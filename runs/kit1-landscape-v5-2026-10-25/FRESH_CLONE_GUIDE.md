@@ -12,7 +12,7 @@ git clone --branch codex/kit1-landscape https://github.com/ramonfueglister/romaa
 cd romaaeterna
 ```
 
-Der Branch ist noch nicht gepusht. Die Root-/Data-Gitignore-Regeln schließen Quellraster, große abgeleitete Float-/Byte-Raster, gerenderte Pack-Payloads, Caches und temporäre Captureframes aus. Kleine Quellen-/Policymanifeste, Generatoren und Offline-Mess-CSV bleiben versionierbar. Daher enthält ein Git Clone **noch keine fertigen Landschafts-Payloads**. Deren erwartete Versionen und SHA-256-Werte stehen in `data/sources.json`, `data/derived/landscape.json` und `data/derived/inventory.json`; große Outputs bleiben lokal oder in einem separat gebundenen Paket.
+Der reviewed Branch `codex/kit1-landscape` ist nach `origin` gepusht. Die Root-/Data-Gitignore-Regeln schließen Quellraster, große abgeleitete Float-/Byte-Raster, gerenderte Pack-Payloads, Caches und temporäre Captureframes aus. Kleine Quellen-/Policymanifeste, Generatoren und Offline-Mess-CSV bleiben versionierbar. Daher enthält ein Git Clone **noch keine fertigen Landschafts-Payloads**. Deren erwartete Versionen und SHA-256-Werte stehen in `data/sources.json`, `data/derived/landscape.json` und `data/derived/inventory.json`; große Outputs bleiben lokal oder in einem separat gebundenen Paket.
 
 ## Abhängigkeiten und öffentlicher Quellenzugriff
 

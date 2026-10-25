@@ -189,3 +189,10 @@ Noch keine Produktarbeit oder Laufzeitprüfung. Neue Einträge nicht rückwirken
 - Normale Benchmarks getrennt vom Capture berichtet. Mobile max 141.976667 ms; Forward+ Pipeline-Maximum 1224.069 ms. Capture 1031 Frames / 0 Drops / 47.96 s, erster Startup-gap 514.182 ms. Keine Messgrenze als Nullpass ausgegeben.
 - Operations führt jetzt genau einen finalen `report-check` aus; erwartete offene A08/A12/A16-Punkte bleiben sichtbar. Danach Git-Audit und inhaltlich getrennte Commits; kein Push ohne freigegebenen Zielbranchcheck. Kosten Token/USD nicht erhoben.
 - Einziger finaler `report-check`: exit 2 / `blocked`, `scope=evidence-contract-only`, `visual_truth_checked=false`; Issues ausschließlich `derivation level/metric coverage incomplete` (Kitchecker kann die 4 NA nicht modellieren), A08 offen (Nutzerstil), A12 offen (GPU-/Per-Pass-Zeit), A16 offen (formale NA-Lücke). Keine weitere Runtimeprüfung impliziert.
+
+
+## 2026-10-25T17:12Z — Git-Lieferung abgeschlossen
+
+- Commitgruppen: `2742741` Datenreport-Errata, `bec000e` Renderer/App/Packaging, `9e860ab` finaler Operations-/Reviewreport, `a27569d` lokale Reviewartefakt-Ignoregrenzen; drei frühere Datencommits `3cecd01`, `d9d955c`, `6ecfcce` blieben unverändert.
+- Ziel `origin` wurde read-only als `https://github.com/ramonfueglister/romaaeterna.git` geprüft; Branch zuvor nicht vorhanden. Normaler nicht-forced push auf `codex/kit1-landscape` erfolgreich, Upstream eingerichtet. Keine PR oder Releaseveröffentlichung.
+- Lokal-only: `.app`, kompletter MP4-Film, große Raw-/Derived-Raster, rohe runtime dumps und superseded reviewer working artifacts bleiben ausgeschlossen; Hash/Produktion stehen in Runmanifesten. Vier finale PNG-Ansichten und zwei Kontaktseiten sind repräsentativ versioniert.

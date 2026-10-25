@@ -4,7 +4,7 @@
 **Remote:** `origin` = `https://github.com/ramonfueglister/romaaeterna.git` (private; `gh repo view` confirmed read access).
 **Base:** `01c48ad` / `origin/main` at branch preparation.
 **Local branch:** `codex/kit1-landscape`.
-**Remote branch check:** read-only `git ls-remote --heads origin refs/heads/codex/kit1-landscape` against the authorized private remote returned no matching ref. Exact destination verified; branch has not been pushed. No force operation was used.
+**Remote branch check:** before push, read-only `git ls-remote --heads origin refs/heads/codex/kit1-landscape` against the authorized private remote returned no matching ref. A normal non-force push then created the branch and set upstream tracking. Exact destination verified; no release publication or PR creation.
 
 The working directory already held authorized implementation/data/run changes when the branch was created. `git switch -c codex/kit1-landscape` preserved them; nothing was reset or staged. Do not stage the whole tree: generated/raw payload directories are large and some are intentionally excluded from Git.
 
@@ -56,3 +56,15 @@ Die lokale Branch hat keinen Upstream und keinen gecachten Remote-Ref. `git ls-r
 Die finale unabhängige Reviewmatrix liegt unter `independent-review/FINAL_REVIEW.md` (SHA-256 `4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a`) und ist in `report.json` gebunden. Der Bericht kennzeichnet A08 Nutzerstil, A12 nicht verfügbare GPU-/Per-Pass-Zeit und A16 vier nicht anwendbare Offline-Metrikkombinationen ehrlich als offen. Finale Release-v2-Daten-Errata und reproduzierbarer Converter liegen unter `data-report-errata/release-v2/`.
 
 Datencommits sind `3cecd01`, `d9d955c`, `6ecfcce`. Nach Abschluss der Operationsbindung wurden Renderer/Startskripte, Operationsdokumente und kleine Belege separat auditiert und committed; keine `.app`, keine großen Raw-/Render-Payloads, keine Runtime-Caches und kein vollständiger Film werden in regulärem Git verteilt. Finales Bundle und vollständiger Film bleiben lokal, sind aber im Report mit Hash und Erzeugungs-/Startpfad gebunden. Prüfe die darunter dokumentierte Commitliste sowie den exakten `origin`-Branch vor Push. Kein Force-Push, keine Releasepublikation, kein zweites Repo.
+
+
+## Final local commit sequence and remote state
+
+- `3cecd01` — `data: add reproducible landscape pipeline`
+- `d9d955c` — `data: bind landscape v3 provenance and samples`
+- `6ecfcce` — `docs: bind landscape data policy and probes`
+- `2742741` — `data: bind release-v2 report errata`
+- `bec000e` — `renderer: add native landscape app and packaging`
+- `9e860ab` — `ops: bind final Kit 1 review evidence`
+- `a27569d` — `chore: ignore local-only reviewer work files`
+- Current branch tip: `a27569d` (`codex/kit1-landscape`), pushed to `origin/codex/kit1-landscape`, tracking configured. Push completed successfully as a normal fast-forward/new-branch push. No force, second repository, release, or PR.
