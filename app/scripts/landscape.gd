@@ -1,10 +1,21 @@
 extends Node3D
 ## A single read-only geographic scene. No simulation, UI, or geographic mutation.
 const MAPPING_REVISION = "mapping-v1"
-const CAMERA_REVISION = "orthographic-relief-v1"
+const CameraRig = preload("res://scripts/landscape_camera.gd")
+const CAMERA_REVISION = CameraRig.REVISION
 const EARTH_RADIUS = 6371008.8
 const MODEL_SCALE = 0.001
 var manifest: Dictionary
+var dataset_path = ""
+var dataset_directory = ""
+var model_product = false
+var context_elevations: PackedFloat32Array
+var detail_rect = Rect2()
+var detail_water_bytes: PackedByteArray
+var detail_water_width = 0
+var detail_water_height = 0
+var style_api: Script
+var surface_material_bytes: PackedByteArray
 var elevations: PackedFloat32Array
 var native_elevation_bytes: PackedByteArray
 var covers: PackedByteArray
@@ -27,6 +38,18 @@ var camera = Camera3D.new()
 var target = Vector2.ZERO
 var zoom = 0.0
 var target_zoom = 0.0
+var zoom_velocity = 0.0
+var core_rect = Rect2()
+var context_rect = Rect2()
+var viewport_size = Vector2.ZERO
+var zoom_anchor_valid = false
+var zoom_anchor = Vector2.ZERO
+var zoom_anchor_pixel = Vector2.ZERO
+var drag_anchor_valid = false
+var drag_anchor = Vector2.ZERO
+var camera_clamp_events: Array = []
+var camera_footprint = Rect2()
+var camera_context_insufficient = false
 var relief = 0.0
 var elevation_degrees = 90.0
 var view_width = 1.0
@@ -142,6 +165,7 @@ func _ready() -> void:
     var args = OS.get_cmdline_user_args()
     for i in range(args.size()):
         if args[i] == "--tour": tour = true
+        if args[i] == "--dataset" and i+1<args.size(): dataset_path=args[i+1]
         if args[i] == "--time-window" and i+2<args.size(): tour_window=[float(args[i+1]),float(args[i+2])]
         if args[i] == "--diagnose-input": diagnose_input=true
         if args[i] == "--probe-anchor" and i+3<args.size(): probe_anchor=[args[i+1],float(args[i+2]),float(args[i+3])]
@@ -188,8 +212,14 @@ func _ready() -> void:
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
     if root_integrity_fatal: get_tree().quit(2); return
-    far_width = max(world_size.x, world_size.y * camera.get_viewport().get_visible_rect().size.aspect()) * 1.08
-    view_width = far_width
+    context_rect=Rect2(world_min,world_size)
+    var cb=manifest.get("core_bounds",manifest.get("bounds",{}))
+    var core_min=geographic_to_world(float(cb.west),float(cb.north))
+    var core_end=geographic_to_world(float(cb.east),float(cb.south))
+    core_rect=Rect2(core_min,core_end-core_min)
+    world_center=core_rect.get_center()
+    target=world_center
+    _resize_camera_contract()
     if start_view.size()==3:
         target=geographic_to_world(start_view[0],start_view[1])
         zoom=clampf(start_view[2],0.0,1.0)
@@ -204,7 +234,7 @@ func _ready() -> void:
     start_usec=Time.get_ticks_usec()-int((tour_window[0] if not tour_window.is_empty() else 0.0)*1000000.0)
 
 func _read_relative(path: String, required: bool=true) -> PackedByteArray:
-    var p=path if path.is_absolute_path() else source_root.path_join("data/derived").path_join(path)
+    var p=path if path.is_absolute_path() else dataset_directory.path_join(path)
     if not FileAccess.file_exists(p): p=source_root.path_join(path)
     if not verified_assets.has(path):
         var entry=manifest.get("assets",{}).get(path,{})
@@ -221,13 +251,19 @@ func _read_relative(path: String, required: bool=true) -> PackedByteArray:
     return FileAccess.get_file_as_bytes(p)
 
 func _load_dataset() -> bool:
-    var path = source_root.path_join("data/derived/landscape.json")
+    var path = dataset_path
+    if path=="":
+        var model_path=source_root.path_join("data/gameworld-v1/landscape.json")
+        path=model_path if FileAccess.file_exists(model_path) else source_root.path_join("data/derived/landscape.json")
+    if not path.is_absolute_path(): path=source_root.path_join(path)
+    dataset_directory=path.get_base_dir()
     if not FileAccess.file_exists(path):
         push_error("Dataset missing. Run documented data preparation first: " + path)
         return false
     var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
     if not parsed is Dictionary: push_error("Invalid dataset manifest"); return false
     manifest = parsed
+    model_product=manifest.has("core_bounds") and manifest.has("render_context_bounds")
     snapshot_manifest_sha256=FileAccess.get_sha256(path)
     renderer_source_sha256=FileAccess.get_sha256("res://scripts/landscape.gd")
     for asset in ["project.godot","landscape.tscn","scripts/landscape.gd","shaders/terrain.gdshader","shaders/vegetation.gdshader","shaders/rivers.gdshader","scripts/pack_height.py","scripts/pack_water_distance.py"]:
@@ -247,6 +283,12 @@ func _load_dataset() -> bool:
     if grid_width < 2 or grid_height < 2 or elevations.size() != grid_width*grid_height or covers.size()!=elevations.size() or waters.size()!=elevations.size():
         push_error("Dataset payload dimensions mismatch; refusing fabricated fallback")
         return false
+    context_elevations=elevations
+    detail_rect=Rect2(world_min,world_size)
+    if manifest.has("height_detail_bounds"):
+        var db=manifest.height_detail_bounds
+        var dm=geographic_to_world(float(db.west),float(db.north))
+        detail_rect=Rect2(dm,geographic_to_world(float(db.east),float(db.south))-dm)
     elevation_width=grid_width
     elevation_height=grid_height
     if manifest.has("height_detail_path"):
@@ -272,6 +314,12 @@ func _load_dataset() -> bool:
             water_width=int(manifest.water_detail_width)
             water_height=int(manifest.water_detail_height)
             if render_waters.size()!=water_width*water_height: push_error("Invalid detailed water dimensions"); return false
+    if manifest.has("detail_water_path"):
+        detail_water_bytes=_read_relative(manifest.detail_water_path)
+        detail_water_width=int(manifest.detail_water_width)
+        detail_water_height=int(manifest.detail_water_height)
+        if detail_water_bytes.size()!=detail_water_width*detail_water_height: return false
+    if manifest.has("material_path"): surface_material_bytes=_read_relative(manifest.material_path)
     return true
 
 func geographic_to_world(lon: float, lat: float) -> Vector2:
@@ -290,21 +338,33 @@ func _source_height_cell(index: int) -> float:
     return native_elevation_bytes.decode_float(index*4) if not native_elevation_bytes.is_empty() else elevations[index]
 
 func _height(p: Vector2) -> float:
-    var uv=((p-world_min)/world_size)*Vector2(elevation_width,elevation_height)-Vector2(0.5,0.5)
-    var x=clampi(int(floor(uv.x)),0,elevation_width-2)
-    var y=clampi(int(floor(uv.y)),0,elevation_height-2)
-    var fx=clampf(uv.x-x,0.0,1.0)
-    var fy=clampf(uv.y-y,0.0,1.0)
-    var raw=lerpf(lerpf(_source_height_cell(y*elevation_width+x),_source_height_cell(y*elevation_width+x+1),fx),lerpf(_source_height_cell((y+1)*elevation_width+x),_source_height_cell((y+1)*elevation_width+x+1),fx),fy)
+    var use_detail=not native_elevation_bytes.is_empty() and detail_rect.has_point(p)
+    var rect=detail_rect if use_detail else Rect2(world_min,world_size)
+    var width=elevation_width if use_detail else grid_width
+    var height=elevation_height if use_detail else grid_height
+    var uv=((p-rect.position)/rect.size)*Vector2(width,height)-Vector2(0.5,0.5)
+    var x=clampi(int(floor(uv.x)),0,width-2)
+    var y=clampi(int(floor(uv.y)),0,height-2)
+    var f=(uv-Vector2(x,y)).clamp(Vector2.ZERO,Vector2.ONE)
+    var values=[]
+    for d in [Vector2i.ZERO,Vector2i(1,0),Vector2i(0,1),Vector2i(1,1)]:
+        var index=(y+d.y)*width+x+d.x
+        values.append(native_elevation_bytes.decode_float(index*4) if use_detail else context_elevations[index])
+    var raw=lerpf(lerpf(values[0],values[1],f.x),lerpf(values[2],values[3],f.x),f.y)
     return (0.0 if _water_kind(p)==1 else raw)*MODEL_SCALE
 
 func _water_kind(p: Vector2) -> int:
-    var uv=(p-world_min)/world_size
-    var x=clampi(int(floor(uv.x*water_width)),0,water_width-1)
-    var y=clampi(int(floor(uv.y*water_height)),0,water_height-1)
-    return int(render_waters[y*water_width+x])
+    var detailed=not detail_water_bytes.is_empty() and detail_rect.has_point(p)
+    var rect=detail_rect if detailed else Rect2(world_min,world_size)
+    var width=detail_water_width if detailed else water_width
+    var height=detail_water_height if detailed else water_height
+    var uv=(p-rect.position)/rect.size
+    var x=clampi(int(floor(uv.x*width)),0,width-1)
+    var y=clampi(int(floor(uv.y*height)),0,height-1)
+    return int(detail_water_bytes[y*width+x] if detailed else render_waters[y*width+x])
 
 func _setup_scene() -> void:
+    if FileAccess.file_exists("res://scripts/style/landscape_style.gd"): style_api=load("res://scripts/style/landscape_style.gd")
     var env=WorldEnvironment.new()
     var environment=Environment.new()
     environment.background_mode=Environment.BG_COLOR
@@ -323,6 +383,7 @@ func _setup_scene() -> void:
     sun.directional_shadow_max_distance=25.0
     sun.shadow_bias=0.03
     sun.shadow_normal_bias=0.2
+    if style_api: style_api.configure_environment(environment,sun)
     add_child(sun)
     camera.projection=Camera3D.PROJECTION_ORTHOGONAL
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
@@ -331,7 +392,18 @@ func _setup_scene() -> void:
     terrain_material=ShaderMaterial.new()
     terrain_material.shader=load("res://shaders/terrain.gdshader")
     terrain_material.set_shader_parameter("elevation_tex",_height_texture())
-    terrain_material.set_shader_parameter("height_packed",not packing_manifest.is_empty())
+    terrain_material.set_shader_parameter("height_packed",not model_product and not packing_manifest.is_empty())
+    if model_product and not native_elevation_bytes.is_empty():
+        terrain_material.set_shader_parameter("use_detail_elevation",true)
+        terrain_material.set_shader_parameter("detail_elevation_tex",_detail_height_texture())
+        terrain_material.set_shader_parameter("detail_height_packed",not packing_manifest.is_empty())
+        terrain_material.set_shader_parameter("detail_world_min",detail_rect.position)
+        terrain_material.set_shader_parameter("detail_world_size",detail_rect.size)
+    if not detail_water_bytes.is_empty():
+        terrain_material.set_shader_parameter("detail_water_tex",ImageTexture.create_from_image(Image.create_from_data(detail_water_width,detail_water_height,false,Image.FORMAT_R8,detail_water_bytes)))
+        terrain_material.set_shader_parameter("use_detail_water",true)
+    if style_api:
+        for key in style_api.terrain_parameters(): terrain_material.set_shader_parameter(key,style_api.terrain_parameters()[key])
     terrain_material.set_shader_parameter("mapped_cover_tex",_make_cover_texture())
     terrain_material.set_shader_parameter("water_tex",ImageTexture.create_from_image(Image.create_from_data(water_width,water_height,false,Image.FORMAT_R8,render_waters)))
     terrain_material.set_shader_parameter("water_distance_tex",_water_distance_texture())
@@ -343,10 +415,12 @@ func _setup_scene() -> void:
     add_child(forest)
     tree_material=ShaderMaterial.new()
     tree_material.shader=load("res://shaders/vegetation.gdshader")
+    if style_api:
+        for key in style_api.vegetation_parameters(): tree_material.set_shader_parameter(key,style_api.vegetation_parameters()[key])
     forest.material_override=tree_material
     forest_families.append(forest)
     for family in range(3):
-        tree_meshes.append(_make_tree_mesh(family))
+        tree_meshes.append(style_api.create_tree_mesh(family) if style_api else _make_tree_mesh(family))
         if family>0:
             var renderer=MultiMeshInstance3D.new()
             renderer.material_override=tree_material
@@ -425,24 +499,59 @@ func _update_lod() -> void:
         node.set_instance_shader_parameter("patch_bounds",wanted[key])
         patches[key]=node
 
-func _update_camera() -> void:
-    view_width=exp(lerpf(log(far_width),log(near_width),zoom))
-    var t=clampf((zoom-0.05)/0.9,0.0,1.0)
-    relief=t*t*(3.0-2.0*t)
-    elevation_degrees=lerpf(90.0,35.2643897,relief)
-    var ratio=get_viewport().get_visible_rect().size.aspect()
-    camera.size=view_width/ratio
-    camera.near=maxf(0.0001,view_width*0.0001)
-    camera.far=maxf(15.0,view_width*5.0+20.0)
-    var ground=_height(target)*relief
-    var focus=Vector3(target.x,ground,target.y)
+func _resize_camera_contract() -> void:
+    var new_size=Vector2(get_viewport().get_visible_rect().size)
+    if new_size.x<=0 or new_size.y<=0: return
+    var previous_width=view_width
+    var overview=zoom<0.000001
+    viewport_size=new_size
+    far_width=maxf(core_rect.size.x,core_rect.size.y*viewport_size.aspect())*1.04
+    if overview: zoom=0.0;target_zoom=0.0;target=core_rect.get_center()
+    elif previous_width>0:
+        var next_zoom=clampf(log(far_width/previous_width)/log(far_width/near_width),0.0,1.0)
+        target_zoom=clampf(target_zoom+next_zoom-zoom,0.0,1.0)
+        zoom=next_zoom
+    zoom_anchor_valid=false
+    drag_anchor_valid=false
+    previous_lod_key=""
+
+func _clamp_camera_target() -> void:
+    var focus=_render_height(target)
+    var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,focus)
+    var limits=CameraRig.target_limits(core_rect,context_rect,offsets,1.0-view_width/far_width)
+    camera_context_insufficient=limits.size.x<0 or limits.size.y<0
+    if camera_context_insufficient:
+        # Existing legacy dataset is knowingly incomplete until real context is
+        # integrated. Never pretend background is geographic water or crop core.
+        target=core_rect.get_center()
+    else:
+        var wanted=target
+        target=target.clamp(limits.position,limits.end)
+        if not wanted.is_equal_approx(target) and camera_clamp_events.size()<10000:
+            camera_clamp_events.append({"frame":frame_number,"wanted":[wanted.x,wanted.y],"clamped":[target.x,target.y],"reason":"full_ground_footprint_or_zoom_pan_limit"})
+    camera_footprint=Rect2(target+offsets.position,offsets.size)
+
+func _place_camera() -> void:
+    camera.size=view_width/viewport_size.aspect()
     var angle=deg_to_rad(elevation_degrees)
-    var distance=maxf(10.0,view_width*1.5)
-    # Set the continuous orthonormal basis atomically; look_at near vertical
-    # snapped the sub-degree pitch on this runtime and shifted all map anchors.
+    var focus=Vector3(target.x,_render_height(target),target.y)
+    var depth=view_width/viewport_size.aspect()/maxf(sin(angle),0.001)
+    var height_extent=(CameraRig.MAX_HEIGHT-CameraRig.MIN_HEIGHT)*relief
+    var distance=maxf(20.0,depth+height_extent+10.0)
+    camera.near=0.001
+    camera.far=distance+depth+height_extent+20.0
     var back=Vector3(0,sin(angle),cos(angle))
     var up=Vector3(0,cos(angle),-sin(angle))
     camera.transform=Transform3D(Basis(Vector3.RIGHT,up,back),focus+back*distance)
+
+func _update_camera() -> void:
+    if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
+    view_width=exp(lerpf(log(far_width),log(near_width),zoom))
+    var profile=CameraRig.profile(view_width)
+    elevation_degrees=profile.x
+    relief=profile.y
+    _clamp_camera_target()
+    _place_camera()
     terrain_material.set_shader_parameter("relief",relief)
     terrain_material.set_shader_parameter("view_width",view_width)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
@@ -472,6 +581,14 @@ func _pan_delta(event: InputEvent) -> Vector2:
         if pressed: return movement
     return Vector2.ZERO
 
+func _pick_ground(pixel: Vector2) -> Vector2:
+    return CameraRig.pick(camera,pixel,Callable(self,"_render_height"),relief)
+
+func _begin_zoom_anchor(pixel: Vector2) -> void:
+    zoom_anchor=_pick_ground(pixel)
+    zoom_anchor_pixel=pixel
+    zoom_anchor_valid=true
+
 func _unhandled_input(event: InputEvent) -> void:
     if diagnose_input: _log_input_diagnostic(event,"unhandled_input",false)
     if tour or snapshot: return
@@ -479,15 +596,30 @@ func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseButton or event is InputEventMagnifyGesture or event is InputEventPanGesture or movement!=Vector2.ZERO:
         interaction_events.append({"t_ms":elapsed*1000.0,"event_type":event.get_class(),"target_before":[target.x,target.y],"zoom_before":target_zoom,"pan_pixels":[movement.x,movement.y]})
     if event is InputEventMouseButton:
-        if event.button_index==MOUSE_BUTTON_WHEEL_UP and event.pressed: target_zoom=clampf(target_zoom+0.035,0,1)
-        if event.button_index==MOUSE_BUTTON_WHEEL_DOWN and event.pressed: target_zoom=clampf(target_zoom-0.035,0,1)
-    if event is InputEventMagnifyGesture: target_zoom=clampf(target_zoom+log(event.factor)*0.16,0,1)
+        if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and event.pressed:
+            _begin_zoom_anchor(event.position)
+            var direction=1.0 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -1.0
+            target_zoom=clampf(target_zoom+direction*log(1.18)*maxf(event.factor,0.01)/log(far_width/near_width),0,1)
+        elif event.button_index<=MOUSE_BUTTON_MIDDLE:
+            if event.pressed:
+                drag_anchor=_pick_ground(event.position)
+                drag_anchor_valid=true
+                zoom_anchor_valid=false
+            elif pan_down_mask==0: drag_anchor_valid=false
+    if event is InputEventMagnifyGesture:
+        _begin_zoom_anchor(event.position)
+        target_zoom=clampf(target_zoom+log(maxf(event.factor,0.001))/log(far_width/near_width),0,1)
     if event is InputEventPanGesture:
-        target+=event.delta*view_width/get_viewport().get_visible_rect().size.x*12.0
-    if movement!=Vector2.ZERO:
-        var scale_per_pixel=view_width/get_viewport().get_visible_rect().size.x
-        target-=Vector2(movement.x,movement.y/maxf(sin(deg_to_rad(elevation_degrees)),0.3))*scale_per_pixel
-    target=target.clamp(world_min,world_min+world_size)
+        # Gesture displacement is interpreted in the same viewport pixel space
+        # as a drag, through the same terrain intersection. No device factor.
+        var pixel=event.position
+        var anchor=_pick_ground(pixel)
+        target=CameraRig.anchored_target(anchor,pixel-event.delta,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+        zoom_anchor_valid=false
+    if movement!=Vector2.ZERO and drag_anchor_valid:
+        target=CameraRig.anchored_target(drag_anchor,event.position,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+    _clamp_camera_target()
+    _place_camera()
 
 func _process(delta: float) -> void:
     if quitting or not terrain_material: return
@@ -503,9 +635,21 @@ func _process(delta: float) -> void:
         pipeline_events.append({"frame":frame_number,"t_ms":elapsed*1000.0,"previous_frame_wall_ms":frame_wall_ms,"counts":counts})
         last_pipeline_counts=counts
     if tour: _drive_tour()
-    else: zoom=lerpf(zoom,target_zoom,1.0-exp(-delta*12.0))
+    else:
+        var state=CameraRig.damp(zoom,zoom_velocity,target_zoom,delta)
+        zoom=clampf(state.x,0.0,1.0)
+        zoom_velocity=state.y
     _update_camera()
     _update_lod()
+    if zoom_anchor_valid and not tour:
+        # Re-solve against the actual new LOD and relief, rather than a flat
+        # plane. Two passes include the implicit focus-height and clamp change.
+        for iteration in range(2):
+            target=CameraRig.anchored_target(zoom_anchor,zoom_anchor_pixel,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+            _clamp_camera_target()
+            _place_camera()
+            _update_lod()
+        if absf(zoom-target_zoom)<0.0000001 and absf(zoom_velocity)<0.000001: zoom_anchor_valid=false
     _update_forest()
     _record_motion()
     if warmup_frames_remaining>0:
@@ -542,7 +686,7 @@ func _record_sample(delta: float) -> void:
     var geo=world_to_geographic(target)
     var anchors=_anchor_probes()
     var ridge_probes=_anchor_probes(ridge_definitions)
-    var observation={"t_ms":elapsed*1000.0,"frame":frame_number,"anchor_probes":anchors,"render_timing":_render_timings(),"ridge_probes":ridge_probes,"view_state_id":current_fixture_state_id,"view_state":_observed_view_state(),"waypoint_id":_waypoint_id(),"profile_sha256":profile_sha256,"frame_ms":frame_wall_ms,"engine_delta_ms":delta*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"profile_elevation_degrees":elevation_degrees,"camera_basis":_basis_columns(),"camera_projection":_projection_columns(),"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"relief_weight":relief,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"visible_width_source_m":view_width/MODEL_SCALE,"target_height_model":_height(target)*relief,"camera_position":[camera.position.x,camera.position.y,camera.position.z],"patch_count":patches.size(),"tree_count":tree_count,"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"dataset_revision":manifest.get("dataset_revision","unknown"),"memory_static_bytes":OS.get_static_memory_usage(),"render_draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"gpu_memory_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),"gpu_texture_memory_bytes":Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED),"gpu_buffer_memory_bytes":Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED),"canonical_tile_id":_tile_id(geo)}
+    var observation={"t_ms":elapsed*1000.0,"frame":frame_number,"anchor_probes":anchors,"render_timing":_render_timings(),"ridge_probes":ridge_probes,"view_state_id":current_fixture_state_id,"view_state":_observed_view_state(),"waypoint_id":_waypoint_id(),"profile_sha256":profile_sha256,"frame_ms":frame_wall_ms,"engine_delta_ms":delta*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"profile_elevation_degrees":elevation_degrees,"camera_basis":_basis_columns(),"camera_projection":_projection_columns(),"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"relief_weight":relief,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"visible_width_source_m":view_width/MODEL_SCALE,"target_height_model":_height(target)*relief,"camera_position":[camera.position.x,camera.position.y,camera.position.z],"patch_count":patches.size(),"tree_count":tree_count,"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"ground_footprint_model":[camera_footprint.position.x,camera_footprint.position.y,camera_footprint.end.x,camera_footprint.end.y],"context_insufficient":camera_context_insufficient,"dataset_revision":manifest.get("dataset_revision","unknown"),"memory_static_bytes":OS.get_static_memory_usage(),"render_draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"gpu_memory_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),"gpu_texture_memory_bytes":Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED),"gpu_buffer_memory_bytes":Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED),"canonical_tile_id":_tile_id(geo)}
     telemetry.append(observation)
     if current_fixture_waypoint!=null: waypoint_observations.append(observation)
     var window=int(floor(elapsed/2.0))
@@ -596,7 +740,7 @@ func _finish() -> void:
     _record_sample(0.0)
     var sorted_frames=frame_samples.duplicate()
     sorted_frames.sort()
-    var result={"schema_version":"runtime-evidence-v1","input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"seeded-360m-budget-v1","candidate_spacing_m":18,"chunk_cells":20,"max_chunks_generated_per_frame":1,"resident_cache_limit":192,"prefetch_zoom":0.78,"visible_zoom":0.86,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
+    var result={"schema_version":"runtime-evidence-v1","input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"seeded-360m-budget-v1","candidate_spacing_m":18,"chunk_cells":20,"max_chunks_generated_per_frame":1,"resident_cache_limit":192,"prefetch_zoom":0.78,"visible_zoom":0.86,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"camera_clamp_events":camera_clamp_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
     var out=telemetry_dir if telemetry_dir!="" else (capture_dir if capture_dir!="" else source_root.path_join("artifacts/runtime"))
     DirAccess.make_dir_recursive_absolute(out)
     var f=FileAccess.open(out.path_join("runtime.json"),FileAccess.WRITE)
@@ -876,6 +1020,8 @@ func _notification(what: int) -> void:
     if what==NOTIFICATION_APPLICATION_FOCUS_OUT:
         pan_down_mask=0
         pan_position_valid=false
+        drag_anchor_valid=false
+        zoom_anchor_valid=false
     if what==NOTIFICATION_WM_CLOSE_REQUEST and not quitting:
         quitting=true
         if frame_samples.is_empty(): get_tree().quit(); return
@@ -883,23 +1029,31 @@ func _notification(what: int) -> void:
 
 
 func _height_texture() -> ImageTexture:
+    if model_product:
+        return ImageTexture.create_from_image(Image.create_from_data(grid_width,grid_height,false,Image.FORMAT_RF,context_elevations.to_byte_array()))
+    return _detail_height_texture()
+
+func _detail_height_texture() -> ImageTexture:
     if elevation_width==grid_width:
         return ImageTexture.create_from_image(Image.create_from_data(elevation_width,elevation_height,false,Image.FORMAT_RF,elevations.to_byte_array()))
-    var meta=source_root.path_join("artifacts/render-data/height-packing.json")
-    var path=source_root.path_join("artifacts/render-data/height-rg8.bin")
+    if model_product and not manifest.has("height_packing_path"):
+        return ImageTexture.create_from_image(Image.create_from_data(elevation_width,elevation_height,false,Image.FORMAT_RF,native_elevation_bytes))
+    var meta=dataset_directory.path_join(manifest.height_packing_path) if model_product else source_root.path_join("artifacts/render-data/height-packing.json")
+    var path=dataset_directory.path_join(manifest.height_packed_path) if model_product else source_root.path_join("artifacts/render-data/height-rg8.bin")
     if not FileAccess.file_exists(meta) or not FileAccess.file_exists(path):
         push_error("Missing bound GPU upload representation; run scripts/build-landscape")
         root_integrity_fatal=true
         return ImageTexture.new()
     packing_manifest=JSON.parse_string(FileAccess.get_file_as_string(meta))
     packing_manifest_sha256=FileAccess.get_sha256(meta)
-    if packing_manifest.get("payload_sha256","")!=FileAccess.get_sha256(path) or packing_manifest.get("policy",{}).get("source_sha256","")!=manifest.get("assets",{}).get("height-detail.f32",{}).get("sha256",""):
+    if packing_manifest.get("payload_sha256","")!=FileAccess.get_sha256(path) or packing_manifest.get("policy",{}).get("source_sha256","")!=manifest.get("assets",{}).get(manifest.get("height_detail_path","height-detail.f32"),{}).get("sha256",""):
         push_error("GPU upload representation integrity mismatch")
         root_integrity_fatal=true
         return ImageTexture.new()
     return ImageTexture.create_from_image(Image.create_from_data(elevation_width,elevation_height,false,Image.FORMAT_RG8,FileAccess.get_file_as_bytes(path)))
 
 func _packed_height(p: Vector2) -> float:
+    if model_product: return _height(p)
     # Same four decoded texels as shader. Camera focus keeps canonical source height.
     var uv=((p-world_min)/world_size)*Vector2(elevation_width,elevation_height)-Vector2(0.5,0.5)
     var x=clampi(int(floor(uv.x)),0,elevation_width-2)
