@@ -1,0 +1,492 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "derivation"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "build_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sources_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifact": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "accuracy_status": {
+            "enum": [
+              "measured",
+              "estimated",
+              "unknown"
+            ]
+          },
+          "accuracy_limitation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quality_evidence": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "source_id",
+          "artifact",
+          "accuracy_status",
+          "accuracy_limitation",
+          "quality_evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "derived_outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "artifact_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "artifact_path",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "level_measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric": {
+            "enum": [
+              "terrain_vertical_m",
+              "terrain_horizontal_m",
+              "coastline_displacement_m",
+              "screen_error_px",
+              "projection_scale_error_ratio",
+              "transition_residual_px"
+            ]
+          },
+          "unit": {
+            "enum": [
+              "m",
+              "px",
+              "ratio"
+            ]
+          },
+          "statistic": {
+            "const": "sample_maximum"
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "coverage_evidence": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "sampling_plan": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "reported_value": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unsampled_limitations": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "level_id",
+          "metric",
+          "unit",
+          "statistic",
+          "scope",
+          "source_ids",
+          "coverage_evidence",
+          "sampling_plan",
+          "samples",
+          "reported_value",
+          "unsampled_limitations"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "topology_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "feature_class": {
+            "enum": [
+              "coast",
+              "islands",
+              "river_network",
+              "ridges",
+              "tile_seams"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "policy_rule": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "protected_feature_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unexpected_changes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "scope_limitations": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "feature_class",
+          "source_ids",
+          "policy_rule",
+          "protected_feature_count",
+          "unexpected_changes",
+          "evidence",
+          "scope_limitations"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "detail_omissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_feature_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rule": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source_id",
+          "source_feature_id",
+          "rule",
+          "evidence",
+          "rationale"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "region_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "region_definition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "synthetic",
+    "run_id",
+    "build_revision",
+    "sources_revision",
+    "mapping_revision",
+    "policy_revision",
+    "policy",
+    "source_bindings",
+    "derived_outputs",
+    "level_measurements",
+    "topology_checks",
+    "detail_omissions",
+    "region_revision",
+    "region_definition"
+  ],
+  "additionalProperties": false
+}

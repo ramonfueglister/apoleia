@@ -1,0 +1,92 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "sources",
+  "revision": "kit1-reference-screenshots-2026-10-25-v1",
+  "sources": [
+    {
+      "id": "U01",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1411740/ss_8e827fd147b2662b99258c86343353f589991fa0.1920x1080.jpg?t=1770544830",
+      "version": "Steam app 1411740, screenshot ID 0; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "urbek-neighborhood.jpg",
+      "sha256": "86532eae5d893bd4dfa0f99086639a8a163614008e0ad3f8da4b06364051e7a0",
+      "transformations": []
+    },
+    {
+      "id": "U02",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1411740/ss_00276968c0cd4359c0cfdae532543f41f31e4744.1920x1080.jpg?t=1770544830",
+      "version": "Steam app 1411740, screenshot ID 13; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "urbek-terrain-vegetation.jpg",
+      "sha256": "501aaab01493b565ab9f9f9d8fa064223a93d89b1df41ff99ffc2857b021fedf",
+      "transformations": []
+    },
+    {
+      "id": "U03",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1411740/ss_ded4375f8a676200c9fe9fb0101a277c3e7c883a.1920x1080.jpg?t=1770544830",
+      "version": "Steam app 1411740, screenshot ID 11; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "urbek-coast-city-overview.jpg",
+      "sha256": "b9025c4ab96334fa82fe3364572d72c39030de6a23ba271234de5d3c709140b8",
+      "transformations": []
+    },
+    {
+      "id": "V01",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/4a1da4d1f072d157c25645ca8459c6573a0d5671/ss_4a1da4d1f072d157c25645ca8459c6573a0d5671.1920x1080.jpg?t=1791467998",
+      "version": "Steam app 529340, screenshot ID 0; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "vic3-map-overview.jpg",
+      "sha256": "a9771a536b793bfd20903d46ff241d18c04fa3ff553406ca145696904da3ea8a",
+      "transformations": []
+    },
+    {
+      "id": "V02",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/ccfc86b923d134949d072bbb3559fa8d10cfc8c0/ss_ccfc86b923d134949d072bbb3559fa8d10cfc8c0.1920x1080.jpg?t=1791467998",
+      "version": "Steam app 529340, screenshot ID 10; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "vic3-continental-terrain.jpg",
+      "sha256": "b257290657b1ca9607cf75cd6d7440073d8489a00397d5a13addfe046f5ba2ad",
+      "transformations": []
+    },
+    {
+      "id": "V03",
+      "role": "style",
+      "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/67b8a722d24c05abe47444df64ad6201f893678d/ss_67b8a722d24c05abe47444df64ad6201f893678d.1920x1080.jpg?t=1791467998",
+      "version": "Steam app 529340, screenshot ID 6; retrieved 2026-10-25; exact game build unknown",
+      "license": "Copyrighted game publicity screenshot; reference only; no free asset or product reuse license asserted. Credits and source page in README.md.",
+      "coverage": "Visual reference only; not geodata and not a historical reconstruction.",
+      "resolution": "1920x1080 JPEG; bytes as delivered by official Steam CDN",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "vic3-coast-region.jpg",
+      "sha256": "eca3f3ea88e023ce2bd8fa55529e1f61d528c533ab2a643a0cd01390ee96e9d1",
+      "transformations": []
+    }
+  ],
+  "historical_corrections": []
+}

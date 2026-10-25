@@ -1,0 +1,2559 @@
+{
+  "reference_archive": "WorldOfOldcraft-build-kit.zip",
+  "archive_sha256": "b639cd2e14c9cb526f511574f161cfa568f41ce64fe9d844a5999ff2b791c366",
+  "entry_count": 224,
+  "entries": [
+    {
+      "source": "WorldOfOldcraft-build-kit/CLAUDE.md",
+      "bytes": 10048,
+      "sha256": "cfe6c0bbe1199b31dc33ff50b3349192cb0720b2f59aef382ce255a4fffa1123",
+      "disposition": "angepasst",
+      "targets": [
+        "WORKFLOW.md",
+        "operations/ROLES.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Rollen, Zustandsführung, Nachweise übertragen; Projekt-/Autonomiebefehle nicht."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/logo_oldcraft_A.webp",
+      "bytes": 118688,
+      "sha256": "282d8469f7dbd0b2885457af3f2be636c5438b1baae1a26d6f1805bde692731a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_bullfolk_B.webp",
+      "bytes": 99682,
+      "sha256": "27fbe8ed3791e5be929d4c27b7ed30694813411169f6c8601d9c83dd52628d0d",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_dwarf_C.webp",
+      "bytes": 136120,
+      "sha256": "fb86999062ca3cfd87986ba0220fca50d09461d60f863f51f1dc6c8abf6277fd",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_human_C.webp",
+      "bytes": 104246,
+      "sha256": "abcc74e692a1b231ac5449f59df3b08b0542421c88b4115619d10a456b949cea",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_nightelf_C.webp",
+      "bytes": 62386,
+      "sha256": "c1f9d6226c14d9b86ec771b6d5fbfdcba084dc55f96daeef293ae63e2e12060e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_orc_A.webp",
+      "bytes": 102890,
+      "sha256": "46235d82493878fa5ca77040b5f0d121c674609257dfac62c70a9c8d38bd02cc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/race_undead_B.webp",
+      "bytes": 56994,
+      "sha256": "510136a386c61f28f8a3cd8393d88fcea4cda8cbc650e1a248113a064b8f0aaf",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/README.md",
+      "bytes": 1839,
+      "sha256": "44b4efc95b096cb10d5c7d0ad1dd78241421c77703013fd2585a74f2ec43f1d6",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_biome_farmland_N.webp",
+      "bytes": 767604,
+      "sha256": "59a2fd358cd2f4e0a9f9a3baedf73635b084ecd831234c96f70fa6024382d188",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_biome_haunted_N.webp",
+      "bytes": 378410,
+      "sha256": "8546e0f2c67b4b360043315cff2a162bbdb9790d3fad000cf387f979e2d38606",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_bullfolk_B_Egpt.webp",
+      "bytes": 129588,
+      "sha256": "230d3d3d068a4d5f88c7fb42a90a922f905b96f4eee28cb8bf3b22be55b9812c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_city_human_G.webp",
+      "bytes": 197478,
+      "sha256": "b658ef911d33c539dfb423382c4d14ef4aea93f5bc5ac9457048bbd95bec8e5f",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_city_human_inside_N.webp",
+      "bytes": 630990,
+      "sha256": "46599803c2b131c000e2c01f652d1a691fba7c0d1cae437dc253982739a449c9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_city_stone_inside_N.webp",
+      "bytes": 654264,
+      "sha256": "e18b5f6096437c437604515d709afee57b3f865297c8a7ed915338482be3852c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_city_stone_inside_W.webp",
+      "bytes": 634242,
+      "sha256": "3c2d5f55dd068a069100b619dc5f0201872d58d98439756f24c5444cf0a32f4a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_dwarf_C_Egpt.webp",
+      "bytes": 141322,
+      "sha256": "a8007ea0d2453752e21dea3797d45157d46e67537b3663a523d4d92cf8474bbb",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_human_C_Enano.webp",
+      "bytes": 365908,
+      "sha256": "d60a6bc9f496efd1d55c216260575c99b8a2ae90d2b5ec6efe2dced0325c3000",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_nightelf_C_Egpt.webp",
+      "bytes": 77688,
+      "sha256": "2144615d8963e4dbed3730c29c63f2976e4e5526cfa746a952bd9c8fe16b6cef",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_start_valley_N.webp",
+      "bytes": 665484,
+      "sha256": "a093b30b660d552da5cfb8583e5fcf002fb09df1000753c5870c5ed5aaab33b9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_transition_farmland_N.webp",
+      "bytes": 531518,
+      "sha256": "fbcac7d7a4ca2f76dcc491a290fb9770b512146445a117ac886e78abe28ea44e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_ui_charcreate_N.webp",
+      "bytes": 380352,
+      "sha256": "8c80cd7e91c71157eeb7edb879a8984b1a6839a585c74380a2e4567017b1250b",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_ui_charselect_fix_G.webp",
+      "bytes": 177628,
+      "sha256": "0965f13cb3f18eed0f98b0127ce8b72156ad86272ee0aa35f0b68e900432e3ed",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_ui_hud_N.webp",
+      "bytes": 815284,
+      "sha256": "3933d46631c2ccd1800f1b6d272b6237b6c271a3593597f07c08153c6685b322",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_ui_login_G.webp",
+      "bytes": 142742,
+      "sha256": "74f510ee8ca24d570abd607897beddfd20f3c06e7417d110061812c8add26357",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_zone_overview_west_N.webp",
+      "bytes": 926890,
+      "sha256": "10651344cf8eab3b9bef932693f4a2e558a2bc1e0fba1bad5344b4e63cb083b3",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/approved/v2_zonemap_west_Nref.webp",
+      "bytes": 653890,
+      "sha256": "c768d6197955669bddef25dae874d085e216633cdd6b9db5e1d4253e7055c5ba",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_canyon_A.webp",
+      "bytes": 215256,
+      "sha256": "d7015d322c0834a4528f217757f3a5abc13236b65f22df16b9854869a0b702ac",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_canyon_B.webp",
+      "bytes": 221934,
+      "sha256": "acc82bbf6116b4aeb875ab4643b15059f18609d5594ff4f4bd3f0bb350de425c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_farmland_A.webp",
+      "bytes": 221086,
+      "sha256": "77cb38d0a7bf7caa9a14e4616c9ab01ecdcbfc012b0282998093c6bf30e34b58",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_farmland_B.webp",
+      "bytes": 220320,
+      "sha256": "659f1320ed5dbeff93c0e171cc667077bcd8c17bd8e12d430705ee7c880001ae",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_haunted_A.webp",
+      "bytes": 187942,
+      "sha256": "605d20cda31d80d232fdeec50dfe93a90f26b1f9e6f6353dc4a81d66f267096a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_haunted_B.webp",
+      "bytes": 174840,
+      "sha256": "46b2833e8c93bbd954a63e8fb2d11c1f4751d10add2483eaabf83f9267fea0f3",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_snow_A.webp",
+      "bytes": 229848,
+      "sha256": "9d8a01899d78002a78811dc0e9ad09f48b661b8c3a79d11e93ee8973116feaa8",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/biome_snow_B.webp",
+      "bytes": 224188,
+      "sha256": "718ff07f83bddf65a1b2e3ae2fdc121158779b7763031738a5cb8c1d84787675",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_dwarf_A.webp",
+      "bytes": 225310,
+      "sha256": "7fb6395a563e89b4684f98b79bd7084c0b2d6637a2ec10a66ffa1180f1d0ada2",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_dwarf_B.webp",
+      "bytes": 199668,
+      "sha256": "de3c498590099b039e3e054a99384890c5471ca6485b06de7038072e16d1d708",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_human_A.webp",
+      "bytes": 211540,
+      "sha256": "5ca5590f7a114e55b7d1d491542245b80d67e550b44066dcbd718855892efab1",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_human_B.webp",
+      "bytes": 202024,
+      "sha256": "1b94fe31d6bacbc9f7267718ba26f7c509bb38889865bf1edf4d922eb4d9ba0c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_human_inside_A.webp",
+      "bytes": 226996,
+      "sha256": "03f91a62f011103d64aed0414b9282214f49016d3409027da3df171f10554934",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_human_inside_B.webp",
+      "bytes": 192146,
+      "sha256": "c0feb760dea9202dd629a6cc6e2471c5debd04f6cfa6203d157f7442a271f9e4",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_orc_A.webp",
+      "bytes": 220388,
+      "sha256": "11af348be26048641a00fe25d72a6915089064d9ddd4f61418368388faca91a9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/city_orc_B.webp",
+      "bytes": 183448,
+      "sha256": "f0a280539afc66f80007d4135d2adc156a9e66f8490163d435294e76f673cc8f",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/lineup_all_A.webp",
+      "bytes": 86250,
+      "sha256": "1aad0213c1bde9e8583c47abcf0903430693a0a450760c9087e9cd6ffd3a4a50",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/lineup_all_B.webp",
+      "bytes": 126840,
+      "sha256": "62aa85ae1fc476804d4b6db8c38c47386b9019b8ea1f836271778d7a27bacb69",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_elderhold_A.webp",
+      "bytes": 120810,
+      "sha256": "5aa6724ff635b82df972dec98c80bd16125f7529886e77e35c454e972d8ef0e0",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_elderhold_B.webp",
+      "bytes": 120652,
+      "sha256": "3df9bc71860755853ef2b977e53a46c6da129abdc3597853abc60933ecd1166c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_eldmoor_A.webp",
+      "bytes": 106790,
+      "sha256": "131a93a06116804ecefcae4cadd0b2a0c042f29e2f07d853b004f47a767c0f42",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_eldmoor_B.webp",
+      "bytes": 98960,
+      "sha256": "5468cb2cb5a89d183e78d81a9f69324369c5115d9f2998f2a96602b3e2ed8a1a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_oldcraft_A.webp",
+      "bytes": 118688,
+      "sha256": "282d8469f7dbd0b2885457af3f2be636c5438b1baae1a26d6f1805bde692731a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/logo_oldcraft_B.webp",
+      "bytes": 118894,
+      "sha256": "3ac1bc13bfb9d0dfa9da6133c6a8d834d1024b999e97a89588be67f969047f96",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_bullfolk_A.webp",
+      "bytes": 105028,
+      "sha256": "e7fc4ffae3f07f6088501f1254495f86bb1a9a9072c48a1d774404cf623d3616",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_bullfolk_B.webp",
+      "bytes": 99682,
+      "sha256": "27fbe8ed3791e5be929d4c27b7ed30694813411169f6c8601d9c83dd52628d0d",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_bullfolk_C.webp",
+      "bytes": 148774,
+      "sha256": "a0d35d2b4329f8380a432dbf6b9b4fca422d3be5cff3244a2528ef9aa4817666",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_dwarf_A.webp",
+      "bytes": 129012,
+      "sha256": "4398324e2a9d7242e83d679448d9bd6eee330b57fc0a5bbfe06f401539a03f54",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_dwarf_B.webp",
+      "bytes": 108938,
+      "sha256": "3f3f31610467d2fef9bd1fa899f23a723a632317a419dddc6c5c6205228a3297",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_dwarf_C.webp",
+      "bytes": 136120,
+      "sha256": "fb86999062ca3cfd87986ba0220fca50d09461d60f863f51f1dc6c8abf6277fd",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_human_A.webp",
+      "bytes": 85278,
+      "sha256": "13c8cc9b5a85dceeb02c1c743d6bff3959c3bff62926a3123762205fb987b316",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_human_B.webp",
+      "bytes": 76410,
+      "sha256": "aeba28eea262dd30a9edc84ceddc23b7a02280e79b383240ef4edd10d11b6dfd",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_human_C.webp",
+      "bytes": 104246,
+      "sha256": "abcc74e692a1b231ac5449f59df3b08b0542421c88b4115619d10a456b949cea",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_nightelf_A.webp",
+      "bytes": 69458,
+      "sha256": "8c660ea1dacb4452eb08c3aed612d10c1cd6abffd56899da26aeeb8007ee52ec",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_nightelf_B.webp",
+      "bytes": 62878,
+      "sha256": "7641a7a30c6a3efa8dc9eec5c19f765653819c234251c12fb621b4ff17df9cd3",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_nightelf_C.webp",
+      "bytes": 62386,
+      "sha256": "c1f9d6226c14d9b86ec771b6d5fbfdcba084dc55f96daeef293ae63e2e12060e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_orc_A.webp",
+      "bytes": 102890,
+      "sha256": "46235d82493878fa5ca77040b5f0d121c674609257dfac62c70a9c8d38bd02cc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_orc_B.webp",
+      "bytes": 93634,
+      "sha256": "680490ed0a4fc0d0f18a7d38e98e5766ec81dbb4ff114501ae582df2c3a3e401",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_orc_C.webp",
+      "bytes": 120962,
+      "sha256": "58592709e5d6b9415d0712cd582005b914e27a53cf7ff82b17919ae11f80e4b0",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_undead_A.webp",
+      "bytes": 71276,
+      "sha256": "6bc40813191135cc2030a94244e39160d23be6e1d8de958562117309c3f26de4",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_undead_B.webp",
+      "bytes": 56994,
+      "sha256": "510136a386c61f28f8a3cd8393d88fcea4cda8cbc650e1a248113a064b8f0aaf",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/race_undead_C.webp",
+      "bytes": 106378,
+      "sha256": "997413bc7a8ffbb69b5e9bd2869f561689d0fe20e4805327e00b7d0bc7217602",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/start_valley_A.webp",
+      "bytes": 250412,
+      "sha256": "8e90ea32a7981b41c2f325593b96042c6d34a3ec5f2c0fbfe9898e17f1507100",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/start_valley_B.webp",
+      "bytes": 241086,
+      "sha256": "2ae0b0bd6f17d08c03747b31715d1b9d293af1c9227028a71082a3fb498d6180",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/transition_canyon_A.webp",
+      "bytes": 242076,
+      "sha256": "f746685662aac6405b0935cf95ce8790576e11815779aff289cbd11e7d7c1bbd",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/transition_farmland_A.webp",
+      "bytes": 225184,
+      "sha256": "5acdd3b350f404cfc7506cbf0da59e714bec0bf33b796f43b4cce2038cbf3ff5",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/transition_haunted_A.webp",
+      "bytes": 224354,
+      "sha256": "71d6ba9e2376f6618b335ee8f2cd4e046c0527e5bae3a66b2731d94b27c5aa9e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/transition_snow_A.webp",
+      "bytes": 227444,
+      "sha256": "94def827bbcd0aa97ca8ff47924297249544b1f922bac62e429ded3bf31cb175",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_charcreate_A.webp",
+      "bytes": 145634,
+      "sha256": "d3cd8f0dd8c8ba6c38f6e8df3f5f390947def9bb6f2629ebf5cc64fe46a10d18",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_charcreate_B.webp",
+      "bytes": 193890,
+      "sha256": "9597c57929ae1d305f62659082b932cb0261bc492508e7e0dd5b287970b0a9c7",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_charselect_A.webp",
+      "bytes": 202386,
+      "sha256": "aac7c9089e49ed3efb5f32aab3e1d40a54a4f7a7300e0c7181d1f138883aaa55",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_charselect_B.webp",
+      "bytes": 179844,
+      "sha256": "d9c8e896960cda8e55a3288338f5884af75445857f8a569cf890bbd1f02f34b9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_hud_A.webp",
+      "bytes": 228964,
+      "sha256": "2077a726879df36d4c86e9158c7eb55d29b1ce201a20bd22b27a816c19c230d4",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_hud_B.webp",
+      "bytes": 217606,
+      "sha256": "a5e912029dad85248eeb9eaed2c26a5241463ce3b7bc06d18bf45304154b5939",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_login_A.webp",
+      "bytes": 199864,
+      "sha256": "593ad8f3627a8f624db926d641edb9d96b8e41e068bb7c0e30af2fc3c5f83193",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/ui_login_B.webp",
+      "bytes": 194160,
+      "sha256": "2ae75050ad9669614c4f8f26724e5bb97e013ce39b968e7a65c720239f02d754",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_canyon_G.webp",
+      "bytes": 182844,
+      "sha256": "e61c4f2f598816f6a5f135a18a11c716acaf2cd10f61e5bb00907ce22cba6a80",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_canyon_N.webp",
+      "bytes": 651130,
+      "sha256": "7ccc8acd064ec76623205f9ed0b3db72d1a9cb6a3ae08203b0555ea839cfd870",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_canyon_W.webp",
+      "bytes": 690170,
+      "sha256": "e280042122adb30790293c578cd9e5eee70d0faa7747373efe10d38a71da58d7",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_farmland_G.webp",
+      "bytes": 233976,
+      "sha256": "1e83d2761c6fae0144909899a11361a0fc2ae01836815161648c22c112370a6e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_farmland_N.webp",
+      "bytes": 767604,
+      "sha256": "59a2fd358cd2f4e0a9f9a3baedf73635b084ecd831234c96f70fa6024382d188",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_farmland_W.webp",
+      "bytes": 897240,
+      "sha256": "7fd40d4638944850289298c52bcd1f2dd98360c5e0adca98fd08d87802b6dc72",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_haunted_G.webp",
+      "bytes": 144942,
+      "sha256": "6627d07c0c1403c0fe2d1fec06334af3c71ecab48233af62f1162eb9ae1ea7ee",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_haunted_N.webp",
+      "bytes": 378410,
+      "sha256": "8546e0f2c67b4b360043315cff2a162bbdb9790d3fad000cf387f979e2d38606",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_haunted_W.webp",
+      "bytes": 340630,
+      "sha256": "3e6377c6d3c98774f6649605efb288f10629d3d45961fc1d3a1312f3c87e8f4e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_snow_G.webp",
+      "bytes": 214632,
+      "sha256": "b90851d737fb70efa7764f2ccdada839ae107211c72dfd8f6cfd9ec6b1e6a486",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_snow_N.webp",
+      "bytes": 724902,
+      "sha256": "08295df6b5deb53cf9686ba295151794ef5d67167fe7851523339fb03ba8e1c1",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_biome_snow_W.webp",
+      "bytes": 521138,
+      "sha256": "0d21e9f9cfec62314574f089a66358b2177f5ed2114a2da12db42144a5243fed",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_bullfolk_B_Egpt.webp",
+      "bytes": 129588,
+      "sha256": "230d3d3d068a4d5f88c7fb42a90a922f905b96f4eee28cb8bf3b22be55b9812c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_bullfolk_B_Enano.webp",
+      "bytes": 339544,
+      "sha256": "579bf15277c089cf1496d2d679f1958dc794ee0483e535662cdca3b4507acf3d",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_dwarf_G.webp",
+      "bytes": 202192,
+      "sha256": "e5c810ffd0010fd7e0375aae7535f196f4265b747da87bd513ebb1ddbe4d26d8",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_dwarf_N.webp",
+      "bytes": 585718,
+      "sha256": "13cb871f7ca8d326d98033b8b88fff3e025b776176cd0b7c9f6daf23dab124fc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_dwarf_W.webp",
+      "bytes": 395956,
+      "sha256": "8192e202f1ad72946deeb609c04bee7d6c9bc8c0034c5ee459f3e1f75dc32541",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_G.webp",
+      "bytes": 197478,
+      "sha256": "b658ef911d33c539dfb423382c4d14ef4aea93f5bc5ac9457048bbd95bec8e5f",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_inside_G.webp",
+      "bytes": 249294,
+      "sha256": "f93675d5acde1f310d47ee5b63a7309f2fbb891813ead62887f48294c6c86bc5",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_inside_N.webp",
+      "bytes": 630990,
+      "sha256": "46599803c2b131c000e2c01f652d1a691fba7c0d1cae437dc253982739a449c9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_inside_W.webp",
+      "bytes": 800226,
+      "sha256": "7b2f4cdc8097e20b663c129242ca64618fe6581905d89947fd538b8beb3cccbe",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_N.webp",
+      "bytes": 501424,
+      "sha256": "04a97330aa9290855d5e5d27ac6853b132752dab9b6e5939ae328b11516430f8",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_human_W.webp",
+      "bytes": 746116,
+      "sha256": "c123394b049638264ee0ace0ceaf8f03885cba9f85f1be49edfe2d84e014b950",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_orc_G.webp",
+      "bytes": 164424,
+      "sha256": "0145b0d1d4c0bec7ffb14b718fb25bec91dd0f873c10c3e4de6541fce73832e1",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_orc_N.webp",
+      "bytes": 551142,
+      "sha256": "ff807bf3d9f74c1a8010404851f05c102c07244cb9eed910bff0be476bb68912",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_orc_W.webp",
+      "bytes": 583340,
+      "sha256": "171ee6aedf33d2ec91a6606240516c4bea8f81f7f56120362c2807196456e5ec",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_inside_G.webp",
+      "bytes": 197952,
+      "sha256": "8fddd41721ab7dc1f80a95bff7aedbf78e931aa6824cf6df2ebda6043a7a1039",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_inside_N.webp",
+      "bytes": 654264,
+      "sha256": "e18b5f6096437c437604515d709afee57b3f865297c8a7ed915338482be3852c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_inside_W.webp",
+      "bytes": 634242,
+      "sha256": "3c2d5f55dd068a069100b619dc5f0201872d58d98439756f24c5444cf0a32f4a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_square_G.webp",
+      "bytes": 197676,
+      "sha256": "3de2081b2790281daf907699c2697753f375400c27a0cf1f3b02c3da544c2cfa",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_square_N.webp",
+      "bytes": 437310,
+      "sha256": "c041d58bb3160fa45b58e32750595b1bc6cc0f4d222e15eb238bca9ccf12b192",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_city_stone_square_W.webp",
+      "bytes": 545918,
+      "sha256": "0a76f616ae6f63de2f4cfcb7ecd7978de4dda708d3ce3b16000e0fe7ebfbcecc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_dwarf_C_Egpt.webp",
+      "bytes": 141322,
+      "sha256": "a8007ea0d2453752e21dea3797d45157d46e67537b3663a523d4d92cf8474bbb",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_dwarf_C_Enano.webp",
+      "bytes": 471748,
+      "sha256": "fe3fde7c4d6b4c77dab3a04d5aa7f581a82b5bda497cf30fc1a402b798e9c3c5",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_human_C_Egpt.webp",
+      "bytes": 114310,
+      "sha256": "cdfa4fd95c7b189f626f67df0c8d70a79e93acfafdac4c2a0c5baddac1e7b975",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_human_C_Enano.webp",
+      "bytes": 365908,
+      "sha256": "d60a6bc9f496efd1d55c216260575c99b8a2ae90d2b5ec6efe2dced0325c3000",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_nightelf_C_Egpt.webp",
+      "bytes": 77688,
+      "sha256": "2144615d8963e4dbed3730c29c63f2976e4e5526cfa746a952bd9c8fe16b6cef",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_nightelf_C_Enano.webp",
+      "bytes": 197498,
+      "sha256": "91ce55f97f895f9d0a4f0f3b06253e21733ffc1b7804ec703568c9b34012395a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_start_valley_G.webp",
+      "bytes": 223522,
+      "sha256": "b595320e3288b5f48df647f1c7b7596eafe1634a57ebcb59951c3b19ba42f4b1",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_start_valley_N.webp",
+      "bytes": 665484,
+      "sha256": "a093b30b660d552da5cfb8583e5fcf002fb09df1000753c5870c5ed5aaab33b9",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_canyon_G.webp",
+      "bytes": 195890,
+      "sha256": "35506a9aa9f10687e41417f69764fcea9e59cf7a756672cedc51769eb9d97ce0",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_canyon_N.webp",
+      "bytes": 628350,
+      "sha256": "cf3e6100a23ea80a5bbb37aaa5a66bfda925146daf2d7696d7c65337a2e6e38b",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_canyon_W.webp",
+      "bytes": 747906,
+      "sha256": "55b3f3a870fd63312ea0b25bbf5fc5ab2ec67cd74a2dad6ef05813645dcc58ff",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_farmland_G.webp",
+      "bytes": 225312,
+      "sha256": "ca477e438b6bde7e8410fd0d00754ed0db498ec5d6ff008a18107ca3492dd8d3",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_farmland_N.webp",
+      "bytes": 531518,
+      "sha256": "fbcac7d7a4ca2f76dcc491a290fb9770b512146445a117ac886e78abe28ea44e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_farmland_W.webp",
+      "bytes": 526040,
+      "sha256": "183b82a9155fc00b218bf69dfdbbb70208cb87798eba23785bb681ceb7afc2b0",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_haunted_G.webp",
+      "bytes": 175298,
+      "sha256": "e3d596f31225bdb2fb8a628cda8603bb37fe27341442869e683b8cf243869dbb",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_haunted_N.webp",
+      "bytes": 384640,
+      "sha256": "8ddd137810b99d5f0b3155ce4515db1f0a1ca7e456899d24e8b5076586f17e8d",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_haunted_W.webp",
+      "bytes": 474364,
+      "sha256": "93a08f99f8f69cbda9fcff9a019dc1a4f607f9c90660445e2f0c4e409be7d858",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_transition_snow_G.webp",
+      "bytes": 190822,
+      "sha256": "cd93eea22429df86e76824fb0571e299d1873b663384029d035475b8d350018b",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_charcreate_fix_G.webp",
+      "bytes": 146806,
+      "sha256": "94061159568ef0247d57822e2fab2a09f9515cf04ee86eba7b4381b8f65f49ab",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_charcreate_G.webp",
+      "bytes": 171438,
+      "sha256": "efca0d0b501528351dd16be99a905802ea12e50247f997c585c5a9a1c27ae4d6",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_charcreate_N.webp",
+      "bytes": 380352,
+      "sha256": "8c80cd7e91c71157eeb7edb879a8984b1a6839a585c74380a2e4567017b1250b",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_charselect_fix_G.webp",
+      "bytes": 177628,
+      "sha256": "0965f13cb3f18eed0f98b0127ce8b72156ad86272ee0aa35f0b68e900432e3ed",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_charselect_G.webp",
+      "bytes": 160742,
+      "sha256": "cdd08737fe62c95b8e6aa02eec81a026661238c18274ff7ab3d6d34699caedbc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_hud_G.webp",
+      "bytes": 230592,
+      "sha256": "e4f5e635690d77d444a45d0989bf2418ba16a492acc5b61e7fb1f648b8d8bf9c",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_hud_N.webp",
+      "bytes": 815284,
+      "sha256": "3933d46631c2ccd1800f1b6d272b6237b6c271a3593597f07c08153c6685b322",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_login_G.webp",
+      "bytes": 142742,
+      "sha256": "74f510ee8ca24d570abd607897beddfd20f3c06e7417d110061812c8add26357",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_ui_login_N.webp",
+      "bytes": 389060,
+      "sha256": "48dd2638cfbdb5b634c9259a909f0ea4a1a9b0780a512628f05b8e11fa546242",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zone_overview_east_N.webp",
+      "bytes": 882706,
+      "sha256": "8ee24d2e29d4c1db65f4af01279c88c58ee08a6b3827053006c13016ee56131e",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zone_overview_west_N.webp",
+      "bytes": 926890,
+      "sha256": "10651344cf8eab3b9bef932693f4a2e558a2bc1e0fba1bad5344b4e63cb083b3",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_east_G.webp",
+      "bytes": 284220,
+      "sha256": "0ff032ea693db34fd47633961c5b235066c6da8f89a7446be842842427fbf2fc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_east_N.webp",
+      "bytes": 760694,
+      "sha256": "1c8c9721198e6647111210a362d726aa05db33e88c137a73021abaa57b0d024a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_east_Nref.webp",
+      "bytes": 1017012,
+      "sha256": "b239aff25395c1bef4074b9b3c12ffbd4d27dc8b639d62fd80a6aa81d5ac3295",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_west_G.webp",
+      "bytes": 281020,
+      "sha256": "562dd6bae6da353cfda4c5998110efa82eabf08e019b29ac42ef3e23f47bb581",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_west_N.webp",
+      "bytes": 956582,
+      "sha256": "43ea56f529336592b941265b870fd9579d7e95e7410138dfdb92b29c1cb4ed15",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemap_west_Nref.webp",
+      "bytes": 653890,
+      "sha256": "c768d6197955669bddef25dae874d085e216633cdd6b9db5e1d4253e7055c5ba",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemapA_G.webp",
+      "bytes": 286812,
+      "sha256": "b123646bcf11c66e2c3e44b9e0217604e66af6b29170474d3c34729692b5080a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemapA_N.webp",
+      "bytes": 895304,
+      "sha256": "49119c92fe172244774f7df8335e935f814346a12aee40b1c621bbf3797e5a01",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemapB_G.webp",
+      "bytes": 291678,
+      "sha256": "cf67f36c62f95500cb36d26f8f037effc0e9501014e3e39096bbcb799138cfde",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/v2_zonemapB_N.webp",
+      "bytes": 735744,
+      "sha256": "435f6d623d673548a3142ce299ce4163fc4558392d806d7f862259a019226ccd",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/zonemap_A.webp",
+      "bytes": 282808,
+      "sha256": "b080832106b938fa0e6ed663f51c3189abcd7255a655a963f31a5f46e947a3fc",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/concepts/candidates/zonemap_B.webp",
+      "bytes": 283346,
+      "sha256": "0d1f1289d0cd2778287739214f53d2e62cd30fa39f348e899bd969c8b7afcc69",
+      "disposition": "ausgelassen",
+      "targets": [
+        "REFERENCES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "MMO-/Figuren-/Stadtreferenzen sind keine Kit-1-Landschaftsassets. Aktuelle eigene schriftliche Bildsprache ist maßgeblich."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/KICKOFF.md",
+      "bytes": 2056,
+      "sha256": "7c3a5d5ba34bcb7919b15e860ba252364d453b4472fbfd598e83aa23b0df8998",
+      "disposition": "angepasst",
+      "targets": [
+        "KICKOFF.md"
+      ],
+      "reason": "Start/Wiederaufnahme/Abschluss ohne automatische Implementierungsfreigabe."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/PIPELINE_LESSONS.md",
+      "bytes": 23451,
+      "sha256": "b517a5c8642cfa13ddd75bcde742c28090a94288d6296d7fd0f1a18bd4826660",
+      "disposition": "angepasst",
+      "targets": [
+        "operations/RECOVERY.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Quellen-/Prüf-/Integrationslehren übertragen, zeitgebundene Engine-/Modell-/Budgetbehauptungen nicht."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/refs/manifest.json",
+      "bytes": 45069,
+      "sha256": "e878eed7274527777070faae0174c3df284d8fd283262527d0bd15e0f60bca99",
+      "disposition": "ersetzt",
+      "targets": [
+        "references/screenshots/README.md",
+        "references/screenshots/sources.json",
+        "REFERENCES.md"
+      ],
+      "reason": "Fremde MMO-Referenzen nicht kopiert. Referenzsammlung und Provenienz durch sechs echte offizielle Urbek-/Victoria-3-Screenshots mit eigener Zuordnung und Ausschlüssen ersetzt."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/Docs/TASK.md",
+      "bytes": 30814,
+      "sha256": "ea773b66b0cdba0a1b080c378030b237a61071d7a64f8e970c502a2da81b13ca",
+      "disposition": "angepasst",
+      "targets": [
+        "TASK.md",
+        "ACCEPTANCE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "WHAT und überprüfbarer vollständiger Pfad auf natürliche Projektregion und Zoom neu gefasst."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/hooks/after_compact.py",
+      "bytes": 522,
+      "sha256": "4cd8998d75a64244dac9308baaf0c90ae84fbfb5c44e5d3bc5e16398c2b42e31",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/RECOVERY.md",
+        "templates/HANDOFF.md",
+        "templates/PROGRESS.md"
+      ],
+      "reason": "Persistente Wiederaufnahme durch konkrete manuelle Checkliste ohne Agentenhost-Hook ersetzt."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/hooks/keep_working.py",
+      "bytes": 1289,
+      "sha256": "0e1b82e008a905ab60bf3f99414ebdf71c42101df27c2405f2f47f85a81368f1",
+      "disposition": "ausgelassen",
+      "targets": [
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Stop-Blockierung/Autonomiesettings nicht übernehmen; Nutzersteuerung und bestehende Grenzen gelten."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/settings.json",
+      "bytes": 650,
+      "sha256": "a4353bbfb9a2fc3c087fc7d8c378769ffd8cf442ae0d8802d1a31d508a3bbf27",
+      "disposition": "ausgelassen",
+      "targets": [
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Stop-Blockierung/Autonomiesettings nicht übernehmen; Nutzersteuerung und bestehende Grenzen gelten."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/3d-production-routing/SKILL.md",
+      "bytes": 2206,
+      "sha256": "57d2247d9ba8356baa031595b33db9739e992b39c803b6fb6468f7fc83e0fefa",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/ROLES.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Aufgabenspezifischer Arbeitszweck durch Landschaftsprozess ersetzt; keine fremde Implementierung übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/blender-game-animation/SKILL.md",
+      "bytes": 11925,
+      "sha256": "e3dffcb24369286dd5f4d360892e0df77e861ca50d61e917a8ac3f56b1394b0f",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/01a_apose_front.md",
+      "bytes": 3067,
+      "sha256": "1fd91c12c0dc8b2ef5ae2189e69dcf53b60b920ade101288c917acba666c2164",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/01b_character_sheet.md",
+      "bytes": 4398,
+      "sha256": "68b329635d6012cf297fa4e454ea93bfa1e4c67ac06f118340b8469f59c77eee",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/02_parts_body.md",
+      "bytes": 4097,
+      "sha256": "304229f59d4f4e1df4c5d47852bbc4a004947586434b04589db0944c6b84680a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/03_parts_paired.md",
+      "bytes": 3693,
+      "sha256": "f148af0493051ba70f98f0c1c52e55a726427dfde0dd5e4222ee75889d535cad",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/04_parts_accessory.md",
+      "bytes": 5001,
+      "sha256": "e8ea72a9a8503c1d5bfbf3c39d949550c9f19c188a392f77e8e20d80c50f9cf8",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/05_parts_hair.md",
+      "bytes": 3099,
+      "sha256": "314e762852c7bc6290cb06aaa2bac95260c0c76c74bfa40a9b09c822c115dc26",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/06_multiview.md",
+      "bytes": 5323,
+      "sha256": "8a99bb113b8e2b07553063c9a308cd68fec37c45dc21fff1651f536f0b802897",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/07_360_video.md",
+      "bytes": 4248,
+      "sha256": "aaf257e7419a59489b19d4b8e0f5026882987271f527b402ebcce764f6e81941",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/prompts/08_3q_classifier.md",
+      "bytes": 8030,
+      "sha256": "3b38c21d277de102e63b05b51bbc74fba650c0ce696df3456e27450ab855f631",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/character-sheet-pipeline/SKILL.md",
+      "bytes": 19152,
+      "sha256": "e6b5512194bab866e2be9a6dc2c48616fccac253a3c3a7a741a0628ad739851d",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/examples/concept.json",
+      "bytes": 331,
+      "sha256": "17774c4f139ee9df4af7cfa9e0cd43cad7fb6cfea64ca251ace98a754fa15de6",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/examples/edit.json",
+      "bytes": 374,
+      "sha256": "c409bfaba3b3b2a736634d8653ad5cd24dc0840d50a6fe184e6f76f833a0444d",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/examples/WALKTHROUGH.md",
+      "bytes": 1618,
+      "sha256": "7e055ba46748b541ca6bb3ba18465d7d36369e9d2821399ed12246d4e2c0f535",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/references/mcp-workflow.md",
+      "bytes": 4647,
+      "sha256": "94c1c577430c7f1b57767c5ff47ea4052519e5169db4b1c13ca4a78946b82a6e",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/references/prompting-and-review.md",
+      "bytes": 2612,
+      "sha256": "618a26451e2a6c96c796800c5e2d7b18342e1af0092a3d844a4ca8f8df920544",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/references/setup.md",
+      "bytes": 2603,
+      "sha256": "ff1ba792638cb17fe6b660479654a08bbd9bf214a73dc28d29b2af7b010ed14b",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/scripts/fal_job.py",
+      "bytes": 9568,
+      "sha256": "b44bff78d2ea681dcb6666262cb7dd4d9a954dc9c3a4dfe9aa8dfb15048e6b51",
+      "disposition": "ersetzt",
+      "targets": [
+        "tools/kit.py",
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Herunterladen/generieren/exportieren fremder Assets nicht übernehmen; Herkunfts-/Struktur-/Belegprüfungen als eigene lokale Helfer, produktive Adapter später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/scripts/requirements.txt",
+      "bytes": 42,
+      "sha256": "2b09e471b329bf9cfb5b4c247b7350d5564737e4a9da82cf7d9f381d9a5a4983",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/SETUP.md",
+        "operations/ADAPTER.md",
+        "templates/config.json",
+        "tools/kit.py"
+      ],
+      "reason": "Explizite Werkzeugbindung, lokaler Preflight und portables Paket statt Installation/fremder Konten/MCPs. Keine Pakete notwendig."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/scripts/test_fal_job.py",
+      "bytes": 4105,
+      "sha256": "5af8c33ad7a7688c2dd04edc316d42f798480d40d33bee9fec1f8bcb9bbac617",
+      "disposition": "ersetzt",
+      "targets": [
+        "tools/kit.py",
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Herunterladen/generieren/exportieren fremder Assets nicht übernehmen; Herkunfts-/Struktur-/Belegprüfungen als eigene lokale Helfer, produktive Adapter später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/dot-claude/skills/fal-ai-generation/SKILL.md",
+      "bytes": 4764,
+      "sha256": "f5fe75557105510d0e0112fccde5a6bfda2789f542f36c7e16ca306fb19af2c8",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/STYLE_PIPELINE.md",
+        "operations/RECOVERY.md",
+        "templates/sources.json"
+      ],
+      "reason": "Optionale Dienstnutzung mit Jobkennung/Provenienz/Review beschrieben, keine Anbieterbindung oder Installation."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/env.example",
+      "bytes": 245,
+      "sha256": "c18611af038462b9e7534190b619ce7b472771005bdec505eee5d3c6c69d10fe",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/SETUP.md",
+        "operations/ADAPTER.md",
+        "templates/config.json",
+        "tools/kit.py"
+      ],
+      "reason": "Explizite Werkzeugbindung, lokaler Preflight und portables Paket statt Installation/fremder Konten/MCPs. Keine Pakete notwendig."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/host-tools/desktop_timelapse.ps1",
+      "bytes": 2912,
+      "sha256": "d833b3e2b456625b7c61b653333c21fcd3fcc563182c84856eaaf83718ff8278",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/VERIFY_CAPTURE.md",
+        "operations/ADAPTER.md",
+        "schemas/telemetry.schema.json",
+        "tools/kit.py"
+      ],
+      "reason": "Echte reproduzierbare Laufzeitaufnahmen mit Telemetrie/Provenienz statt Desktop-/Timelapse-Implementierung; Runtimeadapter erst später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/host-tools/make_desktop_timelapse.ps1",
+      "bytes": 1223,
+      "sha256": "92619e079af24621fe9627c08bf8839520a1b02dd2bb5f70f5cb63890237b896",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/VERIFY_CAPTURE.md",
+        "operations/ADAPTER.md",
+        "schemas/telemetry.schema.json",
+        "tools/kit.py"
+      ],
+      "reason": "Echte reproduzierbare Laufzeitaufnahmen mit Telemetrie/Provenienz statt Desktop-/Timelapse-Implementierung; Runtimeadapter erst später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/host-tools/stop_desktop_timelapse.ps1",
+      "bytes": 996,
+      "sha256": "12c6ed14f7e30d6b82b1ce4f57bda7ac946140bdeefa386129c366eb8870a090",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/VERIFY_CAPTURE.md",
+        "operations/ADAPTER.md",
+        "schemas/telemetry.schema.json",
+        "tools/kit.py"
+      ],
+      "reason": "Echte reproduzierbare Laufzeitaufnahmen mit Telemetrie/Provenienz statt Desktop-/Timelapse-Implementierung; Runtimeadapter erst später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/install_kit.ps1",
+      "bytes": 6850,
+      "sha256": "459e693dc25675e5d8bc9f52f5e760865912012e97776bee6d5f152a3ef467b4",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/SETUP.md",
+        "operations/ADAPTER.md",
+        "templates/config.json",
+        "tools/kit.py"
+      ],
+      "reason": "Explizite Werkzeugbindung, lokaler Preflight und portables Paket statt Installation/fremder Konten/MCPs. Keine Pakete notwendig."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/KIT_CONTENTS.json",
+      "bytes": 1650,
+      "sha256": "b96826a99013f73ca866824c15671321a49561a50c98f99dfeb5929a4661a9a2",
+      "disposition": "angepasst",
+      "targets": [
+        "README.md",
+        "REFERENCE_MAP.json",
+        "operations/PACKAGING.md"
+      ],
+      "reason": "Einstieg und vollständiges portables Inhalts-/Übertragungsinventar."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/KIT_README.md",
+      "bytes": 8598,
+      "sha256": "09bddd78df8ae0b2d422dea69f3884264320371b2898741d53d15785b95e48a7",
+      "disposition": "angepasst",
+      "targets": [
+        "README.md",
+        "REFERENCE_MAP.json",
+        "operations/PACKAGING.md"
+      ],
+      "reason": "Einstieg und vollständiges portables Inhalts-/Übertragungsinventar."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/3d-gen-preferences.md",
+      "bytes": 2211,
+      "sha256": "2fc03b94acbdfb537b98b4f691c7d5c655ab1c6dfc43e3a2cbfcd032d68b356e",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/blender-game-animation-lessons.md",
+      "bytes": 29790,
+      "sha256": "99e0df43c957125eba78a2b2fb4dbe52e31643e00fba931e25b574e1e9f300c0",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/creative-skills.md",
+      "bytes": 3973,
+      "sha256": "f5cbb99aedc5ee859ed6b27e97fc9e5176ad05bfbcdd0e0529718f5aa914daf4",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/image-gen-lessons.md",
+      "bytes": 7780,
+      "sha256": "b9bc85ae51c0a145146a7403f6bce79cce37d61403c91682bba54ba297a2e1a6",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/mixamo-animation-acquisition.md",
+      "bytes": 3699,
+      "sha256": "a17fb339781a3edb22b50895499eb0c55fbdc980b65212465d95659bc5f92db5",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/overlord-character-animation-reviews.md",
+      "bytes": 12664,
+      "sha256": "673cf0a91cba368443254c653b102ac847721f3654935cd7558e07003e979fea",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/overlord-quadruped-turning.md",
+      "bytes": 2124,
+      "sha256": "741a38c8c0a426a31a947d099f71a792df0d2feaa65cb37c5570304ee6fa8607",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/overlord-unity-test-input.md",
+      "bytes": 1630,
+      "sha256": "2d46cdba627e57cba1c277864c2083703a0442cd1a7710d926be65691aad57a6",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/knowledge/overlord-upright-locomotion.md",
+      "bytes": 5306,
+      "sha256": "4a61fde0434f9737a0ae4eeac96445e3a630112b1188b6eff52df2de202f8347",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/mcp.json",
+      "bytes": 454,
+      "sha256": "b216cc8dfa6f74bf58018cfe6124399011e71e42181754bba92515b8772f3933",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/SETUP.md",
+        "operations/ADAPTER.md",
+        "templates/config.json",
+        "tools/kit.py"
+      ],
+      "reason": "Explizite Werkzeugbindung, lokaler Preflight und portables Paket statt Installation/fremder Konten/MCPs. Keine Pakete notwendig."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/animation-reference-selection.md",
+      "bytes": 12965,
+      "sha256": "b2d62b62410b6b3f52f142dc093bca491aafcfad90a78f2a392185433170efeb",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/blender-game-animation.md",
+      "bytes": 23243,
+      "sha256": "0c041b72b97478cff4fe06224f1efd9e82116e036cd852ef7aa4732124da3621",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/character-creation.md",
+      "bytes": 4541,
+      "sha256": "04bbf4eaca92b97d965805a7f57966d01979c2cc1a9a8e10e391a96c5ad4f861",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/game-animation-polish.md",
+      "bytes": 10096,
+      "sha256": "97931a73fc51c0e95b0cb0a6dda7dede832e5b6de4adf834bfa0d8a2a4f55105",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/higgsfield-cli.md",
+      "bytes": 2882,
+      "sha256": "340268333c287440e8860083c318de6f49b026bd871a0c6ea41eae53df95ef17",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/image-generation.md",
+      "bytes": 4173,
+      "sha256": "a9aeb3fb91094588cf542a2f51c91cdfdcf30d4967757c3c2d9b01a74c5ad113",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/prompting.md",
+      "bytes": 7331,
+      "sha256": "d00d9aab4e75bbc9af66ac9a34d46eb12c8f26cbbc49c5bc49992d42f9eb999b",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/3d-ai/tools.md",
+      "bytes": 3617,
+      "sha256": "34d550463a703c5ebfe4ea9c5ae55fa7279fceedd3abadf45d98b27bd944787c",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/VERIFY_CAPTURE.md",
+        "operations/RECOVERY.md"
+      ],
+      "reason": "Übertragbare Auswahl-, Import-, Beleg- und Recoveryprinzipien neu gefasst; fremde Technologie/Präferenzen nicht übernommen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/processes/workspace-video-storage.md",
+      "bytes": 4609,
+      "sha256": "6b5872f134739e121f5b91bd17bd2f51f989e7fd865ab7c8198548eab933bb22",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/VERIFY_CAPTURE.md",
+        "operations/ADAPTER.md",
+        "schemas/telemetry.schema.json",
+        "tools/kit.py"
+      ],
+      "reason": "Echte reproduzierbare Laufzeitaufnahmen mit Telemetrie/Provenienz statt Desktop-/Timelapse-Implementierung; Runtimeadapter erst später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/NEXT_BATCH.md",
+      "bytes": 8975,
+      "sha256": "93d8f2503ac34004881afc14ca5621357d12b2703c5700a4b8cad398e25c5627",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/quadruped-locomotion.md",
+      "bytes": 10207,
+      "sha256": "0d9e46901a7c0740cc99cf7ac11f5e13527b14d3b1b969bb394d8e607a9c4db4",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/README.md",
+      "bytes": 10188,
+      "sha256": "c9161787ccc40fe857896132af3bccec03f71d01bab951c836d5718e83d7c421",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/roster-turns-2026-09-18/HANDOFF.md",
+      "bytes": 8611,
+      "sha256": "736a55055087f2d2c8ea24b0a63115a86e3837a5de9cb591c257f31340f4f468",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/skullgirls-polish.md",
+      "bytes": 7766,
+      "sha256": "d0b1a6f0b832197cdc1edd443b6d1ade47efe7bf2ba25b1ded1257d3cbfbf15f",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/projects/overlord/animation-workflow/wolf-turn90-final01/HANDOFF.md",
+      "bytes": 6314,
+      "sha256": "0d187a989aace4b0fdf16d542d0afa1ec35579fdd3a8799413b9caf4f58989d6",
+      "disposition": "ersetzt",
+      "targets": [
+        "templates/HANDOFF.md",
+        "templates/DEFECT.md",
+        "templates/REVIEW.md",
+        "templates/REPORT.md"
+      ],
+      "reason": "Projektfremde Animationsinhalte nicht übertragen; Arbeitsübergabe und dokumentierte Review als eigene Vorlagen."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/requirements.txt",
+      "bytes": 44,
+      "sha256": "25971952b151b854e5346886aad480a7672c915f6bc6598a8d26c0e686d39d48",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/SETUP.md",
+        "operations/ADAPTER.md",
+        "templates/config.json",
+        "tools/kit.py"
+      ],
+      "reason": "Explizite Werkzeugbindung, lokaler Preflight und portables Paket statt Installation/fremder Konten/MCPs. Keine Pakete notwendig."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/3d/center_glb_bottom.py",
+      "bytes": 2780,
+      "sha256": "0a918323ec3e7f15213b3442c95fc0b7e59fe9249324f385d978946772ecdb8f",
+      "disposition": "ersetzt",
+      "targets": [
+        "tools/kit.py",
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Herunterladen/generieren/exportieren fremder Assets nicht übernehmen; Herkunfts-/Struktur-/Belegprüfungen als eigene lokale Helfer, produktive Adapter später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/animation/download_mixamo.py",
+      "bytes": 3505,
+      "sha256": "9bdfd86641742a48d95532b197617bd9b6cb3af7172e43abca953b4bb164cd11",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/animation/mixamo_core_set.json",
+      "bytes": 14973,
+      "sha256": "610d1740068b6f409f8a6c44ac0d3a4e50439537b83f4c2d30822524a636569a",
+      "disposition": "ausgelassen",
+      "targets": [
+        "TASK.md",
+        "operations/STYLE_PIPELINE.md",
+        "operations/REGION.md"
+      ],
+      "reason": "Figuren, Rigs und Animationen außerhalb Kit 1. Entsprechender Landschaftsproduktionsprozess separat vorhanden."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/capture/make_timelapse.py",
+      "bytes": 6297,
+      "sha256": "1f515b08ce5240ffa26a42543b4a1fcc2b7f36f558ed4ed0fc28845b9a3e64ff",
+      "disposition": "ersetzt",
+      "targets": [
+        "operations/VERIFY_CAPTURE.md",
+        "operations/ADAPTER.md",
+        "schemas/telemetry.schema.json",
+        "tools/kit.py"
+      ],
+      "reason": "Echte reproduzierbare Laufzeitaufnahmen mit Telemetrie/Provenienz statt Desktop-/Timelapse-Implementierung; Runtimeadapter erst später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/image-gen/generate.py",
+      "bytes": 15226,
+      "sha256": "666ad2b252f145971cf56905de8aa5f04cf1951554db7781e7c6bb85f9036399",
+      "disposition": "ersetzt",
+      "targets": [
+        "tools/kit.py",
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Herunterladen/generieren/exportieren fremder Assets nicht übernehmen; Herkunfts-/Struktur-/Belegprüfungen als eigene lokale Helfer, produktive Adapter später."
+    },
+    {
+      "source": "WorldOfOldcraft-build-kit/scripts/refs/fetch_refs.py",
+      "bytes": 2602,
+      "sha256": "b441a0a78aa144cab8aa7d9ff344bf2f5cc42bd3783174379b4d057808811c99",
+      "disposition": "ersetzt",
+      "targets": [
+        "tools/kit.py",
+        "operations/DATA_PIPELINE.md",
+        "operations/STYLE_PIPELINE.md"
+      ],
+      "reason": "Herunterladen/generieren/exportieren fremder Assets nicht übernehmen; Herkunfts-/Struktur-/Belegprüfungen als eigene lokale Helfer, produktive Adapter später."
+    }
+  ],
+  "kit_extension": "kit1-landscape-v3: latest user scope is one natural landscape view, no GUI or additional modes; invisible square tile foundation only.",
+  "kit_version": "kit1-landscape-v5"
+}

@@ -1,0 +1,319 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "geodata_policy"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_to_model_scale": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 1e-15,
+          "maximum": 0.999999999999999
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "uniform_model_scale": {
+      "const": true
+    },
+    "vertical_exaggeration": {
+      "const": 1
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_model_transform": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "model_render_transition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "projection_definition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_accuracy_assessment": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "detail_rules": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sampling_plan": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "budgets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metric": {
+                  "enum": [
+                    "terrain_vertical_m",
+                    "terrain_horizontal_m",
+                    "coastline_displacement_m",
+                    "screen_error_px",
+                    "projection_scale_error_ratio",
+                    "transition_residual_px"
+                  ]
+                },
+                "unit": {
+                  "enum": [
+                    "m",
+                    "px",
+                    "ratio"
+                  ]
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "metric",
+                "unit",
+                "limit"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 6
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "sampling_plan",
+          "budgets"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "protection_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "feature_class": {
+            "enum": [
+              "coast",
+              "islands",
+              "river_network",
+              "ridges",
+              "tile_seams"
+            ]
+          },
+          "rule": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "feature_class",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "revision",
+    "source_to_model_scale",
+    "uniform_model_scale",
+    "vertical_exaggeration",
+    "decision",
+    "source_model_transform",
+    "model_render_transition",
+    "projection_definition",
+    "source_accuracy_assessment",
+    "detail_rules",
+    "levels",
+    "protection_rules"
+  ],
+  "additionalProperties": false
+}

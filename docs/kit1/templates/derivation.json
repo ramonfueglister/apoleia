@@ -1,0 +1,18 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "derivation",
+  "synthetic": false,
+  "run_id": "unstarted-template",
+  "build_revision": null,
+  "sources_revision": null,
+  "mapping_revision": null,
+  "policy_revision": null,
+  "policy": null,
+  "source_bindings": [],
+  "derived_outputs": [],
+  "level_measurements": [],
+  "topology_checks": [],
+  "detail_omissions": [],
+  "region_revision": null,
+  "region_definition": null
+}

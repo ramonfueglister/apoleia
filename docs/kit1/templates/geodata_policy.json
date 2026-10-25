@@ -1,0 +1,16 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "geodata_policy",
+  "revision": "unbound",
+  "source_to_model_scale": null,
+  "uniform_model_scale": true,
+  "vertical_exaggeration": 1,
+  "decision": null,
+  "source_model_transform": null,
+  "model_render_transition": null,
+  "projection_definition": null,
+  "source_accuracy_assessment": null,
+  "detail_rules": null,
+  "levels": [],
+  "protection_rules": []
+}

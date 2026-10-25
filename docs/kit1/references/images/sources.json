@@ -1,0 +1,36 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "sources",
+  "revision": "user-primary-with-accepted-far-style-reference-2026-10-25",
+  "sources": [
+    {
+      "id": "user-primary-natural-landscape-style",
+      "role": "style",
+      "url": "conversation:user-attached-primary-landscape-style-2026-10-25",
+      "version": "User-attached original file codex-clipboard-38ba09ae-963a-4ce6-8299-287dfe507e6f.png; user identified as preferred primary reference on 2026-10-25",
+      "license": "User-provided reference image; individual author and external license are not independently established. Included as an internal visual style reference only.",
+      "coverage": "Primary terrain palette, material, and detail-density style reference only; not geographic or historical evidence and not a mask input; see ../STYLE_GUIDE.md.",
+      "resolution": "PNG 1774 x 887; 8-bit RGB; 2813884 bytes; copied unchanged from user attachment",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "user-primary-landscape-style.png",
+      "sha256": "bf91d62e914b57d526aa5e49543495464d8f3ae75ef344033ff54d7dafd8e5ea",
+      "transformations": []
+    },
+    {
+      "id": "accepted-far-landscape-style-reference",
+      "role": "style",
+      "url": "conversation:generated-far-style-probe-from-primary-2026-10-25",
+      "version": "Generated on request based on user-accepted primary; user accepted the style reference after clarifying on 2026-10-25 that it is not flat enough to serve as the far-camera endpoint; original file exec-0e279693-8e5f-4a94-89a6-58743878f5f3.png",
+      "license": "Generated conversation style reference; not a historical or runtime evidence artifact.",
+      "coverage": "Auxiliary distant landscape style and palette only; explicitly not evidence of the required flat 2D far-camera endpoint, not geographic or mask evidence; see ../STYLE_GUIDE.md.",
+      "resolution": "PNG 1774 x 887; 8-bit RGB; 3130273 bytes; original bytes unchanged",
+      "crs": null,
+      "vertical_datum": null,
+      "artifact_path": "landscape-far-revised.png",
+      "sha256": "db060cf0fa18830e8277c33fde9cb14cf5ff4708750b38d63012cea0fbf2b150",
+      "transformations": []
+    }
+  ],
+  "historical_corrections": []
+}

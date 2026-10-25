@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 config",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "config"
+    },
+    "engine": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "adapter": {
+      "type": "object",
+      "properties": {
+        "working_directory": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commands": {
+          "type": "object",
+          "properties": {
+            "build": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "start": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "capture": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "build",
+            "start",
+            "capture"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "working_directory",
+        "commands"
+      ],
+      "additionalProperties": false
+    },
+    "mapping": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "sources_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixture_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "enum": [
+            "macos",
+            "windows",
+            "linux"
+          ]
+        },
+        "hardware": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "platform",
+        "hardware",
+        "resolution"
+      ],
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "frame_p95_ms": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peak_memory_mb": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mapping_residual_px": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "threshold_decision_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "frame_p95_ms",
+        "peak_memory_mb",
+        "mapping_residual_px",
+        "threshold_decision_ref"
+      ],
+      "additionalProperties": false
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "executable": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "executable",
+          "version",
+          "required"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "required_source_roles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "elevation",
+          "water",
+          "landcover"
+        ]
+      },
+      "minItems": 3
+    },
+    "tiles": {
+      "type": "object",
+      "properties": {
+        "logical_shape": {
+          "const": "square"
+        },
+        "grid_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grid_revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "definition": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "visible_grid": {
+          "const": false
+        }
+      },
+      "required": [
+        "logical_shape",
+        "grid_id",
+        "grid_revision",
+        "definition",
+        "visible_grid"
+      ],
+      "additionalProperties": false
+    },
+    "geodata_policy_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "region_path": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "engine",
+    "adapter",
+    "mapping",
+    "sources_path",
+    "fixture_path",
+    "target",
+    "thresholds",
+    "tools",
+    "required_source_roles",
+    "tiles",
+    "geodata_policy_path",
+    "region_path"
+  ],
+  "additionalProperties": false
+}

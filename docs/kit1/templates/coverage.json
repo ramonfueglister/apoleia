@@ -1,0 +1,172 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "coverage",
+  "synthetic": false,
+  "revision": "unbound",
+  "run_id": "unstarted-template",
+  "sources_revision": null,
+  "mapping_revision": null,
+  "crs": "EPSG:4326",
+  "extent": null,
+  "method": null,
+  "domains": [
+    {
+      "id": "land",
+      "status": "offen",
+      "source_ids": [],
+      "represented_fraction": null,
+      "unresolved_nodata_fraction": null,
+      "render_policy": null,
+      "evidence": [],
+      "role_bindings": []
+    },
+    {
+      "id": "ocean",
+      "status": "offen",
+      "source_ids": [],
+      "represented_fraction": null,
+      "unresolved_nodata_fraction": null,
+      "render_policy": null,
+      "evidence": [],
+      "role_bindings": []
+    }
+  ],
+  "special_regions": [
+    {
+      "id": "region_boundary",
+      "status": "offen",
+      "bounds": {
+        "west": 0,
+        "east": 1,
+        "south": 0,
+        "north": 1
+      },
+      "source_ids": [],
+      "finding": null,
+      "evidence": [],
+      "domain_ids": [
+        "land",
+        "ocean"
+      ],
+      "role_bindings": []
+    },
+    {
+      "id": "coastal_interfaces",
+      "status": "offen",
+      "bounds": {
+        "west": 0,
+        "east": 1,
+        "south": 0,
+        "north": 1
+      },
+      "source_ids": [],
+      "finding": null,
+      "evidence": [],
+      "domain_ids": [
+        "land",
+        "ocean"
+      ],
+      "role_bindings": []
+    },
+    {
+      "id": "tile_seams",
+      "status": "offen",
+      "bounds": {
+        "west": 0,
+        "east": 1,
+        "south": 0,
+        "north": 1
+      },
+      "source_ids": [],
+      "finding": null,
+      "evidence": [],
+      "domain_ids": [
+        "land",
+        "ocean"
+      ],
+      "role_bindings": []
+    }
+  ],
+  "nodata": [],
+  "landcover_treatments": [
+    {
+      "semantic_class": "cultivated_fields",
+      "source_ids": [],
+      "source_class_codes": [],
+      "treatment": "unresolved",
+      "rationale": null,
+      "evidence": [],
+      "visible_result": "unresolved"
+    },
+    {
+      "semantic_class": "plantations",
+      "source_ids": [],
+      "source_class_codes": [],
+      "treatment": "unresolved",
+      "rationale": null,
+      "evidence": [],
+      "visible_result": "unresolved"
+    },
+    {
+      "semantic_class": "managed_areas",
+      "source_ids": [],
+      "source_class_codes": [],
+      "treatment": "unresolved",
+      "rationale": null,
+      "evidence": [],
+      "visible_result": "unresolved"
+    },
+    {
+      "semantic_class": "built_up",
+      "source_ids": [],
+      "source_class_codes": [],
+      "treatment": "unresolved",
+      "rationale": null,
+      "evidence": [],
+      "visible_result": "unresolved"
+    },
+    {
+      "semantic_class": "transport",
+      "source_ids": [],
+      "source_class_codes": [],
+      "treatment": "unresolved",
+      "rationale": null,
+      "evidence": [],
+      "visible_result": "unresolved"
+    }
+  ],
+  "region_revision": null,
+  "region_definition": null,
+  "reference_components": [
+    {
+      "id": "imperial_maximum_extent",
+      "represented_fraction": null,
+      "evidence": [],
+      "reference_geometry_id": null,
+      "reference_revision": null,
+      "reference_source_id": null,
+      "reference_source": null,
+      "mask_revision": null
+    },
+    {
+      "id": "entire_mediterranean",
+      "represented_fraction": null,
+      "evidence": [],
+      "reference_geometry_id": null,
+      "reference_revision": null,
+      "reference_source_id": null,
+      "reference_source": null,
+      "mask_revision": null
+    },
+    {
+      "id": "england_and_northern_context",
+      "represented_fraction": null,
+      "evidence": [],
+      "reference_geometry_id": null,
+      "reference_revision": null,
+      "reference_source_id": null,
+      "reference_source": null,
+      "mask_revision": null
+    }
+  ]
+}

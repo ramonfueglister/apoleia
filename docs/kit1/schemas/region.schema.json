@@ -1,0 +1,363 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "region"
+    },
+    "scope_id": {
+      "const": "roman_maximum_extent_and_mediterranean"
+    },
+    "reference_extent_year_ce": {
+      "const": 117
+    },
+    "landscape_reference_year_ce": {
+      "const": 180
+    },
+    "crs": {
+      "const": "EPSG:4326"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "west": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "east": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "south": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "north": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          "required": [
+            "west",
+            "east",
+            "south",
+            "north"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "boundary_convention": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sea_context_policy": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "imperial_extent_source": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mediterranean_source": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "region_mask": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "completeness_evidence": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "england_extent_source": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "england_north_latitude": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 50,
+          "maximum": 60
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "north_context_degrees": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 1e-06,
+          "maximum": 15
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reference_geometries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": [
+              "imperial_maximum_extent",
+              "entire_mediterranean",
+              "england_and_northern_context"
+            ]
+          },
+          "source_id": {
+            "enum": [
+              "imperial_extent_source",
+              "mediterranean_source",
+              "england_extent_source"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "crs": {
+            "const": "EPSG:4326"
+          },
+          "extent": {
+            "type": "object",
+            "properties": {
+              "west": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "east": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "south": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "north": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              }
+            },
+            "required": [
+              "west",
+              "east",
+              "south",
+              "north"
+            ],
+            "additionalProperties": false
+          },
+          "feature_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "source",
+          "revision",
+          "crs",
+          "extent",
+          "feature_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "mask_revision": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "scope_id",
+    "reference_extent_year_ce",
+    "landscape_reference_year_ce",
+    "crs",
+    "revision",
+    "extent",
+    "boundary_convention",
+    "sea_context_policy",
+    "imperial_extent_source",
+    "mediterranean_source",
+    "region_mask",
+    "completeness_evidence",
+    "england_extent_source",
+    "england_north_latitude",
+    "north_context_degrees",
+    "reference_geometries",
+    "mask_revision"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 regional extent binding (not a historical boundary assertion)"
+}

@@ -1,0 +1,116 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "report",
+  "run_id": "unstarted-template",
+  "created_utc": null,
+  "synthetic": false,
+  "kit_version": "kit1-landscape-v5",
+  "build_revision": null,
+  "sources_revision": null,
+  "mapping_revision": null,
+  "fixture_revision": null,
+  "producer": null,
+  "reviewer": null,
+  "review_ref": null,
+  "user_style_review": "offen",
+  "evidence": [],
+  "measurements": [],
+  "checks": [
+    {
+      "id": "A01",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A02",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A03",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A04",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A05",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A06",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A07",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A08",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A09",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A10",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A11",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A12",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A13",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A14",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A15",
+      "status": "offen",
+      "finding": "Nicht ausgeführt. Vorlage, kein Laufzeitbefund.",
+      "evidence_ids": []
+    },
+    {
+      "id": "A16",
+      "status": "offen",
+      "finding": "Datenableitung/Fehlerbudget/Topologieschutz nicht ausgeführt.",
+      "evidence_ids": []
+    }
+  ]
+}

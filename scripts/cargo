@@ -1,0 +1,12 @@
+#!/bin/sh
+# Use the repository-local Rust toolchain without changing shell profiles.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+export RUSTUP_HOME="$ROOT_DIR/.tooling/rustup"
+export CARGO_HOME="$ROOT_DIR/.tooling/cargo"
+export RUSTUP_TOOLCHAIN="1.99.1"
+export PATH="$CARGO_HOME/bin:$PATH"
+
+exec cargo "$@"

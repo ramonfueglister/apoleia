@@ -1,0 +1,21 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "region",
+  "scope_id": "roman_maximum_extent_and_mediterranean",
+  "reference_extent_year_ce": 117,
+  "landscape_reference_year_ce": 180,
+  "crs": "EPSG:4326",
+  "revision": "unbound",
+  "extent": null,
+  "boundary_convention": null,
+  "sea_context_policy": null,
+  "imperial_extent_source": null,
+  "mediterranean_source": null,
+  "region_mask": null,
+  "completeness_evidence": null,
+  "england_extent_source": null,
+  "england_north_latitude": null,
+  "north_context_degrees": null,
+  "reference_geometries": [],
+  "mask_revision": "unbound"
+}

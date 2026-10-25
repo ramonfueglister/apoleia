@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit1 invisible square tile foundation evidence",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "tiles"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "build_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sources_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fixture_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "grid_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "grid_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "logical_shape": {
+      "const": "square"
+    },
+    "grid_definition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "presentation": {
+      "const": "natural_landscape_only"
+    },
+    "gui_visible": {
+      "const": false
+    },
+    "grid_visible": {
+      "const": false
+    },
+    "selection_highlight_visible": {
+      "const": false
+    },
+    "probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "view_state_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "view_state": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mapping_revision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target_source_position": {
+                "type": "object",
+                "properties": {
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  }
+                },
+                "required": [
+                  "longitude",
+                  "latitude"
+                ],
+                "additionalProperties": false
+              },
+              "viewport": {
+                "type": "object",
+                "properties": {
+                  "width_px": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height_px": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "device_pixel_ratio": {
+                    "type": "number",
+                    "minimum": 0.001
+                  },
+                  "screen_origin": {
+                    "const": "top-left"
+                  }
+                },
+                "required": [
+                  "width_px",
+                  "height_px",
+                  "device_pixel_ratio",
+                  "screen_origin"
+                ],
+                "additionalProperties": false
+              },
+              "zoom_normalized": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "transform": {
+                "type": "object",
+                "properties": {
+                  "artifact_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "artifact_path",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "azimuth_degrees": {
+                "type": "number"
+              },
+              "elevation_degrees": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 90
+              },
+              "relief_weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "transition_definition": {
+                "type": "object",
+                "properties": {
+                  "artifact_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "artifact_path",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "mapping_revision",
+              "target_source_position",
+              "viewport",
+              "zoom_normalized",
+              "transform",
+              "azimuth_degrees",
+              "elevation_degrees",
+              "relief_weight",
+              "transition_definition"
+            ],
+            "additionalProperties": false
+          },
+          "t_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "canonical_tile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_index": {
+            "type": "object",
+            "properties": {
+              "region": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "integer"
+              },
+              "column": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "region",
+              "row",
+              "column"
+            ],
+            "additionalProperties": false
+          },
+          "logical_cell_width": {
+            "type": "number",
+            "minimum": 1e-09
+          },
+          "logical_cell_height": {
+            "type": "number",
+            "minimum": 1e-09
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "case_id",
+          "view_state_id",
+          "view_state",
+          "t_ms",
+          "canonical_tile_id",
+          "logical_index",
+          "logical_cell_width",
+          "logical_cell_height",
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "navigation_probe_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "synthetic",
+    "run_id",
+    "build_revision",
+    "sources_revision",
+    "mapping_revision",
+    "fixture_revision",
+    "grid_id",
+    "grid_revision",
+    "logical_shape",
+    "grid_definition",
+    "presentation",
+    "gui_visible",
+    "grid_visible",
+    "selection_highlight_visible",
+    "probes",
+    "navigation_probe_ids"
+  ],
+  "additionalProperties": false
+}

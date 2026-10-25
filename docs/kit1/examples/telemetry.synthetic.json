@@ -1,0 +1,153 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "telemetry",
+  "synthetic": true,
+  "run_id": "synthetic-format-example",
+  "build_revision": "synthetic-no-build",
+  "mapping_revision": "synthetic-no-mapping",
+  "sampling_method": "Erfundene Formatwerte, KEINE Messung",
+  "warmup_description": "Kein Lauf ausgeführt",
+  "samples": [
+    {
+      "t_ms": 0,
+      "zoom_normalized": 0,
+      "azimuth_degrees": 0,
+      "elevation_degrees": 90,
+      "frame_ms": 1,
+      "memory_mb": 1,
+      "observations": [
+        {
+          "point_id": "synthetic-point",
+          "source_position": {
+            "longitude": 0,
+            "latitude": 0
+          },
+          "expected_screen_xy": [
+            1,
+            1
+          ],
+          "actual_screen_xy": [
+            1,
+            1
+          ]
+        }
+      ],
+      "waypoint_id": "synthetic-waypoint-0",
+      "view_state": {
+        "id": "synthetic-state-0",
+        "mapping_revision": "synthetic-no-mapping",
+        "target_source_position": {
+          "longitude": 0,
+          "latitude": 0
+        },
+        "viewport": {
+          "width_px": 640,
+          "height_px": 480,
+          "device_pixel_ratio": 1,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0,
+        "transform": {
+          "artifact_path": "unavailable-synthetic-transform.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "azimuth_degrees": 0,
+        "elevation_degrees": 90,
+        "relief_weight": 0,
+        "transition_definition": {
+          "artifact_path": "unavailable-synthetic-transition.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "t_ms": 1,
+      "zoom_normalized": 1,
+      "azimuth_degrees": 0,
+      "elevation_degrees": 35.264,
+      "frame_ms": 2,
+      "memory_mb": 2,
+      "observations": [],
+      "waypoint_id": "synthetic-waypoint-1",
+      "view_state": {
+        "id": "synthetic-state-1",
+        "mapping_revision": "synthetic-no-mapping",
+        "target_source_position": {
+          "longitude": 1,
+          "latitude": 0
+        },
+        "viewport": {
+          "width_px": 640,
+          "height_px": 480,
+          "device_pixel_ratio": 1,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 1,
+        "transform": {
+          "artifact_path": "unavailable-synthetic-transform.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "azimuth_degrees": 0,
+        "elevation_degrees": 35.264,
+        "relief_weight": 1,
+        "transition_definition": {
+          "artifact_path": "unavailable-synthetic-transition.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "t_ms": 2,
+      "zoom_normalized": 0,
+      "azimuth_degrees": 0,
+      "elevation_degrees": 90,
+      "frame_ms": 1,
+      "memory_mb": 1,
+      "observations": [
+        {
+          "point_id": "synthetic-point",
+          "source_position": {
+            "longitude": 0,
+            "latitude": 0
+          },
+          "expected_screen_xy": [
+            1,
+            1
+          ],
+          "actual_screen_xy": [
+            1,
+            1
+          ]
+        }
+      ],
+      "waypoint_id": "synthetic-waypoint-2",
+      "view_state": {
+        "id": "synthetic-state-2",
+        "mapping_revision": "synthetic-no-mapping",
+        "target_source_position": {
+          "longitude": 0,
+          "latitude": 0
+        },
+        "viewport": {
+          "width_px": 640,
+          "height_px": 480,
+          "device_pixel_ratio": 1,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0,
+        "transform": {
+          "artifact_path": "unavailable-synthetic-transform.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "azimuth_degrees": 0,
+        "elevation_degrees": 90,
+        "relief_weight": 0,
+        "transition_definition": {
+          "artifact_path": "unavailable-synthetic-transition.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    }
+  ],
+  "source_crs": "EPSG:4326"
+}

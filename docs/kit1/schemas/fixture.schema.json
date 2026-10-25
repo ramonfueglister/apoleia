@@ -1,0 +1,619 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 fixture",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "fixture"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mapping_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_version": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "camera": {
+      "type": "object",
+      "properties": {
+        "control": {
+          "const": "zoom_bound_no_free_rotation"
+        },
+        "azimuth_degrees": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "far_elevation_degrees": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "near_elevation_degrees": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transition_definition": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "control",
+        "azimuth_degrees",
+        "far_elevation_degrees",
+        "near_elevation_degrees",
+        "transition_definition"
+      ],
+      "additionalProperties": false
+    },
+    "coverage_regions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_feature_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_position": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  }
+                },
+                "required": [
+                  "longitude",
+                  "latitude"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feature_type": {
+            "enum": [
+              "coast",
+              "river",
+              "mountain",
+              "forest",
+              "dryland",
+              "polar",
+              "seam",
+              "other"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "source_feature_id",
+          "source_position",
+          "feature_type"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "path": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "point_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "zoom_normalized": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "capture_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "view_state_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "t_ms",
+          "point_id",
+          "zoom_normalized",
+          "capture_label",
+          "id",
+          "view_state_id"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "source_crs": {
+      "const": "EPSG:4326"
+    },
+    "expected_position_method": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "max_waypoint_time_error_ms": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "view_states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_source_position": {
+            "type": "object",
+            "properties": {
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              }
+            },
+            "required": [
+              "longitude",
+              "latitude"
+            ],
+            "additionalProperties": false
+          },
+          "viewport": {
+            "type": "object",
+            "properties": {
+              "width_px": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height_px": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "device_pixel_ratio": {
+                "type": "number",
+                "minimum": 0.001
+              },
+              "screen_origin": {
+                "const": "top-left"
+              }
+            },
+            "required": [
+              "width_px",
+              "height_px",
+              "device_pixel_ratio",
+              "screen_origin"
+            ],
+            "additionalProperties": false
+          },
+          "zoom_normalized": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "azimuth_degrees": {
+            "type": "number"
+          },
+          "elevation_degrees": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 90
+          },
+          "relief_weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "transition_definition": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "mapping_revision",
+          "target_source_position",
+          "viewport",
+          "zoom_normalized",
+          "transform",
+          "azimuth_degrees",
+          "elevation_degrees",
+          "relief_weight",
+          "transition_definition"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "tile_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "point_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "spatial_case": {
+            "enum": [
+              "interior",
+              "coast",
+              "region_edge",
+              "tile_seam"
+            ]
+          },
+          "canonical_tile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logical_index": {
+            "type": "object",
+            "properties": {
+              "region": {
+                "type": "string",
+                "minLength": 1
+              },
+              "row": {
+                "type": "integer"
+              },
+              "column": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "region",
+              "row",
+              "column"
+            ],
+            "additionalProperties": false
+          },
+          "view_state_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 2
+          }
+        },
+        "required": [
+          "id",
+          "point_id",
+          "spatial_case",
+          "canonical_tile_id",
+          "logical_index",
+          "view_state_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "tile_region_policy": {
+      "type": "object",
+      "properties": {
+        "edge_max_distance_degrees": {
+          "type": "number",
+          "minimum": 1e-06,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "edge_max_distance_degrees"
+      ],
+      "additionalProperties": false
+    },
+    "tile_navigation": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "view_state_sequence": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "case_id",
+            "view_state_sequence"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "region_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "project_extent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "west": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "east": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "south": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "north": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          "required": [
+            "west",
+            "east",
+            "south",
+            "north"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "revision",
+    "synthetic",
+    "seed",
+    "mapping_id",
+    "mapping_version",
+    "camera",
+    "coverage_regions",
+    "points",
+    "path",
+    "source_crs",
+    "expected_position_method",
+    "max_waypoint_time_error_ms",
+    "view_states",
+    "tile_cases",
+    "tile_region_policy",
+    "tile_navigation",
+    "region_revision",
+    "project_extent"
+  ],
+  "additionalProperties": false
+}

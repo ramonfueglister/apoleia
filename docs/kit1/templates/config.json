@@ -1,0 +1,67 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "config",
+  "engine": {
+    "name": null,
+    "version": null
+  },
+  "adapter": {
+    "working_directory": null,
+    "commands": {
+      "build": [],
+      "start": [],
+      "capture": []
+    }
+  },
+  "mapping": {
+    "id": null,
+    "version": null
+  },
+  "sources_path": "sources.json",
+  "fixture_path": "fixture.json",
+  "target": {
+    "platform": "macos",
+    "hardware": null,
+    "resolution": null
+  },
+  "thresholds": {
+    "frame_p95_ms": null,
+    "peak_memory_mb": null,
+    "mapping_residual_px": null,
+    "threshold_decision_ref": null
+  },
+  "tools": [
+    {
+      "role": "renderer",
+      "executable": null,
+      "version": null,
+      "required": true
+    },
+    {
+      "role": "data_processing",
+      "executable": null,
+      "version": null,
+      "required": true
+    },
+    {
+      "role": "capture",
+      "executable": null,
+      "version": null,
+      "required": true
+    }
+  ],
+  "required_source_roles": [
+    "elevation",
+    "water",
+    "landcover"
+  ],
+  "tiles": {
+    "logical_shape": "square",
+    "grid_id": null,
+    "grid_revision": null,
+    "definition": null,
+    "visible_grid": false
+  },
+  "geodata_policy_path": "geodata_policy.json",
+  "region_path": "region.json"
+}

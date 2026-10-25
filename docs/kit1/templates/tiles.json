@@ -1,0 +1,20 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "tiles",
+  "synthetic": false,
+  "run_id": "unstarted-template",
+  "build_revision": null,
+  "sources_revision": null,
+  "mapping_revision": null,
+  "fixture_revision": null,
+  "grid_id": null,
+  "grid_revision": null,
+  "logical_shape": "square",
+  "grid_definition": null,
+  "presentation": "natural_landscape_only",
+  "gui_visible": false,
+  "grid_visible": false,
+  "selection_highlight_visible": false,
+  "probes": [],
+  "navigation_probe_ids": []
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "sources",
+  "revision": "unbound",
+  "sources": [],
+  "historical_corrections": [
+    {
+      "id": "H001",
+      "region_or_feature": "Küsten, Deltas und Flussläufe",
+      "current_observation": "Heutige Daten vorgesehen; Datensatz noch ungewählt",
+      "historical_difference": "Abweichungen zu 180 n. Chr. später quellenbezogen prüfen",
+      "source_ref": null,
+      "uncertainty": "Nicht global rekonstruiert",
+      "status": "offen"
+    },
+    {
+      "id": "H002",
+      "region_or_feature": "Stauseen, Kanäle und Landgewinnung",
+      "current_observation": "Mögliche moderne Veränderungen in heutigen Geodaten",
+      "historical_difference": "Historische Korrektur offen; moderne Bauobjekte sind bereits ausgeschlossen",
+      "source_ref": null,
+      "uncertainty": "Datenabhängig zu prüfen",
+      "status": "offen"
+    }
+  ]
+}

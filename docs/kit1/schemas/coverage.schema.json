@@ -1,0 +1,738 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 regional coverage evidence contract",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "coverage"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "crs": {
+      "const": "EPSG:4326"
+    },
+    "extent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "west": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "east": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "south": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "north": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          "required": [
+            "west",
+            "east",
+            "south",
+            "north"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": [
+              "land",
+              "ocean"
+            ]
+          },
+          "status": {
+            "enum": [
+              "offen",
+              "validiert"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "represented_fraction": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unresolved_nodata_fraction": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "render_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "role_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "enum": [
+                    "elevation",
+                    "water",
+                    "landcover"
+                  ]
+                },
+                "source_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "role",
+                "source_ids"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source_ids",
+          "represented_fraction",
+          "unresolved_nodata_fraction",
+          "render_policy",
+          "evidence",
+          "role_bindings"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "special_regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": [
+              "region_boundary",
+              "coastal_interfaces",
+              "tile_seams"
+            ]
+          },
+          "status": {
+            "enum": [
+              "offen",
+              "validiert"
+            ]
+          },
+          "bounds": {
+            "type": "object",
+            "properties": {
+              "west": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "east": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "south": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "north": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              }
+            },
+            "required": [
+              "west",
+              "east",
+              "south",
+              "north"
+            ],
+            "additionalProperties": false
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "finding": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "role_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "enum": [
+                    "elevation",
+                    "water",
+                    "landcover"
+                  ]
+                },
+                "source_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "role",
+                "source_ids"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "domain_ids": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "land",
+                "ocean"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "bounds",
+          "source_ids",
+          "finding",
+          "evidence",
+          "role_bindings",
+          "domain_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "nodata": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "domain": {
+            "enum": [
+              "land",
+              "ocean"
+            ]
+          },
+          "status": {
+            "enum": [
+              "offen",
+              "resolved"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "treatment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "domain",
+          "status",
+          "description",
+          "treatment",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "landcover_treatments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "semantic_class": {
+            "enum": [
+              "cultivated_fields",
+              "plantations",
+              "managed_areas",
+              "built_up",
+              "transport"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "source_class_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "treatment": {
+            "enum": [
+              "unresolved",
+              "mask",
+              "abstract",
+              "not_present"
+            ]
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "visible_result": {
+            "enum": [
+              "unresolved",
+              "natural_surface_no_cultivation_or_built_patterns"
+            ]
+          }
+        },
+        "required": [
+          "semantic_class",
+          "source_ids",
+          "source_class_codes",
+          "treatment",
+          "rationale",
+          "evidence",
+          "visible_result"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "region_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "region_definition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "artifact_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifact_path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reference_components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": [
+              "imperial_maximum_extent",
+              "entire_mediterranean",
+              "england_and_northern_context"
+            ]
+          },
+          "represented_fraction": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "artifact_path",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "reference_geometry_id": {
+            "anyOf": [
+              {
+                "enum": [
+                  "imperial_maximum_extent",
+                  "entire_mediterranean",
+                  "england_and_northern_context"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference_source_id": {
+            "anyOf": [
+              {
+                "enum": [
+                  "imperial_extent_source",
+                  "mediterranean_source",
+                  "england_extent_source"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference_source": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "artifact_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "artifact_path",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mask_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "represented_fraction",
+          "evidence",
+          "reference_geometry_id",
+          "reference_revision",
+          "reference_source_id",
+          "reference_source",
+          "mask_revision"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 2
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "synthetic",
+    "revision",
+    "run_id",
+    "sources_revision",
+    "mapping_revision",
+    "crs",
+    "extent",
+    "method",
+    "domains",
+    "special_regions",
+    "nodata",
+    "landcover_treatments",
+    "region_revision",
+    "region_definition",
+    "reference_components"
+  ],
+  "additionalProperties": false
+}

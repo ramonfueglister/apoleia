@@ -1,0 +1,652 @@
+{
+  "scope": "kit-tools-only",
+  "kit_version": "kit1-landscape-v2",
+  "recorded_utc": "2026-10-25T10:34:53.129047Z",
+  "host": {
+    "os": "Darwin",
+    "machine": "arm64",
+    "python": "3.15.0"
+  },
+  "game_implemented": false,
+  "runtime_executed": false,
+  "results": [
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "self-check"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched": true,
+      "stdout": "",
+      "stderr": "test_complete_structural_report_then_synthetic_rejected (test_kit.KitTests.test_complete_structural_report_then_synthetic_rejected) ... ok\ntest_missing_and_duplicate_check_fail (test_kit.KitTests.test_missing_and_duplicate_check_fail) ... ok\ntest_missing_hash_or_threshold_and_fake_metric (test_kit.KitTests.test_missing_hash_or_threshold_and_fake_metric) ... ok\ntest_missing_return_zoom_rejected (test_kit.KitTests.test_missing_return_zoom_rejected) ... ok\ntest_nonfinite_json (test_kit.KitTests.test_nonfinite_json) ... ok\ntest_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper) ... ok\ntest_paths_reject_traversal_absolute_windows_symlink (test_kit.KitTests.test_paths_reject_traversal_absolute_windows_symlink) ... ok\ntest_report_utc_timestamp_required_and_valid (test_kit.KitTests.test_report_utc_timestamp_required_and_valid) ... ok\ntest_same_reviewer_rejected (test_kit.KitTests.test_same_reviewer_rejected) ... ok\ntest_schema_rejects_bool_as_number_and_unknown (test_kit.KitTests.test_schema_rejects_bool_as_number_and_unknown) ... ok\ntest_self_check (test_kit.KitTests.test_self_check) ... ok\ntest_time_and_vector_shape (test_kit.KitTests.test_time_and_vector_shape) ... ok\ntest_unbound_preflight_is_blocked (test_kit.KitTests.test_unbound_preflight_is_blocked) ... ok\ntest_unknown_schema_keyword_fails (test_kit.KitTests.test_unknown_schema_keyword_fails) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.155s\n\nOK\n"
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "preflight",
+        "templates/config.json"
+      ],
+      "expected_exit": 2,
+      "actual_exit": 2,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"binding-readiness\",\n  \"host\": \"darwin\",\n  \"runtime_executed\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera orientation unbound\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "validate",
+        "telemetry",
+        "examples/telemetry.synthetic.json"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "init-run",
+        "<temporary-directory>/run"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"ok\",\n  \"created\": \"/private<temporary-directory>/run\",\n  \"runtime_executed\": false,\n  \"issues\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "validate",
+        "report",
+        "<temporary-directory>/run/report.json"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "report-check",
+        "<temporary-directory>/run"
+      ],
+      "expected_exit": 2,
+      "actual_exit": 2,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"evidence-contract-only\",\n  \"visual_truth_checked\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera orientation unbound\",\n    \"build_revision missing\",\n    \"sources_revision missing\",\n    \"mapping_revision missing\",\n    \"fixture_revision missing\",\n    \"producer missing\",\n    \"reviewer missing\",\n    \"review_ref missing\",\n    \"independent reviewer required\",\n    \"report revision mismatch\",\n    \"evidence kinds missing: config,coverage,fixture,screenshot,sources,telemetry,video\",\n    \"A01: not evidenced/validated\",\n    \"A02: not evidenced/validated\",\n    \"A03: not evidenced/validated\",\n    \"A04: not evidenced/validated\",\n    \"A05: not evidenced/validated\",\n    \"A06: not evidenced/validated\",\n    \"A07: not evidenced/validated\",\n    \"A08: not evidenced/validated\",\n    \"A09: not evidenced/validated\",\n    \"A10: not evidenced/validated\",\n    \"A11: not evidenced/validated\",\n    \"A12: not evidenced/validated\",\n    \"A13: not evidenced/validated\",\n    \"A14: not evidenced/validated\",\n    \"frame_p95_ms: measurement missing\",\n    \"peak_memory_mb: measurement missing\",\n    \"mapping_residual_px: measurement missing\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/kit.py",
+        "init-run",
+        "<temporary-directory>/run"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "matched": true,
+      "stdout": "{\n  \"status\": \"error\",\n  \"issues\": [\n    \"[Errno 17] File exists: '<temporary-directory>/run'\"\n  ]\n}\n",
+      "stderr": ""
+    }
+  ],
+  "independent_review": {
+    "date": "2026-10-25",
+    "reviewer": "separater unabhängig beauftragter Subagent",
+    "scope": "kit-consistency-and-tool-contracts-only",
+    "unit_tests": "14/14 passed",
+    "self_check": "passed",
+    "preflight": "blocked as expected",
+    "new_run": "real UTC timestamp; report blocked as expected",
+    "reference_entries_verified": 224,
+    "inventory_files_verified": 43,
+    "missing_or_unlisted_files": 0,
+    "local_user_paths_found": false,
+    "product_validated": false
+  },
+  "reference_screenshots_extension": {
+    "recorded_utc": "2026-10-25T10:53:36.302589Z",
+    "scope": "reference-screenshots-and-kit-integrity-only",
+    "game_implemented": false,
+    "runtime_executed": false,
+    "inventory_files": 51,
+    "images": [
+      {
+        "id": "U01",
+        "path": "references/screenshots/urbek-neighborhood.jpg",
+        "sha256": "86532eae5d893bd4dfa0f99086639a8a163614008e0ad3f8da4b06364051e7a0",
+        "bytes": 696074,
+        "hash_matches": true,
+        "visually_inspected": true
+      },
+      {
+        "id": "U02",
+        "path": "references/screenshots/urbek-terrain-vegetation.jpg",
+        "sha256": "501aaab01493b565ab9f9f9d8fa064223a93d89b1df41ff99ffc2857b021fedf",
+        "bytes": 854889,
+        "hash_matches": true,
+        "visually_inspected": true
+      },
+      {
+        "id": "U03",
+        "path": "references/screenshots/urbek-coast-city-overview.jpg",
+        "sha256": "b9025c4ab96334fa82fe3364572d72c39030de6a23ba271234de5d3c709140b8",
+        "bytes": 525182,
+        "hash_matches": true,
+        "visually_inspected": true
+      },
+      {
+        "id": "V01",
+        "path": "references/screenshots/vic3-map-overview.jpg",
+        "sha256": "a9771a536b793bfd20903d46ff241d18c04fa3ff553406ca145696904da3ea8a",
+        "bytes": 662887,
+        "hash_matches": true,
+        "visually_inspected": true
+      },
+      {
+        "id": "V02",
+        "path": "references/screenshots/vic3-continental-terrain.jpg",
+        "sha256": "b257290657b1ca9607cf75cd6d7440073d8489a00397d5a13addfe046f5ba2ad",
+        "bytes": 804038,
+        "hash_matches": true,
+        "visually_inspected": true
+      },
+      {
+        "id": "V03",
+        "path": "references/screenshots/vic3-coast-region.jpg",
+        "sha256": "eca3f3ea88e023ce2bd8fa55529e1f61d528c533ab2a643a0cd01390ee96e9d1",
+        "bytes": 790529,
+        "hash_matches": true,
+        "visually_inspected": true
+      }
+    ],
+    "results": [
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "self-check"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "validate",
+          "sources",
+          "references/screenshots/sources.json"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      }
+    ],
+    "independent_review": {
+      "date": "2026-10-25",
+      "reviewer": "separater unabhängig beauftragter Subagent",
+      "scope": "reference-images-provenance-mapping-and-portability-only",
+      "images_visually_reviewed": 6,
+      "shop_sources_checked": true,
+      "documented_metadata_checked": true,
+      "local_hashes_checked": true,
+      "mapping_and_portability_checked": true,
+      "relevant_findings": [],
+      "exact_api_screenshot_ids_independently_refetched": false,
+      "product_validated": false
+    }
+  },
+  "final_audit_corrections": {
+    "recorded_utc": "2026-10-25T11:14:17.109286Z",
+    "contract_version": "kit1-ops-v2",
+    "scope": "kit-contracts-only",
+    "product_implemented": false,
+    "runtime_executed": false,
+    "inventory_files": 56,
+    "results": [
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "self-check"
+        ],
+        "expected_exit": 0,
+        "actual_exit": 0,
+        "matched": true,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "expected_exit": 0,
+        "actual_exit": 0,
+        "matched": true,
+        "stdout": "",
+        "stderr": "test_abstract_landcover_requires_natural_only_result (test_kit.KitTests.test_abstract_landcover_requires_natural_only_result) ... ok\ntest_complete_structural_report_then_synthetic_rejected (test_kit.KitTests.test_complete_structural_report_then_synthetic_rejected) ... ok\ntest_coverage_nodata_and_source_binding (test_kit.KitTests.test_coverage_nodata_and_source_binding) ... ok\ntest_coverage_poles_seam_synthetic_and_link (test_kit.KitTests.test_coverage_poles_seam_synthetic_and_link) ... ok\ntest_cultivated_landcover_cannot_silently_pass (test_kit.KitTests.test_cultivated_landcover_cannot_silently_pass) ... ok\ntest_fixture_requires_pan_and_start_return_state (test_kit.KitTests.test_fixture_requires_pan_and_start_return_state) ... ok\ntest_missing_and_duplicate_check_fail (test_kit.KitTests.test_missing_and_duplicate_check_fail) ... ok\ntest_missing_hash_or_threshold_and_fake_metric (test_kit.KitTests.test_missing_hash_or_threshold_and_fake_metric) ... ok\ntest_missing_return_zoom_rejected (test_kit.KitTests.test_missing_return_zoom_rejected) ... ok\ntest_nonfinite_json (test_kit.KitTests.test_nonfinite_json) ... ok\ntest_package_rejects_manifest_only_wrong_version_and_inventory_drift (test_kit.KitTests.test_package_rejects_manifest_only_wrong_version_and_inventory_drift) ... ok\ntest_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper) ... ok\ntest_paths_reject_traversal_absolute_windows_symlink (test_kit.KitTests.test_paths_reject_traversal_absolute_windows_symlink) ... ok\ntest_reference_image_tamper_blocks_self_check_and_package (test_kit.KitTests.test_reference_image_tamper_blocks_self_check_and_package) ... ok\ntest_report_utc_timestamp_required_and_valid (test_kit.KitTests.test_report_utc_timestamp_required_and_valid) ... ok\ntest_same_reviewer_rejected (test_kit.KitTests.test_same_reviewer_rejected) ... ok\ntest_schema_rejects_bool_as_number_and_unknown (test_kit.KitTests.test_schema_rejects_bool_as_number_and_unknown) ... ok\ntest_self_check (test_kit.KitTests.test_self_check) ... ok\ntest_skipped_waypoint_and_bad_timing_rejected (test_kit.KitTests.test_skipped_waypoint_and_bad_timing_rejected) ... ok\ntest_time_and_vector_shape (test_kit.KitTests.test_time_and_vector_shape) ... ok\ntest_unbound_preflight_is_blocked (test_kit.KitTests.test_unbound_preflight_is_blocked) ... ok\ntest_unknown_schema_keyword_fails (test_kit.KitTests.test_unknown_schema_keyword_fails) ... ok\ntest_view_transform_hash_and_method_required (test_kit.KitTests.test_view_transform_hash_and_method_required) ... ok\ntest_water_cannot_masquerade_as_land_layers (test_kit.KitTests.test_water_cannot_masquerade_as_land_layers) ... ok\ntest_waypoint_camera_and_viewport_binding (test_kit.KitTests.test_waypoint_camera_and_viewport_binding) ... ok\n\n----------------------------------------------------------------------\nRan 25 tests in 0.837s\n\nOK\n"
+      },
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "validate",
+          "coverage",
+          "templates/coverage.json"
+        ],
+        "expected_exit": 0,
+        "actual_exit": 0,
+        "matched": true,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "validate",
+          "coverage",
+          "examples/coverage.synthetic.json"
+        ],
+        "expected_exit": 0,
+        "actual_exit": 0,
+        "matched": true,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "argv": [
+          "python3",
+          "tools/kit.py",
+          "preflight",
+          "templates/config.json"
+        ],
+        "expected_exit": 2,
+        "actual_exit": 2,
+        "matched": true,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"binding-readiness\",\n  \"host\": \"darwin\",\n  \"runtime_executed\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera orientation unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    ],
+    "independent_retest": {
+      "date": "2026-10-25",
+      "reviewers": "two independently assigned subagents",
+      "scope": "kit-contracts-reference-package-integrity-and-document-consistency-only",
+      "findings_closed": 5,
+      "remaining_audit_findings": 0,
+      "current_unit_tests": "25/25 passed",
+      "camera_waypoint_contract": "closed",
+      "global_coverage_and_role_binding": "closed",
+      "natural_only_landcover_treatment": "closed",
+      "reference_hash_binding": "closed",
+      "package_manifest_inventory_validation": "closed",
+      "product_validated": false,
+      "historical_accuracy_validated": false,
+      "performance_validated": false
+    }
+  },
+  "tile_update": {
+    "created_utc": "2026-10-25T12:18:30.879982Z",
+    "kit_version": "kit1-landscape-v3",
+    "schema_version": "kit1-ops-v3",
+    "scope": "kit contracts only: one natural landscape view, no GUI/additional modes; invisible square tile foundation",
+    "unit_tests_passed": 32,
+    "inventory_files": 62,
+    "independent_review": {
+      "status": "completed",
+      "recorded_utc": "2026-10-25T12:20:01.170629Z",
+      "reviewer": "separately assigned independent subagent",
+      "unit_tests_passed": 32,
+      "self_check": "ok",
+      "findings_closed": [
+        "geographic membership of tile cases",
+        "observed tile pan/zoom/return sequence"
+      ],
+      "scope_check": "one natural landscape view; no GUI/additional modes; A01-A15; start prompt consistent",
+      "scope": "kit contracts and document consistency only; no product, historical, geographic or performance validation"
+    },
+    "temporary_path_redaction": "disposable paths replaced with <temporary-directory>; command results otherwise retained",
+    "commands": [
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "self-check"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "",
+        "stderr": "test_abstract_landcover_requires_natural_only_result (test_kit.KitTests.test_abstract_landcover_requires_natural_only_result) ... ok\ntest_complete_structural_report_then_synthetic_rejected (test_kit.KitTests.test_complete_structural_report_then_synthetic_rejected) ... ok\ntest_coverage_nodata_and_source_binding (test_kit.KitTests.test_coverage_nodata_and_source_binding) ... ok\ntest_coverage_poles_seam_synthetic_and_link (test_kit.KitTests.test_coverage_poles_seam_synthetic_and_link) ... ok\ntest_cultivated_landcover_cannot_silently_pass (test_kit.KitTests.test_cultivated_landcover_cannot_silently_pass) ... ok\ntest_fixture_requires_pan_and_start_return_state (test_kit.KitTests.test_fixture_requires_pan_and_start_return_state) ... ok\ntest_hidden_tiles_reject_visible_features_and_non_square (test_kit.KitTests.test_hidden_tiles_reject_visible_features_and_non_square) ... ok\ntest_missing_and_duplicate_check_fail (test_kit.KitTests.test_missing_and_duplicate_check_fail) ... ok\ntest_missing_hash_or_threshold_and_fake_metric (test_kit.KitTests.test_missing_hash_or_threshold_and_fake_metric) ... ok\ntest_missing_return_zoom_rejected (test_kit.KitTests.test_missing_return_zoom_rejected) ... ok\ntest_nonfinite_json (test_kit.KitTests.test_nonfinite_json) ... ok\ntest_package_rejects_manifest_only_wrong_version_and_inventory_drift (test_kit.KitTests.test_package_rejects_manifest_only_wrong_version_and_inventory_drift) ... ok\ntest_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper) ... ok\ntest_paths_reject_traversal_absolute_windows_symlink (test_kit.KitTests.test_paths_reject_traversal_absolute_windows_symlink) ... ok\ntest_reference_image_tamper_blocks_self_check_and_package (test_kit.KitTests.test_reference_image_tamper_blocks_self_check_and_package) ... ok\ntest_report_utc_timestamp_required_and_valid (test_kit.KitTests.test_report_utc_timestamp_required_and_valid) ... ok\ntest_same_reviewer_rejected (test_kit.KitTests.test_same_reviewer_rejected) ... ok\ntest_schema_rejects_bool_as_number_and_unknown (test_kit.KitTests.test_schema_rejects_bool_as_number_and_unknown) ... ok\ntest_self_check (test_kit.KitTests.test_self_check) ... ok\ntest_skipped_waypoint_and_bad_timing_rejected (test_kit.KitTests.test_skipped_waypoint_and_bad_timing_rejected) ... ok\ntest_tile_case_labels_require_actual_geographic_regions (test_kit.KitTests.test_tile_case_labels_require_actual_geographic_regions) ... ok\ntest_tile_definition_synthetic_and_report_link (test_kit.KitTests.test_tile_definition_synthetic_and_report_link) ... ok\ntest_tile_internal_identity_size_and_camera_binding (test_kit.KitTests.test_tile_internal_identity_size_and_camera_binding) ... ok\ntest_tile_navigation_requires_observed_pan_and_return (test_kit.KitTests.test_tile_navigation_requires_observed_pan_and_return) ... ok\ntest_tile_seam_polar_zoom_probes_and_index (test_kit.KitTests.test_tile_seam_polar_zoom_probes_and_index) ... ok\ntest_tiles_runtime_origin_required_without_gui (test_kit.KitTests.test_tiles_runtime_origin_required_without_gui) ... ok\ntest_time_and_vector_shape (test_kit.KitTests.test_time_and_vector_shape) ... ok\ntest_unbound_preflight_is_blocked (test_kit.KitTests.test_unbound_preflight_is_blocked) ... ok\ntest_unknown_schema_keyword_fails (test_kit.KitTests.test_unknown_schema_keyword_fails) ... ok\ntest_view_transform_hash_and_method_required (test_kit.KitTests.test_view_transform_hash_and_method_required) ... ok\ntest_water_cannot_masquerade_as_land_layers (test_kit.KitTests.test_water_cannot_masquerade_as_land_layers) ... ok\ntest_waypoint_camera_and_viewport_binding (test_kit.KitTests.test_waypoint_camera_and_viewport_binding) ... ok\n\n----------------------------------------------------------------------\nRan 32 tests in 0.940s\n\nOK\n"
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "validate",
+          "tiles",
+          "templates/tiles.json"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "preflight",
+          "templates/config.json"
+        ],
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"binding-readiness\",\n  \"host\": \"darwin\",\n  \"runtime_executed\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera orientation unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, antimeridian and both polar regions\",\n    \"tile navigation case unbound\"\n  ]\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "init-run",
+          "<temporary-directory>/tile-run"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"created\": \"/private<temporary-directory>/tile-run\",\n  \"runtime_executed\": false,\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "report-check",
+          "<temporary-directory>/tile-run"
+        ],
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"evidence-contract-only\",\n  \"visual_truth_checked\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera orientation unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, antimeridian and both polar regions\",\n    \"tile navigation case unbound\",\n    \"build_revision missing\",\n    \"sources_revision missing\",\n    \"mapping_revision missing\",\n    \"fixture_revision missing\",\n    \"producer missing\",\n    \"reviewer missing\",\n    \"review_ref missing\",\n    \"independent reviewer required\",\n    \"report revision mismatch\",\n    \"evidence kinds missing: config,coverage,fixture,screenshot,sources,telemetry,tiles,video\",\n    \"A01: not evidenced/validated\",\n    \"A02: coverage evidence must be linked\",\n    \"A02: not evidenced/validated\",\n    \"A03: not evidenced/validated\",\n    \"A04: not evidenced/validated\",\n    \"A05: not evidenced/validated\",\n    \"A06: not evidenced/validated\",\n    \"A07: not evidenced/validated\",\n    \"A08: not evidenced/validated\",\n    \"A09: not evidenced/validated\",\n    \"A10: not evidenced/validated\",\n    \"A11: not evidenced/validated\",\n    \"A12: not evidenced/validated\",\n    \"A13: not evidenced/validated\",\n    \"A14: not evidenced/validated\",\n    \"A15: tiles evidence must be linked\",\n    \"A15: not evidenced/validated\",\n    \"frame_p95_ms: measurement missing\",\n    \"peak_memory_mb: measurement missing\",\n    \"mapping_residual_px: measurement missing\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    ],
+    "review_corrections": [
+      "tile case labels bound to actual EPSG:4326 regions",
+      "tile pan/zoom/return bound to unique observed probe IDs and times"
+    ]
+  },
+  "geodata_update": {
+    "checked_utc": "2026-10-25T12:41:19.336566Z",
+    "kit_version": "kit1-landscape-v4",
+    "contract_version": "kit1-ops-v4",
+    "inventory_files": 70,
+    "scope": "Kit contracts only, no terrain/renderer/GIS runtime; mocked unit data is not product evidence.",
+    "commands": [
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "expected_exit": 0,
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "test_abstract_landcover_requires_natural_only_result (test_kit.KitTests.test_abstract_landcover_requires_natural_only_result) ... ok\ntest_complete_structural_report_then_synthetic_rejected (test_kit.KitTests.test_complete_structural_report_then_synthetic_rejected) ... ok\ntest_coverage_nodata_and_source_binding (test_kit.KitTests.test_coverage_nodata_and_source_binding) ... ok\ntest_coverage_poles_seam_synthetic_and_link (test_kit.KitTests.test_coverage_poles_seam_synthetic_and_link) ... ok\ntest_cultivated_landcover_cannot_silently_pass (test_kit.KitTests.test_cultivated_landcover_cannot_silently_pass) ... ok\ntest_derivation_error_maximum_budget_and_sampling (test_kit.KitTests.test_derivation_error_maximum_budget_and_sampling) ... ok\ntest_derivation_sources_topology_and_omission_policy (test_kit.KitTests.test_derivation_sources_topology_and_omission_policy) ... ok\ntest_derivation_synthetic_policy_hash_and_a16 (test_kit.KitTests.test_derivation_synthetic_policy_hash_and_a16) ... ok\ntest_fixture_requires_pan_and_start_return_state (test_kit.KitTests.test_fixture_requires_pan_and_start_return_state) ... ok\ntest_geodata_policy_budget_units_and_scale (test_kit.KitTests.test_geodata_policy_budget_units_and_scale) ... ok\ntest_hidden_tiles_reject_visible_features_and_non_square (test_kit.KitTests.test_hidden_tiles_reject_visible_features_and_non_square) ... ok\ntest_map_to_diorama_camera_is_zoom_bound (test_kit.KitTests.test_map_to_diorama_camera_is_zoom_bound) ... ok\ntest_missing_and_duplicate_check_fail (test_kit.KitTests.test_missing_and_duplicate_check_fail) ... ok\ntest_missing_hash_or_threshold_and_fake_metric (test_kit.KitTests.test_missing_hash_or_threshold_and_fake_metric) ... ok\ntest_missing_return_zoom_rejected (test_kit.KitTests.test_missing_return_zoom_rejected) ... ok\ntest_nonfinite_json (test_kit.KitTests.test_nonfinite_json) ... ok\ntest_package_rejects_manifest_only_wrong_version_and_inventory_drift (test_kit.KitTests.test_package_rejects_manifest_only_wrong_version_and_inventory_drift) ... ok\ntest_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper) ... ok\ntest_paths_reject_traversal_absolute_windows_symlink (test_kit.KitTests.test_paths_reject_traversal_absolute_windows_symlink) ... ok\ntest_reference_image_tamper_blocks_self_check_and_package (test_kit.KitTests.test_reference_image_tamper_blocks_self_check_and_package) ... ok\ntest_report_utc_timestamp_required_and_valid (test_kit.KitTests.test_report_utc_timestamp_required_and_valid) ... ok\ntest_same_reviewer_rejected (test_kit.KitTests.test_same_reviewer_rejected) ... ok\ntest_schema_rejects_bool_as_number_and_unknown (test_kit.KitTests.test_schema_rejects_bool_as_number_and_unknown) ... ok\ntest_self_check (test_kit.KitTests.test_self_check) ... ok\ntest_skipped_waypoint_and_bad_timing_rejected (test_kit.KitTests.test_skipped_waypoint_and_bad_timing_rejected) ... ok\ntest_tile_case_labels_require_actual_geographic_regions (test_kit.KitTests.test_tile_case_labels_require_actual_geographic_regions) ... ok\ntest_tile_definition_synthetic_and_report_link (test_kit.KitTests.test_tile_definition_synthetic_and_report_link) ... ok\ntest_tile_internal_identity_size_and_camera_binding (test_kit.KitTests.test_tile_internal_identity_size_and_camera_binding) ... ok\ntest_tile_navigation_requires_observed_pan_and_return (test_kit.KitTests.test_tile_navigation_requires_observed_pan_and_return) ... ok\ntest_tile_seam_polar_zoom_probes_and_index (test_kit.KitTests.test_tile_seam_polar_zoom_probes_and_index) ... ok\ntest_tiles_runtime_origin_required_without_gui (test_kit.KitTests.test_tiles_runtime_origin_required_without_gui) ... ok\ntest_time_and_vector_shape (test_kit.KitTests.test_time_and_vector_shape) ... ok\ntest_transition_midpoint_and_profile_required (test_kit.KitTests.test_transition_midpoint_and_profile_required) ... ok\ntest_unbound_preflight_is_blocked (test_kit.KitTests.test_unbound_preflight_is_blocked) ... ok\ntest_unknown_schema_keyword_fails (test_kit.KitTests.test_unknown_schema_keyword_fails) ... ok\ntest_view_transform_hash_and_method_required (test_kit.KitTests.test_view_transform_hash_and_method_required) ... ok\ntest_water_cannot_masquerade_as_land_layers (test_kit.KitTests.test_water_cannot_masquerade_as_land_layers) ... ok\ntest_waypoint_camera_and_viewport_binding (test_kit.KitTests.test_waypoint_camera_and_viewport_binding) ... ok\n\n----------------------------------------------------------------------\nRan 38 tests in 1.481s\n\nOK\n"
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "self-check"
+        ],
+        "expected_exit": 0,
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "validate",
+          "geodata_policy",
+          "templates/geodata_policy.json"
+        ],
+        "expected_exit": 0,
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "validate",
+          "derivation",
+          "examples/derivation.synthetic.json"
+        ],
+        "expected_exit": 0,
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "preflight",
+          "templates/config.json"
+        ],
+        "expected_exit": 2,
+        "exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"binding-readiness\",\n  \"host\": \"darwin\",\n  \"runtime_executed\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera transition unbound\",\n    \"camera transition definition: artifact unbound\",\n    \"geodata policy/scale/budgets unbound\",\n    \"geodata policy decision: artifact unbound\",\n    \"geodata policy source_model_transform: artifact unbound\",\n    \"geodata policy model_render_transition: artifact unbound\",\n    \"geodata policy projection_definition: artifact unbound\",\n    \"geodata policy source_accuracy_assessment: artifact unbound\",\n    \"geodata policy detail_rules: artifact unbound\",\n    \"geodata protection classes unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, antimeridian and both polar regions\",\n    \"tile navigation case unbound\"\n  ]\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "init-run",
+          "/var/folders/p7/9n6py1_x3c94xzkjssk7sz1m0000gn/T/tmpb973te9k/run"
+        ],
+        "expected_exit": 0,
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"created\": \"/private/var/folders/p7/9n6py1_x3c94xzkjssk7sz1m0000gn/T/tmpb973te9k/run\",\n  \"runtime_executed\": false,\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tools/kit.py",
+          "report-check",
+          "/var/folders/p7/9n6py1_x3c94xzkjssk7sz1m0000gn/T/tmpb973te9k/run"
+        ],
+        "expected_exit": 2,
+        "exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"evidence-contract-only\",\n  \"visual_truth_checked\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple world regions; global coverage still independently reviewed\",\n    \"camera transition unbound\",\n    \"camera transition definition: artifact unbound\",\n    \"geodata policy/scale/budgets unbound\",\n    \"geodata policy decision: artifact unbound\",\n    \"geodata policy source_model_transform: artifact unbound\",\n    \"geodata policy model_render_transition: artifact unbound\",\n    \"geodata policy projection_definition: artifact unbound\",\n    \"geodata policy source_accuracy_assessment: artifact unbound\",\n    \"geodata policy detail_rules: artifact unbound\",\n    \"geodata protection classes unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, antimeridian and both polar regions\",\n    \"tile navigation case unbound\",\n    \"build_revision missing\",\n    \"sources_revision missing\",\n    \"mapping_revision missing\",\n    \"fixture_revision missing\",\n    \"producer missing\",\n    \"reviewer missing\",\n    \"review_ref missing\",\n    \"independent reviewer required\",\n    \"report revision mismatch\",\n    \"evidence kinds missing: config,coverage,derivation,fixture,screenshot,sources,telemetry,tiles,video\",\n    \"A01: not evidenced/validated\",\n    \"A02: coverage evidence must be linked\",\n    \"A02: not evidenced/validated\",\n    \"A03: not evidenced/validated\",\n    \"A04: not evidenced/validated\",\n    \"A05: not evidenced/validated\",\n    \"A06: not evidenced/validated\",\n    \"A07: not evidenced/validated\",\n    \"A08: not evidenced/validated\",\n    \"A09: not evidenced/validated\",\n    \"A10: not evidenced/validated\",\n    \"A11: not evidenced/validated\",\n    \"A12: not evidenced/validated\",\n    \"A13: not evidenced/validated\",\n    \"A14: not evidenced/validated\",\n    \"A15: tiles evidence must be linked\",\n    \"A15: not evidenced/validated\",\n    \"A16: derivation evidence must be linked\",\n    \"A16: not evidenced/validated\",\n    \"frame_p95_ms: measurement missing\",\n    \"peak_memory_mb: measurement missing\",\n    \"mapping_residual_px: measurement missing\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    ],
+    "independent_review": {
+      "status": "completed",
+      "recorded_utc": "2026-10-25T12:42:26.959969Z",
+      "reviewer": "separately assigned independent subagent",
+      "tests_passed": 38,
+      "inventory_files": 70,
+      "findings_open": 0,
+      "checks": [
+        "self-check",
+        "unit tests",
+        "empty global topology evidence rejected",
+        "scope/contracts/document consistency",
+        "inventory completeness"
+      ],
+      "scope": "Kit contracts and documentation only; not product, geodata truth, historical or performance validation."
+    }
+  },
+  "region_scope_update": {
+    "timestamp_utc": "2026-10-25T13:11:05.382282+00:00",
+    "kit_version": "kit1-landscape-v5",
+    "contract_version": "kit1-ops-v5",
+    "scope": "kit-contracts-only; no region geometry or product executed",
+    "inventory_files": 74,
+    "unit_tests": 43,
+    "results": [
+      {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "",
+        "stderr": "test_abstract_landcover_requires_natural_only_result (test_kit.KitTests.test_abstract_landcover_requires_natural_only_result) ... ok\ntest_complete_structural_report_then_synthetic_rejected (test_kit.KitTests.test_complete_structural_report_then_synthetic_rejected) ... ok\ntest_coverage_components_bind_reference_geometry_and_mask (test_kit.KitTests.test_coverage_components_bind_reference_geometry_and_mask) ... ok\ntest_coverage_nodata_and_source_binding (test_kit.KitTests.test_coverage_nodata_and_source_binding) ... ok\ntest_coverage_regional_edges_synthetic_and_link (test_kit.KitTests.test_coverage_regional_edges_synthetic_and_link) ... ok\ntest_cultivated_landcover_cannot_silently_pass (test_kit.KitTests.test_cultivated_landcover_cannot_silently_pass) ... ok\ntest_derivation_error_maximum_budget_and_sampling (test_kit.KitTests.test_derivation_error_maximum_budget_and_sampling) ... ok\ntest_derivation_sources_topology_and_omission_policy (test_kit.KitTests.test_derivation_sources_topology_and_omission_policy) ... ok\ntest_derivation_synthetic_policy_hash_and_a16 (test_kit.KitTests.test_derivation_synthetic_policy_hash_and_a16) ... ok\ntest_fixture_requires_pan_and_start_return_state (test_kit.KitTests.test_fixture_requires_pan_and_start_return_state) ... ok\ntest_geodata_policy_budget_units_and_scale (test_kit.KitTests.test_geodata_policy_budget_units_and_scale) ... ok\ntest_hidden_tiles_reject_visible_features_and_non_square (test_kit.KitTests.test_hidden_tiles_reject_visible_features_and_non_square) ... ok\ntest_map_to_diorama_camera_is_zoom_bound (test_kit.KitTests.test_map_to_diorama_camera_is_zoom_bound) ... ok\ntest_missing_and_duplicate_check_fail (test_kit.KitTests.test_missing_and_duplicate_check_fail) ... ok\ntest_missing_hash_or_threshold_and_fake_metric (test_kit.KitTests.test_missing_hash_or_threshold_and_fake_metric) ... ok\ntest_missing_return_zoom_rejected (test_kit.KitTests.test_missing_return_zoom_rejected) ... ok\ntest_nonfinite_json (test_kit.KitTests.test_nonfinite_json) ... ok\ntest_package_rejects_manifest_only_wrong_version_and_inventory_drift (test_kit.KitTests.test_package_rejects_manifest_only_wrong_version_and_inventory_drift) ... ok\ntest_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper) ... ok\ntest_paths_reject_traversal_absolute_windows_symlink (test_kit.KitTests.test_paths_reject_traversal_absolute_windows_symlink) ... ok\ntest_reference_image_tamper_blocks_self_check_and_package (test_kit.KitTests.test_reference_image_tamper_blocks_self_check_and_package) ... ok\ntest_region_coverage_definition_and_required_components (test_kit.KitTests.test_region_coverage_definition_and_required_components) ... ok\ntest_region_reference_metadata_rejects_narrow_roi_and_wrong_source (test_kit.KitTests.test_region_reference_metadata_rejects_narrow_roi_and_wrong_source) ... ok\ntest_region_scope_rejects_europe_world_and_missing_northern_context (test_kit.KitTests.test_region_scope_rejects_europe_world_and_missing_northern_context) ... ok\ntest_regional_fixture_and_derivation_binding (test_kit.KitTests.test_regional_fixture_and_derivation_binding) ... ok\ntest_report_utc_timestamp_required_and_valid (test_kit.KitTests.test_report_utc_timestamp_required_and_valid) ... ok\ntest_same_reviewer_rejected (test_kit.KitTests.test_same_reviewer_rejected) ... ok\ntest_schema_rejects_bool_as_number_and_unknown (test_kit.KitTests.test_schema_rejects_bool_as_number_and_unknown) ... ok\ntest_self_check (test_kit.KitTests.test_self_check) ... ok\ntest_skipped_waypoint_and_bad_timing_rejected (test_kit.KitTests.test_skipped_waypoint_and_bad_timing_rejected) ... ok\ntest_tile_case_labels_require_actual_geographic_regions (test_kit.KitTests.test_tile_case_labels_require_actual_geographic_regions) ... ok\ntest_tile_definition_synthetic_and_report_link (test_kit.KitTests.test_tile_definition_synthetic_and_report_link) ... ok\ntest_tile_internal_identity_size_and_camera_binding (test_kit.KitTests.test_tile_internal_identity_size_and_camera_binding) ... ok\ntest_tile_navigation_requires_observed_pan_and_return (test_kit.KitTests.test_tile_navigation_requires_observed_pan_and_return) ... ok\ntest_tile_regional_zoom_probes_and_index (test_kit.KitTests.test_tile_regional_zoom_probes_and_index) ... ok\ntest_tiles_runtime_origin_required_without_gui (test_kit.KitTests.test_tiles_runtime_origin_required_without_gui) ... ok\ntest_time_and_vector_shape (test_kit.KitTests.test_time_and_vector_shape) ... ok\ntest_transition_midpoint_and_profile_required (test_kit.KitTests.test_transition_midpoint_and_profile_required) ... ok\ntest_unbound_preflight_is_blocked (test_kit.KitTests.test_unbound_preflight_is_blocked) ... ok\ntest_unknown_schema_keyword_fails (test_kit.KitTests.test_unknown_schema_keyword_fails) ... ok\ntest_view_transform_hash_and_method_required (test_kit.KitTests.test_view_transform_hash_and_method_required) ... ok\ntest_water_cannot_masquerade_as_land_layers (test_kit.KitTests.test_water_cannot_masquerade_as_land_layers) ... ok\ntest_waypoint_camera_and_viewport_binding (test_kit.KitTests.test_waypoint_camera_and_viewport_binding) ... ok\n\n----------------------------------------------------------------------\nRan 43 tests in 1.983s\n\nOK\n"
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "self-check"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"kit-integrity-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "validate",
+          "region",
+          "templates/region.json"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "validate",
+          "coverage",
+          "templates/coverage.json"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"scope\": \"structure-only\",\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "preflight",
+          "templates/config.json"
+        ],
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"binding-readiness\",\n  \"host\": \"darwin\",\n  \"runtime_executed\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"region revision unbound\",\n    \"region mask_revision unbound\",\n    \"region extent unbound\",\n    \"region boundary_convention unbound\",\n    \"region sea_context_policy unbound\",\n    \"region england_north_latitude unbound\",\n    \"region north_context_degrees unbound\",\n    \"region imperial_extent_source: artifact unbound\",\n    \"region mediterranean_source: artifact unbound\",\n    \"region region_mask: artifact unbound\",\n    \"region completeness_evidence: artifact unbound\",\n    \"region england_extent_source: artifact unbound\",\n    \"region reference geometry metadata incomplete\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple parts of the project region; complete regional coverage independently reviewed\",\n    \"fixture regional binding mismatch\",\n    \"camera transition unbound\",\n    \"camera transition definition: artifact unbound\",\n    \"geodata policy/scale/budgets unbound\",\n    \"geodata policy decision: artifact unbound\",\n    \"geodata policy source_model_transform: artifact unbound\",\n    \"geodata policy model_render_transition: artifact unbound\",\n    \"geodata policy projection_definition: artifact unbound\",\n    \"geodata policy source_accuracy_assessment: artifact unbound\",\n    \"geodata policy detail_rules: artifact unbound\",\n    \"geodata protection classes unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, coast, regional edge and tile seam\",\n    \"tile navigation case unbound\"\n  ]\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "init-run",
+          "<temporary-run>"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "stdout": "{\n  \"status\": \"ok\",\n  \"created\": \"<temporary-run>\",\n  \"runtime_executed\": false,\n  \"issues\": []\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "python3",
+          "tools/kit.py",
+          "report-check",
+          "<temporary-run>"
+        ],
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "stdout": "{\n  \"status\": \"blocked\",\n  \"scope\": \"evidence-contract-only\",\n  \"visual_truth_checked\": false,\n  \"issues\": [\n    \"engine name unbound\",\n    \"engine version unbound\",\n    \"working_directory unbound\",\n    \"mapping ID unbound\",\n    \"mapping version unbound\",\n    \"hardware unbound\",\n    \"resolution unbound\",\n    \"build command unbound\",\n    \"start command unbound\",\n    \"capture command unbound\",\n    \"frame_p95_ms unbound\",\n    \"peak_memory_mb unbound\",\n    \"mapping_residual_px unbound\",\n    \"threshold_decision_ref unbound\",\n    \"renderer tool unbound\",\n    \"data_processing tool unbound\",\n    \"capture tool unbound\",\n    \"region revision unbound\",\n    \"region mask_revision unbound\",\n    \"region extent unbound\",\n    \"region boundary_convention unbound\",\n    \"region sea_context_policy unbound\",\n    \"region england_north_latitude unbound\",\n    \"region north_context_degrees unbound\",\n    \"region imperial_extent_source: artifact unbound\",\n    \"region mediterranean_source: artifact unbound\",\n    \"region region_mask: artifact unbound\",\n    \"region completeness_evidence: artifact unbound\",\n    \"region england_extent_source: artifact unbound\",\n    \"region reference geometry metadata incomplete\",\n    \"sources revision unbound\",\n    \"elevation/water/landcover sources incomplete\",\n    \"fixture not bound\",\n    \"fixture needs multiple parts of the project region; complete regional coverage independently reviewed\",\n    \"fixture regional binding mismatch\",\n    \"camera transition unbound\",\n    \"camera transition definition: artifact unbound\",\n    \"geodata policy/scale/budgets unbound\",\n    \"geodata policy decision: artifact unbound\",\n    \"geodata policy source_model_transform: artifact unbound\",\n    \"geodata policy model_render_transition: artifact unbound\",\n    \"geodata policy projection_definition: artifact unbound\",\n    \"geodata policy source_accuracy_assessment: artifact unbound\",\n    \"geodata policy detail_rules: artifact unbound\",\n    \"geodata protection classes unbound\",\n    \"waypoint timing tolerance unbound\",\n    \"expected position method: artifact unbound\",\n    \"tiles grid_id unbound\",\n    \"tiles grid_revision unbound\",\n    \"tile addressing definition: artifact unbound\",\n    \"tile cases must cover interior, coast, regional edge and tile seam\",\n    \"tile navigation case unbound\",\n    \"build_revision missing\",\n    \"sources_revision missing\",\n    \"mapping_revision missing\",\n    \"fixture_revision missing\",\n    \"producer missing\",\n    \"reviewer missing\",\n    \"review_ref missing\",\n    \"independent reviewer required\",\n    \"report revision mismatch\",\n    \"evidence kinds missing: config,coverage,derivation,fixture,region,screenshot,sources,telemetry,tiles,video\",\n    \"A01: not evidenced/validated\",\n    \"A02: coverage and region evidence must be linked\",\n    \"A02: not evidenced/validated\",\n    \"A03: not evidenced/validated\",\n    \"A04: not evidenced/validated\",\n    \"A05: not evidenced/validated\",\n    \"A06: not evidenced/validated\",\n    \"A07: not evidenced/validated\",\n    \"A08: not evidenced/validated\",\n    \"A09: not evidenced/validated\",\n    \"A10: not evidenced/validated\",\n    \"A11: not evidenced/validated\",\n    \"A12: not evidenced/validated\",\n    \"A13: not evidenced/validated\",\n    \"A14: not evidenced/validated\",\n    \"A15: tiles evidence must be linked\",\n    \"A15: not evidenced/validated\",\n    \"A16: derivation evidence must be linked\",\n    \"A16: not evidenced/validated\",\n    \"frame_p95_ms: measurement missing\",\n    \"peak_memory_mb: measurement missing\",\n    \"mapping_residual_px: measurement missing\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    ],
+    "independent_review": {
+      "status": "validated",
+      "scope": "kit-contracts-and-active-scope-documents-only",
+      "unit_tests": 43,
+      "self_check": "passed",
+      "initial_findings": [
+        "reference geometry metadata missing",
+        "coverage component reference cross-binding missing"
+      ],
+      "retest_findings": "both corrections verified closed; no open scope findings",
+      "product_geography_runtime_validated": false,
+      "review_source": "independent reviewer result relayed by coordinating parent agent"
+    }
+  }
+}

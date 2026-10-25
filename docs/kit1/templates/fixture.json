@@ -1,0 +1,31 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "fixture",
+  "id": "regional-landscape-route",
+  "revision": "unbound",
+  "synthetic": false,
+  "seed": 0,
+  "mapping_id": null,
+  "mapping_version": null,
+  "camera": {
+    "control": "zoom_bound_no_free_rotation",
+    "azimuth_degrees": null,
+    "far_elevation_degrees": null,
+    "near_elevation_degrees": null,
+    "transition_definition": null
+  },
+  "coverage_regions": [],
+  "points": [],
+  "path": [],
+  "source_crs": "EPSG:4326",
+  "expected_position_method": null,
+  "max_waypoint_time_error_ms": null,
+  "view_states": [],
+  "tile_cases": [],
+  "tile_region_policy": {
+    "edge_max_distance_degrees": 0.25
+  },
+  "tile_navigation": null,
+  "region_revision": null,
+  "project_extent": null
+}

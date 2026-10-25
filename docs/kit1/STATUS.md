@@ -1,0 +1,223 @@
+# Kit 1 — tatsächlicher Arbeitsstand
+
+**Referenzversion:** `kit1-landscape-v5` / `kit1-rendering-v4` · **Stand:** 25.10.2026.
+
+| Bereich | Status | Nachweis / Grenze |
+|---|---|---|
+| GitHub-Repository und Versionierungsziel | `implementiert` | Privates [`ramonfueglister/romaaeterna`](https://github.com/ramonfueglister/romaaeterna), Konto/Owner und Sichtbarkeit geprüft; erster Projektcommit und Push folgen |
+| Kostenbewusster Arbeitsablauf | `spezifiziert` | WORKFLOW.md, START_PROMPT.md, ROLES.md und ASSIGNMENT.md; Qualitäts-/Abnahmeziele bleiben bestehen. Keine USD-/Tokenmessung, Einsparquote oder ChatGPT-Planumrechnung erhoben; Grundlagen in REFERENCES.md am 25.10.2026 abgerufen |
+| Regionaler Umfang v5 | `implementiert` | REGION_SCOPE_UPDATE.md; nur geografischer Scope angepasst, keine Produktimplementation |
+| Moderne Gebietsauswahlhilfe | `erforscht` | geoBoundaries gbOpen ADM2 API-Metadatenstichprobe dokumentiert; Featureauswahl und Datensatzbindung bleiben offen, keine Geometrie geladen |
+| Dokumentreview geoBoundaries ADM2 | `validiert` | Kurzreview ohne Befund: Ländervariation, Layer- vs. Feature-ID, Version/Lizenzbindung, Puffer/Meer sowie Abgrenzung zur 117/180-Referenz sind korrekt eingeordnet. Nur Dokumentkonsistenz; keine Featureauswahl oder Geometrieprüfung |
+| Eigene Kit-Prüfungen v5 | `validiert` | evidence/kit-checks.json → region_scope_update; 43 Tests und CLI-Läufe, nur Kitverträge |
+| Unabhängiger regionaler Review v5 | `validiert` | Separater Reviewer: 43/43 Tests, Selbstprüfung, aktive Scope-Dokumente und beide Referenzbindungs-Korrekturen bestätigt; keine offenen Scopebefunde. Nur Kitverträge, keine Geografie-/Produktvalidierung |
+| Historische Geoableitung / Kamerapräzisierung v4 | `implementiert` | GEODATA_UPDATE.md; Quellen-/Modell-/Rendertrennung, A16, kein Produktcode |
+| Historische eigene Kit-Prüfungen v4 | `validiert` | evidence/kit-checks.json → geodata_update: 38 Tests und sieben CLI-Läufe mit erwarteten Ergebnissen, nur Kitverträge |
+| Historische unabhängige Prüfung v4 | `validiert` | Separater Subagent: 38/38 Kit-Tests, Selbstprüfung, Topologie-Negativfall und 70 Inventardateien geprüft; keine offenen Befunde. Nur Kitverträge/Dokumentkonsistenz, keine Produktvalidierung |
+| Bestätigte Nutzerentscheidungen | `spezifiziert` | decisions.md; keine wieder geöffneten Interviewfragen |
+| Spätere Windows-/Linux-Ziele und Portabilitätsleitlinie | `spezifiziert` | Nutzerwunsch für deutlich spätere Versionen; aktueller Umfang unverändert, keine Engine-/OS-/Hardware-/Leistungsvalidierung |
+| Vollständiger späterer Bauauftrag | `spezifiziert` | TASK/WORKFLOW/ACCEPTANCE/KICKOFF |
+| Operative Prozesse und ausfüllbare Vorlagen | `spezifiziert` | operations/, templates/; keine Produktimplementierung |
+| JSON-Verträge und Kit-Hilfswerkzeuge | `implementiert` | schemas/, tools/kit.py; ausschließlich Kitverwaltung/Prüfung |
+| Historische eigene Kit-Prüfungen v3 | `validiert` | evidence/kit-checks.json → tile_update; ausschließlich damalige v3-Kit-Verträge |
+| Historische Tile-Erweiterung / unabhängige Prüfung v3 | `validiert` | Unabhängiger Review: 32/32 Kit-Tests, Selbstprüfung, beide A15-Befunde geschlossen; eine Ansicht ohne GUI/Modi. Nur Kit-Verträge, keine Produktvalidierung; siehe TILE_UPDATE.md |
+| Vollständiger Referenzabgleich | `erforscht` | 224 Einträge mit Quellenhash und Disposition in REFERENCE_MAP.json |
+| Historische unabhängige Prüfung v2 vor Auditkorrektur | `validiert` | Separater Subagent: 14/14 Werkzeugtests, Selbstprüfung, erwartbar blockierte Runtime-Bindung, UTC-/Runprüfung, 224 Archivpfade/Hashes und 43 Inventardateien geprüft; ausschließlich Kit-Konsistenz/Werkzeugvertrag |
+| Historischer Abschlussaudit / ops-v2 | `validiert` | Alle fünf Befunde geschlossen; 25 Tests erfolgreich; zwei unabhängige Subagents bestätigen Vertrags-/Dokumentkorrekturen. Keine Produkt-/Historien-/Leistungsvalidierung, siehe FINAL_AUDIT.md |
+| Echte Spiel-Referenzscreenshots | `erforscht` | Sechs offizielle Steam-Galeriebilder lokal gespeichert und visuell betrachtet; Zuordnung im Screenshotkatalog `spezifiziert`; unabhängige Sicht-/Herkunfts-/Hash-/Portabilitätsprüfung abgeschlossen, keine Produktvalidierung |
+| Nutzer-Primärreferenz für Terrainstil | `spezifiziert` | Unveränderte nutzerbereitgestellte PNG-Kopie, eigene Sichtung, portable Attachment-Provenienz und SHA-256; Stilvorgabe, keine Geografie- oder Laufzeitvalidierung |
+| Ergänzende Fernstilprobe | `spezifiziert` | Nutzer akzeptierte Bild als weiträumige Stil-/Farbprobe, sagte zugleich, die Ansicht sollte flach sein; kein Beleg für den geforderten flachen 2D-Fernendpunkt |
+| Abgeleitete Nahprobe | `erforscht` | Vom Nutzer am 25.10.2026 verworfen; Kitkopie/Metadaten/Inventareintrag entfernt, privates Original unberührt |
+| Unabhängiger Review der aktuellen Stilreferenzen | `validiert` | Reviewer ohne Befund: Primärbild und eingeschränkte Fernprobe byteidentisch an Quellen gebunden; Nah-/Altproben entfernt, Stilpriorität und flacher 2D-Fernendpunkt konsistent; 79 Inventardateien. Keine Geografie-/Produktvalidierung |
+| Grafikstack/Daten/Mapping/Testbudgets | `offen` | Konfig ungebunden, Preflight erwartungsgemäß blockiert |
+| Rendering-Recherche bis 25.10.2026 | `erforscht` | Gezielter Abgleich von Proceedings, Herstellerdocs und Streamingarbeiten; 2026-Suche ohne verifizierte direkt passende begutachtete Arbeit. Keine Vollständigkeitsbehauptung; Details in RENDERING_RESEARCH.md |
+| Rendering-/Simulationsgrenze | `spezifiziert` | operations/RENDERING.md + künftige Systemgrenzen-Abnahme in ACCEPTANCE.md: headlesser Rust-Kern, validierte Commands, unveränderliche Snapshots, entkoppelte Ticks/Frames und begrenzte latest-valid Übergabe mit Delta-Recovery; keine Laufzeitprüfung |
+| Rendering v4: Animationsverträge, Hitch-/Streamingvertrag und Godot-Vertikalpfad | `spezifiziert` | operations/RENDERING.md / ACCEPTANCE.md; Visual Clock, Autorität, stabile Identität/Lebenszyklus und spätere Update-/LOD-/Partikelbudgets; Messwerte offen, Renderer nicht implementiert |
+| Produkt-/Renderer-/Captureadapter | `offen` | nicht implementiert, keine Spielumsetzung gestartet |
+| Laufzeit/Geografie/Leistung | `offen` | keine echten Runtimebelege, keine Leistungszusage |
+| Historische Korrekturen | `offen` | heutige Datenbasis bestätigt; Korrekturbacklog vorbereitet |
+
+## Nächster Schritt
+
+Die initiale private GitHub-Ablage des dokumentierten Kit- und Forschungsstands
+wird vorbereitet. Produktarbeit bleibt dem dafür erteilten Auftrag vorbehalten.
+
+## Protokoll
+
+- 25.10.2026: v1-Entscheidungs-/Auftragsdokumente erstellt und unabhängig auf
+  Konsistenz geprüft; noch kein vollständiges operatives Gegenstück zum Archiv.
+- 25.10.2026: Nutzer fordert sinnvolle vollständige Übertragung auch der übrigen
+  Kit-Bestandteile. v2 ergänzt konkrete Arbeitsprozesse, Rollenpakete, Vorlagen,
+  Adapter-/Messverträge, portable lokale Prüfer und vollständiges Quellinventar.
+  Keine fremden Skripte ausgeführt, keine Pakete/SDKs/Daten/Assets installiert.
+  Originalarchiv und Wirtschaftsdateien unverändert. Produktcode nicht erstellt.
+
+- 25.10.2026: Portable Herkunftsnachweise auf Dateinamen/Hashes umgestellt. Die
+  zweite eigene, vom Nutzer als brauchbar eingeordnete Bildprobe ist unverändert
+  als optionale Stilreferenz enthalten (kein Spielasset). Das erste abgelehnte
+  Bild, Originalarchiv und Interviewanhang sind nicht enthalten. Kit-Inventar:
+  43 Dateien; Selbstprüfung und 14 Werkzeugtests erneut erfolgreich.
+
+- 25.10.2026: Unabhängiger Subagent prüfte das operative v2-Kit. 14/14 Tests
+  bestanden; Selbstprüfung erfolgreich; Preflight und frischer ungestarteter
+  Report korrekt blockiert. Alle 224 Archivpfade/Hashes und 43 Inventardateien
+  stimmen; keine fehlenden/unaufgeführten Dateien oder lokalen Nutzerpfade.
+  Der Befund validiert Kit-Konsistenz und Hilfswerkzeugverträge, keine Landschaft,
+  Produktfunktion, historische Genauigkeit oder Leistung.
+
+- 25.10.2026: Auf ausdrücklichen Nutzerauftrag drei Urbek- und drei Victoria-3-
+  Screenshots aus offiziellen Steam-Galerien ergänzt. Alle sechs JPGs tatsächlich
+  visuell betrachtet, unverändert gespeichert und mit Quellen/Hashes dokumentiert.
+  Screenshotkatalog ordnet sichtbare Eigenschaften bestehenden Grafikvorgaben zu
+  und grenzt moderne Bebauung, Politik/UI, Materialien und Kamerabeispiele aus.
+  Kit-Inventar jetzt 51 Dateien. Frühere v2-Prüfung mit 43 Dateien bleibt ein
+  historischer Nachweis; die Referenzerweiterung wird separat geprüft. Keine
+  Spielimplementierung; kein Screenshot ist ein Kit-1-Laufzeitbeleg.
+
+- 25.10.2026: Unabhängiger Subagent betrachtete alle sechs Referenzbilder und
+  prüfte Shopquellen, dokumentierte Metadaten, Dateihashes, Zuordnung und
+  Portabilität ohne relevante Fehler. Der Befund betrifft Referenzmaterial und
+  Kit-Konsistenz, keine Produktfunktion oder historische Genauigkeit. Eine erneute
+  unabhängige API-Abfrage der exakten Galerie-IDs wird nicht behauptet.
+
+- 25.10.2026: Vollständigkeitsaudit identifizierte fünf konkrete Vertragslücken.
+  Gezielte Korrekturen, Begründung und Grenzen stehen in FINAL_AUDIT.md. Die
+  Laufverträge sind jetzt kit1-ops-v2; 23 gezielte Werkzeugtests bestanden. Die
+  unabhängige Wiederprüfung dieser Korrekturen ist noch offen. Nutzerakzeptanz
+  der sechs Referenzbilder dokumentiert. Kit-Inventar jetzt 56 Dateien.
+
+- 25.10.2026: Nach unabhängiger Wiederprüfung Restpunkte gezielt ergänzt:
+  domänenbezogene Rollen-/Quellenbindungen (gültige Komposite möglich) sowie
+  expliziter natürlicher Endzustand ohne Feld-/Plantagen-/Zaun-/Bewirtschaftungs-
+  muster. Eigener aktueller Stand: 25/25 Tests. Finale unabhängige Wiederprüfung
+  bleibt bis zu deren tatsächlichem Ergebnis offen; die frühere 14-Test-Prüfung
+  ist ausdrücklich historisch abgegrenzt.
+
+- 25.10.2026: Abschließender unabhängiger Retest durch zwei getrennte Subagents
+  abgeschlossen. Alle fünf Auditbefunde geschlossen, aktueller Teststand 25/25.
+  FINAL_AUDIT.md und Evidence halten Umfang und Grenzen fest. Die vorherigen
+  offenen Reteststände im Protokoll sind historische Zwischenstände. Geprüft
+  sind Kit-Verträge, Paket-/Referenzintegrität und Dokumentkonsistenz; keine
+  Produktfunktion, historische Genauigkeit oder Leistungsfähigkeit. Keine
+  Spielimplementierung gestartet. Aktuelles Kit-Inventar: 56 Dateien.
+
+- 25.10.2026: Nutzer erweitert Kit 1 ausdrücklich um quadratische logische Tiles
+  und zunächst drei Ansichten. Dieser noch unveröffentlichte Zwischenentwurf
+  wurde durch die nachfolgende Nutzerkorrektur ersetzt;
+  keine Spielimplementierung. Aktueller Eigenprüfstand in evidence/kit-checks.json
+  unter tile_update; unabhängige v3-Prüfung noch offen. Historische v2-Belege
+  bleiben erhalten, gelten nicht automatisch für den erweiterten Umfang.
+
+- 25.10.2026: Neueste Nutzerkorrektur umgesetzt: keine GUI und keine weiteren
+  Darstellungsmodi in diesem Schritt. Kit 1 zeigt genau eine natürliche Landschaft
+  mit Pan/Zoom; quadratische Tiles nur unsichtbare Datenbasis. Alle Modus-/Themen-/
+  Auswahlverträge aus dem Zwischenentwurf entfernt; aktuelle Checks A01–A15.
+  Die drei Darstellungsweisen bleiben spätere Ziele. Unabhängiger Review offen.
+
+- 25.10.2026: Gezielte A15-Reviewkorrekturen: tatsächliche Quellkoordinaten
+  müssen zur Naht-/Polar-Fallzuordnung passen; eine beobachtete Tile-Pan-/Zoom-/
+  Rückkehrfolge ist eigenständig gebunden. Aktuelle Eigenprüfung: 32/32 Tests.
+  Unabhängiger Retest dieser Korrekturen noch offen.
+
+- 25.10.2026: Unabhängiger Abschlussreview bestätigt 32/32 Kit-Tests und
+  Selbstprüfung; beide A15-Befunde geschlossen. Scope-/Startpromptprüfung findet
+  keine aktiven GUI-/Modus-/A16-/A17-Pflichten. Frühere offene Prüfstände oben
+  sind historische Zwischenstände. Geprüft sind Kit-Verträge und Dokumentkonsistenz,
+  keine Grafik-, Geografie-, Historien- oder Leistungsvalidierung.
+
+- 25.10.2026: v4 präzisiert flache Karte → gebundenes isometrisches Diorama,
+  tatsächlich verkleinerte reale Modellgeografie und wissenschaftlich begründete
+  Generalisierung. 38 Tests und sieben CLI-Prüfläufe mit erwarteten Ergebnissen;
+  keine Spiel-/GIS-/Rendererimplementierung. Unabhängiger Review noch offen.
+
+- 25.10.2026: Unabhängiger v4-Abschlussreview ohne offene Befunde. 38/38
+  Tests, Selbstprüfung, Topologie-Negativfall und 70-Dateien-Inventar bestätigt.
+  Frühere offene v4-Einträge sind historische Zwischenstände. Validiert sind
+  Kitverträge und Dokumentkonsistenz, keine Landschaft, historische Genauigkeit,
+  Runtimequalität oder Leistung. Keine Spielimplementierung gestartet.
+
+- 25.10.2026: Neuer geografischer Umfang v5: Reichsrahmen bei größter Ausdehnung
+  um 117 + gesamtes Mittelmeer + England/nördlicher Kontext. Europazwischenvorschlag
+  durch Nutzer ersetzt; keine globale Weltpflicht. Regionaler Quellen-/Maskenvertrag
+  ersetzt Welt-Extents und Pol-/Datumsgrenztests; Landschaftsreferenz 180 bleibt.
+  41 eigene Kit-Tests bestanden. Unabhängige Prüfung noch offen; kein Produktcode.
+
+- 25.10.2026: Unabhängiger v5-Retest abgeschlossen: 43/43 Tests und Selbstprüfung
+  erfolgreich; beide Bindungslücken geschlossen, keine offenen Scopebefunde.
+  Geprüft sind Kitverträge und aktive Dokumentkonsistenz. Referenzgeometrien,
+  Landschaft, Runtime und Leistung sind weiterhin nicht produktseitig validiert.
+
+- 25.10.2026: Gezielter Quellenabgleich für Terrain-LOD, Out-of-Core-
+  Geometriestreaming, Virtual Textures, GPU-driven Optionen und Apple-Metal-
+  Fähigkeiten ergänzt. Suchumfang und Evidenzlücken sind ausdrücklich
+  dokumentiert; keine Aussage, alle SOTA-Arbeiten erfasst zu haben. RENDERING.md
+  konkretisiert spätere Datenpipeline, Blockbaum-Baseline, Fallback-/Cache-
+  Lebenszyklus, Snapshotgrenze und Etappen. Vorschlagsbudgets bleiben `offen`
+  bis zur Geräte-/Szenariobindung. Keine Daten, SDKs oder Renderer
+  implementiert; Laufzeit und Leistung bleiben `offen`.
+
+- 25.10.2026: Nutzer akzeptierte drei eigene, im Gespräch generierte
+  Landschafts-Stilbilder: Zoomstudie als Übergangseindruck, flache Fernkarte und
+  isometrische Küsten-Nahansicht. Unveränderte PNGs, portable Dateinamen und
+  SHA-256/Metadaten sind in `references/images/` und `sources.json` dokumentiert;
+  `references/STYLE_GUIDE.md` zeigt sie inline und trennt Stilmerkmale von
+  Geografiebehauptungen. Frühere Stadtbildprobe bleibt getrennt erhalten.
+  Gesamtregion, ADM2-Methode, Renderer, Produktcode und Laufzeitbelege bleiben
+  unberührt. ZIP-Erneuerung wartet auf unabhängigen Review und Nutzerfreigabe.
+
+- 25.10.2026: Nutzer setzte ein selbst bereitgestelltes Landschaftstriptychon als
+  eindeutige Primärreferenz. Frühere zu voxelartige/klotzige Terrainvorgaben
+  wurden durch eine stilisierte, facettierte, ausreichend detaillierte natürliche
+  Bildsprache mit zurückhaltender Palette ersetzt. Die alte eigene Stadtprobe
+  und drei frühere generierte Terrainbilder wurden aus Kitdateien, aktivem
+  Quellenmanifest, Inventar und Links entfernt; externe Originale nicht gelöscht.
+  Sechs offizielle Spiel-Screenshots bleiben sekundäre Quellenreferenzen. Zwei
+  Fernprobe anschließend nur als Stilreferenz akzeptiert; flache 2D-Endkamera
+  ausdrücklich nicht belegt. Nahprobe verworfen und aus Kitkopie/Manifest/
+  Inventar/Links entfernt. Keine weitere Bildgenerierung beauftragt.
+
+- 25.10.2026: Unabhängiger Review der aktuellen Stilreferenzen ohne Befund.
+  Primärbild und ergänzende Fernstilprobe stimmen bytegenau mit Quellenmanifesten
+  überein; Nah-/Altproben sind nicht im aktiven Kit. Der Reviewer bestätigte die
+  Stilpriorität, den begrenzten Aussageumfang der Fernprobe und das unveränderte
+  flache 2D-Kameraziel. 79 Inventardateien; keine Geografie-/Produktvalidierung.
+  Anschließend Paket gebaut und separat auf Manifest, Inventar und Hashes geprüft.
+
+
+- 25.10.2026: Nutzer wünscht zusätzlich spätere Windows- und Linux-Versionen.
+  Kit 1 bleibt unverändert; Dokumente halten plattformneutralen Rust-Kern,
+  getrennte Host-/Rendereradapter, optionales Metal und Laufzeit-Fähigkeitsprüfung
+  fest. Godot ist die genannte Ziel-App-Engine, Integration/Runtime offen. Keine
+  Windows-/Linux-Implementierung, Runtime-Prüfung oder Leistungszusage.
+
+- 25.10.2026: `kit1-rendering-v2` präzisiert die verbindliche Grenze zwischen
+  headlesser Rust-Simulation und Godot/Grafik: validierte Commands, getrennte
+  Tick-/Frame-Zeit, begrenzte Snapshotübergabe mit Delta-Recovery und keine
+  alternative Wahrheit im Renderer. ACCEPTANCE.md nennt spätere headless-/Boundary-
+  Abnahmekriterien außerhalb der Kit-1-Laufmatrix. Dokumentstatus `spezifiziert`;
+  keine Simulation, Renderer
+  oder Tests implementiert und keine Leistungszusage.
+
+- 25.10.2026: `kit1-rendering-v3` konkretisiert Hitch-Telemetrie für kalte/
+  warme Pipeline-Caches und erste/spät gestreamte Varianten, screen-space-
+  Fehlerpriorisierung mit Starvation-Schutz und bounded Uploads sowie einen
+  Godot-Terrain-/Streaming-/Material-Vertikalpfad mit Forward+/Mobile-Vergleich.
+  Godot-Dokumentation und UltraMeshRenderer (2025) sind als Quellen mit
+  begrenzter Übertragbarkeit notiert. Das bleibt Plan/Spezifikation; kein
+  Renderer, keine Messwerte und keine Produktvalidierung.
+
+- 25.10.2026: Kostenbewusster Workflow spezifiziert: aktuelle ausreichende
+  Modell-/Reasoning-Wahl, passende Delegations- und Kontextgröße, Nutzung gültiger
+  Baselines, gezielte Folgeprüfungen und qualitätsgerechte Eskalation. Offizielle
+  ChatGPT-/API-Quellen am Abrufdatum in REFERENCES.md dokumentiert; keine Aussage,
+  sie seien an diesem Datum veröffentlicht worden. Keine Plan-zu-API-Umrechnung,
+  Einsparquote oder tatsächliche Nutzungsmessung behauptet. Dokumentänderung;
+  keine Produktimplementierung und keine Kit-Volltests ausgeführt.
+
+- 25.10.2026: `kit1-rendering-v4` ergänzt vier spätere Animationsverträge: Zeit/Interpolation und Pause, Rust-Autorität gegenüber Dekoration, stabile Identität über Streaming sowie Mess-/Budgetpflichten. Nur Spezifikation; aktuelle Landschaft bleibt statisch, keine Implementierung, Messung oder Leistungszusage.
+
+- 25.10.2026: Privates GitHub-Repository `ramonfueglister/romaaeterna` erstellt
+  und per REST als privat im authentifizierten Ownerkonto verifiziert. Der
+  authentifizierte Login und die numerische Konto-ID stimmen mit dem Owner überein;
+  die Repository-URL ist festgelegt. Initialer Commit/Push werden mit diesem
+  Stand vorbereitet. Keine Produktimplementierung oder Release-Veröffentlichung.

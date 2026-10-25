@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 telemetry",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "telemetry"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "build_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mapping_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sampling_method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "warmup_description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "zoom_normalized": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "azimuth_degrees": {
+            "type": "number"
+          },
+          "elevation_degrees": {
+            "type": "number"
+          },
+          "frame_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "memory_mb": {
+            "type": "number",
+            "minimum": 0
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "point_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source_position": {
+                  "type": "object",
+                  "properties": {
+                    "longitude": {
+                      "type": "number",
+                      "minimum": -180,
+                      "maximum": 180
+                    },
+                    "latitude": {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    }
+                  },
+                  "required": [
+                    "longitude",
+                    "latitude"
+                  ],
+                  "additionalProperties": false
+                },
+                "expected_screen_xy": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2
+                },
+                "actual_screen_xy": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2
+                }
+              },
+              "required": [
+                "point_id",
+                "source_position",
+                "expected_screen_xy",
+                "actual_screen_xy"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "waypoint_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "view_state": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mapping_revision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target_source_position": {
+                "type": "object",
+                "properties": {
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  }
+                },
+                "required": [
+                  "longitude",
+                  "latitude"
+                ],
+                "additionalProperties": false
+              },
+              "viewport": {
+                "type": "object",
+                "properties": {
+                  "width_px": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height_px": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "device_pixel_ratio": {
+                    "type": "number",
+                    "minimum": 0.001
+                  },
+                  "screen_origin": {
+                    "const": "top-left"
+                  }
+                },
+                "required": [
+                  "width_px",
+                  "height_px",
+                  "device_pixel_ratio",
+                  "screen_origin"
+                ],
+                "additionalProperties": false
+              },
+              "zoom_normalized": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "transform": {
+                "type": "object",
+                "properties": {
+                  "artifact_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "artifact_path",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "azimuth_degrees": {
+                "type": "number"
+              },
+              "elevation_degrees": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 90
+              },
+              "relief_weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "transition_definition": {
+                "type": "object",
+                "properties": {
+                  "artifact_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "artifact_path",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "mapping_revision",
+              "target_source_position",
+              "viewport",
+              "zoom_normalized",
+              "transform",
+              "azimuth_degrees",
+              "elevation_degrees",
+              "relief_weight",
+              "transition_definition"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "t_ms",
+          "zoom_normalized",
+          "azimuth_degrees",
+          "elevation_degrees",
+          "frame_ms",
+          "memory_mb",
+          "observations",
+          "waypoint_id",
+          "view_state"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "source_crs": {
+      "const": "EPSG:4326"
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "synthetic",
+    "run_id",
+    "build_revision",
+    "mapping_revision",
+    "sampling_method",
+    "warmup_description",
+    "samples",
+    "source_crs"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit 1 sources",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "kit1-ops-v5"
+    },
+    "kind": {
+      "const": "sources"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "elevation",
+              "water",
+              "landcover",
+              "style",
+              "derived"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crs": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vertical_datum": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifact_path": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transformations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool_version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "parameters": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "output_sha256": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "recipe_ref": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "tool_version",
+                "parameters",
+                "input_sha256",
+                "output_sha256",
+                "recipe_ref"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "url",
+          "version",
+          "license",
+          "coverage",
+          "resolution",
+          "crs",
+          "vertical_datum",
+          "artifact_path",
+          "sha256",
+          "transformations"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "historical_corrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "region_or_feature": {
+            "type": "string",
+            "minLength": 1
+          },
+          "current_observation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "historical_difference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "uncertainty": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "offen",
+              "erforscht",
+              "spezifiziert",
+              "implementiert",
+              "validiert"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "region_or_feature",
+          "current_observation",
+          "historical_difference",
+          "source_ref",
+          "uncertainty",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "revision",
+    "sources",
+    "historical_corrections"
+  ],
+  "additionalProperties": false
+}
