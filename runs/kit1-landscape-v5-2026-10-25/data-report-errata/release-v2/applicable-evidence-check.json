@@ -1,0 +1,188 @@
+{
+  "schema_version": "kit1-applicable-data-evidence-check-v1",
+  "revision": "data-report-errata-release-v2",
+  "applicable_level_metric_count": 14,
+  "explicitly_not_applicable_count": 4,
+  "independent_approval": false,
+  "all_applicable_maxima_within_original_budgets": true,
+  "all_scope_and_plan_refs_match": true,
+  "source_manifests_unchanged": true,
+  "metrics": [
+    {
+      "level_id": "overview",
+      "metric": "terrain_vertical_m",
+      "reported_value": 1334.149432356,
+      "budget": {
+        "metric": "terrain_vertical_m",
+        "unit": "m",
+        "limit": 2500
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "canonical",
+      "metric": "terrain_vertical_m",
+      "reported_value": 1065.568237305,
+      "budget": {
+        "metric": "terrain_vertical_m",
+        "unit": "m",
+        "limit": 1800
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "terrain_vertical_m",
+      "reported_value": 1e-09,
+      "budget": {
+        "metric": "terrain_vertical_m",
+        "unit": "m",
+        "limit": 1000
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "overview",
+      "metric": "projection_scale_error_ratio",
+      "reported_value": 0.42419729034542564,
+      "budget": {
+        "metric": "projection_scale_error_ratio",
+        "unit": "ratio",
+        "limit": 0.5
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "canonical",
+      "metric": "projection_scale_error_ratio",
+      "reported_value": 0.42419729034542564,
+      "budget": {
+        "metric": "projection_scale_error_ratio",
+        "unit": "ratio",
+        "limit": 0.5
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "projection_scale_error_ratio",
+      "reported_value": 0.42419729034542564,
+      "budget": {
+        "metric": "projection_scale_error_ratio",
+        "unit": "ratio",
+        "limit": 0.5
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "overview",
+      "metric": "coastline_displacement_m",
+      "reported_value": 2040.133357521,
+      "budget": {
+        "metric": "coastline_displacement_m",
+        "unit": "m",
+        "limit": 6000
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "canonical",
+      "metric": "coastline_displacement_m",
+      "reported_value": 2797.252710681,
+      "budget": {
+        "metric": "coastline_displacement_m",
+        "unit": "m",
+        "limit": 6000
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "coastline_displacement_m",
+      "reported_value": 2039.410125728,
+      "budget": {
+        "metric": "coastline_displacement_m",
+        "unit": "m",
+        "limit": 6000
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "overview",
+      "metric": "terrain_horizontal_m",
+      "reported_value": 0.0,
+      "budget": {
+        "metric": "terrain_horizontal_m",
+        "unit": "m",
+        "limit": 0
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "canonical",
+      "metric": "terrain_horizontal_m",
+      "reported_value": 0.0,
+      "budget": {
+        "metric": "terrain_horizontal_m",
+        "unit": "m",
+        "limit": 0
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "terrain_horizontal_m",
+      "reported_value": 0.0,
+      "budget": {
+        "metric": "terrain_horizontal_m",
+        "unit": "m",
+        "limit": 0
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "screen_error_px",
+      "reported_value": 0.6560332070186663,
+      "budget": {
+        "metric": "screen_error_px",
+        "unit": "px",
+        "limit": 2
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    },
+    {
+      "level_id": "detail",
+      "metric": "transition_residual_px",
+      "reported_value": 0.06846778276470257,
+      "budget": {
+        "metric": "transition_residual_px",
+        "unit": "px",
+        "limit": 1
+      },
+      "within_original_budget": true,
+      "scope_and_plan_match": true
+    }
+  ],
+  "outputs": {
+    "coverage-view.json": "5866fa55e82a4cc41bf5cf1dc45e3905a2ecf51790046bcff975d2fc9fc91939",
+    "derivation-view.json": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88",
+    "runtime-evidence-summary.json": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+    "errata-binding.json": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935",
+    "policy-application-v1.json": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+  },
+  "original_kit_validator_remaining_issue": "Four unrendered offline-level runtime pairs have no NA representation; no numeric substitution performed."
+}

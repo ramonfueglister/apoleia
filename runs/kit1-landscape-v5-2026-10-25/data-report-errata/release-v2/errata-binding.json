@@ -1,0 +1,195 @@
+{
+  "schema_version": "kit1-data-report-errata-v1",
+  "revision": "data-report-errata-release-v2",
+  "created_utc": "2026-10-25T16:58:04.921047+00:00",
+  "original_frozen_manifests": {
+    "coverage.json": "a6bd882e9baabad8ca2700595c19ec5805d3d61273a21ab51c3a036ba174cfad",
+    "derivation.json": "fb5f3ee3310b7164d46be69b043944663baf86013b6404968da98ff51a8dcc10",
+    "geodata_policy.json": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+    "region.json": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a"
+  },
+  "operations_alias_binding": {
+    "artifact_path": "report-manifest-binding.json",
+    "sha256": "5700908e70df61c1a8fe04569ea6681bb92dea01e998801b39f0b5e47b8ca1fb"
+  },
+  "application": {
+    "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+    "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+  },
+  "review_snapshot": {
+    "artifact_path": "data-report-errata/release-v2/evidence/independent-review-snapshot.md",
+    "sha256": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a"
+  },
+  "scope_alias_normalizations": [
+    {
+      "level": "overview",
+      "metric": "terrain_vertical_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "canonical",
+      "metric": "terrain_vertical_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "detail",
+      "metric": "terrain_vertical_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "overview",
+      "metric": "projection_scale_error_ratio",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "canonical",
+      "metric": "projection_scale_error_ratio",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "detail",
+      "metric": "projection_scale_error_ratio",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "overview",
+      "metric": "coastline_displacement_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "canonical",
+      "metric": "coastline_displacement_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "detail",
+      "metric": "coastline_displacement_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "overview",
+      "metric": "terrain_horizontal_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "canonical",
+      "metric": "terrain_horizontal_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    },
+    {
+      "level": "detail",
+      "metric": "terrain_horizontal_m",
+      "original_scope": "entire region-v1; explicitly sampled sourcegeometry, not global proven bound",
+      "normalized_scope": "entire project rectangular mask",
+      "raw_samples_unchanged": true
+    }
+  ],
+  "coverage_changes": "Only bounded independent A02/A10/A15 and measured source/SDF/seam findings expressed; no global claim or new user-style approval.",
+  "runtime_additions": {
+    "detail_screen_samples": 2087,
+    "detail_transition_samples": 5609,
+    "summary": {
+      "artifact_path": "data-report-errata/release-v2/runtime-evidence-summary.json",
+      "sha256": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f"
+    }
+  },
+  "not_applicable": [
+    {
+      "level_id": "overview",
+      "metric": "screen_error_px",
+      "reason": "Offline output not rendered in integrity-valid native-detail-only runtime; explicit NA cannot be represented by original Kit1ops-v5 checker."
+    },
+    {
+      "level_id": "overview",
+      "metric": "transition_residual_px",
+      "reason": "Offline output not rendered in integrity-valid native-detail-only runtime; explicit NA cannot be represented by original Kit1ops-v5 checker."
+    },
+    {
+      "level_id": "canonical",
+      "metric": "screen_error_px",
+      "reason": "Offline output not rendered in integrity-valid native-detail-only runtime; explicit NA cannot be represented by original Kit1ops-v5 checker."
+    },
+    {
+      "level_id": "canonical",
+      "metric": "transition_residual_px",
+      "reason": "Offline output not rendered in integrity-valid native-detail-only runtime; explicit NA cannot be represented by original Kit1ops-v5 checker."
+    }
+  ],
+  "remaining_real_limits": [
+    "No GPU vertex/fragment readback or global topology guarantee.",
+    "Five original positive ridge controls in current run; original marine mistake retained. Supplemental separately reviewed positive control remains bound to its own renderer and source-equivalence evidence.",
+    "Current/future renderer revisions require refreshed matching runtime/visual review; this source evidence is bound to actual recorded renderer hash.",
+    "Kitreport checker will still report4NAlevel/metric combinations missing, not fabricated into numeric samples."
+  ],
+  "outputs": {
+    "coverage-view.json": {
+      "artifact_path": "data-report-errata/release-v2/coverage-view.json",
+      "sha256": "5866fa55e82a4cc41bf5cf1dc45e3905a2ecf51790046bcff975d2fc9fc91939"
+    },
+    "derivation-view.json": {
+      "artifact_path": "data-report-errata/release-v2/derivation-view.json",
+      "sha256": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88"
+    },
+    "runtime-evidence-summary.json": {
+      "artifact_path": "data-report-errata/release-v2/runtime-evidence-summary.json",
+      "sha256": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f"
+    }
+  },
+  "review_supplements": [
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/ridge-positive-review.json",
+      "sha256": "a898dad5b349e0958ac3832016b0a98f5e845e4a3344c00f06bd7b85eadac4e0"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/REGRESSION_DELTA.md",
+      "sha256": "4841958254061be6284aed0861ddcd85e308a2e1ef89f5a82bd6910814a7bb18"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/release-v2-mobile-review.json",
+      "sha256": "d9f9d4d577e8c82476d8605239fa125be88cb1c7f962271fa21f11ec454a3507"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/anchor-analysis.json",
+      "sha256": "4c85173674a9213e86e38945cd296e707c8c488c79d152c2beb4b338952d5882"
+    }
+  ],
+  "input_selection": {
+    "runtime": {
+      "artifact_path": "evidence/runtime/release-v2-mobile-normal/runtime.json",
+      "sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8"
+    },
+    "lod": {
+      "artifact_path": "independent-review/release-v2-lod-ridge.json",
+      "sha256": "8518301098c93bd7d78a9ad0bc9ca25621b76ccd4d9fd5e8ccc699b6f7c78616"
+    },
+    "lod_csv": {
+      "artifact_path": "independent-review/release-v2-lod-ridge.csv",
+      "sha256": "3d1cb960beb98dc985cff6b54c397af1eb0ef5868d906309cc8d7da5d1cb3237"
+    },
+    "renderer_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+    "converter_repository_path": "tools/data_report_errata.py",
+    "converter_sha256": "0c5d1b5dfc0a64e17494ee37832273bb995df4df7c27c954635798b90ea488a9"
+  }
+}

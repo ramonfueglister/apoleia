@@ -1,0 +1,87 @@
+{
+  "revision": "data-report-errata-release-v2",
+  "application": {
+    "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+    "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+  },
+  "runtime": {
+    "artifact_path": "evidence/runtime/release-v2-mobile-normal/runtime.json",
+    "sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8"
+  },
+  "runtime_renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "source_input": {
+    "artifact_path": "data/derived/landscape.json",
+    "sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a"
+  },
+  "screen_probe_count": 8694,
+  "visible_screen_count": 2087,
+  "screen_max_px": 0.6560332070186663,
+  "motion_frame_count": 5750,
+  "visible_transition_count": 5609,
+  "transition_max_px": 0.06846778276470257,
+  "observed_actual_quadtree_levels": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "ridge_positive_ids": [
+    "protected-ridge-0",
+    "protected-ridge-1",
+    "protected-ridge-2",
+    "protected-ridge-3",
+    "protected-ridge-5"
+  ],
+  "ridge_positive_visible_count": 1105,
+  "ridge_positive_max_screen_residual_px": 0.28388363432610986,
+  "ridge_invalid_baseline_id": "protected-ridge-4 is marine source0, excluded from positive evidence; original inventory unmodified, separate prospective replacement handled by independent reviewer.",
+  "independent_lod_analysis": {
+    "artifact_path": "independent-review/release-v2-lod-ridge.json",
+    "sha256": "8518301098c93bd7d78a9ad0bc9ca25621b76ccd4d9fd5e8ccc699b6f7c78616"
+  },
+  "edge_snapshot_count": 26,
+  "visible_edge_query_count": 57617,
+  "distinct_observed_visible_seam_pairs": 1131,
+  "visible_edge_max_px": 0.0,
+  "scope": "Actual native-detail rendering across whole tour and observed LOD1..14; independent scalar projection against source Float32 payload + actual Camera3D/mesh CPU observations. No framebuffer feature recognition, no global topology or GPU readback guarantee.",
+  "review": {
+    "artifact_path": "data-report-errata/release-v2/evidence/independent-review-snapshot.md",
+    "sha256": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a"
+  },
+  "review_supplements": [
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/ridge-positive-review.json",
+      "sha256": "a898dad5b349e0958ac3832016b0a98f5e845e4a3344c00f06bd7b85eadac4e0"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/REGRESSION_DELTA.md",
+      "sha256": "4841958254061be6284aed0861ddcd85e308a2e1ef89f5a82bd6910814a7bb18"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/release-v2-mobile-review.json",
+      "sha256": "d9f9d4d577e8c82476d8605239fa125be88cb1c7f962271fa21f11ec454a3507"
+    },
+    {
+      "artifact_path": "data-report-errata/release-v2/evidence/anchor-analysis.json",
+      "sha256": "4c85173674a9213e86e38945cd296e707c8c488c79d152c2beb4b338952d5882"
+    }
+  ],
+  "independent_lod_csv": {
+    "artifact_path": "independent-review/release-v2-lod-ridge.csv",
+    "sha256": "3d1cb960beb98dc985cff6b54c397af1eb0ef5868d906309cc8d7da5d1cb3237"
+  },
+  "converter": {
+    "repository_path": "tools/data_report_errata.py",
+    "sha256": "0c5d1b5dfc0a64e17494ee37832273bb995df4df7c27c954635798b90ea488a9"
+  }
+}
