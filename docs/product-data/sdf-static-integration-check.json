@@ -1,0 +1,21 @@
+{
+  "status": "static integration checked; GPU screen/temporal correctness separately required",
+  "timestamp_utc": "2026-10-25T15:17:39.882103+00:00",
+  "dataset_revision": "landscape-v3",
+  "payload_sha256": "ee41a6bd76f835106a64383b577edee142a27b54cdbb90ebf629c61200699e67",
+  "files": {
+    "app/scripts/landscape.gd": "9c795b152b5db0de00a39387172b71594cec8a50cc405261a9a45ed35d7bf1de",
+    "app/shaders/terrain.gdshader": "d32fa7757579d4a4fedbdb5c0640f8b343dbe699ea2ea81a6a4178ea43d6849c",
+    "app/shaders/rivers.gdshader": "cf5072c098f679e458fddaf94bd47d93af89f10bd8c81e2488311aa5255441e7",
+    "docs/product-renderer/water-distance-policy-v2.json": "d19dde843c7161da718a716e29058f141311e2a41ff6ba56699c1c1bd48a813a",
+    "artifacts/render-data/water-distance-rg8.json": "9e97b20ee51a248c5dcfcbc44d6e15e8ceb676c669a46ffc6c90273985291de0"
+  },
+  "findings": [
+    "v2 filenames and Image.FORMAT_RG8 used",
+    "CPU index*2 high/low decode*.125-4096 before bilinear",
+    "both terrain and river shaders four texelFetch cornerdecode before bilinear",
+    "nearest source waterkind remains separate from fragment SDF",
+    "tree admission uses detailkind0 and signed shore distance<-20 projectedm",
+    "source manifest/payloads remain unchanged"
+  ]
+}
