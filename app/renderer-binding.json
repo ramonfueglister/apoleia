@@ -1,0 +1,25 @@
+{
+  "schema": "landscape-product-binding-v1",
+  "status": "implemented; CPU integration checkpoint; visual/performance acceptance open",
+  "source": {
+    "path": "data/gameworld-v2/landscape.json",
+    "sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb"
+  },
+  "atlas": {
+    "path": "artifacts/render-data/fixed-source-v2-macro-r1/surface.json",
+    "sha256": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3"
+  },
+  "upload": {
+    "path": "artifacts/render-data/source-v2-upload-r1/upload.json",
+    "sha256": "e1386da677c2adff466bcca75b019a07b2aa53afd56586afe559086b7a614446"
+  },
+  "coast": {
+    "path": "artifacts/render-data/display-coast-source-v2-r1/manifest.json",
+    "sha256": "b8388888680009ead3b8809901c6796d51ff30e3b54fd0c2b7776de3f6319cab"
+  },
+  "forest_cache": {
+    "path": "artifacts/render-data/forest-cache-sourcev2-v19-frusta-r1",
+    "manifest_sha256": "5bb618e402de7e8e0855be2ecf5d2a1273c07a837a08d46a9cdfe0f1a1b033d5",
+    "status": "352 observed far/middle/near cells stride1; bounded product cache; other cells/strides use exact generator fallback"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "old-inventory-refusal": {
+    "exit_code": 2,
+    "reason": "package refused: runtime mesh dependency omitted from dataset.asset_keys: feature_mesh_manifest_path"
+  },
+  "final-input-refusal": {
+    "exit_code": 2,
+    "reason": "package refused: final inputs unavailable: renderer, cloud, forest_cache"
+  },
+  "output_created": false
+}

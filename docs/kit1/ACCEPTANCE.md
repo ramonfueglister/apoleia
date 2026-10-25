@@ -219,11 +219,8 @@ aktuellen A07-Pass übernehmen.
   Bilder bleibt ausstehend.
 - Die frühere visuelle v7-Abnahme der Wolken ist widerrufen: Laut
   Cloud-Owner-Meldung an den Hauptagenten hat der Nutzer den v7-Screenshot
-  ausdrücklich abgelehnt. Die Kopfnotiz in
-  [`cloud_layer.md`](../../app/scripts/weather/cloud_layer.md) dokumentiert den
-  Widerruf und weitere Astro-Reviewbefunde; laut Cloud-Owner-Meldung nennt der
-  neue Astro-Review Stempelformen, harte Silhouetten, uniforme Transparenz und
-  Crossfade-Ghosting. Der frühere
+  ausdrücklich abgelehnt. Laut Cloud-Owner-Meldung nennt der neue Astro-Review Stempelformen, harte
+  Silhouetten, uniforme Transparenz und Crossfade-Ghosting. Der frühere
   [`visual-review.md`](../../runs/clouds-2026-10-25/v7/visual-review.md) bleibt
   historische Dokumentation, kein gültiger visueller PASS. Frühere
   Capture-/Kamera-/Driftbelege bleiben nur in ihrem technischen Umfang

@@ -1,7 +1,7 @@
 {
-  "schema_version": "landscape-camera-profile-v2",
+  "schema_version": "landscape-camera-profile-v4",
   "mapping_revision": "mapping-v1",
-  "camera_revision": "orthographic-ground-anchor-v2",
+  "camera_revision": "orthographic-diorama-display-v4",
   "projection": {
     "kind": "spherical_equirectangular",
     "radius_m": 6371008.8,
@@ -21,37 +21,32 @@
     "azimuth_degrees": 0.0,
     "far_elevation_degrees": 90.0,
     "near_elevation_degrees": 35.2643897,
-    "near_visible_width_source_m": 500.0,
-    "near_width_status": "working comparison value, final visual house-neighbourhood scale remains under review",
+    "near_visible_width_source_m": 240000.0,
+    "near_width_status": "V11 fixed-diorama framing candidate; keeps same5.8\u20138.6model-unit crown forms. Replaces obsolete500m working value; visual near acceptance pending.",
     "far_visible_width": "max(core_width,core_height*viewport_aspect)*1.04",
     "zoom_range": [
       0.0,
       1.0
     ],
-    "visible_width": "exp(lerp(log(far_visible_width),log(0.5),zoom))",
+    "visible_width": "exp(lerp(log(far_visible_width),log(240.0),zoom))",
     "profile_knots": [
       {
-        "width_source_m": 1500000,
+        "width_model": "viewport-dependent overview far_width",
         "elevation": 90.0,
         "relief": 0.0
       },
       {
-        "width_source_m": 200000,
-        "elevation": 65.0,
-        "relief": 0.45
+        "width_source_m": 3400000,
+        "elevation": 35.2643897,
+        "relief": 1.0
       },
       {
-        "width_source_m": 20000,
-        "elevation": 45.0,
-        "relief": 0.88
-      },
-      {
-        "width_source_m": 5000,
+        "width_source_m": 240000.0,
         "elevation": 35.2643897,
         "relief": 1.0
       }
     ],
-    "profile_interpolation": "C1 smoothstep between knots in log(visible model width); constant outside knots",
+    "profile_interpolation": "C1 smoothstep in logarithmic width from actual outermost overview width to continental diorama anchor3.4M source metres; constant diorama within",
     "target_height": "actual current rendered terrain triangle including LOD and relief",
     "input": {
       "wheel_factor_per_notch": 1.18,
@@ -75,19 +70,47 @@
         61.0
       ],
       "pan_opening": "1-visible_width/far_visible_width times core half extent",
-      "ground_footprint": "all viewport corner ray intersections with conservative rendered height interval [-1,9]*relief model units, relative to focus height",
+      "ground_footprint": "all viewport corner ray intersections with conservative canonical height interval [-1,9] times display_height_scale times relief, relative to displayed focus height",
       "clamp": "intersection of opened core target range and context inset by full footprint",
       "insufficient_context": "explicit telemetry failure; never claim filled background is geographic context"
     },
-    "viewport": "stretch disabled; native viewport follows window; overview recomputed at resize, regional width and ground focus retained"
+    "viewport": "stretch disabled; native viewport follows window; overview recomputed at resize, regional width and ground focus retained",
+    "profile_status": "own versioned mapping updated for actual geographic framing of user weit.png; exact reference reproduction and silhouette match unvalidated",
+    "reference_frame": {
+      "image": "user-provided weit.png,2952x524",
+      "target_longitude": 15.5,
+      "target_latitude": 42.0,
+      "visible_width_source_m": 3400000,
+      "viewport": [
+        2952,
+        524
+      ],
+      "status": "geographic approximation with separate unvalidated visible-landform calibration candidate; canonical coordinates unchanged"
+    }
   },
   "terrain": {
-    "height_sampling": "bilinear pixel-center Float32LE canonical elevation, marine kind1 displayed at sea surface zero; signed land and inland height retained",
-    "relief": "canonical model height * relief_weight",
+    "height_sampling": "fixed RG8 displayed-world grid, first-to-last vertex extent, f.x+f.y<1 triangular interpolation;4namedanchorcells use identical four-edge star triangles in CPU and rendered mesh",
+    "relief": "canonical model height * separate display_height_scale * relief_weight",
     "patch_cells": 24,
     "child_morph": "smoothstep(0.11,0.22,max(patch_width,patch_height)/visible_width)",
-    "coarse_surface": "parent's canonical triangulated sample grid",
-    "skirt_depth_source_m": 60.0
+    "coarse_surface": "one shared dyadic stride across visible chunks, maximum screen error0.75px including display scale, relief,pitch,viewport. Exact all-node bounds for compatible regular cells, conservative full height interval for anchor/partial cells.",
+    "skirt_depth_source_m": 60.0,
+    "fixed_surface_manifest": "artifacts/render-data/fixed-diorama-v2/surface.json",
+    "fixed_surface_sha256": "a2229a2f5c8b90b85356a3dc24b349bbc38bc1472f59f1a69152b4fa8777dc97",
+    "raw_source_tin_rendering": "disabled; canonical TIN source remains immutable and separate",
+    "macrofacet_model": "fixed global24km source control partition, named/coast/water and existing river valleys protected; own display generalization,2500m source-grid-node budget distinct from prior accuracy targets",
+    "shadow_policy": "terrain casting off after isolated selfshadow-stripe controls; terrain receives and forest/object shadows remain on",
+    "fixed_surface_by_source_revision": {
+      "gameworld-v1": {
+        "path": "artifacts/render-data/fixed-diorama-v2/surface.json",
+        "sha256": "a2229a2f5c8b90b85356a3dc24b349bbc38bc1472f59f1a69152b4fa8777dc97"
+      },
+      "gameworld-v2": {
+        "path": "artifacts/render-data/fixed-source-v2-macro-r1/surface.json",
+        "sha256": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3"
+      }
+    },
+    "source_selection_status": "default explicitly gameworld-v2; legacy V1 available only via --dataset; source/default/cache integration checkpoint separate from style and performance acceptance"
   },
   "screen": {
     "origin": "top_left",
@@ -98,7 +121,26 @@
     "no rotation input",
     "no scene switch",
     "same geographic data at every zoom",
-    "no permanent vertical exaggeration",
-    "source DEM accuracy is separate from render mapping"
-  ]
+    "source DEM accuracy is separate from render mapping",
+    "source/canonical XYZ remain isotropic; visible vertical display policy is separate and explicitly unvalidated"
+  ],
+  "display_policy": {
+    "revision": "reference-diorama-height-v1-candidate12",
+    "reference": "docs/product-style/V9_DISPLAY_CONTRACT.md",
+    "display_height_scale": 12.0,
+    "status": "implemented calibration candidate; visual acceptance pending",
+    "canonical_model_scale_unchanged": true,
+    "contract_change": "visible vertical scaling differs from horizontal scaling under current explicit diorama reproduction request; previous display-isotropy requirement is superseded for this candidate, no transferred acceptance"
+  },
+  "objects": {
+    "forest_world": "same fixed source root positions/seeds/heights and single crown asset through zoom; all drawable source crowns, no lower envelope body; graphic rock priority remains fixed",
+    "near_framing_candidate_source_m": 240000,
+    "status": "V16 product variant chosen after V15 near A/B; middle/far validation pending, A07 open",
+    "forest_geometry_mode": "all_source_crowns"
+  },
+  "source_sampling": {
+    "gameworld-v2": "canonical-c2-domains-v2: static product of four smootherstep edge weights for parent H/RGBA/SDF; local RGBA/SDF only; final SDF then nearest discrete associated role from finest valid positive-weight domain",
+    "source_transport": "height RG8 .25m max.125m; given SDF/roles byte-identical transport, independent GPU arithmetic/readback budgets",
+    "GPU_probe": "runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-gpu-sampling-r2/result.json"
+  }
 }

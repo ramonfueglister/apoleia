@@ -1,11 +1,13 @@
 extends Node3D
 ## A single read-only geographic scene. No simulation, UI, or geographic mutation.
 const MAPPING_REVISION = "mapping-v1"
+const ForestMeshCache = preload("res://scripts/cache/fixed_forest_mesh_cache.gd")
 const CameraRig = preload("res://scripts/landscape_camera.gd")
 const CAMERA_REVISION = CameraRig.REVISION
 const EARTH_RADIUS = 6371008.8
 const MODEL_SCALE = 0.001
 var manifest: Dictionary
+var product_binding: Dictionary={}
 var dataset_path = ""
 var dataset_directory = ""
 var model_product = false
@@ -19,13 +21,53 @@ var detail_water_width = 0
 var detail_water_height = 0
 var style_api: Script
 var surface_material_bytes: PackedByteArray
+var surface_weight_domains: Array=[]
 var tin_surface: RefCounted
+var feature_lod: RefCounted
+var fixed_surface: RefCounted
+var canonical_v2: RefCounted
+var canonical_v2_textures: Dictionary={}
+var fixed_chunks: Dictionary={}
+var fixed_grid_meshes: Dictionary={}
+var fixed_named_meshes: Dictionary={}
+var fixed_flat_node: MeshInstance3D
+var marine_material: ShaderMaterial
+var display_coast_distance_binding: Dictionary={}
+var fixed_stride=1
+var fixed_lod_key=""
+var snapshot_stable_frames=0
+const FIXED_CHUNK_RESIDENT_LIMIT=512
+var feature_material: ShaderMaterial
+var feature_meshes: Dictionary={}
+var feature_active: Dictionary={}
+var feature_queue: Array[String]=[]
+var feature_task=-1
+var feature_build_key=""
+var feature_build_result: Dictionary={}
+const FEATURE_MESH_CACHE_LIMIT=128
 var sun_light: DirectionalLight3D
+var cloud_layer: Node3D
+var clouds_enabled=true
 var coarse_tree_meshes: Array[ArrayMesh]=[]
 var middle_tree_meshes: Array[ArrayMesh]=[]
 var canopy_material: ShaderMaterial
 var forest_representation: Dictionary={}
 var forest_detail_queue: Array[Vector2i]=[]
+var forest_mesh_cache_directory=""
+var forest_mesh_cache: RefCounted
+var forest_mesh_cache_state={"enabled":false,"hits":0,"misses":0,"load_ms":0.0,"fallback_build_ms":0.0,"errors":{}}
+var forest_build_stride=1
+var diorama_policy: Dictionary={}
+var landform_policy: Dictionary={}
+var display_height_scale=1.0
+var displayed_height_bounds: Dictionary={}
+var diorama_chunks: Dictionary={}
+var diorama_wanted: Dictionary={}
+var diorama_queue: Array[Vector2i]=[]
+var previous_diorama_key=""
+var diorama_surface_revision=""
+var diorama_invalidation_events: Array=[]
+var diorama_stats: Array=[]
 var elevations: PackedFloat32Array
 var native_elevation_bytes: PackedByteArray
 var covers: PackedByteArray
@@ -71,7 +113,7 @@ var relief = 0.0
 var elevation_degrees = 90.0
 var view_width = 1.0
 var far_width = 1.0
-var near_width = 0.5
+var near_width = CameraRig.NEAR_WIDTH
 var terrain_material: ShaderMaterial
 var patch_mesh: ArrayMesh
 var patches: Dictionary = {}
@@ -86,6 +128,12 @@ var forest = MultiMeshInstance3D.new()
 var tree_material: ShaderMaterial
 var river_material: ShaderMaterial
 var river_feature_count=0
+var river_sources: Array=[]
+var river_nodes: Array[MeshInstance3D]=[]
+var river_pending_nodes: Array[MeshInstance3D]=[]
+var river_queue: Array[int]=[]
+var river_surface_key=""
+var river_support_revision=0
 var previous_forest_key = ""
 var tree_count = 0
 var warmup_frames_remaining=4
@@ -192,7 +240,9 @@ func _ready() -> void:
     var args = OS.get_cmdline_user_args()
     for i in range(args.size()):
         if args[i] == "--tour": tour = true
+        if args[i] == "--clouds-disabled": clouds_enabled=false
         if args[i] == "--dataset" and i+1<args.size(): dataset_path=args[i+1]
+        if args[i] == "--forest-mesh-cache" and i+1<args.size(): forest_mesh_cache_directory=args[i+1]
         if args[i] == "--time-window" and i+2<args.size(): tour_window=[float(args[i+1]),float(args[i+2])]
         if args[i] == "--diagnose-input": diagnose_input=true
         if args[i] == "--trace-frames": trace_frames=true
@@ -237,6 +287,7 @@ func _ready() -> void:
         ridge_definitions.append({"id":probe_anchor[0],"longitude":probe_anchor[1],"latitude":probe_anchor[2],"source":"explicit independent probe; original protected anchors retained","plan_sha256":FileAccess.get_sha256(probe_plan) if probe_plan!="" else ""})
     profile_sha256=FileAccess.get_sha256(source_root.path_join("docs/product-renderer/camera-profile.json"))
     _setup_scene()
+    _configure_forest_mesh_cache()
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
@@ -283,10 +334,15 @@ func _read_relative(path: String, required: bool=true) -> PackedByteArray:
     return FileAccess.get_file_as_bytes(p)
 
 func _load_dataset() -> bool:
+    var binding=JSON.parse_string(FileAccess.get_file_as_string("res://renderer-binding.json"))
+    if not binding is Dictionary or binding.get("schema","")!="landscape-product-binding-v1":
+        push_error("Missing or invalid product renderer binding");return false
+    product_binding=binding
     var path = dataset_path
     if path=="":
-        var model_path=source_root.path_join("data/gameworld-v1/landscape.json")
-        path=model_path if FileAccess.file_exists(model_path) else source_root.path_join("data/derived/landscape.json")
+        path=source_root.path_join(product_binding.source.path)
+        if FileAccess.get_sha256(path)!=product_binding.source.sha256:
+            push_error("Default source binding hash mismatch");return false
     if not path.is_absolute_path(): path=source_root.path_join(path)
     dataset_directory=path.get_base_dir()
     if not FileAccess.file_exists(path):
@@ -309,7 +365,7 @@ func _load_dataset() -> bool:
         manifest["detail_forest_interior_path"]=manifest.get("forest_interior_distance_path","")
     snapshot_manifest_sha256=FileAccess.get_sha256(path)
     renderer_source_sha256=FileAccess.get_sha256("res://scripts/landscape.gd")
-    for asset in ["project.godot","landscape.tscn","scripts/landscape.gd","shaders/terrain.gdshader","shaders/vegetation.gdshader","shaders/rivers.gdshader","scripts/pack_height.py","scripts/pack_water_distance.py","scripts/landscape_camera.gd","scripts/gameworld_mesh.gd","scripts/style/landscape_style.gd","shaders/model_sampling.gdshaderinc","shaders/canopy.gdshader"]:
+    for asset in ["renderer-binding.json","project.godot","landscape.tscn","scripts/landscape.gd","shaders/terrain.gdshader","shaders/vegetation.gdshader","shaders/rivers.gdshader","scripts/pack_height.py","scripts/pack_water_distance.py","scripts/landscape_camera.gd","scripts/gameworld_mesh.gd","scripts/landscape_feature_lod.gd","scripts/fixed_display_surface.gd","scripts/canonical_domains_v2.gd","scripts/cache/fixed_forest_mesh_cache.gd","scripts/pack_model_uploads.py","scripts/style/landscape_style.gd","shaders/model_sampling.gdshaderinc","shaders/canopy.gdshader"]:
         renderer_asset_sha256[asset]=FileAccess.get_sha256("res://"+asset)
     context_height_width=int(manifest.get("height_width",manifest.get("width",manifest.get("grid_width",0))))
     context_height_height=int(manifest.get("height_height",manifest.get("height",manifest.get("grid_height",0))))
@@ -322,6 +378,8 @@ func _load_dataset() -> bool:
     world_min=geographic_to_world(float(bounds[0]),float(bounds[3]))
     world_center=world_min+world_size*0.5
     target=world_center
+    if manifest.get("required_sampling_contract","")=="canonical-c2-domains-v2":
+        return _load_v2_domains() and _load_fixed_display_world()
     elevations = _read_relative(manifest.get("height_path","height.f32")).to_float32_array()
     covers = _read_relative(manifest.get("class_path","landcover.u8"))
     waters = _read_relative(manifest.get("water_path","water.u8"))
@@ -392,10 +450,42 @@ func _load_dataset() -> bool:
         native_elevation_bytes=PackedByteArray()
         elevations=PackedFloat32Array()
         context_elevations=PackedFloat32Array()
+    return _load_fixed_display_world()
+
+func _load_fixed_display_world() -> bool:
+    var fixed_path=source_root.path_join(product_binding.atlas.path if canonical_v2 else "artifacts/render-data/fixed-diorama-v2/surface.json")
+    if canonical_v2 and FileAccess.get_sha256(fixed_path)!=product_binding.atlas.sha256:
+        push_error("Product atlas manifest binding mismatch");return false
+    if not FileAccess.file_exists(fixed_path): push_error("Fixed display world missing; run tools/build_fixed_display_surface.py and tools/build_fixed_display_lods.py");return false
+    fixed_surface=preload("res://scripts/fixed_display_surface.gd").new()
+    if not fixed_surface.configure(fixed_path,snapshot_manifest_sha256): push_error("Fixed display world source/payload mismatch");return false
+    return true
+
+func _load_v2_domains() -> bool:
+    var upload_path=source_root.path_join(product_binding.upload.path)
+    canonical_v2=preload("res://scripts/canonical_domains_v2.gd").new()
+    if not canonical_v2.configure(source_root,upload_path,snapshot_manifest_sha256,product_binding.upload.sha256):
+        push_error("V2 canonical sampling bind failed: "+str(canonical_v2.failures));return false
+    upload_manifest=canonical_v2.manifest
+    var context:Dictionary=canonical_v2.domains.context;var fine:Dictionary=canonical_v2.domains.fine;var local:Dictionary=canonical_v2.domains.local
+    # Use the same final Float32 rectangles as the CPU source sampler and GPU
+    # fields, rather than rounding projected source metres before model scaling.
+    world_min=context.height.rect.position;world_size=context.height.rect.size
+    context_height_width=context.height.width;context_height_height=context.height.height;context_height_packed=context.height.bytes
+    elevation_width=fine.height.width;elevation_height=fine.height.height;detail_height_packed=fine.height.bytes
+    grid_width=context.classes.width;grid_height=context.classes.height;covers=context.classes.bytes
+    detail_rect=fine.height.rect;detail_classes=fine.classes.bytes;detail_class_width=fine.classes.width;detail_class_height=fine.classes.height
+    water_width=context.associated_role.width;water_height=context.associated_role.height;waters=context.associated_role.bytes;render_waters=waters
+    detail_water_width=fine.associated_role.width;detail_water_height=fine.associated_role.height;detail_water_bytes=fine.associated_role.bytes
+    water_distance_bytes=context.water_distance.bytes;detail_water_distance_bytes=fine.water_distance.bytes
+    water_tile={"revision":"canonical-v2-fixed-local-domain","width":local.associated_role.width,"height":local.associated_role.height,"source_manifest_sha256":snapshot_manifest_sha256,"domain_transition":upload_manifest.local_domain_transition}
+    water_tile_rect=local.associated_role.rect;water_tile_bytes=local.associated_role.bytes;water_tile_distance_bytes=local.water_distance.bytes
+    water_distance_manifest=JSON.parse_string(FileAccess.get_file_as_string(dataset_directory.path_join(manifest.water_distance_manifest_path)))
+    water_distance_manifest_sha256=FileAccess.get_sha256(dataset_directory.path_join(manifest.water_distance_manifest_path))
     return true
 
 func _load_upload(entry: Dictionary) -> PackedByteArray:
-    var path=dataset_directory.path_join(entry.path)
+    var path=source_root.path_join(entry.path) if entry.get("path_base","")=="repository_root" else dataset_directory.path_join(entry.path)
     if not FileAccess.file_exists(path) or FileAccess.get_sha256(path)!=entry.sha256:
         push_error("Model GPU upload hash mismatch: "+str(entry.path))
         root_integrity_fatal=true
@@ -433,8 +523,24 @@ func _bind_local_water_tile(material: ShaderMaterial) -> void:
     material.set_shader_parameter("use_water_tile_distance",true)
     material.set_shader_parameter("water_tile_world_min",water_tile_rect.position)
     material.set_shader_parameter("water_tile_world_size",water_tile_rect.size)
-    material.set_shader_parameter("water_tile_tex",ImageTexture.create_from_image(Image.create_from_data(int(water_tile.width),int(water_tile.height),false,Image.FORMAT_R8,water_tile_bytes)))
-    material.set_shader_parameter("water_tile_distance_tex",ImageTexture.create_from_image(Image.create_from_data(int(water_tile.width),int(water_tile.height),false,Image.FORMAT_RG8,water_tile_distance_bytes)))
+    material.set_shader_parameter("water_tile_tex",_v2_texture("local","associated_role",Image.FORMAT_R8) if canonical_v2 else ImageTexture.create_from_image(Image.create_from_data(int(water_tile.width),int(water_tile.height),false,Image.FORMAT_R8,water_tile_bytes)))
+    material.set_shader_parameter("water_tile_distance_tex",_v2_texture("local","water_distance",Image.FORMAT_RG8) if canonical_v2 else ImageTexture.create_from_image(Image.create_from_data(int(water_tile.width),int(water_tile.height),false,Image.FORMAT_RG8,water_tile_distance_bytes)))
+    if canonical_v2:
+        material.set_shader_parameter("use_c2_domains",true)
+        var fine:Dictionary=upload_manifest.domain_transition;var local:Dictionary=upload_manifest.local_domain_transition
+        material.set_shader_parameter("fine_inner_world_min",Vector2(fine.inner_world_min[0],fine.inner_world_min[1]))
+        material.set_shader_parameter("fine_inner_world_size",Vector2(fine.inner_world_size[0],fine.inner_world_size[1]))
+        material.set_shader_parameter("local_inner_world_min",Vector2(local.inner_world_min[0],local.inner_world_min[1]))
+        material.set_shader_parameter("local_inner_world_size",Vector2(local.inner_world_size[0],local.inner_world_size[1]))
+
+func _v2_texture(domain:String,field_name:String,format:int,mipmaps:bool=false) -> ImageTexture:
+    var entry:Dictionary=canonical_v2.field(domain,field_name)
+    var key=str(entry.description.payload.sha256)+":"+str(format)+":"+str(mipmaps)
+    if not canonical_v2_textures.has(key):
+        var image=Image.create_from_data(entry.width,entry.height,false,format,entry.bytes)
+        if mipmaps:image.generate_mipmaps()
+        canonical_v2_textures[key]=ImageTexture.create_from_image(image)
+    return canonical_v2_textures[key]
 
 func geographic_to_world(lon: float, lat: float) -> Vector2:
     return Vector2(deg_to_rad(lon-19.0)*EARTH_RADIUS*cos(deg_to_rad(41.0)),deg_to_rad(41.0-lat)*EARTH_RADIUS)*MODEL_SCALE
@@ -443,6 +549,7 @@ func world_to_geographic(p: Vector2) -> Vector2:
     return Vector2(rad_to_deg(p.x/MODEL_SCALE/EARTH_RADIUS/cos(deg_to_rad(41.0)))+19.0,41.0-rad_to_deg(p.y/MODEL_SCALE/EARTH_RADIUS))
 
 func _cover_kind(p: Vector2) -> int:
+    if canonical_v2:return canonical_v2.cover_kind(p)
     if not detail_classes.is_empty() and detail_rect.has_point(p):
         var uv=(p-detail_rect.position)/detail_rect.size
         var x=clampi(int(uv.x*detail_class_width),0,detail_class_width-1)
@@ -451,6 +558,7 @@ func _cover_kind(p: Vector2) -> int:
     return int(covers[_sample_index(p)])
 
 func _forest_group_sample(p: Vector2) -> Vector2:
+    if canonical_v2:return canonical_v2.forest_group(p)
     if forest_group_bytes.is_empty() or not detail_rect.has_point(p): return Vector2.ZERO
     var uv=(p-detail_rect.position)/detail_rect.size
     var x=clampi(int(uv.x*detail_class_width),0,detail_class_width-1)
@@ -459,11 +567,19 @@ func _forest_group_sample(p: Vector2) -> Vector2:
     return Vector2(float(forest_group_bytes.decode_u32(index*4)),forest_interior_bytes.decode_float(index*4) if not forest_interior_bytes.is_empty() else 0.0)
 
 func _bind_surface_weights(material: ShaderMaterial) -> void:
+    if canonical_v2:
+        material.set_shader_parameter("use_surface_weights",true);material.set_shader_parameter("use_detail_surface_weights",true)
+        material.set_shader_parameter("surface_weights_tex",_v2_texture("context","surface_weights",Image.FORMAT_RGBA8,true))
+        material.set_shader_parameter("detail_surface_weights_tex",_v2_texture("fine","surface_weights",Image.FORMAT_RGBA8,true))
+        material.set_shader_parameter("local_surface_weights_tex",_v2_texture("local","surface_weights",Image.FORMAT_RGBA8,true))
+        material.set_shader_parameter("surface_world_min",world_min);material.set_shader_parameter("surface_world_size",world_size)
+        return
     if manifest.has("surface_weights_path"):
         var width=int(manifest.get("surface_weights_width",grid_width))
         var height=int(manifest.get("surface_weights_height",grid_height))
         var bytes=_read_relative(manifest.surface_weights_path)
         if bytes.size()!=width*height*4: root_integrity_fatal=true;return
+        surface_weight_domains.append({"bytes":bytes,"width":width,"height":height,"rect":Rect2(world_min,world_size)})
         var image=Image.create_from_data(width,height,false,Image.FORMAT_RGBA8,bytes)
         image.generate_mipmaps()
         material.set_shader_parameter("use_surface_weights",true)
@@ -475,6 +591,7 @@ func _bind_surface_weights(material: ShaderMaterial) -> void:
         var height=int(manifest.get("detail_surface_weights_height",detail_class_height))
         var bytes=_read_relative(manifest.detail_surface_weights_path)
         if bytes.size()!=width*height*4: root_integrity_fatal=true;return
+        surface_weight_domains.append({"bytes":bytes,"width":width,"height":height,"rect":detail_rect})
         var image=Image.create_from_data(width,height,false,Image.FORMAT_RGBA8,bytes)
         image.generate_mipmaps()
         material.set_shader_parameter("use_detail_surface_weights",true)
@@ -490,6 +607,7 @@ func _source_height_cell(index: int) -> float:
     return native_elevation_bytes.decode_float(index*4) if not native_elevation_bytes.is_empty() else elevations[index]
 
 func _height(p: Vector2) -> float:
+    if canonical_v2:return (0. if canonical_v2.water_kind(p)==1 else canonical_v2.height_source_m(p))*MODEL_SCALE
     var use_detail=(not native_elevation_bytes.is_empty() or not detail_height_packed.is_empty()) and detail_rect.has_point(p)
     var rect=detail_rect if use_detail else Rect2(world_min,world_size)
     var width=elevation_width if use_detail else context_height_width
@@ -509,6 +627,7 @@ func _height(p: Vector2) -> float:
     return (0.0 if _water_kind(p)==1 else raw)*MODEL_SCALE
 
 func _water_kind(p: Vector2) -> int:
+    if canonical_v2:return canonical_v2.water_kind(p)
     if not water_tile_bytes.is_empty() and water_tile_rect.has_point(p):
         var uv=(p-water_tile_rect.position)/water_tile_rect.size
         var x=clampi(int(uv.x*int(water_tile.width)),0,int(water_tile.width)-1)
@@ -525,6 +644,9 @@ func _water_kind(p: Vector2) -> int:
 
 func _setup_scene() -> void:
     if FileAccess.file_exists("res://scripts/style/landscape_style.gd"): style_api=load("res://scripts/style/landscape_style.gd")
+    if style_api and style_api.has_method("landform_representation_policy"): landform_policy=style_api.landform_representation_policy()
+    if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
+    if style_api and style_api.has_method("diorama_representation_policy"): diorama_policy=style_api.diorama_representation_policy()
     if style_api and style_api.has_method("forest_representation_policy"):
         forest_representation=style_api.forest_representation_policy()
         forest_spacing_m=float(forest_representation.candidate_spacing_m)
@@ -555,6 +677,11 @@ func _setup_scene() -> void:
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
     camera.current=true
     add_child(camera)
+    cloud_layer=preload("res://scripts/weather/cloud_layer.gd").new()
+    add_child(cloud_layer)
+    _refresh_displayed_height_bounds()
+    cloud_layer.configure(Rect2(world_min,world_size),camera,{"sun_light":sun_light,"height_range_provider":Callable(self,"get_displayed_height_range"),"altitude_unit":"godot_world_y"})
+    cloud_layer.enabled=clouds_enabled
     terrain_material=ShaderMaterial.new()
     terrain_material.shader=load("res://shaders/terrain.gdshader")
     terrain_material.set_shader_parameter("elevation_tex",_height_texture())
@@ -604,7 +731,170 @@ func _setup_scene() -> void:
     if manifest.has("feature_mesh_manifest_path"):
         tin_surface=load("res://scripts/gameworld_mesh.gd").new()
         tin_surface.configure(source_root,dataset_directory,manifest.feature_mesh_manifest_path,self,terrain_material,Callable(self,"_water_kind"))
+    if model_product and manifest.has("feature_mesh_manifest_path"):
+        feature_lod=preload("res://scripts/landscape_feature_lod.gd").new()
+        feature_lod.configure(source_root,dataset_directory.path_join(manifest.feature_mesh_manifest_path),world_size)
+        feature_material=terrain_material.duplicate()
+        feature_material.set_shader_parameter("use_model_mesh",true)
+    if fixed_surface: _setup_fixed_surface()
     _setup_rivers()
+
+func _setup_fixed_surface() -> void:
+    var texture=ImageTexture.create_from_image(Image.create_from_data(fixed_surface.width,fixed_surface.height,false,Image.FORMAT_RG8,fixed_surface.bytes))
+    for material in [terrain_material,feature_material]:
+        material.set_shader_parameter("use_fixed_surface",true)
+        material.set_shader_parameter("fixed_surface_height_tex",texture)
+        material.set_shader_parameter("fixed_surface_world_min",fixed_surface.world_min)
+        material.set_shader_parameter("fixed_surface_world_size",fixed_surface.world_size)
+    # Only the four source-retained anchor chunks need unique meshes. Prebuild
+    # these once; regular chunks share a displaced indexed grid at every LOD.
+    var named_cells={}
+    for cell in fixed_surface.peaks:named_cells[Vector2i(cell.x/fixed_surface.CHUNK_CELLS,cell.y/fixed_surface.CHUNK_CELLS)]=true
+    for cell in named_cells:
+        for stride in fixed_surface.STRIDES:
+            var record=fixed_surface.build(cell,stride)
+            fixed_named_meshes[str(cell)+":"+str(stride)]=record
+    var plane_arrays=[];plane_arrays.resize(Mesh.ARRAY_MAX)
+    var a=world_min;var b=world_min+Vector2(world_size.x,0);var c=world_min+Vector2(0,world_size.y);var d=world_min+world_size
+    plane_arrays[Mesh.ARRAY_VERTEX]=PackedVector3Array([Vector3(a.x,0,a.y),Vector3(b.x,0,b.y),Vector3(c.x,0,c.y),Vector3(d.x,0,d.y)])
+    plane_arrays[Mesh.ARRAY_NORMAL]=PackedVector3Array([Vector3.UP,Vector3.UP,Vector3.UP,Vector3.UP])
+    plane_arrays[Mesh.ARRAY_INDEX]=PackedInt32Array([0,1,2,1,3,2])
+    var plane=ArrayMesh.new();plane.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,plane_arrays)
+    fixed_flat_node=MeshInstance3D.new();fixed_flat_node.mesh=plane;fixed_flat_node.material_override=feature_material;fixed_flat_node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(fixed_flat_node)
+    marine_material=feature_material.duplicate();marine_material.set_shader_parameter("marine_surface_only",true)
+    var marine=MeshInstance3D.new();marine.name="MarineZeroSurface";marine.mesh=plane;marine.material_override=marine_material;marine.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(marine)
+    _bind_display_coast_distance()
+
+func _bind_display_coast_distance() -> void:
+    var path=source_root.path_join(product_binding.coast.path if canonical_v2 else "artifacts/render-data/display-coast-v1/manifest.json")
+    var expected=str(product_binding.coast.sha256) if canonical_v2 else "f2fac79062ec976bc474332504b2a3b76e2d1ec867085b6b47b5b885b16ee167"
+    if FileAccess.get_sha256(path)!=expected:
+        push_error("Graphic coast sidecar manifest hash mismatch");root_integrity_fatal=true;return
+    var binding=JSON.parse_string(FileAccess.get_file_as_string(path))
+    var payload_path=source_root.path_join(binding.payload.path)
+    if binding.source_manifest_sha256!=snapshot_manifest_sha256 or FileAccess.get_sha256(payload_path)!=binding.payload.sha256:
+        push_error("Graphic coast sidecar source/payload identity mismatch");root_integrity_fatal=true;return
+    var bytes=FileAccess.get_file_as_bytes(payload_path)
+    if bytes.size()!=int(binding.width)*int(binding.height)*2:
+        push_error("Graphic coast sidecar shape mismatch");root_integrity_fatal=true;return
+    var texture=ImageTexture.create_from_image(Image.create_from_data(int(binding.width),int(binding.height),false,Image.FORMAT_RG8,bytes))
+    for material in [terrain_material,feature_material,marine_material]:
+        material.set_shader_parameter("use_display_coast_distance",true)
+        material.set_shader_parameter("display_coast_distance_tex",texture)
+        material.set_shader_parameter("display_coast_world_min",Vector2(binding.world_min[0],binding.world_min[1]))
+        material.set_shader_parameter("display_coast_world_size",Vector2(binding.world_size[0],binding.world_size[1]))
+    display_coast_distance_binding=binding
+    display_coast_distance_binding["manifest_sha256"]=expected
+
+func _fixed_grid_mesh(stride: int,cx: int,cz: int) -> ArrayMesh:
+    var key=str(stride)+":"+str(cx)+":"+str(cz)
+    if fixed_grid_meshes.has(key):return fixed_grid_meshes[key]
+    var xs: Array[int]=[];var zs: Array[int]=[]
+    for x in range(0,cx,stride):xs.append(x)
+    xs.append(cx)
+    for z in range(0,cz,stride):zs.append(z)
+    zs.append(cz)
+    var vertices=PackedVector3Array();var normals=PackedVector3Array();var uv2=PackedVector2Array();var indices=PackedInt32Array()
+    for z in zs:
+        for x in xs:vertices.append(Vector3(float(x)/cx,0,float(z)/cz));normals.append(Vector3.UP);uv2.append(Vector2.ZERO)
+    for z in range(zs.size()-1):
+        for x in range(xs.size()-1):
+            var a=z*xs.size()+x;var b=a+1;var c=a+xs.size();var d=c+1
+            indices.append_array(PackedInt32Array([a,b,c,b,d,c]))
+    var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV2]=uv2;arrays[Mesh.ARRAY_INDEX]=indices
+    var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+    mesh.custom_aabb=AABB(Vector3(world_min.x,-200,world_min.y),Vector3(world_size.x,400,world_size.y))
+    fixed_grid_meshes[key]=mesh
+    return mesh
+
+func _update_fixed_surface_lod() -> void:
+    var forest_identity=str(diorama_policy.get("revision",""))+":"+str(diorama_policy.get("forest_geometry_mode","current_body"))
+    var px_per_height=display_height_scale*relief*cos(deg_to_rad(elevation_degrees))*viewport_size.x/view_width
+    var maximum=maxf(absf(float(fixed_surface.policy.height_range_source_equivalent_m[0])),absf(float(fixed_surface.policy.height_range_source_equivalent_m[1])))*.001
+    var flat=maximum*px_per_height<=.75
+    fixed_flat_node.visible=flat
+    if flat:
+        _bind_diorama_surface_revision(str(fixed_surface.identity.manifest_sha256)+":flat:"+str(display_height_scale)+":"+forest_identity)
+        for record in fixed_chunks.values():record.node.visible=false
+        previous_lod_key="fixed-flat";fixed_lod_key=previous_lod_key
+        return
+    var cell_span=fixed_surface.spacing*float(fixed_surface.CHUNK_CELLS)
+    var rect=camera_footprint.grow(80.0)
+    var first=Vector2i(((rect.position-fixed_surface.world_min)/cell_span).floor()).max(Vector2i.ZERO)
+    var last=Vector2i(((rect.end-fixed_surface.world_min)/cell_span).floor())
+    var limit=Vector2i(int(ceil(float(fixed_surface.width-1)/fixed_surface.CHUNK_CELLS))-1,int(ceil(float(fixed_surface.height-1)/fixed_surface.CHUNK_CELLS))-1)
+    last=last.min(limit)
+    var wanted: Array[Vector2i]=[];var errors=[]
+    errors.resize(fixed_surface.STRIDES.size());errors.fill(0.0)
+    for z in range(first.y,last.y+1):
+        for x in range(first.x,last.x+1):
+            var cell=Vector2i(x,z)
+            if not fixed_surface.chunks.has(cell):continue
+            wanted.append(cell)
+            var source=fixed_surface.chunks[cell]
+            for i in range(errors.size()):
+                var error=source.lod_height_error_m[i]
+                if error==null:error=float(source.maximum_source_equivalent_m)-float(source.minimum_source_equivalent_m)
+                errors[i]=maxf(errors[i],float(error))
+    fixed_stride=1
+    for i in range(errors.size()):
+        if float(errors[i])*.001*px_per_height<=.75:fixed_stride=fixed_surface.STRIDES[i]
+    _bind_diorama_surface_revision(str(fixed_surface.identity.manifest_sha256)+":stride:"+str(fixed_stride)+":scale:"+str(display_height_scale)+":"+forest_identity)
+    var key=str(first)+":"+str(last)+":"+str(fixed_stride)
+    if key==fixed_lod_key:return
+    fixed_lod_key=key;previous_lod_key="fixed:"+key
+    for record in fixed_chunks.values():record.node.visible=false
+    for cell in wanted:
+        var bounds=fixed_surface.chunk_rect(cell)
+        var named_key=str(cell)+":"+str(fixed_stride)
+        var record: Dictionary=fixed_chunks.get(cell,{})
+        var node: MeshInstance3D=record.get("node")
+        if not node:node=MeshInstance3D.new();add_child(node)
+        if fixed_named_meshes.has(named_key):
+            var named=fixed_named_meshes[named_key]
+            node.mesh=named.mesh;node.material_override=feature_material
+            _bind_display_mesh_bounds(node.mesh)
+        else:
+            var start=cell*fixed_surface.CHUNK_CELLS
+            var end=(start+Vector2i.ONE*fixed_surface.CHUNK_CELLS).min(Vector2i(fixed_surface.width-1,fixed_surface.height-1))
+            node.mesh=_fixed_grid_mesh(fixed_stride,end.x-start.x,end.y-start.y);node.material_override=terrain_material
+            node.set_instance_shader_parameter("patch_bounds",Vector4((bounds.position.x-world_min.x)/world_size.x,(bounds.position.y-world_min.y)/world_size.y,bounds.size.x/world_size.x,bounds.size.y/world_size.y))
+        node.visible=true;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        record={"cell":cell,"stride":fixed_stride,"node":node,"last_used":frame_number,"rect":bounds,"lod_height_error_m":errors[fixed_surface.STRIDES.find(fixed_stride)]}
+        fixed_chunks[cell]=record
+    while fixed_chunks.size()>FIXED_CHUNK_RESIDENT_LIMIT:
+        var victim: Variant=null;var oldest=frame_number+1
+        for cell in fixed_chunks:
+            if not fixed_chunks[cell].node.visible and fixed_chunks[cell].last_used<oldest:victim=cell;oldest=fixed_chunks[cell].last_used
+        if victim==null:break
+        fixed_chunks[victim].node.queue_free();fixed_chunks.erase(victim)
+    river_support_revision+=1
+    _place_camera()
+
+func _bind_diorama_surface_revision(revision: String) -> void:
+    # A different visible rectangle does not change this fixed world's faces.
+    # Retain those costly source-bound meshes through pan/return; only actual
+    # support-surface changes (atlas, stride, flat path, display scale) rebuild.
+    if revision==diorama_surface_revision:return
+    diorama_invalidation_events.append({"frame":frame_number,"previous":diorama_surface_revision,"next":revision,"discarded_chunks":diorama_chunks.size()})
+    for chunk in diorama_chunks.values():
+        if chunk.node:chunk.node.queue_free()
+    diorama_chunks.clear();previous_diorama_key=""
+    diorama_surface_revision=revision
+
+func _fixed_chunk_inventory() -> Array:
+    var result=[]
+    if not fixed_surface:return result
+    for record in fixed_chunks.values():
+        if record.node.visible:result.append({"cell":[record.cell.x,record.cell.y],"stride":record.stride,"height_error_source_equivalent_m":record.lod_height_error_m,"projected_height_error_bound_px":float(record.lod_height_error_m)*.001*display_height_scale*relief*cos(deg_to_rad(elevation_degrees))*viewport_size.x/view_width})
+    return result
+
+func _snapshot_ready() -> bool:
+    var ready=frame_number>=30 and feature_queue.is_empty() and feature_task<0 and river_queue.is_empty() and diorama_queue.is_empty() and forest_queue.is_empty() and forest_detail_queue.is_empty()
+    for chunk in diorama_chunks.values():
+        if elapsed-float(chunk.created)<.35:ready=false;break
+    snapshot_stable_frames=snapshot_stable_frames+1 if ready else 0
+    return snapshot_stable_frames>=8
 
 func _make_patch_mesh() -> ArrayMesh:
     var vertices=PackedVector3Array()
@@ -661,6 +951,9 @@ func _collect_patches(origin: Vector2, size: Vector2, depth: int, key: String, r
         result[key]=Vector4(origin.x,origin.y,size.x,size.y)
 
 func _update_lod() -> void:
+    if fixed_surface:
+        _update_fixed_surface_lod()
+        return
     if tin_surface:
         var before=tin_surface.changes
         tin_surface.update(camera_footprint,view_width,relief)
@@ -680,20 +973,90 @@ func _update_lod() -> void:
     var lod_key=str(round(zoom*220))+":"+str(round(target.x/maxf(view_width*0.025,0.01)))+":"+str(round(target.y/maxf(view_width*0.025,0.01)))
     if lod_key==previous_lod_key: return
     previous_lod_key=lod_key
+    feature_queue.clear();feature_active.clear()
     var wanted={}
     _collect_patches(Vector2.ZERO,Vector2.ONE,0,"r",wanted)
     active_patch_bounds=wanted
     for key in patches.keys():
         if not wanted.has(key): patches[key].queue_free(); patches.erase(key)
     for key in wanted:
-        if patches.has(key): continue
-        var node=MeshInstance3D.new()
-        node.mesh=patch_mesh
-        node.material_override=terrain_material
-        node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        add_child(node)
-        node.set_instance_shader_parameter("patch_bounds",wanted[key])
-        patches[key]=node
+        if not patches.has(key):
+            var node=MeshInstance3D.new()
+            node.mesh=patch_mesh
+            node.material_override=terrain_material
+            node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            add_child(node)
+            node.set_instance_shader_parameter("patch_bounds",wanted[key])
+            patches[key]=node
+        var patch: Vector4=wanted[key]
+        var rect=Rect2(world_min+Vector2(patch.x,patch.y)*world_size,Vector2(patch.z,patch.w)*world_size)
+        if feature_lod and view_width>=40.0 and rect.intersects(camera_footprint.grow(32.0)):
+            if feature_meshes.has(key):
+                patches[key].mesh=feature_meshes[key].mesh
+                patches[key].material_override=feature_material
+                patches[key].cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+                feature_meshes[key].last_used=frame_number
+                feature_active[key]=true
+            else: feature_queue.append(key)
+        else:
+            patches[key].mesh=patch_mesh
+            patches[key].material_override=terrain_material
+            patches[key].cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    feature_queue.sort_custom(func(a,b):
+        var pa: Vector4=wanted[a];var pb: Vector4=wanted[b]
+        return (world_min+(Vector2(pa.x,pa.y)+Vector2(pa.z,pa.w)*.5)*world_size-target).length_squared()<(world_min+(Vector2(pb.x,pb.y)+Vector2(pb.z,pb.w)*.5)*world_size-target).length_squared())
+
+func _update_feature_lod() -> void:
+    if not feature_lod or fixed_surface: return
+    if feature_task>=0:
+        if not WorkerThreadPool.is_task_completed(feature_task): return
+        WorkerThreadPool.wait_for_task_completion(feature_task)
+        feature_task=-1
+        var key=feature_build_key
+        var record=feature_build_result
+        feature_build_result={}
+        if record.is_empty():
+            root_integrity_fatal=true
+            return
+        record["last_used"]=frame_number
+        feature_meshes[key]=record
+        if patches.has(key) and active_patch_bounds.has(key) and view_width>=40.0:
+            feature_active[key]=true
+            patches[key].mesh=record.mesh
+            patches[key].material_override=feature_material
+            patches[key].cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+            river_support_revision+=1
+            # Forest signs use exactly the final triangles, after worker handoff.
+            for cell in diorama_chunks.keys():
+                var size=float(diorama_policy.get("chunk_size",128.0))
+                if not Rect2(Vector2(cell)*size,Vector2.ONE*size).intersects(record.rect): continue
+                if diorama_chunks[cell].node: diorama_chunks[cell].node.queue_free()
+                diorama_chunks.erase(cell)
+            previous_diorama_key=""
+        while feature_meshes.size()>FEATURE_MESH_CACHE_LIMIT:
+            var victim="";var oldest=frame_number+1
+            for candidate in feature_meshes:
+                if not feature_active.has(candidate) and feature_meshes[candidate].last_used<oldest:
+                    victim=candidate;oldest=feature_meshes[candidate].last_used
+            if victim=="": break
+            feature_meshes.erase(victim)
+    if feature_queue.is_empty(): return
+    var key=feature_queue.pop_front()
+    if not patches.has(key) or not active_patch_bounds.has(key): return
+    var patch: Vector4=active_patch_bounds[key]
+    var rect=Rect2(world_min+Vector2(patch.x,patch.y)*world_size,Vector2(patch.z,patch.w)*world_size)
+    feature_build_key=key
+    feature_task=WorkerThreadPool.add_task(_build_feature_lod_async.bind(rect),false,"Bounded source-feature terrain derivation")
+
+func _build_feature_lod_async(rect: Rect2) -> void:
+    # The worker owns only immutable source reads and new, unshared mesh resources.
+    # Scene nodes and active render/picking dictionaries change on the main thread.
+    feature_build_result=feature_lod.build(rect,Callable(self,"_height"),Callable(self,"_water_kind"))
+
+func _exit_tree() -> void:
+    if feature_task>=0:
+        WorkerThreadPool.wait_for_task_completion(feature_task)
+        feature_task=-1
 
 func _resize_camera_contract() -> void:
     var new_size=Vector2(get_viewport().get_visible_rect().size)
@@ -728,20 +1091,60 @@ func _clamp_camera_target() -> void:
     camera_footprint=Rect2(target+offsets.position,offsets.size)
 
 func _camera_height_interval() -> Vector2:
-    if tin_surface:
-        for id in tin_surface.active:
-            var entry=tin_surface.loaded[id].entry
-            var rect=Rect2(Vector2(entry.world_min[0],entry.world_min[1]),Vector2(entry.world_size[0],entry.world_size[1]))
-            if rect.encloses(camera_footprint):
-                return Vector2(minf(float(entry.height_min_source_m)*MODEL_SCALE,0.0),maxf(float(entry.height_max_source_m)*MODEL_SCALE,0.0))
-    return Vector2(CameraRig.MIN_HEIGHT,CameraRig.MAX_HEIGHT)
+    if not displayed_height_bounds.is_empty() and relief>.000001:
+        return Vector2(float(displayed_height_bounds.terrain_min_y),float(displayed_height_bounds.terrain_max_y))/relief
+    return Vector2(CameraRig.MIN_HEIGHT,CameraRig.MAX_HEIGHT)*display_height_scale
+
+func _refresh_displayed_height_bounds() -> void:
+    # Immutable frame snapshot; this method never calls camera/cloud code.
+    # The broad interval is always safe while a new visible LOD is incomplete.
+    var interval=Vector2(CameraRig.MIN_HEIGHT,CameraRig.MAX_HEIGHT)
+    var status="conservative_global_canonical_bound_while_support_incomplete"
+    if fixed_surface:
+        interval=Vector2(fixed_surface.policy.height_range_source_equivalent_m[0],fixed_surface.policy.height_range_source_equivalent_m[1])*.001
+        status="conservative_fixed_display_world_bound"
+    if viewport_size.x>0 and viewport_size.y>0 and view_width>0:
+        var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),interval*display_height_scale)
+        var footprint=Rect2(target+offsets.position,offsets.size)
+        if tin_surface:
+            for id in tin_surface.active:
+                var entry=tin_surface.loaded[id].entry
+                var rect=Rect2(Vector2(entry.world_min[0],entry.world_min[1]),Vector2(entry.world_size[0],entry.world_size[1]))
+                if rect.encloses(footprint):
+                    interval=Vector2(minf(float(entry.height_min_source_m)*MODEL_SCALE,0.),maxf(float(entry.height_max_source_m)*MODEL_SCALE,0.))
+                    status="conservative_canonical_block_enclosing_visible_frustum"
+                    break
+        if view_width>=40.0 and not feature_active.is_empty() and feature_queue.is_empty() and feature_task<0:
+            var covered=true;var found=false;var actual=Vector2(INF,-INF)
+            for key in active_patch_bounds:
+                var patch: Vector4=active_patch_bounds[key]
+                var rect=Rect2(world_min+Vector2(patch.x,patch.y)*world_size,Vector2(patch.z,patch.w)*world_size)
+                if not rect.intersects(footprint): continue
+                if not feature_active.has(key): covered=false;break
+                var mesh: ArrayMesh=feature_meshes[key].mesh
+                var box: AABB=mesh.get_meta("canonical_aabb",mesh.get_aabb())
+                actual.x=minf(actual.x,box.position.y);actual.y=maxf(actual.y,box.end.y);found=true
+            if covered and found:
+                interval=actual
+                status="conservative_actual_triangles_over_visible_frustum"
+    var crown_height=.1
+    if not diorama_policy.is_empty() and (fixed_surface or view_width>float(diorama_policy.near_width)): crown_height=float(diorama_policy.visible_height_max)
+    var effective_scale=display_height_scale*relief
+    displayed_height_bounds={"revision":"displayed-height-bounds-v1","unit":"godot_world_y","terrain_min_y":interval.x*effective_scale,"terrain_max_y":interval.y*effective_scale,"natural_min_y":interval.x*effective_scale,"natural_max_y":interval.y*effective_scale+crown_height*relief,"relief_weight":relief,"display_height_scale":display_height_scale,"bounds_status":status,"frame":frame_number,"snapshot_rule":"read-only stable bounds for this frame; no camera/cloud recursion"}
+
+func get_displayed_height_range() -> Dictionary:
+    return displayed_height_bounds.duplicate(true)
 
 func _place_camera() -> void:
     camera.size=view_width/viewport_size.aspect()
     var angle=deg_to_rad(elevation_degrees)
     var focus=Vector3(target.x,_render_height(target),target.y)
     var heights=_camera_height_interval()*relief
-    heights.y+=.045 # Bound the original crown assets above the model surface.
+    heights.y+=.1 # Conservative near crown asset bound, separate from terrain.
+    if not diorama_policy.is_empty() and view_width>float(diorama_policy.near_width): heights.y+=float(diorama_policy.visible_height_max)*relief
+    if cloud_layer and cloud_layer.enabled:
+        var cloud_altitude=float(cloud_layer.get_display_altitude()) if cloud_layer.has_method("get_display_altitude") else float(cloud_layer.cloud_base_height)
+        heights.y=maxf(heights.y,cloud_altitude)
     var half_view_height=view_width/viewport_size.aspect()*.5
     var minimum_depth=(heights.x-focus.y)/sin(angle)-half_view_height/tan(angle)
     var maximum_depth=(heights.y-focus.y)/sin(angle)+half_view_height/tan(angle)
@@ -755,24 +1158,51 @@ func _place_camera() -> void:
 func _update_camera() -> void:
     if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
     view_width=exp(lerpf(log(far_width),log(near_width),zoom))
-    var profile=CameraRig.profile(view_width)
+    if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
+    var profile=CameraRig.profile(view_width,far_width)
     elevation_degrees=profile.x
     relief=profile.y
+    _refresh_displayed_height_bounds()
     _clamp_camera_target()
     _place_camera()
     terrain_material.set_shader_parameter("relief",relief)
+    terrain_material.set_shader_parameter("display_height_scale",display_height_scale)
+    if patch_mesh: patch_mesh.custom_aabb=AABB(Vector3(world_min.x,CameraRig.MIN_HEIGHT*display_height_scale,world_min.y),Vector3(world_size.x,(CameraRig.MAX_HEIGHT-CameraRig.MIN_HEIGHT)*display_height_scale,world_size.y))
+    if tin_surface:
+        for block in tin_surface.loaded.values(): _bind_display_mesh_bounds(block.node.mesh)
+    for key in feature_active: _bind_display_mesh_bounds(feature_meshes[key].mesh)
+    if tin_surface: tin_surface.material.set_shader_parameter("display_height_scale",display_height_scale)
     terrain_material.set_shader_parameter("view_width",view_width)
     terrain_material.set_shader_parameter("viewport_width",viewport_size.x)
     terrain_material.set_shader_parameter("shading_origin",target)
     if tin_surface: tin_surface.material.set_shader_parameter("shading_origin",target)
+    if marine_material:
+        marine_material.set_shader_parameter("relief",relief)
+        marine_material.set_shader_parameter("display_height_scale",display_height_scale)
+        marine_material.set_shader_parameter("view_width",view_width)
+        marine_material.set_shader_parameter("viewport_width",viewport_size.x)
+        marine_material.set_shader_parameter("shading_origin",target)
+    if feature_material:
+        feature_material.set_shader_parameter("relief",relief)
+        feature_material.set_shader_parameter("display_height_scale",display_height_scale)
+        feature_material.set_shader_parameter("view_width",view_width)
+        feature_material.set_shader_parameter("viewport_width",viewport_size.x)
+        feature_material.set_shader_parameter("shading_origin",target)
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
     if river_material:
         river_material.set_shader_parameter("relief",relief)
+        river_material.set_shader_parameter("display_height_scale",display_height_scale)
         river_material.set_shader_parameter("view_width",view_width)
         river_material.set_shader_parameter("viewport_width",get_viewport().size.x)
+        river_material.set_shader_parameter("projection_vertical_scale",sin(deg_to_rad(elevation_degrees)))
     tree_material.set_shader_parameter("visible_weight",0.0 if warmup_frames_remaining>0 else 1.0-smoothstep(6.0,8.0,view_width))
+
+func _bind_display_mesh_bounds(mesh: ArrayMesh) -> void:
+    if not mesh.has_meta("canonical_aabb"): mesh.set_meta("canonical_aabb",mesh.get_aabb())
+    var box: AABB=mesh.get_meta("canonical_aabb")
+    mesh.custom_aabb=AABB(Vector3(box.position.x,box.position.y*display_height_scale,box.position.z),Vector3(box.size.x,maxf(box.size.y*display_height_scale,.0001),box.size.z))
 
 func _pan_delta(event: InputEvent) -> Vector2:
     # Event position survives coalesced macOS/CUA input when relative/mask do not.
@@ -795,7 +1225,7 @@ func _pan_delta(event: InputEvent) -> Vector2:
     return Vector2.ZERO
 
 func _pick_ground(pixel: Vector2) -> Vector2:
-    return CameraRig.pick(camera,pixel,Callable(self,"_render_height"),relief)
+    return CameraRig.pick(camera,pixel,Callable(self,"_render_height"),relief,_camera_height_interval())
 
 func _begin_zoom_anchor(pixel: Vector2) -> void:
     zoom_anchor=_pick_ground(pixel)
@@ -827,10 +1257,10 @@ func _unhandled_input(event: InputEvent) -> void:
         # as a drag, through the same terrain intersection. No device factor.
         var pixel=event.position
         var anchor=_pick_ground(pixel)
-        target=CameraRig.anchored_target(anchor,pixel-event.delta,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+        target=CameraRig.anchored_target(anchor,pixel-event.delta,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
         zoom_anchor_valid=false
     if movement!=Vector2.ZERO and drag_anchor_valid:
-        target=CameraRig.anchored_target(drag_anchor,event.position,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+        target=CameraRig.anchored_target(drag_anchor,event.position,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
     _clamp_camera_target()
     _place_camera()
 
@@ -856,17 +1286,20 @@ func _process(delta: float) -> void:
     _update_camera()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE lod before ",frame_number)
     _update_lod()
+    _update_feature_lod()
+    _update_river_surface()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE lod after ",frame_number," patches ",patches.size())
     if zoom_anchor_valid and not tour:
         # Re-solve against the actual new LOD and relief, rather than a flat
         # plane. Two passes include the implicit focus-height and clamp change.
         for iteration in range(2):
-            target=CameraRig.anchored_target(zoom_anchor,zoom_anchor_pixel,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target)
+            target=CameraRig.anchored_target(zoom_anchor,zoom_anchor_pixel,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
             _clamp_camera_target()
             _place_camera()
             _update_lod()
         if absf(zoom-target_zoom)<0.0000001 and absf(zoom_velocity)<0.000001: zoom_anchor_valid=false
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE forest before ",frame_number)
+    _update_diorama_forest()
     _update_forest()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE forest after ",frame_number," queue ",forest_queue.size()," wanted ",forest_wanted.size()," loaded ",forest_chunks.size()," cpu_ms ",forest_frame_stats[-1].cpu_ms if not forest_frame_stats.is_empty() else 0)
     _record_motion()
@@ -879,7 +1312,7 @@ func _process(delta: float) -> void:
     if capture_dir!="" and not snapshot and elapsed>=next_capture:
         next_capture=elapsed+capture_interval
         RenderingServer.frame_post_draw.connect(_capture_frame.bind(frame_number),CONNECT_ONE_SHOT)
-    if ((tour and elapsed>=(tour_window[1] if not tour_window.is_empty() else tour_duration)) or (snapshot and frame_number>=30 and ((forest_queue.is_empty() and (forest_detail_queue.is_empty() or view_width>=3.1)) or view_width>=9.0))) and not quitting:
+    if ((tour and elapsed>=(tour_window[1] if not tour_window.is_empty() else tour_duration)) or (snapshot and _snapshot_ready())) and not quitting:
         quitting=true
         CameraRig.finish_after_final_frame(Callable(self,"_finish"))
 
@@ -904,7 +1337,7 @@ func _record_sample(delta: float) -> void:
     var geo=world_to_geographic(target)
     var anchors=_anchor_probes()
     var ridge_probes=_anchor_probes(ridge_definitions)
-    var observation={"t_ms":elapsed*1000.0,"frame":frame_number,"anchor_probes":anchors,"render_timing":_render_timings(),"ridge_probes":ridge_probes,"view_state_id":current_fixture_state_id,"view_state":_observed_view_state(),"waypoint_id":_waypoint_id(),"profile_sha256":profile_sha256,"frame_ms":frame_wall_ms,"engine_delta_ms":delta*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"profile_elevation_degrees":elevation_degrees,"camera_basis":_basis_columns(),"camera_projection":_projection_columns(),"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"relief_weight":relief,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"visible_width_source_m":view_width/MODEL_SCALE,"target_height_model":_height(target)*relief,"camera_position":[camera.position.x,camera.position.y,camera.position.z],"patch_count":patches.size(),"tree_count":tree_count,"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"ground_footprint_model":[camera_footprint.position.x,camera_footprint.position.y,camera_footprint.end.x,camera_footprint.end.y],"context_insufficient":camera_context_insufficient,"dataset_revision":manifest.get("dataset_revision","unknown"),"memory_static_bytes":OS.get_static_memory_usage(),"render_draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"gpu_memory_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),"gpu_texture_memory_bytes":Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED),"gpu_buffer_memory_bytes":Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED),"canonical_tile_id":_tile_id(geo)}
+    var observation={"t_ms":elapsed*1000.0,"frame":frame_number,"anchor_probes":anchors,"render_timing":_render_timings(),"ridge_probes":ridge_probes,"view_state_id":current_fixture_state_id,"view_state":_observed_view_state(),"waypoint_id":_waypoint_id(),"profile_sha256":profile_sha256,"frame_ms":frame_wall_ms,"engine_delta_ms":delta*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"profile_elevation_degrees":elevation_degrees,"camera_basis":_basis_columns(),"camera_projection":_projection_columns(),"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"relief_weight":relief,"display_height_scale":display_height_scale,"display_policy":landform_policy,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"visible_width_source_m":view_width/MODEL_SCALE,"target_height_model":_render_height(target),"target_canonical_height_model":_height(target),"camera_position":[camera.position.x,camera.position.y,camera.position.z],"patch_count":patches.size(),"tree_count":tree_count,"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"ground_footprint_model":[camera_footprint.position.x,camera_footprint.position.y,camera_footprint.end.x,camera_footprint.end.y],"context_insufficient":camera_context_insufficient,"dataset_revision":manifest.get("dataset_revision","unknown"),"memory_static_bytes":OS.get_static_memory_usage(),"render_draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"gpu_memory_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),"gpu_texture_memory_bytes":Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED),"gpu_buffer_memory_bytes":Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED),"canonical_tile_id":_tile_id(geo)}
     telemetry.append(observation)
     if current_fixture_waypoint!=null: waypoint_observations.append(observation)
     var window=int(floor(elapsed/2.0))
@@ -974,10 +1407,10 @@ func _render_unit_probes() -> Dictionary:
                 chosen.append(best)
             for i in chosen:
                 var p=vertices[i]
-                var rendered_y=p.y*relief
+                var rendered_y=p.y*relief*display_height_scale
                 var projected=camera.unproject_position(Vector3(p.x,rendered_y,p.z))
                 var flat=camera.unproject_position(Vector3(p.x,0,p.z))
-                terrain.append({"block":id,"vertex_index":i,"source_canonical_height_m":source_heights.decode_float(i*4),"mesh_vertex_y_model":p.y,"mesh_aabb":str(block.node.mesh.get_aabb()),"use_model_mesh_actual":tin_surface.material.get_shader_parameter("use_model_mesh"),"relief_actual":tin_surface.material.get_shader_parameter("relief"),"shader_formula":"altitude=VERTEX.y*1000; VERTEX.y=altitude*0.001*relief; marinevertex0 separate","predicted_shader_y_model":rendered_y,"actual_camera_projected_elevation_px":flat.y-projected.y,"observation_limit":"CPU trace of bound actual mesh, shader uniform and actual Camera3D; no independent GPU vertex-ID readback"})
+                terrain.append({"block":id,"vertex_index":i,"source_canonical_height_m":source_heights.decode_float(i*4),"mesh_vertex_y_model":p.y,"mesh_aabb":str(block.node.mesh.get_aabb()),"use_model_mesh_actual":tin_surface.material.get_shader_parameter("use_model_mesh"),"relief_actual":tin_surface.material.get_shader_parameter("relief"),"shader_formula":"altitude=VERTEX.y*1000; VERTEX.y=altitude*0.001*relief*display_height_scale; marinevertex0 separate","display_height_scale":display_height_scale,"predicted_shader_y_model":rendered_y,"actual_camera_projected_elevation_px":flat.y-projected.y,"observation_limit":"CPU trace of bound actual mesh, shader uniform and actual Camera3D; no independent GPU vertex-ID readback"})
             break
     if trace_frames: print("TRACE unit terrain done")
     var crowns=[]
@@ -1022,7 +1455,7 @@ func _finish() -> void:
     if trace_frames: print("TRACE finish record done")
     var sorted_frames=frame_samples.duplicate()
     sorted_frames.sort()
-    var result={"schema_version":"runtime-evidence-v2","render_unit_probes":_render_unit_probes(),"water_render_tile_binding":water_tile,"canonical_mesh_binding":tin_surface.identity if tin_surface else {},"active_canonical_blocks":tin_surface.active.keys() if tin_surface else [],"light_binding":{"shadow_max_distance":sun_light.directional_shadow_max_distance,"shadow_bias":sun_light.shadow_bias,"shadow_normal_bias":sun_light.shadow_normal_bias,"directional_shadow_mode":sun_light.directional_shadow_mode,"shadow_texture_size":ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size"),"camera_focus_distance":camera_distance,"camera_near":camera.near,"camera_far":camera.far},"input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"forest_representation_policy":forest_representation,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"semantic-group-800m-cache-v2","candidate_spacing_m":forest_spacing_m,"chunk_cells":20,"max_chunks_generated_per_frame":3,"resident_cache_limit":768,"prefetch_view_width_model":9.0,"visible_view_width_model":8.0,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"model_upload_manifest":upload_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"camera_clamp_events":camera_clamp_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
+    var result={"schema_version":"runtime-evidence-v2","product_renderer_binding":{"sha256":FileAccess.get_sha256("res://renderer-binding.json"),"binding":product_binding,"dataset_cli_override":dataset_path!=""},"forest_mesh_cache":forest_mesh_cache_state,"canonical_source_sampling":{"contract":"canonical-c2-domains-v2" if canonical_v2 else "legacy-v1-domains","upload_manifest_sha256":canonical_v2.manifest_sha256 if canonical_v2 else "","role_selection":"final composed SDF<=0 land; otherwise nearest associated_role from finest valid positive-weight domain, no role lerp" if canonical_v2 else "legacy-v1","local_height_override":false},"terrain_shadow_policy":{"terrain_casts":false,"terrain_receives":true,"forest_casts":true,"reason":"isolated same-frozen-scene controls bind terrain selfshadow stripes; conscious display decision, no overall style/performance pass","evidence":"runs/kit1-gamegraphics-v2-2026-10-25/camera/shadow-stable-v11-caster/control.json"},"fixed_display_surface":{"manifest":fixed_surface.identity if fixed_surface else {},"policy":fixed_surface.policy if fixed_surface else {},"common_visible_stride":fixed_stride,"visible_chunks":_fixed_chunk_inventory(),"render_error_budget_px":.75,"same_surface_all_zooms":fixed_surface!=null,"raw_TIN_rendering_disabled":fixed_surface!=null,"snapshot_stable_render_frames":snapshot_stable_frames,"forest_support_revision":diorama_surface_revision,"forest_support_invalidation_events":diorama_invalidation_events},"display_policy":landform_policy,"display_height_scale":display_height_scale,"water_material_uniforms":{"terrain":_material_uniform_snapshot(terrain_material),"feature":_material_uniform_snapshot(feature_material),"marine":_material_uniform_snapshot(marine_material),"river":_material_uniform_snapshot(river_material)},"display_coast_distance_binding":display_coast_distance_binding,"graphic_rock_priority_contract":"fixed regular Atlas h/gradient; N inverse fixed display Y, no relief/zoom; semantic G bilinear mip0; max(G,smoothstep(.06,.25,1-N.y),.85*smoothstep(1250,2700,h)); source forest membership unchanged","river_surface_binding":{"same_cpu_surface_as_terrain":true,"triangle_clip":"river polygons clipped against exact active-stride terrain triangles; source centerlines unchanged","minimum_screen_width_px":1.6,"orientation_compensation":"sqrt(side.x^2+(side.z*sinPitch)^2)","pending_features":river_queue.size(),"revision":"source-centerline-barycentric-support-v1","width_policy":"same symbolic source-rank width and pixel floor, centerline unchanged"},"cloud_layer_binding":{"integrated":cloud_layer!=null,"enabled":cloud_layer.enabled if cloud_layer else false,"baseline_switch":"--clouds-disabled","altitude_unit":"godot_world_y","height_range_snapshot":displayed_height_bounds,"provider_api":"get_displayed_height_range() returns immutable frame snapshot; cloud get_display_altitude() read before camera clipping"},"render_unit_probes":_render_unit_probes(),"water_render_tile_binding":water_tile,"protected_render_lod":{"revision":feature_lod.REVISION if feature_lod else "none","generated":feature_lod.generated if feature_lod else [],"failures":feature_lod.failures if feature_lod else [],"resident_meshes":feature_meshes.size(),"active_patch_ids":feature_active.keys(),"mesh_cache_limit":FEATURE_MESH_CACHE_LIMIT,"source_block_cache_limit":16,"maximum_patch_builds_per_frame":1,"derivation_execution":"one bounded WorkerThreadPool task, immutable source reads, main-thread mesh handoff after task completion","retention_policy":"dominant ridge/valley supports at patch/40 addresses; regional prominence filter; land-only source kernel; named anchors and source shoulders preserved; global dyadic boundary supports; no parent morph of retained features","transition_limit":"incremental surface replacement and cross-LOD popping require continuous-tour validation","surface_contract":"render mesh and barycentric CPU height are identical; forest signs await mesh queue and regenerate overlapping supports"},"canonical_mesh_binding":tin_surface.identity if tin_surface else {},"active_canonical_blocks":tin_surface.active.keys() if tin_surface else [],"light_binding":{"shadow_max_distance":sun_light.directional_shadow_max_distance,"shadow_bias":sun_light.shadow_bias,"shadow_normal_bias":sun_light.shadow_normal_bias,"directional_shadow_mode":sun_light.directional_shadow_mode,"shadow_texture_size":ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size"),"camera_focus_distance":camera_distance,"camera_near":camera.near,"camera_far":camera.far},"input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"diorama_representation_policy":diorama_policy,"diorama_chunk_frames":diorama_stats,"forest_representation_policy":forest_representation,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"semantic-group-800m-cache-v2","candidate_spacing_m":forest_spacing_m,"chunk_cells":20,"max_chunks_generated_per_frame":3,"resident_cache_limit":768,"prefetch_view_width_model":9.0,"visible_view_width_model":8.0,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"model_upload_manifest":upload_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"camera_clamp_events":camera_clamp_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
     var out=telemetry_dir if telemetry_dir!="" else (capture_dir if capture_dir!="" else source_root.path_join("artifacts/runtime"))
     DirAccess.make_dir_recursive_absolute(out)
     var f=FileAccess.open(out.path_join("runtime.json"),FileAccess.WRITE)
@@ -1030,15 +1463,208 @@ func _finish() -> void:
     print(JSON.stringify({"event":"tour_finished","evidence":out,"frame_ms":result.frame_ms}))
     get_tree().quit(0 if integrity_issues.is_empty() else 2)
 
+# Public CPU build contract: no camera nodes, relief, shader uniforms or cache RIDs.
+# Stride0 is the flat support. All nonzero variants use the same globally selected
+# dyadic surface, including geometry-only anchor stars, even outside resident tiles.
+func _diorama_height_for_stride(p: Vector2,stride: int) -> float:
+    if stride==0 or _water_kind(p)==1:return 0.0
+    var cell=Vector2i(((p-fixed_surface.world_min)/fixed_surface.spacing/float(fixed_surface.CHUNK_CELLS)).floor())
+    cell=cell.clamp(Vector2i.ZERO,Vector2i((fixed_surface.width-2)/fixed_surface.CHUNK_CELLS,(fixed_surface.height-2)/fixed_surface.CHUNK_CELLS))
+    return fixed_surface.rendered_height(p,{"cell":cell,"stride":stride})*display_height_scale
+
+func forest_geometry_code_binding() -> Dictionary:
+    # Bind the transitive local call closure, not unrelated navigation/material/IO
+    # entrypoints. External canonical/fixed/style implementations are hashed below.
+    var source=FileAccess.get_file_as_string("res://scripts/landscape.gd")
+    var functions={}
+    var sections=source.split("\nfunc ")
+    for i in range(1,sections.size()):
+        var name=sections[i].get_slice("(",0)
+        functions[name]="func "+sections[i]
+    var roots=["build_fixed_forest_mesh","_diorama_height_for_stride","_diorama_surface_sample","_diorama_land_coverage","_diorama_forest_coverage"]
+    var selected={}
+    var pending=roots.duplicate()
+    while not pending.is_empty():
+        var name=str(pending.pop_back())
+        if selected.has(name):continue
+        if not functions.has(name):return {"error":"geometry_function_missing:"+name}
+        var body=str(functions[name]);selected[name]=true
+        for called in functions:
+            if not selected.has(called) and body.contains(str(called)+"("):pending.append(called)
+    var names=selected.keys();names.sort()
+    var bodies=""
+    for name in names:bodies+=str(functions[name])+"\n"
+    return {"functions":names,"sha256":bodies.sha256_text(),
+        "constants":{"model_scale":MODEL_SCALE,"earth_radius":EARTH_RADIUS,"mapping_revision":MAPPING_REVISION},
+        "world_min":[world_min.x,world_min.y],"world_size":[world_size.x,world_size.y]}
+
+func forest_mesh_cache_identity() -> Dictionary:
+    if not fixed_surface or not style_api:return {}
+    var binding={"revision":"fixed-forest-runtime-cache-binding-v2","source_manifest_sha256":snapshot_manifest_sha256,
+        "upload_manifest_sha256":canonical_v2.manifest_sha256 if canonical_v2 else FileAccess.get_sha256(dataset_directory.path_join("upload/upload.json")),
+        "atlas":fixed_surface.identity.duplicate(true),"display_height_scale":display_height_scale,
+        "forest_geometry_mode":str(diorama_policy.get("forest_geometry_mode","current_body")),"generator_policy":diorama_policy.duplicate(true),
+        "generator_sha256":FileAccess.get_sha256("res://scripts/style/landscape_style.gd"),
+        "runtime_geometry":forest_geometry_code_binding(),
+        "fixed_sampler_sha256":FileAccess.get_sha256("res://scripts/fixed_display_surface.gd"),
+        "canonical_sampler_sha256":FileAccess.get_sha256("res://scripts/canonical_domains_v2.gd"),
+        "projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),
+        "codec_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_mesh_cache.gd"),
+        "support_policy":"explicit global dyadic stride; zero flat; named-star geometry; marine zero; no relief; no node-residency dependence"}
+    # JSON manifest numbers are parsed as floats. Normalize native policy ints
+    # before hashing, so the on-disk manifest and independently rebuilt key agree.
+    return JSON.parse_string(JSON.stringify(binding,"",true,true))
+
+func build_fixed_forest_mesh(cell: Vector2i,stride: int) -> ArrayMesh:
+    if not stride in [0,1,2,4,8,16,32,64,128] or not fixed_surface or not style_api:return null
+    var previous=forest_build_stride
+    forest_build_stride=stride
+    var chunk_size=float(diorama_policy.chunk_size)
+    var mesh: ArrayMesh=style_api.create_diorama_forest(Vector2(cell)*chunk_size,Vector2.ONE*chunk_size,Callable(self,"_diorama_surface_sample"),Callable(self,"_diorama_land_coverage"),Callable(self,"_diorama_forest_coverage"),{"surface_grid_origin":fixed_surface.world_min,"surface_grid_spacing":fixed_surface.spacing,"forest_geometry_mode":str(diorama_policy.get("forest_geometry_mode","current_body"))})
+    forest_build_stride=previous
+    return mesh
+
+func load_or_build_fixed_forest_mesh(cell: Vector2i,stride: int) -> ArrayMesh:
+    var mesh: ArrayMesh=null
+    if forest_mesh_cache:
+        var load_start=Time.get_ticks_usec()
+        mesh=forest_mesh_cache.load_mesh(cell,stride)
+        forest_mesh_cache_state.load_ms+=float(Time.get_ticks_usec()-load_start)/1000.0
+        if mesh!=null:forest_mesh_cache_state.hits+=1
+        else:
+            forest_mesh_cache_state.misses+=1
+            var reason=forest_mesh_cache.last_error
+            forest_mesh_cache_state.errors[reason]=int(forest_mesh_cache_state.errors.get(reason,0))+1
+    if mesh==null:
+        var build_start=Time.get_ticks_usec()
+        mesh=build_fixed_forest_mesh(cell,stride)
+        forest_mesh_cache_state.fallback_build_ms+=float(Time.get_ticks_usec()-build_start)/1000.0
+    return mesh
+
+func _configure_forest_mesh_cache() -> void:
+    forest_mesh_cache=null
+    var configured=product_binding.get("forest_cache",{})
+    var override=forest_mesh_cache_directory!=""
+    var directory=forest_mesh_cache_directory if override else str(configured.get("path",""))
+    forest_mesh_cache_state["requested_directory"]=directory
+    forest_mesh_cache_state["selection"]="CLI test override" if override else "product manifest"
+    forest_mesh_cache_state["identity"]=forest_mesh_cache_identity()
+    if directory=="":return
+    var path=directory if directory.is_absolute_path() else source_root.path_join(directory)
+    if not override and (str(configured.get("manifest_sha256","")).length()!=64 or FileAccess.get_sha256(path.path_join("manifest.json"))!=configured.manifest_sha256):
+        forest_mesh_cache_state["configure_error"]="product_cache_manifest_hash_mismatch"
+        return
+    var reader=ForestMeshCache.new()
+    if not reader.configure(path,forest_mesh_cache_state.identity):
+        forest_mesh_cache_state["configure_error"]=reader.last_error
+        return
+    forest_mesh_cache=reader
+    forest_mesh_cache_state["enabled"]=true
+    forest_mesh_cache_state["manifest_sha256"]=FileAccess.get_sha256(path.path_join("manifest.json"))
+    forest_mesh_cache_state["identity_key"]=ForestMeshCache.identity_key(forest_mesh_cache_state.identity)
+
+func _diorama_surface_sample(p: Vector2) -> Dictionary:
+    var forest=_cover_kind(p)==10 and _water_kind(p)==0
+    if not forest: return {"forest":false,"height":0.0,"group_id":0}
+    var group=_forest_group_sample(p)
+    var height=_diorama_height_for_stride(p,forest_build_stride)
+    return {"forest":true,"height":height,"group_id":int(group.x),"interior_m":group.y,"graphic_rock_weight":_graphic_rock_weight(p)}
+
+func _semantic_rock_channel(p: Vector2) -> float:
+    if canonical_v2:return canonical_v2.rgba_at(p).y
+    var result=0.0
+    for domain in surface_weight_domains:
+        var rect: Rect2=domain.rect
+        if not rect.has_point(p):continue
+        var width=int(domain.width);var height=int(domain.height)
+        var q=(p-rect.position)/rect.size*Vector2(width,height)-Vector2.ONE*.5
+        var x=clampi(int(floor(q.x)),0,width-2);var z=clampi(int(floor(q.y)),0,height-2)
+        var f=(q-Vector2(x,z)).clamp(Vector2.ZERO,Vector2.ONE)
+        var bytes: PackedByteArray=domain.bytes
+        var a=float(bytes[(z*width+x)*4+1])/255.;var b=float(bytes[(z*width+x+1)*4+1])/255.
+        var c=float(bytes[((z+1)*width+x)*4+1])/255.;var d=float(bytes[((z+1)*width+x+1)*4+1])/255.
+        result=lerpf(lerpf(a,b,f.x),lerpf(c,d,f.x),f.y)
+    return result
+
+func _graphic_rock_weight(p: Vector2) -> float:
+    var h=fixed_surface.material_height(p)*1000.0
+    var normal=fixed_surface.material_normal(p)
+    normal=Vector3(normal.x,normal.y/display_height_scale,normal.z).normalized()
+    return maxf(_semantic_rock_channel(p),maxf(smoothstep(.06,.25,1.0-normal.y),.85*smoothstep(1250.,2700.,h)))
+
+func _graphic_rock_probe(p: Vector2) -> Dictionary:
+    var normal=fixed_surface.material_normal(p)
+    var display_normal=Vector3(normal.x,normal.y/display_height_scale,normal.z).normalized()
+    return {"source_position":str(world_to_geographic(p)),"source_forest_membership":_diorama_forest_coverage(p),"fixed_material_height_source_equivalent_m":fixed_surface.material_height(p)*1000.,"fixed_material_normal":[normal.x,normal.y,normal.z],"fixed_display_normal":[display_normal.x,display_normal.y,display_normal.z],"fixed_display_height_scale":display_height_scale,"semantic_G_base_level":_semantic_rock_channel(p),"graphic_rock_weight":_graphic_rock_weight(p),"atlas_manifest_sha256":fixed_surface.identity.manifest_sha256,"definition":"stable regular Atlas, excludes geometry-only named-star cells; G bilinear base mip; slope uses fixed display-Y inverse normal; same priority expression as shader, no zoom/LOD/relief input"}
+
+func _diorama_forest_coverage(p: Vector2) -> bool:
+    return _cover_kind(p)==10 and _water_kind(p)==0
+
+func _diorama_land_coverage(p: Vector2) -> bool:
+    return Rect2(world_min,world_size).has_point(p) and _water_kind(p)==0
+
+func _update_diorama_forest() -> void:
+    if diorama_policy.is_empty() or not feature_queue.is_empty() or feature_task>=0: return
+    var started=Time.get_ticks_usec()
+    var chunk_size=float(diorama_policy.chunk_size)
+    var weight=relief if fixed_surface else smoothstep(float(diorama_policy.near_width),float(diorama_policy.full_width),view_width)*relief
+    if weight>.00001:
+        var rect=camera_footprint.grow(float(diorama_policy.visible_height_max)*1.6)
+        var first=Vector2i((rect.position/chunk_size).floor())
+        var last=Vector2i((rect.end/chunk_size).floor())
+        var key=str(first)+":"+str(last)
+        if key!=previous_diorama_key:
+            previous_diorama_key=key;diorama_wanted.clear();diorama_queue.clear()
+            for z in range(first.y,last.y+1):
+                for x in range(first.x,last.x+1):
+                    var cell=Vector2i(x,z)
+                    diorama_wanted[cell]=true
+                    if not diorama_chunks.has(cell): diorama_queue.append(cell)
+            var center=target/chunk_size
+            diorama_queue.sort_custom(func(a,b): return (Vector2(a)-center).length_squared()<(Vector2(b)-center).length_squared())
+        if not diorama_queue.is_empty():
+            var cell=diorama_queue.pop_front()
+            var stride=0 if fixed_flat_node and fixed_flat_node.visible else fixed_stride
+            var mesh=load_or_build_fixed_forest_mesh(cell,stride)
+            if mesh==null:
+                root_integrity_fatal=true
+                integrity_issues.append({"asset":"style.create_diorama_forest","state":"fatal_runtime_contract","reason":"null mesh returned from style generation; capture prohibited"})
+                push_error("Forest representation contract failed: null mesh")
+                get_tree().quit(2)
+                return
+            var node: MeshInstance3D=null
+            if mesh.get_surface_count()>0:
+                node=MeshInstance3D.new();node.mesh=mesh;node.material_override=canopy_material
+                node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+                add_child(node)
+            diorama_chunks[cell]={"node":node,"created":elapsed,"last_used":frame_number}
+    else: diorama_queue.clear()
+    var visible=0
+    for cell in diorama_chunks:
+        var chunk=diorama_chunks[cell]
+        var wanted=diorama_wanted.has(cell) and weight>.00001
+        if wanted: chunk.last_used=frame_number
+        if chunk.node:
+            chunk.node.visible=wanted
+            chunk.node.set_instance_shader_parameter("representation_weight",weight)
+            chunk.node.set_instance_shader_parameter("residency_weight",smoothstep(0.,.3,elapsed-chunk.created))
+            if wanted: visible+=1
+    while diorama_chunks.size()>768:
+        var victim: Variant=null;var oldest=frame_number+1
+        for cell in diorama_chunks:
+            if not diorama_wanted.has(cell) and diorama_chunks[cell].last_used<oldest: victim=cell;oldest=diorama_chunks[cell].last_used
+        if victim==null: break
+        if diorama_chunks[victim].node: diorama_chunks[victim].node.queue_free()
+        diorama_chunks.erase(victim)
+    diorama_stats.append({"frame":frame_number,"queued":diorama_queue.size(),"resident_chunks":diorama_chunks.size(),"visible_meshes":visible,"weight":weight,"cpu_ms":float(Time.get_ticks_usec()-started)/1000.})
+    if frame_number%60==0 and not diorama_queue.is_empty(): print(JSON.stringify({"event":"diorama_generation_progress","frame":frame_number,"remaining_chunks":diorama_queue.size(),"visible_meshes":visible}))
+
 func _forest_coverage(p: Vector2) -> bool:
     return _cover_kind(p)==10 and _water_kind(p)==0 and _water_distance(p)<-12.0
 
 func _forest_surface_sample(p: Vector2) -> Dictionary:
     var group=_forest_group_sample(p)
-    var height=_height(p)
-    if tin_surface:
-        var exact=tin_surface.height_at(p)
-        if exact!=null: height=float(exact)
+    var height=_render_height(p)/relief if relief>.00001 else _height(p)*display_height_scale
     return {"height":height,"forest":_forest_coverage(p),"group_id":int(group.x),"interior_m":group.y}
 
 func _build_forest_proxy(cell: Vector2i) -> void:
@@ -1056,6 +1682,9 @@ func _build_forest_proxy(cell: Vector2i) -> void:
     forest_chunks[cell]={"nodes":[],"proxy":proxy,"proxy_triangles":triangle_count,"count":0,"crowns_ready":false,"created":elapsed,"detail_created":elapsed,"last_used":frame_number}
 
 func _update_forest() -> void:
+    if fixed_surface:
+        for node in forest_families: node.visible=false
+        return
     var started=Time.get_ticks_usec()
     if warmup_frames_remaining>0:
         _position_warmup_instances()
@@ -1145,14 +1774,12 @@ func _forest_candidate(x: int,z: int,offset: Vector2=Vector2.ZERO,variant: int=0
     var size=lerpf(0.70,1.4,float(seed_value%97)/97.0)
     var visible_scale=float(forest_representation.get("visible_asset_scale",1.0))
     var basis=Basis(Vector3.UP,float(seed_value%360)*PI/180.0).scaled(Vector3(size*(1.0+jx*0.6),size*(0.85+jz*0.3),size*(1.0+jz*0.6))*visible_scale)
-    var base_height=_height(p)
-    if tin_surface:
-        var exact=tin_surface.height_at(p)
-        if exact!=null: base_height=float(exact)
+    var canonical_height=_height(p)
+    var base_height=_render_height(p)/relief if relief>.00001 else canonical_height*display_height_scale
     var brightness=lerpf(.94,1.06,jx)
     var cluster=(p/.14).floor()
     var family_seed=posmod(int(cluster.x)*83492791^int(cluster.y)*297121507^int(group.x),2147483647)
-    var family=style_api.tree_family_for(family_seed,base_height/MODEL_SCALE,group.y) if style_api and style_api.has_method("tree_family_for") else family_seed%tree_meshes.size()
+    var family=style_api.tree_family_for(family_seed,canonical_height/MODEL_SCALE,group.y) if style_api and style_api.has_method("tree_family_for") else family_seed%tree_meshes.size()
     return {"transform":Transform3D(basis,Vector3(p.x,base_height,p.y)),"color":Color(brightness,brightness,brightness),"family":family}
 
 func _forest_cell_candidates(x: int,z: int) -> Array:
@@ -1252,55 +1879,100 @@ func _setup_rivers() -> void:
     if not data is Dictionary: push_error("Invalid source rivers"); return
     river_material=ShaderMaterial.new()
     river_material.shader=load("res://shaders/rivers.gdshader")
-    for param in ["elevation_tex","water_tex","world_size","world_min","height_packed","water_distance_tex","use_water_distance","detail_elevation_tex","detail_height_packed","use_detail_elevation","detail_world_min","detail_world_size","detail_water_tex","use_detail_water","detail_water_distance_tex","use_detail_water_distance","use_water_tile","use_water_tile_distance","water_tile_tex","water_tile_distance_tex","water_tile_world_min","water_tile_world_size"]:
+    for param in ["elevation_tex","water_tex","world_size","world_min","height_packed","water_distance_tex","use_water_distance","detail_elevation_tex","detail_height_packed","use_detail_elevation","detail_world_min","detail_world_size","detail_water_tex","use_detail_water","detail_water_distance_tex","use_detail_water_distance","use_water_tile","use_water_tile_distance","water_tile_tex","water_tile_distance_tex","water_tile_world_min","water_tile_world_size","use_c2_domains","fine_inner_world_min","fine_inner_world_size","local_inner_world_min","local_inner_world_size"]:
         river_material.set_shader_parameter(param,terrain_material.get_shader_parameter(param))
+    river_material.set_shader_parameter("use_model_mesh",true)
     if style_api:
         for param in style_api.water_parameters(): river_material.set_shader_parameter(param,style_api.water_parameters()[param])
-    var vertices=PackedVector3Array()
-    var normals=PackedVector3Array()
-    var uvs=PackedVector2Array()
-    var indices=PackedInt32Array()
     for feature in data.get("features",[]):
         var geom=feature.get("geometry",{})
         var lines=[]
         if geom.get("type")=="LineString": lines=[geom.coordinates]
         elif geom.get("type")=="MultiLineString": lines=geom.coordinates
         else: continue
-        river_feature_count+=1
         var rank=float(feature.get("properties",{}).get("scalerank",5))
-        # Symbolic natural river band, source widths are not available in NE.
         var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
+        var segments: Array=[]
+        var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
         for line in lines:
-            if line.size()<2: continue
             for j in range(line.size()-1):
                 var a=geographic_to_world(float(line[j][0]),float(line[j][1]))
                 var b=geographic_to_world(float(line[j+1][0]),float(line[j+1][1]))
-                var tangent=(b-a).normalized()
-                var side=Vector3(-tangent.y,0,tangent.x)
-                var segments=clampi(int(ceil(a.distance_to(b)/0.25)),1,100)
-                for k in range(segments):
-                    var p=a.lerp(b,float(k)/segments)
-                    var q=a.lerp(b,float(k+1)/segments)
-                    var base=vertices.size()
-                    vertices.append_array(PackedVector3Array([Vector3(p.x,0,p.y),Vector3(p.x,0,p.y),Vector3(q.x,0,q.y),Vector3(q.x,0,q.y)]))
-                    normals.append_array(PackedVector3Array([side,side,side,side]))
-                    uvs.append_array(PackedVector2Array([Vector2(-1,width),Vector2(1,width),Vector2(-1,width),Vector2(1,width)]))
-                    indices.append_array(PackedInt32Array([base,base+2,base+1,base+1,base+2,base+3]))
-    var arrays=[]
-    arrays.resize(Mesh.ARRAY_MAX)
-    arrays[Mesh.ARRAY_VERTEX]=vertices
-    arrays[Mesh.ARRAY_NORMAL]=normals
-    arrays[Mesh.ARRAY_TEX_UV2]=uvs
-    arrays[Mesh.ARRAY_INDEX]=indices
-    var mesh=ArrayMesh.new()
-    mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-    mesh.custom_aabb=AABB(Vector3(world_min.x,-1,world_min.y),Vector3(world_size.x,12,world_size.y))
-    var node=MeshInstance3D.new()
-    node.mesh=mesh
-    node.material_override=river_material
-    node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    add_child(node)
+                segments.append([a,b,width])
+                minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
+        if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001)})
+        river_feature_count+=1
 
+func _update_river_surface() -> void:
+    if not river_material or not feature_queue.is_empty() or feature_task>=0: return
+    var key=previous_lod_key+":"+str(river_support_revision)+":"+str(tin_surface.changes if tin_surface else 0)
+    if key!=river_surface_key:
+        river_surface_key=key
+        for node in river_pending_nodes: node.queue_free()
+        river_pending_nodes.clear();river_queue.clear()
+        for i in range(river_sources.size()):
+            if river_sources[i].rect.intersects(camera_footprint.grow(2.0)): river_queue.append(i)
+    if river_queue.is_empty(): return
+    var source=river_sources[river_queue.pop_front()]
+    var vertices=PackedVector3Array();var normals=PackedVector3Array();var uvs=PackedVector2Array();var indices=PackedInt32Array()
+    for segment in source.segments:
+        var a: Vector2=segment[0];var b: Vector2=segment[1]
+        if not Rect2(a.min(b),(a-b).abs()).grow(2.0).intersects(camera_footprint): continue
+        var tangent=(b-a).normalized()
+        var side=Vector2(-tangent.y,tangent.x)
+        var minimum_pixels=float(style_api.water_parameters().get("minimum_screen_width_px",1.6)) if style_api else 1.6
+        var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
+        var half_width=maxf(float(segment[2])*.5,minimum_pixels*.5*view_width/viewport_size.x/maxf(projected_side,.001))
+        var count=clampi(int(ceil(a.distance_to(b)/maxf(view_width/viewport_size.x*4.0,.05))),1,100)
+        for j in range(count):
+            var p=a.lerp(b,float(j)/count);var q=a.lerp(b,float(j+1)/count)
+            var points=PackedVector2Array([p-side*half_width,q-side*half_width,q+side*half_width,p+side*half_width])
+            if fixed_surface and not fixed_flat_node.visible:
+                var low=points[0];var high=points[0]
+                for v in points:low=low.min(v);high=high.max(v)
+                for triangle in fixed_surface.triangles_in_area(Rect2(low,high-low),fixed_stride):
+                    var tri=PackedVector2Array([Vector2(triangle[0].x,triangle[0].z),Vector2(triangle[1].x,triangle[1].z),Vector2(triangle[2].x,triangle[2].z)])
+                    for polygon in Geometry2D.intersect_polygons(points,tri):
+                        _append_river_polygon(polygon,triangle,p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+            else:
+                _append_river_polygon(points,[],p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+    if not vertices.is_empty():
+        var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
+        arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV2]=uvs;arrays[Mesh.ARRAY_INDEX]=indices
+        var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+        var node=MeshInstance3D.new();node.mesh=mesh;node.material_override=river_material;node.visible=false
+        node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        add_child(node);river_pending_nodes.append(node)
+    if river_queue.is_empty():
+        for node in river_nodes: node.queue_free()
+        river_nodes=river_pending_nodes;river_pending_nodes=[]
+        for node in river_nodes: node.visible=true
+
+func _append_river_polygon(polygon: PackedVector2Array,triangle: Array,origin: Vector2,side: Vector2,half_width: float,symbolic_width: float,vertices: PackedVector3Array,normals: PackedVector3Array,uvs: PackedVector2Array,indices: PackedInt32Array) -> void:
+    if polygon.size()<3:return
+    var start=vertices.size()
+    for p in polygon:
+        var base=0.0
+        if not triangle.is_empty():
+            var a: Vector3=triangle[0];var b: Vector3=triangle[1];var c: Vector3=triangle[2]
+            var delta=p-Vector2(a.x,a.z);var u=Vector2(b.x-a.x,b.z-a.z);var v=Vector2(c.x-a.x,c.z-a.z)
+            var denominator=u.cross(v)
+            if absf(denominator)>1e-14:base=(a.y+(b.y-a.y)*delta.cross(v)/denominator+(c.y-a.y)*u.cross(delta)/denominator)*display_height_scale
+        vertices.append(Vector3(p.x,base,p.y));normals.append(Vector3.UP)
+        uvs.append(Vector2(clampf((p-origin).dot(side)/maxf(half_width,.000001),-1.,1.),symbolic_width))
+    for i in range(1,polygon.size()-1):
+        var b=i;var c=i+1
+        if (polygon[b]-polygon[0]).cross(polygon[c]-polygon[0])<0.0:var temp=b;b=c;c=temp
+        indices.append_array(PackedInt32Array([start,start+b,start+c]))
+
+func _material_uniform_snapshot(material: ShaderMaterial) -> Dictionary:
+    var result={}
+    if not material:return result
+    for key in ["view_width","viewport_width","shore_band_m","shallow_band_m","shore_screen_width_px","shallow_screen_width_px","use_display_coast_distance","display_coast_world_min","display_coast_world_size","shore_display_span_world","shallow_display_span_world","surface_overlay_offset_world","minimum_screen_width_px","projection_vertical_scale","use_water_distance","use_detail_water_distance","world_min","world_size","detail_world_min","detail_world_size","water_tile_world_min","water_tile_world_size","use_fixed_surface","marine_surface_only","display_height_scale","use_c2_domains","fine_inner_world_min","fine_inner_world_size","local_inner_world_min","local_inner_world_size"]:
+        var value=material.get_shader_parameter(key)
+        if value is Vector2:value=[value.x,value.y]
+        result[key]=value
+    return result
 
 func _waypoint_id() -> Variant:
     if not fixture_data.is_empty(): return current_fixture_waypoint
@@ -1323,16 +1995,33 @@ func _triangle_height(p: Vector2, step: Vector2) -> float:
     return d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y)
 
 func _render_height(p: Vector2) -> float:
+    if fixed_surface:
+        if _water_kind(p)==1 or (fixed_flat_node and fixed_flat_node.visible): return 0.0
+        var cell=Vector2i(((p-fixed_surface.world_min)/fixed_surface.spacing/float(fixed_surface.CHUNK_CELLS)).floor())
+        var h=fixed_surface.rendered_height(p,fixed_chunks[cell]) if fixed_chunks.has(cell) and fixed_chunks[cell].node.visible else fixed_surface.surface_height(p)
+        return float(h)*display_height_scale*relief
     if tin_surface:
         var model_height=tin_surface.height_at(p)
-        if model_height!=null: return float(model_height)*relief
-    for key in active_patch_bounds:
-        var patch: Vector4=active_patch_bounds[key]
-        var size=Vector2(patch.z,patch.w)*world_size
-        if Rect2(world_min+Vector2(patch.x,patch.y)*world_size,size).has_point(p):
-            var morph=smoothstep(0.11,0.22,maxf(size.x,size.y)/view_width)
-            return lerpf(_triangle_height(p,size/12.0),_triangle_height(p,size/24.0),morph)*relief
-    return _height(p)*relief
+        if model_height!=null: return float(model_height)*relief*display_height_scale
+    # Follow the same quadtree address directly; continental forest support
+    # queries must not linearly scan every visible patch for every sign.
+    var uv=(p-world_min)/world_size
+    if uv.x>=0 and uv.y>=0 and uv.x<=1 and uv.y<=1:
+        var key="r"
+        for depth in range(15):
+            if active_patch_bounds.has(key):
+                if feature_active.has(key):
+                    var feature_height=feature_lod.height_at(p,feature_meshes[key])
+                    if feature_height!=null: return float(feature_height)*relief*display_height_scale
+                var patch: Vector4=active_patch_bounds[key]
+                var size=Vector2(patch.z,patch.w)*world_size
+                var morph=smoothstep(.11,.22,maxf(size.x,size.y)/view_width)
+                return lerpf(_triangle_height(p,size/12.),_triangle_height(p,size/24.),morph)*relief*display_height_scale
+            uv*=2.0
+            var x=clampi(int(uv.x),0,1);var y=clampi(int(uv.y),0,1)
+            key+=str(y*2+x)
+            uv-=Vector2(x,y)
+    return _height(p)*relief*display_height_scale
 
 func _anchor_probes(definitions: Array=[]) -> Array:
     if definitions.is_empty(): definitions=anchor_definitions
@@ -1394,6 +2083,7 @@ func _notification(what: int) -> void:
 
 
 func _height_texture() -> ImageTexture:
+    if canonical_v2:return _v2_texture("context","height",Image.FORMAT_RG8)
     if not context_height_packed.is_empty():
         return ImageTexture.create_from_image(Image.create_from_data(context_height_width,context_height_height,false,Image.FORMAT_RG8,context_height_packed))
     if model_product:
@@ -1401,6 +2091,7 @@ func _height_texture() -> ImageTexture:
     return _detail_height_texture()
 
 func _detail_height_texture() -> ImageTexture:
+    if canonical_v2:return _v2_texture("fine","height",Image.FORMAT_RG8)
     if not detail_height_packed.is_empty():
         return ImageTexture.create_from_image(Image.create_from_data(elevation_width,elevation_height,false,Image.FORMAT_RG8,detail_height_packed))
     if elevation_width==grid_width:
@@ -1446,6 +2137,10 @@ func _projection_columns() -> Array:
 
 
 func _water_distance_texture() -> ImageTexture:
+    if canonical_v2:
+        terrain_material.set_shader_parameter("use_water_distance",true);terrain_material.set_shader_parameter("use_detail_water_distance",true)
+        terrain_material.set_shader_parameter("detail_water_distance_tex",_v2_texture("fine","water_distance",Image.FORMAT_RG8))
+        return _v2_texture("context","water_distance",Image.FORMAT_RG8)
     if model_product:
         terrain_material.set_shader_parameter("use_water_distance",false)
         terrain_material.set_shader_parameter("use_detail_water_distance",false)
@@ -1479,6 +2174,7 @@ func _water_distance_texture() -> ImageTexture:
     return ImageTexture.create_from_image(Image.create_from_data(water_width,water_height,false,Image.FORMAT_RG8,water_distance_bytes))
 
 func _water_distance(p: Vector2) -> float:
+    if canonical_v2:return canonical_v2.water_distance_m(p)
     if not water_tile_distance_bytes.is_empty() and water_tile_rect.has_point(p):
         return _sample_distance_field(water_tile_distance_bytes,water_tile_rect,int(water_tile.width),int(water_tile.height),p)
     var detailed=not detail_water_distance_bytes.is_empty() and detail_rect.has_point(p)
@@ -1532,7 +2228,7 @@ func _drive_fixture() -> void:
 
 func _observed_view_state() -> Dictionary:
     var geo=world_to_geographic(target)
-    return {"id":current_fixture_state_id if current_fixture_state_id!="" else "continuous-"+str(frame_number),"mapping_revision":MAPPING_REVISION,"target_source_position":{"longitude":geo.x,"latitude":geo.y},"viewport":{"width_px":get_viewport().size.x,"height_px":get_viewport().size.y,"device_pixel_ratio":1.0,"screen_origin":"top-left"},"zoom_normalized":zoom,"transform":{"artifact_path":"data/projection.json","sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json"))},"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"relief_weight":relief,"transition_definition":{"artifact_path":"docs/product-renderer/camera-profile.json","sha256":profile_sha256}}
+    return {"id":current_fixture_state_id if current_fixture_state_id!="" else "continuous-"+str(frame_number),"mapping_revision":MAPPING_REVISION,"target_source_position":{"longitude":geo.x,"latitude":geo.y},"viewport":{"width_px":get_viewport().size.x,"height_px":get_viewport().size.y,"device_pixel_ratio":1.0,"screen_origin":"top-left"},"zoom_normalized":zoom,"transform":{"artifact_path":"data/projection.json","sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json"))},"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"relief_weight":relief,"display_height_scale":display_height_scale,"display_policy":landform_policy,"transition_definition":{"artifact_path":"docs/product-renderer/camera-profile.json","sha256":profile_sha256}}
 
 
 func _decode_water_distance(index: int) -> float:
@@ -1557,7 +2253,7 @@ func _record_motion() -> void:
             var y=_render_height(p)
             var pixel=camera.unproject_position(Vector3(p.x,y,p.y))
             points.append({"anchor_id":id,"source_lon":anchor.longitude,"source_lat":anchor.latitude,"observed_pixel":[pixel.x,pixel.y],"rendered_height_model":y,"in_viewport":not camera.is_position_behind(Vector3(p.x,y,p.y)) and get_viewport().get_visible_rect().has_point(pixel)})
-    motion_probes.append({"frame":frame_number,"t_ms":elapsed*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"relief_weight":relief,"target_height_model":_height(target)*relief,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"points":points})
+    motion_probes.append({"frame":frame_number,"t_ms":elapsed*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"relief_weight":relief,"target_height_model":_render_height(target),"target_canonical_height_model":_height(target),"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"points":points})
 
 
 func _fixture_control(id: String) -> Dictionary:
