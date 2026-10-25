@@ -25,13 +25,20 @@ static func damp(value: float, velocity: float, goal: float, delta: float) -> Ve
     var decay = exp(-SETTLE_OMEGA*delta)
     return Vector2(goal+(offset+impulse*delta)*decay,(velocity-SETTLE_OMEGA*impulse*delta)*decay)
 
-static func footprint_offsets(width: float, aspect: float, pitch: float, relief: float, focus_height: float) -> Rect2:
+static func finish_after_final_frame(callback: Callable) -> void:
+    if DisplayServer.get_name()=="headless":
+        callback.call_deferred()
+    else:
+        RenderingServer.frame_post_draw.connect(callback,CONNECT_ONE_SHOT)
+        RenderingServer.force_draw(false)
+
+static func footprint_offsets(width: float, aspect: float, pitch: float, relief: float, focus_height: float, height_range: Vector2=Vector2(MIN_HEIGHT,MAX_HEIGHT)) -> Rect2:
     # All intersections of four orthographic corner rays with the conservative
     # height interval. Thus every intervening heightfield point is contained.
     var angle = deg_to_rad(pitch)
     var half_depth = width/(2.0*aspect*sin(angle))
-    var low_shift = (MIN_HEIGHT*relief-focus_height)/tan(angle)
-    var high_shift = (MAX_HEIGHT*relief-focus_height)/tan(angle)
+    var low_shift = (height_range.x*relief-focus_height)/tan(angle)
+    var high_shift = (height_range.y*relief-focus_height)/tan(angle)
     return Rect2(Vector2(-width*0.5,-half_depth+low_shift),Vector2(width,2.0*half_depth+high_shift-low_shift))
 
 static func target_limits(core: Rect2, context: Rect2, footprint: Rect2, freedom: float) -> Rect2:
