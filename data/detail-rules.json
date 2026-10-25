@@ -1,0 +1,31 @@
+{
+  "revision": "policy-v2",
+  "method": "Bilinear resampling of real elevation only; nearest/mode categorical cover. No synthetic relief noise, no height exaggeration. Same canonical grid sampled at each LOD.",
+  "levels": [
+    "overview",
+    "canonical",
+    "detail"
+  ],
+  "omissions": "Small source islands with projected area below10squarekm may be subpixel at canonical/overview; vector geometry is retained and specific omission inventory measured. Protected Sicily/Sardinia/Corsica/Crete/Cyprus never omitted. Native15s detail preserves input heights, no invented microdetail.",
+  "protected_classes": [
+    "coastlines",
+    "islands",
+    "river_network",
+    "mountain_ridges",
+    "tile_seams"
+  ],
+  "landcover": {
+    "10": "trees represented with stable seeded illustrative individuals; no measured tree positions",
+    "20": "shrub",
+    "30": "grass",
+    "40": "neutral homogeneous natural-looking surface; no fields or presumed historical vegetation",
+    "50": "neutral homogeneous surface; no buildings",
+    "60": "bare",
+    "70": "snow",
+    "80": "water",
+    "90": "wetland",
+    "95": "mangrove",
+    "100": "moss",
+    "0": "unknown must remain explicit"
+  }
+}

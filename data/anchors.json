@@ -1,0 +1,141 @@
+{
+  "revision": "anchors-v3",
+  "anchors": [
+    {
+      "id": "alpine-woodland-near",
+      "longitude": 8.991666666666667,
+      "latitude": 46.00833333333333,
+      "class_code": 10,
+      "height_m": 584.4168701171875,
+      "canonical_col": 1199,
+      "canonical_row": 719,
+      "source": "ESAWorldCover2021v200 observed overview class10; ETOPO2022v1. No surveyed individual tree claim.",
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/worldcover-inventory.json",
+        "sha256": "ab47b43425f98ef3a12d75839bb261c450201d9b1400c2feb1b9b56ccb0dd24e"
+      },
+      "source_feature_id": "WorldCoverN45E006 native overview pixel; canonical719,1199"
+    },
+    {
+      "id": "italy",
+      "longitude": 12.49,
+      "latitude": 41.89,
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/etopo15-inventory.json",
+        "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+      },
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "class_code": 50,
+      "height_m": 39.0393180847168,
+      "canonical_row": 966,
+      "canonical_col": 1409
+    },
+    {
+      "id": "england",
+      "longitude": -1.5,
+      "latitude": 54.0,
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/etopo15-inventory.json",
+        "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+      },
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "class_code": 50,
+      "height_m": 75.3210678100586,
+      "canonical_row": 240,
+      "canonical_col": 570
+    },
+    {
+      "id": "north-africa",
+      "longitude": 10.2,
+      "latitude": 35.5,
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/etopo15-inventory.json",
+        "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+      },
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "class_code": 40,
+      "height_m": 66.75709533691406,
+      "canonical_row": 1350,
+      "canonical_col": 1272
+    },
+    {
+      "id": "eastern-extent",
+      "longitude": 42,
+      "latitude": 36,
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/etopo15-inventory.json",
+        "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+      },
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "class_code": 40,
+      "height_m": 310.3926696777344,
+      "canonical_row": 1320,
+      "canonical_col": 3180
+    },
+    {
+      "id": "jordandepression",
+      "longitude": 35.5,
+      "latitude": 31.5,
+      "kind": "interior",
+      "source_ref": {
+        "artifact_path": "data/etopo15-inventory.json",
+        "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+      },
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "class_code": 80,
+      "height_m": -427.0,
+      "canonical_row": 1590,
+      "canonical_col": 2790
+    },
+    {
+      "id": "region-edge",
+      "longitude": -11,
+      "latitude": 45,
+      "kind": "region_edge",
+      "source_ref": {
+        "artifact_path": "data/reference/mask.geojson",
+        "sha256": "f2775bb87d1cd40d6f091695e856381043935f996c876bb56da2f74a6135e81b"
+      },
+      "source_feature_id": "project-mask-v1 west edge",
+      "class_code": 80,
+      "height_m": -4921.484375,
+      "canonical_row": 780,
+      "canonical_col": 0
+    },
+    {
+      "id": "tile-seam",
+      "longitude": 19,
+      "latitude": 41,
+      "kind": "tile_seam",
+      "source_ref": {
+        "artifact_path": "data/tile-grid.json",
+        "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+      },
+      "source_feature_id": "eqc41-km-v1:0:0; projectedx=0m,z=0m",
+      "class_code": 80,
+      "height_m": -114.5859375,
+      "canonical_row": 1020,
+      "canonical_col": 1800
+    },
+    {
+      "id": "coast-ostia",
+      "longitude": 12.239024,
+      "latitude": 41.736274,
+      "kind": "coast",
+      "source_ref": {
+        "artifact_path": "data/derived/land.geojson",
+        "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c"
+      },
+      "source_feature_id": "sourcefeature0:vertex11406",
+      "class_code": 80,
+      "height_m": -1.3814491033554077,
+      "canonical_row": 975,
+      "canonical_col": 1394
+    }
+  ]
+}
