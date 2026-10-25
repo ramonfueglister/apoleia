@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+mkdir -p "$ROOT_DIR/artifacts/runtime"
+python3 "$ROOT_DIR/app/scripts/pack_height.py"
+python3 "$ROOT_DIR/app/scripts/pack_water_distance.py"
+exec "${GODOT_BIN:-godot}" --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/godot.log" "$@"

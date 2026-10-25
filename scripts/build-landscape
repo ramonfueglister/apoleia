@@ -1,0 +1,13 @@
+#!/bin/sh
+# Import/parse project; optionally assemble a local Mac app with existing Godot.
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+mkdir -p "$ROOT_DIR/artifacts/runtime"
+python3 "$ROOT_DIR/app/scripts/pack_height.py"
+python3 "$ROOT_DIR/app/scripts/pack_water_distance.py"
+"${GODOT_BIN:-godot}" --headless --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/build.log" --editor --import --quit
+"${GODOT_BIN:-godot}" --headless --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/parse.log" --script res://scripts/landscape.gd --check-only
+if [ "${1:-}" = "--package" ]; then
+    exec python3 "$ROOT_DIR/app/scripts/package_macos.py"
+fi
