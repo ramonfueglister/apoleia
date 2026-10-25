@@ -2,6 +2,41 @@
 
 **Referenzversion:** `kit1-landscape-v5` / `kit1-rendering-v4` · **Stand:** 25.10.2026.
 
+## Wiederaufnahme-Checkpoint — aktueller Produktstand
+
+**Scope:** vollständiger ausdrücklicher Kit-1-Startauftrag aus
+`START_PROMPT.md`; ältere Einträge „keine Spielimplementierung“ sind historisch.
+Referenz `kit1-landscape-v5` / `kit1-rendering-v4`. Der aktuelle eingefrorene
+Produktlauf ist `source-v2-v19-product-cloud-r1` (Session 34031, Exit 0); sein
+Hashcheckpoint bindet Runtime `c3c42ef7…`, Terrainshader `ca680ba2…` und
+Produktbindung `b4dd9133…` sowie vier tatsächliche Frames. Das belegt eine
+begrenzte Runtimeintegration, keinen Stil-, Navigations- oder Gesamtpass.
+
+| Bereich | Status | Aktueller Beleg / Grenze |
+|---|---|---|
+| SourceV2-Produktbindung | `implementiert` | [`renderer-binding.json`](../../app/renderer-binding.json) setzt SourceV2 als Default und bindet Atlas, Upload, Küste sowie den V19-Waldcache. [`SOURCE_V2_RUNTIME_HANDOFF.md`](../product-renderer/SOURCE_V2_RUNTIME_HANDOFF.md) und [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/checkpoint.json) binden die Revisionen/Hashes. SourceV2 lief im Produktlauf ohne CLI-Datasetoverride; keine vollständige Datengebietsabnahme. |
+| V19-Waldgruppierung / A08 | `implementiert` / A08 `offen` | [`V19_GROUPED_CROWNS_HANDOFF.md`](../product-style/V19_GROUPED_CROWNS_HANDOFF.md) bestätigt begrenzte CPU-Validierung und unabhängig bessere Gruppierung, aber keine Referenznähe. Der gebundene aktuelle Fern-/Nah-Produktlauf ist [`source-v2-v19-product-cloud-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/); A08 bleibt **FAIL**. Kein Stil- oder Gesamtabnahmepass. |
+| Produkt-Waldcache | `implementiert`, begrenzt validiert | [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-frusta-cache-r1/summary.json): 352 beobachtete stride-1-Zellen aus genau Fern/Mittel/Nah-Frusta, davon 61 leer; 264.164.536 Payloadbytes, Bake/Write 76.314 ms, Arrayfingerprints 352/352 identisch. Das Produktmanifest hat SHA-256 `5bb618e402de7e8e0855be2ecf5d2a1273c07a837a08d46a9cdfe0f1a1b033d5`. CPU-Standardstart: 352 Hits/0 Misses/0 Fallbacks; integrierter Fern-/Nah-Lauf: 308 Produktcachehits/0 Misses/0 Fallbacks und 1.294,384 ms kumulierte Meshloads. Cache deckt nicht alle Welt-, Viewport- oder Stridezustände ab; GPU-Feld `viewport_gpu_ms` ist nicht verfügbar. Der 253-MiB-generierte Cache ist lokal vorhanden, nicht in Git veröffentlicht; dieser Checkpoint behauptet keine entfernte Reproduzierbarkeit. |
+| Integrierter Lauf / Messumfang | `erforscht` | [`control.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/control.json), [`runtime.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/runtime.json), [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/summary.json) binden vier Bilder (fern/nah, Wolken aus/an), 16 Warmups und 90 Messframes je Record; Queues leer, 8 stabile Frames. Wallzeitmediane OFF/ON: fern 29,670/63,4485 ms (p95 30,934/67,460), nah 8,3235/10,340 ms (p95 8,779/10,446). Je Variante 90 Frames nach 16 Warmups. Ziel, Breite, Basis, LOD-Signatur und projizierte Anker waren gleich (max. 0,000061 px); vollständige Kameraposition und Far Clip unterschieden sich wolkenhöhenbedingt. GPU-Zeit ist `null`; nur dieser gerenderte, bereite Szenenzustand wurde gemessen. Keine Navigation, Kaltstart-, Zielhardware-/Mobile-Forward+- oder A12-Performanceabnahme. |
+| Material-/Küstenkorrekturen | `erforscht` | Der kontrollierte [`source-v2-material-coast-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-material-coast-r1/) schaltete beide Materialübergangs-Uniforms gemeinsam von 0 auf 1; unabhängiger Vergleich bestätigt weniger Materialtreppen/Doppelringe, nicht die isolierte Wirkung jeder Uniform. Weiche Flecken, Inselhöfe und glatte Felsflanken bleiben. |
+| Canopyfilter | `erforscht` | [`source-v2-canopy-ab-r1/control.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-canopy-ab-r1/control.json) bindet den engen Filter-A/B; nur kleiner Ferngewinn, kein übernommener globaler Stilpass. |
+| SourceV2 GPU-Numerik | `offen` | [`source-v2-gpu-sampling-r3`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-gpu-sampling-r3/) bleibt mit damaligem RGBA-Grenzwert `0.0001` **FAIL**. [`numeric-policy-r4`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-numeric-policy-r4/analysis.json) begründet unabhängig eine künftige Render-Toleranz `1/255`; das ist weder globale Fehlergrenze noch rückwirkender r3-Pass. |
+| Verpackung | `implementiert`, finale Lieferung `offen` | P1/P2-Korrekturbeleg [`package-evidence/p1p2-r1`](../product-renderer/package-evidence/p1p2-r1/README.md) bindet 8 CPU-/Filesystemtests und einen 9.504-Dateien/2.925.580.324-Byte-Dryrun. Das ist kein neues Bundle und kein gestarteter Apptransport. |
+| Wolken | `offen` | [`cloud_layer.md`](../../app/scripts/weather/cloud_layer.md): v7-Nutzerabnahme widerrufen; Cloud V10 ist im aktuellen Lauf hashgebunden. Laut Cloud-Owner sind Code und 12 Bildprüfungen vorhanden, Referenz- und Leistungsabnahme bleiben offen. Der integrierte ON/OFF-Lauf liefert begrenzte Messwerte, aber keinen kombinierten visuellen Pass. |
+| A07, Tour und finale Lieferung | `offen` | A07 verlangt mehrere künftige Häuser samt Umfeld und lesbare Einzelbäume; Häuserassets bleiben ausgeschlossen, 500 m ist nur Arbeitswert und ein 240-km-Anker kein A07-Pass. Liveinputs/Resize, endgültige durchgehende Tour samt Readiness-Startadapter, Rand-/Roundtrip, Vollweltcache, aktuelles Bundle und finale unabhängige Stil-/A01–A16-Abnahme bleiben offen. |
+
+**Nächster Wiederaufnahmepunkt:** Ergebnisse des eingefrorenen integrierten
+SourceV2/V19/Cloud-Laufs auf die explizit begrenzten Fragen abbilden; danach
+A07-Ausschnitt, live gesteuerte Pan-/Zoomfahrt samt Readiness und Rand-/Resize-/
+Roundtripbelegen vervollständigen. Den lokalen Cache erst nach geklärter
+Publikations-/Transportbindung als reproduzierbare Lieferung behandeln. Offene
+visuelle, geografische, Kamera-, Leistungs- und Paketabnahmen bleiben sichtbar.
+Kosten nur aus tatsächlich erhobenen Metriken berichten; keine Preise ableiten.
+
+Die nachfolgende historische Statusübersicht ist ein Arbeitslog und wird durch
+diesen aktuellen Checkpoint ergänzt; ältere „noch nicht implementiert“-Zeilen
+beziehen sich auf ihren jeweiligen damaligen Stand.
+
 | Bereich | Status | Nachweis / Grenze |
 |---|---|---|
 | GitHub-Repository und Versionierungsziel | `validiert` | Privates [`ramonfueglister/romaaeterna`](https://github.com/ramonfueglister/romaaeterna), Konto/Owner und Sichtbarkeit geprüft; initialer Commit `60ff002563e73555ea53abb44a4195cea1f15872` ist auf `origin/main` |
