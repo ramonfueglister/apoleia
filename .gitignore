@@ -36,3 +36,17 @@ __pycache__/
 /runs/**/independent-review/**/runtime.json
 /runs/**/independent-review/*-lod-ridge.csv
 /runs/**/independent-review/final-bundle-input/
+# Local-only superseded/reviewer working artifacts; final compact release-v2 evidence is tracked explicitly.
+/runs/**/data-report-errata/HANDOFF.md
+/runs/**/data-report-errata/applicable-evidence-check.json
+/runs/**/data-report-errata/coverage-view.json
+/runs/**/data-report-errata/errata-binding.json
+/runs/**/data-report-errata/policy-application-v1.json
+/runs/**/data-report-errata/runtime-evidence-summary.json
+/runs/**/data-report-errata/evidence/
+/runs/**/data/reference/AWMC-LICENSE.txt
+/runs/**/data/reference/roman-117.geojson
+/runs/**/independent-review/*-lod-ridge.json
+/runs/**/independent-review/capture-contact/
+/runs/**/independent-review/ridge-positive-runtime/
+/runs/**/independent-review/video-frame-*.png
