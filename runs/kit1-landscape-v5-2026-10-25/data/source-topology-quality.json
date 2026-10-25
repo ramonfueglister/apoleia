@@ -1,0 +1,35 @@
+{
+  "revision": "sourcequality-v1",
+  "input": {
+    "artifact_path": "data/reference/roman-117.geojson",
+    "sha256": "1ddd9ac15006e8b9ffd4d185d0302295c3d7c321e9bc8ae3fd627e12d128ba29"
+  },
+  "output": {
+    "artifact_path": "data/reference/roman-117-normalized.geojson",
+    "sha256": "fae33a2a1b5bdc839f71fc6b95bdecd867bfb18b2c797989f97245679e7f6467"
+  },
+  "method": "OGR MakeValid only for invalid original source polygons. Original AWMC bytes untouched. Reference-region extent comes from original geometry envelopes; normalization is an independent audit artifact, not a historical correction.",
+  "source_feature_count": 112,
+  "invalid_sources": 1,
+  "normalizations": [
+    {
+      "source_feature_id": "44",
+      "original_type": "POLYGON",
+      "normalized_type": "POLYGON",
+      "normalized_valid": true,
+      "source_extent": [
+        28.43066,
+        43.75164000000041,
+        37.110930000000735,
+        42.0976699999992
+      ],
+      "normalized_extent": [
+        28.43066,
+        43.75164000000041,
+        37.110930000000735,
+        42.0976699999992
+      ],
+      "area_change_square_degrees": 1.4210854715202004e-14
+    }
+  ]
+}

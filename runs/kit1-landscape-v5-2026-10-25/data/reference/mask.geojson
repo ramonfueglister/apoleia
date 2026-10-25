@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "project-mask-v1",
+        "rule": "outward whole-degree envelope + >=1.5deg context, >=2deg England north"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -11.0,
+              21.0
+            ],
+            [
+              46.0,
+              21.0
+            ],
+            [
+              46.0,
+              58.0
+            ],
+            [
+              -11.0,
+              58.0
+            ],
+            [
+              -11.0,
+              21.0
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

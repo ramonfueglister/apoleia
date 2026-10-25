@@ -1,0 +1,143 @@
+{
+  "kind": "independent-runtime-raw-analysis",
+  "raw_path": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/runtime/camera-pitch-fix/runtime.json",
+  "raw_sha256": "b8de28f11bae04090e3ec7a1bd6bffac8454cd6ab2a8b3d0eb1e5e490b803aa5",
+  "dataset_revision": "landscape-v3",
+  "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "renderer_source_sha256": "9cd9d43e05f73ebcd429bc09bcc65ae4669308371c619a27cc9157e84132974f",
+  "renderer_asset_sha256": {
+    "landscape.tscn": "144cd6119774263b14b6f8d006442b67a5f6f3e2f38ebd524cca5aa150226b78",
+    "project.godot": "f4a976620734b6009e9c59d987f01a36a12362169042f9568c50e9737ca9b29b",
+    "scripts/landscape.gd": "9cd9d43e05f73ebcd429bc09bcc65ae4669308371c619a27cc9157e84132974f",
+    "scripts/pack_height.py": "d670bd6616cdcee4c7acafb769e7871fcc6652a3cae36abfcfbe2100b71a8d0e",
+    "shaders/rivers.gdshader": "9124503f7651b7352b8a73ff071f0b3e12d5a285f0201fd786c47bc960abab4b",
+    "shaders/terrain.gdshader": "f522ce9b325e340d2ac5c4ef28b3761e889dba9f5163f32e37448d934e357922",
+    "shaders/vegetation.gdshader": "dd84a559fbbf9df0402d2195180fc82a816b0d6442c87c48b636afb4b7e30b59"
+  },
+  "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+  "packing_manifest_sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1",
+  "rendering_method": "mobile",
+  "duration_seconds": 0.313458,
+  "frame_count": 30,
+  "all_frame_intervals_count": 30,
+  "all_frame_ms_independent": {
+    "p50": 8.435,
+    "p95": 73.448,
+    "p99": 150.0,
+    "max": 150.0
+  },
+  "peak_gpu_monitor_bytes": 814727168.0,
+  "peak_process_rss_bytes": null,
+  "rss_raw_sha256": null,
+  "integrity_passed": true,
+  "tile_observation_count": 54,
+  "tile_mismatches": [],
+  "mapping_maximum": {
+    "error_px": 8.076758558937691e-05,
+    "frame": 6,
+    "t_ms": 110.158,
+    "anchor_id": "jordandepression",
+    "zoom": 0.0641330173611113
+  },
+  "source_to_render_screen_maximum": {
+    "error_px": 8.095718423355432e-05,
+    "frame": 6,
+    "t_ms": 110.158,
+    "anchor_id": "jordandepression",
+    "zoom": 0.0641330173611113
+  },
+  "sampled_transition_residual_maximum": {
+    "residual_change_px": 0.0,
+    "anchor_id": "alpine-woodland-near",
+    "frame": 12,
+    "previous_frame": 6,
+    "dt_ms": 44.82100000000001
+  },
+  "visible_anchor_zoom_ranges": {
+    "alpine-woodland-near": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    },
+    "italy": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    },
+    "north-africa": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    },
+    "jordandepression": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    },
+    "tile-seam": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    },
+    "coast-ostia": {
+      "count": 6,
+      "minimum": 0.0641330173611113,
+      "maximum": 0.0641330173611113
+    }
+  },
+  "actual_start": {
+    "zoom": 0.0641330173611113,
+    "center_lon": 16.6205024719238,
+    "center_lat": 40.1072692871094,
+    "relief_weight": 0.000732041105462074,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "actual_return": {
+    "zoom": 0.0641330173611113,
+    "center_lon": 16.6205024719238,
+    "center_lat": 40.1072692871094,
+    "relief_weight": 0.000732041105462074,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "pipeline_events": [
+    {
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 0.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 0.0
+      },
+      "frame": 1,
+      "previous_frame_wall_ms": 150.0,
+      "t_ms": 18.002
+    },
+    {
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 2.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 4.0
+      },
+      "frame": 2,
+      "previous_frame_wall_ms": 3.923,
+      "t_ms": 21.925
+    }
+  ],
+  "pipeline_counts_final": {
+    "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+    "PIPELINE_COMPILATIONS_DRAW": 0.0,
+    "PIPELINE_COMPILATIONS_MESH": 0.0,
+    "PIPELINE_COMPILATIONS_SPECIALIZATION": 2.0,
+    "PIPELINE_COMPILATIONS_SURFACE": 4.0
+  },
+  "interaction_events": [],
+  "limitations": "Real Camera3D probes are CPU projections of CPU-evaluated active terrain; no independent GPU transform-feedback or framebuffer feature detection. Mapping compares scalar math with actual Camera3D output. Source screen error uses independently sampled original signed detail grid plus profile relief. Transition residual is change in observed-minus-expected residual at consecutive visible telemetry samples, subtracting legitimate camera movement; it is sampled, not full-frame mesh or ridge/seam proof."
+}

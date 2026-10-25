@@ -1,0 +1,6 @@
+{
+  "revision": "policy-v3",
+  "status": "spezifiziert",
+  "decision": "Before processing: native15s source supports detail13680x8880 (native15arcsec,463m north-south), canonical3420x2220 and overview2048x1536. Predeclared vertical resampling budgets1000m/1800m/2500m respectively, coast6000m,2px screen,1px transition,0.5projection. These are technical simplification limits, not source accuracy. Native15s relief knowledge does not permit surveyed500m microtopography.",
+  "targeted_v3_repair": "v2overviewcoast6418.557m>6000m. Improve derived overviewwater to4096x3072, do not change any budget; actual runtime already shares8192x6144shoreline at everyzoom. Horizontal queryidentity separated from numeric projectionroundtrip before newmeasurement. Height/classes/nativewater/riverpayloads unchanged."
+}

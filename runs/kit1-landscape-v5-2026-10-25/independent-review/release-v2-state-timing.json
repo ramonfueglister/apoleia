@@ -1,0 +1,152 @@
+{
+  "mobile": {
+    "waypoints": 8,
+    "unique_waypoint_ids": 8,
+    "exact_viewstate_mismatches": [],
+    "timings": {
+      "viewport_cpu_ms": {
+        "count": 965,
+        "p50": 0.18799999356269836,
+        "max": 0.6589999794960022
+      },
+      "viewport_gpu_ms": {
+        "count": 0,
+        "p50": null,
+        "max": null
+      },
+      "frame_setup_cpu_ms": {
+        "count": 965,
+        "p50": 0.067,
+        "max": 0.206
+      }
+    },
+    "forest_cpu_max_ms": 8.163,
+    "forest_max_generated_per_frame": 1,
+    "pipeline_events": [
+      {
+        "frame": 1,
+        "t_ms": 18.572000000000003,
+        "previous_frame_wall_ms": 141.9766666666673,
+        "counts": {
+          "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+          "PIPELINE_COMPILATIONS_MESH": 0.0,
+          "PIPELINE_COMPILATIONS_SURFACE": 0.0,
+          "PIPELINE_COMPILATIONS_DRAW": 0.0,
+          "PIPELINE_COMPILATIONS_SPECIALIZATION": 0.0
+        }
+      },
+      {
+        "frame": 2,
+        "t_ms": 24.104,
+        "previous_frame_wall_ms": 5.532,
+        "counts": {
+          "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+          "PIPELINE_COMPILATIONS_MESH": 0.0,
+          "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+          "PIPELINE_COMPILATIONS_DRAW": 0.0,
+          "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+        }
+      }
+    ],
+    "first_generated_forest": {
+      "frame": 2328,
+      "t_ms": 19403.793,
+      "cpu_ms": 7.557,
+      "generated": 1,
+      "resident_chunks": 1,
+      "wanted_chunks": 134,
+      "ready_chunks": 1,
+      "queued_chunks": 133,
+      "tree_count": 225,
+      "evictions": 0
+    },
+    "first_above_visible_threshold": {
+      "zoom": 0.8600039926738494,
+      "frame": 2461,
+      "t_ms": 20512.89,
+      "cpu_ms": 0.818,
+      "generated": 1,
+      "resident_chunks": 134,
+      "wanted_chunks": 134,
+      "ready_chunks": 134,
+      "queued_chunks": 0,
+      "tree_count": 18459,
+      "evictions": 0
+    }
+  },
+  "forward-plus": {
+    "waypoints": 8,
+    "unique_waypoint_ids": 8,
+    "exact_viewstate_mismatches": [],
+    "timings": {
+      "viewport_cpu_ms": {
+        "count": 937,
+        "p50": 0.17499999701976776,
+        "max": 1.0160000324249268
+      },
+      "viewport_gpu_ms": {
+        "count": 0,
+        "p50": null,
+        "max": null
+      },
+      "frame_setup_cpu_ms": {
+        "count": 937,
+        "p50": 0.063,
+        "max": 0.177
+      }
+    },
+    "forest_cpu_max_ms": 7.533,
+    "forest_max_generated_per_frame": 1,
+    "pipeline_events": [
+      {
+        "frame": 1,
+        "t_ms": 35.854,
+        "previous_frame_wall_ms": 144.6310000000004,
+        "counts": {
+          "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+          "PIPELINE_COMPILATIONS_MESH": 0.0,
+          "PIPELINE_COMPILATIONS_SURFACE": 0.0,
+          "PIPELINE_COMPILATIONS_DRAW": 0.0,
+          "PIPELINE_COMPILATIONS_SPECIALIZATION": 0.0
+        }
+      },
+      {
+        "frame": 2,
+        "t_ms": 1259.923,
+        "previous_frame_wall_ms": 1224.069,
+        "counts": {
+          "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+          "PIPELINE_COMPILATIONS_MESH": 0.0,
+          "PIPELINE_COMPILATIONS_SURFACE": 9.0,
+          "PIPELINE_COMPILATIONS_DRAW": 0.0,
+          "PIPELINE_COMPILATIONS_SPECIALIZATION": 7.0
+        }
+      }
+    ],
+    "first_generated_forest": {
+      "frame": 2175,
+      "t_ms": 19408.418999999998,
+      "cpu_ms": 7.533,
+      "generated": 1,
+      "resident_chunks": 1,
+      "wanted_chunks": 134,
+      "ready_chunks": 1,
+      "queued_chunks": 133,
+      "tree_count": 225,
+      "evictions": 0
+    },
+    "first_above_visible_threshold": {
+      "zoom": 0.8603018535551725,
+      "frame": 2308,
+      "t_ms": 20517.263,
+      "cpu_ms": 0.753,
+      "generated": 1,
+      "resident_chunks": 134,
+      "wanted_chunks": 134,
+      "ready_chunks": 134,
+      "queued_chunks": 0,
+      "tree_count": 18459,
+      "evictions": 0
+    }
+  }
+}

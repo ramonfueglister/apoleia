@@ -1,0 +1,170 @@
+{
+  "kind": "independent-runtime-raw-analysis",
+  "raw_path": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/runtime/release-v2-mobile-normal/runtime.json",
+  "raw_sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8",
+  "dataset_revision": "landscape-v3",
+  "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "renderer_asset_sha256": {
+    "project.godot": "f4a976620734b6009e9c59d987f01a36a12362169042f9568c50e9737ca9b29b",
+    "landscape.tscn": "144cd6119774263b14b6f8d006442b67a5f6f3e2f38ebd524cca5aa150226b78",
+    "scripts/landscape.gd": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+    "shaders/terrain.gdshader": "9ff546a3f40dbe5eb2851d56e856c7e46ad83790d96ac80cccd8ce015fc173ce",
+    "shaders/vegetation.gdshader": "c4b4a410c85d3fcea5e198085c0a4a9430198fa507ecc957432f998f744a6dcc",
+    "shaders/rivers.gdshader": "cf5072c098f679e458fddaf94bd47d93af89f10bd8c81e2488311aa5255441e7",
+    "scripts/pack_height.py": "d670bd6616cdcee4c7acafb769e7871fcc6652a3cae36abfcfbe2100b71a8d0e",
+    "scripts/pack_water_distance.py": "2193aa673bbb43dcbe17315d4a8a28d580936230bb1fb9480569daf165ec58bb"
+  },
+  "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+  "packing_manifest_sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1",
+  "rendering_method": "mobile",
+  "duration_seconds": 48.004184,
+  "frame_count": 5750,
+  "all_frame_intervals_count": 5750,
+  "all_frame_ms_independent": {
+    "p50": 8.323,
+    "p95": 9.078,
+    "p99": 9.515,
+    "max": 141.9766666666673
+  },
+  "peak_gpu_monitor_bytes": 916914176.0,
+  "peak_process_rss_bytes": 1859371008,
+  "rss_raw_sha256": "037fa88e9f92f1f4452da4b26a9224df9e943e0f4207f99e96386e0654c44f93",
+  "integrity_passed": true,
+  "tile_observation_count": 8694,
+  "tile_mismatches": [],
+  "mapping_maximum": {
+    "error_px": 0.538048074966185,
+    "frame": 2877,
+    "t_ms": 24004.254,
+    "anchor_id": "alpine-woodland-near",
+    "zoom": 1.0
+  },
+  "source_to_render_screen_maximum": {
+    "error_px": 0.6559894858261045,
+    "frame": 2877,
+    "t_ms": 24004.254,
+    "anchor_id": "alpine-woodland-near",
+    "zoom": 1.0
+  },
+  "sampled_transition_residual_maximum": {
+    "residual_change_px": 0.048775086232921316,
+    "anchor_id": "alpine-woodland-near",
+    "frame": 3432,
+    "previous_frame": 3426,
+    "dt_ms": 50.508999999998196
+  },
+  "per_frame_motion_sample_count": 5750,
+  "per_frame_motion_visible_consecutive_pairs": 5609,
+  "per_frame_motion_residual_maximum": {
+    "anchor_id": "alpine-woodland-near",
+    "frame": 2640,
+    "previous_frame": 2639,
+    "dt_ms": 7.892999999996391,
+    "residual_change_px": 0.06846767644383916
+  },
+  "wall_interval_max_excluding_initial_engine_delta_ms": 18.629,
+  "initial_interval_source": "First raw interval is engine delta fallback, not observed inter-frame wall time; retained in raw and all-frame percentile calculation",
+  "visible_anchor_zoom_ranges": {
+    "alpine-woodland-near": {
+      "count": 800,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "italy": {
+      "count": 233,
+      "minimum": 0.0,
+      "maximum": 0.16166028528222423
+    },
+    "england": {
+      "count": 146,
+      "minimum": 0.0,
+      "maximum": 0.35
+    },
+    "north-africa": {
+      "count": 136,
+      "minimum": 0.0,
+      "maximum": 0.09340023771312639
+    },
+    "eastern-extent": {
+      "count": 99,
+      "minimum": 0.0,
+      "maximum": 0.05531696287760568
+    },
+    "jordandepression": {
+      "count": 106,
+      "minimum": 0.0,
+      "maximum": 0.06288816530335978
+    },
+    "region-edge": {
+      "count": 116,
+      "minimum": 0.0,
+      "maximum": 0.07157409586904717
+    },
+    "tile-seam": {
+      "count": 220,
+      "minimum": 0.0,
+      "maximum": 0.1469609820395519
+    },
+    "coast-ostia": {
+      "count": 231,
+      "minimum": 0.0,
+      "maximum": 0.15936931773484536
+    }
+  },
+  "actual_start": {
+    "zoom": 0.0,
+    "center_lon": 17.5,
+    "center_lat": 39.5,
+    "relief_weight": 0.0,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "actual_return": {
+    "zoom": 0.0,
+    "center_lon": 17.5,
+    "center_lat": 39.5,
+    "relief_weight": 0.0,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "pipeline_events": [
+    {
+      "frame": 1,
+      "t_ms": 18.572000000000003,
+      "previous_frame_wall_ms": 141.9766666666673,
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 0.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 0.0
+      }
+    },
+    {
+      "frame": 2,
+      "t_ms": 24.104,
+      "previous_frame_wall_ms": 5.532,
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+      }
+    }
+  ],
+  "pipeline_counts_final": {
+    "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+    "PIPELINE_COMPILATIONS_MESH": 0.0,
+    "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+    "PIPELINE_COMPILATIONS_DRAW": 0.0,
+    "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+  },
+  "interaction_events": [],
+  "limitations": "Real Camera3D probes are CPU projections of CPU-evaluated active terrain; no independent GPU transform-feedback or framebuffer feature detection. Mapping compares scalar math with actual Camera3D output. Source screen error uses independently sampled original signed detail grid plus profile relief. Transition residual is change in observed-minus-expected residual at consecutive visible telemetry samples, subtracting legitimate camera movement; it is sampled, not full-frame mesh or ridge/seam proof."
+}

@@ -1,0 +1,32 @@
+{
+  "source_plan_sha256": "0be45505595a91fa42e505c0e5541d18b3abf7accbae0c1ea3a8fb94e701d913",
+  "runtime_sha256": "144dd2f03e9cea8152b7c283fa8451ba07f8d652361feea572726d658431bdef",
+  "renderer_source_sha256": "06d97361665fca83eb65108cd241ca9356557b2d8744ad4bc873d121cc456fc5",
+  "independent_source_height_m_at_logged_source_position": 1752.130859375,
+  "logged_probe": {
+    "anchor_id": "independent-positive-ridge",
+    "source_lon": 36.047916666666666,
+    "source_lat": 36.33958333333334,
+    "source_surface_height_m": 1752.0767150557367,
+    "water_kind": 0,
+    "canonical_model_position": [
+      1430.6610107421875,
+      1.7520767150557368,
+      518.2154541015625
+    ],
+    "rendered_height_model": 1.4163815187686293,
+    "observed_pixel": [
+      960.0,
+      540.7765502929688
+    ],
+    "tile_id": "eqc41-km-v1:518:1430",
+    "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+    "in_viewport": true
+  },
+  "model_height_difference": -0.0052719837283699,
+  "source_height_equivalent_difference_m": -6.497508263705253,
+  "screen_vertical_height_residual_px": 0.7792901869778858,
+  "zoom": 0.7,
+  "relief_weight": 0.8113854595336076,
+  "limits": "Actual Camera3D projection of CPU active triangle; no GPU vertex readback. Source probe coordinates retain full precision. Nominal camera target and effective Float32 camera center differ and are retained separately; runtime height samples a Float32 world query. Original ocean anchor is not replaced."
+}

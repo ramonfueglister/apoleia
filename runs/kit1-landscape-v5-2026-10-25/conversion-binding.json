@@ -1,0 +1,126 @@
+{
+  "schema_version": "kit1-runtime-conversion-binding-v1",
+  "run_id": "kit1-landscape-v5-2026-10-25",
+  "build_revision": "product-build-sha256:34a0f20fa36c1f95516307b53a228ea5ac7cdd6a5644159380c71e4c499bd347",
+  "renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "renderer_source_revision": "renderer-source-sha256:32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "dataset_revision": null,
+  "dataset_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "product_build_components": {
+    "schema_version": "kit1-product-build-components-v1",
+    "dataset_revision": null,
+    "dataset_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+    "sources_revision": "sources-v1",
+    "sources_manifest_sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+    "mapping_revision": "mapping-v1",
+    "camera_revision": "orthographic-relief-v1",
+    "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+    "renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+    "renderer_asset_sha256": {
+      "project.godot": "f4a976620734b6009e9c59d987f01a36a12362169042f9568c50e9737ca9b29b",
+      "landscape.tscn": "144cd6119774263b14b6f8d006442b67a5f6f3e2f38ebd524cca5aa150226b78",
+      "scripts/landscape.gd": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+      "shaders/terrain.gdshader": "9ff546a3f40dbe5eb2851d56e856c7e46ad83790d96ac80cccd8ce015fc173ce",
+      "shaders/vegetation.gdshader": "c4b4a410c85d3fcea5e198085c0a4a9430198fa507ecc957432f998f744a6dcc",
+      "shaders/rivers.gdshader": "cf5072c098f679e458fddaf94bd47d93af89f10bd8c81e2488311aa5255441e7",
+      "scripts/pack_height.py": "d670bd6616cdcee4c7acafb769e7871fcc6652a3cae36abfcfbe2100b71a8d0e",
+      "scripts/pack_water_distance.py": "2193aa673bbb43dcbe17315d4a8a28d580936230bb1fb9480569daf165ec58bb"
+    },
+    "packing_manifest_sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1",
+    "water_distance_manifest_sha256": "9e97b20ee51a248c5dcfcbc44d6e15e8ceb676c669a46ffc6c90273985291de0",
+    "anchors_sha256": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d",
+    "fixture_sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+    "fixture_controls_sha256": "527992f720becdef0ad016c1d37860138f78c8f62ad48fb890c5bc0315adf085",
+    "validation_thresholds_sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8"
+  },
+  "build_revision_method": "SHA-256 of canonical JSON (sorted keys, compact separators) in product_build_components; this is a run assembly fingerprint, not a claim about a compiled binary hash",
+  "runtime_file_mtime_utc": "2026-10-25T16:46:40Z",
+  "timestamp_semantics": "runtime.json filesystem mtime; native runtime file does not contain wall-clock start UTC",
+  "rss_peak_source_t_ms": 53135.222333003185,
+  "rss_peak_nearest_runtime_t_ms": 48004.184,
+  "rss_peak_nearest_runtime_delta_ms": 5131.038333003184,
+  "max_nearest_rss_sample_delta_ms": 59.046958002069005,
+  "frame_percentile_note": "Kit telemetry frame_p95_ms is computed over the native emitted sample records; independent all-frame distribution remains in the source runtime/reviewer JSON.",
+  "memory_note": "memory_mb uses MiB values from process RSS bytes because the predeclared memory limit is explicitly 2048 MiB; no decimal-GB conversion.",
+  "tile_note": "Observed canonical tile IDs are copied from runtime anchor_probes; row/column are parsed from the observed id format and checked against fixture cases. Cell size comes from the bound tile-grid manifest.",
+  "overview_target_note": "The fixture requires the overview-target point at start/return. It is derived from the commanded camera focus and viewport center because runtime anchor_probes contains only the nine hashed data anchors; do not interpret it as an observed active-terrain-triangle probe or an A05 anchor.",
+  "duplicate_timestamp_note": "The Kit adapter requires strictly increasing sample times. Only an immediately later generic raw sample sharing the exact final waypoint timestamp is dropped; the waypoint record is retained. Native runtime.json is unchanged.",
+  "raw_sample_record_count": 966,
+  "kit_sample_record_count": 965,
+  "dropped_raw_sample_indices": [
+    965
+  ],
+  "duplicate_timestamp_drops": [
+    {
+      "kept_sample_index": 964,
+      "t_ms": 48004.184,
+      "kept_frame": 5750,
+      "kept_waypoint_id": "wp-overview-return",
+      "dropped_sample_index": 965,
+      "dropped_frame": 5750,
+      "reason": "later generic sample duplicates final waypoint timestamp"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "evidence/runtime/release-v2-mobile-normal/runtime.json",
+      "sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8"
+    },
+    {
+      "path": "evidence/runtime/release-v2-mobile-normal/process-rss.json",
+      "sha256": "037fa88e9f92f1f4452da4b26a9224df9e943e0f4207f99e96386e0654c44f93"
+    },
+    {
+      "path": "evidence/runtime/release-v2-mobile-normal/anchor-projection.csv",
+      "sha256": "7ebf28115f97c1c215b2f3eac0253b462700f0c38434cd206cd5253593070c9f"
+    },
+    {
+      "path": "fixture.json",
+      "sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f"
+    },
+    {
+      "path": "config.json",
+      "sha256": "3fd2a2e630bde7cc80c09db3160b36423ff9d1a994802f968307e9428be95ceb"
+    },
+    {
+      "path": "sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f"
+    },
+    {
+      "path": "data/anchors.json",
+      "sha256": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d"
+    },
+    {
+      "path": "data/projection.json",
+      "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+    },
+    {
+      "path": "data/tile-grid.json",
+      "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+    },
+    {
+      "path": "data/derived/landscape.json",
+      "sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a"
+    },
+    {
+      "path": "thresholds.md",
+      "sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8"
+    },
+    {
+      "path": "tools/convert_runtime_to_kit.py",
+      "sha256": "b3c2c30f8096a841fb8271b645716b7e18f80e5ac93262fba44087b7a4bc04c6"
+    },
+    {
+      "path": "docs/product-renderer/method/expected_projection.py",
+      "sha256": "3fcbb9ce80704885971b8fec13c7622aac199eb50e8cad60159269ae74c04b2d"
+    },
+    {
+      "path": "docs/product-renderer/method/analyze_runtime.py",
+      "sha256": "965dc2eadf6a5697367bd7a18fcb892cd31923d37108f38267c8032f0a54e8d5"
+    }
+  ],
+  "outputs": {
+    "telemetry.json": "7c03cd427e04689157b88f96ede829376d0998dc9f4a078c61791e64047bad8d",
+    "tiles.json": "e1f0dcc8925a40ed544fd7c8a14bb0501603f064095aabadffa05fa1b00ee19f"
+  }
+}

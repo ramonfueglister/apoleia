@@ -1,0 +1,19 @@
+{
+  "kind": "independent-render-encoding-check",
+  "runtime_executed": false,
+  "source_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "packing_manifest_sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1",
+  "payload_sha256": "500799c49ec324054206b40319a010a68a508728b226d73d7c3ec30a1c8cb9ae",
+  "payload_hash_matches": true,
+  "source_hash_binding_matches": true,
+  "source_manifest_binding_matches": true,
+  "independent_seed": 4107,
+  "independent_bilinear_queries": 8192,
+  "queried_corner_count": 32768,
+  "byte_mismatches": 0,
+  "sample_texel_error_max_m": 0.125,
+  "sample_bilinear_error_max_m": 0.12290285495691933,
+  "additional_encoding_budget_m": 0.125,
+  "source_model_scale": 0.001,
+  "scope": "Independent deterministic sample and complete artifact hash. Full 121478400-texel mathematical byte comparison is separate data-owner evidence; GPU arithmetic, pixels and mesh/morph need runtime evidence."
+}

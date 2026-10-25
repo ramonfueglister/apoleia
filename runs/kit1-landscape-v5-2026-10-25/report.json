@@ -1,0 +1,487 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "report",
+  "run_id": "kit1-landscape-v5-2026-10-25",
+  "created_utc": "2026-10-25T16:57:49.746043Z",
+  "synthetic": false,
+  "kit_version": "kit1-landscape-v5",
+  "build_revision": "product-build-sha256:34a0f20fa36c1f95516307b53a228ea5ac7cdd6a5644159380c71e4c499bd347",
+  "sources_revision": "sources-v1",
+  "mapping_revision": "mapping-v1",
+  "fixture_revision": "landscape-route-v2-effective-float-state",
+  "producer": "Codex Operations (final release-v2 evidence binding) / Graphics Owner (runtime/package producer)",
+  "reviewer": "independent_review",
+  "review_ref": "independent-review/FINAL_REVIEW.md",
+  "user_style_review": "offen",
+  "evidence": [
+    {
+      "id": "config",
+      "path": "config.json",
+      "sha256": "3fd2a2e630bde7cc80c09db3160b36423ff9d1a994802f968307e9428be95ceb",
+      "kind": "config",
+      "origin": "data"
+    },
+    {
+      "id": "fixture",
+      "path": "fixture.json",
+      "sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+      "kind": "fixture",
+      "origin": "data"
+    },
+    {
+      "id": "sources",
+      "path": "sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "kind": "sources",
+      "origin": "data"
+    },
+    {
+      "id": "region",
+      "path": "region.json",
+      "sha256": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a",
+      "kind": "region",
+      "origin": "data"
+    },
+    {
+      "id": "coverage",
+      "path": "data-report-errata/release-v2/coverage-view.json",
+      "sha256": "5866fa55e82a4cc41bf5cf1dc45e3905a2ecf51790046bcff975d2fc9fc91939",
+      "kind": "coverage",
+      "origin": "data"
+    },
+    {
+      "id": "derivation",
+      "path": "data-report-errata/release-v2/derivation-view.json",
+      "sha256": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88",
+      "kind": "derivation",
+      "origin": "data"
+    },
+    {
+      "id": "tiles",
+      "path": "tiles.json",
+      "sha256": "e1f0dcc8925a40ed544fd7c8a14bb0501603f064095aabadffa05fa1b00ee19f",
+      "kind": "tiles",
+      "origin": "runtime"
+    },
+    {
+      "id": "telemetry_mobile",
+      "path": "telemetry.json",
+      "sha256": "7c03cd427e04689157b88f96ede829376d0998dc9f4a078c61791e64047bad8d",
+      "kind": "telemetry",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_video",
+      "path": "captures/release-v2-mobile/zoom-tour.mp4",
+      "sha256": "ee4d780e7867dd06833f4bc41732a5fbed9bd169a0961e5a2dd8a593ac9c13e0",
+      "kind": "video",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_overview",
+      "path": "captures/release-v2-mobile/lossless_overview_start.png",
+      "sha256": "12d0db36276f1418e86c5b10be94274824630de88e77f20a311cd8a493ea4153",
+      "kind": "screenshot",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_intermediate",
+      "path": "captures/release-v2-mobile/lossless_intermediate.png",
+      "sha256": "f965aa6b5ac643fe4863ac51de04fcd831df10a8f48304b40102892d97c49f92",
+      "kind": "screenshot",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_near",
+      "path": "captures/release-v2-mobile/lossless_near.png",
+      "sha256": "5adef57d7effcfe5f21a25431ce5b6ee4be897e95f7a9644f4021f0be3723dd9",
+      "kind": "screenshot",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_return",
+      "path": "captures/release-v2-mobile/lossless_overview_return.png",
+      "sha256": "e58cc9da3ba6faf73c776334910e18cd099ac6eedbbf1320423a5a4b3eae20d8",
+      "kind": "screenshot",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_smoke_frame",
+      "path": "evidence/runtime/release-v2-package-smoke/frame_000030.png",
+      "sha256": "755cd1d43c0912c85cd30b45a236727fc60d144212e84ef9508e8ace22447aac",
+      "kind": "screenshot",
+      "origin": "runtime"
+    },
+    {
+      "id": "mobile_raw_runtime",
+      "path": "evidence/runtime/release-v2-mobile-normal/runtime.json",
+      "sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "mobile_rss",
+      "path": "evidence/runtime/release-v2-mobile-normal/process-rss.json",
+      "sha256": "037fa88e9f92f1f4452da4b26a9224df9e943e0f4207f99e96386e0654c44f93",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "mobile_anchor_analysis",
+      "path": "evidence/runtime/release-v2-mobile-normal/anchor-analysis.json",
+      "sha256": "4c85173674a9213e86e38945cd296e707c8c488c79d152c2beb4b338952d5882",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "mobile_anchor_projection",
+      "path": "evidence/runtime/release-v2-mobile-normal/anchor-projection.csv",
+      "sha256": "7ebf28115f97c1c215b2f3eac0253b462700f0c38434cd206cd5253593070c9f",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "forward_raw_runtime",
+      "path": "evidence/runtime/release-v2-forward-plus-normal/runtime.json",
+      "sha256": "818aab79dce2f1677e56c89d4a54e3d87eee469344ea7c8f8ba295d70bd8c123",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "forward_rss",
+      "path": "evidence/runtime/release-v2-forward-plus-normal/process-rss.json",
+      "sha256": "5b580e6365d414af7670232bf351656810f0547b3da40292679610f31d6c37db",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "forward_anchor_analysis",
+      "path": "evidence/runtime/release-v2-forward-plus-normal/anchor-analysis.json",
+      "sha256": "2246d932bbb0991be502c5de6c755ed1746a87809c3d97f1e5d619ad864bcd58",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_raw_runtime",
+      "path": "evidence/runtime/release-v2-mobile-capture/runtime.json",
+      "sha256": "3d835cbbc5ffa78e4ae88379b366c6f19261c5aadb13decca68465869bbfb481",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_rss",
+      "path": "evidence/runtime/release-v2-mobile-capture/process-rss.json",
+      "sha256": "19f00a7db5ef72bafa35ccf2419be09d249bcc4bc2f07b5d029149bd398b6999",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "capture_handoff",
+      "path": "evidence/runtime/release-v2-handoff.json",
+      "sha256": "520bbbb688948ac293ee6f74603710204e67b6173d9acdb2868c03b4da9eab5b",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "release_freeze",
+      "path": "evidence/runtime/release-freeze-v2.json",
+      "sha256": "17d645382daa319f521a97c596ad46945391b6a30b32e0d21ad24f1609548290",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_smoke_runtime",
+      "path": "evidence/runtime/release-v2-package-smoke/runtime.json",
+      "sha256": "294d508b3086cf6f2a11772a19570ae12d181e76cbc8dce25697b36df4acb67a",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_inventory",
+      "path": "docs/product-renderer/package-evidence/release-v2/package-inventory.json",
+      "sha256": "21f9e5a4ceabe3ee7fc146fdb1ad4474879de451250b2bab685441191c3391d3",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_build",
+      "path": "docs/product-renderer/package-evidence/release-v2/build.json",
+      "sha256": "de67893a8c755e3d2eecc12938212597c1e53d2bdbda6af4a5485764134c222e",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_license",
+      "path": "docs/product-renderer/package-evidence/release-v2/GODOT-LICENSE-AND-NOTICES.txt",
+      "sha256": "f24c6f9b5a2639ff30d8b359a517fc89951ebb0845dea4bd9f35c886a2a78dcc",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "package_sources",
+      "path": "docs/product-renderer/package-evidence/release-v2/sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "package_info_plist",
+      "path": "docs/product-renderer/package-evidence/release-v2/Info.plist",
+      "sha256": "63b4cbbbcdb5007245ad5baa1c1cce5afbb22fd716563c956ad6ba5266a82191",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "source_transformations",
+      "path": "data/transformations.json",
+      "sha256": "134aff4b595ee9f6b6d9c845f105e5619b1aea28a51d9c1e1d1cdb2f29dcb1f1",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "data_errata_policy",
+      "path": "data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "data_errata_binding",
+      "path": "data-report-errata/release-v2/errata-binding.json",
+      "sha256": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "data_errata_summary",
+      "path": "data-report-errata/release-v2/runtime-evidence-summary.json",
+      "sha256": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "data_errata_check",
+      "path": "data-report-errata/release-v2/applicable-evidence-check.json",
+      "sha256": "6ab6e746319d218c31c900a225497569552b14cfc5ebf83ab22f7d57ff1c1aab",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "data_errata_structure",
+      "path": "data-report-errata/release-v2/structure-verification.json",
+      "sha256": "6ac15dd3ce2c8df4eefe840aee176219e46307d777adbcdab4e0fd0bde15a9b1",
+      "kind": "log",
+      "origin": "data"
+    },
+    {
+      "id": "independent_final_review",
+      "path": "independent-review/FINAL_REVIEW.md",
+      "sha256": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+      "kind": "log",
+      "origin": "runtime"
+    },
+    {
+      "id": "independent_review_binding",
+      "path": "independent-review/final-review-binding.json",
+      "sha256": "cb92d531f6484a3168db431f90aea3086aa5fef815c97bac394f3fa4cec1b870",
+      "kind": "log",
+      "origin": "runtime"
+    }
+  ],
+  "measurements": [
+    {
+      "metric": "frame_p95_ms",
+      "value": 9.094,
+      "unit": "ms",
+      "evidence_id": "telemetry_mobile"
+    },
+    {
+      "metric": "peak_memory_mb",
+      "value": 1773.234375,
+      "unit": "MB",
+      "evidence_id": "telemetry_mobile"
+    },
+    {
+      "metric": "mapping_residual_px",
+      "value": 0.6560332068414252,
+      "unit": "px",
+      "evidence_id": "telemetry_mobile"
+    }
+  ],
+  "checks": [
+    {
+      "id": "A01",
+      "status": "validiert",
+      "finding": "Unabhängig im finalen Bundle mit echten Pan-, Rückfahrt- und Wheel-Eingaben validiert; Paket 79 Dateien, 0 Hashabweichungen.",
+      "evidence_ids": [
+        "package_smoke_frame",
+        "independent_final_review",
+        "independent_review_binding"
+      ]
+    },
+    {
+      "id": "A02",
+      "status": "validiert",
+      "finding": "Im regionalen und geometrischen Umfang der unabhängigen Prüfung validiert; Coverage-View bindet die begrenzten Teilbefunde.",
+      "evidence_ids": [
+        "coverage",
+        "region",
+        "sources",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A03",
+      "status": "validiert",
+      "finding": "Ein gebundener Kamerapfad mit flacher Übersicht und stufenlosem Relief-Nahzoom; keine Szenenumschaltung.",
+      "evidence_ids": [
+        "fixture",
+        "telemetry_mobile",
+        "capture_overview",
+        "capture_intermediate",
+        "capture_near"
+      ]
+    },
+    {
+      "id": "A04",
+      "status": "validiert",
+      "finding": "Im aufgezeichneten Release-v2-Pfad validiert: 1.031 Frames, 0 Drops, 47,96 s; Startup-Abstand 514,182 ms bleibt ausgewiesen.",
+      "evidence_ids": [
+        "capture_video",
+        "capture_raw_runtime",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A05",
+      "status": "validiert",
+      "finding": "Im gebundenen CPU-Probenumfang validiert: 8/8 Wegpunkte; unabhängiges sichtbares Maximum 0,655989486 px bei 1 px Grenze. Keine GPU-Readback-/Framebuffer-Featuremessung.",
+      "evidence_ids": [
+        "telemetry_mobile",
+        "fixture",
+        "mobile_anchor_analysis",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A06",
+      "status": "validiert",
+      "finding": "Im gebundenen Daten-, Mapping-, Pack- und Rendererumfang validiert; keine allgemeine Genauigkeitszusage.",
+      "evidence_ids": [
+        "sources",
+        "region",
+        "source_transformations",
+        "release_freeze"
+      ]
+    },
+    {
+      "id": "A07",
+      "status": "validiert",
+      "finding": "Als 500-m-Arbeitsmaßstab validiert; native Quellauflösung begrenzt Detailgenauigkeit.",
+      "evidence_ids": [
+        "capture_near"
+      ]
+    },
+    {
+      "id": "A08",
+      "status": "offen",
+      "finding": "Technisch nachgeprüft; Nutzerbewertung des Bildstils bleibt offen.",
+      "evidence_ids": [
+        "capture_overview",
+        "capture_intermediate",
+        "capture_near",
+        "capture_return",
+        "capture_video",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A09",
+      "status": "validiert",
+      "finding": "Für den aufgezeichneten Übergang validiert; Startup- und Forward+-Pipeline-Spitzen bleiben dokumentiert, Cacheumfang begrenzt.",
+      "evidence_ids": [
+        "mobile_raw_runtime",
+        "forward_raw_runtime",
+        "capture_raw_runtime",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A10",
+      "status": "validiert",
+      "finding": "Im geprüften Bild- und Inventarumfang validiert; Klassenquellen unterscheiden nicht jede Plantage von Naturwald.",
+      "evidence_ids": [
+        "capture_overview",
+        "capture_near",
+        "package_smoke_frame"
+      ]
+    },
+    {
+      "id": "A11",
+      "status": "validiert",
+      "finding": "Im gebundenen Regionalumfang validiert; keine historische Vegetationsparität behauptet.",
+      "evidence_ids": [
+        "sources",
+        "capture_overview"
+      ]
+    },
+    {
+      "id": "A12",
+      "status": "offen",
+      "finding": "Teilweise validiert. Normale Frame-/RSS-/Engineallokationswerte liegen im Ziel; GPU-Zeit-API lieferte 0 gültige Samples (null), Per-Pass-Zeit und vollständige physische Residency sind nicht verfügbar.",
+      "evidence_ids": [
+        "mobile_raw_runtime",
+        "mobile_rss",
+        "forward_raw_runtime",
+        "forward_rss",
+        "independent_final_review"
+      ]
+    },
+    {
+      "id": "A13",
+      "status": "validiert",
+      "finding": "Als Provenienz- und Attributionsdokumentation im gebundenen Umfang validiert; keine Rechtsfreigabe oder Genauigkeitsgarantie.",
+      "evidence_ids": [
+        "sources",
+        "source_transformations",
+        "package_sources",
+        "package_license"
+      ]
+    },
+    {
+      "id": "A14",
+      "status": "validiert",
+      "finding": "Geografische Wiederkehr und deterministische Daten im geprüften Pfad validiert; keine zeitgleiche Pixelidentität behauptet.",
+      "evidence_ids": [
+        "config",
+        "fixture",
+        "mobile_raw_runtime",
+        "forward_raw_runtime",
+        "capture_handoff"
+      ]
+    },
+    {
+      "id": "A15",
+      "status": "validiert",
+      "finding": "Im gebundenen quadratischen 1-km-Grid- und Laufzeitprobenumfang validiert; kein globaler Topologienachweis.",
+      "evidence_ids": [
+        "tiles",
+        "telemetry_mobile",
+        "fixture",
+        "capture_overview"
+      ]
+    },
+    {
+      "id": "A16",
+      "status": "offen",
+      "finding": "14 anwendbare Metrikkombinationen liegen innerhalb der unveränderten Budgets; 4 Offline-Level-Kombinationen sind begründet NA. Formale Kit-Abnahme bleibt offen, da der Kitchecker NA nicht darstellen kann.",
+      "evidence_ids": [
+        "derivation",
+        "data_errata_policy",
+        "data_errata_binding",
+        "data_errata_summary",
+        "independent_final_review"
+      ]
+    }
+  ]
+}

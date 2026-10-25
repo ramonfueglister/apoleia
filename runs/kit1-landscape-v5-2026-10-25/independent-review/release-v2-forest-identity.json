@@ -1,0 +1,12 @@
+{
+  "mobile": {
+    "all_candidate_records_exact_equal_to_independently_source_checked_regression": true,
+    "candidate_count": 18459,
+    "canonical_candidate_sha256": "f313361841800898a3c01098a2ca37434727388d242f83d4b698d03729376cb3"
+  },
+  "forward-plus": {
+    "all_candidate_records_exact_equal_to_independently_source_checked_regression": true,
+    "candidate_count": 18459,
+    "canonical_candidate_sha256": "f313361841800898a3c01098a2ca37434727388d242f83d4b698d03729376cb3"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "created_utc": "2026-10-25T14:21:25.270833+00:00",
+  "scope": "Independent actual source geometry containment and metadata checks; no historical frontier truth or runtime claim",
+  "region_sha256": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a",
+  "mask_sha256": "f2775bb87d1cd40d6f091695e856381043935f996c876bb56da2f74a6135e81b",
+  "mask_hash_matches": true,
+  "mask_valid": true,
+  "mask_geometry_type": "POLYGON",
+  "mask_connected_polygon": true,
+  "references": [
+    {
+      "id": "imperial_maximum_extent",
+      "file_sha256": "1ddd9ac15006e8b9ffd4d185d0302295c3d7c321e9bc8ae3fd627e12d128ba29",
+      "hash_matches": true,
+      "feature_count": 112,
+      "invalid_count": 1,
+      "actual_extent": {
+        "west": -9.487320000000182,
+        "east": 43.75164000000041,
+        "south": 22.89549000000079,
+        "north": 55.16791999999987
+      },
+      "declared_extent_max_difference_deg": 0.0,
+      "outside_mask_square_degrees": 0.0,
+      "features_with_outside_area": 0
+    },
+    {
+      "id": "entire_mediterranean",
+      "file_sha256": "af7814d1b402b61487563c36617e7fbdaeb8ef8cafc685776472decb3cfe591e",
+      "hash_matches": true,
+      "feature_count": 11,
+      "invalid_count": 0,
+      "actual_extent": {
+        "west": -6.034975,
+        "east": 36.188262,
+        "south": 30.830367,
+        "north": 45.771393
+      },
+      "declared_extent_max_difference_deg": 0.0,
+      "outside_mask_square_degrees": 0.0,
+      "features_with_outside_area": 0
+    },
+    {
+      "id": "england_and_northern_context",
+      "file_sha256": "cf5082f88251e781bf212130898d88cb8a0916e7f99d0487fc34f545e6b74b81",
+      "hash_matches": true,
+      "feature_count": 1,
+      "invalid_count": 0,
+      "actual_extent": {
+        "west": -6.364739999651192,
+        "east": 1.754925999835052,
+        "south": 49.88482600011986,
+        "north": 55.81116499966504
+      },
+      "declared_extent_max_difference_deg": 0.0,
+      "outside_mask_square_degrees": 0.0,
+      "features_with_outside_area": 0
+    }
+  ],
+  "northern_context": {
+    "england_north_actual_deg": 55.81116499966504,
+    "mask_north_deg": 58.0,
+    "actual_buffer_deg": 2.1888350003349615,
+    "declared_buffer_deg": 2.1888350003349615
+  }
+}

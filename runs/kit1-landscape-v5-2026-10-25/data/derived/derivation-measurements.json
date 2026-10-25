@@ -1,0 +1,72 @@
+{
+  "revision": "landscape-v3",
+  "policy": {
+    "artifact_path": "data/geodata_policy.json",
+    "sha256": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28"
+  },
+  "elevation": [
+    {
+      "level": "overview",
+      "metric": "terrain_vertical_m",
+      "sample_count": 421015,
+      "sample_max": 1334.1494323562963,
+      "p95": 81.41483663175373,
+      "rms": 41.90236896152644,
+      "raw": {
+        "artifact_path": "data/derived/error-overview.csv",
+        "sha256": "b83f72bf0c5fe5e63a68d14b3f237f02b482a753ff70433e6cd330fa7da0ee28"
+      },
+      "scope": "fixed source-centre lattice every17th native pixel; not global bound"
+    },
+    {
+      "level": "canonical",
+      "metric": "terrain_vertical_m",
+      "sample_count": 421015,
+      "sample_max": 1065.5682373046875,
+      "p95": 60.23500308987927,
+      "rms": 31.183645243178667,
+      "raw": {
+        "artifact_path": "data/derived/error-canonical.csv",
+        "sha256": "cac1959e61b0d5522432aa2ebd3e68b7bad646903bb16679da5393695860c773"
+      },
+      "scope": "fixed source-centre lattice every17th native pixel; not global bound"
+    },
+    {
+      "level": "detail",
+      "metric": "terrain_vertical_m",
+      "sample_count": 421015,
+      "sample_max": 8.399183570872992e-10,
+      "p95": 3.728928277269006e-11,
+      "rms": 2.2893191976400788e-11,
+      "raw": {
+        "artifact_path": "data/derived/error-detail.csv",
+        "sha256": "512ba898fd1258dcf2d7778a73239c2e541a3400af04f5ed09aba54a3777ee09"
+      },
+      "scope": "fixed source-centre lattice every17th native pixel; not global bound"
+    }
+  ],
+  "horizontal_terrain": {
+    "method": "Explicitly specified sourcequery identity for height-only generalization; independent affinequery arrays compared bitwise and unrounded displacement computed",
+    "sample_max_m": 0.0,
+    "sample_count": 421015,
+    "raw": {
+      "artifact_path": "data/derived/horizontal-generalization.csv",
+      "sha256": "b4f028a4a99a0d39ece0abe4fcb0d5dab057da175572e7db97246d918b9df174"
+    },
+    "definition": {
+      "artifact_path": "data/horizontal-metric.json",
+      "sha256": "ed79059bcca8321296768c7f9d7713e1e4b326d0fe215fe214932015287edfbb"
+    }
+  },
+  "projection_roundtrip_diagnostic": {
+    "sample_max_m": 9.494415286548626e-10,
+    "raw": {
+      "artifact_path": "data/derived/horizontal-roundtrip.csv",
+      "sha256": "13e36cbba58160674159798f1a6dc5d5dbaef3c4a668be417f5b8e2b8c90bc87"
+    },
+    "limitation": "Actual finiteprecision diagnostic, not removed or rounded into terrain displacement"
+  },
+  "screen_error_px": null,
+  "transition_residual_px": null,
+  "missing": "Runtime screen/transition evidence must come from renderer capture; no offline surrogate. Native source uncertainty remains unknown, separate from resampling error."
+}

@@ -1,0 +1,405 @@
+{
+  "revision": "package-inventory-v1",
+  "files": [
+    {
+      "path": "Contents/Info.plist",
+      "bytes": 654,
+      "sha256": "63b4cbbbcdb5007245ad5baa1c1cce5afbb22fd716563c956ad6ba5266a82191"
+    },
+    {
+      "path": "Contents/MacOS/RomaAeterna",
+      "bytes": 156,
+      "sha256": "f92fcd3b3c81fb0c64f5751e3c80722c1cf21f183e5b721c6280b501187071e0"
+    },
+    {
+      "path": "Contents/MacOS/godot-runtime",
+      "bytes": 129643840,
+      "sha256": "3827d91682a801158cea9afd23007164c52af3c0738d85f85c85c90b21001802"
+    },
+    {
+      "path": "Contents/Resources/GODOT-LICENSE-AND-NOTICES.txt",
+      "bytes": 112876,
+      "sha256": "f24c6f9b5a2639ff30d8b359a517fc89951ebb0845dea4bd9f35c886a2a78dcc"
+    },
+    {
+      "path": "Contents/Resources/build.json",
+      "bytes": 452,
+      "sha256": "de67893a8c755e3d2eecc12938212597c1e53d2bdbda6af4a5485764134c222e"
+    },
+    {
+      "path": "Contents/Resources/world/app/.gitignore",
+      "bytes": 21,
+      "sha256": "58e108788c7fab93f6f7eac1f5d06370b3dd447232c8ce8b0c4702b8b284ec02"
+    },
+    {
+      "path": "Contents/Resources/world/app/landscape.tscn",
+      "bytes": 169,
+      "sha256": "144cd6119774263b14b6f8d006442b67a5f6f3e2f38ebd524cca5aa150226b78"
+    },
+    {
+      "path": "Contents/Resources/world/app/project.godot",
+      "bytes": 696,
+      "sha256": "f4a976620734b6009e9c59d987f01a36a12362169042f9568c50e9737ca9b29b"
+    },
+    {
+      "path": "Contents/Resources/world/app/requirements-render-data.txt",
+      "bytes": 89,
+      "sha256": "3df260c0691429a0fbcce0bc3e6f7f3d564550d1795a0b49a6ca9a2b3ef13814"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/analyze_lod_motion.py",
+      "bytes": 6222,
+      "sha256": "36adbbb149b878fee05acdba3a09461cd63220ce64e656b2fb5bd6d7d420c185"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/analyze_runtime.py",
+      "bytes": 3383,
+      "sha256": "965dc2eadf6a5697367bd7a18fcb892cd31923d37108f38267c8032f0a54e8d5"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/encode_capture.py",
+      "bytes": 1013,
+      "sha256": "68292b949e35c27a9de8d3d7f6c776c6848300e3aa76cdc63fb260bb1103b277"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/engine_license.gd",
+      "bytes": 389,
+      "sha256": "556eccc3723f146d182b22779bfe39789a9700161679b711eb29291786b17598"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/engine_license.gd.uid",
+      "bytes": 20,
+      "sha256": "63dd7cde9891c599dfd04feba51c45d661bc1f05c338d8dd5d8d5a42eed92bb5"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/expected_projection.py",
+      "bytes": 1095,
+      "sha256": "3fcbb9ce80704885971b8fec13c7622aac199eb50e8cad60159269ae74c04b2d"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/input_regression.gd",
+      "bytes": 1082,
+      "sha256": "bbcc56a51de09da1d7d11d51dc9714b56730835fffad23b7d585de755929fb25"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/landscape.gd",
+      "bytes": 62953,
+      "sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/landscape.gd.uid",
+      "bytes": 20,
+      "sha256": "b2f68f1e07a30c35c51bdabb4b788bf121252160d7b7b2e8c3c578e518e8f8b3"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/measure_runtime.py",
+      "bytes": 2099,
+      "sha256": "e34ae45ef44fb715768d799d7ce1c4d9305129b24e2aef92525f76fccb1dc88e"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/pack_height.py",
+      "bytes": 3138,
+      "sha256": "d670bd6616cdcee4c7acafb769e7871fcc6652a3cae36abfcfbe2100b71a8d0e"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/pack_water_distance.py",
+      "bytes": 3796,
+      "sha256": "2193aa673bbb43dcbe17315d4a8a28d580936230bb1fb9480569daf165ec58bb"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/package_macos.py",
+      "bytes": 4255,
+      "sha256": "d3850d6c233edfda20079df301ee553c6245c9d3595418c5233a69f30ed94eb2"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/source_bytes_regression.gd",
+      "bytes": 2094,
+      "sha256": "c58b44a918ce2d8f5bcc2009adbc377605a604bbdc7340252b0ca71ed64f805d"
+    },
+    {
+      "path": "Contents/Resources/world/app/scripts/verify_ridge_windows.py",
+      "bytes": 2424,
+      "sha256": "1eda283fd4f567a1acc17668aa769f4da61568427a2e4584de5911f559b240b9"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/rivers.gdshader",
+      "bytes": 2049,
+      "sha256": "cf5072c098f679e458fddaf94bd47d93af89f10bd8c81e2488311aa5255441e7"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/rivers.gdshader.uid",
+      "bytes": 20,
+      "sha256": "97db34123296dda5cfd2a4924d383e63b76f5625030fa71862acabbef300b086"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/terrain.gdshader",
+      "bytes": 5229,
+      "sha256": "9ff546a3f40dbe5eb2851d56e856c7e46ad83790d96ac80cccd8ce015fc173ce"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/terrain.gdshader.uid",
+      "bytes": 20,
+      "sha256": "7abd683c234fe75ee7b2fa8a61ddc22c31eff7a7bf5a7908928b6bfce208b261"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/vegetation.gdshader",
+      "bytes": 333,
+      "sha256": "c4b4a410c85d3fcea5e198085c0a4a9430198fa507ecc957432f998f744a6dcc"
+    },
+    {
+      "path": "Contents/Resources/world/app/shaders/vegetation.gdshader.uid",
+      "bytes": 20,
+      "sha256": "ddc79abca394750bb9e1a73a4e426c260a244d13d95c8f27e551f17cd9827346"
+    },
+    {
+      "path": "Contents/Resources/world/artifacts/render-data/height-packing.json",
+      "bytes": 1078,
+      "sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1"
+    },
+    {
+      "path": "Contents/Resources/world/artifacts/render-data/height-rg8.bin",
+      "bytes": 242956800,
+      "sha256": "500799c49ec324054206b40319a010a68a508728b226d73d7c3ec30a1c8cb9ae"
+    },
+    {
+      "path": "Contents/Resources/world/artifacts/render-data/water-distance-rg8.bin",
+      "bytes": 100663296,
+      "sha256": "ee41a6bd76f835106a64383b577edee142a27b54cdbb90ebf629c61200699e67"
+    },
+    {
+      "path": "Contents/Resources/world/artifacts/render-data/water-distance-rg8.json",
+      "bytes": 2616,
+      "sha256": "9e97b20ee51a248c5dcfcbc44d6e15e8ceb676c669a46ffc6c90273985291de0"
+    },
+    {
+      "path": "Contents/Resources/world/data/adm2-selection.json",
+      "bytes": 3027,
+      "sha256": "a03af52471589954fa241ba8c51a0f82dc70febfffdc885060fe2b79addfdb70"
+    },
+    {
+      "path": "Contents/Resources/world/data/anchors.json",
+      "bytes": 4436,
+      "sha256": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/height-detail.f32",
+      "bytes": 485913600,
+      "sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/height.f32",
+      "bytes": 30369600,
+      "sha256": "7d6c6d4294c8a2214badc5aaf8b71392b98fdd7e8d3ebc5a6010ad3c398f7b2d"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/lakes.geojson",
+      "bytes": 751437,
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/land.geojson",
+      "bytes": 3438966,
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/landcover.u8",
+      "bytes": 7592400,
+      "sha256": "a32bb6ac9463de7c7b227f810edadc7b3e14c90794d1b8e2718f5260ab1fda3d"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/landscape.json",
+      "bytes": 4355,
+      "sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/overview-height.f32",
+      "bytes": 12582912,
+      "sha256": "e5e38baf6694b114d50d5981409ca92f71695d4e633f21cf73040f8ce8710997"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/overview-water.u8",
+      "bytes": 12582912,
+      "sha256": "e241e8ec7f524112e88d2f9a92e96ac899f091b673f6830bffaa63d2a98fabf4"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/rivers.geojson",
+      "bytes": 2118295,
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/water-detail.u8",
+      "bytes": 50331648,
+      "sha256": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e"
+    },
+    {
+      "path": "Contents/Resources/world/data/derived/water.u8",
+      "bytes": 7592400,
+      "sha256": "41e2bd0c5ecff97bf630743308caccdf57779a9f4cf1a6329a0b9ff992044d10"
+    },
+    {
+      "path": "Contents/Resources/world/data/detail-rules.json",
+      "bytes": 1192,
+      "sha256": "1e3d62dc3a5b7afc445b35bcb06a91559148e7126e9c648c346fd6626fccc46c"
+    },
+    {
+      "path": "Contents/Resources/world/data/etopo15-inventory.json",
+      "bytes": 6382,
+      "sha256": "b7e9adba3f674b3a8c9f6e0cc81f7c7dfdddc3e77efffb44fdde78d2487f6a89"
+    },
+    {
+      "path": "Contents/Resources/world/data/geodata_policy.json",
+      "bytes": 5150,
+      "sha256": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28"
+    },
+    {
+      "path": "Contents/Resources/world/data/policy-decision.json",
+      "bytes": 807,
+      "sha256": "702a279ce2388c226d9d9d0ea372df032910c973e3441b468bdb29679a07361c"
+    },
+    {
+      "path": "Contents/Resources/world/data/projection.json",
+      "bytes": 645,
+      "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+    },
+    {
+      "path": "Contents/Resources/world/data/protection-rules.json",
+      "bytes": 1573,
+      "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+    },
+    {
+      "path": "Contents/Resources/world/data/region.json",
+      "bytes": 5248,
+      "sha256": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a"
+    },
+    {
+      "path": "Contents/Resources/world/data/sampling-plan.json",
+      "bytes": 800,
+      "sha256": "14302a8a2b311a4a8e793688bd7d81661a7723bef2e6717bd4e1b5675c7feee4"
+    },
+    {
+      "path": "Contents/Resources/world/data/source-accuracy.json",
+      "bytes": 613,
+      "sha256": "3ede3561b77b583fc4e8984100e583264feab2960eb1d716d9403c418d0e2719"
+    },
+    {
+      "path": "Contents/Resources/world/data/source-topology-quality.json",
+      "bytes": 1161,
+      "sha256": "a0c147c6b707827bb72ccf536dbf6959b690c8ca3623fc8cce10b60dcf9f7aa3"
+    },
+    {
+      "path": "Contents/Resources/world/data/sources.json",
+      "bytes": 248412,
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f"
+    },
+    {
+      "path": "Contents/Resources/world/data/tile-grid.json",
+      "bytes": 892,
+      "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+    },
+    {
+      "path": "Contents/Resources/world/data/transformations.json",
+      "bytes": 4182,
+      "sha256": "134aff4b595ee9f6b6d9c845f105e5619b1aea28a51d9c1e1d1cdb2f29dcb1f1"
+    },
+    {
+      "path": "Contents/Resources/world/data/worldcover-inventory.json",
+      "bytes": 412612,
+      "sha256": "ab47b43425f98ef3a12d75839bb261c450201d9b1400c2feb1b9b56ccb0dd24e"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/ASSIGNMENT.md",
+      "bytes": 1138,
+      "sha256": "3783fabea3acd4f1a4a5f0b3dae244fbf6815f8dc6e159728bff6f5399a35f6c"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/AWMC-PROVENANCE-ADDENDUM.md",
+      "bytes": 1586,
+      "sha256": "bfb142902f7860bd788546d7a8723f2854ae7987078cc84136dbffeae40a14ea"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/COAST-SDF-CONTRACT.md",
+      "bytes": 8778,
+      "sha256": "ff90700ee5f534349758f4b181543b6f881ca884bf8d3058c55cdb743ace0dab"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/HANDOFF.md",
+      "bytes": 5502,
+      "sha256": "0d46ca42a26cc30d91cb8a782fbce63d8369c730e63813449dcf625cf5bc1e88"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/PREDECLARED-PIXEL-BUDGETS.md",
+      "bytes": 1205,
+      "sha256": "5f2476177b60fce2f73d1d4acdbce1078928dd1541f82d1b525f2e125d2200e7"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/README.md",
+      "bytes": 5637,
+      "sha256": "a0a428743da61b3b7a3ba5eee57791c8e21c69d8d83d0b345fa3dfdb2a2c90ae"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/REPORT-ERRATA.md",
+      "bytes": 1512,
+      "sha256": "e375db307f0b434c7592c97fdc23d4d1f28940da87fefcfe02fd92c79fa2c4a1"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/RG8-PACKING.md",
+      "bytes": 6037,
+      "sha256": "c4dc67aa23999a3632114d07c62f2e69475570ec50da98abc3b34d469acffc45"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/rg8-quantization-probe.json",
+      "bytes": 2780,
+      "sha256": "e032931053027aa3e53ee128e83f25abbb29d52d67769214ee514f28bfd7e594"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/rg8-runtime-encoding-probe.json",
+      "bytes": 2913,
+      "sha256": "44498c33034c2a728d58e39010660de98208ff2a75722587630a72cc7c121c9d"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/sdf-float-probe.json",
+      "bytes": 2058,
+      "sha256": "441496ad6c312e39491da00eac82e09d8bdf5ed056a085b00054273e65a83d8f"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/sdf-probe.json",
+      "bytes": 401907,
+      "sha256": "c234d19e89f40998394df0c2dffef642d2087f8df4d35d956a8295d2fc43570d"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/sdf-rg8-probe.json",
+      "bytes": 400953,
+      "sha256": "2a6d90a66fcb345bfdbca17292ceb4017e444635a3c5d31d6a9d871aa620fb05"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-data/sdf-static-integration-check.json",
+      "bytes": 1257,
+      "sha256": "8b7ff1fbf5929c7b057a7e2e334b9412ea3313e9a91c96348da2cff0a0155319"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-renderer/START.md",
+      "bytes": 4456,
+      "sha256": "f6dcf6452b178da9d1133f38eb631bfea540c0a2c7f7a8c5f90cf6fe419da200"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-renderer/TECHNICAL_DECISION.md",
+      "bytes": 7737,
+      "sha256": "ac1cb401c830d2bde162f4579bcc266c20895cbba4e31de9d3604374c1e9195c"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-renderer/camera-profile.json",
+      "bytes": 1841,
+      "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+    },
+    {
+      "path": "Contents/Resources/world/docs/product-renderer/water-distance-policy-v2.json",
+      "bytes": 1422,
+      "sha256": "d19dde843c7161da718a716e29058f141311e2a41ff6ba56699c1c1bd48a813a"
+    }
+  ],
+  "mutable_runtime_paths_excluded": [
+    "Contents/Resources/world/app/.godot/",
+    "Contents/Resources/world/artifacts/runtime/"
+  ],
+  "notices": "Engine notices and exact source/data attribution included; no general legal assurance"
+}

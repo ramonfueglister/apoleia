@@ -1,0 +1,13 @@
+{
+  "raw_sha256": "da821ce1bdbc2b70f581444d5a4e879947369bf6788ecf5c6db862b74347e7aa",
+  "renderer_source_sha256": "06d97361665fca83eb65108cd241ca9356557b2d8744ad4bc873d121cc456fc5",
+  "count": 18459,
+  "unique_cells": 18459,
+  "global_seed_position_max_difference_model": 0,
+  "source_cover_water_distance_family_violations": [],
+  "sdf_bilinear_decode_max_difference_m": 0,
+  "max_candidate_queries_chunk": 400,
+  "max_generated_chunks_per_frame": 1,
+  "forest_cpu_max_ms": 8.286,
+  "limitations": "All accepted candidates independently checked against canonical cover, detailed semantic water and decoded bilinear SDF; source-bound representative seeds, not measured real trees. CPU gate/probe validation does not measure actual framebuffer crown silhouettes or species."
+}
