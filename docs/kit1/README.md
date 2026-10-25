@@ -22,7 +22,9 @@ Erst ein späterer Nutzerstart beginnt die Umsetzung.
 Das Kit und die spätere Umsetzung liegen im privaten GitHub-Repository
 [`ramonfueglister/romaaeterna`](https://github.com/ramonfueglister/romaaeterna).
 Konto, Owner, Zielname und private Sichtbarkeit wurden geprüft; die erste Ablage
-dieses Projektstands folgt mit dem initialen Commit. Details zu Quellen,
+dieses Projektstands ist bereits auf `origin/main` abgelegt: Commit
+[`60ff002`](https://github.com/ramonfueglister/romaaeterna/commit/60ff002563e73555ea53abb44a4195cea1f15872).
+Details zu Quellen,
 Abhängigkeiten und Commits stehen in [WORKFLOW.md](WORKFLOW.md).
 
 **Geografischer Umfang v5:** ein zusammenhängender Ausschnitt nach dem Bezugsrahmen

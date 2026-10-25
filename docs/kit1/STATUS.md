@@ -4,7 +4,7 @@
 
 | Bereich | Status | Nachweis / Grenze |
 |---|---|---|
-| GitHub-Repository und Versionierungsziel | `implementiert` | Privates [`ramonfueglister/romaaeterna`](https://github.com/ramonfueglister/romaaeterna), Konto/Owner und Sichtbarkeit geprüft; erster Projektcommit und Push folgen |
+| GitHub-Repository und Versionierungsziel | `validiert` | Privates [`ramonfueglister/romaaeterna`](https://github.com/ramonfueglister/romaaeterna), Konto/Owner und Sichtbarkeit geprüft; initialer Commit `60ff002563e73555ea53abb44a4195cea1f15872` ist auf `origin/main` |
 | Kostenbewusster Arbeitsablauf | `spezifiziert` | WORKFLOW.md, START_PROMPT.md, ROLES.md und ASSIGNMENT.md; Qualitäts-/Abnahmeziele bleiben bestehen. Keine USD-/Tokenmessung, Einsparquote oder ChatGPT-Planumrechnung erhoben; Grundlagen in REFERENCES.md am 25.10.2026 abgerufen |
 | Regionaler Umfang v5 | `implementiert` | REGION_SCOPE_UPDATE.md; nur geografischer Scope angepasst, keine Produktimplementation |
 | Moderne Gebietsauswahlhilfe | `erforscht` | geoBoundaries gbOpen ADM2 API-Metadatenstichprobe dokumentiert; Featureauswahl und Datensatzbindung bleiben offen, keine Geometrie geladen |
@@ -39,8 +39,9 @@
 
 ## Nächster Schritt
 
-Die initiale private GitHub-Ablage des dokumentierten Kit- und Forschungsstands
-wird vorbereitet. Produktarbeit bleibt dem dafür erteilten Auftrag vorbehalten.
+Der initiale private GitHub-Stand des dokumentierten Kits und Forschungsstands
+ist auf `origin/main` abgelegt. Produktarbeit bleibt dem dafür erteilten Auftrag
+vorbehalten.
 
 ## Protokoll
 
@@ -219,5 +220,6 @@ wird vorbereitet. Produktarbeit bleibt dem dafür erteilten Auftrag vorbehalten.
 - 25.10.2026: Privates GitHub-Repository `ramonfueglister/romaaeterna` erstellt
   und per REST als privat im authentifizierten Ownerkonto verifiziert. Der
   authentifizierte Login und die numerische Konto-ID stimmen mit dem Owner überein;
-  die Repository-URL ist festgelegt. Initialer Commit/Push werden mit diesem
-  Stand vorbereitet. Keine Produktimplementierung oder Release-Veröffentlichung.
+  die Repository-URL ist festgelegt. Initialer Commit
+  `60ff002563e73555ea53abb44a4195cea1f15872` wurde am 25.10.2026 nach `origin/main`
+  gepusht. Keine Produktimplementierung oder Release-Veröffentlichung.
