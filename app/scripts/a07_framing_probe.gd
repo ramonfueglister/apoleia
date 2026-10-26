@@ -195,6 +195,7 @@ func _settle()->Dictionary:
             return {"settled":true,"seconds":elapsed,"crown_instances":crowns}
         if elapsed>=settle_timeout:
             return {"settled":false,"seconds":elapsed,"crown_instances":crowns,"streaming_idle":streaming_idle,"stable_camera_frames":stable_camera,"stable_crown_frames":stable_crowns}
+    return {}
 
 func _same_signature(a:Array,b:Array)->bool:
     if a.size()!=b.size() or a.is_empty():return false

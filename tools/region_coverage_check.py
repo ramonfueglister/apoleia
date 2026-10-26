@@ -195,7 +195,8 @@ def check_forest_layout(root, binding, clip, subs, rep):
                 for i in range(len(raw) // 128):
                     index[(cb[0] + i % width, cb[1] + i // width)] = struct.unpack_from('<I', raw, i * 128 + 12)[0]
     complete = m.get('coverage', 'complete') == 'complete' and m.get('chunk_count') == full
-    ready = (d / 'READY').is_file()
+    # Die Runtime schreibt READY.json; ältere Layouts nur READY.
+    ready = (d / 'READY.json').is_file() or (d / 'READY').is_file()
     origin = [0.0, 0.0]  # layout cell = floor(model/128)
     if clip:
         off = [int(clip['origin'][0] / BASE_SPAN), int(clip['origin'][1] / BASE_SPAN)]
