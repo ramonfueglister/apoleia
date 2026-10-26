@@ -36,3 +36,36 @@ Goal: water and landscape visually close to
 | `CompactBounds.prepare`: exactly 174 template vertices | Relaxed to "non-empty"; the bounds stay analytic from the template's extrema. |
 | Product atlas / layout manifest sha256 in `renderer-binding.json` | Updated to the new artifacts. |
 | Forest mesh cache (`forest_cache`) | Not rebuilt: on a key mismatch the runtime falls back to the exact generator (compact path is the product default). |
+
+## Water (round 3)
+- `app/shaders/water.gdshader`: own sea surface on the zero-height marine
+  plane (replaces the terrain albedo mix).
+- `app/shaders/water_look.gdshaderinc`: shared optics for sea, lakes
+  (`terrain_look`) and rivers (`rivers.gdshader`): Beer-Lambert-style depth
+  colour (seabed tone, turquoise, blue, navy; shore distance bounds the coarse
+  bathymetry), low-poly facet lattice, swell plus scrolled detail normals along
+  the wind, caustic web in shallow water, Fresnel sky reflection, glitter path
+  (light mirrored in front of the camera, follows the sun's azimuth and
+  elevation, `water_sun_dir` set each frame), permanent shore foam plus three
+  surf bands running towards the coast, storm whitecaps. Far map: animation and
+  glints damped by relief/pixel footprint, thin light coast line.
+- Rivers: flow along the segment (the river mesh normal carries the side
+  vector), current streaks, same optics; lakes use the same function without
+  surf bands. Wet sand edge in `terrain_look`.
+- Weather hooks: `global uniform` `weather_wind_dir`, `weather_wind_strength`,
+  `weather_storm`, `weather_cloud_shadow` + `weather_cloud_shadow_rect`
+  (sampled only when rect size > 0), `weather_lightning`; neutral defaults in
+  `project.godot [shader_globals]`.
+
+## Performance fixes (round 3)
+- Common terrain stride: named-anchor/edge chunks (no subset error bound)
+  forced stride 1 (8.6M triangles) in every overview. They are skipped; the
+  stride uses the 85th percentile of chunk errors with an error budget growing
+  from 0.75 px (close) to 8 px (overview).
+- Grove LOD on the shared MultiMesh meshes: 6 trees (<360), 3 (<700),
+  1 (<2200), none beyond (darker forest floor in `terrain_look`).
+- Sun shadows off beyond 1700 model units (no crowns, terrain casts none).
+- `terrain_look` only computes water optics for water fragments; cavity and
+  crest samples are skipped in far views.
+- `--hold-seconds N` (with `--snapshot`) keeps a fixed view for
+  steady-state measurements.

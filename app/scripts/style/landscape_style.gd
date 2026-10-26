@@ -114,7 +114,8 @@ static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
     var rng=RandomNumberGenerator.new()
     rng.seed=71039
     var palette=[Color("2f5524"),Color("3b6428"),Color("4a6d2b"),Color("5c7432"),Color("426a2b"),Color("35592a"),Color("677a35")]
-    var count=6
+    # lod 0/1: full grove (layout template); 2: three trees; 3: one tree.
+    var count=6 if lod<=1 else (3 if lod==2 else 1)
     for t in range(count):
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
         var distance=0.0 if t==0 else 4.4*sqrt(float(t)/float(count-1))*rng.randf_range(0.8,1.05)

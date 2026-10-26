@@ -36,8 +36,8 @@
     "format": "compact",
     "status": "validated current V19 representation and complete SourceContext layout; native cold coverage 3.023s, A08/A12 remain open",
     "layout": {
-      "path": "artifacts/render-data/forest-layout-claude-groves-r1",
-      "manifest_sha256": "c7dd850dad6381227190a2e172f5f489e5688c716705e2c607cd6d42a51a34ce",
+      "path": "artifacts/render-data/forest-layout-claude-groves-r2",
+      "manifest_sha256": "a235fb4b421a72d9487bc28ffa34b477a3cbf5b401e7f7df60e91d2438aba195",
       "coverage": "complete",
       "cells": 3116,
       "records": 174210,

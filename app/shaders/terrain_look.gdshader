@@ -3,6 +3,7 @@ shader_type spatial;
 // binds terrain.gdshader by hash); fragment adds the reference look.
 render_mode cull_disabled, diffuse_burley;
 #include "res://shaders/model_sampling.gdshaderinc"
+#include "res://shaders/water_look.gdshaderinc"
 uniform sampler2D mapped_cover_tex : filter_linear_mipmap, repeat_disable;
 uniform bool use_model_mesh=false;
 uniform bool use_fixed_surface=false;
@@ -242,6 +243,8 @@ void fragment() {
     // Overview (reduced relief): slightly deeper, greener land as in the reference.
     float overview=1.0-smoothstep(0.7,1.0,relief);
     ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
+    // Without crowns in the overview the forest reads as darker green ground.
+    ground=mix(ground,forest_ground_color.rgb*vec3(0.62,0.72,0.62),weights.r*smoothstep(1800.0,2600.0,view_width)*0.85);
     // Fine grass grain in the close views.
     ground*=1.0+(filtered_surface_noise(vp/1.1,footprint/1.1)-0.5)*0.20*(1.0-weights.r)*relief;
     // Faint triangle facets on open ground (low-poly read), pixel-filtered.
@@ -278,7 +281,7 @@ void fragment() {
     // reflectance uses the spatially bounded appearance-filtered G channel.
     // Local neighbourhood mean on the fixed surface: crests vs. hollows.
     float around=h;
-    if(use_fixed_surface) {
+    if(use_fixed_surface && footprint<3.0) {
         float r=6.0;
         around=(fixed_surface_height_at(vp+vec2(r,0))+fixed_surface_height_at(vp-vec2(r,0))+fixed_surface_height_at(vp+vec2(0,r))+fixed_surface_height_at(vp-vec2(0,r)))*0.25;
     }
@@ -294,7 +297,7 @@ void fragment() {
     ground=mix(ground,stone,rock_v);
     ground=mix(ground,snow_color.rgb,smoothstep(3300.0,4300.0,h)*0.85);
     // Cavity darkening in valleys and hollows, from the same fixed surface.
-    if(use_fixed_surface) {
+    if(use_fixed_surface && footprint<3.0) {
         float cavity=smoothstep(0.0,260.0,around-h)-smoothstep(0.0,420.0,h-around)*0.35;
         ground*=1.0-look_cavity_strength*cavity;
     }
@@ -331,56 +334,26 @@ void fragment() {
     // shallow water when the overview pixel footprint grows beyond that range.
     float shallow=(1.0-smoothstep(0.0,shallow_span,max(material_distance,0.0)));
     if(!graphic_coast) shallow*=1.0-step(2999.0,distance);
-    float bathymetry=model_height_at(world_position.xz);
-    float depth=water_kind_at(world_position.xz)==1.0 ? max(-bathymetry,0.0) : 30.0;
-    float coast_m=max(material_distance,0.0);
-    // Depth ramp: navy abyss -> open blue -> broad turquoise shelf/saum.
-    vec3 sea=mix(sea_open_color.rgb,sea_deep_color.rgb,smoothstep(600.0,3800.0,depth)*0.55);
-    float shelf_t=1.0-smoothstep(15.0,140.0,depth);
-    // Broad saum up close, only a thin lighter rim in the overview.
-    float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
-    float saum=1.0-smoothstep(0.0,shallow_span*0.62*saum_scale,coast_m);
-    // Steep island flanks drop off fast: no broad turquoise halo there.
-    if(physical_water_kind==1.0) saum*=1.0-smoothstep(90.0,500.0,depth)*0.85;
-    float core=1.0-smoothstep(0.0,shallow_span*0.16,coast_m);
-    // Patchy outer edge so the shelf colour does not read as a uniform halo.
-    float saum_edge=look_fbm(vp/14.0,footprint/14.0);
-    float turq=clamp(max(pow(saum,1.4)*(0.70+0.45*saum_edge),shelf_t*0.55*saum_scale)+core*0.30,0.0,1.0);
-    if(!graphic_coast) turq*=1.0-step(2999.0,distance);
-    if(physical_water_kind==2.0) turq*=saum_scale;
-    if(physical_water_kind==1.0) turq*=1.0-smoothstep(150.0,900.0,depth)*0.55;
-    sea=mix(sea,sea_shallow_color.rgb,turq);
-    // Animated waves; damped in the flat overview (relief ~ 0) and filtered
-    // away once wavelengths drop below pixel size.
-    float wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
-    float t=TIME;
-    vec2 wp=world_position.xz/9.0;
-    float wfp=footprint/9.0;
-    float e=0.08;
-    float w0=wave_height(wp,wfp,t);
-    float wx=wave_height(wp+vec2(e,0.0),wfp,t);
-    float wz=wave_height(wp+vec2(0.0,e),wfp,t);
-    vec3 wave_normal=normalize(vec3(-(wx-w0)/e*0.20*wave_amount,1.0,-(wz-w0)/e*0.20*wave_amount));
-    float mottled=(w0-0.5)*wave_amount;
-    sea*=1.0+mottled*0.30;
-    // Low-poly water facets and broad tonal drift, as in the reference.
-    float sea_facet_px=footprint/5.0;
-    sea*=1.0+(material_facets(vp/5.0+vec2(t*0.02,0.0))-0.5)*0.16*(1.0-smoothstep(0.3,0.8,sea_facet_px));
-    sea*=1.0+(look_fbm(vp/160.0,footprint/160.0)-0.5)*0.22;
-    // Fresnel-like sky sheen from the wave slopes.
-    float fres=pow(1.0-clamp(dot(wave_normal,normalize(vec3(0.0,0.58,0.81))),0.0,1.0),3.0);
-    sea=mix(sea,sea_sky_color.rgb,clamp(fres*0.6*wave_amount,0.0,0.10));
-    // Thin animated surf line from the coast SDF.
+    // Sea has its own surface (water.gdshader). Here only lakes and the
+    // anti-aliased land side of the contour need water optics, and only
+    // those fragments pay for them.
     float px=max(contour_m_per_px,1.0);
-    float foam_w=max(px*1.7,120.0);
-    float surf=1.0-smoothstep(foam_w*0.35,foam_w,coast_m);
-    float ring_phase=fract(t*0.11+w0*0.6);
-    float ring_pos=foam_w*(1.2+ring_phase*3.0);
-    float ring=exp(-abs(coast_m-ring_pos)/(foam_w*0.35))*(1.0-ring_phase)*0.55*wave_amount;
-    float foam=clamp(surf*(0.72+0.28*sin(t*1.7+w0*9.0))+ring,0.0,1.0)*(1.0-smoothstep(1.2,3.5,footprint));
-    if(physical_water_kind==2.0) foam*=0.35;
-    sea=mix(sea,sea_foam_color.rgb,foam*0.85);
+    vec3 sea=vec3(0.0);vec3 water_emission=vec3(0.0);vec3 wave_normal=vec3(0.0,1.0,0.0);
+    float wave_amount=0.0;
+    if(water>0.001) {
+        float depth=physical_water_kind==1.0 ? max(-model_height_at(vp),0.0) : 25.0;
+        float saum_scale=physical_water_kind==2.0 ? 0.0 : mix(0.22,1.0,smoothstep(0.7,1.0,relief));
+        vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
+        WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale);
+        sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
+        wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
+    }
+    // Wet, darker sand right at the waterline.
+    float wet_w=max(px*2.2,260.0);
+    float wet=(1.0-smoothstep(0.0,wet_w,max(-material_distance,0.0)))*(1.0-water);
+    ground*=mix(1.0,0.78+0.05*sin(TIME*1.3+vp.x*0.7),wet*shore);
     ALBEDO=mix(ground,sea,water);
+    EMISSION=water_emission*water;
     ROUGHNESS=mix(0.94,mix(0.70,0.42,wave_amount),water);
     SPECULAR=mix(0.15,mix(0.18,0.34,wave_amount),water);
     AO=1.0-weights.r*0.12*(1.0-water);
