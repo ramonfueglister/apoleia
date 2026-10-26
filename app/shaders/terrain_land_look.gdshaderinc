@@ -197,8 +197,11 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
     // Closed forest ground from the forest share, crisp edged, every distance.
-    float forest_ground=land_edge(smoothstep(0.30,0.70,soft.r+edge*0.2),0.5);
-    ground=mix(ground,land_forest_ground_color.rgb,forest_ground*0.85*(1.0-valley_floor));
+    // Only where forest is really dense; ragged edges and small clearings
+    // from 1-2 km noise, still crisp.
+    float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
+    float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
+    ground=mix(ground,land_forest_ground_color.rgb,forest_ground*mix(0.7,0.85,overview)*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
     float field_fade=(1.0-smoothstep(0.35,0.7,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
