@@ -212,14 +212,15 @@ Die übrigen Vorgaben und der Abschnitt für spätere Kits bleiben unverändert.
 ## Spiel-Tile-Größe, adaptiv (26.10.2026)
 
 Nutzerentscheidung vom 26.10.2026. Betrifft nur die logischen Spiel-Tiles (K17),
-nicht die Grafik-Streamingkacheln.
+nicht die Grafik-Streamingkacheln. Die IDs K25–K28 hießen auf den
+Look-Branches zuerst K21–K24; umnummeriert, weil K21 bereits die A07-Hausgröße ist.
 
 | ID | Entscheidung |
 |---|---|
-| K21 | Basis-Spiel-Tile **25 km × 25 km**, ausgerichtet am bestehenden 1-km-Raster `eqc41-km-v1` (25 × 25 Zellen). |
-| K22 | **Adaptiver Quadtree:** Wo die Nutzung gleichartig ist, werden je 4 gleichartige Tiles zu einem größeren zusammengefasst. Tiles bleiben quadratisch und rasterbündig. |
-| K23 | Stufen nach Klasse: **Land 25 km**; **Küstenmeer** (bis ca. 50 km vor der Küste) **50 km**; **offenes Meer 100–200 km**; **Sahara/Wüste und Hochgebirge 50 km**. Seen und Flüsse gehören zu den Land-Tiles. |
-| K24 | **Stabile IDs:** Ein zusammengefasstes Tile ist der Elternknoten seiner 4 Kinder. Feineres Aufteilen später (z. B. Hafenbucht) ändert keine bestehenden IDs. |
+| K25 | Basis-Spiel-Tile **25 km × 25 km**, ausgerichtet am bestehenden 1-km-Raster `eqc41-km-v1` (25 × 25 Zellen). |
+| K26 | **Adaptiver Quadtree:** Wo die Nutzung gleichartig ist, werden je 4 gleichartige Tiles zu einem größeren zusammengefasst. Tiles bleiben quadratisch und rasterbündig. |
+| K27 | Stufen nach Klasse: **Land 25 km**; **Küstenmeer** (bis ca. 50 km vor der Küste) **50 km**; **offenes Meer 100–200 km**; **Sahara/Wüste und Hochgebirge 50 km**. Seen und Flüsse gehören zu den Land-Tiles. |
+| K28 | **Stabile IDs:** Ein zusammengefasstes Tile ist der Elternknoten seiner 4 Kinder. Feineres Aufteilen später (z. B. Hafenbucht) ändert keine bestehenden IDs. |
 
 Grobe Schätzung bei rund 4800 × 4100 km Projektregion: etwa 10.000–11.000 Tiles statt
 etwa 31.000 bei einheitlich 25 km. Genaue Klassengrenzen (Küstenabstand, Wüsten-/
