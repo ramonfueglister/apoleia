@@ -17,7 +17,7 @@ const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
 # cover, noise amplitude, rain, storm (see weather_field.gdshaderinc)
 const STATE_FIELD := {
 	"clear": Vector4(0.0, 0.08, 0.0, 0.0),
-	"fair": Vector4(0.06, 0.55, 0.0, 0.0),
+	"fair": Vector4(0.14, 0.55, 0.0, 0.0),
 	"overcast": Vector4(0.68, 0.35, 0.10, 0.0),
 	"rain": Vector4(0.30, 0.55, 0.60, 0.0),
 	# Storms are local: fair background plus one or two large storm cells.
@@ -36,7 +36,7 @@ const TIME_LOOK := {
 	# Warm low sun against a cooler blue ambient; terrain colours are kept.
 	# Warmth mostly in highlights and glitter: mildly saturated sun, ambient kept.
 	"morning": [Vector3(-17.0, 72.0, 0.0), Color(1.0, 0.88, 0.80), 1.2, Color(0.92, 0.95, 1.04), 1.0, Color(1.0, 0.95, 0.94)],
-	"evening": [Vector3(-14.0, -100.0, 0.0), Color(1.0, 0.84, 0.66), 1.25, Color(0.92, 0.95, 1.04), 1.0, Color(1.03, 0.95, 0.88)],
+	"evening": [Vector3(-10.0, -100.0, 0.0), Color(1.0, 0.76, 0.52), 1.35, Color(0.86, 0.92, 1.10), 0.95, Color(1.04, 0.94, 0.86)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -242,10 +242,9 @@ func _build_cloud_sun() -> void:
 	_sun_caster_mask = _sun.shadow_caster_mask
 	_cloud_sun = DirectionalLight3D.new()
 	_cloud_sun.shadow_enabled = true
-	# Only the cloud proxies cast into this light's shadow map, in one cascade:
-	# re-rendering every forest caster here doubled the shadow cost.
+	# Only the cloud proxies cast into this light's shadow map: re-rendering every
+	# forest caster here doubled the shadow cost.
 	_cloud_sun.shadow_caster_mask = CloudMeshes.CLOUD_SHADOW_LAYER
-	_cloud_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	_cloud_sun.visible = false
 	_sun.get_parent().add_child(_cloud_sun)
 
@@ -264,7 +263,7 @@ func _split_sun(strength: float) -> void:
 	_cloud_sun.visible = true
 	_cloud_sun.global_transform = _sun.global_transform
 	_cloud_sun.light_energy = energy * strength
-	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_max_distance", "light_specular"]:
+	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_mode", "directional_shadow_max_distance", "directional_shadow_split_1", "directional_shadow_split_2", "directional_shadow_split_3", "directional_shadow_blend_splits", "light_specular"]:
 		_cloud_sun.set(property, _sun.get(property))
 	# Soft, blurred cloud shadows; tree shadows keep the main sun's settings.
 	_cloud_sun.shadow_blur = 6.0
@@ -366,9 +365,9 @@ func _prewarm_cells() -> void:
 			# Placed so the front appears on the right of the view, not above it.
 			# Far side of the view, right half: the foreground stays sunny.
 			var away := Vector2(_forward.x, _forward.z).normalized()
-			cell.pos = _focus() + away * _ground_width * 0.3 + Vector2(-away.y, away.x) * _ground_width * 0.3
-			cell.ra = maxf(_ground_width * 0.3, 60.0)
-			cell.rc = maxf(_ground_width * 0.45, 90.0)
+			cell.pos = _focus() + away * _ground_width * 0.12 + Vector2(-away.y, away.x) * _ground_width * 0.32
+			cell.ra = maxf(_ground_width * 0.4, 60.0)
+			cell.rc = maxf(_ground_width * 0.5, 90.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -555,24 +554,25 @@ func _apply_look() -> void:
 	var w := local_weather
 	# Darkness under fronts comes from their shadows; global dimming stays mild.
 	var state_rain := _current_field().z
-	var dim := clampf(maxf((w.x - 0.6) * 0.5, 0.0) + w.y * 0.3 + state_rain * 0.25 + w.z * 0.1, 0.0, 0.4)
+	# Rain dims the whole scene (overcast sky); storm fronts stay local.
+	var dim := clampf(maxf((w.x - 0.6) * 0.5, 0.0) + w.y * 0.3 + state_rain * 0.6, 0.0, 0.55)
 	_sun.quaternion = look[0]
 	var sun_color: Color = _base.sun_color * look[1]
 	_sun.light_color = sun_color.lerp(Color(0.80, 0.82, 0.86), dim * 0.4)
-	_sun.light_energy = _base.sun_energy * look[2] * (1.0 - 0.6 * dim)
+	_sun.light_energy = _base.sun_energy * look[2] * (1.0 - 0.9 * dim)
 	var ambient: Color = _base.ambient_color * look[3]
 	_environment.ambient_light_color = ambient.lerp(Color(0.72, 0.76, 0.82), dim * 0.5)
-	_environment.ambient_light_energy = _base.ambient_energy * look[4] * (1.0 - 0.15 * dim)
+	_environment.ambient_light_energy = _base.ambient_energy * look[4] * (1.0 - 0.35 * dim)
 	var fog: Color = _base.fog_color * look[5]
-	fog = fog.lerp(Color(0.60, 0.64, 0.69), clampf(w.y * 0.4 + dim * 0.2, 0.0, 1.0)).lerp(Color(0.48, 0.45, 0.55), w.z * 0.1)
+	fog = fog.lerp(Color(0.60, 0.64, 0.69), clampf(state_rain * 0.6, 0.0, 1.0))
 	_environment.fog_light_color = fog
 	# LandscapeLook rewrites fog_density per view; only scale its latest value.
 	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
-	_written_fog = _fog_base * (1.0 + w.y * 0.3)
+	_written_fog = _fog_base * (1.0 + state_rain * 0.8)
 	_environment.fog_density = _written_fog
-	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.18 * w.y - 0.2 * state_rain)
+	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.1 * w.y - 0.3 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
-	_split_sun(clampf(0.5 + 0.35 * w.z, 0.0, 0.85))
+	_split_sun(clampf(0.62 + 0.25 * w.z, 0.0, 0.85))
 	_written = _read_look()
 
 func _restore_look() -> void:
@@ -625,6 +625,7 @@ func _update_tiers() -> void:
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
 	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
+	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 1.1, smoothstep(0.2, 0.6, _current_field().z)))
 	var cluster_scale := clampf(_ground_width / 700.0, 0.4, 1.0)
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)

@@ -20,6 +20,7 @@ uniform vec3 flash_pos;
 uniform float flash = 0.0;
 uniform float flash_radius = 80.0;
 uniform float near_fade_distance = 0.0;
+uniform float near_cull_distance = 0.0; // whole clusters closer than this shrink away (rain keeps the foreground clear)
 instance uniform float fade = 1.0;
 
 varying vec3 world_pos;
@@ -33,6 +34,9 @@ void vertex() {
 	vec3 origin = MODEL_MATRIX[3].xyz;
 	vec3 local = VERTEX - origin;
 	VERTEX = place_cluster(VERTEX, origin, INSTANCE_CUSTOM, info);
+	vec3 centre = vec3(origin.x + air_drift.x, cloud_base, origin.z + air_drift.y);
+	float keep = smoothstep(near_cull_distance * 0.8, near_cull_distance, distance(centre, CAMERA_POSITION_WORLD));
+	VERTEX = centre + (VERTEX - centre) * keep;
 	world_pos = VERTEX;
 	smooth_normal = NORMAL;
 	storm = info.w;
@@ -51,7 +55,7 @@ void fragment() {
 	float dither = bayer4(FRAGCOORD.xy);
 	// Close to the camera fair clouds dissolve (their shadows stay); storm fronts stay.
 	float near_fade = smoothstep(near_fade_distance * 0.6, near_fade_distance, distance(world_pos, CAMERA_POSITION_WORLD));
-	near_fade = mix(near_fade, 1.0, smoothstep(0.05, 0.3, storm));
+	near_fade = mix(near_fade, 1.0, smoothstep(0.05, 0.3, storm) * (1.0 - grey));
 	if (fade * near_fade < dither) { discard; }
 	vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
@@ -68,7 +72,7 @@ void fragment() {
 	float back = clamp(-dot(to_camera, l) * 0.5 + 0.5, 0.0, 1.0);
 	colour += pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.9, 0.75) * (0.12 + 0.3 * back);
 	// Rain: grey tops, darker slate bellies.
-	vec3 rain_grey = vec3(0.33, 0.35, 0.38) * mix(0.6, 1.0, smoothstep(0.0, 0.6, height01)) * (0.8 + 0.4 * wrap);
+	vec3 rain_grey = vec3(0.15, 0.16, 0.18) * mix(0.65, 1.0, smoothstep(0.0, 0.6, height01)) * (0.8 + 0.4 * wrap);
 	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
 	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.24 * smoothstep(0.5, 1.0, wrap) * smoothstep(0.45, 0.95, height01) + pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.6, 0.4) * 0.18 * wrap;
@@ -78,6 +82,6 @@ void fragment() {
 	ALBEDO = colour * brightness;
 	// Soft silhouette; rain banks are see-through (0.55-0.8) with frayed edges.
 	float rim = smoothstep(0.02, 0.35, facing);
-	float body = mix(1.0, mix(0.55, 0.8, rim), grey * (1.0 - storm_amount));
+	float body = mix(1.0, mix(0.7, 0.88, rim), grey * (1.0 - storm_amount));
 	ALPHA = mix(rim, 1.0, storm_amount * 0.7) * body;
 }
