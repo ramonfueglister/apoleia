@@ -1,6 +1,6 @@
 # Kit 2 — Architektur des Spielzustands (Vorschlag)
 
-**Stand:** 26.10.2026 · **Status:** `erforscht`, Vorschlag zur Entscheidung.
+**Stand:** 26.10.2026 (Recherche Oktober 2026) · **Status:** `erforscht`, Vorschlag zur Entscheidung.
 
 ## Was die Vorbilder machen (belegt)
 
@@ -21,28 +21,39 @@ Engine-Familie wie EU5): <https://www.paradoxinteractive.com/games/victoria-3/ne
 EU5 selbst hat keine öffentliche Beschreibung seiner Zustandsspeicherung gefunden; die
 Aussagen oben gelten für Victoria 3 und werden für EU5 nur vermutet.
 
-Stand der Technik ausserhalb Paradox: Entity-Component-System mit Archetyp-Speicher
-(Bevy ECS, flecs). Für Godot gibt es die GDExtension-Brücken `godot-bevy` und
-`bevy_godot4`, die Bevy-Systeme neben dem Godot-Szenenbaum laufen lassen
-(<https://gamefromscratch.com/bevy-ecs-in-godot-engine/>).
+## Stand der Technik, Oktober 2026 (belegt)
+
+| Baustein | Stand | Was für uns zählt | Quelle |
+|---|---|---|---|
+| **Bevy ECS 0.20** | erschienen 8.10.2026 | Schwache Ordnung (`before_weak`/`after_weak`): nur Systeme mit Datenkonflikt werden geordnet, der Rest läuft parallel. Change-Ticks pro Spalte (`summary_tick`) überspringen unveränderte Spalten. `shuffle_seed` mischt die Systemreihenfolge, so lässt sich testen, ob das Ergebnis von der Reihenfolge abhängt. `despawn_all` für Massen-Löschen (1,3–1,7× schneller). | <https://bevy.org/news/bevy-0-20/> |
+| Bevy ECS 0.19 | 19.6.2026 | `contiguous_iter(_mut)` liefert rohe Tabellen-Slices für dichte Schleifen (SIMD). Ressourcen sind Komponenten auf Singleton-Entities. Entity-IDs lassen sich von jedem Thread reservieren. | <https://bevy.org/news/bevy-0-19/> |
+| flecs 4.1.6 | 29.6.2026, C/C++ | Starke Relationen und Abfragen, aber die Rust-Bindung wurde aus dem README entfernt (4.1.0). Damit ist flecs für einen Rust-Kern zweite Wahl. | <https://github.com/SanderMertens/flecs/releases> |
+| **gdext 0.5.5** (godot-rust) | August 2026 | Unterstützt Godot 4.7 über `api-4-7`, passt also zu unserem Godot 4.7.2. Das ist die Brücke zwischen Rust-Kern und Godot. | <https://github.com/godot-rust/gdext/releases> |
+| godot-bevy / bevy_godot4 | GDExtension-Projekte | Lassen Bevy-Systeme neben dem Godot-Szenenbaum laufen. Reife ist ungeprüft. | <https://gamefromscratch.com/bevy-ecs-in-godot-engine/> |
+| Archon Engine (Unity, Grand Strategy) | Stresstest 4.2.2026 | Festkomma statt Float in der Simulation. Jede Zustandsänderung läuft als Befehl (Command Pattern), dazu Lockstep-Mehrspieler und Desync-Erkennung. Provinzen sind Texturpixel, die Karte ist **ein Draw Call**, Grenzen und Effekte rechnen GPU-Compute-Shader. Monats-Tick 1,8–2,8 ms bei 50 000 Provinzen. | <https://github.com/ForgottenHistory/Archon-Engine> |
+| Lockstep-Determinismus | allgemein | Floats sind zwischen Plattformen nicht garantiert gleich, deshalb Festkomma oder Ganzzahlen für den gespeicherten Zustand. | <https://www.gamedeveloper.com/programming/cross-platform-rts-synchronization-and-floating-point-indeterminism> |
 
 ## Vorschlag für Apoleia
 
 | ID | Entscheidung |
 |---|---|
-| S40 | **Ein Rust-Kern hält den einzigen gültigen Spielzustand** (headless, deterministisch). Godot zeichnet nur und schickt Befehle (passt zu `docs/product-renderer/TECHNICAL_DECISION.md`: „Späterer Rust-Kern bleibt ausserhalb dieses Grafikprojekts“). |
-| S41 | **Zustand als ECS** (`bevy_ecs` als eigenständige Bibliothek, ohne Bevy-Renderer). Tiles, Städte, später Staaten und Gruppen sind Entities; Bevölkerung, Kapazität, Fläche sind Komponenten. Teilen/Zusammenlegen = Entities anlegen/löschen. Alternative: eigene Tabellen pro Typ (wie Paradox-„Datenbanken“). |
-| S42 | **Tick-Tasks nach Victoria 3:** jede Simulation ist ein System mit Frequenz und Abhängigkeiten; Monatstakt nach S21. Parallel nur in Vorschritten; Änderungen an der Struktur seriell und nach stabiler Tile-ID sortiert (Determinismus, Fingerabdruck wie jetzt). |
-| S43 | **Lesen nur zwischen Ticks:** nach jedem Tick entsteht ein unveränderlicher Snapshot (Doppelpuffer), den Godot über GDExtension liest. Kartenmodi, Tooltip und Panel lesen nur diesen Snapshot. |
-| S44 | **Abgeleitete Werte mit Dirty-Flags** (Kapazität, später Modifikatoren): nur geänderte Tiles neu rechnen. |
-| S45 | **Keine SQL-Datenbank zur Laufzeit.** Speicherstand = versionierte Binärserialisierung des ECS-Zustands; Export als CSV/Parquet nur für Auswertung. |
-| S46 | **Objektbudget statt Bevölkerungsbudget:** Kosten hängen an der Zahl der Entities (Vic3); das Tile-Budget S12 (65 536) bleibt die Obergrenze. |
+| S40 | **Ein Rust-Kern hält den einzigen gültigen Spielzustand.** Er läuft headless und deterministisch. Godot zeichnet nur und schickt Befehle; das passt zu `docs/product-renderer/TECHNICAL_DECISION.md` („Späterer Rust-Kern bleibt ausserhalb dieses Grafikprojekts“). |
+| S41 | **Zustand als ECS mit `bevy_ecs` 0.20**, als eigenständige Bibliothek ohne Bevy-Renderer. Tiles, Städte und später Staaten und Gruppen sind Entities. Bevölkerung, Kapazität und Fläche sind Komponenten. Teilen und Zusammenlegen heisst Entities anlegen und löschen. Dichte Schleifen laufen über `contiguous_iter`. |
+| S42 | **Tick-Tasks wie bei Victoria 3:** Jede Simulation ist ein System mit Frequenz und Abhängigkeiten, mit dem Monatstakt nach S21. Die Ordnung ergibt sich aus Datenkonflikten (`before_weak`/`after_weak`). Strukturänderungen laufen seriell und nach stabiler Tile-ID sortiert. Ein Test mit `shuffle_seed` muss denselben Fingerabdruck liefern. |
+| S43 | **Alle Eingriffe als Befehle** (Spieler, KI, Werkzeuge auf der Karte). Sie werden pro Tick gesammelt, sortiert und angewendet. Das ist die Grundlage für Speicherstände, Wiederholung und Lockstep-Mehrspieler. |
+| S44 | **Gespeicherter Zustand in Ganzzahl oder Festkomma**, z. B. Bevölkerung als ganze Zahl plus Bruchteil in Festkomma. Floats sind nur in Zwischenrechnungen innerhalb eines Ticks erlaubt, damit das Ergebnis auf Mac, Windows und Linux gleich bleibt. |
+| S45 | **Lesen nur zwischen Ticks:** Nach jedem Tick entsteht ein unveränderlicher Snapshot (Doppelpuffer), den Godot über gdext (`api-4-7`) liest. |
+| S46 | **Kartenmodi auf der GPU:** pro Tick eine Tile-ID-Textur und eine Wert-Textur pro Modus, eingefärbt im Shader als ein Draw Call. Grenzen und Streifen (über Kapazität) zeichnet ebenfalls der Shader. Tooltip und Panel lesen den Snapshot. |
+| S47 | **Abgeleitete Werte über Change Detection** (`Changed<T>`, `summary_tick`): Nur geänderte Tiles werden neu gerechnet, wie die Dirty-Flags in Victoria 3. |
+| S48 | **Keine SQL-Datenbank zur Laufzeit.** Der Spielstand ist eine versionierte Binärserialisierung des ECS plus Befehlsprotokoll. CSV- oder Parquet-Export gibt es nur zur Auswertung. Das Tile-Budget S12 (65 536) begrenzt die Zahl der Objekte; nach Victoria 3 hängen die Kosten an der Objektzahl. |
 
 ## Erster Schritt nach der Entscheidung
 
-1. `sim/` auf `bevy_ecs` umstellen: Komponenten `TileKey`, `Population`, `Capacity`,
-   `Land`; Systeme `capacity`, `growth`, `split`, `merge` als Monats-Tick-Tasks.
-   Gleicher Fingerabdruck wie heute als Prüfung.
-2. Snapshot-Export pro Tick (Binärformat) und eine Godot-Kartenmodus-Szene
-   „Bevölkerung“, die diesen Snapshot liest.
-3. Messung Tick-Zeit auf dem Mac (B08).
+1. `sim/` auf `bevy_ecs` 0.20 umstellen. Komponenten: `TileKey`, `Population`
+   (Festkomma), `Capacity`, `Land`. Systeme `capacity`, `growth`, `split` und `merge`
+   werden Monats-Tick-Tasks. Prüfung: deterministischer Fingerabdruck, auch mit
+   `shuffle_seed`.
+2. Befehlsschnittstelle (vorerst nur „Tick ausführen“) und Snapshot pro Tick.
+3. gdext-Brücke und Godot-Kartenmodus „Bevölkerung“ als Shader auf Tile-ID- und
+   Wert-Textur, mit Tooltip und Panel aus dem Snapshot.
+4. Messung der Tick-Zeit auf dem Mac (B08).
