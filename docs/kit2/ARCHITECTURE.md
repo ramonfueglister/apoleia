@@ -68,6 +68,18 @@ Schritt 2: Alle Eingriffe laufen als Befehl über `Sim::submit` und `Sim::step`
 Snapshot ist doppelt gepuffert (`Arc`), wird nur nach einem neuen Monat und nur auf
 Anfrage gebaut und kostet 0,13–0,15 ms für 41 827 Tiles (Tabellenreihenfolge, nicht ID-Reihenfolge).
 
+## Messung auf dem Mac (B08, 26.10.2026, Apple M3 Pro)
+
+Gleicher Lauf, 500 Jahre HYDE 3.3, je zwei Läufe, gleiche Fingerabdrücke wie im Container.
+
+| Kern | Tick p50 | Tick p95 | Snapshot p50 |
+|---|---|---|---|
+| Referenz ohne ECS | 0,106–0,108 ms | 0,13–0,14 ms | – |
+| bevy_ecs | 0,059–0,062 ms | 0,085–0,090 ms | 0,046 ms |
+
+In Godot 4.7.2 (Metal): Laden 71–156 ms, ein Monat im laufenden Spiel inklusive
+Befehl und Snapshot 0,29–0,30 ms.
+
 ## Erster Schritt nach der Entscheidung
 
 1. `sim/` auf `bevy_ecs` 0.20 umstellen. Komponenten: `TileKey`, `Population`

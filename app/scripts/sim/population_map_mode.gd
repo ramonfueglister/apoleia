@@ -87,24 +87,32 @@ func _process(delta: float) -> void:
             if enabled: _upload(false)
     _update_tip()
 
+# The clipmap gives every tile its own duplicate of terrain_material, so a
+# parameter set only on the template would reach just tiles uploaded later.
+func _set_param(name: String, value: Variant) -> void:
+    host.terrain_material.set_shader_parameter(name,value)
+    if host.clipmap_runtime==null: return
+    for id in host.clipmap_runtime.nodes:
+        var land: MeshInstance3D=host.clipmap_runtime.nodes[id].land
+        land.material_override.set_shader_parameter(name,value)
+
 func _upload(force_index: bool) -> void:
-    var m: ShaderMaterial=host.terrain_material
-    m.set_shader_parameter("map_mode_population",enabled)
+    _set_param("map_mode_population",enabled)
     if not enabled: return
     if force_index or sim.index_changed() or index_tex==null:
         var img: Image=sim.index_image()
         if index_tex==null or index_tex.get_size()!=Vector2(img.get_size()): index_tex=ImageTexture.create_from_image(img)
         else: index_tex.update(img)
         var origin: Vector2=sim.index_origin_m()*MODEL_SCALE
-        m.set_shader_parameter("map_index_tex",index_tex)
-        m.set_shader_parameter("map_index_origin",origin)
-        m.set_shader_parameter("map_index_cell",sim.index_cell_m()*MODEL_SCALE)
+        _set_param("map_index_tex",index_tex)
+        _set_param("map_index_origin",origin)
+        _set_param("map_index_cell",sim.index_cell_m()*MODEL_SCALE)
     var values: Image=sim.value_image()
     if value_tex==null or value_tex.get_size()!=Vector2(values.get_size()): value_tex=ImageTexture.create_from_image(values)
     else: value_tex.update(values)
-    m.set_shader_parameter("map_value_tex",value_tex)
-    m.set_shader_parameter("map_value_width",sim.value_width())
-    m.set_shader_parameter("map_max_population",sim.max_population())
+    _set_param("map_value_tex",value_tex)
+    _set_param("map_value_width",sim.value_width())
+    _set_param("map_max_population",sim.max_population())
 
 func _update_clock() -> void:
     if clock==null: return
