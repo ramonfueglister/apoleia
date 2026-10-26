@@ -1,0 +1,27 @@
+{
+  "revision": "data-jobs-v3",
+  "jobs": [
+    {
+      "session_id": 15288,
+      "purpose": "NOAA ETOPO2022v1 60s 465969062-byte full source",
+      "output": "data/raw/ETOPO_2022_v1_60s_N90W180_surface.tif",
+      "state": "terminal download complete; unused legacy60s source excluded from v3export and v3source manifest",
+      "actual_bytes": 465969062
+    },
+    {
+      "session_id": 24449,
+      "purpose": "WorldCover260 source-overview probes",
+      "state": "complete 249 downloaded;11 unavailable; inspect water mask before classifying as ocean"
+    },
+    {
+      "session_id": 18754,
+      "purpose": "Natural Earth v5.1.2 physical source download",
+      "state": "complete"
+    },
+    {
+      "session_id": 3098,
+      "purpose": "15 complete NOAA source tiles",
+      "state": "complete; inventory data/etopo15-inventory.json"
+    }
+  ]
+}

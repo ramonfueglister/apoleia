@@ -1,6 +1,84 @@
 # Kit 1 — tatsächlicher Arbeitsstand
 
-**Referenzversion:** `kit1-landscape-v5` / `kit1-rendering-v4` · **Stand:** 25.10.2026.
+**Referenzversion:** `kit1-landscape-v5` / `kit1-rendering-v4` · **Stand:** 26.10.2026.
+
+## Wiederaufnahme-Checkpoint — aktueller Produktstand
+
+**Scope:** vollständiger ausdrücklicher Kit-1-Startauftrag aus
+`START_PROMPT.md`; ältere Einträge „keine Spielimplementierung“ sind historisch.
+Referenz `kit1-landscape-v5` / `kit1-rendering-v4`. Der neueste integrierte
+SourceV2/V19/Cloud-Lauf ist `source-v2-v19-product-cloud-r1` (Session 34031,
+Exit 0); der Tour-/Cache-Lauf ist davon getrennt und liefert keine Abnahme.
+Runtime, Daten, Cache und Package-Arbeit im gemeinsamen Arbeitsbaum sind teils
+uncommitted und hier nicht unabhängig reviewt. Keine der folgenden Teilprüfungen
+schließt eine Kit-Gesamtabnahme.
+
+| Bereich | Status | Aktueller Beleg / Grenze |
+|---|---|---|
+| SourceV2/V19 Produktbindung | `implementiert`, Daten-/Weltabdeckung `offen` | [`renderer-binding.json`](../../app/renderer-binding.json) bindet SourceV2 standardmäßig und V19; [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/checkpoint.json) bindet den integrierten Lauf. Laufzeit-/Stiländerungen im Arbeitsbaum sind nicht Bestandteil dieses Dokumentcommits und nicht unabhängig reviewt. |
+| Stil / A08 | Teilverbesserungen `validiert`, A08 **FAIL/offen** | [`V19_GROUPED_CROWNS_HANDOFF.md`](../product-style/V19_GROUPED_CROWNS_HANDOFF.md): bessere Gruppierung gegenüber Vorgänger, kein Referenzpass. V20-Schärfung verworfen; V21 kontrollierter Elternflächenkandidat: [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v21-parent-patches-r1/checkpoint.json), Exit 0, drei Zielpunkte wirksam. Laut unabhängigem Astra-Befund harte helle Dreiecke ohne räumliche Formgliederung; kein Produktkandidat. V25 ist für einen reparierten Übergang lokal visuell `keep`, doch die globale Landschaftsform verfehlt weiter A08; siehe [V25-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v25-bounded-transition-r1/HANDOFF.md) und unabhängigen [V25-Datenreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/v25-bounded-transition-r1-independent/review.json). Kein V25-Produktwechsel. Material-/Küsten-A/B reduziert Treppen/Doppelringe, lässt weiche Flecken, Inselhöfe und glatte Felsflanken; Canopyfilter nur kleiner Ferngewinn. Kein Stilpass. |
+| Nichtflacher Tourcache | `implementiert`, eng validiert | [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-tour-cache-r1/summary.json) bindet Manifest-SHA `9280e9cd0361909ee404ee267446f5e7b9c575cc9733fba6891e6c51e98c0285`: 2.924 Varianten, 352 wiederverwendet/2.572 neu, 1.210.154.764 Bytes, Build+Write 326.679,81 ms; Meshprüfungen bestanden. Neue API-Probe: 8 Hits/0 Misses. Dies deckt nur beobachtete Tournachfrage, nicht die Vollwelt. |
+| Tour mit Cache / Rückkehr | `erforscht`, Freigabe `offen` | [`source-v2-v19-cloud-off-tour-cache-r2`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-cloud-off-tour-cache-r2/summary.json): Exit 0, 923 Frames, ein verworfener Aufnahmeversuch, 459 Hits/16 Misses (alle stride 0), 2.574 ms Fallback; p95 54,285, p99 89,497, max 350,187 ms. Bei erster Endpose nach 48,079 s waren noch 155 Flussjobs aktiv; weiterer Hold 1,760 s/162 Frames bis Leerlauf. Kein vollständiges Videoreview, Streaming-/Rückkehr- oder Performancepass. |
+| Fluss-Set-Cache | `implementiert`, Teilverhalten validiert; Navigation/Performance `offen` | [`source-v2-v19-river-cache-tour-r4/summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-river-cache-tour-r4/summary.json): Start/erste Endpose/Endhold pixelidentisch, 0 Flussjobs an erster Endpose; zugleich nur 2 Sets bei 1.777 Requests und nahe Regression durch fortlaufend abgebrochene Width/Pitch/Frustum-Schlüssel. R5 Telemetrie ohne Capture: [`source-v2-v19-river-cache-tour-no-capture-r5/summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-river-cache-tour-no-capture-r5/summary.json), p50/p95/p99/max 9,274/41,402/68,035/308,703 ms, nur dieser Lauf und kein A12-Pass. 8 Sets/64 MiB Raw-Mesh-Budget ist keine absolute Obergrenze für Pin-/Pending-/GPU-Daten. |
+| V22 lokaler Formkandidat | `implementiert`, ursprüngliche numerische Abnahme **FAIL/offen** | [`HANDOFF.md`](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v22-local-form-r1/HANDOFF.md), [`manifest.json`](../../artifacts/render-data/source-v2-local-form-r1/manifest.json), SHA `2ceaf2f5c413d97ca1e1a11b9ccb7be6ed9baa85c425526f09921295734a02e0`. Gesamtkernmaximum 314,25 m > 250 m wegen sechs geschützter Nodes; 163 veränderbare Nodes max. 225,5 m. Profil 670 m abwärts/477,5 m aufwärts, keine Schutz-/Randverletzung, Source-Maximum 1224,020953 m < 2500 m. Unabhängige 529-Node-Rekonstruktion: null Delta. Kein GPU-/Stilpass und keine Produkt-/G-Weltumschaltung. |
+| V22 Diagnosebilder | `implementiert`, Stilbeurteilung **FAIL/offen** | Echte Baseline-/Kandidatenbilder in [`source-v2-v22-local-form-capture-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v22-local-form-capture-r1/); Vergleich bestätigt gleiche Kamera/Materialien/Licht/Quelle/Readiness und kohärente Höhenkonsumenten. Laut unabhängiger Astra-Prüfung verworfen: höher/steiler, aber weiter breite weiche beige Felsflächen. Kein Produktwechsel; A08 bleibt FAIL. |
+| SourceV2 Teilcache (historisch) | `implementiert`, eng begrenzt validiert | Teilmanifest-SHA `5bb618e402de7e8e0855be2ecf5d2a1273c07a837a08d46a9cdfe0f1a1b033d5`: 352 Zellen aus Fern/Mittel/Nah, 61 leer, 264.164.536 Bytes, Bake/Write 76.314 ms. CPU-Standardstart 352 Hits/0 Misses/0 Fallbacks; Produktlauf 308 Hits/0 Misses/0 Fallbacks und 1.294,384 ms kumulierte Meshloads. Kein Vollwelt-/Vollzoom-/GPU-Uploadnachweis. Der neue Produktdefault mit Compact/Layout-r3 ist separat unten dokumentiert; dieser ältere Teilcachelauf ist nicht seine Coverage. |
+| Integrierter Fern-/Nahlauf | `erforscht` | [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/summary.json): je 90 Frames nach 16 Warmups. Wallmediane OFF/ON fern 29,670/63,4485 ms (p95 30,934/67,460), nah 8,3235/10,340 ms (p95 8,779/10,446). GPU-Zeit `null`; keine Navigation und keine A12-/Mobile-Forward+-Abnahme. Wolkenreserve änderte vollständige Kamera/Far Clip; Nahprobe Lugano wolkenfrei. |
+| Verpackung | `implementiert`, aktuelle Lieferung `offen` | P1/P2-Beleg bleibt auf seinen damaligen Dryrun begrenzt. r3 wurde tatsächlich relocatiert gestartet: [`start-summary.json`](../product-renderer/package-evidence/source-v2-v19-candidate-r3/start-summary.json) Exit 0, Launcher-Wallzeit 15,608 s; 1,815 s ist nur nach Setup gemessene Runtimezeit. Clouds OFF ist noch nicht neu verpackter Produktdefault. Fehlgeschlagene r1-/r2-Kopien wurden nach Hasharchiv entfernt; [`record.json`](../product-renderer/package-evidence/scratch-cleanup-2026-10-26-r1/record.json) hält Scope fest. Kein neues Bundle ist hier abgenommen. |
+| Wolken | `implementiert`, Überarbeitung/Integration `offen` | Nutzerkorrektur via autorisiertem Cloudchat: Wolken verbessern und aktivieren; OFF nur Diagnose. V16 wurde in privater GPU-Kopie geprüft, ohne Qualitäts-/Leistungsfreigabe. Produktdefault bleibt OFF bis integrierte Reviewfreigabe. v7-Screenshot bleibt abgelehnt; frühere technische Bildprüfungen und kombinierte V2/V19/V10-Messwerte sind keine Stil-/A12-Abnahme. |
+| Forest-Async/Input/Resize | `implementiert`; enge CPU-/native Probe, Stil/Vollständigkeit/A12 `offen` | CPU-Queue P2 ist laut [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-async-queue-p2-r2/checkpoint.json) repariert, fokussierte Regression Exit 0; unabhängige Re-Review steht aus. Native R3 [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-native-input-resize-async-r3/summary.json): Scroll/Gegen-Scroll und Resize-Rückkehr, Zoom 0→0,0469799, Viewport 1440×810→1154×670→1440×810, Rückübersicht pixelidentisch; 813 kalte Builds/0 Hits/0 Fehler/1 Cancel. Mainthread-Commit max. 1,376 ms, Forest-Main max. 9,031 ms; Frames p50/p95/p99/max 10,341/14,187/15,278/165,845 ms inkl. Diagnoseaufnahmen. 0 Jobs/Leases am Ende; 768-Zellen-Limit weich, Spitzen-Wanted 2100/stabil 1508→1454, max. 813 resident/511 sichtbar. OS-OriginTimestamp fehlt; keine OS-Latenzbehauptung. |
+| Forest-Cache-Refaktorgate | `validiert`, eng begrenzt | Reguläre Consumeridentity `dffeea1d79afdfb773e8ac7b0633e83ba8426451ce0c4a7a756fa272dc1ef9c9`; exakter Producer `92a357fd…` nur mit Originalmanifest-SHA `9280e9cd…` gemäß [`compatibility.json`](../../artifacts/render-data/forest-cache-refactor-compatibility-r1/compatibility.json), SHA `91b4c10f97dba4eb08ffc0b771f49deb41df1d4f32ef151bea0998093e18547f`. Unabhängiger Review [`review.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-cache-context-gate-r2-independent/review.json), SHA `67295f9fb361d6fd37436ad072527445f9731bed1070574d579481c2b83f0578`: 20/20 Headlesschecks, Exit 0, 12 Dateihashes exakt, keine P1/P2. Dieser Gate-Review belegt Metadatensicherheit und ein echtes Payload; spätere native Layout-/Cacheabdeckung ist separat dokumentiert. |
+| Compact-Forest-Integration | `validiert`, Compact-Flag im R2-Checkpoint inaktiv | Eingefrorener Lauf [`forest-compact-cell-capture-r2`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-compact-cell-capture-r2/checkpoint.json), SHA `0f6512706024905940c535f4bfc23d9bdc6598ec1167784a60b5a972364fd21e`; [Integration-Handoff](../product-renderer/SOURCE_V2_RUNTIME_HANDOFF.md#compact-forest-integration-r2). Unabhängiger Review [`review.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-compact-integration-r2-independent/review.json), SHA `a9aa073a674fca273c886c3adf1568cd86bb1b569bb76571762e4197370d151e`: 48 Bindungen, 10 Record-, 7 Compact-Queue-, 8 Lifecycle- und 20 Identitychecks; neun reale GPU-Zellpaare beurteilt; keine P1/P2. Das sind R2-Historikdaten; Produktdefault wurde inzwischen auf Compact/Layout-r3 gebunden. Der alte Expandedcache bleibt wegen verändertem Style/Context strikt abgelehnt. Kein CPU-Build-Speedup im R2-Recordaufbau: 240,416–281,311 ms; kleinere DTOs und Mainthread-Materialisierung sind lokal belegt. Keine Projektregions-Vollabdeckung oder A08/A12. |
+| Ground/Layout-Provider R2 | `validiert`, P2 **CLOSED**, damaliger Probeumfang | [Runtimecheckpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/checkpoint.json), SHA `ff3a9b919a97b9911b3bff51adaa27f52dea7a4baeb7c868f494d850f23a6885`; [unabhängiger Recheck](../../runs/kit1-gamegraphics-v2-2026-10-25/review/final-ground-layout-r2-p2-independent/REVIEW.md), SHA `95e094771b70fde8615b86913a2cb1936e386b11f3eccb958821b22dea0c0f4b`: 72 gezielte Identitychecks, 419 echte Records/8 Zellen sowie Layout64- und Ground0-Metadaten von r3/r4 bytegleich. Diese frühere Probe ist vom späteren vollständigen Bake und dem unten verlinkten nativen Lauf zu unterscheiden. r1-Befunde 11.220 Ground-, 60 Reader-, 41 Context-, 7 Container- und 10 Memo-Checks bleiben im jeweiligen Scope PASS. CPU-Trace behebt den alten maximalen 38,1111-m-Groundfehler; keine pauschale GPU-Parität. Das Codec-Relokations-Smoke (Checkpoint-SHA `07f318314d2348fec1f2144b3edbde12ff9dea5b6d246120ce4825a49355f5b6`) bindet den bytegleichen `tools/forest_layout_codec.py`-Codec und korrigierten Importlocator. `app/scripts/river/river_g_snapshot.gd` ist eine nötige Geometry-/Shaderidentitätsbindung, keine fertige Riverintegration. |
+| Kitabnahmen | `offen` | A07 ist nutzerseitig spezifiziert; externer Quellen-/Breitenschema-Teilbeleg samt engem unabhängigem Review ist PASS, aber Produkt-Screen-Bounds und Kameraausschnitt fehlen. Haus etwa eine einzelne Baumkrone breit, kompakt (keine Meterzahl, kein Waldcluster); Gebäude bleiben in Kit 1 ausgeschlossen. A01/A04/A09: nativer Layout-r3-Lauf belegt volle Waldbedeckung in geprüften Scroll-/Resize-Posen; Cold-Coverage 3,023 s. Eine 1-Pixel-Differenz (768,234) zwischen alten/neuen fertigen Scrollposen bleibt kausal ungeklärt, Rückübersicht/Resizepixelidentisch. River-Nahnavigation und vollständige durchgehende Tour bleiben offen. Frames p95/p99/max 19,296/22,349/173,273 ms; kein A12-Pass. A08 **FAIL**. Region hat kein READY/Bildpass. A12, Projektregions-Vollabdeckung, aktuelles Bundle und finale unabhängige A01–A16-Abnahme offen. SourceV2-/Runtimeänderungen sind teilweise uncommitted/unreviewed. V23-r2 externe Studie ist verworfen. |
+
+## Wiederaufnahme — neueste begrenzte Runtime- und Geometriebelege
+
+- **Forest layout r3 / analytic bounds:** unabhängiger Integrationsreview
+  bestanden; neuer deterministischer vollständiger Bake behält 3.116 Zellen und
+  176.609 Records mit identischem Recorddigest zu r2 (Container 14.197.868 B).
+  [Bake-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-analytic-bounds-complete-r3/HANDOFF.md),
+  Checkpoint-SHA `58a626ecdb914ac9995294c85e9640fed8b9f95760c1970824f39ae163436732`.
+  Der native Lauf belegt Scroll-/Resize-Vollabdeckung; Cold-Coverage 3.023,281 ms
+  statt 9.277,929 ms. Commits max. 0,369 ms. Frames p95/p99/max
+  19,296/22,349/173,273 ms, daher kein A12-Pass. Eine Pixelabweichung bei
+  (768,234) zwischen fertigen alten/neuen Scrollposen bleibt ungeklärt, obwohl
+  Records, Kamera und Riverkey identisch sind; keine kausale Pixelparität
+  behaupten. Übersicht, kleine Resizeansicht und Rückkehr sind pixelidentisch.
+  [Native-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-native-layout-bounds-r1/HANDOFF.md),
+  Checkpoint-SHA `9a81f0652b51a8957b9948739f608cf0d44bd2a5c78f91a6d6b10ee5e5db29d0`.
+- **Produktdefault und Packageclosure:** `renderer-binding.json` wählt jetzt
+  Compact plus relatives vollständiges Layout-r3 und exakten Manifestpin;
+  falscher Pin oder fehlender Pfad schließt fail-closed. Closure bindet Manifest,
+  Binding, Layout und READY (14.206.103 B). Defaultcheckpoint-final SHA
+  `47a9513dfb15c5e7fb3ac8875d9eadafd6e61ef5435c1b806bfc6ab79eadd91e`.
+  Snapshot-Copyinclude ergänzt inzwischen die fehlende LRU-Abhängigkeit:
+  Regression [`COPY_INCLUDE_REGRESSION.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/cloud-current-layout-basis-r2/COPY_INCLUDE_REGRESSION.json),
+  SHA `a2c36dd4744d72a0ca0a0667507cbec9875ca9d0a104698b32634ba982331b61`;
+  Closure-Addendum SHA `76f00b83c204d633d30b49e47bfbda2f3fe1c4fdefde85b748dd60af5af87804`.
+  Kein aktueller Bundle-/Relocationbau; Cloudprodukt bleibt OFF bis integrierte
+  Prüfung.
+- **A07:** Größenentscheidung nutzerseitig spezifiziert. Externes Einzelkronen-
+  Breitenschema und Quellenorientierung bestehen einen eng begrenzten unabhängigen
+  Teilreview ([Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/a07-single-crown-r1-independent/REVIEW.md));
+  tatsächliche Screen-Bounds und Kameraausschnitt für mehrere Häuser fehlen,
+  daher A07 bleibt offen.
+- **Region und Wolken:** Region-r3 nach Astra-Review verworfen; laufender
+  Strukturpfad hat weiter kein READY/Bildpass. Nutzerkorrektur: Wolken verbessern
+  und aktivieren, OFF nur für Diagnose; V16 wurde privat auf GPU geprüft, aber
+  Integration/Review und Produktumschaltung sind offen. Produkt-Cloud bleibt OFF.
+
+**Nächster Wiederaufnahmepunkt:** native Ein-Pixel-Abweichung (768,234) lokalisieren,
+ohne vorab Ursache oder fehlende Geometrie zu behaupten; danach Framespitzen und
+7,739-ms-Sortierrest separat behandeln. Cloud-V16-Integration samt Produkt-
+Review/Defaultumschaltung abschließen; Regionalpfad bis zu READY und Bildprüfung
+offen führen. A07-Kameraausschnitt, A08, A12, Projektregions-Vollabdeckung und
+aktuelles Bundle bleiben offen. Kosten nur aus tatsächlich erhobenen Metriken
+berichten; keine Preise ableiten.
+
+Die nachfolgende historische Statusübersicht ist ein Arbeitslog und wird durch
+diesen aktuellen Checkpoint ergänzt; ältere „noch nicht implementiert“-Zeilen
+beziehen sich auf ihren jeweiligen damaligen Stand.
 
 | Bereich | Status | Nachweis / Grenze |
 |---|---|---|

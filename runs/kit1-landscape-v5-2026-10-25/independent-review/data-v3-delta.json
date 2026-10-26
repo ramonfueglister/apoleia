@@ -1,0 +1,118 @@
+{
+  "created_utc": "2026-10-25T14:36:58.542214+00:00",
+  "dataset_revision": "landscape-v3",
+  "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "runtime_executed": false,
+  "payloads": [
+    {
+      "path": "data/derived/height.f32",
+      "sha256": "7d6c6d4294c8a2214badc5aaf8b71392b98fdd7e8d3ebc5a6010ad3c398f7b2d",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/landcover.u8",
+      "sha256": "a32bb6ac9463de7c7b227f810edadc7b3e14c90794d1b8e2718f5260ab1fda3d",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/water.u8",
+      "sha256": "41e2bd0c5ecff97bf630743308caccdf57779a9f4cf1a6329a0b9ff992044d10",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/height-detail.f32",
+      "sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/water-detail.u8",
+      "sha256": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/overview-height.f32",
+      "sha256": "e5e38baf6694b114d50d5981409ca92f71695d4e633f21cf73040f8ce8710997",
+      "matches_manifest": true,
+      "changed_from_v2": false,
+      "export_hash_matches": true
+    },
+    {
+      "path": "data/derived/overview-water.u8",
+      "sha256": "e241e8ec7f524112e88d2f9a92e96ac899f091b673f6830bffaa63d2a98fabf4",
+      "matches_manifest": true,
+      "changed_from_v2": true,
+      "export_hash_matches": true
+    }
+  ],
+  "budgets_unchanged": true,
+  "coast_samples_same_coordinates_order": true,
+  "coast_sample_count": 2340,
+  "coast_overview_independent": {
+    "maximum_m": 2040.1333575209435,
+    "missing_count": 0,
+    "csv_maximum_m": 2040.133357521,
+    "maximum_distance_from_reported_m": 4.998810254619457e-10,
+    "budget_m": 6000,
+    "all_within_budget": true,
+    "raw_sha256": "c342d36ac4d8257b0aa63b6b2e346ed7f97dbe779932a2b5c794789bd2d4bcbb"
+  },
+  "horizontal_generalization": {
+    "samples": 421015,
+    "coordinate_pairs_bit_equal_after_csv_read": true,
+    "raw_displacement_maximum_m": 0.0,
+    "nonzero_displacements": 0,
+    "raw_sha256": "b4f028a4a99a0d39ece0abe4fcb0d5dab057da175572e7db97246d918b9df174",
+    "definition_sha256": "ed79059bcca8321296768c7f9d7713e1e4b326d0fe215fe214932015287edfbb",
+    "retained_roundtrip_sha256": "13e36cbba58160674159798f1a6dc5d5dbaef3c4a668be417f5b8e2b8c90bc87"
+  },
+  "alpine_anchor": {
+    "declared_height_m": 584.4168701171875,
+    "actual_canonical_height_m": 584.4168701171875,
+    "matches": true
+  },
+  "metadata": {
+    "journal_revision": "landscape-v3",
+    "inventory_has_misleading_full_source_field": false,
+    "source_vrt_sha256": "104cffd4affa726b936d874449a394e272dbfe6bea36c2328809f815eb8ef6ae",
+    "source_vrt_hash_matches": true
+  },
+  "changed_input_snapshot": {
+    "data/derived/landscape.json": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+    "data/geodata_policy.json": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+    "data/derivation.json": "fb5f3ee3310b7164d46be69b043944663baf86013b6404968da98ff51a8dcc10",
+    "data/anchors.json": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d",
+    "data/transformations.json": "134aff4b595ee9f6b6d9c845f105e5619b1aea28a51d9c1e1d1cdb2f29dcb1f1",
+    "data/horizontal-metric.json": "ed79059bcca8321296768c7f9d7713e1e4b326d0fe215fe214932015287edfbb"
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": "landscape-camera-profile-v5",
+  "mapping_revision": "mapping-v1",
+  "camera_revision": "orthographic-diorama-display-v5-near-framing",
+  "projection": {
+    "kind": "spherical_equirectangular",
+    "radius_m": 6371008.8,
+    "standard_parallel_degrees": 41.0,
+    "origin_longitude": 19.0,
+    "origin_latitude": 41.0,
+    "x": "R * (lon - 19.0) * pi/180 * cos(41*pi/180)",
+    "z": "R * (41.0 - lat) * pi/180"
+  },
+  "model_scale": {
+    "horizontal": 0.001,
+    "vertical": 0.001,
+    "unit": "source metre * 0.001"
+  },
+  "camera": {
+    "projection": "orthographic",
+    "azimuth_degrees": 0.0,
+    "far_elevation_degrees": 90.0,
+    "near_elevation_degrees": 35.2643897,
+    "near_visible_width_source_m": 120000.0,
+    "near_width_status": "Additional own provisional120km near range for house/crown legibility; existing240km reference framing retained as an interior anchor. At1440px viewport, observed40km crowns roughly90\u2013130px imply30\u201343px at120km. These exceed typical primary-panel crown fractions: no exact reference pixel match, physical size parity or A07 acceptance is claimed.",
+    "far_visible_width": "max(core_width,core_height*viewport_aspect)*1.04",
+    "zoom_range": [
+      0.0,
+      1.0
+    ],
+    "visible_width": "CameraRig.width_for_zoom(zoom,far_width,near_width); exp(lerp(log(far_visible_width),log(120.0),zoom))",
+    "profile_knots": [
+      {
+        "width_model": "viewport-dependent overview far_width",
+        "elevation": 90.0,
+        "relief": 0.0
+      },
+      {
+        "width_source_m": 3400000,
+        "elevation": 35.2643897,
+        "relief": 1.0
+      },
+      {
+        "width_source_m": 120000.0,
+        "elevation": 35.2643897,
+        "relief": 1.0
+      }
+    ],
+    "profile_interpolation": "C1 smoothstep in logarithmic width from actual outermost overview width to continental diorama anchor3.4M source metres; constant diorama within",
+    "target_height": "actual current rendered terrain triangle including LOD and relief",
+    "input": {
+      "wheel_factor_per_notch": 1.18,
+      "magnify": "CameraRig.zoom_after_factor; continuous logarithmic width ratio",
+      "damping": "exact critically damped solution omega=18.9755/sec,95% at250ms",
+      "anchor": "terrain-ray intersection, preserved each damping frame after pitch/relief/LOD updates",
+      "drag": "same picked ground point follows viewport pointer; no release inertia",
+      "trackpad_pan": "same ground-anchored viewport-pixel displacement, no special multiplier"
+    },
+    "bounds": {
+      "core": [
+        -11.0,
+        21.0,
+        46.0,
+        58.0
+      ],
+      "requested_real_context": [
+        -44.0,
+        18.0,
+        79.0,
+        61.0
+      ],
+      "pan_opening": "1-visible_width/far_visible_width times core half extent",
+      "ground_footprint": "all viewport corner ray intersections with conservative canonical height interval [-1,9] times display_height_scale times relief, relative to displayed focus height",
+      "clamp": "intersection of opened core target range and context inset by full footprint",
+      "insufficient_context": "explicit telemetry failure; never claim filled background is geographic context"
+    },
+    "viewport": "stretch disabled; native viewport follows window; overview recomputed at resize, regional width and ground focus retained",
+    "profile_status": "own versioned mapping updated for actual geographic framing of user weit.png; exact reference reproduction and silhouette match unvalidated",
+    "reference_frame": {
+      "image": "user-provided weit.png,2952x524",
+      "target_longitude": 15.5,
+      "target_latitude": 42.0,
+      "visible_width_source_m": 3400000,
+      "viewport": [
+        2952,
+        524
+      ],
+      "status": "geographic approximation with separate unvalidated visible-landform calibration candidate; canonical coordinates unchanged"
+    },
+    "legacy_zoom_migration": "Existing v4 --view, fixture and tour normalized coordinates must map through CameraRig.zoom_from_legacy using the240.0 legacy endpoint; their physical model widths and pitch stay unchanged. Explicit --width-source-m maps through zoom_for_width. Current interactive normalized zoom0..1 reaches120.0.",
+    "reference_near_anchor_source_m": 240000.0
+  },
+  "terrain": {
+    "height_sampling": "fixed RG8 displayed-world grid, first-to-last vertex extent, f.x+f.y<1 triangular interpolation;4namedanchorcells use identical four-edge star triangles in CPU and rendered mesh",
+    "relief": "canonical model height * separate display_height_scale * relief_weight",
+    "patch_cells": 24,
+    "child_morph": "smoothstep(0.11,0.22,max(patch_width,patch_height)/visible_width)",
+    "coarse_surface": "one shared dyadic stride across visible chunks, maximum screen error0.75px including display scale, relief,pitch,viewport. Exact all-node bounds for compatible regular cells, conservative full height interval for anchor/partial cells.",
+    "skirt_depth_source_m": 60.0,
+    "fixed_surface_manifest": "artifacts/render-data/fixed-diorama-v2/surface.json",
+    "fixed_surface_sha256": "a2229a2f5c8b90b85356a3dc24b349bbc38bc1472f59f1a69152b4fa8777dc97",
+    "raw_source_tin_rendering": "disabled; canonical TIN source remains immutable and separate",
+    "macrofacet_model": "fixed global24km source control partition, named/coast/water and existing river valleys protected; own display generalization,2500m source-grid-node budget distinct from prior accuracy targets",
+    "shadow_policy": "terrain casting off after isolated selfshadow-stripe controls; terrain receives and forest/object shadows remain on",
+    "fixed_surface_by_source_revision": {
+      "gameworld-v1": {
+        "path": "artifacts/render-data/fixed-diorama-v2/surface.json",
+        "sha256": "a2229a2f5c8b90b85356a3dc24b349bbc38bc1472f59f1a69152b4fa8777dc97"
+      },
+      "gameworld-v2": {
+        "path": "artifacts/render-data/fixed-source-v2-macro-r1/surface.json",
+        "sha256": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3"
+      }
+    },
+    "source_selection_status": "default explicitly gameworld-v2; legacy V1 available only via --dataset; source/default/cache integration checkpoint separate from style and performance acceptance"
+  },
+  "screen": {
+    "origin": "top_left",
+    "expected_x": "viewport_width/2 + (world_x-target_x)*viewport_width/visible_width",
+    "expected_y": "viewport_height/2 - ((world_y-target_y)*cos(elevation) - (world_z-target_z)*sin(elevation))*viewport_width/visible_width"
+  },
+  "constraints": [
+    "no rotation input",
+    "no scene switch",
+    "same geographic data at every zoom",
+    "source DEM accuracy is separate from render mapping",
+    "source/canonical XYZ remain isotropic; visible vertical display policy is separate and explicitly unvalidated"
+  ],
+  "display_policy": {
+    "revision": "reference-diorama-height-v1-candidate12",
+    "reference": "docs/product-style/V9_DISPLAY_CONTRACT.md",
+    "display_height_scale": 12.0,
+    "status": "implemented calibration candidate; visual acceptance pending",
+    "canonical_model_scale_unchanged": true,
+    "contract_change": "visible vertical scaling differs from horizontal scaling under current explicit diorama reproduction request; previous display-isotropy requirement is superseded for this candidate, no transferred acceptance"
+  },
+  "objects": {
+    "forest_world": "same fixed source root positions/seeds/heights and single crown asset through zoom; all drawable source crowns, no lower envelope body; graphic rock priority remains fixed",
+    "near_framing_candidate_source_m": 120000,
+    "status": "Own provisional120km framing; fixed crown geometry retained. Legacy reference view widths preserved through normalized zoom migration; A07 open.",
+    "forest_geometry_mode": "all_source_crowns"
+  },
+  "source_sampling": {
+    "gameworld-v2": "canonical-c2-domains-v2: static product of four smootherstep edge weights for parent H/RGBA/SDF; local RGBA/SDF only; final SDF then nearest discrete associated role from finest valid positive-weight domain",
+    "source_transport": "height RG8 .25m max.125m; given SDF/roles byte-identical transport, independent GPU arithmetic/readback budgets",
+    "GPU_probe": "runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-gpu-sampling-r2/result.json"
+  }
+}

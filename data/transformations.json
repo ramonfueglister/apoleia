@@ -1,0 +1,120 @@
+{
+  "revision": "landscape-v3",
+  "tool_version": "GDAL 3.13.3 \"Iowa City\", released 2026/08/13",
+  "recipes": [
+    "tools/data_bind.py",
+    "tools/data_worldcover.py",
+    "tools/data_dem15.py",
+    "tools/data_build.py",
+    "tools/data_measure.py",
+    "tools/data_manifest.py",
+    "tools/data_revise_v3.py",
+    "tools/data_topology.py",
+    "tools/data_source_quality.py"
+  ],
+  "source_manifest": {
+    "artifact_path": "data/sources.json",
+    "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f"
+  },
+  "region": {
+    "artifact_path": "data/region.json",
+    "sha256": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a"
+  },
+  "policy": {
+    "artifact_path": "data/geodata_policy.json",
+    "sha256": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28"
+  },
+  "parameters": "EPSG4326 bounds[-11,21,46,58], rasterpixelcenters, DEMbilinear, covernearest, NEland/lakespixelcentre rasterization, common modelscale0.001, no reliefnoise",
+  "outputs": [
+    {
+      "artifact_path": "data/derived/coverage-measurements.json",
+      "sha256": "342ae1ba818eee87d0a6b28e76c83c359fc47c82a4f8aa770f7fdfd6d0293fb8",
+      "bytes": 710
+    },
+    {
+      "artifact_path": "data/derived/derivation-measurements.json",
+      "sha256": "aaffdf5baf85b46437c3aa9ca7d94bbdc56f1976acb760915eda5b3f7991ba72",
+      "bytes": 2809
+    },
+    {
+      "artifact_path": "data/derived/height-detail.f32",
+      "sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+      "bytes": 485913600
+    },
+    {
+      "artifact_path": "data/derived/height.f32",
+      "sha256": "7d6c6d4294c8a2214badc5aaf8b71392b98fdd7e8d3ebc5a6010ad3c398f7b2d",
+      "bytes": 30369600
+    },
+    {
+      "artifact_path": "data/derived/inventory.json",
+      "sha256": "5705744a55fb8f9527e7f0b30266c13e031bd5be00edba58d61d5f06cabba669",
+      "bytes": 1774
+    },
+    {
+      "artifact_path": "data/derived/lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+      "bytes": 751437
+    },
+    {
+      "artifact_path": "data/derived/land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+      "bytes": 3438966
+    },
+    {
+      "artifact_path": "data/derived/landcover.png",
+      "sha256": "6c6f12ae0d57323be3e60f409377774e19812366b308bd294c8eab50ab377934",
+      "bytes": 998123
+    },
+    {
+      "artifact_path": "data/derived/landcover.u8",
+      "sha256": "a32bb6ac9463de7c7b227f810edadc7b3e14c90794d1b8e2718f5260ab1fda3d",
+      "bytes": 7592400
+    },
+    {
+      "artifact_path": "data/derived/landscape.json",
+      "sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+      "bytes": 4355
+    },
+    {
+      "artifact_path": "data/derived/overview-height.f32",
+      "sha256": "e5e38baf6694b114d50d5981409ca92f71695d4e633f21cf73040f8ce8710997",
+      "bytes": 12582912
+    },
+    {
+      "artifact_path": "data/derived/overview-water.u8",
+      "sha256": "e241e8ec7f524112e88d2f9a92e96ac899f091b673f6830bffaa63d2a98fabf4",
+      "bytes": 12582912
+    },
+    {
+      "artifact_path": "data/derived/projection-measurements.json",
+      "sha256": "1e3637ce7bd4f3f47ea312240a098d23dabead20caca1296121a865f18a36ac2",
+      "bytes": 6722
+    },
+    {
+      "artifact_path": "data/derived/rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2",
+      "bytes": 2118295
+    },
+    {
+      "artifact_path": "data/derived/topology-measurements.json",
+      "sha256": "4d39454d537d756d9088c811fa9368fb86b455ae53990e06bdb862b8a81ae6af",
+      "bytes": 28663
+    },
+    {
+      "artifact_path": "data/derived/water-detail.u8",
+      "sha256": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e",
+      "bytes": 50331648
+    },
+    {
+      "artifact_path": "data/derived/water.png",
+      "sha256": "beb20ee5cb939e4201c044104f011abe96723976114aa5bc79458a22e8cf4566",
+      "bytes": 68453
+    },
+    {
+      "artifact_path": "data/derived/water.u8",
+      "sha256": "41e2bd0c5ecff97bf630743308caccdf57779a9f4cf1a6329a0b9ff992044d10",
+      "bytes": 7592400
+    }
+  ]
+}

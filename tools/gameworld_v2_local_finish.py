@@ -1,0 +1,14 @@
+#!/opt/anaconda3/bin/python
+import pathlib,json,math,numpy as np
+from scipy import ndimage
+ROOT=pathlib.Path(__file__).resolve().parents[1];OUT=ROOT/'data/gameworld-v2';PAY=OUT/'payload';R=6371008.8
+
+def main():
+ m=json.loads((OUT/'local-composition.json').read_text());b=[m['bounds'][k] for k in ['west','south','east','north']];h,w=m['height'],m['width'];kind=np.fromfile(PAY/'local-water.u8',dtype='u1').reshape(h,w);raw=np.load(OUT/'source-observations/local-composition-inputs.npz')['source_classes'];forest=np.fromfile(PAY/'local-forest-membership.u8',dtype='u1').reshape(h,w)>0;forest&=(kind==0)&~np.isin(raw,[0,40,50]);sx=(b[2]-b[0])*math.pi/180*R*math.cos(math.radians(41))/w;sy=(b[3]-b[1])*math.pi/180*R/h;inside=ndimage.distance_transform_edt(forest,sampling=(sy,sx));signed=inside-ndimage.distance_transform_edt(~forest,sampling=(sy,sx));labels,n=ndimage.label(forest);groups=np.where(labels>0,labels+1000000,0).astype('<u4');weights=np.fromfile(PAY/'local-surface-weights.rgba8',dtype='u1').reshape(h,w,4);weights[:,:,0]=np.rint(np.clip(.5+signed/180,0,1)*255).astype('u1');weights[kind>0,0]=0;classes=np.full((h,w),30,dtype='u1');classes[raw==0]=0;classes[forest]=10;classes[kind>0]=80
+ xs=b[0]+(np.arange(w)+.5)*(b[2]-b[0])/w;ys=b[3]-(np.arange(h)+.5)*(b[3]-b[1])/h;px=np.clip(((xs+12)/59*10620).astype(int),0,10619);py=np.clip(((59-ys)/39*7020).astype(int),0,7019);parent=np.memmap(PAY/'fine-forest-groups.u32',dtype='<u4',mode='r',shape=(7020,10620))[py[:,None],px[None,:]];mapping=[]
+ for lab,sl in enumerate(ndimage.find_objects(labels),1):
+  if sl is None:continue
+  yy,xx=sl;ids,cnt=np.unique(parent[sl][labels[sl]==lab],return_counts=True);order=np.argsort(cnt)[::-1];mapping.append({'group_id':1000000+lab,'seed':int((117180+lab*2654435761)&0xffffffff),'source_bbox':[float(xs[xx.start]),float(ys[yy.stop-1]),float(xs[xx.stop-1]),float(ys[yy.start])],'parent_fine_group_ids':[int(ids[i]) for i in order[:8] if ids[i]>0],'source_model':'ESAnativeforestcomponents + fixedconfidence regionalforest, managedguard, samecanonicalforestmask','edge_density':.42,'core_density':.88})
+ for name,a in [('local-forest-membership.u8',forest.astype('u1')),('local-forest-groups.u32',groups),('local-forest-interior.f32',inside.astype('<f4')),('local-surface-weights.rgba8',weights),('local-classes.u8',classes)]:a.tofile(PAY/name)
+ m['group_mapping']=mapping;m['forest_groups']=n;m['source_guard_failures']=int(np.count_nonzero(np.isin(raw,[0,40,50])&forest));m['forest_water_overlap']=int(np.count_nonzero((kind>0)&forest));m['final_geometry_binding']='local-water mask fromglobalcomposedland/lakegeometry afterexactboundarysnap; forest clippedagain againstthatmask';(OUT/'local-composition.json').write_text(json.dumps(m,indent=2)+'\n');print('local finished',n,m['source_guard_failures'],m['forest_water_overlap'],flush=True)
+if __name__=='__main__':main()

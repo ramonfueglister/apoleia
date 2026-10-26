@@ -1,0 +1,13 @@
+{
+  "plan_sha256": "0be45505595a91fa42e505c0e5541d18b3abf7accbae0c1ea3a8fb94e701d913",
+  "selection_uses_rendered_errors": false,
+  "candidate_cells": 57600,
+  "eligible_land_cells": 1810,
+  "source_row": 5198,
+  "source_column": 11291,
+  "longitude": 36.047916666666666,
+  "latitude": 36.33958333333334,
+  "source_height_m": 1752.130859375,
+  "water_kind": 0,
+  "height_payload_sha256": "see bound manifest assets"
+}

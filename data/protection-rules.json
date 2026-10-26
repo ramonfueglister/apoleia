@@ -1,0 +1,9 @@
+{
+ "revision":"protection-v1",
+ "status":"spezifiziert",
+ "coast":{"source":"data/raw/ne_10m_land.geojson","rule":"Retain exact clipped vector coordinates. Raster representation has predeclared6000m samplebudget; detailed source remains available. No source shoreline is snapped to tile edges."},
+ "islands":{"source":"data/raw/ne_10m_land.geojson","anchors":[[14,37.5],[9,40],[9,42],[24.9,35.2],[33,35]],"names":["Sicily","Sardinia","Corsica","Crete","Cyprus"],"rule":"Protected large island interiors must remain land in both canonical and detailed water masks. Subpixel islands are a declared cartographic omission limit, not surveyed absence."},
+ "river_network":{"source":"data/raw/ne_10m_rivers_lake_centerlines.geojson","rule":"Retain every intersecting feature and exact clipped source coordinates; clipping at regional edge expected. No fictional network completion; source missing small streams remains unknown."},
+ "ridges":{"source":"data/etopo15-inventory.json","anchors":[[6.86,45.83],[10.76,46.51],[14.99,37.75],[1.0,42.6],[35.8,36.7],[42.0,37.5]],"rule":"Native15s detail uses unchanged source heights at source cell centers, preserving all sampled heightfield features. Coarser levels allowed only measured budget reduction. These are ridge/massif test anchors, not a newly surveyed ridge line network."},
+ "tile_seams":{"source":"data/tile-grid.json","rule":"One global canonical raster; adjacent renderpatches must sample identical geography. Logical tile IDs floor projected metres/1000 and are zoom-independent. Runtime probes required separately."}
+}

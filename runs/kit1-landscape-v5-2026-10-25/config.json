@@ -1,0 +1,84 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "config",
+  "engine": {
+    "name": "Godot",
+    "version": "4.7.2.stable.custom_build.ed1daf0bf"
+  },
+  "adapter": {
+    "working_directory": "/Users/ramonfuglister/Coding/vic3-clone",
+    "commands": {
+      "build": [
+        "./scripts/build-landscape"
+      ],
+      "start": [
+        "./scripts/run-landscape"
+      ],
+      "capture": [
+        "python3",
+        "app/scripts/measure_runtime.py",
+        "--out",
+        "/Users/ramonfuglister/Coding/vic3-clone/runs/kit1-landscape-v5-2026-10-25",
+        "--renderer",
+        "mobile",
+        "--duration",
+        "48",
+        "--capture"
+      ]
+    }
+  },
+  "mapping": {
+    "id": "equirectangular-model-v1",
+    "version": "mapping-v1"
+  },
+  "sources_path": "sources.json",
+  "fixture_path": "fixture.json",
+  "target": {
+    "platform": "macos",
+    "hardware": "MacBook Pro Mac15,6; Apple M3 Pro; 11 CPU cores; 18 GB unified memory; Metal-capable 14-core GPU",
+    "resolution": "1920x1080"
+  },
+  "thresholds": {
+    "frame_p95_ms": 16.7,
+    "peak_memory_mb": 2048,
+    "mapping_residual_px": 1.0,
+    "threshold_decision_ref": "thresholds.md"
+  },
+  "tools": [
+    {
+      "role": "renderer",
+      "executable": "/Users/ramonfuglister/.local/bin/godot",
+      "version": "4.7.2.stable.custom_build.ed1daf0bf",
+      "required": true
+    },
+    {
+      "role": "data_processing",
+      "executable": "/opt/homebrew/bin/python3.14",
+      "version": "Python 3.14.8; GDAL 3.13.3; NumPy 2.5.4",
+      "required": true
+    },
+    {
+      "role": "capture",
+      "executable": "/Users/ramonfuglister/.local/bin/godot",
+      "version": "4.7.2.stable.custom_build.ed1daf0bf",
+      "required": true
+    }
+  ],
+  "required_source_roles": [
+    "elevation",
+    "water",
+    "landcover"
+  ],
+  "tiles": {
+    "logical_shape": "square",
+    "grid_id": "eqc41-km-v1",
+    "grid_revision": "tile-grid-v1",
+    "definition": {
+      "artifact_path": "data/tile-grid.json",
+      "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+    },
+    "visible_grid": false
+  },
+  "geodata_policy_path": "geodata_policy.json",
+  "region_path": "region.json"
+}

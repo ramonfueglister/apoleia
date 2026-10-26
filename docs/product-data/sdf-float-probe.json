@@ -1,0 +1,49 @@
+{
+  "kind": "independent-targeted-Float64-source-SDF-zero-diagnostic",
+  "sampled_source_grid_centres": 141,
+  "root_samples_per_axis": 4097,
+  "visible_source_points": 3,
+  "max_planar_pixel_offset": 0.013566018455976943,
+  "measurements": [
+    {
+      "source_longitude": 1.0969344999999997,
+      "source_latitude": 51.0746725,
+      "unquantized_source_SDF_zero": {
+        "longitude": 1.0969348549842834,
+        "latitude": 51.07467256137842,
+        "distance_geodesic_m": 0.025722803396747707
+      },
+      "planar_pixel_offset": 0.007533333142416077,
+      "previous_R8_planar_pixel_offset": 0.9299104107322517
+    },
+    {
+      "source_longitude": 1.077036999999999,
+      "source_latitude": 51.0686915,
+      "unquantized_source_SDF_zero": {
+        "longitude": 1.0770376026630402,
+        "latitude": 51.06869175532285,
+        "distance_geodesic_m": 0.05078685586400108
+      },
+      "planar_pixel_offset": 0.013566018455976943,
+      "previous_R8_planar_pixel_offset": 1.2979348641968405
+    },
+    {
+      "source_longitude": 1.1394555000000004,
+      "source_latitude": 51.07687,
+      "unquantized_source_SDF_zero": {
+        "longitude": 1.1394558250904083,
+        "latitude": 51.0768700050517,
+        "distance_geodesic_m": 0.02271819429449406
+      },
+      "planar_pixel_offset": 0.006812839370063753,
+      "previous_R8_planar_pixel_offset": 0.1882253217904944
+    }
+  ],
+  "limitation": "Exact direct nearest source segment Float64 distances at relevant centres, no R8/RG8 quantization. Limited3point zeroheight/profile diagnostic of curvature, not fullGPUedge/topology/Screenpass.",
+  "reference_R8_payload_sha256": "a08b15ad169dc6a628e1d1ee37eb3e1906f5461e7a26d207012884ae554ff1b2",
+  "source_geometry_sha256": {
+    "data/derived/land.geojson": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+    "data/derived/lakes.geojson": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+    "data/derived/water-detail.u8": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e"
+  }
+}

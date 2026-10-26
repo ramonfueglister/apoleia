@@ -1,0 +1,114 @@
+{
+  "kind": "read-only-RG8-height-quantization-probe",
+  "source_revision": "landscape-v3",
+  "source_sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+  "source_shape": [
+    8880,
+    13680
+  ],
+  "packed_path": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/render-data/height-rg8.bin",
+  "packed_sha256": "500799c49ec324054206b40319a010a68a508728b226d73d7c3ec30a1c8cb9ae",
+  "source_count": 121478400,
+  "source_min_m": -5136.30029296875,
+  "source_max_m": 5582.501953125,
+  "encoding": {
+    "low_m": -8192.0,
+    "high_m": 8191.75,
+    "step_m": 0.25,
+    "rounding": "floor((Float64(sourceFloat32)-low)/step+0.5)",
+    "channels": "Rhighbyte,Glowbyte",
+    "decode": "(R*256+G)*0.25-8192; decode4texelFetch corners BEFORE bilinear; marine query clamp applied afterward"
+  },
+  "quantization_budget_m": 0.125,
+  "out_of_range_count": 0,
+  "byte_mismatch_count": 0,
+  "full_grid_max_error_m": 0.125,
+  "full_grid_rms_m": 0.06587819589850989,
+  "half_step_ties": 16981,
+  "bilinear_sample_count": 4096,
+  "bilinear_sample_max_error_m": 0.11722612448625114,
+  "samples": [
+    {
+      "row": 0,
+      "column": 317,
+      "source_m": -669.0,
+      "R": 117,
+      "G": 140,
+      "decoded_m": -669.0,
+      "error_m": 0.0
+    },
+    {
+      "row": 1024,
+      "column": 317,
+      "source_m": 183.8271484375,
+      "R": 130,
+      "G": 223,
+      "decoded_m": 183.75,
+      "error_m": 0.0771484375
+    },
+    {
+      "row": 2048,
+      "column": 317,
+      "source_m": -132.5804901123047,
+      "R": 125,
+      "G": 238,
+      "decoded_m": -132.5,
+      "error_m": 0.0804901123046875
+    },
+    {
+      "row": 3072,
+      "column": 317,
+      "source_m": -4231.0,
+      "R": 61,
+      "G": 228,
+      "decoded_m": -4231.0,
+      "error_m": 0.0
+    },
+    {
+      "row": 4096,
+      "column": 317,
+      "source_m": -2494.0,
+      "R": 89,
+      "G": 8,
+      "decoded_m": -2494.0,
+      "error_m": 0.0
+    },
+    {
+      "row": 5120,
+      "column": 317,
+      "source_m": -2970.675048828125,
+      "R": 81,
+      "G": 149,
+      "decoded_m": -2970.75,
+      "error_m": 0.074951171875
+    },
+    {
+      "row": 6144,
+      "column": 317,
+      "source_m": -123.0,
+      "R": 126,
+      "G": 20,
+      "decoded_m": -123.0,
+      "error_m": 0.0
+    },
+    {
+      "row": 7168,
+      "column": 317,
+      "source_m": 412.2928771972656,
+      "R": 134,
+      "G": 113,
+      "decoded_m": 412.25,
+      "error_m": 0.042877197265625
+    },
+    {
+      "row": 8192,
+      "column": 317,
+      "source_m": 239.3309783935547,
+      "R": 131,
+      "G": 189,
+      "decoded_m": 239.25,
+      "error_m": 0.0809783935546875
+    }
+  ],
+  "limitation": "Read-only source/render-byte mathematical probe. Actual GPU UNORM decode, Float32 arithmetic, rendered mesh/morph and screen errors need separate runtime measurement. No change to source/generalization budgets; no marine preflattening."
+}

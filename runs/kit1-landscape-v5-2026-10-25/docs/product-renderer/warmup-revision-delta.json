@@ -1,0 +1,79 @@
+{
+  "revision": "warmup-delta-v1",
+  "source_before_sha256": "9478a78e27a9076ca4836b8818f8cfefab8d8c5c6e10a26f8458473d1b31ed0d",
+  "source_after_sha256": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+  "unchanged_visible_geometry_functions": {
+    "geographic_to_world": {
+      "before": "79b413e515a3c0d3fc42933b6c8ffc11f0352ef3a49bf0a65c4a8e36be2cb209",
+      "after": "79b413e515a3c0d3fc42933b6c8ffc11f0352ef3a49bf0a65c4a8e36be2cb209",
+      "identical": true
+    },
+    "world_to_geographic": {
+      "before": "97a16841649ac51f42f9d1e4c1a6bf7bca04c8a607861fdfe62d04e18f5297c1",
+      "after": "97a16841649ac51f42f9d1e4c1a6bf7bca04c8a607861fdfe62d04e18f5297c1",
+      "identical": true
+    },
+    "_height": {
+      "before": "2cfa8caee2be44988afc55f14d00234d0a9e3052f97572a585d1a270df2179fa",
+      "after": "2cfa8caee2be44988afc55f14d00234d0a9e3052f97572a585d1a270df2179fa",
+      "identical": true
+    },
+    "_make_patch_mesh": {
+      "before": "622341292a4563daa5e42006cd0b8da95bf51d9f7f796e10b572e3232f55c449",
+      "after": "622341292a4563daa5e42006cd0b8da95bf51d9f7f796e10b572e3232f55c449",
+      "identical": true
+    },
+    "_collect_patches": {
+      "before": "28f681560ee8e5d5ce7427116db8f31fba72808011e06445583e9acc467b12d9",
+      "after": "28f681560ee8e5d5ce7427116db8f31fba72808011e06445583e9acc467b12d9",
+      "identical": true
+    },
+    "_make_tree_mesh": {
+      "before": "40b1669492424a63e09578c8fb828c6b231ef09d3c99075e20a32b9306ef8c4a",
+      "after": "40b1669492424a63e09578c8fb828c6b231ef09d3c99075e20a32b9306ef8c4a",
+      "identical": true
+    },
+    "_append_crown": {
+      "before": "36b831e2c4cc5fc77a43b15e43d2a0e4d1e3cffd97db92f8e86ce46449d6d6d5",
+      "after": "36b831e2c4cc5fc77a43b15e43d2a0e4d1e3cffd97db92f8e86ce46449d6d6d5",
+      "identical": true
+    },
+    "_setup_rivers": {
+      "before": "dbdf10055c1a56b6be5257a60be5ebbe4d0f7d2b04d1474ec147b9e01d8b35ea",
+      "after": "dbdf10055c1a56b6be5257a60be5ebbe4d0f7d2b04d1474ec147b9e01d8b35ea",
+      "identical": true
+    },
+    "_triangle_height": {
+      "before": "c550414003b91d3a166111535e3f7bf2fcdf202648675d96a6e0dea6796a0fba",
+      "after": "c550414003b91d3a166111535e3f7bf2fcdf202648675d96a6e0dea6796a0fba",
+      "identical": true
+    },
+    "_render_height": {
+      "before": "595fc51f300f92278134c6126998148cd45bfb31e8cd141d2552d6e8c0c216cd",
+      "after": "595fc51f300f92278134c6126998148cd45bfb31e8cd141d2552d6e8c0c216cd",
+      "identical": true
+    },
+    "_packed_height": {
+      "before": "5eac2ce119580ba20b0af22d224fdee5a457994252d4724e3138ffa2782c1944",
+      "after": "5eac2ce119580ba20b0af22d224fdee5a457994252d4724e3138ffa2782c1944",
+      "identical": true
+    },
+    "_water_distance": {
+      "before": "19e5ad5646ec9ec38651018a6f5183ea10f7500d58fd26622640a1510c9c706e",
+      "after": "19e5ad5646ec9ec38651018a6f5183ea10f7500d58fd26622640a1510c9c706e",
+      "identical": true
+    },
+    "_drive_fixture": {
+      "before": "ac4856806e592c572ce57512d4bd1453a5db251c617ef02da3d0b97cc5c4b1fe",
+      "after": "ac4856806e592c572ce57512d4bd1453a5db251c617ef02da3d0b97cc5c4b1fe",
+      "identical": true
+    }
+  },
+  "unchanged_shader_hashes": {
+    "shaders/terrain.gdshader": true,
+    "shaders/vegetation.gdshader": true,
+    "shaders/rivers.gdshader": true
+  },
+  "change": "only initial zero-alpha draws of the same crown/MultiMesh/material/shadow variants and separate render-timing telemetry; no added viewport or visible geography",
+  "video_evidence": "accepted-mobile-capture remains real visual geography evidence for these identical mesh/shader/data functions; final warmed build separately tested"
+}

@@ -1,0 +1,5 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+ERROR: Condition "ret != noErr" is true. Returning: ""
+   at: get_system_ca_certificates (platform/macos/os_macos.mm:1035)
+{"damping_250ms":0.950000405311584,"failures":[],"ground_cases":96,"max_anchor_error_px":0.614366054534912,"max_pick_error_px":0.50946044921875,"revision":"orthographic-ground-anchor-v2"}

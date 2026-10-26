@@ -1,0 +1,881 @@
+{
+  "schema_version": "kit1-ops-evidence-index-v1",
+  "run_id": "kit1-landscape-v5-2026-10-25",
+  "generated_utc": "2026-10-25T17:02:00Z",
+  "status": "final_review_bound; qualified_acceptance; A08_user_style_open; A12_gpu_timing_open; A16_four_NA_contract_gap",
+  "report_binding": "39 hash-bound evidence objects; current release-v2 runtime and final independent matrix bound. A08 user style decision, A12 GPU/per-pass time, and A16 four NA values remain open.",
+  "records": [
+    {
+      "id": "config",
+      "path": "runs/kit1-landscape-v5-2026-10-25/config.json",
+      "sha256": "3fd2a2e630bde7cc80c09db3160b36423ff9d1a994802f968307e9428be95ceb",
+      "kind": "config",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "fixture",
+      "path": "runs/kit1-landscape-v5-2026-10-25/fixture.json",
+      "sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+      "kind": "fixture",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "sources",
+      "path": "runs/kit1-landscape-v5-2026-10-25/sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "kind": "sources",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "region",
+      "path": "runs/kit1-landscape-v5-2026-10-25/region.json",
+      "sha256": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a",
+      "kind": "region",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "coverage",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/coverage-view.json",
+      "sha256": "5866fa55e82a4cc41bf5cf1dc45e3905a2ecf51790046bcff975d2fc9fc91939",
+      "kind": "coverage",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "derivation",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/derivation-view.json",
+      "sha256": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88",
+      "kind": "derivation",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "tiles",
+      "path": "runs/kit1-landscape-v5-2026-10-25/tiles.json",
+      "sha256": "e1f0dcc8925a40ed544fd7c8a14bb0501603f064095aabadffa05fa1b00ee19f",
+      "kind": "tiles",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "telemetry_mobile",
+      "path": "runs/kit1-landscape-v5-2026-10-25/telemetry.json",
+      "sha256": "7c03cd427e04689157b88f96ede829376d0998dc9f4a078c61791e64047bad8d",
+      "kind": "telemetry",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_video",
+      "path": "runs/kit1-landscape-v5-2026-10-25/captures/release-v2-mobile/zoom-tour.mp4",
+      "sha256": "ee4d780e7867dd06833f4bc41732a5fbed9bd169a0961e5a2dd8a593ac9c13e0",
+      "kind": "video",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_overview",
+      "path": "runs/kit1-landscape-v5-2026-10-25/captures/release-v2-mobile/lossless_overview_start.png",
+      "sha256": "12d0db36276f1418e86c5b10be94274824630de88e77f20a311cd8a493ea4153",
+      "kind": "screenshot",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_intermediate",
+      "path": "runs/kit1-landscape-v5-2026-10-25/captures/release-v2-mobile/lossless_intermediate.png",
+      "sha256": "f965aa6b5ac643fe4863ac51de04fcd831df10a8f48304b40102892d97c49f92",
+      "kind": "screenshot",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_near",
+      "path": "runs/kit1-landscape-v5-2026-10-25/captures/release-v2-mobile/lossless_near.png",
+      "sha256": "5adef57d7effcfe5f21a25431ce5b6ee4be897e95f7a9644f4021f0be3723dd9",
+      "kind": "screenshot",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_return",
+      "path": "runs/kit1-landscape-v5-2026-10-25/captures/release-v2-mobile/lossless_overview_return.png",
+      "sha256": "e58cc9da3ba6faf73c776334910e18cd099ac6eedbbf1320423a5a4b3eae20d8",
+      "kind": "screenshot",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_smoke_frame",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-package-smoke/frame_000030.png",
+      "sha256": "755cd1d43c0912c85cd30b45a236727fc60d144212e84ef9508e8ace22447aac",
+      "kind": "screenshot",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "mobile_raw_runtime",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-normal/runtime.json",
+      "sha256": "b89c11e0621012e6202dd5abc68af597cfce99affd3f1a27a6b7600717afeaa8",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "mobile_rss",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-normal/process-rss.json",
+      "sha256": "037fa88e9f92f1f4452da4b26a9224df9e943e0f4207f99e96386e0654c44f93",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "mobile_anchor_analysis",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-normal/anchor-analysis.json",
+      "sha256": "4c85173674a9213e86e38945cd296e707c8c488c79d152c2beb4b338952d5882",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "mobile_anchor_projection",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-normal/anchor-projection.csv",
+      "sha256": "7ebf28115f97c1c215b2f3eac0253b462700f0c38434cd206cd5253593070c9f",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "forward_raw_runtime",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-forward-plus-normal/runtime.json",
+      "sha256": "818aab79dce2f1677e56c89d4a54e3d87eee469344ea7c8f8ba295d70bd8c123",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "forward_rss",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-forward-plus-normal/process-rss.json",
+      "sha256": "5b580e6365d414af7670232bf351656810f0547b3da40292679610f31d6c37db",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "forward_anchor_analysis",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-forward-plus-normal/anchor-analysis.json",
+      "sha256": "2246d932bbb0991be502c5de6c755ed1746a87809c3d97f1e5d619ad864bcd58",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_raw_runtime",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-capture/runtime.json",
+      "sha256": "3d835cbbc5ffa78e4ae88379b366c6f19261c5aadb13decca68465869bbfb481",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_rss",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-mobile-capture/process-rss.json",
+      "sha256": "19f00a7db5ef72bafa35ccf2419be09d249bcc4bc2f07b5d029149bd398b6999",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "capture_handoff",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-handoff.json",
+      "sha256": "520bbbb688948ac293ee6f74603710204e67b6173d9acdb2868c03b4da9eab5b",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "release_freeze",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-freeze-v2.json",
+      "sha256": "17d645382daa319f521a97c596ad46945391b6a30b32e0d21ad24f1609548290",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_smoke_runtime",
+      "path": "runs/kit1-landscape-v5-2026-10-25/evidence/runtime/release-v2-package-smoke/runtime.json",
+      "sha256": "294d508b3086cf6f2a11772a19570ae12d181e76cbc8dce25697b36df4acb67a",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_inventory",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/release-v2/package-inventory.json",
+      "sha256": "21f9e5a4ceabe3ee7fc146fdb1ad4474879de451250b2bab685441191c3391d3",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_build",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/release-v2/build.json",
+      "sha256": "de67893a8c755e3d2eecc12938212597c1e53d2bdbda6af4a5485764134c222e",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_license",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/release-v2/GODOT-LICENSE-AND-NOTICES.txt",
+      "sha256": "f24c6f9b5a2639ff30d8b359a517fc89951ebb0845dea4bd9f35c886a2a78dcc",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_sources",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/release-v2/sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "package_info_plist",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/release-v2/Info.plist",
+      "sha256": "63b4cbbbcdb5007245ad5baa1c1cce5afbb22fd716563c956ad6ba5266a82191",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "source_transformations",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data/transformations.json",
+      "sha256": "134aff4b595ee9f6b6d9c845f105e5619b1aea28a51d9c1e1d1cdb2f29dcb1f1",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "data_errata_policy",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "data_errata_binding",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/errata-binding.json",
+      "sha256": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "data_errata_summary",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/runtime-evidence-summary.json",
+      "sha256": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "data_errata_check",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/applicable-evidence-check.json",
+      "sha256": "6ab6e746319d218c31c900a225497569552b14cfc5ebf83ab22f7d57ff1c1aab",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "data_errata_structure",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/structure-verification.json",
+      "sha256": "6ac15dd3ce2c8df4eefe840aee176219e46307d777adbcdab4e0fd0bde15a9b1",
+      "kind": "log",
+      "origin": "data",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "independent_final_review",
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/FINAL_REVIEW.md",
+      "sha256": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "independent_review_binding",
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/final-review-binding.json",
+      "sha256": "cb92d531f6484a3168db431f90aea3086aa5fef815c97bac394f3fa4cec1b870",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "final_current",
+      "scope": "final release-v2 report binding"
+    },
+    {
+      "id": "fixture_controls",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/fixture-controls.json",
+      "sha256": "527992f720becdef0ad016c1d37860138f78c8f62ad48fb890c5bc0315adf085",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "calibration-only; excluded from final report binding"
+    },
+    {
+      "id": "position_method",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/expected-position-method.json",
+      "sha256": "4d1143bb872d4fe7d4c934066500962e12c970a109f8ebf2cb14c68247d24385",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-binding; excluded from final report binding"
+    },
+    {
+      "id": "thresholds",
+      "path": "runs/kit1-landscape-v5-2026-10-25/thresholds.md",
+      "sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-binding; excluded from final report binding"
+    },
+    {
+      "id": "camera_profile",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/camera-profile.json",
+      "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-binding; excluded from final report binding"
+    },
+    {
+      "id": "tiles_definition",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data/tile-grid.json",
+      "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d",
+      "kind": "tiles",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-binding; excluded from final report binding"
+    },
+    {
+      "id": "data_geodata_policy",
+      "path": "runs/kit1-landscape-v5-2026-10-25/geodata_policy.json",
+      "sha256": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-binding; excluded from final report binding"
+    },
+    {
+      "id": "fixture_controller_regression",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/calibration/fixture-controller-regression.json",
+      "sha256": "c58ce8c6cc84f7b52b25bac1f05284106caf17926fa8ea47f4a1db155f434d6c",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "calibration-only; excluded from final report binding"
+    },
+    {
+      "id": "fixture_effective_controller_check",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/calibration/fixture-effective-controller-check.json",
+      "sha256": "b2278c6ad8fd2694e4849e31efa0f319b7c81f68d0c6dba957ab10b9a5662b81",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "calibration-only; excluded from final report binding"
+    },
+    {
+      "id": "warmed_mobile_runtime",
+      "path": "artifacts/runtime/warmed-mobile-normal/runtime.json",
+      "sha256": "da55c44e28848b1f4536ffd8221bb4e2f917ee76af99134fc897ce8821366c39",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmed_mobile_launch",
+      "path": "artifacts/runtime/warmed-mobile-normal/launch.log",
+      "sha256": "6dd30e3c96d65aa1fc74430e21d05a0463ba43adb1abd1a43da592aad5f8f0d8",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmed_mobile_process_rss",
+      "path": "artifacts/runtime/warmed-mobile-normal/process-rss.json",
+      "sha256": "5a5bdf4b352f4c3639d9a13fa38006f21b54384e50ad88641071423b55d81cae",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmed_forward_plus_runtime",
+      "path": "artifacts/runtime/warmed-forward-plus-normal/runtime.json",
+      "sha256": "2c248b3e63b1d941062f745b17abbcec2a615baf13c4c138d254ea35eedeb675",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmed_forward_plus_launch",
+      "path": "artifacts/runtime/warmed-forward-plus-normal/launch.log",
+      "sha256": "6e4f5d6540d0d97fb77ffc326052928dbe5e00c22d08d68762a9254f0a0430aa",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmed_forward_plus_process_rss",
+      "path": "artifacts/runtime/warmed-forward-plus-normal/process-rss.json",
+      "sha256": "537524b5bc9efc021cc674966dd9a431ecea9ad7728553104d0171cd9eef6f9a",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "post-warmup-normal-benchmark; excluded from final report binding"
+    },
+    {
+      "id": "warmup_revision_delta",
+      "path": "artifacts/runtime/warmup-revision-delta.json",
+      "sha256": "a01ffb1a94927f173f2769aad6bd45501e35ec0beff5dd5f375537d90444c060",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "revision-delta; excluded from final report binding"
+    },
+    {
+      "id": "mobile_capture_runtime",
+      "path": "artifacts/runtime/accepted-mobile-capture/runtime.json",
+      "sha256": "892a2c5e22107eb707ff29a58c7f4ea50c5a281b077051c625a21da1870e7212",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "visual-capture-pre-warmup-source; excluded from final report binding"
+    },
+    {
+      "id": "mobile_capture_video",
+      "path": "artifacts/runtime/accepted-mobile-capture/zoom-tour.mp4",
+      "sha256": "2e2273f8242b4baa3b1cbd183516086f31d4ec97994c520ff80d6547c1556c12",
+      "kind": "video",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "visual-capture-pre-warmup-source; excluded from final report binding"
+    },
+    {
+      "id": "mobile_capture_environment",
+      "path": "artifacts/runtime/accepted-mobile-capture/capture-environment.json",
+      "sha256": "090de0c627cc6802bb1af7dbb0bf554e3df8619cee198f630e93091019bff637",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "visual-capture-pre-warmup-source; excluded from final report binding"
+    },
+    {
+      "id": "package_build_metadata",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/build.json",
+      "sha256": "de67893a8c755e3d2eecc12938212597c1e53d2bdbda6af4a5485764134c222e",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "package-metadata; excluded from final report binding"
+    },
+    {
+      "id": "package_godot_notices",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/GODOT-LICENSE-AND-NOTICES.txt",
+      "sha256": "f24c6f9b5a2639ff30d8b359a517fc89951ebb0845dea4bd9f35c886a2a78dcc",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "package-metadata; excluded from final report binding"
+    },
+    {
+      "id": "package_source_attribution",
+      "path": "runs/kit1-landscape-v5-2026-10-25/docs/product-renderer/package-evidence/bundled-sources.json",
+      "sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "kind": "sources",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "package-source-attribution; excluded from final report binding"
+    },
+    {
+      "id": "ops_report",
+      "path": "runs/kit1-landscape-v5-2026-10-25/report.json",
+      "sha256": "9845b0360f82ae8162ed25125db5a30a9bc36079fa4102d7bd507173d65e04eb",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "run-report; excluded from final report binding"
+    },
+    {
+      "id": "kit_telemetry_mobile",
+      "path": "runs/kit1-landscape-v5-2026-10-25/telemetry.json",
+      "sha256": "1f8d3962134cf37e855a639765fc8e5b5ae3d9f27648c3dfe392e85d2a6f450b",
+      "kind": "telemetry",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "kit-telemetry; excluded from final report binding"
+    },
+    {
+      "id": "runtime_tiles",
+      "path": "runs/kit1-landscape-v5-2026-10-25/tiles.json",
+      "sha256": "578cdf2c746401fc176ae221dec4243cbb8a9a841758e202e2bfa3dad7856037",
+      "kind": "tiles",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "tile-probes; excluded from final report binding"
+    },
+    {
+      "id": "runtime_conversion_binding",
+      "path": "runs/kit1-landscape-v5-2026-10-25/conversion-binding.json",
+      "sha256": "67e25fab40b3e1957e72f809852a6418417e1dd668d93b476b0a6a177b71fd30",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "runtime-to-kit-conversion; excluded from final report binding"
+    },
+    {
+      "id": "report_manifest_binding",
+      "path": "runs/kit1-landscape-v5-2026-10-25/report-manifest-binding.json",
+      "sha256": "277486e4dd24f3d4a3deffc9a18c9ada03de944e9a1c0e5a70d86e1c1e8cda33",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-adapter; excluded from final report binding"
+    },
+    {
+      "id": "report_coverage_adapter",
+      "path": "runs/kit1-landscape-v5-2026-10-25/report-coverage.json",
+      "sha256": "4b7fdb82a3c79ee10181732d3e0bf29d68992d6e0ab83cd5eb1e3e9098a1a334",
+      "kind": "coverage",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-adapter; excluded from final report binding"
+    },
+    {
+      "id": "report_derivation_adapter",
+      "path": "runs/kit1-landscape-v5-2026-10-25/report-derivation.json",
+      "sha256": "f10db2af8f24fce7108cc9f5b4667e0a35a0ada86d779ef27d3f4a5c04f6b6c7",
+      "kind": "derivation",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-adapter; excluded from final report binding"
+    },
+    {
+      "id": "data_report_coverage_view",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/coverage-view.json",
+      "sha256": "4c00fe98130bf8679bfd01fb523ba3a304abd89270f81ca2a08770d393be9afe",
+      "kind": "coverage",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_derivation_view",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/derivation-view.json",
+      "sha256": "6521234f83b5a2b4136b8e5e91eea18e2741354a7360f606536082ab84137f27",
+      "kind": "derivation",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_runtime_summary",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/runtime-evidence-summary.json",
+      "sha256": "518fee6d6c352fe095a77bf3e8cea8b9ccb0f49e67c24d3f1e21ce42dfabe267",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_errata_binding",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/errata-binding.json",
+      "sha256": "a15b329826b9da28039e6e354256f4e776ff3ef859d542e8673f9f8c13abb5ca",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_policy_application",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_applicable_check",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/applicable-evidence-check.json",
+      "sha256": "827128c11188bbda3f142ea23400beed30729e94d82fcd47cbdcc85f2b3a1b51",
+      "kind": "log",
+      "origin": "data",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_detail_screen",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/evidence/detail-screen.csv",
+      "sha256": "38542b38bef62dc181f50d6642a179dbc8223d84ea6a4b3174ecb483b9574e01",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_detail_transition",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/evidence/detail-transition.csv",
+      "sha256": "98a59c7b732e8a8442334605e403bcb62d32a5c3f585ef304bd1186dfe660703",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    },
+    {
+      "id": "data_report_review_snapshot",
+      "path": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/evidence/independent-review-snapshot.md",
+      "sha256": "c36867c5ff4b40ab025b968e3399d0719892c25844f2ef3dbcc298d141a93c95",
+      "kind": "log",
+      "origin": "runtime",
+      "state": "historical_or_superseded",
+      "scope": "report-errata; excluded from final report binding"
+    }
+  ],
+  "pending": [
+    {
+      "id": "macos_app_package",
+      "state": "owner_built_and_smoke_exit0; metadata_hashes_bound; independent_review_pending"
+    },
+    {
+      "id": "independent_acceptance_a01_a16",
+      "state": "open; awaiting independent reviewer evidence and decision"
+    },
+    {
+      "id": "capture_visual_review",
+      "state": "open; independent reviewer currently owns review"
+    },
+    {
+      "id": "report_check",
+      "state": "blocked only by independent reviewer binding and Kit NA contract gap for four offline-level runtime metric pairs; status details in current report-check/PROGRESS"
+    }
+  ],
+  "known_review_limits": [
+    "A12 is only partially validated: no GPU per-pass timing API in the current Godot/Metal environment; no profiler/SDK installed.",
+    "Reported GPU memory is engine allocation, not complete physical residency; viewport timing is not total frame/GPU timing.",
+    "Mobile and Forward+ normal runs have independent frame wall-time evidence; startup and pipeline-compilation hitches must remain visible.",
+    "Forward+ warmed peak RSS is reported in MiB against the pre-bound 2048 MiB limit; it is 2035.4375 MiB (12.5625 MiB below), not over the binary-MiB threshold.",
+    "Warmed normal benchmark runs are separate from the pre-warmup-source visual capture; warmup revision delta records unchanged visible-geometry functions and shaders.",
+    "Capture evidence is not an isolated performance benchmark and overlaps a known 7-second reviewer CPU interval; retain original timestamps and frame gaps.",
+    "The local macOS .app owner smoke exited 0 and produced a 1920x1080 runtime frame; this is startup evidence, not full A01-A16 acceptance or a visual style decision.",
+    "Bundle inventory lists 76 payload files with no missing/hash mismatch; the package-inventory file itself is intentionally not in its own manifest and is independently hashed in this index.",
+    "Bundled Godot notices and source-attribution manifest are present; this records package contents, not a blanket legal or license-use conclusion."
+  ],
+  "run_contexts": [
+    {
+      "run_id": "warmed-mobile-normal",
+      "run_directory": "artifacts/runtime/warmed-mobile-normal",
+      "renderer": "mobile",
+      "measurement_window_relative_ms": {
+        "first_sample": 21.739,
+        "last_sample": 48000.237
+      },
+      "runtime_file_mtime_utc": "2026-10-25T15:49:41Z",
+      "timestamp_semantics": "filesystem runtime.json last-modified time, not runtime start; runtime evidence has no wall-clock UTC field",
+      "renderer_source_sha256": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+      "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+      "fixture_sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+      "thresholds_sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "runtime_sha256": "da55c44e28848b1f4536ffd8221bb4e2f917ee76af99134fc897ce8821366c39",
+      "process_rss_sha256": "5a5bdf4b352f4c3639d9a13fa38006f21b54384e50ad88641071423b55d81cae",
+      "duration_seconds": 48.000237,
+      "frame_count": 5431,
+      "frame_ms": {
+        "p50": 8.326,
+        "p95": 9.01,
+        "p99": 26.832,
+        "max": 171.538
+      },
+      "peak_process_rss_bytes": 1897054208,
+      "peak_process_rss_mib": 1809.171875,
+      "peak_engine_gpu_allocation_bytes": 903086080.0,
+      "peak_engine_gpu_allocation_mib": 861.25,
+      "rss_budget_bytes": 2147483648,
+      "rss_budget_mib": 2048,
+      "gpu_budget_bytes": 1073741824,
+      "gpu_budget_mib": 1024,
+      "capture_environment": null,
+      "independent_review": "pending"
+    },
+    {
+      "run_id": "warmed-forward-plus-normal",
+      "run_directory": "artifacts/runtime/warmed-forward-plus-normal",
+      "renderer": "forward_plus",
+      "measurement_window_relative_ms": {
+        "first_sample": 21.232,
+        "last_sample": 48000.799
+      },
+      "runtime_file_mtime_utc": "2026-10-25T15:53:35Z",
+      "timestamp_semantics": "filesystem runtime.json last-modified time, not runtime start; runtime evidence has no wall-clock UTC field",
+      "renderer_source_sha256": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+      "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+      "fixture_sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+      "thresholds_sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "runtime_sha256": "2c248b3e63b1d941062f745b17abbcec2a615baf13c4c138d254ea35eedeb675",
+      "process_rss_sha256": "537524b5bc9efc021cc674966dd9a431ecea9ad7728553104d0171cd9eef6f9a",
+      "duration_seconds": 48.000799,
+      "frame_count": 5399,
+      "frame_ms": {
+        "p50": 8.323,
+        "p95": 9.343,
+        "p99": 27.863,
+        "max": 279.208
+      },
+      "peak_process_rss_bytes": 2134310912,
+      "peak_process_rss_mib": 2035.4375,
+      "peak_engine_gpu_allocation_bytes": 974618624.0,
+      "peak_engine_gpu_allocation_mib": 929.46875,
+      "rss_budget_bytes": 2147483648,
+      "rss_budget_mib": 2048,
+      "gpu_budget_bytes": 1073741824,
+      "gpu_budget_mib": 1024,
+      "capture_environment": null,
+      "independent_review": "pending"
+    },
+    {
+      "run_id": "accepted-mobile-capture",
+      "run_directory": "artifacts/runtime/accepted-mobile-capture",
+      "renderer": "mobile",
+      "measurement_window_relative_ms": {
+        "first_sample": 37.647,
+        "last_sample": 48012.335
+      },
+      "runtime_file_mtime_utc": "2026-10-25T15:35:42Z",
+      "timestamp_semantics": "filesystem runtime.json last-modified time, not runtime start; runtime evidence has no wall-clock UTC field",
+      "renderer_source_sha256": "9478a78e27a9076ca4836b8818f8cfefab8d8c5c6e10a26f8458473d1b31ed0d",
+      "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+      "fixture_sha256": "39e82d6ace00a399740cab5487634b857f47ddb1db3b37c5662211a9f48b327f",
+      "thresholds_sha256": "7cd7613eaa9f29c125c0792d1631f3296ab62f609b615ed80b4d2d03f7287ee8",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "runtime_sha256": "892a2c5e22107eb707ff29a58c7f4ea50c5a281b077051c625a21da1870e7212",
+      "process_rss_sha256": "1ea12c1ec8118a4ab2d2699863713d38f3f89c8b893a80feac4daeadea9c7c7e",
+      "duration_seconds": 48.012335,
+      "frame_count": 5436,
+      "frame_ms": {
+        "p50": 8.341,
+        "p95": 16.679,
+        "p99": 23.682,
+        "max": 188.906
+      },
+      "peak_process_rss_bytes": 1897398272,
+      "peak_process_rss_mib": 1809.5,
+      "peak_engine_gpu_allocation_bytes": 903102464.0,
+      "peak_engine_gpu_allocation_mib": 861.265625,
+      "rss_budget_bytes": 2147483648,
+      "rss_budget_mib": 2048,
+      "gpu_budget_bytes": 1073741824,
+      "gpu_budget_mib": 1024,
+      "capture_environment": {
+        "revision": "capture-environment-v1",
+        "classification": "visual/framebuffer evidence, not an isolated performance benchmark",
+        "known_parallel_cpu_analysis_utc": [
+          "2026-10-25 15:35:27",
+          "2026-10-25 15:35:34"
+        ],
+        "overlap_seconds_approx": 7,
+        "source": "independent reviewer reported exact CPU analysis file times after coordination crossed capture startup",
+        "normal_benchmarks_affected": false,
+        "restart": false,
+        "interpretation": "all original timestamps and actual frame intervals retained; inspect frame gaps/video quality, use separate normal workloads for performance acceptance"
+      },
+      "independent_review": "capture-review-pending"
+    },
+    {
+      "run_id": "macos-package-smoke",
+      "run_directory": "artifacts/runtime/package-smoke",
+      "artifact": "artifacts/Roma Aeterna.app",
+      "bundle_packaging": "local unsigned, not notarized; no release",
+      "manifest_revision": "package-inventory-v1",
+      "listed_payload_files": 76,
+      "filesystem_files_including_manifest": 77,
+      "manifest_self_entry": "excluded; package-inventory.json hash bound separately in package-evidence",
+      "payload_manifest_sha256": "15fd3d8f275e34cbe63ffb4e8ccf855471edd2df8d7c8a517020f97568e5fb1e",
+      "build_metadata_sha256": "de67893a8c755e3d2eecc12938212597c1e53d2bdbda6af4a5485764134c222e",
+      "engine_binary_sha256": "3827d91682a801158cea9afd23007164c52af3c0738d85f85c85c90b21001802",
+      "sources_manifest_sha256": "9881be75f5cc3c4adf0c7b348cb4b7d0c34a42ee67a868606531796d1321793f",
+      "godot_notice_bytes": 112876,
+      "smoke_runtime_sha256": "60176e9b40ea0b6725bf6ecfff7c01002b1d48c0ba6b41daa3d669c1f0668f5b",
+      "smoke_frame_sha256": "94e93805df9b79b7b163199438fd05f86ab8c0ceb981fbe66ab9a53f6366b753",
+      "smoke_duration_seconds": 1.469897,
+      "smoke_frame_count": 30,
+      "smoke_integrity_passed": true,
+      "renderer_source_sha256": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+      "dataset_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+      "fixture_sha256": "",
+      "thresholds_sha256": "",
+      "runtime_file_mtime_utc": "2026-10-25T15:58:46Z",
+      "timestamp_semantics": "filesystem runtime.json mtime; smoke evidence itself contains duration/frame counts but no wall clock start timestamp",
+      "owner_reported_start_command": "./scripts/build-landscape --package followed by bundle executable Contents/MacOS/RomaAeterna",
+      "owner_reported_exit_code": 0,
+      "independent_review": "pending"
+    }
+  ],
+  "package_inventory_audit": {
+    "listed_files": 76,
+    "actual_bundle_files": 77,
+    "missing_listed_files": 0,
+    "mismatched_listed_files": 0,
+    "unlisted_file": "Contents/Resources/package-inventory.json (manifest self-excluded; exact hash separately bound)",
+    "total_listed_payload_bytes": 1088303862
+  }
+}

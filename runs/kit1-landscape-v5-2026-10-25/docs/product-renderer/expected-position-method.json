@@ -1,0 +1,63 @@
+{
+  "schema_version": "kit1-a05-method-v1",
+  "revision": "a05-position-method-v2",
+  "status": "spezifiziert",
+  "metric": "max_visible_anchor_screen_residual_px",
+  "limit_px": 1.0,
+  "viewport_origin": "top-left",
+  "anchor_set": {
+    "artifact_path": "data/anchors.json",
+    "sha256": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d",
+    "revision": "anchors-v3",
+    "all_anchor_ids": [
+      "alpine-woodland-near",
+      "italy",
+      "england",
+      "north-africa",
+      "eastern-extent",
+      "jordandepression",
+      "region-edge",
+      "tile-seam",
+      "coast-ostia"
+    ]
+  },
+  "route_waypoint_ids": [
+    "wp-overview-start",
+    "wp-pan-alps",
+    "wp-intermediate",
+    "wp-near",
+    "wp-near-hold",
+    "wp-zoomout",
+    "wp-pan-england",
+    "wp-overview-return"
+  ],
+  "sampling": "At every fixed fixture waypoint time and every emitted analysis sample, retain each anchor ID, sample time, visibility, source lon/lat, expected/observed pixel coordinates, viewport, DPR, and actual camera basis/projection. Keep off-screen raw values but score only visible probes.",
+  "expected_projection": {
+    "artifact_path": "docs/product-renderer/method/expected_projection.py",
+    "sha256": "3fcbb9ce80704885971b8fec13c7622aac199eb50e8cad60159269ae74c04b2d",
+    "method": "independent scalar orthographic projection from source query and actual fixture/view state"
+  },
+  "observed_projection": {
+    "artifact_path": "docs/product-renderer/method/analyze_runtime.py",
+    "sha256": "965dc2eadf6a5697367bd7a18fcb892cd31923d37108f38267c8032f0a54e8d5",
+    "method": "Camera3D.unproject_position(active terrain triangle CPU probe) using actual runtime basis and projection; no framebuffer feature recognition"
+  },
+  "aggregation": "maximum Euclidean 2D distance in pixels; no RMS aggregation and no rounding",
+  "a16_separation": "A16 surface/generalization limits screen_error_px=2 and transition_residual_px=1 are separate; they do not change this A05 limit.",
+  "fixture_control_binding": {
+    "nominal_controls": {
+      "artifact_path": "docs/product-renderer/fixture-controls.json",
+      "sha256": "527992f720becdef0ad016c1d37860138f78c8f62ad48fb890c5bc0315adf085",
+      "meaning": "Original fixed geographic route controls and zoom values; the runtime harness continues to drive these values."
+    },
+    "effective_fixture_states": {
+      "meaning": "The fixture binds deterministic full-precision Camera3D state observed by a separate controller-only regression; this is the exact expected state used by the strict Kit validator, not an A05 measurement."
+    },
+    "controller_regression": {
+      "artifact_path": "docs/product-renderer/calibration/fixture-controller-regression.json",
+      "sha256": "c58ce8c6cc84f7b52b25bac1f05284106caf17926fa8ea47f4a1db155f434d6c",
+      "scope": "2-second controller/serialization regression only; no A05 score and no acceptance evidence."
+    },
+    "serialization": "Godot JSON serialization uses FULL_PRECISION=true so source anchor coordinates round-trip exactly as IEEE-754 values."
+  }
+}

@@ -21,6 +21,8 @@ KEYWORDS = {'$schema', 'title', 'type', 'properties', 'required', 'additionalPro
 CHECKS = {f'A{i:02}' for i in range(1, 17)}
 GEO_METRICS = {'terrain_vertical_m':'m','terrain_horizontal_m':'m','coastline_displacement_m':'m','screen_error_px':'px','projection_scale_error_ratio':'ratio','transition_residual_px':'px'}
 FEATURE_CLASSES = {'coast','islands','river_network','ridges','tile_seams'}
+# Only render-space metrics may be declared not applicable, e.g. for an offline level that is never rendered.
+NA_METRICS = {'screen_error_px','transition_residual_px'}
 POLICY_ARTIFACTS = ('decision','source_model_transform','model_render_transition','projection_definition','source_accuracy_assessment','detail_rules')
 
 
@@ -198,6 +200,10 @@ def validate(kind, value):
         if len(pairs)!=len(set(pairs)):errors.append('duplicate derivation level/metric')
         for row in value['level_measurements']:
             if row['unit']!=GEO_METRICS[row['metric']]:errors.append('derivation unit mismatch')
+        # Optional explicit NA (render-space metrics only); never counted as a numeric value.
+        na=[(x['level_id'],x['metric']) for x in value.get('not_applicable',[])]
+        if len(na)!=len(set(na)):errors.append('duplicate derivation not-applicable level/metric')
+        if set(na)&set(pairs):errors.append('derivation level/metric both measured and not applicable')
     if kind=='tiles':
         errors+=unique(value['probes'],'id','tile probes')
         if len(value['navigation_probe_ids'])!=len(set(value['navigation_probe_ids'])):errors.append('tile navigation cannot reuse probe IDs')
@@ -455,7 +461,16 @@ def derivation_check(folder, value, report, sources, config):
     for output in value['derived_outputs']:issues+=artifact_issues(folder,output,'derived output')
     levels={x['id']:x for x in policy['levels']}
     expected={(ident,m) for ident in levels for m in GEO_METRICS}
-    if {(m['level_id'],m['metric']) for m in value['level_measurements']}!=expected or not expected:issues.append('derivation level/metric coverage incomplete')
+    measured={(m['level_id'],m['metric']) for m in value['level_measurements']}
+    not_applicable=value.get('not_applicable',[])
+    na={(x['level_id'],x['metric']) for x in not_applicable}
+    if measured|na!=expected or measured&na or not expected:issues.append('derivation level/metric coverage incomplete')
+    for row in not_applicable:
+        if row['level_id'] not in levels:issues.append('derivation not-applicable level unknown: '+row['level_id'])
+        if row['metric'] not in NA_METRICS:issues.append('derivation metric cannot be not applicable: '+row['metric'])
+        issues+=artifact_issues(folder,row['rule'],'derivation not-applicable rule')
+    for metric in GEO_METRICS:
+        if levels and not any(m==metric and l in levels for l,m in measured):issues.append('derivation metric has no measured level: '+metric)
     for row in value['level_measurements']:
         level=levels.get(row['level_id'])
         if not level:continue

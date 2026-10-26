@@ -1,0 +1,68 @@
+{
+  "revision": "landscape-v3",
+  "region_revision": "region-v1",
+  "gdal_version": "GDAL 3.13.3 \"Iowa City\", released 2026/08/13",
+  "native_elevation_grid": [
+    18000,
+    10800
+  ],
+  "canonical_dimensions": [
+    3420,
+    2220
+  ],
+  "total_cells": 7592400,
+  "land_cells": 5593677,
+  "ocean_lake_cells": 1998723,
+  "unknown_landcover_cells": 0,
+  "elevation_min": -5129.83056640625,
+  "elevation_max": 5167.03564453125,
+  "class_histogram": {
+    "10": 1136704,
+    "20": 27750,
+    "30": 873718,
+    "40": 1082270,
+    "50": 60973,
+    "60": 2351283,
+    "70": 2211,
+    "80": 2041186,
+    "90": 14902,
+    "95": 3,
+    "100": 1400
+  },
+  "vectors": {
+    "land": {
+      "features": 8,
+      "input_invalid_repaired": 0,
+      "output_invalid": 0,
+      "output_sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c"
+    },
+    "rivers": {
+      "features": 168,
+      "input_invalid_repaired": 0,
+      "output_invalid": 0,
+      "output_sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2"
+    },
+    "lakes": {
+      "features": 100,
+      "input_invalid_repaired": 0,
+      "output_invalid": 0,
+      "output_sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2"
+    }
+  },
+  "worldcover_sources": 249,
+  "unavailable_worldcover": [
+    "N33W012",
+    "N33E015",
+    "N33E018",
+    "N42E030",
+    "N45W012",
+    "N45W009",
+    "N48W012",
+    "N54E000",
+    "N54E003",
+    "N57W012",
+    "N57E000"
+  ],
+  "source_vrt_sha256": "104cffd4affa726b936d874449a394e272dbfe6bea36c2328809f815eb8ef6ae",
+  "source_vrt_hash_scope": "Hash of complete elevation-source.vrt descriptor, NOT a TIFF or merged elevation payload. Original complete TIFF hashes are in etopo15-inventory.json and sources.json."
+}

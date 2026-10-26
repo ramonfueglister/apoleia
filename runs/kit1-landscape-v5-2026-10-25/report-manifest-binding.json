@@ -1,0 +1,64 @@
+{
+  "schema_version": "kit1-report-manifest-adapter-v1",
+  "run_id": "kit1-landscape-v5-2026-10-25",
+  "build_revision": "product-build-sha256:34a0f20fa36c1f95516307b53a228ea5ac7cdd6a5644159380c71e4c499bd347",
+  "build_revision_method": "SHA-256 of canonical JSON (sorted keys, compact separators) in product_build_components; this is a run assembly fingerprint, not a claim about a compiled binary hash",
+  "source_manifests": {
+    "coverage": {
+      "path": "coverage.json",
+      "sha256": "a6bd882e9baabad8ca2700595c19ec5805d3d61273a21ab51c3a036ba174cfad",
+      "revision": "coverage-v3"
+    },
+    "derivation": {
+      "path": "derivation.json",
+      "sha256": "fb5f3ee3310b7164d46be69b043944663baf86013b6404968da98ff51a8dcc10",
+      "data_build_revision": "landscape-v3"
+    }
+  },
+  "alias_normalizations": [
+    {
+      "field": "coverage.region_definition.artifact_path",
+      "from": "data/region.json",
+      "to": "region.json",
+      "sha256_unchanged": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a"
+    },
+    {
+      "field": "derivation.region_definition.artifact_path",
+      "from": "data/region.json",
+      "to": "region.json",
+      "sha256_unchanged": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a"
+    },
+    {
+      "field": "derivation.policy.artifact_path",
+      "from": "data/geodata_policy.json",
+      "to": "geodata_policy.json",
+      "sha256_unchanged": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28"
+    },
+    {
+      "field": "derivation.build_revision",
+      "from": "landscape-v3",
+      "to": "product-build-sha256:34a0f20fa36c1f95516307b53a228ea5ac7cdd6a5644159380c71e4c499bd347",
+      "basis": "composite run/product identity; original dataset revision retained above",
+      "data_measurements_changed": false
+    }
+  ],
+  "unchanged_inputs": {
+    "coverage.json": "a6bd882e9baabad8ca2700595c19ec5805d3d61273a21ab51c3a036ba174cfad",
+    "derivation.json": "fb5f3ee3310b7164d46be69b043944663baf86013b6404968da98ff51a8dcc10",
+    "config.json": "3fd2a2e630bde7cc80c09db3160b36423ff9d1a994802f968307e9428be95ceb",
+    "region.json": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a",
+    "data/region.json": "adaa308c83b03f3e4288ab0c81a91e835e8a5a88e0191162362b5481d86acc8a",
+    "geodata_policy.json": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+    "data/geodata_policy.json": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+    "conversion-binding.json": "c894929b762923db6df10e60546ef5aad2e2e1dda5b176898f2f69c1399fc4d5"
+  },
+  "outputs": {
+    "report-coverage.json": "4b7fdb82a3c79ee10181732d3e0bf29d68992d6e0ab83cd5eb1e3e9098a1a334",
+    "report-derivation.json": "83d8dd6cc8fd645c74d011f863a26c099ba1776c597afd5a54a6d4dd5744786a"
+  },
+  "limitations": [
+    "No coverage result, source measurement, scope, sample, budget, topology result, or visible landcover treatment is changed or inferred.",
+    "The adapter does not convert missing derivation metrics or incomplete topology classes into evidence.",
+    "The source manifest remains the authoritative record; these copies exist only to express byte-identical aliases and the composite run build identity required by the report contract."
+  ]
+}

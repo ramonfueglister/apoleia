@@ -1,0 +1,9 @@
+{
+  "schema_version": "anchor-analysis-v1",
+  "method": "independent mmap source bilinear pixel-center read; independent scalar expected projection; observed Camera3D actual state + active terrain triangle CPU probe, not framebuffer feature recognition",
+  "sample_count": 8694,
+  "visible_sample_count": 2087,
+  "visible_screen_residual_max_px": 0.6560332068414252,
+  "source_height_read_residual_max_m": 0.05066228657960892,
+  "tile_mismatch_count": 0
+}

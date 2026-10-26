@@ -1,0 +1,87 @@
+{
+ "revision": "gametiles-terrain-25km-v1",
+ "generated_utc": "2026-10-26T15:49:53Z",
+ "tool": "tools/gametiles_terrain.py",
+ "status": "erforscht (derived statistics; thresholds for Hochgebirge/Wueste are a separate design decision)",
+ "grid": {
+  "projection": "data/projection.json mapping-v1",
+  "tile_m": 25000,
+  "col": "floor(x/25000)",
+  "row": "floor(z/25000)",
+  "cols": [
+   -101,
+   90
+  ],
+  "rows": [
+   -76,
+   88
+  ],
+  "tiles": 31680,
+  "region": {
+   "west": -11,
+   "east": 46,
+   "south": 21,
+   "north": 58
+  }
+ },
+ "sampling": {
+  "grid_deg": "1/300",
+  "points": "cell centres within region rectangle",
+  "approx_spacing_m": {
+   "lat": 371,
+   "lon_at_41N": 280
+  },
+  "lookup": "nearest/containing overview pixel of each source",
+  "land": "WorldCover class not in {0 nodata/absent tile, 80 permanent water}",
+  "bare": "WorldCover 60 Bare/sparse vegetation",
+  "snow": "WorldCover 70 Snow and ice",
+  "elevation": "DEM value > -1000 m; DSM (includes canopy/buildings); land samples without DEM value excluded from mean/p50 and counted as not above thresholds",
+  "land_samples_without_dem": 0,
+  "p50": "median from 10 m histogram (bin centre), range -500..6000 m",
+  "fractions": "relative to land_samples; empty when land_samples=0",
+  "caveats": [
+   "Copernicus DEM is pixel-is-point; overview pixel treated as area cell (offset <= ~0.5 native pixel, ~45 m), negligible at 25 km",
+   "WorldCover overview resampling method is not stated in the COG; categorical fractions at 1/375 deg are an overview estimate, not 10 m statistics",
+   "DEM overview (factor 4, average) smooths peaks: high-threshold fractions slightly underestimate small summits"
+  ]
+ },
+ "sources": [
+  {
+   "id": "copernicus-dem-glo90",
+   "name": "Copernicus DEM GLO-90 (COP-DEM_GLO-90-DGED) COG on AWS Open Data",
+   "url": "https://copernicus-dem-90m.s3.amazonaws.com/",
+   "tile_index": "https://copernicus-dem-90m.s3.amazonaws.com/tileList.txt",
+   "readme": "https://copernicus-dem-90m.s3.amazonaws.com/readme.html",
+   "version": "GLO-90 DGED as served by bucket (bucket does not state release; sample object Last-Modified 2022-05-09)",
+   "license": "Copernicus DEM GLO-90 licence, free for the general public (https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model, Licencing); (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved",
+   "read": "internal overview with 300 rows per deg (1/300 deg; lon 1/200 deg for 50-60N), single 2048x2048 tile, DEFLATE predictor 3",
+   "files_read": 1842,
+   "files_absent": 267,
+   "header_bytes": 30179328,
+   "overview_bytes": 415830668,
+   "overview_blobs_sha256": "1e3c9356c8e4d4b6177890a37918d9f4b507a2839dc3074a26a7afa15ecdd2cd"
+  },
+  {
+   "id": "esa-worldcover-2021-v200",
+   "name": "ESA WorldCover 10 m 2021 v200",
+   "url": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/",
+   "version": "v200 (2021), algorithm V2.0.0",
+   "doi": "10.5281/zenodo.7254221",
+   "license": "CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/); attribution: ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium",
+   "read": "internal overview 1125x1125 per 3 deg tile (1/375 deg, factor 32), 2x2 tiles of 1024, DEFLATE predictor 1",
+   "files_read": 249,
+   "files_absent": 11,
+   "header_bytes": 16318464,
+   "overview_bytes": 24528643,
+   "overview_blobs_sha256": "b4a180955b8a89f3fd2696425ece10281d75267e815441ce5229e0dd96be47a5"
+  }
+ ],
+ "bytes_downloaded_total": 487969053,
+ "bytes_fetched_this_run": 492048669,
+ "output": {
+  "path": "data/gametiles/terrain-25km.csv",
+  "rows": 31680,
+  "sha256": "7a569e8a60b30277a6df32eb887a4fd10b486f2f8752fa508b45104be30680ba",
+  "bytes": 992767
+ }
+}

@@ -1,0 +1,3676 @@
+{
+  "created_utc": "2026-10-25T14:29:11.553829+00:00",
+  "kind": "independent_offline_data_review",
+  "dataset_revision": "landscape-v2",
+  "manifest_sha256": "18f41339a208af9e1dfb4bb436c93eac5e27b870a63dd49e82a3304788b4eadf",
+  "runtime_executed": false,
+  "hash_checks": [
+    {
+      "path": "data/derived/height.f32",
+      "sha256": "7d6c6d4294c8a2214badc5aaf8b71392b98fdd7e8d3ebc5a6010ad3c398f7b2d",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/landcover.u8",
+      "sha256": "a32bb6ac9463de7c7b227f810edadc7b3e14c90794d1b8e2718f5260ab1fda3d",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/water.u8",
+      "sha256": "41e2bd0c5ecff97bf630743308caccdf57779a9f4cf1a6329a0b9ff992044d10",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/height-detail.f32",
+      "sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/water-detail.u8",
+      "sha256": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/overview-height.f32",
+      "sha256": "e5e38baf6694b114d50d5981409ca92f71695d4e633f21cf73040f8ce8710997",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    },
+    {
+      "path": "data/derived/overview-water.u8",
+      "sha256": "dec926e3aaedc20482312f0685fa4d068bec5e37fb9fef388aa19502ccd21a75",
+      "matches": true,
+      "bytes_match": true,
+      "run_export_exists": true,
+      "run_export_same_inode": true,
+      "run_export_hash_matches": true
+    }
+  ],
+  "input_hash_checks": [
+    {
+      "id": "awmc117",
+      "path": "data/reference/roman-117.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "ne-land",
+      "path": "data/raw/ne_10m_land.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "ne-rivers",
+      "path": "data/raw/ne_10m_rivers_lake_centerlines.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "ne-lakes",
+      "path": "data/raw/ne_10m_lakes.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "ne-marine",
+      "path": "data/reference/marine-10m-v5.1.2.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "gb-adm1",
+      "path": "data/reference/GBR-ADM1.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "gb-adm2",
+      "path": "data/reference/GBR-ADM2.geojson",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-0",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30W015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-1",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E000_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-2",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-3",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E030_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-4",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E045_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-5",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45W015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-6",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E000_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-7",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-8",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E030_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-9",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E045_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-10",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60W015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-11",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E000_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-12",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E015_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-13",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E030_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "etopo15-14",
+      "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E045_surface.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21W012",
+      "path": "data/raw/worldcover/N21W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21W009",
+      "path": "data/raw/worldcover/N21W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21W006",
+      "path": "data/raw/worldcover/N21W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21W003",
+      "path": "data/raw/worldcover/N21W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E000",
+      "path": "data/raw/worldcover/N21E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E003",
+      "path": "data/raw/worldcover/N21E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E006",
+      "path": "data/raw/worldcover/N21E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E009",
+      "path": "data/raw/worldcover/N21E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E012",
+      "path": "data/raw/worldcover/N21E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E015",
+      "path": "data/raw/worldcover/N21E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E018",
+      "path": "data/raw/worldcover/N21E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E021",
+      "path": "data/raw/worldcover/N21E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E024",
+      "path": "data/raw/worldcover/N21E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E027",
+      "path": "data/raw/worldcover/N21E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E030",
+      "path": "data/raw/worldcover/N21E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E033",
+      "path": "data/raw/worldcover/N21E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E036",
+      "path": "data/raw/worldcover/N21E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E039",
+      "path": "data/raw/worldcover/N21E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E042",
+      "path": "data/raw/worldcover/N21E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N21E045",
+      "path": "data/raw/worldcover/N21E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24W012",
+      "path": "data/raw/worldcover/N24W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24W009",
+      "path": "data/raw/worldcover/N24W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24W006",
+      "path": "data/raw/worldcover/N24W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24W003",
+      "path": "data/raw/worldcover/N24W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E000",
+      "path": "data/raw/worldcover/N24E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E003",
+      "path": "data/raw/worldcover/N24E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E006",
+      "path": "data/raw/worldcover/N24E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E009",
+      "path": "data/raw/worldcover/N24E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E012",
+      "path": "data/raw/worldcover/N24E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E015",
+      "path": "data/raw/worldcover/N24E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E018",
+      "path": "data/raw/worldcover/N24E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E021",
+      "path": "data/raw/worldcover/N24E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E024",
+      "path": "data/raw/worldcover/N24E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E027",
+      "path": "data/raw/worldcover/N24E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E030",
+      "path": "data/raw/worldcover/N24E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E033",
+      "path": "data/raw/worldcover/N24E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E036",
+      "path": "data/raw/worldcover/N24E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E039",
+      "path": "data/raw/worldcover/N24E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E042",
+      "path": "data/raw/worldcover/N24E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N24E045",
+      "path": "data/raw/worldcover/N24E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27W012",
+      "path": "data/raw/worldcover/N27W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27W009",
+      "path": "data/raw/worldcover/N27W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27W006",
+      "path": "data/raw/worldcover/N27W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27W003",
+      "path": "data/raw/worldcover/N27W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E000",
+      "path": "data/raw/worldcover/N27E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E003",
+      "path": "data/raw/worldcover/N27E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E006",
+      "path": "data/raw/worldcover/N27E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E009",
+      "path": "data/raw/worldcover/N27E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E012",
+      "path": "data/raw/worldcover/N27E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E015",
+      "path": "data/raw/worldcover/N27E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E018",
+      "path": "data/raw/worldcover/N27E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E021",
+      "path": "data/raw/worldcover/N27E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E024",
+      "path": "data/raw/worldcover/N27E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E027",
+      "path": "data/raw/worldcover/N27E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E030",
+      "path": "data/raw/worldcover/N27E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E033",
+      "path": "data/raw/worldcover/N27E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E036",
+      "path": "data/raw/worldcover/N27E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E039",
+      "path": "data/raw/worldcover/N27E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E042",
+      "path": "data/raw/worldcover/N27E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N27E045",
+      "path": "data/raw/worldcover/N27E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30W012",
+      "path": "data/raw/worldcover/N30W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30W009",
+      "path": "data/raw/worldcover/N30W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30W006",
+      "path": "data/raw/worldcover/N30W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30W003",
+      "path": "data/raw/worldcover/N30W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E000",
+      "path": "data/raw/worldcover/N30E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E003",
+      "path": "data/raw/worldcover/N30E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E006",
+      "path": "data/raw/worldcover/N30E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E009",
+      "path": "data/raw/worldcover/N30E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E012",
+      "path": "data/raw/worldcover/N30E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E015",
+      "path": "data/raw/worldcover/N30E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E018",
+      "path": "data/raw/worldcover/N30E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E021",
+      "path": "data/raw/worldcover/N30E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E024",
+      "path": "data/raw/worldcover/N30E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E027",
+      "path": "data/raw/worldcover/N30E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E030",
+      "path": "data/raw/worldcover/N30E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E033",
+      "path": "data/raw/worldcover/N30E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E036",
+      "path": "data/raw/worldcover/N30E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E039",
+      "path": "data/raw/worldcover/N30E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E042",
+      "path": "data/raw/worldcover/N30E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N30E045",
+      "path": "data/raw/worldcover/N30E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33W009",
+      "path": "data/raw/worldcover/N33W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33W006",
+      "path": "data/raw/worldcover/N33W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33W003",
+      "path": "data/raw/worldcover/N33W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E000",
+      "path": "data/raw/worldcover/N33E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E003",
+      "path": "data/raw/worldcover/N33E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E006",
+      "path": "data/raw/worldcover/N33E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E009",
+      "path": "data/raw/worldcover/N33E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E012",
+      "path": "data/raw/worldcover/N33E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E021",
+      "path": "data/raw/worldcover/N33E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E024",
+      "path": "data/raw/worldcover/N33E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E027",
+      "path": "data/raw/worldcover/N33E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E030",
+      "path": "data/raw/worldcover/N33E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E033",
+      "path": "data/raw/worldcover/N33E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E036",
+      "path": "data/raw/worldcover/N33E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E039",
+      "path": "data/raw/worldcover/N33E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E042",
+      "path": "data/raw/worldcover/N33E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N33E045",
+      "path": "data/raw/worldcover/N33E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36W012",
+      "path": "data/raw/worldcover/N36W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36W009",
+      "path": "data/raw/worldcover/N36W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36W006",
+      "path": "data/raw/worldcover/N36W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36W003",
+      "path": "data/raw/worldcover/N36W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E000",
+      "path": "data/raw/worldcover/N36E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E003",
+      "path": "data/raw/worldcover/N36E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E006",
+      "path": "data/raw/worldcover/N36E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E009",
+      "path": "data/raw/worldcover/N36E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E012",
+      "path": "data/raw/worldcover/N36E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E015",
+      "path": "data/raw/worldcover/N36E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E018",
+      "path": "data/raw/worldcover/N36E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E021",
+      "path": "data/raw/worldcover/N36E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E024",
+      "path": "data/raw/worldcover/N36E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E027",
+      "path": "data/raw/worldcover/N36E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E030",
+      "path": "data/raw/worldcover/N36E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E033",
+      "path": "data/raw/worldcover/N36E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E036",
+      "path": "data/raw/worldcover/N36E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E039",
+      "path": "data/raw/worldcover/N36E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E042",
+      "path": "data/raw/worldcover/N36E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N36E045",
+      "path": "data/raw/worldcover/N36E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39W012",
+      "path": "data/raw/worldcover/N39W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39W009",
+      "path": "data/raw/worldcover/N39W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39W006",
+      "path": "data/raw/worldcover/N39W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39W003",
+      "path": "data/raw/worldcover/N39W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E000",
+      "path": "data/raw/worldcover/N39E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E003",
+      "path": "data/raw/worldcover/N39E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E006",
+      "path": "data/raw/worldcover/N39E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E009",
+      "path": "data/raw/worldcover/N39E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E012",
+      "path": "data/raw/worldcover/N39E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E015",
+      "path": "data/raw/worldcover/N39E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E018",
+      "path": "data/raw/worldcover/N39E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E021",
+      "path": "data/raw/worldcover/N39E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E024",
+      "path": "data/raw/worldcover/N39E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E027",
+      "path": "data/raw/worldcover/N39E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E030",
+      "path": "data/raw/worldcover/N39E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E033",
+      "path": "data/raw/worldcover/N39E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E036",
+      "path": "data/raw/worldcover/N39E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E039",
+      "path": "data/raw/worldcover/N39E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E042",
+      "path": "data/raw/worldcover/N39E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N39E045",
+      "path": "data/raw/worldcover/N39E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42W012",
+      "path": "data/raw/worldcover/N42W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42W009",
+      "path": "data/raw/worldcover/N42W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42W006",
+      "path": "data/raw/worldcover/N42W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42W003",
+      "path": "data/raw/worldcover/N42W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E000",
+      "path": "data/raw/worldcover/N42E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E003",
+      "path": "data/raw/worldcover/N42E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E006",
+      "path": "data/raw/worldcover/N42E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E009",
+      "path": "data/raw/worldcover/N42E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E012",
+      "path": "data/raw/worldcover/N42E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E015",
+      "path": "data/raw/worldcover/N42E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E018",
+      "path": "data/raw/worldcover/N42E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E021",
+      "path": "data/raw/worldcover/N42E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E024",
+      "path": "data/raw/worldcover/N42E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E027",
+      "path": "data/raw/worldcover/N42E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E033",
+      "path": "data/raw/worldcover/N42E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E036",
+      "path": "data/raw/worldcover/N42E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E039",
+      "path": "data/raw/worldcover/N42E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E042",
+      "path": "data/raw/worldcover/N42E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N42E045",
+      "path": "data/raw/worldcover/N42E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45W006",
+      "path": "data/raw/worldcover/N45W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45W003",
+      "path": "data/raw/worldcover/N45W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E000",
+      "path": "data/raw/worldcover/N45E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E003",
+      "path": "data/raw/worldcover/N45E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E006",
+      "path": "data/raw/worldcover/N45E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E009",
+      "path": "data/raw/worldcover/N45E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E012",
+      "path": "data/raw/worldcover/N45E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E015",
+      "path": "data/raw/worldcover/N45E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E018",
+      "path": "data/raw/worldcover/N45E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E021",
+      "path": "data/raw/worldcover/N45E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E024",
+      "path": "data/raw/worldcover/N45E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E027",
+      "path": "data/raw/worldcover/N45E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E030",
+      "path": "data/raw/worldcover/N45E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E033",
+      "path": "data/raw/worldcover/N45E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E036",
+      "path": "data/raw/worldcover/N45E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E039",
+      "path": "data/raw/worldcover/N45E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E042",
+      "path": "data/raw/worldcover/N45E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N45E045",
+      "path": "data/raw/worldcover/N45E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48W009",
+      "path": "data/raw/worldcover/N48W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48W006",
+      "path": "data/raw/worldcover/N48W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48W003",
+      "path": "data/raw/worldcover/N48W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E000",
+      "path": "data/raw/worldcover/N48E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E003",
+      "path": "data/raw/worldcover/N48E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E006",
+      "path": "data/raw/worldcover/N48E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E009",
+      "path": "data/raw/worldcover/N48E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E012",
+      "path": "data/raw/worldcover/N48E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E015",
+      "path": "data/raw/worldcover/N48E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E018",
+      "path": "data/raw/worldcover/N48E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E021",
+      "path": "data/raw/worldcover/N48E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E024",
+      "path": "data/raw/worldcover/N48E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E027",
+      "path": "data/raw/worldcover/N48E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E030",
+      "path": "data/raw/worldcover/N48E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E033",
+      "path": "data/raw/worldcover/N48E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E036",
+      "path": "data/raw/worldcover/N48E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E039",
+      "path": "data/raw/worldcover/N48E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E042",
+      "path": "data/raw/worldcover/N48E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N48E045",
+      "path": "data/raw/worldcover/N48E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51W012",
+      "path": "data/raw/worldcover/N51W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51W009",
+      "path": "data/raw/worldcover/N51W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51W006",
+      "path": "data/raw/worldcover/N51W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51W003",
+      "path": "data/raw/worldcover/N51W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E000",
+      "path": "data/raw/worldcover/N51E000.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E003",
+      "path": "data/raw/worldcover/N51E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E006",
+      "path": "data/raw/worldcover/N51E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E009",
+      "path": "data/raw/worldcover/N51E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E012",
+      "path": "data/raw/worldcover/N51E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E015",
+      "path": "data/raw/worldcover/N51E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E018",
+      "path": "data/raw/worldcover/N51E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E021",
+      "path": "data/raw/worldcover/N51E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E024",
+      "path": "data/raw/worldcover/N51E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E027",
+      "path": "data/raw/worldcover/N51E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E030",
+      "path": "data/raw/worldcover/N51E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E033",
+      "path": "data/raw/worldcover/N51E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E036",
+      "path": "data/raw/worldcover/N51E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E039",
+      "path": "data/raw/worldcover/N51E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E042",
+      "path": "data/raw/worldcover/N51E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N51E045",
+      "path": "data/raw/worldcover/N51E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54W012",
+      "path": "data/raw/worldcover/N54W012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54W009",
+      "path": "data/raw/worldcover/N54W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54W006",
+      "path": "data/raw/worldcover/N54W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54W003",
+      "path": "data/raw/worldcover/N54W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E006",
+      "path": "data/raw/worldcover/N54E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E009",
+      "path": "data/raw/worldcover/N54E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E012",
+      "path": "data/raw/worldcover/N54E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E015",
+      "path": "data/raw/worldcover/N54E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E018",
+      "path": "data/raw/worldcover/N54E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E021",
+      "path": "data/raw/worldcover/N54E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E024",
+      "path": "data/raw/worldcover/N54E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E027",
+      "path": "data/raw/worldcover/N54E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E030",
+      "path": "data/raw/worldcover/N54E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E033",
+      "path": "data/raw/worldcover/N54E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E036",
+      "path": "data/raw/worldcover/N54E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E039",
+      "path": "data/raw/worldcover/N54E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E042",
+      "path": "data/raw/worldcover/N54E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N54E045",
+      "path": "data/raw/worldcover/N54E045.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57W009",
+      "path": "data/raw/worldcover/N57W009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57W006",
+      "path": "data/raw/worldcover/N57W006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57W003",
+      "path": "data/raw/worldcover/N57W003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E003",
+      "path": "data/raw/worldcover/N57E003.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E006",
+      "path": "data/raw/worldcover/N57E006.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E009",
+      "path": "data/raw/worldcover/N57E009.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E012",
+      "path": "data/raw/worldcover/N57E012.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E015",
+      "path": "data/raw/worldcover/N57E015.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E018",
+      "path": "data/raw/worldcover/N57E018.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E021",
+      "path": "data/raw/worldcover/N57E021.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E024",
+      "path": "data/raw/worldcover/N57E024.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E027",
+      "path": "data/raw/worldcover/N57E027.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E030",
+      "path": "data/raw/worldcover/N57E030.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E033",
+      "path": "data/raw/worldcover/N57E033.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E036",
+      "path": "data/raw/worldcover/N57E036.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E039",
+      "path": "data/raw/worldcover/N57E039.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E042",
+      "path": "data/raw/worldcover/N57E042.tif",
+      "matches": true,
+      "license_declared": true
+    },
+    {
+      "id": "wc-N57E045",
+      "path": "data/raw/worldcover/N57E045.tif",
+      "matches": true,
+      "license_declared": true
+    }
+  ],
+  "anchors": [
+    {
+      "id": "alpine-woodland-near",
+      "computed_tile_id": "eqc41-km-v1:-557:-840",
+      "tile_matches": true,
+      "class_at_pixel": 10,
+      "class_matches": true,
+      "nearest_canonical_height_m": 584.4168701171875,
+      "declared_height_m": 633.613037109375,
+      "water_kind": 0
+    },
+    {
+      "id": "italy",
+      "computed_tile_id": "eqc41-km-v1:-99:-547",
+      "tile_matches": true,
+      "class_at_pixel": 50,
+      "class_matches": true,
+      "nearest_canonical_height_m": 39.0393180847168,
+      "declared_height_m": 39.0393180847168,
+      "water_kind": 0
+    },
+    {
+      "id": "england",
+      "computed_tile_id": "eqc41-km-v1:-1446:-1721",
+      "tile_matches": true,
+      "class_at_pixel": 50,
+      "class_matches": true,
+      "nearest_canonical_height_m": 75.3210678100586,
+      "declared_height_m": 75.3210678100586,
+      "water_kind": 0
+    },
+    {
+      "id": "north-africa",
+      "computed_tile_id": "eqc41-km-v1:611:-739",
+      "tile_matches": true,
+      "class_at_pixel": 40,
+      "class_matches": true,
+      "nearest_canonical_height_m": 66.75709533691406,
+      "declared_height_m": 66.75709533691406,
+      "water_kind": 0
+    },
+    {
+      "id": "eastern-extent",
+      "computed_tile_id": "eqc41-km-v1:555:1930",
+      "tile_matches": true,
+      "class_at_pixel": 40,
+      "class_matches": true,
+      "nearest_canonical_height_m": 310.3926696777344,
+      "declared_height_m": 310.3926696777344,
+      "water_kind": 0
+    },
+    {
+      "id": "jordandepression",
+      "computed_tile_id": "eqc41-km-v1:1056:1384",
+      "tile_matches": true,
+      "class_at_pixel": 80,
+      "class_matches": true,
+      "nearest_canonical_height_m": -427.0,
+      "declared_height_m": -427.0,
+      "water_kind": 2
+    },
+    {
+      "id": "region-edge",
+      "computed_tile_id": "eqc41-km-v1:-445:-2518",
+      "tile_matches": true,
+      "class_at_pixel": 80,
+      "class_matches": true,
+      "nearest_canonical_height_m": -4921.484375,
+      "declared_height_m": -4921.484375,
+      "water_kind": 1
+    },
+    {
+      "id": "tile-seam",
+      "computed_tile_id": "eqc41-km-v1:0:0",
+      "tile_matches": true,
+      "class_at_pixel": 80,
+      "class_matches": true,
+      "nearest_canonical_height_m": -114.5859375,
+      "declared_height_m": -114.5859375,
+      "water_kind": 1
+    },
+    {
+      "id": "coast-ostia",
+      "computed_tile_id": "eqc41-km-v1:-82:-568",
+      "tile_matches": true,
+      "class_at_pixel": 80,
+      "class_matches": true,
+      "nearest_canonical_height_m": -1.3814491033554077,
+      "declared_height_m": -1.3814491033554077,
+      "water_kind": 0
+    }
+  ],
+  "canonical_census": {
+    "cells": 7592400,
+    "nonfinite_heights": 0,
+    "unknown_landcover_on_land": 0,
+    "negative_land_cells": 40453,
+    "water_kinds": {
+      "0": 5593677,
+      "1": 1979574,
+      "2": 19149
+    }
+  },
+  "independent_native_lattice": {
+    "method": "Every 173rd original TIFF source pixel within region plus original regional min/max per tile; direct original ReadAsArray, bilinear delivered grids; different sample from producer. Sample maxima, no global bound.",
+    "metrics": {
+      "overview": {
+        "sample_count": 4323,
+        "maximum_absolute_error_m": 1001.3341696278676
+      },
+      "canonical": {
+        "sample_count": 4323,
+        "maximum_absolute_error_m": 683.5734901428546
+      },
+      "detail": {
+        "sample_count": 4323,
+        "maximum_absolute_error_m": 4.622506821760908e-10
+      }
+    },
+    "source_grids": [
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30W015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          -15.0,
+          0.004166666666666667,
+          0.0,
+          30.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E000_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          0.0,
+          0.004166666666666667,
+          0.0,
+          30.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          15.0,
+          0.004166666666666667,
+          0.0,
+          30.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E030_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          30.0,
+          0.004166666666666667,
+          0.0,
+          30.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N30E045_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          45.0,
+          0.004166666666666667,
+          0.0,
+          30.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45W015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          -15.0,
+          0.004166666666666667,
+          0.0,
+          45.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E000_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          0.0,
+          0.004166666666666667,
+          0.0,
+          45.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          15.0,
+          0.004166666666666667,
+          0.0,
+          45.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E030_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          30.0,
+          0.004166666666666667,
+          0.0,
+          45.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N45E045_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          45.0,
+          0.004166666666666667,
+          0.0,
+          45.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60W015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          -15.0,
+          0.004166666666666667,
+          0.0,
+          60.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E000_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          0.0,
+          0.004166666666666667,
+          0.0,
+          60.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E015_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          15.0,
+          0.004166666666666667,
+          0.0,
+          60.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E030_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          30.0,
+          0.004166666666666667,
+          0.0,
+          60.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      },
+      {
+        "path": "data/raw/etopo15/ETOPO_2022_v1_15s_N60E045_surface.tif",
+        "width": 3600,
+        "height": 3600,
+        "geotransform": [
+          45.0,
+          0.004166666666666667,
+          0.0,
+          60.0,
+          0.0,
+          -0.004166666666666667
+        ],
+        "has_EGM2008_in_crs": true,
+        "nodata": -99999.0
+      }
+    ]
+  },
+  "river_coordinate_checks": [
+    {
+      "id": "13",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6835492297543865,
+      "expected_length_degrees": 0.6835492297543865,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "14",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.44664454977202694,
+      "expected_length_degrees": 0.44664454977202694,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "62",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.4316058995671215,
+      "expected_length_degrees": 4.4316058995671215,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "65",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.567905661195419,
+      "expected_length_degrees": 3.567905661195419,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "66",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.467757645211277,
+      "expected_length_degrees": 5.467757645211277,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "68",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.8182710096650156,
+      "expected_length_degrees": 3.8182710096650156,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "72",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.297196118642956,
+      "expected_length_degrees": 4.297196118642956,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "73",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.2615510246855486,
+      "expected_length_degrees": 3.2615510246855486,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "75",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.558346138967979,
+      "expected_length_degrees": 2.558346138967979,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "76",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6736851187165613,
+      "expected_length_degrees": 0.6736851187165613,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "77",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.749676783173319,
+      "expected_length_degrees": 1.749676783173319,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "78",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.77669915780913,
+      "expected_length_degrees": 4.77669915780913,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "79",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.8897947369318484,
+      "expected_length_degrees": 1.8897947369318484,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "80",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.5173980998781311,
+      "expected_length_degrees": 1.5173980998781311,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "81",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.9284785901118555,
+      "expected_length_degrees": 2.9284785901118555,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "82",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.0804546360244136,
+      "expected_length_degrees": 3.0804546360244136,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "83",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.327008463640424,
+      "expected_length_degrees": 1.327008463640424,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "84",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.076456410995982,
+      "expected_length_degrees": 3.076456410995982,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "85",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.1804244567875126,
+      "expected_length_degrees": 3.1804244567875126,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "86",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.872634025094337,
+      "expected_length_degrees": 5.872634025094337,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "87",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.260664423195257,
+      "expected_length_degrees": 4.260664423195257,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "150",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.246415811280407,
+      "expected_length_degrees": 2.246415811280407,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "163",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.893059205608042,
+      "expected_length_degrees": 2.893059205608042,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "166",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.6480230341583892,
+      "expected_length_degrees": 2.6480230341583892,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "167",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6155431174287253,
+      "expected_length_degrees": 0.6155431174287253,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "168",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.34339652453502867,
+      "expected_length_degrees": 0.34339652453502867,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "182",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.2227072422318008,
+      "expected_length_degrees": 1.2227072422318008,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "187",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.788649172115159,
+      "expected_length_degrees": 5.788649172115159,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "188",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 13.507796266267698,
+      "expected_length_degrees": 13.507796266267698,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "193",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.483315115026666,
+      "expected_length_degrees": 4.483315115026666,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "194",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.586743452402302,
+      "expected_length_degrees": 1.586743452402302,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "202",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.2568798995698875,
+      "expected_length_degrees": 7.2568798995698875,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "204",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.704677461513494,
+      "expected_length_degrees": 8.704677461513494,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "209",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.59340494480653,
+      "expected_length_degrees": 8.59340494480653,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "215",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.357951890405477,
+      "expected_length_degrees": 3.357951890405477,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "216",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.766667614324974,
+      "expected_length_degrees": 0.766667614324974,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "217",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.3001667817441316,
+      "expected_length_degrees": 1.3001667817441316,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "218",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6808196907001387,
+      "expected_length_degrees": 0.6808196907001387,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "227",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.7166969185693555,
+      "expected_length_degrees": 6.7166969185693555,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "228",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6983114003499403,
+      "expected_length_degrees": 0.6983114003499403,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "232",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.250750745174314,
+      "expected_length_degrees": 7.250750745174314,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "242",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 11.074315317714113,
+      "expected_length_degrees": 11.074315317714113,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "251",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.0822831666083053,
+      "expected_length_degrees": 1.0822831666083053,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "252",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.331899400220524,
+      "expected_length_degrees": 5.331899400220524,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "253",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.12825524253874165,
+      "expected_length_degrees": 0.12825524253874165,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "254",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 11.188010425488407,
+      "expected_length_degrees": 11.188010425488407,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "281",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 11.66882662071586,
+      "expected_length_degrees": 11.66882662071586,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "298",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.9120146812074068,
+      "expected_length_degrees": 1.9120146812074068,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "300",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.2635603150079318,
+      "expected_length_degrees": 2.2635603150079318,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "312",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.8657536658967,
+      "expected_length_degrees": 6.8657536658967,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "313",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.33941862852795535,
+      "expected_length_degrees": 0.33941862852795535,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "314",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.0548654755043956,
+      "expected_length_degrees": 1.0548654755043956,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "315",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.1672296257491723,
+      "expected_length_degrees": 2.1672296257491723,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "316",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.252927126142762,
+      "expected_length_degrees": 1.252927126142762,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "337",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6626231467012985,
+      "expected_length_degrees": 0.6626231467012985,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "338",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.144144461014769,
+      "expected_length_degrees": 2.144144461014769,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "342",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.3427925436803233,
+      "expected_length_degrees": 0.3427925436803233,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "343",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 12.855412981909728,
+      "expected_length_degrees": 12.855412981909728,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "379",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.8449112129539019,
+      "expected_length_degrees": 0.8449112129539019,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "380",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.979487840478233,
+      "expected_length_degrees": 6.979487840478233,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "389",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 19.221997761098436,
+      "expected_length_degrees": 19.221997761098436,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "423",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.507991621608689,
+      "expected_length_degrees": 3.507991621608689,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "424",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 15.392647812805146,
+      "expected_length_degrees": 15.392647812805146,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "458",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.2976781989382467,
+      "expected_length_degrees": 3.2976781989382467,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "460",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.105740692323991,
+      "expected_length_degrees": 8.105740692323991,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "490",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.188400736276254,
+      "expected_length_degrees": 8.188400736276254,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "515",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.5694436598092598,
+      "expected_length_degrees": 0.5694436598092598,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "516",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.48754690114857585,
+      "expected_length_degrees": 0.48754690114857585,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "522",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.3908807183254639,
+      "expected_length_degrees": 0.3908807183254639,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "527",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.6702980382166441,
+      "expected_length_degrees": 1.6702980382166441,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "544",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.5538992925958384,
+      "expected_length_degrees": 0.5538992925958384,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "566",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 10.567651133203288,
+      "expected_length_degrees": 10.567651133203288,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "577",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6072813537635438,
+      "expected_length_degrees": 0.6072813537635438,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "578",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.275747577174638,
+      "expected_length_degrees": 6.275747577174638,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "626",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.21336117943260882,
+      "expected_length_degrees": 0.21336117943260882,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "649",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.06888905836336562,
+      "expected_length_degrees": 0.06888905836336562,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "650",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.824058735497408,
+      "expected_length_degrees": 5.824058735497408,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "665",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.213439787010112,
+      "expected_length_degrees": 4.213439787010112,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "666",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.8008151928322595,
+      "expected_length_degrees": 4.8008151928322595,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "667",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.3725029985729753,
+      "expected_length_degrees": 3.3725029985729753,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "689",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 9.755011211143428,
+      "expected_length_degrees": 9.755011211143428,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "690",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 15.571161737432963,
+      "expected_length_degrees": 15.571161737432963,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "691",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.407672626775177,
+      "expected_length_degrees": 8.407672626775177,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "695",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.325725578411262,
+      "expected_length_degrees": 8.325725578411262,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "697",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.208756104234038,
+      "expected_length_degrees": 5.208756104234038,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "698",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.0473608804136,
+      "expected_length_degrees": 4.0473608804136,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "710",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 10.099142948151538,
+      "expected_length_degrees": 10.099142948151538,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "719",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.4461364206576142,
+      "expected_length_degrees": 1.4461364206576142,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "724",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.4379013789252335,
+      "expected_length_degrees": 7.4379013789252335,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "730",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.0482873764979894,
+      "expected_length_degrees": 1.0482873764979894,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "731",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.615005512874989,
+      "expected_length_degrees": 3.615005512874989,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "732",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 9.531034129458584,
+      "expected_length_degrees": 9.531034129458584,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "743",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.822373817225435,
+      "expected_length_degrees": 0.822373817225435,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "766",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.1355750631634967,
+      "expected_length_degrees": 1.1355750631634967,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "771",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.450749374626833,
+      "expected_length_degrees": 5.450749374626833,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "793",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.984067432549901,
+      "expected_length_degrees": 6.984067432549901,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "796",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.413543334473481,
+      "expected_length_degrees": 7.413543334473481,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "802",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.4539961738244351,
+      "expected_length_degrees": 1.4539961738244351,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "803",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.135177926001322,
+      "expected_length_degrees": 7.135177926001322,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "839",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.639704523307917,
+      "expected_length_degrees": 0.639704523307917,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "848",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.3024748829288209,
+      "expected_length_degrees": 1.3024748829288209,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "859",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.7665268401293654,
+      "expected_length_degrees": 2.7665268401293654,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "866",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.7939884700970922,
+      "expected_length_degrees": 0.7939884700970922,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "869",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.1263298696699913,
+      "expected_length_degrees": 2.1263298696699913,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "873",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.9346852730949144,
+      "expected_length_degrees": 0.9346852730949144,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "880",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.77413308252482,
+      "expected_length_degrees": 8.77413308252482,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "885",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.9701463301410306,
+      "expected_length_degrees": 0.9701463301410306,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "896",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.20423627143329,
+      "expected_length_degrees": 4.20423627143329,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "931",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.640719880642078,
+      "expected_length_degrees": 2.640719880642078,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "932",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.808913769704855,
+      "expected_length_degrees": 6.808913769704855,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "949",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6906179711142018,
+      "expected_length_degrees": 0.6906179711142018,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "950",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.670985320655006,
+      "expected_length_degrees": 1.670985320655006,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "951",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.6247548991975136,
+      "expected_length_degrees": 0.6247548991975136,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "952",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.0055390452988062,
+      "expected_length_degrees": 1.0055390452988062,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "955",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.25557996919946496,
+      "expected_length_degrees": 0.25557996919946496,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "956",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.365871593982698,
+      "expected_length_degrees": 7.365871593982698,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "997",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.124676665707429,
+      "expected_length_degrees": 7.124676665707429,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "998",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 14.962221898140964,
+      "expected_length_degrees": 14.962221898140964,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "999",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.4167042631777807,
+      "expected_length_degrees": 0.4167042631777807,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1000",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.1706337638509784,
+      "expected_length_degrees": 0.1706337638509784,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1001",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.15823755850053747,
+      "expected_length_degrees": 0.15823755850053747,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1002",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.2163841897397189,
+      "expected_length_degrees": 0.2163841897397189,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1019",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.8915504604824761,
+      "expected_length_degrees": 0.8915504604824761,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1020",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.641700524341595,
+      "expected_length_degrees": 4.641700524341595,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1048",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.420187312237794,
+      "expected_length_degrees": 5.420187312237794,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1049",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.3223164443362085,
+      "expected_length_degrees": 5.3223164443362085,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1050",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.935203172116803,
+      "expected_length_degrees": 2.935203172116803,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1053",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 8.29213683140418,
+      "expected_length_degrees": 8.29213683140418,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1054",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.343065460389277,
+      "expected_length_degrees": 5.343065460389277,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1055",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.257513401142815,
+      "expected_length_degrees": 3.257513401142815,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1056",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.790901250208223,
+      "expected_length_degrees": 4.790901250208223,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1066",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 7.374631006210347,
+      "expected_length_degrees": 7.374631006210347,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1077",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.1671790533882302,
+      "expected_length_degrees": 2.1671790533882302,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1084",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.859676184606953,
+      "expected_length_degrees": 5.859676184606953,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1118",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.3797630201180735,
+      "expected_length_degrees": 2.3797630201180735,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1120",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.0250932919671967,
+      "expected_length_degrees": 2.0250932919671967,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1166",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.916789203678185,
+      "expected_length_degrees": 3.916789203678185,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1171",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.668746607688126,
+      "expected_length_degrees": 2.668746607688126,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1172",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.2797486816840817,
+      "expected_length_degrees": 2.2797486816840817,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1203",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.4194147874383515,
+      "expected_length_degrees": 0.4194147874383515,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1217",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.275860413817493,
+      "expected_length_degrees": 4.275860413817493,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1219",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.8254309459129012,
+      "expected_length_degrees": 2.8254309459129012,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1221",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.3958920248246,
+      "expected_length_degrees": 4.3958920248246,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1222",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.8426943704861927,
+      "expected_length_degrees": 2.8426943704861927,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1223",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.564839689042756,
+      "expected_length_degrees": 4.564839689042756,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1225",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.525856775104664,
+      "expected_length_degrees": 2.525856775104664,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1226",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.468582715943557,
+      "expected_length_degrees": 6.468582715943557,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1227",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.001629094672454,
+      "expected_length_degrees": 4.001629094672454,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1249",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.9796353629543293,
+      "expected_length_degrees": 1.9796353629543293,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1273",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.093672615734563,
+      "expected_length_degrees": 4.093672615734563,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1309",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.9108619179774833,
+      "expected_length_degrees": 0.9108619179774833,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1319",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.1878861080704673,
+      "expected_length_degrees": 0.1878861080704673,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1335",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.3109828425334047,
+      "expected_length_degrees": 1.3109828425334047,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1338",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.456531141965897,
+      "expected_length_degrees": 3.456531141965897,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1353",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.105908643576703,
+      "expected_length_degrees": 1.105908643576703,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1354",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.283362029914567,
+      "expected_length_degrees": 4.283362029914567,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1360",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.588459753796585,
+      "expected_length_degrees": 4.588459753796585,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1366",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 2.0052429780933356,
+      "expected_length_degrees": 2.0052429780933356,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1368",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.189218640878151,
+      "expected_length_degrees": 1.189218640878151,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1369",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.92358999672219,
+      "expected_length_degrees": 4.92358999672219,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1386",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 0.006266000000000105,
+      "expected_length_degrees": 0.006266000000000105,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1387",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.4713911024286705,
+      "expected_length_degrees": 5.4713911024286705,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1388",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 1.1376065199670127,
+      "expected_length_degrees": 1.1376065199670127,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1389",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.468456715056845,
+      "expected_length_degrees": 4.468456715056845,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1390",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 5.543313654016908,
+      "expected_length_degrees": 5.543313654016908,
+      "actual_geometry_type": "LINESTRING",
+      "expected_geometry_type": "LINESTRING"
+    },
+    {
+      "id": "1451",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 6.721125934979475,
+      "expected_length_degrees": 6.721125934979475,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1453",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 3.6983256472875143,
+      "expected_length_degrees": 3.6983256472875143,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    },
+    {
+      "id": "1454",
+      "topological_equals": true,
+      "symmetric_difference_length_degrees": 0.0,
+      "actual_length_degrees": 4.927025705181887,
+      "expected_length_degrees": 4.927025705181887,
+      "actual_geometry_type": "MULTILINESTRING",
+      "expected_geometry_type": "MULTILINESTRING"
+    }
+  ],
+  "raw_csv_maxima": [
+    {
+      "path": "data/derived/error-overview.csv",
+      "sha256": "b83f72bf0c5fe5e63a68d14b3f237f02b482a753ff70433e6cd330fa7da0ee28",
+      "sample_count": 421015,
+      "maximum": 1334.149432356,
+      "maximum_row": [
+        25.26875,
+        36.110416667,
+        -170.0,
+        -1504.149432356,
+        1334.149432356
+      ]
+    },
+    {
+      "path": "data/derived/coast-overview.csv",
+      "sha256": "646a97762de9adb47bd705d3021f703dd8a881a669d0428fdba7e1aac876b007",
+      "sample_count": 2340,
+      "maximum": 6418.557150753,
+      "maximum_row": [
+        -5.459828,
+        57.099799,
+        6418.557150753
+      ]
+    },
+    {
+      "path": "data/derived/error-canonical.csv",
+      "sha256": "cac1959e61b0d5522432aa2ebd3e68b7bad646903bb16679da5393695860c773",
+      "sample_count": 421015,
+      "maximum": 1065.568237305,
+      "maximum_row": [
+        25.26875,
+        36.110416667,
+        -170.0,
+        -1235.568237305,
+        1065.568237305
+      ]
+    },
+    {
+      "path": "data/derived/coast-canonical.csv",
+      "sha256": "824fa5f806f29464937bb64f75de2c4a92c24aaf306ef66fea6ca641fc163545",
+      "sample_count": 2340,
+      "maximum": 2797.252710681,
+      "maximum_row": [
+        -6.194814,
+        36.932115,
+        2797.252710681
+      ]
+    },
+    {
+      "path": "data/derived/error-detail.csv",
+      "sha256": "512ba898fd1258dcf2d7778a73239c2e541a3400af04f5ed09aba54a3777ee09",
+      "sample_count": 421015,
+      "maximum": 1e-09,
+      "maximum_row": [
+        19.247916667,
+        43.972916667,
+        384.241821289,
+        384.24182129,
+        1e-09
+      ]
+    },
+    {
+      "path": "data/derived/coast-detail.csv",
+      "sha256": "903f9c7d4cab4f34cfe67ead78328b64ba7ce9d68884f3b47fc68c3d7d8f97f6",
+      "sample_count": 2340,
+      "maximum": 2039.410125728,
+      "maximum_row": [
+        28.924978,
+        44.620551,
+        2039.410125728
+      ]
+    }
+  ],
+  "input_snapshot": {
+    "data/derived/landscape.json": "18f41339a208af9e1dfb4bb436c93eac5e27b870a63dd49e82a3304788b4eadf",
+    "data/geodata_policy.json": "a6981e43c48356bb7968e448e7d68234532ff3eb86a6b2ced0ffcfa1a4d38fa5",
+    "data/coverage.json": "c91723541a85b4cfdd9e0dd700cb42af6edf7d2290c55272ff88c90d30fde7da",
+    "data/derivation.json": "b2ac9b5a98328219d80076ced1b509f38c0596d05ae50c08b35ed967ba24748f",
+    "data/anchors.json": "bd8d4ecfcb3e49d96e9304855e30a7296249dca9146a96dc7b1c2e920a829d33",
+    "data/expected-tiles.json": "e9bd0c3d8f56cfb6d307f31deeb8de07e54015375a00fe84ceed28cd4ba3dc9c",
+    "data/transformations.json": "02ad7742b1c93b0a18f5bceb3dea68aa5663dddd375d9a45ba998cfbd73fe95f",
+    "data/derived/inventory.json": "b62e04709f417b86a820fb7022cb83dba153accbcbc2af4a8fe127bc0b042816",
+    "app/scripts/landscape.gd": "4b0c0fc7d5b8357600503dff377dcf84f671c82f14ad8d78a733c95c7398196f",
+    "app/shaders/terrain.gdshader": "84f08a969859be4243992fc9e9505e77dc3c5173266a745913fa672ed9d7b488",
+    "app/scripts/expected_projection.py": "3fcbb9ce80704885971b8fec13c7622aac199eb50e8cad60159269ae74c04b2d",
+    "docs/product-renderer/camera-profile.json": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+  }
+}

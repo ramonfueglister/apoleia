@@ -1,0 +1,6 @@
+{
+  "revision": "accuracy-v2",
+  "elevation": "ETOPO2022v1 native15arcsec surface heights EGM2008, north-south463.313m, east-west~245.5..432.6m across21..58N on spherical mapping. Regional vertical/source-horizontal uncertainty not quantified; resolution is not accuracy.",
+  "landcover": "WorldCover2021v200 native10m, delivered last overview562x562 per3degrees (~600m); classification uncertainty and generalization affect small features. Not a vegetation reconstruction for180CE.",
+  "water": "Natural Earth1:10million generalized physical polygons; coastal detail substantially coarser than modern survey."
+}

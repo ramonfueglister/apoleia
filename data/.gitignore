@@ -1,0 +1,12 @@
+/raw/
+/derived/*.f32
+/derived/*.u8
+/derived/*.png
+/derived/*.png.aux.xml
+/derived/*.vrt
+/derived/*-source.tif
+*.log
+
+/derivation.json
+/derived/error-*.csv
+/derived/horizontal-*.csv

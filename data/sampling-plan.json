@@ -1,0 +1,7 @@
+{
+  "revision": "policy-v3",
+  "scheme": "Source-centre lattice every 17th raster pixel plus geographic anchors and extrema; all produced levels; before measurement. Fixed seed 0. Coast vertices sampled at fixed stride, island/rivers/components counted. Projection local scale sampled every degree north-south and fixed azimuths.",
+  "limits": "Sample maxima only; native source quality unknown regionally. Screen and transition metrics require renderer measurements; never inferred from geographic measurements.",
+  "horizontal_metric": "data/horizontal-metric.json; source-query identity, projection numerical roundtrip separate; no rounding or budget change",
+  "coast_sampling": "Same fixed every17th exterior vertex and same2340points; overviewwater increased4096x3072; 6000m limit unchanged"
+}

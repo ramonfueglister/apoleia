@@ -1,0 +1,4344 @@
+{
+  "schema_version": "runtime-evidence-v1",
+  "render_timing_method": {
+    "api": "Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu",
+    "units": "milliseconds",
+    "sampling": "last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals",
+    "per_pass_timings": "not exposed by this RenderingServer public API; not measured, not zero",
+    "streaming": "entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"
+  },
+  "pipeline_warmup": {
+    "method": "four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape",
+    "completed_frame": 4,
+    "initial_pipeline_counts": {
+      "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+      "PIPELINE_COMPILATIONS_MESH": 0.0,
+      "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+      "PIPELINE_COMPILATIONS_DRAW": 0.0,
+      "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+    }
+  },
+  "motion_probes": [
+    {
+      "frame": 1,
+      "t_ms": 453.052,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 2,
+      "t_ms": 1167.473,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 3,
+      "t_ms": 1248.2340000000002,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 4,
+      "t_ms": 1259.9279999999999,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 5,
+      "t_ms": 1262.4470000000001,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 6,
+      "t_ms": 1271.22,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 7,
+      "t_ms": 1284.368,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 8,
+      "t_ms": 1292.2959999999998,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 9,
+      "t_ms": 1297.409,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 10,
+      "t_ms": 1302.99,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 11,
+      "t_ms": 1312.0369999999998,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 12,
+      "t_ms": 1319.709,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 13,
+      "t_ms": 1327.951,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 14,
+      "t_ms": 1336.375,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 15,
+      "t_ms": 1344.672,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 16,
+      "t_ms": 1353.007,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 17,
+      "t_ms": 1361.299,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 18,
+      "t_ms": 1369.626,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 19,
+      "t_ms": 1378.251,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 20,
+      "t_ms": 1386.752,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 21,
+      "t_ms": 1394.666,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 22,
+      "t_ms": 1403.4279999999999,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 23,
+      "t_ms": 1411.6290000000001,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 24,
+      "t_ms": 1420.032,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 25,
+      "t_ms": 1428.3380000000002,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 26,
+      "t_ms": 1436.6570000000002,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 27,
+      "t_ms": 1444.8780000000002,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 28,
+      "t_ms": 1453.417,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 29,
+      "t_ms": 1461.6899999999998,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    },
+    {
+      "frame": 30,
+      "t_ms": 1469.897,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "target_height_model": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "points": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "rendered_height_model": 0.0,
+          "in_viewport": true
+        }
+      ]
+    }
+  ],
+  "ridge_protection_sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748",
+  "fixture_sha256": "",
+  "fixture_controls_sha256": "",
+  "fixture_path": "",
+  "validation_thresholds_sha256": "",
+  "waypoint_observations": [],
+  "lod_snapshots": [
+    {
+      "t_ms": 1271.22,
+      "frame": 6,
+      "waypoint_id": null,
+      "zoom": 0.0,
+      "relief_weight": 0.0,
+      "view_width": 7899.299121354359,
+      "world_min": [
+        -2517.599853515625,
+        -1890.31640625
+      ],
+      "world_size": [
+        4783.43994140625,
+        4114.21826171875
+      ],
+      "patches": [
+        {
+          "id": "r00",
+          "level": 2,
+          "uv_origin": [
+            0.0,
+            0.0
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r01",
+          "level": 2,
+          "uv_origin": [
+            0.25,
+            0.0
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r02",
+          "level": 2,
+          "uv_origin": [
+            0.0,
+            0.25
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r03",
+          "level": 2,
+          "uv_origin": [
+            0.25,
+            0.25
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r10",
+          "level": 2,
+          "uv_origin": [
+            0.5,
+            0.0
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r11",
+          "level": 2,
+          "uv_origin": [
+            0.75,
+            0.0
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r12",
+          "level": 2,
+          "uv_origin": [
+            0.5,
+            0.25
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r13",
+          "level": 2,
+          "uv_origin": [
+            0.75,
+            0.25
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r20",
+          "level": 2,
+          "uv_origin": [
+            0.0,
+            0.5
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r21",
+          "level": 2,
+          "uv_origin": [
+            0.25,
+            0.5
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r22",
+          "level": 2,
+          "uv_origin": [
+            0.0,
+            0.75
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r23",
+          "level": 2,
+          "uv_origin": [
+            0.25,
+            0.75
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r30",
+          "level": 2,
+          "uv_origin": [
+            0.5,
+            0.5
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r31",
+          "level": 2,
+          "uv_origin": [
+            0.75,
+            0.5
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r32",
+          "level": 2,
+          "uv_origin": [
+            0.5,
+            0.75
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        },
+        {
+          "id": "r33",
+          "level": 2,
+          "uv_origin": [
+            0.75,
+            0.75
+          ],
+          "uv_size": [
+            0.25,
+            0.25
+          ],
+          "morph_weight": 0.31817307323713573,
+          "mesh_cells": 24
+        }
+      ],
+      "canonical_edge_rule": "shared binary UV endpoints transformed once; parent-triangle morph; masked skirts",
+      "all_anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ]
+    }
+  ],
+  "capture_method": {
+    "target_hz": 24,
+    "video_frames": "unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes",
+    "encoder_workers_max": 2,
+    "queue_peak": 1,
+    "dropped_attempts": [],
+    "lossless_keyframes": {},
+    "timestamps": "monotonic runtime samples; VFR movie preserves captured frame spacing"
+  },
+  "pipeline_events": [
+    {
+      "frame": 1,
+      "t_ms": 453.052,
+      "previous_frame_wall_ms": 148.11333333333377,
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 0.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 0.0
+      }
+    },
+    {
+      "frame": 2,
+      "t_ms": 1167.473,
+      "previous_frame_wall_ms": 714.421,
+      "counts": {
+        "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+        "PIPELINE_COMPILATIONS_MESH": 0.0,
+        "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+        "PIPELINE_COMPILATIONS_DRAW": 0.0,
+        "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+      }
+    }
+  ],
+  "pipeline_counts_final": {
+    "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+    "PIPELINE_COMPILATIONS_MESH": 0.0,
+    "PIPELINE_COMPILATIONS_SURFACE": 6.0,
+    "PIPELINE_COMPILATIONS_DRAW": 0.0,
+    "PIPELINE_COMPILATIONS_SPECIALIZATION": 4.0
+  },
+  "frame_intervals_ms": [
+    148.11333333333377,
+    714.421,
+    80.761,
+    11.694,
+    2.519,
+    8.773,
+    13.148,
+    7.928,
+    5.113,
+    5.581,
+    9.047,
+    7.672,
+    8.242,
+    8.424,
+    8.297,
+    8.335,
+    8.292,
+    8.327,
+    8.625,
+    8.501,
+    7.914,
+    8.762,
+    8.201,
+    8.403,
+    8.306,
+    8.319,
+    8.221,
+    8.539,
+    8.273,
+    8.207
+  ],
+  "packing_manifest": {
+    "schema_version": "renderer-upload-v1",
+    "policy": {
+      "revision": "signed-rg8-quarter-metre-v1",
+      "source_sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+      "width": 13680.0,
+      "height": 8880.0,
+      "encoding": "R=high byte,G=low byte",
+      "minimum_m": -8192.0,
+      "maximum_m": 8191.75,
+      "step_m": 0.25,
+      "maximum_quantization_error_m": 0.125,
+      "sampling": "decode four nearest texels, then pixel-center bilinear interpolation; marine clamp only after interpolation at query point",
+      "canonical_model_scale": 0.001,
+      "source_mutation": false
+    },
+    "payload_path": "height-rg8.bin",
+    "payload_sha256": "500799c49ec324054206b40319a010a68a508728b226d73d7c3ec30a1c8cb9ae",
+    "source_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+    "texel_count": 121478400.0,
+    "source_min_m": -5136.30029296875,
+    "source_max_m": 5582.501953125,
+    "quantization_max_m": 0.125,
+    "quantization_rms_m": 0.06587819589850989,
+    "bytes": 242956800.0,
+    "source_bytes": 485913600.0,
+    "numpy_version": "2.5.4"
+  },
+  "water_distance_manifest": {
+    "schema_version": "renderer-water-distance-v1",
+    "revision": "vector-water-distance-rg8-v2",
+    "identity": {
+      "policy_sha256": "d19dde843c7161da718a716e29058f141311e2a41ff6ba56699c1c1bd48a813a",
+      "source_sha256": {
+        "data/derived/land.geojson": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+        "data/derived/lakes.geojson": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+        "data/derived/water-detail.u8": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e"
+      },
+      "width": 8192.0,
+      "height": 6144.0,
+      "bounds": {
+        "west": -11.0,
+        "east": 46.0,
+        "south": 21.0,
+        "north": 58.0
+      }
+    },
+    "payload_sha256": "ee41a6bd76f835106a64383b577edee142a27b54cdbb90ebf629c61200699e67",
+    "bytes": 100663296.0,
+    "segments_measured": 46985.0,
+    "artificial_region_clip_segments_excluded": 30.0,
+    "sx_projected_m": 583.9159622284624,
+    "sy_projected_m": 669.6318308334502,
+    "quantization_max_projected_m": 0.0625,
+    "elapsed_seconds": 0.966266417002771,
+    "zero_isoline_source_accuracy": "not inferred from quantization; independent data-owner probe required",
+    "policy": {
+      "revision": "vector-water-distance-rg8-v2",
+      "source_geometry": "unmodified data/derived/land.geojson and lakes.geojson, exact straight source boundary segments",
+      "source_sign": "unmodified water-detail.u8 nearest pixel-centre class0 land, class1 ocean, class2 inland",
+      "projection": "mapping-v1, projected metres, source radius6371008.8m, standard parallel41deg",
+      "grid": [
+        8192.0,
+        6144.0
+      ],
+      "exclude": "artificial clipping segments lying exactly on the region rectangle boundary",
+      "distance": "Euclidean nearest source boundary segment in projected metres at canonical pixel centres, computed in float64 within3000m narrow band; outside band distance capped",
+      "encoding": "Two UInt8 channels: code=R*256+G; projected_distance_m=code*0.125-4096; positive water, negative land; narrow band capped at3000m",
+      "quantization_budget_projected_m": 0.0625,
+      "distance_computation_budget_projected_m": 0.01,
+      "zero_isoline_source_offset_budget_geodesic_m": 6000.0,
+      "screen_error_budget_px": 2.0,
+      "transition_residual_budget_px": 1.0,
+      "filter": "decode four nearest RG8 texels before scalar bilinear interpolation; zero-isoline derivative antialiasing; semantic water kind unchanged",
+      "limitations": "distance quantization bound is not a coastline position bound; zero-isoline offsets and protected small features require independent measured source-space review; no historical accuracy claim"
+    }
+  },
+  "water_distance_manifest_sha256": "9e97b20ee51a248c5dcfcbc44d6e15e8ceb676c669a46ffc6c90273985291de0",
+  "packing_manifest_sha256": "c6cda212cabd902a7ab699b9dd7ae84856911b11cf8d0efbd656d1a6ad8cf0c1",
+  "gpu_capabilities": {
+    "max_texture_2d": 16384,
+    "method": "mobile"
+  },
+  "interaction_events": [],
+  "captures": [
+    {
+      "file": "frame_000030.png",
+      "frame": 30,
+      "t_ms": 1469.897,
+      "zoom": 0.0,
+      "center": [
+        17.5,
+        39.5
+      ],
+      "lossless_copy": ""
+    }
+  ],
+  "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "renderer_source_sha256": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+  "renderer_asset_sha256": {
+    "project.godot": "f4a976620734b6009e9c59d987f01a36a12362169042f9568c50e9737ca9b29b",
+    "landscape.tscn": "144cd6119774263b14b6f8d006442b67a5f6f3e2f38ebd524cca5aa150226b78",
+    "scripts/landscape.gd": "59a926c8e09fdc0a391a829cf727003834c421ee1b79ff884d07735e0a31fe70",
+    "shaders/terrain.gdshader": "d32fa7757579d4a4fedbdb5c0640f8b343dbe699ea2ea81a6a4178ea43d6849c",
+    "shaders/vegetation.gdshader": "dd84a559fbbf9df0402d2195180fc82a816b0d6442c87c48b636afb4b7e30b59",
+    "shaders/rivers.gdshader": "cf5072c098f679e458fddaf94bd47d93af89f10bd8c81e2488311aa5255441e7",
+    "scripts/pack_height.py": "d670bd6616cdcee4c7acafb769e7871fcc6652a3cae36abfcfbe2100b71a8d0e",
+    "scripts/pack_water_distance.py": "2193aa673bbb43dcbe17315d4a8a28d580936230bb1fb9480569daf165ec58bb"
+  },
+  "anchors_sha256": "2e026e903e89b1df7cf5209167874e4e2739077c78fe0f3555541dcdefeaea6d",
+  "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+  "verified_assets": {
+    "height.f32": true,
+    "landcover.u8": true,
+    "water.u8": true,
+    "height-detail.f32": true,
+    "water-detail.u8": true,
+    "rivers.geojson": true
+  },
+  "integrity_issues": [],
+  "integrity_passed": true,
+  "dataset_revision": "landscape-v3",
+  "mapping_revision": "mapping-v1",
+  "camera_revision": "orthographic-relief-v1",
+  "duration_seconds": 1.469897,
+  "frame_count": 30,
+  "rendering_method": "mobile",
+  "gpu": "Apple M3 Pro (Apple9)",
+  "frame_ms": {
+    "p50": 8.327,
+    "p95": 148.11333333333377,
+    "p99": 714.421,
+    "max": 714.421
+  },
+  "samples": [
+    {
+      "t_ms": 1271.22,
+      "frame": 6,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.09099999815225601,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.016,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-6",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 8.773,
+      "engine_delta_ms": 8.725,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 694752456,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    },
+    {
+      "t_ms": 1319.709,
+      "frame": 12,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.06400000303983688,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.02,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-12",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 7.672,
+      "engine_delta_ms": 7.142857142857142,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 694824604,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    },
+    {
+      "t_ms": 1369.626,
+      "frame": 18,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.07599999755620956,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.018,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-18",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 8.327,
+      "engine_delta_ms": 8.292666666666669,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 694877844,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    },
+    {
+      "t_ms": 1420.032,
+      "frame": 24,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.06300000101327896,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.017,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-24",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 8.403,
+      "engine_delta_ms": 8.389,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 694931252,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    },
+    {
+      "t_ms": 1469.897,
+      "frame": 30,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.06400000303983688,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.014,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-30",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 8.207,
+      "engine_delta_ms": 8.333333333333334,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 694984924,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    },
+    {
+      "t_ms": 1469.897,
+      "frame": 30,
+      "anchor_probes": [
+        {
+          "anchor_id": "alpine-woodland-near",
+          "source_lon": 8.991666666666667,
+          "source_lat": 46.00833333333333,
+          "source_surface_height_m": 696.7537720277905,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -839.8992919921875,
+            0.6967537720277905,
+            -556.9020385742188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            786.4508056640625,
+            364.09912109375
+          ],
+          "tile_id": "eqc41-km-v1:-557:-840",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "italy",
+          "source_lon": 12.49,
+          "source_lat": 41.89,
+          "source_surface_height_m": 32.21632147549235,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -546.3191528320313,
+            0.03221632147549235,
+            -98.96363067626953
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            857.8082275390625,
+            475.4054260253906
+          ],
+          "tile_id": "eqc41-km-v1:-99:-547",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "england",
+          "source_lon": -1.5,
+          "source_lat": 54.0,
+          "source_surface_height_m": 84.30218987166882,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1720.3599853515625,
+            0.08430218987166882,
+            -1445.5360107421875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            572.4464111328125,
+            148.10818481445313
+          ],
+          "tile_id": "eqc41-km-v1:-1446:-1721",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "north-africa",
+          "source_lon": 10.2,
+          "source_lat": 35.5,
+          "source_surface_height_m": 67.567795753479,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -738.4959716796875,
+            0.067567795753479,
+            611.5729370117188
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            811.0978393554688,
+            648.1080932617188
+          ],
+          "tile_id": "eqc41-km-v1:611:-739",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "eastern-extent",
+          "source_lon": 42.0,
+          "source_lat": 36.0,
+          "source_surface_height_m": 307.24058532714844,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            0.30724058532714843,
+            555.9754028320313
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            634.5946044921875
+          ],
+          "tile_id": "eqc41-km-v1:555:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "jordandepression",
+          "source_lon": 35.5,
+          "source_lat": 31.5,
+          "source_surface_height_m": -427.0,
+          "water_kind": 2,
+          "canonical_model_position": [
+            1384.679931640625,
+            -0.427,
+            1056.353271484375
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1327.156005859375,
+            756.2161865234375
+          ],
+          "tile_id": "eqc41-km-v1:1056:1384",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "region-edge",
+          "source_lon": -11.0,
+          "source_lat": 45.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -2517.599853515625,
+            0.0,
+            -444.78033447265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            378.66961669921875,
+            391.3513488769531
+          ],
+          "tile_id": "eqc41-km-v1:-445:-2518",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "tile-seam",
+          "source_lon": 19.0,
+          "source_lat": 41.0,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            990.5963134765625,
+            499.45947265625
+          ],
+          "tile_id": "eqc41-km-v1:0:0",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "coast-ostia",
+          "source_lon": 12.239024,
+          "source_lat": 41.736274,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            -567.381103515625,
+            0.0,
+            -81.87004852294922
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            852.68896484375,
+            479.5601501464844
+          ],
+          "tile_id": "eqc41-km-v1:-82:-568",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "render_timing": {
+        "viewport_cpu_ms": 0.06400000303983688,
+        "viewport_gpu_ms": null,
+        "frame_setup_cpu_ms": 0.022,
+        "status": "measured last completed viewport"
+      },
+      "ridge_probes": [
+        {
+          "anchor_id": "protected-ridge-0",
+          "source_lon": 6.86,
+          "source_lat": 45.83,
+          "source_surface_height_m": 4400.193717762595,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1018.7887573242188,
+            4.400193717762595,
+            -537.072265625
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            742.9700317382813,
+            368.9189453125
+          ],
+          "tile_id": "eqc41-km-v1:-538:-1019",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-1",
+          "source_lon": 10.76,
+          "source_lat": 46.51,
+          "source_surface_height_m": 2757.060678450216,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -691.5007934570313,
+            2.757060678450216,
+            -612.6848754882813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            822.5204467773438,
+            350.5405578613281
+          ],
+          "tile_id": "eqc41-km-v1:-613:-692",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-2",
+          "source_lon": 14.99,
+          "source_lat": 37.75,
+          "source_surface_height_m": 3156.302210390568,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -336.5191650390625,
+            3.156302210390568,
+            361.3840026855469
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            908.8021240234375,
+            587.2973022460938
+          ],
+          "tile_id": "eqc41-km-v1:361:-337",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-3",
+          "source_lon": 1.0,
+          "source_lat": 42.6,
+          "source_surface_height_m": 2522.040771600674,
+          "water_kind": 0,
+          "canonical_model_position": [
+            -1510.5599365234375,
+            2.522040771600674,
+            -177.91213989257813
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            623.4403076171875,
+            456.2162170410156
+          ],
+          "tile_id": "eqc41-km-v1:-178:-1511",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-4",
+          "source_lon": 35.8,
+          "source_lat": 36.7,
+          "source_surface_height_m": 0.0,
+          "water_kind": 1,
+          "canonical_model_position": [
+            1409.85595703125,
+            0.0,
+            478.13885498046875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1333.2752685546875,
+            615.6756591796875
+          ],
+          "tile_id": "eqc41-km-v1:478:1409",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        },
+        {
+          "anchor_id": "protected-ridge-5",
+          "source_lon": 42.0,
+          "source_lat": 37.5,
+          "source_surface_height_m": 1036.8272195756435,
+          "water_kind": 0,
+          "canonical_model_position": [
+            1930.159912109375,
+            1.0368272195756436,
+            389.18280029296875
+          ],
+          "rendered_height_model": 0.0,
+          "observed_pixel": [
+            1459.7401123046875,
+            594.0540771484375
+          ],
+          "tile_id": "eqc41-km-v1:389:1930",
+          "projection_observation": "Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition",
+          "in_viewport": true
+        }
+      ],
+      "view_state_id": "",
+      "view_state": {
+        "id": "continuous-30",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "waypoint_id": "overview_start",
+      "profile_sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7",
+      "frame_ms": 8.207,
+      "engine_delta_ms": 0.0,
+      "zoom": 0.0,
+      "center_lon": 17.5,
+      "center_lat": 39.5,
+      "elevation_degrees": 90.0,
+      "profile_elevation_degrees": 90.0,
+      "camera_basis": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          6.123234262925839e-17,
+          -1.0
+        ],
+        [
+          0.0,
+          1.0,
+          6.123234262925839e-17
+        ]
+      ],
+      "camera_projection": [
+        [
+          0.00025318702682852745,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.00045011023757979274,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -5.06127871631179e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0000399351119995,
+          1.0
+        ]
+      ],
+      "azimuth_degrees": 0.0,
+      "relief_weight": 0.0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "visible_width_model": 7899.299121354359,
+      "visible_width_source_m": 7899299.121354359,
+      "target_height_model": 0.0,
+      "camera_position": [
+        -125.87999725341797,
+        11848.9482421875,
+        166.79263305664063
+      ],
+      "patch_count": 16,
+      "tree_count": 0,
+      "mapping_revision": "mapping-v1",
+      "camera_revision": "orthographic-relief-v1",
+      "dataset_revision": "landscape-v3",
+      "memory_static_bytes": 695019304,
+      "render_draw_calls": 17.0,
+      "gpu_memory_bytes": 899940352.0,
+      "gpu_texture_memory_bytes": 558381696.0,
+      "gpu_buffer_memory_bytes": 39351624.0,
+      "canonical_tile_id": "eqc41-km-v1:166:-126"
+    }
+  ]
+}

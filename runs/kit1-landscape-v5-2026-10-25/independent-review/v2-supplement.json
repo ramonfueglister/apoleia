@@ -1,0 +1,941 @@
+{
+  "roman_normalization": [
+    {
+      "source_feature_id": "1",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "2",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "3",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "4",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "5",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "6",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "7",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "9",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "10",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "11",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "12",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "13",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "14",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "15",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "16",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "17",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "18",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "19",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "20",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "21",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "22",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "23",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "24",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "25",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "26",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "27",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "28",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "29",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "30",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "31",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "32",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "33",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "34",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "35",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "36",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "37",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "38",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "39",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "40",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "41",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "42",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "43",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "44",
+      "original_valid": false,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "45",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "47",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "48",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "49",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "50",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "51",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "52",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "53",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "54",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "55",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "56",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "57",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "58",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "59",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "60",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "61",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "62",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "63",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "64",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "65",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "66",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "68",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "69",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "70",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "71",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "72",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "73",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "74",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "77",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "78",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "79",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "80",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "81",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "82",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "83",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "84",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "85",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "86",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "87",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "88",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "89",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "90",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "91",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "92",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "93",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "94",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "95",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "96",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "97",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "98",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "99",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "100",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "101",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "102",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "103",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "104",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "105",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "106",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "107",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "108",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "109",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "111",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "112",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "113",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "115",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "116",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "118",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "119",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    },
+    {
+      "source_feature_id": "120",
+      "original_valid": true,
+      "output_valid": true,
+      "equals_expected_normalization": true,
+      "envelope_unchanged": true,
+      "symmetric_difference_area_square_degrees": 0.0
+    }
+  ],
+  "coast_maximum_recomputed": [
+    {
+      "level": "overview",
+      "sample_lon": -5.459828,
+      "sample_lat": 57.099799,
+      "csv_reported_distance_m": 6418.557150753,
+      "independent_distance_m": 6418.557150752631,
+      "nearest_interface_pixel": [
+        195,
+        36
+      ],
+      "budget_m": 6000,
+      "within_budget": false
+    },
+    {
+      "level": "canonical",
+      "sample_lon": -6.194814,
+      "sample_lat": 36.932115,
+      "csv_reported_distance_m": 2797.252710681,
+      "independent_distance_m": 2797.2527106810103,
+      "nearest_interface_pixel": [
+        286,
+        1264
+      ],
+      "budget_m": 6000,
+      "within_budget": true
+    },
+    {
+      "level": "detail",
+      "sample_lon": 28.924978,
+      "sample_lat": 44.620551,
+      "csv_reported_distance_m": 2039.410125728,
+      "independent_distance_m": 2039.4101257276152,
+      "nearest_interface_pixel": [
+        5736,
+        2224
+      ],
+      "budget_m": 6000,
+      "within_budget": true
+    }
+  ]
+}

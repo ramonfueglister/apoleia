@@ -1,0 +1,11 @@
+{
+  "schema_version": "landscape-camera-profile-v1",
+  "mapping_revision": "mapping-v1",
+  "camera_revision": "orthographic-relief-v1",
+  "projection": {"kind":"spherical_equirectangular", "radius_m":6371008.8,"standard_parallel_degrees":41.0,"origin_longitude":19.0,"origin_latitude":41.0,"x":"R * (lon - 19.0) * pi/180 * cos(41*pi/180)","z":"R * (41.0 - lat) * pi/180"},
+  "model_scale": {"horizontal":0.001,"vertical":0.001,"unit":"source metre * 0.001"},
+  "camera": {"projection":"orthographic","azimuth_degrees":0.0,"far_elevation_degrees":90.0,"near_elevation_degrees":35.2643897,"near_visible_width_source_m":500.0,"far_visible_width":"max(world_width,world_height*viewport_aspect)*1.08","zoom_range":[0.0,1.0],"visible_width":"exp(lerp(log(far_visible_width),log(0.5),zoom))","transition_t":"clamp((zoom-0.05)/0.9,0,1)","relief_weight":"t*t*(3-2*t)","elevation":"lerp(90,35.2643897,relief_weight)","target_height":"bilinear canonical source height * model_scale * relief_weight"},
+  "terrain": {"height_sampling":"bilinear pixel-center Float32LE canonical elevation, marine kind1 displayed at sea surface zero; signed land and inland height retained","relief":"canonical model height * relief_weight","patch_cells":24,"child_morph":"smoothstep(0.11,0.22,max(patch_width,patch_height)/visible_width)","coarse_surface":"parent's canonical triangulated sample grid","skirt_depth_source_m":60.0},
+  "screen": {"origin":"top_left","expected_x":"viewport_width/2 + (world_x-target_x)*viewport_width/visible_width","expected_y":"viewport_height/2 - ((world_y-target_y)*cos(elevation) - (world_z-target_z)*sin(elevation))*viewport_width/visible_width"},
+  "constraints":["no rotation input","no scene switch","same geographic data at every zoom","no permanent vertical exaggeration","source DEM accuracy is separate from render mapping"]
+}

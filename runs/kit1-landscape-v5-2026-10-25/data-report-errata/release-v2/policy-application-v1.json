@@ -1,0 +1,43 @@
+{
+  "schema_version": "kit1-run-policy-application-v1",
+  "revision": "native-detail-render-application-v1",
+  "specified_utc": "2026-10-25T16:32:28.706257+00:00",
+  "base_policy": {
+    "artifact_path": "geodata_policy.json",
+    "sha256": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28"
+  },
+  "budgets_changed": false,
+  "source_manifests_changed": false,
+  "geographic_scope": "Same region-v1 rectangular mask [-11,46]x[21,58]; policy scope and prior derivation prose are aliases of this bound geographic domain, not assertions of exhaustive sampling.",
+  "classification": "Own actual renderer architecture, no original-game parity. Offline data-generalization products and actual render quadtree LOD are distinct address/level spaces.",
+  "offline_levels": {
+    "overview": {
+      "rendered_in_valid_runs": false,
+      "usage": "Produced2048x1536 height+4096x3072water offline asset, not bound as regular renderer input.",
+      "not_applicable_metrics": [
+        "screen_error_px",
+        "transition_residual_px"
+      ]
+    },
+    "canonical": {
+      "rendered_in_valid_runs": false,
+      "usage": "3420x2220 loaded/verified at initialization; overwritten by native detail before scene creation. Integrity-failure fallback does not constitute an accepted normal render run.",
+      "not_applicable_metrics": [
+        "screen_error_px",
+        "transition_residual_px"
+      ]
+    },
+    "detail": {
+      "rendered_in_valid_runs": true,
+      "usage": "Native13680x8880 height, fixed modelscale.001, renderRG8 + common SDF at every zoom; quadtree patch tessellation/morph changes, geographic data level does not.",
+      "required_runtime_metrics": [
+        "screen_error_px",
+        "transition_residual_px"
+      ]
+    }
+  },
+  "actual_render_lod_contract": "All actually observed quadtree levels and all valid zoom states retain screen<=2px and transition<=1px budgets; do not relabel or triple-copy actual detail observations into unrendered offline representations.",
+  "scope_alias": "Prior entire region-v1; explicitly sampled sourcegeometry, not global proven bound -> entire project rectangular mask. Same regionhash, coordinate domain, raw samples and sampling-plan hash; sampling limitations retained verbatim.",
+  "temporal_limit": "This application definition is fixed before any further final run; descriptive interpretation of earlier native-detail-only runs is identified by their actual hashes. It introduces no new pass threshold and cannot bless a changed renderer without its own matching evidence.",
+  "validator_limitation": "Kit1ops-v5 derivation checker demands all6metrics for every offline level and has no explicit NA representation. Four unrendered-level runtime combinations remain a documented tool-contract gap, not invented measurements."
+}

@@ -1,0 +1,2 @@
+# Existing local environment verified; no automatic install by build/start.
+numpy==2.5.4

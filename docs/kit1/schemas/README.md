@@ -94,6 +94,12 @@ mitgelieferten nichtnegativen Stichprobenwerte, kein RMS und keine mathematisch
 bewiesene globale Fehlerschranke. Reale Vollständigkeit/Methodenqualität muss ein
 unabhängiger Reviewer an Rohdaten, Samplingbelegen und Bildern prüfen.
 
+Optional `derivation.not_applicable[]` (`level_id`, `metric`, `status:
+"not_applicable"`, Pflicht `reason`, Pflicht `rule` mit Pfad+SHA-256): nur
+`screen_error_px`/`transition_residual_px` für nicht gerenderte Niveaus. Gemessen
+und NA zusammen müssen alle Niveau-/Metrikpaare exakt abdecken, ohne Überlappung;
+jede Metrik braucht mindestens ein gemessenes Niveau. NA ist kein Nullwert.
+
 ## Regionaler Umfang v5
 
 `region` bindet das Projektgebiet nach [REGION](../operations/REGION.md). Konfig,

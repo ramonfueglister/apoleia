@@ -1,0 +1,19 @@
+{
+  "runtime_duration_s": 48.006078,
+  "original_frames": 1031,
+  "encoded_frames": 1031,
+  "strictly_monotonic_original_timestamps": true,
+  "vfr_max_timestamp_quantization_s": 0.01961199999999863,
+  "raw_capture_max_gap_ms": 514.1820000000001,
+  "post_first_second_max_gap_ms": 58.29500000000189,
+  "dropped_attempts": [],
+  "renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "movie_sha256": "ee4d780e7867dd06833f4bc41732a5fbed9bd169a0961e5a2dd8a593ac9c13e0",
+  "actual_viewed_images": [
+    "70 actual original samples in release-v2-contact pages1-5 including 21 samples at100ms near first forest",
+    "lossless_intermediate.png",
+    "lossless_near.png",
+    "lossless_overview_return.png"
+  ],
+  "limits": "Original frame sequence and timestamps examined; contact and dense actual frame review is sampled visual inspection, not continuous human viewing or GPU feature tracking. The startup514ms capture gap is retained."
+}

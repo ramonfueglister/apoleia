@@ -1,0 +1,11 @@
+{
+  "revision": "independent-ridge-positive-v1",
+  "status": "specified-before-source-selection-and-render-measurement",
+  "reason": "Original protected-ridge-4 at 35.8E/36.7N is ocean waterkind1 and is not a positive mountain control. Original evidence is retained as erratum.",
+  "dataset_revision": "landscape-v3",
+  "manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "source_only_geographic_window_degrees": {"west": 35.3, "east": 36.3, "south": 36.2, "north": 37.2},
+  "selection_rule": "Evaluate all native-detail source cell centers inside the fixed one-degree window around the original anchor. Keep only water-detail kind0 land and finite signed source height >=1000m. Choose maximum signed source height; ties use lowest row then lowest column. This is a local massif positive control, not a surveyed ridge network. Do not use rendered error, visibility or camera output for selection.",
+  "render_plan": {"center": "selected source cell center", "zoom": 0.7, "viewport": [1920,1080], "frames": 30, "measure": "source height versus actual active mesh/morph height and screen residual; actual screenshot; report all values and source/renderer hashes"},
+  "limits": "Adds one local positive mountain control without changing product data/protection rules or replacing the erroneous original record. Existing five valid anchors remain. Native source resolution and generalization/packing policy remain unchanged. No global topological ridge claim."
+}

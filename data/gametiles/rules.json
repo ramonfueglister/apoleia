@@ -1,0 +1,48 @@
+{
+ "schema_version": "gametiles-rules-v1",
+ "status": "spezifiziert: Parameter sind eigene Designentscheidungen (K25-K29) bzw. markierte Startwerte, keine Fremdregeln",
+ "sea": {
+  "note": "K27: Küstenmeer 50 km, offenes Meer 100-200 km. Ein Meer-Block wird Blatt, wenn alle 25-km-Kinder landfrei sind und im um open_clearance_m erweiterten Quadrat (Chebyshev, 1-km-Zellmitten) kein Land liegt. 50 km braucht keinen Abstand.",
+  "open_clearance_m": {
+   "50000": 0,
+   "100000": 50000,
+   "200000": 100000
+  }
+ },
+ "terrain": {
+  "note": "K27/K26: Hochgebirge und Wüste 50 km; reine Wüste (alle 25-km-Kinder Wüste) bis desert_max_size_m; leeres Land (kein Ort aus places*.csv in irgendeiner Epoche im 25-km-Tile) bis empty_land_max_size_m. Gilt überall gleich, im Reich und außerhalb (Ramon 26.10.2026). Hochgebirge braucht beide Höhenanteile, damit Hochplateaus nicht als Gebirge zählen. Schwellen sind Startwerte (Hypothese), gemessen in summary.json.",
+  "desert_min_bare_fraction": 0.8,
+  "mountain_min_fraction_above_1500m": 0.5,
+  "mountain_min_fraction_above_2000m": 0.3,
+  "desert_max_size_m": 200000,
+  "empty_land_max_size_m": 50000,
+  "empty_land_margin_m": 0
+ },
+ "urban": {
+  "note": "K29: Verfeinerung nach Epochen-Maximum. Wichtigkeit je 25-km-Tile und Stichjahr = Summe der Stadtbevölkerung / Mittel der epoch_reference_top_n stärksten Tiles dieses Jahres; Maximum über alle Jahre; + port_bonus bei Hafen. Reihenfolge: major_city_count Großstädte (6,25 km für ihr ganzes 25-km-Tile), dann 25-km-Tiles nach Wichtigkeit (12,5 km), dann Handliste; 2:1-Ausgleich nach jedem Schritt; Abbruch vor Überschreiten des Budgets.",
+  "years": [
+   117,
+   400,
+   1000,
+   1500,
+   1800,
+   1900,
+   2020
+  ],
+  "epoch_reference_top_n": 50,
+  "port_bonus": 0.05,
+  "min_importance": 0.02,
+  "major_city_count": 35,
+  "budget": 14000
+ },
+ "context_land": {
+  "note": "Abgelehnt von Ramon am 26.10.2026: alle Gebiete gleich behandeln. Bleibt aus.",
+  "enabled": false,
+  "reference": "data/reference/roman-117.geojson",
+  "min_distance_m": 100000,
+  "clearance_m": {
+   "50000": 100000,
+   "100000": 200000
+  }
+ }
+}

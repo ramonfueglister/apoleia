@@ -1,0 +1,124 @@
+{
+  "height_detail_path": "height-detail.f32",
+  "height_detail_width": 13680,
+  "height_detail_height": 8880,
+  "schema_version": "landscape-data-v1",
+  "dataset_revision": "landscape-v3",
+  "region_revision": "region-v1",
+  "mask_revision": "mask-v1",
+  "mapping_revision": "mapping-v1",
+  "width": 3420,
+  "height": 2220,
+  "bounds": {
+    "west": -11,
+    "east": 46,
+    "south": 21,
+    "north": 58
+  },
+  "sample_registration": "pixel_center",
+  "row_order": "north_to_south",
+  "height_path": "height.f32",
+  "class_path": "landcover.u8",
+  "water_path": "water.u8",
+  "water_detail_path": "water-detail.u8",
+  "water_detail_width": 8192,
+  "water_detail_height": 6144,
+  "height_encoding": "Float32LE",
+  "height_units": "metres EGM2008",
+  "class_encoding": "UInt8 ESA WorldCover codes (0 unknown,80 water)",
+  "water_encoding": "UInt8 0 land 1 ocean 2 inland lakes; only ocean has sea-level surface0; inland lake levels inherit uncertain source heights",
+  "projection": {
+    "revision": "mapping-v1",
+    "crs": "spherical equidistant cylindrical",
+    "proj": "+proj=eqc +lat_ts=41 +lat_0=41 +lon_0=19 +R=6371008.8 +units=m",
+    "radius_m": 6371008.8,
+    "center_latitude": 41,
+    "center_longitude": 19,
+    "formula": "x=R*cos(41deg)*(lon-19deg)*pi/180; z=-R*(lat-41deg)*pi/180; y=height_m; all multiplied by 0.001",
+    "model_scale": 0.001,
+    "vertical_exaggeration": 1,
+    "choice": "Continuous simple regional mapping shared with portable renderer. Distortion measured and disclosed, not geodetic equal-distance or equal-area claim.",
+    "extent": {
+      "west": -11,
+      "east": 46,
+      "south": 21,
+      "north": 58
+    }
+  },
+  "source_to_model_scale": 0.001,
+  "vertical_exaggeration": 1,
+  "assets": {
+    "height.f32": {
+      "path": "height.f32",
+      "sha256": "7d6c6d4294c8a2214badc5aaf8b71392b98fdd7e8d3ebc5a6010ad3c398f7b2d",
+      "bytes": 30369600
+    },
+    "landcover.u8": {
+      "path": "landcover.u8",
+      "sha256": "a32bb6ac9463de7c7b227f810edadc7b3e14c90794d1b8e2718f5260ab1fda3d",
+      "bytes": 7592400
+    },
+    "water.u8": {
+      "path": "water.u8",
+      "sha256": "41e2bd0c5ecff97bf630743308caccdf57779a9f4cf1a6329a0b9ff992044d10",
+      "bytes": 7592400
+    },
+    "height-detail.f32": {
+      "path": "height-detail.f32",
+      "sha256": "d66d80fbaf32e5eb62b84cf410e64575f7a6a6174eeb67b516068816b2dc3c32",
+      "bytes": 485913600
+    },
+    "water-detail.u8": {
+      "path": "water-detail.u8",
+      "sha256": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e",
+      "bytes": 50331648
+    },
+    "rivers.geojson": {
+      "path": "rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2",
+      "bytes": 2118295
+    },
+    "lakes.geojson": {
+      "path": "lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+      "bytes": 751437
+    },
+    "land.geojson": {
+      "path": "land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+      "bytes": 3438966
+    },
+    "overview-height.f32": {
+      "path": "overview-height.f32",
+      "sha256": "e5e38baf6694b114d50d5981409ca92f71695d4e633f21cf73040f8ce8710997",
+      "bytes": 12582912
+    },
+    "overview-water.u8": {
+      "path": "overview-water.u8",
+      "sha256": "e241e8ec7f524112e88d2f9a92e96ac899f091b673f6830bffaa63d2a98fabf4",
+      "bytes": 12582912
+    }
+  },
+  "rivers_path": "rivers.geojson",
+  "lakes_path": "lakes.geojson",
+  "vector_paths": {
+    "land": "land.geojson",
+    "rivers": "rivers.geojson",
+    "lakes": "lakes.geojson"
+  },
+  "source_quality": "ETOPO15s native elevation (~245-433m east-west;463m north-south). WorldCover last overview (~0.6km). Natural Earth1:10M physical water. No fabricated small relief or historical vegetation.",
+  "nodata": {
+    "elevation": 0,
+    "landcover_land_cells": 0
+  },
+  "overview": {
+    "width": 2048,
+    "height": 1536,
+    "height_path": "overview-height.f32",
+    "water_path": "overview-water.u8",
+    "water_width": 4096,
+    "water_height": 3072
+  },
+  "tile_grid": "../tile-grid.json",
+  "water_lod_policy": "Actual runtime uses water-detail8192x6144 at every zoom; canonical water is integrity-failure fallback, overview-water4096x3072 is offline prepared product only, never a hidden rendered coastLOD."
+}
