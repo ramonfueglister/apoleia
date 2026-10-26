@@ -236,10 +236,16 @@ void fragment() {
     float open_land=(1.0-weights.r)*(1.0-dry*0.6);
     vec3 varied=mix(look_olive_color.rgb,look_lime_color.rgb,smoothstep(0.30,0.72,n_meso*0.65+n_macro*0.35));
     ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength);
-    float ochre=smoothstep(0.52,0.78,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
-    ground=mix(ground,look_ochre_color.rgb,ochre*0.55);
+    float ochre=smoothstep(0.56,0.82,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
+    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.18,1.0-smoothstep(0.7,1.0,relief)));
     ground=mix(ground,forest_ground_color.rgb*0.82,weights.r*0.35);
     ground*=1.0+(n_micro-0.5)*0.22*look_variation_strength;
+    // Overview (reduced relief): slightly deeper, greener land as in the reference.
+    float overview=1.0-smoothstep(0.7,1.0,relief);
+    ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
+    // Faint triangle facets on open ground (low-poly read), pixel-filtered.
+    float facet_px=footprint/2.2;
+    ground*=1.0+(material_facets(vp/2.2)-0.5)*0.10*(1.0-smoothstep(0.3,0.8,facet_px))*relief;
     // V8 lighting follows the actual retained-feature triangle surface used
     // by the renderer and CPU picking. No detached 2km DEM normal texture.
     // Material ownership uses the same fixed atlas gradient and base-level G
@@ -269,8 +275,11 @@ void fragment() {
     vec3 stone=mix(rock_shadow_color.rgb,rock_color.rgb,0.82);
     // Canonical rock above still governs fixed forest priority; only visible
     // reflectance uses the spatially bounded appearance-filtered G channel.
-    float visible_rock=max(weights.g,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
-    ground=mix(ground,stone,mix(rock,visible_rock,material_transition_strength));
+    float visible_rock=max(weights.g*0.9,max(smoothstep(0.11,0.33,represented_slope),smoothstep(1500.0,2800.0,h)*0.85));
+    // Crisp rock/grass boundary and per-facet stone tone (low-poly read).
+    float rock_v=smoothstep(0.38,0.62,mix(rock,visible_rock,material_transition_strength));
+    stone*=0.90+0.20*material_facets(vp/3.4);
+    ground=mix(ground,stone,rock_v);
     ground=mix(ground,snow_color.rgb,smoothstep(3300.0,4300.0,h)*0.85);
     // Cavity darkening in valleys and hollows, from the same fixed surface.
     if(use_fixed_surface) {
@@ -316,12 +325,17 @@ void fragment() {
     float depth=water_kind_at(world_position.xz)==1.0 ? max(-bathymetry,0.0) : 30.0;
     float coast_m=max(material_distance,0.0);
     // Depth ramp: navy abyss -> open blue -> broad turquoise shelf/saum.
-    vec3 sea=mix(sea_open_color.rgb,sea_deep_color.rgb,smoothstep(600.0,3800.0,depth)*0.85);
+    vec3 sea=mix(sea_open_color.rgb,sea_deep_color.rgb,smoothstep(600.0,3800.0,depth)*0.55);
     float shelf_t=1.0-smoothstep(15.0,140.0,depth);
-    float saum=1.0-smoothstep(0.0,shallow_span*0.42,coast_m);
-    float core=1.0-smoothstep(0.0,shallow_span*0.10,coast_m);
-    float turq=clamp(max(saum*saum*0.85,shelf_t*0.55)+core*0.25,0.0,1.0);
+    // Broad saum up close, only a thin lighter rim in the overview.
+    float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
+    float saum=1.0-smoothstep(0.0,shallow_span*0.62*saum_scale,coast_m);
+    float core=1.0-smoothstep(0.0,shallow_span*0.16,coast_m);
+    // Patchy outer edge so the shelf colour does not read as a uniform halo.
+    float saum_edge=look_fbm(vp/14.0,footprint/14.0);
+    float turq=clamp(max(pow(saum,1.4)*(0.70+0.45*saum_edge),shelf_t*0.55*saum_scale)+core*0.30,0.0,1.0);
     if(!graphic_coast) turq*=1.0-step(2999.0,distance);
+    if(physical_water_kind==2.0) turq*=saum_scale;
     sea=mix(sea,sea_shallow_color.rgb,turq);
     // Animated waves; damped in the flat overview (relief ~ 0) and filtered
     // away once wavelengths drop below pixel size.
@@ -335,10 +349,14 @@ void fragment() {
     float wz=wave_height(wp+vec2(0.0,e),wfp,t);
     vec3 wave_normal=normalize(vec3(-(wx-w0)/e*0.20*wave_amount,1.0,-(wz-w0)/e*0.20*wave_amount));
     float mottled=(w0-0.5)*wave_amount;
-    sea*=1.0+mottled*0.10;
+    sea*=1.0+mottled*0.30;
+    // Low-poly water facets and broad tonal drift, as in the reference.
+    float sea_facet_px=footprint/5.0;
+    sea*=1.0+(material_facets(vp/5.0+vec2(t*0.02,0.0))-0.5)*0.16*(1.0-smoothstep(0.3,0.8,sea_facet_px));
+    sea*=1.0+(look_fbm(vp/160.0,footprint/160.0)-0.5)*0.22;
     // Fresnel-like sky sheen from the wave slopes.
     float fres=pow(1.0-clamp(dot(wave_normal,normalize(vec3(0.0,0.58,0.81))),0.0,1.0),3.0);
-    sea=mix(sea,sea_sky_color.rgb,clamp(fres*0.9*wave_amount,0.0,0.18));
+    sea=mix(sea,sea_sky_color.rgb,clamp(fres*0.6*wave_amount,0.0,0.10));
     // Thin animated surf line from the coast SDF.
     float px=max(contour_m_per_px,1.0);
     float foam_w=max(px*1.7,120.0);
