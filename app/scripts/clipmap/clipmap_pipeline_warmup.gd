@@ -10,8 +10,8 @@ extends RefCounted
 ## those compiled when the tour zoomed in. During warmup the sun shadow is held
 ## on just before each draw (frame_pre_draw); the regular per-frame light
 ## update restores the view-dependent value once warmup ends.
-## Invisible: crowns have representation_weight 0 (alpha hash discards all
-## fragments) and 0.001 scale; river and coast ribbons are zero-area triangles.
+## Invisible: fade crowns have representation_weight 0 (alpha hash discards
+## all fragments), opaque crowns 0.001 scale; river and coast ribbons are zero-area triangles.
 const MIN_FRAMES=4
 const QUIET_FRAMES=6
 const MAX_FRAMES=240
@@ -40,15 +40,26 @@ func begin(scene:Node3D,clipmap:RefCounted)->bool:
     holder=Node3D.new();holder.name="ClipmapPipelineWarmup";scene.add_child(holder)
     var kinds=[]
     if clipmap.forest and not clipmap.forest.meshes.is_empty():
-        var buckets=[]
-        for variant in range(clipmap.forest.meshes.size()):
-            var s=.001
-            var transforms=PackedFloat32Array([s,0.,0.,p.x,0.,s,0.,p.y,0.,0.,s,p.z])
-            buckets.append({"variant":variant,"count":1,"transforms":transforms,"aabb":AABB(p-Vector3.ONE,Vector3.ONE*2.)})
-        var trees:Array=clipmap.forest.attach(holder,{"buckets":buckets,"support_id":"pipeline-warmup","support_stride":0,"cell":Vector2i.ZERO},textures,rect)
-        for tree in trees:
-            tree.custom_aabb=everywhere;tree.set_instance_shader_parameter("representation_weight",0.)
-        kinds.append("forest_multimesh_x%d"%trees.size())
+        var count=0
+        # Real tiles carry a precomputed ground (MultiMesh custom data, a
+        # specialization) and draw the alpha-hash fade material while their
+        # family fades in, the opaque one afterwards; both for the visible
+        # crowns and the L0 shadow-only copies. Warm every combination.
+        for fading in [false,true]:
+            # Without the fade/opaque swap (set_weight) there is no fade variant to warm.
+            if fading and not clipmap.forest.has_method("set_weight"):continue
+            var buckets=[]
+            for variant in range(clipmap.forest.meshes.size()):
+                var s=.001
+                var transforms=PackedFloat32Array([s,0.,0.,p.x,0.,s,0.,p.y,0.,0.,s,p.z])
+                buckets.append({"variant":variant,"count":1,"transforms":transforms,"ground":PackedFloat32Array([0.]),"aabb":AABB(p-Vector3.ONE,Vector3.ONE*2.)})
+            var trees:Array=clipmap.forest.attach(holder,{"buckets":buckets,"support_id":"pipeline-warmup","support_stride":0,"cell":Vector2i.ZERO},textures,rect)
+            for tree in trees:
+                tree.custom_aabb=everywhere
+                if fading:clipmap.forest.set_weight(tree,0.) # fade material, alpha hash discards all
+                else:tree.set_instance_shader_parameter("representation_weight",0.)
+            count+=trees.size()
+        kinds.append("forest_multimesh_x%d"%count)
     var c=Vector3(p.x,0.,p.z)
     var quad_v=PackedVector3Array([c,c,c,c]);var quad_n=PackedVector3Array([Vector3.UP,Vector3.UP,Vector3.UP,Vector3.UP])
     var quad_i=PackedInt32Array([0,2,1,1,2,3])
