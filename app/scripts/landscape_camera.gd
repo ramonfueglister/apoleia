@@ -118,6 +118,7 @@ static func perspective_distance(width: float, aspect: float, fov_degrees: float
 # rays intersected with the conservative height interval; rays at or above the
 # horizon are clamped to a long distance.
 static func perspective_footprint_offsets(width: float, aspect: float, pitch: float, fov_degrees: float, relief: float, focus_height: float, height_range: Vector2=Vector2(MIN_HEIGHT,MAX_HEIGHT)) -> Rect2:
+    if not (width>0.0 and aspect>0.0 and is_finite(aspect)):return Rect2(-Vector2.ONE*maxf(width,1.0),Vector2.ONE*maxf(width,1.0)*2.0)
     var angle=deg_to_rad(pitch)
     var distance=perspective_distance(width,aspect,fov_degrees)
     var back=Vector3(0,sin(angle),cos(angle));var up=Vector3(0,cos(angle),-sin(angle))

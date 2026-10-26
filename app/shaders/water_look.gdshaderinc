@@ -42,7 +42,9 @@ float wl_wind_strength() {return clamp(weather_wind_strength,0.0,1.0);}
 // p in model km.
 float wl_wave(vec2 p,float footprint,float t,vec2 flow) {
     vec2 w=wl_wind();
-    float storm=clamp(weather_storm,0.0,1.0);
+    // Wave height: global weather only slightly; the front's local storm
+    // (darker water, whitecaps, no glints) is applied in water_shade.
+    float storm=clamp(weather_storm,0.0,1.0)*0.3;
     float strength=0.6+0.8*wl_wind_strength()+0.8*storm;
     float along=dot(p,w);
     float swell=sin(along*0.55-t*0.9+wl_noise(p*0.08)*6.0)*0.5+0.5;
@@ -80,7 +82,14 @@ struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float 
 WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float calm,vec3 view_world,vec2 flow,float px_m,float saum_scale,float mouth) {
     WaterSample s;
     float t=TIME;
-    float storm=clamp(weather_storm,0.0,1.0);
+    // Cloud shadow mask (1 = full sun), only inside weather_cloud_shadow_rect.
+    float sun_mask=1.0;float cloud_density=0.0;
+    if(weather_cloud_shadow_rect.z>0.0) {
+        vec2 uv=(p-weather_cloud_shadow_rect.xy)/weather_cloud_shadow_rect.zw;
+        if(all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0)))) {sun_mask=texture(weather_cloud_shadow,uv).r;cloud_density=1.0-sun_mask;}
+    }
+    // Storm acts locally under the front's clouds, not over the whole sea.
+    float storm=clamp(weather_storm,0.0,1.0)*cloud_density;
     float anim=calm*(1.0-smoothstep(0.35,1.1,footprint));
     // Effective depth: bathymetry is coarse, so the shore distance also
     // bounds it; gives a continuous shelf towards every coast.
@@ -132,12 +141,6 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     sky=mix(sky,vec3(0.45,0.50,0.56),storm*0.7);
     float fres=0.03+0.97*pow(1.0-clamp(dot(n,view_world),0.0,1.0),5.0);
     float sheen=clamp(fres*mix(0.35,0.9,anim),0.0,0.45);
-    // Cloud shadow mask (1 = full sun).
-    float sun_mask=1.0;
-    if(weather_cloud_shadow_rect.z>0.0) {
-        vec2 uv=(p-weather_cloud_shadow_rect.xy)/weather_cloud_shadow_rect.zw;
-        if(all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0)))) sun_mask=texture(weather_cloud_shadow,uv).r;
-    }
     // Stylised glitter path: the light is mirrored in front of the camera so
     // the sun trail is visible; it follows the sun's azimuth and elevation.
     vec3 l=normalize(vec3(water_sun_dir.x,max(water_sun_dir.y,0.08),-abs(water_sun_dir.z)-0.35));
