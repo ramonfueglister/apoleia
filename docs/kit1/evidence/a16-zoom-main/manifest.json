@@ -1,0 +1,286 @@
+{
+  "purpose": "A16 zoom evidence: one fixed place (Rome 12.45E/42.0N), overview to detail in 11 steps",
+  "commit": "f589e37de40b4ae58a83031adbb921f10afdf0d2",
+  "commit_note": "gsv7uc = main ea8e0dd (PR #11 merged) + startup telemetry",
+  "capture": "separate --snapshot per zoom after full clipmap coverage (root_ready, missing==0, refining==0); not one continuous recording",
+  "resolution": "640x360 window (small-window rule; larger captures pending owner decision)",
+  "hardware": "Apple M3 Pro (11 CPU / 14 GPU cores, 18 GB), macOS 26.5, Godot 4.7.2.stable.custom_build.ed1daf0bf, Forward+ Metal",
+  "review": "image assessment by an independent reviewer",
+  "frames": [
+    {
+      "file": "rome-zoom-0.0.png",
+      "sha256": "fd2983cb68086bdd76ca18ac9324c069cdfb1c9029e3703d709001c5555a9c0c",
+      "source_capture_sha256": "6847b09b437fbc3b87beb37d425d14e26e63f7afd472f6c141d62821cd5ba40e",
+      "bytes": 298666,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.0
+      },
+      "zoom": 0.0,
+      "view_width_model": 7606.7315844523455,
+      "view_width_source_m": 7606731.584452345,
+      "elevation_degrees": 49.99999868188683,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 6507,
+        "coverage_ready_msec": 16338,
+        "coverage_ready_frame": 321
+      }
+    },
+    {
+      "file": "rome-zoom-0.1.png",
+      "sha256": "dc16602f3afe922dc5e7c50409fcd70e41201050796eb0ccf139d62a3f5893b5",
+      "source_capture_sha256": "409c87af095dca3b77dbd05ddb56b33b6d1bf3d399facf058179ad936a2b6954",
+      "bytes": 320955,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.1
+      },
+      "zoom": 0.0658576488494873,
+      "view_width_model": 5383.9301283688665,
+      "view_width_source_m": 5383930.128368867,
+      "elevation_degrees": 49.99999868188683,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3778,
+        "coverage_ready_msec": 11012,
+        "coverage_ready_frame": 295
+      }
+    },
+    {
+      "file": "rome-zoom-0.2.png",
+      "sha256": "9689d282c4fdd7906893e8c7a554b3474c3ec3451059b9455912db986ec3f910",
+      "source_capture_sha256": "b06f3af1601e36083f6ecda29ff9c17a6e38e26ccdc61e258c6f42ae78a7505c",
+      "bytes": 343761,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.2
+      },
+      "zoom": 0.1317152976989746,
+      "view_width_model": 3810.664712608618,
+      "view_width_source_m": 3810664.712608618,
+      "elevation_degrees": 49.99999868188683,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3743,
+        "coverage_ready_msec": 11593,
+        "coverage_ready_frame": 387
+      }
+    },
+    {
+      "file": "rome-zoom-0.3.png",
+      "sha256": "11b7b2909f8207d7842642f498a92505197148f032662e3eac99182286c2a8a6",
+      "source_capture_sha256": "d999144274681fa4d156595aab0703adb9aea905ddd864d33844e792512b8593",
+      "bytes": 345973,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.3
+      },
+      "zoom": 0.1975729614496231,
+      "view_width_model": 2697.130919261321,
+      "view_width_source_m": 2697130.919261321,
+      "elevation_degrees": 49.99999868188683,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3785,
+        "coverage_ready_msec": 11572,
+        "coverage_ready_frame": 381
+      }
+    },
+    {
+      "file": "rome-zoom-0.4.png",
+      "sha256": "1d2cb62bffd2799343b677e13e96dfb9bb4ee8e2b3d9d177b0dccbc06a48df90",
+      "source_capture_sha256": "f3017ab9de7a5b93229bb46e4fd72d61a68456cf956b709bc9d8733c59f1110a",
+      "bytes": 368365,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.4
+      },
+      "zoom": 0.2634305953979492,
+      "view_width_model": 1908.988820060489,
+      "view_width_source_m": 1908988.820060489,
+      "elevation_degrees": 49.627657142371326,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3751,
+        "coverage_ready_msec": 13561,
+        "coverage_ready_frame": 555
+      }
+    },
+    {
+      "file": "rome-zoom-0.5.png",
+      "sha256": "973162988cdc15da5321533ebd39b9ee39159f6ee1593f456424f74159d0e595",
+      "source_capture_sha256": "a97900b627d78e69abfa76ca785cde6795e4ab1965c89125e40d3be12d9243fb",
+      "bytes": 322468,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.5
+      },
+      "zoom": 0.3292882740497589,
+      "view_width_model": 1351.1533437822168,
+      "view_width_source_m": 1351153.3437822168,
+      "elevation_degrees": 48.454739123450366,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3771,
+        "coverage_ready_msec": 13383,
+        "coverage_ready_frame": 567
+      }
+    },
+    {
+      "file": "rome-zoom-0.6.png",
+      "sha256": "d61c9a63b09d762f860d7b1609f73f4b17d4d714edca495d95125329480833e8",
+      "source_capture_sha256": "d47f6986b2520e60a19d4c6fa49dbb0ad6fd79760a8d240db9f72f489647f421",
+      "bytes": 329188,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.6
+      },
+      "zoom": 0.3951459228992462,
+      "view_width_model": 956.3260008416815,
+      "view_width_source_m": 956326.0008416815,
+      "elevation_degrees": 46.68667605182743,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3751,
+        "coverage_ready_msec": 14789,
+        "coverage_ready_frame": 597
+      }
+    },
+    {
+      "file": "rome-zoom-0.7.png",
+      "sha256": "499b84249a2de11800c7dd8079418ca5cee1690ae99e4eac3350ca2d6a5dc77b",
+      "source_capture_sha256": "24bd1dfc76bc7dd4744a0b05fac967c5bad80ead2e763c9baf4bc3c695f31117",
+      "bytes": 304469,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.7
+      },
+      "zoom": 0.4610035717487335,
+      "view_width_model": 676.8731499607306,
+      "view_width_source_m": 676873.1499607306,
+      "elevation_degrees": 44.534542372324104,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3752,
+        "coverage_ready_msec": 13733,
+        "coverage_ready_frame": 552
+      }
+    },
+    {
+      "file": "rome-zoom-0.8.png",
+      "sha256": "aec2a067697d7804271f21bb318081e67092a5c8420358da1836a005877f3d07",
+      "source_capture_sha256": "130df6bffae0f7816b341dd66cc7481cee60a952136beea04a22e0363501caf8",
+      "bytes": 287853,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.8
+      },
+      "zoom": 0.5268611907958984,
+      "view_width_model": 479.0807030136989,
+      "view_width_source_m": 479080.70301369886,
+      "elevation_degrees": 42.209415401449185,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3741,
+        "coverage_ready_msec": 14506,
+        "coverage_ready_frame": 590
+      }
+    },
+    {
+      "file": "rome-zoom-0.9.png",
+      "sha256": "0186ef03ed948468c8b8cb2727963f8ca8ba4d7bfa35c753d3fe9002a48b8c9b",
+      "source_capture_sha256": "52a2d3f7704e43b6d8a0c8869ad77202fcbdeb07d977fa847946c92e6baff0db",
+      "bytes": 348503,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.9
+      },
+      "zoom": 0.5927188992500305,
+      "view_width_model": 339.08600499742363,
+      "view_width_source_m": 339086.0049974236,
+      "elevation_degrees": 39.92235886316248,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3748,
+        "coverage_ready_msec": 13802,
+        "coverage_ready_frame": 566
+      }
+    },
+    {
+      "file": "rome-zoom-1.0.png",
+      "sha256": "317344f09ff033664718ad1c94eb7447a7a75535e30fb6676e272736751a90f5",
+      "source_capture_sha256": "0fe721d1df400f374e844d9ce26f3c0a26366a6405e24e254024bdb0045d2e5e",
+      "bytes": 169578,
+      "size_px": [
+        640,
+        360
+      ],
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0
+      },
+      "zoom": 0.6585765480995178,
+      "view_width_model": 239.99997083442534,
+      "view_width_source_m": 239999.97083442533,
+      "elevation_degrees": 37.88446117694893,
+      "coverage": "complete",
+      "startup_timeline": {
+        "first_frame_msec": 3749,
+        "coverage_ready_msec": 13284,
+        "coverage_ready_frame": 557
+      }
+    }
+  ]
+}
