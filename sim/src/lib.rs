@@ -6,6 +6,8 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+pub mod ecs;
+
 pub const MAX_LEVEL: u8 = 7;
 pub const ROOT_SIZE_M: f64 = 200_000.0;
 /// Level of the 25 km terrain cells.
@@ -208,7 +210,7 @@ impl World {
     /// Start population of a start leaf: HYDE 200 AD where present, otherwise
     /// `start_fill` × local capacity plus cities. Below cell level the cell's
     /// HYDE count is spread by capacity, like a split (S34).
-    fn start_population(&self, k: Key, local: f64, urban: f64) -> f64 {
+    pub fn start_population(&self, k: Key, local: f64, urban: f64) -> f64 {
         let estimate = self.params.start_fill * local + urban;
         if k.level <= CELL_LEVEL {
             let n = 1i32 << (CELL_LEVEL - k.level);

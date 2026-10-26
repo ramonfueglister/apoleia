@@ -47,6 +47,22 @@ Aussagen oben gelten für Victoria 3 und werden für EU5 nur vermutet.
 | S47 | **Abgeleitete Werte über Change Detection** (`Changed<T>`, `summary_tick`): Nur geänderte Tiles werden neu gerechnet, wie die Dirty-Flags in Victoria 3. |
 | S48 | **Keine SQL-Datenbank zur Laufzeit.** Der Spielstand ist eine versionierte Binärserialisierung des ECS plus Befehlsprotokoll. CSV- oder Parquet-Export gibt es nur zur Auswertung. Das Tile-Budget S12 (65 536) begrenzt die Zahl der Objekte; nach Victoria 3 hängen die Kosten an der Objektzahl. |
 
+## Messung Schritt 1 (26.10.2026, Cloud-Container, 4 Kerne)
+
+500 Jahre auf HYDE 3.3, 41 827 Tiles am Ende, 9276 Teilungen, beide Kerne mit
+gleicher Tile-Zahl und Bevölkerung bis auf 19 Menschen (Rundung Festkomma).
+
+| Kern | Tick p50 | Tick p95 |
+|---|---|---|
+| Referenz ohne ECS (`--reference`) | 0,34 ms | 0,46–0,58 ms |
+| bevy_ecs, erster Port (i128-Division, `par_iter_mut`, zwei Durchläufe) | 0,60 ms | 0,80 ms |
+| bevy_ecs, jetzt (Spalten-Slices parallel, ein Durchlauf, Sortierschritt) | 0,18–0,19 ms | 0,29–0,30 ms |
+
+Was den Unterschied machte (callgrind): die 128-Bit-Division pro Tile, die
+Software-Rundung `f64::round` (ohne SSE4.1), der Overhead pro Entity bei
+`par_iter_mut` gegenüber `contiguous_par_iter_mut` und rund 60 µs Wake-up des
+Multi-Thread-Executors bei einer reinen Kette. Die Messung auf dem Mac (B08) steht aus.
+
 ## Erster Schritt nach der Entscheidung
 
 1. `sim/` auf `bevy_ecs` 0.20 umstellen. Komponenten: `TileKey`, `Population`
