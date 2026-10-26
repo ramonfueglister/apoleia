@@ -78,8 +78,8 @@ void fragment(){
     // Muted mid teal-blue like the reference rivers.
     // Opaque mid teal-blue (reference #2d6f8f range), not the pale sky sheen.
     // Reference rivers ~#307884: teal (h185-194), v~0.5.
-    // Reference #297377-#377a86 on screen; the lit albedo shows ~25 % brighter.
-    vec3 water=mix(w.albedo,vec3(0.016,0.112,0.12),0.97);
+    // Reference #297377-#377a86 on screen; the lit albedo shows ~35 % brighter.
+    vec3 water=mix(w.albedo,vec3(0.0136,0.095,0.102),0.97);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));

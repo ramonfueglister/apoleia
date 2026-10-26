@@ -80,7 +80,7 @@ void fragment() {
     // clipmap coast distance (reference near view, ~#1d648d off the beach).
     float shelf=(1.0-smoothstep(15.0,45.0,depth))*(1.0-smoothstep(300.0,900.0,view_width));
     shelf*=0.7+0.3*wl_fnoise(p*0.3,footprint*0.3);
-    ALBEDO=mix(ALBEDO,ALBEDO*vec3(1.45,1.65,1.15),shelf*0.9);
+    ALBEDO=mix(ALBEDO,ALBEDO*vec3(1.30,1.45,1.18),shelf*0.9);
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
     float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
     // One continuous arc; only open mouths break it.
