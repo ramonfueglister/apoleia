@@ -41,101 +41,135 @@ des Zoomprofils; willkürliche Überhöhung oder verschobene Quellgeografie sind
 
 ## Aktueller Laufzeit-Checkpoint — SourceV2/V19 integrierter Stand
 
-### Bindung und Belege
+### Bindung und revisionsbezogene Belege
 
 Die aktuelle [`renderer-binding.json`](../../app/renderer-binding.json) setzt
-SourceV2 standardmäßig und bindet V19 `source_grouped_crowns` sowie den lokalen
-frusta-Waldcache (Manifest-SHA-256
-`5bb618e402de7e8e0855be2ecf5d2a1273c07a837a08d46a9cdfe0f1a1b033d5`).
-Die Implementierungs-/CPU-Grenzen stehen in [SourceV2 Runtime Handoff](../product-renderer/SOURCE_V2_RUNTIME_HANDOFF.md)
-und [V19 Handoff](../product-style/V19_GROUPED_CROWNS_HANDOFF.md).
+SourceV2 als Default und bindet V19 `source_grouped_crowns` sowie den
+SourceV2/V19-Produktcache. Die Runtimebindung ist im geteilten Arbeitsbaum
+geändert; dieser Dokumentcheckpoint nimmt keine Runtimeänderung auf. Handoffs:
+[SourceV2 Runtime](../product-renderer/SOURCE_V2_RUNTIME_HANDOFF.md) und
+[V19 Gruppierung](../product-style/V19_GROUPED_CROWNS_HANDOFF.md).
 
-Der abgeschlossene Lauf
-[`camera/source-v2-v19-product-cloud-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/)
-bindet in [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/checkpoint.json)
-Runtime-SHA `c3c42ef787e25b5b8af77847a90de7b67477dacfd9f52b02b5004a7fab67c6d9`,
+Der integrierte Lauf
+[`source-v2-v19-product-cloud-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/)
+ist Session 34031, Exit 0. Sein [`checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/checkpoint.json)
+bindet Runtime-SHA `c3c42ef787e25b5b8af77847a90de7b67477dacfd9f52b02b5004a7fab67c6d9`,
 Terrainshader-SHA `ca680ba278f5bbe1bf507ea3131624339245bb109604c50ee0355988abf64ff3`
-und Produktbindungs-SHA `b4dd913322583213ae66f76c4de0b08cb50154a6e6a39173e06744975be0fa57`.
-Er endete mit Session 34031, Exit 0 und vier realen Bildern für Fern/Nah sowie
-Wolken aus/an. Der Lauf prüft einen bereit gerenderten Szenenzustand, nicht den
-Appstart, Navigation oder vollständige Kitabnahmen.
+und Produktbindung-SHA `b4dd913322583213ae66f76c4de0b08cb50154a6e6a39173e06744975be0fa57`.
+Vier reale Fern-/Nahbilder mit Wolken aus/an und 90 Messframes nach 16 Warmups
+pro Variante belegen nur diese bereit gerenderte Szene, keinen Start, Tour- oder
+Gesamtpass.
 
-Der lokale Cache
-[`manifest.json`](../../artifacts/render-data/forest-cache-sourcev2-v19-frusta-r1/manifest.json)
-und die zugehörige [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-frusta-cache-r1/summary.json)
-binden genau drei beobachtete Fern-/Mittel-/Nah-Frusta: 352 stride-1-Zellen,
-61 leer, 264.164.536 Payloadbytes und 76.314 ms Bake/Write. Die erzeugten
-Arrays stimmen bei 352/352 Laufzeitfingerprints überein. CPU-Standardstart
-meldet 352 Hits, 0 Misses und 0 Fallbacks; der integrierte Fern-/Nahlauf meldet
-308 Produktcachehits, 0 Misses, 0 Fallbacks und 1.294,384 ms kumulierte Meshloads. Dies ist keine Vollwelt-,
-Vollzoom-, GPU-Upload- oder Cache-Lifecycleabnahme. Der Cache ist lokal vorhanden
-und durch obigen Hash gebunden, aber nicht durch den Kit-Dokumentcheckpoint auf
-GitHub veröffentlicht; Remote-Reproduzierbarkeit ist damit nicht belegt.
+### Landschaftsform und Stil
 
-### Begrenzte Darstellungs- und Laufzeitbefunde
-
-V19 ist als Gruppierungsänderung begrenzt CPU-validiert; der koordinierte
-unabhängige Bildbefund beurteilt die Gruppierung gegenüber dem Vorgänger als
-besser, aber **A08 weiterhin FAIL/offen**. Das ist kein Pass zur Nutzerreferenz.
-Der integrierte Lauf enthält keine unabhängige Stilabnahme. Details zur
-begrenzten Geometrieprüfung und zu deren Grenzen stehen im V19-Handoff.
-
-Der kontrollierte
+V19 ist als Gruppierungsänderung begrenzt CPU-validiert und als bessere
+Gruppierung gegenüber dem Vorgänger unabhängig beurteilt; **A08 bleibt FAIL**.
+Die normale Schärfung V20 wurde verworfen. V21 testete drei wirksame
+Elternflächen-Zielpunkte, Session Exit 0, gebunden in
+[`camera/source-v2-v21-parent-patches-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v21-parent-patches-r1/).
+Laut unabhängigem Astra-Review erzeugten sie harte helle Dreiecke ohne räumliche
+Formgliederung; Kandidat verworfen, kein Produkt-/Stilpass. Der Reviewbefund ist
+als Ownerbericht überliefert, nicht als verlinktes Reviewdokument. Der kontrollierte
 [`source-v2-material-coast-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-material-coast-r1/)
-setzte beide Übergangs-Uniforms gemeinsam von 0 auf 1. Der unabhängige
-Vergleich bestätigt weniger Materialtreppen und Doppelringe; weiche Flecken,
-Inselhöfe und glatte Felsflanken bleiben. Die Einzelwirkung jeder Uniform ist
-nicht isoliert. Der
-[`source-v2-canopy-ab-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-canopy-ab-r1/control.json)
-zeigt nur einen kleinen Ferngewinn des Canopyfilters und keinen globalen Pass.
+schaltete beide Übergangs-Uniforms gemeinsam von 0 auf 1; der unabhängige Vergleich
+bestätigte weniger Materialtreppen und Doppelringe, aber weiche Flecken,
+Inselhöfe und glatte Felsflanken bleiben. [`source-v2-canopy-ab-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-canopy-ab-r1/control.json)
+zeigt nur kleinen Ferngewinn; beide Befunde sind kein globaler Stilpass.
 
-Die bestehende SourceV2-GPU-Probe r3 bleibt beim ursprünglichen RGBA-Grenzwert
-`0.0001` **FAIL**. Die unabhängig begründete zukünftige Engineering-Toleranz
-`1/255` in [`numeric-policy-r4/analysis.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-numeric-policy-r4/analysis.json)
-ist keine globale Fehlergrenze und ändert r3 nicht rückwirkend.
+V22 ist ein lokaler numerischer Formkandidat, kein Produktwechsel. Der
+[V22-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v22-local-form-r1/HANDOFF.md)
+bindet das lokale [`manifest.json`](../../artifacts/render-data/source-v2-local-form-r1/manifest.json),
+SHA-256 `2ceaf2f5c413d97ca1e1a11b9ccb7be6ed9baa85c425526f09921295734a02e0`.
+Mit 32 Stützen beträgt das Maximum im Gesamtkern 314,25 m und **verfehlt** das
+ursprüngliche ≤250-m-Kriterium wegen sechs geschützter Nodes; 163 veränderbare
+Nodes liegen bei höchstens 225,5 m. Profil: 670 m Absenkung/477,5 m Anhebung,
+keine Schutz-/Randverletzungen, Source-Maximum 1224,020953 m unter dem
+2500-m-Budget. Unabhängige Rekonstruktion von 529 Nodes: null Delta. GPU- und
+Stilprüfung offen; keine Produkt-/G-Weltumschaltung.
 
-### Messumfang des integrierten Laufs
+### Cache- und Tourbefunde
+
+Der eng definierte Fern-/Mittel-/Nah-Produktcache enthält 352 Zellen, 61 leer,
+264.164.536 Payloadbytes, Bake/Write 76.314 ms, Arrayfingerprints 352/352
+identisch. Manifest-SHA `5bb618e402de7e8e0855be2ecf5d2a1273c07a837a08d46a9cdfe0f1a1b033d5`.
+CPU-Standardstart: 352 Hits/0 Misses/0 Fallbacks. Der integrierte Lauf meldet
+308 Hits/0 Misses/0 Fallbacks und 1.294,384 ms
+kumulierte Meshloads. Kein Vollwelt-/Vollzoom-/GPU-Uploadnachweis. Cache und
+Source-/Renderinputs sind lokal; dieser Dokumentcheckpoint veröffentlicht sie
+nicht und begründet keine Remote-Reproduzierbarkeit.
+
+Der Nichtflach-Tourcache
+[`manifest.json`](../../artifacts/render-data/forest-cache-sourcev2-v19-tour-nonflat-r1/manifest.json)
+hat SHA `9280e9cd0361909ee404ee267446f5e7b9c575cc9733fba6891e6c51e98c0285`:
+2.924 Varianten (352 wiederverwendet, 2.572 neu), 1.210.154.764 Bytes und
+326.679,81 ms Build+Write. Die gebundenen Meshprüfungen bestanden; neue echte
+Cache-API-Probe 8 Hits/0 Misses. Das bleibt beobachtete Tourabdeckung, keine
+Vollweltabdeckung. Belege: [`source-v2-v19-tour-cache-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-tour-cache-r1/).
+
+Tourlauf mit diesem Cache:
+[`source-v2-v19-cloud-off-tour-cache-r2`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-cloud-off-tour-cache-r2/)
+Exit 0, 923 Frames, ein ausgelassener Aufnahmeversuch, 459 Hits/16 Misses
+(alles stride 0) und 2.574 ms Fallback. Frame-Wallzeiten p95 54,285 ms,
+p99 89,497 ms, Maximum 350,187 ms. Erste Endpose nach 48,079 s: 155 Flussjobs
+offen; zusätzlicher Hold 1,760 s/162 Frames bis Queue-Leerlauf. Keine vollständige
+Videobetrachtung; keine Streaming-, Rückkehr- oder Performancefreigabe. Der
+vorige r1-Lauf hatte p95 72,991/p99 159,616/Maximum 558,589 ms.
+
+Der Fluss-Set-Cache ist implementiert. [`river-set-cache-r1/result.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/river-set-cache-r1/result.json)
+belegt atomaren Tausch, stabile Zähler, geänderte Schlüssel bei Pitch/Support/
+Breite und Wiederverwendung bei Rückkehr für synthetische Zwei-Linien-CPU-
+Geometrie. 8 Sets/64 MiB ist nur das Raw-Mesh-Cachebudget; aktiver Pin, Pending-
+und GPU-Daten kommen zusätzlich hinzu. Enge CPU-Tests Exit 0 und unabhängiger
+Codecheck ohne P1/P2 sind Ownerberichte. Der Runtimeowner meldet den Riverfix-
+Tourlauf r3 als beendet; dessen Auswertung und Abnahme stehen noch aus. Hier
+werden keine r3-Metriken oder Tourfreigaben vorweggenommen.
+
+### Integrierter Fern-/Nahlauf, Wolken und Numerik
 
 [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/summary.json)
-bindet 16 Warmup- und 90 Messframes je Variante sowie 8 stabile Frames vor
-Aufnahme und leere Renderqueues. Gemessene Wallzeitmediane OFF/ON: fern
-29,67/63,4485 ms, p95 30,934/67,46 ms; nah 8,3235/10,34 ms, p95
-8,779/10,446 ms. `viewport_gpu_ms` ist nicht verfügbar (`null`). Das sind
-szenario- und revisionsgebundene Renderwerte, keine A12-/Mobile-Forward+-/
-Zielklassenabnahme; der Lauf enthält weder Navigation noch Start-/Bakezeiten.
-Ziel/Breite/Basis/LOD-Signatur und projizierte Anker blieben gleich (max.
-0,000061 px), vollständige Kameraposition/Far Clip variierten wolkenhöhenbedingt.
-Die Nahprobe ist Lugano ohne Wolken und erlaubt keine Nahwolken-Qualitätsabnahme.
-Cloud V10 ist in der Hashliste enthalten. Laut Cloud-Owner sind der Code und
-12 Bildprüfungen erfolgt; Referenztreue und Leistungsabnahme bleiben offen.
-Die v7-Nutzerabnahme wurde laut Cloud-Owner-Mitteilung an den Hauptagenten vom
-Nutzer ausdrücklich abgelehnt; v7 gilt deshalb nicht als visueller Pass.
+bindet 90 Messframes nach 16 Warmups je Variante. Wallmediane OFF/ON: Fern
+29,670/63,4485 ms (p95 30,934/67,460), Nah 8,3235/10,340 ms (p95 8,779/10,446).
+GPU-Zeit ist `null`; diese szenario-/revisionsgebundenen Renderwerte sind kein
+A12-/Mobile-Forward+-Pass. Ziel/Breite/Basis/LOD-Signatur und projizierte Anker
+blieben gleich (max. 0,000061 px), vollständige Kameraposition und Far Clip
+variierten wolkenhöhenbedingt. Lugano-Nahprobe war wolkenfrei, daher keine
+Nahwolken-Qualitätsaussage.
 
-### Noch offene Anforderungen
+Cloud V10 ist in der Produkt-Hashliste. Laut Cloud-Owner bestehen zwölf
+technische Bildprüfungen; visuelle Referenztreue und Leistung bleiben offen.
+Der v7-Screenshot wurde laut Mitteilung des Cloud-Owners an den Hauptagenten
+vom Nutzer ausdrücklich abgelehnt und gilt daher nicht als visueller Pass.
+Die SourceV2-GPU-Probe r3 bleibt beim ursprünglichen RGBA-Grenzwert `0.0001`
+FAIL. Die unabhängig begründete künftige Render-Toleranz `1/255` in
+[`numeric-policy-r4/analysis.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-numeric-policy-r4/analysis.json)
+ist keine globale Fehlergrenze und ändert r3 nicht rückwirkend.
 
-- **A07:** Kein belegter Nah-Ausschnitt mit mehreren künftigen Häusern samt
-  Umfeld und einzeln lesbaren stilisierten Bäumen. Häuserassets sind
-  ausgeschlossen; 500 m in [`decisions.md`](decisions.md) bleibt Arbeitswert,
-  und der 240-km-Anker ist kein A07-Pass.
-- **A01/A04/A09:** Die tatsächliche ununterbrochene Pan-/Zoom-/Rückfahrt ab
-  erfolgreichem Readiness-Start, mit Liveinputs, Übergängen und Randbedingungen,
-  ist noch nicht vollständig belegt. Der bisherige Tourpfad startet sofort vor
-  Readiness; laut Runtimeowner wird ein externer Startadapter erstellt. Resize,
-  Kartenrand und Roundtrip bleiben offen.
-- **A08:** Unabhängiger aktueller Befund bleibt **FAIL**; Material-/Gruppierungs-
-  Teilverbesserungen ändern die Gesamtbewertung nicht.
-- **A12:** Die Messreihe oben hat keine GPU-Zeit und keinen vollständigen
-  Zielhardware-/Mobile-Forward+-Workload; finale Performance offen.
-- **Paket/Gesamtabnahme:** P1/P2-CPU-/Filesystemkorrekturen sind im
-  [`p1p2-r1`-Beleg](../product-renderer/package-evidence/p1p2-r1/README.md)
-  validiert (8 Tests, Dryrun 9.504 Dateien/2.925.580.324 Bytes), aber kein
-  aktuelles Bundle gebaut oder gestartet. Vollweltcache/-datenlieferung,
-  kohärente aktuelle App-/Belegsammlung und alle finalen A01–A16-Abnahmen offen.
+### Tour, Paket und offene Abnahmen
 
-Der lokale generierte Cache und lokale Source-/Renderinputs sind nicht Teil des
-Kit-Dokumentcommits. Ohne diese Assets darf eine Git-Kopie nicht als remote
-reproduzierbarer Appstand bezeichnet werden. Kosten sind nur für tatsächlich
-erhobene Messwerte zu berichten; ein Preis wurde hier nicht erhoben.
+Der gültige r3-Appkandidat wurde relocatiert gestartet: [`start-summary.json`](../product-renderer/package-evidence/source-v2-v19-candidate-r3/start-summary.json)
+meldet Exit 0 und 15,608 s Launcher-Wallzeit. Die getrennten 1,815 s Runtimezeit
+beginnen nach Engine-/Quellstart und Setup, also nicht beim Prozessstart. Laut
+Cleanupbeleg [`record.json`](../product-renderer/package-evidence/scratch-cleanup-2026-10-26-r1/record.json)
+wurden nur die fehlgeschlagenen r1-/r2-Kopien nach Hasharchiv entfernt; r3 blieb
+erhalten. `Clouds OFF` ist noch nicht als Produktdefault neu verpackt. Kein
+aktuelles Bundle ist auf der neuesten Runtimerevision gebaut.
+
+- **A07 — offen:** kein belegter Ausschnitt mit mehreren künftigen Häusern samt
+  Umfeld und einzeln lesbaren stilisierten Bäumen. Häuserassets ausgeschlossen;
+  500 m in [`decisions.md`](decisions.md) bleibt Arbeitswert, 240-km-Anker kein Pass.
+- **A01/A04/A09 — offen:** Tour vom readinessbereiten Start mit Liveinputs,
+  Übergängen, Resize, Rand und Roundtrip. Der beobachtete Tourpfad beginnt im
+  Altpfad vor Readiness; externer Startadapter laut Runtimeowner in Arbeit.
+- **A08 — FAIL/offen:** Stilreferenzabnahme weiterhin nicht bestanden.
+- **A12 — offen:** keine Zielklassen-/Mobile-Forward+-Leistungsabnahme; Einzelwerte
+  des integrierten Laufs decken nur die oben beschriebene Szene ab.
+- **Paket/Gesamtabnahme — offen:** Vollweltcache/-daten, frisches kohärentes Bundle,
+  aktuelle App-/Belegsammlung und finale unabhängige A01–A16-Abnahmen fehlen.
+  SourceV2/Runtimeänderungen im gemeinsamen Arbeitsbaum sind nicht Teil dieses
+  Dokumentcommits und nicht unabhängig reviewt.
+
+Kosten werden nur aus tatsächlich erhobenen Messwerten berichtet; Preise wurden
+nicht erhoben.
 
 ### Historische V12- und V13-Aufnahmen
 
@@ -199,9 +233,9 @@ Häuser samt Umfeld Platz haben und einzelne stilisierte Bäume lesbar sind;
 Häuserassets bleiben in Kit 1 ausgeschlossen. Die 500-m-Angabe in
 [`decisions.md`](decisions.md#maßstabswerte-orientierung-keine-starren-vorgaben)
 ist nur ein Arbeitswert. Ein 240-km-Anker ist kein A07-Nachweis. Auch für den
-aktuellen V19-Produktlauf liegt kein gebundener Kamera-/Ausschnittsnachweis vor, der
-mehrere künftige Häuser samt Umfeld belegt. Keine frühere Capture-Revision als
-aktuellen A07-Pass übernehmen.
+aktuellen integrierten SourceV2/V19-Lauf und die Tourproben liegt kein gebundener
+Kamera-/Ausschnittsnachweis vor, der mehrere künftige Häuser samt Umfeld belegt.
+Keine frühere Capture-Revision als aktuellen A07-Pass übernehmen.
 
 ### Historische V13-Statusgrenzen
 
