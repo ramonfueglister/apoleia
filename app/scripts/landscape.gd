@@ -2512,11 +2512,27 @@ func _add_delta_arms() -> void:
         for source in river_sources:
             if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
         var start=mouth-sea*length
+        # The source course below the split is replaced by the fan (it would
+        # otherwise run as an extra band through the middle: the "braid").
+        for source in river_sources:
+            if str(source.get("name",""))!=str(region.name):continue
+            var kept=[]
+            for segment in source.segments:
+                var m=(Vector2(segment[0])+Vector2(segment[1]))*.5
+                if (m-start).dot(sea)>0.0 and m.distance_to(mouth)<length*1.6:continue
+                kept.append(segment)
+            source.segments=kept
+        var root_distance=INF
+        for source in river_sources:
+            if str(source.get("name",""))!=str(region.name):continue
+            for segment in source.segments:
+                for q in [Vector2(segment[0]),Vector2(segment[1])]:
+                    if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);start=q if root_distance<length*0.6 else start
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
         var ends=[]
-        var arm_count=3
+        var arm_count=4
         for k in range(arm_count):
-            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*0.75
+            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*1.3
             ends.append(mouth+tangent*spread)
         var mouths_out=[]
         for k in range(arm_count):
@@ -2526,15 +2542,16 @@ func _add_delta_arms() -> void:
             var end:Vector2=ends[k]+sea*14.0
             var direction=(end-start).normalized();var normal=direction.orthogonal()
             var span=start.distance_to(end)
-            var slot=float(region.ra)*0.75/float(arm_count-1)
+            var slot=float(region.ra)*1.3/float(arm_count-1)
             var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(1.6,2.4),rng.randf_range(3.5,5.0)]
-            var width=base_width*(1.0 if k==1 else rng.randf_range(0.6,0.85))
+            var width=base_width*rng.randf_range(0.45,0.65)
             var segments=[];var station=0.0
             var previous=start;var count=48
             var minimum=start;var maximum=start
             for i in range(1,count+1):
                 var t=float(i)/count
-                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.48*sin(t*PI)
+                # No meander at the shared split, so neighbours never cross.
+                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.4*smoothstep(0.15,0.45,t)*(1.0-smoothstep(0.85,1.0,t))
                 var p=start.lerp(end,t)+normal*wobble
                 segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
                 minimum=minimum.min(p);maximum=maximum.max(p);previous=p

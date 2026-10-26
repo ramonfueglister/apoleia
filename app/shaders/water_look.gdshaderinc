@@ -176,7 +176,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);
     s.albedo=col*mix(0.80,1.0,sun_mask);
-    s.emission=sky*sheen*0.55+water_sun_tint.rgb*glitter*0.45+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
+    s.emission=sky*sheen*0.25+water_sun_tint.rgb*glitter*0.45+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
     s.normal=n;
     s.roughness=mix(0.75,0.45,anim);
     s.foam=foam;
