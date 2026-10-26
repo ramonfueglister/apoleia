@@ -42,7 +42,9 @@ float wl_wind_strength() {return clamp(weather_wind_strength,0.0,1.0);}
 // p in model km.
 float wl_wave(vec2 p,float footprint,float t,vec2 flow) {
     vec2 w=wl_wind();
-    float storm=clamp(weather_storm,0.0,1.0);
+    // Wave height: global weather only slightly; the front's local storm
+    // (darker water, whitecaps, no glints) is applied in water_shade.
+    float storm=clamp(weather_storm,0.0,1.0)*0.3;
     float strength=0.6+0.8*wl_wind_strength()+0.8*storm;
     float along=dot(p,w);
     float swell=sin(along*0.55-t*0.9+wl_noise(p*0.08)*6.0)*0.5+0.5;
@@ -80,7 +82,14 @@ struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float 
 WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float calm,vec3 view_world,vec2 flow,float px_m,float saum_scale,float mouth) {
     WaterSample s;
     float t=TIME;
-    float storm=clamp(weather_storm,0.0,1.0);
+    // Cloud shadow mask (1 = full sun), only inside weather_cloud_shadow_rect.
+    float sun_mask=1.0;float cloud_density=0.0;
+    if(weather_cloud_shadow_rect.z>0.0) {
+        vec2 uv=(p-weather_cloud_shadow_rect.xy)/weather_cloud_shadow_rect.zw;
+        if(all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0)))) {sun_mask=texture(weather_cloud_shadow,uv).r;cloud_density=1.0-sun_mask;}
+    }
+    // Storm acts locally under the front's clouds, not over the whole sea.
+    float storm=clamp(weather_storm,0.0,1.0)*cloud_density;
     float anim=calm*(1.0-smoothstep(0.35,1.1,footprint));
     // Effective depth: bathymetry is coarse, so the shore distance also
     // bounds it; gives a continuous shelf towards every coast.
@@ -90,13 +99,19 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Turquoise is bound to the shore distance only (a narrow band of a few
     // km), never to the shelf depth: shallow seas like the Adriatic stay deep
     // blue up to the coast. eff is a pseudo-depth for the colour ramp.
-    float saum_w=max(px_m*20.0,2500.0)*mix(0.45,1.0,saum_scale)*(0.6+0.8*patch);
-    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.8)+coast_m*0.002;
+    // saum_scale 1 close .. ~0.15 continental: the band shrinks to a hairline
+    // of about one pixel instead of growing with the pixel footprint.
+    float far_view=clamp((1.0-saum_scale)/0.85,0.0,1.0);
+    // Width in metres (~2.5 km, patchy): broad gradient in the close view,
+    // a few pixels in the regional view, a hairline far out.
+    float saum_w=mix(max(2500.0*(0.6+0.8*patch),px_m*1.5),px_m*1.2,far_view);
+    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.4)+coast_m*0.002;
     eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
     vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/5.0));
     col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
-    col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.6);
+    // Mostly uniform open sea; bathymetry only a faint deepening.
+    col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25);
     // Narrow teal strip right at the beach.
     col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5));
     // Facets (low-poly surface) with smooth detail between them.
@@ -126,12 +141,6 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     sky=mix(sky,vec3(0.45,0.50,0.56),storm*0.7);
     float fres=0.03+0.97*pow(1.0-clamp(dot(n,view_world),0.0,1.0),5.0);
     float sheen=clamp(fres*mix(0.35,0.9,anim),0.0,0.45);
-    // Cloud shadow mask (1 = full sun).
-    float sun_mask=1.0;
-    if(weather_cloud_shadow_rect.z>0.0) {
-        vec2 uv=(p-weather_cloud_shadow_rect.xy)/weather_cloud_shadow_rect.zw;
-        if(all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0)))) sun_mask=texture(weather_cloud_shadow,uv).r;
-    }
     // Stylised glitter path: the light is mirrored in front of the camera so
     // the sun trail is visible; it follows the sun's azimuth and elevation.
     vec3 l=normalize(vec3(water_sun_dir.x,max(water_sun_dir.y,0.08),-abs(water_sun_dir.z)-0.35));
@@ -157,7 +166,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     }
     float whitecap=smoothstep(0.78,0.95,wl_wave(p,footprint,t,flow)/(0.6+0.8*wl_wind_strength()+0.8*storm))*storm*anim;
     // One soft, narrow foam line (slow breathing); surf bands are off.
-    float foam=clamp(shore*0.55*(0.8+0.2*sin(t*1.2+c1*8.0))+bands*anim*saum_scale*0.0+whitecap*0.6,0.0,1.0);
+    float foam=clamp(shore*0.55*(1.0-far_view*0.7)*(0.8+0.2*sin(t*1.2+c1*8.0))+bands*anim*saum_scale*0.0+whitecap*0.6,0.0,1.0);
     foam*=1.0-mouth;
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);
