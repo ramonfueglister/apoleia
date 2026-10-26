@@ -16,6 +16,7 @@ var pending:Dictionary={}
 var bytes=0
 var tick=0
 var _jobs:Dictionary={} # tile id -> WorkerThreadPool task id
+var requested_usec:Dictionary={} # tile id -> first request since its last load (A12 request age)
 var _results:Dictionary={} # tile id -> finished _read result (guarded by _lock)
 var _lock:=Mutex.new()
 var forest_builder:RefCounted
@@ -38,6 +39,7 @@ func key(level:int,x:int,z:int)->String:return "%d/%d/%d"%[level,x,z]
 func request(id:String,priority:float=0.)->void:
     if cache.has(id) and cache[id].images.size()==3:cache[id].used=tick;metrics.cache_hits+=1;return
     if _jobs.has(id):return
+    if not requested_usec.has(id):requested_usec[id]=Time.get_ticks_usec()
     pending[id]=maxf(float(pending.get(id,-INF)),priority)
 func set_wanted(ids:Array,pins:Array)->void:
     tick+=1;wanted={};pinned={}
@@ -45,7 +47,7 @@ func set_wanted(ids:Array,pins:Array)->void:
     for id in pins:pinned[str(id)]=true
     pinned[str(manifest.root)]=true
     for id in pending.keys():
-        if not wanted.has(id) and not pinned.has(id):pending.erase(id)
+        if not wanted.has(id) and not pinned.has(id):pending.erase(id);requested_usec.erase(id)
 var _reported_failure=false
 func poll()->Array:
     var loaded=[]
@@ -57,6 +59,7 @@ func poll()->Array:
             var cost=int(result.bytes)
             _evict(cost)
             if bytes+cost<=CPU_LIMIT or wanted.has(job) or pinned.has(job):
+                result["requested_usec"]=requested_usec.get(job,-1);result["loaded_usec"]=Time.get_ticks_usec();requested_usec.erase(job)
                 result["used"]=tick;if cache.has(result.id):bytes-=int(cache[result.id].bytes)
                 cache[result.id]=result;bytes+=cost;loaded.append(result);metrics.loaded+=1
         else:
