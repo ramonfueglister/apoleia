@@ -283,6 +283,11 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
 
+    // Crown hand-off: clipmap crowns end at view_width 2048; the forest tone
+    // is complete there (crown colour x forest share), so zooming out
+    // leaves no gap between drawn trees and painted forest.
+    float crown_cut=smoothstep(1400.0,2048.0,vw);
+    ground=mix(ground,land_forest_floor_color.rgb*0.92,clamp(soft.r,0.0,1.0)*crown_cut*(1.0-rock));
     // Weit view: the map must stay three-dimensional. Painted hillshade
     // from the atlas normal at full display exaggeration (independent of the
     // camera's relief fade), slopes keep their dark green structure, high
