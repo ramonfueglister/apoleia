@@ -2,7 +2,7 @@ shader_type spatial;
 // Delta area mask: lagoon water with organic islands and sand rims behind a
 // beach arc with inlets. Drawn as a draped grid just above the terrain; land
 // that is not lagoon, island or sand is discarded (terrain shows through).
-render_mode cull_disabled, diffuse_burley, specular_schlick_ggx, shadows_disabled;
+render_mode cull_disabled, diffuse_burley, specular_schlick_ggx, shadows_disabled, blend_mix, depth_draw_never;
 #include "res://shaders/model_sampling.gdshaderinc"
 #include "res://shaders/water_look.gdshaderinc"
 uniform float relief=1.0;
@@ -53,18 +53,24 @@ void fragment() {
     float pond=0.0;
     for(int i=0;i<3;i++){
         float fi=float(i);
-        vec2 c=vec2(mix(-0.45,0.45,h1(fi+3.0)),mix(-0.05,0.35,h1(fi+9.0)));
-        vec2 d=(local-c)/vec2(mix(0.08,0.16,h1(fi+15.0)),mix(0.05,0.10,h1(fi+19.0)));
+        // Lagoons just behind the beach (coast at local.y ~ -0.55), 1-3 km.
+        vec2 c=vec2(mix(-0.6,0.6,h1(fi+3.0)),mix(-0.42,-0.22,h1(fi+9.0)));
+        vec2 d=(local-c)/vec2(mix(0.22,0.38,h1(fi+15.0)),mix(0.12,0.22,h1(fi+19.0)));
         pond=max(pond,1.0-length(d)+(wl_noise(p*0.9+vec2(fi*5.0))-0.5)*0.5);
     }
     // Spit removed: the beach sand band comes from the land shader (r15/r16).
     float pond_a=smoothstep(0.0,0.12,pond)*region;
     float spit_a=0.0;
-    if(pond_a<0.5 && spit_a<0.5) discard;
+    // Marsh: a soft, richer green wash over the delta land between the arms.
+    float marsh=(1.0-smoothstep(0.45,0.95,length(local*vec2(0.8,1.0))))*0.45;
+    if(pond_a<0.5 && marsh<0.02) discard;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);
     vec3 up=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
-    if(spit_a>=0.5){
+    ALPHA=1.0;
+    if(pond_a<0.5){
+        ALBEDO=vec3(0.10,0.17,0.05)*(0.9+0.2*wl_noise(p*0.8));ROUGHNESS=0.95;NORMAL=up;ALPHA=marsh;
+    } else if(spit_a>=0.5){
         ALBEDO=vec3(0.60,0.50,0.30)*(0.95+0.08*wl_noise(p*1.7));ROUGHNESS=0.9;NORMAL=up;
     } else {
         WaterSample w=water_shade(p,300.0,8.0,footprint,calm,view_world,vec2(0.0),px_m,0.6,0.0);

@@ -2599,7 +2599,7 @@ func _add_delta_arms() -> void:
         for spec in branch_specs:
             var at=int(float(main_points.size()-1)*float(spec[0]))
             var split:Vector2=main_points[at]
-            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.3,1.7)*(1.0-float(spec[0])*0.5)
+            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.6,2.0)*(1.0-float(spec[0])*0.45)
             var coast_end=mouth+tangent*lateral
             var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
             river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
