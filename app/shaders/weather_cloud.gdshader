@@ -16,6 +16,7 @@ uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
 uniform float flash_radius = 80.0;
+uniform float near_fade_distance = 0.0;
 instance uniform float fade = 1.0;
 
 varying vec3 world_pos;
@@ -44,7 +45,8 @@ float bayer4(vec2 p) {
 }
 
 void fragment() {
-	if (fade < 0.999 && fade < bayer4(FRAGCOORD.xy)) { discard; }
+	float near_fade = smoothstep(near_fade_distance * 0.6, near_fade_distance, distance(world_pos, CAMERA_POSITION_WORLD));
+	if (fade * near_fade < 0.999 && fade * near_fade < bayer4(FRAGCOORD.xy)) { discard; }
 	vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	if (dot(flat_n, to_camera) < 0.0) { flat_n = -flat_n; }

@@ -40,7 +40,7 @@ const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
 const FINE_CELL := 50.0
 const COARSE_CELL := 160.0
-const FINE_SCALE := Vector2(3.2, 8.5)
+const FINE_SCALE := Vector2(5.0, 15.0)
 const COARSE_SCALE := Vector2(10.0, 28.0)
 const CLOUD_HEIGHT := 1.2 * 0.85 * 1.3 # mesh height * vertical scale * field growth
 const TRANSITION_SECONDS := 30.0
@@ -270,9 +270,9 @@ func _build_lightning() -> void:
 func is_active() -> bool:
 	return configured and enabled
 
-## Highest displayed cloud Y, for camera near/far clipping.
+## Highest displayed cloud Y of the active zoom tier, for camera clipping and near fade.
 func get_display_altitude() -> float:
-	return cloud_base + COARSE_SCALE.y * CLOUD_HEIGHT
+	return cloud_base + (FINE_SCALE.y if _ground_width < 1850.0 else COARSE_SCALE.y) * CLOUD_HEIGHT
 
 func set_weather(name: String, automatic: bool = false) -> void:
 	auto_weather = automatic
@@ -344,7 +344,7 @@ func _prewarm_cells() -> void:
 	for cell in cells:
 		if cell.kind == 2:
 			# Placed so the front appears on the right of the view, not above it.
-			cell.pos = _focus() + Vector2(_ground_width * 0.42, 0.0) - _apparent_offset(cloud_base)
+			cell.pos = _focus() + Vector2(_ground_width * 0.33, 0.0) - _apparent_offset(cloud_base) * 0.5
 			cell.ra = maxf(_ground_width * 0.38, 90.0)
 			cell.rc = maxf(_ground_width * 0.5, 120.0)
 			break
@@ -417,6 +417,7 @@ func _process(delta: float) -> void:
 		_publish_globals(Vector3.ZERO)
 		return
 	_update_ground_view()
+	_update_altitude(delta)
 	if not _prewarmed:
 		# Deferred until the landscape has applied its start view.
 		_prewarmed = true
@@ -440,7 +441,6 @@ func _process(delta: float) -> void:
 	for offset in [Vector2.ZERO, Vector2(spread, 0), Vector2(-spread, 0), Vector2(0, spread), Vector2(0, -spread)]:
 		sampled += sample_field(focus + offset) * 0.2
 	local_weather = sampled if _frame <= 2 else local_weather.lerp(sampled, clampf(delta * 1.5, 0.0, 1.0))
-	_update_altitude(delta)
 	_apply_look()
 	_update_tiers()
 	_upload_uniforms()
@@ -474,7 +474,8 @@ func _update_altitude(delta: float) -> void:
 	var target_base := cloud_base
 	if _height_provider.is_valid():
 		var bounds: Dictionary = _height_provider.call()
-		target_base = float(bounds.get("natural_max_y", 80.0)) + 4.0
+		# Below the highest peaks: clouds may wrap mountain tops, like the reference.
+		target_base = float(bounds.get("natural_max_y", 80.0)) * 0.6 + 4.0
 	cloud_base = target_base if not _altitude_ready else lerpf(cloud_base, target_base, clampf(delta * 3.0, 0.0, 1.0))
 	_altitude_ready = true
 
@@ -558,6 +559,9 @@ func _update_tiers() -> void:
 	_shadow_rect = Vector4(centre.x - side * 0.5, centre.y - side * 0.5, side, side)
 	_mask_camera.size = side
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
+	# Clouds closer to the camera than this dissolve (perspective near zoom).
+	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("proxy_shift", proxy_shift)
 		material.set_shader_parameter("mask_shift", mask_shift)

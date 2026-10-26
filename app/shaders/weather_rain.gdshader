@@ -33,7 +33,7 @@ void fragment() {
 	float line = 1.0 - smoothstep(0.06, 0.2, abs(fract(x) - 0.5));
 	float dash = smoothstep(0.0, 0.25, fract(UV.y * 5.0 - now * (1.6 + r) + r * 9.0)) * step(0.35, r + 0.2);
 	// Streaks run out towards the ground at different lengths.
-	float reach = 0.55 + 0.45 * r;
+	float reach = 0.35 + 0.35 * r;
 	float edge = pow(sin(3.14159 * UV.x), 1.5) * smoothstep(0.0, 0.08, UV.y) * (1.0 - smoothstep(reach * 0.6, reach, UV.y));
 	ALBEDO = rain_color;
 	ALPHA = clamp((0.2 + 0.5 * line * dash) * edge * amount * fade * strength, 0.0, 0.7);
