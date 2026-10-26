@@ -301,3 +301,41 @@ ist Metadatensicherheit plus ein echtes Payload: keine native Warmcache- oder
 Vollabdeckungsprüfung, kein GPU-/A12-/A08-Nachweis. Sichtbarer Wald bleibt
 unvollständig, Flussverhalten während der Fahrt offen; V23-r2 externe Studie
 verworfen.
+
+## Compact-Forest-Integration R2
+
+Status **implementiert**, eng quellengebunden und unabhängig **validiert**;
+Compactflag bleibt inaktiv und Produktdefault **Expanded**. Der eingefrorene
+[Zellcapture-Checkpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-compact-cell-capture-r2/checkpoint.json)
+hat SHA-256 `0f6512706024905940c535f4bfc23d9bdc6598ec1167784a60b5a972364fd21e`.
+Der unabhängige [Integrationsreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-compact-integration-r2-independent/review.json)
+hat SHA-256 `a9aa073a674fca273c886c3adf1568cd86bb1b569bb76571762e4197370d151e`,
+48/48 Datei-/Checkpointbindungen, zehn synthetische Recordfälle, sieben
+Compact-Queueprüfungen, acht Lifecyclegruppen und 20 Identitychecks bestätigt;
+keine P1/P2-Befunde. Er hat neun bereits erfasste GPU-Zellpaare geprüft, selbst
+aber keinen GPU- oder nativen Appstart ausgeführt.
+
+Der bestehende Expandedcache bleibt streng: der neue Style-/Context-Hash
+invalidiert ihn; es gibt keinen warmen Expandedcache-Pass. Compact bleibt ein
+reversibler expliziter Pfad. CPU-Recordaufbau für 191 Kronen dauert
+240,416–281,311 ms; ein CPU-Speedup ist nicht belegt. Tatsächlich serialisierte
+DTOs lagen bei höchstens 14.068 Bytes, gegenüber 84.744 Bytes für das dichte
+1369-Record-Fixture. Das stützt nur eine begrenzte Transport-/Speicherreduktion;
+kein Prozess-/GPU-Speicherpass. Mainthread-Materialisierung und Queue-/Lease-
+Lebenszyklus sind im eingefrorenen Codepfad geprüft.
+
+Die neun sichtgeprüften GPU-Paare sind nicht pixelidentisch: bei den nichtleeren
+Fällen änderten sich 34–189 Pixel pro 1.166.400, mit maximal vier bis neun
+RGB-Codes je Paar; leere Zellen waren identisch. Der Reviewer sah lokale
+Kronen-/Facet-/Kanten-/Schattenpixelabweichungen, keine breitflächige
+Materialverschiebung. Das ist keine genehmigte allgemeine Bildtoleranz und keine
+globale visuelle Gleichwertigkeitsbehauptung. Keine Vollwelt-/Native-/A08-/A12-
+Abnahme: sichtbare Waldfüllung, Warmcache-/Pan-/Zoom-/Resize-Rückkehr und
+Leistung bleiben offen.
+
+V25 ist ein lokaler Sicht-`keep` für den reparierten Landschaftsübergang; die
+globale Form bleibt **A08 FAIL**. Der [V25-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v25-bounded-transition-r1/HANDOFF.md)
+und [unabhängige Datenreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/v25-bounded-transition-r1-independent/review.json)
+betreffen den lokalen Kandidaten, keine Produkt-/Runtimefreigabe. V23-r2 externe
+Studie bleibt verworfen. Keine der V25-Artefakte ist Bestandteil dieses
+Compact-Integrationscommits.

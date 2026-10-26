@@ -56,6 +56,15 @@ var forest_representation: Dictionary={}
 var forest_detail_queue: Array[Vector2i]=[]
 var forest_mesh_cache_demands: Array=[]
 var forest_mesh_cache_requests: Array=[]
+const CompactForest=preload("res://scripts/cache/compact_forest_poses.gd")
+const CompactForestMaterialize=preload("res://scripts/cache/compact_forest_materialize.gd")
+const CompactForestIdentity=preload("res://scripts/cache/compact_forest_identity.gd")
+var forest_representation_override=""
+var forest_representation_format="expanded"
+var forest_compact_templates:Array=[]
+var forest_compact_canopy_material:ShaderMaterial
+var forest_compact_meshes:Array=[]
+var forest_base_crown_arrays:Array=[]
 var forest_async: RefCounted
 var forest_build_context: RefCounted
 var forest_async_identity=""
@@ -264,6 +273,7 @@ func _ready() -> void:
         if args[i] == "--clouds-disabled": clouds_override=false
         if args[i] == "--clouds-enabled": clouds_override=true
         if args[i] == "--dataset" and i+1<args.size(): dataset_path=args[i+1]
+        if args[i] == "--forest-representation" and i+1<args.size():forest_representation_override=args[i+1]
         if args[i] == "--forest-mesh-cache" and i+1<args.size(): forest_mesh_cache_directory=args[i+1]
         if args[i] == "--time-window" and i+2<args.size(): tour_window=[float(args[i+1]),float(args[i+2])]
         if args[i] == "--diagnose-input": diagnose_input=true
@@ -1221,6 +1231,7 @@ func _update_camera() -> void:
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
+    if forest_compact_canopy_material:forest_compact_canopy_material.set_shader_parameter("relief",relief)
     if river_material:
         river_material.set_shader_parameter("relief",relief)
         river_material.set_shader_parameter("display_height_scale",display_height_scale)
@@ -1488,7 +1499,7 @@ func _finish() -> void:
     if trace_frames: print("TRACE finish record done")
     var sorted_frames=frame_samples.duplicate()
     sorted_frames.sort()
-    var result={"schema_version":"runtime-evidence-v2","product_renderer_binding":{"sha256":FileAccess.get_sha256("res://renderer-binding.json"),"binding":product_binding,"dataset_cli_override":dataset_path!=""},"forest_mesh_cache":forest_mesh_cache_state,"forest_async":{"state":forest_async_final_stats if not forest_async_final_stats.is_empty() else (forest_async.stats() if forest_async else {}),"commits":forest_async_commits,"maximum_commits_per_frame":1,"commit_start_budget_usec":FOREST_COMMIT_START_BUDGET_USEC,"pending_lookahead":FOREST_ASYNC_LOOKAHEAD,"support_transition_limit":"old per-cell mesh retained until replacement; stale support height may differ transiently and is not a parity claim"},"forest_mesh_cache_requests":forest_mesh_cache_requests,"forest_mesh_cache_demands":forest_mesh_cache_demands,"canonical_source_sampling":{"contract":"canonical-c2-domains-v2" if canonical_v2 else "legacy-v1-domains","upload_manifest_sha256":canonical_v2.manifest_sha256 if canonical_v2 else "","role_selection":"final composed SDF<=0 land; otherwise nearest associated_role from finest valid positive-weight domain, no role lerp" if canonical_v2 else "legacy-v1","local_height_override":false},"terrain_shadow_policy":{"terrain_casts":false,"terrain_receives":true,"forest_casts":true,"reason":"isolated same-frozen-scene controls bind terrain selfshadow stripes; conscious display decision, no overall style/performance pass","evidence":"runs/kit1-gamegraphics-v2-2026-10-25/camera/shadow-stable-v11-caster/control.json"},"fixed_display_surface":{"manifest":fixed_surface.identity if fixed_surface else {},"policy":fixed_surface.policy if fixed_surface else {},"common_visible_stride":fixed_stride,"visible_chunks":_fixed_chunk_inventory(),"render_error_budget_px":.75,"same_surface_all_zooms":fixed_surface!=null,"raw_TIN_rendering_disabled":fixed_surface!=null,"snapshot_stable_render_frames":snapshot_stable_frames,"forest_support_revision":diorama_surface_revision,"forest_support_invalidation_events":diorama_invalidation_events},"display_policy":landform_policy,"display_height_scale":display_height_scale,"water_material_uniforms":{"terrain":_material_uniform_snapshot(terrain_material),"feature":_material_uniform_snapshot(feature_material),"marine":_material_uniform_snapshot(marine_material),"river":_material_uniform_snapshot(river_material)},"display_coast_distance_binding":display_coast_distance_binding,"graphic_rock_priority_contract":"fixed regular Atlas h/gradient; N inverse fixed display Y, no relief/zoom; semantic G bilinear mip0; max(G,smoothstep(.06,.25,1-N.y),.85*smoothstep(1250,2700,h)); source forest membership unchanged","river_surface_binding":{"cache":river_cache_stats,"cache_events":river_cache_events,"requested_key":river_surface_key,"completed_key":river_completed_key,"complete_set_limit":RIVER_SET_CACHE_LIMIT,"raw_surface_byte_limit":RIVER_SET_CACHE_BYTES,"same_cpu_surface_as_terrain":true,"triangle_clip":"river polygons clipped against exact active-stride terrain triangles; source centerlines unchanged","minimum_screen_width_px":1.6,"orientation_compensation":"sqrt(side.x^2+(side.z*sinPitch)^2)","pending_features":river_queue.size(),"revision":"source-centerline-barycentric-support-v1","width_policy":"same symbolic source-rank width and pixel floor, centerline unchanged"},"cloud_layer_binding":{"integrated":cloud_layer!=null,"enabled":cloud_layer.enabled if cloud_layer else false,"baseline_switch":"--clouds-disabled","activation_switch":"--clouds-enabled","product_default_enabled":bool(product_binding.get("visual_extensions",{}).get("clouds",{}).get("enabled",false)),"cli_override":clouds_override,"altitude_unit":"godot_world_y","height_range_snapshot":displayed_height_bounds,"provider_api":"get_displayed_height_range() returns immutable frame snapshot; cloud get_display_altitude() read before camera clipping"},"render_unit_probes":_render_unit_probes(),"water_render_tile_binding":water_tile,"protected_render_lod":{"revision":feature_lod.REVISION if feature_lod else "none","generated":feature_lod.generated if feature_lod else [],"failures":feature_lod.failures if feature_lod else [],"resident_meshes":feature_meshes.size(),"active_patch_ids":feature_active.keys(),"mesh_cache_limit":FEATURE_MESH_CACHE_LIMIT,"source_block_cache_limit":16,"maximum_patch_builds_per_frame":1,"derivation_execution":"one bounded WorkerThreadPool task, immutable source reads, main-thread mesh handoff after task completion","retention_policy":"dominant ridge/valley supports at patch/40 addresses; regional prominence filter; land-only source kernel; named anchors and source shoulders preserved; global dyadic boundary supports; no parent morph of retained features","transition_limit":"incremental surface replacement and cross-LOD popping require continuous-tour validation","surface_contract":"render mesh and barycentric CPU height are identical; forest signs await mesh queue and regenerate overlapping supports"},"canonical_mesh_binding":tin_surface.identity if tin_surface else {},"active_canonical_blocks":tin_surface.active.keys() if tin_surface else [],"light_binding":{"shadow_max_distance":sun_light.directional_shadow_max_distance,"shadow_bias":sun_light.shadow_bias,"shadow_normal_bias":sun_light.shadow_normal_bias,"directional_shadow_mode":sun_light.directional_shadow_mode,"shadow_texture_size":ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size"),"camera_focus_distance":camera_distance,"camera_near":camera.near,"camera_far":camera.far},"input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"diorama_representation_policy":diorama_policy,"diorama_chunk_frames":diorama_stats,"forest_representation_policy":forest_representation,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"semantic-group-800m-cache-v2","candidate_spacing_m":forest_spacing_m,"chunk_cells":20,"max_chunks_generated_per_frame":3,"resident_cache_limit":768,"prefetch_view_width_model":9.0,"visible_view_width_model":8.0,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"model_upload_manifest":upload_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"camera_clamp_events":camera_clamp_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
+    var result={"schema_version":"runtime-evidence-v2","product_renderer_binding":{"sha256":FileAccess.get_sha256("res://renderer-binding.json"),"binding":product_binding,"dataset_cli_override":dataset_path!=""},"forest_mesh_cache":forest_mesh_cache_state,"forest_async":{"state":forest_async_final_stats if not forest_async_final_stats.is_empty() else (forest_async.stats() if forest_async else {}),"commits":forest_async_commits,"maximum_commits_per_frame":64 if forest_representation_format=="compact" else 1,"representation_format":forest_representation_format,"commit_start_budget_usec":FOREST_COMMIT_START_BUDGET_USEC,"pending_lookahead":FOREST_ASYNC_LOOKAHEAD,"support_transition_limit":"old per-cell mesh retained until replacement; stale support height may differ transiently and is not a parity claim"},"forest_mesh_cache_requests":forest_mesh_cache_requests,"forest_mesh_cache_demands":forest_mesh_cache_demands,"canonical_source_sampling":{"contract":"canonical-c2-domains-v2" if canonical_v2 else "legacy-v1-domains","upload_manifest_sha256":canonical_v2.manifest_sha256 if canonical_v2 else "","role_selection":"final composed SDF<=0 land; otherwise nearest associated_role from finest valid positive-weight domain, no role lerp" if canonical_v2 else "legacy-v1","local_height_override":false},"terrain_shadow_policy":{"terrain_casts":false,"terrain_receives":true,"forest_casts":true,"reason":"isolated same-frozen-scene controls bind terrain selfshadow stripes; conscious display decision, no overall style/performance pass","evidence":"runs/kit1-gamegraphics-v2-2026-10-25/camera/shadow-stable-v11-caster/control.json"},"fixed_display_surface":{"manifest":fixed_surface.identity if fixed_surface else {},"policy":fixed_surface.policy if fixed_surface else {},"common_visible_stride":fixed_stride,"visible_chunks":_fixed_chunk_inventory(),"render_error_budget_px":.75,"same_surface_all_zooms":fixed_surface!=null,"raw_TIN_rendering_disabled":fixed_surface!=null,"snapshot_stable_render_frames":snapshot_stable_frames,"forest_support_revision":diorama_surface_revision,"forest_support_invalidation_events":diorama_invalidation_events},"display_policy":landform_policy,"display_height_scale":display_height_scale,"water_material_uniforms":{"terrain":_material_uniform_snapshot(terrain_material),"feature":_material_uniform_snapshot(feature_material),"marine":_material_uniform_snapshot(marine_material),"river":_material_uniform_snapshot(river_material)},"display_coast_distance_binding":display_coast_distance_binding,"graphic_rock_priority_contract":"fixed regular Atlas h/gradient; N inverse fixed display Y, no relief/zoom; semantic G bilinear mip0; max(G,smoothstep(.06,.25,1-N.y),.85*smoothstep(1250,2700,h)); source forest membership unchanged","river_surface_binding":{"cache":river_cache_stats,"cache_events":river_cache_events,"requested_key":river_surface_key,"completed_key":river_completed_key,"complete_set_limit":RIVER_SET_CACHE_LIMIT,"raw_surface_byte_limit":RIVER_SET_CACHE_BYTES,"same_cpu_surface_as_terrain":true,"triangle_clip":"river polygons clipped against exact active-stride terrain triangles; source centerlines unchanged","minimum_screen_width_px":1.6,"orientation_compensation":"sqrt(side.x^2+(side.z*sinPitch)^2)","pending_features":river_queue.size(),"revision":"source-centerline-barycentric-support-v1","width_policy":"same symbolic source-rank width and pixel floor, centerline unchanged"},"cloud_layer_binding":{"integrated":cloud_layer!=null,"enabled":cloud_layer.enabled if cloud_layer else false,"baseline_switch":"--clouds-disabled","activation_switch":"--clouds-enabled","product_default_enabled":bool(product_binding.get("visual_extensions",{}).get("clouds",{}).get("enabled",false)),"cli_override":clouds_override,"altitude_unit":"godot_world_y","height_range_snapshot":displayed_height_bounds,"provider_api":"get_displayed_height_range() returns immutable frame snapshot; cloud get_display_altitude() read before camera clipping"},"render_unit_probes":_render_unit_probes(),"water_render_tile_binding":water_tile,"protected_render_lod":{"revision":feature_lod.REVISION if feature_lod else "none","generated":feature_lod.generated if feature_lod else [],"failures":feature_lod.failures if feature_lod else [],"resident_meshes":feature_meshes.size(),"active_patch_ids":feature_active.keys(),"mesh_cache_limit":FEATURE_MESH_CACHE_LIMIT,"source_block_cache_limit":16,"maximum_patch_builds_per_frame":1,"derivation_execution":"one bounded WorkerThreadPool task, immutable source reads, main-thread mesh handoff after task completion","retention_policy":"dominant ridge/valley supports at patch/40 addresses; regional prominence filter; land-only source kernel; named anchors and source shoulders preserved; global dyadic boundary supports; no parent morph of retained features","transition_limit":"incremental surface replacement and cross-LOD popping require continuous-tour validation","surface_contract":"render mesh and barycentric CPU height are identical; forest signs await mesh queue and regenerate overlapping supports"},"canonical_mesh_binding":tin_surface.identity if tin_surface else {},"active_canonical_blocks":tin_surface.active.keys() if tin_surface else [],"light_binding":{"shadow_max_distance":sun_light.directional_shadow_max_distance,"shadow_bias":sun_light.shadow_bias,"shadow_normal_bias":sun_light.shadow_normal_bias,"directional_shadow_mode":sun_light.directional_shadow_mode,"shadow_texture_size":ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size"),"camera_focus_distance":camera_distance,"camera_near":camera.near,"camera_far":camera.far},"input_diagnostic":{"enabled":diagnose_input,"events":input_diagnostic_events,"timestamp_note":"receipt Time.get_ticks_usec is engine monotonic microseconds; original OS event generation timestamp is not exposed by Godot InputEvent and remains null","behavior":"explicit pressed-state plus absolute-position fallback only when relative motion is zero"},"render_timing_method":{"api":"Godot viewport_set_measure_render_time; viewport_get_measured_render_time_cpu/gpu; get_frame_setup_time_cpu","units":"milliseconds","sampling":"last completed engine viewport measurement, GPU result may lag; separate from process-frame wall intervals","per_pass_timings":"not exposed by this RenderingServer public API; not measured, not zero","streaming":"entire bound dataset resident before exploration; request/IO/late block upload queues not applicable, no streaming-engine performance claim"},"pipeline_warmup":{"method":"four initial frames draw same crown meshes, MultiMesh color/transform format and shadow material with zero alpha in current camera frustum; no additional viewport or visible landscape","completed_frame":warmup_completed_frame,"initial_pipeline_counts":warmup_startup_pipeline_counts},"tour_window":tour_window,"diorama_representation_policy":diorama_policy,"diorama_chunk_frames":diorama_stats,"forest_representation_policy":forest_representation,"forest_chunk_inventory":forest_chunk_inventory,"forest_chunk_frames":forest_frame_stats,"forest_chunk_policy":{"revision":"semantic-group-800m-cache-v2","candidate_spacing_m":forest_spacing_m,"chunk_cells":20,"max_chunks_generated_per_frame":3,"resident_cache_limit":768,"prefetch_view_width_model":9.0,"visible_view_width_model":8.0,"readiness_fade_seconds":0.3},"motion_probes":motion_probes,"ridge_protection_sha256":ridge_protection_sha256,"fixture_sha256":fixture_sha256,"fixture_controls_sha256":fixture_controls_sha256,"fixture_path":fixture_path,"validation_thresholds_sha256":validation_thresholds_sha256,"waypoint_observations":waypoint_observations,"lod_snapshots":lod_snapshots,"capture_method":{"target_hz":24,"video_frames":"unretouched framebuffer JPEG quality0.94; lossless PNG same-frame keyframes","encoder_workers_max":2,"queue_peak":capture_queue_peak,"dropped_attempts":capture_dropped_attempts,"lossless_keyframes":captured_lossless_tags,"timestamps":"monotonic runtime samples; VFR movie preserves captured frame spacing"},"pipeline_events":pipeline_events,"pipeline_counts_final":last_pipeline_counts,"frame_intervals_ms":frame_samples,"packing_manifest":packing_manifest,"model_upload_manifest":upload_manifest,"water_distance_manifest":water_distance_manifest,"water_distance_manifest_sha256":water_distance_manifest_sha256,"packing_manifest_sha256":packing_manifest_sha256,"gpu_capabilities":gpu_capabilities,"interaction_events":interaction_events,"camera_clamp_events":camera_clamp_events,"captures":captured_frames,"manifest_sha256":snapshot_manifest_sha256,"renderer_source_sha256":renderer_source_sha256,"renderer_asset_sha256":renderer_asset_sha256,"anchors_sha256":anchors_sha256,"profile_sha256":profile_sha256,"verified_assets":verified_assets,"integrity_issues":integrity_issues,"integrity_passed":integrity_issues.is_empty(),"dataset_revision":manifest.get("dataset_revision","unknown"),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"duration_seconds":elapsed,"frame_count":frame_number,"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"frame_ms":{"p50":sorted_frames[int(sorted_frames.size()*0.50)],"p95":sorted_frames[int(sorted_frames.size()*0.95)],"p99":sorted_frames[mini(sorted_frames.size()-1,int(sorted_frames.size()*0.99))],"max":sorted_frames[-1]},"samples":telemetry}
     var out=telemetry_dir if telemetry_dir!="" else (capture_dir if capture_dir!="" else source_root.path_join("artifacts/runtime"))
     DirAccess.make_dir_recursive_absolute(out)
     var f=FileAccess.open(out.path_join("runtime.json"),FileAccess.WRITE)
@@ -1584,6 +1595,19 @@ func load_or_build_fixed_forest_mesh(cell: Vector2i,stride: int) -> ArrayMesh:
 
 func _configure_forest_mesh_cache() -> void:
     forest_mesh_cache=null
+    forest_representation_format=forest_representation_override if forest_representation_override!="" else str(product_binding.get("forest_rendering",{}).get("format","expanded"))
+    if not forest_representation_format in ["expanded","compact"]:
+        root_integrity_fatal=true;push_error("Unknown forest representation");return
+    if forest_representation_format=="compact":
+        forest_base_crown_arrays=style_api.prepare_diorama_crown_arrays()
+        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays)
+        forest_compact_meshes=CompactForestMaterialize.shared_meshes(forest_compact_templates)
+        forest_compact_canopy_material=canopy_material.duplicate()
+        var binding=forest_compact_binding()
+        var key=CompactForestIdentity.representation_id(binding)
+        if key=="":root_integrity_fatal=true;push_error("Compact forest sampling binding rejected");return
+        forest_mesh_cache_state.merge({"enabled":false,"selection":"reversible compact candidate; expanded cache is a different format","identity":binding,"identity_key":key,"format":CompactForest.FORMAT,"expanded_payload_reuse":false})
+        return
     var configured=product_binding.get("forest_cache",{})
     var override=forest_mesh_cache_directory!=""
     var directory=forest_mesh_cache_directory if override else str(configured.get("path",""))
@@ -1706,18 +1730,41 @@ func _diorama_chunk_may_have_source_forest(cell: Vector2i) -> bool:
             if bytes.slice(z*int(entry.width)+x0,z*int(entry.width)+x1+1).has(10):return true
     return false
 
+func _compact_renderer_code_sha256()->String:
+    var source=FileAccess.get_file_as_string("res://scripts/landscape.gd")
+    for section in source.split("\nfunc "):
+        if section.begins_with("_materialize_compact_forest_cell("):return ("func "+section).sha256_text()
+    return ""
+
+func forest_compact_binding() -> Dictionary:
+    var binding={"format":CompactForest.FORMAT,"geometry":forest_mesh_cache_identity(),
+        "templates_sha256":var_to_bytes(forest_compact_templates).hex_encode().sha256_text(),
+        "compact_module_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_poses.gd"),
+        "materializer_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_materialize.gd"),
+        "runtime_renderer_sha256":_compact_renderer_code_sha256(),
+        "normal_contract":"unit world NORMAL before unchanged crown_up; same direction",
+        "canopy_sha256":FileAccess.get_sha256("res://shaders/canopy.gdshader"),
+        "engine":Engine.get_version_info(),"record_bound":1369,"dto_reservation_bytes":262144}
+    return JSON.parse_string(JSON.stringify(CompactForestIdentity.effective_binding(binding,{
+        "source_sampler_sha256":FileAccess.get_sha256("res://scripts/canonical_domains_v2.gd"),
+        "ground_sampler_sha256":FileAccess.get_sha256("res://scripts/fixed_display_surface.gd"),
+        "sampling_callbacks_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_build_context.gd"),
+        "identity_contract_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_identity.gd")}),"",true,true))
+
 func _configure_forest_async() -> void:
     if not canonical_v2 or not fixed_surface or not style_api:
         push_error("Async forest requires the bound immutable SourceV2/G product");root_integrity_fatal=true;return
     forest_build_context=load("res://scripts/cache/fixed_forest_build_context.gd").new()
     var snapshot={"canonical":canonical_v2,"surface":fixed_surface,"world_min":world_min,"world_size":world_size,
-        "display_height_scale":display_height_scale,"style":style_api,"crown_arrays":style_api.prepare_diorama_crown_arrays(),
+        "display_height_scale":display_height_scale,"style":style_api,"crown_arrays":forest_base_crown_arrays if not forest_base_crown_arrays.is_empty() else style_api.prepare_diorama_crown_arrays(),
+        "representation":forest_representation_format,"compact_templates":forest_compact_templates,
         "policy":diorama_policy,"identity":forest_mesh_cache_state.identity}
     if not forest_build_context.configure(snapshot):
         push_error("Async forest immutable context rejected");root_integrity_fatal=true;return
     forest_async_identity=forest_build_context.identity_key
     forest_async=load("res://scripts/cache/fixed_forest_async_queue.gd").new()
-    if not forest_async.configure(forest_build_context,forest_mesh_cache):
+    var limits={"maximum_results":64,"generation_reservation_bytes":262144} if forest_representation_format=="compact" else {}
+    if not forest_async.configure(forest_build_context,forest_mesh_cache,limits):
         push_error("Async forest queue rejected");root_integrity_fatal=true
 
 func _forest_async_idle() -> bool:
@@ -1725,8 +1772,25 @@ func _forest_async_idle() -> bool:
     var state=forest_async.stats()
     return not state.active and int(state.queued)==0 and int(state.ready)==0 and int(state.held)==0 and forest_async_results.is_empty()
 
+func _materialize_compact_forest_cell(payload:Dictionary,stride:int)->Dictionary:
+    assert(Thread.is_main_thread())
+    if payload.get("format","")!=CompactForest.FORMAT or payload.get("binding_id","")!=forest_async_identity or int(payload.get("support_stride",-1))!=stride or payload.get("support_id","")!=CompactForestIdentity.support_id(forest_async_identity,stride):return {"error":"compact_payload_binding"}
+    forest_compact_canopy_material.set_shader_parameter("normalize_instanced_normals",true)
+    var count=int(payload.count);var nodes=[];var holder:Node3D=null
+    if count>0:
+        holder=Node3D.new();holder.name="CompactForestCell";add_child(holder)
+        for part in CompactForestMaterialize.multimeshes(payload,forest_compact_meshes):
+            var instance=MultiMeshInstance3D.new();instance.multimesh=part.multimesh;instance.material_override=forest_compact_canopy_material
+            # Shader relief can move Y toward zero. Include that interval in
+            # culling bounds without changing any crown's canonical transform.
+            var box:AABB=part.multimesh.custom_aabb;var lower=minf(0.,box.position.y);var upper=maxf(0.,box.end.y)
+            instance.custom_aabb=AABB(Vector3(box.position.x,lower,box.position.z),Vector3(box.size.x,upper-lower,box.size.z))
+            instance.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON;holder.add_child(instance);nodes.append(instance)
+    return {"node":holder,"nodes":nodes,"crown_count":count,"resident_array_bytes":int(payload.payload_array_bytes)}
+
 func _commit_forest_async(started: int,stride: int,weight: float) -> void:
     if not forest_async:return
+    var committed_this_frame=0
     if forest_async_results.is_empty():forest_async_results=forest_async.poll()
     while not forest_async_results.is_empty():
         var result:Dictionary=forest_async_results[0];var request:Dictionary=result.request
@@ -1741,15 +1805,22 @@ func _commit_forest_async(started: int,stride: int,weight: float) -> void:
             integrity_issues.append({"asset":"async forest","cell":str(cell),"stride":stride,"reason":result.error})
             push_error("Async forest build failed: "+str(result.error));get_tree().quit(2);return
         var before=Time.get_ticks_usec()
-        var mesh: ArrayMesh=ForestMeshCache.materialize_payload(result.payload)
-        if mesh==null:
-            forest_async.release(result.id);root_integrity_fatal=true;push_error("Async forest CPU payload rejected");get_tree().quit(2);return
-        var node:MeshInstance3D=null
-        if mesh.get_surface_count()>0:
-            node=MeshInstance3D.new();node.mesh=mesh;node.material_override=canopy_material
-            node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON;add_child(node)
+        var node:Node3D=null;var draw_nodes:Array=[];var count=0;var resident_bytes=0
+        if forest_representation_format=="compact":
+            var materialized=_materialize_compact_forest_cell(result.payload,stride)
+            if materialized.has("error"):
+                forest_async.release(result.id);root_integrity_fatal=true;push_error("Compact forest CPU payload rejected");get_tree().quit(2);return
+            node=materialized.node;draw_nodes=materialized.nodes;count=materialized.crown_count;resident_bytes=materialized.resident_array_bytes
+        else:
+            var mesh: ArrayMesh=ForestMeshCache.materialize_payload(result.payload)
+            if mesh==null:
+                forest_async.release(result.id);root_integrity_fatal=true;push_error("Async forest CPU payload rejected");get_tree().quit(2);return
+            count=int(mesh.get_meta("crown_count",0));resident_bytes=int(result.bytes)
+            if mesh.get_surface_count()>0:
+                var instance=MeshInstance3D.new();instance.mesh=mesh;instance.material_override=canopy_material
+                instance.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON;add_child(instance);node=instance;draw_nodes.append(instance)
         if diorama_chunks.has(cell) and diorama_chunks[cell].node:diorama_chunks[cell].node.queue_free()
-        diorama_chunks[cell]={"node":node,"created":elapsed,"last_used":frame_number,"support_revision":diorama_surface_revision,"stride":stride}
+        diorama_chunks[cell]={"node":node,"nodes":draw_nodes,"created":elapsed,"last_used":frame_number,"support_revision":diorama_surface_revision,"stride":stride,"crown_count":count,"resident_array_bytes":resident_bytes,"format":forest_representation_format}
         diorama_queue.erase(cell);forest_async_requests_dirty=true
         var commit_ms=float(Time.get_ticks_usec()-before)/1000.0
         forest_mesh_cache_state.load_ms+=float(result.get("read_ms",0.0))
@@ -1759,7 +1830,11 @@ func _commit_forest_async(started: int,stride: int,weight: float) -> void:
         if result.source=="cache":forest_mesh_cache_state.hits+=1
         else:forest_mesh_cache_state.misses+=1
         forest_async.release(result.id)
-        return # At most one Mesh/RID/Node commit per process frame.
+        committed_this_frame+=1
+        if forest_representation_format!="compact" or committed_this_frame>=64:return # Hard count cap in addition to time/byte admission.
+        # Compact path may install further small results while the same2ms
+        # start budget remains. A single slow upload is measured, never hidden.
+        if forest_async_results.is_empty():forest_async_results=forest_async.poll()
 
 func _update_diorama_forest() -> void:
     if diorama_policy.is_empty() or not forest_async:return
@@ -1790,16 +1865,17 @@ func _update_diorama_forest() -> void:
         # An active still-visible tuple survives falling behind priority64.
         forest_async.set_wanted(requests);forest_async_requests_dirty=false
     _commit_forest_async(started,stride,weight)
-    var visible=0;var stale=0
+    var visible=0;var stale=0;var resident_crowns=0;var visible_crowns=0;var resident_array_bytes=0;var draw_instances=0
     for cell in diorama_chunks:
-        var chunk=diorama_chunks[cell];var wanted=diorama_wanted.has(cell) and weight>.00001
+        var chunk=diorama_chunks[cell];resident_crowns+=int(chunk.get("crown_count",0));resident_array_bytes+=int(chunk.get("resident_array_bytes",0));draw_instances+=chunk.get("nodes",[]).size();var wanted=diorama_wanted.has(cell) and weight>.00001
         if wanted:chunk.last_used=frame_number
         if chunk.node:
             chunk.node.visible=wanted
-            chunk.node.set_instance_shader_parameter("representation_weight",weight)
-            chunk.node.set_instance_shader_parameter("residency_weight",smoothstep(0.,.3,elapsed-chunk.created))
+            for instance in chunk.get("nodes",[chunk.node]):
+                instance.set_instance_shader_parameter("representation_weight",weight)
+                instance.set_instance_shader_parameter("residency_weight",smoothstep(0.,.3,elapsed-chunk.created))
             if wanted:
-                visible+=1
+                visible+=1;visible_crowns+=int(chunk.get("crown_count",0))
                 if chunk.get("support_revision","")!=diorama_surface_revision:stale+=1
     while diorama_chunks.size()>768:
         var victim:Variant=null;var oldest=frame_number+1
@@ -1808,7 +1884,7 @@ func _update_diorama_forest() -> void:
         if victim==null:break # Existing visible-residency limit remains explicitly soft.
         if diorama_chunks[victim].node:diorama_chunks[victim].node.queue_free()
         diorama_chunks.erase(victim)
-    diorama_stats.append({"frame":frame_number,"queued":diorama_queue.size(),"resident_chunks":diorama_chunks.size(),"visible_meshes":visible,"wanted_cells":diorama_wanted.size(),"missing_visible_cells":diorama_queue.size(),"stale_support_meshes":stale,"weight":weight,"cpu_ms":float(Time.get_ticks_usec()-started)/1000.,"async":forest_async.stats()})
+    diorama_stats.append({"frame":frame_number,"queued":diorama_queue.size(),"resident_chunks":diorama_chunks.size(),"visible_meshes":visible,"wanted_cells":diorama_wanted.size(),"missing_visible_cells":diorama_queue.size(),"resident_crowns":resident_crowns,"visible_crowns":visible_crowns,"resident_array_bytes":resident_array_bytes,"draw_instances":draw_instances,"representation_format":forest_representation_format,"stale_support_meshes":stale,"weight":weight,"cpu_ms":float(Time.get_ticks_usec()-started)/1000.,"async":forest_async.stats()})
     if frame_number%60==0 and not diorama_queue.is_empty():print(JSON.stringify({"event":"diorama_generation_progress","frame":frame_number,"remaining_chunks":diorama_queue.size(),"visible_meshes":visible,"async":forest_async.stats()}))
 
 func _forest_coverage(p: Vector2) -> bool:

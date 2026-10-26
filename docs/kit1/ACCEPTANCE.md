@@ -92,6 +92,13 @@ Readiness sowie kohärente Höhenkonsumenten. Laut unabhängiger Astra-Sichtprü
 verworfen: höher/steiler, weiterhin breite weiche beige Felsen. Kein
 Produkt-/G-Weltwechsel; A08 bleibt **FAIL/offen**.
 
+V25 ist ein lokaler Sicht-`keep` für den reparierten Geländeübergang; die
+globale Landschaftsform verfehlt A08 weiterhin. Der unabhängige V25-Review
+validiert nur Daten-/Geometrie-/Energie-/Bounds-/Fixityumfang, keine Bilder oder
+Laufzeit. Siehe [V25-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v25-bounded-transition-r1/HANDOFF.md)
+und [Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/v25-bounded-transition-r1-independent/review.json).
+V25 bleibt eine lokale Kandidatenstudie; kein Produktwechsel.
+
 ### Cache- und Tourbefunde
 
 Der eng definierte Fern-/Mittel-/Nah-Produktcache enthält 352 Zellen, 61 leer,
@@ -187,6 +194,29 @@ P1/P2-Befunde. Umfang: Metadatensicherheit und ein echtes Payload. Keine native
 Warmcacheprüfung, Vollabdeckung, GPU-/Leistungsabnahme oder A08/A12-Aussage.
 Stride 0 bleibt Miss; sichtbarer Wald ist unvollständig. Flussverhalten während
 der Fahrt bleibt offen.
+
+### Compact-Forest-Integration R2
+
+Der eingefrorene [Laufcheckpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-compact-cell-capture-r2/checkpoint.json)
+hat SHA-256 `0f6512706024905940c535f4bfc23d9bdc6598ec1167784a60b5a972364fd21e`.
+Der unabhängige [Integrationsreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-compact-integration-r2-independent/review.json)
+hat SHA-256 `a9aa073a674fca273c886c3adf1568cd86bb1b569bb76571762e4197370d151e`,
+bestätigt 48 Datei-/Checkpointbindungen, zehn synthetische Recordfälle,
+sieben Compact-Queueprüfungen, acht Lifecyclegruppen, 20 aktive Identitychecks
+und beurteilt neun bereits erfasste echte GPU-Zellpaare. Keine P1/P2-Befunde.
+Der Reviewer hat selbst keine GPU oder native App gestartet.
+
+Compact bleibt ein reversibler, explizit aktivierbarer Pfad; Produktdefault ist
+Expanded. Der alte Expandedcache wird wegen des neuen Style-/Context-Hashes
+weiterhin strikt abgelehnt. CPU-Recordaufbau kostet für 191 Kronen
+240,416–281,311 ms, also kein CPU-Speedup. Für die tatsächlich serialisierten
+DTOs wurden höchstens 14.068 Bytes gegenüber 84.744 Bytes beim dichten
+1369-Record-Fixture gemessen; dies belegt eine begrenzte Transport-/Speicher-
+Reduktion, keinen Gesamtprozess- oder GPU-Speicherpass. Der Mainthreadpfad zur
+Materialisierung ist geprüft. Native Warmcache-/Vollabdeckung, vollständige
+sichtbare Waldfüllung, A08 und A12 bleiben offen. Die kleinen GPU-Paarabweichungen
+werden berichtet; Pixelidentität oder eine vorab genehmigte Bildtoleranz wird
+nicht behauptet.
 
 ### Integrierter Fern-/Nahlauf, Wolken und Numerik
 

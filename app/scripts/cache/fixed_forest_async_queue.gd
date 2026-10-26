@@ -21,10 +21,16 @@ var _bytes=0
 var _reserved=0
 var _stopping=false
 var _configured=false
+var _max_results=MAX_RESULTS
+var _generation_reservation=MAX_BYTES
 var _counts={"completed":0,"cancelled":0,"stale_dropped":0,"errors":0,"oversized":0,"cache_hits":0,"generated":0,"peak_results":0,"peak_bytes":0,"read_ms":0.0,"build_ms":0.0,"fallback_replans":0}
 
-func configure(context: RefCounted,reader: RefCounted=null) -> bool:
+func configure(context: RefCounted,reader: RefCounted=null,limits: Dictionary={}) -> bool:
     if _configured or context==null:return false
+    var requested_results=int(limits.get("maximum_results",MAX_RESULTS))
+    var requested_bytes=int(limits.get("generation_reservation_bytes",MAX_BYTES))
+    if requested_results<1 or requested_results>64 or requested_bytes<1 or requested_bytes>MAX_BYTES:return false
+    _max_results=requested_results;_generation_reservation=requested_bytes
     _context=context;_reader=reader;_configured=true
     return true
 
@@ -82,7 +88,7 @@ func release(id: int) -> void:
 func stats() -> Dictionary:
     _mutex.lock()
     var result=_counts.duplicate()
-    result.merge({"active":not _active.is_empty(),"queued":_pending.size(),"wanted":_wanted.size(),"ready":_ready.size(),"held":_held.size(),"bytes":_bytes,"reserved_bytes":_reserved,"stopped":_stopping})
+    result.merge({"active":not _active.is_empty(),"queued":_pending.size(),"wanted":_wanted.size(),"ready":_ready.size(),"held":_held.size(),"bytes":_bytes,"reserved_bytes":_reserved,"stopped":_stopping,"maximum_results":_max_results,"generation_reservation_bytes":_generation_reservation})
     _mutex.unlock()
     return result
 
@@ -96,22 +102,33 @@ func _reap() -> void:
     if _task>=0 and WorkerThreadPool.is_task_completed(_task):
         WorkerThreadPool.wait_for_task_completion(_task);_task=-1
 
-func _pump() -> void:
-    if not _configured or _task>=0:return
-    _mutex.lock()
+func _admit_locked()->Dictionary:
     _refill_locked()
-    if _stopping or _pending.is_empty() or _held.size()>=MAX_RESULTS:_mutex.unlock();return
-    var request: Dictionary=_pending[0]
-    var reservation=MAX_BYTES
+    if _stopping or _pending.is_empty() or _held.size()>=_max_results:return {}
+    var request:Dictionary=_pending[0]
+    var reservation=_generation_reservation
     var generation_only=_generation_only.has(_key(request))
     if _reader and not generation_only:
         var cache_key=Cache.entry_key(request.cell,int(request.stride))
         if _reader.entries.has(cache_key):reservation=mini(MAX_BYTES,int(_reader.entries[cache_key].bytes))
-    if _bytes+reservation>MAX_BYTES:_mutex.unlock();return
+    if _bytes+reservation>MAX_BYTES:return {}
     _pending.pop_front();_active=request;_reserved=reservation
-    # Worker may acquire the mutex only after this short scheduling handoff.
-    _task=WorkerThreadPool.add_task(Callable(self,"_execute").bind(request,reservation,generation_only),false,"forest_cpu_data")
+    return {"request":request,"reservation":reservation,"generation_only":generation_only}
+
+func _pump() -> void:
+    if not _configured or _task>=0:return
+    _mutex.lock()
+    var job=_admit_locked()
+    if not job.is_empty():
+        _task=WorkerThreadPool.add_task(Callable(self,"_execute_batch").bind(job),false,"forest_cpu_data")
     _mutex.unlock()
+
+func _execute_batch(job:Dictionary)->void:
+    # One worker task can fill several small DTO slots without a main-frame
+    # roundtrip. The same byte/result/lease admission applies to every item.
+    while not job.is_empty():
+        _execute(job.request,int(job.reservation),bool(job.generation_only))
+        _mutex.lock();job=_admit_locked();_mutex.unlock()
 
 func _refill_locked() -> void:
     _pending.clear()
@@ -143,7 +160,7 @@ func _execute(request: Dictionary,reservation: int,generation_only: bool) -> voi
                 result["cache_error"]=read.error
                 # Rawcache storage can be smaller than expanded generated arrays.
                 # Re-admit with full generation capacity before constructing them.
-                replan_generation=reservation<MAX_BYTES
+                replan_generation=reservation<_generation_reservation
         if not replan_generation and result.payload.is_empty() and result.error=="" and not _cancelled(request):
             var build_start=Time.get_ticks_usec()
             result.payload=_context.build(request.cell,int(request.stride),func()->bool:return _cancelled(request))

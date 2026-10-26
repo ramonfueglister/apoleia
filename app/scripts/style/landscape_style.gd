@@ -309,6 +309,16 @@ static func _append_crown_cpu_arrays(st:SurfaceTool,arrays:Array,transform:Trans
     st.set_tangent(Plane())
 
 static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable,forest_coverage:Callable,surface_grid:Dictionary,crown_arrays:Array,cancelled:Callable=Callable()) -> Dictionary:
+    return _build_diorama_forest(origin,size,sample,coverage,forest_coverage,surface_grid,crown_arrays,cancelled,true)
+
+static func build_diorama_forest_records(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable,forest_coverage:Callable,surface_grid:Dictionary,cancelled:Callable=Callable()) -> Dictionary:
+    # Pure drawable DTO: no crown preparation, SurfaceTool, or expanded vertices.
+    # Historical body surfaces cannot be represented by pointed-crown records.
+    if str(surface_grid.get("forest_geometry_mode",DIORAMA_FOREST_GEOMETRY_MODE))=="current_body":
+        return {"cancelled":false,"records":[],"metadata":{},"resource_name":"","error":"current_body is unsupported by forest records"}
+    return _build_diorama_forest(origin,size,sample,coverage,forest_coverage,surface_grid,[],cancelled,false)
+
+static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable,forest_coverage:Callable,surface_grid:Dictionary,crown_arrays:Array,cancelled:Callable,build_arrays:bool) -> Dictionary:
     # Product groups the existing candidate set inside source-positive areas.
     # all_source_crowns retains the unchanged V16 positions as the control.
     # current_body is historical only; no body is added to either crown mode.
@@ -319,7 +329,7 @@ static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Calla
     var group_anchors:Dictionary={}
     var placement_identity:Array=[]
     var drawable_records:Array=[]
-    var record_geometry=bool(surface_grid.get("record_forest_geometry",false))
+    var record_geometry=not build_arrays or bool(surface_grid.get("record_forest_geometry",false))
     var root_start=((origin-Vector2.ONE*STEP*(5.0 if grouped else 2.0))/STEP).floor()
     var root_finish=((origin+size+Vector2.ONE*STEP*(5.0 if grouped else 2.0))/STEP).ceil()
     var roots:Dictionary={}
@@ -327,10 +337,13 @@ static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Calla
     var source_count=0
     var fraction_sum=0.0
     var root_identity:Array=[]
-    var st=SurfaceTool.new()
-    st.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var st:SurfaceTool
+    if build_arrays:
+        st=SurfaceTool.new()
+        st.begin(Mesh.PRIMITIVE_TRIANGLES)
     for z in range(int(root_start.y),int(root_finish.y)):
-        if cancelled.is_valid() and bool(cancelled.call()):return {"cancelled":true}
+        if cancelled.is_valid() and bool(cancelled.call()):
+            return {"cancelled":true} if build_arrays else {"cancelled":true,"records":[],"metadata":{},"resource_name":""}
         for x in range(int(root_start.x),int(root_finish.x)):
             var seed_value=posmod(x*73856093 ^ z*19349663,2147483647)
             var rng=RandomNumberGenerator.new()
@@ -374,7 +387,7 @@ static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Calla
             # display omission/transition, not a new vegetation distribution.
             height*=minf(source_visibility,forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0))))
             var phase=rng.randf()*TAU
-            roots[Vector2i(x,z)]={"position":p,"height":height,"ground":float(observation.get("height",0.0))}
+            if use_body:roots[Vector2i(x,z)]={"position":p,"height":height,"ground":float(observation.get("height",0.0))}
             if not Rect2(origin,size).has_point(p):continue
             source_count+=1
             fraction_sum+=fraction
@@ -395,17 +408,21 @@ static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Calla
                 for direction in [Vector2(-1,-1).normalized(),Vector2(1,-1).normalized(),Vector2(-1,1).normalized(),Vector2(1,1).normalized()]:
                     if not bool(coverage.call(p+direction*radius)):wet_safe=false;break
             if not wet_safe:continue
-            var basis=Basis(Vector3.UP,phase).scaled(Vector3(width_scale,1.0,width_scale)*(height/0.016))
             if record_geometry:drawable_records.append([x,z,p.x,p.y,height,phase,width_scale,float(observation.get("height",0.0)),source_p.x,source_p.y])
-            _append_crown_cpu_arrays(st,crown_arrays,Transform3D(basis,Vector3(p.x,float(observation.get("height",0.0)),p.y)))
+            if build_arrays:
+                var basis=Basis(Vector3.UP,phase).scaled(Vector3(width_scale,1.0,width_scale)*(height/0.016))
+                _append_crown_cpu_arrays(st,crown_arrays,Transform3D(basis,Vector3(p.x,float(observation.get("height",0.0)),p.y)))
             count+=1
     var body=_append_forest_body(st,origin,size,sample,forest_coverage,roots,surface_grid) if use_body else {"roof_triangles":0,"wall_triangles":0}
-    var arrays=st.commit_to_arrays() if count>0 or int(body.roof_triangles)>0 else []
+    var arrays=st.commit_to_arrays() if build_arrays and (count>0 or int(body.roof_triangles)>0) else []
     var metadata={"forest_area_cells":source_count,"forest_fraction_sum":fraction_sum,
         "source_crown_count":source_count,"source_root_sha256":JSON.stringify(root_identity).sha256_text(),
         "forest_geometry_mode":geometry_mode,"forest_geometry_identity":FOREST_GEOMETRY_IDENTITY if grouped else "pointed-crown-v8-baseline",
         "placement_sha256":JSON.stringify(placement_identity).sha256_text(),"crown_count":count,
         "volume_roof_triangles":body.roof_triangles,"volume_wall_triangles":body.wall_triangles,"candidate_step_model":STEP}
+    var resource_name="source_closed_crown_volume_forest" if use_body else ("source_grouped_pointed_crown_forest" if grouped else "source_full_pointed_crown_forest")
+    if not build_arrays:
+        return {"cancelled":false,"records":drawable_records,"metadata":metadata,"resource_name":resource_name}
     if record_geometry:metadata["drawable_records"]=drawable_records
     var bounds=AABB();var byte_size=0
     if not arrays.is_empty():
@@ -419,7 +436,7 @@ static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Calla
         for array in arrays:
             if array!=null:byte_size+=var_to_bytes(array).size()
     return {"cancelled":false,"arrays":arrays,"metadata":metadata,
-        "resource_name":"source_closed_crown_volume_forest" if use_body else ("source_grouped_pointed_crown_forest" if grouped else "source_full_pointed_crown_forest"),
+        "resource_name":resource_name,
         "aabb":bounds,"byte_size":byte_size}
 
 static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Callable) -> Dictionary:

@@ -1,10 +1,12 @@
 shader_type spatial;
 render_mode cull_disabled, world_vertex_coords, diffuse_burley;
 uniform float relief=1.0;
+// Expanded meshes arrive encoded unit normals; instanced uniform scale does not.
+uniform bool normalize_instanced_normals=false;
 instance uniform float representation_weight=1.0;
 instance uniform float residency_weight=1.0;
 varying float crown_up;
-void vertex(){ crown_up=NORMAL.y; VERTEX.y*=relief; }
+void vertex(){ if(normalize_instanced_normals) NORMAL=normalize(NORMAL); crown_up=NORMAL.y; VERTEX.y*=relief; }
 void fragment(){
     vec3 leaf=mix(COLOR.rgb/12.92,pow((COLOR.rgb+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),COLOR.rgb));
     float upper=clamp(crown_up*0.5+0.5,0.0,1.0);
