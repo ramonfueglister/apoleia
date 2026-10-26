@@ -32,7 +32,8 @@ def collect_clipmap(binding, add):
     if not config.get('enabled', False):
         return
     manifest_path = Path(transport.safe_relative(config['path']))
-    manifest = transport.read_json(add(manifest_path, config.get('sha256'), role='clipmap-manifest'))
+    manifest_source = add(manifest_path, config.get('sha256'), role='clipmap-manifest')
+    manifest = transport.read_json(manifest_source)
     if manifest.get('format') != 'apoleia-clipmap-tiles-v1':
         raise ValueError('unsupported clipmap tile format')
     counts = manifest['tile_counts']
@@ -51,6 +52,13 @@ def collect_clipmap(binding, add):
                 for field in manifest['fields']:
                     add(manifest_path.parent / str(level) / str(x) / f'{z}-{field}.png',
                         role='clipmap-' + field)
+                # Optional local-XZ float32x4 shoreline segments, read beside PNGs.
+                shore = Path(str(level)) / str(x) / f'{z}-shore.bin'
+                source = manifest_source.parent / shore
+                if source.is_file():
+                    if source.stat().st_size % 16:
+                        raise ValueError('truncated clipmap shoreline: ' + str(shore))
+                    add(manifest_path.parent / shore, role='clipmap-shore')
 
 
 def collect_current(repository):
