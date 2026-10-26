@@ -26,6 +26,7 @@ var _dt=0.
 var _finest=0
 var _gpu_bytes=0
 var _frame=0
+const CAMERA_STRIDE=3
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
 # refining: tiles that want finer children but are not fully faded to them yet;
@@ -109,7 +110,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     var ordered=_draw.keys();ordered.sort();var key=",".join(ordered)
     if key!=_draw_key:_edge_masks={};_draw_key=key
     var camera=[view_width,relief,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
-    var fading_forests={}
+    var fading_forests={};var camera_slot=0
     for id in _draw:
         if float(_draw[id].blend)<1.:fading_forests[str(_draw[id].parent)]=1.-float(_draw[id].blend)
     for id in nodes:
@@ -131,7 +132,15 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         # per-frame focus updates have no rendered or height_at effect.
         var state=[parent_id,blend,edge_mask]
         var structural=entry.get("state",[])!=state
-        if not structural and entry.get("camera",[])==camera:continue
+        if not structural:
+            var seen:Array=entry.get("camera",[])
+            if seen==camera:continue
+            # A tile already showing an earlier camera takes the new camera
+            # uniforms on every CAMERA_STRIDE-th frame only (staggered over
+            # tiles): during a zoom they change every frame on ~140 tiles,
+            # and a lag of two frames (<1% view width) is not visible.
+            camera_slot+=1
+            if not seen.is_empty() and (camera_slot+_frame)%CAMERA_STRIDE!=0:continue
         var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
         if entry.get("river")!=null:tile_nodes.append(entry.river)
         if entry.get("shore")!=null:tile_nodes.append(entry.shore)
