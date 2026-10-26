@@ -203,6 +203,7 @@ var pipeline_preparation:RefCounted
 var landscape_environment:Environment
 var environment_api:Script
 var clipmap_runtime:RefCounted
+var snapshot_clipmap_timeout=false
 var tile_forest:RefCounted
 var warmup_frames_remaining=4
 var warmup_completed_frame=-1
@@ -1057,6 +1058,11 @@ func _fixed_chunk_inventory() -> Array:
 
 func _snapshot_ready() -> bool:
     if pipeline_preparation and not pipeline_preparation.released:return false
+    # A snapshot must show the refined clipmap, not the root-only fallback;
+    # same coverage rule and 120 s cap as the tour clock.
+    if not _tour_start_ready():
+        if elapsed<120.0:snapshot_stable_frames=0;return false
+        if not snapshot_clipmap_timeout:snapshot_clipmap_timeout=true;push_warning("Snapshot: clipmap coverage incomplete after 120 s; capturing anyway")
     var ready=frame_number>=30 and feature_queue.is_empty() and feature_task<0 and river_queue.is_empty() and diorama_queue.is_empty() and forest_queue.is_empty() and forest_detail_queue.is_empty() and _forest_async_idle()
     for chunk in diorama_chunks.values():
         if elapsed-float(chunk.created)<.35:ready=false;break
