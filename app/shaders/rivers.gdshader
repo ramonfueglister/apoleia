@@ -33,7 +33,7 @@ void vertex(){
     // Look layer: screen floor grows towards the close views (thin map line
     // far out, broad diorama river near; same curve as LandscapeLook).
     // Thin in the regional view (2-4 px), medium-broad in the close view.
-    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+14.0*smoothstep(450.0,150.0,view_width));
+    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+6.0*smoothstep(450.0,150.0,view_width));
     float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.
@@ -78,8 +78,8 @@ void fragment(){
     // Muted mid teal-blue like the reference rivers.
     // Opaque mid teal-blue (reference #2d6f8f range), not the pale sky sheen.
     // Reference rivers ~#307884: teal (h185-194), v~0.5.
-    // Reference #297377-#377a86.
-    vec3 water=mix(w.albedo,vec3(0.022,0.16,0.17),0.97);
+    // Reference #297377-#377a86 on screen; the lit albedo shows ~25 % brighter.
+    vec3 water=mix(w.albedo,vec3(0.016,0.112,0.12),0.97);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));

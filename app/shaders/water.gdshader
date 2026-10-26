@@ -75,6 +75,12 @@ void fragment() {
     float far_sea=smoothstep(800.0,2800.0,view_width);
     ALBEDO*=mix(1.04,1.12,far_sea);
     ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),0.10+far_sea*0.06);
+    // Close views: the shallow shelf (bathymetry under ~40 m) lifts towards a
+    // lighter, patchy mid blue over several km, beyond the ~4 km range of the
+    // clipmap coast distance (reference near view, ~#1d648d off the beach).
+    float shelf=(1.0-smoothstep(15.0,45.0,depth))*(1.0-smoothstep(300.0,900.0,view_width));
+    shelf*=0.7+0.3*wl_fnoise(p*0.3,footprint*0.3);
+    ALBEDO=mix(ALBEDO,ALBEDO*vec3(1.45,1.65,1.15),shelf*0.9);
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
     float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
     // One continuous arc; only open mouths break it.
