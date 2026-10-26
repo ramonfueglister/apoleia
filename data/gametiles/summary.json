@@ -10,31 +10,36 @@
   "K28",
   "K29"
  ],
- "tile_count": 23000,
- "budget": 23000,
- "tiles_after_class_merge": 20049,
+ "tile_count": 13999,
+ "budget": 14000,
+ "tiles_after_class_merge": 11631,
  "by_size_m": {
-  "100000": 132,
-  "12500": 2984,
-  "200000": 7,
-  "25000": 16135,
-  "50000": 3214,
+  "100000": 315,
+  "12500": 1500,
+  "200000": 103,
+  "25000": 8186,
+  "50000": 3367,
   "6250": 528
  },
  "by_class": {
-  "desert": 2817,
-  "desert+mountain": 2,
-  "land": 17655,
-  "mountain": 302,
-  "sea-coastal": 2085,
-  "sea-open": 139
+  "desert": 829,
+  "empty-desert+land": 120,
+  "empty-desert+land+mountain": 1,
+  "empty-desert+mountain": 3,
+  "empty-land": 1875,
+  "empty-land+mountain": 80,
+  "empty-mountain": 43,
+  "land": 8772,
+  "mountain": 103,
+  "sea-coastal": 2033,
+  "sea-open": 140
  },
  "by_reason": {
-  "balance": 769,
-  "class": 19199,
-  "manual": 127,
-  "root": 7,
-  "urban12": 2370,
+  "balance": 1713,
+  "class": 10646,
+  "manual": 129,
+  "root": 103,
+  "urban12": 880,
   "urban6": 528
  },
  "base_25km_cells": 31680,
@@ -45,17 +50,17 @@
   "mountain": 423,
   "sea": 6890
  },
- "refinements_applied": 717,
+ "refinements_applied": 329,
  "refinement_stopped_at": {
   "kind": "urban12",
   "id": null,
-  "tile": "eqc41-gt-v1:3:-47:-63",
-  "score": 0.13536462307105412
+  "tile": "eqc41-gt-v1:3:13:14",
+  "score": 0.33074381863373914
  },
  "checks": {
   "unique_ids": {
    "ok": true,
-   "n": 23000
+   "n": 13999
   },
   "id_geometry_roundtrip": {
    "ok": true
@@ -65,7 +70,7 @@
   },
   "region_area_cover": {
    "ok": true,
-   "ratio": 1.0
+   "ratio": 1.0000000000000002
   },
   "no_overlap_no_gap": {
    "ok": true,
@@ -97,14 +102,14 @@
  "inputs": {
   "data/derived/land.geojson": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
   "data/derived/lakes.geojson": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
-  "data/gametiles/rules.json": "6dc56d8e403567eae487373c13213d9def4da44d8a02b497a58d2ec78f0cbf27",
+  "data/gametiles/rules.json": "88c743dea9efac0bdd25457e0138e912db24e285d027a76c681288a14bcfdb5c",
   "data/projection.json": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9",
   "data/gametiles/terrain-25km.csv": "7a569e8a60b30277a6df32eb887a4fd10b486f2f8752fa508b45104be30680ba",
   "data/gametiles/places.csv": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036",
   "data/gametiles/places-manual.csv": "f3cbff4e2941f736f6fe7672a0d4edcddbfb882d06d67b390f4330f5286773f5"
  },
  "outputs": {
-  "data/gametiles/tiles.csv": "76c529cad6d69b59994b58f10fe5e479572272858ef26d6eca3823cd29db252e"
+  "data/gametiles/tiles.csv": "9eaa30c7a718b88d39c67bf2ba352d45e3bed32505b52fee0e81d85828047627"
  },
  "refinements": [
   {
@@ -113,7 +118,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:-16:-88",
    "score": 0.0,
-   "leaves_after": 20076
+   "leaves_after": 11658
   },
   {
    "kind": "urban6",
@@ -121,7 +126,7 @@
    "year": 1000,
    "tile": "eqc41-gt-v1:5:136:340",
    "score": 0.0,
-   "leaves_after": 20103
+   "leaves_after": 11691
   },
   {
    "kind": "urban6",
@@ -129,7 +134,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:-1:133",
    "score": 0.0,
-   "leaves_after": 20133
+   "leaves_after": 11727
   },
   {
    "kind": "urban6",
@@ -137,7 +142,7 @@
    "year": 1800,
    "tile": "eqc41-gt-v1:5:-187:-257",
    "score": 0.0,
-   "leaves_after": 20160
+   "leaves_after": 11757
   },
   {
    "kind": "urban6",
@@ -145,7 +150,7 @@
    "year": 2020,
    "tile": "eqc41-gt-v1:5:194:164",
    "score": 0.0,
-   "leaves_after": 20190
+   "leaves_after": 11793
   },
   {
    "kind": "urban6",
@@ -153,7 +158,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:-140:-224",
    "score": 1.0,
-   "leaves_after": 20217
+   "leaves_after": 11826
   },
   {
    "kind": "urban6",
@@ -161,7 +166,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:174:147",
    "score": 1.0,
-   "leaves_after": 20250
+   "leaves_after": 11865
   },
   {
    "kind": "urban6",
@@ -169,7 +174,7 @@
    "year": 2020,
    "tile": "eqc41-gt-v1:5:-263:249",
    "score": 2.0,
-   "leaves_after": 20277
+   "leaves_after": 11901
   },
   {
    "kind": "urban6",
@@ -177,7 +182,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:140:342",
    "score": 2.0,
-   "leaves_after": 20298
+   "leaves_after": 11925
   },
   {
    "kind": "urban6",
@@ -185,7 +190,7 @@
    "year": 1900,
    "tile": "eqc41-gt-v1:5:-206:-76",
    "score": 2.0,
-   "leaves_after": 20325
+   "leaves_after": 11964
   },
   {
    "kind": "urban6",
@@ -193,7 +198,7 @@
    "year": 400,
    "tile": "eqc41-gt-v1:5:84:229",
    "score": 2.0,
-   "leaves_after": 20355
+   "leaves_after": 12000
   },
   {
    "kind": "urban6",
@@ -201,7 +206,7 @@
    "year": 1800,
    "tile": "eqc41-gt-v1:5:2:-64",
    "score": 3.0,
-   "leaves_after": 20382
+   "leaves_after": 12027
   },
   {
    "kind": "urban6",
@@ -209,7 +214,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:-12:101",
    "score": 3.0,
-   "leaves_after": 20409
+   "leaves_after": 12066
   },
   {
    "kind": "urban6",
@@ -217,7 +222,7 @@
    "year": 400,
    "tile": "eqc41-gt-v1:5:73:-117",
    "score": 3.0,
-   "leaves_after": 20436
+   "leaves_after": 12093
   },
   {
    "kind": "urban6",
@@ -225,7 +230,7 @@
    "year": 1000,
    "tile": "eqc41-gt-v1:5:55:-320",
    "score": 3.0,
-   "leaves_after": 20463
+   "leaves_after": 12123
   },
   {
    "kind": "urban6",
@@ -233,7 +238,7 @@
    "year": 1900,
    "tile": "eqc41-gt-v1:5:-129:-36",
    "score": 3.0,
-   "leaves_after": 20490
+   "leaves_after": 12156
   },
   {
    "kind": "urban6",
@@ -241,7 +246,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:-2:-65",
    "score": 3.0,
-   "leaves_after": 20511
+   "leaves_after": 12177
   },
   {
    "kind": "urban6",
@@ -249,7 +254,7 @@
    "year": 400,
    "tile": "eqc41-gt-v1:5:140:343",
    "score": 4.0,
-   "leaves_after": 20511
+   "leaves_after": 12177
   },
   {
    "kind": "urban6",
@@ -257,7 +262,7 @@
    "year": 1000,
    "tile": "eqc41-gt-v1:5:63:-336",
    "score": 4.0,
-   "leaves_after": 20538
+   "leaves_after": 12204
   },
   {
    "kind": "urban6",
@@ -265,7 +270,7 @@
    "year": 1900,
    "tile": "eqc41-gt-v1:5:-222:-286",
    "score": 4.0,
-   "leaves_after": 20565
+   "leaves_after": 12231
   },
   {
    "kind": "urban6",
@@ -273,7 +278,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:148:-64",
    "score": 4.0,
-   "leaves_after": 20598
+   "leaves_after": 12276
   },
   {
    "kind": "urban6",
@@ -281,7 +286,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:-80:-132",
    "score": 5.0,
-   "leaves_after": 20625
+   "leaves_after": 12303
   },
   {
    "kind": "urban6",
@@ -289,7 +294,7 @@
    "year": 1000,
    "tile": "eqc41-gt-v1:5:178:172",
    "score": 5.0,
-   "leaves_after": 20652
+   "leaves_after": 12330
   },
   {
    "kind": "urban6",
@@ -297,7 +302,7 @@
    "year": 1900,
    "tile": "eqc41-gt-v1:5:-205:-281",
    "score": 5.0,
-   "leaves_after": 20679
+   "leaves_after": 12357
   },
   {
    "kind": "urban6",
@@ -305,7 +310,7 @@
    "year": 117,
    "tile": "eqc41-gt-v1:5:81:123",
    "score": 5.0,
-   "leaves_after": 20706
+   "leaves_after": 12387
   },
   {
    "kind": "urban6",
@@ -313,7 +318,7 @@
    "year": 2020,
    "tile": "eqc41-gt-v1:5:10:-305",
    "score": 6.0,
-   "leaves_after": 20733
+   "leaves_after": 12417
   },
   {
    "kind": "urban6",
@@ -321,7 +326,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:74:-119",
    "score": 6.0,
-   "leaves_after": 20733
+   "leaves_after": 12417
   },
   {
    "kind": "urban6",
@@ -329,7 +334,7 @@
    "year": 1000,
    "tile": "eqc41-gt-v1:5:170:172",
    "score": 6.0,
-   "leaves_after": 20766
+   "leaves_after": 12450
   },
   {
    "kind": "urban6",
@@ -337,7 +342,7 @@
    "year": 2020,
    "tile": "eqc41-gt-v1:5:-7:-226",
    "score": 7.0,
-   "leaves_after": 20799
+   "leaves_after": 12483
   },
   {
    "kind": "urban6",
@@ -345,7 +350,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:-79:-90",
    "score": 7.0,
-   "leaves_after": 20826
+   "leaves_after": 12513
   },
   {
    "kind": "urban6",
@@ -353,7 +358,7 @@
    "year": 1800,
    "tile": "eqc41-gt-v1:5:-202:-190",
    "score": 7.0,
-   "leaves_after": 20853
+   "leaves_after": 12543
   },
   {
    "kind": "urban6",
@@ -361,7 +366,7 @@
    "year": 1900,
    "tile": "eqc41-gt-v1:5:-265:-313",
    "score": 7.0,
-   "leaves_after": 20880
+   "leaves_after": 12576
   },
   {
    "kind": "urban6",
@@ -369,7 +374,7 @@
    "year": 400,
    "tile": "eqc41-gt-v1:5:37:-341",
    "score": 7.0,
-   "leaves_after": 20907
+   "leaves_after": 12603
   },
   {
    "kind": "urban6",
@@ -377,7 +382,7 @@
    "year": 1500,
    "tile": "eqc41-gt-v1:5:84:243",
    "score": 8.0,
-   "leaves_after": 20934
+   "leaves_after": 12633
   },
   {
    "kind": "urban6",
@@ -385,7 +390,7 @@
    "year": 1800,
    "tile": "eqc41-gt-v1:5:-220:-340",
    "score": 8.0,
-   "leaves_after": 20961
+   "leaves_after": 12666
   },
   {
    "kind": "manual",
@@ -393,7 +398,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:11:11",
    "score": null,
-   "leaves_after": 20964
+   "leaves_after": 12669
   },
   {
    "kind": "manual",
@@ -401,7 +406,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:8",
    "score": null,
-   "leaves_after": 20967
+   "leaves_after": 12672
   },
   {
    "kind": "manual",
@@ -409,7 +414,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:6:6",
    "score": null,
-   "leaves_after": 20970
+   "leaves_after": 12678
   },
   {
    "kind": "manual",
@@ -417,7 +422,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:21",
    "score": null,
-   "leaves_after": 20973
+   "leaves_after": 12681
   },
   {
    "kind": "manual",
@@ -425,7 +430,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:27",
    "score": null,
-   "leaves_after": 20976
+   "leaves_after": 12684
   },
   {
    "kind": "manual",
@@ -433,7 +438,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:52:21",
    "score": null,
-   "leaves_after": 20988
+   "leaves_after": 12723
   },
   {
    "kind": "manual",
@@ -441,7 +446,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:75:46",
    "score": null,
-   "leaves_after": 21000
+   "leaves_after": 12747
   },
   {
    "kind": "manual",
@@ -449,7 +454,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:13",
    "score": null,
-   "leaves_after": 21003
+   "leaves_after": 12750
   },
   {
    "kind": "manual",
@@ -457,7 +462,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:16",
    "score": null,
-   "leaves_after": 21006
+   "leaves_after": 12753
   },
   {
    "kind": "manual",
@@ -465,7 +470,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-7:-87",
    "score": null,
-   "leaves_after": 21009
+   "leaves_after": 12759
   },
   {
    "kind": "manual",
@@ -473,7 +478,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-50:-78",
    "score": null,
-   "leaves_after": 21012
+   "leaves_after": 12765
   },
   {
    "kind": "manual",
@@ -481,7 +486,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-24:13",
    "score": null,
-   "leaves_after": 21015
+   "leaves_after": 12771
   },
   {
    "kind": "manual",
@@ -489,7 +494,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:-92",
    "score": null,
-   "leaves_after": 21018
+   "leaves_after": 12777
   },
   {
    "kind": "manual",
@@ -497,7 +502,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:61:47",
    "score": null,
-   "leaves_after": 21027
+   "leaves_after": 12786
   },
   {
    "kind": "manual",
@@ -505,7 +510,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-63:-72",
    "score": null,
-   "leaves_after": 21030
+   "leaves_after": 12795
   },
   {
    "kind": "manual",
@@ -513,7 +518,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-63:-72",
    "score": null,
-   "leaves_after": 21030
+   "leaves_after": 12795
   },
   {
    "kind": "manual",
@@ -521,7 +526,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-54:-79",
    "score": null,
-   "leaves_after": 21033
+   "leaves_after": 12804
   },
   {
    "kind": "manual",
@@ -529,7 +534,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-42:-36",
    "score": null,
-   "leaves_after": 21036
+   "leaves_after": 12807
   },
   {
    "kind": "manual",
@@ -537,7 +542,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-29:-37",
    "score": null,
-   "leaves_after": 21039
+   "leaves_after": 12810
   },
   {
    "kind": "manual",
@@ -545,7 +550,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-48:-43",
    "score": null,
-   "leaves_after": 21042
+   "leaves_after": 12813
   },
   {
    "kind": "manual",
@@ -553,7 +558,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-36:-24",
    "score": null,
-   "leaves_after": 21045
+   "leaves_after": 12819
   },
   {
    "kind": "manual",
@@ -561,7 +566,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-12:21",
    "score": null,
-   "leaves_after": 21048
+   "leaves_after": 12825
   },
   {
    "kind": "manual",
@@ -569,7 +574,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:24:-43",
    "score": null,
-   "leaves_after": 21051
+   "leaves_after": 12831
   },
   {
    "kind": "manual",
@@ -577,7 +582,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:28:-46",
    "score": null,
-   "leaves_after": 21060
+   "leaves_after": 12840
   },
   {
    "kind": "manual",
@@ -585,7 +590,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:43:54",
    "score": null,
-   "leaves_after": 21063
+   "leaves_after": 12843
   },
   {
    "kind": "manual",
@@ -593,7 +598,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:9:11",
    "score": null,
-   "leaves_after": 21066
+   "leaves_after": 12846
   },
   {
    "kind": "manual",
@@ -601,7 +606,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-27:-26",
    "score": null,
-   "leaves_after": 21069
+   "leaves_after": 12852
   },
   {
    "kind": "manual",
@@ -609,7 +614,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-22:-41",
    "score": null,
-   "leaves_after": 21075
+   "leaves_after": 12858
   },
   {
    "kind": "manual",
@@ -617,7 +622,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-18:-42",
    "score": null,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "manual",
@@ -625,7 +630,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:13",
    "score": null,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -633,7 +638,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-4:-22",
    "score": 9.9963,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -641,7 +646,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-47:-65",
    "score": 8.0242,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -649,7 +654,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-1:33",
    "score": 5.8393,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -657,7 +662,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:34:85",
    "score": 5.7893,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -665,7 +670,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:43:36",
    "score": 4.4448,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -673,7 +678,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:35:85",
    "score": 4.2895,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -681,7 +686,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-35:-56",
    "score": 4.0979,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -689,7 +694,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:48:41",
    "score": 3.7561,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -697,7 +702,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-52:-19",
    "score": 3.3312,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -705,7 +710,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:-16",
    "score": 2.9724,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -713,7 +718,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-66:62",
    "score": 2.9357,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -721,7 +726,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-33:-9",
    "score": 2.0895,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -729,7 +734,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-56:-72",
    "score": 1.9726,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -737,7 +742,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-1:-17",
    "score": 1.9394,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -745,7 +750,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:-80",
    "score": 1.9298,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -753,7 +758,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-3:25",
    "score": 1.8316,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -761,7 +766,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:-30",
    "score": 1.7922,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -769,7 +774,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:37:-16",
    "score": 1.747,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -777,7 +782,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:-84",
    "score": 1.7368,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -785,7 +790,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:21:57",
    "score": 1.6922,
-   "leaves_after": 21084
+   "leaves_after": 12870
   },
   {
    "kind": "urban12",
@@ -793,7 +798,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:1:-15",
    "score": 1.6903,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -801,7 +806,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:2:-77",
    "score": 1.6508,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -809,7 +814,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:44:43",
    "score": 1.6017,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -817,7 +822,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:42:43",
    "score": 1.5438,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -825,7 +830,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-52:-71",
    "score": 1.5358,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -833,7 +838,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-51:-48",
    "score": 1.4984,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -841,7 +846,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-20:-23",
    "score": 1.4922,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -849,7 +854,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-2:-57",
    "score": 1.4919,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -857,7 +862,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:20:30",
    "score": 1.4473,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -865,7 +870,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-20:-33",
    "score": 1.4422,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -873,7 +878,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-67:-79",
    "score": 1.3938,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -881,7 +886,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-55:-85",
    "score": 1.3262,
-   "leaves_after": 21087
+   "leaves_after": 12873
   },
   {
    "kind": "urban12",
@@ -889,7 +894,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:10:-95",
    "score": 1.2943,
-   "leaves_after": 21090
+   "leaves_after": 12879
   },
   {
    "kind": "urban12",
@@ -897,7 +902,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:12:-19",
    "score": 1.2079,
-   "leaves_after": 21093
+   "leaves_after": 12882
   },
   {
    "kind": "urban12",
@@ -905,7 +910,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-56:-74",
    "score": 1.2068,
-   "leaves_after": 21096
+   "leaves_after": 12885
   },
   {
    "kind": "urban12",
@@ -913,7 +918,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-56:-31",
    "score": 1.2014,
-   "leaves_after": 21099
+   "leaves_after": 12891
   },
   {
    "kind": "urban12",
@@ -921,7 +926,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:4:46",
    "score": 1.1655,
-   "leaves_after": 21102
+   "leaves_after": 12900
   },
   {
    "kind": "urban12",
@@ -929,7 +934,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:21:60",
    "score": 1.1537,
-   "leaves_after": 21102
+   "leaves_after": 12900
   },
   {
    "kind": "urban12",
@@ -937,7 +942,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:47",
    "score": 1.1537,
-   "leaves_after": 21105
+   "leaves_after": 12909
   },
   {
    "kind": "urban12",
@@ -945,7 +950,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:15",
    "score": 1.1444,
-   "leaves_after": 21108
+   "leaves_after": 12912
   },
   {
    "kind": "urban12",
@@ -953,7 +958,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:-54",
    "score": 1.1441,
-   "leaves_after": 21117
+   "leaves_after": 12921
   },
   {
    "kind": "urban12",
@@ -961,7 +966,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:32:-90",
    "score": 1.0194,
-   "leaves_after": 21123
+   "leaves_after": 12927
   },
   {
    "kind": "urban12",
@@ -969,7 +974,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:39:52",
    "score": 1.0132,
-   "leaves_after": 21129
+   "leaves_after": 12933
   },
   {
    "kind": "urban12",
@@ -977,7 +982,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:-76",
    "score": 1.0095,
-   "leaves_after": 21132
+   "leaves_after": 12936
   },
   {
    "kind": "urban12",
@@ -985,7 +990,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-41:-16",
    "score": 1.0095,
-   "leaves_after": 21135
+   "leaves_after": 12945
   },
   {
    "kind": "urban12",
@@ -993,7 +998,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:86:67",
    "score": 1.0014,
-   "leaves_after": 21141
+   "leaves_after": 12951
   },
   {
    "kind": "urban12",
@@ -1001,7 +1006,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-29:0",
    "score": 0.966,
-   "leaves_after": 21144
+   "leaves_after": 12957
   },
   {
    "kind": "urban12",
@@ -1009,7 +1014,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:23:-30",
    "score": 0.9649,
-   "leaves_after": 21147
+   "leaves_after": 12963
   },
   {
    "kind": "urban12",
@@ -1017,7 +1022,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:-13",
    "score": 0.9486,
-   "leaves_after": 21153
+   "leaves_after": 12969
   },
   {
    "kind": "urban12",
@@ -1025,7 +1030,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-47:-41",
    "score": 0.9426,
-   "leaves_after": 21156
+   "leaves_after": 12972
   },
   {
    "kind": "urban12",
@@ -1033,7 +1038,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:30:-81",
    "score": 0.9374,
-   "leaves_after": 21159
+   "leaves_after": 12981
   },
   {
    "kind": "urban12",
@@ -1041,7 +1046,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:11",
    "score": 0.9312,
-   "leaves_after": 21162
+   "leaves_after": 12987
   },
   {
    "kind": "urban12",
@@ -1049,7 +1054,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:33:58",
    "score": 0.923,
-   "leaves_after": 21165
+   "leaves_after": 12996
   },
   {
    "kind": "urban12",
@@ -1057,7 +1062,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:5:24",
    "score": 0.9123,
-   "leaves_after": 21168
+   "leaves_after": 12999
   },
   {
    "kind": "urban12",
@@ -1065,7 +1070,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-13:-27",
    "score": 0.8941,
-   "leaves_after": 21171
+   "leaves_after": 13002
   },
   {
    "kind": "urban12",
@@ -1073,7 +1078,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-50:6",
    "score": 0.8909,
-   "leaves_after": 21174
+   "leaves_after": 13011
   },
   {
    "kind": "urban12",
@@ -1081,7 +1086,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-16:-34",
    "score": 0.8865,
-   "leaves_after": 21177
+   "leaves_after": 13014
   },
   {
    "kind": "urban12",
@@ -1089,7 +1094,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-42:38",
    "score": 0.8684,
-   "leaves_after": 21180
+   "leaves_after": 13020
   },
   {
    "kind": "urban12",
@@ -1097,7 +1102,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:52:39",
    "score": 0.8664,
-   "leaves_after": 21183
+   "leaves_after": 13023
   },
   {
    "kind": "urban12",
@@ -1105,7 +1110,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-29:-62",
    "score": 0.8653,
-   "leaves_after": 21186
+   "leaves_after": 13032
   },
   {
    "kind": "urban12",
@@ -1113,7 +1118,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:3:33",
    "score": 0.8653,
-   "leaves_after": 21189
+   "leaves_after": 13038
   },
   {
    "kind": "urban12",
@@ -1121,7 +1126,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:41:-91",
    "score": 0.8653,
-   "leaves_after": 21192
+   "leaves_after": 13047
   },
   {
    "kind": "urban12",
@@ -1129,7 +1134,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:11:27",
    "score": 0.8645,
-   "leaves_after": 21195
+   "leaves_after": 13050
   },
   {
    "kind": "urban12",
@@ -1137,7 +1142,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:19:-85",
    "score": 0.8285,
-   "leaves_after": 21198
+   "leaves_after": 13053
   },
   {
    "kind": "urban12",
@@ -1145,7 +1150,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:1:13",
    "score": 0.8219,
-   "leaves_after": 21201
+   "leaves_after": 13062
   },
   {
    "kind": "urban12",
@@ -1153,7 +1158,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-35:-33",
    "score": 0.8214,
-   "leaves_after": 21204
+   "leaves_after": 13068
   },
   {
    "kind": "urban12",
@@ -1161,7 +1166,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:28",
    "score": 0.8174,
-   "leaves_after": 21207
+   "leaves_after": 13071
   },
   {
    "kind": "urban12",
@@ -1169,7 +1174,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-41:-35",
    "score": 0.8076,
-   "leaves_after": 21210
+   "leaves_after": 13074
   },
   {
    "kind": "urban12",
@@ -1177,7 +1182,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-63:-70",
    "score": 0.8068,
-   "leaves_after": 21213
+   "leaves_after": 13077
   },
   {
    "kind": "urban12",
@@ -1185,7 +1190,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-52",
    "score": 0.7932,
-   "leaves_after": 21216
+   "leaves_after": 13080
   },
   {
    "kind": "urban12",
@@ -1193,7 +1198,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-69:83",
    "score": 0.7932,
-   "leaves_after": 21219
+   "leaves_after": 13086
   },
   {
    "kind": "urban12",
@@ -1201,7 +1206,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-1:6",
    "score": 0.7719,
-   "leaves_after": 21222
+   "leaves_after": 13092
   },
   {
    "kind": "urban12",
@@ -1209,7 +1214,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:22:67",
    "score": 0.7719,
-   "leaves_after": 21225
+   "leaves_after": 13101
   },
   {
    "kind": "urban12",
@@ -1217,7 +1222,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:39:85",
    "score": 0.7719,
-   "leaves_after": 21228
+   "leaves_after": 13107
   },
   {
    "kind": "urban12",
@@ -1225,7 +1230,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-36:-24",
    "score": 0.7719,
-   "leaves_after": 21228
+   "leaves_after": 13107
   },
   {
    "kind": "urban12",
@@ -1233,7 +1238,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:38:88",
    "score": 0.7719,
-   "leaves_after": 21231
+   "leaves_after": 13113
   },
   {
    "kind": "urban12",
@@ -1241,7 +1246,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-18:-66",
    "score": 0.7711,
-   "leaves_after": 21234
+   "leaves_after": 13122
   },
   {
    "kind": "urban12",
@@ -1249,7 +1254,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-42:0",
    "score": 0.766,
-   "leaves_after": 21237
+   "leaves_after": 13125
   },
   {
    "kind": "urban12",
@@ -1257,7 +1262,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:36:-20",
    "score": 0.7563,
-   "leaves_after": 21240
+   "leaves_after": 13128
   },
   {
    "kind": "urban12",
@@ -1265,7 +1270,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:13",
    "score": 0.733,
-   "leaves_after": 21240
+   "leaves_after": 13128
   },
   {
    "kind": "urban12",
@@ -1273,7 +1278,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-16:-26",
    "score": 0.7211,
-   "leaves_after": 21243
+   "leaves_after": 13134
   },
   {
    "kind": "urban12",
@@ -1281,7 +1286,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-22:-48",
    "score": 0.7211,
-   "leaves_after": 21246
+   "leaves_after": 13137
   },
   {
    "kind": "urban12",
@@ -1289,7 +1294,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-31:-58",
    "score": 0.7211,
-   "leaves_after": 21249
+   "leaves_after": 13146
   },
   {
    "kind": "urban12",
@@ -1297,7 +1302,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-5:8",
    "score": 0.7211,
-   "leaves_after": 21252
+   "leaves_after": 13149
   },
   {
    "kind": "urban12",
@@ -1305,7 +1310,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-20:-27",
    "score": 0.7211,
-   "leaves_after": 21255
+   "leaves_after": 13155
   },
   {
    "kind": "urban12",
@@ -1313,7 +1318,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-62:43",
    "score": 0.7211,
-   "leaves_after": 21258
+   "leaves_after": 13164
   },
   {
    "kind": "urban12",
@@ -1321,7 +1326,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-18:21",
    "score": 0.7211,
-   "leaves_after": 21261
+   "leaves_after": 13170
   },
   {
    "kind": "urban12",
@@ -1329,7 +1334,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-61:19",
    "score": 0.7211,
-   "leaves_after": 21264
+   "leaves_after": 13176
   },
   {
    "kind": "urban12",
@@ -1337,7 +1342,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:5:-78",
    "score": 0.714,
-   "leaves_after": 21267
+   "leaves_after": 13185
   },
   {
    "kind": "urban12",
@@ -1345,7 +1350,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:6:-66",
    "score": 0.712,
-   "leaves_after": 21270
+   "leaves_after": 13188
   },
   {
    "kind": "urban12",
@@ -1353,7 +1358,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-21:-30",
    "score": 0.7067,
-   "leaves_after": 21273
+   "leaves_after": 13194
   },
   {
    "kind": "urban12",
@@ -1361,7 +1366,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:16",
    "score": 0.702,
-   "leaves_after": 21276
+   "leaves_after": 13197
   },
   {
    "kind": "urban12",
@@ -1369,7 +1374,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-11:-46",
    "score": 0.699,
-   "leaves_after": 21279
+   "leaves_after": 13203
   },
   {
    "kind": "urban12",
@@ -1377,7 +1382,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:24:58",
    "score": 0.6905,
-   "leaves_after": 21282
+   "leaves_after": 13206
   },
   {
    "kind": "urban12",
@@ -1385,7 +1390,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-44:-50",
    "score": 0.6904,
-   "leaves_after": 21285
+   "leaves_after": 13209
   },
   {
    "kind": "urban12",
@@ -1393,7 +1398,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:-68",
    "score": 0.6868,
-   "leaves_after": 21291
+   "leaves_after": 13215
   },
   {
    "kind": "urban12",
@@ -1401,7 +1406,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:66",
    "score": 0.6754,
-   "leaves_after": 21294
+   "leaves_after": 13224
   },
   {
    "kind": "urban12",
@@ -1409,7 +1414,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-5:-64",
    "score": 0.6754,
-   "leaves_after": 21297
+   "leaves_after": 13230
   },
   {
    "kind": "urban12",
@@ -1417,7 +1422,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-18",
    "score": 0.6645,
-   "leaves_after": 21300
+   "leaves_after": 13233
   },
   {
    "kind": "urban12",
@@ -1425,7 +1430,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-26:-63",
    "score": 0.6636,
-   "leaves_after": 21303
+   "leaves_after": 13239
   },
   {
    "kind": "urban12",
@@ -1433,7 +1438,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-38:-36",
    "score": 0.6589,
-   "leaves_after": 21306
+   "leaves_after": 13242
   },
   {
    "kind": "urban12",
@@ -1441,7 +1446,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:19:-79",
    "score": 0.6557,
-   "leaves_after": 21309
+   "leaves_after": 13245
   },
   {
    "kind": "urban12",
@@ -1449,7 +1454,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:-17",
    "score": 0.6551,
-   "leaves_after": 21309
+   "leaves_after": 13245
   },
   {
    "kind": "urban12",
@@ -1457,7 +1462,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:24:56",
    "score": 0.6547,
-   "leaves_after": 21315
+   "leaves_after": 13251
   },
   {
    "kind": "urban12",
@@ -1465,7 +1470,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-46:-23",
    "score": 0.6547,
-   "leaves_after": 21318
+   "leaves_after": 13257
   },
   {
    "kind": "urban12",
@@ -1473,7 +1478,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-41",
    "score": 0.649,
-   "leaves_after": 21321
+   "leaves_after": 13260
   },
   {
    "kind": "urban12",
@@ -1481,7 +1486,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-75:31",
    "score": 0.649,
-   "leaves_after": 21324
+   "leaves_after": 13269
   },
   {
    "kind": "urban12",
@@ -1489,7 +1494,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-66:-22",
    "score": 0.6445,
-   "leaves_after": 21327
+   "leaves_after": 13272
   },
   {
    "kind": "urban12",
@@ -1497,7 +1502,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:12",
    "score": 0.6356,
-   "leaves_after": 21330
+   "leaves_after": 13275
   },
   {
    "kind": "urban12",
@@ -1505,7 +1510,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:36",
    "score": 0.6342,
-   "leaves_after": 21333
+   "leaves_after": 13278
   },
   {
    "kind": "urban12",
@@ -1513,7 +1518,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:-47",
    "score": 0.6289,
-   "leaves_after": 21339
+   "leaves_after": 13284
   },
   {
    "kind": "urban12",
@@ -1521,7 +1526,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:9:-86",
    "score": 0.6267,
-   "leaves_after": 21339
+   "leaves_after": 13284
   },
   {
    "kind": "urban12",
@@ -1529,7 +1534,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:31:55",
    "score": 0.6246,
-   "leaves_after": 21342
+   "leaves_after": 13287
   },
   {
    "kind": "urban12",
@@ -1537,7 +1542,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:49:41",
    "score": 0.6231,
-   "leaves_after": 21342
+   "leaves_after": 13287
   },
   {
    "kind": "urban12",
@@ -1545,7 +1550,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:48:40",
    "score": 0.6198,
-   "leaves_after": 21342
+   "leaves_after": 13287
   },
   {
    "kind": "urban12",
@@ -1553,7 +1558,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:36:6",
    "score": 0.6147,
-   "leaves_after": 21348
+   "leaves_after": 13293
   },
   {
    "kind": "urban12",
@@ -1561,7 +1566,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-32:-25",
    "score": 0.6141,
-   "leaves_after": 21351
+   "leaves_after": 13299
   },
   {
    "kind": "urban12",
@@ -1569,7 +1574,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-56:-69",
    "score": 0.6104,
-   "leaves_after": 21354
+   "leaves_after": 13305
   },
   {
    "kind": "urban12",
@@ -1577,7 +1582,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-18:-25",
    "score": 0.6057,
-   "leaves_after": 21357
+   "leaves_after": 13308
   },
   {
    "kind": "urban12",
@@ -1585,7 +1590,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:8:27",
    "score": 0.6047,
-   "leaves_after": 21360
+   "leaves_after": 13311
   },
   {
    "kind": "urban12",
@@ -1593,7 +1598,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-25:39",
    "score": 0.6025,
-   "leaves_after": 21363
+   "leaves_after": 13317
   },
   {
    "kind": "urban12",
@@ -1601,7 +1606,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-57:-69",
    "score": 0.5858,
-   "leaves_after": 21366
+   "leaves_after": 13320
   },
   {
    "kind": "urban12",
@@ -1609,7 +1614,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-67:-75",
    "score": 0.5796,
-   "leaves_after": 21369
+   "leaves_after": 13329
   },
   {
    "kind": "urban12",
@@ -1617,7 +1622,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-40:-37",
    "score": 0.5789,
-   "leaves_after": 21372
+   "leaves_after": 13332
   },
   {
    "kind": "urban12",
@@ -1625,7 +1630,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:2:82",
    "score": 0.5789,
-   "leaves_after": 21375
+   "leaves_after": 13338
   },
   {
    "kind": "urban12",
@@ -1633,7 +1638,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-10:26",
    "score": 0.5789,
-   "leaves_after": 21378
+   "leaves_after": 13344
   },
   {
    "kind": "urban12",
@@ -1641,7 +1646,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-19:-31",
    "score": 0.5769,
-   "leaves_after": 21381
+   "leaves_after": 13347
   },
   {
    "kind": "urban12",
@@ -1649,7 +1654,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-13:-29",
    "score": 0.5769,
-   "leaves_after": 21384
+   "leaves_after": 13350
   },
   {
    "kind": "urban12",
@@ -1657,7 +1662,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-38:-61",
    "score": 0.5769,
-   "leaves_after": 21387
+   "leaves_after": 13356
   },
   {
    "kind": "urban12",
@@ -1665,7 +1670,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:-19",
    "score": 0.5719,
-   "leaves_after": 21390
+   "leaves_after": 13359
   },
   {
    "kind": "urban12",
@@ -1673,7 +1678,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:-72",
    "score": 0.571,
-   "leaves_after": 21393
+   "leaves_after": 13365
   },
   {
    "kind": "urban12",
@@ -1681,7 +1686,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-57:-70",
    "score": 0.5599,
-   "leaves_after": 21396
+   "leaves_after": 13368
   },
   {
    "kind": "urban12",
@@ -1689,7 +1694,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-49:-49",
    "score": 0.5496,
-   "leaves_after": 21399
+   "leaves_after": 13374
   },
   {
    "kind": "urban12",
@@ -1697,7 +1702,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:87:69",
    "score": 0.548,
-   "leaves_after": 21403
+   "leaves_after": 13378
   },
   {
    "kind": "urban12",
@@ -1705,7 +1710,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-38:-27",
    "score": 0.548,
-   "leaves_after": 21406
+   "leaves_after": 13384
   },
   {
    "kind": "urban12",
@@ -1713,7 +1718,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-16:23",
    "score": 0.5437,
-   "leaves_after": 21409
+   "leaves_after": 13390
   },
   {
    "kind": "urban12",
@@ -1721,7 +1726,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-28:-70",
    "score": 0.5413,
-   "leaves_after": 21412
+   "leaves_after": 13399
   },
   {
    "kind": "urban12",
@@ -1729,7 +1734,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:31:-87",
    "score": 0.5406,
-   "leaves_after": 21415
+   "leaves_after": 13405
   },
   {
    "kind": "urban12",
@@ -1737,7 +1742,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:2:35",
    "score": 0.5403,
-   "leaves_after": 21418
+   "leaves_after": 13408
   },
   {
    "kind": "urban12",
@@ -1745,7 +1750,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:21",
    "score": 0.5396,
-   "leaves_after": 21421
+   "leaves_after": 13411
   },
   {
    "kind": "urban12",
@@ -1753,7 +1758,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:6:-55",
    "score": 0.5324,
-   "leaves_after": 21424
+   "leaves_after": 13417
   },
   {
    "kind": "urban12",
@@ -1761,7 +1766,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-26:45",
    "score": 0.5324,
-   "leaves_after": 21427
+   "leaves_after": 13426
   },
   {
    "kind": "urban12",
@@ -1769,7 +1774,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-1:-16",
    "score": 0.5301,
-   "leaves_after": 21427
+   "leaves_after": 13426
   },
   {
    "kind": "urban12",
@@ -1777,7 +1782,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:28",
    "score": 0.5289,
-   "leaves_after": 21430
+   "leaves_after": 13429
   },
   {
    "kind": "urban12",
@@ -1785,7 +1790,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-49:-93",
    "score": 0.5286,
-   "leaves_after": 21433
+   "leaves_after": 13435
   },
   {
    "kind": "urban12",
@@ -1793,7 +1798,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-58:28",
    "score": 0.5242,
-   "leaves_after": 21436
+   "leaves_after": 13444
   },
   {
    "kind": "urban12",
@@ -1801,7 +1806,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-19:-39",
    "score": 0.5232,
-   "leaves_after": 21439
+   "leaves_after": 13447
   },
   {
    "kind": "urban12",
@@ -1809,7 +1814,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-7",
    "score": 0.5193,
-   "leaves_after": 21442
+   "leaves_after": 13456
   },
   {
    "kind": "urban12",
@@ -1817,7 +1822,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:9",
    "score": 0.5148,
-   "leaves_after": 21445
+   "leaves_after": 13459
   },
   {
    "kind": "urban12",
@@ -1825,7 +1830,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-46:-53",
    "score": 0.5048,
-   "leaves_after": 21448
+   "leaves_after": 13462
   },
   {
    "kind": "urban12",
@@ -1833,7 +1838,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-46:-49",
    "score": 0.5048,
-   "leaves_after": 21451
+   "leaves_after": 13468
   },
   {
    "kind": "urban12",
@@ -1841,7 +1846,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-19:54",
    "score": 0.5048,
-   "leaves_after": 21454
+   "leaves_after": 13474
   },
   {
    "kind": "urban12",
@@ -1849,7 +1854,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-43:-53",
    "score": 0.5048,
-   "leaves_after": 21457
+   "leaves_after": 13477
   },
   {
    "kind": "urban12",
@@ -1857,7 +1862,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:11",
    "score": 0.4972,
-   "leaves_after": 21460
+   "leaves_after": 13480
   },
   {
    "kind": "urban12",
@@ -1865,7 +1870,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:46:40",
    "score": 0.4972,
-   "leaves_after": 21463
+   "leaves_after": 13486
   },
   {
    "kind": "urban12",
@@ -1873,7 +1878,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-33:-53",
    "score": 0.4937,
-   "leaves_after": 21466
+   "leaves_after": 13492
   },
   {
    "kind": "urban12",
@@ -1881,7 +1886,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-46:-40",
    "score": 0.4935,
-   "leaves_after": 21469
+   "leaves_after": 13495
   },
   {
    "kind": "urban12",
@@ -1889,7 +1894,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-4:-23",
    "score": 0.4924,
-   "leaves_after": 21469
+   "leaves_after": 13495
   },
   {
    "kind": "urban12",
@@ -1897,7 +1902,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:8:5",
    "score": 0.4921,
-   "leaves_after": 21472
+   "leaves_after": 13498
   },
   {
    "kind": "urban12",
@@ -1905,7 +1910,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:-76",
    "score": 0.4903,
-   "leaves_after": 21475
+   "leaves_after": 13501
   },
   {
    "kind": "urban12",
@@ -1913,7 +1918,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:41:54",
    "score": 0.4833,
-   "leaves_after": 21478
+   "leaves_after": 13504
   },
   {
    "kind": "urban12",
@@ -1921,7 +1926,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:63",
    "score": 0.4831,
-   "leaves_after": 21481
+   "leaves_after": 13507
   },
   {
    "kind": "urban12",
@@ -1929,7 +1934,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-60:-2",
    "score": 0.4827,
-   "leaves_after": 21484
+   "leaves_after": 13513
   },
   {
    "kind": "urban12",
@@ -1937,7 +1942,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:75:46",
    "score": 0.4824,
-   "leaves_after": 21484
+   "leaves_after": 13513
   },
   {
    "kind": "urban12",
@@ -1945,7 +1950,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-39:-52",
    "score": 0.4824,
-   "leaves_after": 21487
+   "leaves_after": 13516
   },
   {
    "kind": "urban12",
@@ -1953,7 +1958,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-42:-2",
    "score": 0.475,
-   "leaves_after": 21490
+   "leaves_after": 13525
   },
   {
    "kind": "urban12",
@@ -1961,7 +1966,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:7:13",
    "score": 0.4704,
-   "leaves_after": 21493
+   "leaves_after": 13528
   },
   {
    "kind": "urban12",
@@ -1969,7 +1974,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:20:81",
    "score": 0.4678,
-   "leaves_after": 21496
+   "leaves_after": 13531
   },
   {
    "kind": "urban12",
@@ -1977,7 +1982,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-10:-54",
    "score": 0.4626,
-   "leaves_after": 21499
+   "leaves_after": 13534
   },
   {
    "kind": "urban12",
@@ -1985,7 +1990,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:26:-35",
    "score": 0.4626,
-   "leaves_after": 21502
+   "leaves_after": 13540
   },
   {
    "kind": "urban12",
@@ -1993,7 +1998,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-61:-84",
    "score": 0.4622,
-   "leaves_after": 21505
+   "leaves_after": 13546
   },
   {
    "kind": "urban12",
@@ -2001,7 +2006,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-28:-56",
    "score": 0.4615,
-   "leaves_after": 21508
+   "leaves_after": 13552
   },
   {
    "kind": "urban12",
@@ -2009,7 +2014,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-51:-8",
    "score": 0.4615,
-   "leaves_after": 21511
+   "leaves_after": 13561
   },
   {
    "kind": "urban12",
@@ -2017,7 +2022,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:12:-12",
    "score": 0.4605,
-   "leaves_after": 21514
+   "leaves_after": 13564
   },
   {
    "kind": "urban12",
@@ -2025,7 +2030,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:11",
    "score": 0.4583,
-   "leaves_after": 21517
+   "leaves_after": 13567
   },
   {
    "kind": "urban12",
@@ -2033,7 +2038,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:19:-57",
    "score": 0.4519,
-   "leaves_after": 21520
+   "leaves_after": 13570
   },
   {
    "kind": "urban12",
@@ -2041,7 +2046,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-48:-76",
    "score": 0.4516,
-   "leaves_after": 21523
+   "leaves_after": 13576
   },
   {
    "kind": "urban12",
@@ -2049,7 +2054,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-1:-93",
    "score": 0.4511,
-   "leaves_after": 21526
+   "leaves_after": 13582
   },
   {
    "kind": "urban12",
@@ -2057,7 +2062,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-36:-60",
    "score": 0.4471,
-   "leaves_after": 21529
+   "leaves_after": 13588
   },
   {
    "kind": "urban12",
@@ -2065,7 +2070,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:12",
    "score": 0.4455,
-   "leaves_after": 21532
+   "leaves_after": 13591
   },
   {
    "kind": "urban12",
@@ -2073,7 +2078,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:25:-28",
    "score": 0.4455,
-   "leaves_after": 21535
+   "leaves_after": 13594
   },
   {
    "kind": "urban12",
@@ -2081,7 +2086,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-13:-50",
    "score": 0.4455,
-   "leaves_after": 21538
+   "leaves_after": 13600
   },
   {
    "kind": "urban12",
@@ -2089,7 +2094,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:39:3",
    "score": 0.44,
-   "leaves_after": 21541
+   "leaves_after": 13603
   },
   {
    "kind": "urban12",
@@ -2097,7 +2102,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:34:54",
    "score": 0.436,
-   "leaves_after": 21544
+   "leaves_after": 13606
   },
   {
    "kind": "urban12",
@@ -2105,7 +2110,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-37:-65",
    "score": 0.436,
-   "leaves_after": 21547
+   "leaves_after": 13609
   },
   {
    "kind": "urban12",
@@ -2113,7 +2118,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:29:56",
    "score": 0.436,
-   "leaves_after": 21550
+   "leaves_after": 13612
   },
   {
    "kind": "urban12",
@@ -2121,7 +2126,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-27:-50",
    "score": 0.4354,
-   "leaves_after": 21553
+   "leaves_after": 13621
   },
   {
    "kind": "urban12",
@@ -2129,7 +2134,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-33:-28",
    "score": 0.4327,
-   "leaves_after": 21556
+   "leaves_after": 13627
   },
   {
    "kind": "urban12",
@@ -2137,7 +2142,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-17:4",
    "score": 0.4327,
-   "leaves_after": 21559
+   "leaves_after": 13633
   },
   {
    "kind": "urban12",
@@ -2145,7 +2150,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-6:19",
    "score": 0.4327,
-   "leaves_after": 21562
+   "leaves_after": 13639
   },
   {
    "kind": "urban12",
@@ -2153,7 +2158,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-12:-59",
    "score": 0.4327,
-   "leaves_after": 21565
+   "leaves_after": 13642
   },
   {
    "kind": "urban12",
@@ -2161,7 +2166,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:27:-69",
    "score": 0.4327,
-   "leaves_after": 21568
+   "leaves_after": 13651
   },
   {
    "kind": "urban12",
@@ -2169,7 +2174,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-3:-80",
    "score": 0.4327,
-   "leaves_after": 21571
+   "leaves_after": 13657
   },
   {
    "kind": "urban12",
@@ -2177,7 +2182,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:22:-29",
    "score": 0.4322,
-   "leaves_after": 21574
+   "leaves_after": 13660
   },
   {
    "kind": "urban12",
@@ -2185,7 +2190,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-48:1",
    "score": 0.4319,
-   "leaves_after": 21577
+   "leaves_after": 13669
   },
   {
    "kind": "urban12",
@@ -2193,7 +2198,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:55:39",
    "score": 0.4286,
-   "leaves_after": 21583
+   "leaves_after": 13675
   },
   {
    "kind": "urban12",
@@ -2201,7 +2206,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:37:56",
    "score": 0.4281,
-   "leaves_after": 21586
+   "leaves_after": 13678
   },
   {
    "kind": "urban12",
@@ -2209,7 +2214,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-20:-24",
    "score": 0.4182,
-   "leaves_after": 21586
+   "leaves_after": 13678
   },
   {
    "kind": "urban12",
@@ -2217,7 +2222,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:-15",
    "score": 0.4148,
-   "leaves_after": 21589
+   "leaves_after": 13681
   },
   {
    "kind": "urban12",
@@ -2225,7 +2230,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-41:-59",
    "score": 0.4119,
-   "leaves_after": 21592
+   "leaves_after": 13687
   },
   {
    "kind": "urban12",
@@ -2233,7 +2238,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:23:-66",
    "score": 0.4105,
-   "leaves_after": 21595
+   "leaves_after": 13690
   },
   {
    "kind": "urban12",
@@ -2241,7 +2246,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:54",
    "score": 0.4089,
-   "leaves_after": 21598
+   "leaves_after": 13696
   },
   {
    "kind": "urban12",
@@ -2249,7 +2254,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-47:-73",
    "score": 0.4084,
-   "leaves_after": 21601
+   "leaves_after": 13699
   },
   {
    "kind": "urban12",
@@ -2257,7 +2262,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-47:-64",
    "score": 0.4073,
-   "leaves_after": 21601
+   "leaves_after": 13699
   },
   {
    "kind": "urban12",
@@ -2265,7 +2270,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-41:57",
    "score": 0.4062,
-   "leaves_after": 21604
+   "leaves_after": 13708
   },
   {
    "kind": "urban12",
@@ -2273,7 +2278,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:0:10",
    "score": 0.4019,
-   "leaves_after": 21607
+   "leaves_after": 13717
   },
   {
    "kind": "urban12",
@@ -2281,7 +2286,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-46:-42",
    "score": 0.3962,
-   "leaves_after": 21610
+   "leaves_after": 13723
   },
   {
    "kind": "urban12",
@@ -2289,7 +2294,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-50:-50",
    "score": 0.3922,
-   "leaves_after": 21613
+   "leaves_after": 13726
   },
   {
    "kind": "urban12",
@@ -2297,7 +2302,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-66:-24",
    "score": 0.3894,
-   "leaves_after": 21616
+   "leaves_after": 13729
   },
   {
    "kind": "urban12",
@@ -2305,7 +2310,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-61:5",
    "score": 0.3882,
-   "leaves_after": 21619
+   "leaves_after": 13738
   },
   {
    "kind": "urban12",
@@ -2313,7 +2318,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-12:-30",
    "score": 0.3882,
-   "leaves_after": 21622
+   "leaves_after": 13741
   },
   {
    "kind": "urban12",
@@ -2321,7 +2326,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-10:22",
    "score": 0.386,
-   "leaves_after": 21625
+   "leaves_after": 13747
   },
   {
    "kind": "urban12",
@@ -2329,7 +2334,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-39:-42",
    "score": 0.386,
-   "leaves_after": 21628
+   "leaves_after": 13750
   },
   {
    "kind": "urban12",
@@ -2337,7 +2342,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:-77",
    "score": 0.386,
-   "leaves_after": 21631
+   "leaves_after": 13753
   },
   {
    "kind": "urban12",
@@ -2345,7 +2350,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:10:55",
    "score": 0.386,
-   "leaves_after": 21634
+   "leaves_after": 13762
   },
   {
    "kind": "urban12",
@@ -2353,7 +2358,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:53",
    "score": 0.386,
-   "leaves_after": 21637
+   "leaves_after": 13765
   },
   {
    "kind": "urban12",
@@ -2361,7 +2366,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-39:-36",
    "score": 0.386,
-   "leaves_after": 21640
+   "leaves_after": 13768
   },
   {
    "kind": "urban12",
@@ -2369,7 +2374,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:14:26",
    "score": 0.3807,
-   "leaves_after": 21643
+   "leaves_after": 13774
   },
   {
    "kind": "urban12",
@@ -2377,7 +2382,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:58:39",
    "score": 0.3789,
-   "leaves_after": 21649
+   "leaves_after": 13780
   },
   {
    "kind": "urban12",
@@ -2385,7 +2390,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-32:63",
    "score": 0.3765,
-   "leaves_after": 21652
+   "leaves_after": 13786
   },
   {
    "kind": "urban12",
@@ -2393,7 +2398,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-43:-54",
    "score": 0.375,
-   "leaves_after": 21655
+   "leaves_after": 13789
   },
   {
    "kind": "urban12",
@@ -2401,7 +2406,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:2:-6",
    "score": 0.3744,
-   "leaves_after": 21658
+   "leaves_after": 13792
   },
   {
    "kind": "urban12",
@@ -2409,7 +2414,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-5:-24",
    "score": 0.3731,
-   "leaves_after": 21661
+   "leaves_after": 13795
   },
   {
    "kind": "urban12",
@@ -2417,7 +2422,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-28:69",
    "score": 0.3719,
-   "leaves_after": 21664
+   "leaves_after": 13804
   },
   {
    "kind": "urban12",
@@ -2425,7 +2430,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:37:55",
    "score": 0.3707,
-   "leaves_after": 21667
+   "leaves_after": 13807
   },
   {
    "kind": "urban12",
@@ -2433,7 +2438,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-34:-59",
    "score": 0.3691,
-   "leaves_after": 21670
+   "leaves_after": 13810
   },
   {
    "kind": "urban12",
@@ -2441,7 +2446,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:11:25",
    "score": 0.3682,
-   "leaves_after": 21673
+   "leaves_after": 13813
   },
   {
    "kind": "urban12",
@@ -2449,7 +2454,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-14:-13",
    "score": 0.3682,
-   "leaves_after": 21676
+   "leaves_after": 13816
   },
   {
    "kind": "urban12",
@@ -2457,7 +2462,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-6:-25",
    "score": 0.368,
-   "leaves_after": 21679
+   "leaves_after": 13819
   },
   {
    "kind": "urban12",
@@ -2465,7 +2470,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:13:-68",
    "score": 0.3667,
-   "leaves_after": 21682
+   "leaves_after": 13825
   },
   {
    "kind": "urban12",
@@ -2473,7 +2478,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:21:-46",
    "score": 0.3657,
-   "leaves_after": 21685
+   "leaves_after": 13831
   },
   {
    "kind": "urban12",
@@ -2481,7 +2486,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-43:-46",
    "score": 0.363,
-   "leaves_after": 21688
+   "leaves_after": 13837
   },
   {
    "kind": "urban12",
@@ -2489,7 +2494,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:16:56",
    "score": 0.3627,
-   "leaves_after": 21691
+   "leaves_after": 13843
   },
   {
    "kind": "urban12",
@@ -2497,7 +2502,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:52:40",
    "score": 0.3627,
-   "leaves_after": 21694
+   "leaves_after": 13846
   },
   {
    "kind": "urban12",
@@ -2505,7 +2510,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:11:30",
    "score": 0.3627,
-   "leaves_after": 21697
+   "leaves_after": 13849
   },
   {
    "kind": "urban12",
@@ -2513,7 +2518,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-71:17",
    "score": 0.3618,
-   "leaves_after": 21700
+   "leaves_after": 13858
   },
   {
    "kind": "urban12",
@@ -2521,7 +2526,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-19:-28",
    "score": 0.3605,
-   "leaves_after": 21703
+   "leaves_after": 13861
   },
   {
    "kind": "urban12",
@@ -2529,7 +2534,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-18:-32",
    "score": 0.3605,
-   "leaves_after": 21706
+   "leaves_after": 13864
   },
   {
    "kind": "urban12",
@@ -2537,7 +2542,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-17:49",
    "score": 0.3605,
-   "leaves_after": 21709
+   "leaves_after": 13867
   },
   {
    "kind": "urban12",
@@ -2545,7 +2550,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-50:-49",
    "score": 0.3605,
-   "leaves_after": 21712
+   "leaves_after": 13870
   },
   {
    "kind": "urban12",
@@ -2553,7 +2558,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-58:-28",
    "score": 0.3605,
-   "leaves_after": 21715
+   "leaves_after": 13879
   },
   {
    "kind": "urban12",
@@ -2561,7 +2566,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-49",
    "score": 0.3605,
-   "leaves_after": 21718
+   "leaves_after": 13882
   },
   {
    "kind": "urban12",
@@ -2569,7 +2574,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:31:-83",
    "score": 0.3605,
-   "leaves_after": 21721
+   "leaves_after": 13888
   },
   {
    "kind": "urban12",
@@ -2577,7 +2582,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:4:-85",
    "score": 0.3605,
-   "leaves_after": 21724
+   "leaves_after": 13894
   },
   {
    "kind": "urban12",
@@ -2585,7 +2590,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-61:21",
    "score": 0.3605,
-   "leaves_after": 21727
+   "leaves_after": 13903
   },
   {
    "kind": "urban12",
@@ -2593,7 +2598,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:36:53",
    "score": 0.358,
-   "leaves_after": 21730
+   "leaves_after": 13906
   },
   {
    "kind": "urban12",
@@ -2601,7 +2606,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-47:-42",
    "score": 0.3562,
-   "leaves_after": 21733
+   "leaves_after": 13909
   },
   {
    "kind": "urban12",
@@ -2609,7 +2614,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-51:-32",
    "score": 0.3556,
-   "leaves_after": 21736
+   "leaves_after": 13915
   },
   {
    "kind": "urban12",
@@ -2617,7 +2622,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:18:39",
    "score": 0.3538,
-   "leaves_after": 21739
+   "leaves_after": 13918
   },
   {
    "kind": "urban12",
@@ -2625,7 +2630,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:-14",
    "score": 0.3527,
-   "leaves_after": 21742
+   "leaves_after": 13921
   },
   {
    "kind": "urban12",
@@ -2633,7 +2638,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-21:-23",
    "score": 0.3512,
-   "leaves_after": 21742
+   "leaves_after": 13921
   },
   {
    "kind": "urban12",
@@ -2641,7 +2646,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:-81",
    "score": 0.3474,
-   "leaves_after": 21745
+   "leaves_after": 13924
   },
   {
    "kind": "urban12",
@@ -2649,7 +2654,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-7:-77",
    "score": 0.3474,
-   "leaves_after": 21748
+   "leaves_after": 13933
   },
   {
    "kind": "urban12",
@@ -2657,7 +2662,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:73:69",
    "score": 0.3467,
-   "leaves_after": 21757
+   "leaves_after": 13948
   },
   {
    "kind": "urban12",
@@ -2665,7 +2670,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:34:-92",
    "score": 0.3461,
-   "leaves_after": 21760
+   "leaves_after": 13951
   },
   {
    "kind": "urban12",
@@ -2673,7 +2678,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-24:-44",
    "score": 0.3459,
-   "leaves_after": 21763
+   "leaves_after": 13960
   },
   {
    "kind": "urban12",
@@ -2681,7 +2686,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-8:14",
    "score": 0.344,
-   "leaves_after": 21766
+   "leaves_after": 13963
   },
   {
    "kind": "urban12",
@@ -2689,7 +2694,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:27:59",
    "score": 0.3426,
-   "leaves_after": 21769
+   "leaves_after": 13972
   },
   {
    "kind": "urban12",
@@ -2697,7 +2702,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-57:-65",
    "score": 0.3404,
-   "leaves_after": 21772
+   "leaves_after": 13975
   },
   {
    "kind": "urban12",
@@ -2705,7 +2710,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-45:-69",
    "score": 0.3395,
-   "leaves_after": 21775
+   "leaves_after": 13981
   },
   {
    "kind": "urban12",
@@ -2713,7 +2718,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:-40:-61",
    "score": 0.3384,
-   "leaves_after": 21781
+   "leaves_after": 13987
   },
   {
    "kind": "urban12",
@@ -2721,7 +2726,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:15:65",
    "score": 0.3371,
-   "leaves_after": 21784
+   "leaves_after": 13993
   },
   {
    "kind": "urban12",
@@ -2729,7 +2734,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:42:51",
    "score": 0.3353,
-   "leaves_after": 21787
+   "leaves_after": 13996
   },
   {
    "kind": "urban12",
@@ -2737,3111 +2742,7 @@
    "year": null,
    "tile": "eqc41-gt-v1:3:17:61",
    "score": 0.3345,
-   "leaves_after": 21790
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:14",
-   "score": 0.3307,
-   "leaves_after": 21793
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:46:42",
-   "score": 0.3307,
-   "leaves_after": 21796
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:40:56",
-   "score": 0.3306,
-   "leaves_after": 21799
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-54",
-   "score": 0.3286,
-   "leaves_after": 21802
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-3:-67",
-   "score": 0.3281,
-   "leaves_after": 21805
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-57:-72",
-   "score": 0.3261,
-   "leaves_after": 21805
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:13",
-   "score": 0.3233,
-   "leaves_after": 21808
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:21:83",
-   "score": 0.323,
-   "leaves_after": 21811
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:37:84",
-   "score": 0.319,
-   "leaves_after": 21817
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-13:-40",
-   "score": 0.3184,
-   "leaves_after": 21820
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:37:53",
-   "score": 0.3175,
-   "leaves_after": 21823
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-41:3",
-   "score": 0.3173,
-   "leaves_after": 21826
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-29:-36",
-   "score": 0.3163,
-   "leaves_after": 21829
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:19:-33",
-   "score": 0.3134,
-   "leaves_after": 21832
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-34:-38",
-   "score": 0.3127,
-   "leaves_after": 21835
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:3:85",
-   "score": 0.3126,
-   "leaves_after": 21841
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-68",
-   "score": 0.3109,
-   "leaves_after": 21844
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-4:86",
-   "score": 0.3105,
-   "leaves_after": 21847
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:26",
-   "score": 0.3103,
-   "leaves_after": 21850
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-54:-35",
-   "score": 0.3096,
-   "leaves_after": 21853
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:36:9",
-   "score": 0.309,
-   "leaves_after": 21856
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-37:-44",
-   "score": 0.3088,
-   "leaves_after": 21859
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:9:-88",
-   "score": 0.3088,
-   "leaves_after": 21862
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-56:-16",
-   "score": 0.3084,
-   "leaves_after": 21865
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-21:-26",
-   "score": 0.3029,
-   "leaves_after": 21868
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-81",
-   "score": 0.3029,
-   "leaves_after": 21871
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:-78",
-   "score": 0.3029,
-   "leaves_after": 21874
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-57:-73",
-   "score": 0.3027,
-   "leaves_after": 21877
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:-41",
-   "score": 0.3014,
-   "leaves_after": 21880
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:21:-35",
-   "score": 0.2996,
-   "leaves_after": 21883
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-55:-74",
-   "score": 0.299,
-   "leaves_after": 21886
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:-93",
-   "score": 0.2989,
-   "leaves_after": 21889
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-16:-23",
-   "score": 0.2985,
-   "leaves_after": 21892
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:27",
-   "score": 0.2955,
-   "leaves_after": 21895
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:45",
-   "score": 0.2951,
-   "leaves_after": 21898
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:26:22",
-   "score": 0.2926,
-   "leaves_after": 21901
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-54:-68",
-   "score": 0.2916,
-   "leaves_after": 21904
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-34:53",
-   "score": 0.2907,
-   "leaves_after": 21907
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:17:10",
-   "score": 0.2897,
-   "leaves_after": 21910
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-29:-66",
-   "score": 0.2895,
-   "leaves_after": 21913
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-58:-90",
-   "score": 0.2895,
-   "leaves_after": 21916
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:50:39",
-   "score": 0.2895,
-   "leaves_after": 21919
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:51:39",
-   "score": 0.2895,
-   "leaves_after": 21922
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-8:-83",
-   "score": 0.2895,
-   "leaves_after": 21925
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-6:5",
-   "score": 0.2895,
-   "leaves_after": 21928
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:67:46",
-   "score": 0.2895,
-   "leaves_after": 21934
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:43:-79",
-   "score": 0.2895,
-   "leaves_after": 21946
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-25:-63",
-   "score": 0.2884,
-   "leaves_after": 21949
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-33:-51",
-   "score": 0.2884,
-   "leaves_after": 21952
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-40:-57",
-   "score": 0.2884,
-   "leaves_after": 21955
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:7:-75",
-   "score": 0.2884,
-   "leaves_after": 21958
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-20:-32",
-   "score": 0.2884,
-   "leaves_after": 21958
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:9",
-   "score": 0.2884,
-   "leaves_after": 21961
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:5:60",
-   "score": 0.2884,
-   "leaves_after": 21964
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:30:-78",
-   "score": 0.2884,
-   "leaves_after": 21967
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-50:-47",
-   "score": 0.2884,
-   "leaves_after": 21970
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:2:-14",
-   "score": 0.2873,
-   "leaves_after": 21973
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-46",
-   "score": 0.2873,
-   "leaves_after": 21976
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:8:25",
-   "score": 0.2868,
-   "leaves_after": 21979
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:69:45",
-   "score": 0.2843,
-   "leaves_after": 21985
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-21:-48",
-   "score": 0.282,
-   "leaves_after": 21988
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-50:-25",
-   "score": 0.2818,
-   "leaves_after": 21991
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-66",
-   "score": 0.2813,
-   "leaves_after": 21994
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:46:-97",
-   "score": 0.2803,
-   "leaves_after": 21997
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:16",
-   "score": 0.2753,
-   "leaves_after": 22000
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:80",
-   "score": 0.275,
-   "leaves_after": 22003
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-45:-27",
-   "score": 0.274,
-   "leaves_after": 22006
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:21:36",
-   "score": 0.2706,
-   "leaves_after": 22015
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-42:-78",
-   "score": 0.2703,
-   "leaves_after": 22018
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-35:85",
-   "score": 0.2695,
-   "leaves_after": 22021
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:19:-30",
-   "score": 0.2692,
-   "leaves_after": 22021
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:28:64",
-   "score": 0.2692,
-   "leaves_after": 22030
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-40:16",
-   "score": 0.268,
-   "leaves_after": 22033
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:-22",
-   "score": 0.2663,
-   "leaves_after": 22036
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:26:19",
-   "score": 0.2662,
-   "leaves_after": 22039
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:69",
-   "score": 0.2633,
-   "leaves_after": 22042
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-1:-8",
-   "score": 0.2623,
-   "leaves_after": 22045
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-59:62",
-   "score": 0.2616,
-   "leaves_after": 22048
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-14:-48",
-   "score": 0.2596,
-   "leaves_after": 22051
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-21:-32",
-   "score": 0.2596,
-   "leaves_after": 22054
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-17:-28",
-   "score": 0.2596,
-   "leaves_after": 22057
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-44",
-   "score": 0.2596,
-   "leaves_after": 22060
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-29",
-   "score": 0.2596,
-   "leaves_after": 22063
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:23:-84",
-   "score": 0.2592,
-   "leaves_after": 22069
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:25:20",
-   "score": 0.2586,
-   "leaves_after": 22072
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:-81",
-   "score": 0.2573,
-   "leaves_after": 22075
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-5:1",
-   "score": 0.2552,
-   "leaves_after": 22078
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-13:-3",
-   "score": 0.2552,
-   "leaves_after": 22081
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:-68",
-   "score": 0.2547,
-   "leaves_after": 22084
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-1:-9",
-   "score": 0.2542,
-   "leaves_after": 22087
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-21",
-   "score": 0.2535,
-   "leaves_after": 22090
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-63:-69",
-   "score": 0.2531,
-   "leaves_after": 22096
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:15:27",
-   "score": 0.2527,
-   "leaves_after": 22099
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-55:-42",
-   "score": 0.2519,
-   "leaves_after": 22102
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-37:-51",
-   "score": 0.2509,
-   "leaves_after": 22105
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-49",
-   "score": 0.2507,
-   "leaves_after": 22108
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:36:55",
-   "score": 0.2507,
-   "leaves_after": 22111
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:2",
-   "score": 0.2498,
-   "leaves_after": 22114
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:39:57",
-   "score": 0.2496,
-   "leaves_after": 22117
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:39:54",
-   "score": 0.2485,
-   "leaves_after": 22120
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:21",
-   "score": 0.2471,
-   "leaves_after": 22120
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:1",
-   "score": 0.2471,
-   "leaves_after": 22123
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-69:-74",
-   "score": 0.2469,
-   "leaves_after": 22126
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-49",
-   "score": 0.2452,
-   "leaves_after": 22129
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-29:-25",
-   "score": 0.2452,
-   "leaves_after": 22132
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-74",
-   "score": 0.2442,
-   "leaves_after": 22135
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:-21",
-   "score": 0.2425,
-   "leaves_after": 22138
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-47:-75",
-   "score": 0.2403,
-   "leaves_after": 22141
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-16:-59",
-   "score": 0.2397,
-   "leaves_after": 22144
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-41:-37",
-   "score": 0.2375,
-   "leaves_after": 22147
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:-60",
-   "score": 0.2361,
-   "leaves_after": 22150
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-54",
-   "score": 0.2361,
-   "leaves_after": 22153
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:-21",
-   "score": 0.2361,
-   "leaves_after": 22156
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:22:-16",
-   "score": 0.2361,
-   "leaves_after": 22159
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-72:-71",
-   "score": 0.2346,
-   "leaves_after": 22165
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-60",
-   "score": 0.2339,
-   "leaves_after": 22168
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:67",
-   "score": 0.2338,
-   "leaves_after": 22171
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-58:-68",
-   "score": 0.2316,
-   "leaves_after": 22174
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-47:-24",
-   "score": 0.2316,
-   "leaves_after": 22177
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-34:-53",
-   "score": 0.2316,
-   "leaves_after": 22180
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-30:-39",
-   "score": 0.2315,
-   "leaves_after": 22183
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-17:-30",
-   "score": 0.2307,
-   "leaves_after": 22186
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-19:-34",
-   "score": 0.2307,
-   "leaves_after": 22189
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-26",
-   "score": 0.2307,
-   "leaves_after": 22192
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:-9",
-   "score": 0.2307,
-   "leaves_after": 22195
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-4:-81",
-   "score": 0.2307,
-   "leaves_after": 22198
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:-16",
-   "score": 0.2307,
-   "leaves_after": 22201
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:-46",
-   "score": 0.2307,
-   "leaves_after": 22204
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-33:-31",
-   "score": 0.2307,
-   "leaves_after": 22207
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-3:-93",
-   "score": 0.2306,
-   "leaves_after": 22210
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:12:-67",
-   "score": 0.2297,
-   "leaves_after": 22213
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:17:-31",
-   "score": 0.2279,
-   "leaves_after": 22216
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:21:-82",
-   "score": 0.2276,
-   "leaves_after": 22219
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-62:-69",
-   "score": 0.2272,
-   "leaves_after": 22222
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:24:15",
-   "score": 0.2259,
-   "leaves_after": 22225
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:43:44",
-   "score": 0.224,
-   "leaves_after": 22228
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-30:8",
-   "score": 0.2233,
-   "leaves_after": 22231
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-23:15",
-   "score": 0.223,
-   "leaves_after": 22234
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:33",
-   "score": 0.2224,
-   "leaves_after": 22237
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:52",
-   "score": 0.2221,
-   "leaves_after": 22240
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:58",
-   "score": 0.22,
-   "leaves_after": 22246
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:24:16",
-   "score": 0.2199,
-   "leaves_after": 22249
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:-23",
-   "score": 0.2199,
-   "leaves_after": 22252
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:25:50",
-   "score": 0.2172,
-   "leaves_after": 22255
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-42:-52",
-   "score": 0.2163,
-   "leaves_after": 22258
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:2:-3",
-   "score": 0.2163,
-   "leaves_after": 22261
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:44:40",
-   "score": 0.2163,
-   "leaves_after": 22264
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:42:38",
-   "score": 0.2163,
-   "leaves_after": 22267
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-37:-9",
-   "score": 0.2163,
-   "leaves_after": 22270
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-43:-51",
-   "score": 0.2163,
-   "leaves_after": 22273
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:25:48",
-   "score": 0.2163,
-   "leaves_after": 22276
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-13:23",
-   "score": 0.2163,
-   "leaves_after": 22279
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-33:-79",
-   "score": 0.2159,
-   "leaves_after": 22282
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-31:54",
-   "score": 0.2156,
-   "leaves_after": 22285
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-37:-41",
-   "score": 0.2148,
-   "leaves_after": 22288
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-21:-18",
-   "score": 0.2124,
-   "leaves_after": 22291
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-61:-68",
-   "score": 0.2117,
-   "leaves_after": 22294
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:35:53",
-   "score": 0.2111,
-   "leaves_after": 22297
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:27:45",
-   "score": 0.2111,
-   "leaves_after": 22300
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:11",
-   "score": 0.2111,
-   "leaves_after": 22303
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:10",
-   "score": 0.2111,
-   "leaves_after": 22306
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-47:-72",
-   "score": 0.2106,
-   "leaves_after": 22309
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-51",
-   "score": 0.2106,
-   "leaves_after": 22312
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:7:-34",
-   "score": 0.2095,
-   "leaves_after": 22315
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:-16",
-   "score": 0.2042,
-   "leaves_after": 22318
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:15:87",
-   "score": 0.2042,
-   "leaves_after": 22321
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-30:-49",
-   "score": 0.2027,
-   "leaves_after": 22324
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:15:-79",
-   "score": 0.2019,
-   "leaves_after": 22327
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:44:41",
-   "score": 0.2019,
-   "leaves_after": 22330
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-5:-79",
-   "score": 0.2019,
-   "leaves_after": 22333
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:24:88",
-   "score": 0.2017,
-   "leaves_after": 22336
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-11",
-   "score": 0.2016,
-   "leaves_after": 22339
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:17:27",
-   "score": 0.2015,
-   "leaves_after": 22342
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:12:26",
-   "score": 0.2015,
-   "leaves_after": 22345
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:4:3",
-   "score": 0.1997,
-   "leaves_after": 22348
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-15:-24",
-   "score": 0.1978,
-   "leaves_after": 22351
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-28:-13",
-   "score": 0.1978,
-   "leaves_after": 22354
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-20:30",
-   "score": 0.1977,
-   "leaves_after": 22357
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-38:-53",
-   "score": 0.1971,
-   "leaves_after": 22360
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:-6",
-   "score": 0.1957,
-   "leaves_after": 22363
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-3:-18",
-   "score": 0.1953,
-   "leaves_after": 22366
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-65",
-   "score": 0.1944,
-   "leaves_after": 22369
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-60:-30",
-   "score": 0.194,
-   "leaves_after": 22372
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-6:-66",
-   "score": 0.193,
-   "leaves_after": 22375
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-32:-70",
-   "score": 0.193,
-   "leaves_after": 22378
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-18:-35",
-   "score": 0.193,
-   "leaves_after": 22381
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:47:42",
-   "score": 0.193,
-   "leaves_after": 22384
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:5:38",
-   "score": 0.193,
-   "leaves_after": 22387
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:24:-27",
-   "score": 0.193,
-   "leaves_after": 22393
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-27:33",
-   "score": 0.192,
-   "leaves_after": 22396
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:48:45",
-   "score": 0.1918,
-   "leaves_after": 22402
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:-71",
-   "score": 0.1916,
-   "leaves_after": 22405
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-28:-44",
-   "score": 0.1914,
-   "leaves_after": 22408
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:26:59",
-   "score": 0.1914,
-   "leaves_after": 22411
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:-38",
-   "score": 0.1905,
-   "leaves_after": 22414
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-32:-8",
-   "score": 0.1904,
-   "leaves_after": 22417
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-10:-44",
-   "score": 0.1904,
-   "leaves_after": 22420
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-41",
-   "score": 0.1898,
-   "leaves_after": 22423
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-16",
-   "score": 0.1893,
-   "leaves_after": 22423
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-46",
-   "score": 0.1875,
-   "leaves_after": 22426
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-29:-47",
-   "score": 0.1875,
-   "leaves_after": 22429
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:10:-91",
-   "score": 0.1875,
-   "leaves_after": 22432
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-20:-35",
-   "score": 0.1875,
-   "leaves_after": 22435
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:4:-71",
-   "score": 0.1875,
-   "leaves_after": 22438
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-36",
-   "score": 0.1875,
-   "leaves_after": 22441
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-23:-20",
-   "score": 0.1875,
-   "leaves_after": 22444
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:7:12",
-   "score": 0.1861,
-   "leaves_after": 22447
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:40:85",
-   "score": 0.1857,
-   "leaves_after": 22450
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:10:38",
-   "score": 0.185,
-   "leaves_after": 22453
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-35:-43",
-   "score": 0.185,
-   "leaves_after": 22456
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-42:-1",
-   "score": 0.1847,
-   "leaves_after": 22459
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-38:-64",
-   "score": 0.1846,
-   "leaves_after": 22462
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:2:29",
-   "score": 0.1834,
-   "leaves_after": 22465
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:-65",
-   "score": 0.1834,
-   "leaves_after": 22465
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-17",
-   "score": 0.1834,
-   "leaves_after": 22465
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:87:71",
-   "score": 0.1834,
-   "leaves_after": 22472
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:46:44",
-   "score": 0.183,
-   "leaves_after": 22475
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-31:48",
-   "score": 0.182,
-   "leaves_after": 22478
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-18:67",
-   "score": 0.1813,
-   "leaves_after": 22481
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-1:-60",
-   "score": 0.1811,
-   "leaves_after": 22487
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-7:-25",
-   "score": 0.1807,
-   "leaves_after": 22490
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:71",
-   "score": 0.1799,
-   "leaves_after": 22493
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-32:-7",
-   "score": 0.1787,
-   "leaves_after": 22496
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:20:-85",
-   "score": 0.1787,
-   "leaves_after": 22499
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:7",
-   "score": 0.1786,
-   "leaves_after": 22502
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:23",
-   "score": 0.1776,
-   "leaves_after": 22505
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-31:-76",
-   "score": 0.1776,
-   "leaves_after": 22508
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-35:-71",
-   "score": 0.1776,
-   "leaves_after": 22511
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-88",
-   "score": 0.1776,
-   "leaves_after": 22514
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-47:-39",
-   "score": 0.1747,
-   "leaves_after": 22517
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-7:-22",
-   "score": 0.1746,
-   "leaves_after": 22520
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-8:-22",
-   "score": 0.1731,
-   "leaves_after": 22523
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-7:-24",
-   "score": 0.1731,
-   "leaves_after": 22526
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-49:-45",
-   "score": 0.1731,
-   "leaves_after": 22529
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-10:-23",
-   "score": 0.1731,
-   "leaves_after": 22532
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:-83",
-   "score": 0.1731,
-   "leaves_after": 22535
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:-84",
-   "score": 0.1731,
-   "leaves_after": 22538
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-49:-50",
-   "score": 0.1731,
-   "leaves_after": 22541
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-49:-29",
-   "score": 0.1731,
-   "leaves_after": 22544
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-49",
-   "score": 0.1731,
-   "leaves_after": 22544
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-45:-56",
-   "score": 0.1731,
-   "leaves_after": 22547
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-39:-6",
-   "score": 0.1731,
-   "leaves_after": 22550
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-39:-19",
-   "score": 0.1731,
-   "leaves_after": 22553
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-54:-2",
-   "score": 0.1731,
-   "leaves_after": 22556
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-47:-62",
-   "score": 0.1725,
-   "leaves_after": 22559
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-56:-71",
-   "score": 0.1723,
-   "leaves_after": 22559
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:-18",
-   "score": 0.1723,
-   "leaves_after": 22562
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-20",
-   "score": 0.1723,
-   "leaves_after": 22565
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-23:-68",
-   "score": 0.1712,
-   "leaves_after": 22568
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-5:54",
-   "score": 0.1712,
-   "leaves_after": 22571
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:68:45",
-   "score": 0.17,
-   "leaves_after": 22574
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-14",
-   "score": 0.1699,
-   "leaves_after": 22577
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:44:42",
-   "score": 0.1699,
-   "leaves_after": 22577
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-74:70",
-   "score": 0.1692,
-   "leaves_after": 22580
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-4:-19",
-   "score": 0.169,
-   "leaves_after": 22583
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:20:-42",
-   "score": 0.1688,
-   "leaves_after": 22586
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:-13",
-   "score": 0.1688,
-   "leaves_after": 22589
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:19:-60",
-   "score": 0.1688,
-   "leaves_after": 22595
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:24:85",
-   "score": 0.1678,
-   "leaves_after": 22598
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-24",
-   "score": 0.1677,
-   "leaves_after": 22601
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:64:42",
-   "score": 0.1674,
-   "leaves_after": 22607
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:32",
-   "score": 0.1672,
-   "leaves_after": 22610
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:38:56",
-   "score": 0.1672,
-   "leaves_after": 22613
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:28",
-   "score": 0.1672,
-   "leaves_after": 22616
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:37:85",
-   "score": 0.1659,
-   "leaves_after": 22619
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:12:-13",
-   "score": 0.1654,
-   "leaves_after": 22622
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-10",
-   "score": 0.1654,
-   "leaves_after": 22625
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:25:-34",
-   "score": 0.1653,
-   "leaves_after": 22628
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-32:-17",
-   "score": 0.1646,
-   "leaves_after": 22631
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:9:26",
-   "score": 0.164,
-   "leaves_after": 22634
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-19:-19",
-   "score": 0.1638,
-   "leaves_after": 22640
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:-18",
-   "score": 0.1619,
-   "leaves_after": 22643
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:-73",
-   "score": 0.1619,
-   "leaves_after": 22646
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-4",
-   "score": 0.1615,
-   "leaves_after": 22649
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-75:-24",
-   "score": 0.16,
-   "leaves_after": 22652
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-9:-93",
-   "score": 0.1595,
-   "leaves_after": 22655
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-17:-39",
-   "score": 0.1595,
-   "leaves_after": 22658
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:7:25",
-   "score": 0.1595,
-   "leaves_after": 22661
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-9",
-   "score": 0.1595,
-   "leaves_after": 22664
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:10:87",
-   "score": 0.1595,
-   "leaves_after": 22667
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-14:12",
-   "score": 0.1595,
-   "leaves_after": 22670
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-37:-63",
-   "score": 0.1593,
-   "leaves_after": 22673
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:12:14",
-   "score": 0.1593,
-   "leaves_after": 22676
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-42:-55",
-   "score": 0.1586,
-   "leaves_after": 22679
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-15",
-   "score": 0.1586,
-   "leaves_after": 22682
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-46:-14",
-   "score": 0.1586,
-   "leaves_after": 22685
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:16:72",
-   "score": 0.1586,
-   "leaves_after": 22688
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-57",
-   "score": 0.1586,
-   "leaves_after": 22691
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-60:-20",
-   "score": 0.1586,
-   "leaves_after": 22694
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-19",
-   "score": 0.1585,
-   "leaves_after": 22697
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:-58",
-   "score": 0.1585,
-   "leaves_after": 22703
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-67:-80",
-   "score": 0.1585,
-   "leaves_after": 22703
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-22",
-   "score": 0.1567,
-   "leaves_after": 22709
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-19",
-   "score": 0.1567,
-   "leaves_after": 22712
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:-43",
-   "score": 0.1567,
-   "leaves_after": 22712
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-17:48",
-   "score": 0.1558,
-   "leaves_after": 22718
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-6:-94",
-   "score": 0.1557,
-   "leaves_after": 22724
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-20",
-   "score": 0.1544,
-   "leaves_after": 22727
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:8:12",
-   "score": 0.1541,
-   "leaves_after": 22730
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:43:42",
-   "score": 0.1541,
-   "leaves_after": 22733
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:29:-86",
-   "score": 0.1539,
-   "leaves_after": 22736
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-93",
-   "score": 0.1534,
-   "leaves_after": 22739
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:20:50",
-   "score": 0.1534,
-   "leaves_after": 22742
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-16:-38",
-   "score": 0.1531,
-   "leaves_after": 22745
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-19:-23",
-   "score": 0.1531,
-   "leaves_after": 22745
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-14:-60",
-   "score": 0.1531,
-   "leaves_after": 22748
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:56:58",
-   "score": 0.1529,
-   "leaves_after": 22757
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-10:29",
-   "score": 0.1521,
-   "leaves_after": 22760
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:29",
-   "score": 0.152,
-   "leaves_after": 22763
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-9",
-   "score": 0.152,
-   "leaves_after": 22766
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:12:-10",
-   "score": 0.1515,
-   "leaves_after": 22769
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-18:2",
-   "score": 0.1515,
-   "leaves_after": 22772
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:2:10",
-   "score": 0.1515,
-   "leaves_after": 22775
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-56:-73",
-   "score": 0.1514,
-   "leaves_after": 22775
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-71",
-   "score": 0.1497,
-   "leaves_after": 22778
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:30",
-   "score": 0.1497,
-   "leaves_after": 22781
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:31:57",
-   "score": 0.1489,
-   "leaves_after": 22784
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:34",
-   "score": 0.1489,
-   "leaves_after": 22787
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:38:-95",
-   "score": 0.1486,
-   "leaves_after": 22790
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-45:-51",
-   "score": 0.1468,
-   "leaves_after": 22793
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-19:-38",
-   "score": 0.1468,
-   "leaves_after": 22796
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-41:12",
-   "score": 0.1468,
-   "leaves_after": 22799
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-27:2",
-   "score": 0.1468,
-   "leaves_after": 22802
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-54:-72",
-   "score": 0.1468,
-   "leaves_after": 22805
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-35:-57",
-   "score": 0.1468,
-   "leaves_after": 22805
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:38:54",
-   "score": 0.1463,
-   "leaves_after": 22808
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-74:-78",
-   "score": 0.1457,
-   "leaves_after": 22811
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-55:-95",
-   "score": 0.1457,
-   "leaves_after": 22814
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:6:3",
-   "score": 0.1457,
-   "leaves_after": 22817
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-63:-89",
-   "score": 0.1457,
-   "leaves_after": 22820
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:4:-50",
-   "score": 0.1457,
-   "leaves_after": 22826
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-68",
-   "score": 0.1457,
-   "leaves_after": 22829
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:-86",
-   "score": 0.1457,
-   "leaves_after": 22835
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-61:69",
-   "score": 0.1451,
-   "leaves_after": 22838
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-38:-57",
-   "score": 0.1442,
-   "leaves_after": 22841
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-22:-34",
-   "score": 0.1442,
-   "leaves_after": 22844
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:17:-80",
-   "score": 0.1442,
-   "leaves_after": 22847
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-14:-22",
-   "score": 0.1442,
-   "leaves_after": 22850
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:7:-93",
-   "score": 0.1442,
-   "leaves_after": 22853
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:61:40",
-   "score": 0.1442,
-   "leaves_after": 22856
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-80",
-   "score": 0.1442,
-   "leaves_after": 22859
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:44:38",
-   "score": 0.1442,
-   "leaves_after": 22862
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-42:-54",
-   "score": 0.1442,
-   "leaves_after": 22865
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-59:1",
-   "score": 0.1442,
-   "leaves_after": 22868
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-50:-31",
-   "score": 0.1442,
-   "leaves_after": 22871
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-55",
-   "score": 0.1442,
-   "leaves_after": 22874
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-7:-19",
-   "score": 0.1442,
-   "leaves_after": 22877
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-44:-45",
-   "score": 0.1442,
-   "leaves_after": 22880
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:1:-9",
-   "score": 0.1442,
-   "leaves_after": 22883
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-49:-39",
-   "score": 0.1442,
-   "leaves_after": 22886
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-51:-37",
-   "score": 0.1442,
-   "leaves_after": 22889
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:31:-86",
-   "score": 0.1442,
-   "leaves_after": 22892
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-59:-23",
-   "score": 0.1442,
-   "leaves_after": 22895
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-14:27",
-   "score": 0.1442,
-   "leaves_after": 22898
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-48:-37",
-   "score": 0.1442,
-   "leaves_after": 22901
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-30:24",
-   "score": 0.1442,
-   "leaves_after": 22904
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-10:-64",
-   "score": 0.1442,
-   "leaves_after": 22907
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-52:69",
-   "score": 0.1438,
-   "leaves_after": 22910
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-15:-62",
-   "score": 0.1438,
-   "leaves_after": 22913
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-3:-13",
-   "score": 0.1438,
-   "leaves_after": 22916
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:45:41",
-   "score": 0.1438,
-   "leaves_after": 22919
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-12:-83",
-   "score": 0.1437,
-   "leaves_after": 22925
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-55:87",
-   "score": 0.143,
-   "leaves_after": 22928
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:20:-55",
-   "score": 0.1426,
-   "leaves_after": 22931
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-27:43",
-   "score": 0.1425,
-   "leaves_after": 22934
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-11:-22",
-   "score": 0.1412,
-   "leaves_after": 22937
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-36:-55",
-   "score": 0.1412,
-   "leaves_after": 22940
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:0:-15",
-   "score": 0.1404,
-   "leaves_after": 22940
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:-70",
-   "score": 0.1404,
-   "leaves_after": 22943
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-24:3",
-   "score": 0.1404,
-   "leaves_after": 22946
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-54:57",
-   "score": 0.1404,
-   "leaves_after": 22949
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:57:39",
-   "score": 0.1395,
-   "leaves_after": 22955
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-34:-71",
-   "score": 0.1393,
-   "leaves_after": 22958
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:33",
-   "score": 0.1387,
-   "leaves_after": 22961
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:32:58",
-   "score": 0.1384,
-   "leaves_after": 22964
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:14:14",
-   "score": 0.1382,
-   "leaves_after": 22967
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:23:-28",
-   "score": 0.1382,
-   "leaves_after": 22970
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:-66",
-   "score": 0.1381,
-   "leaves_after": 22973
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-53:-69",
-   "score": 0.1378,
-   "leaves_after": 22976
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-7:-17",
-   "score": 0.1378,
-   "leaves_after": 22979
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-61:-2",
-   "score": 0.1378,
-   "leaves_after": 22982
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-2:-18",
-   "score": 0.1368,
-   "leaves_after": 22985
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:53:40",
-   "score": 0.1365,
-   "leaves_after": 22988
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-4:-21",
-   "score": 0.1365,
-   "leaves_after": 22988
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:13:37",
-   "score": 0.1361,
-   "leaves_after": 22991
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:18:60",
-   "score": 0.1361,
-   "leaves_after": 22994
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:-15:18",
-   "score": 0.1361,
-   "leaves_after": 22997
-  },
-  {
-   "kind": "urban12",
-   "place": null,
-   "year": null,
-   "tile": "eqc41-gt-v1:3:11:15",
-   "score": 0.1361,
-   "leaves_after": 23000
+   "leaves_after": 13999
   }
  ]
 }

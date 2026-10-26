@@ -146,6 +146,7 @@ def main():
      for rr in range(math.floor((float(z)-m)/BASE),math.floor((float(z)+m)/BASE)+1):
       for cc in range(math.floor((float(x)-m)/BASE),math.floor((float(x)+m)/BASE)+1):occ.add((rr,cc))
   empty={k for k in base if kinds[k]!='sea' and k not in occ}
+ global EMPTY;EMPTY=empty
  # how coarse may a block be?  (K27 classes and context land; urban refinement comes later)
  sr=rules['sea']
  def may_leaf(l,r,c):
@@ -236,6 +237,7 @@ def write(t,kinds,ctx,base,A,terr,imp,rules,applied,stopped,n_classes,plc,manual
   k='+'.join(sorted({kinds[q] for q in subcells(l,r,c) if q in kinds}))
   if k=='sea':k='sea-coastal' if s_<=50000 else 'sea-open'
   if not k.startswith('sea') and all(q in ctx for q in subcells(l,r,c) if q in kinds):k='context-'+k
+  elif not k.startswith('sea') and k!='desert' and s_>BASE and all(q in EMPTY for q in subcells(l,r,c) if q in kinds):k='empty-'+k
   ix0,iz0,ix1,iz1=max(x0,X0),max(z0,Z0),min(x1,X1),min(z1,Z1)
   w,n_,e,s=*lonlat(ix0,iz0),*lonlat(ix1,iz1)
   rows.append(dict(id=tid(l,r,c),parent=tid(l-1,r>>1,c>>1) if l else '',level=l,size_m=s_,row=r,col=c,x0_m=x0,z0_m=z0,

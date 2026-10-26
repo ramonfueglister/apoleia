@@ -227,3 +227,12 @@ Grobe Schätzung bei rund 4800 × 4100 km Projektregion: etwa 10.000–11.000 Ti
 etwa 31.000 bei einheitlich 25 km. Genaue Klassengrenzen (Küstenabstand, Wüsten-/
 Hochgebirgsmaske) werden aus den vorhandenen Land-/Wasser-, Landcover- und
 Höhendaten abgeleitet und beim Bau gemessen; die Zahlen hier sind Schätzungen.
+
+### Ergänzung 26.10.2026 (Nutzerentscheidungen im Tile-Thread)
+
+| ID | Entscheidung |
+|---|---|
+| K29 | **Verfeinerung nach Epochen-Maximum:** dichte Regionen 12,5 km, ~35 Großstädte 6,25 km, Wichtigkeit relativ zur Epoche über die Stichjahre 117–2020, Maximum zählt; Budget **14.000** Tiles. Alle Regeln gelten **überall gleich**, im Reich und außerhalb. Zum Erreichen des Budgets wächst reine Wüste bis 200 km (K26 „gleichartig“), und Land ohne Ort in irgendeiner Epoche wird 50 km. Das Raster ist der Startzustand; Teilen/Zusammenlegen zur Laufzeit gehört zu Kit 2. |
+
+Gemessen (gametiles-v1): 13.999 Tiles, vor der Stadtverfeinerung 11.631; strikt nach K27 wären es ~22.500, weil die
+Region zu 78 % Land ist. Regeln, Quellen und Prüfungen: [GAMETILES.md](GAMETILES.md).
