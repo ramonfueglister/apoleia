@@ -84,8 +84,13 @@ Mit 32 Stützen beträgt das Maximum im Gesamtkern 314,25 m und **verfehlt** das
 ursprüngliche ≤250-m-Kriterium wegen sechs geschützter Nodes; 163 veränderbare
 Nodes liegen bei höchstens 225,5 m. Profil: 670 m Absenkung/477,5 m Anhebung,
 keine Schutz-/Randverletzungen, Source-Maximum 1224,020953 m unter dem
-2500-m-Budget. Unabhängige Rekonstruktion von 529 Nodes: null Delta. GPU- und
-Stilprüfung offen; keine Produkt-/G-Weltumschaltung.
+2500-m-Budget. Unabhängige Rekonstruktion von 529 Nodes: null Delta. Echte
+Baseline-/Kandidatenbilder stehen in
+[`source-v2-v22-local-form-capture-r1`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v22-local-form-capture-r1/).
+Der gebundene Vergleich bestätigt gleiche Kamera, Materialien, Licht, Quelle und
+Readiness sowie kohärente Höhenkonsumenten. Laut unabhängiger Astra-Sichtprüfung
+verworfen: höher/steiler, weiterhin breite weiche beige Felsen. Kein
+Produkt-/G-Weltwechsel; A08 bleibt **FAIL/offen**.
 
 ### Cache- und Tourbefunde
 
@@ -116,13 +121,52 @@ Videobetrachtung; keine Streaming-, Rückkehr- oder Performancefreigabe. Der
 vorige r1-Lauf hatte p95 72,991/p99 159,616/Maximum 558,589 ms.
 
 Der Fluss-Set-Cache ist implementiert. [`river-set-cache-r1/result.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/river-set-cache-r1/result.json)
-belegt atomaren Tausch, stabile Zähler, geänderte Schlüssel bei Pitch/Support/
-Breite und Wiederverwendung bei Rückkehr für synthetische Zwei-Linien-CPU-
-Geometrie. 8 Sets/64 MiB ist nur das Raw-Mesh-Cachebudget; aktiver Pin, Pending-
-und GPU-Daten kommen zusätzlich hinzu. Enge CPU-Tests Exit 0 und unabhängiger
-Codecheck ohne P1/P2 sind Ownerberichte. Der Runtimeowner meldet den Riverfix-
-Tourlauf r3 als beendet; dessen Auswertung und Abnahme stehen noch aus. Hier
-werden keine r3-Metriken oder Tourfreigaben vorweggenommen.
+belegt atomaren Tausch, stabile Zähler und Key-Abhängigkeiten an synthetischer
+Zwei-Linien-CPU-Geometrie. 8 Sets/64 MiB ist nur das Raw-Mesh-Cachebudget;
+aktiver Pin, Pending- und GPU-Daten kommen zusätzlich hinzu.
+
+Der echte River-Endpunktlauf R4
+([`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-river-cache-tour-r4/summary.json))
+hat Start, erste Endpose und Endhold pixelidentisch; an der ersten Endpose waren
+0 Flussjobs aktiv. Unterwegs besteht aber eine Near-Regression: bei 1.777
+Requests wurden nur 2 Sets fertig, weil exakte Width/Pitch-/Frustum-Keys laufende
+Gesamtsets wiederholt abbrechen. R5 ohne Bildaufnahme
+([`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-river-cache-tour-no-capture-r5/summary.json))
+meldet p50/p95/p99/max 9,274/41,402/68,035/308,703 ms und 2 Sets bei 2.126
+Requests. Das sind nur diese Tour-/Aufnahmekonfigurationen, kein A12-Pass.
+
+### Forest-Async, native Eingabe und AABB-Replay
+
+Der Forest-Async-Pfad ist implementiert. CPU-Queue-P2 wird in
+[`forest-async-queue-p2-r2/checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-async-queue-p2-r2/checkpoint.json)
+als repariert mit fokussierter Regression Exit 0 gebunden; unabhängige Re-Review
+steht aus. Die konkrete Source-Ownership im gemeinsamen Arbeitsbaum bestätigt
+der Runtimeowner; sie ist nicht Bestandteil dieses Dokumentcheckpointes.
+
+Native Probe R3:
+[`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-native-input-resize-async-r3/summary.json)
+bindet reale Scroll-/Gegen-Scroll- und Resize-Rückkehr, Zoom 0→0,0469799 sowie
+Viewport 1440×810→1154×670→1440×810; Gegen-Scroll/Rückübersicht pixelidentisch.
+813 kalte Builds, 0 Cachehits, 0 Fehler, 1 Cancel, am Ende 0 Jobs/Leases.
+Mainthread-Commit max. 1,376 ms; Forest-Mainfunktion max. 9,031 ms; Framezeiten
+p50/p95/p99/max 10,341/14,187/15,278/165,845 ms einschließlich Diagnose-PNGs.
+Das ist kein direkter Leistungsvergleich mit anderen Auflösungen und kein A12-
+Pass. Wanted-Spitze 2.100, stabil 1.508→1.454; maximal 813 resident/511 sichtbar,
+768 bleibt weiche Grenze. Die Waldfüllung ist damit nicht abgenommen. OS-Input-
+OriginTimestamp fehlt, also keine OS-Eingabelatenzbehauptung. Alte Cacheheader
+mit Codeidentity `92a357…` werden wegen neuer Codeidentity `7a…` weiter strikt
+abgewiesen; es gibt keine Kompatibilitätsausnahme oder neuen Bake.
+
+Das nach dem Min/Max-AABB-Fix gebundene Replay
+[`aabb-reproduction.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-async-array-split-r2/aabb-reproduction.json)
+hat SHA-256 `bd49f6dd82cbc2512be495e87c895d677ddde1316e1b876f4316a32b3f84d340`,
+acht Reports und `failures=[]`, einschließlich `(-2,2)`. Der unabhängige Review
+bestätigt 8/8 exakte Fälle; Style-SHA `120436ea…0b335` entspricht Native R3.
+Finale Cacheinputidentity laut Replay ist
+`091c5a48c0d67411fe1c69a94b1a8617019fa515602191c249c59dd2b9aa232a` (nicht die
+vorläufige Zwischenidentity). R1 bleibt historischer Fehlbefund. Alte
+Cacheheader werden weiter strikt abgewiesen; daraus folgt keine
+Kompatibilitätsfreigabe.
 
 ### Integrierter Fern-/Nahlauf, Wolken und Numerik
 
@@ -157,12 +201,13 @@ aktuelles Bundle ist auf der neuesten Runtimerevision gebaut.
 - **A07 — offen:** kein belegter Ausschnitt mit mehreren künftigen Häusern samt
   Umfeld und einzeln lesbaren stilisierten Bäumen. Häuserassets ausgeschlossen;
   500 m in [`decisions.md`](decisions.md) bleibt Arbeitswert, 240-km-Anker kein Pass.
-- **A01/A04/A09 — offen:** Tour vom readinessbereiten Start mit Liveinputs,
-  Übergängen, Resize, Rand und Roundtrip. Der beobachtete Tourpfad beginnt im
-  Altpfad vor Readiness; externer Startadapter laut Runtimeowner in Arbeit.
+- **A01/A04/A09 — offen:** begrenzter nativer Scroll-/Resizepfad ist beobachtet;
+  vollständige Waldfüllung, River-Nahnavigation, Rand-/Roundtrip und durchgehende
+  Tour vom readinessbereiten Start bleiben offen. Der ältere Tourpfad beginnt vor
+  Readiness; Startadapter/Folgetour sind getrennt zu bewerten.
 - **A08 — FAIL/offen:** Stilreferenzabnahme weiterhin nicht bestanden.
-- **A12 — offen:** keine Zielklassen-/Mobile-Forward+-Leistungsabnahme; Einzelwerte
-  des integrierten Laufs decken nur die oben beschriebene Szene ab.
+- **A12 — offen:** weder Produkt-OFF/ON-Einzelwerte noch die native R3-Frame-
+  Verteilung sind Zielklassen-/Mobile-Forward+-Leistungsabnahmen.
 - **Paket/Gesamtabnahme — offen:** Vollweltcache/-daten, frisches kohärentes Bundle,
   aktuelle App-/Belegsammlung und finale unabhängige A01–A16-Abnahmen fehlen.
   SourceV2/Runtimeänderungen im gemeinsamen Arbeitsbaum sind nicht Teil dieses

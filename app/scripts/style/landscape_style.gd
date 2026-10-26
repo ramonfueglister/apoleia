@@ -276,7 +276,39 @@ static func diorama_representation_policy() -> Dictionary:
         "placement":"world-fixed source-checked local grouping of existing candidates; same crown height/family; no broad body",
         "no_artificial_forest_holes":true,"membership_samples_per_cell":9}
 
+static func prepare_diorama_crown_arrays() -> Array:
+    # Mainthread-only preparation. Workers receive values, never a Mesh or RID.
+    return create_tree_mesh(0,1).surface_get_arrays(0)
+
 static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable=Callable(),forest_coverage:Callable=Callable(),surface_grid:Dictionary={}) -> ArrayMesh:
+    # Synchronous compatibility entrypoint; runtime async commits use the same DTO.
+    var data=build_diorama_forest_arrays(origin,size,sample,coverage,forest_coverage,surface_grid,prepare_diorama_crown_arrays())
+    var mesh=ArrayMesh.new()
+    if not data.arrays.is_empty():mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,data.arrays)
+    mesh.resource_name=data.resource_name
+    for key in data.metadata:mesh.set_meta(key,data.metadata[key])
+    return mesh
+
+static func _append_crown_cpu_arrays(st:SurfaceTool,arrays:Array,transform:Transform3D) -> void:
+    # Equivalent to SurfaceTool.append_from for this indexed-or-expanded crown.
+    # All arrays were extracted on the mainthread before work was scheduled.
+    var vertices:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+    var normals:PackedVector3Array=arrays[Mesh.ARRAY_NORMAL]
+    var colors:PackedColorArray=arrays[Mesh.ARRAY_COLOR]
+    var tangents:PackedFloat32Array=arrays[Mesh.ARRAY_TANGENT]
+    var uv:PackedVector2Array=arrays[Mesh.ARRAY_TEX_UV]
+    var indices=arrays[Mesh.ARRAY_INDEX]
+    var count=indices.size() if indices!=null and not indices.is_empty() else vertices.size()
+    for i in range(count):
+        var at=int(indices[i]) if indices!=null and not indices.is_empty() else i
+        st.set_normal(transform.basis*normals[at])
+        var tangent=transform.basis*Vector3(tangents[at*4],tangents[at*4+1],tangents[at*4+2])
+        st.set_tangent(Plane(tangent,tangents[at*4+3]*(-1.0 if transform.basis.determinant()<0.0 else 1.0)))
+        st.set_color(colors[at]);st.set_uv(uv[at]);st.add_vertex(transform*vertices[at])
+    # append_from does not mutate the tool's pending tangent attribute.
+    st.set_tangent(Plane())
+
+static func build_diorama_forest_arrays(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable,forest_coverage:Callable,surface_grid:Dictionary,crown_arrays:Array,cancelled:Callable=Callable()) -> Dictionary:
     # Product groups the existing candidate set inside source-positive areas.
     # all_source_crowns retains the unchanged V16 positions as the control.
     # current_body is historical only; no body is added to either crown mode.
@@ -295,10 +327,10 @@ static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
     var source_count=0
     var fraction_sum=0.0
     var root_identity:Array=[]
-    var crown=create_tree_mesh(0,1)
     var st=SurfaceTool.new()
     st.begin(Mesh.PRIMITIVE_TRIANGLES)
     for z in range(int(root_start.y),int(root_finish.y)):
+        if cancelled.is_valid() and bool(cancelled.call()):return {"cancelled":true}
         for x in range(int(root_start.x),int(root_finish.x)):
             var seed_value=posmod(x*73856093 ^ z*19349663,2147483647)
             var rng=RandomNumberGenerator.new()
@@ -365,24 +397,30 @@ static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             if not wet_safe:continue
             var basis=Basis(Vector3.UP,phase).scaled(Vector3(width_scale,1.0,width_scale)*(height/0.016))
             if record_geometry:drawable_records.append([x,z,p.x,p.y,height,phase,width_scale,float(observation.get("height",0.0)),source_p.x,source_p.y])
-            st.append_from(crown,0,Transform3D(basis,Vector3(p.x,float(observation.get("height",0.0)),p.y)))
+            _append_crown_cpu_arrays(st,crown_arrays,Transform3D(basis,Vector3(p.x,float(observation.get("height",0.0)),p.y)))
             count+=1
     var body=_append_forest_body(st,origin,size,sample,forest_coverage,roots,surface_grid) if use_body else {"roof_triangles":0,"wall_triangles":0}
-    var mesh=st.commit() if count>0 or int(body.roof_triangles)>0 else ArrayMesh.new()
-    mesh.resource_name="source_closed_crown_volume_forest" if use_body else ("source_grouped_pointed_crown_forest" if grouped else "source_full_pointed_crown_forest")
-    mesh.set_meta("forest_area_cells",source_count)
-    mesh.set_meta("forest_fraction_sum",fraction_sum)
-    mesh.set_meta("source_crown_count",source_count)
-    mesh.set_meta("source_root_sha256",JSON.stringify(root_identity).sha256_text())
-    mesh.set_meta("forest_geometry_mode",geometry_mode)
-    mesh.set_meta("forest_geometry_identity",FOREST_GEOMETRY_IDENTITY if grouped else "pointed-crown-v8-baseline")
-    mesh.set_meta("placement_sha256",JSON.stringify(placement_identity).sha256_text())
-    if record_geometry:mesh.set_meta("drawable_records",drawable_records)
-    mesh.set_meta("crown_count",count)
-    mesh.set_meta("volume_roof_triangles",body.roof_triangles)
-    mesh.set_meta("volume_wall_triangles",body.wall_triangles)
-    mesh.set_meta("candidate_step_model",STEP)
-    return mesh
+    var arrays=st.commit_to_arrays() if count>0 or int(body.roof_triangles)>0 else []
+    var metadata={"forest_area_cells":source_count,"forest_fraction_sum":fraction_sum,
+        "source_crown_count":source_count,"source_root_sha256":JSON.stringify(root_identity).sha256_text(),
+        "forest_geometry_mode":geometry_mode,"forest_geometry_identity":FOREST_GEOMETRY_IDENTITY if grouped else "pointed-crown-v8-baseline",
+        "placement_sha256":JSON.stringify(placement_identity).sha256_text(),"crown_count":count,
+        "volume_roof_triangles":body.roof_triangles,"volume_wall_triangles":body.wall_triangles,"candidate_step_model":STEP}
+    if record_geometry:metadata["drawable_records"]=drawable_records
+    var bounds=AABB();var byte_size=0
+    if not arrays.is_empty():
+        var vertices:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+        if not vertices.is_empty():
+            # Match RenderingServer's min/max reduction, then subtract ONCE.
+            # Repeated AABB.expand recomputes endpoints and can accumulate1ULP.
+            var minimum=vertices[0];var maximum=vertices[0]
+            for point in vertices:minimum=minimum.min(point);maximum=maximum.max(point)
+            bounds=AABB(minimum,maximum-minimum)
+        for array in arrays:
+            if array!=null:byte_size+=var_to_bytes(array).size()
+    return {"cancelled":false,"arrays":arrays,"metadata":metadata,
+        "resource_name":"source_closed_crown_volume_forest" if use_body else ("source_grouped_pointed_crown_forest" if grouped else "source_full_pointed_crown_forest"),
+        "aabb":bounds,"byte_size":byte_size}
 
 static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Callable) -> Dictionary:
     # A fixed 15.6-model-unit neighbourhood, never a render chunk or camera cell.

@@ -209,3 +209,58 @@ entlang der Blickachse und FarClip. Target/Breite/Basis, Waldsignatur und die
 beobachteten Ankerprojektionen bleiben gleich. `summary.json:camera_clip_pairs`
 zeigt die tatsächlichen getrennten Werte. Die OFF/ON-Wallzeiten sind ein aktueller
 Produktvergleich, kein isoliertes Material- oder Wolkenshaderprofil.
+
+
+## 2026-10-26: echte Bedienung und begrenzte asynchrone Waldarbeit
+
+Status **implementiert**, enger kalter OS-Scroll-/Resizepfad **validiert**;
+volle Bildvollständigkeit, tiefe Navigation und A12 weiter **offen**.
+Referenz ist SourceV2/V19/CloudOFF. V20/V21/V22 sind verworfene
+Darstellungsversuche und kein Produktwechsel.
+
+Der bisherige synchrone Generator blockierte die reale kleine Scrollaktion
+bei 1440×810: 1508 Stride0-Zellen, 104 s Factoryarbeit nach 467 ausgeführten Misses.
+Der neue Pfad benutzt einen unveränderlichen Source-/Atlas-Kontext, genau
+einen Worker, volle Wantedmitgliedschaft bei 64 eingereihten Jobs, maximal
+zwei CPU-Datenergebnisse/16 MiB und höchstens einen Mainthread-Meshcommit pro Frame.
+Weiterhin benötigte Tuples bleiben bei Prioritäts-/View-Epochenwechsel erhalten.
+Worker erzeugen weder SceneNodes noch Meshes/RIDs. Kronenarrays werden vorab
+im Mainthread bereitgestellt; der Stylegenerator liefert PackedArrays/Metadaten.
+
+CPU-Belege: `camera/forest-async-array-split-r2/` und
+`camera/forest-async-queue-p2-r2/`. Alle getesteten Array-/Rohsurface-/AABB-/
+Metadatenwerte stimmen mit dem eingefrorenen ursprünglichen Generator überein.
+Die AABB-Berechnung verwendet einmalige Min-/Max-Reduktion statt akkumuliertem
+AABB.expand; die frühere Ein-ULP-Abweichung bleibt im r1-Replay erhalten.
+Der Queue-Fallback reserviert nach einem fehlerhaften kleinen Cacheeintrag
+vor Generatorarbeit erneut volle Kapazität; fehlende Payloads führen nicht
+zu einem falschen Oversizedabbruch. Beide konkreten Fehlerbelege bleiben erhalten.
+Das nach dem Fix gebundene [`aabb-reproduction.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-async-array-split-r2/aabb-reproduction.json)
+(SHA-256 `bd49f6dd82cbc2512be495e87c895d677ddde1316e1b876f4316a32b3f84d340`)
+enthält acht exakte Fälle ohne Fehler, einschließlich `(-2,2)`; unabhängiger
+Review bestätigt 8/8. Finale Inputidentity ist `091c5a48c0d67411fe1c69a94b1a8617019fa515602191c249c59dd2b9aa232a`.
+Der historische r1-Ein-ULP-Fehler bleibt abgegrenzt. Alte Cacheheader bleiben
+strikt abgewiesen; dieser Replay erteilt keine Kompatibilitätsfreigabe.
+
+Echte native Probe: `camera/source-v2-native-input-resize-async-r3/`.
+Kleine Scrollaktion, tatsächlicher Fenstereckendrag 1440×810→1154×670→1440×810,
+Gegen-Scroll und reguläres natives Schließen wurden verarbeitet; Exit 0.
+813 kalte Builds/0 Fehler/1 Cancel, Spitzenrückstand 2100 fehlende sichtbare Zellen,
+511 sichtbare Meshes; der Wald war während des Aufbaus nicht vollständig.
+Commitmax 1.376 ms, gesamte Forest-Mainthreadfunktion max 9.031 ms; Gesamtframewerte
+p50/p95/p99/max = 10.341/14.187/15.278/165.845 ms inklusive Diagnoseaufnahmen.
+Keine daraus erfundene Leistungsgrenze oder allgemeine Bedienfreigabe.
+
+Alte Cacheheader werden nach dem Code-/DTO-Split bewusst strikt abgewiesen.
+Der native Nachweis verwendete ausschließlich kalte Generatorarbeit, keine
+behaupteten alten Cachehits. Eine explizit gebundene Kompatibilitätsentscheidung
+oder neue Cachegeneration ist noch offen. Die 768-Zellen-Residencygrenze ist bei
+mehr vollständig Wanted-Zellen weiterhin weich. Alte Supportmeshes werden bis
+zum passenden Zellnachfolger behalten; transiente staleSupporthöhen sind
+protokolliert und nicht als Oberflächenparität abgenommen.
+
+Der vollständige River-Set-LRU behebt die identische Übersichtsrückkehr
+(Start/erste Endpose/Endhold in R4 pixelidentisch). Er behebt die Flüsse während
+kontinuierlicher Navigation ausdrücklich noch nicht: exakte Breite/Pitch im
+Baukey brechen laufende Gesamtsets ständig ab. `camera/river-set-cache-r1/real-tour-causal.json`
+bindet diesen weiterhin offenen Regressionsbefund.
