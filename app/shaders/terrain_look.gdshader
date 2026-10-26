@@ -243,6 +243,8 @@ void fragment() {
     // Overview (reduced relief): slightly deeper, greener land as in the reference.
     float overview=1.0-smoothstep(0.7,1.0,relief);
     ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
+    // Fine grass grain in the close views.
+    ground*=1.0+(filtered_surface_noise(vp/1.1,footprint/1.1)-0.5)*0.20*(1.0-weights.r)*relief;
     // Faint triangle facets on open ground (low-poly read), pixel-filtered.
     float facet_px=footprint/2.2;
     ground*=1.0+(material_facets(vp/2.2)-0.5)*0.10*(1.0-smoothstep(0.3,0.8,facet_px))*relief;
@@ -330,12 +332,15 @@ void fragment() {
     // Broad saum up close, only a thin lighter rim in the overview.
     float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
     float saum=1.0-smoothstep(0.0,shallow_span*0.62*saum_scale,coast_m);
+    // Steep island flanks drop off fast: no broad turquoise halo there.
+    if(physical_water_kind==1.0) saum*=1.0-smoothstep(90.0,500.0,depth)*0.85;
     float core=1.0-smoothstep(0.0,shallow_span*0.16,coast_m);
     // Patchy outer edge so the shelf colour does not read as a uniform halo.
     float saum_edge=look_fbm(vp/14.0,footprint/14.0);
     float turq=clamp(max(pow(saum,1.4)*(0.70+0.45*saum_edge),shelf_t*0.55*saum_scale)+core*0.30,0.0,1.0);
     if(!graphic_coast) turq*=1.0-step(2999.0,distance);
     if(physical_water_kind==2.0) turq*=saum_scale;
+    if(physical_water_kind==1.0) turq*=1.0-smoothstep(150.0,900.0,depth)*0.55;
     sea=mix(sea,sea_shallow_color.rgb,turq);
     // Animated waves; damped in the flat overview (relief ~ 0) and filtered
     // away once wavelengths drop below pixel size.

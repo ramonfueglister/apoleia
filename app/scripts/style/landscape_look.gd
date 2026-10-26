@@ -59,7 +59,7 @@ static func river_minimum_px(view_width: float) -> float:
 
 static func terrain_parameters() -> Dictionary:
     return {
-        "open_color": Color("9a9a44"),
+        "open_color": Color("939a43"),
         "meadow_color": Color("8f9840"),
         "forest_ground_color": Color("3f6227"),
         "dry_color": Color("b8a066"),
@@ -70,7 +70,7 @@ static func terrain_parameters() -> Dictionary:
         "shore_display_span_world": 2.8,
         "look_olive_color": Color("77803a"),
         "look_ochre_color": Color("b49e58"),
-        "look_lime_color": Color("a7a64a"),
+        "look_lime_color": Color("9ea646"),
         "sea_deep_color": Color("1d497e"),
         "sea_open_color": Color("235483"),
         "sea_shallow_color": Color("48909b"),
