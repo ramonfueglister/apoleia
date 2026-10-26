@@ -1,0 +1,10 @@
+{
+  "status": "blocked",
+  "scope": "evidence-contract-only",
+  "visual_truth_checked": false,
+  "issues": [
+    "A08: not evidenced/validated",
+    "A12: not evidenced/validated",
+    "A16: not evidenced/validated"
+  ]
+}
