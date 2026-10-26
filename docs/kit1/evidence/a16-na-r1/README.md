@@ -21,7 +21,8 @@ Nachprüfen (lokale Kopie des Laufs nötig):
 
 ```sh
 cp -cR <checkout-mit-lauf>/runs/kit1-landscape-v5-2026-10-25 /tmp/a16-run
-python3 docs/kit1/evidence/a16-na-r1/apply_na.py /tmp/a16-run /tmp/a16-run/data-report-errata/release-v2
+python3 docs/kit1/evidence/a16-na-r1/apply_na.py /tmp/a16-run /tmp/a16-na
+cp /tmp/a16-na/derivation-view.json /tmp/a16-run/data-report-errata/release-v2/derivation-view.json
 cp docs/kit1/evidence/a16-na-r1/report.json /tmp/a16-run/report.json
 python3 docs/kit1/tools/kit.py report-check /tmp/a16-run
 ```
