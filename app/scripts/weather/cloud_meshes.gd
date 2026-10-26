@@ -4,6 +4,8 @@ extends RefCounted
 ## field; this side only lays out stable slots around the camera.
 
 const MAX_SLOTS := 4096
+## Render layer of the cloud shadow proxies; only the cloud sun casts from it.
+const CLOUD_SHADOW_LAYER := 1 << 19
 
 static func _icosphere() -> Array:
 	var t := (1.0 + sqrt(5.0)) * 0.5
@@ -23,28 +25,33 @@ static func _icosphere() -> Array:
 		subdivided.append_array([[f[0],m[0],m[2]],[f[1],m[1],m[0]],[f[2],m[2],m[1]],[m[0],m[1],m[2]]])
 	return [verts, subdivided]
 
-## A cluster of jittered low-poly spheres with a flat base at y=0.
-## Footprint is about 3.3 x 2.2 units, height about 1.3 units.
+## A flat, wide cumulus cluster of 5-12 squashed low-poly ellipsoids with a flat
+## base at y=0. Normals are bent towards the cluster centre so the shader can
+## keep facets soft. Footprint about 3.4 x 1.6 units, height about 1.2 units.
 static func build_cumulus(seed: int) -> ArrayMesh:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var sphere := _icosphere()
-	var blobs := [[Vector3(0.0, 0.32, 0.0), 0.78]]
-	for i in rng.randi_range(4, 6):
-		var a := rng.randf() * TAU
-		var r := rng.randf_range(0.45, 0.95)
-		blobs.append([Vector3(cos(a) * r * 1.15, rng.randf_range(0.12, 0.38), sin(a) * r * 0.7), rng.randf_range(0.38, 0.62)])
-	blobs.append([Vector3(rng.randf_range(-0.35, 0.35), 0.78, rng.randf_range(-0.2, 0.2)), rng.randf_range(0.34, 0.48)])
+	var blobs := []
+	var count := rng.randi_range(5, 12)
+	for i in count:
+		var t := (float(i) + 0.5) / count * 2.0 - 1.0
+		var x := t * 1.35 + rng.randf_range(-0.15, 0.15)
+		# Taller, larger blobs in the middle; smaller ones towards the ends.
+		var r := lerpf(0.75, 0.32, absf(t)) * rng.randf_range(0.8, 1.15)
+		var squash := Vector3(rng.randf_range(1.0, 1.35), rng.randf_range(0.62, 0.85), rng.randf_range(0.8, 1.1))
+		blobs.append([Vector3(x, r * 0.55, rng.randf_range(-0.35, 0.35)), r, squash])
+	var centre := Vector3(0.0, -0.6, 0.0)
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
 	for blob in blobs:
 		var base := vertices.size()
 		for v in sphere[0]:
-			var p: Vector3 = blob[0] + v * blob[1] * rng.randf_range(0.86, 1.12)
+			var p: Vector3 = blob[0] + v * blob[2] * blob[1] * rng.randf_range(0.92, 1.08)
 			p.y = maxf(p.y, 0.0)
 			vertices.append(p)
-			normals.append(v)
+			normals.append((v.normalized() * 0.5 + (p - centre).normalized() * 0.5).normalized())
 		for f in sphere[1]:
 			indices.append_array([base + f[0], base + f[1], base + f[2]])
 	var arrays := []
@@ -89,7 +96,9 @@ class CloudTier:
 		n = n ^ (n >> 16)
 		return float(n & 0xffffff) / 16777216.0
 
-	func _init(library: Script, parent: Node3D, cell_size: float, scales: Vector2, tier_seed: int, cloud_material: ShaderMaterial, rain_material: ShaderMaterial) -> void:
+	var mask: Array[MultiMeshInstance3D] = []
+
+	func _init(library: Script, parent: Node3D, cell_size: float, scales: Vector2, tier_seed: int, cloud_material: ShaderMaterial, shadow_material: ShaderMaterial, rain_material: ShaderMaterial) -> void:
 		cell = cell_size
 		scale_range = scales
 		seed = tier_seed
@@ -103,9 +112,10 @@ class CloudTier:
 			for casts in [false, true]:
 				var mmi := MultiMeshInstance3D.new()
 				mmi.multimesh = mm
-				mmi.material_override = cloud_material
+				mmi.material_override = shadow_material if casts else cloud_material
 				mmi.custom_aabb = world_box
 				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				if casts: mmi.layers = CLOUD_SHADOW_LAYER
 				parent.add_child(mmi)
 				(shadow if casts else visual).append(mmi)
 		if rain_material:
@@ -119,6 +129,18 @@ class CloudTier:
 			rain_instance.custom_aabb = world_box
 			rain_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			parent.add_child(rain_instance)
+
+	## Same instances drawn top-down into the water cloud-shadow mask world.
+	func add_mask(mask_parent: Node3D, mask_material: ShaderMaterial) -> void:
+		var world_box := AABB(Vector3(-1.0e5, -1.0e3, -1.0e5), Vector3(2.0e5, 2.0e3, 2.0e5))
+		for mm in multimeshes:
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.material_override = mask_material
+			mmi.custom_aabb = world_box
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mask_parent.add_child(mmi)
+			mask.append(mmi)
 
 	## Re-lays the slot grid only when the wanted air-space rect leaves the built one.
 	func ensure(air_rect: Rect2) -> bool:
@@ -138,9 +160,10 @@ class CloudTier:
 			for i in range(built.position.x, built.end.x):
 				var jitter := Vector2(hash01(i, j, seed), hash01(i, j, seed + 1)) - Vector2(0.5, 0.5)
 				var origin := (Vector2(i, j) + Vector2(0.5, 0.5) + jitter * 0.98) * cell
-				var s := lerpf(scale_range.x, scale_range.y, hash01(i, j, seed + 2))
+				# Mostly modest clouds, a few large cumulus.
+				var s := lerpf(scale_range.x, scale_range.y, pow(hash01(i, j, seed + 2), 2.2))
 				var yaw := hash01(i, j, seed + 3) * TAU
-				var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s, s * 0.85, s * lerpf(0.8, 1.15, hash01(i, j, seed + 4))))
+				var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s, s * 1.0, s * lerpf(0.8, 1.15, hash01(i, j, seed + 4))))
 				var threshold := lerpf(0.05, 0.95, hash01(i, j, seed + 5))
 				var custom := [threshold, hash01(i, j, seed + 6), hash01(i, j, seed + 7), 0.0]
 				var variant := 0 if hash01(i, j, seed + 8) < 0.5 else 1
@@ -171,10 +194,11 @@ class CloudTier:
 			mmi.visible = visual_fade > 0.01
 			mmi.set_instance_shader_parameter("fade", visual_fade)
 		for mmi in shadow: mmi.visible = shadows
+		for mmi in mask: mmi.visible = shadows
 		if rain_instance:
 			rain_instance.visible = rain_fade > 0.01
 			rain_instance.set_instance_shader_parameter("fade", rain_fade)
 
 	func set_visible(on: bool) -> void:
-		for mmi in visual + shadow: mmi.visible = on
+		for mmi in visual + shadow + mask: mmi.visible = on
 		if rain_instance: rain_instance.visible = on

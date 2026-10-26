@@ -805,11 +805,9 @@ func _setup_scene() -> void:
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
     camera.current=true
     add_child(camera)
-    cloud_layer=preload("res://scripts/weather/cloud_layer.gd").new()
-    add_child(cloud_layer)
+    # Volume clouds (cloud_layer.gd) are retired and no longer instanced;
+    # --clouds-enabled/--clouds-disabled now drive the weather system.
     _refresh_displayed_height_bounds()
-    cloud_layer.configure(Rect2(world_min,world_size),camera,{"sun_light":sun_light,"height_range_provider":Callable(self,"get_displayed_height_range"),"altitude_unit":"godot_world_y"})
-    cloud_layer.enabled=false # Volume clouds retired; --clouds-enabled/--clouds-disabled now drive the weather system.
     weather=preload("res://scripts/weather/weather_system.gd").new()
     add_child(weather)
     weather.configure(self,camera,sun_light,environment,Callable(self,"get_displayed_height_range"))
