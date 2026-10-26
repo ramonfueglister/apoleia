@@ -28,7 +28,7 @@ const STATE_PUFFS := {"clear": 1.0, "fair": 1.0, "overcast": 0.35, "rain": 0.0, 
 const STATE_BANK_GREY := {"clear": 0.0, "fair": 0.0, "overcast": 0.55, "rain": 1.0, "storm": 0.6}
 const STATE_WIND := {"clear": 0.45, "fair": 0.6, "overcast": 0.8, "rain": 0.9, "storm": 1.0}
 # Desired weather cells per kind (0 cumulus cluster, 1 rain front, 2 storm cell).
-const STATE_CELLS := {"clear": [0, 0, 0], "fair": [2, 0, 0], "overcast": [2, 1, 0], "rain": [0, 4, 0], "storm": [1, 0, 2]}
+const STATE_CELLS := {"clear": [0, 0, 0], "fair": [2, 0, 0], "overcast": [2, 1, 0], "rain": [0, 4, 0], "storm": [0, 0, 1]}
 const AUTO_WEIGHTS := {"fair": 0.55, "clear": 0.2, "overcast": 0.12, "rain": 0.08, "storm": 0.05}
 const TIMES: Array[String] = ["morning", "noon", "evening"]
 # Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
@@ -362,7 +362,7 @@ func _prewarm_cells() -> void:
 	for cell in cells: cell.age = _rng.randf_range(40.0, cell.life * 0.5)
 	# Fair weather starts with a cumulus group in view.
 	for cell in cells:
-		if cell.kind == 0:
+		if cell.kind == 0 and state == "fair":
 			cell.pos = _focus() - _apparent_offset(cloud_base) * 0.5
 			cell.ra = maxf(_ground_width * 0.7, 120.0)
 			cell.rc = maxf(_ground_width * 0.9, 150.0)
@@ -497,7 +497,7 @@ func _process(delta: float) -> void:
 			if _frame == 20 and not front.is_empty(): _strike(front[0].pos + Vector2(0.0, -front[0].ra * 0.2), _ground_width)
 			if _frame > 20:
 				_bolt_frames = 2
-				lightning = maxf(lightning, 0.6)
+				lightning = maxf(lightning, 0.25)
 		if _frame == 30: print("WEATHERDEBUG ", JSON.stringify(describe()))
 	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
 		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
@@ -637,7 +637,7 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.5)
 	var cluster_scale := clampf(_ground_width / 700.0, 0.4, 1.0)
 	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.8, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
