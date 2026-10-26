@@ -25,56 +25,39 @@ static func _icosphere() -> Array:
 		subdivided.append_array([[f[0],m[0],m[2]],[f[1],m[1],m[0]],[f[2],m[2],m[1]],[m[0],m[1],m[2]]])
 	return [verts, subdivided]
 
-## A cluster of jittered low-poly spheres with a flat base at y=0.
-## Footprint is about 3.3 x 2.2 units, height about 1.3 units.
+## A flat, wide cumulus cluster of 5-12 squashed low-poly ellipsoids with a flat
+## base at y=0. Normals are bent towards the cluster centre so the shader can
+## keep facets soft. Footprint about 3.4 x 1.6 units, height about 1.2 units.
 static func build_cumulus(seed: int) -> ArrayMesh:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var sphere := _icosphere()
-	var blobs := [[Vector3(0.0, 0.32, 0.0), 0.78]]
-	for i in rng.randi_range(4, 6):
-		var a := rng.randf() * TAU
-		var r := rng.randf_range(0.45, 0.95)
-		blobs.append([Vector3(cos(a) * r * 1.15, rng.randf_range(0.12, 0.38), sin(a) * r * 0.7), rng.randf_range(0.38, 0.62)])
-	blobs.append([Vector3(rng.randf_range(-0.35, 0.35), 0.78, rng.randf_range(-0.2, 0.2)), rng.randf_range(0.34, 0.48)])
+	var blobs := []
+	var count := rng.randi_range(5, 12)
+	for i in count:
+		var t := (float(i) + 0.5) / count * 2.0 - 1.0
+		var x := t * 1.35 + rng.randf_range(-0.15, 0.15)
+		# Taller, larger blobs in the middle; smaller ones towards the ends.
+		var r := lerpf(0.75, 0.32, absf(t)) * rng.randf_range(0.8, 1.15)
+		var squash := Vector3(rng.randf_range(1.0, 1.35), rng.randf_range(0.62, 0.85), rng.randf_range(0.8, 1.1))
+		blobs.append([Vector3(x, r * 0.55, rng.randf_range(-0.35, 0.35)), r, squash])
+	var centre := Vector3(0.0, -0.6, 0.0)
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
 	for blob in blobs:
 		var base := vertices.size()
 		for v in sphere[0]:
-			var p: Vector3 = blob[0] + v * blob[1] * rng.randf_range(0.86, 1.12)
+			var p: Vector3 = blob[0] + v * blob[2] * blob[1] * rng.randf_range(0.92, 1.08)
 			p.y = maxf(p.y, 0.0)
 			vertices.append(p)
-			normals.append(v)
+			normals.append((v.normalized() * 0.5 + (p - centre).normalized() * 0.5).normalized())
 		for f in sphere[1]:
 			indices.append_array([base + f[0], base + f[1], base + f[2]])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
-
-## Regular grid of (x, z) cell indices; the deck shader jitters and lifts it.
-static func build_deck_grid(nx: int, nz: int) -> ArrayMesh:
-	var vertices := PackedVector3Array()
-	var indices := PackedInt32Array()
-	for z in nz + 1:
-		for x in nx + 1: vertices.append(Vector3(x, 0, z))
-	for z in nz:
-		for x in nx:
-			var a := z * (nx + 1) + x
-			var b := a + 1
-			var c := a + nx + 1
-			var d := c + 1
-			if (x + z) % 2 == 0: indices.append_array([a, b, d, a, d, c])
-			else: indices.append_array([a, b, c, b, d, c])
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -180,7 +163,7 @@ class CloudTier:
 				# Mostly modest clouds, a few large cumulus.
 				var s := lerpf(scale_range.x, scale_range.y, pow(hash01(i, j, seed + 2), 2.2))
 				var yaw := hash01(i, j, seed + 3) * TAU
-				var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s, s * 0.85, s * lerpf(0.8, 1.15, hash01(i, j, seed + 4))))
+				var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s, s * 1.0, s * lerpf(0.8, 1.15, hash01(i, j, seed + 4))))
 				var threshold := lerpf(0.05, 0.95, hash01(i, j, seed + 5))
 				var custom := [threshold, hash01(i, j, seed + 6), hash01(i, j, seed + 7), 0.0]
 				var variant := 0 if hash01(i, j, seed + 8) < 0.5 else 1

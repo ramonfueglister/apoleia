@@ -36,5 +36,5 @@ void fragment() {
 	float reach = 0.55 + 0.45 * r;
 	float edge = pow(sin(3.14159 * UV.x), 1.5) * smoothstep(0.0, 0.08, UV.y) * (1.0 - smoothstep(reach * 0.6, reach, UV.y));
 	ALBEDO = rain_color;
-	ALPHA = clamp((0.16 + 0.42 * line * dash) * edge * amount * fade * strength, 0.0, 0.6);
+	ALPHA = clamp((0.2 + 0.5 * line * dash) * edge * amount * fade * strength, 0.0, 0.7);
 }
