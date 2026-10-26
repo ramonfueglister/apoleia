@@ -61,13 +61,15 @@ void fragment() {
 	// Light shining through the thin rim, strongest with the sun behind the cloud.
 	float back = clamp(-dot(to_camera, l) * 0.5 + 0.5, 0.0, 1.0);
 	colour += pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.9, 0.75) * (0.12 + 0.3 * back);
-	colour = mix(colour, vec3(0.21, 0.225, 0.25) * (0.75 + 0.5 * wrap), grey);
+	// Rain: light grey tops, dark blue-grey bellies.
+	vec3 rain_grey = vec3(0.30, 0.32, 0.35) * mix(0.55, 1.0, smoothstep(0.0, 0.6, height01)) * (0.75 + 0.5 * wrap);
+	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
 	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.55, 0.38) * 0.18 * wrap * smoothstep(0.4, 0.95, height01);
 	colour = mix(colour, slate, storm_amount);
 	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
 	colour += near_flash * vec3(1.4, 1.45, 1.8) * (0.6 + storm);
 	ALBEDO = colour * brightness;
-	// Translucent rims; grey rain banks are thinner overall.
-	ALPHA = mix(0.7, 1.0, smoothstep(0.08, 0.5, facing)) * mix(1.0, 0.82, grey) * fade;
+	// Translucent rims; grey rain banks are thinner, storm fronts dense.
+	ALPHA = mix(0.7, 1.0, smoothstep(0.08, 0.5, facing)) * mix(mix(1.0, 0.82, grey), 1.0, storm_amount) * fade;
 }
