@@ -2464,9 +2464,12 @@ func _start_river_load() -> void:
     var supplement:Dictionary=product_binding.get("visual_extensions",{}).get("rivers_supplement",{})
     if bool(supplement.get("enabled",false)):
         var path=source_root.path_join(str(supplement.path))
-        river_supplement_sha256=FileAccess.get_sha256(path) if FileAccess.file_exists(path) else ""
-        if river_supplement_sha256==str(supplement.sha256):payloads.append({"bytes":FileAccess.get_file_as_bytes(path),"smoothing":1})
-        else:push_error("River supplement missing or hash mismatch; drawn without it")
+        # Optional: a package without it draws the canonical rivers only.
+        if not FileAccess.file_exists(path):push_warning("River supplement not packaged; drawn without it")
+        else:
+            river_supplement_sha256=FileAccess.get_sha256(path)
+            if river_supplement_sha256==str(supplement.sha256):payloads.append({"bytes":FileAccess.get_file_as_bytes(path),"smoothing":1})
+            else:push_error("River supplement hash mismatch; drawn without it")
     river_load_task=WorkerThreadPool.add_task(_load_river_features.bind(payloads),false,"river polylines")
 
 # Worker: pure data (JSON, projection, Chaikin), no scene or main-thread state.
