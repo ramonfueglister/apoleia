@@ -10,6 +10,7 @@ var next_capture=0.
 var capturing=false
 var finishing=false
 var image_index=0
+var capture_enabled=true
 var phases={}
 var rows=PackedStringArray(["seconds,frame_ms,capture_previous_ms,engine_process_ms,longitude,latitude,width_model_km,draw_tiles,missing_requests,pending,cpu_bytes,gpu_bytes"])
 var timings=PackedStringArray()
@@ -26,6 +27,7 @@ var waypoints=[
     [72.,19.,41.,6000.,"return-far"]]
 func _initialize()->void:
     var args=OS.get_cmdline_user_args()
+    capture_enabled=not args.has("--no-capture")
     for i in range(args.size()-1):
         if args[i]=="--output":directory=args[i+1]
     if directory=="":directory=ProjectSettings.globalize_path("res://../docs/kit1/screenshots/britain-egypt")
@@ -60,7 +62,7 @@ func _tick()->void:
     rows.append("%.4f,%.3f,%.3f,%.3f,%.5f,%.5f,%.3f,%d,%d,%d,%d,%d"%[seconds,frame_ms,capture_previous_ms,Performance.get_monitor(Performance.TIME_PROCESS)*1000.,geo.x,geo.y,scene.view_width,runtime.metrics.draw_tiles,runtime.metrics.missing,tile.pending,tile.cpu_bytes,runtime.metrics.gpu_bytes])
     capture_previous_ms=0.
     var phase=_camera(seconds)
-    if first_draw and seconds>=next_capture and not capturing:
+    if capture_enabled and first_draw and seconds>=next_capture and not capturing:
         next_capture=seconds+.125;capturing=true;_capture(seconds,phase)
     if first_draw and seconds>=72.:finishing=true;call_deferred("_finish")
     elif now-start_usec>130000000:finishing=true;call_deferred("_finish")

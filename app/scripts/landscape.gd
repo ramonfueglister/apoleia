@@ -1436,7 +1436,7 @@ func _process(delta: float) -> void:
     _update_camera()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE lod before ",frame_number)
     _update_lod()
-    if terrain_streaming and frame_number%30==0:
+    if terrain_streaming and not clipmap_runtime and frame_number%30==0:
         var stream_state=terrain_streaming.stats();stream_state["memory_static_bytes"]=OS.get_static_memory_usage();stream_state["source_arrays_bytes"]=context_height_packed.size()+detail_height_packed.size()+fixed_surface.bytes.size();stream_state["forest"]=terrain_forest.stats() if terrain_forest else {};stream_state["rivers"]=terrain_rivers.stats() if terrain_rivers else {};print("TERRAIN_STREAM "+JSON.stringify(stream_state))
     if pipeline_preparation:pipeline_preparation.update()
     _update_feature_lod()
