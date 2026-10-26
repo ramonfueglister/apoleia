@@ -40,6 +40,7 @@ func set_wanted(ids:Array,pins:Array)->void:
     pinned[str(manifest.root)]=true
     for id in pending.keys():
         if not wanted.has(id) and not pinned.has(id):pending.erase(id)
+var _reported_failure=false
 func poll()->Array:
     var loaded=[]
     if _task>=0 and WorkerThreadPool.is_task_completed(_task):
@@ -50,7 +51,11 @@ func poll()->Array:
             if bytes+cost<=CPU_LIMIT:
                 result["used"]=tick;if cache.has(result.id):bytes-=int(cache[result.id].bytes)
                 cache[result.id]=result;bytes+=cost;loaded.append(result);metrics.loaded+=1
-        else:failures[_job]=Time.get_ticks_msec()
+        else:
+            failures[_job]=Time.get_ticks_msec()
+            # A tile that cannot be read leaves its parent drawn forever; say so once.
+            if not _reported_failure:
+                _reported_failure=true;push_error("Clipmap tile unreadable: "+directory.path_join(_job+"-{height,material,water}.png")+"; finer levels stay on coarser parents. Check the bound clipmap tile set (READY, all levels) or relink it with scripts/link-render-data.")
         metrics.io_ms=float(_result.get("io_ms",0.));_result={};_job=""
     if _task<0 and not pending.is_empty():
         var selected="";var priority=-INF

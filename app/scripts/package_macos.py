@@ -365,13 +365,24 @@ def launcher_text(arguments):
     if any(not re.fullmatch(r'[A-Za-z0-9_./=-]+', item) for item in arguments):
         raise ValueError('unsafe fixed launcher argument')
     joined = ' '.join("'" + item + "'" for item in arguments)
-    return '''#!/bin/sh
+    return '''#!/bin/bash
 set -eu
 LAUNCH_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 WORLD_DIR=$(CDPATH= cd -- "$LAUNCH_DIR/../Resources/world" && pwd)
 # Runtime resolves repository-relative dataset arguments from its source_root.
 cd "$WORLD_DIR"
-exec "$LAUNCH_DIR/godot-runtime" --path "$WORLD_DIR/app" -- ''' + joined + ''' "$@"
+# Arguments before a literal "--" go to the engine (e.g. --windowed --resolution 640x360);
+# everything after it, or everything when no "--" is given, goes to the app.
+ENGINE_ARGS=()
+APP_ARGS=("$@")
+for ((i = 1; i <= $#; i++)); do
+    if [ "${!i}" = "--" ]; then
+        ENGINE_ARGS=("${@:1:i-1}")
+        APP_ARGS=("${@:i+1}")
+        break
+    fi
+done
+exec "$LAUNCH_DIR/godot-runtime" --path "$WORLD_DIR/app" ${ENGINE_ARGS[@]+"${ENGINE_ARGS[@]}"} -- ''' + joined + ''' ${APP_ARGS[@]+"${APP_ARGS[@]}"}
 '''
 
 

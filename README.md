@@ -11,6 +11,16 @@ einheitliche kantige Bildsprache; unsichtbare quadratische Tile-Grundlage, ohne 
 
 Im aktuellen Checkout kann die Landschaft nach Daten-/Rendererbuild mit `./scripts/run-landscape` gestartet werden. Die finale lokale macOS-App [Roma Aeterna Final.app](<artifacts/Roma Aeterna Final.app>) wurde auf Release-v2 gebaut und als Paket gestartet; ein frischer Git-Clone enthält die großen Geodaten- und Renderpayloads nicht, ihre Reproduktion und Abhängigkeiten stehen in der Fresh-Clone-Anleitung. Die finale unabhängige Matrix ist qualifiziert abgeschlossen: A08 Nutzerstil bleibt offen, A12 GPU-/Per-Pass-Zeit fehlt, A16 enthält vier begründete NA, die der Kitchecker nicht darstellen kann. Die App wurde mit echten Eingaben geprüft; Paket-/Messbelege stehen im Runreport und Evidence-Index.
 
+### Render-Daten in einem frischen Checkout
+
+`app/renderer-binding.json` bindet Quell- und Renderdaten (`data/gameworld-v2`,
+`artifacts/render-data/*`), die zu gross für Git sind. Fehlen sie, bricht die App
+mit einer Liste der fehlenden Pfade ab. Liegen sie in einem anderen Checkout,
+verlinkt `scripts/link-render-data <checkout-mit-daten>` die fehlenden Datensätze
+(bestehende Pfade bleiben unangetastet); alternativ startet
+`--source-root <checkout-mit-daten>` direkt dagegen. Unlesbare Clipmap-Tiles
+meldet die App einmal als Fehler, statt still auf groben Stufen zu bleiben.
+
 Projekt- und Kitdateien werden im privaten GitHub-Repository
 [ramonfueglister/romaaeterna](https://github.com/ramonfueglister/romaaeterna)
 versioniert.
