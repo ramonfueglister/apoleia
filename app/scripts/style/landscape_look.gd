@@ -57,7 +57,7 @@ const RIVER_WIDTH_SCALE = 2.6
 # Screen-width floor: thin map lines far out, broad diorama rivers up close.
 static func river_minimum_px(view_width: float) -> float:
     var near = clampf((log(1800.0) - log(maxf(view_width, 1.0))) / (log(1800.0) - log(300.0)), 0.0, 1.0)
-    return lerpf(1.6, 9.0, near * near)
+    return lerpf(1.6, 26.0, near * near)
 
 static func terrain_parameters() -> Dictionary:
     return {
@@ -82,7 +82,7 @@ static func terrain_parameters() -> Dictionary:
 
 static func water_parameters() -> Dictionary:
     return {
-        "river_color": Color("2b8fa6"),
+        "river_color": Color("1f6aa6"),
         "river_edge_color": Color("4fb2b8"),
         "river_bank_color": Color("c9bd86"),
         "minimum_screen_width_px": 2.2,
@@ -99,6 +99,6 @@ static func water_look_parameters() -> Dictionary:
         "water_sky_zenith": Color("5d8fc4"),
         "water_sky_horizon": Color("c9dce8"),
         "water_sun_tint": Color("fff0d0"),
-        "water_facet_size": 2.4,
-        "water_glitter": 1.0,
+        "water_facet_size": 1.4,
+        "water_glitter": 0.33,
     }

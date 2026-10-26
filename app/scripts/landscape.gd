@@ -2328,6 +2328,9 @@ func _update_river_surface() -> void:
         var count=clampi(int(ceil(a.distance_to(b)/maxf(view_width/viewport_size.x*4.0,.05))),1,100)
         for j in range(count):
             var p=a.lerp(b,float(j)/count);var q=a.lerp(b,float(j+1)/count)
+            # Overlap at segment ends closes the notches between strips.
+            if j==0:p-=tangent*half_width
+            if j==count-1:q+=tangent*half_width
             var points=PackedVector2Array([p-side*half_width,q-side*half_width,q+side*half_width,p+side*half_width])
             if fixed_surface and not fixed_flat_node.visible:
                 var low=points[0];var high=points[0]

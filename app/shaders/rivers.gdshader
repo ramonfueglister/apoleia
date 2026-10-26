@@ -50,18 +50,18 @@ void fragment(){
     float calm=smoothstep(0.05,0.6,relief);
     // Same optics as the sea; flow along the river line, no surf bands.
     WaterSample w=water_shade(river_position,bank_m+400.0,9.0+(1.0-edge)*22.0,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0);
-    vec3 water=mix(w.albedo,river_color.rgb,0.35);
+    vec3 water=mix(w.albedo,river_color.rgb,0.55);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
     float streak=smoothstep(0.62,0.9,wl_fnoise(vec2(along*0.9-TIME*0.5,across*6.0),footprint*6.0))*calm*(1.0-edge);
     water=mix(water,water*1.18+0.03,streak*0.5);
-    water=mix(water,river_edge_color.rgb,smoothstep(0.55,0.92,edge)*0.45);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
     water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
-    ALBEDO=mix(water,river_bank_color.rgb,smoothstep(0.82,1.0,edge)*0.55*(1.0-smoothstep(600.0,1500.0,view_width)));
+    // No per-strip edge tint: strips overlap at joints and would show seams.
+    ALBEDO=water;
     EMISSION=w.emission*0.6*(1.0-smoothstep(0.8,1.0,edge));
     ROUGHNESS=w.roughness;
-    SPECULAR=0.25;
+    SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
 }

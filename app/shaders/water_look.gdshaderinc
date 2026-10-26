@@ -21,7 +21,7 @@ uniform vec4 water_sky_horizon : source_color = vec4(0.78,0.88,0.94,1.0);
 uniform vec4 water_sun_tint : source_color = vec4(1.0,0.93,0.78,1.0);
 // Direction towards the light, world space (set from the sun each frame).
 uniform vec3 water_sun_dir=vec3(-0.68,0.64,0.36);
-uniform float water_facet_size=2.4;
+uniform float water_facet_size=1.4;
 uniform float water_glitter=1.0;
 
 float wl_hash(vec2 p) {p=fract(p*vec2(233.34,851.73));p+=dot(p,p+23.45);return fract(p.x*p.y);}
@@ -95,11 +95,11 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     float facet_amount=anim*(1.0-smoothstep(0.25,0.6,facet_px));
     vec3 n_detail=wl_normal(p,footprint,t,flow,anim);
     vec3 n_facet=wl_normal(centre,0.0,t,flow,1.6);
-    float tilt=(facet_id-0.5)*0.10;
+    float tilt=(facet_id-0.5)*0.05;
     n_facet=normalize(n_facet+vec3(tilt,0.0,-tilt*0.7));
-    vec3 n=normalize(mix(n_detail,n_facet,facet_amount*0.75));
+    vec3 n=normalize(mix(n_detail,n_facet,facet_amount*0.45));
     // Facet tone: faint per-triangle brightness steps.
-    col*=1.0+(facet_id-0.5)*0.05*facet_amount;
+    col*=1.0+(facet_id-0.5)*0.025*facet_amount;
     col*=1.0+(wl_wave(p,footprint,t,flow)-0.5)*0.10*anim;
     // Caustic-like light web in very shallow water.
     float shallow=1.0-smoothstep(2.0,16.0,eff);
@@ -125,9 +125,13 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // the sun trail is visible; it follows the sun's azimuth and elevation.
     vec3 l=normalize(vec3(water_sun_dir.x,max(water_sun_dir.y,0.08),-abs(water_sun_dir.z)-0.35));
     float rl=max(dot(r,l),0.0);
-    float glint_core=pow(rl,900.0);
-    float sparkle=step(0.975,fract(facet_id*13.7+t*0.45))*pow(rl,90.0);
-    float broad=pow(rl,40.0)*0.05;
+    // Core path from the smooth detail normal: soft, no flat-white facets.
+    float rd=max(dot(reflect(-view_world,n_detail),l),0.0);
+    float glint_core=pow(rd,900.0)*0.35;
+    // Small soft points at facet centres, not whole white triangles.
+    float dot_mask=1.0-smoothstep(0.0,water_facet_size*0.14,length(p-centre));
+    float sparkle=step(0.95,fract(facet_id*13.7+t*0.45))*pow(rl,160.0)*dot_mask;
+    float broad=pow(rd,320.0)*0.05;
     float glitter=(glint_core*2.2+sparkle*1.4*facet_amount+broad)*anim*water_glitter*sun_mask*(1.0-storm*0.8);
     // Surf: permanent shore foam plus 2-3 bands running towards the coast.
     float foam_w=max(px_m*1.6,110.0)*mix(0.45,1.0,saum_scale);
@@ -145,7 +149,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);
     s.albedo=col*mix(0.80,1.0,sun_mask);
-    s.emission=sky*sheen*0.55+water_sun_tint.rgb*glitter*1.3+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
+    s.emission=sky*sheen*0.55+water_sun_tint.rgb*glitter*0.45+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
     s.normal=n;
     s.roughness=mix(0.75,0.45,anim);
     s.foam=foam;

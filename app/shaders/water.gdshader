@@ -54,6 +54,7 @@ void fragment() {
     ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-calm)*0.6);
     EMISSION=w.emission;
     ROUGHNESS=w.roughness;
-    SPECULAR=0.25;
+    // Sun glints come from water_look; the engine lobe would form a blob.
+    SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
 }
