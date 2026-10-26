@@ -75,10 +75,15 @@ float decode_model_distance(sampler2D tex,ivec2 cell) {
     vec2 code=texelFetch(tex,clamp(cell,ivec2(0),textureSize(tex,0)-ivec2(1)),0).rg;
     return (round(code.r*255.0)*256.0+round(code.g*255.0))*0.125-4096.0;
 }
-// Quadratic B-spline (3x3) instead of bilinear: removes the texel staircase
-// of the coast contour; C1-smooth, slightly rounds sub-texel corners.
+// Quadratic B-spline (3x3) near the contour instead of bilinear: removes the
+// texel staircase of the coast; C1-smooth, slightly rounds sub-texel corners.
 float bilinear_model_distance(sampler2D tex,vec2 uv) {
-    vec2 p=uv*vec2(textureSize(tex,0))-0.5;ivec2 c=ivec2(round(p));vec2 t=p-vec2(c)+0.5;
+    vec2 p=uv*vec2(textureSize(tex,0))-0.5;
+    ivec2 c0=ivec2(floor(p));vec2 f=fract(p);
+    float linear=mix(mix(decode_model_distance(tex,c0),decode_model_distance(tex,c0+ivec2(1,0)),f.x),mix(decode_model_distance(tex,c0+ivec2(0,1)),decode_model_distance(tex,c0+ivec2(1,1)),f.x),f.y);
+    // Smoothing only matters near the contour; far fields stay bilinear.
+    if(abs(linear)>1500.0) return linear;
+    ivec2 c=ivec2(round(p));vec2 t=p-vec2(c)+0.5;
     vec3 wx=vec3(0.5*(1.0-t.x)*(1.0-t.x),0.5+t.x*(1.0-t.x),0.5*t.x*t.x);
     vec3 wy=vec3(0.5*(1.0-t.y)*(1.0-t.y),0.5+t.y*(1.0-t.y),0.5*t.y*t.y);
     float d=0.0;

@@ -238,7 +238,6 @@ void fragment() {
     ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength);
     float ochre=smoothstep(0.56,0.82,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
     ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.18,1.0-smoothstep(0.7,1.0,relief)));
-    ground=mix(ground,forest_ground_color.rgb*0.82,weights.r*0.35);
     ground*=1.0+(n_micro-0.5)*0.22*look_variation_strength;
     // Overview (reduced relief): slightly deeper, greener land as in the reference.
     float overview=1.0-smoothstep(0.7,1.0,relief);

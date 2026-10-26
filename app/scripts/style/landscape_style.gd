@@ -104,40 +104,51 @@ static func vegetation_parameters() -> Dictionary:
     return {"canopy_ambient_occlusion": 0.20, "leaf_warmth": 0.06}
 
 static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
-    # One closed upright crown, a tapered irregular pentagonal form. Variants
-    # change its flanks, never substitute spherical bushes or stacked cones.
+    # One source crown record renders as a small grove: several low-poly
+    # pointed trees about a third of the former size, each with its own tone
+    # (dark green <-> olive). Footprint stays inside the former crown radius,
+    # so the existing coverage/wet-safety checks remain valid. Trunks reach
+    # below the record ground so trees on slopes sink in instead of floating.
     var st=SurfaceTool.new()
     st.begin(Mesh.PRIMITIVE_TRIANGLES)
     var rng=RandomNumberGenerator.new()
     rng.seed=71039
-    var sides=6
-    var height=16.0
-    var levels=[0.06,0.25,0.58,0.82,1.0]
-    var widths=[0.38,1.0,0.73,0.34,0.0]
-    var vertices:Array[Vector3]=[]
+    var palette=[Color("2f5524"),Color("3b6428"),Color("4a6d2b"),Color("5c7432"),Color("426a2b"),Color("35592a"),Color("677a35")]
+    var count=6
+    for t in range(count):
+        var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
+        var distance=0.0 if t==0 else 4.4*sqrt(float(t)/float(count-1))*rng.randf_range(0.8,1.05)
+        var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
+        var height=rng.randf_range(4.6,6.4)
+        var radius=height*rng.randf_range(0.27,0.33)
+        _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)])
+    var mesh=st.commit()
+    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)
+    return mesh
+
+static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color)->void:
+    var sides=5
+    var levels=[-0.45,0.18,0.55,1.0]
+    var widths=[0.55,1.0,0.58,0.0]
+    var phase=rng.randf()*TAU
+    var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
+    var rings:Array=[]
     for j in range(levels.size()):
+        var ring:Array[Vector3]=[]
         for i in range(sides):
-            var angle=TAU*float(i)/float(sides)
-            var radius=5.0*widths[j]*rng.randf_range(0.85,1.12)
-            var tip=Vector3(0.65,height,0.2)
-            vertices.append(tip if j==levels.size()-1 else Vector3(cos(angle)*radius+levels[j]*0.65,levels[j]*height,sin(angle)*radius*0.82))
-    var center=Vector3(0,8,0)
-    var tones=[Color("365725"),Color("44672d"),Color("537333"),Color("607c3b"),Color("4b6c2e"),Color("3a5d29")]
+            var a=phase+TAU*float(i)/float(sides)
+            var r=radius*widths[j]*rng.randf_range(0.88,1.1)
+            ring.append(base+Vector3(cos(a)*r,levels[j]*height,sin(a)*r)+lean*maxf(levels[j],0.0))
+        rings.append(ring)
+    var center=base+Vector3(0,height*0.4,0)
     for j in range(levels.size()-1):
         for i in range(sides):
             var k=(i+1)%sides
-            var a=vertices[j*sides+i]
-            var b=vertices[j*sides+k]
-            var c=vertices[(j+1)*sides+i]
-            var d=vertices[(j+1)*sides+k]
-            _outward_triangle(st,a,c,b,center,tones[i])
-            _outward_triangle(st,b,c,d,center,tones[i])
-    for i in range(sides):
-        _outward_triangle(st,Vector3(0,height*0.06,0),vertices[(i+1)%sides],vertices[i],center,Color("365725"))
-    _branch(st,Vector3.ZERO,Vector3(0,2.0,0),0.40,0.25,Color("716842"),5)
-    var mesh=st.commit()
-    mesh.resource_name="own_reference_pointed_crown_"+str(family)+"_lod"+str(lod)
-    return mesh
+            # Faces facing the sun side (west) slightly lighter: low-poly read.
+            var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
+            var tone=color.lightened(0.10*facing) if j>0 else color.darkened(0.25)
+            _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
+            if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 
 static func representative_grove_layout(seed_value:int, interior_distance_m:float, spacing_m:float=20.0) -> Array[Vector2]:
     # A placement recipe, not displaced geography. The integrator must validate

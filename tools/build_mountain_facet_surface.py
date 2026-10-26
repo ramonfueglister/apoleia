@@ -37,9 +37,10 @@ if (macro_m['width'], macro_m['height'], macro_m['world_min']) != (base_m['width
 # Relief mask: local 14 km range and elevation; zero on and near water.
 relief = ndimage.maximum_filter(base, 7) - ndimage.minimum_filter(base, 7)
 land = macro > 0.5
-near_water = ndimage.binary_dilation(~land, iterations=3)
-mask = smooth(relief, 300, 1100) * smooth(macro, 250, 900) * (~near_water)
-mask = ndimage.gaussian_filter(mask, 1.5)
+# Fade out over 3..12 grid nodes (6..24 km) from water: no coastal walls.
+water_distance = ndimage.distance_transform_edt(land)
+mask = smooth(relief, 300, 1100) * smooth(macro, 250, 900) * smooth(water_distance, 3, 12)
+mask = ndimage.gaussian_filter(mask, 2.0) * (water_distance > 2)
 # Ridge sharpening: boost the 6 km band-pass of the base grid, more on crests.
 low = ndimage.gaussian_filter(base, 3.0)
 detail = base - low

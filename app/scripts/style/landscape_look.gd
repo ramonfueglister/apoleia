@@ -61,7 +61,7 @@ static func terrain_parameters() -> Dictionary:
     return {
         "open_color": Color("939a43"),
         "meadow_color": Color("8f9840"),
-        "forest_ground_color": Color("3f6227"),
+        "forest_ground_color": Color("587530"),
         "dry_color": Color("b8a066"),
         "rock_color": Color("a89a82"),
         "rock_shadow_color": Color("6f6555"),

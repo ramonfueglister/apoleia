@@ -7,7 +7,7 @@
   },
   "atlas": {
     "path": "artifacts/render-data/fixed-source-v2-mountain-r1/surface.json",
-    "sha256": "f2382dcdf581b94bd54790c5a7c74932b02811730da811feed1bc1f10c7306a6"
+    "sha256": "201bcef749c82a0663575497a825c65ad1cdc6e978573e0ec7554eaf1d5a8106"
   },
   "upload": {
     "path": "artifacts/render-data/source-v2-upload-r1/upload.json",
@@ -36,11 +36,11 @@
     "format": "compact",
     "status": "validated current V19 representation and complete SourceContext layout; native cold coverage 3.023s, A08/A12 remain open",
     "layout": {
-      "path": "artifacts/render-data/forest-layout-sourcev2-v19-complete-r3",
-      "manifest_sha256": "a11c94d6005039408cbcd0146e6e78b34d64eba79c9f65826727f8470a1bdd10",
+      "path": "artifacts/render-data/forest-layout-claude-groves-r1",
+      "manifest_sha256": "c7dd850dad6381227190a2e172f5f489e5688c716705e2c607cd6d42a51a34ce",
       "coverage": "complete",
       "cells": 3116,
-      "records": 176609,
+      "records": 174210,
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     }
   }
