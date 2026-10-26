@@ -160,11 +160,22 @@ def collect_current(repository):
 
 
 def launcher_text():
-    return '''#!/bin/sh
+    return '''#!/bin/bash
 set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 RESOURCES=$(CDPATH= cd -- "$HERE/../Resources" && pwd)
-exec "$HERE/godot-runtime" --main-pack "$RESOURCES/apoleia.pck" -- --source-root "$RESOURCES/world" "$@"
+# Arguments before a literal "--" go to the engine (e.g. --windowed --resolution 640x360);
+# everything after it, or everything when no "--" is given, goes to the app.
+ENGINE_ARGS=()
+APP_ARGS=("$@")
+for ((i = 1; i <= $#; i++)); do
+    if [ "${!i}" = "--" ]; then
+        ENGINE_ARGS=("${@:1:i-1}")
+        APP_ARGS=("${@:i+1}")
+        break
+    fi
+done
+exec "$HERE/godot-runtime" --main-pack "$RESOURCES/apoleia.pck" ${ENGINE_ARGS[@]+"${ENGINE_ARGS[@]}"} -- --source-root "$RESOURCES/world" ${APP_ARGS[@]+"${APP_ARGS[@]}"}
 '''
 
 
