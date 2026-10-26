@@ -2,13 +2,13 @@
 
 **Kit:** `kit1-landscape-v5` / `kit1-ops-v5`. Der Text startet die Umsetzung erst
 bei bewusstem Absenden als Nutzerauftrag. Speichern oder Lesen führt ihn nicht aus.
-Im Projekt `vic3-clone` verwenden; bei Weitergabe den entpackten Kitordner bereitstellen.
+Im Projekt `romaaeterna` verwenden; bei Weitergabe den entpackten Kitordner bereitstellen.
 
 ```text
 Setze jetzt das vollständige Kit 1 um. Dies ist mein ausdrücklicher Startauftrag
 für Implementierung, nicht nur für weitere Planung oder Dokumentation.
 
-Arbeite im Projekt vic3-clone. Maßgeblich ist docs/kit1/README.md samt vollständigem
+Arbeite im Projekt romaaeterna. Maßgeblich ist docs/kit1/README.md samt vollständigem
 Kit. Das portable Ersatzpaket liegt unter artifacts/kit1-build-kit.zip. Falls nur
 dieses vorliegt, prüfe es und entpacke in einen neuen Ordner, ohne bestehende Arbeit
 zu überschreiben. Das ursprüngliche WorldOfOldcraft-Archiv ist Referenzmaterial;
@@ -84,10 +84,10 @@ lesbare facettierte Geländeformen, detaillierte Waldgruppen und natürliche
 die Primärreferenz und ihre Abgrenzungen vor dem Rendering tatsächlich. Die
 Fernstilprobe ist eine nachrangige Farbreferenz, kein Beleg für den flachen
 2D-Endpunkt; die Nahprobe wurde vom Nutzer verworfen und ist nicht enthalten. Die
-sechs offiziellen Screenshots bleiben Quellenkontext und dürfen
+drei offiziellen Urbek-Screenshots bleiben Quellenkontext und dürfen
 die Primärreferenz nicht überstimmen. Kein Stilbild belegt gemeinsame Geografie,
-historische 117/180-Formen, kontinuierlichen Zoom oder Maskengeometrie. Victoria 3 dient geografischer Übersicht,
-nicht als politische oder malerische Material-/UI-Vorlage. Städte, Gebäude, Menschen,
+historische 117/180-Formen, kontinuierlichen Zoom oder Maskengeometrie. Kein Screenshot ist eine
+politische oder malerische Material-/UI-Vorlage. Städte, Gebäude, Menschen,
 Straßen, Wirtschaft, politische Farben und sichtbare Bewirtschaftungsmuster bleiben
 ausgeschlossen. Keine neuen Spielsysteme hinzufügen.
 

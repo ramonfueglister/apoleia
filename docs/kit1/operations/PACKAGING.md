@@ -3,7 +3,7 @@
 `REFERENCE_MAP.json` erfasst jeden Eintrag des Referenzarchivs mit SHA-256,
 Größe, Entscheidung und Zielpfaden. `REFERENCE_MAP.md` erklärt Kategorien.
 Keine Assets/Skripte des fremden MMO-Referenzarchivs werden kopiert. Die explizit
-beauftragten sechs offiziellen Urbek-/Victoria-3-Screenshots sind getrennte
+beauftragten drei offiziellen Urbek-Screenshots sind getrennte
 Referenzdateien mit Provenienz, keine Produktassets.
 
 ```sh
