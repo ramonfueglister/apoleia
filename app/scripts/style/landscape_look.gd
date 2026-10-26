@@ -60,8 +60,35 @@ static func river_minimum_px(view_width: float) -> float:
     var near = clampf((log(1800.0) - log(maxf(view_width, 1.0))) / (log(1800.0) - log(300.0)), 0.0, 1.0)
     return lerpf(1.6, 15.0, near * near)
 
+# Real land cover (ESA WorldCover 2021, roman-adjusted) at the 2 km nodes,
+# built by tools/build_landcover_nodes.py; optional, the shader falls back to
+# the source material weights when it is missing.
+const LAND_COVER_DIR = "artifacts/render-data/landcover-node-2km"
+static var _land_cover: Dictionary = {}
+
+static func land_cover_parameters() -> Dictionary:
+    if not _land_cover.is_empty(): return _land_cover
+    var root = ProjectSettings.globalize_path("res://..").simplify_path().path_join(LAND_COVER_DIR)
+    var manifest_text = FileAccess.get_file_as_string(root.path_join("manifest.json"))
+    var manifest = JSON.parse_string(manifest_text) if manifest_text != "" else null
+    if manifest == null:
+        _land_cover = {"use_land_cover": false}
+        return _land_cover
+    var bytes = FileAccess.get_file_as_bytes(root.path_join(manifest.look.path))
+    var w = int(manifest.width); var h = int(manifest.height)
+    if bytes.size() != w * h * 4:
+        _land_cover = {"use_land_cover": false}
+        return _land_cover
+    var image = Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes)
+    image.generate_mipmaps()
+    _land_cover = {"use_land_cover": true, "land_cover_tex": ImageTexture.create_from_image(image),
+        "land_cover_world_min": Vector2(manifest.world_min[0], manifest.world_min[1]),
+        "land_cover_spacing": float(manifest.world_size[0]) / float(w - 1),
+        "land_cover_size": Vector2(w, h)}
+    return _land_cover
+
 static func terrain_parameters() -> Dictionary:
-    return {
+    return land_cover_parameters().merged({
         "open_color": Color("b4a248"),
         "meadow_color": Color("9a9341"),
         "forest_ground_color": Color("4f5f2c"),
@@ -75,23 +102,26 @@ static func terrain_parameters() -> Dictionary:
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
         # Painted land look (terrain_land_look.gdshaderinc).
-        "land_grass_color": Color("7a8538"),
-        "land_lime_color": Color("98953e"),
-        "land_olive_color": Color("5a682c"),
-        "land_ochre_color": Color("a2884f"),
-        "land_forest_floor_color": Color("405425"),
-        "land_dry_color": Color("ab9462"),
-        "land_rock_light_color": Color("b09c86"),
-        "land_rock_dark_color": Color("62554a"),
-        "land_snow_color": Color("f2efe9"),
+        "land_grass_color": Color("989650"),
+        "land_lime_color": Color("a3a05c"),
+        "land_olive_color": Color("7c8648"),
+        "land_ochre_color": Color("b0a464"),
+        "land_hill_color": Color("5c7044"),
+        "land_forest_floor_color": Color("3a5236"),
+        "land_dry_color": Color("b3a660"),
+        "land_sand_color": Color("c5b177"),
+        "land_rock_light_color": Color("cfc3aa"),
+        "land_rock_dark_color": Color("4a4842"),
+        "land_snow_color": Color("ece6da"),
         "land_valley_tint": Color("9db3b8"),
         "land_facet_tilt": 0.22,
+        "land_micro_height": 1.3,
         "sea_deep_color": Color("1d497e"),
         "sea_open_color": Color("235483"),
         "sea_shallow_color": Color("48909b"),
         "sea_foam_color": Color("eef6f2"),
         "sea_sky_color": Color("6f9fc4"),
-    }
+    })
 
 static func water_parameters() -> Dictionary:
     return {

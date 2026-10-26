@@ -136,7 +136,6 @@ vec4 display_material_weights_at(vec2 p) {
     return mix(center,filtered,material_transition_strength);
 }
 // Shared painted land look; the host supplies its represented surface.
-#define LAND_LOOK_HEIGHT(p) (use_fixed_surface ? fixed_surface_height_at(p) : model_height_at(p))
 #define LAND_LOOK_WEIGHTS(p) source_surface_weights_at(p)
 #include "res://shaders/terrain_land_look.gdshaderinc"
 // Nonnegative C1 continuation. Unlike crossfading two offset distance fields,
