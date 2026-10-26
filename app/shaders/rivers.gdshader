@@ -27,8 +27,13 @@ varying float river_half_width;
 // here double-decoded gray128 to56. Vertex COLOR follows a different path.
 void vertex(){
     // Documented cartographic width; source centerline and topology unchanged.
-    float side_projection=max(length(vec2(NORMAL.x,NORMAL.z*projection_vertical_scale)),0.001);
-    float half_width=max(UV2.y*0.5,view_width/max(viewport_width,1.0)*minimum_screen_width_px*0.5/side_projection);
+    vec2 side_unit=normalize(NORMAL.xz+vec2(0.000001));
+    float side_projection=max(length(vec2(side_unit.x,side_unit.y*projection_vertical_scale)),0.001);
+    // Look layer: screen floor grows towards the close views (thin map line
+    // far out, broad diorama river near; same curve as LandscapeLook).
+    float near_t=clamp((log(1800.0)-log(max(view_width,1.0)))/(log(1800.0)-log(300.0)),0.0,1.0);
+    float floor_px=max(minimum_screen_width_px,mix(1.6,15.0,near_t*near_t)*mix(1.0,2.0,smoothstep(240.0,80.0,view_width)));
+    float half_width=max(UV2.y*0.5*1.6,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.
     if(!use_model_mesh) VERTEX.xz+=NORMAL.xz*UV2.x*half_width;

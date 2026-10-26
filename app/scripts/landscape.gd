@@ -1405,7 +1405,8 @@ func _update_camera() -> void:
     if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
     # Continental views: stronger exaggeration so ranges read as relief.
     # No crowns are drawn there, so forest support heights are unaffected.
-    display_height_scale*=1.0+1.0*smoothstep(2200.0,6000.0,view_width)
+    # Zoom curve of the vertical exaggeration (LandscapeLook).
+    display_height_scale=LandscapeLook.display_height_scale(view_width)
     var profile=CameraRig.profile(view_width,far_width)
     elevation_degrees=profile.x
     relief=profile.y
@@ -1440,6 +1441,7 @@ func _update_camera() -> void:
     if marine_material:
         for material in _marine_materials():material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     if marine_material: _bind_visible_river_mouths()
+    if delta_nodes.is_empty() and frame_number%15==0:_build_delta_surfaces()
     for node in delta_nodes:
         node.material_override.set_shader_parameter("relief",relief);node.material_override.set_shader_parameter("view_width",view_width)
         node.material_override.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
@@ -2468,17 +2470,39 @@ func _setup_rivers() -> void:
         for line in lines:
             var station=0.
             var polyline_id=str(river_feature_count)+":"+str(line_index);line_index+=1
-            for j in range(line.size()-1):
-                var a=geographic_to_world(float(line[j][0]),float(line[j][1]))
-                var b=geographic_to_world(float(line[j+1][0]),float(line[j+1][1]))
-                if a==b:continue
+            # Display smoothing (Chaikin, endpoints kept) once at load, so every
+            # renderer path (fixed, streaming, clipmap) draws smooth meanders.
+            var points:Array[Vector2]=[]
+            for coordinate in line:
+                var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
+                if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
+            for _iteration in range(2):
+                if points.size()<3:break
+                var smoothed:Array[Vector2]=[points[0]]
+                for k in range(points.size()-1):
+                    smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
+                smoothed.append(points[-1]);points=smoothed
+            for j in range(points.size()-1):
+                var a=points[j];var b=points[j+1]
                 segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
                 minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
         if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name",""))})
         river_feature_count+=1
     _detect_river_mouths()
     _setup_river_deltas()
+    _widen_river_mouths()
     _build_river_crown_grid()
+
+# Display width in the source records: estuary funnel over the last ~4 km
+# and a wider lower course towards a delta. Shared by all renderer paths.
+func _widen_river_mouths() -> void:
+    for source in river_sources:
+        for segment in source.segments:
+            var p:Vector2=(Vector2(segment[0])+Vector2(segment[1]))*.5
+            var gain=1.0
+            for mouth in river_mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
+            for apex in delta_apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
+            segment[2]=float(segment[2])*gain
 
 # Display deltas: an area mask per delta (delta.gdshader) instead of band
 # arms. The main course stays a river band and ends in a lagoon with organic
@@ -2518,8 +2542,13 @@ func _setup_river_deltas() -> void:
             "center":mouth-sea_direction*rb*0.45})
         delta_apexes.append(mouth-sea_direction*rb*1.2)
 
+# Built once the surface heights are available (streaming loads them after
+# setup); retried from _process until then.
 func _build_delta_surfaces() -> void:
-    if delta_regions.is_empty() or not fixed_surface:return
+    if delta_regions.is_empty() or not fixed_surface or not delta_nodes.is_empty():return
+    if clipmap_runtime and not clipmap_runtime.metrics.root_ready:return
+    for region in delta_regions:
+        if not is_finite(_render_height(region.center)):return
     var shader=load("res://shaders/delta.gdshader")
     for region in delta_regions:
         var center:Vector2=region.center;var size=Vector2.ONE*maxf(region.ra,region.rb)*2.6
@@ -2529,7 +2558,9 @@ func _build_delta_surfaces() -> void:
         for z in range(n+1):
             for x in range(n+1):
                 var p=origin+size*Vector2(float(x)/n,float(z)/n)
-                vertices.append(Vector3(p.x,maxf(fixed_surface.surface_height(p),0.0)*display_height_scale,p.y))
+                # Same height source as the visible terrain (clipmap/stream).
+                var h=_render_height(p)/maxf(relief,.0001)
+                vertices.append(Vector3(p.x,maxf(h,0.0) if is_finite(h) else 0.0,p.y))
         for z in range(n):
             for x in range(n):
                 var a=z*(n+1)+x;var b=a+1;var c=a+n+1;var d=c+1

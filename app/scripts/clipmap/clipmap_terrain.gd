@@ -37,6 +37,8 @@ func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMater
     if water_template==null:
         water_template=ShaderMaterial.new();water_template.shader=load("res://shaders/water.gdshader")
         load("res://scripts/water/water_style.gd").apply_to(water_template)
+        var look=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+        for key in look:water_template.set_shader_parameter(key,look[key])
     forest=tile_forest;stream.forest_builder=forest
     rivers=load("res://scripts/clipmap/tile_rivers.gd").new();rivers.configure(scene.river_sources);stream.river_builder=rivers
     grid=_grid()
