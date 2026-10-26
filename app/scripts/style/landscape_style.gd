@@ -107,7 +107,8 @@ static func vegetation_parameters() -> Dictionary:
 ## viewport): [[view_width_below, detail], ...] ascending. Every stage draws the
 ## same trees (positions, sizes, colours); detail only removes facets:
 ## 0 authored 5-sided cone (25 tris), 1 five sides without the shoulder ring
-## (15), 2 four sides (12), 3 three sides (9). Past the last entry crowns read
+## (15), 2 four sides (12), 3 three sides (9), 4 one three-sided cone without
+## the under-ground skirt (3). Past the last entry crowns read
 ## as the terrain's forest-ground tint (overview).
 static func grove_detail_view_widths() -> Array:
     return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
