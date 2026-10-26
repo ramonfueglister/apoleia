@@ -1,0 +1,8 @@
+mittel-fair med 11.29 p95 12.67
+mittel-off med 9.93 p95 12.14
+mittel-storm med 11.95 p95 13.40
+nah-fair med 8.32 p95 8.74
+nah-off med 8.29 p95 8.77
+nah-storm med 8.40 p95 8.97
+
+# own perf lock, 240 frames after readiness, perspective camera, 1330x450 internal render (480x270 window), wall frame ms
