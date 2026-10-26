@@ -1,6 +1,9 @@
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
 #include "res://shaders/model_sampling.gdshaderinc"
+#include "res://shaders/water_appearance.gdshaderinc"
+uniform bool streamed_terrain=false;
+uniform float terrain_morph_alpha=1.0;
 uniform sampler2D mapped_cover_tex : filter_linear_mipmap, repeat_disable;
 uniform bool use_model_mesh=false;
 uniform bool use_fixed_surface=false;
@@ -47,7 +50,7 @@ uniform float material_transition_strength=1.0;
 uniform float coast_extension_strength=1.0;
 uniform float shore_display_span_world=4.6;
 uniform float shallow_display_span_world=24.0;
-uniform float surface_detail_strength=0.075;
+uniform float surface_detail_strength=0.22;
 uniform float model_facet_strength=0.88;
 uniform float cartographic_relief_strength=0.23;
 uniform float water_variation_strength=0.028;
@@ -82,10 +85,12 @@ float fixed_surface_height_at(vec2 p) {
     float b=decode_model_height(fixed_surface_height_tex,cell+ivec2(1,0),true);
     float c=decode_model_height(fixed_surface_height_tex,cell+ivec2(0,1),true);
     float d=decode_model_height(fixed_surface_height_tex,cell+ivec2(1),true);
-    return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+    float value=f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+    return material_cohort_value_3(p,vec4(value,0.0,0.0,0.0)).x;
 }
 vec3 fixed_surface_normal_at(vec2 p) {
     vec2 step_size=fixed_surface_world_size/vec2(textureSize(fixed_surface_height_tex,0)-ivec2(1));
+    if(terrain_pages)step_size=canonical_grid_spacing;
     float dx=(fixed_surface_height_at(p+vec2(step_size.x,0))-fixed_surface_height_at(p-vec2(step_size.x,0)))*0.001/(2.0*step_size.x);
     float dz=(fixed_surface_height_at(p+vec2(0,step_size.y))-fixed_surface_height_at(p-vec2(0,step_size.y)))*0.001/(2.0*step_size.y);
     return normalize(vec3(-dx,1.0,-dz));
@@ -97,7 +102,9 @@ float display_coast_decode(ivec2 cell) {
 float display_coast_distance_at(vec2 uv) {
     vec2 q=uv*vec2(textureSize(display_coast_distance_tex,0))-0.5;
     ivec2 cell=ivec2(floor(q));vec2 f=fract(q);
-    return mix(mix(display_coast_decode(cell),display_coast_decode(cell+ivec2(1,0)),f.x),mix(display_coast_decode(cell+ivec2(0,1)),display_coast_decode(cell+ivec2(1)),f.x),f.y);
+    float value=mix(mix(display_coast_decode(cell),display_coast_decode(cell+ivec2(1,0)),f.x),mix(display_coast_decode(cell+ivec2(0,1)),display_coast_decode(cell+ivec2(1)),f.x),f.y);
+    vec2 p=display_coast_world_min+uv*display_coast_world_size;
+    return material_cohort_value_4(p,vec4(value,0.0,0.0,0.0)).x;
 }
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
@@ -120,7 +127,13 @@ float extended_display_coast_distance(float short_distance,float long_distance) 
 
 void vertex() {
     float altitude;
-    if(use_model_mesh) {
+    if(clipmap_enabled) {
+        VERTEX.xz=clipmap_origin+VERTEX.xz*clipmap_span;
+        altitude=clipmap_water_kind(VERTEX.xz)==1.0 ? 0.0 : clipmap_ring_height(VERTEX.xz);
+        NORMAL=clipmap_normal(VERTEX.xz);
+    } else if(streamed_terrain) {
+        altitude=(UV2.x+(VERTEX.y-UV2.x)*terrain_morph_alpha)*1000.0;
+    } else if(use_model_mesh) {
         altitude=water_kind_at(VERTEX.xz)==1.0 ? 0.0 : VERTEX.y*1000.0;
     } else {
         vec2 patch_size=patch_bounds.zw*world_size;
@@ -162,7 +175,7 @@ void fragment() {
     } else if(physical_water_kind==1.0) discard;
     // Canonical TIN owns its footprint. Raster fallback must not draw a second
     // different surface through block edges while neighboring blocks stream.
-    if(!use_model_mesh && !marine_surface_only) {
+    if(!clipmap_enabled && !use_model_mesh && !marine_surface_only) {
         for(int i=0;i<8;i++) {
             if(i>=active_model_count) break;
             vec4 bounds=active_model_bounds[i];
@@ -172,7 +185,7 @@ void fragment() {
     // The fixed derived world owns material height, including relief=0.
     // Geometry decimation must not recolor the same place when zoom changes.
     // This is the generalized atlas, never a finer raw DEM microtexture.
-    float h=use_fixed_surface ? fixed_surface_height_at(world_position.xz) : canonical_position.y*1000.0;
+    float h=clipmap_enabled ? clipmap_source_height(world_position.xz) : (use_fixed_surface ? fixed_surface_height_at(world_position.xz) : canonical_position.y*1000.0);
     float distance=water_distance_at(world_position.xz);
     float edge_aa=max(fwidth(distance)*0.7,0.15);
     float water=smoothstep(-edge_aa,edge_aa,distance);
@@ -186,7 +199,7 @@ void fragment() {
     float fixed_rock_channel=source_surface_rock_at(world_position.xz);
     vec2 detail_material_uv=(world_position.xz-detail_world_min)/detail_world_size;
     float lat=mix(north_lat,south_lat,geo_uv.y);
-    bool semantic_surface=use_surface_weights || (use_detail_surface_weights && inside_domain(detail_material_uv));
+    bool semantic_surface=clipmap_enabled || use_surface_weights || (use_detail_surface_weights && inside_domain(detail_material_uv));
     float dry=semantic_surface?weights.b:(1.0-smoothstep(29.0,37.0,lat));
     // RGBA is FOREST / ROCK / DRY / SHORE. Alpha was incorrectly used as
     // meadow evidence in V10, leaving inland plains with no green role.
@@ -200,15 +213,22 @@ void fragment() {
         vec3 mapped=pow(texture(mapped_cover_tex,geo_uv).rgb,vec3(2.2));
         ground=mix(ground,mapped,0.36);
     }
-    // Source-bound form hierarchy: no noise field invents a terrain/material
-    // pattern. Geographic heights, forest, rock and dry weights remain inputs.
+    // Geography owns material classes; three appearance scales vary their reflectance.
     float footprint=max(length(dFdx(local_render_position.xz)),length(dFdy(local_render_position.xz)));
+    float macro=filtered_surface_noise(world_position.xz/20.0+vec2(7.1,13.4),footprint/20.0)-0.5;
+    float meso=filtered_surface_noise(world_position.xz/2.0+vec2(23.7,4.3),footprint/2.0)-0.5;
+    float micro=filtered_surface_noise(world_position.xz/0.16,footprint/0.16)-0.5;
+    float variation=macro*0.16+meso*0.11+micro*0.035;
+    vec3 warm_meadow=meadow_color.rgb*vec3(1.12,1.07,0.85);
+    vec3 olive_meadow=open_color.rgb*vec3(0.90,1.04,0.85);
+    ground=mix(ground,mix(olive_meadow,warm_meadow,clamp(0.5+macro*0.75+meso*0.4,0.0,1.0)),(1.0-dry)*(1.0-weights.r)*0.48);
+    ground*=1.0+variation;
     // V8 lighting follows the actual retained-feature triangle surface used
     // by the renderer and CPU picking. No detached 2km DEM normal texture.
     // Material ownership uses the same fixed atlas gradient and base-level G
     // as CPU forest representation, including the flat endpoint. Screen LOD
     // may filter appearance but cannot change which material owns a place.
-    vec3 source_normal=use_fixed_surface ? fixed_surface_normal_at(world_position.xz) : canonical_normal;
+    vec3 source_normal=clipmap_enabled ? clipmap_normal(world_position.xz) : (use_fixed_surface ? fixed_surface_normal_at(world_position.xz) : canonical_normal);
     // Material hierarchy follows the FIXED represented form, not the much
     // shallower canonical source and not the camera's temporary relief fade.
     // CPU forest priority uses this same inverse transpose and fixed factor.
@@ -217,22 +237,27 @@ void fragment() {
     float rock=max(fixed_rock_channel,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
     // Smooth plains and long lower hills; hard, directed faces on supported
     // rock/high relief. No global full-facet override and no detached DEM bump.
-    float hard_face=max(smoothstep(0.28,0.75,rock),smoothstep(0.12,0.42,1.0-smooth_normal.y)*0.60);
+    float hard_face=max(0.24,max(smoothstep(0.28,0.75,rock),smoothstep(0.12,0.42,1.0-smooth_normal.y)*0.60));
     vec3 normal=normalize(mix(smooth_normal,facet_normal,hard_face*model_facet_strength));
     // The regular 2km transport triangles are not authored rock facets. Use
     // the same fixed atlas gradient already needed for material ownership.
     // Planar macroflanks retain their direction; raster-cell edges no longer
     // receive an independent hard lighting discontinuity. Geometry is intact.
-    if(use_fixed_surface) normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale*relief,0.00001),source_normal.z));
+    if(use_fixed_surface || clipmap_enabled) {
+        vec3 terrain_normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale*relief,0.00001),source_normal.z));
+        normal=normalize(mix(terrain_normal,facet_normal,hard_face*0.72*relief));
+    }
     float aspect=clamp(dot(source_normal,normalize(vec3(-0.58,0.65,0.49))),0.0,1.0);
     // A few coherent facet values follow actual slope/aspect and source zones;
     // only reflectance is discretized, never positions or canonical heights.
-    vec3 stone=mix(rock_shadow_color.rgb,rock_color.rgb,0.82);
+    float stone_facet=material_facets(world_position.xz/1.4);
+    vec3 stone=mix(rock_shadow_color.rgb,rock_color.rgb,0.68+stone_facet*0.24);
+    stone*=1.0+meso*0.085;
     // Canonical rock above still governs fixed forest priority; only visible
     // reflectance uses the spatially bounded appearance-filtered G channel.
     float visible_rock=max(weights.g,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
     ground=mix(ground,stone,mix(rock,visible_rock,material_transition_strength));
-    ground=mix(ground,snow_color.rgb,smoothstep(3400.0,4500.0,h)*0.68);
+    ground=mix(ground,snow_color.rgb,smoothstep(3650.0,4650.0,h+macro*160.0)*0.88);
     // Actual directional light now uses represented_normal; no second baked
     // directional darkening competes with the sun or suppresses slope contrast.
     // Regional lowland variation is semantic, not a free cloud texture.
@@ -240,11 +265,11 @@ void fragment() {
     // the actual contour, including isometric foreshortening and aspect.
     // Neither shoreline nor source distance moves; only material width does.
     float contour_m_per_px=max(length(vec2(dFdx(distance),dFdy(distance))),0.001);
-    float shore_span=min(max(shore_band_m,contour_m_per_px*shore_screen_width_px),1800.0);
+    float shore_span=min(max(max(shore_band_m,140.0),contour_m_per_px*1.15),1800.0);
     float shallow_span=min(max(shallow_band_m,contour_m_per_px*shallow_screen_width_px),1000.0);
     float material_distance=distance;
     vec2 coast_uv=(world_position.xz-display_coast_world_min)/display_coast_world_size;
-    bool graphic_coast=use_display_coast_distance && inside_domain(coast_uv) && physical_water_kind!=2.0;
+    bool graphic_coast=!clipmap_enabled && use_display_coast_distance && inside_domain(coast_uv) && physical_water_kind!=2.0;
     if(graphic_coast) {
         float coast_distance=display_coast_distance_at(coast_uv);
         // Preserve the exact existing contour close to zero; the sidecar only
@@ -253,7 +278,9 @@ void fragment() {
         float baseline_distance=mix(coast_distance,abs(distance),exact_weight);
         float unsigned_distance=mix(baseline_distance,extended_display_coast_distance(abs(distance),coast_distance),coast_extension_strength);
         material_distance=(physical_water_kind==1.0 ? 1.0 : -1.0)*unsigned_distance;
-        shore_span=max(shore_display_span_world*1000.0,contour_m_per_px*shore_screen_width_px);
+        // Long-range coastal distance is for water depth, not a 4.6 km sand
+        // strip at every zoom. Keep the existing physical/screen-width bound.
+        shore_span=min(max(max(shore_band_m,140.0),contour_m_per_px*1.15),1800.0);
         shallow_span=max(shallow_display_span_world*1000.0,contour_m_per_px*shallow_screen_width_px);
     }
     // The final ground/sea mix applies (1-water) once. Applying it here too
@@ -281,9 +308,25 @@ void fragment() {
     sea=mix(sea,water_shallow_color.rgb,teal_profile*0.67);
     float water_var=filtered_surface_noise(world_position.xz*0.012+vec2(4.7,8.1),footprint*0.012)*0.6+filtered_surface_noise(world_position.xz*5.0,footprint*5.0)*0.4;
     sea*=1.0+(water_var-0.5)*water_variation_strength;
-    ALBEDO=mix(ground,sea,water);
-    ROUGHNESS=mix(0.94,0.63,water);
-    SPECULAR=mix(0.15,0.30,water);
-    AO=1.0-weights.r*0.12*(1.0-water);
-    NORMAL=normalize((VIEW_MATRIX*vec4(normalize(mix(normal,vec3(0,1,0),water)),0.0)).xyz);
+    vec3 water_normal;float water_roughness;float water_specular;
+    water_appearance(world_position.xz,distance,physical_water_kind==1.0 ? abs(material_distance) : abs(distance),max(-bathymetry,0.0),int(physical_water_kind),relief,view_width,footprint,TIME,sea,water_normal,water_roughness,water_specular);
+    vec3 water_reflected_radiance;
+    float water_reflectance;
+    vec3 world_view_direction=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
+    water_environment_reflection(water_normal,world_view_direction,
+        int(physical_water_kind),relief,view_width,
+        water_reflected_radiance,water_reflectance);
+    ALBEDO=mix(ground,sea*(1.0-water_reflectance),water);
+    EMISSION=water_reflected_radiance*water_reflectance*water;
+    ROUGHNESS=mix(0.94,water_roughness,water);
+    SPECULAR=mix(0.15,water_specular,water);
+    // Bounded source-height concavity adds soft valley/floor occlusion.
+    float cavity=0.0;
+    if(view_width<1600.0 && !marine_surface_only) {
+        vec2 cavity_step=vec2(2.0,1.2);
+        float surrounding=(model_height_at(world_position.xz+cavity_step)+model_height_at(world_position.xz-cavity_step))*0.5;
+        cavity=smoothstep(30.0,340.0,surrounding-max(h,0.0))*relief;
+    }
+    AO=1.0-(weights.r*0.23+cavity*0.20)*(1.0-water);
+    NORMAL=normalize((VIEW_MATRIX*vec4(normalize(mix(normal,water_normal,water)),0.0)).xyz);
 }
