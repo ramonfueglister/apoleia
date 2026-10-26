@@ -13,24 +13,10 @@ varying float coast_top_weight;
 varying float coast_source_height;
 varying vec2 coast_position;
 
-float coast_grid_vertex(vec2 p) {
-    return clipmap_water_kind(p)==1.0 ? 0.0 : clipmap_ring_height(p);
-}
-float coast_rendered_height(vec2 p) {
-    float step_size=clipmap_span/64.0;
-    vec2 q=clamp((p-clipmap_origin)/step_size,vec2(0.0),vec2(64.0));
-    vec2 cell=min(floor(q),vec2(63.0));vec2 f=q-cell;
-    vec2 corner=clipmap_origin+cell*step_size;
-    float a=coast_grid_vertex(corner);
-    float b=coast_grid_vertex(corner+vec2(step_size,0.0));
-    float c=coast_grid_vertex(corner+vec2(0.0,step_size));
-    float d=coast_grid_vertex(corner+vec2(step_size));
-    return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
-}
 void vertex() {
     coast_top_weight=clamp(VERTEX.y,0.0,1.0);
     vec2 p=clipmap_origin+VERTEX.xz*clipmap_span;
-    coast_source_height=max(coast_rendered_height(p),0.0);
+    coast_source_height=max(clipmap_surface_height(p),0.0);
     VERTEX=vec3(p.x,coast_source_height*0.001*display_height_scale*relief*coast_top_weight,p.y);
     coast_position=p;
     vec2 step_size=tile_rect.zw/vec2(textureSize(tile_water_tex,0)-ivec2(1));

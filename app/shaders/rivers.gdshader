@@ -40,7 +40,7 @@ void vertex(){
     // Only the raw raster fallback needs the explicit display mapping here.
     float ground=use_model_mesh ? VERTEX.y : terrain_height_at(VERTEX.xz)*0.001*display_height_scale;
     if(clipmap_enabled){
-        ground=clipmap_ring_height(VERTEX.xz)*0.001*display_height_scale;
+        ground=clipmap_surface_height(VERTEX.xz)*0.001*display_height_scale;
     }else if(streamed_river){
         float ya=CUSTOM0.x+(CUSTOM0.y-CUSTOM0.x)*terrain_morph_alpha;
         float yb=CUSTOM0.z+(CUSTOM0.w-CUSTOM0.z)*terrain_morph_alpha;

@@ -105,3 +105,19 @@ float clipmap_bathymetry(vec2 p) {
     float e=texelFetch(tile_water_tex,c+ivec2(1),0).a;
     return mix(mix(a,b,f.x),mix(d,e,f.x),f.y)*6375.0;
 }
+
+// Actual rendered 65-grid triangle plane for all surface attachments.
+float clipmap_surface_vertex(vec2 p) {
+    return clipmap_water_kind(p)==1.0 ? 0.0 : clipmap_ring_height(p);
+}
+float clipmap_surface_height(vec2 p) {
+    float step_size=clipmap_span/64.0;
+    vec2 q=clamp((p-clipmap_origin)/step_size,vec2(0.0),vec2(64.0));
+    vec2 cell=min(floor(q),vec2(63.0));vec2 f=q-cell;
+    vec2 corner=clipmap_origin+cell*step_size;
+    float a=clipmap_surface_vertex(corner);
+    float b=clipmap_surface_vertex(corner+vec2(step_size,0.0));
+    float c=clipmap_surface_vertex(corner+vec2(0.0,step_size));
+    float d=clipmap_surface_vertex(corner+vec2(step_size));
+    return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+}

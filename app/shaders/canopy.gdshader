@@ -15,7 +15,7 @@ void vertex(){
     if(normalize_instanced_normals) NORMAL=normalize(NORMAL);
     crown_up=NORMAL.y;
     if(clipmap_enabled){
-        VERTEX.y+=clipmap_ring_height(MODEL_MATRIX[3].xz)*0.001*display_height_scale;
+        VERTEX.y+=clipmap_surface_height(MODEL_MATRIX[3].xz)*0.001*display_height_scale;
     }else if(stream_ground){
         vec4 a=texelFetch(ground_vertices,ivec2(0,INSTANCE_ID),0);
         vec4 b=texelFetch(ground_vertices,ivec2(1,INSTANCE_ID),0);
