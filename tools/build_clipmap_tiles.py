@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Build a progressive 256² height/material/water pyramid from existing sources.
 Coarse tiles are written first and remain usable while finer tiles are built.
+
+--fine-detail adds a 0.5 km real-relief detail raster (build_fine_relief_detail.py)
+to the height of levels 0 and 1; --reuse-from copies material/water tiles of an
+existing pyramid with the same layout (they do not depend on the height surface).
 """
 from pathlib import Path
 import argparse,json,math,time,shutil
@@ -12,6 +16,11 @@ class Sources:
   surface=ROOT/surface;self.surface=surface
   self.upload=json.loads((ROOT/'artifacts/render-data/source-v2-upload-r1/upload.json').read_text());self.g=json.loads(surface.read_text());self.arrays={}
   self.height=np.memmap(surface.parent/self.g['height_payload']['path'],dtype=np.uint8,mode='r',shape=(self.g['height'],self.g['width'],2))
+  self.detail=None;self.detail_max_span=0.;self.height_only=False
+ def use_detail(self,folder,max_span):
+  m=json.loads((ROOT/folder/'manifest.json').read_text())
+  a=np.memmap(ROOT/folder/'detail.f16',dtype=np.float16,mode='r',shape=(m['height'],m['width']))
+  self.detail={'array':a,'world_min':m['world_min'],'world_size':[m['spacing']*(m['width']-1),m['spacing']*(m['height']-1)]};self.detail_max_span=max_span
  def sample(self,domain,name,x,z,nearest=False):
   d=self.upload['domains'][domain][name];key=(domain,name)
   if key not in self.arrays:self.arrays[key]=np.memmap(ROOT/d['payload']['path'],dtype=np.uint8,mode='r',shape=(d['height'],d['width'],d.get('bytes_per_pixel',d.get('channels',4 if name=='surface_weights' else 1 if name=='associated_role' else 2))))
@@ -23,6 +32,9 @@ class Sources:
   axis=(np.arange(258,dtype=np.float64)-.5)/256*span;x,z=np.meshgrid(origin[0]+axis,origin[1]+axis)
   h=sample(self.height,x,z,self.g['world_min'],self.g['world_size'],False,True)
   height=(h[...,0]*256+h[...,1])*.25-8192
+  if self.detail is not None and span<=self.detail_max_span:
+   d=self.detail;height=height+np.where(height>0.5,sample(d['array'][...,None],x,z,d['world_min'],d['world_size'],False,True)[...,0],0)
+  if self.height_only:return packed(height,.25,-8192),None,None
   fine=self.weight('domain_transition',x,z);local=self.weight('local_domain_transition',x,z)
   material=self.sample('context','surface_weights',x,z)*(1-fine[...,None])+self.sample('fine','surface_weights',x,z)*fine[...,None]
   material=material*(1-local[...,None])+self.sample('local','surface_weights',x,z)*local[...,None]
@@ -50,9 +62,11 @@ def packed(value,scale,offset,role=None):
  if role is not None:out[...,2]=np.uint8(role)
  return out
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',default='artifacts/render-data/clipmap-tiles-r3');p.add_argument('--max-tiles',type=int,default=0);p.add_argument('--focus',nargs=2,type=float);p.add_argument('--radius-tiles',type=int,default=0);p.add_argument('--surface',default='artifacts/render-data/fixed-source-v2-macro-r1/surface.json');args=p.parse_args()
- source=Sources(args.surface);base=128.;minimum=np.floor(np.array(source.g['world_min'])/base)*base;end=np.array(source.g['world_min'])+source.g['world_size'];counts=np.ceil((end-minimum)/base).astype(int);maxlevel=int(math.ceil(math.log2(max(counts))));out=ROOT/args.output;out.mkdir(parents=True,exist_ok=True)
- manifest={'format':'apoleia-clipmap-tiles-v1','tile_samples':256,'image_size':258,'halo':1,'base_span':base,'origin':minimum.tolist(),'world_min':source.g['world_min'],'world_size':source.g['world_size'],'tile_counts':counts.tolist(),'max_level':maxlevel,'root':f'{maxlevel}/0/0','height_encoding':[.25,-8192],'water_encoding':[.125,-4096],'water_depth_encoding':{'channel':'A','metres_per_code':25,'maximum_metres':6375,'source':'C2 context/fine source height; G render height unchanged'},'source':'existing '+source.surface.parent.name+' and source-v2-upload-r1','fields':['height','material','water']}
+ p=argparse.ArgumentParser();p.add_argument('--output',default='artifacts/render-data/clipmap-tiles-r3');p.add_argument('--max-tiles',type=int,default=0);p.add_argument('--focus',nargs=2,type=float);p.add_argument('--radius-tiles',type=int,default=0);p.add_argument('--surface',default='artifacts/render-data/fixed-source-v2-macro-r1/surface.json');p.add_argument('--fine-detail');p.add_argument('--reuse-from');args=p.parse_args()
+ source=Sources(args.surface)
+ if args.fine_detail:source.use_detail(args.fine_detail,256.)
+ reuse=ROOT/args.reuse_from if args.reuse_from else None;source.height_only=reuse is not None;base=128.;minimum=np.floor(np.array(source.g['world_min'])/base)*base;end=np.array(source.g['world_min'])+source.g['world_size'];counts=np.ceil((end-minimum)/base).astype(int);maxlevel=int(math.ceil(math.log2(max(counts))));out=ROOT/args.output;out.mkdir(parents=True,exist_ok=True)
+ manifest={'format':'apoleia-clipmap-tiles-v1','tile_samples':256,'image_size':258,'halo':1,'base_span':base,'origin':minimum.tolist(),'world_min':source.g['world_min'],'world_size':source.g['world_size'],'tile_counts':counts.tolist(),'max_level':maxlevel,'root':f'{maxlevel}/0/0','height_encoding':[.25,-8192],'water_encoding':[.125,-4096],'water_depth_encoding':{'channel':'A','metres_per_code':25,'maximum_metres':6375,'source':'C2 context/fine source height; G render height unchanged'},'source':'existing '+source.surface.parent.name+' and source-v2-upload-r1'+(' + '+args.fine_detail+' on levels 0-1' if args.fine_detail else ''),'fields':['height','material','water']}
  (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');done=0;started=time.monotonic()
  for level in range(maxlevel,-1,-1):
   span=base*2**level;nx,nz=np.ceil(counts/2**level).astype(int);tiles=[(x,z) for z in range(nz) for x in range(nx)]
@@ -65,7 +79,14 @@ def main():
    if not (folder/f'{z}-water.png').exists():
     arrays=source.tile(minimum+np.array([x,z])*span,span)
     for name,array in zip(manifest['fields'],arrays):
+     if array is None:continue
      destination=folder/f'{z}-{name}.png';temporary=destination.with_suffix('.tmp');Image.fromarray(array,'RGBA').save(temporary,format='PNG',compress_level=2);temporary.replace(destination)
+    if reuse is not None:
+     # water last: its presence marks a complete tile
+     for name in ('material','water'):
+      src=reuse/str(level)/str(x)/f'{z}-{name}.png'
+      if not src.exists():raise SystemExit('reuse source missing '+str(src))
+      temporary=folder/f'{z}-{name}.tmp';shutil.copyfile(src,temporary);temporary.replace(folder/f'{z}-{name}.png')
    done+=1
    if done%10==0 or done==1:print(f'{done} tiles, level {level}, {time.monotonic()-started:.1f}s',flush=True)
    if args.max_tiles and done>=args.max_tiles:return
