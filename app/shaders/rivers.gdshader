@@ -32,7 +32,7 @@ void vertex(){
     // Look layer: screen floor grows towards the close views (thin map line
     // far out, broad diorama river near; same curve as LandscapeLook).
     // Thin in the regional view (2-4 px), medium-broad in the close view.
-    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+16.0*smoothstep(300.0,90.0,view_width));
+    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+9.0*smoothstep(300.0,90.0,view_width));
     float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.

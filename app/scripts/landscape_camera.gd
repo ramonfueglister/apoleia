@@ -5,7 +5,7 @@ const REVISION = "perspective-diorama-display-v5"
 const PERSPECTIVE_FOV = 27.0
 const OVERVIEW_FOV = 8.0
 # A07: closest view about 80 km of ground (3x closer than 240).
-const NEAR_WIDTH = 80.0
+const NEAR_WIDTH = 40.0 # settlement view (A07); zoom stays continuous
 # Legacy fixtures address zoom against the former 240-unit endpoint.
 const LEGACY_NEAR_WIDTH = 240.0
 const MIN_HEIGHT = -1.0
