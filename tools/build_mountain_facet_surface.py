@@ -26,9 +26,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--macro-dir', default='artifacts/render-data/fixed-source-v2-macro-r1')
 parser.add_argument('--base-dir', default='artifacts/render-data/fixed-source-v2-base-r1')
-parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r6')
+parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r7')
 parser.add_argument('--ridge-gain', type=float, default=0.0)
-parser.add_argument('--compress-m', type=float, default=800.0, help='H0 of the global log height compression h=H0*ln(1+h/H0)')
+parser.add_argument('--compress-m', type=float, default=500.0, help='H1 of the knee compression above --knee-m')
+parser.add_argument('--knee-m', type=float, default=1000.0, help='heights up to the knee stay real')
 parser.add_argument('--high-detail', type=float, default=0.6, help='detail band factor above ~1500 m real')
 parser.add_argument('--real-nodes', default='artifacts/render-data/etopo15-node-2km/nodes.tif', help='ETOPO 15s area mean at the 2 km nodes')
 parser.add_argument('--hill-gain', type=float, default=0.0, help='emphasis of the real 2-6 km band-pass in hill country')
@@ -105,9 +106,11 @@ u = np.clip((t - f0) / (1 - f0), 0, 1)
 valley_mask = smooth(span, 350, 1100) * coast_fade
 result = result * (1 - valley_mask) + (lmin + span * u ** 1.25) * valley_mask
 result = np.where(land, np.maximum(result, 1.0), macro)
-# r6: one global, monotonic log compression of all land heights (order and
-# geography preserved; real height = H0*(exp(h/H0)-1)).
-result = np.where(land, H0 * np.log1p(np.maximum(result, 0) / H0), result)
+# r7: monotonic knee compression: real up to K, h = K + H1*ln(1+(h-K)/H1)
+# above (slope 1 at K). Hills and valley floors stay real; only high
+# mountains flatten. Real height = K + H1*(exp((h-K)/H1)-1) above K.
+K = args.knee_m
+result = np.where(land & (result > K), K + H0 * np.log1p(np.maximum(result - K, 0) / H0), result)
 # Step limiter: no node more than wall-step above its lowest neighbour.
 T = args.wall_step_m
 for _ in range(10):
@@ -122,15 +125,15 @@ packed = np.stack([code // 256, code % 256], axis=-1).astype(np.uint8)
 packed.tofile(OUT / 'height.rg8')
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 policy = json.loads((MACRO / 'policy.json').read_text())
-policy.update({'revision': 'fixed-diorama-mountain-facets-r6', 'valley_floor': args.valley_floor, 'valley_radius_nodes': args.valley_radius, 'real_nodes': args.real_nodes, 'real_source': 'ETOPO 2022 v1 15 arc-second surface (NOAA NCEI), area mean per 2 km node', 'hill_gain': args.hill_gain, 'wall_step_m': args.wall_step_m, 'valley_floor_share': valley_floor_share,
+policy.update({'revision': 'fixed-diorama-mountain-facets-r7', 'valley_floor': args.valley_floor, 'valley_radius_nodes': args.valley_radius, 'real_nodes': args.real_nodes, 'real_source': 'ETOPO 2022 v1 15 arc-second surface (NOAA NCEI), area mean per 2 km node', 'hill_gain': args.hill_gain, 'wall_step_m': args.wall_step_m, 'valley_floor_share': valley_floor_share,
     'look_pass': 'relief areas blend the macro atlas back to the fixed 2km base grid with ridge sharpening; plains/coast/water keep macro heights',
-    'ridge_gain': args.ridge_gain, 'compress_m': args.compress_m, 'compression': 'global on land: h = H0*ln(1+h_real/H0)', 'high_detail': args.high_detail, 'macro_surface_manifest_sha256': sha(MACRO / 'surface.json'),
+    'ridge_gain': args.ridge_gain, 'compress_m': args.compress_m, 'compression': 'knee: real up to knee_m, then knee + H1*ln(1+(h-knee)/H1)', 'knee_m': args.knee_m, 'high_detail': args.high_detail, 'macro_surface_manifest_sha256': sha(MACRO / 'surface.json'),
     'base_surface_manifest_sha256': sha(BASE / 'surface.json'),
     'mountain_mask_mean': float(mask.mean()), 'height_range_source_equivalent_m': [float(result.min()), float(result.max())]})
 (OUT / 'policy.json').write_text(json.dumps(policy, indent=2) + '\n')
 m = dict(macro_m)
 m.pop('chunks', None)
-m['revision'] = 'fixed-diorama-mountain-facets-r6'
+m['revision'] = 'fixed-diorama-mountain-facets-r7'
 m['policy'] = {'path': 'policy.json', 'sha256': sha(OUT / 'policy.json')}
 m['height_payload'] = {'path': 'height.rg8', 'sha256': sha(OUT / 'height.rg8'), 'bytes': (OUT / 'height.rg8').stat().st_size}
 (OUT / 'surface.json').write_text(json.dumps(m, indent=2) + '\n')

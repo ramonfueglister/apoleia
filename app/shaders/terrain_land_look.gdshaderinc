@@ -38,6 +38,8 @@ vec4 land_tnoise(vec2 p,float feature_km) {return texture(land_noise_tex,p/(feat
 // works in real metres expressed on the H0 1900 reference curve its
 // thresholds were tuned on (tree line ~1320, snow ~2000 there).
 uniform float land_h0=800.0;
+// Knee compression (atlas r7): real up to land_knee, land_h0 acts as H1 above.
+uniform float land_knee=0.0;
 // Perf A/B: constant albedo, early return (uniform branch).
 uniform bool land_look_stub=false;
 uniform vec4 land_valley_tint : source_color = vec4(0.62,0.70,0.72,1.0);
@@ -125,7 +127,7 @@ float land_edge(float v,float threshold) {
 
 LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_normal,float footprint,float rel,float vw,float dhs) {
     // Real height, then the reference curve used by every threshold below.
-    float h_real=h>0.0 ? land_h0*(exp(h/land_h0)-1.0) : h;
+    float h_real=h>0.0 ? (land_knee>0.0 ? (h<=land_knee ? h : land_knee+land_h0*(exp((h-land_knee)/land_h0)-1.0)) : land_h0*(exp(h/land_h0)-1.0)) : h;
     h=h_real>0.0 ? 1900.0*log(1.0+h_real/1900.0) : h_real;
     if(land_look_stub) {LandLook st;st.albedo=vec3(0.30,0.33,0.16);st.normal=land_display_normal(source_normal,dhs*max(rel,0.00001));st.ao=1.0;return st;}
     // Cost tiers by pixel footprint (km per pixel): every detail stage is

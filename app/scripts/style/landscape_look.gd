@@ -153,6 +153,8 @@ static func terrain_parameters() -> Dictionary:
         "land_snow_color": Color("f2efe8"),
         "land_valley_tint": Color("9db3b8"),
         "land_facet_tilt": 0.20,
+        "land_h0": 500.0,
+        "land_knee": 1000.0,
         "land_fine_tint": 0.38,
         "land_facet_size": 1.5,
         "sea_deep_color": Color("1d497e"),

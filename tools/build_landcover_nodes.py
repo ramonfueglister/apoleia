@@ -51,14 +51,14 @@ OUT.mkdir(parents=True, exist_ok=True)
 np.rint(np.clip(classes, 0, 1) * 255).astype(np.uint8).tofile(OUT / 'classes.u8')
 # Shader look: dry/golden = shrub/macchia, cereal fields and dry bare land.
 dry = np.clip(shrub + 0.8 * crop_r + 0.5 * bare + 0.15 * grass_r, 0, 1)
-ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r6'
+ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r7'
 am = json.loads((ATLAS / 'surface.json').read_text())
 q = np.fromfile(ATLAS / 'height.rg8', dtype=np.uint8).reshape(am['height'], am['width'], 2)
 h = (q[..., 0].astype(np.float32) * 256 + q[..., 1]) * .25 - 8192
 # Relief position in the land shader's reference metres: atlas r6 heights
 # (global H0 800 compression) back to real, then the H0 1900 curve the
 # shader thresholds are expressed in.
-real_h = np.where(h > 0, 800.0 * np.expm1(np.maximum(h, 0) / 800.0), h)
+real_h = np.where(h > 1000.0, 1000.0 + 500.0 * np.expm1(np.maximum(h - 1000.0, 0) / 500.0), h)
 h = np.where(real_h > 0, 1900.0 * np.log1p(np.maximum(real_h, 0) / 1900.0), real_h)
 from scipy import ndimage
 yy, xx = np.mgrid[-3:4, -3:4]

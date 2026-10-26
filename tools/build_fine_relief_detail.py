@@ -16,9 +16,9 @@ import numpy as np, rasterio
 from scipy import ndimage
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-OUT = ROOT / 'artifacts/render-data/fine-relief-detail-500m-r2'
-ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r6'
-H0 = 800.0      # atlas r6 global log compression
+OUT = ROOT / 'artifacts/render-data/fine-relief-detail-500m-r3'
+ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r7'
+KNEE, H1 = 1000.0, 500.0  # atlas r7 knee compression
 SCALE = 0.6     # keep high mountains round
 m = json.loads((ATLAS / 'surface.json').read_text())
 W, H = m['width'], m['height']
@@ -43,15 +43,15 @@ def smooth(x, lo, hi):
     t = np.clip((x - lo) / (hi - lo), 0, 1); return t * t * (3 - 2 * t)
 relief = ndimage.maximum_filter(atlas, 3) - ndimage.minimum_filter(atlas, 3)
 mask = smooth(water_distance, 2, 6) * smooth(relief, 40, 260)
-gain = 1.0 / (1.0 + np.maximum(coarse, 0) / H0)
+gain = np.where(coarse > KNEE, H1 / (H1 + np.maximum(coarse - KNEE, 0)), 1.0)
 scale = up((mask * gain).astype(np.float32))
 del coarse
 detail = np.clip(detail * scale * SCALE, -400, 400).astype(np.float16)
 OUT.mkdir(parents=True, exist_ok=True)
 detail.tofile(OUT / 'detail.f16')
-manifest = {'revision': 'fine-relief-detail-500m-r2', 'width': int(detail.shape[1]), 'height': int(detail.shape[0]),
+manifest = {'revision': 'fine-relief-detail-500m-r3', 'width': int(detail.shape[1]), 'height': int(detail.shape[0]),
             'world_min': m['world_min'], 'spacing': 0.5, 'dtype': 'float16 metres, node centred',
-            'source': 'ETOPO 2022 v1 15 arc-second (NOAA NCEI), sub-2 km band, log-compression derivative (H0 800 m) x0.6',
-            'atlas': 'fixed-source-v2-mountain-r6', 'scale': SCALE, 'abs_p99_m': float(np.percentile(np.abs(detail[detail != 0]), 99))}
+            'source': 'ETOPO 2022 v1 15 arc-second (NOAA NCEI), sub-2 km band, knee-compression derivative (K 1000 m, H1 500 m) x0.6',
+            'atlas': 'fixed-source-v2-mountain-r7', 'scale': SCALE, 'abs_p99_m': float(np.percentile(np.abs(detail[detail != 0]), 99))}
 (OUT / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 print(json.dumps(manifest))
