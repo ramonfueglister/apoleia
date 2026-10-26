@@ -65,6 +65,8 @@ var forest_ground_queries:Dictionary={}
 var forest_layout:RefCounted
 var forest_layout_override=""
 var forest_layout_state:Dictionary={"enabled":false}
+const ForestEviction=preload("res://scripts/cache/forest_residency_eviction.gd")
+var forest_eviction=ForestEviction.new()
 var forest_representation_override=""
 var forest_representation_format="expanded"
 var forest_compact_templates:Array=[]
@@ -1779,6 +1781,7 @@ func forest_compact_binding() -> Dictionary:
     var binding={"format":CompactForest.FORMAT,"geometry":forest_mesh_cache_identity(),
         "templates_sha256":var_to_bytes(forest_compact_templates).hex_encode().sha256_text(),
         "compact_module_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_poses.gd"),
+        "bounds_algorithm_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_bounds.gd"),
         "materializer_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_materialize.gd"),
         "runtime_renderer_sha256":_compact_renderer_code_sha256(),
         "normal_contract":"unit world NORMAL before unchanged crown_up; same direction",
@@ -1791,6 +1794,15 @@ func forest_compact_binding() -> Dictionary:
         "model_sampling_shader_sha256":FileAccess.get_sha256("res://shaders/model_sampling.gdshaderinc"),
         "trace_sha256":FileAccess.get_sha256("res://scripts/river/river_g_snapshot.gd"),
         "runtime_geometry":render_geometry}
+    var schedule_source=FileAccess.get_file_as_string("res://scripts/landscape.gd")
+    var schedule_bodies=""
+    for section in schedule_source.split("\nfunc "):
+        if section.begins_with("_forest_layout_proven_empty_cell(") or section.begins_with("_update_diorama_forest("):schedule_bodies+="func "+section+"\n"
+    binding["layout_scheduling"]={"revision":"source-owner-disjoint-empty-r1","code_sha256":schedule_bodies.sha256_text(),
+        "rule":"complete bound layout; outside its owner bounds AND disjoint actual SourceContext; missing inner entry remains error"}
+    binding["residency_scheduling"]={"revision":ForestEviction.REVISION,"module_sha256":FileAccess.get_sha256("res://scripts/cache/forest_residency_eviction.gd"),
+        "eventual_limit":768,"maximum_deletions_per_frame":ForestEviction.MAX_EVICTIONS,"selection_start_budget_usec":ForestEviction.START_BUDGET_USEC,
+        "retention":"Wanted never evicted; obsolete temporary excess drained over frames; geometry/layout unchanged"}
     return JSON.parse_string(JSON.stringify(CompactForestIdentity.effective_binding(binding,{
         "source_sampler_sha256":FileAccess.get_sha256("res://scripts/canonical_domains_v2.gd"),
         "ground_sampler_sha256":FileAccess.get_sha256("res://scripts/fixed_display_surface.gd"),
@@ -1882,6 +1894,18 @@ func _commit_forest_async(started: int,stride: int,weight: float) -> void:
         # start budget remains. A single slow upload is measured, never hidden.
         if forest_async_results.is_empty():forest_async_results=forest_async.poll()
 
+func _forest_layout_proven_empty_cell(cell:Vector2i)->bool:
+    if forest_layout==null or forest_layout.coverage!="complete" or float(diorama_policy.get("chunk_size",0.))!=128.:return false
+    var bounds=forest_layout.identity.get("region",{}).get("chunk_bounds",[])
+    if bounds!=FixedForestLayout.FULL or forest_layout.entries.has(cell):return false
+    if cell.x>=int(bounds[0]) and cell.x<int(bounds[2]) and cell.y>=int(bounds[1]) and cell.y<int(bounds[3]):return false
+    # Source membership is rejected outside context before grouping, and every
+    # accepted crown's symmetric footprint lies inside this same rectangle.
+    # A disjoint output owner therefore has no drawable, even if the visible
+    # frustum padding requested it. Never treat an absent inner entry as empty.
+    var owner=Rect2(Vector2(cell)*128.,Vector2.ONE*128.)
+    return not owner.intersection(Rect2(world_min,world_size)).has_area()
+
 func _update_diorama_forest() -> void:
     if diorama_policy.is_empty() or not forest_async:return
     var started=Time.get_ticks_usec()
@@ -1893,16 +1917,22 @@ func _update_diorama_forest() -> void:
         var first=Vector2i((rect.position/chunk_size).floor());var last=Vector2i((rect.end/chunk_size).floor())
         var key=str(first)+":"+str(last)+":"+diorama_surface_revision
         if key!=previous_diorama_key:
+            forest_eviction.reset()
             forest_async_epoch+=1;forest_async_requests_dirty=true;previous_diorama_key=key;diorama_wanted.clear();diorama_queue.clear()
             if _cache_request_evidence_enabled():forest_mesh_cache_demands.append({"frame":frame_number,"t_ms":elapsed*1000.0,"first":[first.x,first.y],"last":[last.x,last.y],"stride":stride,"width_model":view_width,"relief":relief,"support_revision":diorama_surface_revision,"cell_range_rule":"inclusive rectangle after visible-weight filter, distinct from async submitted lookahead"})
             for z in range(first.y,last.y+1):
                 for x in range(first.x,last.x+1):
                     var cell=Vector2i(x,z);diorama_wanted[cell]=true
+                    if _forest_layout_proven_empty_cell(cell):
+                        if not diorama_chunks.has(cell) or diorama_chunks[cell].get("support_revision","")!=diorama_surface_revision:
+                            diorama_chunks[cell]={"node":null,"nodes":[],"created":elapsed,"last_used":frame_number,"support_revision":diorama_surface_revision,"stride":stride,
+                                "crown_count":0,"resident_array_bytes":0,"format":forest_representation_format,"proven_empty_outside_layout":true}
+                        continue
                     if not diorama_chunks.has(cell) or diorama_chunks[cell].get("support_revision","")!=diorama_surface_revision:diorama_queue.append(cell)
             var center=target/chunk_size
             diorama_queue.sort_custom(func(a,b):return (Vector2(a)-center).length_squared()<(Vector2(b)-center).length_squared())
     else:
-        if not diorama_wanted.is_empty():forest_async_requests_dirty=true
+        if not diorama_wanted.is_empty():forest_async_requests_dirty=true;forest_eviction.reset()
         diorama_queue.clear();diorama_wanted.clear();previous_diorama_key=""
     if forest_async_requests_dirty:
         var requests=[]
@@ -1923,14 +1953,13 @@ func _update_diorama_forest() -> void:
             if wanted:
                 visible+=1;visible_crowns+=int(chunk.get("crown_count",0))
                 if chunk.get("support_revision","")!=diorama_surface_revision:stale+=1
-    while diorama_chunks.size()>768:
-        var victim:Variant=null;var oldest=frame_number+1
-        for cell in diorama_chunks:
-            if not diorama_wanted.has(cell) and diorama_chunks[cell].last_used<oldest:victim=cell;oldest=diorama_chunks[cell].last_used
-        if victim==null:break # Existing visible-residency limit remains explicitly soft.
+    var eviction_started=Time.get_ticks_usec()
+    var eviction_victims=forest_eviction.select(diorama_chunks,diorama_wanted,768)
+    for victim in eviction_victims:
         if diorama_chunks[victim].node:diorama_chunks[victim].node.queue_free()
         diorama_chunks.erase(victim)
-    diorama_stats.append({"frame":frame_number,"queued":diorama_queue.size(),"resident_chunks":diorama_chunks.size(),"visible_meshes":visible,"wanted_cells":diorama_wanted.size(),"missing_visible_cells":diorama_queue.size(),"resident_crowns":resident_crowns,"visible_crowns":visible_crowns,"resident_array_bytes":resident_array_bytes,"draw_instances":draw_instances,"representation_format":forest_representation_format,"stale_support_meshes":stale,"weight":weight,"cpu_ms":float(Time.get_ticks_usec()-started)/1000.,"async":forest_async.stats()})
+    var eviction_ms=float(Time.get_ticks_usec()-eviction_started)/1000.
+    diorama_stats.append({"frame":frame_number,"queued":diorama_queue.size(),"resident_chunks":diorama_chunks.size(),"visible_meshes":visible,"wanted_cells":diorama_wanted.size(),"missing_visible_cells":diorama_queue.size(),"resident_crowns":resident_crowns,"visible_crowns":visible_crowns,"resident_array_bytes":resident_array_bytes,"draw_instances":draw_instances,"evicted_this_frame":eviction_victims.size(),"eviction_ms":eviction_ms,"eviction_state":forest_eviction.stats.duplicate(),"residency_soft_excess":maxi(0,diorama_chunks.size()-768),"representation_format":forest_representation_format,"stale_support_meshes":stale,"weight":weight,"cpu_ms":float(Time.get_ticks_usec()-started)/1000.,"async":forest_async.stats()})
     if frame_number%60==0 and not diorama_queue.is_empty():print(JSON.stringify({"event":"diorama_generation_progress","frame":frame_number,"remaining_chunks":diorama_queue.size(),"visible_meshes":visible,"async":forest_async.stats()}))
 
 func _forest_coverage(p: Vector2) -> bool:

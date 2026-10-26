@@ -32,24 +32,6 @@ func write_bytes(path:String,bytes:PackedByteArray)->bool:
 func hash_bytes(bytes:PackedByteArray)->String:
     if bytes.is_empty():return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     var hashing=HashingContext.new();hashing.start(HashingContext.HASH_SHA256);hashing.update(bytes);return hashing.finish().hex_encode()
-func exact_json_values(left:Variant,right:Variant)->bool:
-    if typeof(left) in [TYPE_INT,TYPE_FLOAT]:
-        if not typeof(right) in [TYPE_INT,TYPE_FLOAT]:return false
-        var a=PackedByteArray();a.resize(8);a.encode_double(0,float(left))
-        var b=PackedByteArray();b.resize(8);b.encode_double(0,float(right))
-        return a==b
-    if typeof(left)!=typeof(right):return false
-    if left is Dictionary:
-        if left.size()!=right.size():return false
-        for key in left:
-            if not right.has(key) or not exact_json_values(left[key],right[key]):return false
-        return true
-    if left is Array:
-        if left.size()!=right.size():return false
-        for i in range(left.size()):
-            if not exact_json_values(left[i],right[i]):return false
-        return true
-    return left==right
 func run()->void:
     var args=OS.get_cmdline_user_args()
     if args.size()!=2 or args[0]!="--config":fail("expected --config path");return
@@ -136,14 +118,16 @@ func run()->void:
             var restored=[rows.decode_s32(i*64),rows.decode_s32(i*64+4),rows.decode_double(i*64+8),rows.decode_double(i*64+16),rows.decode_double(i*64+24),rows.decode_double(i*64+32),rows.decode_double(i*64+40),0.,rows.decode_double(i*64+48),rows.decode_double(i*64+56)]
             roundtrip=roundtrip and var_to_bytes(restored)==var_to_bytes(record)
         var metadata={"legacy_ground_support":0,"resource_name":dto.resource_name,"legacy_metadata":dto.metadata}
-        var metadata_raw=JSON.stringify(metadata,"",true,true).to_utf8_buffer()
+        var encoded_metadata=binding_script.encode_metadata(metadata)
+        if not encoded_metadata.ok:fail("metadata encode: "+str(encoded_metadata.error));return
+        var metadata_raw=JSON.stringify(encoded_metadata.metadata,"",true,true).to_utf8_buffer()
         if metadata_raw.size()>4096 or not roundtrip:fail("metadata limit/bitwise engine record roundtrip");return
-        var metadata_roundtrip=JSON.parse_string(metadata_raw.get_string_from_utf8())
-        if not exact_json_values(metadata,metadata_roundtrip):fail("full-precision metadata binary64 value roundtrip");return
+        var metadata_roundtrip=binding_script.decode_metadata(JSON.parse_string(metadata_raw.get_string_from_utf8()))
+        if not metadata_roundtrip.ok or not binding_script.metadata_equal(metadata,metadata_roundtrip.metadata):fail("tagged metadata exact Variant roundtrip");return
         if not write_bytes(folder.path_join("records.bin"),rows) or not write_bytes(folder.path_join("metadata.json"),metadata_raw):fail("spool write");return
         if is_probe and not write_bytes(folder.path_join("oracle-records.bin"),oracle):fail("probe oracle spool write");return
         if not frozen_valid():fail("input freeze changed during cell");return
-        var response={"event":"cell_ready","ordinal":ordinal,"cell":[cell.x,cell.y],"folder":folder,"binding_sha256":bound_sha,"records":{"path":"records.bin","bytes":rows.size(),"count":dto.records.size(),"sha256":hash_bytes(rows)},"oracle_records":{"path":"oracle-records.bin","bytes":oracle.size(),"sha256":hash_bytes(oracle)},"metadata":{"path":"metadata.json","bytes":metadata_raw.size(),"sha256":hash_bytes(metadata_raw)},"build_usec":build_usec,"engine_record_roundtrip_bit_exact":roundtrip,"metadata_full_precision_roundtrip":true,"request_sampling":sampler.counts.duplicate()}
+        var response={"event":"cell_ready","ordinal":ordinal,"cell":[cell.x,cell.y],"folder":folder,"binding_sha256":bound_sha,"records":{"path":"records.bin","bytes":rows.size(),"count":dto.records.size(),"sha256":hash_bytes(rows)},"oracle_records":{"path":"oracle-records.bin","bytes":oracle.size(),"sha256":hash_bytes(oracle)},"metadata":{"path":"metadata.json","bytes":metadata_raw.size(),"sha256":hash_bytes(metadata_raw)},"build_usec":build_usec,"engine_record_roundtrip_bit_exact":roundtrip,"metadata_variant_roundtrip_exact":true,"metadata_encoding":binding_script.METADATA_ENCODING,"request_sampling":sampler.counts.duplicate()}
         if not is_probe:response.erase("oracle_records")
         emit(response)
         dto.clear();sampler=null;rows=PackedByteArray();oracle=PackedByteArray()
@@ -161,8 +145,11 @@ func run()->void:
         var replay_usec=Time.get_ticks_usec()-replay_started
         var replay_metadata={"legacy_ground_support":0,"resource_name":replay.resource_name,"legacy_metadata":replay.metadata}
         if var_to_bytes(loaded_records)!=var_to_bytes(replay.records):fail("disk layout differs from fresh direct API records");return
-        if FileAccess.get_file_as_bytes(final_folder.path_join("metadata.json"))!=JSON.stringify(replay_metadata,"",true,true).to_utf8_buffer():fail("disk metadata differs from fresh direct API metadata");return
-        emit({"event":"cell_verified","ordinal":ordinal,"cell":[cell.x,cell.y],"disk_vs_fresh_direct_records_bit_exact":true,"disk_vs_fresh_direct_metadata_bytes_exact":true,"replay_build_usec":replay_usec})
+        var disk_metadata=binding_script.decode_metadata(JSON.parse_string(FileAccess.get_file_as_string(final_folder.path_join("metadata.json"))))
+        if not disk_metadata.ok or not binding_script.metadata_equal(replay_metadata,disk_metadata.metadata):fail("disk metadata differs from fresh direct API Variant metadata");return
+        var replay_encoded=binding_script.encode_metadata(replay_metadata)
+        if not replay_encoded.ok or FileAccess.get_file_as_bytes(final_folder.path_join("metadata.json"))!=JSON.stringify(replay_encoded.metadata,"",true,true).to_utf8_buffer():fail("tagged metadata bytes differ from fresh direct API encoding");return
+        emit({"event":"cell_verified","ordinal":ordinal,"cell":[cell.x,cell.y],"disk_vs_fresh_direct_records_bit_exact":true,"disk_vs_fresh_direct_metadata_bytes_exact":true,"disk_vs_fresh_direct_metadata_variant_exact":true,"replay_build_usec":replay_usec})
         loaded_records.clear();replay.clear();replay_sampler=null;disk_rows=PackedByteArray()
     emit({"event":"probe_complete" if is_probe else "generation_complete","cells":config.cells.size(),"resume_from_ordinal":resume_from,"binding_sha256":bound_sha,"coverage":"incomplete-probe" if is_probe else "complete-build-not-published","input_freeze_unchanged":frozen_valid()})
     quit(0)

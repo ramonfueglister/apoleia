@@ -19,6 +19,9 @@ MAX_META=4096
 MAX_FILE=HEADER.size+MAX_CELLS*INDEX.size+MAX_ROWS*ROW.size+MAX_CELLS*MAX_META
 MAX_MANIFEST=1024*1024
 STRIDES=(0,1,2,4,8,16,32,64,128)
+METADATA_ENCODING="godot-numeric-le-v1"
+MAX_METADATA_DEPTH=16
+MAX_METADATA_NODES=512
 
 def cells(bounds=FULL):
     x0,z0,x1,z1=bounds
@@ -39,14 +42,64 @@ def canonical_binding(value):
         raise ValueError("binding type")
     return json.dumps(convert(value),sort_keys=True,ensure_ascii=True,separators=(",",":"),allow_nan=False).encode("ascii")
 
-DIGEST_FIELDS=("source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256","compact_module_sha256")
+def _metadata_visit(value,encode,depth=0,nodes=None):
+    if nodes is None:nodes=[0]
+    nodes[0]+=1
+    if depth>MAX_METADATA_DEPTH or nodes[0]>MAX_METADATA_NODES:raise ValueError("metadata complexity")
+    if isinstance(value,bool) or value is None or isinstance(value,str):return value
+    if isinstance(value,(int,float)):
+        if not encode:raise ValueError("metadata untagged number")
+        if isinstance(value,int):
+            if not -(1<<63)<=value<(1<<63):raise ValueError("metadata integer range")
+            return {"$i64le":struct.pack("<q",value).hex()}
+        if not math.isfinite(value):raise ValueError("metadata nonfinite")
+        return {"$f64le":struct.pack("<d",value).hex()}
+    if isinstance(value,dict):
+        if "$f64le" in value or "$i64le" in value:
+            if encode:raise ValueError("metadata reserved tag key")
+            if len(value)!=1:raise ValueError("metadata tag shape")
+            key=next(iter(value));text=value[key]
+            if not isinstance(text,str) or len(text)!=16 or any(c not in "0123456789abcdef" for c in text):raise ValueError("metadata tag hex")
+            number=struct.unpack("<d" if key=="$f64le" else "<q",bytes.fromhex(text))[0]
+            if isinstance(number,float) and not math.isfinite(number):raise ValueError("metadata nonfinite")
+            return number
+        result={}
+        for key,item in value.items():
+            if not isinstance(key,str) or key.startswith("$"):raise ValueError("metadata key/reserved tag")
+            result[key]=_metadata_visit(item,encode,depth+1,nodes)
+        return result
+    if isinstance(value,list):return [_metadata_visit(item,encode,depth+1,nodes) for item in value]
+    raise ValueError("metadata value type")
+
+def encode_metadata(original):
+    if not isinstance(original,dict) or set(original)!={"legacy_ground_support","resource_name","legacy_metadata"} or type(original["legacy_ground_support"]) is not int or original["legacy_ground_support"]!=0 or not isinstance(original["resource_name"],str) or not isinstance(original["legacy_metadata"],dict):raise ValueError("metadata envelope")
+    return {"metadata_encoding":METADATA_ENCODING,"legacy_ground_support":0,"resource_name":original["resource_name"],"legacy_metadata":_metadata_visit(original["legacy_metadata"],True)}
+
+def decode_metadata(encoded):
+    if not isinstance(encoded,dict) or set(encoded)!={"metadata_encoding","legacy_ground_support","resource_name","legacy_metadata"} or encoded["metadata_encoding"]!=METADATA_ENCODING or type(encoded["legacy_ground_support"]) is not int or encoded["legacy_ground_support"]!=0 or not isinstance(encoded["resource_name"],str) or not isinstance(encoded["legacy_metadata"],dict):raise ValueError("metadata envelope/encoding")
+    return {"legacy_ground_support":0,"resource_name":encoded["resource_name"],"legacy_metadata":_metadata_visit(encoded["legacy_metadata"],False)}
+
+def metadata_equal(left,right):
+    if type(left) is not type(right):return False
+    if isinstance(left,float):return struct.pack("<d",left)==struct.pack("<d",right)
+    if isinstance(left,dict):return left.keys()==right.keys() and all(metadata_equal(left[key],right[key]) for key in left)
+    if isinstance(left,list):return len(left)==len(right) and all(metadata_equal(a,b) for a,b in zip(left,right))
+    return left==right
+
+DIGEST_FIELDS=("source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256")
 def validate_binding(raw):
     if not raw or len(raw)>MAX_MANIFEST:raise ValueError("missing/oversized binding")
     value=json.loads(raw,parse_constant=lambda x:(_ for _ in ()).throw(ValueError("nonfinite JSON")))
-    if not isinstance(value,dict) or value.get("format")!="v19-layout-binding-r1":raise ValueError("binding schema")
+    if not isinstance(value,dict) or value.get("format")!="v19-layout-binding-r2":raise ValueError("binding schema")
+    if value.get("metadata_encoding")!=METADATA_ENCODING:raise ValueError("binding metadata encoding")
     for key in DIGEST_FIELDS:
         text=value.get(key,"")
         if not isinstance(text,str) or len(text)!=64 or any(c not in "0123456789abcdef" for c in text):raise ValueError("missing binding dependency "+key)
+    variants=value.get("compact_variants",{})
+    if not isinstance(variants,dict) or variants.get("function")!="variants" or variants.get("WIDTHS_f64le")!=[struct.pack("<d",1.).hex(),struct.pack("<d",1.18).hex()] or variants.get("template_arrays_sha256")!=value.get("template_arrays_sha256"):raise ValueError("compact variants binding")
+    for key in ("sha256","WIDTHS_declaration_sha256"):
+        text=variants.get(key,"")
+        if not isinstance(text,str) or len(text)!=64 or any(c not in "0123456789abcdef" for c in text):raise ValueError("compact variants code binding")
     if not value.get("engine_build") or not value.get("policy") or not value.get("numerics"):raise ValueError("missing engine/policy/numerics")
     region=value.get("region",{})
     if region.get("chunk_bounds")!=list(FULL) or region.get("root_bounds")!=list(ROOT) or not region.get("world_min") or not region.get("world_size"):raise ValueError("full region binding")
@@ -104,6 +157,7 @@ def write_layout(path,provider,binding_bytes,*,bounds=FULL):
                 if previous is not None and key<=previous:raise ValueError("root scan order")
                 previous=key;out.write(raw);h.update(raw);nrows+=1
                 if nrows>MAX_ROWS:raise ValueError("global row limit")
+            decode_metadata(metadata) # Strict tagged format only; never reinterpret historical JSON.
             metadata_raw=json.dumps(metadata,sort_keys=True,separators=(",",":"),ensure_ascii=True,allow_nan=False).encode("ascii")
             if len(metadata_raw)>MAX_META:raise ValueError("metadata limit")
             mo=meta.tell();meta.write(metadata_raw)
@@ -157,7 +211,7 @@ def verify_layout(path,expected_binding,*,expected_bounds=FULL,byte_budget=256*1
             f.seek(mo);metadata_raw=f.read(mb);max_read=max(max_read,len(metadata_raw))
             if len(metadata_raw)!=mb or digest(metadata_raw)!=msha:raise ValueError("metadata hash/short read")
             metadata=json.loads(metadata_raw,parse_constant=lambda x:(_ for _ in ()).throw(ValueError("nonfinite metadata JSON")))
-            if not isinstance(metadata,dict):raise ValueError("metadata shape")
+            decode_metadata(metadata)
             next_row+=nbytes;next_meta+=mb;total+=count
         if total!=nrows or next_row!=meta_start or next_meta!=file_size:raise ValueError("totals/trailing bytes")
     return {"cells":ncells,"rows":total,"accepted_layout_records_sha256":accepted.hexdigest(),"maximum_single_read":max_read,"duplicate_root_bitset_bytes":len(seen)}

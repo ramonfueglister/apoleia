@@ -65,11 +65,11 @@ def verify_cell(folder,response,binding_sha,seen,*,probe=True):
             original=struct.unpack_from('<ii8d',oracle,i*72)
             if struct.pack('<ii8d',*codec.restore_row(row,0.))!=oracle[i*72:(i+1)*72]:raise ValueError('lossless original record parity')
             if struct.pack('<d',original[7])!=struct.pack('<d',0.):raise ValueError('oracle ground0')
-    metadata=json.loads(payloads['metadata'])
-    if metadata.get('legacy_ground_support')!=0 or not isinstance(metadata.get('legacy_metadata'),dict) or metadata['legacy_metadata'].get('crown_count')!=count:raise ValueError('metadata support/count')
+    metadata=codec.decode_metadata(json.loads(payloads['metadata']))
+    if metadata.get('legacy_ground_support')!=0 or not isinstance(metadata.get('legacy_metadata'),dict) or type(metadata['legacy_metadata'].get('crown_count')) is not int or metadata['legacy_metadata']['crown_count']!=count:raise ValueError('metadata support/count')
     for key in ('source_root_sha256','placement_sha256'):
         if len(metadata['legacy_metadata'].get(key,''))!=64:raise ValueError('missing legacy digest')
-    if not response.get('engine_record_roundtrip_bit_exact') or not response.get('metadata_full_precision_roundtrip'):raise ValueError('engine parity not established')
+    if not response.get('engine_record_roundtrip_bit_exact') or not response.get('metadata_variant_roundtrip_exact') or response.get('metadata_encoding')!=codec.METADATA_ENCODING:raise ValueError('engine parity not established')
     return count
 
 def sha_file(path,guard=lambda:None):
@@ -105,27 +105,29 @@ def publish_complete(out,entries,binding_raw,*,guard=lambda:None,frozen_files=No
     directory_fd=os.open(out,os.O_RDONLY)
     try:os.fsync(directory_fd)
     finally:os.close(directory_fd)
-    manifest={'format':FORMAT,'coverage':'complete','chunk_bounds':list(codec.FULL),'root_bounds':list(codec.ROOT),'chunk_count':3116,'record_count':verified['rows'],'layout':{'path':'layout.bin','bytes':storage['file_bytes'],'sha256':layout_hash},'binding':{'path':'binding.json','bytes':len(binding_raw),'sha256':binding_sha},'accepted_digest_encoding':'concat-layout64-rows-index-order-r1','accepted_layout_records_sha256':verified['accepted_layout_records_sha256'],'compiler':{'provider_sha256':sha((ROOT/'app/tools/build_complete_forest_layout.gd').read_bytes()),'supervisor_sha256':sha(Path(__file__).read_bytes()),'storage_codec_sha256':sha(DRAFT.read_bytes()),'frozen_files_sha256':sha(json_raw(frozen_files)) if frozen_files is not None else 'synthetic-storage-fixture-only'},'verification':{'all3116_cells_visited':True,'empty_cells_explicit':True,'global_root_uniqueness_checked':True,'lossless_storage_codec':'immutable v19-complete-layout-plan-r1/draft_codec.py'}}
+    manifest={'format':FORMAT,'metadata_encoding':codec.METADATA_ENCODING,'coverage':'complete','chunk_bounds':list(codec.FULL),'root_bounds':list(codec.ROOT),'chunk_count':3116,'record_count':verified['rows'],'layout':{'path':'layout.bin','bytes':storage['file_bytes'],'sha256':layout_hash},'binding':{'path':'binding.json','bytes':len(binding_raw),'sha256':binding_sha},'accepted_digest_encoding':'concat-layout64-rows-index-order-r1','accepted_layout_records_sha256':verified['accepted_layout_records_sha256'],'compiler':{'provider_sha256':sha((ROOT/'app/tools/build_complete_forest_layout.gd').read_bytes()),'supervisor_sha256':sha(Path(__file__).read_bytes()),'storage_codec_sha256':sha(DRAFT.read_bytes()),'frozen_files_sha256':sha(json_raw(frozen_files)) if frozen_files is not None else 'synthetic-storage-fixture-only'},'verification':{'all3116_cells_visited':True,'empty_cells_explicit':True,'global_root_uniqueness_checked':True,'lossless_storage_codec':'tools/forest_layout_codec.py','metadata_encoding':codec.METADATA_ENCODING}}
     guard();raw=json_raw(manifest);write_atomic(out/'manifest.json',raw)
     write_atomic(out/'READY.json',json_raw({'coverage':'complete','manifest_sha256':sha(raw)}))
     return manifest
 
-def compare_probe_rows(out,entries,previous):
+def compare_probe_rows(out,entries,previous,*,records_only=False):
     previous=Path(previous).resolve();manifest_path=previous/'manifest.json'
     if manifest_path.stat().st_size>1048576:raise ValueError('previous probe manifest cap')
     old=json.loads(manifest_path.read_text())
     if old.get('coverage')!='incomplete-probe':raise ValueError('comparison requires previous incomplete probe')
     ordered=sorted(entries,key=lambda r:(r['cell'][1],r['cell'][0]))
-    if [r['cell'] for r in ordered]!=old.get('visited_cells'):raise ValueError('probe comparison cell set')
+    old_cells=old.get('visited_cells',[])
+    if (not records_only and [r['cell'] for r in ordered]!=old_cells) or (records_only and not {tuple(c) for c in old_cells}.issubset({tuple(r['cell']) for r in ordered})):raise ValueError('probe comparison cell set')
+    if records_only:ordered=[r for r in ordered if r['cell'] in old_cells]
     previous_entries={tuple(r['cell']):r for r in old['cells']};count=0
     for entry in ordered:
         before=previous_entries[tuple(entry['cell'])]
-        for field in ('records','metadata'):
+        for field in (('records',) if records_only else ('records','metadata')):
             cap=1369*64 if field=='records' else 4096
             a=checked_relative(out,entry[field]['path']);b=checked_relative(previous,before[field]['path'])
             if a.stat().st_size>cap or b.stat().st_size>cap or a.read_bytes()!=b.read_bytes():raise ValueError('probe comparison byte difference:'+str(entry['cell'])+':'+field)
         count+=entry['records']['count']
-    return {'status':'exact byte equality','previous_probe':str(previous),'cells':len(ordered),'records':count,'rows_byte_identical':True,'metadata_byte_identical':True,'previous_binding_sha256':old['binding']['sha256'],'current_binding_sha256':entries[0]['binding_sha256'],'binding_change_allowed_only_with_fresh_current_factory':True}
+    return {'status':'exact byte equality','previous_probe':str(previous),'cells':len(ordered),'records':count,'rows_byte_identical':True,'metadata_byte_identical':not records_only,'metadata_comparison':'not compared: historical transport has different encoding' if records_only else 'encoded bytes exact','previous_binding_sha256':old['binding']['sha256'],'current_binding_sha256':entries[0]['binding_sha256'],'binding_change_allowed_only_with_fresh_current_factory':True}
 
 def checkpoint(out,responses,binding_sha,complete):
     value={'coverage':'incomplete-build','binding_sha256':binding_sha,'completed_cells':len(responses),'last_cell':responses[-1]['cell'] if responses else None,'checkpoint_scheme':'canonical-prefix+per-cell-checkpoint-r1'} if complete else {'coverage':'incomplete-probe','binding_sha256':binding_sha,'visited_cells':[r['cell'] for r in responses],'cells':responses}
@@ -135,8 +137,9 @@ def prepare_run(args):
     complete=args.mode=='complete' or args.execute_complete
     if args.execute_probe and complete:raise ValueError('probe execution cannot request complete mode')
     cells=list(codec.cells()) if complete else DEFAULT_CELLS if not args.cells else [tuple(map(int,item.split(','))) for item in args.cells]
-    if complete and args.cells:raise ValueError('complete mode never accepts partial cell selection')
-    if complete and args.compare_probe:raise ValueError('probe comparison is not complete-build input')
+    if complete and (args.cells or args.additional_probe_cell):raise ValueError('complete mode never accepts partial cell selection')
+    if not complete and args.additional_probe_cell:cells+= [tuple(map(int,item.split(','))) for item in args.additional_probe_cell]
+    if complete and (args.compare_probe or args.compare_records_probe):raise ValueError('probe comparison is not complete-build input')
     if not complete and (not 1<=len(cells)<=16 or len(set(cells))!=len(cells)):raise ValueError('one to16 unique probe cells required')
     if any(len(c)!=2 or not (-42<=c[0]<40 and -18<=c[1]<20) for c in cells):raise ValueError('invalid full-region cell')
     if args.resume and not complete:raise ValueError('resume is for interrupted complete-build checkpoints only')
@@ -268,8 +271,8 @@ def run(args):
         if complete:publication=publish_complete(out,responses,binding_raw,guard=guard,frozen_files=frozen)
         else:
             published_cells=sorted(responses,key=lambda r:(r['cell'][1],r['cell'][0]))
-            if args.compare_probe:write_atomic(out/'probe-comparison.json',json_raw(compare_probe_rows(out,published_cells,args.compare_probe)))
-            manifest={'format':FORMAT,'coverage':'incomplete-probe','chunk_bounds':list(codec.FULL),'root_bounds':list(codec.ROOT),'chunk_count':len(responses),'record_count':sum(r['records']['count'] for r in responses),'binding':{'path':'binding.json','bytes':len(binding_raw),'sha256':binding_sha},'visited_cells':[r['cell'] for r in published_cells],'cells':published_cells,'accepted_digest_encoding':'concat-layout64-rows-index-order-r1','note':'Sparse actual probe ONLY. Unvisited cells unknown; no full layout/index or complete bake.'}
+            if args.compare_probe or args.compare_records_probe:write_atomic(out/'probe-comparison.json',json_raw(compare_probe_rows(out,published_cells,args.compare_probe or args.compare_records_probe,records_only=bool(args.compare_records_probe))))
+            manifest={'format':FORMAT,'metadata_encoding':codec.METADATA_ENCODING,'coverage':'incomplete-probe','chunk_bounds':list(codec.FULL),'root_bounds':list(codec.ROOT),'chunk_count':len(responses),'record_count':sum(r['records']['count'] for r in responses),'binding':{'path':'binding.json','bytes':len(binding_raw),'sha256':binding_sha},'visited_cells':[r['cell'] for r in published_cells],'cells':published_cells,'accepted_digest_encoding':'concat-layout64-rows-index-order-r1','note':'Sparse actual probe ONLY. Unvisited cells unknown; no full layout/index or complete bake.'}
             h=hashlib.sha256()
             for entry in published_cells:h.update(checked_relative(out,entry['records']['path']).read_bytes())
             manifest['accepted_layout_records_sha256']=h.hexdigest();raw=json_raw(manifest);write_atomic(out/'manifest.json',raw);write_atomic(out/'READY.json',json_raw({'coverage':'incomplete-probe','manifest_sha256':sha(raw)}));publication=manifest
@@ -292,9 +295,12 @@ def run(args):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--additional-probe-cell',action='append',help='append one x,z probe cell; e.g. --additional-probe-cell=-5,-18; max16 total')
     parser.add_argument('--output',required=True);parser.add_argument('--mode',choices=['probe','complete'],default='probe');parser.add_argument('--resume',action='store_true')
     execution=parser.add_mutually_exclusive_group();execution.add_argument('--execute-probe',action='store_true');execution.add_argument('--execute-complete',action='store_true',help='Run ONLY after explicit Root full-bake authorization and final dependency freeze')
-    parser.add_argument('--compare-probe',help='probe-only prior artifact; require all accepted row and metadata bytes exactly equal before READY publication')
+    comparisons=parser.add_mutually_exclusive_group()
+    comparisons.add_argument('--compare-records-probe',help='probe-only historical record-byte oracle; metadata bytes intentionally differ under new encoding')
+    comparisons.add_argument('--compare-probe',help='probe-only prior artifact; require all accepted row and metadata bytes exactly equal before READY publication')
     parser.add_argument('--godot',default='/Applications/Godot.app/Contents/MacOS/Godot');parser.add_argument('--cells',nargs='*',help='probe-only explicit x,z cells, max16; complete always all3116')
     parser.add_argument('--max-runtime-seconds',type=float,default=None,help='default300 probe /1800 complete');parser.add_argument('--warmup-timeout',type=float,default=180);parser.add_argument('--cell-timeout',type=float,default=15);parser.add_argument('--scratch-mib',type=int,default=64)
     run(parser.parse_args())

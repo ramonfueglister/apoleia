@@ -4,11 +4,13 @@ extends RefCounted
 const Cache=preload("res://scripts/cache/fixed_forest_mesh_cache.gd")
 const Compact=preload("res://scripts/cache/compact_forest_poses.gd")
 const CompactIdentity=preload("res://scripts/cache/compact_forest_identity.gd")
+const CompactBounds=preload("res://scripts/cache/compact_forest_bounds.gd")
 const FinalGround=preload("res://scripts/cache/fixed_forest_ground.gd")
 const COMPACT_MAX_RECORDS=1369 # Conservative37x37 bound for unchanged128km/5.2km+group halo.
 const COMPACT_RESERVATION_BYTES=256*1024
 var compact=false
 var _templates:Array=[]
+var _prepared_bounds:Dictionary={}
 var identity_key=""
 var _configured=false
 var _canonical: RefCounted
@@ -80,6 +82,8 @@ func configure(snapshot: Dictionary) -> bool:
         if str(_policy.get("forest_geometry_mode",""))!="source_grouped_crowns" or float(_policy.chunk_size)!=128.0:return false
         if not snapshot.has("compact_templates") or snapshot.compact_templates.size()!=2 or CompactIdentity.representation_id(snapshot.identity)=="":return false
         _templates=snapshot.compact_templates.duplicate(true)
+        _prepared_bounds=CompactBounds.prepare(_templates)
+        if _prepared_bounds.has("error"):return false
         if snapshot.get("layout")!=null:
             if not snapshot.layout is RefCounted or snapshot.layout.coverage!="complete" or snapshot.layout.identity_sha256!=str(snapshot.identity.get("layout",{}).get("binding_sha256","")):return false
             _layout=snapshot.layout
@@ -121,7 +125,7 @@ func build(cell: Vector2i,stride: int,cancelled: Callable=Callable()) -> Diction
     if direct.get("cancelled",false) or direct.has("error"):return direct
     if direct.records.size()>COMPACT_MAX_RECORDS:return {"error":"compact_record_bound_exceeded"}
     if cancelled.is_valid() and cancelled.call():return {"cancelled":true}
-    var result=Compact.build(direct.records,cell,stride,CompactIdentity.support_id(identity_key,stride),_templates,identity_key)
+    var result=Compact.build(direct.records,cell,stride,CompactIdentity.support_id(identity_key,stride),_templates,identity_key,_prepared_bounds)
     if result.has("error"):return result
     result["metadata"]=direct.metadata;result.metadata.erase("drawable_records")
     result["resource_name"]=direct.resource_name

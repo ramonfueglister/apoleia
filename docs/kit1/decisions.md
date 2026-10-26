@@ -1,6 +1,6 @@
 # Kit 1 — bestätigter Entscheidungsstand
 
-**Referenzversion:** `kit1-landscape-v5` · **Datum:** 25.10.2026.  
+**Referenzversion:** `kit1-landscape-v5` · **Datum:** 26.10.2026.
 **Status:** folgende Nutzerentscheidungen `spezifiziert`; keine davon behauptet
 eine implementierte oder validierte Grafik. Quelle ist das gemeinsame Interview.
 Neuere ausdrückliche Entscheidungen ersetzen frühere widersprechende Vorschläge.
@@ -39,6 +39,7 @@ Details: [REGION](operations/REGION.md).
 | K15 | **Gesamter Grafikauftrag in einem Durchlauf** als Ziel des Kits. Rom/Ostia/Tibur sind ein mögliches Prüfbeispiel, keine regionale Beschränkung des Ergebnisses. |
 | K16 | Aktueller Auftrag ist **vollständige Kit-Anpassung einschließlich operativer Hilfsmittel, keine Spielimplementierung**. Bereits geklärte Fragen nicht erneut stellen. Technische Vorschläge aus Vorgaben ableiten, nicht alltägliche Details als neue Grundsatzfragen zurückgeben. |
 | K17 | Für moderne Gebiets-Auswahlanker dient geoBoundaries **gbOpen ADM2 bevorzugt als Orientierung**. ADM2-Level und Features sind länderweise verschieden; sie behaupten keine antiken Grenzen, keine Simulationsregionen und schreiben keine politische Grenzvisualisierung oder harte finale Cutline vor. Exakte Features und Datensatzrevision bleiben offen, bis die konkrete Datenauswahl erfolgt. |
+| K21 | **A07-Hausgröße:** Ein späteres Haus soll in der Breite etwa einer einzelnen Baumkrone entsprechen; die Darstellung soll kompakter sein. Dies ist eine relative Größenorientierung, keine Meterangabe und bezieht sich ausdrücklich auf eine einzelne Krone, nicht auf einen Waldcluster. Quelle: direkte Nutzerantwort in diesem Chat am 26.10.2026. Externe Quellen-/Breitenschemaorientierung hat einen engen unabhängigen Teilreview bestanden; Produkt-Screen-Bounds und Kameraausschnitt bleiben offen. Gebäude bleiben in Kit 1 ausgeschlossen; Kronenfamilie und Produktgrößen werden hierdurch nicht umgestellt. |
 
 ## Maßstabswerte: Orientierung, keine starren Vorgaben
 

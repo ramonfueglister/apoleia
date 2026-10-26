@@ -2,6 +2,9 @@ extends RefCounted
 ## Immutable, typed lossless drawable-layout reader. Configure once on main;
 ## read_records is CPU/IO-only and returns a private job-owned Array.
 const FORMAT="v19-layout64-le-r1"
+const METADATA_ENCODING="godot-numeric-le-v1"
+const MAX_METADATA_DEPTH=16
+const MAX_METADATA_NODES=512
 const FULL=[-42,-18,40,20]
 const ROOT=[-1017,-428,969,492]
 const MAX_ROWS=1827120
@@ -31,6 +34,74 @@ static func _hash(bytes:PackedByteArray)->String:
     var h=HashingContext.new();h.start(HashingContext.HASH_SHA256)
     if not bytes.is_empty():h.update(bytes)
     return h.finish().hex_encode()
+static func _meta_error(reason:String)->Dictionary:return {"ok":false,"error":reason}
+static func _meta_number_tag(value:Variant)->Dictionary:
+    var raw=PackedByteArray();raw.resize(8)
+    if value is int:raw.encode_s64(0,value);return {"$i64le":raw.hex_encode()}
+    raw.encode_double(0,value);return {"$f64le":raw.hex_encode()}
+static func _meta_visit(value:Variant,encode:bool,depth:int,nodes:Array)->Dictionary:
+    nodes[0]+=1
+    if depth>MAX_METADATA_DEPTH or nodes[0]>MAX_METADATA_NODES:return _meta_error("metadata_complexity")
+    if encode and (value is int or value is float):
+        if value is float and not is_finite(value):return _meta_error("metadata_nonfinite")
+        return {"ok":true,"value":_meta_number_tag(value)}
+    if not encode and (value is int or value is float):return _meta_error("metadata_untagged_number")
+    if value is Dictionary:
+        if value.has("$f64le") or value.has("$i64le"):
+            if encode:return _meta_error("metadata_reserved_tag_key")
+            if value.size()!=1:return _meta_error("metadata_tag_shape")
+            var key="$f64le" if value.has("$f64le") else "$i64le"
+            var text=value[key]
+            if not text is String or text.length()!=16:return _meta_error("metadata_tag_hex")
+            for character in text:
+                if not str(character) in "0123456789abcdef":return _meta_error("metadata_tag_hex")
+            var raw:PackedByteArray=text.hex_decode()
+            if raw.size()!=8:return _meta_error("metadata_tag_hex")
+            if key=="$i64le":return {"ok":true,"value":raw.decode_s64(0)}
+            var number=raw.decode_double(0)
+            if not is_finite(number):return _meta_error("metadata_nonfinite")
+            return {"ok":true,"value":number}
+        var result={}
+        for key in value:
+            if not key is String:return _meta_error("metadata_key_type")
+            if key.begins_with("$"):return _meta_error("metadata_reserved_tag_key")
+            var item=_meta_visit(value[key],encode,depth+1,nodes)
+            if not item.ok:return item
+            result[key]=item.value
+        return {"ok":true,"value":result}
+    if value is Array:
+        var result=[]
+        for element in value:
+            var item=_meta_visit(element,encode,depth+1,nodes)
+            if not item.ok:return item
+            result.append(item.value)
+        return {"ok":true,"value":result}
+    if value==null or value is String or value is bool:return {"ok":true,"value":value}
+    return _meta_error("metadata_value_type")
+static func encode_metadata(original:Dictionary)->Dictionary:
+    if original.size()!=3 or not original.has("legacy_ground_support") or not original.legacy_ground_support is int or original.legacy_ground_support!=0 or not original.get("resource_name") is String or not original.get("legacy_metadata") is Dictionary:return _meta_error("metadata_envelope")
+    var result=_meta_visit(original.legacy_metadata,true,0,[0])
+    if not result.ok:return result
+    return {"ok":true,"error":"","metadata":{"metadata_encoding":METADATA_ENCODING,"legacy_ground_support":0,"resource_name":original.resource_name,"legacy_metadata":result.value}}
+static func decode_metadata(encoded:Variant)->Dictionary:
+    if not encoded is Dictionary or encoded.size()!=4 or encoded.get("metadata_encoding","")!=METADATA_ENCODING or not _integer(encoded.get("legacy_ground_support"),0,0) or not encoded.get("resource_name") is String or not encoded.get("legacy_metadata") is Dictionary:return _meta_error("metadata_envelope_or_encoding")
+    var result=_meta_visit(encoded.legacy_metadata,false,0,[0])
+    if not result.ok:return result
+    return {"ok":true,"error":"","encoding":METADATA_ENCODING,"metadata":{"legacy_ground_support":0,"resource_name":encoded.resource_name,"legacy_metadata":result.value}}
+static func metadata_equal(left:Variant,right:Variant)->bool:
+    if typeof(left)!=typeof(right):return false
+    if left is float:return _hex64(left)==_hex64(right)
+    if left is Dictionary:
+        if left.size()!=right.size():return false
+        for key in left:
+            if not right.has(key) or not metadata_equal(left[key],right[key]):return false
+        return true
+    if left is Array:
+        if left.size()!=right.size():return false
+        for i in range(left.size()):
+            if not metadata_equal(left[i],right[i]):return false
+        return true
+    return left==right
 static func binding(snapshot:Dictionary)->Dictionary:
     for key in ["canonical","surface","style","policy","templates","world_min","world_size","display_height_scale","source_manifest_sha256","projection_sha256"]:
         if not snapshot.has(key):return {}
@@ -44,9 +115,19 @@ static func binding(snapshot:Dictionary)->Dictionary:
     var policy_json=JSON.stringify(snapshot.policy,"",true,true)
     var engine_json=JSON.stringify(Engine.get_version_info(),"",true,true)
     var vec=PackedVector2Array([Vector2.ONE]).to_byte_array()
+    # Offline drawable compilation uses Compact only to make these two width
+    # variants. Pose packing/runtime bounds are not layout source dependencies.
+    var compact_source=FileAccess.get_file_as_string("res://scripts/cache/compact_forest_poses.gd")
+    var variant_body="";var width_declaration=""
+    for line in compact_source.split("\n"):
+        if line.begins_with("const WIDTHS="):width_declaration=line
+    for section in compact_source.split("\nstatic func "):
+        if section.begins_with("variants("):variant_body="static func "+section
+    if variant_body.is_empty() or width_declaration.is_empty():return {}
+    var variant_code={"function":"variants","sha256":variant_body.sha256_text(),"WIDTHS_declaration_sha256":width_declaration.sha256_text(),"WIDTHS_f64le":[_hex64(1.0),_hex64(1.18)],"template_arrays_sha256":var_to_bytes(snapshot.templates).hex_encode().sha256_text()}
     var runtime_geometry=RenderVertexTrace.runtime_geometry_binding()
     if runtime_geometry.has("error"):return {}
-    return {"format":"v19-layout-binding-r1","source_manifest_sha256":str(snapshot.source_manifest_sha256),"upload_manifest_sha256":canonical.manifest_sha256,
+    return {"format":"v19-layout-binding-r2","metadata_encoding":METADATA_ENCODING,"source_manifest_sha256":str(snapshot.source_manifest_sha256),"upload_manifest_sha256":canonical.manifest_sha256,
         "source_sampler_sha256":FileAccess.get_sha256(canonical.get_script().resource_path),"canonical_surface_identity_sha256":surface_json.sha256_text(),"canonical_surface_gd_json":surface_json,
         "ground_sampler_sha256":FileAccess.get_sha256(surface.get_script().resource_path),"base_ground_sampler_sha256":FileAccess.get_sha256("res://scripts/fixed_display_surface.gd"),
         "final_ground_consumer_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_ground.gd"),
@@ -55,7 +136,7 @@ static func binding(snapshot:Dictionary)->Dictionary:
         "model_sampling_shader_sha256":FileAccess.get_sha256("res://shaders/model_sampling.gdshaderinc"),
         "runtime_geometry":runtime_geometry,
         "sampling_callbacks_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_build_context.gd"),"style_sha256":FileAccess.get_sha256(style.resource_path),
-        "template_arrays_sha256":var_to_bytes(snapshot.templates).hex_encode().sha256_text(),"compact_module_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_poses.gd"),
+        "template_arrays_sha256":var_to_bytes(snapshot.templates).hex_encode().sha256_text(),"compact_variants":variant_code,
         "identity_contract_sha256":FileAccess.get_sha256("res://scripts/cache/compact_forest_identity.gd"),"binding_loader_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_layout.gd"),
         "projection_sha256":str(snapshot.projection_sha256),"engine_build":{"gd_json":engine_json,"gd_json_sha256":engine_json.sha256_text(),"executable_sha256":FileAccess.get_sha256(OS.get_executable_path())},
         "policy":{"gd_json":policy_json,"gd_json_sha256":policy_json.sha256_text()},"numerics":{"vector2_scalar_bytes":int(vec.size()/2),"record_scalar_bytes":8,"byte_order":"little","display_height_scale_f64le":_hex64(float(snapshot.display_height_scale))},
@@ -101,6 +182,7 @@ func configure(directory:String,expected:Dictionary,allow_probe:bool=false,expec
     if expected_manifest_sha256!="" and manifest_sha256!=expected_manifest_sha256:return _fail("manifest_pin")
     var m=JSON.parse_string(raw.get_string_from_utf8())
     if not m is Dictionary or m.get("format","")!=FORMAT:return _fail("manifest_schema")
+    if m.get("metadata_encoding","")!=METADATA_ENCODING:return _fail("manifest_metadata_encoding")
     coverage=str(m.get("coverage",""))
     if coverage!="complete" and not (allow_probe and coverage=="incomplete-probe"):return _fail("incomplete_layout")
     if coverage=="complete" and not _digest(expected_manifest_sha256):return _fail("complete_requires_manifest_pin")
@@ -115,9 +197,12 @@ func configure(directory:String,expected:Dictionary,allow_probe:bool=false,expec
     var bind_raw=FileAccess.get_file_as_bytes(br.path);var parsed=JSON.parse_string(bind_raw.get_string_from_utf8())
     if not parsed is Dictionary or _normalized(parsed)!=_normalized(expected):return _fail("binding_mismatch")
     identity=parsed;identity_sha256=_hash(bind_raw)
-    if identity.get("format","")!="v19-layout-binding-r1" or not _same_ints(identity.get("region",{}).get("chunk_bounds"),FULL) or not _same_ints(identity.region.get("root_bounds"),ROOT):return _fail("binding_region")
-    for key in ["source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","base_ground_sampler_sha256","final_ground_consumer_sha256","render_vertex_trace_sha256","terrain_shader_sha256","model_sampling_shader_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256","compact_module_sha256","identity_contract_sha256","binding_loader_sha256","projection_sha256"]:
+    if identity.get("metadata_encoding","")!=METADATA_ENCODING:return _fail("binding_metadata_encoding")
+    if identity.get("format","")!="v19-layout-binding-r2" or not _same_ints(identity.get("region",{}).get("chunk_bounds"),FULL) or not _same_ints(identity.region.get("root_bounds"),ROOT):return _fail("binding_region")
+    for key in ["source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","base_ground_sampler_sha256","final_ground_consumer_sha256","render_vertex_trace_sha256","terrain_shader_sha256","model_sampling_shader_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256","identity_contract_sha256","binding_loader_sha256","projection_sha256"]:
         if not _digest(str(identity.get(key,""))):return _fail("binding_dependency:"+key)
+    var variants=identity.get("compact_variants",{})
+    if not variants is Dictionary or variants.get("function","")!="variants" or not _digest(str(variants.get("sha256",""))) or not _digest(str(variants.get("WIDTHS_declaration_sha256",""))) or variants.get("WIDTHS_f64le",[])!=[_hex64(1.0),_hex64(1.18)] or variants.get("template_arrays_sha256","")!=identity.template_arrays_sha256:return _fail("binding_compact_variants")
     if not _digest(str(identity.get("runtime_geometry",{}).get("sha256",""))) or identity.runtime_geometry.get("functions",[])!=["_fixed_grid_mesh","_setup_fixed_surface","_update_fixed_surface_lod"]:return _fail("binding_runtime_geometry")
     if not _integer(m.get("record_count"),0,MAX_ROWS):return _fail("manifest_record_count")
     var seen=Seen.new();var count=0;var accepted=HashingContext.new();accepted.start(HashingContext.HASH_SHA256)
@@ -173,12 +258,14 @@ func _read_entry(entry:Dictionary,budget:int,seen:Seen=null,aggregate:HashingCon
     if f==null:failure.error="metadata_missing";return failure
     f.seek(entry.meta_offset);var meta=f.get_buffer(entry.meta_bytes);f.close()
     if meta.size()!=entry.meta_bytes or _hash(meta)!=entry.meta_sha256:failure.error="metadata_hash";return failure
-    var metadata=JSON.parse_string(meta.get_string_from_utf8())
-    if not metadata is Dictionary or metadata.get("legacy_ground_support",-1)!=0 or not metadata.get("legacy_metadata") is Dictionary or not metadata.get("resource_name") is String:failure.error="metadata_schema";return failure
+    var decoded=decode_metadata(JSON.parse_string(meta.get_string_from_utf8()))
+    if not decoded.ok:failure.error=str(decoded.error);return failure
+    var metadata:Dictionary=decoded.metadata
     var old:Dictionary=metadata.legacy_metadata
     for key in ["forest_area_cells","source_crown_count","crown_count","volume_roof_triangles","volume_wall_triangles"]:
-        if not _integer(old.get(key),0,MAX_CELL_ROWS):failure.error="metadata_counter:"+key;return failure
-        old[key]=int(old[key])
+        if not old.get(key) is int or not _integer(old[key],0,MAX_CELL_ROWS):failure.error="metadata_counter:"+key;return failure
+    for key in ["forest_fraction_sum","candidate_step_model"]:
+        if not old.get(key) is float:failure.error="metadata_float:"+key;return failure
     if old.crown_count!=entry.count or not _digest(str(old.get("source_root_sha256",""))) or not _digest(str(old.get("placement_sha256",""))):failure.error="metadata_counts_hashes";return failure
     var records=[];var previous=Vector2i(ROOT[0]-1,ROOT[1]-1)
     for i in range(entry.count):
@@ -199,7 +286,7 @@ func _read_entry(entry:Dictionary,budget:int,seen:Seen=null,aggregate:HashingCon
         if not Rect2(Vector2(entry.cell)*128.,Vector2.ONE*128.).has_point(p) or row[4]<.25 or row[4]>8.6 or row[5]<0. or row[5]>TAU or not row[6] in [1.,1.18]:failure.error="record_value_or_owner";return failure
         row.insert(7,0.0);records.append(row)
     if aggregate and not raw.is_empty():aggregate.update(raw)
-    return {"ok":true,"error":"","records":records,"metadata":metadata,"bytes":entry.bytes+entry.meta_bytes,"count":records.size(),"layout_id":identity_sha256}
+    return {"ok":true,"error":"","records":records,"metadata":metadata,"bytes":entry.bytes+entry.meta_bytes,"count":records.size(),"layout_id":identity_sha256,"metadata_encoding":METADATA_ENCODING}
 func read_records(cell:Vector2i,budget:int=262144)->Dictionary:
     if not _configured or not entries.has(cell):return {"ok":false,"error":"layout_cell_miss","records":[],"metadata":{},"bytes":0}
     return _read_entry(entries[cell],budget)

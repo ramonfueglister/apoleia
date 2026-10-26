@@ -378,22 +378,71 @@ Vollabdeckung **offen**. Die regionale Sechsansichten-Diagnose ist angelaufen,
 aber noch nicht stilistisch abgenommen. Bestehende Source-r3-Fails, A07,
 Bundlegrenzen und Fluss-Nahnavigation bleiben offen.
 
-### Wiederaufnahme
+### Vollständiger Layout-r3, native Abdeckung und Produktdefault
 
-Die nächste Prüfung ist die visuelle Sichtung der angelaufenen regionalen
-Sechsansichten-Diagnose mit dokumentierter Wald-/Flussbereitschaft; dies schließt
-A08 nicht automatisch. Ein vollständiger SourceContext-Bake setzt anschließend
-eine finale Source-/G-/Context-/Consumeridentity-Fixierung, die bestehende
-gezielte 8-Zellen-Bytes-Paritätsprobe und ein gesondertes Root-Go voraus. Bis
-dahin werden weder die 3116 synthetischen Indexplätze noch 419 Records als
-Coverage gezählt. Native Compact-Vollfüllung, Pan-/Zoom-/Resize-Rückkehr,
-Vollabdeckung, A07/A08/A12, endgültiges Bundle und alle A01–A16 bleiben getrennte
-offene Abnahmen.
+Der deterministische [Layout-r3-Neubake](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-analytic-bounds-complete-r3/HANDOFF.md)
+ist nach unabhängig bestandenem Bounds-Integrationsreview atomar READY publiziert.
+Checkpoint-SHA `58a626ecdb914ac9995294c85e9640fed8b9f95760c1970824f39ae163436732`.
+Der r3-Bake hat wie r2 3.116 Zellen und 176.609 Records; der Container ist
+14.197.868 B, alle Recordbytes behalten denselben Digest. Der Bake dauerte
+378,467 s. Das ist vollständige Coverage des gebundenen Layoutkontexts, keine
+Vollabdeckung der Projektregion.
+
+Der echte [native Scroll-/Resize-Lauf](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-native-layout-bounds-r1/HANDOFF.md)
+erreichte volle Waldabdeckung in geprüften Posen und Cold-Coverage 3.023,281 ms
+statt 9.277,929 ms. Resize war vollständig; Commits max. 0,369 ms. Frames
+p95/p99/max 19,296/22,349/173,273 ms; das ist kein A12-Pass. Übersicht, kleine
+Resizeansicht und Rückkehr waren pixelidentisch. Fertige alte/neue Scrollposen
+unterscheiden sich an genau einem Pixel (768,234), obwohl Records, Kamera und
+Riverkey gleich sind; Ursache offen, keine kausale Pixelparität behaupten.
+Checkpoint-SHA `9a81f0652b51a8957b9948739f608cf0d44bd2a5c78f91a6d6b10ee5e5db29d0`.
+
+Der [Produktdefault-/Closure-Checkpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-complete-layout-default-r1/HANDOFF.md)
+hat finalen Checkpoint-SHA `47a9513dfb15c5e7fb3ac8875d9eadafd6e61ef5435c1b806bfc6ab79eadd91e`.
+`renderer-binding.json` wählt Compact und das relative vollständige Layout-r3
+mit exaktem Manifestpin; falscher Pin oder fehlender Pfad fail-closed. Die
+gehashte Closure bindet Manifest, Binding, layout.bin und READY (14.206.103 B).
+Das ist kein neuer App-Bundle-/Relocationbau. Cloud-Default bleibt getrennt OFF.
+
+Die eingefrorene Snapshot-Copyinclude-Closure wurde durch
+`tools/runtime_snapshot_preloads.py` ergänzt. Der unabhängige Regressionbeleg
+[`COPY_INCLUDE_REGRESSION.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/cloud-current-layout-basis-r2/COPY_INCLUDE_REGRESSION.json),
+SHA `a2c36dd4744d72a0ca0a0667507cbec9875ca9d0a104698b32634ba982331b61`, weist
+nach, dass die alte unvollständige Kopie abgewiesen und genau das benötigte
+`forest_residency_eviction.gd` hinzugefügt wird. Das Closure-Addendum
+[`CLOSURE_ADDENDUM.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/cloud-current-layout-basis-r2/CLOSURE_ADDENDUM.json),
+SHA `76f00b83c204d633d30b49e47bfbda2f3fe1c4fdefde85b748dd60af5af87804`, bindet
+die 2.001-Byte-Datei und die statische Closure aus 19 Modulen/18 Kanten ohne
+Lücke. Paket-Inventarfunktion blieb unverändert. Die Regression lief im bereits
+gebundenen Checkpoint; hier wurde kein neuer Test ausgeführt.
+
+A07 bleibt offen: der externe Einzelkronen-/Größenbeleg hat einen engen
+unabhängigen Quellen-/Schema-Teilreview ([Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/a07-single-crown-r1-independent/REVIEW.md))
+bestanden. Produktkameraausschnitt und echte Screen-Bounds für eine Einzelkrone
+sowie mehrere Hausbreiten samt Umfeld fehlen.
+
+**Wiederaufnahme:** die ungeklärte Ein-Pixel-Abweichung (768,234) untersuchen,
+ohne Ursache vorwegzunehmen; Framespitzen und LRU-Sortierrest getrennt prüfen.
+Cloud-V16-Integration und Review abschließen; Produkt bleibt bis dahin OFF.
+Regionale r3-Sechsansichten sind verworfen; Strukturpfad hat kein READY/Bildpass.
+A07-Kameraausschnitt, A08 **FAIL**, A12, Projektregion-Vollabdeckung, aktuelles
+Bundle und finale A01–A16 bleiben getrennte offene Punkte.
+
+### Wolken — aktuelle Nutzerkorrektur
+
+Der Nutzer hat via autorisiertem Cloudchat klargestellt: Wolken verbessern und
+aktivieren; OFF dient nur der Diagnose. V16 wurde in privater GPU-Kopie geprüft,
+ohne Qualitäts- oder Leistungsfreigabe. Produktdefault bleibt bis Integration
+und Review OFF; Umschaltung und kombinierte Terrain-/Wolkenprüfung sind offen.
+Die frühere v7-Ablehnung bleibt bestehen.
 
 ## Compact-Forest-Integration R2
 
+Historischer R2-Stand; der folgende damalige Expanded-Default wurde durch den
+späteren Layout-r3-Produktdefault unten im aktuellen Wiederaufnahmestand ersetzt.
+
 Status **implementiert**, eng quellengebunden und unabhängig **validiert**;
-Compactflag bleibt inaktiv und Produktdefault **Expanded**. Der eingefrorene
+Compactflag war in diesem Checkpoint inaktiv und Produktdefault **Expanded**. Der eingefrorene
 [Zellcapture-Checkpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-compact-cell-capture-r2/checkpoint.json)
 hat SHA-256 `0f6512706024905940c535f4bfc23d9bdc6598ec1167784a60b5a972364fd21e`.
 Der unabhängige [Integrationsreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-compact-integration-r2-independent/review.json)

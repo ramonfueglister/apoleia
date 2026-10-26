@@ -197,6 +197,10 @@ der Fahrt bleibt offen.
 
 ### Compact-Forest-Integration R2
 
+Historischer Compact-Integrationsstand; der Produktdefault Expanded und der
+fehlende Warmcache-Pass in diesem Abschnitt wurden durch den späteren Layout-r3-
+Default-/Nativcheckpoint ergänzt. R2-Reviewdetails gelten nur für ihren Scope.
+
 Der eingefrorene [Laufcheckpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-compact-cell-capture-r2/checkpoint.json)
 hat SHA-256 `0f6512706024905940c535f4bfc23d9bdc6598ec1167784a60b5a972364fd21e`.
 Der unabhängige [Integrationsreview](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-compact-integration-r2-independent/review.json)
@@ -206,8 +210,8 @@ sieben Compact-Queueprüfungen, acht Lifecyclegruppen, 20 aktive Identitychecks
 und beurteilt neun bereits erfasste echte GPU-Zellpaare. Keine P1/P2-Befunde.
 Der Reviewer hat selbst keine GPU oder native App gestartet.
 
-Compact bleibt ein reversibler, explizit aktivierbarer Pfad; Produktdefault ist
-Expanded. Der alte Expandedcache wird wegen des neuen Style-/Context-Hashes
+Zum damaligen R2-Stand blieb Compact ein reversibler, explizit aktivierbarer Pfad;
+Produktdefault war Expanded. Der alte Expandedcache wird wegen des neuen Style-/Context-Hashes
 weiterhin strikt abgelehnt. CPU-Recordaufbau kostet für 191 Kronen
 240,416–281,311 ms, also kein CPU-Speedup. Für die tatsächlich serialisierten
 DTOs wurden höchstens 14.068 Bytes gegenüber 84.744 Bytes beim dichten
@@ -253,12 +257,12 @@ zum geprüften Researchcodec; nur der Compiler-Importlocator änderte sich. Der
 begrenzte Smoke bestätigte Import, 128/128/64-Byteformate und exakten F64-
 Roundtrip. Kein Source-Laden oder vollständiger Bake.
 
-Compact bleibt **default OFF / Expanded**. Im vorhandenen nativen Compactlauf
-fehlten nach Resize-Rückkehr 1077 von 1508 Wanted-Zellen; dies ist keine
-Bereitschafts- oder Waldfüllungsabnahme. A08 bleibt **FAIL**, A12 und Vollabdeckung
-bleiben **offen**. Eine separate regionale Sechsansichten-Diagnose ist jetzt
-angelaufen, hat aber noch keine Stilabnahme. Der kalte Start, A07 und bestehende
-Source-r3-FAILs sowie Bundlegrenzen bleiben unverändert offen.
+Der ältere Compact-Lauf mit 1077/1508 Wanted-Zellen nach Resize ist historisch
+und wurde durch Layout-r2/r3-Nativläufe für deren getestete Posen abgelöst.
+Aktueller Produktdefault ist Compact plus vollständiges Layout-r3 mit fail-closed
+Manifest-/READY-Closure, aber noch kein neues Bundle gebaut. Die Projektregion
+bleibt unabgedeckt; A08 **FAIL**, A12 **offen**. Region-r3 ist verworfen; der
+aktuelle Strukturpfad hat kein READY und keinen Bildpass.
 
 ### Integrierter Fern-/Nahlauf, Wolken und Numerik
 
@@ -290,13 +294,20 @@ wurden nur die fehlgeschlagenen r1-/r2-Kopien nach Hasharchiv entfernt; r3 blieb
 erhalten. `Clouds OFF` ist noch nicht als Produktdefault neu verpackt. Kein
 aktuelles Bundle ist auf der neuesten Runtimerevision gebaut.
 
-- **A07 — offen:** kein belegter Ausschnitt mit mehreren künftigen Häusern samt
-  Umfeld und einzeln lesbaren stilisierten Bäumen. Häuserassets ausgeschlossen;
-  500 m in [`decisions.md`](decisions.md) bleibt Arbeitswert, 240-km-Anker kein Pass.
-- **A01/A04/A09 — offen:** begrenzter nativer Scroll-/Resizepfad ist beobachtet;
-  vollständige Waldfüllung, River-Nahnavigation, Rand-/Roundtrip und durchgehende
-  Tour vom readinessbereiten Start bleiben offen. Der ältere Tourpfad beginnt vor
-  Readiness; Startadapter/Folgetour sind getrennt zu bewerten.
+- **A07 — nutzerseitig spezifiziert; Abnahme offen:** Die Breite eines späteren
+  Hauses soll etwa einer einzelnen Baumkrone entsprechen, kompakt dargestellt
+  (Nutzerantwort vom 26.10.2026, siehe [`decisions.md`](decisions.md#bestätigt-für-kit-1)).
+  Der externe Größen-/Einzelkronenbeleg hat einen engen unabhängigen Teilreview
+  bestanden; es fehlt weiterhin ein gebundener Kamera-/Ausschnittsnachweis mit mehreren künftigen Häusern,
+  Umfeld und einzeln lesbaren stilisierten Bäumen. Keine Meterzahl ableiten;
+  500 m bleibt ein Arbeitswert und der 240-km-Anker kein Pass. Gebäude bleiben
+  in Kit 1 ausgeschlossen.
+- **A01/A04/A09 — offen:** nativer Layout-r3-Lauf belegt vollständige
+  Waldfüllung in geprüften Scroll-/Resize-Posen, Cold-Coverage 3,023 s sowie
+  pixelgleiche Übersicht/kleines Resize/Rückkehr. Scrollpose alt/neu weicht an
+  Pixel (768,234) ab, Ursache offen. River-Nahnavigation, Rand-/Roundtrip und
+  durchgehende Tour vom readinessbereiten Start bleiben offen. Der ältere
+  Tourpfad beginnt vor Readiness; Startadapter/Folgetour sind getrennt zu bewerten.
 - **A08 — FAIL/offen:** Stilreferenzabnahme weiterhin nicht bestanden.
 - **A12 — offen:** weder Produkt-OFF/ON-Einzelwerte noch die native R3-Frame-
   Verteilung sind Zielklassen-/Mobile-Forward+-Leistungsabnahmen.
@@ -365,14 +376,51 @@ beginnt und ein externer Startadapter in Arbeit ist. A01/A04 bleiben offen.
 
 ### A07 — Nahansicht für spätere Häuser
 
-**Status: `offen`.** Maßgeblich ist ein Ausschnitt, in dem später mehrere
-Häuser samt Umfeld Platz haben und einzelne stilisierte Bäume lesbar sind;
-Häuserassets bleiben in Kit 1 ausgeschlossen. Die 500-m-Angabe in
+**Nutzerseitige Größenorientierung: `spezifiziert`; A07-Abnahme: `offen`.**
+Die direkte Nutzerantwort vom 26.10.2026 legt fest, dass ein späteres Haus
+kompakt dargestellt etwa eine einzelne Baumkrone breit sein soll (siehe
+[`decisions.md`](decisions.md#bestätigt-für-kit-1)). Das ist keine Meterzahl und
+meint ausdrücklich eine einzelne Baumkrone, keinen Waldcluster. Externe
+Größen-/Quellenorientierung und unabhängiger Teilreview sind PASS im engen
+Umfang; Produkt-Screen-Bounds und Kameraausschnitt sind noch nicht belegt.
+
+Maßgeblich ist ein Ausschnitt, in dem später mehrere Häuser samt Umfeld Platz
+haben und einzelne stilisierte Bäume lesbar sind; Häuserassets bleiben in Kit 1
+ausgeschlossen. Die 500-m-Angabe in
 [`decisions.md`](decisions.md#maßstabswerte-orientierung-keine-starren-vorgaben)
 ist nur ein Arbeitswert. Ein 240-km-Anker ist kein A07-Nachweis. Auch für den
 aktuellen integrierten SourceV2/V19-Lauf und die Tourproben liegt kein gebundener
 Kamera-/Ausschnittsnachweis vor, der mehrere künftige Häuser samt Umfeld belegt.
 Keine frühere Capture-Revision als aktuellen A07-Pass übernehmen.
+
+### Neuester Layout-/Bounds-/Default-Stand
+
+Der Layout-r3-Bake umfasst 3.116 Zellen und 176.609 Records; alle Recordbytes
+sind digestgleich zu r2, Container 14.197.868 B. Der deterministische Bake dauerte
+378,467 s. Echter nativer Scroll-/Resize-Lauf erreichte vollständige Abdeckung
+in den geprüften Posen; Cold-Coverage 3,023 s statt 9,278 s. Commitmaximum
+0,369 ms. Frames p95/p99/max 19,296/22,349/173,273 ms, daher kein A12-Pass.
+Übersicht, kleines Resize und Rückkehr sind pixelidentisch. Zwischen fertigen
+alten/neuen Scrollposen besteht genau eine Pixelabweichung bei (768,234); Ursache
+offen trotz gleicher Records, Kamera und Riverkey. Keine kausale Pixelparität
+behaupten. [Native-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-native-layout-bounds-r1/HANDOFF.md),
+Checkpoint-SHA `9a81f0652b51a8957b9948739f608cf0d44bd2a5c78f91a6d6b10ee5e5db29d0`.
+
+Analytic Bounds sind unabhängig reviewt; [vollständiger r3-Bake/Loader-Handoff](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-analytic-bounds-complete-r3/HANDOFF.md),
+Checkpoint-SHA `58a626ecdb914ac9995294c85e9640fed8b9f95760c1970824f39ae163436732`.
+Der ehemalige Layout-r2-Stand bleibt historisch und unverändert.
+
+Produktdefault bindet nun Compact und relatives vollständiges Layout-r3 mit
+exaktem Manifestpin. Closure enthält Manifest, Binding, Layout und READY,
+14.206.103 B; falscher Pin und fehlender Pfad schlagen fail-closed fehl. Beleg:
+[`checkpoint-final.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-complete-layout-default-r1/checkpoint-final.json),
+SHA `47a9513dfb15c5e7fb3ac8875d9eadafd6e61ef5435c1b806bfc6ab79eadd91e`.
+Dies belegt keine neue aktuelle Bundle-/Relocationerstellung; Cloudprodukt bleibt OFF.
+
+Der externe A07-Einzelkronenbeleg samt unabhängigem Teilreview
+([Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/a07-single-crown-r1-independent/REVIEW.md))
+ist PASS in seinem Quellen-/Schemaumfang; tatsächliche Produkt-Screen-Bounds und
+der Kameraausschnitt für mehrere Häuser fehlen. A07 bleibt offen.
 
 ### Historische V13-Statusgrenzen
 
@@ -395,7 +443,10 @@ Keine frühere Capture-Revision als aktuellen A07-Pass übernehmen.
   [`visual-review.md`](../../runs/clouds-2026-10-25/v7/visual-review.md) bleibt
   historische Dokumentation, kein gültiger visueller PASS. Frühere
   Capture-/Kamera-/Driftbelege bleiben nur in ihrem technischen Umfang
-  nachvollziehbar. Eine eigene Wolkenüberarbeitung läuft laut Owner ohne GPU;
+  nachvollziehbar. Die aktuelle Nutzerkorrektur verlangt, die Wolken zu
+  verbessern und anschließend zu aktivieren; OFF bleibt Diagnosezustand. V16
+  wurde in privater GPU-Kopie geprüft, ist aber keine Qualitäts- oder
+  Leistungsfreigabe. Produktdefault bleibt bis zur Integration und Review OFF; Umschaltung,
   Referenztreue/Erscheinung und kombinierte Terrainintegration bleiben offen.
 - V2-Datenrevision und sämtliche bisherigen finalen A01–A16-Abnahmen bleiben
   offen; V13 bindet weiterhin V1.
