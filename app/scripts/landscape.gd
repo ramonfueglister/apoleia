@@ -1543,6 +1543,7 @@ func forest_mesh_cache_identity() -> Dictionary:
         "canonical_sampler_sha256":FileAccess.get_sha256("res://scripts/canonical_domains_v2.gd"),
         "projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),
         "codec_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_mesh_cache.gd"),
+        "build_context_sha256":FileAccess.get_sha256("res://scripts/cache/fixed_forest_build_context.gd"),
         "support_policy":"explicit global dyadic stride; zero flat; named-star geometry; marine zero; no relief; no node-residency dependence"}
     # JSON manifest numbers are parsed as floats. Normalize native policy ints
     # before hashing, so the on-disk manifest and independently rebuilt key agree.
@@ -1595,13 +1596,52 @@ func _configure_forest_mesh_cache() -> void:
         forest_mesh_cache_state["configure_error"]="product_cache_manifest_hash_mismatch"
         return
     var reader=ForestMeshCache.new()
-    if not reader.configure(path,forest_mesh_cache_state.identity):
-        forest_mesh_cache_state["configure_error"]=reader.last_error
-        return
+    var strict=reader.configure(path,forest_mesh_cache_state.identity)
+    if not strict:
+        var failure=reader.last_error
+        var compatibility=_forest_cache_refactor_compatibility(configured,path,forest_mesh_cache_state.identity) if not override and failure=="revision_mismatch" else {"approved":false,"reason":"no_product_refactor_gate"}
+        if not compatibility.approved or not reader.configure(path,compatibility.producer_identity):
+            forest_mesh_cache_state["configure_error"]=failure
+            forest_mesh_cache_state["compatibility_rejection"]=compatibility.get("reason",reader.last_error)
+            return
+        forest_mesh_cache_state["compatibility"]={"schema":"explicit-refactor-compatibility-v1","definition":configured.compatibility,"definition_sha256":compatibility.definition_sha256,"producer_identity_key":compatibility.producer_identity_key,"consumer_identity_key":ForestMeshCache.identity_key(forest_mesh_cache_state.identity),"decision":"exact pinned producer payloads; unchanged headers, geometry-equivalent CPU-array refactor"}
     forest_mesh_cache=reader
     forest_mesh_cache_state["enabled"]=true
     forest_mesh_cache_state["manifest_sha256"]=FileAccess.get_sha256(path.path_join("manifest.json"))
     forest_mesh_cache_state["identity_key"]=ForestMeshCache.identity_key(forest_mesh_cache_state.identity)
+    forest_mesh_cache_state["producer_identity_key"]=ForestMeshCache.identity_key(reader.identity)
+
+func _forest_cache_refactor_compatibility(configured:Dictionary,path:String,consumer:Dictionary)->Dictionary:
+    var rejected={"approved":false,"reason":"refactor_gate_missing"}
+    var ref=configured.get("compatibility",{})
+    if not ref is Dictionary or str(ref.get("path","")).is_empty() or str(ref.get("sha256","")).length()!=64:return rejected
+    var definition_path=source_root.path_join(str(ref.path))
+    if FileAccess.get_sha256(definition_path)!=str(ref.sha256):return {"approved":false,"reason":"refactor_definition_hash"}
+    var definition=JSON.parse_string(FileAccess.get_file_as_string(definition_path))
+    if not definition is Dictionary or definition.get("schema","")!="fixed-forest-explicit-refactor-compatibility-v1":return rejected
+    for key in ["consumer_identity_key","producer_manifest_path","producer_manifest_sha256","producer_identity_key"]:
+        if not definition.get(key) is String:return {"approved":false,"reason":"refactor_definition_schema"}
+    for key in ["engine","consumer_pins","producer_pins"]:
+        if not definition.get(key) is Dictionary:return {"approved":false,"reason":"refactor_definition_schema"}
+    if definition.consumer_identity_key!=ForestMeshCache.identity_key(consumer):return {"approved":false,"reason":"refactor_consumer_identity"}
+    var engine=Engine.get_version_info()
+    if definition.engine.get("string","")!=engine.string or definition.engine.get("hash","")!=engine.hash:return {"approved":false,"reason":"refactor_engine"}
+    var manifest_path=path.path_join("manifest.json").simplify_path()
+    if manifest_path!=source_root.path_join(str(definition.producer_manifest_path)).simplify_path() or FileAccess.get_sha256(manifest_path)!=str(definition.producer_manifest_sha256) or configured.get("manifest_sha256","")!=definition.producer_manifest_sha256:return {"approved":false,"reason":"refactor_producer_manifest"}
+    var producer_manifest=JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+    if not producer_manifest is Dictionary or producer_manifest.get("identity_key","")!=definition.producer_identity_key or ForestMeshCache.identity_key(producer_manifest.get("identity",{}))!=definition.producer_identity_key:return {"approved":false,"reason":"refactor_producer_identity"}
+    var pins={"generator_sha256":"res://scripts/style/landscape_style.gd","codec_sha256":"res://scripts/cache/fixed_forest_mesh_cache.gd","build_context_sha256":"res://scripts/cache/fixed_forest_build_context.gd"}
+    for field in pins:
+        if not definition.consumer_pins.has(field) or consumer.get(field,"")!=definition.consumer_pins[field] or FileAccess.get_sha256(pins[field])!=definition.consumer_pins[field]:return {"approved":false,"reason":"refactor_active_code_pin:"+field}
+    var producer:Dictionary=producer_manifest.identity
+    if producer.has("build_context_sha256"):return {"approved":false,"reason":"refactor_not_original_producer"}
+    for field in ["generator_sha256","codec_sha256"]:
+        if producer.get(field,"")!=definition.producer_pins.get(field,""):return {"approved":false,"reason":"refactor_original_code_pin:"+field}
+    var before=producer.duplicate(true);var after=consumer.duplicate(true)
+    # The only permitted difference is this measured execution-only refactor.
+    for field in ["generator_sha256","codec_sha256","build_context_sha256"]:before.erase(field);after.erase(field)
+    if JSON.stringify(before,"",true,true)!=JSON.stringify(after,"",true,true):return {"approved":false,"reason":"refactor_geometry_dependency_changed"}
+    return {"approved":true,"reason":"exact_refactor_bound","producer_identity":producer,"producer_identity_key":definition.producer_identity_key,"definition_sha256":str(ref.sha256)}
 
 func _diorama_surface_sample(p: Vector2) -> Dictionary:
     var forest=_cover_kind(p)==10 and _water_kind(p)==0

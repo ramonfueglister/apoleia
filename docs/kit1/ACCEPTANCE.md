@@ -153,9 +153,9 @@ p50/p95/p99/max 10,341/14,187/15,278/165,845 ms einschließlich Diagnose-PNGs.
 Das ist kein direkter Leistungsvergleich mit anderen Auflösungen und kein A12-
 Pass. Wanted-Spitze 2.100, stabil 1.508→1.454; maximal 813 resident/511 sichtbar,
 768 bleibt weiche Grenze. Die Waldfüllung ist damit nicht abgenommen. OS-Input-
-OriginTimestamp fehlt, also keine OS-Eingabelatenzbehauptung. Alte Cacheheader
-mit Codeidentity `92a357…` werden wegen neuer Codeidentity `7a…` weiter strikt
-abgewiesen; es gibt keine Kompatibilitätsausnahme oder neuen Bake.
+OriginTimestamp fehlt, also keine OS-Eingabelatenzbehauptung. Die Cachekompatibilität
+ist inzwischen ausschließlich durch das unten dokumentierte enge Refaktorgate
+freigegeben; daraus entsteht keine zusätzliche Cacheabdeckung.
 
 Das nach dem Min/Max-AABB-Fix gebundene Replay
 [`aabb-reproduction.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/forest-async-array-split-r2/aabb-reproduction.json)
@@ -165,8 +165,28 @@ bestätigt 8/8 exakte Fälle; Style-SHA `120436ea…0b335` entspricht Native R3.
 Finale Cacheinputidentity laut Replay ist
 `091c5a48c0d67411fe1c69a94b1a8617019fa515602191c249c59dd2b9aa232a` (nicht die
 vorläufige Zwischenidentity). R1 bleibt historischer Fehlbefund. Alte
-Cacheheader werden weiter strikt abgewiesen; daraus folgt keine
-Kompatibilitätsfreigabe.
+Cacheheader außerhalb des ausdrücklich gebundenen Producer/Consumer-Paars werden
+weiter strikt abgewiesen.
+
+### Enges Forest-Cache-Refaktorgate
+
+Die normale Consumeridentity bindet jetzt auch den aktiven
+`fixed_forest_build_context.gd` und lautet
+`dffeea1d79afdfb773e8ac7b0633e83ba8426451ce0c4a7a756fa272dc1ef9c9`. Eine
+gehashte Kompatibilitätsdefinition erlaubt ausschließlich Producer
+`92a357fd9ecde784d0371b1221226b0fda66b30024627a10730016f28a4325f0` aus dem
+unveränderten Originalmanifest mit SHA-256
+`9280e9cd0361909ee404ee267446f5e7b9c575cc9733fba6891e6c51e98c0285`.
+Definition [`compatibility.json`](../../artifacts/render-data/forest-cache-refactor-compatibility-r1/compatibility.json),
+SHA-256 `91b4c10f97dba4eb08ffc0b771f49deb41df1d4f32ef151bea0998093e18547f`;
+Producerheader und Payloads bleiben unverändert. Der unabhängige
+[`review.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-cache-context-gate-r2-independent/review.json)
+hat SHA-256 `67295f9fb361d6fd37436ad072527445f9731bed1070574d579481c2b83f0578`,
+20/20 Headlesschecks mit Exit 0, zwölf exakt passende Dateihashes und keine
+P1/P2-Befunde. Umfang: Metadatensicherheit und ein echtes Payload. Keine native
+Warmcacheprüfung, Vollabdeckung, GPU-/Leistungsabnahme oder A08/A12-Aussage.
+Stride 0 bleibt Miss; sichtbarer Wald ist unvollständig. Flussverhalten während
+der Fahrt bleibt offen.
 
 ### Integrierter Fern-/Nahlauf, Wolken und Numerik
 

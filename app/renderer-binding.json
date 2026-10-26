@@ -20,7 +20,11 @@
   "forest_cache": {
     "path": "artifacts/render-data/forest-cache-sourcev2-v19-tour-nonflat-r1",
     "manifest_sha256": "9280e9cd0361909ee404ee267446f5e7b9c575cc9733fba6891e6c51e98c0285",
-    "status": "2924 observed nonflat tour variants,1504 stride1 and1420 stride128; no stride0/full-region claim; other variants exact generator fallback"
+    "status": "2924 observed nonflat tour variants,1504 stride1 and1420 stride128; no stride0/full-region claim; other variants exact generator fallback",
+    "compatibility": {
+      "path": "artifacts/render-data/forest-cache-refactor-compatibility-r1/compatibility.json",
+      "sha256": "91b4c10f97dba4eb08ffc0b771f49deb41df1d4f32ef151bea0998093e18547f"
+    }
   },
   "visual_extensions": {
     "clouds": {

@@ -251,10 +251,9 @@ Commitmax 1.376 ms, gesamte Forest-Mainthreadfunktion max 9.031 ms; Gesamtframew
 p50/p95/p99/max = 10.341/14.187/15.278/165.845 ms inklusive Diagnoseaufnahmen.
 Keine daraus erfundene Leistungsgrenze oder allgemeine Bedienfreigabe.
 
-Alte Cacheheader werden nach dem Code-/DTO-Split bewusst strikt abgewiesen.
-Der native Nachweis verwendete ausschließlich kalte Generatorarbeit, keine
-behaupteten alten Cachehits. Eine explizit gebundene Kompatibilitätsentscheidung
-oder neue Cachegeneration ist noch offen. Die 768-Zellen-Residencygrenze ist bei
+Der damalige native Nachweis verwendete ausschließlich kalte Generatorarbeit;
+die darin offene Kompatibilitätsentscheidung wurde inzwischen durch das unten
+beschriebene enge Refaktorgate geschlossen. Die 768-Zellen-Residencygrenze ist bei
 mehr vollständig Wanted-Zellen weiterhin weich. Alte Supportmeshes werden bis
 zum passenden Zellnachfolger behalten; transiente staleSupporthöhen sind
 protokolliert und nicht als Oberflächenparität abgenommen.
@@ -264,3 +263,41 @@ Der vollständige River-Set-LRU behebt die identische Übersichtsrückkehr
 kontinuierlicher Navigation ausdrücklich noch nicht: exakte Breite/Pitch im
 Baukey brechen laufende Gesamtsets ständig ab. `camera/river-set-cache-r1/real-tour-causal.json`
 bindet diesen weiterhin offenen Regressionsbefund.
+
+### Enges Refaktorgate nach der kalten R3-Probe
+
+Status **validiert** im ausdrücklich begrenzten Metadaten-/Payloadumfang;
+20 kleine CPU-Konfigurations-/Payloadprüfungen bestanden, unabhängiger Review
+ohne P1/P2. Ein tatsächlicher neuer Appstart bleibt offen.
+`forest_mesh_cache_identity()` bindet nun auch die aktive Datei
+`fixed_forest_build_context.gd` regulär. Die neue Consumeridentity lautet
+`dffeea1d79afdfb773e8ac7b0633e83ba8426451ce0c4a7a756fa272dc1ef9c9`.
+
+Die Produktbindung verweist ausdrücklich auf die gehashte Definition
+`artifacts/render-data/forest-cache-refactor-compatibility-r1/compatibility.json`,
+SHA-256 `91b4c10f97dba4eb08ffc0b771f49deb41df1d4f32ef151bea0998093e18547f`.
+Nur Producer `92a357fd9ecde784d0371b1221226b0fda66b30024627a10730016f28a4325f0`
+aus dem unveränderten Manifest `9280e9cd0361909ee404ee267446f5e7b9c575cc9733fba6891e6c51e98c0285` ist damit
+wiederverwendbar. Generator-/Codec-Refaktor und neu expliziter Context sind die
+zulässigen Unterschiede; alle übrigen Source-/G-/Mode-/Policy-/Support-/
+Projektionsabhängigkeiten müssen gleich sein. Aktive Codepins und Engine sind
+zusätzlich exakt gebunden. Der unveränderte strenge Loader prüft weiterhin die
+originalen Producerheader, der Scheduler verwendet die neue Consumeridentity.
+Kein Header wurde umgeschrieben und kein neuer Cache gebacken.
+
+Unabhängiger Review [`review.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/review/forest-cache-context-gate-r2-independent/review.json),
+SHA-256 `67295f9fb361d6fd37436ad072527445f9731bed1070574d579481c2b83f0578`,
+bestätigt 20/20 Headlesschecks (Exit 0), zwölf exakt passende Dateihashes und
+keine P1/P2-Befunde.
+Beleg `camera/forest-cache-context-gate-r2/`: Die Prüfung ruft den tatsächlichen
+Runtime-Konfigurationspfad mit den vollständigen Identitätsmetadaten auf, ohne
+Source-Raster zu laden. Ein echtes altes Payload wurde geprüft/materialisiert;
+Stride0 bleibt ein Miss. Zukunftsänderungen, falsche Definition/Engine und ein
+CLI-Verzeichnisoverride erhalten keine pauschale Ausnahme. Dieser CPU-Beleg
+behauptet keinen vollständigen neuen Appstart oder Leistungspass. Die Definition
+ist eine neue tatsächliche Laufzeitdatei und muss in künftigen Paketinventaren
+enthalten sein; ihr Forschungsbeleg ist reine Herkunftsmetadaten. Der Gateumfang
+ist Metadatensicherheit plus ein echtes Payload: keine native Warmcache- oder
+Vollabdeckungsprüfung, kein GPU-/A12-/A08-Nachweis. Sichtbarer Wald bleibt
+unvollständig, Flussverhalten während der Fahrt offen; V23-r2 externe Studie
+verworfen.
