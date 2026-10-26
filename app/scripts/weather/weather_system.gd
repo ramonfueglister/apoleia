@@ -1,0 +1,565 @@
+extends Node3D
+## Weather states, moving weather cells, faceted clouds with real sun shadows,
+## rain veils, lightning and time of day. The existing look is never replaced:
+## its values are read once after LandscapeLook.configure_environment and only
+## modulated per frame. With weather off every touched value returns to that base.
+## World units are model kilometres; weather time can run faster than real time.
+
+const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
+const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
+const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
+const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
+
+const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
+# cover, noise amplitude, rain, storm (see weather_field.gdshaderinc)
+const STATE_FIELD := {
+	"clear": Vector4(0.0, 0.08, 0.0, 0.0),
+	"fair": Vector4(0.04, 0.55, 0.0, 0.0),
+	"overcast": Vector4(0.74, 0.28, 0.12, 0.0),
+	"rain": Vector4(0.86, 0.24, 0.75, 0.0),
+	"storm": Vector4(0.80, 0.30, 0.60, 0.55),
+}
+const STATE_WIND := {"clear": 0.45, "fair": 0.6, "overcast": 0.8, "rain": 0.9, "storm": 1.0}
+# Desired weather cells per kind (0 cumulus cluster, 1 rain front, 2 storm cell).
+const STATE_CELLS := {"clear": [0, 0, 0], "fair": [2, 0, 0], "overcast": [2, 1, 0], "rain": [0, 4, 0], "storm": [0, 1, 3]}
+const AUTO_WEIGHTS := {"fair": 0.55, "clear": 0.2, "overcast": 0.12, "rain": 0.08, "storm": 0.05}
+const TIMES: Array[String] = ["morning", "noon", "evening"]
+# Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
+const TIME_LOOK := {
+	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.76, 0.55), 1.75, Color(1.0, 0.90, 0.84), 1.3, Color(1.0, 0.86, 0.74)],
+	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.66, 0.42), 1.7, Color(1.0, 0.84, 0.78), 1.25, Color(1.05, 0.78, 0.62)],
+}
+const WIND_SPEED := 3.0
+const NOISE_PERIOD := 1100.0
+const FINE_CELL := 46.0
+const COARSE_CELL := 170.0
+const FINE_SCALE := Vector2(10.0, 17.0)
+const COARSE_SCALE := Vector2(36.0, 60.0)
+const CLOUD_HEIGHT := 1.3 * 0.85 * 1.17 # mesh height * vertical scale * maximum field growth
+const TRANSITION_SECONDS := 30.0
+
+var enabled := true
+var auto_weather := true
+var state := "fair"
+var time_of_day := 0.5
+var day_cycle_seconds := 0.0
+var time_scale := 1.0
+var weather_time := 0.0
+var drift := Vector2.ZERO
+var wind_dir := Vector2(1.0, -0.15).normalized()
+var wind_strength := 0.6
+var cells: Array = []
+var cloud_base := 90.0
+var local_weather := Vector3.ZERO
+var lightning := 0.0
+
+var _landscape: Node3D
+var _camera: Camera3D
+var _sun: DirectionalLight3D
+var _environment: Environment
+var _height_provider: Callable
+var _base := {}
+var _written_fog := -1.0
+var _fog_base := 0.0
+var _rng := RandomNumberGenerator.new()
+var _noise_image: Image
+var _noise_texture: ImageTexture
+var _cloud_material: ShaderMaterial
+var _rain_material: ShaderMaterial
+var _fine: RefCounted
+var _coarse: RefCounted
+var _field_from := Vector4.ZERO
+var _field_to := Vector4.ZERO
+var _wind_from := 0.6
+var _wind_to := 0.6
+var _transition := 1.0
+var _phase_left := 0.0
+var _front_timer := 0.0
+var _lightning_timer := 0.0
+var _bolt: MeshInstance3D
+var _bolt_frames := 0
+var _flash_light: OmniLight3D
+var _flash_pos := Vector3.ZERO
+var _altitude_ready := false
+var _prewarmed := false
+var _spawn_front := false
+var _capture_dir := ""
+var _capture_frames := 0
+var _capture_every := 2
+var _frame := 0
+var configured := false
+
+func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, environment: Environment, height_provider: Callable) -> void:
+	_landscape = landscape
+	_camera = camera
+	_sun = sun
+	_environment = environment
+	_height_provider = height_provider
+	_capture_base()
+	var seed := 1
+	var start_state := ""
+	var spawn_front := false
+	var args := OS.get_cmdline_user_args()
+	for i in args.size():
+		var key := args[i]
+		var value := args[i + 1] if i + 1 < args.size() else ""
+		if "=" in key:
+			value = key.get_slice("=", 1)
+			key = key.get_slice("=", 0)
+		match key:
+			"--weather":
+				if value in ["off", "none"]: enabled = false
+				elif value in STATES: start_state = value
+			"--time":
+				if value in TIMES: time_of_day = TIMES.find(value) * 0.5
+			"--weather-seed": seed = int(value)
+			"--day-cycle": day_cycle_seconds = float(value)
+			"--weather-timescale": time_scale = maxf(float(value), 0.0)
+			"--weather-front": spawn_front = true
+			"--weather-capture": _capture_dir = value
+			"--weather-capture-frames": _capture_frames = int(value)
+			"--clouds-disabled": enabled = false
+			"--clouds-enabled": enabled = true
+	_rng.seed = seed
+	if start_state != "":
+		auto_weather = false
+		state = start_state
+	_build_noise(seed)
+	_cloud_material = ShaderMaterial.new()
+	_cloud_material.shader = CLOUD_SHADER
+	_rain_material = ShaderMaterial.new()
+	_rain_material.shader = RAIN_SHADER
+	for material in [_cloud_material, _rain_material]:
+		material.set_shader_parameter("weather_noise", _noise_texture)
+		material.set_shader_parameter("noise_period", NOISE_PERIOD)
+		material.set_shader_parameter("earth_km", _earth_km())
+	_fine = CloudMeshes.CloudTier.new(CloudMeshes, self, FINE_CELL, FINE_SCALE, seed * 31 + 3, _cloud_material, _rain_material)
+	_coarse = CloudMeshes.CloudTier.new(CloudMeshes, self, COARSE_CELL, COARSE_SCALE, seed * 31 + 11, _cloud_material, null)
+	_build_lightning()
+	_field_from = STATE_FIELD[state]
+	_field_to = _field_from
+	_wind_from = STATE_WIND[state]
+	_wind_to = _wind_from
+	_phase_left = _rng.randf_range(120.0, 240.0)
+	_front_timer = _rng.randf_range(60.0, 120.0)
+	_spawn_front = spawn_front
+	if _capture_dir != "": DirAccess.make_dir_recursive_absolute(_capture_dir)
+	configured = true
+	_apply_enabled()
+
+func _earth_km() -> float:
+	return 6371008.8 * 0.001
+
+func _capture_base() -> void:
+	_base = {
+		"sun_rotation": _sun.rotation_degrees,
+		"sun_color": _sun.light_color,
+		"sun_energy": _sun.light_energy,
+		"ambient_color": _environment.ambient_light_color,
+		"ambient_energy": _environment.ambient_light_energy,
+		"fog_color": _environment.fog_light_color,
+		"saturation": _environment.adjustment_saturation,
+	}
+	_fog_base = _environment.fog_density
+
+func _build_noise(seed: int) -> void:
+	var noise := FastNoiseLite.new()
+	noise.seed = seed
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.02
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 3
+	_noise_image = noise.get_seamless_image(256, 256, false, false, 0.1, true)
+	_noise_image.convert(Image.FORMAT_L8)
+	_noise_texture = ImageTexture.create_from_image(_noise_image)
+
+func _build_lightning() -> void:
+	_bolt = MeshInstance3D.new()
+	var material := ShaderMaterial.new()
+	var shader := Shader.new()
+	shader.code = BOLT_CODE
+	material.shader = shader
+	_bolt.material_override = material
+	_bolt.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_bolt.visible = false
+	add_child(_bolt)
+	_flash_light = OmniLight3D.new()
+	_flash_light.light_color = Color(0.82, 0.86, 1.0)
+	_flash_light.shadow_enabled = false
+	_flash_light.visible = false
+	add_child(_flash_light)
+
+# --- Public API -----------------------------------------------------------
+
+func is_active() -> bool:
+	return configured and enabled
+
+## Highest displayed cloud Y, for camera near/far clipping.
+func get_display_altitude() -> float:
+	return cloud_base + COARSE_SCALE.y * CLOUD_HEIGHT
+
+func set_weather(name: String, automatic: bool = false) -> void:
+	auto_weather = automatic
+	_begin_transition(name)
+
+func set_enabled(value: bool) -> void:
+	enabled = value
+	_apply_enabled()
+
+## CPU mirror of weather_field(): x cover, y rain, z storm.
+func sample_field(p: Vector2) -> Vector3:
+	var n := _noise_at((p - drift) / NOISE_PERIOD)
+	var climate := _climate(p)
+	var f := _current_field()
+	var cover := clampf(f.x + (n - 0.5) * f.y * 2.0, 0.0, 1.0) * climate
+	var rain := f.z * smoothstep(0.45, 0.85, cover)
+	var storm := f.w * smoothstep(0.5, 0.9, cover)
+	var cell_climate := minf(climate * 1.2, 1.0)
+	for cell in cells:
+		var local: Vector2 = p - cell.pos
+		var axis: Vector2 = cell.axis
+		var d := Vector2(local.dot(axis) / cell.ra, local.dot(Vector2(-axis.y, axis.x)) / cell.rc).length()
+		var b: float = _cell_strength(cell) * (1.0 - smoothstep(0.35, 1.0, d)) * (0.55 + 0.9 * n) * cell_climate
+		cover += b * (0.6 if cell.kind == 0 else 1.0)
+		if cell.kind >= 1: rain += b * 0.9 * smoothstep(0.2, 0.6, b)
+		if cell.kind == 2: storm += b * smoothstep(0.3, 0.8, b)
+	return Vector3(clampf(cover, 0.0, 1.0), clampf(rain, 0.0, 1.0), clampf(storm, 0.0, 1.0))
+
+func describe() -> Dictionary:
+	return {"enabled": enabled, "auto": auto_weather, "state": state, "time_of_day": time_of_day, "local": [local_weather.x, local_weather.y, local_weather.z], "cells": cells.size(), "cloud_base": cloud_base, "fine_slots": _fine.slot_count if _fine else 0, "coarse_slots": _coarse.slot_count if _coarse else 0}
+
+# --- Field helpers ----------------------------------------------------------
+
+func _climate(p: Vector2) -> float:
+	var lat := 41.0 - rad_to_deg(p.y / _earth_km())
+	return lerpf(0.15, 1.0, smoothstep(30.0, 37.0, lat)) * lerpf(1.0, 1.5, smoothstep(44.0, 54.0, lat))
+
+func _noise_at(uv: Vector2) -> float:
+	var size := _noise_image.get_size()
+	var p := Vector2(fposmod(uv.x, 1.0) * size.x - 0.5, fposmod(uv.y, 1.0) * size.y - 0.5)
+	var i := Vector2i(p.floor())
+	var f := p - Vector2(i)
+	var a := _noise_image.get_pixel(posmod(i.x, size.x), posmod(i.y, size.y)).r
+	var b := _noise_image.get_pixel(posmod(i.x + 1, size.x), posmod(i.y, size.y)).r
+	var c := _noise_image.get_pixel(posmod(i.x, size.x), posmod(i.y + 1, size.y)).r
+	var d := _noise_image.get_pixel(posmod(i.x + 1, size.x), posmod(i.y + 1, size.y)).r
+	return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y)
+
+func _current_field() -> Vector4:
+	return _field_from.lerp(_field_to, smoothstep(0.0, 1.0, _transition))
+
+func _cell_strength(cell: Dictionary) -> float:
+	return cell.strength * clampf(cell.age / 40.0, 0.0, 1.0) * clampf((cell.life - cell.age) / 40.0, 0.0, 1.0)
+
+# --- Weather cells and states ----------------------------------------------
+
+func _focus() -> Vector2:
+	return _landscape.get("target") if _landscape else Vector2.ZERO
+
+func _region_radius() -> float:
+	return clampf(float(_landscape.get("view_width")) * 1.2, 500.0, 3000.0)
+
+func _prewarm_cells() -> void:
+	var wanted: Array = STATE_CELLS[state]
+	for kind in 3:
+		for k in wanted[kind]: _spawn_cell(kind, false, 0.0)
+	for cell in cells: cell.age = _rng.randf_range(40.0, cell.life * 0.5)
+
+func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
+	if cells.size() >= 16: return
+	var radius := _region_radius()
+	var across := Vector2(-wind_dir.y, wind_dir.x)
+	var pos := _focus()
+	if upwind:
+		var d := distance if distance > 0.0 else radius * 0.9
+		pos += -wind_dir * d + across * (_rng.randf_range(-0.6, 0.6) * radius if distance <= 0.0 else 0.0)
+	else:
+		pos += Vector2(_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0)) * radius
+	var cell := {"kind": kind, "pos": pos, "axis": wind_dir, "age": 0.0, "speed": _rng.randf_range(0.8, 1.0)}
+	match kind:
+		0:
+			var r := _rng.randf_range(180.0, 320.0)
+			cell.merge({"ra": r, "rc": r * _rng.randf_range(0.8, 1.3), "strength": _rng.randf_range(0.45, 0.7), "life": _rng.randf_range(500.0, 900.0)})
+		1:
+			cell.merge({"ra": _rng.randf_range(140.0, 220.0), "rc": _rng.randf_range(450.0, 750.0), "strength": _rng.randf_range(0.8, 1.0), "life": _rng.randf_range(600.0, 1000.0)})
+		_:
+			var r := _rng.randf_range(110.0, 200.0)
+			cell.merge({"ra": r, "rc": r * _rng.randf_range(0.8, 1.2), "strength": _rng.randf_range(0.9, 1.0), "life": _rng.randf_range(300.0, 600.0)})
+	cells.append(cell)
+
+func _update_cells(dt: float) -> void:
+	var focus := _focus()
+	var radius := _region_radius()
+	for cell in cells:
+		cell.age += dt
+		cell.pos += wind_dir * WIND_SPEED * wind_strength * cell.speed * 0.9 * dt
+	cells = cells.filter(func(c): return c.age < c.life and (c.pos - focus).length() < radius * 2.5)
+	var wanted: Array = STATE_CELLS[state]
+	for kind in 3:
+		var have := cells.filter(func(c): return c.kind == kind and not c.get("transient", false)).size()
+		if have < wanted[kind]: _spawn_cell(kind, true, 0.0)
+	if auto_weather and state in ["fair", "clear"]:
+		_front_timer -= dt
+		if _front_timer <= 0.0:
+			_front_timer = _rng.randf_range(90.0, 180.0)
+			_spawn_cell(1 if _rng.randf() < 0.7 else 2, true, 0.0)
+			if not cells.is_empty(): cells[-1]["transient"] = true
+
+func _begin_transition(name: String) -> void:
+	_field_from = _current_field()
+	_wind_from = lerpf(_wind_from, _wind_to, smoothstep(0.0, 1.0, _transition))
+	state = name
+	_field_to = STATE_FIELD[name]
+	_wind_to = STATE_WIND[name]
+	_transition = 0.0
+	print(JSON.stringify({"event": "weather_state", "state": state, "auto": auto_weather}))
+
+func _pick_auto_state() -> String:
+	var r := _rng.randf()
+	for name in AUTO_WEIGHTS:
+		r -= AUTO_WEIGHTS[name]
+		if r <= 0.0: return name
+	return "fair"
+
+# --- Frame update -------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	if not configured: return
+	_frame += 1
+	var dt := delta * time_scale
+	if day_cycle_seconds > 0.0: time_of_day = 0.5 - 0.5 * cos(TAU * Time.get_ticks_msec() / 1000.0 / day_cycle_seconds)
+	if not enabled:
+		_publish_globals(Vector3.ZERO)
+		return
+	if not _prewarmed:
+		# Deferred until the landscape has applied its start view.
+		_prewarmed = true
+		_prewarm_cells()
+		if _spawn_front: _spawn_cell(1, true, 600.0)
+	weather_time += dt
+	_transition = minf(_transition + dt / TRANSITION_SECONDS, 1.0)
+	if auto_weather:
+		_phase_left -= dt
+		if _phase_left <= 0.0:
+			_phase_left = _rng.randf_range(120.0, 240.0)
+			_begin_transition(_pick_auto_state())
+	wind_strength = lerpf(_wind_from, _wind_to, smoothstep(0.0, 1.0, _transition))
+	var heading := 0.25 * sin(weather_time / 300.0)
+	wind_dir = Vector2(1.0, -0.15).normalized().rotated(heading)
+	drift += wind_dir * WIND_SPEED * wind_strength * dt
+	_update_cells(dt)
+	var focus := _focus()
+	var spread := float(_landscape.get("view_width")) * 0.25
+	var sampled := Vector3.ZERO
+	for offset in [Vector2.ZERO, Vector2(spread, 0), Vector2(-spread, 0), Vector2(0, spread), Vector2(0, -spread)]:
+		sampled += sample_field(focus + offset) * 0.2
+	local_weather = sampled if _frame <= 2 else local_weather.lerp(sampled, clampf(delta * 1.5, 0.0, 1.0))
+	_update_altitude(delta)
+	_apply_look()
+	_update_tiers()
+	_upload_uniforms()
+	_update_lightning(delta)
+	_publish_globals(local_weather)
+	_capture()
+
+func _update_altitude(delta: float) -> void:
+	var target_base := cloud_base
+	if _height_provider.is_valid():
+		var bounds: Dictionary = _height_provider.call()
+		target_base = float(bounds.get("natural_max_y", 80.0)) + 4.0
+	cloud_base = target_base if not _altitude_ready else lerpf(cloud_base, target_base, clampf(delta * 3.0, 0.0, 1.0))
+	_altitude_ready = true
+
+func _time_look() -> Array:
+	var noon := [_base.sun_rotation, Color(1, 1, 1), 1.0, Color(1, 1, 1), 1.0, Color(1, 1, 1)]
+	var from: Array = TIME_LOOK.morning if time_of_day < 0.5 else noon
+	var to: Array = noon if time_of_day < 0.5 else TIME_LOOK.evening
+	var t := time_of_day * 2.0 if time_of_day < 0.5 else (time_of_day - 0.5) * 2.0
+	var q := Quaternion.from_euler(_euler(from[0])).slerp(Quaternion.from_euler(_euler(to[0])), t)
+	return [q, from[1].lerp(to[1], t), lerpf(from[2], to[2], t), from[3].lerp(to[3], t), lerpf(from[4], to[4], t), from[5].lerp(to[5], t)]
+
+func _euler(degrees: Vector3) -> Vector3:
+	return Vector3(deg_to_rad(degrees.x), deg_to_rad(degrees.y), deg_to_rad(degrees.z))
+
+func _apply_look() -> void:
+	var look := _time_look()
+	var w := local_weather
+	var dim := clampf(maxf((w.x - 0.45) * 0.9, 0.0) + w.y * 0.25 + w.z * 0.35, 0.0, 0.8)
+	_sun.quaternion = look[0]
+	var sun_color: Color = _base.sun_color * look[1]
+	_sun.light_color = sun_color.lerp(Color(0.80, 0.82, 0.86), dim * 0.4)
+	_sun.light_energy = _base.sun_energy * look[2] * (1.0 - 0.6 * dim)
+	var ambient: Color = _base.ambient_color * look[3]
+	_environment.ambient_light_color = ambient.lerp(Color(0.72, 0.76, 0.82), dim * 0.5)
+	_environment.ambient_light_energy = _base.ambient_energy * look[4] * (1.0 - 0.15 * dim)
+	var fog: Color = _base.fog_color * look[5]
+	fog = fog.lerp(Color(0.60, 0.64, 0.69), clampf(w.y * 0.7 + dim * 0.3, 0.0, 1.0)).lerp(Color(0.48, 0.45, 0.55), w.z * 0.5)
+	_environment.fog_light_color = fog
+	# LandscapeLook rewrites fog_density per view; only scale its latest value.
+	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
+	_written_fog = _fog_base * (1.0 + w.y * 1.6 + dim * 0.5)
+	_environment.fog_density = _written_fog
+	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.22 * w.y - 0.12 * w.z)
+
+func _restore_look() -> void:
+	if _base.is_empty(): return
+	_sun.rotation_degrees = _base.sun_rotation
+	_sun.light_color = _base.sun_color
+	_sun.light_energy = _base.sun_energy
+	_environment.ambient_light_color = _base.ambient_color
+	_environment.ambient_light_energy = _base.ambient_energy
+	_environment.fog_light_color = _base.fog_color
+	if is_equal_approx(_environment.fog_density, _written_fog): _environment.fog_density = _fog_base
+	_written_fog = -1.0
+	_environment.adjustment_saturation = _base.saturation
+
+func _update_tiers() -> void:
+	var view_width := float(_landscape.get("view_width"))
+	var fine_fade := smoothstep(240.0, 420.0, view_width) * (1.0 - smoothstep(1500.0, 2200.0, view_width))
+	var coarse_fade := smoothstep(1500.0, 2200.0, view_width)
+	var rain_fade := 1.0 - smoothstep(1300.0, 1800.0, view_width)
+	var fine_on := view_width < 2200.0
+	var coarse_on := view_width > 1500.0
+	_fine.set_fade(fine_fade, fine_on and view_width < 1850.0, rain_fade if fine_on else 0.0)
+	_coarse.set_fade(coarse_fade, coarse_on and view_width >= 1850.0, 0.0)
+	if not fine_on: _fine.set_visible(false)
+	if not coarse_on: _coarse.set_visible(false)
+	var footprint: Rect2 = _landscape.get("camera_footprint")
+	var elevation := deg_to_rad(float(_landscape.get("elevation_degrees")))
+	var sun_dir := _sun.global_basis.z.normalized()
+	var top := get_display_altitude()
+	var view_shift := Vector2(0.0, top / maxf(tan(elevation), 0.2))
+	var shadow_shift := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12) * cloud_base
+	var region := footprint.merge(Rect2(footprint.position + view_shift, footprint.size)).merge(Rect2(footprint.position + shadow_shift, footprint.size))
+	region.position -= drift
+	if fine_on: _fine.ensure(region.grow(FINE_SCALE.y * 1.8))
+	if coarse_on: _coarse.ensure(region.grow(COARSE_SCALE.y * 1.8))
+
+func _upload_uniforms() -> void:
+	var shape: Array[Vector4] = []
+	var param: Array[Vector4] = []
+	for cell in cells:
+		shape.append(Vector4(cell.pos.x, cell.pos.y, cell.ra, cell.rc))
+		param.append(Vector4(cell.axis.x, cell.axis.y, _cell_strength(cell), cell.kind))
+	while shape.size() < 16:
+		shape.append(Vector4(0, 0, 1, 1))
+		param.append(Vector4(1, 0, 0, 0))
+	var field := _current_field()
+	var sun_dir := _sun.global_basis.z.normalized()
+	var sun_color := _sun.light_color
+	var ambient := _environment.ambient_light_color
+	for material in [_cloud_material, _rain_material]:
+		material.set_shader_parameter("air_drift", drift)
+		material.set_shader_parameter("weather_state", field)
+		material.set_shader_parameter("cell_shape", shape)
+		material.set_shader_parameter("cell_param", param)
+		material.set_shader_parameter("cell_count", cells.size())
+		material.set_shader_parameter("cloud_base", cloud_base)
+	_rain_material.set_shader_parameter("now", weather_time / maxf(time_scale, 0.001) if time_scale > 0.0 else 0.0)
+	_cloud_material.set_shader_parameter("sun_dir", sun_dir)
+	_cloud_material.set_shader_parameter("sun_color", Vector3(sun_color.r, sun_color.g, sun_color.b) / maxf(maxf(sun_color.r, sun_color.g), sun_color.b))
+	var shade := Color(0.55, 0.62, 0.74) * ambient * 1.15
+	_cloud_material.set_shader_parameter("shade_color", Vector3(shade.r, shade.g, shade.b))
+	var sun_height := clampf(sun_dir.y / 0.64, 0.4, 1.0)
+	_cloud_material.set_shader_parameter("brightness", sun_height)
+
+# --- Lightning ----------------------------------------------------------------
+
+func _update_lightning(delta: float) -> void:
+	lightning = maxf(lightning - delta * 3.0, 0.0)
+	if _bolt_frames > 0:
+		_bolt_frames -= 1
+		if _bolt_frames == 0: _bolt.visible = false
+	_flash_light.visible = lightning > 0.02
+	_flash_light.light_energy = 6.0 * lightning
+	_cloud_material.set_shader_parameter("flash", lightning)
+	_cloud_material.set_shader_parameter("flash_pos", _flash_pos)
+	_lightning_timer -= delta
+	if _lightning_timer > 0.0: return
+	_lightning_timer = 0.5
+	var view_width := float(_landscape.get("view_width"))
+	if view_width > 2500.0: return
+	var footprint: Rect2 = _landscape.get("camera_footprint")
+	var best := Vector2.ZERO
+	var best_storm := 0.0
+	for k in 4:
+		var p := footprint.position + Vector2(_rng.randf(), _rng.randf()) * footprint.size
+		var storm := sample_field(p).z
+		if storm > best_storm:
+			best_storm = storm
+			best = p
+	if best_storm > 0.35 and _rng.randf() < best_storm * 0.35: _strike(best, view_width)
+
+func _strike(p: Vector2, view_width: float) -> void:
+	var ground := 0.0
+	if _landscape.has_method("_render_height"): ground = float(_landscape.call("_render_height", p))
+	var top := cloud_base + 2.0
+	var width := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0) * 2.2
+	var points := PackedVector3Array()
+	var x := 0.0
+	var steps := 10
+	for k in steps + 1:
+		var y := lerpf(top, ground, float(k) / steps)
+		points.append(Vector3(p.x + x, y, p.y))
+		x += _rng.randf_range(-1.0, 1.0) * (top - ground) * 0.06
+	var vertices := PackedVector3Array()
+	for k in steps:
+		var a := points[k]
+		var b := points[k + 1]
+		var w := width * (1.0 - 0.5 * float(k) / steps)
+		vertices.append_array([a + Vector3(-w, 0, 0), a + Vector3(w, 0, 0), b + Vector3(w, 0, 0), a + Vector3(-w, 0, 0), b + Vector3(w, 0, 0), b + Vector3(-w, 0, 0)])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_bolt.mesh = mesh
+	_bolt.visible = true
+	_bolt_frames = 3
+	_flash_pos = Vector3(p.x, top, p.y)
+	_flash_light.position = Vector3(p.x, ground + (top - ground) * 0.3, p.y)
+	_flash_light.omni_range = maxf(top - ground, 20.0) * 1.4
+	lightning = 1.0
+
+# --- Globals, input, capture ---------------------------------------------------
+
+func _publish_globals(w: Vector3) -> void:
+	RenderingServer.global_shader_parameter_set("weather_wind_dir", wind_dir)
+	RenderingServer.global_shader_parameter_set("weather_wind_strength", wind_strength if enabled else 0.0)
+	RenderingServer.global_shader_parameter_set("weather_storm", w.z)
+	RenderingServer.global_shader_parameter_set("weather_wetness", w.y)
+	RenderingServer.global_shader_parameter_set("weather_lightning", lightning if enabled else 0.0)
+
+func _apply_enabled() -> void:
+	if not configured: return
+	_fine.set_visible(enabled)
+	_coarse.set_visible(enabled)
+	if not enabled:
+		_restore_look()
+		_bolt.visible = false
+		_flash_light.visible = false
+		lightning = 0.0
+		_publish_globals(Vector3.ZERO)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not configured or not event is InputEventKey or not event.pressed or event.echo: return
+	match event.keycode:
+		KEY_F5:
+			var order: Array[String] = ["auto"] + STATES
+			var current := "auto" if auto_weather else state
+			var next := order[(order.find(current) + 1) % order.size()]
+			if next == "auto": set_weather("fair", true)
+			else: set_weather(next, false)
+		KEY_F6:
+			time_of_day = fmod(round(time_of_day * 2.0) * 0.5 + 0.5, 1.5)
+			day_cycle_seconds = 0.0
+			print(JSON.stringify({"event": "weather_time", "time": TIMES[int(round(time_of_day * 2.0))]}))
+		KEY_F7:
+			set_enabled(not enabled)
+			print(JSON.stringify({"event": "weather_enabled", "enabled": enabled}))
+
+func _capture() -> void:
+	if _capture_dir == "" or _capture_frames <= 0 or _frame % _capture_every != 0: return
+	_capture_frames -= 1
+	var image := get_viewport().get_texture().get_image()
+	image.save_jpg(_capture_dir.path_join("w_%05d.jpg" % _frame), 0.92)

@@ -48,6 +48,7 @@ var feature_build_result: Dictionary={}
 const FEATURE_MESH_CACHE_LIMIT=128
 var sun_light: DirectionalLight3D
 var cloud_layer: Node3D
+var weather: Node3D
 var clouds_enabled=false
 var clouds_override: Variant=null
 var coarse_tree_meshes: Array[ArrayMesh]=[]
@@ -211,6 +212,7 @@ var last_lod_probe_window=-1
 var snapshot=false
 var start_view: Array=[]
 var start_width_source_m=-1.0
+var snapshot_hold_frames=0 # local weather-baseline measurement only
 var tour_duration = 48.0
 var capture_interval = 1.0/24.0
 var capture_tasks: Array[int]=[]
@@ -292,6 +294,7 @@ func _ready() -> void:
         if args[i] == "--probe-plan" and i+1<args.size(): probe_plan=args[i+1]
         if args[i] == "--fixture" and i+1<args.size(): fixture_path=args[i+1]
         if args[i] == "--snapshot": snapshot=true
+        if args[i] == "--snapshot-hold" and i+1<args.size(): snapshot_hold_frames=int(args[i+1])
         if args[i] == "--width-source-m" and i+1<args.size(): start_width_source_m=float(args[i+1])
         if args[i] == "--view" and i+3<args.size(): start_view=[float(args[i+1]),float(args[i+2]),float(args[i+3])]
         if args[i] == "--capture-dir" and i + 1 < args.size(): capture_dir = args[i+1]
@@ -732,7 +735,10 @@ func _setup_scene() -> void:
     add_child(cloud_layer)
     _refresh_displayed_height_bounds()
     cloud_layer.configure(Rect2(world_min,world_size),camera,{"sun_light":sun_light,"height_range_provider":Callable(self,"get_displayed_height_range"),"altitude_unit":"godot_world_y"})
-    cloud_layer.enabled=clouds_enabled
+    cloud_layer.enabled=false # Volume clouds retired; --clouds-enabled/--clouds-disabled now drive the weather system.
+    weather=preload("res://scripts/weather/weather_system.gd").new()
+    add_child(weather)
+    weather.configure(self,camera,sun_light,environment,Callable(self,"get_displayed_height_range"))
     terrain_material=ShaderMaterial.new()
     terrain_material.shader=load("res://shaders/terrain_look.gdshader")
     terrain_material.set_shader_parameter("elevation_tex",_height_texture())
@@ -946,7 +952,7 @@ func _snapshot_ready() -> bool:
     for chunk in diorama_chunks.values():
         if elapsed-float(chunk.created)<.35:ready=false;break
     snapshot_stable_frames=snapshot_stable_frames+1 if ready else 0
-    return snapshot_stable_frames>=8
+    return snapshot_stable_frames>=8+snapshot_hold_frames
 
 func _make_patch_mesh() -> ArrayMesh:
     var vertices=PackedVector3Array()
@@ -1197,6 +1203,7 @@ func _place_camera() -> void:
     if cloud_layer and cloud_layer.enabled:
         var cloud_altitude=float(cloud_layer.get_display_altitude()) if cloud_layer.has_method("get_display_altitude") else float(cloud_layer.cloud_base_height)
         heights.y=maxf(heights.y,cloud_altitude)
+    if weather and weather.is_active(): heights.y=maxf(heights.y,weather.get_display_altitude())
     var half_view_height=view_width/viewport_size.aspect()*.5
     var minimum_depth=(heights.x-focus.y)/sin(angle)-half_view_height/tan(angle)
     var maximum_depth=(heights.y-focus.y)/sin(angle)+half_view_height/tan(angle)
