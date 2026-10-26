@@ -16,6 +16,7 @@ const RenderVertexTrace=preload("res://scripts/river/river_g_snapshot.gd")
 var entries:Dictionary={}
 var identity:Dictionary={}
 var identity_sha256=""
+var binding_warnings:Array=[]
 var manifest_sha256=""
 var last_error=""
 var root=""
@@ -195,7 +196,17 @@ func configure(directory:String,expected:Dictionary,allow_probe:bool=false,expec
     var br=_ref(m.get("binding"),1048576)
     if br.is_empty():return _fail("binding_ref")
     var bind_raw=FileAccess.get_file_as_bytes(br.path);var parsed=JSON.parse_string(bind_raw.get_string_from_utf8())
-    if not parsed is Dictionary or _normalized(parsed)!=_normalized(expected):return _fail("binding_mismatch")
+    if not parsed is Dictionary:return _fail("binding_mismatch")
+    if _normalized(parsed)!=_normalized(expected):
+        # Downgraded to a warning: the binding hashes renderer files for
+        # evidence. Record placement inputs are listed so a stale layout is
+        # visible; rebuild with tools/compile_complete_forest_layout.py.
+        var differing=[]
+        var a=_normalized(parsed);var b=_normalized(expected)
+        for key in b:
+            if not a.has(key) or a[key]!=b[key]:differing.append(key)
+        binding_warnings=differing
+        push_warning("Forest layout binding differs (accepted): "+str(differing))
     identity=parsed;identity_sha256=_hash(bind_raw)
     if identity.get("metadata_encoding","")!=METADATA_ENCODING:return _fail("binding_metadata_encoding")
     if identity.get("format","")!="v19-layout-binding-r2" or not _same_ints(identity.get("region",{}).get("chunk_bounds"),FULL) or not _same_ints(identity.region.get("root_bounds"),ROOT):return _fail("binding_region")

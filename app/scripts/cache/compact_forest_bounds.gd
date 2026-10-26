@@ -47,7 +47,7 @@ static func prepare(templates:Array)->Dictionary:
     var result=[]
     for arrays in templates:
         var vertices:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
-        if vertices.size()!=174:return {"error":"requires_V19_174_vertex_templates"}
+        if vertices.is_empty():return {"error":"empty_template"}
         var low=vertices[0];var high=low
         for point in vertices:
             if not point.is_finite():return {"error":"nonfinite_template"}

@@ -74,6 +74,9 @@ var forest_representation_format="expanded"
 var forest_compact_templates:Array=[]
 var forest_compact_canopy_material:ShaderMaterial
 var forest_compact_meshes:Array=[]
+# Zoom LOD of the shared grove meshes: fewer trees per grove further out.
+var forest_grove_lod_arrays:Dictionary={}
+var forest_grove_lod=1
 var forest_base_crown_arrays:Array=[]
 var forest_async: RefCounted
 var forest_build_context: RefCounted
@@ -210,6 +213,8 @@ var motion_probes: Array=[]
 var lod_snapshots: Array=[]
 var last_lod_probe_window=-1
 var snapshot=false
+# Steady-state measurement: keep a snapshot view running this long.
+var snapshot_hold_seconds=0.0
 var start_view: Array=[]
 var start_width_source_m=-1.0
 var snapshot_hold_frames=0 # local weather-baseline measurement only
@@ -295,6 +300,7 @@ func _ready() -> void:
         if args[i] == "--fixture" and i+1<args.size(): fixture_path=args[i+1]
         if args[i] == "--snapshot": snapshot=true
         if args[i] == "--snapshot-hold" and i+1<args.size(): snapshot_hold_frames=int(args[i+1])
+        if args[i] == "--hold-seconds" and i+1<args.size(): snapshot_hold_seconds=float(args[i+1])
         if args[i] == "--width-source-m" and i+1<args.size(): start_width_source_m=float(args[i+1])
         if args[i] == "--view" and i+3<args.size(): start_view=[float(args[i+1]),float(args[i+2]),float(args[i+3])]
         if args[i] == "--capture-dir" and i + 1 < args.size(): capture_dir = args[i+1]
@@ -819,7 +825,11 @@ func _setup_fixed_surface() -> void:
     plane_arrays[Mesh.ARRAY_INDEX]=PackedInt32Array([0,1,2,1,3,2])
     var plane=ArrayMesh.new();plane.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,plane_arrays)
     fixed_flat_node=MeshInstance3D.new();fixed_flat_node.mesh=plane;fixed_flat_node.material_override=feature_material;fixed_flat_node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(fixed_flat_node)
-    marine_material=feature_material.duplicate();marine_material.set_shader_parameter("marine_surface_only",true)
+    marine_material=ShaderMaterial.new();marine_material.shader=load("res://shaders/water.gdshader")
+    for uniform in marine_material.shader.get_shader_uniform_list():
+        var value=feature_material.get_shader_parameter(uniform.name)
+        if value!=null:marine_material.set_shader_parameter(uniform.name,value)
+    for key in LandscapeLook.water_look_parameters():marine_material.set_shader_parameter(key,LandscapeLook.water_look_parameters()[key])
     var marine=MeshInstance3D.new();marine.name="MarineZeroSurface";marine.mesh=plane;marine.material_override=marine_material;marine.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(marine)
     _bind_display_coast_distance()
 
@@ -882,21 +892,32 @@ func _update_fixed_surface_lod() -> void:
     var last=Vector2i(((rect.end-fixed_surface.world_min)/cell_span).floor())
     var limit=Vector2i(int(ceil(float(fixed_surface.width-1)/fixed_surface.CHUNK_CELLS))-1,int(ceil(float(fixed_surface.height-1)/fixed_surface.CHUNK_CELLS))-1)
     last=last.min(limit)
-    var wanted: Array[Vector2i]=[];var errors=[]
+    var wanted: Array[Vector2i]=[];var errors=[];var chunk_errors=[]
     errors.resize(fixed_surface.STRIDES.size());errors.fill(0.0)
+    for i in range(errors.size()):chunk_errors.append([])
     for z in range(first.y,last.y+1):
         for x in range(first.x,last.x+1):
             var cell=Vector2i(x,z)
             if not fixed_surface.chunks.has(cell):continue
             wanted.append(cell)
             var source=fixed_surface.chunks[cell]
-            for i in range(errors.size()):
-                var error=source.lod_height_error_m[i]
-                if error==null:error=float(source.maximum_source_equivalent_m)-float(source.minimum_source_equivalent_m)
-                errors[i]=maxf(errors[i],float(error))
-    fixed_stride=1
+            # Named-anchor and partial edge chunks carry no subset error bound
+            # (null). Their full height range used to force stride 1 on the
+            # whole view (8.6M triangles in the overview); they now follow the
+            # regular chunks' common stride.
+            if source.lod_height_error_m[1]==null:continue
+            for i in range(errors.size()):chunk_errors[i].append(float(source.lod_height_error_m[i]))
+    # 85th percentile instead of the maximum: a few sharp mountain chunks no
+    # longer pin the whole view to the finest stride.
     for i in range(errors.size()):
-        if float(errors[i])*.001*px_per_height<=.75:fixed_stride=fixed_surface.STRIDES[i]
+        var values:Array=chunk_errors[i]
+        if values.is_empty():continue
+        values.sort();errors[i]=float(values[mini(values.size()-1,int(values.size()*.85))])
+    fixed_stride=1
+    # Low-poly look: the transition/far views tolerate a looser height error.
+    var budget_px=lerpf(.75,8.0,smoothstep(450.0,2000.0,view_width))
+    for i in range(errors.size()):
+        if float(errors[i])*.001*px_per_height<=budget_px:fixed_stride=fixed_surface.STRIDES[i]
     _bind_diorama_surface_revision(str(fixed_surface.identity.manifest_sha256)+":stride:"+str(fixed_stride)+":scale:"+str(display_height_scale)+":"+forest_identity)
     var key=str(first)+":"+str(last)+":"+str(fixed_stride)
     if key==fixed_lod_key:return
@@ -1214,6 +1235,17 @@ func _place_camera() -> void:
     var up=Vector3(0,cos(angle),-sin(angle))
     camera.transform=Transform3D(Basis(Vector3.RIGHT,up,back),focus+back*camera_distance)
 
+func _update_forest_grove_lod() -> void:
+    if forest_grove_lod_arrays.is_empty() or forest_compact_meshes.size()!=2:return
+    # 4: overview, no crowns; the terrain shows a darker forest floor instead.
+    var lod=1 if view_width<360.0 else (2 if view_width<700.0 else (3 if view_width<2200.0 else 4))
+    if lod==forest_grove_lod:return
+    forest_grove_lod=lod
+    for i in range(2):
+        var mesh:ArrayMesh=forest_compact_meshes[i]
+        mesh.clear_surfaces()
+        if lod<4:mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,forest_grove_lod_arrays[lod][i])
+
 func _update_camera() -> void:
     if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
     view_width=exp(lerpf(log(far_width),log(near_width),zoom))
@@ -1248,6 +1280,8 @@ func _update_camera() -> void:
         feature_material.set_shader_parameter("viewport_width",viewport_size.x)
         feature_material.set_shader_parameter("shading_origin",target)
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
+    _update_forest_grove_lod()
+    if marine_material: marine_material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.size*.5,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
@@ -1373,7 +1407,7 @@ func _process(delta: float) -> void:
     if capture_dir!="" and not snapshot and elapsed>=next_capture:
         next_capture=elapsed+capture_interval
         RenderingServer.frame_post_draw.connect(_capture_frame.bind(frame_number),CONNECT_ONE_SHOT)
-    if ((tour and elapsed>=(tour_window[1] if not tour_window.is_empty() else tour_duration)) or (snapshot and _snapshot_ready())) and not quitting:
+    if ((tour and elapsed>=(tour_window[1] if not tour_window.is_empty() else tour_duration)) or (snapshot and _snapshot_ready() and elapsed>=snapshot_hold_seconds)) and not quitting:
         quitting=true
         CameraRig.finish_after_final_frame(Callable(self,"_finish"))
 
@@ -1630,6 +1664,8 @@ func _configure_forest_mesh_cache() -> void:
         forest_base_crown_arrays=style_api.prepare_diorama_crown_arrays()
         forest_compact_templates=CompactForest.variants(forest_base_crown_arrays)
         forest_compact_meshes=CompactForestMaterialize.shared_meshes(forest_compact_templates)
+        forest_grove_lod_arrays={1:forest_compact_templates}
+        for lod in [2,3]:forest_grove_lod_arrays[lod]=CompactForest.variants(style_api.create_tree_mesh(0,lod).surface_get_arrays(0))
         forest_compact_canopy_material=canopy_material.duplicate()
         if not _configure_complete_forest_layout():root_integrity_fatal=true;return
         var binding=forest_compact_binding()
@@ -2328,7 +2364,8 @@ func _append_river_polygon(polygon: PackedVector2Array,triangle: Array,origin: V
             var delta=p-Vector2(a.x,a.z);var u=Vector2(b.x-a.x,b.z-a.z);var v=Vector2(c.x-a.x,c.z-a.z)
             var denominator=u.cross(v)
             if absf(denominator)>1e-14:base=(a.y+(b.y-a.y)*delta.cross(v)/denominator+(c.y-a.y)*u.cross(delta)/denominator)*display_height_scale
-        vertices.append(Vector3(p.x,base,p.y));normals.append(Vector3.UP)
+        # Normal carries the segment side direction (flow = its perpendicular).
+        vertices.append(Vector3(p.x,base,p.y));normals.append(Vector3(side.x,0.0,side.y))
         uvs.append(Vector2(clampf((p-origin).dot(side)/maxf(half_width,.000001),-1.,1.),symbolic_width))
     for i in range(1,polygon.size()-1):
         var b=i;var c=i+1

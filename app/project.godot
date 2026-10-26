@@ -27,15 +27,23 @@ lights_and_shadows/directional_shadow/size=2048
 
 weather_wind_dir={
 "type": "vec2",
-"value": Vector2(1, 0)
+"value": Vector2(0.7071, -0.7071)
 }
 weather_wind_strength={
 "type": "float",
-"value": 0.0
+"value": 0.35
 }
 weather_storm={
 "type": "float",
 "value": 0.0
+}
+weather_cloud_shadow={
+"type": "sampler2D",
+"value": ""
+}
+weather_cloud_shadow_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
 }
 weather_wetness={
 "type": "float",

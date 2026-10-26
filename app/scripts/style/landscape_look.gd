@@ -39,7 +39,9 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
 
-static func update_view(_sun: DirectionalLight3D, _view_width: float, camera_distance: float, half_view_height: float, elevation_degrees: float) -> void:
+static func update_view(sun: DirectionalLight3D, view_width: float, camera_distance: float, half_view_height: float, elevation_degrees: float) -> void:
+    # No crowns are drawn beyond ~1600 model units; terrain casts no shadow.
+    sun.shadow_enabled = view_width < 1700.0
     if not _environment or half_view_height <= 0.0: return
     # Ortho camera: ground depth grows from bottom to top of the screen.
     var spread = half_view_height / maxf(tan(deg_to_rad(elevation_degrees)), 0.2)
@@ -61,7 +63,7 @@ static func terrain_parameters() -> Dictionary:
     return {
         "open_color": Color("939a43"),
         "meadow_color": Color("8f9840"),
-        "forest_ground_color": Color("3f6227"),
+        "forest_ground_color": Color("587530"),
         "dry_color": Color("b8a066"),
         "rock_color": Color("a89a82"),
         "rock_shadow_color": Color("6f6555"),
@@ -85,4 +87,18 @@ static func water_parameters() -> Dictionary:
         "river_bank_color": Color("c9bd86"),
         "minimum_screen_width_px": 2.2,
         "surface_overlay_offset_world": 0.004,
+    }
+
+static func water_look_parameters() -> Dictionary:
+    return {
+        "water_deep_tint": Color("173f74"),
+        "water_open_tint": Color("1e5592"),
+        "water_shallow_tint": Color("3a95a4"),
+        "water_seabed_tint": Color("9fae8a"),
+        "water_foam_tint": Color("eef6f2"),
+        "water_sky_zenith": Color("5d8fc4"),
+        "water_sky_horizon": Color("c9dce8"),
+        "water_sun_tint": Color("fff0d0"),
+        "water_facet_size": 2.4,
+        "water_glitter": 1.0,
     }
