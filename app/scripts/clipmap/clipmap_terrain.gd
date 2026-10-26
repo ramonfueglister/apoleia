@@ -26,7 +26,10 @@ var _dt=0.
 var _finest=0
 var _gpu_bytes=0
 var _frame=0
-const CAMERA_STRIDE=3
+## New and structurally changed tiles take the camera uniforms at once; tiles
+## already showing an earlier camera are updated oldest first, at most this
+## many per frame (each costs several material writes; ~140 tiles are drawn).
+const CAMERA_TILE_BUDGET=16
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
 # refining: tiles that want finer children but are not fully faded to them yet;
@@ -109,8 +112,11 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     stream.set_wanted(_wanted.keys()+_draw.keys(),_pins.keys())
     var ordered=_draw.keys();ordered.sort();var key=",".join(ordered)
     if key!=_draw_key:_edge_masks={};_draw_key=key
-    var camera=[view_width,relief,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
-    var fading_forests={};var camera_slot=0
+    # Camera uniforms on a fine fixed lattice (1/32 octave of view width,
+    # 1/64 relief): during a zoom a tile then needs new values only every few
+    # frames, and every tile shows the same lattice value.
+    var camera=[pow(2.,round(log(view_width)/log(2.)*32.)/32.),round(relief*64.)/64.,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
+    var fading_forests={};var stale:Array=[]
     for id in _draw:
         if float(_draw[id].blend)<1.:fading_forests[str(_draw[id].parent)]=1.-float(_draw[id].blend)
     for id in nodes:
@@ -135,15 +141,9 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         if not structural:
             var seen:Array=entry.get("camera",[])
             if seen==camera:continue
-            # A tile already showing an earlier camera takes the new camera
-            # uniforms on every CAMERA_STRIDE-th frame only (staggered over
-            # tiles): during a zoom they change every frame on ~140 tiles,
-            # and a lag of two frames (<1% view width) is not visible.
-            camera_slot+=1
-            if not seen.is_empty() and (camera_slot+_frame)%CAMERA_STRIDE!=0:continue
-        var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
-        if entry.get("river")!=null:tile_nodes.append(entry.river)
-        if entry.get("shore")!=null:tile_nodes.append(entry.shore)
+            # Already showing an earlier camera: queued, see CAMERA_TILE_BUDGET.
+            if not seen.is_empty():stale.append(id);continue
+        var tile_nodes:=_tile_nodes(entry)
         if structural:
             entry["state"]=state;entry.erase("camera")
             var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
@@ -158,18 +158,28 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
                 material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
             for node in tile_nodes:
                 if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
-        # Camera uniforms: identical for every tile; write only values that
-        # changed and only to shaders that declare them.
-        var previous:Array=entry.get("camera",[]);var tile_materials:=_materials(tile_nodes)
-        for i in range(CAMERA_UNIFORMS.size()):
-            if not previous.is_empty() and previous[i]==camera[i]:continue
-            var uniform_name:StringName=CAMERA_UNIFORMS[i]
-            for material in tile_materials:
-                if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
-        entry["camera"]=camera
+        _write_camera(entry,camera)
+    # Oldest camera first, at most CAMERA_TILE_BUDGET tiles per frame.
+    stale.sort_custom(func(a,b):return int(nodes[a].get("camera_frame",0))<int(nodes[b].get("camera_frame",0)))
+    for id in stale.slice(0,CAMERA_TILE_BUDGET):_write_camera(nodes[id],camera)
     _evict();metrics.draw_tiles=_draw.size();metrics.gpu_bytes=_gpu_bytes;metrics.missing=0
     for id in _wanted:
         if not nodes.has(id):metrics.missing+=1
+func _tile_nodes(entry:Dictionary)->Array:
+    var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
+    if entry.get("river")!=null:tile_nodes.append(entry.river)
+    if entry.get("shore")!=null:tile_nodes.append(entry.shore)
+    return tile_nodes
+## Camera uniforms are identical for every tile; write only values that
+## changed and only to shaders that declare them.
+func _write_camera(entry:Dictionary,camera:Array)->void:
+    var previous:Array=entry.get("camera",[]);var tile_materials:=_materials(_tile_nodes(entry))
+    for i in range(CAMERA_UNIFORMS.size()):
+        if not previous.is_empty() and previous[i]==camera[i]:continue
+        var uniform_name:StringName=CAMERA_UNIFORMS[i]
+        for material in tile_materials:
+            if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
+    entry["camera"]=camera;entry["camera_frame"]=_frame
 ## Distinct materials of a tile's nodes: forest buckets share one per tile.
 static func _materials(tile_nodes:Array)->Array:
     var seen={}
