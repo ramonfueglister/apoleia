@@ -281,7 +281,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         float upland=smoothstep(300.0,800.0,h);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
         ground=mix(ground,land_forest_stipple_light.rgb,smoothstep(300.0,500.0,h)*(1.0-smoothstep(1000.0,1200.0,h))*overview*0.35);
-        ground*=mix(vec3(1.0),vec3(1.300,1.160,1.300),overview);
+        ground*=mix(vec3(1.0),vec3(1.340,1.160,1.080),overview);
         // Plain colour from real land cover: crop/dry land calm tan-olive.
         float far_dry=smoothstep(0.3,0.7,soft.b)*(1.0-upland);
         ground=mix(ground,land_far_dry_color.rgb,far_dry*overview*0.75);
@@ -291,21 +291,21 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
         float ridge=clamp(crest/250.0,-1.0,1.0);
         float alpine_zone=smoothstep(900.0,1100.0,h);
-        float shade=1.0+1.7*(lit-0.643)+0.40*mix(0.5,1.0,alpine_zone)*max(ridge,0.0)*side-0.35*max(-ridge,0.0);
+        float shade=1.0+2.4*(lit-0.643)+0.60*mix(0.5,1.0,alpine_zone)*max(ridge,0.0)*side-0.50*max(-ridge,0.0);
         // Dense forest darkest on shaded flanks.
         float shadow_side=clamp(0.5-side*0.5+(0.643-lit)*2.0,0.0,1.0);
         // Mountain forest stippled like painted crowns (pixel-scale noise).
         float stipple=land_tnoise(p+vec2(91.0,13.0),max(footprint*0.2,0.05)).r;
         vec3 crowns=mix(land_forest_stipple_dark.rgb,land_forest_stipple_light.rgb,land_edge(stipple,0.66-0.18*clamp(side,0.0,1.0)));
         ground=mix(ground,mix(crowns,land_far_forest_color.rgb,shadow_side*0.5),far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
-        ground*=mix(1.0,clamp(shade,0.5,1.4),overview);
+        ground*=mix(1.0,clamp(shade,0.45,1.5),overview);
         // Pixel-sharp grain on far plains (+-5 %).
-        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.16*overview*(1.0-upland*0.5);
+        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.24*overview*(1.0-upland*0.5);
         // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
         // compressed), shaded by side; only the highest summits white.
         // Real ranges only: high plateaus (Meseta, Anatolia) stay land.
         // Rock massif from real land cover (bare/snow share) on high ground.
-        float alpine=max(smoothstep(0.15,0.35,soft.g)*smoothstep(650.0,750.0,h),smoothstep(1000.0,1100.0,h)*smoothstep(0.03,0.10,slope));
+        float alpine=max(smoothstep(0.10,0.30,soft.g)*smoothstep(600.0,700.0,h),smoothstep(1000.0,1100.0,h)*smoothstep(0.03,0.10,slope));
         vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1300.0,1500.0,h));
         belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*0.92);
