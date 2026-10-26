@@ -193,7 +193,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec2 fh=land_hash2(fc+vec2(3.0,8.0));
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
-        ground=mix(ground,parcel,0.30*field_fade);
+        ground=mix(ground,parcel,0.12*field_fade);
+        // Irregular darker grass patches (0.5-2 km) from the existing noise
+        // fetch, hard-edged: meadow, not a parcel quilt.
+        ground*=1.0-0.10*land_edge(nz.a*0.6+nm.r*0.4,0.62)*field_fade;
 
     }
 

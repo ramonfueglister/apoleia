@@ -127,7 +127,7 @@ static func terrain_parameters() -> Dictionary:
         "rock_color": Color("a89a82"),
         "rock_shadow_color": Color("6f6555"),
         "snow_color": Color("f1efe8"),
-        "shore_color": Color("cfaa6f"),
+        "shore_color": Color("b8975f"),
         "shore_display_span_world": 2.8,
         "look_olive_color": Color("7c7a35"),
         "look_ochre_color": Color("bb9c55"),
