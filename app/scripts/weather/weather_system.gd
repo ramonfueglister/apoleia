@@ -417,7 +417,7 @@ func _apply_look() -> void:
 	_environment.fog_light_color = fog
 	# LandscapeLook rewrites fog_density per view; only scale its latest value.
 	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
-	_written_fog = _fog_base * (1.0 + w.y * 1.6 + dim * 0.5)
+	_written_fog = _fog_base * (1.0 + w.y * 0.8 + dim * 0.3)
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.22 * w.y - 0.12 * w.z)
 
