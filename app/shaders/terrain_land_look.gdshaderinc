@@ -174,7 +174,6 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         float r=1.8;
         soft=(soft*1.5+LAND_FIELDS(pw+vec2(r,0.0))+LAND_FIELDS(pw+vec2(-0.5*r,0.866*r))+LAND_FIELDS(pw+vec2(-0.5*r,-0.866*r)))/4.5;
     }
-    if(!use_land_cover) soft.a=0.0;
     float forest=smoothstep(0.42,0.58,soft.r+edge*0.30);
     float dry=smoothstep(0.38,0.62,soft.b+edge*0.25);
     // Bare land below the tree line is sand/steppe, not rock.
@@ -218,7 +217,6 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float rock_field=max(smoothstep(80.0,260.0,crest)*above_trees,smoothstep(1500.0,1850.0,h));
     rock_field=max(rock_field,smoothstep(0.62,0.85,slope)*smoothstep(1100.0,1350.0,h));
     rock_field=max(rock_field,soft.g*above_trees);
-    rock_field=max(rock_field,soft.a*1.2);
     float rock=smoothstep(0.40,0.62,rock_field+edge*0.25);
 
     // Normals: stable facet lattice on the represented form (near only).
