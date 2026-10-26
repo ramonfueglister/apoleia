@@ -19,10 +19,11 @@ vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	float cluster_cover = max(field.x * puff_amount, bank);
 	float h = custom.x;
 	float presence = smoothstep(h - 0.06, h + 0.06, cluster_cover);
-	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 1.3 * bank);
+	// Banks and fronts: clusters grow until they merge into one mass.
+	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank);
 	info = vec4(s, field.x, max(field.y, bank * 0.8 * bank_grey), field.z);
 	// Banks spread wide and flat; fair clusters keep their height.
 	vec3 local = (vertex_world - origin) * s;
-	local.y *= 1.0 - 0.45 * bank * (1.0 - field.z);
+	local.y *= 1.0 - 0.7 * bank * (1.0 - field.z);
 	return vec3(world_xz.x, cloud_base, world_xz.y) + local;
 }

@@ -577,7 +577,7 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * (0.55 if _ground_width < 400.0 else 0.22))
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * (1.6 if _ground_width < 400.0 else 0.22))
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("proxy_shift", proxy_shift)
 		material.set_shader_parameter("mask_shift", mask_shift)
