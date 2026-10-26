@@ -460,6 +460,8 @@ func _process(delta: float) -> void:
 	_update_lightning(delta)
 	_publish_globals(local_weather)
 	_capture()
+	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
+		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
 
 ## Ground footprint from the camera rays through the viewport corners and edges.
 func _update_ground_view() -> void:
@@ -684,7 +686,10 @@ func _strike(p: Vector2, view_width: float) -> void:
 
 func _publish_globals(w: Vector3) -> void:
 	RenderingServer.global_shader_parameter_set("weather_wind_dir", wind_dir)
-	RenderingServer.global_shader_parameter_set("weather_wind_strength", wind_strength if enabled else 0.0)
+	# Capped at 0.7 for now: the water shader applies wind globally to normals and
+	# Fresnel, which paled the whole sea in storms. Lift once the water thread makes
+	# that local via storm_local.
+	RenderingServer.global_shader_parameter_set("weather_wind_strength", minf(wind_strength, 0.7) if enabled else 0.0)
 	RenderingServer.global_shader_parameter_set("weather_storm", w.z)
 	RenderingServer.global_shader_parameter_set("weather_wetness", w.y)
 	RenderingServer.global_shader_parameter_set("weather_lightning", lightning if enabled else 0.0)
