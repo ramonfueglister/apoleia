@@ -3,13 +3,74 @@ extends RefCounted
 const Compact=preload("res://scripts/cache/compact_forest_poses.gd")
 const Bounds=preload("res://scripts/cache/compact_forest_bounds.gd")
 const Materialize=preload("res://scripts/cache/compact_forest_materialize.gd")
+const Style=preload("res://scripts/style/landscape_style.gd")
+const CameraRig=preload("res://scripts/landscape_camera.gd")
+const FOREST_LEVELS=3 # build(): levels 0..2 carry forest
+const CELL_SPAN=128.  # forest layout cell == clipmap base_span
+const SHADOW_LEVELS=1 # only L0 forests cast shadows (sun shadow range 25 units)
+## Full-weight tiles draw canopy_opaque (no alpha-hash discard, back faces
+## culled); the alpha-hash canopy material is swapped in only while fading.
+const OPAQUE_SHADER="res://shaders/canopy_opaque.gdshader"
 var reader:RefCounted
 var templates:Array=[]
 var meshes:Array=[]
 var prepared:Dictionary={}
 var material:ShaderMaterial
+var opaque_material:ShaderMaterial
+var uniform_names:Array=[]
+var level_detail:Array=[]
+var detail_meshes:Dictionary={}
+var grove_pad_ratio:=0.
 func configure(layout:RefCounted,crowns:Array,canopy:ShaderMaterial)->void:
     reader=layout;templates=crowns;meshes=Materialize.shared_meshes(crowns);prepared=Bounds.prepare(crowns);material=canopy
+    _configure_detail();_configure_opaque()
+func _configure_detail()->void:
+    # Drawn mesh only: records, bounds and the layout identity keep using the
+    # full-grove templates. Every stage draws the same trees (positions, sizes,
+    # colours) with fewer facets (landscape_style grove_detail_view_widths).
+    var stages:Array=Style.grove_detail_view_widths()
+    var window:Vector2=Vector2(Engine.get_main_loop().root.size) if Engine.get_main_loop() is SceneTree else Vector2(16,9)
+    var near=CameraRig.NEAR_WIDTH
+    var focus=CameraRig.perspective_distance(near,window.x/maxf(window.y,1.),CameraRig.PERSPECTIVE_FOV)
+    level_detail=[];detail_meshes={0:meshes}
+    for level in range(FOREST_LEVELS):
+        var detail=0 # L0: authored grove
+        if level>0:
+            # Closest ground distance from the focus at which a tile of this
+            # level is drawn unrefined (clipmap_terrain _visit refines while the
+            # Chebyshev centre distance < 1.4 span + .55 width), at the nearest
+            # zoom; its pixel scale is that of a focus at sqrt(f^2+g^2), i.e.
+            # of the view width below. The style's stage for that width is used.
+            var span=CELL_SPAN*float(1<<level)
+            var ground=0.9*span+0.55*near
+            detail=_stage_for(stages,near*sqrt(focus*focus+ground*ground)/focus)
+        level_detail.append(detail)
+        if not detail_meshes.has(detail):
+            detail_meshes[detail]=Materialize.shared_meshes(Compact.variants(Style.create_tree_mesh(0,1,detail).surface_get_arrays(0)))
+    var reach=0.
+    for detail in detail_meshes:
+        for mesh in detail_meshes[detail]:
+            var box:AABB=mesh.get_aabb()
+            reach=maxf(reach,maxf(maxf(absf(box.position.x),absf(box.end.x)),maxf(absf(box.position.z),absf(box.end.z))))
+    # Horizontal grove reach per unit of drawn height: pads the tile AABB.
+    grove_pad_ratio=reach/maxf(meshes[0].get_aabb().size.y,1e-9)
+static func _stage_for(stages:Array,width:float)->int:
+    for stage in stages:
+        if width<float(stage[0]):return int(stage[1])
+    return int(stages[-1][1]) # beyond the table: coarsest drawable stage
+func _configure_opaque()->void:
+    opaque_material=null;uniform_names=[]
+    if material==null or not ResourceLoader.exists(OPAQUE_SHADER):return
+    for u in material.shader.get_shader_uniform_list(false):uniform_names.append(str(u.name))
+    opaque_material=ShaderMaterial.new();opaque_material.shader=load(OPAQUE_SHADER);_copy_params(material,opaque_material)
+func _copy_params(from:ShaderMaterial,to:ShaderMaterial)->void:
+    for name in uniform_names:to.set_shader_parameter(name,from.get_shader_parameter(name))
+## Family-fade weight of a forest node: alpha-hash material only while < 1.
+func set_weight(node:GeometryInstance3D,weight:float)->void:
+    var want=node.get_meta("fade_material" if weight<1. else "opaque_material",null)
+    if want!=null and node.material_override!=want:
+        _copy_params(node.material_override,want);node.material_override=want
+    node.set_instance_shader_parameter("representation_weight",weight)
 func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
     var level=int(id.get_slice("/",0))
     if level>2:return {}
@@ -28,6 +89,7 @@ func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
                 if level==2 and i%4!=0:continue
                 var row=loaded.records[i];row[7]=0.;rows.append(row)
     var payload=Compact.build(rows,first,0,"terrain-tile",templates,"terrain-tile",prepared)
+    if payload.has("buckets"):payload["level"]=level
     if payload.has("buckets") and images.has("height") and images.has("water"):
         var tile_span=float(manifest.base_span)*span
         var origin=Vector2(manifest.origin[0],manifest.origin[1])+Vector2(int(id.get_slice("/",1)),int(id.get_slice("/",2)))*tile_span
@@ -85,7 +147,8 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
     var result=[]
     if not payload.has("buckets"):return result
     var texel=rect.size.x/257.;var origin=rect.position+Vector2.ONE*texel*.5;var span=texel*256.
-    var items=Materialize.multimeshes(payload,meshes)
+    var level=clampi(int(payload.get("level",0)),0,level_detail.size()-1)
+    var items=Materialize.multimeshes(payload,detail_meshes[level_detail[level]])
     var filled=payload.buckets.filter(func(bucket):return int(bucket.count)>0)
     for index in range(items.size()):
         var item=items[index];_attach_ground(item.multimesh,filled[index])
@@ -94,7 +157,12 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
         node.material_override.set_shader_parameter("normalize_instanced_normals",true);node.material_override.set_shader_parameter("stream_ground",false)
         node.material_override.set_shader_parameter("clipmap_enabled",true);node.material_override.set_shader_parameter("clipmap_height_tex",textures.height)
         node.material_override.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
-        var box:AABB=item.multimesh.custom_aabb;node.custom_aabb=AABB(Vector3(box.position.x,-100.,box.position.z),Vector3(box.size.x,300.,box.size.z))
+        if opaque_material:
+            var fade:ShaderMaterial=node.material_override;var opaque:ShaderMaterial=opaque_material.duplicate();_copy_params(fade,opaque)
+            node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
+        if level>=SHADOW_LEVELS:node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        var box:AABB=item.multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
+        node.custom_aabb=AABB(Vector3(box.position.x-pad,-100.,box.position.z-pad),Vector3(box.size.x+2.*pad,300.,box.size.z+2.*pad))
         parent.add_child(node);result.append(node)
     return result
 ## Re-packs the instance buffer as transform+custom so INSTANCE_CUSTOM.r
