@@ -277,16 +277,25 @@ void fragment() {
     vec3 stone=mix(rock_shadow_color.rgb,rock_color.rgb,0.82);
     // Canonical rock above still governs fixed forest priority; only visible
     // reflectance uses the spatially bounded appearance-filtered G channel.
-    float visible_rock=max(weights.g*0.9,max(smoothstep(0.11,0.33,represented_slope),smoothstep(1500.0,2800.0,h)*0.85));
+    // Local neighbourhood mean on the fixed surface: crests vs. hollows.
+    float around=h;
+    if(use_fixed_surface) {
+        float r=6.0;
+        around=(fixed_surface_height_at(vp+vec2(r,0))+fixed_surface_height_at(vp-vec2(r,0))+fixed_surface_height_at(vp+vec2(0,r))+fixed_surface_height_at(vp-vec2(0,r)))*0.25;
+    }
+    // Rock on crests, peaks and steep high ground; green in valleys and on
+    // lower flanks. The blocky semantic G channel is not shown.
+    float crest_rock=smoothstep(40.0,220.0,h-around)*smoothstep(500.0,1100.0,h);
+    float visible_rock=max(max(crest_rock,smoothstep(0.55,0.85,represented_slope)*smoothstep(900.0,1500.0,h)),smoothstep(1900.0,2900.0,h)*0.9);
     // Crisp rock/grass boundary and per-facet stone tone (low-poly read).
-    float rock_v=smoothstep(0.38,0.62,mix(rock,visible_rock,material_transition_strength));
-    stone*=0.90+0.20*material_facets(vp/3.4);
+    float rock_v=smoothstep(0.38,0.62,visible_rock);
+    // Clear lit/shadow sides per facet (sun from WSW), as in the reference.
+    float sun_side=clamp(dot(facet_normal,normalize(vec3(-0.68,0.64,0.36))),0.0,1.0);
+    stone*=mix(0.62,1.18,sun_side*sun_side*relief+(1.0-relief)*0.6);
     ground=mix(ground,stone,rock_v);
     ground=mix(ground,snow_color.rgb,smoothstep(3300.0,4300.0,h)*0.85);
     // Cavity darkening in valleys and hollows, from the same fixed surface.
     if(use_fixed_surface) {
-        float r=6.0;
-        float around=(fixed_surface_height_at(vp+vec2(r,0))+fixed_surface_height_at(vp-vec2(r,0))+fixed_surface_height_at(vp+vec2(0,r))+fixed_surface_height_at(vp-vec2(0,r)))*0.25;
         float cavity=smoothstep(0.0,260.0,around-h)-smoothstep(0.0,420.0,h-around)*0.35;
         ground*=1.0-look_cavity_strength*cavity;
     }

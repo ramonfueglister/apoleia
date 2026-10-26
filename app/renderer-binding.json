@@ -6,8 +6,8 @@
     "sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb"
   },
   "atlas": {
-    "path": "artifacts/render-data/fixed-source-v2-macro-r1/surface.json",
-    "sha256": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3"
+    "path": "artifacts/render-data/fixed-source-v2-mountain-r1/surface.json",
+    "sha256": "f2382dcdf581b94bd54790c5a7c74932b02811730da811feed1bc1f10c7306a6"
   },
   "upload": {
     "path": "artifacts/render-data/source-v2-upload-r1/upload.json",
