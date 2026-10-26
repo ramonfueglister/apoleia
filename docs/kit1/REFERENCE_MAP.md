@@ -15,7 +15,7 @@ Arbeitszwecks, nicht Portierung fremden Codes oder automatische Produktfreigabe.
 | Historische Projekterfahrungen | VERIFY_CAPTURE, RECOVERY, isolierter Reimport; keine Unity-spezifischen Behauptungen |
 | Installer/MCP/env/Abhängigkeiten | portable stdlib-Kitwerkzeuge, explizite später zu bindende Konfig; keine Installation |
 | Capture/Timelapse | reproduzierbarer Echtzeit-Capturevertrag, Report-/Telemetrieformat, Evidence-Hashprüfung |
-| Assets/Concepts/MMO-Referenzen | fremde Inhalte nicht übernommen; ergänzt durch [echte Urbek-/Vic3-Quellenreferenzen](references/screenshots/README.md) sowie Nutzer-Primärreferenz und eingeschränkte Fernstilprobe |
+| Assets/Concepts/MMO-Referenzen | fremde Inhalte nicht übernommen; ergänzt durch [echte Urbek-Quellenreferenzen](references/screenshots/README.md) sowie Nutzer-Primärreferenz und eingeschränkte Fernstilprobe |
 | Projekt-Handoffs | eigene Handoff-/Review-/Defekt-/Abschlussvorlagen |
 | Inhaltsinventar | vollständige REFERENCE_MAP und selbst erzeugtes Paketmanifest |
 

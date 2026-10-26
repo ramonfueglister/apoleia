@@ -7,8 +7,8 @@ Laufzeitnachweis für Kit 1.
 ## Nutzerauftrag als maßgebliche Quelle
 
 Primärquelle ist das gemeinsame Interview in diesem Chat am 25.10.2026.
-Der jüngste Ergänzungsauftrag verlangt echte Referenzscreenshots aus Urbek und
-Victoria 3, lokal im Kit und unseren Grafikvorgaben zugeordnet; weiterhin
+Der jüngste Ergänzungsauftrag verlangt echte Referenzscreenshots aus Urbek (die Victoria-3-Bilder
+wurden am 26.10.2026 entfernt), lokal im Kit und unseren Grafikvorgaben zugeordnet; weiterhin
 keine Spielimplementierung und keine erneut geöffneten Entscheidungen.
 Die später eingegrenzte Landschaftsphase ersetzt für Kit 1 frühere breitere
 Stadt-/Wirtschaftsvorschläge. [decisions.md](decisions.md) ist die portable
@@ -18,8 +18,8 @@ werden. Frühere Assistentenvorschläge sind nicht automatisch Nutzerentscheidun
 Der ursprünglich eingefügte Verlauf ist die nicht mitgelieferte Datei
 `Eingefügter Text.txt` (SHA-256: `125ee531ee1373f4fd90e5154ce0d352fbe50fe3b7886a7e274180e4c0f0bf27`).
 Er enthält Text und Referenzverweise, nicht alle damaligen Bilddaten. Die neueren
-Interviewentscheidungen haben Vorrang. Die historischen Entwürfe unter
-`docs/superpowers/specs/` sind keine Quelle für aktuelle Anforderungen.
+Interviewentscheidungen haben Vorrang. Frühere historische Entwürfe (am 26.10.2026 entfernt) sind keine Quelle für
+aktuelle Anforderungen.
 
 ## Referenz-Build-Kit: Methode, nicht Produktauftrag
 
@@ -78,8 +78,8 @@ Kartenmaske. Das Bild verändert weder Gesamtregion noch ADM2-Auswahlmethode.
 und blockige Nahansichtsproben wurden aus Kit-Dateien, Quellenmanifest,
 aktuellem Inventar und aktiven Stilreferenzlinks entfernt, nachdem der Nutzer die
 beigefügte Primärreferenz als maßgeblich festgelegt hatte. Die privaten
-Originaldateien außerhalb des Kits sind davon unberührt. Die sechs offiziellen
-Urbek-/Victoria-3-Referenzbilder bleiben als ausdrücklich nachrangige
+Originaldateien außerhalb des Kits sind davon unberührt. Die drei offiziellen
+Urbek-Referenzbilder bleiben als ausdrücklich nachrangige
 Quellenreferenzen erhalten. Eine auf Basis der Primärreferenz erzeugte Fernprobe
 wurde als Stil-/Farbkontext akzeptiert, aber ausdrücklich nicht als flacher
 Fernkartenendpunkt. Eine neue Nahprobe wurde abgelehnt und aus dem Kit entfernt.

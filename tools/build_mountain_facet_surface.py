@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
-"""Display atlas with faceted low-poly mountains (look pass).
+"""Display atlas with geographically real low-poly relief (look pass).
 
-The product macro atlas interpolates 24 km control addresses, which turns
-mountain ranges into a few large planar blocks. In relief areas this blends
-back to the fixed 2 km base grid and sharpens its ridges; plains, coast and
-water keep the macro heights exactly. Run build_fixed_display_lods.py on the
-output afterwards to derive chunks.json.
+The product macro atlas interpolates 24 km control addresses and the fixed
+2 km base grid is a 4 km Gaussian of the source, which blurs real valleys
+and crests. r4 resamples the 2 km nodes from ETOPO 2022 15 arc-second (area
+mean per node, see --real-nodes), keeps macro heights on flat plains, the
+coastal strip and water, sharpens real crests in relief areas, lightly
+emphasises the real 2-6 km band-pass in hill country and flattens real
+valley floors into broad settleable U-valleys. Same grid, chunks and strides
+as before; no synthetic peaks or noise. A step limiter trims near-vertical
+2 km walls. Run build_fixed_display_lods.py on the output afterwards.
+
+Real nodes (node centred pixels, eqc of data/projection.json):
+  gdalbuildvrt etopo15.vrt data/raw/etopo15/*.tif
+  gdalwarp -t_srs '+proj=eqc +lat_ts=41 +lat_0=41 +lon_0=19 +R=6371008.8 +units=m' \
+    -te <(wx-1)*1000> <-(wz+2*(H-1)+1)*1000> <(wx+2*(W-1)+1)*1000> <-(wz-1)*1000> \
+    -ts W H -r average -srcnodata -99999 -dstnodata -99999 -ot Float32 etopo15.vrt nodes.tif
+  with wx, wz, W, H from the base surface.json.
 """
 import argparse, hashlib, json, pathlib
 import numpy as np
@@ -15,12 +26,14 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--macro-dir', default='artifacts/render-data/fixed-source-v2-macro-r1')
 parser.add_argument('--base-dir', default='artifacts/render-data/fixed-source-v2-base-r1')
-parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r1')
+parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r4')
 parser.add_argument('--ridge-gain', type=float, default=0.7)
 parser.add_argument('--compress-m', type=float, default=1900.0)
-parser.add_argument('--peak-spacing', type=float, default=3.5, help='grid nodes (2 km)')
-parser.add_argument('--peak-height', type=float, default=780.0)
-parser.add_argument('--hill-m', type=float, default=45.0)
+parser.add_argument('--real-nodes', default='artifacts/render-data/etopo15-node-2km/nodes.tif', help='ETOPO 15s area mean at the 2 km nodes')
+parser.add_argument('--hill-gain', type=float, default=0.6, help='emphasis of the real 2-6 km band-pass in hill country')
+parser.add_argument('--valley-floor', type=float, default=0.22, help='share of local relief flattened into the valley floor')
+parser.add_argument('--valley-radius', type=int, default=7, help='grid nodes (2 km) for the local relief window')
+parser.add_argument('--wall-step-m', type=float, default=520.0, help='largest height step between neighbouring nodes')
 args = parser.parse_args()
 MACRO, BASE, OUT = ROOT / args.macro_dir, ROOT / args.base_dir, ROOT / args.output
 
@@ -38,51 +51,60 @@ base_m, base = load(BASE)
 if (macro_m['width'], macro_m['height'], macro_m['world_min']) != (base_m['width'], base_m['height'], base_m['world_min']):
     raise RuntimeError('macro/base grid mismatch')
 
-# Relief mask: local 14 km range and elevation; zero on and near water.
-relief = ndimage.maximum_filter(base, 7) - ndimage.minimum_filter(base, 7)
+# r4: geographically real relief. Grid nodes are resampled from ETOPO 2022
+# 15 arc-second (area mean per 2 km node, tools: gdalwarp -r average onto the
+# fixed eqc grid); the base grid's 4 km Gaussian blurred real valleys and
+# crests away. Stylisation only emphasises existing forms: crest sharpening
+# of the real band-pass and flattening of real valley floors. No synthetic
+# peaks or noise hills.
+real = base.copy()
+if args.real_nodes:
+    import rasterio
+    with rasterio.open(ROOT / args.real_nodes) as src:
+        etopo = src.read(1).astype(np.float32)
+    if etopo.shape != base.shape:
+        raise RuntimeError('real node grid mismatch')
+    real = np.where(etopo > -9000, etopo, base)
 land = macro > 0.5
-# Fade out over 3..12 grid nodes (6..24 km) from water: no coastal walls.
 water_distance = ndimage.distance_transform_edt(land)
-mask = smooth(relief, 220, 900) * smooth(macro, 180, 700) * smooth(water_distance, 3, 12)
-mask = ndimage.gaussian_filter(mask, 2.0) * (water_distance > 2)
-# Ridge sharpening: boost the 6 km band-pass of the base grid, more on crests.
-low = ndimage.gaussian_filter(base, 3.0)
-detail = base - low
-crest = np.where(detail > 0, detail * (1 + 0.5 * args.ridge_gain), detail * 0.8)
+coast_fade = smooth(water_distance, 3, 12) * (water_distance > 2)
+# Relief areas (14 km range) take the real grid with crest sharpening;
+# gentle hill country takes the real grid unsharpened; flat plains and the
+# coastal strip keep the macro heights.
+relief = ndimage.maximum_filter(real, 7) - ndimage.minimum_filter(real, 7)
+mask = ndimage.gaussian_filter(smooth(relief, 220, 800) * smooth(real, 150, 650), 1.5) * coast_fade
+hill_mask = ndimage.gaussian_filter(smooth(relief, 30, 220), 1.5) * coast_fade
+low = ndimage.gaussian_filter(real, 3.0)
+detail = real - low
+# Sharpen crests only; valley floors keep their real height.
+crest = np.where(detail > 0, detail * (1 + 0.5 * args.ridge_gain), 0.0)
 mountain = low + detail + args.ridge_gain * crest
-# Logarithmic height compression in relief areas: the 12x display scale
-# otherwise turns 2 km grid steps into near-vertical striped walls.
 H0 = args.compress_m
 mountain = H0 * np.log1p(np.maximum(mountain, 0) / H0)
-# Chains of many small pyramid peaks on a jittered lattice, strongest on
-# crests (positive band-pass), as in the reference.
-rng = np.random.default_rng(20261026)
-S = args.peak_spacing
-h, w = base.shape
-gy, gx = np.mgrid[0:h, 0:w].astype(np.float32)
-cy, cx = np.floor(gy / S), np.floor(gx / S)
-peaks = np.zeros_like(base)
-for oy in (-1, 0, 1):
-    for ox in (-1, 0, 1):
-        ky, kx = cy + oy, cx + ox
-        seed = (ky * 7919 + kx * 104729).astype(np.int64) % 1000003
-        jy = (np.sin(seed * 12.9898) * 43758.5453) % 1.0
-        jx = (np.sin(seed * 78.233) * 12345.6789) % 1.0
-        amp = 0.6 + 0.4 * ((np.sin(seed * 3.7) * 9631.4) % 1.0)
-        py, px = (ky + 0.2 + 0.6 * jy) * S, (kx + 0.2 + 0.6 * jx) * S
-        cone = np.clip(1 - (np.abs(gy - py) + np.abs(gx - px)) / (0.8 * S), 0, 1) * amp
-        peaks = np.maximum(peaks, cone)
-crestness = smooth(detail, -60, 160)
-mountain = mountain + args.peak_height * peaks * (0.35 + 0.65 * crestness) * smooth(mountain, 300, 900)
-result = macro * (1 - mask) + mountain * mask
-# Gentle low-poly hills on open land; flat areas (lakes, deltas) and the
-# coast stay untouched.
-flat = (ndimage.maximum_filter(macro, 3) - ndimage.minimum_filter(macro, 3)) < 0.5
-hills = ndimage.gaussian_filter(rng.standard_normal(base.shape).astype(np.float32), 2.5)
-hills = hills / max(float(hills.std()), 1e-6)
-hill_mask = smooth(water_distance, 3, 10) * (1 - mask) * (~flat)
-result = result + args.hill_m * hills * hill_mask
+# Real fine roughness in hill country (2-6 km band-pass of ETOPO), lightly
+# emphasised so existing small hills and ridges read as facets.
+fine = real - ndimage.gaussian_filter(real, 1.2)
+hills = real + args.hill_gain * np.where(fine > 0, fine, 0.4 * fine)
+result = macro * (1 - hill_mask) + hills * hill_mask
+result = result * (1 - mask) + mountain * mask
+# Settleable valleys: within relief areas, the lowest share of the real
+# local relief becomes a broad flat floor (where the DEM has a valley floor),
+# flanks rise and crests stay narrow. Valleys stay where they are.
+V = args.valley_radius
+lmin = ndimage.gaussian_filter(ndimage.minimum_filter(result, 2 * V + 1), V * 0.4)
+lmax = ndimage.gaussian_filter(ndimage.maximum_filter(result, 2 * V + 1), V * 0.4)
+span = np.maximum(lmax - lmin, 1.0)
+t = np.clip((result - lmin) / span, 0, 1)
+f0 = args.valley_floor
+u = np.clip((t - f0) / (1 - f0), 0, 1)
+valley_mask = smooth(span, 350, 1100) * coast_fade
+result = result * (1 - valley_mask) + (lmin + span * u ** 1.25) * valley_mask
 result = np.where(land, np.maximum(result, 1.0), macro)
+# Step limiter: no node more than wall-step above its lowest neighbour.
+T = args.wall_step_m
+for _ in range(10):
+    result = np.where(land, np.minimum(result, ndimage.minimum_filter(result, 3) + T), result)
+valley_floor_share = float(((t < f0) & (valley_mask > 0.5)).sum() / max((valley_mask > 0.5).sum(), 1))
 
 OUT.mkdir(parents=True, exist_ok=False)
 code = np.rint((result + 8192) / .25).astype(np.int64)
@@ -92,16 +114,15 @@ packed = np.stack([code // 256, code % 256], axis=-1).astype(np.uint8)
 packed.tofile(OUT / 'height.rg8')
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 policy = json.loads((MACRO / 'policy.json').read_text())
-policy.update({'revision': 'fixed-diorama-mountain-facets-r2',
+policy.update({'revision': 'fixed-diorama-mountain-facets-r4', 'valley_floor': args.valley_floor, 'valley_radius_nodes': args.valley_radius, 'real_nodes': args.real_nodes, 'real_source': 'ETOPO 2022 v1 15 arc-second surface (NOAA NCEI), area mean per 2 km node', 'hill_gain': args.hill_gain, 'wall_step_m': args.wall_step_m, 'valley_floor_share': valley_floor_share,
     'look_pass': 'relief areas blend the macro atlas back to the fixed 2km base grid with ridge sharpening; plains/coast/water keep macro heights',
-    'ridge_gain': args.ridge_gain, 'compress_m': args.compress_m, 'peak_spacing_nodes': args.peak_spacing,
-    'peak_height_m': args.peak_height, 'hill_m': args.hill_m, 'macro_surface_manifest_sha256': sha(MACRO / 'surface.json'),
+    'ridge_gain': args.ridge_gain, 'compress_m': args.compress_m, 'macro_surface_manifest_sha256': sha(MACRO / 'surface.json'),
     'base_surface_manifest_sha256': sha(BASE / 'surface.json'),
     'mountain_mask_mean': float(mask.mean()), 'height_range_source_equivalent_m': [float(result.min()), float(result.max())]})
 (OUT / 'policy.json').write_text(json.dumps(policy, indent=2) + '\n')
 m = dict(macro_m)
 m.pop('chunks', None)
-m['revision'] = 'fixed-diorama-mountain-facets-r2'
+m['revision'] = 'fixed-diorama-mountain-facets-r4'
 m['policy'] = {'path': 'policy.json', 'sha256': sha(OUT / 'policy.json')}
 m['height_payload'] = {'path': 'height.rg8', 'sha256': sha(OUT / 'height.rg8'), 'bytes': (OUT / 'height.rg8').stat().st_size}
 (OUT / 'surface.json').write_text(json.dumps(m, indent=2) + '\n')

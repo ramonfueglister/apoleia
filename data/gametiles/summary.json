@@ -1,0 +1,2748 @@
+{
+ "schema_version": "gametiles-v1",
+ "revision": "gametiles-v1",
+ "grid_id": "eqc41-gt-v1",
+ "id_format": "eqc41-gt-v1:{level}:{row}:{col}; size_m=200000/2**level; row=floor(z/size_m), col=floor(x/size_m); parent=(level-1,floor(row/2),floor(col/2)); children=(level+1,2row+i,2col+j)",
+ "decisions": [
+  "K25",
+  "K26",
+  "K27",
+  "K28",
+  "K29"
+ ],
+ "tile_count": 13999,
+ "budget": 14000,
+ "tiles_after_class_merge": 11631,
+ "by_size_m": {
+  "100000": 315,
+  "12500": 1500,
+  "200000": 103,
+  "25000": 8186,
+  "50000": 3367,
+  "6250": 528
+ },
+ "by_class": {
+  "desert": 829,
+  "empty-desert+land": 120,
+  "empty-desert+land+mountain": 1,
+  "empty-desert+mountain": 3,
+  "empty-land": 1875,
+  "empty-land+mountain": 80,
+  "empty-mountain": 43,
+  "land": 8772,
+  "mountain": 103,
+  "sea-coastal": 2033,
+  "sea-open": 140
+ },
+ "by_reason": {
+  "balance": 1713,
+  "class": 10646,
+  "manual": 129,
+  "root": 103,
+  "urban12": 880,
+  "urban6": 528
+ },
+ "base_25km_cells": 31680,
+ "base_25km_land_cells": 24790,
+ "base_25km_by_kind": {
+  "desert": 9379,
+  "land": 14988,
+  "mountain": 423,
+  "sea": 6890
+ },
+ "refinements_applied": 329,
+ "refinement_stopped_at": {
+  "kind": "urban12",
+  "id": null,
+  "tile": "eqc41-gt-v1:3:13:14",
+  "score": 0.33074381863373914
+ },
+ "checks": {
+  "unique_ids": {
+   "ok": true,
+   "n": 13999
+  },
+  "id_geometry_roundtrip": {
+   "ok": true
+  },
+  "aligned_25km_to_1km_grid": {
+   "ok": true
+  },
+  "region_area_cover": {
+   "ok": true,
+   "ratio": 1.0000000000000002
+  },
+  "no_overlap_no_gap": {
+   "ok": true,
+   "ancestor_leaves": 0,
+   "sample_points": 20000,
+   "miss": 0,
+   "multi": 0
+  },
+  "balance_2to1": {
+   "ok": true,
+   "violations": 0
+  },
+  "finer_tiles_nest_in_25km": {
+   "ok": true
+  },
+  "control_cities_in_fine_tiles": {
+   "ok": true,
+   "note": "Kontrollliste: Top 50 je 117/1000/1500/2020 liegt in 12,5- oder 6,25-km-Tile",
+   "fine": 200,
+   "not_fine": 0,
+   "not_fine_list": []
+  },
+  "major_cities_in_control_list": {
+   "ok": true,
+   "note": "Gegenprobe: jede 6,25-km-Stadt gehört in einem Stichjahr zu den Top 50 der Daten oder steht in der Kontrollliste",
+   "orphans": []
+  }
+ },
+ "inputs": {
+  "data/derived/land.geojson": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+  "data/derived/lakes.geojson": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+  "data/gametiles/rules.json": "88c743dea9efac0bdd25457e0138e912db24e285d027a76c681288a14bcfdb5c",
+  "data/projection.json": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9",
+  "data/gametiles/terrain-25km.csv": "7a569e8a60b30277a6df32eb887a4fd10b486f2f8752fa508b45104be30680ba",
+  "data/gametiles/places.csv": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036",
+  "data/gametiles/places-manual.csv": "f3cbff4e2941f736f6fe7672a0d4edcddbfb882d06d67b390f4330f5286773f5"
+ },
+ "outputs": {
+  "data/gametiles/tiles.csv": "9eaa30c7a718b88d39c67bf2ba352d45e3bed32505b52fee0e81d85828047627"
+ },
+ "refinements": [
+  {
+   "kind": "urban6",
+   "place": "rome",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:-16:-88",
+   "score": 0.0,
+   "leaves_after": 11658
+  },
+  {
+   "kind": "urban6",
+   "place": "baghdad",
+   "year": 1000,
+   "tile": "eqc41-gt-v1:5:136:340",
+   "score": 0.0,
+   "leaves_after": 11691
+  },
+  {
+   "kind": "urban6",
+   "place": "istanbul",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:-1:133",
+   "score": 0.0,
+   "leaves_after": 11727
+  },
+  {
+   "kind": "urban6",
+   "place": "london",
+   "year": 1800,
+   "tile": "eqc41-gt-v1:5:-187:-257",
+   "score": 0.0,
+   "leaves_after": 11757
+  },
+  {
+   "kind": "urban6",
+   "place": "cairo",
+   "year": 2020,
+   "tile": "eqc41-gt-v1:5:194:164",
+   "score": 0.0,
+   "leaves_after": 11793
+  },
+  {
+   "kind": "urban6",
+   "place": "paris",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:-140:-224",
+   "score": 1.0,
+   "leaves_after": 11826
+  },
+  {
+   "kind": "urban6",
+   "place": "alexandria",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:174:147",
+   "score": 1.0,
+   "leaves_after": 11865
+  },
+  {
+   "kind": "urban6",
+   "place": "moscow",
+   "year": 2020,
+   "tile": "eqc41-gt-v1:5:-263:249",
+   "score": 2.0,
+   "leaves_after": 11901
+  },
+  {
+   "kind": "urban6",
+   "place": "seleucia",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:140:342",
+   "score": 2.0,
+   "leaves_after": 11925
+  },
+  {
+   "kind": "urban6",
+   "place": "berlin",
+   "year": 1900,
+   "tile": "eqc41-gt-v1:5:-206:-76",
+   "score": 2.0,
+   "leaves_after": 11964
+  },
+  {
+   "kind": "urban6",
+   "place": "antakya",
+   "year": 400,
+   "tile": "eqc41-gt-v1:5:84:229",
+   "score": 2.0,
+   "leaves_after": 12000
+  },
+  {
+   "kind": "urban6",
+   "place": "naples",
+   "year": 1800,
+   "tile": "eqc41-gt-v1:5:2:-64",
+   "score": 3.0,
+   "leaves_after": 12027
+  },
+  {
+   "kind": "urban6",
+   "place": "edirne",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:-12:101",
+   "score": 3.0,
+   "leaves_after": 12066
+  },
+  {
+   "kind": "urban6",
+   "place": "carthage",
+   "year": 400,
+   "tile": "eqc41-gt-v1:5:73:-117",
+   "score": 3.0,
+   "leaves_after": 12093
+  },
+  {
+   "kind": "urban6",
+   "place": "cordoba",
+   "year": 1000,
+   "tile": "eqc41-gt-v1:5:55:-320",
+   "score": 3.0,
+   "leaves_after": 12123
+  },
+  {
+   "kind": "urban6",
+   "place": "vienna",
+   "year": 1900,
+   "tile": "eqc41-gt-v1:5:-129:-36",
+   "score": 3.0,
+   "leaves_after": 12156
+  },
+  {
+   "kind": "urban6",
+   "place": "capua",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:-2:-65",
+   "score": 3.0,
+   "leaves_after": 12177
+  },
+  {
+   "kind": "urban6",
+   "place": "ctesiphon",
+   "year": 400,
+   "tile": "eqc41-gt-v1:5:140:343",
+   "score": 4.0,
+   "leaves_after": 12177
+  },
+  {
+   "kind": "urban6",
+   "place": "seville",
+   "year": 1000,
+   "tile": "eqc41-gt-v1:5:63:-336",
+   "score": 4.0,
+   "leaves_after": 12204
+  },
+  {
+   "kind": "urban6",
+   "place": "manchester",
+   "year": 1900,
+   "tile": "eqc41-gt-v1:5:-222:-286",
+   "score": 4.0,
+   "leaves_after": 12231
+  },
+  {
+   "kind": "urban6",
+   "place": "leptis",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:148:-64",
+   "score": 4.0,
+   "leaves_after": 12276
+  },
+  {
+   "kind": "urban6",
+   "place": "milan",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:-80:-132",
+   "score": 5.0,
+   "leaves_after": 12303
+  },
+  {
+   "kind": "urban6",
+   "place": "tinnis",
+   "year": 1000,
+   "tile": "eqc41-gt-v1:5:178:172",
+   "score": 5.0,
+   "leaves_after": 12330
+  },
+  {
+   "kind": "urban6",
+   "place": "birmingham",
+   "year": 1900,
+   "tile": "eqc41-gt-v1:5:-205:-281",
+   "score": 5.0,
+   "leaves_after": 12357
+  },
+  {
+   "kind": "urban6",
+   "place": "rodos",
+   "year": 117,
+   "tile": "eqc41-gt-v1:5:81:123",
+   "score": 5.0,
+   "leaves_after": 12387
+  },
+  {
+   "kind": "urban6",
+   "place": "madrid",
+   "year": 2020,
+   "tile": "eqc41-gt-v1:5:10:-305",
+   "score": 6.0,
+   "leaves_after": 12417
+  },
+  {
+   "kind": "urban6",
+   "place": "tunis",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:74:-119",
+   "score": 6.0,
+   "leaves_after": 12417
+  },
+  {
+   "kind": "urban6",
+   "place": "dumyat",
+   "year": 1000,
+   "tile": "eqc41-gt-v1:5:170:172",
+   "score": 6.0,
+   "leaves_after": 12450
+  },
+  {
+   "kind": "urban6",
+   "place": "barcelona",
+   "year": 2020,
+   "tile": "eqc41-gt-v1:5:-7:-226",
+   "score": 7.0,
+   "leaves_after": 12483
+  },
+  {
+   "kind": "urban6",
+   "place": "venice",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:-79:-90",
+   "score": 7.0,
+   "leaves_after": 12513
+  },
+  {
+   "kind": "urban6",
+   "place": "amsterdam",
+   "year": 1800,
+   "tile": "eqc41-gt-v1:5:-202:-190",
+   "score": 7.0,
+   "leaves_after": 12543
+  },
+  {
+   "kind": "urban6",
+   "place": "glasgow",
+   "year": 1900,
+   "tile": "eqc41-gt-v1:5:-265:-313",
+   "score": 7.0,
+   "leaves_after": 12576
+  },
+  {
+   "kind": "urban6",
+   "place": "merida",
+   "year": 400,
+   "tile": "eqc41-gt-v1:5:37:-341",
+   "score": 7.0,
+   "leaves_after": 12603
+  },
+  {
+   "kind": "urban6",
+   "place": "aleppo",
+   "year": 1500,
+   "tile": "eqc41-gt-v1:5:84:243",
+   "score": 8.0,
+   "leaves_after": 12633
+  },
+  {
+   "kind": "urban6",
+   "place": "dublin",
+   "year": 1800,
+   "tile": "eqc41-gt-v1:5:-220:-340",
+   "score": 8.0,
+   "leaves_after": 12666
+  },
+  {
+   "kind": "manual",
+   "place": "delphi",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:11:11",
+   "score": null,
+   "leaves_after": 12669
+  },
+  {
+   "kind": "manual",
+   "place": "olympia",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:8",
+   "score": null,
+   "leaves_after": 12672
+  },
+  {
+   "kind": "manual",
+   "place": "dodona",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:6:6",
+   "score": null,
+   "leaves_after": 12678
+  },
+  {
+   "kind": "manual",
+   "place": "delos",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:21",
+   "score": null,
+   "leaves_after": 12681
+  },
+  {
+   "kind": "manual",
+   "place": "didyma",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:27",
+   "score": null,
+   "leaves_after": 12684
+  },
+  {
+   "kind": "manual",
+   "place": "ammon-siwa",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:52:21",
+   "score": null,
+   "leaves_after": 12723
+  },
+  {
+   "kind": "manual",
+   "place": "philae",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:75:46",
+   "score": null,
+   "leaves_after": 12747
+  },
+  {
+   "kind": "manual",
+   "place": "isthmia",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:13",
+   "score": null,
+   "leaves_after": 12750
+  },
+  {
+   "kind": "manual",
+   "place": "laureion",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:16",
+   "score": null,
+   "leaves_after": 12753
+  },
+  {
+   "kind": "manual",
+   "place": "las-medulas",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-7:-87",
+   "score": null,
+   "leaves_after": 12759
+  },
+  {
+   "kind": "manual",
+   "place": "dolaucothi",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-50:-78",
+   "score": null,
+   "leaves_after": 12765
+  },
+  {
+   "kind": "manual",
+   "place": "alburnus-maior",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-24:13",
+   "score": null,
+   "leaves_after": 12771
+  },
+  {
+   "kind": "manual",
+   "place": "metallum-vipascense",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:-92",
+   "score": null,
+   "leaves_after": 12777
+  },
+  {
+   "kind": "manual",
+   "place": "mons-porphyrites",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:61:47",
+   "score": null,
+   "leaves_after": 12786
+  },
+  {
+   "kind": "manual",
+   "place": "vindolanda",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-63:-72",
+   "score": null,
+   "leaves_after": 12795
+  },
+  {
+   "kind": "manual",
+   "place": "vercovicium-housesteads",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-63:-72",
+   "score": null,
+   "leaves_after": 12795
+  },
+  {
+   "kind": "manual",
+   "place": "segontium",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-54:-79",
+   "score": null,
+   "leaves_after": 12804
+  },
+  {
+   "kind": "manual",
+   "place": "saalburg",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-42:-36",
+   "score": null,
+   "leaves_after": 12807
+  },
+  {
+   "kind": "manual",
+   "place": "vindonissa",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-29:-37",
+   "score": null,
+   "leaves_after": 12810
+  },
+  {
+   "kind": "manual",
+   "place": "castra-vetera",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-48:-43",
+   "score": null,
+   "leaves_after": 12813
+  },
+  {
+   "kind": "manual",
+   "place": "castra-regina",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-36:-24",
+   "score": null,
+   "leaves_after": 12819
+  },
+  {
+   "kind": "manual",
+   "place": "novae",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-12:21",
+   "score": null,
+   "leaves_after": 12825
+  },
+  {
+   "kind": "manual",
+   "place": "lambaesis",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:24:-43",
+   "score": null,
+   "leaves_after": 12831
+  },
+  {
+   "kind": "manual",
+   "place": "gemellae",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:28:-46",
+   "score": null,
+   "leaves_after": 12840
+  },
+  {
+   "kind": "manual",
+   "place": "masada",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:43:54",
+   "score": null,
+   "leaves_after": 12843
+  },
+  {
+   "kind": "manual",
+   "place": "thermopylae",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:9:11",
+   "score": null,
+   "leaves_after": 12846
+  },
+  {
+   "kind": "manual",
+   "place": "brenner-pass",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-27:-26",
+   "score": null,
+   "leaves_after": 12852
+  },
+  {
+   "kind": "manual",
+   "place": "poeninus-groer-st-bernhard",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-22:-41",
+   "score": null,
+   "leaves_after": 12858
+  },
+  {
+   "kind": "manual",
+   "place": "summae-alpes-montgenevre",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-18:-42",
+   "score": null,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "manual",
+   "place": "isthmos-von-korinth",
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:13",
+   "score": null,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-4:-22",
+   "score": 9.9963,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-47:-65",
+   "score": 8.0242,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-1:33",
+   "score": 5.8393,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:34:85",
+   "score": 5.7893,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:43:36",
+   "score": 4.4448,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:35:85",
+   "score": 4.2895,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-35:-56",
+   "score": 4.0979,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:48:41",
+   "score": 3.7561,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-52:-19",
+   "score": 3.3312,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:-16",
+   "score": 2.9724,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-66:62",
+   "score": 2.9357,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-33:-9",
+   "score": 2.0895,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-56:-72",
+   "score": 1.9726,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-1:-17",
+   "score": 1.9394,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:-80",
+   "score": 1.9298,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-3:25",
+   "score": 1.8316,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:-30",
+   "score": 1.7922,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:37:-16",
+   "score": 1.747,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:-84",
+   "score": 1.7368,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:21:57",
+   "score": 1.6922,
+   "leaves_after": 12870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:1:-15",
+   "score": 1.6903,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:2:-77",
+   "score": 1.6508,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:44:43",
+   "score": 1.6017,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:42:43",
+   "score": 1.5438,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-52:-71",
+   "score": 1.5358,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-51:-48",
+   "score": 1.4984,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-20:-23",
+   "score": 1.4922,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-2:-57",
+   "score": 1.4919,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:20:30",
+   "score": 1.4473,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-20:-33",
+   "score": 1.4422,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-67:-79",
+   "score": 1.3938,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-55:-85",
+   "score": 1.3262,
+   "leaves_after": 12873
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:10:-95",
+   "score": 1.2943,
+   "leaves_after": 12879
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:12:-19",
+   "score": 1.2079,
+   "leaves_after": 12882
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-56:-74",
+   "score": 1.2068,
+   "leaves_after": 12885
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-56:-31",
+   "score": 1.2014,
+   "leaves_after": 12891
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:4:46",
+   "score": 1.1655,
+   "leaves_after": 12900
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:21:60",
+   "score": 1.1537,
+   "leaves_after": 12900
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:47",
+   "score": 1.1537,
+   "leaves_after": 12909
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:15",
+   "score": 1.1444,
+   "leaves_after": 12912
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:-54",
+   "score": 1.1441,
+   "leaves_after": 12921
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:32:-90",
+   "score": 1.0194,
+   "leaves_after": 12927
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:39:52",
+   "score": 1.0132,
+   "leaves_after": 12933
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:-76",
+   "score": 1.0095,
+   "leaves_after": 12936
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-41:-16",
+   "score": 1.0095,
+   "leaves_after": 12945
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:86:67",
+   "score": 1.0014,
+   "leaves_after": 12951
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-29:0",
+   "score": 0.966,
+   "leaves_after": 12957
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:23:-30",
+   "score": 0.9649,
+   "leaves_after": 12963
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:-13",
+   "score": 0.9486,
+   "leaves_after": 12969
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-47:-41",
+   "score": 0.9426,
+   "leaves_after": 12972
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:30:-81",
+   "score": 0.9374,
+   "leaves_after": 12981
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:11",
+   "score": 0.9312,
+   "leaves_after": 12987
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:33:58",
+   "score": 0.923,
+   "leaves_after": 12996
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:5:24",
+   "score": 0.9123,
+   "leaves_after": 12999
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-13:-27",
+   "score": 0.8941,
+   "leaves_after": 13002
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-50:6",
+   "score": 0.8909,
+   "leaves_after": 13011
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-16:-34",
+   "score": 0.8865,
+   "leaves_after": 13014
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-42:38",
+   "score": 0.8684,
+   "leaves_after": 13020
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:52:39",
+   "score": 0.8664,
+   "leaves_after": 13023
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-29:-62",
+   "score": 0.8653,
+   "leaves_after": 13032
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:3:33",
+   "score": 0.8653,
+   "leaves_after": 13038
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:41:-91",
+   "score": 0.8653,
+   "leaves_after": 13047
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:11:27",
+   "score": 0.8645,
+   "leaves_after": 13050
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:19:-85",
+   "score": 0.8285,
+   "leaves_after": 13053
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:1:13",
+   "score": 0.8219,
+   "leaves_after": 13062
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-35:-33",
+   "score": 0.8214,
+   "leaves_after": 13068
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:28",
+   "score": 0.8174,
+   "leaves_after": 13071
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-41:-35",
+   "score": 0.8076,
+   "leaves_after": 13074
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-63:-70",
+   "score": 0.8068,
+   "leaves_after": 13077
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-52",
+   "score": 0.7932,
+   "leaves_after": 13080
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-69:83",
+   "score": 0.7932,
+   "leaves_after": 13086
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-1:6",
+   "score": 0.7719,
+   "leaves_after": 13092
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:22:67",
+   "score": 0.7719,
+   "leaves_after": 13101
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:39:85",
+   "score": 0.7719,
+   "leaves_after": 13107
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-36:-24",
+   "score": 0.7719,
+   "leaves_after": 13107
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:38:88",
+   "score": 0.7719,
+   "leaves_after": 13113
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-18:-66",
+   "score": 0.7711,
+   "leaves_after": 13122
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-42:0",
+   "score": 0.766,
+   "leaves_after": 13125
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:36:-20",
+   "score": 0.7563,
+   "leaves_after": 13128
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:13",
+   "score": 0.733,
+   "leaves_after": 13128
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-16:-26",
+   "score": 0.7211,
+   "leaves_after": 13134
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-22:-48",
+   "score": 0.7211,
+   "leaves_after": 13137
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-31:-58",
+   "score": 0.7211,
+   "leaves_after": 13146
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-5:8",
+   "score": 0.7211,
+   "leaves_after": 13149
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-20:-27",
+   "score": 0.7211,
+   "leaves_after": 13155
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-62:43",
+   "score": 0.7211,
+   "leaves_after": 13164
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-18:21",
+   "score": 0.7211,
+   "leaves_after": 13170
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-61:19",
+   "score": 0.7211,
+   "leaves_after": 13176
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:5:-78",
+   "score": 0.714,
+   "leaves_after": 13185
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:6:-66",
+   "score": 0.712,
+   "leaves_after": 13188
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-21:-30",
+   "score": 0.7067,
+   "leaves_after": 13194
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:16",
+   "score": 0.702,
+   "leaves_after": 13197
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-11:-46",
+   "score": 0.699,
+   "leaves_after": 13203
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:24:58",
+   "score": 0.6905,
+   "leaves_after": 13206
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-44:-50",
+   "score": 0.6904,
+   "leaves_after": 13209
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:-68",
+   "score": 0.6868,
+   "leaves_after": 13215
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:66",
+   "score": 0.6754,
+   "leaves_after": 13224
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-5:-64",
+   "score": 0.6754,
+   "leaves_after": 13230
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-18",
+   "score": 0.6645,
+   "leaves_after": 13233
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-26:-63",
+   "score": 0.6636,
+   "leaves_after": 13239
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-38:-36",
+   "score": 0.6589,
+   "leaves_after": 13242
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:19:-79",
+   "score": 0.6557,
+   "leaves_after": 13245
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:-17",
+   "score": 0.6551,
+   "leaves_after": 13245
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:24:56",
+   "score": 0.6547,
+   "leaves_after": 13251
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-46:-23",
+   "score": 0.6547,
+   "leaves_after": 13257
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-41",
+   "score": 0.649,
+   "leaves_after": 13260
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-75:31",
+   "score": 0.649,
+   "leaves_after": 13269
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-66:-22",
+   "score": 0.6445,
+   "leaves_after": 13272
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:12",
+   "score": 0.6356,
+   "leaves_after": 13275
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:36",
+   "score": 0.6342,
+   "leaves_after": 13278
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:-47",
+   "score": 0.6289,
+   "leaves_after": 13284
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:9:-86",
+   "score": 0.6267,
+   "leaves_after": 13284
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:31:55",
+   "score": 0.6246,
+   "leaves_after": 13287
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:49:41",
+   "score": 0.6231,
+   "leaves_after": 13287
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:48:40",
+   "score": 0.6198,
+   "leaves_after": 13287
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:36:6",
+   "score": 0.6147,
+   "leaves_after": 13293
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-32:-25",
+   "score": 0.6141,
+   "leaves_after": 13299
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-56:-69",
+   "score": 0.6104,
+   "leaves_after": 13305
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-18:-25",
+   "score": 0.6057,
+   "leaves_after": 13308
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:8:27",
+   "score": 0.6047,
+   "leaves_after": 13311
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-25:39",
+   "score": 0.6025,
+   "leaves_after": 13317
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-57:-69",
+   "score": 0.5858,
+   "leaves_after": 13320
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-67:-75",
+   "score": 0.5796,
+   "leaves_after": 13329
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-40:-37",
+   "score": 0.5789,
+   "leaves_after": 13332
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:2:82",
+   "score": 0.5789,
+   "leaves_after": 13338
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-10:26",
+   "score": 0.5789,
+   "leaves_after": 13344
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-19:-31",
+   "score": 0.5769,
+   "leaves_after": 13347
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-13:-29",
+   "score": 0.5769,
+   "leaves_after": 13350
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-38:-61",
+   "score": 0.5769,
+   "leaves_after": 13356
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:-19",
+   "score": 0.5719,
+   "leaves_after": 13359
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:-72",
+   "score": 0.571,
+   "leaves_after": 13365
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-57:-70",
+   "score": 0.5599,
+   "leaves_after": 13368
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-49:-49",
+   "score": 0.5496,
+   "leaves_after": 13374
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:87:69",
+   "score": 0.548,
+   "leaves_after": 13378
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-38:-27",
+   "score": 0.548,
+   "leaves_after": 13384
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-16:23",
+   "score": 0.5437,
+   "leaves_after": 13390
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-28:-70",
+   "score": 0.5413,
+   "leaves_after": 13399
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:31:-87",
+   "score": 0.5406,
+   "leaves_after": 13405
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:2:35",
+   "score": 0.5403,
+   "leaves_after": 13408
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:21",
+   "score": 0.5396,
+   "leaves_after": 13411
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:6:-55",
+   "score": 0.5324,
+   "leaves_after": 13417
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-26:45",
+   "score": 0.5324,
+   "leaves_after": 13426
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-1:-16",
+   "score": 0.5301,
+   "leaves_after": 13426
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:28",
+   "score": 0.5289,
+   "leaves_after": 13429
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-49:-93",
+   "score": 0.5286,
+   "leaves_after": 13435
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-58:28",
+   "score": 0.5242,
+   "leaves_after": 13444
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-19:-39",
+   "score": 0.5232,
+   "leaves_after": 13447
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-7",
+   "score": 0.5193,
+   "leaves_after": 13456
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:9",
+   "score": 0.5148,
+   "leaves_after": 13459
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-46:-53",
+   "score": 0.5048,
+   "leaves_after": 13462
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-46:-49",
+   "score": 0.5048,
+   "leaves_after": 13468
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-19:54",
+   "score": 0.5048,
+   "leaves_after": 13474
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-43:-53",
+   "score": 0.5048,
+   "leaves_after": 13477
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:11",
+   "score": 0.4972,
+   "leaves_after": 13480
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:46:40",
+   "score": 0.4972,
+   "leaves_after": 13486
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-33:-53",
+   "score": 0.4937,
+   "leaves_after": 13492
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-46:-40",
+   "score": 0.4935,
+   "leaves_after": 13495
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-4:-23",
+   "score": 0.4924,
+   "leaves_after": 13495
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:8:5",
+   "score": 0.4921,
+   "leaves_after": 13498
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:-76",
+   "score": 0.4903,
+   "leaves_after": 13501
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:41:54",
+   "score": 0.4833,
+   "leaves_after": 13504
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:63",
+   "score": 0.4831,
+   "leaves_after": 13507
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-60:-2",
+   "score": 0.4827,
+   "leaves_after": 13513
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:75:46",
+   "score": 0.4824,
+   "leaves_after": 13513
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-39:-52",
+   "score": 0.4824,
+   "leaves_after": 13516
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-42:-2",
+   "score": 0.475,
+   "leaves_after": 13525
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:7:13",
+   "score": 0.4704,
+   "leaves_after": 13528
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:20:81",
+   "score": 0.4678,
+   "leaves_after": 13531
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-10:-54",
+   "score": 0.4626,
+   "leaves_after": 13534
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:26:-35",
+   "score": 0.4626,
+   "leaves_after": 13540
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-61:-84",
+   "score": 0.4622,
+   "leaves_after": 13546
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-28:-56",
+   "score": 0.4615,
+   "leaves_after": 13552
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-51:-8",
+   "score": 0.4615,
+   "leaves_after": 13561
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:12:-12",
+   "score": 0.4605,
+   "leaves_after": 13564
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:11",
+   "score": 0.4583,
+   "leaves_after": 13567
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:19:-57",
+   "score": 0.4519,
+   "leaves_after": 13570
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-48:-76",
+   "score": 0.4516,
+   "leaves_after": 13576
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-1:-93",
+   "score": 0.4511,
+   "leaves_after": 13582
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-36:-60",
+   "score": 0.4471,
+   "leaves_after": 13588
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:12",
+   "score": 0.4455,
+   "leaves_after": 13591
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:25:-28",
+   "score": 0.4455,
+   "leaves_after": 13594
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-13:-50",
+   "score": 0.4455,
+   "leaves_after": 13600
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:39:3",
+   "score": 0.44,
+   "leaves_after": 13603
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:34:54",
+   "score": 0.436,
+   "leaves_after": 13606
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-37:-65",
+   "score": 0.436,
+   "leaves_after": 13609
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:29:56",
+   "score": 0.436,
+   "leaves_after": 13612
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-27:-50",
+   "score": 0.4354,
+   "leaves_after": 13621
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-33:-28",
+   "score": 0.4327,
+   "leaves_after": 13627
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-17:4",
+   "score": 0.4327,
+   "leaves_after": 13633
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-6:19",
+   "score": 0.4327,
+   "leaves_after": 13639
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-12:-59",
+   "score": 0.4327,
+   "leaves_after": 13642
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:27:-69",
+   "score": 0.4327,
+   "leaves_after": 13651
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-3:-80",
+   "score": 0.4327,
+   "leaves_after": 13657
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:22:-29",
+   "score": 0.4322,
+   "leaves_after": 13660
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-48:1",
+   "score": 0.4319,
+   "leaves_after": 13669
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:55:39",
+   "score": 0.4286,
+   "leaves_after": 13675
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:37:56",
+   "score": 0.4281,
+   "leaves_after": 13678
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-20:-24",
+   "score": 0.4182,
+   "leaves_after": 13678
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:-15",
+   "score": 0.4148,
+   "leaves_after": 13681
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-41:-59",
+   "score": 0.4119,
+   "leaves_after": 13687
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:23:-66",
+   "score": 0.4105,
+   "leaves_after": 13690
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:54",
+   "score": 0.4089,
+   "leaves_after": 13696
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-47:-73",
+   "score": 0.4084,
+   "leaves_after": 13699
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-47:-64",
+   "score": 0.4073,
+   "leaves_after": 13699
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-41:57",
+   "score": 0.4062,
+   "leaves_after": 13708
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:0:10",
+   "score": 0.4019,
+   "leaves_after": 13717
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-46:-42",
+   "score": 0.3962,
+   "leaves_after": 13723
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-50:-50",
+   "score": 0.3922,
+   "leaves_after": 13726
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-66:-24",
+   "score": 0.3894,
+   "leaves_after": 13729
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-61:5",
+   "score": 0.3882,
+   "leaves_after": 13738
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-12:-30",
+   "score": 0.3882,
+   "leaves_after": 13741
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-10:22",
+   "score": 0.386,
+   "leaves_after": 13747
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-39:-42",
+   "score": 0.386,
+   "leaves_after": 13750
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:-77",
+   "score": 0.386,
+   "leaves_after": 13753
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:10:55",
+   "score": 0.386,
+   "leaves_after": 13762
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:53",
+   "score": 0.386,
+   "leaves_after": 13765
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-39:-36",
+   "score": 0.386,
+   "leaves_after": 13768
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:14:26",
+   "score": 0.3807,
+   "leaves_after": 13774
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:58:39",
+   "score": 0.3789,
+   "leaves_after": 13780
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-32:63",
+   "score": 0.3765,
+   "leaves_after": 13786
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-43:-54",
+   "score": 0.375,
+   "leaves_after": 13789
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:2:-6",
+   "score": 0.3744,
+   "leaves_after": 13792
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-5:-24",
+   "score": 0.3731,
+   "leaves_after": 13795
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-28:69",
+   "score": 0.3719,
+   "leaves_after": 13804
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:37:55",
+   "score": 0.3707,
+   "leaves_after": 13807
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-34:-59",
+   "score": 0.3691,
+   "leaves_after": 13810
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:11:25",
+   "score": 0.3682,
+   "leaves_after": 13813
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-14:-13",
+   "score": 0.3682,
+   "leaves_after": 13816
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-6:-25",
+   "score": 0.368,
+   "leaves_after": 13819
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:13:-68",
+   "score": 0.3667,
+   "leaves_after": 13825
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:21:-46",
+   "score": 0.3657,
+   "leaves_after": 13831
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-43:-46",
+   "score": 0.363,
+   "leaves_after": 13837
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:16:56",
+   "score": 0.3627,
+   "leaves_after": 13843
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:52:40",
+   "score": 0.3627,
+   "leaves_after": 13846
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:11:30",
+   "score": 0.3627,
+   "leaves_after": 13849
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-71:17",
+   "score": 0.3618,
+   "leaves_after": 13858
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-19:-28",
+   "score": 0.3605,
+   "leaves_after": 13861
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-18:-32",
+   "score": 0.3605,
+   "leaves_after": 13864
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-17:49",
+   "score": 0.3605,
+   "leaves_after": 13867
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-50:-49",
+   "score": 0.3605,
+   "leaves_after": 13870
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-58:-28",
+   "score": 0.3605,
+   "leaves_after": 13879
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-49",
+   "score": 0.3605,
+   "leaves_after": 13882
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:31:-83",
+   "score": 0.3605,
+   "leaves_after": 13888
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:4:-85",
+   "score": 0.3605,
+   "leaves_after": 13894
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-61:21",
+   "score": 0.3605,
+   "leaves_after": 13903
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:36:53",
+   "score": 0.358,
+   "leaves_after": 13906
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-47:-42",
+   "score": 0.3562,
+   "leaves_after": 13909
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-51:-32",
+   "score": 0.3556,
+   "leaves_after": 13915
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:18:39",
+   "score": 0.3538,
+   "leaves_after": 13918
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:-14",
+   "score": 0.3527,
+   "leaves_after": 13921
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-21:-23",
+   "score": 0.3512,
+   "leaves_after": 13921
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:-81",
+   "score": 0.3474,
+   "leaves_after": 13924
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-7:-77",
+   "score": 0.3474,
+   "leaves_after": 13933
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:73:69",
+   "score": 0.3467,
+   "leaves_after": 13948
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:34:-92",
+   "score": 0.3461,
+   "leaves_after": 13951
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-24:-44",
+   "score": 0.3459,
+   "leaves_after": 13960
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-8:14",
+   "score": 0.344,
+   "leaves_after": 13963
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:27:59",
+   "score": 0.3426,
+   "leaves_after": 13972
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-57:-65",
+   "score": 0.3404,
+   "leaves_after": 13975
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-45:-69",
+   "score": 0.3395,
+   "leaves_after": 13981
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:-40:-61",
+   "score": 0.3384,
+   "leaves_after": 13987
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:15:65",
+   "score": 0.3371,
+   "leaves_after": 13993
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:42:51",
+   "score": 0.3353,
+   "leaves_after": 13996
+  },
+  {
+   "kind": "urban12",
+   "place": null,
+   "year": null,
+   "tile": "eqc41-gt-v1:3:17:61",
+   "score": 0.3345,
+   "leaves_after": 13999
+  }
+ ]
+}

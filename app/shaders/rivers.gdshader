@@ -2,6 +2,8 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_burley, blend_mix, depth_draw_never;
 #include "model_sampling.gdshaderinc"
 #include "water_look.gdshaderinc"
+uniform bool streamed_river=false;
+uniform float terrain_morph_alpha=1.0;
 uniform float relief=0.0;
 uniform float display_height_scale=1.0;
 uniform float view_width=1.0;
@@ -37,13 +39,22 @@ void vertex(){
     // CPU mesh river bases are already in displayed-world height, before relief.
     // Only the raw raster fallback needs the explicit display mapping here.
     float ground=use_model_mesh ? VERTEX.y : terrain_height_at(VERTEX.xz)*0.001*display_height_scale;
+    if(clipmap_enabled){
+        ground=clipmap_surface_height(VERTEX.xz)*0.001*display_height_scale;
+    }else if(streamed_river){
+        float ya=CUSTOM0.x+(CUSTOM0.y-CUSTOM0.x)*terrain_morph_alpha;
+        float yb=CUSTOM0.z+(CUSTOM0.w-CUSTOM0.z)*terrain_morph_alpha;
+        float yc=CUSTOM1.x+(CUSTOM1.y-CUSTOM1.x)*terrain_morph_alpha;
+        ground=(ya*CUSTOM1.z+yb*CUSTOM1.w+yc*(1.0-CUSTOM1.z-CUSTOM1.w))*display_height_scale;
+    }
     VERTEX.y=ground*relief+surface_overlay_offset_world;
     NORMAL=vec3(0.0,1.0,0.0);
 }
 void fragment(){
     float sea_distance=water_distance_at(river_position);
     if(sea_distance>0.0) discard;
-    float edge=abs(river_side);
+    // Streamed/clipmap strips carry the side offset in world units.
+    float edge=streamed_river ? abs(river_side)/max(river_half_width,0.000001) : abs(river_side);
     float footprint=max(length(dFdx(river_position)),length(dFdy(river_position)));
     float bank_m=(1.0-edge)*river_half_width*1000.0;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
@@ -52,8 +63,9 @@ void fragment(){
     // depth eases towards the sea's mouth plume over the last ~3 km.
     float to_sea=1.0-smoothstep(0.0,3000.0,-sea_distance);
     float depth=mix(14.0+(1.0-edge)*16.0,12.0,to_sea);
-    WaterSample w=water_shade(river_position,bank_m+250.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
-    vec3 water=w.albedo;
+    WaterSample w=water_shade(river_position,bank_m+3000.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
+    // Stronger mid-blue than the sea's turquoise rim (reference arms).
+    vec3 water=mix(w.albedo,vec3(0.016,0.105,0.30),0.65);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
@@ -61,7 +73,9 @@ void fragment(){
     water=mix(water,water*1.12+0.02,streak*0.4);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
     water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
-    ALBEDO=water;
+    // Light sand bank along the outer edge (islands between delta arms).
+    float near_view=1.0-smoothstep(600.0,1500.0,view_width);
+    ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.80,0.98,edge)*0.7*near_view);
     EMISSION=w.emission*0.5;
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;

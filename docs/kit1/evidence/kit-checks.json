@@ -163,30 +163,6 @@
         "bytes": 525182,
         "hash_matches": true,
         "visually_inspected": true
-      },
-      {
-        "id": "V01",
-        "path": "references/screenshots/vic3-map-overview.jpg",
-        "sha256": "a9771a536b793bfd20903d46ff241d18c04fa3ff553406ca145696904da3ea8a",
-        "bytes": 662887,
-        "hash_matches": true,
-        "visually_inspected": true
-      },
-      {
-        "id": "V02",
-        "path": "references/screenshots/vic3-continental-terrain.jpg",
-        "sha256": "b257290657b1ca9607cf75cd6d7440073d8489a00397d5a13addfe046f5ba2ad",
-        "bytes": 804038,
-        "hash_matches": true,
-        "visually_inspected": true
-      },
-      {
-        "id": "V03",
-        "path": "references/screenshots/vic3-coast-region.jpg",
-        "sha256": "eca3f3ea88e023ce2bd8fa55529e1f61d528c533ab2a643a0cd01390ee96e9d1",
-        "bytes": 790529,
-        "hash_matches": true,
-        "visually_inspected": true
       }
     ],
     "results": [

@@ -121,7 +121,8 @@ dürfen nicht durch eine überall identische Vegetation ersetzt werden.
 ## Bestätigte Referenzerweiterung
 
 Am 25.10.2026 hat der Nutzer die sechs einzeln gezeigten echten Urbek-/Victoria-3-
-Referenzscreenshots samt ihrer Zuordnung akzeptiert. [Der Katalog](references/screenshots/README.md)
+Referenzscreenshots samt ihrer Zuordnung akzeptiert. Am 26.10.2026 wurden die drei
+Victoria-3-Bilder auf Nutzerwunsch entfernt; die drei Urbek-Bilder bleiben. [Der Katalog](references/screenshots/README.md)
 bleibt dem Landschaftsauftrag untergeordnet; die sichtbaren modernen Gebäude,
 Straßen, Kulturlandschaften, politischen Farben und UI-Elemente werden nicht zu
 Kit-1-Features. Die Akzeptanz ist keine vorweggenommene Produktabnahme.
@@ -212,16 +213,26 @@ Die übrigen Vorgaben und der Abschnitt für spätere Kits bleiben unverändert.
 ## Spiel-Tile-Größe, adaptiv (26.10.2026)
 
 Nutzerentscheidung vom 26.10.2026. Betrifft nur die logischen Spiel-Tiles (K17),
-nicht die Grafik-Streamingkacheln.
+nicht die Grafik-Streamingkacheln. Die IDs K25–K28 hießen auf den
+Look-Branches zuerst K21–K24; umnummeriert, weil K21 bereits die A07-Hausgröße ist.
 
 | ID | Entscheidung |
 |---|---|
-| K21 | Basis-Spiel-Tile **25 km × 25 km**, ausgerichtet am bestehenden 1-km-Raster `eqc41-km-v1` (25 × 25 Zellen). |
-| K22 | **Adaptiver Quadtree:** Wo die Nutzung gleichartig ist, werden je 4 gleichartige Tiles zu einem größeren zusammengefasst. Tiles bleiben quadratisch und rasterbündig. |
-| K23 | Stufen nach Klasse: **Land 25 km**; **Küstenmeer** (bis ca. 50 km vor der Küste) **50 km**; **offenes Meer 100–200 km**; **Sahara/Wüste und Hochgebirge 50 km**. Seen und Flüsse gehören zu den Land-Tiles. |
-| K24 | **Stabile IDs:** Ein zusammengefasstes Tile ist der Elternknoten seiner 4 Kinder. Feineres Aufteilen später (z. B. Hafenbucht) ändert keine bestehenden IDs. |
+| K25 | Basis-Spiel-Tile **25 km × 25 km**, ausgerichtet am bestehenden 1-km-Raster `eqc41-km-v1` (25 × 25 Zellen). |
+| K26 | **Adaptiver Quadtree:** Wo die Nutzung gleichartig ist, werden je 4 gleichartige Tiles zu einem größeren zusammengefasst. Tiles bleiben quadratisch und rasterbündig. |
+| K27 | Stufen nach Klasse: **Land 25 km**; **Küstenmeer** (bis ca. 50 km vor der Küste) **50 km**; **offenes Meer 100–200 km**; **Sahara/Wüste und Hochgebirge 50 km**. Seen und Flüsse gehören zu den Land-Tiles. |
+| K28 | **Stabile IDs:** Ein zusammengefasstes Tile ist der Elternknoten seiner 4 Kinder. Feineres Aufteilen später (z. B. Hafenbucht) ändert keine bestehenden IDs. |
 
 Grobe Schätzung bei rund 4800 × 4100 km Projektregion: etwa 10.000–11.000 Tiles statt
 etwa 31.000 bei einheitlich 25 km. Genaue Klassengrenzen (Küstenabstand, Wüsten-/
 Hochgebirgsmaske) werden aus den vorhandenen Land-/Wasser-, Landcover- und
 Höhendaten abgeleitet und beim Bau gemessen; die Zahlen hier sind Schätzungen.
+
+### Ergänzung 26.10.2026 (Nutzerentscheidungen im Tile-Thread)
+
+| ID | Entscheidung |
+|---|---|
+| K29 | **Verfeinerung nach Epochen-Maximum:** dichte Regionen 12,5 km, ~35 Großstädte 6,25 km, Wichtigkeit relativ zur Epoche über die Stichjahre 117–2020, Maximum zählt; Budget **14.000** Tiles. Alle Regeln gelten **überall gleich**, im Reich und außerhalb. Zum Erreichen des Budgets wächst reine Wüste bis 200 km (K26 „gleichartig“), und Land ohne Ort in irgendeiner Epoche wird 50 km. Das Raster ist der Startzustand; Teilen/Zusammenlegen zur Laufzeit gehört zu Kit 2. |
+
+Gemessen (gametiles-v1): 13.999 Tiles, vor der Stadtverfeinerung 11.631; strikt nach K27 wären es ~22.500, weil die
+Region zu 78 % Land ist. Regeln, Quellen und Prüfungen: [GAMETILES.md](GAMETILES.md).

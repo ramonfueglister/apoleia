@@ -69,3 +69,31 @@ Goal: water and landscape visually close to
   crest samples are skipped in far views.
 - `--hold-seconds N` (with `--snapshot`) keeps a fixed view for
   steady-state measurements.
+
+## Terrain look (painted low-poly diorama)
+- `app/shaders/terrain_land_look.gdshaderinc`: self-contained land look,
+  `land_look(p, h, weights, source_normal, facet_normal, footprint, relief,
+  view_width, display_height_scale)` returns albedo, display normal and AO.
+  The host defines `LAND_LOOK_HEIGHT(p)` and `LAND_LOOK_WEIGHTS(p)` before
+  the include; `terrain_look.gdshader` only calls it (water block unchanged,
+  vertex stage identical to `terrain.gdshader`).
+- Quintic gradient noise with domain warping replaces the hash value noise;
+  every octave fades to its mean below ~2 px (no speckle, no shimmer).
+- Material fields: one weight tap in the host plus a three-tap ring and a
+  noise-displaced smoothstep edge in the include; no raster cells. Forest
+  weight gives a closed dark forest floor (stronger on hills, softer in the
+  overview).
+- Facets: stable world-space triangle lattice (2.4 km hills, 3.6 km rock);
+  each facet takes the represented surface normal once at its centroid plus a
+  small tilt and tone. Independent of mesh LOD, so the 2 km raster no longer
+  stripes flanks. Rock mixes in the mesh facet normal for silhouettes and
+  carries lit/shaded pyramid sides.
+- Valley occlusion (three-tap height ring, cool tint) and slight crest light;
+  overview keeps a soft hillshade, calm forest zones and bright high peaks.
+- `landscape_look.gd`: `land_*` palette, warmer sun, cooler ambient, slightly
+  more mid contrast and SSAO.
+- Atlas and forest layout unchanged; forest binding reports only the
+  `model_sampling` hash difference already present on the base.
+- Cost: nah p50 9.2 -> 11.1 ms, mittel 10.8 -> 12.6 ms (sequential
+  `--hold-seconds 6` snapshots, same machine).
+- Comparisons: `screenshots/terrain-compare-{nah,mittel,fern}.png`.

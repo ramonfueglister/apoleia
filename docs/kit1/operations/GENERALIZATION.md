@@ -87,7 +87,8 @@ nicht beliebige überhängende Oberflächen dar. Kein Raten bei fehlenden Quelld
 `preflight` blockiert ohne Policy, Budgets, Schutz-/Quellen-/Transformbelege.
 `report-check` verlangt A16 und prüft Struktur, Revisionen/Hashes, vollständige
 **deklarierte** Niveau-/Metrikkombinationen, Rohwertmaximum, Budget und gemeldete
-Topologieabweichungen. Es führt keine Geoverarbeitung aus, liest keine Koordinaten-
+Topologieabweichungen. Render-Metriken nicht gerenderter Niveaus dürfen als
+`not_applicable` mit Begründung und gehashter Regel stehen (siehe Schema-README). Es führt keine Geoverarbeitung aus, liest keine Koordinaten-
 geometrie zur unabhängigen Wahrheitsermittlung und erkennt kein gefälschtes
 Laufzeitprotokoll. Ein Reviewer muss Quellenqualität, Vollständigkeit aller
 produzierten Levels, Metrikimplementation, Schutzregeln, Sampling und Video

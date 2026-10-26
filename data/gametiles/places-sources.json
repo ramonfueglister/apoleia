@@ -1,0 +1,229 @@
+{
+ "generated_by": "tools/gametiles_places.py",
+ "region_bbox_lon_lat": [
+  -11,
+  21,
+  46,
+  58
+ ],
+ "sample_years": [
+  117,
+  400,
+  1000,
+  1500,
+  1800,
+  1900,
+  2020
+ ],
+ "year_tolerance": {
+  "117": 50,
+  "400": 50,
+  "1000": 50,
+  "1500": 50,
+  "1800": 25,
+  "1900": 25,
+  "2020": 25
+ },
+ "rules": {
+  "value_choice": "per sample year, the first source in priority order that has a value within tolerance",
+  "priority": {
+   "117": [
+    "hanson",
+    "modelski-anc",
+    "chandler"
+   ],
+   "400": [
+    "modelski-anc",
+    "chandler"
+   ],
+   "1000": [
+    "b2l",
+    "chandler",
+    "modelski-anc"
+   ],
+   "1500": [
+    "b2l",
+    "chandler"
+   ],
+   "1800": [
+    "b2l",
+    "chandler"
+   ],
+   "1900": [
+    "chandler"
+   ],
+   "2020": [
+    "ne-places",
+    "modelski-mod",
+    "ne-popmax"
+   ]
+  },
+  "hanson_p117": "N=d*A^p, d=42.08, p=1.335 fitted to Hanson-Ortman 2017 sample (115/125 pairs within 5%); only cities with Start<=117<=End; model estimate, not a count",
+  "b2l": "citypop_le5*1000; 0 means below 5,000 -> blank; where a place has a B2L row, B2L is authoritative for 1000/1500/1800 (no fallback to Chandler/Modelski)",
+  "reba_cert3": "places formed only by Reba rows with Certainty 3 (low location certainty) are not placed: Bergisch Gladbach; Berwick-upon-Tweed; Chorzow; Darlington; Elvira; Fua; Hydra; Kalaa; La Spezia; Ohrid; Piotrkow; Torquay",
+  "ne": "POP2020*1000 (field is in thousands; UN WUP agglomeration, dated 2020) else POP_MAX (undated, NE v5.1.2) as source ne-popmax",
+  "dedup": "same place if <10 km (<25 km when a Reba/Chandler-Modelski row with Certainty 1-2 is involved, <100 km for Certainty 3: Reba geocodes are often 10-35 km off) and a name/alias match (exact, prefix>=4 chars, or difflib ratio>=0.85), or <2.5 km regardless of name; constrained single-link, a merged place never holds two rows of the same source",
+  "keep": "max population >= 5000 in any sample year, or listed by Hanson 2016",
+  "port": "Hanson Monuments Harbour*/Lighthouse* (no \"?\"), or Pleiades port/harbor (precise) or NE port within 5 km",
+  "coords": "first available of ne,b2l,hanson,chandler,modelski-anc,modelski-mod",
+  "sources_column": "all sources matched to the place (population, port or Hanson membership), not only the ones whose value was chosen"
+ },
+ "counts": {
+  "rows": 2694,
+  "coverage": {
+   "p117": 860,
+   "p400": 18,
+   "p1000": 131,
+   "p1500": 358,
+   "p1800": 748,
+   "p1900": 521,
+   "p2020": 1180
+  },
+  "ports": 336
+ },
+ "sources": [
+  {
+   "id": "chandler",
+   "file": "chandlerV2.csv",
+   "url": "https://s3-eu-west-1.amazonaws.com/pfigshare-u-files/5407640/chandlerV2.csv",
+   "sha256": "5b8df64e46988b216988eef18b46ebc2cba57ecc1adc8a5c2e1e6d5b78068031",
+   "version": "figshare 10.6084/m9.figshare.2059494 (chandlerV2.csv, file 5407640)",
+   "licence": "CC BY 4.0",
+   "citation": "Reba M, Reitsma F, Seto KC (2016) Spatializing 6,000 years of global urbanization from 3700 BC to AD 2000. Sci Data 3:160034, doi:10.1038/sdata.2016.34; digitizes Chandler T (1987) Four Thousand Years of Urban Growth",
+   "note": "figshare.com/ndownloader blocked by proxy; same file fetched from figshare S3 storage URL (sha256 equals the hash pinned by independent users of the file).",
+   "used": "p117 (AD_100), p400 (AD_361), p1000, p1500, p1800, p1900: nearest year column within tolerance",
+   "raw_file": "data/raw/gametiles/places/chandlerV2.csv"
+  },
+  {
+   "id": "modelski-anc",
+   "file": "modelskiAncientV2.csv",
+   "url": "https://s3-eu-west-1.amazonaws.com/pfigshare-u-files/5356132/modelskiAncientV2.csv",
+   "sha256": "71beafaacbdeb8d8fc156951521e9a14e20d6704b0d77be5528511c52fad3e1d",
+   "version": "figshare 10.6084/m9.figshare.2059497 (modelskiAncientV2.csv, file 5356132)",
+   "licence": "CC BY 4.0",
+   "citation": "Reba M, Reitsma F, Seto KC (2016) Spatializing 6,000 years of global urbanization from 3700 BC to AD 2000. Sci Data 3:160034, doi:10.1038/sdata.2016.34; digitizes Modelski G (2003) World Cities -3000 to 2000",
+   "used": "p117 (AD_100), p400 (AD_400), p1000 (AD_1000)",
+   "raw_file": "data/raw/gametiles/places/modelskiAncientV2.csv"
+  },
+  {
+   "id": "modelski-mod",
+   "file": "modelskiModernV2.csv",
+   "url": "https://s3-eu-west-1.amazonaws.com/pfigshare-u-files/5407637/modelskiModernV2.csv",
+   "sha256": "927ee6a9122be6aded1a2f71ff5bb6f36312aae6a778574af47f4e8c65265726",
+   "version": "figshare 10.6084/m9.figshare.2059500 (modelskiModernV2.csv, file 5407637)",
+   "licence": "CC BY 4.0",
+   "citation": "Reba M, Reitsma F, Seto KC (2016) Spatializing 6,000 years of global urbanization from 3700 BC to AD 2000. Sci Data 3:160034, doi:10.1038/sdata.2016.34",
+   "used": "p2020 fallback (AD_2000, 20 y off) when NE has no POP2020",
+   "raw_file": "data/raw/gametiles/places/modelskiModernV2.csv"
+  },
+  {
+   "id": "hanson",
+   "file": "Hanson2016_CitiesDatabase_OxREP.xlsx",
+   "url": "https://raw.githubusercontent.com/wccarleton/urbanscale/HEAD/Data/Hanson2016_CitiesDatabase_OxREP.xlsx",
+   "sha256": "582e326ad1cb1525ba8f36c69c2ab2b43d8d3c3b82138f085df1c9b97bb7a078",
+   "version": "OxREP Cities Database (Hanson 2016), mirror in github.com/wccarleton/urbanscale (Zenodo 10.5281/zenodo.10925901), fetched 2026-10-26",
+   "licence": "Original OxREP database: licence not stated in mirror (verify before redistribution); mirror repository CC BY 4.0",
+   "citation": "Hanson JW (2016) An Urban Geography of the Roman World, 100 BC to AD 300. Archaeopress (OxREP databases)",
+   "note": "oxrep.classics.ox.ac.uk blocked by proxy; mirror sheets Cities/Areas/Monuments identical in structure to the OxREP CSVs.",
+   "used": "city list + coordinates (Cities), inhabited/walled area (Areas) -> p117 via Hanson-Ortman scaling, port flag from Monuments (Harbour*/Lighthouse*, uncertain \"?\" excluded)",
+   "raw_file": "data/raw/gametiles/places/Hanson2016_CitiesDatabase_OxREP.xlsx"
+  },
+  {
+   "id": "hanson-ortman",
+   "file": "HansonOrtmanetal2017_dataset.csv",
+   "url": "https://raw.githubusercontent.com/past-networks/roman_ECI/HEAD/data/data_generation/HansonOrtmanetal2017_dataset.csv",
+   "sha256": "39136b03677671116f387a620f4a28a47ad621a8f37d00597bbc4d820a4daad8",
+   "version": "mirror in github.com/past-networks/roman_ECI, fetched 2026-10-26",
+   "licence": "not stated in mirror (verify before redistribution); only fitted parameters used",
+   "citation": "Hanson JW, Ortman SG (2017) A systematic method for estimating the populations of Greek and Roman settlements. J Roman Archaeol 30:301-324",
+   "used": "fit N=d*A^p (log space, iterative |residual|<0.05) on its 125 area/population pairs; parameters applied to Hanson areas",
+   "raw_file": "data/raw/gametiles/places/HansonOrtmanetal2017_dataset.csv"
+  },
+  {
+   "id": "b2l",
+   "file": "b2l-bagdad_london_final_restat.dta",
+   "url": "https://raw.githubusercontent.com/nikunjt0/HRE-Urban-City-Research/HEAD/docs/external/bosker_baghdad_london/bagdad_london_final_restat.dta",
+   "sha256": "2b0df0f46e2e5d008733461f366c6f78761ad49c441c6cdb669a47f06bb5003e",
+   "version": "Harvard Dataverse doi:10.7910/DVN/24747 (bagdad_london_final_restat.dta), mirror in github.com/nikunjt0/HRE-Urban-City-Research, fetched 2026-10-26",
+   "licence": "CC0 1.0 (Dataverse terms, per mirror README)",
+   "citation": "Bosker M, Buringh E, van Zanden JL (2013) From Baghdad to London: Unraveling urban development in Europe, the Middle East, and North Africa, 800-1800. Rev Econ Stat 95(4):1418-1437 (Bairoch-type European figures + MENA estimates)",
+   "note": "dataverse.harvard.edu blocked by proxy.",
+   "used": "p1000, p1500, p1800 from citypop_le5 (thousands; 0 = below 5,000 or unrecorded -> blank)",
+   "raw_file": "data/raw/gametiles/places/b2l-bagdad_london_final_restat.dta"
+  },
+  {
+   "id": "ne-places",
+   "file": "ne_10m_populated_places.geojson",
+   "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_populated_places.geojson",
+   "sha256": "9b8e3de09048ef00dfc70357dbb9fa324493f214b5e0ae4daf1aa79a8d10116b",
+   "version": "Natural Earth v5.1.2",
+   "licence": "Public domain (Made with Natural Earth)",
+   "citation": "Natural Earth 1:10m Populated Places v5.1.2",
+   "used": "p2020 = POP2020 (UN World Urbanization Prospects agglomeration series carried by NE); fallback POP_MAX (undated, ~2010s, source id ne-popmax)",
+   "raw_file": "data/raw/gametiles/places/ne_10m_populated_places.geojson"
+  },
+  {
+   "id": "ne-ports",
+   "file": "ne_10m_ports.geojson",
+   "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_ports.geojson",
+   "sha256": "c5a5028f5187a5e1b9fe7f0fab99804a8be7482099a2365d404fb7e9dd6b5457",
+   "version": "Natural Earth v5.1.2",
+   "licence": "Public domain (Made with Natural Earth)",
+   "citation": "Natural Earth 1:10m Ports v5.1.2",
+   "used": "port=1 if an NE port point lies within 5 km",
+   "raw_file": "data/raw/gametiles/places/ne_10m_ports.geojson"
+  },
+  {
+   "id": "pleiades",
+   "file": "pleiades-places.csv",
+   "url": "https://raw.githubusercontent.com/isawnyu/pleiades.datasets/v4.1/data/gis/places.csv",
+   "sha256": "5dd09b1a92c53e50cb9962bab44df12c5f0b7b683d4f228367d843637cfe5a59",
+   "version": "pleiades.datasets v4.1 (28 May 2025), git tag v4.1",
+   "licence": "CC BY 3.0",
+   "citation": "Pleiades gazetteer of ancient places, isawnyu/pleiades.datasets v4.1",
+   "used": "port=1 if a Pleiades place typed port/harbor lies within 5 km; coordinates of places-manual.csv",
+   "raw_file": "data/raw/gametiles/places/pleiades-places.csv"
+  },
+  {
+   "id": "pleiades-types",
+   "file": "pleiades-places_place_types.csv",
+   "url": "https://raw.githubusercontent.com/isawnyu/pleiades.datasets/v4.1/data/gis/places_place_types.csv",
+   "sha256": "846acc52098771ead0ee673bf92e8304906389fc681c1750107f28d584e09d24",
+   "version": "pleiades.datasets v4.1, git tag v4.1",
+   "licence": "CC BY 3.0",
+   "citation": "Pleiades gazetteer, place-type join table",
+   "used": "place types for port flag and manual-site check",
+   "raw_file": "data/raw/gametiles/places/pleiades-places_place_types.csv"
+  }
+ ],
+ "not_used": [
+  {
+   "id": "hyde",
+   "why": "HYDE hosts (geo.public.data.uu.nl, public.yoda.uu.nl) blocked by proxy"
+  },
+  {
+   "id": "orbis",
+   "why": "github emeeks/orbis_v2 sites.csv reachable but has no port flag or population; orbis.stanford.edu blocked"
+  },
+  {
+   "id": "itiner-e",
+   "why": "itiner-e.org and zenodo blocked by proxy"
+  },
+  {
+   "id": "darmc",
+   "why": "darmc.harvard.edu / dataverse blocked by proxy"
+  },
+  {
+   "id": "ghsl",
+   "why": "ghsl.jrc.ec.europa.eu blocked; NE POP2020 (UN WUP) used for 2020 instead"
+  },
+  {
+   "id": "wikidata",
+   "why": "query.wikidata.org and www.wikidata.org blocked by proxy"
+  },
+  {
+   "id": "buringh-2021",
+   "why": "Buringh city-population dataset (DANS/dataverse) blocked; Bosker-Buringh-van Zanden 2013 used instead"
+  }
+ ]
+}

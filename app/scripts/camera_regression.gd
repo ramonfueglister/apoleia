@@ -30,7 +30,7 @@ func run() -> void:
         viewport.size=size
         var aspect=float(size.x)/size.y
         # Perspective contract covers the app zoom range (NEAR_WIDTH and up).
-        for width in [10000.,1500.,700.,400.,Rig.NEAR_WIDTH]:
+        for width in [10000.,1500.,700.,400.,200.,Rig.NEAR_WIDTH]:
             var profile=Rig.profile(width)
             var fov=Rig.perspective_fov(profile.y)
             var angle=deg_to_rad(profile.x)

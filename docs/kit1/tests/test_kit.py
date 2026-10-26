@@ -122,6 +122,45 @@ class KitTests(unittest.TestCase):
         self.assertTrue(any('policy file/hash' in x for x in k.report_check(self.folder)))
         self.write_evidence(r,'derivation',base);next(x for x in r['checks'] if x['id']=='A16')['evidence_ids']=['screenshot'];k.dump(self.folder/'report.json',r)
         self.assertTrue(any('A16: derivation' in x for x in k.report_check(self.folder)))
+    def na_derivation(self,base,pairs):
+        """Replace measured (level, metric) pairs by explicit NA rows bound to a hashed rule file."""
+        (self.folder/'na-rule.md').write_text('UNIT TEST NA RULE; NOT A REAL POLICY APPLICATION')
+        rule={'artifact_path':'na-rule.md','sha256':k.sha(self.folder/'na-rule.md')}
+        d=copy.deepcopy(base);d['level_measurements']=[x for x in d['level_measurements'] if (x['level_id'],x['metric']) not in pairs]
+        d['not_applicable']=[{'level_id':l,'metric':m,'status':'not_applicable','reason':'UNIT TEST: level not rendered','rule':copy.deepcopy(rule)} for l,m in pairs]
+        return d
+    def test_derivation_not_applicable_closes_coverage_with_reason_and_rule(self):
+        r,_=self.setup_report();base=k.load(self.folder/'derivation.json')
+        pairs=[('far','screen_error_px'),('far','transition_residual_px'),('mid','screen_error_px'),('mid','transition_residual_px')]
+        good=self.na_derivation(base,pairs)
+        self.assertEqual(k.validate('derivation',good),[])
+        self.write_evidence(r,'derivation',good);self.assertEqual(k.report_check(self.folder),[])
+        # Without the NA rows the four missing combinations still block, exactly as before.
+        bad=copy.deepcopy(good);del bad['not_applicable'];self.write_evidence(r,'derivation',bad)
+        self.assertTrue(any('level/metric coverage' in x for x in k.report_check(self.folder)))
+    def test_derivation_not_applicable_requires_reason_rule_and_render_metric(self):
+        r,_=self.setup_report();base=k.load(self.folder/'derivation.json')
+        good=self.na_derivation(base,[('far','screen_error_px')])
+        for field in ('reason','rule','status'):
+            bad=copy.deepcopy(good);del bad['not_applicable'][0][field];self.assertTrue(k.validate('derivation',bad),field)
+        bad=copy.deepcopy(good);bad['not_applicable'][0]['reason']='';self.assertTrue(k.validate('derivation',bad))
+        bad=copy.deepcopy(good);bad['not_applicable'][0]['status']='validiert';self.assertTrue(k.validate('derivation',bad))
+        # Source-space metrics are always measurable on a derived output and cannot be waived.
+        bad=self.na_derivation(base,[('far','terrain_vertical_m')]);self.assertTrue(k.validate('derivation',bad))
+        bad=copy.deepcopy(good);bad['not_applicable'][0]['rule']['sha256']='0'*64;self.write_evidence(r,'derivation',bad)
+        self.assertTrue(any('not-applicable rule' in x for x in k.report_check(self.folder)))
+        bad=copy.deepcopy(good);bad['not_applicable'][0]['level_id']='unknown-level';self.write_evidence(r,'derivation',bad)
+        issues=k.report_check(self.folder)
+        self.assertTrue(any('not-applicable level unknown' in x for x in issues));self.assertTrue(any('level/metric coverage' in x for x in issues))
+    def test_derivation_not_applicable_cannot_overlap_duplicate_or_waive_whole_metric(self):
+        r,_=self.setup_report();base=k.load(self.folder/'derivation.json')
+        good=self.na_derivation(base,[('far','screen_error_px')])
+        bad=copy.deepcopy(good);bad['not_applicable'].append(copy.deepcopy(bad['not_applicable'][0]))
+        self.assertTrue(any('duplicate derivation not-applicable' in x for x in k.validate('derivation',bad)))
+        bad=copy.deepcopy(good);bad['not_applicable'][0]['level_id']='mid'
+        self.assertTrue(any('both measured and not applicable' in x for x in k.validate('derivation',bad)))
+        bad=self.na_derivation(base,[(l,'screen_error_px') for l in ('far','mid','near')]);self.write_evidence(r,'derivation',bad)
+        self.assertTrue(any('no measured level: screen_error_px' in x for x in k.report_check(self.folder)))
     def test_self_check(self):self.assertEqual(k.self_check(),[])
     def test_schema_rejects_bool_as_number_and_unknown(self):
         t=k.load(k.ROOT/'examples/telemetry.synthetic.json');t['samples'][0]['frame_ms']=True

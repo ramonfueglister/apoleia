@@ -4,13 +4,31 @@ extends RefCounted
 const REVISION = "perspective-diorama-display-v5"
 const PERSPECTIVE_FOV = 25.0
 const OVERVIEW_FOV = 8.0
-const NEAR_WIDTH = 240.0
+# A07: closest view about 80 km of ground (3x closer than 240).
+const NEAR_WIDTH = 80.0
+# Legacy fixtures address zoom against the former 240-unit endpoint.
+const LEGACY_NEAR_WIDTH = 240.0
 const MIN_HEIGHT = -1.0
 const MAX_HEIGHT = 9.0
 const SETTLE_OMEGA = 18.9755 # (1+w*t)*exp(-w*t)=0.05 at t=0.25 s.
 const WIDTHS = [1500.0, 200.0, 20.0, 5.0]
 const PITCHES = [90.0, 65.0, 45.0, 35.2643897]
 const RELIEFS = [0.0, 0.45, 0.88, 1.0]
+
+static func width_for_zoom(zoom: float, overview_width: float, near_width: float=NEAR_WIDTH) -> float:
+    return exp(lerpf(log(overview_width),log(near_width),clampf(zoom,0.0,1.0)))
+
+static func zoom_for_width(width: float, overview_width: float, near_width: float=NEAR_WIDTH) -> float:
+    return clampf(log(overview_width/maxf(width,0.000001))/log(overview_width/near_width),0.0,1.0)
+
+static func zoom_after_factor(zoom: float, factor: float, overview_width: float, near_width: float=NEAR_WIDTH) -> float:
+    # A wheel/pinch factor changes width by the same ratio at every zoom.
+    return zoom_for_width(width_for_zoom(zoom,overview_width,near_width)/maxf(factor,0.000001),overview_width,near_width)
+
+static func zoom_from_legacy(zoom: float, overview_width: float, near_width: float=NEAR_WIDTH) -> float:
+    # Old --view/fixture/tour coordinates used a 240-unit endpoint. Migrate
+    # their widths, not their normalized numbers, so established views remain.
+    return zoom_for_width(width_for_zoom(zoom,overview_width,LEGACY_NEAR_WIDTH),overview_width,near_width)
 
 static func profile(width: float, overview_width: float=7606.0) -> Vector2:
     # The regional reference is a continental diorama, not the outermost flat

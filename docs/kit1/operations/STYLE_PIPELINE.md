@@ -15,7 +15,7 @@ den flachen 2D-Fernkartenendpunkt. Die neue Nahprobe wurde verworfen; die
 Primärreferenz bleibt maßgeblich für den Nahstil.
 Vor jeder späteren Stilprüfung
 [den lokalen Screenshotkatalog](../references/screenshots/README.md) betrachten:
-U01–U03 zeigen übertragbare Urbek-Formen, V01–V03 geografische Lesbarkeit.
+U01–U03 zeigen übertragbare Urbek-Formen.
 Die jeweiligen Ausschlüsse mitlesen. Diese Spielbilder sind Referenzen, keine
 Kit-1-Produktassets, Geodaten oder vollständigen Landschaftsvorlagen. Frühere
 eigene generierte Stilproben sind aus dem Kit entfernt; die Nutzer-Primärreferenz

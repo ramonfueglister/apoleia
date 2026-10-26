@@ -6,8 +6,8 @@
 Die Nutzeranlage steht hierarchisch an erster Stelle und präzisiert die frühere,
 zu stark voxelartige Stilbeschreibung. Sie legt Palette, Materialwirkung und
 Detaildichte der natürlichen Landschaft fest; sie liefert keine Geodaten,
-Laufzeitbilder, historische Rekonstruktion oder technischen Belege. Die sechs
-offiziellen Urbek-/Victoria-3-Screenshots bleiben als getrennte Quellenreferenzen
+Laufzeitbilder, historische Rekonstruktion oder technischen Belege. Die drei
+offiziellen Urbek-Screenshots bleiben als getrennte Quellenreferenzen
 erhalten, unterliegen aber der Nutzer-Primärreferenz. Frühere eigene generierte
 Stilproben und eine neu erzeugte Nahprobe wurden aus dem aktuellen Kit entfernt.
 Eine neu erzeugte Fernprobe ist nur als ergänzende Stilreferenz aufgenommen; sie
