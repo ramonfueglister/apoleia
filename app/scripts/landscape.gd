@@ -1274,6 +1274,9 @@ func _update_camera() -> void:
     if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
     view_width=exp(lerpf(log(far_width),log(near_width),zoom))
     if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
+    # Continental views: stronger exaggeration so ranges read as relief.
+    # No crowns are drawn there, so forest support heights are unaffected.
+    display_height_scale*=1.0+1.0*smoothstep(2200.0,6000.0,view_width)
     var profile=CameraRig.profile(view_width,far_width)
     elevation_degrees=profile.x
     relief=profile.y

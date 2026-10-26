@@ -52,8 +52,8 @@ void fragment() {
     if(water<0.5 && rim<0.05 && island_land<0.5) discard;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);
-    vec3 sand=vec3(0.74,0.62,0.36)*(0.92+0.12*wl_noise(np*3.0));
-    vec3 grass=vec3(0.24,0.33,0.06)*(0.85+0.3*d_fbm(np*2.5));
+    vec3 sand=vec3(0.80,0.66,0.40)*(0.92+0.12*wl_noise(np*3.0));
+    vec3 grass=vec3(0.16,0.26,0.05)*(0.85+0.3*d_fbm(np*2.5));
     if(water>0.5) {
         float edge_m=max(field,0.0)*delta_radii.y*1000.0;
         WaterSample w=water_shade(p,edge_m+400.0,6.0+field*20.0,footprint,calm,view_world,vec2(0.0),px_m,0.6,0.0);
@@ -64,8 +64,10 @@ void fragment() {
         NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
     } else if(rim>=0.05) {
         ALBEDO=sand;ROUGHNESS=0.9;
+        NORMAL=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
     } else {
         ALBEDO=grass;ROUGHNESS=0.92;
+        NORMAL=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
     }
     SPECULAR=0.04;
 }

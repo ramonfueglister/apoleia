@@ -90,13 +90,19 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Turquoise is bound to the shore distance only (a narrow band of a few
     // km), never to the shelf depth: shallow seas like the Adriatic stay deep
     // blue up to the coast. eff is a pseudo-depth for the colour ramp.
-    float saum_w=max(px_m*28.0,3600.0)*mix(0.45,1.0,saum_scale)*(0.6+0.8*patch);
+    // saum_scale 1 close .. ~0.15 continental: the band shrinks to a hairline
+    // of about one pixel instead of growing with the pixel footprint.
+    float far_view=clamp((1.0-saum_scale)/0.85,0.0,1.0);
+    // Width in metres (~2.5 km, patchy): broad gradient in the close view,
+    // a few pixels in the regional view, a hairline far out.
+    float saum_w=mix(max(2500.0*(0.6+0.8*patch),px_m*1.5),px_m*1.2,far_view);
     float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.4)+coast_m*0.002;
     eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
     vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/5.0));
     col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
-    col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.6);
+    // Mostly uniform open sea; bathymetry only a faint deepening.
+    col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25);
     // Narrow teal strip right at the beach.
     col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5));
     // Facets (low-poly surface) with smooth detail between them.
@@ -157,7 +163,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     }
     float whitecap=smoothstep(0.78,0.95,wl_wave(p,footprint,t,flow)/(0.6+0.8*wl_wind_strength()+0.8*storm))*storm*anim;
     // One soft, narrow foam line (slow breathing); surf bands are off.
-    float foam=clamp(shore*0.55*(0.8+0.2*sin(t*1.2+c1*8.0))+bands*anim*saum_scale*0.0+whitecap*0.6,0.0,1.0);
+    float foam=clamp(shore*0.55*(1.0-far_view*0.7)*(0.8+0.2*sin(t*1.2+c1*8.0))+bands*anim*saum_scale*0.0+whitecap*0.6,0.0,1.0);
     foam*=1.0-mouth;
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);

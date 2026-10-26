@@ -49,8 +49,9 @@ void fragment() {
     float depth=max(-model_height_at(p),0.0);
     float footprint=max(length(dFdx(p)),length(dFdy(p)));
     float px_m=max(length(vec2(dFdx(distance),dFdy(distance))),1.0);
-    float calm=smoothstep(0.05,0.6,relief);
-    float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
+    // Continental views: calm, hairline coast; close views: full saum.
+    float calm=1.0-smoothstep(1500.0,4000.0,view_width)*0.85;
+    float saum_scale=1.0-smoothstep(700.0,2600.0,view_width)*0.85;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float mouth=0.0;float delta_region=0.0;float gap=1e9;
     for(int i=0;i<32;i++) {
@@ -63,7 +64,7 @@ void fragment() {
     WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
-    ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-calm)*0.6);
+    ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-saum_scale)*0.6);
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
     float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
     // One continuous arc; only open mouths break it.

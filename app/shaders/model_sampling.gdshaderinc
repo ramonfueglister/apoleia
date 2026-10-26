@@ -135,9 +135,12 @@ float water_kind_at(vec2 p) {
     if(use_c2_domains) {
         if(water_distance_at(p)<=0.0) return 0.0;
         vec2 w=source_domain_weights(p);
-        if(w.y>0.0) return sample_water_kind(water_tile_tex,(p-water_tile_world_min)/water_tile_world_size);
-        if(w.x>0.0) return sample_water_kind(detail_water_tex,(p-detail_world_min)/detail_world_size);
-        return sample_water_kind(water_tex,(p-world_min)/world_size);
+        // The smooth SDF owns the land/water contour; the nearest-sampled
+        // class texture only tells sea (1) from inland water (2). A class
+        // texel still marked land inside the SDF water is sea, otherwise the
+        // coast shows the class texture's staircase.
+        float kind=w.y>0.0 ? sample_water_kind(water_tile_tex,(p-water_tile_world_min)/water_tile_world_size) : (w.x>0.0 ? sample_water_kind(detail_water_tex,(p-detail_world_min)/detail_world_size) : sample_water_kind(water_tex,(p-world_min)/world_size));
+        return kind<0.5 ? 1.0 : kind;
     }
     vec2 tile_uv=(p-water_tile_world_min)/water_tile_world_size;
     if(use_water_tile && inside_domain(tile_uv)) return sample_water_kind(water_tile_tex,tile_uv);
