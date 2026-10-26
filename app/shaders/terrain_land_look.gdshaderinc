@@ -296,25 +296,27 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // camera's relief fade), slopes keep their dark green structure, high
     // ranges read as pale grey-white rock.
     if(overview>0.0) {
-        float far_forest=smoothstep(0.15,0.9,soft.r);
-        ground=mix(ground,land_forest_floor_color.rgb,far_forest*overview*0.45*(1.0-rock));
-        float steep=smoothstep(0.02,0.25,slope);
-        ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.4),steep*overview*0.55);
-        // Far view tone balance against the reference (measured k-means).
-        ground*=mix(vec3(1.0),vec3(0.740,0.730,0.740),overview);
-        // Broad, soft hillshade: gentle normal so 2 km steps do not hatch.
-        vec3 shade_n=land_display_normal(source_normal,dhs*0.3);
-        float lit=dot(shade_n,normalize(vec3(-0.676,0.643,-0.360)));
-        float shade=clamp(1.0+1.1*(lit-0.643),0.62,1.25);
-        ground*=mix(1.0,shade,overview*0.6);
-        // Alps and other high ranges: a bright grey-white rock belt, peaks
-        // near white, applied after the balance so it stays bright.
-        float alpine=smoothstep(700.0,1050.0,h);
-        // Pale grey-beige rock belt with shaded faces; only the highest
-        // summits turn white.
-        vec3 belt=mix(vec3(0.60,0.56,0.47),vec3(0.88,0.87,0.84),smoothstep(1500.0,1850.0,h));
-        belt*=mix(0.62,1.12,clamp((lit-0.40)*2.5,0.0,1.0));
-        ground=mix(ground,belt,alpine*overview*0.9);
+        // Weit: no per-pixel facet noise; large forms only. Forest share as
+        // clear dark green areas, uplands green, shading from the large atlas
+        // normal plus the precomputed ridge/valley position (channel A).
+        float far_forest=smoothstep(0.12,0.45,soft.r);
+        ground=mix(ground,vec3(0.26,0.36,0.23),far_forest*overview*0.8*(1.0-rock));
+        float upland=smoothstep(300.0,800.0,h);
+        ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
+        ground*=mix(vec3(1.0),vec3(0.680,0.660,0.560),overview);
+        vec3 shade_n=land_display_normal(source_normal,dhs*0.15);
+        vec3 sun=normalize(vec3(-0.676,0.643,-0.360));
+        float lit=dot(shade_n,sun);
+        float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
+        float ridge=clamp(crest/250.0,-1.0,1.0);
+        float shade=1.0+0.9*(lit-0.643)+0.18*max(ridge,0.0)*side-0.16*max(-ridge,0.0);
+        ground*=mix(1.0,clamp(shade,0.62,1.3),overview);
+        // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
+        // compressed), shaded by side; only the highest summits white.
+        float alpine=smoothstep(1100.0,1350.0,h);
+        vec3 belt=mix(vec3(0.60,0.56,0.47),vec3(0.88,0.87,0.84),smoothstep(1550.0,1850.0,h));
+        belt*=mix(0.62,1.12,clamp(0.5+0.5*side*max(ridge,0.3)+(lit-0.643),0.0,1.0));
+        ground=mix(ground,belt,alpine*overview*0.92);
     }
     o.albedo=ground;
 #ifdef LAND_LOOK_DEBUG_FLOOR
