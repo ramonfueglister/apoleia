@@ -39,10 +39,10 @@ fn write_snapshot(w: &World, path: &Path) {
     }
 }
 
-fn write_views(sim: &Sim, path: &Path) {
+fn write_views(sim: &mut Sim, path: &Path) {
     let mut f = fs::File::create(path).unwrap();
     writeln!(f, "id,level,x0_m,z0_m,size_m,p,k,land_km2").unwrap();
-    for t in sim.snapshot() {
+    for t in &sim.snapshot().tiles {
         let k = t.key;
         let s = k.size_m();
         writeln!(f, "{},{},{},{},{},{:.1},{:.1},{:.3}", k.id(), k.level, k.col as f64 * s, k.row as f64 * s, s, t.pop, t.cap, t.land_km2)
@@ -58,14 +58,16 @@ fn percentiles(mut us: Vec<f64>) -> (f64, f64, f64) {
 
 /// The ECS core: same output files and summary line as the reference run.
 fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) {
-    write_views(&sim, &out.join(format!("leaves-{START_YEAR}.csv")));
+    write_views(&mut sim, &out.join(format!("leaves-{START_YEAR}.csv")));
     let mut series = fs::File::create(out.join("series.csv")).unwrap();
     writeln!(series, "year,population,capacity,leaves,max_level,splits,merges,mean_tick_us,max_tick_us").unwrap();
     let level = |v: &[apoleia_sim::ecs::TileView]| v.iter().map(|t| t.key.level).max().unwrap();
     let v = sim.snapshot();
+    let v = &v.tiles;
     let k_total: f64 = v.iter().map(|t| t.cap).sum();
     writeln!(series, "{START_YEAR},{:.0},{k_total:.0},{},{},0,0,0,0", sim.total_population(), v.len(), level(&v)).unwrap();
     let mut all_us = Vec::new();
+    let mut snap_us = Vec::new();
     for y in 1..=years {
         let mut ticks = Vec::with_capacity(12);
         for _ in 0..12 {
@@ -75,7 +77,10 @@ fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) 
         }
         all_us.extend_from_slice(&ticks);
         let year = START_YEAR + y as i32;
+        let t0 = Instant::now();
         let v = sim.snapshot();
+        snap_us.push(t0.elapsed().as_secs_f64() * 1e6);
+        let v = &v.tiles;
         let k_total: f64 = v.iter().map(|t| t.cap).sum();
         let st = sim.stats();
         let mean = ticks.iter().sum::<f64>() / 12.0;
@@ -83,13 +88,14 @@ fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) 
         writeln!(series, "{year},{:.0},{k_total:.0},{},{},{},{},{mean:.1},{max:.1}", sim.total_population(), v.len(), level(&v), st.splits, st.merges)
             .unwrap();
         if y % snap_every == 0 || y == years {
-            write_views(&sim, &out.join(format!("leaves-{year}.csv")));
+            write_views(&mut sim, &out.join(format!("leaves-{year}.csv")));
         }
     }
     let (p50, p95, max) = percentiles(all_us);
+    let (snap50, _, _) = percentiles(snap_us);
     let st = sim.stats();
     println!(
-        "core=ecs inputs={inputs} years={years} leaves={} splits={} merges={} population={:.0} balanced={} fingerprint={:016x} tick_us p50={p50:.0} p95={p95:.0} max={max:.0}",
+        "core=ecs inputs={inputs} years={years} leaves={} splits={} merges={} population={:.0} balanced={} fingerprint={:016x} tick_us p50={p50:.0} p95={p95:.0} max={max:.0} snapshot_us p50={snap50:.0}",
         sim.leaf_count(),
         st.splits,
         st.merges,

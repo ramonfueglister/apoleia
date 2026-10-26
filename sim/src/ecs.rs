@@ -15,6 +15,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{LogLevel, ScheduleBuildSettings};
 use bevy_utils::Parallel;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::sync::Arc;
 
 /// Fixed point scale: 1.0 person (or km²) = 65 536 units.
 pub const FX: i64 = 1 << 16;
@@ -109,6 +110,21 @@ pub struct TileView {
     pub pop: f64,
     pub cap: f64,
     pub land_km2: f64,
+}
+
+/// Everything the presentation layer may read about one month (S45).
+/// Godot's tile-ID texture stores the index into `tiles`.
+#[derive(Clone, Debug, Default)]
+pub struct Snapshot {
+    pub month: u32,
+    pub tiles: Vec<TileView>,
+}
+
+/// A change to the game state (S43). Player, AI, map tools and replays all
+/// go through `Sim::submit`; for now the only command advances the clock.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Command {
+    AdvanceMonth,
 }
 
 // ---- Tick tasks -----------------------------------------------------------
@@ -325,6 +341,16 @@ fn merge(world: &mut World, idx: &mut TileIndex, q: Key) {
 pub struct Sim {
     pub world: World,
     monthly: Schedule,
+    /// Submitted, not yet applied: (issuer, sequence, command).
+    pending: Vec<(u32, u32, Command)>,
+    seq: u32,
+    /// Applied commands with the month they were applied in.
+    log: Vec<(u32, Command)>,
+    /// Double buffer (S45): readers keep `front` alive while the next one is
+    /// written into `back`, which is reused when no reader holds it.
+    front: Arc<Snapshot>,
+    back: Arc<Snapshot>,
+    views: QueryState<(&'static TileKey, &'static Pop, &'static Cap, &'static Land)>,
 }
 
 impl Sim {
@@ -379,12 +405,51 @@ impl Sim {
         // parallelism is inside growth (parallel chunks on the task pool).
         monthly.set_executor(bevy_ecs::schedule::SingleThreadedExecutor::new());
         monthly.add_systems((growth, collect, structure).chain_weak());
-        Sim { world, monthly }
+        let views = world.query::<(&TileKey, &Pop, &Cap, &Land)>();
+        let mut sim = Sim {
+            world,
+            monthly,
+            pending: Vec::new(),
+            seq: 0,
+            log: Vec::new(),
+            front: Arc::default(),
+            back: Arc::default(),
+            views,
+        };
+        sim.publish();
+        sim
     }
 
-    /// One monthly tick (S21, S42).
+    /// Queues a command; it takes effect at the next `step` (S43).
+    pub fn submit(&mut self, issuer: u32, cmd: Command) {
+        self.pending.push((issuer, self.seq, cmd));
+        self.seq += 1;
+    }
+
+    /// Applies all queued commands in a fixed order (issuer, then submission
+    /// order), so the same commands give the same state on every machine.
+    pub fn step(&mut self) {
+        let mut cmds = std::mem::take(&mut self.pending);
+        cmds.sort_unstable();
+        for &(_, _, cmd) in &cmds {
+            self.log.push((self.stats().month, cmd));
+            match cmd {
+                Command::AdvanceMonth => self.monthly.run(&mut self.world),
+            }
+        }
+        cmds.clear();
+        self.pending = cmds;
+    }
+
+    /// One monthly tick (S21, S42), as a command like any other.
     pub fn tick(&mut self) {
-        self.monthly.run(&mut self.world);
+        self.submit(0, Command::AdvanceMonth);
+        self.step();
+    }
+
+    /// Applied commands with their month, enough to replay a run.
+    pub fn log(&self) -> &[(u32, Command)] {
+        &self.log
     }
 
     pub fn stats(&self) -> Stats {
@@ -400,21 +465,40 @@ impl Sim {
         from_fx(q.iter(&self.world).map(|p| p.0).sum())
     }
 
-    /// Read-only view in ID order, taken between ticks (S45).
-    pub fn snapshot(&self) -> Vec<TileView> {
-        let idx = self.world.resource::<TileIndex>();
-        idx.leaves
-            .iter()
-            .map(|(&key, &e)| {
-                let w = &self.world;
-                TileView {
-                    key,
-                    pop: from_fx(w.get::<Pop>(e).unwrap().0),
-                    cap: from_fx(w.get::<Cap>(e).unwrap().0),
-                    land_km2: from_fx(w.get::<Land>(e).unwrap().0),
-                }
-            })
-            .collect()
+    /// The state as of the last completed tick (S45). Cheap to call every
+    /// frame: it is rebuilt only after the month has changed, and only when
+    /// someone asks for it.
+    pub fn snapshot(&mut self) -> Arc<Snapshot> {
+        if self.front.month != self.stats().month {
+            self.publish();
+        }
+        Arc::clone(&self.front)
+    }
+
+    fn publish(&mut self) {
+        let mut next = std::mem::take(&mut self.back);
+        let buf = match Arc::get_mut(&mut next) {
+            Some(b) => b,
+            None => {
+                next = Arc::default();
+                Arc::get_mut(&mut next).expect("fresh")
+            }
+        };
+        buf.month = self.world.resource::<Stats>().month;
+        buf.tiles.clear();
+        // Storage order, not ID order: a linear pass over the tile table is
+        // several times cheaper than walking the index. The order is still
+        // deterministic, because spawns and despawns happen in one serial,
+        // sorted system.
+        for (keys, pop, cap, land) in self.views.contiguous_iter(&self.world).expect("tiles live in tables") {
+            buf.tiles.extend((0..keys.len()).map(|i| TileView {
+                key: keys[i].0,
+                pop: from_fx(pop[i].0),
+                cap: from_fx(cap[i].0),
+                land_km2: from_fx(land[i].0),
+            }));
+        }
+        self.back = std::mem::replace(&mut self.front, next);
     }
 
     /// FNV fingerprint over keys and fixed-point populations in ID order.
@@ -541,5 +625,39 @@ mod tests {
         assert_eq!(s.leaf_count(), r.leaves.len());
         let rel = (s.total_population() - r.total_population()).abs() / r.total_population();
         assert!(rel < 1e-6, "relative difference {rel}");
+    }
+
+    #[test]
+    fn replaying_the_command_log_gives_the_same_state() {
+        let mut a = sim(Params::default());
+        for _ in 0..240 {
+            a.tick();
+        }
+        let mut b = sim(Params::default());
+        for &(_, cmd) in a.log() {
+            b.submit(0, cmd);
+        }
+        b.step();
+        assert_eq!(a.log().len(), 240);
+        assert_eq!(a.fingerprint(), b.fingerprint());
+    }
+
+    #[test]
+    fn snapshot_is_stable_between_ticks_and_double_buffered() {
+        let mut s = sim(Params::default());
+        let first = s.snapshot();
+        assert!(Arc::ptr_eq(&first, &s.snapshot()), "no rebuild without a tick");
+        s.tick();
+        let second = s.snapshot();
+        assert_eq!((first.month, second.month), (0, 1));
+        // A reader still holding the old month keeps valid data.
+        assert_eq!(first.tiles.len(), 4);
+        assert_eq!(second.tiles.len(), s.leaf_count());
+        let total: f64 = second.tiles.iter().map(|t| t.pop).sum();
+        assert!((total - s.total_population()).abs() < 1e-6);
+        let mut keys: Vec<Key> = second.tiles.iter().map(|t| t.key).collect();
+        keys.sort();
+        let leaves: Vec<Key> = s.world.resource::<TileIndex>().leaves.keys().copied().collect();
+        assert_eq!(keys, leaves, "every leaf exactly once");
     }
 }

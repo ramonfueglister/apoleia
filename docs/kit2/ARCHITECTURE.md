@@ -63,6 +63,11 @@ Software-Rundung `f64::round` (ohne SSE4.1), der Overhead pro Entity bei
 `par_iter_mut` gegenüber `contiguous_par_iter_mut` und rund 60 µs Wake-up des
 Multi-Thread-Executors bei einer reinen Kette. Die Messung auf dem Mac (B08) steht aus.
 
+Schritt 2: Alle Eingriffe laufen als Befehl über `Sim::submit` und `Sim::step`
+(sortiert nach Absender und Reihenfolge, mit Protokoll für Wiederholung). Der
+Snapshot ist doppelt gepuffert (`Arc`), wird nur nach einem neuen Monat und nur auf
+Anfrage gebaut und kostet 0,13–0,15 ms für 41 827 Tiles (Tabellenreihenfolge, nicht ID-Reihenfolge).
+
 ## Erster Schritt nach der Entscheidung
 
 1. `sim/` auf `bevy_ecs` 0.20 umstellen. Komponenten: `TileKey`, `Population`
