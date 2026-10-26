@@ -1,5 +1,6 @@
 {
-  "revision": "landcover-node-2km-r1",
+  "revision": "landcover-node-2km-r2",
+  "coverage": "all 3 degree WorldCover tiles intersecting the atlas (artifacts/render-data/worldcover-atlas-r1, inventory worldcover-inventory.json); uncovered land nodes filled from the nearest covered node",
   "width": 5163,
   "height": 2392,
   "world_min": [
@@ -25,7 +26,7 @@
       "wetland",
       "water"
     ],
-    "sha256": "d10102de7e8aae0c83bbc4ed74a7bb55e7675c8af0c7cb0d2c09c9d3a5240384"
+    "sha256": "da2fcd2792c2ed2488df2b9da243b82ba118535c7937836608f4a7f0d482612e"
   },
   "atlas_surface_sha256": "2ea33356cd5fa5979e63770e7f73fa59e4cc546135a8dbc9e7301e46270cc68d",
   "look": {
@@ -36,14 +37,14 @@
       "dry",
       "relief_position (128 + (h - ring mean 4.5 km)/3.2 m)"
     ],
-    "sha256": "ae53c165cf3ecb22022ba9d59dbffd98ba199f73a19214e431fc37026dc73f7f"
+    "sha256": "b23e592a935a82eae3578a1bcbe1f6a3a85ade6e4af2babc7ff91a217022a47a"
   },
   "land_means": {
-    "forest": 0.08897491544485092,
-    "shrub": 0.001599617418833077,
-    "grass": 0.07456440478563309,
-    "crop": 0.029770728200674057,
-    "bare": 0.13422973453998566,
-    "snow": 0.0001373455161228776
+    "forest": 0.13913795351982117,
+    "shrub": 0.0071082101203501225,
+    "grass": 0.1645037978887558,
+    "crop": 0.05005535110831261,
+    "bare": 0.25977784395217896,
+    "snow": 0.0019417309667915106
   }
 }

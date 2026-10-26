@@ -12,7 +12,13 @@ import json,pathlib,hashlib,concurrent.futures,time
 from osgeo import gdal
 import numpy as np
 gdal.UseExceptions()
-ROOT=pathlib.Path(__file__).resolve().parents[1]; OUT=ROOT/'data/raw/worldcover';OUT.mkdir(parents=True,exist_ok=True)
+import argparse,math
+ROOT=pathlib.Path(__file__).resolve().parents[1]
+ap=argparse.ArgumentParser();ap.add_argument('--out',default='data/raw/worldcover');ap.add_argument('--atlas-manifest',help='cover every 3 degree tile intersecting this eqc node grid (plus a one-tile margin) instead of the fixed region positions');ap.add_argument('--seed-from',help='existing tile folder; its files are linked first and not downloaded again');cli=ap.parse_args()
+OUT=ROOT/cli.out;OUT.mkdir(parents=True,exist_ok=True)
+if cli.seed_from:
+ for f in (ROOT/cli.seed_from).iterdir():
+  if not (OUT/f.name).exists():(OUT/f.name).symlink_to(f.resolve())
 b=json.loads((ROOT/'data/region.json').read_text())['extent']
 def one(pos):
  lat,lon=pos; name=f'N{lat:02d}'+('E' if lon>=0 else 'W')+f'{abs(lon):03d}'
@@ -26,6 +32,11 @@ def one(pos):
  except Exception as e:r=dict(id=name,url=url,status='unavailable',error=str(e))
  meta.write_text(json.dumps(r,indent=2)+'\n');print(name,r['status'],flush=True);return r
 positions=[(lat,lon) for lat in range(21,60,3) for lon in range(-12,48,3)]
+if cli.atlas_manifest:
+ m=json.loads((ROOT/cli.atlas_manifest).read_text());R=6371008.8;K=math.pi/180*R*.001;CX=K*math.cos(math.radians(41))
+ x0,z0=m['world_min'];w,h=m['world_size']
+ west,east,south,north=19+x0/CX,19+(x0+w)/CX,41-(z0+h)/K,41-z0/K
+ positions=[(lat,lon) for lat in range(int(math.floor(south/3))*3-3,int(math.ceil(north/3))*3+3,3) for lon in range(int(math.floor(west/3))*3-3,int(math.ceil(east/3))*3+3,3) if -60<=lat<=81]
 with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:results=list(ex.map(one,positions))
-(ROOT/'data/worldcover-inventory.json').write_text(json.dumps(dict(revision='worldcover-overview-v1',note='562-pixel native COG overviews ~0.00534 degree; source10m does not become delivered10m. Full source object hashes unknown; reproducibility freezes each downloaded subset.',tiles=results),indent=2)+'\n')
+(ROOT/('data/worldcover-inventory.json' if not cli.atlas_manifest else 'artifacts/render-data/landcover-node-2km/worldcover-inventory.json')).write_text(json.dumps(dict(revision='worldcover-overview-v1',note='562-pixel native COG overviews ~0.00534 degree; source10m does not become delivered10m. Full source object hashes unknown; reproducibility freezes each downloaded subset.',tiles=results),indent=2)+'\n')
 print('DONE',len(results),sum(r['status']=='downloaded' for r in results),flush=True)

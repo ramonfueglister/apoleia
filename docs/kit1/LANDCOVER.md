@@ -86,3 +86,16 @@
 - Tiles `clipmap-tiles-r7-etopo15`: 4187 tiles, 266 MB, manifest sha256 see below.
 - Land shader: `land_knee` = 1000, `land_h0` = 500 (H1).
 - clipmap-tiles-r7-etopo15 manifest sha256: 75096f88763321955f2dffea185b8ace47357675c936f84f7534ebeabe6397e7
+
+## Full land-cover coverage (landcover-node-2km-r2)
+- `tools/data_worldcover.py --out artifacts/render-data/worldcover-atlas-r1
+  --atlas-manifest artifacts/render-data/landcover-node-2km/manifest.json
+  --seed-from data/raw/worldcover`: every 3 degree WorldCover tile that
+  intersects the atlas (lon -44..79, lat 18..61, plus one tile margin):
+  748 positions, 549 downloaded (same frozen 562 px overview method),
+  199 open-ocean tiles unavailable (404). 18 MB, not in Git; inventory in
+  `artifacts/render-data/landcover-node-2km/worldcover-inventory.json`.
+- `gdalbuildvrt -srcnodata 0 worldcover-atlas.vrt worldcover-atlas-r1/*.tif`,
+  then the same 4x4 sub-grid gdalwarp as before.
+- `tools/build_landcover_nodes.py`: land nodes without class data take the
+  nearest covered node (no hard data edges).
