@@ -2466,8 +2466,51 @@ func _setup_rivers() -> void:
         river_feature_count+=1
     _detect_river_mouths()
     _setup_river_deltas()
+    _add_delta_arms()
     _widen_river_mouths()
     _build_river_crown_grid()
+
+# Delta arms in the SAME river records (all renderer paths draw them like
+# the main course): over the last ~12 km the course splits into 3-4 strongly
+# meandering arms of 60-100% width that fan to the coast; inlets of the
+# barrier spit sit at their ends. The main course stays the central arm.
+func _add_delta_arms() -> void:
+    for region in delta_regions:
+        var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
+        var length=float(region.rb)*2.2
+        var base_width=0.03
+        for source in river_sources:
+            if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
+        var start=mouth-sea*length
+        var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
+        var ends=[]
+        var arm_count=3
+        for k in range(arm_count):
+            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*0.75
+            ends.append(mouth+tangent*spread)
+        var mouths_out=[]
+        for k in range(arm_count):
+            # Run well past the CPU coast: the river shader clips at the
+            # rendered sea, which can lie km further out than the CPU SDF.
+            var end:Vector2=ends[k]+sea*14.0
+            var direction=(end-start).normalized();var normal=direction.orthogonal()
+            var span=start.distance_to(end)
+            var phase=rng.randf()*TAU;var waves=rng.randf_range(1.6,2.6)
+            var width=base_width*rng.randf_range(0.6,1.0)
+            var segments=[];var station=0.0
+            var previous=start;var count=40
+            var minimum=start;var maximum=start
+            for i in range(1,count+1):
+                var t=float(i)/count
+                # Strong meander, fading at both ends so arms leave/enter cleanly.
+                var p=start.lerp(end,t)+normal*sin(t*TAU*waves+phase)*span*0.09*sin(t*PI)
+                segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
+                minimum=minimum.min(p);maximum=maximum.max(p);previous=p
+            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(region.name)+" delta arm","synthetic_delta":true})
+            mouths_out.append(ends[k])
+        # Spit inlets at the two outer arms.
+        region.inlets=[mouths_out[0],mouths_out[arm_count-1]]
+        region.arm_ends=mouths_out
 
 # Display width in the source records: estuary funnel over the last ~4 km
 # and a wider lower course towards a delta. Shared by all renderer paths.
