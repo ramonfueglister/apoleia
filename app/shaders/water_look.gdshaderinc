@@ -90,8 +90,8 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Turquoise is bound to the shore distance only (a narrow band of a few
     // km), never to the shelf depth: shallow seas like the Adriatic stay deep
     // blue up to the coast. eff is a pseudo-depth for the colour ramp.
-    float saum_w=max(px_m*20.0,2500.0)*mix(0.45,1.0,saum_scale)*(0.6+0.8*patch);
-    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.8)+coast_m*0.002;
+    float saum_w=max(px_m*28.0,3600.0)*mix(0.45,1.0,saum_scale)*(0.6+0.8*patch);
+    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.4)+coast_m*0.002;
     eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
     vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/5.0));
