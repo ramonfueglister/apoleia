@@ -17,7 +17,7 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     environment.tonemap_exposure = 1.18
     environment.tonemap_white = 4.0
     environment.adjustment_enabled = true
-    environment.adjustment_saturation = 0.86
+    environment.adjustment_saturation = 1.0
     environment.adjustment_contrast = 1.10
     environment.glow_enabled = false
     # Forward+ only; soft contact darkening under crowns and in valleys.
@@ -119,12 +119,12 @@ static func water_parameters() -> Dictionary:
 
 static func water_look_parameters() -> Dictionary:
     return {
-        "water_deep_tint": Color("123c6a"),
-        "water_open_tint": Color("17467a"),
+        "water_deep_tint": Color("0f3566"),
+        "water_open_tint": Color("143f72"),
         "water_shallow_tint": Color("4fa3a8"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),
-        "water_sky_zenith": Color("3f6690"),
+        "water_sky_zenith": Color("2f5378"),
         "water_sky_horizon": Color("8eaabd"),
         "water_sun_tint": Color("fff0d0"),
         "water_facet_size": 1.4,

@@ -2521,14 +2521,14 @@ func _add_delta_arms() -> void:
             var direction=(end-start).normalized();var normal=direction.orthogonal()
             var span=start.distance_to(end)
             var slot=float(region.ra)*0.75/float(arm_count-1)
-            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(2.0,3.2),rng.randf_range(4.5,6.5)]
+            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(1.6,2.4),rng.randf_range(3.5,5.0)]
             var width=base_width*(1.0 if k==1 else rng.randf_range(0.6,0.85))
             var segments=[];var station=0.0
             var previous=start;var count=48
             var minimum=start;var maximum=start
             for i in range(1,count+1):
                 var t=float(i)/count
-                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.7+sin(t*TAU*freqs[1]+phases[1])*0.3)*slot*0.28*sin(t*PI)
+                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.42*sin(t*PI)
                 var p=start.lerp(end,t)+normal*wobble
                 segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
                 minimum=minimum.min(p);maximum=maximum.max(p);previous=p

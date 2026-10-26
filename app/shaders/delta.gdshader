@@ -57,8 +57,9 @@ void fragment() {
         vec2 d=(local-c)/vec2(mix(0.08,0.16,h1(fi+15.0)),mix(0.05,0.10,h1(fi+19.0)));
         pond=max(pond,1.0-length(d)+(wl_noise(p*0.9+vec2(fi*5.0))-0.5)*0.5);
     }
-    float pond_a=smoothstep(0.0,0.12,pond)*region*(1.0-smoothstep(0.3,0.9,spit));
-    float spit_a=smoothstep(0.4,0.6,spit);
+    // Spit removed: the beach sand band comes from the land shader (r15/r16).
+    float pond_a=smoothstep(0.0,0.12,pond)*region;
+    float spit_a=0.0;
     if(pond_a<0.5 && spit_a<0.5) discard;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);

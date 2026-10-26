@@ -402,10 +402,17 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             for q in support:share+=landcover_forest(q)
             share/=9.0
             var fraction=float(support.size())/9.0
-            if share<0.18 or rng.randf()>clampf(share*1.6,0.0,1.0):continue
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
+            # Strong contrast: the land-cover forest share itself is high on
+            # hills/slopes and low in the farmed plains (the source sample
+            # carries no height outside source forest, so no slope term).
+            # Closed forest clumps with meadows between: full above 0.5, rare
+            # below 0.3; in between a 5-15 km noise decides (clumps/clearings).
+            var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
+            var density=1.0 if share>=0.5 else (0.04 if share<0.3 else smoothstep(0.45,0.6,clump+(share-0.4)))
+            if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
             var width_scale=1.0
             if grouped:

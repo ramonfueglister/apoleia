@@ -22,6 +22,7 @@ varying vec2 river_position;
 varying float river_side;
 varying vec2 river_flow;
 varying float river_half_width;
+varying float river_symbolic;
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
 // here double-decoded gray128 to56. Vertex COLOR follows a different path.
@@ -32,7 +33,7 @@ void vertex(){
     // Look layer: screen floor grows towards the close views (thin map line
     // far out, broad diorama river near; same curve as LandscapeLook).
     // Thin in the regional view (2-4 px), medium-broad in the close view.
-    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+9.0*smoothstep(300.0,90.0,view_width));
+    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+14.0*smoothstep(450.0,150.0,view_width));
     float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.
@@ -40,6 +41,7 @@ void vertex(){
     river_position=VERTEX.xz;
     river_flow=normalize(vec2(-NORMAL.z,NORMAL.x)+vec2(0.0001));
     river_half_width=half_width;
+    river_symbolic=UV2.y;
     river_side=UV2.x;
     // CPU mesh river bases are already in displayed-world height, before relief.
     // Only the raw raster fallback needs the explicit display mapping here.
@@ -56,6 +58,9 @@ void vertex(){
     NORMAL=vec3(0.0,1.0,0.0);
 }
 void fragment(){
+    // Zoom-dependent size filter: far views only the largest rivers.
+    float rank_width=river_symbolic/(use_model_mesh ? 1.0 : 1.6);
+    if(rank_width<mix(0.0,0.036,smoothstep(500.0,1800.0,view_width))) discard;
     float sea_distance=water_distance_at(river_position);
     if(sea_distance>0.0) discard;
     // Streamed/clipmap strips carry the side offset in world units.
@@ -78,7 +83,7 @@ void fragment(){
     float streak=smoothstep(0.62,0.9,wl_fnoise(vec2(along*0.9-TIME*0.5,across*6.0),footprint*6.0))*calm*(1.0-edge)*(1.0-to_sea);
     water=mix(water,water*1.12+0.02,streak*0.4);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
-    water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
+    water=mix(water,vec3(0.02,0.08,0.16),smoothstep(700.0,2500.0,view_width)*0.9);
     // Light sand bank along the outer edge (islands between delta arms).
     float near_view=1.0-smoothstep(600.0,1500.0,view_width);
     ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.80,0.98,edge)*0.7*near_view);
@@ -87,6 +92,6 @@ void fragment(){
     SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
     // Anti-aliased bank: soft coverage over ~1.5 px of the strip edge.
-    float aa=max(fwidth(edge)*1.0,0.01);
+    float aa=max(fwidth(edge)*0.8,0.005);
     ALPHA=1.0-smoothstep(1.0-aa,1.0,edge);
 }
