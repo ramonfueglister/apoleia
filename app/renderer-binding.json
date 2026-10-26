@@ -28,8 +28,31 @@
   },
   "visual_extensions": {
     "clouds": {
-      "enabled": false,
-      "status": "optional user-requested visual extension; quality/performance open; explicit --clouds-enabled opts in, --clouds-disabled opts out"
+      "enabled": true,
+      "revision": "cloud-v16-density-v15-light-kernel-composite",
+      "status": "user-requested active default; current product scene integration and bounded GPU/live/zoom review passed; Victoria 3 reference parity and global A08/A12 remain open",
+      "runtime_assets_sha256": {
+        "scripts/weather/cloud_layer.gd": "9e676759991cca4261ea660fc92ca5df4c0bb9fe8add4b1cb74c9475621b6f36",
+        "shaders/cloud_kernel_pass.gdshader": "a07b5d78f8cff8fde4b76c5a19884fe87e277588624f33e517d4f049680203e0",
+        "shaders/cloud_composite.gdshader": "1a331b25dbb104360439bf5e739f548b65eda6571b0a4d62297aa82b8a019e98",
+        "assets/weather/cloud_weather.png": "b71af8050a2c25448b65af7cf98bd7d2129527be4c606fc0026ed0f161614f84",
+        "assets/weather/cloud_structure.png": "809b50d200dcfdf20c0f4edabba3634c8d146408e2888a0fc33d9de60a6142e7",
+        "assets/weather/cloud_kernel.json": "3f95f6aa02e49cc945556e1bd333e496cfbe22cd74a3c076cf5edbf2102f8871",
+        "assets/weather/cloud_kernel_lod0.rg8": "33666444de40986777793bcfe8bfa4ae4a4e63e67c16ec542f00356ffde07129",
+        "assets/weather/cloud_kernel_lod1.rg8": "71fa99399d67767992ba3f06c1c32db6fad4c5f3aacac54c678d6113828e0a74",
+        "assets/weather/cloud_kernel_lod2.rg8": "3663479a0a2287686beb8bcc43088c77840932e5f2978bcf2a6583735aa6c970",
+        "assets/weather/cloud_kernel_lod3.rg8": "0c1f6f38c461b6bfa19ad7a358cf793803a467162b1b89ce5ad033c6d8ee5407"
+      },
+      "sun_rotation_degrees": [
+        -48,
+        -32,
+        0
+      ],
+      "height_contract": "get_display_altitude returns already-displayed TOP = bottom + 38; no additional Y12 transform",
+      "controls": {
+        "diagnostic_off": "--clouds-disabled",
+        "explicit_on": "--clouds-enabled"
+      }
     }
   },
   "forest_rendering": {
@@ -42,6 +65,26 @@
       "cells": 3116,
       "records": 176609,
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
+    },
+    "streaming_layout": {
+      "path": "artifacts/render-data/forest-layout-sourcev2-v19-complete-r5-source-root",
+      "manifest_sha256": "ab254ac7bea036a6d5310e1d91d24a6295b0059c717abd645bf7459b63f246ff",
+      "format": "v19-layout64-le-r1",
+      "producer_contract": "v19-layout-source-binding-v3",
+      "record_source": "identical complete-r3 canonical source/G/veto"
     }
+  },
+  "terrain_streaming": {
+    "revision": "terrain-block-stream-r3-conforming",
+    "path": "artifacts/render-data/terrain-blocks-source-v2-r3/tree.json",
+    "sha256": "6d02637c243c33fd3365a0ac01f5703b291b550f8736af79dbff4ed84831fdcd",
+    "cpu_cache_bytes": 134217728,
+    "gpu_cache_bytes": 201326592,
+    "upload_start_budget_usec": 2000,
+    "upload_max_bytes": 8388608
+  },
+  "clipmap": {
+    "enabled": true,
+    "path": "artifacts/render-data/clipmap-tiles-r3/manifest.json"
   }
 }

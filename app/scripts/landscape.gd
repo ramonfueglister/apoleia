@@ -24,6 +24,11 @@ var surface_material_bytes: PackedByteArray
 var surface_weight_domains: Array=[]
 var tin_surface: RefCounted
 var feature_lod: RefCounted
+const TerrainRuntime=preload("res://scripts/terrain/terrain_runtime.gd")
+var terrain_rivers:RefCounted
+var terrain_forest:RefCounted
+var terrain_streaming:RefCounted
+var terrain_streaming_bootstrap=false
 var fixed_surface: RefCounted
 var canonical_v2: RefCounted
 var canonical_v2_textures: Dictionary={}
@@ -174,6 +179,11 @@ var river_cache_events: Array=[]
 var river_support_revision=0
 var previous_forest_key = ""
 var tree_count = 0
+var pipeline_preparation:RefCounted
+var landscape_environment:Environment
+var environment_api:Script
+var clipmap_runtime:RefCounted
+var tile_forest:RefCounted
 var warmup_frames_remaining=4
 var warmup_completed_frame=-1
 var warmup_startup_pipeline_counts: Dictionary={}
@@ -277,6 +287,7 @@ func _ready() -> void:
         if "PIPELINE_COMPILATIONS" in constant: pipeline_monitors[constant]=ClassDB.class_get_integer_constant("Performance",constant)
     var args = OS.get_cmdline_user_args()
     for i in range(args.size()):
+        if args[i] == "--source-root" and i+1<args.size(): source_root=String(args[i+1]).simplify_path()
         if args[i] == "--tour": tour = true
         if args[i] == "--clouds-disabled": clouds_override=false
         if args[i] == "--clouds-enabled": clouds_override=true
@@ -312,6 +323,13 @@ func _ready() -> void:
     if not _load_dataset():
         get_tree().quit(2)
         return
+    if terrain_streaming:
+        var root_started=Time.get_ticks_msec()
+        while terrain_streaming.root_record().is_empty():
+            if not terrain_streaming.stream.failures.is_empty() or Time.get_ticks_msec()-root_started>30000:
+                push_error("Terrain root load failed: "+str(terrain_streaming.stream.failures));get_tree().quit(2);return
+            await get_tree().process_frame
+        if not _bootstrap_terrain_stream():get_tree().quit(2);return
     var anchor_path=source_root.path_join("data/anchors.json")
     if FileAccess.file_exists(anchor_path):
         var anchor_data=JSON.parse_string(FileAccess.get_file_as_string(anchor_path))
@@ -328,8 +346,16 @@ func _ready() -> void:
         ridge_definitions.append({"id":probe_anchor[0],"longitude":probe_anchor[1],"latitude":probe_anchor[2],"source":"explicit independent probe; original protected anchors retained","plan_sha256":FileAccess.get_sha256(probe_plan) if probe_plan!="" else ""})
     profile_sha256=FileAccess.get_sha256(source_root.path_join("docs/product-renderer/camera-profile.json"))
     _setup_scene()
-    _configure_forest_mesh_cache()
-    _configure_forest_async()
+    if not terrain_streaming:
+        _configure_forest_mesh_cache()
+        _configure_forest_async()
+    else:
+        if not _configure_stream_forest():get_tree().quit(2);return
+    var clipmap_path=source_root.path_join(str(product_binding.get("clipmap",{}).get("path","artifacts/render-data/clipmap-tiles-r1/manifest.json")))
+    if FileAccess.file_exists(clipmap_path):
+        tile_forest=load("res://scripts/clipmap/tile_forest.gd").new();tile_forest.configure(forest_layout,forest_compact_templates,canopy_material)
+        clipmap_runtime=load("res://scripts/clipmap/clipmap_terrain.gd").new()
+        if not clipmap_runtime.configure(clipmap_path,self,terrain_material,marine_material,tile_forest):clipmap_runtime=null
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
@@ -344,10 +370,10 @@ func _ready() -> void:
     _resize_camera_contract()
     if start_view.size()==3:
         target=geographic_to_world(start_view[0],start_view[1])
-        zoom=clampf(start_view[2],0.0,1.0)
+        zoom=CameraRig.zoom_from_legacy(float(start_view[2]),far_width,near_width)
         target_zoom=zoom
     if start_width_source_m>0:
-        zoom=clampf(log(far_width/(start_width_source_m*MODEL_SCALE))/log(far_width/near_width),0.0,1.0)
+        zoom=CameraRig.zoom_for_width(start_width_source_m*MODEL_SCALE,far_width,near_width)
         target_zoom=zoom
     tour_center = geographic_to_world(8.9916666667,46.0083333333)
     tour_secondary = geographic_to_world(-3.5, 54.0)
@@ -355,7 +381,11 @@ func _ready() -> void:
     print(JSON.stringify({"event":"runtime_started","engine":Engine.get_version_info(),"dataset_revision":manifest.get("dataset_revision","unknown"),"gpu":RenderingServer.get_video_adapter_name(),"gpu_capabilities":gpu_capabilities,"rendering_method":RenderingServer.get_current_rendering_method(),"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"world_size": [world_size.x,world_size.y]}))
     _update_camera()
     _update_lod()
-    _prepare_pipeline_warmup()
+    if not terrain_streaming:_prepare_pipeline_warmup()
+    else:warmup_frames_remaining=0
+    if terrain_streaming and not clipmap_runtime:
+        pipeline_preparation=load("res://scripts/terrain/terrain_pipeline_preparation.gd").new()
+        pipeline_preparation.begin(self)
     start_usec=Time.get_ticks_usec()-int((tour_window[0] if not tour_window.is_empty() else 0.0)*1000000.0)
 
 func _read_relative(path: String, required: bool=true) -> PackedByteArray:
@@ -428,6 +458,10 @@ func _load_dataset() -> bool:
     world_center=world_min+world_size*0.5
     target=world_center
     if manifest.get("required_sampling_contract","")=="canonical-c2-domains-v2":
+        if product_binding.has("terrain_streaming"):
+            var cfg:Dictionary=product_binding.terrain_streaming
+            terrain_streaming=TerrainRuntime.new()
+            return terrain_streaming.configure(source_root.path_join(cfg.path),snapshot_manifest_sha256,cfg.sha256,source_root)
         return _load_v2_domains() and _load_fixed_display_world()
     elevations = _read_relative(manifest.get("height_path","height.f32")).to_float32_array()
     covers = _read_relative(manifest.get("class_path","landcover.u8"))
@@ -703,6 +737,7 @@ func _setup_scene() -> void:
         FOREST_CHUNK=forest_spacing_m*MODEL_SCALE*FOREST_CELLS
     var env=WorldEnvironment.new()
     var environment=Environment.new()
+    landscape_environment=environment
     environment.background_mode=Environment.BG_COLOR
     environment.background_color=Color("163c50")
     environment.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR
@@ -721,6 +756,9 @@ func _setup_scene() -> void:
     sun.shadow_bias=0.03
     sun.shadow_normal_bias=0.2
     if style_api: style_api.configure_environment(environment,sun)
+    if ResourceLoader.exists("res://scripts/style/landscape_environment.gd"):
+        environment_api=load("res://scripts/style/landscape_environment.gd")
+        environment_api.configure(environment,sun)
     add_child(sun)
     camera.projection=Camera3D.PROJECTION_ORTHOGONAL
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
@@ -733,30 +771,35 @@ func _setup_scene() -> void:
     cloud_layer.enabled=clouds_enabled
     terrain_material=ShaderMaterial.new()
     terrain_material.shader=load("res://shaders/terrain.gdshader")
-    terrain_material.set_shader_parameter("elevation_tex",_height_texture())
-    terrain_material.set_shader_parameter("height_packed",not context_height_packed.is_empty() or (not model_product and not packing_manifest.is_empty()))
-    terrain_material.set_shader_parameter("detail_world_min",detail_rect.position)
-    terrain_material.set_shader_parameter("detail_world_size",detail_rect.size)
-    if model_product and (not native_elevation_bytes.is_empty() or not detail_height_packed.is_empty()):
-        terrain_material.set_shader_parameter("use_detail_elevation",true)
-        terrain_material.set_shader_parameter("detail_elevation_tex",_detail_height_texture())
-        terrain_material.set_shader_parameter("detail_height_packed",not detail_height_packed.is_empty() or not packing_manifest.is_empty())
+    if terrain_streaming:
+        terrain_streaming.bind_pages(terrain_material,terrain_streaming.root_record())
+        if style_api:
+            for key in style_api.terrain_parameters():terrain_material.set_shader_parameter(key,style_api.terrain_parameters()[key])
+    else:
+        terrain_material.set_shader_parameter("elevation_tex",_height_texture())
+        terrain_material.set_shader_parameter("height_packed",not context_height_packed.is_empty() or (not model_product and not packing_manifest.is_empty()))
         terrain_material.set_shader_parameter("detail_world_min",detail_rect.position)
         terrain_material.set_shader_parameter("detail_world_size",detail_rect.size)
-    if not detail_water_bytes.is_empty():
-        terrain_material.set_shader_parameter("detail_water_tex",ImageTexture.create_from_image(Image.create_from_data(detail_water_width,detail_water_height,false,Image.FORMAT_R8,detail_water_bytes)))
-        terrain_material.set_shader_parameter("use_detail_water",true)
-    if style_api:
-        for key in style_api.terrain_parameters(): terrain_material.set_shader_parameter(key,style_api.terrain_parameters()[key])
-    _bind_surface_weights(terrain_material)
-    terrain_material.set_shader_parameter("mapped_cover_tex",_make_cover_texture())
-    terrain_material.set_shader_parameter("water_tex",ImageTexture.create_from_image(Image.create_from_data(water_width,water_height,false,Image.FORMAT_R8,render_waters)))
-    terrain_material.set_shader_parameter("water_distance_tex",_water_distance_texture())
-    _bind_local_water_tile(terrain_material)
-    terrain_material.set_shader_parameter("world_size",world_size)
-    terrain_material.set_shader_parameter("world_min",world_min)
-    terrain_material.set_shader_parameter("north_lat",float(bounds[3]))
-    terrain_material.set_shader_parameter("south_lat",float(bounds[1]))
+        if model_product and (not native_elevation_bytes.is_empty() or not detail_height_packed.is_empty()):
+            terrain_material.set_shader_parameter("use_detail_elevation",true)
+            terrain_material.set_shader_parameter("detail_elevation_tex",_detail_height_texture())
+            terrain_material.set_shader_parameter("detail_height_packed",not detail_height_packed.is_empty() or not packing_manifest.is_empty())
+            terrain_material.set_shader_parameter("detail_world_min",detail_rect.position)
+            terrain_material.set_shader_parameter("detail_world_size",detail_rect.size)
+        if not detail_water_bytes.is_empty():
+            terrain_material.set_shader_parameter("detail_water_tex",ImageTexture.create_from_image(Image.create_from_data(detail_water_width,detail_water_height,false,Image.FORMAT_R8,detail_water_bytes)))
+            terrain_material.set_shader_parameter("use_detail_water",true)
+        if style_api:
+            for key in style_api.terrain_parameters(): terrain_material.set_shader_parameter(key,style_api.terrain_parameters()[key])
+        _bind_surface_weights(terrain_material)
+        terrain_material.set_shader_parameter("mapped_cover_tex",_make_cover_texture())
+        terrain_material.set_shader_parameter("water_tex",ImageTexture.create_from_image(Image.create_from_data(water_width,water_height,false,Image.FORMAT_R8,render_waters)))
+        terrain_material.set_shader_parameter("water_distance_tex",_water_distance_texture())
+        _bind_local_water_tile(terrain_material)
+        terrain_material.set_shader_parameter("world_size",world_size)
+        terrain_material.set_shader_parameter("world_min",world_min)
+        terrain_material.set_shader_parameter("north_lat",float(bounds[3]))
+        terrain_material.set_shader_parameter("south_lat",float(bounds[1]))
     patch_mesh=_make_patch_mesh()
     add_child(forest)
     tree_material=ShaderMaterial.new()
@@ -777,15 +820,17 @@ func _setup_scene() -> void:
             renderer.material_override=tree_material
             add_child(renderer)
             forest_families.append(renderer)
-    if manifest.has("feature_mesh_manifest_path"):
+    if not terrain_streaming and manifest.has("feature_mesh_manifest_path"):
         tin_surface=load("res://scripts/gameworld_mesh.gd").new()
         tin_surface.configure(source_root,dataset_directory,manifest.feature_mesh_manifest_path,self,terrain_material,Callable(self,"_water_kind"))
-    if model_product and manifest.has("feature_mesh_manifest_path"):
+    if not terrain_streaming and model_product and manifest.has("feature_mesh_manifest_path"):
         feature_lod=preload("res://scripts/landscape_feature_lod.gd").new()
         feature_lod.configure(source_root,dataset_directory.path_join(manifest.feature_mesh_manifest_path),world_size)
         feature_material=terrain_material.duplicate()
         feature_material.set_shader_parameter("use_model_mesh",true)
-    if fixed_surface: _setup_fixed_surface()
+    if terrain_streaming:
+        terrain_streaming.attach(self,terrain_material)
+    elif fixed_surface: _setup_fixed_surface()
     _setup_rivers()
 
 func _setup_fixed_surface() -> void:
@@ -811,6 +856,7 @@ func _setup_fixed_surface() -> void:
     var plane=ArrayMesh.new();plane.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,plane_arrays)
     fixed_flat_node=MeshInstance3D.new();fixed_flat_node.mesh=plane;fixed_flat_node.material_override=feature_material;fixed_flat_node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(fixed_flat_node)
     marine_material=feature_material.duplicate();marine_material.set_shader_parameter("marine_surface_only",true)
+    if ResourceLoader.exists("res://shaders/water.gdshader"):marine_material.shader=load("res://shaders/water.gdshader")
     var marine=MeshInstance3D.new();marine.name="MarineZeroSurface";marine.mesh=plane;marine.material_override=marine_material;marine.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(marine)
     _bind_display_coast_distance()
 
@@ -939,6 +985,7 @@ func _fixed_chunk_inventory() -> Array:
     return result
 
 func _snapshot_ready() -> bool:
+    if pipeline_preparation and not pipeline_preparation.released:return false
     var ready=frame_number>=30 and feature_queue.is_empty() and feature_task<0 and river_queue.is_empty() and diorama_queue.is_empty() and forest_queue.is_empty() and forest_detail_queue.is_empty() and _forest_async_idle()
     for chunk in diorama_chunks.values():
         if elapsed-float(chunk.created)<.35:ready=false;break
@@ -1000,6 +1047,28 @@ func _collect_patches(origin: Vector2, size: Vector2, depth: int, key: String, r
         result[key]=Vector4(origin.x,origin.y,size.x,size.y)
 
 func _update_lod() -> void:
+    if clipmap_runtime:
+        clipmap_runtime.update(target,view_width,relief,display_height_scale,get_process_delta_time())
+        for entry in terrain_streaming.nodes.values():
+            entry.node.visible=not clipmap_runtime.metrics.root_ready;entry.marine.visible=not clipmap_runtime.metrics.root_ready
+        if frame_number%60==0:print("CLIPMAP "+JSON.stringify(clipmap_runtime.stats()))
+        return
+    if terrain_streaming:
+        terrain_streaming.update(camera_footprint,display_height_scale*relief*cos(deg_to_rad(elevation_degrees))*viewport_size.x/maxf(view_width,1.),viewport_size.x/maxf(view_width,1.),get_process_delta_time(),fixed_surface)
+        if terrain_forest and terrain_streaming.surface:
+            if terrain_streaming._task<0 and not terrain_streaming._candidate:
+                if terrain_forest.prepare(terrain_streaming.surface,camera_footprint,relief):terrain_forest.activate()
+                if terrain_rivers.prepare(terrain_streaming.surface,camera_footprint,view_width/maxf(viewport_size.x,1.)):terrain_rivers.activate()
+            terrain_forest.update(terrain_streaming.surface.morph_alpha,relief,display_height_scale)
+        if terrain_rivers and terrain_streaming.surface:terrain_rivers.update(terrain_streaming.surface.morph_alpha,relief,display_height_scale,view_width,viewport_size.x,elevation_degrees)
+        previous_lod_key="stream:"+terrain_streaming.geometry_key
+        for entry in terrain_streaming.nodes.values():
+            for node in [entry.node,entry.marine]:
+                node.material_override.set_shader_parameter("relief",relief)
+                node.material_override.set_shader_parameter("display_height_scale",display_height_scale)
+                node.material_override.set_shader_parameter("view_width",view_width)
+                node.material_override.set_shader_parameter("viewport_width",viewport_size.x)
+        return
     if fixed_surface:
         _update_fixed_surface_lod()
         return
@@ -1103,6 +1172,11 @@ func _build_feature_lod_async(rect: Rect2) -> void:
     feature_build_result=feature_lod.build(rect,Callable(self,"_height"),Callable(self,"_water_kind"))
 
 func _exit_tree() -> void:
+    if clipmap_runtime:clipmap_runtime.shutdown()
+    if terrain_forest:terrain_forest.shutdown()
+    if terrain_rivers:terrain_rivers.shutdown()
+    if pipeline_preparation:pipeline_preparation.shutdown()
+    if terrain_streaming:terrain_streaming.shutdown()
     if feature_task>=0:
         WorkerThreadPool.wait_for_task_completion(feature_task)
         feature_task=-1
@@ -1116,7 +1190,7 @@ func _resize_camera_contract() -> void:
     far_width=maxf(core_rect.size.x,core_rect.size.y*viewport_size.aspect())*1.04
     if overview: zoom=0.0;target_zoom=0.0;target=core_rect.get_center()
     elif previous_width>0:
-        var next_zoom=clampf(log(far_width/previous_width)/log(far_width/near_width),0.0,1.0)
+        var next_zoom=CameraRig.zoom_for_width(previous_width,far_width,near_width)
         target_zoom=clampf(target_zoom+next_zoom-zoom,0.0,1.0)
         zoom=next_zoom
     zoom_anchor_valid=false
@@ -1222,7 +1296,7 @@ func _place_camera() -> void:
 
 func _update_camera() -> void:
     if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
-    view_width=exp(lerpf(log(far_width),log(near_width),zoom))
+    view_width=CameraRig.width_for_zoom(zoom,far_width,near_width)
     if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
     var profile=CameraRig.profile(view_width,far_width)
     elevation_degrees=profile.x
@@ -1254,6 +1328,7 @@ func _update_camera() -> void:
         feature_material.set_shader_parameter("viewport_width",viewport_size.x)
         feature_material.set_shader_parameter("shading_origin",target)
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
+    if environment_api:environment_api.update_view(landscape_environment,sun_light,view_width,camera_distance,relief)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
     if forest_compact_canopy_material:forest_compact_canopy_material.set_shader_parameter("relief",relief)
@@ -1299,6 +1374,8 @@ func _begin_zoom_anchor(pixel: Vector2) -> void:
     zoom_anchor_valid=true
 
 func _unhandled_input(event: InputEvent) -> void:
+    if not terrain_material or not is_instance_valid(camera) or viewport_size.x<=0:return
+    if pipeline_preparation and not pipeline_preparation.released:return
     if diagnose_input: _log_input_diagnostic(event,"unhandled_input",false)
     if tour or snapshot: return
     var movement=_pan_delta(event)
@@ -1308,7 +1385,7 @@ func _unhandled_input(event: InputEvent) -> void:
         if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and event.pressed:
             _begin_zoom_anchor(event.position)
             var direction=1.0 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -1.0
-            target_zoom=clampf(target_zoom+direction*log(1.18)*maxf(event.factor,0.01)/log(far_width/near_width),0,1)
+            target_zoom=CameraRig.zoom_after_factor(target_zoom,pow(1.18,direction*maxf(event.factor,0.01)),far_width,near_width)
         elif event.button_index<=MOUSE_BUTTON_MIDDLE:
             if event.pressed:
                 drag_anchor=_pick_ground(event.position)
@@ -1317,7 +1394,7 @@ func _unhandled_input(event: InputEvent) -> void:
             elif pan_down_mask==0: drag_anchor_valid=false
     if event is InputEventMagnifyGesture:
         _begin_zoom_anchor(event.position)
-        target_zoom=clampf(target_zoom+log(maxf(event.factor,0.001))/log(far_width/near_width),0,1)
+        target_zoom=CameraRig.zoom_after_factor(target_zoom,maxf(event.factor,0.001),far_width,near_width)
     if event is InputEventPanGesture:
         # Gesture displacement is interpreted in the same viewport pixel space
         # as a drag, through the same terrain intersection. No device factor.
@@ -1352,8 +1429,11 @@ func _process(delta: float) -> void:
     _update_camera()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE lod before ",frame_number)
     _update_lod()
+    if terrain_streaming and frame_number%30==0:
+        var stream_state=terrain_streaming.stats();stream_state["memory_static_bytes"]=OS.get_static_memory_usage();stream_state["source_arrays_bytes"]=context_height_packed.size()+detail_height_packed.size()+fixed_surface.bytes.size();stream_state["forest"]=terrain_forest.stats() if terrain_forest else {};stream_state["rivers"]=terrain_rivers.stats() if terrain_rivers else {};print("TERRAIN_STREAM "+JSON.stringify(stream_state))
+    if pipeline_preparation:pipeline_preparation.update()
     _update_feature_lod()
-    _update_river_surface()
+    if not terrain_streaming:_update_river_surface()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE lod after ",frame_number," patches ",patches.size())
     if zoom_anchor_valid and not tour:
         # Re-solve against the actual new LOD and relief, rather than a flat
@@ -1365,8 +1445,9 @@ func _process(delta: float) -> void:
             _update_lod()
         if absf(zoom-target_zoom)<0.0000001 and absf(zoom_velocity)<0.000001: zoom_anchor_valid=false
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE forest before ",frame_number)
-    _update_diorama_forest()
-    _update_forest()
+    if not terrain_streaming or forest_async:
+        _update_diorama_forest()
+        _update_forest()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE forest after ",frame_number," queue ",forest_queue.size()," wanted ",forest_wanted.size()," loaded ",forest_chunks.size()," cpu_ms ",forest_frame_stats[-1].cpu_ms if not forest_frame_stats.is_empty() else 0)
     _record_motion()
     if warmup_frames_remaining>0:
@@ -1375,7 +1456,7 @@ func _process(delta: float) -> void:
             warmup_completed_frame=frame_number
             warmup_startup_pipeline_counts=last_pipeline_counts.duplicate()
     if frame_number%6==0 or current_fixture_waypoint!=null: _record_sample(delta)
-    if capture_dir!="" and not snapshot and elapsed>=next_capture:
+    if capture_dir!="" and not snapshot and elapsed>=next_capture and not RenderingServer.frame_post_draw.is_connected(_capture_frame.bind(frame_number)):
         next_capture=elapsed+capture_interval
         RenderingServer.frame_post_draw.connect(_capture_frame.bind(frame_number),CONNECT_ONE_SHOT)
     if ((tour and elapsed>=(tour_window[1] if not tour_window.is_empty() else tour_duration)) or (snapshot and _snapshot_ready())) and not quitting:
@@ -1398,12 +1479,14 @@ func _drive_tour() -> void:
     else:
         var p=(t-0.76)/0.24
         zoom=0.52*(1.0-p); target=tour_secondary.lerp(world_center,smoothstep(0.0,1.0,p))
+    zoom=CameraRig.zoom_from_legacy(zoom,far_width,near_width)
 
 func _record_sample(delta: float) -> void:
     var geo=world_to_geographic(target)
     var anchors=_anchor_probes()
     var ridge_probes=_anchor_probes(ridge_definitions)
     var observation={"t_ms":elapsed*1000.0,"frame":frame_number,"anchor_probes":anchors,"render_timing":_render_timings(),"ridge_probes":ridge_probes,"view_state_id":current_fixture_state_id,"view_state":_observed_view_state(),"waypoint_id":_waypoint_id(),"profile_sha256":profile_sha256,"frame_ms":frame_wall_ms,"engine_delta_ms":delta*1000.0,"zoom":zoom,"center_lon":geo.x,"center_lat":geo.y,"elevation_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.y,camera.global_transform.basis.z.z)),"profile_elevation_degrees":elevation_degrees,"camera_basis":_basis_columns(),"camera_projection":_projection_columns(),"azimuth_degrees":rad_to_deg(atan2(camera.global_transform.basis.z.x,camera.global_transform.basis.z.z)),"relief_weight":relief,"display_height_scale":display_height_scale,"display_policy":landform_policy,"viewport":[get_viewport().size.x,get_viewport().size.y],"visible_width_model":view_width,"visible_width_source_m":view_width/MODEL_SCALE,"target_height_model":_render_height(target),"target_canonical_height_model":_height(target),"camera_position":[camera.position.x,camera.position.y,camera.position.z],"patch_count":patches.size(),"tree_count":tree_count,"mapping_revision":MAPPING_REVISION,"camera_revision":CAMERA_REVISION,"ground_footprint_model":[camera_footprint.position.x,camera_footprint.position.y,camera_footprint.end.x,camera_footprint.end.y],"context_insufficient":camera_context_insufficient,"dataset_revision":manifest.get("dataset_revision","unknown"),"memory_static_bytes":OS.get_static_memory_usage(),"render_draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"gpu_memory_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),"gpu_texture_memory_bytes":Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED),"gpu_buffer_memory_bytes":Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED),"canonical_tile_id":_tile_id(geo)}
+    if terrain_streaming:observation["terrain_streaming"]=terrain_streaming.stats()
     telemetry.append(observation)
     if current_fixture_waypoint!=null: waypoint_observations.append(observation)
     var window=int(floor(elapsed/2.0))
@@ -2214,11 +2297,15 @@ func _setup_rivers() -> void:
         var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
         var segments: Array=[]
         var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
+        var line_index=0
         for line in lines:
+            var station=0.
+            var polyline_id=str(river_feature_count)+":"+str(line_index);line_index+=1
             for j in range(line.size()-1):
                 var a=geographic_to_world(float(line[j][0]),float(line[j][1]))
                 var b=geographic_to_world(float(line[j+1][0]),float(line[j+1][1]))
-                segments.append([a,b,width])
+                if a==b:continue
+                segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
                 minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
         if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001)})
         river_feature_count+=1
@@ -2369,6 +2456,11 @@ func _triangle_height(p: Vector2, step: Vector2) -> float:
     return d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y)
 
 func _render_height(p: Vector2) -> float:
+    if clipmap_runtime and clipmap_runtime.metrics.root_ready:return clipmap_runtime.height_at(p)*relief*display_height_scale
+    if terrain_streaming:
+        var height=terrain_streaming.height_at(p)
+        if is_finite(height):return height*relief*display_height_scale
+        return fixed_surface.material_height(p)*relief*display_height_scale
     if fixed_surface:
         if _water_kind(p)==1 or (fixed_flat_node and fixed_flat_node.visible): return 0.0
         var cell=Vector2i(((p-fixed_surface.world_min)/fixed_surface.spacing/float(fixed_surface.CHUNK_CELLS)).floor())
@@ -2581,7 +2673,7 @@ func _drive_fixture() -> void:
         var state=fixture_states[wp.view_state_id]
         var control=_fixture_control(wp.view_state_id)
         target=geographic_to_world(control.longitude,control.latitude)
-        zoom=control.zoom_normalized
+        zoom=CameraRig.zoom_from_legacy(float(control.zoom_normalized),far_width,near_width)
         current_fixture_waypoint=wp.id
         current_fixture_state_id=wp.view_state_id
         next_fixture_waypoint+=1
@@ -2594,11 +2686,11 @@ func _drive_fixture() -> void:
             var sa=_fixture_control(a.view_state_id)
             var sb=_fixture_control(b.view_state_id)
             target=geographic_to_world(sa.longitude,sa.latitude).lerp(geographic_to_world(sb.longitude,sb.latitude),p)
-            zoom=lerpf(float(sa.zoom_normalized),float(sb.zoom_normalized),p)
+            zoom=CameraRig.zoom_from_legacy(lerpf(float(sa.zoom_normalized),float(sb.zoom_normalized),p),far_width,near_width)
             return
     var last=_fixture_control(path[-1].view_state_id)
     target=geographic_to_world(last.longitude,last.latitude)
-    zoom=float(last.zoom_normalized)
+    zoom=CameraRig.zoom_from_legacy(float(last.zoom_normalized),far_width,near_width)
 
 func _observed_view_state() -> Dictionary:
     var geo=world_to_geographic(target)
@@ -2691,3 +2783,46 @@ func _log_input_diagnostic(event: InputEvent,phase: String,update_tracker: bool)
     if event is InputEventPanGesture: row["delta"]=[event.delta.x,event.delta.y]
     if event is InputEventMagnifyGesture: row["factor"]=event.factor
     input_diagnostic_events.append(row)
+
+func _bootstrap_terrain_stream()->bool:
+    canonical_v2=load("res://scripts/terrain/terrain_source_sampler.gd").new()
+    if not canonical_v2.configure_stream(terrain_streaming.stream):return false
+    fixed_surface=load("res://scripts/terrain/terrain_atlas_sampler.gd").new()
+    if not fixed_surface.configure_stream(terrain_streaming.stream,Callable(terrain_streaming,"height_at")):return false
+    upload_manifest=canonical_v2.manifest
+    var field:Dictionary=canonical_v2.field("context","height")
+    world_min=Vector2(field.semantic_world_min[0],field.semantic_world_min[1]);world_size=Vector2(field.semantic_world_size[0],field.semantic_world_size[1])
+    var fine:Dictionary=canonical_v2.field("fine","height")
+    detail_rect=Rect2(Vector2(fine.semantic_world_min[0],fine.semantic_world_min[1]),Vector2(fine.semantic_world_size[0],fine.semantic_world_size[1]))
+    water_distance_manifest=JSON.parse_string(FileAccess.get_file_as_string(dataset_directory.path_join(manifest.water_distance_manifest_path)))
+    water_distance_manifest_sha256=FileAccess.get_sha256(dataset_directory.path_join(manifest.water_distance_manifest_path))
+    terrain_streaming_bootstrap=true
+    return true
+
+func _configure_stream_forest()->bool:
+    forest_representation_format="compact"
+    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays())
+    var expected=load("res://scripts/cache/forest_layout_source_contract.gd").binding({"surface":fixed_surface,"style":style_api,"policy":diorama_policy,"templates":forest_compact_templates,"world_min":world_min,"world_size":world_size,"display_height_scale":display_height_scale,"source_manifest_sha256":snapshot_manifest_sha256,"projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),"canonical_surface_identity":fixed_surface.identity,"source_root":source_root})
+    var cfg:Dictionary=product_binding.forest_rendering.streaming_layout
+    var reader=FixedForestLayout.new()
+    if expected.is_empty() or not reader.configure(source_root.path_join(cfg.path),expected,false,cfg.manifest_sha256):
+        push_error("Streaming source layout rejected: "+reader.last_error);return false
+    forest_layout=reader;forest_layout_state={"enabled":true,"manifest_sha256":reader.manifest_sha256,"binding_sha256":reader.identity_sha256,"coverage":reader.coverage,"ground":"current F32 morph triangle endpoints; source records unchanged"}
+    terrain_forest=load("res://scripts/terrain/terrain_forest.gd").new();terrain_forest.configure(self,reader,forest_compact_templates,canopy_material)
+    terrain_rivers=load("res://scripts/terrain/terrain_rivers.gd").new();terrain_rivers.configure(self,terrain_streaming,river_sources,river_sources_sha256)
+    return true
+func _terrain_candidate_ready(candidate:RefCounted,_selection:Dictionary)->bool:
+    if not terrain_forest:return true
+    var forest_ready=terrain_forest.prepare(candidate,camera_footprint,relief)
+    var river_ready=terrain_rivers.prepare(candidate,camera_footprint,view_width/maxf(viewport_size.x,1.)) if terrain_rivers else true
+    return forest_ready and river_ready
+func _terrain_candidate_activate()->void:
+    if terrain_forest:terrain_forest.activate()
+    if terrain_rivers:terrain_rivers.activate()
+
+func _terrain_consumer_pins()->Array:
+    var ids=terrain_forest.pinned_ids() if terrain_forest else []
+    if terrain_rivers:
+        for id in terrain_rivers.pinned_ids():
+            if not ids.has(id):ids.append(id)
+    return ids

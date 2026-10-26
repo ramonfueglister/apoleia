@@ -1,7 +1,7 @@
 {
-  "schema_version": "landscape-camera-profile-v4",
+  "schema_version": "landscape-camera-profile-v5",
   "mapping_revision": "mapping-v1",
-  "camera_revision": "orthographic-diorama-display-v4",
+  "camera_revision": "orthographic-diorama-display-v5-near-framing",
   "projection": {
     "kind": "spherical_equirectangular",
     "radius_m": 6371008.8,
@@ -21,14 +21,14 @@
     "azimuth_degrees": 0.0,
     "far_elevation_degrees": 90.0,
     "near_elevation_degrees": 35.2643897,
-    "near_visible_width_source_m": 240000.0,
-    "near_width_status": "V11 fixed-diorama framing candidate; keeps same5.8\u20138.6model-unit crown forms. Replaces obsolete500m working value; visual near acceptance pending.",
+    "near_visible_width_source_m": 120000.0,
+    "near_width_status": "Additional own provisional120km near range for house/crown legibility; existing240km reference framing retained as an interior anchor. At1440px viewport, observed40km crowns roughly90\u2013130px imply30\u201343px at120km. These exceed typical primary-panel crown fractions: no exact reference pixel match, physical size parity or A07 acceptance is claimed.",
     "far_visible_width": "max(core_width,core_height*viewport_aspect)*1.04",
     "zoom_range": [
       0.0,
       1.0
     ],
-    "visible_width": "exp(lerp(log(far_visible_width),log(240.0),zoom))",
+    "visible_width": "CameraRig.width_for_zoom(zoom,far_width,near_width); exp(lerp(log(far_visible_width),log(120.0),zoom))",
     "profile_knots": [
       {
         "width_model": "viewport-dependent overview far_width",
@@ -41,7 +41,7 @@
         "relief": 1.0
       },
       {
-        "width_source_m": 240000.0,
+        "width_source_m": 120000.0,
         "elevation": 35.2643897,
         "relief": 1.0
       }
@@ -50,7 +50,7 @@
     "target_height": "actual current rendered terrain triangle including LOD and relief",
     "input": {
       "wheel_factor_per_notch": 1.18,
-      "magnify": "continuous log(factor)",
+      "magnify": "CameraRig.zoom_after_factor; continuous logarithmic width ratio",
       "damping": "exact critically damped solution omega=18.9755/sec,95% at250ms",
       "anchor": "terrain-ray intersection, preserved each damping frame after pitch/relief/LOD updates",
       "drag": "same picked ground point follows viewport pointer; no release inertia",
@@ -86,7 +86,9 @@
         524
       ],
       "status": "geographic approximation with separate unvalidated visible-landform calibration candidate; canonical coordinates unchanged"
-    }
+    },
+    "legacy_zoom_migration": "Existing v4 --view, fixture and tour normalized coordinates must map through CameraRig.zoom_from_legacy using the240.0 legacy endpoint; their physical model widths and pitch stay unchanged. Explicit --width-source-m maps through zoom_for_width. Current interactive normalized zoom0..1 reaches120.0.",
+    "reference_near_anchor_source_m": 240000.0
   },
   "terrain": {
     "height_sampling": "fixed RG8 displayed-world grid, first-to-last vertex extent, f.x+f.y<1 triangular interpolation;4namedanchorcells use identical four-edge star triangles in CPU and rendered mesh",
@@ -134,8 +136,8 @@
   },
   "objects": {
     "forest_world": "same fixed source root positions/seeds/heights and single crown asset through zoom; all drawable source crowns, no lower envelope body; graphic rock priority remains fixed",
-    "near_framing_candidate_source_m": 240000,
-    "status": "V16 product variant chosen after V15 near A/B; middle/far validation pending, A07 open",
+    "near_framing_candidate_source_m": 120000,
+    "status": "Own provisional120km framing; fixed crown geometry retained. Legacy reference view widths preserved through normalized zoom migration; A07 open.",
     "forest_geometry_mode": "all_source_crowns"
   },
   "source_sampling": {
