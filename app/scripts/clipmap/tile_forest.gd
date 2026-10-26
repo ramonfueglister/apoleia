@@ -102,7 +102,7 @@ func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
         var tile_span=float(manifest.base_span)*span
         var origin=Vector2(manifest.origin[0],manifest.origin[1])+Vector2(int(id.get_slice("/",1)),int(id.get_slice("/",2)))*tile_span
         var corners=_settled_corners(images,origin,tile_span)
-        for bucket in payload.buckets:bucket["ground"]=_instance_ground(bucket.transforms,corners,origin,tile_span)
+        for bucket in payload.buckets:bucket["buffer"]=_custom_buffer(bucket.transforms,_instance_ground(bucket.transforms,corners,origin,tile_span))
     return payload
 ## Settled source surface on the 65-grid (clipmap_surface_vertex with ring
 ## weight 1): 0 on marine water, else the bilinear source height in metres.
@@ -182,13 +182,16 @@ func _shadow_copy(parent:Node3D,node:MultiMeshInstance3D,variant:int)->MultiMesh
         if node.has_meta(key):copy.set_meta(key,node.get_meta(key))
     copy.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
     parent.add_child(copy);return copy
-## Re-packs the instance buffer as transform+custom so INSTANCE_CUSTOM.r
-## carries the precomputed ground and .a marks it valid (canopy.gdshader).
-func _attach_ground(multimesh:MultiMesh,bucket:Dictionary)->void:
-    if not bucket.has("ground"):return
-    var ground:PackedFloat32Array=bucket.ground;var source:PackedFloat32Array=bucket.transforms
-    var count=multimesh.instance_count;var buffer=PackedFloat32Array();buffer.resize(count*16)
+## Instance buffer as transform+custom, packed on the IO worker:
+## INSTANCE_CUSTOM.r carries the precomputed ground and .a marks it valid
+## (canopy.gdshader). The main thread only hands the buffer over.
+static func _custom_buffer(source:PackedFloat32Array,ground:PackedFloat32Array)->PackedFloat32Array:
+    var count=ground.size();var buffer=PackedFloat32Array();buffer.resize(count*16)
     for i in range(count):
         for k in range(12):buffer[i*16+k]=source[i*12+k]
         buffer[i*16+12]=ground[i];buffer[i*16+15]=1.
-    multimesh.instance_count=0;multimesh.use_custom_data=true;multimesh.instance_count=count;multimesh.buffer=buffer
+    return buffer
+func _attach_ground(multimesh:MultiMesh,bucket:Dictionary)->void:
+    if not bucket.has("buffer"):return
+    var count=multimesh.instance_count
+    multimesh.instance_count=0;multimesh.use_custom_data=true;multimesh.instance_count=count;multimesh.buffer=bucket.buffer
