@@ -1,0 +1,236 @@
+{
+  "metric": "projection_scale_error_ratio",
+  "method": "Analytic infinitesimal principal scales on same sphere R6371008.8; spherical model is separately different from WGS84 ellipsoid.",
+  "samples": [
+    {
+      "latitude": 21.0,
+      "east_west_scale": 0.808403388505526,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.19159661149447405
+    },
+    {
+      "latitude": 22.0,
+      "east_west_scale": 0.8139805029018744,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.1860194970981256
+    },
+    {
+      "latitude": 23.0,
+      "east_west_scale": 0.8198865844022033,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.1801134155977967
+    },
+    {
+      "latitude": 24.0,
+      "east_west_scale": 0.8261324862479159,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.1738675137520841
+    },
+    {
+      "latitude": 25.0,
+      "east_west_scale": 0.832729886047258,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.16727011395274205
+    },
+    {
+      "latitude": 26.0,
+      "east_west_scale": 0.8396913434510713,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.16030865654892867
+    },
+    {
+      "latitude": 27.0,
+      "east_west_scale": 0.8470303636780315,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.15296963632196847
+    },
+    {
+      "latitude": 28.0,
+      "east_west_scale": 0.8547614675284083,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.14523853247159169
+    },
+    {
+      "latitude": 29.0,
+      "east_west_scale": 0.8629002686106721,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.13709973138932785
+    },
+    {
+      "latitude": 30.0,
+      "east_west_scale": 0.8714635586032137,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.12853644139678633
+    },
+    {
+      "latitude": 31.0,
+      "east_west_scale": 0.8804694014862484,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.11953059851375158
+    },
+    {
+      "latitude": 32.0,
+      "east_west_scale": 0.8899372378091663,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.11006276219083366
+    },
+    {
+      "latitude": 33.0,
+      "east_west_scale": 0.8998880002092601,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.10011199979073993
+    },
+    {
+      "latitude": 34.0,
+      "east_west_scale": 0.9103442415725556,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.08965575842744444
+    },
+    {
+      "latitude": 35.0,
+      "east_west_scale": 0.9213302774307857,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.07866972256921434
+    },
+    {
+      "latitude": 36.0,
+      "east_west_scale": 0.932872344425677,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.06712765557432299
+    },
+    {
+      "latitude": 37.0,
+      "east_west_scale": 0.9449987769490494,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.055001223050950565
+    },
+    {
+      "latitude": 38.0,
+      "east_west_scale": 0.9577402043924774,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.04225979560752258
+    },
+    {
+      "latitude": 39.0,
+      "east_west_scale": 0.9711297718228686,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.028870228177131363
+    },
+    {
+      "latitude": 40.0,
+      "east_west_scale": 0.9852033873517108,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.014796612648289242
+    },
+    {
+      "latitude": 41.0,
+      "east_west_scale": 1.0,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.0
+    },
+    {
+      "latitude": 42.0,
+      "east_west_scale": 1.015561912495251,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.015561912495251073
+    },
+    {
+      "latitude": 43.0,
+      "east_west_scale": 1.0319351341927896,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.031935134192789594
+    },
+    {
+      "latitude": 44.0,
+      "east_west_scale": 1.0491697802171789,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.04916978021717888
+    },
+    {
+      "latitude": 45.0,
+      "east_west_scale": 1.0673205240039494,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.06732052400394939
+    },
+    {
+      "latitude": 46.0,
+      "east_west_scale": 1.0864471117278782,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.08644711172787822
+    },
+    {
+      "latitude": 47.0,
+      "east_west_scale": 1.1066149486834693,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.10661494868346932
+    },
+    {
+      "latitude": 48.0,
+      "east_west_scale": 1.1278957696010954,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.1278957696010954
+    },
+    {
+      "latitude": 49.0,
+      "east_west_scale": 1.1503684072210096,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.15036840722100964
+    },
+    {
+      "latitude": 50.0,
+      "east_west_scale": 1.1741196763123862,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.17411967631238623
+    },
+    {
+      "latitude": 51.0,
+      "east_west_scale": 1.1992453938505938,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.1992453938505938
+    },
+    {
+      "latitude": 52.0,
+      "east_west_scale": 1.2258515604270404,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.22585156042704035
+    },
+    {
+      "latitude": 53.0,
+      "east_west_scale": 1.254055733387857,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.25405573338785703
+    },
+    {
+      "latitude": 54.0,
+      "east_west_scale": 1.2839886289750595,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.2839886289750595
+    },
+    {
+      "latitude": 55.0,
+      "east_west_scale": 1.315795999263936,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.3157959992639361
+    },
+    {
+      "latitude": 56.0,
+      "east_west_scale": 1.3496408404658042,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.34964084046580424
+    },
+    {
+      "latitude": 57.0,
+      "east_west_scale": 1.3857060028794097,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.3857060028794097
+    },
+    {
+      "latitude": 58.0,
+      "east_west_scale": 1.4241972903454256,
+      "north_south_scale": 1,
+      "projection_scale_error_ratio": 0.42419729034542564
+    }
+  ],
+  "sample_max": 0.42419729034542564,
+  "note": "No false equal-distance/equal-area claim."
+}

@@ -1,0 +1,17 @@
+{
+  "revision":"vector-water-distance-v1",
+  "source_geometry":"unmodified data/derived/land.geojson and lakes.geojson, exact straight source boundary segments",
+  "source_sign":"unmodified water-detail.u8 nearest pixel-centre class0 land, class1 ocean, class2 inland",
+  "projection":"mapping-v1, projected metres, source radius6371008.8m, standard parallel41deg",
+  "grid":[8192,6144],
+  "exclude":"artificial clipping segments lying exactly on the region rectangle boundary",
+  "distance":"Euclidean nearest source boundary segment in projected metres at canonical pixel centres, computed in float64 within3000m narrow band; outside band distance capped",
+  "encoding":"UInt8 UNORM, projected_distance_m = code/255*6000-3000; positive water, negative land",
+  "quantization_budget_projected_m":12.0,
+  "distance_computation_budget_projected_m":0.01,
+  "zero_isoline_source_offset_budget_geodesic_m":6000.0,
+  "screen_error_budget_px":2.0,
+  "transition_residual_budget_px":1.0,
+  "filter":"bilinear scalar distance interpolation, zero-isoline coverage with derivative-based pixel antialiasing; semantic water kind remains nearest and unchanged",
+  "limitations":"distance quantization bound is not a coastline position bound; zero-isoline offsets and protected small features require independent measured source-space review; no historical accuracy claim"
+}

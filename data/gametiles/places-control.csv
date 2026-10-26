@@ -1,0 +1,201 @@
+year,rank,name,lon,lat,pop,source
+117,1,Rome (Roma),12.4813,41.8979,921177,hanson
+117,2,Alexandria,29.948,31.202,409819,hanson
+117,3,Seleucia,44.5222,33.0944,400000,modelski-anc
+117,4,Capua (Casilinum),14.212,41.1087,170000,modelski-anc
+117,5,Leptis (Lepcis Magna),14.2931,32.6383,153587,hanson
+117,6,Rodos (Rhodus),28.2225,36.4412,130301,hanson
+117,7,Antakya (Antiochia),36.1167,36.2333,124842,hanson
+117,8,Carthage (Carthago),10.3277,36.8513,102018,hanson
+117,9,Sparti (Sparta),22.4297,37.0737,86835,hanson
+117,10,Siracusa (Syracusae),15.29,37.0704,83798,hanson
+117,11,Kom Fāris (Arsinoe),30.75,29.25,80789,hanson
+117,12,Stambul (Alexandria),26.1547,39.7565,80414,hanson
+117,13,Ephesus,27.3418,37.9383,71565,hanson
+117,14,Amfipoli (Amphipolis),23.8401,40.8211,65458,hanson
+117,15,Apamea,36.4016,35.4173,64394,hanson
+117,16,Corinth (Corinthia),22.8798,37.9063,63688,hanson
+117,17,İzmit (Nicomedia),29.9306,40.776,59143,hanson
+117,18,Athens (Athenae),23.7314,37.9853,58107,hanson
+117,19,Kom Rabia (Memphis),31.2551,29.8495,58107,hanson
+117,20,Latakia (Laodicea),35.78,35.54,56389,hanson
+117,21,Pergamon (Pergamum),27.18,39.12,56389,hanson
+117,22,Agrigento (Agrigentum),13.567,37.317,53331,hanson
+117,23,Tolmeita (Ptolemais),20.9531,32.7076,52657,hanson
+117,24,Maronia (Maronea),25.5191,40.9064,50316,hanson
+117,25,Vendeuvre du Poitou (Vindobriga),0.3097,46.7354,49652,hanson
+117,26,Argos,22.7198,37.6313,49321,hanson
+117,27,Phigaleia (Phigalia),21.8391,37.3963,48002,hanson
+117,28,İzmir (Smyrna),27.1498,38.4381,47674,hanson
+117,29,Alea (Tegea),22.4172,37.4277,46366,hanson
+117,30,Benha (Athribis),31.1833,30.4667,46366,hanson
+117,31,Sens (Agedincum),3.2877,48.2475,46040,hanson
+117,32,Jerusalem (Aelia Capitolina),35.2066,31.7784,45067,hanson
+117,33,S. Maria di Capua Vetere (Capua),14.2563,41.0814,44422,hanson
+117,34,Narbonne (Narbo Martius),3.0,43.183,43137,hanson
+117,35,Thélepte,8.5939,34.9757,43137,hanson
+117,36,Tinnis (Tanis),31.873,30.978,42180,hanson
+117,37,Basiliko (Sicyon),22.726,37.9799,41545,hanson
+117,38,El Djem (Thysdrus),10.707,35.2948,41545,hanson
+117,39,Nîmes (Nemausus),4.35,43.8304,41545,hanson
+117,40,Bodrum (Halicarnassus),27.4216,37.0401,41228,hanson
+117,41,Palioprevesa (Nicopolis),20.7334,39.0265,41228,hanson
+117,42,Autun (Augustodunum),4.2994,46.9517,40597,hanson
+117,43,El Bahnasa (Oxyrhynchus),30.6553,28.536,39968,hanson
+117,44,Lyon (Lugdunum),4.8281,45.772,39968,hanson
+117,45,Amiens (Augusta Ambianorum),1.4637,50.0216,38406,hanson
+117,46,Cherchell (Iol),2.1888,36.6064,37477,hanson
+117,47,Edessa,22.0507,40.8024,37477,hanson
+117,48,Thessaloniki (Thessalonica),22.8831,40.6981,37169,hanson
+117,49,London (Londinium),-0.1187,51.5019,36861,hanson
+117,50,Sousse (Hadrumetum),10.625,35.83,35636,hanson
+1000,1,Baghdad,44.3919,33.3406,300000,b2l
+1000,2,Istanbul (Byzantium),28.9743,41.0176,300000,b2l
+1000,3,Cairo (Heliopolis),31.248,30.0519,135000,b2l
+1000,4,Córdoba (Corduba),-4.77,37.88,100000,b2l
+1000,5,Seville (Hispalis),-5.98,37.405,90000,b2l
+1000,6,Tinnis (Tanis),31.873,30.978,83000,b2l
+1000,7,Dumyat,31.82,31.4204,80000,b2l
+1000,8,Alexandria,29.948,31.202,60000,b2l
+1000,9,Palermo (Panormus),13.3481,38.127,60000,b2l
+1000,10,Qairouan,10.1,35.6804,50000,b2l
+1000,11,Salerno (Salernum),14.7699,40.6804,50000,b2l
+1000,12,Antakya (Antiochia),36.1167,36.2333,45000,b2l
+1000,13,Kyiv,30.5147,50.4353,45000,chandler
+1000,14,Venice,12.335,45.4387,45000,b2l
+1000,15,Ar Raqqah,39.02,35.9304,40000,b2l
+1000,16,Damascus,36.2981,33.502,40000,b2l
+1000,17,Fez,-5.0023,34.0565,40000,b2l
+1000,18,Kufa,44.393,32.032,40000,b2l
+1000,19,Ohrid (Lychnidus),20.8,41.117,40000,b2l
+1000,20,Regensburg,12.12,49.0204,40000,b2l
+1000,21,Thessaloniki (Thessalonica),22.8831,40.6981,40000,b2l
+1000,22,Wasit,45.225,32.383,40000,b2l
+1000,23,Toledo (Toletum),-4.0167,39.867,37000,b2l
+1000,24,Amalfi,14.6027,40.634,35000,chandler
+1000,25,Barbastro,0.133,42.033,35000,b2l
+1000,26,Rome (Roma),12.4813,41.8979,35000,b2l
+1000,27,Şanlıurfa,38.795,37.17,35000,b2l
+1000,28,Cartagena (Carthago Nova),-0.98,37.6004,33000,b2l
+1000,29,Aleppo (Beroea),37.1681,36.2319,30000,b2l
+1000,30,Ani,43.57,40.53,30000,b2l
+1000,31,Béjaïa (Saldae),5.07,36.7604,30000,b2l
+1000,32,Ephese,27.38,37.95,30000,b2l
+1000,33,Florence (Florentia),11.25,43.78,30000,b2l
+1000,34,Mainz (Mogontiacum),8.2732,49.9825,30000,b2l
+1000,35,Mérida (Augusta Emerita),-6.338,38.912,30000,b2l
+1000,36,Milan (Mediolanum),9.2031,45.4719,30000,b2l
+1000,37,Naples (Neapolis),14.2431,40.842,30000,b2l
+1000,38,Preslav,26.817,43.167,30000,b2l
+1000,39,Nicea (Nicaea),29.717,40.433,28000,b2l
+1000,40,Almería,-2.43,36.8303,27000,b2l
+1000,41,Granada (Illiberi),-3.585,37.165,26000,b2l
+1000,42,Makkah,39.8181,21.432,26000,b2l
+1000,43,Aswan (Elephantine),32.8989,24.0875,25000,b2l
+1000,44,Kherson,32.6007,46.6325,25000,chandler
+1000,45,Laon,3.617,49.567,25000,b2l
+1000,46,London (Londinium),-0.1187,51.5019,25000,b2l
+1000,47,Palma,2.6542,39.5743,25000,b2l
+1000,48,Speyer (Noviomagus),8.432,49.321,25000,b2l
+1000,49,Cologne (Colonia Agrippinensis),6.9481,50.932,21000,b2l
+1000,50,Caen,-0.35,49.1838,20000,b2l
+1500,1,Istanbul (Byzantium),28.9743,41.0176,280000,b2l
+1500,2,Paris (Lutetia),2.353,48.8581,200000,b2l
+1500,3,Cairo (Heliopolis),31.248,30.0519,180000,b2l
+1500,4,Edirne (Hadrianopolis),26.57,41.6704,127000,b2l
+1500,5,Naples (Neapolis),14.2431,40.842,125000,b2l
+1500,6,Milan (Mediolanum),9.2031,45.4719,100000,b2l
+1500,7,Tunis (Tunisa),10.1797,36.8028,100000,b2l
+1500,8,Venice,12.335,45.4387,100000,b2l
+1500,9,Aleppo (Beroea),37.1681,36.2319,80000,b2l
+1500,10,Karaman (Laranda),33.215,37.1815,80000,chandler
+1500,11,Moscow,37.6136,55.7541,80000,chandler
+1500,12,Granada (Illiberi),-3.585,37.165,70000,b2l
+1500,13,Prague,14.4229,50.087,70000,b2l
+1500,14,Fez,-5.0023,34.0565,65000,b2l
+1500,15,Lisbon (Olisipo),-9.1468,38.7247,65000,b2l
+1500,16,Palermo (Panormus),13.3481,38.127,65000,b2l
+1500,17,Damascus,36.2981,33.502,64000,b2l
+1500,18,Baghdad,44.3919,33.3406,60000,b2l
+1500,19,Bursa,29.0681,40.2019,60000,b2l
+1500,20,Marrakesh,-8.0019,31.6319,60000,b2l
+1500,21,Tours (Caesarodunum),0.6999,47.3804,60000,b2l
+1500,22,Genoa (Genua),8.93,44.41,58000,b2l
+1500,23,Florence (Florentia),11.25,43.78,55000,b2l
+1500,24,Gent,3.7,51.03,55000,b2l
+1500,25,Nizhny Novgorod,43.9981,56.335,55000,chandler
+1500,26,Rome (Roma),12.4813,41.8979,55000,b2l
+1500,27,Bologna (Bononia),11.34,44.5004,50000,b2l
+1500,28,Bordeaux (Burdigala),-0.597,44.852,50000,b2l
+1500,29,London (Londinium),-0.1187,51.5019,50000,b2l
+1500,30,Lyon (Lugdunum),4.8281,45.772,50000,b2l
+1500,31,Orléans (Cenabum),1.9,47.9004,50000,b2l
+1500,32,Skopje (Scupi),21.4335,42.0,50000,b2l
+1500,33,Smolensk,32.0473,54.7827,50000,chandler
+1500,34,Târgoviște,25.459,44.938,50000,b2l
+1500,35,Trakai,24.9333,54.6333,50000,chandler
+1500,36,Verona,10.99,45.4404,50000,b2l
+1500,37,Brescia (Brixia),10.25,45.55,49000,b2l
+1500,38,Cologne (Colonia Agrippinensis),6.9481,50.932,45000,b2l
+1500,39,Marseille (Massalia),5.3731,43.2919,45000,b2l
+1500,40,Pskov,28.3299,57.83,45000,chandler
+1500,41,Seville (Hispalis),-5.98,37.405,45000,b2l
+1500,42,Ferrara,11.6099,44.8504,42000,b2l
+1500,43,Málaga (Malaca),-4.42,36.7204,42000,b2l
+1500,44,Valencia (Valentia),-0.367,39.467,42000,b2l
+1500,45,Cremona,10.033,45.117,40000,b2l
+1500,46,Dumyat,31.82,31.4204,40000,b2l
+1500,47,Rouen (Rotomagus),1.08,49.4304,40000,b2l
+1500,48,Makkah,39.8181,21.432,38000,b2l
+1500,49,Nürnberg,11.08,49.45,38000,b2l
+1500,50,Brugge,3.23,51.2204,35000,b2l
+2020,1,Cairo (Heliopolis),31.248,30.0519,13465000,ne-places
+2020,2,Istanbul (Byzantium),28.9743,41.0176,11177000,ne-places
+2020,3,Moscow,37.6136,55.7541,10524000,ne-places
+2020,4,Paris (Lutetia),2.353,48.8581,10007000,ne-places
+2020,5,London (Londinium),-0.1187,51.5019,8618000,ne-places
+2020,6,Baghdad,44.3919,33.3406,6618000,ne-places
+2020,7,Madrid,-3.6853,40.402,5918000,ne-places
+2020,8,Barcelona (Barcino),2.1814,41.3852,5169000,ne-places
+2020,9,Alexandria,29.948,31.202,4817000,ne-places
+2020,10,Ankara (Ancyra),32.8624,39.9292,4178000,ne-places
+2020,11,Algiers (Icosium),3.0486,36.765,3922000,ne-places
+2020,12,Jeddah,39.2173,21.5188,3590000,ne-places
+2020,13,Casablanca,-7.6183,33.6019,3475000,ne-places
+2020,14,Tel Aviv,34.7681,32.0819,3453000,ne-places
+2020,15,Berlin,13.3996,52.5238,3434000,ne-places
+2020,16,Rome (Roma),12.4813,41.8979,3330000,ne-places
+2020,17,Aleppo (Beroea),37.1681,36.2319,3306000,ne-places
+2020,18,Athens (Athenae),23.7314,37.9853,3278000,ne-places
+2020,19,Lisbon (Olisipo),-9.1468,38.7247,2996000,ne-places
+2020,20,Damascus,36.2981,33.502,2981000,ne-places
+2020,21,Stuttgart,9.2,48.78,2944700,ne-popmax
+2020,22,Milan (Mediolanum),9.2031,45.4719,2938000,ne-places
+2020,23,İzmir (Smyrna),27.1498,38.4381,2920000,ne-places
+2020,24,Frankfurt,8.675,50.1,2895000,ne-popmax
+2020,25,Kyiv,30.5147,50.4353,2770000,ne-places
+2020,26,Katowice,19.02,50.2604,2746000,ne-popmax
+2020,27,Tripoli (Oea),13.18,32.8925,2532000,ne-places
+2020,28,Vienna (Vindobona),16.3647,48.202,2451000,ne-places
+2020,29,Tunis (Tunisa),10.1797,36.8028,2412500,ne-popmax
+2020,30,Mannheim,8.47,49.5004,2362000,ne-popmax
+2020,31,Birmingham,-1.9219,52.4769,2303000,ne-places
+2020,32,Naples (Neapolis),14.2431,40.842,2254000,ne-places
+2020,33,Manchester,-2.2487,53.4753,2246000,ne-places
+2020,34,Giza,31.19,30.01,2222000,modelski-mod
+2020,35,Beirut (Berytus),35.5078,33.8739,2051000,ne-places
+2020,36,Bucharest,26.098,44.4353,1949000,ne-places
+2020,37,Rabat (Sala),-6.8364,34.0253,1938000,ne-places
+2020,38,Minsk,27.5647,53.9019,1879000,ne-places
+2020,39,Hamburg,9.9981,53.552,1791000,ne-places
+2020,40,Brussels,4.3314,50.8353,1744000,ne-places
+2020,41,Essen,7.0166,51.45,1742135,ne-popmax
+2020,42,Warsaw,21.0053,52.2309,1735000,ne-places
+2020,43,Bursa,29.0681,40.2019,1713000,ne-places
+2020,44,Mosul,43.1431,36.3469,1677000,ne-places
+2020,45,Budapest (Aquincum),19.0814,47.502,1655000,ne-places
+2020,46,Makkah,39.8181,21.432,1651000,ne-places
+2020,47,Turin (Augusta Taurinorum),7.668,45.0723,1645000,ne-places
+2020,48,Leeds,-1.5513,53.79,1552000,ne-places
+2020,49,Florence (Florentia),11.25,43.78,1500000,ne-popmax
+2020,50,Lyon (Lugdunum),4.8281,45.772,1471000,ne-places

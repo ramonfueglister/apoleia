@@ -1,0 +1,34 @@
+{
+  "revision": "region-v1",
+  "checks": [
+    {
+      "id": "imperial_maximum_extent",
+      "outside_mask_square_degrees": 0.0,
+      "feature_count": 112,
+      "source": {
+        "artifact_path": "data/reference/roman-117.geojson",
+        "sha256": "1ddd9ac15006e8b9ffd4d185d0302295c3d7c321e9bc8ae3fd627e12d128ba29"
+      }
+    },
+    {
+      "id": "entire_mediterranean",
+      "outside_mask_square_degrees": 0.0,
+      "feature_count": 11,
+      "source": {
+        "artifact_path": "data/reference/mediterranean.geojson",
+        "sha256": "af7814d1b402b61487563c36617e7fbdaeb8ef8cafc685776472decb3cfe591e"
+      }
+    },
+    {
+      "id": "england_and_northern_context",
+      "outside_mask_square_degrees": 0.0,
+      "feature_count": 1,
+      "source": {
+        "artifact_path": "data/reference/england.geojson",
+        "sha256": "cf5082f88251e781bf212130898d88cb8a0916e7f99d0487fc34f545e6b74b81"
+      }
+    }
+  ],
+  "connected_mask": true,
+  "note": "Containment computed on actual source polygons. Historical frontier source convention uncertain; no exact 117 truth claim. Mediterranean label polygons are generalized scope references, not shorelines."
+}

@@ -1,0 +1,2695 @@
+id,name,lon,lat,p117,p400,p1000,p1500,p1800,p1900,p2020,port,sources
+aachen,Aachen,6.1,50.767,,,10000,18000,24000,135000,,0,b2l;chandler
+aalborg,Aalborg,9.9166,57.0337,,,,,,34000,122219,0,chandler;ne-popmax
+aalst,Aalst,4.033,50.933,,,,5000,11000,30000,,0,b2l;chandler
+aarau,Aarau,8.034,47.39,,,,,,,15501,0,ne-popmax
+abadla,Abadla,-2.7333,31.0171,,,,,,,14364,0,ne-popmax
+abbeville,Abbeville,1.833,50.1,,,,,18000,,,0,b2l
+aberdeen,Aberdeen,-2.105,57.1451,,,,,27000,150000,189364,1,b2l;chandler;ne-popmax;ne-ports
+abu-kamal,Abu Kamal,40.9186,34.4504,,,,,,,80808,0,ne-popmax
+abu-sir-bana,Abu Sir Bana (Busiris),31.2444,30.9111,,,,,,,,0,hanson
+acerenza,Acerenza (Aceruntia),15.9406,40.7969,,,,,,,,0,hanson
+acerra,Acerra (Acerrae),14.371,40.9456,1848,,,,,,,0,hanson
+acharnes,Acharnes (Acharnae),23.7341,38.0835,,,,,,,,0,hanson
+acireale,Acireale,15.167,37.617,,,,,15000,,,0,b2l
+acqui-terme,Acqui Terme (Aquae Statiellae),8.4707,44.6755,3770,,,,,,,0,hanson
+acra,Acra (Acce),35.073,32.924,19682,,,10000,,,,0,b2l;chandler;hanson
+ad-diwaniyah,Ad Diwaniyah,44.924,31.9889,,,,,,,358408,0,ne-popmax
+ad-nabk,Ad Nabk,36.7333,34.017,,,,,,,50178,0,ne-popmax
+adamclisi,Adamclisi (Tropaeum Traiani),27.9443,44.0922,910,,,,,,,0,hanson
+adana,Adana,35.3181,36.9969,,,,15000,13000,30000,1466000,0,b2l;chandler;modelski-mod;ne-places
+adapazar,Adapazarı,30.415,40.8,,,,,,,260109,0,ne-popmax
+adra,Adra (Abdera),-3.0225,36.7481,,,,,,,,0,hanson
+adrano,Adrano (Adranum),13.1377,37.6632,9952,,,,,,,0,hanson
+adrar,Adrar,-0.29,27.87,,,,,,,56910,0,ne-popmax
+adria,Adria,12.0562,45.054,,,,,,,,1,hanson
+adyaman,Adıyaman,38.2799,37.7704,,,,,,,223744,0,ne-popmax
+aequi,Aequi,13.1954,42.1868,,,,,,,,0,hanson
+afragola,Afragola,14.3,40.917,,,,,12000,,,0,b2l
+afyon,Afyon,30.55,38.7504,,,,,29000,,156992,0,b2l;ne-popmax
+agadir,Agadir,-9.62,30.44,,,,,,,825467,1,ne-popmax;ne-ports
+agen,Agen (Aginnum),0.6333,44.2004,13405,,,,10000,,58223,0,b2l;hanson;ne-popmax
+agios-georgios,Agios Georgios (Coronea),22.9571,38.3912,18121,,,,,,,0,hanson
+aglasun,Aglasun (Sagalassus),30.5192,37.6767,2296,,,,,,,0,hanson
+agr,Ağrı,43.0513,39.7198,,,,,,,87854,0,ne-popmax
+agrigento,Agrigento (Agrigentum),13.567,37.317,53331,,,10000,14000,,,0,b2l;hanson
+agrinio,Agrinio,21.4077,38.6218,,,,,,,75233,0,ne-popmax
+ahat-koyu,Ahat Köyü (Acmonia),29.774,38.6597,,,,,,,,0,hanson
+aigeira,Aigeira (Aegira),22.3557,38.148,,,,,,,,0,hanson
+aigina,Aigina (Aegina),23.4285,37.7501,8221,,,,,,,1,hanson;pleiades
+aigio,Aigio (Aegium),22.082,38.2527,,,,,,,,0,hanson
+ain-defla,Aïn Defla (Oppidum Novum),1.9654,36.2571,,,,,,,,0,hanson
+ain-tachegga,Aïn Tachegga (Thisica),9.702,37.0037,,,,,,,,0,hanson
+ain-tounga,Aïn Tounga (Thignica),9.3617,36.5237,14611,,,,,,,0,hanson
+aix-en-provence,Aix-en-Provence (Aquae Sextiae),5.45,43.52,10174,,,13000,21000,,146821,0,b2l;chandler;hanson;ne-popmax
+aix-les-bains,Aix les Bains (Aquae Tarbellicae),-1.054,43.7091,1704,,,,,,,0,hanson
+ajaccio,Ajaccio,8.7283,41.9271,,,,,,,54364,1,ne-popmax;ne-ports;pleiades
+ajdabiya,Ajdabiya,20.22,30.77,,,,,,,143833,0,ne-popmax
+akhisar,Akhisar (Thyatira),27.8405,38.9229,,,,,,,,0,hanson
+akhmim,Akhmim (Panopolis),31.75,26.5667,,,,,,,,0,hanson
+akraifnio,Akraifnio (Acraephia),23.2197,38.4526,,,,,,,,0,hanson
+aksaray,Aksaray (Archelais),34.0353,38.3784,,,,,,,,0,hanson
+aksu,Aksu (Perge),30.8541,36.9603,10621,,,,,,,0,hanson
+aktas,Aktaş (Gagae),30.35,36.2886,,,,,,,,0,hanson
+al-alia,Al Alia (Uzalis),10.034,37.169,4662,,,,,,,0,hanson
+al-aqabah,Al Aqabah,35.0777,29.527,,,,,,,95048,0,ne-popmax
+al-fallujah,Al Fallujah,43.7773,33.3477,,,,,,,231819,0,ne-popmax
+al-hasakah,Al Hasakah,40.75,36.4833,,,,,,,128100,0,ne-popmax
+al-hillah,Al Hillah,44.4217,32.4721,,,,,,,594605,0,ne-popmax
+al-jawf,Al Jawf,23.29,24.2,,,,,,,24132,0,ne-popmax
+al-karak,Al Karak,35.7047,31.1851,,,,,,,80062,0,ne-popmax
+al-khalil,Al Khalil,35.0956,31.5406,,,,,,,280321,0,ne-popmax
+al-khums,Al Khums,14.26,32.6604,,,,,,,201943,1,ne-popmax;pleiades
+al-kut,Al Kut,45.8304,32.4907,,,,,,,321521,0,ne-popmax
+al-mafraq,Al Mafraq,36.2333,32.2833,,,,,,,57118,0,ne-popmax
+al-mahalla-al-kubra,al-Mahalla al-Kubra,31.167,30.967,,,10000,15000,10000,,,0,b2l
+al-marj,Al Marj,20.83,32.5005,,,,,,,169540,0,ne-popmax
+al-musayyib,Al Musayyib,44.29,32.7786,,,,,,,76454,0,ne-popmax
+al-qamishli,Al Qamishli,41.23,37.03,,,,,,,104107,0,ne-popmax
+al-quais,Al Quais? (Cynopolis),30.7829,28.4795,,,,,,,,0,hanson
+al-quwayiyah,Al Quwayiyah,45.2806,24.0737,,,,,,,8712,0,ne-popmax
+al-wajh,Al Wajh,36.4636,26.2324,,,,,,,43237,0,ne-popmax
+alanya,Alanya (Coracesium),31.986,36.5491,5792,,,,,,,0,hanson
+alasehir,Alaşehir (Philadelphia),28.5167,38.35,,,,,,,,0,hanson
+alatri,Alatri (Aletrium),13.3421,41.7265,2767,,,,,,,0,hanson
+alba,Alba (Alba Helviorum),4.6001,44.5606,1292,,,,,,,0,hanson
+alba-2,Alba (Alba Pompeia),8.0353,44.7009,4846,,,,,,,0,hanson
+alba-lulia,Alba Lulia (Apulum),23.58,46.077,3945,,,,,,66085,0,hanson;ne-popmax
+albacete,Albacete,-1.87,39.0003,,,,,,,158094,0,ne-popmax
+albe,Albe (Alba Fucentia),13.409,42.0799,4480,,,,,,,0,hanson
+albenga,Albenga (Albingaunum),8.2128,44.0489,676,,,,,,,0,hanson
+albi,Albi,2.15,43.933,,,,8000,10000,,,0,b2l
+alcacer-do-sal,Alcacer do Sal (Salacia),-8.5195,38.3712,910,,,,,,,0,hanson
+alcala-de-henares,Alcala-de-Henares,-3.367,40.483,,,,8000,5000,,,0,b2l
+alcala-del-rio,Alcalá del Río (Ilipa),-5.9783,37.5182,565,,,,,,,0,hanson
+alcala-la-real,Alcala-la-Real,-3.933,37.467,,,,,9000,,,0,b2l
+alcamo,Alcamo,12.97,37.98,,,,6000,13000,,,0,b2l
+alcazar-de-san-juan,Alcazar de San Juan,-3.2,39.4,,,,20000,10000,,,0,b2l
+alcolea,Alcolea (Canama),-5.6713,37.6142,,,,,,,,0,hanson
+alcorrucen,Alcorrucen (Sacili),-4.5072,38.0058,,,,,,,,0,hanson
+alcoy,Alcoy,-0.467,38.7,,,,,16000,,,0,b2l
+alcudia-de-pollensa,Alcudia de Pollensa (Pollentia),3.0172,39.8777,1161,,,,,,,0,hanson
+aldborough,Aldborough (Isurium),-1.372,54.0913,2296,,,,,,,0,hanson
+aldershot,Aldershot,-0.7639,51.2483,,,,,,30000,,0,chandler
+alea,Alea (Tegea),22.4172,37.4277,46366,,,,,,,0,hanson
+alekseyevka,Alekseyevka,38.6931,50.6535,,,,,,,39848,0,ne-popmax
+aleksin,Aleksin,37.0944,54.5143,,,,,,,66885,0,ne-popmax
+alencon,Alencon,0.083,48.433,,,,,13000,,,0,b2l
+aleppo,Aleppo (Beroea),37.1681,36.2319,29963,,30000,80000,100000,130000,3306000,0,b2l;chandler;hanson;modelski-mod;ne-places
+aleria,Aléria,9.5121,42.103,,,,,,,,1,hanson;pleiades
+alessandria,Alessandria,8.617,44.9,,,10000,8000,30000,48000,,0,b2l;chandler
+alexandria,Alexandria,29.948,31.202,409819,200000,60000,10000,,314000,4817000,1,b2l;chandler;hanson;modelski-anc;modelski-mod;ne-places;pleiades
+alexandria-2,Alexandria,25.3299,43.9744,,,,,,,49346,0,ne-popmax
+alexandroupoli,Alexandroupoli,25.8744,40.8486,,,,,,,52979,1,ne-popmax;ne-ports
+alfaro,Alfaro (Gracchuris),-1.7492,42.1783,,,,,,,,0,hanson
+algeciras,Algeciras (Iulia Traducta),-5.4527,36.1319,,,,,,,111027,1,hanson;ne-popmax;pleiades
+algiers,Algiers (Icosium),3.0486,36.765,,,,20000,30000,140000,3922000,1,b2l;chandler;hanson;modelski-mod;ne-places;ne-ports
+alicante,Alicante (Lucentum),-0.4836,38.3512,106,,,,13000,39000,315863,1,b2l;chandler;hanson;ne-popmax;ne-ports;pleiades
+alife,Alife (Allifae),14.3306,41.3285,2607,,,,,,,0,hanson
+alise-s-reine,Alise S. Reine (Alesia),4.5003,47.5372,18898,,,,,,,0,hanson
+alkmaar,Alkmaar,4.75,52.633,,,,5000,,,,0,b2l
+almeria,Almería,-2.43,36.8303,,,27000,30000,7000,47000,179405,1,b2l;chandler;ne-popmax;ne-ports
+almunecar,Almuñécar (Sexi),-3.6907,36.7345,,,,,,,,1,hanson;pleiades
+altamura,Altamura,16.55,40.817,,,,6000,18000,,,0,b2l
+altdorf,Altdorf,8.638,46.879,,,,,,,8678,0,ne-popmax
+altenburg,Altenburg,12.4333,50.985,,,,,,37000,,0,chandler
+altino,Altino (Altinum),12.401,45.5492,28801,,,,,,,0,hanson
+altona,Altona,9.933,53.55,,,,,23000,,,1,b2l;ne-ports
+alvignano,Alvignano? (Cubulteria),14.3333,41.25,910,,,,,,,0,hanson
+amalfi,Amalfi,14.6027,40.634,,,35000,,,,,0,chandler
+amasra,Amasra (Amastris),32.3806,41.735,,,,,,,,1,hanson
+amasya,Amasya (Amasia),35.833,40.6537,3598,,,,12000,,82896,0,b2l;hanson;ne-popmax
+amathos,Amathos (Amathus),33.1438,34.7122,1995,,,,,,,1,hanson;pleiades
+amelia,Amelia (Ameria),12.4136,42.5576,3093,,,,,,,0,hanson
+amfipoli,Amfipoli (Amphipolis),23.8401,40.8211,65458,,,,,,,0,hanson
+amfissa,Amfissa (Amphissa),22.3784,38.5273,,,,,,,,0,hanson
+amiens,Amiens,2.3,49.9004,,,10000,20000,40000,90000,143086,0,b2l;chandler;ne-popmax
+amiens-2,Amiens (Augusta Ambianorum),1.4637,50.0216,38406,,,,,,,0,hanson
+amlik,Amlik (Cremna),30.6911,37.5001,5409,,,,,,,0,hanson
+amman,Amman (Philadelphia),35.9314,31.952,3945,,,,,,1185000,0,hanson;modelski-mod;ne-places
+amrit,Amrit (Marathus),35.9076,34.8326,,,,,,,,0,hanson
+amsterdam,Amsterdam,4.9147,52.3519,,,,15000,217000,510000,1064000,0,b2l;chandler;ne-places
+amwas,Amwas (Emmaus),34.9895,31.8392,5792,,,,,,,0,hanson
+an-nabk,An Nabk,37.3333,31.3333,,,,,,,10000,0,ne-popmax
+anagni,Anagni (Anagnia),13.159,41.7422,2296,,,,,,,0,hanson
+anavarza,Anavarza (Anazarbus),35.906,37.2604,33818,,,,,,,0,hanson
+ancona,Ancona,13.4999,43.6004,5792,,,,17000,34000,100507,1,b2l;chandler;hanson;ne-popmax;ne-ports;pleiades
+andorra,Andorra,1.5266,42.5108,,,,,,,53998,0,ne-popmax
+andria,Andria,16.283,41.217,,,,5000,14000,47000,,0,b2l;chandler
+andujar,Andujar,-4.07,38.05,,,,,10000,,,0,b2l
+angers,Angers (Iuliomagus),-0.53,47.48,22624,,15000,13000,32000,82000,188380,0,b2l;chandler;hanson;ne-popmax
+angouleme,Angouleme,0.15,45.65,,,,,15000,32000,,0,b2l;chandler
+ani,Ani,43.57,40.53,,,30000,,,,,0,b2l;chandler;modelski-anc
+ankara,Ankara (Ancyra),32.8624,39.9292,23719,,,22000,23000,27825,4178000,0,b2l;chandler;hanson;modelski-mod;ne-places
+annaba,Annaba (Hippo Regius),7.76,36.92,9952,,,,,,503524,1,hanson;ne-popmax;pleiades
+annecy,Annecy (Boutae),6.1167,45.9,3259,,,,,,105749,0,hanson;ne-popmax
+announa,Announa (Thibilis),7.25,36.3826,,,,,,,,0,hanson
+ansbach,Ansbach,10.583,49.3,,,,,12000,,,0,b2l
+ansedonia,Ansedonia (Cosa),11.2896,42.4132,1426,,,,,,,1,hanson;pleiades
+antakya,Antakya (Antiochia),36.1167,36.2333,124842,270000,45000,12000,12000,,154803,0,b2l;chandler;hanson;modelski-anc;ne-popmax
+antalya,Antalya (Attalea),30.71,36.89,,,,,13000,,,1,b2l;hanson
+antalya-2,Antalya (Attalea),30.698,36.8919,,,,,,,910000,0,hanson;ne-places
+antequera,Antequera,-4.55,37.017,,,,10000,15000,,,0,b2l
+anthedon,Anthedon,23.4615,38.4975,3945,,,,,,,1,hanson;pleiades
+antibes,Antibes (Antipolis),7.1209,43.5806,,,,,,,,1,hanson;pleiades
+antwerpen,Antwerpen,4.4131,51.2223,,,,30000,62000,361000,920000,0,b2l;chandler;ne-places
+anzio,Anzio (Antium),12.6291,41.4479,9952,,,,,,,1,hanson;pleiades
+aosta,Aosta (Augusta Praetoria),7.315,45.737,5986,,,,,,34062,0,hanson;ne-popmax
+apamea,Apamea,36.4016,35.4173,64394,,,,,,,0,hanson;modelski-anc
+appenzell,Appenzell,9.4167,47.3333,,,,,,,5649,0,ne-popmax
+apsheronsk,Apsheronsk,39.7287,44.4687,,,,,,,45876,0,ne-popmax
+apt,Apt (Apta),5.3974,43.8765,565,,,,,,,0,hanson
+aquileia,Aquileia,13.3671,45.7653,14611,,,,,,,0,hanson
+aquino,Aquino (Aquinum),13.7056,41.4922,12459,,,,,,,0,hanson
+ar-ramadi,Ar Ramadi,43.3,33.42,,,,,,,295121,0,ne-popmax
+ar-raqqah,Ar Raqqah,39.02,35.9304,,,40000,,,,177636,0,b2l;ne-popmax
+ar-rutbah,Ar Rutbah,40.2845,33.0385,,,,,,,22370,0,ne-popmax
+aracena,Aracena,-6.55,37.883,,,,,10000,,,0,b2l
+arad,Arad,21.32,46.17,,,,,10000,53000,169065,0,b2l;chandler;ne-popmax
+araiano-irpino,Araiano Irpino,15.08,41.15,,,,,10000,,,0,b2l
+arak,Arak,3.75,25.28,,,,,,,423251,0,ne-popmax
+arar,Arar,41.0207,30.99,,,,,,,222016,0,ne-popmax
+archar,Archar (Ratiaria),22.9049,43.8174,4480,,,,,,,0,hanson
+arcos-de-la-frontera,Arcos de la Frontera,-5.8,36.75,,,,12000,12000,,,0,b2l
+ardea,Ardea,12.5106,41.6115,,,,,,,,0,hanson
+arentsburg,Arentsburg (Forum Hadriani),4.3604,52.068,,,,,,,,0,hanson
+arezzo,Arezzo (Arretium),11.875,43.4617,8860,,,6000,8000,,91589,0,b2l;hanson;ne-popmax
+argenton-sur-creuse,Argenton sur Creuse (Argentomagus),1.5098,46.5987,,,,,,,,0,hanson
+argos,Argos,22.7198,37.6313,49321,,,,,,,0,hanson
+argusto,Argusto (Aprustum),16.9157,39.1476,,,,,,,,0,hanson
+arhus,Århus,10.2107,56.1572,,,,,,51000,237551,0,chandler;ne-popmax
+ariccia,Ariccia (Aricia),12.6644,41.7317,2607,,,,,,,0,hanson
+arles,Arles (Arelate),4.633,43.667,10397,40000,,10000,17000,,,0,b2l;chandler;hanson
+arlon,Arlon,5.8167,49.6833,,,,,,,26179,0,ne-popmax
+armagh,Armagh,-7.583,53.917,,,15000,,7000,,,0,b2l
+armant,Armant (Hermonthis),32.5081,25.5503,,,,,,,,0,hanson
+armavir,Armavir,41.13,45.0004,,,,,,,199548,0,ne-popmax
+arnhem,Arnhem,5.923,51.988,,,,6000,10000,57000,141674,0,b2l;chandler;ne-popmax
+arpino,Arpino (Arpinum),13.6,41.65,460,,,,10000,,,0,b2l;hanson
+arras,Arras (Nemetacum),2.7833,50.2833,3945,,,11000,19000,,64165,0,b2l;chandler;hanson;ne-popmax
+arsuf,Arsuf (Apollonia),34.8068,32.1952,676,,,,,,,0,hanson
+arta,Arta (Ambracia),20.987,39.158,,,,,,,,0,hanson
+artashat,Artashat,44.5506,39.9539,,,,,,,20562,0,ne-popmax
+artvin,Artvin,41.818,41.183,,,,,,,32272,0,ne-popmax
+arwad,Arwad (Aradus),35.8583,34.8561,4480,,,,,,,0,hanson
+arzamas,Arzamas,43.8,55.4,,,,,,,142597,0,ne-popmax
+arzew,Arzew (Portus Magnus),-0.266,35.8079,,,,,,,,1,hanson;pleiades
+as-salt,As Salt,35.7272,32.0392,,,,,,,140689,0,ne-popmax
+as-samawah,As Samawah,45.2803,31.3099,,,,,,,174978,0,ne-popmax
+as-sulaymaniyah,As Sulaymaniyah,45.4309,35.5613,,,,,,,723170,0,ne-popmax
+as-suwayda,As Suwayda (Dionysias),36.5666,32.7004,,,,,,,72248,0,hanson;ne-popmax
+asar-koyu,Asar Köyü (Sillyum),30.9864,36.9907,1292,,,,,,,0,hanson
+ascoli-piceno,Ascoli Piceno (Asculum),13.567,42.85,5599,,,,12000,,,0,b2l;hanson
+ascoli-satriano,Ascoli Satriano (Ausculum),15.5625,41.2071,1564,,,,,,,0,hanson
+ashkelon,Ashkelon (Ascalon),34.5562,31.6698,8221,,,,,,,0,hanson
+ashtarak,Ashtarak,44.3592,40.3017,,,,,,,18779,0,ne-popmax
+ashton-upon-lyne,Ashton-upon-Lyne,-2.083,53.492,,,,,15000,,,0,b2l
+asolo,Asolo (Acelum),11.9133,45.8017,910,,,,,,,0,hanson
+assen,Assen,6.55,53.0,,,,,,,62237,0,ne-popmax
+assisi,Assisi (Asisium),12.6175,43.0702,4121,,,,,,,0,hanson
+asti,Asti (Hasta),8.21,44.93,5409,,,8000,21000,,71276,0,b2l;hanson;ne-popmax
+astorga,Astorga (Asturica),-6.0573,42.456,3259,,,,,,,0,hanson
+aswan,Aswan (Elephantine),32.8989,24.0875,33818,,25000,,,,313442,0,b2l;hanson;ne-popmax
+asyut,Asyut (Lycopolis),31.1799,27.19,,,,10000,15000,42000,420585,0,b2l;chandler;hanson;ne-popmax
+at-tafilah,At Tafilah,35.6,30.8333,,,,,,,25429,0,ne-popmax
+at-taif,At Taif,40.3823,21.2622,,,,,,,657282,0,ne-popmax
+atella,Atella,14.27,40.9804,7802,,,,,,,0,hanson
+athens,Athens (Athenae),23.7314,37.9853,58107,,15000,10000,12000,181000,3278000,0,b2l;chandler;hanson;ne-places
+atina,Atina,13.7996,41.6197,4846,,,,,,,0,hanson
+atkarsk,Atkarsk,44.9961,51.8765,,,,,,,27554,0,ne-popmax
+atri,Atri (Atria),13.9759,42.58,2929,,,,,,,0,hanson
+auch,Auch (Augusta Auscorum),0.583,43.65,,,,,10000,,,0,b2l;hanson
+augsburg,Augsburg (Augusta Vindelicum),10.9,48.35,10621,,,30000,30000,102000,358989,0,b2l;chandler;hanson;ne-popmax
+augst,Augst (Augusta Raurica),7.7214,47.5339,6379,,,,,,,0,hanson
+augusta,Augusta,15.217,37.217,,,,,15000,,,0,b2l
+aumale,Aumale (Auzia),3.6899,36.1456,2296,,,,,,,0,hanson
+ausim,Ausim (Letopolis),31.134,30.1223,,,,,,,,0,hanson
+autun,Autun (Augustodunum),4.2994,46.9517,40597,,,,,,,0,hanson
+auxerre,Auxerre,3.5666,47.8004,,,,,12000,,41516,0,b2l;ne-popmax
+avdira,Avdira (Abdera),24.9833,40.95,3259,,,,,,,1,hanson
+aveia,Aveia,13.4874,42.2957,1704,,,,,,,0,hanson
+aveiro,Aveiro,-8.651,40.641,,,,,,,54162,0,ne-popmax
+avella,Avella (Abella),14.6014,40.96,3598,,,,,,,0,hanson
+avellino,Avellino (Abellinum),14.7927,40.9147,3093,,,,,,,0,hanson
+avellino-2,Avellino,14.78,40.82,,,,,11000,,,0,b2l
+avenches,Avenches (Aventicum),7.0469,46.8827,5032,,,,,,,0,hanson
+aversa,Aversa,14.2,40.967,,,,,14000,,,0,b2l
+avignon,Avignon (Avennio),4.817,43.95,6778,,,18000,30000,46000,,0,b2l;chandler;hanson
+avila,Avila,-4.7,40.65,,,,10000,,,,0,b2l
+avranches,Avranches (Ingena),-1.3617,48.6858,2767,,,,,,,0,hanson
+awjilah,Awjilah,21.2869,29.108,,,,,,,6610,0,ne-popmax
+ayakli,Ayakli (Euromus),27.6732,37.3784,,,,,,,,0,hanson
+ayas,Ayaş (Elaeussa),34.1787,36.4942,3259,,,,,,,1,hanson;pleiades
+ayasofya,Ayasofya (Colybrassus),31.9624,36.7322,,,,,,,,0,hanson
+aydn,Aydın (Tralles),27.85,37.85,,,,,18000,35000,198857,0,b2l;chandler;hanson;ne-popmax
+aykiricay,Aykiriçay (Arycanda),30.0485,36.5134,565,,,,,,,0,hanson
+ayr,Ayr,-4.6167,55.4504,,,,,,,69042,0,ne-popmax
+ayvalik,Ayvalik,26.7128,39.3359,,,,,25000,,,0,chandler
+az-zarqa,Az Zarqa,36.1,32.07,,,,,,,894691,0,ne-popmax
+az-zawiyah,Az Zawiyah,12.72,32.7604,,,,,,,200000,0,ne-popmax
+azeffoun,Azeffoun (Rusazus),4.4227,36.894,,,,,,,,0,hanson
+azemmour,Azemmour,-8.3422,33.2878,,,,24000,,10000,,0,chandler
+b-abda,B'abda,35.5333,33.8333,,,,,,,9000,0,ne-popmax
+baalbek,Baalbek (Heliopolis),36.2043,34.007,13884,,,,,,,0,hanson
+babadat,Babadat (Germa),31.6162,39.5114,,,,,,,,0,hanson
+babruysk,Babruysk,29.1928,53.1266,,,,,,35000,220517,0,chandler;ne-popmax
+bacau,Bacău,26.9196,46.5784,,,,,,,199668,0,ne-popmax
+baccanae,Baccanae?,12.3673,42.1191,42,,,,,,,0,hanson
+badajoz,Badajoz,-6.97,38.8804,,,16000,,10000,30000,140133,0,b2l;chandler;ne-popmax
+badalona,Badalona (Baetulo),2.2294,41.4316,1161,,,,,,,0,hanson
+baena,Baena,-4.317,37.617,,,,14000,9000,,,0,b2l
+baeza,Baeza,-3.467,37.983,,,,14000,10000,,,0,b2l;chandler
+bafa-golu,Bafa Gölü (Heraclea),27.5269,37.5024,3598,,,,,,,0,hanson
+bafra,Bafra,35.9069,41.5682,,,,,,,97452,0,ne-popmax
+baghdad,Baghdad,44.3919,33.3406,,,300000,60000,85000,145000,6618000,0,b2l;chandler;modelski-anc;modelski-mod;ne-places
+bahnesa,Bahnesa,30.653,29.55,,,15000,15000,,,,0,b2l
+baia-di-bacoli,Baia di Bacoli (Baiae),14.0664,40.8192,,,,,,,,1,hanson;pleiades
+baia-mare,Baia Mare,23.5791,47.6595,,,,,,,136553,0,ne-popmax
+bajram-curri,Bajram Curri,20.0833,42.3333,,,,,,,7967,0,ne-popmax
+bakhchiserai,Bakhchiserai,33.8672,44.7553,,,,25000,5776,,,0,chandler
+balakhna,Balakhna,43.5944,56.4943,,,,,,,63083,0,ne-popmax
+balashov,Balashov,43.1631,51.5535,,,,,,,98107,0,ne-popmax
+balat,Balat (Miletus),27.2762,37.5318,18898,,,,,,,1,hanson;pleiades
+balkesir,Balıkesir,27.89,39.6504,,,,,17000,,261516,0,b2l;ne-popmax
+balkis,Balkis (Zeugma),37.8658,37.0583,33517,,,,,,,0,hanson
+balti,Bălți,27.9053,47.7591,,,,,,,151355,0,ne-popmax
+bamberg,Bamberg,10.867,49.867,,,,7000,17000,41000,,0,b2l;chandler
+banghazi,Banghazi (Berenice),20.0648,32.1187,32024,,,,,,1398000,1,hanson;ne-places;pleiades
+bani-walid,Bani Walid,13.99,31.7704,,,,,,,65392,0,ne-popmax
+banias,Banias (Paneas),35.6944,33.2486,,,,,,,,0,hanson
+banja-luka,Banja Luka,17.18,44.7804,,,,,15000,,221738,0,b2l;ne-popmax
+banska-bystrica,Banská Bystrica,19.15,48.7333,,,,,,,82336,0,ne-popmax
+banska-stiavnica,Banska Stiavnica,18.9,48.45,,,,6000,17000,,,0,b2l
+banzi,Banzi (Bantia),16.0139,40.8617,4300,,,,,,,0,hanson
+baqubah,Baqubah,44.6573,33.7476,,,,,,,299479,0,ne-popmax
+bar-le-duc,Bar-le-duc,5.167,48.783,,,,,11000,,,0,b2l
+baranavichy,Baranavichy,26.0134,53.1368,,,,,,,168772,0,ne-popmax
+barbastro,Barbastro,0.133,42.033,,,35000,,7000,,,0,b2l
+barcelona,Barcelona (Barcino),2.1814,41.3852,1161,,,20000,100000,552000,5169000,1,b2l;chandler;hanson;modelski-mod;ne-places;ne-ports
+bari,Bari (Barium),16.8728,41.1142,,,11000,8000,17000,77000,500577,1,b2l;chandler;hanson;ne-popmax;ne-ports
+barka,Barka (Barce),20.8928,32.4983,,,,,,,,0,hanson
+barletta,Barletta,16.27,41.32,,,,8000,16000,40000,107830,1,b2l;chandler;ne-popmax;ne-ports
+barnsley,Barnsley,-1.4833,53.55,,,,,,40000,,0,chandler
+barysaw,Barysaw,28.4922,54.226,,,,,,,155389,0,ne-popmax
+basel,Basel,7.59,47.5804,,,,10000,15000,109000,830000,0,b2l;chandler;ne-popmax
+basiliko,Basiliko (Sicyon),22.726,37.9799,41545,,,,,,,0,hanson
+basmakc,Başmakçı (Faustinopolis),34.7443,37.6543,,,,,,,,0,hanson
+bassano,Bassano,11.73,45.77,,,,,10000,,,0,b2l
+bastia,Bastia (Mariana),9.4971,42.5387,,,,,,,,0,hanson
+bastia-2,Bastia,9.45,42.7032,,,,,11000,,41001,1,b2l;ne-popmax;ne-ports
+bataysk,Bataysk,39.7448,47.1368,,,,,,,109962,1,ne-popmax;ne-ports
+bath,Bath (Aquae Sulis),-2.35,51.3837,1161,,,,33000,60000,93238,0,b2l;chandler;hanson;ne-popmax
+batman,Batman,41.14,37.8904,,,,,,,302074,0,ne-popmax
+batna,Batna,6.17,35.57,,,,,,,280798,0,ne-popmax
+batumi,Batumi,41.63,41.6,,,,,,,155542,0,ne-popmax
+bautzen,Bautzen,14.433,51.183,,,,5000,11000,,,0,b2l
+bavai,Bavai (Bagacum),3.7989,50.2981,5219,,,,,,,0,hanson
+bayeux,Bayeux (Augustodurum),-0.7,49.267,1564,,,,10000,,,0,b2l;hanson
+bayonne,Bayonne,-1.483,43.483,,,,,12000,,,1,b2l;ne-ports
+bayreuth,Bayreuth,11.583,49.95,,,,,10000,,,0,b2l
+beauvais,Beauvais (Caesaromagus),2.083,49.433,565,,,10000,13000,,,0,b2l;hanson
+bechar,Béchar,-2.23,31.6111,,,,,,,143382,0,ne-popmax
+beer-sheva,Beer Sheva,34.83,31.25,,,,,,,206408,0,ne-popmax
+behramkale,Behramkale (Assus),26.3367,39.4906,7388,,,,,,,1,hanson
+beirut,Beirut (Berytus),35.5078,33.8739,,,15000,,9000,118000,2051000,1,b2l;chandler;hanson;ne-places;ne-ports
+beit-jibrin,Beit Jibrin (Eleutheropolis),34.894,31.6171,3945,,,,,,,0,hanson
+beit-ras,Beit Ras (Capitolias),35.8583,32.5986,26512,,,,,,,0,hanson
+beja,Béja (Vaga),9.19,36.7304,,,,,,,59567,0,hanson;ne-popmax
+beja-2,Beja (Pax Iulia),-7.863,38.014,3427,,,,,,35854,0,hanson;ne-popmax
+bejaia,Béjaïa (Saldae),5.07,36.7604,8860,,30000,,,,384937,1,b2l;chandler;hanson;ne-popmax;ne-ports;pleiades
+bekes,Bekes,21.133,46.767,,,,,10000,,,0,b2l
+bekescsaba,Békéscsaba,21.101,46.672,,,,,10000,,65206,0,b2l;ne-popmax
+bela-palanka,Bela Palanka (Remesiana),22.2935,43.2145,361,,,,,,,0,hanson
+belaya-kalitva,Belaya Kalitva,40.7861,48.1865,,,,,,,48098,0,ne-popmax
+belenli,Belenli (Olbasa),30.0055,37.3039,,,,,,,,0,hanson
+belfast,Belfast,-5.9282,54.5942,,,,,20000,335000,450406,1,b2l;chandler;ne-popmax;ne-ports
+belgorod,Belgorod,36.5999,50.63,,,,,,,345289,0,ne-popmax
+belgorod-dnestrovskiy,Belgorod-Dnestrovskiy,30.3333,46.1833,,,,,,32000,,0,chandler
+belgrade,Belgrade (Singidunum),20.466,44.8206,3598,,,30000,40000,69000,1108000,0,b2l;chandler;hanson;modelski-mod;ne-places
+belkis,Belkis (Cyzicus),27.8907,40.3834,17099,,,,,,,0,hanson
+belkis-2,Belkis (Aspendus),31.1691,36.9395,2929,,,,,,,0,hanson
+bellibol,Bellibol (Cys),28.4237,37.4289,,,,,,,,0,hanson
+bellinzona,Bellinzona,9.02,46.197,,,,,,,16572,0,ne-popmax
+belluno,Belluno (Bellunum),12.2174,46.14,1292,,,,,,,0,hanson
+belmonte-del-perejil,Belmonte del Perejil (Segeda),-1.5177,41.2891,,,,,,,,0,hanson
+ben-gardane,Ben Gardane,11.22,33.1404,,,,,,,19843,0,ne-popmax
+bendery,Bendery,29.4711,46.8306,,,,,,33000,,0,chandler
+benevagienna,Benevagienna (Augusta Bagiennorum),7.8578,44.5616,1704,,,,,,,0,hanson
+benevento,Benevento (Beneventum),14.75,41.1337,7183,,,,14000,,61791,0,b2l;hanson;ne-popmax
+benha,Benha (Athribis),31.1833,30.4667,46366,,,,,,167029,0,hanson;ne-popmax
+beni-mazar,Beni Mazar,30.81,28.4904,,,,,,,79553,0,ne-popmax
+beni-ounif,Béni Ounif,-1.2514,32.0493,,,,,,,5628,0,ne-popmax
+beni-suef,Beni Suef,31.09,29.0804,,,,,,,489450,0,ne-popmax
+berat,Berat,19.972,40.71,,,,,,,46866,0,ne-popmax
+berdyansk,Berdyansk,36.7868,46.7568,,,,,,,118284,1,ne-popmax;ne-ports
+berdychiv,Berdychiv,28.5879,49.9079,,,,,,58000,,0,chandler
+bergamo,Bergamo (Bergomum),9.67,45.7004,2144,,13000,18000,24000,,200000,0,b2l;chandler;hanson;ne-popmax
+berlin,Berlin,13.3996,52.5238,,,,9000,172000,2707000,3434000,0,b2l;chandler;modelski-mod;ne-places
+bern,Bern,7.467,46.9167,,,,,11000,64000,275329,0,b2l;chandler;ne-popmax
+bernburg,Bernburg,11.7342,51.797,,,,,,34000,,0,chandler
+besancon,Besançon (Vesontio),6.03,47.23,15101,,,9000,30000,55000,128426,0,b2l;chandler;hanson;ne-popmax
+beth-shean,Beth Shean (Scythopolis),35.5022,32.5023,31137,,,,,,,0,hanson
+bettona,Bettona (Vettona),12.4846,43.0129,361,,,,,,,0,hanson
+bevagna,Bevagna (Mevania),12.6073,42.9318,1426,,,,,,,0,hanson
+bezhetsk,Bezhetsk,36.69,57.7647,,,,,,,34736,0,ne-popmax
+beziers,Béziers (Baeterrae),3.21,43.3505,1564,,,,15000,52000,81438,0,b2l;chandler;hanson;ne-popmax
+biarritz,Biarritz,-1.5616,43.4733,,,,,,,145348,0,ne-popmax
+biaystok,Białystok,23.1823,53.1317,,,,,,65000,291855,0,chandler;ne-popmax
+bieda,Bieda (Blera),12.0325,42.2733,1995,,,,,,,0,hanson
+biel,Biel,7.25,47.1666,,,,,,,78708,0,ne-popmax
+bielefeld,Bielefeld,8.53,52.03,,,,,,63000,331906,0,chandler;ne-popmax
+bila-tserkva,Bila Tserkva,30.1309,49.7743,,,,,,,199163,0,ne-popmax
+bilbao,Bilbao,-2.93,43.25,,,,,10000,83000,875552,0,b2l;chandler;ne-popmax
+bilbeis,Bilbeis,31.57,30.42,,,10000,10000,10000,,,0,b2l
+bilecik,Bilecik,29.983,40.15,,,,,,,40285,0,ne-popmax
+bingol,Bingöl,40.498,38.885,,,,,,,80568,0,ne-popmax
+birak,Birak,14.2834,27.5333,,,,,,,45421,0,ne-popmax
+birmingham,Birmingham,-1.9219,52.4769,,,,,71000,1248000,2303000,0,b2l;chandler;modelski-mod;ne-places
+bisceglie,Bisceglie,16.5,41.233,,,,,11000,,,0,b2l
+biskra,Biskra,5.73,34.86,,,,,,,202103,0,ne-popmax
+bistrita,Bistrița,24.513,47.138,,,,,,,81318,0,ne-popmax
+bitburg,Bitburg (Beda),6.5235,49.9744,106,,,,,,,0,hanson
+bitlis,Bitlis,42.123,38.394,,,,,10000,38000,62811,0,b2l;chandler;ne-popmax
+bitola,Bitola (Heraclea),21.3395,41.0391,565,,,,15000,45000,86528,0,b2l;chandler;hanson;ne-popmax
+bitonto,Bitonto (Butuntum),16.683,41.1,,,,,15000,,,0,b2l;hanson
+bizerte,Bizerte (Hippo Diarrhytus),9.855,37.2904,,,,,,,139843,1,hanson;ne-popmax
+bjelajce,Bjelajce (Leusaba),17.084,44.417,,,,,,,,0,hanson
+blackburn,Blackburn,-2.478,53.743,,,,,12000,126000,,0,b2l;chandler
+blackpool,Blackpool,-3.05,53.8304,,,,,,43000,272792,0,chandler;ne-popmax
+blagodarnyy,Blagodarnyy,43.4344,45.1047,,,,,,,35995,0,ne-popmax
+blida,Blida,2.83,36.4203,,,,,,,511348,0,ne-popmax
+blois,Blois,1.333,47.583,,,,,11000,,,0,b2l
+bodrum,Bodrum (Halicarnassus),27.4216,37.0401,41228,,,,,,,1,hanson;pleiades
+bogdanou,Bogdanou (Hyampolis),22.9188,38.5947,460,,,,,,,0,hanson
+bogoroditsk,Bogoroditsk,38.1144,53.7747,,,,,,,39553,0,ne-popmax
+boiano,Boiano (Bovianum),14.471,41.4821,1564,,,,,,,0,hanson
+bologna,Bologna (Bononia),11.34,44.5004,5599,,10000,50000,68000,132000,488172,0,b2l;chandler;hanson;ne-popmax
+bologoye,Bologoye,34.0518,57.8722,,,,,,,25142,0,ne-popmax
+bolonia,Bolonia (Baelo),-5.7746,36.0899,1034,,,,,,,0,hanson
+bolsena,Bolsena (Volsinii Novi),12.0267,42.7378,4846,,,,,,,0,hanson
+bolton,Bolton,-2.43,53.572,,,,,13000,168000,,0,b2l;chandler
+bolu,Bolu,31.6061,40.7363,,,,,,,96629,0,ne-popmax
+bolzano,Bolzano,11.36,46.5004,,,,,,,95895,0,ne-popmax
+bonn,Bonn,7.08,50.7205,,,,,11000,59000,680543,0,b2l;chandler;ne-popmax
+boras,Borås,12.9392,57.7178,,,,,,,65008,0,ne-popmax
+borcani,Borčani (Delminium),17.2257,43.7208,,,,,,,,0,hanson
+bordeaux,Bordeaux (Burdigala),-0.597,44.852,16092,,,50000,96000,304000,836000,1,b2l;chandler;hanson;ne-places;ne-ports
+bordj-bou-arreridj,Bordj Bou Arréridj,4.7647,36.0777,,,,,,,140000,0,ne-popmax
+bordj-el-kantara,Bordj el Kantara (Meninx),10.9131,33.6889,6379,,,,,,,0,hanson
+borgo-s-dalmazzo,Borgo S. Dalmazzo (Pedona),7.4686,44.3353,2607,,,,,,,0,hanson
+borgo-tufico,Borgo Tufico (Tuficum),12.9976,43.3458,5792,,,,,,,0,hanson
+borinage,Borinage,3.3451,50.6176,,,,,19830,70000,,0,chandler
+borisoglebsk,Borisoglebsk,42.0887,51.3687,,,,,,,68597,0,ne-popmax
+bosra,Bosra (Bostra),36.4821,32.5183,10174,,,,,,,0,hanson
+botosani,Botoșani,26.6597,47.7484,,,,,,,114783,0,ne-popmax
+bou-grara,Bou Grara (Gigthis),10.6795,33.5415,7802,,,,,,,1,hanson
+bouira,Bouïra,3.9,36.3805,,,,,,,110144,0,ne-popmax
+boulogne,Boulogne,1.62,50.72,,,,,11000,49000,,1,b2l;chandler;ne-ports
+bourges,Bourges (Avaricum),2.4,47.0837,19419,,,32000,15000,39000,72340,0,b2l;chandler;hanson;ne-popmax
+bournemouth,Bournemouth,-1.9001,50.73,,,,,,46000,426945,0,chandler;ne-popmax
+bovino,Bovino (Vibinum),15.9571,41.7065,910,,,,,,,0,hanson
+bozcaada,Bozcaada (Tenedos),30.6479,36.8858,,,,,,,,1,hanson
+bradford,Bradford,-1.7545,53.7917,,,,,13000,303000,501700,0,b2l;chandler;ne-popmax
+braga,Braga (Bracara),-8.4213,41.555,3770,,,,16000,,826833,0,b2l;hanson;ne-popmax
+braganca,Bragança,-6.755,41.808,,,,,,,34375,0,ne-popmax
+braila,Brăila,27.969,45.292,,,,,16000,58000,213569,0,b2l;chandler;ne-popmax
+brandenburg,Brandenburg,12.55,52.417,,,,,12000,49000,,0,b2l;chandler
+brasov,Brasov,25.6167,45.6667,,,,,,34000,,0,chandler
+brasov-2,Brașov,25.6072,45.6475,,,,6000,18000,60000,311044,0,b2l;chandler;ne-popmax
+bratislava,Bratislava,17.117,48.15,,,,6000,28000,61000,423737,0,b2l;chandler;ne-popmax
+braunschweig,Braunschweig,10.5,52.25,,,10000,18000,30000,128000,244715,0,b2l;chandler;ne-popmax
+bregenz,Bregenz (Brigantium),9.7667,47.5167,,,,,,,26928,0,hanson;ne-popmax
+bremen,Bremen,8.8,53.08,,,,18000,36000,182000,724909,1,b2l;chandler;ne-popmax;ne-ports
+bremerhaven,Bremerhaven,8.58,53.5504,,,,,,64000,137751,1,chandler;ne-popmax;ne-ports
+brescello,Brescello (Brixellum),10.5167,44.9,1292,,,,,,,0,hanson
+brescia,Brescia (Brixia),10.25,45.55,4846,,10000,49000,32000,48000,,0,b2l;chandler;hanson
+brest,Brest,23.7,52.1,,,,,,43000,300715,0,chandler;ne-popmax
+brest-2,Brest,-4.495,48.3904,,,,,26000,103000,144899,1,b2l;chandler;ne-popmax;ne-ports
+bribir,Bribir (Varvaria),14.7671,45.1638,565,,,,,,,0,hanson
+brighton,Brighton,-0.17,50.8303,,,,,7339,158000,503008,0,chandler;ne-popmax
+brindisi,Brindisi (Brundisium),17.93,40.6403,10397,,,,,,104437,1,hanson;ne-popmax;ne-ports;pleiades
+bristol,Bristol,-2.5833,51.45,,,5000,10000,64000,320000,553528,0,b2l;chandler;ne-popmax
+brive,Brive,1.5333,45.1504,,,,,,,55448,0,ne-popmax
+brno,Brno,16.61,49.2004,,,,15000,16000,137000,388277,0,b2l;chandler;ne-popmax
+brough-on-humber,Brough on Humber (Petuaria),-0.5729,53.732,361,,,,,,,0,hanson
+brovary,Brovary,30.7809,50.4943,,,,,,,88506,0,ne-popmax
+brugg,Brugg (Vindonissa),8.2067,47.4796,,,,,,,,0,hanson
+brugge,Brugge,3.23,51.2204,,,12000,35000,31000,53000,146469,0,b2l;chandler;ne-popmax
+brussels,Brussels,4.3314,50.8353,,,,33000,66000,561000,1744000,0,b2l;chandler;modelski-mod;ne-places
+bryansk,Bryansk,34.43,53.26,,,,,,,427236,0,ne-popmax
+buccino,Buccino (Volcei),15.3748,40.6327,460,,,,,,,0,hanson
+bucharest,Bucharest,26.098,44.4353,,,,,50000,282000,1949000,0,b2l;chandler;modelski-mod;ne-places
+budapest,Budapest (Aquincum),19.0814,47.502,3945,,,12000,25000,785000,1655000,0,b2l;chandler;hanson;modelski-mod;ne-places
+budva,Budva (Butua),18.8425,42.2881,,,,,,,,0,hanson
+bugojno,Bugojno (Bistua Nova),17.4373,44.0535,,,,,,,,0,hanson
+bur-safaga,Bur Safaga,33.9333,26.7337,,,,,,,32944,1,ne-popmax;ne-ports
+bur-said,Bur Said,32.29,31.26,,,,,,44000,623864,1,chandler;ne-popmax;ne-ports
+buraydah,Buraydah,43.9628,26.3664,,,,,,,398581,0,ne-popmax
+burdur,Burdur,30.2833,37.7167,,,,,10000,,66158,0,b2l;ne-popmax
+burgas,Burgas,27.4746,42.5146,,,,,,,195966,0,ne-popmax
+burgos,Burgos,-3.68,42.3504,,,18000,8000,10000,31000,170183,0,b2l;chandler;ne-popmax
+burnley,Burnley,-2.2333,53.8,,,,,,96000,,0,chandler
+burrel,Burrel,20.016,41.626,,,,,,,15405,0,ne-popmax
+bursa,Bursa,29.0681,40.2019,,,10000,60000,32000,71000,1713000,0,b2l;chandler;modelski-mod;ne-places
+buruncuk,Buruncuk (Larisa),26.1476,39.6157,2296,,,,,,,0,hanson
+bury,Bury,-2.298,53.593,,,,,,57000,,0,chandler
+butrinto,Butrinto (Buthrotum),20.0206,39.7457,1292,,,,,,,1,hanson;pleiades
+buyuknefes,Büyüknefes (Tavium),34.4564,39.879,,,,,,,,0,hanson
+buzau,Buzău,26.8065,45.1565,,,,,,,130954,0,ne-popmax
+bydgoszcz,Bydgoszcz,18.01,53.1204,,,,,,52000,366452,0,chandler;ne-popmax
+bytom,Bytom,18.91,50.35,,,,,,,662247,0,ne-popmax
+cabezo-del-griego,Cabezo del Griego (Segobriga),-2.813,39.8853,1034,,,,,,,0,hanson
+cacak,Čačak,20.3301,43.8897,,,,,,,170000,0,ne-popmax
+caceres,Cáceres (Norba Caesarina),-6.381,39.4544,,,,,,,,0,hanson
+cadiz,Cádiz (Gades),-6.2861,36.5248,14856,,,,70000,113000,283157,1,b2l;chandler;hanson;ne-popmax;ne-ports
+caen,Caen,-0.35,49.1838,,,20000,25000,35000,42000,190099,1,b2l;chandler;ne-popmax;ne-ports
+caerwent,Caerwent (Venta Silurum),-2.7681,51.6112,1995,,,,,,,0,hanson
+caesarea-maritima,Caesarea Maritima,34.8921,32.5009,24271,,,,,,,1,hanson
+caglarca,Çağlarca (Trebenna),30.4618,36.8761,,,,,,,,0,hanson
+cagli,Cagli (Pitinum Mergens),12.6485,43.5464,1564,,,,,,,0,hanson
+cagliari,Cagliari (Caralis),9.104,39.2224,,,,,25000,53000,291511,1,b2l;chandler;hanson;ne-popmax;ne-ports
+cahors,Cahors (Divona),1.433,44.433,22352,,,,10000,,,0,b2l;hanson
+cahul,Cahul,28.1944,45.9079,,,,,,,63407,0,ne-popmax
+caiazzo,Caiazzo (Caiatia),14.3666,41.1771,1426,,,,,,,0,hanson
+cairo,Cairo (Heliopolis),31.248,30.0519,17099,,135000,180000,263000,595000,13465000,0,b2l;chandler;hanson;modelski-anc;modelski-mod;ne-places
+caistor-by-norwich,Caistor by Norwich (Venta Icenorum),1.2909,52.5834,1995,,,,,,,0,hanson
+calahorra,Calahorra (Calagurris),-1.965,42.3037,1704,,,,,,,0,hanson
+calais,Calais,1.8333,50.9504,,,,,,59000,92201,1,chandler;ne-popmax;ne-ports
+calarasi,Călărași,27.3259,44.2063,,,,,,,73224,0,ne-popmax
+calatafimi,Calatafimi,12.867,37.917,,,,,10000,,,0,b2l
+calatayud,Calatayud (Bilbilis),-1.6083,41.3766,3770,,,,,,,0,hanson
+caltagirone,Caltagirone,14.517,37.233,,,,8000,20000,,,0,b2l
+caltanisetta,Caltanisetta,14.067,37.483,,,,,16000,32000,,0,b2l;chandler
+calvi,Calvi (Cales),14.132,41.2,10847,,,,,,,0,hanson
+camarina,Camarina,14.4477,36.8721,,,,,,,,0,hanson
+cambrai,Cambrai (Camaracum),3.233,50.167,,,,,15000,,,0,b2l;hanson
+cambridge,Cambridge,0.1166,52.2004,,,,,10000,38000,128488,0,b2l;chandler;ne-popmax
+camerino,Camerino (Camerinum),13.0666,43.1341,2296,,,,,,,0,hanson
+campobasso,Campobasso,14.656,41.563,,,,,,,50762,0,ne-popmax
+canakkale,Çanakkale,26.4064,40.1459,,,,,,,87791,0,ne-popmax
+canaveruelas,Cañaveruelas (Ercavica),-2.6697,40.4333,2144,,,,,,,0,hanson
+canicatti,Canicatti,13.85,37.35,,,,,16000,,,0,b2l
+cankr,Çankırı,33.621,40.607,,,,,,,71379,0,ne-popmax
+canosa-di-puglia,Canosa di Puglia (Canusium),16.066,41.2225,2296,,,,,,,0,hanson
+canterbury,Canterbury (Durovernum),1.0805,51.2787,9731,,,,,,,0,hanson
+caparra,Cáparra (Capera),-6.1011,40.1668,1704,,,,,,,0,hanson
+cape-kutri,Cape Kutri (Phalasarna),23.5804,35.501,,,,,,,,1,hanson;pleiades
+capilla,Capilla (Mirobriga),-5.0843,38.8205,,,,,,,,0,hanson
+capua,Capua (Casilinum),14.212,41.1087,170000,100000,,,,,,0,hanson;modelski-anc
+carcassonne,Carcassonne (Carcaso),2.35,43.217,460,,,,15000,,,0,b2l;hanson
+cardiff,Cardiff,-3.1676,51.4826,,,,,,169000,861400,0,chandler;ne-popmax
+carhaix,Carhaix (Vorgium),-3.5711,48.2765,,,,,,,,0,hanson
+carija,Carija (Carissa),-5.7321,36.8777,,,,,,,,0,hanson
+carlisle,Carlisle (Luguvalium),-2.93,54.88,3598,,,,,45000,72633,0,chandler;hanson;ne-popmax
+carmagnole,Carmagnole,7.717,44.85,,,,,10000,,,0,b2l
+carmarthen,Carmarthen (Moridunum),-4.2967,51.862,1564,,,,,,,0,hanson
+carmona,Carmona (Carmo),-5.633,37.467,7183,,,7000,12000,,,0,b2l;hanson
+carpentras,Carpentras (Carpentorate),5.0489,44.0558,,,,,,,,0,hanson
+carsli,Carsli (Carseoli),13.0869,42.0993,,,,,,,,0,hanson
+carsulae,Carsulae,12.5572,42.6398,1564,,,,,,,0,hanson
+cartagena,Cartagena (Carthago Nova),-0.98,37.6004,9511,,33000,,25000,78000,201274,1,b2l;chandler;hanson;ne-popmax;ne-ports
+cartama,Cartama (Cartima),-4.6307,36.7113,,,,,,,,0,hanson
+carthage,Carthage (Carthago),10.3277,36.8513,102018,270000,,,,,,1,chandler;hanson;modelski-anc;pleiades
+casablanca,Casablanca,-7.6183,33.6019,,,,,,,3475000,1,modelski-mod;ne-places;ne-ports
+casale,Casale (Vardagate),8.45,45.133,1564,,,,16000,,,0,b2l;hanson
+casamari,Casamari (Cereatae),13.487,41.671,,,,,,,,0,hanson
+caserta,Caserta,14.3374,41.06,,,,,,,250000,0,ne-popmax
+caska,Caska (Cissa),14.918,44.551,,,,,,,,0,hanson
+cassandrea,Cassandrea,23.412,40.0477,,,,,,,,0,hanson
+cassel,Cassel,2.4853,50.8011,,,,,,106000,,0,chandler
+cassino,Cassino (Casinum),13.8222,41.4828,910,,,,,,,0,hanson
+castel-di-sangro,Castel di Sangro (Aufidena),14.1044,41.7747,,,,,,,,0,hanson
+castellammare,Castellammare,12.883,38.017,,,,,15000,,,0,b2l
+castelleone-di-suasa,Castelleone di Suasa (Suasa),12.984,43.6234,2450,,,,,,,0,hanson
+castello,Castello,-0.05,39.9704,,,,7000,13000,,180610,0,b2l;ne-popmax
+castelo-branco,Castelo Branco,-7.488,39.811,,,,,,,33479,0,ne-popmax
+castelvecchio-subequo,Castelvecchio Subequo (Superaequum),13.7306,42.1306,5599,,,,,,,0,hanson
+castelvetrano,Castelvetrano,12.783,37.683,,,,,14000,,,0,b2l
+castiglione,Castiglione (Gabii),12.7158,41.8869,1564,,,,,,,0,hanson
+castres,Castres,2.25,43.6,,,,,13000,,,0,b2l
+castroreale,Castroreale,15.2,38.1,,,,,11000,,,0,b2l
+catania,Catania,15.08,37.5,28224,,,14000,45000,138000,674542,1,b2l;chandler;hanson;ne-popmax;ne-ports;pleiades
+catanzaro,Catanzaro (Scolacium),16.5961,38.8103,3093,,,,,,,0,hanson
+catanzaro-2,Catanzaro,16.6,38.9004,,,,,13000,,95251,0,b2l;ne-popmax
+cava-di-tirreni,Cava di Tirreni,14.7,40.7,,,,,20000,,,0,b2l
+cavaillon,Cavaillon (Cabellio),5.0342,43.8299,,,,,,,,0,hanson
+cavdarhisar,Çavdarhisar (Aezanis),29.6197,39.1936,,,,,,,,0,hanson
+cavtat,Cavtat (Epidaurum),18.2164,42.5826,,,,,,,,0,hanson
+cazona,Cazona (Castulo),-3.6236,38.0358,5792,,,,,,,0,hanson
+ccuneo,Ccuneo,7.533,44.383,,,,,18000,,,0,b2l
+cebelires,Cebelireş (Laertes),32.1594,36.5148,,,,,,,,0,hanson
+ceglie-di-bari,Ceglie di Bari (Caelia),16.8661,41.0642,,,,,,,,0,hanson
+celje,Celje (Celeia),15.2603,46.231,,,,,,,,0,hanson
+centuripe,Centuripe (Centuripae),14.7401,37.624,,,,,,,,0,hanson
+cerignola,Cerignola,15.9005,41.264,,,,,,31000,,0,chandler
+cerro-del-calvario,Cerro del Calvario (Labitolosa),0.2874,42.1447,910,,,,,,,0,hanson
+cerveteri,Cerveteri (Caere),12.0935,41.9938,25106,,,,,,,0,hanson
+cesena,Cesena (Caesena),12.2391,44.1388,2450,,,,,,,0,hanson
+ceske-budejovice,České Budějovice,14.46,48.98,,,,,5000,39000,98851,0,b2l;chandler;ne-popmax
+ceuta,Ceuta,-5.307,35.889,,,,,,,78674,1,ne-popmax;ne-ports;pleiades
+chalkida,Chalkida (Chalcis),23.6124,38.464,2296,,,,,,71842,0,hanson;ne-popmax
+chalon-sur-saone,Chalon-sur-saone (Cabillonum),4.85,46.783,1564,,,8000,11000,,,0,b2l;hanson
+chalons-sur-marne,Chalons-sur-Marne,4.367,48.95,,,,,11000,,,0,b2l
+chambery,Chambery,5.9,45.6,,,,,10000,,,0,b2l
+charleroi,Charleroi,4.45,50.4204,,,,,,,345367,0,ne-popmax
+chartres,Chartres (Autricum),1.5,48.45,34421,,,,16000,,,0,b2l;hanson
+chatham,Chatham,0.535,51.361,,,,,22000,,,0,b2l;chandler
+chaves,Chaves (Aquae Flaviae),-7.4684,41.739,361,,,,,,,0,hanson
+chelmsford,Chelmsford (Caesaromagus),0.4697,51.7358,1704,,,,,,,0,hanson
+cheltenham,Cheltenham,-2.0667,51.8833,,,,,,48000,,0,chandler
+chemnitz,Chemnitz,12.92,50.83,,,,,14000,206000,302643,0,b2l;chandler;ne-popmax
+chemtou,Chemtou (Simitthus),8.5735,36.4909,5792,,,,,,,0,hanson
+cherbourg,Cherbourg,-1.65,49.6504,,,,,11000,42000,60991,1,b2l;chandler;ne-popmax;ne-ports
+cherchell,Cherchell (Iol),2.1888,36.6064,37477,,,,,,,1,hanson;pleiades
+cherkasy,Cherkasy,32.0709,49.4347,,,,,,,297568,0,ne-popmax
+cherkessk,Cherkessk,42.06,44.2904,,,,,,,116224,0,ne-popmax
+chernihiv,Chernihiv,31.3015,51.5049,,,,,,,307684,0,ne-popmax
+chernivtsi,Chernivtsi,25.9216,48.3053,,,,,,67000,298251,0,chandler;ne-popmax
+chernyakhovsk,Chernyakhovsk,21.8109,54.6316,,,,,,,45187,0,ne-popmax
+chester,Chester,-2.903,53.1863,,,,,15000,38000,89531,0,b2l;chandler;ne-popmax
+chichester,Chichester (Noviomagus),-0.7792,50.8365,6182,,,,,,,0,hanson
+chieri,Chieri (Carreum),7.8283,45.0069,1564,,,,,,,0,hanson
+chieti,Chieti (Teate Marrucinorum),14.167,42.35,2296,,,,13000,,,0,b2l;hanson
+chioggia,Chioggia,12.289,45.226,,,,,24000,,,0,b2l
+chisinau,Chișinău,28.8577,47.005,,,,,13000,125000,688134,0,chandler;ne-popmax
+chiusi,Chiusi (Clusium),11.949,43.0167,3259,,,,,,,0,hanson
+chivasso,Chivasso,7.883,45.183,,,,,23000,,,0,b2l
+chlef,Chlef,1.32,36.1704,,,,,,,449167,0,ne-popmax
+chollo,Chollo (Chullu),6.5621,37.0079,,,,,,,,0,hanson
+chora,Chora (Astypalaea),26.3505,36.5449,,,,,,,,0,hanson
+choud-el-battan,Choud el Battan (Abitinae),9.5491,36.6279,,,,,,,,0,hanson
+chur,Chur (Curia),9.5,46.85,791,,,,,,38293,0,hanson;ne-popmax
+cingoli,Cingoli (Cingulum),13.2034,43.3742,910,,,,,,,0,hanson
+circeo,Circeo (Circeii),13.0963,41.2356,,,,,,,,0,hanson
+circeo-2,Circeo (Circeii),13.0962,41.2354,3945,,,,,,,0,hanson
+cirencester,Cirencester (Corinium Dobunnorum),-1.9668,51.7136,17864,,,,,,,0,hanson
+citluk,Čitluk (Aequum),16.6557,43.7393,1292,,,,,,,0,hanson
+citta-di-castello,Città di Castello (Tifernum Tiberinum),12.244,43.4609,3945,,,,,,,0,hanson
+ciudad-rodrigo,Ciudad-Rodrigo,-6.533,40.6,,,,5000,,,,0,b2l
+ciudadela,Ciudadela (Iamo),3.8612,40.0092,1292,,,,,,,1,hanson
+civaux,Civaux (Unknown),0.6649,46.4442,,,,,,,,0,hanson
+cividale-del-friuli,Cividale del Friuli (Forum Iulii),13.431,46.0928,1161,,,,,,,0,hanson
+civita-castellana,Civita Castellana (Falerii Novi),12.4115,42.2888,4121,,,,,,,0,hanson
+civita-d-antino,Civita d'Antino (Antinum),13.4718,41.8856,268,,,,,,,0,hanson
+civita-di-marano,Civita di Marano (Cupra Maritima),13.1164,43.4469,3945,,,,,,,0,hanson
+civitavecchia,Civitavecchia (Centumcellae),11.8,42.1004,1995,,,,,,61316,1,hanson;ne-popmax;ne-ports;pleiades
+civitcola,Civitcola (Capena),12.5417,42.1427,460,,,,,,,0,hanson
+civitella,Civitella? (Vitellia),12.779,41.8823,,,,,,,,0,hanson
+clermont-ferrand,Clermont-Ferrand (Augustonemetum),3.08,45.78,17353,,,,24000,52000,233050,0,b2l;chandler;hanson;ne-popmax
+cluj-napoca,Cluj-Napoca (Napoca),23.5984,46.7884,5409,,,6000,11000,46000,316748,0,b2l;chandler;hanson;ne-popmax
+cnidus,Cnidus,27.6839,36.7325,9511,,,,,,,1,hanson
+coatbridge,Coatbridge,-4.0247,55.8622,,,,,,57000,,0,chandler
+coburg,Coburg,10.9666,50.2666,,,,,,,61054,0,ne-popmax
+coimbra,Coimbra (Aeminium),-8.4167,40.2004,,,,6000,15000,,106582,0,b2l;chandler;hanson;ne-popmax
+colchester,Colchester (Camulodunum),0.9,51.892,7388,,,5000,12000,38000,,0,b2l;chandler;hanson
+colfiorito,Colfiorito (Plestia),12.8896,43.0277,4846,,,,,,,0,hanson
+colkayigi,Çölkayiği (Balbura),29.6026,36.9671,,,,,,,,0,hanson
+collemancio,Collemancio (Urvinum Hortense),12.522,42.9852,268,,,,,,,0,hanson
+colmar,Colmar,7.367,48.083,,,,,11000,36000,,0,b2l;chandler
+cologne,Cologne (Colonia Agrippinensis),6.9481,50.932,13405,,21000,45000,41000,437000,1059000,0,b2l;chandler;hanson;ne-places
+comiso,Comiso,14.6,36.933,,,,,11000,,,0,b2l
+como,Como (Comum),9.08,45.81,3093,,,10000,15000,,250000,0,b2l;hanson;ne-popmax
+concordia,Concordia,12.8443,45.7569,6182,,,,,,,0,hanson
+condeixa-a-velha,Condeixa a Velha (Conimbriga),-8.4949,40.0992,2767,,,,,,,0,hanson
+constanta,Constanța (Tomis),28.61,44.2027,6182,,,,,,303399,1,hanson;ne-popmax
+constantine,Constantine (Cirta),6.5999,36.36,5219,,,,11000,52000,605179,0,b2l;chandler;hanson;ne-popmax
+conza-della-campania,Conza della Campania (Compsa),15.3336,40.867,,,,,,,,0,hanson
+corato,Corato,16.417,41.15,,,,,10000,,,0,b2l
+corbridge,Corbridge (Corstopitum),-2.0292,54.9781,,,,,,,,0,hanson
+cordoba,Córdoba (Corduba),-4.77,37.88,19419,,100000,35000,40000,52000,321376,0,b2l;chandler;hanson;modelski-anc;ne-popmax
+corfinio,Corfinio (Corfinium),13.8422,42.1238,1034,,,,,,,0,hanson
+cori-a-valle,Cori a Valle (Cora),12.9161,41.6428,1564,,,,,,,0,hanson
+corinth,Corinth (Corinthia),22.8798,37.9063,63688,,,,,,,1,hanson;pleiades
+cork,Cork,-8.4651,51.8928,,,,,75000,76000,188907,1,b2l;chandler;ne-popmax;ne-ports
+corleone,Corleone,13.3,37.817,,,,5000,12000,,,0,b2l
+corovode,Çorovodë,20.2333,40.5167,,,,,,,14046,0,ne-popmax
+corridonia,Corridonia (Pausulae),13.5102,43.2485,1426,,,,,,,0,hanson
+corseul,Corseul (Fanum Martis),3.5178,50.3119,3093,,,,,,,0,hanson
+cortijo-de-el-rocadillo,Cortijo de el Rocadillo (Carteia),-5.4104,36.1832,2929,,,,,,,1,hanson;ne-ports
+cortijo-de-maquiz,Cortijo de Maquiz (Iliturgi),-3.8088,37.9683,,,,,,,,0,hanson
+cortijo-del-castillon,Cortijo del Castillón (Singilia Barba),-4.6304,37.0325,5409,,,,,,,0,hanson
+cortona,Cortona,11.9855,43.2745,6778,,,,,,,0,hanson
+corum,Corum,34.95,40.52,,,,,,,183418,0,ne-popmax
+cosenza,Cosenza (Consentia),16.25,39.3,910,,,,10000,,,0,b2l;hanson
+cottbus,Cottbus,14.33,51.7704,,,,,,39000,105067,0,chandler;ne-popmax
+coutances,Coutances (Cosedia),-1.4443,49.0482,3770,,,,,,,0,hanson
+coventry,Coventry,-1.5027,52.4007,,,,6000,16000,68000,388271,0,b2l;chandler;ne-popmax
+covilha,Covilhã,-7.5,40.2833,,,,,,,24828,0,ne-popmax
+craiova,Craiova,23.8259,44.3263,,,,,11000,45000,304142,0,b2l;chandler;ne-popmax
+crema,Crema,9.683,45.367,,,,12000,9000,,,0,b2l
+cremona,Cremona,10.033,45.117,9293,,,40000,23000,31000,,0,b2l;chandler;hanson
+cres,Cres (Crexa),14.3975,44.8568,,,,,,,,0,hanson
+crewe,Crewe,-2.4416,53.0979,,,,,,41000,,0,chandler
+crotone,Crotone (Croton),17.1233,39.0833,,,,,,,60010,1,hanson;ne-popmax;ne-ports
+ctesiphon,Ctesiphon,44.5801,33.0938,,250000,,,,,,0,chandler;modelski-anc
+cuenca,Cuenca,-2.133,40.067,,,,13000,6000,,,0,b2l
+cumae,Cumae,14.0561,40.8471,14611,,,,,,,1,hanson;pleiades
+cures,Cures,12.6842,42.178,460,,,,,,,0,hanson
+cvijina-gradina,Cvijina Gradina (Ansium),15.6654,44.1788,,,,,,,,0,hanson
+czestochowa,Czestochowa,19.1241,50.7965,,,,,,53000,,0,chandler
+dag-pazari,Dağ Pazari (Coropissus),33.4775,36.8189,,,,,,,,0,hanson
+dalama,Dalama (Euhippe),28.0866,37.7876,,,,,,,,0,hanson
+dali,Dali (Idalium),33.4248,35.0161,5792,,,,,,,0,hanson
+dalyan,Dalyan (Caunus),28.6215,36.8258,4121,,,,,,,0,hanson
+damanhur,Damanhûr (Hermopolis Parva),30.47,31.0504,,,,10000,10000,,500000,0,b2l;hanson;ne-popmax
+damascus,Damascus,36.2981,33.502,28224,40000,40000,64000,80000,165000,2981000,0,b2l;chandler;hanson;modelski-mod;ne-places
+dandara,Dandara (Tentyris),32.65,26.1667,,,,,,,,0,hanson
+danilo,Danilo (Rider),16.0557,43.7005,,,,,,,,0,hanson
+dar-a,Dar'a (Adraha),36.105,32.625,,,,,,,146481,0,hanson;ne-popmax
+darmstadt,Darmstadt,8.6494,49.8706,,,,,,72000,,0,chandler
+darnah,Darnah,22.6391,32.7648,,,,,,,127974,0,ne-popmax
+daruvar,Daruvar (Aquae Balissae),17.224,45.5937,,,,,,,,0,hanson
+daugavpils,Daugavpils,26.51,55.88,,,,,,73000,111564,0,chandler;ne-popmax
+dawmat-al-jandal,Dawmat al Jandal,39.8664,29.8153,,,,,,,22583,0,ne-popmax
+dayr-az-zawr,Dayr az Zawr,40.13,35.3304,,,,,,,309141,0,ne-popmax
+dchar-jedid,Dchar Jedid (Zilis),-5.9158,35.5222,,,,,,,,0,hanson
+debelt,Debelt (Deultum),27.2896,42.3908,,,,,,,,0,hanson
+debrecen,Debrecen,21.63,47.5305,,,,9000,35000,72000,231286,0,b2l;chandler;ne-popmax
+degirmendere,Degirmendere (Colophon),27.2008,38.0024,4121,,,,,,,1,hanson;pleiades
+delemont,Delémont,7.345,47.37,,,,,,,11315,0,ne-popmax
+delft,Delft,4.367,52.0,,,,12000,17000,31000,,0,b2l;chandler
+deliktas,Deliktaş (Olympus),30.4715,36.3879,,,,,,,,0,hanson
+dellys,Dellys? (Rusuccuru),3.9141,36.916,,,,,,,,0,hanson
+delos,Delos,25.2672,37.3986,18379,,,,,,,1,hanson;pleiades
+delphi,Delphi,22.5,38.4833,3945,,,,,,,0,hanson
+demircideresi,Demircideresi (Alinda),27.8305,37.5608,1426,,,,,,,0,hanson
+demre,Demre (Myra),30.0144,36.2464,19945,,,,,,,0,hanson
+denizli,Denizli,29.08,37.7704,,,,,,,372344,0,ne-popmax
+denlizi,Denlizi (Castabala),36.1772,37.1604,7594,,,,,,,0,hanson
+deptford,Deptford,-0.034,51.479,,,,,18000,,,1,b2l;ne-ports
+derby,Derby,-1.472,52.915,,,,,11000,112000,,0,b2l;chandler
+dessau,Dessau,12.25,51.833,,,,,10000,50000,,0,b2l;chandler
+deva,Deva,22.9167,45.8833,,,,,,,67802,0,ne-popmax
+deventer,Deventer,6.2,52.25,,,,7000,8000,,,0,b2l
+dewsbury,Dewsbury,-1.6291,53.6908,,,,,,57000,,0,chandler
+die,Die (Dea Augusta Vocontiorum),5.3705,44.7525,2767,,,,,,,0,hanson
+diekirch,Diekirch,6.1667,49.8833,,,,,,,6242,0,ne-popmax
+dieppe,Dieppe,1.0833,49.9337,,,,20000,17000,,42461,1,b2l;chandler;ne-popmax;ne-ports
+dijon,Dijon (Dibio),5.03,47.3304,910,,,13000,19000,71000,169946,0,b2l;chandler;hanson;ne-popmax
+dilver,Dilver (Tlos),29.4208,36.5539,1704,,,,,,,1,hanson
+dinar,Dinar (Celaenae),30.1585,38.076,12694,,,,,,,0,hanson
+dion,Dion (Dium),22.4861,40.1729,4846,,,,,,,0,hanson
+diyarbakr,Diyarbakır,40.23,37.9204,,,,,20000,,644763,0,b2l;chandler;ne-popmax
+djebeleh,Djebeleh (Gabala),35.9223,35.3781,,,,,,,,0,hanson
+djelfa,Djelfa,3.25,34.68,,,,,,,170901,0,ne-popmax
+djemaa-saharidj,Djemaa Saharidj (Bida),4.2892,36.6833,,,,,,,,0,hanson
+djemila,Djemila (Cuicul),5.7357,36.3205,791,,,,,,,0,hanson
+dnipro,Dnipro,34.9981,48.4819,,,,,,135000,1042000,0,chandler;modelski-mod;ne-places
+dobrich,Dobrich,27.84,43.5851,,,,,,,94831,0,ne-popmax
+dodona,Dodona,20.7878,39.5464,,,,,,,,0,hanson
+doganyurt,Doğanyurt (Alabanda),27.9854,37.5918,11993,,,,,,,0,hanson
+dolsach-and-nudorf-debant,Dölsach and Nußdorf Debant (Aguntum),12.8222,46.8279,,,,,,,,0,hanson
+donetsk,Donetsk,37.828,48.0019,,,,,,,973000,0,modelski-mod;ne-places
+dorchester,Dorchester (Durnovaria),-2.4405,50.7109,5599,,,,,,,0,hanson
+dordrecht,Dordrecht,4.667,51.8,,,,10000,18000,38000,,1,b2l;chandler;ne-ports
+dortmund,Dortmund,7.45,51.53,,,,,,142000,588462,0,chandler;ne-popmax
+douai,Douai,3.067,50.367,,,,10000,18000,,,0,b2l
+dougga,Dougga (Thugga),9.2202,36.4237,3093,,,,,,,0,hanson
+douglas,Douglas,-4.4803,54.1491,,,,,,,35854,1,ne-popmax;ne-ports
+douma,Douma,36.4,33.5833,,,,,,,496145,0,ne-popmax
+dover,Dover,1.3,51.1337,,,,,11000,40000,36384,1,b2l;chandler;ne-popmax;ne-ports;pleiades
+dresden,Dresden,13.75,51.05,,,,5000,60000,540000,617515,0,b2l;chandler;ne-popmax
+driana,Driana (Hadrianopolis),20.3075,32.358,,,,,,,,0,hanson
+drnovo,Drnovo (Neviodunum),15.4991,45.9209,182,,,,,,,0,hanson
+drobeta-turnu-severin,Drobeta-Turnu Severin (Drobeta),22.6659,44.6459,9731,,,,,,106578,0,hanson;ne-popmax
+drobudja,Drobudja (Troesmis),28.1935,45.1402,106,,,,,,,0,hanson
+drogheda,Drogheda,-6.3505,53.7089,,,,,18000,,36533,0,b2l;ne-popmax
+drohobych,Drohobych,23.4994,49.3444,,,,,,,124269,0,ne-popmax
+dubasari,Dubăsari,29.1608,47.2631,,,,,,,23254,0,ne-popmax
+dublin,Dublin,-6.257,53.3467,,,,8000,200000,382000,1177000,1,b2l;chandler;ne-places;ne-ports
+dubravica,Dubravica (Margum),21.0617,44.6912,,,,,,,,0,hanson
+dubrovnik,Dubrovnik,18.0914,42.6609,,,,,,,36994,1,ne-popmax;ne-ports
+dudley,Dudley,-2.096,52.512,,,,,10000,,,0,b2l
+dudurga-asari,Dudurga Asari (Sidyma),29.1978,36.4097,,,,,,,,0,hanson
+duhok,Duhok,43.0,36.8667,,,,,,,986000,0,ne-popmax
+duisburg,Duisburg,6.75,51.43,,,,,,,1276757,0,ne-popmax
+dumfries,Dumfries,-3.55,55.0671,,,,,,,31044,0,ne-popmax
+dumyat,Dumyat,31.82,31.4204,,,80000,40000,,30000,299459,0,b2l;chandler;ne-popmax
+dundalk,Dundalk,-6.3956,53.9998,,,,,15000,,38884,0,b2l;ne-popmax
+dundee,Dundee,-3.0,56.4704,,,,,26000,160000,151592,1,b2l;chandler;ne-popmax;ne-ports
+dunkerque,Dunkerque,2.367,51.05,,,,,21000,70000,,0,b2l;chandler
+durres,Durrës (Dyrrachium),19.4482,41.3178,18379,,,,10000,,142432,1,b2l;hanson;ne-popmax;ne-ports;pleiades
+dusseldorf,Düsseldorf,6.78,51.2204,,,,,20000,213000,1220000,0,b2l;chandler;ne-popmax
+dyatkovo,Dyatkovo,34.3392,53.5891,,,,,,,33527,0,ne-popmax
+dzerzhinsk,Dzerzhinsk,43.46,56.2504,,,,,,,256537,0,ne-popmax
+dzhankoy,Dzhankoy,34.4,45.717,,,,,,,43879,0,ne-popmax
+eastbourne,Eastbourne,0.2845,50.7687,,,,,,42000,,0,chandler
+ebusus,Ebusus,1.4323,38.9084,,,,,,,,1,hanson;ne-ports
+ecija,Ecija (Astigi),-5.083,37.533,13884,,18000,17000,28000,,,0,b2l;chandler;hanson
+edessa,Edessa,22.0507,40.8024,37477,,,,,,,0,hanson
+edinburgh,Edinburgh,-3.2191,55.9483,,,,18000,83000,400000,504966,1,b2l;chandler;ne-popmax;ne-ports
+edirne,Edirne (Hadrianopolis),26.57,41.6704,5986,,15000,127000,44000,81000,126470,0,b2l;chandler;hanson;ne-popmax
+edremit,Edremit (Adramyttium),26.9478,39.5003,182,,,,,,,0,hanson
+eger,Eger,20.383,47.895,,,,,17000,,56647,0,b2l;ne-popmax
+egnazia,Egnazia (Egnatia),17.3908,40.8879,2296,,,,,,,1,hanson
+ehnasya-el-medina,Ehnasya el Medina (Heracleopolis Magna),30.9345,29.0855,33818,,,,,,,0,hanson
+eindhoven,Eindhoven,5.5,51.43,,,,,,,398053,0,ne-popmax
+eisenach,Eisenach,10.3152,50.9807,,,,,,31000,,0,chandler
+eisenstadt,Eisenstadt,16.5333,47.8333,,,,,,,13165,0,ne-popmax
+ek,Ełk,22.35,53.8337,,,,,,,55769,0,ne-popmax
+el-alamein,El Alamein,28.95,30.8171,,,,,,,7400,0,ne-popmax
+el-arish,El Arish,33.8006,31.1249,,,,,,,178651,0,ne-popmax
+el-ashmunein,El Ashmunein (Hermopolis Magna),30.8039,27.7814,35331,,,,,,,0,hanson
+el-bahnasa,El Bahnasa (Oxyrhynchus),30.6553,28.536,39968,,,,,,,0,hanson
+el-bayadh,El Bayadh,1.01,33.6904,,,,,,,67413,0,ne-popmax
+el-benian,El Bénian (Quiza),0.2417,36.0299,,,,,,,,0,hanson
+el-birba,El Birba (Thinis),30.7367,27.7747,,,,,,,,0,hanson
+el-castillejo,El Castillejo (Arva),-5.6713,37.6142,,,,,,,,0,hanson
+el-daba,El Daba,28.4333,31.0338,,,,,,,14212,0,ne-popmax
+el-djem,El Djem (Thysdrus),10.707,35.2948,41545,,,,,,,0,hanson
+el-faiyum,El Faiyum (Nilopolis),30.84,29.31,,,15000,15000,15000,32000,316772,0,b2l;chandler;hanson;ne-popmax
+el-gabalein,El Gabalein (Aphroditopolis),32.4739,25.3697,26512,,,,,,,0,hanson
+el-golea,El Goléa,2.8833,30.5666,,,,,,,32049,0,ne-popmax
+el-jadida,El Jadida,-8.51,33.2604,,,,,,,180470,1,ne-popmax;pleiades
+el-kef,El Kef (Sicca Veneria),8.7148,36.1826,27937,,,,,,47979,0,hanson;ne-popmax
+el-khalasa,El Khalasa (Elusa),34.6532,31.1001,4846,,,,,,,0,hanson
+el-kharga,El Kharga,30.55,25.44,,,,,,,49991,0,ne-popmax
+el-kherba,El Kherba (Tigava),1.6514,36.2319,,,,,,,,0,hanson
+el-manshah,El Manshah (Ptolemais),31.8,26.4833,,,,,,,,0,hanson
+el-mansura,El Mansura,31.38,31.0504,,,,14000,14000,37000,600000,0,b2l;chandler;ne-popmax
+el-minya,El Minya,30.75,28.09,,,,,,,500000,0,ne-popmax
+el-oued,El Oued,6.86,33.3704,,,,,,,177497,0,ne-popmax
+el-qusiya,El Qusiya (Cussae),30.818,27.4382,,,,,,,,0,hanson
+el-tur,El Tur,33.6148,28.2394,,,,,,,27628,0,ne-popmax
+elazg,Elâzığ,39.23,38.68,,,,,,,271492,0,ne-popmax
+elbasan,Elbasan,20.0838,41.1215,,,,,,,165010,0,ne-popmax
+elberfeld,Elberfeld,7.133,51.267,,,,,19000,,,0,b2l
+elblag,Elbląg,19.4032,54.1539,,,,10000,17000,52000,127558,0,b2l;chandler;ne-popmax
+elche,Elche (Ilici),-0.68,38.25,791,,,,17000,,,0,b2l;hanson
+elea,Elea (Velia),15.1542,40.1595,2767,,,,,,,1,hanson
+elefsina,Elefsina (Eleusis),23.5421,38.0433,460,,,,,,,0,hanson
+elista,Elista,44.2087,46.3287,,,,,,,106971,0,ne-popmax
+eloro,Eloro (Helorus),15.1094,36.8422,910,,,,,,,0,hanson
+elvas,Elvas,-7.167,38.883,,,,,13000,,,0,b2l
+emden,Emden,7.2167,53.3667,,,,5000,10000,,51526,1,b2l;ne-popmax;ne-ports
+empuries,Empúries (Emporiae),3.1158,42.1333,2929,,,,,,,1,hanson;pleiades
+endiseguney,Endişegüney (Antiochia),32.4291,36.1533,,,,,,,,0,hanson
+enez,Enez (Aenus),26.0851,40.7245,,,,,,,,0,hanson
+enkhuizen,Enkhuizen,5.283,52.717,,,,,7000,,,0,b2l
+enna,Enna,14.267,37.567,,,,,11000,,,0,b2l;hanson
+entrains,Entrains (Intaranum),3.2564,47.4637,,,,,,,,0,hanson
+epfach,Epfach (Abodiacum),10.9098,47.9099,,,,,,,,0,hanson
+ephese,Ephese,27.38,37.95,,,30000,,,,,0,b2l
+ephesus,Ephesus,27.3418,37.9383,71565,,,,,,,1,hanson;modelski-anc
+er-rachidia,Er Rachidia,-4.45,31.9404,,,,,,,228489,0,ne-popmax
+eraclea,Eraclea (Heraclea),13.2909,37.3948,,,,,,,,0,hanson
+ercolano,Ercolano (Herculaneum),14.3471,40.8059,,,,,,,,0,hanson
+eregli,Ereğli (Heraclea),27.953,40.971,9293,,,,,,,1,hanson
+eregli-2,Ereğli,34.0517,37.5063,,,,,,,92117,0,ne-popmax
+eretria,Eretria,23.7931,38.3937,16343,,,,,,,1,hanson
+erfurt,Erfurt,11.03,50.9701,,,10000,19000,17000,85000,203254,0,b2l;chandler;ne-popmax
+erice,Erice (Eryx),12.5864,38.0369,,,,,,,,0,hanson
+ermoupoli,Ermoupoli,24.9333,37.4504,,,,,,,12260,0,ne-popmax
+erseke,Ersekë,20.6833,40.3333,,,,,,,7890,0,ne-popmax
+erzincan,Erzincan,39.4928,39.7527,,,,,10000,,129407,0,b2l;ne-popmax
+erzurum,Erzurum,41.29,39.9204,,,,,10000,48000,420691,0,b2l;chandler;ne-popmax
+esbjerg,Esbjerg,8.45,55.467,,,,,,,72205,1,ne-popmax;ne-ports
+eski-anemur,Eski Anemur (Anemurium),32.803,36.0227,9952,,,,,,,0,hanson
+eskihisar,Eskihisar (Stratonicaea),27.8018,39.1421,4846,,,,,,,0,hanson
+eskihisar-and-goncal,Eskihisar and Gonçalı (Laodicea),29.1144,37.8411,20740,,,,,,,0,hanson
+eskisehir,Eskişehir,30.53,39.795,,,10000,,,,514869,0,b2l;ne-popmax
+espejo,Espejo (Ucubi),-4.5524,37.6821,,,,,,,,0,hanson
+essen,Essen,7.0166,51.45,,,,,,,1742135,0,ne-popmax
+este,Este (Ateste),11.6667,45.2333,7802,,,,,,,0,hanson
+estepa,Estepa,-4.9,37.3,,,,,7000,,,0,b2l
+etrim,Etrim (Theangela),27.5949,37.0445,3427,,,,,,,0,hanson
+evora,Évora (Ebora),-7.906,38.56,1161,,,13000,12000,,55620,0,b2l;chandler;hanson;ne-popmax
+evreux,Evreux (Mediolanum),1.15,49.017,10847,,,,10000,,,0,b2l;hanson
+exeter,Exeter (Isca),-3.5299,50.7004,5219,,,7000,17000,54000,113118,0,b2l;chandler;hanson;ne-popmax
+faenza,Faenza (Faventia),11.883,44.283,5409,,,,15000,,,0,b2l;hanson
+falaise,Falaise,-0.2,48.9,,,,,10000,,,0,b2l
+falerone,Falerone (Falerio),13.4703,43.1055,1704,,,,,,,0,hanson
+famagusta,Famagusta,33.95,35.125,,,,,,,42526,1,ne-popmax;ne-ports
+fano,Fano (Fanum Fortunae),13.0178,43.8432,2929,,,,,,,0,hanson
+faqus,Faqus (Phacus),31.6722,30.7205,,,,,,,,0,hanson
+faro,Faro (Ossonoba),-7.9333,37.0171,3945,,,,,,41355,1,hanson;ne-popmax;ne-ports
+farsala,Farsala (Pharsalus),22.3845,39.294,,,,,,,,0,hanson
+felendai,Felendai (Phellus),29.6663,36.2409,676,,,,,,,0,hanson
+feltre,Feltre (Feltria),11.9,46.0167,2450,,,,,,,0,hanson
+feneos,Feneos (Pheneus),22.2952,37.9195,2296,,,,,,,0,hanson
+feodosia,Feodosia,35.3792,45.0489,,,,35000,,,,0,chandler
+ferentino,Ferentino (Ferentinum),13.2534,41.6927,910,,,,,,,0,hanson
+ferento,Ferento (Ferentum),12.1322,42.4886,4121,,,,,,,0,hanson
+fermo,Fermo (Firmum),13.7242,43.1656,1704,,,,,,,0,hanson
+ferrara,Ferrara,11.6099,44.8504,,,12000,42000,30000,33000,130992,0,b2l;chandler;ne-popmax
+ferrol,Ferrol,-8.233,43.483,,,,,10000,,,1,b2l;ne-ports
+fethiye,Fethiye (Telmessus),29.1165,36.6212,10174,,,,,,,0,hanson
+feurs,Feurs (Forum Segusiavorum),4.222,45.7438,9952,,,,,,,0,hanson
+fez,Fez,-5.0023,34.0565,,,40000,65000,30000,96000,1152000,0,b2l;chandler;ne-places
+fidene,Fidene (Fidenae),12.5154,41.9821,,,,,,,,0,hanson
+fidenza,Fidenza (Fidentia),10.0667,44.8667,460,,,,,,,0,hanson
+fier,Fier,19.573,40.73,,,,,,,82297,0,ne-popmax
+fiesole,Fiesole (Faesulae),11.2938,43.8081,4121,,,,,,,0,hanson
+finike,Finike (Phoenice),20.058,39.9132,7183,,,,,,,0,hanson
+finike-2,Finike (Limyra),30.1732,36.3441,1161,,,,,,,0,hanson
+flensburg,Flensburg,9.4333,54.7837,,,,,13000,48000,97930,1,b2l;chandler;ne-popmax;ne-ports
+florence,Florence (Florentia),11.25,43.78,2607,,30000,55000,81000,203000,1500000,0,b2l;chandler;hanson;ne-popmax
+foca,Foça (Phocaea),26.7587,38.6729,7802,,,,,,,0,hanson
+focsani,Focșani,27.1865,45.6966,,,,,,,105112,0,ne-popmax
+foggia,Foggia,15.56,41.4605,,,,,13000,47000,155203,0,b2l;chandler;ne-popmax
+foligno,Foligno (Fulginiae),12.7032,42.9557,5219,,,,,,,0,hanson
+folkestone,Folkestone,1.1833,51.0833,,,,,,30000,,0,chandler
+fondi,Fondi (Fundi),13.4268,41.3588,1426,,,,,,,0,hanson
+forli,Forli (Forum Livii),12.053,44.224,5599,,,10000,16000,,,0,b2l;hanson
+forlimpopoli,Forlimpopoli (Forum Popili),12.1268,44.1888,361,,,,,,,0,hanson
+formia,Formia (Formiae),13.6059,41.2564,2296,,,,,,,0,hanson
+forst,Forst,14.6397,51.7354,,,,,,32000,,0,chandler
+fort-william,Fort William,-5.1121,56.8165,,,,,,,9652,0,ne-popmax
+forum-cassii,Forum Cassii?,12.0771,42.3316,361,,,,,,,0,hanson
+forum-novum,Forum Novum,12.6391,42.3546,106,,,,,,,0,hanson
+fossano,Fossano,7.717,44.55,,,,,14000,,,0,b2l
+fossombrone,Fossombrone (Forum Sempronii),12.817,43.7003,3093,,,,,,,0,hanson
+francavilla,Francavilla,17.583,40.533,,,,,11000,,,0,b2l
+frankfurt,Frankfurt,8.675,50.1,,,,12000,48000,350000,2895000,0,b2l;chandler;ne-popmax
+frankfurt-a-oder,Frankfurt a Oder,14.55,52.35,,,,11000,13000,61000,,0,b2l;chandler
+frattocchie,Frattocchie (Bovillae),12.6099,41.7436,,,,,,,,0,hanson
+frauenfeld,Frauenfeld,8.9049,47.5526,,,,,,,21979,0,ne-popmax
+frederikshavn,Frederikshavn,10.5333,57.4337,,,,,,,24103,1,ne-popmax;ne-ports
+fregenae,Fregenae,12.1934,41.8533,,,,,,,,0,hanson
+freiberg,Freiberg,13.367,50.917,,,,8000,10000,30000,,0,b2l;chandler
+freiburg,Freiburg,7.8699,48.0004,,,,6000,9000,61000,254889,0,b2l;chandler;ne-popmax
+frejus,Fréjus (Forum Iulii),6.7336,43.4333,7594,,,,,,,1,hanson;pleiades
+fribourg,Fribourg,7.15,46.8,,,,,,,32827,0,ne-popmax
+frolovo,Frolovo,43.6518,49.7722,,,,,,,40882,0,ne-popmax
+frosinone,Frosinone (Frusino),13.3519,41.6394,,,,,,,,0,hanson
+fuengirola,Fuengirola (Suel),-4.6289,36.5254,,,,,,,,0,hanson
+fuimicino,Fuimicino (Portus),12.2667,41.7792,1564,,,,,,,1,hanson;ne-ports;pleiades
+furth,Fürth,11.0,49.47,,,,,12000,54000,237844,0,b2l;chandler;ne-popmax
+gabes,Gabès (Tacapae),14.5,32.5,,,,,,,,0,hanson
+gabes-2,Gabès,10.1,33.9004,,,,,10000,,219517,0,b2l;ne-popmax
+gadabay,Gadabay,45.8161,40.5656,,,,,,,8657,0,ne-popmax
+gaeta,Gaeta,13.583,41.2,,,,,13000,,,1,b2l;pleiades
+gafsa,Gafsa (Capsa),8.78,34.4204,3598,,,,,,126803,0,hanson;ne-popmax
+galati,Galați,28.0459,45.4559,,,,,,62000,311156,1,chandler;ne-popmax;ne-ports
+gallipoli,Gallipoli,26.68,40.42,,,,,10000,,,1,b2l;chandler;pleiades
+gallipoli-2,Gallipoli (Anxa),17.976,40.056,,,,,10000,,,1,b2l;hanson;ne-ports
+galway,Galway,-9.0488,53.2724,,,,,15000,,75594,1,b2l;ne-popmax;ne-ports
+gavarr,Gavarr,45.1267,40.3589,,,,,,,21680,0,ne-popmax
+gaza-city,Gaza City (Gaza),34.445,31.53,4846,,,,,,505700,1,hanson;ne-popmax;pleiades
+gaziantep,Gaziantep,37.383,37.0769,,,,,11000,,1199000,0,b2l;ne-places
+gazipasa,Gazipaşa (Selinus),32.2833,36.2585,5986,,,,,,,0,hanson
+gdansk,Gdańsk,18.64,54.36,,,,30000,37000,140000,740000,1,b2l;chandler;ne-popmax;ne-ports
+gdynia,Gdynia,18.53,54.5204,,,,,,,314664,1,ne-popmax;ne-ports
+gelendzhik,Gelendzhik,38.0644,44.5748,,,,,,,55508,1,ne-popmax;pleiades
+gendevar,Gendevar (Candyba),29.6665,36.3084,106,,,,,,,0,hanson
+geneva,Geneva (Genava),6.14,46.21,3598,,,12000,25000,112000,1240000,0,b2l;chandler;hanson;ne-popmax
+genoa,Genoa (Genua),8.93,44.41,2296,,15000,58000,90000,269000,647497,1,b2l;chandler;hanson;ne-popmax;pleiades
+gent,Gent,3.7,51.03,,,,55000,55000,198000,444336,0,b2l;chandler;ne-popmax
+georgievsk,Georgievsk,43.4699,44.1599,,,,,,,72649,0,ne-popmax
+gera,Gera,12.07,50.8704,,,,,,45000,104659,0,chandler;ne-popmax
+gerona,Gerona (Gerunda),2.817,41.983,361,,,6000,14000,,,0,b2l;hanson
+geyre,Geyre (Aphrodisias),28.7234,37.7084,15595,,,,,,,0,hanson
+ghadamis,Ghadamis,9.5,30.1333,,,,,,,6623,0,ne-popmax
+ghardaia,Ghardaia,3.67,32.49,,,,,,,125480,0,ne-popmax
+gharyan,Gharyan,13.02,32.1704,,,,,,,146810,0,ne-popmax
+ghat,Ghat,10.1728,24.9647,,,,,,,24347,0,ne-popmax
+gibraltar,Gibraltar,-5.346,36.1283,,,,,20000,59000,187083,1,b2l;chandler;ne-popmax;ne-ports
+gieen,Gießen,8.65,50.5837,,,,,,,82358,0,ne-popmax
+gigen,Gigen (Oescus),24.4655,43.7105,4300,,,,,,,0,hanson
+gijon,Gijón,-5.67,43.53,,,,,,,335972,1,ne-popmax;ne-ports
+gilindire,Gilindire (Celenderis),33.318,36.1427,,,,,,,,0,hanson
+ginosa,Ginosa (Genusia),16.7571,40.5813,,,,,,,,0,hanson
+giresun,Giresun,38.39,40.913,,,,,,,98864,0,ne-popmax
+girga,Girga,31.88,26.3304,,,,,,,128250,0,ne-popmax
+giulianova,Giulianova (Castrum Novum),13.9661,42.7534,1161,,,,,,,0,hanson
+giurgiu,Giurgiu,25.9663,43.9018,,,,,,,69067,0,ne-popmax
+giza,Giza,31.19,30.01,,,,,,,2222000,0,modelski-mod;ne-popmax
+gjirokaster,Gjirokastër (Antigonia),20.149,40.079,6778,,,,10000,,23437,0,b2l;hanson;ne-popmax
+glamoc,Glamoč (Salvium),16.7511,44.0484,,,,,,,,0,hanson
+glarus,Glarus,9.0667,47.05,,,,,,,5681,0,ne-popmax
+glasgow,Glasgow,-4.2391,55.8623,,,,,70000,1015000,1175000,1,b2l;chandler;ne-places;ne-ports
+gliwice,Gliwice,18.67,50.3304,,,,,,386000,507670,0,chandler;ne-popmax
+gloucester,Gloucester (Glevum),-2.2458,51.8653,8221,,,,,47000,,0,chandler;hanson
+goce-delcev,Goce Delčev (Nicopolis),23.8153,41.6058,2607,,,,,,,0,hanson
+goerlitz,Goerlitz,15.0,51.167,,,,11000,9000,80000,,0,b2l;chandler
+golewitza,Golewitza (Cabyle),26.4816,42.5394,,,,,,,,0,hanson
+golhisar,Gölhisar (Cibyra),29.4898,37.16,,,,,,,,0,hanson
+golubic,Golubic (Raetinium),15.9384,44.781,,,,,,,,0,hanson
+golyaz,Gölyazı (Apollonia),28.6841,40.175,,,,,,,,0,hanson
+gonnoussa,Gonnoussa (Gonnus),22.4762,39.8609,460,,,,,,,0,hanson
+gorizia,Gorizia,13.633,45.95,,,,,10000,,,0,b2l
+gornje-vrtace,Gornje Vrtace (Splonum),16.6997,44.8436,,,,,,,,0,hanson
+goslar,Goslar,10.433,51.9,,,,12000,5000,,,0,b2l
+goteborg,Göteborg,11.9786,57.7091,,,,,13000,130000,537797,0,b2l;chandler;ne-popmax
+gotha,Gotha,10.717,50.95,,,,,12000,34000,,0,b2l;chandler
+gottingen,Göttingen,9.92,51.5204,,,,,,30000,139419,0,chandler;ne-popmax
+gouda,Gouda,4.7,52.017,,,,11000,12000,,,0,b2l
+goulimine,Goulimine,-10.07,28.98,,,,,,,115267,0,ne-popmax
+gracanica,Gračanica (Ulpiana),21.1957,42.6001,4662,,,,,,,0,hanson
+gradina,Gradina (Alveria),15.8232,44.0454,,,,,,,,0,hanson
+gradina-2,Gradina (Domavium),19.3627,44.144,,,,,,,,0,hanson
+gradina-3,Gradina (Sidrona),15.7924,44.0991,,,,,,,,0,hanson
+gradisht,Gradisht (Byllis),19.7393,40.5383,3598,,,,,,,0,hanson
+graimadha,Graimadha (Tanagra),23.5368,38.3273,10397,,,,,,,0,hanson
+gramsh,Gramsh,20.2,40.8667,,,,,,,11556,0,ne-popmax
+gran-sasso,Gran Sasso (Peltuinum),13.6203,42.2858,3259,,,,,,,0,hanson
+granada,Granada (Illiberi),-3.585,37.165,,,26000,70000,70000,75000,388290,0,b2l;chandler;hanson;ne-popmax
+grand,Grand (Unknown),5.9823,43.3198,2450,,,,,,,0,hanson
+gravina,Gravina (Silvium),16.417,40.817,,,,10000,,,,0,b2l;hanson
+graz,Graz,15.41,47.0778,,,,5000,31000,138000,263234,0,b2l;chandler;ne-popmax
+great-yarmouth,Great-Yarmouth,1.73,52.606,,,,,17000,51000,,1,b2l;chandler;ne-ports
+greenock,Greenock,-4.75,55.9333,,,,,17000,67000,74635,1,b2l;chandler;ne-popmax;ne-ports
+greenwich,Greenwich,0.009,51.479,,,,,14000,,,0,b2l
+grenoble,Grenoble (Cularo),5.72,45.1804,910,,,,20000,68000,388574,0,b2l;chandler;hanson;ne-popmax
+grimsby,Grimsby,-0.0755,53.5654,,,,,,62000,,0,chandler
+groningen,Groningen,6.58,53.2204,,,,14000,24000,67000,216688,1,b2l;chandler;ne-popmax;ne-ports
+grozny,Grozny,45.6987,43.3187,,,,,,,226100,0,ne-popmax
+grudziadz,Grudziądz,18.75,53.4804,,,,,,32000,102443,0,chandler;ne-popmax
+grumento,Grumento (Grumentum),15.9061,40.2839,4480,,,,,,,0,hanson
+gryazi,Gryazi,39.9343,52.4948,,,,,,,47413,0,ne-popmax
+guadalajara,Guadalajara,-3.1666,40.6337,,,,,16000,,72850,0,b2l;ne-popmax
+guadix-el-viejo,Guadix el Viejo (Acci),-3.1346,37.3003,,,,,,,,0,hanson
+guarda,Guarda,-7.262,40.541,,,,,,,32111,0,ne-popmax
+gubbio,Gubbio (Iguvium),12.5804,43.3504,13167,,,,,,,0,hanson
+gube,Gübe (Augusta Cilicia),35.3441,37.2452,,,,,,,,0,hanson
+guben,Guben,14.7145,51.9499,,,,,,33000,,0,chandler
+guelma,Guelma (Calama),7.428,36.466,2607,,,,,,123590,0,hanson;ne-popmax
+guissona,Guissona (Iesso),1.2902,41.7872,2296,,,,,,,0,hanson
+gulluk-dag,Güllük Dağ (Termessus),30.4647,36.9825,3945,,,,,,,0,hanson
+gumushane,Gümüşhane,39.484,40.464,,,,,,,32250,0,ne-popmax
+gumusluk,Gümüslük (Myndus),27.2333,37.0529,14126,,,,,,,1,hanson
+gyoengyoes,Gyoengyoes,19.933,47.783,,,,,10000,,,0,b2l
+gyor,Győr,17.63,47.7004,,,,,13000,,136081,0,b2l;ne-popmax
+gytheio,Gytheio (Gythium),22.5623,36.7637,,,,,,,,1,hanson;ne-ports;pleiades
+gythokastro,Gythokastro (Proerna),22.2973,39.2412,,,,,,,,0,hanson
+gyumri,Gyumri,43.8475,40.7894,,,,,,,148381,0,ne-popmax
+haarlem,Haarlem,4.63,52.3804,,,,12000,22000,65000,349957,0,b2l;chandler;ne-popmax
+haciveliler,Haciveliler (Corydalla),30.2738,36.3713,,,,,,,,0,hanson
+hafar-al-batin,Hafar al Batin,45.9601,28.4337,,,,,,,249194,0,ne-popmax
+haghios-philon,Haghios Philon (Carpasium),34.3681,35.6247,,,,,,,,1,hanson;pleiades
+haidra,Haidra (Ammaedara),8.4553,35.5654,11993,,,,,,,0,hanson
+haifa,Haifa,34.9781,32.8224,,,,,,,1104000,1,ne-places;ne-ports
+hail,Hail,41.7001,27.5236,,,,,,,385257,0,ne-popmax
+hakkari,Hakkâri,43.7408,37.5744,,,,,,,77699,0,ne-popmax
+halberstadt,Halberstadt,11.05,51.9,,,,,12000,42000,,0,b2l;chandler
+halifax,Halifax,-1.856,53.726,,,,,12000,104000,,0,b2l;chandler
+halle,Halle,12.0,51.5,,,12000,8000,20000,156000,,0,b2l;chandler
+halmstad,Halmstad,12.8556,56.6718,,,,,,,55657,1,ne-popmax;ne-ports
+hamah,Hamah,36.73,35.1503,,,,,30000,,460602,0,chandler;ne-popmax
+hamburg,Hamburg,9.9981,53.552,,,,15000,130000,895000,1791000,1,b2l;chandler;modelski-mod;ne-places;ne-ports
+hamm,Hamm,7.8209,51.6803,,,,,,31000,,0,chandler
+hammam-darradji,Hammam Darradji (Bulla Regia),8.7561,36.5586,5986,,,,,,,0,hanson
+hammam-guergour,Hammam Guergour (Ad Sava),5.0665,36.3255,,,,,,,,0,hanson
+hammam-righa,Hammam Righa (Aquae Calidae),2.3939,36.3802,,,,,,,,0,hanson
+hamman-zouakra,Hamman Zouakra (Thigibba),9.25,35.75,,,,,,,,0,hanson
+hanau,Hanau,8.917,50.133,,,,,12000,,,0,b2l
+hania,Hania (Cydonea),24.0156,35.5122,15843,,,,,,78728,1,hanson;ne-popmax;ne-ports
+hanover,Hanover,9.7167,52.367,,,,6000,17000,289000,722490,0,b2l;chandler;ne-popmax
+hartlepool,Hartlepool,-1.2125,54.6861,,,,,,83000,,0,chandler
+hasselt,Hasselt,5.3385,50.9288,,,,,,,69222,0,ne-popmax
+hassi-messaoud,Hassi Messaoud,6.0545,31.7023,,,,,,,18124,0,ne-popmax
+hastings,Hastings,0.5729,50.8563,,,,,,65000,,0,chandler
+haverhill,Haverhill,0.4389,52.0823,,,,,,37000,,0,chandler
+heidelberg,Heidelberg,8.7,49.42,,,,8000,11000,40000,426590,0,b2l;chandler;ne-popmax
+heilbronn,Heilbronn,9.2205,49.1399,,,,,,37000,,0,chandler
+helsingborg,Helsingborg,12.7233,56.0413,,,,,,,91304,1,ne-popmax;ne-ports
+henchir-ain-hedja,Henchir Ain Hedja (Agbia),9.2299,36.3914,,,,,,,,0,hanson
+henchir-bedd,Henchir Bedd (Avedda),9.5818,36.7953,,,,,,,,0,hanson
+henchir-bijga,Henchir Bijga (Bisica),9.6343,36.398,,,,,,,,0,hanson
+henchir-bou-ftis,Henchir Bou Ftis (Avitta),9.7059,36.409,7388,,,,,,,0,hanson
+henchir-bou-tria,Henchir Bou Tria (Acholla),11.0187,35.0782,,,,,,,,0,hanson
+henchir-douamis,Henchir Douamis (Uchi Maius),9.0853,36.4123,361,,,,,,,0,hanson
+henchir-el-aouinia,Henchir el Aouinia (Turris Tamalleni),8.9206,33.7168,,,,,,,,0,hanson
+henchir-el-faouar,Henchir el Faouar (Belalis),9.4705,36.8739,,,,,,,,0,hanson
+henchir-el-maatria,Henchir el Maatria (Numluli),9.2105,36.5228,14611,,,,,,,0,hanson
+henchir-en-naam,Henchir en Naam (Abbir Maius),10.0088,36.374,,,,,,,,0,hanson
+henchir-es-souar,Henchir es Souar (Abthungi),10.0198,36.1999,4846,,,,,,,0,hanson
+henchir-harat,Henchir Harat (Segermes),10.2997,36.3447,1704,,,,,,,0,hanson
+henchir-kasbat,Henchir Kasbat (Thuburbo Maius),9.9042,36.4009,3093,,,,,,,0,hanson
+henchir-kern-el-kebch,Henchir Kern el Kebch (Aunobari),9.1535,36.3664,,,,,,,,0,hanson
+henchir-lorbeus,Henchir Lorbeus (Lares),8.8414,36.0813,,,,,,,,0,hanson
+henchir-merouana,Henchir Merouana (Lamasba),5.9113,35.629,,,,,,,,0,hanson
+henchir-mest,Henchir Mest (Musti),9.143,36.3363,106,,,,,,,0,hanson
+henchir-oum-el-abouab,Henchir Oum el Abouab (Seressi),9.7736,36.1667,,,,,,,,0,hanson
+henchir-rougga,Henchir Rougga (Bararus),10.7912,35.2119,,,,,,,,0,hanson
+henchir-sidi-median,Henchir Sidi Median (Vallis),9.75,36.75,,,,,,,,0,hanson
+henchir-souk-el-abiod,Henchir Souk el Abiod (Pupput),10.5622,36.393,,,,,,,,0,hanson
+henchir-thina,Henchir Thina (Thaenae),10.6707,34.6553,,,,,,,,0,hanson
+henchir-zembra,Henchir Zembra (Uluzibbira),10.4472,35.954,,,,,,,,0,hanson
+henchir-zenfour,Henchir Zenfour (Assuras),9.0223,35.9933,,,,,,,,0,hanson
+henchir-zouitina,Henchir Zouitina (Thibiuca),9.75,36.75,5792,,,,,,,0,hanson
+herisau,Herisau,9.2833,47.3833,,,,,,,15438,0,ne-popmax
+hildesheim,Hildesheim,9.967,52.15,,,,10000,11000,42000,,0,b2l;chandler
+hilla,Hilla,44.23,32.48,,,,15000,50000,,,0,b2l
+hillerd,Hillerød,12.3167,55.9333,,,,,,,28313,0,ne-popmax
+hinojosa-del-duque,Hinojosa-del-Duque,-5.15,38.5,,,,,10000,,,0,b2l
+hios,Hios,26.1358,38.3681,,,,,20000,,26891,1,b2l;ne-popmax;ne-ports
+hippos,Hippos (Hippus),35.6599,32.7788,791,40000,,,,,,0,chandler;hanson
+hisariya,Hisariya (Diocletianopolis),24.7077,42.5032,3945,,,,,,,0,hanson
+hisarkoy,Hisarköy (Amorium),31.3206,39.0356,9952,,,,,,,0,hanson
+hisaronu,Hisarönü (Tius),32.0554,41.5583,,,,,,,,0,hanson
+histria,Histria,28.7747,44.5474,1704,,,,,,,1,hanson
+hiw,Hiw (Diospolis Parva),32.3125,26.0169,,,,,,,,0,hanson
+hodmezoevasarhely,Hodmezoevasarhely,20.333,46.417,,,,,16000,60000,,0,b2l;chandler
+hof,Hof,11.9167,50.317,,,,,,32000,56153,0,chandler;ne-popmax
+homs,Homs (Emesa),36.7181,34.7319,,,,,25000,35000,1228000,0,chandler;hanson;ne-places
+homyel,Homyel,31.0,52.43,,,,,,45000,480951,0,chandler;ne-popmax
+honaz,Honaz (Colossae),29.2294,37.7869,,,,,,,,0,hanson
+hondschoote,Hondschoote,2.583,50.983,,,,12000,,,,0,b2l
+hoorn,Hoorn,5.067,52.65,,,,6000,10000,,,0,b2l
+horlivka,Horlivka,38.0547,48.2996,,,,,,,396885,0,ne-popmax
+hradec-kralove,Hradec Králové,15.812,50.206,,,,,,,95195,0,ne-popmax
+hrodna,Hrodna,23.8341,53.6779,,,,,,43000,317365,0,chandler;ne-popmax
+hsarlk,Hısarlık (Ilium),26.2578,39.9539,3093,,,,,,,1,hanson;pleiades
+huddersfield,Huddersfield,-1.781,53.645,,,,,11000,95000,,0,b2l;chandler
+huelva,Huelva,-6.9299,37.2504,,,,,,,144174,0,ne-popmax
+huesca,Huesca (Osca),-0.417,42.133,1848,,10000,7000,7000,,,0,b2l;hanson
+hun,Hun,15.9333,29.1167,,,,,,,18878,0,ne-popmax
+hunedoara,Hunedoara (Sarmizegetusa),22.8094,45.51,4300,,,,,,,0,hanson
+hurghada,Hurghada,33.83,27.23,,,,,,,157204,0,ne-popmax
+i-n-salah,I-n-Salah,2.4666,27.2166,,,,,,,49223,0,ne-popmax
+iasi,Iași,27.5749,47.1683,,,,,17000,78000,325914,0,b2l;chandler;ne-popmax
+ibecik,Ibecik (Bubon),29.4152,36.974,,,,,,,,0,hanson
+icel,Icel (Pompeiopolis),34.62,36.8,5219,,,,,,616990,1,hanson;ne-popmax;ne-ports
+idanha-a-velha,Idanha a Velha (Egitania),-7.1445,39.9971,460,,,,,,,0,hanson
+idlib,Idlib,36.6317,35.9297,,,,,,,128840,0,ne-popmax
+ieper,Ieper,2.883,50.85,,,,10000,12000,,,0,b2l;chandler
+ierapetra,Ierapetra (Hierapytna),25.7369,35.0082,22624,,,,,,,1,hanson
+iesi,Iesi (Aesis),13.2438,43.5224,910,,,,,,,0,hanson
+ijevan,Ijevan,45.1492,40.8756,,,,,,,14737,0,ne-popmax
+ilchester,Ilchester (Lindinis),-2.6871,51.0036,791,,,,,,,0,hanson
+ildiri,Ildiri (Erythrae),26.4808,38.3827,29671,,,,,,,1,hanson;pleiades
+ilida,Ilida (Elis),21.4354,37.8275,,,,,,,,0,hanson
+illichivsk,Illichivsk,30.6666,46.3,,,,,,,54102,0,ne-popmax
+illizi,Illizi,8.4666,26.4834,,,,,,,7957,0,ne-popmax
+imola,Imola (Forum Cornelii),11.714,44.3524,6379,,,,,,,0,hanson
+incealiler,Incealiler (Oenoanda),29.5497,36.8093,1848,,,,,,,0,hanson
+ingolstadt,Ingolstadt,11.45,48.7704,,,,,,,163325,0,ne-popmax
+innsbruck,Innsbruck,11.41,47.2804,,,,,12000,,155214,0,b2l;ne-popmax
+inowrocaw,Inowrocław,18.25,52.7799,,,,,,,79007,0,ne-popmax
+inverness,Inverness,-4.2333,57.4671,,,,5000,15000,,45158,1,b2l;ne-popmax;ne-ports
+ioanina,Ioanina,20.8509,39.6679,,,,,20000,,86304,0,b2l;chandler;ne-popmax
+ipswich,Ipswich,1.17,52.0703,,,,,11000,65000,143767,0,b2l;chandler;ne-popmax
+iraklio,Iraklio,25.1305,35.325,,,,11000,15000,,137154,1,b2l;chandler;ne-popmax;ne-ports;pleiades
+irbid,Irbid,35.85,32.55,,,,,,,650000,0,ne-popmax
+irbil,Irbil,44.0067,36.181,,,,,,,1158000,0,ne-places
+isernia,Isernia (Aesernia),14.234,41.5981,1564,,,,,,,0,hanson
+iskenderun,İskenderun,36.17,36.5804,,,,,,,297943,0,ne-popmax
+ismailia,Ismaïlia,32.26,30.5903,,,,,,,656135,0,ne-popmax
+isna,Isna (Latopolis),32.5499,25.2904,,,,,,,100000,0,hanson;ne-popmax
+isona,Isona (Aeso),1.0441,42.1178,268,,,,,,,0,hanson
+isparta,Isparta,30.53,37.77,,,,,13000,,172334,0,b2l;ne-popmax
+issoudin,Issoudin,2.0,46.95,,,,,11000,,,0,b2l
+istanbul,Istanbul (Byzantium),28.9743,41.0176,35331,400000,300000,280000,500000,900000,11177000,1,b2l;chandler;hanson;modelski-anc;modelski-mod;ne-places;ne-ports;pleiades
+ivano-frankivsk,Ivano-Frankivsk,24.7094,48.9348,,,,,,30000,241239,0,chandler;ne-popmax
+ivanovo,Ivanovo,41.01,57.01,,,,,,64000,420839,0,chandler;ne-popmax
+ivosevci,Ivoševci (Burnum),15.9936,44.0317,,,,,,,,0,hanson
+ivrea,Ivrea (Eporedia),7.8759,45.4666,11762,,,,,,,0,hanson
+izaz,Izaz,37.0441,36.5888,,,,,,,31534,0,ne-popmax
+izmayil,Izmayil,28.8374,45.3503,,,,,2000,33000,83194,0,chandler;ne-popmax
+izmir,İzmir (Smyrna),27.1498,38.4381,47674,,20000,10000,100000,201000,2920000,1,b2l;chandler;hanson;modelski-anc;ne-places;ne-ports
+izmit,İzmit (Nicomedia),29.9306,40.776,59143,,,,15000,,466504,0,b2l;hanson;ne-popmax
+jaen,Jaén (Aurgi),-3.8,37.7704,,,20000,23000,27000,30727,116400,0,b2l;chandler;hanson;ne-popmax
+jaroslav,Jaroslav,22.683,50.017,,,,,23000,,,0,b2l
+jaszbereny,Jaszbereny,19.917,47.5,,,,,11000,,,0,b2l
+jativa,Jativa (Saetabis),-0.517,38.983,910,,,9000,10000,,,0,b2l;hanson
+javols,Javols (Anderitum),3.3427,44.6939,4846,,,,,,,0,hanson
+jebeil,Jebeil (Byblos),35.6462,34.1196,,,,,,,,1,hanson;pleiades
+jeddah,Jeddah,39.2173,21.5188,,,10000,10000,,,3590000,0,b2l;chandler;modelski-mod;ne-places
+jelgava,Jelgava,23.7128,56.6527,,,,,,35000,67207,0,chandler;ne-popmax
+jena,Jena,11.58,50.9304,,,,,,,104712,0,ne-popmax
+jendouba,Jendouba,8.75,36.5,,,,,,,51408,0,ne-popmax
+jerash,Jerash (Gerasa),35.8913,32.2812,15595,,,,,,,0,hanson
+jerez-de-la-frontera,Jerez de la Frontera (Laepia),-6.133,36.683,,,19000,10000,35000,53320,,0,b2l;chandler;hanson
+jerez-de-los-caballeros,Jerez-de-los-Caballeros (Seria),-6.767,38.317,,,,,7000,,,0,b2l;hanson
+jergucati,Jergucati (Hadrianopolis),20.2247,39.9962,1995,,,,,,,0,hanson
+jerusalem,Jerusalem (Aelia Capitolina),35.2066,31.7784,45067,50000,18000,20000,20000,56000,1029300,0,b2l;chandler;hanson;ne-popmax
+jihlava,Jihlava,15.5833,49.4004,,,,,11000,,53921,0,b2l;ne-popmax
+jijel,Jijel (Igilgili),5.766,36.822,,,,,,,148000,1,hanson;ne-popmax;pleiades
+jonkoping,Jönköping,14.165,57.7713,,,,,,,89780,0,ne-popmax
+jublains,Jublains (Noviodunum),-0.4945,48.2574,3598,,,,,,,0,hanson
+jupa,Jupa (Tibiscum),22.1672,45.4512,791,,,,,,,0,hanson
+kadirli,Kadirli (Flaviopolis),26.8346,40.5387,,,,,,,,0,hanson
+kadkoy,Kadıköy (Chalcedon),29.0268,40.9854,,,,,,,,1,hanson;ne-ports;pleiades
+kafr-el-sheikh,Kafr el Sheikh (Xois),30.936,31.109,,,,,,,143970,0,hanson;ne-popmax
+kahramanmaras,Kahramanmaraş,36.945,37.61,,,,8000,18000,52000,376045,0,b2l;chandler;ne-popmax
+kainourgiou,Kainourgiou (Gortyna),24.9469,35.0627,24827,,,,,,,0,hanson
+kaiserslautern,Kaiserslautern,7.7716,49.443,,,,,,48000,,0,chandler
+kalamata,Kalamata,22.1142,37.0389,,,,,,,71823,1,ne-popmax;ne-ports
+kalapodi,Kalapodi (Abae),22.9333,38.5833,1704,,,,,,,0,hanson
+kalekoy,Kaleköy (Simena),29.8614,36.1902,268,,,,,,,1,hanson
+kaliningrad,Kaliningrad,20.4973,54.7,,,,8000,53000,189000,434954,1,chandler;ne-popmax;ne-ports
+kalmar,Kalmar,16.3666,56.667,,,,,,,35024,1,ne-popmax;ne-ports
+kalpali,Kalpali (Orchomenus Arcadicus),22.3154,37.7247,17353,,,,,,,0,hanson
+kaluga,Kaluga,36.27,54.5204,,,,,20000,50000,338978,0,chandler;ne-popmax
+kalydon,Kalydon (Calydon),21.5328,38.3781,,,,,,,,0,hanson
+kamarina,Kamarina (Cassope),20.6759,39.145,,,,,,,,0,hanson
+kamenka,Kamenka,44.0444,53.1947,,,,,,,16560,0,ne-popmax
+kamensk-shakhtinskiy,Kamensk Shakhtinskiy,40.2518,48.3318,,,,,,,75814,0,ne-popmax
+kampen,Kampen,5.917,52.55,,,,7000,6000,,,0,b2l
+kamyanets-podilskyy,Kamyanets-Podilskyy,26.5809,48.6843,,,,,,39000,114658,0,chandler;ne-popmax
+kamyshin,Kamyshin,45.4,50.0804,,,,,,,128626,0,ne-popmax
+kapi-dagi,Kapi Daği (Lydai),28.8602,36.6149,,,,,,,,0,hanson
+kaposvar,Kaposvár,17.8,46.367,,,,,,,108528,0,ne-popmax
+karabaulo,Karabaulo (Adada),30.9863,37.5818,,,,,,,,0,hanson
+karabuk,Karabük,32.6,41.2,,,,,,,128564,0,ne-popmax
+karacahisar,Karacahisar (Hydissa),27.8062,37.1506,,,,,,,,0,hanson
+karadjoli,Karadjóli (Phalanna),22.1931,39.7085,,,,,,,,0,hanson
+karaman,Karaman (Laranda),33.215,37.1815,,,,80000,20000,7500,120399,0,chandler;hanson;ne-popmax
+karatas,Karataş (Antiochia),35.4852,36.7562,2929,,,,,,,0,hanson
+karavostasi,Karavostasi (Soli),32.812,35.1398,3259,,,,,,,0,hanson
+karbala,Karbala,44.0245,32.6149,,,,,,65000,510692,0,chandler;ne-popmax
+karin,Karin (Corinium),15.6335,44.1045,,,,,,,,0,hanson
+karlobag,Karlobag (Vegium),15.0739,44.5246,,,,,,,,0,hanson
+karlovac,Karlovac,15.5478,45.4872,,,,,,,55063,0,ne-popmax
+karlskrona,Karlskrona,15.5908,56.1628,,,,,10000,,35212,1,b2l;ne-popmax;ne-ports
+karlsruhe,Karlsruhe,8.4,49.0,,,,,,97000,377487,0,chandler;ne-popmax
+kars,Kars,43.0975,40.6085,,,,,,,77486,0,ne-popmax
+kas,Kaş (Antiphellus),29.6349,36.2,460,,,,,,,1,hanson
+kasimov,Kasimov,41.3931,54.9435,,,,,,,36663,0,ne-popmax
+kassel,Kassel,9.5,51.3,,,,5000,18000,,289924,0,b2l;ne-popmax
+kasserine,Kasserine,8.7167,35.2167,,,,,,,76243,0,ne-popmax
+kastamonu,Kastamonu,33.783,41.389,,,,,,,70402,0,ne-popmax
+kastelli-kisamou,Kastelli Kisamou (Cisamus),23.6607,35.4953,12459,,,,,,,0,hanson
+kastro,Kastro (Naxus),25.52,36.9958,2296,,,,,,,0,hanson
+katerini,Katerini,22.5025,40.2723,,,,,,,53293,0,ne-popmax
+kato-achaia,Kato Achaia (Dyme),21.5514,38.1446,,,,,,,,0,hanson
+kato-klitoria,Kato Klitoria (Cleitor),22.0446,37.8856,9511,,,,,,,0,hanson
+katowice,Katowice,19.02,50.2604,,,,,,565000,2746000,0,chandler;ne-popmax
+kaunas,Kaunas,23.88,54.9504,,,,,,69000,374643,0,chandler;ne-popmax
+kavala,Kavala (Neapolis),24.4018,40.9412,1292,,,,,,59240,1,hanson;ne-popmax;ne-ports;pleiades
+kayseri,Kayseri (Mazaca),35.49,38.735,,,20000,15000,26000,60000,592840,0,b2l;chandler;hanson;ne-popmax
+kazanlak,Kazanlak (Seuthopolis),25.274,42.6289,361,,,,,,,0,hanson
+kazikbaglari,Kazikbaglari (Elaea),27.0553,38.9416,5599,,,,,,,0,hanson
+kbenhavn,København,12.5615,55.6805,,,,10000,101000,462000,1092000,0,b2l;chandler;ne-places
+kebili,Kebili,8.971,33.69,,,,,,,19875,0,ne-popmax
+kecskemet,Kecskemét,19.7,46.9,,,,,23000,57000,113895,0,b2l;chandler;ne-popmax
+kelemi,Kelemi (Patara),29.3194,36.261,,,,,,,,1,hanson;pleiades
+kelibia,Kelibia (Clupea),11.0999,36.8496,,,,,,,,0,hanson
+kemer,Kemer (Parium),27.0691,40.4205,,,,,,,,1,hanson;pleiades
+kemerhisan,Kemerhisan (Tyana),34.5725,37.8237,,,,,,,,0,hanson
+kempten,Kempten (Cambodunum),10.323,47.7276,,,,,,,,0,hanson
+kenitra,Kenitra,-6.58,34.2704,,,,,,,551786,0,ne-popmax
+kerch,Kerch,36.4881,45.3685,,,,,,,152195,1,ne-popmax;ne-ports;pleiades
+kerkira,Kerkira (Corcyra),19.9147,39.6154,,,,,15000,,38517,1,b2l;hanson;ne-popmax;ne-ports
+kestridze,Kestridze (Aprus),27.1074,40.9269,,,,,,,,0,hanson
+khaironia,Khaironia (Chaeronea),22.8445,38.4947,2767,,,,,,,0,hanson
+khamissa,Khamissa (Thubursicum Numidarum),7.6554,36.1932,7183,,,,,,,0,hanson
+kharkiv,Kharkiv,36.2481,50.0019,,,,,,197000,1456000,0,chandler;modelski-mod;ne-places
+khaskovo,Khaskovo,25.5633,41.9438,,,,,,,79699,0,ne-popmax
+khenchela,Khenchela (Mascula),7.15,35.4333,,,,,,,,0,hanson
+kherson,Kherson,32.6007,46.6325,,,25000,,10000,73000,320477,1,chandler;ne-popmax;ne-ports
+khirbet-el-burj,Khirbet el Burj (Dora),34.9222,32.6168,676,,,,,,,0,hanson
+khirbet-fasayil,Khirbet Fasayil (Phasaelis),35.4434,32.0275,,,,,,,,0,hanson
+khirbet-ouled-arif,Khirbet Ouled Arif (Lambiridi),6.0773,35.5038,,,,,,,,0,hanson
+khirbet-tida,Khirbet Tida (Agrippias),34.4798,31.5363,17099,,,,,,,1,hanson;pleiades
+khmelnytskyy,Khmelnytskyy,27.0015,49.4249,,,,,,,398346,0,ne-popmax
+khvoy,Khvoy,44.97,38.5304,,,,,25000,35000,202728,0,chandler;ne-popmax
+kiel,Kiel,10.13,54.3304,,,,,,117000,269427,1,chandler;ne-popmax;ne-ports
+kielce,Kielce,20.66,50.8904,,,,,,,215733,0,ne-popmax
+kilincli,Kilinçli (Apollonia),29.7637,36.1867,,,,,,,,0,hanson
+kilis,Kilis,37.12,36.7204,,,,,,,82301,0,ne-popmax
+kilkenny,Kilkenny,-7.2523,52.6546,,,,,16000,,21589,0,b2l;ne-popmax
+killarney,Killarney,-9.5167,52.0504,,,,,,,11902,0,ne-popmax
+kilmallock,Kilmallock,-8.577,52.4,,,,,12000,,,0,b2l
+kilmarnock,Kilmarnock,-4.4958,55.6117,,,,,,33000,,0,chandler
+kimry,Kimry,37.3444,56.8691,,,,,,,52070,0,ne-popmax
+kina,Kina,26.17,32.72,,,,10000,15000,,,0,b2l
+kineshma,Kineshma,42.13,57.47,,,,,,,92983,0,ne-popmax
+king-s-lynn,King's Lynn,0.394,52.758,,,,,10000,,,0,b2l
+kingston-upon-hull,Kingston upon Hull,-0.33,53.7504,,,,,30000,236000,302296,1,b2l;chandler;ne-popmax;ne-ports
+kinik,Kinik (Xanthus),29.3199,36.3566,3093,,,,,,,0,hanson
+kirkcaldy,Kirkcaldy,-3.1615,56.1098,,,,,,33000,,0,chandler
+kirkuk,Kirkuk,44.3923,35.4722,,,,,,,601433,0,ne-popmax
+kirov,Kirov,34.3048,54.0852,,,,,,,39319,0,ne-popmax
+kirovohrad,Kirovohrad,32.2603,48.5041,,,,,,66000,249454,0,chandler;ne-popmax
+kirsanov,Kirsanov,42.7174,52.6574,,,,,,,17975,0,ne-popmax
+kisik,Kisik (Lebedus),26.9673,38.0728,,,,,,,,1,hanson
+kiskunfelegyhaza,Kiskunfelegyhaza,19.8446,46.7121,,,,,,33000,,0,chandler
+kislovodsk,Kislovodsk,42.72,43.91,,,,,,,132771,0,ne-popmax
+kiyi-kilacik,Kiyi Kilacik (Iasus),27.5821,37.2775,4662,,,,,,,1,hanson
+kizkalesi,Kizkalesi (Corycus),30.4705,36.4361,,,,,,,,1,hanson
+klagenfurt,Klagenfurt,14.31,46.6203,,,,,10000,,90610,0,b2l;ne-popmax
+klaipeda,Klaipėda,21.1199,55.7204,,,,,,,192307,1,ne-popmax;ne-ports
+klazumen,Klazümen (Clazomenae),26.7706,38.3615,24271,,,,,,,1,hanson;pleiades
+klin,Klin,36.6987,56.3431,,,,,,,80778,0,ne-popmax
+klintsy,Klintsy,32.2448,52.7652,,,,,,,66336,0,ne-popmax
+klos,Klos (Amantia),19.6178,40.4679,2296,,,,,,,0,hanson
+knossos,Knossos (Cnossus),25.1607,35.2988,8646,,,,,,,1,hanson;pleiades
+koblenz,Koblenz,7.6,50.3505,,,,,,48000,312633,0,chandler;ne-popmax
+kolomna,Kolomna,38.785,55.08,,,,,,,147690,0,ne-popmax
+kolomyia,Kolomyia,25.0403,48.5306,,,,,,34000,,0,chandler
+kom-edfu,Kom Edfu (Apollonopolis Magna),32.8733,24.9795,,,,,,,,0,hanson
+kom-faris,Kom Fāris (Arsinoe),30.75,29.25,80789,,,,,,,0,hanson
+kom-ombo,Kom Ombo (Ombos),33.5123,25.7294,,,,,,,,0,hanson
+kom-ombo-2,Kom Ombo,32.95,24.47,,,,,,,303962,0,ne-popmax
+kom-rabia,Kom Rabia (Memphis),31.2551,29.8495,58107,,,,,,,0,hanson
+komatini,Komatini,25.4167,41.1333,,,,,,,45631,0,ne-popmax
+komini,Komini (Municipium S…),19.3583,43.3567,,,,,,,,0,hanson
+konotop,Konotop,33.209,51.2424,,,,,,,103547,0,ne-popmax
+konuralp,Konuralp (Prusias),31.1482,40.906,,,,,,,,0,hanson
+konya,Konya (Iconium),32.4731,37.877,,,15000,20000,28000,,1058000,0,b2l;chandler;hanson;ne-places
+korba,Korba (Curubis),10.8571,36.5759,,,,,,,,0,hanson
+korce,Korçë,20.7667,40.6167,,,,,,,58259,0,ne-popmax
+korosten,Korosten,28.65,50.9504,,,,,,,72984,0,ne-popmax
+kortrijk,Kortrijk,3.267,50.833,,,,6000,14000,33000,,0,b2l;chandler
+kos,Kos (Cos),27.2888,36.8937,22897,,,,,,19244,1,hanson;ne-popmax;ne-ports
+kosice,Košice,21.25,48.7304,,,,,,35000,236563,0,chandler;ne-popmax
+kostolac,Kostolac (Viminacium),21.2161,44.7368,9293,,,,,,,0,hanson
+kostolac-2,Kostolac (Viminacium),21.2161,44.7368,2144,,,,,,,0,hanson
+kostroma,Kostroma,40.94,57.77,,,,,,41000,277656,0,chandler;ne-popmax
+koszalin,Koszalin,16.1833,54.2,,,,,,,107450,0,ne-popmax
+kotor,Kotor (Acruvium),18.7673,42.4215,,,,,,,,0,hanson
+kotovsk,Kotovsk,41.5044,52.5947,,,,,,,33077,0,ne-popmax
+kotrones,Kotrónes (Teuthrone),22.4891,36.6211,676,,,,,,,0,hanson
+kouft,Kouft (Coptos),32.8158,25.9964,,,,,,,,1,hanson;pleiades
+kouklia,Kouklia (Palaepaphus),32.5737,34.7071,,,,,,,,0,hanson
+kourion,Kourion (Curium),32.8877,34.6642,,,,,,,,0,hanson
+kovel,Kovel,24.7166,51.2171,,,,,,,71301,0,ne-popmax
+kovrov,Kovrov,41.33,56.3604,,,,,,,154224,0,ne-popmax
+kozagac,Kozağacı (Idebessus),30.203,36.555,,,,,,,,0,hanson
+kragujevac,Kragujevac,20.92,44.02,,,,,,,171197,0,ne-popmax
+krakow,Kraków,19.9581,50.0619,,,,22000,24000,108000,755000,0,b2l;chandler;ne-places
+kramatorsk,Kramatorsk,37.5344,48.7194,,,,,,,184105,0,ne-popmax
+krasnoarmeysk,Krasnoarmeysk,45.6974,51.0174,,,,,,,25841,0,ne-popmax
+krasnodar,Krasnodar,39.0,45.02,,,,,,70000,649851,0,chandler;ne-popmax
+krefeld,Krefeld,6.567,51.333,,,,,11000,109000,,0,b2l;chandler
+kremenchuk,Kremenchuk,33.4296,49.0835,,,,,,65000,232742,0,chandler;ne-popmax
+krenides,Krenides (Philippi),24.3391,41.0252,8011,,,,,,,0,hanson
+kristianstad,Kristianstad,14.1333,56.0337,,,,,,,32188,0,ne-popmax
+krk,Krk (Curicum),14.5734,45.0262,,,,,,,,0,hanson
+krkkale,Kırıkkale,33.53,39.8504,,,,,,,211138,0,ne-popmax
+krklareli,Kırklareli,27.226,41.743,,,,,,,58223,0,ne-popmax
+kropotkin,Kropotkin,40.5821,45.4471,,,,,,,79599,0,ne-popmax
+krsehir,Kırşehir,34.171,39.142,,,,,,,94336,0,ne-popmax
+kruje,Krujë,19.797,41.519,,,,,,,21286,0,ne-popmax
+kryvyy-rih,Kryvyy Rih,33.345,47.9283,,,,,,,652380,0,ne-popmax
+ksar-el-guelal,Ksar el Guelal (Unknown),8.9667,35.2667,8433,,,,,,,0,hanson
+ksar-el-kebir,Ksar El Kebir,-5.91,35.0204,,,,,,,306600,0,ne-popmax
+ksar-lemsa,Ksar Lemsa (Limisa),9.6919,36.0359,,,,,,,,0,hanson
+ksar-toual-zammel,Ksar Toual Zammel (Maraci),9.2229,36.0299,,,,,,,,0,hanson
+kufa,Kufa,44.393,32.032,,,40000,,,,,0,b2l;chandler
+kukes,Kukës,20.434,42.083,,,,,,,17832,0,ne-popmax
+kumluca,Kumluca (Rhodiapolis),30.2672,36.3857,,,,,,,,0,hanson
+kupyansk,Kupyansk,37.5981,49.7218,,,,,,,78870,0,ne-popmax
+kursk,Kursk,36.19,51.74,,,,,21000,58000,409431,0,chandler;ne-popmax
+kutahya,Kütahya,29.93,39.42,,,,,17000,,185008,0,b2l;chandler;ne-popmax
+kutaisi,Kutaisi,42.73,42.25,,,,,,36000,183945,0,chandler;ne-popmax
+kutna-hora,Kutna Hora,15.267,49.95,,,,,5000,,,0,b2l
+kuyucak,Kuyucak (Antiochia),28.5794,37.8714,1292,,,,,,,0,hanson
+kyiv,Kyiv,30.5147,50.4353,,,45000,,19000,300000,2770000,0,chandler;modelski-mod;ne-places
+kyrenia,Kyrenia,33.333,35.326,,,,,,,26701,0,ne-popmax
+kyrrhos,Kyrrhos (Cyrrus),36.9564,36.7447,12694,,,,,,,0,hanson
+kythrea,Kythrea (Chythrus),33.4907,35.2458,,,,,,,,0,hanson
+kyustendil,Kyustendil (Pautalia),22.6911,42.2843,,,,,,,51067,0,hanson;ne-popmax
+l-aquila,L'Aquila,13.39,42.3504,,,,10000,14000,,68503,0,b2l;ne-popmax
+l-ariana,L'Ariana,10.2,36.8667,,,,,,,97687,0,ne-popmax
+la-bienvenida,La Bienvenida (Sisapo),-4.5183,38.6464,1161,,,,,,,0,hanson
+la-chaux-de-fonds,La Chaux de Fonds,6.8216,47.0979,,,,,,35000,,0,chandler
+la-coruna,La Coruña,-8.42,43.33,,,,,15000,43000,370610,1,b2l;chandler;ne-popmax;ne-ports
+la-rochelle,La Rochelle,-1.15,46.1667,,,,,19000,,76997,1,b2l;chandler;ne-popmax;ne-ports
+labin,Labin (Albona),14.1157,45.0984,,,,,,,,0,hanson
+labinsk,Labinsk,40.7443,44.6348,,,,,,,61945,0,ne-popmax
+ladenburg,Ladenburg (Lopodunum),8.6142,49.4742,6182,,,,,,,0,hanson
+laghouat,Laghouat,2.88,33.81,,,,,,,113872,0,ne-popmax
+lago-di-salpi,Lago di Salpi (Salapia Vetus),15.9933,41.4034,,,,,,,,0,hanson
+lamia,Lamia,22.434,38.899,,,,,,,47246,0,ne-popmax
+lampousa,Lampousa (Lapethus),33.2021,35.3506,,,,,,,,0,hanson
+lamsaki,Lamsaki (Lampsacus),26.6992,40.3467,,,,,,,,0,hanson
+lancaster,Lancaster,-2.8333,54.0667,,,,,,39000,,0,chandler
+lanciano,Lanciano (Anxanum),14.383,42.233,460,,,,12000,,,0,b2l;hanson
+landsberg-am-lech,Landsberg am Lech,10.8989,48.0478,,,,,,33000,,0,chandler
+langres,Langres (Andematunum),5.3341,47.863,5792,,,,,,,0,hanson
+lanuvio,Lanuvio (Lanuvium),12.6976,41.6747,,,,,,,,0,hanson
+laon,Laon,3.617,49.567,,,25000,10000,,,,0,b2l;chandler
+larache,Larache,-6.16,35.2004,,,,,,,120082,0,ne-popmax
+larino,Larino (Larinum),14.9162,41.8054,4662,,,,,,,0,hanson
+larissa,Larissa (Larisa),22.42,39.6304,,,,,20000,,128758,0,b2l;hanson;ne-popmax
+larnaka,Larnaka (Citium),33.636,34.917,,,,,,,48947,1,hanson;ne-popmax;ne-ports;pleiades
+latakia,Latakia (Laodicea),35.78,35.54,56389,,,,,,539147,1,hanson;ne-popmax;pleiades
+lausanne,Lausanne (Lousonna),6.65,46.5304,,,,,,46000,265702,1,chandler;hanson;ne-popmax;pleiades
+laval,Laval,-0.767,48.067,,,,,12000,,,0,b2l
+lavello,Lavello (Forentum),15.7705,41.0522,2296,,,,,,,0,hanson
+le-havre,Le Havre,0.105,49.505,,,,,16000,150000,242124,0,b2l;chandler;ne-popmax
+le-mans,Le Mans,0.2026,48.0044,,,,,18000,63000,144515,0,b2l;chandler;ne-popmax
+le-puy,Le Puy,3.88,45.03,,,,,12000,,,0,b2l
+le-vieil-evreux,Le Vieil Evreux (Gisacum),1.2401,49.0046,30842,,,,,,,0,hanson
+lebrija,Lebrija (Nabrissa),-6.0784,36.9195,,,,,,,,0,hanson
+lecce,Lecce (Lupiae),18.15,40.3604,2296,,,15000,16000,,162582,0,b2l;chandler;hanson;ne-popmax
+leeds,Leeds,-1.5513,53.79,,,,,53000,436000,1552000,0,b2l;chandler;ne-places
+leeuwarden,Leeuwarden,5.7834,53.2504,,,,,16000,,125778,0,b2l;ne-popmax
+lefta,Lefta (Elateia),22.765,38.6264,1292,,,,,,,0,hanson
+legnica,Legnica,16.1603,51.2083,,,,,,55000,,0,chandler
+leicester,Leicester (Ratae),-1.1332,52.63,6980,,,,17000,207000,457983,0,b2l;chandler;hanson;ne-popmax
+leiden,Leiden,4.5,52.15,,,,14000,31000,54000,,0,b2l;chandler
+leipzig,Leipzig,12.41,51.3354,,,,10000,30000,532000,542529,0,b2l;chandler;ne-popmax
+leiria,Leiria,-8.805,39.739,,,,,,,45112,0,ne-popmax
+lemosos,Lemosos,33.0333,34.6754,,,,,,,154000,1,ne-popmax;ne-ports
+lemta,Lemta (Leptiminus),10.898,35.666,8221,,,,,,,1,hanson;pleiades
+lentini,Lentini (Leontini),15.0006,37.2865,5792,,,,,,,0,hanson
+leon,León,-5.57,42.58,,,15000,5000,6000,55000,136227,0,b2l;chandler;ne-popmax
+leonforte,Leonforte,14.383,37.633,,,,,10000,,,0,b2l
+leptis,Leptis (Lepcis Magna),14.2931,32.6383,153587,50000,,,,,,1,chandler;hanson;pleiades
+lerida,Lerida (Ilerda),0.617,41.617,,,,,11000,,,0,b2l;hanson
+leuven,Leuven,4.7,50.883,,,,17000,14000,42000,,0,b2l;chandler
+lezhe,Lezhë (Lissus),19.654,41.788,2929,,,,,,18695,1,hanson;ne-popmax;pleiades
+lezuza,Lezuza (Libisosa),-2.3538,38.949,,,,,,,,0,hanson
+lgov,Lgov,35.2744,51.6948,,,,,,,23500,0,ne-popmax
+liberec,Liberec,15.08,50.8,,,,,10000,34000,102175,0,b2l;chandler;ne-popmax
+librazhd,Librazhd,20.3667,41.2,,,,,,,12691,0,ne-popmax
+licata,Licata (Phintias),13.933,37.1,,,,,11000,,,1,b2l;hanson;ne-ports
+lida,Lida,25.2846,53.8885,,,,,,,100216,0,ne-popmax
+liege,Liège,5.58,50.63,,,12000,20000,55000,295000,749110,0,b2l;chandler;ne-popmax
+liepaga,Liepaga,21.01,56.51,,,,,,67000,85132,1,chandler;ne-popmax;ne-ports
+lier,Lier,4.567,51.133,,,,5000,10000,,,0,b2l
+liestal,Liestal,7.737,47.483,,,,,,,12832,0,ne-popmax
+lille,Lille,3.0781,50.6519,,,,26000,56000,289000,1081000,0,b2l;chandler;ne-places
+lillebonne,Lillebonne (Iuliobona),0.5343,49.5189,,,,,,,,0,hanson
+limani-khersonesou,Limani Khersonesou (Chersonesus),25.3886,35.3192,,,,,,,,0,hanson
+limerick,Limerick,-8.623,52.6647,,,,,39000,38000,90054,1,b2l;chandler;ne-popmax;ne-ports
+limoges,Limoges (Augustoritum),1.25,45.83,21811,,,,21000,84000,152199,0,b2l;chandler;hanson;ne-popmax
+linares,Linares,-3.6334,38.0833,,,,,,,59761,0,ne-popmax
+lincoln,Lincoln (Lindum),-0.5384,53.2349,5986,,,,,48000,,0,chandler;hanson
+lindos,Lindos (Lindus),28.0878,36.0914,,,,,,,,0,hanson
+linz,Linz,14.2888,48.3192,,,,,17000,58000,349161,0,b2l;chandler;ne-popmax
+lipari,Lipari (Lipara),14.954,38.4674,2144,,,,,,,0,hanson
+lipetsk,Lipetsk,39.64,52.62,,,,,,,515655,0,ne-popmax
+liria,Liria,-0.6,39.633,,,,,10000,,,0,b2l
+lisbon,Lisbon (Olisipo),-9.1468,38.7247,7388,,15000,65000,195000,363000,2996000,1,b2l;chandler;hanson;ne-places;ne-ports
+lisburn,Lisburn,-6.0477,54.5103,,,,,,,12899,0,ne-popmax
+lisieux,Lisieux (Noviomagus),0.233,49.15,14856,,,,11000,,,0,b2l;hanson
+livadhia,Livadhia (Lebadea),22.8667,38.4333,,,,,,,,0,hanson
+liverpool,Liverpool,-2.9619,53.4051,,,,,83000,940000,825000,1,b2l;chandler;ne-places;ne-ports
+livny,Livny,37.6044,52.4248,,,,,,,52915,0,ne-popmax
+livorno,Livorno,10.3023,43.5511,,,,,53000,78000,156274,1,b2l;chandler;ne-popmax;ne-ports
+ljubljana,Ljubljana (Emona),14.515,46.0553,2767,,,,10000,36000,314807,0,b2l;chandler;hanson;ne-popmax
+llerena,Llerena,-6.017,38.233,,,,,5000,,,0,b2l
+llucera,Llucera (Luceria),15.333,41.5,13405,,,,10000,,,0,b2l;hanson
+locri,Locri,16.2599,38.2364,14126,,,,,,,0,hanson
+lod,Lod (Lydda),34.8924,31.9583,910,,,,,,,0,hanson
+lodi,Lodi,9.5,45.317,,,,8000,12000,,,0,b2l
+logrono,Logroño,-2.43,42.4704,,,,,,,143698,0,ne-popmax
+loja,Loja,-4.15,37.167,,,,,13000,,,0,b2l
+lokeren,Lokeren,3.983,51.1,,,,,12000,,,0,b2l
+lomello,Lomello (Laumellum),8.7973,45.122,910,,,,,,,0,hanson
+london,London (Londinium),-0.1187,51.5019,36861,,25000,50000,948000,6480000,8618000,1,b2l;chandler;hanson;modelski-mod;ne-places;ne-ports
+londonderry-derry,Londonderry/Derry,-7.3333,55.0004,,,,,15000,,83652,1,b2l;ne-popmax;ne-ports
+lora-del-rio,Lora del Rio (Axati),-5.5262,37.6593,,,,,,,,0,hanson
+lorca,Lorca,-1.6985,37.6886,,,,7000,22000,66000,86119,0,b2l;chandler;ne-popmax
+lorch,Lorch (Lauriacum),14.4788,48.2126,,,,,,,,0,hanson
+lorient,Lorient,-3.3666,47.7504,,,,,20000,42000,84952,1,b2l;chandler;ne-popmax;ne-ports
+los-villares,Los Villares (Isturgi),-4.0224,38.0302,,,,,,,,0,hanson
+lousoi,Lousoi,22.1168,37.969,,,,,,,,0,hanson
+loutron,Loutron (Argos),21.25,38.75,,,,,,,,0,hanson
+lovec,Lovec,24.719,43.138,,,,,,,42211,0,ne-popmax
+lubeck,Lübeck,10.67,53.8704,,,,25000,25000,82000,235390,0,b2l;chandler;ne-popmax
+lublin,Lublin,22.5727,51.2504,,,,,,57000,360044,0,chandler;ne-popmax
+luc-en-diois,Luc en Diois (Lucus Augusti),5.4533,44.6156,,,,,,,,0,hanson
+lucca,Lucca (Luca),10.483,43.833,7388,,,30000,17000,43000,,0,b2l;chandler;hanson
+lucena,Lucena,-4.483,37.4,,,,,16000,,,0,b2l
+luco,Luco (Angitia),13.4599,41.97,1564,,,,,,,0,hanson
+ludwigshafen,Ludwigshafen,8.4452,49.4774,,,,,,61000,,0,chandler
+lueneburg,Lueneburg,10.4,53.25,,,,,10000,,,0,b2l
+lugano,Lugano,8.9667,46.0004,,,,,,,105388,0,ne-popmax
+lugo,Lugo (Lucus Augusti),-7.5579,43.0112,5986,,,,,,,0,hanson
+luhansk,Luhansk,39.3344,48.5698,,,,,,,452000,0,ne-popmax
+luleburgaz,Lüleburgaz,27.3552,41.4067,,,,,,,90899,0,ne-popmax
+luneville,Luneville,6.5,48.6,,,,,11000,,,0,b2l
+luni,Luni (Luna),10.0221,44.0622,2767,,,,,,,1,hanson;pleiades
+lurnfelde,Lurnfelde (Teurnia),13.4437,46.8233,676,,,,,,,0,hanson
+lushnje,Lushnjë,19.716,40.94,,,,,,,41469,0,ne-popmax
+luton,Luton,-0.42,51.8804,,,,,,36000,235958,0,chandler;ne-popmax
+lutsk,Lutsk,25.3334,50.7472,,,,,,,213661,0,ne-popmax
+luxembourg,Luxembourg,6.13,49.6117,,,,,10000,,107260,0,b2l;ne-popmax
+luxor,Luxor (Diospolis Magna),32.65,25.7,,,,,,,609248,0,hanson;ne-popmax
+luzern,Luzern,8.28,47.0504,,,,,,,250000,0,ne-popmax
+lviv,Lviv,24.03,49.835,,,,,42000,159000,803880,0,chandler;ne-popmax
+lykosoura,Lykosoura (Lycosura),22.031,37.3897,,,,,,,,0,hanson
+lyon,Lyon (Lugdunum),4.8281,45.772,39968,,20000,50000,109000,508000,1471000,0,b2l;chandler;hanson;ne-places
+lysychansk,Lysychansk,38.4274,48.9204,,,,,,,124421,0,ne-popmax
+m-sila,M'sila,4.545,35.7,,,,,,,150000,0,ne-popmax
+ma-an,Ma'an,35.736,30.192,,,,,,,50350,0,ne-popmax
+maastricht,Maastricht,5.677,50.853,,,,10000,18000,34000,122378,0,b2l;chandler;ne-popmax
+macclesfield,Macclesfield,-2.127,53.258,,,,,11000,34000,,0,b2l;chandler
+macerata,Macerata,13.45,43.3,,,,,12000,,,0,b2l
+macerata-feltria,Macerata Feltria (Pitinum Pisaurense),12.4413,43.8039,,,,,,,,0,hanson
+macon,Macon,4.833,46.3,,,,,10000,,,0,b2l
+mactar,Mactar (Mactaris),9.2072,35.8538,,,,,,,,0,hanson
+madaba,Madaba,35.7947,31.7117,,,,,,,,0,hanson
+madaurouch,Madaurouch (Madauros),7.9024,36.0778,2296,,,,,,,0,hanson
+maddaloni,Maddaloni (Calatia),14.383,41.033,1292,,,,10000,,,0,b2l;hanson
+madinat-ath-thawrah,Madinat ath Thawrah,38.5481,35.8367,,,,,,,87880,0,ne-popmax
+madrid,Madrid,-3.6853,40.402,,,,13000,168000,539000,5918000,0,b2l;chandler;modelski-mod;ne-places
+magdeburg,Magdeburg,11.62,52.1304,,,,18000,36000,229000,229826,0,b2l;chandler;ne-popmax
+magliano,Magliano (Heba),11.2953,42.5922,1426,,,,,,,0,hanson
+mahabad,Mahabad,45.72,36.7704,,,,,,,162434,0,ne-popmax
+mahdia,Mahdia (Aggar),11.0409,35.4839,,,10000,,10000,,45977,0,b2l;hanson;ne-popmax
+mahilyow,Mahilyow,30.3246,53.8985,,,,,,47000,369200,0,chandler;ne-popmax
+mahon,Mahon (Mago),4.25,39.883,,,,,15000,,,1,b2l;hanson
+maidstone,Maidstone,0.5167,51.2667,,,,,,33000,,0,chandler
+mainz,Mainz (Mogontiacum),8.2732,49.9825,19945,,30000,6000,28000,,184997,0,b2l;chandler;hanson;ne-popmax
+makiyivka,Makiyivka,37.9746,48.0297,,,,,,,376610,0,ne-popmax
+makkah,Makkah,39.8181,21.432,,,26000,38000,38000,60000,1651000,0,b2l;chandler;ne-places
+mako,Mako,20.483,46.217,,,,,10000,33000,,0,b2l;chandler
+maladzyechna,Maladzyechna,26.8653,54.3188,,,,,,,101300,0,ne-popmax
+malaga,Málaga (Malaca),-4.42,36.7204,3093,,17000,42000,49000,117000,550058,1,b2l;chandler;hanson;ne-popmax;ne-ports
+malain,Mâlain (Mediolanum),4.7957,47.3271,,,,,,,,0,hanson
+malatya,Malatya,38.3,38.3704,,,,,10000,30000,461574,0,b2l;chandler;ne-popmax
+malatya-2,Malatya (Melitene),37.25,38.25,4300,,,,,,,0,hanson
+mallawi,Mallawi,30.84,27.7304,,,,,,,217365,0,ne-popmax
+malmo,Malmö,13.0231,55.5994,,,,,,60000,269349,1,chandler;ne-popmax;ne-ports
+manbij,Manbij,37.9563,36.5266,,,,,,,120169,0,ne-popmax
+manchester,Manchester,-2.2487,53.4753,,,,,84000,1435000,2246000,0,b2l;chandler;ne-places
+mandali,Mandali,45.5464,33.7436,,,,,,,29785,0,ne-popmax
+mandeure,Mandeure (Epamanduodurum),6.8061,47.4519,5986,,,,,,,0,hanson
+mangalia,Mangalia (Callatis),28.5772,43.8149,791,,,,,,,1,hanson;pleiades
+manisa,Manisa (Magnesia),27.44,38.6304,,,,,12000,35000,243971,0,b2l;chandler;hanson;ne-popmax
+mannheim,Mannheim,8.47,49.5004,,,,,23000,203000,2362000,0,b2l;chandler;ne-popmax
+manresa,Manresa,1.833,41.733,,,,,13000,,,0,b2l
+mantineia,Mantineia (Mantinea),22.4053,37.6428,25385,,,,,,,0,hanson
+mantua,Mantua,10.8,45.15,676,,12000,25000,25000,,,0,b2l;chandler;hanson
+marbella,Marbella,-4.8833,36.5166,,,,,,,186131,0,ne-popmax
+marchena,Marchena,-5.4,37.33,,,,,10000,,,0,b2l
+mardin,Mardin,40.7427,37.3115,,,,11000,18000,,71373,0,b2l;ne-popmax
+maribor,Maribor,15.65,46.5405,,,,,,,114228,0,ne-popmax
+marino,Marino (Castrimoenium),12.6666,41.7666,,,,,,,,0,hanson
+mariupol,Mariupol,37.5562,47.0962,,,,,,52000,481626,0,chandler;ne-popmax
+markouna,Markouna (Verecunda),6.2897,35.4887,,,,,,,,0,hanson
+maronia,Maronia (Maronea),25.5191,40.9064,50316,,,,,,,0,hanson
+marrakesh,Marrakesh,-8.0019,31.6319,,,,60000,40000,120000,1005000,0,b2l;chandler;ne-places
+marsa-sousa,Marsa Sousa (Apollonia),21.9725,32.8963,2607,,,,,,,1,hanson
+marsala,Marsala (Lilybaeum),12.4387,37.8054,15843,,,6000,16000,,77784,1,b2l;hanson;ne-popmax;ne-ports
+marseille,Marseille (Massalia),5.3731,43.2919,9076,,,45000,101000,410000,1445000,1,b2l;chandler;hanson;ne-places;ne-ports;pleiades
+martigny,Martigny (Forum Claudii),7.0735,46.1017,2607,,,,,,,0,hanson
+martina-franca,Martina Franca,17.333,40.7,,,,5000,12000,,,0,b2l
+martos,Martos (Tucci),-3.967,37.717,460,,,,11000,,,0,b2l;hanson
+marzuq,Marzuq,13.8972,25.9044,,,,,,,55071,0,ne-popmax
+mascali,Mascali,15.2,37.75,,,,,14000,,,0,b2l
+mascara,Mascara,0.14,35.4004,,,,,,,108230,0,ne-popmax
+mastru,Mastru? (Paeania),23.8553,37.9585,,,,,,,,0,hanson
+mataranga,Mataránga (Cierium),22.0755,39.3611,,,,,,,,0,hanson
+mataro,Mataró (Iluro),-4.7067,36.8226,676,,,,,,,0,hanson
+mataro-2,Mataró,2.45,41.54,,,,,10000,,183293,0,b2l;ne-popmax
+matelica,Matélica (Matilica),13.0087,43.2559,676,,,,,,,0,hanson
+matera,Matera,16.6,40.667,,,,10000,12000,,,0,b2l
+matruh,Matruh,27.23,31.3504,,,,,,,103470,0,ne-popmax
+mauves,Mauves,4.83,45.0392,2296,,,,,,,0,hanson
+mavromati,Mavromati (Messene),22.008,37.0514,22352,,,,,,,0,hanson
+maykop,Maykop,40.12,44.61,,,,,,34000,158451,0,chandler;ne-popmax
+mazi-n-kalesi,Mazi n Kalesi (Amyzon),27.6909,37.5989,,,,,,,,0,hanson
+mazyr,Mazyr,29.2722,52.046,,,,,,,112137,0,ne-popmax
+mazzarino,Mazzarino,14.217,37.3,,,,,11000,,,0,b2l
+meaux,Meaux (Iatinum),2.8883,48.9603,13167,,,,,,,0,hanson
+mechelen,Mechelen,4.467,51.033,,,,25000,20000,56000,,0,b2l;chandler
+medea,Médéa,2.77,36.2704,,,,,,,147707,0,ne-popmax
+medeina,Medeina (Althiburos),8.8318,35.9438,,,,,,,,0,hanson
+medellin,Medellín (Metellinum),-5.9582,38.9646,,,,,,,,0,hanson
+medenine,Medenine,10.4167,33.4,,,,,,,61705,0,ne-popmax
+medina,Medina,39.5781,24.5019,,,13000,19000,19000,27500,1243000,0,b2l;chandler;ne-places
+medina-2,Medina (Melita),14.4029,35.8859,,,,,,,,0,hanson
+medina-de-rio-seco,Medina de rio Seco,-5.033,41.883,,,,16000,5000,,,0,b2l
+medina-del-campo,Medina del Campo,-4.917,41.3,,,,21000,,,,0,b2l;chandler
+medina-sidonia,Medina Sidonia (Asido),-5.9279,36.4678,,,,,,,,0,hanson
+megara,Megara,23.3446,37.9948,30842,,,,,,,0,hanson
+meknes,Meknes,-5.56,33.9004,,,,25000,20000,50000,697628,0,b2l;chandler;ne-popmax
+melfi,Melfi,15.65,41.0,,,,,8000,,,0,b2l
+melilla,Melilla (Rusadir),-2.95,35.3,,,,,,,141308,1,hanson;ne-popmax;ne-ports;pleiades
+melitopol,Melitopol,35.3775,46.8378,,,,,,,158000,0,ne-popmax
+melli,Melli (Milyas),29.75,36.75,361,,,,,,,0,hanson
+melun,Melun,2.6666,48.5333,,,,,,,249432,0,ne-popmax
+mentana,Mentana (Nomentum),12.6374,42.0334,,,,,,,,0,hanson
+menuf,Menuf,30.92,30.46,,,,10000,10000,,,0,b2l
+merida,Mérida (Augusta Emerita),-6.338,38.912,14856,100000,30000,10000,5000,,52423,0,b2l;hanson;modelski-anc;ne-popmax
+mertola,Mértola (Myrtilis),-7.6688,37.6349,,,,,,,,0,hanson
+mesas-de-asta,Mesas de Asta (Hasta Regia),-6.1726,36.788,6182,,,,,,,0,hanson
+mesevle-and-kapraklar,Mesevle and Kapraklar (Hyllarima),28.3482,37.5016,,,,,,,,0,hanson
+messina,Messina (Messana),15.55,38.2005,11531,,,25000,35000,93000,252026,1,b2l;chandler;hanson;ne-popmax;ne-ports
+metaponto,Metaponto (Metapontum),16.8252,40.3836,1426,,,,,,,0,hanson
+metz,Metz (Divodurum),6.18,49.1203,8221,,16000,15000,46000,58000,409186,0,b2l;chandler;hanson;ne-popmax
+michurinsk,Michurinsk,40.5,52.9,,,,,,41000,93499,0,chandler;ne-popmax
+middelburg,Middelburg,3.61,51.502,,,,7000,20000,,46485,0,b2l;chandler;ne-popmax
+middlesbrough,Middlesbrough,-1.23,54.5804,,,,,,89000,416042,0,chandler;ne-popmax
+miercurea-cuic,Miercurea Cuic,25.524,46.361,,,,,,,42029,0,ne-popmax
+mikhaylovka,Mikhaylovka,43.2175,50.0679,,,,,,,58898,0,ne-popmax
+mila,Mila (Milev),6.2677,36.4513,,,,,,,,0,hanson
+milan,Milan (Mediolanum),9.2031,45.4719,21006,40000,30000,100000,135000,491000,2938000,0,b2l;chandler;hanson;modelski-mod;ne-places
+milas,Milâs (Mylasa),27.7816,37.3171,,,,,,,,0,hanson
+milazzo,Milazzo (Mylae),15.2333,38.2167,1995,,,,,,,1,hanson;pleiades
+miliana,Miliana (Zucchabar),2.2268,36.3045,,,,,,,,0,hanson
+millerovo,Millerovo,40.3974,48.9379,,,,,,,38527,0,ne-popmax
+minare-koyu,Minare Köyü (Pinara),29.241,36.4976,2607,,,,,,,0,hanson
+miniara,Miniara (Arca),36.0428,34.5331,,,,,,,,0,hanson
+minsk,Minsk,27.5647,53.9019,,,,,,94000,1879000,0,chandler;modelski-mod;ne-places
+minturno,Minturno (Minturnae),13.7466,41.2628,4480,,,,,,,0,hanson
+mirabella-eclano,Mirabella Eclano (Aeclanum),14.9942,41.0421,2296,,,,,,,0,hanson
+miseno,Miseno (Misenum),14.0849,40.7863,1426,,,,,,,1,hanson;pleiades
+miskolc,Miskolc,20.78,48.1004,,,,,14000,40000,247757,0,b2l;chandler;ne-popmax
+misrata,Misrata,15.1,32.38,,,,,,,386120,0,ne-popmax
+missiori,Missiori (Mesembria),27.7193,42.6629,,,,,,,,0,hanson
+mistretta,Mistretta,14.37,37.93,,,,,11000,,,0,b2l
+mithymna,Mithymna (Methymna),26.1761,39.3672,,,,,,,,1,hanson
+mitilini,Mitilini (Mytilene),26.5546,39.1104,22081,,,,,,29328,1,hanson;ne-popmax
+mizdah,Mizdah,12.9833,31.4337,,,,,,,26107,0,ne-popmax
+modena,Modena (Mutina),10.92,44.65,8646,,,18000,23000,,175502,0,b2l;hanson;ne-popmax
+modica,Modica,14.767,36.867,,,,,17000,,,0,b2l
+modon,Modon (Methone),23.0692,39.328,4480,,,,,,,0,hanson
+moigrad,Moigrad (Porolissum),23.1267,47.2303,2607,,,,,,,0,hanson
+molfetta,Molfetta,16.6,41.2,,,,,12000,,,1,b2l;ne-ports
+molino-del-postero,Molino del Postero (Irni),-5.1089,37.05,,,,,,,,0,hanson
+monaco,Monaco,7.4069,43.7396,,,,,,,36371,1,ne-popmax;ne-ports
+monastir,Monastir,10.7673,35.7307,,,,,,,71546,0,ne-popmax
+mondovi,Mondovi,7.817,44.383,,,,,10000,,,0,b2l;chandler
+mondragone,Mondragone (Sinuessa),13.8946,41.1152,4121,,,,,,,0,hanson
+monopoli,Monopoli,17.3,40.95,,,,5000,15000,,,1,b2l;ne-ports
+mons,Mons (Mopthensium),5.5674,36.2473,,,,,,,,0,hanson
+mons-2,Mons,3.939,50.446,,,,15000,18000,,91277,0,b2l;ne-popmax
+montagano,Montagano (Fagifulae),14.6676,41.6579,42,,,,,,,0,hanson
+montana,Montana,23.237,43.414,,,,,,,47445,0,hanson;ne-popmax
+montauban,Montauban,1.35,44.017,,,,,24000,30000,,0,b2l;chandler
+monte-bisenzio,Monte Bisenzio (Visentium),11.8715,42.5697,,,,,,,,0,hanson
+monte-compatri,Monte Compatri (Labicum),12.7364,41.8075,,,,,,,,0,hanson
+monte-di-canne,Monte di Canne (Cannae),16.1517,41.2964,,,,,,,,0,hanson
+monte-di-salpi,Monte di Salpi? (Salapia Nova),15.9599,41.3986,2607,,,,,,,0,hanson
+monte-mayor,Monte Mayor (Ulia),-4.6989,37.6487,,,,,,,,0,hanson
+monteleone-sabino,Monteleone Sabino (Trebula Mutuesca),12.8581,42.2331,,,,,,,,0,hanson
+montesarchio,Montesarchio (Caudium),14.6397,41.0644,,,,,,,,0,hanson
+monteu-da-po,Monteu da Po (Industria),8.0181,45.1516,3093,,,,,,,0,hanson
+montilla,montilla,-4.633,37.583,,,,,13000,,,0,b2l
+montlucon,Montlucon,2.6,46.3333,,,,,,32000,,0,chandler
+montoro,Montoro,-4.383,38.017,,,,,13000,,,0,b2l
+montpellier,Montpellier,3.87,43.6104,,,,6000,33000,75000,327254,0,b2l;chandler;ne-popmax
+monza,Monza,9.267,45.583,,,,,10000,33000,,0,b2l;chandler
+morella,Morella,-0.1,40.617,,,,,6000,,,0,b2l
+moron-de-la-frontera,Moron-de-la-Frontera (Lucurgentum),-5.45,37.133,565,,,,8000,,,0,b2l;hanson
+morshansk,Morshansk,41.8044,53.4547,,,,,,,49350,0,ne-popmax
+moscow,Moscow,37.6136,55.7541,,,,80000,248000,1120000,10524000,0,chandler;modelski-mod;ne-places
+mostaganem,Mostaganem,0.09,35.9404,,,,,,,188354,1,ne-popmax;ne-ports
+mostar,Mostar (Benzavaticum),18.5,43.5,,,,,,,,0,hanson
+mostar-2,Mostar,17.82,43.3505,,,,,,,163067,0,ne-popmax
+mosul,Mosul,43.1431,36.3469,,,10000,25000,49000,60000,1677000,0,b2l;chandler;ne-places
+motherwell,Motherwell,-3.9919,55.7892,,,,,,82000,,0,chandler
+motril,Motril,-3.517,36.75,,,,,12000,,,0,b2l
+moulins,Moulins,3.33,46.57,,,,,13000,,,0,b2l
+mozdok,Mozdok,44.6544,43.7543,,,,,,,45702,0,ne-popmax
+mraissa,Mraissa (Carpis),10.5531,36.7652,,,,,,,,0,hanson
+mtsensk,Mtsensk,36.5472,53.2647,,,,,,,47609,0,ne-popmax
+mudanya,Mudanya (Apamea),28.8911,40.3685,,,,,,,,0,hanson
+muelheim-an-der-ruhr,Muelheim an der Ruhr,6.883,51.433,,,,,10000,,,0,b2l
+mugla,Muğla,28.3639,37.2164,,,,,,,48183,0,ne-popmax
+muhlhausen,Muhlhausen,10.4527,51.209,,,,,,33000,,0,chandler
+muineachan,Muineachan,-6.9667,54.25,,,,,,,5937,0,ne-popmax
+mulhouse,Mulhouse,7.35,47.7504,,,,,,89000,215454,0,chandler;ne-popmax
+mulva,Mulva (Munigua),-5.7407,37.7133,268,,,,,,,0,hanson
+munich,Munich,11.573,48.1319,,,,13000,40000,499000,1317000,0,b2l;chandler;modelski-mod;ne-places
+munster,Münster,7.62,51.9704,,,,10000,14000,63000,270184,0,b2l;chandler;ne-popmax
+murcia,Murcia,-1.13,37.98,,,19000,25000,40000,74000,406807,0,b2l;chandler;ne-popmax
+murom,Murom,42.04,55.5704,,,,,,,131287,0,ne-popmax
+mus,Muş,41.4969,38.749,,,,,,,82536,0,ne-popmax
+mut,Mut (Claudiopolis),33.4369,36.6453,,,,,,,,0,hanson
+mykolayiv,Mykolayiv,31.9843,46.9677,,,,,,95000,510840,0,chandler;ne-popmax
+nabatiye-et-tahta,Nabatiye et Tahta,35.45,33.3833,,,,,,,80000,0,ne-popmax
+nabeul,Nabeul (Neapolis),10.73,36.4603,,,,,,,115149,0,hanson;ne-popmax
+nablus,Nablus (Neapolis),35.2544,32.2215,23170,,,,,,215981,0,hanson;ne-popmax
+nadin,Nadin (Nedinum),15.4972,44.0715,,,,,,,,0,hanson
+naix-aux-forges-and-saint-amand-sur-orna,Naix aux Forges and Saint Amand sur Ornain (Nasium),5.3865,48.6323,11074,,,,,,,0,hanson
+najaf,Najaf,44.3354,32.0003,,,,,,,665552,0,ne-popmax
+nalchik,Nalchik,43.6179,43.4981,,,,,,,307866,0,ne-popmax
+nalut,Nalut,10.97,31.8804,,,,,,,66609,0,ne-popmax
+namur,Namur,4.87,50.4704,,,,8000,15000,32000,106284,0,b2l;chandler;ne-popmax
+namurt-limani,Namurt Limani (Cyme),26.9363,38.7595,676,,,,,,,0,hanson
+nancy,Nancy,6.2,48.6837,,,,,29000,87000,268976,0,b2l;chandler;ne-popmax
+nantes,Nantes (Condevicnum),-1.59,47.2104,1848,,,14000,77000,151000,438537,1,b2l;chandler;hanson;ne-popmax;pleiades
+naples,Naples (Neapolis),14.2431,40.842,15101,,30000,125000,430000,563000,2254000,1,b2l;chandler;hanson;modelski-mod;ne-places
+nara-burnu,Nara Burnu (Abydus),26.4169,40.195,,,,,,,,0,hanson
+narbonne,Narbonne (Narbo Martius),3.0,43.183,43137,,12000,,,,,0,b2l;chandler;hanson
+nardo,Nardo (Neretum),18.0304,40.1759,,,,,,,,0,hanson
+narenta,Narenta (Narona),17.6134,43.0637,2296,,,,,,,0,hanson
+narni,Narni (Narnia),12.5156,42.5176,1034,,,,,,,1,hanson;pleiades
+naro,Naro,13.8,37.3,,,,,11000,,,0,b2l
+naxcivan,Naxcivan,45.4122,39.2092,,,,,,,94788,0,ne-popmax
+nazareth,Nazareth,35.2955,32.704,,,,,,,151459,0,ne-popmax
+nazran,Nazran,44.783,43.233,,,,,,,93357,0,ne-popmax
+nea-anchialos,Nea Anchialos (Thebae Phthiotides),22.7623,39.273,,,,,,,,0,hanson
+near-acerra,Near Acerra (Suessula),14.3989,40.9905,5986,,,,,,,0,hanson
+near-kozan,Near Kozan (Pednelissus),30.9341,37.2142,2767,,,,,,,0,hanson
+near-larache,Near Larache (Lixus),-6.1102,35.1998,2144,,,,,,,0,hanson
+nelidovo,Nelidovo,32.7731,56.2235,,,,,,,25349,0,ne-popmax
+nemrutkale,Nemrutkale (Aegae),27.1684,38.8251,,,,,,,,0,hanson
+nepi,Nepi (Nepet),12.3478,42.2419,1161,,,,,,,0,hanson
+neritus,Neritus (Leucas),20.7131,38.8073,,,,,,,,0,hanson
+neuchatel,Neuchâtel,6.923,46.999,,,,,,,31270,0,ne-popmax
+nevers,Nevers,3.1667,46.9837,,,,,11000,,45929,0,b2l;ne-popmax
+nevinnomyssk,Nevinnomyssk,41.95,44.6201,,,,,,,134380,0,ne-popmax
+nevsehir,Nevşehir,34.724,38.624,,,,,,,75527,0,ne-popmax
+newcastle,Newcastle,-1.6116,54.9897,,,,5000,33000,615000,898000,1,b2l;chandler;ne-places;ne-ports
+newport,Newport,-2.9696,51.5823,,,,,,66000,,1,chandler;ne-ports
+newry,Newry,-6.33,54.18,,,,,15000,,,0,b2l
+nice,Nice (Cemelenum),7.2631,43.717,1995,,,,23000,103000,962000,1,b2l;chandler;hanson;ne-places;ne-ports
+nicea,Nicea (Nicaea),29.717,40.433,23444,,28000,15000,,,,0,b2l;chandler;hanson
+nicosia,Nicosia,33.3666,35.1667,,,,15000,10000,14940,224300,0,b2l;chandler;ne-popmax
+nicosia-2,Nicosia,14.4,37.75,,,,16000,12000,,,0,b2l
+nigde,Niğde,34.694,37.976,,,,,7000,,91039,0,b2l;ne-popmax
+nijmegen,Nijmegen (Noviomagus),5.867,51.833,4846,,,12000,13000,44000,,0,b2l;chandler;hanson
+nikolayevsk,Nikolayevsk,45.4261,50.0161,,,,,,,16044,0,ne-popmax
+nikopol,Nikopol,24.9,43.7,,,,,10000,,,0,b2l
+nikopol-2,Nikopol,34.4062,47.5666,,,,,,,130500,0,ne-popmax
+niksar,Niksar (Neocaesarea),37.0201,40.5892,,,,,,,,0,hanson
+nikup,Nikup (Nicopolis),25.6122,43.2179,3427,,,,,,,0,hanson
+nimes,Nîmes (Nemausus),4.35,43.8304,41545,,,6000,41000,72000,169547,0,b2l;chandler;hanson;ne-popmax
+nin,Nin (Aenona),15.1842,44.2435,1704,,,,,,,0,hanson
+niort,Niort,-0.45,46.3,,,,,14000,,,0,b2l
+nis,Niš (Naissus),21.9,43.3304,,,,20000,,12817,250000,0,b2l;chandler;hanson;ne-popmax
+nizhny-novgorod,Nizhny Novgorod,43.9981,56.335,,,,55000,9000,91000,1263000,0,chandler;modelski-mod;ne-places
+nizhyn,Nizhyn,31.8903,51.0541,,,,,,32000,116288,0,chandler;ne-popmax
+nocera-dei-pagani,Nocera dei Pagani (Nuceria Camellaria),12.7883,43.1139,,,,,,,,0,hanson
+nocera-superiore,Nocera Superiore (Nuceria Alfaterna),14.6739,40.7431,23444,,,,,,,0,hanson
+noerdlingen,Noerdlingen,10.5,48.85,,,,6000,6000,,,0,b2l
+noginsk,Noginsk,38.48,55.8704,,,,,,,229731,0,ne-popmax
+nola,Nola,14.5286,40.9259,8011,,,,,,,0,hanson
+nora,Nora,9.0159,38.9847,3093,,,,,,,1,hanson
+norcia,Norcia (Nursia),13.0939,42.7934,4121,,,,,,,0,hanson
+norma,Norma (Norba),12.9603,41.5917,,,,,,,,0,hanson
+northampton,Northampton,-0.896,52.1506,,,,,,85000,,0,chandler
+norwich,Norwich,1.3,52.6304,,,10000,10000,37000,110000,190756,0,b2l;chandler;ne-popmax
+noto,Noto (Netum),15.067,36.883,,,,5000,11000,,,0,b2l;hanson
+notre-dame-d-alleaume,Notre Dame d'Alleaume (Alauna),-1.4628,49.5078,,,,,,,,0,hanson
+nottingham,Nottingham,-1.1657,52.9411,,,,,29000,237000,825600,0,b2l;chandler;ne-popmax
+novara,Novara (Novaria),8.62,45.45,4300,,,7000,12000,,100910,0,b2l;hanson;ne-popmax
+novi-sad,Novi Sad,19.8499,45.2504,,,,,,34000,225457,0,chandler;ne-popmax
+novocherkassk,Novocherkassk,40.08,47.42,,,,,,52000,166974,0,chandler;ne-popmax
+novomoskovsk,Novomoskovsk,38.2893,54.0107,,,,,,,130982,0,ne-popmax
+novorossiysk,Novorossiysk,37.7699,44.73,,,,,,,241856,1,ne-popmax;ne-ports;pleiades
+novoshakhtinsk,Novoshakhtinsk,39.92,47.77,,,,,,,99478,0,ne-popmax
+novozybkov,Novozybkov,31.9449,52.5348,,,,,,,43534,0,ne-popmax
+numana,Numana,13.6221,43.5103,1704,,,,,,,0,hanson
+numancia,Numancia (Numantia),-2.4443,41.8096,2929,,,,,,,0,hanson
+nurnberg,Nürnberg,11.08,49.45,,,,38000,30000,261000,737304,0,b2l;chandler;ne-popmax
+nusaybin,Nusaybin,41.2184,37.075,,,,,,,152668,0,ne-popmax
+nyiregyhaza,Nyíregyháza,21.7187,47.9653,,,,,,31000,176880,0,chandler;ne-popmax
+nyon,Nyon (Noviodunum),6.2384,46.3808,460,,,,,,,0,hanson
+obninsk,Obninsk,36.62,55.0804,,,,,,,107392,0,ne-popmax
+ocana,Ocana,-3.517,39.933,,,,9000,5000,,,0,b2l
+odense,Odense,10.3833,55.4004,,,,,,39000,158222,1,chandler;ne-popmax;ne-ports
+oderzo,Oderzo (Opitergum),12.4906,45.7811,5219,,,,,,,0,hanson
+odessa,Odessa,30.7081,46.492,,,,,7000,449000,970000,1,chandler;modelski-mod;ne-places;ne-ports
+odz,Łódź,19.4582,51.7678,,,,,,351000,736000,0,chandler;ne-places
+ohrid,Ohrid (Lychnidus),20.8,41.117,1034,,40000,,,,,0,b2l;hanson
+oiniadai,Oiniadai (Oeniadae),21.213,38.399,11993,,,,,,,1,hanson;pleiades
+oiniandos,Oiniandos (Oeniandus),36.1544,36.9619,,,,,,,,0,hanson
+olbia,Olbia,9.5151,40.9143,4300,,,,,,45366,1,hanson;ne-popmax;ne-ports;pleiades
+oldenburg,Oldenburg,8.22,53.13,,,,,,,167458,0,ne-popmax
+oldham,Oldham,-2.113,53.537,,,,,12000,,,0,b2l;chandler
+olomouc,Olomouc,17.2568,49.5867,,,,12000,9000,,101268,0,b2l;ne-popmax
+olot,Olot,2.483,42.183,,,,,15000,,,0,b2l
+olou-borlon,Olou Borlon (Apollonia),30.457,38.0783,,,,,,,,0,hanson
+olsztyn,Olsztyn,20.4856,53.7726,,,,,,,186670,0,ne-popmax
+omagh,Omagh,-7.3,54.6,,,,,,,21056,0,ne-popmax
+omisalj,Omišalj (Fulfinium),14.554,45.2118,,,,,,,,0,hanson
+onteniente,Onteniente,-0.617,38.817,,,,,12000,,,0,b2l
+opole,Opole,17.9313,50.685,,,,,,30000,131412,0,chandler;ne-popmax
+oradea,Oradea,21.92,47.05,,,,,,47000,213830,0,chandler;ne-popmax
+oran,Oran,-0.6219,35.7119,,,,25000,12000,87000,944000,1,b2l;chandler;modelski-mod;ne-places;ne-ports
+orange,Orange (Arausio),4.8076,44.1367,11074,,,,,,,0,hanson
+ordona,Ordona (Herdoniae),15.6208,41.3107,2144,,,,,,,0,hanson
+ordu,Ordu,37.8699,41.0004,,,,,,,155117,0,ne-popmax
+orekhovo-zuevo,Orekhovo-Zuevo,38.98,55.82,,,,,,,140247,0,ne-popmax
+orel,Orel,36.07,52.97,,,,,22000,70000,334552,0,chandler;ne-popmax
+oren,Oren (Ceramus),27.9562,37.0417,,,,,,,,0,hanson
+orihuela,Orihuela,-0.95,38.083,,,,7000,19000,,,0,b2l
+orleans,Orléans (Cenabum),1.9,47.9004,8433,,10000,50000,48000,57000,217301,0,b2l;chandler;hanson;ne-popmax
+orsha,Orsha,30.4215,54.5153,,,,,,,135206,0,ne-popmax
+orsova,Orşova (Dierna),22.4076,44.7383,1292,,,,,,,0,hanson
+orte,Orte (Horta),12.3864,42.4603,676,,,,,,,0,hanson
+ortona,Ortona (Hortona),14.4034,42.3549,460,,,,,,,0,hanson
+osijek,Osijek (Mursa),18.68,45.5504,,,,,,,95077,0,hanson;ne-popmax
+osimo,Osimo (Auximum),13.4855,43.4858,1292,,,,,,,0,hanson
+osma,Osma (Uxama),-3.0821,41.5853,3259,,,,,,,0,hanson
+osnabruck,Osnabrück,8.05,52.2804,,,,10000,9000,51000,231268,0,b2l;chandler;ne-popmax
+osor,Osor (Absortium),14.3928,44.6935,,,,,,,,0,hanson
+ostende,Ostende,2.917,51.217,,,,,10000,39000,,1,b2l;chandler;ne-ports
+ostia,Ostia,12.2883,41.7538,35027,,,,,,,1,hanson;ne-ports;pleiades
+ostrava,Ostrava,18.25,49.8304,,,,,,30000,478963,0,chandler;ne-popmax
+osuna,Osuna (Urso),-5.117,37.233,23995,,,,14000,,,0,b2l;hanson
+othrys,Othrys (Halus),22.8212,39.1424,14368,,,,,,,0,hanson
+otranto,Otranto (Hydruntum),18.4831,40.15,,,,,,,,1,hanson;pleiades
+otricoli,Otricoli (Ocriculum),12.4765,42.4229,3093,,,,,,,0,hanson
+oualili,Oualili (Volubilis),-5.5545,34.0734,6379,,,,,,,0,hanson
+ouargla,Ouargla,5.34,31.97,,,,,,,176271,0,ne-popmax
+oudjel,Oudjel (Uzelis),6.3602,36.3807,,,,,,,,0,hanson
+oudna,Oudna (Uthina),10.1727,36.6069,25106,,,,,,,0,hanson
+ouezzane,Ouezzane,-5.57,34.8103,,,,,,,69658,0,ne-popmax
+oujda,Oujda,-1.91,34.69,,,,,,,409391,0,ne-popmax
+oum-el-bouaghi,Oum el Bouaghi,7.15,35.85,,,,,,,100821,0,ne-popmax
+oumm-guerriche,Oumm Guerriche (Civitas Nattabutum),7.2605,36.2394,,,,,,,,0,hanson
+ourense,Ourense,-7.87,42.33,,,,,,,118107,0,ne-popmax
+ovar,Ovar,-8.633,40.867,,,,,11000,,,0,b2l
+oviedo,Oviedo,-5.83,43.3505,,,,,,,235651,0,ne-popmax
+oxford,Oxford,-1.2481,51.7518,,,,5000,12000,48000,192796,0,b2l;chandler;ne-popmax
+ozzano-dell-emilia,Ozzano dell'Emilia (Claterna),11.4705,44.4436,2767,,,,,,,0,hanson
+padova,Padova (Patavium),11.883,45.417,27937,,10000,29000,33000,50000,,0,b2l;chandler;hanson
+padula,Padula (Cosilinum),15.5923,40.3948,,,,,,,,0,hanson
+paisley,Paisley,-4.42,55.841,,,,,25000,77000,,0,b2l;chandler
+palaia-epidauros,Palaia Epidauros (Epidaurus),23.1322,37.6266,,,,,,,,0,hanson
+palaiogardiki,Palaiogardiki (Pelinna),21.9519,39.5766,9076,,,,,,,0,hanson
+palaiokastro,Palaiokastro (Atrax),22.1996,39.5713,10847,,,,,,,0,hanson
+palaiokastro-near-megala-choraphia,"Palaiokastro, near Megala Choraphia (Aptera)",24.142,35.4629,6182,,,,,,,0,hanson
+palatia,Palatia (Anticyra),22.6329,38.3776,,,,,,,,1,hanson;pleiades
+palazzolo-acreide,Palazzolo Acreide (Acrae),14.8942,37.0578,5409,,,,,,,0,hanson
+palencia,Palencia,-4.533,42.017,,,,14000,10000,,,0,b2l
+paleokastro,Paleokastro (Macynia),21.7263,38.3552,,,,,,,,0,hanson
+palermo,Palermo (Panormus),13.3481,38.127,5032,,60000,65000,139000,255000,868000,1,b2l;chandler;hanson;ne-places;ne-ports
+palestrina,Palestrina (Praeneste),12.8924,41.84,6578,,,,,,,0,hanson
+palioprevesa,Palioprevesa (Nicopolis),20.7334,39.0265,41228,,,,,,,1,hanson;pleiades
+pallantion,Pallantion (Pallantium),22.3366,37.4622,,,,,,,,0,hanson
+palma,Palma,2.6542,39.5743,460,,25000,13000,29000,63000,375773,1,b2l;chandler;hanson;ne-popmax;ne-ports
+palo,Palo (Alsium),12.1,41.9333,,,,,,,,1,hanson;pleiades
+pamplona,Pamplona (Pompaelo),-1.65,42.82,1564,,,,14000,,274545,0,b2l;hanson;ne-popmax
+pamukkale,Pamukkale (Hierapolis),29.1318,37.9175,13884,,,,,,,0,hanson
+panczova,Panczova,20.65,44.867,,,,,10000,,,0,b2l
+panevezys,Panevežys,24.37,55.74,,,,,,,127405,0,ne-popmax
+paphos,Paphos (Neapaphus),32.4225,34.7559,19682,,,,,,35961,0,hanson;ne-popmax
+pardubice,Pardubice,15.76,50.0404,,,,,,,107064,0,ne-popmax
+paris,Paris (Lutetia),2.353,48.8581,6778,,20000,200000,550000,3330000,10007000,0,b2l;chandler;hanson;modelski-mod;ne-places
+parma,Parma,10.32,44.8104,2450,,,16000,34000,49000,166011,0,b2l;chandler;hanson;ne-popmax
+paroikia,Paroikia (Paros),25.1464,37.0764,7802,,,,,,,1,hanson;ne-ports
+partanna,Partanna,12.9,37.72,,,,,11000,,,0,b2l
+partinico,Partinico,13.12,38.05,,,,,10000,,,0,b2l
+pascha-liman,Pascha Liman (Oricus),19.4518,40.3233,361,,,,,,,1,hanson;pleiades
+passau,Passau,13.4412,48.5755,,,,,10000,,50560,0,b2l;ne-popmax
+patra,Patra (Patrae),21.73,38.23,,,,,10000,37000,163360,1,b2l;chandler;hanson;ne-popmax;ne-ports
+pau,Pau,0.37,43.3,,,,,,30000,,0,chandler
+pavia,Pavia (Ticinum),9.167,45.167,6578,,10000,16000,23000,,,0,b2l;chandler;hanson
+pazarlik,Pazarlik (Castabus),28.1768,36.7876,,,,,,,,0,hanson
+pec,Pec,20.3107,42.6603,,,,,,,105163,0,ne-popmax
+pecs,Pécs (Sopianae),18.22,46.0804,1995,,,,,42000,186262,0,chandler;hanson;ne-popmax
+pella,Pella,22.5256,40.76,19682,,,,,,,0,hanson
+penalba-de-castro,Peñalba de Castro (Clunia),-3.3701,41.7812,12226,,,,,,,0,hanson
+penza,Penza,45.0,53.18,,,,,,65000,512602,0,chandler;ne-popmax
+penzance,Penzance,-5.55,50.1337,,,,,,,20812,0,ne-popmax
+pergamon,Pergamon (Pergamum),27.18,39.12,56389,,15000,10000,,,,0,b2l;hanson;modelski-anc
+perigueux,Périgueux (Vesunna),0.722,45.1835,7388,,,,,,,0,hanson
+permet,Përmet,20.352,40.234,,,,,,,10686,0,ne-popmax
+pernik,Pernik,23.0227,42.61,,,,,,,82467,0,ne-popmax
+perpignan,Perpignan (Ruscino),2.9,42.7,361,,,,13000,,146620,0,b2l;hanson;ne-popmax
+perth,Perth,-3.4364,56.3926,,,,9000,15000,33000,39654,0,b2l;chandler;ne-popmax
+perugia,Perugia (Perusia),12.39,43.1104,4846,,,12000,15000,,149125,0,b2l;hanson;ne-popmax
+pesaro,Pesaro (Pisaurum),12.9,43.9,1848,,,,10000,,,1,b2l;hanson;ne-ports
+pescara,Pescara,14.2187,42.4554,,,,,,,314789,1,ne-popmax;ne-ports
+peshkopi,Peshkopi,20.4333,41.6833,,,,,,,14848,0,ne-popmax
+pest,Pest,19.083,47.5,,,,10000,25000,,,0,b2l
+pesto,Pesto (Paestum),15.0051,40.4187,26795,,,,,,,0,hanson
+peterborough,Peterborough,-0.2484,52.5672,,,,,,30000,140141,0,chandler;ne-popmax
+petra,Petra,35.4423,30.329,9952,,,,,,,0,hanson
+petronell,Petronell (Carnuntum),16.8679,48.1133,7802,,,,,,,0,hanson
+petronell-2,Petronell (Carnuntum),16.8631,48.1148,9952,,,,,,,0,hanson
+petrovci,Petrovci (Bassiana),19.977,44.9697,1995,,,,,,,0,hanson
+pforzheim,Pforzheim,8.6989,48.8844,,,,,,43000,,0,chandler
+phigaleia,Phigaleia (Phigalia),21.8391,37.3963,48002,,,,,,,0,hanson
+phlius,Phlius,22.6411,37.8317,9952,,,,,,,0,hanson
+piacenza,Piacenza (Placentia),9.667,45.017,6379,,,25000,28000,35000,,0,b2l;chandler;hanson
+piano-laroma,Piano Laroma (Cluviae),14.2609,42.1363,361,,,,,,,0,hanson
+piatra-neamt,Piatra-Neamt,26.383,46.94,,,,,,,102688,0,ne-popmax
+piazza-armerina,Piazza Armerina,14.367,37.383,,,,,12000,,,0,b2l
+pignataro-interamna,Pignataro Interamna (Interamna Lirenas),13.7879,41.4383,3427,,,,,,,0,hanson
+pinsk,Pinsk,26.0941,52.1279,,,,,,,130777,0,ne-popmax
+piperi,Piperi (Peparethum),23.7196,39.1191,,,,,,,,0,hanson
+piraeus,Piraeus,23.7,37.95,31137,,,,,,466065,1,hanson;ne-popmax;ne-ports;pleiades
+pirgos,Pirgos,21.45,37.6837,,,,,,,22399,0,ne-popmax
+pirmasens,Pirmasens,7.6053,49.2015,,,,,,30000,,0,chandler
+pisa,Pisa (Pisae),10.4,43.7205,3945,,,10000,23000,,203336,0,b2l;chandler;hanson;ne-popmax
+pistoia,Pistoia (Pistorium),10.9,43.917,791,,,5000,9000,,,0,b2l;hanson
+pitesti,Pitești,24.8758,44.8563,,,,,,,171021,0,ne-popmax
+pizen,Pizen,13.36,49.7404,,,,12000,6000,68000,164180,0,b2l;chandler;ne-popmax
+plasencia,Plasencia,-6.083,40.033,,,,25000,7000,,,0,b2l
+plataea,Plataea,23.2669,38.2155,14856,,,,,,,0,hanson
+pleuron,Pleuron (Nea Pleuron),21.412,38.4149,2450,,,,,,,0,hanson
+pleven,Pleven,24.6134,43.4238,,,,,,,118675,0,ne-popmax
+ploiesti,Ploiești,26.0365,44.9469,,,,,,42000,232542,0,chandler;ne-popmax
+plomin,Plomin (Flanona),14.1727,45.1382,,,,,,,,0,hanson
+plovdiv,Plovdiv (Philippopolis),24.754,42.154,14126,,20000,30000,30000,42000,340494,0,b2l;chandler;hanson;ne-popmax
+plymouth,Plymouth,-4.16,50.3854,,,,,16000,179000,247297,1,b2l;chandler;ne-popmax;ne-ports
+podgorica,Podgorica (Doclea),19.2663,42.466,3093,,,,,,145850,0,hanson;ne-popmax
+podgradje,Podgradje (Asseria),15.6806,44.0176,460,,,,,,,0,hanson
+podolsk,Podolsk,37.5299,55.3804,,,,,,,320635,0,ne-popmax
+poggio-buco,Poggio Buco? (Statonia),12.2791,42.5207,910,,,,,,,0,hanson
+pogradec,Pogradec,20.664,40.9,,,,,,,40000,0,ne-popmax
+poitier,Poitier (Limonum),0.3333,46.5833,14611,,12000,20000,20000,31000,85960,0,b2l;chandler;hanson;ne-popmax
+pojani,Pojani (Apollonia),19.4749,40.7413,,,,,,,,0,hanson
+polatl,Polatlı,32.1472,39.5842,,,,,,,93262,0,ne-popmax
+polatsk,Polatsk,28.786,55.4894,,,,,,,82258,0,ne-popmax
+policastro-bussentino,Policastro Bussentino (Buxentum),15.5112,40.0701,910,,,,,,,0,hanson
+policoro,Policoro (Heraclea),16.6917,40.2083,1564,,,,,,,0,hanson
+polis,Polis (Marion),32.436,35.0372,,,,,,,,1,hanson;pleiades
+pollenzo,Pollenzo (Pollentia),13.3484,43.2669,3093,,,,,,,0,hanson
+poltava,Poltava,34.5703,49.574,,,,,,59000,317847,0,chandler;ne-popmax
+polygyros,Polygyros,23.453,40.381,,,,,,,5258,0,ne-popmax
+polyrrhinia,Polyrrhinia (Polyrrhenium),23.6571,35.4668,3945,,,,,,,0,hanson
+pomorije,Pomorije (Anchialus),27.6414,42.5559,4121,,,,,,,0,hanson
+pompei,Pompei (Pompeii),14.4848,40.7493,,,,,,,,1,hanson;ne-ports
+pontecagnano,Pontecagnano (Picentia),14.8769,40.6441,15843,,,,,,,0,hanson
+ponza,Ponza (Pontia),12.9651,40.8925,,,,,,,,0,hanson
+porec,Porec (Parentium),13.5978,45.2267,791,,,,,,,1,hanson;pleiades
+portalegre,Portalegre,-7.423,39.29,,,,,,,15581,0,ne-popmax
+portimao,Portimão,-8.5333,37.1337,,,,,,,61226,0,ne-popmax
+porto,Porto,-8.6219,41.152,,,,14000,43000,175000,1438000,1,b2l;chandler;ne-places;ne-ports;pleiades
+porto-clementino,Porto Clementino (Graviscae),11.7103,42.2128,3427,,,,,,,1,hanson;pleiades
+portocivitanova,Portocivitanova (Cluana),13.7305,43.3048,,,,,,,,0,hanson
+portocorres,Portocorres (Turris Libisonis),8.4014,40.8382,,,,,,,,1,hanson;ne-ports;pleiades
+portsmouth,Portsmouth,-1.08,50.8003,,,,,33000,212000,442252,1,b2l;chandler;ne-popmax;ne-ports
+portugalete,Portugalete (Flaviobriga),-3.2196,43.3828,,,,,,,,0,hanson
+potenza,Potenza (Potentia),15.799,40.642,676,,,,,,69060,0,hanson;ne-popmax
+poti,Poti,41.6716,42.1557,,,,,,,47149,1,ne-popmax;ne-ports
+potsdam,Potsdam,13.07,52.4004,,,,,27000,59000,218095,0,b2l;chandler;ne-popmax
+poznan,Poznań,16.8999,52.4058,,,,32000,12000,117000,623997,0,b2l;chandler;ne-popmax
+pozzuoli,Pozzuoli (Puteoli),14.1251,40.8259,25106,,,,,,,1,hanson;ne-ports;pleiades
+prague,Prague,14.4229,50.087,,,10000,70000,76000,474000,1159000,0,b2l;chandler;modelski-mod;ne-places
+pratica-di-mare,Pratica di Mare (Lavinium),12.4709,41.668,3770,,,,,,,1,hanson;pleiades
+prato,Prato,11.1,43.883,,,,7000,8000,,,0,b2l
+prenzlau,Prenzlau,13.867,53.317,,,,,10000,,,0,b2l
+preslav,Preslav,26.817,43.167,,,30000,,30000,,,0,b2l;chandler
+presov,Prešov,21.2394,48.9997,,,,,,,94718,0,ne-popmax
+preston,Preston,-2.705,53.76,,,,,12000,120000,,0,b2l;chandler
+priego-de-cordoba,Priego-de-Cordoba,-4.183,37.433,,,,,17000,,,0,b2l
+prijedor,Prijedor,16.7,44.9804,,,,,,,104858,0,ne-popmax
+pristina,Pristina,21.166,42.6667,,,,,,,465186,0,ne-popmax
+priverno,Priverno (Privernum),13.1804,41.4726,910,,,,,,,0,hanson
+prizren,Prizren,20.7501,42.2293,,,15000,,20000,30000,171464,0,b2l;chandler;ne-popmax
+procida,Procida,14.033,40.767,,,,,12000,,,1,b2l;pleiades
+procuna,Procuna (Obulco),-4.1848,37.8709,,,,,,,,0,hanson
+provins,Provins,3.3,48.55,,,12000,15000,,,,0,b2l
+prozor,Prozor (Arupium),15.2687,44.8485,,,,,,,,0,hanson
+przemysl,Przemysl,22.7673,49.785,,,,,,46000,,0,chandler
+pskov,Pskov,28.3299,57.83,,,,45000,7000,30000,201990,0,chandler;ne-popmax
+ptuj,Ptuj (Poetovio),15.8699,46.4198,,,,,,,,0,hanson
+puerto-de-santa-maria,Puerto-de-Santa-Maria,-6.233,36.6,,,,7000,17000,,,0,b2l
+puke,Pukë,19.8833,42.0333,,,,,,,6495,0,ne-popmax
+pula,Pula (Pola),13.8481,44.8687,2929,,,,,45000,61599,1,chandler;hanson;ne-popmax;ne-ports;pleiades
+putignano,Putignano,17.117,40.85,,,,,10000,,,0,b2l
+pyatigorsk,Pyatigorsk,43.09,44.08,,,,,,,142865,0,ne-popmax
+qairouan,Qairouan,10.1,35.6804,,,50000,20000,20000,,144522,0,b2l;chandler;ne-popmax
+qalyub,Qalyub,31.2,30.2,,,,,10000,,,0,b2l
+qaminis,Qaminis,20.0155,31.6606,,,,,,,5348,0,ne-popmax
+qanawat,Qanawat (Canatha),36.6031,32.7426,,,,,,,,0,hanson
+qasr-e-shirin,Qasr-e Shirin,45.5772,34.5124,,,,,,,11202,0,ne-popmax
+qasr-farafra,Qasr Farafra,27.9666,27.0671,,,,,,,5000,0,ne-popmax
+qasserine,Qasserine (Cillium),8.83,35.1804,4121,,,,,,81987,0,hanson;ne-popmax
+qaw-el-kebir,Qaw el Kebir (Antaeopolis),31.5174,26.8993,,,,,,,,0,hanson
+qena,Qena,32.72,26.1505,,,,,,,302027,0,ne-popmax
+quedlinburg,Quedlinburg,11.15,51.783,,,,5000,11000,,,0,b2l
+qus,Qus (Apollonopolis Parva),32.77,25.92,,,15000,10000,,,,0,b2l;hanson
+quwaylibah,Quwaylibah (Abila),35.8691,32.6807,13405,,,,,,,0,hanson
+rab,Rab (Arba),14.7609,44.7558,,,,,,,,0,hanson
+rabat,Rabat (Sala),-6.8364,34.0253,,,,,43000,40000,1938000,0,chandler;hanson;modelski-mod;ne-places
+rabat-2,Rabat,-6.45,34.0,,,,10000,20000,,,0,b2l
+rades,Radès (Maxula),10.2716,36.7688,,,,,,,,1,hanson;ne-ports
+radom,Radom,21.1471,51.4025,,,,,,31000,,0,chandler
+radotovi,Radotovi (Passaron),20.7524,39.733,1426,,,,,,,0,hanson
+rafha,Rafha,43.4948,29.6202,,,,,,,64755,0,ne-popmax
+ragusa,Ragusa,14.73,36.93,,,,,17000,,68956,0,b2l;ne-popmax
+ramallah,Ramallah,35.2062,31.9029,,,,,,,24599,0,ne-popmax
+ramla,Ramla,34.8667,31.9167,,,,,,,63860,0,ne-popmax
+ras-dimas,Ras Dimas (Thapsus),11.0428,35.6228,6578,,,,,,,1,hanson;pleiades
+rashid,Rashid,30.39,31.4604,,,10000,15000,25000,,199509,0,b2l;ne-popmax
+ravenna,Ravenna,12.22,44.4204,23170,,,8000,10000,34000,134631,1,b2l;chandler;hanson;ne-popmax;pleiades
+rawtenstall,Rawtenstall,-2.2844,53.7008,,,,,,30000,,0,chandler
+razgrad,Razgrad,26.536,43.534,,,,,,,38285,0,ne-popmax
+reading,Reading,-0.98,51.47,,,,,10000,76000,369804,0,b2l;chandler;ne-popmax
+regensburg,Regensburg,12.12,49.0204,,,40000,22000,23000,45000,164359,0,b2l;chandler;ne-popmax
+reggane,Reggane,0.1666,26.7,,,,,,,32974,0,ne-popmax
+reggio-di-calabria,Reggio di Calabria (Regium),15.6414,38.115,11531,,,,,37000,180353,1,chandler;hanson;ne-popmax;ne-ports
+reggio-emilia,Reggio Emilia (Regium Lepidum),10.6313,44.6981,6379,,,,,,,0,hanson
+reggio-nell-emilia,Reggio nell Emilia,10.6,44.717,,,,9000,18000,,,0,b2l
+reims,Reims (Durocortorum),4.03,49.2504,9293,,13000,12000,30000,108000,196565,0,b2l;chandler;hanson;ne-popmax
+reina,Reina (Regina),-5.9495,38.1875,,,,,,,,0,hanson
+reka-devnija,Reka Devnija (Marcianopolis),27.556,43.2191,,,,,,,,0,hanson
+remscheid,Remscheid,7.1925,51.1798,,,,,,58000,,0,chandler
+renfrew,Renfrew,-4.405,55.868,,,,,17000,,,0,b2l
+rengini,Rengini (Naryca),22.7282,38.7171,,,,,,,,0,hanson
+rennes,Rennes (Condate Redonum),-1.67,48.1,910,,10000,13000,25000,74000,209375,0,b2l;chandler;hanson;ne-popmax
+requena,Requena,-1.1,39.483,,,,,11000,,,0,b2l
+resca,Reşca (Romula),24.3962,44.1742,12694,,,,,,,0,hanson
+resita,Reșița,21.8865,45.297,,,,,,,83324,0,ne-popmax
+retortillo,Retortillo (Iuliobriga),-4.1139,42.9851,,,,,,,,0,hanson
+reus,Reus,1.117,41.15,,,,,15000,,,0,b2l
+reze,Rezé (Ratiatum),-1.5467,47.184,1292,,,,,,,1,hanson;pleiades
+rezekne,Rēzekne,27.3166,56.5,,,,,,,38340,0,ne-popmax
+rhamnous,Rhamnous (Rhamnus),24.028,38.2227,,,,,,,,1,hanson
+rhethymno,Rhethymno (Rhithymna),24.4729,35.3711,1161,,,,,,,0,hanson
+rhondda,Rhondda,-3.4489,51.659,,,,,,367000,,0,chandler
+ricina,Ricina (Helvia Ricina),13.424,43.3279,2607,,,,,,,0,hanson
+rieti,Rieti (Reate),12.8612,42.4031,676,,,,,,,0,hanson
+riez,Riez (Alebaece),6.0907,43.8186,1564,,,,,,,0,hanson
+riga,Riga,24.1,56.95,,,,7000,29000,294000,742572,0,chandler;ne-popmax
+rijeka,Rijeka (Tarsatica),14.45,45.33,791,,,,,,170992,1,hanson;ne-popmax;ne-ports
+rimini,Rimini (Ariminum),12.581,44.063,5792,,,10000,15000,,,0,b2l;hanson
+rimnicu-vilcea,Rimnicu Vilcea,24.383,45.11,,,,,,,107558,0,ne-popmax
+riom,Riom,3.117,45.9,,,,,13000,,,0,b2l
+risan,Risan (Risinium),18.695,42.5147,,,,,,,,1,hanson;pleiades
+rivne,Rivne,26.2528,50.6166,,,,,,,255106,0,ne-popmax
+rize,Rize,40.5219,41.0208,,,,,,,279450,0,ne-popmax
+roanne,Roanne,4.0667,46.0333,,,,,,34000,73315,0,chandler;ne-popmax
+rochdale,Rochdale,-2.159,53.618,,,,,13000,82000,,0,b2l;chandler
+rochefort,Rochefort,5.2216,50.1631,,,,,,30000,,0,chandler
+rochefort-2,Rochefort,-0.96,45.94,,,,,15000,,,1,b2l;ne-ports
+rochester,Rochester (Durobrivae),0.5037,51.3898,791,,,,,110000,,0,chandler;hanson
+rodez,Rodez (Segodunum),2.5738,44.351,5409,,,,,,,0,hanson
+rodos,Rodos (Rhodus),28.2225,36.4412,130301,,,,,,56969,1,hanson;ne-popmax;ne-ports
+rogatica,Rogatica (Ris…),19.0043,43.8017,,,,,,,,0,hanson
+rome,Rome (Roma),12.4813,41.8979,921177,800000,35000,55000,153000,438000,3330000,1,b2l;chandler;hanson;modelski-anc;modelski-mod;ne-places;pleiades
+ronda,Ronda,-5.167,36.733,,,,7000,15000,,,0,b2l
+ronda-la-vieja,Ronda la Vieja (Acinippo),-5.2407,36.8324,4846,,,,,,,0,hanson
+rosas,Rosas (Roda),3.1692,42.2675,,,,,,,,1,hanson;pleiades
+roselle,Roselle (Rusellae),11.1592,42.8274,2296,,,,,,,0,hanson
+rosenheim,Rosenheim,12.1333,47.8503,,,,,,,92809,0,ne-popmax
+roskilde,Roskilde,12.0833,55.65,,,,27000,2000,,44285,0,chandler;ne-popmax
+roslavl,Roslavl,32.8604,53.9509,,,,,,,56971,0,ne-popmax
+rostock,Rostock,12.15,54.0704,,,,10000,14000,54000,203080,0,b2l;chandler;ne-popmax
+rostov,Rostov,39.7107,47.2366,,,,,,142000,1044000,0,chandler;modelski-mod;ne-places
+rostov-2,Rostov,39.4043,57.1892,,,,,,,33803,0,ne-popmax
+rotherham,Rotherham,-1.3568,53.4301,,,,,,53000,,0,chandler
+rottenburg-am-neckar,Rottenburg am Neckar (Sumelocenna),8.9377,48.4769,5032,,,,,,,0,hanson
+rotterdam,Rotterdam,4.478,51.9219,,,,5000,53000,368000,1033000,0,b2l;chandler;ne-places
+rottweil,Rottweil (Arae Flaviae),8.6279,48.1667,3945,,,,,,,0,hanson
+roubaix,Roubaix,3.1778,50.6927,,,,,8703,267000,,0,chandler
+rouen,Rouen (Rotomagus),1.08,49.4304,9511,,12000,40000,80000,185000,532559,0,b2l;chandler;hanson;ne-popmax
+rovinj,Rovinj,13.636,45.084,,,,,10000,,,1,b2l;ne-ports
+rreshen,Rrëshen,19.8167,41.7833,,,,,,,10064,0,ne-popmax
+rugge,Rugge (Rudiae),18.1485,40.3335,1292,,,,,,,0,hanson
+ruhr,Ruhr,6.8626,51.4074,,,,,,766000,,0,chandler
+runovic,Runovic (Novae),17.5,43.5,,,,,,,,0,hanson
+ruse,Ruse,25.9733,43.8537,,,,15000,30000,,184270,0,b2l;chandler;ne-popmax
+rustavi,Rustavi,45.05,41.5704,,,,,,,157063,0,ne-popmax
+ruvo-di-puglia,Ruvo di Puglia (Rubi),16.4852,41.1184,,,,,,,,0,hanson
+ruzayevka,Ruzayevka,44.9244,54.0643,,,,,,,49311,0,ne-popmax
+ryazan,Ryazan,39.72,54.62,,,,,,44000,520173,0,chandler;ne-popmax
+rzeszow,Rzeszów,21.996,50.0287,,,,,,,245686,0,ne-popmax
+rzhev,Rzhev,34.3275,56.2574,,,,,,,63414,0,ne-popmax
+s-agata-de-goti,S. Agata de Goti (Saticula),14.5046,41.0905,,,,,,,,0,hanson
+s-albans,S. Albans (Verulamium),-0.3573,51.7522,17099,,,,,,,0,hanson
+s-antioco,S. Antioco (Sulcis),8.4547,39.0618,,,,,,,,1,hanson;pleiades
+s-antonio-della-rasina,S. Antonio della Rasina (Tadinae),12.786,43.2303,910,,,,,,,0,hanson
+s-archittu,S. Archittu (Cornus),8.4926,40.1044,,,,,,,,0,hanson
+s-benedetto-dei-marsi,S. Benedetto dei Marsi (Marruvium),13.6239,42.0053,3093,,,,,,,0,hanson
+s-bertrand-de-comminges,S. Bertrand de Comminges (Lugdunum Convenarum),0.5737,43.0275,7594,,,,,,,0,hanson
+s-domenico,S. Domenico (Pinna),13.9275,42.4576,1995,,,,,,,0,hanson
+s-filippo-d-argiro,S. Filippo d'Argirò (Agyrium),14.5295,37.6552,,,,,,,,0,hanson
+s-fratello,S. Fratello (Apollonia),14.5975,38.0128,,,,,,,,0,hanson
+s-giovanni-di-sinis,S. Giovanni di Sinis (Tharrus),8.4403,39.8796,,,,,,,,0,hanson
+s-giovanni-incarico,S. Giovanni Incarico (Fabrateria Nova),13.5589,41.5028,3598,,,,,,,0,hanson
+s-hertogenbosch,'s-Hertogenbosch,5.3167,51.6833,,,,16000,13000,32000,134520,0,b2l;chandler;ne-popmax
+s-juan-de-aznalfarache,S. Juan de Aznalfarache (Osset),-6.0354,37.3584,,,,,,,,0,hanson
+s-lizier-en-couseran,S. Lizier en Couseran (Consoranni),1.1384,43.0017,,,,,,,,0,hanson
+s-marco-di-alunzio,S. Marco di Alunzio (Haluntium),14.7004,38.0718,,,,,,,,0,hanson
+s-maria-a-potenza,S. Maria a Potenza (Potentia),13.671,43.4146,2144,,,,,,,0,hanson
+s-maria-di-capua-vetere,S. Maria di Capua Vetere (Capua),14.2563,41.0814,44422,,,,,,,0,hanson
+s-paolo-di-civitate,S. Paolo di Civitate (Teanum Apulum),15.2613,41.7391,7802,,,,,,,0,hanson
+s-paul-trois-chateaux,S. Paul Trois Chateaux (Augusta Tricastinorum),4.767,44.3495,5599,,,,,,,0,hanson
+s-polten,S. Pölten (Cetium),15.6227,48.2047,,,,,,,,0,hanson
+s-remy-de-provence,S. Remy de Provence (Glanum),4.8325,43.7739,4300,,,,,,,0,hanson
+s-severa,S. Severa (Pyrgi),11.9634,42.0152,361,,,,,,,1,hanson;pleiades
+s-severino-marche,S. Severino Marche (Septempeda),13.1978,43.2356,1426,,,,,,,0,hanson
+s-vittorino,S. Vittorino (Amiternum),13.306,42.4006,11074,,,,,,,0,hanson
+sa-el-hagar,Sa el Hagar (Sais),30.7683,30.9647,,,,,,,,0,hanson
+saarbrucken,Saarbrücken,6.97,49.2504,,,,,,75000,770001,0,chandler;ne-popmax
+sabha,Sabha,14.4333,27.0333,,,,,,,100249,0,ne-popmax
+sabrata,Sabrata (Sabratha),12.487,32.8049,4846,,,,,,,0,hanson
+sadak-kelkit-gmane,"Sadak, Kelkit, Gmane (Satala)",28.2675,38.5792,,,,,,,,0,hanson
+saffuriyeh,Saffuriyeh (Sepphoris),35.2797,32.7535,9952,,,,,,,0,hanson
+safi,Safi,-9.24,32.32,,,,,,,353476,1,ne-popmax;ne-ports
+safonovo,Safonovo,33.2161,55.1465,,,,,,,46637,0,ne-popmax
+sagunto,Sagunto (Saguntum),-0.2778,39.6762,3427,,,,,,,0,hanson
+saida,Saida (Sidon),35.3688,33.563,11302,,,,,,173894,0,hanson;ne-popmax
+saida-2,Saïda,0.14,34.8404,,,,,,,142213,0,ne-popmax
+saint-etienne,Saint-Étienne,4.38,45.4304,,,,,18000,,265684,0,b2l;ne-popmax
+saint-gallen,Saint Gallen,9.362,47.423,,,,,,33000,70572,0,chandler;ne-popmax
+saint-malo,Saint-Malo,-2.0257,48.6493,,,,,20000,,,1,chandler;ne-ports
+saintes,Saintes (Mediolanum),-0.641,45.7451,26229,,,,,,,0,hanson
+sakakah,Sakakah,40.1333,30.0,,,,,,,128332,0,ne-popmax
+sakarya,Sakarya,30.4,40.7667,,,,,12000,,286787,0,b2l;ne-popmax
+salamanca,Salamanca (Salmantica),-5.67,40.9704,6778,,,12000,9000,,162353,0,b2l;chandler;hanson;ne-popmax
+salamis,Salamis,33.9025,35.1848,15595,,,,,,,1,hanson
+salemi,Salemi,12.8,37.817,,,,,12000,,,0,b2l
+salerno,Salerno (Salernum),14.7699,40.6804,3427,,50000,5000,10000,,954265,1,b2l;chandler;hanson;ne-popmax
+salford,Salford,-2.294,53.483,,,,,18000,,,0,b2l
+salgotarjan,Salgótarján,19.826,48.105,,,,,,,39640,0,ne-popmax
+salsk,Salsk,41.542,46.4775,,,,,,,61000,0,ne-popmax
+salum,Salum,25.15,31.567,,,,,,,7330,1,ne-popmax;pleiades
+saluzzo,Saluzzo,7.483,44.65,,,,,10000,,,0,b2l
+salzburg,Salzburg (Iuvavum),13.04,47.8105,,,,7000,16000,32000,206279,0,b2l;chandler;hanson;ne-popmax
+samalut,Samalut,30.71,28.3004,,,,,,,152097,0,ne-popmax
+samandagi,Samandagi (Seleucia),35.9333,36.1171,,,,,,,93638,1,hanson;ne-popmax;pleiades
+samannud,Samannūd (Sebennytus),31.241,30.9607,,,,,,,,0,hanson
+samarra,Samarra,43.875,34.194,,,,,,,158508,0,ne-popmax
+samothrace,Samothrace,25.5292,40.5007,3259,,,,,,,0,hanson
+samsat,Samsat (Samosata),38.5082,37.5418,31432,,,,,,,0,hanson
+samsun,Samsun (Amisus),36.3437,41.28,,,,,,,609339,1,hanson;ne-popmax;ne-ports
+san-fernando,San-Fernando,-6.2,36.467,,,,,28000,,,0,b2l
+san-filippo-di-mela,San-Filippo di Mela,15.283,38.18,,,,8000,6000,,,0,b2l
+san-lucar-de-barrameda,San-Lucar-de-Barrameda,-6.35,36.783,,,,,15000,,,1,b2l;ne-ports
+san-marino,San Marino,12.4418,43.9361,,,,,,,29579,0,ne-popmax
+san-sebastian,San Sebastián,-1.98,43.3204,,,,,10000,30000,357468,1,b2l;chandler;ne-popmax;ne-ports
+san-severo,San-Severo,15.383,41.683,,,,,16000,,,0,b2l
+sandarlik,Sandarlik (Myrina),26.9855,38.8401,9952,,,,,,,1,hanson
+sanlurfa,Şanlıurfa,38.795,37.17,,75000,35000,10000,20000,55000,449549,0,b2l;chandler;ne-popmax
+santander,Santander,-3.8,43.3805,,,,,15000,54000,208763,0,b2l;chandler;ne-popmax
+santarem,Santarém (Scallabis),-8.682,39.231,3945,,,10000,9000,,29385,0,b2l;hanson;ne-popmax
+santiago-de-compostela,Santiago de Compostela,-8.5411,42.8829,,,,5000,25000,,92430,0,b2l;ne-popmax
+santiago-do-cacem,Santiago do Cacém (Mirobriga),-8.6837,38.0102,,,,,,,,0,hanson
+santiponce,Santiponce (Italica),-6.0449,37.4411,7594,,,,,,,0,hanson
+sanza,Sanza (Sontia),15.5514,40.2422,,,,,,,,0,hanson
+sar,Şar (Comana),36.3259,38.3295,,,,,,,,0,hanson
+sarajevo,Sarajevo,18.383,43.85,,,,5000,40000,44000,696731,0,b2l;chandler;ne-popmax
+sarande,Sarandë (Onchesmus),20.0,39.877,,,,,,,15147,1,hanson;ne-popmax;pleiades
+saransk,Saransk,45.18,54.1704,,,,,,,303394,0,ne-popmax
+sarnen,Sarnen,8.243,46.899,,,,,,,9410,0,ne-popmax
+sarno,Sarno,14.617,40.817,,,,,11000,,,0,b2l
+sarrebourg,Sarrebourg (Pons Saravi),7.0534,48.7342,,,,,,,,0,hanson
+sarsina,Sarsina,12.1431,43.9187,910,,,,,,,0,hanson
+sart,Sart (Sardis),28.0403,38.4883,33818,,,,,,,0,hanson
+sarvar,Sárvár (Bassiana),16.9352,47.2541,,,,,,,,0,hanson
+sasovo,Sasovo,41.9087,54.3491,,,,,,,31325,0,ne-popmax
+sassari,Sassari,8.57,40.73,,,,13000,18000,32000,120729,0,b2l;chandler;ne-popmax
+satu-mare,Satu Mare,22.885,47.792,,,,,10000,,112490,0,b2l;ne-popmax
+saturnia,Saturnia,11.5048,42.6663,2929,,,,,,,0,hanson
+saumur,Saumur,-0.083,47.267,,,,,10000,,,0,b2l
+savigliano,Savigliano,7.667,44.633,,,,5000,15000,,,0,b2l
+savona,Savona,8.5,44.283,,,,,8000,,,1,b2l;ne-ports;pleiades
+sbeitla,Sbeitla (Sufetula),9.1184,35.2417,6980,,,,,,,0,hanson
+sbiba,Sbiba (Sufes),9.0744,35.5427,,,,,,,,0,hanson
+scarborough,Scarborough,-0.43,54.2804,,,,,,,70571,0,ne-popmax
+schaffhausen,Schaffhausen,8.633,47.706,,,,,,,33863,0,ne-popmax
+schwaz,Schwaz,11.73,47.33,,,,17000,,,,0,b2l
+schwerin,Schwerin,11.4167,53.6333,,,,,10000,38000,96641,0,b2l;chandler;ne-popmax
+schwyz,Schwyz,8.648,47.02,,,,,,,14177,0,ne-popmax
+sciacca,Sciacca,13.1,37.5,,,,,11000,,,0,b2l
+scicli,Scicli,14.7,36.783,,,,,10000,,,0,b2l
+scitarjevo,Şćitarjevo (Andautonia),16.1172,45.7736,5792,,,,,,,0,hanson
+sdid-bouzid,Sdid Bouzid,9.5,35.0167,,,,,,,42098,0,ne-popmax
+seba-biar,Seba Biar (Zama Regia),9.2858,36.1117,,,,,,,,0,hanson
+sebastieh,Sebastieh (Samaria),35.1904,32.2765,13644,,,,,,,0,hanson
+sedan,Sedan,4.95,49.7,,,,,13000,,,0,b2l
+sedgley,Sedgley,-2.125,52.548,,,,,10000,,,0,b2l
+sedra,Sedra (Syedra),32.1477,36.4461,,,,,,,,0,hanson
+sefra,Sefra,-0.5799,32.7604,,,,,,,63420,0,ne-popmax
+segesta,Segesta,12.8324,37.9414,4480,,,,,,,0,hanson
+segni,Segni (Signia),13.0244,41.6922,1848,,,,,,,0,hanson
+segovia,Segovia,-4.117,40.95,,,,21000,10000,,,0,b2l;chandler;hanson
+selef,Selef (Seleucia),30.6324,37.8973,,,,,,,,0,hanson
+seleucia,Seleucia,44.5222,33.0944,400000,,,,,,,0,modelski-anc
+selge,Selge,31.128,37.2282,9731,,,,,,,0,hanson
+selimiye,Selimiye (Side),31.3888,36.7663,5409,,,,,,,1,hanson
+seltz,Seltz (Saletio),8.1062,48.8951,2296,,,,,,,0,hanson
+senigallia,Senigallia (Sena Gallica),13.218,43.715,565,,,,,,,0,hanson
+senj,Senj (Senia),14.9009,44.9906,,,,,,,,1,hanson;pleiades
+senlis,Senlis (Augustomagus),2.586,49.2068,7388,,,,,,,0,hanson
+sens,Sens (Agedincum),3.2877,48.2475,46040,,,,,,,0,hanson
+sentino,Sentino (Sentinum),12.853,43.4218,1704,,,,,,,0,hanson
+sepino,Sepino (Saepinum),14.6177,41.4334,1161,,,,,,,0,hanson
+serdobsk,Serdobsk,44.2218,52.4622,,,,,,,36652,0,ne-popmax
+serefonu,Serefönü (Comama),30.3371,37.3213,,,,,,,,0,hanson
+seres,Seres,23.5497,41.086,,,,,20000,,55886,0,b2l;chandler;ne-popmax
+sergiyev-posad,Sergiyev Posad,38.17,56.33,,,,,,,109252,0,ne-popmax
+sermoneta,Sermoneta (Ulubrae),12.9837,41.5498,,,,,,,,0,hanson
+serpukhov,Serpukhov,37.43,54.9304,,,,,,,135584,0,ne-popmax
+serra-orlando,Serra Orlando (Morgantina),14.4793,37.4311,,,,,,,,0,hanson
+serravalle-scrivia,Serravalle Scrivia (Libarna),8.861,44.7099,2296,,,,,,,0,hanson
+sessa-aurunca,Sessa Aurunca (Suessa),13.9337,41.2361,4846,,,,,,,0,hanson
+sestino,Sestino (Sestinum),12.2989,43.7106,,,,,,,,0,hanson
+sete,Sete,3.683,43.4,,,,,10000,,,1,b2l;ne-ports
+setif,Sétif (Sitifis),5.4,36.18,6578,,,,,,1311000,0,hanson;modelski-mod;ne-popmax
+settat,Settat,-7.62,33.0104,,,,,,,161748,0,ne-popmax
+setubal,Setúbal,-8.9,38.53,,,,6000,15000,,117974,0,b2l;ne-popmax
+sevastopol,Sevastopol,33.5244,44.6039,,,,,,57000,379200,1,chandler;ne-popmax;ne-ports
+seville,Seville (Hispalis),-5.98,37.405,6778,,90000,45000,96000,,1212045,0,b2l;chandler;hanson;modelski-anc;ne-popmax
+sezze,Sezze (Setia),13.0589,41.4986,1426,,,,,,,0,hanson
+sfax,Sfax,10.72,34.75,,,,,12000,,453050,0,b2l;ne-popmax
+sfintu-gheorghe,Sfintu-Gheorghe,25.793,45.868,,,,,,,60677,0,ne-popmax
+shahba,Shahba (Philippopolis),36.6275,32.8538,,,,,,,,0,hanson
+shahhat,Shahhat (Cyrene),21.8622,32.8281,21542,,,,,,45000,0,hanson;ne-popmax
+shakhty,Shakhty,40.27,47.7204,,,,,,,221312,0,ne-popmax
+shannon,Shannon,-8.8641,52.7038,,,,,,,8781,0,ne-popmax
+shchekino,Shchekino,37.5143,54.0143,,,,,,,86088,0,ne-popmax
+shebekino,Shebekino,36.8944,50.4143,,,,,,,45194,0,ne-popmax
+sheffield,Sheffield,-1.5,53.3667,,,,,46000,403000,1292900,0,b2l;chandler;ne-popmax
+sheikh-abadah,Sheikh Abadah (Antinoopolis),30.8752,27.8117,,,,,,,,0,hanson
+shibin-el-kom,Shibin el Kom,31.007,30.5545,,,,,,,182900,0,ne-popmax
+shkoder,Shkodër (Scodra),19.5189,42.0685,3770,,,,40000,32000,155767,0,b2l;chandler;hanson;ne-popmax
+shostka,Shostka,33.4797,51.8734,,,,,,,96825,0,ne-popmax
+shrewsbury,Shrewsbury,-2.748,52.707,,,,,15000,,,0,b2l
+shumen,Shumen,26.9294,43.27,,,,,20000,,87283,0,b2l;chandler;ne-popmax
+shutb,Shutb (Hypselis),31.2347,27.1466,,,,,,,,0,hanson
+shuya,Shuya,41.3643,56.8543,,,,,,,60705,0,ne-popmax
+siauliai,Šiauliai,23.325,55.9386,,,,,,,133528,0,ne-popmax
+sibenik,Šibenik,15.9058,43.7272,,,,,,,37112,1,ne-popmax;ne-ports
+sibiu,Sibiu,24.1371,45.7971,,,,6000,14000,,155565,0,b2l;ne-popmax
+sidas-kale,Sidas Kale (Saettae),28.624,38.703,,,,,,,,0,hanson
+sidi-ali-bel-kassem,Sidi Ali bel Kassem (Thuburnica),8.4613,36.5275,3945,,,,,,,0,hanson
+sidi-ali-ben-ahmed,Sidi Ali ben Ahmed (Thamusida),-6.4905,34.335,1704,,,,,,,0,hanson
+sidi-ali-bou-jenoun,Sidi Ali bou Jenoun (Banasa),-6.1154,34.6019,,,,,,,,0,hanson
+sidi-bel-abbes,Sidi bel Abbes,-0.64,35.1903,,,,,,,208604,0,ne-popmax
+sidi-bou-ras,Sidi bou Ras (Arsennaria),0.8731,36.3343,,,,,,,,0,hanson
+sidi-brahim,Sidi Brahim (Gunugu),1.9056,36.5716,3770,,,,,,,1,hanson
+sidi-daoud,Sidi Daoud (Missua),10.9,37.0,,,,,,,,0,hanson
+sidi-khalifa,Sidi Khalifa (Pheradi Maius),10.3971,36.25,,,,,,,,0,hanson
+sidi-meskin,Sidi Meskin (Thunusidum),8.6659,36.4518,,,,,,,,0,hanson
+siena,Siena (Saena),11.35,43.317,268,,,16000,17000,,52625,0,b2l;chandler;hanson;ne-popmax
+sigacik,Siğacik (Teus),26.785,38.1773,14126,,,,,,,1,hanson
+siirt,Siirt,41.933,37.944,,,,,,,114034,0,ne-popmax
+sijilmasa,Sijilmasa,-4.269,31.285,,,15000,,,,,0,b2l
+silchester,Silchester (Calleva),-1.0828,51.3571,6778,,,,,,,0,hanson
+siliana,Siliana,9.3833,36.0833,,,,,,,26960,0,ne-popmax
+silifke,Silifke (Seleucia),33.9215,36.3793,6379,,,,,,,0,hanson
+silistra,Silistra (Durostorum),27.267,44.117,,,,10000,20000,,,0,b2l;chandler;hanson
+simferopol,Simferopol,34.0987,44.9492,,,,,,60000,358108,0,chandler;ne-popmax
+sinanu,Sinánu (Megalopolis),22.1368,37.4023,19682,,,,,,,0,hanson
+sinop,Sinop (Sinope),35.153,42.023,11302,,,,,,34834,1,hanson;ne-popmax;ne-ports;pleiades
+sion,Sion,7.354,46.239,,,,,,,28045,0,ne-popmax
+siponto,Siponto (Sipontum),15.8898,41.6085,1848,,,,,,,1,hanson;ne-ports
+sipovo,Sipovo (Baloie),17.0908,44.2828,,,,,,,,0,hanson
+siracusa,Siracusa (Syracusae),15.29,37.0704,83798,,,10000,16000,108000,123657,1,b2l;chandler;hanson;ne-popmax;ne-ports
+sisak,Sisak (Siscia),16.3714,45.4832,3093,,,,,,,0,hanson
+sitia,Sitia,26.0986,35.2004,,,,,,,8833,0,ne-popmax
+sivas,Sivas (Sebaste),37.035,39.7454,,,,20000,18000,43000,264022,0,b2l;chandler;hanson;ne-popmax
+sivrihisar,Sivrihisar (Pessinus),31.5514,39.3811,,,,,,,,0,hanson
+siwa,Siwa,25.5167,29.2,,,,,,,23080,0,ne-popmax
+skala-oropou,Skala Oropou (Oropus),23.7758,38.3203,,,,,,,,1,hanson;pleiades
+skelani,Skelani (Malvesia),19.5689,43.97,,,,,,,,0,hanson
+skikda,Skikda (Rusicada),6.9,36.8804,23444,,,,,,225181,1,hanson;ne-popmax;pleiades
+skopje,Skopje (Scupi),21.4335,42.0,3598,,,50000,6000,,494087,0,b2l;chandler;hanson;ne-popmax
+skradin,Skradin (Scardona),15.923,43.8179,,,,,,,,0,hanson
+skripu,Skripú (Orchomenus Minyeaus),22.9811,38.4933,3598,,,,,,,0,hanson
+slatina,Slatina,24.371,44.435,,,,,,,78988,0,ne-popmax
+slavonski-brod,Slavonski Brod,18.0156,45.1603,,,,,,,97718,0,ne-popmax
+sligo,Sligo,-8.4833,54.2671,,,,,,,20228,1,ne-popmax;ne-ports
+sliven,Sliven,26.33,42.6794,,,,,20000,,96368,0,b2l;ne-popmax
+slobozia,Slobozia,27.382,44.57,,,,,,,52693,0,ne-popmax
+slouguia,Slouguia (Chidibbia),9.512,36.5803,,,,,,,,0,hanson
+smolensk,Smolensk,32.0473,54.7827,,,,50000,11410,57000,320991,0,chandler;ne-popmax
+sochi,Sochi,39.73,43.59,,,,,,,327608,0,ne-popmax
+soest,Soest,8.117,51.583,,,,10000,6000,,,0,b2l;chandler
+sofia,Sofia (Serdica),23.3147,42.6853,15595,,,22000,46000,67000,1233000,0,b2l;chandler;hanson;ne-places
+sohag,Sohag,31.7,26.5504,,,,,,,600000,0,ne-popmax
+soissons,Soissons (Augusta Suessionum),3.3254,49.3809,18379,,,,,,,0,hanson
+soke,Söke,27.4103,37.7512,,,,,,,77341,0,ne-popmax
+solfeld,Solfeld (Flavia Solva),15.5687,46.769,1848,,,,,,,0,hanson
+solingen,Solingen,7.0845,51.1734,,,,,,45000,,0,chandler
+solnechnogorsk,Solnechnogorsk,36.9809,56.1807,,,,,,,58891,0,ne-popmax
+solothurn,Solothurn,7.537,47.212,,,,,,,14853,0,ne-popmax
+soluntum,Soluntum,13.5317,38.0927,1564,,,,,,,0,hanson
+sombor,Sombor,19.112,45.774,,,,,15000,,,0,b2l
+sopron,Sopron (Scarbantia),16.6,47.683,2767,,,,11000,30000,,0,b2l;chandler;hanson
+sor,Sorø,11.5667,55.433,,,,,,,7167,0,ne-popmax
+sora,Sora,13.6168,41.7179,12459,,,,,,,0,hanson
+sorrento,Sorrento (Surrentum),14.3757,40.6263,2607,,,,,,,0,hanson
+souk-ahras,Souk Ahras,7.95,36.2904,,,,,,,134947,0,ne-popmax
+sour-djouab,Sour Djouab (Rapidum),3.4218,36.1364,,,,,,,,0,hanson
+sousse,Sousse (Hadrumetum),10.625,35.83,35636,,,,10000,,327004,1,b2l;hanson;ne-popmax;pleiades
+south-shields,South-Shields,-1.429,54.992,,,,,11000,,,1,b2l;ne-ports
+southampton,Southampton,-1.4,50.9,,,,,,102000,384417,1,chandler;ne-popmax;ne-ports
+southend-on-sea,Southend-on-Sea,0.72,51.55,,,,,,,618386,0,ne-popmax
+sovana,Sovana (Suana),11.647,42.6586,1995,,,,,,,0,hanson
+sovetsk,Sovetsk,21.882,55.0718,,,,,,34000,43309,0,chandler;ne-popmax
+sparti,Sparti (Sparta),22.4297,37.0737,86835,,,,,,16187,0,hanson;ne-popmax
+spello,Spello (Hispellum),12.6708,42.994,1292,,,,,,,0,hanson
+speyer,Speyer (Noviomagus),8.432,49.321,,,25000,13000,5000,,,0,b2l;chandler;hanson
+split,Split (Salona),16.47,43.5204,9511,,,,,,214741,1,hanson;ne-popmax;ne-ports
+spoleto,Spoleto (Spoletium),12.733,42.733,2767,,,12000,6000,,,0,b2l;hanson
+sremska-mitrovica,Sremska Mitrovica (Sirmium),19.6101,44.9664,14126,,,,,,,0,hanson
+st-brieuc,St.-Brieuc,-2.7833,48.5167,,,,,,,53223,0,ne-popmax
+st-germain,St-Germain,2.083,48.9,,,,,10000,,,0,b2l
+st-jean-d-angely,St-Jean-d'Angely,-0.517,45.95,,,,,10000,,,0,b2l
+st-malo,St-Malo,-2.08,48.64,,,,,14000,,,1,b2l;ne-ports
+st-niklaas,St-Niklaas,4.133,51.167,,,,,11000,,,0,b2l
+st-omer,St Omer,2.25,50.75,,,,11000,22000,,,0,b2l;chandler
+st-quentin,St-Quentin (Augusta Viromanduorum),3.29,49.85,7802,,,,10000,46000,,0,b2l;chandler;hanson
+stabanj,Stabanj (Blandona),15.5015,43.986,,,,,,,,0,hanson
+staklen,Staklen (Novae),25.394,43.6072,42,,,,,,,0,hanson
+stambul,Stambul (Alexandria),26.1547,39.7565,80414,,,,,,,1,hanson
+stans,Stans,8.3833,46.95,,,,,,,7475,0,ne-popmax
+stara-zagora,Stara Zagora (Beroea),25.6227,42.4231,,,,,20000,,143431,0,b2l;hanson;ne-popmax
+staraya-russa,Staraya Russa,31.3544,57.9948,,,,,,,34303,0,ne-popmax
+starigrad,Starigrad (Argyruntum),15.4375,44.2959,268,,,,,,,0,hanson
+starsy-oskol,Starsy Oskol,37.84,51.3004,,,,,,,226977,0,ne-popmax
+stavropol,Stavropol,41.98,45.05,,,,,,46000,363064,0,chandler;ne-popmax
+stinica,Stinica (Ortoplinia),14.8926,44.7176,,,,,,,,0,hanson
+stobi,Stobi,21.975,41.5526,2296,,,,,,,0,hanson
+stockport,Stockport,-2.158,53.411,,,,,20000,,,0,b2l;chandler
+stoke,Stoke,-2.8667,53.25,,,,,22000,205000,,0,chandler
+stoke-2,Stoke,-2.18,53.0004,,,,,23000,,390801,0,b2l;ne-popmax
+stolac,Stolac (Diluntum),17.9584,43.0787,,,,,,,,0,hanson
+stralsund,Stralsund,13.1,54.3004,,,,11000,11000,31000,61368,0,b2l;chandler;ne-popmax
+strasbourg,Strasbourg (Argentoratum),7.75,48.58,8860,,,20000,49000,172000,439972,0,b2l;chandler;hanson;ne-popmax
+strongoli,Strongoli (Petelia),17.0511,39.2661,,,,,,,,0,hanson
+stuttgart,Stuttgart,9.2,48.78,,,,,20000,224000,2944700,0,b2l;chandler;ne-popmax
+stymphalos,Stymphalos (Stymphalum),22.4593,37.8593,5792,,,,,,,0,hanson
+subotica,Subotica,19.68,46.07,,,,,21000,81000,100000,0,b2l;chandler;ne-popmax
+suceava,Suceava,26.2593,47.6377,,,,10000,5000,,105796,0,b2l;chandler;ne-popmax
+suez,Suez,32.5499,30.005,,,,,,,508335,1,ne-popmax;pleiades
+suhut,Şuhut (Synnada),30.5451,38.5357,,,,,,,,0,hanson
+sukhumi,Sukhumi,41.02,43.02,,,,,,,81546,0,ne-popmax
+sulmona,Sulmona (Sulmo),13.9257,42.0477,1564,,,,,,,0,hanson
+sultanhisar,Sultanhisar (Nysa),28.145,37.9034,6578,,,,,,,0,hanson
+sulumenli,Sülümenli (Blaundus),29.2098,38.3573,,,,,,,,0,hanson
+sumy,Sumy,34.7809,50.9243,,,,,,,294456,0,ne-popmax
+sunderland,Sunderland,-1.3799,54.9034,,,,,24000,144000,452934,1,b2l;chandler;ne-popmax;ne-ports
+supli,Suplí (Scotussa),22.5746,39.3755,,,,,,,,0,hanson
+surovigli,Surovigli (Stratus),21.3137,38.6668,,,,,,,,0,hanson
+surt,Surt (Macomades),16.59,31.21,,,,,,,128123,0,hanson;ne-popmax
+susa,Susa (Segusio),7.0484,45.1385,565,,,,,,,0,hanson
+susanj,Susanj (Setovia),16.6555,43.719,,,,,,,,0,hanson
+sutlgen,Sütlğen (Nisa),29.633,36.4392,,,,,,,,0,hanson
+sutri,Sutri (Sutrium),12.2243,42.2413,565,,,,,,,0,hanson
+sv-juraj,Sv. Juraj (Lopsica),14.92,44.9289,,,,,,,,0,hanson
+svendborg,Svendborg,10.6167,55.0704,,,,,,,29180,1,ne-popmax;ne-ports
+svishtov,Svishtov,25.35,43.6167,,,,,21000,,,0,chandler
+swansea,Swansea,-3.95,51.63,,,,,,91000,294339,0,chandler;ne-popmax
+swindon,Swindon,-1.7812,51.558,,,,,,44000,,0,chandler
+sybaris,Sybaris (Copia),16.4905,39.7156,7802,,,,,,,1,hanson;pleiades
+szczecin,Szczecin,14.53,53.4204,,,,9000,23000,210000,407811,1,b2l;chandler;ne-popmax;ne-ports
+szeged,Szeged,20.15,46.2504,,,,7000,22000,100000,187765,0,b2l;chandler;ne-popmax
+szekesfehervar,Székesfehérvár,18.4081,47.1947,,,,,12000,30000,144319,0,b2l;chandler;ne-popmax
+szekszard,Szekszárd,18.713,46.344,,,,,,,34174,0,ne-popmax
+szentes,Szentes,20.272,46.6563,,,,,,31000,,0,chandler
+szolnok,Szolnok,20.1794,47.1864,,,,,,,109261,0,ne-popmax
+szombathely,Szombathely (Savaria),16.6287,47.2253,6980,,,,,,109518,0,hanson;ne-popmax
+szony,Szöny (Brigetio),18.1695,47.7352,8011,,,,,,,0,hanson
+tabaqat-fahl,Tabaqat Fahl (Pella),35.6155,32.4501,910,,,,,,,0,hanson
+tabariah,Tabariah (Tiberias),35.544,32.7762,5792,,,,,,,0,hanson
+tabarka,Tabarka (Thabraca),8.7485,36.9562,,,,,,,,1,hanson
+tabuk,Tabuk,36.555,28.3838,,,,,,,547957,0,ne-popmax
+tac,Tác (Gorsium),18.4198,47.0902,361,,,,,,,0,hanson
+tadmur,Tadmur (Palmyra),38.2833,34.5504,25106,,,,,,55111,0,hanson;ne-popmax
+taganrog,Taganrog,38.92,47.23,,,,,,58000,279056,0,chandler;ne-popmax
+tajo-de-mogarejo,Tajo de Mogarejo (Callet),-5.6262,37.0523,,,,,,,,0,hanson
+takembrit,Takembrit (Siga),-1.4517,35.2529,,,,,,,,0,hanson
+taksebt,Taksebt (Rusippisir),4.1742,36.9007,,,,,,,,0,hanson
+talavera,Talavera (Caesarobriga),-4.833,39.95,,,,5000,7000,,,0,b2l;hanson
+tall-afar,Tall Afar,42.4498,36.376,,,,,,,144465,0,ne-popmax
+tamanrasset,Tamanrasset,5.5228,22.785,,,,,,,76000,0,ne-popmax
+tambov,Tambov,41.43,52.73,,,,,,49000,301482,0,chandler;ne-popmax
+tangier,Tangier (Tingis),-5.8062,35.7759,2144,,,,,30000,750060,1,chandler;hanson;ne-popmax;ne-ports;pleiades
+tanta,Tanta,31.0,30.7904,,,,,10000,56000,404901,0,b2l;chandler;ne-popmax
+taormina,Taormina (Tauromenium),15.2879,37.8531,11074,,,,,,,1,hanson
+tarabulus,Ṭarābulus (Tripolis),35.8317,34.4383,,,20000,,17000,,530000,1,b2l;hanson;ne-popmax;ne-ports
+taranto,Taranto (Tarentum),17.23,40.5084,30255,,,12000,17000,,202033,1,b2l;hanson;ne-popmax;ne-ports
+tarascon,Tarascon,4.667,43.8,,,,,10000,,,0,b2l
+tarazona,Tarazona (Turiaso),-1.7261,41.9048,,,,,,,,0,hanson
+tarbes,Tarbes,0.0833,43.2333,,,,10000,,,54854,0,b2l;ne-popmax
+tarf-ech-chena,Tarf ech Chena (Apisa Maius),9.7224,36.3471,,,,,,,,0,hanson
+targoviste,Târgoviște,25.459,44.938,,,,50000,,,88435,0,b2l;chandler;ne-popmax
+targu-jiu,Târgu Jiu,23.274,45.045,,,,,,,97179,0,ne-popmax
+tarifa,Tarifa,-5.606,36.013,,,,,12000,,,0,b2l
+tarnow,Tarnow,20.9886,50.0125,,,,,,31000,,0,chandler
+tarquimpol,Tarquimpol (Decem Pagi),6.7576,48.7845,,,,,,,,0,hanson
+tarquinia,Tarquinia (Tarquinii),11.758,42.2541,26229,,,,,,,0,hanson
+tarragona,Tarragona (Tarraco),1.25,41.1204,12226,,,,,,126291,1,hanson;ne-popmax;ne-ports
+tarsus,Tarsus,34.88,36.9204,,,20000,,,,894318,0,b2l;chandler;hanson;ne-popmax
+tartus,Tartus,35.8866,34.8846,,,,,,,162980,0,ne-popmax
+tatabanya,Tatabánya,18.433,47.55,,,,,,,70541,0,ne-popmax
+tataouine,Tataouine,10.4667,33.0,,,,,,,62577,0,ne-popmax
+tatar-pazardzhik,Tatar Pazardzhik,24.333,42.2,,,,,10000,,,0,b2l
+tatvan,Tatvan,42.2816,38.5066,,,,,,,73222,0,ne-popmax
+tavira,Tavira (Balsa),-7.6494,37.1263,,,,,,,,0,hanson
+tawqrah,Tawqrah (Taucheira),20.5658,32.5371,5986,,,,,,,0,hanson
+taza,Taza,-4.02,34.2204,,,,20000,,,199633,0,chandler;ne-popmax
+tazzoult,Tazzoult (Lambaesis),6.2667,35.4608,,,,,,,,0,hanson
+tbilisi,Tbilisi,44.7888,41.727,,,,,15000,175000,1113000,0,chandler;modelski-mod;ne-places
+teano,Teano (Teanum Sidicinum),14.0496,41.2696,17099,,,,,,,0,hanson
+tebessa,Tébessa (Theveste),8.12,35.4104,11531,,,,,,171742,0,hanson;ne-popmax
+tebourba,Tebourba (Thuburbo Minus),9.8386,36.8296,,,,,,,,0,hanson
+teboursouk,Teboursouk (Thubursicum Bure),9.2444,36.4615,,,,,,,,0,hanson
+teggiano,Teggiano (Tegianum),15.54,40.3784,,,,,,,,0,hanson
+tekin,Tekin (Magnesia),27.5246,37.8478,15595,,,,,,,0,hanson
+tekirdag,Tekirdağ,27.51,40.9909,,,,,,,122287,1,ne-popmax;ne-ports
+tekirova,Tekirova (Phaselis),30.5487,36.5218,5792,,,,,,,1,hanson
+tel-afek,Tel Afek (Antipatris),34.9304,32.1049,791,,,,,,,0,hanson
+tel-aviv,Tel Aviv,34.7681,32.0819,,,,,,,3453000,1,ne-places;ne-ports;pleiades
+telese-terme,Telese Terme (Telesia),14.5288,41.2185,2296,,,,,,,0,hanson
+tell-belim,Tell Belim (Heracleopolis Parva),32.1676,30.9821,9293,,,,,,,0,hanson
+tell-el-balamun,Tell el Balamun (Diospolis Inferior),31.5667,31.2667,14368,,,,,,,0,hanson
+tell-el-farama,Tell el Farama (Pelusium),32.6001,31.0499,,,,,,,,0,hanson
+tell-el-maskhuta,Tell el Maskhuta (Heroonpolis),32.0992,30.553,5792,,,,,,,0,hanson
+tell-el-moqdam,Tell el Moqdam (Leontopolis),31.35,30.6833,13405,,,,,,,0,hanson
+tell-el-ruba,Tell el Ruba (Mendes),31.5557,30.966,,,,,,,,0,hanson
+tell-mutubis,Tell Mutubis (Metelis),30.3754,31.1204,5792,,,,,,,0,hanson
+tell-sandahana,Tell Sandahana (Marissa),34.8982,31.593,1564,,,,,,,0,hanson
+tell-timai,Tell Timai (Thmuis),31.5169,30.9356,15843,,,,,,,0,hanson
+tell-umm-el-baragat,Tell Umm el-Baragat (Tebtunis),29.1069,30.7612,9293,,,,,,,0,hanson
+tementfoust,Tementfoust (Rusguniae),3.2355,36.81,2296,,,,,,,0,hanson
+tenes,Ténès (Cartenna),1.3076,36.5104,11074,,,,,,,1,hanson
+tepelene,Tepelenë,20.0333,40.2833,,,,,,,11955,0,ne-popmax
+teramo,Teramo (Interamnia Praetuttiorum),13.7008,42.6597,2767,,,,,,,0,hanson
+terlizzi,Terlizzi,16.55,41.133,,,,,10000,,,0,b2l
+termini-imerese,Termini Imerese (Himera),13.7,37.983,15101,,,,14000,,,0,b2l;hanson
+terni,Terni (Interamna Nahars),12.6468,42.5602,7388,,,,,,,0,hanson
+ternopil,Ternopil,25.5821,49.536,,,,,,30000,244768,0,chandler;ne-popmax
+terracina,Terracina (Tarracina),13.2489,41.2912,5792,,,,,,,1,hanson
+tetovo,Tetovo,20.9701,42.0092,,,,,,,119132,0,ne-popmax
+thala,Thala,8.6692,35.5724,,,,,,,,0,hanson
+thasos,Thasos,24.7386,40.7476,3945,,,,,,,1,hanson
+the-hague,The Hague,4.27,52.08,,,,7000,39000,236000,1406000,0,b2l;chandler;ne-popmax
+thebes,Thebes (Thebae),23.3178,38.3191,3945,,,,,,,0,hanson
+thelepte,Thélepte,8.5939,34.9757,43137,,,,,,,0,hanson
+thera,Thera,25.4745,36.3525,,,,,,,,0,hanson
+therouanne,Therouanne (Tarvenna),2.2587,50.6379,910,,,,,,,0,hanson
+thespiae,Thespiae,23.1501,38.3028,8433,,,,,,,0,hanson
+thessaloniki,Thessaloniki (Thessalonica),22.8831,40.6981,37169,42000,40000,19000,70000,140000,851000,1,b2l;chandler;hanson;modelski-anc;ne-places
+thisvi,Thisvi (Thisbe),22.9678,38.2609,7594,,,,,,,0,hanson
+tiarat,Tiarat,1.32,35.3804,,,,,,,184195,0,ne-popmax
+tiddis,Tiddis,6.4783,36.4618,1995,,,,,,,0,hanson
+tiermes,Tiermes (Termes),-3.1486,41.331,2144,,,,,,,0,hanson
+tigani,Tigani (Samos),26.9401,37.6915,30842,,,,,,,1,hanson;pleiades
+tigzirt,Tigzirt (Iomnium),4.1256,36.892,910,,,,,,,0,hanson
+tikhoretsk,Tikhoretsk,40.1377,45.8531,,,,,,,64387,0,ne-popmax
+tiklat,Tiklat (Tubusuctu),4.842,36.6655,5599,,,,,,,0,hanson
+tikrit,Tikrit,43.677,34.597,,,,,,,56591,0,ne-popmax
+tilburg,Tilburg,5.0913,51.5555,,,,,,41000,,0,chandler
+tilmusa,Tilmusa (Apamea),37.8724,37.0784,11531,,,,,,,0,hanson
+timashevsk,Timashevsk,38.9444,45.6247,,,,,,,44024,0,ne-popmax
+timgad,Timgad (Thamugadi),6.4685,35.485,7802,,,,,,,0,hanson
+timimoun,Timimoun,0.27,29.2365,,,,,,,49237,0,ne-popmax
+timisoara,Timișoara,21.2234,45.7588,,,,,10000,53000,315053,0,b2l;chandler;ne-popmax
+tindari,Tindari (Tyndaris),15.04,38.1454,3945,,,,,,,0,hanson
+tindouf,Tindouf,-8.1478,27.6742,,,,,,,18270,0,ne-popmax
+tineo,Tineo,-6.417,43.333,,,,,15000,,,0,b2l
+tinnis,Tinnis (Tanis),31.873,30.978,42180,,83000,,,,,0,b2l;chandler;hanson;modelski-anc
+tipaza,Tipaza (Tipasa),2.4456,36.5914,9293,,,,,,,0,hanson
+tirana,Tirana,19.8189,41.3275,,,,,,,895350,0,ne-popmax
+tiraspol,Tiraspol,29.64,46.8531,,,,,,,157000,0,ne-popmax
+tirgu-mures,Tirgu Mures,24.5578,46.5582,,,,,,,149433,0,ne-popmax
+tivoli,Tivoli (Tibur),12.7983,41.9636,6778,,,,,,,0,hanson
+tizi-ouzou,Tizi-Ouzou,4.0461,36.7117,,,,,,,144000,0,ne-popmax
+tiznit,Tiznit,-9.74,29.7104,,,,,,,57705,0,ne-popmax
+tlimcen,Tlimcen,-1.32,34.8904,,,,30000,,,229777,0,b2l;chandler;ne-popmax
+todi,Todi (Tuder),12.4064,42.7819,1995,,,,,,,0,hanson
+tokat,Tokat,36.563,40.306,,,,,20000,,129702,0,b2l;chandler;ne-popmax
+toledo,Toledo (Toletum),-4.0167,39.867,361,,37000,32000,18000,,74632,0,b2l;chandler;hanson;ne-popmax
+tolentino,Tolentino (Tolentinum),13.2834,43.2095,,,,,,,,0,hanson
+tolmeita,Tolmeita (Ptolemais),20.9531,32.7076,52657,,,,,,,1,hanson;pleiades
+tongeren,Tongeren (Atuatuca),5.4667,50.7833,26795,,,,,,,0,hanson
+toroni,Toroni (Torone),23.9045,39.9767,9511,,,,,,,0,hanson
+torre-annunziata,Torre Annunziata,14.45,40.75,,,,,14000,,,1,b2l;ne-ports
+torre-chiaruccia,Torre Chiaruccia (Castrum Novum),11.8333,42.0333,1161,,,,,,,0,hanson
+torre-de-los-herberos,Torre de los Herberos (Orippo),-5.9223,37.2832,791,,,,,,,0,hanson
+torre-del-aguila,Torre del Aguila (Siarum),-5.7516,37.0524,910,,,,,,,0,hanson
+torre-del-greco,Torre del Greco,14.367,40.783,,,,,16000,,,0,b2l
+torreparedones,Torreparedones (Iptuci),-4.3776,37.7559,,,,,,,,0,hanson
+torres-de-alhocaz,Torres de Alhocaz (Ugia),-5.8303,36.9894,,,,,,,,0,hanson
+tortona,Tortona (Dertona),8.8655,44.8972,5409,,,,,,,0,hanson
+tortosa,Tortosa (Dertosa),0.517,40.8,,,,,10000,,,0,b2l;hanson
+torun,Torun,18.6,53.033,,,,12000,9000,,,0,b2l
+torybeia,Torybeia (Torybea),21.7263,38.3552,4121,,,,,,,0,hanson
+torzhok,Torzhok,34.9787,57.0291,,,,,,,48546,0,ne-popmax
+touggourt,Touggourt,6.06,33.1,,,,,,,133954,0,ne-popmax
+toul,Toul (Tullum),5.8914,48.6751,1161,,,,,,,0,hanson
+toulon,Toulon,5.9188,43.1342,,,,,22000,78000,357693,1,b2l;chandler;ne-popmax;ne-ports
+toulouse,Toulouse (Tolosa),1.448,43.6219,17353,,10000,30000,50000,127000,883000,0,b2l;chandler;hanson;ne-places
+tourcoing,Tourcoing,3.15,50.717,,,,,12000,,,0,b2l
+tournai,Tournai,3.383,50.6,,,,35000,21000,35000,,0,b2l;chandler
+tours,Tours (Caesarodunum),0.6999,47.3804,11531,,20000,60000,13000,64000,236096,0,b2l;chandler;hanson;ne-popmax
+tovuz,Tovuz,45.6289,40.9922,,,,,,,12626,0,ne-popmax
+tozeur,Tozeur,8.13,33.9304,,,,,,,39504,0,ne-popmax
+trabzon,Trabzon,39.72,40.98,,,10000,,10000,40000,764714,1,b2l;chandler;ne-popmax;ne-ports
+trakai,Trakai,24.9333,54.6333,,,,50000,,,,0,chandler
+tralee,Tralee,-9.7167,52.2667,,,,,,,26384,0,ne-popmax
+trani,Trani,16.417,41.283,,,,,14000,,,0,b2l
+trapani,Trapani (Drepanum),12.483,38.017,1995,,,15000,24000,45000,,1,b2l;chandler;hanson;ne-ports;pleiades
+treglia,Treglia (Trebula Balliensis),14.2599,41.2273,1564,,,,,,,0,hanson
+treia,Treia (Trea),13.3125,43.3116,791,,,,,,,0,hanson
+trento,Trento (Tridentum),11.12,46.0804,1034,,,,,,107808,0,hanson;ne-popmax
+trevi,Trevi (Treba),13.2487,41.8625,,,,,,,,0,hanson
+treviso,Treviso (Tarvisium),12.24,45.67,3945,,,12000,10000,,177309,0,b2l;hanson;ne-popmax
+trier,Trier (Colonia Augusta Treverorum),6.633,49.75,28224,60000,20000,8000,13000,43000,,0,b2l;chandler;hanson
+trieste,Trieste (Tergestum),13.8,45.6504,1564,,,,25000,132000,216035,1,b2l;chandler;hanson;ne-popmax;ne-ports
+tripoli,Tripoli (Oea),13.18,32.8925,8221,,,10000,14000,30000,2532000,1,b2l;chandler;hanson;modelski-mod;ne-places;ne-ports
+tripoli-2,Tripoli,22.3794,37.5091,,,,,15000,,28970,0,b2l;chandler;ne-popmax
+trivento,Trivento (Terventum),14.5519,41.7822,1034,,,,,,,0,hanson
+trnava,Trnava,17.6,48.3666,,,,,,,69785,0,ne-popmax
+trogir,Trogir (Tragurium),16.2514,43.5169,,,,,,,,0,hanson
+troia,Troia (Aecae),15.3073,41.3597,,,,,,,,0,hanson
+troia-2,Tróia (Unknown),-8.9036,38.4888,106,,,,,,,0,hanson
+troizina,Troizina (Troezen),23.3625,37.4966,5986,,,,,,,0,hanson
+troyes,Troyes (Augustobona),4.0834,48.3404,14611,,12000,20000,23000,53000,61703,0,b2l;chandler;hanson;ne-popmax
+tskhinvali,Tskhinvali,43.975,42.2325,,,,,,,38502,0,ne-popmax
+tuapse,Tuapse,39.0644,44.1148,,,,,,,99145,1,ne-popmax;ne-ports
+tubruq,Tubruq,23.96,32.08,,,,,,,263527,0,ne-popmax
+tula,Tula,37.6299,54.2,,,,,41000,109000,489486,0,chandler;ne-popmax
+tulcea,Tulcea,28.7967,45.1993,,,,,,,92475,1,ne-popmax;ne-ports
+tunceli,Tunceli,39.5333,39.1167,,,,,,,29062,0,ne-popmax
+tunis,Tunis (Tunisa),10.1797,36.8028,,,20000,100000,120000,156000,2412500,0,b2l;chandler;hanson;ne-popmax
+turda,Turda (Potaissa),23.7724,46.5703,,,,,,,,0,hanson
+turin,Turin (Augusta Taurinorum),7.668,45.0723,8646,,,15000,82000,330000,1645000,0,b2l;chandler;hanson;ne-places
+turnovo,Turnovo,25.6555,43.0862,,,20000,20000,,,53115,0,b2l;chandler;ne-popmax
+tuscania,Tuscania (Tuscana),11.8723,42.4173,676,,,,,,,0,hanson
+tuscolo,Tuscolo (Tusculum),12.7087,41.7984,2144,,,,,,,0,hanson
+tuskevar,Tüskevár (Mogentiana),17.3141,47.1183,,,,,,,,0,hanson
+tuzla,Tuzla,18.68,44.5505,,,,,,,144334,0,ne-popmax
+tver,Tver,35.89,56.86,,,,,18000,53000,400212,0,chandler;ne-popmax
+tynemouth,Tynemouth,-1.445,55.019,,,,,13000,,,1,b2l;chandler;ne-ports
+tyrus,Tyrus,35.196,33.271,13405,,20000,,,,,1,b2l;hanson
+ubeda,Ubeda (Salaria),-3.367,38.017,,,,20000,14000,,,0,b2l;hanson
+uckap,Üçkapı (Ariassus),30.4708,37.1797,1034,,,,,,,0,hanson
+udine,Udine,13.24,46.07,,,,13000,16000,,119009,0,b2l;ne-popmax
+ugento,Ugento (Uxentum),18.1583,39.9274,,,,,,,,0,hanson
+uglich,Uglich,38.33,57.5244,,,,,,,37732,0,ne-popmax
+ugura,Uğura (Olba),33.9567,36.5852,,,,,,,,0,hanson
+ulcinj,Ulcinj (Olcinium),19.2413,41.9213,,,,,,,,0,hanson
+ulm,Ulm,10.0,48.4004,,,,16000,16000,52000,172955,0,b2l;chandler;ne-popmax
+ulu-pinar,Ulu Pinar (Isaura),32.4538,37.2606,,,,,,,,0,hanson
+uman,Uman,30.2109,48.7543,,,,,,,87658,0,ne-popmax
+umbertide,Umbertide (Pitulum),12.3274,43.3051,,,,,,,,0,hanson
+umljanovic,Umljanovic (Magnum),16.3134,43.7936,,,,,,,,0,hanson
+umm-qais,Umm Qais (Gadara),35.6789,32.6556,3427,,,,,,,0,hanson
+unknown,Unknown (Carthaea),24.3142,37.5423,,,,,,,,0,hanson
+unknown-10,Unknown (Thyrium),20.9809,38.8549,,,,,,,,0,hanson
+unknown-11,Unknown (Zacynthus),20.8921,37.7872,,,,,,,,0,hanson
+unknown-12,Unknown (Saccaea),36.6978,32.8968,,,,,,,,0,hanson
+unknown-13,Unknown (Cedreae),30.8842,38.9464,1426,,,,,,,0,hanson
+unknown-14,Unknown (Dardanium),26.3744,40.0797,,,,,,,,0,hanson
+unknown-15,Unknown (Harpasa),28.3481,37.8058,,,,,,,,0,hanson
+unknown-16,Unknown (Silandos),28.826,38.7515,,,,,,,,0,hanson
+unknown-17,Unknown (Nertobriga),-6.6514,38.1648,,,,,,,,0,hanson
+unknown-18,Unknown (Segida),-6.5893,38.3785,,,,,,,,0,hanson
+unknown-19,Unknown (Ugultunia),-6.4115,38.3436,,,,,,,,0,hanson
+unknown-2,Unknown (Euonymon),23.7374,37.9169,,,,,,,,1,hanson;pleiades
+unknown-20,Unknown (Urgao),-4.0549,37.9365,,,,,,,,0,hanson
+unknown-21,Unknown (Lystra),32.3477,37.5833,,,,,,,,0,hanson
+unknown-22,Unknown (Drepanum),32.3208,34.9022,,,,,,,,0,hanson
+unknown-23,Unknown (Attacum),1.794,41.3299,,,,,,,,0,hanson
+unknown-24,Unknown (Bocchori),3.1386,39.9324,,,,,,,,0,hanson
+unknown-25,Unknown (Dianium),0.1075,38.8428,,,,,,,,0,hanson
+unknown-26,Unknown (Ossigi),-3.5603,37.8489,,,,,,,,0,hanson
+unknown-27,Unknown (Aquilonia),14.75,40.75,,,,,,,,0,hanson
+unknown-28,Unknown (Forum Popili),13.9669,41.172,,,,,,,,0,hanson
+unknown-29,Unknown (Liternum),14.0301,40.921,1292,,,,,,,0,hanson
+unknown-3,Unknown (Halae),23.1938,38.6538,1292,,,,,,,0,hanson
+unknown-30,Unknown (Numistro),15.4867,40.7536,,,,,,,,0,hanson
+unknown-31,Unknown (Iuvanum),14.2567,41.999,,,,,,,,0,hanson
+unknown-32,Unknown (Mevaniola),11.9034,43.9831,106,,,,,,,0,hanson
+unknown-33,Unknown (Ostra),13.158,43.6133,,,,,,,,0,hanson
+unknown-34,Unknown (Arna),12.486,43.1278,,,,,,,,0,hanson
+unknown-35,Unknown (Lucus Feroniae),12.5969,42.1297,3093,,,,,,,0,hanson
+unknown-36,Unknown (Urbana),11.4453,45.1934,,,,,,,,0,hanson
+unknown-37,Unknown (Laus Pompeia),9.4188,45.3035,2296,,,,,,,0,hanson
+unknown-38,Unknown (Lacimurga),-5.4611,39.0918,,,,,,,,0,hanson
+unknown-39,Unknown (Parlais),30.7921,38.0148,,,,,,,,0,hanson
+unknown-4,Unknown (Hephaestia),25.3242,39.9591,4300,,,,,,,0,hanson
+unknown-40,Unknown (Dard),20.8183,43.0269,3945,,,,,,,0,hanson
+unknown-41,Unknown (Halaesa),14.2333,37.9833,1848,,,,,,,0,hanson
+unknown-42,Unknown (Batnae),37.5534,36.3957,,,,,,,,0,hanson
+unknown-43,Unknown (Azotos),34.622,31.7835,5792,,,,,,,0,hanson
+unknown-5,Unknown (Heraclea),22.4476,38.792,,,,,,,,0,hanson
+unknown-6,Unknown (Ioulis),24.3463,37.6331,,,,,,,,0,hanson
+unknown-7,Unknown (Lilaea),22.5095,38.6304,,,,,,,,0,hanson
+unknown-8,Unknown (Melos),24.4207,36.733,2144,,,,,,,1,hanson;pleiades
+unknown-9,Unknown (Thaumacia),22.322,39.1266,,,,,,,,0,hanson
+unlocated,Unlocated (Azina),18.5,43.5,,,,,,,,0,hanson
+unlocated-2,Unlocated (Tempsa),16.6111,39.4481,,,,,,,,0,hanson
+unlocated-3,Unlocated (Trebula Suffenas),12.9377,41.9542,,,,,,,,0,hanson
+unlocated-4,Unlocated (Solona),11.9592,44.1856,,,,,,,,0,hanson
+urbino,Urbino (Urvinum Mataurense),12.6368,43.7239,1161,,,,,,,0,hanson
+urbisaglia,Urbisaglia (Urbs Salvia),13.3814,43.1984,5219,,,,,,,0,hanson
+urmia,Urmia,45.0,37.53,,,,,32000,35000,577307,0,chandler;ne-popmax
+uryupinsk,Uryupinsk,42.0031,50.7734,,,,,,,41644,0,ne-popmax
+usak,Uşak,29.42,38.6804,,,,,,,152862,0,ne-popmax
+usti-nad-labem,Usti Nad Labem,14.081,50.663,,,,,,37000,94105,0,chandler;ne-popmax
+utique,Utique (Utica),10.038,37.0358,16594,,,,,,,0,hanson
+utrecht,Utrecht,5.12,52.1003,,,,20000,32000,104000,640000,0,b2l;chandler;ne-popmax
+utrera,Utrera (Salpensa),-5.787,37.186,,,,8000,11000,,,0,b2l;hanson
+uzhgorod,Uzhgorod,22.25,48.63,,,,,,,150832,0,ne-popmax
+uzumlu,Üzümlü (Cadyanda),29.2422,36.7259,1292,,,,,,,0,hanson
+uzuncaburc,Uzuncaburç (Diocaesarea),33.9247,36.5805,1426,,,,,,,0,hanson
+vac,Vác,19.1332,47.7837,,,,,,,35293,0,ne-popmax
+vado-ligure,Vado Ligure (Vada Sabatia),8.4378,44.2708,,,,,,,,0,hanson
+vaduz,Vaduz,9.5167,47.1337,,,,,,,36281,0,ne-popmax
+vaison-la-romaine,Vaison la Romaine (Vasio),5.074,44.241,5032,,,,,,,0,hanson
+vakif,Vakif (Heraclea),28.9941,37.6282,,,,,,,,0,hanson
+valence,Valence (Valentia),4.8899,44.9298,3945,,,,,,,0,hanson
+valencia,Valencia (Valentia),-0.367,39.467,910,,15000,42000,80000,213000,1363000,1,b2l;chandler;hanson;modelski-mod;ne-ports;pleiades
+valencia-2,Valencia (Valentia),-0.402,39.487,5219,,,,,,831000,1,hanson;ne-places;pleiades
+valenciennes,Valenciennes,3.533,50.35,,,,15000,17000,,,0,b2l;chandler
+valera-la-vieja,Valera la Vieja (Valeria),-2.1494,39.8112,1426,,,,,,,0,hanson
+valladolid,Valladolid,-4.75,41.65,,,,30000,20000,68000,322304,0,b2l;chandler;ne-popmax
+valletta,Valletta,14.5147,35.8997,,,,,37000,61000,368250,0,b2l;chandler;ne-popmax
+valuyki,Valuyki,38.0987,50.2091,,,,,,,35887,0,ne-popmax
+van,Van,43.4,38.4954,,,,,12000,,371713,0,b2l;chandler;ne-popmax
+vanadzor,Vanadzor,44.4883,40.8128,,,,,,,101098,0,ne-popmax
+vannes,Vannes (Darioritum),-2.7596,47.6548,,,,,,,,1,hanson;ne-ports
+varna,Varna (Odessus),27.8953,43.2156,5599,,,,16000,33000,312770,1,b2l;chandler;hanson;ne-popmax;ne-ports
+varvil,Varvil (Bargylia),27.588,37.1958,2296,,,,,,,0,hanson
+vaslui,Vaslui,27.7333,46.6333,,,,,,,69225,0,ne-popmax
+vasto,Vasto (Histonium),14.7096,42.1127,1161,,,,,,,0,hanson
+vaxjo,Växjö,14.8167,56.8837,,,,,,,59600,0,ne-popmax
+veio,Veio (Veii),12.3955,42.0217,3093,,,,,,,0,hanson
+vejle,Vejle,9.535,55.709,,,,,,,51177,1,ne-popmax;ne-ports
+velatouri,Velatouri (Thoricus),24.0535,37.7375,,,,,,,,1,hanson;pleiades
+velestino,Velestino (Pherae),22.7539,39.379,17353,,,,,,,0,hanson
+velez-malaga,Velez-Malaga,-4.1,36.783,,,,,16000,,,0,b2l
+velez-rubio,Velez-Rubio,-2.067,37.65,,,,,11000,,,0,b2l
+velikiye-luki,Velikiye Luki,30.52,56.32,,,,,,,103149,0,ne-popmax
+velilla-del-ebro,Velilla del Ebro (Celsa),-0.4379,41.375,460,,,,,,,0,hanson
+velitsa,Velitsa (Neon),22.6676,38.5841,1564,,,,,,,0,hanson
+velleia,Velleia (Veleia),9.7224,44.7848,910,,,,,,,0,hanson
+velletri,Velletri (Velitrae),12.7779,41.689,4300,,,,,,,0,hanson
+venafro,Venafro (Venafrum),14.0435,41.4857,3427,,,,,,,0,hanson
+vendeuvre-du-poitou,Vendeuvre du Poitou (Vindobriga),0.3097,46.7354,49652,,,,,,,0,hanson
+vendoeuvres-en-brenne,Vendoeuvres en Brenne (Vindobriga),1.3541,46.8009,,,,,,,,0,hanson
+venice,Venice,12.335,45.4387,,,45000,100000,138000,171000,270816,1,b2l;chandler;modelski-anc;ne-popmax;pleiades
+venosa,Venosa (Venusia),15.8194,40.9631,6578,,,,,,,0,hanson
+venta-de-s-andres,Venta de S. Andres (Ilugo),-3.2064,38.2475,,,,,,,,0,hanson
+ventimiglia,Ventimiglia (Albintimilium),7.6258,43.7891,2929,,,,,,,0,hanson
+ventspils,Ventspils,21.5606,57.3899,,,,,,,42884,1,ne-popmax;ne-ports
+vercelli,Vercelli (Vercellae),8.417,45.317,5409,,,,16000,,,0,b2l;hanson
+vereto,Vereto (Veretum),15.8274,40.9691,,,,,,,,0,hanson
+veria,Veria (Beroea),22.2015,40.5221,14126,,,,,,,0,hanson
+veroli,Veroli (Verulae),13.4174,41.6906,268,,,,,,,0,hanson
+verona,Verona,10.99,45.4404,8221,,20000,50000,51000,66000,347459,0,b2l;chandler;hanson;ne-popmax
+versailles,Versailles,2.1333,48.8005,,,,,23000,,85416,0,b2l;chandler;ne-popmax
+vertault,Vertault (Vertillum),4.352,47.9174,3093,,,,,,,0,hanson
+verviers,Verviers,5.867,50.583,,,,,10000,49000,,0,b2l;chandler
+veszprem,Veszprém,17.911,47.091,,,,,,,62023,0,ne-popmax
+vetel,Veţel (Micia),22.7979,45.902,,,,,,,,0,hanson
+vetulonia,Vetulonia,10.9711,42.8594,3093,,,,,,,0,hanson
+viana-do-castelo,Viana Do Castelo,-8.8441,41.6962,,,,,,,15555,1,ne-popmax;ne-ports
+vibo-valentia,Vibo Valentia,16.1,38.6666,3945,,,,,,33957,0,hanson;ne-popmax
+viborg,Viborg,9.4,56.4333,,,,,,31000,34831,0,chandler;ne-popmax
+vicenza,Vicenza (Vicetia),11.55,45.55,3598,,,21000,28000,32000,,0,b2l;chandler;hanson
+vich,Vich,2.25,41.933,,,,,13000,,,0,b2l
+vichuga,Vichuga,41.9287,57.2191,,,,,,,39071,0,ne-popmax
+vichy,Vichy,3.4167,46.1171,,,,,,,43158,0,ne-popmax
+vidin,Vidin,22.867,43.983,,,,,25000,,,0,b2l;chandler
+vienna,Vienna (Vindobona),16.3647,48.202,4846,,,20000,247000,1698000,2451000,0,b2l;chandler;hanson;modelski-mod;ne-places
+vienne,Vienne (Vienna),4.867,45.517,15347,45000,,,11000,,,0,b2l;chandler;hanson
+vieux,Vieux (Aregenua),-0.4298,49.1081,,,,,,,,0,hanson
+vieux-poitiers,Vieux Poitiers (Vetus Pictavis),0.5125,46.7618,12226,,,,,,,0,hanson
+vigevano,Vigevano,8.85,45.317,,,,6000,12000,,,0,b2l
+vigo,Vigo,-8.73,42.22,,,,,,,378952,1,ne-popmax;ne-ports;pleiades
+vila-real,Vila Real,-7.737,41.294,,,,,,,17001,0,ne-popmax
+villa-del-foro,Villa del Foro (Valentia),8.6451,45.0141,,,,,,,,0,hanson
+villanueva-de-la-serena,Villanueva-de-la-Serena,-5.8,38.967,,,,,11000,,,0,b2l
+villeneuve,Villeneuve,0.72,44.42,,,,,10000,,,0,b2l
+vilnius,Vilnius,25.3166,54.6834,,,,25000,25430,162000,542366,0,chandler;ne-popmax
+vinaroz,Vinaroz,0.483,40.467,,,,,10000,,,0,b2l
+vinicica,Vinicica (Metulum),15.2998,45.2094,,,,,,,,0,hanson
+vinkovci,Vinkovci (Cibalae),18.801,45.291,9076,,,,,,,0,hanson
+vinnytsya,Vinnytsya,28.4816,49.2254,,,,,,,352115,0,ne-popmax
+vis,Vis (Issa),16.1841,43.0616,1848,,,,,,,0,hanson
+visby,Visby,18.3,57.6337,,,,,3730,,22593,1,chandler;ne-popmax;ne-ports
+viseu,Viseu,-7.91,40.657,,,,,,,26364,0,ne-popmax
+viterbo,Viterbo,12.1,42.417,,,,12000,13000,,,0,b2l
+vitoria,Vitoria,-2.67,42.85,,,,,10000,,224578,0,b2l;ne-popmax
+vitoria-2,Vitoria,14.533,36.95,,,,,10000,,,0,b2l
+vitsyebsk,Vitsyebsk,30.1853,55.1887,,,,,,73000,342700,0,chandler;ne-popmax
+vizace,Vizače (Nesactium),13.9697,44.9167,676,,,,,,,0,hanson
+vize,Vize (Bizye),27.7644,41.5754,,,,,,,,0,hanson
+vladikavkaz,Vladikavkaz,44.67,43.0504,,,,,,49000,364630,0,chandler;ne-popmax
+vladimir,Vladimir,40.4099,56.13,,,,,,32000,318648,0,chandler;ne-popmax
+vlore,Vlorë,19.4982,40.4774,,,,,,,89546,0,ne-popmax
+voghera,Voghera (Iria),9.0092,44.9922,,,,,,,,0,hanson
+volci,Volci (Vulci),11.6317,42.4189,16846,,,,,,,0,hanson
+volgodonsk,Volgodonsk,42.1599,47.51,,,,,,,167731,0,ne-popmax
+volgograd,Volgograd,44.498,48.712,,,,,,67000,966000,0,chandler;ne-places
+volos,Volos (Demetrias),22.95,39.37,34724,,,,,,110632,1,hanson;ne-popmax;ne-ports
+volterra,Volterra (Volaterra),10.8583,43.4022,3945,,,,,,,0,hanson
+volturno,Volturno (Volturnum),13.9403,41.0217,,,,,,,,0,hanson
+volzhskiy,Volzhskiy,44.7744,48.7948,,,,,,,323293,0,ne-popmax
+voronezh,Voronezh,39.1868,51.6654,,,,,18000,84000,838000,0,chandler;ne-places
+voznesensk,Voznesensk,31.3333,47.5504,,,,,,,43996,0,ne-popmax
+vratsa,Vratsa,23.5625,43.21,,,,,,,71633,0,ne-popmax
+vrsac,Vrsac,21.3,45.12,,,,,10000,,,0,b2l
+vyazma,Vyazma,34.2918,55.2122,,,,,,,55500,0,ne-popmax
+vyshnniy-volochek,Vyshnniy Volochek,34.5631,57.583,,,,,,,53800,0,ne-popmax
+vyska,Vyska,42.1644,55.3247,,,,,,,61664,0,ne-popmax
+wadi-halfa,Wadi Halfa,31.35,21.8,,,,,,,17121,0,ne-popmax
+wakefield,Wakefield,-1.493,53.68,,,,,11000,40000,,0,b2l;chandler
+walsall,Walsall,-1.978,52.584,,,,,10000,,,0,b2l
+warrington,Warrington,-2.594,53.392,,,,,11000,63000,,0,b2l;chandler
+warsaw,Warsaw,21.0053,52.2309,,,,5000,63000,724000,1735000,0,b2l;chandler;modelski-mod;ne-places
+wasit,Wasit,45.225,32.383,,,40000,,,,,0,b2l
+water-newton,Water Newton (Durobrivae),-0.3482,52.559,1995,,,,,,,0,hanson
+waterford,Waterford,-7.1119,52.2583,,,,,20000,,49275,1,b2l;chandler;ne-popmax;ne-ports
+weissenburg,Weissenburg (Apulum),23.5723,46.0667,16846,,,,,,,0,hanson
+wels,Wels (Ovilava),14.0246,48.1566,15347,,,,,,,0,hanson
+wexford,Wexford,-6.458,52.334,,,,,10000,,,1,b2l;ne-ports
+wiener-neustadt,Wiener Neustadt,16.25,47.816,,,,,5000,,82762,0,chandler;ne-popmax
+wiesbaden,Wiesbaden (Aquae Mattiacorum),8.25,50.0804,,,,,,193000,617126,0,chandler;hanson;ne-popmax
+wigan,Wigan,-2.626,53.544,,,,,11000,60000,,0,b2l;chandler
+winchester,Winchester (Venta Belgarum),-1.308,51.062,9511,,15000,,,,,0,b2l;hanson
+wolverhampton,Wolverhampton,-2.125,52.584,,,,,13000,,,0,b2l;chandler
+woolwich,Woolwich,0.08,51.48,,,,,24000,,,0,b2l
+worcester,Worcester,-2.212,52.197,,,,,11000,46000,,0,b2l;chandler
+worms,Worms,8.36,49.636,,,20000,8000,5000,40000,,0,b2l;chandler
+wrocaw,Wrocław,17.03,51.1104,,,,25000,60000,422000,634893,0,b2l;chandler;ne-popmax
+wroxeter,Wroxeter (Viroconium),-2.644,52.6743,15101,,,,,,,0,hanson
+wuppertal,Wuppertal,7.17,51.25,,,,,13000,298000,776525,0,b2l;chandler;ne-popmax
+wurzburg,Würzburg,9.95,49.8004,,,,7000,20000,75000,168561,0,b2l;chandler;ne-popmax
+xanten,Xanten (Colonia Ulpia Traiana),6.4446,51.668,14611,,,,,,,0,hanson
+xanthi,Xanthi,24.8836,41.1418,,,,,,,50570,0,ne-popmax
+xeropigadi,Xeropigadi (Cirrha),22.4506,38.4289,,,,,,,,0,hanson
+xydas,Xydas (Lyctus),25.3593,35.2047,,,,,,,,0,hanson
+yalta,Yalta,34.1594,44.4993,,,,,,,79509,0,ne-popmax
+yalvac,Yalvaç (Antiochia),31.1789,38.3007,5599,,,,,,,0,hanson
+yanbu-al-bahr,Yanbu al Bahr,38.0493,24.0943,,,,,,,267590,0,ne-popmax
+yaroslavl,Yaroslavl,39.87,57.62,,,,,22000,76000,606730,0,chandler;ne-popmax
+yavu,Yavu (Cyaneae),29.8225,36.2447,361,,,,,,,0,hanson
+yecla,Yecla,-1.117,38.617,,,,,12000,,,0,b2l
+yefremov,Yefremov,38.1215,53.1491,,,,,,,45497,0,ne-popmax
+yeghegnadzor,Yeghegnadzor,45.3333,39.7611,,,,,,,8200,0,ne-popmax
+yegoryevsk,Yegoryevsk,39.0294,55.3848,,,,,,,89795,0,ne-popmax
+yeilyayla,Yeilyayla (Nicopolis),38.1435,40.1486,,,,,,,,0,hanson
+yelets,Yelets,38.5,52.58,,,,,,38000,115919,0,chandler;ne-popmax
+yeniji,Yeniji (Apollonia),28.9565,38.0486,12930,,,,,,,0,hanson
+yenikoy,Yeniköy (Metropolis),30.6282,39.1713,676,,,,,,,0,hanson
+yerevan,Yerevan,44.5116,40.1831,,,,,,,1102000,0,modelski-mod;ne-places
+yevpatoriya,Yevpatoriya,33.3631,45.1969,,,,,,,105223,0,ne-popmax
+yeysk,Yeysk,38.2634,46.6988,,,,,,,87814,0,ne-popmax
+yilan-kale,Yilan Kale (Mopsuestia),35.6195,36.9578,,,,,,,,0,hanson
+york,York (Eburacum),-1.0721,53.9512,5792,,12000,7000,17000,76000,158947,0,b2l;chandler;hanson;ne-popmax
+yozgat,Yozgat,34.815,39.818,,,,,,,87881,0,ne-popmax
+zaandam,Zaandam,4.833,52.45,,,,,10000,,,1,b2l;ne-ports
+zadar,Zadar (Iader),15.2623,44.1201,29671,,,,,,71258,1,hanson;ne-popmax;ne-ports;pleiades
+zagazig,Zagazig (Bubastis),31.5167,30.5833,30842,,,,,35000,285097,0,chandler;hanson;ne-popmax
+zaghouan,Zaghouan,10.147,36.4,,,,,,,16911,0,ne-popmax
+zagreb,Zagreb,16.0,45.8,,,,,13000,61000,722526,0,b2l;chandler;ne-popmax
+zahle,Zahlé,35.9042,33.8501,,,,,,,78145,0,ne-popmax
+zakho,Zakho,42.6872,37.1445,,,,,,,134863,0,ne-popmax
+zakynthos,Zakynthos,20.73,37.87,,,,,15000,,,0,b2l
+zalaegerszeg,Zalaegerszeg,16.84,46.844,,,,,,,61898,0,ne-popmax
+zalau,Zalău,23.063,47.175,,,,,,,63232,0,ne-popmax
+zamora,Zamora,-5.75,41.5,,,,5000,10000,,,0,b2l
+zana,Zana (Diana Veteranorum),6.0803,35.7797,,,,,,,,0,hanson
+zaporizhzhya,Zaporizhzhya,35.1749,47.8592,,,,,,,773000,0,ne-places
+zaragoza,Zaragoza (Caesaraugusta),-0.89,41.65,7183,,17000,20000,43000,99000,649404,0,b2l;chandler;hanson;ne-popmax
+zarzis,Zarzis (Zitha),11.1,33.5104,,,,,,,159161,0,hanson;ne-popmax
+zelenokumsk,Zelenokumsk,43.8787,44.4091,,,,,,,41306,0,ne-popmax
+zenica,Zenica,17.92,44.22,,,,,,,164423,0,ne-popmax
+zheleznogorsk,Zheleznogorsk,35.4044,52.3548,,,,,,,97900,0,ne-popmax
+zhytomyr,Zhytomyr,28.6622,50.2456,,,,,,80000,282192,0,chandler;ne-popmax
+ziama,Ziama (Choba),5.4813,36.6731,1292,,,,,,,0,hanson
+zielona-gora,Zielona Góra,15.5,51.9504,,,,,8000,,118433,0,b2l;ne-popmax
+zile,Zile (Zela),35.8833,40.3,,,,,,,,0,hanson
+zilina,Žilina,18.7494,49.2198,,,,,,,87625,0,ne-popmax
+zittau,Zittau,14.8076,50.8977,,,,,,30000,,0,chandler
+zlatna,Zlatna (Ampelum),23.2312,46.1075,,,,,,,,0,hanson
+zlin,Zlín,17.65,49.2304,,,,,,,124610,0,ne-popmax
+zollfeld,Zollfeld (Virunum),14.3669,46.6977,7183,,,,,,,0,hanson
+zonguldak,Zonguldak,31.78,41.4304,,,,,,,156918,0,ne-popmax
+zougra,Zougra (Pellene),22.5483,38.0432,,,,,,,,0,hanson
+zrenjanin,Zrenjanin,20.3995,45.3786,,,,,,,64053,0,ne-popmax
+zug,Zug,8.487,47.179,,,,,,,23435,0,ne-popmax
+zuglio,Zuglio (Iulium Carnicum),13.0258,46.4608,,,,,,,,0,hanson
+zurich,Zürich,8.5481,47.3819,,,,5000,10000,150000,1134000,0,b2l;chandler;ne-places
+zuwara,Zuwara,12.0791,32.9344,,,,,,,180310,0,ne-popmax
+zvolen,Zvolen,19.1332,48.5837,,,,,,,44502,0,ne-popmax
+zwickau,Zwickau,12.4884,50.7272,,,,,,62000,,0,chandler
+zwolle,Zwolle,6.097,52.524,,,,,12000,,111805,0,b2l;ne-popmax

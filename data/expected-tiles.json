@@ -1,0 +1,145 @@
+{
+  "revision": "tile-grid-v1",
+  "definition": {
+    "artifact_path": "data/tile-grid.json",
+    "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+  },
+  "status": "offline expected mapping; runtime probes are separate and must not be relabeled",
+  "probes": [
+    {
+      "anchor_id": "alpine-woodland-near",
+      "longitude": 8.991666666666667,
+      "latitude": 46.00833333333333,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:-557:-840",
+        "region": "project",
+        "row": -557,
+        "column": -840,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -839899.2565282531,
+        "source_projected_z_m": -556902.0268362772
+      }
+    },
+    {
+      "anchor_id": "italy",
+      "longitude": 12.49,
+      "latitude": 41.89,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:-99:-547",
+        "region": "project",
+        "row": -99,
+        "column": -547,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -546319.1500415248,
+        "source_projected_z_m": -98963.62140784436
+      }
+    },
+    {
+      "anchor_id": "england",
+      "longitude": -1.5,
+      "latitude": 54.0,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:-1446:-1721",
+        "region": "project",
+        "row": -1446,
+        "column": -1721,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -1720359.842680685,
+        "source_projected_z_m": -1445536.043035928
+      }
+    },
+    {
+      "anchor_id": "north-africa",
+      "longitude": 10.2,
+      "latitude": 35.5,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:611:-739",
+        "region": "project",
+        "row": 611,
+        "column": -739,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -738495.9324678064,
+        "source_projected_z_m": 611572.9412844309
+      }
+    },
+    {
+      "anchor_id": "eastern-extent",
+      "longitude": 42,
+      "latitude": 36,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:555:1930",
+        "region": "project",
+        "row": 555,
+        "column": 1930,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": 1930159.8234954027,
+        "source_projected_z_m": 555975.4011676646
+      }
+    },
+    {
+      "anchor_id": "jordandepression",
+      "longitude": 35.5,
+      "latitude": 31.5,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:1056:1384",
+        "region": "project",
+        "row": 1056,
+        "column": 1384,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": 1384679.8733771367,
+        "source_projected_z_m": 1056353.2622185627
+      }
+    },
+    {
+      "anchor_id": "region-edge",
+      "longitude": -11,
+      "latitude": 45,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:-445:-2518",
+        "region": "project",
+        "row": -445,
+        "column": -2518,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -2517599.769776612,
+        "source_projected_z_m": -444780.3209341316
+      }
+    },
+    {
+      "anchor_id": "tile-seam",
+      "longitude": 19,
+      "latitude": 41,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:0:0",
+        "region": "project",
+        "row": 0,
+        "column": 0,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": 0.0,
+        "source_projected_z_m": -0.0
+      }
+    },
+    {
+      "anchor_id": "coast-ostia",
+      "longitude": 12.239024,
+      "latitude": 41.736274,
+      "expected": {
+        "canonical_tile_id": "eqc41-km-v1:-82:-568",
+        "region": "project",
+        "row": -82,
+        "column": -568,
+        "logical_cell_width": 1000,
+        "logical_cell_height": 1000,
+        "source_projected_x_m": -567381.0540355067,
+        "source_projected_z_m": -81870.04650386439
+      }
+    }
+  ]
+}

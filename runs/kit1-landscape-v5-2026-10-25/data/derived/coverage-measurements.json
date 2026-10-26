@@ -1,0 +1,27 @@
+{
+  "revision": "landscape-v3",
+  "region_revision": "region-v1",
+  "mask_revision": "mask-v1",
+  "aggregation": "Complete canonical pixel-centre census; fractions are sample-cell fractions, not equal-area physical area.",
+  "land_cells": 5593677,
+  "water_cells": 1998723,
+  "landcover_nodata_cells": 0,
+  "elevation_nodata_cells": 0,
+  "source_unavailable_tiles": [
+    "N33W012",
+    "N33E015",
+    "N33E018",
+    "N42E030",
+    "N45W012",
+    "N45W009",
+    "N48W012",
+    "N54E000",
+    "N54E003",
+    "N57W012",
+    "N57E000"
+  ],
+  "reference_containment": {
+    "artifact_path": "data/reference/completeness.json",
+    "sha256": "1bc696afe0301a118ca8d879c9c4f36af89b7f75d36fccd5eaba4d0f7b2bd724"
+  }
+}

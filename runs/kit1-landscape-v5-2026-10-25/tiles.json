@@ -1,0 +1,550 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "tiles",
+  "synthetic": false,
+  "run_id": "kit1-landscape-v5-2026-10-25",
+  "build_revision": "product-build-sha256:34a0f20fa36c1f95516307b53a228ea5ac7cdd6a5644159380c71e4c499bd347",
+  "sources_revision": "sources-v1",
+  "mapping_revision": "mapping-v1",
+  "fixture_revision": "landscape-route-v2-effective-float-state",
+  "grid_id": "eqc41-km-v1",
+  "grid_revision": "tile-grid-v1",
+  "logical_shape": "square",
+  "grid_definition": {
+    "artifact_path": "data/tile-grid.json",
+    "sha256": "8c2acb50000fea5186f8b2a4a6d2f5c62de00c27dc09bca2465a1e2de3cbc67d"
+  },
+  "presentation": "natural_landscape_only",
+  "gui_visible": false,
+  "grid_visible": false,
+  "selection_highlight_visible": false,
+  "probes": [
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-overview",
+      "view_state": {
+        "id": "state-overview",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 18.572000000000003,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-overview"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-alps-012",
+      "view_state": {
+        "id": "state-alps-012",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.12,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 89.0581569249527,
+        "relief_weight": 0.017207133058984907,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 6004.039,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-alps-012"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-alps-mid",
+      "view_state": {
+        "id": "state-alps-mid",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.5,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 62.63219509816206,
+        "relief_weight": 0.5,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 14004.323,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-alps-mid"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-alps-near",
+      "view_state": {
+        "id": "state-alps-near",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 1.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 35.26439100347202,
+        "relief_weight": 1.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 24004.254,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-alps-near"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-alps-out",
+      "view_state": {
+        "id": "state-alps-out",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.35,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 75.80928670409595,
+        "relief_weight": 0.25925925925925924,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 34004.539000000004,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-alps-out"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-england-mid",
+      "view_state": {
+        "id": "state-england-mid",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": -1.5000016689300537,
+          "latitude": 54.0
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.35,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 75.80928670409595,
+        "relief_weight": 0.25925925925925924,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 40004.240000000005,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-england-mid"
+    },
+    {
+      "case_id": "tile-coast",
+      "view_state_id": "state-overview",
+      "view_state": {
+        "id": "state-overview",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 18.572000000000003,
+      "canonical_tile_id": "eqc41-km-v1:-82:-568",
+      "logical_index": {
+        "region": "project",
+        "row": -82,
+        "column": -568
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-coast-state-overview"
+    },
+    {
+      "case_id": "tile-coast",
+      "view_state_id": "state-alps-out",
+      "view_state": {
+        "id": "state-alps-out",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.35,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 75.80928670409595,
+        "relief_weight": 0.25925925925925924,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 34004.539000000004,
+      "canonical_tile_id": "eqc41-km-v1:-82:-568",
+      "logical_index": {
+        "region": "project",
+        "row": -82,
+        "column": -568
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-coast-state-alps-out"
+    },
+    {
+      "case_id": "tile-region-edge",
+      "view_state_id": "state-overview",
+      "view_state": {
+        "id": "state-overview",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 18.572000000000003,
+      "canonical_tile_id": "eqc41-km-v1:-445:-2518",
+      "logical_index": {
+        "region": "project",
+        "row": -445,
+        "column": -2518
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-region-edge-state-overview"
+    },
+    {
+      "case_id": "tile-region-edge",
+      "view_state_id": "state-alps-out",
+      "view_state": {
+        "id": "state-alps-out",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.35,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 75.80928670409595,
+        "relief_weight": 0.25925925925925924,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 34004.539000000004,
+      "canonical_tile_id": "eqc41-km-v1:-445:-2518",
+      "logical_index": {
+        "region": "project",
+        "row": -445,
+        "column": -2518
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-region-edge-state-alps-out"
+    },
+    {
+      "case_id": "tile-seam",
+      "view_state_id": "state-overview",
+      "view_state": {
+        "id": "state-overview",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 18.572000000000003,
+      "canonical_tile_id": "eqc41-km-v1:0:0",
+      "logical_index": {
+        "region": "project",
+        "row": 0,
+        "column": 0
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-seam-state-overview"
+    },
+    {
+      "case_id": "tile-seam",
+      "view_state_id": "state-alps-mid",
+      "view_state": {
+        "id": "state-alps-mid",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 8.991665840148926,
+          "latitude": 46.00833511352539
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.5,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 62.63219509816206,
+        "relief_weight": 0.5,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 14004.323,
+      "canonical_tile_id": "eqc41-km-v1:0:0",
+      "logical_index": {
+        "region": "project",
+        "row": 0,
+        "column": 0
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-seam-state-alps-mid"
+    },
+    {
+      "case_id": "tile-interior",
+      "view_state_id": "state-overview",
+      "view_state": {
+        "id": "state-overview",
+        "mapping_revision": "mapping-v1",
+        "target_source_position": {
+          "longitude": 17.5,
+          "latitude": 39.5
+        },
+        "viewport": {
+          "width_px": 1920,
+          "height_px": 1080,
+          "device_pixel_ratio": 1.0,
+          "screen_origin": "top-left"
+        },
+        "zoom_normalized": 0.0,
+        "transform": {
+          "artifact_path": "data/projection.json",
+          "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+        },
+        "azimuth_degrees": 0.0,
+        "elevation_degrees": 90.0,
+        "relief_weight": 0.0,
+        "transition_definition": {
+          "artifact_path": "docs/product-renderer/camera-profile.json",
+          "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+        }
+      },
+      "t_ms": 48004.184,
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "logical_cell_width": 1000,
+      "logical_cell_height": 1000,
+      "id": "tileprobe-tile-interior-state-overview-return"
+    }
+  ],
+  "navigation_probe_ids": [
+    "tileprobe-tile-interior-state-overview",
+    "tileprobe-tile-interior-state-alps-mid",
+    "tileprobe-tile-interior-state-alps-near",
+    "tileprobe-tile-interior-state-england-mid",
+    "tileprobe-tile-interior-state-overview-return"
+  ]
+}

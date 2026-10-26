@@ -1,0 +1,21 @@
+{
+  "schema_version": "tile-grid-v1",
+  "revision": "tile-grid-v1",
+  "grid_id": "eqc41-km-v1",
+  "space": "source projected metres before common model scaling",
+  "projection": {
+    "artifact_path": "data/projection.json",
+    "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+  },
+  "cell_size_m": 1000,
+  "origin_x_m": 0,
+  "origin_z_m": 0,
+  "axes": {
+    "column": "east",
+    "row": "south"
+  },
+  "id_format": "eqc41-km-v1:{row}:{column}",
+  "rule": "column=floor(x/1000),row=floor(z/1000); half-open cells [min,max), exact seam assigned east/south; regional mask outer edge retained with clamp to last interior cell. No longitude wrap within project.",
+  "lod": "Rendering LOD aggregates immutable logical IDs, never changes identity.",
+  "coast": "Coast/rivers cut cells freely. Raster data pixels and rendering patches are independent address spaces."
+}

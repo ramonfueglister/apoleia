@@ -1,0 +1,153 @@
+{
+  "reference": "kit1-landscape-v5 / kit1-rendering-v4",
+  "reviewer": "independent_review",
+  "review_status": "final independent evidence review completed; qualified result, no unconditional full acceptance",
+  "renderer_source_sha256": "32692e62a00683419f562793b506e7199f871e782cc2ecf7dc07afc7f34d97a5",
+  "requirements": [
+    {
+      "requirement_id": "A01",
+      "status": "validiert",
+      "finding": "Exaktes finales eigenständig startendes Bundle, echte Pan-/Rückfahrt-/Wheeleingaben und gesicherte Runtime."
+    },
+    {
+      "requirement_id": "A02",
+      "status": "validiert",
+      "finding": "Gesamte Rechteckregion, tatsächliche Übersicht; unabhängige Containmentprüfung AWMC117/Mittelmeer/England+Nordpuffer, Quellen-/Masken-/Coveragebindung."
+    },
+    {
+      "requirement_id": "A03",
+      "status": "validiert",
+      "finding": "Ein Kamerapfad90°/Relief0→35.264391°/Relief1; tatsächliche Basis/Matrix/Zwischenstände; kein freier Moduswechsel."
+    },
+    {
+      "requirement_id": "A04",
+      "status": "validiert im aufgezeichneten Pfad",
+      "finding": "1031realeFrames Übersicht→nah→Übersicht; keine getrennten Szenen oder Leerframes in Bildstichprobe; Startupgap ausdrücklich erhalten."
+    },
+    {
+      "requirement_id": "A05",
+      "status": "validiert im gebundenen Probenumfang",
+      "finding": "8/8Viewstates einschließlich Pan/Rückkehr, sichtbarerRest<1px,0TileMismatch; CPU-Probegrenze explizit."
+    },
+    {
+      "requirement_id": "A06",
+      "status": "validiert",
+      "finding": "Uniform.001Längen-/Höhenskalierung, signedEGM2008/-novshift, getrennte Relief-/RG8-Rendertransformation; Projektionsmaßstabsfehler quantifiziert."
+    },
+    {
+      "requirement_id": "A07",
+      "status": "validiert als Arbeitsmaßstab",
+      "finding": "500mNahbreite, Einzelbäume/Gelände/Wasser lesbar; native~463mRasterquelle bleibt Genauigkeitsgrenze."
+    },
+    {
+      "requirement_id": "A08",
+      "status": "technisch nachgeprüft; Nutzerbewertung offen",
+      "finding": "Primärreferenz tatsächlich betrachtet, natürliche Palette/facettierte Familien/Gruppen; konkrete Wasser-/Materialfehler nachgeprüft. Keine erteilte Nutzerstilfreigabe."
+    },
+    {
+      "requirement_id": "A09",
+      "status": "validiert für aufgezeichneten Übergang; Cacheumfang begrenzt",
+      "finding": "LangsamererHin-/schnellererRückzoom und dichter Waldabschnitt beurteilt,CPU-Kaskade behoben,Seeds stabil,keine späten Pipelines. FrischeProzesse belegt,OS-/GPU-Caches unbekannt; kein beliebiger Kamerapfad zertifiziert."
+    },
+    {
+      "requirement_id": "A10",
+      "status": "validiert im Bild-/Inventarumfang",
+      "finding": "Keine GUI/Städte/Straßen/Gebäude/Grenzfarben/Raster/Feldreihen; kultivierte/verwalteteKlassen abstrakt. Quelldaten unterscheiden nicht jede Plantage/Naturwald."
+    },
+    {
+      "requirement_id": "A11",
+      "status": "validiert im Regionalumfang",
+      "finding": "FesteSommer-/Lichtparameter; grüne/trockene/Gebirgsregionen unterscheidbar; keine historische Vegetationsparität."
+    },
+    {
+      "requirement_id": "A12",
+      "status": "teilweise validiert, offen",
+      "finding": "NormalesFrame-/RSS-/GPUallokationsbudget beiderBackends erfüllt; echteCPUzeiten/Startupspitzen. GPU-/Per-Pass-Zeiten fehlen, deshalb keine volleA12-Abnahme."
+    },
+    {
+      "requirement_id": "A13",
+      "status": "validiert als Herkunftsdokumentation",
+      "finding": "Versionen/Lizenzen/Attributionen/Auflösungen/Transformationen/Historikbacklog; unveränderteOriginale/Hashes/separatesMakeValid,AWMCDateipfadaddendum imBundle. Keine Rechts-/180erGenauigkeitsgarantie."
+    },
+    {
+      "requirement_id": "A14",
+      "status": "geografische Wiederkehr validiert",
+      "finding": "DeterministischeKandidaten/Daten,gleiche finaleQuell-/Rendererbindung,echtePan-Rückkehr;keine neue Zufallsanordnung. Endbild nicht exakt zeitgleich zur letztenWP,keine Pixelidentität behauptet."
+    },
+    {
+      "requirement_id": "A15",
+      "status": "validiert im Probenumfang",
+      "finding": "eqc41-km-v1quadratische1000mProjektionszellen,floorrow/column;RuntimePan/Rückkehr/Küste/Rand/Naht mit0Abweichungen;kein sichtbaresRaster."
+    },
+    {
+      "requirement_id": "A16",
+      "status": "anwendbare Stichproben validiert; formale Toolabnahme offen",
+      "finding": "Quellen-/Modell-/Renderbudgets und Fehlerrevisionen getrennt,quellengebundeneKüsten/Flüsse/Inseln/Ridges/Nähte,neueMorph/Motionproben.14anwendbareLevel/Metrikkombinationen bestehen;4nichtgerenderteKombinationen sindNA,Kitchecker besitzt keinNA-Feld. Kein erfundenerNullwert/Vollpass."
+    }
+  ],
+  "scope_limits": [
+    "A08 user style decision remains open",
+    "A12 valid GPU and per-pass time unavailable",
+    "A16 four non-rendered derivative metric combinations NA; unchanged Kit checker cannot express NA",
+    "CPU active-mesh probes and sampled actual framebuffer review, not GPU transform feedback or global topology proof"
+  ],
+  "evidence": [
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/FINAL_REVIEW.md",
+      "sha256": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-mobile-review.json",
+      "sha256": "d9f9d4d577e8c82476d8605239fa125be88cb1c7f962271fa21f11ec454a3507"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-forward-review.json",
+      "sha256": "8f7eff05132ed417446d92bc22148ecae48ec53940af81e94a49a8fba48a8488"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-state-timing.json",
+      "sha256": "fd2f95dd7f966a7ecb0bc62ff8c386736c36c8692cff262f37479fd36936ae3f"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-lod-ridge.json",
+      "sha256": "8518301098c93bd7d78a9ad0bc9ca25621b76ccd4d9fd5e8ccc699b6f7c78616"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-film-review.json",
+      "sha256": "44375c5bd09eaac344d440121ad220d4d5db7308601f9d087c638cb6e1fad226"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/release-v2-forest-identity.json",
+      "sha256": "6b5a51fe0b6dcd444131b8779ff68d7865096ab2c039830f835ac5b368dd746f"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/forest-source-regression.json",
+      "sha256": "4cdd3d31c9ac831e8845a9ebabc51becbc4d35de25d2b4ba04e5c84d1ac4b9ff"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/source-bytes-independent.log",
+      "sha256": "f7234ce3115347f1121f6b5d358cca3d6763bd59b93834f8e7fae62c8c4f5f16"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/final-bundle-input/runtime.json",
+      "sha256": "c100c387e6882856d7493b1351c7d37c3c74a287f87a6502a35c55ec7f0efb08"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/ridge-positive-plan.json",
+      "sha256": "0be45505595a91fa42e505c0e5541d18b3abf7accbae0c1ea3a8fb94e701d913"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/ridge-positive-selection.json",
+      "sha256": "34c75788e186de6d736951f821c65d5640a709cc443ee29ba5618b39d3db4fba"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/ridge-positive-review.json",
+      "sha256": "a898dad5b349e0958ac3832016b0a98f5e845e4a3344c00f06bd7b85eadac4e0"
+    },
+    {
+      "path": "runs/kit1-landscape-v5-2026-10-25/independent-review/ridge-positive-runtime/runtime.json",
+      "sha256": "144dd2f03e9cea8152b7c283fa8451ba07f8d652361feea572726d658431bdef"
+    }
+  ],
+  "driver": "returned; all reviewer apps and GPU/encode jobs closed; no preview open"
+}

@@ -1,0 +1,191 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "geodata_policy",
+  "revision": "policy-v3",
+  "source_to_model_scale": 0.001,
+  "uniform_model_scale": true,
+  "vertical_exaggeration": 1,
+  "decision": {
+    "artifact_path": "data/policy-decision.json",
+    "sha256": "702a279ce2388c226d9d9d0ea372df032910c973e3441b468bdb29679a07361c"
+  },
+  "source_model_transform": {
+    "artifact_path": "data/projection.json",
+    "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+  },
+  "model_render_transition": {
+    "artifact_path": "docs/product-renderer/camera-profile.json",
+    "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+  },
+  "projection_definition": {
+    "artifact_path": "data/projection.json",
+    "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+  },
+  "source_accuracy_assessment": {
+    "artifact_path": "data/source-accuracy.json",
+    "sha256": "3ede3561b77b583fc4e8984100e583264feab2960eb1d716d9403c418d0e2719"
+  },
+  "detail_rules": {
+    "artifact_path": "data/detail-rules.json",
+    "sha256": "1e3d62dc3a5b7afc445b35bcb06a91559148e7126e9c648c346fd6626fccc46c"
+  },
+  "levels": [
+    {
+      "id": "overview",
+      "scope": "entire project rectangular mask",
+      "sampling_plan": {
+        "artifact_path": "data/sampling-plan.json",
+        "sha256": "14302a8a2b311a4a8e793688bd7d81661a7723bef2e6717bd4e1b5675c7feee4"
+      },
+      "budgets": [
+        {
+          "metric": "terrain_vertical_m",
+          "unit": "m",
+          "limit": 2500
+        },
+        {
+          "metric": "terrain_horizontal_m",
+          "unit": "m",
+          "limit": 0
+        },
+        {
+          "metric": "coastline_displacement_m",
+          "unit": "m",
+          "limit": 6000
+        },
+        {
+          "metric": "screen_error_px",
+          "unit": "px",
+          "limit": 2
+        },
+        {
+          "metric": "transition_residual_px",
+          "unit": "px",
+          "limit": 1
+        },
+        {
+          "metric": "projection_scale_error_ratio",
+          "unit": "ratio",
+          "limit": 0.5
+        }
+      ]
+    },
+    {
+      "id": "canonical",
+      "scope": "entire project rectangular mask",
+      "sampling_plan": {
+        "artifact_path": "data/sampling-plan.json",
+        "sha256": "14302a8a2b311a4a8e793688bd7d81661a7723bef2e6717bd4e1b5675c7feee4"
+      },
+      "budgets": [
+        {
+          "metric": "terrain_vertical_m",
+          "unit": "m",
+          "limit": 1800
+        },
+        {
+          "metric": "terrain_horizontal_m",
+          "unit": "m",
+          "limit": 0
+        },
+        {
+          "metric": "coastline_displacement_m",
+          "unit": "m",
+          "limit": 6000
+        },
+        {
+          "metric": "screen_error_px",
+          "unit": "px",
+          "limit": 2
+        },
+        {
+          "metric": "transition_residual_px",
+          "unit": "px",
+          "limit": 1
+        },
+        {
+          "metric": "projection_scale_error_ratio",
+          "unit": "ratio",
+          "limit": 0.5
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "scope": "entire project rectangular mask",
+      "sampling_plan": {
+        "artifact_path": "data/sampling-plan.json",
+        "sha256": "14302a8a2b311a4a8e793688bd7d81661a7723bef2e6717bd4e1b5675c7feee4"
+      },
+      "budgets": [
+        {
+          "metric": "terrain_vertical_m",
+          "unit": "m",
+          "limit": 1000
+        },
+        {
+          "metric": "terrain_horizontal_m",
+          "unit": "m",
+          "limit": 0
+        },
+        {
+          "metric": "coastline_displacement_m",
+          "unit": "m",
+          "limit": 6000
+        },
+        {
+          "metric": "screen_error_px",
+          "unit": "px",
+          "limit": 2
+        },
+        {
+          "metric": "transition_residual_px",
+          "unit": "px",
+          "limit": 1
+        },
+        {
+          "metric": "projection_scale_error_ratio",
+          "unit": "ratio",
+          "limit": 0.5
+        }
+      ]
+    }
+  ],
+  "protection_rules": [
+    {
+      "feature_class": "coast",
+      "rule": {
+        "artifact_path": "data/protection-rules.json",
+        "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+      }
+    },
+    {
+      "feature_class": "islands",
+      "rule": {
+        "artifact_path": "data/protection-rules.json",
+        "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+      }
+    },
+    {
+      "feature_class": "river_network",
+      "rule": {
+        "artifact_path": "data/protection-rules.json",
+        "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+      }
+    },
+    {
+      "feature_class": "ridges",
+      "rule": {
+        "artifact_path": "data/protection-rules.json",
+        "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+      }
+    },
+    {
+      "feature_class": "tile_seams",
+      "rule": {
+        "artifact_path": "data/protection-rules.json",
+        "sha256": "a0afa472cfdce0c13b6ada84812aef94b537d1d98565d5df043b24654f2f1748"
+      }
+    }
+  ]
+}

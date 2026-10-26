@@ -1,0 +1,10 @@
+{
+  "revision": "horizontal-identity-v1",
+  "status": "spezifiziert",
+  "metric": "terrain_horizontal_m",
+  "definition": "Horizontal change introduced by heightfield generalization at each fixed sourcequery coordinate: compare the sourcequery longitude/latitude with the same query positions supplied to the height-only generalization. Generalization has no horizontal coordinate operator. Independently reconstructed query arrays must compare bitwise; nonidentity is failure. Source/height/model mapping remains unchanged.",
+  "method": "Construct sourcequery positions independently from native source affine indices; construct generalized surfacequery positions from the identical affine sourcegeography that sample_bilinear actually uses. Check np.array_equal on each coordinate array; compute unrounded geodetic displacement between these paired arrays. No threshold rounding.",
+  "budget_m": 0,
+  "projection_roundtrip": "Forward/inverse projection diagnostic retained separately, including ~1e-9m finite-precision residuals. It is not horizontal displacement introduced by the height-only generalization. Does not claim renderer Float32 positions or actual mesh/morph accuracy.",
+  "supersedes": "v2 mislabeled numerical forward/inverse projection roundtrip as terrain generalization displacement. v2 strict0 policy failed its old measurement; no pass relabeling for that old result."
+}

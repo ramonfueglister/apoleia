@@ -1,0 +1,444 @@
+{
+  "schema_version": "kit1-ops-v5",
+  "kind": "fixture",
+  "id": "regional-landscape-route",
+  "revision": "landscape-route-v2-effective-float-state",
+  "synthetic": false,
+  "seed": 0,
+  "mapping_id": "equirectangular-model-v1",
+  "mapping_version": "mapping-v1",
+  "camera": {
+    "control": "zoom_bound_no_free_rotation",
+    "azimuth_degrees": 0.0,
+    "far_elevation_degrees": 90.0,
+    "near_elevation_degrees": 35.26439100347202,
+    "transition_definition": {
+      "artifact_path": "docs/product-renderer/camera-profile.json",
+      "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+    }
+  },
+  "coverage_regions": [
+    "Roman maximum extent and Mediterranean overview",
+    "Alps and central Mediterranean near detail",
+    "England and northern context",
+    "North Africa and eastern project extent"
+  ],
+  "points": [
+    {
+      "id": "alpine-woodland-near",
+      "source_id": "wc-N45E006",
+      "source_feature_id": "WorldCoverN45E006 native overview pixel; canonical719,1199",
+      "source_position": {
+        "longitude": 8.991666666666667,
+        "latitude": 46.00833333333333
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "italy",
+      "source_id": "etopo15-1",
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "source_position": {
+        "longitude": 12.49,
+        "latitude": 41.89
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "england",
+      "source_id": "etopo15-5",
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "source_position": {
+        "longitude": -1.5,
+        "latitude": 54.0
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "north-africa",
+      "source_id": "etopo15-1",
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "source_position": {
+        "longitude": 10.2,
+        "latitude": 35.5
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "eastern-extent",
+      "source_id": "etopo15-4",
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "source_position": {
+        "longitude": 42,
+        "latitude": 36
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "jordandepression",
+      "source_id": "etopo15-4",
+      "source_feature_id": "ETOPO2022v1 native raster sample location",
+      "source_position": {
+        "longitude": 35.5,
+        "latitude": 31.5
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "region-edge",
+      "source_id": "etopo15-0",
+      "source_feature_id": "project-mask-v1 west edge",
+      "source_position": {
+        "longitude": -11,
+        "latitude": 45
+      },
+      "feature_type": "other"
+    },
+    {
+      "id": "tile-seam",
+      "source_id": "etopo15-2",
+      "source_feature_id": "eqc41-km-v1:0:0; projectedx=0m,z=0m",
+      "source_position": {
+        "longitude": 19,
+        "latitude": 41
+      },
+      "feature_type": "seam"
+    },
+    {
+      "id": "coast-ostia",
+      "source_id": "etopo15-1",
+      "source_feature_id": "sourcefeature0:vertex11406",
+      "source_position": {
+        "longitude": 12.239024,
+        "latitude": 41.736274
+      },
+      "feature_type": "coast"
+    },
+    {
+      "id": "overview-target",
+      "source_id": "etopo15-7",
+      "source_feature_id": "Graphics-specified overview camera target; ETOPO2022v1 native raster query at 17.5E,39.5N (N45E015 tile)",
+      "source_position": {
+        "longitude": 17.5,
+        "latitude": 39.5
+      },
+      "feature_type": "other"
+    }
+  ],
+  "path": [
+    {
+      "t_ms": 0,
+      "point_id": "overview-target",
+      "zoom_normalized": 0,
+      "capture_label": null,
+      "id": "wp-overview-start",
+      "view_state_id": "state-overview"
+    },
+    {
+      "t_ms": 6000,
+      "point_id": "alpine-woodland-near",
+      "zoom_normalized": 0.12,
+      "capture_label": "alps far zoom",
+      "id": "wp-pan-alps",
+      "view_state_id": "state-alps-012"
+    },
+    {
+      "t_ms": 14000,
+      "point_id": "alpine-woodland-near",
+      "zoom_normalized": 0.5,
+      "capture_label": "intermediate transition",
+      "id": "wp-intermediate",
+      "view_state_id": "state-alps-mid"
+    },
+    {
+      "t_ms": 24000,
+      "point_id": "alpine-woodland-near",
+      "zoom_normalized": 1.0,
+      "capture_label": "near view",
+      "id": "wp-near",
+      "view_state_id": "state-alps-near"
+    },
+    {
+      "t_ms": 27000,
+      "point_id": "alpine-woodland-near",
+      "zoom_normalized": 1.0,
+      "capture_label": "near hold",
+      "id": "wp-near-hold",
+      "view_state_id": "state-alps-near"
+    },
+    {
+      "t_ms": 34000,
+      "point_id": "alpine-woodland-near",
+      "zoom_normalized": 0.35,
+      "capture_label": "zoom out",
+      "id": "wp-zoomout",
+      "view_state_id": "state-alps-out"
+    },
+    {
+      "t_ms": 40000,
+      "point_id": "england",
+      "zoom_normalized": 0.35,
+      "capture_label": "pan to England",
+      "id": "wp-pan-england",
+      "view_state_id": "state-england-mid"
+    },
+    {
+      "t_ms": 48000,
+      "point_id": "overview-target",
+      "zoom_normalized": 0.0,
+      "capture_label": "return overview",
+      "id": "wp-overview-return",
+      "view_state_id": "state-overview"
+    }
+  ],
+  "source_crs": "EPSG:4326",
+  "expected_position_method": {
+    "artifact_path": "docs/product-renderer/expected-position-method.json",
+    "sha256": "4d1143bb872d4fe7d4c934066500962e12c970a109f8ebf2cb14c68247d24385"
+  },
+  "max_waypoint_time_error_ms": 250.0,
+  "view_states": [
+    {
+      "id": "state-overview",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": 17.5,
+        "latitude": 39.5
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 0.0,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 90.0,
+      "relief_weight": 0.0,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    },
+    {
+      "id": "state-alps-012",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": 8.991665840148926,
+        "latitude": 46.00833511352539
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 0.12,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 89.0581569249527,
+      "relief_weight": 0.017207133058984907,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    },
+    {
+      "id": "state-alps-mid",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": 8.991665840148926,
+        "latitude": 46.00833511352539
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 0.5,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 62.63219509816206,
+      "relief_weight": 0.5,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    },
+    {
+      "id": "state-alps-near",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": 8.991665840148926,
+        "latitude": 46.00833511352539
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 1.0,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 35.26439100347202,
+      "relief_weight": 1.0,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    },
+    {
+      "id": "state-alps-out",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": 8.991665840148926,
+        "latitude": 46.00833511352539
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 0.35,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 75.80928670409595,
+      "relief_weight": 0.25925925925925924,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    },
+    {
+      "id": "state-england-mid",
+      "mapping_revision": "mapping-v1",
+      "target_source_position": {
+        "longitude": -1.5000016689300537,
+        "latitude": 54.0
+      },
+      "viewport": {
+        "width_px": 1920,
+        "height_px": 1080,
+        "device_pixel_ratio": 1.0,
+        "screen_origin": "top-left"
+      },
+      "zoom_normalized": 0.35,
+      "transform": {
+        "artifact_path": "data/projection.json",
+        "sha256": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9"
+      },
+      "azimuth_degrees": 0.0,
+      "elevation_degrees": 75.80928670409595,
+      "relief_weight": 0.25925925925925924,
+      "transition_definition": {
+        "artifact_path": "docs/product-renderer/camera-profile.json",
+        "sha256": "dc3520f2088757b577556d766d914d30f69385014292414d7fdc900552a3d4d7"
+      }
+    }
+  ],
+  "tile_cases": [
+    {
+      "id": "tile-interior",
+      "point_id": "alpine-woodland-near",
+      "spatial_case": "interior",
+      "canonical_tile_id": "eqc41-km-v1:-557:-840",
+      "logical_index": {
+        "region": "project",
+        "row": -557,
+        "column": -840
+      },
+      "view_state_ids": [
+        "state-overview",
+        "state-alps-012",
+        "state-alps-mid",
+        "state-alps-near",
+        "state-alps-out",
+        "state-england-mid"
+      ]
+    },
+    {
+      "id": "tile-coast",
+      "point_id": "coast-ostia",
+      "spatial_case": "coast",
+      "canonical_tile_id": "eqc41-km-v1:-82:-568",
+      "logical_index": {
+        "region": "project",
+        "row": -82,
+        "column": -568
+      },
+      "view_state_ids": [
+        "state-overview",
+        "state-alps-out"
+      ]
+    },
+    {
+      "id": "tile-region-edge",
+      "point_id": "region-edge",
+      "spatial_case": "region_edge",
+      "canonical_tile_id": "eqc41-km-v1:-445:-2518",
+      "logical_index": {
+        "region": "project",
+        "row": -445,
+        "column": -2518
+      },
+      "view_state_ids": [
+        "state-overview",
+        "state-alps-out"
+      ]
+    },
+    {
+      "id": "tile-seam",
+      "point_id": "tile-seam",
+      "spatial_case": "tile_seam",
+      "canonical_tile_id": "eqc41-km-v1:0:0",
+      "logical_index": {
+        "region": "project",
+        "row": 0,
+        "column": 0
+      },
+      "view_state_ids": [
+        "state-overview",
+        "state-alps-mid"
+      ]
+    }
+  ],
+  "tile_region_policy": {
+    "edge_max_distance_degrees": 0.25
+  },
+  "tile_navigation": {
+    "case_id": "tile-interior",
+    "view_state_sequence": [
+      "state-overview",
+      "state-alps-mid",
+      "state-alps-near",
+      "state-england-mid",
+      "state-overview"
+    ]
+  },
+  "region_revision": "region-v1",
+  "project_extent": {
+    "west": -11.0,
+    "east": 46.0,
+    "south": 21.0,
+    "north": 58.0
+  }
+}

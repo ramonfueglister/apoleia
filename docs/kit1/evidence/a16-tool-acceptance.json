@@ -1,0 +1,315 @@
+{
+  "scope": "A16 Werkzeugabnahme (Kitchecker + NA-Vertrag); keine Runtime-, GIS- oder Bildprüfung",
+  "recorded_utc": "2026-10-26T15:43:48.695678Z",
+  "host": {
+    "os": "Linux",
+    "machine": "x86_64",
+    "python": "3.13.17",
+    "checkout": "Cloud-Worktree, Basis origin/codex/kit1-landscape 8484e15a544bebe83127c287799785f4b8575d0e plus NA-Erweiterung dieses Commits"
+  },
+  "runtime_executed": false,
+  "results": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/kit1/tests"
+      ],
+      "actual_exit": 1,
+      "summary": [
+        "ERROR: test_package_rejects_manifest_only_wrong_version_and_inventory_drift (test_kit.KitTests.test_package_rejects_manifest_only_wrong_version_and_inventory_drift)",
+        "ERROR: test_package_roundtrip_and_tamper (test_kit.KitTests.test_package_roundtrip_and_tamper)",
+        "ERROR: test_reference_image_tamper_blocks_self_check_and_package (test_kit.KitTests.test_reference_image_tamper_blocks_self_check_and_package)",
+        "ERROR: test_self_check (test_kit.KitTests.test_self_check)",
+        "Ran 46 tests in 2.526s",
+        "FAILED (errors=4)"
+      ],
+      "note": "4 ERROR sind vorbestehend und unabhaengig von A16: references/screenshots/vic3-*.jpg fehlen im Repository (KIT_CONTENTS verlangt sie). Auf der unveraenderten Basis identisch (43 Tests, 4 ERROR)."
+    },
+    {
+      "argv": [
+        "python3",
+        "docs/kit1/tools/kit.py",
+        "report-check",
+        "runs/kit1-landscape-v5-2026-10-25"
+      ],
+      "actual_exit": 2,
+      "status": "blocked",
+      "source_artifact_hash_mismatch_count": 268,
+      "source_artifact_hash_mismatch_reason": "Rohquellen (/runs/**/data/raw/) sind per .gitignore lokal-only und fehlen in diesem Checkout.",
+      "other_issues": [
+        "region imperial_extent_source: artifact/hash mismatch",
+        "region reference geometry imperial_maximum_extent: artifact/hash mismatch",
+        "region imperial_extent_source: artifact/hash mismatch",
+        "region reference geometry imperial_maximum_extent: artifact/hash mismatch",
+        "derivation: evidence missing/hash mismatch",
+        "capture_video: evidence missing/hash mismatch",
+        "package_smoke_frame: evidence missing/hash mismatch",
+        "mobile_raw_runtime: evidence missing/hash mismatch",
+        "mobile_rss: evidence missing/hash mismatch",
+        "mobile_anchor_analysis: evidence missing/hash mismatch",
+        "mobile_anchor_projection: evidence missing/hash mismatch",
+        "forward_raw_runtime: evidence missing/hash mismatch",
+        "forward_rss: evidence missing/hash mismatch",
+        "forward_anchor_analysis: evidence missing/hash mismatch",
+        "capture_raw_runtime: evidence missing/hash mismatch",
+        "capture_rss: evidence missing/hash mismatch",
+        "capture_handoff: evidence missing/hash mismatch",
+        "release_freeze: evidence missing/hash mismatch",
+        "package_smoke_runtime: evidence missing/hash mismatch",
+        "evidence kinds missing: derivation,video",
+        "A08: not evidenced/validated",
+        "A12: not evidenced/validated",
+        "A16: derivation evidence must be linked",
+        "A16: not evidenced/validated"
+      ]
+    },
+    {
+      "argv": [
+        "python3",
+        "docs/kit1/evidence/a16_crosscheck.py",
+        "<repo>"
+      ],
+      "actual_exit": 0,
+      "output": {
+        "hashes": {
+          "geodata_policy (config path geodata_policy.json)": {
+            "actual": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+            "bound": "289fdb60188aa7fcf86ef6168c1f0b8bb6b53be0721ebdb4acd726fd63d12d28",
+            "match": true
+          },
+          "policy-application-v1.json": {
+            "actual": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56",
+            "bound": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56",
+            "match": true
+          },
+          "errata-binding.json": {
+            "actual": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935",
+            "bound": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935",
+            "match": true
+          },
+          "applicable-evidence-check.json": {
+            "actual": "6ab6e746319d218c31c900a225497569552b14cfc5ebf83ab22f7d57ff1c1aab",
+            "bound": "6ab6e746319d218c31c900a225497569552b14cfc5ebf83ab22f7d57ff1c1aab",
+            "match": true
+          },
+          "runtime-evidence-summary.json": {
+            "actual": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+            "bound": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+            "match": true
+          },
+          "independent-review/FINAL_REVIEW.md": {
+            "actual": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+            "bound": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+            "match": true
+          },
+          "independent-review-snapshot.md": {
+            "actual": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+            "bound": "4aa830507d0dcb75fbbc859b711fde173e01794a1d177bb4ea21451b46350c0a",
+            "match": true
+          },
+          "derivation-view.json": {
+            "actual": null,
+            "bound": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88",
+            "match": false
+          }
+        },
+        "reviewer_binding": {
+          "producer": "Codex Operations (final release-v2 evidence binding) / Graphics Owner (runtime/package producer)",
+          "reviewer": "independent_review",
+          "review_ref": "independent-review/FINAL_REVIEW.md",
+          "review_file_present": true,
+          "independent": true,
+          "all_bound": true
+        },
+        "coverage": {
+          "expected": 18,
+          "measured": 14,
+          "not_applicable": 4,
+          "closed": true,
+          "na_application_equals_binding": true,
+          "every_metric_has_measured_level": true
+        },
+        "rows": [
+          {
+            "level_id": "overview",
+            "metric": "terrain_vertical_m",
+            "status": "PASS",
+            "reported_value": 1334.149432356,
+            "limit": 2500,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "canonical",
+            "metric": "terrain_vertical_m",
+            "status": "PASS",
+            "reported_value": 1065.568237305,
+            "limit": 1800,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "terrain_vertical_m",
+            "status": "PASS",
+            "reported_value": 1e-09,
+            "limit": 1000,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "overview",
+            "metric": "projection_scale_error_ratio",
+            "status": "PASS",
+            "reported_value": 0.42419729034542564,
+            "limit": 0.5,
+            "unit": "ratio",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "canonical",
+            "metric": "projection_scale_error_ratio",
+            "status": "PASS",
+            "reported_value": 0.42419729034542564,
+            "limit": 0.5,
+            "unit": "ratio",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "projection_scale_error_ratio",
+            "status": "PASS",
+            "reported_value": 0.42419729034542564,
+            "limit": 0.5,
+            "unit": "ratio",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "overview",
+            "metric": "coastline_displacement_m",
+            "status": "PASS",
+            "reported_value": 2040.133357521,
+            "limit": 6000,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "canonical",
+            "metric": "coastline_displacement_m",
+            "status": "PASS",
+            "reported_value": 2797.252710681,
+            "limit": 6000,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "coastline_displacement_m",
+            "status": "PASS",
+            "reported_value": 2039.410125728,
+            "limit": 6000,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "overview",
+            "metric": "terrain_horizontal_m",
+            "status": "PASS",
+            "reported_value": 0.0,
+            "limit": 0,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "canonical",
+            "metric": "terrain_horizontal_m",
+            "status": "PASS",
+            "reported_value": 0.0,
+            "limit": 0,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "terrain_horizontal_m",
+            "status": "PASS",
+            "reported_value": 0.0,
+            "limit": 0,
+            "unit": "m",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "screen_error_px",
+            "status": "PASS",
+            "reported_value": 0.6560332070186663,
+            "limit": 2,
+            "unit": "px",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "detail",
+            "metric": "transition_residual_px",
+            "status": "PASS",
+            "reported_value": 0.06846778276470257,
+            "limit": 1,
+            "unit": "px",
+            "budget_matches_summary": true
+          },
+          {
+            "level_id": "canonical",
+            "metric": "screen_error_px",
+            "status": "NA",
+            "render_metric": true,
+            "level_in_policy": true,
+            "rendered_in_valid_runs": false,
+            "rule": {
+              "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+              "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+            }
+          },
+          {
+            "level_id": "canonical",
+            "metric": "transition_residual_px",
+            "status": "NA",
+            "render_metric": true,
+            "level_in_policy": true,
+            "rendered_in_valid_runs": false,
+            "rule": {
+              "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+              "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+            }
+          },
+          {
+            "level_id": "overview",
+            "metric": "screen_error_px",
+            "status": "NA",
+            "render_metric": true,
+            "level_in_policy": true,
+            "rendered_in_valid_runs": false,
+            "rule": {
+              "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+              "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+            }
+          },
+          {
+            "level_id": "overview",
+            "metric": "transition_residual_px",
+            "status": "NA",
+            "render_metric": true,
+            "level_in_policy": true,
+            "rendered_in_valid_runs": false,
+            "rule": {
+              "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+              "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

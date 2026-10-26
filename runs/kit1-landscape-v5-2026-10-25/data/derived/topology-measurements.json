@@ -1,0 +1,1124 @@
+{
+  "revision": "landscape-v3",
+  "vector_checks": [
+    {
+      "layer": "land",
+      "source_feature_count": 8,
+      "output_feature_count": 8,
+      "unexpected_feature_ids": [],
+      "missing_feature_ids": [],
+      "invalid_outputs": 0,
+      "method": "Independent repeat actual geometry intersection with fixed region; OGR equality; dimension2 symmetric-difference area<=1e-10squaredegrees for JSONfloatingroundoff; dimension1 symmetric-difference LENGTH<=1e-12degrees, never area; points require exactequality. Not a claim of complete real-world hydrography."
+    },
+    {
+      "layer": "rivers",
+      "source_feature_count": 168,
+      "output_feature_count": 168,
+      "unexpected_feature_ids": [],
+      "missing_feature_ids": [],
+      "invalid_outputs": 0,
+      "method": "Independent repeat actual geometry intersection with fixed region; OGR equality; dimension2 symmetric-difference area<=1e-10squaredegrees for JSONfloatingroundoff; dimension1 symmetric-difference LENGTH<=1e-12degrees, never area; points require exactequality. Not a claim of complete real-world hydrography."
+    },
+    {
+      "layer": "lakes",
+      "source_feature_count": 100,
+      "output_feature_count": 100,
+      "unexpected_feature_ids": [],
+      "missing_feature_ids": [],
+      "invalid_outputs": 0,
+      "method": "Independent repeat actual geometry intersection with fixed region; OGR equality; dimension2 symmetric-difference area<=1e-10squaredegrees for JSONfloatingroundoff; dimension1 symmetric-difference LENGTH<=1e-12degrees, never area; points require exactequality. Not a claim of complete real-world hydrography."
+    }
+  ],
+  "protected_islands": [
+    {
+      "name": "Sicily",
+      "longitude": 14,
+      "latitude": 37.5,
+      "canonical_kind": 0,
+      "detail_kind": 0,
+      "preserved_land": true
+    },
+    {
+      "name": "Sardinia",
+      "longitude": 9,
+      "latitude": 40,
+      "canonical_kind": 0,
+      "detail_kind": 0,
+      "preserved_land": true
+    },
+    {
+      "name": "Corsica",
+      "longitude": 9,
+      "latitude": 42,
+      "canonical_kind": 0,
+      "detail_kind": 0,
+      "preserved_land": true
+    },
+    {
+      "name": "Crete",
+      "longitude": 24.9,
+      "latitude": 35.2,
+      "canonical_kind": 0,
+      "detail_kind": 0,
+      "preserved_land": true
+    },
+    {
+      "name": "Cyprus",
+      "longitude": 33,
+      "latitude": 35,
+      "canonical_kind": 0,
+      "detail_kind": 0,
+      "preserved_land": true
+    }
+  ],
+  "planned_small_component_omissions": [
+    {
+      "source_feature_id": "0",
+      "component": 1,
+      "area_km2": 0.02805064678092371,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "0",
+      "component": 3,
+      "area_km2": 1.3255178894113302,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "0",
+      "component": 4,
+      "area_km2": 1.3689446006226127,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 11,
+      "area_km2": 8.847929929099893,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 25,
+      "area_km2": 4.861921702409211,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 32,
+      "area_km2": 0.7510734724378518,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 37,
+      "area_km2": 4.674234027619965,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 38,
+      "area_km2": 9.548163875204953,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 44,
+      "area_km2": 4.966626748202374,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 47,
+      "area_km2": 4.332100687114668,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 48,
+      "area_km2": 7.523065910486828,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 51,
+      "area_km2": 5.6128562500971,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 53,
+      "area_km2": 8.032902721659411,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 64,
+      "area_km2": 9.193680162254607,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 70,
+      "area_km2": 7.581051497103511,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 71,
+      "area_km2": 6.578432667572013,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 72,
+      "area_km2": 6.371045058875238,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 74,
+      "area_km2": 0.9608205078351233,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 76,
+      "area_km2": 4.859064932578455,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 77,
+      "area_km2": 0.9684990592793185,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 78,
+      "area_km2": 2.0047776009968348,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 79,
+      "area_km2": 1.8309575073042084,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 80,
+      "area_km2": 8.161307162786509,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 81,
+      "area_km2": 7.667229022385433,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 83,
+      "area_km2": 1.1059584570259953,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 84,
+      "area_km2": 3.903832585289096,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 85,
+      "area_km2": 6.558392898852886,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 86,
+      "area_km2": 3.464941830334259,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 87,
+      "area_km2": 2.5270240388081673,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 88,
+      "area_km2": 3.1935658618081653,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 107,
+      "area_km2": 8.041911822855557,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 113,
+      "area_km2": 3.751609288919967,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 117,
+      "area_km2": 8.681669355756057,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 118,
+      "area_km2": 6.337137865978484,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 121,
+      "area_km2": 9.388542202251047,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 122,
+      "area_km2": 1.2013301224722033,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 123,
+      "area_km2": 0.738888758931434,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "3",
+      "component": 124,
+      "area_km2": 2.4561747399723837,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 0,
+      "area_km2": 6.366389500147926,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 1,
+      "area_km2": 5.744591873794107,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 2,
+      "area_km2": 5.460591678939904,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 3,
+      "area_km2": 3.38043263046308,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 5,
+      "area_km2": 5.376702292236493,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 7,
+      "area_km2": 7.52219725203891,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 8,
+      "area_km2": 5.5381212114829745,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 9,
+      "area_km2": 4.060864936573394,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 11,
+      "area_km2": 3.0140215565927435,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 12,
+      "area_km2": 0.1085457327568118,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 13,
+      "area_km2": 1.7853669215505328,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 14,
+      "area_km2": 1.458871363922369,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 16,
+      "area_km2": 0.11486181412572227,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 17,
+      "area_km2": 6.102631534051558,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 18,
+      "area_km2": 0.5704412423735656,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 19,
+      "area_km2": 0.27238725404755193,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 20,
+      "area_km2": 7.857143075103279,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 22,
+      "area_km2": 0.12385856860459621,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 23,
+      "area_km2": 4.097254372470287,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 25,
+      "area_km2": 0.4469884365531202,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 26,
+      "area_km2": 9.95309101870885,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 27,
+      "area_km2": 1.749562203738863,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 28,
+      "area_km2": 2.2041222478955524,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 29,
+      "area_km2": 3.015218352178035,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 30,
+      "area_km2": 3.884770239404747,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 31,
+      "area_km2": 5.719180163949479,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 32,
+      "area_km2": 0.5501561151906817,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 33,
+      "area_km2": 2.0599072584363607,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 35,
+      "area_km2": 5.750178662130104,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 37,
+      "area_km2": 7.975761595285033,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 40,
+      "area_km2": 4.103069529594072,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 41,
+      "area_km2": 4.242387394126218,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 43,
+      "area_km2": 7.442785830837549,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 45,
+      "area_km2": 4.416444605604748,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 46,
+      "area_km2": 8.281889778650438,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 47,
+      "area_km2": 2.904721025227143,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 50,
+      "area_km2": 3.035543814552299,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 52,
+      "area_km2": 1.2558301619770675,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 54,
+      "area_km2": 6.610438587699895,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 55,
+      "area_km2": 1.1735205937635653,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 56,
+      "area_km2": 2.3817605202115013,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 59,
+      "area_km2": 4.699582489755083,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 60,
+      "area_km2": 4.038814060095554,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 61,
+      "area_km2": 3.9809549099159027,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 62,
+      "area_km2": 1.9552278702530086,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 63,
+      "area_km2": 6.422864141929731,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 64,
+      "area_km2": 4.466824193345532,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 65,
+      "area_km2": 3.7925847852344,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 66,
+      "area_km2": 0.3583788809433443,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 68,
+      "area_km2": 2.9824204333306445,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 69,
+      "area_km2": 9.180458064997628,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 70,
+      "area_km2": 4.119585514716191,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 71,
+      "area_km2": 5.938312736313281,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 72,
+      "area_km2": 6.8279573279164545,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 73,
+      "area_km2": 5.657822364086825,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 74,
+      "area_km2": 9.78010788686107,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 75,
+      "area_km2": 9.164771985831566,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 76,
+      "area_km2": 4.526580307971496,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 77,
+      "area_km2": 5.20340266828252,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 78,
+      "area_km2": 3.211858731041109,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 79,
+      "area_km2": 7.443653912904652,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 80,
+      "area_km2": 8.535457516307313,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 81,
+      "area_km2": 1.8179231682418502,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 82,
+      "area_km2": 0.8757942524384724,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 83,
+      "area_km2": 0.6975205473332173,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 84,
+      "area_km2": 2.382399842459888,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 85,
+      "area_km2": 1.746988854791685,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 86,
+      "area_km2": 3.9596084999270325,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 87,
+      "area_km2": 1.7216307179842125,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 88,
+      "area_km2": 1.9828674210703845,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 89,
+      "area_km2": 2.003695757875314,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 90,
+      "area_km2": 0.5818656718489581,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 91,
+      "area_km2": 1.1795574554521107,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 92,
+      "area_km2": 2.4712315924642616,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 93,
+      "area_km2": 2.5581434939427425,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 94,
+      "area_km2": 0.009383029839892221,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 95,
+      "area_km2": 0.011819739266090491,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 96,
+      "area_km2": 0.012337772002189658,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 97,
+      "area_km2": 0.009963160384952381,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 98,
+      "area_km2": 0.1612160551458704,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 100,
+      "area_km2": 4.42074059427503,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 101,
+      "area_km2": 6.732653740192038,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 102,
+      "area_km2": 4.881570298602173,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 104,
+      "area_km2": 8.910951659355502,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 105,
+      "area_km2": 2.5648895655381385,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 106,
+      "area_km2": 9.993726291110546,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 107,
+      "area_km2": 1.9533715906505646,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 108,
+      "area_km2": 8.114274581004528,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 109,
+      "area_km2": 7.394938421530315,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 114,
+      "area_km2": 8.145132120259582,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 115,
+      "area_km2": 3.8156111840413725,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 116,
+      "area_km2": 6.554579879800655,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 118,
+      "area_km2": 9.029221960024007,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 119,
+      "area_km2": 3.387300377685551,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 120,
+      "area_km2": 0.5494918339253161,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 121,
+      "area_km2": 1.0536816078780713,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 122,
+      "area_km2": 1.002386167306382,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 123,
+      "area_km2": 1.2950884841411892,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 124,
+      "area_km2": 2.268412358127309,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 125,
+      "area_km2": 6.1499694511188885,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 126,
+      "area_km2": 1.9543291021811646,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 127,
+      "area_km2": 2.9978261664291086,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 128,
+      "area_km2": 2.669783251351163,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 129,
+      "area_km2": 1.892714794941824,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 130,
+      "area_km2": 2.7648275008555268,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 131,
+      "area_km2": 7.9851378299836036,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 132,
+      "area_km2": 2.2202165759493586,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 133,
+      "area_km2": 2.809767639829417,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 134,
+      "area_km2": 2.970591942020512,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 135,
+      "area_km2": 2.0676675037627956,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 136,
+      "area_km2": 7.903421584543794,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 138,
+      "area_km2": 5.985174437136829,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 140,
+      "area_km2": 0.07853452157678685,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 143,
+      "area_km2": 6.910159121330075,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 144,
+      "area_km2": 1.9365750948821103,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 145,
+      "area_km2": 2.7889412036065164,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 146,
+      "area_km2": 1.1786120827178113,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 147,
+      "area_km2": 6.720282988419365,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 148,
+      "area_km2": 8.00329114548069,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 149,
+      "area_km2": 6.41619249964516,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 150,
+      "area_km2": 7.251489344182785,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 151,
+      "area_km2": 0.9812865928994262,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 152,
+      "area_km2": 0.03805288732970719,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 153,
+      "area_km2": 0.006552592475007116,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 154,
+      "area_km2": 0.0070870574891596415,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 155,
+      "area_km2": 0.42677012658303576,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 156,
+      "area_km2": 0.2400322259338213,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 157,
+      "area_km2": 0.24405248688438327,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 158,
+      "area_km2": 0.14113458247759372,
+      "rule": "subpixel-small-island"
+    },
+    {
+      "source_feature_id": "7",
+      "component": 159,
+      "area_km2": 0.05327297299677363,
+      "rule": "subpixel-small-island"
+    }
+  ],
+  "coastline": [
+    {
+      "level": "overview",
+      "metric": "coastline_displacement_m",
+      "method": "Approximate local tangent distance to nearest raster-interface pixel centre within8cells, every17th retained source exterior vertex; no global bound and not coastline survey error.",
+      "sample_count": 2340,
+      "unresolved_count": 0,
+      "sample_max": 2040.1333575209428,
+      "raw": {
+        "artifact_path": "data/derived/coast-overview.csv",
+        "sha256": "c342d36ac4d8257b0aa63b6b2e346ed7f97dbe779932a2b5c794789bd2d4bcbb"
+      }
+    },
+    {
+      "level": "canonical",
+      "metric": "coastline_displacement_m",
+      "method": "Approximate local tangent distance to nearest raster-interface pixel centre within8cells, every17th retained source exterior vertex; no global bound and not coastline survey error.",
+      "sample_count": 2340,
+      "unresolved_count": 0,
+      "sample_max": 2797.2527106810103,
+      "raw": {
+        "artifact_path": "data/derived/coast-canonical.csv",
+        "sha256": "824fa5f806f29464937bb64f75de2c4a92c24aaf306ef66fea6ca641fc163545"
+      }
+    },
+    {
+      "level": "detail",
+      "metric": "coastline_displacement_m",
+      "method": "Approximate local tangent distance to nearest raster-interface pixel centre within8cells, every17th retained source exterior vertex; no global bound and not coastline survey error.",
+      "sample_count": 2340,
+      "unresolved_count": 0,
+      "sample_max": 2039.410125727615,
+      "raw": {
+        "artifact_path": "data/derived/coast-detail.csv",
+        "sha256": "903f9c7d4cab4f34cfe67ead78328b64ba7ce9d68884f3b47fc68c3d7d8f97f6"
+      }
+    }
+  ],
+  "ridges": "Native15s height samples retained; vertical measurement checks lattice. No independently traced or validated real ridge-line network.",
+  "tile_seams": "Single shared global source raster, stable logical-address contract. Runtime seam triangles and transitions are separate renderer evidence."
+}

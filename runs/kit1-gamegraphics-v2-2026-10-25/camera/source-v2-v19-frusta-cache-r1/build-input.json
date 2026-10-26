@@ -1,0 +1,27 @@
+{
+  "schema": "fixed-forest-runtime-build-input-v1",
+  "repository_root": "/Users/ramonfuglister/Coding/vic3-clone",
+  "runtime_files": {
+    "scripts/landscape.gd": "c3c42ef787e25b5b8af77847a90de7b67477dacfd9f52b02b5004a7fab67c6d9",
+    "scripts/style/landscape_style.gd": "2073e20ad6e2ed828bc238ee14d411ddaf67a974adb8c196aada9bd17cff0c33",
+    "scripts/canonical_domains_v2.gd": "97e464570f14ae6913c5dc2b65f4b1fda837e2ca1475b09c76a96996a2a97acf",
+    "scripts/fixed_display_surface.gd": "b060ff389f92e796852ad087d44539f269a4038300893795b10635357a30a7e9",
+    "scripts/cache/fixed_forest_mesh_cache.gd": "07d6476cd48aa81380d5142903e045ca3252f98ea0cd7b60a1f49a2909f422c0",
+    "renderer-binding.json": "64d2cc69b408987ba60836caf20969569c03dd357ed64115ffaba532e8488fca"
+  },
+  "repository_files": {
+    "data/projection.json": "498ce60c41eb8272afe982b7a632d554e400841fce7f953df6fe3ac97c51b2d9",
+    "runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-default-cache-r5/required-coverage-v19.json": "8fa5eb26a06ed6b0692a56c42fa77050c2c5d8df1d495fb3f1619aa2c6c56c98",
+    "data/gameworld-v2/landscape.json": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+    "artifacts/render-data/fixed-source-v2-macro-r1/surface.json": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3",
+    "artifacts/render-data/source-v2-upload-r1/upload.json": "e1386da677c2adff466bcca75b019a07b2aa53afd56586afe559086b7a614446",
+    "artifacts/render-data/display-coast-source-v2-r1/manifest.json": "b8388888680009ead3b8809901c6796d51ff30e3b54fd0c2b7776de3f6319cab",
+    "artifacts/render-data/fixed-source-v2-macro-r1/height.rg8": "f1fa4b473aa8f32994dc90d4f6354a97f906afd0cab093e2350763f8578f3618",
+    "artifacts/render-data/fixed-source-v2-macro-r1/policy.json": "0b2a53d73d5a08320d380dcffd11a2040ee3794e1325fb47f99385af6ab220db",
+    "artifacts/render-data/fixed-source-v2-macro-r1/chunks.json": "7e01b68341125a29576fee4f9376de34eac102c3b39558cd03064df15592e2c7"
+  },
+  "geometry_freeze_sha256": "9fb14a8d56c3cbc79e95acaf1e110e0a768ed510a4f97ca9faa74c71da554367",
+  "expected_mode": "source_grouped_crowns",
+  "expected_geometry": "pointed-crown-v8-cluster3-contract046-width118-r1",
+  "expected_geometry_function_sha256": "3c7a5b0618a603fbd2298a479508da5be7352da09912f2069cb6cdbbf43bc7a5"
+}

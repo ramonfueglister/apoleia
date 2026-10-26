@@ -1,0 +1,18 @@
+{
+  "revision": "mapping-v1",
+  "crs": "spherical equidistant cylindrical",
+  "proj": "+proj=eqc +lat_ts=41 +lat_0=41 +lon_0=19 +R=6371008.8 +units=m",
+  "radius_m": 6371008.8,
+  "center_latitude": 41,
+  "center_longitude": 19,
+  "formula": "x=R*cos(41deg)*(lon-19deg)*pi/180; z=-R*(lat-41deg)*pi/180; y=height_m; all multiplied by 0.001",
+  "model_scale": 0.001,
+  "vertical_exaggeration": 1,
+  "choice": "Continuous simple regional mapping shared with portable renderer. Distortion measured and disclosed, not geodetic equal-distance or equal-area claim.",
+  "extent": {
+    "west": -11,
+    "east": 46,
+    "south": 21,
+    "north": 58
+  }
+}

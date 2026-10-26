@@ -1,6 +1,6 @@
 # Kit 1 — bestätigter Entscheidungsstand
 
-**Referenzversion:** `kit1-landscape-v5` · **Datum:** 25.10.2026.  
+**Referenzversion:** `kit1-landscape-v5` · **Datum:** 26.10.2026.
 **Status:** folgende Nutzerentscheidungen `spezifiziert`; keine davon behauptet
 eine implementierte oder validierte Grafik. Quelle ist das gemeinsame Interview.
 Neuere ausdrückliche Entscheidungen ersetzen frühere widersprechende Vorschläge.
@@ -33,12 +33,13 @@ Details: [REGION](operations/REGION.md).
 | K09 | **Zurückhaltende, nicht zu bunte natürliche Palette** wie die Nutzer-Primärreferenz: gemäßigte Grünflächen, tiefes Blau und helleres Flachwasser sowie helle graubeige Felsgebirge. Die Primärreferenz bestimmt Palette, Materialwirkung und Detaildichte; sie begründet weder ein Polygonbudget noch eine Leistungszusage. |
 | K10 | Wälder erscheinen im Nahzoom als **einzelne stilisierte Bäume** in derselben vereinfachten Formensprache. |
 | K11 | **Natürliche Landschaftsfarben in der einzigen aktuellen Ansicht**, keine politischen Grenzen, Gebietsfarben oder Themenlayer. |
-| K12 | **Sommer** als fester Darstellungszustand und **festes warmes Tageslicht**. Jahreszeitenwechsel und Tag/Nacht kommen später. |
+| K12 | **Sommer** bleibt fester Darstellungszustand (keine Jahreszeiten). **Wetter** nach Nutzerentscheidung 26.10.2026: Standard "Schönwetter, wechselnd" mit gelegentlichen Regenfronten und Gewittern; Tageslicht standardmäßig warmer Mittag, Morgen/Abend als wählbare Varianten; Nacht und Jahreszeitenwechsel kommen später. |
 | K13 | Keine modernen Städte, Straßen oder sonstigen modernen Bauwerke aus den Daten darstellen. Städte, Gebäude und Menschen kommen später; auch keine antiken Stadtmodelle in Kit 1. |
 | K14 | **Historischer Gesprächsstand:** zunächst auf dem Mac erproben; als damalige Leistungsrichtung wurde ein flüssiger Mittelklasse-PC genannt, ohne Hardware/FPS/Auflösung. **Zwischenstand 25.10.2026:** Mac-only möglich, iPad optional; finale Plattform offen. **Neuere Nutzerentscheidung:** Windows- und Linux-Versionen sind gewünschte spätere Produktziele; Umsetzung deutlich später, nicht Teil des aktuellen Kit-1-Auftrags. Der historische PC-Leistungssatz bleibt davon getrennt und begründet keine Leistungszusage. Rust-Kern, Hostadapter und Renderer sollen portabel getrennt werden; Metal bleibt optionaler Apple-Pfad und Plattform-/GPU-Fähigkeiten sind zur Laufzeit zu prüfen. Godot ist die vom Nutzer genannte App-Engine; konkrete Integration und Runtime-Version sind offen, ein Godot-Projekt/Runtime liegt hier nicht vor. Referenzhardware, Engine und konkrete Plattformunterstützung bleiben offen. |
 | K15 | **Gesamter Grafikauftrag in einem Durchlauf** als Ziel des Kits. Rom/Ostia/Tibur sind ein mögliches Prüfbeispiel, keine regionale Beschränkung des Ergebnisses. |
 | K16 | Aktueller Auftrag ist **vollständige Kit-Anpassung einschließlich operativer Hilfsmittel, keine Spielimplementierung**. Bereits geklärte Fragen nicht erneut stellen. Technische Vorschläge aus Vorgaben ableiten, nicht alltägliche Details als neue Grundsatzfragen zurückgeben. |
 | K17 | Für moderne Gebiets-Auswahlanker dient geoBoundaries **gbOpen ADM2 bevorzugt als Orientierung**. ADM2-Level und Features sind länderweise verschieden; sie behaupten keine antiken Grenzen, keine Simulationsregionen und schreiben keine politische Grenzvisualisierung oder harte finale Cutline vor. Exakte Features und Datensatzrevision bleiben offen, bis die konkrete Datenauswahl erfolgt. |
+| K21 | **A07-Hausgröße:** Ein späteres Haus soll in der Breite etwa einer einzelnen Baumkrone entsprechen; die Darstellung soll kompakter sein. Dies ist eine relative Größenorientierung, keine Meterangabe und bezieht sich ausdrücklich auf eine einzelne Krone, nicht auf einen Waldcluster. Quelle: direkte Nutzerantwort in diesem Chat am 26.10.2026. Externe Quellen-/Breitenschemaorientierung hat einen engen unabhängigen Teilreview bestanden; Produkt-Screen-Bounds und Kameraausschnitt bleiben offen. Gebäude bleiben in Kit 1 ausgeschlossen; Kronenfamilie und Produktgrößen werden hierdurch nicht umgestellt. |
 
 ## Maßstabswerte: Orientierung, keine starren Vorgaben
 
@@ -208,3 +209,30 @@ K01/K15 beziehen sich jetzt auf die vollständige gebundene Projektregion.
 Nur der geografische Umfang wird geändert. Die zuletzt durchgerechneten Skalen,
 Tilegrößen, Stadtbudgets und 100×100-Beispiele sind keine neuen Kitvorgaben.
 Die übrigen Vorgaben und der Abschnitt für spätere Kits bleiben unverändert.
+
+## Spiel-Tile-Größe, adaptiv (26.10.2026)
+
+Nutzerentscheidung vom 26.10.2026. Betrifft nur die logischen Spiel-Tiles (K17),
+nicht die Grafik-Streamingkacheln. Die IDs K25–K28 hießen auf den
+Look-Branches zuerst K21–K24; umnummeriert, weil K21 bereits die A07-Hausgröße ist.
+
+| ID | Entscheidung |
+|---|---|
+| K25 | Basis-Spiel-Tile **25 km × 25 km**, ausgerichtet am bestehenden 1-km-Raster `eqc41-km-v1` (25 × 25 Zellen). |
+| K26 | **Adaptiver Quadtree:** Wo die Nutzung gleichartig ist, werden je 4 gleichartige Tiles zu einem größeren zusammengefasst. Tiles bleiben quadratisch und rasterbündig. |
+| K27 | Stufen nach Klasse: **Land 25 km**; **Küstenmeer** (bis ca. 50 km vor der Küste) **50 km**; **offenes Meer 100–200 km**; **Sahara/Wüste und Hochgebirge 50 km**. Seen und Flüsse gehören zu den Land-Tiles. |
+| K28 | **Stabile IDs:** Ein zusammengefasstes Tile ist der Elternknoten seiner 4 Kinder. Feineres Aufteilen später (z. B. Hafenbucht) ändert keine bestehenden IDs. |
+
+Grobe Schätzung bei rund 4800 × 4100 km Projektregion: etwa 10.000–11.000 Tiles statt
+etwa 31.000 bei einheitlich 25 km. Genaue Klassengrenzen (Küstenabstand, Wüsten-/
+Hochgebirgsmaske) werden aus den vorhandenen Land-/Wasser-, Landcover- und
+Höhendaten abgeleitet und beim Bau gemessen; die Zahlen hier sind Schätzungen.
+
+### Ergänzung 26.10.2026 (Nutzerentscheidungen im Tile-Thread)
+
+| ID | Entscheidung |
+|---|---|
+| K29 | **Verfeinerung nach Epochen-Maximum:** dichte Regionen 12,5 km, ~35 Großstädte 6,25 km, Wichtigkeit relativ zur Epoche über die Stichjahre 117–2020, Maximum zählt; Budget **14.000** Tiles. Alle Regeln gelten **überall gleich**, im Reich und außerhalb. Zum Erreichen des Budgets wächst reine Wüste bis 200 km (K26 „gleichartig“), und Land ohne Ort in irgendeiner Epoche wird 50 km. Das Raster ist der Startzustand; Teilen/Zusammenlegen zur Laufzeit gehört zu Kit 2. |
+
+Gemessen (gametiles-v1): 13.999 Tiles, vor der Stadtverfeinerung 11.631; strikt nach K27 wären es ~22.500, weil die
+Region zu 78 % Land ist. Regeln, Quellen und Prüfungen: [GAMETILES.md](GAMETILES.md).

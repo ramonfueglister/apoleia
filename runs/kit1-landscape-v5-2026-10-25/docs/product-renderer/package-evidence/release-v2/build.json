@@ -1,0 +1,8 @@
+{
+  "schema_version": "local-macos-bundle-v1",
+  "dataset_revision": "landscape-v3",
+  "dataset_manifest_sha256": "edf5f18e00376c4b5545e27ec5ec8b4ecf8eb1e0ede53d938d77f50d695c562a",
+  "engine_binary_sha256": "3827d91682a801158cea9afd23007164c52af3c0738d85f85c85c90b21001802",
+  "packaging": "local project bundle with existing Godot binary; unsigned, not notarized, no release published",
+  "platform_tested": "Mac only, actual GPU evidence separate"
+}

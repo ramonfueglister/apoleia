@@ -1,0 +1,17 @@
+{
+  "schema_version": "data-errata-structure-verification-v1",
+  "checked_utc": "2026-10-25T16:59:11.644148+00:00",
+  "kit_reference": "kit1-landscape-v5 / kit1-ops-v5",
+  "coverage_schema_issues": [],
+  "derivation_schema_issues": [],
+  "applicable_metric_count": 14,
+  "explicit_NA_count": 4,
+  "source_and_policy_unchanged": true,
+  "independent_acceptance": false,
+  "view_hashes": {
+    "coverage-view.json": "5866fa55e82a4cc41bf5cf1dc45e3905a2ecf51790046bcff975d2fc9fc91939",
+    "derivation-view.json": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88",
+    "runtime-evidence-summary.json": "a6a955b694270277c510f664ea6a13d48d255e0de65f5905758b9a72f073f55f",
+    "errata-binding.json": "ce3e2e85171271d25c77d77b2d1438ea0b3545bed06f1cb53e96b469994f6935"
+  }
+}

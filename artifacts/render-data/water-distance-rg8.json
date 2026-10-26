@@ -1,0 +1,49 @@
+{
+  "schema_version": "renderer-water-distance-v1",
+  "revision": "vector-water-distance-rg8-v2",
+  "identity": {
+    "policy_sha256": "d19dde843c7161da718a716e29058f141311e2a41ff6ba56699c1c1bd48a813a",
+    "source_sha256": {
+      "data/derived/land.geojson": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c",
+      "data/derived/lakes.geojson": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2",
+      "data/derived/water-detail.u8": "518da101076ac063589db93b17cc679a7054926db59b4d29cd6a6a193c98084e"
+    },
+    "width": 8192,
+    "height": 6144,
+    "bounds": {
+      "west": -11,
+      "east": 46,
+      "south": 21,
+      "north": 58
+    }
+  },
+  "payload_sha256": "ee41a6bd76f835106a64383b577edee142a27b54cdbb90ebf629c61200699e67",
+  "bytes": 100663296,
+  "segments_measured": 46985,
+  "artificial_region_clip_segments_excluded": 30,
+  "sx_projected_m": 583.9159622284624,
+  "sy_projected_m": 669.6318308334502,
+  "quantization_max_projected_m": 0.0625,
+  "elapsed_seconds": 0.966266417002771,
+  "zero_isoline_source_accuracy": "not inferred from quantization; independent data-owner probe required",
+  "policy": {
+    "revision": "vector-water-distance-rg8-v2",
+    "source_geometry": "unmodified data/derived/land.geojson and lakes.geojson, exact straight source boundary segments",
+    "source_sign": "unmodified water-detail.u8 nearest pixel-centre class0 land, class1 ocean, class2 inland",
+    "projection": "mapping-v1, projected metres, source radius6371008.8m, standard parallel41deg",
+    "grid": [
+      8192,
+      6144
+    ],
+    "exclude": "artificial clipping segments lying exactly on the region rectangle boundary",
+    "distance": "Euclidean nearest source boundary segment in projected metres at canonical pixel centres, computed in float64 within3000m narrow band; outside band distance capped",
+    "encoding": "Two UInt8 channels: code=R*256+G; projected_distance_m=code*0.125-4096; positive water, negative land; narrow band capped at3000m",
+    "quantization_budget_projected_m": 0.0625,
+    "distance_computation_budget_projected_m": 0.01,
+    "zero_isoline_source_offset_budget_geodesic_m": 6000.0,
+    "screen_error_budget_px": 2.0,
+    "transition_residual_budget_px": 1.0,
+    "filter": "decode four nearest RG8 texels before scalar bilinear interpolation; zero-isoline derivative antialiasing; semantic water kind unchanged",
+    "limitations": "distance quantization bound is not a coastline position bound; zero-isoline offsets and protected small features require independent measured source-space review; no historical accuracy claim"
+  }
+}

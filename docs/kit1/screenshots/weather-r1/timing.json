@@ -1,0 +1,54 @@
+{
+ "method": "own perf lock; snapshot hold 240 frames after readiness, --disable-vsync, 1774x600, Forward+, M3 Pro; wall frame intervals, not GPU timestamps; --weather=off vs fair/storm",
+ "camera": {
+  "fern": [
+   15.0,
+   42.5,
+   0.2
+  ],
+  "mittel": [
+   12.45,
+   42.0,
+   0.72
+  ],
+  "nah": [
+   12.25,
+   41.75,
+   1.0
+  ]
+ },
+ "results": {
+  "fern-fair": {
+   "median_ms": 11.14,
+   "p95_ms": 12.69
+  },
+  "fern-off": {
+   "median_ms": 9.74,
+   "p95_ms": 13.89
+  },
+  "mittel-fair": {
+   "median_ms": 11.23,
+   "p95_ms": 12.27
+  },
+  "mittel-off": {
+   "median_ms": 11.07,
+   "p95_ms": 12.13
+  },
+  "mittel-storm": {
+   "median_ms": 8.31,
+   "p95_ms": 8.76
+  },
+  "nah-fair": {
+   "median_ms": 8.36,
+   "p95_ms": 8.65
+  },
+  "nah-off": {
+   "median_ms": 8.32,
+   "p95_ms": 8.54
+  },
+  "nah-storm": {
+   "median_ms": 8.27,
+   "p95_ms": 9.35
+  }
+ }
+}
