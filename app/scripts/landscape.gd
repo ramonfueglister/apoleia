@@ -470,7 +470,7 @@ func _tour_start_ready() -> bool:
 func _cache_request_evidence_enabled() -> bool:
     return tour or snapshot or telemetry_dir!="" or capture_dir!=""
 
-# Every artifacts/... or data/... path the product binding names, if absent under source_root.
+# Every artifacts/... or data/... path in value (binding entries), if absent under source_root.
 func _missing_bound_paths(value:Variant)->Array:
     var result=[]
     if value is Dictionary:
@@ -485,7 +485,14 @@ func _load_dataset() -> bool:
     if not binding is Dictionary or binding.get("schema","")!="landscape-product-binding-v1":
         push_error("Missing or invalid product renderer binding");return false
     product_binding=binding
-    var absent=_missing_bound_paths(product_binding)
+    # Only entries this renderer reads; bundles leave out the legacy forest cache/layout.
+    var required={}
+    for key in ["source","atlas","upload","coast","terrain_streaming"]:required[key]=product_binding.get(key,{})
+    if bool(product_binding.get("clipmap",{}).get("enabled",false)):required["clipmap"]=product_binding.clipmap
+    if product_binding.has("terrain_streaming"):required["streaming_layout"]=product_binding.get("forest_rendering",{}).get("streaming_layout",{})
+    else:
+        required["forest_cache"]=product_binding.get("forest_cache",{});required["forest_rendering"]=product_binding.get("forest_rendering",{})
+    var absent=_missing_bound_paths(required)
     if dataset_path=="" and not absent.is_empty():
         push_error("Bound render data missing under "+source_root+": "+", ".join(absent)+". Large payloads are not in Git; run scripts/link-render-data <checkout-with-data> or pass --source-root <checkout-with-data>.");return false
     _configure_cloud_default()
