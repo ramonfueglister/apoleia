@@ -34,8 +34,8 @@ const TIMES: Array[String] = ["morning", "noon", "evening"]
 # Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
 const TIME_LOOK := {
 	# Warm low sun against a cooler blue ambient; terrain colours are kept.
-	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.84, 0.66), 1.35, Color(0.82, 0.90, 1.08), 1.4, Color(1.0, 0.94, 0.90)],
-	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.76, 0.54), 1.35, Color(0.80, 0.88, 1.08), 1.35, Color(1.03, 0.90, 0.82)],
+	"morning": [Vector3(-16.0, 72.0, 0.0), Color(1.0, 0.80, 0.70), 1.3, Color(0.80, 0.88, 1.10), 1.2, Color(1.0, 0.90, 0.90)],
+	"evening": [Vector3(-14.0, -100.0, 0.0), Color(1.0, 0.66, 0.40), 1.35, Color(0.76, 0.84, 1.10), 1.15, Color(1.05, 0.86, 0.74)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -303,7 +303,7 @@ func sample_field(p: Vector2) -> Vector3:
 		var axis: Vector2 = cell.axis
 		var d := Vector2(local.dot(axis) / cell.ra, local.dot(Vector2(-axis.y, axis.x)) / cell.rc).length()
 		var b: float = _cell_strength(cell) * (1.0 - smoothstep(0.35, 1.0, d)) * (0.55 + 0.9 * n) * cell_climate
-		cover += b * (0.6 if cell.kind == 0 else 1.0)
+		cover += b * (0.6 if cell.kind == 0 else (1.6 if cell.kind == 2 else 1.0))
 		if cell.kind >= 1: rain += b * 0.9 * smoothstep(0.2, 0.6, b)
 		if cell.kind == 2: storm += b * smoothstep(0.3, 0.8, b)
 	return Vector3(clampf(cover, 0.0, 1.0), clampf(rain, 0.0, 1.0), clampf(storm, 0.0, 1.0))
@@ -577,7 +577,7 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * (0.55 if _ground_width < 400.0 else 0.22))
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("proxy_shift", proxy_shift)
 		material.set_shader_parameter("mask_shift", mask_shift)

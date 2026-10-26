@@ -31,7 +31,7 @@ vec3 weather_field(vec2 p) {
 		float b = cell_param[i].z * (1.0 - smoothstep(0.35, 1.0, length(vec2(along, across))));
 		b *= (0.55 + 0.9 * n) * cell_climate;
 		float kind = cell_param[i].w;
-		cover += b * (kind < 0.5 ? 0.6 : 1.0);
+		cover += b * (kind < 0.5 ? 0.6 : (kind > 1.5 ? 1.6 : 1.0));
 		if (kind > 0.5) { rain += b * 0.9 * smoothstep(0.2, 0.6, b); }
 		if (kind > 1.5) { storm += b * smoothstep(0.3, 0.8, b); }
 	}

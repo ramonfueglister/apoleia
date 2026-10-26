@@ -2,16 +2,17 @@ shader_type spatial;
 // Faceted low-poly cumulus clusters (flattened ellipsoids). Instances sit on a
 // fixed air-space grid; the weather field decides whether and how large each
 // cluster is. Own soft lighting: white tops, light blue-grey shade, facets only
-// as gentle brightness steps; translucent rims. Shadows come from
+// as gentle brightness steps. Opaque (no inner faces show through); only the
+// silhouette is softened by an ordered dither. Shadows come from
 // weather_proxy.gdshader, so this transparent material never casts.
-render_mode unshaded, world_vertex_coords, blend_mix, depth_draw_always, cull_back, fog_disabled;
+render_mode unshaded, world_vertex_coords, cull_disabled, fog_disabled;
 #include "res://shaders/weather_placement.gdshaderinc"
 
 uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
 uniform vec3 sun_color : source_color = vec3(1.0, 0.97, 0.92);
 uniform vec3 shade_color : source_color = vec3(0.76, 0.82, 0.90);
 // Linear targets, calibrated against the ACES look (0.5 linear already reads near white).
-uniform vec3 storm_color : source_color = vec3(0.30, 0.31, 0.37);
+uniform vec3 storm_color : source_color = vec3(0.27, 0.30, 0.345);
 uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
@@ -45,8 +46,11 @@ float bayer4(vec2 p) {
 }
 
 void fragment() {
+	float dither = bayer4(FRAGCOORD.xy);
+	// Close to the camera fair clouds dissolve (their shadows stay); storm fronts stay.
 	float near_fade = smoothstep(near_fade_distance * 0.6, near_fade_distance, distance(world_pos, CAMERA_POSITION_WORLD));
-	if (fade * near_fade < 0.999 && fade * near_fade < bayer4(FRAGCOORD.xy)) { discard; }
+	near_fade = mix(near_fade, 1.0, smoothstep(0.05, 0.3, storm));
+	if (fade * near_fade < dither) { discard; }
 	vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	if (dot(flat_n, to_camera) < 0.0) { flat_n = -flat_n; }
@@ -62,14 +66,15 @@ void fragment() {
 	float back = clamp(-dot(to_camera, l) * 0.5 + 0.5, 0.0, 1.0);
 	colour += pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.9, 0.75) * (0.12 + 0.3 * back);
 	// Rain: light grey tops, dark blue-grey bellies.
-	vec3 rain_grey = vec3(0.30, 0.32, 0.35) * mix(0.55, 1.0, smoothstep(0.0, 0.6, height01)) * (0.75 + 0.5 * wrap);
+	vec3 rain_grey = vec3(0.24, 0.255, 0.28) * mix(0.5, 1.0, smoothstep(0.0, 0.6, height01)) * (0.75 + 0.5 * wrap);
 	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
-	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.32 * wrap * smoothstep(0.35, 0.95, height01);
+	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.24 * smoothstep(0.5, 1.0, wrap) * smoothstep(0.45, 0.95, height01) + pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.6, 0.4) * 0.18 * wrap;
 	colour = mix(colour, slate, storm_amount);
 	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
 	colour += near_flash * vec3(1.4, 1.45, 1.8) * (0.6 + storm);
 	ALBEDO = colour * brightness;
-	// Translucent rims; grey rain banks are thinner, storm fronts dense.
-	ALPHA = mix(0.7, 1.0, smoothstep(0.08, 0.5, facing)) * mix(mix(1.0, 0.82, grey), 1.0, storm_amount) * fade;
+	// Soft silhouette: dither away part of the grazing rim; storm fronts stay solid.
+	float rim_keep = mix(smoothstep(0.02, 0.35, facing), 1.0, storm_amount);
+	if (rim_keep < dither * 0.7) { discard; }
 }
