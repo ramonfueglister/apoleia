@@ -78,7 +78,7 @@ static func terrain_parameters() -> Dictionary:
         "rock_shadow_color": Color("6f6555"),
         "snow_color": Color("f1efe8"),
         "shore_color": Color("e6d6a2"),
-        "shore_display_span_world": 2.8,
+        "shore_display_span_world": 4.5,
         "look_olive_color": Color("7c7a35"),
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
@@ -114,7 +114,7 @@ static func water_look_parameters() -> Dictionary:
     return {
         "water_deep_tint": Color("1a4a7c"),
         "water_open_tint": Color("1f5288"),
-        "water_shallow_tint": Color("3f8f9a"),
+        "water_shallow_tint": Color("4fa3a8"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),
         "water_sky_zenith": Color("3f6690"),

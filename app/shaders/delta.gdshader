@@ -28,52 +28,74 @@ void vertex() {
     world_position=VERTEX;
     vertex_shore=UV.x;
 }
+float seg_dist(vec2 p,vec2 a,vec2 b){vec2 ab=b-a;float t=clamp(dot(p-a,ab)/dot(ab,ab),0.0,1.0);return length(p-a-ab*t);}
+float h1(float x){return fract(sin(x*127.1+delta_seed*3.7)*43758.5453);}
+
 void fragment() {
     vec2 p=world_position.xz;
-    float shore=vertex_shore;
-    if(shore>0.0) discard; // the sea itself belongs to water.gdshader
+    float shore=vertex_shore;          // m, >0 sea (rendered coast)
+    if(shore>0.0) discard;             // the sea belongs to water.gdshader
     float land_m=-shore;
     vec2 tangent=vec2(-delta_sea.y,delta_sea.x);
     vec2 q=p-delta_center;
+    // u along the coast, v inland; the coast lies near v=-0.55.
     vec2 local=vec2(dot(q,tangent)/delta_radii.x,dot(q,-delta_sea)/delta_radii.y);
     float footprint=max(length(dFdx(p)),length(dFdy(p)));
-    vec2 np=p*0.55+vec2(delta_seed);
-    // Lagoon body: a noisy ellipse behind the coast.
-    float body=1.0-length(local*vec2(1.0,1.0+0.35*sin(local.x*2.3+delta_seed)))-(d_fbm(np*0.45)-0.5)*0.9-(d_fbm(np*1.4)-0.5)*0.25;
-    // Islands: organic blobs inside the lagoon, more towards its inner side.
-    // More, smaller islands: the lagoon reads as a braided channel net.
-    float island=smoothstep(0.44,0.54,d_fbm(np*2.1+vec2(11.0)))*smoothstep(-0.3,0.4,local.y+0.2);
-    float field=body-island*0.9;
-    // Beach arc: a band of sand along the open coast, broken at the inlets.
     float px_m=max(footprint*1000.0,1.0);
-    float barrier_m=max(px_m*4.0,650.0);
+    // Lagoon body: smooth ellipse with a very low-frequency wobble.
+    float wobble=(wl_noise(p*0.25+vec2(delta_seed))-0.5)*0.45+(wl_noise(p*0.7+vec2(3.0))-0.5)*0.12;
+    float body=1.0-length(local*vec2(1.0,1.15))+wobble;
+    // 3-6 large smooth islands as metaballs inside the lagoon.
+    float meta=0.0;
+    for(int i=0;i<6;i++){
+        float fi=float(i);
+        vec2 c=vec2(mix(-0.65,0.65,h1(fi+1.0)),mix(-0.25,0.55,h1(fi+7.0)));
+        float r=mix(0.13,0.24,h1(fi+13.0));
+        vec2 d=(local-c)/r;
+        meta+=1.0/(1.0+dot(d,d)*dot(d,d));
+    }
+    float island=smoothstep(0.42,0.52,meta+(wl_noise(p*0.6)-0.5)*0.08);
+    // 3 channels from the river end (inland apex) to the coast inlets.
+    vec2 apex=vec2(0.0,0.95);
+    float ch=1e9;
+    for(int i=0;i<3;i++){
+        float fi=float(i);
+        vec2 end=vec2(mix(-0.7,0.7,fi*0.5)+(h1(fi+21.0)-0.5)*0.15,-0.6);
+        vec2 mid=mix(apex,end,0.5)+vec2((h1(fi+31.0)-0.5)*0.35,0.0);
+        ch=min(ch,min(seg_dist(local,apex,mid),seg_dist(local,mid,end)));
+    }
+    float channel=1.0-smoothstep(0.035,0.055,ch);
+    float in_lagoon=smoothstep(-0.02,0.02,body);
+    // Barrier spit: continuous sand arc along the rendered coast, open only
+    // where the two outer channels reach the sea.
+    float barrier_m=max(px_m*3.0,900.0);
+    float barrier=(1.0-smoothstep(barrier_m*0.75,barrier_m,land_m))*smoothstep(-0.15,0.1,1.0-abs(local.x)*0.95);
     float inlet=min(length(p-delta_inlet_a),length(p-delta_inlet_b));
-    float inlet_open=1.0-smoothstep(0.35,0.75,inlet);
-    float barrier=(1.0-smoothstep(barrier_m*0.7,barrier_m,land_m))*(1.0-inlet_open);
-    float in_region=smoothstep(-0.25,0.05,1.0-length(local*vec2(0.85,0.9)));
-    float water=step(0.0,field)*(1.0-barrier)*in_region;
-    water=max(water,inlet_open*step(-0.15,field));
-    float rim=max(smoothstep(-0.16,0.0,field)*(1.0-water),barrier*in_region);
-    float island_land=(1.0-water)*step(0.0,body)*in_region*(1.0-rim);
-    if(water<0.5 && rim<0.05 && island_land<0.5) discard;
+    barrier*=smoothstep(0.5,0.9,inlet);
+    float water=in_lagoon*(1.0-island)*(1.0-barrier);
+    water=max(water,channel*smoothstep(-0.25,0.0,body)*(1.0-barrier*0.0));
+    // Sand rim around islands and the lagoon shore.
+    float rim_island=smoothstep(0.36,0.42,meta)*(1.0-island)*in_lagoon;
+    float rim_body=smoothstep(-0.06,0.0,body)*(1.0-in_lagoon);
+    float sand=max(max(barrier,rim_island*(1.0-channel)),rim_body);
+    float green=island*in_lagoon*(1.0-channel);
+    if(water<0.5 && sand<0.5 && green<0.5) discard;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);
-    vec3 sand=vec3(0.70,0.58,0.34)*(0.92+0.12*wl_noise(np*3.0));
-    vec3 grass=vec3(0.20,0.30,0.06)*(0.85+0.3*d_fbm(np*2.5));
-    if(water>0.5) {
-        float edge_m=max(field,0.0)*delta_radii.y*1000.0;
-        WaterSample w=water_shade(p,edge_m+400.0,6.0+field*20.0,footprint,calm,view_world,vec2(0.0),px_m,0.6,0.0);
-        // Lagoon blue between the river band and the sea's shallow tint.
-        ALBEDO=mix(w.albedo,vec3(0.03,0.15,0.26),0.6);
+    vec2 np=p*0.55+vec2(delta_seed);
+    vec3 sand_c=vec3(0.72,0.60,0.36)*(0.94+0.08*wl_noise(np*1.5));
+    vec3 grass=vec3(0.13,0.21,0.04)*(0.9+0.2*wl_noise(np*0.8));
+    vec3 up=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
+    if(water>=0.5) {
+        WaterSample w=water_shade(p,400.0+max(body,0.0)*2000.0,8.0+max(body,0.0)*20.0,footprint,calm,view_world,vec2(0.0),px_m,0.6,0.0);
+        ALBEDO=mix(w.albedo,vec3(0.025,0.12,0.22),0.6);
         EMISSION=w.emission*0.5;
         ROUGHNESS=w.roughness;
         NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
-    } else if(rim>=0.05) {
-        ALBEDO=sand;ROUGHNESS=0.9;
-        NORMAL=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
+    } else if(sand>=0.5) {
+        ALBEDO=sand_c;ROUGHNESS=0.9;NORMAL=up;
     } else {
-        ALBEDO=grass;ROUGHNESS=0.92;
-        NORMAL=normalize((VIEW_MATRIX*vec4(0.0,1.0,0.0,0.0)).xyz);
+        ALBEDO=grass;ROUGHNESS=0.92;NORMAL=up;
     }
     SPECULAR=0.04;
 }
