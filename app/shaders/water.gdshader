@@ -57,7 +57,8 @@ void fragment() {
         if(i>=river_mouth_count) break;
         float d=length(p-river_mouths[i].xy);
         mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,d));
-        if(river_mouths[i].w>0.5) {delta_region=max(delta_region,1.0-smoothstep(8.0,16.0,d));gap=min(gap,d);}
+        if(river_mouths[i].w>0.5) delta_region=max(delta_region,1.0-smoothstep(10.0,20.0,d));
+        if(river_mouths[i].w>1.5) gap=min(gap,d);
     }
     WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
@@ -65,7 +66,8 @@ void fragment() {
     ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-calm)*0.6);
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
     float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
-    float spit=(1.0-smoothstep(spit_w*0.5,spit_w,abs(coast_m-spit_c)))*delta_region*smoothstep(0.9,1.6,gap);
+    // One continuous arc; only open mouths break it.
+    float spit=(1.0-smoothstep(spit_w*0.5,spit_w,abs(coast_m-spit_c)))*delta_region*smoothstep(0.8,1.4,gap);
     spit*=0.75+0.25*wl_fnoise(p*1.3,footprint*1.3);
     ALBEDO=mix(ALBEDO,vec3(0.70,0.58,0.30),spit);
     EMISSION=w.emission;

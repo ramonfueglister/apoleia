@@ -174,6 +174,7 @@ var river_sources_sha256=""
 # Display-only estuaries: detected mouths (pos, inland dir, width) and
 # curated delta branches appended as extra river sources.
 var river_mouths:Array=[]
+var delta_apexes:Array=[]
 const RIVER_SET_CACHE_LIMIT=8
 const RIVER_SET_CACHE_BYTES=67108864
 var river_cache_stats={"hits":0,"misses":0,"completed":0,"evictions":0,"resident_bytes":0,"resident_sets":0}
@@ -2314,10 +2315,10 @@ func _setup_rivers() -> void:
 # apex upstream of the detected main mouth to mouths spread along the coast.
 # Nile: the source course ends far inland, so apex/main mouth are given.
 const RIVER_DELTAS=[
-    {"name":"Tevere","arms":4,"levels":3,"length":38.0,"width":.034},
-    {"name":"Po","arms":5,"levels":3,"length":40.0,"width":.040},
-    {"name":"Rhône","arms":3,"levels":2,"length":36.0,"width":.040},
-    {"name":"Ebro","arms":3,"levels":2,"length":24.0,"width":.034},
+    {"name":"Tevere","arms":4,"levels":3,"length":38.0,"width":.05},
+    {"name":"Po","arms":5,"levels":3,"length":40.0,"width":.055},
+    {"name":"Rhône","arms":3,"levels":2,"length":36.0,"width":.055},
+    {"name":"Ebro","arms":3,"levels":2,"length":24.0,"width":.048},
     {"name":"Nile","arms":2,"levels":1,"length":150.0,"width":.050,"apex":[31.25,30.10],"mouth":[31.05,31.50]}]
 
 # Branch points sit on the actual source course of the main river.
@@ -2385,6 +2386,8 @@ func _setup_river_deltas() -> void:
                 for q in [Vector2(segment[0]),Vector2(segment[1])]:
                     if q.distance_to(mouth)<root_distance:root_distance=q.distance_to(mouth);apex=q
         var stack=[[apex,sea_direction,float(delta.width),0]]
+        var arm_ends:Array=[]
+        delta_apexes.append(apex)
         var branches=0
         while not stack.is_empty() and branches<int(delta.arms)*4:
             var item=stack.pop_back()
@@ -2418,13 +2421,17 @@ func _setup_river_deltas() -> void:
             for i in range(points.size()-1):
                 var along=float(i)/float(points.size()-1)
                 var w=width*(0.85+0.3*sin(along*9.0+phase)*sin(along*9.0+phase))
-                if reached:w*=1.0+0.35*smoothstep(0.8,1.0,along)
+                # Lagoon widening over the last part before the coast.
+                if reached:w*=1.0+1.6*smoothstep(0.72,0.95,along)
                 segments.append([points[i],points[i+1],w])
                 minimum=minimum.min(points[i]).min(points[i+1]);maximum=maximum.max(points[i]).max(points[i+1])
             river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(delta.name)+" delta arm","synthetic_delta":true})
             branches+=1
             if reached:
-                river_mouths.append({"position":points[-1],"inland":-heading,"width":width,"name":str(delta.name)+" delta arm","delta":true})
+                # Only some arms break through the barrier spit (w=2 opens it).
+                var open_mouth=rng.randf()<0.4 or branches==1
+                river_mouths.append({"position":points[-1],"inland":-heading,"width":width,"name":str(delta.name)+" delta arm","delta":true,"open":open_mouth})
+                arm_ends.append(points.slice(int(points.size()*0.55)))
                 continue
             # Y-fork: two children, angles relative to the sea direction.
             var fork=points[-1]
@@ -2433,7 +2440,23 @@ func _setup_river_deltas() -> void:
                 var child=heading.rotated(spread)
                 var angle=sea_direction.angle_to(child)
                 child=sea_direction.rotated(clampf(angle,deg_to_rad(-50.0),deg_to_rad(50.0)))
-                stack.append([fork,child,width*0.72,level+1])
+                stack.append([fork,child,width*0.85,level+1])
+        # Reconnecting side channels between neighbouring arms near the coast.
+        for k in range(arm_ends.size()-1):
+            var a_points:Array=arm_ends[k];var b_points:Array=arm_ends[k+1]
+            if a_points.is_empty() or b_points.is_empty():continue
+            var a_point:Vector2=a_points[a_points.size()/2];var best_point:Vector2=b_points[0]
+            for q in b_points:
+                if Vector2(q).distance_to(a_point)<best_point.distance_to(a_point):best_point=q
+            if a_point.distance_to(best_point)>float(delta.length)*0.35:continue
+            var link=[]
+            var count=8
+            var normal=(best_point-a_point).normalized().orthogonal()
+            for i in range(count):
+                var t0=float(i)/count;var t1=float(i+1)/count
+                var bow=normal*a_point.distance_to(best_point)*0.18
+                link.append([a_point.lerp(best_point,t0)+bow*sin(t0*PI),a_point.lerp(best_point,t1)+bow*sin(t1*PI),float(delta.width)*0.6])
+            river_sources.append({"segments":link,"rect":Rect2(a_point.min(best_point),(a_point-best_point).abs()).grow(1.0),"name":str(delta.name)+" delta link","synthetic_delta":true})
 
 # Endpoints within ~2.5 km of the sea are mouths: funnel widening, colour
 # blend and no surf in the mouth radius.
@@ -2442,7 +2465,7 @@ func _bind_visible_river_mouths() -> void:
     var packed=PackedVector4Array()
     for mouth in river_mouths:
         if packed.size()>=32:break
-        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,1.0 if bool(mouth.get("delta",false)) else 0.0))
+        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,(2.0 if bool(mouth.get("open",false)) else 1.0) if bool(mouth.get("delta",false)) else 0.0))
     var count=packed.size()
     while packed.size()<32:packed.append(Vector4.ZERO)
     marine_material.set_shader_parameter("river_mouths",packed)
@@ -2577,6 +2600,8 @@ func _update_river_surface() -> void:
             var half=maxf(float(points[k][1])*.5*LandscapeLook.RIVER_WIDTH_SCALE,floor_px*.5*pixel_world/maxf(projected_side,.001))
             # Estuary funnel: widen over the last ~8 km before a mouth.
             if not bool(source.get("synthetic_delta",false)):
+                # Lower course widens towards a delta apex.
+                for apex_point in delta_apexes:half*=1.0+0.7*(1.0-smoothstep(0.0,25.0,Vector2(points[k][0]).distance_to(apex_point)))
                 var mouth_distance=INF
                 for mouth in river_mouths:
                     if not bool(mouth.get("delta",false)):mouth_distance=minf(mouth_distance,Vector2(points[k][0]).distance_to(mouth.position))
