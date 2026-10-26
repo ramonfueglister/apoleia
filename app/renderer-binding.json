@@ -62,6 +62,6 @@
   },
   "clipmap": {
     "enabled": true,
-    "path": "artifacts/render-data/clipmap-tiles-r4-mountain-r4/manifest.json"
+    "path": "artifacts/render-data/clipmap-tiles-r5-etopo15/manifest.json"
   }
 }

@@ -31,3 +31,28 @@
     `terrain_land_look.gdshaderinc` (loaded by `landscape_look.gd`).
 - Not used yet: a climate layer (Köppen-Geiger) for dry vs. humid; the dry
   channel is currently derived from shrub, cropland and bare land.
+
+## Near clipmap levels with fine real relief (clipmap-tiles-r5-etopo15)
+- Levels 0 and 1 (0.5 / 1 km samples) = display atlas r5 plus the real
+  sub-2 km relief band of ETOPO 2022 v1 15 arc-second (NOAA NCEI, public
+  domain); coarser levels are pure atlas r5. Material and water tiles are
+  copied unchanged from clipmap-tiles-r4-mountain-r4.
+- Format unchanged (RGBA8 PNG, 258², height code*0.25-8192), 4187 tiles,
+  273 MB; manifest sha256 87324484f9319b48b25c90ee7030df86b045e7541843c90ec2f6675b6eb6c705.
+  Tile data is not in Git (`.gitignore`); `scripts/link-render-data` links it
+  from a checkout that holds it (it follows `renderer-binding.json`).
+- Build:
+  ```
+  # 0.5 km ETOPO nodes (eqc of data/projection.json, node-centred, 4x atlas nodes)
+  gdalwarp -t_srs '+proj=eqc +lat_ts=41 +lat_0=41 +lon_0=19 +R=6371008.8 +units=m' \
+    -te <(wx-0.25)*1000> <-(wz+2*(H-1)+0.25)*1000> <(wx+2*(W-1)+0.25)*1000> <-(wz-0.25)*1000> \
+    -ts 4(W-1)+1 4(H-1)+1 -r average -srcnodata -99999 -dstnodata -99999 -ot Float32 \
+    artifacts/render-data/etopo15-node-2km/etopo15.vrt artifacts/render-data/etopo15-node-500m/nodes.tif
+  python3 tools/build_fine_relief_detail.py
+  python3 tools/build_clipmap_tiles.py --output artifacts/render-data/clipmap-tiles-r5-etopo15 \
+    --surface artifacts/render-data/fixed-source-v2-mountain-r5/surface.json \
+    --fine-detail artifacts/render-data/fine-relief-detail-500m \
+    --reuse-from artifacts/render-data/clipmap-tiles-r4-mountain-r4
+  ```
+- The forest layout binds the atlas (r4), not the tiles; crowns read their
+  ground height from the tiles, so they follow the new relief.
