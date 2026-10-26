@@ -52,6 +52,14 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
     var oblique = clampf((50.0 - elevation_degrees) / 14.0, 0.0, 1.0)
     _environment.fog_density = lerpf(0.0, 0.22, oblique)
 
+# Vertical exaggeration: one parameter for the medium/close views (low,
+# gentle hills), easing to the regional/continental value further out.
+const CLOSE_HEIGHT_SCALE = 7.0
+const FAR_HEIGHT_SCALE = 14.0
+
+static func display_height_scale(view_width: float) -> float:
+    return lerpf(CLOSE_HEIGHT_SCALE, FAR_HEIGHT_SCALE, smoothstep(600.0, 4500.0, view_width))
+
 # Display-only river widening; source centrelines stay unchanged.
 const RIVER_WIDTH_SCALE = 1.6
 
@@ -104,13 +112,13 @@ static func water_parameters() -> Dictionary:
 
 static func water_look_parameters() -> Dictionary:
     return {
-        "water_deep_tint": Color("143a6c"),
-        "water_open_tint": Color("1d4f8a"),
-        "water_shallow_tint": Color("3a95a4"),
+        "water_deep_tint": Color("1a4a7c"),
+        "water_open_tint": Color("1f5288"),
+        "water_shallow_tint": Color("3f8f9a"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),
-        "water_sky_zenith": Color("5d8fc4"),
-        "water_sky_horizon": Color("c9dce8"),
+        "water_sky_zenith": Color("3f6690"),
+        "water_sky_horizon": Color("8eaabd"),
         "water_sun_tint": Color("fff0d0"),
         "water_facet_size": 1.4,
         "water_glitter": 0.08,
