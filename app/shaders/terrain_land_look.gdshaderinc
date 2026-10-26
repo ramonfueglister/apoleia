@@ -191,7 +191,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 grass=land_grass_color.rgb;
     grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,meso)*0.7);
     grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6);
-    grass=mix(grass,land_olive_color.rgb,smoothstep(0.58,0.80,1.0-macro)*0.45);
+    grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85);
     if(footprint<1.2) {
         float patch=land_fbm(p/6.0+vec2(5.5,2.4)+(meso-0.5)*1.4,footprint/6.0,2);
         float f=1.0-smoothstep(0.6,1.2,footprint);
@@ -297,15 +297,19 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground=mix(ground,land_forest_floor_color.rgb,far_forest*overview*0.45*(1.0-rock));
         float steep=smoothstep(0.02,0.25,slope);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.4),steep*overview*0.55);
-        float alpine=smoothstep(950.0,1450.0,h);
-        ground=mix(ground,mix(land_rock_light_color.rgb,land_snow_color.rgb,smoothstep(1800.0,2400.0,h)),alpine*overview*0.85);
-        vec3 shade_n=land_display_normal(source_normal,dhs*0.7);
-        float lit=dot(shade_n,normalize(vec3(-0.676,0.643,-0.360)));
-        // Flat ground keeps its tone (lit=0.643 when level).
-        float shade=clamp(1.0+1.4*(lit-0.643),0.5,1.35);
-        ground*=mix(1.0,shade,overview*0.6);
         // Far view tone balance against the reference (measured k-means).
-        ground*=mix(vec3(1.0),vec3(0.620,0.660,0.620),overview);
+        ground*=mix(vec3(1.0),vec3(0.740,0.730,0.740),overview);
+        // Broad, soft hillshade: gentle normal so 2 km steps do not hatch.
+        vec3 shade_n=land_display_normal(source_normal,dhs*0.3);
+        float lit=dot(shade_n,normalize(vec3(-0.676,0.643,-0.360)));
+        float shade=clamp(1.0+1.1*(lit-0.643),0.62,1.25);
+        ground*=mix(1.0,shade,overview*0.6);
+        // Alps and other high ranges: a bright grey-white rock belt, peaks
+        // near white, applied after the balance so it stays bright.
+        float alpine=smoothstep(900.0,1300.0,h);
+        vec3 belt=mix(vec3(0.62,0.60,0.55),vec3(0.86,0.84,0.80),smoothstep(1250.0,1700.0,h));
+        belt*=mix(0.78,1.08,clamp((lit-0.45)*2.5,0.0,1.0));
+        ground=mix(ground,belt,alpine*overview*0.9);
     }
     o.albedo=ground;
 #ifdef LAND_LOOK_DEBUG_FLOOR
