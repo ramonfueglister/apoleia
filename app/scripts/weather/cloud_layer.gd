@@ -1,8 +1,7 @@
 extends Node3D
 ## Own bounded density volume. Fixed world weather and 3D density are shared
 ## across zooms. The top proxy plane covers every viewport aspect ratio.
-const CLOUD_SHADER = preload("res://shaders/cloud_kernel_pass.gdshader")
-const COMPOSITE_SHADER = preload("res://shaders/cloud_composite.gdshader")
+const CLOUD_SHADER = preload("res://shaders/cloud_layer.gdshader")
 const WEATHER_TEXTURE = preload("res://assets/weather/cloud_weather.png")
 const STRUCTURE_TEXTURE = preload("res://assets/weather/cloud_structure.png")
 const NOISE_PATH = "res://assets/weather/cloud_noise_scale192.rgba8"
@@ -20,14 +19,8 @@ const NOISE_PATH = "res://assets/weather/cloud_noise_scale192.rgba8"
 @export var cloud_clearance: float = 1.1
 @export var cloud_volume_height: float = 38.0
 var _volume_bottom: float = 7.2
-var diagnostic_mode := "full"
-var _cloud_viewport: SubViewport
-var _pass_rect: ColorRect
-var _composite_material: ShaderMaterial
 var _noise_texture: ImageTexture3D
 var _moment_textures: Array[ImageTexture3D] = []
-var _kernel_textures: Array[ImageTexture3D] = []
-var _kernel_sun_error := 0.0
 var _height_range_provider: Callable
 var _altitude_floor: float = 7.2
 var _last_height_range: Dictionary = {}
@@ -114,8 +107,7 @@ func _update_drift_uniforms() -> void:
 	for material in _materials:
 		material.set_shader_parameter("cloud_drift", Vector2(1.0, 0.28).normalized() * _elapsed * drift_speed)
 		material.set_shader_parameter("cloud_density_multiplier", opacity)
-		var actual_sun := landscape_sun.global_basis.z.normalized() if landscape_sun != null else _sun_direction.normalized()
-		_kernel_sun_error = rad_to_deg(acos(clampf(actual_sun.dot(Vector3(-0.35458523,0.74314487,0.56745499)), -1.0, 1.0)))
+		material.set_shader_parameter("cloud_sun_direction", landscape_sun.global_basis.z.normalized() if landscape_sun != null else _sun_direction)
 		if landscape_sun != null:
 			var color := landscape_sun.light_color.srgb_to_linear()
 			material.set_shader_parameter("cloud_sun_color", Vector3(color.r, color.g, color.b))
@@ -136,41 +128,24 @@ func _sync_camera_coverage() -> void:
 	# This handles oblique and portrait views without a square-width heuristic.
 	var minimum := Vector2(INF, INF)
 	var maximum := Vector2(-INF, -INF)
-	var entry_points: Array[Vector3] = []
 	for corner in [Vector2.ZERO, Vector2(viewport_size.x, 0.0), viewport_size, Vector2(0.0, viewport_size.y)]:
 		var origin := landscape_camera.project_ray_origin(corner)
 		var direction := landscape_camera.project_ray_normal(corner)
 		if absf(direction.y) < 0.001:
 			return
 		var hit := origin + direction * ((cloud_base_height - origin.y) / direction.y)
-		entry_points.append(hit)
 		minimum = minimum.min(Vector2(hit.x, hit.z))
 		maximum = maximum.max(Vector2(hit.x, hit.z))
 	var span := (maximum - minimum).max(Vector2(0.01, 0.01))
 	_plane_mesh.size = span * (1.0 + 2.0 * cloud_world_margin_fraction)
 	var center := (minimum + maximum) * 0.5
 	_layers[0].position = Vector3(center.x, cloud_base_height, center.y)
-	# A separate transparent RGBA8 2D target stores linear ray data. No scene/UI
-	# is copied into it. Main-world top-plane depth and ordering stay unchanged.
-	# Resolution depends on viewport shape, never camera zoom. This avoids
-	# reallocating the target and changing its sample lattice while zooming.
-	var coarse_weight := smoothstep(2.0, 4.0, viewport_size.x / viewport_size.y)
-	var scale := lerpf(0.5, 1.0 / 3.0, coarse_weight)
-	var pass_size := Vector2i(maxi(2, int(ceil(viewport_size.x * scale))), maxi(2, int(ceil(viewport_size.y * scale))))
-	if _cloud_viewport.size != pass_size:
-		_cloud_viewport.size = pass_size
-		_pass_rect.size = Vector2(pass_size)
-	_materials[0].set_shader_parameter("cloud_entry_origin", entry_points[0])
-	_materials[0].set_shader_parameter("cloud_entry_dx", entry_points[1] - entry_points[0])
-	_materials[0].set_shader_parameter("cloud_entry_dy", entry_points[3] - entry_points[0])
-	_cloud_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if enabled and diagnostic_mode != "frozen" and (_layers[0].visible or diagnostic_mode == "pass_only") else SubViewport.UPDATE_DISABLED
 	# Zoom removes only unresolved fine detail; it never replaces the weather
 	# field, positions, scale or optical-depth law with another cloud layout.
-	var world_per_pixel := landscape_camera.size / float(pass_size.y)
+	var world_per_pixel := landscape_camera.size / viewport_size.y
 	var footprint := world_per_pixel / maxf(absf(forward.y), 0.05) * 1.05
 	_materials[0].set_shader_parameter("cloud_shape_lod", clampf(log(maxf(footprint / 0.5, 1.0)) / log(2.0), 0.0, 3.0))
 	_materials[0].set_shader_parameter("cloud_erosion_lod", clampf(log(maxf(footprint * 1.6 / 0.5, 1.0)) / log(2.0), 0.0, 3.0))
-	_materials[0].set_shader_parameter("cloud_kernel_lod",clampf(log(maxf(world_per_pixel / maxf(absf(forward.y),0.05),1.0))/log(2.0),0.0,3.0))
 
 func _find_camera() -> Camera3D:
 	var ancestor := get_parent()
@@ -191,35 +166,17 @@ func _build_layers() -> void:
 	material.shader = CLOUD_SHADER
 	material.set_shader_parameter("cloud_weather", WEATHER_TEXTURE)
 	material.set_shader_parameter("cloud_structure", STRUCTURE_TEXTURE)
-	if _kernel_textures.is_empty():
-		for level in range(4):
-			_kernel_textures.append(_load_kernel_texture(level))
-	for level in range(4):
-		material.set_shader_parameter("cloud_kernel"+str(level),_kernel_textures[level])
+	material.set_shader_parameter("cloud_noise", _load_noise_texture())
+	if _moment_textures.is_empty():
+		for level in range(1,4):
+			_moment_textures.append(_load_moment_texture(level))
+	for level in range(1,4):
+		material.set_shader_parameter("cloud_moments" + str(level), _moment_textures[level-1])
 	material.set_shader_parameter("cloud_origin", world_bounds.get_center())
 	var layer := MeshInstance3D.new()
 	layer.name = "CloudDensityVolume"
 	layer.mesh = _plane_mesh
-	_cloud_viewport = SubViewport.new()
-	_cloud_viewport.name = "CloudRadiancePass"
-	_cloud_viewport.disable_3d = true
-	_cloud_viewport.transparent_bg = true
-	_cloud_viewport.use_hdr_2d = false
-	_cloud_viewport.gui_disable_input = true
-	_cloud_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	_cloud_viewport.size = Vector2i(2, 2)
-	add_child(_cloud_viewport)
-	_pass_rect = ColorRect.new()
-	_pass_rect.name = "CloudRayIntegration"
-	_pass_rect.position = Vector2.ZERO
-	_pass_rect.size = Vector2(2, 2)
-	_pass_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pass_rect.material = material
-	_cloud_viewport.add_child(_pass_rect)
-	_composite_material = ShaderMaterial.new()
-	_composite_material.shader = COMPOSITE_SHADER
-	_composite_material.set_shader_parameter("cloud_pass", _cloud_viewport.get_texture())
-	layer.material_override = _composite_material
+	layer.material_override = material
 	layer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	layer.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	add_child(layer)
@@ -249,8 +206,6 @@ func _load_noise_texture() -> ImageTexture3D:
 func _apply_enabled() -> void:
 	visible = enabled
 	set_process(enabled and configured)
-	if is_instance_valid(_cloud_viewport):
-		_cloud_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if enabled else SubViewport.UPDATE_DISABLED
 
 func _load_moment_texture(level: int) -> ImageTexture3D:
 	var file := FileAccess.open("res://assets/weather/cloud_moments_lod%d.rgba16f" % level, FileAccess.READ)
@@ -268,25 +223,4 @@ func _load_moment_texture(level: int) -> ImageTexture3D:
 	if texture.create(Image.FORMAT_RGBAH,side,side,side,false,slices) != OK:
 		push_error("Could not upload cloud moment resource")
 		return null
-	return texture
-
-func set_diagnostic_mode(mode: String) -> void:
-	assert(mode in ["full", "frozen", "pass_only"])
-	diagnostic_mode = mode
-	_layers[0].visible = mode != "pass_only"
-	_sync_camera_coverage()
-
-func _load_kernel_texture(level: int) -> ImageTexture3D:
-	var file := FileAccess.open("res://assets/weather/cloud_kernel_lod%d.rg8"%level,FileAccess.READ)
-	assert(file != null)
-	var width := file.get_32()
-	var height := file.get_32()
-	var depth := file.get_32()
-	assert(width == 384 / int(pow(2,level)) and height == 64 / int(pow(2,level)) and depth == width)
-	assert(file.get_length() == 12 + width*height*depth*2)
-	var slices: Array[Image] = []
-	for z in range(depth):
-		slices.append(Image.create_from_data(width,height,false,Image.FORMAT_RG8,file.get_buffer(width*height*2)))
-	var texture := ImageTexture3D.new()
-	assert(texture.create(Image.FORMAT_RG8,width,height,depth,false,slices) == OK)
 	return texture
