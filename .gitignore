@@ -57,3 +57,4 @@ __pycache__/
 # Kit 2 simulation prototype build and run outputs
 /sim/target/
 /sim/out*/
+/app/bin/

@@ -7,6 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub mod ecs;
+pub mod inputs;
 
 pub const MAX_LEVEL: u8 = 7;
 pub const ROOT_SIZE_M: f64 = 200_000.0;

@@ -1,0 +1,13 @@
+[package]
+name = "apoleia-godot"
+version = "0.1.0"
+edition = "2021"
+description = "GDExtension bridge: the Rust game state (S40) read by Godot (S45, S46)"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+apoleia-sim = { path = ".." }
+godot = { version = "0.5.5", features = ["api-4-7"] }

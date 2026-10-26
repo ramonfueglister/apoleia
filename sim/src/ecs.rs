@@ -117,6 +117,10 @@ pub struct TileView {
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
     pub month: u32,
+    /// Changes whenever tiles were split or merged, i.e. whenever `tiles`
+    /// may have a new order; the presentation layer rebuilds its tile-ID
+    /// texture only then.
+    pub structure: u64,
     pub tiles: Vec<TileView>,
 }
 
@@ -484,7 +488,9 @@ impl Sim {
                 Arc::get_mut(&mut next).expect("fresh")
             }
         };
-        buf.month = self.world.resource::<Stats>().month;
+        let st = *self.world.resource::<Stats>();
+        buf.month = st.month;
+        buf.structure = st.splits + st.merges;
         buf.tiles.clear();
         // Storage order, not ID order: a linear pass over the tile table is
         // several times cheaper than walking the index. The order is still

@@ -10,6 +10,9 @@ bevy_ecs = { version = "0.20", features = ["multi_threaded"] }
 bevy_tasks = { version = "0.20", features = ["multi_threaded"] }
 bevy_utils = { version = "0.20", features = ["parallel"] }
 
+[workspace]
+members = [".", "godot"]
+
 [profile.release]
 debug = false
 

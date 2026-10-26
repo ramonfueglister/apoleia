@@ -6,28 +6,13 @@
 //! default; `--reference` runs the plain-struct version it was ported from.
 
 use apoleia_sim::ecs::Sim;
-use apoleia_sim::{Cell, City, Hyde, Key, Params, World};
-use std::collections::HashMap;
+use apoleia_sim::{Params, World};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 const START_YEAR: i32 = 180;
-
-fn read_csv(path: &Path) -> Vec<HashMap<String, String>> {
-    let text = fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let mut lines = text.lines();
-    let header: Vec<String> = lines.next().unwrap_or("").split(',').map(str::to_owned).collect();
-    lines
-        .filter(|l| !l.is_empty())
-        .map(|l| header.iter().cloned().zip(l.split(',').map(str::to_owned)).collect())
-        .collect()
-}
-
-fn num(row: &HashMap<String, String>, key: &str) -> f64 {
-    row.get(key).and_then(|v| v.parse().ok()).unwrap_or(0.0)
-}
 
 fn write_snapshot(w: &World, path: &Path) {
     let mut f = fs::File::create(path).unwrap();
@@ -119,41 +104,8 @@ fn main() {
     };
     fs::create_dir_all(&out).unwrap();
 
-    let start: Vec<Key> = read_csv(&root.join("data/gametiles/tiles.csv"))
-        .iter()
-        .map(|r| Key::parse(&r["id"]).expect("tile id"))
-        .collect();
-    let mut cells: HashMap<(i32, i32), Cell> = read_csv(&root.join("sim/inputs/cells25.csv"))
-        .iter()
-        .map(|r| {
-            let rc = (num(r, "row") as i32, num(r, "col") as i32);
-            let cell = Cell {
-                land_km2: num(r, "land_km2"),
-                frac_bare: num(r, "frac_bare"),
-                frac_snow: num(r, "frac_snow"),
-                frac_above_1500m: num(r, "frac_above_1500m"),
-                hyde: None,
-            };
-            (rc, cell)
-        })
-        .collect();
-    // Real data replaces the estimates when tools/sim_hyde.py has been run.
-    let hyde_path = root.join("sim/inputs/hyde25.csv");
-    let use_hyde = hyde_path.exists() && !args.iter().any(|a| a == "--estimates");
-    if use_hyde {
-        for r in read_csv(&hyde_path) {
-            let rc = (num(&r, "row") as i32, num(&r, "col") as i32);
-            if let Some(cell) = cells.get_mut(&rc) {
-                let rural = r.get("rural200").and_then(|v| v.parse().ok());
-                cell.hyde = Some(Hyde { crop_km2: num(&r, "crop_km2"), pop: num(&r, "pop200"), rural });
-            }
-        }
-    }
-    let cities: Vec<City> = read_csv(&root.join("sim/inputs/cities.csv"))
-        .iter()
-        .map(|r| City { x_m: num(r, "x_m"), z_m: num(r, "z_m"), pop: num(r, "pop117") })
-        .collect();
-
+    let data = apoleia_sim::inputs::load(&root, args.iter().any(|a| a == "--estimates")).unwrap_or_else(|e| panic!("{e}"));
+    let (start, cells, cities, use_hyde) = (data.start, data.cells, data.cities, data.hyde);
     let inputs = if use_hyde { "hyde33" } else { "estimates" };
     if !args.iter().any(|a| a == "--reference") {
         run_ecs(Sim::new(params, &start, cells, cities), years, snap_every, &out, inputs);

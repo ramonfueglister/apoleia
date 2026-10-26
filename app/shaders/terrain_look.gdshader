@@ -196,6 +196,54 @@ void vertex() {
     world_position=VERTEX;
     local_render_position=vec3(VERTEX.x-shading_origin.x,VERTEX.y,VERTEX.z-shading_origin.y);
 }
+// Kit 2 map mode "Bevölkerung" (docs/kit2/ARCHITECTURE.md S46). The Rust
+// snapshot provides a tile index per 1.5625 km cell (index + 1, 0 = none)
+// and one value texel per tile (population, people per km²); the colour is
+// computed here, so a new month only re-uploads the value texture.
+uniform bool map_mode_population=false;
+uniform sampler2D map_index_tex : filter_nearest, repeat_disable;
+uniform sampler2D map_value_tex : filter_nearest, repeat_disable;
+uniform vec2 map_index_origin=vec2(0.0);
+uniform float map_index_cell=1.5625;
+uniform int map_value_width=1024;
+uniform float map_max_population=1.0;
+uniform float map_decades=3.5;
+
+vec3 map_srgb_to_linear(vec3 c) {
+    return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(0.04045,c));
+}
+// Same ramp as the browser view: maroon, red-brown, ochre, olive, green.
+vec3 map_ramp(float t) {
+    vec3 stops[5]=vec3[5](vec3(122,42,40),vec3(138,90,44),vec3(160,138,48),vec3(143,154,53),vec3(95,154,58));
+    float x=clamp(t,0.0,1.0)*4.0;
+    int a=min(int(floor(x)),3);
+    return map_srgb_to_linear(mix(stops[a],stops[a+1],x-float(a))/255.0);
+}
+int map_tile(ivec2 c) {
+    ivec2 size=textureSize(map_index_tex,0);
+    if(any(lessThan(c,ivec2(0))) || any(greaterThanEqual(c,size))) return -1;
+    return int(texelFetch(map_index_tex,c,0).r+0.5)-1;
+}
+vec3 population_overlay(vec3 ground,vec2 p) {
+    if(!map_mode_population) return ground;
+    vec2 f=(p-map_index_origin)/map_index_cell;
+    ivec2 c=ivec2(floor(f));
+    int i=map_tile(c);
+    if(i<0) return ground;
+    vec2 v=texelFetch(map_value_tex,ivec2(i%map_value_width,i/map_value_width),0).rg;
+    float t=1.0+log(max(v.r,1.0)/max(map_max_population,1.0))/log(10.0)/map_decades;
+    vec3 col=map_ramp(t);
+    // Keep a little of the relief shading under the flat colour.
+    float shade=dot(ground,vec3(0.2126,0.7152,0.0722))/0.18;
+    col*=mix(1.0,clamp(shade,0.7,1.25),0.35);
+    // Thin dark border where the neighbouring cell belongs to another tile,
+    // about one screen pixel wide at any zoom.
+    vec2 fr=fract(f);
+    vec2 px=max(fwidth(f),vec2(1e-6));
+    bool edge=(fr.x<px.x && map_tile(c+ivec2(-1,0))!=i) || (fr.x>1.0-px.x && map_tile(c+ivec2(1,0))!=i)
+        || (fr.y<px.y && map_tile(c+ivec2(0,-1))!=i) || (fr.y>1.0-px.y && map_tile(c+ivec2(0,1))!=i);
+    return edge ? col*0.45 : col;
+}
 void fragment() {
     // Exclusive physical ownership: one zero-height ocean plane, one land /
     // inland surface. No coincident ocean triangles from overlapping terrain.
@@ -289,6 +337,7 @@ void fragment() {
     float wet_w=max(px*2.2,260.0);
     float wet=(1.0-smoothstep(0.0,wet_w,max(-material_distance,0.0)))*(1.0-water);
     ground*=mix(1.0,0.78+0.05*sin(TIME*1.3+vp.x*0.7),wet*shore);
+    ground=population_overlay(ground,world_position.xz);
     ALBEDO=mix(ground,sea,water);
     EMISSION=water_emission*water;
     ROUGHNESS=mix(0.94,mix(0.70,0.42,wave_amount),water);
