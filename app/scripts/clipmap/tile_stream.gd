@@ -1,6 +1,9 @@
 extends RefCounted
-## PNG tile pyramid: one CPU worker, bounded queues, root pin and LRU.
+## PNG tile pyramid: up to IO_WORKERS CPU tasks, bounded queues, root pin and LRU.
 const CPU_LIMIT=64*1024*1024
+## Tiles decoded in parallel (PNG decode + forest/river/shore build). One task
+## serialized the startup coverage (~10 s); the builders only read shared state.
+const IO_WORKERS=3
 var manifest:Dictionary={}
 var directory=""
 var cache:Dictionary={}
@@ -9,9 +12,9 @@ var pinned:Dictionary={}
 var pending:Dictionary={}
 var bytes=0
 var tick=0
-var _task=-1
-var _result:Dictionary={}
-var _job=""
+var _jobs:Dictionary={} # tile id -> WorkerThreadPool task id
+var _results:Dictionary={} # tile id -> finished _read result (guarded by _lock)
+var _lock:=Mutex.new()
 var forest_builder:RefCounted
 var river_builder:RefCounted
 var shore_builder=preload("res://scripts/clipmap/tile_shores.gd").new()
@@ -31,7 +34,7 @@ func configure(path:String)->bool:
 func key(level:int,x:int,z:int)->String:return "%d/%d/%d"%[level,x,z]
 func request(id:String,priority:float=0.)->void:
     if cache.has(id) and cache[id].images.size()==3:cache[id].used=tick;metrics.cache_hits+=1;return
-    if id==_job:return
+    if _jobs.has(id):return
     pending[id]=maxf(float(pending.get(id,-INF)),priority)
 func set_wanted(ids:Array,pins:Array)->void:
     tick+=1;wanted={};pinned={}
@@ -43,37 +46,41 @@ func set_wanted(ids:Array,pins:Array)->void:
 var _reported_failure=false
 func poll()->Array:
     var loaded=[]
-    if _task>=0 and WorkerThreadPool.is_task_completed(_task):
-        WorkerThreadPool.wait_for_task_completion(_task);_task=-1
-        if _result.get("ok",false):
-            var result=_result;var cost=int(result.bytes)
+    for job in _jobs.keys():
+        if not WorkerThreadPool.is_task_completed(_jobs[job]):continue
+        WorkerThreadPool.wait_for_task_completion(_jobs[job]);_jobs.erase(job)
+        _lock.lock();var result:Dictionary=_results.get(job,{});_results.erase(job);_lock.unlock()
+        if result.get("ok",false):
+            var cost=int(result.bytes)
             _evict(cost)
             if bytes+cost<=CPU_LIMIT:
                 result["used"]=tick;if cache.has(result.id):bytes-=int(cache[result.id].bytes)
                 cache[result.id]=result;bytes+=cost;loaded.append(result);metrics.loaded+=1
         else:
-            failures[_job]=Time.get_ticks_msec()
+            failures[job]=Time.get_ticks_msec()
             # A tile that cannot be read leaves its parent drawn forever; say so once.
             if not _reported_failure:
-                _reported_failure=true;push_error("Clipmap tile unreadable: "+directory.path_join(_job+"-{height,material,water}.png")+"; finer levels stay on coarser parents. Check the bound clipmap tile set (READY, all levels) or relink it with scripts/link-render-data.")
-        metrics.io_ms=float(_result.get("io_ms",0.));_result={};_job=""
-    if _task<0 and not pending.is_empty():
+                _reported_failure=true;push_error("Clipmap tile unreadable: "+directory.path_join(job+"-{height,material,water}.png")+"; finer levels stay on coarser parents. Check the bound clipmap tile set (READY, all levels) or relink it with scripts/link-render-data.")
+        metrics.io_ms=float(result.get("io_ms",0.))
+    while _jobs.size()<IO_WORKERS and not pending.is_empty():
         var selected="";var priority=-INF
         for id in pending:
             if failures.has(id) and Time.get_ticks_msec()-int(failures[id])<1500:continue
             if float(pending[id])>priority:selected=id;priority=float(pending[id])
-        if selected!="":
-            pending.erase(selected);_job=selected;_task=WorkerThreadPool.add_task(_read.bind(selected),false,"Clipmap tile IO")
+        if selected=="":break
+        pending.erase(selected);_jobs[selected]=WorkerThreadPool.add_task(_read.bind(selected),false,"Clipmap tile IO")
     metrics.pending=pending.size();return loaded
+func _finish(id:String,result:Dictionary)->void:
+    _lock.lock();_results[id]=result;_lock.unlock()
 func _read(id:String)->void:
     var started=Time.get_ticks_usec();var images={};var count=0
     for field in ["height","material","water"]:
         var path=directory.path_join(id+"-"+field+".png")
-        if not FileAccess.file_exists(path):_result={"ok":false};return
+        if not FileAccess.file_exists(path):_finish(id,{"ok":false});return
         var image=Image.load_from_file(path)
-        if image==null or image.is_empty():_result={"ok":false};return
+        if image==null or image.is_empty():_finish(id,{"ok":false});return
         image.convert(Image.FORMAT_RGBA8);images[field]=image;count+=image.get_data_size()
-    _result={"ok":true,"id":id,"images":images,"bytes":count,"marine":_has_marine(images.water),"forest":forest_builder.build(id,manifest,images) if forest_builder else {},"rivers":river_builder.build(id,manifest) if river_builder else {},"shores":shore_builder.build(directory.path_join(id+"-shore.bin")),"io_ms":float(Time.get_ticks_usec()-started)/1000.}
+    _finish(id,{"ok":true,"id":id,"images":images,"bytes":count,"marine":_has_marine(images.water),"forest":forest_builder.build(id,manifest,images) if forest_builder else {},"rivers":river_builder.build(id,manifest) if river_builder else {},"shores":shore_builder.build(directory.path_join(id+"-shore.bin")),"io_ms":float(Time.get_ticks_usec()-started)/1000.})
 func _has_marine(water:Image)->bool:
     # Marine role is 1 in the water B channel; clipmap_water_kind() only ever
     # returns roles of texels in this tile, so a tile without one never shows sea.
@@ -100,9 +107,10 @@ func best(id:String)->Dictionary:
         if not result.is_empty():return result
         id=parent(id)
     return {}
-func stats()->Dictionary:return {"ready":ready_state,"cpu_bytes":bytes,"cpu_limit":CPU_LIMIT,"resident":cache.size(),"pending":pending.size(),"worker_active":_task>=0,"loaded":metrics.loaded,"evicted":metrics.evicted,"io_ms":metrics.io_ms}
+func stats()->Dictionary:return {"ready":ready_state,"cpu_bytes":bytes,"cpu_limit":CPU_LIMIT,"resident":cache.size(),"pending":pending.size(),"worker_active":not _jobs.is_empty(),"workers":_jobs.size(),"loaded":metrics.loaded,"evicted":metrics.evicted,"io_ms":metrics.io_ms}
 func shutdown()->void:
-    if _task>=0:WorkerThreadPool.wait_for_task_completion(_task);_task=-1
+    for job in _jobs:WorkerThreadPool.wait_for_task_completion(_jobs[job])
+    _jobs={};_results={}
 
 func release_uploaded_images(id:String)->void:
     if not cache.has(id):return
