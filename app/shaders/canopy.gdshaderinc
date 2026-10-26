@@ -39,7 +39,7 @@ void fragment(){
     float upper=clamp(crown_up*0.5+0.5,0.0,1.0);
     // Warmer olive crowns as in the reference.
     // Reference crowns: deep, slightly bluish green (h~100, s~0.36).
-    ALBEDO=leaf*vec3(0.62,0.80,0.62)*mix(0.90,1.04,upper);
+    ALBEDO=leaf*vec3(0.50,0.66,0.62)*mix(0.90,1.04,upper);
     ROUGHNESS=0.96;
     SPECULAR=0.12;
     AO=mix(0.80,1.0,upper);

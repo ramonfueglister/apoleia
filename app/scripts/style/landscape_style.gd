@@ -414,7 +414,8 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             var density=1.0 if share>=0.5 else (0.04 if share<0.3 else smoothstep(0.45,0.6,clump+(share-0.4)))
             if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
-            var width_scale=1.0
+            # Dense forest: the wider grove variant closes the canopy.
+            var width_scale=1.18 if share>=0.6 else 1.0
             if grouped:
                 var group=Vector2i(floori(float(x)/3.0),floori(float(z)/3.0))
                 if not group_anchors.has(group):group_anchors[group]=_source_group_anchor(group,sample,forest_coverage)

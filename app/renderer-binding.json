@@ -44,8 +44,8 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-claude-landcover-r4",
-      "manifest_sha256": "ee4d2217e32d9d7ed8a95d30e22593d53db5e969706adc200781da9273aaf31b",
+      "path": "artifacts/render-data/forest-layout-claude-landcover-r5",
+      "manifest_sha256": "ad1d413a7425c7901b27beb2b871a60cce51224cfdaac7c746fb1411a3a30f8d",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
       "record_source": "complete r4 bake against fixed-source-v2-mountain-r4 (164313 records), rebound to v3 source contract"
