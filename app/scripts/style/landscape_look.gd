@@ -100,5 +100,5 @@ static func water_look_parameters() -> Dictionary:
         "water_sky_horizon": Color("c9dce8"),
         "water_sun_tint": Color("fff0d0"),
         "water_facet_size": 1.4,
-        "water_glitter": 0.33,
+        "water_glitter": 0.08,
     }

@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode cull_disabled, diffuse_burley;
+render_mode cull_disabled, diffuse_burley, blend_mix, depth_draw_never;
 #include "model_sampling.gdshaderinc"
 #include "water_look.gdshaderinc"
 uniform float relief=0.0;
@@ -48,20 +48,25 @@ void fragment(){
     float bank_m=(1.0-edge)*river_half_width*1000.0;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);
-    // Same optics as the sea; flow along the river line, no surf bands.
-    WaterSample w=water_shade(river_position,bank_m+400.0,9.0+(1.0-edge)*22.0,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0);
-    vec3 water=mix(w.albedo,river_color.rgb,0.55);
+    // One water body with the sea: same function and shallow palette; the
+    // depth eases towards the sea's mouth plume over the last ~3 km.
+    float to_sea=1.0-smoothstep(0.0,3000.0,-sea_distance);
+    float depth=mix(14.0+(1.0-edge)*16.0,12.0,to_sea);
+    WaterSample w=water_shade(river_position,bank_m+250.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
+    vec3 water=w.albedo;
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
-    float streak=smoothstep(0.62,0.9,wl_fnoise(vec2(along*0.9-TIME*0.5,across*6.0),footprint*6.0))*calm*(1.0-edge);
-    water=mix(water,water*1.18+0.03,streak*0.5);
+    float streak=smoothstep(0.62,0.9,wl_fnoise(vec2(along*0.9-TIME*0.5,across*6.0),footprint*6.0))*calm*(1.0-edge)*(1.0-to_sea);
+    water=mix(water,water*1.12+0.02,streak*0.4);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
     water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
-    // Continuous strip: soft bank tint at the outer edge only.
-    ALBEDO=mix(water,river_bank_color.rgb,smoothstep(0.82,1.0,edge)*0.5*(1.0-smoothstep(600.0,1500.0,view_width)));
-    EMISSION=w.emission*0.6*(1.0-smoothstep(0.8,1.0,edge));
+    ALBEDO=water;
+    EMISSION=w.emission*0.5;
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
+    // Anti-aliased bank: soft coverage over ~1.5 px of the strip edge.
+    float aa=max(fwidth(edge)*1.5,0.02);
+    ALPHA=1.0-smoothstep(1.0-aa,1.0,edge);
 }

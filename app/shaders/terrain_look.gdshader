@@ -349,7 +349,7 @@ void fragment() {
         float depth=physical_water_kind==1.0 ? max(-model_height_at(vp),0.0) : 25.0;
         float saum_scale=physical_water_kind==2.0 ? 0.0 : mix(0.22,1.0,smoothstep(0.7,1.0,relief));
         vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
-        WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale);
+        WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale,0.0);
         sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
         wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
     }
