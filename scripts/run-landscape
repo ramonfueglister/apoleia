@@ -3,10 +3,6 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 mkdir -p "$ROOT_DIR/artifacts/runtime"
-if [ -f "$ROOT_DIR/data/gameworld-v1/landscape.json" ]; then
-    python3 "$ROOT_DIR/app/scripts/pack_model_uploads.py"
-else
-    python3 "$ROOT_DIR/app/scripts/pack_height.py"
-    python3 "$ROOT_DIR/app/scripts/pack_water_distance.py"
-fi
+# Current renderer-binding.json selects prepared SourceV2/clipmap data.
+# Data preparation is an explicit offline step, never part of app startup.
 exec "${GODOT_BIN:-godot}" --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/godot.log" "$@"
