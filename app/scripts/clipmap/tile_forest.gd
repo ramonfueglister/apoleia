@@ -8,6 +8,11 @@ const CameraRig=preload("res://scripts/landscape_camera.gd")
 const FOREST_LEVELS=3 # build(): levels 0..2 carry forest
 const CELL_SPAN=128.  # forest layout cell == clipmap base_span
 const SHADOW_LEVELS=1 # only L0 forests cast shadows (sun shadow range 25 units)
+## Casting L0 crowns are drawn into every shadow cascade (four splits over the
+## whole view). A crown is smaller than a shadow texel there, so the shadow is
+## cast by a shadow-only copy at the coarsest facet stage; the visible crowns
+## keep the authored grove and do not cast.
+const SHADOW_DETAIL=4
 ## Full-weight tiles draw canopy_opaque (no alpha-hash discard, back faces
 ## culled); the alpha-hash canopy material is swapped in only while fading.
 const OPAQUE_SHADER="res://shaders/canopy_opaque.gdshader"
@@ -48,6 +53,7 @@ func _configure_detail()->void:
         # carries full density, so its trees are the most numerous.
         if level==FOREST_LEVELS-1:detail=maxi(detail,int(stages[-1][1]))
         level_detail.append(detail)
+    for detail in level_detail+[SHADOW_DETAIL]:
         if not detail_meshes.has(detail):
             detail_meshes[detail]=Materialize.shared_meshes(Compact.variants(Style.create_tree_mesh(0,1,detail).surface_get_arrays(0)))
     var reach=0.
@@ -162,11 +168,20 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
         if opaque_material:
             var fade:ShaderMaterial=node.material_override;var opaque:ShaderMaterial=opaque_material.duplicate();_copy_params(fade,opaque)
             node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
-        if level>=SHADOW_LEVELS:node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         var box:AABB=item.multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
         node.custom_aabb=AABB(Vector3(box.position.x-pad,-100.,box.position.z-pad),Vector3(box.size.x+2.*pad,300.,box.size.z+2.*pad))
         parent.add_child(node);result.append(node)
+        if level<SHADOW_LEVELS:result.append(_shadow_copy(parent,node,int(item.variant)))
     return result
+## Same instances and materials, coarsest facets, drawn only into shadow maps.
+func _shadow_copy(parent:Node3D,node:MultiMeshInstance3D,variant:int)->MultiMeshInstance3D:
+    var copy=MultiMeshInstance3D.new();copy.multimesh=node.multimesh.duplicate();copy.multimesh.mesh=detail_meshes[SHADOW_DETAIL][variant]
+    copy.material_override=node.material_override;copy.custom_aabb=node.custom_aabb
+    for key in ["fade_material","opaque_material"]:
+        if node.has_meta(key):copy.set_meta(key,node.get_meta(key))
+    copy.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+    parent.add_child(copy);return copy
 ## Re-packs the instance buffer as transform+custom so INSTANCE_CUSTOM.r
 ## carries the precomputed ground and .a marks it valid (canopy.gdshader).
 func _attach_ground(multimesh:MultiMesh,bucket:Dictionary)->void:
