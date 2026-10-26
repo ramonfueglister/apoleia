@@ -160,11 +160,22 @@ def collect_current(repository):
 
 
 def launcher_text():
-    return '''#!/bin/sh
+    return '''#!/bin/bash
 set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 RESOURCES=$(CDPATH= cd -- "$HERE/../Resources" && pwd)
-exec "$HERE/godot-runtime" --main-pack "$RESOURCES/apoleia.pck" -- --source-root "$RESOURCES/world" "$@"
+# Arguments before a literal "--" go to the engine (e.g. --windowed --resolution 640x360);
+# everything after it, or everything when no "--" is given, goes to the app.
+ENGINE_ARGS=()
+APP_ARGS=("$@")
+for ((i = 1; i <= $#; i++)); do
+    if [ "${!i}" = "--" ]; then
+        ENGINE_ARGS=("${@:1:i-1}")
+        APP_ARGS=("${@:i+1}")
+        break
+    fi
+done
+exec "$HERE/godot-runtime" --main-pack "$RESOURCES/apoleia.pck" ${ENGINE_ARGS[@]+"${ENGINE_ARGS[@]}"} -- --source-root "$RESOURCES/world" ${APP_ARGS[@]+"${APP_ARGS[@]}"}
 '''
 
 
@@ -200,7 +211,7 @@ def plan(repository, engine, output):
     output = Path(output).resolve()
     work = output.with_name(output.name + '.export-work')
     stage = work / 'project'
-    commands = [[str(engine), '--path', str(stage), '--rendering-method', 'forward_plus',
+    commands = [[str(engine), '--windowed', '--resolution', '640x360', '--position', '0,0', '--path', str(stage), '--rendering-method', 'forward_plus',
                  '--rendering-driver', 'metal', '--export-pack', PRESET,
                  str(work / 'bundle/Contents/Resources/apoleia.pck')]]
     return inv, binding, {'schema_version': 'metal-baked-pck-editorhost-v1',
