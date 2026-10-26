@@ -103,8 +103,8 @@ static func terrain_parameters() -> Dictionary:
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
         # Painted land look (terrain_land_look.gdshaderinc).
-        "land_grass_color": Color("85863d"),
-        "land_lime_color": Color("888b4a"),
+        "land_grass_color": Color("7f843f"),
+        "land_lime_color": Color("82894c"),
         "land_olive_color": Color("adad5a"),
         "land_ochre_color": Color("9b8d4f"),
         "land_hill_color": Color("7b8954"),

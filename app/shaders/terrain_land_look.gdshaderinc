@@ -195,8 +195,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     if(footprint<1.2) {
         float patch=land_fbm(p/6.0+vec2(5.5,2.4)+(meso-0.5)*1.4,footprint/6.0,2);
         float f=1.0-smoothstep(0.6,1.2,footprint);
-        grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.60,0.74,patch)*0.45*f);
-        grass=mix(grass,land_olive_color.rgb,smoothstep(0.40,0.28,patch)*0.35*f);
+        grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.50,0.80,patch)*0.40*f);
+        grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.22,patch)*0.45*f);
     }
     // Hill country: dark fir-green flanks on the golden ground.
     float hill_country=clamp(smoothstep(0.035,0.16,slope)*0.75+smoothstep(250.0,900.0,h)*0.35+smoothstep(20.0,160.0,crest)*0.2,0.0,1.0);
@@ -214,7 +214,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // slightly different meadow/crop tone; parcel seams a touch lighter.
     float field_fade=(1.0-smoothstep(0.35,0.7,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
     if(field_fade>0.01) {
-        float ang=land_gnoise(p/40.0)*1.2;
+        // One orientation per 30 km block: a continuously varying angle bent
+        // the parcels into contour-like waves.
+        float ang=(land_hash(floor(p/30.0))-0.5)*1.2;
         mat2 fr=mat2(vec2(cos(ang),sin(ang)),vec2(-sin(ang),cos(ang)));
         vec2 fq=(fr*p)/vec2(2.2,1.4);
         vec2 fc=floor(fq);
@@ -222,9 +224,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
         ground=mix(ground,parcel,0.55*field_fade);
-        vec2 fe=abs(fract(fq)-0.5);
-        float seam=smoothstep(0.43,0.49,max(fe.x,fe.y))*(1.0-smoothstep(0.08,0.2,footprint));
-        ground*=1.0+seam*0.04*field_fade;
+
     }
 
     // Rock only on real crests and high ground; narrow ridges.
@@ -310,8 +310,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Alps and other high ranges: a bright grey-white rock belt, peaks
         // near white, applied after the balance so it stays bright.
         float alpine=smoothstep(700.0,1050.0,h);
-        vec3 belt=mix(vec3(0.62,0.60,0.55),vec3(0.86,0.84,0.80),smoothstep(1050.0,1500.0,h));
-        belt*=mix(0.78,1.08,clamp((lit-0.45)*2.5,0.0,1.0));
+        // Pale grey-beige rock belt with shaded faces; only the highest
+        // summits turn white.
+        vec3 belt=mix(vec3(0.60,0.56,0.47),vec3(0.88,0.87,0.84),smoothstep(1500.0,1850.0,h));
+        belt*=mix(0.62,1.12,clamp((lit-0.40)*2.5,0.0,1.0));
         ground=mix(ground,belt,alpine*overview*0.9);
     }
     o.albedo=ground;
