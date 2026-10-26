@@ -8,7 +8,9 @@ extends SceneTree
 ## (K21: ein spaeteres Haus ~ Breite einer einzelnen Baumkrone, kein Cluster).
 ##
 ## Aufruf (aus dem Repo-Root, Fenster mit GPU, nicht --headless):
-##   godot --path app -s res://scripts/a07_framing_probe.gd -- --run-id a07-framing-r1
+##   godot --path app --windowed --resolution 320x180 --position 0,0 -s res://scripts/a07_framing_probe.gd -- --run-id a07-framing-r1
+## Gemessen und aufgenommen wird in einem SubViewport der Groesse --size;
+## das sichtbare Fenster bleibt klein (kein Vollbild).
 ## Optionen: --run-id ID, --output-dir DIR, --size 1440x810,
 ##   --sample ID LON LAT (wiederholbar, ersetzt Standardproben),
 ##   --no-screenshot, --settle-timeout SEKUNDEN, --wheel-steps N
@@ -45,6 +47,7 @@ var screenshots=true
 var settle_timeout=60.0
 var wheel_steps=40
 var mesh_cache:Dictionary={}
+var vp:SubViewport
 
 func _initialize()->void:
     var args=OS.get_cmdline_user_args()
@@ -76,11 +79,13 @@ func _run()->void:
     DirAccess.make_dir_recursive_absolute(output_dir)
     root.title="Apoleia A07 Framing Probe — PID "+str(OS.get_process_id())
     if DisplayServer.get_name()!="headless":
-        root.mode=Window.MODE_WINDOWED;root.size=window_size
-        root.content_scale_mode=Window.CONTENT_SCALE_MODE_VIEWPORT;root.content_scale_size=window_size
-    scene=load("res://landscape.tscn").instantiate();root.add_child(scene)
+        root.mode=Window.MODE_WINDOWED;root.borderless=false;root.size=Vector2i(320,180);root.position=Vector2i(0,0)
+    # Messviewport fester Groesse unabhaengig vom kleinen Fenster.
+    vp=SubViewport.new();vp.size=window_size;vp.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+    vp.handle_input_locally=true;root.add_child(vp)
+    scene=load("res://landscape.tscn").instantiate();vp.add_child(scene)
     var started=Time.get_ticks_msec()
-    while root.get_camera_3d()==null or Time.get_ticks_msec()-started<2000 or ("terrain_material" in scene and scene.terrain_material==null):
+    while vp.get_camera_3d()==null or Time.get_ticks_msec()-started<2000 or ("terrain_material" in scene and scene.terrain_material==null):
         if Time.get_ticks_msec()-started>120000:_write({"error":"no_active_camera3d"});quit(2);return
         await process_frame
     var results=[]
@@ -95,16 +100,16 @@ func _run()->void:
         if screenshots:
             await RenderingServer.frame_post_draw
             var path=output_dir.path_join(str(sample[0])+".png")
-            root.get_texture().get_image().save_png(path);measured["screenshot"]=path.get_file()
+            vp.get_texture().get_image().save_png(path);measured["screenshot"]=path.get_file()
         results.append(measured)
-        print("A07_PROBE_SAMPLE "+JSON.stringify({"id":sample[0],"crown_px":measured.single_crowns.screen_diameter_px_horizontal,"slots":measured.house_slots,"evaluation":measured.criteria_evaluation.summary}))
+        print("A07_PROBE_SAMPLE "+JSON.stringify({"id":sample[0],"crown_px":measured.get("single_crowns",{}).get("screen_diameter_px_horizontal"),"slots":measured.get("house_slots"),"evaluation":measured.get("criteria_evaluation",{}).get("summary")}))
     var summary={"revision":REVISION,"run_id":run_id,"acceptance_item":"A07 Nutzbare Nahansicht",
         "decision_reference":"docs/kit1/decisions.md K21 (26.10.2026): Hausbreite ~ eine einzelne Baumkrone, keine Meterangabe, kein Waldcluster; Gebaeude nicht in Kit 1",
         "scope":"Nur Messung. Kamera-, Stil- und Produktverhalten unveraendert. 500 m bleibt Arbeitswert; kein A07-Pass ohne Nutzerentscheid.",
         "engine":Engine.get_version_info(),"display_server":DisplayServer.get_name(),"rendering_method":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),
-        "viewport_px":[root.get_visible_rect().size.x,root.get_visible_rect().size.y],
+        "viewport_px":[vp.get_visible_rect().size.x,vp.get_visible_rect().size.y],
         "source_sha256":{"probe":FileAccess.get_sha256("res://scripts/a07_framing_probe.gd"),"landscape":FileAccess.get_sha256("res://scripts/landscape.gd"),"camera":FileAccess.get_sha256("res://scripts/landscape_camera.gd")},
-        "method":{"camera":"aktive Camera3D von root.get_camera_3d(); Strahlen project_ray_origin/normal, Projektion unproject_position; gilt fuer orthografisch und perspektivisch",
+        "method":{"camera":"aktive Camera3D des Mess-SubViewports; Strahlen project_ray_origin/normal, Projektion unproject_position; gilt fuer orthografisch und perspektivisch",
             "ground":"Strahlmarsch + Bisektion gegen scene._render_height (falls vorhanden), sonst Ebene y=0",
             "crowns":"alle sichtbaren Kronen-MultiMeshInstance3D; Vorlagenmesh in zusammenhaengende Teilkoerper zerlegt (eine Komponente = eine Einzelkrone); horizontale Groesse aus Instanztransform, Bodenhoehe aus gerendertem Gelaende",
             "closest_pose":"Zoomzustand auf 1.0 (falls Eigenschaften vorhanden) und danach Mausrad hinein bis Bildausschnitt stabil; anschliessend Gegenprobe mit weiteren Radereignissen",
@@ -119,7 +124,7 @@ func _write(data:Dictionary)->void:
     if f:f.store_string(JSON.stringify(data,"  "));f.close()
 
 func _center()->Vector2:
-    return root.get_visible_rect().size*0.5
+    return vp.get_visible_rect().size*0.5
 
 func _pose(sample:Array)->Dictionary:
     var result={"target_set":false,"zoom_state_set":false,"wheel_events":0}
@@ -137,15 +142,15 @@ func _wheel_in(count:int)->int:
     for n in range(count):
         var e=InputEventMouseButton.new()
         e.button_index=MOUSE_BUTTON_WHEEL_UP;e.pressed=true;e.factor=1.0;e.position=_center();e.global_position=_center()
-        root.push_input(e)
+        vp.push_input(e)
         var r=InputEventMouseButton.new()
         r.button_index=MOUSE_BUTTON_WHEEL_UP;r.pressed=false;r.factor=1.0;r.position=_center();r.global_position=_center()
-        root.push_input(r)
+        vp.push_input(r)
         await process_frame
     return count
 
 func _camera_signature()->Array:
-    var cam=root.get_camera_3d()
+    var cam=vp.get_camera_3d()
     if cam==null:return []
     var t=cam.global_transform
     return [t.origin,t.basis.z,cam.fov,cam.size,cam.projection]
@@ -215,7 +220,7 @@ func _height(p:Vector2)->float:
     return 0.0
 
 func _pick(pixel:Vector2):
-    var cam=root.get_camera_3d()
+    var cam=vp.get_camera_3d()
     var origin=cam.project_ray_origin(pixel);var direction=cam.project_ray_normal(pixel)
     var limit=maxf(cam.far,1.0)*1.5
     # Quadratische Schrittweite: fein nahe der Kamera, damit ein grosses
@@ -240,7 +245,7 @@ func _pick(pixel:Vector2):
     return null
 
 func _ground_footprint()->Dictionary:
-    var size=root.get_visible_rect().size
+    var size=vp.get_visible_rect().size
     var e=0.5
     var names={"top_left":Vector2(e,e),"top_center":Vector2(size.x*0.5,e),"top_right":Vector2(size.x-e,e),
         "middle_left":Vector2(e,size.y*0.5),"center":size*0.5,"middle_right":Vector2(size.x-e,size.y*0.5),
@@ -333,8 +338,8 @@ func _instance_transform(mm:MultiMesh,buffer:PackedFloat32Array,stride:int,i:int
     return mm.get_instance_transform(i)
 
 func _measure()->Dictionary:
-    var cam=root.get_camera_3d()
-    var size=root.get_visible_rect().size
+    var cam=vp.get_camera_3d()
+    var size=vp.get_visible_rect().size
     var rect=Rect2(Vector2.ZERO,size)
     var t=cam.global_transform
     var forward=-t.basis.z.normalized()
