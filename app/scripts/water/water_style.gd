@@ -3,7 +3,7 @@ extends RefCounted
 ## Original material-only interpretation of the approved four-scale study.
 ## No IO, source fields, node creation, camera/LOD ownership or geometry changes.
 
-const REVISION = "diorama-water-r7"
+const REVISION = "diorama-water-r10"
 const SHADER_INCLUDE = "res://shaders/water_appearance.gdshaderinc"
 
 static func parameters() -> Dictionary:

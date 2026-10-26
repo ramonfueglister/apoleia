@@ -1,4 +1,4 @@
-// Own material-only water interpretation, revision diorama-water-r7.
+// Own material-only water interpretation, revision diorama-water-r10.
 // No source sampling, ownership/discard, vertex motion, or LOD selection here.
 // Model X/Z, view width and pixel footprint: 1 unit = 1 kilometre.
 // Distances and positive bathymetry: source metres, never display-Y scaled.
@@ -190,19 +190,24 @@ void water_appearance(
     float detail = max(regional*0.42,close_detail);
     if (detail <= 0.00001) return;
 
-    float a0=water_face_visibility(0.90,pixel_world)*detail;
-    float a1=water_face_visibility(0.22,pixel_world)*close_detail;
-    float a2=water_face_visibility(0.075,pixel_world)*close_detail;
-    float v0=0.0;float v1=0.0;float v2=0.0;
-    vec2 g0=vec2(0.0);vec2 g1=vec2(0.0);vec2 g2=vec2(0.0);
-    if (a0>0.0) water_short_faces(world_xz,0.90,time_seconds,3.7,v0,g0);
-    if (a1>0.0) water_short_faces(world_xz,0.22,time_seconds,19.2,v1,g1);
-    if (a2>0.0) water_short_faces(world_xz,0.075,time_seconds,43.8,v2,g2);
+    // Two slowly scrolling procedural normal maps. Their analytic gradients
+    // make broad, irregular wave faces without a periodic sine-crest comb.
+    float a0=water_face_visibility(2.4,pixel_world)*detail;
+    float a1=water_face_visibility(0.85,pixel_world)*close_detail;
+    float v0=0.0;float v1=0.0;
+    vec2 g0=vec2(0.0);vec2 g1=vec2(0.0);
+    if(a0>0.0)water_face(world_xz/2.4+vec2(7.3,19.1)+time_seconds*vec2(0.003,-0.002),v0,g0);
+    if(a1>0.0) {
+        vec2 along=vec2(0.8,0.6);vec2 across=vec2(-0.6,0.8);
+        vec2 q=vec2(dot(world_xz,along),dot(world_xz,across))/0.85+vec2(31.4,8.2)+time_seconds*vec2(-0.004,0.002);
+        vec2 gradient;
+        water_face(q,v1,gradient);
+        g1=along*gradient.x+across*gradient.y;
+    }
     float role_energy=water_role==1 ? 1.0 : (water_role==2 ? 0.46 : 0.20);
-    vec2 slope=(g0*a0*0.30+g1*a1*0.28+g2*a2*0.12)*
-        water_style_wave_strength*role_energy;
+    vec2 slope=(g0*a0*0.12+g1*a1*0.055)*water_style_wave_strength*role_energy;
     world_normal=normalize(vec3(-slope.x,1.0,-slope.y));
-    float surface_value=(v0*a0*0.50+v1*a1*0.35+v2*a2*0.15)*role_energy;
+    float surface_value=(v0*a0*0.60+v1*a1*0.40)*role_energy;
     linear_rgb*=1.0+surface_value*water_style_surface_strength;
 
     if (water_role==1 && close_detail>0.0) {
@@ -216,7 +221,7 @@ void water_appearance(
     // Broad PBR highlights come from the actual scene light/view; there is no
     // screen-painted sun stripe. Coarse footprints raise roughness so broad
     // waves remain legible without glitter or a sparkling subpixel surface.
-    float resolved=water_face_visibility(0.22,pixel_world)*close_detail;
+    float resolved=water_face_visibility(0.85,pixel_world)*close_detail;
     roughness=mix(0.86,water_role==1 ? 0.42 : 0.48,detail);
     roughness+=water_role==1 ? (1.0-resolved)*detail*0.12 : 0.0;
     specular=(water_role==1 ? 0.55 : 0.38)*detail;
