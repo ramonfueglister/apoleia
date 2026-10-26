@@ -2528,7 +2528,7 @@ func _add_delta_arms() -> void:
             var minimum=start;var maximum=start
             for i in range(1,count+1):
                 var t=float(i)/count
-                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.42*sin(t*PI)
+                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.48*sin(t*PI)
                 var p=start.lerp(end,t)+normal*wobble
                 segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
                 minimum=minimum.min(p);maximum=maximum.max(p);previous=p

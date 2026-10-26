@@ -76,7 +76,8 @@ void fragment(){
     WaterSample w=water_shade(river_position,bank_m+3000.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
     // Stronger mid-blue than the sea's turquoise rim (reference arms).
     // Muted mid teal-blue like the reference rivers.
-    vec3 water=mix(w.albedo,vec3(0.026,0.15,0.23),0.7);
+    // Opaque mid teal-blue (reference #2d6f8f range), not the pale sky sheen.
+    vec3 water=mix(w.albedo,vec3(0.022,0.11,0.19),0.85);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
@@ -87,7 +88,7 @@ void fragment(){
     // Light sand bank along the outer edge (islands between delta arms).
     float near_view=1.0-smoothstep(600.0,1500.0,view_width);
     ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.80,0.98,edge)*0.7*near_view);
-    EMISSION=w.emission*0.5;
+    EMISSION=w.emission*0.15;
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
