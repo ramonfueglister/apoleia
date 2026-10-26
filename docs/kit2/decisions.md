@@ -22,7 +22,7 @@ eigene Annahmen und werden kalibriert.
 |---|---|
 | S10 | **Startraster** aus Kit 1: Land 25 km, dünne Gebiete gröber, dichte Regionen und Grossstädte feiner, etwa 15.000 Tiles. |
 | S11 | **IDs** `eqc41-gt-v1:Ebene:Zeile:Spalte`, Kantenlänge 200 km / 2^Ebene (Ebene 3 = 25 km, Ebene 7 ≈ 1,56 km). Eltern/Kinder rechnerisch. |
-| S12 | **Adaptiv zur Laufzeit:** Tiles teilen (Quadtree) und zusammenlegen, nach Dichte, für Spieler und KI gleich. 2:1-Regel zwischen Nachbarn, festes Zellbudget, höchstens Ebene 7. |
+| S12 | **Adaptiv zur Laufzeit:** Tiles teilen (Quadtree) und zusammenlegen, nach Dichte, für Spieler und KI gleich. 2:1-Regel zwischen Nachbarn, festes Zellbudget (Startwert 65.536 Zellen; das Startraster belegt rund 14.000), höchstens Ebene 7. |
 | S13 | **Teilen/Zusammenlegen** nur im Monatstakt, in fester ID-Reihenfolge. Summen bleiben erhalten. Zusammenlegen mit Hysterese und Mindestdauer. |
 | S14 | **Feine Geometrie** liegt in Weltkoordinaten, nicht an Tiles gebunden. Flächenwerte (Acker, Zonen, Strassen) berechnet jedes Tile selbst daraus; nur Bestandsgrössen werden beim Teilen verteilt. |
 | S15 | **Startschwellen:** teilen bei > 200 Einw./km² oder feinerer gezeichneter Geometrie; zusammenlegen, wenn alle 4 Kinder < 100 Einw./km² und keine feinere Geometrie haben, 12 Monate in Folge. |
