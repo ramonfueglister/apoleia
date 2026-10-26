@@ -39,40 +39,41 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
 
-static func update_view(sun: DirectionalLight3D, view_width: float, camera_distance: float, half_view_height: float, elevation_degrees: float) -> void:
+static func update_view(sun: DirectionalLight3D, view_width: float, camera_distance: float, fov_degrees: float, elevation_degrees: float) -> void:
     # No crowns are drawn beyond ~1600 model units; terrain casts no shadow.
     sun.shadow_enabled = view_width < 1700.0
-    if not _environment or half_view_height <= 0.0: return
-    # Ortho camera: ground depth grows from bottom to top of the screen.
-    var spread = half_view_height / maxf(tan(deg_to_rad(elevation_degrees)), 0.2)
-    _environment.fog_depth_begin = maxf(camera_distance - spread * 0.1, 0.0)
-    _environment.fog_depth_end = camera_distance + spread * 2.2
-    # Strongest haze at oblique regional views, almost none in the flat map.
+    if not _environment or camera_distance <= 0.0: return
+    # Perspective: depth of the upper screen edge relative to the focus.
+    var a = deg_to_rad(elevation_degrees)
+    var top = sin(a) / maxf(sin(a - deg_to_rad(fov_degrees) * 0.5), 0.05)
+    _environment.fog_depth_begin = camera_distance * 0.92
+    _environment.fog_depth_end = camera_distance * maxf(top * 1.35, 1.2)
+    # Aerial perspective in the oblique views, none in the flat map.
     var oblique = clampf((50.0 - elevation_degrees) / 14.0, 0.0, 1.0)
-    _environment.fog_density = lerpf(0.0, 0.16, oblique)
+    _environment.fog_density = lerpf(0.0, 0.22, oblique)
 
 # Display-only river widening; source centrelines stay unchanged.
-const RIVER_WIDTH_SCALE = 2.6
+const RIVER_WIDTH_SCALE = 1.6
 
 # Screen-width floor: thin map lines far out, broad diorama rivers up close.
 static func river_minimum_px(view_width: float) -> float:
     var near = clampf((log(1800.0) - log(maxf(view_width, 1.0))) / (log(1800.0) - log(300.0)), 0.0, 1.0)
-    return lerpf(1.6, 9.0, near * near)
+    return lerpf(1.6, 15.0, near * near)
 
 static func terrain_parameters() -> Dictionary:
     return {
-        "open_color": Color("939a43"),
-        "meadow_color": Color("8f9840"),
-        "forest_ground_color": Color("587530"),
+        "open_color": Color("b4a248"),
+        "meadow_color": Color("9a9341"),
+        "forest_ground_color": Color("4f5f2c"),
         "dry_color": Color("b8a066"),
         "rock_color": Color("a89a82"),
         "rock_shadow_color": Color("6f6555"),
         "snow_color": Color("f1efe8"),
         "shore_color": Color("e6d6a2"),
         "shore_display_span_world": 2.8,
-        "look_olive_color": Color("77803a"),
-        "look_ochre_color": Color("b49e58"),
-        "look_lime_color": Color("9ea646"),
+        "look_olive_color": Color("7c7a35"),
+        "look_ochre_color": Color("bb9c55"),
+        "look_lime_color": Color("b6a84a"),
         "sea_deep_color": Color("1d497e"),
         "sea_open_color": Color("235483"),
         "sea_shallow_color": Color("48909b"),
@@ -82,7 +83,7 @@ static func terrain_parameters() -> Dictionary:
 
 static func water_parameters() -> Dictionary:
     return {
-        "river_color": Color("2b8fa6"),
+        "river_color": Color("1f6aa6"),
         "river_edge_color": Color("4fb2b8"),
         "river_bank_color": Color("c9bd86"),
         "minimum_screen_width_px": 2.2,
@@ -99,6 +100,6 @@ static func water_look_parameters() -> Dictionary:
         "water_sky_zenith": Color("5d8fc4"),
         "water_sky_horizon": Color("c9dce8"),
         "water_sun_tint": Color("fff0d0"),
-        "water_facet_size": 2.4,
-        "water_glitter": 1.0,
+        "water_facet_size": 1.4,
+        "water_glitter": 0.08,
     }

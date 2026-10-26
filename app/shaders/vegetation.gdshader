@@ -12,7 +12,8 @@ void fragment(){
     // Mesh colors are authored in sRGB; material lighting operates in linear.
     vec3 leaf=mix(COLOR.rgb/12.92,pow((COLOR.rgb+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),COLOR.rgb));
     float upper=clamp(crown_up*0.5+0.5,0.0,1.0);
-    ALBEDO=leaf*mix(vec3(0.92,0.97,0.94),vec3(1.0+leaf_warmth,1.015,0.95),upper);
+    // Warmer, darker olive crowns as in the reference.
+    ALBEDO=leaf*vec3(0.98,0.88,0.70)*mix(vec3(0.92,0.97,0.94),vec3(1.0+leaf_warmth,1.015,0.95),upper);
     ROUGHNESS=0.94;
     SPECULAR=0.14;
     AO=1.0-canopy_ambient_occlusion*(1.0-upper);

@@ -172,6 +172,9 @@ var river_completed_key=""
 var river_set_cache: Dictionary={}
 var river_build_selection: Dictionary={}
 var river_sources_sha256=""
+# Display-only estuaries: detected mouths (pos, inland dir, width) and
+# curated delta branches appended as extra river sources.
+var river_mouths:Array=[]
 const RIVER_SET_CACHE_LIMIT=8
 const RIVER_SET_CACHE_BYTES=67108864
 var river_cache_stats={"hits":0,"misses":0,"completed":0,"evictions":0,"resident_bytes":0,"resident_sets":0}
@@ -733,7 +736,7 @@ func _setup_scene() -> void:
     if style_api: style_api.configure_environment(environment,sun)
     LandscapeLook.configure_environment(environment,sun)
     add_child(sun)
-    camera.projection=Camera3D.PROJECTION_ORTHOGONAL
+    camera.projection=Camera3D.PROJECTION_PERSPECTIVE
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
     camera.current=true
     add_child(camera)
@@ -1155,7 +1158,7 @@ func _resize_camera_contract() -> void:
 
 func _clamp_camera_target() -> void:
     var focus=_render_height(target)
-    var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,focus,_camera_height_interval())
+    var offsets=CameraRig.perspective_footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,CameraRig.perspective_fov(relief),relief,focus,_camera_height_interval())
     var limits=CameraRig.target_limits(core_rect,context_rect,offsets,1.0-view_width/far_width)
     camera_context_insufficient=limits.size.x<0 or limits.size.y<0
     if camera_context_insufficient:
@@ -1183,7 +1186,7 @@ func _refresh_displayed_height_bounds() -> void:
         interval=Vector2(fixed_surface.policy.height_range_source_equivalent_m[0],fixed_surface.policy.height_range_source_equivalent_m[1])*.001
         status="conservative_fixed_display_world_bound"
     if viewport_size.x>0 and viewport_size.y>0 and view_width>0:
-        var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),interval*display_height_scale)
+        var offsets=CameraRig.perspective_footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,CameraRig.perspective_fov(relief),relief,_render_height(target),interval*display_height_scale)
         var footprint=Rect2(target+offsets.position,offsets.size)
         if tin_surface:
             for id in tin_surface.active:
@@ -1215,25 +1218,39 @@ func get_displayed_height_range() -> Dictionary:
     return displayed_height_bounds.duplicate(true)
 
 func _place_camera() -> void:
+    # Perspective: the visible ground width at the focus equals view_width.
+    # camera.size is kept as the equivalent ortho height for consumers that
+    # read a world-per-pixel scale at the focus (clouds).
     camera.size=view_width/viewport_size.aspect()
     var angle=deg_to_rad(elevation_degrees)
     var focus=Vector3(target.x,_render_height(target),target.y)
+    var fov=CameraRig.perspective_fov(relief)
+    camera.projection=Camera3D.PROJECTION_PERSPECTIVE
+    camera.fov=fov
+    camera_distance=CameraRig.perspective_distance(view_width,viewport_size.aspect(),fov)
     var heights=_camera_height_interval()*relief
-    heights.y+=.1 # Conservative near crown asset bound, separate from terrain.
-    if not diorama_policy.is_empty() and view_width>float(diorama_policy.near_width): heights.y+=float(diorama_policy.visible_height_max)*relief
+    heights.y+=float(diorama_policy.get("visible_height_max",0.0))*relief+.1
     if cloud_layer and cloud_layer.enabled:
         var cloud_altitude=float(cloud_layer.get_display_altitude()) if cloud_layer.has_method("get_display_altitude") else float(cloud_layer.cloud_base_height)
         heights.y=maxf(heights.y,cloud_altitude)
     if weather and weather.is_active(): heights.y=maxf(heights.y,weather.get_display_altitude())
-    var half_view_height=view_width/viewport_size.aspect()*.5
-    var minimum_depth=(heights.x-focus.y)/sin(angle)-half_view_height/tan(angle)
-    var maximum_depth=(heights.y-focus.y)/sin(angle)+half_view_height/tan(angle)
-    camera_distance=maxf(.1,maximum_depth+.05)
-    camera.near=.001
-    camera.far=maxf(.2,camera_distance-minimum_depth+.05)
     var back=Vector3(0,sin(angle),cos(angle))
     var up=Vector3(0,cos(angle),-sin(angle))
+    # Near plane just above the highest displayed geometry along the view.
+    var clearance=(focus.y+back.y*camera_distance)-heights.y
+    camera.near=clampf(clearance*.5,camera_distance*.002,camera_distance*.5)
+    camera.far=camera_distance*24.0
     camera.transform=Transform3D(Basis(Vector3.RIGHT,up,back),focus+back*camera_distance)
+
+# Target that keeps `anchor` under `pixel`. A camera translation moves the
+# picked ground point by the same amount (up to terrain height), so a few
+# fixed-point passes through the actual ray pick converge.
+func _anchored_target(anchor: Vector2,pixel: Vector2) -> Vector2:
+    var start=target
+    var place=func(t:Vector2):target=t;_place_camera()
+    var result=CameraRig.solve_anchor(anchor,pixel,target,place,Callable(self,"_pick_ground"),maxf(view_width*.002,.001))
+    target=start;_place_camera()
+    return result
 
 func _update_forest_grove_lod() -> void:
     if forest_grove_lod_arrays.is_empty() or forest_compact_meshes.size()!=2:return
@@ -1282,7 +1299,8 @@ func _update_camera() -> void:
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
     _update_forest_grove_lod()
     if marine_material: marine_material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
-    LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.size*.5,elevation_degrees)
+    if marine_material: _bind_visible_river_mouths()
+    LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.fov,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
     if forest_compact_canopy_material:forest_compact_canopy_material.set_shader_parameter("relief",relief)
@@ -1352,10 +1370,10 @@ func _unhandled_input(event: InputEvent) -> void:
         # as a drag, through the same terrain intersection. No device factor.
         var pixel=event.position
         var anchor=_pick_ground(pixel)
-        target=CameraRig.anchored_target(anchor,pixel-event.delta,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+        target=_anchored_target(anchor,pixel-event.delta)
         zoom_anchor_valid=false
     if movement!=Vector2.ZERO and drag_anchor_valid:
-        target=CameraRig.anchored_target(drag_anchor,event.position,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+        target=_anchored_target(drag_anchor,event.position)
     _clamp_camera_target()
     _place_camera()
 
@@ -1388,7 +1406,7 @@ func _process(delta: float) -> void:
         # Re-solve against the actual new LOD and relief, rather than a flat
         # plane. Two passes include the implicit focus-height and clamp change.
         for iteration in range(2):
-            target=CameraRig.anchored_target(zoom_anchor,zoom_anchor_pixel,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+            target=_anchored_target(zoom_anchor,zoom_anchor_pixel)
             _clamp_camera_target()
             _place_camera()
             _update_lod()
@@ -2252,8 +2270,114 @@ func _setup_rivers() -> void:
                 var b=geographic_to_world(float(line[j+1][0]),float(line[j+1][1]))
                 segments.append([a,b,width])
                 minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
-        if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001)})
+        if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name",""))})
         river_feature_count+=1
+    _detect_river_mouths()
+    _setup_river_deltas()
+
+# Display deltas of the large flat-coast rivers, exaggerated for the diorama
+# scale (the real Tiber delta is only a few km wide): arms fan out from an
+# apex upstream of the detected main mouth to mouths spread along the coast.
+# Nile: the source course ends far inland, so apex/main mouth are given.
+const RIVER_DELTAS=[
+    {"name":"Tevere","arms":4,"length":30.0,"spread":18.0,"width":.030},
+    {"name":"Po","arms":5,"length":40.0,"spread":24.0,"width":.036},
+    {"name":"Rhône","arms":4,"length":36.0,"spread":20.0,"width":.036},
+    {"name":"Ebro","arms":3,"length":24.0,"spread":14.0,"width":.032},
+    {"name":"Nile","arms":4,"length":150.0,"spread":70.0,"width":.050,"apex":[31.25,30.10],"mouth":[31.05,31.50]}]
+
+# Branch points sit on the actual source course of the main river.
+func _nearest_river_point(name: String,p: Vector2) -> Vector2:
+    var best=p;var distance=INF
+    for source in river_sources:
+        if str(source.get("name",""))!=name:continue
+        for segment in source.segments:
+            var a:Vector2=segment[0];var b:Vector2=segment[1]
+            var q=Geometry2D.get_closest_point_to_segment(p,a,b)
+            if q.distance_to(p)<distance:distance=q.distance_to(p);best=q
+    return best
+
+func _coast_point(p: Vector2,towards_sea: Vector2) -> Vector2:
+    # March to the first sea sample, then slightly past the coastline.
+    var q=p
+    for i in range(80):
+        if _water_kind(q)==1:return q+towards_sea*1.2
+        q+=towards_sea*0.5
+    return q
+
+func _setup_river_deltas() -> void:
+    for delta in RIVER_DELTAS:
+        var mouth:Vector2;var inland:Vector2
+        if delta.has("apex"):
+            var apex_given=geographic_to_world(float(delta.apex[0]),float(delta.apex[1]))
+            mouth=geographic_to_world(float(delta.mouth[0]),float(delta.mouth[1]))
+            inland=(apex_given-mouth).normalized()
+        else:
+            var found=false
+            for record in river_mouths:
+                if str(record.get("name",""))==str(delta.name):mouth=record.position;inland=record.inland;found=true;break
+            if not found:continue
+        var apex=mouth+inland*float(delta.length)
+        var side=Vector2(-inland.y,inland.x)
+        var arms=int(delta.arms)
+        for k in range(arms):
+            var rng=RandomNumberGenerator.new();rng.seed=hash(str(delta.name)+":"+str(k))
+            var offset=(float(k)/float(arms-1)-0.5)*2.0*float(delta.spread)*rng.randf_range(0.8,1.1)
+            var end=_coast_point(mouth+side*offset+inland*float(delta.length)*0.15,-inland)
+            # Arms leave the main channel a little below the apex, staggered.
+            var start=_nearest_river_point(str(delta.name),apex.lerp(mouth,rng.randf_range(0.0,0.35)))
+            var points:Array[Vector2]=[]
+            var count=30
+            var phase=rng.randf()*TAU
+            var direction=(end-start).normalized();var normal=Vector2(-direction.y,direction.x)
+            var length=start.distance_to(end)
+            for i in range(count+1):
+                var t=float(i)/count
+                var meander=sin(t*TAU*rng.randf_range(1.2,2.0)+phase)*length*.06*sin(t*PI)
+                # Bow outwards first, then run straight to the sea.
+                var bow=normal*offset*0.25*sin(t*PI)*0.0
+                points.append(start.lerp(end,t)+normal*meander+bow)
+            var segments=[]
+            var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
+            for i in range(points.size()-1):
+                segments.append([points[i],points[i+1],float(delta.width)*rng.randf_range(0.6,0.9)])
+                minimum=minimum.min(points[i]).min(points[i+1]);maximum=maximum.max(points[i]).max(points[i+1])
+            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(delta.name)+" delta arm","synthetic_delta":true})
+            river_mouths.append({"position":points[-1],"inland":-direction,"width":float(delta.width),"name":str(delta.name)+" delta arm","delta":true})
+
+# Endpoints within ~2.5 km of the sea are mouths: funnel widening, colour
+# blend and no surf in the mouth radius.
+func _bind_visible_river_mouths() -> void:
+    var area=camera_footprint.grow(20.0)
+    var packed=PackedVector4Array()
+    for mouth in river_mouths:
+        if packed.size()>=32:break
+        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,0.0))
+    var count=packed.size()
+    while packed.size()<32:packed.append(Vector4.ZERO)
+    marine_material.set_shader_parameter("river_mouths",packed)
+    marine_material.set_shader_parameter("river_mouth_count",count)
+
+func _detect_river_mouths() -> void:
+    river_mouths.clear()
+    for source in river_sources:
+        var ends={}
+        for segment in source.segments:
+            for p in [segment[0],segment[1]]:
+                var key=str(snappedf(p.x,.0001))+":"+str(snappedf(p.y,.0001))
+                ends[key]=[p,int(ends.get(key,[p,0])[1])+1,segment]
+        for key in ends:
+            if int(ends[key][1])!=1:continue
+            var p:Vector2=ends[key][0]
+            if _water_distance(p)< -2500.0:continue
+            var sea=false
+            for r in [0.0,1.5,3.0]:
+                for direction in [Vector2.RIGHT,Vector2.LEFT,Vector2.UP,Vector2.DOWN]:
+                    if _water_kind(p+direction*r)==1:sea=true
+            if not sea:continue
+            var segment=ends[key][2]
+            var other:Vector2=segment[1] if Vector2(segment[0]).is_equal_approx(p) else segment[0]
+            river_mouths.append({"position":p,"inland":(other-p).normalized(),"width":float(segment[2]),"name":str(source.get("name",""))})
 
 func _river_representation_plan() -> Dictionary:
     var selection={};var features=[]
@@ -2324,27 +2448,61 @@ func _update_river_surface() -> void:
     if river_queue.is_empty():return
     var feature=river_queue.pop_front();var source=river_sources[feature]
     var vertices=PackedVector3Array();var normals=PackedVector3Array();var uvs=PackedVector2Array();var indices=PackedInt32Array()
+    # Chain the selected source segments into polylines, smooth each one
+    # (Chaikin, endpoints kept) and emit ONE continuous strip per polyline:
+    # no overlapping pieces, no joint notches. Display only; source
+    # centrelines stay unchanged.
+    var lines:Array=[];var line:Array=[]
     for segment_index in river_build_selection[feature]:
         var segment=source.segments[segment_index]
         var a: Vector2=segment[0];var b: Vector2=segment[1]
-        var tangent=(b-a).normalized()
-        var side=Vector2(-tangent.y,tangent.x)
-        var minimum_pixels=LandscapeLook.river_minimum_px(view_width)
-        var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
-        var half_width=maxf(float(segment[2])*.5*LandscapeLook.RIVER_WIDTH_SCALE,minimum_pixels*.5*view_width/viewport_size.x/maxf(projected_side,.001))
-        var count=clampi(int(ceil(a.distance_to(b)/maxf(view_width/viewport_size.x*4.0,.05))),1,100)
-        for j in range(count):
-            var p=a.lerp(b,float(j)/count);var q=a.lerp(b,float(j+1)/count)
-            var points=PackedVector2Array([p-side*half_width,q-side*half_width,q+side*half_width,p+side*half_width])
+        if line.is_empty() or Vector2(line[-1][0]).distance_to(a)>1e-5:
+            if line.size()>=2:lines.append(line)
+            line=[[a,float(segment[2])]]
+        line.append([b,float(segment[2])])
+    if line.size()>=2:lines.append(line)
+    var minimum_pixels=LandscapeLook.river_minimum_px(view_width)
+    var pixel_world=view_width/viewport_size.x
+    for raw in lines:
+        var points:Array=raw
+        for _iteration in range(2):
+            if points.size()<3:break
+            var smoothed:Array=[points[0]]
+            for k in range(points.size()-1):
+                var p0:Vector2=points[k][0];var p1:Vector2=points[k+1][0]
+                var w0:float=points[k][1];var w1:float=points[k+1][1]
+                smoothed.append([p0.lerp(p1,.25),lerpf(w0,w1,.25)]);smoothed.append([p0.lerp(p1,.75),lerpf(w0,w1,.75)])
+            smoothed.append(points[-1]);points=smoothed
+        var sides:Array=[];var halves:Array=[]
+        for k in range(points.size()):
+            var before:Vector2=points[maxi(k-1,0)][0];var after:Vector2=points[mini(k+1,points.size()-1)][0]
+            var tangent=(after-before).normalized()
+            var side=Vector2(-tangent.y,tangent.x)
+            var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
+            sides.append(side)
+            var half=maxf(float(points[k][1])*.5*LandscapeLook.RIVER_WIDTH_SCALE,minimum_pixels*.5*pixel_world/maxf(projected_side,.001))
+            # Estuary funnel: widen over the last ~8 km before a mouth.
+            if not bool(source.get("synthetic_delta",false)):
+                var mouth_distance=INF
+                for mouth in river_mouths:
+                    if not bool(mouth.get("delta",false)):mouth_distance=minf(mouth_distance,Vector2(points[k][0]).distance_to(mouth.position))
+                half*=1.0+0.9*(1.0-smoothstep(0.0,4.0,mouth_distance))
+            halves.append(half)
+        for k in range(points.size()-1):
+            var p:Vector2=points[k][0];var q:Vector2=points[k+1][0]
+            var sp:Vector2=sides[k];var sq:Vector2=sides[k+1]
+            var hp:float=halves[k];var hq:float=halves[k+1]
+            var quad=PackedVector2Array([p-sp*hp,q-sq*hq,q+sq*hq,p+sp*hp])
+            var mid_side=(sp+sq).normalized();var mid_half=(hp+hq)*.5;var mid=(p+q)*.5
             if fixed_surface and not fixed_flat_node.visible:
-                var low=points[0];var high=points[0]
-                for v in points:low=low.min(v);high=high.max(v)
+                var low=quad[0];var high=quad[0]
+                for v in quad:low=low.min(v);high=high.max(v)
                 for triangle in fixed_surface.triangles_in_area(Rect2(low,high-low),fixed_stride):
                     var tri=PackedVector2Array([Vector2(triangle[0].x,triangle[0].z),Vector2(triangle[1].x,triangle[1].z),Vector2(triangle[2].x,triangle[2].z)])
-                    for polygon in Geometry2D.intersect_polygons(points,tri):
-                        _append_river_polygon(polygon,triangle,p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+                    for polygon in Geometry2D.intersect_polygons(quad,tri):
+                        _append_river_polygon(polygon,triangle,mid,mid_side,mid_half,float(points[k][1]),vertices,normals,uvs,indices)
             else:
-                _append_river_polygon(points,[],p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+                _append_river_polygon(quad,[],mid,mid_side,mid_half,float(points[k][1]),vertices,normals,uvs,indices)
     if not vertices.is_empty():
         var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
         arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV2]=uvs;arrays[Mesh.ARRAY_INDEX]=indices

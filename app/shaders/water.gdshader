@@ -13,6 +13,8 @@ uniform sampler2D display_coast_distance_tex : filter_nearest, repeat_disable;
 uniform vec2 display_coast_world_min=vec2(0.0);
 uniform vec2 display_coast_world_size=vec2(1.0);
 uniform float shallow_display_span_world=24.0;
+uniform vec4 river_mouths[32];
+uniform int river_mouth_count=0;
 varying vec3 world_position;
 
 float display_coast_decode(ivec2 cell) {
@@ -48,12 +50,18 @@ void fragment() {
     float calm=smoothstep(0.05,0.6,relief);
     float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
-    WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale);
+    float mouth=0.0;
+    for(int i=0;i<32;i++) {
+        if(i>=river_mouth_count) break;
+        mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,length(p-river_mouths[i].xy)));
+    }
+    WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
     ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-calm)*0.6);
     EMISSION=w.emission;
     ROUGHNESS=w.roughness;
-    SPECULAR=0.25;
+    // Sun glints come from water_look; the engine lobe would form a blob.
+    SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
 }
