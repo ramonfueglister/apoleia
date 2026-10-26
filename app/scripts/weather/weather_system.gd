@@ -19,7 +19,7 @@ const STATE_FIELD := {
 	"clear": Vector4(0.0, 0.08, 0.0, 0.0),
 	"fair": Vector4(0.14, 0.55, 0.0, 0.0),
 	"overcast": Vector4(0.68, 0.35, 0.10, 0.0),
-	"rain": Vector4(0.30, 0.55, 0.60, 0.0),
+	"rain": Vector4(0.5, 0.45, 0.70, 0.0),
 	# Storms are local: fair background plus one or two large storm cells.
 	"storm": Vector4(0.04, 0.45, 0.0, 0.0),
 }
@@ -37,7 +37,7 @@ const TIME_LOOK := {
 	# Warmth mostly in highlights and glitter: mildly saturated sun, ambient kept.
 	"morning": [Vector3(-17.0, 72.0, 0.0), Color(1.0, 0.88, 0.80), 1.2, Color(0.92, 0.95, 1.04), 1.0, Color(1.0, 0.95, 0.94)],
 	# Low sun behind-left of the default view: backlight and golden glitter on the sea.
-	"evening": [Vector3(-12.0, -150.0, 0.0), Color(1.0, 0.80, 0.58), 1.15, Color(0.92, 0.95, 1.06), 1.0, Color(1.04, 0.95, 0.88)],
+	"evening": [Vector3(-18.0, -160.0, 0.0), Color(1.0, 0.84, 0.62), 1.45, Color(0.95, 0.97, 1.04), 1.05, Color(1.04, 0.95, 0.88)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -585,9 +585,9 @@ func _apply_look() -> void:
 	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
 	_written_fog = _fog_base * (1.0 + state_rain * 0.8)
 	_environment.fog_density = _written_fog
-	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.1 * w.y - 0.3 * state_rain)
+	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.1 * w.y - 0.55 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
-	_split_sun(clampf(0.62 + 0.25 * w.z, 0.0, 0.85))
+	_split_sun(clampf(0.75 + 0.15 * w.z, 0.0, 0.9))
 	_written = _read_look()
 
 func _restore_look() -> void:
@@ -637,8 +637,8 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.5)
-	var cluster_scale := clampf(_ground_width / 700.0, 0.4, 1.0)
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.7)
+	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 0.6)
 	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.8, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
@@ -678,7 +678,8 @@ func _upload_uniforms() -> void:
 		material.set_shader_parameter("cloud_base", cloud_base)
 	_rain_material.set_shader_parameter("now", weather_time / maxf(time_scale, 0.001) if time_scale > 0.0 else 0.0)
 	# Light blue-grey undersides: shade follows the ambient hue, not its energy.
-	var shade := Color(0.80, 0.86, 0.95) * ambient / maxf(maxf(ambient.r, ambient.g), ambient.b)
+	# Shaded sides at about 60-70 % of the lit tops, blue-grey.
+	var shade := Color(0.60, 0.66, 0.76) * ambient / maxf(maxf(ambient.r, ambient.g), ambient.b)
 	var sun_height := clampf(sun_dir.y / 0.64, 0.85, 1.0)
 	for material in [_cloud_material]:
 		material.set_shader_parameter("sun_dir", sun_dir)

@@ -64,7 +64,7 @@ void fragment() {
 	// Mostly flat facets: clear light/dark steps like the reference.
 	vec3 n = normalize(mix(flat_n, normalize(smooth_normal), 0.15));
 	vec3 l = normalize(sun_dir);
-	float wrap = clamp((dot(n, l) + 0.7) / 1.7, 0.0, 1.0);
+	float wrap = clamp((dot(n, l) + 0.35) / 1.35, 0.0, 1.0);
 	vec3 colour = mix(shade_color, sun_color, smoothstep(0.15, 0.85, wrap));
 	// Slightly bluer belly.
 	colour = mix(colour, shade_color * vec3(0.94, 0.97, 1.02), smoothstep(0.35, 0.0, height01) * 0.5);
@@ -83,6 +83,6 @@ void fragment() {
 	ALBEDO = colour * brightness;
 	// Soft silhouette; rain banks are see-through (0.55-0.8) with frayed edges.
 	float rim = smoothstep(0.02, 0.35, facing);
-	float body = mix(1.0, mix(0.7, 0.88, rim), grey * (1.0 - storm_amount));
+	float body = mix(1.0, mix(0.45, 0.7, rim), grey * (1.0 - storm_amount));
 	ALPHA = mix(rim, 1.0, storm_amount * 0.7) * body;
 }
