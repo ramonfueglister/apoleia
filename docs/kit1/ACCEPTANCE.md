@@ -218,6 +218,48 @@ sichtbare Waldfüllung, A08 und A12 bleiben offen. Die kleinen GPU-Paarabweichun
 werden berichtet; Pixelidentität oder eine vorab genehmigte Bildtoleranz wird
 nicht behauptet.
 
+### Ground-/Layout-Integration R2 und Grenzen der Abdeckung
+
+Der eingefrorene [Ground-/Layout-Checkpoint](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/checkpoint.json)
+hat SHA-256 `ff3a9b919a97b9911b3bff51adaa27f52dea7a4baeb7c868f494d850f23a6885`.
+Der unabhängige [P2-Recheck](../../runs/kit1-gamegraphics-v2-2026-10-25/review/final-ground-layout-r2-p2-independent/REVIEW.md)
+hat SHA-256 `95e094771b70fde8615b86913a2cb1936e386b11f3eccb958821b22dea0c0f4b`:
+72 gezielte Checks bestanden; die aktive Geometry-/Shaderidentity-Lücke ist
+geschlossen. Das geprüfte `river_g_snapshot.gd` wurde separat mit 181 Checks
+reviewt ([Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/river-g-snapshot-r1-independent/review.json),
+SHA-256 `be361908e20c009030835ec513f965ba710a5d9d68a2fb26cc8a01c6930bc7de`);
+es liefert die Rendergeometriebindung und bedeutet keine fertige Riverintegration.
+
+Die bestehenden r1-Befunde umfassen 11.220 Ground-, 60 Reader-, 41 Context-,
+7 Container- und 10 Memo-Checks (jeweils PASS im ursprünglich geprüften Scope).
+Die finale
+Groundabbildung behebt im CPU-Trace den früheren maximalen Fehler von
+38,1111154 Quellmetern gegenüber der tatsächlich gerenderten Fläche. Daraus
+folgt keine pauschale GPU- oder Float64-Transportparität.
+
+Der tatsächliche [Layoutprobe-r4](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-complete-layout-provider-r1/probe-r4/manifest.json)
+hat Manifest-SHA-256 `de8e6d5eda2829d50dff97521c3ed018b55c8bb00557ac83035c170b831b60c7`
+und Status `incomplete-probe`: acht tatsächlich besuchte Zellen mit 419
+Records entsprechen r3 bei allen 419 Recordbytes und acht Layout64-/Ground0-
+Metadatenströmen exakt. Die 3116-Zellen-Publikations-/Indexprüfung war
+synthetisch; sie erzeugt keine echten Records oder Weltabdeckung. Ein
+vollständiger SourceContext-Bake wurde nicht ausgeführt.
+
+Die für das lokale Offline-Tool nötige Codecrelokation ist zusätzlich mit
+[`codec-relocation-checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/codec-relocation-checkpoint.json),
+SHA-256 `07f318314d2348fec1f2144b3edbde12ff9dea5b6d246120ce4825a49355f5b6`,
+gebunden. Der nach `tools/forest_layout_codec.py` kopierte Codec ist bytegleich
+zum geprüften Researchcodec; nur der Compiler-Importlocator änderte sich. Der
+begrenzte Smoke bestätigte Import, 128/128/64-Byteformate und exakten F64-
+Roundtrip. Kein Source-Laden oder vollständiger Bake.
+
+Compact bleibt **default OFF / Expanded**. Im vorhandenen nativen Compactlauf
+fehlten nach Resize-Rückkehr 1077 von 1508 Wanted-Zellen; dies ist keine
+Bereitschafts- oder Waldfüllungsabnahme. A08 bleibt **FAIL**, A12 und Vollabdeckung
+bleiben **offen**. Eine separate regionale Sechsansichten-Diagnose ist jetzt
+angelaufen, hat aber noch keine Stilabnahme. Der kalte Start, A07 und bestehende
+Source-r3-FAILs sowie Bundlegrenzen bleiben unverändert offen.
+
 ### Integrierter Fern-/Nahlauf, Wolken und Numerik
 
 [`summary.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/camera/source-v2-v19-product-cloud-r1/summary.json)

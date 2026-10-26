@@ -302,6 +302,94 @@ Vollabdeckungsprüfung, kein GPU-/A12-/A08-Nachweis. Sichtbarer Wald bleibt
 unvollständig, Flussverhalten während der Fahrt offen; V23-r2 externe Studie
 verworfen.
 
+## Ground- und Layoutprovider-Integration R2
+
+Status **implementiert**, der gezielte Ground-/Layout- und aktive
+Geometry-/Shaderidentity-P2 unabhängig **validiert/geschlossen**; keine
+Vollweltabnahme. Der Runtimecheckpoint
+[`v19-ground-layout-integration-r2/checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/checkpoint.json)
+hat SHA-256 `ff3a9b919a97b9911b3bff51adaa27f52dea7a4baeb7c868f494d850f23a6885`.
+Der unabhängige [P2-Recheck](../../runs/kit1-gamegraphics-v2-2026-10-25/review/final-ground-layout-r2-p2-independent/REVIEW.md),
+SHA-256 `95e094771b70fde8615b86913a2cb1936e386b11f3eccb958821b22dea0c0f4b`,
+hat 72 gezielte Identity-/Bindingchecks bestanden und alle 19
+Checkpointbindungen bestätigt.
+
+Die Runtime-Whitelist dieses Checkpoints ist:
+`app/scripts/landscape.gd`, `app/scripts/cache/fixed_forest_build_context.gd`,
+`app/scripts/cache/fixed_forest_ground.gd`,
+`app/scripts/cache/fixed_forest_layout.gd`,
+`app/tools/build_complete_forest_layout.gd` und
+`tools/compile_complete_forest_layout.py` sowie der exakt bytegleiche
+Offlinecodec `tools/forest_layout_codec.py`. Der Compiler importiert nun diesen
+lokalen Codec; gegenüber dem eingefrorenen Research-Tool wurde nur der
+Importlocator geändert. Das Codec-/Import-/Format-/Float64-Roundtrip-Smoke ist
+separat gebunden, ohne Source-, Godot-, GPU- oder Bake-Ausführung.
+Die transitive Abhängigkeit
+`app/scripts/river/river_g_snapshot.gd` wird von Layoutfactory und
+Compactbinding für die reale `runtime_geometry_binding()` geladen. Ihr
+separater [Review](../../runs/kit1-gamegraphics-v2-2026-10-25/review/river-g-snapshot-r1-independent/review.json)
+mit SHA-256 `be361908e20c009030835ec513f965ba710a5d9d68a2fb26cc8a01c6930bc7de`
+bestätigt 181 Checks. Das Modul ist eine benötigte Geometrybindung und keine
+fertige Riverintegration.
+
+Der notwendige Codec-Relokationsnachweis ist im
+[`codec-relocation-checkpoint.json`](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/codec-relocation-checkpoint.json)
+mit SHA-256 `07f318314d2348fec1f2144b3edbde12ff9dea5b6d246120ce4825a49355f5b6`
+gebunden. `tools/forest_layout_codec.py` entspricht bytegenau dem zuvor
+geprüften Codec (SHA-256
+`f9300a1efbefc89074bc62de27c5d9c764087fdcb604362d5a07ef4c3a0d216e`); der
+geänderte Supervisor
+`tools/compile_complete_forest_layout.py` hat SHA-256
+`1193a9f12bb6c1d2e7542d2158b1f26c1f36cee8bc5dd0ef9d1f6b2a8b44b5e4`.
+Der [Smokebericht](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-ground-layout-integration-r2/codec-relocation.json),
+SHA-256 `523e7d6111496fa52fcee59e38c2bfb270c49abe446c5e0b974ea457268c7c28`,
+bestätigt Import, 128/128/64-Bytecontainerformat und exakten F64-Roundtrip.
+Der originale r2-Checkpoint bleibt byteunverändert. Der vollständige Compiler
+ist damit als lokales Tool schlüssig, aber es wurde weiterhin kein vollständiger
+SourceContext-Bake ausgeführt.
+
+### Ground, Memoisierung und Layoutprobe
+
+Die bisherigen r1-Belege bleiben klar begrenzt: 11.220 Groundchecks, 60
+Reader-, 41 Context-, 7 Container- und 10 Memo-Checks. Der neue
+Layoutfactoryvertrag bindet tatsächliche Runtime-G-Funktionen sowie Terrain-
+und Samplingshader in die Layout- und Compactconsumeridentität. Änderungen
+invalidieren alle neun Supportidentitäten; die alte Expandedcache-Kompatibilität
+bleibt strikt und akzeptiert den neuen Style-/Context-/Ground-Code nicht.
+
+Die finale Groundabbildung behebt im CPU-Trace den zuvor gefundenen Fehler von
+maximal 38,1111154 Quellmetern zwischen altem Waldhelper und tatsächlicher
+Terrainfläche. Das ist gezielte CPU-Consumerparität; keine pauschale GPU-Parität
+oder allgemeine F64/F32-Toleranz. Die joblokale Memoisierung bleibt exakt und
+quellgebunden.
+
+Der finale [Layoutprobe-r4](../../runs/kit1-gamegraphics-v2-2026-10-25/geometry/v19-complete-layout-provider-r1/probe-r4/manifest.json)
+hat Manifest-SHA-256 `de8e6d5eda2829d50dff97521c3ed018b55c8bb00557ac83035c170b831b60c7`.
+Acht tatsächliche Zellen mit 419 Quellenrecords und acht Layout64-/Ground0-
+Metadatenströmen stimmen bytegenau mit r3 überein. Der Probeumfang bleibt
+`incomplete-probe`; die synthetische 3116-Zellen-Index-/Publikationsprüfung
+steht nicht für einen Quellenbake. Vollständiger SourceContext-Bake und
+Weltabdeckung sind **nicht** erfolgt.
+
+Compact bleibt **default OFF / Expanded**. Der bisherige native Compactlauf
+fehlte nach Resize-Rückkehr 1077 von 1508 Wanted-Zellen; vollständige
+Bereitschaft und Waldfüllung sind offen. A08 bleibt **FAIL**, A12 und
+Vollabdeckung **offen**. Die regionale Sechsansichten-Diagnose ist angelaufen,
+aber noch nicht stilistisch abgenommen. Bestehende Source-r3-Fails, A07,
+Bundlegrenzen und Fluss-Nahnavigation bleiben offen.
+
+### Wiederaufnahme
+
+Die nächste Prüfung ist die visuelle Sichtung der angelaufenen regionalen
+Sechsansichten-Diagnose mit dokumentierter Wald-/Flussbereitschaft; dies schließt
+A08 nicht automatisch. Ein vollständiger SourceContext-Bake setzt anschließend
+eine finale Source-/G-/Context-/Consumeridentity-Fixierung, die bestehende
+gezielte 8-Zellen-Bytes-Paritätsprobe und ein gesondertes Root-Go voraus. Bis
+dahin werden weder die 3116 synthetischen Indexplätze noch 419 Records als
+Coverage gezählt. Native Compact-Vollfüllung, Pan-/Zoom-/Resize-Rückkehr,
+Vollabdeckung, A07/A08/A12, endgültiges Bundle und alle A01–A16 bleiben getrennte
+offene Abnahmen.
+
 ## Compact-Forest-Integration R2
 
 Status **implementiert**, eng quellengebunden und unabhängig **validiert**;
