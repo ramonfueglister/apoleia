@@ -13,6 +13,10 @@ uniform vec4 land_olive_color : source_color = vec4(0.45,0.49,0.21,1.0);
 uniform vec4 land_hill_color : source_color = vec4(0.37,0.48,0.15,1.0);
 uniform vec4 land_ochre_color : source_color = vec4(0.74,0.63,0.37,1.0);
 uniform vec4 land_forest_floor_color : source_color = vec4(0.33,0.40,0.18,1.0);
+// Closed forest ground from land cover, all distances (crown colour).
+uniform vec4 land_forest_ground_color : source_color = vec4(0.227,0.302,0.192,1.0);
+// Shading-only relief exaggeration (geometry stays flat): near, mid, far.
+uniform vec3 land_shade_relief=vec3(2.0,2.5,3.0);
 uniform vec4 land_dry_color : source_color = vec4(0.76,0.66,0.43,1.0);
 uniform vec4 land_sand_color : source_color = vec4(0.77,0.69,0.47,1.0);
 uniform vec4 land_rock_light_color : source_color = vec4(0.80,0.73,0.66,1.0);
@@ -128,7 +132,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // skipped by branch, not just faded, once it is below pixel scale.
     LandLook o;
     float scale=dhs*max(rel,0.00001);
-    vec3 smooth_n=land_display_normal(source_normal,scale);
+    float shade_k=mix(mix(land_shade_relief.x,land_shade_relief.y,smoothstep(0.25,0.6,footprint)),land_shade_relief.z,smoothstep(0.7,1.3,footprint));
+    vec3 smooth_n=land_display_normal(source_normal,scale*shade_k);
     float slope=1.0-land_display_normal(source_normal,dhs).y;
     // Far view: the camera's relief fade or simply a large pixel footprint.
     float overview=max(1.0-smoothstep(0.7,1.0,rel),smoothstep(0.7,1.3,footprint));
@@ -189,6 +194,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
+    // Closed forest ground from the forest share, crisp edged, every distance.
+    float forest_ground=land_edge(smoothstep(0.30,0.70,soft.r+edge*0.2),0.5);
+    ground=mix(ground,land_forest_ground_color.rgb,forest_ground*0.85*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
     float field_fade=(1.0-smoothstep(0.35,0.7,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
@@ -299,7 +307,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Northern plains (Pannonia, north Balkans) a little greener.
         float north=smoothstep(-300.0,-600.0,p.y);
         ground=mix(ground,ground*vec3(0.92,1.02,0.95),north*overview*(1.0-upland));
-        vec3 shade_n=land_display_normal(source_normal,dhs*0.15);
+        vec3 shade_n=land_display_normal(source_normal,dhs*0.25);
         vec3 sun=normalize(vec3(-0.676,0.643,-0.360));
         float lit=dot(shade_n,sun);
         float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
