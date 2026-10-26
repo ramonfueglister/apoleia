@@ -4,6 +4,8 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
 #include "res://shaders/model_sampling.gdshaderinc"
 #include "res://shaders/water_look.gdshaderinc"
+uniform bool streamed_terrain=false;
+uniform float terrain_morph_alpha=1.0;
 uniform sampler2D mapped_cover_tex : filter_linear_mipmap, repeat_disable;
 uniform bool use_model_mesh=false;
 uniform bool use_fixed_surface=false;
@@ -109,10 +111,12 @@ float fixed_surface_height_at(vec2 p) {
     float b=decode_model_height(fixed_surface_height_tex,cell+ivec2(1,0),true);
     float c=decode_model_height(fixed_surface_height_tex,cell+ivec2(0,1),true);
     float d=decode_model_height(fixed_surface_height_tex,cell+ivec2(1),true);
-    return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+    float value=f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+    return material_cohort_value_3(p,vec4(value,0.0,0.0,0.0)).x;
 }
 vec3 fixed_surface_normal_at(vec2 p) {
     vec2 step_size=fixed_surface_world_size/vec2(textureSize(fixed_surface_height_tex,0)-ivec2(1));
+    if(terrain_pages)step_size=canonical_grid_spacing;
     float dx=(fixed_surface_height_at(p+vec2(step_size.x,0))-fixed_surface_height_at(p-vec2(step_size.x,0)))*0.001/(2.0*step_size.x);
     float dz=(fixed_surface_height_at(p+vec2(0,step_size.y))-fixed_surface_height_at(p-vec2(0,step_size.y)))*0.001/(2.0*step_size.y);
     return normalize(vec3(-dx,1.0,-dz));
@@ -124,7 +128,9 @@ float display_coast_decode(ivec2 cell) {
 float display_coast_distance_at(vec2 uv) {
     vec2 q=uv*vec2(textureSize(display_coast_distance_tex,0))-0.5;
     ivec2 cell=ivec2(floor(q));vec2 f=fract(q);
-    return mix(mix(display_coast_decode(cell),display_coast_decode(cell+ivec2(1,0)),f.x),mix(display_coast_decode(cell+ivec2(0,1)),display_coast_decode(cell+ivec2(1)),f.x),f.y);
+    float value=mix(mix(display_coast_decode(cell),display_coast_decode(cell+ivec2(1,0)),f.x),mix(display_coast_decode(cell+ivec2(0,1)),display_coast_decode(cell+ivec2(1)),f.x),f.y);
+    vec2 p=display_coast_world_min+uv*display_coast_world_size;
+    return material_cohort_value_4(p,vec4(value,0.0,0.0,0.0)).x;
 }
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
@@ -150,7 +156,13 @@ float extended_display_coast_distance(float short_distance,float long_distance) 
 
 void vertex() {
     float altitude;
-    if(use_model_mesh) {
+    if(clipmap_enabled) {
+        VERTEX.xz=clipmap_origin+VERTEX.xz*clipmap_span;
+        altitude=clipmap_water_kind(VERTEX.xz)==1.0 ? 0.0 : clipmap_ring_height(VERTEX.xz);
+        NORMAL=clipmap_normal(VERTEX.xz);
+    } else if(streamed_terrain) {
+        altitude=(UV2.x+(VERTEX.y-UV2.x)*terrain_morph_alpha)*1000.0;
+    } else if(use_model_mesh) {
         altitude=water_kind_at(VERTEX.xz)==1.0 ? 0.0 : VERTEX.y*1000.0;
     } else {
         vec2 patch_size=patch_bounds.zw*world_size;
@@ -192,7 +204,7 @@ void fragment() {
     } else if(physical_water_kind==1.0) discard;
     // Canonical TIN owns its footprint. Raster fallback must not draw a second
     // different surface through block edges while neighboring blocks stream.
-    if(!use_model_mesh && !marine_surface_only) {
+    if(!clipmap_enabled && !use_model_mesh && !marine_surface_only) {
         for(int i=0;i<8;i++) {
             if(i>=active_model_count) break;
             vec4 bounds=active_model_bounds[i];
@@ -202,7 +214,7 @@ void fragment() {
     // The fixed derived world owns material height, including relief=0.
     // Geometry decimation must not recolor the same place when zoom changes.
     // This is the generalized atlas, never a finer raw DEM microtexture.
-    float h=use_fixed_surface ? fixed_surface_height_at(world_position.xz) : canonical_position.y*1000.0;
+    float h=clipmap_enabled ? clipmap_source_height(world_position.xz) : (use_fixed_surface ? fixed_surface_height_at(world_position.xz) : canonical_position.y*1000.0);
     float distance=water_distance_at(world_position.xz);
     float edge_aa=max(fwidth(distance)*0.7,0.15);
     float water=smoothstep(-edge_aa,edge_aa,distance);
@@ -215,14 +227,14 @@ void fragment() {
     vec4 weights=source_surface_weights_at(world_position.xz);
     vec2 detail_material_uv=(world_position.xz-detail_world_min)/detail_world_size;
     float lat=mix(north_lat,south_lat,geo_uv.y);
-    bool semantic_surface=use_surface_weights || (use_detail_surface_weights && inside_domain(detail_material_uv));
+    bool semantic_surface=clipmap_enabled || use_surface_weights || (use_detail_surface_weights && inside_domain(detail_material_uv));
     // RGBA is FOREST / ROCK / DRY / SHORE; without semantics dry follows latitude.
     if(!semantic_surface) weights.b=1.0-smoothstep(29.0,37.0,lat);
     float footprint=max(length(dFdx(local_render_position.xz)),length(dFdy(local_render_position.xz)));
     vec2 vp=world_position.xz;
     // Lighting and materials follow the fixed represented surface, never the
     // decimated render mesh (which only contributes rock silhouettes).
-    vec3 source_normal=use_fixed_surface ? fixed_surface_normal_at(world_position.xz) : canonical_normal;
+    vec3 source_normal=clipmap_enabled ? clipmap_normal(world_position.xz) : (use_fixed_surface ? fixed_surface_normal_at(world_position.xz) : canonical_normal);
     LandLook land=land_look(vp,h,weights,source_normal,facet_normal,footprint,relief,view_width,display_height_scale);
     vec3 ground=land.albedo;
     vec3 normal=land.normal;
@@ -238,7 +250,7 @@ void fragment() {
     float shallow_span=min(max(shallow_band_m,contour_m_per_px*shallow_screen_width_px),1000.0);
     float material_distance=distance;
     vec2 coast_uv=(world_position.xz-display_coast_world_min)/display_coast_world_size;
-    bool graphic_coast=use_display_coast_distance && inside_domain(coast_uv) && physical_water_kind!=2.0;
+    bool graphic_coast=!clipmap_enabled && use_display_coast_distance && inside_domain(coast_uv) && physical_water_kind!=2.0;
     if(graphic_coast) {
         float coast_distance=display_coast_distance_at(coast_uv);
         // Preserve the exact existing contour close to zero; the sidecar only

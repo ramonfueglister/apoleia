@@ -518,6 +518,17 @@ Wert darf als Nullfehler erscheinen. Echte vollständige Zoomaufnahme und
 unabhängige Daten-/Bildprüfung bleiben erforderlich: eine Messdatei beweist weder
 Herkunftswahrheit noch den visuellen Übergang allein.
 
+Nicht gerenderte Niveaus dürfen Bildschirm-/Übergangsmetriken als
+`derivation.not_applicable` mit Pflichtbegründung und hashgebundenem Regelbezug
+ausweisen; Quellraummetriken nie. NA ist kein Zahlenwert und kein Pass.
+
+**Status A16-Werkzeugabnahme (26.10.2026):** NA-Vertrag im Kitchecker
+`implementiert` und testseitig `validiert`. Release-v2: 14 anwendbare
+Kombinationen innerhalb der Budgets (gemeldete Maxima, hashgeprüft), 4 NA mit
+Regelbezug; Reviewer-Bindung im Bericht vorhanden. Formaler `report-check` über
+`derivation-view.json` und unabhängige A16-Statusentscheidung `offen`. Details:
+[A16_TOOL_ACCEPTANCE](evidence/A16_TOOL_ACCEPTANCE.md).
+
 ## Spätere Systemgrenzen-Abnahme (außerhalb der Kit-1-Laufmatrix)
 
 Vor einer späteren Kopplung mit Grafik ist ein headlesser Rust-Smoke-Lauf ohne

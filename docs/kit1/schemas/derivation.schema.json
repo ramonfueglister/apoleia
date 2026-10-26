@@ -284,6 +284,58 @@
       },
       "minItems": 0
     },
+    "not_applicable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric": {
+            "enum": [
+              "screen_error_px",
+              "transition_residual_px"
+            ]
+          },
+          "status": {
+            "const": "not_applicable"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rule": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "artifact_path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "level_id",
+          "metric",
+          "status",
+          "reason",
+          "rule"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
     "topology_checks": {
       "type": "array",
       "items": {

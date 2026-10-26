@@ -1,0 +1,65 @@
+{
+  "status": "own CPU candidate; not GPU validated",
+  "period_world_xz": 384.0,
+  "height_world_y": 38.0,
+  "kernels": 142,
+  "sun_direction": [
+    -0.3545852303504944,
+    0.7431448698043823,
+    0.567454993724823
+  ],
+  "sun_rotation_degrees": [
+    -48,
+    -32,
+    0
+  ],
+  "sun_source": "frozen landscape_style.gd configure_environment",
+  "encoding": "RG8: density D, density-weighted T=D*exp(-tau*.26*1.5); mip both before unpremultiplying",
+  "lighting_limit": "fixed sun; weather/group modulation after bake is decorative, not exact recomputed selfshadow",
+  "levels": [
+    {
+      "lod": 0,
+      "dimensions": [
+        384,
+        64,
+        384
+      ],
+      "bytes": 18874368,
+      "path": "cloud_kernel_lod0.rg8",
+      "sha256": "33666444de40986777793bcfe8bfa4ae4a4e63e67c16ec542f00356ffde07129"
+    },
+    {
+      "lod": 1,
+      "dimensions": [
+        192,
+        32,
+        192
+      ],
+      "bytes": 2359296,
+      "path": "cloud_kernel_lod1.rg8",
+      "sha256": "71fa99399d67767992ba3f06c1c32db6fad4c5f3aacac54c678d6113828e0a74"
+    },
+    {
+      "lod": 2,
+      "dimensions": [
+        96,
+        16,
+        96
+      ],
+      "bytes": 294912,
+      "path": "cloud_kernel_lod2.rg8",
+      "sha256": "3663479a0a2287686beb8bcc43088c77840932e5f2978bcf2a6583735aa6c970"
+    },
+    {
+      "lod": 3,
+      "dimensions": [
+        48,
+        8,
+        48
+      ],
+      "bytes": 36864,
+      "path": "cloud_kernel_lod3.rg8",
+      "sha256": "0c1f6f38c461b6bfa19ad7a358cf793803a467162b1b89ce5ad033c6d8ee5407"
+    }
+  ]
+}

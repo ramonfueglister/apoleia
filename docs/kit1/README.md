@@ -56,11 +56,11 @@ Details: [REGION](operations/REGION.md).
 | [Landschafts-Stilguide](references/STYLE_GUIDE.md) | Nutzer-Primärreferenz, eingeschränkte Fernstilreferenz, Provenienz und Geografie-Ausschlüsse |
 | [RENDERING_RESEARCH.md](RENDERING_RESEARCH.md) | Gezielter Quellenabgleich bis 25.10.2026, Evidenzlücken und begründete Verfahrenswahl |
 | [RENDERING](operations/RENDERING.md) | Rendering-v4-Plan für Daten-/LOD-/Cache-/Snapshotverträge, Hitch-/Streaming-/Animationsverträge, Godot-Vertikalpfad und harte headless-Simulationsgrenze; Spezifikation, kein Renderer |
-| [Echte Spiel-Screenshots](references/screenshots/README.md) | Sechs lokale Urbek-/Victoria-3-Referenzen mit sichtbarer Zuordnung und Ausschlüssen |
+| [Echte Spiel-Screenshots](references/screenshots/README.md) | Drei lokale Urbek-Referenzen mit sichtbarer Zuordnung und Ausschlüssen |
 
 ## Verhältnis zum bestehenden Projekt
 
-Die ältere Wirtschaftsphase unter `docs/economy/` bleibt erhalten. Für **diesen
+Die ältere Victoria-3-Wirtschaftsrecherche wurde am 26.10.2026 entfernt. Für **diesen
 Kit-1-Auftrag** hat die neuere ausdrückliche Nutzerentscheidung Vorrang: zuerst
 Landschaftsgrafik und Zoom, nicht Wirtschaft, Städte oder das vollständige Spiel.
 Das langfristige Gesamtspiel bleibt der Rahmen für spätere Kits. Die allgemeinen
@@ -132,7 +132,7 @@ Stilproben wurden aus dem aktuellen Kit entfernt. Eine neue Fernstilprobe ist
 mit dem Hinweis enthalten, dass sie den geforderten flachen 2D-Fernendpunkt nicht
 belegt. Die neue Nahprobe wurde verworfen und entfernt. Keine Stilprobe ist ein
 Spielasset.
-Zusätzlich sind sechs echte offizielle Urbek-/Victoria-3-Screenshots als getrennt
+Zusätzlich sind drei echte offizielle Urbek-Screenshots als getrennt
 zugeordnete Referenzen enthalten. Sie sind kein Produktmaterial und keine
 Kit-1-Laufzeitbelege. Assets aus dem fremden MMO-Kit und das erste abgelehnte
 Bild sind **nicht mitgeliefert**.

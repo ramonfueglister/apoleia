@@ -1,7 +1,7 @@
 shader_type spatial;
 // Own sea surface: the zero-height marine plane. Land keeps its terrain
 // shader; ownership is the same SDF-based water kind as before.
-render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode cull_disabled, diffuse_burley, specular_schlick_ggx, depth_draw_always;
 #include "res://shaders/model_sampling.gdshaderinc"
 #include "res://shaders/water_look.gdshaderinc"
 uniform float relief=0.0;
@@ -28,6 +28,8 @@ float display_coast_distance_at(vec2 uv) {
 }
 
 void vertex() {
+    // Clipmap rings stream the same marine plane around the camera.
+    if(clipmap_enabled)VERTEX.xz=clipmap_origin+VERTEX.xz*clipmap_span;
     VERTEX.y=0.0;
     NORMAL=vec3(0.0,1.0,0.0);
     world_position=VERTEX;
@@ -35,6 +37,9 @@ void vertex() {
 void fragment() {
     vec2 p=world_position.xz;
     if(water_kind_at(p)!=1.0) discard;
+    // Solid marine pixels use the depth-writing alpha colour pass; avoids the
+    // Metal Forward+ opaque EQUAL/prepass mismatch.
+    ALPHA=1.0;
     float distance=water_distance_at(p);
     // Near the contour the exact SDF; further out the graphic sidecar that
     // extends the range beyond the packed 3 km.
@@ -42,7 +47,7 @@ void fragment() {
     vec2 coast_uv=(p-display_coast_world_min)/display_coast_world_size;
     // The coarse sidecar only extends the range far out; the exact SDF owns
     // the whole visible saum (no quantised contour bands).
-    if(use_display_coast_distance && inside_domain(coast_uv)) {
+    if(!clipmap_enabled && use_display_coast_distance && inside_domain(coast_uv)) {
         float far=display_coast_distance_at(coast_uv);
         coast_m=mix(coast_m,max(far,coast_m),smoothstep(2600.0,3200.0,coast_m));
     }
