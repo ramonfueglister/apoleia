@@ -3,6 +3,7 @@ extends Node3D
 const MAPPING_REVISION = "mapping-v1"
 const ForestMeshCache = preload("res://scripts/cache/fixed_forest_mesh_cache.gd")
 const CameraRig = preload("res://scripts/landscape_camera.gd")
+const LandscapeLook = preload("res://scripts/style/landscape_look.gd")
 const CAMERA_REVISION = CameraRig.REVISION
 const EARTH_RADIUS = 6371008.8
 const MODEL_SCALE = 0.001
@@ -721,6 +722,7 @@ func _setup_scene() -> void:
     sun.shadow_bias=0.03
     sun.shadow_normal_bias=0.2
     if style_api: style_api.configure_environment(environment,sun)
+    LandscapeLook.configure_environment(environment,sun)
     add_child(sun)
     camera.projection=Camera3D.PROJECTION_ORTHOGONAL
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
@@ -732,7 +734,7 @@ func _setup_scene() -> void:
     cloud_layer.configure(Rect2(world_min,world_size),camera,{"sun_light":sun_light,"height_range_provider":Callable(self,"get_displayed_height_range"),"altitude_unit":"godot_world_y"})
     cloud_layer.enabled=clouds_enabled
     terrain_material=ShaderMaterial.new()
-    terrain_material.shader=load("res://shaders/terrain.gdshader")
+    terrain_material.shader=load("res://shaders/terrain_look.gdshader")
     terrain_material.set_shader_parameter("elevation_tex",_height_texture())
     terrain_material.set_shader_parameter("height_packed",not context_height_packed.is_empty() or (not model_product and not packing_manifest.is_empty()))
     terrain_material.set_shader_parameter("detail_world_min",detail_rect.position)
@@ -748,6 +750,7 @@ func _setup_scene() -> void:
         terrain_material.set_shader_parameter("use_detail_water",true)
     if style_api:
         for key in style_api.terrain_parameters(): terrain_material.set_shader_parameter(key,style_api.terrain_parameters()[key])
+    for key in LandscapeLook.terrain_parameters(): terrain_material.set_shader_parameter(key,LandscapeLook.terrain_parameters()[key])
     _bind_surface_weights(terrain_material)
     terrain_material.set_shader_parameter("mapped_cover_tex",_make_cover_texture())
     terrain_material.set_shader_parameter("water_tex",ImageTexture.create_from_image(Image.create_from_data(water_width,water_height,false,Image.FORMAT_R8,render_waters)))
@@ -1238,6 +1241,7 @@ func _update_camera() -> void:
         feature_material.set_shader_parameter("viewport_width",viewport_size.x)
         feature_material.set_shader_parameter("shading_origin",target)
     if style_api and style_api.has_method("update_view"): style_api.update_view(sun_light,view_width,camera_distance)
+    LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.size*.5,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
     if forest_compact_canopy_material:forest_compact_canopy_material.set_shader_parameter("relief",relief)
@@ -2188,6 +2192,7 @@ func _setup_rivers() -> void:
     river_material.set_shader_parameter("use_model_mesh",true)
     if style_api:
         for param in style_api.water_parameters(): river_material.set_shader_parameter(param,style_api.water_parameters()[param])
+    for param in LandscapeLook.water_parameters(): river_material.set_shader_parameter(param,LandscapeLook.water_parameters()[param])
     for feature in data.get("features",[]):
         var geom=feature.get("geometry",{})
         var lines=[]
@@ -2220,7 +2225,7 @@ func _river_representation_plan() -> Dictionary:
     var flat=fixed_surface!=null and fixed_flat_node!=null and fixed_flat_node.visible
     var support={"atlas":fixed_surface.identity.get("manifest_sha256","") if fixed_surface else "legacy","flat":flat,"stride":0 if flat else fixed_stride}
     if not fixed_surface:support["legacy_mesh_state"]=[previous_lod_key,tin_surface.changes if tin_surface else 0]
-    var pixels=float(style_api.water_parameters().get("minimum_screen_width_px",1.6)) if style_api else 1.6
+    var pixels=LandscapeLook.river_minimum_px(view_width)
     var binding={"revision":"complete-river-set-v1","source":snapshot_manifest_sha256,"river_payload":river_sources_sha256,"support":support,"display_height_scale":display_height_scale,"world_per_pixel":view_width/viewport_size.x,"viewport":[viewport_size.x,viewport_size.y],"pitch_sine":sin(deg_to_rad(elevation_degrees)),"minimum_width_px":pixels,"source_segments":features,"tessellation_rule":[4.0,.05,100]}
     return {"key":JSON.stringify(binding,"",true,true).sha256_text(),"binding":binding,"selection":selection}
 
@@ -2281,9 +2286,9 @@ func _update_river_surface() -> void:
         var a: Vector2=segment[0];var b: Vector2=segment[1]
         var tangent=(b-a).normalized()
         var side=Vector2(-tangent.y,tangent.x)
-        var minimum_pixels=float(style_api.water_parameters().get("minimum_screen_width_px",1.6)) if style_api else 1.6
+        var minimum_pixels=LandscapeLook.river_minimum_px(view_width)
         var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
-        var half_width=maxf(float(segment[2])*.5,minimum_pixels*.5*view_width/viewport_size.x/maxf(projected_side,.001))
+        var half_width=maxf(float(segment[2])*.5*LandscapeLook.RIVER_WIDTH_SCALE,minimum_pixels*.5*view_width/viewport_size.x/maxf(projected_side,.001))
         var count=clampi(int(ceil(a.distance_to(b)/maxf(view_width/viewport_size.x*4.0,.05))),1,100)
         for j in range(count):
             var p=a.lerp(b,float(j)/count);var q=a.lerp(b,float(j+1)/count)

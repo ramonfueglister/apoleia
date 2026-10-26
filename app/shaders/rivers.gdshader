@@ -39,7 +39,9 @@ void fragment(){
     if(water_distance_at(river_position)>0.0) discard;
     float edge=abs(river_side);
     vec3 water=mix(river_color.rgb,river_edge_color.rgb,smoothstep(0.48,0.90,edge)*0.65);
-    ALBEDO=mix(water,river_bank_color.rgb,smoothstep(0.93,1.0,edge)*0.42);
+    // Far views: rivers recede to a thin map blue instead of bright turquoise.
+    water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.7);
+    ALBEDO=mix(water,river_bank_color.rgb,smoothstep(0.80,1.0,edge)*0.55*(1.0-smoothstep(600.0,1500.0,view_width)));
     ROUGHNESS=0.72;
     SPECULAR=0.22;
 }
