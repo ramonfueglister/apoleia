@@ -182,7 +182,19 @@ var river_sources_sha256=""
 var river_mouths:Array=[]
 const RIVER_SET_CACHE_LIMIT=8
 const RIVER_SET_CACHE_BYTES=67108864
-var river_cache_stats={"hits":0,"misses":0,"completed":0,"evictions":0,"resident_bytes":0,"resident_sets":0}
+# Set-Schluessel quantisiert: Breitenboden (Mindestpixel*Welt/Pixel) in Viertel-
+# Oktaven, Pitch in Sinusstufen, Ausschnitt als kachelbuendige Obermenge des
+# Bedarfs. Laufende Sets werden nur bei Unerreichbarkeit abgebrochen.
+const RIVER_WIDTH_STEPS_PER_OCTAVE=4.0
+const RIVER_PITCH_SINE_STEP=.05
+const RIVER_UNREACHABLE_WIDTH_STEPS=8
+const RIVER_BUILD_BUDGET_USEC=2000
+var river_cache_stats={"hits":0,"misses":0,"completed":0,"evictions":0,"resident_bytes":0,"resident_sets":0,"requested":0,"started":0,"aborted":0,"retained_in_flight":0,"fallbacks":0}
+var river_build_key="" # in-flight set; empty while idle
+var river_build_plan: Dictionary={}
+var river_completed_plan: Dictionary={}
+var river_wanted_plan: Dictionary={}
+var river_stats_printed=""
 var river_cache_events: Array=[]
 var river_support_revision=0
 var previous_forest_key = ""
@@ -2488,26 +2500,130 @@ func _detect_river_mouths() -> void:
 
 func _river_representation_plan() -> Dictionary:
     var selection={};var features=[]
-    for i in range(river_sources.size()):
-        var source=river_sources[i]
-        if not source.rect.intersects(camera_footprint.grow(2.0)):continue
-        var segments=[]
-        for j in range(source.segments.size()):
-            var segment=source.segments[j];var a: Vector2=segment[0];var b: Vector2=segment[1]
-            if Rect2(a.min(b),(a-b).abs()).grow(2.0).intersects(camera_footprint):segments.append(j)
-        if not segments.is_empty():selection[i]=segments;features.append([i,segments])
+    # Bedarf wie zuvor (Footprint+2). Gebaut wird eine auf ein Zweierpotenz-Raster
+    # ausgerichtete Obermenge, damit kleine Kameraschritte denselben Schluessel behalten.
+    var need=camera_footprint.grow(2.0)
+    var cell=pow(2.0,ceil(log(maxf(maxf(need.size.x,need.size.y)*.25,.001))/log(2.0)))
+    var low: Vector2=((need.position-Vector2.ONE*cell*.5)/cell).floor()*cell
+    var high: Vector2=((need.end+Vector2.ONE*cell*.5)/cell).ceil()*cell
+    var cover=Rect2(low,high-low)
     var flat=fixed_surface!=null and fixed_flat_node!=null and fixed_flat_node.visible
     var support={"atlas":fixed_surface.identity.get("manifest_sha256","") if fixed_surface else "legacy","flat":flat,"stride":0 if flat else fixed_stride}
     if not fixed_surface:support["legacy_mesh_state"]=[previous_lod_key,tin_surface.changes if tin_surface else 0]
     var pixels=LandscapeLook.river_minimum_px(view_width)
     var binding={"revision":"complete-river-set-v1","source":snapshot_manifest_sha256,"river_payload":river_sources_sha256,"support":support,"display_height_scale":display_height_scale,"world_per_pixel":view_width/viewport_size.x,"viewport":[viewport_size.x,viewport_size.y],"pitch_sine":sin(deg_to_rad(elevation_degrees)),"minimum_width_px":pixels,"source_segments":features,"tessellation_rule":[4.0,.05,100]}
-    return {"key":JSON.stringify(binding,"",true,true).sha256_text(),"binding":binding,"selection":selection}
+    # binding: exakte Anfrageparameter (Evidenz). Schluessel: quantisierte Familie+Obermenge.
+    var world_floor=pixels*view_width/maxf(viewport_size.x,1.0)
+    var width_step=int(floor(log(maxf(world_floor,.000001))/log(2.0)*RIVER_WIDTH_STEPS_PER_OCTAVE))
+    var pitch_step=int(round(sin(deg_to_rad(elevation_degrees))/RIVER_PITCH_SINE_STEP))
+    var family={"revision":"complete-river-set-v2","source":snapshot_manifest_sha256,"river_payload":river_sources_sha256,"support":support,"display_height_scale":display_height_scale,"viewport":[viewport_size.x,viewport_size.y],"width_step":width_step,"pitch_step":pitch_step}
+    var family_key=JSON.stringify(family,"",true,true).sha256_text()
+    var key=JSON.stringify({"family":family_key,"cover":[cover.position.x,cover.position.y,cover.size.x,cover.size.y]},"",true,true).sha256_text()
+    return {"key":key,"binding":binding,"selection":selection,"family":family_key,"need":need,"cover":cover,"width_step":width_step,"pitch_step":pitch_step,"support":support}
 
-func _river_activate_complete(key: String,nodes: Array) -> void:
+func _river_selection(cover: Rect2) -> Dictionary:
+    # Obermenge der bisherigen Footprint-Auswahl: cover enthaelt Footprint+2.
+    var selection={}
+    for i in range(river_sources.size()):
+        var source=river_sources[i]
+        if not source.rect.intersects(cover):continue
+        var segments=[]
+        for j in range(source.segments.size()):
+            var segment=source.segments[j];var a: Vector2=segment[0];var b: Vector2=segment[1]
+            if Rect2(a.min(b),(a-b).abs()).grow(2.0).intersects(cover):segments.append(j)
+        if not segments.is_empty():selection[i]=segments
+    return selection
+
+func _river_plan_record(plan: Dictionary) -> Dictionary:
+    return {"family":plan.family,"cover":plan.cover,"width_step":plan.width_step,"pitch_step":plan.pitch_step,"support":plan.support}
+
+func _river_satisfies(record: Dictionary,plan: Dictionary) -> bool:
+    if record.is_empty() or record.family!=plan.family:return false
+    var cover: Rect2=record.cover
+    return cover.encloses(plan.need)
+
+func _river_plan_distance(record: Dictionary,plan: Dictionary) -> float:
+    # Ersatzanzeige: naechstes fertiges Set, nie ueber anderem Atlas/Flachzustand.
+    if record.is_empty():return INF
+    var a: Dictionary=record.support;var b: Dictionary=plan.support
+    if a.get("atlas")!=b.get("atlas") or a.get("flat")!=b.get("flat"):return INF
+    var cover: Rect2=record.cover;var need: Rect2=plan.need
+    var distance=0.0 if cover.encloses(need) else (1.0 if cover.intersects(need) else INF)
+    distance+=absf(float(record.width_step)-float(plan.width_step))*.25+absf(float(record.pitch_step)-float(plan.pitch_step))*.25
+    if a.get("stride")!=b.get("stride"):distance+=.5
+    return distance
+
+func _river_unreachable(build: Dictionary,plan: Dictionary) -> bool:
+    # Nur klar unerreichbare Sets abbrechen: anderer Atlas/Flachzustand (Clip-Untergrund
+    # wird live gelesen), mehr als zwei Oktaven Breitenabstand oder weit weg geschwenkt.
+    var a: Dictionary=build.support;var b: Dictionary=plan.support
+    if a.get("atlas")!=b.get("atlas") or a.get("flat")!=b.get("flat"):return true
+    if absi(int(build.width_step)-int(plan.width_step))>RIVER_UNREACHABLE_WIDTH_STEPS:return true
+    var cover: Rect2=build.cover;var need: Rect2=plan.need
+    return not cover.grow(maxf(need.size.x,need.size.y)).intersects(need)
+
+func _river_abort_build(plan: Dictionary) -> void:
+    for node in river_pending_nodes:node.queue_free()
+    river_pending_nodes.clear();river_queue.clear()
+    if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"abort","key":river_build_key,"requested_key":str(plan.key)})
+    river_build_key="";river_build_plan={};river_cache_stats.aborted+=1
+
+func _river_start_build(plan: Dictionary) -> void:
+    river_build_key=str(plan.key);river_build_plan=_river_plan_record(plan)
+    # Anfrageparameter einfrieren: das Set wird vollstaendig mit ihnen gebaut.
+    river_build_plan["params"]=[view_width,elevation_degrees,viewport_size,fixed_stride]
+    for node in river_pending_nodes:node.queue_free()
+    river_pending_nodes.clear();river_queue.clear();river_build_selection=_river_selection(plan.cover)
+    river_cache_stats.misses+=1;river_cache_stats.started+=1
+    for i in river_build_selection:river_queue.append(i)
+    if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"request","key":river_build_key,"features":river_queue.size(),"retained_complete_key":river_completed_key})
+    if river_queue.is_empty():_river_publish_complete()
+
+func _river_schedule(plan: Dictionary) -> void:
+    if _river_satisfies(river_completed_plan,plan):
+        if river_set_cache.has(river_completed_key):river_set_cache[river_completed_key].last_used=frame_number
+        return
+    for cached in river_set_cache:
+        var record: Dictionary=river_set_cache[cached]
+        if _river_satisfies(record,plan):
+            river_cache_stats.hits+=1;_river_activate_complete(cached,record.nodes,record)
+            if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"hit","key":cached,"nodes":river_nodes.size()})
+            return
+    var key=str(plan.key)
+    if not _river_satisfies(river_build_plan,plan):
+        if key!=river_surface_key:river_surface_key=key;river_cache_stats.requested+=1
+        if river_build_key!="":
+            if _river_unreachable(river_build_plan,plan):_river_abort_build(plan)
+            elif river_build_plan.get("retained_for","")!=key:
+                # Nicht wegen Schluesselwechsel abbrechen: fertig bauen, in den LRU-Cache.
+                river_build_plan["retained_for"]=key;river_cache_stats.retained_in_flight+=1
+        if river_build_key=="":_river_start_build(plan)
+    _river_display_fallback(plan)
+
+func _river_display_fallback(plan: Dictionary) -> void:
+    # Bis das passende Set fertig ist, das naechstliegende fertige Set zeigen; nie leeren.
+    if _river_satisfies(river_completed_plan,plan):return
+    var best="";var best_score=_river_plan_distance(river_completed_plan,plan)
+    for cached in river_set_cache:
+        if cached==river_completed_key:continue
+        var score=_river_plan_distance(river_set_cache[cached],plan)
+        if score<best_score:best=cached;best_score=score
+    if best=="":return
+    river_cache_stats.fallbacks+=1;_river_activate_complete(best,river_set_cache[best].nodes,river_set_cache[best])
+    if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"fallback","key":best,"requested_key":river_surface_key,"distance":best_score})
+
+func _river_print_stats() -> void:
+    # Laufzeit-Telemetrie fuer Mac-Laeufe; nur bei geaenderten Zaehlern.
+    var stats=JSON.stringify(river_cache_stats)
+    if stats==river_stats_printed:return
+    river_stats_printed=stats
+    print(JSON.stringify({"event":"river_set_cache","frame":frame_number,"stats":river_cache_stats,"pending_features":river_queue.size(),"in_flight":river_build_key!=""}))
+
+func _river_activate_complete(key: String,nodes: Array,record: Dictionary={}) -> void:
     for node in river_nodes:node.visible=false
     river_nodes=[];river_nodes.assign(nodes)
     for node in river_nodes:node.visible=true
-    river_completed_key=key
+    river_completed_key=key;river_completed_plan=record
     if river_set_cache.has(key):river_set_cache[key].last_used=frame_number
 
 func _river_publish_complete() -> void:
@@ -2516,12 +2632,16 @@ func _river_publish_complete() -> void:
     for node in nodes:
         for surface in node.mesh.get("_surfaces"):
             for field in ["vertex_data","attribute_data","skin_data","index_data"]:bytes+=surface.get(field,PackedByteArray()).size()
+    var key=river_build_key;var record: Dictionary=river_build_plan.duplicate()
+    record.erase("params");record.erase("retained_for");river_build_key="";river_build_plan={}
     # Empty representations need no retained resources or LRU slot.
-    if not nodes.is_empty():river_set_cache[river_surface_key]={"nodes":nodes,"last_used":frame_number,"bytes":bytes}
-    _river_activate_complete(river_surface_key,nodes)
+    if not nodes.is_empty():record["nodes"]=nodes;record["last_used"]=frame_number;record["bytes"]=bytes;river_set_cache[key]=record
+    # Ueberholte Sets gehen nur in den Cache; angezeigt wird das passende oder naechste Set.
+    var current=river_wanted_plan.is_empty() or _river_satisfies(record,river_wanted_plan)
+    if current:_river_activate_complete(key,nodes,record)
     river_cache_stats.completed+=1
     _river_evict_complete()
-    if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"complete","key":river_surface_key,"nodes":nodes.size(),"raw_surface_bytes":bytes})
+    if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"complete","key":key,"current":current,"nodes":nodes.size(),"raw_surface_bytes":bytes})
 
 func _river_evict_complete() -> void:
     var bytes=0
@@ -2537,21 +2657,23 @@ func _river_evict_complete() -> void:
     river_cache_stats.resident_bytes=bytes;river_cache_stats.resident_sets=river_set_cache.size()
 
 func _update_river_surface() -> void:
+    if river_material and frame_number%60==0:_river_print_stats()
     if not river_material or not feature_queue.is_empty() or feature_task>=0:return
-    var plan=_river_representation_plan();var key=str(plan.key)
-    if key!=river_surface_key:
-        river_surface_key=key
-        for node in river_pending_nodes:node.queue_free()
-        river_pending_nodes.clear();river_queue.clear();river_build_selection=plan.selection
-        if key==river_completed_key:return
-        if river_set_cache.has(key):
-            river_cache_stats.hits+=1;_river_activate_complete(key,river_set_cache[key].nodes)
-            if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"hit","key":key,"nodes":river_nodes.size()})
-            return
-        river_cache_stats.misses+=1
-        for i in river_build_selection:river_queue.append(i)
-        if _cache_request_evidence_enabled():river_cache_events.append({"frame":frame_number,"event":"request","key":key,"features":river_queue.size(),"retained_complete_key":river_completed_key})
-        if river_queue.is_empty():_river_publish_complete();return
+    var plan=_river_representation_plan();river_wanted_plan=plan
+    _river_schedule(plan)
+    if river_queue.is_empty():return
+    # Laufendes Set mit seinen eingefrorenen Anfrageparametern weiterbauen, auch wenn
+    # die Kamera weiter ist; Zeitbudget pro Frame statt genau eines Features.
+    var live=[view_width,elevation_degrees,viewport_size,fixed_stride];var params: Array=river_build_plan.params
+    view_width=params[0];elevation_degrees=params[1];viewport_size=params[2];fixed_stride=params[3]
+    var started=Time.get_ticks_usec()
+    while not river_queue.is_empty():
+        _river_build_next_feature()
+        if Time.get_ticks_usec()-started>=RIVER_BUILD_BUDGET_USEC:break
+    view_width=live[0];elevation_degrees=live[1];viewport_size=live[2];fixed_stride=live[3]
+    if river_build_key=="":_river_schedule(plan)
+
+func _river_build_next_feature() -> void:
     if river_queue.is_empty():return
     var feature=river_queue.pop_front();var source=river_sources[feature]
     var vertices=PackedVector3Array();var normals=PackedVector3Array();var uvs=PackedVector2Array();var indices=PackedInt32Array()
