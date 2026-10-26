@@ -13,11 +13,13 @@ uniform vec2 mask_shift;
 uniform float mask_darkness = 0.5;
 
 varying float amount;
+varying float storm;
 
 void vertex() {
 	vec4 info;
 	vec3 p = place_cluster(VERTEX, MODEL_MATRIX[3].xyz, INSTANCE_CUSTOM, info);
 	amount = step(0.001, info.x);
+	storm = info.w;
 	// Flat proxy just above the cloud base keeps the cast shape compact.
 	p.y = cloud_base + (p.y - cloud_base) * 0.25;
 	p.xz += proxy_shift;
@@ -27,5 +29,6 @@ void vertex() {
 
 void fragment() {
 	if (amount < 0.3) { discard; }
-	ALBEDO = mode == 2 ? vec3(1.0 - mask_darkness) : vec3(0.0);
+	// Mask: 1 = no cloud; light under fair clouds, dense under storm fronts.
+	ALBEDO = mode == 2 ? vec3(1.0 - min(mask_darkness + 0.6 * storm, 0.9)) : vec3(0.0);
 }

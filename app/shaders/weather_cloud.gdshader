@@ -11,7 +11,7 @@ uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
 uniform vec3 sun_color : source_color = vec3(1.0, 0.97, 0.92);
 uniform vec3 shade_color : source_color = vec3(0.76, 0.82, 0.90);
 // Linear targets, calibrated against the ACES look (0.5 linear already reads near white).
-uniform vec3 storm_color : source_color = vec3(0.24, 0.245, 0.29);
+uniform vec3 storm_color : source_color = vec3(0.30, 0.31, 0.37);
 uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
@@ -65,7 +65,7 @@ void fragment() {
 	vec3 rain_grey = vec3(0.30, 0.32, 0.35) * mix(0.55, 1.0, smoothstep(0.0, 0.6, height01)) * (0.75 + 0.5 * wrap);
 	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
-	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.55, 0.38) * 0.18 * wrap * smoothstep(0.4, 0.95, height01);
+	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.32 * wrap * smoothstep(0.35, 0.95, height01);
 	colour = mix(colour, slate, storm_amount);
 	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
 	colour += near_flash * vec3(1.4, 1.45, 1.8) * (0.6 + storm);

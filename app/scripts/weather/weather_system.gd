@@ -9,7 +9,8 @@ const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
 const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
 const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
 const PROXY_SHADER = preload("res://shaders/weather_proxy.gdshader")
-const MASK_SIZE := 512
+# Low resolution on purpose: bilinear sampling softens the shadow edges on water.
+const MASK_SIZE := 160
 const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
 
 const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
@@ -47,7 +48,8 @@ const TRANSITION_SECONDS := 30.0
 
 var enabled := true
 var auto_weather := true
-var state := "fair"
+# Start clear (the reference look); automatic weather brings clouds in later.
+var state := "clear"
 var time_of_day := 0.5
 var day_cycle_seconds := 0.0
 var time_scale := 1.0
@@ -119,6 +121,7 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 	_capture_base()
 	var seed := 1
 	var start_state := ""
+	var snapshot := false
 	var spawn_front := false
 	var args := OS.get_cmdline_user_args()
 	for i in args.size():
@@ -141,7 +144,10 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 			"--weather-capture-frames": _capture_frames = int(value)
 			"--clouds-disabled": enabled = false
 			"--clouds-enabled": enabled = true
+			"--snapshot": snapshot = true
 	_rng.seed = seed
+	# Snapshots without --weather stay in the clear reference state.
+	if snapshot and start_state == "": start_state = "clear"
 	if start_state != "":
 		auto_weather = false
 		state = start_state
@@ -162,7 +168,8 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 	_puff_from = state
 	_wind_from = STATE_WIND[state]
 	_wind_to = _wind_from
-	_phase_left = _rng.randf_range(120.0, 240.0)
+	# First clouds drift in only after a while.
+	_phase_left = _rng.randf_range(60.0, 120.0)
 	_front_timer = _rng.randf_range(60.0, 120.0)
 	_spawn_front = spawn_front
 	if _capture_dir != "": DirAccess.make_dir_recursive_absolute(_capture_dir)
@@ -247,7 +254,7 @@ func _split_sun(strength: float) -> void:
 	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_mode", "directional_shadow_max_distance", "directional_shadow_blend_splits", "directional_shadow_split_1", "directional_shadow_split_2", "directional_shadow_split_3", "light_specular"]:
 		_cloud_sun.set(property, _sun.get(property))
 	# Soft, blurred cloud shadows; tree shadows keep the main sun's settings.
-	_cloud_sun.shadow_blur = 3.0
+	_cloud_sun.shadow_blur = 6.0
 
 func _build_lightning() -> void:
 	_bolt = MeshInstance3D.new()
@@ -435,7 +442,7 @@ func _process(delta: float) -> void:
 		_phase_left -= dt
 		if _phase_left <= 0.0:
 			_phase_left = _rng.randf_range(120.0, 240.0)
-			_begin_transition(_pick_auto_state())
+			_begin_transition("fair" if state == "clear" else _pick_auto_state())
 	wind_strength = lerpf(_wind_from, _wind_to, smoothstep(0.0, 1.0, _transition))
 	var heading := 0.25 * sin(weather_time / 300.0)
 	wind_dir = Vector2(1.0, -0.15).normalized().rotated(heading)
@@ -517,7 +524,8 @@ func _apply_look() -> void:
 	_written_fog = _fog_base * (1.0 + w.y * 0.3)
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.18 * w.y - 0.2 * state_rain)
-	_split_sun(clampf(0.8 + 0.15 * w.z, 0.0, 0.95))
+	# Cloud shadows darken by about 25-30 %; more under storm fronts.
+	_split_sun(clampf(0.38 + 0.45 * w.z, 0.0, 0.85))
 
 func _restore_look() -> void:
 	if _base.is_empty(): return
@@ -576,7 +584,7 @@ func _update_tiers() -> void:
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("puff_amount", puffs)
 		material.set_shader_parameter("bank_grey", bank_grey)
-	_cloud_mask_material.set_shader_parameter("mask_darkness", 0.45 + 0.35 * local_weather.z)
+	_cloud_mask_material.set_shader_parameter("mask_darkness", 0.22)
 	_rain_material.set_shader_parameter("strength", lerpf(1.25, 0.5, smoothstep(700.0, 1600.0, view_width)))
 	if fine_on: _fine.ensure(region.grow(FINE_SCALE.y * 1.8))
 	if coarse_on: _coarse.ensure(region.grow(COARSE_SCALE.y * 1.8))
