@@ -34,8 +34,9 @@ const TIMES: Array[String] = ["morning", "noon", "evening"]
 # Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
 const TIME_LOOK := {
 	# Warm low sun against a cooler blue ambient; terrain colours are kept.
-	"morning": [Vector3(-16.0, 72.0, 0.0), Color(1.0, 0.80, 0.70), 1.3, Color(0.80, 0.88, 1.10), 1.2, Color(1.0, 0.90, 0.90)],
-	"evening": [Vector3(-14.0, -100.0, 0.0), Color(1.0, 0.66, 0.40), 1.35, Color(0.76, 0.84, 1.10), 1.15, Color(1.05, 0.86, 0.74)],
+	# Warmth mostly in highlights and glitter: mildly saturated sun, ambient kept.
+	"morning": [Vector3(-17.0, 72.0, 0.0), Color(1.0, 0.88, 0.80), 1.2, Color(0.92, 0.95, 1.04), 1.0, Color(1.0, 0.95, 0.94)],
+	"evening": [Vector3(-14.0, -100.0, 0.0), Color(1.0, 0.84, 0.66), 1.25, Color(0.92, 0.95, 1.04), 1.0, Color(1.03, 0.95, 0.88)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -363,7 +364,9 @@ func _prewarm_cells() -> void:
 	for cell in cells:
 		if cell.kind == 2:
 			# Placed so the front appears on the right of the view, not above it.
-			cell.pos = _focus() + Vector2(_ground_width * 0.33, 0.0) - _apparent_offset(cloud_base) * 0.5
+			# Far side of the view, right half: the foreground stays sunny.
+			var away := Vector2(_forward.x, _forward.z).normalized()
+			cell.pos = _focus() + away * _ground_width * 0.55 + Vector2(-away.y, away.x) * _ground_width * 0.25
 			cell.ra = maxf(_ground_width * 0.38, 90.0)
 			cell.rc = maxf(_ground_width * 0.5, 120.0)
 			break
@@ -569,7 +572,7 @@ func _apply_look() -> void:
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.18 * w.y - 0.2 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
-	_split_sun(clampf(0.38 + 0.45 * w.z, 0.0, 0.85))
+	_split_sun(clampf(0.5 + 0.35 * w.z, 0.0, 0.85))
 	_written = _read_look()
 
 func _restore_look() -> void:
@@ -621,7 +624,10 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * (1.6 if _ground_width < 400.0 else 0.22))
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
+	var cluster_scale := clampf(_ground_width / 700.0, 0.4, 1.0)
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
+		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("proxy_shift", proxy_shift)
 		material.set_shader_parameter("mask_shift", mask_shift)
@@ -656,7 +662,8 @@ func _upload_uniforms() -> void:
 		material.set_shader_parameter("cell_count", cells.size())
 		material.set_shader_parameter("cloud_base", cloud_base)
 	_rain_material.set_shader_parameter("now", weather_time / maxf(time_scale, 0.001) if time_scale > 0.0 else 0.0)
-	var shade := Color(0.55, 0.62, 0.74) * ambient * 1.15
+	# Light blue-grey undersides: shade follows the ambient hue, not its energy.
+	var shade := Color(0.80, 0.86, 0.95) * ambient / maxf(maxf(ambient.r, ambient.g), ambient.b)
 	var sun_height := clampf(sun_dir.y / 0.64, 0.85, 1.0)
 	for material in [_cloud_material]:
 		material.set_shader_parameter("sun_dir", sun_dir)

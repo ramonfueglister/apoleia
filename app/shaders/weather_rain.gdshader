@@ -7,7 +7,7 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabl
 
 uniform float cloud_base = 90.0;
 uniform float now = 0.0;
-uniform vec3 rain_color : source_color = vec3(0.34, 0.38, 0.46);
+uniform vec3 rain_color : source_color = vec3(0.62, 0.66, 0.72);
 uniform float strength = 1.0;
 instance uniform float fade = 1.0;
 

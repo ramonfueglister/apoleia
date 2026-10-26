@@ -5,6 +5,7 @@
 #include "res://shaders/weather_field.gdshaderinc"
 
 uniform float cloud_base = 90.0;
+uniform float cluster_scale = 1.0;  // shrinks clusters in close views (largest ~10 % of view width)
 uniform float puff_amount = 1.0;   // scales scattered fair-weather clusters
 uniform float bank_grey = 0.0;     // how grey merged banks turn (0 fair, 1 rain)
 
@@ -20,10 +21,11 @@ vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	float h = custom.x;
 	float presence = smoothstep(h - 0.06, h + 0.06, cluster_cover);
 	// Banks and fronts: clusters grow until they merge into one mass.
-	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank);
+	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank) * cluster_scale;
 	info = vec4(s, field.x, max(field.y, bank * 0.8 * bank_grey), field.z);
 	// Banks spread wide and flat; fair clusters keep their height.
 	vec3 local = (vertex_world - origin) * s;
-	local.y *= 1.0 - 0.7 * bank * (1.0 - field.z);
+	// Height:width at most about 1:3 for banks and storm fronts.
+	local.y *= 0.75 * (1.0 - 0.6 * bank);
 	return vec3(world_xz.x, cloud_base, world_xz.y) + local;
 }

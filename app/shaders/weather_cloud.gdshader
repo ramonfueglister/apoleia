@@ -5,7 +5,9 @@ shader_type spatial;
 // as gentle brightness steps. Opaque (no inner faces show through); only the
 // silhouette is softened by an ordered dither. Shadows come from
 // weather_proxy.gdshader, so this transparent material never casts.
-render_mode unshaded, world_vertex_coords, cull_disabled, fog_disabled;
+// The cluster mesh winds inward, so cull_front keeps only the outer surface;
+// with depth written, translucent rain banks never show inner facets.
+render_mode unshaded, world_vertex_coords, cull_front, blend_mix, depth_draw_always, fog_disabled;
 #include "res://shaders/weather_placement.gdshaderinc"
 
 uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
@@ -55,9 +57,9 @@ void fragment() {
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	if (dot(flat_n, to_camera) < 0.0) { flat_n = -flat_n; }
 	// Facets stay readable but soft: flat normal pulled towards the cluster normal.
-	vec3 n = normalize(mix(flat_n, normalize(smooth_normal), 0.55));
+	vec3 n = normalize(mix(flat_n, normalize(smooth_normal), 0.7));
 	vec3 l = normalize(sun_dir);
-	float wrap = clamp((dot(n, l) + 0.55) / 1.55, 0.0, 1.0);
+	float wrap = clamp((dot(n, l) + 0.7) / 1.7, 0.0, 1.0);
 	vec3 colour = mix(shade_color, sun_color, smoothstep(0.15, 0.85, wrap));
 	// Slightly bluer belly.
 	colour = mix(colour, shade_color * vec3(0.94, 0.97, 1.02), smoothstep(0.35, 0.0, height01) * 0.5);
@@ -65,8 +67,8 @@ void fragment() {
 	// Light shining through the thin rim, strongest with the sun behind the cloud.
 	float back = clamp(-dot(to_camera, l) * 0.5 + 0.5, 0.0, 1.0);
 	colour += pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.9, 0.75) * (0.12 + 0.3 * back);
-	// Rain: light grey tops, dark blue-grey bellies.
-	vec3 rain_grey = vec3(0.24, 0.255, 0.28) * mix(0.5, 1.0, smoothstep(0.0, 0.6, height01)) * (0.75 + 0.5 * wrap);
+	// Rain: grey tops, darker slate bellies.
+	vec3 rain_grey = vec3(0.33, 0.35, 0.38) * mix(0.6, 1.0, smoothstep(0.0, 0.6, height01)) * (0.8 + 0.4 * wrap);
 	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
 	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.24 * smoothstep(0.5, 1.0, wrap) * smoothstep(0.45, 0.95, height01) + pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.6, 0.4) * 0.18 * wrap;
@@ -74,7 +76,8 @@ void fragment() {
 	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
 	colour += near_flash * vec3(1.4, 1.45, 1.8) * (0.6 + storm);
 	ALBEDO = colour * brightness;
-	// Soft silhouette: dither away part of the grazing rim; storm fronts stay solid.
-	float rim_keep = mix(smoothstep(0.02, 0.35, facing), 1.0, storm_amount);
-	if (rim_keep < dither * 0.7) { discard; }
+	// Soft silhouette; rain banks are see-through (0.55-0.8) with frayed edges.
+	float rim = smoothstep(0.02, 0.35, facing);
+	float body = mix(1.0, mix(0.55, 0.8, rim), grey * (1.0 - storm_amount));
+	ALPHA = mix(rim, 1.0, storm_amount * 0.7) * body;
 }

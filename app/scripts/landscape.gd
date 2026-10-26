@@ -249,6 +249,7 @@ var snapshot_hold_seconds=0.0
 var start_view: Array=[]
 var start_width_source_m=-1.0
 var snapshot_hold_frames=0 # local weather-baseline measurement only
+var elevation_override=0.0 # comparison camera for weather/reference shots only
 var tour_duration = 48.0
 var capture_interval = 1.0/24.0
 var capture_tasks: Array[int]=[]
@@ -341,6 +342,7 @@ func _ready() -> void:
         if args[i] == "--fixture" and i+1<args.size(): fixture_path=args[i+1]
         if args[i] == "--snapshot": snapshot=true
         if args[i] == "--snapshot-hold" and i+1<args.size(): snapshot_hold_frames=int(args[i+1])
+        if args[i] == "--elevation" and i+1<args.size(): elevation_override=float(args[i+1])
         if args[i] == "--hold-seconds" and i+1<args.size(): snapshot_hold_seconds=float(args[i+1])
         if args[i] == "--width-source-m" and i+1<args.size(): start_width_source_m=float(args[i+1])
         if args[i] == "--view" and i+3<args.size(): start_view=[float(args[i+1]),float(args[i+2]),float(args[i+3])]
@@ -1384,7 +1386,7 @@ func _update_camera() -> void:
     # No crowns are drawn there, so forest support heights are unaffected.
     display_height_scale*=1.0+1.0*smoothstep(2200.0,6000.0,view_width)
     var profile=CameraRig.profile(view_width,far_width)
-    elevation_degrees=profile.x
+    elevation_degrees=profile.x if elevation_override<=0.0 else elevation_override
     relief=profile.y
     _refresh_displayed_height_bounds()
     _clamp_camera_target()
