@@ -322,7 +322,7 @@ func sample_field(p: Vector2) -> Vector3:
 	return Vector3(clampf(cover, 0.0, 1.0), clampf(rain, 0.0, 1.0), clampf(storm, 0.0, 1.0))
 
 func describe() -> Dictionary:
-	return {"enabled": enabled, "auto": auto_weather, "state": state, "time_of_day": time_of_day, "local": [local_weather.x, local_weather.y, local_weather.z], "cells": cells.size(), "cloud_base": cloud_base, "fine_slots": _fine.slot_count if _fine else 0, "coarse_slots": _coarse.slot_count if _coarse else 0}
+	return {"enabled": enabled, "auto": auto_weather, "state": state, "time_of_day": time_of_day, "local": [local_weather.x, local_weather.y, local_weather.z], "cells": cells.size(), "cloud_base": cloud_base, "fine_slots": _fine.slot_count if _fine else 0, "coarse_slots": _coarse.slot_count if _coarse else 0, "focus": [_focus().x, _focus().y], "ground_width": _ground_width, "forward": [_forward.x, _forward.z], "cell_list": cells.map(func(c): return [c.kind, snappedf(c.pos.x, 0.1), snappedf(c.pos.y, 0.1), snappedf(c.ra, 0.1), snappedf(c.rc, 0.1), snappedf(_cell_strength(c), 0.01)])}
 
 # --- Field helpers ----------------------------------------------------------
 
@@ -366,9 +366,9 @@ func _prewarm_cells() -> void:
 			# Placed so the front appears on the right of the view, not above it.
 			# Far side of the view, right half: the foreground stays sunny.
 			var away := Vector2(_forward.x, _forward.z).normalized()
-			cell.pos = _focus() + away * _ground_width * 0.55 + Vector2(-away.y, away.x) * _ground_width * 0.25
-			cell.ra = maxf(_ground_width * 0.38, 90.0)
-			cell.rc = maxf(_ground_width * 0.5, 120.0)
+			cell.pos = _focus() + away * _ground_width * 0.3 + Vector2(-away.y, away.x) * _ground_width * 0.3
+			cell.ra = maxf(_ground_width * 0.3, 60.0)
+			cell.rc = maxf(_ground_width * 0.45, 90.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -484,7 +484,7 @@ func _process(delta: float) -> void:
 		if "no-clouds" in _debug:
 			for mmi in _fine.visual + _coarse.visual: mmi.visible = false
 		if "no-rain" in _debug and _fine.rain_instance: _fine.rain_instance.visible = false
-		if _frame == 120: print("WEATHERDEBUG ", JSON.stringify(describe()))
+		if _frame == 30: print("WEATHERDEBUG ", JSON.stringify(describe()))
 	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
 		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
 
