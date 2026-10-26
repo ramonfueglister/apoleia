@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Link the render data bound in app/renderer-binding.json from another checkout.
+
+Large source and render payloads (data/gameworld-v2, artifacts/render-data/*) are
+not in Git. This links each missing bound dataset directory from DATA_ROOT, a
+checkout that already holds them, so a fresh clone can start. Existing paths are
+never replaced. Exit 1 lists whatever is still missing.
+
+usage: scripts/link-render-data DATA_ROOT [--dry-run]
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def bound_paths(value):
+    if isinstance(value, dict):
+        for item in value.values():
+            yield from bound_paths(item)
+    elif isinstance(value, str) and value.startswith(('artifacts/', 'data/')):
+        yield value
+
+
+def dataset_dir(path):
+    """The directory that owns one bound path: artifacts/render-data/<name> or data/<name>."""
+    parts = Path(path).parts
+    depth = 3 if parts[:2] == ('artifacts', 'render-data') else 2
+    return Path(*parts[:depth])
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('data_root', type=Path)
+    parser.add_argument('--dry-run', action='store_true')
+    args = parser.parse_args()
+    source = args.data_root.expanduser().resolve()
+    binding = json.loads((ROOT / 'app/renderer-binding.json').read_text())
+    missing = []
+    for directory in sorted({dataset_dir(p) for p in bound_paths(binding)}):
+        local = ROOT / directory
+        if local.exists():
+            continue
+        if local.is_symlink():
+            print(f'broken link, not replaced: {directory} -> {os.readlink(local)}')
+            missing.append(directory)
+            continue
+        if not (source / directory).exists():
+            missing.append(directory)
+            continue
+        print(f'link {directory} -> {source / directory}')
+        if not args.dry_run:
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.symlink_to(source / directory, target_is_directory=(source / directory).is_dir())
+    for path in sorted(set(bound_paths(binding))):
+        if not (ROOT / path).exists() and dataset_dir(path) not in missing and not args.dry_run:
+            missing.append(Path(path))
+    if missing:
+        print('still missing (build them or pick another DATA_ROOT):')
+        for directory in missing:
+            print(f'  {directory}')
+        raise SystemExit(1)
+    print('all bound render data present')
+
+
+if __name__ == '__main__':
+    main()

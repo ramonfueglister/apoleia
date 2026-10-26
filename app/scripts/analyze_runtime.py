@@ -25,8 +25,25 @@ with (root/'data/derived'/manifest['height_detail_path']).open('rb') as hf,(root
    observed=probe['observed_pixel'];error=math.dist(expected,observed)
    x=math.radians(probe['source_lon']-19)*6371008.8*math.cos(math.radians(41));zz=math.radians(41-probe['source_lat'])*6371008.8
    tile=f'eqc41-km-v1:{math.floor(zz/1000)}:{math.floor(x/1000)}'
-   rows.append({'t_ms':sample['t_ms'],'zoom':sample['zoom'],'anchor':probe['anchor_id'],'in_viewport':probe['in_viewport'],'source_height_m':z,'renderer_source_height_m':probe['source_surface_height_m'],'height_read_residual_m':abs(z-probe['source_surface_height_m']),'expected_x_px':expected[0],'expected_y_px':expected[1],'observed_x_px':observed[0],'observed_y_px':observed[1],'screen_residual_px':error,'expected_tile_id':tile,'observed_tile_id':probe['tile_id'],'tile_match':tile==probe['tile_id']})
+   rows.append({'t_ms':sample['t_ms'],'zoom':sample['zoom'],'anchor':probe['anchor_id'],'in_viewport':probe['in_viewport'],'source_height_m':z,'renderer_source_height_m':probe['source_surface_height_m'],'height_read_residual_m':abs(z-probe['source_surface_height_m']),'expected_x_px':expected[0],'expected_y_px':expected[1],'observed_x_px':observed[0],'observed_y_px':observed[1],'screen_residual_px':error,'expected_tile_id':tile,'observed_tile_id':probe['tile_id'],'tile_match':tile==probe['tile_id'],'source_residency':probe.get('source_residency',{}).get('status','unrecorded'),'source_mip_level':probe.get('source_residency',{}).get('mip_level')})
+ # Post-tour A05 phase: one probe per anchor after requesting its native block.
+ # The camera does not move during that phase, so the last timing sample frames it.
+ native_rows=[]
+ for probe in runtime.get('anchor_native_probes',[]):
+  z,kind=height(probe['source_lon'],probe['source_lat']);check=probe.get('native_check',{})
+  expected=mod.expected_pixel(probe['source_lon'],probe['source_lat'],z,runtime['samples'][-1],b,kind)
+  native_rows.append({'anchor':probe['anchor_id'],'native_check':check.get('status','unrecorded'),'wait_ms':check.get('wait_ms'),'source_residency':probe.get('source_residency',{}).get('status','unrecorded'),'source_mip_level':probe.get('source_residency',{}).get('mip_level'),'source_height_m':z,'renderer_source_height_m':probe['source_surface_height_m'],'height_read_residual_m':abs(z-probe['source_surface_height_m']),'in_viewport':probe['in_viewport'],'screen_residual_px':math.dist(expected,probe['observed_pixel'])})
+ if native_rows:
+  with (a.run/'anchor-native.csv').open('w') as out:
+   writer=csv.DictWriter(out,fieldnames=list(native_rows[0]));writer.writeheader();writer.writerows(native_rows)
  with (a.run/'anchor-projection.csv').open('w') as out:
   writer=csv.DictWriter(out,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
- summary={'schema_version':'anchor-analysis-v1','method':'independent mmap source bilinear pixel-center read; independent scalar expected projection; observed Camera3D actual state + active terrain triangle CPU probe, not framebuffer feature recognition','sample_count':len(rows),'visible_sample_count':sum(r['in_viewport']for r in rows),'visible_screen_residual_max_px':max((r['screen_residual_px']for r in rows if r['in_viewport']),default=None),'source_height_read_residual_max_m':max(r['height_read_residual_m']for r in rows),'tile_mismatch_count':sum(not r['tile_match']for r in rows)}
+ summary={'schema_version':'anchor-analysis-v1','method':'independent mmap source bilinear pixel-center read; independent scalar expected projection; observed Camera3D actual state + active terrain triangle CPU probe, not framebuffer feature recognition','sample_count':len(rows),'visible_sample_count':sum(r['in_viewport']for r in rows),'visible_screen_residual_max_px':max((r['screen_residual_px']for r in rows if r['in_viewport']),default=None),'source_height_read_residual_max_m':max(r['height_read_residual_m']for r in rows),
+  # Streaming renderers answer from a coarser parent mip until the anchor's block is native;
+  # only native reads are comparable to the full-resolution source.
+  'source_height_read_residual_native_max_m':max((r['height_read_residual_m']for r in native_rows if r['native_check']=='native' and r['source_residency']=='native'),default=None),
+  'anchor_native_check_counts':{k:sum(r['native_check']==k for r in native_rows) for k in sorted({r['native_check'] for r in native_rows})},
+  'anchor_native_check_residency_mismatch':[r['anchor'] for r in native_rows if r['native_check']=='native' and r['source_residency']!='native'],
+  'anchor_native_check_timeouts':[r['anchor'] for r in native_rows if r['native_check']!='native'],
+  'tour_source_height_read_residual_native_max_m':max((r['height_read_residual_m']for r in rows if r['source_residency']=='native'),default=None),'source_height_read_residual_parent_fallback_max_m':max((r['height_read_residual_m']for r in rows if r['source_residency']=='parent_fallback'),default=None),'source_residency_counts':{k:sum(r['source_residency']==k for r in rows) for k in sorted({r['source_residency'] for r in rows})},'tile_mismatch_count':sum(not r['tile_match']for r in rows)}
  (a.run/'anchor-analysis.json').write_text(json.dumps(summary,indent=2));print(json.dumps(summary))
