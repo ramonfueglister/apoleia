@@ -74,3 +74,15 @@
   2500 m, rock on summits from 2500 m, snow from land cover above 3000 m).
 - The land-cover relief channel (A) is computed from atlas r6 converted to
   that reference curve.
+
+## Knee compression (atlas r7, clipmap-tiles-r7-etopo15) – current
+- Atlas r7 (`fixed-source-v2-mountain-r7`): as r6, but the compression is a
+  soft knee: heights up to K = 1000 m stay real, above
+  h = K + H1*ln(1+(h-K)/H1) with H1 = 500 m (slope 1 at K):
+  1500 -> 1347, 2000 -> 1549, 3000 -> 1805, 4000 -> 1973.
+  Hills, the Apennines below 1000 m and valley floors stay real; only the
+  high mountains flatten. Real = K + H1*(exp((h-K)/H1)-1) above K.
+- Fine detail r3 (`fine-relief-detail-500m-r3`): knee-curve derivative x0.6.
+- Tiles `clipmap-tiles-r7-etopo15`: 4187 tiles, 266 MB, manifest sha256 see below.
+- Land shader: `land_knee` = 1000, `land_h0` = 500 (H1).
+- clipmap-tiles-r7-etopo15 manifest sha256: 75096f88763321955f2dffea185b8ace47357675c936f84f7534ebeabe6397e7
