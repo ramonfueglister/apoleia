@@ -27,7 +27,7 @@
     ],
     "sha256": "d10102de7e8aae0c83bbc4ed74a7bb55e7675c8af0c7cb0d2c09c9d3a5240384"
   },
-  "atlas_surface_sha256": "73ef011f84bca78c6f1fcd584acfd1b203d14bb283cefa94c2540acdffb9eb27",
+  "atlas_surface_sha256": "1bf246f0bb2692e3b5b78a0a5c7c5188c43bd4f7de7dbe3cb748db7b0b1556e4",
   "look": {
     "path": "look.rgba8",
     "channels": [
@@ -36,7 +36,7 @@
       "dry",
       "relief_position (128 + (h - ring mean 4.5 km)/3.2 m)"
     ],
-    "sha256": "2aecde3a40e4cd6d48f7768d44eb6507e7fd3d1c1d8d75eae502aecc99453a61"
+    "sha256": "62e0781ceaa2baced4e035cc39d0811e89868c220684ce8b8c02d194ebe709a2"
   },
   "land_means": {
     "forest": 0.08897491544485092,
