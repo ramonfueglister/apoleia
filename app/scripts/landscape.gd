@@ -462,7 +462,7 @@ func _configure_cloud_default() -> void:
 
 func _tour_start_ready() -> bool:
     if clipmap_runtime and "metrics" in clipmap_runtime:
-        return bool(clipmap_runtime.metrics.get("root_ready",false)) and int(clipmap_runtime.metrics.get("missing",0))==0
+        return bool(clipmap_runtime.metrics.get("root_ready",false)) and int(clipmap_runtime.metrics.get("missing",0))==0 and int(clipmap_runtime.metrics.get("refining",0))==0
     return true
 
 func _cache_request_evidence_enabled() -> bool:
