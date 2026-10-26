@@ -87,6 +87,6 @@ void fragment(){
     SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
     // Anti-aliased bank: soft coverage over ~1.5 px of the strip edge.
-    float aa=max(fwidth(edge)*1.5,0.02);
+    float aa=max(fwidth(edge)*1.0,0.01);
     ALPHA=1.0-smoothstep(1.0-aa,1.0,edge);
 }

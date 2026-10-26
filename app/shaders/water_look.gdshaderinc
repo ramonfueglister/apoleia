@@ -127,9 +127,10 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     vec3 n_facet=wl_normal(centre,0.0,t,flow,1.6);
     float tilt=(facet_id-0.5)*0.05;
     n_facet=normalize(n_facet+vec3(tilt,0.0,-tilt*0.7));
-    vec3 n=normalize(mix(n_detail,n_facet,facet_amount*0.45));
+    // Crisp low-contrast facets (reference): flat per-triangle normals.
+    vec3 n=normalize(mix(n_detail,n_facet,facet_amount*0.8));
     // Facet tone: faint per-triangle brightness steps.
-    col*=1.0+(facet_id-0.5)*0.025*facet_amount;
+    col*=1.0+(facet_id-0.5)*0.05*facet_amount;
     col*=1.0+(wl_wave(p,footprint,t,flow)-0.5)*0.10*anim;
     // Caustic-like light web in very shallow water.
     float shallow=1.0-smoothstep(2.0,16.0,eff);

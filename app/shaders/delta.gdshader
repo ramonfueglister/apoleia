@@ -44,8 +44,9 @@ void fragment() {
     float region=1.0-smoothstep(0.75,1.0,length(local*vec2(0.9,1.0)));
     // Barrier spit: light sand band following the rendered coastline,
     // curved with the coast, open at the two outer arm mouths.
-    float spit_w=max(px_m*2.0,450.0)*(0.8+0.4*wl_noise(p*0.35));
-    float spit=(1.0-smoothstep(spit_w*0.7,spit_w,land_m))*region;
+    // Continuous 0.5-1 km sand band along the rendered coast.
+    float spit_w=max(px_m*2.0,600.0+300.0*wl_noise(p*0.3));
+    float spit=(1.0-smoothstep(spit_w*0.6,spit_w,land_m))*region;
     float inlet=min(length(p-delta_inlet_a),length(p-delta_inlet_b));
     spit*=smoothstep(0.35,0.7,inlet);
     // 2-4 small irregular ponds behind the spit, soft-edged, river colour.

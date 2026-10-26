@@ -30,15 +30,12 @@ static func zoom_from_legacy(zoom: float, overview_width: float, near_width: flo
     # their widths, not their normalized numbers, so established views remain.
     return zoom_for_width(width_for_zoom(zoom,overview_width,LEGACY_NEAR_WIDTH),overview_width,near_width)
 
-static func profile(width: float, overview_width: float=7606.0) -> Vector2:
-    # Oblique 3D diorama at every zoom (reference "weit" shows real relief):
-    # 35.26 deg close, rising slightly to 40 deg for the continental view.
-    # Relief stays 1; there is no flat map endpoint any more.
-    var regional_width=3400.0
-    if width<=regional_width: return Vector2(35.2643897,1.0)
-    var t=clampf(log(width/regional_width)/log(maxf(overview_width,regional_width+1.0)/regional_width),0.0,1.0)
+static func profile(width: float, _overview_width: float=7606.0) -> Vector2:
+    # Oblique 3D diorama at every zoom: about 35 deg close (100 km), 39 deg
+    # medium (450 km), 50 deg continental (2300 km+), smooth in log width.
+    var t=clampf((log(maxf(width,1.0))-log(100.0))/(log(2600.0)-log(100.0)),0.0,1.0)
     t=t*t*(3.0-2.0*t)
-    return Vector2(lerpf(35.2643897,40.0,t),1.0)
+    return Vector2(lerpf(35.2643897,50.0,t),1.0)
 
 static func damp(value: float, velocity: float, goal: float, delta: float) -> Vector2:
     var offset = value-goal

@@ -2514,20 +2514,22 @@ func _add_delta_arms() -> void:
             ends.append(mouth+tangent*spread)
         var mouths_out=[]
         for k in range(arm_count):
-            # Run well past the CPU coast: the river shader clips at the
-            # rendered sea, which can lie km further out than the CPU SDF.
+            # Monotonic fan: arm k keeps its lateral slot (offset grows from 0
+            # at the split to its coast position), small random meander below
+            # half the slot spacing, so arms diverge and never cross.
             var end:Vector2=ends[k]+sea*14.0
             var direction=(end-start).normalized();var normal=direction.orthogonal()
             var span=start.distance_to(end)
-            var phase=rng.randf()*TAU;var waves=rng.randf_range(1.6,2.6)
-            var width=base_width*rng.randf_range(0.6,1.0)
+            var slot=float(region.ra)*0.75/float(arm_count-1)
+            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(2.0,3.2),rng.randf_range(4.5,6.5)]
+            var width=base_width*(1.0 if k==1 else rng.randf_range(0.6,0.85))
             var segments=[];var station=0.0
-            var previous=start;var count=40
+            var previous=start;var count=48
             var minimum=start;var maximum=start
             for i in range(1,count+1):
                 var t=float(i)/count
-                # Strong meander, fading at both ends so arms leave/enter cleanly.
-                var p=start.lerp(end,t)+normal*sin(t*TAU*waves+phase)*span*0.09*sin(t*PI)
+                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.7+sin(t*TAU*freqs[1]+phases[1])*0.3)*slot*0.28*sin(t*PI)
+                var p=start.lerp(end,t)+normal*wobble
                 segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
                 minimum=minimum.min(p);maximum=maximum.max(p);previous=p
             river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(region.name)+" delta arm","synthetic_delta":true})
@@ -2616,7 +2618,7 @@ func _build_delta_surfaces() -> void:
     for region in delta_regions:
         var center:Vector2=region.center;var size=Vector2.ONE*maxf(region.ra,region.rb)*2.6
         var origin=center-size*0.5
-        var n=96
+        var n=192
         var vertices=PackedVector3Array();var indices=PackedInt32Array();var coast=PackedVector2Array()
         for z in range(n+1):
             for x in range(n+1):

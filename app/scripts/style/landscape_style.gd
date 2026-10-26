@@ -393,14 +393,19 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
-                    if _forest_member(p,sample,forest_coverage):support.append(p)
+                    if landcover_forest(p)>0.2:support.append(p)
             if support.is_empty():continue
+            # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
+            # canopy where forest > 0.5 (hills/slopes), loose groups below,
+            # open valley floors and fields stay free.
+            var share=0.0
+            for q in support:share+=landcover_forest(q)
+            share/=9.0
             var fraction=float(support.size())/9.0
-            if rng.randf()>fraction:continue
+            if share<0.18 or rng.randf()>clampf(share*1.6,0.0,1.0):continue
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
-            if not bool(observation.get("forest",false)):continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
             var width_scale=1.0
             if grouped:
@@ -499,6 +504,24 @@ static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Calla
             var d=p.distance_squared_to(center)
             if d<distance:distance=d;best={"valid":true,"position":p}
     return best
+
+static var _landcover:PackedByteArray=PackedByteArray()
+static var _landcover_meta:Dictionary={}
+# Forest share 0..1 (forest + half shrub) at the nearest 2 km node.
+static func landcover_forest(p:Vector2) -> float:
+    if _landcover_meta.is_empty():
+        var root=ProjectSettings.globalize_path("res://..").simplify_path().path_join("artifacts/render-data/landcover-node-2km")
+        var manifest=JSON.parse_string(FileAccess.get_file_as_string(root.path_join("manifest.json")))
+        if not manifest is Dictionary:_landcover_meta={"valid":false};return 0.0
+        _landcover=FileAccess.get_file_as_bytes(root.path_join("classes.u8"))
+        _landcover_meta={"valid":_landcover.size()==int(manifest.width)*int(manifest.height)*8,"w":int(manifest.width),"h":int(manifest.height),
+            "min":Vector2(manifest.world_min[0],manifest.world_min[1]),"size":Vector2(manifest.world_size[0],manifest.world_size[1])}
+    if not bool(_landcover_meta.get("valid",false)):return 0.0
+    var w:int=_landcover_meta.w;var h:int=_landcover_meta.h
+    var uv=(p-Vector2(_landcover_meta.min))/Vector2(_landcover_meta.size)
+    var x=clampi(int(round(uv.x*float(w-1))),0,w-1);var z=clampi(int(round(uv.y*float(h-1))),0,h-1)
+    var at=(z*w+x)*8
+    return clampf((float(_landcover[at])+0.5*float(_landcover[at+1]))/255.0,0.0,1.0)
 
 static func _forest_member(p:Vector2,sample:Callable,membership:Callable) -> bool:
     return bool(membership.call(p)) if membership.is_valid() else bool(sample.call(p).get("forest",false))
