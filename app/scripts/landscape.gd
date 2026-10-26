@@ -180,6 +180,8 @@ var river_sources_sha256=""
 # Display-only estuaries: detected mouths (pos, inland dir, width) and
 # curated delta branches appended as extra river sources.
 var river_mouths:Array=[]
+var delta_apexes:Array=[]
+var delta_nodes:Array=[]
 const RIVER_SET_CACHE_LIMIT=8
 const RIVER_SET_CACHE_BYTES=67108864
 # Set-Schluessel quantisiert: Breitenboden (Mindestpixel*Welt/Pixel) in Viertel-
@@ -903,6 +905,7 @@ func _setup_scene() -> void:
         terrain_streaming.attach(self,terrain_material)
     elif fixed_surface: _setup_fixed_surface()
     _setup_rivers()
+    _build_delta_surfaces()
 
 func _setup_fixed_surface() -> void:
     var texture=ImageTexture.create_from_image(Image.create_from_data(fixed_surface.width,fixed_surface.height,false,Image.FORMAT_RG8,fixed_surface.bytes))
@@ -1386,7 +1389,9 @@ func _anchored_target(anchor: Vector2,pixel: Vector2) -> Vector2:
 func _update_forest_grove_lod() -> void:
     if forest_grove_lod_arrays.is_empty() or forest_compact_meshes.size()!=2:return
     # 4: overview, no crowns; the terrain shows a darker forest floor instead.
-    var lod=1 if view_width<360.0 else (2 if view_width<700.0 else (3 if view_width<2200.0 else 4))
+    # Full 10-tree groves only in the close view (<200 km); mid/far draw the
+    # 2-tree mesh (lod 3); none beyond 2200. Thresholds for the A07 near view.
+    var lod=1 if view_width<200.0 else (3 if view_width<2200.0 else 4)
     if lod==forest_grove_lod:return
     forest_grove_lod=lod
     for i in range(2):
@@ -1398,6 +1403,10 @@ func _update_camera() -> void:
     if viewport_size!=Vector2(get_viewport().get_visible_rect().size): _resize_camera_contract()
     view_width=CameraRig.width_for_zoom(zoom,far_width,near_width)
     if style_api and style_api.has_method("landform_vertical_scale"): display_height_scale=float(style_api.landform_vertical_scale(view_width))
+    # Continental views: stronger exaggeration so ranges read as relief.
+    # No crowns are drawn there, so forest support heights are unaffected.
+    # Zoom curve of the vertical exaggeration (LandscapeLook).
+    display_height_scale=LandscapeLook.display_height_scale(view_width)
     var profile=CameraRig.profile(view_width,far_width)
     elevation_degrees=profile.x
     relief=profile.y
@@ -1432,6 +1441,10 @@ func _update_camera() -> void:
     if marine_material:
         for material in _marine_materials():material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     if marine_material: _bind_visible_river_mouths()
+    if delta_nodes.is_empty() and frame_number%15==0:_build_delta_surfaces()
+    for node in delta_nodes:
+        node.material_override.set_shader_parameter("relief",relief);node.material_override.set_shader_parameter("view_width",view_width);node.material_override.set_shader_parameter("display_height_scale",display_height_scale)
+        node.material_override.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.fov,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
@@ -2066,10 +2079,17 @@ func _build_river_crown_grid() -> void:
                     river_crown_grid[key].append([a,b,clearance])
 
 func _clear_river_crowns(mm:MultiMesh) -> void:
-    if river_crown_grid.is_empty():return
+    if river_crown_grid.is_empty() and delta_regions.is_empty():return
     for i in range(mm.instance_count):
         var t:Transform3D=mm.get_instance_transform(i)
         var p=Vector2(t.origin.x,t.origin.z)
+        var in_delta=false
+        for region in delta_regions:
+            var q=p-Vector2(region.center)
+            var local=Vector2(q.dot(region.tangent)/float(region.ra),q.dot(-Vector2(region.sea))/float(region.rb))
+            if local.length()<1.15:in_delta=true;break
+        if in_delta:
+            mm.set_instance_transform(i,Transform3D(Basis().scaled(Vector3.ONE*0.00001),t.origin));continue
         var cell=Vector2i((p/RIVER_CROWN_CELL).floor())
         if not river_crown_grid.has(cell):continue
         for record in river_crown_grid[cell]:
@@ -2450,49 +2470,99 @@ func _setup_rivers() -> void:
         for line in lines:
             var station=0.
             var polyline_id=str(river_feature_count)+":"+str(line_index);line_index+=1
-            for j in range(line.size()-1):
-                var a=geographic_to_world(float(line[j][0]),float(line[j][1]))
-                var b=geographic_to_world(float(line[j+1][0]),float(line[j+1][1]))
-                if a==b:continue
+            # Display smoothing (Chaikin, endpoints kept) once at load, so every
+            # renderer path (fixed, streaming, clipmap) draws smooth meanders.
+            var points:Array[Vector2]=[]
+            for coordinate in line:
+                var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
+                if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
+            for _iteration in range(2):
+                if points.size()<3:break
+                var smoothed:Array[Vector2]=[points[0]]
+                for k in range(points.size()-1):
+                    smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
+                smoothed.append(points[-1]);points=smoothed
+            for j in range(points.size()-1):
+                var a=points[j];var b=points[j+1]
                 segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
                 minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
         if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name",""))})
         river_feature_count+=1
     _detect_river_mouths()
     _setup_river_deltas()
+    _add_delta_arms()
+    _widen_river_mouths()
     _build_river_crown_grid()
 
-# Display deltas of the large flat-coast rivers, exaggerated for the diorama
-# scale (the real Tiber delta is only a few km wide): arms fan out from an
-# apex upstream of the detected main mouth to mouths spread along the coast.
-# Nile: the source course ends far inland, so apex/main mouth are given.
-const RIVER_DELTAS=[
-    {"name":"Tevere","arms":4,"levels":3,"length":38.0,"width":.034},
-    {"name":"Po","arms":5,"levels":3,"length":40.0,"width":.040},
-    {"name":"Rhône","arms":3,"levels":2,"length":36.0,"width":.040},
-    {"name":"Ebro","arms":3,"levels":2,"length":24.0,"width":.034},
-    {"name":"Nile","arms":2,"levels":1,"length":150.0,"width":.050,"apex":[31.25,30.10],"mouth":[31.05,31.50]}]
+# Delta arms in the SAME river records (all renderer paths draw them like
+# the main course): over the last ~12 km the course splits into 3-4 strongly
+# meandering arms of 60-100% width that fan to the coast; inlets of the
+# barrier spit sit at their ends. The main course stays the central arm.
+func _add_delta_arms() -> void:
+    for region in delta_regions:
+        var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
+        var length=float(region.rb)*2.2
+        var base_width=0.03
+        for source in river_sources:
+            if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
+        var start=mouth-sea*length
+        var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
+        var ends=[]
+        var arm_count=3
+        for k in range(arm_count):
+            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*0.75
+            ends.append(mouth+tangent*spread)
+        var mouths_out=[]
+        for k in range(arm_count):
+            # Monotonic fan: arm k keeps its lateral slot (offset grows from 0
+            # at the split to its coast position), small random meander below
+            # half the slot spacing, so arms diverge and never cross.
+            var end:Vector2=ends[k]+sea*14.0
+            var direction=(end-start).normalized();var normal=direction.orthogonal()
+            var span=start.distance_to(end)
+            var slot=float(region.ra)*0.75/float(arm_count-1)
+            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(2.0,3.2),rng.randf_range(4.5,6.5)]
+            var width=base_width*(1.0 if k==1 else rng.randf_range(0.6,0.85))
+            var segments=[];var station=0.0
+            var previous=start;var count=48
+            var minimum=start;var maximum=start
+            for i in range(1,count+1):
+                var t=float(i)/count
+                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.7+sin(t*TAU*freqs[1]+phases[1])*0.3)*slot*0.28*sin(t*PI)
+                var p=start.lerp(end,t)+normal*wobble
+                segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
+                minimum=minimum.min(p);maximum=maximum.max(p);previous=p
+            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(region.name)+" delta arm","synthetic_delta":true})
+            mouths_out.append(ends[k])
+        # Spit inlets at the two outer arms.
+        region.inlets=[mouths_out[0],mouths_out[arm_count-1]]
+        region.arm_ends=mouths_out
 
-# Branch points sit on the actual source course of the main river.
-func _nearest_river_point(name: String,p: Vector2) -> Vector2:
-    var best=p;var distance=INF
+# Display width in the source records: estuary funnel over the last ~4 km
+# and a wider lower course towards a delta. Shared by all renderer paths.
+func _widen_river_mouths() -> void:
     for source in river_sources:
-        if str(source.get("name",""))!=name:continue
         for segment in source.segments:
-            var a:Vector2=segment[0];var b:Vector2=segment[1]
-            var q=Geometry2D.get_closest_point_to_segment(p,a,b)
-            if q.distance_to(p)<distance:distance=q.distance_to(p);best=q
-    return best
+            var p:Vector2=(Vector2(segment[0])+Vector2(segment[1]))*.5
+            var gain=1.0
+            for mouth in river_mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
+            for apex in delta_apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
+            segment[2]=float(segment[2])*gain
 
-func _coast_point(p: Vector2,towards_sea: Vector2) -> Vector2:
-    # March to the first sea sample, then slightly past the coastline.
-    var q=p
-    for i in range(80):
-        if _water_kind(q)==1:return q+towards_sea*1.2
-        q+=towards_sea*0.5
-    return q
+# Display deltas: an area mask per delta (delta.gdshader) instead of band
+# arms. The main course stays a river band and ends in a lagoon with organic
+# islands, sand rims and a beach arc with inlets. Radii in model units
+# (km), along the coast (ra) and inland (rb).
+const RIVER_DELTAS=[
+    {"name":"Tevere","ra":7.0,"rb":4.5},
+    {"name":"Po","ra":20.0,"rb":11.0},
+    {"name":"Rhône","ra":18.0,"rb":10.0},
+    {"name":"Ebro","ra":8.0,"rb":5.0},
+    {"name":"Nile","ra":45.0,"rb":16.0,"mouth":[31.05,31.50],"apex":[31.25,30.10]}]
+var delta_regions:Array=[]
 
 func _setup_river_deltas() -> void:
+    delta_regions.clear()
     for delta in RIVER_DELTAS:
         var mouth:Vector2;var inland:Vector2
         if delta.has("apex"):
@@ -2504,91 +2574,105 @@ func _setup_river_deltas() -> void:
             for record in river_mouths:
                 if str(record.get("name",""))==str(delta.name):mouth=record.position;inland=record.inland;found=true;break
             if not found:continue
-        # Sea direction = coast normal (gradient of the signed shore distance),
-        # not the last source segment, which often runs along the coast.
+        # Sea direction = coast normal (gradient of the signed shore distance).
         var e=1.5
         var gradient=Vector2(_water_distance(mouth+Vector2(e,0))-_water_distance(mouth-Vector2(e,0)),_water_distance(mouth+Vector2(0,e))-_water_distance(mouth-Vector2(0,e)))
         var sea_direction=gradient.normalized() if gradient.length()>0.001 else -inland
-        # Apex: the main-course point about 0.8 delta lengths from the mouth.
-        var apex=mouth-sea_direction*float(delta.length)*0.8;var best=INF
-        for source in river_sources:
-            if str(source.get("name",""))!=str(delta.name):continue
-            for segment in source.segments:
-                var q:Vector2=segment[0]
-                var score=absf(q.distance_to(mouth)-float(delta.length)*0.8)
-                if score<best:best=score;apex=q
+        var ra=float(delta.ra);var rb=float(delta.rb)
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(delta.name))
-        # Recursive bifurcation: each branch meanders towards the sea, splits
-        # into a Y (2-3 levels), widths shrink per fork, directions fan out
-        # within +-50 deg of the sea direction; branches end past the coast.
-        # The delta tree replaces the source course below the apex.
-        var cut=apex.distance_to(mouth)*0.97
-        for source in river_sources:
-            if str(source.get("name",""))!=str(delta.name):continue
-            var kept=[]
-            for segment in source.segments:
-                if Vector2(segment[0]).distance_to(mouth)<cut and Vector2(segment[1]).distance_to(mouth)<cut:continue
-                kept.append(segment)
-            source.segments=kept
-        # Root the tree at the remaining course end nearest the mouth.
-        var root_distance=INF
-        for source in river_sources:
-            if str(source.get("name",""))!=str(delta.name):continue
-            for segment in source.segments:
-                for q in [Vector2(segment[0]),Vector2(segment[1])]:
-                    if q.distance_to(mouth)<root_distance:root_distance=q.distance_to(mouth);apex=q
-        var stack=[[apex,sea_direction,float(delta.width),0]]
-        var branches=0
-        while not stack.is_empty() and branches<int(delta.arms)*4:
-            var item=stack.pop_back()
-            var start:Vector2=item[0];var direction:Vector2=item[1];var width:float=item[2];var level:int=item[3]
-            # Fork after a fraction of the remaining way to the coast, so every
-            # level splits on land; the last level runs until the sea.
-            # Shore distance by marching (the packed SDF saturates at 3 km).
-            var to_coast=0.0
-            while to_coast<float(delta.length)*2.0 and _water_kind(start+direction*to_coast)!=1:to_coast+=0.5
-            to_coast=maxf(to_coast,1.0)
-            var length=to_coast*rng.randf_range(0.28,0.42)
-            var step=maxf(float(delta.length)/60.0,0.25)
-            # Start slightly upstream so the joint overlaps the parent strip.
-            var points:Array[Vector2]=[start-direction*0.8,start]
-            var phase=rng.randf()*TAU;var wiggle=rng.randf_range(0.25,0.45)
-            var reached=false
-            var travelled=0.0
-            var heading=direction
-            while travelled<float(delta.length)*3.0:
-                travelled+=step
-                var bend=sin(travelled/maxf(length,2.0)*TAU*0.9+phase)*wiggle
-                heading=direction.rotated(bend)
-                var next=points[-1]+heading*step
-                points.append(next)
-                if _water_kind(next)==1:
-                    points.append(next+heading*1.0);reached=true;break
-                if travelled>=length and level<int(delta.levels) and to_coast>1.5:break
-            if points.size()<3:continue
-            var segments=[]
-            var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
-            var station=0.0
-            for i in range(points.size()-1):
-                var along=float(i)/float(points.size()-1)
-                var w=width*(0.85+0.3*sin(along*9.0+phase)*sin(along*9.0+phase))
-                if reached:w*=1.0+0.35*smoothstep(0.8,1.0,along)
-                # Same [a,b,width,station,polyline_id] record as source rivers (clipmap tile_rivers reads station).
-                segments.append([points[i],points[i+1],w,station,"delta:"+str(delta.name)+":"+str(branches)]);station+=points[i].distance_to(points[i+1])
-                minimum=minimum.min(points[i]).min(points[i+1]);maximum=maximum.max(points[i]).max(points[i+1])
-            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(delta.name)+" delta arm","synthetic_delta":true})
-            branches+=1
-            if reached:
-                river_mouths.append({"position":points[-1],"inland":-heading,"width":width,"name":str(delta.name)+" delta arm","delta":true})
-                continue
-            # Y-fork: two children, angles relative to the sea direction.
-            var fork=points[-1]
-            for sign in [-1.0,1.0]:
-                var spread=deg_to_rad(rng.randf_range(30.0,50.0))*sign
-                var child=heading.rotated(spread)
-                var angle=sea_direction.angle_to(child)
-                child=sea_direction.rotated(clampf(angle,deg_to_rad(-50.0),deg_to_rad(50.0)))
-                stack.append([fork,child,width*0.72,level+1])
+        var tangent=sea_direction.orthogonal()
+        # Inlets through the beach arc: at the river mouth and one more.
+        var inlets=[mouth,mouth+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
+        # Anchor on the actual coastline: the source course often ends a few
+        # km out at sea. March inland until the signed shore distance < 0.
+        var coast_point=mouth
+        for k in range(120):
+            if _water_distance(coast_point)<0.0:break
+            coast_point-=sea_direction*0.25
+        inlets=[coast_point,coast_point+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
+        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,
+            "center":coast_point-sea_direction*rb*0.55})
+        delta_apexes.append(mouth-sea_direction*rb*1.2)
+
+# Built once the surface heights are available (streaming loads them after
+# setup); retried from _process until then.
+func _build_delta_surfaces() -> void:
+    if delta_regions.is_empty() or not fixed_surface or not delta_nodes.is_empty():return
+    if terrain_streaming or bool(product_binding.get("clipmap",{}).get("enabled",false)):
+        # Streamed/clipmap heights are only valid once the root is resident.
+        if not clipmap_runtime or not clipmap_runtime.metrics.root_ready or frame_number<30:return
+    for region in delta_regions:
+        if not is_finite(_render_height(region.center)):return
+    # Re-anchor each delta on the RENDERED coastline (the CPU SDF can be km
+    # off the streamed/clipmap coast): from the sea side, first land sample.
+    for region in delta_regions:
+        var sea:Vector2=region.sea;var start:Vector2=Vector2(region.mouth)+sea*15.0
+        var coast_point=Vector2(region.mouth)
+        for k in range(240):
+            var q=start-sea*0.25*float(k)
+            if _render_height(q)>0.0005:coast_point=q;break
+        var shift=coast_point-Vector2(region.mouth)
+        region.mouth=coast_point;region.center=Vector2(region.center)+shift
+        region.inlets=[Vector2(region.inlets[0])+shift,Vector2(region.inlets[1])+shift]
+    var shader=load("res://shaders/delta.gdshader")
+    for region in delta_regions:
+        var center:Vector2=region.center;var size=Vector2.ONE*maxf(region.ra,region.rb)*2.6
+        var origin=center-size*0.5
+        var n=192
+        var vertices=PackedVector3Array();var indices=PackedInt32Array();var coast=PackedVector2Array()
+        for z in range(n+1):
+            for x in range(n+1):
+                var p=origin+size*Vector2(float(x)/n,float(z)/n)
+                coast.append(Vector2.ZERO)
+                # Same height source as the visible terrain (clipmap/stream).
+                # Unscaled model height; the shader applies the current
+                # display scale and relief (both change with zoom).
+                var h=_render_height(p)/maxf(relief*display_height_scale,.0001)
+                vertices.append(Vector3(p.x,maxf(h,0.0) if is_finite(h) else 0.0,p.y))
+        for z in range(n):
+            for x in range(n):
+                var a=z*(n+1)+x;var b=a+1;var c=a+n+1;var d=c+1
+                indices.append_array(PackedInt32Array([a,c,b,b,c,d]))
+        # Signed shore distance (m, >0 sea) from the RENDERED surface (sea =
+        # height at/below 0): the CPU SDF and the clipmap coast can differ by
+        # km. Two-pass chamfer distance on the grid.
+        var cell_m=size.x/n*1000.0
+        var land:Array=[];var dist=PackedFloat32Array();dist.resize(vertices.size())
+        for i in range(vertices.size()):land.append(vertices[i].y>0.0004)
+        for i in range(vertices.size()):dist[i]=0.0
+        var boundary=PackedFloat32Array();boundary.resize(vertices.size())
+        for z in range(n+1):
+            for x in range(n+1):
+                var i=z*(n+1)+x;var edge=false
+                for o in [Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1)]:
+                    var xx=x+o.x;var zz=z+o.y
+                    if xx>=0 and zz>=0 and xx<=n and zz<=n and land[zz*(n+1)+xx]!=land[i]:edge=true
+                boundary[i]=0.0 if edge else 1e9
+        for z in range(n+1):
+            for x in range(n+1):
+                var i=z*(n+1)+x
+                if x>0:boundary[i]=minf(boundary[i],boundary[i-1]+cell_m)
+                if z>0:boundary[i]=minf(boundary[i],boundary[i-(n+1)]+cell_m)
+        for z in range(n,-1,-1):
+            for x in range(n,-1,-1):
+                var i=z*(n+1)+x
+                if x<n:boundary[i]=minf(boundary[i],boundary[i+1]+cell_m)
+                if z<n:boundary[i]=minf(boundary[i],boundary[i+(n+1)]+cell_m)
+        for i in range(vertices.size()):coast[i]=Vector2(-boundary[i] if land[i] else boundary[i],0.0)
+        var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.UP)
+        var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV]=coast;arrays[Mesh.ARRAY_INDEX]=indices
+        var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+        var material=ShaderMaterial.new();material.shader=shader
+        for uniform in shader.get_shader_uniform_list():
+            var value=marine_material.get_shader_parameter(uniform.name) if marine_material else null
+            if value!=null:material.set_shader_parameter(uniform.name,value)
+        var inlets=PackedVector2Array(region.inlets)
+        material.set_shader_parameter("delta_center",region.center);material.set_shader_parameter("delta_sea",region.sea)
+        material.set_shader_parameter("delta_radii",Vector2(region.ra,region.rb));material.set_shader_parameter("delta_seed",float(region.seed))
+        material.set_shader_parameter("delta_inlet_a",inlets[0]);material.set_shader_parameter("delta_inlet_b",inlets[1])
+        var node=MeshInstance3D.new();node.name="Delta_"+str(region.name);node.mesh=mesh;node.material_override=material
+        node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        add_child(node);delta_nodes.append(node)
 
 # Endpoints within ~2.5 km of the sea are mouths: funnel widening, colour
 # blend and no surf in the mouth radius.
@@ -2597,7 +2681,7 @@ func _bind_visible_river_mouths() -> void:
     var packed=PackedVector4Array()
     for mouth in river_mouths:
         if packed.size()>=32:break
-        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,1.0 if bool(mouth.get("delta",false)) else 0.0))
+        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,(2.0 if bool(mouth.get("open",false)) else 1.0) if bool(mouth.get("delta",false)) else 0.0))
     var count=packed.size()
     while packed.size()<32:packed.append(Vector4.ZERO)
     for material in _marine_materials():
@@ -2852,6 +2936,8 @@ func _river_build_next_feature() -> void:
             var half=maxf(float(points[k][1])*.5*LandscapeLook.RIVER_WIDTH_SCALE,floor_px*.5*pixel_world/maxf(projected_side,.001))
             # Estuary funnel: widen over the last ~8 km before a mouth.
             if not bool(source.get("synthetic_delta",false)):
+                # Lower course widens towards a delta apex.
+                for apex_point in delta_apexes:half*=1.0+0.7*(1.0-smoothstep(0.0,25.0,Vector2(points[k][0]).distance_to(apex_point)))
                 var mouth_distance=INF
                 for mouth in river_mouths:
                     if not bool(mouth.get("delta",false)):mouth_distance=minf(mouth_distance,Vector2(points[k][0]).distance_to(mouth.position))

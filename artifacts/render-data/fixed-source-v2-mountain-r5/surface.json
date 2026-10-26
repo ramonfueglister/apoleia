@@ -1,0 +1,119 @@
+{
+  "revision": "fixed-diorama-mountain-facets-r5",
+  "policy": {
+    "path": "policy.json",
+    "sha256": "737f8a91fc9c99c169717c1925db628903a68e64e51e10487eef20ea28694b9e"
+  },
+  "height_payload": {
+    "path": "height.rg8",
+    "sha256": "7de3a93f3fc6098ffd795bb207acdb11bd76c119f44746f5bde48ed5dccdff1c",
+    "bytes": 24699792
+  },
+  "source_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+  "world_min": [
+    -5286.959516530886,
+    -2223.9016046706583
+  ],
+  "world_size": [
+    10322.15905608411,
+    4781.388450041915
+  ],
+  "width": 5163,
+  "height": 2392,
+  "anchors": [
+    {
+      "id": "massif-anchor:0",
+      "world_x": -1018.7537231445312,
+      "world_z": -537.2112426757812,
+      "height_source_m": 4532.0625,
+      "source_sample": [
+        2920,
+        4286
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-02816-04096.features.json",
+        "sha256": "cba103b1c58740b4e544fd27584882cbd8e80f9d5f91321a730ef278a1fc32d5",
+        "bytes": 2957066
+      }
+    },
+    {
+      "id": "massif-anchor:1",
+      "world_x": -691.4657592773438,
+      "world_z": -612.731201171875,
+      "height_source_m": 2755.028076171875,
+      "source_sample": [
+        2757,
+        5222
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-02560-05120.features.json",
+        "sha256": "29fd1755fb3bcc298296c62b92dabe69660da947232eaad3bac0061324dc34bd",
+        "bytes": 3487376
+      }
+    },
+    {
+      "id": "massif-anchor:2",
+      "world_x": -336.55413818359375,
+      "world_z": 361.61566162109375,
+      "height_source_m": 3131.174560546875,
+      "source_sample": [
+        4860,
+        6237
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04608-06144.features.json",
+        "sha256": "4637f38b7fea12c1aa3ee31c7f7986fe8a4af038cea8ef2ac019bc28ce2f993f",
+        "bytes": 493948
+      }
+    },
+    {
+      "id": "massif-anchor:3",
+      "world_x": -1510.385009765625,
+      "world_z": -178.14378356933594,
+      "height_source_m": 2521.36181640625,
+      "source_sample": [
+        3695,
+        2880
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-03584-02816.features.json",
+        "sha256": "4447f3041f581e3e37f19e2ab8a7b0b72f205235526681844be8bc29833480db",
+        "bytes": 2926889
+      }
+    },
+    {
+      "id": "massif-anchor:4",
+      "world_x": 1410.03076171875,
+      "world_z": 477.9071960449219,
+      "height_source_m": -49.0,
+      "source_sample": [
+        5111,
+        11232
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04864-11008.features.json",
+        "sha256": "cb89b1bbc846a6dffb390974de46f9ae2a18c292ca7b1cb040ce60bf14ed3a6a",
+        "bytes": 701145
+      }
+    },
+    {
+      "id": "massif-anchor:5",
+      "world_x": 1930.334716796875,
+      "world_z": 389.4144287109375,
+      "height_source_m": 1012.8621215820312,
+      "source_sample": [
+        4920,
+        12720
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04864-12544.features.json",
+        "sha256": "55242762421fc004cea062d76e836cc8ef2b07606fa2b4be56b1527266ba1b38",
+        "bytes": 311013
+      }
+    }
+  ],
+  "chunks": {
+    "path": "chunks.json",
+    "sha256": "cc33952bee011f18805da80c65f460726fe20a1082eae337c8047b817ae23784"
+  }
+}
