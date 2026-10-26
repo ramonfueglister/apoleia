@@ -414,6 +414,12 @@ func _process(delta: float) -> void:
 	var dt := delta * time_scale
 	if day_cycle_seconds > 0.0: time_of_day = 0.5 - 0.5 * cos(TAU * Time.get_ticks_msec() / 1000.0 / day_cycle_seconds)
 	if not enabled:
+		# Time-of-day light stays active without weather; no cloud shadows.
+		local_weather = Vector3.ZERO
+		_apply_look()
+		_sun.shadow_caster_mask = _sun_caster_mask
+		_sun.light_energy += _cloud_sun.light_energy if _cloud_sun.visible else 0.0
+		_cloud_sun.visible = false
 		_publish_globals(Vector3.ZERO)
 		return
 	_update_ground_view()
