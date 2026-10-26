@@ -11,6 +11,10 @@ var phase="unstarted"
 var released=false
 var failed=false
 var started_usec=0
+## Cold Metal pipeline compiles (~1-1.6 s each, 17-20 s for the first draw
+## of a fresh bundle) count as progress: the deadline is 60 s without a new
+## compile, capped at 300 s overall, not 60 s from begin.
+var progress_usec=0
 var release_elapsed_usec=-1
 var draws=0
 var quiet_draws=0
@@ -20,7 +24,7 @@ var registry:Dictionary={}
 var events:Array=[]
 var result:Dictionary={}
 func begin(scene:Node3D)->void:
-    owner=scene;primary=scene.camera;primary_mask=primary.cull_mask;started_usec=Time.get_ticks_usec()
+    owner=scene;primary=scene.camera;primary_mask=primary.cull_mask;started_usec=Time.get_ticks_usec();progress_usec=started_usec
     viewport=SubViewport.new();viewport.name="PipelinePreparationViewport"
     viewport.size=Vector2i(scene.get_viewport().get_visible_rect().size)
     viewport.msaa_3d=scene.get_viewport().msaa_3d
@@ -74,7 +78,8 @@ func _examples()->void:
     _register("river_custom_float",mesh,material,node.cast_shadow,"mesh CUSTOM0/1 RGBA_FLOAT")
 func update()->void:
     if released or failed:return
-    if Time.get_ticks_usec()-started_usec>60000000:
+    var now=Time.get_ticks_usec()
+    if now-progress_usec>60000000 or now-started_usec>300000000:
         failed=true;phase="failed_deadline";result=stats();push_error("Pipeline preparation deadline: "+JSON.stringify(result));owner.get_tree().quit(2);return
     camera.global_transform=primary.global_transform;camera.projection=primary.projection;camera.size=primary.size;camera.near=primary.near;camera.far=primary.far;camera.keep_aspect=primary.keep_aspect;camera.environment=primary.environment;camera.attributes=primary.attributes
 func _ready_materials()->bool:
@@ -90,7 +95,7 @@ func _post_draw()->void:
     if counts.is_empty():failed=true;phase="failed_counters_unavailable";return
     if counts!=last_counts:
         events.append({"post_draw":draws,"phase":phase,"elapsed_usec":Time.get_ticks_usec()-started_usec,"counts":counts})
-        last_counts=counts.duplicate();quiet_draws=0;quiet_since_usec=Time.get_ticks_usec()
+        last_counts=counts.duplicate();quiet_draws=0;quiet_since_usec=Time.get_ticks_usec();progress_usec=quiet_since_usec
     else:quiet_draws+=1
     if draws>=2:
         for key in registry:registry[key].submitted_post_draw=draws
