@@ -1,6 +1,9 @@
 extends RefCounted
 ## PNG tile pyramid: up to IO_WORKERS CPU tasks, bounded queues, root pin and LRU.
-const CPU_LIMIT=64*1024*1024
+## Soft budget: after upload a tile keeps height RG8 + water RGB8 (~330 KB);
+## near zooms want ~200 tiles at once. Wanted/pinned tiles are always kept
+## (evicting them only re-reads them forever), others only within the budget.
+const CPU_LIMIT=128*1024*1024
 ## Tiles decoded in parallel (PNG decode + forest/river/shore build). One task
 ## serialized the startup coverage (~10 s); the builders only read shared state.
 const IO_WORKERS=3
@@ -53,7 +56,7 @@ func poll()->Array:
         if result.get("ok",false):
             var cost=int(result.bytes)
             _evict(cost)
-            if bytes+cost<=CPU_LIMIT:
+            if bytes+cost<=CPU_LIMIT or wanted.has(job) or pinned.has(job):
                 result["used"]=tick;if cache.has(result.id):bytes-=int(cache[result.id].bytes)
                 cache[result.id]=result;bytes+=cost;loaded.append(result);metrics.loaded+=1
         else:

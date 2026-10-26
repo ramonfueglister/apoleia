@@ -2,7 +2,7 @@ extends RefCounted
 ## Camera-centred geomipmap rings. Every tile shares one permanent 65² grid.
 const Tiles=preload("res://scripts/clipmap/tile_stream.gd")
 const GRID=64
-const GPU_LIMIT=192*1024*1024
+const GPU_LIMIT=320*1024*1024 # three RGBA8 images, ~0.8 MB per tile
 var stream=Tiles.new()
 var owner:Node3D
 var terrain_template:ShaderMaterial
@@ -103,7 +103,12 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     _frame+=1;_focus=focus;_width=view_width;_dt=minf(delta,.05)
     _finest=clampi(int(floor(log(maxf(view_width/(float(stream.manifest.base_span)*2.),1.))/log(2.))),0,int(stream.manifest.max_level))
     _uploads.append_array(stream.poll());var started=Time.get_ticks_usec()
-    if not _uploads.is_empty() and _gpu_bytes+int(_uploads[0].bytes)<=GPU_LIMIT:
+    # Soft budget: a wanted or pinned tile is uploaded even over GPU_LIMIT;
+    # holding it back would leave its region on the parent forever.
+    # Tiles no longer wanted are dropped from the head instead of blocking it.
+    while not _uploads.is_empty() and _gpu_bytes+int(_uploads[0].bytes)>GPU_LIMIT and not (_wanted.has(str(_uploads[0].id)) or _pins.has(str(_uploads[0].id))):
+        _uploads.pop_front()
+    if not _uploads.is_empty():
         _upload(_uploads.pop_front());metrics.uploads+=1
     metrics.upload_ms=float(Time.get_ticks_usec()-started)/1000.
     _wanted={};_pins={};_draw={};metrics.refining=0;var root_id=str(stream.manifest.root);_pins[root_id]=true;_request(root_id,1000000.)
