@@ -18,6 +18,8 @@ uniform vec4 land_sand_color : source_color = vec4(0.77,0.69,0.47,1.0);
 uniform vec4 land_rock_light_color : source_color = vec4(0.80,0.73,0.66,1.0);
 uniform vec4 land_rock_dark_color : source_color = vec4(0.52,0.46,0.42,1.0);
 uniform vec4 land_snow_color : source_color = vec4(0.95,0.94,0.91,1.0);
+// Perf A/B: constant albedo, early return (uniform branch).
+uniform bool land_look_stub=false;
 uniform vec4 land_valley_tint : source_color = vec4(0.62,0.70,0.72,1.0);
 // Lattice size of the painted facets on hills and on rock (world units, km).
 uniform float land_facet_size=2.4;
@@ -151,6 +153,7 @@ vec3 land_cell_facet(vec3 n,vec2 p,float size,out float facet_id) {
 }
 
 LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_normal,float footprint,float rel,float vw,float dhs) {
+    if(land_look_stub) {LandLook st;st.albedo=vec3(0.30,0.33,0.16);st.normal=land_display_normal(source_normal,dhs*max(rel,0.00001));st.ao=1.0;return st;}
     // Cost tiers by pixel footprint (km per pixel): every detail stage is
     // skipped by branch, not just faded, once it is below pixel scale.
     LandLook o;
