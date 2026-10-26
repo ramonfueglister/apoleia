@@ -2,7 +2,7 @@ shader_type spatial;
 // Closed low cloud deck for overcast, rain and storm: a jittered low-poly grid
 // snapped to world cells. Thickness, holes and ragged edges come from the
 // weather field, so the deck breaks up where cover drops. Same modes as
-// weather_cloud.gdshader (0 visible, 1 dithered shadow proxy, 2 water mask).
+// weather_cloud.gdshader (0 visible, 1 shadow proxy, 2 water mask).
 render_mode unshaded, cull_disabled, depth_draw_opaque, fog_disabled;
 #include "res://shaders/weather_field.gdshaderinc"
 
@@ -14,7 +14,7 @@ uniform float deck_thickness = 10.0;
 uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
 uniform vec3 sun_color : source_color = vec3(1.0, 0.96, 0.88);
 uniform vec3 shade_color : source_color = vec3(0.62, 0.69, 0.80);
-uniform vec3 storm_color : source_color = vec3(0.34, 0.36, 0.43);
+uniform vec3 storm_color : source_color = vec3(0.41, 0.44, 0.51);
 uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
@@ -48,7 +48,7 @@ void vertex() {
 	if (mode == 2) { p.xz += proxy_shift + mask_shift; p.y = cloud_base; }
 	world_pos = p;
 	storm = field.z;
-	grey = clamp(0.35 + field.y * 0.55, 0.0, 1.0);
+	grey = clamp(0.3 + field.y * 1.1, 0.0, 1.0);
 	height01 = bump;
 	VERTEX = p;
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(p, 1.0);
@@ -66,7 +66,6 @@ void fragment() {
 	// Ragged, dithered deck edge where cover falls off.
 	if (smoothstep(0.08, 0.35, amount) < dither) { discard; }
 	if (mode == 1) {
-		if (dither > shadow_coverage + 0.3 * storm) { discard; }
 		ALBEDO = vec3(0.0);
 	} else if (mode == 2) {
 		ALBEDO = vec3(1.0 - min((shadow_coverage + 0.3 * storm) * smoothstep(0.08, 0.35, amount), 0.95));
@@ -78,7 +77,7 @@ void fragment() {
 		vec3 l = normalize(sun_dir);
 		float lit = smoothstep(-0.3, 0.7, dot(n, l));
 		vec3 colour = mix(shade_color * 0.85, sun_color, lit) * mix(0.82, 1.0, height01);
-		colour = mix(colour, vec3(0.34, 0.36, 0.41) * (0.75 + 0.45 * lit), grey);
+		colour = mix(colour, vec3(0.17, 0.185, 0.215) * (0.75 + 0.5 * lit), grey);
 		float storm_amount = smoothstep(0.05, 0.45, storm);
 		colour = mix(colour, storm_color * (0.72 + 0.45 * lit), storm_amount);
 		float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));

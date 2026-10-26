@@ -9,10 +9,8 @@ const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
 const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
 const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
 const DECK_SHADER = preload("res://shaders/weather_deck.gdshader")
-const MASK_SIZE := 256
+const MASK_SIZE := 512
 const DECK_GRID := Vector2i(128, 96)
-# Nominal display height that sets the small sun offset of every cloud shadow.
-const SHADOW_OFFSET_HEIGHT := 14.0
 const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
 
 const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
@@ -33,8 +31,8 @@ const TIMES: Array[String] = ["morning", "noon", "evening"]
 # Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
 const TIME_LOOK := {
 	# Warm low sun against a cooler blue ambient; terrain colours are kept.
-	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.74, 0.50), 1.5, Color(0.80, 0.88, 1.06), 1.25, Color(1.0, 0.92, 0.86)],
-	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.64, 0.40), 1.45, Color(0.78, 0.85, 1.06), 1.2, Color(1.04, 0.88, 0.78)],
+	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.84, 0.66), 1.35, Color(0.82, 0.90, 1.08), 1.4, Color(1.0, 0.94, 0.90)],
+	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.76, 0.54), 1.35, Color(0.80, 0.88, 1.08), 1.35, Color(1.03, 0.90, 0.82)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -84,6 +82,9 @@ var _mask_camera: Camera3D
 var _deck: MeshInstance3D
 var _deck_shadow: MeshInstance3D
 var _deck_mask: MeshInstance3D
+# Second, parallel sun that carries the share of sunlight clouds can block.
+var _cloud_sun: DirectionalLight3D
+var _sun_caster_mask := 0xFFFFFFFF
 var _fine: RefCounted
 var _coarse: RefCounted
 var _field_from := Vector4.ZERO
@@ -107,6 +108,10 @@ var _capture_frames := 0
 var _capture_every := 2
 var _frame := 0
 var configured := false
+# Camera-agnostic view on the ground (works for orthographic and perspective).
+var _ground_rect := Rect2()
+var _ground_width := 1000.0
+var _forward := Vector3(0.0, -0.6, -0.8)
 
 func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, environment: Environment, height_provider: Callable) -> void:
 	_landscape = landscape
@@ -157,6 +162,7 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 	_fine.add_mask(_mask_root, _cloud_mask_material)
 	_coarse.add_mask(_mask_root, _cloud_mask_material)
 	_build_deck()
+	_build_cloud_sun()
 	_build_lightning()
 	_field_from = STATE_FIELD[state]
 	_field_to = _field_from
@@ -227,6 +233,26 @@ func _build_shadow_mask() -> void:
 	add_child(_mask_viewport)
 	RenderingServer.global_shader_parameter_set("weather_cloud_shadow", _mask_viewport.get_texture())
 
+func _build_cloud_sun() -> void:
+	_sun_caster_mask = _sun.shadow_caster_mask
+	_cloud_sun = DirectionalLight3D.new()
+	_cloud_sun.shadow_enabled = true
+	_cloud_sun.shadow_caster_mask = _sun_caster_mask | CloudMeshes.CLOUD_SHADOW_LAYER
+	_cloud_sun.visible = false
+	_sun.get_parent().add_child(_cloud_sun)
+
+## Splits the sun: the main light ignores cloud proxies, the cloud sun (share
+## `strength`) is blocked by them, so a cloud shadow removes only that share.
+func _split_sun(strength: float) -> void:
+	var energy := _sun.light_energy
+	_sun.shadow_caster_mask = _sun_caster_mask & ~CloudMeshes.CLOUD_SHADOW_LAYER
+	_sun.light_energy = energy * (1.0 - strength)
+	_cloud_sun.visible = true
+	_cloud_sun.global_transform = _sun.global_transform
+	_cloud_sun.light_energy = energy * strength
+	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_blur", "shadow_opacity", "directional_shadow_mode", "directional_shadow_max_distance", "directional_shadow_blend_splits", "directional_shadow_split_1", "directional_shadow_split_2", "directional_shadow_split_3", "light_specular"]:
+		_cloud_sun.set(property, _sun.get(property))
+
 func _build_deck() -> void:
 	var mesh := CloudMeshes.build_deck_grid(DECK_GRID.x, DECK_GRID.y)
 	var world_box := AABB(Vector3(-1.0e5, -1.0e3, -1.0e5), Vector3(2.0e5, 2.0e3, 2.0e5))
@@ -240,6 +266,7 @@ func _build_deck() -> void:
 		pair[0].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		pair[2].add_child(pair[0])
 	_deck_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	_deck_shadow.layers = CloudMeshes.CLOUD_SHADOW_LAYER
 
 func _build_lightning() -> void:
 	_bolt = MeshInstance3D.new()
@@ -325,7 +352,7 @@ func _focus() -> Vector2:
 	return _landscape.get("target") if _landscape else Vector2.ZERO
 
 func _region_radius() -> float:
-	return clampf(float(_landscape.get("view_width")) * 1.2, 500.0, 3000.0)
+	return clampf(_ground_width * 1.2, 500.0, 3000.0)
 
 func _prewarm_cells() -> void:
 	var wanted: Array = STATE_CELLS[state]
@@ -404,6 +431,7 @@ func _process(delta: float) -> void:
 	if not enabled:
 		_publish_globals(Vector3.ZERO)
 		return
+	_update_ground_view()
 	if not _prewarmed:
 		# Deferred until the landscape has applied its start view.
 		_prewarmed = true
@@ -422,7 +450,7 @@ func _process(delta: float) -> void:
 	drift += wind_dir * WIND_SPEED * wind_strength * dt
 	_update_cells(dt)
 	var focus := _focus()
-	var spread := float(_landscape.get("view_width")) * 0.25
+	var spread := _ground_width * 0.25
 	var sampled := Vector3.ZERO
 	for offset in [Vector2.ZERO, Vector2(spread, 0), Vector2(-spread, 0), Vector2(0, spread), Vector2(0, -spread)]:
 		sampled += sample_field(focus + offset) * 0.2
@@ -434,6 +462,28 @@ func _process(delta: float) -> void:
 	_update_lightning(delta)
 	_publish_globals(local_weather)
 	_capture()
+
+## Ground footprint from the camera rays through the viewport corners and edges.
+func _update_ground_view() -> void:
+	var size := get_viewport().get_visible_rect().size
+	var points := [Vector2(0, 0), Vector2(size.x, 0), Vector2(0, size.y), size, Vector2(0, size.y * 0.5), Vector2(size.x, size.y * 0.5)]
+	var hits: Array[Vector2] = []
+	var reach := maxf(_camera.far, 1.0)
+	for point in points:
+		var origin := _camera.project_ray_origin(point)
+		var normal := _camera.project_ray_normal(point)
+		var t := reach if normal.y > -0.02 else minf(-origin.y / normal.y, reach)
+		var hit := origin + normal * t
+		hits.append(Vector2(hit.x, hit.z))
+	var rect := Rect2(hits[0], Vector2.ZERO)
+	for hit in hits: rect = rect.expand(hit)
+	_ground_rect = rect
+	_ground_width = maxf(hits[4].distance_to(hits[5]), 1.0)
+	_forward = -_camera.global_basis.z.normalized()
+
+## Ground point that a point at height y covers on screen (along the central view ray).
+func _apparent_offset(y: float) -> Vector2:
+	return Vector2(_forward.x, _forward.z) * (y / maxf(-_forward.y, 0.1))
 
 func _update_altitude(delta: float) -> void:
 	var target_base := cloud_base
@@ -474,6 +524,7 @@ func _apply_look() -> void:
 	_written_fog = _fog_base * (1.0 + w.y * 0.8 + dim * 0.3)
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.22 * w.y - 0.12 * w.z)
+	_split_sun(clampf(0.8 + 0.15 * w.z, 0.0, 0.95))
 
 func _restore_look() -> void:
 	if _base.is_empty(): return
@@ -486,10 +537,15 @@ func _restore_look() -> void:
 	if is_equal_approx(_environment.fog_density, _written_fog): _environment.fog_density = _fog_base
 	_written_fog = -1.0
 	_environment.adjustment_saturation = _base.saturation
+	_sun.shadow_caster_mask = _sun_caster_mask
+	if _cloud_sun: _cloud_sun.visible = false
 
 func _update_tiers() -> void:
-	var view_width := float(_landscape.get("view_width"))
-	var fine_fade := smoothstep(240.0, 420.0, view_width) * (1.0 - smoothstep(1500.0, 2200.0, view_width))
+	var view_width := _ground_width
+	# Fade clouds out up close and whenever the camera comes near the cloud layer.
+	var clearance := _camera.global_position.y - get_display_altitude()
+	var near_fade := smoothstep(240.0, 420.0, view_width) * smoothstep(5.0, 40.0, clearance)
+	var fine_fade := near_fade * (1.0 - smoothstep(1500.0, 2200.0, view_width))
 	var coarse_fade := smoothstep(1500.0, 2200.0, view_width)
 	var rain_fade := 1.0 - smoothstep(1300.0, 1800.0, view_width)
 	var fine_on := view_width < 2200.0
@@ -498,20 +554,20 @@ func _update_tiers() -> void:
 	_coarse.set_fade(coarse_fade, coarse_on and view_width >= 1850.0, 0.0)
 	if not fine_on: _fine.set_visible(false)
 	if not coarse_on: _coarse.set_visible(false)
-	var footprint: Rect2 = _landscape.get("camera_footprint")
-	var elevation := deg_to_rad(float(_landscape.get("elevation_degrees")))
+	var footprint := _ground_rect
 	var sun_dir := _sun.global_basis.z.normalized()
 	var top := get_display_altitude()
-	var view_shift := Vector2(0.0, top / maxf(tan(elevation), 0.2))
-	var region := footprint.merge(Rect2(footprint.position + view_shift, footprint.size))
+	var region := footprint.merge(Rect2(footprint.position - _apparent_offset(top), footprint.size))
 	region.position -= drift
-	# Stylised shadow placement: the shadow lands just below the cloud as seen by
-	# the camera, offset slightly along the sun, instead of 100+ km away.
+	# Stylised shadow placement: the shadow lands where the cloud appears over the
+	# ground, offset a little away from the sun and down-screen so it peeks out,
+	# instead of 100+ km away as the true geometry of the high layer would give.
 	var sun_xz := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12)
-	var apparent := Vector2(0.0, -(cloud_base + 6.0) / maxf(tan(elevation), 0.2))
-	var proxy_shift := apparent + sun_xz * (cloud_base - SHADOW_OFFSET_HEIGHT)
+	var toward_camera := -Vector2(_forward.x, _forward.z).normalized()
+	var landing := _apparent_offset(cloud_base + 6.0) - sun_xz.normalized() * view_width * 0.035 + toward_camera * view_width * 0.03
+	var proxy_shift := landing + sun_xz * cloud_base
 	var mask_shift := -sun_xz * cloud_base
-	var side := maxf(footprint.size.x, footprint.size.y) * 1.15
+	var side := maxf(footprint.size.x, footprint.size.y) * 1.1
 	var centre := footprint.get_center()
 	_shadow_rect = Vector4(centre.x - side * 0.5, centre.y - side * 0.5, side, side)
 	_mask_camera.size = side
@@ -519,7 +575,7 @@ func _update_tiers() -> void:
 	var deck_cell := clampf(pow(2.0, ceil(log(maxf(view_width / 90.0, 1.0)) / log(2.0))), 4.0, 128.0)
 	var deck_centre := region.get_center() + drift
 	var deck_origin := (deck_centre / deck_cell).floor() - Vector2(DECK_GRID) * 0.5
-	var deck_fade := smoothstep(240.0, 420.0, view_width)
+	var deck_fade := near_fade
 	_deck.visible = deck_fade > 0.01
 	_deck.set_instance_shader_parameter("fade", deck_fade)
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _deck_material, _deck_shadow_material, _deck_mask_material]:
@@ -574,13 +630,13 @@ func _update_lightning(delta: float) -> void:
 	for material in [_cloud_material, _deck_material]:
 		material.set_shader_parameter("flash", lightning)
 		material.set_shader_parameter("flash_pos", _flash_pos)
-		material.set_shader_parameter("flash_radius", maxf(float(_landscape.get("view_width")) * 0.08, 30.0))
+		material.set_shader_parameter("flash_radius", maxf(_ground_width * 0.08, 30.0))
 	_lightning_timer -= delta
 	if _lightning_timer > 0.0: return
 	_lightning_timer = 0.35
-	var view_width := float(_landscape.get("view_width"))
+	var view_width := _ground_width
 	if view_width > 2500.0: return
-	var footprint: Rect2 = _landscape.get("camera_footprint")
+	var footprint := _ground_rect
 	var best := Vector2.ZERO
 	var best_storm := 0.0
 	for k in 4:
@@ -595,7 +651,9 @@ func _strike(p: Vector2, view_width: float) -> void:
 	var ground := 0.0
 	if _landscape.has_method("_render_height"): ground = float(_landscape.call("_render_height", p))
 	var top := cloud_base + 2.0
-	var width := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0) * 3.4
+	# About three pixels wide at the strike's distance, for any projection.
+	var pixel := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0)
+	var width := pixel * 3.4
 	var points := PackedVector3Array()
 	var x := 0.0
 	var steps := 10

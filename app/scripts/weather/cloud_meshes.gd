@@ -4,6 +4,8 @@ extends RefCounted
 ## field; this side only lays out stable slots around the camera.
 
 const MAX_SLOTS := 4096
+## Render layer of the cloud shadow proxies; only the cloud sun casts from it.
+const CLOUD_SHADOW_LAYER := 1 << 19
 
 static func _icosphere() -> Array:
 	var t := (1.0 + sqrt(5.0)) * 0.5
@@ -130,6 +132,7 @@ class CloudTier:
 				mmi.material_override = shadow_material if casts else cloud_material
 				mmi.custom_aabb = world_box
 				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				if casts: mmi.layers = CLOUD_SHADOW_LAYER
 				parent.add_child(mmi)
 				(shadow if casts else visual).append(mmi)
 		if rain_material:

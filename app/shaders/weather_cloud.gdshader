@@ -2,10 +2,11 @@ shader_type spatial;
 // Faceted low-poly cumulus. Instances sit on a fixed air-space grid; the weather
 // field decides per instance whether and how large the cloud is. Unshaded with
 // its own sun model so the tops stay white under the ACES look.
-// mode 0: visible cloud. mode 1: shadow proxy (SHADOWS_ONLY instances), moved so
-// its shadow lands just below the cloud as seen by the camera, dithered in
-// shadow-map space so the shadow is lighter than tree shadows. mode 2: the same
-// footprint drawn top-down into the water cloud-shadow mask.
+// mode 0: visible cloud. mode 1: shadow proxy (SHADOWS_ONLY instances on the
+// cloud layer), moved so its shadow lands just below the cloud as seen by the
+// camera; only the weaker cloud sun sees this layer, so the shadow stays lighter
+// than tree shadows. mode 2: the same footprint drawn top-down into the water
+// cloud-shadow mask.
 render_mode unshaded, world_vertex_coords, cull_disabled, depth_draw_opaque, fog_disabled;
 #include "res://shaders/weather_field.gdshaderinc"
 
@@ -14,7 +15,7 @@ uniform float cloud_base = 90.0;
 uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
 uniform vec3 sun_color : source_color = vec3(1.0, 0.96, 0.88);
 uniform vec3 shade_color : source_color = vec3(0.62, 0.69, 0.80);
-uniform vec3 storm_color : source_color = vec3(0.34, 0.36, 0.43);
+uniform vec3 storm_color : source_color = vec3(0.41, 0.44, 0.51);
 uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
@@ -49,7 +50,7 @@ void vertex() {
 	if (mode == 2) { VERTEX.xz += proxy_shift + mask_shift; VERTEX.y = cloud_base + local.y * 0.25; }
 	world_pos = VERTEX;
 	storm = field.z;
-	grey = clamp(smoothstep(0.55, 1.0, field.x) * 0.5 + field.y * 0.4, 0.0, 1.0);
+	grey = clamp(smoothstep(0.55, 1.0, field.x) * 0.3 + field.y * 0.75 + deck * 0.35, 0.0, 1.0);
 	tint = INSTANCE_CUSTOM.y;
 	height01 = local.y / max(1.1 * s * length(MODEL_MATRIX[1].xyz), 0.001);
 }
@@ -64,8 +65,6 @@ float bayer4(vec2 p) {
 void fragment() {
 	float dither = bayer4(FRAGCOORD.xy);
 	if (mode == 1) {
-		// Partial occluder in shadow-map texels; the shadow filter averages it.
-		if (dither > shadow_coverage + 0.25 * storm) { discard; }
 		ALBEDO = vec3(0.0);
 	} else if (mode == 2) {
 		ALBEDO = vec3(1.0 - min(shadow_coverage + 0.25 * storm, 0.95));
