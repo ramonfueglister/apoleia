@@ -110,7 +110,7 @@ static func vegetation_parameters() -> Dictionary:
 ## (15), 2 four sides (12), 3 three sides (9). Past the last entry crowns read
 ## as the terrain's forest-ground tint (overview).
 static func grove_detail_view_widths() -> Array:
-    return [[360.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
+    return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
 
 static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
