@@ -44,6 +44,9 @@ func _configure_detail()->void:
             var span=CELL_SPAN*float(1<<level)
             var ground=0.9*span+0.55*near
             detail=_stage_for(stages,near*sqrt(focus*focus+ground*ground)/focus)
+        # The farthest forest level always takes the coarsest stage: it now
+        # carries full density, so its trees are the most numerous.
+        if level==FOREST_LEVELS-1:detail=maxi(detail,int(stages[-1][1]))
         level_detail.append(detail)
         if not detail_meshes.has(detail):
             detail_meshes[detail]=Materialize.shared_meshes(Compact.variants(Style.create_tree_mesh(0,1,detail).surface_get_arrays(0)))
@@ -83,10 +86,9 @@ func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
             if not reader.entries.has(cell):continue
             var loaded=reader.read_records(cell,262144)
             if not loaded.get("ok",false):continue
+            # Every level shows all original crowns (same density at every
+            # distance); far levels are cheaper only through facet stages.
             for i in range(loaded.records.size()):
-                # The two near levels show the same original crowns. Farther
-                # groups use a stable quarter-density subset; no new geography.
-                if level==2 and i%4!=0:continue
                 var row=loaded.records[i];row[7]=0.;rows.append(row)
     var payload=Compact.build(rows,first,0,"terrain-tile",templates,"terrain-tile",prepared)
     if payload.has("buckets"):payload["level"]=level
