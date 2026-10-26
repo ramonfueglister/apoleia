@@ -1,0 +1,42 @@
+[
+  {
+    "level_id": "overview",
+    "metric": "screen_error_px",
+    "status": "not_applicable",
+    "reason": "Offline level not rendered in any integrity-valid run (rendered_in_valid_runs: false); render-space metric has no measurable value at this level.",
+    "rule": {
+      "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+    }
+  },
+  {
+    "level_id": "overview",
+    "metric": "transition_residual_px",
+    "status": "not_applicable",
+    "reason": "Offline level not rendered in any integrity-valid run (rendered_in_valid_runs: false); render-space metric has no measurable value at this level.",
+    "rule": {
+      "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+    }
+  },
+  {
+    "level_id": "canonical",
+    "metric": "screen_error_px",
+    "status": "not_applicable",
+    "reason": "Offline level not rendered in any integrity-valid run (rendered_in_valid_runs: false); render-space metric has no measurable value at this level.",
+    "rule": {
+      "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+    }
+  },
+  {
+    "level_id": "canonical",
+    "metric": "transition_residual_px",
+    "status": "not_applicable",
+    "reason": "Offline level not rendered in any integrity-valid run (rendered_in_valid_runs: false); render-space metric has no measurable value at this level.",
+    "rule": {
+      "artifact_path": "data-report-errata/release-v2/policy-application-v1.json",
+      "sha256": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56"
+    }
+  }
+]
