@@ -275,6 +275,15 @@ const FOREST_CELLS=8
 const FOREST_CACHE_LIMIT=768
 
 func _ready() -> void:
+    # Test/capture runs: never take keyboard focus from the user.
+    if OS.get_environment("RA_NO_FOCUS")!="":DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS,true)
+    # Capture runs: render at a fixed size independent of the (small) window.
+    var capture_size=OS.get_environment("RA_RENDER_SIZE")
+    if capture_size!="":
+        var parts=capture_size.split("x")
+        get_window().content_scale_mode=Window.CONTENT_SCALE_MODE_VIEWPORT
+        get_window().content_scale_aspect=Window.CONTENT_SCALE_ASPECT_IGNORE
+        get_window().content_scale_size=Vector2i(int(parts[0]),int(parts[1]))
     get_tree().auto_accept_quit=false
     source_root = ProjectSettings.globalize_path("res://..").simplify_path()
     var device=RenderingServer.get_rendering_device()
@@ -1888,6 +1897,36 @@ func _forest_async_idle() -> bool:
     var state=forest_async.stats()
     return not state.active and int(state.queued)==0 and int(state.ready)==0 and int(state.held)==0 and forest_async_results.is_empty()
 
+# Display rivers (incl. delta arms) are not part of the forest layout. Crowns
+# on a river strip are hidden by a zero scale at runtime; the layout and its
+# bindings are unchanged.
+var river_crown_grid:Dictionary={}
+const RIVER_CROWN_CELL=4.0
+
+func _build_river_crown_grid() -> void:
+    river_crown_grid.clear()
+    for source in river_sources:
+        for segment in source.segments:
+            var a:Vector2=segment[0];var b:Vector2=segment[1]
+            var clearance=float(segment[2])*LandscapeLook.RIVER_WIDTH_SCALE*2.5+1.2
+            var low=Vector2i(((a.min(b)-Vector2.ONE*clearance)/RIVER_CROWN_CELL).floor());var high=Vector2i(((a.max(b)+Vector2.ONE*clearance)/RIVER_CROWN_CELL).floor())
+            for z in range(low.y,high.y+1):
+                for x in range(low.x,high.x+1):
+                    var key=Vector2i(x,z)
+                    if not river_crown_grid.has(key):river_crown_grid[key]=[]
+                    river_crown_grid[key].append([a,b,clearance])
+
+func _clear_river_crowns(mm:MultiMesh) -> void:
+    if river_crown_grid.is_empty():return
+    for i in range(mm.instance_count):
+        var t:Transform3D=mm.get_instance_transform(i)
+        var p=Vector2(t.origin.x,t.origin.z)
+        var cell=Vector2i((p/RIVER_CROWN_CELL).floor())
+        if not river_crown_grid.has(cell):continue
+        for record in river_crown_grid[cell]:
+            if Geometry2D.get_closest_point_to_segment(p,record[0],record[1]).distance_to(p)<float(record[2]):
+                mm.set_instance_transform(i,Transform3D(Basis().scaled(Vector3.ONE*0.00001),t.origin));break
+
 func _materialize_compact_forest_cell(payload:Dictionary,stride:int)->Dictionary:
     assert(Thread.is_main_thread())
     if payload.get("format","")!=CompactForest.FORMAT or payload.get("binding_id","")!=forest_async_identity or int(payload.get("support_stride",-1))!=stride or payload.get("support_id","")!=CompactForestIdentity.support_id(forest_async_identity,stride):return {"error":"compact_payload_binding"}
@@ -1896,6 +1935,7 @@ func _materialize_compact_forest_cell(payload:Dictionary,stride:int)->Dictionary
     if count>0:
         holder=Node3D.new();holder.name="CompactForestCell";add_child(holder)
         for part in CompactForestMaterialize.multimeshes(payload,forest_compact_meshes):
+            _clear_river_crowns(part.multimesh)
             var instance=MultiMeshInstance3D.new();instance.multimesh=part.multimesh;instance.material_override=forest_compact_canopy_material
             # Shader relief can move Y toward zero. Include that interval in
             # culling bounds without changing any crown's canonical transform.
@@ -2267,6 +2307,7 @@ func _setup_rivers() -> void:
         river_feature_count+=1
     _detect_river_mouths()
     _setup_river_deltas()
+    _build_river_crown_grid()
 
 # Display deltas of the large flat-coast rivers, exaggerated for the diorama
 # scale (the real Tiber delta is only a few km wide): arms fan out from an
@@ -2530,7 +2571,9 @@ func _update_river_surface() -> void:
             var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
             sides.append(side)
             # Delta arms keep a thinner floor so neighbouring arms stay apart.
-            var floor_px=minimum_pixels*(0.5 if bool(source.get("synthetic_delta",false)) else 1.0)
+            # A07 near view (<240 km): rivers keep growing on screen.
+            var close_gain=lerpf(1.0,2.0,smoothstep(240.0,80.0,view_width))
+            var floor_px=minimum_pixels*close_gain*(0.62 if bool(source.get("synthetic_delta",false)) else 1.0)
             var half=maxf(float(points[k][1])*.5*LandscapeLook.RIVER_WIDTH_SCALE,floor_px*.5*pixel_world/maxf(projected_side,.001))
             # Estuary funnel: widen over the last ~8 km before a mouth.
             if not bool(source.get("synthetic_delta",false)):
