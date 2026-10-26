@@ -1,21 +1,28 @@
 shader_type spatial;
 // Faceted low-poly cumulus. Instances sit on a fixed air-space grid; the weather
 // field decides per instance whether and how large the cloud is. Unshaded with
-// its own sun model so the tops stay white under the ACES look; real directional
-// shadows come from separate SHADOWS_ONLY instances of the same multimesh.
+// its own sun model so the tops stay white under the ACES look.
+// mode 0: visible cloud. mode 1: shadow proxy (SHADOWS_ONLY instances), moved so
+// its shadow lands just below the cloud as seen by the camera, dithered in
+// shadow-map space so the shadow is lighter than tree shadows. mode 2: the same
+// footprint drawn top-down into the water cloud-shadow mask.
 render_mode unshaded, world_vertex_coords, cull_disabled, depth_draw_opaque, fog_disabled;
 #include "res://shaders/weather_field.gdshaderinc"
 
+uniform int mode = 0;
 uniform float cloud_base = 90.0;
-uniform float size_boost = 1.0;
 uniform vec3 sun_dir = vec3(-0.68, 0.64, 0.36);
 uniform vec3 sun_color : source_color = vec3(1.0, 0.96, 0.88);
 uniform vec3 shade_color : source_color = vec3(0.62, 0.69, 0.80);
-uniform vec3 storm_color : source_color = vec3(0.24, 0.22, 0.30);
+uniform vec3 storm_color : source_color = vec3(0.34, 0.36, 0.43);
 uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
 uniform float flash_radius = 80.0;
+// Shadow placement (world XZ): proxy offset and the part of it removed again for the mask.
+uniform vec2 proxy_shift;
+uniform vec2 mask_shift;
+uniform float shadow_coverage = 0.58;
 instance uniform float fade = 1.0;
 
 varying vec3 world_pos;
@@ -24,21 +31,27 @@ varying float grey;
 varying float tint;
 varying float height01;
 
+float deck_amount(float cover) { return smoothstep(0.55, 0.85, cover); }
+
 void vertex() {
 	vec3 origin = MODEL_MATRIX[3].xyz;
 	vec2 world_xz = origin.xz + air_drift;
 	vec3 field = weather_field(world_xz);
+	float deck = deck_amount(field.x);
+	// Under a closed deck only the tallest slots survive, as towers on top of it.
+	float tower_cover = field.x - 0.62 * deck;
 	float h = INSTANCE_CUSTOM.x;
-	float presence = smoothstep(h - 0.07, h + 0.07, field.x);
-	// Dense cover widens and flattens the cells into a closed, low deck.
-	float s = presence * (0.6 + 0.55 * field.x + 1.0 * field.x * field.x) * size_boost;
-	float flat_deck = 1.0 - 0.45 * smoothstep(0.6, 1.0, field.x);
-	VERTEX = vec3(world_xz.x, cloud_base, world_xz.y) + (VERTEX - origin) * vec3(s, s * flat_deck, s);
+	float presence = smoothstep(h - 0.07, h + 0.07, tower_cover);
+	float s = presence * (0.75 + 0.6 * field.x) * (1.0 + 0.45 * deck);
+	vec3 local = (VERTEX - origin) * s;
+	VERTEX = vec3(world_xz.x, cloud_base + deck * 3.0, world_xz.y) + local;
+	if (mode == 1) { VERTEX.xz += proxy_shift; VERTEX.y = cloud_base + local.y * 0.25; }
+	if (mode == 2) { VERTEX.xz += proxy_shift + mask_shift; VERTEX.y = cloud_base + local.y * 0.25; }
 	world_pos = VERTEX;
-	height01 = (VERTEX.y - cloud_base) / max(1.1 * s * flat_deck * length(MODEL_MATRIX[1].xyz), 0.001);
 	storm = field.z;
-	grey = clamp(smoothstep(0.55, 1.0, field.x) * 0.55 + field.y * 0.45, 0.0, 1.0);
+	grey = clamp(smoothstep(0.55, 1.0, field.x) * 0.5 + field.y * 0.4, 0.0, 1.0);
 	tint = INSTANCE_CUSTOM.y;
+	height01 = local.y / max(1.1 * s * length(MODEL_MATRIX[1].xyz), 0.001);
 }
 
 float bayer4(vec2 p) {
@@ -49,26 +62,39 @@ float bayer4(vec2 p) {
 }
 
 void fragment() {
-	if (fade < 0.999 && fade < bayer4(FRAGCOORD.xy)) { discard; }
-	vec3 n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
-	vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
-	if (dot(n, to_camera) < 0.0) { n = -n; }
-	float ndl = dot(n, normalize(sun_dir));
-	float lit = smoothstep(-0.2, 0.6, ndl);
-	float under = smoothstep(0.15, -0.55, n.y);
-	vec3 colour = mix(shade_color * 0.9, sun_color * 1.05, lit);
-	// Blue-grey belly, bright crown.
-	colour *= mix(0.62, 1.0, smoothstep(0.05, 0.65, height01));
-	colour = mix(colour, shade_color * 0.8, under * 0.7);
-	// Warm sunlit rim, as on the reference cumulus.
-	float rim = pow(1.0 - clamp(dot(n, to_camera), 0.0, 1.0), 3.0) * clamp(ndl + 0.3, 0.0, 1.0);
-	colour += rim * sun_color * vec3(1.0, 0.82, 0.58) * 0.35;
-	// Per-facet tone so the low-poly read survives at small sizes.
-	float facet = fract(sin(dot(floor(n * 6.0), vec3(12.9898, 78.233, 37.719)) + tint * 7.0) * 43758.5453);
-	colour *= 0.88 + 0.16 * facet;
-	colour = mix(colour, vec3(0.19, 0.205, 0.245) * (0.75 + 0.45 * lit), grey);
-	colour = mix(colour, storm_color * (0.8 + 0.6 * lit), smoothstep(0.05, 0.45, storm));
-	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
-	colour += near_flash * vec3(1.6, 1.65, 2.0) * (0.5 + storm);
-	ALBEDO = colour * brightness;
+	float dither = bayer4(FRAGCOORD.xy);
+	if (mode == 1) {
+		// Partial occluder in shadow-map texels; the shadow filter averages it.
+		if (dither > shadow_coverage + 0.25 * storm) { discard; }
+		ALBEDO = vec3(0.0);
+	} else if (mode == 2) {
+		ALBEDO = vec3(1.0 - min(shadow_coverage + 0.25 * storm, 0.95));
+	} else {
+		if (fade < 0.999 && fade < dither) { discard; }
+		vec3 n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+		vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
+		if (dot(n, to_camera) < 0.0) { n = -n; }
+		float facing = clamp(dot(n, to_camera), 0.0, 1.0);
+		// Soft, broken silhouette instead of a hard cut-out edge.
+		if (smoothstep(0.05, 0.3, facing) < dither * 0.85) { discard; }
+		vec3 l = normalize(sun_dir);
+		float ndl = dot(n, l);
+		float lit = smoothstep(-0.2, 0.6, ndl);
+		vec3 colour = mix(shade_color * 0.9, sun_color * 1.05, lit);
+		colour *= mix(0.62, 1.0, smoothstep(0.05, 0.65, height01));
+		// Warm sunlit rim; brighter silver lining when the sun is behind the cloud.
+		float back = clamp(-dot(to_camera, l) * 0.5 + 0.5, 0.0, 1.0);
+		float rim = pow(1.0 - facing, 2.5) * (clamp(ndl + 0.3, 0.0, 1.0) + back * 0.6);
+		colour += rim * sun_color * vec3(1.0, 0.84, 0.62) * 0.4;
+		float facet = fract(sin(dot(floor(n * 6.0), vec3(12.9898, 78.233, 37.719)) + tint * 7.0) * 43758.5453);
+		colour *= 0.88 + 0.16 * facet;
+		colour = mix(colour, vec3(0.30, 0.32, 0.37) * (0.7 + 0.5 * lit), grey * 0.85);
+		// Storm: cool slate blue-grey with a faint violet tone; sunlit tops stay warm.
+		float storm_amount = smoothstep(0.05, 0.45, storm);
+		vec3 slate = storm_color * (0.7 + 0.5 * lit) + sun_color * vec3(1.0, 0.8, 0.6) * 0.16 * lit * smoothstep(0.4, 0.9, height01);
+		colour = mix(colour, slate, storm_amount);
+		float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
+		colour += near_flash * vec3(1.7, 1.75, 2.1) * (0.6 + storm) * (1.0 - 0.5 * height01);
+		ALBEDO = colour * brightness;
+	}
 }

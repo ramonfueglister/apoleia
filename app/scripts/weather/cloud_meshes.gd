@@ -56,6 +56,28 @@ static func build_cumulus(seed: int) -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
+## Regular grid of (x, z) cell indices; the deck shader jitters and lifts it.
+static func build_deck_grid(nx: int, nz: int) -> ArrayMesh:
+	var vertices := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for z in nz + 1:
+		for x in nx + 1: vertices.append(Vector3(x, 0, z))
+	for z in nz:
+		for x in nx:
+			var a := z * (nx + 1) + x
+			var b := a + 1
+			var c := a + nx + 1
+			var d := c + 1
+			if (x + z) % 2 == 0: indices.append_array([a, b, d, a, d, c])
+			else: indices.append_array([a, b, c, b, d, c])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
 ## Two crossed vertical quads, top edge at y=0, bottom at y=-1.
 static func build_rain_veil() -> ArrayMesh:
 	var vertices := PackedVector3Array([Vector3(-1,0,0), Vector3(1,0,0), Vector3(1,-1,0), Vector3(-1,-1,0), Vector3(0,0,-1), Vector3(0,0,1), Vector3(0,-1,1), Vector3(0,-1,-1)])
@@ -89,7 +111,9 @@ class CloudTier:
 		n = n ^ (n >> 16)
 		return float(n & 0xffffff) / 16777216.0
 
-	func _init(library: Script, parent: Node3D, cell_size: float, scales: Vector2, tier_seed: int, cloud_material: ShaderMaterial, rain_material: ShaderMaterial) -> void:
+	var mask: Array[MultiMeshInstance3D] = []
+
+	func _init(library: Script, parent: Node3D, cell_size: float, scales: Vector2, tier_seed: int, cloud_material: ShaderMaterial, shadow_material: ShaderMaterial, rain_material: ShaderMaterial) -> void:
 		cell = cell_size
 		scale_range = scales
 		seed = tier_seed
@@ -103,7 +127,7 @@ class CloudTier:
 			for casts in [false, true]:
 				var mmi := MultiMeshInstance3D.new()
 				mmi.multimesh = mm
-				mmi.material_override = cloud_material
+				mmi.material_override = shadow_material if casts else cloud_material
 				mmi.custom_aabb = world_box
 				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 				parent.add_child(mmi)
@@ -119,6 +143,18 @@ class CloudTier:
 			rain_instance.custom_aabb = world_box
 			rain_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			parent.add_child(rain_instance)
+
+	## Same instances drawn top-down into the water cloud-shadow mask world.
+	func add_mask(mask_parent: Node3D, mask_material: ShaderMaterial) -> void:
+		var world_box := AABB(Vector3(-1.0e5, -1.0e3, -1.0e5), Vector3(2.0e5, 2.0e3, 2.0e5))
+		for mm in multimeshes:
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.material_override = mask_material
+			mmi.custom_aabb = world_box
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mask_parent.add_child(mmi)
+			mask.append(mmi)
 
 	## Re-lays the slot grid only when the wanted air-space rect leaves the built one.
 	func ensure(air_rect: Rect2) -> bool:
@@ -138,7 +174,8 @@ class CloudTier:
 			for i in range(built.position.x, built.end.x):
 				var jitter := Vector2(hash01(i, j, seed), hash01(i, j, seed + 1)) - Vector2(0.5, 0.5)
 				var origin := (Vector2(i, j) + Vector2(0.5, 0.5) + jitter * 0.98) * cell
-				var s := lerpf(scale_range.x, scale_range.y, hash01(i, j, seed + 2))
+				# Mostly modest clouds, a few large cumulus.
+				var s := lerpf(scale_range.x, scale_range.y, pow(hash01(i, j, seed + 2), 2.2))
 				var yaw := hash01(i, j, seed + 3) * TAU
 				var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s, s * 0.85, s * lerpf(0.8, 1.15, hash01(i, j, seed + 4))))
 				var threshold := lerpf(0.05, 0.95, hash01(i, j, seed + 5))
@@ -171,10 +208,11 @@ class CloudTier:
 			mmi.visible = visual_fade > 0.01
 			mmi.set_instance_shader_parameter("fade", visual_fade)
 		for mmi in shadow: mmi.visible = shadows
+		for mmi in mask: mmi.visible = shadows
 		if rain_instance:
 			rain_instance.visible = rain_fade > 0.01
 			rain_instance.set_instance_shader_parameter("fade", rain_fade)
 
 	func set_visible(on: bool) -> void:
-		for mmi in visual + shadow: mmi.visible = on
+		for mmi in visual + shadow + mask: mmi.visible = on
 		if rain_instance: rain_instance.visible = on

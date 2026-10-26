@@ -8,36 +8,41 @@ extends Node3D
 const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
 const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
 const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
-const MASK_SHADER = preload("res://shaders/weather_shadow_mask.gdshader")
+const DECK_SHADER = preload("res://shaders/weather_deck.gdshader")
 const MASK_SIZE := 256
+const DECK_GRID := Vector2i(128, 96)
+# Nominal display height that sets the small sun offset of every cloud shadow.
+const SHADOW_OFFSET_HEIGHT := 14.0
 const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
 
 const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
 # cover, noise amplitude, rain, storm (see weather_field.gdshaderinc)
 const STATE_FIELD := {
 	"clear": Vector4(0.0, 0.08, 0.0, 0.0),
-	"fair": Vector4(0.04, 0.55, 0.0, 0.0),
-	"overcast": Vector4(0.74, 0.28, 0.12, 0.0),
-	"rain": Vector4(0.86, 0.24, 0.75, 0.0),
-	"storm": Vector4(0.80, 0.30, 0.60, 0.55),
+	"fair": Vector4(0.06, 0.55, 0.0, 0.0),
+	"overcast": Vector4(0.68, 0.35, 0.10, 0.0),
+	"rain": Vector4(0.62, 0.45, 0.60, 0.0),
+	# Storms are local: fair background plus one or two large storm cells.
+	"storm": Vector4(0.10, 0.45, 0.0, 0.0),
 }
 const STATE_WIND := {"clear": 0.45, "fair": 0.6, "overcast": 0.8, "rain": 0.9, "storm": 1.0}
 # Desired weather cells per kind (0 cumulus cluster, 1 rain front, 2 storm cell).
-const STATE_CELLS := {"clear": [0, 0, 0], "fair": [2, 0, 0], "overcast": [2, 1, 0], "rain": [0, 4, 0], "storm": [0, 1, 3]}
+const STATE_CELLS := {"clear": [0, 0, 0], "fair": [2, 0, 0], "overcast": [2, 1, 0], "rain": [0, 4, 0], "storm": [1, 0, 2]}
 const AUTO_WEIGHTS := {"fair": 0.55, "clear": 0.2, "overcast": 0.12, "rain": 0.08, "storm": 0.05}
 const TIMES: Array[String] = ["morning", "noon", "evening"]
 # Sun rotation, sun colour factor, sun energy factor, ambient tint, ambient factor, fog tint.
 const TIME_LOOK := {
-	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.76, 0.55), 1.75, Color(1.0, 0.90, 0.84), 1.3, Color(1.0, 0.86, 0.74)],
-	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.66, 0.42), 1.7, Color(1.0, 0.84, 0.78), 1.25, Color(1.05, 0.78, 0.62)],
+	# Warm low sun against a cooler blue ambient; terrain colours are kept.
+	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.74, 0.50), 1.5, Color(0.80, 0.88, 1.06), 1.25, Color(1.0, 0.92, 0.86)],
+	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.64, 0.40), 1.45, Color(0.78, 0.85, 1.06), 1.2, Color(1.04, 0.88, 0.78)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
 const FINE_CELL := 46.0
 const COARSE_CELL := 170.0
-const FINE_SCALE := Vector2(10.0, 17.0)
-const COARSE_SCALE := Vector2(36.0, 60.0)
-const CLOUD_HEIGHT := 1.3 * 0.85 * 1.17 # mesh height * vertical scale * maximum field growth
+const FINE_SCALE := Vector2(7.0, 26.0)
+const COARSE_SCALE := Vector2(24.0, 80.0)
+const CLOUD_HEIGHT := 1.3 * 0.85 * 1.35 * 1.45 # mesh height * vertical scale * field growth * deck towers
 const TRANSITION_SECONDS := 30.0
 
 var enabled := true
@@ -67,9 +72,18 @@ var _rng := RandomNumberGenerator.new()
 var _noise_image: Image
 var _noise_texture: ImageTexture
 var _cloud_material: ShaderMaterial
+var _cloud_shadow_material: ShaderMaterial
+var _cloud_mask_material: ShaderMaterial
+var _deck_material: ShaderMaterial
+var _deck_shadow_material: ShaderMaterial
+var _deck_mask_material: ShaderMaterial
 var _rain_material: ShaderMaterial
-var _mask_material: ShaderMaterial
 var _mask_viewport: SubViewport
+var _mask_root: Node3D
+var _mask_camera: Camera3D
+var _deck: MeshInstance3D
+var _deck_shadow: MeshInstance3D
+var _deck_mask: MeshInstance3D
 var _fine: RefCounted
 var _coarse: RefCounted
 var _field_from := Vector4.ZERO
@@ -130,17 +144,19 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 		auto_weather = false
 		state = start_state
 	_build_noise(seed)
-	_cloud_material = ShaderMaterial.new()
-	_cloud_material.shader = CLOUD_SHADER
-	_rain_material = ShaderMaterial.new()
-	_rain_material.shader = RAIN_SHADER
+	_cloud_material = _material(CLOUD_SHADER, 0)
+	_cloud_shadow_material = _material(CLOUD_SHADER, 1)
+	_cloud_mask_material = _material(CLOUD_SHADER, 2)
+	_deck_material = _material(DECK_SHADER, 0)
+	_deck_shadow_material = _material(DECK_SHADER, 1)
+	_deck_mask_material = _material(DECK_SHADER, 2)
+	_rain_material = _material(RAIN_SHADER, -1)
 	_build_shadow_mask()
-	for material in [_cloud_material, _rain_material, _mask_material]:
-		material.set_shader_parameter("weather_noise", _noise_texture)
-		material.set_shader_parameter("noise_period", NOISE_PERIOD)
-		material.set_shader_parameter("earth_km", _earth_km())
-	_fine = CloudMeshes.CloudTier.new(CloudMeshes, self, FINE_CELL, FINE_SCALE, seed * 31 + 3, _cloud_material, _rain_material)
-	_coarse = CloudMeshes.CloudTier.new(CloudMeshes, self, COARSE_CELL, COARSE_SCALE, seed * 31 + 11, _cloud_material, null)
+	_fine = CloudMeshes.CloudTier.new(CloudMeshes, self, FINE_CELL, FINE_SCALE, seed * 31 + 3, _cloud_material, _cloud_shadow_material, _rain_material)
+	_coarse = CloudMeshes.CloudTier.new(CloudMeshes, self, COARSE_CELL, COARSE_SCALE, seed * 31 + 11, _cloud_material, _cloud_shadow_material, null)
+	_fine.add_mask(_mask_root, _cloud_mask_material)
+	_coarse.add_mask(_mask_root, _cloud_mask_material)
+	_build_deck()
 	_build_lightning()
 	_field_from = STATE_FIELD[state]
 	_field_to = _field_from
@@ -179,19 +195,51 @@ func _build_noise(seed: int) -> void:
 	_noise_image.convert(Image.FORMAT_L8)
 	_noise_texture = ImageTexture.create_from_image(_noise_image)
 
+func _material(shader: Shader, mode: int) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	if mode >= 0: material.set_shader_parameter("mode", mode)
+	material.set_shader_parameter("weather_noise", _noise_texture)
+	material.set_shader_parameter("noise_period", NOISE_PERIOD)
+	material.set_shader_parameter("earth_km", _earth_km())
+	return material
+
+## Top-down render of the shadow proxies (own world) for shaders with their own
+## sun term; 1 = full sun. Feeds weather_cloud_shadow / weather_cloud_shadow_rect.
 func _build_shadow_mask() -> void:
 	_mask_viewport = SubViewport.new()
 	_mask_viewport.size = Vector2i(MASK_SIZE, MASK_SIZE)
-	_mask_viewport.disable_3d = true
+	_mask_viewport.own_world_3d = true
 	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_mask_material = ShaderMaterial.new()
-	_mask_material.shader = MASK_SHADER
-	var rect := ColorRect.new()
-	rect.size = Vector2(MASK_SIZE, MASK_SIZE)
-	rect.material = _mask_material
-	_mask_viewport.add_child(rect)
+	_mask_root = Node3D.new()
+	_mask_viewport.add_child(_mask_root)
+	_mask_camera = Camera3D.new()
+	_mask_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_mask_camera.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	_mask_camera.near = 1.0
+	_mask_camera.far = 6000.0
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color.WHITE
+	_mask_camera.environment = environment
+	_mask_camera.current = true
+	_mask_root.add_child(_mask_camera)
 	add_child(_mask_viewport)
 	RenderingServer.global_shader_parameter_set("weather_cloud_shadow", _mask_viewport.get_texture())
+
+func _build_deck() -> void:
+	var mesh := CloudMeshes.build_deck_grid(DECK_GRID.x, DECK_GRID.y)
+	var world_box := AABB(Vector3(-1.0e5, -1.0e3, -1.0e5), Vector3(2.0e5, 2.0e3, 2.0e5))
+	_deck = MeshInstance3D.new()
+	_deck_shadow = MeshInstance3D.new()
+	_deck_mask = MeshInstance3D.new()
+	for pair in [[_deck, _deck_material, self], [_deck_shadow, _deck_shadow_material, self], [_deck_mask, _deck_mask_material, _mask_root]]:
+		pair[0].mesh = mesh
+		pair[0].material_override = pair[1]
+		pair[0].custom_aabb = world_box
+		pair[0].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pair[2].add_child(pair[0])
+	_deck_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 
 func _build_lightning() -> void:
 	_bolt = MeshInstance3D.new()
@@ -284,6 +332,11 @@ func _prewarm_cells() -> void:
 	for kind in 3:
 		for k in wanted[kind]: _spawn_cell(kind, false, 0.0)
 	for cell in cells: cell.age = _rng.randf_range(40.0, cell.life * 0.5)
+	# A storm starts as one front over part of the view; the rest stays bright.
+	for cell in cells:
+		if cell.kind == 2:
+			cell.pos = _focus() + Vector2(_region_radius() * 0.28, -_region_radius() * 0.08)
+			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
 	if cells.size() >= 16: return
@@ -303,7 +356,7 @@ func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
 		1:
 			cell.merge({"ra": _rng.randf_range(140.0, 220.0), "rc": _rng.randf_range(450.0, 750.0), "strength": _rng.randf_range(0.8, 1.0), "life": _rng.randf_range(600.0, 1000.0)})
 		_:
-			var r := _rng.randf_range(110.0, 200.0)
+			var r := _rng.randf_range(200.0, 340.0)
 			cell.merge({"ra": r, "rc": r * _rng.randf_range(0.8, 1.2), "strength": _rng.randf_range(0.9, 1.0), "life": _rng.randf_range(300.0, 600.0)})
 	cells.append(cell)
 
@@ -404,7 +457,8 @@ func _euler(degrees: Vector3) -> Vector3:
 func _apply_look() -> void:
 	var look := _time_look()
 	var w := local_weather
-	var dim := clampf(maxf((w.x - 0.45) * 0.9, 0.0) + w.y * 0.25 + w.z * 0.35, 0.0, 0.8)
+	# Darkness under fronts comes from their shadows; global dimming stays mild.
+	var dim := clampf(maxf((w.x - 0.6) * 0.5, 0.0) + w.y * 0.15 + w.z * 0.1, 0.0, 0.35)
 	_sun.quaternion = look[0]
 	var sun_color: Color = _base.sun_color * look[1]
 	_sun.light_color = sun_color.lerp(Color(0.80, 0.82, 0.86), dim * 0.4)
@@ -449,13 +503,33 @@ func _update_tiers() -> void:
 	var sun_dir := _sun.global_basis.z.normalized()
 	var top := get_display_altitude()
 	var view_shift := Vector2(0.0, top / maxf(tan(elevation), 0.2))
-	var shadow_shift := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12) * cloud_base
-	var region := footprint.merge(Rect2(footprint.position + view_shift, footprint.size)).merge(Rect2(footprint.position + shadow_shift, footprint.size))
+	var region := footprint.merge(Rect2(footprint.position + view_shift, footprint.size))
 	region.position -= drift
-	var ground := footprint.grow(footprint.size.x * 0.1)
-	_mask_material.set_shader_parameter("ground_rect", Vector4(ground.position.x, ground.position.y, ground.size.x, ground.size.y))
-	_mask_material.set_shader_parameter("shadow_shift", shadow_shift)
-	_shadow_rect = Vector4(ground.position.x, ground.position.y, ground.size.x, ground.size.y)
+	# Stylised shadow placement: the shadow lands just below the cloud as seen by
+	# the camera, offset slightly along the sun, instead of 100+ km away.
+	var sun_xz := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12)
+	var apparent := Vector2(0.0, -(cloud_base + 6.0) / maxf(tan(elevation), 0.2))
+	var proxy_shift := apparent + sun_xz * (cloud_base - SHADOW_OFFSET_HEIGHT)
+	var mask_shift := -sun_xz * cloud_base
+	var side := maxf(footprint.size.x, footprint.size.y) * 1.15
+	var centre := footprint.get_center()
+	_shadow_rect = Vector4(centre.x - side * 0.5, centre.y - side * 0.5, side, side)
+	_mask_camera.size = side
+	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
+	var deck_cell := clampf(pow(2.0, ceil(log(maxf(view_width / 90.0, 1.0)) / log(2.0))), 4.0, 128.0)
+	var deck_centre := region.get_center() + drift
+	var deck_origin := (deck_centre / deck_cell).floor() - Vector2(DECK_GRID) * 0.5
+	var deck_fade := smoothstep(240.0, 420.0, view_width)
+	_deck.visible = deck_fade > 0.01
+	_deck.set_instance_shader_parameter("fade", deck_fade)
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _deck_material, _deck_shadow_material, _deck_mask_material]:
+		material.set_shader_parameter("proxy_shift", proxy_shift)
+		material.set_shader_parameter("mask_shift", mask_shift)
+	for material in [_deck_material, _deck_shadow_material, _deck_mask_material]:
+		material.set_shader_parameter("deck_origin", deck_origin)
+		material.set_shader_parameter("deck_cell", deck_cell)
+		material.set_shader_parameter("deck_thickness", clampf(deck_cell * 0.9, 5.0, 60.0))
+	_rain_material.set_shader_parameter("strength", lerpf(1.25, 0.5, smoothstep(700.0, 1600.0, view_width)))
 	if fine_on: _fine.ensure(region.grow(FINE_SCALE.y * 1.8))
 	if coarse_on: _coarse.ensure(region.grow(COARSE_SCALE.y * 1.8))
 
@@ -472,7 +546,7 @@ func _upload_uniforms() -> void:
 	var sun_dir := _sun.global_basis.z.normalized()
 	var sun_color := _sun.light_color
 	var ambient := _environment.ambient_light_color
-	for material in [_cloud_material, _rain_material, _mask_material]:
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _deck_material, _deck_shadow_material, _deck_mask_material, _rain_material]:
 		material.set_shader_parameter("air_drift", drift)
 		material.set_shader_parameter("weather_state", field)
 		material.set_shader_parameter("cell_shape", shape)
@@ -480,12 +554,13 @@ func _upload_uniforms() -> void:
 		material.set_shader_parameter("cell_count", cells.size())
 		material.set_shader_parameter("cloud_base", cloud_base)
 	_rain_material.set_shader_parameter("now", weather_time / maxf(time_scale, 0.001) if time_scale > 0.0 else 0.0)
-	_cloud_material.set_shader_parameter("sun_dir", sun_dir)
-	_cloud_material.set_shader_parameter("sun_color", Vector3(sun_color.r, sun_color.g, sun_color.b) / maxf(maxf(sun_color.r, sun_color.g), sun_color.b))
 	var shade := Color(0.55, 0.62, 0.74) * ambient * 1.15
-	_cloud_material.set_shader_parameter("shade_color", Vector3(shade.r, shade.g, shade.b))
-	var sun_height := clampf(sun_dir.y / 0.64, 0.4, 1.0)
-	_cloud_material.set_shader_parameter("brightness", sun_height)
+	var sun_height := clampf(sun_dir.y / 0.64, 0.55, 1.0)
+	for material in [_cloud_material, _deck_material]:
+		material.set_shader_parameter("sun_dir", sun_dir)
+		material.set_shader_parameter("sun_color", Vector3(sun_color.r, sun_color.g, sun_color.b) / maxf(maxf(sun_color.r, sun_color.g), sun_color.b))
+		material.set_shader_parameter("shade_color", Vector3(shade.r, shade.g, shade.b))
+		material.set_shader_parameter("brightness", sun_height)
 
 # --- Lightning ----------------------------------------------------------------
 
@@ -496,11 +571,13 @@ func _update_lightning(delta: float) -> void:
 		if _bolt_frames == 0: _bolt.visible = false
 	_flash_light.visible = lightning > 0.02
 	_flash_light.light_energy = 6.0 * lightning
-	_cloud_material.set_shader_parameter("flash", lightning)
-	_cloud_material.set_shader_parameter("flash_pos", _flash_pos)
+	for material in [_cloud_material, _deck_material]:
+		material.set_shader_parameter("flash", lightning)
+		material.set_shader_parameter("flash_pos", _flash_pos)
+		material.set_shader_parameter("flash_radius", maxf(float(_landscape.get("view_width")) * 0.08, 30.0))
 	_lightning_timer -= delta
 	if _lightning_timer > 0.0: return
-	_lightning_timer = 0.5
+	_lightning_timer = 0.35
 	var view_width := float(_landscape.get("view_width"))
 	if view_width > 2500.0: return
 	var footprint: Rect2 = _landscape.get("camera_footprint")
@@ -512,13 +589,13 @@ func _update_lightning(delta: float) -> void:
 		if storm > best_storm:
 			best_storm = storm
 			best = p
-	if best_storm > 0.35 and _rng.randf() < best_storm * 0.35: _strike(best, view_width)
+	if best_storm > 0.3 and _rng.randf() < best_storm * 0.6: _strike(best, view_width)
 
 func _strike(p: Vector2, view_width: float) -> void:
 	var ground := 0.0
 	if _landscape.has_method("_render_height"): ground = float(_landscape.call("_render_height", p))
 	var top := cloud_base + 2.0
-	var width := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0) * 2.2
+	var width := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0) * 3.4
 	var points := PackedVector3Array()
 	var x := 0.0
 	var steps := 10
@@ -559,6 +636,9 @@ func _apply_enabled() -> void:
 	if not configured: return
 	_fine.set_visible(enabled)
 	_coarse.set_visible(enabled)
+	_deck.visible = enabled
+	_deck_shadow.visible = enabled
+	_deck_mask.visible = enabled
 	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if enabled else SubViewport.UPDATE_DISABLED
 	if not enabled:
 		_restore_look()
