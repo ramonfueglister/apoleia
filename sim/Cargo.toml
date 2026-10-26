@@ -1,0 +1,11 @@
+[package]
+name = "apoleia-sim"
+version = "0.1.0"
+edition = "2021"
+description = "Kit 2 headless simulation prototype: population subsystem 1"
+publish = false
+
+[dependencies]
+
+[profile.release]
+debug = false

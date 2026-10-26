@@ -53,3 +53,7 @@ __pycache__/
 
 # Generated clipmap PNG pyramids; rebuild from versioned source manifests.
 /artifacts/render-data/clipmap-tiles-*/
+
+# Kit 2 simulation prototype build and run outputs
+/sim/target/
+/sim/out*/

@@ -1,6 +1,6 @@
 # Kit 2 — Auftrag Subsystem 1: Bevölkerung
 
-**Status:** `spezifiziert`, Umsetzung `offen`. Kein Startsignal.
+**Status:** Prototyp `implementiert` mit Schätzwerten ([ESTIMATES.md](ESTIMATES.md)); Schritt 1 (belegter Datensatz) `offen`.
 
 ## Ziel
 
