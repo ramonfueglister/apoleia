@@ -13,6 +13,14 @@ Rebuild the existing source-derived pyramid and its small shore sidecars:
 /opt/anaconda3/bin/python tools/build_clipmap_shores.py
 ```
 
+Region coverage (A02) of the bound pyramid, forest layout, atlas, upload, coast field and rivers is checked headlessly per sub-region (Reich 117, Mittelmeer, England + Nordpuffer):
+
+```sh
+python3 tools/region_coverage_check.py --data-root . --json /tmp/region-coverage.json
+```
+
+It lists every missing base tile per level and exits 1 on a gap, 3 if a bound file is absent. `READY` must read `complete`; `--focus`, `--radius-tiles`, `--max-tiles` or the 512 MiB disk-reserve stop leave a partial pyramid, which the runtime now reports as a warning instead of silently drawing coarse parents.
+
 The second command writes marine SDF-zero contour segments only. Their side faces close the gap between elevated land and sea level without changing source heights or horizontal coastline position. Picking evaluates the visible 65-grid triangle with the actual parent/family/edge morph, rather than an unrelated finest cached image.
 
 The previous terrain module remains as metadata/bootstrap and an explicit compatibility path; active camera updates use the clipmap controller. The current packaged scene still includes those modules. Full source raster arrays are not loaded by the clipmap path.

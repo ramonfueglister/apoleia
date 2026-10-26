@@ -373,6 +373,10 @@ func _ready() -> void:
         clipmap_runtime=load("res://scripts/clipmap/clipmap_terrain.gd").new()
         if not clipmap_runtime.configure(clipmap_path,self,terrain_material,marine_material,tile_forest):
             push_error("Clipmap tile configuration failed: "+clipmap_path);get_tree().quit(2);return
+        if clipmap_runtime.stream.ready_state!="complete":
+            # Region coverage (A02) needs every pyramid level; a partial build
+            # silently shows coarse parents. Report it instead of hiding it.
+            push_warning("Clipmap pyramid READY is '"+clipmap_runtime.stream.ready_state+"', not 'complete': finer tiles may be missing; run tools/region_coverage_check.py")
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
