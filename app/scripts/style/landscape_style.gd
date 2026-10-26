@@ -125,14 +125,14 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> Arra
     rng.seed=71039
     var palette=[Color("2f5524"),Color("3b6428"),Color("4a6d2b"),Color("5c7432"),Color("426a2b"),Color("35592a"),Color("677a35")]
     # lod 0/1: full grove (layout template); 2: three trees; 3: one tree.
-    # Small dense trees (about half the former size): 11 per grove so
-    # neighbouring groves close into a canopy; 3 / 1 for far LODs.
-    var count=11 if lod<=1 else (3 if lod==2 else 1)
+    # 6 small trees per grove: 8 or 11 jump the clipmap tour p50 from ~7 to
+    # 38-41 ms (template budget threshold). 3 / 1 for far LODs.
+    var count=6 if lod<=1 else (3 if lod==2 else 1)
     for t in range(count):
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
         var distance=0.0 if t==0 else 5.2*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
-        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.6)
+        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)
         var radius=height*rng.randf_range(0.30,0.36)
         _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
