@@ -16,11 +16,18 @@ var forest_builder:RefCounted
 var river_builder:RefCounted
 var shore_builder=preload("res://scripts/clipmap/tile_shores.gd").new()
 var failures:Dictionary={}
+## Content of the pyramid READY marker. build_clipmap_tiles.py writes "complete"
+## only for an unrestricted build; --focus/--radius-tiles/--max-tiles or the disk
+## reserve stop leave finer levels partial, which best() hides behind parents.
+var ready_state=""
 var metrics={"loaded":0,"cache_hits":0,"evicted":0,"io_ms":0.,"pending":0}
 func configure(path:String)->bool:
     var value=JSON.parse_string(FileAccess.get_file_as_string(path))
     if not value is Dictionary:return false
-    manifest=value;directory=path.get_base_dir();return true
+    manifest=value;directory=path.get_base_dir()
+    var marker=directory.path_join("READY")
+    ready_state=FileAccess.get_file_as_string(marker).strip_edges() if FileAccess.file_exists(marker) else "missing"
+    return true
 func key(level:int,x:int,z:int)->String:return "%d/%d/%d"%[level,x,z]
 func request(id:String,priority:float=0.)->void:
     if cache.has(id) and cache[id].images.size()==3:cache[id].used=tick;metrics.cache_hits+=1;return
@@ -81,7 +88,7 @@ func best(id:String)->Dictionary:
         if not result.is_empty():return result
         id=parent(id)
     return {}
-func stats()->Dictionary:return {"cpu_bytes":bytes,"cpu_limit":CPU_LIMIT,"resident":cache.size(),"pending":pending.size(),"worker_active":_task>=0,"loaded":metrics.loaded,"evicted":metrics.evicted,"io_ms":metrics.io_ms}
+func stats()->Dictionary:return {"ready":ready_state,"cpu_bytes":bytes,"cpu_limit":CPU_LIMIT,"resident":cache.size(),"pending":pending.size(),"worker_active":_task>=0,"loaded":metrics.loaded,"evicted":metrics.evicted,"io_ms":metrics.io_ms}
 func shutdown()->void:
     if _task>=0:WorkerThreadPool.wait_for_task_completion(_task);_task=-1
 

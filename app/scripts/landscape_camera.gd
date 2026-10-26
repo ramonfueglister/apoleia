@@ -1,13 +1,11 @@
 extends RefCounted
-## Own orthographic camera contract. Source/model geography is never changed.
-const REVISION = "orthographic-diorama-display-v5-near-framing"
-# Display framing, not a physical house/tree size or accepted A07 measurement.
-# The 40-unit capture makes individual crowns roughly 90–130px at 1440px.
-# A 120-unit endpoint retains roughly 30–43px crowns and room for surroundings.
-# It extends the existing reference view; it does not claim to match its pixels.
-const NEAR_WIDTH = 120.0
-const REFERENCE_NEAR_WIDTH = 240.0
-const LEGACY_NEAR_WIDTH = REFERENCE_NEAR_WIDTH
+## Own camera contract. Source/model geography is never changed.
+## Perspective since v5: view width is the visible ground width at the focus.
+const REVISION = "perspective-diorama-display-v5"
+const PERSPECTIVE_FOV = 25.0
+const OVERVIEW_FOV = 8.0
+const NEAR_WIDTH = 240.0
+const LEGACY_NEAR_WIDTH = NEAR_WIDTH
 const MIN_HEIGHT = -1.0
 const MAX_HEIGHT = 9.0
 const SETTLE_OMEGA = 18.9755 # (1+w*t)*exp(-w*t)=0.05 at t=0.25 s.
@@ -104,3 +102,46 @@ static func anchored_target(anchor: Vector2, pixel: Vector2, viewport: Vector2, 
         if residual>0: low=middle
         else: high=middle
     return result
+
+# Vertical field of view: the regional/near views use a narrow perspective,
+# the flat overview narrows further so the map reads cartographic.
+static func perspective_fov(relief: float) -> float:
+    var t=clampf(relief,0.0,1.0)
+    return lerpf(OVERVIEW_FOV,PERSPECTIVE_FOV,t*t*(3.0-2.0*t))
+
+# Focus distance at which the visible ground width at the focus is `width`.
+static func perspective_distance(width: float, aspect: float, fov_degrees: float) -> float:
+    return width/(2.0*aspect*tan(deg_to_rad(fov_degrees)*0.5))
+
+# Ground footprint (offsets from the target) of the four perspective corner
+# rays intersected with the conservative height interval; rays at or above the
+# horizon are clamped to a long distance.
+static func perspective_footprint_offsets(width: float, aspect: float, pitch: float, fov_degrees: float, relief: float, focus_height: float, height_range: Vector2=Vector2(MIN_HEIGHT,MAX_HEIGHT)) -> Rect2:
+    var angle=deg_to_rad(pitch)
+    var distance=perspective_distance(width,aspect,fov_degrees)
+    var back=Vector3(0,sin(angle),cos(angle));var up=Vector3(0,cos(angle),-sin(angle))
+    var position=back*distance+Vector3(0,focus_height,0)
+    var tv=tan(deg_to_rad(fov_degrees)*0.5);var th=tv*aspect
+    var low=Vector2(INF,INF);var high=Vector2(-INF,-INF)
+    for sx in [-1.0,1.0]:
+        for sy in [-1.0,1.0]:
+            var direction=(Vector3.RIGHT*sx*th+up*sy*tv-back).normalized()
+            for plane in [height_range.x*relief,height_range.y*relief]:
+                var t=distance*20.0
+                if direction.y< -0.0001:t=minf((plane-position.y)/direction.y,distance*20.0)
+                var p=position+direction*maxf(t,0.0)
+                low=low.min(Vector2(p.x,p.z));high=high.max(Vector2(p.x,p.z))
+    return Rect2(low,high-low)
+
+# Target keeping `anchor` under `pixel`. place(t) positions the camera for
+# target t, pick_at(pixel) returns the ground point under the pixel. A camera
+# translation moves the picked point by the same amount up to terrain height,
+# so fixed-point passes converge.
+static func solve_anchor(anchor: Vector2, pixel: Vector2, initial: Vector2, place: Callable, pick_at: Callable, _step: float=0.0) -> Vector2:
+    var t=initial
+    for iteration in range(5):
+        place.call(t)
+        var picked=Vector2(pick_at.call(pixel))
+        if not picked.is_finite():break
+        t+=anchor-picked
+    return t
