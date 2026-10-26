@@ -92,8 +92,8 @@ static func water_parameters() -> Dictionary:
 
 static func water_look_parameters() -> Dictionary:
     return {
-        "water_deep_tint": Color("173f74"),
-        "water_open_tint": Color("1e5592"),
+        "water_deep_tint": Color("143a6c"),
+        "water_open_tint": Color("1d4f8a"),
         "water_shallow_tint": Color("3a95a4"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),

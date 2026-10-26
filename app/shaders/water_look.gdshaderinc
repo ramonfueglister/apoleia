@@ -87,11 +87,15 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Narrow, patchy saum: a noise term breaks the uniform halo and lets
     // sand show through in the shallowest patches.
     float patch=wl_fnoise(p*0.55,footprint*0.55)*0.6+wl_fnoise(p*1.7+vec2(3.3,1.1),footprint*1.7)*0.4;
-    float eff=min(depth,coast_m*mix(0.20,0.10,saum_scale)*(0.55+0.9*patch)+2.0);
-    eff=mix(eff,min(eff,11.0+coast_m*0.004),mouth*0.75);
+    // Turquoise is bound to the shore distance only (a narrow band of a few
+    // km), never to the shelf depth: shallow seas like the Adriatic stay deep
+    // blue up to the coast. eff is a pseudo-depth for the colour ramp.
+    float saum_w=max(px_m*20.0,2500.0)*mix(0.45,1.0,saum_scale)*(0.6+0.8*patch);
+    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.8)+coast_m*0.002;
+    eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
-    vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/7.0));
-    col=mix(col,water_open_tint.rgb,1.0-exp(-eff/(90.0*mix(0.45,1.0,saum_scale))));
+    vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/5.0));
+    col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
     col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.6);
     // Facets (low-poly surface) with smooth detail between them.
     float facet_id;

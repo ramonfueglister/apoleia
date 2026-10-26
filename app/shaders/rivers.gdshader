@@ -52,8 +52,9 @@ void fragment(){
     // depth eases towards the sea's mouth plume over the last ~3 km.
     float to_sea=1.0-smoothstep(0.0,3000.0,-sea_distance);
     float depth=mix(14.0+(1.0-edge)*16.0,12.0,to_sea);
-    WaterSample w=water_shade(river_position,bank_m+250.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
-    vec3 water=w.albedo;
+    WaterSample w=water_shade(river_position,bank_m+3000.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
+    // Stronger mid-blue than the sea's turquoise rim (reference arms).
+    vec3 water=mix(w.albedo,vec3(0.016,0.105,0.30),0.65);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
@@ -61,7 +62,9 @@ void fragment(){
     water=mix(water,water*1.12+0.02,streak*0.4);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
     water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
-    ALBEDO=water;
+    // Light sand bank along the outer edge (islands between delta arms).
+    float near_view=1.0-smoothstep(600.0,1500.0,view_width);
+    ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.80,0.98,edge)*0.7*near_view);
     EMISSION=w.emission*0.5;
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;

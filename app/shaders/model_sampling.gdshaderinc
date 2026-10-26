@@ -82,7 +82,8 @@ float bilinear_model_distance(sampler2D tex,vec2 uv) {
     ivec2 c0=ivec2(floor(p));vec2 f=fract(p);
     float linear=mix(mix(decode_model_distance(tex,c0),decode_model_distance(tex,c0+ivec2(1,0)),f.x),mix(decode_model_distance(tex,c0+ivec2(0,1)),decode_model_distance(tex,c0+ivec2(1,1)),f.x),f.y);
     // Smoothing only matters near the contour; far fields stay bilinear.
-    if(abs(linear)>1500.0) return linear;
+    // Blended over 1200..1600 m so the switch leaves no contour step.
+    if(abs(linear)>1600.0) return linear;
     ivec2 c=ivec2(round(p));vec2 t=p-vec2(c)+0.5;
     vec3 wx=vec3(0.5*(1.0-t.x)*(1.0-t.x),0.5+t.x*(1.0-t.x),0.5*t.x*t.x);
     vec3 wy=vec3(0.5*(1.0-t.y)*(1.0-t.y),0.5+t.y*(1.0-t.y),0.5*t.y*t.y);
@@ -91,7 +92,7 @@ float bilinear_model_distance(sampler2D tex,vec2 uv) {
         float row=wx.x*decode_model_distance(tex,c+ivec2(-1,y-1))+wx.y*decode_model_distance(tex,c+ivec2(0,y-1))+wx.z*decode_model_distance(tex,c+ivec2(1,y-1));
         d+=wy[y]*row;
     }
-    return d;
+    return mix(d,linear,smoothstep(1200.0,1600.0,abs(linear)));
 }
 // Classification-cell fallback cannot recover a subcell coastline. Vector SDF
 // takes precedence; domains never borrow or stretch the other domain's SDF.

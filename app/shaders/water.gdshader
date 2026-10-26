@@ -40,9 +40,11 @@ void fragment() {
     // extends the range beyond the packed 3 km.
     float coast_m=max(distance,0.0);
     vec2 coast_uv=(p-display_coast_world_min)/display_coast_world_size;
+    // The coarse sidecar only extends the range far out; the exact SDF owns
+    // the whole visible saum (no quantised contour bands).
     if(use_display_coast_distance && inside_domain(coast_uv)) {
         float far=display_coast_distance_at(coast_uv);
-        coast_m=mix(coast_m,max(far,coast_m),smoothstep(1000.0,2500.0,far));
+        coast_m=mix(coast_m,max(far,coast_m),smoothstep(2600.0,3200.0,coast_m));
     }
     float depth=max(-model_height_at(p),0.0);
     float footprint=max(length(dFdx(p)),length(dFdy(p)));
@@ -50,15 +52,22 @@ void fragment() {
     float calm=smoothstep(0.05,0.6,relief);
     float saum_scale=mix(0.22,1.0,smoothstep(0.7,1.0,relief));
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
-    float mouth=0.0;
+    float mouth=0.0;float delta_region=0.0;float gap=1e9;
     for(int i=0;i<32;i++) {
         if(i>=river_mouth_count) break;
-        mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,length(p-river_mouths[i].xy)));
+        float d=length(p-river_mouths[i].xy);
+        mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,d));
+        if(river_mouths[i].w>0.5) {delta_region=max(delta_region,1.0-smoothstep(8.0,16.0,d));gap=min(gap,d);}
     }
     WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
     ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-calm)*0.6);
+    // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
+    float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
+    float spit=(1.0-smoothstep(spit_w*0.5,spit_w,abs(coast_m-spit_c)))*delta_region*smoothstep(0.9,1.6,gap);
+    spit*=0.75+0.25*wl_fnoise(p*1.3,footprint*1.3);
+    ALBEDO=mix(ALBEDO,vec3(0.70,0.58,0.30),spit);
     EMISSION=w.emission;
     ROUGHNESS=w.roughness;
     // Sun glints come from water_look; the engine lobe would form a blob.

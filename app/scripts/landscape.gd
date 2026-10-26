@@ -2277,7 +2277,7 @@ const RIVER_DELTAS=[
     {"name":"Po","arms":5,"length":40.0,"spread":24.0,"width":.036},
     {"name":"Rhône","arms":4,"length":36.0,"spread":20.0,"width":.036},
     {"name":"Ebro","arms":3,"length":24.0,"spread":14.0,"width":.032},
-    {"name":"Nile","arms":4,"length":150.0,"spread":70.0,"width":.050,"apex":[31.25,30.10],"mouth":[31.05,31.50]}]
+    {"name":"Nile","arms":2,"length":150.0,"spread":70.0,"width":.050,"apex":[31.25,30.10],"mouth":[31.05,31.50]}]
 
 # Branch points sit on the actual source course of the main river.
 func _nearest_river_point(name: String,p: Vector2) -> Vector2:
@@ -2333,7 +2333,9 @@ func _setup_river_deltas() -> void:
             var segments=[]
             var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
             for i in range(points.size()-1):
-                segments.append([points[i],points[i+1],float(delta.width)*rng.randf_range(0.6,0.9)])
+                # Width varies along the arm; widest near the coast (lagoons).
+                var along=float(i)/float(points.size()-1)
+                segments.append([points[i],points[i+1],float(delta.width)*(0.55+0.35*sin(along*7.0+phase)*sin(along*7.0+phase)+0.9*smoothstep(0.65,1.0,along))])
                 minimum=minimum.min(points[i]).min(points[i+1]);maximum=maximum.max(points[i]).max(points[i+1])
             river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(delta.name)+" delta arm","synthetic_delta":true})
             river_mouths.append({"position":points[-1],"inland":-direction,"width":float(delta.width),"name":str(delta.name)+" delta arm","delta":true})
@@ -2345,7 +2347,7 @@ func _bind_visible_river_mouths() -> void:
     var packed=PackedVector4Array()
     for mouth in river_mouths:
         if packed.size()>=32:break
-        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,0.0))
+        if area.has_point(mouth.position):packed.append(Vector4(mouth.position.x,mouth.position.y,3.0+float(mouth.width)*60.0,1.0 if bool(mouth.get("delta",false)) else 0.0))
     var count=packed.size()
     while packed.size()<32:packed.append(Vector4.ZERO)
     marine_material.set_shader_parameter("river_mouths",packed)
