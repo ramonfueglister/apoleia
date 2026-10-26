@@ -111,7 +111,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         if float(_draw[id].blend)<1.:fading_forests[str(_draw[id].parent)]=1.-float(_draw[id].blend)
     for id in nodes:
         var entry:Dictionary=nodes[id];var shown=_draw.has(id)
-        entry.land.visible=shown;entry.water.visible=shown
+        entry.land.visible=shown;entry.water.visible=shown and entry.marine
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
             for tree in entry.forests:tree.set_instance_shader_parameter("representation_weight",float(fading_forests[id]))
@@ -129,7 +129,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         var state=[parent_id,blend,edge_mask]
         var structural=entry.get("state",[])!=state
         if not structural and entry.get("camera",[])==camera:continue
-        var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
+        var tile_nodes:Array=[entry.land]+([entry.water] if entry.marine else [])+entry.get("forests",[])
         if entry.get("river")!=null:tile_nodes.append(entry.river)
         if entry.get("shore")!=null:tile_nodes.append(entry.shore)
         if structural:
@@ -169,7 +169,7 @@ func _declares(shader:Shader,uniform_name:StringName)->bool:
 func _upload(tile:Dictionary)->void:
     var id=str(tile.id);var d=_description(id);var textures={}
     for name in tile.images:textures[name]=ImageTexture.create_from_image(tile.images[name])
-    var entry={"textures":textures,"bytes":int(tile.bytes),"used":_frame}
+    var entry={"textures":textures,"bytes":int(tile.bytes),"used":_frame,"marine":bool(tile.get("marine",true))}
     for pair in [["land",terrain_template],["water",water_template]]:
         var material:ShaderMaterial=pair[1].duplicate()
         if pair[0]=="water":material.render_priority=-10
