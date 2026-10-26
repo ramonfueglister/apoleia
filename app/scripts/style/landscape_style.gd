@@ -110,7 +110,7 @@ static func vegetation_parameters() -> Dictionary:
 ## (15), 2 four sides (12), 3 three sides (9). Past the last entry crowns read
 ## as the terrain's forest-ground tint (overview).
 static func grove_detail_view_widths() -> Array:
-    return [[360.0,0],[700.0,2],[2200.0,3]]
+    return [[360.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
 
 static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
@@ -148,7 +148,12 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
         var row:Array=[]
         for i in range(sides):row.append(rng.randf_range(0.88,1.1))
         jitter.append(row)
-    if detail>0:
+    if detail>=4:
+        # Crowns of one to three pixels: a single three-sided cone from just
+        # below the ground to the tip (3 triangles); the skirt under the widest
+        # ring is sub-pixel at this size.
+        levels=[-0.1,levels[3]];widths=[widths[1],widths[3]];jitter=[jitter[1],jitter[3]];sides=3
+    elif detail>0:
         # The straight cone from the widest ring to the tip passes within 3%
         # of the shoulder ring, so dropping it keeps the silhouette.
         levels=[levels[0],levels[1],levels[3]];widths=[widths[0],widths[1],widths[3]];jitter=[jitter[0],jitter[1],jitter[3]]
@@ -167,7 +172,7 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
             var k=(i+1)%sides
             # Faces facing the sun side (west) slightly lighter: low-poly read.
             var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
-            var tone=color.lightened(0.10*facing) if j>0 else color.darkened(0.25)
+            var tone=color.lightened(0.10*facing) if j>0 or detail>=4 else color.darkened(0.25)
             _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
             if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 
