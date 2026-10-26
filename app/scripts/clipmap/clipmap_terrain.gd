@@ -26,6 +26,8 @@ var _dt=0.
 var _finest=0
 var _gpu_bytes=0
 var _frame=0
+const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
+var _shader_uniforms:Dictionary={}
 var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missing":0,"upload_ms":0.}
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
@@ -103,6 +105,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     stream.set_wanted(_wanted.keys()+_draw.keys(),_pins.keys())
     var ordered=_draw.keys();ordered.sort();var key=",".join(ordered)
     if key!=_draw_key:_edge_masks={};_draw_key=key
+    var camera=[view_width,relief,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
     var fading_forests={}
     for id in _draw:
         if float(_draw[id].blend)<1.:fading_forests[str(_draw[id].parent)]=1.-float(_draw[id].blend)
@@ -112,29 +115,57 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
             for tree in entry.forests:tree.set_instance_shader_parameter("representation_weight",float(fading_forests[id]))
-            entry.erase("state")
+            entry.erase("state");entry.erase("camera")
         if not shown:continue
         entry.used=_frame;var d=_description(id);var parent_id=str(_draw[id].parent)
         if parent_id==id:parent_id=stream.parent(id)
         if not nodes.has(parent_id):parent_id=id
         var parent:Dictionary=nodes[parent_id];var parent_d=_description(parent_id)
-        var state=[parent_id,float(_draw[id].blend),focus,view_width,relief,display_scale]
-        if entry.get("state",[])==state:continue
-        entry["state"]=state
-        for node in [entry.land,entry.water]+entry.get("forests",[])+([entry.river] if entry.get("river")!=null else [])+([entry.shore] if entry.get("shore")!=null else []):
-            var material:ShaderMaterial=node.material_override
-            material.set_shader_parameter("clipmap_parent_height_tex",parent.textures.height)
-            material.set_shader_parameter("clipmap_parent_height_rect",Vector4(_rect(parent_id).position.x,_rect(parent_id).position.y,_rect(parent_id).size.x,_rect(parent_id).size.y))
-            material.set_shader_parameter("clipmap_parent_grid_origin",parent_d.origin);material.set_shader_parameter("clipmap_parent_grid_step",parent_d.span/GRID)
-            material.set_shader_parameter("clipmap_family_blend",_draw[id].blend);material.set_shader_parameter("clipmap_focus",focus)
-            material.set_shader_parameter("clipmap_edge_mask",_edge_mask(id));material.set_shader_parameter("clipmap_edge_width",d.span/GRID*4.)
-            material.set_shader_parameter("clipmap_morph_start",d.span*.8);material.set_shader_parameter("clipmap_morph_end",d.span*1.6)
-            material.set_shader_parameter("viewport_width",owner.viewport_size.x);material.set_shader_parameter("projection_vertical_scale",sin(deg_to_rad(owner.elevation_degrees)))
-            if node is MultiMeshInstance3D:node.set_instance_shader_parameter("representation_weight",_draw[id].blend)
-            material.set_shader_parameter("relief",relief);material.set_shader_parameter("display_height_scale",display_scale);material.set_shader_parameter("view_width",view_width)
+        var blend=float(_draw[id].blend);var edge_mask=_edge_mask(id)
+        # Tile-structural uniforms change only on parent/blend/edge changes.
+        # clipmap_focus is written with them: the shader's focus morph is
+        # always replaced by the edge morph (clipmap_edge_width>0), so
+        # per-frame focus updates have no rendered or height_at effect.
+        var state=[parent_id,blend,edge_mask]
+        var structural=entry.get("state",[])!=state
+        if not structural and entry.get("camera",[])==camera:continue
+        var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
+        if entry.get("river")!=null:tile_nodes.append(entry.river)
+        if entry.get("shore")!=null:tile_nodes.append(entry.shore)
+        if structural:
+            entry["state"]=state;entry.erase("camera")
+            var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
+            var parent_texture=parent.textures.height;var parent_step=parent_d.span/GRID
+            var edge_width=d.span/GRID*4.;var morph_start=d.span*.8;var morph_end=d.span*1.6
+            for node in tile_nodes:
+                var material:ShaderMaterial=node.material_override
+                material.set_shader_parameter(&"clipmap_parent_height_tex",parent_texture)
+                material.set_shader_parameter(&"clipmap_parent_height_rect",rect_value)
+                material.set_shader_parameter(&"clipmap_parent_grid_origin",parent_d.origin);material.set_shader_parameter(&"clipmap_parent_grid_step",parent_step)
+                material.set_shader_parameter(&"clipmap_family_blend",blend);material.set_shader_parameter(&"clipmap_focus",focus)
+                material.set_shader_parameter(&"clipmap_edge_mask",edge_mask);material.set_shader_parameter(&"clipmap_edge_width",edge_width)
+                material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
+                if node is MultiMeshInstance3D:node.set_instance_shader_parameter(&"representation_weight",blend)
+        # Camera uniforms: identical for every tile; write only values that
+        # changed and only to shaders that declare them.
+        var previous:Array=entry.get("camera",[])
+        for i in range(CAMERA_UNIFORMS.size()):
+            if not previous.is_empty() and previous[i]==camera[i]:continue
+            var uniform_name:StringName=CAMERA_UNIFORMS[i]
+            for node in tile_nodes:
+                var material:ShaderMaterial=node.material_override
+                if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
+        entry["camera"]=camera
     _evict();metrics.draw_tiles=_draw.size();metrics.gpu_bytes=_gpu_bytes;metrics.missing=0
     for id in _wanted:
         if not nodes.has(id):metrics.missing+=1
+func _declares(shader:Shader,uniform_name:StringName)->bool:
+    # Setting an undeclared uniform has no rendered effect; skip that call.
+    var names:Dictionary=_shader_uniforms.get(shader,{})
+    if names.is_empty():
+        for uniform in shader.get_shader_uniform_list():names[StringName(uniform.name)]=true
+        _shader_uniforms[shader]=names
+    return names.has(uniform_name)
 func _upload(tile:Dictionary)->void:
     var id=str(tile.id);var d=_description(id);var textures={}
     for name in tile.images:textures[name]=ImageTexture.create_from_image(tile.images[name])
