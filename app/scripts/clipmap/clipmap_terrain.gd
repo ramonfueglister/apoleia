@@ -140,28 +140,32 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
             var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
             var parent_texture=parent.textures.height;var parent_step=parent_d.span/GRID
             var edge_width=d.span/GRID*4.;var morph_start=d.span*.8;var morph_end=d.span*1.6
-            for node in tile_nodes:
-                var material:ShaderMaterial=node.material_override
+            for material in _materials(tile_nodes):
                 material.set_shader_parameter(&"clipmap_parent_height_tex",parent_texture)
                 material.set_shader_parameter(&"clipmap_parent_height_rect",rect_value)
                 material.set_shader_parameter(&"clipmap_parent_grid_origin",parent_d.origin);material.set_shader_parameter(&"clipmap_parent_grid_step",parent_step)
                 material.set_shader_parameter(&"clipmap_family_blend",blend);material.set_shader_parameter(&"clipmap_focus",focus)
                 material.set_shader_parameter(&"clipmap_edge_mask",edge_mask);material.set_shader_parameter(&"clipmap_edge_width",edge_width)
                 material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
+            for node in tile_nodes:
                 if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
         # Camera uniforms: identical for every tile; write only values that
         # changed and only to shaders that declare them.
-        var previous:Array=entry.get("camera",[])
+        var previous:Array=entry.get("camera",[]);var tile_materials:=_materials(tile_nodes)
         for i in range(CAMERA_UNIFORMS.size()):
             if not previous.is_empty() and previous[i]==camera[i]:continue
             var uniform_name:StringName=CAMERA_UNIFORMS[i]
-            for node in tile_nodes:
-                var material:ShaderMaterial=node.material_override
+            for material in tile_materials:
                 if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
         entry["camera"]=camera
     _evict();metrics.draw_tiles=_draw.size();metrics.gpu_bytes=_gpu_bytes;metrics.missing=0
     for id in _wanted:
         if not nodes.has(id):metrics.missing+=1
+## Distinct materials of a tile's nodes: forest buckets share one per tile.
+static func _materials(tile_nodes:Array)->Array:
+    var seen={}
+    for node in tile_nodes:seen[node.material_override]=true
+    return seen.keys()
 func _declares(shader:Shader,uniform_name:StringName)->bool:
     # Setting an undeclared uniform has no rendered effect; skip that call.
     var names:Dictionary=_shader_uniforms.get(shader,{})

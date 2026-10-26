@@ -158,16 +158,20 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
     var level=clampi(int(payload.get("level",0)),0,level_detail.size()-1)
     var items=Materialize.multimeshes(payload,detail_meshes[level_detail[level]])
     var filled=payload.buckets.filter(func(bucket):return int(bucket.count)>0)
+    # One fade and one opaque material per tile, shared by all its buckets
+    # (and their shadow copies): the uniforms are per tile, so clipmap_terrain
+    # writes each change once per tile instead of once per bucket.
+    var fade:ShaderMaterial=material.duplicate()
+    fade.set_shader_parameter("clipmap_origin",origin);fade.set_shader_parameter("clipmap_span",span)
+    fade.set_shader_parameter("normalize_instanced_normals",true);fade.set_shader_parameter("stream_ground",false)
+    fade.set_shader_parameter("clipmap_enabled",true);fade.set_shader_parameter("clipmap_height_tex",textures.height)
+    fade.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
+    var opaque:ShaderMaterial=null
+    if opaque_material:opaque=opaque_material.duplicate();_copy_params(fade,opaque)
     for index in range(items.size()):
         var item=items[index];_attach_ground(item.multimesh,filled[index])
-        var node=MultiMeshInstance3D.new();node.multimesh=item.multimesh;node.material_override=material.duplicate()
-        node.material_override.set_shader_parameter("clipmap_origin",origin);node.material_override.set_shader_parameter("clipmap_span",span)
-        node.material_override.set_shader_parameter("normalize_instanced_normals",true);node.material_override.set_shader_parameter("stream_ground",false)
-        node.material_override.set_shader_parameter("clipmap_enabled",true);node.material_override.set_shader_parameter("clipmap_height_tex",textures.height)
-        node.material_override.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
-        if opaque_material:
-            var fade:ShaderMaterial=node.material_override;var opaque:ShaderMaterial=opaque_material.duplicate();_copy_params(fade,opaque)
-            node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
+        var node=MultiMeshInstance3D.new();node.multimesh=item.multimesh;node.material_override=fade
+        if opaque:node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
         node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         var box:AABB=item.multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
         node.custom_aabb=AABB(Vector3(box.position.x-pad,-100.,box.position.z-pad),Vector3(box.size.x+2.*pad,300.,box.size.z+2.*pad))
