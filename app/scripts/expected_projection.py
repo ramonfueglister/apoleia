@@ -3,7 +3,7 @@
 
 Perspective since camera contract v5 (vertical FOV, KEEP_HEIGHT; the visible
 ground width at the focus equals visible_width_model). Samples recorded before
-v5, or with camera_projection "orthogonal", use the former orthographic mapping.
+v5, or with camera_projection_mode "orthogonal", use the former orthographic mapping.
 
 Given a raw runtime sample and source-space control point (converted through the
 bound projection), returns expected top-left framebuffer pixels. The caller
@@ -28,7 +28,7 @@ def expected_pixel(lon, lat, height_m, sample, bounds, water_kind=0):
     a=math.radians(sample['elevation_degrees'])
     right=x-tx
     up=(y-ty)*math.cos(a)-(z-tz)*math.sin(a)
-    if sample.get('camera_projection','orthogonal')!='perspective':
+    if sample.get('camera_projection_mode','orthogonal')!='perspective':
         return [width/2+right*k,height/2-up*k]
     # Camera sits at focus+back*d; d is the focus distance whose ground width
     # equals visible_width_model, so k is the pixel scale at the focus plane.
