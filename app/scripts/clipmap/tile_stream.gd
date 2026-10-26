@@ -73,7 +73,7 @@ func _read(id:String)->void:
         var image=Image.load_from_file(path)
         if image==null or image.is_empty():_result={"ok":false};return
         image.convert(Image.FORMAT_RGBA8);images[field]=image;count+=image.get_data_size()
-    _result={"ok":true,"id":id,"images":images,"bytes":count,"forest":forest_builder.build(id,manifest) if forest_builder else {},"rivers":river_builder.build(id,manifest) if river_builder else {},"shores":shore_builder.build(directory.path_join(id+"-shore.bin")),"io_ms":float(Time.get_ticks_usec()-started)/1000.}
+    _result={"ok":true,"id":id,"images":images,"bytes":count,"forest":forest_builder.build(id,manifest,images) if forest_builder else {},"rivers":river_builder.build(id,manifest) if river_builder else {},"shores":shore_builder.build(directory.path_join(id+"-shore.bin")),"io_ms":float(Time.get_ticks_usec()-started)/1000.}
 func _evict(additional:int)->void:
     while bytes+additional>CPU_LIMIT:
         var victim="";var oldest=9223372036854775807

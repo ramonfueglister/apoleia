@@ -31,9 +31,9 @@ void vertex(){
     float side_projection=max(length(vec2(side_unit.x,side_unit.y*projection_vertical_scale)),0.001);
     // Look layer: screen floor grows towards the close views (thin map line
     // far out, broad diorama river near; same curve as LandscapeLook).
-    float near_t=clamp((log(1800.0)-log(max(view_width,1.0)))/(log(1800.0)-log(300.0)),0.0,1.0);
-    float floor_px=max(minimum_screen_width_px,mix(1.6,15.0,near_t*near_t)*mix(1.0,2.0,smoothstep(240.0,80.0,view_width)));
-    float half_width=max(UV2.y*0.5*1.6,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
+    // Thin in the regional view (2-4 px), medium-broad in the close view.
+    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+9.0*smoothstep(300.0,90.0,view_width));
+    float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.
     if(!use_model_mesh) VERTEX.xz+=NORMAL.xz*UV2.x*half_width;
@@ -70,7 +70,8 @@ void fragment(){
     float depth=mix(14.0+(1.0-edge)*16.0,12.0,to_sea);
     WaterSample w=water_shade(river_position,bank_m+3000.0,depth,footprint,calm,view_world,river_flow*0.6,max(footprint*1000.0,1.0),0.0,1.0);
     // Stronger mid-blue than the sea's turquoise rim (reference arms).
-    vec3 water=mix(w.albedo,vec3(0.016,0.105,0.30),0.65);
+    // Muted mid teal-blue like the reference rivers.
+    vec3 water=mix(w.albedo,vec3(0.026,0.15,0.23),0.7);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
@@ -86,6 +87,6 @@ void fragment(){
     SPECULAR=0.04;
     NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);
     // Anti-aliased bank: soft coverage over ~1.5 px of the strip edge.
-    float aa=max(fwidth(edge)*1.5,0.02);
+    float aa=max(fwidth(edge)*1.0,0.01);
     ALPHA=1.0-smoothstep(1.0-aa,1.0,edge);
 }
