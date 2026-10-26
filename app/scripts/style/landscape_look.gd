@@ -8,33 +8,34 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     _environment = environment
     environment.background_color = Color("9fc2d6")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("bcc8cc")
-    environment.ambient_light_energy = 0.40
+    environment.ambient_light_color = Color("c8d6e0")
+    environment.ambient_light_energy = 0.46
     environment.tonemap_mode = Environment.TONE_MAPPER_ACES
     environment.tonemap_exposure = 0.8
     environment.tonemap_white = 6.0
     environment.adjustment_enabled = true
-    environment.adjustment_saturation = 1.16
-    environment.adjustment_contrast = 1.08
+    environment.adjustment_saturation = 1.10
+    environment.adjustment_contrast = 1.04
     # Forward+ only; soft contact darkening under crowns and in valleys.
     environment.ssao_enabled = true
-    environment.ssao_radius = 0.9
-    environment.ssao_intensity = 2.2
+    environment.ssao_radius = 0.6
+    environment.ssao_intensity = 1.6
     environment.ssao_power = 1.4
     environment.ssao_detail = 0.4
     environment.ssao_light_affect = 0.15
     # Aerial perspective: light depth haze towards the upper (far) screen edge.
     environment.fog_enabled = true
     environment.fog_mode = Environment.FOG_MODE_DEPTH
-    environment.fog_light_color = Color("c8d4d2")
+    environment.fog_light_color = Color("cdd8de")
     environment.fog_light_energy = 1.0
     environment.fog_sun_scatter = 0.08
     environment.fog_density = 0.0
     environment.fog_depth_curve = 1.6
     environment.fog_aerial_perspective = 0.0
-    sun.rotation_degrees = Vector3(-29.0, -58.0, 0.0)
-    sun.light_color = Color("ffdfae")
-    sun.light_energy = 2.15
+    # Bright, nearly neutral (slightly warm) sun from the upper left at about 40 degrees.
+    sun.rotation_degrees = Vector3(-40.0, -118.0, 0.0)
+    sun.light_color = Color("fff4e6")
+    sun.light_energy = 2.0
     sun.light_angular_distance = 0.0
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
@@ -50,7 +51,7 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
     _environment.fog_depth_end = camera_distance * maxf(top * 1.35, 1.2)
     # Aerial perspective in the oblique views, none in the flat map.
     var oblique = clampf((50.0 - elevation_degrees) / 14.0, 0.0, 1.0)
-    _environment.fog_density = lerpf(0.0, 0.11, oblique)
+    _environment.fog_density = lerpf(0.0, 0.12, oblique)
 
 # Display-only river widening; source centrelines stay unchanged.
 const RIVER_WIDTH_SCALE = 1.6
@@ -102,17 +103,17 @@ static func terrain_parameters() -> Dictionary:
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
         # Painted land look (terrain_land_look.gdshaderinc).
-        "land_grass_color": Color("989650"),
-        "land_lime_color": Color("a3a05c"),
-        "land_olive_color": Color("7c8648"),
-        "land_ochre_color": Color("b0a464"),
-        "land_hill_color": Color("5c7044"),
-        "land_forest_floor_color": Color("3a5236"),
-        "land_dry_color": Color("b3a660"),
-        "land_sand_color": Color("c5b177"),
-        "land_rock_light_color": Color("cfc3aa"),
-        "land_rock_dark_color": Color("4a4842"),
-        "land_snow_color": Color("ece6da"),
+        "land_grass_color": Color("a19c48"),
+        "land_lime_color": Color("a5a258"),
+        "land_olive_color": Color("adad5a"),
+        "land_ochre_color": Color("bca860"),
+        "land_hill_color": Color("a1af69"),
+        "land_forest_floor_color": Color("688556"),
+        "land_dry_color": Color("bca860"),
+        "land_sand_color": Color("dfbc86"),
+        "land_rock_light_color": Color("fffaee"),
+        "land_rock_dark_color": Color("625a57"),
+        "land_snow_color": Color("ffffff"),
         "land_valley_tint": Color("9db3b8"),
         "land_facet_tilt": 0.22,
         "land_micro_height": 1.3,
