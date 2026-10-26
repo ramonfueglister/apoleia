@@ -36,7 +36,8 @@ const TIME_LOOK := {
 	# Warm low sun against a cooler blue ambient; terrain colours are kept.
 	# Warmth mostly in highlights and glitter: mildly saturated sun, ambient kept.
 	"morning": [Vector3(-17.0, 72.0, 0.0), Color(1.0, 0.88, 0.80), 1.2, Color(0.92, 0.95, 1.04), 1.0, Color(1.0, 0.95, 0.94)],
-	"evening": [Vector3(-10.0, -100.0, 0.0), Color(1.0, 0.76, 0.52), 1.35, Color(0.86, 0.92, 1.10), 0.95, Color(1.04, 0.94, 0.86)],
+	# Low sun behind-left of the default view: backlight and golden glitter on the sea.
+	"evening": [Vector3(-12.0, -150.0, 0.0), Color(1.0, 0.80, 0.58), 1.15, Color(0.92, 0.95, 1.06), 1.0, Color(1.04, 0.95, 0.88)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -359,15 +360,22 @@ func _prewarm_cells() -> void:
 	for kind in 3:
 		for k in wanted[kind]: _spawn_cell(kind, false, 0.0)
 	for cell in cells: cell.age = _rng.randf_range(40.0, cell.life * 0.5)
+	# Fair weather starts with a cumulus group in view.
+	for cell in cells:
+		if cell.kind == 0:
+			cell.pos = _focus() - _apparent_offset(cloud_base) * 0.5
+			cell.ra = maxf(_ground_width * 0.7, 120.0)
+			cell.rc = maxf(_ground_width * 0.9, 150.0)
+			break
 	# A storm starts as one front over part of the view; the rest stays bright.
 	for cell in cells:
 		if cell.kind == 2:
 			# Placed so the front appears on the right of the view, not above it.
 			# Far side of the view, right half: the foreground stays sunny.
 			var away := Vector2(_forward.x, _forward.z).normalized()
-			cell.pos = _focus() + away * _ground_width * 0.12 + Vector2(-away.y, away.x) * _ground_width * 0.32
-			cell.ra = maxf(_ground_width * 0.4, 60.0)
-			cell.rc = maxf(_ground_width * 0.5, 90.0)
+			cell.pos = _focus() + away * _ground_width * 0.15 + Vector2(-away.y, away.x) * _ground_width * 0.3
+			cell.ra = maxf(_ground_width * 0.6, 60.0)
+			cell.rc = maxf(_ground_width * 0.75, 90.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -483,6 +491,13 @@ func _process(delta: float) -> void:
 		if "no-clouds" in _debug:
 			for mmi in _fine.visual + _coarse.visual: mmi.visible = false
 		if "no-rain" in _debug and _fine.rain_instance: _fine.rain_instance.visible = false
+		# Stills: one strike in the storm front, held visible.
+		if "bolt" in _debug:
+			var front := cells.filter(func(c): return c.kind == 2)
+			if _frame == 20 and not front.is_empty(): _strike(front[0].pos + Vector2(0.0, -front[0].ra * 0.2), _ground_width)
+			if _frame > 20:
+				_bolt_frames = 2
+				lightning = maxf(lightning, 0.6)
 		if _frame == 30: print("WEATHERDEBUG ", JSON.stringify(describe()))
 	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
 		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
@@ -614,9 +629,7 @@ func _update_tiers() -> void:
 	# instead of 100+ km away as the true geometry of the high layer would give.
 	var sun_xz := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12)
 	var toward_camera := -Vector2(_forward.x, _forward.z).normalized()
-	var landing := _apparent_offset(cloud_base + 6.0) - sun_xz.normalized() * view_width * 0.035 + toward_camera * view_width * 0.03
-	var proxy_shift := landing + sun_xz * cloud_base
-	var mask_shift := -sun_xz * cloud_base
+	var peek := -sun_xz.normalized() * view_width * 0.03 + toward_camera * view_width * 0.03
 	var side := maxf(footprint.size.x, footprint.size.y) * 1.1
 	var centre := footprint.get_center()
 	_shadow_rect = Vector4(centre.x - side * 0.5, centre.y - side * 0.5, side, side)
@@ -625,13 +638,14 @@ func _update_tiers() -> void:
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
 	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.22)
-	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 1.1, smoothstep(0.2, 0.6, _current_field().z)))
 	var cluster_scale := clampf(_ground_width / 700.0, 0.4, 1.0)
+	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.8, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
-		material.set_shader_parameter("proxy_shift", proxy_shift)
-		material.set_shader_parameter("mask_shift", mask_shift)
+		material.set_shader_parameter("view_camera", _camera.global_position)
+		material.set_shader_parameter("sun_xz", sun_xz)
+		material.set_shader_parameter("peek", peek)
 	var puffs := lerpf(STATE_PUFFS.get(_puff_from, 1.0), STATE_PUFFS[state], smoothstep(0.0, 1.0, _transition))
 	var bank_grey := lerpf(STATE_BANK_GREY.get(_puff_from, 0.0), STATE_BANK_GREY[state], smoothstep(0.0, 1.0, _transition))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:

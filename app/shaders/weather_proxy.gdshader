@@ -8,8 +8,12 @@ render_mode unshaded, world_vertex_coords, cull_disabled, depth_draw_opaque, fog
 #include "res://shaders/weather_placement.gdshaderinc"
 
 uniform int mode = 1;
-uniform vec2 proxy_shift;
-uniform vec2 mask_shift;
+// Per cluster: the ground point the cloud covers as seen from the view camera
+// (works for any projection), plus a small screen-down "peek" offset.
+uniform vec3 view_camera;
+uniform vec2 sun_xz;          // sun direction xz / sun direction y
+uniform vec2 peek;
+uniform float ground_y = 0.0;
 uniform float mask_darkness = 0.5;
 
 varying float amount;
@@ -22,8 +26,12 @@ void vertex() {
 	storm = info.w;
 	// Flat proxy just above the cloud base keeps the cast shape compact.
 	p.y = cloud_base + (p.y - cloud_base) * 0.25;
-	p.xz += proxy_shift;
-	if (mode == 2) { p.xz += mask_shift; }
+	vec2 centre = MODEL_MATRIX[3].xz + air_drift;
+	float t = (view_camera.y - ground_y) / max(view_camera.y - cloud_base, 1.0);
+	vec2 land = view_camera.xz + (centre - view_camera.xz) * t + peek;
+	p.xz += land - centre;
+	// Shadow proxies sit on the cloud layer, so they move up the sun ray.
+	if (mode == 1) { p.xz += sun_xz * (cloud_base - ground_y); }
 	VERTEX = p;
 }
 

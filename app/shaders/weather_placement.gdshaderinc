@@ -26,6 +26,7 @@ vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	// Banks spread wide and flat; fair clusters keep their height.
 	vec3 local = (vertex_world - origin) * s;
 	// Height:width at most about 1:3 for banks and storm fronts.
-	local.y *= 0.75 * (1.0 - 0.6 * bank);
+	// Fair cumulus about 1:2; banks flatten, storm towers stay tall.
+	local.y *= 1.15 * (1.0 - 0.6 * bank * (1.0 - field.z));
 	return vec3(world_xz.x, cloud_base, world_xz.y) + local;
 }

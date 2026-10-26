@@ -7,7 +7,7 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabl
 
 uniform float cloud_base = 90.0;
 uniform float now = 0.0;
-uniform vec3 rain_color : source_color = vec3(0.62, 0.66, 0.72);
+uniform vec3 rain_color : source_color = vec3(0.40, 0.43, 0.48);
 uniform float strength = 1.0;
 instance uniform float fade = 1.0;
 
@@ -20,21 +20,22 @@ void vertex() {
 	vec3 field = weather_field(world_xz);
 	amount = smoothstep(0.2, 0.6, field.y) * INSTANCE_CUSTOM.z;
 	seed = INSTANCE_CUSTOM.y;
-	vec3 side = (MODEL_MATRIX * vec4(VERTEX.x, 0.0, VERTEX.z, 0.0)).xyz * 0.55 * mix(1.0, 0.45, -VERTEX.y);
+	vec3 side = (MODEL_MATRIX * vec4(VERTEX.x, 0.0, VERTEX.z, 0.0)).xyz * 1.1 * mix(1.0, 0.7, -VERTEX.y);
 	vec3 world = vec3(world_xz.x, cloud_base * (1.0 + VERTEX.y), world_xz.y) + side * step(0.001, amount);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 
 void fragment() {
 	if (amount < 0.01) { discard; }
-	float x = UV.x * 22.0 + seed * 31.0;
+	float x = UV.x * 70.0 + seed * 31.0;
 	float column = floor(x);
 	float r = fract(sin(column * 12.9898 + seed * 78.233) * 43758.5453);
-	float line = 1.0 - smoothstep(0.06, 0.2, abs(fract(x) - 0.5));
+	float line = 1.0 - smoothstep(0.03, 0.12, abs(fract(x) - 0.5));
 	float dash = smoothstep(0.0, 0.25, fract(UV.y * 5.0 - now * (1.6 + r) + r * 9.0)) * step(0.35, r + 0.2);
 	// Streaks run out towards the ground at different lengths.
 	float reach = 0.35 + 0.35 * r;
 	float edge = pow(sin(3.14159 * UV.x), 1.5) * smoothstep(0.0, 0.08, UV.y) * (1.0 - smoothstep(reach * 0.6, reach, UV.y));
 	ALBEDO = rain_color;
-	ALPHA = clamp((0.14 + 0.6 * line * dash) * edge * amount * fade * strength, 0.0, 0.75);
+	// Fine, sparse, see-through streaks over a faint grey veil.
+	ALPHA = clamp((0.12 + 0.2 * line * dash) * edge * amount * fade * strength, 0.0, 0.35);
 }

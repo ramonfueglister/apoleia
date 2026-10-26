@@ -36,11 +36,11 @@ static func build_cumulus(seed: int) -> ArrayMesh:
 	var count := rng.randi_range(5, 12)
 	for i in count:
 		var t := (float(i) + 0.5) / count * 2.0 - 1.0
-		var x := t * 1.35 + rng.randf_range(-0.15, 0.15)
+		var x := t * 1.0 + rng.randf_range(-0.15, 0.15)
 		# Taller, larger blobs in the middle; smaller ones towards the ends.
 		var r := lerpf(0.75, 0.32, absf(t)) * rng.randf_range(0.8, 1.15)
-		var squash := Vector3(rng.randf_range(1.0, 1.35), rng.randf_range(0.62, 0.85), rng.randf_range(0.8, 1.1))
-		blobs.append([Vector3(x, r * 0.55, rng.randf_range(-0.35, 0.35)), r, squash])
+		var squash := Vector3(rng.randf_range(0.95, 1.2), rng.randf_range(0.8, 1.0), rng.randf_range(0.85, 1.1))
+		blobs.append([Vector3(x, r * 0.7, rng.randf_range(-0.35, 0.35)), r, squash])
 	var centre := Vector3(0.0, -0.6, 0.0)
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()

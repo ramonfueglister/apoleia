@@ -61,7 +61,8 @@ void fragment() {
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	if (dot(flat_n, to_camera) < 0.0) { flat_n = -flat_n; }
 	// Facets stay readable but soft: flat normal pulled towards the cluster normal.
-	vec3 n = normalize(mix(flat_n, normalize(smooth_normal), 0.7));
+	// Mostly flat facets: clear light/dark steps like the reference.
+	vec3 n = normalize(mix(flat_n, normalize(smooth_normal), 0.15));
 	vec3 l = normalize(sun_dir);
 	float wrap = clamp((dot(n, l) + 0.7) / 1.7, 0.0, 1.0);
 	vec3 colour = mix(shade_color, sun_color, smoothstep(0.15, 0.85, wrap));
@@ -75,7 +76,7 @@ void fragment() {
 	vec3 rain_grey = vec3(0.15, 0.16, 0.18) * mix(0.65, 1.0, smoothstep(0.0, 0.6, height01)) * (0.8 + 0.4 * wrap);
 	colour = mix(colour, rain_grey, grey);
 	float storm_amount = smoothstep(0.02, 0.25, storm);
-	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.62, 0.42) * 0.24 * smoothstep(0.5, 1.0, wrap) * smoothstep(0.45, 0.95, height01) + pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.6, 0.4) * 0.18 * wrap;
+	vec3 slate = storm_color * (0.7 + 0.6 * wrap) + sun_color * vec3(1.0, 0.6, 0.38) * 0.5 * smoothstep(0.45, 1.0, wrap) * smoothstep(0.35, 0.95, height01) + pow(1.0 - facing, 3.0) * sun_color * vec3(1.0, 0.6, 0.4) * 0.18 * wrap;
 	colour = mix(colour, slate, storm_amount);
 	float near_flash = flash * (1.0 - smoothstep(0.0, flash_radius, distance(world_pos.xz, flash_pos.xz)));
 	colour += near_flash * vec3(1.4, 1.45, 1.8) * (0.6 + storm);
