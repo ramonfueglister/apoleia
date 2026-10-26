@@ -235,11 +235,16 @@ void fragment() {
     float n_meso=look_fbm(vp/38.0+vec2(1.9,4.2),footprint/38.0);
     float n_micro=look_fbm(vp/7.5,footprint/7.5);
     float open_land=(1.0-weights.r)*(1.0-dry*0.6);
+    float variation_far=mix(0.35,1.0,smoothstep(0.7,1.0,relief));
     vec3 varied=mix(look_olive_color.rgb,look_lime_color.rgb,smoothstep(0.30,0.72,n_meso*0.65+n_macro*0.35));
-    ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength);
+    ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength*variation_far);
     float ochre=smoothstep(0.56,0.82,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
-    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.18,1.0-smoothstep(0.7,1.0,relief)));
+    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.12,1.0-smoothstep(0.7,1.0,relief)));
     ground*=1.0+(n_micro-0.5)*0.22*look_variation_strength;
+    // Dark, contiguous forest patches over hills and flanks; looser and
+    // lighter in the plains.
+    float hilly=smoothstep(120.0,650.0,h);
+    ground=mix(ground,vec3(0.072,0.118,0.036),weights.r*mix(0.25,0.60,hilly)*relief);
     // Overview (reduced relief): slightly deeper, greener land as in the reference.
     float overview=1.0-smoothstep(0.7,1.0,relief);
     ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
@@ -287,7 +292,7 @@ void fragment() {
     }
     // Rock on crests, peaks and steep high ground; green in valleys and on
     // lower flanks. The blocky semantic G channel is not shown.
-    float crest_rock=smoothstep(40.0,220.0,h-around)*smoothstep(500.0,1100.0,h);
+    float crest_rock=smoothstep(10.0,140.0,h-around)*smoothstep(350.0,800.0,h);
     float visible_rock=max(max(crest_rock,smoothstep(0.55,0.85,represented_slope)*smoothstep(900.0,1500.0,h)),smoothstep(1900.0,2900.0,h)*0.9);
     // Crisp rock/grass boundary and per-facet stone tone (low-poly read).
     float rock_v=smoothstep(0.38,0.62,visible_rock);
@@ -344,7 +349,7 @@ void fragment() {
         float depth=physical_water_kind==1.0 ? max(-model_height_at(vp),0.0) : 25.0;
         float saum_scale=physical_water_kind==2.0 ? 0.0 : mix(0.22,1.0,smoothstep(0.7,1.0,relief));
         vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
-        WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale);
+        WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale,0.0);
         sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
         wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
     }
