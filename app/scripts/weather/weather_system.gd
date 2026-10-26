@@ -8,6 +8,8 @@ extends Node3D
 const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
 const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
 const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
+const MASK_SHADER = preload("res://shaders/weather_shadow_mask.gdshader")
+const MASK_SIZE := 256
 const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
 
 const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
@@ -66,6 +68,8 @@ var _noise_image: Image
 var _noise_texture: ImageTexture
 var _cloud_material: ShaderMaterial
 var _rain_material: ShaderMaterial
+var _mask_material: ShaderMaterial
+var _mask_viewport: SubViewport
 var _fine: RefCounted
 var _coarse: RefCounted
 var _field_from := Vector4.ZERO
@@ -80,6 +84,7 @@ var _bolt: MeshInstance3D
 var _bolt_frames := 0
 var _flash_light: OmniLight3D
 var _flash_pos := Vector3.ZERO
+var _shadow_rect := Vector4.ZERO
 var _altitude_ready := false
 var _prewarmed := false
 var _spawn_front := false
@@ -129,7 +134,8 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 	_cloud_material.shader = CLOUD_SHADER
 	_rain_material = ShaderMaterial.new()
 	_rain_material.shader = RAIN_SHADER
-	for material in [_cloud_material, _rain_material]:
+	_build_shadow_mask()
+	for material in [_cloud_material, _rain_material, _mask_material]:
 		material.set_shader_parameter("weather_noise", _noise_texture)
 		material.set_shader_parameter("noise_period", NOISE_PERIOD)
 		material.set_shader_parameter("earth_km", _earth_km())
@@ -172,6 +178,20 @@ func _build_noise(seed: int) -> void:
 	_noise_image = noise.get_seamless_image(256, 256, false, false, 0.1, true)
 	_noise_image.convert(Image.FORMAT_L8)
 	_noise_texture = ImageTexture.create_from_image(_noise_image)
+
+func _build_shadow_mask() -> void:
+	_mask_viewport = SubViewport.new()
+	_mask_viewport.size = Vector2i(MASK_SIZE, MASK_SIZE)
+	_mask_viewport.disable_3d = true
+	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_mask_material = ShaderMaterial.new()
+	_mask_material.shader = MASK_SHADER
+	var rect := ColorRect.new()
+	rect.size = Vector2(MASK_SIZE, MASK_SIZE)
+	rect.material = _mask_material
+	_mask_viewport.add_child(rect)
+	add_child(_mask_viewport)
+	RenderingServer.global_shader_parameter_set("weather_cloud_shadow", _mask_viewport.get_texture())
 
 func _build_lightning() -> void:
 	_bolt = MeshInstance3D.new()
@@ -432,6 +452,10 @@ func _update_tiers() -> void:
 	var shadow_shift := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.12) * cloud_base
 	var region := footprint.merge(Rect2(footprint.position + view_shift, footprint.size)).merge(Rect2(footprint.position + shadow_shift, footprint.size))
 	region.position -= drift
+	var ground := footprint.grow(footprint.size.x * 0.1)
+	_mask_material.set_shader_parameter("ground_rect", Vector4(ground.position.x, ground.position.y, ground.size.x, ground.size.y))
+	_mask_material.set_shader_parameter("shadow_shift", shadow_shift)
+	_shadow_rect = Vector4(ground.position.x, ground.position.y, ground.size.x, ground.size.y)
 	if fine_on: _fine.ensure(region.grow(FINE_SCALE.y * 1.8))
 	if coarse_on: _coarse.ensure(region.grow(COARSE_SCALE.y * 1.8))
 
@@ -448,7 +472,7 @@ func _upload_uniforms() -> void:
 	var sun_dir := _sun.global_basis.z.normalized()
 	var sun_color := _sun.light_color
 	var ambient := _environment.ambient_light_color
-	for material in [_cloud_material, _rain_material]:
+	for material in [_cloud_material, _rain_material, _mask_material]:
 		material.set_shader_parameter("air_drift", drift)
 		material.set_shader_parameter("weather_state", field)
 		material.set_shader_parameter("cell_shape", shape)
@@ -529,11 +553,13 @@ func _publish_globals(w: Vector3) -> void:
 	RenderingServer.global_shader_parameter_set("weather_storm", w.z)
 	RenderingServer.global_shader_parameter_set("weather_wetness", w.y)
 	RenderingServer.global_shader_parameter_set("weather_lightning", lightning if enabled else 0.0)
+	RenderingServer.global_shader_parameter_set("weather_cloud_shadow_rect", _shadow_rect if enabled else Vector4.ZERO)
 
 func _apply_enabled() -> void:
 	if not configured: return
 	_fine.set_visible(enabled)
 	_coarse.set_visible(enabled)
+	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if enabled else SubViewport.UPDATE_DISABLED
 	if not enabled:
 		_restore_look()
 		_bolt.visible = false
