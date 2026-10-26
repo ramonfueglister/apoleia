@@ -71,7 +71,7 @@ func run()->void:
     var policy:Dictionary=style.diorama_representation_policy()
     var display_scale=float(style.landform_vertical_scale(3400.0))
     # Only this tiny shared template is prepared; no expanded forest vertices.
-    var templates:Array=load("res://scripts/cache/compact_forest_poses.gd").variants(style.prepare_diorama_crown_arrays(),style.prepare_dense_crown_arrays())
+    var templates:Array=load("res://scripts/cache/compact_forest_poses.gd").variants(style.prepare_diorama_crown_arrays())
     var snapshot={"canonical":canonical,"surface":surface,"style":style,"policy":policy,"templates":templates,"world_min":canonical.domains.context.height.rect.position,"world_size":canonical.domains.context.height.rect.size,"display_height_scale":display_scale,"source_manifest_sha256":product.source.sha256,"projection_sha256":FileAccess.get_sha256(repository.path_join("data/projection.json"))}
     var binding_script=load("res://scripts/cache/fixed_forest_layout.gd")
     if binding_script==null:fail("shared layout binding API unavailable");return
