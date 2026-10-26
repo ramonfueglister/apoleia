@@ -21,7 +21,8 @@ vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	float h = custom.x;
 	float presence = smoothstep(h - 0.06, h + 0.06, cluster_cover);
 	// Banks and fronts: clusters grow until they merge into one mass.
-	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank) * cluster_scale;
+	// Small fair clusters in close views; banks and fronts keep their full size.
+	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank) * mix(cluster_scale, 1.0, bank);
 	info = vec4(s, field.x, max(field.y, bank * 0.8 * bank_grey), field.z);
 	// Banks spread wide and flat; fair clusters keep their height.
 	vec3 local = (vertex_world - origin) * s;

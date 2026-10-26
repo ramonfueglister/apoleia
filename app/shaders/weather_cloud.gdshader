@@ -35,7 +35,9 @@ void vertex() {
 	vec3 local = VERTEX - origin;
 	VERTEX = place_cluster(VERTEX, origin, INSTANCE_CUSTOM, info);
 	vec3 centre = vec3(origin.x + air_drift.x, cloud_base, origin.z + air_drift.y);
-	float keep = smoothstep(near_cull_distance * 0.8, near_cull_distance, distance(centre, CAMERA_POSITION_WORLD));
+	// Whole clusters shrink away near the camera instead of a dithered cut.
+	float d = distance(centre, CAMERA_POSITION_WORLD);
+	float keep = smoothstep(near_cull_distance * 0.8, near_cull_distance, d) * mix(smoothstep(near_fade_distance * 0.75, near_fade_distance, d), 1.0, step(0.05, info.w));
 	VERTEX = centre + (VERTEX - centre) * keep;
 	world_pos = VERTEX;
 	smooth_normal = NORMAL;
@@ -54,9 +56,7 @@ float bayer4(vec2 p) {
 void fragment() {
 	float dither = bayer4(FRAGCOORD.xy);
 	// Close to the camera fair clouds dissolve (their shadows stay); storm fronts stay.
-	float near_fade = smoothstep(near_fade_distance * 0.6, near_fade_distance, distance(world_pos, CAMERA_POSITION_WORLD));
-	near_fade = mix(near_fade, 1.0, smoothstep(0.05, 0.3, storm) * (1.0 - grey));
-	if (fade * near_fade < dither) { discard; }
+	if (fade < dither) { discard; }
 	vec3 to_camera = INV_VIEW_MATRIX[2].xyz;
 	vec3 flat_n = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	if (dot(flat_n, to_camera) < 0.0) { flat_n = -flat_n; }

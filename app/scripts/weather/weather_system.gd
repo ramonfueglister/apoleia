@@ -11,13 +11,15 @@ const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
 const PROXY_SHADER = preload("res://shaders/weather_proxy.gdshader")
 # Low resolution on purpose: bilinear sampling softens the shadow edges on water.
 const MASK_SIZE := 160
-const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled;\nuniform float glow = 1.0;\nvoid fragment() { ALBEDO = vec3(2.6, 2.6, 3.4) * glow; }\n"
+# Thin bluish-white core with a soft glow towards the ribbon edges (UV.x 0..1 across).
+const BOLT_CODE = "shader_type spatial;\nrender_mode unshaded, cull_disabled, shadows_disabled, blend_add, depth_draw_never;\nuniform float glow = 1.0;\nvoid fragment() { float c = 1.0 - abs(UV.x * 2.0 - 1.0); ALBEDO = mix(vec3(0.35, 0.45, 0.9), vec3(2.2, 2.3, 2.8), smoothstep(0.7, 0.95, c)) * c * glow; }\n"
 
 const STATES: Array[String] = ["clear", "fair", "overcast", "rain", "storm"]
 # cover, noise amplitude, rain, storm (see weather_field.gdshaderinc)
 const STATE_FIELD := {
 	"clear": Vector4(0.0, 0.08, 0.0, 0.0),
-	"fair": Vector4(0.14, 0.55, 0.0, 0.0),
+	# Fair: grouped cumulus fields with clear high-pressure gaps.
+	"fair": Vector4(0.02, 0.7, 0.0, 0.0),
 	"overcast": Vector4(0.68, 0.35, 0.10, 0.0),
 	"rain": Vector4(0.5, 0.45, 0.70, 0.0),
 	# Storms are local: fair background plus one or two large storm cells.
@@ -579,11 +581,11 @@ func _apply_look() -> void:
 	_environment.ambient_light_color = ambient.lerp(Color(0.72, 0.76, 0.82), dim * 0.5)
 	_environment.ambient_light_energy = _base.ambient_energy * look[4] * (1.0 - 0.35 * dim)
 	var fog: Color = _base.fog_color * look[5]
-	fog = fog.lerp(Color(0.60, 0.64, 0.69), clampf(state_rain * 0.6, 0.0, 1.0))
+	fog = fog.lerp(Color(0.58, 0.61, 0.65), clampf(state_rain * 1.2, 0.0, 1.0))
 	_environment.fog_light_color = fog
 	# LandscapeLook rewrites fog_density per view; only scale its latest value.
 	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
-	_written_fog = _fog_base * (1.0 + state_rain * 0.8)
+	_written_fog = _fog_base * (1.0 + state_rain * 2.5) + state_rain * 0.04
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.1 * w.y - 0.55 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
@@ -639,7 +641,7 @@ func _update_tiers() -> void:
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
 	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.7)
 	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 0.6)
-	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.8, smoothstep(0.2, 0.6, _current_field().z)))
+	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.6, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
@@ -722,7 +724,7 @@ func _strike(p: Vector2, view_width: float) -> void:
 	var top := cloud_base + 2.0
 	# About three pixels wide at the strike's distance, for any projection.
 	var pixel := view_width / maxf(get_viewport().get_visible_rect().size.x, 1.0)
-	var width := pixel * 3.4
+	var width := pixel * 1.3
 	var points := PackedVector3Array()
 	var x := 0.0
 	var steps := 10
@@ -730,15 +732,30 @@ func _strike(p: Vector2, view_width: float) -> void:
 		var y := lerpf(top, ground, float(k) / steps)
 		points.append(Vector3(p.x + x, y, p.y))
 		x += _rng.randf_range(-1.0, 1.0) * (top - ground) * 0.06
+	# Main channel plus two short branches; ribbons are wide for the glow.
+	var paths := [points]
+	for branch in 2:
+		var start := _rng.randi_range(2, steps - 4)
+		var path := PackedVector3Array([points[start]])
+		var bx := 0.0
+		for k in range(1, 4):
+			bx += _rng.randf_range(0.4, 1.0) * (1.0 if branch == 0 else -1.0) * (top - ground) * 0.07
+			path.append(Vector3(points[start].x + bx, lerpf(points[start].y, ground, float(k) / 6.0), points[start].z))
+		paths.append(path)
 	var vertices := PackedVector3Array()
-	for k in steps:
-		var a := points[k]
-		var b := points[k + 1]
-		var w := width * (1.0 - 0.5 * float(k) / steps)
-		vertices.append_array([a + Vector3(-w, 0, 0), a + Vector3(w, 0, 0), b + Vector3(w, 0, 0), a + Vector3(-w, 0, 0), b + Vector3(w, 0, 0), b + Vector3(-w, 0, 0)])
+	var uvs := PackedVector2Array()
+	for path in paths:
+		var scale := 1.0 if path == points else 0.6
+		for k in path.size() - 1:
+			var a: Vector3 = path[k]
+			var b: Vector3 = path[k + 1]
+			var w := width * 4.0 * scale * (1.0 - 0.4 * float(k) / path.size())
+			vertices.append_array([a + Vector3(-w, 0, 0), a + Vector3(w, 0, 0), b + Vector3(w, 0, 0), a + Vector3(-w, 0, 0), b + Vector3(w, 0, 0), b + Vector3(-w, 0, 0)])
+			uvs.append_array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1)])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	_bolt.mesh = mesh
