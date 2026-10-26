@@ -15,7 +15,11 @@ void vertex(){
     if(normalize_instanced_normals) NORMAL=normalize(NORMAL);
     crown_up=NORMAL.y;
     if(clipmap_enabled){
-        VERTEX.y+=clipmap_surface_height(MODEL_MATRIX[3].xz)*0.001*display_height_scale;
+        // Clipmap tiles store the settled ground per instance in
+        // INSTANCE_CUSTOM (r metres, a=1); morphing cells sample it again.
+        vec2 root=MODEL_MATRIX[3].xz;
+        float ground=INSTANCE_CUSTOM.a>0.5 && clipmap_cell_settled(root) ? INSTANCE_CUSTOM.r : clipmap_surface_height(root);
+        VERTEX.y+=ground*0.001*display_height_scale;
     }else if(stream_ground){
         vec4 a=texelFetch(ground_vertices,ivec2(0,INSTANCE_ID),0);
         vec4 b=texelFetch(ground_vertices,ivec2(1,INSTANCE_ID),0);

@@ -129,3 +129,16 @@ float clipmap_surface_height(vec2 p) {
     float d=clipmap_surface_vertex(corner+vec2(step_size));
     return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
+// True when the ring weight is 1 at all four corners of p's 65-grid cell:
+// clipmap_surface_height(p) then equals the settled source surface that
+// tile_forest.gd precomputes per instance. Arithmetic only, no texture taps.
+bool clipmap_cell_settled(vec2 p) {
+    float step_size=clipmap_span/64.0;
+    vec2 q=clamp((p-clipmap_origin)/step_size,vec2(0.0),vec2(64.0));
+    vec2 corner=clipmap_origin+min(floor(q),vec2(63.0))*step_size;
+    float a=clipmap_ring_weight(corner);
+    float b=clipmap_ring_weight(corner+vec2(step_size,0.0));
+    float c=clipmap_ring_weight(corner+vec2(0.0,step_size));
+    float d=clipmap_ring_weight(corner+vec2(step_size));
+    return min(min(a,b),min(c,d))>=1.0;
+}
