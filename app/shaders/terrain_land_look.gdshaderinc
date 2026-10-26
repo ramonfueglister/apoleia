@@ -224,7 +224,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground=mix(ground,parcel,0.55*field_fade);
         vec2 fe=abs(fract(fq)-0.5);
         float seam=smoothstep(0.43,0.49,max(fe.x,fe.y))*(1.0-smoothstep(0.08,0.2,footprint));
-        ground*=1.0+seam*0.16*field_fade;
+        ground*=1.0+seam*0.04*field_fade;
     }
 
     // Rock only on real crests and high ground; narrow ridges.
@@ -253,14 +253,17 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         n=normalize(mix(n,rock_facet,rock*rel*(1.0-smoothstep(0.6,1.5,footprint))));
     }
     // Micro hills: lighting only, in hill country, never on plains or rock.
-    float hills_amount=smoothstep(0.15,0.6,hill_country)*(1.0-rock)*rel;
+    // Small faceted hills (~1.1 km) over hill and mountain country; the big
+    // 2 km forms are flattened a little so the eye reads the small ones.
+    float hills_amount=smoothstep(0.1,0.5,hill_country)*(1.0-rock)*rel;
+    n=normalize(mix(n,vec3(0.0,1.0,0.0),0.30*hills_amount));
     float vis=1.0-smoothstep(land_micro_size/9.0,land_micro_size/4.0,footprint);
     if(hills_amount*vis>0.001) {
         float hid;
         vec4 mh=land_micro_hills(p+vec2(31.0,17.0),land_micro_size,0.5+0.45*hills_amount,hid);
-        vec2 ms=mh.xy*vis*land_micro_height*hills_amount*0.5;
+        vec2 ms=mh.xy*vis*land_micro_height*hills_amount;
         n=normalize(n+vec3(-ms.x,0.0,-ms.y));
-        ground*=1.0-mh.z*vis*0.30*hills_amount;
+        ground*=1.0-mh.z*vis*0.45*hills_amount;
         ground*=1.0+(hid-0.5)*0.08*mh.w*vis*hills_amount;
     }
     // Fine flat-shaded triangles (about 5 px) up close: tilt and tint.
