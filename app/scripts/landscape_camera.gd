@@ -2,7 +2,7 @@ extends RefCounted
 ## Own camera contract. Source/model geography is never changed.
 ## Perspective since v5: view width is the visible ground width at the focus.
 const REVISION = "perspective-diorama-display-v5"
-const PERSPECTIVE_FOV = 25.0
+const PERSPECTIVE_FOV = 27.0
 const OVERVIEW_FOV = 8.0
 # A07: closest view about 80 km of ground (3x closer than 240).
 const NEAR_WIDTH = 80.0
@@ -31,14 +31,14 @@ static func zoom_from_legacy(zoom: float, overview_width: float, near_width: flo
     return zoom_for_width(width_for_zoom(zoom,overview_width,LEGACY_NEAR_WIDTH),overview_width,near_width)
 
 static func profile(width: float, overview_width: float=7606.0) -> Vector2:
-    # The regional reference is a continental diorama, not the outermost flat
-    # endpoint. Width anchors are own render-profile choices, not engine parity.
+    # Oblique 3D diorama at every zoom (reference "weit" shows real relief):
+    # 35.26 deg close, rising slightly to 40 deg for the continental view.
+    # Relief stays 1; there is no flat map endpoint any more.
     var regional_width=3400.0
     if width<=regional_width: return Vector2(35.2643897,1.0)
-    if width>=overview_width: return Vector2(90.0,0.0)
-    var t=clampf(log(overview_width/width)/log(overview_width/regional_width),0.0,1.0)
+    var t=clampf(log(width/regional_width)/log(maxf(overview_width,regional_width+1.0)/regional_width),0.0,1.0)
     t=t*t*(3.0-2.0*t)
-    return Vector2(lerpf(90.0,35.2643897,t),t)
+    return Vector2(lerpf(35.2643897,40.0,t),1.0)
 
 static func damp(value: float, velocity: float, goal: float, delta: float) -> Vector2:
     var offset = value-goal
@@ -107,9 +107,8 @@ static func anchored_target(anchor: Vector2, pixel: Vector2, viewport: Vector2, 
 
 # Vertical field of view: the regional/near views use a narrow perspective,
 # the flat overview narrows further so the map reads cartographic.
-static func perspective_fov(relief: float) -> float:
-    var t=clampf(relief,0.0,1.0)
-    return lerpf(OVERVIEW_FOV,PERSPECTIVE_FOV,t*t*(3.0-2.0*t))
+static func perspective_fov(_relief: float) -> float:
+    return PERSPECTIVE_FOV
 
 # Focus distance at which the visible ground width at the focus is `width`.
 static func perspective_distance(width: float, aspect: float, fov_degrees: float) -> float:
@@ -119,6 +118,7 @@ static func perspective_distance(width: float, aspect: float, fov_degrees: float
 # rays intersected with the conservative height interval; rays at or above the
 # horizon are clamped to a long distance.
 static func perspective_footprint_offsets(width: float, aspect: float, pitch: float, fov_degrees: float, relief: float, focus_height: float, height_range: Vector2=Vector2(MIN_HEIGHT,MAX_HEIGHT)) -> Rect2:
+    if not (width>0.0 and aspect>0.0 and is_finite(aspect)):return Rect2(-Vector2.ONE*maxf(width,1.0),Vector2.ONE*maxf(width,1.0)*2.0)
     var angle=deg_to_rad(pitch)
     var distance=perspective_distance(width,aspect,fov_degrees)
     var back=Vector3(0,sin(angle),cos(angle));var up=Vector3(0,cos(angle),-sin(angle))
