@@ -198,12 +198,23 @@ func configure(directory:String,expected:Dictionary,allow_probe:bool=false,expec
     if not parsed is Dictionary or _normalized(parsed)!=_normalized(expected):return _fail("binding_mismatch")
     identity=parsed;identity_sha256=_hash(bind_raw)
     if identity.get("metadata_encoding","")!=METADATA_ENCODING:return _fail("binding_metadata_encoding")
-    if identity.get("format","")!="v19-layout-binding-r2" or not _same_ints(identity.get("region",{}).get("chunk_bounds"),FULL) or not _same_ints(identity.region.get("root_bounds"),ROOT):return _fail("binding_region")
-    for key in ["source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","base_ground_sampler_sha256","final_ground_consumer_sha256","render_vertex_trace_sha256","terrain_shader_sha256","model_sampling_shader_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256","identity_contract_sha256","binding_loader_sha256","projection_sha256"]:
-        if not _digest(str(identity.get(key,""))):return _fail("binding_dependency:"+key)
+    var source_only=identity.get("format","")=="v19-layout-source-binding-v3"
+    if not source_only and identity.get("format","")!="v19-layout-binding-r2":return _fail("binding_format")
+    if not _same_ints(identity.get("region",{}).get("chunk_bounds"),FULL) or not _same_ints(identity.region.get("root_bounds"),ROOT):return _fail("binding_region")
+    if source_only:
+        for key in ["source_contract_sha256","source_manifest_sha256","upload_manifest_sha256","atlas_manifest_sha256","source_sampler_sha256","ground_sampler_sha256","canonical_surface_identity_sha256","style_sha256","template_arrays_sha256","projection_sha256"]:
+            if not _digest(str(identity.get(key,""))):return _fail("binding_dependency:"+key)
+        var callbacks=identity.get("source_callbacks",{})
+        if callbacks.get("contract","")!="RequestSamples-stride0-exact-v1" or callbacks.get("source_stride",-1)!=0 or callbacks.get("memo_limit",-1)!=4096 or not _digest(str(callbacks.get("sha256",""))):return _fail("binding_source_callbacks")
+        if callbacks.get("functions",[])!=["_put","role","forest","land","sample"]:return _fail("binding_source_callback_functions")
+        for name in callbacks.functions:
+            if not _digest(str(callbacks.get("function_sha256",{}).get(name,""))):return _fail("binding_source_callback:"+str(name))
+    else:
+        for key in ["source_manifest_sha256","upload_manifest_sha256","source_sampler_sha256","canonical_surface_identity_sha256","ground_sampler_sha256","base_ground_sampler_sha256","final_ground_consumer_sha256","render_vertex_trace_sha256","terrain_shader_sha256","model_sampling_shader_sha256","sampling_callbacks_sha256","style_sha256","template_arrays_sha256","identity_contract_sha256","binding_loader_sha256","projection_sha256"]:
+            if not _digest(str(identity.get(key,""))):return _fail("binding_dependency:"+key)
     var variants=identity.get("compact_variants",{})
     if not variants is Dictionary or variants.get("function","")!="variants" or not _digest(str(variants.get("sha256",""))) or not _digest(str(variants.get("WIDTHS_declaration_sha256",""))) or variants.get("WIDTHS_f64le",[])!=[_hex64(1.0),_hex64(1.18)] or variants.get("template_arrays_sha256","")!=identity.template_arrays_sha256:return _fail("binding_compact_variants")
-    if not _digest(str(identity.get("runtime_geometry",{}).get("sha256",""))) or identity.runtime_geometry.get("functions",[])!=["_fixed_grid_mesh","_setup_fixed_surface","_update_fixed_surface_lod"]:return _fail("binding_runtime_geometry")
+    if not source_only and (not _digest(str(identity.get("runtime_geometry",{}).get("sha256",""))) or identity.runtime_geometry.get("functions",[])!=["_fixed_grid_mesh","_setup_fixed_surface","_update_fixed_surface_lod"]):return _fail("binding_runtime_geometry")
     if not _integer(m.get("record_count"),0,MAX_ROWS):return _fail("manifest_record_count")
     var seen=Seen.new();var count=0;var accepted=HashingContext.new();accepted.start(HashingContext.HASH_SHA256)
     if coverage=="incomplete-probe":
