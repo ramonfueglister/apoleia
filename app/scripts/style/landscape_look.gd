@@ -8,18 +8,18 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     _environment = environment
     environment.background_color = Color("9fc2d6")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("c9dbe6")
-    environment.ambient_light_energy = 0.42
+    environment.ambient_light_color = Color("b6cde6")
+    environment.ambient_light_energy = 0.40
     environment.tonemap_mode = Environment.TONE_MAPPER_ACES
     environment.tonemap_exposure = 0.8
     environment.tonemap_white = 6.0
     environment.adjustment_enabled = true
     environment.adjustment_saturation = 0.98
-    environment.adjustment_contrast = 1.04
+    environment.adjustment_contrast = 1.08
     # Forward+ only; soft contact darkening under crowns and in valleys.
     environment.ssao_enabled = true
-    environment.ssao_radius = 0.6
-    environment.ssao_intensity = 1.6
+    environment.ssao_radius = 0.9
+    environment.ssao_intensity = 2.2
     environment.ssao_power = 1.4
     environment.ssao_detail = 0.4
     environment.ssao_light_affect = 0.15
@@ -33,8 +33,8 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     environment.fog_depth_curve = 1.6
     environment.fog_aerial_perspective = 0.0
     sun.rotation_degrees = Vector3(-40.0, -62.0, 0.0)
-    sun.light_color = Color("fff0d6")
-    sun.light_energy = 1.85
+    sun.light_color = Color("ffe9c8")
+    sun.light_energy = 1.92
     sun.light_angular_distance = 0.0
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
@@ -74,6 +74,18 @@ static func terrain_parameters() -> Dictionary:
         "look_olive_color": Color("7c7a35"),
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
+        # Painted land look (terrain_land_look.gdshaderinc).
+        "land_grass_color": Color("7a8538"),
+        "land_lime_color": Color("98953e"),
+        "land_olive_color": Color("5a682c"),
+        "land_ochre_color": Color("a2884f"),
+        "land_forest_floor_color": Color("405425"),
+        "land_dry_color": Color("ab9462"),
+        "land_rock_light_color": Color("b09c86"),
+        "land_rock_dark_color": Color("62554a"),
+        "land_snow_color": Color("f2efe9"),
+        "land_valley_tint": Color("9db3b8"),
+        "land_facet_tilt": 0.22,
         "sea_deep_color": Color("1d497e"),
         "sea_open_color": Color("235483"),
         "sea_shallow_color": Color("48909b"),
@@ -92,8 +104,8 @@ static func water_parameters() -> Dictionary:
 
 static func water_look_parameters() -> Dictionary:
     return {
-        "water_deep_tint": Color("173f74"),
-        "water_open_tint": Color("1e5592"),
+        "water_deep_tint": Color("143a6c"),
+        "water_open_tint": Color("1d4f8a"),
         "water_shallow_tint": Color("3a95a4"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),

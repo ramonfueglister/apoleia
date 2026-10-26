@@ -141,6 +141,10 @@ vec4 display_material_weights_at(vec2 p) {
     vec4 filtered=(center*4.0+source_surface_weights_at(p+vec2(r,0.0))+source_surface_weights_at(p-vec2(r,0.0))+source_surface_weights_at(p+vec2(0.0,r))+source_surface_weights_at(p-vec2(0.0,r)))*0.125;
     return mix(center,filtered,material_transition_strength);
 }
+// Shared painted land look; the host supplies its represented surface.
+#define LAND_LOOK_HEIGHT(p) (use_fixed_surface ? fixed_surface_height_at(p) : model_height_at(p))
+#define LAND_LOOK_WEIGHTS(p) source_surface_weights_at(p)
+#include "res://shaders/terrain_land_look.gdshaderinc"
 // Nonnegative C1 continuation. Unlike crossfading two offset distance fields,
 // this cannot reduce a growing short distance merely as its source weight fades.
 // The cap is the supplied physical SDF's3km transport range, not new geography.
@@ -220,104 +224,22 @@ void fragment() {
     vec3 facet_normal=normalize(cross(dFdy(local_render_position),dFdx(local_render_position)));
     if(facet_normal.y<0.0) facet_normal=-facet_normal;
     vec3 smooth_normal=normalize(model_smooth_normal);
-    vec2 material_uv=(world_position.xz-surface_world_min)/surface_world_size;
-    vec4 weights=display_material_weights_at(world_position.xz);
-    float fixed_rock_channel=source_surface_rock_at(world_position.xz);
+    // The land look blurs and edges the fields itself; one tap here.
+    vec4 weights=source_surface_weights_at(world_position.xz);
     vec2 detail_material_uv=(world_position.xz-detail_world_min)/detail_world_size;
     float lat=mix(north_lat,south_lat,geo_uv.y);
     bool semantic_surface=clipmap_enabled || use_surface_weights || (use_detail_surface_weights && inside_domain(detail_material_uv));
-    float dry=semantic_surface?weights.b:(1.0-smoothstep(29.0,37.0,lat));
-    // RGBA is FOREST / ROCK / DRY / SHORE. Alpha was incorrectly used as
-    // meadow evidence in V10, leaving inland plains with no green role.
-    // This is a declared graphic interpretation of canonical low open land,
-    // not a climate/moisture dataset or a new geographic texture.
-    float low_open=(1.0-smoothstep(250.0,1150.0,h))*(1.0-dry);
-    vec3 ground=mix(open_color.rgb,meadow_color.rgb,low_open*0.85);
-    ground=mix(ground,dry_color.rgb,dry);
-    ground=mix(ground,forest_ground_color.rgb,weights.r*0.94);
-    if(!semantic_surface) {
-        vec3 mapped=pow(texture(mapped_cover_tex,geo_uv).rgb,vec3(2.2));
-        ground=mix(ground,mapped,0.36);
-    }
+    // RGBA is FOREST / ROCK / DRY / SHORE; without semantics dry follows latitude.
+    if(!semantic_surface) weights.b=1.0-smoothstep(29.0,37.0,lat);
     float footprint=max(length(dFdx(local_render_position.xz)),length(dFdy(local_render_position.xz)));
-    // Look layer: multi-scale variation inside each material class
-    // (lime <-> olive <-> ochre); classes themselves stay source-bound.
     vec2 vp=world_position.xz;
-    float n_macro=look_fbm(vp/210.0+vec2(3.1,7.7),footprint/210.0);
-    float n_meso=look_fbm(vp/38.0+vec2(1.9,4.2),footprint/38.0);
-    float n_micro=look_fbm(vp/7.5,footprint/7.5);
-    float open_land=(1.0-weights.r)*(1.0-dry*0.6);
-    float variation_far=mix(0.35,1.0,smoothstep(0.7,1.0,relief));
-    vec3 varied=mix(look_olive_color.rgb,look_lime_color.rgb,smoothstep(0.30,0.72,n_meso*0.65+n_macro*0.35));
-    ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength*variation_far);
-    float ochre=smoothstep(0.56,0.82,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
-    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.12,1.0-smoothstep(0.7,1.0,relief)));
-    ground*=1.0+(n_micro-0.5)*0.22*look_variation_strength;
-    // Dark, contiguous forest patches over hills and flanks; looser and
-    // lighter in the plains.
-    float hilly=smoothstep(120.0,650.0,h);
-    ground=mix(ground,vec3(0.072,0.118,0.036),weights.r*mix(0.25,0.60,hilly)*relief);
-    // Overview (reduced relief): slightly deeper, greener land as in the reference.
-    float overview=1.0-smoothstep(0.7,1.0,relief);
-    ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
-    // Without crowns in the overview the forest reads as darker green ground.
-    ground=mix(ground,forest_ground_color.rgb*vec3(0.62,0.72,0.62),weights.r*smoothstep(1800.0,2600.0,view_width)*0.85);
-    // Fine grass grain in the close views.
-    ground*=1.0+(filtered_surface_noise(vp/1.1,footprint/1.1)-0.5)*0.20*(1.0-weights.r)*relief;
-    // Faint triangle facets on open ground (low-poly read), pixel-filtered.
-    float facet_px=footprint/2.2;
-    ground*=1.0+(material_facets(vp/2.2)-0.5)*0.10*(1.0-smoothstep(0.3,0.8,facet_px))*relief;
-    // V8 lighting follows the actual retained-feature triangle surface used
-    // by the renderer and CPU picking. No detached 2km DEM normal texture.
-    // Material ownership uses the same fixed atlas gradient and base-level G
-    // as CPU forest representation, including the flat endpoint. Screen LOD
-    // may filter appearance but cannot change which material owns a place.
+    // Lighting and materials follow the fixed represented surface, never the
+    // decimated render mesh (which only contributes rock silhouettes).
     vec3 source_normal=clipmap_enabled ? clipmap_normal(world_position.xz) : (use_fixed_surface ? fixed_surface_normal_at(world_position.xz) : canonical_normal);
-    // Material hierarchy follows the FIXED represented form, not the much
-    // shallower canonical source and not the camera's temporary relief fade.
-    // CPU forest priority uses this same inverse transpose and fixed factor.
-    vec3 fixed_display_normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z));
-    float represented_slope=1.0-fixed_display_normal.y;
-    float rock=max(fixed_rock_channel,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
-    // Smooth plains and long lower hills; hard, directed faces on supported
-    // rock/high relief. No global full-facet override and no detached DEM bump.
-    float hard_face=max(smoothstep(0.28,0.75,rock),smoothstep(0.12,0.42,1.0-smooth_normal.y)*0.60);
-    vec3 normal=normalize(mix(smooth_normal,facet_normal,hard_face*model_facet_strength));
-    // The regular 2km transport triangles are not authored rock facets. Use
-    // the same fixed atlas gradient already needed for material ownership.
-    // Planar macroflanks retain their direction; raster-cell edges no longer
-    // receive an independent hard lighting discontinuity. Geometry is intact.
-    if(use_fixed_surface || clipmap_enabled) normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale*relief,0.00001),source_normal.z));
-    // Light low-poly facetting everywhere, stronger on rock faces.
-    normal=normalize(mix(normal,facet_normal,clamp(max(look_facet_floor,hard_face)*relief,0.0,1.0)));
-    float aspect=clamp(dot(source_normal,normalize(vec3(-0.58,0.65,0.49))),0.0,1.0);
-    // A few coherent facet values follow actual slope/aspect and source zones;
-    // only reflectance is discretized, never positions or canonical heights.
-    vec3 stone=mix(rock_shadow_color.rgb,rock_color.rgb,0.82);
-    // Canonical rock above still governs fixed forest priority; only visible
-    // reflectance uses the spatially bounded appearance-filtered G channel.
-    // Local neighbourhood mean on the fixed surface: crests vs. hollows.
-    float around=h;
-    if(use_fixed_surface && footprint<3.0) {
-        float r=6.0;
-        around=(fixed_surface_height_at(vp+vec2(r,0))+fixed_surface_height_at(vp-vec2(r,0))+fixed_surface_height_at(vp+vec2(0,r))+fixed_surface_height_at(vp-vec2(0,r)))*0.25;
-    }
-    // Rock on crests, peaks and steep high ground; green in valleys and on
-    // lower flanks. The blocky semantic G channel is not shown.
-    float crest_rock=smoothstep(10.0,140.0,h-around)*smoothstep(350.0,800.0,h);
-    float visible_rock=max(max(crest_rock,smoothstep(0.55,0.85,represented_slope)*smoothstep(900.0,1500.0,h)),smoothstep(1900.0,2900.0,h)*0.9);
-    // Crisp rock/grass boundary and per-facet stone tone (low-poly read).
-    float rock_v=smoothstep(0.38,0.62,visible_rock);
-    // Clear lit/shadow sides per facet (sun from WSW), as in the reference.
-    float sun_side=clamp(dot(facet_normal,normalize(vec3(-0.68,0.64,0.36))),0.0,1.0);
-    stone*=mix(0.62,1.18,sun_side*sun_side*relief+(1.0-relief)*0.6);
-    ground=mix(ground,stone,rock_v);
-    ground=mix(ground,snow_color.rgb,smoothstep(3300.0,4300.0,h)*0.85);
-    // Cavity darkening in valleys and hollows, from the same fixed surface.
-    if(use_fixed_surface && footprint<3.0) {
-        float cavity=smoothstep(0.0,260.0,around-h)-smoothstep(0.0,420.0,h-around)*0.35;
-        ground*=1.0-look_cavity_strength*cavity;
-    }
+    LandLook land=land_look(vp,h,weights,source_normal,facet_normal,footprint,relief,view_width,display_height_scale);
+    vec3 ground=land.albedo;
+    vec3 normal=land.normal;
+    if(!semantic_surface) ground=mix(ground,pow(texture(mapped_cover_tex,geo_uv).rgb,vec3(2.2)),0.25);
     // Actual directional light now uses represented_normal; no second baked
     // directional darkening competes with the sun or suppresses slope contrast.
     // Regional lowland variation is semantic, not a free cloud texture.
@@ -345,8 +267,6 @@ void fragment() {
     // suppressed the real shoreline color twice (confirmed frozen-scene A/B).
     float shore=(1.0-smoothstep(graphic_coast ? shore_span*0.2 : 0.0,shore_span,max(-material_distance,0.0)));
     ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : (0.60+weights.a*0.15)));
-    float carto=clamp(dot(source_normal,normalize(vec3(-0.45,0.78,0.4))),0.0,1.0);
-    ground*=mix(1.0,0.82+carto*0.29,cartographic_relief_strength*(1.0-relief));
     // Packed SDFs saturate around3km. Saturated open ocean must NEVER become
     // shallow water when the overview pixel footprint grows beyond that range.
     float shallow=(1.0-smoothstep(0.0,shallow_span,max(material_distance,0.0)));
@@ -373,6 +293,6 @@ void fragment() {
     EMISSION=water_emission*water;
     ROUGHNESS=mix(0.94,mix(0.70,0.42,wave_amount),water);
     SPECULAR=mix(0.15,mix(0.18,0.34,wave_amount),water);
-    AO=1.0-weights.r*0.12*(1.0-water);
+    AO=mix(land.ao,1.0,water);
     NORMAL=normalize((VIEW_MATRIX*vec4(normalize(mix(normal,wave_normal,water)),0.0)).xyz);
 }
