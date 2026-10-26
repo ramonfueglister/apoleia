@@ -2512,7 +2512,7 @@ func _delta_arm_points(a:Vector2,b:Vector2,amplitude:float,rng:RandomNumberGener
     for i in range(1,count+1):
         var t=float(i)/count
         var fade=smoothstep(0.0,0.12,t)*(1.0-0.55*t)
-        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.22*fade
+        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.14*fade
         pts.append(a.lerp(b,t)+normal*wobble)
     return pts
 
@@ -2555,7 +2555,7 @@ func _add_delta_arms() -> void:
         var mouths_out=[]
         var main_end=mouth+sea*14.0
         var arms=[[start,main_end,base_width,0.0]]
-        var branch_specs=[[0.30,-1.0,0.55],[0.52,1.0,0.45],[0.70,-1.0,0.35]]
+        var branch_specs=[[0.15,-1.0,0.55],[0.40,1.0,0.45],[0.62,-1.0,0.35]]
         var main_points=_delta_arm_points(start,main_end,float(region.ra),rng)
         river_sources.append(_delta_arm_source(main_points,base_width,str(region.name),0))
         mouths_out.append(mouth)
@@ -2563,7 +2563,7 @@ func _add_delta_arms() -> void:
         for spec in branch_specs:
             var at=int(float(main_points.size()-1)*float(spec[0]))
             var split:Vector2=main_points[at]
-            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(0.7,1.1)*(1.0-float(spec[0])*0.4)
+            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.3,1.7)*(1.0-float(spec[0])*0.5)
             var coast_end=mouth+tangent*lateral
             var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
             river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
@@ -2571,7 +2571,7 @@ func _add_delta_arms() -> void:
             if index==2:
                 # Second-order split of the first side arm.
                 var at2=int(float(pts.size()-1)*0.45);var split2:Vector2=pts[at2]
-                var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.45
+                var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.8
                 var pts2=_delta_arm_points(split2,coast2+sea*14.0,float(region.ra)*0.4,rng)
                 river_sources.append(_delta_arm_source(pts2,base_width*0.35,str(region.name),index));index+=1
                 mouths_out.append(coast2)
