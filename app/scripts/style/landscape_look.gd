@@ -8,13 +8,13 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     _environment = environment
     environment.background_color = Color("9fc2d6")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("b6cde6")
+    environment.ambient_light_color = Color("bcc8cc")
     environment.ambient_light_energy = 0.40
     environment.tonemap_mode = Environment.TONE_MAPPER_ACES
     environment.tonemap_exposure = 0.8
     environment.tonemap_white = 6.0
     environment.adjustment_enabled = true
-    environment.adjustment_saturation = 0.98
+    environment.adjustment_saturation = 1.16
     environment.adjustment_contrast = 1.08
     # Forward+ only; soft contact darkening under crowns and in valleys.
     environment.ssao_enabled = true
@@ -26,15 +26,15 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     # Aerial perspective: light depth haze towards the upper (far) screen edge.
     environment.fog_enabled = true
     environment.fog_mode = Environment.FOG_MODE_DEPTH
-    environment.fog_light_color = Color("b9d3e2")
+    environment.fog_light_color = Color("c8d4d2")
     environment.fog_light_energy = 1.0
     environment.fog_sun_scatter = 0.08
     environment.fog_density = 0.0
     environment.fog_depth_curve = 1.6
     environment.fog_aerial_perspective = 0.0
-    sun.rotation_degrees = Vector3(-40.0, -62.0, 0.0)
-    sun.light_color = Color("ffe9c8")
-    sun.light_energy = 1.92
+    sun.rotation_degrees = Vector3(-29.0, -58.0, 0.0)
+    sun.light_color = Color("ffdfae")
+    sun.light_energy = 2.15
     sun.light_angular_distance = 0.0
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
@@ -50,7 +50,7 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
     _environment.fog_depth_end = camera_distance * maxf(top * 1.35, 1.2)
     # Aerial perspective in the oblique views, none in the flat map.
     var oblique = clampf((50.0 - elevation_degrees) / 14.0, 0.0, 1.0)
-    _environment.fog_density = lerpf(0.0, 0.22, oblique)
+    _environment.fog_density = lerpf(0.0, 0.11, oblique)
 
 # Display-only river widening; source centrelines stay unchanged.
 const RIVER_WIDTH_SCALE = 1.6
