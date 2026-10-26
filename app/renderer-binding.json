@@ -44,8 +44,8 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-sourcev2-v19-mountain-r4-complete-r1-source-root",
-      "manifest_sha256": "5e207135a80276857e4fa671efd0fd7cc2cfc3a9f7fda7f2df127848afa2a112",
+      "path": "artifacts/render-data/forest-layout-claude-landcover-r1",
+      "manifest_sha256": "1de2bf78c71d80cb4a76751af0ea9f649f2d15a4217f3cb3d3d481b2421e4bda",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
       "record_source": "complete r4 bake against fixed-source-v2-mountain-r4 (164313 records), rebound to v3 source contract"
@@ -62,6 +62,6 @@
   },
   "clipmap": {
     "enabled": true,
-    "path": "artifacts/render-data/clipmap-tiles-r4-mountain-r4/manifest.json"
+    "path": "artifacts/render-data/clipmap-tiles-r5-etopo15/manifest.json"
   }
 }

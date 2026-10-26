@@ -37,6 +37,8 @@ func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMater
     if water_template==null:
         water_template=ShaderMaterial.new();water_template.shader=load("res://shaders/water.gdshader")
         load("res://scripts/water/water_style.gd").apply_to(water_template)
+        var look=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+        for key in look:water_template.set_shader_parameter(key,look[key])
     forest=tile_forest;stream.forest_builder=forest
     rivers=load("res://scripts/clipmap/tile_rivers.gd").new();rivers.configure(scene.river_sources);stream.river_builder=rivers
     grid=_grid()
@@ -117,7 +119,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         entry.land.visible=shown;entry.water.visible=shown and entry.marine
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
-            for tree in entry.forests:tree.set_instance_shader_parameter("representation_weight",float(fading_forests[id]))
+            for tree in entry.forests:forest.set_weight(tree,float(fading_forests[id]))
             entry.erase("state");entry.erase("camera")
         if not shown:continue
         entry.used=_frame;var d=_description(id);var parent_id=str(_draw[id].parent)
@@ -148,7 +150,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
                 material.set_shader_parameter(&"clipmap_family_blend",blend);material.set_shader_parameter(&"clipmap_focus",focus)
                 material.set_shader_parameter(&"clipmap_edge_mask",edge_mask);material.set_shader_parameter(&"clipmap_edge_width",edge_width)
                 material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
-                if node is MultiMeshInstance3D:node.set_instance_shader_parameter(&"representation_weight",blend)
+                if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
         # Camera uniforms: identical for every tile; write only values that
         # changed and only to shaders that declare them.
         var previous:Array=entry.get("camera",[])

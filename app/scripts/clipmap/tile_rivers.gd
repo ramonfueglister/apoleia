@@ -25,16 +25,28 @@ func build(id:String,manifest:Dictionary)->Dictionary:
     var rect=Rect2(origin,Vector2.ONE*span);var vertices=PackedVector3Array();var normals=PackedVector3Array();var uv=PackedVector2Array();var uv2=PackedVector2Array();var indices=PackedInt32Array()
     for source in sources:
         if not source.rect.intersects(rect,true):continue
-        for segment in source.segments:
+        var segs:Array=source.segments
+        for j in range(segs.size()):
+            var segment=segs[j]
             var a:Vector2=segment[0];var b:Vector2=segment[1];var portion=_clip(a,b,rect)
             if portion.x<0.:continue
             var delta=b-a;var length=delta.length();var tangent=delta/length;var side=Vector2(-tangent.y,tangent.x)
+            # Mitred joints: sides at the segment ends follow the neighbouring
+            # segments of the same polyline, so the ribbon has no notches.
+            var side_a=side;var side_b=side
+            if j>0 and Vector2(segs[j-1][1]).is_equal_approx(a):
+                var t0=(a-Vector2(segs[j-1][0])).normalized();var mitre=(side+Vector2(-t0.y,t0.x)).normalized()
+                side_a=mitre/maxf(mitre.dot(side),.5)
+            if j<segs.size()-1 and Vector2(segs[j+1][0]).is_equal_approx(b):
+                var t1=(Vector2(segs[j+1][1])-b).normalized();var mitre=(side+Vector2(-t1.y,t1.x)).normalized()
+                side_b=mitre/maxf(mitre.dot(side),.5)
             var count=maxi(1,mini(64,int(ceil(length*(portion.y-portion.x)/maxf(span/128.,.2)))))
             for step in range(count):
                 var ta=lerpf(portion.x,portion.y,float(step)/count);var tb=lerpf(portion.x,portion.y,float(step+1)/count)
                 var first=a+delta*ta;var last=a+delta*tb;var base=vertices.size()
                 for pair in [[first,-1.,ta],[first,1.,ta],[last,-1.,tb],[last,1.,tb]]:
-                    vertices.append(Vector3(pair[0].x,0.,pair[0].y));normals.append(Vector3(side.x,0.,side.y));uv.append(Vector2(float(segment[3])+length*pair[2],0.));uv2.append(Vector2(pair[1],float(segment[2])*1.6))
+                    var s_here:Vector2=side_a.lerp(side_b,float(pair[2]))
+                    vertices.append(Vector3(pair[0].x,0.,pair[0].y));normals.append(Vector3(s_here.x,0.,s_here.y));uv.append(Vector2(float(segment[3])+length*pair[2],0.));uv2.append(Vector2(pair[1],float(segment[2])*1.6))
                 indices.append_array([base,base+2,base+1,base+1,base+2,base+3])
     return {"vertices":vertices,"normals":normals,"uv":uv,"uv2":uv2,"indices":indices}
 func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Node3D:

@@ -159,9 +159,13 @@ float water_kind_at(vec2 p) {
     if(use_c2_domains) {
         if(water_distance_at(p)<=0.0) return 0.0;
         vec2 w=source_domain_weights(p);
-        if(w.y>0.0) return material_cohort_value_5(p,vec4(sample_water_kind(water_tile_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_associated_role_page)),0.0,0.0,0.0)).x;
-        if(w.x>0.0) return material_cohort_value_5(p,vec4(sample_water_kind(detail_water_tex,page_uv(p,(p-detail_world_min)/detail_world_size,fine_associated_role_page)),0.0,0.0,0.0)).x;
-        return material_cohort_value_5(p,vec4(sample_water_kind(water_tex,page_uv(p,(p-world_min)/world_size,context_associated_role_page)),0.0,0.0,0.0)).x;
+        // The smooth SDF owns the land/water contour; the class texture only
+        // tells sea (1) from inland water (2). A class texel still marked
+        // land inside the SDF water is sea (no class-texture staircase).
+        float kind=w.y>0.0 ? material_cohort_value_5(p,vec4(sample_water_kind(water_tile_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_associated_role_page)),0.0,0.0,0.0)).x
+            : (w.x>0.0 ? material_cohort_value_5(p,vec4(sample_water_kind(detail_water_tex,page_uv(p,(p-detail_world_min)/detail_world_size,fine_associated_role_page)),0.0,0.0,0.0)).x
+            : material_cohort_value_5(p,vec4(sample_water_kind(water_tex,page_uv(p,(p-world_min)/world_size,context_associated_role_page)),0.0,0.0,0.0)).x);
+        return kind<0.5 ? 1.0 : kind;
     }
     vec2 tile_uv=(p-water_tile_world_min)/water_tile_world_size;
     if(use_water_tile && inside_domain(tile_uv)) return material_cohort_value_5(p,vec4(sample_water_kind(water_tile_tex,page_uv(p,tile_uv,local_associated_role_page)),0.0,0.0,0.0)).x;

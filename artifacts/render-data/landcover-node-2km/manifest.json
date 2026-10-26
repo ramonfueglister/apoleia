@@ -1,0 +1,49 @@
+{
+  "revision": "landcover-node-2km-r1",
+  "width": 5163,
+  "height": 2392,
+  "world_min": [
+    -5286.959516530886,
+    -2223.9016046706583
+  ],
+  "world_size": [
+    10322.15905608411,
+    4781.388450041915
+  ],
+  "grid": "node centred, same as the fixed display atlas",
+  "source": "ESA WorldCover 2021 v200, CC BY 4.0, frozen COG overviews (data/raw/worldcover)",
+  "roman_adjustment": "built -> 0.5 crop + 0.5 grass; crop -> 0.25 forest + 0.30 grass + 0.45 crop",
+  "classes": {
+    "path": "classes.u8",
+    "channels": [
+      "forest",
+      "shrub",
+      "grass",
+      "crop",
+      "bare",
+      "snow",
+      "wetland",
+      "water"
+    ],
+    "sha256": "d10102de7e8aae0c83bbc4ed74a7bb55e7675c8af0c7cb0d2c09c9d3a5240384"
+  },
+  "atlas_surface_sha256": "73ef011f84bca78c6f1fcd584acfd1b203d14bb283cefa94c2540acdffb9eb27",
+  "look": {
+    "path": "look.rgba8",
+    "channels": [
+      "forest",
+      "bare_or_snow",
+      "dry",
+      "relief_position (128 + (h - ring mean 4.5 km)/3.2 m)"
+    ],
+    "sha256": "2aecde3a40e4cd6d48f7768d44eb6507e7fd3d1c1d8d75eae502aecc99453a61"
+  },
+  "land_means": {
+    "forest": 0.08897491544485092,
+    "shrub": 0.001599617418833077,
+    "grass": 0.07456440478563309,
+    "crop": 0.029770728200674057,
+    "bare": 0.13422973453998566,
+    "snow": 0.0001373455161228776
+  }
+}
