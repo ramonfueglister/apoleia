@@ -212,7 +212,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
-    float field_fade=(1.0-smoothstep(0.25,0.45,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
+    float field_fade=(1.0-smoothstep(0.35,0.7,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
     if(field_fade>0.01) {
         float ang=land_gnoise(p/40.0)*1.2;
         mat2 fr=mat2(vec2(cos(ang),sin(ang)),vec2(-sin(ang),cos(ang)));
@@ -221,10 +221,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec2 fh=land_hash2(fc+vec2(3.0,8.0));
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
-        ground=mix(ground,parcel,0.38*field_fade);
+        ground=mix(ground,parcel,0.55*field_fade);
         vec2 fe=abs(fract(fq)-0.5);
         float seam=smoothstep(0.43,0.49,max(fe.x,fe.y))*(1.0-smoothstep(0.08,0.2,footprint));
-        ground*=1.0+seam*0.10*field_fade;
+        ground*=1.0+seam*0.16*field_fade;
     }
 
     // Rock only on real crests and high ground; narrow ridges.
@@ -306,8 +306,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground*=mix(1.0,shade,overview*0.6);
         // Alps and other high ranges: a bright grey-white rock belt, peaks
         // near white, applied after the balance so it stays bright.
-        float alpine=smoothstep(900.0,1300.0,h);
-        vec3 belt=mix(vec3(0.62,0.60,0.55),vec3(0.86,0.84,0.80),smoothstep(1250.0,1700.0,h));
+        float alpine=smoothstep(700.0,1050.0,h);
+        vec3 belt=mix(vec3(0.62,0.60,0.55),vec3(0.86,0.84,0.80),smoothstep(1050.0,1500.0,h));
         belt*=mix(0.78,1.08,clamp((lit-0.45)*2.5,0.0,1.0));
         ground=mix(ground,belt,alpine*overview*0.9);
     }
