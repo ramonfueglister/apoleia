@@ -25,6 +25,9 @@ func build(id:String,manifest:Dictionary)->Dictionary:
     var rect=Rect2(origin,Vector2.ONE*span);var vertices=PackedVector3Array();var normals=PackedVector3Array();var uv=PackedVector2Array();var uv2=PackedVector2Array();var indices=PackedInt32Array()
     for source in sources:
         if not source.rect.intersects(rect,true):continue
+        # The thin display supplement only reaches levels 0-2; coarser tiles
+        # lie in views where rivers.gdshader discards it anyway.
+        if level>=3 and bool(source.get("supplement",false)):continue
         var segs:Array=source.segments
         for j in range(segs.size()):
             var segment=segs[j]

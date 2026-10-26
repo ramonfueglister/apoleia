@@ -27,6 +27,14 @@
     }
   },
   "visual_extensions": {
+    "rivers_supplement": {
+      "enabled": true,
+      "path": "artifacts/render-data/rivers-europe-supplement-r1/rivers.geojson",
+      "sha256": "490e9c98749727a0a106feeeaa741923809e89c1089fa470cc394dc9e0e3dcc1",
+      "manifest": "artifacts/render-data/rivers-europe-supplement-r1/manifest.json",
+      "manifest_sha256": "deb65cca72f01bba29f7efbf98b2494bd269075acf0b2452771df7e46d128893",
+      "status": "display only: Natural Earth v5.1.2 10m Europe rivers, scalerank <= 10, no canonical duplicates (tools/build_river_supplement.py); the dataset rivers stay unchanged"
+    },
     "clouds": {
       "enabled": false,
       "status": "weather system (weather_system.gd) owns clouds; the former bounded cloud volume (cloud_layer.gd) stays retired; explicit --clouds-enabled opts in, --clouds-disabled opts out"
