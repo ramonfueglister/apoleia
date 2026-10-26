@@ -468,11 +468,24 @@ func _tour_start_ready() -> bool:
 func _cache_request_evidence_enabled() -> bool:
     return tour or snapshot or telemetry_dir!="" or capture_dir!=""
 
+# Every artifacts/... or data/... path the product binding names, if absent under source_root.
+func _missing_bound_paths(value:Variant)->Array:
+    var result=[]
+    if value is Dictionary:
+        for item in value.values():result.append_array(_missing_bound_paths(item))
+    elif value is String and (value.begins_with("artifacts/") or value.begins_with("data/")):
+        var path=source_root.path_join(value)
+        if not FileAccess.file_exists(path) and not DirAccess.dir_exists_absolute(path):result.append(value)
+    return result
+
 func _load_dataset() -> bool:
     var binding=JSON.parse_string(FileAccess.get_file_as_string("res://renderer-binding.json"))
     if not binding is Dictionary or binding.get("schema","")!="landscape-product-binding-v1":
         push_error("Missing or invalid product renderer binding");return false
     product_binding=binding
+    var absent=_missing_bound_paths(product_binding)
+    if dataset_path=="" and not absent.is_empty():
+        push_error("Bound render data missing under "+source_root+": "+", ".join(absent)+". Large payloads are not in Git; run scripts/link-render-data <checkout-with-data> or pass --source-root <checkout-with-data>.");return false
     _configure_cloud_default()
     var path = dataset_path
     if path=="":
