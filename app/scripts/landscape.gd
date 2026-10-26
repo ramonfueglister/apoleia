@@ -1124,20 +1124,36 @@ func _resize_camera_contract() -> void:
     previous_lod_key=""
 
 func _clamp_camera_target() -> void:
-    var focus=_render_height(target)
-    var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,focus,_camera_height_interval())
-    var limits=CameraRig.target_limits(core_rect,context_rect,offsets,1.0-view_width/far_width)
-    camera_context_insufficient=limits.size.x<0 or limits.size.y<0
-    if camera_context_insufficient:
-        # Existing legacy dataset is knowingly incomplete until real context is
-        # integrated. Never pretend background is geographic water or crop core.
-        target=core_rect.get_center()
-    else:
-        var wanted=target
-        target=target.clamp(limits.position,limits.end)
-        if not wanted.is_equal_approx(target) and camera_clamp_events.size()<10000:
-            camera_clamp_events.append({"frame":frame_number,"wanted":[wanted.x,wanted.y],"clamped":[target.x,target.y],"reason":"full_ground_footprint_or_zoom_pan_limit"})
-    camera_footprint=Rect2(target+offsets.position,offsets.size)
+    var wanted=target
+    var heights=_camera_height_interval()
+    var freedom=1.0-view_width/far_width
+    var settled=false
+    camera_context_insufficient=false
+    # Clamping changes terrain focus height, hence the footprint's depth offset.
+    for iteration in range(8):
+        var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),heights)
+        var limits=CameraRig.target_limits(core_rect,context_rect,offsets,freedom)
+        if limits.size.x<0 or limits.size.y<0:
+            camera_context_insufficient=true
+            break
+        var clamped=target.clamp(limits.position,limits.end)
+        if target.is_equal_approx(clamped):
+            settled=true
+            break
+        target=clamped
+    if not settled and not camera_context_insufficient:
+        # Steep relief can defeat fixed-point iteration. This envelope contains
+        # the footprint for every focus height in the existing terrain interval.
+        var low=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,heights.x*relief,heights)
+        var high=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,heights.y*relief,heights)
+        var limits=CameraRig.target_limits(core_rect,context_rect,low.merge(high),freedom)
+        camera_context_insufficient=limits.size.x<0 or limits.size.y<0
+        if not camera_context_insufficient:target=wanted.clamp(limits.position,limits.end)
+    if camera_context_insufficient:target=core_rect.get_center()
+    if not wanted.is_equal_approx(target) and camera_clamp_events.size()<10000:
+        camera_clamp_events.append({"frame":frame_number,"wanted":[wanted.x,wanted.y],"clamped":[target.x,target.y],"reason":"full_ground_footprint_or_zoom_pan_limit"})
+    var final_offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),heights)
+    camera_footprint=Rect2(target+final_offsets.position,final_offsets.size)
 
 func _camera_height_interval() -> Vector2:
     if not displayed_height_bounds.is_empty() and relief>.000001:
