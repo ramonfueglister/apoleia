@@ -121,7 +121,8 @@ dürfen nicht durch eine überall identische Vegetation ersetzt werden.
 ## Bestätigte Referenzerweiterung
 
 Am 25.10.2026 hat der Nutzer die sechs einzeln gezeigten echten Urbek-/Victoria-3-
-Referenzscreenshots samt ihrer Zuordnung akzeptiert. [Der Katalog](references/screenshots/README.md)
+Referenzscreenshots samt ihrer Zuordnung akzeptiert. Am 26.10.2026 wurden die drei
+Victoria-3-Bilder auf Nutzerwunsch entfernt; die drei Urbek-Bilder bleiben. [Der Katalog](references/screenshots/README.md)
 bleibt dem Landschaftsauftrag untergeordnet; die sichtbaren modernen Gebäude,
 Straßen, Kulturlandschaften, politischen Farben und UI-Elemente werden nicht zu
 Kit-1-Features. Die Akzeptanz ist keine vorweggenommene Produktabnahme.
