@@ -70,6 +70,11 @@ void fragment() {
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
     ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-saum_scale)*0.6);
+    // Reference calibration (h~207 s0.80-0.83 v0.52-0.55): slightly darker,
+    // and less saturated in the continental view where AgX pushes chroma.
+    float far_sea=smoothstep(800.0,2800.0,view_width);
+    ALBEDO*=mix(1.04,1.12,far_sea);
+    ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),0.10+far_sea*0.06);
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
     float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
     // One continuous arc; only open mouths break it.
