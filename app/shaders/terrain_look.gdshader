@@ -235,11 +235,16 @@ void fragment() {
     float n_meso=look_fbm(vp/38.0+vec2(1.9,4.2),footprint/38.0);
     float n_micro=look_fbm(vp/7.5,footprint/7.5);
     float open_land=(1.0-weights.r)*(1.0-dry*0.6);
+    float variation_far=mix(0.35,1.0,smoothstep(0.7,1.0,relief));
     vec3 varied=mix(look_olive_color.rgb,look_lime_color.rgb,smoothstep(0.30,0.72,n_meso*0.65+n_macro*0.35));
-    ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength);
+    ground=mix(ground,varied,0.55*open_land*(1.0-dry)*look_variation_strength*variation_far);
     float ochre=smoothstep(0.56,0.82,n_macro*0.55+n_meso*0.45)*(1.0-weights.r)*look_variation_strength;
-    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.18,1.0-smoothstep(0.7,1.0,relief)));
+    ground=mix(ground,look_ochre_color.rgb,ochre*mix(0.40,0.12,1.0-smoothstep(0.7,1.0,relief)));
     ground*=1.0+(n_micro-0.5)*0.22*look_variation_strength;
+    // Dark, contiguous forest patches over hills and flanks; looser and
+    // lighter in the plains.
+    float hilly=smoothstep(120.0,650.0,h);
+    ground=mix(ground,vec3(0.072,0.118,0.036),weights.r*mix(0.25,0.60,hilly)*relief);
     // Overview (reduced relief): slightly deeper, greener land as in the reference.
     float overview=1.0-smoothstep(0.7,1.0,relief);
     ground=mix(ground,ground*vec3(0.80,0.86,0.86),overview);
