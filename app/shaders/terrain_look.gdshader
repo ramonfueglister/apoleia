@@ -264,8 +264,16 @@ void fragment() {
     }
     // The final ground/sea mix applies (1-water) once. Applying it here too
     // suppressed the real shoreline color twice (confirmed frozen-scene A/B).
-    float shore=(1.0-smoothstep(graphic_coast ? shore_span*0.2 : 0.0,shore_span,max(-material_distance,0.0)));
-    ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : (0.60+weights.a*0.15)));
+    // Broad sand beaches on flat, low coasts (clipmap path): 0.9-2 km, about
+    // 12 px up close; rock coasts and steep shores keep the narrow band.
+    float beach=0.0;
+    if(!graphic_coast) {
+        float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
+        beach=(1.0-smoothstep(40.0,80.0,h))*(1.0-smoothstep(0.04,0.12,coast_slope));
+        shore_span=mix(shore_span,clamp(contour_m_per_px*12.0,900.0,2000.0),beach);
+    }
+    float shore=(1.0-smoothstep(graphic_coast ? shore_span*0.2 : shore_span*0.55*beach,shore_span,max(-material_distance,0.0)));
+    ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : mix(0.60+weights.a*0.15,0.92,beach)));
     // Packed SDFs saturate around3km. Saturated open ocean must NEVER become
     // shallow water when the overview pixel footprint grows beyond that range.
     float shallow=(1.0-smoothstep(0.0,shallow_span,max(material_distance,0.0)));

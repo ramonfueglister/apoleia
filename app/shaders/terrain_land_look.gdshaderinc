@@ -22,6 +22,10 @@ uniform vec4 land_snow_color : source_color = vec4(0.95,0.94,0.91,1.0);
 uniform vec4 land_far_forest_color : source_color = vec4(0.259,0.361,0.231,1.0);
 uniform vec4 land_far_rock_color : source_color = vec4(0.784,0.737,0.627,1.0);
 uniform vec4 land_far_peak_color : source_color = vec4(0.933,0.922,0.894,1.0);
+uniform vec4 land_far_rock_shade_color : source_color = vec4(0.420,0.396,0.345,1.0);
+uniform vec4 land_far_dry_color : source_color = vec4(0.592,0.588,0.345,1.0);
+uniform vec4 land_forest_stipple_dark : source_color = vec4(0.176,0.259,0.165,1.0);
+uniform vec4 land_forest_stipple_light : source_color = vec4(0.310,0.420,0.227,1.0);
 // Tileable RGBA noise (generated at startup by landscape_look.gd, mipmapped):
 // a few fetches replace per-pixel hash noise. Features are ~8 texels.
 uniform sampler2D land_noise_tex : filter_linear_mipmap, repeat_enable;
@@ -152,9 +156,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float macro=nM.r;
     float meso=nm.r;
     vec3 grass=land_grass_color.rgb;
-    grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,meso)*0.7);
-    grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6);
-    grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85);
+    float var_amt=mix(1.0,0.25,overview);
+    grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,meso)*0.7*var_amt);
+    grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6*var_amt);
+    grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85*var_amt);
     if(footprint<1.2) {
         float patch=nz.a;
         float f=1.0-smoothstep(0.6,1.2,footprint);
@@ -170,7 +175,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     grass=mix(grass,mix(land_lime_color.rgb,land_grass_color.rgb,0.4),valley_floor*0.9);
     hill_country*=1.0-valley_floor;
     vec3 floor_tone=land_forest_floor_color.rgb;
-    vec3 ground=mix(grass,floor_tone,forest*mix(0.55,0.9,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
+    vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
     // Field mosaic on open plains: jittered rectangular parcels, each a
@@ -195,11 +200,11 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // ~1900 m sits near 1320 m here. Below it slopes stay green.
     float above_trees=smoothstep(1250.0,1450.0,h);
     float ridge_zone=smoothstep(650.0,1000.0,h);
-    float rock_field=max(smoothstep(45.0,170.0,crest)*ridge_zone,smoothstep(1350.0,1750.0,h));
+    float rock_field=max(smoothstep(90.0,200.0,crest)*smoothstep(900.0,1150.0,h),smoothstep(1350.0,1750.0,h));
     rock_field=max(rock_field,smoothstep(0.62,0.85,slope)*smoothstep(1100.0,1350.0,h));
     rock_field=max(rock_field,soft.g*above_trees);
     // Continuous ridge chains from the relief channel.
-    rock_field=max(rock_field,smoothstep(30.0,120.0,crest)*smoothstep(550.0,850.0,h));
+    rock_field=max(rock_field,smoothstep(120.0,220.0,crest)*smoothstep(1000.0,1200.0,h));
     float rock=smoothstep(0.40,0.62,rock_field+edge*0.25);
 
     // Normals: stable facet lattice on the represented form (near only).
@@ -235,7 +240,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float sun_side=clamp(dot(rock_facet,normalize(vec3(-0.676,0.643,-0.360))),0.0,1.0);
     vec3 stone=mix(land_rock_dark_color.rgb,land_rock_light_color.rgb,clamp(0.15+0.85*sun_side*sun_side*rel+0.5*(1.0-rel)+0.2*(rfid-0.5),0.0,1.0));
     float mid_fp=smoothstep(0.2,0.4,footprint)*(1.0-smoothstep(1.0,1.4,footprint));
-    stone*=mix(1.0,0.75,mid_fp*sun_side);
+    stone*=mix(0.85,0.50,mid_fp*sun_side);
     ground=mix(ground,stone,rock);
     ground=mix(ground,land_snow_color.rgb,smoothstep(2500.0,3000.0,h+edge*250.0)*0.85);
 
@@ -260,25 +265,32 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         float upland=smoothstep(300.0,800.0,h);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
         ground*=mix(vec3(1.0),vec3(1.150,1.000,1.070),overview);
+        // Plain colour from real land cover: crop/dry land calm tan-olive.
+        float far_dry=smoothstep(0.3,0.7,soft.b)*(1.0-upland);
+        ground=mix(ground,land_far_dry_color.rgb,far_dry*overview*0.75);
         vec3 shade_n=land_display_normal(source_normal,dhs*0.15);
         vec3 sun=normalize(vec3(-0.676,0.643,-0.360));
         float lit=dot(shade_n,sun);
         float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
         float ridge=clamp(crest/250.0,-1.0,1.0);
-        float shade=1.0+1.7*(lit-0.643)+0.22*max(ridge,0.0)*side-0.20*max(-ridge,0.0);
+        float shade=1.0+1.7*(lit-0.643)+0.40*max(ridge,0.0)*side-0.35*max(-ridge,0.0);
         // Dense forest darkest on shaded flanks.
         float shadow_side=clamp(0.5-side*0.5+(0.643-lit)*2.0,0.0,1.0);
-        ground=mix(ground,land_far_forest_color.rgb,far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
+        // Mountain forest stippled like painted crowns (pixel-scale noise).
+        float stipple=land_tnoise(p+vec2(91.0,13.0),max(footprint*0.2,0.05)).r;
+        vec3 crowns=mix(land_forest_stipple_dark.rgb,land_forest_stipple_light.rgb,smoothstep(0.55,0.8,stipple));
+        ground=mix(ground,mix(crowns,land_far_forest_color.rgb,shadow_side*0.5),far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
         ground*=mix(1.0,clamp(shade,0.5,1.4),overview);
         // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
         // compressed), shaded by side; only the highest summits white.
-        float alpine=smoothstep(950.0,1250.0,h);
-        vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1550.0,1850.0,h));
-        belt*=mix(0.62,1.12,clamp(0.5+0.5*side*max(ridge,0.3)+(lit-0.643),0.0,1.0));
+        // Real ranges only: high plateaus (Meseta, Anatolia) stay land.
+        float alpine=smoothstep(700.0,900.0,h)*smoothstep(0.03,0.10,slope);
+        vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1300.0,1700.0,h));
+        belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*0.92);
     }
     // Weit: only real ranges read as relief; lowland and hill country calm.
-    n=normalize(mix(n,vec3(0.0,1.0,0.0),0.7*overview*(1.0-smoothstep(450.0,750.0,h))));
+    n=normalize(mix(n,vec3(0.0,1.0,0.0),0.7*overview*(1.0-smoothstep(250.0,350.0,h))));
     o.albedo=ground;
 #ifdef LAND_LOOK_DEBUG_FLOOR
     o.albedo=mix(o.albedo,vec3(1.0,0.0,1.0),valley_floor);
