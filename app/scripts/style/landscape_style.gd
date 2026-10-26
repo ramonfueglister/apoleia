@@ -103,7 +103,17 @@ static func water_parameters() -> Dictionary:
 static func vegetation_parameters() -> Dictionary:
     return {"canopy_ambient_occlusion": 0.20, "leaf_warmth": 0.06}
 
-static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
+## Facet stages for drawn grove crowns, by view width (world units across the
+## viewport): [[view_width_below, detail], ...] ascending. Every stage draws the
+## same trees (positions, sizes, colours); detail only removes facets:
+## 0 authored 5-sided cone (25 tris), 1 five sides without the shoulder ring
+## (15), 2 four sides (12), 3 three sides (9), 4 one three-sided cone without
+## the under-ground skirt (3). Past the last entry crowns read
+## as the terrain's forest-ground tint (overview).
+static func grove_detail_view_widths() -> Array:
+    return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
+
+static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
     # pointed trees about a third of the former size, each with its own tone
     # (dark green <-> olive). Footprint stays inside the former crown radius,
@@ -122,23 +132,39 @@ static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
         var height=rng.randf_range(4.6,6.4)
         var radius=height*rng.randf_range(0.27,0.33)
-        _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)])
+        _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
-    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)
+    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")
     return mesh
 
-static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color)->void:
+static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
     var sides=5
     var levels=[-0.45,0.18,0.55,1.0]
     var widths=[0.55,1.0,0.58,0.0]
     var phase=rng.randf()*TAU
     var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
+    # Same RNG draws at every detail, so all stages show the same trees.
+    var jitter:Array=[]
+    for j in range(levels.size()):
+        var row:Array=[]
+        for i in range(sides):row.append(rng.randf_range(0.88,1.1))
+        jitter.append(row)
+    if detail>=4:
+        # Crowns of one to three pixels: a single three-sided cone from just
+        # below the ground to the tip (3 triangles); the skirt under the widest
+        # ring is sub-pixel at this size.
+        levels=[-0.1,levels[3]];widths=[widths[1],widths[3]];jitter=[jitter[1],jitter[3]];sides=3
+    elif detail>0:
+        # The straight cone from the widest ring to the tip passes within 3%
+        # of the shoulder ring, so dropping it keeps the silhouette.
+        levels=[levels[0],levels[1],levels[3]];widths=[widths[0],widths[1],widths[3]];jitter=[jitter[0],jitter[1],jitter[3]]
+        sides=[5,5,4,3][clampi(detail,0,3)]
     var rings:Array=[]
     for j in range(levels.size()):
         var ring:Array[Vector3]=[]
         for i in range(sides):
             var a=phase+TAU*float(i)/float(sides)
-            var r=radius*widths[j]*rng.randf_range(0.88,1.1)
+            var r=radius*widths[j]*float(jitter[j][i])
             ring.append(base+Vector3(cos(a)*r,levels[j]*height,sin(a)*r)+lean*maxf(levels[j],0.0))
         rings.append(ring)
     var center=base+Vector3(0,height*0.4,0)
@@ -147,7 +173,7 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
             var k=(i+1)%sides
             # Faces facing the sun side (west) slightly lighter: low-poly read.
             var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
-            var tone=color.lightened(0.10*facing) if j>0 else color.darkened(0.25)
+            var tone=color.lightened(0.10*facing) if j>0 or detail>=4 else color.darkened(0.25)
             _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
             if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 
