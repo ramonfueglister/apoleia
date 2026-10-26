@@ -275,7 +275,7 @@ func _distance_xz(a,b):
     if a==null or b==null:return null
     return Vector2(a.x,a.z).distance_to(Vector2(b.x,b.z))
 
-func _components(mesh:Mesh)->Array:
+func _components(mesh:Mesh)->Dictionary:
     # Grove-LOD tauscht Flaechen derselben Mesh-Instanz aus: Schluessel mit Vertexzahl.
     var id=str(mesh.get_instance_id())+":"+str(mesh.surface_get_array_len(0) if mesh.get_surface_count()>0 else 0)
     if mesh_cache.has(id):return mesh_cache[id]
