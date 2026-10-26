@@ -62,6 +62,6 @@
   },
   "clipmap": {
     "enabled": true,
-    "path": "artifacts/render-data/clipmap-tiles-r6-etopo15/manifest.json"
+    "path": "artifacts/render-data/clipmap-tiles-r7-etopo15/manifest.json"
   }
 }
