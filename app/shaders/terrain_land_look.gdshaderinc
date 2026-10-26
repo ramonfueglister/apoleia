@@ -210,13 +210,29 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 ground=mix(grass,floor_tone,forest*mix(0.55,0.9,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
+    // Field mosaic on open plains: jittered rectangular parcels, each a
+    // slightly different meadow/crop tone; parcel seams a touch lighter.
+    float field_fade=(1.0-smoothstep(0.25,0.45,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
+    if(field_fade>0.01) {
+        float ang=land_gnoise(p/40.0)*1.2;
+        mat2 fr=mat2(vec2(cos(ang),sin(ang)),vec2(-sin(ang),cos(ang)));
+        vec2 fq=(fr*p)/vec2(2.2,1.4);
+        vec2 fc=floor(fq);
+        vec2 fh=land_hash2(fc+vec2(3.0,8.0));
+        vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
+        parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
+        ground=mix(ground,parcel,0.38*field_fade);
+        vec2 fe=abs(fract(fq)-0.5);
+        float seam=smoothstep(0.43,0.49,max(fe.x,fe.y))*(1.0-smoothstep(0.08,0.2,footprint));
+        ground*=1.0+seam*0.10*field_fade;
+    }
 
     // Rock only on real crests and high ground; narrow ridges.
     // Atlas heights are log-compressed (H0 1900 m): the real tree line at
     // ~1900 m sits near 1320 m here. Below it slopes stay green.
     float above_trees=smoothstep(1250.0,1450.0,h);
-    float ridge_zone=smoothstep(900.0,1250.0,h);
-    float rock_field=max(smoothstep(70.0,220.0,crest)*ridge_zone,smoothstep(1500.0,1850.0,h));
+    float ridge_zone=smoothstep(650.0,1000.0,h);
+    float rock_field=max(smoothstep(45.0,170.0,crest)*ridge_zone,smoothstep(1350.0,1750.0,h));
     rock_field=max(rock_field,smoothstep(0.62,0.85,slope)*smoothstep(1100.0,1350.0,h));
     rock_field=max(rock_field,soft.g*above_trees);
     float rock=smoothstep(0.40,0.62,rock_field+edge*0.25);
@@ -242,7 +258,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     if(hills_amount*vis>0.001) {
         float hid;
         vec4 mh=land_micro_hills(p+vec2(31.0,17.0),land_micro_size,0.5+0.45*hills_amount,hid);
-        vec2 ms=mh.xy*vis*land_micro_height*hills_amount;
+        vec2 ms=mh.xy*vis*land_micro_height*hills_amount*0.5;
         n=normalize(n+vec3(-ms.x,0.0,-ms.y));
         ground*=1.0-mh.z*vis*0.30*hills_amount;
         ground*=1.0+(hid-0.5)*0.08*mh.w*vis*hills_amount;
@@ -276,13 +292,13 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground=mix(ground,land_forest_floor_color.rgb,far_forest*overview*0.45*(1.0-rock));
         float steep=smoothstep(0.02,0.25,slope);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.4),steep*overview*0.55);
-        float alpine=smoothstep(1350.0,1900.0,h);
+        float alpine=smoothstep(950.0,1450.0,h);
         ground=mix(ground,mix(land_rock_light_color.rgb,land_snow_color.rgb,smoothstep(1800.0,2400.0,h)),alpine*overview*0.85);
-        vec3 shade_n=land_display_normal(source_normal,dhs*1.5);
+        vec3 shade_n=land_display_normal(source_normal,dhs*0.7);
         float lit=dot(shade_n,normalize(vec3(-0.676,0.643,-0.360)));
         // Flat ground keeps its tone (lit=0.643 when level).
         float shade=clamp(1.0+1.4*(lit-0.643),0.5,1.35);
-        ground*=mix(1.0,shade,overview*0.9);
+        ground*=mix(1.0,shade,overview*0.6);
         // Far view tone balance against the reference (measured k-means).
         ground*=mix(vec3(1.0),vec3(0.620,0.660,0.620),overview);
     }

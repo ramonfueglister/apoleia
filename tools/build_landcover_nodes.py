@@ -51,7 +51,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 np.rint(np.clip(classes, 0, 1) * 255).astype(np.uint8).tofile(OUT / 'classes.u8')
 # Shader look: dry/golden = shrub/macchia, cereal fields and dry bare land.
 dry = np.clip(shrub + 0.8 * crop_r + 0.5 * bare + 0.15 * grass_r, 0, 1)
-ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r4'
+ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r5'
 am = json.loads((ATLAS / 'surface.json').read_text())
 q = np.fromfile(ATLAS / 'height.rg8', dtype=np.uint8).reshape(am['height'], am['width'], 2)
 h = (q[..., 0].astype(np.float32) * 256 + q[..., 1]) * .25 - 8192
