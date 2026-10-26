@@ -17,8 +17,8 @@ static func parameters() -> Dictionary:
         "water_style_inland": Color("216b96"),
         "water_style_river": Color("2f819a"),
         "water_style_edge_light": Color("c2d9c8"),
-        "water_style_wave_strength": 0.90,
-        "water_style_surface_strength": 0.090,
+        "water_style_wave_strength": 0.30,
+        "water_style_surface_strength": 0.035,
         "water_style_shore_accent": 0.42,
     }
 

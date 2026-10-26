@@ -9,8 +9,8 @@ uniform vec4 water_style_shoal : source_color = vec4(0.462745,0.733333,0.709804,
 uniform vec4 water_style_inland : source_color = vec4(0.129412,0.419608,0.588235,1.0);
 uniform vec4 water_style_river : source_color = vec4(0.184314,0.505882,0.603922,1.0);
 uniform vec4 water_style_edge_light : source_color = vec4(0.760784,0.850980,0.784314,1.0);
-uniform float water_style_wave_strength : hint_range(0.0,1.0) = 0.90;
-uniform float water_style_surface_strength : hint_range(0.0,0.1) = 0.090;
+uniform float water_style_wave_strength : hint_range(0.0,1.0) = 0.30;
+uniform float water_style_surface_strength : hint_range(0.0,0.1) = 0.035;
 uniform float water_style_shore_accent : hint_range(0.0,0.8) = 0.42;
 
 // Fade an existing world-space band before it becomes subpixel. The band does
@@ -217,7 +217,7 @@ void water_appearance(
     // screen-painted sun stripe. Coarse footprints raise roughness so broad
     // waves remain legible without glitter or a sparkling subpixel surface.
     float resolved=water_face_visibility(0.22,pixel_world)*close_detail;
-    roughness=mix(0.86,water_role==1 ? 0.30 : 0.48,detail);
+    roughness=mix(0.86,water_role==1 ? 0.42 : 0.48,detail);
     roughness+=water_role==1 ? (1.0-resolved)*detail*0.12 : 0.0;
     specular=(water_role==1 ? 0.55 : 0.38)*detail;
 
