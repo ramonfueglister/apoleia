@@ -78,7 +78,8 @@ void fragment(){
     // Muted mid teal-blue like the reference rivers.
     // Opaque mid teal-blue (reference #2d6f8f range), not the pale sky sheen.
     // Reference rivers ~#307884: teal (h185-194), v~0.5.
-    vec3 water=mix(w.albedo,vec3(0.020,0.12,0.15),0.97);
+    // Reference #297377-#377a86.
+    vec3 water=mix(w.albedo,vec3(0.022,0.16,0.17),0.97);
     // Current streaks along the flow direction.
     float along=dot(river_position,river_flow);
     float across=dot(river_position,vec2(-river_flow.y,river_flow.x));
@@ -88,7 +89,9 @@ void fragment(){
     water=mix(water,vec3(0.02,0.08,0.16),smoothstep(700.0,2500.0,view_width)*0.9);
     // Light sand bank along the outer edge (islands between delta arms).
     float near_view=1.0-smoothstep(600.0,1500.0,view_width);
-    ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.80,0.98,edge)*0.7*near_view);
+    // Bank tint only at the very edge (overlapping arm strips showed it as
+    // bright stripes inside the water).
+    ALBEDO=mix(water,vec3(0.66,0.55,0.29),smoothstep(0.93,1.0,edge)*0.35*near_view);
     EMISSION=vec3(0.0);
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;

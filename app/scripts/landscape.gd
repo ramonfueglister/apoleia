@@ -2504,6 +2504,25 @@ func _setup_rivers() -> void:
 # the main course): over the last ~12 km the course splits into 3-4 strongly
 # meandering arms of 60-100% width that fan to the coast; inlets of the
 # barrier spit sit at their ends. The main course stays the central arm.
+func _delta_arm_points(a:Vector2,b:Vector2,amplitude:float,rng:RandomNumberGenerator)->Array[Vector2]:
+    var direction=(b-a).normalized();var normal=direction.orthogonal()
+    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.0,3.2);var phase2=rng.randf()*TAU
+    var pts:Array[Vector2]=[a]
+    var count=48
+    for i in range(1,count+1):
+        var t=float(i)/count
+        var fade=smoothstep(0.0,0.12,t)*(1.0-0.55*t)
+        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.22*fade
+        pts.append(a.lerp(b,t)+normal*wobble)
+    return pts
+
+func _delta_arm_source(pts:Array[Vector2],width:float,name:String,k:int)->Dictionary:
+    var segments=[];var station=0.0;var minimum=pts[0];var maximum=pts[0]
+    for i in range(pts.size()-1):
+        segments.append([pts[i],pts[i+1],width,station,"delta:"+name+":"+str(k)]);station+=pts[i].distance_to(pts[i+1])
+        minimum=minimum.min(pts[i+1]);maximum=maximum.max(pts[i+1])
+    return {"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":name+" delta arm","synthetic_delta":true}
+
 func _add_delta_arms() -> void:
     for region in delta_regions:
         var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
@@ -2529,34 +2548,34 @@ func _add_delta_arms() -> void:
                 for q in [Vector2(segment[0]),Vector2(segment[1])]:
                     if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);start=q if root_distance<length*0.6 else start
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
-        var ends=[]
-        var arm_count=4
-        for k in range(arm_count):
-            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*1.3
-            ends.append(mouth+tangent*spread)
+        # Hierarchical branching: the main arm (width 1.0) runs to the mouth;
+        # side arms (0.35-0.6) leave it at different points, one of them
+        # splits again. Every arm meanders with a random phase, amplitude
+        # fading towards the coast.
         var mouths_out=[]
-        for k in range(arm_count):
-            # Monotonic fan: arm k keeps its lateral slot (offset grows from 0
-            # at the split to its coast position), small random meander below
-            # half the slot spacing, so arms diverge and never cross.
-            var end:Vector2=ends[k]+sea*14.0
-            var direction=(end-start).normalized();var normal=direction.orthogonal()
-            var span=start.distance_to(end)
-            var slot=float(region.ra)*1.3/float(arm_count-1)
-            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(1.6,2.4),rng.randf_range(3.5,5.0)]
-            var width=base_width*rng.randf_range(0.45,0.65)
-            var segments=[];var station=0.0
-            var previous=start;var count=48
-            var minimum=start;var maximum=start
-            for i in range(1,count+1):
-                var t=float(i)/count
-                # No meander at the shared split, so neighbours never cross.
-                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.75+sin(t*TAU*freqs[1]+phases[1])*0.25)*slot*0.4*smoothstep(0.15,0.45,t)*(1.0-smoothstep(0.85,1.0,t))
-                var p=start.lerp(end,t)+normal*wobble
-                segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
-                minimum=minimum.min(p);maximum=maximum.max(p);previous=p
-            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(region.name)+" delta arm","synthetic_delta":true})
-            mouths_out.append(ends[k])
+        var main_end=mouth+sea*14.0
+        var arms=[[start,main_end,base_width,0.0]]
+        var branch_specs=[[0.30,-1.0,0.55],[0.52,1.0,0.45],[0.70,-1.0,0.35]]
+        var main_points=_delta_arm_points(start,main_end,float(region.ra),rng)
+        river_sources.append(_delta_arm_source(main_points,base_width,str(region.name),0))
+        mouths_out.append(mouth)
+        var index=1
+        for spec in branch_specs:
+            var at=int(float(main_points.size()-1)*float(spec[0]))
+            var split:Vector2=main_points[at]
+            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(0.7,1.1)*(1.0-float(spec[0])*0.4)
+            var coast_end=mouth+tangent*lateral
+            var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
+            river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
+            mouths_out.append(coast_end)
+            if index==2:
+                # Second-order split of the first side arm.
+                var at2=int(float(pts.size()-1)*0.45);var split2:Vector2=pts[at2]
+                var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.45
+                var pts2=_delta_arm_points(split2,coast2+sea*14.0,float(region.ra)*0.4,rng)
+                river_sources.append(_delta_arm_source(pts2,base_width*0.35,str(region.name),index));index+=1
+                mouths_out.append(coast2)
+        var arm_count=mouths_out.size()
         # Spit inlets at the two outer arms.
         region.inlets=[mouths_out[0],mouths_out[arm_count-1]]
         region.arm_ends=mouths_out

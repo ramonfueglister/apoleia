@@ -410,8 +410,11 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             # carries no height outside source forest, so no slope term).
             # Closed forest clumps with meadows between: full above 0.5, rare
             # below 0.3; in between a 5-15 km noise decides (clumps/clearings).
+            # Strong clumps: the 5-15 km noise gates even dense forest, so cores
+            # fill up and clearings stay empty (same record budget).
             var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
-            var density=1.0 if share>=0.5 else (0.04 if share<0.3 else smoothstep(0.45,0.6,clump+(share-0.4)))
+            var gate=smoothstep(0.40,0.55,clump+(share-0.5)*0.6)
+            var density=0.0 if share<0.3 else gate*(1.0 if share>=0.5 else 0.55)
             if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
             # Dense forest: the wider grove variant closes the canopy.

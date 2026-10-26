@@ -107,8 +107,8 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Close view: broad soft turquoise -> teal -> blue (~6 km, patchy).
     // Clipmap water distance is encoded to +-4096 m and saturates beyond:
     // keep the gradient inside ~3.3 km and treat saturated texels as open sea.
-    float saum_w=mix(max(3300.0*(0.6+0.5*patch),px_m*1.5),px_m*1.2,far_view);
-    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.1)+coast_m*0.002;
+    float saum_w=mix(max(3800.0*(0.7+0.4*patch),px_m*1.5),px_m*1.2,far_view);
+    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),0.85)+coast_m*0.002;
     eff=coast_m>3900.0 ? 200.0 : eff;
     eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
