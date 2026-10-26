@@ -2948,7 +2948,9 @@ func _anchor_probes(definitions: Array=[]) -> Array:
         var y=_render_height(p)
         var pixel=camera.unproject_position(Vector3(p.x,y,p.y))
         var source_height=_height(p)/MODEL_SCALE
-        result.append({"anchor_id":anchor.get("id","unknown"),"source_lon":lon,"source_lat":lat,"source_surface_height_m":source_height,"water_kind":_water_kind(p),"canonical_model_position":[p.x,_height(p),p.y],"rendered_height_model":y,"observed_pixel":[pixel.x,pixel.y],"tile_id":_tile_id(Vector2(lon,lat)),"projection_observation":"Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition","in_viewport":not camera.is_position_behind(Vector3(p.x,y,p.y)) and get_viewport().get_visible_rect().has_point(pixel)})
+        # Native or parent-fallback block page behind source_surface_height_m.
+        var residency:Dictionary=canonical_v2.last_query.duplicate() if canonical_v2 and "last_query" in canonical_v2 else {}
+        result.append({"anchor_id":anchor.get("id","unknown"),"source_lon":lon,"source_lat":lat,"source_surface_height_m":source_height,"source_residency":residency,"water_kind":_water_kind(p),"canonical_model_position":[p.x,_height(p),p.y],"rendered_height_model":y,"observed_pixel":[pixel.x,pixel.y],"tile_id":_tile_id(Vector2(lon,lat)),"projection_observation":"Camera3D.unproject_position using actual camera and CPU evaluation of active terrain triangles; no framebuffer feature recognition","in_viewport":not camera.is_position_behind(Vector3(p.x,y,p.y)) and get_viewport().get_visible_rect().has_point(pixel)})
     return result
 
 
