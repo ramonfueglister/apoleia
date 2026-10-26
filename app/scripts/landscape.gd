@@ -1414,7 +1414,10 @@ func _process(delta: float) -> void:
     previous_frame_usec=now
     elapsed=float(now-start_usec)/1000000.0
     frame_number+=1
-    frame_samples.append(frame_wall_ms)
+    # The playable clipmap path does not retain the former per-frame review
+    # program. Explicit capture/telemetry callers still request those records.
+    var record_diagnostics=not clipmap_runtime or _cache_request_evidence_enabled() or trace_frames or diagnose_input
+    if record_diagnostics:frame_samples.append(frame_wall_ms)
     var counts={}
     for name in pipeline_monitors: counts[name]=Performance.get_monitor(pipeline_monitors[name])
     if counts!=last_pipeline_counts:
@@ -1449,13 +1452,13 @@ func _process(delta: float) -> void:
         _update_diorama_forest()
         _update_forest()
     if trace_frames and (frame_number<8 or frame_number%10==0): print("TRACE forest after ",frame_number," queue ",forest_queue.size()," wanted ",forest_wanted.size()," loaded ",forest_chunks.size()," cpu_ms ",forest_frame_stats[-1].cpu_ms if not forest_frame_stats.is_empty() else 0)
-    _record_motion()
+    if record_diagnostics:_record_motion()
     if warmup_frames_remaining>0:
         warmup_frames_remaining-=1
         if warmup_frames_remaining==0:
             warmup_completed_frame=frame_number
             warmup_startup_pipeline_counts=last_pipeline_counts.duplicate()
-    if frame_number%6==0 or current_fixture_waypoint!=null: _record_sample(delta)
+    if record_diagnostics and (frame_number%6==0 or current_fixture_waypoint!=null): _record_sample(delta)
     if capture_dir!="" and not snapshot and elapsed>=next_capture and not RenderingServer.frame_post_draw.is_connected(_capture_frame.bind(frame_number)):
         next_capture=elapsed+capture_interval
         RenderingServer.frame_post_draw.connect(_capture_frame.bind(frame_number),CONNECT_ONE_SHOT)
