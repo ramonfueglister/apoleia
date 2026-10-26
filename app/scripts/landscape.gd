@@ -775,7 +775,7 @@ func _setup_scene() -> void:
     if style_api: style_api.configure_environment(environment,sun)
     LandscapeLook.configure_environment(environment,sun)
     add_child(sun)
-    camera.projection=Camera3D.PROJECTION_ORTHOGONAL
+    camera.projection=Camera3D.PROJECTION_PERSPECTIVE
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
     camera.current=true
     add_child(camera)
@@ -1232,36 +1232,20 @@ func _resize_camera_contract() -> void:
     previous_lod_key=""
 
 func _clamp_camera_target() -> void:
-    var wanted=target
-    var heights=_camera_height_interval()
-    var freedom=1.0-view_width/far_width
-    var settled=false
-    camera_context_insufficient=false
-    # Clamping changes terrain focus height, hence the footprint's depth offset.
-    for iteration in range(8):
-        var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),heights)
-        var limits=CameraRig.target_limits(core_rect,context_rect,offsets,freedom)
-        if limits.size.x<0 or limits.size.y<0:
-            camera_context_insufficient=true
-            break
-        var clamped=target.clamp(limits.position,limits.end)
-        if target.is_equal_approx(clamped):
-            settled=true
-            break
-        target=clamped
-    if not settled and not camera_context_insufficient:
-        # Steep relief can defeat fixed-point iteration. This envelope contains
-        # the footprint for every focus height in the existing terrain interval.
-        var low=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,heights.x*relief,heights)
-        var high=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,heights.y*relief,heights)
-        var limits=CameraRig.target_limits(core_rect,context_rect,low.merge(high),freedom)
-        camera_context_insufficient=limits.size.x<0 or limits.size.y<0
-        if not camera_context_insufficient:target=wanted.clamp(limits.position,limits.end)
-    if camera_context_insufficient:target=core_rect.get_center()
-    if not wanted.is_equal_approx(target) and camera_clamp_events.size()<10000:
-        camera_clamp_events.append({"frame":frame_number,"wanted":[wanted.x,wanted.y],"clamped":[target.x,target.y],"reason":"full_ground_footprint_or_zoom_pan_limit"})
-    var final_offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),heights)
-    camera_footprint=Rect2(target+final_offsets.position,final_offsets.size)
+    var focus=_render_height(target)
+    var offsets=CameraRig.perspective_footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,CameraRig.perspective_fov(relief),relief,focus,_camera_height_interval())
+    var limits=CameraRig.target_limits(core_rect,context_rect,offsets,1.0-view_width/far_width)
+    camera_context_insufficient=limits.size.x<0 or limits.size.y<0
+    if camera_context_insufficient:
+        # Existing legacy dataset is knowingly incomplete until real context is
+        # integrated. Never pretend background is geographic water or crop core.
+        target=core_rect.get_center()
+    else:
+        var wanted=target
+        target=target.clamp(limits.position,limits.end)
+        if not wanted.is_equal_approx(target) and camera_clamp_events.size()<10000:
+            camera_clamp_events.append({"frame":frame_number,"wanted":[wanted.x,wanted.y],"clamped":[target.x,target.y],"reason":"full_ground_footprint_or_zoom_pan_limit"})
+    camera_footprint=Rect2(target+offsets.position,offsets.size)
 
 func _camera_height_interval() -> Vector2:
     if not displayed_height_bounds.is_empty() and relief>.000001:
@@ -1277,7 +1261,7 @@ func _refresh_displayed_height_bounds() -> void:
         interval=Vector2(fixed_surface.policy.height_range_source_equivalent_m[0],fixed_surface.policy.height_range_source_equivalent_m[1])*.001
         status="conservative_fixed_display_world_bound"
     if viewport_size.x>0 and viewport_size.y>0 and view_width>0:
-        var offsets=CameraRig.footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,relief,_render_height(target),interval*display_height_scale)
+        var offsets=CameraRig.perspective_footprint_offsets(view_width,viewport_size.aspect(),elevation_degrees,CameraRig.perspective_fov(relief),relief,_render_height(target),interval*display_height_scale)
         var footprint=Rect2(target+offsets.position,offsets.size)
         if tin_surface:
             for id in tin_surface.active:
@@ -1309,25 +1293,39 @@ func get_displayed_height_range() -> Dictionary:
     return displayed_height_bounds.duplicate(true)
 
 func _place_camera() -> void:
+    # Perspective: the visible ground width at the focus equals view_width.
+    # camera.size is kept as the equivalent ortho height for consumers that
+    # read a world-per-pixel scale at the focus (clouds).
     camera.size=view_width/viewport_size.aspect()
     var angle=deg_to_rad(elevation_degrees)
     var focus=Vector3(target.x,_render_height(target),target.y)
+    var fov=CameraRig.perspective_fov(relief)
+    camera.projection=Camera3D.PROJECTION_PERSPECTIVE
+    camera.fov=fov
+    camera_distance=CameraRig.perspective_distance(view_width,viewport_size.aspect(),fov)
     var heights=_camera_height_interval()*relief
-    heights.y+=.1 # Conservative near crown asset bound, separate from terrain.
-    if not diorama_policy.is_empty() and view_width>float(diorama_policy.near_width): heights.y+=float(diorama_policy.visible_height_max)*relief
+    heights.y+=float(diorama_policy.get("visible_height_max",0.0))*relief+.1
     if cloud_layer and cloud_layer.enabled:
         var cloud_altitude=float(cloud_layer.get_display_altitude()) if cloud_layer.has_method("get_display_altitude") else float(cloud_layer.cloud_base_height)
         heights.y=maxf(heights.y,cloud_altitude)
     if weather and weather.is_active(): heights.y=maxf(heights.y,weather.get_display_altitude())
-    var half_view_height=view_width/viewport_size.aspect()*.5
-    var minimum_depth=(heights.x-focus.y)/sin(angle)-half_view_height/tan(angle)
-    var maximum_depth=(heights.y-focus.y)/sin(angle)+half_view_height/tan(angle)
-    camera_distance=maxf(.1,maximum_depth+.05)
-    camera.near=.001
-    camera.far=maxf(.2,camera_distance-minimum_depth+.05)
     var back=Vector3(0,sin(angle),cos(angle))
     var up=Vector3(0,cos(angle),-sin(angle))
+    # Near plane just above the highest displayed geometry along the view.
+    var clearance=(focus.y+back.y*camera_distance)-heights.y
+    camera.near=clampf(clearance*.5,camera_distance*.002,camera_distance*.5)
+    camera.far=camera_distance*24.0
     camera.transform=Transform3D(Basis(Vector3.RIGHT,up,back),focus+back*camera_distance)
+
+# Target that keeps `anchor` under `pixel`. A camera translation moves the
+# picked ground point by the same amount (up to terrain height), so a few
+# fixed-point passes through the actual ray pick converge.
+func _anchored_target(anchor: Vector2,pixel: Vector2) -> Vector2:
+    var start=target
+    var place=func(t:Vector2):target=t;_place_camera()
+    var result=CameraRig.solve_anchor(anchor,pixel,target,place,Callable(self,"_pick_ground"),maxf(view_width*.002,.001))
+    target=start;_place_camera()
+    return result
 
 func _update_forest_grove_lod() -> void:
     if forest_grove_lod_arrays.is_empty() or forest_compact_meshes.size()!=2:return
@@ -1378,7 +1376,7 @@ func _update_camera() -> void:
     if marine_material:
         for material in _marine_materials():material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     if marine_material: _bind_visible_river_mouths()
-    LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.size*.5,elevation_degrees)
+    LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.fov,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
     if forest_compact_canopy_material:forest_compact_canopy_material.set_shader_parameter("relief",relief)
@@ -1450,10 +1448,10 @@ func _unhandled_input(event: InputEvent) -> void:
         # as a drag, through the same terrain intersection. No device factor.
         var pixel=event.position
         var anchor=_pick_ground(pixel)
-        target=CameraRig.anchored_target(anchor,pixel-event.delta,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+        target=_anchored_target(anchor,pixel-event.delta)
         zoom_anchor_valid=false
     if movement!=Vector2.ZERO and drag_anchor_valid:
-        target=CameraRig.anchored_target(drag_anchor,event.position,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+        target=_anchored_target(drag_anchor,event.position)
     _clamp_camera_target()
     _place_camera()
 
@@ -1492,7 +1490,7 @@ func _process(delta: float) -> void:
         # Re-solve against the actual new LOD and relief, rather than a flat
         # plane. Two passes include the implicit focus-height and clamp change.
         for iteration in range(2):
-            target=CameraRig.anchored_target(zoom_anchor,zoom_anchor_pixel,viewport_size,view_width,elevation_degrees,Callable(self,"_render_height"),target,_camera_height_interval()*relief)
+            target=_anchored_target(zoom_anchor,zoom_anchor_pixel)
             _clamp_camera_target()
             _place_camera()
             _update_lod()

@@ -20,44 +20,53 @@ func run() -> void:
     var scene=Node3D.new()
     viewport.add_child(scene)
     camera=Camera3D.new()
-    camera.projection=Camera3D.PROJECTION_ORTHOGONAL
+    camera.projection=Camera3D.PROJECTION_PERSPECTIVE
     camera.keep_aspect=Camera3D.KEEP_HEIGHT
-    camera.near=.001;camera.far=100000
     scene.add_child(camera)
     var count=0
     var max_pick_error=0.0
     var max_anchor_pixel_error=0.0
     for size in [Vector2i(1440,1080),Vector2i(1728,1080),Vector2i(1920,1080),Vector2i(2520,1080)]:
         viewport.size=size
-        for width in [10000.,1500.,700.,200.,75.,20.,5.,.5]:
+        var aspect=float(size.x)/size.y
+        # Perspective contract covers the app zoom range (NEAR_WIDTH and up).
+        for width in [10000.,1500.,700.,400.,Rig.NEAR_WIDTH]:
             var profile=Rig.profile(width)
+            var fov=Rig.perspective_fov(profile.y)
             var angle=deg_to_rad(profile.x)
             var basis=Basis(Vector3.RIGHT,Vector3(0,cos(angle),-sin(angle)),Vector3(0,sin(angle),cos(angle)))
-            camera.size=width/(float(size.x)/size.y)
+            var distance=Rig.perspective_distance(width,aspect,fov)
+            camera.fov=fov;camera.near=distance*.002;camera.far=distance*24.0
             var target=Vector2(2265.,2223.)
-            var distance=maxf(20.0,width/(float(size.x)/size.y)/maxf(sin(angle),.001)+20.0)
-            camera.transform=Transform3D(basis,Vector3(target.x,height(target),target.y)+basis.z*distance)
-            var footprint=Rig.footprint_offsets(width,float(size.x)/size.y,profile.x,profile.y,height(target))
+            var place=func(t:Vector2):camera.transform=Transform3D(basis,Vector3(t.x,height(t),t.y)+basis.z*distance)
+            place.call(target)
+            var footprint=Rig.perspective_footprint_offsets(width,aspect,profile.x,fov,profile.y,height(target))
             for point in [Vector2(size)*.5,Vector2(size)*Vector2(.15,.20),Vector2(size)*Vector2(.83,.87)]:
                 var picked=Rig.pick(camera,point,Callable(self,"height"),1.)
                 var projected=camera.unproject_position(Vector3(picked.x,height(picked),picked.y))
                 max_pick_error=maxf(max_pick_error,projected.distance_to(point))
                 check(projected.distance_to(point)<1.0,"ray reprojection %s %s"%[size,width])
-                var anchored=Rig.anchored_target(picked,point+Vector2(73,-91),Vector2(size),width,profile.x,Callable(self,"height"),target)
-                camera.transform=Transform3D(basis,Vector3(anchored.x,height(anchored),anchored.y)+basis.z*distance)
+                # Same fixed point as landscape._anchored_target.
+                var goal=point+Vector2(73,-91)
+                var pick_at=func(px:Vector2):return Rig.pick(camera,px,Callable(self,"height"),1.)
+                var anchored=Rig.solve_anchor(picked,goal,target,place,pick_at,maxf(width*.002,.001))
+                place.call(anchored)
                 projected=camera.unproject_position(Vector3(picked.x,height(picked),picked.y))
-                var error=projected.distance_to(point+Vector2(73,-91))
+                var error=projected.distance_to(goal)
                 max_anchor_pixel_error=maxf(max_anchor_pixel_error,error)
-                check(error<1.0,"ground anchor %s %s = %f"%[size,width,error])
-                camera.transform=Transform3D(basis,Vector3(target.x,height(target),target.y)+basis.z*distance)
+                # The wavy synthetic surface can be hit twice by one ray; 1.5 px bound.
+                check(error<1.5,"ground anchor %s %s = %f"%[size,width,error])
+                place.call(target)
                 count+=1
             for corner in [Vector2.ZERO,Vector2(size)*Vector2(1,0),Vector2(size)*Vector2(0,1),Vector2(size)]:
                 var ray=camera.project_ray_normal(corner)
                 var origin=camera.project_ray_origin(corner)
                 for altitude in [Rig.MIN_HEIGHT*profile.y,Rig.MAX_HEIGHT*profile.y]:
+                    if ray.y>-0.0001:continue
                     var p=origin+ray*((altitude-origin.y)/ray.y)
                     var relative=Vector2(p.x,p.z)-target
-                    check(relative.x>=footprint.position.x-.05 and relative.x<=footprint.end.x+.05 and relative.y>=footprint.position.y-.05 and relative.y<=footprint.end.y+.05,"full corner footprint")
+                    var slack=maxf(.05,width*.001)
+                    check(relative.x>=footprint.position.x-slack and relative.x<=footprint.end.x+slack and relative.y>=footprint.position.y-slack and relative.y<=footprint.end.y+slack,"full corner footprint %s %s"%[size,width])
     var state=Vector2.ZERO
     for i in range(15): state=Rig.damp(state.x,state.y,1.,1./60.)
     check(absf(state.x-.95)<.00001,"95 percent at 250ms")

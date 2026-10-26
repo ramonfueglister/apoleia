@@ -39,17 +39,18 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     sun.shadow_blur = 1.0
     sun.shadow_opacity = 0.82
 
-static func update_view(sun: DirectionalLight3D, view_width: float, camera_distance: float, half_view_height: float, elevation_degrees: float) -> void:
+static func update_view(sun: DirectionalLight3D, view_width: float, camera_distance: float, fov_degrees: float, elevation_degrees: float) -> void:
     # No crowns are drawn beyond ~1600 model units; terrain casts no shadow.
     sun.shadow_enabled = view_width < 1700.0
-    if not _environment or half_view_height <= 0.0: return
-    # Ortho camera: ground depth grows from bottom to top of the screen.
-    var spread = half_view_height / maxf(tan(deg_to_rad(elevation_degrees)), 0.2)
-    _environment.fog_depth_begin = maxf(camera_distance - spread * 0.1, 0.0)
-    _environment.fog_depth_end = camera_distance + spread * 2.2
-    # Strongest haze at oblique regional views, almost none in the flat map.
+    if not _environment or camera_distance <= 0.0: return
+    # Perspective: depth of the upper screen edge relative to the focus.
+    var a = deg_to_rad(elevation_degrees)
+    var top = sin(a) / maxf(sin(a - deg_to_rad(fov_degrees) * 0.5), 0.05)
+    _environment.fog_depth_begin = camera_distance * 0.92
+    _environment.fog_depth_end = camera_distance * maxf(top * 1.35, 1.2)
+    # Aerial perspective in the oblique views, none in the flat map.
     var oblique = clampf((50.0 - elevation_degrees) / 14.0, 0.0, 1.0)
-    _environment.fog_density = lerpf(0.0, 0.16, oblique)
+    _environment.fog_density = lerpf(0.0, 0.22, oblique)
 
 # Display-only river widening; source centrelines stay unchanged.
 const RIVER_WIDTH_SCALE = 1.6
