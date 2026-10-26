@@ -135,6 +135,17 @@ def main():
  if cr.get('enabled'):
   REF=Area(raster(cr['reference']))
   ctx={k for k in base if kinds[k]!='sea' and REF.count(*grow(Tree.bounds(BASE,*k),cr['min_distance_m']))==0}
+ # empty land: no place (any epoch, any source, manual list) within the 25 km cell grown by empty_land_margin_m
+ empty=set()
+ if tr.get('empty_land_max_size_m'):
+  occ=set();m=tr.get('empty_land_margin_m',0)
+  for f in ('places.csv','places-manual.csv'):
+   if (OUT/f).exists():
+    for p in csv.DictReader((OUT/f).open()):
+     x,z=xz(float(p['lon']),float(p['lat']))
+     for rr in range(math.floor((float(z)-m)/BASE),math.floor((float(z)+m)/BASE)+1):
+      for cc in range(math.floor((float(x)-m)/BASE),math.floor((float(x)+m)/BASE)+1):occ.add((rr,cc))
+  empty={k for k in base if kinds[k]!='sea' and k not in occ}
  # how coarse may a block be?  (K27 classes and context land; urban refinement comes later)
  sr=rules['sea']
  def may_leaf(l,r,c):
@@ -146,6 +157,9 @@ def main():
    if clear is None:return False
    lc,_=A.land(x0-clear,z0-clear,x1+clear,z1+clear);return lc==0
   if l==L25-1 and ks<= {'desert','mountain'} and ks:return True
+  if ks=={'desert'} and s_<=tr.get('desert_max_size_m',50000):return True
+  em=tr.get('empty_land_max_size_m',0)
+  if s_<=em and 'sea' not in ks and all(q in empty for q in sub):return True
   if ctx and all(q in ctx for q in sub):
    clear=cr['clearance_m'].get(str(s_))
    return clear is not None and REF.count(*grow((x0,z0,x1,z1),clear))==0

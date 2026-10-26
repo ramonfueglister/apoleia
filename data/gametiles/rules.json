@@ -30,11 +30,11 @@
   "port_bonus": 0.05,
   "min_importance": 0.02,
   "major_city_count": 35,
-  "budget": 16500
+  "budget": 23000
  },
  "context_land": {
   "note": "Option, nicht entschieden (Default aus = reines K27): Land ohne Bezug zum Reich 117 (kein Reichsland im um min_distance_m erweiterten Tile) darf gröber werden; clearance_m je Kantenlänge = nötiger Abstand des ganzen Blocks zum Reichsland.",
-  "enabled": true,
+  "enabled": false,
   "reference": "data/reference/roman-117.geojson",
   "min_distance_m": 100000,
   "clearance_m": {
