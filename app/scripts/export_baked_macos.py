@@ -200,7 +200,7 @@ def plan(repository, engine, output):
     output = Path(output).resolve()
     work = output.with_name(output.name + '.export-work')
     stage = work / 'project'
-    commands = [[str(engine), '--path', str(stage), '--rendering-method', 'forward_plus',
+    commands = [[str(engine), '--windowed', '--resolution', '640x360', '--position', '0,0', '--path', str(stage), '--rendering-method', 'forward_plus',
                  '--rendering-driver', 'metal', '--export-pack', PRESET,
                  str(work / 'bundle/Contents/Resources/apoleia.pck')]]
     return inv, binding, {'schema_version': 'metal-baked-pck-editorhost-v1',
