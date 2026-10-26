@@ -28,7 +28,9 @@ var _gpu_bytes=0
 var _frame=0
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
-var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missing":0,"upload_ms":0.}
+# refining: tiles that want finer children but are not fully faded to them yet;
+# missing can be 0 between levels while a fade is still running.
+var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missing":0,"refining":0,"upload_ms":0.}
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
     owner=scene;terrain_template=terrain;water_template=water
@@ -83,6 +85,7 @@ func _visit(id:String)->void:
     if ready:alpha=move_toward(alpha,1. if refine else 0.,_dt/.22)
     elif alpha>0.:alpha=1. # existing complete children remain until Parent ready
     _alpha[id]=alpha
+    if refine and alpha<1. and not children.is_empty():metrics.refining+=1
     if alpha>0. and ready:
         if alpha<1.:_pins[id]=true
         for child in children:
@@ -97,7 +100,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     if not _uploads.is_empty() and _gpu_bytes+int(_uploads[0].bytes)<=GPU_LIMIT:
         _upload(_uploads.pop_front());metrics.uploads+=1
     metrics.upload_ms=float(Time.get_ticks_usec()-started)/1000.
-    _wanted={};_pins={};_draw={};var root_id=str(stream.manifest.root);_pins[root_id]=true;_request(root_id,1000000.)
+    _wanted={};_pins={};_draw={};metrics.refining=0;var root_id=str(stream.manifest.root);_pins[root_id]=true;_request(root_id,1000000.)
     if nodes.has(root_id):_visit(root_id);metrics.root_ready=true
     for id in _draw:
         _pins[id]=true;var parent=stream.parent(id)
