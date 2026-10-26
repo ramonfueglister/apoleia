@@ -44,7 +44,7 @@ eigene Annahmen und werden kalibriert.
 | S32 | **Wachstum logistisch:** dP = r × P × (1 − P/K) pro Monat, r je Epoche, Modifikatoren nur als Faktoren. P ist eine Kommazahl. Liegt P über K, schrumpft P über dieselbe Formel. |
 | S33 | **Teilen:** P_kind = P × K_kind / ΣK_kinder (sonst nach Landfläche; ohne Land kein Teilen wegen Bevölkerung). Rest exakt auf das letzte Kind in ID-Reihenfolge. So behalten alle Kinder dasselbe P/K. Zusammenlegen: P = ΣP. |
 | S34 | **Performance:** Werte als Arrays pro Tile, nur aktive Tiles (kein Meer/Ödland ohne Bevölkerung) werden gerechnet. |
-| S35 | **Übergang bis zum Landwirtschafts-Subsystem (Ramon, 26.10.2026):** K pro 25-km-Zelle = HYDE-3.3-Bevölkerung 200 n. Chr. / 0,7, Städte (Hanson 117) zusätzlich. S31 (K aus Ackerland × Ertrag) gilt weiter als Ziel und folgt, sobald es regionale Erträge gibt. Begründung: Mit einer Einheitszahl pro km² Ackerland starten 5 552 Tiles über K (run-1). |
+| S35 | **Übergang bis zum Landwirtschafts-Subsystem (Ramon, 26.10.2026):** K pro 25-km-Zelle = HYDE-3.3-Landbevölkerung (`rurc`) 200 n. Chr. / 0,7, Städte (Hanson 117) zusätzlich; Start = Landbevölkerung + Städte (HYDE kennt fast keine Stadtbevölkerung). S31 (K aus Ackerland × Ertrag) gilt weiter als Ziel und folgt, sobald es regionale Erträge gibt. Begründung: Mit einer Einheitszahl pro km² Ackerland starten 5 552 Tiles über K (run-1). |
 
 ## Ausdrücklich später (je eigenes Subsystem)
 

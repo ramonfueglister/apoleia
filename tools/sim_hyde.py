@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Aggregate HYDE 3.3 (200 AD) population and cropland onto the 25 km cells.
 
-Reads data/hyde33/popc_200AD_crop.asc.gz and cropland_200AD_crop.asc.gz (ESRI
-ASCII grids, 1/12 degree, people per cell and km² per cell) and writes
-sim/inputs/hyde25.csv (row, col, crop_km2, pop200) for every 25 km cell with
-land in sim/inputs/cells25.csv.
+Reads data/hyde33/popc_200AD_crop.asc.gz, cropland_200AD_crop.asc.gz and, if
+present, rurc_200AD_crop.asc.gz (ESRI ASCII grids, 1/12 degree, people per cell
+and km² per cell) and writes sim/inputs/hyde25.csv (row, col, crop_km2, pop200
+[, rural200]) for every 25 km cell with land in sim/inputs/cells25.csv.
 
 Each HYDE cell is split into 4×4 sub-points that are projected and binned, so
 values follow the cell boundaries closely. Values that land on a cell without
@@ -89,11 +89,18 @@ def main():
     hyde = ROOT / "data/hyde33"
     pop, pop_lost = bin_grid(*read_asc(hyde / "popc_200AD_crop.asc.gz"), land, domain)
     crop, crop_lost = bin_grid(*read_asc(hyde / "cropland_200AD_crop.asc.gz"), land, domain)
+    rural = None
+    if (hyde / "rurc_200AD_crop.asc.gz").exists():
+        rural, rural_lost = bin_grid(*read_asc(hyde / "rurc_200AD_crop.asc.gz"), land, domain)
+        print(f"rural200 in game area: {sum(rural.values()):,.0f} (outside/unplaced: {rural_lost:,.0f})")
     with open(ROOT / "sim/inputs/hyde25.csv", "w", newline="") as g:
         w = csv.writer(g)
-        w.writerow(["row", "col", "crop_km2", "pop200"])
+        w.writerow(["row", "col", "crop_km2", "pop200"] + (["rural200"] if rural else []))
         for key in sorted(land):
-            w.writerow([key[0], key[1], round(crop.get(key, 0.0), 3), round(pop.get(key, 0.0), 1)])
+            row = [key[0], key[1], round(crop.get(key, 0.0), 3), round(pop.get(key, 0.0), 1)]
+            if rural:
+                row.append(round(rural.get(key, 0.0), 1))
+            w.writerow(row)
     print(f"pop200 in game area: {sum(pop.values()):,.0f} (outside/unplaced: {pop_lost:,.0f})")
     print(f"cropland in game area: {sum(crop.values()):,.0f} km² (outside/unplaced: {crop_lost:,.0f})")
 

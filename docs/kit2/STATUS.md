@@ -10,5 +10,5 @@
 | Startraster und IDs | `implementiert` (Kit 1) | `data/gametiles/`, `docs/kit1/GAMETILES.md` (Branch des Tile-Threads) |
 | Prototyp Subsystem 1 | `implementiert` | `sim/`, 7 Tests; [Lauf 0](run-0/README.md) Schätzwerte, [Lauf 1](run-1/README.md) HYDE: 500 Jahre deterministisch, 2:1-balanciert, adaptiv = statisch |
 | Eingabewerte Subsystem 1 | Startbevölkerung `belegt` (HYDE 3.3), K und r `geschätzt` | [ESTIMATES.md](ESTIMATES.md) |
-| B08 Performance | `implementiert`, Mac-Messung `offen` | Tick p50 0,32 ms, p95 ~0,5 ms (Cloud); Spitzen bis 6 ms nur in Monaten mit Tausenden Teilungen |
-| Datensatz Startbevölkerung 180 n. Chr. | `implementiert` | HYDE 3.3 Baseline 200 n. Chr., CC BY 4.0, `data/hyde33/`, `tools/sim_hyde.py` |
+| B08 Performance | `implementiert`, Mac-Messung `offen` | Tick p50 0,35 ms, p95 ~0,53 ms (Cloud); Spitzen bis 5 ms nur in Monaten mit Tausenden Teilungen |
+| Datensatz Startbevölkerung 180 n. Chr. | `implementiert` | HYDE 3.3 Baseline 200 n. Chr. (popc, rurc, urbc, cropland), CC BY 4.0, `data/hyde33/`, `tools/sim_hyde.py` |

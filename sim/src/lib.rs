@@ -117,6 +117,9 @@ pub struct Cell {
 pub struct Hyde {
     pub crop_km2: f64,
     pub pop: f64,
+    /// Rural population (HYDE `rurc`); when present, cities come from the
+    /// city list instead of HYDE's urban share (S35).
+    pub rural: Option<f64>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -193,7 +196,10 @@ impl World {
             if p.k_from_cropland {
                 return h.crop_km2 * p.people_per_cropland_km2;
             }
-            return (h.pop / p.start_fill - urban).max(0.0);
+            return match h.rural {
+                Some(r) => r / p.start_fill,
+                None => (h.pop / p.start_fill - urban).max(0.0),
+            };
         }
         let usable = (1.0 - c.frac_bare - c.frac_snow).max(0.0) * (1.0 - p.highland_penalty * c.frac_above_1500m).max(0.0);
         c.land_km2 * usable * p.cropland_share * p.people_per_cropland_km2
@@ -206,21 +212,34 @@ impl World {
         let estimate = self.params.start_fill * local + urban;
         if k.level <= CELL_LEVEL {
             let n = 1i32 << (CELL_LEVEL - k.level);
-            let mut hyde = None;
+            let (mut any, mut total, mut rural, mut all_rural) = (false, 0.0, 0.0, true);
             for r in k.row * n..(k.row + 1) * n {
                 for c in k.col * n..(k.col + 1) * n {
                     if let Some(h) = self.cells.get(&(r, c)).and_then(|cell| cell.hyde) {
-                        *hyde.get_or_insert(0.0) += h.pop;
+                        any = true;
+                        total += h.pop;
+                        match h.rural {
+                            Some(v) => rural += v,
+                            None => all_rural = false,
+                        }
                     }
                 }
             }
-            return hyde.unwrap_or(estimate);
+            if !any {
+                return estimate;
+            }
+            // With rural data: HYDE countryside plus the listed cities.
+            return if all_rural { rural + urban } else { total };
         }
         let ck = k.at_level(CELL_LEVEL);
         let Some(h) = self.cells.get(&(ck.row, ck.col)).and_then(|cell| cell.hyde) else {
             return estimate;
         };
         let (cl, cu, cland) = self.capacity_parts(ck);
+        if let Some(rural) = h.rural {
+            let share = if cl > 0.0 { local / cl } else if cland > 0.0 { self.capacity_parts(k).2 / cland } else { 0.0 };
+            return rural * share + urban;
+        }
         if cl + cu > 0.0 {
             h.pop * (local + urban) / (cl + cu)
         } else if cland > 0.0 {

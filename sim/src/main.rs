@@ -76,7 +76,8 @@ fn main() {
         for r in read_csv(&hyde_path) {
             let rc = (num(&r, "row") as i32, num(&r, "col") as i32);
             if let Some(cell) = cells.get_mut(&rc) {
-                cell.hyde = Some(Hyde { crop_km2: num(&r, "crop_km2"), pop: num(&r, "pop200") });
+                let rural = r.get("rural200").and_then(|v| v.parse().ok());
+                cell.hyde = Some(Hyde { crop_km2: num(&r, "crop_km2"), pop: num(&r, "pop200"), rural });
             }
         }
     }
