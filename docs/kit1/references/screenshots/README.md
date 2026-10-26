@@ -4,11 +4,11 @@
 **Status:** Herkunft und sichtbare Bildeigenschaften `erforscht`; Zuordnung zu den
 bereits bestätigten Vorgaben `spezifiziert`. Keine Spielimplementierung.
 
-Sechs tatsächliche, von den jeweiligen offiziellen Steam-Shop-Galerien angebotene
-Spiel-Screenshots sind lokal enthalten: drei aus **Urbek City Builder**, drei aus
-**Victoria 3**. Es sind unveränderte JPG-Dateien aus den dort als `screenshots`
+Drei tatsächliche, von der offiziellen Steam-Shop-Galerie angebotene
+Spiel-Screenshots aus **Urbek City Builder** sind lokal enthalten. Die früheren
+drei Victoria-3-Screenshots wurden am 26.10.2026 auf Nutzerwunsch entfernt. Es sind unveränderte JPG-Dateien aus den dort als `screenshots`
 geführten Bildlisten, keine KI-Bilder, keine Trailer-Standbilder und keine selbst
-aufgenommenen Kit-1-Laufzeitbilder. Alle sechs gelieferten Dateien wurden visuell
+aufgenommenen Kit-1-Laufzeitbilder. Alle drei gelieferten Dateien wurden visuell
 betrachtet. Der genaue Spielbuild und der individuelle Screenshotautor sind von
 den Quellen nicht angegeben.
 
@@ -17,18 +17,17 @@ den Quellen nicht angegeben.
 Die IDs K01–K16 beziehen sich auf [die bestätigten Entscheidungen](../../decisions.md).
 Die vom Nutzer bereitgestellte Landschaftsreferenz im
 [STYLE_GUIDE](../STYLE_GUIDE.md) bestimmt Palette, Materialwirkung und
-Detaildichte. **Urbek bleibt nachrangiger Kontext für vereinfachte Formen;
-Victoria 3 veranschaulicht geografische Übersicht und räumliche Ausschnitte.**
+Detaildichte. **Urbek bleibt nachrangiger Kontext für vereinfachte Formen.**
 Urbek-Formen bleiben gegenüber der Nutzer-Primärreferenz nachrangig.
 Die Katalogzuordnungen sind illustrative Quellenbeobachtungen, keine
 eigenständigen ästhetischen Anforderungen. Bei jeder Stilabweichung hat die
 Nutzer-Primärreferenz Vorrang.
 
-Die sechs Bilder sind **keine maßstabsgetreue Zoomsequenz desselben Ortes**.
+Die drei Bilder sind **keine maßstabsgetreue Zoomsequenz desselben Ortes**.
 Insbesondere zeigen sie keinen kontinuierlichen Übergang, keine feste Kamera
 über die Zeit und keine geografische Konsistenz zwischen LOD-Stufen. Diese
 Eigenschaften müssen später in Kit 1 durch echte zusammenhängende Aufnahmen und
-Messungen geprüft werden. Die sechs Referenzbilder und ihre Zuordnung wurden nach der direkten
+Messungen geprüft werden. Die Referenzbilder und ihre Zuordnung wurden nach der direkten
 Darstellung im Chat vom Nutzer akzeptiert (25.10.2026). Diese Akzeptanz betrifft
 die Referenzrichtung; sie ist keine Freigabe der späteren Kit-1-Grafik.
 
@@ -37,17 +36,12 @@ die Referenzrichtung; sie ist keine Freigabe der späteren Kit-1-Grafik.
 | U01 — Urbek — kantige Nahansicht | Nachrangiger Kontext für klare Silhouetten und einfache Formen; nicht maßgeblich für die aktuelle Terrain-Detaildichte | K03, K08, K09, K10 |
 | U02 — Urbek — Vegetation und lesbare Flächen | Die Baum-Silhouetten, reduzierte Oberflächenwirkung und Trennung größerer Flächen dienen als Referenz für unsere natürliche Landschaft | K08, K10, K11, K12 |
 | U03 — Urbek — Übersicht, Küste und Wald | Übernehmen wollen wir die visuelle Trennung von Wasser, Ufer und Vegetation sowie die Lesbarkeit wiederholter einfacher Formen | K06, K08, K10 |
-| V01 — Victoria 3 — weite Kartenübersicht | Referenz für geografische Orientierung und ruhige, weit herausgezoomte Darstellung | K04, K05, K06 |
-| V02 — Victoria 3 — kontinentales Relief | Die erkennbare Hierarchie großer Küsten- und Gebirgsformen ist eine Kompositionsreferenz | K04, K05, K06, K11 |
-| V03 — Victoria 3 — regionale Küste und Gelände | Referenz für das Zusammenspiel von Küstenkontur, Inseln, Gelände und Vegetationsverteilung bei näherem Zoom | K04, K05, K06, K11 |
 
 ## Quellen, Dateitreue und Verwendung
 
 - Urbek: [offizieller Steam-Shop](https://store.steampowered.com/app/1411740/Urbek_City_Builder/), Entwickler **Fridus**, Publisher **RockGame S.A.** laut Shop.
-- Victoria 3: [offizieller Steam-Shop](https://store.steampowered.com/app/529340/Victoria_3/), Entwickler **Paradox Development Studio**, Publisher **Paradox Interactive** laut Shop.
-- Screenshot-IDs und Download-URLs stammen aus der jeweiligen offiziellen
-  Steam-Shop-API: [Urbek-Metadaten](https://store.steampowered.com/api/appdetails?appids=1411740&l=english),
-  [Victoria-3-Metadaten](https://store.steampowered.com/api/appdetails?appids=529340&l=english).
+- Screenshot-IDs und Download-URLs stammen aus der offiziellen
+  Steam-Shop-API: [Urbek-Metadaten](https://store.steampowered.com/api/appdetails?appids=1411740&l=english).
 - Abruf aller Dateien: **2026-10-25**. Original des gelieferten Steam-CDN-Formats:
   JPEG, **1920 × 1080 Pixel**, keine lokale Beschneidung, Retusche, Umfärbung oder
   Neukodierung. SHA-256 unten bezieht sich auf genau diese heruntergeladenen Bytes.
@@ -103,51 +97,6 @@ die Referenzrichtung; sie ist keine Freigabe der späteren Kit-1-Grafik.
 [unveränderte Quelldatei](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1411740/ss_ded4375f8a676200c9fe9fb0101a277c3e7c883a.1920x1080.jpg?t=1770544830).  
 **Datei:** `urbek-coast-city-overview.jpg` · 525182 Bytes · JPEG 1920 × 1080.  
 **SHA-256:** `b9025c4ab96334fa82fe3364572d72c39030de6a23ba271234de5d3c709140b8`.
-
-## V01 — Victoria 3 — weite Kartenübersicht
-
-![Victoria 3 — weite Kartenübersicht](vic3-map-overview.jpg)
-
-**Sichtbar:** Der Kartenausschnitt umfasst Europa und angrenzende Räume; Großbritannien, Skandinavien und das Mittelmeer sind über ihre Küstenkonturen erkennbar. Reliefdetails sind gegenüber der regionalen Landschaft stark zurückgenommen.
-
-**Für Kit 1 übernehmen (K04, K05, K06):** Referenz für geografische Orientierung und ruhige, weit herausgezoomte Darstellung. Für Kit 1 sollen erkennbare Land-Wasser-Formen diese Aufgabe in natürlichen Landschaftsfarben erfüllen.
-
-**Nicht übernehmen / Grenze:** Politische Flächenfarben, Grenzen, Beschriftungen, Wappen, Schifffahrtslinien und die gesamte Oberfläche übernehmen wir nicht. Das Bild ist eine kontinentale Übersicht, KEIN Screenshot der gesamten Projektregion und keine gewünschte Papierkarten-Stilvorlage.
-
-**Herkunft:** Steam-App `529340`, Galerie-Screenshot-ID `0`;
-[unveränderte Quelldatei](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/4a1da4d1f072d157c25645ca8459c6573a0d5671/ss_4a1da4d1f072d157c25645ca8459c6573a0d5671.1920x1080.jpg?t=1791467998).  
-**Datei:** `vic3-map-overview.jpg` · 662887 Bytes · JPEG 1920 × 1080.  
-**SHA-256:** `a9771a536b793bfd20903d46ff241d18c04fa3ff553406ca145696904da3ea8a`.
-
-## V02 — Victoria 3 — kontinentales Relief
-
-![Victoria 3 — kontinentales Relief](vic3-continental-terrain.jpg)
-
-**Sichtbar:** Großbritannien, Frankreich und die Iberische Halbinsel sind zusammen mit Küsten, Pyrenäen und Alpen auf einem weiten Geländeauschnitt lesbar. Wasserflächen und Höhenformen strukturieren den Raum.
-
-**Für Kit 1 übernehmen (K04, K05, K06, K11):** Die erkennbare Hierarchie großer Küsten- und Gebirgsformen ist eine Kompositionsreferenz. Kit 1 übersetzt diese Orientierung in kantige Urbek-artige Geometrie und natürliche Farben, mit dokumentierter Modellskalierung und kontrollierter Detailreduktion.
-
-**Nicht übernehmen / Grenze:** Die malerisch detaillierten Materialien, politischen Tönungen, leuchtenden Grenzen, Ortsnamen, Symbole und UI sind ausgeschlossen. Keine Reliefhöhe, Distanz oder geografische Genauigkeit aus dem Screenshot als Messwert übernehmen.
-
-**Herkunft:** Steam-App `529340`, Galerie-Screenshot-ID `10`;
-[unveränderte Quelldatei](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/ccfc86b923d134949d072bbb3559fa8d10cfc8c0/ss_ccfc86b923d134949d072bbb3559fa8d10cfc8c0.1920x1080.jpg?t=1791467998).  
-**Datei:** `vic3-continental-terrain.jpg` · 804038 Bytes · JPEG 1920 × 1080.  
-**SHA-256:** `b257290657b1ca9607cf75cd6d7440073d8489a00397d5a13addfe046f5ba2ad`.
-
-## V03 — Victoria 3 — regionale Küste und Gelände
-
-![Victoria 3 — regionale Küste und Gelände](vic3-coast-region.jpg)
-
-**Sichtbar:** Buchten, Inseln, eine enge Wasserverbindung, Hügel und Vegetationsflächen sind gemeinsam im regionalen Ausschnitt sichtbar. Land und Wasser bleiben als zusammenhängende Formen lesbar.
-
-**Für Kit 1 übernehmen (K04, K05, K06, K11):** Referenz für das Zusammenspiel von Küstenkontur, Inseln, Gelände und Vegetationsverteilung bei näherem Zoom. Die vereinfachte Kit-1-Darstellung soll diese räumliche Lesbarkeit erhalten.
-
-**Nicht übernehmen / Grenze:** Siedlungen, Häfen, Landwirtschaft, Straßen, Schiffe, politische Markierungen, Zahlen und UI gehören nicht in Kit 1. Wassertexturen und feine Bodendetails sind nicht unser Stil. Die Karte belegt weder den Zustand von 180 n. Chr. noch heutige geodätische Genauigkeit.
-
-**Herkunft:** Steam-App `529340`, Galerie-Screenshot-ID `6`;
-[unveränderte Quelldatei](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/529340/67b8a722d24c05abe47444df64ad6201f893678d/ss_67b8a722d24c05abe47444df64ad6201f893678d.1920x1080.jpg?t=1791467998).  
-**Datei:** `vic3-coast-region.jpg` · 790529 Bytes · JPEG 1920 × 1080.  
-**SHA-256:** `eca3f3ea88e023ce2bd8fa55529e1f61d528c533ab2a643a0cd01390ee96e9d1`.
 
 ## Unsichtbare Tile-Grundlage, nicht aus diesen Bildern abgeleitet
 

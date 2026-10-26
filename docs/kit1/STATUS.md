@@ -144,6 +144,9 @@ vorbehalten.
   Der Befund validiert Kit-Konsistenz und Hilfswerkzeugverträge, keine Landschaft,
   Produktfunktion, historische Genauigkeit oder Leistung.
 
+- 26.10.2026: Auf Nutzerwunsch die drei Victoria-3-Screenshots (V01–V03) samt
+  Katalog-, Quellen-, Inhalts- und Prüfeinträgen entfernt; Urbek U01–U03 bleiben.
+
 - 25.10.2026: Auf ausdrücklichen Nutzerauftrag drei Urbek- und drei Victoria-3-
   Screenshots aus offiziellen Steam-Galerien ergänzt. Alle sechs JPGs tatsächlich
   visuell betrachtet, unverändert gespeichert und mit Quellen/Hashes dokumentiert.

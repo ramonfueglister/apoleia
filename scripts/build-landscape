@@ -3,15 +3,16 @@
 set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-mkdir -p "$ROOT_DIR/artifacts/runtime"
-if [ -f "$ROOT_DIR/data/gameworld-v1/landscape.json" ]; then
-    python3 "$ROOT_DIR/app/scripts/pack_model_uploads.py"
-else
-    python3 "$ROOT_DIR/app/scripts/pack_height.py"
-    python3 "$ROOT_DIR/app/scripts/pack_water_distance.py"
+if [ "${1:-}" = "--baked-pck" ]; then
+    shift
+    exec python3 "$ROOT_DIR/app/scripts/export_baked_macos.py" "$@"
 fi
+mkdir -p "$ROOT_DIR/artifacts/runtime"
+# Current renderer-binding.json selects prepared SourceV2/clipmap data.
+# Data preparation is an explicit offline step, never part of app startup.
 "${GODOT_BIN:-godot}" --headless --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/build.log" --editor --import --quit
 "${GODOT_BIN:-godot}" --headless --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/parse.log" --script res://scripts/landscape.gd --check-only
 if [ "${1:-}" = "--package" ]; then
-    exec python3 "$ROOT_DIR/app/scripts/package_macos.py"
+    shift
+    exec python3 "$ROOT_DIR/app/scripts/package_macos.py" "$@"
 fi

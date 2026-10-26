@@ -1,3 +1,17 @@
+#include "res://shaders/terrain_clipmap.gdshaderinc"
+uniform bool terrain_pages=false;
+uniform vec4 context_height_page=vec4(0.,0.,1.,1.);
+uniform vec4 fine_height_page=vec4(0.,0.,1.,1.);
+uniform vec4 context_associated_role_page=vec4(0.,0.,1.,1.);
+uniform vec4 fine_associated_role_page=vec4(0.,0.,1.,1.);
+uniform vec4 local_associated_role_page=vec4(0.,0.,1.,1.);
+uniform vec4 context_water_distance_page=vec4(0.,0.,1.,1.);
+uniform vec4 fine_water_distance_page=vec4(0.,0.,1.,1.);
+uniform vec4 local_water_distance_page=vec4(0.,0.,1.,1.);
+uniform vec4 context_surface_weights_page=vec4(0.,0.,1.,1.);
+uniform vec4 fine_surface_weights_page=vec4(0.,0.,1.,1.);
+uniform vec4 local_surface_weights_page=vec4(0.,0.,1.,1.);
+vec2 page_uv(vec2 p,vec2 legacy,vec4 page){return terrain_pages ? (p-page.xy)/page.zw : legacy;}
 // Canonical generalized model sampling. No geometric noise or source invention.
 // Main and detail domains are separate: core textures must never stretch over context.
 uniform bool height_packed = true;
@@ -46,6 +60,8 @@ vec2 source_domain_weights(vec2 p) {
     return vec2(c2_domain_weight(p,detail_world_min,detail_world_size,fine_inner_world_min,fine_inner_world_size),c2_domain_weight(p,water_tile_world_min,water_tile_world_size,local_inner_world_min,local_inner_world_size));
 }
 
+#include "res://shaders/terrain_material_pages.gdshaderinc"
+
 bool inside_domain(vec2 uv) { return all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0))); }
 float decode_model_height(sampler2D tex, ivec2 cell, bool packed) {
     vec2 code=texelFetch(tex,clamp(cell,ivec2(0),textureSize(tex,0)-ivec2(1)),0).rg;
@@ -57,10 +73,11 @@ float bilinear_model_height(sampler2D tex,vec2 uv,bool packed) {
     return mix(mix(decode_model_height(tex,c,packed),decode_model_height(tex,c+ivec2(1,0),packed),f.x),mix(decode_model_height(tex,c+ivec2(0,1),packed),decode_model_height(tex,c+ivec2(1,1),packed),f.x),f.y);
 }
 float model_height_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_water_kind(p)==1.0 ? -clipmap_bathymetry(p) : clipmap_source_height(p);
     vec2 uv=(p-detail_world_min)/detail_world_size;
-    if(use_c2_domains) return mix(bilinear_model_height(elevation_tex,(p-world_min)/world_size,height_packed),bilinear_model_height(detail_elevation_tex,uv,detail_height_packed),source_domain_weights(p).x);
-    if(use_detail_elevation && inside_domain(uv)) return bilinear_model_height(detail_elevation_tex,uv,detail_height_packed);
-    return bilinear_model_height(elevation_tex,(p-world_min)/world_size,height_packed);
+    if(use_c2_domains) return material_cohort_value_0(p,vec4(mix(bilinear_model_height(elevation_tex,page_uv(p,(p-world_min)/world_size,context_height_page),height_packed),bilinear_model_height(detail_elevation_tex,page_uv(p,uv,fine_height_page),detail_height_packed),source_domain_weights(p).x),0.0,0.0,0.0)).x;
+    if(use_detail_elevation && inside_domain(uv)) return material_cohort_value_0(p,vec4(bilinear_model_height(detail_elevation_tex,page_uv(p,uv,fine_height_page),detail_height_packed),0.0,0.0,0.0)).x;
+    return material_cohort_value_0(p,vec4(bilinear_model_height(elevation_tex,page_uv(p,(p-world_min)/world_size,context_height_page),height_packed),0.0,0.0,0.0)).x;
 }
 // Canonical source normal: differentiate composed H, including C2 weights.
 vec3 source_model_normal_at(vec2 p,float step_model) {
@@ -115,38 +132,41 @@ float classified_water_distance(sampler2D tex,vec2 uv,vec2 extent) {
     return wet ? closest : -closest;
 }
 float water_distance_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_water_distance(p);
     if(use_c2_domains) {
         vec2 w=source_domain_weights(p);
-        float parent=mix(bilinear_model_distance(water_distance_tex,(p-world_min)/world_size),bilinear_model_distance(detail_water_distance_tex,(p-detail_world_min)/detail_world_size),w.x);
-        return mix(parent,bilinear_model_distance(water_tile_distance_tex,(p-water_tile_world_min)/water_tile_world_size),w.y);
+        float parent=mix(bilinear_model_distance(water_distance_tex,page_uv(p,(p-world_min)/world_size,context_water_distance_page)),bilinear_model_distance(detail_water_distance_tex,page_uv(p,(p-detail_world_min)/detail_world_size,fine_water_distance_page)),w.x);
+        return material_cohort_value_1(p,vec4(mix(parent,bilinear_model_distance(water_tile_distance_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_water_distance_page)),w.y),0.0,0.0,0.0)).x;
     }
     vec2 tile_uv=(p-water_tile_world_min)/water_tile_world_size;
-    if(use_water_tile_distance && inside_domain(tile_uv)) return bilinear_model_distance(water_tile_distance_tex,tile_uv);
+    if(use_water_tile_distance && inside_domain(tile_uv)) return material_cohort_value_1(p,vec4(bilinear_model_distance(water_tile_distance_tex,page_uv(p,tile_uv,local_water_distance_page)),0.0,0.0,0.0)).x;
     vec2 uv=(p-detail_world_min)/detail_world_size;
     if(use_detail_water && inside_domain(uv)) {
-        if(use_detail_water_distance) return bilinear_model_distance(detail_water_distance_tex,uv);
-        return classified_water_distance(detail_water_tex,uv,detail_world_size);
+        if(use_detail_water_distance) return material_cohort_value_1(p,vec4(bilinear_model_distance(detail_water_distance_tex,page_uv(p,uv,fine_water_distance_page)),0.0,0.0,0.0)).x;
+        return material_cohort_value_1(p,vec4(classified_water_distance(detail_water_tex,uv,detail_world_size),0.0,0.0,0.0)).x;
     }
     uv=(p-world_min)/world_size;
-    if(use_water_distance) return bilinear_model_distance(water_distance_tex,uv);
-    return classified_water_distance(water_tex,uv,world_size);
+    if(use_water_distance) return material_cohort_value_1(p,vec4(bilinear_model_distance(water_distance_tex,page_uv(p,uv,context_water_distance_page)),0.0,0.0,0.0)).x;
+    return material_cohort_value_1(p,vec4(classified_water_distance(water_tex,uv,world_size),0.0,0.0,0.0)).x;
 }
 float water_kind_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_water_kind(p);
     if(use_c2_domains) {
         if(water_distance_at(p)<=0.0) return 0.0;
         vec2 w=source_domain_weights(p);
-        // The smooth SDF owns the land/water contour; the nearest-sampled
-        // class texture only tells sea (1) from inland water (2). A class
-        // texel still marked land inside the SDF water is sea, otherwise the
-        // coast shows the class texture's staircase.
-        float kind=w.y>0.0 ? sample_water_kind(water_tile_tex,(p-water_tile_world_min)/water_tile_world_size) : (w.x>0.0 ? sample_water_kind(detail_water_tex,(p-detail_world_min)/detail_world_size) : sample_water_kind(water_tex,(p-world_min)/world_size));
+        // The smooth SDF owns the land/water contour; the class texture only
+        // tells sea (1) from inland water (2). A class texel still marked
+        // land inside the SDF water is sea (no class-texture staircase).
+        float kind=w.y>0.0 ? material_cohort_value_5(p,vec4(sample_water_kind(water_tile_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_associated_role_page)),0.0,0.0,0.0)).x
+            : (w.x>0.0 ? material_cohort_value_5(p,vec4(sample_water_kind(detail_water_tex,page_uv(p,(p-detail_world_min)/detail_world_size,fine_associated_role_page)),0.0,0.0,0.0)).x
+            : material_cohort_value_5(p,vec4(sample_water_kind(water_tex,page_uv(p,(p-world_min)/world_size,context_associated_role_page)),0.0,0.0,0.0)).x);
         return kind<0.5 ? 1.0 : kind;
     }
     vec2 tile_uv=(p-water_tile_world_min)/water_tile_world_size;
-    if(use_water_tile && inside_domain(tile_uv)) return sample_water_kind(water_tile_tex,tile_uv);
+    if(use_water_tile && inside_domain(tile_uv)) return material_cohort_value_5(p,vec4(sample_water_kind(water_tile_tex,page_uv(p,tile_uv,local_associated_role_page)),0.0,0.0,0.0)).x;
     vec2 uv=(p-detail_world_min)/detail_world_size;
-    if(use_detail_water && inside_domain(uv)) return sample_water_kind(detail_water_tex,uv);
-    return sample_water_kind(water_tex,(p-world_min)/world_size);
+    if(use_detail_water && inside_domain(uv)) return material_cohort_value_5(p,vec4(sample_water_kind(detail_water_tex,page_uv(p,uv,fine_associated_role_page)),0.0,0.0,0.0)).x;
+    return material_cohort_value_5(p,vec4(sample_water_kind(water_tex,page_uv(p,(p-world_min)/world_size,context_associated_role_page)),0.0,0.0,0.0)).x;
 }
 
 float terrain_height_at(vec2 p) {
@@ -154,15 +174,16 @@ float terrain_height_at(vec2 p) {
 }
 
 vec4 source_surface_weights_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_material(p);
     vec2 uv=(p-surface_world_min)/surface_world_size;
     vec2 fine_uv=(p-detail_world_min)/detail_world_size;
-    vec4 result=use_surface_weights ? texture(surface_weights_tex,uv) : vec4(0.0);
+    vec4 result=use_surface_weights ? texture(surface_weights_tex,page_uv(p,uv,context_surface_weights_page)) : vec4(0.0);
     if(use_c2_domains) {
         vec2 w=source_domain_weights(p);
-        return mix(mix(result,texture(detail_surface_weights_tex,fine_uv),w.x),texture(local_surface_weights_tex,(p-water_tile_world_min)/water_tile_world_size),w.y);
+        return material_cohort_value_2(p,mix(mix(result,texture(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page)),w.x),texture(local_surface_weights_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_surface_weights_page)),w.y));
     }
-    if(use_detail_surface_weights && inside_domain(fine_uv)) result=texture(detail_surface_weights_tex,fine_uv);
-    return result;
+    if(use_detail_surface_weights && inside_domain(fine_uv)) result=texture(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page));
+    return material_cohort_value_2(p,result);
 }
 // Semantic fields are sampled explicitly at base level. Hardware color
 // mip/filtering above is a separate render footprint, not a source-field API.
@@ -172,24 +193,26 @@ vec4 bilinear_surface_data(sampler2D tex,vec2 uv) {
     return mix(mix(texelFetch(tex,clamp(c,ivec2(0),last),0),texelFetch(tex,clamp(c+ivec2(1,0),ivec2(0),last),0),f.x),mix(texelFetch(tex,clamp(c+ivec2(0,1),ivec2(0),last),0),texelFetch(tex,clamp(c+ivec2(1,1),ivec2(0),last),0),f.x),f.y);
 }
 vec4 source_surface_weights_base_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_material(p);
     vec2 fine_uv=(p-detail_world_min)/detail_world_size;
-    vec4 result=use_surface_weights ? bilinear_surface_data(surface_weights_tex,(p-surface_world_min)/surface_world_size) : vec4(0.0);
+    vec4 result=use_surface_weights ? bilinear_surface_data(surface_weights_tex,page_uv(p,(p-surface_world_min)/surface_world_size,context_surface_weights_page)) : vec4(0.0);
     if(use_c2_domains) {
         vec2 w=source_domain_weights(p);
-        return mix(mix(result,bilinear_surface_data(detail_surface_weights_tex,fine_uv),w.x),bilinear_surface_data(local_surface_weights_tex,(p-water_tile_world_min)/water_tile_world_size),w.y);
+        return material_cohort_value_2(p,mix(mix(result,bilinear_surface_data(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page)),w.x),bilinear_surface_data(local_surface_weights_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_surface_weights_page)),w.y));
     }
-    if(use_detail_surface_weights && inside_domain(fine_uv))result=bilinear_surface_data(detail_surface_weights_tex,fine_uv);
-    return result;
+    if(use_detail_surface_weights && inside_domain(fine_uv))result=bilinear_surface_data(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page));
+    return material_cohort_value_2(p,result);
 }
 float source_surface_rock_at(vec2 p) {
+    if(clipmap_enabled)return clipmap_material(p).g;
     if(use_c2_domains)return source_surface_weights_base_at(p).g;
     vec2 uv=(p-surface_world_min)/surface_world_size;
     vec2 fine_uv=(p-detail_world_min)/detail_world_size;
-    float result=use_surface_weights ? textureLod(surface_weights_tex,uv,0.0).g : 0.0;
+    float result=use_surface_weights ? textureLod(surface_weights_tex,page_uv(p,uv,context_surface_weights_page),0.0).g : 0.0;
     if(use_c2_domains) {
         vec2 w=source_domain_weights(p);
-        return mix(mix(result,textureLod(detail_surface_weights_tex,fine_uv,0.0).g,w.x),textureLod(local_surface_weights_tex,(p-water_tile_world_min)/water_tile_world_size,0.0).g,w.y);
+        return mix(mix(result,textureLod(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page),0.0).g,w.x),textureLod(local_surface_weights_tex,page_uv(p,(p-water_tile_world_min)/water_tile_world_size,local_surface_weights_page),0.0).g,w.y);
     }
-    if(use_detail_surface_weights && inside_domain(fine_uv)) result=textureLod(detail_surface_weights_tex,fine_uv,0.0).g;
+    if(use_detail_surface_weights && inside_domain(fine_uv)) result=textureLod(detail_surface_weights_tex,page_uv(p,fine_uv,fine_surface_weights_page),0.0).g;
     return result;
 }

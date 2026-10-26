@@ -1,0 +1,244 @@
+{
+ "method": "snapshot hold 240 frames after readiness, --disable-vsync, 1774x600, Forward+, M3 Pro; wall frame intervals (CPU postdraw), not GPU timestamps; other agent ran Godot concurrently except v10lock (own perf lock)",
+ "camera": {
+  "fern": [
+   15.0,
+   42.5,
+   0.2
+  ],
+  "mittel": [
+   12.45,
+   42.0,
+   0.72
+  ],
+  "nah": [
+   12.25,
+   41.75,
+   1.0
+  ]
+ },
+ "results": {
+  "branch": {
+   "fern-off": [
+    {
+     "run": "branch-r1",
+     "median_ms": 108.47,
+     "p95_ms": 136.96
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 94.26,
+     "p95_ms": 96.05
+    }
+   ],
+   "fern-on": [
+    {
+     "run": "branch-r1",
+     "median_ms": 172.63,
+     "p95_ms": 282.17
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 184.5,
+     "p95_ms": 195.58
+    }
+   ],
+   "mittel-off": [
+    {
+     "run": "branch-r1",
+     "median_ms": 13.93,
+     "p95_ms": 74.64
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 13.56,
+     "p95_ms": 14.62
+    }
+   ],
+   "mittel-on": [
+    {
+     "run": "branch-r1",
+     "median_ms": 26.87,
+     "p95_ms": 57.48
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 21.14,
+     "p95_ms": 22.9
+    }
+   ],
+   "nah-off": [
+    {
+     "run": "branch-r1",
+     "median_ms": 8.68,
+     "p95_ms": 17.61
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 32.37,
+     "p95_ms": 70.93
+    }
+   ],
+   "nah-on": [
+    {
+     "run": "branch-r1",
+     "median_ms": 24.37,
+     "p95_ms": 44.69
+    },
+    {
+     "run": "branch-r2",
+     "median_ms": 9.77,
+     "p95_ms": 11.25
+    }
+   ]
+  },
+  "v10lock": {
+   "fern-off": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 93.64,
+     "p95_ms": 95.72
+    }
+   ],
+   "fern-on": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 168.16,
+     "p95_ms": 188.21
+    }
+   ],
+   "mittel-off": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 14.52,
+     "p95_ms": 16.32
+    }
+   ],
+   "mittel-on": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 20.78,
+     "p95_ms": 22.45
+    }
+   ],
+   "nah-off": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 9.52,
+     "p95_ms": 11.06
+    }
+   ],
+   "nah-on": [
+    {
+     "run": "v10lock-r1",
+     "median_ms": 10.47,
+     "p95_ms": 12.08
+    }
+   ]
+  },
+  "v16": {
+   "fern-off": [
+    {
+     "run": "v16-r1",
+     "median_ms": 92.69,
+     "p95_ms": 94.12
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 96.8,
+     "p95_ms": 141.46
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 92.69,
+     "p95_ms": 95.12
+    }
+   ],
+   "fern-on": [
+    {
+     "run": "v16-r1",
+     "median_ms": 93.2,
+     "p95_ms": 98.72
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 105.58,
+     "p95_ms": 141.49
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 95.76,
+     "p95_ms": 112.07
+    }
+   ],
+   "mittel-off": [
+    {
+     "run": "v16-r1",
+     "median_ms": 13.27,
+     "p95_ms": 14.18
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 24.34,
+     "p95_ms": 49.06
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 13.12,
+     "p95_ms": 14.09
+    }
+   ],
+   "mittel-on": [
+    {
+     "run": "v16-r1",
+     "median_ms": 13.9,
+     "p95_ms": 14.57
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 32.44,
+     "p95_ms": 87.34
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 13.8,
+     "p95_ms": 14.77
+    }
+   ],
+   "nah-off": [
+    {
+     "run": "v16-r1",
+     "median_ms": 8.29,
+     "p95_ms": 9.27
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 21.82,
+     "p95_ms": 45.51
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 8.36,
+     "p95_ms": 8.59
+    }
+   ],
+   "nah-on": [
+    {
+     "run": "v16-r1",
+     "median_ms": 8.91,
+     "p95_ms": 9.83
+    },
+    {
+     "run": "v16-r2",
+     "median_ms": 9.47,
+     "p95_ms": 23.33
+    },
+    {
+     "run": "v16-r3",
+     "median_ms": 9.75,
+     "p95_ms": 10.76
+    }
+   ]
+  }
+ }
+}

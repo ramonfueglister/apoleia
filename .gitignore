@@ -50,3 +50,6 @@ __pycache__/
 /runs/**/independent-review/capture-contact/
 /runs/**/independent-review/ridge-positive-runtime/
 /runs/**/independent-review/video-frame-*.png
+
+# Generated clipmap PNG pyramids; rebuild from versioned source manifests.
+/artifacts/render-data/clipmap-tiles-*/
