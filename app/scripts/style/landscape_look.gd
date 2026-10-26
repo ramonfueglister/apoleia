@@ -75,22 +75,44 @@ static func river_minimum_px(view_width: float) -> float:
 const LAND_COVER_DIR = "artifacts/render-data/landcover-node-2km"
 static var _land_cover: Dictionary = {}
 
+# Tileable RGBA noise for the land look (256², mipmapped). Built once at
+# startup from four seamless simplex images; replaces per-pixel hash noise.
+static var _land_noise: Texture2D
+
+static func land_noise_texture() -> Texture2D:
+    if _land_noise: return _land_noise
+    var channels = []
+    for seed in [11, 23, 37, 53]:
+        var noise = FastNoiseLite.new()
+        noise.seed = seed
+        noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+        noise.frequency = 1.0 / 8.0
+        noise.fractal_type = FastNoiseLite.FRACTAL_NONE
+        channels.append(noise.get_seamless_image(256, 256, false, false, 0.1, true))
+    var image = Image.create(256, 256, false, Image.FORMAT_RGBA8)
+    for y in range(256):
+        for x in range(256):
+            image.set_pixel(x, y, Color(channels[0].get_pixel(x, y).r, channels[1].get_pixel(x, y).r, channels[2].get_pixel(x, y).r, channels[3].get_pixel(x, y).r))
+    image.generate_mipmaps()
+    _land_noise = ImageTexture.create_from_image(image)
+    return _land_noise
+
 static func land_cover_parameters() -> Dictionary:
     if not _land_cover.is_empty(): return _land_cover
     var root = ProjectSettings.globalize_path("res://..").simplify_path().path_join(LAND_COVER_DIR)
     var manifest_text = FileAccess.get_file_as_string(root.path_join("manifest.json"))
     var manifest = JSON.parse_string(manifest_text) if manifest_text != "" else null
     if manifest == null:
-        _land_cover = {"use_land_cover": false}
+        _land_cover = {"use_land_cover": false, "land_noise_tex": land_noise_texture()}
         return _land_cover
     var bytes = FileAccess.get_file_as_bytes(root.path_join(manifest.look.path))
     var w = int(manifest.width); var h = int(manifest.height)
     if bytes.size() != w * h * 4:
-        _land_cover = {"use_land_cover": false}
+        _land_cover = {"use_land_cover": false, "land_noise_tex": land_noise_texture()}
         return _land_cover
     var image = Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes)
     image.generate_mipmaps()
-    _land_cover = {"use_land_cover": true, "land_cover_tex": ImageTexture.create_from_image(image),
+    _land_cover = {"land_noise_tex": land_noise_texture(), "use_land_cover": true, "land_cover_tex": ImageTexture.create_from_image(image),
         "land_cover_world_min": Vector2(manifest.world_min[0], manifest.world_min[1]),
         "land_cover_spacing": float(manifest.world_size[0]) / float(w - 1),
         "land_cover_size": Vector2(w, h)}
@@ -111,21 +133,19 @@ static func terrain_parameters() -> Dictionary:
         "look_ochre_color": Color("bb9c55"),
         "look_lime_color": Color("b6a84a"),
         # Painted land look (terrain_land_look.gdshaderinc).
-        "land_grass_color": Color("7f843f"),
-        "land_lime_color": Color("82894c"),
+        "land_grass_color": Color("6e733d"),
+        "land_lime_color": Color("71774a"),
         "land_olive_color": Color("adad5a"),
-        "land_ochre_color": Color("9b8d4f"),
+        "land_ochre_color": Color("897f4f"),
         "land_hill_color": Color("7b8954"),
         "land_forest_floor_color": Color("516c47"),
-        "land_dry_color": Color("9b8d4f"),
+        "land_dry_color": Color("897f4f"),
         "land_sand_color": Color("ccad7b"),
-        "land_rock_light_color": Color("dbbf9f"),
-        "land_rock_dark_color": Color("6e726b"),
+        "land_rock_light_color": Color("c9c3b0"),
+        "land_rock_dark_color": Color("5f5c50"),
         "land_snow_color": Color("ffecec"),
         "land_valley_tint": Color("9db3b8"),
         "land_facet_tilt": 0.13,
-        "land_micro_height": 0.9,
-        "land_micro_size": 1.1,
         "sea_deep_color": Color("1d497e"),
         "sea_open_color": Color("235483"),
         "sea_shallow_color": Color("48909b"),

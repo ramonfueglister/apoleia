@@ -18,6 +18,14 @@ uniform vec4 land_sand_color : source_color = vec4(0.77,0.69,0.47,1.0);
 uniform vec4 land_rock_light_color : source_color = vec4(0.80,0.73,0.66,1.0);
 uniform vec4 land_rock_dark_color : source_color = vec4(0.52,0.46,0.42,1.0);
 uniform vec4 land_snow_color : source_color = vec4(0.95,0.94,0.91,1.0);
+// Weit colours (sRGB authored, linearised by source_color).
+uniform vec4 land_far_forest_color : source_color = vec4(0.259,0.361,0.231,1.0);
+uniform vec4 land_far_rock_color : source_color = vec4(0.784,0.737,0.627,1.0);
+uniform vec4 land_far_peak_color : source_color = vec4(0.933,0.922,0.894,1.0);
+// Tileable RGBA noise (generated at startup by landscape_look.gd, mipmapped):
+// a few fetches replace per-pixel hash noise. Features are ~8 texels.
+uniform sampler2D land_noise_tex : filter_linear_mipmap, repeat_enable;
+vec4 land_tnoise(vec2 p,float feature_km) {return texture(land_noise_tex,p/(feature_km*32.0));}
 // Perf A/B: constant albedo, early return (uniform branch).
 uniform bool land_look_stub=false;
 uniform vec4 land_valley_tint : source_color = vec4(0.62,0.70,0.72,1.0);
@@ -33,9 +41,6 @@ uniform sampler2D land_cover_tex : filter_linear_mipmap, repeat_disable;
 uniform vec2 land_cover_world_min=vec2(0.0);
 uniform float land_cover_spacing=2.0;
 uniform vec2 land_cover_size=vec2(1.0);
-// Micro hills: cell size (km) and slope gain.
-uniform float land_micro_size=2.0;
-uniform float land_micro_height=0.9;
 uniform float land_fine_tilt=0.22;
 uniform float land_fine_tint=0.13;
 
@@ -55,62 +60,10 @@ vec2 land_hash2(vec2 p) {
     q+=dot(q,q.yzx+33.33);
     return fract((q.xx+q.yz)*q.zy);
 }
-// Quintic gradient noise in [0,1]; no value-noise cell plateaus.
-float land_gnoise(vec2 p) {
-    vec2 i=floor(p),f=fract(p);
-    vec2 u=f*f*f*(f*(f*6.0-15.0)+10.0);
-    vec2 ga=land_hash2(i)*2.0-1.0,gb=land_hash2(i+vec2(1,0))*2.0-1.0;
-    vec2 gc=land_hash2(i+vec2(0,1))*2.0-1.0,gd=land_hash2(i+vec2(1,1))*2.0-1.0;
-    float a=dot(ga,f),b=dot(gb,f-vec2(1,0)),c=dot(gc,f-vec2(0,1)),d=dot(gd,f-vec2(1,1));
-    return clamp(0.5+0.85*mix(mix(a,b,u.x),mix(c,d,u.x),u.y),0.0,1.0);
-}
-// Footprint-filtered fbm: an octave fades to its mean once a period spans
-// less than about two pixels, so nothing shimmers or speckles.
-float land_fbm(vec2 p,float footprint,int octaves) {
-    float n=0.0,a=0.5,w=0.0,f=1.0;
-    mat2 r=mat2(vec2(0.8,0.6),vec2(-0.6,0.8));
-    for(int i=0;i<4;i++) {
-        if(i>=octaves) break;
-        float fade=1.0-smoothstep(0.25,0.6,footprint*f);
-        n+=a*mix(0.5,land_gnoise(p),fade);w+=a;
-        p=r*p*2.03+vec2(3.7,1.9);f*=2.03;a*=0.5;
-    }
-    return n/w;
-}
 vec3 land_display_normal(vec3 n,float scale) {
     return normalize(vec3(n.x,n.y/max(scale,0.00001),n.z));
 }
 
-// Micro hills: a jittered field of small six-sided low-poly mounds. Each
-// mound is a hexagonal pyramid (six planar faces, so every face has one
-// clear lit or shaded value); gaps between mounds get contact darkening.
-// Returns the world-space slope (xz) of the face and, in .z, the gap AO.
-vec4 land_micro_hills(vec2 p,float size,float density,out float hill_id) {
-    vec2 q=p/size;
-    vec2 c=floor(q);
-    float m1=9.0,m2=9.0;vec2 g1=vec2(0.0);hill_id=0.0;
-    const vec2 D0=vec2(1.0,0.0),D1=vec2(0.5,0.866025),D2=vec2(-0.5,0.866025);
-    for(int y=-1;y<=1;y++) {
-        for(int x=-1;x<=1;x++) {
-            vec2 n=c+vec2(float(x),float(y));
-            vec2 hsh=land_hash2(n*1.37+vec2(11.0,3.0));
-            if(land_hash(n+vec2(7.0,9.0))>density) continue;
-            vec2 d=q-(n+0.2+0.6*hsh);
-            float r=0.55+0.35*land_hash(n+vec2(2.0,5.0));
-            float a0=dot(d,D0),a1=dot(d,D1),a2=dot(d,D2);
-            float m=max(abs(a0),max(abs(a1),abs(a2)))/r;
-            vec2 g=abs(a0)>=abs(a1)&&abs(a0)>=abs(a2) ? D0*sign(a0) : (abs(a1)>=abs(a2) ? D1*sign(a1) : D2*sign(a2));
-            g/=r;
-            if(m<m1) {m2=m1;m1=m;g1=g;hill_id=hsh.x;} else if(m<m2) m2=m;
-        }
-    }
-    float inside=step(m1,1.0);
-    float gap=1.0-smoothstep(0.0,0.18,m2-m1)*smoothstep(0.55,0.95,m1);
-    float rim=smoothstep(0.75,1.05,m1);
-    // Slope of h=1-m in world units (height in "size" units).
-    vec2 slope_xz=-g1/size*inside;
-    return vec4(slope_xz,clamp(gap*(1.0-rim*0.6)+rim*0.0,0.0,1.0)*inside,inside);
-}
 
 // Fine flat-shaded triangles sized to ~5 px: a constant tilt and tint per
 // triangle, two neighbouring power-of-two lattices crossfaded by footprint.
@@ -132,12 +85,13 @@ vec3 land_fine_tri(vec2 p,float size) {
     return vec3(t,land_hash(id+vec2(9.1,4.4))-0.5);
 }
 
-vec4 land_cover_at(vec2 p) {
+// bias: the far view samples calmer (blurrier) land cover.
+vec4 land_cover_at(vec2 p,float bias) {
     vec2 uv=((p-land_cover_world_min)/land_cover_spacing+0.5)/land_cover_size;
-    return texture(land_cover_tex,uv);
+    return texture(land_cover_tex,uv,bias);
 }
 // Only the selected source is sampled (?: evaluates one operand).
-#define LAND_FIELDS(q) (use_land_cover ? land_cover_at(q) : LAND_LOOK_WEIGHTS(q))
+#define LAND_FIELDS(q) (use_land_cover ? land_cover_at(q,cover_bias) : LAND_LOOK_WEIGHTS(q))
 
 // Cheap facets: one hash per cell of a warped triangle lattice tilts the
 // represented normal by a constant amount (no height fetches).
@@ -167,8 +121,14 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Material fields: one domain-warped tap of the coarse atlas; up close
     // quantised to the fine triangle and blurred by a small ring, so no
     // texel or bilinear diamond ever shows.
-    float edge=land_gnoise(p/5.5+vec2(2.2,5.1))-0.5;
-    vec2 pw=p+vec2(land_gnoise(p/3.1+vec2(4.4,1.3)),land_gnoise(p/3.1+vec2(8.2,6.6)))*2.2-1.1;
+    // Edge noise and warp fade out before they alias in the far view.
+    float noise_fade=1.0-smoothstep(0.4,1.2,footprint);
+    float cover_bias=1.5*smoothstep(0.7,1.5,footprint);
+    vec4 nz=land_tnoise(p,4.5);          // R edge, G/B warp, A patch
+    vec4 nm=land_tnoise(p+vec2(37.0,11.0),22.0); // R meso
+    vec4 nM=land_tnoise(p+vec2(5.0,73.0),120.0); // R macro
+    float edge=(nz.r-0.5)*noise_fade;
+    vec2 pw=p+(nz.gb*2.2-1.1)*noise_fade;
     float tri_size=exp2(floor(log2(max(footprint*5.0,0.05))));
     if(footprint<0.6) pw=land_tri_centroid(pw,tri_size);
     // Fields: R forest, G bare/rock, B dry, A snow (land cover), or the
@@ -176,7 +136,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec4 soft=LAND_FIELDS(pw);
     if(footprint<0.5) {
         float r=1.8;
-        soft=(soft*1.5+LAND_FIELDS(pw+vec2(r,0.0))+LAND_FIELDS(pw+vec2(-0.5*r,0.866*r))+LAND_FIELDS(pw+vec2(-0.5*r,-0.866*r)))/4.5;
+        soft=(soft*1.5+LAND_FIELDS(pw+vec2(r,0.3*r))+LAND_FIELDS(pw-vec2(r,0.3*r)))/3.5;
     }
     float forest=smoothstep(0.42,0.58,soft.r+edge*0.30);
     float dry=smoothstep(0.55,0.85,soft.b+edge*0.25);
@@ -189,14 +149,14 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float crest=use_land_cover ? (soft.a*255.0-128.0)*3.2 : 0.0;
 
     // Calm golden plains: two broad colour masses, no strokes or grain.
-    float macro=land_fbm(p/120.0+vec2(3.1,7.7),footprint/120.0,2);
-    float meso=land_fbm(p/22.0+vec2(1.9,4.2)+(macro-0.5)*2.0,footprint/22.0,2);
+    float macro=nM.r;
+    float meso=nm.r;
     vec3 grass=land_grass_color.rgb;
     grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,meso)*0.7);
     grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6);
     grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85);
     if(footprint<1.2) {
-        float patch=land_fbm(p/6.0+vec2(5.5,2.4)+(meso-0.5)*1.4,footprint/6.0,2);
+        float patch=nz.a;
         float f=1.0-smoothstep(0.6,1.2,footprint);
         grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.50,0.80,patch)*0.40*f);
         grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.22,patch)*0.45*f);
@@ -226,7 +186,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec2 fh=land_hash2(fc+vec2(3.0,8.0));
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
-        ground=mix(ground,parcel,0.55*field_fade);
+        ground=mix(ground,parcel,0.30*field_fade);
 
     }
 
@@ -238,6 +198,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float rock_field=max(smoothstep(45.0,170.0,crest)*ridge_zone,smoothstep(1350.0,1750.0,h));
     rock_field=max(rock_field,smoothstep(0.62,0.85,slope)*smoothstep(1100.0,1350.0,h));
     rock_field=max(rock_field,soft.g*above_trees);
+    // Continuous ridge chains from the relief channel.
+    rock_field=max(rock_field,smoothstep(30.0,120.0,crest)*smoothstep(550.0,850.0,h));
     float rock=smoothstep(0.40,0.62,rock_field+edge*0.25);
 
     // Normals: stable facet lattice on the represented form (near only).
@@ -258,17 +220,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Micro hills: lighting only, in hill country, never on plains or rock.
     // Small faceted hills (~1.1 km) over hill and mountain country; the big
     // 2 km forms are flattened a little so the eye reads the small ones.
-    float hills_amount=smoothstep(0.1,0.5,hill_country)*(1.0-rock)*rel;
-    n=normalize(mix(n,vec3(0.0,1.0,0.0),0.30*hills_amount));
-    float vis=1.0-smoothstep(land_micro_size/9.0,land_micro_size/4.0,footprint);
-    if(hills_amount*vis>0.001) {
-        float hid;
-        vec4 mh=land_micro_hills(p+vec2(31.0,17.0),land_micro_size,0.5+0.45*hills_amount,hid);
-        vec2 ms=mh.xy*vis*land_micro_height*hills_amount;
-        n=normalize(n+vec3(-ms.x,0.0,-ms.y));
-        ground*=1.0-mh.z*vis*0.45*hills_amount;
-        ground*=1.0+(hid-0.5)*0.08*mh.w*vis*hills_amount;
-    }
+    // Small hills come from the real 0.5 km relief of the near clipmap levels.
     // Fine flat-shaded triangles (about 5 px) up close: tilt and tint.
     if(footprint<0.6) {
         float lvl=log2(max(footprint*5.0,0.05));
@@ -282,6 +234,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Rock: warm lit faces, dark brown-grey shaded faces.
     float sun_side=clamp(dot(rock_facet,normalize(vec3(-0.676,0.643,-0.360))),0.0,1.0);
     vec3 stone=mix(land_rock_dark_color.rgb,land_rock_light_color.rgb,clamp(0.15+0.85*sun_side*sun_side*rel+0.5*(1.0-rel)+0.2*(rfid-0.5),0.0,1.0));
+    float mid_fp=smoothstep(0.2,0.4,footprint)*(1.0-smoothstep(1.0,1.4,footprint));
+    stone*=mix(1.0,0.75,mid_fp*sun_side);
     ground=mix(ground,stone,rock);
     ground=mix(ground,land_snow_color.rgb,smoothstep(2500.0,3000.0,h+edge*250.0)*0.85);
 
@@ -302,25 +256,29 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Weit: no per-pixel facet noise; large forms only. Forest share as
         // clear dark green areas, uplands green, shading from the large atlas
         // normal plus the precomputed ridge/valley position (channel A).
-        float far_forest=smoothstep(0.12,0.45,soft.r);
-        ground=mix(ground,vec3(0.26,0.36,0.23),far_forest*overview*0.8*(1.0-rock));
+        float far_forest=smoothstep(0.45,0.85,soft.r)*0.75;
         float upland=smoothstep(300.0,800.0,h);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
-        ground*=mix(vec3(1.0),vec3(0.680,0.660,0.560),overview);
+        ground*=mix(vec3(1.0),vec3(1.150,1.000,1.070),overview);
         vec3 shade_n=land_display_normal(source_normal,dhs*0.15);
         vec3 sun=normalize(vec3(-0.676,0.643,-0.360));
         float lit=dot(shade_n,sun);
         float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
         float ridge=clamp(crest/250.0,-1.0,1.0);
-        float shade=1.0+0.9*(lit-0.643)+0.18*max(ridge,0.0)*side-0.16*max(-ridge,0.0);
-        ground*=mix(1.0,clamp(shade,0.62,1.3),overview);
+        float shade=1.0+1.7*(lit-0.643)+0.22*max(ridge,0.0)*side-0.20*max(-ridge,0.0);
+        // Dense forest darkest on shaded flanks.
+        float shadow_side=clamp(0.5-side*0.5+(0.643-lit)*2.0,0.0,1.0);
+        ground=mix(ground,land_far_forest_color.rgb,far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
+        ground*=mix(1.0,clamp(shade,0.5,1.4),overview);
         // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
         // compressed), shaded by side; only the highest summits white.
-        float alpine=smoothstep(1100.0,1350.0,h);
-        vec3 belt=mix(vec3(0.60,0.56,0.47),vec3(0.88,0.87,0.84),smoothstep(1550.0,1850.0,h));
+        float alpine=smoothstep(950.0,1250.0,h);
+        vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1550.0,1850.0,h));
         belt*=mix(0.62,1.12,clamp(0.5+0.5*side*max(ridge,0.3)+(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*0.92);
     }
+    // Weit: only real ranges read as relief; lowland and hill country calm.
+    n=normalize(mix(n,vec3(0.0,1.0,0.0),0.7*overview*(1.0-smoothstep(450.0,750.0,h))));
     o.albedo=ground;
 #ifdef LAND_LOOK_DEBUG_FLOOR
     o.albedo=mix(o.albedo,vec3(1.0,0.0,1.0),valley_floor);
