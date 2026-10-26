@@ -107,6 +107,8 @@ var _capture_frames := 0
 var _capture_every := 2
 var _frame := 0
 var configured := false
+# Diagnostics: --weather-debug=no-sun,no-mask,no-clouds,no-rain
+var _debug := ""
 # Camera-agnostic view on the ground (works for orthographic and perspective).
 var _ground_rect := Rect2()
 var _ground_width := 1000.0
@@ -137,6 +139,7 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 			"--time":
 				if value in TIMES: time_of_day = TIMES.find(value) * 0.5
 			"--weather-seed": seed = int(value)
+			"--weather-debug": _debug = value
 			"--day-cycle": day_cycle_seconds = float(value)
 			"--weather-timescale": time_scale = maxf(float(value), 0.0)
 			"--weather-front": spawn_front = true
@@ -469,6 +472,16 @@ func _process(delta: float) -> void:
 	_update_lightning(delta)
 	_publish_globals(local_weather)
 	_capture()
+	if _debug != "":
+		if "no-sun" in _debug:
+			_sun.shadow_caster_mask = _sun_caster_mask
+			_sun.light_energy += _cloud_sun.light_energy if _cloud_sun.visible else 0.0
+			_cloud_sun.visible = false
+		if "no-mask" in _debug: _mask_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		if "no-clouds" in _debug:
+			for mmi in _fine.visual + _coarse.visual: mmi.visible = false
+		if "no-rain" in _debug and _fine.rain_instance: _fine.rain_instance.visible = false
+		if _frame == 120: print("WEATHERDEBUG ", JSON.stringify(describe()))
 	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
 		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
 
