@@ -43,7 +43,7 @@ float clipmap_parent_grid_height(vec2 p) {
     float d=clipmap_encoded(clipmap_parent_height_tex,clipmap_parent_height_rect,corner+vec2(step_size),0.25,-8192.0);
     return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
-float clipmap_ring_height(vec2 p) {
+float clipmap_ring_weight(vec2 p) {
     float radius=max(abs(p.x-clipmap_focus.x),abs(p.y-clipmap_focus.y));
     float morph=smoothstep(clipmap_morph_start,max(clipmap_morph_end,clipmap_morph_start+0.000001),radius);
     if(clipmap_edge_width>0.0) {
@@ -53,7 +53,15 @@ float clipmap_ring_height(vec2 p) {
         vec4 edge_weight=(vec4(1.0)-smoothstep(vec4(0.0),vec4(clipmap_edge_width),edge))*clipmap_edge_mask;
         morph=max(max(edge_weight.x,edge_weight.y),max(edge_weight.z,edge_weight.w));
     }
-    return mix(clipmap_parent_grid_height(p),clipmap_source_height(p),clamp(clipmap_family_blend,0.0,1.0)*(1.0-morph));
+    return clamp(clipmap_family_blend,0.0,1.0)*(1.0-morph);
+}
+// Source weight 1 (tile interior, settled family) needs no parent taps and
+// weight 0 no source taps; both branches return the exact mix() result.
+float clipmap_ring_height(vec2 p) {
+    float weight=clipmap_ring_weight(p);
+    if(weight>=1.0)return clipmap_source_height(p);
+    if(weight<=0.0)return clipmap_parent_grid_height(p);
+    return mix(clipmap_parent_grid_height(p),clipmap_source_height(p),weight);
 }
 vec3 clipmap_normal(vec2 p) {
     vec2 step_size=clipmap_height_rect.zw/max(vec2(textureSize(clipmap_height_tex,0)-ivec2(1)),vec2(1.0));
