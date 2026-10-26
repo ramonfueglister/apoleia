@@ -26,6 +26,10 @@ var _dt=0.
 var _finest=0
 var _gpu_bytes=0
 var _frame=0
+## New and structurally changed tiles take the camera uniforms at once; tiles
+## already showing an earlier camera are updated oldest first, at most this
+## many per frame (each costs several material writes; ~140 tiles are drawn).
+const CAMERA_TILE_BUDGET=16
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
 # refining: tiles that want finer children but are not fully faded to them yet;
@@ -110,13 +114,16 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     stream.set_wanted(_wanted.keys()+_draw.keys(),_pins.keys())
     var ordered=_draw.keys();ordered.sort();var key=",".join(ordered)
     if key!=_draw_key:_edge_masks={};_draw_key=key
-    var camera=[view_width,relief,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
-    var fading_forests={}
+    # Camera uniforms on a fine fixed lattice (1/32 octave of view width,
+    # 1/64 relief): during a zoom a tile then needs new values only every few
+    # frames, and every tile shows the same lattice value.
+    var camera=[pow(2.,round(log(view_width)/log(2.)*32.)/32.),round(relief*64.)/64.,display_scale,owner.viewport_size.x,sin(deg_to_rad(owner.elevation_degrees))]
+    var fading_forests={};var stale:Array=[]
     for id in _draw:
         if float(_draw[id].blend)<1.:fading_forests[str(_draw[id].parent)]=1.-float(_draw[id].blend)
     for id in nodes:
         var entry:Dictionary=nodes[id];var shown=_draw.has(id)
-        entry.land.visible=shown;entry.water.visible=shown
+        entry.land.visible=shown;entry.water.visible=shown and entry.marine
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
             for tree in entry.forests:forest.set_weight(tree,float(fading_forests[id]))
@@ -133,37 +140,53 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         # per-frame focus updates have no rendered or height_at effect.
         var state=[parent_id,blend,edge_mask]
         var structural=entry.get("state",[])!=state
-        if not structural and entry.get("camera",[])==camera:continue
-        var tile_nodes:Array=[entry.land,entry.water]+entry.get("forests",[])
-        if entry.get("river")!=null:tile_nodes.append(entry.river)
-        if entry.get("shore")!=null:tile_nodes.append(entry.shore)
+        if not structural:
+            var seen:Array=entry.get("camera",[])
+            if seen==camera:continue
+            # Already showing an earlier camera: queued, see CAMERA_TILE_BUDGET.
+            if not seen.is_empty():stale.append(id);continue
+        var tile_nodes:=_tile_nodes(entry)
         if structural:
             entry["state"]=state;entry.erase("camera")
             var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
             var parent_texture=parent.textures.height;var parent_step=parent_d.span/GRID
             var edge_width=d.span/GRID*4.;var morph_start=d.span*.8;var morph_end=d.span*1.6
-            for node in tile_nodes:
-                var material:ShaderMaterial=node.material_override
+            for material in _materials(tile_nodes):
                 material.set_shader_parameter(&"clipmap_parent_height_tex",parent_texture)
                 material.set_shader_parameter(&"clipmap_parent_height_rect",rect_value)
                 material.set_shader_parameter(&"clipmap_parent_grid_origin",parent_d.origin);material.set_shader_parameter(&"clipmap_parent_grid_step",parent_step)
                 material.set_shader_parameter(&"clipmap_family_blend",blend);material.set_shader_parameter(&"clipmap_focus",focus)
                 material.set_shader_parameter(&"clipmap_edge_mask",edge_mask);material.set_shader_parameter(&"clipmap_edge_width",edge_width)
                 material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
-                if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
-        # Camera uniforms: identical for every tile; write only values that
-        # changed and only to shaders that declare them.
-        var previous:Array=entry.get("camera",[])
-        for i in range(CAMERA_UNIFORMS.size()):
-            if not previous.is_empty() and previous[i]==camera[i]:continue
-            var uniform_name:StringName=CAMERA_UNIFORMS[i]
             for node in tile_nodes:
-                var material:ShaderMaterial=node.material_override
-                if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
-        entry["camera"]=camera
+                if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
+        _write_camera(entry,camera)
+    # Oldest camera first, at most CAMERA_TILE_BUDGET tiles per frame.
+    stale.sort_custom(func(a,b):return int(nodes[a].get("camera_frame",0))<int(nodes[b].get("camera_frame",0)))
+    for id in stale.slice(0,CAMERA_TILE_BUDGET):_write_camera(nodes[id],camera)
     _evict();metrics.draw_tiles=_draw.size();metrics.gpu_bytes=_gpu_bytes;metrics.missing=0
     for id in _wanted:
         if not nodes.has(id):metrics.missing+=1
+func _tile_nodes(entry:Dictionary)->Array:
+    var tile_nodes:Array=[entry.land]+([entry.water] if entry.marine else [])+entry.get("forests",[])
+    if entry.get("river")!=null:tile_nodes.append(entry.river)
+    if entry.get("shore")!=null:tile_nodes.append(entry.shore)
+    return tile_nodes
+## Camera uniforms are identical for every tile; write only values that
+## changed and only to shaders that declare them.
+func _write_camera(entry:Dictionary,camera:Array)->void:
+    var previous:Array=entry.get("camera",[]);var tile_materials:=_materials(_tile_nodes(entry))
+    for i in range(CAMERA_UNIFORMS.size()):
+        if not previous.is_empty() and previous[i]==camera[i]:continue
+        var uniform_name:StringName=CAMERA_UNIFORMS[i]
+        for material in tile_materials:
+            if _declares(material.shader,uniform_name):material.set_shader_parameter(uniform_name,camera[i])
+    entry["camera"]=camera;entry["camera_frame"]=_frame
+## Distinct materials of a tile's nodes: forest buckets share one per tile.
+static func _materials(tile_nodes:Array)->Array:
+    var seen={}
+    for node in tile_nodes:seen[node.material_override]=true
+    return seen.keys()
 func _declares(shader:Shader,uniform_name:StringName)->bool:
     # Setting an undeclared uniform has no rendered effect; skip that call.
     var names:Dictionary=_shader_uniforms.get(shader,{})
@@ -174,7 +197,7 @@ func _declares(shader:Shader,uniform_name:StringName)->bool:
 func _upload(tile:Dictionary)->void:
     var id=str(tile.id);var d=_description(id);var textures={}
     for name in tile.images:textures[name]=ImageTexture.create_from_image(tile.images[name])
-    var entry={"textures":textures,"bytes":int(tile.bytes),"used":_frame}
+    var entry={"textures":textures,"bytes":int(tile.bytes),"used":_frame,"marine":bool(tile.get("marine",true))}
     for pair in [["land",terrain_template],["water",water_template]]:
         var material:ShaderMaterial=pair[1].duplicate()
         if pair[0]=="water":material.render_priority=-10
@@ -183,6 +206,7 @@ func _upload(tile:Dictionary)->void:
         material.set_shader_parameter("clipmap_height_tex",textures.height);material.set_shader_parameter("tile_material_tex",textures.material);material.set_shader_parameter("tile_water_tex",textures.water)
         var rect=_rect(id);material.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y));material.set_shader_parameter("tile_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
         material.set_shader_parameter("marine_surface_only",pair[0]=="water")
+        material.set_shader_parameter("clipmap_tile_marine",entry.marine)
         var node=MeshInstance3D.new();node.mesh=grid;node.material_override=material;node.visible=false;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         node.custom_aabb=AABB(Vector3(d.origin.x,-100.,d.origin.y),Vector3(d.span,300.,d.span));owner.add_child(node);entry[pair[0]]=node
     var forest_holder=Node3D.new();forest_holder.visible=false;owner.add_child(forest_holder);entry["forest_holder"]=forest_holder

@@ -18,6 +18,9 @@ uniform float clipmap_edge_width=0.0;
 uniform sampler2D tile_material_tex : filter_linear, repeat_disable;
 uniform sampler2D tile_water_tex : filter_nearest, repeat_disable;
 uniform vec4 tile_rect=vec4(0.0,0.0,1.0,1.0);
+// False when the tile's water image has no marine role 1 texel
+// (tile_stream._has_marine); clipmap_water_kind() can then never return 1.
+uniform bool clipmap_tile_marine=true;
 
 float clipmap_code(vec2 code){return round(code.r*255.0)*256.0+round(code.g*255.0);}
 float clipmap_encoded(sampler2D tex,vec4 rect,vec2 p,float scale,float offset) {

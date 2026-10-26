@@ -102,7 +102,7 @@ func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
         var tile_span=float(manifest.base_span)*span
         var origin=Vector2(manifest.origin[0],manifest.origin[1])+Vector2(int(id.get_slice("/",1)),int(id.get_slice("/",2)))*tile_span
         var corners=_settled_corners(images,origin,tile_span)
-        for bucket in payload.buckets:bucket["ground"]=_instance_ground(bucket.transforms,corners,origin,tile_span)
+        for bucket in payload.buckets:bucket["buffer"]=_custom_buffer(bucket.transforms,_instance_ground(bucket.transforms,corners,origin,tile_span))
     return payload
 ## Settled source surface on the 65-grid (clipmap_surface_vertex with ring
 ## weight 1): 0 on marine water, else the bilinear source height in metres.
@@ -156,39 +156,52 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
     if not payload.has("buckets"):return result
     var texel=rect.size.x/257.;var origin=rect.position+Vector2.ONE*texel*.5;var span=texel*256.
     var level=clampi(int(payload.get("level",0)),0,level_detail.size()-1)
-    var items=Materialize.multimeshes(payload,detail_meshes[level_detail[level]])
+    var level_meshes:Array=detail_meshes[level_detail[level]]
     var filled=payload.buckets.filter(func(bucket):return int(bucket.count)>0)
-    for index in range(items.size()):
-        var item=items[index];_attach_ground(item.multimesh,filled[index])
-        var node=MultiMeshInstance3D.new();node.multimesh=item.multimesh;node.material_override=material.duplicate()
-        node.material_override.set_shader_parameter("clipmap_origin",origin);node.material_override.set_shader_parameter("clipmap_span",span)
-        node.material_override.set_shader_parameter("normalize_instanced_normals",true);node.material_override.set_shader_parameter("stream_ground",false)
-        node.material_override.set_shader_parameter("clipmap_enabled",true);node.material_override.set_shader_parameter("clipmap_height_tex",textures.height)
-        node.material_override.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
-        if opaque_material:
-            var fade:ShaderMaterial=node.material_override;var opaque:ShaderMaterial=opaque_material.duplicate();_copy_params(fade,opaque)
-            node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
+    # One fade and one opaque material per tile, shared by all its buckets
+    # (and their shadow copies): the uniforms are per tile, so clipmap_terrain
+    # writes each change once per tile instead of once per bucket.
+    var fade:ShaderMaterial=material.duplicate()
+    fade.set_shader_parameter("clipmap_origin",origin);fade.set_shader_parameter("clipmap_span",span)
+    fade.set_shader_parameter("normalize_instanced_normals",true);fade.set_shader_parameter("stream_ground",false)
+    fade.set_shader_parameter("clipmap_enabled",true);fade.set_shader_parameter("clipmap_height_tex",textures.height)
+    fade.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
+    var opaque:ShaderMaterial=null
+    if opaque_material:opaque=opaque_material.duplicate();_copy_params(fade,opaque)
+    for bucket in filled:
+        var multimesh=_multimesh(bucket,level_meshes[int(bucket.variant)])
+        var node=MultiMeshInstance3D.new();node.multimesh=multimesh;node.material_override=fade
+        if opaque:node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
         node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        var box:AABB=item.multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
+        var box:AABB=multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
         node.custom_aabb=AABB(Vector3(box.position.x-pad,-100.,box.position.z-pad),Vector3(box.size.x+2.*pad,300.,box.size.z+2.*pad))
         parent.add_child(node);result.append(node)
-        if level<SHADOW_LEVELS:result.append(_shadow_copy(parent,node,int(item.variant)))
+        if level<SHADOW_LEVELS:result.append(_shadow_copy(parent,node,bucket))
     return result
 ## Same instances and materials, coarsest facets, drawn only into shadow maps.
-func _shadow_copy(parent:Node3D,node:MultiMeshInstance3D,variant:int)->MultiMeshInstance3D:
-    var copy=MultiMeshInstance3D.new();copy.multimesh=node.multimesh.duplicate();copy.multimesh.mesh=detail_meshes[SHADOW_DETAIL][variant]
+## Built from the bucket, not duplicated: reading MultiMesh.buffer back can
+## stall on the GPU copy.
+func _shadow_copy(parent:Node3D,node:MultiMeshInstance3D,bucket:Dictionary)->MultiMeshInstance3D:
+    var copy=MultiMeshInstance3D.new();copy.multimesh=_multimesh(bucket,detail_meshes[SHADOW_DETAIL][int(bucket.variant)])
     copy.material_override=node.material_override;copy.custom_aabb=node.custom_aabb
     for key in ["fade_material","opaque_material"]:
         if node.has_meta(key):copy.set_meta(key,node.get_meta(key))
     copy.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
     parent.add_child(copy);return copy
-## Re-packs the instance buffer as transform+custom so INSTANCE_CUSTOM.r
-## carries the precomputed ground and .a marks it valid (canopy.gdshader).
-func _attach_ground(multimesh:MultiMesh,bucket:Dictionary)->void:
-    if not bucket.has("ground"):return
-    var ground:PackedFloat32Array=bucket.ground;var source:PackedFloat32Array=bucket.transforms
-    var count=multimesh.instance_count;var buffer=PackedFloat32Array();buffer.resize(count*16)
+## Instance buffer as transform+custom, packed on the IO worker:
+## INSTANCE_CUSTOM.r carries the precomputed ground and .a marks it valid
+## (canopy.gdshader). The main thread only hands the buffer over.
+static func _custom_buffer(source:PackedFloat32Array,ground:PackedFloat32Array)->PackedFloat32Array:
+    var count=ground.size();var buffer=PackedFloat32Array();buffer.resize(count*16)
     for i in range(count):
         for k in range(12):buffer[i*16+k]=source[i*12+k]
         buffer[i*16+12]=ground[i];buffer[i*16+15]=1.
-    multimesh.instance_count=0;multimesh.use_custom_data=true;multimesh.instance_count=count;multimesh.buffer=buffer
+    return buffer
+## One MultiMesh with its final format, so the instance buffer is uploaded
+## once (the worker-packed transform+ground buffer when present).
+static func _multimesh(bucket:Dictionary,mesh:Mesh)->MultiMesh:
+    var multimesh=MultiMesh.new();multimesh.transform_format=MultiMesh.TRANSFORM_3D
+    multimesh.use_colors=false;multimesh.use_custom_data=bucket.has("buffer");multimesh.mesh=mesh
+    multimesh.instance_count=int(bucket.count);multimesh.buffer=bucket.buffer if bucket.has("buffer") else bucket.transforms
+    multimesh.custom_aabb=bucket.aabb
+    return multimesh
