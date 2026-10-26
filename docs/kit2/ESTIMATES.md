@@ -1,8 +1,16 @@
 # Kit 2 — Schätzwerte für den Prototyp Subsystem 1
 
-**Stand:** 26.10.2026. **Status:** alle Werte `geschätzt` (eigene Designannahmen,
-keine belegten Daten). Sie ersetzen den Ablaufschritt 1 aus TASK.md nur vorläufig;
-HYDE 3.3 und Klimadaten folgen, sobald der Host freigegeben ist.
+**Stand:** 26.10.2026.
+
+**Mit HYDE 3.3 (Standard seit Lauf 1):** Startbevölkerung pro 25-km-Zelle aus
+HYDE 3.3 für 200 n. Chr. (`data/hyde33/`, CC BY 4.0). K pro Zelle = HYDE-Bevölkerung
+/ `start_fill` (0,7), Städte wie unten. Geschätzt bleiben r, `start_fill` und
+der Städteplatzhalter; Ackeranteil, Hochland und Menschen pro km² Ackerland
+werden in diesem Modus nicht gebraucht. Begründung und Vergleich mit K aus
+HYDE-Ackerland: [run-1](run-1/README.md).
+
+**Ohne HYDE (`--estimates`, Lauf 0):** alle Werte `geschätzt` (eigene Designannahmen,
+keine belegten Daten):
 
 | Wert | Schätzung | Code (`sim/src/lib.rs`, `Params`) | Herleitung / Grenze |
 |---|---|---|---|

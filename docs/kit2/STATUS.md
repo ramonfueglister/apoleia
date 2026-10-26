@@ -8,6 +8,7 @@
 | Subsystem 1 Bevölkerung (S30–S34) | `spezifiziert` | decisions.md, TASK.md |
 | Vorbilder Bevölkerung und Preise | `erforscht` | REFERENCES.md |
 | Startraster und IDs | `implementiert` (Kit 1) | `data/gametiles/`, `docs/kit1/GAMETILES.md` (Branch des Tile-Threads) |
-| Prototyp Subsystem 1 | `implementiert` mit Schätzwerten | `sim/`, 7 Tests, [Lauf 0](run-0/README.md): 500 Jahre deterministisch, 2:1-balanciert, adaptiv = statisch, Tick p50 0,23 ms |
-| Eingabewerte Subsystem 1 | `geschätzt` | [ESTIMATES.md](ESTIMATES.md); Klima/Boden fehlen |
-| Datensatz Startbevölkerung 180 n. Chr. | `offen` | Kandidat HYDE 3.3, Lizenz ungeprüft; Host `geo.public.data.uu.nl` in der Cloud-Umgebung gesperrt |
+| Prototyp Subsystem 1 | `implementiert` | `sim/`, 7 Tests; [Lauf 0](run-0/README.md) Schätzwerte, [Lauf 1](run-1/README.md) HYDE: 500 Jahre deterministisch, 2:1-balanciert, adaptiv = statisch |
+| Eingabewerte Subsystem 1 | Startbevölkerung `belegt` (HYDE 3.3), K und r `geschätzt` | [ESTIMATES.md](ESTIMATES.md) |
+| B08 Performance | `offen` | Tick p50 0,59 ms, p95 1,9 ms (Cloud, nicht Mac) |
+| Datensatz Startbevölkerung 180 n. Chr. | `implementiert` | HYDE 3.3 Baseline 200 n. Chr., CC BY 4.0, `data/hyde33/`, `tools/sim_hyde.py` |

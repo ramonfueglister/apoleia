@@ -1,9 +1,10 @@
 //! Runs the population prototype over the real start grid.
 //!
-//! Usage: apoleia-sim [--years N] [--out DIR] [--static]
-//! Inputs: data/gametiles/tiles.csv and sim/inputs/*.csv (tools/sim_inputs.py).
+//! Usage: apoleia-sim [--years N] [--out DIR] [--root DIR] [--static] [--estimates] [--k-from-cropland]
+//! Inputs: data/gametiles/tiles.csv and sim/inputs/*.csv (tools/sim_inputs.py,
+//! tools/sim_hyde.py). `--estimates` ignores hyde25.csv.
 
-use apoleia_sim::{Cell, City, Key, Params, World};
+use apoleia_sim::{Cell, City, Hyde, Key, Params, World};
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
@@ -42,14 +43,18 @@ fn main() {
     let years: u32 = arg("--years").and_then(|v| v.parse().ok()).unwrap_or(500);
     let out = PathBuf::from(arg("--out").unwrap_or_else(|| "sim/out".into()));
     let root = PathBuf::from(arg("--root").unwrap_or_else(|| ".".into()));
-    let params = Params { adaptive: !args.iter().any(|a| a == "--static"), ..Params::default() };
+    let params = Params {
+        adaptive: !args.iter().any(|a| a == "--static"),
+        k_from_cropland: args.iter().any(|a| a == "--k-from-cropland"),
+        ..Params::default()
+    };
     fs::create_dir_all(&out).unwrap();
 
     let start: Vec<Key> = read_csv(&root.join("data/gametiles/tiles.csv"))
         .iter()
         .map(|r| Key::parse(&r["id"]).expect("tile id"))
         .collect();
-    let cells: HashMap<(i32, i32), Cell> = read_csv(&root.join("sim/inputs/cells25.csv"))
+    let mut cells: HashMap<(i32, i32), Cell> = read_csv(&root.join("sim/inputs/cells25.csv"))
         .iter()
         .map(|r| {
             let rc = (num(r, "row") as i32, num(r, "col") as i32);
@@ -58,10 +63,22 @@ fn main() {
                 frac_bare: num(r, "frac_bare"),
                 frac_snow: num(r, "frac_snow"),
                 frac_above_1500m: num(r, "frac_above_1500m"),
+                hyde: None,
             };
             (rc, cell)
         })
         .collect();
+    // Real data replaces the estimates when tools/sim_hyde.py has been run.
+    let hyde_path = root.join("sim/inputs/hyde25.csv");
+    let use_hyde = hyde_path.exists() && !args.iter().any(|a| a == "--estimates");
+    if use_hyde {
+        for r in read_csv(&hyde_path) {
+            let rc = (num(&r, "row") as i32, num(&r, "col") as i32);
+            if let Some(cell) = cells.get_mut(&rc) {
+                cell.hyde = Some(Hyde { crop_km2: num(&r, "crop_km2"), pop: num(&r, "pop200") });
+            }
+        }
+    }
     let cities: Vec<City> = read_csv(&root.join("sim/inputs/cities.csv"))
         .iter()
         .map(|r| City { x_m: num(r, "x_m"), z_m: num(r, "z_m"), pop: num(r, "pop117") })
@@ -104,7 +121,8 @@ fn main() {
     all_us.sort_by(f64::total_cmp);
     let pct = |q: f64| all_us[((all_us.len() - 1) as f64 * q) as usize];
     println!(
-        "years={years} leaves={} splits={} merges={} population={:.0} balanced={} fingerprint={:016x} tick_us p50={:.0} p95={:.0} max={:.0}",
+        "inputs={} years={years} leaves={} splits={} merges={} population={:.0} balanced={} fingerprint={:016x} tick_us p50={:.0} p95={:.0} max={:.0}",
+        if use_hyde { "hyde33" } else { "estimates" },
         w.leaves.len(),
         w.splits,
         w.merges,

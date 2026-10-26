@@ -35,6 +35,9 @@ pub struct Params {
     pub budget: usize,
     /// Disable splitting and merging (for comparison runs, B02).
     pub adaptive: bool,
+    /// With HYDE data: true = K from HYDE cropland × `people_per_cropland_km2`;
+    /// false = K anchored on the HYDE start population (start = `start_fill` × K).
+    pub k_from_cropland: bool,
 }
 
 impl Default for Params {
@@ -50,6 +53,7 @@ impl Default for Params {
             merge_months: 12,
             budget: 65_536,
             adaptive: true,
+            k_from_cropland: false,
         }
     }
 }
@@ -104,6 +108,15 @@ pub struct Cell {
     pub frac_bare: f64,
     pub frac_snow: f64,
     pub frac_above_1500m: f64,
+    /// HYDE 3.3 values for 200 AD when available; replaces the estimates.
+    pub hyde: Option<Hyde>,
+}
+
+/// HYDE 3.3 data aggregated to a 25 km cell (tools/sim_hyde.py).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Hyde {
+    pub crop_km2: f64,
+    pub pop: f64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -160,7 +173,7 @@ impl World {
         };
         for &k in start {
             let (local, urban, land) = w.capacity_parts(k);
-            let p = w.params.start_fill * local + urban;
+            let p = w.start_population(k, local, urban);
             w.leaves.insert(k, Tile { p, k: local + urban, land_km2: land, months_low: 0 });
             let mut a = k;
             while a.level > 0 {
@@ -171,10 +184,49 @@ impl World {
         w
     }
 
-    fn cell_capacity(&self, c: &Cell) -> f64 {
+    /// Local (non-city) capacity of a 25 km cell; `urban` is the city
+    /// capacity inside it, which the start-anchored mode leaves out.
+    fn cell_capacity(&self, c: &Cell, urban: f64) -> f64 {
         let p = &self.params;
+        if let Some(h) = c.hyde {
+            if p.k_from_cropland {
+                return h.crop_km2 * p.people_per_cropland_km2;
+            }
+            return (h.pop / p.start_fill - urban).max(0.0);
+        }
         let usable = (1.0 - c.frac_bare - c.frac_snow).max(0.0) * (1.0 - p.highland_penalty * c.frac_above_1500m).max(0.0);
         c.land_km2 * usable * p.cropland_share * p.people_per_cropland_km2
+    }
+
+    /// Start population of a start leaf: HYDE 200 AD where present, otherwise
+    /// `start_fill` × local capacity plus cities. Below cell level the cell's
+    /// HYDE count is spread by capacity, like a split (S34).
+    fn start_population(&self, k: Key, local: f64, urban: f64) -> f64 {
+        let estimate = self.params.start_fill * local + urban;
+        if k.level <= CELL_LEVEL {
+            let n = 1i32 << (CELL_LEVEL - k.level);
+            let mut hyde = None;
+            for r in k.row * n..(k.row + 1) * n {
+                for c in k.col * n..(k.col + 1) * n {
+                    if let Some(h) = self.cells.get(&(r, c)).and_then(|cell| cell.hyde) {
+                        *hyde.get_or_insert(0.0) += h.pop;
+                    }
+                }
+            }
+            return hyde.unwrap_or(estimate);
+        }
+        let ck = k.at_level(CELL_LEVEL);
+        let Some(h) = self.cells.get(&(ck.row, ck.col)).and_then(|cell| cell.hyde) else {
+            return estimate;
+        };
+        let (cl, cu, cland) = self.capacity_parts(ck);
+        if cl + cu > 0.0 {
+            h.pop * (local + urban) / (cl + cu)
+        } else if cland > 0.0 {
+            h.pop * self.capacity_parts(k).2 / cland
+        } else {
+            0.0
+        }
     }
 
     /// (local food capacity, urban import placeholder, land km²) for a tile.
@@ -189,20 +241,20 @@ impl World {
             let n = 1i32 << (CELL_LEVEL - k.level);
             for r in k.row * n..(k.row + 1) * n {
                 for c in k.col * n..(k.col + 1) * n {
+                    let u: f64 = self.cities.get(&(r, c)).map_or(0.0, |cs| cs.iter().map(|c| c.pop).sum());
                     if let Some(cell) = self.cells.get(&(r, c)) {
-                        local += self.cell_capacity(cell);
+                        local += self.cell_capacity(cell, u);
                         land += cell.land_km2;
                     }
-                    if let Some(cs) = self.cities.get(&(r, c)) {
-                        urban += cs.iter().map(|c| c.pop).sum::<f64>();
-                    }
+                    urban += u;
                 }
             }
         } else {
             let ck = k.at_level(CELL_LEVEL);
             let share = 1.0 / f64::from(1u32 << (2 * (k.level - CELL_LEVEL)));
+            let u: f64 = self.cities.get(&(ck.row, ck.col)).map_or(0.0, |cs| cs.iter().map(|c| c.pop).sum());
             if let Some(cell) = self.cells.get(&(ck.row, ck.col)) {
-                local = self.cell_capacity(cell) * share;
+                local = self.cell_capacity(cell, u) * share;
                 land = cell.land_km2 * share;
             }
             if let Some(cs) = self.cities.get(&(ck.row, ck.col)) {
@@ -418,7 +470,7 @@ mod tests {
         let mut cells = HashMap::new();
         for r in 0..4 {
             for c in 0..4 {
-                cells.insert((r, c), Cell { land_km2: 625.0, frac_bare: 0.0, frac_snow: 0.0, frac_above_1500m: 0.0 });
+                cells.insert((r, c), Cell { land_km2: 625.0, frac_bare: 0.0, frac_snow: 0.0, frac_above_1500m: 0.0, hyde: None });
             }
         }
         let start: Vec<Key> = (0..2).flat_map(|r| (0..2).map(move |c| Key::new(2, r, c))).collect();
