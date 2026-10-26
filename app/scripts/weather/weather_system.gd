@@ -238,20 +238,29 @@ func _build_cloud_sun() -> void:
 	_sun_caster_mask = _sun.shadow_caster_mask
 	_cloud_sun = DirectionalLight3D.new()
 	_cloud_sun.shadow_enabled = true
-	_cloud_sun.shadow_caster_mask = _sun_caster_mask | CloudMeshes.CLOUD_SHADOW_LAYER
+	# Only the cloud proxies cast into this light's shadow map, in one cascade:
+	# re-rendering every forest caster here doubled the shadow cost.
+	_cloud_sun.shadow_caster_mask = CloudMeshes.CLOUD_SHADOW_LAYER
+	_cloud_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	_cloud_sun.visible = false
 	_sun.get_parent().add_child(_cloud_sun)
 
 ## Splits the sun: the main light ignores cloud proxies, the cloud sun (share
-## `strength`) is blocked by them, so a cloud shadow removes only that share.
+## `strength`) is blocked only by them, so a cloud shadow removes that share.
+## Tree shadows then darken only the main share, so the split is used only
+## while clouds can be in view.
 func _split_sun(strength: float) -> void:
+	if state == "clear" and cells.is_empty():
+		_sun.shadow_caster_mask = _sun_caster_mask
+		_cloud_sun.visible = false
+		return
 	var energy := _sun.light_energy
 	_sun.shadow_caster_mask = _sun_caster_mask & ~CloudMeshes.CLOUD_SHADOW_LAYER
 	_sun.light_energy = energy * (1.0 - strength)
 	_cloud_sun.visible = true
 	_cloud_sun.global_transform = _sun.global_transform
 	_cloud_sun.light_energy = energy * strength
-	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_mode", "directional_shadow_max_distance", "directional_shadow_blend_splits", "directional_shadow_split_1", "directional_shadow_split_2", "directional_shadow_split_3", "light_specular"]:
+	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_max_distance", "light_specular"]:
 		_cloud_sun.set(property, _sun.get(property))
 	# Soft, blurred cloud shadows; tree shadows keep the main sun's settings.
 	_cloud_sun.shadow_blur = 6.0
@@ -475,10 +484,14 @@ func _update_ground_view() -> void:
 		var t := reach if normal.y > -0.02 else minf(-origin.y / normal.y, reach)
 		var hit := origin + normal * t
 		hits.append(Vector2(hit.x, hit.z))
-	var rect := Rect2(hits[0], Vector2.ZERO)
-	for hit in hits: rect = rect.expand(hit)
-	_ground_rect = rect
 	_ground_width = maxf(hits[4].distance_to(hits[5]), 1.0)
+	# Rays towards the horizon reach the far plane; beyond a few view widths the
+	# haze hides clouds anyway, so clamp the area to keep the slot count small.
+	var focus := _focus()
+	var limit := Rect2(focus - Vector2(_ground_width * 1.4, _ground_width * 1.6), Vector2(_ground_width * 2.8, _ground_width * 2.4))
+	var rect := Rect2(hits[0].clamp(limit.position, limit.end), Vector2.ZERO)
+	for hit in hits: rect = rect.expand(hit.clamp(limit.position, limit.end))
+	_ground_rect = rect
 	_forward = -_camera.global_basis.z.normalized()
 
 ## Ground point that a point at height y covers on screen (along the central view ray).
@@ -505,7 +518,23 @@ func _time_look() -> Array:
 func _euler(degrees: Vector3) -> Vector3:
 	return Vector3(deg_to_rad(degrees.x), deg_to_rad(degrees.y), deg_to_rad(degrees.z))
 
+## Values this system wrote last frame. Anything that differs now was changed by
+## the landscape look (or the user) and becomes the new base, so weather and time
+## of day always modulate the current base instead of a stale copy.
+var _written := {}
+
+func _read_look() -> Dictionary:
+	return {"sun_rotation": _sun.rotation_degrees, "sun_color": _sun.light_color, "sun_energy": _sun.light_energy + (_cloud_sun.light_energy if _cloud_sun and _cloud_sun.visible else 0.0), "ambient_color": _environment.ambient_light_color, "ambient_energy": _environment.ambient_light_energy, "fog_color": _environment.fog_light_color, "saturation": _environment.adjustment_saturation}
+
+func _rebase() -> void:
+	if _written.is_empty(): return
+	var now := _read_look()
+	for key in now:
+		var changed: bool = not (now[key].is_equal_approx(_written[key]) if now[key] is Vector3 or now[key] is Color else is_equal_approx(now[key], _written[key]))
+		if changed: _base[key] = now[key]
+
 func _apply_look() -> void:
+	_rebase()
 	var look := _time_look()
 	var w := local_weather
 	# Darkness under fronts comes from their shadows; global dimming stays mild.
@@ -528,6 +557,7 @@ func _apply_look() -> void:
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.18 * w.y - 0.2 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
 	_split_sun(clampf(0.38 + 0.45 * w.z, 0.0, 0.85))
+	_written = _read_look()
 
 func _restore_look() -> void:
 	if _base.is_empty(): return
@@ -540,6 +570,7 @@ func _restore_look() -> void:
 	if is_equal_approx(_environment.fog_density, _written_fog): _environment.fog_density = _fog_base
 	_written_fog = -1.0
 	_environment.adjustment_saturation = _base.saturation
+	_written = {}
 	_sun.shadow_caster_mask = _sun_caster_mask
 	if _cloud_sun: _cloud_sun.visible = false
 
