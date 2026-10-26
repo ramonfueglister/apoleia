@@ -177,6 +177,11 @@ var river_completed_key=""
 var river_set_cache: Dictionary={}
 var river_build_selection: Dictionary={}
 var river_sources_sha256=""
+# River polylines are parsed, projected and smoothed on a worker while the
+# terrain root loads; _setup_rivers() joins it (was ~1.4 s on the main thread).
+var river_load_task:=-1
+var river_load_result:Dictionary={}
+var river_supplement_sha256=""
 # Display-only estuaries: detected mouths (pos, inland dir, width) and
 # curated delta branches appended as extra river sources.
 var river_mouths:Array=[]
@@ -369,6 +374,7 @@ func _ready() -> void:
     if not _load_dataset():
         get_tree().quit(2)
         return
+    _start_river_load()
     if terrain_streaming:
         var root_started=Time.get_ticks_msec()
         while terrain_streaming.root_record().is_empty():
@@ -2448,12 +2454,68 @@ func _append_crown(st: SurfaceTool,rings: Array,offset: Vector3,color: Color,sid
             for v in [v0,v2,v1,v1,v2,v3]: st.add_vertex(v)
 
 
-func _setup_rivers() -> void:
+func _start_river_load() -> void:
     if not manifest.has("rivers_path"): return
     var bytes=_read_relative(manifest.rivers_path)
-    var data=JSON.parse_string(bytes.get_string_from_utf8())
     var river_hash=HashingContext.new();river_hash.start(HashingContext.HASH_SHA256);river_hash.update(bytes);river_sources_sha256=river_hash.finish().hex_encode()
-    if not data is Dictionary: push_error("Invalid source rivers"); return
+    var payloads:Array=[{"bytes":bytes,"smoothing":2}]
+    # Display-only supplement (Natural Earth Europe rivers, see its manifest);
+    # the canonical dataset rivers stay unchanged.
+    var supplement:Dictionary=product_binding.get("visual_extensions",{}).get("rivers_supplement",{})
+    if bool(supplement.get("enabled",false)):
+        var path=source_root.path_join(str(supplement.path))
+        river_supplement_sha256=FileAccess.get_sha256(path) if FileAccess.file_exists(path) else ""
+        if river_supplement_sha256==str(supplement.sha256):payloads.append({"bytes":FileAccess.get_file_as_bytes(path),"smoothing":1})
+        else:push_error("River supplement missing or hash mismatch; drawn without it")
+    river_load_task=WorkerThreadPool.add_task(_load_river_features.bind(payloads),false,"river polylines")
+
+# Worker: pure data (JSON, projection, Chaikin), no scene or main-thread state.
+func _load_river_features(payloads:Array) -> void:
+    var sources:Array=[];var feature_count=0;var valid=true
+    for payload_index in range(payloads.size()):
+        var data=JSON.parse_string(payloads[payload_index].bytes.get_string_from_utf8())
+        if not data is Dictionary:
+            if payload_index==0:valid=false;break
+            continue
+        var smoothing=int(payloads[payload_index].smoothing)
+        for feature in data.get("features",[]):
+            var geom=feature.get("geometry",{})
+            var lines=[]
+            if geom.get("type")=="LineString": lines=[geom.coordinates]
+            elif geom.get("type")=="MultiLineString": lines=geom.coordinates
+            else: continue
+            var rank=float(feature.get("properties",{}).get("scalerank",5))
+            var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
+            var segments: Array=[]
+            var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
+            var line_index=0
+            for line in lines:
+                var station=0.
+                var polyline_id=str(feature_count)+":"+str(line_index);line_index+=1
+                # Display smoothing (Chaikin, endpoints kept) once at load, so every
+                # renderer path (fixed, streaming, clipmap) draws smooth meanders.
+                var points:Array[Vector2]=[]
+                for coordinate in line:
+                    var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
+                    if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
+                for _iteration in range(smoothing):
+                    if points.size()<3:break
+                    var smoothed:Array[Vector2]=[points[0]]
+                    for k in range(points.size()-1):
+                        smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
+                    smoothed.append(points[-1]);points=smoothed
+                for j in range(points.size()-1):
+                    var a=points[j];var b=points[j+1]
+                    segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
+                    minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
+            if not segments.is_empty(): sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name","")),"supplement":payload_index>0})
+            feature_count+=1
+    river_load_result={"valid":valid,"sources":sources,"feature_count":feature_count}
+
+func _setup_rivers() -> void:
+    if river_load_task<0: return
+    WorkerThreadPool.wait_for_task_completion(river_load_task);river_load_task=-1
+    if not bool(river_load_result.get("valid",false)): push_error("Invalid source rivers"); return
     river_material=ShaderMaterial.new()
     river_material.shader=load("res://shaders/rivers.gdshader")
     for param in ["elevation_tex","water_tex","world_size","world_min","height_packed","water_distance_tex","use_water_distance","detail_elevation_tex","detail_height_packed","use_detail_elevation","detail_world_min","detail_world_size","detail_water_tex","use_detail_water","detail_water_distance_tex","use_detail_water_distance","use_water_tile","use_water_tile_distance","water_tile_tex","water_tile_distance_tex","water_tile_world_min","water_tile_world_size","use_c2_domains","fine_inner_world_min","fine_inner_world_size","local_inner_world_min","local_inner_world_size"]:
@@ -2462,38 +2524,9 @@ func _setup_rivers() -> void:
     if style_api:
         for param in style_api.water_parameters(): river_material.set_shader_parameter(param,style_api.water_parameters()[param])
     for param in LandscapeLook.water_parameters(): river_material.set_shader_parameter(param,LandscapeLook.water_parameters()[param])
-    for feature in data.get("features",[]):
-        var geom=feature.get("geometry",{})
-        var lines=[]
-        if geom.get("type")=="LineString": lines=[geom.coordinates]
-        elif geom.get("type")=="MultiLineString": lines=geom.coordinates
-        else: continue
-        var rank=float(feature.get("properties",{}).get("scalerank",5))
-        var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
-        var segments: Array=[]
-        var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
-        var line_index=0
-        for line in lines:
-            var station=0.
-            var polyline_id=str(river_feature_count)+":"+str(line_index);line_index+=1
-            # Display smoothing (Chaikin, endpoints kept) once at load, so every
-            # renderer path (fixed, streaming, clipmap) draws smooth meanders.
-            var points:Array[Vector2]=[]
-            for coordinate in line:
-                var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
-                if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
-            for _iteration in range(2):
-                if points.size()<3:break
-                var smoothed:Array[Vector2]=[points[0]]
-                for k in range(points.size()-1):
-                    smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
-                smoothed.append(points[-1]);points=smoothed
-            for j in range(points.size()-1):
-                var a=points[j];var b=points[j+1]
-                segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
-                minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
-        if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name",""))})
-        river_feature_count+=1
+    river_sources.append_array(river_load_result.sources)
+    river_feature_count+=int(river_load_result.feature_count)
+    river_load_result={}
     _detect_river_mouths()
     _setup_river_deltas()
     _add_delta_arms()
@@ -2584,11 +2617,17 @@ func _add_delta_arms() -> void:
 # and a wider lower course towards a delta. Shared by all renderer paths.
 func _widen_river_mouths() -> void:
     for source in river_sources:
+        # Gains end at 4 km from a mouth and 25 km from an apex: only those
+        # within the source's rect grown by 25 km can change its segments.
+        var reach=Rect2(source.rect).grow(25.0)
+        var mouths=river_mouths.filter(func(mouth):return reach.has_point(mouth.position))
+        var apexes=delta_apexes.filter(func(apex):return reach.has_point(apex))
+        if mouths.is_empty() and apexes.is_empty():continue
         for segment in source.segments:
             var p:Vector2=(Vector2(segment[0])+Vector2(segment[1]))*.5
             var gain=1.0
-            for mouth in river_mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
-            for apex in delta_apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
+            for mouth in mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
+            for apex in apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
             segment[2]=float(segment[2])*gain
 
 # Display deltas: an area mask per delta (delta.gdshader) instead of band
