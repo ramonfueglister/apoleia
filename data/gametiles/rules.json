@@ -1,0 +1,45 @@
+{
+ "schema_version": "gametiles-rules-v1",
+ "status": "spezifiziert: Parameter sind eigene Designentscheidungen (K25-K29) bzw. markierte Startwerte, keine Fremdregeln",
+ "sea": {
+  "note": "K27: Küstenmeer 50 km, offenes Meer 100-200 km. Ein Meer-Block wird Blatt, wenn alle 25-km-Kinder landfrei sind und im um open_clearance_m erweiterten Quadrat (Chebyshev, 1-km-Zellmitten) kein Land liegt. 50 km braucht keinen Abstand.",
+  "open_clearance_m": {
+   "50000": 0,
+   "100000": 50000,
+   "200000": 100000
+  }
+ },
+ "terrain": {
+  "note": "K27: Sahara/Wüste und Hochgebirge 50 km. Ein 50-km-Block wird Blatt, wenn alle vier 25-km-Kinder vollständig Land sind und jedes Wüste oder Hochgebirge ist. Schwellen sind Startwerte (Hypothese), gemessen in summary.json. Hochgebirge braucht beide Höhenanteile, damit Hochplateaus (Ostanatolien, Ahaggar) nicht als Gebirge zählen.",
+  "desert_min_bare_fraction": 0.8,
+  "mountain_min_fraction_above_1500m": 0.5,
+  "mountain_min_fraction_above_2000m": 0.3
+ },
+ "urban": {
+  "note": "K29: Verfeinerung nach Epochen-Maximum. Wichtigkeit je 25-km-Tile und Stichjahr = Summe der Stadtbevölkerung / Mittel der epoch_reference_top_n stärksten Tiles dieses Jahres; Maximum über alle Jahre; + port_bonus bei Hafen. Reihenfolge: major_city_count Großstädte (6,25 km für ihr ganzes 25-km-Tile), dann 25-km-Tiles nach Wichtigkeit (12,5 km), dann Handliste; 2:1-Ausgleich nach jedem Schritt; Abbruch vor Überschreiten des Budgets.",
+  "years": [
+   117,
+   400,
+   1000,
+   1500,
+   1800,
+   1900,
+   2020
+  ],
+  "epoch_reference_top_n": 50,
+  "port_bonus": 0.05,
+  "min_importance": 0.02,
+  "major_city_count": 35,
+  "budget": 16500
+ },
+ "context_land": {
+  "note": "Option, nicht entschieden (Default aus = reines K27): Land ohne Bezug zum Reich 117 (kein Reichsland im um min_distance_m erweiterten Tile) darf gröber werden; clearance_m je Kantenlänge = nötiger Abstand des ganzen Blocks zum Reichsland.",
+  "enabled": true,
+  "reference": "data/reference/roman-117.geojson",
+  "min_distance_m": 100000,
+  "clearance_m": {
+   "50000": 100000,
+   "100000": 200000
+  }
+ }
+}
