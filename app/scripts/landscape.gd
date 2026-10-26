@@ -1850,7 +1850,7 @@ func _configure_forest_mesh_cache() -> void:
         root_integrity_fatal=true;push_error("Unknown forest representation");return
     if forest_representation_format=="compact":
         forest_base_crown_arrays=style_api.prepare_diorama_crown_arrays()
-        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays)
+        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays,style_api.prepare_dense_crown_arrays())
         forest_compact_meshes=CompactForestMaterialize.shared_meshes(forest_compact_templates)
         forest_grove_lod_arrays={1:forest_compact_templates}
         for lod in [2,3]:forest_grove_lod_arrays[lod]=CompactForest.variants(style_api.create_tree_mesh(0,lod).surface_get_arrays(0))
@@ -2563,7 +2563,7 @@ func _add_delta_arms() -> void:
         for spec in branch_specs:
             var at=int(float(main_points.size()-1)*float(spec[0]))
             var split:Vector2=main_points[at]
-            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.3,1.7)*(1.0-float(spec[0])*0.5)
+            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.6,2.0)*(1.0-float(spec[0])*0.45)
             var coast_end=mouth+tangent*lateral
             var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
             river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
@@ -3420,7 +3420,7 @@ func _bootstrap_terrain_stream()->bool:
 
 func _configure_stream_forest()->bool:
     forest_representation_format="compact"
-    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays())
+    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays(),style_api.prepare_dense_crown_arrays())
     var expected=load("res://scripts/cache/forest_layout_source_contract.gd").binding({"surface":fixed_surface,"style":style_api,"policy":diorama_policy,"templates":forest_compact_templates,"world_min":world_min,"world_size":world_size,"display_height_scale":display_height_scale,"source_manifest_sha256":snapshot_manifest_sha256,"projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),"canonical_surface_identity":fixed_surface.identity,"source_root":source_root})
     var cfg:Dictionary=product_binding.forest_rendering.streaming_layout
     var reader=FixedForestLayout.new()
