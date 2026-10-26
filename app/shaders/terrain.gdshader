@@ -219,8 +219,8 @@ void fragment() {
     float meso=filtered_surface_noise(world_position.xz/2.0+vec2(23.7,4.3),footprint/2.0)-0.5;
     float micro=filtered_surface_noise(world_position.xz/0.16,footprint/0.16)-0.5;
     float variation=macro*0.16+meso*0.11+micro*0.035;
-    vec3 warm_meadow=meadow_color.rgb*vec3(1.12,1.07,0.85);
-    vec3 olive_meadow=open_color.rgb*vec3(0.90,1.04,0.85);
+    vec3 warm_meadow=meadow_color.rgb*vec3(1.03,1.07,0.90);
+    vec3 olive_meadow=open_color.rgb*vec3(0.84,1.04,0.90);
     ground=mix(ground,mix(olive_meadow,warm_meadow,clamp(0.5+macro*0.75+meso*0.4,0.0,1.0)),(1.0-dry)*(1.0-weights.r)*0.48);
     ground*=1.0+variation;
     // V8 lighting follows the actual retained-feature triangle surface used
@@ -234,10 +234,10 @@ void fragment() {
     // CPU forest priority uses this same inverse transpose and fixed factor.
     vec3 fixed_display_normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z));
     float represented_slope=1.0-fixed_display_normal.y;
-    float rock=max(fixed_rock_channel,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
+    float rock=max(fixed_rock_channel,max(smoothstep(0.14,0.44,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
     // Smooth plains and long lower hills; hard, directed faces on supported
     // rock/high relief. No global full-facet override and no detached DEM bump.
-    float hard_face=max(0.24,max(smoothstep(0.28,0.75,rock),smoothstep(0.12,0.42,1.0-smooth_normal.y)*0.60));
+    float hard_face=max(0.32,max(smoothstep(0.28,0.75,rock),smoothstep(0.12,0.42,1.0-smooth_normal.y)*0.60));
     vec3 normal=normalize(mix(smooth_normal,facet_normal,hard_face*model_facet_strength));
     // The regular 2km transport triangles are not authored rock facets. Use
     // the same fixed atlas gradient already needed for material ownership.
@@ -245,7 +245,7 @@ void fragment() {
     // receive an independent hard lighting discontinuity. Geometry is intact.
     if(use_fixed_surface || clipmap_enabled) {
         vec3 terrain_normal=normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale*relief,0.00001),source_normal.z));
-        normal=normalize(mix(terrain_normal,facet_normal,hard_face*0.72*relief));
+        normal=normalize(mix(terrain_normal,facet_normal,hard_face*0.88*relief));
     }
     float aspect=clamp(dot(source_normal,normalize(vec3(-0.58,0.65,0.49))),0.0,1.0);
     // A few coherent facet values follow actual slope/aspect and source zones;
@@ -255,7 +255,7 @@ void fragment() {
     stone*=1.0+meso*0.085;
     // Canonical rock above still governs fixed forest priority; only visible
     // reflectance uses the spatially bounded appearance-filtered G channel.
-    float visible_rock=max(weights.g,max(smoothstep(0.06,0.25,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
+    float visible_rock=max(weights.g,max(smoothstep(0.14,0.44,represented_slope),smoothstep(1250.0,2700.0,h)*0.85));
     ground=mix(ground,stone,mix(rock,visible_rock,material_transition_strength));
     ground=mix(ground,snow_color.rgb,smoothstep(3650.0,4650.0,h+macro*160.0)*0.88);
     // Actual directional light now uses represented_normal; no second baked

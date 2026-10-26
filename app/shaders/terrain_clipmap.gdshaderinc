@@ -73,3 +73,16 @@ float clipmap_water_kind(vec2 p) {
     vec2 q=clamp((p-tile_rect.xy)/tile_rect.zw,vec2(0.0),vec2(1.0))*vec2(size-ivec2(1));
     return round(texelFetch(tile_water_tex,clamp(ivec2(round(q)),ivec2(0),size-ivec2(1)),0).b*255.0);
 }
+
+// Positive source bathymetry is separately quantized at 25 m in water.A.
+// The displaced terrain G field deliberately contains zero-height marine land.
+float clipmap_bathymetry(vec2 p) {
+    ivec2 last=textureSize(tile_water_tex,0)-ivec2(1);
+    vec2 q=clamp((p-tile_rect.xy)/tile_rect.zw,vec2(0.0),vec2(1.0))*vec2(last);
+    ivec2 c=ivec2(min(floor(q),vec2(last-ivec2(1))));vec2 f=q-vec2(c);
+    float a=texelFetch(tile_water_tex,c,0).a;
+    float b=texelFetch(tile_water_tex,c+ivec2(1,0),0).a;
+    float d=texelFetch(tile_water_tex,c+ivec2(0,1),0).a;
+    float e=texelFetch(tile_water_tex,c+ivec2(1),0).a;
+    return mix(mix(a,b,f.x),mix(d,e,f.x),f.y)*6375.0;
+}

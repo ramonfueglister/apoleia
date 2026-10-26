@@ -14,9 +14,9 @@ static func configure(environment: Environment, sun: DirectionalLight3D) -> void
     environment.sky = sky
     environment.background_mode = Environment.BG_SKY
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    environment.ambient_light_energy = 0.62
+    environment.ambient_light_energy = 0.48
     environment.tonemap_mode = Environment.TONE_MAPPER_ACES
-    environment.tonemap_exposure = 0.92
+    environment.tonemap_exposure = 0.78
     environment.ssao_enabled = true
     environment.ssao_radius = 0.22
     environment.ssao_intensity = 0.85
@@ -35,7 +35,7 @@ static func configure(environment: Environment, sun: DirectionalLight3D) -> void
     environment.fog_sky_affect = 0.0
     sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
     sun.light_color = Color("fff1d8")
-    sun.light_energy = 1.45
+    sun.light_energy = 1.15
     sun.light_angular_distance = 0.65
     sun.shadow_enabled = true
     sun.shadow_bias = 0.025
