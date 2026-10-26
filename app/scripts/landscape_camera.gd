@@ -4,7 +4,8 @@ extends RefCounted
 const REVISION = "perspective-diorama-display-v5"
 const PERSPECTIVE_FOV = 25.0
 const OVERVIEW_FOV = 8.0
-const NEAR_WIDTH = 240.0
+# A07: closest view about 80 km of ground (3x closer than 240).
+const NEAR_WIDTH = 80.0
 const MIN_HEIGHT = -1.0
 const MAX_HEIGHT = 9.0
 const SETTLE_OMEGA = 18.9755 # (1+w*t)*exp(-w*t)=0.05 at t=0.25 s.
