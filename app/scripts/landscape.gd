@@ -204,6 +204,7 @@ var landscape_environment:Environment
 var environment_api:Script
 var clipmap_runtime:RefCounted
 var tile_forest:RefCounted
+var clipmap_warmup:RefCounted # clipmap_pipeline_warmup.gd: invisible first draw of forest/river/shore pipelines before the tour clock
 var warmup_frames_remaining=4
 var warmup_completed_frame=-1
 var warmup_startup_pipeline_counts: Dictionary={}
@@ -457,7 +458,7 @@ func _configure_cloud_default() -> void:
 
 func _tour_start_ready() -> bool:
     if clipmap_runtime and "metrics" in clipmap_runtime:
-        return bool(clipmap_runtime.metrics.get("root_ready",false)) and int(clipmap_runtime.metrics.get("missing",0))==0
+        return bool(clipmap_runtime.metrics.get("root_ready",false)) and int(clipmap_runtime.metrics.get("missing",0))==0 and clipmap_warmup!=null and clipmap_warmup.done
     return true
 
 func _cache_request_evidence_enabled() -> bool:
@@ -1511,6 +1512,11 @@ func _process(delta: float) -> void:
     if counts!=last_pipeline_counts:
         pipeline_events.append({"frame":frame_number,"t_ms":elapsed*1000.0,"previous_frame_wall_ms":frame_wall_ms,"counts":counts})
         last_pipeline_counts=counts
+    if clipmap_runtime and not (clipmap_warmup and clipmap_warmup.done):
+        if clipmap_warmup: clipmap_warmup.update(counts)
+        elif clipmap_runtime.metrics.root_ready:
+            clipmap_warmup=load("res://scripts/clipmap/clipmap_pipeline_warmup.gd").new()
+            if not clipmap_warmup.begin(self,clipmap_runtime): clipmap_warmup=null
     if tour: _drive_tour()
     else:
         var state=CameraRig.damp(zoom,zoom_velocity,target_zoom,delta)
