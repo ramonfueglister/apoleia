@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Source-free r2→r3 exact existing-vertex Parentstar edge-noding migration."""
-import pathlib,json,struct,hashlib,os,copy
+import argparse,pathlib,json,struct,hashlib,os,copy
 import numpy as np
 from terrain_mesh_topology import node_existing_edges,topology
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -8,7 +8,8 @@ def enc(x):return json.dumps(x,separators=(',',':'),ensure_ascii=False).encode()
 def sha(p):
     with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 def main():
-    source=ROOT/'artifacts/render-data/terrain-blocks-source-v2-r2';out=ROOT/'artifacts/render-data/terrain-blocks-source-v2-r3'
+    p=argparse.ArgumentParser();p.add_argument('--source',default='artifacts/render-data/terrain-blocks-source-v2-r2');p.add_argument('--out',default='artifacts/render-data/terrain-blocks-source-v2-r3');a=p.parse_args()
+    source=ROOT/a.source;out=ROOT/a.out
     if out.exists():raise RuntimeError('refuse existing revision')
     manifest=json.loads((source/'tree.json').read_text());old_manifest_sha=sha(source/'tree.json');out.mkdir();(out/'blocks').mkdir();results=[];changed=[]
     origin=np.array(manifest['world_min']);spacing=np.array(manifest['spacing']);anchors=manifest['atlas_identity']['anchors']
@@ -35,6 +36,6 @@ def main():
         b['vertex_count']=len(v);b['index_count']=len(ix);b['geometry_bytes']=len(body);b['decoded_bytes']=len(body)+b['material_bytes'];b['payload']={'path':b['payload']['path'],'bytes':len(newdata),'sha256':sha(dst)};b['topology_revision']='existing-f32-edge-noding-r1';changed.append(id);results.append({'id':id,**stats,**check})
     for b in manifest['blocks'].values():
         if b['parent'] is not None:b['parent_payload_sha256']=manifest['blocks'][b['parent']]['payload']['sha256']
-    manifest['dataset_revision']='terrain-blocks-source-v2-r3';manifest['topology_revision']='existing-f32-edge-noding-r1';manifest['derivation_parent_manifest_sha256']=old_manifest_sha;manifest['contracts']['geometry_ids']='exact existing F32 XZ + bit-identical child/parent Y; separate normal corner instances; adjacent original faces noded without vertex displacement';manifest['payload_bytes']=sum(b['payload']['bytes'] for b in manifest['blocks'].values());(out/'tree.json').write_bytes(enc(manifest)+b'\n');digest=sha(out/'tree.json');(out/'READY.json').write_bytes(enc({'manifest_sha256':digest,'blocks':len(manifest['blocks']),'complete':True})+b'\n')
+    manifest['dataset_revision']=out.name;manifest['topology_revision']='existing-f32-edge-noding-r1';manifest['derivation_parent_manifest_sha256']=old_manifest_sha;manifest['contracts']['geometry_ids']='exact existing F32 XZ + bit-identical child/parent Y; separate normal corner instances; adjacent original faces noded without vertex displacement';manifest['payload_bytes']=sum(b['payload']['bytes'] for b in manifest['blocks'].values());(out/'tree.json').write_bytes(enc(manifest)+b'\n');digest=sha(out/'tree.json');(out/'READY.json').write_bytes(enc({'manifest_sha256':digest,'blocks':len(manifest['blocks']),'complete':True})+b'\n')
     (out/'TOPOLOGY-REPAIR.json').write_text(json.dumps({'status':'validated actual raw geometric topology; active LOD/render validation pending','source_manifest_sha256':old_manifest_sha,'manifest_sha256':digest,'changed_blocks':changed,'checks':results,'normal_contract':'existing corners unchanged; inserted corners interpolate original-face edge normals; geometric IDs independent','source_reads':0,'vertex_displacements':0},indent=2)+'\n');print(json.dumps({'manifest_sha256':digest,'changed_blocks':len(changed),'payload_bytes':manifest['payload_bytes'],'new_physical_payload_bytes':sum(manifest['blocks'][i]['payload']['bytes'] for i in changed),'path':str(out/'tree.json')}))
 if __name__=='__main__':main()

@@ -6,8 +6,8 @@
     "sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb"
   },
   "atlas": {
-    "path": "artifacts/render-data/fixed-source-v2-mountain-r2/surface.json",
-    "sha256": "9d1db13ec60427be31a549a9694180e07841398c6c9145749910d95cd3934cd5"
+    "path": "artifacts/render-data/fixed-source-v2-mountain-r4/surface.json",
+    "sha256": "665b326ef9462a99efb52ac39f89b9dfbe464c16ca637b4bf4cdae7a7794b4be"
   },
   "upload": {
     "path": "artifacts/render-data/source-v2-upload-r1/upload.json",
@@ -44,17 +44,17 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-sourcev2-v19-complete-r5-source-root",
-      "manifest_sha256": "ab254ac7bea036a6d5310e1d91d24a6295b0059c717abd645bf7459b63f246ff",
+      "path": "artifacts/render-data/forest-layout-sourcev2-v19-mountain-r4-complete-r1-source-root",
+      "manifest_sha256": "5e207135a80276857e4fa671efd0fd7cc2cfc3a9f7fda7f2df127848afa2a112",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
-      "record_source": "identical complete-r3 canonical source/G/veto"
+      "record_source": "complete r4 bake against fixed-source-v2-mountain-r4 (164313 records), rebound to v3 source contract"
     }
   },
   "terrain_streaming": {
-    "revision": "terrain-block-stream-r3-conforming",
-    "path": "artifacts/render-data/terrain-blocks-source-v2-r3/tree.json",
-    "sha256": "6d02637c243c33fd3365a0ac01f5703b291b550f8736af79dbff4ed84831fdcd",
+    "revision": "terrain-block-stream-r4-mountain-r4-conforming",
+    "path": "artifacts/render-data/terrain-blocks-source-v2-r4-mountain-r4/tree.json",
+    "sha256": "beb2b5b95805602ea922155ba189b6993833f1a346d0b3ee389af19f9b83f7d2",
     "cpu_cache_bytes": 134217728,
     "gpu_cache_bytes": 201326592,
     "upload_start_budget_usec": 2000,
@@ -62,6 +62,6 @@
   },
   "clipmap": {
     "enabled": true,
-    "path": "artifacts/render-data/clipmap-tiles-r3/manifest.json"
+    "path": "artifacts/render-data/clipmap-tiles-r4-mountain-r4/manifest.json"
   }
 }
