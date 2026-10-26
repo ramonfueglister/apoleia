@@ -97,6 +97,8 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/5.0));
     col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
     col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.6);
+    // Narrow teal strip right at the beach.
+    col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5));
     // Facets (low-poly surface) with smooth detail between them.
     float facet_id;
     vec2 centre=wl_facet_center(p,water_facet_size,facet_id);
