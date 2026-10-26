@@ -6,6 +6,7 @@ render_mode cull_disabled, diffuse_burley, specular_schlick_ggx, shadows_disable
 #include "res://shaders/model_sampling.gdshaderinc"
 #include "res://shaders/water_look.gdshaderinc"
 uniform float relief=1.0;
+uniform float display_height_scale=7.0;
 uniform float view_width=1.0;
 uniform vec2 delta_center=vec2(0.0);
 uniform vec2 delta_sea=vec2(0.0,1.0);
@@ -14,18 +15,22 @@ uniform float delta_seed=0.0;
 uniform vec2 delta_inlet_a=vec2(0.0);
 uniform vec2 delta_inlet_b=vec2(0.0);
 varying vec3 world_position;
+varying float vertex_shore;
 
 float d_fbm(vec2 p) {
     return wl_noise(p)*0.5+wl_noise(p*2.1+vec2(3.7,1.9))*0.3+wl_noise(p*4.3+vec2(8.1,5.3))*0.2;
 }
 
 void vertex() {
-    VERTEX.y=VERTEX.y*relief+0.006;
+    // Lift above the streamed terrain (its LOD heights differ slightly from
+    // the CPU sample used to drape this grid); delta land is near sea level.
+    VERTEX.y=VERTEX.y*display_height_scale*relief+0.12;
     world_position=VERTEX;
+    vertex_shore=UV.x;
 }
 void fragment() {
     vec2 p=world_position.xz;
-    float shore=water_distance_at(p);
+    float shore=vertex_shore;
     if(shore>0.0) discard; // the sea itself belongs to water.gdshader
     float land_m=-shore;
     vec2 tangent=vec2(-delta_sea.y,delta_sea.x);
@@ -36,7 +41,8 @@ void fragment() {
     // Lagoon body: a noisy ellipse behind the coast.
     float body=1.0-length(local*vec2(1.0,1.0+0.35*sin(local.x*2.3+delta_seed)))-(d_fbm(np*0.45)-0.5)*0.9-(d_fbm(np*1.4)-0.5)*0.25;
     // Islands: organic blobs inside the lagoon, more towards its inner side.
-    float island=smoothstep(0.50,0.62,d_fbm(np*1.15+vec2(11.0)))*smoothstep(-0.2,0.5,local.y+0.2);
+    // More, smaller islands: the lagoon reads as a braided channel net.
+    float island=smoothstep(0.44,0.54,d_fbm(np*2.1+vec2(11.0)))*smoothstep(-0.3,0.4,local.y+0.2);
     float field=body-island*0.9;
     // Beach arc: a band of sand along the open coast, broken at the inlets.
     float px_m=max(footprint*1000.0,1.0);
@@ -52,13 +58,13 @@ void fragment() {
     if(water<0.5 && rim<0.05 && island_land<0.5) discard;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
     float calm=smoothstep(0.05,0.6,relief);
-    vec3 sand=vec3(0.80,0.66,0.40)*(0.92+0.12*wl_noise(np*3.0));
-    vec3 grass=vec3(0.16,0.26,0.05)*(0.85+0.3*d_fbm(np*2.5));
+    vec3 sand=vec3(0.70,0.58,0.34)*(0.92+0.12*wl_noise(np*3.0));
+    vec3 grass=vec3(0.20,0.30,0.06)*(0.85+0.3*d_fbm(np*2.5));
     if(water>0.5) {
         float edge_m=max(field,0.0)*delta_radii.y*1000.0;
         WaterSample w=water_shade(p,edge_m+400.0,6.0+field*20.0,footprint,calm,view_world,vec2(0.0),px_m,0.6,0.0);
         // Lagoon blue between the river band and the sea's shallow tint.
-        ALBEDO=mix(w.albedo,vec3(0.02,0.13,0.32),0.45);
+        ALBEDO=mix(w.albedo,vec3(0.03,0.15,0.26),0.6);
         EMISSION=w.emission*0.5;
         ROUGHNESS=w.roughness;
         NORMAL=normalize((VIEW_MATRIX*vec4(w.normal,0.0)).xyz);

@@ -1420,7 +1420,7 @@ func _update_camera() -> void:
     if marine_material: _bind_visible_river_mouths()
     if delta_nodes.is_empty() and frame_number%15==0:_build_delta_surfaces()
     for node in delta_nodes:
-        node.material_override.set_shader_parameter("relief",relief);node.material_override.set_shader_parameter("view_width",view_width)
+        node.material_override.set_shader_parameter("relief",relief);node.material_override.set_shader_parameter("view_width",view_width);node.material_override.set_shader_parameter("display_height_scale",display_height_scale)
         node.material_override.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.fov,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
@@ -2485,10 +2485,10 @@ func _widen_river_mouths() -> void:
 # islands, sand rims and a beach arc with inlets. Radii in model units
 # (km), along the coast (ra) and inland (rb).
 const RIVER_DELTAS=[
-    {"name":"Tevere","ra":10.0,"rb":6.5},
+    {"name":"Tevere","ra":7.0,"rb":4.5},
     {"name":"Po","ra":20.0,"rb":11.0},
     {"name":"Rhône","ra":18.0,"rb":10.0},
-    {"name":"Ebro","ra":11.0,"rb":7.0},
+    {"name":"Ebro","ra":8.0,"rb":5.0},
     {"name":"Nile","ra":45.0,"rb":16.0,"mouth":[31.05,31.50],"apex":[31.25,30.10]}]
 var delta_regions:Array=[]
 
@@ -2514,35 +2514,84 @@ func _setup_river_deltas() -> void:
         var tangent=sea_direction.orthogonal()
         # Inlets through the beach arc: at the river mouth and one more.
         var inlets=[mouth,mouth+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
-        delta_regions.append({"name":delta.name,"mouth":mouth,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,
-            "center":mouth-sea_direction*rb*0.45})
+        # Anchor on the actual coastline: the source course often ends a few
+        # km out at sea. March inland until the signed shore distance < 0.
+        var coast_point=mouth
+        for k in range(120):
+            if _water_distance(coast_point)<0.0:break
+            coast_point-=sea_direction*0.25
+        inlets=[coast_point,coast_point+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
+        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,
+            "center":coast_point-sea_direction*rb*0.55})
         delta_apexes.append(mouth-sea_direction*rb*1.2)
 
 # Built once the surface heights are available (streaming loads them after
 # setup); retried from _process until then.
 func _build_delta_surfaces() -> void:
     if delta_regions.is_empty() or not fixed_surface or not delta_nodes.is_empty():return
-    if clipmap_runtime and not clipmap_runtime.metrics.root_ready:return
+    if terrain_streaming or bool(product_binding.get("clipmap",{}).get("enabled",false)):
+        # Streamed/clipmap heights are only valid once the root is resident.
+        if not clipmap_runtime or not clipmap_runtime.metrics.root_ready or frame_number<30:return
     for region in delta_regions:
         if not is_finite(_render_height(region.center)):return
+    # Re-anchor each delta on the RENDERED coastline (the CPU SDF can be km
+    # off the streamed/clipmap coast): from the sea side, first land sample.
+    for region in delta_regions:
+        var sea:Vector2=region.sea;var start:Vector2=Vector2(region.mouth)+sea*15.0
+        var coast_point=Vector2(region.mouth)
+        for k in range(240):
+            var q=start-sea*0.25*float(k)
+            if _render_height(q)>0.0005:coast_point=q;break
+        var shift=coast_point-Vector2(region.mouth)
+        region.mouth=coast_point;region.center=Vector2(region.center)+shift
+        region.inlets=[Vector2(region.inlets[0])+shift,Vector2(region.inlets[1])+shift]
     var shader=load("res://shaders/delta.gdshader")
     for region in delta_regions:
         var center:Vector2=region.center;var size=Vector2.ONE*maxf(region.ra,region.rb)*2.6
         var origin=center-size*0.5
         var n=96
-        var vertices=PackedVector3Array();var indices=PackedInt32Array()
+        var vertices=PackedVector3Array();var indices=PackedInt32Array();var coast=PackedVector2Array()
         for z in range(n+1):
             for x in range(n+1):
                 var p=origin+size*Vector2(float(x)/n,float(z)/n)
+                coast.append(Vector2.ZERO)
                 # Same height source as the visible terrain (clipmap/stream).
-                var h=_render_height(p)/maxf(relief,.0001)
+                # Unscaled model height; the shader applies the current
+                # display scale and relief (both change with zoom).
+                var h=_render_height(p)/maxf(relief*display_height_scale,.0001)
                 vertices.append(Vector3(p.x,maxf(h,0.0) if is_finite(h) else 0.0,p.y))
         for z in range(n):
             for x in range(n):
                 var a=z*(n+1)+x;var b=a+1;var c=a+n+1;var d=c+1
                 indices.append_array(PackedInt32Array([a,c,b,b,c,d]))
+        # Signed shore distance (m, >0 sea) from the RENDERED surface (sea =
+        # height at/below 0): the CPU SDF and the clipmap coast can differ by
+        # km. Two-pass chamfer distance on the grid.
+        var cell_m=size.x/n*1000.0
+        var land:Array=[];var dist=PackedFloat32Array();dist.resize(vertices.size())
+        for i in range(vertices.size()):land.append(vertices[i].y>0.0004)
+        for i in range(vertices.size()):dist[i]=0.0
+        var boundary=PackedFloat32Array();boundary.resize(vertices.size())
+        for z in range(n+1):
+            for x in range(n+1):
+                var i=z*(n+1)+x;var edge=false
+                for o in [Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1)]:
+                    var xx=x+o.x;var zz=z+o.y
+                    if xx>=0 and zz>=0 and xx<=n and zz<=n and land[zz*(n+1)+xx]!=land[i]:edge=true
+                boundary[i]=0.0 if edge else 1e9
+        for z in range(n+1):
+            for x in range(n+1):
+                var i=z*(n+1)+x
+                if x>0:boundary[i]=minf(boundary[i],boundary[i-1]+cell_m)
+                if z>0:boundary[i]=minf(boundary[i],boundary[i-(n+1)]+cell_m)
+        for z in range(n,-1,-1):
+            for x in range(n,-1,-1):
+                var i=z*(n+1)+x
+                if x<n:boundary[i]=minf(boundary[i],boundary[i+1]+cell_m)
+                if z<n:boundary[i]=minf(boundary[i],boundary[i+(n+1)]+cell_m)
+        for i in range(vertices.size()):coast[i]=Vector2(-boundary[i] if land[i] else boundary[i],0.0)
         var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.UP)
-        var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_INDEX]=indices
+        var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV]=coast;arrays[Mesh.ARRAY_INDEX]=indices
         var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
         var material=ShaderMaterial.new();material.shader=shader
         for uniform in shader.get_shader_uniform_list():
