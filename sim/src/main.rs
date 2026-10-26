@@ -1,6 +1,6 @@
 //! Runs the population prototype over the real start grid.
 //!
-//! Usage: apoleia-sim [--years N] [--out DIR] [--root DIR] [--static] [--estimates] [--k-from-cropland]
+//! Usage: apoleia-sim [--years N] [--out DIR] [--root DIR] [--static] [--estimates] [--k-from-cropland] [--snap-every N]
 //! Inputs: data/gametiles/tiles.csv and sim/inputs/*.csv (tools/sim_inputs.py,
 //! tools/sim_hyde.py). `--estimates` ignores hyde25.csv.
 
@@ -41,6 +41,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let arg = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned();
     let years: u32 = arg("--years").and_then(|v| v.parse().ok()).unwrap_or(500);
+    let snap_every: u32 = arg("--snap-every").and_then(|v| v.parse().ok()).unwrap_or(100);
     let out = PathBuf::from(arg("--out").unwrap_or_else(|| "sim/out".into()));
     let root = PathBuf::from(arg("--root").unwrap_or_else(|| ".".into()));
     let params = Params {
@@ -114,7 +115,7 @@ fn main() {
             w.merges
         )
         .unwrap();
-        if y % 100 == 0 || y == years {
+        if y % snap_every == 0 || y == years {
             write_snapshot(&w, &out.join(format!("leaves-{year}.csv")));
         }
     }
