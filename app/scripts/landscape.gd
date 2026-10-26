@@ -351,11 +351,15 @@ func _ready() -> void:
         _configure_forest_async()
     else:
         if not _configure_stream_forest():get_tree().quit(2);return
-    var clipmap_path=source_root.path_join(str(product_binding.get("clipmap",{}).get("path","artifacts/render-data/clipmap-tiles-r1/manifest.json")))
-    if FileAccess.file_exists(clipmap_path):
+    var clipmap_config:Dictionary=product_binding.get("clipmap",{})
+    var clipmap_path=source_root.path_join(str(clipmap_config.get("path","")))
+    if bool(clipmap_config.get("enabled",false)):
+        if not FileAccess.file_exists(clipmap_path):
+            push_error("Enabled clipmap tile manifest is missing: "+clipmap_path);get_tree().quit(2);return
         tile_forest=load("res://scripts/clipmap/tile_forest.gd").new();tile_forest.configure(forest_layout,forest_compact_templates,canopy_material)
         clipmap_runtime=load("res://scripts/clipmap/clipmap_terrain.gd").new()
-        if not clipmap_runtime.configure(clipmap_path,self,terrain_material,marine_material,tile_forest):clipmap_runtime=null
+        if not clipmap_runtime.configure(clipmap_path,self,terrain_material,marine_material,tile_forest):
+            push_error("Clipmap tile configuration failed: "+clipmap_path);get_tree().quit(2);return
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
