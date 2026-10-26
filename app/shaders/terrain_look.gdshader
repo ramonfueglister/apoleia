@@ -287,7 +287,7 @@ void fragment() {
     }
     // Rock on crests, peaks and steep high ground; green in valleys and on
     // lower flanks. The blocky semantic G channel is not shown.
-    float crest_rock=smoothstep(40.0,220.0,h-around)*smoothstep(500.0,1100.0,h);
+    float crest_rock=smoothstep(10.0,140.0,h-around)*smoothstep(350.0,800.0,h);
     float visible_rock=max(max(crest_rock,smoothstep(0.55,0.85,represented_slope)*smoothstep(900.0,1500.0,h)),smoothstep(1900.0,2900.0,h)*0.9);
     // Crisp rock/grass boundary and per-facet stone tone (low-poly read).
     float rock_v=smoothstep(0.38,0.62,visible_rock);

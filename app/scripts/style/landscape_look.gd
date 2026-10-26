@@ -52,12 +52,12 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
     _environment.fog_density = lerpf(0.0, 0.16, oblique)
 
 # Display-only river widening; source centrelines stay unchanged.
-const RIVER_WIDTH_SCALE = 2.6
+const RIVER_WIDTH_SCALE = 1.6
 
 # Screen-width floor: thin map lines far out, broad diorama rivers up close.
 static func river_minimum_px(view_width: float) -> float:
     var near = clampf((log(1800.0) - log(maxf(view_width, 1.0))) / (log(1800.0) - log(300.0)), 0.0, 1.0)
-    return lerpf(1.6, 26.0, near * near)
+    return lerpf(1.6, 15.0, near * near)
 
 static func terrain_parameters() -> Dictionary:
     return {

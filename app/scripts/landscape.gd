@@ -2317,30 +2317,54 @@ func _update_river_surface() -> void:
     if river_queue.is_empty():return
     var feature=river_queue.pop_front();var source=river_sources[feature]
     var vertices=PackedVector3Array();var normals=PackedVector3Array();var uvs=PackedVector2Array();var indices=PackedInt32Array()
+    # Chain the selected source segments into polylines, smooth each one
+    # (Chaikin, endpoints kept) and emit ONE continuous strip per polyline:
+    # no overlapping pieces, no joint notches. Display only; source
+    # centrelines stay unchanged.
+    var lines:Array=[];var line:Array=[]
     for segment_index in river_build_selection[feature]:
         var segment=source.segments[segment_index]
         var a: Vector2=segment[0];var b: Vector2=segment[1]
-        var tangent=(b-a).normalized()
-        var side=Vector2(-tangent.y,tangent.x)
-        var minimum_pixels=LandscapeLook.river_minimum_px(view_width)
-        var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
-        var half_width=maxf(float(segment[2])*.5*LandscapeLook.RIVER_WIDTH_SCALE,minimum_pixels*.5*view_width/viewport_size.x/maxf(projected_side,.001))
-        var count=clampi(int(ceil(a.distance_to(b)/maxf(view_width/viewport_size.x*4.0,.05))),1,100)
-        for j in range(count):
-            var p=a.lerp(b,float(j)/count);var q=a.lerp(b,float(j+1)/count)
-            # Overlap at segment ends closes the notches between strips.
-            if j==0:p-=tangent*half_width
-            if j==count-1:q+=tangent*half_width
-            var points=PackedVector2Array([p-side*half_width,q-side*half_width,q+side*half_width,p+side*half_width])
+        if line.is_empty() or Vector2(line[-1][0]).distance_to(a)>1e-5:
+            if line.size()>=2:lines.append(line)
+            line=[[a,float(segment[2])]]
+        line.append([b,float(segment[2])])
+    if line.size()>=2:lines.append(line)
+    var minimum_pixels=LandscapeLook.river_minimum_px(view_width)
+    var pixel_world=view_width/viewport_size.x
+    for raw in lines:
+        var points:Array=raw
+        for _iteration in range(2):
+            if points.size()<3:break
+            var smoothed:Array=[points[0]]
+            for k in range(points.size()-1):
+                var p0:Vector2=points[k][0];var p1:Vector2=points[k+1][0]
+                var w0:float=points[k][1];var w1:float=points[k+1][1]
+                smoothed.append([p0.lerp(p1,.25),lerpf(w0,w1,.25)]);smoothed.append([p0.lerp(p1,.75),lerpf(w0,w1,.75)])
+            smoothed.append(points[-1]);points=smoothed
+        var sides:Array=[];var halves:Array=[]
+        for k in range(points.size()):
+            var before:Vector2=points[maxi(k-1,0)][0];var after:Vector2=points[mini(k+1,points.size()-1)][0]
+            var tangent=(after-before).normalized()
+            var side=Vector2(-tangent.y,tangent.x)
+            var projected_side=sqrt(side.x*side.x+pow(side.y*sin(deg_to_rad(elevation_degrees)),2.0))
+            sides.append(side)
+            halves.append(maxf(float(points[k][1])*.5*LandscapeLook.RIVER_WIDTH_SCALE,minimum_pixels*.5*pixel_world/maxf(projected_side,.001)))
+        for k in range(points.size()-1):
+            var p:Vector2=points[k][0];var q:Vector2=points[k+1][0]
+            var sp:Vector2=sides[k];var sq:Vector2=sides[k+1]
+            var hp:float=halves[k];var hq:float=halves[k+1]
+            var quad=PackedVector2Array([p-sp*hp,q-sq*hq,q+sq*hq,p+sp*hp])
+            var mid_side=(sp+sq).normalized();var mid_half=(hp+hq)*.5;var mid=(p+q)*.5
             if fixed_surface and not fixed_flat_node.visible:
-                var low=points[0];var high=points[0]
-                for v in points:low=low.min(v);high=high.max(v)
+                var low=quad[0];var high=quad[0]
+                for v in quad:low=low.min(v);high=high.max(v)
                 for triangle in fixed_surface.triangles_in_area(Rect2(low,high-low),fixed_stride):
                     var tri=PackedVector2Array([Vector2(triangle[0].x,triangle[0].z),Vector2(triangle[1].x,triangle[1].z),Vector2(triangle[2].x,triangle[2].z)])
-                    for polygon in Geometry2D.intersect_polygons(points,tri):
-                        _append_river_polygon(polygon,triangle,p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+                    for polygon in Geometry2D.intersect_polygons(quad,tri):
+                        _append_river_polygon(polygon,triangle,mid,mid_side,mid_half,float(points[k][1]),vertices,normals,uvs,indices)
             else:
-                _append_river_polygon(points,[],p,side,half_width,float(segment[2]),vertices,normals,uvs,indices)
+                _append_river_polygon(quad,[],mid,mid_side,mid_half,float(points[k][1]),vertices,normals,uvs,indices)
     if not vertices.is_empty():
         var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
         arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV2]=uvs;arrays[Mesh.ARRAY_INDEX]=indices

@@ -58,8 +58,8 @@ void fragment(){
     water=mix(water,water*1.18+0.03,streak*0.5);
     // Far views: rivers recede to a thin map blue instead of bright turquoise.
     water=mix(water,vec3(0.06,0.20,0.36),smoothstep(900.0,3500.0,view_width)*0.88);
-    // No per-strip edge tint: strips overlap at joints and would show seams.
-    ALBEDO=water;
+    // Continuous strip: soft bank tint at the outer edge only.
+    ALBEDO=mix(water,river_bank_color.rgb,smoothstep(0.82,1.0,edge)*0.5*(1.0-smoothstep(600.0,1500.0,view_width)));
     EMISSION=w.emission*0.6*(1.0-smoothstep(0.8,1.0,edge));
     ROUGHNESS=w.roughness;
     SPECULAR=0.04;

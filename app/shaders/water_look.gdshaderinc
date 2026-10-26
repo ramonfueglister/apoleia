@@ -83,7 +83,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     float anim=calm*(1.0-smoothstep(0.35,1.1,footprint));
     // Effective depth: bathymetry is coarse, so the shore distance also
     // bounds it; gives a continuous shelf towards every coast.
-    float eff=min(depth,coast_m*mix(0.20,0.035,saum_scale)+3.0);
+    float eff=min(depth,coast_m*mix(0.20,0.06,saum_scale)+3.0);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
     vec3 col=mix(water_seabed_tint.rgb,water_shallow_tint.rgb,1.0-exp(-eff/7.0));
     col=mix(col,water_open_tint.rgb,1.0-exp(-eff/(90.0*mix(0.45,1.0,saum_scale))));
@@ -142,7 +142,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
         float phase=fract(t*0.07+float(k)/3.0+wl_noise(p*0.15+float(k))*0.25);
         float pos=band_span*(1.0-phase);
         float line=exp(-abs(coast_m-pos)/(foam_w*0.45));
-        bands+=line*smoothstep(0.0,0.25,phase)*(1.0-smoothstep(0.7,1.0,phase))*0.55;
+        bands+=line*smoothstep(0.0,0.25,phase)*(1.0-smoothstep(0.7,1.0,phase))*0.40;
     }
     float whitecap=smoothstep(0.78,0.95,wl_wave(p,footprint,t,flow)/(0.6+0.8*wl_wind_strength()+0.8*storm))*storm*anim;
     float foam=clamp(shore*(0.75+0.25*sin(t*1.6+c1*8.0))+bands*anim*saum_scale+whitecap*0.6,0.0,1.0);
