@@ -62,8 +62,8 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
 
 # Vertical exaggeration: one parameter for the medium/close views (low,
 # gentle hills), easing to the regional/continental value further out.
-const CLOSE_HEIGHT_SCALE = 7.0
-const FAR_HEIGHT_SCALE = 14.0
+const CLOSE_HEIGHT_SCALE = 3.5
+const FAR_HEIGHT_SCALE = 5.5
 
 static func display_height_scale(view_width: float) -> float:
     return lerpf(CLOSE_HEIGHT_SCALE, FAR_HEIGHT_SCALE, smoothstep(600.0, 4500.0, view_width))
