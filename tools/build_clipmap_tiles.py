@@ -8,9 +8,10 @@ import numpy as np
 from PIL import Image
 ROOT=Path(__file__).resolve().parents[1]
 class Sources:
- def __init__(self):
-  self.upload=json.loads((ROOT/'artifacts/render-data/source-v2-upload-r1/upload.json').read_text());self.g=json.loads((ROOT/'artifacts/render-data/fixed-source-v2-macro-r1/surface.json').read_text());self.arrays={}
-  self.height=np.memmap(ROOT/'artifacts/render-data/fixed-source-v2-macro-r1/height.rg8',dtype=np.uint8,mode='r',shape=(self.g['height'],self.g['width'],2))
+ def __init__(self,surface='artifacts/render-data/fixed-source-v2-macro-r1/surface.json'):
+  surface=ROOT/surface;self.surface=surface
+  self.upload=json.loads((ROOT/'artifacts/render-data/source-v2-upload-r1/upload.json').read_text());self.g=json.loads(surface.read_text());self.arrays={}
+  self.height=np.memmap(surface.parent/self.g['height_payload']['path'],dtype=np.uint8,mode='r',shape=(self.g['height'],self.g['width'],2))
  def sample(self,domain,name,x,z,nearest=False):
   d=self.upload['domains'][domain][name];key=(domain,name)
   if key not in self.arrays:self.arrays[key]=np.memmap(ROOT/d['payload']['path'],dtype=np.uint8,mode='r',shape=(d['height'],d['width'],d.get('bytes_per_pixel',d.get('channels',4 if name=='surface_weights' else 1 if name=='associated_role' else 2))))
@@ -49,9 +50,9 @@ def packed(value,scale,offset,role=None):
  if role is not None:out[...,2]=np.uint8(role)
  return out
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',default='artifacts/render-data/clipmap-tiles-r3');p.add_argument('--max-tiles',type=int,default=0);p.add_argument('--focus',nargs=2,type=float);p.add_argument('--radius-tiles',type=int,default=0);args=p.parse_args()
- source=Sources();base=128.;minimum=np.floor(np.array(source.g['world_min'])/base)*base;end=np.array(source.g['world_min'])+source.g['world_size'];counts=np.ceil((end-minimum)/base).astype(int);maxlevel=int(math.ceil(math.log2(max(counts))));out=ROOT/args.output;out.mkdir(parents=True,exist_ok=True)
- manifest={'format':'apoleia-clipmap-tiles-v1','tile_samples':256,'image_size':258,'halo':1,'base_span':base,'origin':minimum.tolist(),'world_min':source.g['world_min'],'world_size':source.g['world_size'],'tile_counts':counts.tolist(),'max_level':maxlevel,'root':f'{maxlevel}/0/0','height_encoding':[.25,-8192],'water_encoding':[.125,-4096],'water_depth_encoding':{'channel':'A','metres_per_code':25,'maximum_metres':6375,'source':'C2 context/fine source height; G render height unchanged'},'source':'existing fixed-source-v2-macro-r1 and source-v2-upload-r1','fields':['height','material','water']}
+ p=argparse.ArgumentParser();p.add_argument('--output',default='artifacts/render-data/clipmap-tiles-r3');p.add_argument('--max-tiles',type=int,default=0);p.add_argument('--focus',nargs=2,type=float);p.add_argument('--radius-tiles',type=int,default=0);p.add_argument('--surface',default='artifacts/render-data/fixed-source-v2-macro-r1/surface.json');args=p.parse_args()
+ source=Sources(args.surface);base=128.;minimum=np.floor(np.array(source.g['world_min'])/base)*base;end=np.array(source.g['world_min'])+source.g['world_size'];counts=np.ceil((end-minimum)/base).astype(int);maxlevel=int(math.ceil(math.log2(max(counts))));out=ROOT/args.output;out.mkdir(parents=True,exist_ok=True)
+ manifest={'format':'apoleia-clipmap-tiles-v1','tile_samples':256,'image_size':258,'halo':1,'base_span':base,'origin':minimum.tolist(),'world_min':source.g['world_min'],'world_size':source.g['world_size'],'tile_counts':counts.tolist(),'max_level':maxlevel,'root':f'{maxlevel}/0/0','height_encoding':[.25,-8192],'water_encoding':[.125,-4096],'water_depth_encoding':{'channel':'A','metres_per_code':25,'maximum_metres':6375,'source':'C2 context/fine source height; G render height unchanged'},'source':'existing '+source.surface.parent.name+' and source-v2-upload-r1','fields':['height','material','water']}
  (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');done=0;started=time.monotonic()
  for level in range(maxlevel,-1,-1):
   span=base*2**level;nx,nz=np.ceil(counts/2**level).astype(int);tiles=[(x,z) for z in range(nz) for x in range(nx)]
