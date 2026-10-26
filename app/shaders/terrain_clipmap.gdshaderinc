@@ -71,7 +71,26 @@ float clipmap_water_kind(vec2 p) {
     if(clipmap_water_distance(p)<=0.0)return 0.0;
     ivec2 size=textureSize(tile_water_tex,0);
     vec2 q=clamp((p-tile_rect.xy)/tile_rect.zw,vec2(0.0),vec2(1.0))*vec2(size-ivec2(1));
-    return round(texelFetch(tile_water_tex,clamp(ivec2(round(q)),ivec2(0),size-ivec2(1)),0).b*255.0);
+    ivec2 nearest=clamp(ivec2(round(q)),ivec2(0),size-ivec2(1));
+    float role=round(texelFetch(tile_water_tex,nearest,0).b*255.0);
+    if(role>0.0)return role;
+    // The bilinear SDF owns the contour. A nearest dry texel must not move it
+    // to the categorical Voronoi boundary. Select the closest wet contributor;
+    // roles remain discrete, with no marine/lake/river interpolation.
+    ivec2 cell=ivec2(floor(q));float best=8.0;
+    for(int y=0;y<2;y++) {
+        for(int x=0;x<2;x++) {
+            ivec2 c=clamp(cell+ivec2(x,y),ivec2(0),size-ivec2(1));
+            vec4 sample_value=texelFetch(tile_water_tex,c,0);
+            float sample_role=round(sample_value.b*255.0);
+            float sample_sdf=clipmap_code(sample_value.rg)*0.125-4096.0;
+            vec2 delta=vec2(c)-q;float distance_squared=dot(delta,delta);
+            if(sample_sdf>0.0 && sample_role>0.0 && distance_squared<best) {
+                best=distance_squared;role=sample_role;
+            }
+        }
+    }
+    return role;
 }
 
 // Positive source bathymetry is separately quantized at 25 m in water.A.
