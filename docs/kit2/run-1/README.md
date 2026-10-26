@@ -14,9 +14,10 @@ Kapazität: K pro 25-km-Zelle = HYDE-Bevölkerung / 0,7 (Start bei 70 % von K),
 Städte nach Hanson 117 wie bisher in ihrem Teil-Tile. Siehe ESTIMATES.md.
 
 Ergebnis (adaptiv): `inputs=hyde33 years=500 leaves=39940 splits=8647 merges=0
-population=82391504 balanced=true fingerprint=97d08bf626f04ae6 tick_us p50=590 p95=1865`.
+population=82391504 balanced=true fingerprint=97d08bf626f04ae6 tick_us p50=320 p95=473 max=5153`
+(nach der Optimierung vom 26.10.2026; vorher p50 590, p95 1865 µs bei identischem Ergebnis).
 Ein zweiter Lauf ergibt denselben Fingerabdruck. Statisch: gleiche Summe
-82 391 504, Tick p50 67 µs.
+82 391 504, Tick p50 77 µs.
 
 | Jahr | Bevölkerung | K | Blätter |
 |---|---|---|---|
@@ -37,7 +38,9 @@ einzige Zahl pro km² Ackerland nicht.
 
 ## Grenzen
 
-- B08: Tick p50 0,59 ms, p95 1,9 ms in der Cloud-Umgebung (nicht auf dem Mac
-  gemessen); p95 liegt über 1 ms. Optimierung noch offen.
+- B08: Tick p50 0,32 ms, p95 0,47–0,55 ms in der Cloud-Umgebung (nicht auf dem
+  Mac gemessen). Einzelne Monate mit vielen Teilungen (erster Monat: 4 429) dauern
+  bis 6 ms; in 6 von 500 Jahren liegt das Jahresmaximum über 1 ms. Auch der
+  statische Lauf zeigt Ausreisser bis 1 ms (Messrauschen der Umgebung).
 - HYDE liegt für 200 n. Chr. eher tief (Spielgebiet 56,7 Mio.); Wert ist ungeprüft
   gegen andere Schätzungen.

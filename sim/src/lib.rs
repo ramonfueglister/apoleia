@@ -146,7 +146,8 @@ pub struct World {
     cells: HashMap<(i32, i32), Cell>,
     cities: HashMap<(i32, i32), Vec<City>>,
     pub month: u32,
-    structure_changed: bool,
+    /// Nodes a merge may have unblocked; checked in the next month.
+    pending_merge: BTreeSet<Key>,
     pub splits: u64,
     pub merges: u64,
 }
@@ -167,7 +168,7 @@ impl World {
             cells,
             cities: by_cell,
             month: 0,
-            structure_changed: true,
+            pending_merge: BTreeSet::new(),
             splits: 0,
             merges: 0,
         };
@@ -288,8 +289,11 @@ impl World {
         let decay = (-rm).exp();
         let merge_d = self.params.merge_density;
         let need = self.params.merge_months;
-        // Parents whose children just became eligible for merging.
+        let split_d = self.params.split_density;
+        // Parents whose children just became eligible for merging, and leaves
+        // over the split density (collected here to avoid a second scan).
         let mut fresh: Vec<Key> = Vec::new();
+        let mut split_cand: Vec<(Key, f64)> = Vec::new();
         for (k, t) in self.leaves.iter_mut() {
             if t.p <= 0.0 {
                 continue;
@@ -297,32 +301,29 @@ impl World {
             // Exact solution of the logistic equation over one month: stable,
             // never negative, approaches K without overshoot.
             t.p = if t.k > 0.0 { t.k / (1.0 + (t.k - t.p) / t.p * decay) } else { t.p * decay };
-            t.months_low = if Self::density(t) < merge_d { t.months_low.saturating_add(1) } else { 0 };
+            let d = Self::density(t);
+            t.months_low = if d < merge_d { t.months_low.saturating_add(1) } else { 0 };
             if t.months_low == need && k.level > 0 {
                 fresh.push(k.parent());
             }
+            if d > split_d && k.level < MAX_LEVEL {
+                split_cand.push((*k, t.p));
+            }
         }
         if self.params.adaptive {
-            let before = (self.splits, self.merges);
-            self.split_pass();
-            // A changed structure can unblock any node; otherwise only nodes
-            // whose last child just crossed the threshold can newly merge.
-            let full = self.structure_changed || (self.splits, self.merges) != before;
-            self.merge_pass(if full { None } else { Some(fresh) });
-            self.structure_changed = (self.splits, self.merges) != before;
+            self.split_pass(split_cand);
+            // A split never unblocks a merge. A merge can unblock its parent
+            // and that parent's neighbours (queued in `pending_merge`); all
+            // other nodes can only become mergeable when their last child
+            // crosses the threshold (`fresh`).
+            fresh.extend(std::mem::take(&mut self.pending_merge));
+            self.merge_pass(fresh);
         }
         self.month += 1;
     }
 
-    fn split_pass(&mut self) {
-        let thr = self.params.split_density;
+    fn split_pass(&mut self, mut cand: Vec<(Key, f64)>) {
         // Importance = population, ties by ID (S12, S13).
-        let mut cand: Vec<(Key, f64)> = self
-            .leaves
-            .iter()
-            .filter(|(k, t)| k.level < MAX_LEVEL && Self::density(t) > thr)
-            .map(|(k, t)| (*k, t.p))
-            .collect();
         cand.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
         for (k, _) in cand {
             if self.leaves.contains_key(&k) {
@@ -380,17 +381,11 @@ impl World {
         true
     }
 
-    fn merge_pass(&mut self, only: Option<Vec<Key>>) {
+    fn merge_pass(&mut self, mut nodes: Vec<Key>) {
         let need = self.params.merge_months;
-        let nodes: Vec<Key> = match only {
-            Some(mut v) => {
-                v.sort();
-                v.dedup();
-                v.retain(|q| self.split_nodes.contains(q));
-                v
-            }
-            None => self.split_nodes.iter().copied().collect(),
-        };
+        nodes.sort();
+        nodes.dedup();
+        nodes.retain(|q| self.split_nodes.contains(q));
         let cand: Vec<Key> = nodes
             .into_iter()
             .filter(|q| {
@@ -428,6 +423,11 @@ impl World {
         self.internal.remove(&q);
         self.split_nodes.remove(&q);
         self.merges += 1;
+        if q.level > 0 {
+            let up = q.parent();
+            self.pending_merge.insert(up);
+            self.pending_merge.extend(up.edge_neighbors());
+        }
     }
 
     /// Checks the 2:1 rule over all leaves.
