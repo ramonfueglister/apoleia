@@ -73,7 +73,12 @@ float bilinear_model_height(sampler2D tex,vec2 uv,bool packed) {
     return mix(mix(decode_model_height(tex,c,packed),decode_model_height(tex,c+ivec2(1,0),packed),f.x),mix(decode_model_height(tex,c+ivec2(0,1),packed),decode_model_height(tex,c+ivec2(1,1),packed),f.x),f.y);
 }
 float model_height_at(vec2 p) {
-    if(clipmap_enabled)return clipmap_water_kind(p)==1.0 ? -clipmap_bathymetry(p) : clipmap_source_height(p);
+    if(clipmap_enabled) {
+        // Land look samples heights up to 9x per pixel; skip the water test
+        // where the tile holds no sea (same result, 4-9 fewer fetches each).
+        if(!clipmap_tile_marine)return clipmap_source_height(p);
+        return clipmap_water_kind(p)==1.0 ? -clipmap_bathymetry(p) : clipmap_source_height(p);
+    }
     vec2 uv=(p-detail_world_min)/detail_world_size;
     if(use_c2_domains) return material_cohort_value_0(p,vec4(mix(bilinear_model_height(elevation_tex,page_uv(p,(p-world_min)/world_size,context_height_page),height_packed),bilinear_model_height(detail_elevation_tex,page_uv(p,uv,fine_height_page),detail_height_packed),source_domain_weights(p).x),0.0,0.0,0.0)).x;
     if(use_detail_elevation && inside_domain(uv)) return material_cohort_value_0(p,vec4(bilinear_model_height(detail_elevation_tex,page_uv(p,uv,fine_height_page),detail_height_packed),0.0,0.0,0.0)).x;

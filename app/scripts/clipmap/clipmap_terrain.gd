@@ -178,6 +178,7 @@ func _upload(tile:Dictionary)->void:
         material.set_shader_parameter("clipmap_height_tex",textures.height);material.set_shader_parameter("tile_material_tex",textures.material);material.set_shader_parameter("tile_water_tex",textures.water)
         var rect=_rect(id);material.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y));material.set_shader_parameter("tile_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
         material.set_shader_parameter("marine_surface_only",pair[0]=="water")
+        material.set_shader_parameter("clipmap_tile_marine",entry.marine)
         var node=MeshInstance3D.new();node.mesh=grid;node.material_override=material;node.visible=false;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         node.custom_aabb=AABB(Vector3(d.origin.x,-100.,d.origin.y),Vector3(d.span,300.,d.span));owner.add_child(node);entry[pair[0]]=node
     var forest_holder=Node3D.new();forest_holder.visible=false;owner.add_child(forest_holder);entry["forest_holder"]=forest_holder
