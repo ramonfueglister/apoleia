@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Display atlas with faceted low-poly mountains (look pass).
+"""Display atlas with faceted low-poly mountains and micro relief (look pass).
 
 The product macro atlas interpolates 24 km control addresses, which turns
 mountain ranges into a few large planar blocks. In relief areas this blends
 back to the fixed 2 km base grid and sharpens its ridges; plains, coast and
 water keep the macro heights exactly. Run build_fixed_display_lods.py on the
 output afterwards to derive chunks.json.
+
+r3 only reshapes heights on the existing grid (same resolution, chunks and
+strides): a dense micro relief of small faceted hills and ridges whose
+amplitude follows the source relief (plains and coast stay flat), denser
+peak chains on crests, and a step limiter against near-vertical 2 km walls.
 """
 import argparse, hashlib, json, pathlib
 import numpy as np
@@ -15,12 +20,14 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--macro-dir', default='artifacts/render-data/fixed-source-v2-macro-r1')
 parser.add_argument('--base-dir', default='artifacts/render-data/fixed-source-v2-base-r1')
-parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r1')
+parser.add_argument('--output', default='artifacts/render-data/fixed-source-v2-mountain-r3')
 parser.add_argument('--ridge-gain', type=float, default=0.7)
 parser.add_argument('--compress-m', type=float, default=1900.0)
-parser.add_argument('--peak-spacing', type=float, default=3.5, help='grid nodes (2 km)')
-parser.add_argument('--peak-height', type=float, default=780.0)
+parser.add_argument('--peak-spacing', type=float, default=2.7, help='grid nodes (2 km)')
+parser.add_argument('--peak-height', type=float, default=760.0)
 parser.add_argument('--hill-m', type=float, default=45.0)
+parser.add_argument('--micro-m', type=float, default=150.0, help='micro relief amplitude at full source relief')
+parser.add_argument('--wall-step-m', type=float, default=520.0, help='largest height step between neighbouring nodes')
 args = parser.parse_args()
 MACRO, BASE, OUT = ROOT / args.macro_dir, ROOT / args.base_dir, ROOT / args.output
 
@@ -43,7 +50,7 @@ relief = ndimage.maximum_filter(base, 7) - ndimage.minimum_filter(base, 7)
 land = macro > 0.5
 # Fade out over 3..12 grid nodes (6..24 km) from water: no coastal walls.
 water_distance = ndimage.distance_transform_edt(land)
-mask = smooth(relief, 220, 900) * smooth(macro, 180, 700) * smooth(water_distance, 3, 12)
+mask = smooth(relief, 180, 800) * smooth(macro, 150, 650) * smooth(water_distance, 3, 12)
 mask = ndimage.gaussian_filter(mask, 2.0) * (water_distance > 2)
 # Ridge sharpening: boost the 6 km band-pass of the base grid, more on crests.
 low = ndimage.gaussian_filter(base, 3.0)
@@ -82,6 +89,25 @@ hills = ndimage.gaussian_filter(rng.standard_normal(base.shape).astype(np.float3
 hills = hills / max(float(hills.std()), 1e-6)
 hill_mask = smooth(water_distance, 3, 10) * (1 - mask) * (~flat)
 result = result + args.hill_m * hills * hill_mask
+# Micro relief: small faceted hills (2-4 nodes) and ridge lines on the
+# existing vertices. Amplitude follows the 18 km source relief, so plains,
+# deltas and the coastal strip stay flat while hill country and foothills
+# are covered densely; mountain cores get a little extra texture.
+src_relief = ndimage.maximum_filter(base, 9) - ndimage.minimum_filter(base, 9)
+rough = 0.12 + 0.88 * smooth(src_relief, 40, 550)
+bumps = ndimage.gaussian_filter(rng.standard_normal(base.shape).astype(np.float32), 0.85)
+bumps /= max(float(bumps.std()), 1e-6)
+ridge = ndimage.gaussian_filter(rng.standard_normal(base.shape).astype(np.float32), 1.4)
+ridge = 1.0 - 2.0 * np.abs(ridge / max(float(ridge.std()), 1e-6))
+micro = np.clip(0.65 * bumps + 0.35 * ridge, -2.5, 2.5)
+micro_mask = rough * smooth(water_distance, 2, 7) * (~flat) * (1 - 0.5 * mask)
+result = result + args.micro_m * micro * micro_mask
+# Step limiter: no node may stand more than wall-step above its lowest
+# neighbour; this trims the near-vertical 2 km walls without touching water.
+T = args.wall_step_m
+for _ in range(10):
+    lower = ndimage.minimum_filter(result, 3) + T
+    result = np.where(land, np.minimum(result, lower), result)
 result = np.where(land, np.maximum(result, 1.0), macro)
 
 OUT.mkdir(parents=True, exist_ok=False)
@@ -92,7 +118,7 @@ packed = np.stack([code // 256, code % 256], axis=-1).astype(np.uint8)
 packed.tofile(OUT / 'height.rg8')
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 policy = json.loads((MACRO / 'policy.json').read_text())
-policy.update({'revision': 'fixed-diorama-mountain-facets-r2',
+policy.update({'revision': 'fixed-diorama-mountain-facets-r3', 'micro_m': args.micro_m, 'wall_step_m': args.wall_step_m,
     'look_pass': 'relief areas blend the macro atlas back to the fixed 2km base grid with ridge sharpening; plains/coast/water keep macro heights',
     'ridge_gain': args.ridge_gain, 'compress_m': args.compress_m, 'peak_spacing_nodes': args.peak_spacing,
     'peak_height_m': args.peak_height, 'hill_m': args.hill_m, 'macro_surface_manifest_sha256': sha(MACRO / 'surface.json'),
@@ -101,7 +127,7 @@ policy.update({'revision': 'fixed-diorama-mountain-facets-r2',
 (OUT / 'policy.json').write_text(json.dumps(policy, indent=2) + '\n')
 m = dict(macro_m)
 m.pop('chunks', None)
-m['revision'] = 'fixed-diorama-mountain-facets-r2'
+m['revision'] = 'fixed-diorama-mountain-facets-r3'
 m['policy'] = {'path': 'policy.json', 'sha256': sha(OUT / 'policy.json')}
 m['height_payload'] = {'path': 'height.rg8', 'sha256': sha(OUT / 'height.rg8'), 'bytes': (OUT / 'height.rg8').stat().st_size}
 (OUT / 'surface.json').write_text(json.dumps(m, indent=2) + '\n')
