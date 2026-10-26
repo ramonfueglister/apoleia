@@ -56,3 +56,21 @@
   ```
 - The forest layout binds the atlas (r4), not the tiles; crowns read their
   ground height from the tiles, so they follow the new relief.
+
+## Flat, round mountains (atlas r6, clipmap-tiles-r6-etopo15)
+- Atlas r6 (`fixed-source-v2-mountain-r6`, `tools/build_mountain_facet_surface.py`
+  defaults): no crest sharpening; detail band above ~1500 m real x0.6 with a
+  wider low-pass; broader flat valley floors (floor share 0.35, radius 9);
+  step limiter 300 m; one global monotonic compression of all land heights
+  h = H0*ln(1+h_real/H0), H0 = 800 m (3000 m -> ~1250, 1000 m -> ~650).
+  Real height = H0*(exp(h/H0)-1). Valley floors stay real after the
+  back-conversion (Sion 606 m vs ETOPO 595, Innsbruck 674 vs 645).
+- Fine detail r2 (`fine-relief-detail-500m-r2`): the H0 800 derivative and x0.6.
+- Tiles `clipmap-tiles-r6-etopo15`: levels 0-1 atlas r6 + fine detail r2,
+  coarser levels atlas r6; material/water from r4; 4187 tiles, 256 MB;
+  manifest sha256 3ebf0cb8e19a85ae15a0c9cea7f199a155082c39a5e551bcaa4b528fea492f62.
+- Land shader: `land_h0` converts back to real metres; thresholds are kept on
+  the H0 1900 reference curve (tree line 1900-2000 m real, alpine pasture to
+  2500 m, rock on summits from 2500 m, snow from land cover above 3000 m).
+- The land-cover relief channel (A) is computed from atlas r6 converted to
+  that reference curve.
