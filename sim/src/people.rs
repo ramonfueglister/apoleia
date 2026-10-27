@@ -922,11 +922,11 @@ impl People {
     }
 
     /// Moves the members of a household at home to another cell (a
-    /// landless household taking a free farm, S69).
-    pub fn relocate_household(&mut self, house: u32, cell: u32) {
-        let lo = self.households.partition_point(|p| p.0 < house);
-        let members: Vec<u32> = self.households[lo..].iter().take_while(|p| p.0 == house).map(|p| p.1).collect();
-        for pid in members {
+    /// landless household taking a free farm, S69). The members come from
+    /// the caller's count the day before; someone who joined since (born
+    /// or married in that day) stays behind.
+    pub fn relocate_household(&mut self, house: u32, members: &[u32], cell: u32) {
+        for &pid in members {
             let Some(e) = self.alive(pid) else { continue };
             if self.world.get::<Household>(e).unwrap().0 != house || self.world.get::<Travel>(e).is_some() {
                 continue;

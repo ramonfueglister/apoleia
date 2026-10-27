@@ -16,15 +16,17 @@
 //! Performance (GRAIN.md): a trip is an event with an arrival day, not a
 //! step per day; harvest and sowing are events per farm; consumption runs
 //! for 1/30 of the households each day; traders decide on 1/7 each day;
-//! paths are walked once a month per market and decay lazily when read;
-//! a market's path field is rebuilt only when a path level in its region
-//! changed. Stores, money and wear are integers. Everything that changes
-//! state runs serially in a fixed order, so the result does not depend on
-//! the thread count.
+//! paths are walked every 90 days per market and decay at the walk; a
+//! market's path field is rebuilt only when a path level in its region
+//! changed. The monthly household count is a snapshot counted on another
+//! thread and taken over in steps on the following days. Stores, money and
+//! wear are integers. Everything that changes shared state runs serially
+//! in a fixed order (the walks of one day touch only their own market), so
+//! the result does not depend on the thread count.
 
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
-use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
+use crate::people::{Born, Clock, Econ, Grid, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
 use crate::groups::{BAUERN, HAENDLER, PAECHTER, TAGELOEHNER, UNFREIE};
 
 use bevy_ecs::prelude::Without;
@@ -55,6 +57,13 @@ const NET_POOR: i64 = (RATIO_HILL_X10 - 10) * SEED_KG_HA / 10;
 /// HYDE cropland, not bare, snow or above 1500 m) that families can clear,
 /// per cent, and how much an adult clears per year after the start, m².
 pub const CLEAR_PCT: i64 = 100;
+/// Which land families can clear (S73, Ramon 27.10.2026: from land cover):
+/// what is farmland today (ESA WorldCover cropland and built-up) on slopes
+/// below 16 %, less the HYDE cropland of 200. PLACEHOLDER choice of
+/// columns: land that was farmed by today was clearable with Roman tools;
+/// grassland and woodland are left out, steeper slopes too (FAO GAEZ class
+/// limit). Alternatives and their growth: docs/kit2/run-grain/README.md.
+pub const CLEAR_COVER: [&str; 2] = ["farm_8", "farm_16"];
 const CLEAR_M2_ADULT_YEAR: i64 = 5_000;
 /// Work per ha and year, days (Spurr, Rosenstein via Devereaux: 60–80);
 /// working days per year (Columella: 290).
@@ -201,7 +210,13 @@ struct HhInfo {
     carrier: u32,
     /// An adult trader of the household, NONE if none.
     trader: u32,
+    /// First of the household's members in `Grain::members`.
+    at: u32,
 }
+
+/// A living person in the monthly snapshot: (household, person, home, sex,
+/// job, stand, born).
+type Row = (u32, u32, u32, u8, u8, u8, i32);
 
 /// What a household owns, kept between counts.
 #[derive(Clone, Copy)]
@@ -373,8 +388,6 @@ pub struct Grain {
     seed: u64,
     farms: Vec<Farm>,
     pub markets: Vec<Market>,
-    /// Market of a region key.
-    market_of: FxHashMap<u32, u32>,
     /// Market of each 25 km cell (NONE at sea).
     cell_market: Vec<u32>,
     hh: IdMap<HhState>,
@@ -396,7 +409,11 @@ pub struct Grain {
     wheel: Vec<Vec<GEv>>,
     decay: Vec<i64>,
     /// Reused buffer for the monthly count.
-    scratch: Vec<(u32, u32, u32, u8, u8, u8, i32)>,
+    scratch: Vec<Row>,
+    /// Person ids grouped by household, from the last count.
+    members: Vec<u32>,
+    /// The monthly count, running on another thread.
+    census_job: Option<std::thread::JoinHandle<(IdMap<HhInfo>, Vec<u32>, Vec<Row>)>>,
     /// Trader traffic per 25 km cell (roads and sea lanes, S71), counted.
     pub lanes: FxHashMap<u32, i64>,
     cols_f: i32,
@@ -408,6 +425,35 @@ fn doy(day: i64) -> i64 {
     day.rem_euclid(YEAR)
 }
 
+/// Clearable share of the land per 25 km cell (row, col), S73.
+pub type Clearable = FxHashMap<(i32, i32), f64>;
+
+/// Reads sim/inputs/landcover25.csv (tools/sim_landcover.py: ESA WorldCover
+/// 2021 and Copernicus DEM per cell, as shares of land by cover group and
+/// slope band) and sums the named columns, e.g. `farm_8`, `grass_16`.
+pub fn clearable(root: &std::path::Path, columns: &[String]) -> Result<Clearable, String> {
+    let path = root.join("sim/inputs/landcover25.csv");
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let mut lines = text.lines();
+    let head: Vec<&str> = lines.next().unwrap_or("").split(',').collect();
+    let pick: Vec<usize> = columns
+        .iter()
+        .map(|c| head.iter().position(|h| h == c).ok_or(format!("no column {c} in {}", path.display())))
+        .collect::<Result<_, _>>()?;
+    let mut out = Clearable::default();
+    for l in lines {
+        let v: Vec<&str> = l.split(',').collect();
+        let num = |k: usize| v[k].parse::<f64>().map_err(|e| format!("{l}: {e}"));
+        let (r, c) = (num(0)? as i32, num(1)? as i32);
+        let mut share = 0.0;
+        for &k in &pick {
+            share += num(k)?;
+        }
+        out.insert((r, c), share);
+    }
+    Ok(out)
+}
+
 /// Days from `day` to the next day of year `target`.
 fn doy_until(day: i64, target: i64) -> i64 {
     (target - doy(day)).rem_euclid(YEAR)
@@ -415,11 +461,13 @@ fn doy_until(day: i64, target: i64) -> i64 {
 
 impl Grain {
     pub fn new(inp: &Inputs, p: &mut People) -> Grain {
-        Self::with_clearing(inp, p, CLEAR_PCT)
+        Self::with_clearing(inp, p, CLEAR_PCT, None)
     }
 
-    /// As `new`, with the share of clearable land in per cent.
-    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64) -> Grain {
+    /// As `new`, with the share of clearable land in per cent and, if
+    /// given, the clearable share of each cell's land from land cover
+    /// (`clearable`) instead of all usable land.
+    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64, cover: Option<&Clearable>) -> Grain {
         let seed = p.world.resource::<Clock>().seed;
         let g = &p.grid;
         let n = g.kind.len();
@@ -435,7 +483,10 @@ impl Grain {
             let Some(i) = g.index(r, c) else { continue };
             let crop = cell.hyde.as_ref().map_or(0.0, |h| h.crop_km2);
             free_m2[i as usize] = (crop * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
-            let usable = cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0);
+            let usable = match cover {
+                Some(m) => cell.land_km2 * m.get(&(r, c)).copied().unwrap_or(0.0),
+                None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
+            };
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
             let ratio = RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64;
@@ -514,7 +565,6 @@ impl Grain {
             seed,
             farms: Vec::new(),
             markets,
-            market_of,
             hh: IdMap::default(),
             info: IdMap::default(),
             hh_slices: vec![Vec::new(); MONTH as usize],
@@ -529,6 +579,8 @@ impl Grain {
             wheel: vec![Vec::new(); 1024],
             decay: decay_table(),
             scratch: Vec::new(),
+            members: Vec::new(),
+            census_job: None,
             lanes: FxHashMap::default(),
             cols_f,
             stats: GrainStats::default(),
@@ -656,83 +708,51 @@ impl Grain {
         self.info.get(&id).map_or(0, |i| i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR)
     }
 
-    /// Monthly count of the households from the people (parallel read,
-    /// then serial in household order): who lives where, needs how much,
-    /// can work and carry. New households get a kind; farms of households
-    /// that moved away or died out are given to landless households of the
-    /// same region (S69: a free farm is taken automatically).
-    fn census(&mut self, p: &mut People, day: i64, start: bool) {
-        // People by id (one pass over the tables), then grouped by
-        // household with a counting sort, so no comparison sort.
-        let n = p.next_pid() as usize;
-        let mut by_pid = std::mem::take(&mut self.scratch);
-        by_pid.clear();
-        by_pid.resize(n, (NONE, 0, 0, 0, 0, 0, 0));
+    /// Snapshot of the living at home (one pass over the tables, in table
+    /// order; `count_households` puts it in id order).
+    fn snapshot(&mut self, p: &mut People) -> (Vec<Row>, u32) {
+        let mut rows = std::mem::take(&mut self.scratch);
+        rows.clear();
         let mut q = p.world.query_filtered::<(&Pid, &Household, &Home, &Born, &Sex, &Job, &Stand), Without<Travel>>();
-        for (pid, hh, home, born, sex, job, stand) in q.iter(&p.world) {
-            by_pid[pid.0 as usize] = (hh.0, pid.0, home.0, sex.0, job.0, stand.0, born.0);
+        rows.extend(q.iter(&p.world).map(|(pid, hh, home, born, sex, job, stand)| (hh.0, pid.0, home.0, sex.0, job.0, stand.0, born.0)));
+        (rows, p.next_pid())
+    }
+
+    /// Monthly count of the households, at once (start of the run).
+    fn census(&mut self, p: &mut People, day: i64, start: bool) {
+        let (rows, n) = self.snapshot(p);
+        let (info, members, scratch) = count_households(rows, n, day);
+        (self.info, self.members, self.scratch) = (info, members, scratch);
+        self.reconcile(p, start);
+        self.assign_free(p);
+        self.regroup();
+        self.sums();
+    }
+
+    /// The monthly count, spread over a week so no day carries more than
+    /// about a millisecond of it (like the people's index): the snapshot
+    /// is taken now and counted on another thread; `finish_census` takes
+    /// the result over three days later (the thread has two full days),
+    /// then free farms are given out, then `regroup`, then `sums`, a day
+    /// each. The count is new to this core, so each pass over it is
+    /// mostly cache misses.
+    fn start_census(&mut self, p: &mut People, day: i64) {
+        let (rows, n) = self.snapshot(p);
+        self.census_job = Some(std::thread::spawn(move || count_households(rows, n, day)));
+    }
+
+    fn finish_census(&mut self, p: &mut People) {
+        if let Some(job) = self.census_job.take() {
+            let (info, members, scratch) = job.join().expect("census thread");
+            (self.info, self.members, self.scratch) = (info, members, scratch);
+            self.reconcile(p, false);
         }
-        let mut at = vec![0u32; n + 1];
-        for r in &by_pid {
-            if r.0 != NONE {
-                at[r.0 as usize + 1] += 1;
-            }
-        }
-        for k in 0..n {
-            at[k + 1] += at[k];
-        }
-        let mut rows = vec![(0, 0, 0, 0, 0, 0, 0); at[n] as usize];
-        for r in &by_pid {
-            if r.0 != NONE {
-                rows[at[r.0 as usize] as usize] = *r;
-                at[r.0 as usize] += 1;
-            }
-        }
-        self.scratch = by_pid;
-        self.info.clear();
-        let age = |b: i32| (day - b as i64) as f64 / YEAR as f64;
-        let mut k = 0;
-        while k < rows.len() {
-            let id = rows[k].0;
-            let mut e = k;
-            while e < rows.len() && rows[e].0 == id {
-                e += 1;
-            }
-            let m = &rows[k..e];
-            // Head: the lowest person id among the adults, else the lowest.
-            let head = m.iter().find(|r| age(r.6) >= ADULT.0).unwrap_or(&m[0]);
-            let mut man = false;
-            let mut spare = NONE;
-            let mut inf = HhInfo { home: head.2, stand: head.5, job: head.4, carrier: NONE, trader: NONE, ..Default::default() };
-            for r in m {
-                let a = age(r.6);
-                inf.size += 1;
-                inf.need_w += if a < CHILD_AGE { 5 } else { 10 };
-                if (ADULT.0..ADULT.1).contains(&a) {
-                    inf.adults += 1;
-                    // The first man, else the first woman.
-                    if inf.carrier == NONE || (r.3 == 1 && !man) {
-                        man = r.3 == 1;
-                        inf.carrier = r.1;
-                    }
-                    if r.4 == HAENDLER && inf.trader == NONE {
-                        inf.trader = r.1;
-                    }
-                }
-                if (PEAK_HANDS.0..PEAK_HANDS.1).contains(&a) {
-                    inf.hands += 1;
-                    // Without an adult, an older child or old person goes.
-                    if inf.carrier == NONE {
-                        spare = r.1;
-                    }
-                }
-            }
-            if inf.carrier == NONE {
-                inf.carrier = spare;
-            }
-            self.info.insert(id, inf);
-            k = e;
-        }
+    }
+
+    /// After a count: new households get a kind; farms of households that
+    /// moved away or died out are given to landless households of the same
+    /// region (S69: a free farm is taken automatically).
+    fn reconcile(&mut self, p: &mut People, start: bool) {
         // Households gone or moved: free their farm.
         let ids = sorted_keys(&self.hh);
         for id in ids {
@@ -787,6 +807,12 @@ impl Grain {
         if start {
             self.share_land(p);
         }
+    }
+
+    /// After a count: free farms go to landless households, and the
+    /// workers are listed by market.
+    fn assign_free(&mut self, p: &mut People) {
+        let ids = sorted_keys(&self.info);
         // Free farms go to landless households of the same cell first, then
         // of the region (lowest household id first). PLACEHOLDER order.
         let mut free: Vec<u32> = (0..self.farms.len() as u32).filter(|&f| self.farms[f as usize].hh == NONE).collect();
@@ -806,7 +832,8 @@ impl Grain {
                     let (_, id) = list.remove(k);
                     let home = self.info[&id].home;
                     if home != cell {
-                        p.relocate_household(id, cell);
+                        let i = self.info[&id];
+                        p.relocate_household(id, &self.members[i.at as usize..(i.at + i.size as u32) as usize], cell);
                         self.info.get_mut(&id).unwrap().home = cell;
                     }
                     let fine = self.farms[f as usize].fine;
@@ -822,7 +849,20 @@ impl Grain {
                 }
             }
         }
-        // Slices for the staggered work.
+        // Workers offered at the market.
+        self.market_hh = vec![Vec::new(); self.markets.len()];
+        for &id in &ids {
+            let mk = self.cell_market[self.info[&id].home as usize] as usize;
+            self.market_hh[mk].push(id);
+        }
+    }
+
+    /// Slices for the staggered work and the farms that hire, from the
+    /// last count. Until this runs, the old slices may name a household
+    /// that is gone (skipped) or miss a new one (eats a few days later).
+    fn regroup(&mut self) {
+        // The count lists households in id order.
+        let ids: Vec<u32> = self.info.iter().map(|(&id, _)| id).collect();
         for v in self.hh_slices.iter_mut() {
             v.clear();
         }
@@ -835,8 +875,6 @@ impl Grain {
                 self.trader_slices[(id % 7) as usize].push(id);
             }
         }
-        // Yearly field growth (S73) is done at sowing; here the region sums.
-        self.market_hh = vec![Vec::new(); self.markets.len()];
         for m in self.markets.iter_mut() {
             m.hirers.clear();
         }
@@ -845,17 +883,20 @@ impl Grain {
                 self.markets[f.market as usize].hirers.push(k as u32);
             }
         }
+    }
+
+    /// People, landless, grain and free land per market, for the people's
+    /// migration (`export`) and the reports.
+    fn sums(&mut self) {
         for m in self.markets.iter_mut() {
             m.people = 0;
             m.tents = 0;
             m.grain = m.store;
             m.free_area = 0;
         }
-        for &id in &ids {
-            let i = self.info[&id];
+        for (&id, i) in self.info.iter() {
             let mk = self.cell_market[i.home as usize] as usize;
             let s = self.hh[&id];
-            self.market_hh[mk].push(id);
             let m = &mut self.markets[mk];
             m.people += i.size as u32;
             m.tents += u32::from(s.kind == TENT);
@@ -865,11 +906,9 @@ impl Grain {
             }
         }
         for (c, &a) in self.free_m2.iter().enumerate() {
-            let a = a + self.free_poor[c];
-            if a > 0 {
-                if let Some(&mk) = self.market_of.get(&p.grid.region(c as u32)) {
-                    self.markets[mk as usize].free_area += a;
-                }
+            let (a, mk) = (a + self.free_poor[c], self.cell_market[c]);
+            if a > 0 && mk != NONE {
+                self.markets[mk as usize].free_area += a;
             }
         }
     }
@@ -1020,14 +1059,21 @@ impl Grain {
         self.traders(day);
         self.timing.traders += us(t0);
         let t0 = t();
-        self.paths(p, day, slice as usize);
+        self.paths(p, day);
         self.timing.paths += us(t0);
-        if slice == 20 {
-            let t0 = t();
-            self.census(p, day, false);
-            self.export(p);
-            self.timing.census += us(t0);
+        let t0 = t();
+        match slice {
+            11 => self.start_census(p, day),
+            14 => self.finish_census(p),
+            15 => self.assign_free(p),
+            16 => self.regroup(),
+            17 => {
+                self.sums();
+                self.export(p);
+            }
+            _ => {}
         }
+        self.timing.census += us(t0);
     }
 
     fn push(&mut self, day: i64, ev: GEv) {
@@ -1380,8 +1426,8 @@ impl Grain {
             let _ = region;
             let ids = std::mem::take(&mut self.market_hh[mi]);
             for &id in &ids {
-                let s = self.hh[&id];
-                let i = self.info[&id];
+                // Gone since the count (the lists follow a day later).
+                let (Some(&s), Some(&i)) = (self.hh.get(&id), self.info.get(&id)) else { continue };
                 let days = match s.kind {
                     TENT => i.hands as i64 * 7 * SPARE_TENT_PCT / 100,
                     FARM if self.farms[s.farm as usize].peak.is_none() => i.hands as i64 * 7 * SPARE_FARM_PCT / 100,
@@ -1726,168 +1772,50 @@ impl Grain {
         self.trader_slices[wd] = ids;
     }
 
-    /// Footpaths (S70, Helbing 1997): once a month per market (1/30 of the
-    /// markets a day), every origin's trips since the last walk are walked
-    /// along the market's path field and add wear to each fine cell; wear
-    /// decays lazily (half-life PATH_HALF). A level change marks the field
-    /// for a rebuild, so later trips follow and deepen the path.
-    fn paths(&mut self, p: &People, day: i64, slice: usize) {
-        let _ = slice;
+    /// Footpaths (S70, Helbing 1997): once every WALK_DAYS per market
+    /// (1/WALK_DAYS of the markets a day), every origin's trips since the
+    /// last walk are walked along the market's path field and add wear to
+    /// each fine cell; wear decays with half-life PATH_HALF. A level change
+    /// marks the field for a rebuild, so later trips follow and deepen the
+    /// path. The day's markets are independent, so they run on the task
+    /// pool; the result does not depend on the number of threads.
+    fn paths(&mut self, p: &People, day: i64) {
         let q = day.rem_euclid(WALK_DAYS) as usize;
+        let mut jobs: Vec<Walk> = Vec::new();
         for mi in (q..self.markets.len()).step_by(WALK_DAYS as usize) {
-            if self.markets[mi].walked.is_empty() && !self.markets[mi].dirty {
+            let m = &mut self.markets[mi];
+            if m.walked.is_empty() && !m.dirty {
                 continue;
             }
-            let mut origins: Vec<(u32, i64)> = self.markets[mi].walked.drain().collect();
+            let mut origins: Vec<(u32, i64)> = m.walked.drain().collect();
             origins.sort_unstable();
-            self.ensure_field(p, mi as u32);
-            let mut f = self.markets[mi].field.take().unwrap();
-            // Every route follows the field to the market; add up the
-            // trips per cell, then wear each cell once.
-            let mut acc: FxHashMap<u32, i64> = FxHashMap::default();
-            for (o, k) in origins {
-                let (mut r, mut c) = ((o as i32 / self.cols_f) - f.r0, (o as i32 % self.cols_f) - f.c0);
-                let mut steps = 0;
-                while r >= 0 && c >= 0 && r < f.n && c < f.n && steps <= 2 * f.n {
-                    let i = (r * f.n + c) as usize;
-                    if f.dist[i] == u32::MAX {
-                        break;
-                    }
-                    *acc.entry(i as u32).or_default() += k;
-                    let d = f.dir[i];
-                    if d == 255 {
-                        break;
-                    }
-                    let (dr, dc) = DIRS[d as usize];
-                    r += dr;
-                    c += dc;
-                    steps += 1;
-                }
+            jobs.push(Walk { m: mi as u32, region: m.region, fine: m.fine, origins, field: m.field.take(), dirty: m.dirty, first_us: 0.0, rebuild_us: 0.0, rebuilt: false });
+        }
+        let (grid, cols_f, tab) = (&p.grid, self.cols_f, &self.decay[..]);
+        // One task per market: rebuilds are few and uneven.
+        bevy_tasks::ComputeTaskPool::get().scope(|s| {
+            for w in jobs.iter_mut() {
+                s.spawn(async move { walk(grid, cols_f, tab, w, day) });
             }
-            let mut cells: Vec<(u32, i64)> = acc.into_iter().collect();
-            cells.sort_unstable();
-            let mut changed = self.markets[mi].dirty;
-            // Wear decays since the last walk, then this walk adds to it.
-            let dt = day - f.walked;
-            f.walked = day;
-            for &i in &f.worn {
-                f.wear[i as usize] = decay(&self.decay, f.wear[i as usize] as i64, dt) as u32;
-            }
-            for &(i, k) in &cells {
-                if f.wear[i as usize] == 0 {
-                    f.worn.push(i as u16);
-                }
-                f.wear[i as usize] = (f.wear[i as usize] as i64 + 2 * k * WEAR_UNIT).min(u32::MAX as i64) as u32;
-            }
-            let (wear, level) = (&f.wear, &mut f.level);
-            f.worn.retain(|&i| {
-                let w = wear[i as usize] as i64;
-                let old = level[i as usize];
-                let mut lv = old;
-                while (lv as usize) < LEVELS.len() && w >= LEVELS[lv as usize].0 {
-                    lv += 1;
-                }
-                while lv > 0 && w < LEVELS[lv as usize - 1].1 {
-                    lv -= 1;
-                }
-                if lv != old {
-                    level[i as usize] = lv;
-                    changed = true;
-                }
-                w > 0
-            });
-            for &(i, _) in &cells {
-                let _ = i;
-            }
-            let last = f.built;
-            self.markets[mi].field = Some(f);
-            self.markets[mi].dirty = changed;
-            if changed && day - last >= WALK_DAYS {
-                let t0 = std::time::Instant::now();
-                self.build_field(p, mi as u32);
-                self.stats.field_rebuilds += 1;
-                self.timing.rebuild += t0.elapsed().as_secs_f64() * 1e6;
-            }
+        });
+        for w in jobs {
+            let m = &mut self.markets[w.m as usize];
+            m.field = w.field;
+            m.dirty = w.dirty;
+            self.stats.field_rebuilds += u64::from(w.rebuilt);
+            self.timing.first_build += w.first_us;
+            self.timing.rebuild += w.rebuild_us;
         }
     }
 
     fn ensure_field(&mut self, p: &People, m: u32) {
-        if self.markets[m as usize].field.is_none() {
+        let mk = &mut self.markets[m as usize];
+        if mk.field.is_none() {
             let t0 = std::time::Instant::now();
-            self.build_field(p, m);
+            mk.field = Some(build_field(&p.grid, self.cols_f, mk.region, mk.fine, None, p.world.resource::<Clock>().day));
+            mk.dirty = false;
             self.timing.first_build += t0.elapsed().as_secs_f64() * 1e6;
         }
-    }
-
-    /// Dijkstra over the market's region (64 × 64 fine cells) from the
-    /// market, step cost by path level; sea cells (coarse) are blocked.
-    fn build_field(&mut self, p: &People, m: u32) {
-        let day = p.world.resource::<Clock>().day;
-        let mk = &self.markets[m as usize];
-        let n = 4 * FINE;
-        let key = mk.region;
-        let (rr, rc) = ((key >> 16) as i32 - 64, (key & 0xffff) as i32 - 64);
-        let (r0, c0) = ((rr * 4 - p.grid.row0) * FINE, (rc * 4 - p.grid.col0) * FINE);
-        let size = (n * n) as usize;
-        let mut dist = vec![u32::MAX; size];
-        let mut dir = vec![255u8; size];
-        let (mr, mc) = ((mk.fine as i32 / self.cols_f) - r0, (mk.fine as i32 % self.cols_f) - c0);
-        // Wear and levels stay with the market's field across rebuilds.
-        let (level, wear, worn, walked) = match self.markets[m as usize].field.take() {
-            Some(old) => (old.level, old.wear, old.worn, old.walked),
-            None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
-        };
-        if mr < 0 || mc < 0 || mr >= n || mc >= n {
-            self.markets[m as usize].field = Some(Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day });
-            self.markets[m as usize].dirty = false;
-            return;
-        }
-        // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
-        let mut land = [false; 16];
-        for (k, l) in land.iter_mut().enumerate() {
-            let (cr, cc) = (r0 / FINE + k as i32 / 4, c0 / FINE + k as i32 % 4);
-            *l = cr >= 0 && cc >= 0 && cr < p.grid.rows && cc < p.grid.cols && p.grid.kind[(cr * p.grid.cols + cc) as usize] != 0;
-        }
-        // Dial's bucket queue (integer step costs below 256).
-        let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); 256];
-        let start = (mr * n + mc) as u32;
-        dist[start as usize] = 0;
-        buckets[0].push(start);
-        let (mut g, mut pending) = (0u32, 1usize);
-        while pending > 0 {
-            let b = std::mem::take(&mut buckets[(g & 255) as usize]);
-            for &i in &b {
-                pending -= 1;
-                if dist[i as usize] != g {
-                    continue;
-                }
-                let (r, c) = (i as i32 / n, i as i32 % n);
-                for (d, (dr, dc)) in DIRS.iter().enumerate() {
-                    let (nr, nc) = (r + dr, c + dc);
-                    if nr < 0 || nc < 0 || nr >= n || nc >= n || !land[((nr / FINE) * 4 + nc / FINE) as usize] {
-                        continue;
-                    }
-                    let j = (nr * n + nc) as usize;
-                    let base = if *dr != 0 && *dc != 0 { 141 } else { FINE_STEP };
-                    let ng = g + (base * LEVEL_COST_PCT[level[j] as usize] / 100) as u32;
-                    if ng < dist[j] {
-                        dist[j] = ng;
-                        dir[j] = (7 - d) as u8;
-                        buckets[(ng & 255) as usize].push(j as u32);
-                        pending += 1;
-                    }
-                }
-            }
-            let mut b = b;
-            b.clear();
-            if buckets[(g & 255) as usize].is_empty() {
-                buckets[(g & 255) as usize] = b;
-            }
-            g += 1;
-        }
-        let mk = &mut self.markets[m as usize];
-        mk.field = Some(Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day });
-        mk.dirty = false;
     }
 
     /// What people.rs reads: fed per household, and per region whether it
@@ -2101,6 +2029,268 @@ fn sorted_keys<V>(m: &IdMap<V>) -> Vec<u32> {
     v
 }
 
+/// One market's walk on a path day (see `Grain::paths`).
+struct Walk {
+    m: u32,
+    region: u32,
+    fine: u32,
+    origins: Vec<(u32, i64)>,
+    field: Option<Field>,
+    dirty: bool,
+    first_us: f64,
+    rebuild_us: f64,
+    rebuilt: bool,
+}
+
+fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
+    if w.field.is_none() {
+        let t0 = std::time::Instant::now();
+        w.field = Some(build_field(grid, cols_f, w.region, w.fine, None, day));
+        w.first_us = t0.elapsed().as_secs_f64() * 1e6;
+    }
+    let f = w.field.as_mut().unwrap();
+    // Every route follows the field to the market; add up the trips per
+    // cell, then wear each cell once. The trips flow down the field's tree
+    // from the farthest cell to the market, so a stretch shared by many
+    // routes is visited once.
+    let mut acc = vec![0i64; (f.n * f.n) as usize];
+    let mut heap = BinaryHeap::new();
+    for &(o, k) in &w.origins {
+        let (r, c) = ((o as i32 / cols_f) - f.r0, (o as i32 % cols_f) - f.c0);
+        if r < 0 || c < 0 || r >= f.n || c >= f.n {
+            continue;
+        }
+        let i = (r * f.n + c) as usize;
+        if f.dist[i] == u32::MAX {
+            continue;
+        }
+        if acc[i] == 0 {
+            heap.push((f.dist[i], i as u32));
+        }
+        acc[i] += k;
+    }
+    let mut cells: Vec<(u32, i64)> = Vec::with_capacity(heap.len() * 8);
+    while let Some((_, i)) = heap.pop() {
+        let k = acc[i as usize];
+        cells.push((i, k));
+        let d = f.dir[i as usize];
+        if d == 255 {
+            continue;
+        }
+        let (dr, dc) = DIRS[d as usize];
+        let j = ((i as i32 / f.n + dr) * f.n + i as i32 % f.n + dc) as usize;
+        if acc[j] == 0 {
+            heap.push((f.dist[j], j as u32));
+        }
+        acc[j] += k;
+    }
+    cells.sort_unstable();
+    let mut changed = w.dirty;
+    // Wear decays since the last walk, then this walk adds to it.
+    let dt = day - f.walked;
+    f.walked = day;
+    for &i in &f.worn {
+        f.wear[i as usize] = decay(tab, f.wear[i as usize] as i64, dt) as u32;
+    }
+    for &(i, k) in &cells {
+        if f.wear[i as usize] == 0 {
+            f.worn.push(i as u16);
+        }
+        f.wear[i as usize] = (f.wear[i as usize] as i64 + 2 * k * WEAR_UNIT).min(u32::MAX as i64) as u32;
+    }
+    let (wear, level) = (&f.wear, &mut f.level);
+    f.worn.retain(|&i| {
+        let w = wear[i as usize] as i64;
+        let old = level[i as usize];
+        let mut lv = old;
+        while (lv as usize) < LEVELS.len() && w >= LEVELS[lv as usize].0 {
+            lv += 1;
+        }
+        while lv > 0 && w < LEVELS[lv as usize - 1].1 {
+            lv -= 1;
+        }
+        if lv != old {
+            level[i as usize] = lv;
+            changed = true;
+        }
+        w > 0
+    });
+    w.dirty = changed;
+    if changed && day - f.built >= WALK_DAYS {
+        let t0 = std::time::Instant::now();
+        w.field = Some(build_field(grid, cols_f, w.region, w.fine, w.field.take(), day));
+        w.dirty = false;
+        w.rebuilt = true;
+        w.rebuild_us = t0.elapsed().as_secs_f64() * 1e6;
+    }
+}
+
+/// Dijkstra over the market's region (64 × 64 fine cells) from the
+/// market, step cost by path level; sea cells (coarse) are blocked.
+fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>, day: i64) -> Field {
+    let n = 4 * FINE;
+    let (rr, rc) = ((key >> 16) as i32 - 64, (key & 0xffff) as i32 - 64);
+    let (r0, c0) = ((rr * 4 - grid.row0) * FINE, (rc * 4 - grid.col0) * FINE);
+    let size = (n * n) as usize;
+    let mut dist = vec![u32::MAX; size];
+    let mut dir = vec![255u8; size];
+    let (mr, mc) = ((fine as i32 / cols_f) - r0, (fine as i32 % cols_f) - c0);
+    // Wear and levels stay with the market's field across rebuilds.
+    let (level, wear, worn, walked) = match old {
+        Some(old) => (old.level, old.wear, old.worn, old.walked),
+        None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
+    };
+    if mr < 0 || mc < 0 || mr >= n || mc >= n {
+        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day };
+    }
+    // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
+    let mut land = [false; 16];
+    for (k, l) in land.iter_mut().enumerate() {
+        let (cr, cc) = (r0 / FINE + k as i32 / 4, c0 / FINE + k as i32 % 4);
+        *l = cr >= 0 && cc >= 0 && cr < grid.rows && cc < grid.cols && grid.kind[(cr * grid.cols + cc) as usize] != 0;
+    }
+    // Step costs into each cell (0: blocked) on a grid with a blocked
+    // border, so a step needs no bounds check.
+    let w = n + 2;
+    let (mut ortho, mut diag) = (vec![0u32; (w * w) as usize], vec![0u32; (w * w) as usize]);
+    for r in 0..n {
+        for c in 0..n {
+            if land[((r / FINE) * 4 + c / FINE) as usize] {
+                let pct = LEVEL_COST_PCT[level[(r * n + c) as usize] as usize];
+                let pj = ((r + 1) * w + c + 1) as usize;
+                ortho[pj] = (FINE_STEP * pct / 100) as u32;
+                diag[pj] = (141 * pct / 100) as u32;
+            }
+        }
+    }
+    let off = DIRS.map(|(dr, dc)| (dr * w + dc) as isize);
+    let mut pd = vec![u32::MAX; (w * w) as usize];
+    let mut pdir = vec![255u8; (w * w) as usize];
+    // Dial's bucket queue (integer step costs below 256).
+    let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); 256];
+    let start = ((mr + 1) * w + mc + 1) as u32;
+    pd[start as usize] = 0;
+    buckets[0].push(start);
+    let (mut g, mut pending) = (0u32, 1usize);
+    while pending > 0 {
+        if buckets[(g & 255) as usize].is_empty() {
+            g += 1;
+            continue;
+        }
+        let mut b = std::mem::take(&mut buckets[(g & 255) as usize]);
+        for &i in &b {
+            pending -= 1;
+            if pd[i as usize] != g {
+                continue;
+            }
+            for (d, &o) in off.iter().enumerate() {
+                let j = (i as isize + o) as usize;
+                let step = if d == 1 || d == 3 || d == 4 || d == 6 { ortho[j] } else { diag[j] };
+                if step == 0 {
+                    continue;
+                }
+                let ng = g + step;
+                if ng < pd[j] {
+                    pd[j] = ng;
+                    pdir[j] = (7 - d) as u8;
+                    buckets[(ng & 255) as usize].push(j as u32);
+                    pending += 1;
+                }
+            }
+        }
+        b.clear();
+        if buckets[(g & 255) as usize].is_empty() {
+            buckets[(g & 255) as usize] = b;
+        }
+        g += 1;
+    }
+    for r in 0..n {
+        for c in 0..n {
+            let (i, pj) = ((r * n + c) as usize, ((r + 1) * w + c + 1) as usize);
+            dist[i] = pd[pj];
+            dir[i] = pdir[pj];
+        }
+    }
+    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day }
+}
+
+/// Groups a snapshot by household (counting sort, no comparison sort) and
+/// counts each household: who lives where, needs how much, can work and
+/// carry. Pure, so it can run on another thread. Returns the households,
+/// the person ids grouped by household and the emptied buffer.
+fn count_households(snap: Vec<Row>, n: u32, day: i64) -> (IdMap<HhInfo>, Vec<u32>, Vec<Row>) {
+    // Person id order first, then grouped by household (stable).
+    let n = n as usize;
+    let mut by_pid = vec![(NONE, 0, 0, 0, 0, 0, 0); n];
+    for r in &snap {
+        by_pid[r.1 as usize] = *r;
+    }
+    let mut at = vec![0u32; n + 1];
+    for r in &by_pid {
+        if r.0 != NONE {
+            at[r.0 as usize + 1] += 1;
+        }
+    }
+    for k in 0..n {
+        at[k + 1] += at[k];
+    }
+    let mut rows = vec![(0, 0, 0, 0, 0, 0, 0); at[n] as usize];
+    for r in &by_pid {
+        if r.0 != NONE {
+            rows[at[r.0 as usize] as usize] = *r;
+            at[r.0 as usize] += 1;
+        }
+    }
+    let mut info = IdMap::default();
+    let age = |b: i32| (day - b as i64) as f64 / YEAR as f64;
+    let mut k = 0;
+    while k < rows.len() {
+        let id = rows[k].0;
+        let mut e = k;
+        while e < rows.len() && rows[e].0 == id {
+            e += 1;
+        }
+        let m = &rows[k..e];
+        // Head: the lowest person id among the adults, else the lowest.
+        let head = m.iter().find(|r| age(r.6) >= ADULT.0).unwrap_or(&m[0]);
+        let mut man = false;
+        let mut spare = NONE;
+        let mut inf = HhInfo { home: head.2, stand: head.5, job: head.4, carrier: NONE, trader: NONE, at: k as u32, ..Default::default() };
+        for r in m {
+            let a = age(r.6);
+            inf.size += 1;
+            inf.need_w += if a < CHILD_AGE { 5 } else { 10 };
+            if (ADULT.0..ADULT.1).contains(&a) {
+                inf.adults += 1;
+                // The first man, else the first woman.
+                if inf.carrier == NONE || (r.3 == 1 && !man) {
+                    man = r.3 == 1;
+                    inf.carrier = r.1;
+                }
+                if r.4 == HAENDLER && inf.trader == NONE {
+                    inf.trader = r.1;
+                }
+            }
+            if (PEAK_HANDS.0..PEAK_HANDS.1).contains(&a) {
+                inf.hands += 1;
+                // Without an adult, an older child or old person goes.
+                if inf.carrier == NONE {
+                    spare = r.1;
+                }
+            }
+        }
+        if inf.carrier == NONE {
+            inf.carrier = spare;
+        }
+        info.insert(id, inf);
+        k = e;
+    }
+    let members = rows.iter().map(|r| r.1).collect();
+    let mut snap = snap;
+    snap.clear();
+    (info, members, snap)
+}
+
 /// A map from household id (a person id, dense and never reused) to a
 /// value: a slot per id and the values packed, so a lookup is two array
 /// reads. Iteration follows insertion and removal (deterministic, but not
@@ -2154,6 +2344,7 @@ impl<V> IdMap<V> {
             self.slot[*id as usize] = NONE;
         }
     }
+    #[cfg(test)]
     fn clear(&mut self) {
         for &id in &self.ids {
             self.slot[id as usize] = NONE;

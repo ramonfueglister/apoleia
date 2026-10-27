@@ -1,0 +1,24 @@
+{
+ "revision": "sim-landcover25-v1",
+ "generated_utc": "2026-10-27T18:28:43Z",
+ "tool": "tools/sim_landcover.py",
+ "sources": "as data/gametiles/terrain-sources.json (ESA WorldCover 2021 v200 CC BY 4.0: ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium; Copernicus DEM GLO-90)",
+ "groups": {
+  "farm": "40 cropland, 50 built-up",
+  "grass": "30 grassland",
+  "wood": "10 tree cover, 20 shrubland",
+  "other": "60 bare, 70 snow, 90 wetland, 95 mangroves, 100 moss"
+ },
+ "slope_bands_pct": [
+  "<8",
+  "8-16",
+  "16-30",
+  ">=30"
+ ],
+ "slope": "central differences on the DEM overview (300 rows/deg; ~370 m), underestimates short steep slopes",
+ "output": {
+  "path": "sim/inputs/landcover25.csv",
+  "rows": 24885,
+  "sha256": "ac32a991ce41b22679da93b726ec003446281e704a2fba6788f2978897adc30b"
+ }
+}

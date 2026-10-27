@@ -4,6 +4,7 @@
 //! tick times (people and grain apart), memory and fingerprints.
 //!
 //! Usage: grain [--years N] [--seed S] [--threads N] [--root DIR]
+//!              [--clear-pct P] [--clear-cover COL,COL,…|usable]
 
 use apoleia_sim::grain::Grain;
 use apoleia_sim::people::People;
@@ -40,7 +41,16 @@ fn main() {
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
-    let mut g = Grain::with_clearing(&inp, &mut p, clear);
+    // Clearable land (S73): the columns of sim/inputs/landcover25.csv that
+    // count, by default today's farmland below 16 % slope
+    // (grain::CLEAR_COVER); `--clear-cover usable` for all usable land.
+    let cols = arg("--clear-cover").unwrap_or_else(|| apoleia_sim::grain::CLEAR_COVER.join(","));
+    let cover = (cols != "usable").then(|| {
+        let cols: Vec<String> = cols.split(',').map(str::to_owned).collect();
+        apoleia_sim::grain::clearable(&root, &cols).expect("landcover25.csv")
+    });
+    println!("clearable land: {cols}");
+    let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref());
     let grain_ms = t0.elapsed().as_secs_f64() * 1e3;
     let (farms, kinds, tents, tent_people, ha, fs, ms) = g.summary();
     println!(
