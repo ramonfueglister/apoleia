@@ -82,9 +82,12 @@ func _process(delta: float) -> void:
         var months=int(pending)
         if months>0:
             pending-=months
+            # Queues the months; the sim thread computes them.
             sim.advance(months)
-            _update_clock()
-            if enabled: _upload(false)
+    # Newest finished month, if the sim thread published one.
+    if sim.refresh():
+        _update_clock()
+        if enabled: _upload(false)
     _update_tip()
 
 # The clipmap gives every tile its own duplicate of terrain_material, so a

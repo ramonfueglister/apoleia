@@ -2,6 +2,11 @@
 //! commands and reads the snapshot of the last completed month as two
 //! textures, one tile index per 1.5625 km map cell and one value row per
 //! tile, which the terrain shader colours as a map mode.
+//!
+//! The simulation runs on its own thread, as in Paradox's engines: `advance`
+//! only queues months and returns, the frame never waits for a tick. The
+//! sim thread publishes a snapshot after each month; `refresh` picks up the
+//! newest one. Results stay deterministic (one thread owns the world).
 
 use apoleia_sim::ecs::{Command, Sim, Snapshot};
 use apoleia_sim::{Params, MAX_LEVEL, ROOT_SIZE_M};
@@ -9,7 +14,8 @@ use godot::classes::image::Format;
 use godot::classes::Image;
 use godot::prelude::*;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread::JoinHandle;
 use std::time::Instant;
 
 struct ApoleiaExtension;
@@ -20,10 +26,52 @@ unsafe impl ExtensionLibrary for ApoleiaExtension {}
 /// Width of the value texture; tile i sits at (i % W, i / W).
 const VALUE_WIDTH: usize = 1024;
 
+/// State shared between Godot's main thread and the sim thread.
+#[derive(Default)]
+struct Shared {
+    queue: Mutex<Queue>,
+    wake: Condvar,
+    /// Newest published snapshot and the wall time of the month behind it.
+    latest: Mutex<Option<(Arc<Snapshot>, f64)>>,
+}
+
+#[derive(Default)]
+struct Queue {
+    months: u64,
+    quit: bool,
+}
+
+/// The sim thread: owns the world through the mutex, steps one month at a
+/// time and publishes each finished month.
+fn run(sim: Arc<Mutex<Sim>>, shared: Arc<Shared>) {
+    loop {
+        {
+            let mut q = shared.queue.lock().unwrap();
+            while q.months == 0 && !q.quit {
+                q = shared.wake.wait(q).unwrap();
+            }
+            if q.quit {
+                return;
+            }
+            q.months -= 1;
+        }
+        let mut sim = sim.lock().unwrap();
+        let t0 = Instant::now();
+        sim.submit(0, Command::AdvanceMonth);
+        sim.step();
+        let usec = t0.elapsed().as_secs_f64() * 1e6;
+        let snap = sim.snapshot();
+        drop(sim);
+        *shared.latest.lock().unwrap() = Some((snap, usec));
+    }
+}
+
 #[derive(GodotClass)]
 #[class(init, base = RefCounted)]
 pub struct ApoleiaSim {
-    sim: Option<Sim>,
+    sim: Option<Arc<Mutex<Sim>>>,
+    shared: Arc<Shared>,
+    worker: Option<JoinHandle<()>>,
     snap: Option<Arc<Snapshot>>,
     /// Finest-level grid covering all tiles: origin column/row and size.
     grid: (i64, i64, usize, usize),
@@ -59,7 +107,13 @@ impl ApoleiaSim {
                     r1 = r1.max(r + s);
                 }
                 self.grid = (c0, r0, (c1 - c0) as usize, (r1 - r0) as usize);
+                self.stop();
+                let sim = Arc::new(Mutex::new(sim));
+                let shared = Arc::new(Shared::default());
+                let (s, sh) = (sim.clone(), shared.clone());
+                self.worker = Some(std::thread::Builder::new().name("apoleia-sim".into()).spawn(move || run(s, sh)).expect("sim thread"));
                 self.sim = Some(sim);
+                self.shared = shared;
                 self.snap = Some(snap);
                 self.index_structure = None;
                 true
@@ -71,17 +125,30 @@ impl ApoleiaSim {
         }
     }
 
-    /// Advances the given number of months through the command queue (S43).
+    /// Queues months for the sim thread (S43) and returns at once.
     #[func]
     fn advance(&mut self, months: i64) {
-        let Some(sim) = self.sim.as_mut() else { return };
-        let t0 = Instant::now();
-        for _ in 0..months.max(0) {
-            sim.submit(0, Command::AdvanceMonth);
+        if self.sim.is_none() || months <= 0 {
+            return;
         }
-        sim.step();
-        self.last_step_usec = t0.elapsed().as_secs_f64() * 1e6;
-        self.snap = Some(sim.snapshot());
+        self.shared.queue.lock().unwrap().months += months as u64;
+        self.shared.wake.notify_one();
+    }
+
+    /// Months queued but not yet computed (the sim is behind by this much).
+    #[func]
+    fn backlog(&self) -> i64 {
+        self.shared.queue.lock().unwrap().months as i64
+    }
+
+    /// Takes the newest finished month, if any. True when it is new; then
+    /// clock and textures should be updated.
+    #[func]
+    fn refresh(&mut self) -> bool {
+        let Some((snap, usec)) = self.shared.latest.lock().unwrap().take() else { return false };
+        self.snap = Some(snap);
+        self.last_step_usec = usec;
+        true
     }
 
     #[func]
@@ -99,12 +166,13 @@ impl ApoleiaSim {
         self.snap.as_ref().map_or(0.0, |s| s.tiles.iter().map(|t| t.pop).sum())
     }
 
+    /// Waits for the sim thread's current month (debug and tests only).
     #[func]
     fn fingerprint(&self) -> GString {
-        self.sim.as_ref().map_or(GString::new(), |s| format!("{:016x}", s.fingerprint()).as_str().into())
+        self.sim.as_ref().map_or(GString::new(), |s| format!("{:016x}", s.lock().unwrap().fingerprint()).as_str().into())
     }
 
-    /// Wall time of the last `advance`, in microseconds.
+    /// Wall time of the last finished month on the sim thread, in microseconds.
     #[func]
     fn last_step_usec(&self) -> f64 {
         self.last_step_usec
@@ -204,5 +272,21 @@ impl ApoleiaSim {
         d.set("land_km2", t.land_km2);
         d.set("density", if t.land_km2 > 0.0 { t.pop / t.land_km2 } else { 0.0 });
         d
+    }
+}
+
+impl ApoleiaSim {
+    fn stop(&mut self) {
+        if let Some(w) = self.worker.take() {
+            self.shared.queue.lock().unwrap().quit = true;
+            self.shared.wake.notify_one();
+            let _ = w.join();
+        }
+    }
+}
+
+impl Drop for ApoleiaSim {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
