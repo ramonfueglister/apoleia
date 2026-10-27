@@ -203,7 +203,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // from 1-2 km noise, still crisp.
     float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
     float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
-    ground=mix(ground,land_forest_ground_color.rgb,forest_ground*mix(0.7,0.85,overview)*(1.0-valley_floor));
+    // Near: crowns carry the dark, the ground only hints at the forest.
+    float fg_strength=mix(mix(0.45,0.55,smoothstep(0.25,0.5,footprint)),0.85,overview);
+    ground=mix(ground,land_forest_ground_color.rgb,forest_ground*fg_strength*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
     float field_fade=(1.0-smoothstep(0.35,0.7,footprint))*(1.0-hill_country)*(1.0-forest)*(1.0-sand);
@@ -293,6 +295,11 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Compress the flank contrast: lit flanks a bit darker, shaded ones lighter.
     float flank=max(hill_country,forest)*(1.0-rock)*(1.0-overview);
     ground*=mix(1.0,clamp(0.86+0.55*(1.0-clamp(lit_n,0.0,1.0)),0.86,1.3),flank);
+    // Near meadow: shaded facet sides stay light (no mid-tone carpet); the
+    // contrast comes from brighter sunlit sides instead.
+    float meadow_near=(1.0-forest_ground)*(1.0-rock)*(1.0-smoothstep(0.3,0.6,footprint));
+    float sl=clamp(lit_n,0.0,1.0);
+    ground*=mix(1.0,mix(1.0+0.45*(0.6-sl),1.0+0.12*(sl-0.6),step(0.6,sl)),meadow_near);
     // Valley occlusion with a cool tint.
     float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
