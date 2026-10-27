@@ -54,12 +54,18 @@ void fragment(){
     // 5b44221 crop: the reference crowns are a saturated mid green with a
     // lighter top; ours grey-green (desaturated 35 %, flat top).
     tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.15);
+    float top=smoothstep(0.15,0.65,crown_up);
+    // 2ef82ce bands (nah): ours #102b13 / #25421f / #425d2d against the
+    // reference #1b3028 / #2e4332 / #4b5c38, green equal, blue 10-20 and red
+    // ~9 too low, most in the shade. Red and blue only (v and the band split
+    // stay): about 2x blue on the walls, 1.4x on the lit tops.
+    tinted*=mix(vec3(1.45,1.0,2.0),vec3(1.25,1.0,1.4),top);
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
     float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
     // Lighter tops over the steep gumdrop walls.
-    ALBEDO=tinted*mix(0.86,1.12,smoothstep(0.15,0.65,crown_up))*near_crowns;
+    ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
     // Sun-averted faces: the reference keeps them a mid green (#2e4332,
