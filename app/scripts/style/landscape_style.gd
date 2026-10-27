@@ -135,8 +135,11 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: 
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
         var distance=0.0 if t==0 else 5.2*spread*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
-        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)
-        var radius=height*rng.randf_range(0.30,0.36)
+        # Reference crowns are rounded cones about 0.85 as wide as tall; ours
+        # read as narrow spikes (0.66). Same draws, so the same trees: 8 %
+        # lower, 20 % wider, about 10 % more cover per crown.
+        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)*0.92
+        var radius=height*rng.randf_range(0.30,0.36)*1.30
         _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
     mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")+("_dense" if dense else "")
@@ -145,7 +148,8 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: 
 static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
     var sides=5
     var levels=[-0.45,0.18,0.55,1.0]
-    var widths=[0.55,1.0,0.58,0.0]
+    # Fuller shoulder: a rounded top instead of a spike (0.58 before).
+    var widths=[0.55,1.0,0.66,0.0]
     var phase=rng.randf()*TAU
     var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
     # Same RNG draws at every detail, so all stages show the same trees.
@@ -178,7 +182,9 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
             var k=(i+1)%sides
             # Faces facing the sun side (west) slightly lighter: low-poly read.
             var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
-            var tone=color.lightened(0.10*facing) if j>0 or detail>=4 else color.darkened(0.25)
+            # Underside: a cool shade like the reference (#1b3028), not near
+            # black (ours #162917 on 11 % of the crown pixels at 190 km).
+            var tone=color.lightened(0.10*facing) if j>0 or detail>=4 else Color(color.r*0.72,color.g*0.80,minf(color.b*1.05+0.03,1.0))
             _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
             if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 

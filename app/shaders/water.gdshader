@@ -109,7 +109,12 @@ void fragment() {
     if(near_sea>0.0) {
         float shelf_id;
         wl_facet_center(p,2.2,shelf_id);
-        float texel=clipmap_enabled ? tile_rect.z/max(float(textureSize(tile_water_tex,0).x-1),1.0) : 0.5;
+        // At most 0.6 km: the far part of the close view lies on coarse
+        // tiles (2 km texels), where taps 5 km out averaged open-sea depth
+        // into the coast, so the teal band ended mid-frame (b757b7f, 190 km:
+        // #31618a up to the far coast against the reference #38828e).
+        float tile_texel=clipmap_enabled ? tile_rect.z/max(float(textureSize(tile_water_tex,0).x-1),1.0) : 0.5;
+        float texel=min(tile_texel,0.6);
         // 8 taps: a diagonal ring at ~1 texel and an axis ring at ~2.6
         // texels. The 25 m codes stepped visibly with the 4-tap ring (a soft
         // contour ~20 km off the Lazio coast in the close view).
@@ -123,15 +128,22 @@ void fragment() {
         // came late at 10-15 km with a linear ramp to 100 m).
         float shelf_deep=mix(75.0,40.0,smoothstep(250.0,800.0,view_width));
         float s_depth=1.0-smoothstep(2.0,shelf_deep,shelf_d*0.125);
-        float s=max(s_depth,(1.0-smoothstep(0.0,3500.0,coast_m))*0.9);
+        // Coarse tiles store the coast as a texel water share (0 to 4 km
+        // within one texel), so the band spans at least ~2 texels there.
+        float s=max(s_depth,(1.0-smoothstep(0.0,max(3500.0,tile_texel*2200.0),coast_m))*0.9);
         // Mid and teal stops a little greener and brighter (measured 2-5 km
         // #327387, 10 km #216a86 against #2f7b8c and #1f708d).
-        vec3 c=mix(vec3(0.0085,0.040,0.107),vec3(0.0090,0.0770,0.130),smoothstep(0.0,0.5,s));
+        // Deep stop ~10 % lighter (b757b7f 20-30 px off the coast #165685 /
+        // #135383 against the reference #1c648a / #1c5d8a).
+        vec3 c=mix(vec3(0.0095,0.045,0.112),vec3(0.0090,0.0770,0.130),smoothstep(0.0,0.5,s));
         c=mix(c,vec3(0.0190,0.0950,0.122),smoothstep(0.4,0.9,s));
         // Light water right at the beach; only a hairline in the mid view
         // (measured #9db8ad at 0.5 km there).
-        float beach=1.0-smoothstep(0.0,max(px_m*2.0,800.0),coast_m);
-        c=mix(c,vec3(0.060,0.120,0.135),beach*mix(0.85,0.08,smoothstep(200.0,450.0,view_width)));
+        // b757b7f at 190 km: light for 1 px only (#588893, then #347a89);
+        // the reference fades over ~5 px (#5b8f8e, #498a8f, #40868e,
+        // #38828e, #2a7a8d at 6 px), lighter and greener.
+        float beach=1.0-smoothstep(0.0,max(px_m*5.0,1000.0),coast_m);
+        c=mix(c,vec3(0.062,0.150,0.158),beach*mix(0.85,0.08,smoothstep(200.0,450.0,view_width)));
         c*=1.0+(shelf_id-0.5)*0.05*smoothstep(0.1,0.4,s);
         c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.6);
         ALBEDO=mix(ALBEDO,c,near_sea);
