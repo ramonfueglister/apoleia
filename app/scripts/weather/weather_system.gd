@@ -375,6 +375,10 @@ func _prewarm_cells() -> void:
 	for kind in 3:
 		for k in wanted[kind]: _spawn_cell(kind, false, 0.0)
 	for cell in cells: cell.age = _rng.randf_range(40.0, cell.life * 0.5)
+	# Rain fronts start spread over the visible area, not around the whole region.
+	for cell in cells:
+		if cell.kind == 1:
+			cell.pos = _ground_rect.position + Vector2(_rng.randf(), _rng.randf() * 0.7) * _ground_rect.size
 	# Fair weather starts with a cumulus group in view.
 	for cell in cells:
 		if cell.kind == 0 and state == "fair":

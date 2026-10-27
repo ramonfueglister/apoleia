@@ -18,7 +18,9 @@ uniform float view_tan = 1.0; // 2 * tan(fov/2) * aspect: screen width at unit d
 float view_keep(vec3 centre, float width, vec3 camera) {
 	float d = distance(centre, camera);
 	float screen = width / max(d * view_tan, 0.001);
-	return smoothstep(near_hide_distance * 0.85, near_hide_distance, d) * (1.0 - smoothstep(0.2, 0.25, screen));
+	// The size limit applies near the focus; distant fronts on the horizon may be wide.
+	float size_limit = 1.0 - smoothstep(0.2, 0.25, screen) * (1.0 - smoothstep(1.4, 1.8, d / max(near_hide_distance, 0.001)));
+	return smoothstep(near_hide_distance * 0.85, near_hide_distance, d) * size_limit;
 }
 
 // Cumulus: returns the world vertex; x of `info` is the cluster scale (0 = absent).
