@@ -209,8 +209,8 @@ uniform float map_index_cell=1.5625;
 uniform int map_value_width=1024;
 // Colour by density (people per km²) on a fixed log scale, so tiles of
 // different size compare fairly and colours keep their meaning over time.
-uniform float map_density_low=1.0;
-uniform float map_density_high=1000.0;
+uniform float map_density_low=0.3;
+uniform float map_density_high=300.0;
 
 vec3 map_srgb_to_linear(vec3 c) {
     return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(0.04045,c));
