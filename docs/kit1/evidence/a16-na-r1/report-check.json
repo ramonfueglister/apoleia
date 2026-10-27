@@ -1,0 +1,20 @@
+{
+  "status": "blocked",
+  "scope": "evidence-contract-only",
+  "visual_truth_checked": false,
+  "issues": [
+    "A08: not evidenced/validated",
+    "A12: not evidenced/validated",
+    "A16: not evidenced/validated"
+  ],
+  "provenance": {
+    "command": "python3 docs/kit1/tools/kit.py report-check <run-copy>",
+    "repository_commit": "4a99fc7",
+    "run": "runs/kit1-landscape-v5-2026-10-25 (local APFS copy, frozen original unchanged)",
+    "inputs": {
+      "data-report-errata/release-v2/derivation-view.json": "c1ea9d503f38c15240b60ad5b4f119f91f188c91705d612dedc93b652db240b5 (apply_na.py output)",
+      "report.json": "docs/kit1/evidence/a16-na-r1/report.json"
+    },
+    "reproduce": "see README.md; derivation-view.json is local-only (gitignored, 40 MB)"
+  }
+}

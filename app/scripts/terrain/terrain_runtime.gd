@@ -117,6 +117,9 @@ func _upload(record:Dictionary)->bool:
         for uniform in material.shader.get_shader_uniform_list():
             var name=str(uniform.name);var value=material.get_shader_parameter(name)
             if available.has(name) and value!=null:water_material.set_shader_parameter(name,value)
+        # Look layer water palette (same as the fixed-surface sea).
+        var look=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+        for key in look:water_material.set_shader_parameter(key,look[key])
         marine.material_override=water_material
     if not _marine_binding_printed:
         var report={"shader":marine.material_override.shader.resource_path}

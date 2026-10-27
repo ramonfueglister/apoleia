@@ -1,0 +1,28 @@
+{
+ "capture_frame_clipmap": {
+  "frame": 678,
+  "t_ms": 6326,
+  "frame_wall_ms": 11.27,
+  "upload_bytes": 0,
+  "upload_ms": 0.0,
+  "missing": 0,
+  "refining": 0,
+  "draw_tiles": 121,
+  "gpu_bytes": 133394256
+ },
+ "startup_timeline": {
+  "first_frame_msec": 3530,
+  "coverage_ready_msec": 9794,
+  "coverage_ready_frame": 671
+ },
+ "coverage_gate": "snapshot waits for root_ready, missing==0, refining==0 (120 s cap)",
+ "coverage_cap_hit": false,
+ "pipeline_counts_final": {
+  "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+  "PIPELINE_COMPILATIONS_MESH": 0.0,
+  "PIPELINE_COMPILATIONS_SURFACE": 31.0,
+  "PIPELINE_COMPILATIONS_DRAW": 0.0,
+  "PIPELINE_COMPILATIONS_SPECIALIZATION": 21.0
+ },
+ "exit_code": 0
+}

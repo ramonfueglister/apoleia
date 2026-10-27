@@ -1,0 +1,358 @@
+{
+  "forward_plus-1793057549": {
+    "rendering_method": "forward_plus",
+    "gpu": "Apple M3 Pro (Apple9)",
+    "viewport": [
+      640,
+      360
+    ],
+    "window": "640x360 logical (allow_hidpi; see viewport for render size)",
+    "startup_wait_ms": 26835.204,
+    "tour_start_frame": 125,
+    "frames_total": 4779,
+    "frames_tour": 4654,
+    "frame_ms_all": {
+      "p50": 8.543,
+      "p95": 16.817,
+      "p99": 28.128,
+      "max": 8317.993
+    },
+    "frame_ms_tour": {
+      "p50": 8.54,
+      "p95": 16.77,
+      "p99": 26.41,
+      "max": 134.305
+    },
+    "spikes_top8_ms_frame": [
+      [
+        8318.0,
+        1
+      ],
+      [
+        6137.3,
+        3
+      ],
+      [
+        5141.6,
+        2
+      ],
+      [
+        4821.7,
+        30
+      ],
+      [
+        1240.5,
+        11
+      ],
+      [
+        134.3,
+        2931
+      ],
+      [
+        110.8,
+        2930
+      ],
+      [
+        107.2,
+        2929
+      ]
+    ],
+    "tour_frames_over_ms": {
+      "16.7": 242,
+      "33.3": 33,
+      "50": 11,
+      "100": 5,
+      "250": 0
+    },
+    "rss_bytes": {
+      "max": 1304313856,
+      "median": 1199079424.0,
+      "samples": 156,
+      "method": "ps rss every 0.5 s"
+    },
+    "memory_static_bytes_max": 722356880,
+    "gpu_memory_bytes_max": 791740416.0,
+    "gpu_texture_memory_bytes_max": 480508544.0,
+    "terrain_streaming": {
+      "oldest_request_ms_max": 0.0,
+      "upload_max_ms": 0.0
+    },
+    "clipmap": {
+      "lines": 80,
+      "missing_max": 76,
+      "upload_ms_max": 1.853,
+      "gpu_bytes_max": 251611920,
+      "tile_io_ms_max": 183.226,
+      "tile_pending_max": 73,
+      "tile_cpu_bytes_max": 118816740
+    },
+    "runtime_json_sha256": "ef31887036e113ce2eca0cfbc87d627dbe6eb3fe52eba39d46c2fc642d997a6e"
+  },
+  "forward_plus-1793058080": {
+    "rendering_method": "forward_plus",
+    "gpu": "Apple M3 Pro (Apple9)",
+    "viewport": [
+      640,
+      360
+    ],
+    "window": "640x360 logical (allow_hidpi; see viewport for render size)",
+    "startup_wait_ms": 7077.606,
+    "tour_start_frame": 293,
+    "frames_total": 4999,
+    "frames_tour": 4706,
+    "frame_ms_all": {
+      "p50": 8.479,
+      "p95": 16.645,
+      "p99": 25.991,
+      "max": 4515.732
+    },
+    "frame_ms_tour": {
+      "p50": 8.496,
+      "p95": 16.765,
+      "p99": 25.552,
+      "max": 127.667
+    },
+    "spikes_top8_ms_frame": [
+      [
+        4515.7,
+        105
+      ],
+      [
+        127.7,
+        3140
+      ],
+      [
+        109.4,
+        3139
+      ],
+      [
+        103.3,
+        3138
+      ],
+      [
+        101.7,
+        3136
+      ],
+      [
+        101.6,
+        3137
+      ],
+      [
+        76.2,
+        3075
+      ],
+      [
+        75.8,
+        3078
+      ]
+    ],
+    "tour_frames_over_ms": {
+      "16.7": 239,
+      "33.3": 26,
+      "50": 12,
+      "100": 5,
+      "250": 0
+    },
+    "rss_bytes": {
+      "max": 1541783552,
+      "median": 1231355904,
+      "samples": 117,
+      "method": "ps rss every 0.5 s"
+    },
+    "memory_static_bytes_max": 724678216,
+    "gpu_memory_bytes_max": 791953408.0,
+    "gpu_texture_memory_bytes_max": 482966144.0,
+    "terrain_streaming": {
+      "oldest_request_ms_max": 0.0,
+      "upload_max_ms": 0.0
+    },
+    "clipmap": {
+      "lines": 84,
+      "missing_max": 80,
+      "upload_ms_max": 1.87,
+      "gpu_bytes_max": 251611920,
+      "tile_io_ms_max": 487.106,
+      "tile_pending_max": 68,
+      "tile_cpu_bytes_max": 118816740
+    },
+    "runtime_json_sha256": "5882ae2278cf02213bac48db4cdead6db483d84f2464573b038bad558cef1f97"
+  },
+  "mobile-1793058145": {
+    "rendering_method": "mobile",
+    "gpu": "Apple M3 Pro (Apple9)",
+    "viewport": [
+      640,
+      360
+    ],
+    "window": "640x360 logical (allow_hidpi; see viewport for render size)",
+    "startup_wait_ms": 26823.95,
+    "tour_start_frame": 182,
+    "frames_total": 5468,
+    "frames_tour": 5286,
+    "frame_ms_all": {
+      "p50": 8.385,
+      "p95": 11.929,
+      "p99": 20.624,
+      "max": 14400.411
+    },
+    "frame_ms_tour": {
+      "p50": 8.381,
+      "p95": 11.778,
+      "p99": 20.122,
+      "max": 61.41
+    },
+    "spikes_top8_ms_frame": [
+      [
+        14400.4,
+        1
+      ],
+      [
+        4495.1,
+        30
+      ],
+      [
+        4116.0,
+        2
+      ],
+      [
+        1409.7,
+        3
+      ],
+      [
+        672.6,
+        10
+      ],
+      [
+        61.4,
+        3565
+      ],
+      [
+        58.3,
+        3564
+      ],
+      [
+        58.3,
+        3563
+      ]
+    ],
+    "tour_frames_over_ms": {
+      "16.7": 110,
+      "33.3": 10,
+      "50": 5,
+      "100": 0,
+      "250": 0
+    },
+    "rss_bytes": {
+      "max": 1559822336,
+      "median": 1317552128,
+      "samples": 137,
+      "method": "ps rss every 0.5 s"
+    },
+    "memory_static_bytes_max": 724483411,
+    "gpu_memory_bytes_max": 779206656.0,
+    "gpu_texture_memory_bytes_max": 1.8446744073708468e+19,
+    "terrain_streaming": {
+      "oldest_request_ms_max": 73.0,
+      "upload_max_ms": 0.0
+    },
+    "clipmap": {
+      "lines": 92,
+      "missing_max": 85,
+      "upload_ms_max": 3.567,
+      "gpu_bytes_max": 251611920,
+      "tile_io_ms_max": 162.031,
+      "tile_pending_max": 79,
+      "tile_cpu_bytes_max": 118816740
+    },
+    "runtime_json_sha256": "d91ea5501295ee9dfd888c9544a5d15f1f7c988a188676bd7a361706c4579f08"
+  },
+  "mobile-1793058233": {
+    "rendering_method": "mobile",
+    "gpu": "Apple M3 Pro (Apple9)",
+    "viewport": [
+      640,
+      360
+    ],
+    "window": "640x360 logical (allow_hidpi; see viewport for render size)",
+    "startup_wait_ms": 7123.714,
+    "tour_start_frame": 274,
+    "frames_total": 5553,
+    "frames_tour": 5279,
+    "frame_ms_all": {
+      "p50": 8.399,
+      "p95": 11.982,
+      "p99": 20.226,
+      "max": 4546.389
+    },
+    "frame_ms_tour": {
+      "p50": 8.396,
+      "p95": 11.903,
+      "p99": 19.907,
+      "max": 60.992
+    },
+    "spikes_top8_ms_frame": [
+      [
+        4546.4,
+        105
+      ],
+      [
+        61.0,
+        3637
+      ],
+      [
+        58.7,
+        3636
+      ],
+      [
+        58.0,
+        3633
+      ],
+      [
+        57.2,
+        3635
+      ],
+      [
+        56.6,
+        3634
+      ],
+      [
+        49.5,
+        3522
+      ],
+      [
+        49.3,
+        3523
+      ]
+    ],
+    "tour_frames_over_ms": {
+      "16.7": 109,
+      "33.3": 10,
+      "50": 5,
+      "100": 0,
+      "250": 0
+    },
+    "rss_bytes": {
+      "max": 1324335104,
+      "median": 1223245824.0,
+      "samples": 116,
+      "method": "ps rss every 0.5 s"
+    },
+    "memory_static_bytes_max": 725477639,
+    "gpu_memory_bytes_max": 780238848.0,
+    "gpu_texture_memory_bytes_max": 1.8446744073708468e+19,
+    "terrain_streaming": {
+      "oldest_request_ms_max": 0.0,
+      "upload_max_ms": 0.0
+    },
+    "clipmap": {
+      "lines": 93,
+      "missing_max": 100,
+      "upload_ms_max": 3.962,
+      "gpu_bytes_max": 251611920,
+      "tile_io_ms_max": 488.847,
+      "tile_pending_max": 97,
+      "tile_cpu_bytes_max": 118816740
+    },
+    "runtime_json_sha256": "0ca246fa835350af1149a6c077b6f4fa382ae402e65e982eb99c7792446a8a34"
+  }
+}

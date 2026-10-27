@@ -105,6 +105,22 @@ def collect_current(repository):
     for relative in ['data/anchors.json', 'data/protection-rules.json', 'data/projection.json',
                      'docs/product-renderer/camera-profile.json']:
         add(relative, role='runtime-sidecar')
+    # Display-only river supplement (landscape.gd reads it when enabled in the binding).
+    supplement = binding.get('visual_extensions', {}).get('rivers_supplement', {})
+    if supplement.get('enabled'):
+        add(supplement['path'], supplement.get('sha256'), role='rivers-supplement')
+        if supplement.get('manifest'):
+            add(supplement['manifest'], supplement.get('manifest_sha256'), role='rivers-supplement-manifest')
+    # Optional land-cover nodes read by landscape_look/landscape_style (not in the binding).
+    land_cover = Path('artifacts/render-data/landcover-node-2km')
+    if (Path(repository) / land_cover / 'manifest.json').exists():
+        cover = transport.read_json(add(land_cover / 'manifest.json', role='land-cover-manifest'))
+        for key in ['look', 'classes']:
+            entry = cover.get(key)
+            if isinstance(entry, dict) and entry.get('path'):
+                add(land_cover / entry['path'], entry.get('sha256'), role='land-cover-' + key)
+            else:
+                add(land_cover / (key + ('.rgba8' if key == 'look' else '.u8')), role='land-cover-' + key)
     # The stream branch reads these two dataset-relative resources directly.
     for key in ['rivers_path', 'water_distance_manifest_path']:
         raw = dataset[key]
@@ -385,6 +401,28 @@ func _initialize():
     return {key: value for key, value in report.items() if key != 'files'}
 
 
+def prewarm(bundle, timeout):
+    """Launch the finished bundle once so macOS caches its compiled Metal pipelines.
+
+    Godot persists only MSL text (user://shader_cache); the Metal library/pipeline
+    compile (~1-1.6 s per pipeline when cold, ~20 s for a fresh bundle) is cached by
+    macOS per bundle identifier, and SPIR-V-only baking cannot avoid it without the
+    Xcode Metal toolchain. The clipmap pipeline warmup draws every material variant
+    before the tour clock, so a 3 s tour fills that cache for later launches.
+    Small window at 0,0; telemetry beside, not inside, the inventoried bundle.
+    """
+    out = bundle.parent / (bundle.name + '.prewarm')
+    out.mkdir(parents=True, exist_ok=True)
+    command = [str(bundle / 'Contents/MacOS/Apoleia'), '--windowed', '--resolution', '960x540', '--position', '0,0',
+               '--', '--tour', '--duration', '3', '--telemetry-dir', str(out)]
+    with (out / 'launch.log').open('w') as log:
+        subprocess.run(command, check=True, timeout=timeout, stdout=log, stderr=subprocess.STDOUT)
+    evidence = transport.read_json(out / 'runtime.json')
+    frames = evidence.get('frame_intervals_ms', [])
+    return {'prewarm_telemetry': str(out), 'first_frames_max_ms': max(frames[:60], default=None),
+            'pipeline_counts_final': evidence.get('pipeline_counts_final')}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository', type=Path, default=ROOT)
@@ -393,18 +431,26 @@ def main():
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--finish-existing', action='store_true', help='inspect/assemble retained export-work without another GPU export')
     parser.add_argument('--timeout', type=int, default=300)
+    parser.add_argument('--prewarm', action='store_true',
+                        help='after assembling, launch the bundle once (small window) to fill the macOS Metal pipeline cache')
     args = parser.parse_args()
     try:
         if args.dry_run and args.finish_existing:
             raise ValueError('--dry-run and --finish-existing are mutually exclusive')
         if args.finish_existing:
-            print(json.dumps(finish_export(args.engine, args.output), indent=2))
+            report = finish_export(args.engine, args.output)
+            if args.prewarm:
+                report['prewarm'] = prewarm(args.output, args.timeout)
+            print(json.dumps(report, indent=2))
             return 0
         if args.dry_run:
             _, _, report = plan(args.repository, args.engine, args.output)
             print(json.dumps(report, indent=2))
             return 2 if report['blockers'] else 0
-        print(json.dumps(build(args.repository, args.engine, args.output, args.timeout), indent=2))
+        report = build(args.repository, args.engine, args.output, args.timeout)
+        if args.prewarm:
+            report['prewarm'] = prewarm(args.output, args.timeout)
+        print(json.dumps(report, indent=2))
         return 0
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print('baked export refused: ' + str(error), file=sys.stderr)
