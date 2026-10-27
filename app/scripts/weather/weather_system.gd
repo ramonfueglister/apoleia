@@ -22,7 +22,7 @@ const STATE_FIELD := {
 	# Fair: grouped cumulus fields with clear high-pressure gaps.
 	"fair": Vector4(0.02, 0.7, 0.0, 0.0),
 	"overcast": Vector4(0.68, 0.35, 0.10, 0.0),
-	"rain": Vector4(0.5, 0.45, 0.70, 0.0),
+	"rain": Vector4(0.35, 0.45, 0.70, 0.0),
 	# Storms are local: fair background plus one or two large storm cells.
 	"storm": Vector4(0.04, 0.45, 0.0, 0.0),
 }
@@ -396,8 +396,8 @@ func _prewarm_cells() -> void:
 			# Just beyond the focus (a flat camera sees little further), right side:
 			# upper right of the picture, never between camera and focus.
 			cell.pos = _focus() + away * _ground_width * 0.25 + Vector2(-away.y, away.x) * _ground_width * 0.35
-			cell.ra = maxf(_ground_width * 0.22, 50.0)
-			cell.rc = maxf(_ground_width * 0.3, 70.0)
+			cell.ra = maxf(_ground_width * 0.3, 50.0)
+			cell.rc = maxf(_ground_width * 0.4, 70.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -684,10 +684,10 @@ func _update_tiers() -> void:
 		material.set_shader_parameter("focus_forward", Vector2(_focus().x - _camera.global_position.x, _focus().y - _camera.global_position.z).dot(Vector2(_forward.x, _forward.z).normalized()))
 		material.set_shader_parameter("near_hide_fair", lerpf(0.5, 0.85, close))
 		material.set_shader_parameter("near_hide_bank", lerpf(0.7, 1.05, close))
-		material.set_shader_parameter("bank_growth", lerpf(2.2, 0.8, close))
+		material.set_shader_parameter("bank_growth", lerpf(1.2, 0.8, close))
 		material.set_shader_parameter("view_tan", view_tan)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
-	var cluster_scale := clampf(_ground_width / 900.0, 0.3, 1.0)
+	var cluster_scale := clampf(_ground_width / 900.0, 0.45, 1.0)
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:

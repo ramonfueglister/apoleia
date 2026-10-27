@@ -20,7 +20,8 @@ void vertex() {
 void fragment() {
 	vec3 field = weather_field(world_xz);
 	float detail = texture(weather_noise, (world_xz - air_drift) / (noise_period * 0.17)).r;
-	float body = smoothstep(0.2, 0.6, field.x + (detail - 0.5) * 0.25);
+	// Only where it rains or storms: fair cumulus fields stay off the continental view.
+	float body = smoothstep(0.4, 0.75, field.x + (detail - 0.5) * 0.25) * clamp(max(field.y, field.z) * 2.5, 0.0, 1.0);
 	if (body < 0.01 && !debug_solid) { discard; }
 	float storm = smoothstep(0.05, 0.4, field.z);
 	ALBEDO = mix(rain_color * (0.85 + 0.3 * detail), storm_color, storm);
