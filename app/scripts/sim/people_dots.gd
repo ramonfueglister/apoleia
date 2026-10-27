@@ -21,6 +21,7 @@ const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 const PLACE_KEYS: Array[StringName] = [&"tile_km", &"relief_smooth", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
+const DOTS_PER_INSTANCE := 64 # people_dots.gdshaderinc, divides the page size
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -101,15 +102,18 @@ func _rebuild() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = _dot_mesh()
-	mm.instance_count = _texture.get_layers() * people.page_side() * people.page_side()
+	mm.instance_count = _texture.get_layers() * people.page_side() * people.page_side() / DOTS_PER_INSTANCE
 	multimesh = mm
 
-## One triangle around the unit circle; the shader scales it to pixels and
-## cuts the round dot out of it.
+## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
+## shader scales each to pixels and cuts the round dot out of it.
 static func _dot_mesh() -> ArrayMesh:
+	var verts := PackedVector3Array()
+	for i in DOTS_PER_INSTANCE:
+		verts.append_array([Vector3(0, 2, i), Vector3(-1.7320508, -1, i), Vector3(1.7320508, -1, i)])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(0, 2, 0), Vector3(-1.7320508, -1, 0), Vector3(1.7320508, -1, 0)])
+	arrays[Mesh.ARRAY_VERTEX] = verts
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh

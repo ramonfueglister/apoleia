@@ -9,6 +9,8 @@
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 
+const int DOTS_PER_INSTANCE = 64; // people_dots.gd DOTS_PER_INSTANCE
+
 uniform sampler2D place_tex : filter_nearest, repeat_disable; // people_dots_prep output
 uniform float dot_px = 3.0;      // dot radius in pixels
 uniform vec3 dot_colour : source_color = vec3(0.02, 0.02, 0.02);
@@ -19,7 +21,10 @@ varying flat uint kind;
 
 void vertex() {
 	local = VERTEX.xy;
-	int id = INSTANCE_ID;
+	// DOTS_PER_INSTANCE triangles per instance (VERTEX.z = dot within the
+	// batch): one tiny 3-vertex instance per dot would leave most lanes of
+	// the GPU's vertex SIMD groups idle
+	int id = INSTANCE_ID * DOTS_PER_INSTANCE + int(VERTEX.z);
 	int per = page_side * page_side;
 	int in_page = id % per;
 	ivec2 px = ivec2(in_page % page_side, (id / per) * page_side + in_page / page_side);
