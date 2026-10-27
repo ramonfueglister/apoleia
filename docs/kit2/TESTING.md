@@ -107,6 +107,26 @@ denselben Fingerprint `65b033b310548070`; `pinned_fingerprint` ist auf beiden gr
 Im Spiel (echte Karte, Jahr 300): F5 19 ms, Datei 0,33 MB; F9 87 ms, danach läuft das
 Spiel nahtlos weiter.
 
+### Nachtrag: Jahresschritt und Teilen parallel (92dc699)
+
+- Wanderungsfeld parallel gefüllt (jede Tile schreibt nur ihren eigenen Platz).
+- Stadtzug in zwei parallelen Durchläufen; die Summen pro Region sind Festkomma-Ganzzahlen,
+  daher ist das Ergebnis unabhängig davon, wie die Tiles auf Threads verteilt werden.
+- Nachbarlisten nach Teilungen parallel gebaut.
+- Plattformgleich: 500 Jahre echte Karte ergeben auf Linux und Mac `7766c98c5a6211a0`.
+
+Mac, 1,5 Mio. Tiles, 72 Monate (`--per-month`):
+
+| Abschnitt | Zeit pro Monat |
+|---|---|
+| Normaler Monat (Median) | 1,5 ms |
+| Januar (Wanderung, Stadtzug) | 13 ms (vorher ~25 ms) |
+| Ein Jahr gesamt | ~29 ms → Tempo 5 (100 Monate/s) braucht ~24 % eines Kerns |
+| Anlauf: Teilungsschub Monate 0–5 | 75–176 ms (einmalig, ~0,6 s für die ersten 16 Monate) |
+
+Mittel über die ersten 36 Monate: 100 000 Zellen 1,5 ms (vorher 1,9), 300 000 Zellen 4,9 ms
+(6,8), 1 000 000 Zellen 19,8 ms (25,5).
+
 **Grenzen, ehrlich:**
 
 - Teuer sind die Januare (Wanderung und Stadtzug) und die ersten Monate nach dem Start, in
