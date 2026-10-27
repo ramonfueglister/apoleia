@@ -82,7 +82,9 @@ void fragment(){
     // direct sun the warm colour (red 1.0, green 0.88, blue 0.8 of tinted).
     vec3 cool=mix(vec3(1.35,1.0,1.85),vec3(1.02,1.07,1.4),top);
     tinted*=cool;
-    crown_warm=vec3(1.0,0.88,0.8)/cool;
+    // a117124 / de679e4 lit, land only: nah #5f7745, mittel #60784d against
+    // #5e723d / #5d723f, blue 8-14 high.
+    crown_warm=vec3(1.0,0.88,0.72)/cool;
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.

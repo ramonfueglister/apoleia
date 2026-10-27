@@ -92,7 +92,10 @@ void fragment() {
         // red base; stronger coast ramp; the shelf band only to ~300 m.
         vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(0.68,0.88,0.90);
         float near=1.0-smoothstep(0.0,4000.0,coast_m);
-        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(30.0,300.0,depth))*0.6);
+        // de679e4: 2-10 px on the reference; from 14 px out G/B 5-8 high
+        // (30 px #1e6492 against #1b5c8d): the shelf term is ~full there
+        // (Adriatic, Lazio shelf), so its weight sets the level.
+        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(30.0,300.0,depth))*0.45);
         // Keep the open sea's facet and wave tone steps.
         float texture_tone=clamp(dot(w.albedo,vec3(1.0))/max(dot(open,vec3(1.0)),0.0001),0.85,1.15);
         vec3 c=open*mix(vec3(1.0),vec3(1.0,2.1,1.42),band)*mix(texture_tone,1.0,near);
