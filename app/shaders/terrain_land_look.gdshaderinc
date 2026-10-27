@@ -102,7 +102,12 @@ vec3 land_fine_tri(vec2 p,float size) {
 
 // bias: the far view samples calmer (blurrier) land cover.
 vec4 land_cover_at(vec2 p,float bias) {
-    vec2 uv=((p-land_cover_world_min)/land_cover_spacing+0.5)/land_cover_size;
+    // Quintic (smootherstep) weights through one bilinear fetch: thresholded
+    // fields get round contours instead of bilinear diamond steps.
+    vec2 q=(p-land_cover_world_min)/land_cover_spacing;
+    vec2 i=floor(q),f=q-i;
+    f=f*f*f*(f*(f*6.0-15.0)+10.0);
+    vec2 uv=(i+f+0.5)/land_cover_size;
     return texture(land_cover_tex,uv,bias);
 }
 // Only the selected source is sampled (?: evaluates one operand).
@@ -139,8 +144,11 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 smooth_n=land_display_normal(source_normal,scale*shade_k);
     float slope=1.0-land_display_normal(source_normal,dhs).y;
     // Far view: the camera's relief fade or simply a large pixel footprint.
-    float overview=max(1.0-smoothstep(0.7,1.0,rel),smoothstep(0.7,1.3,footprint));
-    bool near=footprint<1.0;
+    // From the smaller screen footprint: at the oblique camera the vertical
+    // footprint is much larger and pulled far-view tones into mid views.
+    float ofoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    float overview=max(1.0-smoothstep(0.7,1.0,rel),smoothstep(0.7,1.3,ofoot));
+    bool near=min(footprint,max(min(length(dFdx(p)),length(dFdy(p))),0.001))<1.0;
 
     // Material fields: one domain-warped tap of the coarse atlas; up close
     // quantised to the fine triangle and blurred by a small ring, so no
@@ -152,16 +160,28 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Colour is constant per fine facet up close: sample at its centroid.
     float tri_size=exp2(floor(log2(max(footprint*5.0,0.05))));
     vec2 pc=footprint<0.6 ? land_tri_centroid(p,tri_size) : p;
-    vec4 nz=land_tnoise(pc,4.5);          // R edge, G/B warp, A patch
-    vec4 nm=land_tnoise(pc+vec2(37.0,11.0),22.0); // R meso
-    vec4 nM=land_tnoise(pc+vec2(5.0,73.0),120.0); // R macro
+    // Colour masses from the smooth position: centroid-quantised sampling
+    // turned their edges into triangle staircases.
+    vec4 nz=land_tnoise(p,4.5);          // R edge, G/B warp, A patch
+    vec4 nm=land_tnoise(p+vec2(37.0,11.0),22.0); // R meso
+    vec4 nM=land_tnoise(p+vec2(5.0,73.0),120.0); // R macro
     float edge=(nz.r-0.5)*noise_fade;
-    vec2 pw=pc+(nz.gb*2.2-1.1)*noise_fade;
+    // The warp is low-frequency (3 km): keep it at every distance, otherwise
+    // the 2 km land-cover texels show as blocks once it fades out.
+    // Plus a fine 300 m warp octave (from the same fetch at another scale
+    // would cost a fetch; reuse the patch channel instead).
+    vec2 pw=p+(nz.gb*2.0-1.0)*1.6+(vec2(nz.a,nz.r)-0.5)*0.6;
     // Fields: R forest, G bare/rock, B dry, A snow (land cover), or the
     // source material weights (FOREST/ROCK/DRY/SHORE) without it.
     vec4 soft=LAND_FIELDS(pw);
     float forest=land_edge(soft.r+edge*0.30,0.5);
-    float dry=land_edge(soft.b+edge*0.25,0.7);
+    // Dry/crop land: in mid and near views only light speckles (0.3-0.5 km)
+    // within the dry zone, not continuous beige plates.
+    float dry_zone=land_edge(soft.b+edge*0.25,0.7);
+    float speck=land_tnoise(p+vec2(53.0,29.0),0.4).r;
+    float sfade=1.0-smoothstep(0.3,0.9,max(min(length(dFdx(p)),length(dFdy(p))),0.001)/0.4*2.0);
+    // Where the speckles are not resolved (mid), the dry tone is weak.
+    float dry=mix(dry_zone,dry_zone*mix(0.3,land_edge(speck,0.62),sfade),1.0-overview);
     // Bare land below the tree line is sand/steppe, not rock.
     float sand=use_land_cover ? land_edge(soft.g+edge*0.2,0.5)*(1.0-smoothstep(900.0,1300.0,h)) : 0.0;
 
@@ -175,13 +195,15 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float meso=nm.r;
     vec3 grass=land_grass_color.rgb;
     float var_amt=mix(1.0,0.25,overview);
-    grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,meso)*0.7*var_amt);
-    grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6*var_amt);
+    // Mid views: bright patches half as strong and finer (patch noise, not meso).
+    float midv=smoothstep(0.2,0.45,footprint)*(1.0-overview);
+    grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,mix(meso,nz.a,midv))*0.4*var_amt*mix(1.0,0.4,midv));
+    grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6*var_amt*mix(0.4,1.0,overview));
     grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85*var_amt);
     if(footprint<1.2) {
         float patch=nz.a;
         float f=1.0-smoothstep(0.6,1.2,footprint);
-        grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.50,0.80,patch)*0.40*f);
+        grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.55,0.80,patch)*0.25*f);
         grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.22,patch)*0.45*f);
     }
     // Hill country: dark fir-green flanks on the golden ground.
@@ -197,6 +219,19 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 floor_tone=land_forest_floor_color.rgb;
     vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
+    // Fine darker grass patches (100-300 m): grass structure instead of
+    // large bright plates; faded once below ~2 px.
+    float gfoot_any=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    if(gfoot_any<0.12) {
+        float gp=land_tnoise(p+vec2(71.0,7.0),0.2).r;
+        ground*=1.0-0.09*land_edge(gp,0.62)*(1.0-smoothstep(0.05,0.12,gfoot_any))*(1.0-forest);
+    }
+    // Fine meadow speckles (~80 m) for the closest zooms.
+    float gfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    if(gfoot<0.04) {
+        float g=land_tnoise(p+vec2(17.0,91.0),0.08).r;
+        ground*=1.0+(land_edge(g,0.6)-0.4)*0.10*(1.0-smoothstep(0.015,0.04,gfoot));
+    }
     ground=mix(ground,land_sand_color.rgb,sand*0.9);
     // Closed forest ground from the forest share, crisp edged, every distance.
     // Only where forest is really dense; ragged edges and small clearings
@@ -204,7 +239,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
     float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
     // Near: crowns carry the dark, the ground only hints at the forest.
-    float fg_strength=mix(mix(0.45,0.55,smoothstep(0.25,0.5,footprint)),0.85,overview);
+    float fg_strength=mix(mix(0.45,0.6,smoothstep(0.25,0.5,footprint)),0.85,overview);
     ground=mix(ground,land_forest_ground_color.rgb,forest_ground*fg_strength*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
@@ -219,7 +254,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec2 fh=land_hash2(fc+vec2(3.0,8.0));
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
-        ground=mix(ground,parcel,0.12*field_fade);
+        ground=mix(ground,parcel,0.06*field_fade);
         // Irregular darker grass patches (0.5-2 km) from the existing noise
         // fetch, hard-edged: meadow, not a parcel quilt.
         ground*=1.0-0.10*land_edge(nz.a*0.6+nm.r*0.4,0.62)*field_fade;
@@ -237,6 +272,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float rock_field=smoothstep(1560.0,1640.0,h)*smoothstep(60.0,140.0,crest);
     rock_field=max(rock_field,smoothstep(200.0,280.0,crest)*smoothstep(1000.0,1060.0,h));
     rock_field=max(rock_field,smoothstep(1780.0,1840.0,h));
+    // Mid zoom: the high Alps as a closed light rock massif (real > ~1900 m).
+    rock_field=max(rock_field,smoothstep(1220.0,1300.0,h)*smoothstep(0.2,0.45,footprint));
     float rock=land_edge(rock_field+edge*0.25,0.5);
 
     // Normals: stable facet lattice on the represented form (near only).
@@ -246,16 +283,19 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Facets ~1.25 km near, ~3 km mid; tilt exaggerated like the shading
         // normal so flat geometry still shows lit/shaded triangles. Only on
         // slopes (of the exaggerated shading normal); plains stay calm.
-        float fsize=mix(1.25,3.0,smoothstep(0.25,0.6,footprint));
-        float fv=1.0-smoothstep(0.30,0.9,footprint/fsize*2.0);
-        float sslope=smoothstep(0.02,0.10,1.0-smooth_n.y);
+        // Visibility from the smaller screen footprint: at the oblique camera
+        // the vertical footprint is several times larger and hid the facets.
+        float ffoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+        float fsize=mix(0.6,3.0,smoothstep(0.2,0.6,ffoot));
+        float fv=1.0-smoothstep(0.45,1.1,ffoot/fsize*2.0);
+        float sslope=smoothstep(0.004,0.04,1.0-smooth_n.y);
         vec3 hill_facet=land_cell_facet(smooth_n,p,fsize,fid);
         hill_facet=normalize(vec3(hill_facet.x*shade_k,hill_facet.y,hill_facet.z*shade_k));
         n=normalize(mix(smooth_n,hill_facet,land_facet_strength*sslope*fv*rel));
-        ground*=1.0+(fid-0.5)*0.32*fv*(1.0-rock)*mix(0.3,1.0,sslope);
-        // Hard light/dark per mesh triangle on slopes, exaggerated like k.
-        vec3 fn=normalize(vec3(facet_normal.x*shade_k,facet_normal.y,facet_normal.z*shade_k));
-        n=normalize(mix(n,fn,0.55*fv*sslope*rel));
+        ground*=1.0+(fid-0.5)*0.40*fv*(1.0-rock)*mix(0.35,1.0,sslope);
+        // No mesh-triangle normal here: clipmap parent tiles have km-sized
+        // triangles, which showed as dark blocks. Facets come from the
+        // stable world lattice above only.
     }
     float rfid=0.5;
     vec3 rock_facet=facet_normal;
@@ -285,7 +325,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float sun_side=clamp(dot(rock_facet,normalize(vec3(-0.676,0.643,-0.360))),0.0,1.0);
     vec3 stone=mix(land_rock_dark_color.rgb,land_rock_light_color.rgb,clamp(0.15+0.85*sun_side*sun_side*rel+0.5*(1.0-rel)+0.2*(rfid-0.5),0.0,1.0));
     float mid_fp=smoothstep(0.2,0.4,footprint)*(1.0-smoothstep(1.0,1.4,footprint));
-    stone*=mix(0.85,0.50,mid_fp*sun_side);
+    // Strong lit/shaded facet contrast on rock (lit light grey-beige,
+    // shaded clearly dark).
+    stone*=mix(1.0,0.62,mid_fp*sun_side)*mix(0.72,1.08,sun_side);
     ground=mix(ground,stone,rock);
     // Snow/ice only from land cover (bare/snow) above ~3000 m real.
     ground=mix(ground,land_snow_color.rgb,land_edge(soft.g*smoothstep(1780.0,1840.0,h),0.3)*0.85);
@@ -298,8 +340,15 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Near meadow: shaded facet sides stay light (no mid-tone carpet); the
     // contrast comes from brighter sunlit sides instead.
     float meadow_near=(1.0-forest_ground)*(1.0-rock)*(1.0-smoothstep(0.3,0.6,footprint));
+    // Near meadow warmer yellow-green (reference #939346).
+    ground*=mix(vec3(1.0),vec3(1.38,1.12,1.0),meadow_near*(1.0-hill_country*0.5));
     float sl=clamp(lit_n,0.0,1.0);
-    ground*=mix(1.0,mix(1.0+0.45*(0.6-sl),1.0+0.12*(sl-0.6),step(0.6,sl)),meadow_near);
+    ground*=mix(1.0,mix(1.0+0.45*(0.6-sl),1.0+0.35*(sl-0.6),step(0.6,sl)),meadow_near);
+    // Shaded sides of meadow and forest ground: cool blue-green, desaturated.
+    float shade_amt=(1.0-clamp(lit_n/0.6,0.0,1.0))*(1.0-rock)*(1.0-overview);
+    vec3 cool=ground*vec3(0.88,0.97,1.05);
+    cool=mix(cool,vec3(dot(cool,vec3(0.3,0.59,0.11))),0.18);
+    ground=mix(ground,cool,shade_amt);
     // Valley occlusion with a cool tint.
     float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
@@ -321,7 +370,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         float upland=smoothstep(300.0,800.0,h);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
         ground=mix(ground,land_forest_stipple_light.rgb,smoothstep(300.0,500.0,h)*(1.0-smoothstep(1000.0,1200.0,h))*overview*0.35);
-        ground*=mix(vec3(1.0),vec3(1.340,1.160,1.080),overview);
+        ground*=mix(vec3(1.0),vec3(1.420,1.160,1.060),overview);
         // Plain colour from real land cover: crop/dry land calm tan-olive.
         float far_dry=smoothstep(0.3,0.7,soft.b)*(1.0-upland);
         ground=mix(ground,land_far_dry_color.rgb,far_dry*overview*0.75);
@@ -350,13 +399,13 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground=mix(ground,mix(crowns,land_far_forest_color.rgb,shadow_side*0.5),far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
         ground*=mix(1.0,clamp(shade,0.45,1.5),overview);
         // Pixel-sharp grain on far plains (+-5 %).
-        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.24*overview*(1.0-upland*0.5);
+        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.32*overview*(1.0-upland*0.5);
         // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
         // compressed), shaded by side; only the highest summits white.
         // Real ranges only: high plateaus (Meseta, Anatolia) stay land.
         // Rock massif from real land cover (bare/snow share) on high ground.
         // Real > ~1900 m (1260 on the reference curve): pale rock belt.
-        float alpine=max(smoothstep(1220.0,1300.0,h),smoothstep(0.08,0.20,soft.g)*smoothstep(1000.0,1100.0,h));
+        float alpine=max(smoothstep(1050.0,1150.0,h),smoothstep(0.08,0.20,soft.g)*smoothstep(1000.0,1100.0,h));
         vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1720.0,1800.0,h)*max(0.5,smoothstep(0.1,0.3,soft.g)));
         belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*overview*0.92);
