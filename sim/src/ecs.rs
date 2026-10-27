@@ -270,6 +270,21 @@ fn flow_month(stats: &Stats) -> bool {
     stats.month % 12 == 0
 }
 
+/// Base pointer of the migration array for disjoint parallel writes.
+#[derive(Clone, Copy)]
+struct Slots(*mut Side);
+// SAFETY: used only for writes to distinct indices (one per entity).
+unsafe impl Send for Slots {}
+unsafe impl Sync for Slots {}
+
+impl Slots {
+    /// # Safety
+    /// `i` must be in bounds and written by no other task at the same time.
+    unsafe fn put(self, i: usize, v: Side) {
+        unsafe { *self.0.add(i) = v };
+    }
+}
+
 fn migrate(
     c: Res<TickConst>,
     stats: Res<Stats>,
@@ -288,15 +303,23 @@ fn migrate(
         }
         return;
     }
-    for (ents, keys, pop, cap) in state.contiguous_iter().expect("tiles live in tables") {
-        for i in 0..ents.len() {
-            let at = ents[i].index_u32() as usize;
-            if at >= dense.len() {
-                dense.resize(at + 1, Side::default());
-            }
-            dense[at] = side(pop[i].0, cap[i].0, keys[i].0.level);
-        }
+    // Size the array by the largest entity index, then fill it in parallel:
+    // every tile writes only its own slot.
+    let mut top = 0usize;
+    for (ents, ..) in state.contiguous_iter().expect("tiles live in tables") {
+        top = ents.iter().fold(top, |m, e| m.max(e.index_u32() as usize + 1));
     }
+    if dense.len() < top {
+        dense.resize(top, Side::default());
+    }
+    let slots = Slots(dense.as_mut_ptr());
+    state.contiguous_par_iter().expect("tiles live in tables").for_each(move |(ents, keys, pop, cap)| {
+        for i in 0..ents.len() {
+            // SAFETY: entity indices are unique and < top, so writes are
+            // disjoint and in bounds; `dense` is not read until all are done.
+            unsafe { slots.put(ents[i].index_u32() as usize, side(pop[i].0, cap[i].0, keys[i].0.level)) };
+        }
+    });
     let dense = &*dense;
     let chunks = tiles.contiguous_par_iter_mut().expect("tiles live in tables");
     chunks.for_each(|(ents, nbs, moved)| {
@@ -361,110 +384,101 @@ fn city_draw(
     c: Res<TickConst>,
     regions: Res<Regions>,
     stats: Res<Stats>,
-    mut s: Local<DrawScratch>,
-    state: Query<(&TileKey, &Pop, &Cap, &UrbanShare)>,
-    mut moved: Query<&mut Moved>,
+    mut parts: Local<Parallel<DrawPart>>,
+    mut given: Local<Parallel<i64>>,
+    mut q: Query<(Entity, &TileKey, &Pop, &Cap, &UrbanShare, &mut Moved)>,
 ) {
     let c = *c;
     if c.city_pull_rate <= 0.0 || !flow_month(&stats) {
         return;
     }
-    let n = regions.count;
-    let s = &mut *s;
-    s.demand.clear();
-    s.demand.resize(n, 0.0);
-    s.pool.clear();
-    s.pool.resize(n, 0.0);
-    s.tiles.clear();
-    s.cities.clear();
-    // Only the rural birth surplus leaves (landless children, Wrigley 1967;
-    // de Vries 1984): this year's logistic gain of the rural share. A
-    // drained countryside therefore stops sending instead of emptying.
-    let d = c.decay_year_q32 as f64 / Q32 as f64;
-    // Pass 1 over the columns: what each city asks, what each root square
-    // can give, and per tile its root square, rural people and surplus.
+    let (n, rg) = (regions.count, *regions);
+    // Pass 1, parallel: what each city asks and what each root square can
+    // give. Sums are integers (fixed point), so the result does not depend
+    // on how the tiles are split across threads.
     // A tile is city and country at once: its city share u asks for
     // u·(K − P), its rural share (1 − u) of the people can be drawn.
-    let mut at = 0u32;
-    for (keys, pop, cap, urban) in state.contiguous_iter().expect("tiles live in tables") {
-        for i in 0..keys.len() {
-            let (p, k, u) = (pop[i].0, cap[i].0, urban[i].0);
-            let r = regions.index(keys[i].0);
-            let uf = u as f64 * (1.0 / U_ONE as f64);
-            if u > 0 {
-                let want = (c.city_pull_rate * uf * (k - p).max(0) as f64) as i64;
-                if want >= 1 {
-                    s.demand[r] += want as f64;
-                    s.cities.push((keys[i].0, want, at + i as u32));
+    q.contiguous_par_iter().expect("tiles live in tables").for_each(|(ents, keys, pop, cap, urban, _)| {
+        parts.scope(|a| {
+            if a.demand.len() != n {
+                a.demand = vec![0; n];
+                a.pool = vec![0; n];
+            }
+            for i in 0..ents.len() {
+                let (p, k, u) = (pop[i].0, cap[i].0, urban[i].0);
+                let r = rg.index(keys[i].0);
+                let uf = u as f64 * (1.0 / U_ONE as f64);
+                if u > 0 {
+                    let want = (c.city_pull_rate * uf * (k - p).max(0) as f64) as i64;
+                    if want >= 1 {
+                        a.demand[r] += want;
+                        a.cities.push((keys[i].0, want, ents[i]));
+                    }
                 }
+                a.pool[r] += (p.max(0) as f64 * (1.0 - uf)) as i64;
             }
-            s.pool[r] += p.max(0) as f64 * (1.0 - uf);
-            if u < U_ONE && p > 0 && k > p {
-                let rest = 1.0 - uf;
-                let (pp, kk) = (p as f64, k as f64);
-                let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
-                s.tiles.push((at + i as u32, r as u32, pp * rest, surplus));
-            }
+        });
+    });
+    let (mut demand, mut pool, mut cities) = (vec![0i64; n], vec![0i64; n], Vec::new());
+    for a in parts.iter_mut() {
+        for r in 0..a.demand.len() {
+            demand[r] += std::mem::take(&mut a.demand[r]);
+            pool[r] += std::mem::take(&mut a.pool[r]);
         }
-        at += keys.len() as u32;
+        cities.append(&mut a.cities);
     }
-    if s.cities.is_empty() {
+    if cities.is_empty() {
         // Rates are zero without demand: nobody leaves.
         return;
     }
     // Rate asked of each catchment, then summed back onto each root square.
-    let (demand, pool) = (&s.demand, &s.pool);
     let asked: Vec<f64> = (0..n)
         .map(|r| {
-            let p3: f64 = regions.around(r).map(|q| pool[q]).sum();
-            if p3 > 0.0 { demand[r] / p3 } else { 0.0 }
+            let p3: i64 = regions.around(r).map(|q| pool[q]).sum();
+            if p3 > 0 { demand[r] as f64 / p3 as f64 } else { 0.0 }
         })
         .collect();
     let rate: Vec<f64> = (0..n).map(|q| regions.around(q).map(|r| asked[r]).sum::<f64>().min(c.city_draw_cap)).collect();
-    // Pass 2: what leaves each giving tile, in table order.
-    let mut taken = 0i64;
-    for t in &mut s.tiles {
-        let out = ((t.2 * rate[t.1 as usize]).min(t.3) + 0.5) as i64;
-        t.2 = out as f64;
-        taken += out;
-    }
+    // Pass 2, parallel: only the rural birth surplus leaves (landless
+    // children, Wrigley 1967; de Vries 1984): this year's logistic gain of
+    // the rural share. A drained countryside stops sending instead of
+    // emptying.
+    let d = c.decay_year_q32 as f64 / Q32 as f64;
+    q.contiguous_par_iter_mut().expect("tiles live in tables").for_each(|(_, keys, pop, cap, urban, moved)| {
+        let (moved, _) = ContiguousMut::split(moved);
+        let mut out_sum = 0i64;
+        for i in 0..keys.len() {
+            let (p, k, u) = (pop[i].0, cap[i].0, urban[i].0);
+            if u < U_ONE && p > 0 && k > p {
+                let rest = 1.0 - u as f64 * (1.0 / U_ONE as f64);
+                let (pp, kk) = (p as f64, k as f64);
+                let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
+                let out = ((pp * rest * rate[rg.index(keys[i].0)]).min(surplus) + 0.5) as i64;
+                moved[i].0 -= out;
+                out_sum += out;
+            }
+        }
+        given.scope(|t| *t += out_sum);
+    });
+    let taken: i64 = given.iter_mut().map(std::mem::take).sum();
     // Hand out in ID order: the last city takes the remainder.
-    s.cities.sort_unstable_by_key(|c| c.0);
-    let wanted: i64 = s.cities.iter().map(|c| c.1).sum();
+    cities.sort_unstable_by_key(|c| c.0);
+    let wanted: i64 = cities.iter().map(|c| c.1).sum();
     let mut left = taken;
-    let last = s.cities.len() - 1;
-    for (i, c) in s.cities.iter_mut().enumerate() {
-        let g = if i == last { left } else { ((taken as i128 * c.1 as i128) / wanted as i128) as i64 };
+    let last = cities.len() - 1;
+    for (i, &(_, want, e)) in cities.iter().enumerate() {
+        let g = if i == last { left } else { ((taken as i128 * want as i128) / wanted as i128) as i64 };
         left -= g;
-        c.1 = g;
-    }
-    s.cities.sort_unstable_by_key(|c| c.2);
-    // Pass 3: write both lists into the Moved columns (same table order).
-    let (mut give, mut get) = (s.tiles.iter().peekable(), s.cities.iter().peekable());
-    let mut at = 0u32;
-    for chunk in moved.contiguous_iter_mut().expect("tiles live in tables") {
-        let (chunk, _) = ContiguousMut::split(chunk);
-        let end = at + chunk.len() as u32;
-        while let Some(t) = give.next_if(|t| t.0 < end) {
-            chunk[(t.0 - at) as usize].0 -= t.2 as i64;
-        }
-        while let Some(c) = get.next_if(|c| c.2 < end) {
-            chunk[(c.2 - at) as usize].0 += c.1;
-        }
-        at = end;
+        q.get_mut(e).expect("city").5 .0 += g;
     }
 }
 
-/// Reused buffers of `city_draw`.
+/// Per-thread sums of `city_draw` pass 1, kept between years.
 #[derive(Default)]
-pub struct DrawScratch {
-    demand: Vec<f64>,
-    pool: Vec<f64>,
-    /// Tiles that can give: position, root square, rural people (then the
-    /// people leaving), surplus.
-    /// Positions are in table order.
-    tiles: Vec<(u32, u32, f64, f64)>,
-    cities: Vec<(Key, i64, u32)>,
+pub struct DrawPart {
+    demand: Vec<i64>,
+    pool: Vec<i64>,
+    cities: Vec<(Key, i64, Entity)>,
 }
 
 /// Per-thread candidate lists filled during the parallel growth pass.
@@ -645,6 +659,24 @@ impl KeyList {
 
 /// New neighbour lists for leaves born this month and every leaf next to
 /// them (their old lists may point at despawned tiles).
+/// `f` over chunks of `items` on the task pool, results concatenated in
+/// chunk order (so the output is the same as one sequential call).
+fn par_chunks<T: Sync, R: Send + 'static>(items: &[T], f: &(dyn Fn(&[T]) -> Vec<R> + Sync)) -> Vec<R> {
+    if items.len() < 4096 {
+        return f(items);
+    }
+    let pool = bevy_tasks::ComputeTaskPool::get();
+    let size = items.len().div_ceil(pool.thread_num().max(1) * 4);
+    pool.scope(|s| {
+        for chunk in items.chunks(size) {
+            s.spawn(async move { f(chunk) });
+        }
+    })
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
 pub(crate) fn refresh_neighbors(world: &mut World, idx: &mut TileIndex) {
     let born = std::mem::take(&mut idx.born);
     if born.is_empty() {
@@ -655,23 +687,34 @@ pub(crate) fn refresh_neighbors(world: &mut World, idx: &mut TileIndex) {
         // A new or loaded game: every leaf.
         dirty = idx.leaves.keys().copied().collect();
     } else {
-        dirty = Vec::with_capacity(born.len() * 5);
-        for &k in &born {
-            if idx.leaves.contains_key(&k) {
-                dirty.push(k);
-                dirty.extend_from_slice(leaf_neighbors(idx, k).keys());
+        let around = |chunk: &[Key]| {
+            let mut v = Vec::with_capacity(chunk.len() * 5);
+            for &k in chunk {
+                if idx.leaves.contains_key(&k) {
+                    v.push(k);
+                    v.extend_from_slice(leaf_neighbors(idx, k).keys());
+                }
             }
-        }
+            v
+        };
+        dirty = par_chunks(&born, &around);
         dirty.sort_unstable();
         dirty.dedup();
     }
-    for k in dirty {
-        let list = leaf_neighbors(idx, k);
+    // The lists only read the index, so they are built in parallel; the
+    // writes follow. The result does not depend on the order.
+    let idx = &*idx;
+    let build = |k: &Key| {
+        let list = leaf_neighbors(idx, *k);
         let mut n = Neighbors { len: list.len as u8, ..Neighbors::default() };
         for (slot, key) in n.at.iter_mut().zip(list.keys()) {
             *slot = idx.leaves[key].index_u32();
         }
-        *world.get_mut::<Neighbors>(idx.leaves[&k]).expect("neighbors") = n;
+        (idx.leaves[k], n)
+    };
+    let lists = par_chunks(&dirty, &|chunk: &[Key]| chunk.iter().map(build).collect());
+    for (e, n) in lists {
+        *world.get_mut::<Neighbors>(e).expect("neighbors") = n;
     }
 }
 

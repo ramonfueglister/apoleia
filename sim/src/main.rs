@@ -7,7 +7,8 @@
 //! `--compare` runs both side by side on the full map and reports, per year,
 //! whether they have the same tiles and how far apart they are.
 //! `--synthetic N` builds a synthetic map of N 25 km cells (no input files)
-//! and measures tick, snapshot, save and load at that size (scale test).
+//! and measures tick, snapshot, save and load at that size (scale test);
+//! `--per-month` also prints every month's time, splits and merges.
 
 use apoleia_sim::ecs::Sim;
 use apoleia_sim::{Cell, City, Key, Params, World, CELL_LEVEL};
@@ -163,16 +164,21 @@ fn synthetic(n: usize) -> (Vec<Key>, HashMap<(i32, i32), Cell>, Vec<City>) {
     (start, cells, cities)
 }
 
-fn scale(n: usize, months: u32, params: Params) {
+fn scale(n: usize, months: u32, params: Params, per_month: bool) {
     let (start, cells, cities) = synthetic(n);
     let t0 = Instant::now();
     let mut sim = Sim::new(params.clone(), &start, cells.clone(), cities.clone());
     let build_ms = t0.elapsed().as_secs_f64() * 1e3;
     let mut us = Vec::new();
-    for _ in 0..months {
+    for m in 0..months {
+        let s0 = sim.stats();
         let t = Instant::now();
         sim.tick();
         us.push(t.elapsed().as_secs_f64() * 1e6);
+        let s1 = sim.stats();
+        if per_month {
+            eprintln!("month={m} us={:.0} splits={} merges={}", us[us.len() - 1], s1.splits - s0.splits, s1.merges - s0.merges);
+        }
     }
     let mean = us.iter().sum::<f64>() / us.len() as f64;
     let (p50, p95, max) = percentiles(us);
@@ -217,7 +223,7 @@ fn main() {
     };
     if let Some(n) = arg("--synthetic").and_then(|v| v.parse().ok()) {
         // Room to split: the budget (S12) scales with the map.
-        scale(n, arg("--months").and_then(|v| v.parse().ok()).unwrap_or(48), Params { budget: params.budget.max(4 * n), ..params });
+        scale(n, arg("--months").and_then(|v| v.parse().ok()).unwrap_or(48), Params { budget: params.budget.max(4 * n), ..params }, args.iter().any(|a| a == "--per-month"));
         return;
     }
     fs::create_dir_all(&out).unwrap();
