@@ -27,7 +27,30 @@ varying float river_base_width;
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
 // here double-decoded gray128 to56. Vertex COLOR follows a different path.
+// Display meanders (reference near view: strongly winding lowland rivers).
+// One smooth displacement field for every river, so confluences stay
+// joined; ~7 km and ~3 km wavelengths, up to ~1.2 km. Lowland only, none
+// within ~1 km of the coast or a lake (mouths stay put), and only in close
+// views (sub-pixel beyond). Clipmap strips only.
+vec2 river_meander(vec2 p) {
+    vec2 d=vec2(wl_noise(p*0.14+vec2(3.1,7.4))*0.65+wl_noise(p*0.33+vec2(9.2,1.3))*0.35,
+        wl_noise(p*0.14+vec2(5.7,2.2))*0.65+wl_noise(p*0.33+vec2(4.4,8.8))*0.35)-0.5;
+    float lowland=1.0-smoothstep(120.0,450.0,clipmap_source_height(p));
+    float inland=smoothstep(800.0,3200.0,-clipmap_water_distance(p));
+    return d*2.4*lowland*inland*(1.0-smoothstep(500.0,900.0,view_width));
+}
+
 void vertex(){
+    if(clipmap_enabled && !use_model_mesh && view_width<900.0) {
+        // Move the centreline and turn the sides with the bent tangent.
+        vec2 n=NORMAL.xz;vec2 t=normalize(vec2(-n.y,n.x)+vec2(0.000001));
+        vec2 c=VERTEX.xz;
+        vec2 ahead=c+t*0.25+river_meander(c+t*0.25);
+        vec2 behind=c-t*0.25+river_meander(c-t*0.25);
+        vec2 bent=normalize(ahead-behind+vec2(0.000001));
+        VERTEX.xz=c+river_meander(c);
+        NORMAL.xz=vec2(bent.y,-bent.x)*length(n);
+    }
     // Documented cartographic width; source centerline and topology unchanged.
     vec2 side_unit=normalize(NORMAL.xz+vec2(0.000001));
     float side_projection=max(length(vec2(side_unit.x,side_unit.y*projection_vertical_scale)),0.001);
@@ -36,9 +59,10 @@ void vertex(){
     // Thin in the regional view (2-4 px), medium-broad in the close view.
     // Hierarchy: the floor scales with the unwidened source width (clipmap
     // strips), so tributaries and delta side arms read thinner than the main
-    // course (reference near view ~12 px main, ~5 px small rivers).
+    // course (reference near view ~12 px main, ~5 px small rivers; measured
+    // e6782ba at 190 km: Tiber ~6 px against the reference ~10 px).
     float hierarchy=UV.y>0.0 ? clamp(UV.y/0.03,0.45,1.0) : 1.0;
-    float floor_px=max(minimum_screen_width_px,(mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+6.0*smoothstep(450.0,150.0,view_width))*hierarchy);
+    float floor_px=max(minimum_screen_width_px,(mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+12.0*smoothstep(450.0,150.0,view_width))*hierarchy);
     float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.
