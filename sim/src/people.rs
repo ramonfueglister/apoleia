@@ -388,6 +388,19 @@ pub struct Fields {
     pub build_ms: f64,
 }
 
+/// Food from the grain economy (crate::grain, S69–S76). When set, it
+/// replaces the capacity K of S35: health follows what each household ate,
+/// marriage waits where the region has no free land, and households in need
+/// compare regions by the food they offer per head.
+pub struct Econ {
+    /// Permille of its need a household ate last month, by household id.
+    pub fed: Vec<u16>,
+    /// Per region key: (food per head, free land, cell to move to).
+    pub region: FxHashMap<u32, (f32, bool, u32)>,
+    /// Below this a household is in need (S66).
+    pub need_fed: u16,
+}
+
 /// Time per part, summed over the run (µs).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Timing {
@@ -613,6 +626,8 @@ pub struct People {
     /// Monthly index and households being built in the background.
     index_job: Option<std::thread::JoinHandle<Index>>,
     households_job: Option<std::thread::JoinHandle<(Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>)>>,
+    /// Set by the grain economy; None keeps the capacity K of S35.
+    pub econ: Option<Econ>,
 }
 
 /// The rows of a table of `len` handled on day `slice` of `parts`: work
@@ -831,6 +846,7 @@ impl People {
             census: groups::Census::default(),
             index_job: None,
             households_job: None,
+            econ: None,
         };
         let mut q = p.world.query::<&Traits>();
         p.traits = q.iter(&p.world).map(|t| t.0).collect();
@@ -892,6 +908,50 @@ impl People {
         match self.cell_region[cell as usize] {
             NONE => 0.0,
             r => self.region_food[r as usize] as f64 / (self.region_pop[r as usize] + add).max(1) as f64,
+        }
+    }
+
+    pub fn is_alive(&self, pid: u32) -> bool {
+        self.alive(pid).is_some()
+    }
+
+    /// One more than the highest person id so far (household ids are
+    /// person ids).
+    pub fn next_pid(&self) -> u32 {
+        self.next_pid
+    }
+
+    /// Moves the members of a household at home to another cell (a
+    /// landless household taking a free farm, S69).
+    pub fn relocate_household(&mut self, house: u32, cell: u32) {
+        let lo = self.households.partition_point(|p| p.0 < house);
+        let members: Vec<u32> = self.households[lo..].iter().take_while(|p| p.0 == house).map(|p| p.1).collect();
+        for pid in members {
+            let Some(e) = self.alive(pid) else { continue };
+            if self.world.get::<Household>(e).unwrap().0 != house || self.world.get::<Travel>(e).is_some() {
+                continue;
+            }
+            let old = self.world.get::<Home>(e).unwrap().0;
+            self.add_pop(old, -1);
+            self.add_pop(cell, 1);
+            self.world.get_mut::<Home>(e).unwrap().0 = cell;
+        }
+    }
+
+    /// Whether a household counts as in need (S66): it ate too little
+    /// (grain economy), else the region's food per person is below 1.
+    fn in_need(&self, house: u32, home: u32) -> bool {
+        match &self.econ {
+            Some(e) => e.fed.get(house as usize).is_some_and(|&f| f < e.need_fed),
+            None => self.share(home, 0) < 1.0,
+        }
+    }
+
+    /// S65: without free land the family waits with the marriage.
+    fn no_land(&self, home: u32) -> bool {
+        match &self.econ {
+            Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.1),
+            None => self.share(home, 0) <= 1.0,
         }
     }
 
@@ -1170,13 +1230,20 @@ impl People {
     fn health(&mut self, day: i64, slice: u32) {
         let mut redo = Vec::new();
         let (food, pop, region) = (&self.region_food, &self.region_pop, &self.cell_region);
-        let mut q = self.world.query_filtered::<(&Pid, &Home, &Born, &Sex, &Spouse, &mut Health, &mut Sched), Without<Travel>>();
-        for (pid, home, born, sex, spouse, health, sched) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
+        let fed = self.econ.as_ref().map(|e| &e.fed);
+        let mut q = self.world.query_filtered::<(&Pid, &Home, &Household, &Born, &Sex, &Spouse, &mut Health, &mut Sched), Without<Travel>>();
+        for (pid, home, house, born, sex, spouse, health, sched) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
             let (health, _) = ContiguousMut::split(health);
             let (sched, _) = ContiguousMut::split(sched);
             for i in part(pid.len(), slice, MONTH) {
-                let r = region[home[i].0 as usize] as usize;
-                let share = food[r] as f64 / pop[r].max(1) as f64;
+                let share = match fed {
+                    // Grain economy: what the household ate.
+                    Some(f) => f.get(house[i].0 as usize).map_or(1.0, |&v| v as f64 / 1000.0),
+                    None => {
+                        let r = region[home[i].0 as usize] as usize;
+                        food[r] as f64 / pop[r].max(1) as f64
+                    }
+                };
                 let target = (1000.0 * share.min(1.0)) as i32;
                 let h = health[i].0 as i32;
                 let new = (h + (target - h) / HEALTH_STEP) as u16;
@@ -1230,7 +1297,7 @@ impl People {
                 self.world.get::<Household>(ge).unwrap().0,
             );
             // S65: without free land the family waits.
-            if self.share(home, 0) <= 1.0
+            if self.no_land(home)
                 && rnd(seed, g, 0x1a2d, day) % 16 >= NO_LAND_MARRY_PER_16
             {
                 self.stats.waited_for_land += 1;
@@ -1357,6 +1424,27 @@ impl People {
                 .collect();
             let Some(&first) = members.first() else { continue };
             let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
+            let house = self.households[i as usize].0;
+            if let Some(e) = &self.econ {
+                // Grain economy: a household that ate too little looks for
+                // the region around with the most food per head (stores
+                // and free land, crate::grain); PLACEHOLDER as below.
+                if !self.in_need(house, home) {
+                    continue;
+                }
+                let own = self.grid.region(home);
+                let now = e.region.get(&own).map_or(0.0, |r| r.0);
+                let mut best = (now, NONE);
+                for k in Grid::regions_around(own) {
+                    if let Some(r) = e.region.get(&k) {
+                        if k != own && r.0 > best.0 {
+                            best = (r.0, r.2);
+                        }
+                    }
+                }
+                moves.push((members, (best.1 != NONE).then_some(best.1)));
+                continue;
+            }
             let now = self.share(home, 0);
             if now < 1.0 {
                 // The best region around (food per person once they are
@@ -1609,8 +1697,8 @@ impl People {
     pub fn census(&mut self) -> (u32, u32, f64, u32) {
         let day = self.world.resource::<Clock>().day;
         let (mut mw, mut w, mut h, mut n, mut hungry) = (0, 0, 0.0, 0, 0);
-        let mut q = self.world.query_filtered::<(&Born, &Sex, &Spouse, &Health, &Home), Without<Travel>>();
-        for (b, s, sp, he, home) in q.iter(&self.world) {
+        let mut q = self.world.query_filtered::<(&Born, &Sex, &Spouse, &Health, &Home, &Household), Without<Travel>>();
+        for (b, s, sp, he, home, house) in q.iter(&self.world) {
             let a = age_y(day, b.0);
             if s.0 == 0 && (15.0..50.0).contains(&a) {
                 w += 1;
@@ -1620,7 +1708,11 @@ impl People {
             }
             h += he.0 as f64;
             n += 1;
-            if self.share(home.0, 0) < 1.0 {
+            let poor = match &self.econ {
+                Some(_) => self.in_need(house.0, home.0),
+                None => self.share(home.0, 0) < 1.0,
+            };
+            if poor {
                 hungry += 1;
             }
         }
