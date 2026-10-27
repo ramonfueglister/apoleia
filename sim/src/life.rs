@@ -135,8 +135,8 @@ pub const IQ_MATE_R: f64 = 0.44;
 /// Adult heritability (the last point of IQ_H2).
 pub const IQ_H2_ADULT: f64 = IQ_H2[IQ_H2.len() - 1].1;
 
-/// Genetic correlation of the partners in the people sim with the proposed
-/// S82 gap rule (people::IQ_MATE_GAP_PROPOSED) (measured over 30 years, 61,332 marriages: 0.316). It is below
+/// Genetic correlation of the partners in the people sim with the S82 gap
+/// rule (people::IQ_MATE_GAP) (measured over 30 years, 61,332 marriages: 0.316). It is below
 /// IQ_MATE_R · IQ_H2_ADULT = 0.35 because brides are young and their IQ
 /// carries less of their genes (IQ_H2 at 15–20).
 pub const IQ_MATE_RG: f64 = 0.32;

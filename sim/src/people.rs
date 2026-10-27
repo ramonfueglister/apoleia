@@ -75,11 +75,11 @@ const CAP_SOFT: f64 = 0.9;
 /// S80 PLACEHOLDER: share of households a year that leave at the cap, the
 /// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
 const CAP_LEAVE_PER_YEAR: f64 = 0.03;
-/// S82 PROPOSAL (Ramon to decide, off until then): partners further apart
-/// than this many IQ points are not considered. Calibrated so that new
-/// couples correlate at about life::IQ_MATE_R (30 gives r = 0.44 over 10
-/// years, ~19,500 marriages); inheritance then uses life::IQ_MATE_RG.
-pub const IQ_MATE_GAP_PROPOSED: f64 = 30.0;
+/// S82 (Ramon, 27.10.2026): partners further apart than this many IQ
+/// points are not considered. Calibrated so that new couples correlate at
+/// about life::IQ_MATE_R (30 gives r = 0.44 over 10 years, ~19,500
+/// marriages); inheritance then uses life::IQ_MATE_RG.
+pub const IQ_MATE_GAP: f64 = 30.0;
 /// Inheritance at the father's death (S83). INHERIT_EQUAL, the default:
 /// the father's family farm is shared in equal parts between the old
 /// household and the married sons' new households (Roman intestate
@@ -788,11 +788,11 @@ fn fert_adjusted() -> [f64; 8] {
 
 impl People {
     pub fn new(inp: &Inputs, seed: u64) -> People {
-        People::with_iq_mate_gap(inp, seed, f64::INFINITY)
+        People::with_iq_mate_gap(inp, seed, IQ_MATE_GAP)
     }
 
     /// As `new`, with partners at most `iq_mate_gap` IQ points apart
-    /// (calibration, IQ_MATE_GAP_PROPOSED).
+    /// (calibration; infinite: no choice by IQ).
     pub fn with_iq_mate_gap(inp: &Inputs, seed: u64, iq_mate_gap: f64) -> People {
         bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
         let (grid, mut seeds, places, food) = populate(inp, seed);
@@ -2202,7 +2202,7 @@ mod tests {
             let n = p.stats.marry_iq[0];
             (p.stats.marry_iq_r(), p.stats.marry_gene_r(), n, p.iq_summary())
         };
-        let (r, rg, n, (mean, sd, lo, hi)) = run(IQ_MATE_GAP_PROPOSED, 60);
+        let (r, rg, n, (mean, sd, lo, hi)) = run(IQ_MATE_GAP, 60);
         assert!(n > 100_000.0, "marriages {n}");
         assert!((r - crate::life::IQ_MATE_R).abs() < 0.05, "partner r {r}");
         // Inheritance must assume the genetic correlation the rule produces.
