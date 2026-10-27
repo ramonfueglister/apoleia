@@ -145,6 +145,21 @@ vec4 tt_corners(ivec2 t) {
 	return l;
 }
 
+// The corners of every tile in the drawn patch, computed once per frame by
+// tile_corner_prep.gdshader (a small 2D pass) instead of once per vertex.
+// Tiles outside that texture fall back to the full rule.
+uniform sampler2D corner_tex : filter_nearest, repeat_disable;
+uniform ivec2 corner_origin;
+uniform ivec2 corner_size = ivec2(0);
+
+vec4 tt_corners_cached(ivec2 t) {
+	ivec2 q = t - corner_origin;
+	if (q.x >= 0 && q.y >= 0 && q.x < corner_size.x && q.y < corner_size.y) {
+		return texelFetch(corner_tex, q, 0);
+	}
+	return tt_corners(t);
+}
+
 // Clumped woods: land cover forest share through a noisy threshold. The noise
 // is anchored in the world, so woods keep their place across zoom levels.
 float tt_tree_density(vec2 p, float forest) {

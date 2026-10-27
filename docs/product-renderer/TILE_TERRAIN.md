@@ -27,7 +27,7 @@ unabhängig und unverändert.
 
 ## Fernsicht (Reliefkarte, EU5)
 
-Zwischen 25 und 55 km Sichtbreite blendet `relief_smooth` von den Kachelstufen
+Zwischen 20 und 45 km Sichtbreite blendet `relief_smooth` von den Kachelstufen
 zu einer glatten Reliefkarte über: Ecken nicht mehr auf Stufen gerundet,
 Normalen je Pixel, kein Kachelraster. Weil die Höhendaten nur ein 2-km-Raster
 haben, legt der Shader in den Bergen Grate und Rinnen darunter, die hangabwärts
@@ -63,6 +63,14 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   `tile_terrain.gdshader` (Oberseite und Wände) und `tile_props.gdshader`
   (Platzierung der Bäume und Häuser) gemeinsam nutzen. Die gesamte Geometrie
   entsteht im Vertex-Shader; die CPU spiegelt nur die Bodenhöhe für Kamera und Wetter.
+- Zwei kleine 2D-Pässe pro Bild (Float-Viewports) rechnen vor, was sonst jeder
+  Vertex selbst rechnen müsste: `tile_corner_prep.gdshader` die Eckhöhen jeder
+  Kachel im Patch, `tile_prop_prep.gdshader` (mit `tile_props.gdshaderinc`) Ort,
+  Art und Größe jedes Baum- und Hausplatzes. Gelände und Props lesen nur noch
+  einen Texel.
+- Leistung: Der Prop-Patch ist nur so groß wie die Sicht (`PROP_SPAN`), ab
+  10 km Sichtbreite gibt es Low-Poly-Bäume ohne Schatten (`PROP_LOW_KM`), und
+  Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet.
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die facettierten
   Low-Poly-Bäume (flache Normalen, Farbverlauf nach oben) und die Häuser.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
@@ -73,11 +81,12 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 Mausrad oder Pinch zoomt zum Cursor, Ziehen oder WASD/Pfeile verschiebt, Q/E dreht
 um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
-`--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`.
+`--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
+`--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
 
 ## Offen
 
 - macOS-Paketierung des Tile-Geländes.
-- Leistungsmessung auf dem Mac (Patch 320² Kacheln, fünf Prop-MultiMeshes mit je 90.000 Slots).
+- Leistungsmessung auf dem Mac nach dem Umbau (vorher 142 ms bei 25 km Sichtbreite).
 - Küsten und Seeufer bleiben in der Fernsicht Kacheltreppen.
 - Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.

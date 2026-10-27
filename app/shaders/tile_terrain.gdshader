@@ -65,9 +65,12 @@ void vertex() {
 	part = int(VERTEX.x + 0.5);
 	int role = int(VERTEX.y + 0.5);
 	water = tt_water(tile);
-	vec4 own = tt_corners(tile);
+	vec4 own = tt_corners_cached(tile);
 	body_level = min(min(own.x, own.y), min(own.z, own.w));
-	flat_top = float(max(max(own.x, own.y), max(own.z, own.w)) - body_level < 0.01);
+	// flat by the rounded levels, so tiles keep their flat/ramp look while the
+	// steps melt into the smooth relief
+	vec4 rl = round(own);
+	flat_top = float(max(max(rl.x, rl.y), max(rl.z, rl.w)) - min(min(rl.x, rl.y), min(rl.z, rl.w)) < 0.01);
 	vec2 cpos;
 	float level;
 	if (part == 0) {
@@ -82,7 +85,7 @@ void vertex() {
 		int nk = b_side ? e.w : e.z;
 		cpos = vec2(tile + CORNER[ok]);
 		float top = pick(own, ok);
-		vec4 other = tt_corners(tile + SIDE[w]);
+		vec4 other = tt_corners_cached(tile + SIDE[w]);
 		float bottom = min(top, pick(other, nk));
 		level = role <= 1 ? top : bottom;
 		tile_uv = vec2(b_side ? 1.0 : 0.0, role <= 1 ? 0.0 : 1.0);
@@ -236,6 +239,9 @@ void fragment() {
 	vec3 c;
 	float rough = 1.0;
 	vec3 far_n = vec3(0.0, 1.0, 0.0); // world normal of the far relief map
+	// shading and colour switch to the relief map only once the geometry is
+	// nearly smooth; half-blended tile lighting looks smeared
+	float look_smooth = smoothstep(0.5, 1.0, relief_smooth);
 	if ((water == W_SEA || water == W_LAKE) && part == 0) {
 		if (water == W_SEA) {
 			float d_km = tt_sea_distance(p);
@@ -269,13 +275,13 @@ void fragment() {
 		// read crisp instead of as soft blobs (EU5 map)
 		float h_m = tt_height_m(p, height_lod);
 		float fw_km = length(fwidth(p));
-		vec3 rn = relief_smooth > 0.0 ? relief_normal(p) : vec3(0.0, 1.0, 0.0);
-		vec3 ad = relief_smooth > 0.0 ? alpine_detail(p, h_m, fw_km, rn.xz / rn.y) : vec3(0.0);
-		float detail = ad.x * relief_smooth;
+		vec3 rn = look_smooth > 0.0 ? relief_normal(p) : vec3(0.0, 1.0, 0.0);
+		vec3 ad = look_smooth > 0.0 ? alpine_detail(p, h_m, fw_km, rn.xz / rn.y) : vec3(0.0);
+		float detail = ad.x * look_smooth;
 		int town = tt_town(tile);
 		vec3 fc;
 		float stripes;
-		if (town > 0 && relief_smooth > 0.5) {
+		if (town > 0 && look_smooth > 0.5 && tile_km > 1.5) {
 			// far out a town is a round terracotta spot, not a grey tile
 			float r = length(tile_uv - 0.5);
 			float size = town == 3 ? 0.72 : 0.2 + 0.06 * float(town);
@@ -296,16 +302,16 @@ void fragment() {
 		}
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
-			c = mix(c, C_SLOPE, 0.22 * (1.0 - relief_smooth));
+			c = mix(c, C_SLOPE, 0.22 * (1.0 - look_smooth));
 		}
 		// slope shading: ramps facing the sun bright, the others dark
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
-		if (relief_smooth > 0.0) {
+		if (look_smooth > 0.0) {
 			// far out: smooth per-pixel normal from the relief instead of the
 			// flat tile facets, so the relief map has no triangle sawtooth
 			vec2 g = rn.xz / rn.y - ad.yz * (level_h / m_per_level);
-			nw = normalize(mix(nw, normalize(vec3(g.x, 1.0, g.y)), relief_smooth));
+			nw = normalize(mix(nw, normalize(vec3(g.x, 1.0, g.y)), look_smooth));
 			far_n = nw;
 		}
 		// SimCity 2000 slope tiles come in two clear tones: sun side light,
@@ -314,20 +320,21 @@ void fragment() {
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.80, 1.0, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.13, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
+		tone = flat_top > 0.5 ? 1.0 : tone; // flat tiles never flicker between tones
 		// far relief map: bare rock on steep mountain faces, a crisp hillshade
 		// with warm sun sides and cool shade sides (EU5 map)
 		float steep = smoothstep(0.62, 0.88, 1.0 - nw.y) * smoothstep(900.0, 1500.0, h_m + detail);
-		c = mix(c, C_ROCK, steep * relief_smooth * 0.7);
+		c = mix(c, C_ROCK, steep * look_smooth * 0.7);
 		float smooth_tone = clamp(1.0 + 1.6 * lit, 0.62, 1.22);
 		vec3 tint = mix(vec3(0.92, 0.95, 1.03), vec3(1.04, 1.0, 0.94), smoothstep(-0.25, 0.25, lit));
-		c *= mix(vec3(mix(1.0, tone, mix(1.0, 0.6, far))), smooth_tone * tint, relief_smooth);
+		c *= mix(vec3(mix(1.0, tone, mix(1.0, 0.6, far))), smooth_tone * tint, look_smooth);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
 		float line = 1.0 - smoothstep(0.0, 1.0, min(e.x / max(fw.x, 1e-5), e.y / max(fw.y, 1e-5)));
 		// fade the outline out when tiles get only a few pixels wide
 		float fade = smoothstep(5.0, 12.0, 1.0 / max(max(fw.x, fw.y), 1e-5));
-		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.3) * fade * (1.0 - relief_smooth);
+		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.3) * fade * (1.0 - look_smooth);
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
@@ -396,8 +403,8 @@ void fragment() {
 	ROUGHNESS = rough;
 	vec3 n = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
 	n = n.z < 0.0 ? -n : n;
-	if (relief_smooth > 0.0 && part == 0 && water == W_LAND) {
-		n = normalize(mix(n, (VIEW_MATRIX * vec4(far_n, 0.0)).xyz, relief_smooth));
+	if (look_smooth > 0.0 && part == 0 && water == W_LAND) {
+		n = normalize(mix(n, (VIEW_MATRIX * vec4(far_n, 0.0)).xyz, look_smooth));
 	}
 	NORMAL = n;
 }
