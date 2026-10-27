@@ -11,18 +11,20 @@
 //! `key * 4 + kind`. Area: 0 = empty slot; 1..=VILLAGES = a village of the
 //! 25 km cell around the anchor (1 + village seed); ROAD = anywhere in the
 //! cell (people on the road); < 0 = disk of that radius in km around a city.
-//! The key is the low 22 bits of the household id (the person id on the
-//! road), so a family shares one home spot and a village one place in its
-//! cell. The GPU picks those spots on land from hashes of the keys, so they
-//! never change while the people stay put. The sim itself only knows the
-//! cell (Home); villages are a presentation rule until the sim has home
-//! tiles. Floats only carry whole numbers below 2^24 here, so no bit pattern
-//! can turn into a NaN on the way to the GPU.
+//! At home the anchor is the centre of the household's village tile
+//! (crate::settle, 1.5625 km fine tile) and the area 1 + a seed of that
+//! tile; the GPU puts the village on the best open land of the tile and the
+//! household's house within 0.6 km of it. The key is the low 22 bits of the
+//! household id (the person id on the road), so a family shares one house.
+//! The GPU picks those spots from hashes of the keys, so they never change
+//! while the people stay put. Floats only carry whole numbers below 2^24 in
+//! the last two fields, so no bit pattern can turn into a NaN on the way to
+//! the GPU.
 
-use crate::people::{Home, Household, People, Pid, Stand, Travel, CITY};
+use crate::people::{Home, Household, People, Pid, Stand, Travel};
+use crate::settle::{Settle, Spot};
 use crate::City;
 use bevy_ecs::prelude::*;
-use rustc_hash::FxHashMap;
 
 /// Records per page: one 64 × 64 layer of the GPU texture array.
 pub const PAGE: usize = 4096;
@@ -38,21 +40,7 @@ const CELL_KM: f32 = 25.0;
 pub const VILLAGES: u32 = 4096;
 /// Area code of people on the road (anywhere in their current cell).
 pub const ROAD: f32 = 8192.0;
-/// Simulated people per village at the start (about 14,000 real people per
-/// village is far too many, but a simulated person stands for 566; this
-/// gives 2-10 dot clusters per rural cell).
-const PEOPLE_PER_VILLAGE: u32 = 25;
 const NONE: u32 = u32::MAX;
-
-/// A listed place: centre in km, radius in km and its share of the city
-/// people of its cell (cumulative, 0–65535).
-#[derive(Clone, Copy)]
-struct Place {
-    x: f32,
-    z: f32,
-    r: f32,
-    upto: u32,
-}
 
 pub struct PeopleView {
     /// Records by slot.
@@ -62,21 +50,16 @@ pub struct PeopleView {
     free: Vec<u32>,
     /// Day at which each slot was last seen alive (to find the dead).
     seen: Vec<u32>,
+    /// (home, household, estate) behind the record of each slot at home,
+    /// so an unchanged person costs no home lookup; NONE otherwise.
+    inputs: Vec<[u32; 3]>,
     stamp: u32,
     /// Records rewritten by the last update (changed people).
     pub last_writes: usize,
     dirty: Vec<bool>,
-    places: FxHashMap<u32, Vec<Place>>,
-    /// Villages per cell, fixed at the start (so households keep theirs).
-    villages: Vec<u8>,
+    /// Village and house of each household.
+    pub settle: Settle,
     query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, Option<&'static Travel>)>>,
-}
-
-/// City radius in km, the same rule the tile terrain uses for its town
-/// tiles (tools/build_tile_terrain.py, settlements), so city dots sit on
-/// the drawn town.
-fn city_radius_km(pop: f64) -> f32 {
-    (0.6 * (pop / 10_000.0).sqrt()).max(0.5) as f32
 }
 
 fn hash(v: u32) -> u32 {
@@ -89,41 +72,19 @@ fn hash(v: u32) -> u32 {
 }
 
 impl PeopleView {
-    /// Builds the place table (listed cities by grid cell) once.
+    /// Builds the home spots (villages, listed places) once.
     pub fn new(p: &People, cities: &[City]) -> PeopleView {
-        let mut by_cell: FxHashMap<u32, Vec<(f32, f32, f64)>> = FxHashMap::default();
-        for c in cities {
-            let (r, col) = ((c.z_m / 25_000.0).floor() as i32, (c.x_m / 25_000.0).floor() as i32);
-            if let Some(i) = p.grid.index(r, col) {
-                by_cell.entry(i).or_default().push(((c.x_m / 1000.0) as f32, (c.z_m / 1000.0) as f32, c.pop));
-            }
-        }
-        let places = by_cell
-            .into_iter()
-            .map(|(cell, list)| {
-                let total: f64 = list.iter().map(|c| c.2).sum::<f64>().max(1.0);
-                let mut acc = 0.0;
-                let v = list
-                    .iter()
-                    .map(|&(x, z, pop)| {
-                        acc += pop;
-                        Place { x, z, r: city_radius_km(pop), upto: ((acc / total) * 65535.0).round() as u32 }
-                    })
-                    .collect();
-                (cell, v)
-            })
-            .collect();
         PeopleView {
             data: Vec::new(),
             slot_of: Vec::new(),
             pid_of: Vec::new(),
             free: Vec::new(),
             seen: Vec::new(),
+            inputs: Vec::new(),
             stamp: 0,
             last_writes: 0,
             dirty: Vec::new(),
-            places,
-            villages: p.pop.iter().map(|&n| (n / PEOPLE_PER_VILLAGE).clamp(1, 255) as u8).collect(),
+            settle: Settle::new(&p.grid, &p.pop, cities, None, 1),
             query: None,
         }
     }
@@ -149,17 +110,13 @@ impl PeopleView {
             return [x, z, ROAD, (pid & 0x3f_ffff) as f32 * 4.0 + kind as f32];
         }
         let key = (household & 0x3f_ffff) as f32 * 4.0;
-        if stand >= CITY {
-            if let Some(list) = self.places.get(&home) {
-                let u = hash(household ^ 0x51ce) & 0xffff;
-                let pl = list.iter().find(|pl| u <= pl.upto).unwrap_or(&list[list.len() - 1]);
-                return [pl.x, pl.z, -pl.r, key + IN_CITY as f32];
+        match self.settle.spot(home, household, stand) {
+            Spot::City { place } => [place.x, place.z, -place.r, key + IN_CITY as f32],
+            Spot::Village { fine, .. } => {
+                let (x, z) = self.settle.fine_centre_km(fine);
+                [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, key + AT_HOME as f32]
             }
         }
-        let (x, z) = self.cell_centre(p, home);
-        let n = self.villages.get(home as usize).copied().unwrap_or(1).max(1) as u32;
-        let seed = hash(home.wrapping_mul(256) + hash(household) % n) % VILLAGES;
-        [x, z, 1.0 + seed as f32, key + AT_HOME as f32]
     }
 
     /// Brings the records to the people's current state. Returns the pages
@@ -183,6 +140,7 @@ impl PeopleView {
                         let s = self.slots() as u32;
                         self.data.resize(self.data.len() + PAGE * REC, 0.0);
                         self.seen.resize(self.slots(), 0);
+                        self.inputs.resize(self.slots(), [NONE; 3]);
                         self.pid_of.resize(self.slots(), NONE);
                         self.free.extend((s + 1..self.slots() as u32).rev());
                         grew = true;
@@ -191,8 +149,14 @@ impl PeopleView {
                 };
                 self.slot_of[pid as usize] = slot;
                 self.pid_of[slot as usize] = pid;
+                self.inputs[slot as usize] = [NONE; 3];
             }
             self.seen[slot as usize] = stamp;
+            let now = if travel.is_some() { [NONE; 3] } else { [home.0, household.0, stand.0 as u32] };
+            if now[0] != NONE && self.inputs[slot as usize] == now {
+                continue;
+            }
+            self.inputs[slot as usize] = now;
             let rec = self.record(p, pid, home.0, household.0, stand.0, travel);
             let o = slot as usize * REC;
             if self.data[o..o + REC] != rec {

@@ -99,20 +99,35 @@ Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulier
 Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
 die echte Dichte.
 
-## Wohnorte: Familien und Dörfer (Anzeige-Regel)
+## Wohnorte: Familien, Dörfer und Heim-Tiles
 
-Die Simulation kennt pro Person nur die 25-km-Zelle (`Home`). Bis sie echte
-Heim-Tiles hat, ordnet die Anzeige deterministisch zu:
+Jeder Haushalt hat in der Simulation ein festes Dorf und ein Haus-Tile
+(`sim/src/settle.rs`). Das ist eine reine Funktion von Heimzelle, Haushalt und
+Stand mit eigenen Salts: Der Sim-Zustand bleibt unberührt, der Fingerprint ist
+gleich (Test `settle::tests`).
 
-- **Familie:** Alle Mitglieder eines Haushalts (`Household`) teilen ein Haus;
-  jede Person steht bis 35 m daneben.
+- **Feinraster:** dasselbe wie die Getreidewirtschaft (`grain.rs`), 16 × 16
+  Tiles von 1,5625 km pro 25-km-Zelle, Index `fr · cols_f + fc`.
+  `Settle::home_fine(cell, household, stand)` liefert das Tile, auf dem der Hof
+  des Haushalts steht; `house_km` den Ort des Hauses in Welt-km.
 - **Dorf:** Jede Zelle hat feste Dörfer, eines pro 25 simulierte Personen beim
-  Start (mindestens 1). Ein Haushalt gehört per Hash zu einem davon. Der Ort des
-  Dorfs ist die beste von 16 Stellen der Zelle nach Ackerland und offenem Land
-  (`cover_tex`), also an Feldern statt im Wald oder Sumpf; die Häuser liegen
-  im Umkreis von 0,6 km.
-- **Stadt:** Stadtbewohner haushaltsweise in der Scheibe ihrer Stadt (wie bisher).
+  Start (mindestens 1), auf den Fein-Tiles mit dem meisten Ackerland
+  (`FineCover`, landcover-fine aus der Getreidewirtschaft), keine zwei Dörfer
+  auf Nachbar-Tiles. Bis diese Daten da sind, liegen die Dörfer auf gehashten
+  Tiles der Zelle. Ein Haushalt gehört per Hash zu einem Dorf und behält es,
+  solange er in der Zelle bleibt.
+- **Anzeige:** Der Datensatz trägt die Mitte des Dorf-Tiles. Die GPU setzt das
+  Dorf auf die beste von 16 Stellen des Tiles nach Ackerland und offenem Land
+  (`cover_tex`), das Haus in 0,6 km Umkreis, jede Person bis 35 m daneben.
+  Hat das Tile kein Land (gehashtes Tile an der Küste), sucht sie Land in der
+  ganzen Zelle.
+- **Stadt:** Stadtbewohner haushaltsweise in der Scheibe ihrer Stadt; ihr
+  Haus-Tile ist eine gehashte Stelle in dieser Scheibe.
 - **Unterwegs:** irgendwo auf Land in der aktuellen Zelle, dunkelrot.
+
+`PeopleView::update` rechnet eine Person nur neu, wenn sich Heimzelle,
+Haushalt, Stand oder Reise geändert haben: 0,8 ms pro Tag (Median, Linux,
+vorher 1,6 ms).
 
 ## Sichtbarkeit (LOD)
 

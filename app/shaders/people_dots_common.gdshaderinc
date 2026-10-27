@@ -8,6 +8,12 @@
 uniform sampler2DArray people_tex : filter_nearest, repeat_disable;
 uniform int page_side = 64;
 
+const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
+const float DOT_FINE_HALF_KM = 0.78125; // half a 1.5625 km village tile (sim/src/settle.rs)
+const float DOT_VILLAGE_KM = 0.6;       // houses of a village within this radius
+const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
+const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
+
 uint dot_hash(uint x) {
 	x ^= x >> 16u;
 	x *= 0x7feb352du;
@@ -55,9 +61,11 @@ vec2 dot_land(vec2 c, float r, uint key) {
 	return p;
 }
 
-// Village site: of 16 hashed spots in the cell the best one on land, by
-// cropland and open land (cover_tex: forest, dry, crop, wetland), so villages
-// sit at fields and not in the woods or marshes.
+// Village site: of 16 hashed spots in the village tile the best one on land,
+// by cropland and open land (cover_tex: forest, dry, crop, wetland), so
+// villages sit at fields and not in the woods or marshes. A tile without
+// land (the sim picked it without the fine land data) falls back to land in
+// the whole cell.
 vec2 dot_village(vec2 c, float r, uint key) {
 	vec2 best = c;
 	float score = -1.0;
@@ -73,13 +81,8 @@ vec2 dot_village(vec2 c, float r, uint key) {
 			best = p;
 		}
 	}
-	return score < 0.0 ? dot_land(c, r, key) : best;
+	return score < 0.0 ? dot_land(c, DOT_CELL_HALF_KM, key) : best;
 }
-
-const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
-const float DOT_VILLAGE_KM = 0.6;       // houses of a village within this radius
-const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
-const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
 
 // Where the person in `slot` stands: (offset x, offset z) in km from the
 // record's anchor and the height in levels. Records: sim/src/view.rs.
@@ -93,10 +96,9 @@ vec3 dot_place(vec4 rec, uint slot) {
 		// on the road: anywhere on land in the current cell
 		p = dot_land(rec.xy, DOT_CELL_HALF_KM, key);
 	} else {
-		// village of the cell, then the household's house in the village
-		uint village = uint(rec.z) - 1u;
-		uint vkey = dot_hash(village * 0x2545f491u ^ floatBitsToUint(rec.x) ^ (floatBitsToUint(rec.y) * 0x9e3779b9u));
-		vec2 v = dot_village(rec.xy, DOT_CELL_HALF_KM, vkey);
+		// the household's village tile (the sim picks it), then its house
+		uint vkey = dot_hash((uint(rec.z) - 1u) * 0x2545f491u);
+		vec2 v = dot_village(rec.xy, DOT_FINE_HALF_KM, vkey);
 		p = dot_land(v, -DOT_VILLAGE_KM, key);
 	}
 	// the family around its house, one spot per person
