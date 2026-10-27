@@ -15,6 +15,8 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
   height.r16f      little-endian float16 metres at the 2 km nodes (Godot FORMAT_RH)
   relief.r16f      the same heights, slope limited to RELIEF_SLOPE m/km (SimCity 2000
                    rule, see sc2k_relief); the terrain shape is built from this
+  shore.r16f       highest the land may stand next to the water (sea 0 m, lakes at
+                   their level, same slope); caps the blurred relief at the shores
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
@@ -256,20 +258,66 @@ def _envelope(a, step, lower):
     return a
 
 
-def sc2k_relief(height, node_land):
+def lake_cell_seed(lake_cells, lake_enc, height):
+    """Lake level (metres) at the 2 km nodes under the 0.5 km lake cells.
+
+    The shader draws a lake cell at the lowest lake level found on the nearest
+    node of its centre and of four points 1 km around it (tt_lake_level), and
+    reads the relief bilinearly from the four nodes around a point. Every node
+    that carries a lake cell is pinned at that cell's level, so the land
+    around a lake comes down to the water line instead of ending in a wall.
+    Lake cells with no lake node close by (small lakes) take the lowest height
+    of their four nodes; the shader falls back to that value too."""
+    seed = np.full((GRID_H, GRID_W), np.inf, np.float32)
+    cj, ci = np.nonzero(lake_cells)
+    px = WORLD_MIN[0] + (ci + 0.5) * BASE_CELL_KM
+    pz = WORLD_MIN[1] + (cj + 0.5) * BASE_CELL_KM
+    sx = (GRID_W - 1) / WORLD_SIZE[0]
+    sz = (GRID_H - 1) / WORLD_SIZE[1]
+    level = np.full(px.shape, np.inf, np.float32)
+    for ox, oz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+        ni = np.clip(np.floor((px + ox - WORLD_MIN[0]) * sx + 0.5).astype(int), 0, GRID_W - 1)
+        nj = np.clip(np.floor((pz + oz - WORLD_MIN[1]) * sz + 0.5).astype(int), 0, GRID_H - 1)
+        e = lake_enc[nj, ni]
+        level = np.where(e > 0, np.minimum(level, e.astype(np.float32) - 1000), level)
+    gx = (px - WORLD_MIN[0]) * sx
+    gz = (pz - WORLD_MIN[1]) * sz
+    i0 = np.clip(np.floor(gx).astype(int), 0, GRID_W - 2)
+    j0 = np.clip(np.floor(gz).astype(int), 0, GRID_H - 2)
+    low = np.minimum(np.minimum(height[j0, i0], height[j0, i0 + 1]), np.minimum(height[j0 + 1, i0], height[j0 + 1, i0 + 1]))
+    level = np.maximum(np.where(np.isfinite(level), level, low), 0).astype(np.float32)
+    for dj in (0, 1):
+        for di in (0, 1):
+            np.minimum.at(seed, (j0 + dj, i0 + di), level)
+    return np.where(np.isfinite(seed), seed, np.nan).astype(np.float32)
+
+
+def water_envelope(node_land, lake_level):
+    """Highest the land may stand next to the water: 0 m at the sea nodes, the
+    water level at the lake nodes (`lake_level`, metres, NaN elsewhere), rising
+    RELIEF_SLOPE m/km away from them. The shader caps its blurred relief with
+    this sharp field, so shores keep the one-level rule up close."""
+    node_km = WORLD_SIZE[0] / (GRID_W - 1)
+    step = np.float32(RELIEF_SLOPE * node_km)
+    seed = np.where(node_land, np.float32(9000), np.float32(0))
+    if lake_level is not None:
+        seed = np.where(np.isfinite(lake_level), np.minimum(np.maximum(lake_level, 0), seed), seed).astype(np.float32)
+    return _envelope(seed, step, True)
+
+
+def sc2k_relief(height, node_land, water):
     """SimCity 2000 terrain rule: a tile corner is at most one level above or
     below its neighbours, so the land is one surface of flat tiles and one-level
     ramps, with no cliffs inside the land. Here the 2 km heights are limited to
     RELIEF_SLOPE m/km (mean of the lower and upper envelope, so peaks and valleys
-    both keep half their excess) and the sea is pinned at 0 m, so coasts ramp
-    down to the water instead of ending in a wall."""
+    both keep half their excess) and capped by the water envelope, so coasts and
+    lake shores ramp down to the water instead of ending in a wall."""
     node_km = WORLD_SIZE[0] / (GRID_W - 1)
     step = np.float32(RELIEF_SLOPE * node_km)
     h = np.where(node_land, np.maximum(height, 0), 0).astype(np.float32)
     low = _envelope(h, step, True)
     high = _envelope(h, step, False)
-    sea = _envelope(np.where(node_land, np.float32(9000), np.float32(0)), step, True)
-    return np.minimum((low + high) * 0.5, sea)
+    return np.minimum((low + high) * 0.5, water)
 
 
 def sha(p):
@@ -324,6 +372,8 @@ def main():
         river = raster_rivers(rivers, cell, nx, ny, RIVER_RANK[level]) & is_land & ~is_lake
         water = np.where(is_land, 0, 1).astype(np.uint8)
         water[is_lake] = 2
+        if level == 0:
+            lake_cells = is_lake
         water[river] = 3
         town = settlements(cell, nx, ny) * (water == 0)
         packed = pack_nibbles(water | (town << 2))
@@ -358,10 +408,16 @@ def main():
 
     height.astype("<f2").tofile(OUT / "height.r16f")
     print("relief")
-    sc2k_relief(height, node_land).astype("<f2").tofile(OUT / "relief.r16f")
+    lake_seed = np.fmin(np.where(node_lake, lake_lv, np.nan), lake_cell_seed(lake_cells, lake_enc, height))
+    water = water_envelope(node_land, lake_seed)
+    water.astype("<f2").tofile(OUT / "shore.r16f")
+    sc2k_relief(height, node_land, water).astype("<f2").tofile(OUT / "relief.r16f")
     manifest["relief_half"] = {"path": "relief.r16f", "sha256": sha(OUT / "relief.r16f"),
                                "format": "float16 LE, metres", "slope_m_per_km": RELIEF_SLOPE,
                                "height_exaggeration": HEIGHT_EXAGGERATION}
+    manifest["shore_half"] = {"path": "shore.r16f", "sha256": sha(OUT / "shore.r16f"),
+                              "format": "float16 LE, metres",
+                              "rule": "highest land next to the water: sea 0 m, lakes at their level, rising slope_m_per_km"}
     manifest["height_half"] = {"path": "height.r16f", "sha256": sha(OUT / "height.r16f"), "format": "float16 LE, metres"}
     forest, shrub, grass, crop, bare, snow, wet, _ = np.moveaxis(classes, -1, 0)
     cover = np.stack([forest, np.clip(bare + 0.6 * shrub, 0, 1), crop, wet], -1)

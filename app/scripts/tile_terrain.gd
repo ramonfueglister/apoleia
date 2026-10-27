@@ -92,6 +92,10 @@ func load_data() -> bool:
 	relief_float.convert(Image.FORMAT_RF)
 	_relief = relief_float.get_data().to_float32_array()
 	relief_image.generate_mipmaps()
+	var shore_texture: ImageTexture = null
+	if manifest.has("shore_half"):
+		raw = FileAccess.get_file_as_bytes(dir.path_join(manifest.shore_half.path))
+		shore_texture = ImageTexture.create_from_image(Image.create_from_data(grid_size.x, grid_size.y, false, Image.FORMAT_RH, raw))
 	var cover := Image.load_from_file(dir.path_join(manifest.cover.path))
 	cover.generate_mipmaps()
 	var aux := Image.load_from_file(dir.path_join(manifest.aux.path))
@@ -111,6 +115,8 @@ func load_data() -> bool:
 		"world_min": world_min,
 		"world_size": world_size,
 		"grid_size": Vector2(grid_size),
+		"shore_tex": shore_texture,
+		"shore_ready": shore_texture != null,
 	}
 	_corner_material = ShaderMaterial.new()
 	_corner_material.shader = CORNER_PREP_SHADER

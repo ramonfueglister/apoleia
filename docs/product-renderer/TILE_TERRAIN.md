@@ -18,6 +18,13 @@ unabhängig und unverändert.
   geändert am 27.10.2026). Daraus folgt `RELIEF_SLOPE` = 80 m/km.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
+  Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
+  (`shore.r16f`) begrenzt: Sie steigt von jedem Ufer um eine Stufe pro Kachel. Der
+  Bake setzt dafür jeden Knoten unter einer 0,5-km-Seezelle auf den Seespiegel,
+  so entstehen keine Kraterwände am Seeufer.
+- Uferlinie: Je Kachelecke zählt der Anteil der vier Nachbarkacheln, die Wasser
+  sind. Die Uferlinie ist die 0,5-Linie davon, bilinear über die Kachel. So läuft
+  eine Treppe aus Wasserkacheln als Diagonale mit Sand und Schaum davor.
   Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
   (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
 - Optik: Kacheln sind einfarbig ohne Muster, wie in SimCity 2000. Rampen haben
@@ -55,7 +62,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 - `tools/build_tile_terrain.py` backt `artifacts/render-data/tile-terrain-r1/`
   (etwa 6 Minuten): Bewuchs, Meeresabstand und Seespiegel (2-km-Knoten), Wasser-
   und Ortsklassen je Zoomstufe (`cells-L*.png`), Höhe und begrenztes Relief
-  (`height.r16f`, `relief.r16f`). Eingaben sind im Manifest mit Hash geführt.
+  (`height.r16f`, `relief.r16f`) und die Wasserhülle (`shore.r16f`). Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
   für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).
@@ -88,5 +95,5 @@ um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 
 - macOS-Paketierung des Tile-Geländes.
 - Leistungsmessung auf dem Mac nach dem Umbau (vorher 142 ms bei 25 km Sichtbreite).
-- Küsten und Seeufer bleiben in der Fernsicht Kacheltreppen.
+- Bei 400 km Sichtbreite zeigt die Küstenkante noch kleine Zacken.
 - Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.

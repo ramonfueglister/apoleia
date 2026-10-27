@@ -24,6 +24,8 @@ varying flat float body_level;
 varying flat int land_sides;  // sea tile: bit k = land across side k
 varying flat int wall_sides;  // core town tile: bit k = no town across side k
 varying flat int river_sides; // river tile: bit k = water across side k
+varying flat vec4 sea_c;      // share of sea or lake tiles around each corner (c00, c10, c11, c01)
+varying flat int shore_lake;  // 1: that water is a lake
 
 const vec3 C_PLAIN = vec3(0.494, 0.600, 0.290);
 const vec3 C_GRASS = vec3(0.392, 0.545, 0.251);
@@ -93,14 +95,31 @@ void vertex() {
 	world_pos = vec3(world_min.x + cpos.x * tile_km, level * level_h, world_min.y + cpos.y * tile_km);
 	// coast flags: land next to the sea gets a beach, sea next to land a lagoon tint
 	coast = 0.0;
+	bool lake_near = water == W_LAKE;
 	for (int k = 0; k < 4; k++) {
 		int n1 = tt_water(tile + SIDE[k]);
+		lake_near = lake_near || n1 == W_LAKE;
 		int n2 = tt_water(tile + SIDE[k] * 2);
 		if (water == W_SEA) {
 			if (n1 != W_SEA) { coast = 1.0; }
 		} else {
 			if (n1 == W_SEA) { coast = 1.0; }
 			else if (n2 == W_SEA) { coast = max(coast, 0.45); }
+		}
+	}
+	// SimCity 2000 coast: the shoreline is the 0.5 contour of the water share
+	// at the tile corners, so a staircase of water cells becomes a diagonal
+	sea_c = vec4(water == W_SEA || water == W_LAKE ? 1.0 : 0.0);
+	shore_lake = lake_near ? 1 : 0;
+	if (coast > 0.0 || body_level < 0.01 || lake_near) {
+		int wet_kind = lake_near ? W_LAKE : W_SEA;
+		for (int k = 0; k < 4; k++) {
+			ivec2 c = tile + CORNER[k];
+			float n = 0.0;
+			for (int j = 0; j < 4; j++) {
+				n += tt_water(c - ivec2(j & 1, j >> 1)) == wet_kind ? 0.25 : 0.0;
+			}
+			sea_c[k] = n;
 		}
 	}
 	land_sides = 0;
@@ -220,6 +239,20 @@ vec3 alpine_detail(vec2 p, float h, float fw, vec2 slope) {
 	return d * amp;
 }
 
+// Sea colour by distance from the coast (a smooth field, no tile squares).
+vec3 sea_colour(vec2 p) {
+	float d_km = tt_sea_distance(p);
+	return d_km <= 1.2 ? mix(W_LAGOON, W_SHALLOW, d_km / 1.2)
+		: d_km <= 8.0 ? mix(W_SHALLOW, W_MID, (d_km - 1.2) / 6.8)
+		: mix(W_MID, W_DEEP, clamp((d_km - 8.0) / 40.0, 0.0, 1.0));
+}
+
+// Sea share at this point of the tile, bilinear between the corners: the
+// shoreline is its 0.5 contour.
+float shore_value() {
+	return mix(mix(sea_c.x, sea_c.y, tile_uv.x), mix(sea_c.w, sea_c.z, tile_uv.x), tile_uv.y);
+}
+
 // Distance (in tile units) from the tile edge on the sides set in `mask`.
 float side_distance(int mask) {
 	float d = 10.0;
@@ -244,11 +277,7 @@ void fragment() {
 	float look_smooth = smoothstep(0.5, 1.0, relief_smooth);
 	if ((water == W_SEA || water == W_LAKE) && part == 0) {
 		if (water == W_SEA) {
-			float d_km = tt_sea_distance(p);
-			d_km = max(d_km, coast > 0.5 ? 0.0 : tile_km * 1.5);
-			c = d_km <= 1.2 ? mix(W_LAGOON, W_SHALLOW, d_km / 1.2)
-				: d_km <= 8.0 ? mix(W_SHALLOW, W_MID, (d_km - 1.2) / 6.8)
-				: mix(W_MID, W_DEEP, clamp((d_km - 8.0) / 40.0, 0.0, 1.0));
+			c = sea_colour(p);
 			// light wave dashes, anchored to the tile grid
 			vec2 q = p / (tile_km * 0.5);
 			vec2 cell = floor(q);
@@ -256,18 +285,29 @@ void fragment() {
 			float r = tt_hash(cell + floor(TIME * 0.15 + tt_hash(cell) * 7.0));
 			float dash = step(0.82, r) * (1.0 - smoothstep(0.0, 0.05, abs(f.y - 0.5))) * step(0.2, f.x) * step(f.x, 0.55);
 			c = mix(c, vec3(0.86, 0.93, 0.92), dash * 0.5 * (coast > 0.5 ? 1.2 : 0.6));
-			// surf: a bright line along the shore with a softer second band
-			if (land_sides != 0) {
-				float d = side_distance(land_sides);
+			// shore pieces: dry sand where the corner contour says land, then
+			// surf along the waterline with a softer second band
+			if (min(min(sea_c.x, sea_c.y), min(sea_c.z, sea_c.w)) < 1.0) {
+				float near_look = 1.0 - smoothstep(0.5, 0.9, relief_smooth);
+				float v = shore_value();
+				float aa = fwidth(v) + 1e-4;
 				float pulse = 0.5 + 0.5 * sin(TIME * 1.3 + tt_hash(vec2(tile)) * 6.28);
-				float foam = 1.0 - smoothstep(0.06, 0.12, d);
-				foam = max(foam, (1.0 - smoothstep(0.02, 0.05, abs(d - 0.22 - 0.05 * pulse))) * 0.45);
-				c = mix(c, C_FOAM, foam * (1.0 - far) * (1.0 - smoothstep(0.5, 0.9, relief_smooth)));
+				float foam = 1.0 - smoothstep(aa, 2.5 * aa + 0.01, abs(v - 0.53));
+				foam = max(foam, (1.0 - smoothstep(aa, 2.0 * aa + 0.005, abs(v - 0.62 - 0.03 * pulse))) * 0.45);
+				c = mix(c, C_FOAM, foam * (1.0 - far) * near_look);
+				c = mix(c, C_SAND, (1.0 - smoothstep(0.5 - aa, 0.5 + aa, v)) * near_look);
 			}
 		} else {
 			c = W_INLAND;
+			// lake shore pieces: grass where the corner contour says land
+			if (min(min(sea_c.x, sea_c.y), min(sea_c.z, sea_c.w)) < 1.0) {
+				float near_look = 1.0 - smoothstep(0.5, 0.9, relief_smooth);
+				float v = shore_value();
+				float aa = fwidth(v) + 1e-4;
+				c = mix(c, C_FOAM, (1.0 - smoothstep(aa, 2.0 * aa + 0.008, abs(v - 0.53))) * 0.5 * (1.0 - far) * near_look);
+				c = mix(c, ground_colour(p, tt_cover(p), 0.0), (1.0 - smoothstep(0.5 - aa, 0.5 + aa, v)) * near_look);
+			}
 		}
-		c *= 0.985 + 0.03 * tt_hash(vec2(tile) + 3.1);
 		rough = 0.55;
 	} else if (part == 0) {
 		vec4 cov = tt_cover(cp);
@@ -366,6 +406,16 @@ void fragment() {
 			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
 			c = mix(c, C_SAND_DARK, bank * 0.6);
 			c = mix(c, W_INLAND * (0.97 + 0.06 * tt_hash(vec2(tile))), river);
+		}
+		if (max(max(sea_c.x, sea_c.y), max(sea_c.z, sea_c.w)) > 0.5) {
+			// the sea side of the corner contour is water, with surf on its edge
+			float near_look = 1.0 - smoothstep(0.5, 0.9, relief_smooth);
+			float v = shore_value();
+			float aa = fwidth(v) + 1e-4;
+			float wet = smoothstep(0.5 - aa, 0.5 + aa, v) * near_look;
+			c = mix(c, shore_lake == 1 ? W_INLAND : sea_colour(p), wet);
+			c = mix(c, C_FOAM, (1.0 - smoothstep(aa, 2.5 * aa + 0.01, abs(v - 0.53))) * (1.0 - far) * near_look * (shore_lake == 1 ? 0.5 : 1.0));
+			rough = mix(rough, 0.55, wet);
 		}
 	} else {
 		// walls: earth, sand at the coast, rock in the mountains; strata per level

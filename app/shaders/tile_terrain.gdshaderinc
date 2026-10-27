@@ -8,6 +8,8 @@ uniform sampler2D height_tex : filter_linear_mipmap, repeat_disable; // metres, 
 uniform sampler2D relief_tex : filter_linear_mipmap, repeat_disable; // slope-limited metres (shape)
 uniform sampler2D cover_tex : filter_linear_mipmap, repeat_disable;  // forest, dry, crop, wetland
 uniform sampler2D aux_tex : filter_nearest, repeat_disable;          // sea distance, lake level hi/lo
+uniform sampler2D shore_tex : filter_linear, repeat_disable;          // highest land next to the water (metres)
+uniform bool shore_ready = false;
 uniform sampler2D cells_tex : filter_nearest, repeat_disable;        // two cells per byte
 uniform vec2 world_min;
 uniform vec2 world_size;
@@ -89,7 +91,11 @@ float tt_corner_height(ivec2 c) {
 	// blurred, so level contours run as long clean lines (as in SimCity 2000)
 	// instead of single-tile bumps and pits; the blur only lowers slopes
 	// (the smooth far relief keeps more of the ridges, so it stays crisp)
-	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + mix(1.5, 0.3, relief_smooth)).r;
+	vec2 uv = tt_node_uv(tt_corner_pos(c));
+	float h = textureLod(relief_tex, uv, height_lod + mix(1.5, 0.3, relief_smooth)).r;
+	// the blur must not lift the land next to the water: cap it with the sharp
+	// water envelope, which rises one level per tile from every shore
+	return shore_ready ? min(h, textureLod(shore_tex, uv, 0.0).r) : h;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
@@ -107,6 +113,8 @@ float tt_lake_level(ivec2 t) {
 		float m = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
 		if (a.g + a.b > 0.0) { metres = metres < -999.0 ? m : min(metres, m); }
 	}
+	// small lakes between the nodes: the bake pinned their nodes in the envelope
+	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
 	float x = max(metres, 0.0) / m_per_level;
 	return max(mix(round(x), x, relief_smooth), 1.0);
 }
@@ -134,7 +142,7 @@ vec4 tt_corners(ivec2 t) {
 		return vec4(0.0);
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t) - 0.04);
+		return vec4(tt_lake_level(t));
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),
