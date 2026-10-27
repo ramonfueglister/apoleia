@@ -147,9 +147,11 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: 
 
 static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
     var sides=5
-    var levels=[-0.45,0.18,0.55,1.0]
-    # Fuller shoulder: a rounded top instead of a spike (0.58 before).
-    var widths=[0.55,1.0,0.66,0.0]
+    # Gumdrop profile like the reference crowns: widest low, a broad
+    # shoulder high up and a short blunt tip (was 0.55 h / 0.58 r, a spike
+    # at 190 km). Mid-view stages drop the shoulder and stay plain cones.
+    var levels=[-0.45,0.15,0.64,1.0]
+    var widths=[0.55,1.0,0.80,0.0]
     var phase=rng.randf()*TAU
     var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
     # Same RNG draws at every detail, so all stages show the same trees.
@@ -164,8 +166,8 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
         # ring is sub-pixel at this size.
         levels=[-0.1,levels[3]];widths=[widths[1],widths[3]];jitter=[jitter[1],jitter[3]];sides=3
     elif detail>0:
-        # The straight cone from the widest ring to the tip passes within 3%
-        # of the shoulder ring, so dropping it keeps the silhouette.
+        # Without the shoulder ring: a plain cone (crowns of a few pixels;
+        # the gumdrop shoulder only reads in the close view).
         levels=[levels[0],levels[1],levels[3]];widths=[widths[0],widths[1],widths[3]];jitter=[jitter[0],jitter[1],jitter[3]]
         sides=[5,5,4,3][clampi(detail,0,3)]
     var rings:Array=[]

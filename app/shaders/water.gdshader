@@ -126,11 +126,13 @@ void fragment() {
         // Smooth at both ends (no contour line where the shelf ends); open
         // sea from ~75 m, i.e. ~10 km off flat coasts (measured: the drop
         // came late at 10-15 km with a linear ramp to 100 m).
-        float shelf_deep=mix(75.0,40.0,smoothstep(250.0,800.0,view_width));
+        // 515f650 at 190 km: teal flat out to 10 px, falling only at 20-30
+        // px; the reference falls from 4 to 10 px (~0.4-1.1 km).
+        float shelf_deep=mix(45.0,40.0,smoothstep(250.0,800.0,view_width));
         float s_depth=1.0-smoothstep(2.0,shelf_deep,shelf_d*0.125);
         // Coarse tiles store the coast as a texel water share (0 to 4 km
         // within one texel), so the band spans at least ~2 texels there.
-        float s=max(s_depth,(1.0-smoothstep(0.0,max(3500.0,tile_texel*2200.0),coast_m))*0.9);
+        float s=max(s_depth,(1.0-smoothstep(0.0,max(1400.0,tile_texel*2200.0),coast_m))*0.9);
         // Mid and teal stops a little greener and brighter (measured 2-5 km
         // #327387, 10 km #216a86 against #2f7b8c and #1f708d).
         // Deep stop ~10 % lighter (b757b7f 20-30 px off the coast #165685 /

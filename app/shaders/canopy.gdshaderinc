@@ -46,9 +46,11 @@ void fragment(){
     // Warmer olive crowns as in the reference.
     // Reference crowns: deep, slightly bluish green (h~100, s~0.36).
     // Reference crowns ~#2c3e2c: cool blue-green, low saturation.
-    // 2c4cfcf: our shaded bands are yellower than the reference (mid
-    // #2e4323 against #2e4332, dark #1b2c16 against #1b3028): bluer.
-    vec3 tinted=leaf*vec3(0.60,0.69,0.76);
+    // 2c4cfcf: our shaded bands were yellower than the reference (mid
+    // #2e4323 against #2e4332); bluer overall (0.76) turned the lit faces
+    // slate (515f650). Coolness now comes from the underside and the
+    // backlight; the albedo only a little bluer than before (0.66).
+    vec3 tinted=leaf*vec3(0.61,0.70,0.70);
     tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.35);
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
