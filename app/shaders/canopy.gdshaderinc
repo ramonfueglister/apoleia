@@ -57,7 +57,12 @@ void fragment(){
     ALBEDO=tinted*mix(0.90,1.04,upper)*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
-    AO=mix(0.80,1.0,upper);
+    // Sun-averted faces: the reference keeps them a mid green (#2e4332,
+    // about 0.3 of the lit side); ours fell to near black (#152917 on 18 %
+    // of the crown pixels at 190 km, reference 1 %). Backlight wraps the
+    // direct light round the crown; the ground and its shadows are unchanged.
+    BACKLIGHT=vec3(0.22);
+    AO=mix(0.90,1.0,upper);
 #ifdef CANOPY_FADE
     ALPHA=clamp(representation_weight*residency_weight,0.0,1.0);
     ALPHA_HASH_SCALE=1.0;
