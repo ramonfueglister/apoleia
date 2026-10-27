@@ -269,7 +269,7 @@ func _build_cloud_sun() -> void:
 ## Tree shadows then darken only the main share, so the split is used only
 ## while clouds can be in view.
 func _split_sun(strength: float) -> void:
-	if state == "clear" and cells.is_empty():
+	if (state == "clear" and cells.is_empty()) or _coverage_no_shadow:
 		_sun.shadow_caster_mask = _sun_caster_mask
 		_cloud_sun.visible = false
 		return
@@ -385,6 +385,7 @@ func _prewarm_cells() -> void:
 			cell.pos = _focus() + Vector2(_forward.x, _forward.z).normalized() * _ground_width * 0.5
 			cell.ra = maxf(_ground_width * 0.7, 120.0)
 			cell.rc = maxf(_ground_width * 0.9, 150.0)
+			cell.strength = 0.85
 			break
 	# A storm starts as one front over part of the view; the rest stays bright.
 	for cell in cells:
@@ -674,7 +675,7 @@ func _update_tiers() -> void:
 		material.set_shader_parameter("near_hide_distance", near_hide)
 		material.set_shader_parameter("view_tan", view_tan)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
-	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 1.0)
+	var cluster_scale := clampf(_ground_width / 900.0, 0.3, 1.0)
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
@@ -812,7 +813,7 @@ func _publish_globals(w: Vector3) -> void:
 	RenderingServer.global_shader_parameter_set("weather_storm", w.z)
 	RenderingServer.global_shader_parameter_set("weather_wetness", w.y)
 	RenderingServer.global_shader_parameter_set("weather_lightning", lightning if enabled else 0.0)
-	RenderingServer.global_shader_parameter_set("weather_cloud_shadow_rect", _shadow_rect if enabled else Vector4.ZERO)
+	RenderingServer.global_shader_parameter_set("weather_cloud_shadow_rect", _shadow_rect if enabled and not _coverage_no_shadow else Vector4.ZERO)
 
 func _apply_enabled() -> void:
 	if not configured: return
@@ -847,6 +848,25 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Debug acceptance check: share of screen pixels changed by the visible clouds
 ## (render with and without the cloud/rain/layer visuals; shadows stay on in both).
 var _coverage_image: Image
+var _coverage_plain: Image
+var _coverage_no_shadow := false
+var _coverage_result := {}
+
+static func _image_diff(a: Image, b: Image) -> Vector2:
+	var size := a.get_size()
+	var changed := 0
+	var upper := 0
+	var total := 0
+	for y in range(0, size.y, 3):
+		for x in range(0, size.x, 3):
+			total += 1
+			var p := a.get_pixel(x, y)
+			var q := b.get_pixel(x, y)
+			if absf(p.r - q.r) + absf(p.g - q.g) + absf(p.b - q.b) > 0.06:
+				changed += 1
+				if y < size.y / 2: upper += 1
+	return Vector2(float(changed) / total, float(upper) / total)
+
 func _measure_coverage() -> void:
 	var visuals: Array = _fine.visual + _coarse.visual + [_layer]
 	if _fine.rain_instance: visuals.append(_fine.rain_instance)
@@ -854,20 +874,15 @@ func _measure_coverage() -> void:
 		_coverage_image = get_viewport().get_texture().get_image()
 		for node in visuals: node.set_meta("coverage_visible", node.visible); node.visible = false
 	elif _frame == 244 and _coverage_image:
-		var plain := get_viewport().get_texture().get_image()
-		var size := plain.get_size()
-		var changed := 0
-		var lower := 0
-		var total := 0
-		for y in range(0, size.y, 3):
-			for x in range(0, size.x, 3):
-				total += 1
-				var a := _coverage_image.get_pixel(x, y)
-				var b := plain.get_pixel(x, y)
-				if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.06:
-					changed += 1
-					if y > size.y / 2: lower += 1
-		print("WEATHERCOVERAGE ", JSON.stringify({"state": state, "ground_width": snappedf(_ground_width, 1.0), "cloud_fraction": snappedf(float(changed) / total, 0.001), "lower_half_fraction": snappedf(float(lower) / total, 0.001)}))
+		_coverage_plain = get_viewport().get_texture().get_image()
+		var clouds := _image_diff(_coverage_image, _coverage_plain)
+		_coverage_result = {"state": state, "ground_width": snappedf(_ground_width, 1.0), "cloud_fraction": snappedf(clouds.x, 0.001), "upper_half_fraction": snappedf(clouds.y, 0.001), "lower_half_fraction": snappedf(clouds.x - clouds.y, 0.001)}
+		_coverage_no_shadow = true
+	elif _frame == 248 and _coverage_plain:
+		var shadows := _image_diff(_coverage_plain, get_viewport().get_texture().get_image())
+		_coverage_result["shadow_fraction"] = snappedf(shadows.x, 0.001)
+		print("WEATHERCOVERAGE ", JSON.stringify(_coverage_result))
+		_coverage_no_shadow = false
 		for node in visuals: node.visible = node.get_meta("coverage_visible", true)
 
 func _capture() -> void:
