@@ -1,0 +1,271 @@
+{
+  "criterion": "A08",
+  "commit": "1dd0cb140c6e82edf302375517f6e3f9de956257",
+  "commit_note": "Frames per manifest from 1dd0cb1 = main a676442 + land-cover source-root fix. Reviewer checked git diff a676442..1dd0cb1: only data_root() path resolution in landscape_look.gd/landscape_style.gd plus export_baked_macos.py; without --source-root (not passed in any capture command) it resolves to the same res://.. path, so rendering is equivalent to a676442. Evidence committed in d18a3c5 on claude/project-thread-gsv7uc.",
+  "evidence": "docs/kit1/evidence/a08-a676442/ (manifest.json, 11 PNG 640x360, excerpts/*.json)",
+  "references_compared": [
+    "docs/kit1/references/images/user-primary-landscape-style.png (primary; top/middle/bottom panels)",
+    "docs/kit1/references/images/landscape-far-revised.png (subordinate far style/colour only; not the flat far endpoint)",
+    "Urbek screenshots not used for terrain detail (subordinate per STYLE_GUIDE / A08 text)"
+  ],
+  "reviewer": "independent-claude-subagent",
+  "date": "2026-10-27",
+  "resolution_note": "640x360 is an interim resolution; a larger-window decision is pending with the owner. Criteria or aspects that depend on fine detail are marked NOT_JUDGEABLE rather than passed or failed.",
+  "verdict": "FAIL",
+  "verdict_reason": "The look is not photoreal, not garish and not voxel-like, and in the 40 km poses faceted relief and readable conifer groups approach the primary reference's bottom panel. But across the far/mid range (overview, rome-far, alps-012, alps-out, england-mid, rome-mid, alps-mid) the terrain is a smooth hillshade with no stylised faceting, the palette is dominated by ochre/olive-yellow instead of the reference's moderate fresh green, the reference's light grey-beige faceted mountains are absent (Alps read as white speckle), and at 240/40 km the ground shows magnified texel staircases and streaky stretched slope texture. Rivers in far/mid are uniform thick light-blue lines. These are visible at 640x360 and do not depend on the pending resolution decision. Palette and faceting fail independently of resolution.",
+  "hash_check": "All 11 PNG sha256 values match manifest.json (recomputed with sha256sum and Python hashlib). All are 640x360; alps-mid, alps-near and rome-near are stored as 8-bit colormap (palette-quantized) PNGs, the others RGB.",
+  "criteria": [
+    {
+      "id": "A08.palette",
+      "text": "zurueckhaltende natuerliche Palette",
+      "verdict": "PARTIAL",
+      "judgeable_at_640x360": true,
+      "detail": "Not overly colourful (meets 'nicht zu bunt'). Sea deep blue is close to the reference. Land, however, is dominated by desaturated ochre/olive-yellow (overview, alps-012, england-mid, rome-mid, rome-near, rome-40km) where the reference's middle/bottom panels show moderate fresh green with lighter grass. Shallow-water zones exist only as a thin pale fringe, not the reference's broad lighter shelves. Note: three frames are palette-quantized, which slightly limits exact colour comparison but not the overall hue judgment."
+    },
+    {
+      "id": "A08.faceted_geometry",
+      "text": "stilisierte facettierte Geometrie",
+      "verdict": "FAIL",
+      "judgeable_at_640x360": "macro form yes; fine facets at far/mid no",
+      "detail": "Far/mid poses (overview, rome-far, alps-012, alps-out, england-mid, rome-mid, alps-mid) and 240 km poses (rome-near, alps-near) show smooth, soft hillshaded relief with no recognisable faceting; the reference's light grey-beige faceted mountain massifs are absent, the Alps read as white snow speckle on dark green. Only alps-40km shows clear triangular facets, but with streaky stretched slope texture and texel staircases inside facets; rome-40km is nearly flat."
+    },
+    {
+      "id": "A08.landscape_detail",
+      "text": "ausreichende Landschaftsdetails",
+      "verdict": "PARTIAL",
+      "judgeable_at_640x360": "partly; fine coast/river/lagoon detail NOT_JUDGEABLE",
+      "detail": "rome-near shows Tiber course, three lakes, coast and forest groups (better than the A16 set). But far/mid frames draw every river as a uniform thick light-blue line across the continent (overview, alps-012, alps-out, england-mid, alps-mid), which reads as noise rather than the reference's calm far map; rivers at 240 km are wide flat blue ribbons (alps-near). The 40 km ground (rome-40km lower right, alps-near foreground) is bland ochre with blocky texel staircase patches. Lagoons/meanders/beaches of the reference's bottom panel are not reached (river supplement not on main is a known open item). Whether finer coast/river detail exists below the pixel scale cannot be judged at 640x360."
+    },
+    {
+      "id": "A08.forest_groups",
+      "text": "lesbare Waldgruppen",
+      "verdict": "PARTIAL",
+      "judgeable_at_640x360": "near yes; mid NOT_JUDGEABLE",
+      "detail": "rome-40km and alps-40km: faceted conifer cones in clearly readable clusters, close to the reference's bottom panel (positive). rome-near/alps-near: small dark clusters readable as groups. rome-mid/alps-mid: forest is dark pixel speckle; whether these resolve into groups at a larger window cannot be judged at 640x360. Far poses: tint only (acceptable for far)."
+    },
+    {
+      "id": "A08.not_photoreal",
+      "text": "nicht fotorealistisch",
+      "verdict": "PASS",
+      "judgeable_at_640x360": true,
+      "detail": "No pose reads as photoreal; stylised materials and tree cones throughout."
+    },
+    {
+      "id": "A08.not_garish",
+      "text": "nicht uebermaessig bunt",
+      "verdict": "PASS",
+      "judgeable_at_640x360": true,
+      "detail": "Saturation is restrained in all 11 frames; if anything too muted/yellow (see palette)."
+    },
+    {
+      "id": "A08.not_blocky",
+      "text": "nicht extrem low-poly/voxelartig/klotzig",
+      "verdict": "PARTIAL",
+      "judgeable_at_640x360": "geometry yes; coast staircases partly NOT_JUDGEABLE",
+      "detail": "Geometry is not voxel or block-like. However magnified texel staircases in ground material (rome-40km, alps-near, alps-40km) and stair-stepped raster coasts in overview/alps-012 give a pixelated, blocky surface impression. Part of the coastal staircase may be screen-resolution aliasing, so that part cannot be judged at 640x360; the texel blocks at 40 km span several screen pixels and are real."
+    },
+    {
+      "id": "A08.reference_scope",
+      "text": "keine Terrain-Detailvorgabe aus nachrangigen Bildern; keine Polygon-/Leistungsbehauptung aus Stilbildern",
+      "verdict": "PASS",
+      "judgeable_at_640x360": true,
+      "detail": "The manifest compares against STYLE_GUIDE only and makes no polygon-count or performance claim derived from style images."
+    },
+    {
+      "id": "A08.fixed_camera_comparisons",
+      "text": "Feste Kameravergleiche",
+      "verdict": "PARTIAL",
+      "judgeable_at_640x360": true,
+      "detail": "Poses are fixed and fully bound (lon/lat, zoom, view width, elevation, azimuth, FOV, basis, position, command). But rome-far is not a distinct pose: at zoom 0.0 the camera position_model is identical to overview, and the images differ in only 995 pixels (cloud flecks); Rome is not centred. No side-by-side comparison against the reference panels is provided. Clouds are on and occlude terrain in rome-near, alps-near and alps-mid; no cloud-free control. The far endpoint is a 50-degree oblique, not the flat 2D far map the STYLE_GUIDE requires (scope of another criterion, noted only)."
+    }
+  ],
+  "per_image": [
+    {
+      "file": "overview.png",
+      "pose": "17.5/39.5 zoom 0.0 (7607 km)",
+      "findings": [
+        "Known open item confirmed: flat grey strip (RGB 170,184,192) over rows 0-~46 of 360 (about 13% of the frame) with white cloud flecks floating on it.",
+        "Uniform thick light-blue river lines cover all of Europe; reads busy compared with landscape-far-revised.png.",
+        "Stair-stepped raster coasts (Norway, Baltic, Aegean islands, North Africa); many white cloud flakes over sea read as noise.",
+        "Land palette olive/ochre; Sahara plain sand; no faceted grey-beige ranges as in the far reference."
+      ]
+    },
+    {
+      "file": "rome-far.png",
+      "pose": "12.45/42.0 zoom 0.0",
+      "findings": [
+        "Effectively a duplicate of overview.png: same camera position_model; only 995 pixels differ. Not a Rome-centred far comparison.",
+        "Same grey top strip and far-view findings as overview."
+      ]
+    },
+    {
+      "file": "alps-012.png",
+      "pose": "Alps zoom 0.079 (5024 km)",
+      "findings": [
+        "Smooth hillshade, no faceting; Alps as small white speckle.",
+        "Thick uniform river lines; raster coasts; palette ochre/olive rather than green."
+      ]
+    },
+    {
+      "file": "alps-out.png",
+      "pose": "Alps zoom 0.231 (2269 km)",
+      "findings": [
+        "Relief soft and hillshaded; Alps white streaks on dark green, no light grey-beige faceted massifs as in the reference top panel.",
+        "River network drawn as uniform light-blue lines of equal width (small and large rivers alike).",
+        "Large soft white cloud blobs and dark sea cloud shadows."
+      ]
+    },
+    {
+      "file": "england-mid.png",
+      "pose": "England zoom 0.231 (2269 km)",
+      "findings": [
+        "Britain/Ireland uniformly ochre-olive; little landscape differentiation; no readable forest.",
+        "Coast has a pale fringe; uniform river lines; acceptable restraint but not the reference's fresh green."
+      ]
+    },
+    {
+      "file": "rome-mid.png",
+      "pose": "Rome zoom 0.329 (1351 km)",
+      "findings": [
+        "Italy/Corsica/Sardinia shapes readable; Apennines as soft dark-green hillshade, not faceted.",
+        "Forest is dark speckle; ochre lowlands (Po plain, Puglia) dominate.",
+        "Sea deep blue with darker blotches (cloud shadows)."
+      ]
+    },
+    {
+      "file": "alps-mid.png",
+      "pose": "Alps zoom 0.329 (1351 km)",
+      "findings": [
+        "Dense dark-green speckle over the whole frame (forest as pixel noise); groups not readable at 640x360 (NOT_JUDGEABLE whether they would be at a larger window).",
+        "Alps white crests on dark green; no grey-beige facets.",
+        "Palette-quantized PNG."
+      ]
+    },
+    {
+      "file": "rome-near.png",
+      "pose": "Rome zoom 0.659 (240 km)",
+      "findings": [
+        "Positive: Tiber course and mouth, three crater lakes, coast and forest clusters are readable; closest frame to the reference's middle panel in content.",
+        "Ground still smooth and soft, ochre-dominated; Tiber mouth rendered as a jagged flat blue polygon rather than a shaped delta/lagoon.",
+        "Two large opaque white cloud blobs and a detached dark cloud shadow on the sea occlude and distract.",
+        "Palette-quantized PNG."
+      ]
+    },
+    {
+      "file": "alps-near.png",
+      "pose": "Alps zoom 0.659 (240 km)",
+      "findings": [
+        "Relief soft hillshade with olive/ochre; rivers and lakes are wide flat light-blue ribbons with hard outlines.",
+        "Foreground plain shows blocky texel staircase patches (visible in a 3x crop of x400-640/y200-360).",
+        "Tree clusters readable as small dark groups; cloud blobs occlude.",
+        "Palette-quantized PNG."
+      ]
+    },
+    {
+      "file": "rome-40km.png",
+      "pose": "Rome zoom 1.0 (40 km)",
+      "findings": [
+        "Positive: faceted conifer cones in readable groups, river and lake readable; nearest to the reference's bottom panel in object style.",
+        "Ground is a nearly flat, bland ochre-yellow plain with blocky texel staircases (lower right); no grass variation, shrubs or meadow detail as in the reference.",
+        "River is a uniform flat blue ribbon without banks."
+      ]
+    },
+    {
+      "file": "alps-40km.png",
+      "pose": "Alps zoom 1.0 (40 km)",
+      "findings": [
+        "Only frame with clearly visible triangular facets; green palette here is closest to the reference.",
+        "Slopes carry streaky, stretched texture and texel staircases within facets (3x crop of x250-520/y150-330); hard shadow seams across facets.",
+        "No light grey-beige rock faces; mountains read as dark green, not as the reference's light faceted massifs."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "images": "overview, rome-far, alps-012, alps-out, england-mid, rome-mid, alps-mid, rome-near, alps-near",
+      "detail": "No stylised faceting in far/mid/240 km range; smooth hillshade. Reference's light grey-beige faceted mountains absent."
+    },
+    {
+      "severity": "P1",
+      "images": "overview, alps-012, england-mid, rome-mid, rome-near, rome-40km",
+      "detail": "Palette dominated by ochre/olive-yellow instead of the reference's moderate fresh green."
+    },
+    {
+      "severity": "P1",
+      "images": "rome-40km, alps-near, alps-40km",
+      "detail": "Magnified texel staircases and stretched streaky slope texture in ground material."
+    },
+    {
+      "severity": "P2",
+      "images": "overview, alps-012, alps-out, england-mid, alps-mid",
+      "detail": "Uniform thick light-blue river lines everywhere in far/mid views; noisy versus the calm far reference. River supplement not yet on main (known)."
+    },
+    {
+      "severity": "P2",
+      "images": "overview, rome-far",
+      "detail": "Grey strip at the top edge at zoom 0.0 (known open item), ~46 of 360 rows."
+    },
+    {
+      "severity": "P2",
+      "images": "rome-far",
+      "detail": "Duplicate of overview (same camera); not a valid Rome far pose."
+    },
+    {
+      "severity": "P2",
+      "images": "rome-near, alps-near, alps-out, alps-mid",
+      "detail": "Clouds on: opaque white blobs and detached dark shadows occlude terrain; no cloud-free control."
+    },
+    {
+      "severity": "P2",
+      "images": "excerpts",
+      "detail": "Manifest 'capture' says snapshots were taken at missing==0 and refining==0, but each excerpt's last_clipmap_line shows refining 1-6 in 9 of 11 frames and missing=11 in rome-far. Either the excerpt line is not the snapshot moment or the claim is wrong; needs clarification."
+    },
+    {
+      "severity": "P3",
+      "images": "rome-40km, alps-40km",
+      "detail": "Positive: faceted conifer cones in readable groups close to the reference's bottom panel."
+    }
+  ],
+  "not_judgeable_at_640x360": [
+    "Whether mid-range forest speckle (rome-mid, alps-mid) resolves into readable groups",
+    "Fine faceting in far/mid relief below pixel scale",
+    "Fine coastline/lagoon/river detail density and whether coastal staircases are data or screen aliasing",
+    "Exact colour match on the three palette-quantized frames (overall hue judgment unaffected)"
+  ],
+  "manifest_assessment": {
+    "adequate": [
+      "full commit SHA with explained delta to a676442 (verified render-equivalent)",
+      "per-frame sha256 (verified), source_capture_sha256, bytes, size",
+      "exact command per pose",
+      "camera azimuth, elevation, FOV, basis and position",
+      "renderer binding, dataset manifest and renderer source hashes",
+      "hardware, OS, Godot build, renderer",
+      "excerpts with startup timeline, clipmap state, pipeline counts and runtime.json hash"
+    ],
+    "gaps": [
+      "the 'excerpts' are JSON telemetry extracts, not image crops; no comparison crops against the reference exist",
+      "refining/missing values in excerpts contradict the stated capture condition",
+      "weather 'fair', weather_clouds 'on' but cloud_layer_enabled false: clouds are visible, the field meaning is unclear",
+      "source captures (pre re-encode) and runtime.json are not tracked",
+      "rome-far camera identical to overview",
+      "three frames (alps-mid, alps-near, rome-near) are palette-quantized; per the note this happens when the lossless re-encode exceeds 400 KiB, but the manifest does not mark which frames were quantized or record the pre-quantization size"
+    ]
+  },
+  "limitations": [
+    "640x360 interim resolution; larger-window decision pending with the owner",
+    "single snapshots, no motion",
+    "clouds enabled",
+    "visual comparison only; no colour statistics against the reference",
+    "reviewer saw only images, manifest and excerpts, not runtime.json or logs"
+  ],
+  "needed_for_pass": [
+    "Stylised faceted relief in far/mid/240 km views, with light grey-beige faceted mountain massifs comparable to the primary reference (not hillshade or white speckle)",
+    "Land palette shifted from ochre/olive-yellow towards the reference's moderate fresh green while staying restrained; broader lighter shallow-water zones",
+    "Remove texel staircases and stretched slope texture at 240/40 km (rome-40km, alps-near, alps-40km); add ground variation at 40 km",
+    "Calmer far/mid river rendering (width hierarchy, not uniform thick lines); land the river supplement on main",
+    "Fix the grey top strip at zoom 0.0",
+    "Recapture at the owner-decided larger resolution, with a distinct Rome-centred far pose, a cloud-free control and reference side-by-side crops per panel (far/mid/near)",
+    "Resolve the refining/missing contradiction between manifest capture condition and excerpts"
+  ]
+}

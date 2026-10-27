@@ -8,6 +8,9 @@ const DIORAMA_FOREST_GEOMETRY_MODE = "source_grouped_crowns"
 const FOREST_GEOMETRY_IDENTITY = "pointed-crown-v8-cluster3-contract046-width118-r1"
 const MODEL_SCALE = 0.001
 const VISIBLE_ASSET_SCALE = 1.6
+## Gumdrop crowns (reference near view). false restores the pointed crowns
+## of 52af60b exactly (A12 tour A/B).
+const ROUND_CROWNS = true
 const FAMILY_NAMES = ["reference_pointed_crown"]
 
 static func landform_representation_policy() -> Dictionary:
@@ -103,7 +106,17 @@ static func water_parameters() -> Dictionary:
 static func vegetation_parameters() -> Dictionary:
     return {"canopy_ambient_occlusion": 0.20, "leaf_warmth": 0.06}
 
-static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
+## Facet stages for drawn grove crowns, by view width (world units across the
+## viewport): [[view_width_below, detail], ...] ascending. Every stage draws the
+## same trees (positions, sizes, colours); detail only removes facets:
+## 0 authored 5-sided cone (25 tris), 1 five sides without the shoulder ring
+## (15), 2 four sides (12), 3 three sides (9), 4 one three-sided cone without
+## the under-ground skirt (3). Past the last entry crowns read
+## as the terrain's forest-ground tint (overview).
+static func grove_detail_view_widths() -> Array:
+    return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
+
+static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: bool = false) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
     # pointed trees about a third of the former size, each with its own tone
     # (dark green <-> olive). Footprint stays inside the former crown radius,
@@ -115,30 +128,61 @@ static func create_tree_mesh(family: int, lod: int = 0) -> ArrayMesh:
     rng.seed=71039
     var palette=[Color("2f5524"),Color("3b6428"),Color("4a6d2b"),Color("5c7432"),Color("426a2b"),Color("35592a"),Color("677a35")]
     # lod 0/1: full grove (layout template); 2: three trees; 3: one tree.
-    var count=6 if lod<=1 else (3 if lod==2 else 1)
+    # 6 small trees per grove: 8 or 11 jump the clipmap tour p50 from ~7 to
+    # 38-41 ms (template budget threshold). 3 / 1 for far LODs.
+    # Dense groves (forest cores, width variant 1): 11 trees in the 1.18x
+    # footprint; same facet stages as the normal template.
+    var count=(11 if dense else 6) if lod<=1 else (3 if lod==2 else 1)
+    var spread=1.18 if dense else 1.0
     for t in range(count):
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
-        var distance=0.0 if t==0 else 4.4*sqrt(float(t)/float(count-1))*rng.randf_range(0.8,1.05)
+        var distance=0.0 if t==0 else 5.2*spread*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
-        var height=rng.randf_range(4.6,6.4)
-        var radius=height*rng.randf_range(0.27,0.33)
-        _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)])
+        # Reference crowns are rounded cones about 0.85 as wide as tall; ours
+        # read as narrow spikes (0.66). Same draws, so the same trees: 8 %
+        # lower and 6 % wider; the gumdrop profile below adds the cover.
+        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)*(0.92 if ROUND_CROWNS else 1.0)
+        var radius=height*rng.randf_range(0.30,0.36)*(1.15 if ROUND_CROWNS else 1.0)
+        _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
-    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)
+    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")+("_dense" if dense else "")
     return mesh
 
-static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color)->void:
+static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
     var sides=5
-    var levels=[-0.45,0.18,0.55,1.0]
-    var widths=[0.55,1.0,0.58,0.0]
+    # Gumdrop profile like the reference crowns: widest low, a broad
+    # shoulder high up and a short blunt tip (was 0.55 h / 0.58 r, a spike
+    # at 190 km). Coarser stages keep the shoulder and drop the skirt.
+    var levels=[-0.45,0.15,0.60,1.0] if ROUND_CROWNS else [-0.45,0.18,0.55,1.0]
+    var widths=[0.55,1.0,0.76,0.0] if ROUND_CROWNS else [0.55,1.0,0.58,0.0]
     var phase=rng.randf()*TAU
     var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
+    # Same RNG draws at every detail, so all stages show the same trees.
+    var jitter:Array=[]
+    for j in range(levels.size()):
+        var row:Array=[]
+        for i in range(sides):row.append(rng.randf_range(0.88,1.1))
+        jitter.append(row)
+    if detail>=4:
+        # Crowns of one to three pixels: a single three-sided cone from just
+        # below the ground to the tip (3 triangles); the skirt under the widest
+        # ring is sub-pixel at this size.
+        levels=[-0.1,levels[3]];widths=[widths[1],widths[3]];jitter=[jitter[1],jitter[3]];sides=3
+    elif detail>0:
+        # The clipmap tiles draw stage 2 even in the close view (A12
+        # MIN_DETAIL), so the gumdrop must survive it at the same triangle
+        # count: the widest ring sinks just below the ground instead of the
+        # skirt, and the shoulder ring stays (was a plain pyramid, about 0.6
+        # of the gumdrop's cover).
+        if ROUND_CROWNS:levels=[-0.2,levels[2],levels[3]];widths=[widths[1],widths[2],widths[3]];jitter=[jitter[1],jitter[2],jitter[3]]
+        else:levels=[levels[0],levels[1],levels[3]];widths=[widths[0],widths[1],widths[3]];jitter=[jitter[0],jitter[1],jitter[3]]
+        sides=[5,5,4,3][clampi(detail,0,3)]
     var rings:Array=[]
     for j in range(levels.size()):
         var ring:Array[Vector3]=[]
         for i in range(sides):
             var a=phase+TAU*float(i)/float(sides)
-            var r=radius*widths[j]*rng.randf_range(0.88,1.1)
+            var r=radius*widths[j]*float(jitter[j][i])
             ring.append(base+Vector3(cos(a)*r,levels[j]*height,sin(a)*r)+lean*maxf(levels[j],0.0))
         rings.append(ring)
     var center=base+Vector3(0,height*0.4,0)
@@ -147,7 +191,9 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
             var k=(i+1)%sides
             # Faces facing the sun side (west) slightly lighter: low-poly read.
             var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
-            var tone=color.lightened(0.10*facing) if j>0 else color.darkened(0.25)
+            # Underside: a cool shade like the reference (#1b3028), not near
+            # black (ours #162917 on 11 % of the crown pixels at 190 km).
+            var tone=color.lightened(0.10*facing) if j>0 or detail>=(1 if ROUND_CROWNS else 4) else (Color(color.r*0.72,color.g*0.80,minf(color.b*1.05+0.03,1.0)) if ROUND_CROWNS else color.darkened(0.25))
             _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
             if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 
@@ -292,6 +338,9 @@ static func prepare_diorama_crown_arrays() -> Array:
     # Mainthread-only preparation. Workers receive values, never a Mesh or RID.
     return create_tree_mesh(0,1).surface_get_arrays(0)
 
+static func prepare_dense_crown_arrays(detail:int=0) -> Array:
+    return create_tree_mesh(0,1,detail,true).surface_get_arrays(0)
+
 static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable=Callable(),forest_coverage:Callable=Callable(),surface_grid:Dictionary={}) -> ArrayMesh:
     # Synchronous compatibility entrypoint; runtime async commits use the same DTO.
     var data=build_diorama_forest_arrays(origin,size,sample,coverage,forest_coverage,surface_grid,prepare_diorama_crown_arrays())
@@ -361,20 +410,50 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             var rng=RandomNumberGenerator.new()
             rng.seed=seed_value+918713
             var support:Array[Vector2]=[]
+            var open_support:Array[Vector2]=[]
             for sz in range(3):
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
-                    if _forest_member(p,sample,forest_coverage):support.append(p)
+                    if landcover_forest(p)>0.08:support.append(p)
+                    elif landcover_open(p)>0.5:open_support.append(p)
+            # Pure grass and crop land (forest share under 0.08, e.g. the
+            # Lazio coastal plain) still gets sparse copses (r9 near view:
+            # the coastal plain stayed bare, dark share 0.130 against 0.165).
+            var open_only=support.is_empty()
+            if open_only:support=open_support
             if support.is_empty():continue
-            var fraction=float(support.size())/9.0
-            if rng.randf()>fraction:continue
+            # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
+            # canopy where forest > 0.5 (hills/slopes), loose groups below,
+            # open valley floors and fields stay free.
+            var share=0.0
+            if not open_only:
+                for q in support:share+=landcover_forest(q)
+            share/=9.0
+            var fraction=0.0 if open_only else float(support.size())/9.0
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
-            if not bool(observation.get("forest",false)):continue
+            # Strong contrast: the land-cover forest share itself is high on
+            # hills/slopes and low in the farmed plains (the source sample
+            # carries no height outside source forest, so no slope term).
+            # Closed forest clumps with meadows between: full above 0.5, rare
+            # below 0.3; in between a 5-15 km noise decides (clumps/clearings).
+            # Strong clumps: the 5-15 km noise gates even dense forest, so cores
+            # fill up and clearings stay empty (same record budget).
+            var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
+            var gate=smoothstep(0.40,0.55,clump+(share-0.5)*0.6)
+            var density=gate*(1.0 if share>=0.5 else 0.55)
+            # Open land (fields and pasture, share 0.08-0.3): loose copses of
+            # smaller trees in the same clump noise, so the plains read wooded
+            # up to the beach like the reference near view instead of bare
+            # (near dark share 0.125 against 0.165).
+            var copse=share<0.3
+            if copse:density=smoothstep(0.45,0.60,clump)*(0.18 if open_only else 0.32*smoothstep(0.06,0.14,share))
+            if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
-            var width_scale=1.0
+            # Dense forest: the wider grove variant closes the canopy.
+            var width_scale=1.18 if share>=0.6 else 1.0
             if grouped:
                 var group=Vector2i(floori(float(x)/3.0),floori(float(z)/3.0))
                 if not group_anchors.has(group):group_anchors[group]=_source_group_anchor(group,sample,forest_coverage)
@@ -392,8 +471,8 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                     if supported:
                         p=proposed
                         observation=sample.call(p)
-                        width_scale=1.18
-            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)
+                        width_scale=1.18 if share>=0.6 else 1.0
+            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)*(0.8 if copse else 1.0)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit
             # display omission/transition, not a new vegetation distribution.
@@ -471,6 +550,34 @@ static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Calla
             var d=p.distance_squared_to(center)
             if d<distance:distance=d;best={"valid":true,"position":p}
     return best
+
+static var _landcover:PackedByteArray=PackedByteArray()
+static var _landcover_meta:Dictionary={}
+# Forest share 0..1 (forest + half shrub) at the nearest 2 km node.
+# Open land share (grass + crop, 117 AD adjusted) from the same nodes.
+static func landcover_open(p:Vector2) -> float:
+    landcover_forest(p) # loads the nodes on first use
+    if not bool(_landcover_meta.get("valid",false)):return 0.0
+    var w:int=_landcover_meta.w;var h:int=_landcover_meta.h
+    var uv=(p-Vector2(_landcover_meta.min))/Vector2(_landcover_meta.size)
+    var x=clampi(int(round(uv.x*float(w-1))),0,w-1);var z=clampi(int(round(uv.y*float(h-1))),0,h-1)
+    var at=(z*w+x)*8
+    return clampf((float(_landcover[at+2])+float(_landcover[at+3]))/255.0,0.0,1.0)
+
+static func landcover_forest(p:Vector2) -> float:
+    if _landcover_meta.is_empty():
+        var root=preload("res://scripts/style/landscape_look.gd").data_root().path_join(preload("res://scripts/style/landscape_look.gd").LAND_COVER_DIR)
+        var manifest=JSON.parse_string(FileAccess.get_file_as_string(root.path_join("manifest.json")))
+        if not manifest is Dictionary:_landcover_meta={"valid":false};return 0.0
+        _landcover=FileAccess.get_file_as_bytes(root.path_join("classes.u8"))
+        _landcover_meta={"valid":_landcover.size()==int(manifest.width)*int(manifest.height)*8,"w":int(manifest.width),"h":int(manifest.height),
+            "min":Vector2(manifest.world_min[0],manifest.world_min[1]),"size":Vector2(manifest.world_size[0],manifest.world_size[1])}
+    if not bool(_landcover_meta.get("valid",false)):return 0.0
+    var w:int=_landcover_meta.w;var h:int=_landcover_meta.h
+    var uv=(p-Vector2(_landcover_meta.min))/Vector2(_landcover_meta.size)
+    var x=clampi(int(round(uv.x*float(w-1))),0,w-1);var z=clampi(int(round(uv.y*float(h-1))),0,h-1)
+    var at=(z*w+x)*8
+    return clampf((float(_landcover[at])+0.5*float(_landcover[at+1]))/255.0,0.0,1.0)
 
 static func _forest_member(p:Vector2,sample:Callable,membership:Callable) -> bool:
     return bool(membership.call(p)) if membership.is_valid() else bool(sample.call(p).get("forest",false))

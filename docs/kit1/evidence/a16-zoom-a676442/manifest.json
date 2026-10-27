@@ -1,0 +1,1039 @@
+{
+  "commit": "1dd0cb140c6e82edf302375517f6e3f9de956257",
+  "commit_note": "gsv7uc = main a676442 (PR #17 delta warmup) + land-cover source-root fix 1dd0cb14",
+  "resolution": "640x360 window, rendered 640x360 (larger captures pending owner decision)",
+  "hardware": "Apple M3 Pro (11 CPU / 14 GPU cores, 18 GB), macOS 26.5, Godot 4.7.2.stable.custom_build.ed1daf0bf, Forward+ Metal",
+  "capture": "one --snapshot per pose after full clipmap coverage (root_ready, missing==0, refining==0)",
+  "sha256_note": "source_capture_sha256 = PNG written by the app; sha256 = same image re-encoded losslessly (PIL optimize); quantized only if >400 KiB",
+  "review": "image assessment by an independent reviewer",
+  "purpose": "A16 zoom evidence: Rome 12.45E/42.0N from overview (7607 km) to NEAR_WIDTH 40 km, 17 steps",
+  "zoom_mapping": "0.0-1.0 legacy --view zoom (1.0 = 240 km); then --width-source-m to NEAR_WIDTH 40 km",
+  "frames": [
+    {
+      "file": "rome-zoom-0.0.png",
+      "sha256": "dbeeb6f13933eaed80dd6f3e8aa636e466238a80250589fb9d4b562ebb0eaf60",
+      "source_capture_sha256": "c010c854dc62953b73b8525ce8838fae99b1319fb69ad3fd5377e7096f457cc8",
+      "bytes": 303711,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.0 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.0
+      },
+      "zoom": 0.0,
+      "view_width_model": 7606.7315844523455,
+      "view_width_source_m": 7606731.584452345,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 49.99999868188683,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6427876353263855,
+            -0.7660444378852844
+          ],
+          [
+            0.0,
+            0.7660444378852844,
+            0.6427876353263855
+          ]
+        ],
+        "position_model": [
+          -125.880126953125,
+          6826.3857421875,
+          5894.810546875
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.0.json"
+    },
+    {
+      "file": "rome-zoom-0.1.png",
+      "sha256": "acf9dc7a622f562060ac17d8c7033f97de9a655148006a2bb76cdada6ba5e629",
+      "source_capture_sha256": "d73b3f91e72c5bfc046a113cc380ed328ec40b3a88deeb8c6f175a55ee9a1b45",
+      "bytes": 335480,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.1 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.1
+      },
+      "zoom": 0.0658576488494873,
+      "view_width_model": 5383.9301283688665,
+      "view_width_source_m": 5383930.128368867,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 49.99999868188683,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6427876353263855,
+            -0.7660444378852844
+          ],
+          [
+            0.0,
+            0.7660444378852844,
+            0.6427876353263855
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          4831.61328125,
+          4317.0830078125
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.1.json"
+    },
+    {
+      "file": "rome-zoom-0.2.png",
+      "sha256": "17236d6329498d83576dd46f5ee2f3e4b52c906c74fb07f1f05cc387b84a0216",
+      "source_capture_sha256": "10d4d3886b730111b483263df73a055316a0b21d5352c7c9a3d7fa88f8c1369a",
+      "bytes": 362738,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.2 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.2
+      },
+      "zoom": 0.1317152976989746,
+      "view_width_model": 3810.664712608618,
+      "view_width_source_m": 3810664.712608618,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 49.99999868188683,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6427876353263855,
+            -0.7660444378852844
+          ],
+          [
+            0.0,
+            0.7660444378852844,
+            0.6427876353263855
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          3420.750732421875,
+          2758.310302734375
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.2.json"
+    },
+    {
+      "file": "rome-zoom-0.3.png",
+      "sha256": "76892e076f0e101b8dd31e5b7b0c07234adb98c2c49c15cb2081f9b39eaedcd8",
+      "source_capture_sha256": "f68bcfc14cc0fc44170de114645fecb033c72252b5148cf7e02e2dead29a797f",
+      "bytes": 367576,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.3 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.3
+      },
+      "zoom": 0.1975729614496231,
+      "view_width_model": 2697.130919261321,
+      "view_width_source_m": 2697130.919261321,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 49.99999868188683,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6427876353263855,
+            -0.7660444378852844
+          ],
+          [
+            0.0,
+            0.7660444378852844,
+            0.6427876353263855
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          2421.260498046875,
+          1919.7974853515625
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.3.json"
+    },
+    {
+      "file": "rome-zoom-0.4.png",
+      "sha256": "2a5497a414e28cb6ddeb722224ee1859d0416c46142a183ddb26e1ee9a042e9c",
+      "source_capture_sha256": "5779a20b7639f48e729b97524820ec6b37bca1e2490d9391a702ab56b008ee7f",
+      "bytes": 379418,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.4 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.4
+      },
+      "zoom": 0.2634305953979492,
+      "view_width_model": 1908.988820060489,
+      "view_width_source_m": 1908988.820060489,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 49.627657142371326,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6477522253990173,
+            -0.7618510723114014
+          ],
+          [
+            0.0,
+            0.7618510723114014,
+            0.6477522253990173
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          1704.55419921875,
+          1337.41357421875
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.4.json"
+    },
+    {
+      "file": "rome-zoom-0.5.png",
+      "sha256": "d63915cfe11f373952c74930f8fc70d3489eeb3c3e3667c36480f0e4b0f15d9e",
+      "source_capture_sha256": "966a6ec3e830f56070cb36df2e4f58d5ffd732880751448e48371af304a66ede",
+      "bytes": 330344,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.5 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.5
+      },
+      "zoom": 0.3292882740497589,
+      "view_width_model": 1351.1533437822168,
+      "view_width_source_m": 1351153.3437822168,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 48.454739123450366,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6632115244865417,
+            -0.7484320998191833
+          ],
+          [
+            0.0,
+            0.7484320998191833,
+            0.6632115244865417
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          1185.3427734375,
+          938.578125
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.5.json"
+    },
+    {
+      "file": "rome-zoom-0.6.png",
+      "sha256": "106e3489ff72d467bba4e1b8af991e2dd3c6ff4e626bfd2a1eff012d73b82d75",
+      "source_capture_sha256": "d17299797405b93c8e886cc752ee1a39231fabdbfb104f83b5a6e0ab7931d0d8",
+      "bytes": 332669,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.6 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.6
+      },
+      "zoom": 0.3951459228992462,
+      "view_width_model": 956.3260008416815,
+      "view_width_source_m": 956326.0008416815,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 46.68667605182743,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.6859875917434692,
+            -0.7276132702827454
+          ],
+          [
+            0.0,
+            0.7276132702827454,
+            0.6859875917434692
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          815.759521484375,
+          657.3352661132812
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.6.json"
+    },
+    {
+      "file": "rome-zoom-0.7.png",
+      "sha256": "7f6cd0861336daed1c80371c906415ecdb078a23289f28f4cf7395b549e2d7e4",
+      "source_capture_sha256": "b25a7780a93bbc51f9e239e093572360176e1e6fbd4f54900686d8005401df3d",
+      "bytes": 307134,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.7 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.7
+      },
+      "zoom": 0.4610035717487335,
+      "view_width_model": 676.8731499607306,
+      "view_width_source_m": 676873.1499607306,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 44.534542372324104,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.712827742099762,
+            -0.7013391256332397
+          ],
+          [
+            0.0,
+            0.7013391256332397,
+            0.712827742099762
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          556.708984375,
+          454.04205322265625
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.7.json"
+    },
+    {
+      "file": "rome-zoom-0.8.png",
+      "sha256": "e460b4410f5f11a28af61f98746ba3f82940587e8a17e7392560bd2899533a96",
+      "source_capture_sha256": "f2a9edd9fb1f1c5a0eaf505e880fa780da6ef790489fcc0222322315f778b989",
+      "bytes": 287803,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.8 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.8
+      },
+      "zoom": 0.5268611907958984,
+      "view_width_model": 479.0807030136989,
+      "view_width_source_m": 479080.70301369886,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 42.209415401449185,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.7406942248344421,
+            -0.6718423366546631
+          ],
+          [
+            0.0,
+            0.6718423366546631,
+            0.7406942248344421
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          377.6481628417969,
+          304.51104736328125
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.8.json"
+    },
+    {
+      "file": "rome-zoom-0.9.png",
+      "sha256": "a6d2e494baa6c72e79bcf15d344b9c6077e1ff4486d4eab51dfb377350934012",
+      "source_capture_sha256": "a60ac47b90ac1c28839713057434fdd0cb87fddd18455244378860d7cad104a6",
+      "bytes": 348145,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 0.9 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 0.9
+      },
+      "zoom": 0.5927188992500305,
+      "view_width_model": 339.08600499742363,
+      "view_width_source_m": 339086.0049974236,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 39.92235886316248,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.7669147849082947,
+            -0.6417489647865295
+          ],
+          [
+            0.0,
+            0.6417489647865295,
+            0.7669147849082947
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          255.51016235351562,
+          193.4511260986328
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-0.9.json"
+    },
+    {
+      "file": "rome-zoom-1.0.png",
+      "sha256": "9e8a9b9af4e5c5c98fb2a9ac3290bdc5b3aebcd1ef81ad0d9742bb4e1399b5ca",
+      "source_capture_sha256": "a97462ddce81615683aaf577aa58157e83c27bdcc0c2892f4cd17aa75c1a7822",
+      "bytes": 171411,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0
+      },
+      "zoom": 0.6585765480995178,
+      "view_width_model": 239.99997083442534,
+      "view_width_source_m": 239999.97083442533,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 37.88446117694893,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.7892506718635559,
+            -0.6140711903572083
+          ],
+          [
+            0.0,
+            0.6140711903572083,
+            0.7892506718635559
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          173.23516845703125,
+          110.70880126953125
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-zoom-1.0.json"
+    },
+    {
+      "file": "rome-width-200km.png",
+      "sha256": "cdaa5d0ecad95451715771dd5b18b8b5526e5da6228127c1ff385e8d12ac0201",
+      "source_capture_sha256": "8fadd2fd0eb530a85a7b58af55aafad436cef241c6259f53bbd893cbea18b9a2",
+      "bytes": 177036,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 200000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 200000.0
+      },
+      "zoom": 0.693318247795105,
+      "view_width_model": 200.00002846955044,
+      "view_width_source_m": 200000.02846955045,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 36.98144904754757,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.7988303303718567,
+            -0.6015564203262329
+          ],
+          [
+            0.0,
+            0.6015564203262329,
+            0.7988303303718567
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          141.52789306640625,
+          75.96937561035156
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-200km.json"
+    },
+    {
+      "file": "rome-width-160km.png",
+      "sha256": "3dc5832ae239c6372c19bace7821137c4641dd83f4e6d8f5e731fbd4e2ad563f",
+      "source_capture_sha256": "48b979811b8bd6d995b7d316efa76c4877e4c22f571c6cf975fc04712a7989ff",
+      "bytes": 180278,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 160000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 160000.0
+      },
+      "zoom": 0.7358387112617493,
+      "view_width_model": 160.0000244973401,
+      "view_width_source_m": 160000.02449734008,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 36.09586751818989,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.8080323934555054,
+            -0.5891380906105042
+          ],
+          [
+            0.0,
+            0.5891380906105042,
+            0.8080323934555054
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          111.01150512695312,
+          40.26130676269531
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-160km.json"
+    },
+    {
+      "file": "rome-width-120km.png",
+      "sha256": "546a494a9fb8fec16265730888073ffc614a63d141e8be14b18e279dd6c21bc9",
+      "source_capture_sha256": "680969db407c78cfe66f2a5dca9435d3b3ccc82817c0993161601d7f51216134",
+      "bytes": 178326,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 120000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 120000.0
+      },
+      "zoom": 0.7906571626663208,
+      "view_width_model": 119.9999949986967,
+      "view_width_source_m": 119999.99499869671,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 35.39766049679741,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.8151514530181885,
+            -0.5792478919029236
+          ],
+          [
+            0.0,
+            0.5792478919029236,
+            0.8151514530181885
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          82.01434326171875,
+          3.397979736328125
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-120km.json"
+    },
+    {
+      "file": "rome-width-90km.png",
+      "sha256": "92b291b5cd7353c31cf0ecfba88da18bad8d953b705efac28ed54339ae49e30c",
+      "source_capture_sha256": "34498dac8c32a1155efa63479026e9ec033b77f00f58687d6dc46fdd565c44a1",
+      "bytes": 405545,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 90000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 90000.0
+      },
+      "zoom": 0.8454755544662476,
+      "view_width_model": 90.00000687027222,
+      "view_width_source_m": 90000.00687027222,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 35.264388215059064,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.8164966106414795,
+            -0.5773502588272095
+          ],
+          [
+            0.0,
+            0.5773502588272095,
+            0.8164966106414795
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          61.45677947998047,
+          -25.10845184326172
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-90km.json"
+    },
+    {
+      "file": "rome-width-60km.png",
+      "sha256": "8d6f983be3337894191b299c26336f7f86e663d9a664803c663092a733d260ae",
+      "source_capture_sha256": "4d68377ea776d93ccac4fdbe91d84cd12f7243ea9d2ac01d6aa15a387916097b",
+      "bytes": 379665,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 60000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 60000.0
+      },
+      "zoom": 0.9227377772331238,
+      "view_width_model": 60.000002290090706,
+      "view_width_source_m": 60000.002290090706,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 35.264388215059064,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.8164966106414795,
+            -0.5773502588272095
+          ],
+          [
+            0.0,
+            0.5773502588272095,
+            0.8164966106414795
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          41.16596221923828,
+          -53.80399703979492
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-60km.json"
+    },
+    {
+      "file": "rome-width-40km.png",
+      "sha256": "f43ef4e42c815d4484f717233aa78bc422a290f17e331cf2f9af57c0a30edba5",
+      "source_capture_sha256": "dbbcf5039d6c8edb06135714752597ffba977dcfc4b3f9658f783b800ee8a231",
+      "bytes": 336017,
+      "size_px": [
+        640,
+        360
+      ],
+      "command": "godot --windowed --resolution 640x360 --position 0,0 --path app -- --snapshot --view 12.45 42.0 1.0 --width-source-m 40000 --capture-dir <out>",
+      "view": {
+        "lon": 12.45,
+        "lat": 42.0,
+        "legacy_zoom": 1.0,
+        "width_source_m": 40000.0
+      },
+      "zoom": 1.0,
+      "view_width_model": 39.99999999999998,
+      "view_width_source_m": 39999.99999999998,
+      "camera": {
+        "azimuth_degrees": 0.0,
+        "heading": "north-up (azimuth 0)",
+        "elevation_degrees": 35.264388215059064,
+        "fov_degrees_vertical": 27.0,
+        "basis": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.8164966106414795,
+            -0.5773502588272095
+          ],
+          [
+            0.0,
+            0.5773502588272095,
+            0.8164966106414795
+          ]
+        ],
+        "position_model": [
+          -549.6759643554688,
+          27.638751983642578,
+          -72.93435668945312
+        ]
+      },
+      "weather": {
+        "cli_argument": null,
+        "state": "fair (weather_system.gd default)",
+        "weather_clouds": "on"
+      },
+      "cloud_layer_enabled": false,
+      "hashes": {
+        "renderer_binding_sha256": "9b9ae15427655c743d14657cda9f7cd5f0cb6f753af7a23abca3b52e9be4ecef",
+        "dataset_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+        "renderer_source_sha256": "74572e7cf0163a5d41c72e8ab06ade4258d9a9f13faa190f94737b9de664a354"
+      },
+      "coverage": "complete",
+      "excerpt": "excerpts/rome-width-40km.json"
+    }
+  ]
+}

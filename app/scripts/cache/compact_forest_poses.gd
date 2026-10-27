@@ -4,9 +4,12 @@ const Bounds=preload("res://scripts/cache/compact_forest_bounds.gd")
 const FORMAT="v19-compact-crown-poses-r1"
 const STRIDES=[0,1,2,4,8,16,32,64,128]
 const WIDTHS=[1.0,1.18]
-static func variants(base:Array)->Array:
+# Variant 1 (width 1.18, used only in dense forest) may be a separate dense
+# grove template: same footprint as the 1.18-scaled base, more trees.
+static func variants(base:Array,dense:Array=[])->Array:
     var result=[]
     for width in WIDTHS:
+        if width!=1.0 and not dense.is_empty():result.append(dense.duplicate(true));continue
         var arrays=base.duplicate(true)
         var w=Vector3(width,1.0,width)
         var vertices:PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
