@@ -126,8 +126,9 @@ wenn nichts anderes läuft.
 Die Obergrenze S59 wird in diesem Lauf nicht erreicht (Spitze rund 153'000). Mit der
 Getreidewirtschaft schon: Dort greift S80. Ab 90 % der Grenze ziehen Haushalte in Not
 eher weg als um, und ein Teil der übrigen wandert aus, die am schlechtesten versorgten
-zuerst. Die Bevölkerung bleibt so bei rund 185'000 stehen (92 % der Grenze) statt auf
-202'000 zu steigen ([run-grain](../run-grain/README.md)).
+zuerst. Ohne Brache bleibt die Bevölkerung so bei rund 185'000 stehen (92 % der Grenze),
+statt auf 202'000 zu steigen. Mit Brache (S76, Standard) wächst sie nur auf 137'000, und
+S80 greift in 100 Jahren nicht ([run-grain](../run-grain/README.md)).
 
 ## Startzahl 116'805 statt 100'000
 
