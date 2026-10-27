@@ -38,10 +38,14 @@ PeopleView::update()  ── Query (Pid, Home, Stand, Option<Travel>)
   aus `tt_corners` der Tile-Terrain, also steht jeder Punkt auf der Tile-Ebene
   bzw. Rampe der aktuellen Zoomstufe. Der Punkt bleibt fest, solange die Person
   bleibt (Hash, kein Zufall pro Frame).
-- **Ein Draw Call:** ein MultiMesh mit einem Dreieck pro Slot, dessen Transformationen
-  nie geschrieben werden; der Shader liest den Datensatz über `INSTANCE_ID`,
-  verwirft Punkte außerhalb des Bildes vor den Terrain-Abfragen und zeichnet einen
-  runden Punkt fester Pixelgröße.
+- **Platzierung als 2D-Pass:** `people_dots_prep.gdshader` rechnet die Stelle
+  jeder Person einmal in eine RGBA16F-Textur (Versatz zum Anker, Höhe), nur wenn
+  sich die Personen oder die Terrain-Ansicht (Zoomstufe, Relief-Überblendung,
+  Ecken-Ausschnitt) ändern.
+- **Ein Draw Call:** ein MultiMesh mit 64 Dreiecken pro Instanz, dessen
+  Transformationen nie geschrieben werden; der Vertex-Shader liest pro Punkt zwei
+  Texel und zeichnet einen Punkt fester Pixelgröße (3,5 px nah, 1 px weit; ab
+  1,75 px rund ausgeschnitten, darunter ohne `discard`).
 
 ## Gemessen (Linux-Container, 4 Kerne)
 
@@ -66,20 +70,30 @@ von Frame-Zeit und GPU-Zeit sowie die Upload-Zeit von `sync`.
 
 ## Gemessen auf dem Mac (M3 Pro, 1440×810, V-Sync aus)
 
-Frame-Zeit Median in ms, je 240 Frames mit und ohne Punkte (`--people-bench`):
+Frame-Zeit Median in ms, je 240 Frames mit und ohne Punkte (`--people-bench`),
+Kosten der Punkte = mit minus ohne:
 
-| Ansicht | ohne Punkte | mit Punkten (Runde 1) | mit Punkten (Runde 2) |
+| Runde (Stand) | 360 km | 25 km | 1800 km |
 |---|---|---|---|
-| 360 km (Rom) | 15,45 | 16,24 (+0,8) | 15,49 (+0,04) |
-| 25 km (0,5-km-Tiles) | 143,2 | 143,6 (+1,8) | 144,0 (+0,8) |
-| 1800 km (ganzes Meer) | 17,2 | 19,2 (+2,1) | 18,3 (+1,1) |
+| 1: Platzierung pro Vertex, große runde Punkte | +0,8 | +1,8 | +2,1 |
+| 2: kleine Punkte weit weg, ohne `discard`, Cull | +0,04 | +0,8 | +1,1 |
+| 4: neues Terrain (Ecken-Cache), Platzierung als 2D-Pass | +1,0 | +1,3 | +1,1 |
+| 5: Sim pausiert (kein Upload, kein Pass) | +0,97 | | |
+| **6: 64 Punkte pro Instanz** | **+0,17** | **+0,56** | **+0,10** |
+| 6: Sim pausiert | +0,25 | | |
 
-Runde 2: Punktgröße folgt der Ansichtsbreite (3,5 px nah, 1 px weit), kleine
-Punkte ohne `discard` (Dreieck, frühe Tiefenprüfung bleibt), Cull vor allen
-Terrain-Abfragen, weit weg Höhe aus dem glatten Relief. `sync` (Upload aller 29
-Seiten nach einem Sim-Tag) 0,21 ms, Sim-Tag 0,6–1,2 ms und View 0,5–0,9 ms auf
-dem Sim-Thread. Die 25-km-Ansicht ist auch ohne Punkte langsam (Terrain, an den
-Terrain-Thread gemeldet). GPU-Zeitstempel liefert Godot unter Metal nicht (0,0).
+Ohne Punkte: 13,9 ms (360), 23,6 ms (25), 15,6 ms (1800) mit dem Ecken-Cache des
+Terrains (vorher 143 ms bei 25 km). Runde 2 lag bei 360 km nur scheinbar tief: das
+Terrain war damals so teuer, dass die Punkte im Schatten liefen.
+
+Was zählte: Runde 5 zeigte, dass die ~1 ms auch ohne Upload und ohne Pass blieb,
+also im Zeichnen selbst. 118 784 Instanzen mit je 3 Vertices füllen die
+Vertex-SIMD-Gruppen der GPU kaum; mit 64 Punkten pro Instanz (1856 Instanzen)
+fiel die Kosten auf 0,1–0,25 ms. Der Platzierungs-Pass (eine Float-Textur, ein
+Pixel pro Person) läuft nur bei Änderungen (in 40–67 % der Frames bei 10 Tagen/s,
+fast nie bei pausierter Sim). `sync` (alle 29 Seiten nach einem Sim-Tag)
+0,2–0,5 ms im Frame nach dem Tag, sonst 0. GPU-Zeitstempel liefert Godot unter
+Metal nicht (0,0), alle Werte sind ganze Frames.
 
 Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulierte
 Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
@@ -113,8 +127,8 @@ Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 - **Streu-Update auf der GPU** statt ganzer Seiten: die rund 640 geänderten
   Datensätze (≈13 KB/Tag) als kleine Liste hochladen und mit einem Compute-Shader
-  (RenderingDevice, Texture2DRD) in die Textur schreiben. Lohnt erst, wenn die
-  Mac-Messung den Seiten-Upload sichtbar zeigt.
+  (RenderingDevice, Texture2DRD) in die Textur schreiben. Würde die 0,2–0,5-ms-Spitze
+  im Frame nach einem Sim-Tag entfernen.
 - Reisende (auch per Schiff) sind dunkelrot und dürfen auf See liegen.
   Daheim-Personen suchen 8 Stellen in ihrer Fläche und 8 in der doppelten, bevor
   ein Punkt auf Wasser fallen kann.
