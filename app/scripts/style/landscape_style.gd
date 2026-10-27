@@ -442,18 +442,28 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             # Strong clumps: the 5-15 km noise gates even dense forest, so cores
             # fill up and clearings stay empty (same record budget).
             var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
-            var gate=smoothstep(0.40,0.55,clump+(share-0.5)*0.6)
-            var density=gate*(1.0 if share>=0.5 else 0.55)
+            # Forest carpets (r11): the reference mid view shows large closed
+            # forests on hills and mountain flanks with open valleys between.
+            # The regional forest share over a 12 km ring is the hill proxy;
+            # a coarse 7-18 km noise cuts large clearings instead of holes.
+            var regional=landcover_forest(p)
+            for k in range(8):regional+=landcover_forest(p+Vector2.RIGHT.rotated(float(k)*PI/4.0)*12.0)
+            regional/=9.0
+            var carpet=_composition_noise(p/18.0,40417)*0.65+_composition_noise(p/7.0,40421)*0.35
+            var gate=smoothstep(0.42,0.56,carpet+(share-0.45)*1.2+(regional-0.35)*0.8)
+            var density=gate*(1.0 if share>=0.5 else 0.5)
             # Open land (fields and pasture, share 0.08-0.3): loose copses of
             # smaller trees in the same clump noise, so the plains read wooded
             # up to the beach like the reference near view instead of bare
-            # (near dark share 0.125 against 0.165).
+            # (near dark share 0.125 against 0.165). Fewer inside forested
+            # regions, where the carpets carry the cover (same record budget).
             var copse=share<0.3
-            if copse:density=smoothstep(0.45,0.60,clump)*(0.18 if open_only else 0.32*smoothstep(0.06,0.14,share))
+            if copse:density=smoothstep(0.47,0.62,clump)*(0.12 if open_only else 0.20*smoothstep(0.06,0.14,share))*(1.0-0.7*smoothstep(0.30,0.50,regional))
             if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
-            # Dense forest: the wider grove variant closes the canopy.
-            var width_scale=1.18 if share>=0.6 else 1.0
+            # Dense forest: the wider grove variant closes the canopy in the
+            # carpets (r11: from share 0.45 instead of 0.6).
+            var width_scale=1.18 if share>=0.45 else 1.0
             if grouped:
                 var group=Vector2i(floori(float(x)/3.0),floori(float(z)/3.0))
                 if not group_anchors.has(group):group_anchors[group]=_source_group_anchor(group,sample,forest_coverage)
@@ -471,7 +481,7 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                     if supported:
                         p=proposed
                         observation=sample.call(p)
-                        width_scale=1.18 if share>=0.6 else 1.0
+                        width_scale=1.18 if share>=0.45 else 1.0
             var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)*(0.8 if copse else 1.0)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit

@@ -52,11 +52,11 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-claude-landcover-r10",
-      "manifest_sha256": "92090137bbb9032f17d772077a9f04e188e297c2a6e67b6d34c0fe02ef6034cf",
+      "path": "artifacts/render-data/forest-layout-claude-landcover-r11",
+      "manifest_sha256": "8e13b33d39b47f0b0a54919ebf81da7f5dc04e3a1569879a7c2277c450c5162a",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
-      "record_source": "complete landcover-r10 bake (207883 records: land cover r2, dense cores, open-land and grass copses), v3 source contract"
+      "record_source": "complete landcover-r11 bake (215747 records: forest carpets on regional forest share, coarse clearings, dense type from share 0.45), v3 source contract"
     }
   },
   "terrain_streaming": {
