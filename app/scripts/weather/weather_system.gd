@@ -677,7 +677,10 @@ func _update_tiers() -> void:
 	var close := 1.0 - smoothstep(400.0, 900.0, _ground_width)
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _rain_material]:
 		material.set_shader_parameter("near_hide_distance", near_hide)
-		material.set_shader_parameter("near_hide_fair", near_hide * lerpf(1.0, 0.75, close))
+		material.set_shader_parameter("view_forward", Vector2(_forward.x, _forward.z).normalized())
+		material.set_shader_parameter("focus_forward", Vector2(_focus().x - _camera.global_position.x, _focus().y - _camera.global_position.z).dot(Vector2(_forward.x, _forward.z).normalized()))
+		material.set_shader_parameter("near_hide_fair", lerpf(0.5, 0.85, close))
+		material.set_shader_parameter("near_hide_bank", lerpf(0.7, 1.05, close))
 		material.set_shader_parameter("bank_growth", lerpf(2.2, 0.8, close))
 		material.set_shader_parameter("view_tan", view_tan)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
