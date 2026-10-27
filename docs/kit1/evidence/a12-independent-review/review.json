@@ -1,0 +1,67 @@
+{
+  "criterion": "A12",
+  "commit": "c2c0015",
+  "evidence_reviewed": [
+    "docs/kit1/evidence/a12-main-ea8e0dd/README.md",
+    "docs/kit1/evidence/a12-main-ea8e0dd/a12-raw.json (added in 6dba2ef)",
+    "docs/kit1/ACCEPTANCE.md (A12 row, section 'Prüfkonfiguration')",
+    "docs/kit1/operations/RENDERING.md (proposed Mac prototype targets)"
+  ],
+  "measured_build": "f8ce8aed (README: main ea8e0dd plus startup telemetry)",
+  "reviewer": "independent-claude-subagent",
+  "verdict": "PARTIAL",
+  "target": {
+    "status": "proposed working values only, explicitly 'offen' and not a user decision",
+    "source": "ACCEPTANCE.md 'Prüfkonfiguration vor späterer Umsetzung konkretisieren' and operations/RENDERING.md",
+    "quote": "60 Hz Zielrate bei festgehaltener 1920×1080-Ausgabe (p95 Framezeit ≤16,7 ms; p99 ≤33,3 ms) und null sichtbar unbedeckte Terrainframes auf der gebundenen Prüftour",
+    "memory_budget": "undefined",
+    "spike_budget": "undefined",
+    "comparison_against_target": {
+      "forward_plus_cold_tour": "p95 16.77 ms > 16.7 (fail by a hair), p99 26.41 <= 33.3, max 134.3 ms",
+      "forward_plus_warm_tour": "p95 16.765 ms > 16.7 (fail by a hair), p99 25.55 <= 33.3, max 127.7 ms",
+      "mobile_cold_tour": "p95 11.78, p99 20.12, max 61.4 ms -> within proposed p95/p99",
+      "mobile_warm_tour": "p95 11.90, p99 19.91, max 61.0 ms -> within proposed p95/p99",
+      "resolution": "measured 640x360, target names 1920x1080 (9x fewer pixels); no conclusion transferable to the target resolution",
+      "zero_uncovered_terrain_frames": "not measured (clipmap missing_max 76-100 recorded, but visibility per frame unknown)"
+    }
+  },
+  "requirements": [
+    {"name": "Frame times incl. distribution and spikes", "status": "MEASURED", "evidence": "p50/p95/p99/max overall and tour-only, top-8 spikes with frame index, counts >16.7/33.3/50/100/250 ms for 4 runs. Caveat: p50 ~8.4-8.5 ms matches 120 Hz ProMotion vsync cadence (no vsync/max_fps override in app/project.godot), so values are display-quantized, not render cost; no CPU/GPU time per pass."},
+    {"name": "Memory", "status": "PARTIAL", "evidence": "RSS via ps every 0.5 s, static memory, GPU memory max. Mobile gpu_texture_memory_bytes_max = 1.8446744e19 (2^64, unsigned underflow) is invalid in both Mobile runs; no memory budget defined."},
+    {"name": "Load interruptions", "status": "PARTIAL", "evidence": "Startup wait (26.8 s cold / 7.1 s warm) and startup spikes up to 14.4 s recorded; in-tour threshold counts present. No attribution of in-tour spikes (e.g. frames 2929-2931, 3563-3565) to loading vs. shader compile vs. GC."},
+    {"name": "Request age", "status": "PARTIAL", "evidence": "terrain_streaming.oldest_request_ms_max is 0.0 in 3 of 4 runs and 73.0 in one; the tour uses the clipmap path, so this counter is likely not wired to the active path. clipmap tile_io_ms_max (162-489 ms) and tile_pending_max exist but are not request age."},
+    {"name": "Visible lateness", "status": "MISSING", "evidence": "Only clipmap missing_max (76-100) from 80-93 sampled lines; no per-frame visible-hole/fallback metric, no screenshots/video, no time-to-visible."},
+    {"name": "Byte/time-bounded uploads", "status": "PARTIAL", "evidence": "clipmap upload_ms_max 1.85-3.96 ms observed; terrain_streaming upload_max_ms 0.0 everywhere. No configured byte/time limit stated, no upload bytes per frame, so boundedness is not demonstrated."},
+    {"name": "Forward+ vs Mobile with identical workload", "status": "PARTIAL", "evidence": "Same fixture/tour, same binary, same window. Identical terrain/streaming/material workload not shown: no per-renderer material/feature settings, frame counts differ (4654-4706 vs 5279-5286 tour frames) because vsync-free work differs, run order not counterbalanced (Forward+ always first, OS file cache and thermal state differ), n=1 per condition."},
+    {"name": "Named hardware, resolution, identical path", "status": "PARTIAL", "evidence": "Apple M3 Pro 11C/14G, 18 GB, macOS 26.5, Godot 4.7.2 custom Metal, fixture runs/kit1-landscape-v5-2026-10-25/fixture.json all named. Resolution 640x360 is not the proposed 1920x1080 target and not realistic for a Retina display; raw runtime.json files are local-only (only SHA-256 committed), so values cannot be re-derived from the repo."},
+    {"name": "No cross-platform claims", "status": "MEASURED", "evidence": "README: 'Gilt nur für diesen Mac. Daraus folgt kein Windows-, Linux- oder iPad-Nachweis.' No contrary claim found."}
+  ],
+  "consistency_checks": {
+    "percentiles_vs_counts": "consistent: FP cold 242/4654 = 5.2% > 16.7 -> p95 16.77; 33/4654 = 0.7% > 33.3 -> p99 < 33.3; Mobile 110/5286 = 2.1% > 16.7 -> p95 < 16.7, p99 > 16.7. >100 ms counts match listed spikes (FP warm 5 spikes >100, Mobile max 61 -> 0).",
+    "tour_vs_all": "consistent: all huge spikes (frame 1-105) lie before tour_start_frame (125-293).",
+    "warm_vs_cold": "plausible: cold startup ~26.8 s vs warm ~7.1 s; tour statistics almost identical between cold and warm, so in-tour spikes are not first-run shader compile. Warm FP RSS max 1.54 GB > cold 1.30 GB (unexplained).",
+    "rss_samples": "FP cold 156 samples (78 s) ~ 26.8+48 s; Mobile cold only 137 samples (68.5 s) for the same ~75 s expected duration - small unexplained gap.",
+    "identical_workload_claim": "only path-identical; not frame- or material-identical (see requirements)."
+  },
+  "findings": [
+    {"severity": "P1", "detail": "No bound target class: ACCEPTANCE.md leaves reference hardware, resolution, minimum performance, spike and memory budgets 'offen'; RENDERING.md values are unvalidated proposals. A12 'auf Zielklasse' cannot PASS without a bound target."},
+    {"severity": "P1", "detail": "Measured at 640x360 (window intentionally capped pending owner decision) while the proposed target is 1920x1080. On a Retina M3 Pro this is ~1/9 of target pixels; fill-rate/GPU-bound costs are not represented, so neither pass nor fail against the target can be concluded."},
+    {"severity": "P1", "detail": "Visible lateness and zero-uncovered-terrain-frames are not measured; clipmap missing_max 76-100 suggests many missing tiles at times but visibility is unknown."},
+    {"severity": "P2", "detail": "Frame times appear vsync-locked to 120 Hz (p50 8.38-8.54 ms on ProMotion, no vsync override in project.godot). Statistics mix display cadence and missed vblanks; no CPU/GPU time per frame. State vsync mode and add GPU/CPU timings."},
+    {"severity": "P2", "detail": "Mobile gpu_texture_memory_bytes_max = 1.8446744073708468e19 (2^64) is an underflow artefact; the memory column is invalid for Mobile and must be fixed or excluded."},
+    {"severity": "P2", "detail": "terrain_streaming request age/upload are 0.0 in 3/4 runs, i.e. not effectively instrumented on the active clipmap path; request age and byte/time upload bounds are therefore not demonstrated."},
+    {"severity": "P2", "detail": "Forward+ vs Mobile comparison is n=1 per condition, fixed order (Forward+ first), no material/feature parity statement; 'identical workload' is not proven."},
+    {"severity": "P2", "detail": "Forward+ tour p95 16.77/16.765 ms already exceeds the proposed 16.7 ms at 640x360, with in-tour spikes to 134 ms (5 frames >100 ms); Mobile stays <=61 ms. At target resolution Forward+ is unlikely to improve."},
+    {"severity": "P3", "detail": "Raw runtime.json files are local-only (only hashes committed); the aggregates cannot be re-derived or independently recomputed from the repository."},
+    {"severity": "P3", "detail": "Thermal state, power source, other load and display refresh rate are not recorded; Mobile cold RSS sample count (137) is shorter than expected for the run duration."}
+  ],
+  "needed_for_pass": [
+    "Bind the target class as a documented technical test decision (device, OS, display refresh, resolution - e.g. 1920x1080 - p95/p99/max, spike and memory budgets) before measuring; owner decision on window size.",
+    "Re-measure at the bound target resolution with vsync mode stated (or vsync off plus separate CPU/GPU frame times).",
+    "Measure visible lateness per frame (uncovered/fallback terrain frames, time-to-visible) and show zero uncovered frames or an agreed tolerance.",
+    "Instrument request age and upload bytes/ms per frame on the active clipmap path and show they stay within configured limits.",
+    "Fix the Mobile GPU texture memory underflow; report peak RSS/GPU memory against a budget.",
+    "Run Forward+ and Mobile with documented feature/material parity, >=3 runs each, alternating order, thermal state recorded.",
+    "Commit or archive raw telemetry (runtime.json, RSS samples) so aggregates can be recomputed; then an independent review against the bound thresholds."
+  ]
+}

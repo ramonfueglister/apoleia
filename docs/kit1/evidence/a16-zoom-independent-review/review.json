@@ -1,0 +1,48 @@
+{
+  "criterion": "A16-image",
+  "commit": "f589e37de40b4ae58a83031adbb921f10afdf0d2",
+  "commit_note": "Frames per manifest from f589e37 (= main ea8e0dd + startup telemetry in app/scripts/landscape.gd, verified telemetry-only via git diff); evidence committed in f8ce8ae on claude/project-thread-gsv7uc",
+  "evidence": "docs/kit1/evidence/a16-zoom-main/ (manifest.json + rome-zoom-0.0..1.0.png)",
+  "reviewer": "independent-claude-subagent",
+  "date": "2026-10-26",
+  "verdict": "FAIL",
+  "verdict_reason": "Around Rome (0.2-1.0) the steps read as a plausible refinement without holes, seams or loss of the Tiber, Tyrrhenian coast, Corsica/Sardinia or the Apennine relief. But the overview frames show hard-edged rectangular data/landcover domains that disappear on zoom-in (P1), the sequence does not reach a close diorama view, and single snapshots cannot show popping. The image part of A16 is therefore not met.",
+  "hash_check": "All 11 PNG sha256 values match manifest.json (recomputed); all PNG 640x360 RGB.",
+  "findings": [
+    {"severity": "P1", "zoom": "0.0, 0.1 (gone from 0.2)", "detail": "Hard-edged, axis-aligned pale rectangle over the Sahara/Arabia (0.0 approx. x75-575, y215-335; 0.1 vertical left edge near x40 and right edge near Arabia). A data or landcover domain boundary shows as a visible seam, and the straight edge vanishes at 0.2, so the represented surface is not consistent across zoom levels."},
+    {"severity": "P1", "zoom": "0.0, 0.1", "detail": "Rectangular dark-green landcover patch in the north-east (Baltic/Russia, 0.0 approx. x350-510, y50-110) with straight right and top edges, plus a faint vertical stripe further east. This is another domain seam."},
+    {"severity": "P1", "zoom": "end of sequence (1.0)", "detail": "The detail end is legacy_zoom 1.0 = zoom 0.6586 with a 240 km view width. The near isometric diorama range (individual forest groups, coastal detail as in the primary reference's bottom panel) is not captured, so 'overview to detail' is only partially evidenced."},
+    {"severity": "P2", "zoom": "0.4", "detail": "Clouds render as stippled/dithered dot clusters at 0.4 (e.g. Tyrrhenian Sea, Dalmatia), and as soft blobs at 0.3 and 0.5. The rendering style switches between neighbouring steps (likely visible popping in motion)."},
+    {"severity": "P2", "zoom": "0.4-1.0", "detail": "Only one larger lake (probably Bracciano or Bolsena) is visible in central Italy. Lake Trasimeno (~128 km2) and the second of Bolsena/Bracciano are not identifiable at 0.6-0.8, where they should fall in view. The behaviour is consistent across steps (no popping), but it may be an unreported omission of protected lakes; at 640x360 this needs confirmation from data."},
+    {"severity": "P2", "zoom": "0.3-1.0", "detail": "The river network in Italy is very sparse: only the Tiber and Ofanto (plus the Po in the north) are visible. Arno, Volturno and Liri-Garigliano are not discernible. At 0.3 the Tiber is drawn as disconnected segments. There is no loss between steps, but the selection is not justified against sources or rules (A16 requires a source and rule reference for intended omissions)."},
+    {"severity": "P2", "zoom": "0.0, 0.1", "detail": "Stair-stepped, raster-like coastlines (Morocco, Norway/Baltic, Aegean islands) and many tiny white flakes (clouds) over sea and land read as noise. The flat grey band/hard northern map edge at the top of 0.0 shows the world boundary."},
+    {"severity": "P3", "zoom": "0.3 -> 0.4", "detail": "Forest switches from colour tint only (0.3) to dark dot speckle (0.4-0.7) and then to tree sprites (0.8-1.0). This is a plausible refinement, but the 0.3->0.4 switch is abrupt in the stills."},
+    {"severity": "P3", "zoom": "1.0", "detail": "The ground texture at 1.0 looks softer/blurrier than at 0.9, and the file is markedly smaller (170 KB vs about 290-370 KB). This suggests a texture-resolution ceiling or magnification blur at the detail end."},
+    {"severity": "P3", "zoom": "0.8-1.0", "detail": "Clouds with dark shadows partly cover the central Apennines and coastal stretches (e.g. 0.9 and 1.0 right of centre). This hides surface for the review; a cloud-free control run is missing."},
+    {"severity": "P3", "zoom": "all", "detail": "Positive: the Tiber course and mouth, the Tyrrhenian coast, Corsica/Sardinia, the Tuscan and Pontine islands and the Apennine ridges stay positionally consistent from 0.3 to 1.0. No holes, tile seams or flat gaps are visible in the Rome region, and the relief is plausibly subdued (low Roman Campagna, higher Apennines)."}
+  ],
+  "manifest_assessment": {
+    "adequate": ["commit (full SHA) and code delta to ea8e0dd named", "per-frame sha256 (verified), bytes, size", "lon/lat, legacy_zoom, zoom, view width model/source, elevation angle", "coverage per frame plus startup timeline", "hardware, OS, Godot build, renderer"],
+    "gaps": ["source_capture_sha256 differs from sha256, but the transformation (re-encode/crop?) is not documented and the source captures are not tracked", "coverage 'complete' is a self-report; the runtime.json/log with root_ready/missing/refining is not tracked", "camera yaw/heading, FOV, sun/time, cloud enabled/seed, quality settings and the exact capture command are missing", "dataset_revision, renderer/asset hashes and policy hashes (present in runtime.json) are not bound in the manifest", "the claim 'main ea8e0dd' is only indirect; the capture commit is f589e37, a merge on a feature branch"]
+  },
+  "limitations": [
+    "640x360 resolution: fine coastlines, small rivers, lakes and forest groups cannot be judged reliably",
+    "Single snapshots per zoom level, each from a fresh start; this is not a continuous recording, so popping, morphing and transition residuals between levels cannot be observed",
+    "Only one location (Rome) and one pose per level; no other coastal, island or ridge regions",
+    "The sequence ends at zoom 0.6586 (240 km); the near/diorama range is not covered",
+    "Clouds enabled and partly occluding; no cloud-free control",
+    "No overlay with source data (coast/river/lake vectors); feature identification is visual only",
+    "The reviewer only looked at images and the manifest; no runtime.json or capture logs available"
+  ],
+  "a08_preliminary": {
+    "verdict": "FAIL (preliminary)",
+    "notes": [
+      "Preliminary only: 640x360 single frames are not sufficient for A08; a decision needs fixed camera comparisons at higher resolution.",
+      "Palette: restrained and not overly colourful (positive), but clearly more ochre/olive-yellow than the primary reference. The reference's moderate fresh green and the deep blue sea with lighter shallow zones are only partly met; shallow water appears as a narrow pale fringe.",
+      "Geometry: smooth, shaded relief with no recognisable stylised faceting; the reference's light grey-beige faceted mountains are missing. Not blocky/voxel-like (positive), and not photoreal.",
+      "Forest: speckle at 0.4-0.7, then small dark tree sprites at 0.8-1.0. Readable forest groups like the reference's (clear conifer clusters) only appear as a hint at 1.0.",
+      "Landscape detail: at the detail end comparatively flat and soft; the reference's diorama-like density (river meanders, lagoons, groups) is not reached in the captured range.",
+      "Overview (0.0-0.2): many rivers drawn as uniform light-blue lines, domain rectangles and pixel coasts deviate from the calm far-style reference."
+    ]
+  }
+}
