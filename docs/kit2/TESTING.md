@@ -104,7 +104,7 @@ Messung auf dem Mac (Apple M3 Pro, 27.10.2026, 36 Monate ab Start):
 Plattformgleichheit: 500 Jahre auf der echten Karte ergeben auf Linux x86 und macOS ARM
 denselben Fingerprint `65b033b310548070`; `pinned_fingerprint` ist auf beiden grün.
 `--compare` auf dem Mac: 100 Jahre gleiche Tiles, grösste Abweichung 2,0e-3 (wie Linux).
-Im Spiel: F5 bei 1,5 Mio. Menschen-Karte 19 ms, Datei 0,33 MB; F9 87 ms, danach läuft das
+Im Spiel (echte Karte, Jahr 300): F5 19 ms, Datei 0,33 MB; F9 87 ms, danach läuft das
 Spiel nahtlos weiter.
 
 **Grenzen, ehrlich:**
