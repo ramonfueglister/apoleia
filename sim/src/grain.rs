@@ -320,6 +320,8 @@ struct Field {
     worn: Vec<u16>,
     walked: i64,
     built: i64,
+    /// Reachable cells by distance from the market, nearest first.
+    order: Vec<u16>,
 }
 
 pub struct Market {
@@ -1249,7 +1251,8 @@ impl Grain {
             }
             let cl = ((r / FINE) * cols + c / FINE) as u32;
             let base = self.tile_base[cl as usize];
-            if base == NONE || (own && cl != cell) {
+            let left = if poor { self.free_poor[cl as usize] } else { self.free_m2[cl as usize] };
+            if base == NONE || left == 0 || (own && cl != cell) {
                 continue;
             }
             let t = base + ((r % FINE) * FINE + c % FINE) as u32;
@@ -1732,6 +1735,7 @@ impl Grain {
             // Supply: landless adults of the region and farms not in a peak.
             let region = self.markets[mi].region;
             let mut offers: Vec<(u32, i64)> = Vec::new();
+            let mut farm_offers: Vec<(u32, i64)> = Vec::new();
             let _ = region;
             let ids = std::mem::take(&mut self.market_hh[mi]);
             for &id in &ids {
@@ -1743,13 +1747,19 @@ impl Grain {
                     _ => 0,
                 };
                 if days > 0 {
-                    offers.push((id, days));
+                    if s.kind == TENT {
+                        offers.push((id, days));
+                    } else {
+                        farm_offers.push((id, days));
+                    }
                 }
             }
             self.market_hh[mi] = ids;
             // PLACEHOLDER order: the landless are hired first, then farms
             // with spare hands, each in household order.
-            offers.sort_by_key(|&(id, _)| (self.hh[&id].kind != TENT, id));
+            offers.sort_unstable_by_key(|&(id, _)| id);
+            farm_offers.sort_unstable_by_key(|&(id, _)| id);
+            offers.append(&mut farm_offers);
             let open = std::mem::take(&mut self.markets[mi].open);
             let mut still = Vec::new();
             let mut o = 0;
@@ -2456,7 +2466,6 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
     // from the farthest cell to the market, so a stretch shared by many
     // routes is visited once.
     let mut acc = vec![0i64; (f.n * f.n) as usize];
-    let mut heap = BinaryHeap::new();
     for &(o, k) in &w.origins {
         let (r, c) = ((o as i32 / cols_f) - f.r0, (o as i32 % cols_f) - f.c0);
         if r < 0 || c < 0 || r >= f.n || c >= f.n {
@@ -2466,24 +2475,21 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
         if f.dist[i] == u32::MAX {
             continue;
         }
-        if acc[i] == 0 {
-            heap.push((f.dist[i], i as u32));
-        }
         acc[i] += k;
     }
-    let mut cells: Vec<(u32, i64)> = Vec::with_capacity(heap.len() * 8);
-    while let Some((_, i)) = heap.pop() {
+    let mut cells: Vec<(u32, i64)> = Vec::new();
+    for &i in f.order.iter().rev() {
         let k = acc[i as usize];
-        cells.push((i, k));
+        if k == 0 {
+            continue;
+        }
+        cells.push((i as u32, k));
         let d = f.dir[i as usize];
         if d == 255 {
             continue;
         }
         let (dr, dc) = DIRS[d as usize];
         let j = ((i as i32 / f.n + dr) * f.n + i as i32 % f.n + dc) as usize;
-        if acc[j] == 0 {
-            heap.push((f.dist[j], j as u32));
-        }
         acc[j] += k;
     }
     cells.sort_unstable();
@@ -2543,7 +2549,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
         None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
     };
     if mr < 0 || mc < 0 || mr >= n || mc >= n {
-        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day };
+        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order: Vec::new() };
     }
     // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
     let mut land = [false; 16];
@@ -2574,6 +2580,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
     pd[start as usize] = 0;
     buckets[0].push(start);
     let (mut g, mut pending) = (0u32, 1usize);
+    let mut settled: Vec<u32> = Vec::new();
     while pending > 0 {
         if buckets[(g & 255) as usize].is_empty() {
             g += 1;
@@ -2585,6 +2592,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
             if pd[i as usize] != g {
                 continue;
             }
+            settled.push(i);
             for (d, &o) in off.iter().enumerate() {
                 let j = (i as isize + o) as usize;
                 let step = if d == 1 || d == 3 || d == 4 || d == 6 { ortho[j] } else { diag[j] };
@@ -2613,7 +2621,8 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
             dir[i] = pdir[pj];
         }
     }
-    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day }
+    let order = settled.iter().map(|&pj| ((pj as i32 / w - 1) * n + pj as i32 % w - 1) as u16).collect();
+    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order }
 }
 
 /// Groups a snapshot by household (counting sort, no comparison sort) and
