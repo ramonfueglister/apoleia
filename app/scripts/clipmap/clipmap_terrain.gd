@@ -278,6 +278,25 @@ func height_at(p:Vector2)->float:
         return _query_triangle_height(a,b,c,e,f)*.001
     return 0.
 
+## Signed coast distance (m, >0 water) of the finest drawn tile at p, and
+## that tile's water texel (m); x is NAN while no drawn tile covers p.
+func water_distance_at(p:Vector2)->Vector2:
+    var relative=(p-Vector2(stream.manifest.origin[0],stream.manifest.origin[1]))/float(stream.manifest.base_span)
+    for level in range(int(stream.manifest.max_level)+1):
+        var divisor=pow(2.,level)
+        var id=stream.key(level,int(floor(relative.x/divisor)),int(floor(relative.y/divisor)))
+        if not _draw.has(id) or not nodes.has(id) or not nodes[id].land.visible:continue
+        var image:Image=stream.cache.get(id,{}).get("images",{}).get("water")
+        if image==null:continue
+        var rect=_rect(id)
+        return Vector2(_query_encoded_height(image,rect,p)*.125-4096.,rect.size.x*1000./float(image.get_width()-1))
+    return Vector2(NAN,INF)
+
+## A land-surface uniform for the template and every resident tile.
+func set_land_parameter(uniform_name:StringName,value:Variant)->void:
+    terrain_template.set_shader_parameter(uniform_name,value)
+    for id in nodes:nodes[id].land.material_override.set_shader_parameter(uniform_name,value)
+
 func _query_triangle_height(a:float,b:float,c:float,d:float,f:Vector2)->float:
     return a+(b-a)*f.x+(c-a)*f.y if f.x+f.y<1. else d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y)
 

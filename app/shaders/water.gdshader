@@ -87,16 +87,19 @@ void fragment() {
         float shelf_id;
         wl_facet_center(p,2.2,shelf_id);
         float texel=clipmap_enabled ? tile_rect.z/max(float(textureSize(tile_water_tex,0).x-1),1.0) : 0.5;
+        // 8 taps: a diagonal ring at ~1 texel and an axis ring at ~2.6
+        // texels. The 25 m codes stepped visibly with the 4-tap ring (a soft
+        // contour ~20 km off the Lazio coast in the close view).
         float shelf_d=0.0;
-        for(int k=0;k<4;k++) {
-            vec2 o=vec2(k==0||k==3 ? 0.9 : -0.9,k<2 ? 0.9 : -0.9)*texel;
-            shelf_d+=clipmap_enabled ? clipmap_bathymetry(p+o) : max(-model_height_at(p+o),0.0);
+        for(int k=0;k<8;k++) {
+            vec2 o=k<4 ? vec2(k==0||k==3 ? 0.9 : -0.9,k<2 ? 0.9 : -0.9) : vec2(k==4 ? 2.6 : (k==5 ? -2.6 : 0.0),k==6 ? 2.6 : (k==7 ? -2.6 : 0.0));
+            shelf_d+=clipmap_enabled ? clipmap_bathymetry(p+o*texel) : max(-model_height_at(p+o*texel),0.0);
         }
         // Smooth at both ends (no contour line where the shelf ends); open
         // sea from ~75 m, i.e. ~10 km off flat coasts (measured: the drop
         // came late at 10-15 km with a linear ramp to 100 m).
         float shelf_deep=mix(75.0,40.0,smoothstep(250.0,800.0,view_width));
-        float s_depth=1.0-smoothstep(2.0,shelf_deep,shelf_d*0.25);
+        float s_depth=1.0-smoothstep(2.0,shelf_deep,shelf_d*0.125);
         float s=max(s_depth,(1.0-smoothstep(0.0,3500.0,coast_m))*0.9);
         vec3 c=mix(vec3(0.0085,0.040,0.107),vec3(0.0098,0.0704,0.121),smoothstep(0.0,0.5,s));
         c=mix(c,vec3(0.0203,0.0861,0.119),smoothstep(0.4,0.9,s));
