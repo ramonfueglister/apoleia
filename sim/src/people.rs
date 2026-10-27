@@ -907,9 +907,6 @@ impl People {
         self.trips(day, slice);
         self.timing.trips += us(t0);
         let t0 = t();
-        self.jobs(day, yslice);
-        self.timing.jobs += us(t0);
-        let t0 = t();
         self.migration(day, yslice);
         self.timing.migration += us(t0);
         let month = slice == 0;
@@ -1472,25 +1469,6 @@ impl People {
     fn monthly_groups(&mut self) {
         let grid = &self.grid;
         self.groups = groups::count(&mut self.world, &self.cell_region, &self.region_key, |c| grid.region(c));
-    }
-
-    /// Yearly occupation choice, spread over the days (placeholder rule in
-    /// crate::groups); a new occupation moves the person to its political
-    /// group (S61).
-    fn jobs(&mut self, day: i64, yslice: u32) {
-        let seed = self.seed();
-        let mut q = self.world.query::<(&Pid, &Stand, &mut Job, &mut Faction)>();
-        for (pid, stand, job, faction) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
-            let (job, _) = ContiguousMut::split(job);
-            let (faction, _) = ContiguousMut::split(faction);
-            for i in part(pid.len(), yslice, YEAR) {
-                let next = groups::yearly_job(stand[i].0, job[i].0, rnd(seed, pid[i].0, 17, day));
-                if next != job[i].0 {
-                    job[i].0 = next;
-                    faction[i].0 = groups::membership(next);
-                }
-            }
-        }
     }
 
     pub fn travelling(&mut self) -> usize {

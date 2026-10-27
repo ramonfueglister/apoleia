@@ -87,29 +87,46 @@ pub fn membership(job: u8) -> u8 {
     1 << JOB_GROUP[job as usize]
 }
 
-/// PLACEHOLDER (open): occupations by estate at the start, in per cent.
-/// Order of magnitude only; slaves 10–15 % as estimated in SCALE.md.
-const START_SHARES: [&[(u8, u8)]; 4] = [
-    // Land (RURAL)
-    &[(BAUERN, 45), (PAECHTER, 25), (TAGELOEHNER, 15), (UNFREIE, 12), (SOLDATEN, 2), (GEISTLICHE, 1)],
-    // Stadt (CITY)
+/// Occupations by estate at the start, in per mille: an estimate for the
+/// Roman Empire around 180 AD (Ramon, 27.10.2026), see docs/kit2/GROUPS.md
+/// for the sources. Nobody changes occupation for now (Ramon, 27.10.2026);
+/// children take the father's (placeholder).
+const START_SHARES: [&[(u8, u16)]; 4] = [
+    // Land (RURAL): owner-farmers, tenants (coloni), day labourers, rural
+    // slaves, village crafts and trade, soldiers in the frontier camps.
     &[
-        (HANDWERKER, 25),
-        (TAGELOEHNER, 27),
-        (HAENDLER, 15),
-        (UNFREIE, 15),
-        (SOLDATEN, 8),
-        (BEAMTE, 4),
-        (GEISTLICHE, 4),
-        (GELEHRTE, 2),
+        (BAUERN, 453),
+        (PAECHTER, 290),
+        (TAGELOEHNER, 110),
+        (UNFREIE, 100),
+        (HANDWERKER, 30),
+        (HAENDLER, 10),
+        (SOLDATEN, 4),
+        (GEISTLICHE, 3),
     ],
-    // Ritter (EQUES)
-    &[(UNTERNEHMER, 40), (BEAMTE, 30), (OFFIZIERE, 30)],
+    // Stadt (CITY): crafts and trade, labourers, more slaves than on the
+    // land, townspeople farming their land outside the walls, garrisons,
+    // decurions counted with the businessmen until they are an estate.
+    &[
+        (HANDWERKER, 270),
+        (TAGELOEHNER, 235),
+        (UNFREIE, 150),
+        (HAENDLER, 130),
+        (BAUERN, 150),
+        (SOLDATEN, 15),
+        (BEAMTE, 20),
+        (UNTERNEHMER, 10),
+        (GEISTLICHE, 10),
+        (GELEHRTE, 10),
+    ],
+    // Ritter (EQUES): landowners, procurators, tax and trade business,
+    // military tribunes and prefects.
+    &[(ADEL, 300), (BEAMTE, 250), (UNTERNEHMER, 250), (OFFIZIERE, 200)],
     // Senatoren (SENATOR)
-    &[(ADEL, 100)],
+    &[(ADEL, 1000)],
 ];
 
-fn shares(stand: u8) -> &'static [(u8, u8)] {
+fn shares(stand: u8) -> &'static [(u8, u16)] {
     START_SHARES[match stand {
         CITY => 1,
         EQUES => 2,
@@ -130,29 +147,6 @@ pub fn start_job(stand: u8, r: u64) -> u8 {
         x -= p as u64;
     }
     s[s.len() - 1].0
-}
-
-/// PLACEHOLDER (open): chance per year, in per cent, that a person takes
-/// up another occupation of their estate.
-const CHANGE_PER_YEAR: u64 = 10;
-
-/// PLACEHOLDER (open): the yearly occupation choice. With
-/// `CHANGE_PER_YEAR` a person draws a new occupation from the start shares
-/// of their estate, so the mix stays near the start. Nobody becomes unfree
-/// this way, and the unfree do not choose.
-pub fn yearly_job(stand: u8, job: u8, r: u64) -> u8 {
-    if job == UNFREIE || r % 100 >= CHANGE_PER_YEAR {
-        return job;
-    }
-    let free: u64 = shares(stand).iter().filter(|s| s.0 != UNFREIE).map(|s| s.1 as u64).sum();
-    let mut x = (r / 100) % free;
-    for &(j, p) in shares(stand).iter().filter(|s| s.0 != UNFREIE) {
-        if x < p as u64 {
-            return j;
-        }
-        x -= p as u64;
-    }
-    job
 }
 
 /// Pop key: 100 km region (tile level 1), estate, culture, religion.
@@ -255,15 +249,11 @@ mod tests {
         for r in 0..10_000 {
             n[start_job(0, r) as usize] += 1;
         }
-        assert_eq!(n[BAUERN as usize], 4500);
-        assert_eq!(n[UNFREIE as usize], 1200);
+        assert_eq!(n[BAUERN as usize], 4530);
+        assert_eq!(n[UNFREIE as usize], 1000);
         assert_eq!(n[ADEL as usize], 0);
-        // The yearly choice keeps the unfree and draws only free occupations.
-        assert!((0..1000).all(|r| yearly_job(0, UNFREIE, r) == UNFREIE));
-        let changed: Vec<u8> = (0..10_000).map(|r| yearly_job(0, BAUERN, r)).filter(|&j| j != BAUERN).collect();
-        assert!(!changed.is_empty() && changed.iter().all(|&j| j != UNFREIE));
         for stand in 0..4 {
-            assert_eq!(shares(stand).iter().map(|s| s.1 as u32).sum::<u32>(), 100);
+            assert_eq!(shares(stand).iter().map(|s| s.1 as u32).sum::<u32>(), 1000);
         }
     }
 
