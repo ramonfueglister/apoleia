@@ -75,26 +75,34 @@ void fragment() {
     float far_sea=smoothstep(800.0,2800.0,view_width);
     ALBEDO*=mix(1.04,1.12,far_sea);
     ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),0.10+far_sea*0.06);
-    // Close views: shallow water as a broad, faceted ramp like the reference
+    // Close views: shallow water as a broad, even ramp like the reference
     // near view (open #185585 -> #1f708d -> teal #2f7b8c -> #528f94 at the
     // beach). Shallowness comes from the bathymetry (0-100 m, ~10-20 km off
     // flat coasts) and, inside ~3.5 km, the coast distance (the clipmap
-    // distance saturates at ~4 km). Depth is read at the centre of ~2.2 km
-    // facets, so the seabed shows as low-poly patches. Targets are linear
-    // albedo, fitted to the reference through the open sea's screen gain.
+    // distance saturates at ~4 km). The bathymetry is 25 m codes on a
+    // 0.5-1 km grid; a 4-tap blur over about two texels hides its squares,
+    // and faint per-triangle tone steps keep the low-poly seabed. Targets
+    // are linear albedo, fitted to the reference through the open sea's
+    // screen gain.
     float near_sea=(1.0-smoothstep(250.0,800.0,view_width))*(1.0-mouth*0.6);
     if(near_sea>0.0) {
         float shelf_id;
-        vec2 shelf_c=wl_facet_center(p,2.2,shelf_id);
+        wl_facet_center(p,2.2,shelf_id);
+        float texel=clipmap_enabled ? tile_rect.z/max(float(textureSize(tile_water_tex,0).x-1),1.0) : 0.5;
+        float shelf_d=0.0;
+        for(int k=0;k<4;k++) {
+            vec2 o=vec2(k==0||k==3 ? 0.9 : -0.9,k<2 ? 0.9 : -0.9)*texel;
+            shelf_d+=clipmap_enabled ? clipmap_bathymetry(p+o) : max(-model_height_at(p+o),0.0);
+        }
         float shelf_deep=mix(100.0,45.0,smoothstep(250.0,800.0,view_width));
-        float s_depth=1.0-smoothstep(4.0,shelf_deep,max(-model_height_at(shelf_c),0.0));
-        float s=max(s_depth*(0.9+0.2*shelf_id),1.0-smoothstep(0.0,3500.0,coast_m));
-        vec3 c=mix(vec3(0.0065,0.0395,0.107),vec3(0.0098,0.0704,0.121),smoothstep(0.0,0.55,s));
-        c=mix(c,vec3(0.0203,0.0861,0.119),smoothstep(0.5,0.95,s));
-        float beach=1.0-smoothstep(0.0,max(px_m*3.0,400.0),coast_m);
-        c=mix(c,vec3(0.060,0.120,0.135),beach*0.8);
-        c*=1.0+(shelf_id-0.5)*0.06*smoothstep(0.1,0.4,s);
-        c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.85);
+        float s_depth=1.0-clamp((shelf_d*0.25-3.0)/shelf_deep,0.0,1.0);
+        float s=max(s_depth,(1.0-smoothstep(0.0,3500.0,coast_m))*0.9);
+        vec3 c=mix(vec3(0.0085,0.040,0.107),vec3(0.0098,0.0704,0.121),smoothstep(0.0,0.5,s));
+        c=mix(c,vec3(0.0203,0.0861,0.119),smoothstep(0.4,0.9,s));
+        float beach=1.0-smoothstep(0.0,max(px_m*4.0,800.0),coast_m);
+        c=mix(c,vec3(0.060,0.120,0.135),beach*0.85);
+        c*=1.0+(shelf_id-0.5)*0.05*smoothstep(0.1,0.4,s);
+        c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.6);
         ALBEDO=mix(ALBEDO,c,near_sea);
     }
     // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.

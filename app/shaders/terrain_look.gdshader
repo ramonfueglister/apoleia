@@ -294,8 +294,9 @@ void fragment() {
         WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale,0.0);
         sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
         // Lakes: lighter teal-blue than the open sea (reference #3a768d to
-        // #277183); foam and the shore strip keep the shared optics.
-        if(physical_water_kind==2.0) sea=mix(sea*vec3(4.5,2.2,1.08),sea,w.foam);
+        // #277183; measured #5c8193 with a 4.5/2.2/1.08 lift, too grey and
+        // light); foam and the shore strip keep the shared optics.
+        if(physical_water_kind==2.0) sea=mix(sea*vec3(1.3,1.75,0.97),sea,w.foam);
         wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
     }
     // Wet, darker sand right at the waterline.

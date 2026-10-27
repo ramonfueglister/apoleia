@@ -24,17 +24,6 @@ varying vec2 river_flow;
 varying float river_half_width;
 varying float river_symbolic;
 varying float river_base_width;
-// Height range of the rendered 65-grid cell around p (clipmap path).
-float river_cell_range(vec2 p){
-    float step_size=clipmap_span/64.0;
-    vec2 q=clamp((p-clipmap_origin)/step_size,vec2(0.0),vec2(64.0));
-    vec2 corner=clipmap_origin+min(floor(q),vec2(63.0))*step_size;
-    float a=clipmap_surface_vertex(corner);
-    float b=clipmap_surface_vertex(corner+vec2(step_size,0.0));
-    float c=clipmap_surface_vertex(corner+vec2(0.0,step_size));
-    float d=clipmap_surface_vertex(corner+vec2(step_size));
-    return max(max(a,b),max(c,d))-min(min(a,b),min(c,d));
-}
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
 // here double-decoded gray128 to56. Vertex COLOR follows a different path.
@@ -69,17 +58,6 @@ void vertex(){
         ground=(ya*CUSTOM1.z+yb*CUSTOM1.w+yc*(1.0-CUSTOM1.z-CUSTOM1.w))*display_height_scale;
     }
     VERTEX.y=ground*relief+surface_overlay_offset_world;
-    if(clipmap_enabled){
-        // On coarse levels (16 km cells in the far view) the ribbon quads cut
-        // across the terrain triangles' creases and dip under the convex ones,
-        // which broke far rivers into pieces. Move the vertex towards the
-        // camera along its view ray by the local cell relief: same screen
-        // position, only the depth changes. Close views keep the exact surface.
-        float pull=river_cell_range(VERTEX.xz)*0.001*display_height_scale*relief/max(projection_vertical_scale,0.3);
-        pull*=smoothstep(300.0,1200.0,view_width);
-        vec3 eye=(inverse(MODEL_MATRIX)*vec4(INV_VIEW_MATRIX[3].xyz,1.0)).xyz;
-        VERTEX+=normalize(eye-VERTEX)*pull;
-    }
     NORMAL=vec3(0.0,1.0,0.0);
 }
 void fragment(){
@@ -89,6 +67,25 @@ void fragment(){
     if(rank_width<mix(0.0,0.025,smoothstep(500.0,1800.0,view_width))) discard;
     float sea_distance=water_distance_at(river_position);
     if(sea_distance>0.0) discard;
+    // The ribbon is flat between its vertices, the terrain bends at its own
+    // triangle creases: where a fragment lies under the rendered surface
+    // (far rivers cut into pieces, thin rivers in dashes over hills), its
+    // depth moves towards the camera along the view ray until it clears the
+    // surface at its own position. Screen position is unchanged and nothing
+    // moves in front of real occluders (trees, ridges between river and eye).
+    float pulled_depth=FRAGCOORD.z;
+    if(clipmap_enabled) {
+        vec3 fragment_world=(INV_VIEW_MATRIX*vec4(VERTEX,1.0)).xyz;
+        float ground_y=clipmap_surface_height(fragment_world.xz)*0.001*display_height_scale*relief+surface_overlay_offset_world;
+        float deficit=ground_y-fragment_world.y;
+        if(deficit>0.0) {
+            vec3 to_eye=normalize(-VERTEX);
+            float rise=max((INV_VIEW_MATRIX*vec4(to_eye,0.0)).y,0.15);
+            vec4 clip=PROJECTION_MATRIX*vec4(VERTEX+to_eye*deficit*2.0/rise,1.0);
+            pulled_depth=clip.z/clip.w;
+        }
+    }
+    DEPTH=pulled_depth;
     // Streamed/clipmap strips carry the side offset in world units.
     float edge=streamed_river ? abs(river_side)/max(river_half_width,0.000001) : abs(river_side);
     float footprint=max(length(dFdx(river_position)),length(dFdy(river_position)));
