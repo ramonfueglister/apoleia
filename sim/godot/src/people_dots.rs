@@ -33,6 +33,10 @@ struct Front {
     count: u32,
     day_usec: f64,
     view_usec: f64,
+    /// The houses (view::Houses), same scheme.
+    houses: Vec<f32>,
+    house_dirty: Vec<bool>,
+    house_count: u32,
     /// Answer to the last `ask_person`.
     person: Option<Person>,
 }
@@ -50,6 +54,21 @@ struct Shared {
     queue: Mutex<Queue>,
     wake: Condvar,
     front: Mutex<Front>,
+}
+
+fn publish_houses(view: &mut PeopleView, f: &mut Front) {
+    let pages = view.take_house_pages();
+    let h = &view.houses;
+    if f.houses.len() != h.data.len() {
+        f.houses.resize(h.data.len(), 0.0);
+        f.house_dirty.resize(h.pages(), false);
+    }
+    for pg in pages {
+        let pg = pg as usize;
+        f.houses[pg * PAGE * REC..(pg + 1) * PAGE * REC].copy_from_slice(h.page(pg));
+        f.house_dirty[pg] = true;
+    }
+    f.house_count = h.count() as u32;
 }
 
 fn publish(view: &PeopleView, pages: &[u32], f: &mut Front) {
@@ -93,6 +112,7 @@ fn run(mut people: People, mut view: PeopleView, shared: Arc<Shared>) {
         let view_usec = t1.elapsed().as_secs_f64() * 1e6;
         let mut f = shared.front.lock().unwrap();
         publish(&view, &pages, &mut f);
+        publish_houses(&mut view, &mut f);
         f.day += 1;
         f.count = people.count;
         f.day_usec = day_usec;
@@ -108,6 +128,8 @@ pub struct ApoleiaPeople {
     /// Main-thread copy of the records (the back buffer of the GPU texture).
     data: Vec<f32>,
     pages: usize,
+    /// Main-thread copy of the house records.
+    houses: Vec<f32>,
     day: i64,
     count: u32,
     day_usec: f64,
@@ -148,12 +170,14 @@ impl ApoleiaPeople {
         {
             let mut f = shared.front.lock().unwrap();
             publish(&view, &pages, &mut f);
+            publish_houses(&mut view, &mut f);
             f.count = people.count;
         }
         let sh = shared.clone();
         self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(people, view, sh)).expect("people thread"));
         self.shared = shared;
         self.data.clear();
+        self.houses.clear();
         self.pages = 0;
         true
     }
@@ -245,18 +269,7 @@ impl ApoleiaPeople {
     }
 
     fn page_image(&self, pg: usize) -> Option<Gd<Image>> {
-        let src = self.data.get(pg * PAGE * REC..(pg + 1) * PAGE * REC)?;
-        let mut bytes = PackedByteArray::new();
-        bytes.resize(PAGE * REC * 4);
-        // f32 records as little-endian bytes (RGBAF); every target we ship
-        // is little-endian, so this is one memcpy.
-        #[cfg(target_endian = "little")]
-        bytes.as_mut_slice().copy_from_slice(unsafe { std::slice::from_raw_parts(src.as_ptr().cast::<u8>(), src.len() * 4) });
-        #[cfg(target_endian = "big")]
-        for (o, v) in bytes.as_mut_slice().chunks_exact_mut(4).zip(src) {
-            o.copy_from_slice(&v.to_le_bytes());
-        }
-        Image::create_from_data(SIDE as i32, SIDE as i32, false, Format::RGBAF, &bytes)
+        page_image(&self.data, pg)
     }
 
     /// The slot of the dot nearest to `pixel` within `max_px`, or -1.
@@ -368,6 +381,60 @@ impl ApoleiaPeople {
         d
     }
 
+    /// Takes the changed house pages and writes them into `texture`, like
+    /// `sync`. Returns the layers uploaded or -1 (then `make_house_texture`).
+    #[func]
+    fn sync_houses(&mut self, mut texture: Gd<Texture2DArray>) -> i64 {
+        let changed: Vec<usize> = {
+            let mut f = self.shared.front.lock().unwrap();
+            if f.house_dirty.len().max(1) != texture.get_layers() as usize {
+                return -1;
+            }
+            if self.houses.len() != f.houses.len() {
+                self.houses.resize(f.houses.len(), 0.0);
+            }
+            let mut out = Vec::new();
+            for pg in 0..f.house_dirty.len() {
+                if std::mem::take(&mut f.house_dirty[pg]) {
+                    let r = pg * PAGE * REC..(pg + 1) * PAGE * REC;
+                    self.houses[r.clone()].copy_from_slice(&f.houses[r]);
+                    out.push(pg);
+                }
+            }
+            out
+        };
+        for &pg in &changed {
+            if let Some(img) = page_image(&self.houses, pg) {
+                texture.update_layer(&img, pg as i32);
+            }
+        }
+        changed.len() as i64
+    }
+
+    /// A new texture array with all house pages.
+    #[func]
+    fn make_house_texture(&mut self) -> Option<Gd<Texture2DArray>> {
+        {
+            let mut f = self.shared.front.lock().unwrap();
+            self.houses.clone_from(&f.houses);
+            f.house_dirty.fill(false);
+        }
+        let pages = self.houses.len() / (PAGE * REC);
+        let mut images: Array<Gd<Image>> = Array::new();
+        for pg in 0..pages.max(1) {
+            images.push(&page_image(&self.houses, pg).unwrap_or_else(|| Image::create_empty(SIDE as i32, SIDE as i32, false, Format::RGBAF).unwrap()));
+        }
+        let mut tex = Texture2DArray::new_gd();
+        tex.create_from_images(&images);
+        Some(tex)
+    }
+
+    /// Houses standing (one per village household).
+    #[func]
+    fn house_count(&self) -> i64 {
+        self.shared.front.lock().unwrap().house_count as i64
+    }
+
     /// Simulated days so far (the sim thread's, also while no dots show).
     #[func]
     fn day(&self) -> i64 {
@@ -432,4 +499,20 @@ fn f16_to_f32(h: u16) -> f32 {
         _ => sign | (exp + 127 - 15) << 23 | man << 13,
     };
     f32::from_bits(bits)
+}
+
+/// One page of records as an RGBAF image (64 × 64 texels).
+fn page_image(data: &[f32], pg: usize) -> Option<Gd<Image>> {
+    let src = data.get(pg * PAGE * REC..(pg + 1) * PAGE * REC)?;
+    let mut bytes = PackedByteArray::new();
+    bytes.resize(PAGE * REC * 4);
+    // f32 records as little-endian bytes (RGBAF); every target we ship
+    // is little-endian, so this is one memcpy.
+    #[cfg(target_endian = "little")]
+    bytes.as_mut_slice().copy_from_slice(unsafe { std::slice::from_raw_parts(src.as_ptr().cast::<u8>(), src.len() * 4) });
+    #[cfg(target_endian = "big")]
+    for (o, v) in bytes.as_mut_slice().chunks_exact_mut(4).zip(src) {
+        o.copy_from_slice(&v.to_le_bytes());
+    }
+    Image::create_from_data(SIDE as i32, SIDE as i32, false, Format::RGBAF, &bytes)
 }
