@@ -112,7 +112,6 @@ func _upload(force_index: bool) -> void:
     else: value_tex.update(values)
     _set_param("map_value_tex",value_tex)
     _set_param("map_value_width",sim.value_width())
-    _set_param("map_max_population",sim.max_population())
 
 func _update_clock() -> void:
     if clock==null: return
