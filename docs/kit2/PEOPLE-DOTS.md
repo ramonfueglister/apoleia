@@ -1,6 +1,6 @@
 # Bewohner als Punkte (Kit 2, Personen-Prototyp)
 
-Status: **implementiert** (Linux, Software-GPU geprüft); Messung auf dem Mac offen.
+Status: **validiert** auf MacBook Pro M3 Pro (Godot 4.7.2, Forward+/Metal), 27.10.2026.
 
 Jede simulierte Person (Prototyp `sim/src/people.rs`, rund 115 000 bis 150 000)
 erscheint als schwarzer Punkt auf ihrem Tile der Tile-Terrain (SimCity-2000-Look).
@@ -64,6 +64,27 @@ Frame-Zeit auf dem Mac: `scripts/run-landscape -- --people-bench=artifacts/runti
 misst 240 Frames mit und 240 ohne Punkte (V-Sync aus) und schreibt Median und p95
 von Frame-Zeit und GPU-Zeit sowie die Upload-Zeit von `sync`.
 
+## Gemessen auf dem Mac (M3 Pro, 1440×810, V-Sync aus)
+
+Frame-Zeit Median in ms, je 240 Frames mit und ohne Punkte (`--people-bench`):
+
+| Ansicht | ohne Punkte | mit Punkten (Runde 1) | mit Punkten (Runde 2) |
+|---|---|---|---|
+| 360 km (Rom) | 15,45 | 16,24 (+0,8) | 15,49 (+0,04) |
+| 25 km (0,5-km-Tiles) | 143,2 | 143,6 (+1,8) | 144,0 (+0,8) |
+| 1800 km (ganzes Meer) | 17,2 | 19,2 (+2,1) | 18,3 (+1,1) |
+
+Runde 2: Punktgröße folgt der Ansichtsbreite (3,5 px nah, 1 px weit), kleine
+Punkte ohne `discard` (Dreieck, frühe Tiefenprüfung bleibt), Cull vor allen
+Terrain-Abfragen, weit weg Höhe aus dem glatten Relief. `sync` (Upload aller 29
+Seiten nach einem Sim-Tag) 0,21 ms, Sim-Tag 0,6–1,2 ms und View 0,5–0,9 ms auf
+dem Sim-Thread. Die 25-km-Ansicht ist auch ohne Punkte langsam (Terrain, an den
+Terrain-Thread gemeldet). GPU-Zeitstempel liefert Godot unter Metal nicht (0,0).
+
+Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulierte
+Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
+die echte Dichte.
+
 ## Bedienung
 
 `P` Punkte an/aus, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
@@ -94,5 +115,6 @@ Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
   Datensätze (≈13 KB/Tag) als kleine Liste hochladen und mit einem Compute-Shader
   (RenderingDevice, Texture2DRD) in die Textur schreiben. Lohnt erst, wenn die
   Mac-Messung den Seiten-Upload sichtbar zeigt.
-- Reisende per Schiff liegen heute auf See (gewollt); Zellen ganz ohne
-  Land-Tile in 12 Versuchen ebenfalls.
+- Reisende (auch per Schiff) sind dunkelrot und dürfen auf See liegen.
+  Daheim-Personen suchen 8 Stellen in ihrer Fläche und 8 in der doppelten, bevor
+  ein Punkt auf Wasser fallen kann.
