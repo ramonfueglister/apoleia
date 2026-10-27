@@ -66,6 +66,9 @@ fn main() {
     let mut all = Vec::new();
     let mut worst = (0.0, 0);
     let mut worst_parts = String::new();
+    // Mean time per day of the month and per part (--slices).
+    let slices = args.iter().any(|a| a == "--slices");
+    let mut by_slice = vec![[0.0f64; 13]; 30];
     println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal  rss_mb");
     for y in 1..=years {
         p.stats = Default::default();
@@ -92,6 +95,14 @@ fn main() {
                     a.index - before.index,
                     a.pops - before.pops
                 );
+            }
+            if slices {
+                let a = p.timing;
+                let d = [a.events - before.events, a.needs - before.needs, a.travel - before.travel, a.health - before.health, a.marriage - before.marriage, a.relations - before.relations, a.trips - before.trips, a.jobs - before.jobs, a.migration - before.migration, a.index - before.index, a.pops - before.pops, us, 1.0];
+                let row = &mut by_slice[(all.len() % 30) as usize];
+                for k in 0..13 {
+                    row[k] += d[k];
+                }
             }
             match (m, yr) {
                 (_, true) => year.push(us),
@@ -165,5 +176,12 @@ fn main() {
     println!("pops: {} for {} people (last monthly count)", g.pops.len(), g.people);
     println!("occupations: {}", list(&apoleia_sim::groups::JOB_NAMES, &g.economic));
     println!("political groups (members): {}", list(&apoleia_sim::groups::POLITICAL_NAMES, &g.political));
+    if slices {
+        println!("day of month: total us (events needs travel health marriage relations trips jobs migration index pops)");
+        for (d, r) in by_slice.iter().enumerate() {
+            let n = r[12].max(1.0);
+            println!("{d:2}: {:6.0} ({})", r[11] / n, (0..11).map(|k| format!("{:.0}", r[k] / n)).collect::<Vec<_>>().join(" "));
+        }
+    }
     println!("fingerprint={:016x}", p.fingerprint());
 }

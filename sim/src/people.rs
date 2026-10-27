@@ -65,7 +65,7 @@ const EQUITES: usize = 60;
 // PLACEHOLDER values for what S63–S66 leave open. Ages after Saller (first
 // marriage: commoner women late teens, men late 20s; elite earlier).
 /// Age from which a family looks for a spouse: (women, men) by estate.
-const MARRY_AGE: [(f64, f64); 4] = [(15.0, 25.0), (15.0, 25.0), (13.0, 20.0), (13.0, 20.0)];
+const MARRY_AGE: [(f64, f64); 4] = [(15.0, 20.0), (15.0, 20.0), (13.0, 20.0), (13.0, 20.0)];
 /// Women are not sought after this age.
 const MARRY_AGE_MAX_F: f64 = 45.0;
 /// Preferred age gap husband − wife in years (Saller: about 10).
@@ -486,6 +486,101 @@ impl Csr {
     }
 }
 
+/// Stable LSD radix sort by a u32 key below `max`, 11 bits per pass (the
+/// counters stay in L1), two passes for up to 4 million person ids. Linear
+/// in the number of living people, where an array indexed by person id
+/// would grow with everyone ever born.
+fn radix_sort<T: Copy>(v: &mut Vec<T>, max: u32, key: impl Fn(&T) -> u32) {
+    const BITS: u32 = 11;
+    const MASK: u32 = (1 << BITS) - 1;
+    let mut tmp = v.clone();
+    let mut count = [0usize; (1 << BITS) + 1];
+    let mut shift = 0;
+    loop {
+        count.fill(0);
+        for x in v.iter() {
+            count[((key(x) >> shift) & MASK) as usize + 1] += 1;
+        }
+        for d in 0..1 << BITS {
+            count[d + 1] += count[d];
+        }
+        for x in v.iter() {
+            let d = ((key(x) >> shift) & MASK) as usize;
+            tmp[count[d]] = *x;
+            count[d] += 1;
+        }
+        std::mem::swap(v, &mut tmp);
+        shift += BITS;
+        if shift >= 32 || max >> shift == 0 {
+            break;
+        }
+    }
+}
+
+/// One living person in the monthly index snapshot.
+#[derive(Clone, Copy)]
+struct IndexRow {
+    pid: u32,
+    home: u32,
+    /// 100 km region, only for brides.
+    region: u32,
+    flags: u8,
+    stand: u8,
+}
+
+/// The monthly lists for marriage and relations, built from a snapshot.
+struct Index {
+    grooms: Vec<Vec<u32>>,
+    brides: FxHashMap<(u32, u8), Vec<u32>>,
+    brides_by_stand: [Vec<u32>; 4],
+    by_cell: Csr,
+}
+
+impl Index {
+    /// Everything in person id order, as the marriage search expects.
+    fn build(mut rows: Vec<IndexRow>, max_pid: u32, cells: usize) -> Index {
+        radix_sort(&mut rows, max_pid, |r| r.pid);
+        let mut i = Index { grooms: vec![Vec::new(); MONTH as usize], brides: FxHashMap::default(), brides_by_stand: Default::default(), by_cell: Csr::default() };
+        let mut by_cell = Vec::with_capacity(rows.len());
+        for r in &rows {
+            if r.home == NONE {
+                continue;
+            }
+            by_cell.push((r.home, r.pid));
+            if r.flags & 1 != 0 {
+                i.grooms[r.pid as usize % MONTH as usize].push(r.pid);
+            }
+            if r.flags & 2 != 0 {
+                i.brides.entry((r.region, r.stand)).or_default().push(r.pid);
+                if r.stand >= CITY {
+                    i.brides_by_stand[r.stand as usize].push(r.pid);
+                }
+            }
+        }
+        i.by_cell = Csr::counting(cells, &by_cell);
+        i
+    }
+}
+
+/// (household, person) grouped by household, persons in id order, and the
+/// households by yearly slice (household id mod 360).
+fn households(mut pairs: Vec<(u32, u32)>, max_pid: u32) -> (Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>) {
+    radix_sort(&mut pairs, max_pid, |p| p.1);
+    radix_sort(&mut pairs, max_pid, |p| p.0);
+    let mut slices = vec![Vec::new(); YEAR as usize];
+    let mut i = 0;
+    while i < pairs.len() {
+        let h = pairs[i].0;
+        let mut j = i + 1;
+        while j < pairs.len() && pairs[j].0 == h {
+            j += 1;
+        }
+        slices[(h % YEAR as u32) as usize].push((i as u32, j as u32));
+        i = j;
+    }
+    (pairs, slices)
+}
+
 pub struct People {
     pub world: World,
     pub grid: Grid,
@@ -527,6 +622,10 @@ pub struct People {
     pub timing: Timing,
     pub stats: Stats,
     pub groups: Groups,
+    census: groups::Census,
+    /// Monthly index and households being built in the background.
+    index_job: Option<std::thread::JoinHandle<Index>>,
+    households_job: Option<std::thread::JoinHandle<(Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>)>>,
     /// Set by the grain economy; None keeps the capacity K of S35.
     pub econ: Option<Econ>,
 }
@@ -744,6 +843,9 @@ impl People {
             timing: Timing::default(),
             stats: Stats::default(),
             groups: Groups::default(),
+            census: groups::Census::default(),
+            index_job: None,
+            households_job: None,
             econ: None,
         };
         let mut q = p.world.query::<&Traits>();
@@ -859,12 +961,12 @@ impl People {
 
     /// Monthly rebuild of the lookups: one parallel pass over the people,
     /// then one pass in id order (counting sort, no comparison sort).
-    fn refresh_index(&mut self) {
+    /// Snapshot for the monthly index: per living person id, home, region,
+    /// flags (1 groom, 2 bride) and estate. One parallel pass.
+    fn index_rows(&mut self) -> Vec<IndexRow> {
         let day = self.world.resource::<Clock>().day;
-        let n = self.next_pid as usize;
-        // Per id: home, flags (1 groom, 2 bride), stand; NONE home = gone.
-        let mut row = vec![(NONE, 0u8, 0u8); n];
-        let mut parts: Parallel<Vec<(u32, (u32, u8, u8))>> = Parallel::default();
+        let grid = &self.grid;
+        let mut parts: Parallel<Vec<IndexRow>> = Parallel::default();
         let mut q = self.world.query::<(&Pid, &Home, &Born, &Sex, &Stand, &Spouse, Has<Travel>)>();
         q.par_iter(&self.world).for_each_init(
             || parts.borrow_local_mut(),
@@ -878,61 +980,74 @@ impl People {
                 if single && sex.0 == 0 && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F {
                     f |= 2;
                 }
-                out.push((pid.0, (h.0, f, st.0)));
+                let region = if f & 2 != 0 && h.0 != NONE { grid.region(h.0) } else { 0 };
+                out.push(IndexRow { pid: pid.0, home: h.0, region, flags: f, stand: st.0 });
             },
         );
-        for v in parts.iter_mut() {
-            for &(pid, r) in v.iter() {
-                row[pid as usize] = r;
-            }
+        let mut rows = Vec::with_capacity(self.count as usize);
+        parts.drain_into(&mut rows);
+        rows
+    }
+
+    /// Rebuilds the monthly index at once (start of the game).
+    fn refresh_index(&mut self) {
+        let rows = self.index_rows();
+        let built = Index::build(rows, self.next_pid, self.grid.kind.len());
+        self.install_index(built);
+    }
+
+    /// Monthly index in the background: the snapshot is taken now, the
+    /// lists are built on another thread while the next day starts, and
+    /// installed before the marriages of that day, the first to read them.
+    /// The lists are the same as when built at once.
+    fn start_index(&mut self) {
+        let rows = self.index_rows();
+        let (max, cells) = (self.next_pid, self.grid.kind.len());
+        self.index_job = Some(std::thread::spawn(move || Index::build(rows, max, cells)));
+    }
+
+    fn finish_index(&mut self) {
+        if let Some(job) = self.index_job.take() {
+            let built = job.join().expect("index thread");
+            self.install_index(built);
         }
-        self.grooms = vec![Vec::new(); MONTH as usize];
-        for v in self.brides.values_mut() {
-            v.clear();
+    }
+
+    fn install_index(&mut self, i: Index) {
+        self.grooms = i.grooms;
+        self.brides = i.brides;
+        self.brides_by_stand = i.brides_by_stand;
+        self.by_cell = i.by_cell;
+    }
+
+    /// Snapshot of (household, person) of the living.
+    fn household_pairs(&mut self) -> Vec<(u32, u32)> {
+        let mut pairs: Vec<(u32, u32)> = Vec::with_capacity(self.count as usize);
+        let mut q = self.world.query::<(&Pid, &Household)>();
+        for (pid, h) in q.contiguous_iter(&self.world).expect("people live in tables") {
+            pairs.extend((0..pid.len()).filter(|&i| h[i].0 != NONE).map(|i| (h[i].0, pid[i].0)));
         }
-        for v in self.brides_by_stand.iter_mut() {
-            v.clear();
-        }
-        let mut cells = Vec::with_capacity(self.count as usize);
-        for (pid, &(home, f, st)) in row.iter().enumerate() {
-            if home == NONE {
-                continue;
-            }
-            let id = pid as u32;
-            cells.push((home, id));
-            if f & 1 != 0 {
-                self.grooms[pid % MONTH as usize].push(id);
-            }
-            if f & 2 != 0 {
-                self.brides.entry((self.grid.region(home), st)).or_default().push(id);
-                if st >= CITY {
-                    self.brides_by_stand[st as usize].push(id);
-                }
-            }
-        }
-        self.by_cell = Csr::counting(self.grid.kind.len(), &cells);
+        pairs
     }
 
     /// Households and their yearly slices, rebuilt monthly on another day
-    /// than the index so the work does not pile up.
+    /// than the index so the work does not pile up (at once at the start).
     fn refresh_households(&mut self) {
-        let n = self.next_pid as usize;
-        let mut house = vec![NONE; n];
-        let mut q = self.world.query::<(&Pid, &Household)>();
-        for (pid, h) in q.iter(&self.world) {
-            house[pid.0 as usize] = h.0;
-        }
-        let pairs: Vec<(u32, u32)> = house.iter().enumerate().filter(|(_, &h)| h != NONE).map(|(p, &h)| (h, p as u32)).collect();
-        let hh = Csr::counting(n, &pairs);
-        self.households.clear();
-        self.hh_slices = vec![Vec::new(); YEAR as usize];
-        for h in 0..n as u32 {
-            let m = hh.get(h);
-            if !m.is_empty() {
-                let i = self.households.len() as u32;
-                self.households.extend(m.iter().map(|&p| (h, p)));
-                self.hh_slices[(h % YEAR as u32) as usize].push((i, i + m.len() as u32));
-            }
+        let pairs = self.household_pairs();
+        (self.households, self.hh_slices) = households(pairs, self.next_pid);
+    }
+
+    /// Monthly households in the background, like the index; installed
+    /// before the migration of the next day, the first to read them.
+    fn start_households(&mut self) {
+        let pairs = self.household_pairs();
+        let max = self.next_pid;
+        self.households_job = Some(std::thread::spawn(move || households(pairs, max)));
+    }
+
+    fn finish_households(&mut self) {
+        if let Some(job) = self.households_job.take() {
+            (self.households, self.hh_slices) = job.join().expect("households thread");
         }
     }
 
@@ -958,6 +1073,9 @@ impl People {
         self.health(day, slice);
         self.timing.health += us(t0);
         let t0 = t();
+        self.finish_index();
+        self.timing.index += us(t0);
+        let t0 = t();
         self.marriages(Some(slice), day);
         self.timing.marriage += us(t0);
         let t0 = t();
@@ -967,27 +1085,25 @@ impl People {
         self.trips(day, slice);
         self.timing.trips += us(t0);
         let t0 = t();
-        self.jobs(day, yslice);
-        self.timing.jobs += us(t0);
+        self.finish_households();
+        self.timing.index += us(t0);
         let t0 = t();
         self.migration(day, yslice);
         self.timing.migration += us(t0);
         let month = slice == 0;
         if month {
             let t0 = t();
-            self.refresh_index();
+            self.start_index();
             self.timing.index += us(t0);
         }
         if slice == 10 {
             let t0 = t();
-            self.refresh_households();
+            self.start_households();
             self.timing.index += us(t0);
         }
-        if slice == MONTH as u32 / 2 {
-            let t0 = t();
-            self.monthly_groups();
-            self.timing.pops += us(t0);
-        }
+        let t0 = t();
+        self.monthly_groups(slice);
+        self.timing.pops += us(t0);
         self.peak = self.peak.max(self.count);
         // Removal and change trackers grow without bound unless cleared
         // once per tick (a Bevy app does this every frame).
@@ -1556,28 +1672,14 @@ impl People {
         }
     }
 
-    /// Pops, occupations and political groups counted from the people (S61).
-    fn monthly_groups(&mut self) {
-        let grid = &self.grid;
-        self.groups = groups::count(&mut self.world, &self.cell_region, &self.region_key, |c| grid.region(c));
-    }
-
-    /// Yearly occupation choice, spread over the days (placeholder rule in
-    /// crate::groups); a new occupation moves the person to its political
-    /// group (S61).
-    fn jobs(&mut self, day: i64, yslice: u32) {
-        let seed = self.seed();
-        let mut q = self.world.query::<(&Pid, &Stand, &mut Job, &mut Faction)>();
-        for (pid, stand, job, faction) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
-            let (job, _) = ContiguousMut::split(job);
-            let (faction, _) = ContiguousMut::split(faction);
-            for i in part(pid.len(), yslice, YEAR) {
-                let next = groups::yearly_job(stand[i].0, job[i].0, rnd(seed, pid[i].0, 17, day));
-                if next != job[i].0 {
-                    job[i].0 = next;
-                    faction[i].0 = groups::membership(next);
-                }
-            }
+    /// Pops, occupations and political groups counted from the people (S61):
+    /// a snapshot in mid-month, counted over the following days.
+    fn monthly_groups(&mut self, slice: u32) {
+        if slice == MONTH as u32 / 2 {
+            let grid = &self.grid;
+            self.census.start(&mut self.world, &self.cell_region, &self.region_key, |c| grid.region(c));
+        } else if let Some(g) = self.census.step() {
+            self.groups = g;
         }
     }
 

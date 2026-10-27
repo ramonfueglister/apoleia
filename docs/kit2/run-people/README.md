@@ -33,26 +33,29 @@ Fruchtbarkeit, Wartezeiten, Kalender), `west3.py` (rechnet die Sterbetafel nach)
 
 | Jahr | Menschen | Geburten | Tote | davon < 1 Jahr | Ehen | Heiratsalter F / M | Frauen 15–49 verheiratet | ausgewandert |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 115'264 | 2'620 | 4'148 | 884 | 1'589 | 22,1 / 35,7 | 87 % | 14 |
-| 10 | 124'389 | 6'291 | 5'638 | 2'065 | 1'628 | 21,7 / 32,0 | 87 % | 8 |
-| 30 | 133'952 | 6'293 | 5'682 | 2'018 | 2'002 | 21,5 / 32,0 | 74 % | 15 |
-| 50 | 147'435 | 6'910 | 6'180 | 2'264 | 1'844 | 21,9 / 32,2 | 73 % | 165 |
-| 70 | 150'973 | 7'208 | 6'442 | 2'394 | 2'049 | 22,0 / 32,0 | 73 % | 740 |
-| 100 | 149'640 | 7'072 | 6'385 | 2'298 | 2'049 | 21,8 / 32,1 | 74 % | 751 |
+| 1 | 115'364 | 2'712 | 4'141 | 878 | 1'892 | 22,5 / 37,1 | 91 % | 16 |
+| 10 | 127'268 | 7'140 | 6'004 | 2'353 | 1'843 | 21,2 / 29,9 | 98 % | 14 |
+| 30 | 147'853 | 8'149 | 6'696 | 2'662 | 2'336 | 20,3 / 28,0 | 88 % | 325 |
+| 50 | 152'617 | 8'200 | 6'825 | 2'729 | 2'371 | 20,7 / 27,7 | 84 % | 1'403 |
+| 70 | 151'531 | 8'214 | 6'694 | 2'616 | 2'212 | 20,7 / 27,8 | 85 % | 1'542 |
+| 100 | 149'389 | 8'013 | 6'526 | 2'591 | 2'233 | 20,8 / 27,6 | 84 % | 1'484 |
 
-**Was emergent passiert:** Die Bevölkerung wächst rund 50 Jahre lang mit etwa 0,5 % im
+**Was emergent passiert:** Die Bevölkerung wächst rund 40 Jahre lang mit etwa 0,7 % im
 Jahr. Dann ist das Land voll (die Nahrung K liegt nach S35 bei Startbevölkerung / 0,7).
 Ab dort halten sich Geburtenüberschuss und Auswanderung die Waage, bei etwa 150'000
 Menschen. Es gibt keine Formel, die das Wachstum an K bindet: Es bremsen nur die
 Regeln von S65 und S66 (warten mit der Heirat, Umzug, Auswanderung). Die Geburtenrate
-liegt bei etwa 47 pro 1'000, die Sterberate bei 43 pro 1'000, und rund ein Drittel der
+liegt bei etwa 54 pro 1'000, die Sterberate bei 44 pro 1'000, ab Jahr 50 wandern rund
+10 pro 1'000 aus, und rund ein Drittel der
 Säuglinge stirbt im ersten Jahr. Das passt zu einer Lebenserwartung um 25 Jahre. Im
 ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
 
 **Was nicht passt (Platzhalter):**
-- Männer heiraten mit 32 statt Ende 20, weil ihre Suche erst mit 25 beginnt und
-  dauert.
-- Das Wachstum ist mit 0,5 % pro Jahr höher als die historischen 0,1 % (Scheidel).
+- Das Heiratsalter der Männer ist jetzt an Saller angeglichen: Die Suche der Gemeinen
+  beginnt mit 20 statt 25, das mittlere Alter bei der ersten Ehe liegt bei 28 (vorher
+  32). Mit Suchbeginn 22 lag es bei 30. Weil mehr Frauen verheiratet sind (84 % statt
+  74 %), gibt es mehr Geburten und mehr Auswanderung; das Plateau bleibt bei 150'000.
+- Das Wachstum ist mit 0,7 % pro Jahr höher als die historischen 0,1 % (Scheidel).
   Es fehlen noch Missernten, Seuchen, Krieg und Städte mit mehr Toten als Geburten.
 - Hungertote gibt es kaum, weil die Menschen wandern, bevor sie hungern. Ob das so
   sein soll, entscheiden die Regeln zur Nahrung (S69–S76).
@@ -63,17 +66,24 @@ ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
 |---|---|
 | Laden | 1,4 s, davon 0,65 s für 724 Flussfelder |
 | Tag, Median | **2,8 ms** (vorher ohne Geburt und Tod 0,74 ms, aber mit 15–25 ms an Monatstagen) |
-| Tag, 95 % / 99 % | 7,0 ms / 10,4 ms |
-| Monatsanfang, Median | 8,1 ms (Index neu bauen) |
-| Langsamster Tag in 100 Jahren | 30,6 ms (Index an einem Monatsanfang) |
-| Speicher | 155 MB beim Start, **184 MB** nach 100 Jahren, gleichbleibend |
-| Ereignisse im Kalender | ≈ 300'000 |
+| Tag, 95 % / 99 % | 4,7 ms / 6,8 ms (vorher 7,5 / 10,6) |
+| Monatsanfang, Median | 4,2 ms, höchstens 11 ms (vorher 8,4 und 29 ms) |
+| Langsamster Tag in 100 Jahren | 41 ms, je Lauf an einem anderen Tag und in einem anderen parallelen Teil (Bedürfnisse, Bekanntschaften), bei gleichem Ergebnis. Die Arbeit ist also dieselbe, und der Ausreisser kommt von der geteilten Cloud-Maschine (ein Thread wird verdrängt). Ohne solche Ausreisser ist der langsamste Tag ein Monatsanfang mit rund 11 ms. Die Messung auf dem Mac steht noch aus. |
+| Speicher | 155 MB beim Start, **187 MB** nach 100 Jahren (mehr Menschen im Kalender), ab Jahr 60 fast gleichbleibend |
+| Ereignisse im Kalender | ≈ 380'000 |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `people::tests::deterministic_fingerprint` |
 
-Pro Tag (Mittel): Ereignisse 0,10 ms, Bedürfnisse 0,61 ms, Reisen 0,26 ms, Gesundheit
-0,14 ms, Heiratssuche 0,20 ms, Bekanntschaften 1,2 ms, Beruf 0,06 ms, Umzug 0,07 ms.
-Pro Monat: Index 10,6 ms (bis 7 ms am Monatsanfang, der Rest am 10. für Haushalte),
-Pops 2,2 ms.
+Pro Tag (Mittel): Ereignisse 0,10 ms, Bedürfnisse 0,59 ms, Reisen 0,25 ms, Gesundheit
+0,13 ms, Heiratssuche 0,26 ms, Bekanntschaften 1,2 ms, Umzug 0,07 ms (Berufswechsel gibt
+es nicht mehr, S77). Pro Monat: Index und Haushalte 5,7 ms, Pops 3,9 ms.
+
+Jeder Tag soll ungefähr gleich viel kosten. Deshalb arbeiten Index und Haushalte nur
+noch über die Lebenden (Radix-Sort statt Felder über alle je vergebenen IDs, die über
+700 Jahre auf Millionen wachsen würden). Am Monatstag wird nur ein Schnappschuss
+gemacht; gebaut wird auf einem Hintergrund-Thread und übernommen, bevor am nächsten
+Tag der erste Leser kommt. Die Pops werden aus einem Schnappschuss zur Monatsmitte über
+10 Tage gezählt. Die Ergebnisse sind gleich geblieben (gleicher Fingerabdruck).
+Am 2. des Monats wartet die Heiratssuche auf 4 Kernen noch rund 4 ms auf den Index.
 
 Ein Spieltag kostet im Median also 2,8 ms. Das reicht für rund 350 Tage pro Sekunde,
 wenn nichts anderes läuft.
@@ -85,14 +95,13 @@ wenn nichts anderes läuft.
   `clear_trackers()` läuft jetzt jeden Tag.
 
 **Nächste Schritte für mehr Tempo:**
-- Den Monatsindex schrittweise statt auf einmal pflegen (bei Heirat, Tod und Geburtstag).
 - Die Bekanntschaften (der grösste Posten) in Blöcken mit dichteren Personen-IDs rechnen.
 
 ## Platzhalter (nicht entschieden)
 
 | Wert | Platzhalter | Grundlage |
 |---|---|---|
-| Heiratsalter, ab dem gesucht wird (F / M) | 15 / 25, Oberschicht 13 / 20 | Saller |
+| Heiratsalter, ab dem gesucht wird (F / M) | 15 / 20, Oberschicht 13 / 20 | Saller: erste Ehe bei Frauen Ende Teens, bei Männern Ende 20; Oberschicht früher. Ergibt im Mittel 21 / 28 |
 | Bevorzugter Altersabstand | 10 Jahre | Saller |
 | Monate, bis die Suche weiter reicht | 6 | S63 „mehrere Monate“ |
 | Heirat ohne freies Land | Chance 1/4 pro Monat | S65 |

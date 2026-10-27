@@ -87,29 +87,46 @@ pub fn membership(job: u8) -> u8 {
     1 << JOB_GROUP[job as usize]
 }
 
-/// PLACEHOLDER (open): occupations by estate at the start, in per cent.
-/// Order of magnitude only; slaves 10–15 % as estimated in SCALE.md.
-const START_SHARES: [&[(u8, u8)]; 4] = [
-    // Land (RURAL)
-    &[(BAUERN, 45), (PAECHTER, 25), (TAGELOEHNER, 15), (UNFREIE, 12), (SOLDATEN, 2), (GEISTLICHE, 1)],
-    // Stadt (CITY)
+/// Occupations by estate at the start, in per mille: an estimate for the
+/// Roman Empire around 180 AD (Ramon, 27.10.2026), see docs/kit2/GROUPS.md
+/// for the sources. Nobody changes occupation for now (Ramon, 27.10.2026);
+/// children take the father's (placeholder).
+const START_SHARES: [&[(u8, u16)]; 4] = [
+    // Land (RURAL): owner-farmers, tenants (coloni), day labourers, rural
+    // slaves, village crafts and trade, soldiers in the frontier camps.
     &[
-        (HANDWERKER, 25),
-        (TAGELOEHNER, 27),
-        (HAENDLER, 15),
-        (UNFREIE, 15),
-        (SOLDATEN, 8),
-        (BEAMTE, 4),
-        (GEISTLICHE, 4),
-        (GELEHRTE, 2),
+        (BAUERN, 453),
+        (PAECHTER, 290),
+        (TAGELOEHNER, 110),
+        (UNFREIE, 100),
+        (HANDWERKER, 30),
+        (HAENDLER, 10),
+        (SOLDATEN, 4),
+        (GEISTLICHE, 3),
     ],
-    // Ritter (EQUES)
-    &[(UNTERNEHMER, 40), (BEAMTE, 30), (OFFIZIERE, 30)],
+    // Stadt (CITY): crafts and trade, labourers, more slaves than on the
+    // land, townspeople farming their land outside the walls, garrisons,
+    // decurions counted with the businessmen until they are an estate.
+    &[
+        (HANDWERKER, 270),
+        (TAGELOEHNER, 235),
+        (UNFREIE, 150),
+        (HAENDLER, 130),
+        (BAUERN, 150),
+        (SOLDATEN, 15),
+        (BEAMTE, 20),
+        (UNTERNEHMER, 10),
+        (GEISTLICHE, 10),
+        (GELEHRTE, 10),
+    ],
+    // Ritter (EQUES): landowners, procurators, tax and trade business,
+    // military tribunes and prefects.
+    &[(ADEL, 300), (BEAMTE, 250), (UNTERNEHMER, 250), (OFFIZIERE, 200)],
     // Senatoren (SENATOR)
-    &[(ADEL, 100)],
+    &[(ADEL, 1000)],
 ];
 
-fn shares(stand: u8) -> &'static [(u8, u8)] {
+fn shares(stand: u8) -> &'static [(u8, u16)] {
     START_SHARES[match stand {
         CITY => 1,
         EQUES => 2,
@@ -132,29 +149,6 @@ pub fn start_job(stand: u8, r: u64) -> u8 {
     s[s.len() - 1].0
 }
 
-/// PLACEHOLDER (open): chance per year, in per cent, that a person takes
-/// up another occupation of their estate.
-const CHANGE_PER_YEAR: u64 = 10;
-
-/// PLACEHOLDER (open): the yearly occupation choice. With
-/// `CHANGE_PER_YEAR` a person draws a new occupation from the start shares
-/// of their estate, so the mix stays near the start. Nobody becomes unfree
-/// this way, and the unfree do not choose.
-pub fn yearly_job(stand: u8, job: u8, r: u64) -> u8 {
-    if job == UNFREIE || r % 100 >= CHANGE_PER_YEAR {
-        return job;
-    }
-    let free: u64 = shares(stand).iter().filter(|s| s.0 != UNFREIE).map(|s| s.1 as u64).sum();
-    let mut x = (r / 100) % free;
-    for &(j, p) in shares(stand).iter().filter(|s| s.0 != UNFREIE) {
-        if x < p as u64 {
-            return j;
-        }
-        x -= p as u64;
-    }
-    job
-}
-
 /// Pop key: 100 km region (tile level 1), estate, culture, religion.
 pub type PopKey = (u32, u8, u16, u16);
 
@@ -165,18 +159,6 @@ pub struct Pop {
     pub people: u32,
     pub jobs: [u32; JOBS],
     pub political: [u32; POLITICAL],
-}
-
-impl Pop {
-    fn add(&mut self, o: &Pop) {
-        self.people += o.people;
-        for j in 0..JOBS {
-            self.jobs[j] += o.jobs[j];
-        }
-        for g in 0..POLITICAL {
-            self.political[g] += o.political[g];
-        }
-    }
 }
 
 /// The derived layer, rebuilt monthly: pops sorted by key, and totals.
@@ -197,50 +179,108 @@ impl Groups {
     }
 }
 
-/// Counts every person once into their pop, occupation and political
-/// groups. `cell_region` maps a home cell to a dense region index into
-/// `region_key` (NONE at sea; then `region_of` gives the key).
-pub fn count(world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) -> Groups {
-    let mut local: Parallel<FxHashMap<PopKey, Pop>> = Parallel::default();
-    let mut q = world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
-    q.contiguous_par_iter(world).expect("people live in tables").for_each_init(
-        || local.borrow_local_mut(),
-        |map, (home, stand, culture, religion, job, faction)| {
-            for i in 0..home.len() {
-                let cell = home[i].0;
-                let region = match cell_region.get(cell as usize) {
-                    Some(&r) if r != NONE => region_key[r as usize],
-                    _ => region_of(cell),
-                };
-                let key = (region, stand[i].0, culture[i].0, religion[i].0);
-                let pop = map.entry(key).or_insert_with(|| Pop { key, ..Pop::default() });
-                pop.people += 1;
-                pop.jobs[job[i].0 as usize] += 1;
-                let mask = faction[i].0;
-                for g in 0..POLITICAL {
-                    pop.political[g] += (mask >> g) as u32 & 1;
-                }
+/// One person in a census snapshot: pop key, occupation, political groups.
+#[derive(Clone, Copy)]
+struct Row {
+    key: PopKey,
+    job: u8,
+    mask: u8,
+}
+
+/// Days a census is spread over after its snapshot.
+pub const CENSUS_DAYS: usize = 10;
+
+/// A monthly count spread over several days so no day carries all of it.
+/// `start` takes a snapshot of everyone's memberships in one parallel pass;
+/// `step` counts the next part of that snapshot and returns the finished
+/// groups after the last part. Everything comes from the one snapshot, so
+/// nobody is counted twice or missed even if people are born, die or move
+/// while the count runs. The sums are integers and the pops are sorted by
+/// key at the end, so the result does not depend on the thread count.
+#[derive(Default)]
+pub struct Census {
+    rows: Vec<Row>,
+    next: usize,
+    pops: FxHashMap<PopKey, Pop>,
+}
+
+impl Census {
+    pub fn running(&self) -> bool {
+        self.next < self.rows.len()
+    }
+
+    /// Snapshot of every person's pop key, occupation and political groups.
+    /// `cell_region` maps a home cell to a dense region index into
+    /// `region_key` (NONE at sea; then `region_of` gives the key).
+    pub fn start(&mut self, world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) {
+        let mut local: Parallel<Vec<Row>> = Parallel::default();
+        let mut q = world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
+        q.contiguous_par_iter(world).expect("people live in tables").for_each_init(
+            || local.borrow_local_mut(),
+            |rows, (home, stand, culture, religion, job, faction)| {
+                rows.extend((0..home.len()).map(|i| {
+                    let cell = home[i].0;
+                    let region = match cell_region.get(cell as usize) {
+                        Some(&r) if r != NONE => region_key[r as usize],
+                        _ => region_of(cell),
+                    };
+                    Row { key: (region, stand[i].0, culture[i].0, religion[i].0), job: job[i].0, mask: faction[i].0 }
+                }));
+            },
+        );
+        self.rows.clear();
+        local.drain_into(&mut self.rows);
+        self.next = 0;
+        self.pops.clear();
+    }
+
+    /// Counts the next of `CENSUS_DAYS` parts; the groups once all are done.
+    pub fn step(&mut self) -> Option<Groups> {
+        if !self.running() {
+            return None;
+        }
+        let part = self.rows.len().div_ceil(CENSUS_DAYS).max(1);
+        let end = (self.next + part).min(self.rows.len());
+        for r in &self.rows[self.next..end] {
+            let pop = self.pops.entry(r.key).or_insert_with(|| Pop { key: r.key, ..Pop::default() });
+            pop.people += 1;
+            pop.jobs[r.job as usize] += 1;
+            for g in 0..POLITICAL {
+                pop.political[g] += (r.mask >> g) as u32 & 1;
             }
-        },
-    );
-    let mut all: FxHashMap<PopKey, Pop> = FxHashMap::default();
-    for map in local.iter_mut() {
-        for (k, p) in map.drain() {
-            all.entry(k).or_insert_with(|| Pop { key: k, ..Pop::default() }).add(&p);
+        }
+        self.next = end;
+        if self.running() {
+            return None;
+        }
+        let mut g = Groups { pops: self.pops.drain().map(|(_, p)| p).collect(), ..Groups::default() };
+        g.pops.sort_unstable_by_key(|p| p.key);
+        for p in &g.pops {
+            g.people += p.people;
+            for j in 0..JOBS {
+                g.economic[j] += p.jobs[j];
+            }
+            for k in 0..POLITICAL {
+                g.political[k] += p.political[k];
+            }
+        }
+        Some(g)
+    }
+}
+
+/// Counts every person once into their pop, occupation and political
+/// groups, all at once (a census run to the end).
+pub fn count(world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) -> Groups {
+    let mut c = Census::default();
+    c.start(world, cell_region, region_key, region_of);
+    loop {
+        if let Some(g) = c.step() {
+            return g;
+        }
+        if !c.running() {
+            return Groups::default();
         }
     }
-    let mut g = Groups { pops: all.into_values().collect(), ..Groups::default() };
-    g.pops.sort_unstable_by_key(|p| p.key);
-    for p in &g.pops {
-        g.people += p.people;
-        for j in 0..JOBS {
-            g.economic[j] += p.jobs[j];
-        }
-        for k in 0..POLITICAL {
-            g.political[k] += p.political[k];
-        }
-    }
-    g
 }
 
 #[cfg(test)]
@@ -255,15 +295,11 @@ mod tests {
         for r in 0..10_000 {
             n[start_job(0, r) as usize] += 1;
         }
-        assert_eq!(n[BAUERN as usize], 4500);
-        assert_eq!(n[UNFREIE as usize], 1200);
+        assert_eq!(n[BAUERN as usize], 4530);
+        assert_eq!(n[UNFREIE as usize], 1000);
         assert_eq!(n[ADEL as usize], 0);
-        // The yearly choice keeps the unfree and draws only free occupations.
-        assert!((0..1000).all(|r| yearly_job(0, UNFREIE, r) == UNFREIE));
-        let changed: Vec<u8> = (0..10_000).map(|r| yearly_job(0, BAUERN, r)).filter(|&j| j != BAUERN).collect();
-        assert!(!changed.is_empty() && changed.iter().all(|&j| j != UNFREIE));
         for stand in 0..4 {
-            assert_eq!(shares(stand).iter().map(|s| s.1 as u32).sum::<u32>(), 100);
+            assert_eq!(shares(stand).iter().map(|s| s.1 as u32).sum::<u32>(), 1000);
         }
     }
 
@@ -313,5 +349,36 @@ mod tests {
         assert_eq!(g.political.iter().sum::<u32>(), members);
         let k = g.pops[3].key;
         assert_eq!(g.pop(k).map(|p| p.key), Some(k));
+    }
+
+    /// A census counts the people as they were at its start: changes while
+    /// it runs (here everyone moves and half are removed) do not show.
+    #[test]
+    fn census_counts_its_snapshot() {
+        bevy_tasks::ComputeTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(4).build());
+        let mut world = World::new();
+        let ids: Vec<Entity> = (0..5_000u32).map(|i| world.spawn((Home(i % 20), Stand(0), Culture(0), Religion(0), Job(BAUERN), Faction(membership(BAUERN)))).id()).collect();
+        let region_of = |c: u32| c / 4;
+        let once = count(&mut world, &[], &[], region_of);
+        let mut c = Census::default();
+        c.start(&mut world, &[], &[], region_of);
+        let mut days = 0;
+        let g = loop {
+            days += 1;
+            for (i, &e) in ids.iter().enumerate() {
+                if days == 1 && i % 2 == 0 {
+                    world.despawn(e);
+                } else if let Some(mut h) = world.get_mut::<Home>(e) {
+                    h.0 = 99;
+                }
+            }
+            if let Some(g) = c.step() {
+                break g;
+            }
+        };
+        assert_eq!(days, CENSUS_DAYS);
+        assert_eq!(g.pops, once.pops);
+        assert_eq!(g.people, 5_000);
+        assert!(c.step().is_none(), "nothing more until the next start");
     }
 }
