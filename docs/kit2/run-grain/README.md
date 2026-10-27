@@ -31,7 +31,7 @@ Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.cs
 | **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
 | **Markt** | Ein Markt pro 100-km-Region, am grössten Ort nach Hanson, sonst an der Zelle mit den meisten Menschen (1'783 Märkte). Lager, Bargeld der Händler am Markt und ein Preis, der jeden Tag gedämpft auf einen Zielpreis aus der Lagerreichweite zuläuft. Ankauf 10 % unter, Verkauf 10 % über dem Preis. Der Markt kauft nur, so weit sein Bargeld reicht; was er nicht nimmt, trägt der Bauer wieder heim. | S70, S22 |
 | **Träger** | Jede Fahrt zum Markt ist eine echte Person des Haushalts (zuerst ein Mann 15–60) mit Last und Tempo nach ORBIS und Preisedikt: Familien- und Pachthof mit Esel (97 kg, 30 km/Tag), Gutshof mit Ochsenkarren (388 kg, 12 km/Tag), ohne Hof zu Fuss (30 kg pro Erwachsenem, 20 km/Tag). Die Reise ist ein Ereignis mit Ankunftstag, kein Schritt pro Tag. Wer im Marktort wohnt, kauft sofort. | S70, S76 |
-| **Händler** | Erwachsene mit Beruf Händler. Sie kennen höchstens 32 Märkte (die billigsten Wege über Land mit Wagen, über See mit Schiff) mit Preisen, die so alt sind wie die Reise von dort. Einmal pro Woche: ausführen (hier kaufen, dort verkaufen) oder einführen (leer hin, dort kaufen, hier verkaufen), wenn die Marge nach Fracht über 10 % liegt. Fracht nach Preisedikt (Wagen 0,035 Denar pro kg·km) und ORBIS (See ≈ 0,001). Wo sie fahren, wird gezählt (Handelswege, Seewege). | S71 |
+| **Händler** | Erwachsene mit Beruf Händler. Sie kennen höchstens 32 Märkte (die billigsten Wege über Land mit Wagen, über See mit Schiff) mit Preisen, die so alt sind wie die Reise von dort. Einmal pro Woche: ausführen (hier kaufen, dort verkaufen) oder einführen (leer hin, dort kaufen, hier verkaufen), wenn die Marge nach Fracht über 10 % liegt. Fracht nach Preisedikt (Wagen 0,035 Denar pro kg·km) und ORBIS (See ≈ 0,001). Wo sie fahren, entstehen Handelswege: Jede 25-km-Zelle zählt die Fahrten, geglättet mit zwei Jahren Halbwertszeit; ab 100 Fahrten im Jahr wird sie Handelsweg, ab 400 Strasse (mit Hysterese). Der Wagen fährt dort 20 % bzw. 35 % billiger, und die Märkte in Reichweite suchen ihre Nachbarn neu. Seewege werden nur gezählt. | S71 |
 | **Waisen und Alte** | Haushalte ohne jemanden von 15–60 ziehen einmal im Jahr zum nächsten Verwandten (S79, Personen-Prototyp). Wer keinen hat, geht ins Zelt: Der Hof wird frei (der Hofspeicher bleibt beim Hof), der Vorrat bleibt beim Haushalt. Ein Zelt ohne Erwachsene übernimmt keinen freien Hof. | S79 |
 | **Hunger** | Jeder Haushalt isst einmal im Monat aus seinem Vorrat. Der Anteil, den er bekommt, treibt die Gesundheit (S64) und damit Tod und Geburt. Wer zu wenig hat, kauft; wer nichts hat, bettelt am Markt und stiehlt dann von einem Hof der Region. Haushalte, die weniger als 80 % bekommen, ziehen in die Nachbarregion mit der meisten Nahrung pro Kopf oder verlassen die Karte (S66). | S69, S71 |
 | **Geld** | Der Staat hat unbegrenzt Geld (S76): Wer weder Bauer noch Händler ist, bekommt den Taglohn des Preisedikts (25 Denar) vom Staat. Bauern bekommen Geld nur für verkauftes Getreide. | S76 |
@@ -124,20 +124,39 @@ Gebiet sind das 2,4 Mio. km² heutiges Ackerland unter 16 % Hang (HYDE-Acker 200
 solange die Landlosen hungern; danach 0,6–0,9 % mit jeder Rodungsvariante. Mit Brache
 (oben) bindet das Land, und es sind über 100 Jahre 0,16 % im Jahr.
 
+## Handelswege (S71, 100 Jahre, `run100.txt`; ohne: `run100-before-s71.txt`)
+
+| Jahr | Handelswege / Strassen / Seewege (Zellen) | Menschen | Preis Rom (Denar/kg) ohne → mit |
+|---|---|---|---|
+| 5 | 122 / 19 / 554 | | |
+| 10 | 124 / 21 / 580 | 99'593 (ohne 99'803) | 4,52 → 4,58 |
+| 50 | 57 / 7 / 263 | 107'395 (ohne 107'345) | 60,8 → 33,4 |
+| 100 | 29 / 0 / 115 | 135'489 (ohne 136'942) | 28,2 → 30,6 |
+
+Die Wege entstehen in den ersten Jahren, solange die Lager vom Start den Handel tragen,
+und zerfallen danach mit dem Handel (Fahrten im Jahr 10: 277'000, im Jahr 100: 107'000).
+Wo eine Strasse liegt, kommt Getreide billiger nach Rom; in Jahr 50 halbiert sich der
+Preisausschlag dort. Auf Wachstum und Bevölkerung wirkt es kaum (0,16 %/Jahr wie vorher),
+weil das Land bindet, nicht der Transport.
+
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |
 |---|---|
 | Aufbau Getreide | 81 ms (Marktgraph mit 32 Nachbarn pro Markt) |
-| **Getreide pro Tag, Median / Mittel** | **1,15 ms / 1,32 ms** (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,4 ms / 3,5 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,5 / 7,2 / 9,4 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 385 MB bei 202'000 Menschen |
+| **Getreide pro Tag, Median / Mittel** | **1,09 ms / 1,23 ms** (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 2,2 ms / 3,4 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 3,7 / 5,7 / 7,5 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 374 MB bei 135'000 Menschen |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
 Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,20 ms, Arbeitsbörse 0,16, Märkte und
-Nachrichten 0,19, Essen und Kaufen 0,24, Händler 0,04, Fusswege 0,29, Aussaat und Ernte
-0,01, Haushaltszählung 0,18.
+Nachrichten 0,18, Essen und Kaufen 0,18, Händler mit Handelswegen 0,19 (ohne 0,04), Fusswege
+0,26, Aussaat und Ernte 0,01, Haushaltszählung 0,15.
+
+**Handelswege.** Ändert sich eine Zelle, sucht nur ein Markt neu, dessen Nachbarsuche diese
+Zelle berührt hat (Rechteck um alle besuchten Zellen). Die betroffenen Märkte verteilen sich
+über das Jahr und laufen parallel. Ohne diese Prüfung kostete es 0,54 ms pro Tag.
 
 **Haushaltszählung über eine Woche verteilt.** Früher zählte die Getreidewirtschaft alle
 Haushalte an einem Tag des Monats neu (15 ms, bei 250'000 Menschen 18 ms). Jetzt nimmt sie
@@ -188,6 +207,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
 | Not (S66) | weniger als 80 % gegessen | frei gewählt |
+| Handelswege | Halbwertszeit 2 Jahre, Handelsweg ab 100, Strasse ab 400 Fahrten im Jahr (zurück unter 50 / 200), Wagenfracht 80 % / 65 %; Seewege ohne Wirkung | Werte frei, wie Fusswege |
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe bis zur Ernte + 60 Tage, Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
@@ -198,8 +218,8 @@ in Arrays nach ID statt in Hashtabellen.
 - **Neue Höfe und Strassen durch den Spieler** (S69, S74): Landlose können nur frei
   gewordene Höfe übernehmen.
 - **Neue Märkte, Verödung, Elendsviertel** (S75): Es gibt genau einen Markt pro Region.
-- **Wirkung der Handelswege**: Der Verkehr der Händler wird pro 25-km-Zelle gezählt, macht
-  die Fahrt aber noch nicht billiger. Flüsse fehlen im Marktgraph.
+- **Häfen und Flüsse**: Seewege werden gezählt, machen die Fahrt aber nicht billiger.
+  Flüsse fehlen im Marktgraph.
 - **Felder als Kacheln**: Felder sind eine Fläche pro Hof, noch nicht auf dem Feinraster
   verteilt; dafür fehlen Boden und Hang pro Kachel.
 
