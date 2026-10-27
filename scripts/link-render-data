@@ -2,7 +2,8 @@
 """Link the render data bound in app/renderer-binding.json from another checkout.
 
 Large source and render payloads (data/gameworld-v2, artifacts/render-data/*) are
-not in Git. This links each missing bound dataset directory from DATA_ROOT, a
+not in Git. Datasets they reach through '../<name>/' paths (data/gameworld-v1)
+are linked too. This links each missing bound dataset directory from DATA_ROOT, a
 checkout that already holds them, so a fresh clone can start. Existing paths are
 never replaced. Exit 1 lists whatever is still missing.
 
@@ -11,6 +12,7 @@ usage: scripts/link-render-data DATA_ROOT [--dry-run]
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +33,19 @@ def dataset_dir(path):
     return Path(*parts[:depth])
 
 
+def sibling_datasets(source, directory):
+    """data/<name> directories that a dataset reaches through relative
+    '../<name>/' paths in its top-level JSON files (gameworld-v2 reads
+    rivers from ../gameworld-v1/payload)."""
+    if directory.parts[0] != 'data' or not (source / directory).is_dir():
+        return set()
+    found = set()
+    for manifest in (source / directory).glob('*.json'):
+        for name in re.findall(r'\.\./([A-Za-z0-9_.-]+)/', manifest.read_text(errors='ignore')):
+            found.add(Path('data', name))
+    return found
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('data_root', type=Path)
@@ -39,7 +54,10 @@ def main():
     source = args.data_root.expanduser().resolve()
     binding = json.loads((ROOT / 'app/renderer-binding.json').read_text())
     missing = []
-    for directory in sorted({dataset_dir(p) for p in bound_paths(binding)}):
+    wanted = {dataset_dir(p) for p in bound_paths(binding)}
+    for directory in list(wanted):
+        wanted |= sibling_datasets(source, directory)
+    for directory in sorted(wanted):
         local = ROOT / directory
         if local.exists():
             continue
