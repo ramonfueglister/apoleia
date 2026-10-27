@@ -66,6 +66,10 @@ const EQUITES: usize = 60;
 // marriage: commoner women late teens, men late 20s; elite earlier).
 /// Age from which a family looks for a spouse: (women, men) by estate.
 const MARRY_AGE: [(f64, f64); 4] = [(15.0, 20.0), (15.0, 20.0), (13.0, 20.0), (13.0, 20.0)];
+/// S79: a household with nobody of working age moves in with the nearest
+/// relative. PLACEHOLDER ages (the decision names 15–60) and order of kin:
+/// parent, child, sibling, uncle or aunt; within a degree the lowest id.
+const WORK_AGE: (f64, f64) = (15.0, 60.0);
 /// Women are not sought after this age.
 const MARRY_AGE_MAX_F: f64 = 45.0;
 /// Preferred age gap husband − wife in years (Saller: about 10).
@@ -436,6 +440,9 @@ pub struct Stats {
     pub left_households: u64,
     pub left_people: u64,
     pub left_map: u64,
+    /// Households with nobody of working age that joined a relative (S79).
+    pub joined_households: u64,
+    pub joined_people: u64,
 }
 
 /// Person ids grouped by a key (compressed rows): ids of key k are
@@ -562,9 +569,11 @@ impl Index {
     }
 }
 
-/// (household, person) grouped by household, persons in id order, and the
-/// households by yearly slice (household id mod 360).
-fn households(mut pairs: Vec<(u32, u32)>, max_pid: u32) -> (Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>) {
+/// Monthly households: (household, person) grouped by household, persons in
+/// id order, and the households by yearly slice (household id mod 360).
+type HouseholdLists = (Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>);
+
+fn households(mut pairs: Vec<(u32, u32)>, max_pid: u32) -> HouseholdLists {
     radix_sort(&mut pairs, max_pid, |p| p.1);
     radix_sort(&mut pairs, max_pid, |p| p.0);
     let mut slices = vec![Vec::new(); YEAR as usize];
@@ -581,6 +590,22 @@ fn households(mut pairs: Vec<(u32, u32)>, max_pid: u32) -> (Vec<(u32, u32)>, Vec
     (pairs, slices)
 }
 
+/// (parent, child) of the living children, grouped by parent (S79); the
+/// search takes the lowest id itself, so the order within a parent does
+/// not matter.
+fn kids(rows: Vec<(u32, u32, u32)>, max_pid: u32) -> Vec<(u32, u32)> {
+    let mut kids: Vec<(u32, u32)> = Vec::with_capacity(rows.len() * 2);
+    for (c, f, m) in rows {
+        for p in [f, m] {
+            if p != NONE {
+                kids.push((p, c));
+            }
+        }
+    }
+    radix_sort(&mut kids, max_pid, |k| k.0);
+    kids
+}
+
 pub struct People {
     pub world: World,
     pub grid: Grid,
@@ -593,6 +618,11 @@ pub struct People {
     ent: Vec<Entity>,
     /// Traits by person id (kept for the dead too, for old relations).
     traits: Vec<u32>,
+    /// Father and mother by person id (kept for the dead too, to find
+    /// uncles and aunts, S79).
+    parents: Vec<(u32, u32)>,
+    /// (parent, child) of the living children, rebuilt monthly (S79).
+    kids: Vec<(u32, u32)>,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
     /// (household, person) sorted, rebuilt monthly.
@@ -625,7 +655,8 @@ pub struct People {
     census: groups::Census,
     /// Monthly index and households being built in the background.
     index_job: Option<std::thread::JoinHandle<Index>>,
-    households_job: Option<std::thread::JoinHandle<(Vec<(u32, u32)>, Vec<Vec<(u32, u32)>>)>>,
+    households_job: Option<std::thread::JoinHandle<HouseholdLists>>,
+    kids_job: Option<std::thread::JoinHandle<Vec<(u32, u32)>>>,
     /// Set by the grain economy; None keeps the capacity K of S35.
     pub econ: Option<Econ>,
 }
@@ -830,6 +861,8 @@ impl People {
             next_pid: count,
             ent,
             traits: Vec::new(),
+            parents: Vec::new(),
+            kids: Vec::new(),
             by_cell: Csr::default(),
             households: Vec::new(),
             grooms: Vec::new(),
@@ -846,10 +879,12 @@ impl People {
             census: groups::Census::default(),
             index_job: None,
             households_job: None,
+            kids_job: None,
             econ: None,
         };
         let mut q = p.world.query::<&Traits>();
         p.traits = q.iter(&p.world).map(|t| t.0).collect();
+        p.parents = vec![(NONE, NONE); p.next_pid as usize];
         // Marriages at the start: let the families search for a year.
         for m in 0..12 {
             p.refresh_index();
@@ -1030,11 +1065,37 @@ impl People {
         pairs
     }
 
+    /// Snapshot of (person, father, mother) of the living.
+    fn kid_rows(&mut self) -> Vec<(u32, u32, u32)> {
+        let mut rows = Vec::with_capacity(self.count as usize);
+        let mut q = self.world.query::<(&Pid, &Parents)>();
+        for (pid, pa) in q.contiguous_iter(&self.world).expect("people live in tables") {
+            rows.extend((0..pid.len()).map(|i| (pid[i].0, pa[i].0, pa[i].1)));
+        }
+        rows
+    }
+
+    /// Children by parent, monthly in the background on its own day (S79);
+    /// installed before the migration of the next day, its only reader.
+    fn start_kids(&mut self) {
+        let rows = self.kid_rows();
+        let max = self.next_pid;
+        self.kids_job = Some(std::thread::spawn(move || kids(rows, max)));
+    }
+
+    fn finish_kids(&mut self) {
+        if let Some(job) = self.kids_job.take() {
+            self.kids = job.join().expect("kids thread");
+        }
+    }
+
     /// Households and their yearly slices, rebuilt monthly on another day
     /// than the index so the work does not pile up (at once at the start).
     fn refresh_households(&mut self) {
         let pairs = self.household_pairs();
         (self.households, self.hh_slices) = households(pairs, self.next_pid);
+        let rows = self.kid_rows();
+        self.kids = kids(rows, self.next_pid);
     }
 
     /// Monthly households in the background, like the index; installed
@@ -1086,6 +1147,7 @@ impl People {
         self.timing.trips += us(t0);
         let t0 = t();
         self.finish_households();
+        self.finish_kids();
         self.timing.index += us(t0);
         let t0 = t();
         self.migration(day, yslice);
@@ -1099,6 +1161,11 @@ impl People {
         if slice == 10 {
             let t0 = t();
             self.start_households();
+            self.timing.index += us(t0);
+        }
+        if slice == 20 {
+            let t0 = t();
+            self.start_kids();
             self.timing.index += us(t0);
         }
         let t0 = t();
@@ -1205,6 +1272,7 @@ impl People {
         }
         self.ent.push(e);
         self.traits.push(traits);
+        self.parents.push((father, mother));
         self.count += 1;
         self.stats.births += 1;
         self.schedule_death(pid, 0, day as i32, sex, 1000, day);
@@ -1416,6 +1484,7 @@ impl People {
     /// person there after moving.
     fn migration(&mut self, day: i64, yslice: u32) {
         let mut moves: Vec<(Vec<u32>, Option<u32>)> = Vec::new();
+        let mut joins: Vec<(Vec<u32>, u32)> = Vec::new();
         for &(i, j) in &self.hh_slices[yslice as usize] {
             let members: Vec<u32> = self.households[i as usize..j as usize]
                 .iter()
@@ -1423,6 +1492,10 @@ impl People {
                 .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none()))
                 .collect();
             let Some(&first) = members.first() else { continue };
+            if let Some(to) = self.kin_to_join(&members, day) {
+                joins.push((members, to));
+                continue;
+            }
             let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
             let house = self.households[i as usize].0;
             if let Some(e) = &self.econ {
@@ -1467,6 +1540,21 @@ impl People {
             }
         }
         let at = |p: &Self, pid: u32| p.world.get::<Home>(p.ent[pid as usize]).unwrap().0;
+        for (members, kin) in joins {
+            // The relative's household and home as of now (S79).
+            let Some(ke) = self.alive(kin) else { continue };
+            let (house, home) = (self.world.get::<Household>(ke).unwrap().0, self.world.get::<Home>(ke).unwrap().0);
+            for &m in &members {
+                let old = at(self, m);
+                self.add_pop(old, -1);
+                self.add_pop(home, 1);
+                let mut w = self.world.entity_mut(self.ent[m as usize]);
+                w.get_mut::<Home>().unwrap().0 = home;
+                w.get_mut::<Household>().unwrap().0 = house;
+            }
+            self.stats.joined_households += 1;
+            self.stats.joined_people += members.len() as u64;
+        }
         for (members, to) in moves {
             let n = members.len() as u64;
             match to {
@@ -1491,7 +1579,56 @@ impl People {
                 }
             }
         }
-        let _ = day;
+    }
+
+    /// S79: if nobody in the household is of working age, the nearest
+    /// living relative of working age at home in another household, in the
+    /// order parent, child, sibling, uncle or aunt (lowest id first within
+    /// a degree, members in id order). None if someone can work or there is
+    /// no such relative.
+    fn kin_to_join(&self, members: &[u32], day: i64) -> Option<u32> {
+        let age = |p: u32| age_y(day, self.world.get::<Born>(self.ent[p as usize]).unwrap().0);
+        if members.iter().any(|&m| (WORK_AGE.0..WORK_AGE.1).contains(&age(m))) {
+            return None;
+        }
+        let house = self.world.get::<Household>(self.ent[members[0] as usize]).unwrap().0;
+        let fit = |p: u32| {
+            self.alive(p).is_some_and(|e| {
+                self.world.get::<Household>(e).unwrap().0 != house
+                    && self.world.get::<Travel>(e).is_none()
+                    && (WORK_AGE.0..WORK_AGE.1).contains(&age_y(day, self.world.get::<Born>(e).unwrap().0))
+            })
+        };
+        let kids = |p: u32| {
+            let lo = self.kids.partition_point(|k| k.0 < p);
+            self.kids[lo..].iter().take_while(move |k| k.0 == p).map(|k| k.1)
+        };
+        let parents = |p: u32| {
+            let (f, m) = self.parents[p as usize];
+            [f, m].into_iter().filter(|&x| x != NONE)
+        };
+        let best = |c: &mut dyn Iterator<Item = u32>| c.filter(|&p| fit(p)).min();
+        for &m in members {
+            if let Some(k) = best(&mut parents(m)) {
+                return Some(k);
+            }
+        }
+        for &m in members {
+            if let Some(k) = best(&mut kids(m)) {
+                return Some(k);
+            }
+        }
+        for &m in members {
+            if let Some(k) = best(&mut parents(m).flat_map(|p| kids(p)).filter(|&s| s != m)) {
+                return Some(k);
+            }
+        }
+        for &m in members {
+            if let Some(k) = best(&mut parents(m).flat_map(|p| parents(p)).flat_map(|g| kids(g)).filter(|&u| u != self.parents[m as usize].0 && u != self.parents[m as usize].1)) {
+                return Some(k);
+            }
+        }
+        None
     }
 
     fn daily_needs(&mut self) {
@@ -1681,6 +1818,24 @@ impl People {
         } else if let Some(g) = self.census.step() {
             self.groups = g;
         }
+    }
+
+    /// Households (as of the last monthly list) and how many of them have
+    /// nobody of working age (S79).
+    pub fn households_without_workers(&self) -> (u32, u32) {
+        let day = self.world.resource::<Clock>().day;
+        let (mut all, mut idle) = (0, 0);
+        for (h, group) in self.households.chunk_by(|a, b| a.0 == b.0).map(|g| (g[0].0, g)) {
+            let alive: Vec<Entity> = group.iter().filter_map(|p| self.alive(p.1)).filter(|&e| self.world.get::<Household>(e).unwrap().0 == h).collect();
+            if alive.is_empty() {
+                continue;
+            }
+            all += 1;
+            if !alive.iter().any(|&e| (WORK_AGE.0..WORK_AGE.1).contains(&age_y(day, self.world.get::<Born>(e).unwrap().0))) {
+                idle += 1;
+            }
+        }
+        (all, idle)
     }
 
     pub fn travelling(&mut self) -> usize {

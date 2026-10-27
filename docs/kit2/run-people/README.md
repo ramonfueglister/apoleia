@@ -28,17 +28,23 @@ Fruchtbarkeit, Wartezeiten, Kalender), `west3.py` (rechnet die Sterbetafel nach)
 | **Fruchtbarkeit in der Ehe** | Form der natürlichen Fruchtbarkeit nach Coale–Trussell, skaliert auf den Spitzenwert von 0,343 Geburten pro verheirateter Frau und Jahr im Alter von 20–24 Jahren, den die ägyptischen Zensuslisten zeigen. Nach einer Geburt folgen mindestens 15 Monate ohne neue Geburt; die Rate ist so angehoben, dass die Jahresrate gleich bleibt. Kinder nur von Paaren (S62). | Bagnall und Frier 1994 (über Wikipedia, im Buch zu prüfen) |
 | **Heiratsmarkt** | Die Familie des Mannes sucht. Kandidatinnen sind Bekannte des Mannes und seines Vaters sowie ledige Frauen derselben Region und desselben Standes. Nach 6 Monaten ohne Erfolg kommen die acht Nachbarregionen dazu. Die Oberschicht sucht reichsweit und später auch eine Stufe tiefer. Gewertet wird wie in CK3 (Altersabstand, Stand, Kultur, Religion, Meinung, etwas Zufall). Die Braut zieht zum Mann. Kandidaten liegen monatlich in Listen nach (Region, Stand); es gibt keine Suche über alle. | S63; Wertung nach DYNASIM/APPSIM wie bei [Walker und Davis 2013](https://jasss.soc.surrey.ac.uk/16/1/6.html) |
 | **Nahrung, Gesundheit, Wanderung** | Die Nahrung pro Kopf zählt pro 100-km-Region, weil die Region über ihren Markt teilt (S70). Die Gesundheit folgt ihr monatlich und ändert die Sterbe- und Geburtsrate (S64, S65). Ohne freies Land wartet die Familie mit der Heirat (S65). Haushalte in Not vergleichen jährlich die Nachbarregionen und ziehen um; ist keine besser, gehen sie zu Fuss oder per Schiff an den Kartenrand und verschwinden (S66). | S64–S66; Victoria 3: Wanderung nach Unterschieden der Attraktivität, ganze Pops bevorzugt (DD 105) |
+| **Waisen und Alte (S79)** | Einmal im Jahr prüft jeder Haushalt, ob noch jemand zwischen 15 und 60 lebt. Wenn nicht, zieht der ganze Haushalt zum nächsten Verwandten im arbeitsfähigen Alter: zuerst Vater oder Mutter, dann ein Kind, ein Geschwister, dann Onkel oder Tante. Eltern werden auch für Tote gemerkt (8 Byte pro Person), Kinder liegen in einer monatlichen Liste nach Elternteil, die im Hintergrund an einem eigenen Tag gebaut wird. Wer niemanden findet, bleibt; ins Zelt schickt ihn erst die Getreidewirtschaft. | S79; römische Vormundschaft (tutela) und Alte bei den Kindern (Saller 1994) |
 
 ## Ergebnis (100 Jahre, Seed 1, ganze Ausgabe in `run100.txt`)
 
 | Jahr | Menschen | Geburten | Tote | davon < 1 Jahr | Ehen | Heiratsalter F / M | Frauen 15–49 verheiratet | ausgewandert |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 115'364 | 2'712 | 4'141 | 878 | 1'892 | 22,5 / 37,1 | 91 % | 16 |
-| 10 | 127'268 | 7'140 | 6'004 | 2'353 | 1'843 | 21,2 / 29,9 | 98 % | 14 |
-| 30 | 147'853 | 8'149 | 6'696 | 2'662 | 2'336 | 20,3 / 28,0 | 88 % | 325 |
-| 50 | 152'617 | 8'200 | 6'825 | 2'729 | 2'371 | 20,7 / 27,7 | 84 % | 1'403 |
-| 70 | 151'531 | 8'214 | 6'694 | 2'616 | 2'212 | 20,7 / 27,8 | 85 % | 1'542 |
-| 100 | 149'389 | 8'013 | 6'526 | 2'591 | 2'233 | 20,8 / 27,6 | 84 % | 1'484 |
+| 10 | 127'303 | 7'091 | 5'973 | 2'378 | 1'840 | 21,1 / 29,8 | 98 % | 20 |
+| 30 | 148'052 | 8'091 | 6'659 | 2'612 | 2'408 | 20,6 / 27,9 | 88 % | 278 |
+| 50 | 151'664 | 8'142 | 6'681 | 2'572 | 2'296 | 20,7 / 27,5 | 85 % | 1'647 |
+| 70 | 149'785 | 8'136 | 6'576 | 2'647 | 2'204 | 21,2 / 27,5 | 85 % | 1'653 |
+| 100 | 147'460 | 7'921 | 6'495 | 2'612 | 2'241 | 21,2 / 27,7 | 85 % | 1'580 |
+
+Haushalte ohne jemanden zwischen 15 und 60: beim Start 17,6 % (zufällige Fünfergruppen
+ohne bekannte Verwandtschaft), nach 30 Jahren 3,3 % (ohne S79 wären es 7,7 %), nach
+100 Jahren 0,5 %. Pro Jahr ziehen 60–380 Menschen zu Verwandten, anfangs mehr, weil
+die Startbevölkerung keine bekannten Eltern hat.
 
 **Was emergent passiert:** Die Bevölkerung wächst rund 40 Jahre lang mit etwa 0,7 % im
 Jahr. Dann ist das Land voll (die Nahrung K liegt nach S35 bei Startbevölkerung / 0,7).
@@ -59,6 +65,9 @@ ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
   Es fehlen noch Missernten, Seuchen, Krieg und Städte mit mehr Toten als Geburten.
 - Hungertote gibt es kaum, weil die Menschen wandern, bevor sie hungern. Ob das so
   sein soll, entscheiden die Regeln zur Nahrung (S69–S76).
+- Haushalte teilen sich nie: Söhne bleiben mit ihren Frauen im Haus des Vaters. Nach
+  100 Jahren leben so im Mittel 17 Menschen in einem Haushalt (8'622 Haushalte). Wann
+  ein Sohn einen eigenen Haushalt gründet, ist noch nicht entschieden.
 
 ## Tempo und Speicher (4 Cloud-Kerne)
 
@@ -66,16 +75,16 @@ ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
 |---|---|
 | Laden | 1,4 s, davon 0,65 s für 724 Flussfelder |
 | Tag, Median | **2,8 ms** (vorher ohne Geburt und Tod 0,74 ms, aber mit 15–25 ms an Monatstagen) |
-| Tag, 95 % / 99 % | 4,7 ms / 6,8 ms (vorher 7,5 / 10,6) |
-| Monatsanfang, Median | 4,2 ms, höchstens 11 ms (vorher 8,4 und 29 ms) |
-| Langsamster Tag in 100 Jahren | 41 ms, je Lauf an einem anderen Tag und in einem anderen parallelen Teil (Bedürfnisse, Bekanntschaften), bei gleichem Ergebnis. Die Arbeit ist also dieselbe, und der Ausreisser kommt von der geteilten Cloud-Maschine (ein Thread wird verdrängt). Ohne solche Ausreisser ist der langsamste Tag ein Monatsanfang mit rund 11 ms. Die Messung auf dem Mac steht noch aus. |
-| Speicher | 155 MB beim Start, **187 MB** nach 100 Jahren (mehr Menschen im Kalender), ab Jahr 60 fast gleichbleibend |
+| Tag, 95 % / 99 % | 4,8 ms / 6,6 ms (vorher 7,5 / 10,6) |
+| Monatsanfang, Median | 4,1 ms, höchstens 15 ms (vorher 8,4 und 29 ms) |
+| Langsamster Tag in 100 Jahren | 41–95 ms, je Lauf an einem anderen Tag und in einem anderen Teil (Bedürfnisse, Bekanntschaften, Reisen), bei gleichem Ergebnis. Die Arbeit ist also dieselbe, und der Ausreisser kommt von der geteilten Cloud-Maschine (ein Thread wird verdrängt). Ohne solche Ausreisser ist der langsamste Tag ein Monatsanfang mit rund 15 ms. Die Messung auf dem Mac steht noch aus. |
+| Speicher | 155 MB beim Start, **200 MB** nach 100 Jahren (mehr Menschen im Kalender, Eltern aller je Geborenen), ab Jahr 60 wächst er um rund 0,15 MB pro Jahr |
 | Ereignisse im Kalender | ≈ 380'000 |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `people::tests::deterministic_fingerprint` |
 
 Pro Tag (Mittel): Ereignisse 0,10 ms, Bedürfnisse 0,59 ms, Reisen 0,25 ms, Gesundheit
 0,13 ms, Heiratssuche 0,26 ms, Bekanntschaften 1,2 ms, Umzug 0,07 ms (Berufswechsel gibt
-es nicht mehr, S77). Pro Monat: Index und Haushalte 5,7 ms, Pops 3,9 ms.
+es nicht mehr, S77). Pro Monat: Index, Haushalte und Kinderliste 6,4 ms, Pops 3,8 ms.
 
 Jeder Tag soll ungefähr gleich viel kosten. Deshalb arbeiten Index und Haushalte nur
 noch über die Lebenden (Radix-Sort statt Felder über alle je vergebenen IDs, die über
@@ -105,6 +114,7 @@ wenn nichts anderes läuft.
 | Bevorzugter Altersabstand | 10 Jahre | Saller |
 | Monate, bis die Suche weiter reicht | 6 | S63 „mehrere Monate“ |
 | Heirat ohne freies Land | Chance 1/4 pro Monat | S65 |
+| Arbeitsfähiges Alter, Reihenfolge der Verwandten | 15–60; Vater oder Mutter, Kind, Geschwister, Onkel oder Tante, je die kleinste ID | S79 (Beispiele aus der Entscheidung) |
 | Mindestabstand zwischen zwei Geburten | 15 Monate | Schwangerschaft und Stillzeit |
 | Tod der Mutter bei der Geburt | 1 % | vormoderne Grössenordnung, zu prüfen |
 | Wirkung der Gesundheit | Tod × (1 + 2 · (1 − h)), Geburt × h | frei gewählt |
