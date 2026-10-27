@@ -45,12 +45,12 @@ fn percentiles(mut us: Vec<f64>) -> (f64, f64, f64) {
 fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) {
     write_views(&mut sim, &out.join(format!("leaves-{START_YEAR}.csv")));
     let mut series = fs::File::create(out.join("series.csv")).unwrap();
-    writeln!(series, "year,population,capacity,leaves,max_level,splits,merges,mean_tick_us,max_tick_us").unwrap();
+    writeln!(series, "year,population,capacity,leaves,max_level,splits,merges,mean_tick_us,max_tick_us,migrants_dec").unwrap();
     let level = |v: &[apoleia_sim::ecs::TileView]| v.iter().map(|t| t.key.level).max().unwrap();
     let v = sim.snapshot();
     let v = &v.tiles;
     let k_total: f64 = v.iter().map(|t| t.cap).sum();
-    writeln!(series, "{START_YEAR},{:.0},{k_total:.0},{},{},0,0,0,0", sim.total_population(), v.len(), level(&v)).unwrap();
+    writeln!(series, "{START_YEAR},{:.0},{k_total:.0},{},{},0,0,0,0,0", sim.total_population(), v.len(), level(&v)).unwrap();
     let mut all_us = Vec::new();
     let mut snap_us = Vec::new();
     for y in 1..=years {
@@ -70,7 +70,9 @@ fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) 
         let st = sim.stats();
         let mean = ticks.iter().sum::<f64>() / 12.0;
         let max = ticks.iter().cloned().fold(0.0, f64::max);
-        writeln!(series, "{year},{:.0},{k_total:.0},{},{},{},{},{mean:.1},{max:.1}", sim.total_population(), v.len(), level(&v), st.splits, st.merges)
+        // People who changed tile in December of this year.
+        let migrants: f64 = v.iter().map(|t| t.moved.max(0.0)).sum();
+        writeln!(series, "{year},{:.0},{k_total:.0},{},{},{},{},{mean:.1},{max:.1},{migrants:.0}", sim.total_population(), v.len(), level(&v), st.splits, st.merges)
             .unwrap();
         if y % snap_every == 0 || y == years {
             write_views(&mut sim, &out.join(format!("leaves-{year}.csv")));

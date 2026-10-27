@@ -38,6 +38,13 @@ pub struct Params {
     pub budget: usize,
     /// Disable splitting and merging (for comparison runs, B02).
     pub adaptive: bool,
+    /// Migration (Kit 2 MIGRATION.md): share of the smaller of sender
+    /// population and receiver free capacity, per unit attraction difference
+    /// and month, across a full edge. 0 switches migration off.
+    pub migration_rate: f64,
+    /// Attraction differences up to this cause no migration (EU5: only
+    /// locations far enough from their surroundings migrate).
+    pub migration_threshold: f64,
     /// With HYDE data: true = K from HYDE cropland × `people_per_cropland_km2`;
     /// false = K anchored on the HYDE start population (start = `start_fill` × K).
     pub k_from_cropland: bool,
@@ -57,6 +64,8 @@ impl Default for Params {
             budget: 65_536,
             adaptive: true,
             k_from_cropland: false,
+            migration_rate: 0.02,
+            migration_threshold: 0.05,
         }
     }
 }

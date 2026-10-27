@@ -75,9 +75,41 @@ pub struct TickConst {
     merge_months: u16,
     budget: usize,
     adaptive: bool,
+    migration_rate: f64,
+    migration_threshold: f64,
 }
 
 /// Quadtree bookkeeping in ID order (Paradox-style lookup table, S41).
+/// Edge-adjacent leaves (same, coarser or finer level), in ID order, as
+/// entity indices. Stored inline (at most two per edge under the 2:1 rule)
+/// so the migration pass reads them straight from the table instead of
+/// chasing one heap allocation per tile. Rebuilt only for tiles touched by a
+/// split or merge.
+#[derive(Component, Default, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Neighbors {
+    len: u8,
+    at: [u32; 8],
+}
+
+impl Neighbors {
+    fn of(list: &[Entity]) -> Neighbors {
+        let mut n = Neighbors::default();
+        for (slot, e) in n.at.iter_mut().zip(list) {
+            *slot = e.index_u32();
+        }
+        n.len = list.len().min(8) as u8;
+        n
+    }
+
+    pub fn indices(&self) -> &[u32] {
+        &self.at[..self.len as usize]
+    }
+}
+
+/// Net migration of the current month (fixed point, + = arrivals).
+#[derive(Component, Default, Clone, Copy, Debug)]
+pub struct Moved(pub i64);
+
 #[derive(Resource, Default)]
 pub struct TileIndex {
     pub leaves: BTreeMap<Key, Entity>,
@@ -87,6 +119,8 @@ pub struct TileIndex {
     pub split_nodes: BTreeSet<Key>,
     /// Nodes a merge may have unblocked; checked next month.
     pending_merge: BTreeSet<Key>,
+    /// Leaves created this month; their neighbourhoods need new lists.
+    born: Vec<Key>,
 }
 
 /// Work handed from the parallel tasks to the structure task.
@@ -110,6 +144,8 @@ pub struct TileView {
     pub pop: f64,
     pub cap: f64,
     pub land_km2: f64,
+    /// Net migrants this month (+ = arrivals).
+    pub moved: f64,
 }
 
 /// Everything the presentation layer may read about one month (S45).
@@ -133,6 +169,95 @@ pub enum Command {
 
 // ---- Tick tasks -----------------------------------------------------------
 
+/// Attraction of a tile for migrants: free share of its capacity (S35 K),
+/// clamped so an overfull tile counts as at most -1.
+fn attraction(p: f64, k: f64) -> f64 {
+    if k > 0.0 {
+        (1.0 - p / k).clamp(-1.0, 1.0)
+    } else {
+        -1.0
+    }
+}
+
+/// What a neighbour needs to know about a tile, computed once per tile and
+/// month so both sides of an edge use the very same numbers.
+#[derive(Clone, Copy, Default)]
+struct Side {
+    attraction: f64,
+    pop: f64,
+    free: f64,
+    level: u8,
+}
+
+fn side(p: i64, k: i64, level: u8) -> Side {
+    let (pf, kf) = (p as f64, k as f64);
+    Side { attraction: attraction(pf, kf), pop: pf.max(0.0), free: (kf - pf).max(0.0), level }
+}
+
+/// Edge weight of tile `a` towards `b`: shared edge over a's perimeter.
+/// Sizes are powers of two, so this is an exact constant.
+fn edge_weight(a: u8, b: u8) -> f64 {
+    if b <= a { 0.25 } else { 0.25 / (1u64 << (b - a)) as f64 }
+}
+
+/// People (fixed point) moving between neighbours this month, positive
+/// from `a` to `b`. Both tiles evaluate this with the same `Side` values, so
+/// the amount leaving one and arriving at the other is bit-identical and the
+/// total is conserved exactly. Weights sum to 1 over a tile's edges, which
+/// bounds a month's outflow by rate·2·P and inflow by rate·2·free capacity.
+fn flux(c: &TickConst, a: Side, b: Side) -> i64 {
+    let d = b.attraction - a.attraction;
+    if d > c.migration_threshold {
+        let amount = (a.pop * edge_weight(a.level, b.level)).min(b.free * edge_weight(b.level, a.level));
+        (c.migration_rate * d * amount + 0.5) as i64
+    } else if -d > c.migration_threshold {
+        let amount = (b.pop * edge_weight(b.level, a.level)).min(a.free * edge_weight(a.level, b.level));
+        -((c.migration_rate * -d * amount + 0.5) as i64)
+    } else {
+        0
+    }
+}
+
+/// Migration as a tick task (MIGRATION.md): each tile sums what it sends to
+/// and receives from its edge neighbours. Reads only the start-of-month
+/// state, so it runs in parallel and in any order. The state is first copied
+/// into a dense array indexed by entity index; random `Query::get` calls per
+/// neighbour cost several times more.
+fn migrate(
+    c: Res<TickConst>,
+    mut dense: Local<Vec<Side>>,
+    state: Query<(Entity, &TileKey, &Pop, &Cap)>,
+    mut tiles: Query<(Entity, &Neighbors, &mut Moved)>,
+) {
+    let c = *c;
+    if c.migration_rate <= 0.0 {
+        return;
+    }
+    for (ents, keys, pop, cap) in state.contiguous_iter().expect("tiles live in tables") {
+        for i in 0..ents.len() {
+            let at = ents[i].index_u32() as usize;
+            if at >= dense.len() {
+                dense.resize(at + 1, Side::default());
+            }
+            dense[at] = side(pop[i].0, cap[i].0, keys[i].0.level);
+        }
+    }
+    let dense = &*dense;
+    let chunks = tiles.contiguous_par_iter_mut().expect("tiles live in tables");
+    chunks.for_each(|(ents, nbs, moved)| {
+        let (moved, _) = ContiguousMut::split(moved);
+        for i in 0..ents.len() {
+            let me = dense[ents[i].index_u32() as usize];
+            let mut net = 0i64;
+            for &at in nbs[i].indices() {
+                // Positive flux leaves the first argument.
+                net -= flux(&c, me, dense[at as usize]);
+            }
+            moved[i].0 = net;
+        }
+    });
+}
+
 /// Per-thread candidate lists filled during the parallel growth pass.
 #[derive(Default)]
 pub struct Found {
@@ -150,19 +275,21 @@ pub struct Scratch(Parallel<Found>);
 /// avoids a 128-bit division per tile. Independent per tile, so it runs in
 /// parallel and notes split and merge candidates on the way (one pass over
 /// the tiles, like the reference loop).
-fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow)>) {
+fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow, &Moved)>) {
     let c = *c;
     let d = c.decay_q32 as f64 / Q32 as f64;
     // Dense tile table: work on whole column slices (bevy_ecs 0.19
     // contiguous iteration), one chunk per task.
     let chunks = q.contiguous_par_iter_mut().expect("tiles live in tables");
-    chunks.for_each(|(keys, pop, cap, land, low)| {
+    chunks.for_each(|(keys, pop, cap, land, low, moved)| {
         // Population changes on practically every tile each month, so the
         // whole chunk is marked changed once instead of per tile (S47).
         let (pop, _) = ContiguousMut::split(pop);
         let (low, _) = ContiguousMut::split(low);
         for i in 0..keys.len() {
             let p = &mut pop[i].0;
+            // Migration first (computed from the start-of-month state).
+            *p += moved[i].0;
             if *p > 0 {
                 let (pp, kk) = (*p as f64, cap[i].0 as f64);
                 // Values are positive, so +0.5 and truncation round to nearest
@@ -221,9 +348,53 @@ fn structure(world: &mut World) {
         nodes.extend(std::mem::take(&mut idx.pending_merge));
         merge_pass(world, &mut idx, &c, nodes);
     }
+    refresh_neighbors(world, &mut idx);
     world.insert_resource(idx);
     world.insert_resource(cand);
     world.resource_mut::<Stats>().month += 1;
+}
+
+/// Leaves sharing an edge with leaf `k`: the covering leaf of each edge
+/// neighbour (same or coarser level), or, where that position is split,
+/// its children along the shared edge (2:1 rule keeps them leaves).
+fn leaf_neighbors(idx: &TileIndex, k: Key) -> Vec<Key> {
+    let mut out = Vec::with_capacity(6);
+    for n in k.edge_neighbors() {
+        if let Some(c) = covering_leaf(idx, n) {
+            out.push(c);
+        } else if idx.internal.contains(&n) {
+            for ch in n.children() {
+                if idx.leaves.contains_key(&ch) && ch.edge_neighbors().iter().any(|m| m.at_level(k.level) == k) {
+                    out.push(ch);
+                }
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// New neighbour lists for leaves born this month and every leaf next to
+/// them (their old lists may point at despawned tiles).
+fn refresh_neighbors(world: &mut World, idx: &mut TileIndex) {
+    let born = std::mem::take(&mut idx.born);
+    if born.is_empty() {
+        return;
+    }
+    let mut dirty: BTreeSet<Key> = BTreeSet::new();
+    for &k in &born {
+        if idx.leaves.contains_key(&k) {
+            dirty.insert(k);
+            dirty.extend(leaf_neighbors(idx, k));
+        }
+    }
+    for k in dirty {
+        let list: Vec<Entity> = leaf_neighbors(idx, k).iter().map(|n| idx.leaves[n]).collect();
+        debug_assert!(list.len() <= 8, "2:1 rule allows at most two neighbours per edge");
+        let e = idx.leaves[&k];
+        *world.get_mut::<Neighbors>(e).expect("neighbors") = Neighbors::of(&list);
+    }
 }
 
 fn covering_leaf(idx: &TileIndex, k: Key) -> Option<Key> {
@@ -276,8 +447,9 @@ fn split(world: &mut World, idx: &mut TileIndex, c: &TickConst, k: Key) -> bool 
             parent / 4
         };
         given += p;
-        let ent = world.spawn((TileKey(ch), Pop(p.max(0) as i64), Cap(cap), Land(land), MonthsLow(0))).id();
+        let ent = world.spawn((TileKey(ch), Pop(p.max(0) as i64), Cap(cap), Land(land), MonthsLow(0), Neighbors::default(), Moved(0))).id();
         idx.leaves.insert(ch, ent);
+        idx.born.push(ch);
     }
     idx.internal.insert(k);
     idx.split_nodes.insert(k);
@@ -327,8 +499,9 @@ fn merge(world: &mut World, idx: &mut TileIndex, q: Key) {
         }
     }
     let (local, urban, land) = world.resource::<InputDb>().0.capacity_parts(q);
-    let e = world.spawn((TileKey(q), Pop(p), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0))).id();
+    let e = world.spawn((TileKey(q), Pop(p), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0))).id();
     idx.leaves.insert(q, e);
+    idx.born.push(q);
     idx.internal.remove(&q);
     idx.split_nodes.remove(&q);
     world.resource_mut::<Stats>().merges += 1;
@@ -354,7 +527,7 @@ pub struct Sim {
     /// written into `back`, which is reused when no reader holds it.
     front: Arc<Snapshot>,
     back: Arc<Snapshot>,
-    views: QueryState<(&'static TileKey, &'static Pop, &'static Cap, &'static Land)>,
+    views: QueryState<(&'static TileKey, &'static Pop, &'static Cap, &'static Land, &'static Moved)>,
 }
 
 impl Sim {
@@ -378,6 +551,8 @@ impl Sim {
             merge_months: params.merge_months,
             budget: params.budget,
             adaptive: params.adaptive,
+            migration_rate: params.migration_rate,
+            migration_threshold: params.migration_threshold,
         };
         let db = Inputs::new(params, &[], cells, cities);
         let mut world = World::new();
@@ -385,8 +560,9 @@ impl Sim {
         for &k in start {
             let (local, urban, land) = db.capacity_parts(k);
             let p = db.start_population(k, local, urban);
-            let e = world.spawn((TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0))).id();
+            let e = world.spawn((TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0))).id();
             idx.leaves.insert(k, e);
+            idx.born.push(k);
             let mut a = k;
             while a.level > 0 {
                 a = a.parent();
@@ -395,6 +571,7 @@ impl Sim {
         }
         world.insert_resource(InputDb(db));
         world.insert_resource(tc);
+        refresh_neighbors(&mut world, &mut idx);
         world.insert_resource(idx);
         world.insert_resource(Candidates::default());
         world.insert_resource(Scratch::default());
@@ -408,8 +585,8 @@ impl Sim {
         // overlap and only adds about 60 µs of wake-up cost per tick; the
         // parallelism is inside growth (parallel chunks on the task pool).
         monthly.set_executor(bevy_ecs::schedule::SingleThreadedExecutor::new());
-        monthly.add_systems((growth, collect, structure).chain_weak());
-        let views = world.query::<(&TileKey, &Pop, &Cap, &Land)>();
+        monthly.add_systems((migrate, growth, collect, structure).chain_weak());
+        let views = world.query::<(&TileKey, &Pop, &Cap, &Land, &Moved)>();
         let mut sim = Sim {
             world,
             monthly,
@@ -496,12 +673,13 @@ impl Sim {
         // several times cheaper than walking the index. The order is still
         // deterministic, because spawns and despawns happen in one serial,
         // sorted system.
-        for (keys, pop, cap, land) in self.views.contiguous_iter(&self.world).expect("tiles live in tables") {
+        for (keys, pop, cap, land, moved) in self.views.contiguous_iter(&self.world).expect("tiles live in tables") {
             buf.tiles.extend((0..keys.len()).map(|i| TileView {
                 key: keys[i].0,
                 pop: from_fx(pop[i].0),
                 cap: from_fx(cap[i].0),
                 land_km2: from_fx(land[i].0),
+                moved: from_fx(moved[i].0),
             }));
         }
         self.back = std::mem::replace(&mut self.front, next);
@@ -574,11 +752,12 @@ mod tests {
 
     #[test]
     fn splitting_conserves_population_exactly() {
-        let mut s = sim(Params::default());
+        let still = Params { migration_rate: 0.0, ..Params::default() };
+        let mut s = sim(still.clone());
         let mut q = s.world.query::<&Pop>();
         let before: i64 = q.iter(&s.world).map(|p| p.0).sum();
         // One tick of growth plus splits; compare against growth alone.
-        let mut flat = sim(Params { adaptive: false, ..Params::default() });
+        let mut flat = sim(Params { adaptive: false, ..still });
         s.tick();
         flat.tick();
         let mut q = s.world.query::<&Pop>();
@@ -615,7 +794,8 @@ mod tests {
 
     #[test]
     fn matches_reference_within_rounding() {
-        let mut s = sim(Params::default());
+        // The reference has no migration.
+        let mut s = sim(Params { migration_rate: 0.0, ..Params::default() });
         let mut cells = HashMap::new();
         for r in 0..4 {
             for c in 0..4 {
@@ -665,5 +845,34 @@ mod tests {
         keys.sort();
         let leaves: Vec<Key> = s.world.resource::<TileIndex>().leaves.keys().copied().collect();
         assert_eq!(keys, leaves, "every leaf exactly once");
+    }
+
+    #[test]
+    fn migration_conserves_people() {
+        // Without splits every tile keeps its Moved until the next month, so
+        // the net over all tiles is the month's balance.
+        let mut s = sim(Params { adaptive: false, ..Params::default() });
+        let mut moved_any = false;
+        for _ in 0..120 {
+            s.tick();
+            let mut q = s.world.query::<&Moved>();
+            let net: i64 = q.iter(&s.world).map(|m| m.0).sum();
+            assert_eq!(net, 0, "migration must neither create nor destroy people");
+            moved_any |= q.iter(&s.world).any(|m| m.0 != 0);
+        }
+        assert!(moved_any, "the test grid has a city and rural tiles, so people move");
+    }
+
+    #[test]
+    fn neighbor_lists_match_a_full_rebuild() {
+        let mut s = sim(Params::default());
+        for _ in 0..60 {
+            s.tick();
+        }
+        let idx = s.world.resource::<TileIndex>();
+        for (&k, &e) in &idx.leaves {
+            let want: Vec<Entity> = leaf_neighbors(idx, k).iter().map(|n| idx.leaves[n]).collect();
+            assert_eq!(*s.world.get::<Neighbors>(e).unwrap(), Neighbors::of(&want), "{}", k.id());
+        }
     }
 }
