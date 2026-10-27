@@ -2591,13 +2591,28 @@ func _add_delta_arms() -> void:
             start=region.apex;below=(mouth-start).normalized();reach=start.distance_to(mouth)*1.3
         # The source course below the split is replaced by the fan (it would
         # otherwise run as an extra band through the middle: the "braid").
+        # Per polyline everything downstream of the first cut segment goes
+        # too: a meander swinging back across the cut line was kept and ended
+        # square in the land (Tiber at 90 km, r31 preview).
         for source in river_sources:
             if str(source.get("name",""))!=str(region.name):continue
+            var segments:Array=source.segments
+            var spans={}
+            for i in range(segments.size()):
+                var id=str(segments[i][4])
+                if not spans.has(id):spans[id]=[i,i,-1,-1]
+                spans[id][1]=i
+                var m=(Vector2(segments[i][0])+Vector2(segments[i][1]))*.5
+                if (m-start).dot(sea)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:
+                    if spans[id][2]<0:spans[id][2]=i
+                    spans[id][3]=i
             var kept=[]
-            for segment in source.segments:
-                var m=(Vector2(segment[0])+Vector2(segment[1]))*.5
-                if (m-start).dot(sea)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:continue
-                kept.append(segment)
+            for i in range(segments.size()):
+                var span:Array=spans[str(segments[i][4])]
+                if span[2]>=0:
+                    var forward=Vector2(segments[span[1]][1]).distance_to(mouth)<Vector2(segments[span[0]][0]).distance_to(mouth)
+                    if (forward and i>=span[2]) or (not forward and i<=span[3]):continue
+                kept.append(segments[i])
             source.segments=kept
         var root_distance=INF
         for source in river_sources:
