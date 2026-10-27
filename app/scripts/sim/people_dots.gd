@@ -2,8 +2,11 @@ extends MultiMeshInstance3D
 ## Every simulated person as a black dot (Kit 2 people prototype). Godot holds
 ## no game state: ApoleiaPeople (Rust GDExtension, sim/godot) runs the people
 ## on its own thread and hands over the changed pages of its view; this node
-## uploads them into one texture array and draws all people with a single
-## MultiMesh whose instances never move on the CPU (people_dots.gdshader).
+## uploads them into one texture array. A 2D pass (people_dots_prep.gdshader)
+## works out where each person stands on the terrain, one float pixel per
+## person, and runs only when the people or the terrain view changed; all
+## people are then drawn with a single MultiMesh whose instances never move
+## on the CPU (people_dots.gdshader), two texel fetches per dot.
 ##
 ## Dots of people on the road (or on a ship) are dark red.
 ## Keys: P shows or hides the dots, [ and ] slow down or speed up the days.
@@ -14,7 +17,10 @@ extends MultiMeshInstance3D
 const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
 const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
+const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
+# terrain uniforms that move the dots; the placement pass reruns when they change
+const PLACE_KEYS: Array[StringName] = [&"tile_km", &"relief_smooth", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -22,13 +28,19 @@ var people: RefCounted
 var terrain: Node3D
 var days_per_second := 10.0
 var _material := ShaderMaterial.new()
+var _prep_material := ShaderMaterial.new()
+var _prep_view: SubViewport
+var _prep_rect: ColorRect
+var _place_key := []
+var _prep_frames := 0
+var prep_runs := 0
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
 var _day_debt := 0.0
 var _bench_path := ""
 var _bench_frame := 0
 var _bench_last := 0
-var _bench := {"on": [], "off": [], "on_gpu": [], "off_gpu": [], "sync_usec": [], "sync_layers": []}
+var _bench := {"on": [], "off": [], "on_gpu": [], "off_gpu": [], "sync_usec": [], "sync_layers": [], "prep": []}
 
 ## Starts the people sim; false when the GDExtension is not built or the
 ## inputs are missing (then the caller frees this node).
@@ -50,6 +62,17 @@ func setup(tile_terrain: Node3D) -> bool:
 	print(JSON.stringify({"event": "people_loaded", "people": people.count(), "ms": (Time.get_ticks_usec() - started) / 1000.0}))
 	name = "PeopleDots"
 	_material.shader = SHADER
+	_prep_material.shader = PREP_SHADER
+	_prep_view = SubViewport.new()
+	_prep_view.name = "PeoplePlaces"
+	_prep_view.use_hdr_2d = true # RGBA16F
+	_prep_view.transparent_bg = true
+	_prep_view.disable_3d = true
+	_prep_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_prep_rect = ColorRect.new()
+	_prep_rect.material = _prep_material
+	_prep_view.add_child(_prep_rect)
+	add_child(_prep_view)
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
 		_shared_uniforms.append(StringName(u.name))
 	material_override = _material
@@ -65,8 +88,15 @@ func setup(tile_terrain: Node3D) -> bool:
 ## Texture and instance count for the current number of pages.
 func _rebuild() -> void:
 	_texture = people.make_texture()
-	_material.set_shader_parameter("people_tex", _texture)
-	_material.set_shader_parameter("page_side", people.page_side())
+	var side: int = people.page_side()
+	var size := Vector2i(side, side * _texture.get_layers())
+	_prep_view.size = size
+	_prep_rect.size = Vector2(size)
+	for m in [_material, _prep_material]:
+		m.set_shader_parameter("people_tex", _texture)
+		m.set_shader_parameter("page_side", side)
+	_material.set_shader_parameter("place_tex", _prep_view.get_texture())
+	_prep_frames = 2
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = _dot_mesh()
@@ -98,12 +128,23 @@ func _process(delta: float) -> void:
 	if whole > 0 and people.backlog() < 4:
 		people.advance(whole)
 	_day_debt -= whole
-	if people.sync(_texture) < 0:
+	var synced: int = people.sync(_texture)
+	if synced < 0:
 		_rebuild()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
-		_material.set_shader_parameter(key, source.get_shader_parameter(key))
+		var value = source.get_shader_parameter(key)
+		_material.set_shader_parameter(key, value)
+		_prep_material.set_shader_parameter(key, value)
+	var key_now := PLACE_KEYS.map(func(k): return source.get_shader_parameter(k))
+	if synced > 0 or key_now != _place_key:
+		_place_key = key_now
+		_prep_frames = 2 # this frame and the next (the corner cache may lag a frame)
+	if _prep_frames > 0 and visible:
+		_prep_frames -= 1
+		prep_runs += 1
+		_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	# 3.5 px up close, about 1.7 px at 360 km and 1 px over the whole sea, so
 	# the dots stay single people instead of melting into black regions
 	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
@@ -114,6 +155,7 @@ func _process(delta: float) -> void:
 		_material.shader = SHADER_ROUND if want_round else SHADER
 		_material.set_shader_parameter("people_tex", _texture)
 		_material.set_shader_parameter("page_side", people.page_side())
+		_material.set_shader_parameter("place_tex", _prep_view.get_texture())
 	if _bench_path != "":
 		_bench_step()
 
@@ -134,12 +176,13 @@ func _bench_step() -> void:
 		var t: Dictionary = people.timings()
 		_bench.sync_usec.append(t.sync_usec)
 		_bench.sync_layers.append(t.sync_layers)
+		_bench.prep.append(1.0 if _prep_view.render_target_update_mode == SubViewport.UPDATE_ONCE else 0.0)
 	if f == BENCH_FRAMES:
 		visible = false
 	if f == 2 * BENCH_FRAMES:
 		var out := {"people": people.count(), "day": people.day(), "instances": multimesh.instance_count,
 			"timings_last": people.timings(), "renderer": RenderingServer.get_video_adapter_name(),
-			"tile_km": terrain.tile_km}
+			"tile_km": terrain.tile_km, "prep_share": _mean(_bench.prep)}
 		for key in _bench:
 			var v: Array = _bench[key].duplicate()
 			v.sort()
@@ -151,3 +194,9 @@ func _bench_step() -> void:
 		file.close()
 		print(JSON.stringify({"event": "people_bench", "path": _bench_path}))
 		visible = true
+
+static func _mean(v: Array) -> float:
+	var total := 0.0
+	for x in v:
+		total += x
+	return total / maxf(v.size(), 1.0)
