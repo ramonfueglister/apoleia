@@ -14,9 +14,9 @@ uniform vec4 land_hill_color : source_color = vec4(0.37,0.48,0.15,1.0);
 uniform vec4 land_ochre_color : source_color = vec4(0.74,0.63,0.37,1.0);
 uniform vec4 land_forest_floor_color : source_color = vec4(0.33,0.40,0.18,1.0);
 // Closed forest ground from land cover, all distances (crown colour).
-uniform vec4 land_forest_ground_color : source_color = vec4(0.227,0.302,0.192,1.0);
+uniform vec4 land_forest_ground_color : source_color = vec4(0.208,0.322,0.161,1.0);
 // Shading-only relief exaggeration (geometry stays flat): near, mid, far.
-uniform vec3 land_shade_relief=vec3(2.0,2.5,3.0);
+uniform vec3 land_shade_relief=vec3(2.0,2.5,2.0);
 uniform vec4 land_dry_color : source_color = vec4(0.76,0.66,0.43,1.0);
 uniform vec4 land_sand_color : source_color = vec4(0.77,0.69,0.47,1.0);
 uniform vec4 land_rock_light_color : source_color = vec4(0.80,0.73,0.66,1.0);
@@ -24,7 +24,8 @@ uniform vec4 land_rock_dark_color : source_color = vec4(0.52,0.46,0.42,1.0);
 uniform vec4 land_snow_color : source_color = vec4(0.95,0.94,0.91,1.0);
 // Weit colours (sRGB authored, linearised by source_color).
 uniform vec4 land_far_forest_color : source_color = vec4(0.259,0.361,0.231,1.0);
-uniform vec4 land_far_rock_color : source_color = vec4(0.800,0.760,0.680,1.0);
+uniform vec4 land_alp_color : source_color = vec4(0.541,0.604,0.314,1.0);
+uniform vec4 land_far_rock_color : source_color = vec4(0.824,0.784,0.706,1.0);
 uniform vec4 land_far_peak_color : source_color = vec4(0.933,0.922,0.894,1.0);
 uniform vec4 land_far_rock_shade_color : source_color = vec4(0.478,0.455,0.502,1.0);
 uniform vec4 land_far_dry_color : source_color = vec4(0.553,0.573,0.341,1.0);
@@ -186,7 +187,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Hill country: dark fir-green flanks on the golden ground.
     float hill_country=clamp(smoothstep(0.035,0.16,slope)*0.75+smoothstep(250.0,900.0,h)*0.35+smoothstep(20.0,160.0,crest)*0.2,0.0,1.0);
     // Near hill ground a touch warmer (towards grassland), less cool green.
-    grass=mix(grass,mix(land_hill_color.rgb,land_olive_color.rgb,0.35*(1.0-smoothstep(0.3,0.8,footprint))),hill_country*0.9);
+    // Hill ground close to meadow; the forest look comes from the forest ground.
+    grass=mix(grass,mix(land_hill_color.rgb,land_olive_color.rgb,0.35*(1.0-smoothstep(0.3,0.8,footprint))),hill_country*mix(0.35,0.9,overview));
     // Settleable valley floors: flat ground below its surroundings reads as
     // bright meadow, never as dark forest floor.
     float valley_floor=land_edge((1.0-smoothstep(0.015,0.05,slope))*smoothstep(30.0,140.0,-crest)*smoothstep(150.0,350.0,h),0.5);
@@ -228,7 +230,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // 2000-2500 m; rock only on summits (relief channel well above the ring
     // mean) from ~2500 m, and on very sharp crests from ~1350 m real.
     float alp=smoothstep(1260.0,1302.0,h)*(1.0-smoothstep(1560.0,1640.0,h));
-    ground=mix(ground,mix(land_olive_color.rgb,land_hill_color.rgb,0.3),alp*0.8*(1.0-forest*0.5));
+    ground=mix(ground,land_alp_color.rgb,alp*0.85*(1.0-forest*0.5));
     float above_trees=smoothstep(1260.0,1302.0,h);
     float rock_field=smoothstep(1560.0,1640.0,h)*smoothstep(60.0,140.0,crest);
     rock_field=max(rock_field,smoothstep(200.0,280.0,crest)*smoothstep(1000.0,1060.0,h));
@@ -239,12 +241,19 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 n=smooth_n;
     float fid=0.5;
     if(near && rel>0.001) {
-        float fv=1.0-smoothstep(0.30,0.9,footprint/land_facet_size*2.0);
-        vec3 hill_facet=land_cell_facet(smooth_n,p,land_facet_size,fid);
-        n=normalize(mix(smooth_n,hill_facet,land_facet_strength*mix(0.3,0.95,smoothstep(0.08,0.2,slope))*fv*rel));
-        ground*=1.0+(fid-0.5)*0.32*fv*(1.0-rock);
-        // Hard light/dark per mesh triangle on all slopes.
-        n=normalize(mix(n,facet_normal,0.55*fv*smoothstep(0.03,0.12,slope)*rel));
+        // Facets ~1.25 km near, ~3 km mid; tilt exaggerated like the shading
+        // normal so flat geometry still shows lit/shaded triangles. Only on
+        // slopes (of the exaggerated shading normal); plains stay calm.
+        float fsize=mix(1.25,3.0,smoothstep(0.25,0.6,footprint));
+        float fv=1.0-smoothstep(0.30,0.9,footprint/fsize*2.0);
+        float sslope=smoothstep(0.02,0.10,1.0-smooth_n.y);
+        vec3 hill_facet=land_cell_facet(smooth_n,p,fsize,fid);
+        hill_facet=normalize(vec3(hill_facet.x*shade_k,hill_facet.y,hill_facet.z*shade_k));
+        n=normalize(mix(smooth_n,hill_facet,land_facet_strength*sslope*fv*rel));
+        ground*=1.0+(fid-0.5)*0.32*fv*(1.0-rock)*mix(0.3,1.0,sslope);
+        // Hard light/dark per mesh triangle on slopes, exaggerated like k.
+        vec3 fn=normalize(vec3(facet_normal.x*shade_k,facet_normal.y,facet_normal.z*shade_k));
+        n=normalize(mix(n,fn,0.55*fv*sslope*rel));
     }
     float rfid=0.5;
     vec3 rock_facet=facet_normal;
@@ -312,7 +321,12 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Northern plains (Pannonia, north Balkans) a little greener.
         float north=smoothstep(-300.0,-600.0,p.y);
         ground=mix(ground,ground*vec3(0.92,1.02,0.95),north*overview*(1.0-upland));
+        // Planar far slopes: the hillshade normal is quantised (posterised
+        // gradient), so each flank reads as one flat lit or shaded plane.
         vec3 shade_n=land_display_normal(source_normal,dhs*0.25);
+        vec2 grad=shade_n.xz/max(shade_n.y,0.2);
+        grad=(floor(grad/0.06)+0.5)*0.06;
+        shade_n=normalize(vec3(grad.x,1.0,grad.y));
         vec3 sun=normalize(vec3(-0.676,0.643,-0.360));
         float lit=dot(shade_n,sun);
         float side=clamp(dot(normalize(shade_n.xz+vec2(0.0001)),normalize(sun.xz))*length(shade_n.xz)*8.0,-1.0,1.0);
@@ -334,8 +348,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // compressed), shaded by side; only the highest summits white.
         // Real ranges only: high plateaus (Meseta, Anatolia) stay land.
         // Rock massif from real land cover (bare/snow share) on high ground.
-        float alpine=max(smoothstep(0.08,0.20,soft.g)*smoothstep(800.0,900.0,h),smoothstep(1000.0,1100.0,h)*smoothstep(0.03,0.10,slope));
-        vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1350.0,1450.0,h)*0.8);
+        // Real > ~1900 m (1260 on the reference curve): pale rock belt.
+        float alpine=max(smoothstep(1220.0,1300.0,h),smoothstep(0.08,0.20,soft.g)*smoothstep(1000.0,1100.0,h));
+        vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1720.0,1800.0,h)*max(0.5,smoothstep(0.1,0.3,soft.g)));
         belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*overview*0.92);
     }
