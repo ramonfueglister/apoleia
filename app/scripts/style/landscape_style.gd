@@ -399,7 +399,7 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
-                    if landcover_forest(p)>0.2:support.append(p)
+                    if landcover_forest(p)>0.08:support.append(p)
             if support.is_empty():continue
             # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
             # canopy where forest > 0.5 (hills/slopes), loose groups below,
@@ -420,7 +420,13 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             # fill up and clearings stay empty (same record budget).
             var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
             var gate=smoothstep(0.40,0.55,clump+(share-0.5)*0.6)
-            var density=0.0 if share<0.3 else gate*(1.0 if share>=0.5 else 0.55)
+            var density=gate*(1.0 if share>=0.5 else 0.55)
+            # Open land (fields and pasture, share 0.08-0.3): loose copses of
+            # smaller trees in the same clump noise, so the plains read wooded
+            # up to the beach like the reference near view instead of bare
+            # (near dark share 0.125 against 0.165).
+            var copse=share<0.3
+            if copse:density=smoothstep(0.45,0.60,clump)*0.32*smoothstep(0.06,0.14,share)
             if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
             # Dense forest: the wider grove variant closes the canopy.
@@ -443,7 +449,7 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                         p=proposed
                         observation=sample.call(p)
                         width_scale=1.18 if share>=0.6 else 1.0
-            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)
+            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)*(0.8 if copse else 1.0)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit
             # display omission/transition, not a new vegetation distribution.
