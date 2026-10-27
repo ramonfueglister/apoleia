@@ -83,7 +83,7 @@ void vertex() {
 				// smooth relief already is the surface, so the guess is exact)
 				ivec2 t = dot_tile(p);
 				vec2 uv = fract((p - world_min) / tile_km);
-				vec4 c = tt_corners(t);
+				vec4 c = tt_corners_cached(t);
 				level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
 			}
 			vec4 clip = PROJECTION_MATRIX * (VIEW_MATRIX * vec4(p.x, (level + 0.12) * level_h, p.y, 1.0));
