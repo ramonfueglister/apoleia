@@ -34,7 +34,11 @@ void vertex(){
     // Look layer: screen floor grows towards the close views (thin map line
     // far out, broad diorama river near; same curve as LandscapeLook).
     // Thin in the regional view (2-4 px), medium-broad in the close view.
-    float floor_px=max(minimum_screen_width_px,mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+6.0*smoothstep(450.0,150.0,view_width));
+    // Hierarchy: the floor scales with the unwidened source width (clipmap
+    // strips), so tributaries and delta side arms read thinner than the main
+    // course (reference near view ~12 px main, ~5 px small rivers).
+    float hierarchy=UV.y>0.0 ? clamp(UV.y/0.03,0.45,1.0) : 1.0;
+    float floor_px=max(minimum_screen_width_px,(mix(1.6,4.0,smoothstep(1800.0,400.0,view_width))+6.0*smoothstep(450.0,150.0,view_width))*hierarchy);
     float half_width=max(UV2.y*0.5*0.9,view_width/max(viewport_width,1.0)*floor_px*0.5/side_projection);
     // CPU-supported strips already have their final source-bound X/Z edges.
     // Only the centreline fallback expands here, with the same pixel contract.

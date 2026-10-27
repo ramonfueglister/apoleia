@@ -2562,13 +2562,13 @@ func _setup_rivers() -> void:
 # barrier spit sit at their ends. The main course stays the central arm.
 func _delta_arm_points(a:Vector2,b:Vector2,amplitude:float,rng:RandomNumberGenerator)->Array[Vector2]:
     var direction=(b-a).normalized();var normal=direction.orthogonal()
-    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.0,3.2);var phase2=rng.randf()*TAU
+    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.6,3.8);var phase2=rng.randf()*TAU
     var pts:Array[Vector2]=[a]
     var count=48
     for i in range(1,count+1):
         var t=float(i)/count
         var fade=smoothstep(0.0,0.12,t)*(1.0-0.55*t)
-        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.14*fade
+        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.2*fade
         pts.append(a.lerp(b,t)+normal*wobble)
     return pts
 
@@ -2792,14 +2792,13 @@ func _build_delta_surfaces() -> void:
         var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.UP)
         var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV]=coast;arrays[Mesh.ARRAY_INDEX]=indices
         var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-        var material=ShaderMaterial.new();material.shader=shader
+        # Below the river ribbons, so the arms cut the barrier and islands.
+        var material=ShaderMaterial.new();material.shader=shader;material.render_priority=-1
         for uniform in shader.get_shader_uniform_list():
             var value=marine_material.get_shader_parameter(uniform.name) if marine_material else null
             if value!=null:material.set_shader_parameter(uniform.name,value)
-        var inlets=PackedVector2Array(region.inlets)
         material.set_shader_parameter("delta_center",region.center);material.set_shader_parameter("delta_sea",region.sea)
         material.set_shader_parameter("delta_radii",Vector2(region.ra,region.rb));material.set_shader_parameter("delta_seed",float(region.seed))
-        material.set_shader_parameter("delta_inlet_a",inlets[0]);material.set_shader_parameter("delta_inlet_b",inlets[1])
         var node=MeshInstance3D.new();node.name="Delta_"+str(region.name);node.mesh=mesh;node.material_override=material
         node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         add_child(node);delta_nodes.append(node)
