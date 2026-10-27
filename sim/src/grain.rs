@@ -1,0 +1,2226 @@
+//! Grain economy: farms and fields, harvest and day labour, one market per
+//! region, carriers and traders, hunger, landless people in tents and
+//! footpaths from traffic (decisions S69–S76, plan docs/kit2/GRAIN.md,
+//! numbers docs/kit2/GRAIN-NUMBERS.md, run docs/kit2/run-grain/).
+//!
+//! The module runs beside `People` and reads it; it writes back only what
+//! people.rs asks for through `people::Econ`: how well each household ate
+//! (health, S64/S65), whether a region has free land (marriage, S65) and
+//! how much food a region offers per head (moving, S66).
+//!
+//! What the decisions fix is built as decided. Every number they leave
+//! open is a named constant marked `PLACEHOLDER` with its source or "frei
+//! gewählt". Seed grain, fallow and harvest failures are later systems
+//! (S72, S76) and not built: the yield is net of seed.
+//!
+//! Performance (GRAIN.md): a trip is an event with an arrival day, not a
+//! step per day; harvest and sowing are events per farm; consumption runs
+//! for 1/30 of the households each day; traders decide on 1/7 each day;
+//! paths are walked once a month per market and decay lazily when read;
+//! a market's path field is rebuilt only when a path level in its region
+//! changed. Stores, money and wear are integers. Everything that changes
+//! state runs serially in a fixed order, so the result does not depend on
+//! the thread count.
+
+use crate::inputs::Inputs;
+use crate::life::{self, YEAR};
+use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
+use crate::groups::{BAUERN, HAENDLER, PAECHTER, TAGELOEHNER, UNFREIE};
+
+use bevy_ecs::prelude::Without;
+use rustc_hash::FxHashMap;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
+use xxhash_rust::xxh3::xxh3_64;
+
+// ---------------------------------------------------------------------
+// Numbers. Sources in docs/kit2/GRAIN-NUMBERS.md unless noted.
+
+/// Wheat per adult and year, kg (GRAIN-NUMBERS 1: proposal 200, range
+/// 175–250). Children under 10 eat half (proposal there).
+const KG_PER_ADULT_YEAR: i64 = 200;
+const CHILD_AGE: f64 = 10.0;
+/// Seed per ha, kg (Columella 2.9 via Devereaux 2025).
+const SEED_KG_HA: i64 = 130;
+/// Yield ratio harvest : seed, tenths. PLACEHOLDER: no soil or slope data
+/// on the 25 km grid yet, so 5.5 : 1 on open land (Spurr: flat arable
+/// 5–6 : 1) falling to 3 : 1 (Spurr: hill country 3–4 : 1) with the share
+/// of land above 1500 m.
+const RATIO_PLAIN_X10: i64 = 55;
+const RATIO_HILL_X10: i64 = 30;
+/// Net kg per ha on cleared land (slopes, forest edge, S73): PLACEHOLDER
+/// at 3 : 1 (Spurr: hill country 3–4 : 1).
+const NET_POOR: i64 = (RATIO_HILL_X10 - 10) * SEED_KG_HA / 10;
+/// PLACEHOLDER (S73 open): share of a cell's other usable land (not
+/// HYDE cropland, not bare, snow or above 1500 m) that families can clear,
+/// per cent, and how much an adult clears per year after the start, m².
+pub const CLEAR_PCT: i64 = 100;
+const CLEAR_M2_ADULT_YEAR: i64 = 5_000;
+/// Work per ha and year, days (Spurr, Rosenstein via Devereaux: 60–80);
+/// working days per year (Columella: 290).
+const DAYS_PER_HA: i64 = 70;
+const WORK_DAYS_YEAR: i64 = 290;
+/// PLACEHOLDER (GRAIN-NUMBERS: "Verteilung offen"): shares of the yearly
+/// work that fall into sowing and harvest, and the length of each window.
+/// The rest is spread over the year and done by the family.
+const SOW_SHARE_PCT: i64 = 25;
+const HARVEST_SHARE_PCT: i64 = 30;
+const PEAK_DAYS: i64 = 40;
+const OFF_SHARE_PCT: i64 = 100 - SOW_SHARE_PCT - HARVEST_SHARE_PCT;
+const OFF_DAYS: i64 = YEAR - 2 * PEAK_DAYS;
+/// PLACEHOLDER: who works. Off-peak the field area a family can till
+/// follows the adults 15–60; in the peaks everybody 10–65 works every day.
+const ADULT: (f64, f64) = (15.0, 60.0);
+const PEAK_HANDS: (f64, f64) = (10.0, 65.0);
+/// PLACEHOLDER: share of a week that a farm outside its own peak, or a
+/// person in a tent, can sell as day labour, per cent.
+const SPARE_FARM_PCT: i64 = 30;
+const SPARE_TENT_PCT: i64 = 80;
+/// Day wage in grain, kg. PLACEHOLDER from the price edict (VII.1a: farm
+/// labourer 25 den. a day with keep) at the base price below: about 3 kg.
+const WAGE_KG_DAY: i64 = 3;
+/// Base price, milli-denarii per kg. Price edict: 100 den. per modius
+/// castrensis; at 1.5–2 modii italici (6.55 kg each) about 7.6–10.2 den./kg.
+/// PLACEHOLDER mid value. Money is the edict's denarius throughout.
+const BASE_PRICE: i64 = 8_750;
+/// PLACEHOLDER (S76: the state has unlimited money, money is a later
+/// system): every worker 15–60 who neither farms nor trades (city people,
+/// soldiers, clergy) is paid this much per working day by the state; the
+/// edict's unskilled day wage, 25 den.
+const STATE_WAGE: i64 = 25_000;
+/// PLACEHOLDER: start money of a trader's household (about one cart load
+/// at the base price) and of a senator's or eques' household.
+const TRADER_MONEY: i64 = 5_000_000;
+const ELITE_MONEY: i64 = 1_000_000_000;
+/// Tax on the harvest of family and tenant farms, per cent. PLACEHOLDER
+/// (S70: "Höhe der Steuer offen"); the Sicilian tithe (decuma) was 10 %.
+/// Note for Ramon: Italian land paid no land tax until Diocletian.
+const TAX_PCT: i64 = 10;
+/// PLACEHOLDER (S69: Pacht offen): tenants give this share of the harvest
+/// to the landlord (share-cropping, coloni partiarii).
+const RENT_PCT: i64 = 33;
+/// PLACEHOLDER: a farm keeps food until the next harvest plus this many
+/// days and sells the rest; others buy when their store falls below
+/// BUY_BELOW days and buy up to BUY_UP_TO days.
+const RESERVE_DAYS: i64 = 60;
+const BUY_BELOW: i64 = 30;
+const BUY_UP_TO: i64 = 60;
+/// Loads and speeds (GRAIN-NUMBERS 3, ORBIS, edict XVII). Family and
+/// tenant farms carry with a donkey (PLACEHOLDER: every farm has one),
+/// estates with an ox cart, buyers without a farm on foot, traders with a
+/// mule wagon over land and by ship over sea.
+const DONKEY: (i64, i64) = (97, 30);
+const OX_CART: (i64, i64) = (388, 12);
+const ON_FOOT: (i64, i64) = (30, 20);
+const WAGON: (i64, i64) = (388, 30);
+const SEA_KM_DAY: i64 = 100;
+/// Freight, milli-denarii per kg and km: wagon 0.035 (edict XVII.3), sea
+/// about 0.001 (ORBIS: about 0.1 den. per kg and day at about 100 km).
+const WAGON_COST: i64 = 35;
+const SEA_COST: i64 = 1;
+/// Market (EU5-like, GRAIN.md): the price moves 1/PRICE_STEP of the way
+/// to a target each day; the target is the base price × (TARGET_DAYS /
+/// days of supply), clamped. Buy and sell price are the price ∓ SPREAD.
+/// PLACEHOLDER all.
+const PRICE_STEP: i64 = 30;
+const TARGET_DAYS: i64 = 90;
+const PRICE_MIN_PCT: i64 = 25;
+const PRICE_MAX_PCT: i64 = 800;
+const SPREAD_PCT: i64 = 10;
+/// Traders: at most 32 markets known (GRAIN.md), go when the margin per
+/// kg after freight is above this share of the price. PLACEHOLDER.
+const KNOWN: usize = 32;
+const TRADE_MARGIN_PCT: i64 = 10;
+/// Landless (S69): PLACEHOLDER alms at the market, as a share of the
+/// household's monthly need, and chance per month to steal from a farm
+/// store in the region (and how much).
+const ALMS_PCT: i64 = 30;
+const STEAL_PER_16: u64 = 5;
+const STEAL_KG: i64 = 40;
+/// Hunger signal for moving (S66), permille eaten of need. PLACEHOLDER.
+const NEED_FED: u16 = 800;
+
+// Footpaths (Helbing et al. 1997 as in GRAIN.md). Fine raster: tile level
+// 7, 16 × 16 per 25 km cell (≈ 1.56 km real). PLACEHOLDER all: wear
+// halves in PATH_HALF days; levels with hysteresis; cost factor per level.
+const FINE: i32 = 16;
+const FINE_STEP: i64 = 100;
+const PATH_HALF: i64 = 360;
+const WEAR_UNIT: i64 = 1000;
+const LEVELS: [(i64, i64); 2] = [(200 * WEAR_UNIT, 100 * WEAR_UNIT), (1000 * WEAR_UNIT, 500 * WEAR_UNIT)];
+const LEVEL_COST_PCT: [i64; 3] = [100, 80, 65];
+/// Each market's trips are walked (and its field rebuilt if a level
+/// changed) once in this many days, 1/WALK_DAYS of the markets a day.
+/// PLACEHOLDER for performance; GRAIN.md planned monthly.
+const WALK_DAYS: i64 = 90;
+
+const MONTH: i64 = 30;
+
+// Household kinds.
+const FARM: u8 = 0;
+const TENT: u8 = 1;
+const WAGE: u8 = 2;
+const TRADER: u8 = 3;
+const ELITE: u8 = 4;
+
+// Farm kinds (S69: both).
+const FAMILY: u8 = 0;
+const TENANT: u8 = 1;
+const ESTATE: u8 = 2;
+
+// Trip kinds and event kinds.
+const SELL: u8 = 0;
+const BUY: u8 = 1;
+const EXPORT: u8 = 2;
+const IMPORT: u8 = 3;
+const EV_ARRIVE: u8 = 0;
+const EV_HOME: u8 = 1;
+const EV_PEAK_END: u8 = 2;
+
+fn rnd(seed: u64, a: u32, salt: u32, t: i64) -> u64 {
+    let mut b = [0u8; 24];
+    b[..8].copy_from_slice(&seed.to_le_bytes());
+    b[8..12].copy_from_slice(&a.to_le_bytes());
+    b[12..16].copy_from_slice(&salt.to_le_bytes());
+    b[16..24].copy_from_slice(&t.to_le_bytes());
+    xxh3_64(&b)
+}
+
+/// One household from the monthly count of the people.
+#[derive(Clone, Copy, Default)]
+struct HhInfo {
+    home: u32,
+    stand: u8,
+    job: u8,
+    size: u16,
+    /// Need in tenths of an adult.
+    need_w: u32,
+    adults: u16,
+    hands: u16,
+    /// An adult who walks to the market (a man 15–60 first), NONE if none.
+    carrier: u32,
+    /// An adult trader of the household, NONE if none.
+    trader: u32,
+}
+
+/// What a household owns, kept between counts.
+#[derive(Clone, Copy)]
+struct HhState {
+    kind: u8,
+    pantry: i64,
+    money: i64,
+    farm: u32,
+    /// Fine cell of the house (the farm's for farmers).
+    fine: u32,
+    fed: u16,
+    /// The carrier is on the way; the trader is on the way.
+    busy: bool,
+    trading: bool,
+}
+
+#[derive(Clone, Copy)]
+struct Peak {
+    harvest: bool,
+    demand: i64,
+    done: i64,
+}
+
+struct Farm {
+    hh: u32,
+    kind: u8,
+    landlord: u32,
+    cell: u32,
+    fine: u32,
+    market: u32,
+    /// Field area in m² (real size, S51); `poor` of it is cleared land.
+    area: i64,
+    poor: i64,
+    sown: i64,
+    /// Net kg per ha.
+    net_kg_ha: i64,
+    store: i64,
+    money: i64,
+    harvest_doy: i64,
+    peak: Option<Peak>,
+    to_sell: i64,
+    /// Grain sold for the landlord before the farm's own.
+    rent_due: i64,
+    /// A load came back unsold: try again at the next meal count.
+    retry: bool,
+    /// Work outside the peaks since the last harvest: needed and done, days.
+    off_need: i64,
+    off_done: i64,
+}
+
+struct Neigh {
+    m: u32,
+    /// Freight per kg, milli-denarii.
+    cost: i64,
+    days: i64,
+    route: Vec<u32>,
+}
+
+/// Path field of a market over its region: distance (fine steps × 100,
+/// weighted by path level) and the direction of the next step.
+struct Field {
+    r0: i32,
+    c0: i32,
+    n: i32,
+    dist: Vec<u32>,
+    dir: Vec<u8>,
+    /// Path level and wear per cell, the cells with wear, the day the
+    /// wear was last brought up to date and the day the field was built.
+    level: Vec<u8>,
+    wear: Vec<u32>,
+    worn: Vec<u16>,
+    walked: i64,
+    built: i64,
+}
+
+pub struct Market {
+    pub region: u32,
+    pub cell: u32,
+    pub fine: u32,
+    pub store: i64,
+    pub money: i64,
+    pub price: i64,
+    last_week: i64,
+    /// Smoothed sales per day, kg × 1000.
+    demand: i64,
+    sold_today: i64,
+    /// Known prices: (market, price, day seen).
+    board: Vec<(u32, i64, i64)>,
+    neigh: Vec<Neigh>,
+    field: Option<Field>,
+    dirty: bool,
+    /// Trips per origin fine cell since the last walk.
+    walked: FxHashMap<u32, i64>,
+    /// Farms in a peak that still need hands, and farms with more fields
+    /// than their family can work over the year.
+    open: Vec<u32>,
+    hirers: Vec<u32>,
+    pub people: u32,
+    pub tents: u32,
+    /// Grain in the region (farm stores, market, pantries), kg.
+    pub grain: i64,
+    pub free_area: i64,
+}
+
+#[derive(Clone, Copy)]
+struct Trip {
+    kind: u8,
+    pid: u32,
+    hh: u32,
+    farm: u32,
+    market: u32,
+    dest: u32,
+    kg: i64,
+    back_days: i64,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct GEv {
+    kind: u8,
+    id: u32,
+}
+
+
+/// Counters, reset by the caller for yearly figures.
+#[derive(Default, Clone, Copy, Debug)]
+pub struct GrainStats {
+    pub harvest_kg: i64,
+    pub harvest_lost_kg: i64,
+    pub sow_short_m2: i64,
+    pub tax_kg: i64,
+    pub rent_kg: i64,
+    pub hired_days: i64,
+    pub wage_kg: i64,
+    pub eaten_kg: i64,
+    pub need_kg: i64,
+    /// Eaten and needed by household kind (farm, tent, wage, trader, elite).
+    pub eaten_by: [i64; 5],
+    pub need_by: [i64; 5],
+    pub sold_kg: i64,
+    pub bought_kg: i64,
+    pub sell_trips: u64,
+    pub buy_trips: u64,
+    pub trade_trips: u64,
+    pub traded_kg: i64,
+    pub trade_profit: i64,
+    pub alms_kg: i64,
+    pub stolen_kg: i64,
+    pub thefts: u64,
+    pub farms_taken: u64,
+    pub farms_abandoned: u64,
+    pub field_rebuilds: u64,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct GrainTiming {
+    pub events: f64,
+    pub peaks: f64,
+    pub labour: f64,
+    pub markets: f64,
+    pub eat: f64,
+    pub traders: f64,
+    pub paths: f64,
+    pub rebuild: f64,
+    pub first_build: f64,
+    pub census: f64,
+}
+
+pub struct Grain {
+    seed: u64,
+    farms: Vec<Farm>,
+    pub markets: Vec<Market>,
+    /// Market of a region key.
+    market_of: FxHashMap<u32, u32>,
+    /// Market of each 25 km cell (NONE at sea).
+    cell_market: Vec<u32>,
+    hh: IdMap<HhState>,
+    info: IdMap<HhInfo>,
+    /// Household ids by day slice (id mod 30), from the last count.
+    hh_slices: Vec<Vec<u32>>,
+    /// Household ids by market (region), from the last count.
+    market_hh: Vec<Vec<u32>>,
+    trader_slices: Vec<Vec<u32>>,
+    /// Field area in m² that can still be taken per 25 km cell, and the net
+    /// yield there.
+    free_m2: Vec<i64>,
+    free_poor: Vec<i64>,
+    net_kg_ha: Vec<i64>,
+    /// Farms by day of year of their sowing and harvest start.
+    by_doy: Vec<Vec<u32>>,
+    trips: Vec<Trip>,
+    free_trips: Vec<u32>,
+    wheel: Vec<Vec<GEv>>,
+    decay: Vec<i64>,
+    /// Reused buffer for the monthly count.
+    scratch: Vec<(u32, u32, u32, u8, u8, u8, i32)>,
+    /// Trader traffic per 25 km cell (roads and sea lanes, S71), counted.
+    pub lanes: FxHashMap<u32, i64>,
+    cols_f: i32,
+    pub stats: GrainStats,
+    pub timing: GrainTiming,
+}
+
+fn doy(day: i64) -> i64 {
+    day.rem_euclid(YEAR)
+}
+
+/// Days from `day` to the next day of year `target`.
+fn doy_until(day: i64, target: i64) -> i64 {
+    (target - doy(day)).rem_euclid(YEAR)
+}
+
+impl Grain {
+    pub fn new(inp: &Inputs, p: &mut People) -> Grain {
+        Self::with_clearing(inp, p, CLEAR_PCT)
+    }
+
+    /// As `new`, with the share of clearable land in per cent.
+    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64) -> Grain {
+        let seed = p.world.resource::<Clock>().seed;
+        let g = &p.grid;
+        let n = g.kind.len();
+        let (rows_f, cols_f) = (g.rows * FINE, g.cols * FINE);
+        // Field land per cell: the HYDE 3.3 cropland of 200 (real km²),
+        // scaled by area 1 : 566.5 (S50) into real-size m² (S51).
+        // PLACEHOLDER: S73 lets families clear slopes and forest edges
+        // too; how much land that adds needs land cover data and is open.
+        let mut free_m2 = vec![0i64; n];
+        let mut free_poor = vec![0i64; n];
+        let mut net = vec![0i64; n];
+        for (&(r, c), cell) in &inp.cells {
+            let Some(i) = g.index(r, c) else { continue };
+            let crop = cell.hyde.as_ref().map_or(0.0, |h| h.crop_km2);
+            free_m2[i as usize] = (crop * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
+            let usable = cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0);
+            free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
+            let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
+            let ratio = RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64;
+            net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
+        }
+        // Markets: one per 100 km region with land (S70), at the largest
+        // listed place (Hanson 117), else at the cell with most people.
+        let mut place_pop: FxHashMap<u32, f64> = FxHashMap::default();
+        let mut place_xz: FxHashMap<u32, (f64, f64)> = FxHashMap::default();
+        for c in &inp.cities {
+            let (r, col) = ((c.z_m / 25_000.0).floor() as i32, (c.x_m / 25_000.0).floor() as i32);
+            if let Some(i) = g.index(r, col) {
+                let e = place_pop.entry(i).or_default();
+                if c.pop > *e {
+                    place_xz.insert(i, (c.x_m, c.z_m));
+                }
+                *e += c.pop;
+            }
+        }
+        let mut best: FxHashMap<u32, (i64, u32)> = FxHashMap::default();
+        for i in 0..n as u32 {
+            if g.kind[i as usize] == 0 {
+                continue;
+            }
+            let score = place_pop.get(&i).map_or(0, |&v| 1_000_000_000 + v as i64) + p.pop[i as usize] as i64;
+            let e = best.entry(g.region(i)).or_insert((-1, i));
+            if score > e.0 || (score == e.0 && i < e.1) {
+                *e = (score, i);
+            }
+        }
+        let mut regions: Vec<(u32, u32)> = best.into_iter().map(|(k, (_, i))| (k, i)).collect();
+        regions.sort_unstable();
+        let fine_of = |i: u32, sub: u64| -> u32 {
+            let (r, c) = (i as i32 / g.cols, i as i32 % g.cols);
+            let (fr, fc) = (r * FINE + (sub % FINE as u64) as i32, c * FINE + ((sub >> 8) % FINE as u64) as i32);
+            (fr * cols_f + fc) as u32
+        };
+        let mut markets = Vec::new();
+        let mut market_of = FxHashMap::default();
+        for &(k, i) in &regions {
+            let fine = match place_xz.get(&i) {
+                Some(&(x, z)) => {
+                    let fr = (z / 1562.5).floor() as i32 - g.row0 * FINE;
+                    let fc = (x / 1562.5).floor() as i32 - g.col0 * FINE;
+                    (fr.clamp(0, rows_f - 1) * cols_f + fc.clamp(0, cols_f - 1)) as u32
+                }
+                None => fine_of(i, 8 | 8 << 8),
+            };
+            market_of.insert(k, markets.len() as u32);
+            markets.push(Market {
+                region: k,
+                cell: i,
+                fine,
+                store: 0,
+                money: 0,
+                price: BASE_PRICE,
+                last_week: BASE_PRICE,
+                demand: 0,
+                sold_today: 0,
+                board: Vec::new(),
+                neigh: Vec::new(),
+                field: None,
+                dirty: true,
+                walked: FxHashMap::default(),
+                open: Vec::new(),
+                hirers: Vec::new(),
+                people: 0,
+                tents: 0,
+                grain: 0,
+                free_area: 0,
+            });
+        }
+        let cell_market: Vec<u32> = (0..n as u32).map(|i| if g.kind[i as usize] == 0 { NONE } else { market_of[&g.region(i)] }).collect();
+        let mut gr = Grain {
+            cell_market,
+            seed,
+            farms: Vec::new(),
+            markets,
+            market_of,
+            hh: IdMap::default(),
+            info: IdMap::default(),
+            hh_slices: vec![Vec::new(); MONTH as usize],
+            market_hh: Vec::new(),
+            trader_slices: vec![Vec::new(); 7],
+            free_m2,
+            free_poor,
+            net_kg_ha: net,
+            by_doy: vec![Vec::new(); YEAR as usize],
+            trips: Vec::new(),
+            free_trips: Vec::new(),
+            wheel: vec![Vec::new(); 1024],
+            decay: decay_table(),
+            scratch: Vec::new(),
+            lanes: FxHashMap::default(),
+            cols_f,
+            stats: GrainStats::default(),
+            timing: GrainTiming::default(),
+        };
+        gr.build_graph(p);
+        gr.census(p, 0, true);
+        // Start stocks (PLACEHOLDER, so the first half year is not an
+        // artefact of starting in January): farms hold food until their
+        // harvest plus the reserve, markets the region's buyers' need until
+        // midsummer plus the reserve, households without a farm a month,
+        // the landless three.
+        let mut demand = vec![0i64; gr.markets.len()];
+        let ids: Vec<u32> = sorted_keys(&gr.hh);
+        for id in ids {
+            let info = gr.info[&id];
+            let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
+            let s = gr.hh.get_mut(&id).unwrap();
+            if s.kind == FARM {
+                let f = &mut gr.farms[s.farm as usize];
+                f.store += need_day * (f.harvest_doy + RESERVE_DAYS);
+            } else {
+                s.pantry = need_day * if s.kind == TENT { 3 * MONTH } else { MONTH };
+                let m = gr.cell_market[info.home as usize];
+                demand[m as usize] += need_day;
+            }
+        }
+        // Dealers start with the cash for 60 days of their buyers' demand
+        // at the base price, at least one donkey load (PLACEHOLDER).
+        for (m, d) in gr.markets.iter_mut().zip(demand) {
+            m.store = d * (180 + RESERVE_DAYS);
+            m.demand = d * 1000;
+            m.money = (d * 60).max(DONKEY.0) * BASE_PRICE;
+        }
+        gr.export(p);
+        gr
+    }
+
+    /// Market graph over the 25 km grid by freight cost (wagon over land,
+    /// ship over sea, ports at coast cells): each market's 32 cheapest
+    /// markets with cost, days and route. Built once at the start.
+    fn build_graph(&mut self, p: &People) {
+        let g = &p.grid;
+        let n = g.kind.len();
+        let mut at = vec![NONE; n];
+        for (k, m) in self.markets.iter().enumerate() {
+            at[m.cell as usize] = k as u32;
+        }
+        let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
+        let (rows, cols) = (g.rows, g.cols);
+        let kind = &g.kind;
+        let at = &at;
+        let one = |src: u32| -> Vec<Neigh> {
+            let mut best = vec![i64::MAX; n];
+            let mut days = vec![0i64; n];
+            let mut par = vec![NONE; n];
+            let mut open = BinaryHeap::new();
+            best[src as usize] = 0;
+            open.push(Reverse((0i64, src)));
+            let mut out = Vec::new();
+            while let Some(Reverse((c, i))) = open.pop() {
+                if c > best[i as usize] {
+                    continue;
+                }
+                if i != src && at[i as usize] != NONE {
+                    let mut route = Vec::new();
+                    let mut j = i;
+                    while j != src {
+                        route.push(j);
+                        j = par[j as usize];
+                    }
+                    route.reverse();
+                    out.push(Neigh { m: at[i as usize], cost: c, days: ((days[i as usize] + 999) / 1000).max(1), route });
+                    if out.len() >= KNOWN {
+                        break;
+                    }
+                }
+                let (r, col) = (i as i32 / cols, i as i32 % cols);
+                for dr in -1..=1 {
+                    for dc in -1..=1 {
+                        if dr == 0 && dc == 0 {
+                            continue;
+                        }
+                        let (nr, nc) = (r + dr, col + dc);
+                        if nr < 0 || nc < 0 || nr >= rows || nc >= cols {
+                            continue;
+                        }
+                        let j = (nr * cols + nc) as u32;
+                        let (ka, kb) = (kind[i as usize], kind[j as usize]);
+                        let km = if dr != 0 && dc != 0 { 35 } else { 25 };
+                        let (cost, d) = match (ka, kb) {
+                            (0, 2) | (2, 0) => continue,
+                            (0, _) | (_, 0) => (km * SEA_COST * 1, km * 1000 / SEA_KM_DAY),
+                            _ => (km * WAGON_COST, km * 1000 / WAGON.1),
+                        };
+                        let nc_ = c + cost;
+                        if nc_ < best[j as usize] {
+                            best[j as usize] = nc_;
+                            days[j as usize] = days[i as usize] + d;
+                            par[j as usize] = i;
+                            open.push(Reverse((nc_, j)));
+                        }
+                    }
+                }
+            }
+            out
+        };
+        let one = &one;
+        let built: Vec<Vec<Neigh>> = bevy_tasks::ComputeTaskPool::get()
+            .scope(|s| {
+                for chunk in cells.chunks(cells.len().div_ceil(16).max(1)) {
+                    s.spawn(async move { chunk.iter().map(|&c| one(c)).collect::<Vec<_>>() });
+                }
+            })
+            .into_iter()
+            .flatten()
+            .collect();
+        for (m, nb) in self.markets.iter_mut().zip(built) {
+            m.board = nb.iter().map(|x| (x.m, BASE_PRICE, 0)).collect();
+            m.neigh = nb;
+        }
+    }
+
+    fn need_day(&self, id: u32) -> i64 {
+        self.info.get(&id).map_or(0, |i| i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR)
+    }
+
+    /// Monthly count of the households from the people (parallel read,
+    /// then serial in household order): who lives where, needs how much,
+    /// can work and carry. New households get a kind; farms of households
+    /// that moved away or died out are given to landless households of the
+    /// same region (S69: a free farm is taken automatically).
+    fn census(&mut self, p: &mut People, day: i64, start: bool) {
+        // People by id (one pass over the tables), then grouped by
+        // household with a counting sort, so no comparison sort.
+        let n = p.next_pid() as usize;
+        let mut by_pid = std::mem::take(&mut self.scratch);
+        by_pid.clear();
+        by_pid.resize(n, (NONE, 0, 0, 0, 0, 0, 0));
+        let mut q = p.world.query_filtered::<(&Pid, &Household, &Home, &Born, &Sex, &Job, &Stand), Without<Travel>>();
+        for (pid, hh, home, born, sex, job, stand) in q.iter(&p.world) {
+            by_pid[pid.0 as usize] = (hh.0, pid.0, home.0, sex.0, job.0, stand.0, born.0);
+        }
+        let mut at = vec![0u32; n + 1];
+        for r in &by_pid {
+            if r.0 != NONE {
+                at[r.0 as usize + 1] += 1;
+            }
+        }
+        for k in 0..n {
+            at[k + 1] += at[k];
+        }
+        let mut rows = vec![(0, 0, 0, 0, 0, 0, 0); at[n] as usize];
+        for r in &by_pid {
+            if r.0 != NONE {
+                rows[at[r.0 as usize] as usize] = *r;
+                at[r.0 as usize] += 1;
+            }
+        }
+        self.scratch = by_pid;
+        self.info.clear();
+        let age = |b: i32| (day - b as i64) as f64 / YEAR as f64;
+        let mut k = 0;
+        while k < rows.len() {
+            let id = rows[k].0;
+            let mut e = k;
+            while e < rows.len() && rows[e].0 == id {
+                e += 1;
+            }
+            let m = &rows[k..e];
+            // Head: the lowest person id among the adults, else the lowest.
+            let head = m.iter().find(|r| age(r.6) >= ADULT.0).unwrap_or(&m[0]);
+            let mut man = false;
+            let mut spare = NONE;
+            let mut inf = HhInfo { home: head.2, stand: head.5, job: head.4, carrier: NONE, trader: NONE, ..Default::default() };
+            for r in m {
+                let a = age(r.6);
+                inf.size += 1;
+                inf.need_w += if a < CHILD_AGE { 5 } else { 10 };
+                if (ADULT.0..ADULT.1).contains(&a) {
+                    inf.adults += 1;
+                    // The first man, else the first woman.
+                    if inf.carrier == NONE || (r.3 == 1 && !man) {
+                        man = r.3 == 1;
+                        inf.carrier = r.1;
+                    }
+                    if r.4 == HAENDLER && inf.trader == NONE {
+                        inf.trader = r.1;
+                    }
+                }
+                if (PEAK_HANDS.0..PEAK_HANDS.1).contains(&a) {
+                    inf.hands += 1;
+                    // Without an adult, an older child or old person goes.
+                    if inf.carrier == NONE {
+                        spare = r.1;
+                    }
+                }
+            }
+            if inf.carrier == NONE {
+                inf.carrier = spare;
+            }
+            self.info.insert(id, inf);
+            k = e;
+        }
+        // Households gone or moved: free their farm.
+        let ids = sorted_keys(&self.hh);
+        for id in ids {
+            let s = self.hh[&id];
+            let gone = match self.info.get(&id) {
+                None => true,
+                Some(i) => s.farm != NONE && self.farms[s.farm as usize].cell != i.home,
+            };
+            if gone {
+                if s.farm != NONE {
+                    let f = &mut self.farms[s.farm as usize];
+                    f.hh = NONE;
+                    self.stats.farms_abandoned += 1;
+                }
+                if self.info.contains_key(&id) {
+                    // Moved: landless in the new place.
+                    let h = self.hh.get_mut(&id).unwrap();
+                    h.farm = NONE;
+                    h.kind = TENT;
+                } else {
+                    self.hh.remove(&id);
+                }
+            }
+        }
+        // New households.
+        let ids = sorted_keys(&self.info);
+        for &id in &ids {
+            if self.hh.contains_key(&id) {
+                continue;
+            }
+            let i = self.info[&id];
+            let kind = match (i.stand, i.job) {
+                (s, _) if s > CITY => ELITE,
+                (_, BAUERN) | (RURAL, PAECHTER) | (RURAL, UNFREIE) => FARM,
+                (RURAL, TAGELOEHNER) => TENT,
+                _ if i.trader != NONE => TRADER,
+                _ => WAGE,
+            };
+            let fine = self.fine_in(p, i.home, id as u64);
+            let money = match kind {
+                ELITE => ELITE_MONEY,
+                TRADER => TRADER_MONEY,
+                _ => 0,
+            };
+            // Start of the run: new farms. Later, households only arise by
+            // the count after a birth into a new id, which does not happen
+            // (children stay in the household); moved households are tents.
+            let kind = if kind == FARM && !start { TENT } else { kind };
+            let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
+            self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false });
+        }
+        if start {
+            self.share_land(p);
+        }
+        // Free farms go to landless households of the same cell first, then
+        // of the region (lowest household id first). PLACEHOLDER order.
+        let mut free: Vec<u32> = (0..self.farms.len() as u32).filter(|&f| self.farms[f as usize].hh == NONE).collect();
+        if !free.is_empty() {
+            let mut tents: FxHashMap<u32, Vec<(u32, u32)>> = FxHashMap::default();
+            for &id in &ids {
+                if self.hh[&id].kind == TENT {
+                    let home = self.info[&id].home;
+                    tents.entry(self.cell_market[home as usize]).or_default().push((home, id));
+                }
+            }
+            for f in free.drain(..) {
+                let (cell, mk) = (self.farms[f as usize].cell, self.farms[f as usize].market);
+                let Some(list) = tents.get_mut(&mk) else { continue };
+                let pick = list.iter().position(|t| t.0 == cell).or(if list.is_empty() { None } else { Some(0) });
+                if let Some(k) = pick {
+                    let (_, id) = list.remove(k);
+                    let home = self.info[&id].home;
+                    if home != cell {
+                        p.relocate_household(id, cell);
+                        self.info.get_mut(&id).unwrap().home = cell;
+                    }
+                    let fine = self.farms[f as usize].fine;
+                    let h = self.hh.get_mut(&id).unwrap();
+                    h.kind = FARM;
+                    h.farm = f;
+                    h.fine = fine;
+                    let fm = &mut self.farms[f as usize];
+                    fm.hh = id;
+                    fm.store += h.pantry;
+                    h.pantry = 0;
+                    self.stats.farms_taken += 1;
+                }
+            }
+        }
+        // Slices for the staggered work.
+        for v in self.hh_slices.iter_mut() {
+            v.clear();
+        }
+        for v in self.trader_slices.iter_mut() {
+            v.clear();
+        }
+        for &id in &ids {
+            self.hh_slices[(id % MONTH as u32) as usize].push(id);
+            if self.hh[&id].kind == TRADER {
+                self.trader_slices[(id % 7) as usize].push(id);
+            }
+        }
+        // Yearly field growth (S73) is done at sowing; here the region sums.
+        self.market_hh = vec![Vec::new(); self.markets.len()];
+        for m in self.markets.iter_mut() {
+            m.hirers.clear();
+        }
+        for (k, f) in self.farms.iter().enumerate() {
+            if f.hh != NONE && f.area > self.year_m2(f.hh) {
+                self.markets[f.market as usize].hirers.push(k as u32);
+            }
+        }
+        for m in self.markets.iter_mut() {
+            m.people = 0;
+            m.tents = 0;
+            m.grain = m.store;
+            m.free_area = 0;
+        }
+        for &id in &ids {
+            let i = self.info[&id];
+            let mk = self.cell_market[i.home as usize] as usize;
+            let s = self.hh[&id];
+            self.market_hh[mk].push(id);
+            let m = &mut self.markets[mk];
+            m.people += i.size as u32;
+            m.tents += u32::from(s.kind == TENT);
+            m.grain += s.pantry;
+            if s.farm != NONE {
+                m.grain += self.farms[s.farm as usize].store;
+            }
+        }
+        for (c, &a) in self.free_m2.iter().enumerate() {
+            let a = a + self.free_poor[c];
+            if a > 0 {
+                if let Some(&mk) = self.market_of.get(&p.grid.region(c as u32)) {
+                    self.markets[mk as usize].free_area += a;
+                }
+            }
+        }
+    }
+
+    /// A fine cell inside the 25 km cell `cell`, by hash.
+    fn fine_in(&self, p: &People, cell: u32, salt: u64) -> u32 {
+        let (r, c) = (cell as i32 / p.grid.cols, cell as i32 % p.grid.cols);
+        let h = xxh3_64(&(salt ^ self.seed.rotate_left(17)).to_le_bytes());
+        let (fr, fc) = (r * FINE + (h % FINE as u64) as i32, c * FINE + ((h >> 8) % FINE as u64) as i32);
+        (fr * self.cols_f + fc) as u32
+    }
+
+    fn new_farm(&mut self, p: &People, id: u32, i: &HhInfo, fine: u32) -> u32 {
+        let kind = match i.job {
+            PAECHTER => TENANT,
+            UNFREIE => ESTATE,
+            _ => FAMILY,
+        };
+        let cell = i.home;
+        let (_, z) = self.xz(p, cell);
+        // Harvest from mid June at Rome's latitude, 2 days later per 100 km
+        // north, plus up to a week by farm; sowing from late October.
+        // PLACEHOLDER (Columella's calendar is not encoded yet).
+        let jit = (rnd(self.seed, id, 0x4a77, 0) % 15) as i64 - 7;
+        let harvest_doy = (165 + ((-99_842.0 - z) / 100_000.0 * 2.0) as i64 + jit).clamp(100, 230);
+        let sow_doy = (295 - jit).clamp(260, 330);
+        let f = Farm {
+            hh: id,
+            kind,
+            landlord: NONE,
+            cell,
+            fine,
+            market: self.cell_market[cell as usize],
+            area: 0,
+            poor: 0,
+            sown: 0,
+            net_kg_ha: self.net_kg_ha[cell as usize],
+            store: 0,
+            money: 0,
+            harvest_doy,
+            peak: None,
+            to_sell: 0,
+            rent_due: 0,
+            retry: false,
+            off_need: 0,
+            off_done: 0,
+        };
+        let k = self.farms.len() as u32;
+        self.by_doy[harvest_doy as usize].push(k);
+        self.by_doy[sow_doy as usize].push(k);
+        self.farms.push(f);
+        k
+    }
+
+    fn xz(&self, p: &People, cell: u32) -> (f64, f64) {
+        let (r, c) = (cell as i32 / p.grid.cols + p.grid.row0, cell as i32 % p.grid.cols + p.grid.col0);
+        (c as f64 * 25_000.0 + 12_500.0, r as f64 * 25_000.0 + 12_500.0)
+    }
+
+    /// Start: the cropland of each cell is shared among its farms by what
+    /// their families can till (S73), all sown. Estates get a landlord: a
+    /// senator or eques by hash (PLACEHOLDER).
+    fn share_land(&mut self, p: &People) {
+        let elites: Vec<u32> = sorted_keys(&self.hh).into_iter().filter(|id| self.hh[id].kind == ELITE).collect();
+        let mut by_cell: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
+        for (k, f) in self.farms.iter().enumerate() {
+            by_cell.entry(f.cell).or_default().push(k as u32);
+        }
+        let mut cells: Vec<u32> = by_cell.keys().copied().collect();
+        cells.sort_unstable();
+        for c in cells {
+            let fs = &by_cell[&c];
+            let want: Vec<i64> = fs.iter().map(|&f| self.want_m2(self.farms[f as usize].hh)).collect();
+            let total: i64 = want.iter().sum();
+            // Good land first, then land cleared before the start.
+            let (good, poor) = (self.free_m2[c as usize], self.free_poor[c as usize]);
+            let part = |land: i64, w: i64, total: i64| if total <= land { w } else { (w as i128 * land as i128 / total.max(1) as i128) as i64 };
+            let rest_total = (total - good).max(0);
+            for (&f, &w) in fs.iter().zip(&want) {
+                let g = part(good, w, total);
+                let pr = part(poor, w - g, rest_total).min(w - g);
+                let fm = &mut self.farms[f as usize];
+                fm.area = g + pr;
+                fm.poor = pr;
+                fm.sown = g + pr;
+                self.free_m2[c as usize] -= g;
+                self.free_poor[c as usize] -= pr;
+                if fm.kind != FAMILY && !elites.is_empty() {
+                    fm.landlord = elites[(rnd(self.seed, fm.hh, 0x1a4d, 0) % elites.len() as u64) as usize];
+                }
+            }
+        }
+        let _ = p;
+    }
+
+    /// Field area a household's adults can work over the year (290
+    /// working days / 70 days per ha).
+    fn year_m2(&self, id: u32) -> i64 {
+        self.info.get(&id).map_or(0, |i| i.adults as i64) * WORK_DAYS_YEAR * 10_000 / DAYS_PER_HA
+    }
+
+    /// Field area a farm wants (S73). A family farm: what its adults
+    /// manage over the year and its hands bring in during the harvest
+    /// window, whichever is less; an estate: what its adults manage over
+    /// the year, the peaks done by day labourers. Either way at least the
+    /// fields that feed the household (PLACEHOLDER: need + 25 % for tax and
+    /// reserve, at the cell's yield); work the family cannot do is hired
+    /// (S72).
+    fn want_m2(&self, id: u32) -> i64 {
+        let Some(i) = self.info.get(&id) else { return 0 };
+        let year = self.year_m2(id);
+        let peak = i.hands as i64 * PEAK_DAYS * 100 * 10_000 / (DAYS_PER_HA * HARVEST_SHARE_PCT);
+        let s = &self.hh[&id];
+        let (kind, net) = if s.farm != NONE {
+            let f = &self.farms[s.farm as usize];
+            (f.kind, f.net_kg_ha.max(1))
+        } else {
+            (FAMILY, NET_POOR)
+        };
+        let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 * 10_000 / net;
+        let own = if kind == ESTATE { year } else { year.min(peak) };
+        own.max(feed)
+    }
+
+    /// One day, after `People::day`.
+    pub fn day(&mut self, p: &mut People) {
+        let day = p.world.resource::<Clock>().day;
+        let slice = day.rem_euclid(MONTH);
+        let t = std::time::Instant::now;
+        let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
+        let t0 = t();
+        self.events(p, day);
+        self.timing.events += us(t0);
+        let t0 = t();
+        self.peaks(day);
+        self.timing.peaks += us(t0);
+        let t0 = t();
+        self.labour(day);
+        self.timing.labour += us(t0);
+        let t0 = t();
+        self.news(day);
+        self.prices();
+        self.timing.markets += us(t0);
+        let t0 = t();
+        self.eat(p, day, slice as usize);
+        self.timing.eat += us(t0);
+        let t0 = t();
+        self.traders(day);
+        self.timing.traders += us(t0);
+        let t0 = t();
+        self.paths(p, day, slice as usize);
+        self.timing.paths += us(t0);
+        if slice == 20 {
+            let t0 = t();
+            self.census(p, day, false);
+            self.export(p);
+            self.timing.census += us(t0);
+        }
+    }
+
+    fn push(&mut self, day: i64, ev: GEv) {
+        self.wheel[(day as usize) % 1024].push(ev);
+    }
+
+    fn new_trip(&mut self, t: Trip) -> u32 {
+        match self.free_trips.pop() {
+            Some(k) => {
+                self.trips[k as usize] = t;
+                k
+            }
+            None => {
+                self.trips.push(t);
+                self.trips.len() as u32 - 1
+            }
+        }
+    }
+
+    /// Distance from a fine cell to the market along its path field, km,
+    /// and the field is built if needed.
+    fn route_km(&mut self, p: &People, m: u32, from: u32) -> i64 {
+        self.ensure_field(p, m);
+        let f = self.markets[m as usize].field.as_ref().unwrap();
+        let (r, c) = ((from as i32 / self.cols_f) - f.r0, (from as i32 % self.cols_f) - f.c0);
+        let fine_km = 1.5625;
+        if r < 0 || c < 0 || r >= f.n || c >= f.n || f.dist[(r * f.n + c) as usize] == u32::MAX {
+            // Off the field (another region or cut off): straight line × 1.5.
+            let to = self.markets[m as usize].fine as i32;
+            let (dr, dc) = ((from as i32 / self.cols_f - to / self.cols_f) as f64, (from as i32 % self.cols_f - to % self.cols_f) as f64);
+            return ((dr * dr + dc * dc).sqrt() * fine_km * 1.5) as i64;
+        }
+        (f.dist[(r * f.n + c) as usize] as f64 / FINE_STEP as f64 * fine_km) as i64
+    }
+
+    fn travel_days(km: i64, speed: i64) -> i64 {
+        if km == 0 {
+            0
+        } else {
+            ((km + speed - 1) / speed).max(1)
+        }
+    }
+
+    /// Start a carrier trip of a household (sell from its farm, or buy).
+    fn start_carry(&mut self, p: &People, day: i64, id: u32, kind: u8) {
+        let Some(info) = self.info.get(&id).copied() else { return };
+        let s = self.hh[&id];
+        if s.busy || info.carrier == NONE {
+            return;
+        }
+        let m = self.cell_market[info.home as usize];
+        let km = self.route_km(p, m, s.fine);
+        let (load, speed) = if s.farm != NONE {
+            if self.farms[s.farm as usize].kind == ESTATE {
+                OX_CART
+            } else {
+                DONKEY
+            }
+        } else {
+            // PLACEHOLDER: without a donkey every adult carries.
+            (ON_FOOT.0 * info.adults.max(1) as i64, ON_FOOT.1)
+        };
+        let (kg, farm) = if kind == SELL {
+            let f = &mut self.farms[s.farm as usize];
+            let kg = f.to_sell.min(load).min(f.store);
+            if kg <= 0 {
+                return;
+            }
+            f.to_sell -= kg;
+            f.store -= kg;
+            (kg, s.farm)
+        } else {
+            if self.markets[m as usize].store <= 0 {
+                return;
+            }
+            (load, s.farm)
+        };
+        let d = Self::travel_days(km, speed);
+        let t = self.new_trip(Trip { kind, pid: info.carrier, hh: id, farm, market: m, dest: m, kg, back_days: d });
+        self.hh.get_mut(&id).unwrap().busy = true;
+        if kind == SELL {
+            self.stats.sell_trips += 1;
+        } else {
+            self.stats.buy_trips += 1;
+        }
+        *self.markets[m as usize].walked.entry(s.fine).or_default() += 1;
+        if d == 0 {
+            self.arrive(p, day, t);
+        } else {
+            self.push(day + d, GEv { kind: EV_ARRIVE, id: t });
+        }
+    }
+
+    fn events(&mut self, p: &mut People, day: i64) {
+        let mut evs = std::mem::take(&mut self.wheel[(day as usize) % 1024]);
+        evs.sort_unstable();
+        for ev in evs {
+            match ev.kind {
+                EV_ARRIVE => self.arrive(p, day, ev.id),
+                EV_HOME => self.home(p, day, ev.id),
+                EV_PEAK_END => self.peak_end(p, day, ev.id),
+                _ => {}
+            }
+        }
+    }
+
+    fn sell_price(m: &Market) -> i64 {
+        m.price * (100 + SPREAD_PCT) / 100
+    }
+    fn buy_price(m: &Market) -> i64 {
+        m.price * (100 - SPREAD_PCT) / 100
+    }
+
+    /// A trip reaches its market: one sale or one purchase (GRAIN.md).
+    fn arrive(&mut self, p: &People, day: i64, k: u32) {
+        let mut t = self.trips[k as usize];
+        let alive = p.is_alive(t.pid);
+        let mi = t.dest as usize;
+        match t.kind {
+            SELL => {
+                // The market's dealers buy as far as their cash goes; the
+                // rest goes home again (PLACEHOLDER: a market is a body of
+                // dealers with cash, not the state).
+                let m = &mut self.markets[mi];
+                let price = Self::buy_price(m);
+                let kg = if alive { t.kg.min(m.money / price.max(1)).max(0) } else { 0 };
+                let pay = kg * price;
+                m.store += kg;
+                m.money -= pay;
+                self.stats.sold_kg += kg;
+                let owner = &mut self.farms[t.farm as usize];
+                let rent = kg.min(owner.rent_due);
+                owner.rent_due -= rent;
+                let to_lord = if owner.kind == ESTATE { pay } else { rent * price };
+                owner.money += pay - to_lord;
+                let lord = owner.landlord;
+                if to_lord > 0 && lord != NONE {
+                    if let Some(h) = self.hh.get_mut(&lord) {
+                        h.money += to_lord;
+                    }
+                }
+                t.kg -= kg;
+            }
+            BUY => {
+                let want = {
+                    let need = self.need_day(t.hh);
+                    let have = self.hh.get(&t.hh).map_or(0, |s| if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry });
+                    (need * BUY_UP_TO - have).max(0).min(t.kg)
+                };
+                let money = self.money_of(t.hh);
+                let m = &mut self.markets[mi];
+                let price = Self::sell_price(m);
+                let kg = want.min(m.store).min(money / price.max(1));
+                if alive && kg > 0 {
+                    m.store -= kg;
+                    m.money += kg * price;
+                    m.sold_today += kg;
+                    self.stats.bought_kg += kg;
+                    self.pay(t.hh, kg * price);
+                    t.kg = kg;
+                } else {
+                    t.kg = 0;
+                }
+            }
+            EXPORT => {
+                // Sell the load here, tell this market the prices known at
+                // home, then go home empty.
+                let m = &mut self.markets[mi];
+                let pay = t.kg * Self::buy_price(m);
+                m.store += t.kg;
+                m.money -= pay;
+                self.stats.traded_kg += t.kg;
+                if let Some(h) = self.hh.get_mut(&t.hh) {
+                    h.money += pay;
+                }
+                t.kg = 0;
+                self.share_news(t.market, t.dest, day);
+            }
+            IMPORT => {
+                let money = self.money_of(t.hh);
+                let m = &mut self.markets[mi];
+                let price = Self::sell_price(m);
+                let kg = WAGON.0.min(m.store / 4).min(money / price.max(1));
+                if kg > 0 {
+                    m.store -= kg;
+                    m.money += kg * price;
+                    m.sold_today += kg;
+                    self.pay(t.hh, kg * price);
+                }
+                t.kg = kg.max(0);
+                self.share_news(t.market, t.dest, day);
+            }
+            _ => {}
+        }
+        self.trips[k as usize] = t;
+        if t.back_days == 0 {
+            self.home(p, day, k);
+        } else {
+            self.push(day + t.back_days, GEv { kind: EV_HOME, id: k });
+        }
+    }
+
+    /// Prices known at two markets are merged when a trader comes from one
+    /// to the other: the newer entry wins (GRAIN.md: stale knowledge).
+    fn share_news(&mut self, a: u32, b: u32, day: i64) {
+        let pa = (a, self.markets[a as usize].price, day);
+        let pb = (b, self.markets[b as usize].price, day);
+        let ba = self.markets[a as usize].board.clone();
+        let bb = self.markets[b as usize].board.clone();
+        let merge = |board: &mut Vec<(u32, i64, i64)>, other: &[(u32, i64, i64)], fresh: (u32, i64, i64)| {
+            for e in board.iter_mut() {
+                if e.0 == fresh.0 {
+                    *e = fresh;
+                } else if let Some(o) = other.iter().find(|o| o.0 == e.0) {
+                    if o.2 > e.2 {
+                        *e = *o;
+                    }
+                }
+            }
+        };
+        merge(&mut self.markets[a as usize].board, &bb, pb);
+        merge(&mut self.markets[b as usize].board, &ba, pa);
+    }
+
+    fn money_of(&self, id: u32) -> i64 {
+        match self.hh.get(&id) {
+            Some(s) if s.farm != NONE => self.farms[s.farm as usize].money,
+            Some(s) => s.money,
+            None => 0,
+        }
+    }
+
+    fn pay(&mut self, id: u32, amount: i64) {
+        if let Some(s) = self.hh.get_mut(&id) {
+            if s.farm != NONE {
+                self.farms[s.farm as usize].money -= amount;
+            } else {
+                s.money -= amount;
+            }
+        }
+    }
+
+    /// Back home: bought grain goes into the store; the next load leaves
+    /// the next day if there is more to sell.
+    fn home(&mut self, p: &People, day: i64, k: u32) {
+        let t = self.trips[k as usize];
+        self.free_trips.push(k);
+        let Some(s) = self.hh.get_mut(&t.hh) else { return };
+        if matches!(t.kind, EXPORT | IMPORT) {
+            s.trading = false;
+        } else {
+            s.busy = false;
+        }
+        match t.kind {
+            SELL if t.kg > 0 => {
+                // Unsold: back into the store; tried again next month.
+                let f = &mut self.farms[t.farm as usize];
+                f.store += t.kg;
+                f.to_sell = 0;
+                f.retry = true;
+            }
+            BUY if t.kg > 0 => {
+                if s.farm != NONE && self.farms[s.farm as usize].hh == t.hh {
+                    self.farms[s.farm as usize].store += t.kg;
+                } else {
+                    s.pantry += t.kg;
+                }
+            }
+            IMPORT if t.kg > 0 => {
+                // Sell the load at home.
+                let m = &mut self.markets[t.market as usize];
+                let pay = t.kg * Self::buy_price(m);
+                m.store += t.kg;
+                m.money -= pay;
+                s.money += pay;
+                self.stats.traded_kg += t.kg;
+            }
+            _ => {}
+        }
+        if t.kind == SELL && s.farm != NONE && self.farms[s.farm as usize].to_sell > 0 {
+            let id = t.hh;
+            self.start_carry(p, day, id, SELL);
+        }
+    }
+
+    /// Sowing and harvest start on the farm's day: the work needed in the
+    /// window is posted; what the family cannot do is asked for at the
+    /// weekly labour exchange of the region (S72).
+    fn peaks(&mut self, day: i64) {
+        let list = std::mem::take(&mut self.by_doy[doy(day) as usize]);
+        for &f in &list {
+            let fm = &self.farms[f as usize];
+            if fm.hh == NONE || fm.area == 0 {
+                continue;
+            }
+            let harvest = doy(day) == fm.harvest_doy;
+            // Fields grow to what the family can till at sowing (S73).
+            if !harvest {
+                let want = self.want_m2(fm.hh);
+                let fm = &mut self.farms[f as usize];
+                let c = fm.cell as usize;
+                if want > fm.area {
+                    // Free good land first, then clearing (S73), as much
+                    // as the adults clear in a year.
+                    let take = (want - fm.area).min(self.free_m2[c]);
+                    fm.area += take;
+                    self.free_m2[c] -= take;
+                    let adults = self.info.get(&fm.hh).map_or(0, |i| i.adults as i64);
+                    let clear = (want - fm.area).min(self.free_poor[c]).min(adults * CLEAR_M2_ADULT_YEAR).max(0);
+                    fm.area += clear;
+                    fm.poor += clear;
+                    self.free_poor[c] -= clear;
+                } else if fm.area > want * 3 / 2 {
+                    // Cleared land is given up first.
+                    let give = fm.area - want * 3 / 2;
+                    let gp = give.min(fm.poor);
+                    fm.area -= give;
+                    fm.poor -= gp;
+                    self.free_poor[c] += gp;
+                    self.free_m2[c] += give - gp;
+                }
+            }
+            let fm = &self.farms[f as usize];
+            let ha_x = if harvest { fm.sown } else { fm.area };
+            let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
+            let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
+            let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS;
+            let fm = &mut self.farms[f as usize];
+            fm.peak = Some(Peak { harvest, demand, done: family.min(demand) });
+            if family < demand {
+                self.markets[fm.market as usize].open.push(f);
+            }
+            self.push(day + PEAK_DAYS, GEv { kind: EV_PEAK_END, id: f });
+        }
+        self.by_doy[doy(day) as usize] = list;
+    }
+
+    /// Weekly labour exchange per region, staggered by market index: the
+    /// landless and farms outside their peak offer days, farms in their
+    /// peak take them in farm order and pay in grain (S72).
+    fn labour(&mut self, day: i64) {
+        let wd = day.rem_euclid(7) as usize;
+        for mi in (wd..self.markets.len()).step_by(7) {
+            if self.markets[mi].open.is_empty() && self.markets[mi].hirers.is_empty() {
+                continue;
+            }
+            // Supply: landless adults of the region and farms not in a peak.
+            let region = self.markets[mi].region;
+            let mut offers: Vec<(u32, i64)> = Vec::new();
+            let _ = region;
+            let ids = std::mem::take(&mut self.market_hh[mi]);
+            for &id in &ids {
+                let s = self.hh[&id];
+                let i = self.info[&id];
+                let days = match s.kind {
+                    TENT => i.hands as i64 * 7 * SPARE_TENT_PCT / 100,
+                    FARM if self.farms[s.farm as usize].peak.is_none() => i.hands as i64 * 7 * SPARE_FARM_PCT / 100,
+                    _ => 0,
+                };
+                if days > 0 {
+                    offers.push((id, days));
+                }
+            }
+            self.market_hh[mi] = ids;
+            // PLACEHOLDER order: the landless are hired first, then farms
+            // with spare hands, each in household order.
+            offers.sort_by_key(|&(id, _)| (self.hh[&id].kind != TENT, id));
+            let open = std::mem::take(&mut self.markets[mi].open);
+            let mut still = Vec::new();
+            let mut o = 0;
+            for f in open {
+                let Some(mut pk) = self.farms[f as usize].peak else { continue };
+                // Sowing is paid from the store, as far as it goes; the
+                // harvest from the crop that comes.
+                let cap = if pk.harvest { i64::MAX } else { self.farms[f as usize].store.max(0) / WAGE_KG_DAY };
+                let mut paid = 0;
+                while pk.done < pk.demand && o < offers.len() && paid < cap {
+                    let take = (pk.demand - pk.done).min(offers[o].1).min(cap - paid);
+                    paid += take;
+                    offers[o].1 -= take;
+                    pk.done += take;
+                    let wage = take * WAGE_KG_DAY;
+                    // Paid from the farm store (sowing) or the crop (at
+                    // the end of the harvest, from the store now and the
+                    // crop refills it).
+                    let fm = &mut self.farms[f as usize];
+                    fm.store -= wage;
+                    self.stats.hired_days += take;
+                    self.stats.wage_kg += wage;
+                    let w = offers[o].0;
+                    let ws = self.hh.get_mut(&w).unwrap();
+                    if ws.farm != NONE {
+                        self.farms[ws.farm as usize].store += wage;
+                    } else {
+                        ws.pantry += wage;
+                    }
+                    if offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
+                self.farms[f as usize].peak = Some(pk);
+                if pk.done < pk.demand {
+                    still.push(f);
+                }
+            }
+            self.markets[mi].open = still;
+            // Outside the peaks: farms with more fields than their family
+            // works over the year hire for the rest, as far as their store
+            // pays the wage.
+            let hirers = std::mem::take(&mut self.markets[mi].hirers);
+            for &f in &hirers {
+                let fm = &self.farms[f as usize];
+                if fm.peak.is_some() || fm.hh == NONE {
+                    continue;
+                }
+                let extra = (fm.area - self.year_m2(fm.hh)).max(0);
+                let need = extra * DAYS_PER_HA * OFF_SHARE_PCT / 100 / 10_000 * 7 / OFF_DAYS;
+                let fm = &mut self.farms[f as usize];
+                fm.off_need += need;
+                let mut want = need.min(fm.store / WAGE_KG_DAY).max(0);
+                while want > 0 && o < offers.len() {
+                    let take = want.min(offers[o].1);
+                    offers[o].1 -= take;
+                    want -= take;
+                    let wage = take * WAGE_KG_DAY;
+                    let fm = &mut self.farms[f as usize];
+                    fm.off_done += take;
+                    fm.store -= wage;
+                    self.stats.hired_days += take;
+                    self.stats.wage_kg += wage;
+                    let w = offers[o].0;
+                    let ws = self.hh.get_mut(&w).unwrap();
+                    if ws.farm != NONE {
+                        self.farms[ws.farm as usize].store += wage;
+                    } else {
+                        ws.pantry += wage;
+                    }
+                    if offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
+            }
+            self.markets[mi].hirers = hirers;
+        }
+    }
+
+    /// End of sowing or harvest. Sowing: the area sown follows the work
+    /// done. Harvest: the crop follows the work done, the rest stays on the
+    /// field (S72); tax and rent come off; what is beyond the family's
+    /// food until the next harvest plus the reserve is carried to market.
+    fn peak_end(&mut self, p: &People, day: i64, f: u32) {
+        let Some(pk) = self.farms[f as usize].peak.take() else { return };
+        let fm = &mut self.farms[f as usize];
+        let frac_x1000 = if pk.demand == 0 { 1000 } else { pk.done * 1000 / pk.demand };
+        if !pk.harvest {
+            let sown = fm.area * frac_x1000 / 1000;
+            self.stats.sow_short_m2 += fm.area - sown;
+            fm.sown = sown;
+            return;
+        }
+        let poor = if fm.area == 0 { 0 } else { fm.sown * fm.poor / fm.area };
+        let full = ((fm.sown - poor) * fm.net_kg_ha + poor * NET_POOR) / 10_000;
+        // Work outside the peaks that was missing lowers the crop by its share.
+        let off = if fm.off_need == 0 { 1000 } else { (fm.off_done * 1000 / fm.off_need).min(1000) };
+        fm.off_need = 0;
+        fm.off_done = 0;
+        let crop = full * frac_x1000 / 1000 * (1000 - OFF_SHARE_PCT * (1000 - off) / 100) / 1000;
+        self.stats.harvest_kg += crop;
+        self.stats.harvest_lost_kg += full - crop;
+        // Tax in kind leaves the economy for now (PLACEHOLDER: the state's
+        // grain has no use until state, army and money are systems, S76).
+        // Rent is carried to market with the farm's grain and its money
+        // goes to the landlord (PLACEHOLDER: share-cropping paid on sale).
+        let tax = crop * TAX_PCT / 100;
+        let rent = if fm.kind == TENANT { crop * RENT_PCT / 100 } else { 0 };
+        fm.store += crop - tax;
+        fm.rent_due += rent;
+        self.stats.tax_kg += tax;
+        self.stats.rent_kg += rent;
+        let id = fm.hh;
+        if id == NONE {
+            return;
+        }
+        let need = self.need_day(id);
+        let keep = need * (YEAR + RESERVE_DAYS);
+        let fm = &mut self.farms[f as usize];
+        fm.to_sell = (fm.store - keep).max(0).max(fm.rent_due.min(fm.store));
+        if fm.to_sell > 0 {
+            self.start_carry(p, day, id, SELL);
+        }
+    }
+
+    /// News: once a week (1/7 of the markets a day) a market hears the
+    /// prices of its 32 known markets as they were when travellers left
+    /// there, i.e. the travel time ago (PLACEHOLDER: travellers other than
+    /// traders carry news; the price `days` ago is approximated by the
+    /// price then recorded weekly).
+    fn news(&mut self, day: i64) {
+        let wd = day.rem_euclid(7) as usize;
+        for mi in (wd..self.markets.len()).step_by(7) {
+            for k in 0..self.markets[mi].neigh.len() {
+                let (m, days) = (self.markets[mi].neigh[k].m, self.markets[mi].neigh[k].days);
+                let seen = day - days;
+                if self.markets[mi].board[k].2 < seen {
+                    let old = &self.markets[m as usize];
+                    // The price a week ago if the trip is longer than a week.
+                    let price = if days >= 7 { old.last_week } else { old.price };
+                    self.markets[mi].board[k] = (m, price, seen);
+                }
+            }
+        }
+        for m in (wd..self.markets.len()).step_by(7) {
+            let mk = &mut self.markets[m];
+            mk.last_week = mk.price;
+        }
+    }
+
+    /// Daily price step per market towards its target (S22, EU5-like).
+    fn prices(&mut self) {
+        for m in self.markets.iter_mut() {
+            m.demand += (m.sold_today * 1000 - m.demand) / MONTH;
+            m.sold_today = 0;
+            let per_day = (m.demand / 1000).max(1);
+            let days = m.store / per_day;
+            let target = (BASE_PRICE * TARGET_DAYS / days.max(1)).clamp(BASE_PRICE * PRICE_MIN_PCT / 100, BASE_PRICE * PRICE_MAX_PCT / 100);
+            m.price += (target - m.price) / PRICE_STEP;
+        }
+    }
+
+    /// Each household eats once a month (1/30 of them per day) from its
+    /// farm store or pantry. Who is short buys at the market (a trip;
+    /// city households in the market cell buy on the spot), the state wage
+    /// is paid, the landless beg and steal (S69). How much was eaten sets
+    /// `fed`, which drives health (S64, S65).
+    fn eat(&mut self, p: &mut People, day: i64, slice: usize) {
+        let ids = std::mem::take(&mut self.hh_slices[slice]);
+        for &id in &ids {
+            let Some(info) = self.info.get(&id).copied() else { continue };
+            let Some(mut s) = self.hh.get(&id).copied() else { continue };
+            let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
+            let need = need_day * MONTH;
+            // Income: the state wage for workers outside farming (S76).
+            if matches!(s.kind, WAGE | TRADER) {
+                s.money += info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+            }
+            let mk = self.cell_market[info.home as usize];
+            let mut have = if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry };
+            // The landless beg at the market, then steal (S69).
+            if s.kind == TENT && have < need {
+                let m = &mut self.markets[mk as usize];
+                let alms = (need * ALMS_PCT / 100).min(need - have).min(m.store);
+                m.store -= alms;
+                have += alms;
+                self.stats.alms_kg += alms;
+                if have < need && rnd(self.seed, id, 0x57ea, day) % 16 < STEAL_PER_16 {
+                    if let Some(v) = self.victim(id, info.home, day) {
+                        let take = STEAL_KG.min(self.farms[v as usize].store).max(0);
+                        self.farms[v as usize].store -= take;
+                        have += take;
+                        self.stats.stolen_kg += take;
+                        self.stats.thefts += 1;
+                    }
+                }
+            }
+            let eaten = have.clamp(0, need);
+            have -= eaten;
+            self.stats.eaten_kg += eaten;
+            self.stats.need_kg += need;
+            self.stats.eaten_by[s.kind as usize] += eaten;
+            self.stats.need_by[s.kind as usize] += need;
+            s.fed = if need == 0 { 1000 } else { (eaten * 1000 / need) as u16 };
+            if s.farm != NONE {
+                self.farms[s.farm as usize].store = have;
+            } else {
+                s.pantry = have;
+            }
+            self.hh.insert(id, s);
+            if let Some(e) = p.econ.as_mut() {
+                if (id as usize) < e.fed.len() {
+                    e.fed[id as usize] = s.fed;
+                }
+            }
+            // A farm whose load came back unsold tries again.
+            if s.farm != NONE && self.farms[s.farm as usize].retry && !s.busy {
+                let f = &mut self.farms[s.farm as usize];
+                f.retry = false;
+                let keep = need_day * (doy_until(day, f.harvest_doy) + RESERVE_DAYS);
+                f.to_sell = (f.store - keep).max(0).max(f.rent_due.min(f.store));
+                if f.to_sell > 0 {
+                    self.start_carry(p, day, id, SELL);
+                }
+            }
+            // Buy when the store runs low.
+            let money = self.money_of(id);
+            if have < need_day * BUY_BELOW && money > 0 && !s.busy {
+                let m = &self.markets[mk as usize];
+                if m.cell == info.home && s.farm == NONE {
+                    // On the spot.
+                    let price = Self::sell_price(m);
+                    let kg = (need_day * BUY_UP_TO - have).min(m.store).min(money / price.max(1)).max(0);
+                    if kg > 0 {
+                        let m = &mut self.markets[mk as usize];
+                        m.store -= kg;
+                        m.money += kg * price;
+                        m.sold_today += kg;
+                        self.stats.bought_kg += kg;
+                        self.pay(id, kg * price);
+                        self.hh.get_mut(&id).unwrap().pantry += kg;
+                    }
+                } else {
+                    self.start_carry(p, day, id, BUY);
+                }
+            }
+        }
+        self.hh_slices[slice] = ids;
+    }
+
+    /// A farm store in the cell (else the region) to steal from, by hash.
+    fn victim(&self, id: u32, cell: u32, day: i64) -> Option<u32> {
+        let mk = self.cell_market[cell as usize];
+        let n = self.farms.len() as u64;
+        if n == 0 {
+            return None;
+        }
+        // A few draws over all farms, keep one of this market (cheap and
+        // deterministic; PLACEHOLDER).
+        for k in 0..8u32 {
+            let f = (rnd(self.seed, id, 0x7a1 + k, day) % n) as u32;
+            let fm = &self.farms[f as usize];
+            if fm.market == mk && fm.store > 0 && fm.hh != id {
+                return Some(f);
+            }
+        }
+        None
+    }
+
+    /// Traders decide on their day of the week (S71, GRAIN.md): from the
+    /// prices their home market knows (possibly old), the best trip after
+    /// freight: export (buy here, sell there) or import (go there empty,
+    /// buy, sell here). They go if the margin per kg is above the
+    /// threshold.
+    fn traders(&mut self, day: i64) {
+        let wd = day.rem_euclid(7) as usize;
+        let ids = std::mem::take(&mut self.trader_slices[wd]);
+        for &id in &ids {
+            let Some(info) = self.info.get(&id).copied() else { continue };
+            let Some(s) = self.hh.get(&id).copied() else { continue };
+            if s.trading || s.kind != TRADER || info.trader == NONE {
+                continue;
+            }
+            let h = self.cell_market[info.home as usize] as usize;
+            let home = &self.markets[h];
+            let (hb, hs) = (Self::buy_price(home), Self::sell_price(home));
+            let mut best: Option<(i64, u8, usize)> = None;
+            for (k, nb) in home.neigh.iter().enumerate() {
+                let (_, price, _) = home.board[k];
+                let (ob, os) = (price * (100 - SPREAD_PCT) / 100, price * (100 + SPREAD_PCT) / 100);
+                let export = ob - hs - nb.cost;
+                // Import: loaded leg back, the empty leg at half the cost.
+                let import = hb - os - nb.cost - nb.cost / 2;
+                for (margin, kind) in [(export, EXPORT), (import, IMPORT)] {
+                    if margin * 100 > hs * TRADE_MARGIN_PCT && best.is_none_or(|b| margin > b.0) {
+                        best = Some((margin, kind, k));
+                    }
+                }
+            }
+            let Some((_, kind, k)) = best else { continue };
+            let (dest, cost, days) = {
+                let nb = &self.markets[h].neigh[k];
+                (nb.m, nb.cost, nb.days)
+            };
+            let mut kg = 0;
+            if kind == EXPORT {
+                let m = &mut self.markets[h];
+                let price = Self::sell_price(m);
+                kg = WAGON.0.min(m.store / 4).min(s.money / (price + cost).max(1));
+                if kg <= 0 {
+                    continue;
+                }
+                m.store -= kg;
+                m.money += kg * price;
+                m.sold_today += kg;
+                self.pay(id, kg * (price + cost));
+            } else {
+                // Freight paid on the way back, at purchase.
+                self.pay(id, WAGON.0 * cost);
+            }
+            for &c in &self.markets[h].neigh[k].route.clone() {
+                *self.lanes.entry(c).or_default() += 1;
+            }
+            let t = self.new_trip(Trip { kind, pid: info.trader, hh: id, farm: NONE, market: h as u32, dest, kg, back_days: days });
+            self.hh.get_mut(&id).unwrap().trading = true;
+            self.stats.trade_trips += 1;
+            self.push(day + days, GEv { kind: EV_ARRIVE, id: t });
+        }
+        self.trader_slices[wd] = ids;
+    }
+
+    /// Footpaths (S70, Helbing 1997): once a month per market (1/30 of the
+    /// markets a day), every origin's trips since the last walk are walked
+    /// along the market's path field and add wear to each fine cell; wear
+    /// decays lazily (half-life PATH_HALF). A level change marks the field
+    /// for a rebuild, so later trips follow and deepen the path.
+    fn paths(&mut self, p: &People, day: i64, slice: usize) {
+        let _ = slice;
+        let q = day.rem_euclid(WALK_DAYS) as usize;
+        for mi in (q..self.markets.len()).step_by(WALK_DAYS as usize) {
+            if self.markets[mi].walked.is_empty() && !self.markets[mi].dirty {
+                continue;
+            }
+            let mut origins: Vec<(u32, i64)> = self.markets[mi].walked.drain().collect();
+            origins.sort_unstable();
+            self.ensure_field(p, mi as u32);
+            let mut f = self.markets[mi].field.take().unwrap();
+            // Every route follows the field to the market; add up the
+            // trips per cell, then wear each cell once.
+            let mut acc: FxHashMap<u32, i64> = FxHashMap::default();
+            for (o, k) in origins {
+                let (mut r, mut c) = ((o as i32 / self.cols_f) - f.r0, (o as i32 % self.cols_f) - f.c0);
+                let mut steps = 0;
+                while r >= 0 && c >= 0 && r < f.n && c < f.n && steps <= 2 * f.n {
+                    let i = (r * f.n + c) as usize;
+                    if f.dist[i] == u32::MAX {
+                        break;
+                    }
+                    *acc.entry(i as u32).or_default() += k;
+                    let d = f.dir[i];
+                    if d == 255 {
+                        break;
+                    }
+                    let (dr, dc) = DIRS[d as usize];
+                    r += dr;
+                    c += dc;
+                    steps += 1;
+                }
+            }
+            let mut cells: Vec<(u32, i64)> = acc.into_iter().collect();
+            cells.sort_unstable();
+            let mut changed = self.markets[mi].dirty;
+            // Wear decays since the last walk, then this walk adds to it.
+            let dt = day - f.walked;
+            f.walked = day;
+            for &i in &f.worn {
+                f.wear[i as usize] = decay(&self.decay, f.wear[i as usize] as i64, dt) as u32;
+            }
+            for &(i, k) in &cells {
+                if f.wear[i as usize] == 0 {
+                    f.worn.push(i as u16);
+                }
+                f.wear[i as usize] = (f.wear[i as usize] as i64 + 2 * k * WEAR_UNIT).min(u32::MAX as i64) as u32;
+            }
+            let (wear, level) = (&f.wear, &mut f.level);
+            f.worn.retain(|&i| {
+                let w = wear[i as usize] as i64;
+                let old = level[i as usize];
+                let mut lv = old;
+                while (lv as usize) < LEVELS.len() && w >= LEVELS[lv as usize].0 {
+                    lv += 1;
+                }
+                while lv > 0 && w < LEVELS[lv as usize - 1].1 {
+                    lv -= 1;
+                }
+                if lv != old {
+                    level[i as usize] = lv;
+                    changed = true;
+                }
+                w > 0
+            });
+            for &(i, _) in &cells {
+                let _ = i;
+            }
+            let last = f.built;
+            self.markets[mi].field = Some(f);
+            self.markets[mi].dirty = changed;
+            if changed && day - last >= WALK_DAYS {
+                let t0 = std::time::Instant::now();
+                self.build_field(p, mi as u32);
+                self.stats.field_rebuilds += 1;
+                self.timing.rebuild += t0.elapsed().as_secs_f64() * 1e6;
+            }
+        }
+    }
+
+    fn ensure_field(&mut self, p: &People, m: u32) {
+        if self.markets[m as usize].field.is_none() {
+            let t0 = std::time::Instant::now();
+            self.build_field(p, m);
+            self.timing.first_build += t0.elapsed().as_secs_f64() * 1e6;
+        }
+    }
+
+    /// Dijkstra over the market's region (64 × 64 fine cells) from the
+    /// market, step cost by path level; sea cells (coarse) are blocked.
+    fn build_field(&mut self, p: &People, m: u32) {
+        let day = p.world.resource::<Clock>().day;
+        let mk = &self.markets[m as usize];
+        let n = 4 * FINE;
+        let key = mk.region;
+        let (rr, rc) = ((key >> 16) as i32 - 64, (key & 0xffff) as i32 - 64);
+        let (r0, c0) = ((rr * 4 - p.grid.row0) * FINE, (rc * 4 - p.grid.col0) * FINE);
+        let size = (n * n) as usize;
+        let mut dist = vec![u32::MAX; size];
+        let mut dir = vec![255u8; size];
+        let (mr, mc) = ((mk.fine as i32 / self.cols_f) - r0, (mk.fine as i32 % self.cols_f) - c0);
+        // Wear and levels stay with the market's field across rebuilds.
+        let (level, wear, worn, walked) = match self.markets[m as usize].field.take() {
+            Some(old) => (old.level, old.wear, old.worn, old.walked),
+            None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
+        };
+        if mr < 0 || mc < 0 || mr >= n || mc >= n {
+            self.markets[m as usize].field = Some(Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day });
+            self.markets[m as usize].dirty = false;
+            return;
+        }
+        // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
+        let mut land = [false; 16];
+        for (k, l) in land.iter_mut().enumerate() {
+            let (cr, cc) = (r0 / FINE + k as i32 / 4, c0 / FINE + k as i32 % 4);
+            *l = cr >= 0 && cc >= 0 && cr < p.grid.rows && cc < p.grid.cols && p.grid.kind[(cr * p.grid.cols + cc) as usize] != 0;
+        }
+        // Dial's bucket queue (integer step costs below 256).
+        let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); 256];
+        let start = (mr * n + mc) as u32;
+        dist[start as usize] = 0;
+        buckets[0].push(start);
+        let (mut g, mut pending) = (0u32, 1usize);
+        while pending > 0 {
+            let b = std::mem::take(&mut buckets[(g & 255) as usize]);
+            for &i in &b {
+                pending -= 1;
+                if dist[i as usize] != g {
+                    continue;
+                }
+                let (r, c) = (i as i32 / n, i as i32 % n);
+                for (d, (dr, dc)) in DIRS.iter().enumerate() {
+                    let (nr, nc) = (r + dr, c + dc);
+                    if nr < 0 || nc < 0 || nr >= n || nc >= n || !land[((nr / FINE) * 4 + nc / FINE) as usize] {
+                        continue;
+                    }
+                    let j = (nr * n + nc) as usize;
+                    let base = if *dr != 0 && *dc != 0 { 141 } else { FINE_STEP };
+                    let ng = g + (base * LEVEL_COST_PCT[level[j] as usize] / 100) as u32;
+                    if ng < dist[j] {
+                        dist[j] = ng;
+                        dir[j] = (7 - d) as u8;
+                        buckets[(ng & 255) as usize].push(j as u32);
+                        pending += 1;
+                    }
+                }
+            }
+            let mut b = b;
+            b.clear();
+            if buckets[(g & 255) as usize].is_empty() {
+                buckets[(g & 255) as usize] = b;
+            }
+            g += 1;
+        }
+        let mk = &mut self.markets[m as usize];
+        mk.field = Some(Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day });
+        mk.dirty = false;
+    }
+
+    /// What people.rs reads: fed per household, and per region whether it
+    /// has free land and how much grain (stores plus free land at its
+    /// yield) it offers per head (S65, S66).
+    fn export(&mut self, p: &mut People) {
+        let n = p.next_pid() as usize;
+        let mut fed = p.econ.take().map(|e| e.fed).unwrap_or_default();
+        fed.resize(n.max(fed.len()), 1000);
+        for (&id, s) in self.hh.iter() {
+            if (id as usize) < fed.len() {
+                fed[id as usize] = s.fed;
+            }
+        }
+        let mut region = FxHashMap::default();
+        for m in &self.markets {
+            let food = m.grain + m.free_area * 400 / 10_000;
+            let score = food as f64 / (m.people.max(1) as f64 * KG_PER_ADULT_YEAR as f64);
+            // A cell with free land, else the market cell.
+            region.insert(m.region, (score as f32, m.free_area > 0, m.cell));
+        }
+        for (c, &a) in self.free_m2.iter().enumerate() {
+            let a = a + self.free_poor[c];
+            if a > 10_000 {
+                if let Some(e) = region.get_mut(&p.grid.region(c as u32)) {
+                    if self.free_m2[e.2 as usize] + self.free_poor[e.2 as usize] < a {
+                        e.2 = c as u32;
+                    }
+                }
+            }
+        }
+        p.econ = Some(Econ { fed, region, need_fed: NEED_FED });
+    }
+
+    // Reporting -----------------------------------------------------------
+
+    /// (farms, family, tenant, estate, landless households, people in tents,
+    /// field area in ha, farm stores t, market stores t).
+    pub fn summary(&self) -> (usize, [usize; 3], usize, u32, f64, f64, f64) {
+        let mut k = [0; 3];
+        let (mut area, mut store) = (0i64, 0i64);
+        let mut n = 0;
+        for f in &self.farms {
+            if f.hh != NONE {
+                n += 1;
+                k[f.kind as usize] += 1;
+                area += f.area;
+                store += f.store;
+            }
+        }
+        let tents = self.hh.values().filter(|s| s.kind == TENT).count();
+        let tent_people: u32 = self.hh.iter().filter(|(_, s)| s.kind == TENT).map(|(id, _)| self.info.get(id).map_or(0, |i| i.size as u32)).sum();
+        let market: i64 = self.markets.iter().map(|m| m.store).sum();
+        (n, k, tents, tent_people, area as f64 / 1e4, store as f64 / 1e3, market as f64 / 1e3)
+    }
+
+    /// Price of the market of the region of `cell`, denarii per kg.
+    pub fn price_at(&self, cell: u32) -> f64 {
+        self.markets[self.cell_market[cell as usize] as usize].price as f64 / 1000.0
+    }
+
+    /// Fine cells by path level (trail, path), as of the last walk.
+    pub fn path_cells(&self) -> (usize, usize) {
+        let (mut a, mut b) = (0, 0);
+        for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
+            for &i in &f.worn {
+                match f.level[i as usize] {
+                    1 => a += 1,
+                    2 => b += 1,
+                    _ => {}
+                }
+            }
+        }
+        (a, b)
+    }
+
+    /// Prices of the markets with people: (min, median, max) den./kg,
+    /// people-weighted.
+    pub fn price_spread(&self) -> (f64, f64, f64) {
+        let mut v: Vec<(i64, u32)> = self.markets.iter().filter(|m| m.people > 0).map(|m| (m.price, m.people)).collect();
+        if v.is_empty() {
+            return (0.0, 0.0, 0.0);
+        }
+        v.sort_unstable();
+        let total: u32 = v.iter().map(|x| x.1).sum();
+        let mut acc = 0;
+        let mut med = v[0].0;
+        for &(pr, n) in &v {
+            acc += n;
+            if acc * 2 >= total {
+                med = pr;
+                break;
+            }
+        }
+        (v[0].0 as f64 / 1e3, med as f64 / 1e3, v[v.len() - 1].0 as f64 / 1e3)
+    }
+
+    /// Debug lines for the largest markets and the farms' land per head.
+    pub fn debug(&self) -> String {
+        let mut out = String::new();
+        let mut ms: Vec<usize> = (0..self.markets.len()).collect();
+        ms.sort_by_key(|&k| std::cmp::Reverse(self.markets[k].people));
+        for &k in ms.iter().take(6) {
+            let m = &self.markets[k];
+            let mut kinds = [0; 5];
+            for id in self.market_hh.get(k).into_iter().flatten() {
+                kinds[self.hh[id].kind as usize] += 1;
+            }
+            let traders = format!("{kinds:?}");
+            out += &format!("  market {k}: people {} tents {} store {} t demand {:.0} kg/d price {:.2} traders {} free_ha {:.0}\n", m.people, m.tents, m.store / 1000, m.demand as f64 / 1000.0, m.price as f64 / 1000.0, traders, m.free_area as f64 / 1e4);
+        }
+        let mut per: Vec<f64> = Vec::new();
+        for f in &self.farms {
+            if f.hh != NONE {
+                let n = self.info.get(&f.hh).map_or(1, |i| i.size.max(1));
+                per.push(f.area as f64 / 1e4 / n as f64);
+            }
+        }
+        per.sort_by(f64::total_cmp);
+        let q = |x: f64| per.get(((per.len() as f64 - 1.0) * x) as usize).copied().unwrap_or(0.0);
+        let (mut nowant, mut noland) = (0, 0);
+        for f in &self.farms {
+            if f.hh != NONE && f.area == 0 {
+                if self.want_m2(f.hh) == 0 {
+                    nowant += 1;
+                } else {
+                    noland += 1;
+                }
+            }
+        }
+        let mut sizes = [0; 8];
+        let mut nohands_sizes = [0; 8];
+        for f in &self.farms {
+            if f.hh != NONE {
+                let i = self.info.get(&f.hh).copied().unwrap_or_default();
+                sizes[(i.size as usize).min(7)] += 1;
+                if self.want_m2(f.hh) == 0 {
+                    nohands_sizes[(i.size as usize).min(7)] += 1;
+                }
+            }
+        }
+        let mut why = [0; 6];
+        for (&id, st) in self.hh.iter() {
+            if st.kind == WAGE && st.fed < 900 {
+                let i = self.info[&id];
+                let m = &self.markets[self.cell_market[i.home as usize] as usize];
+                let k = if i.carrier == NONE { 0 } else if m.store <= 0 { 1 } else if st.money <= 0 { 2 } else if st.busy { 3 } else if m.cell == i.home { 4 } else { 5 };
+                why[k] += 1;
+            }
+        }
+        out += &format!("  hungry wage households: no carrier {}, empty market {}, no money {}, on the way {}, in market cell {}, other {}\n", why[0], why[1], why[2], why[3], why[4], why[5]);
+        out += &format!("  zero-area farms: no hands {nowant}, no land {noland}; farm sizes {sizes:?}, without hands by size {nohands_sizes:?}\n");
+        out += &format!("  farm ha per head: p10 {:.2} p25 {:.2} p50 {:.2} p75 {:.2} p90 {:.2}; zero {}\n", q(0.1), q(0.25), q(0.5), q(0.75), q(0.9), per.iter().filter(|&&x| x == 0.0).count());
+        out
+    }
+
+    pub fn trips_waiting(&self) -> usize {
+        self.wheel.iter().map(|v| v.len()).sum()
+    }
+
+    pub fn fingerprint(&self) -> u64 {
+        let mut b: Vec<u8> = Vec::new();
+        for f in &self.farms {
+            for x in [f.hh as i64, f.area, f.sown, f.store, f.money, f.to_sell] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+        for m in &self.markets {
+            for x in [m.store, m.money, m.price, m.demand] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+        for id in sorted_keys(&self.hh) {
+            let s = self.hh[&id];
+            for x in [id as i64, s.kind as i64, s.pantry, s.money, s.farm as i64, s.fed as i64] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+        for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
+            let mut w: Vec<u16> = f.worn.clone();
+            w.sort_unstable();
+            for i in w {
+                b.extend_from_slice(&i.to_le_bytes());
+                b.extend_from_slice(&f.wear[i as usize].to_le_bytes());
+                b.push(f.level[i as usize]);
+            }
+        }
+        xxh3_64(&b)
+    }
+}
+
+const DIRS: [(i32, i32); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
+
+/// Wear after `dt` days: whole half-lives as shifts, the rest from a table
+/// of 2^(−d/PATH_HALF) × 2^16 (integers, so the same on every machine).
+fn decay(tab: &[i64], w: i64, dt: i64) -> i64 {
+    let halves = dt / PATH_HALF;
+    if halves >= 40 {
+        return 0;
+    }
+    (w >> halves) * tab[(dt % PATH_HALF) as usize] >> 16
+}
+
+fn decay_table() -> Vec<i64> {
+    (0..PATH_HALF).map(|d| (65536.0 * life::exp_neg(std::f64::consts::LN_2 * d as f64 / PATH_HALF as f64)).round() as i64).collect()
+}
+
+fn sorted_keys<V>(m: &IdMap<V>) -> Vec<u32> {
+    let mut v = m.ids.clone();
+    v.sort_unstable();
+    v
+}
+
+/// A map from household id (a person id, dense and never reused) to a
+/// value: a slot per id and the values packed, so a lookup is two array
+/// reads. Iteration follows insertion and removal (deterministic, but not
+/// sorted; `sorted_keys` sorts).
+struct IdMap<V> {
+    slot: Vec<u32>,
+    ids: Vec<u32>,
+    vals: Vec<V>,
+}
+
+impl<V> Default for IdMap<V> {
+    fn default() -> Self {
+        IdMap { slot: Vec::new(), ids: Vec::new(), vals: Vec::new() }
+    }
+}
+
+impl<V> IdMap<V> {
+    fn at(&self, id: u32) -> Option<usize> {
+        self.slot.get(id as usize).copied().filter(|&k| k != NONE).map(|k| k as usize)
+    }
+    fn get(&self, id: &u32) -> Option<&V> {
+        self.at(*id).map(|k| &self.vals[k])
+    }
+    fn get_mut(&mut self, id: &u32) -> Option<&mut V> {
+        self.at(*id).map(|k| &mut self.vals[k])
+    }
+    fn contains_key(&self, id: &u32) -> bool {
+        self.at(*id).is_some()
+    }
+    fn insert(&mut self, id: u32, v: V) {
+        match self.at(id) {
+            Some(k) => self.vals[k] = v,
+            None => {
+                if self.slot.len() <= id as usize {
+                    self.slot.resize(id as usize + 1, NONE);
+                }
+                self.slot[id as usize] = self.ids.len() as u32;
+                self.ids.push(id);
+                self.vals.push(v);
+            }
+        }
+    }
+    fn remove(&mut self, id: &u32) {
+        if let Some(k) = self.at(*id) {
+            let last = *self.ids.last().unwrap();
+            self.ids.swap_remove(k);
+            self.vals.swap_remove(k);
+            if last != *id {
+                self.slot[last as usize] = k as u32;
+            }
+            self.slot[*id as usize] = NONE;
+        }
+    }
+    fn clear(&mut self) {
+        for &id in &self.ids {
+            self.slot[id as usize] = NONE;
+        }
+        self.ids.clear();
+        self.vals.clear();
+    }
+    fn values(&self) -> std::slice::Iter<'_, V> {
+        self.vals.iter()
+    }
+    fn iter(&self) -> impl Iterator<Item = (&u32, &V)> {
+        self.ids.iter().zip(self.vals.iter())
+    }
+}
+
+impl<V> std::ops::Index<&u32> for IdMap<V> {
+    type Output = V;
+    fn index(&self, id: &u32) -> &V {
+        self.get(id).expect("household")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    /// Same seed, same grain state after 200 days (a harvest included).
+    #[test]
+    fn deterministic_fingerprint() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let run = || {
+            let mut p = People::new(&inp, 3);
+            let mut g = Grain::new(&inp, &mut p);
+            for _ in 0..200 {
+                p.day();
+                g.day(&mut p);
+            }
+            assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
+            (p.fingerprint(), g.fingerprint())
+        };
+        assert_eq!(run(), run());
+    }
+
+    #[test]
+    fn wear_halves() {
+        let tab = decay_table();
+        assert_eq!(decay(&tab, 1 << 20, 0), 1 << 20);
+        assert_eq!(decay(&tab, 1 << 20, PATH_HALF), 1 << 19);
+        let q = decay(&tab, 1 << 20, PATH_HALF / 2);
+        assert!((q - 741_455).abs() < 2, "{q}");
+    }
+
+    #[test]
+    fn id_map() {
+        let mut m: IdMap<u8> = IdMap::default();
+        m.insert(7, 1);
+        m.insert(3, 2);
+        m.insert(9, 3);
+        m.remove(&3);
+        assert_eq!(m.get(&9), Some(&3));
+        assert_eq!(m.get(&3), None);
+        assert_eq!(sorted_keys(&m), vec![7, 9]);
+        m.clear();
+        assert!(!m.contains_key(&7));
+    }
+}
