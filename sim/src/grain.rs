@@ -65,6 +65,12 @@ pub const CLEAR_PCT: i64 = 100;
 /// limit). Alternatives and their growth: docs/kit2/run-grain/README.md.
 pub const CLEAR_COVER: [&str; 2] = ["farm_8", "farm_16"];
 const CLEAR_M2_ADULT_YEAR: i64 = 5_000;
+/// Share of a farm's fields under grain each year (S76, Brache):
+/// PLACEHOLDER two-field rotation, every field fallow every other year
+/// (GRAIN-NUMBERS 2: "mit Zweifelderwirtschaft doppelt so viel Land").
+/// Fallow land needs no work here (PLACEHOLDER: Roman fallow was ploughed
+/// too; the source gives only the yearly total per sown ha).
+pub const CROP_PCT: i64 = 50;
 /// Work per ha and year, days (Spurr, Rosenstein via Devereaux: 60–80);
 /// working days per year (Columella: 290).
 const DAYS_PER_HA: i64 = 70;
@@ -346,6 +352,9 @@ pub struct GrainStats {
     pub harvest_kg: i64,
     pub harvest_lost_kg: i64,
     pub sow_short_m2: i64,
+    /// Seed put in the ground, kg; area left unsown for want of seed, m².
+    pub seed_kg: i64,
+    pub seed_short_m2: i64,
     pub tax_kg: i64,
     pub rent_kg: i64,
     pub hired_days: i64,
@@ -410,6 +419,8 @@ pub struct Grain {
     free_trips: Vec<u32>,
     wheel: Vec<Vec<GEv>>,
     decay: Vec<i64>,
+    /// Share of the fields under grain, per cent (`CROP_PCT`).
+    crop_pct: i64,
     /// Reused buffer for the monthly count.
     scratch: Vec<Row>,
     /// Person ids grouped by household, from the last count.
@@ -463,13 +474,14 @@ fn doy_until(day: i64, target: i64) -> i64 {
 
 impl Grain {
     pub fn new(inp: &Inputs, p: &mut People) -> Grain {
-        Self::with_clearing(inp, p, CLEAR_PCT, None)
+        Self::with_clearing(inp, p, CLEAR_PCT, None, CROP_PCT)
     }
 
     /// As `new`, with the share of clearable land in per cent and, if
     /// given, the clearable share of each cell's land from land cover
-    /// (`clearable`) instead of all usable land.
-    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64, cover: Option<&Clearable>) -> Grain {
+    /// (`clearable`) instead of all usable land, and the share of the
+    /// fields under grain each year (`CROP_PCT`; 100 = no fallow).
+    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64, cover: Option<&Clearable>, crop_pct: i64) -> Grain {
         let seed = p.world.resource::<Clock>().seed;
         let g = &p.grid;
         let n = g.kind.len();
@@ -580,6 +592,7 @@ impl Grain {
             free_trips: Vec::new(),
             wheel: vec![Vec::new(); 1024],
             decay: decay_table(),
+            crop_pct: crop_pct.clamp(1, 100),
             scratch: Vec::new(),
             members: Vec::new(),
             census_job: None,
@@ -904,7 +917,7 @@ impl Grain {
             m.hirers.clear();
         }
         for (k, f) in self.farms.iter().enumerate() {
-            if f.hh != NONE && f.area > self.year_m2(f.hh) {
+            if f.hh != NONE && self.cropped(f.area) > self.year_m2(f.hh) {
                 self.markets[f.market as usize].hirers.push(k as u32);
             }
         }
@@ -1018,7 +1031,7 @@ impl Grain {
                 let fm = &mut self.farms[f as usize];
                 fm.area = g + pr;
                 fm.poor = pr;
-                fm.sown = g + pr;
+                fm.sown = (g + pr) * self.crop_pct / 100;
                 self.free_m2[c as usize] -= g;
                 self.free_poor[c as usize] -= pr;
                 if fm.kind != FAMILY && !elites.is_empty() {
@@ -1055,7 +1068,13 @@ impl Grain {
         };
         let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 * 10_000 / net;
         let own = if kind == ESTATE { year } else { year.min(peak) };
-        own.max(feed)
+        // That much under grain; the fallow half comes on top (S76).
+        own.max(feed) * 100 / self.crop_pct
+    }
+
+    /// The part of a farm's fields under grain this year (S76).
+    fn cropped(&self, area: i64) -> i64 {
+        area * self.crop_pct / 100
     }
 
     /// One day, after `People::day`.
@@ -1422,7 +1441,7 @@ impl Grain {
                 }
             }
             let fm = &self.farms[f as usize];
-            let ha_x = if harvest { fm.sown } else { fm.area };
+            let ha_x = if harvest { fm.sown } else { self.cropped(fm.area) };
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
             let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS;
@@ -1514,7 +1533,7 @@ impl Grain {
                 if fm.peak.is_some() || fm.hh == NONE {
                     continue;
                 }
-                let extra = (fm.area - self.year_m2(fm.hh)).max(0);
+                let extra = (self.cropped(fm.area) - self.year_m2(fm.hh)).max(0);
                 let need = extra * DAYS_PER_HA * OFF_SHARE_PCT / 100 / 10_000 * 7 / OFF_DAYS;
                 let fm = &mut self.farms[f as usize];
                 fm.off_need += need;
@@ -1551,16 +1570,25 @@ impl Grain {
     /// food until the next harvest plus the reserve is carried to market.
     fn peak_end(&mut self, p: &People, day: i64, f: u32) {
         let Some(pk) = self.farms[f as usize].peak.take() else { return };
+        let cropped = self.cropped(self.farms[f as usize].area);
         let fm = &mut self.farms[f as usize];
         let frac_x1000 = if pk.demand == 0 { 1000 } else { pk.done * 1000 / pk.demand };
         if !pk.harvest {
-            let sown = fm.area * frac_x1000 / 1000;
-            self.stats.sow_short_m2 += fm.area - sown;
+            let worked = cropped * frac_x1000 / 1000;
+            self.stats.sow_short_m2 += cropped - worked;
+            // Seed comes from the farm's store (S76); without it, less is sown.
+            let sown = worked.min(fm.store.max(0) * 10_000 / SEED_KG_HA);
+            self.stats.seed_short_m2 += worked - sown;
+            let seed = sown * SEED_KG_HA / 10_000;
+            fm.store -= seed;
+            self.stats.seed_kg += seed;
             fm.sown = sown;
             return;
         }
         let poor = if fm.area == 0 { 0 } else { fm.sown * fm.poor / fm.area };
-        let full = ((fm.sown - poor) * fm.net_kg_ha + poor * NET_POOR) / 10_000;
+        // Gross: the net yield plus the seed back (ratio × seed per ha).
+        let full = ((fm.sown - poor) * fm.net_kg_ha + poor * NET_POOR + fm.sown * SEED_KG_HA) / 10_000;
+        let seed_in = fm.sown * SEED_KG_HA / 10_000;
         // Work outside the peaks that was missing lowers the crop by its share.
         let off = if fm.off_need == 0 { 1000 } else { (fm.off_done * 1000 / fm.off_need).min(1000) };
         fm.off_need = 0;
@@ -1572,8 +1600,10 @@ impl Grain {
         // grain has no use until state, army and money are systems, S76).
         // Rent is carried to market with the farm's grain and its money
         // goes to the landlord (PLACEHOLDER: share-cropping paid on sale).
-        let tax = crop * TAX_PCT / 100;
-        let rent = if fm.kind == TENANT { crop * RENT_PCT / 100 } else { 0 };
+        // Tax and rent on the crop less the seed it took (PLACEHOLDER).
+        let net = (crop - seed_in).max(0);
+        let tax = net * TAX_PCT / 100;
+        let rent = if fm.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
         fm.store += crop - tax;
         fm.rent_due += rent;
         self.stats.tax_kg += tax;
@@ -1583,7 +1613,8 @@ impl Grain {
             return;
         }
         let need = self.need_day(id);
-        let keep = need * (YEAR + RESERVE_DAYS);
+        // Food to the next harvest plus the reserve, and next year's seed.
+        let keep = need * (YEAR + RESERVE_DAYS) + cropped * SEED_KG_HA / 10_000;
         let fm = &mut self.farms[f as usize];
         fm.to_sell = (fm.store - keep).max(0).max(fm.rent_due.min(fm.store));
         if fm.to_sell > 0 {

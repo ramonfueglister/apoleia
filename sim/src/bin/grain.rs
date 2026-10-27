@@ -4,7 +4,7 @@
 //! tick times (people and grain apart), memory and fingerprints.
 //!
 //! Usage: grain [--years N] [--seed S] [--threads N] [--root DIR]
-//!              [--clear-pct P] [--clear-cover COL,COL,…|usable]
+//!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
 
 use apoleia_sim::grain::Grain;
 use apoleia_sim::people::People;
@@ -50,7 +50,9 @@ fn main() {
         apoleia_sim::grain::clearable(&root, &cols).expect("landcover25.csv")
     });
     println!("clearable land: {cols}");
-    let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref());
+    let crop: i64 = arg("--crop-pct").map_or(apoleia_sim::grain::CROP_PCT, |v| v.parse().unwrap());
+    println!("fields under grain each year: {crop} % (fallow {} %)", 100 - crop);
+    let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref(), crop);
     let grain_ms = t0.elapsed().as_secs_f64() * 1e3;
     let (farms, kinds, tents, tent_people, ha, fs, ms) = g.summary();
     println!(
@@ -130,7 +132,7 @@ fn main() {
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
         if std::env::var("GRAIN_DEBUG").is_ok() {
             print!("{}", g.debug());
-            println!("  field rebuilds {} sell trips {} buy trips {}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips);
+            println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
         println!("      eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {}", by.join(" "), gs.to_tents);
     }
