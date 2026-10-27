@@ -11,7 +11,8 @@ uniform int delta_count=0;
 // xy mouth on the tile coast, zw unit direction towards the sea (model
 // units, km).
 uniform vec4 delta_frame[6];
-// x lagoon radius along the coast, y inland (km), z seed.
+// x lagoon radius along the coast, y inland (km), z seed, w offset of the
+// lagoon centre along the coast from the mouth (km, towards (-sea.y, sea.x)).
 uniform vec4 delta_shape[6];
 
 struct DeltaMask {float barrier;float lagoon;float rim;float marsh;float shallow;};
@@ -40,7 +41,7 @@ DeltaField delta_field(vec2 p,float land_m,float px_m) {
         vec2 radii=delta_shape[i].xy;
         float seed=delta_shape[i].z;
         // Ellipse centred a little inland of the mouth.
-        vec2 q=p-delta_frame[i].xy+sea*radii.y*0.55;
+        vec2 q=p-delta_frame[i].xy+sea*radii.y*0.55-tangent*delta_shape[i].w;
         vec2 local=vec2(dot(q,tangent)/radii.x,dot(q,-sea)/radii.y);
         // Radial fade, so the effect never ends at a hard edge.
         float region=1.0-smoothstep(0.7,1.0,length(local*vec2(0.85,1.0)));
@@ -97,8 +98,9 @@ bool delta_inside(vec2 p) {
     for(int i=0;i<6;i++) {
         if(i>=delta_count) break;
         vec2 sea=delta_frame[i].zw;vec2 radii=delta_shape[i].xy;
-        vec2 q=p-delta_frame[i].xy+sea*radii.y*0.55;
-        vec2 local=vec2(dot(q,vec2(-sea.y,sea.x))/radii.x,dot(q,-sea)/radii.y);
+        vec2 tangent=vec2(-sea.y,sea.x);
+        vec2 q=p-delta_frame[i].xy+sea*radii.y*0.55-tangent*delta_shape[i].w;
+        vec2 local=vec2(dot(q,tangent)/radii.x,dot(q,-sea)/radii.y);
         if(dot(local*vec2(0.85,1.0),local*vec2(0.85,1.0))<1.0) return true;
     }
     return false;
