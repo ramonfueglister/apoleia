@@ -82,15 +82,15 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 | Wirtschaft | Verbrauch und Leistung pro Kopf bleiben, Summen /566,5. Preise pro Stück bleiben, Staatshaushalt ≈ 900 Mio. Sesterzen → ≈ 1,6 Mio. (geschätzt) | Wirtschafts-Thread rechnet pro Kopf; aggregierte Mengen aus Quellen durch 566,5 teilen. |
 | Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2,5 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |
 | Kleine Orte | 133 Orte liegen unter 2 Einwohnern, 66 davon sogar unter 1 (z. B. Toledo, Siena, Eleusis, Carcassonne) | **entschieden (S57):** jeder Ort bekommt mindestens 2 Einwohner, ein Paar als Familie (zusammen rund +125 Personen). |
-| Kleine Zahlen | Zufall wirkt stärker: Ein Hof kann aussterben, ein Dorf ohne Heiratspartner bleiben | Heiratskreis über die Reisedauer begrenzen; Verwandtschaftsgrad wie in CK3 führen. |
+| Kleine Zahlen | Zufall wirkt stärker: Ein Hof kann aussterben | offen |
 | Wachstum | 680 n. Chr. ≈ 145'000; 200'000 sind bei ≈ 113 Mio. echten Menschen erreicht (Mittelalter) | **entschieden (S59):** feste Obergrenze, Startwert 200'000 Personen. Der Massstab bleibt 1:566,5 für alle Epochen. |
 | Kamera | nächster Zoom zeigt einzelne Häuser (≈ 10 m) | Ausschnittsbreiten aus Kit 1 („Stadt 5–10 km“, „500 m“) gelten in echten Metern; im Diorama ist Rom 190 m breit. |
 
 ## Was sich in Kit 2 ändert
 
 - **S30 und S32 werden ersetzt** (siehe decisions.md S50–S56): Bevölkerung ist die
-  Summe einzelner Menschen; Wachstum entsteht aus Geburten und Todesfällen.
-- Kapazität K (S31, S35) bleibt und wirkt über Nahrung auf Gesundheit, Heirat und Kinderzahl.
+  Summe einzelner Menschen. Wie sie wächst und schrumpft, ist noch offen.
+- Kapazität K (S31, S35) bleibt; wie sie auf die einzelnen Menschen wirkt, ist offen.
 - HYDE (S35) verteilt die 100'000 Menschen zum Start, deterministisch mit Seed.
 - Tile-Raster, IDs, Teilen und Zusammenlegen (S10–S15) bleiben als Gliederung für
   Märkte, Provinzen und Kartenmodi.

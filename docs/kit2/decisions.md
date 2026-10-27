@@ -56,14 +56,14 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S51 | **Der einzelne Mensch wird nicht verkleinert:** Körper, Haus, Wagen, Boot und Feld einer Familie in echter Grösse. Gemeinschaftsbauten nach Nutzerzahl. |
 | S52 | **Koordinaten:** Geodaten und Tile-IDs bleiben in echten Metern; `DIORAMA_LAENGE = 1/23,80` rechnet in Diorama-Meter um. Dichteschwellen (S15) gelten in Diorama-km². |
 | S53 | **Jeder Einwohner ist ein eigener Charakter** (CK3-Stil): Name, Alter, Geschlecht, Familie und Dynastie, Eigenschaften, Fähigkeiten, Gesundheit, Kultur, Religion, Stand, Wohnhaus, Arbeit, Besitz, Beziehungen zu einem begrenzten Kreis (Startwert höchstens 30). Ersetzt S30. |
-| S54 | **Bevölkerung entsteht aus Geburten und Todesfällen**, gesteuert über Nahrung (K), Gesundheit und Heirat. Startwerte geschätzt: 40 Geburten und 35 Todesfälle pro 1'000 und Jahr. Ersetzt S32. |
+| S54 | **Die Bevölkerung ist die Summe der einzelnen Menschen.** Ersetzt S32. Wie sie wächst und schrumpft, ist offen und wird ein eigenes Subsystem. |
 | S55 | **Reisen** laufen als Reise mit Route und Dauer in Tagen; Alltag am Wohn-/Arbeitsort wird nicht als Weg simuliert. |
-| S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
+| S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Beruf und Umzug jährlich (Startwerte). Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
 | S57 | **Jeder Ort aus `places.csv` bekommt mindestens 2 Einwohner** (ein Paar als Familie), auch wenn er nach Massstab darunter liegt (133 Orte, zusammen rund +125 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
 | S58 | **Ämter nach Aufgabe, nicht nach Massstab:** Senat 40 Senatoren (≈ 30 senatorische Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom für Fraktionen und Erbfolge), mit Familien ≈ 150 Personen. Jede Provinz einen Statthalter, jede Legion einen Legaten, Ritterstand ≈ 60 Personen für die Prokuratoren. Alle übrigen Zahlen im Massstab (S50). |
-| S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Die Grenze wirkt weich über die Tragfähigkeit: Ab etwa 90 % sinken Heirat und Geburten weltweit, so dass die Summe die Grenze nicht überschreitet. Regionen können sich weiter verschieben (eine wächst, eine andere schrumpft). Vorbild: Dwarf Fortress, RimWorld, Songs of Syx. |
+| S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Wie die Grenze eingehalten wird, ist offen. |
 
-Offen: Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
+Offen: Wachstum und Rückgang der Bevölkerung (S54), wie die Obergrenze eingehalten wird (S59), Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
