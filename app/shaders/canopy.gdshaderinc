@@ -21,6 +21,12 @@ const vec3 CROWN_BACKLIGHT=vec3(0.09,0.11,0.13);
 void vertex(){
     if(normalize_instanced_normals) NORMAL=normalize(NORMAL);
     crown_up=NORMAL.y;
+    // Close views: crowns 25 % wider about their root, so groves close into
+    // masses like the reference near view (a117124 A/B: crown share nah
+    // 0.115 -> 0.125, no measurable cost; in the mid view it went too dark,
+    // 0.148 against 0.131, so it fades out by ~380 km).
+    float crown_width=mix(1.25,1.0,smoothstep(220.0,380.0,view_width));
+    VERTEX.xz=MODEL_MATRIX[3].xz+(VERTEX.xz-MODEL_MATRIX[3].xz)*crown_width;
     if(clipmap_enabled){
         // Clipmap tiles store the settled ground per instance in
         // INSTANCE_CUSTOM (r metres, a=1); morphing cells sample it again.
