@@ -99,3 +99,26 @@ Lauf 1600 Jahre HYDE 3.3 (Container):
 Ergebnis: stabiles Gleichgewicht. Rom hält sich bei rund 85 % seiner Kapazität, das Umland
 bleibt voll, die Gesamtzahl nähert sich K von unten. Tick p50 1,8 ms im Container
 (Mac-Messung folgt).
+
+### Nachtrag: Sterbeüberschuss nach Stadtgrösse
+
+Davenport (2020) zeigt, dass die Sterblichkeit mit der Stadtgrösse stieg. Im 18. Jahrhundert
+lag die Säuglingssterblichkeit in London bei 300–400 auf 1000 Geburten, in Marktstädten mit
+2000–3000 Einwohnern bei 209–270 und in abgelegenen Dörfern unter 100. Darum gilt jetzt die
+einfachste Formel mit zwei Ankern:
+
+    Sterbeüberschuss pro Jahr = 0,5 % · log10(Stadtgrösse / 5000), unter 5000 null
+
+| Stadt | Sterbeüberschuss pro Jahr |
+|---|---|
+| 5 000 | 0 |
+| 50 000 | 0,5 % |
+| 500 000 (London, Wrigley 1967) | 1,0 % |
+| 1 000 000 (Rom) | 1,15 % |
+
+log10 ist ohne libm gerechnet (nur + − × ÷, Test gegen libm < 1e-6), damit es auf jeder
+Plattform dieselben Bits ergibt.
+
+Lauf 1600 Jahre: Gesamt 66,1 → 81,7 Mio. (stabil ab ~1000), Rom 925 K → 869 K (580) → 830 K
+(1780), Alexandria 412 K → 375 K. Kleinstädte verlieren nichts mehr, daher wächst das Land
+näher an K. Tick p50 2,0 ms im Container.

@@ -29,6 +29,19 @@ pub fn from_fx(v: i64) -> f64 {
     v as f64 / FX as f64
 }
 
+/// log10 for x ≥ 1 with only + − × ÷ and the exponent bits, so it has the
+/// same bits on every platform (libm `log10` may differ). Error < 1e-6.
+fn log10(x: f64) -> f64 {
+    let bits = x.to_bits();
+    let e = ((bits >> 52) & 0x7ff) as i64 - 1023;
+    let m = f64::from_bits((bits & ((1u64 << 52) - 1)) | (1023u64 << 52));
+    // ln m = 2·atanh(s), s = (m − 1)/(m + 1) ≤ 1/3.
+    let s = (m - 1.0) / (m + 1.0);
+    let s2 = s * s;
+    let ln_m = 2.0 * s * (1.0 + s2 * (1.0 / 3.0 + s2 * (1.0 / 5.0 + s2 * (1.0 / 7.0 + s2 * (1.0 / 9.0 + s2 / 11.0)))));
+    (e as f64 * std::f64::consts::LN_2 + ln_m) * std::f64::consts::LOG10_E
+}
+
 /// e^(-x) in Q32 for x in Q32, by Taylor series in integer arithmetic, so the
 /// monthly decay factor has the same bits everywhere (no libm `exp`).
 fn exp_neg_q32(x: i128) -> i128 {
@@ -77,8 +90,9 @@ pub struct TickConst {
     adaptive: bool,
     migration_rate: f64,
     migration_threshold: f64,
-    /// Monthly keep factor of the city population, Q32.
-    urban_keep_q32: i128,
+    /// Monthly excess deaths per tenfold city size, and the size they start at.
+    urban_excess_month: f64,
+    urban_excess_from: f64,
     city_pull_rate: f64,
     city_draw_cap: f64,
 }
@@ -420,7 +434,6 @@ fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut P
     // Dense tile table: work on whole column slices (bevy_ecs 0.19
     // contiguous iteration), one chunk per task.
     let chunks = q.contiguous_par_iter_mut().expect("tiles live in tables");
-    let keep = c.urban_keep_q32 as f64 / Q32 as f64;
     chunks.for_each(|(keys, pop, cap, land, low, moved, urban)| {
         // Population changes on practically every tile each month, so the
         // whole chunk is marked changed once instead of per tile (S47).
@@ -440,7 +453,12 @@ fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut P
                 let u = urban[i].0;
                 if u > 0 {
                     let city = *p as f64 * (u as f64 / FX as f64);
-                    *p -= (city * (1.0 - keep) + 0.5) as i64;
+                    // Size in people (P is fixed point).
+                    let size = city / FX as f64;
+                    if size > c.urban_excess_from {
+                        let rate = c.urban_excess_month * log10(size / c.urban_excess_from);
+                        *p -= (city * rate + 0.5) as i64;
+                    }
                 }
             }
             let land = land[i].0;
@@ -700,7 +718,8 @@ impl Sim {
             adaptive: params.adaptive,
             migration_rate: params.migration_rate,
             migration_threshold: params.migration_threshold,
-            urban_keep_q32: exp_neg_q32((params.urban_excess_death / 12.0 * Q32 as f64).round() as i128),
+            urban_excess_month: params.urban_excess_death / 12.0,
+            urban_excess_from: params.urban_excess_from,
             city_pull_rate: params.city_pull_rate,
             city_draw_cap: params.city_draw_cap,
         };
@@ -865,6 +884,13 @@ impl Sim {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn log10_matches_libm() {
+        for x in [1.0, 2.0, 9.99, 10.0, 100.0, 5000.0, 123_456.7, 1e6, 3.3e9] {
+            assert!((log10(x) - x.log10()).abs() < 1e-6, "{x}");
+        }
+    }
 
     fn cities() -> Vec<City> {
         vec![City { x_m: 30_000.0, z_m: 30_000.0, pop: 900_000.0 }, City { x_m: 80_000.0, z_m: 20_000.0, pop: 20_000.0 }]

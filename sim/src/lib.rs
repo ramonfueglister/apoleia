@@ -46,9 +46,13 @@ pub struct Params {
     /// locations far enough from their surroundings migrate).
     pub migration_threshold: f64,
     /// Pre-modern cities had more deaths than births ("urban graveyard",
-    /// Kit 2 MIGRATION.md): yearly excess deaths among a tile's city
-    /// population, refilled only by migration. 0 switches it off.
+    /// Kit 2 MIGRATION.md), the more the bigger the city (Davenport 2020):
+    /// yearly excess deaths = this × log10(city / `urban_excess_from`),
+    /// none below that size. 0.005 gives 1 %/yr at 500 000 (London, Wrigley
+    /// 1967). Refilled only by migration. 0 switches it off.
     pub urban_excess_death: f64,
+    /// City size (people) from which excess deaths start.
+    pub urban_excess_from: f64,
     /// Share of a city tile's free capacity (K − P) that it asks for from
     /// its region each month (jobs, grain, EU5's market-wide pull).
     pub city_pull_rate: f64,
@@ -75,7 +79,8 @@ impl Default for Params {
             adaptive: true,
             k_from_cropland: false,
             migration_rate: 0.02,
-            urban_excess_death: 0.01,
+            urban_excess_death: 0.005,
+            urban_excess_from: 5000.0,
             city_pull_rate: 0.05,
             city_draw_cap: 0.002,
             migration_threshold: 0.05,
