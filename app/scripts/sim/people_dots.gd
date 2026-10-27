@@ -296,7 +296,8 @@ func _show_person(p: Dictionary) -> void:
 	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
 	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])
 	lines.append("verheiratet" if p.spouse >= 0 else ("Kind" if p.age < 14.0 else "ledig oder verwitwet"))
-	var health := "Gesundheit %d %%" % int(p.health / 10.0)
+	# Health is body weight in per mille of normal weight (S84, 1000 = BMI 21)
+	var health := "Gewicht %d %% (BMI %.1f)" % [int(p.health / 10.0), 21.0 * p.health / 1000.0]
 	if p.iq >= 0.0:
 		health += ", IQ %d" % roundi(p.iq)
 	lines.append(health)

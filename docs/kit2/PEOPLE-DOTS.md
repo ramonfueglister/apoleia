@@ -166,7 +166,7 @@ wohnen in den Stadt-Tiles.
   einmal zurück, `ApoleiaPeople.pick` sucht in Rust den nächsten Punkt auf
   dem Bildschirm (bis 10 px), und der Sim-Thread liest die Person zwischen zwei
   Tagen aus der Welt (`PeopleView::person`): Geschlecht, Alter, Beruf, Stand,
-  politische Gruppen, Haushalt mit Grösse, Ehe, Gesundheit, IQ, Kultur,
+  politische Gruppen, Haushalt mit Grösse, Ehe, Gewicht und BMI (S84), IQ, Kultur,
   Religion, unterwegs. Der Punkt wird gross und gelb, Esc schliesst.
   Kosten nur beim Klick, kein Aufwand pro Frame.
 
