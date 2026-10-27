@@ -40,7 +40,8 @@ var _day_debt := 0.0
 var _bench_path := ""
 var _bench_frame := 0
 var _bench_last := 0
-var _bench := {"on": [], "off": [], "on_gpu": [], "off_gpu": [], "sync_usec": [], "sync_layers": [], "prep": []}
+var _bench := {"on": [], "off": [], "on_gpu": [], "off_gpu": [], "sync_usec": [], "sync_layers": [], "prep": [], "process_on": [], "process_off": []}
+var _bench_prep_last := 0
 
 ## Starts the people sim; false when the GDExtension is not built or the
 ## inputs are missing (then the caller frees this node).
@@ -137,7 +138,10 @@ func _process(delta: float) -> void:
 		var value = source.get_shader_parameter(key)
 		_material.set_shader_parameter(key, value)
 		_prep_material.set_shader_parameter(key, value)
-	var key_now := PLACE_KEYS.map(func(k): return source.get_shader_parameter(k))
+	# floats rounded, so the camera settling by a hair does not rerun the pass
+	var key_now := PLACE_KEYS.map(func(k):
+		var v = source.get_shader_parameter(k)
+		return snappedf(v, 0.001) if v is float else v)
 	if synced > 0 or key_now != _place_key:
 		_place_key = key_now
 		_prep_frames = 2 # this frame and the next (the corner cache may lag a frame)
@@ -176,7 +180,11 @@ func _bench_step() -> void:
 		var t: Dictionary = people.timings()
 		_bench.sync_usec.append(t.sync_usec)
 		_bench.sync_layers.append(t.sync_layers)
-		_bench.prep.append(1.0 if _prep_view.render_target_update_mode == SubViewport.UPDATE_ONCE else 0.0)
+		_bench.prep.append(float(prep_runs - _bench_prep_last))
+		_bench.process_on.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+	else:
+		_bench.process_off.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+	_bench_prep_last = prep_runs
 	if f == BENCH_FRAMES:
 		visible = false
 	if f == 2 * BENCH_FRAMES:
