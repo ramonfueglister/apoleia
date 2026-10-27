@@ -99,7 +99,9 @@ void fragment(){
     // the mid carpets read blue-grey: v 0.3-0.42 band #435c43 against
     // #485e3b, lit land-only #607950 against #5d723f. Warmer mid crowns
     // (ambient and direct alike; the near view is on target).
-    vec3 mid_warm=mix(vec3(1.0),vec3(1.08,0.95,0.72),mid_view);
+    // 4da4ca4: warm green on the reference, but green x0.95 lowered v and
+    // the mid dark share rose to 0.147 (0.131): green stays.
+    vec3 mid_warm=mix(vec3(1.0),vec3(1.08,1.0,0.72),mid_view);
     // Lighter tops over the steep gumdrop walls.
     ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns*mid_warm;
     ROUGHNESS=0.96;
