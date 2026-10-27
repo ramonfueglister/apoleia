@@ -1,0 +1,46 @@
+{
+  "revision": "forest-mask-r1",
+  "width": 5163,
+  "height": 2392,
+  "world_min": [
+    -5286.959516530886,
+    -2223.9016046706583
+  ],
+  "world_size": [
+    10322.15905608411,
+    4781.388450041915
+  ],
+  "grid": "node centred, same as landcover-node-2km and the fixed display atlas",
+  "model": "Paradox-style grayscale forest density mask: density_curve and scale_curve in LandscapeStyle read it; the land shader paints the forest floor from it",
+  "mask": {
+    "path": "mask.u8",
+    "format": "u8 0..255 = 0..1",
+    "sha256": "039888e4f3f172e28294336c7477a1090a42fbf790b418e4c68c09bec7d22d5d"
+  },
+  "inputs": {
+    "landcover_classes_sha256": "da2fcd2792c2ed2488df2b9da243b82ba118535c7937836608f4a7f0d482612e",
+    "landcover_look_sha256": "b23e592a935a82eae3578a1bcbe1f6a3a85ade6e4af2babc7ff91a217022a47a",
+    "atlas_height_sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8"
+  },
+  "params": {
+    "threshold": 0.5,
+    "edge_half_width": 0.05,
+    "share_blur_nodes": 1.0,
+    "regional_blur_nodes": 3.5,
+    "share_weight": 0.6,
+    "hill_weight": 0.25,
+    "valley_weight": 0.25,
+    "plain_weight": 0.15,
+    "noise_coarse_km": 24.0,
+    "noise_coarse_weight": 0.12,
+    "noise_mid_km": 8.0,
+    "noise_mid_weight": 0.06,
+    "copse_threshold": 2.0,
+    "copse_value": 0.42,
+    "copse_edge_bias": 1.2
+  },
+  "land_share": {
+    "core_over_half": 0.12241546171328219,
+    "light_0.1_to_0.5": 0.01633854418878775
+  }
+}

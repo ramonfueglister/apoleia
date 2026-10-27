@@ -324,7 +324,7 @@ static func diorama_representation_policy() -> Dictionary:
     # trees or an inferred original-engine ratio. The same layout survives zoom.
     return {"candidate_step":5.2,"visible_height_min":0.25,
         "visible_height_max":8.6,"chunk_size":128.0,
-        "base_crown_height_range":[5.8,8.6],"rock_role_body_dominance":0.5,
+        "base_crown_height_range":[4.8,8.6],"rock_role_body_dominance":0.5,
         "rock_role_tip_transition":[0.35,0.65],
         "full_width":1600.0,"near_width":800.0,"revision":REVISION,
         "forest_geometry_mode":DIORAMA_FOREST_GEOMETRY_MODE,
@@ -410,66 +410,38 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             var rng=RandomNumberGenerator.new()
             rng.seed=seed_value+918713
             var support:Array[Vector2]=[]
-            var open_support:Array[Vector2]=[]
+            var mask_sum=0.0
             for sz in range(3):
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
-                    if landcover_forest(p)>0.08:support.append(p)
-                    elif landcover_open(p)>0.5:open_support.append(p)
-            # Pure grass and crop land (forest share under 0.08, e.g. the
-            # Lazio coastal plain) still gets sparse copses (r9 near view:
-            # the coastal plain stayed bare, dark share 0.130 against 0.165).
-            var open_only=support.is_empty()
-            if open_only:support=open_support
+                    var m=forest_mask(p)
+                    mask_sum+=m
+                    if m>0.15:support.append(p)
             if support.is_empty():continue
-            # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
-            # canopy where forest > 0.5 (hills/slopes), loose groups below,
-            # open valley floors and fields stay free.
-            var share=0.0
-            if not open_only:
-                for q in support:share+=landcover_forest(q)
-            share/=9.0
-            var fraction=0.0 if open_only else float(support.size())/9.0
+            # Paradox-style forest (EU5/Vic3/CK3, r12): the grayscale forest
+            # mask (tools/build_forest_mask.py) decides everything. Closed
+            # masses on hills and flanks with clean edges, valley floors and
+            # farmland open, copses only as coherent spots near forest edges.
+            # Dense forest: fewer but larger, overlapping crowns; light forest
+            # and copses: smaller, looser groves.
+            var mask=mask_sum/9.0
+            var fraction=float(support.size())/9.0
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
-            # Strong contrast: the land-cover forest share itself is high on
-            # hills/slopes and low in the farmed plains (the source sample
-            # carries no height outside source forest, so no slope term).
-            # Closed forest clumps with meadows between: full above 0.5, rare
-            # below 0.3; in between a 5-15 km noise decides (clumps/clearings).
-            # Strong clumps: the 5-15 km noise gates even dense forest, so cores
-            # fill up and clearings stay empty (same record budget).
-            var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
-            # Forest carpets (r11): the reference mid view shows large closed
-            # forests on hills and mountain flanks with open valleys between.
-            # The regional forest share over a 12 km ring is the hill proxy;
-            # a coarse 7-18 km noise cuts large clearings instead of holes.
-            var regional=landcover_forest(p)
-            for k in range(8):regional+=landcover_forest(p+Vector2.RIGHT.rotated(float(k)*PI/4.0)*12.0)
-            regional/=9.0
-            var carpet=_composition_noise(p/18.0,40417)*0.65+_composition_noise(p/7.0,40421)*0.35
-            var gate=smoothstep(0.42,0.56,carpet+(share-0.45)*1.2+(regional-0.35)*0.8)
-            var density=gate*(1.0 if share>=0.5 else 0.5)
-            # Open land (fields and pasture, share 0.08-0.3): loose copses of
-            # smaller trees in the same clump noise, so the plains read wooded
-            # up to the beach like the reference near view instead of bare
-            # (near dark share 0.125 against 0.165). Fewer inside forested
-            # regions, where the carpets carry the cover (same record budget).
-            var copse=share<0.3
-            if copse:density=smoothstep(0.47,0.62,clump)*(0.12 if open_only else 0.20*smoothstep(0.06,0.14,share))*(1.0-0.7*smoothstep(0.30,0.50,regional))
-            if rng.randf()>density:continue
+            if rng.randf()>_mask_curve(FOREST_DENSITY_CURVE,mask):continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
-            # Dense forest: the wider grove variant closes the canopy in the
-            # carpets (r11: from share 0.45 instead of 0.6).
-            var width_scale=1.18 if share>=0.45 else 1.0
+            # Dense core: the wider grove variant closes the canopy.
+            var width_scale=1.18 if mask>=FOREST_DENSE_MASK else 1.0
             if grouped:
                 var group=Vector2i(floori(float(x)/3.0),floori(float(z)/3.0))
                 if not group_anchors.has(group):group_anchors[group]=_source_group_anchor(group,sample,forest_coverage)
                 var anchor:Dictionary=group_anchors[group]
                 if bool(anchor.get("valid",false)):
-                    var proposed:Vector2=Vector2(anchor.position).lerp(p,0.46)
+                    # Clusters at the fringe and in copses; the dense core
+                    # keeps its even, closed canopy.
+                    var proposed:Vector2=Vector2(anchor.position).lerp(p,lerpf(0.46,0.85,smoothstep(0.6,0.9,mask)))
                     var supported=true
                     # Check the entire bounded displacement on the same fixed
                     # source field; never jump a water gap or rock-dominant ridge.
@@ -481,8 +453,8 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                     if supported:
                         p=proposed
                         observation=sample.call(p)
-                        width_scale=1.18 if share>=0.45 else 1.0
-            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)*(0.8 if copse else 1.0)
+                        width_scale=1.18 if mask>=FOREST_DENSE_MASK else 1.0
+            var height=minf(_mask_curve(FOREST_SCALE_CURVE,mask)*rng.randf_range(0.95,1.03)*lerpf(0.85,1.0,fraction),8.6)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit
             # display omission/transition, not a new vegetation distribution.
@@ -560,6 +532,40 @@ static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Calla
             var d=p.distance_squared_to(center)
             if d<distance:distance=d;best={"valid":true,"position":p}
     return best
+
+# Paradox-style forest density mask (r12): 0..1 at the 2 km land-cover nodes.
+# density_curve: grove probability per 5.2 cell; scale_curve: crown height.
+const FOREST_MASK_DIR="artifacts/render-data/forest-mask-r1"
+const FOREST_DENSITY_CURVE=[[0.0,0.0],[0.15,0.0],[0.35,0.4],[0.6,0.82],[1.0,0.9]]
+const FOREST_SCALE_CURVE=[[0.0,4.8],[0.35,5.4],[0.6,7.4],[1.0,8.2]]
+const FOREST_DENSE_MASK=0.6
+static var _forest_mask:PackedByteArray=PackedByteArray()
+static var _forest_mask_meta:Dictionary={}
+
+static func _mask_curve(points:Array,x:float) -> float:
+    if x<=float(points[0][0]):return float(points[0][1])
+    for i in range(1,points.size()):
+        if x<=float(points[i][0]):
+            var a:Array=points[i-1];var b:Array=points[i]
+            return lerpf(float(a[1]),float(b[1]),(x-float(a[0]))/(float(b[0])-float(a[0])))
+    return float(points[points.size()-1][1])
+
+# Forest mask 0..1, bilinear between the 2 km nodes (cheap: CPU, byte array).
+static func forest_mask(p:Vector2) -> float:
+    if _forest_mask_meta.is_empty():
+        var root=ProjectSettings.globalize_path("res://..").simplify_path().path_join(FOREST_MASK_DIR)
+        var manifest=JSON.parse_string(FileAccess.get_file_as_string(root.path_join("manifest.json")))
+        if not manifest is Dictionary:_forest_mask_meta={"valid":false};return 0.0
+        _forest_mask=FileAccess.get_file_as_bytes(root.path_join(str(manifest.mask.path)))
+        _forest_mask_meta={"valid":_forest_mask.size()==int(manifest.width)*int(manifest.height),"w":int(manifest.width),"h":int(manifest.height),
+            "min":Vector2(manifest.world_min[0],manifest.world_min[1]),"size":Vector2(manifest.world_size[0],manifest.world_size[1])}
+    if not bool(_forest_mask_meta.get("valid",false)):return 0.0
+    var w:int=_forest_mask_meta.w;var h:int=_forest_mask_meta.h
+    var uv=(p-Vector2(_forest_mask_meta.min))/Vector2(_forest_mask_meta.size)*Vector2(w-1,h-1)
+    uv=uv.clamp(Vector2.ZERO,Vector2(w-1,h-1)-Vector2(0.001,0.001))
+    var x=int(uv.x);var z=int(uv.y);var f=uv-Vector2(x,z)
+    var at=z*w+x
+    return lerpf(lerpf(float(_forest_mask[at]),float(_forest_mask[at+1]),f.x),lerpf(float(_forest_mask[at+w]),float(_forest_mask[at+w+1]),f.x),f.y)/255.0
 
 static var _landcover:PackedByteArray=PackedByteArray()
 static var _landcover_meta:Dictionary={}

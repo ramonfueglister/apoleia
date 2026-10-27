@@ -12,7 +12,7 @@ spec=importlib.util.spec_from_file_location('immutable_layout_draft',DRAFT)
 codec=importlib.util.module_from_spec(spec);spec.loader.exec_module(codec)
 DEFAULT_CELLS=[(-7,-5),(-6,-5),(-2,2),(-42,-18),(-42,0),(39,0),(0,-18),(0,19)]
 FORMAT='v19-layout64-le-r1'
-FREEZE_FILES=['tools/compile_complete_forest_layout.py','app/tools/build_complete_forest_layout.gd','app/scripts/style/landscape_style.gd','app/scripts/canonical_domains_v2.gd','app/scripts/fixed_display_surface.gd','app/scripts/cache/fixed_forest_build_context.gd','app/scripts/cache/compact_forest_poses.gd','app/scripts/cache/fixed_forest_layout.gd','app/scripts/cache/fixed_forest_ground.gd','app/scripts/river/river_g_snapshot.gd','app/scripts/cache/compact_forest_identity.gd','app/shaders/terrain.gdshader','app/shaders/model_sampling.gdshaderinc','app/renderer-binding.json','data/projection.json',str(DRAFT.relative_to(ROOT))]
+FREEZE_FILES=['tools/compile_complete_forest_layout.py','app/tools/build_complete_forest_layout.gd','app/scripts/style/landscape_style.gd','app/scripts/canonical_domains_v2.gd','app/scripts/fixed_display_surface.gd','app/scripts/cache/fixed_forest_build_context.gd','app/scripts/cache/compact_forest_poses.gd','app/scripts/cache/fixed_forest_layout.gd','app/scripts/cache/fixed_forest_ground.gd','app/scripts/river/river_g_snapshot.gd','app/scripts/cache/compact_forest_identity.gd','app/shaders/terrain.gdshader','app/shaders/model_sampling.gdshaderinc','app/renderer-binding.json','data/projection.json','artifacts/render-data/forest-mask-r1/manifest.json',str(DRAFT.relative_to(ROOT))]
 
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 def write_atomic(path,raw):
