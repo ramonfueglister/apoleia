@@ -7,6 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub mod ecs;
+pub mod grain;
 pub mod groups;
 pub mod inputs;
 pub mod life;

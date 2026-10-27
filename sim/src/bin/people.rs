@@ -66,7 +66,10 @@ fn main() {
     let mut all = Vec::new();
     let mut worst = (0.0, 0);
     let mut worst_parts = String::new();
-    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal  rss_mb");
+    // Mean time per day of the month and per part (--slices).
+    let slices = args.iter().any(|a| a == "--slices");
+    let mut by_slice = vec![[0.0f64; 13]; 30];
+    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map joined_hh/people health%  hungry  events_in_cal  rss_mb");
     for y in 1..=years {
         p.stats = Default::default();
         for _ in 0..360 {
@@ -93,6 +96,14 @@ fn main() {
                     a.pops - before.pops
                 );
             }
+            if slices {
+                let a = p.timing;
+                let d = [a.events - before.events, a.needs - before.needs, a.travel - before.travel, a.health - before.health, a.marriage - before.marriage, a.relations - before.relations, a.trips - before.trips, a.jobs - before.jobs, a.migration - before.migration, a.index - before.index, a.pops - before.pops, us, 1.0];
+                let row = &mut by_slice[(all.len() % 30) as usize];
+                for k in 0..13 {
+                    row[k] += d[k];
+                }
+            }
             match (m, yr) {
                 (_, true) => year.push(us),
                 (true, _) => month.push(us),
@@ -103,7 +114,7 @@ fn main() {
         let (mw, w, health, hungry) = p.census();
         let m = s.marriages.max(1) as f64;
         println!(
-            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:6.1} {:7} {:8} {:6.0}",
+            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:5}/{:5} {:6.1} {:7} {:8} {:6.0}",
             p.count,
             s.births,
             s.deaths.iter().sum::<u64>(),
@@ -121,12 +132,16 @@ fn main() {
             s.left_households,
             s.left_people,
             s.left_map,
+            s.joined_households,
+            s.joined_people,
             health,
             hungry,
             p.scheduled(),
             rss_mb()
         );
     }
+    let (hh, idle) = p.households_without_workers();
+    println!("households: {hh}, without anyone aged 15–60: {idle} ({:.1} %)", 100.0 * idle as f64 / hh.max(1) as f64);
     println!(
         "day_us p50={:.0} p95={:.0} p99={:.0} max={:.0} | first_of_month_us p50={:.0} max={:.0} | new_year_us p50={:.0} max={:.0} | rss_mb={:.0} peak_people={} cap={}",
         pct(all.clone(), 0.5),
@@ -165,5 +180,12 @@ fn main() {
     println!("pops: {} for {} people (last monthly count)", g.pops.len(), g.people);
     println!("occupations: {}", list(&apoleia_sim::groups::JOB_NAMES, &g.economic));
     println!("political groups (members): {}", list(&apoleia_sim::groups::POLITICAL_NAMES, &g.political));
+    if slices {
+        println!("day of month: total us (events needs travel health marriage relations trips jobs migration index pops)");
+        for (d, r) in by_slice.iter().enumerate() {
+            let n = r[12].max(1.0);
+            println!("{d:2}: {:6.0} ({})", r[11] / n, (0..11).map(|k| format!("{:.0}", r[k] / n)).collect::<Vec<_>>().join(" "));
+        }
+    }
     println!("fingerprint={:016x}", p.fingerprint());
 }
