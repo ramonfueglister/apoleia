@@ -163,6 +163,20 @@ float tt_sea_distance(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 * 2.0;
 }
 
+// Bilinear share of sea nodes (x) and lake nodes (y) at p, 0 dry .. 1 wet:
+// its 0.5 contour is a smooth shoreline for the far relief map.
+vec2 tt_water_share(vec2 p) {
+	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
+	ivec2 i = ivec2(floor(g));
+	vec2 f = fract(g);
+	vec2 w[4];
+	for (int k = 0; k < 4; k++) {
+		vec4 a = texelFetch(aux_tex, i + ivec2(k & 1, k >> 1), 0);
+		w[k] = vec2(a.r > 0.0 ? 1.0 : 0.0, a.g + a.b > 0.0 ? 1.0 : 0.0);
+	}
+	return mix(mix(w[0], w[1], f.x), mix(w[2], w[3], f.x), f.y);
+}
+
 float tt_latitude(vec2 p) {
 	return 41.0 - degrees(p.y / 6371.0088);
 }

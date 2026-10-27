@@ -17,12 +17,23 @@ unabhängig und unverändert.
 - Höhen sind weltweit **7,5-fach** überhöht (`HEIGHT_EXAGGERATION`, Kit 1 K06,
   geändert am 27.10.2026). Daraus folgt `RELIEF_SLOPE` = 80 m/km.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
-  Im Land gibt es keine Klippen. Flüsse folgen dem Gelände mit einer dünnen
-  Uferkante, nur Seen haben Wände (flacher Seespiegel).
-- Optik: Hänge zur Sonne hell, abgewandte dunkel (`slope_light`), feine
-  Grasstruktur je Kachel, Schaumlinie an der Küste, Fels und Schnee in der Höhe,
-  Städte mit Straßenraster und Mauer am Kern. Weit draußen folgt die Farbe dem
-  Boden statt der Kachel, damit die Karte glatt wirkt.
+  Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
+  Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
+  (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
+- Optik: Kacheln sind einfarbig ohne Muster, wie in SimCity 2000. Rampen haben
+  zwei klare Töne (Sonnenseite hell, Schattenseite dunkel). Schaumlinie an der
+  Küste, Fels ab etwa 1100 m und Schnee ab etwa 1600 m (geglättete Höhe),
+  Städte mit Straßenraster und Mauer am Kern.
+
+## Fernsicht (Reliefkarte, EU5)
+
+Zwischen 25 und 55 km Sichtbreite blendet `relief_smooth` von den Kachelstufen
+zu einer glatten Reliefkarte über: Ecken nicht mehr auf Stufen gerundet,
+Normalen je Pixel, kein Kachelraster. Weil die Höhendaten nur ein 2-km-Raster
+haben, legt der Shader in den Bergen Grate und Rinnen darunter, die hangabwärts
+laufen (Phacelle-Rauschen, `alpine_detail`). Steile Bergflanken werden Fels,
+die Schattierung hat warme Sonnen- und kühle Schattenseiten. Licht: wenig
+Umgebungslicht und Filmic-Tonemapping, damit die Farben nicht auswaschen.
 
 ## Maßstab
 
@@ -46,14 +57,16 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   und Ortsklassen je Zoomstufe (`cells-L*.png`), Höhe und begrenztes Relief
   (`height.r16f`, `relief.r16f`). Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
-  verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, vier MultiMeshes
-  für Laub-, Nadelbäume, Zypressen und Häuser (100 × 100 Kacheln).
+  verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
+  für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).
 - `app/shaders/tile_terrain.gdshaderinc` enthält die Kachelregeln, die
   `tile_terrain.gdshader` (Oberseite und Wände) und `tile_props.gdshader`
   (Platzierung der Bäume und Häuser) gemeinsam nutzen. Die gesamte Geometrie
   entsteht im Vertex-Shader; die CPU spiegelt nur die Bodenhöhe für Kamera und Wetter.
-- `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage und die Low-Poly-Bäume
-  und -Häuser.
+- `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die facettierten
+  Low-Poly-Bäume (flache Normalen, Farbverlauf nach oben) und die Häuser.
+  Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
+  bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.
 
 ## Bedienung
@@ -65,6 +78,6 @@ um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 ## Offen
 
 - macOS-Paketierung des Tile-Geländes.
-- Leistungsmessung auf dem Mac (Patch 320² Kacheln, vier Prop-MultiMeshes mit je 90.000 Slots).
-- Flüsse sind schmale Bänder in der Kachel (mindestens Bootsbreite), Kurven diagonal.
-- Feldmuster, Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.
+- Leistungsmessung auf dem Mac (Patch 320² Kacheln, fünf Prop-MultiMeshes mit je 90.000 Slots).
+- Küsten und Seeufer bleiben in der Fernsicht Kacheltreppen.
+- Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.

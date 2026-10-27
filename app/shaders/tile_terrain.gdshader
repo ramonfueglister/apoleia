@@ -138,7 +138,8 @@ vec3 ground_colour(vec2 p, vec4 cov, float detail_m) {
 	c = mix(c, C_ROCK, rock);
 	c = mix(c, C_SNOW, clamp((h - 1600.0) / 180.0, 0.0, 1.0));
 	if (body_level <= 2.0) {
-		c = mix(c, C_SAND, coast >= 0.99 ? 0.8 : coast * 0.65);
+		// tile beaches only up close; far out the beach follows the smooth shoreline
+		c = mix(c, C_SAND, (coast >= 0.99 ? 0.8 : coast * 0.65) * (1.0 - smoothstep(0.5, 0.9, relief_smooth)));
 	}
 	return c;
 }
@@ -171,7 +172,9 @@ vec3 relief_normal(vec2 p) {
 	float lod = height_lod + 0.3;
 	float hx = textureLod(relief_tex, tt_node_uv(p + vec2(e, 0.0)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(e, 0.0)), lod).r;
 	float hz = textureLod(relief_tex, tt_node_uv(p + vec2(0.0, e)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(0.0, e)), lod).r;
-	float k = level_h / m_per_level / (2.0 * e);
+	// the coarse levels see only blurred heights: shade them steeper so the
+	// mountain ranges still stand out on the world map
+	float k = level_h / m_per_level / (2.0 * e) * mix(1.0, 3.0, smoothstep(2.0, 16.0, tile_km));
 	return normalize(vec3(-hx * k, 1.0, -hz * k));
 }
 
@@ -253,7 +256,7 @@ void fragment() {
 				float pulse = 0.5 + 0.5 * sin(TIME * 1.3 + tt_hash(vec2(tile)) * 6.28);
 				float foam = 1.0 - smoothstep(0.06, 0.12, d);
 				foam = max(foam, (1.0 - smoothstep(0.02, 0.05, abs(d - 0.22 - 0.05 * pulse))) * 0.45);
-				c = mix(c, C_FOAM, foam * (1.0 - far));
+				c = mix(c, C_FOAM, foam * (1.0 - far) * (1.0 - smoothstep(0.5, 0.9, relief_smooth)));
 			}
 		} else {
 			c = W_INLAND;
@@ -272,7 +275,13 @@ void fragment() {
 		int town = tt_town(tile);
 		vec3 fc;
 		float stripes;
-		if (town > 0) {
+		if (town > 0 && relief_smooth > 0.5) {
+			// far out a town is a round terracotta spot, not a grey tile
+			float r = length(tile_uv - 0.5);
+			float size = town == 3 ? 0.72 : 0.2 + 0.06 * float(town);
+			float aa = fwidth(r) + 1e-4;
+			c = mix(ground_colour(cp, cov, detail), vec3(0.74, 0.47, 0.34), 1.0 - smoothstep(size - aa, size + aa, r));
+		} else if (town > 0) {
 			c = mix(ground_colour(centre, cov, 0.0), C_PAVED, 0.75);
 			// streets between the house blocks
 			vec2 g = abs(fract(tile_uv * float(house_grid)) - 0.5);
@@ -287,7 +296,7 @@ void fragment() {
 		}
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
-			c = mix(c, C_SLOPE, 0.22);
+			c = mix(c, C_SLOPE, 0.22 * (1.0 - relief_smooth));
 		}
 		// slope shading: ramps facing the sun bright, the others dark
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
@@ -360,6 +369,28 @@ void fragment() {
 		float sw = fwidth(world_pos.y / level_h);
 		base *= 1.0 - 0.1 * (1.0 - smoothstep(0.0, sw * 1.5 + 0.02, min(strata, 1.0 - strata)));
 		c = base;
+	}
+	float shore_smooth = smoothstep(0.5, 0.9, relief_smooth);
+	if (shore_smooth > 0.0 && part == 0) {
+		// far out the shoreline follows the water nodes smoothly instead of
+		// the tile staircase (EU5 map); only once the relief is nearly smooth,
+		// so the tiles never show through as ghosts
+		vec2 ws = tt_water_share(p);
+		vec2 aa = fwidth(ws) * 0.75 + 0.01;
+		// a little noise on the contour so the 2 km nodes do not show as octagons
+		float edge = 0.5 + 0.22 * (tt_fbm(p / 1.7) - 0.5);
+		vec2 wet = smoothstep(edge - aa, edge + aa, ws);
+		if (water == W_SEA || water == W_LAKE) {
+			float dry = 1.0 - (water == W_SEA ? wet.x : wet.y);
+			vec3 land = ground_colour(p, tt_cover(p), 0.0);
+			land = water == W_SEA ? mix(land, C_SAND, 0.45) : land;
+			c = mix(c, land, dry * shore_smooth);
+		} else if (water == W_LAND || water == W_RIVER) {
+			float beach = smoothstep(edge - 0.3, edge - 0.08, ws.x) * (1.0 - wet.x);
+			c = mix(c, C_SAND, beach * 0.75 * shore_smooth);
+			c = mix(c, W_LAGOON, wet.x * shore_smooth);
+			c = mix(c, W_INLAND, wet.y * (1.0 - wet.x) * shore_smooth);
+		}
 	}
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;

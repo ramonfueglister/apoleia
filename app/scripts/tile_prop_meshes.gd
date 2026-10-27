@@ -110,8 +110,8 @@ static func conifer() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_trunk(st, 0.2, 0.04, Color(0.36, 0.25, 0.16))
-	var low := Color(0.16, 0.34, 0.20)
-	var high := Color(0.38, 0.60, 0.33)
+	var low := Color(0.22, 0.42, 0.25)
+	var high := Color(0.46, 0.68, 0.38)
 	_cone(st, 0.14, 0.66, 0.30, 7, low, high)
 	_cone(st, 0.42, 0.92, 0.23, 7, low, high)
 	_cone(st, 0.68, 1.14, 0.15, 6, low, high)
@@ -122,7 +122,7 @@ static func cypress() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_trunk(st, 0.1, 0.03, Color(0.36, 0.25, 0.16))
-	_crown(st, Vector3(0, 0.62, 0), Vector3(0.12, 0.54, 0.12), Color(0.10, 0.24, 0.12), Color(0.27, 0.44, 0.20), 0)
+	_crown(st, Vector3(0, 0.62, 0), Vector3(0.12, 0.54, 0.12), Color(0.14, 0.30, 0.15), Color(0.32, 0.50, 0.23), 0)
 	return st.commit()
 
 ## Stone pine (Pinus pinea), the Roman umbrella pine: a flat parasol crown on a
