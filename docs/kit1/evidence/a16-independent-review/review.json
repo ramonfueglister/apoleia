@@ -1,0 +1,185 @@
+{
+  "criterion": "A16",
+  "commit": "2499b17f9e7a185bd107817c4fc10e0cc05ecbb4",
+  "branch": "main",
+  "reviewed_also": "4a99fc76e839201d85f5b7c5006692c2a1d13a90 (a16-na-r1, via git show; identical at claude/project-thread-gsv7uc 51dfc54)",
+  "reviewer": "independent-claude-subagent",
+  "reviewed_utc": "2026-10-26",
+  "verdict": "PARTIAL",
+  "verdict_summary": "Anwendbare 14 Messwerte sind konsistent und soweit nachrechenbar korrekt; die 4 NA sind regelkonform begründet und verdecken keinen Fehlwert. A16 ist trotzdem nicht abnahmefähig: die NA-Revision liegt nicht auf main, der formale report-check über derivation-view.json ist nicht reproduzierbar, Topologie/Quellbindungen/Rohsamples der Quellraummetriken sind nur über gitignorierte Dateien belegt, und die Zoomaufnahme fehlt im Checkout.",
+  "requirements": [
+    {
+      "id": "R1 vor Messung versionierte geodata_policy",
+      "status": "NOT EVIDENCED",
+      "evidence": "runs/kit1-landscape-v5-2026-10-25/geodata_policy.json (policy-v3, SHA 289fdb60...) ist hashgebunden (a16_crosscheck hashes.geodata_policy match=true); Zeitpunkt vor Messung nicht belegbar: Policy und Messungen kamen im selben Commit 55c1a12, Policy hat kein Zeitstempelfeld."
+    },
+    {
+      "id": "R2 Quellqualitaet/CRS/Hoehendatum, Quell-/Modell-/Rendertransformation, Skalenfaktor, Projektionsverzerrung",
+      "status": "PASS (Policy-Ebene)",
+      "evidence": "geodata_policy.json Felder source_accuracy_assessment, source_model_transform, model_render_transition, source_to_model_scale, uniform_model_scale, projection_definition. Inhalt der derivation-view (source_bindings, quality_evidence) gitignoriert, daher nicht geprueft."
+    },
+    {
+      "id": "R3 metrische Budgets pro Niveau und Gueltigkeitsraum, Stichprobenplan",
+      "status": "PASS",
+      "evidence": "geodata_policy.json levels[overview|canonical|detail].budgets (alle 6 Metriken), scope 'entire project rectangular mask', sampling_plan data/sampling-plan.json SHA 14302a8a... (nachgerechnet, stimmt)."
+    },
+    {
+      "id": "R4 Hoehenabweichung (Stichprobenmaximum)",
+      "status": "NOT EVIDENCED (nur Zusammenfassung)",
+      "evidence": "data/derived/derivation-measurements.json elevation[].sample_max = 1334.149/1065.568/1e-9 m <= 2500/1800/1000; Rohdateien data/derived/error-*.csv gitignoriert, Maximum nicht nachgerechnet."
+    },
+    {
+      "id": "R5 horizontale Gelaendeabweichung",
+      "status": "NOT EVIDENCED (nur Zusammenfassung)",
+      "evidence": "derivation-measurements.json horizontal_terrain.sample_max_m=0.0 bei Budget 0 m; Rohdatei horizontal-generalization.csv gitignoriert; Wert ist per Definition (Identitaets-Query) 0, Roundtrip-Diagnose 9.49e-10 m separat ausgewiesen."
+    },
+    {
+      "id": "R6 Kuestenabweichung",
+      "status": "PASS",
+      "evidence": "data/derived/coast-{overview,canonical,detail}.csv (getrackt, je 2340 Punkte, keine Leerwerte) nachgerechnet: max 2040.133357521 / 2797.252710681 / 2039.410125728 m = applicable-evidence-check.json, Budget 6000 m."
+    },
+    {
+      "id": "R7 Projektionsmassstabsabweichung",
+      "status": "PASS",
+      "evidence": "data/derived/projection-measurements.json 38 Breitenstichproben 21..58 Grad, max 0.42419729034542564 <= 0.5 nachgerechnet."
+    },
+    {
+      "id": "R8 Bildschirmfehler / Uebergangsresiduum (detail)",
+      "status": "PASS",
+      "evidence": "data-report-errata/release-v2/evidence/detail-screen.csv: max ueber in_viewport=True (2087 von 8694 Samples) = 0.6560332070186663 px <= 2; detail-transition.csv 5609 Samples max 0.06846778276470257 px <= 1; beide nachgerechnet. Off-Viewport-Samples (bis 2191 px, Extrapolation weit ausserhalb des Bildes) sind ausgeschlossen, offengelegt in anchor-analysis.json visible_sample_count."
+    },
+    {
+      "id": "R9 Kitpruefer berechnet Stichprobenmaxima (nicht RMS)",
+      "status": "NOT EVIDENCED",
+      "evidence": "kit.py derivation_check vergleicht max(row.samples) mit reported_value und Budget (Code korrekt), lief aber nie ueber die echte derivation-view.json; a16_crosscheck.py nutzt nur reported_value aus applicable-evidence-check.json."
+    },
+    {
+      "id": "R10 untersuchte/ungepruefte Bereiche und Quelleigenfehler offengelegt",
+      "status": "PASS",
+      "evidence": "derivation-measurements.json elevation[].scope ('every 17th native pixel; not global bound'), missing ('Native source uncertainty remains unknown'); errata-binding.json remaining_real_limits."
+    },
+    {
+      "id": "R11 Feature-Schutz Kuesten/Inseln/Fluesse/Kaemme/Naehte, Detailauslassungen mit Regelbezug",
+      "status": "PARTIAL",
+      "evidence": "data/derived/topology-measurements.json: vector_checks ohne unexpected/missing IDs, protected_islands preserved, planned_small_component_omissions mit rule 'subpixel-small-island'; protection-rules.json/detail-rules.json Hashes stimmen. topology_checks/detail_omissions in derivation-view.json nicht geprueft (gitignoriert)."
+    },
+    {
+      "id": "R12 kein fehlender Wert als Nullfehler",
+      "status": "PASS",
+      "evidence": "Offline-Renderkombinationen als NA, nicht 0; derivation-measurements.json screen_error_px/transition_residual_px = null. Einzige 0-Werte (terrain_horizontal_m) sind als gemessen deklariert, Rohbeleg aber nicht pruefbar."
+    },
+    {
+      "id": "R13 NA nur fuer Bildschirm-/Uebergangsmetrik, Pflichtbegruendung, hashgebundener Regelbezug",
+      "status": "PASS",
+      "evidence": "a16-na-r1/not-applicable.json: 4 Eintraege, nur screen_error_px/transition_residual_px, reason gesetzt, rule policy-application-v1.json SHA e4f66e47... (nachgerechnet, stimmt); kit.py Z.463-473 + schema derivation.schema.json not_applicable."
+    },
+    {
+      "id": "R14 echte vollstaendige Zoomaufnahme und unabhaengige Daten-/Bildpruefung",
+      "status": "NOT EVIDENCED",
+      "evidence": "capture_video und Runtime-Evidenz im Checkout nicht vorhanden (report-check: 'evidence kinds missing: derivation,video'); independent-review/FINAL_REVIEW.md Z.146 setzt A16 nur 'anwendbare Stichproben validiert; formale Toolabnahme offen'."
+    },
+    {
+      "id": "R15 formaler report-check ohne Coverage-Fehler",
+      "status": "NOT EVIDENCED",
+      "evidence": "a16-na-r1/report-check.json ist eine unbelegte Ausgabe (kein Commit, keine Eingabehashes, kein Host); auf main liefert report-check u. a. 'A16: derivation evidence must be linked'."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "file": "docs/kit1/evidence/a16-na-r1/",
+      "detail": "Die NA-Revision r1 (README, not-applicable.json, apply_na.py, report.json, report-check.json) existiert nicht auf main 2499b17; sie liegt nur in Commit 4a99fc7 auf claude/project-thread-gsv7uc (nicht in main gemergt). ACCEPTANCE.md auf main behauptet '4 NA mit Regelbezug', die auf main gebundene report.json bindet aber weiterhin derivation-view SHA 70787790 ohne not_applicable."
+    },
+    {
+      "severity": "P1",
+      "file": "docs/kit1/evidence/a16-na-r1/report-check.json",
+      "detail": "Der entscheidende Nachweis (Coverage-Fehler verschwindet) ist nicht reproduzierbar: derivation-view.json (Quelle 70787790 und Ergebnis c1ea9d50) ist gitignoriert und fehlt; report-check.json enthaelt weder Kommando, Commit, Host noch Eingabehashes. Bewertet werden kann nur der Code-Pfad, nicht das Ergebnis."
+    },
+    {
+      "severity": "P1",
+      "file": "runs/kit1-landscape-v5-2026-10-25/report.json",
+      "detail": "A16 status 'offen'; unabhaengige Statusentscheidung, echte Zoomaufnahme (capture_video) und unabhaengige Bildpruefung fehlen im Checkout. A16 ist damit nicht PASS, unabhaengig von der Werkzeugabnahme."
+    },
+    {
+      "severity": "P2",
+      "file": "docs/kit1/evidence/a16-na-r1/apply_na.py",
+      "detail": "Ergebnis-Hash wird nur als 12-Hex-Praefix (48 Bit, 'c1ea9d503f38') geprueft, nicht als volle SHA-256 wie README/Commit suggerieren. Quell-SHA wird voll geprueft. Logik ist deterministisch (json.loads/dumps indent=2, Einfuegereihenfolge), ueberschreibt aber stillschweigend ein evtl. vorhandenes not_applicable-Feld, nutzt sys.argv ohne Pruefung, und der README-Aufruf schreibt in dasselbe Verzeichnis wie die Quelle (zweiter Lauf scheitert am Quell-Hash)."
+    },
+    {
+      "severity": "P2",
+      "file": "docs/kit1/tools/kit.py",
+      "detail": "derivation_check prueft fuer NA-Regeln nur Existenz+Hash der Regeldatei, nicht dass die Regel die konkrete Niveau/Metrik-Kombination als NA ausweist oder dass das Niveau tatsaechlich nicht gerendert wurde. Jede beliebige hashgebundene Datei koennte als 'Regel' dienen. Hier kompensiert durch a16_crosscheck.py (na_application_equals_binding=true), aber nicht im Kitpruefer selbst."
+    },
+    {
+      "severity": "P2",
+      "file": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/policy-application-v1.json",
+      "detail": "NA-Regel (specified_utc 2026-10-25T16:32Z) wurde nach den frueheren native-detail-only Laeufen formuliert ('descriptive interpretation of earlier native-detail-only runs'). Inhaltlich gerechtfertigt (overview/canonical nie regulaer gerendert, Budgets unveraendert), aber keine vor Messung versionierte Regel im Sinne von A16."
+    },
+    {
+      "severity": "P2",
+      "file": "docs/kit1/evidence/A16_TOOL_ACCEPTANCE.md",
+      "detail": "Testangabe veraltet/abweichend: Behauptet 46 Tests, 4 ERROR (fehlende vic3-*.jpg). Nachlauf auf main: 46 Tests, 1 FAIL (test_self_check) + 2 ERROR, Ursache jetzt kaputte Links in ACCEPTANCE.md/STATUS.md auf nicht vorhandene runs/kit1-gamegraphics-v2-Dateien. A16-fremd; die 3 NA-Tests laufen gruen."
+    },
+    {
+      "severity": "P2",
+      "file": "docs/kit1/evidence/a16_crosscheck.py",
+      "detail": "Der Crosscheck rechnet keine Maxima aus Rohsamples nach, sondern vergleicht reported_value aus applicable-evidence-check.json mit dem Budget. Hoehen- und horizontale Maxima stuetzen sich damit nur auf Zusammenfassungen (Roh-CSV gitignoriert)."
+    },
+    {
+      "severity": "P3",
+      "file": "docs/kit1/evidence/a16-na-r1/report.json",
+      "detail": "Diff zum eingefrorenen report.json nur der derivation-Hash (70787790 -> c1ea9d50), konsistent mit README und Commit. Der A16-Befundtext ('da der Kitchecker NA nicht darstellen kann') ist danach sachlich veraltet."
+    },
+    {
+      "severity": "P3",
+      "file": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/applicable-evidence-check.json",
+      "detail": "outputs.derivation-view.json bindet weiterhin den alten Hash 70787790; nach r1 zeigt die Kette report.json -> c1ea9d50, die Pruefzusammenfassung aber auf die Vorgaengerrevision. Kein Messwertproblem, aber Bindungskette nicht geschlossen."
+    },
+    {
+      "severity": "P3",
+      "file": "runs/kit1-landscape-v5-2026-10-25/geodata_policy.json",
+      "detail": "terrain_horizontal_m hat Budget 0 m und Wert 0.0 per Konstruktion (Identitaets-Query); die Metrik ist damit tautologisch und kann keinen Generalisierungsfehler aufdecken. Offengelegt, aber schwacher Nachweis."
+    },
+    {
+      "severity": "P3",
+      "file": "runs/kit1-landscape-v5-2026-10-25/data-report-errata/release-v2/evidence/detail-screen.csv",
+      "detail": "Reported screen max beruht auf Filter in_viewport=True (2087/8694). Ausschluss plausibel (Off-Viewport-Punkte liegen Millionen px ausserhalb), die Filterregel steht aber nicht im versionierten sampling-plan/Policy, sondern nur in anchor-analysis.json."
+    }
+  ],
+  "na_assessment": {
+    "justified": true,
+    "detail": "Alle 4 NA (overview/canonical x screen_error_px/transition_residual_px) entsprechen exakt policy-application-v1.json offline_levels.*.not_applicable_metrics (rendered_in_valid_runs=false) und errata-binding.json.not_applicable; Regel-SHA e4f66e47... stimmt. Keine Quellraummetrik ist NA. Kein Hinweis auf verdeckte Fehlmessung: derivation-measurements.json fuehrt fuer Render-Metriken null ('no offline surrogate'), es existieren keine gemessenen overview/canonical-Bildschirmwerte im Repo."
+  },
+  "hash_consistency": {
+    "source_derivation_view": "70787790435205de0cb678cbcbb609df10d4d694809473214b766e2d6c96cc88 (README, apply_na.py SOURCE_SHA, frozen report.json, applicable-evidence-check.json: konsistent)",
+    "result_derivation_view": "c1ea9d503f38c15240b60ad5b4f119f91f188c91705d612dedc93b652db240b5 (README, r1 report.json: konsistent; apply_na.py prueft nur Praefix c1ea9d503f38)",
+    "rule": "e4f66e47c36a608e30b8d39584e4cb83702a7a07537d5da6202dcb78208b0e56 (nachgerechnet, stimmt)"
+  },
+  "commands_run": [
+    {
+      "argv": "python3 -m unittest discover -s docs/kit1/tests",
+      "result": "46 Tests, FAILED (failures=1, errors=2); alle A16/NA-Tests ok"
+    },
+    {
+      "argv": "python3 docs/kit1/evidence/a16_crosscheck.py /home/claude/apoleia",
+      "result": "exit 0; alle Hashes match ausser derivation-view.json (fehlt); coverage closed=true, 14+4=18"
+    },
+    {
+      "argv": "python3 docs/kit1/tools/kit.py report-check runs/kit1-landscape-v5-2026-10-25",
+      "result": "blocked, 292 Issues (Rohquellen/Runtime fehlen), u. a. 'A16: derivation evidence must be linked'"
+    },
+    {
+      "argv": "eigene Nachrechnung coast-*.csv, projection-measurements.json, detail-screen.csv, detail-transition.csv",
+      "result": "alle Maxima reproduziert"
+    }
+  ],
+  "unverifiable": [
+    "derivation-view.json (Quelle 70787790 und NA-Ergebnis c1ea9d50) ist gitignoriert und fehlt; apply_na.py konnte nicht ausgefuehrt, Ergebnis-Hash nicht reproduziert werden.",
+    "a16-na-r1/report-check.json (Coverage-Fehler beseitigt) nicht reproduzierbar.",
+    "Rohsamples data/derived/error-{overview,canonical,detail}.csv und horizontal-generalization.csv gitignoriert: Hoehen- und horizontale Maxima nicht nachgerechnet.",
+    "source_bindings/quality_evidence/topology_checks/detail_omissions der derivation-view und 268 Rohquellen-Hashes nicht pruefbar.",
+    "Zeitliche Reihenfolge Policy vor Messung (ein gemeinsamer Commit 55c1a12, kein Zeitstempel in geodata_policy.json).",
+    "Zoomaufnahme/capture_video und Runtime-Dumps (captures/, evidence/runtime/) fehlen.",
+    "Tatsaechliche personelle Unabhaengigkeit des Reviewers 'independent_review' (Checker prueft nur Namensungleichheit)."
+  ]
+}
