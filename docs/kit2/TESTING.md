@@ -92,19 +92,33 @@ Für diese Grösse geändert:
 - **Eingaben-Hash binär** statt über Text und nur einmal pro Laden: Laden bei 1,5 Mio. Tiles
   6,5 s → 4,1 s im Container.
 
-Messung im Cloud-Container (4 vCPU, laut und mit teuren Seitenfehlern; Mac folgt):
+Messung auf dem Mac (Apple M3 Pro, 27.10.2026, 36 Monate ab Start):
 
-| Zellen | Tiles | Monat p50 | Monat p95 | Snapshot | Speichern | Grösse | Laden | gleich nach Laden |
-|---|---|---|---|---|---|---|---|---|
-| 30 000 | 44 505 | 0,25 ms | 8,9 ms | 1,4 ms | 26 ms | 0,6 MB | 119 ms | ja |
-| 300 000 | 443 466 | 1,9 ms | 123 ms | 13 ms | 148 ms | 5,6 MB | 1,2 s | ja |
-| 1 000 000 | 1 500 532 | 14 ms | 683 ms | 17 ms | 1,4 s | 19 MB | 4,7 s | ja |
+| Zellen | Tiles | Monat p50 | Monat p95 | Monat Mittel | Snapshot | Speichern | Grösse | Laden | gleich nach Laden | RAM |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 30 000 | 44 505 | 0,10 ms | 2,4 ms | 0,52 ms | 0,06 ms | 7 ms | 0,6 MB | 12 ms | ja | 65 MB |
+| 100 000 | 147 295 | 0,19 ms | 9,7 ms | 1,9 ms | 0,3 ms | 23 ms | 1,9 MB | 48 ms | ja | 206 MB |
+| 300 000 | 443 466 | 0,45 ms | 38 ms | 6,8 ms | 0,9 ms | 40 ms | 5,6 MB | 208 ms | ja | 584 MB |
+| 1 000 000 | 1 500 532 | 2,0 ms | 130 ms | 26 ms | 2,3 ms | 103 ms | 19 MB | 721 ms | ja | 2,1 GB |
 
-**Grenze, ehrlich:** Teure Monate sind die ersten nach dem Start, in denen sich die Karte
-massenhaft fein teilt (p95). Danach sind Teilungen selten. Bei EU5-Grösse sind das einige
-Millisekunden auf dem eigenen Sim-Thread, ohne Wirkung auf die Bildrate. Bei 50-facher
-EU5-Grösse dauert ein solcher Monat im Container bis 1,2 s. Abhilfe ohne neuen Code: ein
-Szenario wird als bereits verfeinerter Spielstand ausgeliefert.
+Plattformgleichheit: 500 Jahre auf der echten Karte ergeben auf Linux x86 und macOS ARM
+denselben Fingerprint `65b033b310548070`; `pinned_fingerprint` ist auf beiden grün.
+`--compare` auf dem Mac: 100 Jahre gleiche Tiles, grösste Abweichung 2,0e-3 (wie Linux).
+Im Spiel: F5 bei 1,5 Mio. Menschen-Karte 19 ms, Datei 0,33 MB; F9 87 ms, danach läuft das
+Spiel nahtlos weiter.
+
+**Grenzen, ehrlich:**
+
+- Teuer sind die Januare (Wanderung und Stadtzug) und die ersten Monate nach dem Start, in
+  denen sich die Karte massenhaft teilt (p95). Bei EU5-Grösse (30 000–150 000 Tiles) bleibt
+  das im Mittel bei 0,5–1,9 ms pro Monat auf dem eigenen Sim-Thread, ohne Wirkung auf die
+  Bildrate.
+- Bei 1,5 Mio. Tiles (50-fache EU5-Grösse) kostet ein Monat im Mittel 26 ms; Tempo 5
+  (100 Monate/s) schafft dann nur ~40 Monate/s. Ursache: Teile des Jahresschritts
+  (Wanderungsfeld füllen, Stadtzug) und der Teilungsschritt laufen auf einem Kern. Das ist
+  der nächste Hebel, falls die Karte so gross wird.
+- Ein Szenario kann als bereits verfeinerter Spielstand ausgeliefert werden; dann fällt der
+  Teilungsschub nach dem Start weg.
 
 ## Quellen (APA 7)
 

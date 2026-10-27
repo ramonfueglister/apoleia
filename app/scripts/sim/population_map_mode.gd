@@ -73,8 +73,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
         KEY_1,KEY_2,KEY_3,KEY_4,KEY_5:
             speed=event.keycode-KEY_1
         KEY_F5:
-            var ok=sim.save_game(_save_path())
-            print("ApoleiaSim: saved month %d to %s: %s" % [sim.month(),_save_path(),ok])
+            var saved=sim.save_game(_save_path())
+            print("ApoleiaSim: saved month %d to %s" % [saved,_save_path()])
         KEY_F9:
             if sim.load_game(_save_path()):
                 print("ApoleiaSim: loaded month %d from %s" % [sim.month(),_save_path()])

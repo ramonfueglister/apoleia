@@ -106,16 +106,19 @@ impl ApoleiaSim {
         }
     }
 
-    /// Writes a save game (absolute path). Waits for the month the sim
-    /// thread is computing; queued months continue afterwards.
+    /// Writes a save game (absolute path) and returns the month it holds,
+    /// or -1. Waits for the month the sim thread is computing; queued months
+    /// continue afterwards. The saved month is the sim thread's, which may
+    /// be a few months ahead of the snapshot on screen.
     #[func]
-    fn save_game(&mut self, path: GString) -> bool {
-        let Some(sim) = self.sim.as_ref() else { return false };
-        match sim.lock().unwrap().save_to(Path::new(&path.to_string())) {
-            Ok(()) => true,
+    fn save_game(&mut self, path: GString) -> i64 {
+        let Some(sim) = self.sim.as_ref() else { return -1 };
+        let mut sim = sim.lock().unwrap();
+        match sim.save_to(Path::new(&path.to_string())) {
+            Ok(()) => sim.stats().month as i64,
             Err(e) => {
                 godot_error!("ApoleiaSim.save_game: {e}");
-                false
+                -1
             }
         }
     }
