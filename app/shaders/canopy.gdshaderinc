@@ -48,6 +48,8 @@ void fragment(){
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
     float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
+    // Mid view slightly lighter (dark share 0.147 against the reference 0.131).
+    near_crowns*=1.0+0.08*smoothstep(320.0,450.0,view_width)*(1.0-smoothstep(1000.0,1600.0,view_width));
     ALBEDO=tinted*mix(0.90,1.04,upper)*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
