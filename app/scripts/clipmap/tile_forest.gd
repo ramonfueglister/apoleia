@@ -11,8 +11,13 @@ const SHADOW_LEVELS=1 # only L0 forests cast shadows (sun shadow range 25 units)
 ## Casting L0 crowns are drawn into every shadow cascade (four splits over the
 ## whole view). A crown is smaller than a shadow texel there, so the shadow is
 ## cast by a shadow-only copy at the coarsest facet stage; the visible crowns
-## keep the authored grove and do not cast.
+## keep the authored trees and do not cast.
 const SHADOW_DETAIL=4
+## Finest facet stage drawn on L0 and L1. The stage-0 grove (150 triangles)
+## put ~7 M triangles on L1 alone at the nearest zoom; stage 2 keeps the same
+## trees with coarser cones and is not distinguishable at 1080p (A12 run C:
+## p95 -2.2 ms, peak primitives -1.8 M).
+const MIN_DETAIL=2
 ## Full-weight tiles draw canopy_opaque (no alpha-hash discard, back faces
 ## culled); the alpha-hash canopy material is swapped in only while fading.
 const OPAQUE_SHADER="res://shaders/canopy_opaque.gdshader"
@@ -39,7 +44,7 @@ func _configure_detail()->void:
     var focus=CameraRig.perspective_distance(near,window.x/maxf(window.y,1.),CameraRig.PERSPECTIVE_FOV)
     level_detail=[];detail_meshes={0:meshes}
     for level in range(FOREST_LEVELS):
-        var detail=0 # L0: authored grove
+        var detail=MIN_DETAIL # L0: authored trees, coarser facets
         if level>0:
             # Closest ground distance from the focus at which a tile of this
             # level is drawn unrefined (clipmap_terrain _visit refines while the
@@ -48,7 +53,7 @@ func _configure_detail()->void:
             # of the view width below. The style's stage for that width is used.
             var span=CELL_SPAN*float(1<<level)
             var ground=0.9*span+0.55*near
-            detail=_stage_for(stages,near*sqrt(focus*focus+ground*ground)/focus)
+            detail=maxi(MIN_DETAIL,_stage_for(stages,near*sqrt(focus*focus+ground*ground)/focus))
         # The farthest forest level always takes the coarsest stage: it now
         # carries full density, so its trees are the most numerous.
         if level==FOREST_LEVELS-1:detail=maxi(detail,int(stages[-1][1]))
