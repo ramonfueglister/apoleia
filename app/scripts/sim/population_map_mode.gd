@@ -21,11 +21,17 @@ var enabled=false
 var running=false
 var speed=2
 var pending=0.0
-var index_tex: ImageTexture
+var index_tex: Texture2DArray
 var value_tex: ImageTexture
 var clock: Label
 var tip: PanelContainer
 var tip_text: Label
+# Tooltip cache: picking the ground costs 1-4 ms, so it only runs again when
+# the mouse or the camera moved; the text only when the month changed too.
+var tip_mouse=Vector2(-1,-1)
+var tip_camera=Transform3D()
+var tip_ground=Vector2.ZERO
+var tip_month=-1
 var profiling=false
 var prof={"frames":0,"refresh":0,"upload":0,"index":0,"index_n":0,"values":0,"params":0,"tip":0,"frame_ms":[],"cpu":[],"gpu":[]}
 
@@ -72,7 +78,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
     match event.keycode:
         KEY_B:
             enabled=not enabled
-            _upload(true)
+            _set_param("map_mode_population",enabled)
+            _upload(false)
         KEY_SPACE:
             running=not running
         KEY_1,KEY_2,KEY_3,KEY_4,KEY_5:
@@ -83,6 +90,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
         KEY_F9:
             if sim.load_game(_save_path()):
                 print("ApoleiaSim: loaded month %d from %s" % [sim.month(),_save_path()])
+                tip_month=-1
                 _upload(true)
         _: return
     _update_clock()
@@ -146,7 +154,9 @@ func _prof_next_phase() -> void:
         print("SIMPROF done");get_tree().quit();return
     print("SIMPROF phase ",PHASES[phase][0])
     if enabled!=PHASES[phase][1]:
-        enabled=PHASES[phase][1];_upload(true)
+        enabled=PHASES[phase][1]
+        _set_param("map_mode_population",enabled)
+        _upload(false)
     running=PHASES[phase][2];speed=4
 
 # The clipmap gives every tile its own duplicate of terrain_material, so a
@@ -163,26 +173,34 @@ func _set_param_raw(name: String, value: Variant) -> void:
         var land: MeshInstance3D=host.clipmap_runtime.nodes[id].land
         land.material_override.set_shader_parameter(name,value)
 
-func _upload(force_index: bool) -> void:
-    _set_param("map_mode_population",enabled)
+# Textures are updated in place, so the materials keep their binding and a
+# shader parameter is set only when a texture is (re)created. The index is
+# an array of pages; after a split or merge only the touched pages upload.
+func _upload(new_game: bool) -> void:
     if not enabled: return
-    if force_index or sim.index_changed() or index_tex==null:
-        var ti=Time.get_ticks_usec()
-        prof.index_n+=1
-        var img: Image=sim.index_image()
-        if index_tex==null or index_tex.get_size()!=Vector2(img.get_size()): index_tex=ImageTexture.create_from_image(img)
-        else: index_tex.update(img)
-        var origin: Vector2=sim.index_origin_m()*MODEL_SCALE
+    var ti=Time.get_ticks_usec()
+    var dirty: PackedInt32Array=sim.index_dirty_pages()
+    if new_game or index_tex==null or index_tex.get_layers()!=sim.index_layers():
+        var pages: Array[Image]=[]
+        for layer in range(sim.index_layers()): pages.append(sim.index_page(layer))
+        index_tex=Texture2DArray.new()
+        index_tex.create_from_images(pages)
         _set_param("map_index_tex",index_tex)
-        _set_param("map_index_origin",origin)
+        _set_param("map_index_pages_x",sim.index_pages_x())
+        _set_param("map_index_origin",sim.index_origin_m()*MODEL_SCALE)
         _set_param("map_index_cell",sim.index_cell_m()*MODEL_SCALE)
-        prof.index+=Time.get_ticks_usec()-ti
+        _set_param("map_value_width",sim.value_width())
+        prof.index_n+=pages.size()
+    else:
+        for layer in dirty: index_tex.update_layer(sim.index_page(layer),layer)
+        prof.index_n+=dirty.size()
+    prof.index+=Time.get_ticks_usec()-ti
     var tv=Time.get_ticks_usec()
     var values: Image=sim.value_image()
-    if value_tex==null or value_tex.get_size()!=Vector2(values.get_size()): value_tex=ImageTexture.create_from_image(values)
+    if value_tex==null or value_tex.get_size()!=Vector2(values.get_size()):
+        value_tex=ImageTexture.create_from_image(values)
+        _set_param("map_value_tex",value_tex)
     else: value_tex.update(values)
-    _set_param("map_value_tex",value_tex)
-    _set_param("map_value_width",sim.value_width())
     prof.values+=Time.get_ticks_usec()-tv
 
 func _update_clock() -> void:
@@ -194,16 +212,24 @@ func _update_clock() -> void:
 func _update_tip() -> void:
     if not enabled:
         tip.visible=false
+        tip_month=-1
         return
     var mouse=get_viewport().get_mouse_position()
-    var p: Vector2=host._pick_ground(mouse)/MODEL_SCALE
-    var t: Dictionary=sim.tile_at(p.x,p.y)
-    if t.is_empty():
-        tip.visible=false
-        return
-    tip_text.text="Bevölkerung  %s\nTragfähigkeit  %s\nDichte  %.1f / km²\nLandfläche  %s km²\nTile  %.1f km" % [_amount(t.population),_amount(t.capacity),t.density,_amount(t.land_km2),t.size_km]
-    tip.visible=true
-    tip.reset_size()
+    var view: Transform3D=host.camera.global_transform
+    var moved=mouse!=tip_mouse or view!=tip_camera
+    if moved:
+        tip_mouse=mouse
+        tip_camera=view
+        tip_ground=host._pick_ground(mouse)/MODEL_SCALE
+    if moved or sim.month()!=tip_month:
+        tip_month=sim.month()
+        var t: Dictionary=sim.tile_at(tip_ground.x,tip_ground.y)
+        if t.is_empty():
+            tip.visible=false
+            return
+        tip_text.text="Bevölkerung  %s\nTragfähigkeit  %s\nDichte  %.1f / km²\nLandfläche  %s km²\nTile  %.1f km" % [_amount(t.population),_amount(t.capacity),t.density,_amount(t.land_km2),t.size_km]
+        tip.visible=true
+        tip.reset_size()
     tip.position=mouse+Vector2(18,18)
 
 static func _amount(v: float) -> String:

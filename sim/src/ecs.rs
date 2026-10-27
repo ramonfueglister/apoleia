@@ -189,7 +189,7 @@ pub struct TileView {
 }
 
 /// Everything the presentation layer may read about one month (S45).
-/// Godot's tile-ID texture stores the index into `tiles`.
+/// Godot maps each tile to a stable slot (`apoleia-godot` map_index).
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
     pub month: u32,

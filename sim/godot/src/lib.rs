@@ -1,15 +1,18 @@
 //! GDExtension bridge (S45, S46): Godot owns no game state. It sends
 //! commands and reads the snapshot of the last completed month as two
-//! textures, one tile index per 1.5625 km map cell and one value row per
-//! tile, which the terrain shader colours as a map mode.
+//! textures, a paged tile index per 1.5625 km map cell and one value texel
+//! per tile slot, which the terrain shader colours as a map mode.
 //!
 //! The simulation runs on its own thread, as in Paradox's engines: `advance`
 //! only queues months and returns, the frame never waits for a tick. The
 //! sim thread publishes a snapshot after each month; `refresh` picks up the
 //! newest one. Results stay deterministic (one thread owns the world).
 
+mod map_index;
+
 use apoleia_sim::ecs::{Command, Sim, Snapshot};
 use apoleia_sim::{Params, MAX_LEVEL, ROOT_SIZE_M};
+use map_index::{MapIndex, PAGE};
 use godot::classes::image::Format;
 use godot::classes::Image;
 use godot::prelude::*;
@@ -23,8 +26,11 @@ struct ApoleiaExtension;
 #[gdextension]
 unsafe impl ExtensionLibrary for ApoleiaExtension {}
 
-/// Width of the value texture; tile i sits at (i % W, i / W).
+/// Width of the value texture; slot s sits at (s % W, s / W).
 const VALUE_WIDTH: usize = 1024;
+/// The value texture grows in steps of this many rows, so it is recreated
+/// (and rebound to the materials) rarely, not on every new slot.
+const VALUE_ROW_STEP: usize = 16;
 
 /// State shared between Godot's main thread and the sim thread.
 #[derive(Default)]
@@ -75,11 +81,8 @@ pub struct ApoleiaSim {
     /// Repository root the inputs were loaded from (needed to load saves).
     root: String,
     snap: Option<Arc<Snapshot>>,
-    /// Finest-level grid covering all tiles: origin column/row and size.
-    grid: (i64, i64, usize, usize),
-    /// Tile index + 1 per grid cell (0 = no tile), rebuilt on structure change.
-    index: Vec<f32>,
-    index_structure: Option<u64>,
+    /// Tile slots and the paged index texture data.
+    map: Option<MapIndex>,
     last_step_usec: f64,
     base: Base<RefCounted>,
 }
@@ -204,53 +207,67 @@ impl ApoleiaSim {
     /// World position (metres, eqc41) of the index texture's top-left corner.
     #[func]
     fn index_origin_m(&self) -> Vector2 {
-        Vector2::new((self.grid.0 as f64 * cell_m()) as f32, (self.grid.1 as f64 * cell_m()) as f32)
+        let (c0, r0, _, _) = self.map.as_ref().map_or((0, 0, 0, 0), |m| m.grid);
+        Vector2::new((c0 as f64 * cell_m()) as f32, (r0 as f64 * cell_m()) as f32)
     }
 
-    /// True when the tile-ID texture must be fetched again.
+    /// Edge of one index page in cells.
     #[func]
-    fn index_changed(&self) -> bool {
-        self.snap.as_ref().map(|s| s.structure) != self.index_structure
+    fn index_page_cells(&self) -> i64 {
+        PAGE as i64
     }
 
-    /// Tile index + 1 per 1.5625 km cell as an RF image (0 = no tile).
+    /// Index pages per row; page (x, y) is layer y * pages_x + x.
     #[func]
-    fn index_image(&mut self) -> Option<Gd<Image>> {
-        let snap = self.snap.clone()?;
-        let (c0, r0, w, h) = self.grid;
-        self.index.clear();
-        self.index.resize(w * h, 0.0);
-        for (i, t) in snap.tiles.iter().enumerate() {
-            let s = 1i64 << (MAX_LEVEL - t.key.level);
-            let (c, r) = (t.key.col as i64 * s - c0, t.key.row as i64 * s - r0);
-            let v = (i + 1) as f32;
-            for y in r..r + s {
-                let row = &mut self.index[y as usize * w..][..w];
-                row[c as usize..(c + s) as usize].fill(v);
-            }
+    fn index_pages_x(&self) -> i64 {
+        self.map.as_ref().map_or(0, |m| m.pages_x as i64)
+    }
+
+    /// Layers of the index texture array.
+    #[func]
+    fn index_layers(&self) -> i64 {
+        self.map.as_ref().map_or(0, |m| m.layers() as i64)
+    }
+
+    /// Brings the index to the current snapshot and returns the layers that
+    /// changed since the last call (all of them after a new game). Only
+    /// these need `index_page` and a layer upload.
+    #[func]
+    fn index_dirty_pages(&mut self) -> PackedInt32Array {
+        self.sync_map();
+        self.map.as_mut().map_or_else(PackedInt32Array::new, |m| PackedInt32Array::from(m.take_dirty()))
+    }
+
+    /// One index page: slot + 1 per cell as an RF image (0 = no tile).
+    #[func]
+    fn index_page(&self, layer: i64) -> Option<Gd<Image>> {
+        let m = self.map.as_ref()?;
+        if layer < 0 || layer as usize >= m.layers() {
+            return None;
         }
-        self.index_structure = Some(snap.structure);
         let mut bytes = PackedByteArray::new();
-        bytes.resize(w * h * 4);
-        for (dst, v) in bytes.as_mut_slice().chunks_exact_mut(4).zip(&self.index) {
-            dst.copy_from_slice(&v.to_le_bytes());
-        }
-        Image::create_from_data(w as i32, h as i32, false, Format::RF, &bytes)
+        bytes.resize(PAGE * PAGE * 4);
+        m.page_bytes(layer as usize, bytes.as_mut_slice());
+        Image::create_from_data(PAGE as i32, PAGE as i32, false, Format::RF, &bytes)
     }
 
-    /// Per tile (population, population per km²) as an RGF image,
-    /// `VALUE_WIDTH` tiles per row, in the order of the index texture.
+    /// Per slot (population, population per km²) as an RGF image,
+    /// `VALUE_WIDTH` slots per row. Its height grows in steps, so the same
+    /// texture can be updated in place for a long time.
     #[func]
-    fn value_image(&self) -> Option<Gd<Image>> {
+    fn value_image(&mut self) -> Option<Gd<Image>> {
+        self.sync_map();
         let snap = self.snap.as_ref()?;
-        let h = snap.tiles.len().div_ceil(VALUE_WIDTH).max(1);
+        let m = self.map.as_ref()?;
+        let h = m.slot_count().div_ceil(VALUE_WIDTH).max(1).next_multiple_of(VALUE_ROW_STEP);
         let mut bytes = PackedByteArray::new();
         bytes.resize(VALUE_WIDTH * h * 8);
         let out = bytes.as_mut_slice();
-        for (i, t) in snap.tiles.iter().enumerate() {
+        for (t, &s) in snap.tiles.iter().zip(m.slot_of_tile()) {
             let d = if t.land_km2 > 0.0 { t.pop / t.land_km2 } else { 0.0 };
-            out[i * 8..i * 8 + 4].copy_from_slice(&(t.pop as f32).to_le_bytes());
-            out[i * 8 + 4..i * 8 + 8].copy_from_slice(&(d as f32).to_le_bytes());
+            let o = s as usize * 8;
+            out[o..o + 4].copy_from_slice(&(t.pop as f32).to_le_bytes());
+            out[o + 4..o + 8].copy_from_slice(&(d as f32).to_le_bytes());
         }
         Image::create_from_data(VALUE_WIDTH as i32, h as i32, false, Format::RGF, &bytes)
     }
@@ -270,17 +287,13 @@ impl ApoleiaSim {
     #[func]
     fn tile_at(&self, x_m: f64, z_m: f64) -> VarDictionary {
         let mut d = VarDictionary::new();
-        let Some(snap) = self.snap.as_ref() else { return d };
-        if self.index_structure != Some(snap.structure) {
+        let (Some(snap), Some(m)) = (self.snap.as_ref(), self.map.as_ref()) else { return d };
+        if m.structure != Some(snap.structure) {
             return d;
         }
-        let (c0, r0, w, h) = self.grid;
+        let (c0, r0, _, _) = m.grid;
         let (c, r) = ((x_m / cell_m()).floor() as i64 - c0, (z_m / cell_m()).floor() as i64 - r0);
-        if c < 0 || r < 0 || c as usize >= w || r as usize >= h {
-            return d;
-        }
-        let i = self.index[r as usize * w + c as usize] as usize;
-        let Some(t) = i.checked_sub(1).and_then(|i| snap.tiles.get(i)) else { return d };
+        let Some(t) = m.tile_at_cell(c, r).and_then(|i| snap.tiles.get(i)) else { return d };
         d.set("id", t.key.id().as_str());
         d.set("level", t.key.level as i64);
         d.set("size_km", t.key.size_m() / 1000.0);
@@ -296,17 +309,7 @@ impl ApoleiaSim {
     /// Hands a game to a new sim thread (after stopping the old one).
     fn start(&mut self, mut sim: Sim) {
         let snap = sim.snapshot();
-        let shift = |level: u8| 1i64 << (MAX_LEVEL - level);
-        let (mut c0, mut r0, mut c1, mut r1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-        for t in &snap.tiles {
-            let s = shift(t.key.level);
-            let (c, r) = (t.key.col as i64 * s, t.key.row as i64 * s);
-            c0 = c0.min(c);
-            r0 = r0.min(r);
-            c1 = c1.max(c + s);
-            r1 = r1.max(r + s);
-        }
-        self.grid = (c0, r0, (c1 - c0) as usize, (r1 - r0) as usize);
+        self.map = Some(MapIndex::new(&snap));
         self.stop();
         let sim = Arc::new(Mutex::new(sim));
         let shared = Arc::new(Shared::default());
@@ -315,7 +318,12 @@ impl ApoleiaSim {
         self.sim = Some(sim);
         self.shared = shared;
         self.snap = Some(snap);
-        self.index_structure = None;
+    }
+
+    fn sync_map(&mut self) {
+        if let (Some(m), Some(snap)) = (self.map.as_mut(), self.snap.as_ref()) {
+            m.sync(snap);
+        }
     }
 
     fn stop(&mut self) {
