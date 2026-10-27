@@ -3,9 +3,8 @@ shader_type spatial;
 // The quad hangs from the cloud base towards sea level and tapers downwards;
 // it follows the rain field, not individual puffs, so it also hangs under decks.
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
-#include "res://shaders/weather_field.gdshaderinc"
+#include "res://shaders/weather_placement.gdshaderinc"
 
-uniform float cloud_base = 90.0;
 uniform float now = 0.0;
 uniform vec3 rain_color : source_color = vec3(0.40, 0.43, 0.48);
 uniform float strength = 1.0;
@@ -18,7 +17,8 @@ void vertex() {
 	vec3 origin = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	vec2 world_xz = origin.xz + air_drift;
 	vec3 field = weather_field(world_xz);
-	amount = smoothstep(0.2, 0.6, field.y) * INSTANCE_CUSTOM.z;
+	// Same near rule as the clouds: no veil between camera and focus.
+	amount = smoothstep(0.2, 0.6, field.y) * INSTANCE_CUSTOM.z * step(0.5, view_keep(vec3(world_xz.x, cloud_base, world_xz.y), 0.0, CAMERA_POSITION_WORLD));
 	seed = INSTANCE_CUSTOM.y;
 	vec3 side = (MODEL_MATRIX * vec4(VERTEX.x, 0.0, VERTEX.z, 0.0)).xyz * 1.1 * mix(1.0, 0.7, -VERTEX.y);
 	vec3 world = vec3(world_xz.x, cloud_base * (1.0 + VERTEX.y), world_xz.y) + side * step(0.001, amount);

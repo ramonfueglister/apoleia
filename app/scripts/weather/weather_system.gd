@@ -666,7 +666,7 @@ func _update_tiers() -> void:
 	var near_hide := focus_distance * lerpf(1.2, 0.7, smoothstep(400.0, 900.0, _ground_width))
 	var size := get_viewport().get_visible_rect().size
 	var view_tan := 2.0 * tan(deg_to_rad(_camera.fov) * 0.5) * size.x / maxf(size.y, 1.0) if _camera.projection == Camera3D.PROJECTION_PERSPECTIVE else _ground_width / maxf(focus_distance, 1.0)
-	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _rain_material]:
 		material.set_shader_parameter("near_hide_distance", near_hide)
 		material.set_shader_parameter("view_tan", view_tan)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
