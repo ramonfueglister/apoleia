@@ -64,6 +64,7 @@ fn main() {
     );
     let (mut plain, mut month, mut year) = (Vec::new(), Vec::new(), Vec::new());
     let mut all = Vec::new();
+    let mut worst = (0.0, 0);
     println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal");
     for y in 1..=years {
         p.stats = Default::default();
@@ -72,6 +73,9 @@ fn main() {
             let (m, yr) = p.day();
             let us = t.elapsed().as_secs_f64() * 1e6;
             all.push(us);
+            if us > worst.0 {
+                worst = (us, all.len());
+            }
             match (m, yr) {
                 (_, true) => year.push(us),
                 (true, _) => month.push(us),
@@ -120,6 +124,7 @@ fn main() {
         apoleia_sim::people::CAP
     );
     let _ = plain;
+    println!("slowest day: {:.0} us on day {}", worst.0, worst.1);
     let days = (years * 360) as f64;
     let t = p.timing;
     println!(
