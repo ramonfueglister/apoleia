@@ -73,7 +73,9 @@ vec2 wl_facet_center(vec2 p,float size,out float facet_id) {
     return centroid;
 }
 
-struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float foam;};
+// tone: the cloud-shadow and storm factor already applied to albedo, for
+// callers that replace the colour ramp but keep the weather.
+struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float foam;vec3 tone;};
 
 // coast_m: distance to the shore (m, >=0 in water). depth: water depth (m).
 // view_world: unit vector from surface towards the camera. calm: 0 far map
@@ -191,6 +193,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);
     s.albedo=col*mix(0.80,1.0,sun_mask);
+    s.tone=mix(vec3(1.0),vec3(0.62,0.68,0.72),storm*0.6)*mix(0.80,1.0,sun_mask);
     s.emission=sky*sheen*0.25+water_sun_tint.rgb*glitter*0.45+glare_tint*glare*0.8+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
     s.normal=n;
     s.roughness=mix(0.75,0.45,anim);

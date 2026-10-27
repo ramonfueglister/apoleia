@@ -38,6 +38,10 @@ var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missin
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
     owner=scene;terrain_template=terrain;water_template=water
+    # Lakes shade in the terrain material: same water palette as the sea
+    # (without it they fell back to the shader defaults, pale sky blue).
+    var palette=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+    for key in palette:terrain_template.set_shader_parameter(key,palette[key])
     if water_template==null:
         water_template=ShaderMaterial.new();water_template.shader=load("res://shaders/water.gdshader")
         load("res://scripts/water/water_style.gd").apply_to(water_template)
