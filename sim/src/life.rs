@@ -80,6 +80,61 @@ pub fn unit(h: u64) -> f64 {
     ((h >> 11) + 1) as f64 / (1u64 << 53) as f64
 }
 
+/// Standard normal quantile (Acklam's rational approximation, relative
+/// error below 1.2e-9) from a uniform in (0, 1); only + − × ÷, sqrt and our
+/// `ln`, so the same bits on every platform.
+pub fn normal(u: f64) -> f64 {
+    const A: [f64; 6] = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.383577518672690e2, -3.066479806614716e1, 2.506628277459239];
+    const B: [f64; 5] = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+    const C: [f64; 6] = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const D: [f64; 4] = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+    let u = u.clamp(1e-12, 1.0 - 1e-12);
+    let tail = |q: f64| (((((C[0] * q + C[1]) * q + C[2]) * q + C[3]) * q + C[4]) * q + C[5]) / ((((D[0] * q + D[1]) * q + D[2]) * q + D[3]) * q + 1.0);
+    if u < 0.02425 {
+        tail((-2.0 * ln(u)).sqrt())
+    } else if u > 1.0 - 0.02425 {
+        -tail((-2.0 * ln(1.0 - u)).sqrt())
+    } else {
+        let q = u - 0.5;
+        let r = q * q;
+        (((((A[0] * r + A[1]) * r + A[2]) * r + A[3]) * r + A[4]) * r + A[5]) * q / (((((B[0] * r + B[1]) * r + B[2]) * r + B[3]) * r + B[4]) * r + 1.0)
+    }
+}
+
+/// Intelligence (IQ scale, mean 100, SD 15 by definition of the scale).
+/// The phenotype is genes plus environment with an age-dependent share of
+/// the genes (heritability rises with age, the "Wilson effect"):
+/// 0.41 at 9, 0.55 at 12, 0.66 at 17 (Haworth et al. 2010, about 11,000
+/// twin pairs), levelling off at about 0.8 from 18–20 (Bouchard 2013);
+/// linear between the points, 0.2 at birth. PLACEHOLDER: which estimate.
+pub const IQ_H2: [(f64, f64); 5] = [(0.0, 0.2), (9.0, 0.41), (12.0, 0.55), (17.0, 0.66), (20.0, 0.8)];
+
+pub fn iq_h2(age: f64) -> f64 {
+    let i = IQ_H2.iter().rposition(|&(a, _)| a <= age).unwrap_or(0);
+    match IQ_H2.get(i + 1) {
+        Some(&(a1, h1)) => {
+            let (a0, h0) = IQ_H2[i];
+            h0 + (h1 - h0) * (age - a0) / (a1 - a0)
+        }
+        None => IQ_H2[i].1,
+    }
+}
+
+/// IQ at `age` from the standardized genetic value `g` and environment `e`
+/// (both N(0, 1)): 100 + 15 · (√h² · g + √(1 − h²) · e), so the spread is
+/// 15 at every age and only the share of the genes grows.
+pub fn iq(g: f64, e: f64, age: f64) -> f64 {
+    let h2 = iq_h2(age);
+    100.0 + 15.0 * (h2.sqrt() * g + (1.0 - h2).sqrt() * e)
+}
+
+/// A child's standardized genetic value under additive inheritance:
+/// the parents' mean plus Mendelian segregation with variance 1/2, so that
+/// under random mating the spread stays 1 over the generations.
+pub fn child_gene(father: f64, mother: f64, z: f64) -> f64 {
+    (father + mother) / 2.0 + std::f64::consts::FRAC_1_SQRT_2 * z
+}
+
 /// Years until the next event under a piecewise-constant yearly hazard
 /// (`rate[i]` from `ages[i]`, the last interval open-ended) times `mult`,
 /// for someone aged `age` years, from one uniform draw (inverse of the
@@ -219,6 +274,40 @@ mod tests {
                 .sum();
             assert!((s / n as f64 - e0).abs() < 0.2, "{}", s / n as f64);
         }
+    }
+
+    #[test]
+    fn normal_quantiles() {
+        for (u, z) in [(0.5, 0.0), (0.975, 1.959964), (0.025, -1.959964), (0.9772499, 2.0), (0.001, -3.090232)] {
+            assert!((normal(u) - z).abs() < 1e-5, "{u}");
+        }
+    }
+
+    /// Adult IQ has mean 100 and SD 15, and the regression of child on
+    /// mid-parent IQ gives the adult heritability (about 0.8).
+    #[test]
+    fn iq_distribution_and_heritability() {
+        let h = |i: u64, s: u64| normal(unit(xxhash_rust::xxh3::xxh3_64(&(i * 8 + s).to_le_bytes())));
+        let n = 200_000u64;
+        let (mut sp, mut sc, mut spp, mut spc, mut sum, mut sq) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        for i in 0..n {
+            let (gf, gm) = (h(i, 0), h(i, 1));
+            let pf = iq(gf, h(i, 2), 40.0);
+            let pm = iq(gm, h(i, 3), 40.0);
+            let c = iq(child_gene(gf, gm, h(i, 4)), h(i, 5), 40.0);
+            let mid = (pf + pm) / 2.0;
+            sp += mid;
+            sc += c;
+            spp += mid * mid;
+            spc += mid * c;
+            sum += pf;
+            sq += pf * pf;
+        }
+        let nf = n as f64;
+        let (mean, sd) = (sum / nf, (sq / nf - (sum / nf).powi(2)).sqrt());
+        assert!((mean - 100.0).abs() < 0.2 && (sd - 15.0).abs() < 0.2, "{mean} {sd}");
+        let slope = (spc / nf - sp / nf * sc / nf) / (spp / nf - (sp / nf).powi(2));
+        assert!((slope - 0.8).abs() < 0.02, "{slope}");
     }
 
     #[test]

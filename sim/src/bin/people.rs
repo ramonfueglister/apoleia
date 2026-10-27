@@ -142,6 +142,8 @@ fn main() {
             rss_mb()
         );
     }
+    let (iq_mean, iq_sd, iq_lo, iq_hi) = p.iq_summary();
+    println!("iq (20+): mean {iq_mean:.1} sd {iq_sd:.1}, below 70 {iq_lo:.2} %, 130+ {iq_hi:.2} %");
     let (hh, idle) = p.households_without_workers();
     println!("households: {hh}, without anyone aged 15–60: {idle} ({:.1} %)", 100.0 * idle as f64 / hh.max(1) as f64);
     println!(

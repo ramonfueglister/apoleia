@@ -126,6 +126,32 @@ pub struct Home(pub u32);
 pub struct Job(pub u8);
 #[derive(Component, Clone, Copy)]
 pub struct Traits(pub u32);
+/// Intelligence (Ramon, 27.10.2026): standardized genetic value and
+/// environment, each N(0, 1) in steps of 1/4096; the IQ follows from age
+/// (crate::life::iq). Inherited additively, does nothing yet.
+#[derive(Component, Clone, Copy)]
+pub struct Intelligence {
+    pub gene: i16,
+    pub env: i16,
+}
+
+impl Intelligence {
+    const STEP: f64 = 4096.0;
+
+    fn from(gene: f64, env: f64) -> Intelligence {
+        let q = |x: f64| (x * Self::STEP).round().clamp(i16::MIN as f64, i16::MAX as f64) as i16;
+        Intelligence { gene: q(gene), env: q(env) }
+    }
+
+    pub fn gene(&self) -> f64 {
+        self.gene as f64 / Self::STEP
+    }
+
+    pub fn iq(&self, age: f64) -> f64 {
+        life::iq(self.gene(), self.env as f64 / Self::STEP, age)
+    }
+}
+
 /// 0–1000; driven by food (S64, S65).
 #[derive(Component, Clone, Copy)]
 pub struct Health(pub u16);
@@ -791,7 +817,7 @@ impl People {
                 let job = groups::start_job(s.stand, r(3));
                 (
                     (Pid(pid), Born(b), Sex(sex), Household(mates[hh]), Home(s.home), Job(job)),
-                    (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel),
+                    (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel, Intelligence::from(life::normal(life::unit(r(5))), life::normal(life::unit(r(6))))),
                     (
                         Culture((s.home % 192 / 16) as u16),
                         Religion((s.home / 192 / 40) as u16),
@@ -1267,6 +1293,8 @@ impl People {
         let mask = r(1) as u32;
         let traits = ((self.traits[father as usize] & mask) | (self.traits[mother as usize] & !mask)) ^ (1 << (r(2) % 32));
         let sex = (r(3) & 1) as u8;
+        let gene = life::child_gene(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))));
+        let mind = Intelligence::from(gene, life::normal(life::unit(r(6))));
         let mut rel = Relations { n: 2, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
         rel.ids[0] = mother;
         rel.ids[1] = father;
@@ -1276,7 +1304,7 @@ impl People {
             // PLACEHOLDER (open): a child takes the father's occupation and
             // political groups, as it takes his estate.
             (Pid(pid), Born(day as i32), Sex(sex), Household(m_house), Home(m_home), f.4),
-            (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel),
+            (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel, mind),
             (f.1, f.2, f.3, Spouse(NONE), Parents(father, mother), Sched::default(), Search(0)),
         ));
         let leaving = travel.is_some();
@@ -1959,6 +1987,28 @@ impl People {
         (all, idle)
     }
 
+    /// IQ of the living aged 20 and over: mean, SD, share below 70 and
+    /// at 130 or above (in %).
+    pub fn iq_summary(&mut self) -> (f64, f64, f64, f64) {
+        let day = self.world.resource::<Clock>().day;
+        let mut q = self.world.query::<(&Born, &Intelligence)>();
+        let (mut n, mut s, mut s2, mut lo, mut hi) = (0.0f64, 0.0, 0.0, 0.0, 0.0);
+        for (b, m) in q.iter(&self.world) {
+            let a = age_y(day, b.0);
+            if a < 20.0 {
+                continue;
+            }
+            let x = m.iq(a);
+            n += 1.0;
+            s += x;
+            s2 += x * x;
+            lo += (x < 70.0) as u8 as f64;
+            hi += (x >= 130.0) as u8 as f64;
+        }
+        let mean = s / n.max(1.0);
+        (mean, (s2 / n.max(1.0) - mean * mean).sqrt(), 100.0 * lo / n.max(1.0), 100.0 * hi / n.max(1.0))
+    }
+
     pub fn travelling(&mut self) -> usize {
         self.world.query::<&Travel>().iter(&self.world).count()
     }
@@ -1998,8 +2048,8 @@ impl People {
     /// Hash of every person's state in id order.
     pub fn fingerprint(&mut self) -> u64 {
         let mut rows: Vec<(u32, [u64; 7])> = Vec::with_capacity(self.count as usize);
-        let mut q = self.world.query::<(&Pid, &Home, &Job, &Health, &Needs, &Relations, &Spouse, &Born, Option<&Travel>)>();
-        for (pid, home, job, health, needs, rel, sp, born, t) in q.iter(&self.world) {
+        let mut q = self.world.query::<(&Pid, &Home, &Job, &Health, &Needs, &Relations, &Spouse, &Born, Option<&Travel>, &Intelligence)>();
+        for (pid, home, job, health, needs, rel, sp, born, t, mind) in q.iter(&self.world) {
             let n = needs.0;
             let mut h = 0u64;
             for k in 0..rel.n as usize {
@@ -2014,7 +2064,7 @@ impl People {
                     (n[0] as u64) << 48 | (n[1] as u64) << 32 | (n[2] as u64) << 16 | n[3] as u64,
                     h,
                     t,
-                    rel.n as u64,
+                    rel.n as u64 | (mind.gene as u16 as u64) << 16 | (mind.env as u16 as u64) << 32,
                     (sp.0 as u64) << 32 | born.0 as u32 as u64,
                 ],
             ));
