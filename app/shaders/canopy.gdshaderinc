@@ -88,8 +88,12 @@ void fragment(){
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
-    float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
-    near_crowns*=1.0+0.15*smoothstep(280.0,400.0,view_width)*(1.0-smoothstep(600.0,900.0,view_width));
+    // r11 (closed hill carpets): crown share mittel 0.136 / nah 0.155, but
+    // dark share 0.155 / 0.173 against 0.131 / 0.165; 28 % of the mid crown
+    // pixels in v 0.2-0.3 (reference 17 %). Mid crowns ~10 % lighter, near
+    // crowns a little less deep.
+    float near_crowns=1.0-0.12*(1.0-smoothstep(150.0,320.0,view_width));
+    near_crowns*=1.0+0.27*smoothstep(280.0,400.0,view_width)*(1.0-smoothstep(600.0,900.0,view_width));
     // Lighter tops over the steep gumdrop walls.
     ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns;
     ROUGHNESS=0.96;
