@@ -82,6 +82,19 @@ func begin(scene:Node3D,clipmap:RefCounted)->bool:
         var shore:Node3D=clipmap.shores.attach(holder,{"vertices":quad_v,"normals":quad_n,"indices":quad_i},textures,rect,clipmap.terrain_template)
         if shore:
             shore.custom_aabb=everywhere;_tile_origin(shore,d);kinds.append("shore")
+    # Delta surfaces (landscape.gd _build_delta_surfaces) appear only once the
+    # root is resident, usually just after the tour clock starts; their first
+    # draw stalled ~4.5 s. Same mesh format (vertex, normal, uv, index), shader
+    # and shadow setting, zero-area triangles. Skipped once the deltas are drawn
+    # by the terrain shader instead (no _build_delta_surfaces).
+    if scene.has_method("_build_delta_surfaces") and not scene.get("delta_regions").is_empty():
+        var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
+        arrays[Mesh.ARRAY_VERTEX]=quad_v;arrays[Mesh.ARRAY_NORMAL]=quad_n;arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO,Vector2.ZERO]);arrays[Mesh.ARRAY_INDEX]=quad_i
+        var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+        var material=ShaderMaterial.new();material.shader=load("res://shaders/delta.gdshader")
+        var delta=MeshInstance3D.new();delta.name="Delta";delta.mesh=mesh;delta.material_override=material
+        delta.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;delta.custom_aabb=everywhere
+        holder.add_child(delta);kinds.append("delta")
     result={"kinds":kinds}
     return true
 
