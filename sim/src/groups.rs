@@ -161,18 +161,6 @@ pub struct Pop {
     pub political: [u32; POLITICAL],
 }
 
-impl Pop {
-    fn add(&mut self, o: &Pop) {
-        self.people += o.people;
-        for j in 0..JOBS {
-            self.jobs[j] += o.jobs[j];
-        }
-        for g in 0..POLITICAL {
-            self.political[g] += o.political[g];
-        }
-    }
-}
-
 /// The derived layer, rebuilt monthly: pops sorted by key, and totals.
 #[derive(Default, Debug)]
 pub struct Groups {
@@ -191,50 +179,108 @@ impl Groups {
     }
 }
 
-/// Counts every person once into their pop, occupation and political
-/// groups. `cell_region` maps a home cell to a dense region index into
-/// `region_key` (NONE at sea; then `region_of` gives the key).
-pub fn count(world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) -> Groups {
-    let mut local: Parallel<FxHashMap<PopKey, Pop>> = Parallel::default();
-    let mut q = world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
-    q.contiguous_par_iter(world).expect("people live in tables").for_each_init(
-        || local.borrow_local_mut(),
-        |map, (home, stand, culture, religion, job, faction)| {
-            for i in 0..home.len() {
-                let cell = home[i].0;
-                let region = match cell_region.get(cell as usize) {
-                    Some(&r) if r != NONE => region_key[r as usize],
-                    _ => region_of(cell),
-                };
-                let key = (region, stand[i].0, culture[i].0, religion[i].0);
-                let pop = map.entry(key).or_insert_with(|| Pop { key, ..Pop::default() });
-                pop.people += 1;
-                pop.jobs[job[i].0 as usize] += 1;
-                let mask = faction[i].0;
-                for g in 0..POLITICAL {
-                    pop.political[g] += (mask >> g) as u32 & 1;
-                }
+/// One person in a census snapshot: pop key, occupation, political groups.
+#[derive(Clone, Copy)]
+struct Row {
+    key: PopKey,
+    job: u8,
+    mask: u8,
+}
+
+/// Days a census is spread over after its snapshot.
+pub const CENSUS_DAYS: usize = 10;
+
+/// A monthly count spread over several days so no day carries all of it.
+/// `start` takes a snapshot of everyone's memberships in one parallel pass;
+/// `step` counts the next part of that snapshot and returns the finished
+/// groups after the last part. Everything comes from the one snapshot, so
+/// nobody is counted twice or missed even if people are born, die or move
+/// while the count runs. The sums are integers and the pops are sorted by
+/// key at the end, so the result does not depend on the thread count.
+#[derive(Default)]
+pub struct Census {
+    rows: Vec<Row>,
+    next: usize,
+    pops: FxHashMap<PopKey, Pop>,
+}
+
+impl Census {
+    pub fn running(&self) -> bool {
+        self.next < self.rows.len()
+    }
+
+    /// Snapshot of every person's pop key, occupation and political groups.
+    /// `cell_region` maps a home cell to a dense region index into
+    /// `region_key` (NONE at sea; then `region_of` gives the key).
+    pub fn start(&mut self, world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) {
+        let mut local: Parallel<Vec<Row>> = Parallel::default();
+        let mut q = world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
+        q.contiguous_par_iter(world).expect("people live in tables").for_each_init(
+            || local.borrow_local_mut(),
+            |rows, (home, stand, culture, religion, job, faction)| {
+                rows.extend((0..home.len()).map(|i| {
+                    let cell = home[i].0;
+                    let region = match cell_region.get(cell as usize) {
+                        Some(&r) if r != NONE => region_key[r as usize],
+                        _ => region_of(cell),
+                    };
+                    Row { key: (region, stand[i].0, culture[i].0, religion[i].0), job: job[i].0, mask: faction[i].0 }
+                }));
+            },
+        );
+        self.rows.clear();
+        local.drain_into(&mut self.rows);
+        self.next = 0;
+        self.pops.clear();
+    }
+
+    /// Counts the next of `CENSUS_DAYS` parts; the groups once all are done.
+    pub fn step(&mut self) -> Option<Groups> {
+        if !self.running() {
+            return None;
+        }
+        let part = self.rows.len().div_ceil(CENSUS_DAYS).max(1);
+        let end = (self.next + part).min(self.rows.len());
+        for r in &self.rows[self.next..end] {
+            let pop = self.pops.entry(r.key).or_insert_with(|| Pop { key: r.key, ..Pop::default() });
+            pop.people += 1;
+            pop.jobs[r.job as usize] += 1;
+            for g in 0..POLITICAL {
+                pop.political[g] += (r.mask >> g) as u32 & 1;
             }
-        },
-    );
-    let mut all: FxHashMap<PopKey, Pop> = FxHashMap::default();
-    for map in local.iter_mut() {
-        for (k, p) in map.drain() {
-            all.entry(k).or_insert_with(|| Pop { key: k, ..Pop::default() }).add(&p);
+        }
+        self.next = end;
+        if self.running() {
+            return None;
+        }
+        let mut g = Groups { pops: self.pops.drain().map(|(_, p)| p).collect(), ..Groups::default() };
+        g.pops.sort_unstable_by_key(|p| p.key);
+        for p in &g.pops {
+            g.people += p.people;
+            for j in 0..JOBS {
+                g.economic[j] += p.jobs[j];
+            }
+            for k in 0..POLITICAL {
+                g.political[k] += p.political[k];
+            }
+        }
+        Some(g)
+    }
+}
+
+/// Counts every person once into their pop, occupation and political
+/// groups, all at once (a census run to the end).
+pub fn count(world: &mut World, cell_region: &[u32], region_key: &[u32], region_of: impl Fn(u32) -> u32 + Sync) -> Groups {
+    let mut c = Census::default();
+    c.start(world, cell_region, region_key, region_of);
+    loop {
+        if let Some(g) = c.step() {
+            return g;
+        }
+        if !c.running() {
+            return Groups::default();
         }
     }
-    let mut g = Groups { pops: all.into_values().collect(), ..Groups::default() };
-    g.pops.sort_unstable_by_key(|p| p.key);
-    for p in &g.pops {
-        g.people += p.people;
-        for j in 0..JOBS {
-            g.economic[j] += p.jobs[j];
-        }
-        for k in 0..POLITICAL {
-            g.political[k] += p.political[k];
-        }
-    }
-    g
 }
 
 #[cfg(test)]
@@ -303,5 +349,36 @@ mod tests {
         assert_eq!(g.political.iter().sum::<u32>(), members);
         let k = g.pops[3].key;
         assert_eq!(g.pop(k).map(|p| p.key), Some(k));
+    }
+
+    /// A census counts the people as they were at its start: changes while
+    /// it runs (here everyone moves and half are removed) do not show.
+    #[test]
+    fn census_counts_its_snapshot() {
+        bevy_tasks::ComputeTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(4).build());
+        let mut world = World::new();
+        let ids: Vec<Entity> = (0..5_000u32).map(|i| world.spawn((Home(i % 20), Stand(0), Culture(0), Religion(0), Job(BAUERN), Faction(membership(BAUERN)))).id()).collect();
+        let region_of = |c: u32| c / 4;
+        let once = count(&mut world, &[], &[], region_of);
+        let mut c = Census::default();
+        c.start(&mut world, &[], &[], region_of);
+        let mut days = 0;
+        let g = loop {
+            days += 1;
+            for (i, &e) in ids.iter().enumerate() {
+                if days == 1 && i % 2 == 0 {
+                    world.despawn(e);
+                } else if let Some(mut h) = world.get_mut::<Home>(e) {
+                    h.0 = 99;
+                }
+            }
+            if let Some(g) = c.step() {
+                break g;
+            }
+        };
+        assert_eq!(days, CENSUS_DAYS);
+        assert_eq!(g.pops, once.pops);
+        assert_eq!(g.people, 5_000);
+        assert!(c.step().is_none(), "nothing more until the next start");
     }
 }

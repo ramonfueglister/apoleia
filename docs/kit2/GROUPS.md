@@ -79,10 +79,9 @@ Quellen (APA 7):
 | Was | Wert |
 |---|---|
 | Pops | 2'338 für 124'377 Menschen |
-| Monatszählung | 1,6 ms an einem Tag pro Monat (1 Kern: 2,5 ms), im Mittel 0,05 ms pro Tag |
-| Vorher (Zählung ohne Berufe je Pop, seriell) | 2,2 ms pro Monat |
-| Fingerabdruck 1 und 4 Threads | gleich |
-| Nach 100 Jahren | 2'557 Pops für 149'620 Menschen, Zählung 2,1 ms pro Monat (0,07 ms pro Tag) |
+| Monatszählung | über 10 Tage verteilt (`CENSUS_DAYS`), 0,3–0,7 ms pro Tag, 4,4 ms pro Monat |
+| Fingerabdruck 1 und 4 Threads | gleich, und gleich wie vor der Verteilung |
+| Nach 100 Jahren | 2'557 Pops für 149'620 Menschen |
 
 Beim Start (Jahr 1, 115'077 Menschen): Bauern 46'486, Pächter 28'578, Tagelöhner 14'906,
 Unfreie 12'425, Handwerker 7'497, Händler 3'249, Soldaten 674, Geistliche 426, Beamte 388,
@@ -92,9 +91,40 @@ Industrielle 185, Intelligenzija 185, Grundbesitzer 66.
 
 ## Wie es gerechnet wird
 
-Die Zählung läuft parallel über die Personentabellen. Jeder Thread zählt in seine
-eigene Tabelle (Pop → Kopfzahl, Berufe, Gruppen), danach werden die Tabellen
-addiert und nach Schlüssel sortiert. Weil nur ganze Zahlen addiert werden, ist das
-Ergebnis unabhängig davon, wie die Menschen auf die Threads verteilt sind. Ein Test
-vergleicht die parallele Zählung mit einer einfachen seriellen Zählung
-(`groups::tests::parallel_count_equals_plain_count`).
+Die Zählung macht zur Monatsmitte einen Schnappschuss: ein paralleler Durchgang
+schreibt je Mensch Pop, Beruf und Gruppen in eine Liste. Die nächsten 10 Tage
+zählen je ein Zehntel dieser Liste, dann wird nach Schlüssel sortiert und das
+Ergebnis veröffentlicht. Alle Zahlen stammen aus demselben Schnappschuss, also wird
+niemand doppelt gezählt, auch wenn jemand in diesen Tagen stirbt oder umzieht. Weil
+nur ganze Zahlen addiert werden, ist das Ergebnis unabhängig von der Zahl der
+Threads. Tests: `groups::tests::parallel_count_equals_plain_count`,
+`groups::tests::census_counts_its_snapshot`.
+
+## Monatstage glätten (27.10.2026)
+
+Vorher kosteten der 1. jedes Monats und Neujahr rund das Dreifache eines normalen
+Tages: Heiratsindex und Haushalte wurden neu gebaut, über Felder so gross wie alle
+je Geborenen, und die Zählung lief an einem Tag. Jetzt:
+
+- Index und Haushalte nehmen nur Lebende und sortieren mit einem stabilen
+  Radix-Sort (11 Bit je Stelle) statt über Felder je Personennummer.
+- Beide werden am Ende des Monatstags in einem Hintergrund-Thread gebaut und erst
+  vor dem ersten Leser am nächsten Tag abgeholt (Index vor den Heiraten, Haushalte
+  vor der Wanderung). Die Ergebnisse sind dieselben wie vorher.
+- Die Zählung ist über 10 Tage verteilt (oben).
+
+Messung über 100 Jahre (Cloud, 4 Kerne, Seed 1, Fingerabdruck vorher und nachher
+`d5884e33b9f770f8`), Zeiten in µs:
+
+| | Vorher | Nachher |
+|---|---|---|
+| Tag p50 / p95 / p99 | 2'526 / 7'525 / 10'363 | 2'753 / 4'925 / 7'632 |
+| 1. des Monats p50 / max | 8'462 / 28'964 | 4'157 / 12'716 |
+| Neujahr p50 / max | 8'960 / 17'794 | 4'708 / 8'845 |
+| Index pro Monat | 11'777 | 7'315 |
+
+Der höchste Einzeltag (39 ms nachher, 34 ms vorher) kommt aus dem Bedarfsteil,
+nicht aus diesen Bauten. Offen: Am 2. des Monats wartet der Tag auf dieser
+langsamen 4-Kern-Maschine noch rund 4 ms auf den Index. Ganz flach würde es nur,
+wenn die Heiraten den Index vom Vortag nähmen; das ändert die Ergebnisse und ist
+nicht gebaut.
