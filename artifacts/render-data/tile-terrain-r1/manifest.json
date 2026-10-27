@@ -1,0 +1,146 @@
+{
+  "revision": "tile-terrain-r1",
+  "status": "implementiert",
+  "node_grid": {
+    "width": 5163,
+    "height": 2392,
+    "world_min": [
+      -5286.959516530886,
+      -2223.9016046706583
+    ],
+    "world_size": [
+      10322.15905608411,
+      4781.388450041915
+    ],
+    "rule": "node i at world_min + i * world_size / (width - 1)"
+  },
+  "cells": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20645,
+      "height": 9563,
+      "packed_width": 10323,
+      "path": "cells-L0.png",
+      "sha256": "100d4bc7fe055458bd47212fbd6cfc5f0d7d7287409a3dc562fba1d8449aa6e4",
+      "river_max_scalerank": 10
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10323,
+      "height": 4782,
+      "packed_width": 5162,
+      "path": "cells-L1.png",
+      "sha256": "2e4e74a9152af509b1b35db73a1615e434029b597f1d007a8b22d6e257ef346e",
+      "river_max_scalerank": 10
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5162,
+      "height": 2391,
+      "packed_width": 2581,
+      "path": "cells-L2.png",
+      "sha256": "816a79cc1c447d89d8942f68b94a20421c71ec737876f265b640b6cd281cb539",
+      "river_max_scalerank": 7
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2581,
+      "height": 1196,
+      "packed_width": 1291,
+      "path": "cells-L3.png",
+      "sha256": "944323956b907ecfef2f8f25e13ce39045763647a117342501662d4cc0207931",
+      "river_max_scalerank": 5
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1291,
+      "height": 598,
+      "packed_width": 646,
+      "path": "cells-L4.png",
+      "sha256": "db5d34dd8fb9f15020cb5651f1165e83dfa44a90ea1c7565ec16c65283ac3a53",
+      "river_max_scalerank": 3
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 646,
+      "height": 299,
+      "packed_width": 323,
+      "path": "cells-L5.png",
+      "sha256": "20c5a79edd2204901fe39eea122cd3ab06b7d1cbb0a7378a7da0719431307e59",
+      "river_max_scalerank": 2
+    }
+  ],
+  "inputs": {
+    "land": {
+      "path": "data/derived/land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c"
+    },
+    "lakes": {
+      "path": "data/derived/lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2"
+    },
+    "rivers": {
+      "path": "data/derived/rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2"
+    },
+    "lakes_supplement": {
+      "path": "artifacts/render-data/lakes-europe-supplement-r1/lakes.geojson",
+      "sha256": "6fb073f4c65035d75775a49f3bd333d8d3b5b6c7587c35757ccfb80ebfd7fc7e"
+    },
+    "rivers_supplement": {
+      "path": "artifacts/render-data/rivers-europe-supplement-r1/rivers.geojson",
+      "sha256": "490e9c98749727a0a106feeeaa741923809e89c1089fa470cc394dc9e0e3dcc1"
+    },
+    "landcover": {
+      "path": "artifacts/render-data/landcover-node-2km/classes.u8",
+      "sha256": "da2fcd2792c2ed2488df2b9da243b82ba118535c7937836608f4a7f0d482612e"
+    },
+    "places": {
+      "path": "data/gametiles/places.csv",
+      "sha256": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036"
+    }
+  },
+  "cover": {
+    "path": "cover.png",
+    "sha256": "3c3a893f67f8b5fdc65f81d8743a5324a4b8f56470e89ed3c06f4381cd600cc3",
+    "channels": [
+      "forest",
+      "dry = bare + 0.6 shrub",
+      "crop",
+      "wetland"
+    ]
+  },
+  "aux": {
+    "path": "aux.png",
+    "sha256": "9a667c18e9cefa434d99502fcf7ce19d982b96900799aca92cb8a47562f31064",
+    "channels": [
+      "sea distance in node steps (2 km), capped 255",
+      "lake level hi",
+      "lake level lo (uint16 m + 1000; 0 = no lake)",
+      "unused"
+    ]
+  },
+  "height": {
+    "path": "../fixed-source-v2-mountain-r7/height.rg8",
+    "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
+    "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
+  },
+  "height_half": {
+    "path": "height.r16f",
+    "sha256": "5adc1acb3953562f320e1d44c45eea41a4dfd464e4a4f5241278462c565c1dd1",
+    "format": "float16 LE, metres"
+  },
+  "relief_half": {
+    "path": "relief.r16f",
+    "sha256": "4796944684d9b40d2b208eb7c324f490b855d70c8624e84b351627a964cca070",
+    "format": "float16 LE, metres",
+    "slope_m_per_km": 80.0,
+    "height_exaggeration": 7.5
+  }
+}
