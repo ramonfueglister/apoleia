@@ -19,6 +19,7 @@
 //! and every structural change runs serially in person id order, so the
 //! result does not depend on thread count or iteration order.
 
+use crate::groups::{self, Groups};
 use crate::inputs::Inputs;
 use crate::life::{self, Calendar, Ev, BIRTH, DEATH, YEAR};
 use bevy_ecs::change_detection::ContiguousMut;
@@ -48,7 +49,6 @@ const LAND_KM_DAY: i32 = 30;
 const SEA_KM_DAY: i32 = 100;
 /// Placeholder: share of people starting a trip each month, per 10,000.
 const TRIPS_PER_10K_MONTH: u64 = 30;
-const JOBS: u8 = 12;
 /// HYDE rural population is taken as this share of the food capacity K, as
 /// in the tile model (Params::start_fill).
 const START_FILL: f64 = 0.7;
@@ -112,6 +112,7 @@ pub struct Sex(pub u8);
 pub struct Household(pub u32);
 #[derive(Component, Clone, Copy)]
 pub struct Home(pub u32);
+/// Occupation, one of the 13 of S77 (crate::groups); the economic group.
 #[derive(Component, Clone, Copy)]
 pub struct Job(pub u8);
 #[derive(Component, Clone, Copy)]
@@ -127,9 +128,10 @@ pub struct Stand(pub u8);
 pub struct Culture(pub u16);
 #[derive(Component, Clone, Copy)]
 pub struct Religion(pub u16);
-/// Political group membership (placeholder id).
+/// Political groups the person belongs to, a bit mask over the 8 groups of
+/// S77 (crate::groups): one or more (S61).
 #[derive(Component, Clone, Copy)]
-pub struct Faction(pub u16);
+pub struct Faction(pub u8);
 #[derive(Component, Clone, Copy)]
 pub struct Needs(pub [u16; NEEDS]);
 #[derive(Component, Clone, Copy)]
@@ -423,16 +425,6 @@ pub struct Stats {
     pub left_map: u64,
 }
 
-/// Pops as a derived layer (S61): every person belongs to the pop
-/// (100 km region, estate, culture, religion), to an economic
-/// group (job) and a political group; counts are rebuilt from the people.
-#[derive(Default)]
-pub struct Groups {
-    pub pops: FxHashMap<(u32, u8, u16, u16), u32>,
-    pub economic: [u32; JOBS as usize],
-    pub political: FxHashMap<u16, u32>,
-}
-
 /// Person ids grouped by a key (compressed rows): ids of key k are
 /// ids[start[k]..start[k + 1]], ascending.
 #[derive(Default)]
@@ -641,13 +633,14 @@ impl People {
                     }
                 }
                 let (sex, b) = born[pid as usize];
+                let job = groups::start_job(s.stand, r(3));
                 (
-                    (Pid(pid), Born(b), Sex(sex), Household(mates[hh]), Home(s.home), Job((r(3) % JOBS as u64) as u8)),
+                    (Pid(pid), Born(b), Sex(sex), Household(mates[hh]), Home(s.home), Job(job)),
                     (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel),
                     (
                         Culture((s.home % 192 / 16) as u16),
                         Religion((s.home / 192 / 40) as u16),
-                        Faction((r(6) % 8) as u16),
+                        Faction(groups::membership(job)),
                         Spouse(NONE),
                         Parents(NONE, NONE),
                         Sched::default(),
@@ -1009,6 +1002,7 @@ impl People {
             *self.world.get::<Culture>(fe).unwrap(),
             *self.world.get::<Religion>(fe).unwrap(),
             *self.world.get::<Faction>(fe).unwrap(),
+            *self.world.get::<Job>(fe).unwrap(),
         );
         let mask = r(1) as u32;
         let traits = ((self.traits[father as usize] & mask) | (self.traits[mother as usize] & !mask)) ^ (1 << (r(2) % 32));
@@ -1019,7 +1013,9 @@ impl People {
         rel.opinion[0] = 80;
         rel.opinion[1] = 80;
         let mut ec = self.world.spawn((
-            (Pid(pid), Born(day as i32), Sex(sex), Household(m_house), Home(m_home), Job((r(4) % JOBS as u64) as u8)),
+            // PLACEHOLDER (open): a child takes the father's occupation and
+            // political groups, as it takes his estate.
+            (Pid(pid), Born(day as i32), Sex(sex), Household(m_house), Home(m_home), f.4),
             (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel),
             (f.1, f.2, f.3, Spouse(NONE), Parents(father, mother), Sched::default(), Search(0)),
         ));
@@ -1472,38 +1468,27 @@ impl People {
         }
     }
 
+    /// Pops, occupations and political groups counted from the people (S61).
     fn monthly_groups(&mut self) {
         let grid = &self.grid;
-        let g = &mut self.groups;
-        g.pops.clear();
-        g.economic = [0; JOBS as usize];
-        g.political.clear();
-        let mut q = self.world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
-        for (h, st, cu, re, job, fa) in q.iter(&self.world) {
-            *g.pops.entry((grid.region(h.0), st.0, cu.0, re.0)).or_default() += 1;
-            g.economic[job.0 as usize] += 1;
-            *g.political.entry(fa.0).or_default() += 1;
-        }
+        self.groups = groups::count(&mut self.world, &self.cell_region, &self.region_key, |c| grid.region(c));
     }
 
+    /// Yearly occupation choice, spread over the days (placeholder rule in
+    /// crate::groups); a new occupation moves the person to its political
+    /// group (S61).
     fn jobs(&mut self, day: i64, yslice: u32) {
         let seed = self.seed();
-        let mut q = self.world.query::<(&Pid, &Traits, &Needs, &Health, &mut Job)>();
-        for (pid, tr, needs, health, job) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
+        let mut q = self.world.query::<(&Pid, &Stand, &mut Job, &mut Faction)>();
+        for (pid, stand, job, faction) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
             let (job, _) = ContiguousMut::split(job);
+            let (faction, _) = ContiguousMut::split(faction);
             for i in part(pid.len(), yslice, YEAR) {
-                let mut best = (i64::MIN, job[i].0);
-                for cand in 0..JOBS {
-                    let fit = ((tr[i].0 >> (cand as u32 * 2)) & 0xff) as i64;
-                    let need = needs[i].0[cand as usize % NEEDS] as i64 / 1000;
-                    let noise = (rnd(seed, pid[i].0, 17 + cand as u32, day) & 0x3f) as i64;
-                    let stay = if cand == job[i].0 { 40 } else { 0 };
-                    let score = fit - need + noise + stay + health[i].0 as i64 / 100;
-                    if score > best.0 {
-                        best = (score, cand);
-                    }
+                let next = groups::yearly_job(stand[i].0, job[i].0, rnd(seed, pid[i].0, 17, day));
+                if next != job[i].0 {
+                    job[i].0 = next;
+                    faction[i].0 = groups::membership(next);
                 }
-                job[i].0 = best.1;
             }
         }
     }

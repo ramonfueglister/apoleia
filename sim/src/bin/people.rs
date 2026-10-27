@@ -160,5 +160,10 @@ fn main() {
         t.pops / (days / 30.0),
         p.groups.pops.len(),
     );
+    let g = &p.groups;
+    let list = |names: &[&str], n: &[u32]| names.iter().zip(n).map(|(k, v)| format!("{k} {v}")).collect::<Vec<_>>().join(", ");
+    println!("pops: {} for {} people (last monthly count)", g.pops.len(), g.people);
+    println!("occupations: {}", list(&apoleia_sim::groups::JOB_NAMES, &g.economic));
+    println!("political groups (members): {}", list(&apoleia_sim::groups::POLITICAL_NAMES, &g.political));
     println!("fingerprint={:016x}", p.fingerprint());
 }
