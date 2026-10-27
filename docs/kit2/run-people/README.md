@@ -16,12 +16,12 @@ cd sim && cargo run --release --bin people -- --years 10 [--seed S] [--threads N
 `Pid`, `Born`, `Sex`, `Household`, `Home` (25-km-Zelle), `Job`, `Traits` (32 Bit),
 `Health`, `Stand`, `Needs` (4 Werte), `Relations` (bis 30 Personen mit Meinung),
 `Culture`, `Religion`, `Faction`; unterwegs zusätzlich `Travel` (Ziel, km auf dem
-aktuellen Abschnitt).
+aktuellen Abschnitt, Hin- oder Rückweg).
 
 | Takt | Teil (Platzhalter) |
 |---|---|
 | täglich | Bedürfnisse und Gesundheit (parallel); Reisende ziehen weiter |
-| monatlich | Index Zelle → Personen; Meinungen zu allen Bekannten anpassen und eine neue Bekanntschaft in der Zelle; 0,3 % starten eine Reise zu einem der 860 Orte; Pops und Gruppen aus den Personen neu zählen (S61) |
+| monatlich | Index Zelle → Personen; Meinungen zu allen Bekannten anpassen und eine neue Bekanntschaft in der Zelle; 0,3 % starten eine Reise zu einem der 860 Orte und wieder zurück; Pops (pro 100-km-Region) und Gruppen aus den Personen neu zählen (S61) |
 | jährlich | Berufswahl aus 12 Kandidaten |
 
 **Wege:** Pro Zielort ein Flussfeld (Dijkstra über das 25-km-Raster, 165 × 192
@@ -34,17 +34,17 @@ jeder Reise zu diesem Ort; eine Reise folgt dann nur noch Richtungs-Bytes.
 |---|---|
 | Personen zum Start | **116'805** (siehe unten) |
 | Laden | 0,8 s, davon 0,7 s für 724 Flussfelder |
-| Speicher | 72 MB gesamt, davon ≈ 34 MB für Personen und Flussfelder |
-| Gewöhnlicher Tag | p50 0,68 ms, p95 1,1 ms |
-| Tag mit Monatsteil | p50 15 ms, p95 19 ms, max 24 ms |
-| Tag mit Jahresteil | p50 17 ms, max 27 ms |
-| Pops (Zelle, Stand, Kultur, Religion) | 32'341 |
-| Unterwegs | ≈ 470–530 Personen |
+| Speicher | 73 MB gesamt, davon ≈ 36 MB für Personen und Flussfelder |
+| Gewöhnlicher Tag | p50 0,74 ms, p95 1,1 ms |
+| Tag mit Monatsteil | p50 15 ms, p95 21 ms, max 25 ms |
+| Tag mit Jahresteil | p50 17 ms, max 28 ms |
+| Pops (100-km-Region, Stand, Kultur, Religion) | 2'049 (mit 25-km-Zellen wären es 32'341) |
+| Unterwegs | ≈ 840 Personen (Hin- und Rückweg) |
 
-Pro Teil: Bedürfnisse 0,61 ms/Tag, Reisen 0,11 ms/Tag; pro Monat Index 4,4 ms,
-Beziehungen 6,7 ms, Reisestart 1,4 ms, Pops 2,5 ms; pro Jahr Berufswahl 2,9 ms.
+Pro Teil: Bedürfnisse 0,61 ms/Tag, Reisen 0,18 ms/Tag; pro Monat Index 5,3 ms,
+Beziehungen 6,4 ms, Reisestart 1,5 ms, Pops 1,9 ms; pro Jahr Berufswahl 2,3 ms.
 
-**Determinismus:** gleicher Fingerabdruck `a8efc9a413eda9bf` in zwei Läufen und
+**Determinismus:** gleicher Fingerabdruck `6cca8fd260bc15c3` in zwei Läufen und
 mit `--threads 1`. Test `people::tests::deterministic_fingerprint`.
 
 **Einordnung:** Bei einem Spieltag pro Sekunde wären 15–27 ms an einzelnen Tagen

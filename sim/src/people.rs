@@ -79,12 +79,16 @@ pub struct Relations {
     pub ids: [u32; MAX_REL],
     pub opinion: [i8; MAX_REL],
 }
-/// A trip in progress: destination cell and km walked on the current leg.
-/// The way there comes from the destination's flow field each day.
-#[derive(Component, Clone, Copy)]
+/// A trip in progress: there and back home. `at` is the current cell, `km`
+/// the distance walked on the current leg. The way to the destination comes
+/// from its flow field; the way back retraces the cells walked.
+#[derive(Component, Clone)]
 pub struct Travel {
     pub to: u32,
+    pub at: u32,
     pub km: i32,
+    pub back: bool,
+    pub path: Vec<u32>,
 }
 
 fn rnd(seed: u64, pid: u32, salt: u32, t: i64) -> u64 {
@@ -126,6 +130,23 @@ impl Grid {
         };
         Some(km * 100 / speed)
     }
+    /// The step from `i` to the neighbouring cell `j`: cell and km
+    /// (negative for a sea leg).
+    pub fn leg(&self, i: u32, j: u32) -> (u32, i32) {
+        let ((ri, ci), (rj, cj)) = (self.rc(i), self.rc(j));
+        let km = if ri != rj && ci != cj { 35 } else { 25 };
+        let sea = self.kind[i as usize] == 0 || self.kind[j as usize] == 0;
+        (j, if sea { -km } else { km })
+    }
+
+    /// The 100 km region (tile level 1, four 25 km cells per side) of a cell:
+    /// the area a pop is grouped over (S61), until there are provinces.
+    pub fn region(&self, i: u32) -> u32 {
+        let (r, c) = self.rc(i);
+        let (r, c) = ((r + self.row0).div_euclid(4), (c + self.col0).div_euclid(4));
+        ((r + 64) as u32) << 16 | (c + 64) as u32
+    }
+
     /// Dijkstra from `to` over the whole grid (costs are symmetric): for every
     /// cell the direction (0–7) of the next step towards `to`, 255 if none.
     /// One field per destination serves every trip there (flow field).
@@ -266,8 +287,8 @@ pub struct Timing {
     pub pops: f64,
 }
 
-/// Pops as a derived layer (economy thread, 27.10.2026): every person
-/// belongs to the pop (home cell, estate, culture, religion), to an economic
+/// Pops as a derived layer (S61): every person belongs to the pop
+/// (100 km region, estate, culture, religion), to an economic
 /// group (job) and a political group; counts are rebuilt from the people.
 #[derive(Default)]
 pub struct Groups {
@@ -479,31 +500,46 @@ impl People {
         let fields = std::mem::take(&mut self.world.resource_mut::<Fields>().map);
         let grid = &self.grid;
         let mut done = Vec::new();
-        let mut q = self.world.query::<(Entity, &Pid, &mut Travel, &mut Home)>();
-        for (e, pid, mut t, mut home) in q.iter_mut(&mut self.world) {
-            let field = &fields[&t.to];
+        let mut q = self.world.query::<(Entity, &Pid, &mut Travel, &Home)>();
+        for (e, pid, mut t, home) in q.iter_mut(&mut self.world) {
             let mut budget = 1.0f32;
-            while budget > 0.0 && home.0 != t.to {
-                let Some((cell, km)) = grid.next(field, home.0) else {
-                    break;
-                };
-                let (len, speed) = if km < 0 {
-                    (-km, SEA_KM_DAY)
+            while budget > 0.0 {
+                let step = if t.back {
+                    let Some(&prev) = t.path.last() else { break };
+                    grid.leg(t.at, prev)
                 } else {
-                    (km, LAND_KM_DAY)
+                    if t.at == t.to {
+                        t.back = true;
+                        continue;
+                    }
+                    match grid.next(&fields[&t.to], t.at) {
+                        Some(s) => s,
+                        None => {
+                            t.back = true;
+                            continue;
+                        }
+                    }
                 };
+                let (cell, km) = step;
+                let (len, speed) = if km < 0 { (-km, SEA_KM_DAY) } else { (km, LAND_KM_DAY) };
                 let left = len - t.km;
                 let can = (budget * speed as f32) as i32;
                 if can >= left {
                     budget -= left as f32 / speed as f32;
                     t.km = 0;
-                    home.0 = cell;
+                    if t.back {
+                        t.path.pop();
+                    } else {
+                        let at = t.at;
+                        t.path.push(at);
+                    }
+                    t.at = cell;
                 } else {
                     t.km += can;
                     budget = 0.0;
                 }
             }
-            if home.0 == t.to {
+            if t.back && t.at == home.0 {
                 done.push((pid.0, e));
             }
         }
@@ -578,11 +614,13 @@ impl People {
         }
         start.sort_unstable_by_key(|s| s.0);
         for (_, e, _, to) in start {
-            self.world.entity_mut(e).insert(Travel { to, km: 0 });
+            let from = self.world.get::<Home>(e).unwrap().0;
+            self.world.entity_mut(e).insert(Travel { to, at: from, km: 0, back: false, path: Vec::new() });
         }
     }
 
     fn monthly_groups(&mut self) {
+        let grid = &self.grid;
         let g = &mut self.groups;
         g.pops.clear();
         g.economic = [0; JOBS as usize];
@@ -591,7 +629,7 @@ impl People {
             .world
             .query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
         for (h, st, cu, re, job, fa) in q.iter(&self.world) {
-            *g.pops.entry((h.0, st.0, cu.0, re.0)).or_default() += 1;
+            *g.pops.entry((grid.region(h.0), st.0, cu.0, re.0)).or_default() += 1;
             g.economic[job.0 as usize] += 1;
             *g.political.entry(fa.0).or_default() += 1;
         }
@@ -648,7 +686,7 @@ impl People {
             for k in 0..rel.n as usize {
                 h = h.rotate_left(5) ^ ((rel.ids[k] as u64) << 8 | rel.opinion[k] as u8 as u64);
             }
-            let t = t.map_or(0, |t| (t.to as u64) << 32 | t.km as u32 as u64);
+            let t = t.map_or(0, |t| (t.to as u64) << 40 | (t.at as u64) << 20 ^ t.km as u32 as u64 ^ (t.back as u64) << 63 ^ t.path.len() as u64);
             rows.push((
                 pid.0,
                 [
