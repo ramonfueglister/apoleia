@@ -71,9 +71,22 @@ wird gezielt mit einem Lauf gemessen, bei dem alle Felder in derselben Woche rei
 - Eine tägliche Schleife über alle Felder oder alle Zellen.
 - Float im gespeicherten Zustand.
 
+## Zahlen (Vorschlag)
+
+Die Werte mit Quellen und Belegstufen stehen in [GRAIN-NUMBERS.md](GRAIN-NUMBERS.md):
+- Verzehr: 200 kg Weizen pro Kopf und Jahr (Literatur 175–250).
+- Ernte zu Saat: 3 : 1 bis 8 : 1, im Mittel 5 : 1.
+- Saat: ≈ 130 kg/ha; Ertrag netto ≈ 520 kg/ha.
+- Arbeit: ≈ 60–80 Tage pro ha und Jahr.
+- Last pro Gang: Träger ≈ 30 kg, Esel 97 kg, Wagen 388 kg.
+- Tempo: Esel und Träger 30 km/Tag, Ochsenwagen 12 km/Tag, zu Fuss mit Last 20 km/Tag
+  (ORBIS, Preisedikt).
+
+Nichts davon ist entschieden.
+
 ## Offen
 
-- Alle Zahlen von S72: Verzehr pro Kopf, Ertrag, Hände pro Hof, Last pro Gang (Rücken,
+- Die Zahlen von S72, solange sie nicht entschieden sind: Verzehr pro Kopf, Ertrag, Hände pro Hof, Last pro Gang (Rücken,
   Esel, Karren) und Verderb. Sie bestimmen die Zahl der Reisen und damit das Budget am
   stärksten.
 - Die Feinheit des Pfadrasters.
