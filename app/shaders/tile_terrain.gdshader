@@ -7,7 +7,7 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 
 #include "res://shaders/tile_terrain.gdshaderinc"
 
-uniform float grid_line = 0.12;
+uniform float grid_line = 0.04; // faint: a diorama, not a spreadsheet
 uniform bool show_fields = false; // patchwork fields (off: SimCity 2000 tiles are plain)
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
 uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
@@ -76,9 +76,13 @@ void vertex() {
 	vec2 cpos;
 	float level;
 	if (part == 0) {
-		cpos = vec2(tile + CORNER[role]);
-		level = pick(own, role);
-		tile_uv = vec2(CORNER[role]);
+		// SimCity 2000 split: the top is cut along the diagonal whose corners
+		// are closer in level, so a single raised or lowered corner makes one
+		// flat and one sloped triangle instead of a folded pair
+		int k = (role + (abs(own.x - own.z) <= abs(own.y - own.w) ? 0 : 1)) & 3;
+		cpos = vec2(tile + CORNER[k]);
+		level = pick(own, k);
+		tile_uv = vec2(CORNER[k]);
 	} else {
 		int w = part - 1;
 		ivec4 e = WALL[w];
@@ -286,14 +290,12 @@ void fragment() {
 			float dash = step(0.82, r) * (1.0 - smoothstep(0.0, 0.05, abs(f.y - 0.5))) * step(0.2, f.x) * step(f.x, 0.55);
 			c = mix(c, vec3(0.86, 0.93, 0.92), dash * 0.5 * (coast > 0.5 ? 1.2 : 0.6));
 			// shore pieces: dry sand where the corner contour says land, then
-			// surf along the waterline with a softer second band
+			// surf along the waterline
 			if (min(min(sea_c.x, sea_c.y), min(sea_c.z, sea_c.w)) < 1.0) {
 				float near_look = 1.0 - smoothstep(0.5, 0.9, relief_smooth);
 				float v = shore_value();
 				float aa = fwidth(v) + 1e-4;
-				float pulse = 0.5 + 0.5 * sin(TIME * 1.3 + tt_hash(vec2(tile)) * 6.28);
 				float foam = 1.0 - smoothstep(aa, 2.5 * aa + 0.01, abs(v - 0.53));
-				foam = max(foam, (1.0 - smoothstep(aa, 2.0 * aa + 0.005, abs(v - 0.62 - 0.03 * pulse))) * 0.45);
 				c = mix(c, C_FOAM, foam * (1.0 - far) * near_look);
 				c = mix(c, C_SAND, (1.0 - smoothstep(0.5 - aa, 0.5 + aa, v)) * near_look);
 			}

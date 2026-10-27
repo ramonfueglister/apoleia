@@ -54,6 +54,11 @@ SS = 2  # supersampling of the polygon raster
 HEIGHT_EXAGGERATION = 7.5
 LEVEL_HEIGHT = 0.6
 RELIEF_SLOPE = 1000.0 * LEVEL_HEIGHT / HEIGHT_EXAGGERATION  # m per km
+# High mountains may rise up to three levels per tile (diorama massifs);
+# the steepness blends in between these heights of the 10 km mean.
+MOUNTAIN_SLOPE = 3.0 * RELIEF_SLOPE
+MOUNTAIN_FROM_M = 500.0
+MOUNTAIN_TO_M = 1300.0
 
 
 def lonlat_to_world(lon, lat):
@@ -236,10 +241,11 @@ def lake_levels(lake, height):
 
 def _envelope(a, step, lower):
     """Min-plus (lower) or max-minus (upper) envelope with a Chebyshev slope of
-    `step` per node: the result changes by at most `step` between any two
-    8-neighbours."""
+    `step` per node (a number, or an array: the step allowed into each node):
+    the result changes by at most `step` between any two 8-neighbours."""
     a = a.copy()
     pick = np.minimum if lower else np.maximum
+    step = np.asarray(step, np.float32)
     d = step if lower else -step
     for _ in range(10000):
         e = a.copy()
@@ -251,7 +257,7 @@ def _envelope(a, step, lower):
                 yd = slice(max(-dy, 0), a.shape[0] + min(-dy, 0))
                 xs = slice(max(dx, 0), a.shape[1] + min(dx, 0))
                 xd = slice(max(-dx, 0), a.shape[1] + min(-dx, 0))
-                e[yd, xd] = pick(e[yd, xd], a[ys, xs] + d)
+                e[yd, xd] = pick(e[yd, xd], a[ys, xs] + (d[yd, xd] if d.ndim else d))
         if np.array_equal(e, a):
             return e
         a = e
@@ -292,28 +298,42 @@ def lake_cell_seed(lake_cells, lake_enc, height):
     return np.where(np.isfinite(seed), seed, np.nan).astype(np.float32)
 
 
-def water_envelope(node_land, lake_level):
+def relief_step(height):
+    """Allowed rise per node (metres): RELIEF_SLOPE in the lowlands, so
+    plains and hills keep SimCity 2000 terraces of one level per tile, up to
+    MOUNTAIN_SLOPE in high mountains, so ranges stand up as steep diorama
+    massifs (up to three levels per tile) instead of being shaved into mounds."""
+    node_km = WORLD_SIZE[0] / (GRID_W - 1)
+    h = np.maximum(height, 0).astype(np.float32)
+    # 5 x 5 node mean, so single peaks do not decide the slope of their range
+    pad = np.pad(h, 2, mode="edge")
+    c = pad.cumsum(0).cumsum(1)
+    c = np.pad(c, ((1, 0), (1, 0)))
+    box = (c[5:, 5:] - c[:-5, 5:] - c[5:, :-5] + c[:-5, :-5]) / 25.0
+    t = np.clip((box - MOUNTAIN_FROM_M) / (MOUNTAIN_TO_M - MOUNTAIN_FROM_M), 0, 1)
+    t = t * t * (3 - 2 * t)
+    return ((RELIEF_SLOPE + (MOUNTAIN_SLOPE - RELIEF_SLOPE) * t) * node_km).astype(np.float32)
+
+
+def water_envelope(node_land, lake_level, step):
     """Highest the land may stand next to the water: 0 m at the sea nodes, the
     water level at the lake nodes (`lake_level`, metres, NaN elsewhere), rising
-    RELIEF_SLOPE m/km away from them. The shader caps its blurred relief with
-    this sharp field, so shores keep the one-level rule up close."""
-    node_km = WORLD_SIZE[0] / (GRID_W - 1)
-    step = np.float32(RELIEF_SLOPE * node_km)
+    `step` per node away from them (relief_step). The shader caps its blurred
+    relief with this sharp field, so shores keep the level rule up close."""
     seed = np.where(node_land, np.float32(9000), np.float32(0))
     if lake_level is not None:
         seed = np.where(np.isfinite(lake_level), np.minimum(np.maximum(lake_level, 0), seed), seed).astype(np.float32)
     return _envelope(seed, step, True)
 
 
-def sc2k_relief(height, node_land, water):
+def sc2k_relief(height, node_land, water, step):
     """SimCity 2000 terrain rule: a tile corner is at most one level above or
     below its neighbours, so the land is one surface of flat tiles and one-level
     ramps, with no cliffs inside the land. Here the 2 km heights are limited to
-    RELIEF_SLOPE m/km (mean of the lower and upper envelope, so peaks and valleys
-    both keep half their excess) and capped by the water envelope, so coasts and
-    lake shores ramp down to the water instead of ending in a wall."""
-    node_km = WORLD_SIZE[0] / (GRID_W - 1)
-    step = np.float32(RELIEF_SLOPE * node_km)
+    `step` per node (relief_step: RELIEF_SLOPE m/km, steeper in high mountains;
+    mean of the lower and upper envelope, so peaks and valleys both keep half
+    their excess) and capped by the water envelope, so coasts and lake shores
+    ramp down to the water instead of ending in a wall."""
     h = np.where(node_land, np.maximum(height, 0), 0).astype(np.float32)
     low = _envelope(h, step, True)
     high = _envelope(h, step, False)
@@ -409,11 +429,14 @@ def main():
     height.astype("<f2").tofile(OUT / "height.r16f")
     print("relief")
     lake_seed = np.fmin(np.where(node_lake, lake_lv, np.nan), lake_cell_seed(lake_cells, lake_enc, height))
-    water = water_envelope(node_land, lake_seed)
+    step = relief_step(height)
+    water = water_envelope(node_land, lake_seed, step)
     water.astype("<f2").tofile(OUT / "shore.r16f")
-    sc2k_relief(height, node_land, water).astype("<f2").tofile(OUT / "relief.r16f")
+    sc2k_relief(height, node_land, water, step).astype("<f2").tofile(OUT / "relief.r16f")
     manifest["relief_half"] = {"path": "relief.r16f", "sha256": sha(OUT / "relief.r16f"),
                                "format": "float16 LE, metres", "slope_m_per_km": RELIEF_SLOPE,
+                               "mountain_slope_m_per_km": MOUNTAIN_SLOPE,
+                               "mountain_from_to_m": [MOUNTAIN_FROM_M, MOUNTAIN_TO_M],
                                "height_exaggeration": HEIGHT_EXAGGERATION}
     manifest["shore_half"] = {"path": "shore.r16f", "sha256": sha(OUT / "shore.r16f"),
                               "format": "float16 LE, metres",

@@ -25,6 +25,11 @@ unabhängig und unverändert.
 - Uferlinie: Je Kachelecke zählt der Anteil der vier Nachbarkacheln, die Wasser
   sind. Die Uferlinie ist die 0,5-Linie davon, bilinear über die Kachel. So läuft
   eine Treppe aus Wasserkacheln als Diagonale mit Sand und Schaum davor.
+  Kacheln werden an der Diagonale geteilt, deren Ecken näher beieinander liegen
+  (wie SimCity 2000): eine einzelne gehobene Ecke ergibt ein flaches und ein
+  geneigtes Dreieck statt einer Falte. Im Hochgebirge (Mittel über 10 km ab
+  500 m, voll ab 1300 m) darf das Relief bis zu drei Stufen pro Kachel steigen
+  (`MOUNTAIN_SLOPE`), damit Gebirge als steile Massive stehen.
   Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
   (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
 - Optik: Kacheln sind einfarbig ohne Muster, wie in SimCity 2000. Rampen haben
@@ -90,6 +95,7 @@ Mausrad oder Pinch zoomt zum Cursor, Ziehen oder WASD/Pfeile verschiebt, Q/E dre
 um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 `--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
 `--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
+Umgebungsvariable `TT_SMOOTH=1`: glattes Relief auf jeder Zoomstufe (Look-Vergleich).
 
 ## Offen
 

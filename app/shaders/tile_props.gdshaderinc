@@ -57,10 +57,19 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
 	}
 	vec4 c = show ? tt_corners_cached(t) : vec4(0.0);
-	if (!house && max(max(c.x, c.y), max(c.z, c.w)) - min(min(c.x, c.y), min(c.z, c.w)) > 1.5) {
-		show = false;
-	}
 	if (house) { code = float(town); }
 	if (!show) { return vec4(0.0, 0.0, 0.0, -1.0); }
-	return vec4(uv, mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y), code);
+	// on the tile's own triangles (split as in tile_terrain.gdshader), so
+	// trees stand on steep two-level tiles too instead of leaving bare holes
+	float level;
+	if (abs(c.x - c.z) <= abs(c.y - c.w)) {
+		level = uv.x >= uv.y
+			? c.x + (c.y - c.x) * uv.x + (c.z - c.y) * uv.y
+			: c.x + (c.w - c.x) * uv.y + (c.z - c.w) * uv.x;
+	} else {
+		level = uv.x + uv.y <= 1.0
+			? c.x + (c.y - c.x) * uv.x + (c.w - c.x) * uv.y
+			: c.z + (c.w - c.z) * (1.0 - uv.x) + (c.y - c.z) * (1.0 - uv.y);
+	}
+	return vec4(uv, level, code);
 }

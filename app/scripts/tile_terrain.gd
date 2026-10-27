@@ -279,7 +279,8 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	if wanted != level:
 		_apply_level(wanted)
 	# SimCity 2000 tiles up close, EU5-style smooth relief map from far away
-	var smooth_relief := smoothstep(SMOOTH_FROM_KM, SMOOTH_TO_KM, width)
+	# TT_SMOOTH=1: smooth relief at every zoom (look comparison)
+	var smooth_relief := 1.0 if OS.get_environment("TT_SMOOTH") == "1" else smoothstep(SMOOTH_FROM_KM, SMOOTH_TO_KM, width)
 	for material in _all_materials():
 		material.set_shader_parameter("relief_smooth", smooth_relief)
 	var c := ((centre - world_min) / tile_km).floor()
