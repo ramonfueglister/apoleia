@@ -132,7 +132,17 @@ impl ApoleiaPeople {
         };
         self.stop();
         let mut people = People::new(&inp, seed as u64);
-        let mut view = PeopleView::new(&people, &inp.cities);
+        // villages on the farmland of the fine tiles; without the file on
+        // hashed tiles of each cell
+        let root = repo_root.to_string();
+        let cover = match apoleia_sim::grain::fine_cover(Path::new(&root), true) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no fine land cover ({e}), villages on hashed tiles");
+                None
+            }
+        };
+        let mut view = PeopleView::new(&people, &inp.cities, cover.as_ref());
         let pages = view.update(&mut people);
         let shared = Arc::new(Shared::default());
         {

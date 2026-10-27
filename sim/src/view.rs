@@ -25,7 +25,8 @@
 use crate::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use crate::life::YEAR;
 use crate::people::{Born, Clock, Culture, Faction, Health, Home, Household, Intelligence, Job, People, Pid, Religion, Sex, Spouse, Stand, Travel};
-use crate::settle::{Settle, Spot};
+use crate::grain::FineCover;
+use crate::settle::{CoverOf, Settle, Spot};
 use crate::City;
 use bevy_ecs::prelude::*;
 
@@ -76,8 +77,10 @@ fn hash(v: u32) -> u32 {
 }
 
 impl PeopleView {
-    /// Builds the home spots (villages, listed places) once.
-    pub fn new(p: &People, cities: &[City]) -> PeopleView {
+    /// Builds the home spots (villages, listed places) once; with the fine
+    /// land cover (grain::fine_cover) villages sit on the most farmland.
+    pub fn new(p: &People, cities: &[City], cover: Option<&FineCover>) -> PeopleView {
+        let lookup = |r: i32, c: i32| cover.and_then(|cv| cv.get((r, c)));
         PeopleView {
             data: Vec::new(),
             slot_of: Vec::new(),
@@ -88,7 +91,7 @@ impl PeopleView {
             stamp: 0,
             last_writes: 0,
             dirty: Vec::new(),
-            settle: Settle::new(&p.grid, &p.pop, cities, None, 1),
+            settle: Settle::new(&p.grid, &p.pop, cities, cover.map(|_| &lookup as CoverOf), 1),
             query: None,
         }
     }
@@ -247,7 +250,8 @@ mod tests {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let inp = crate::inputs::load(&root, false).expect("inputs");
         let mut p = People::new(&inp, 1);
-        let mut v = PeopleView::new(&p, &inp.cities);
+        let cover = crate::grain::fine_cover(&root, true).ok();
+        let mut v = PeopleView::new(&p, &inp.cities, cover.as_ref());
         let first = v.update(&mut p);
         assert_eq!(first.len(), v.pages());
         let used = (0..v.slots()).filter(|&s| v.data[s * REC + 2] != 0.0).count();

@@ -261,6 +261,27 @@ mod tests {
                 assert_eq!(s.fine_at(x, z), Some(f));
             }
         }
+        // with the fine land cover every village of a cell with land stands
+        // on a land tile, the first on the tile with the most farmland
+        let cover = crate::grain::fine_cover(&root, true).expect("landcover-fine");
+        let look = |r: i32, c: i32| cover.get((r, c));
+        let sc = Settle::new(&a.grid, &a.pop, &inp.cities, Some(&look), 1);
+        let mut checked = 0;
+        for cell in 0..a.pop.len() as u32 {
+            let (r, c) = (cell as i32 / a.grid.cols + a.grid.row0, cell as i32 % a.grid.cols + a.grid.col0);
+            let Some(b) = cover.get((r, c)) else { continue };
+            if b[..256].iter().all(|&l| l == 0) {
+                continue;
+            }
+            let k = |f: u32| ((f as i32 / cols_f) % FINE * FINE + (f as i32 % cols_f) % FINE) as usize;
+            for &f in sc.villages(cell) {
+                assert!(b[k(f)] > 0, "village on a sea tile");
+            }
+            let best = (0..256).filter(|&i| b[i] > 0).map(|i| b[256 + i]).max().unwrap();
+            assert_eq!(b[256 + k(sc.villages(cell)[0])], best);
+            checked += 1;
+        }
+        assert!(checked > 100);
         // building and asking for homes does not touch the sim
         let _ = Settle::new(&b.grid, &b.pop, &inp.cities, None, 1);
         assert_eq!(a.fingerprint(), b.fingerprint());

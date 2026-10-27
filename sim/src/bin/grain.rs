@@ -52,7 +52,11 @@ fn main() {
     println!("clearable land: {cols}");
     let crop: i64 = arg("--crop-pct").map_or(apoleia_sim::grain::CROP_PCT, |v| v.parse().unwrap());
     println!("fields under grain each year: {crop} % (fallow {} %)", 100 - crop);
-    let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref(), crop);
+    // Fields on fine tiles (S73): on farmland tiles with the default
+    // columns, else on land tiles.
+    let fine = apoleia_sim::grain::fine_cover(&root, cols == apoleia_sim::grain::CLEAR_COVER.join(",")).expect("landcover-fine.bin.zst");
+    let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref(), Some(&fine), crop);
+    drop(fine);
     let grain_ms = t0.elapsed().as_secs_f64() * 1e3;
     let (farms, kinds, tents, tent_people, ha, fs, ms) = g.summary();
     println!(

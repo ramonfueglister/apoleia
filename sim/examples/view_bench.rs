@@ -5,7 +5,8 @@ fn main() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
     let inp = apoleia_sim::inputs::load(&root, false).unwrap();
     let mut p = People::new(&inp, 1);
-    let mut v = PeopleView::new(&p, &inp.cities);
+    let cover = apoleia_sim::grain::fine_cover(&root, true).ok();
+    let mut v = PeopleView::new(&p, &inp.cities, cover.as_ref());
     v.update(&mut p);
     let (mut us, mut pages, mut w) = (Vec::new(), Vec::new(), Vec::new());
     for _ in 0..360 {

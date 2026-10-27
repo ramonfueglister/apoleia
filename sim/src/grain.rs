@@ -65,6 +65,11 @@ pub const CLEAR_PCT: i64 = 100;
 /// limit). Alternatives and their growth: docs/kit2/run-grain/README.md.
 pub const CLEAR_COVER: [&str; 2] = ["farm_8", "farm_16"];
 const CLEAR_M2_ADULT_YEAR: i64 = 5_000;
+/// Fields lie on fine tiles (S73) within this many tiles of the farmstead
+/// (centre to centre). PLACEHOLDER: 8 tiles ≈ 12.5 km at movement scale,
+/// about one 25 km cell around the farm; real-size fields (S51) on a map
+/// with distances at 1 : 23.8 (S50) have no natural walking limit.
+const FIELD_RADIUS: i32 = 8;
 /// Share of a farm's fields under grain each year (S76, Brache):
 /// PLACEHOLDER two-field rotation, every field fallow every other year
 /// (GRAIN-NUMBERS 2: "mit Zweifelderwirtschaft doppelt so viel Land").
@@ -280,6 +285,16 @@ struct Farm {
     /// Work outside the peaks since the last harvest: needed and done, days.
     off_need: i64,
     off_done: i64,
+    /// The fine tiles its fields lie on (S73), in the order taken.
+    plots: Vec<Plot>,
+}
+
+/// Part of a fine tile in a farm's fields, m².
+#[derive(Clone, Copy)]
+struct Plot {
+    tile: u32,
+    good: u32,
+    poor: u32,
 }
 
 struct Neigh {
@@ -305,6 +320,8 @@ struct Field {
     worn: Vec<u16>,
     walked: i64,
     built: i64,
+    /// Reachable cells by distance from the market, nearest first.
+    order: Vec<u16>,
 }
 
 pub struct Market {
@@ -426,6 +443,15 @@ pub struct Grain {
     free_m2: Vec<i64>,
     free_poor: Vec<i64>,
     net_kg_ha: Vec<i64>,
+    /// The same free land per fine tile (S73): [good, clearable] m², in
+    /// blocks of 256 per 25 km cell with land (`tile_base`, NONE without);
+    /// `block_cell` is the cell of each block.
+    tiles: Vec<[u16; 2]>,
+    tile_base: Vec<u32>,
+    block_cell: Vec<u32>,
+    /// Fine offsets within a cell's reach, nearest first: (dr, dc, d²).
+    offsets: Vec<(i32, i32, i32)>,
+    rows_f: i32,
     /// Farms by day of year of their sowing and harvest start.
     by_doy: Vec<Vec<u32>>,
     trips: Vec<Trip>,
@@ -487,6 +513,64 @@ pub fn clearable(root: &std::path::Path, columns: &[String]) -> Result<Clearable
     Ok(out)
 }
 
+/// Land cover per fine tile (S73): land, farm_8 and farm_16 samples of
+/// each of the 256 tiles of a 25 km cell (row, col), from
+/// sim/inputs/landcover-fine.bin.zst (tools/sim_landcover.py). With
+/// `farmland`, a cell's fields lie on its farmland tiles (the default
+/// clearable columns); otherwise on all its land.
+pub struct FineCover {
+    data: Vec<u8>,
+    cells: FxHashMap<(i32, i32), usize>,
+    pub farmland: bool,
+}
+
+impl FineCover {
+    /// The samples of a 25 km cell (absolute row, col) per tile: 768
+    /// bytes, land [0..256], farm_8 [256..512], farm_16 [512..768], each
+    /// row-major (tile row * 16 + tile col; fine index fr * cols_f + fc).
+    pub fn get(&self, key: (i32, i32)) -> Option<&[u8]> {
+        self.cells.get(&key).map(|&o| &self.data[o + 8..o + 8 + 3 * 256])
+    }
+}
+
+pub fn fine_cover(root: &std::path::Path, farmland: bool) -> Result<FineCover, String> {
+    let path = root.join("sim/inputs/landcover-fine.bin.zst");
+    let raw = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let b = zstd::decode_all(&raw[..]).map_err(|e| format!("{}: {e}", path.display()))?;
+    const REC: usize = 8 + 3 * 256;
+    if b.len() % REC != 0 {
+        return Err(format!("{}: {} bytes", path.display(), b.len()));
+    }
+    let mut cells = FxHashMap::default();
+    for (k, r) in b.chunks_exact(REC).enumerate() {
+        let key = (i32::from_le_bytes(r[0..4].try_into().unwrap()), i32::from_le_bytes(r[4..8].try_into().unwrap()));
+        cells.insert(key, k * REC);
+    }
+    Ok(FineCover { data: b, cells, farmland })
+}
+
+/// Splits `total` by `w` (all 1 if `w` sums to 0), whole m²: shares
+/// rounded down, the rest one by one to the weighted tiles in order.
+fn spread(total: i64, w: &[u64; 256]) -> [i64; 256] {
+    let mut out = [0i64; 256];
+    let ones = [1u64; 256];
+    let w = if w.iter().sum::<u64>() == 0 { &ones } else { w };
+    let sum: u64 = w.iter().sum();
+    for (o, &x) in out.iter_mut().zip(w) {
+        *o = (total as i128 * x as i128 / sum as i128) as i64;
+    }
+    let mut rest = total - out.iter().sum::<i64>();
+    while rest > 0 {
+        for (o, &x) in out.iter_mut().zip(w) {
+            if rest > 0 && x > 0 {
+                *o += 1;
+                rest -= 1;
+            }
+        }
+    }
+    out
+}
+
 /// Days from `day` to the next day of year `target`.
 fn doy_until(day: i64, target: i64) -> i64 {
     (target - doy(day)).rem_euclid(YEAR)
@@ -494,14 +578,16 @@ fn doy_until(day: i64, target: i64) -> i64 {
 
 impl Grain {
     pub fn new(inp: &Inputs, p: &mut People) -> Grain {
-        Self::with_clearing(inp, p, CLEAR_PCT, None, CROP_PCT)
+        Self::with_clearing(inp, p, CLEAR_PCT, None, None, CROP_PCT)
     }
 
     /// As `new`, with the share of clearable land in per cent and, if
     /// given, the clearable share of each cell's land from land cover
     /// (`clearable`) instead of all usable land, and the share of the
-    /// fields under grain each year (`CROP_PCT`; 100 = no fallow).
-    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64, cover: Option<&Clearable>, crop_pct: i64) -> Grain {
+    /// fields under grain each year (`CROP_PCT`; 100 = no fallow). The
+    /// free land of a cell lies on its fine tiles by `fine` (S73), evenly
+    /// without it.
+    pub fn with_clearing(inp: &Inputs, p: &mut People, clear_pct: i64, cover: Option<&Clearable>, fine: Option<&FineCover>, crop_pct: i64) -> Grain {
         let seed = p.world.resource::<Clock>().seed;
         let g = &p.grid;
         let n = g.kind.len();
@@ -513,6 +599,7 @@ impl Grain {
         let mut free_m2 = vec![0i64; n];
         let mut free_poor = vec![0i64; n];
         let mut net = vec![0i64; n];
+        let mut usable_m2 = vec![0i64; n];
         for (&(r, c), cell) in &inp.cells {
             let Some(i) = g.index(r, c) else { continue };
             let crop = cell.hyde.as_ref().map_or(0.0, |h| h.crop_km2);
@@ -522,10 +609,84 @@ impl Grain {
                 None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
             };
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
+            usable_m2[i as usize] = (usable * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
             let ratio = RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64;
             net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
         }
+        // Free land on fine tiles (S73). The cell's fields lie on its
+        // farmland tiles (by farm_8 + farm_16 samples) up to the farmland
+        // there, the rest (HYDE cropland beyond today's farmland) on its
+        // land tiles; the good (HYDE) land first on the flat farmland
+        // (farm_8), the rest of each tile is clearable.
+        let mut tiles: Vec<[u16; 2]> = Vec::new();
+        let mut tile_base = vec![NONE; n];
+        let mut block_cell = Vec::new();
+        for i in 0..n {
+            let (good, poor) = (free_m2[i], free_poor[i]);
+            if good + poor == 0 {
+                continue;
+            }
+            let (r, c) = (i as i32 / g.cols + g.row0, i as i32 % g.cols + g.col0);
+            let fc = fine.and_then(|f| f.get((r, c)).map(|t| (f.farmland, t)));
+            let w = |k: usize| -> [u64; 256] { std::array::from_fn(|t| fc.map_or(0, |(_, x)| x[k * 256 + t] as u64)) };
+            let (land, flat, steep) = (w(0), w(1), w(2));
+            let farm: [u64; 256] = std::array::from_fn(|t| flat[t] + steep[t]);
+            let on_farm = match fc {
+                Some((true, _)) if farm.iter().sum::<u64>() > 0 => (good + poor).min(usable_m2[i].max(poor)),
+                _ => 0,
+            };
+            let a = spread(on_farm, &farm);
+            let b = spread(good + poor - on_farm, &land);
+            let mut cap: [i64; 256] = std::array::from_fn(|t| a[t] + b[t]);
+            // A tile holds no more than its area (eqc, data/projection.json:
+            // true at 41° N, east-west by cos(lat) / cos(41°) elsewhere);
+            // the rest goes to the cell's other land tiles with room, and
+            // stays over if the cell is full (the 25 km land and cover
+            // data do not quite agree).
+            let lat = (41.0 - (r as f64 * 25_000.0 + 12_500.0) / 6_371_008.8 * 180.0 / std::f64::consts::PI).to_radians();
+            let room = (1562.5 * 1562.5 * lat.cos() / 41f64.to_radians().cos() / crate::people::PEOPLE_PER_PERSON) as i64;
+            let mut over = 0;
+            for x in cap.iter_mut() {
+                over += (*x - room).max(0);
+                *x = (*x).min(room);
+            }
+            for t in 0..256 {
+                if over > 0 && (fc.is_none() || land[t] > 0) {
+                    let k = over.min(room - cap[t]).max(0);
+                    cap[t] += k;
+                    over -= k;
+                }
+            }
+            if over > 0 {
+                let more = spread(over, &land);
+                for t in 0..256 {
+                    cap[t] += more[t];
+                }
+            }
+            let mut gd = spread(good, if flat.iter().sum::<u64>() > 0 { &flat } else { &farm });
+            let mut left = good;
+            for t in 0..256 {
+                gd[t] = gd[t].min(cap[t]);
+                left -= gd[t];
+            }
+            for t in 0..256 {
+                let k = left.min(cap[t] - gd[t]);
+                gd[t] += k;
+                left -= k;
+            }
+            debug_assert_eq!(left, 0);
+            tile_base[i] = tiles.len() as u32;
+            block_cell.push(i as u32);
+            tiles.extend((0..256).map(|t| [u16::try_from(gd[t]).expect("tile land"), u16::try_from(cap[t] - gd[t]).expect("tile land")]));
+        }
+        let mut offsets: Vec<(i32, i32, i32)> = Vec::new();
+        for dr in -(FINE - 1)..FINE {
+            for dc in -(FINE - 1)..FINE {
+                offsets.push((dr, dc, dr * dr + dc * dc));
+            }
+        }
+        offsets.sort_unstable_by_key(|&(dr, dc, d)| (d, dr, dc));
         // Markets: one per 100 km region with land (S70), at the largest
         // listed place (Hanson 117), else at the cell with most people.
         let mut place_pop: FxHashMap<u32, f64> = FxHashMap::default();
@@ -609,6 +770,11 @@ impl Grain {
             free_m2,
             free_poor,
             net_kg_ha: net,
+            tiles,
+            tile_base,
+            block_cell,
+            offsets,
+            rows_f,
             by_doy: vec![Vec::new(); YEAR as usize],
             trips: Vec::new(),
             free_trips: Vec::new(),
@@ -1017,6 +1183,7 @@ impl Grain {
             retry: false,
             off_need: 0,
             off_done: 0,
+            plots: Vec::new(),
         };
         let k = self.farms.len() as u32;
         self.by_doy[harvest_doy as usize].push(k);
@@ -1052,18 +1219,105 @@ impl Grain {
             for (&f, &w) in fs.iter().zip(&want) {
                 let g = part(good, w, total);
                 let pr = part(poor, w - g, rest_total).min(w - g);
+                // From the cell's tiles nearest the farmstead.
+                self.take_land(f as usize, g, false, true);
+                self.take_land(f as usize, pr, true, true);
                 let fm = &mut self.farms[f as usize];
-                fm.area = g + pr;
-                fm.poor = pr;
-                fm.sown = (g + pr) * self.crop_pct / 100;
-                self.free_m2[c as usize] -= g;
-                self.free_poor[c as usize] -= pr;
+                fm.sown = fm.area * self.crop_pct / 100;
                 if fm.kind != FAMILY && !elites.is_empty() {
                     fm.landlord = elites[(rnd(self.seed, fm.hh, 0x1a4d, 0) % elites.len() as u64) as usize];
                 }
             }
         }
         let _ = p;
+    }
+
+    /// Takes up to `want` m² of free good land (or clearable, `poor`) for
+    /// farm `f` from the fine tiles nearest its farmstead (S73): within
+    /// FIELD_RADIUS, or anywhere in its own 25 km cell (`own`, the start).
+    fn take_land(&mut self, f: usize, want: i64, poor: bool, own: bool) -> i64 {
+        let (fine, cell) = (self.farms[f].fine as i32, self.farms[f].cell);
+        let (fr, fc) = (fine / self.cols_f, fine % self.cols_f);
+        let cols = self.cols_f / FINE;
+        let mut got = 0i64;
+        for k in 0..self.offsets.len() {
+            let (dr, dc, d2) = self.offsets[k];
+            if got >= want || (!own && d2 > FIELD_RADIUS * FIELD_RADIUS) {
+                break;
+            }
+            let (r, c) = (fr + dr, fc + dc);
+            if r < 0 || c < 0 || r >= self.rows_f || c >= self.cols_f {
+                continue;
+            }
+            let cl = ((r / FINE) * cols + c / FINE) as u32;
+            let base = self.tile_base[cl as usize];
+            let left = if poor { self.free_poor[cl as usize] } else { self.free_m2[cl as usize] };
+            if base == NONE || left == 0 || (own && cl != cell) {
+                continue;
+            }
+            let t = base + ((r % FINE) * FINE + c % FINE) as u32;
+            let free = &mut self.tiles[t as usize][poor as usize];
+            let n = (want - got).min(*free as i64);
+            if n <= 0 {
+                continue;
+            }
+            *free -= n as u16;
+            got += n;
+            if poor {
+                self.free_poor[cl as usize] -= n;
+            } else {
+                self.free_m2[cl as usize] -= n;
+            }
+            let plots = &mut self.farms[f].plots;
+            let pl = match plots.iter().position(|p| p.tile == t) {
+                Some(j) => &mut plots[j],
+                None => {
+                    plots.push(Plot { tile: t, good: 0, poor: 0 });
+                    plots.last_mut().unwrap()
+                }
+            };
+            if poor {
+                pl.poor += n as u32;
+            } else {
+                pl.good += n as u32;
+            }
+        }
+        let fm = &mut self.farms[f];
+        fm.area += got;
+        if poor {
+            fm.poor += got;
+        }
+        got
+    }
+
+    /// Gives `n` m² of farm `f`'s fields back to their tiles: cleared land
+    /// first, the plots taken last first.
+    fn give_land(&mut self, f: usize, n: i64) {
+        let mut plots = std::mem::take(&mut self.farms[f].plots);
+        let mut left = n;
+        for poor in [true, false] {
+            for pl in plots.iter_mut().rev() {
+                let have = if poor { &mut pl.poor } else { &mut pl.good };
+                let k = left.min(*have as i64);
+                if k == 0 {
+                    continue;
+                }
+                *have -= k as u32;
+                left -= k;
+                self.tiles[pl.tile as usize][poor as usize] += k as u16;
+                let cl = self.block_cell[pl.tile as usize / 256] as usize;
+                if poor {
+                    self.free_poor[cl] += k;
+                    self.farms[f].poor -= k;
+                } else {
+                    self.free_m2[cl] += k;
+                }
+            }
+        }
+        plots.retain(|p| p.good + p.poor > 0);
+        let fm = &mut self.farms[f];
+        fm.plots = plots;
+        fm.area -= n - left;
     }
 
     /// Field area a household's adults can work over the year (290
@@ -1441,28 +1695,17 @@ impl Grain {
             let harvest = doy(day) == fm.harvest_doy;
             // Fields grow to what the family can till at sowing (S73).
             if !harvest {
-                let want = self.want_m2(fm.hh);
-                let fm = &mut self.farms[f as usize];
-                let c = fm.cell as usize;
-                if want > fm.area {
-                    // Free good land first, then clearing (S73), as much
-                    // as the adults clear in a year.
-                    let take = (want - fm.area).min(self.free_m2[c]);
-                    fm.area += take;
-                    self.free_m2[c] -= take;
-                    let adults = self.info.get(&fm.hh).map_or(0, |i| i.adults as i64);
-                    let clear = (want - fm.area).min(self.free_poor[c]).min(adults * CLEAR_M2_ADULT_YEAR).max(0);
-                    fm.area += clear;
-                    fm.poor += clear;
-                    self.free_poor[c] -= clear;
-                } else if fm.area > want * 3 / 2 {
-                    // Cleared land is given up first.
-                    let give = fm.area - want * 3 / 2;
-                    let gp = give.min(fm.poor);
-                    fm.area -= give;
-                    fm.poor -= gp;
-                    self.free_poor[c] += gp;
-                    self.free_m2[c] += give - gp;
+                let (want, area, hh) = (self.want_m2(fm.hh), fm.area, fm.hh);
+                let f = f as usize;
+                if want > area {
+                    // Free good land on the nearest tiles first, then
+                    // clearing (S73), as much as the adults clear in a year.
+                    self.take_land(f, want - area, false, false);
+                    let adults = self.info.get(&hh).map_or(0, |i| i.adults as i64);
+                    let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR).max(0);
+                    self.take_land(f, clear, true, false);
+                } else if area > want * 3 / 2 {
+                    self.give_land(f, area - want * 3 / 2);
                 }
             }
             let fm = &self.farms[f as usize];
@@ -1492,6 +1735,7 @@ impl Grain {
             // Supply: landless adults of the region and farms not in a peak.
             let region = self.markets[mi].region;
             let mut offers: Vec<(u32, i64)> = Vec::new();
+            let mut farm_offers: Vec<(u32, i64)> = Vec::new();
             let _ = region;
             let ids = std::mem::take(&mut self.market_hh[mi]);
             for &id in &ids {
@@ -1503,13 +1747,19 @@ impl Grain {
                     _ => 0,
                 };
                 if days > 0 {
-                    offers.push((id, days));
+                    if s.kind == TENT {
+                        offers.push((id, days));
+                    } else {
+                        farm_offers.push((id, days));
+                    }
                 }
             }
             self.market_hh[mi] = ids;
             // PLACEHOLDER order: the landless are hired first, then farms
             // with spare hands, each in household order.
-            offers.sort_by_key(|&(id, _)| (self.hh[&id].kind != TENT, id));
+            offers.sort_unstable_by_key(|&(id, _)| id);
+            farm_offers.sort_unstable_by_key(|&(id, _)| id);
+            offers.append(&mut farm_offers);
             let open = std::mem::take(&mut self.markets[mi].open);
             let mut still = Vec::new();
             let mut o = 0;
@@ -2216,7 +2466,6 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
     // from the farthest cell to the market, so a stretch shared by many
     // routes is visited once.
     let mut acc = vec![0i64; (f.n * f.n) as usize];
-    let mut heap = BinaryHeap::new();
     for &(o, k) in &w.origins {
         let (r, c) = ((o as i32 / cols_f) - f.r0, (o as i32 % cols_f) - f.c0);
         if r < 0 || c < 0 || r >= f.n || c >= f.n {
@@ -2226,24 +2475,21 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
         if f.dist[i] == u32::MAX {
             continue;
         }
-        if acc[i] == 0 {
-            heap.push((f.dist[i], i as u32));
-        }
         acc[i] += k;
     }
-    let mut cells: Vec<(u32, i64)> = Vec::with_capacity(heap.len() * 8);
-    while let Some((_, i)) = heap.pop() {
+    let mut cells: Vec<(u32, i64)> = Vec::new();
+    for &i in f.order.iter().rev() {
         let k = acc[i as usize];
-        cells.push((i, k));
+        if k == 0 {
+            continue;
+        }
+        cells.push((i as u32, k));
         let d = f.dir[i as usize];
         if d == 255 {
             continue;
         }
         let (dr, dc) = DIRS[d as usize];
         let j = ((i as i32 / f.n + dr) * f.n + i as i32 % f.n + dc) as usize;
-        if acc[j] == 0 {
-            heap.push((f.dist[j], j as u32));
-        }
         acc[j] += k;
     }
     cells.sort_unstable();
@@ -2303,7 +2549,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
         None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
     };
     if mr < 0 || mc < 0 || mr >= n || mc >= n {
-        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day };
+        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order: Vec::new() };
     }
     // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
     let mut land = [false; 16];
@@ -2334,6 +2580,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
     pd[start as usize] = 0;
     buckets[0].push(start);
     let (mut g, mut pending) = (0u32, 1usize);
+    let mut settled: Vec<u32> = Vec::new();
     while pending > 0 {
         if buckets[(g & 255) as usize].is_empty() {
             g += 1;
@@ -2345,6 +2592,7 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
             if pd[i as usize] != g {
                 continue;
             }
+            settled.push(i);
             for (d, &o) in off.iter().enumerate() {
                 let j = (i as isize + o) as usize;
                 let step = if d == 1 || d == 3 || d == 4 || d == 6 { ortho[j] } else { diag[j] };
@@ -2373,7 +2621,8 @@ fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>
             dir[i] = pdir[pj];
         }
     }
-    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day }
+    let order = settled.iter().map(|&pj| ((pj as i32 / w - 1) * n + pj as i32 % w - 1) as u16).collect();
+    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order }
 }
 
 /// Groups a snapshot by household (counting sort, no comparison sort) and
