@@ -60,11 +60,6 @@ func begin(scene:Node3D,clipmap:RefCounted)->bool:
             _steps.append(func():_warm_forest(clipmap,p,textures,rect,everywhere,fading))
     if clipmap.rivers:_steps.append(func():_warm_river(clipmap,quad,textures,rect,d,everywhere))
     if clipmap.shores:_steps.append(func():_warm_shore(clipmap,quad,textures,rect,d,everywhere))
-    # Delta surfaces (landscape.gd _build_delta_surfaces) appear only once the
-    # root is resident; their first draw stalled ~4.5 s. Skipped once the
-    # deltas are drawn by the terrain shader instead (no _build_delta_surfaces).
-    if scene.has_method("_build_delta_surfaces") and not scene.get("delta_regions").is_empty():
-        _steps.append(func():_warm_delta(scene,quad,everywhere))
     result={"kinds":_kinds}
     return true
 
@@ -95,22 +90,6 @@ func _warm_shore(clipmap:RefCounted,quad:Dictionary,textures:Dictionary,rect:Rec
     var shore:Node3D=clipmap.shores.attach(holder,quad,textures,rect,clipmap.terrain_template)
     if shore:
         shore.custom_aabb=everywhere;_tile_origin(shore,d);_kinds.append("shore")
-
-## Same mesh format (vertex, normal, uv, index), shader, uniforms (marine
-## textures and samplers) and shadow setting as the real delta surfaces.
-func _warm_delta(scene:Node3D,quad:Dictionary,everywhere:AABB)->void:
-    var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
-    arrays[Mesh.ARRAY_VERTEX]=quad.vertices;arrays[Mesh.ARRAY_NORMAL]=quad.normals;arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO,Vector2.ZERO]);arrays[Mesh.ARRAY_INDEX]=quad.indices
-    var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-    var shader:Shader=load("res://shaders/delta.gdshader")
-    var material=ShaderMaterial.new();material.shader=shader
-    var marine=scene.get("marine_material")
-    for uniform in shader.get_shader_uniform_list():
-        var value=marine.get_shader_parameter(uniform.name) if marine else null
-        if value!=null:material.set_shader_parameter(uniform.name,value)
-    var delta=MeshInstance3D.new();delta.name="Delta";delta.mesh=mesh;delta.material_override=material
-    delta.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;delta.custom_aabb=everywhere
-    holder.add_child(delta);_kinds.append("delta")
 
 func _hold_view_state()->void:
     _held_draws+=1
