@@ -229,16 +229,16 @@ impl ApoleiaPeople {
         Image::create_from_data(SIDE as i32, SIDE as i32, false, Format::RGBAF, &bytes)
     }
 
-    /// Simulated days shown.
+    /// Simulated days so far (the sim thread's, also while no dots show).
     #[func]
     fn day(&self) -> i64 {
-        self.day
+        self.shared.front.lock().unwrap().day
     }
 
-    /// People alive in the shown day.
+    /// People alive after that day.
     #[func]
     fn count(&self) -> i64 {
-        self.count as i64
+        self.shared.front.lock().unwrap().count as i64
     }
 
     /// Timings in microseconds: the last sim day and view update (sim
@@ -246,8 +246,10 @@ impl ApoleiaPeople {
     #[func]
     fn timings(&self) -> VarDictionary {
         let mut d = VarDictionary::new();
-        d.set("day_usec", self.day_usec);
-        d.set("view_usec", self.view_usec);
+        let f = self.shared.front.lock().unwrap();
+        d.set("day_usec", f.day_usec);
+        d.set("view_usec", f.view_usec);
+        drop(f);
         d.set("sync_usec", self.upload_usec);
         d.set("sync_layers", self.uploaded_pages);
         d
