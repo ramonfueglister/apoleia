@@ -23,6 +23,18 @@ varying float river_side;
 varying vec2 river_flow;
 varying float river_half_width;
 varying float river_symbolic;
+varying float river_base_width;
+// Height range of the rendered 65-grid cell around p (clipmap path).
+float river_cell_range(vec2 p){
+    float step_size=clipmap_span/64.0;
+    vec2 q=clamp((p-clipmap_origin)/step_size,vec2(0.0),vec2(64.0));
+    vec2 corner=clipmap_origin+min(floor(q),vec2(63.0))*step_size;
+    float a=clipmap_surface_vertex(corner);
+    float b=clipmap_surface_vertex(corner+vec2(step_size,0.0));
+    float c=clipmap_surface_vertex(corner+vec2(0.0,step_size));
+    float d=clipmap_surface_vertex(corner+vec2(step_size));
+    return max(max(a,b),max(c,d))-min(min(a,b),min(c,d));
+}
 // Authored Color uniforms arrive linearized by Godot. The isolated GPU
 // probe verified source_color/raw Color == StandardMaterial; manual decoding
 // here double-decoded gray128 to56. Vertex COLOR follows a different path.
@@ -42,6 +54,8 @@ void vertex(){
     river_flow=normalize(vec2(-NORMAL.z,NORMAL.x)+vec2(0.0001));
     river_half_width=half_width;
     river_symbolic=UV2.y;
+    // Clipmap strips carry the unwidened source width in UV.y; 0 elsewhere.
+    river_base_width=UV.y;
     river_side=UV2.x;
     // CPU mesh river bases are already in displayed-world height, before relief.
     // Only the raw raster fallback needs the explicit display mapping here.
@@ -55,12 +69,24 @@ void vertex(){
         ground=(ya*CUSTOM1.z+yb*CUSTOM1.w+yc*(1.0-CUSTOM1.z-CUSTOM1.w))*display_height_scale;
     }
     VERTEX.y=ground*relief+surface_overlay_offset_world;
+    if(clipmap_enabled){
+        // On coarse levels (16 km cells in the far view) the ribbon quads cut
+        // across the terrain triangles' creases and dip under the convex ones,
+        // which broke far rivers into pieces. Move the vertex towards the
+        // camera along its view ray by the local cell relief: same screen
+        // position, only the depth changes. Close views keep the exact surface.
+        float pull=river_cell_range(VERTEX.xz)*0.001*display_height_scale*relief/max(projection_vertical_scale,0.3);
+        pull*=smoothstep(300.0,1200.0,view_width);
+        vec3 eye=(inverse(MODEL_MATRIX)*vec4(INV_VIEW_MATRIX[3].xyz,1.0)).xyz;
+        VERTEX+=normalize(eye-VERTEX)*pull;
+    }
     NORMAL=vec3(0.0,1.0,0.0);
 }
 void fragment(){
-    // Zoom-dependent size filter: far views only the largest rivers.
-    float rank_width=river_symbolic/(use_model_mesh ? 1.0 : 1.6);
-    if(rank_width<mix(0.0,0.036,smoothstep(500.0,1800.0,view_width))) discard;
+    // Zoom-dependent size filter on the unwidened source width, so a river
+    // shows or hides as a whole; the far view keeps scalerank <= 7 (Tevere).
+    float rank_width=river_base_width>0.0 ? river_base_width : river_symbolic/(use_model_mesh ? 1.0 : 1.6);
+    if(rank_width<mix(0.0,0.025,smoothstep(500.0,1800.0,view_width))) discard;
     float sea_distance=water_distance_at(river_position);
     if(sea_distance>0.0) discard;
     // Streamed/clipmap strips carry the side offset in world units.

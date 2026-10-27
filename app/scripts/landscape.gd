@@ -2511,7 +2511,7 @@ func _load_river_features(payloads:Array) -> void:
                     var a=points[j];var b=points[j+1]
                     segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
                     minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
-            if not segments.is_empty(): sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name","")),"supplement":payload_index>0})
+            if not segments.is_empty(): sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name","")),"supplement":payload_index>0,"base_width":width})
             feature_count+=1
     river_load_result={"valid":valid,"sources":sources,"feature_count":feature_count}
 
@@ -2557,7 +2557,7 @@ func _delta_arm_source(pts:Array[Vector2],width:float,name:String,k:int)->Dictio
     for i in range(pts.size()-1):
         segments.append([pts[i],pts[i+1],width,station,"delta:"+name+":"+str(k)]);station+=pts[i].distance_to(pts[i+1])
         minimum=minimum.min(pts[i+1]);maximum=maximum.max(pts[i+1])
-    return {"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":name+" delta arm","synthetic_delta":true}
+    return {"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":name+" delta arm","synthetic_delta":true,"base_width":width}
 
 func _add_delta_arms() -> void:
     for region in delta_regions:

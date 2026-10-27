@@ -29,6 +29,9 @@ func build(id:String,manifest:Dictionary)->Dictionary:
         # lie in views where rivers.gdshader discards it anyway.
         if level>=3 and bool(source.get("supplement",false)):continue
         var segs:Array=source.segments
+        # Source width before mouth/delta widening: the size filter in
+        # rivers.gdshader keeps or drops a river as a whole.
+        var base_width=float(source.get("base_width",0.))
         for j in range(segs.size()):
             var segment=segs[j]
             var a:Vector2=segment[0];var b:Vector2=segment[1];var portion=_clip(a,b,rect)
@@ -49,7 +52,7 @@ func build(id:String,manifest:Dictionary)->Dictionary:
                 var first=a+delta*ta;var last=a+delta*tb;var base=vertices.size()
                 for pair in [[first,-1.,ta],[first,1.,ta],[last,-1.,tb],[last,1.,tb]]:
                     var s_here:Vector2=side_a.lerp(side_b,float(pair[2]))
-                    vertices.append(Vector3(pair[0].x,0.,pair[0].y));normals.append(Vector3(s_here.x,0.,s_here.y));uv.append(Vector2(float(segment[3])+length*pair[2],0.));uv2.append(Vector2(pair[1],float(segment[2])*1.6))
+                    vertices.append(Vector3(pair[0].x,0.,pair[0].y));normals.append(Vector3(s_here.x,0.,s_here.y));uv.append(Vector2(float(segment[3])+length*pair[2],base_width));uv2.append(Vector2(pair[1],float(segment[2])*1.6))
                 indices.append_array([base,base+2,base+1,base+1,base+2,base+3])
     return {"vertices":vertices,"normals":normals,"uv":uv,"uv2":uv2,"indices":indices}
 func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Node3D:
