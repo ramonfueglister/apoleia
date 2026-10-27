@@ -395,19 +395,27 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             var rng=RandomNumberGenerator.new()
             rng.seed=seed_value+918713
             var support:Array[Vector2]=[]
+            var open_support:Array[Vector2]=[]
             for sz in range(3):
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
                     if landcover_forest(p)>0.08:support.append(p)
+                    elif landcover_open(p)>0.5:open_support.append(p)
+            # Pure grass and crop land (forest share under 0.08, e.g. the
+            # Lazio coastal plain) still gets sparse copses (r9 near view:
+            # the coastal plain stayed bare, dark share 0.130 against 0.165).
+            var open_only=support.is_empty()
+            if open_only:support=open_support
             if support.is_empty():continue
             # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
             # canopy where forest > 0.5 (hills/slopes), loose groups below,
             # open valley floors and fields stay free.
             var share=0.0
-            for q in support:share+=landcover_forest(q)
+            if not open_only:
+                for q in support:share+=landcover_forest(q)
             share/=9.0
-            var fraction=float(support.size())/9.0
+            var fraction=0.0 if open_only else float(support.size())/9.0
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
@@ -426,7 +434,7 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             # up to the beach like the reference near view instead of bare
             # (near dark share 0.125 against 0.165).
             var copse=share<0.3
-            if copse:density=smoothstep(0.45,0.60,clump)*0.32*smoothstep(0.06,0.14,share)
+            if copse:density=smoothstep(0.45,0.60,clump)*(0.18 if open_only else 0.32*smoothstep(0.06,0.14,share))
             if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
             # Dense forest: the wider grove variant closes the canopy.
@@ -531,6 +539,16 @@ static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Calla
 static var _landcover:PackedByteArray=PackedByteArray()
 static var _landcover_meta:Dictionary={}
 # Forest share 0..1 (forest + half shrub) at the nearest 2 km node.
+# Open land share (grass + crop, 117 AD adjusted) from the same nodes.
+static func landcover_open(p:Vector2) -> float:
+    landcover_forest(p) # loads the nodes on first use
+    if not bool(_landcover_meta.get("valid",false)):return 0.0
+    var w:int=_landcover_meta.w;var h:int=_landcover_meta.h
+    var uv=(p-Vector2(_landcover_meta.min))/Vector2(_landcover_meta.size)
+    var x=clampi(int(round(uv.x*float(w-1))),0,w-1);var z=clampi(int(round(uv.y*float(h-1))),0,h-1)
+    var at=(z*w+x)*8
+    return clampf((float(_landcover[at+2])+float(_landcover[at+3]))/255.0,0.0,1.0)
+
 static func landcover_forest(p:Vector2) -> float:
     if _landcover_meta.is_empty():
         var root=ProjectSettings.globalize_path("res://..").simplify_path().path_join("artifacts/render-data/landcover-node-2km")
