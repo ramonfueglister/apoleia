@@ -196,6 +196,64 @@ void vertex() {
     world_position=VERTEX;
     local_render_position=vec3(VERTEX.x-shading_origin.x,VERTEX.y,VERTEX.z-shading_origin.y);
 }
+// Kit 2 map mode "Bevölkerung" (docs/kit2/ARCHITECTURE.md S46). The Rust
+// bridge provides the tile slot per 1.5625 km cell (slot + 1, 0 = none) and
+// one value texel per slot (population, people per km²); a tile keeps its
+// slot until it is split or merged. The colour follows the density and is
+// computed here, so a new month only re-uploads the value texture.
+uniform bool map_mode_population=false;
+// The index is cut into square pages, one array layer each, so a split or
+// merge re-uploads only the pages it touches; page (x, y) is layer
+// y * map_index_pages_x + x.
+uniform sampler2DArray map_index_tex : filter_nearest, repeat_disable;
+uniform int map_index_pages_x=1;
+uniform sampler2D map_value_tex : filter_nearest, repeat_disable;
+uniform vec2 map_index_origin=vec2(0.0);
+uniform float map_index_cell=1.5625;
+uniform int map_value_width=1024;
+// Colour by density (people per km²) on a fixed log scale, so tiles of
+// different size compare fairly and colours keep their meaning over time.
+uniform float map_density_low=0.3;
+uniform float map_density_high=300.0;
+
+vec3 map_srgb_to_linear(vec3 c) {
+    return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(0.04045,c));
+}
+// Same ramp as the browser view: maroon, red-brown, ochre, olive, green.
+vec3 map_ramp(float t) {
+    vec3 stops[5]=vec3[5](vec3(122,42,40),vec3(138,90,44),vec3(160,138,48),vec3(143,154,53),vec3(95,154,58));
+    float x=clamp(t,0.0,1.0)*4.0;
+    int a=min(int(floor(x)),3);
+    return map_srgb_to_linear(mix(stops[a],stops[a+1],x-float(a))/255.0);
+}
+int map_tile(ivec2 c) {
+    if(any(lessThan(c,ivec2(0)))) return -1;
+    ivec3 size=textureSize(map_index_tex,0);
+    ivec2 page=c/size.xy;
+    int layer=page.y*map_index_pages_x+page.x;
+    if(page.x>=map_index_pages_x || layer>=size.z) return -1;
+    return int(texelFetch(map_index_tex,ivec3(c-page*size.xy,layer),0).r+0.5)-1;
+}
+vec3 population_overlay(vec3 ground,vec2 p) {
+    if(!map_mode_population) return ground;
+    vec2 f=(p-map_index_origin)/map_index_cell;
+    ivec2 c=ivec2(floor(f));
+    int i=map_tile(c);
+    if(i<0) return ground;
+    vec2 v=texelFetch(map_value_tex,ivec2(i%map_value_width,i/map_value_width),0).rg;
+    float t=log(max(v.g,map_density_low)/map_density_low)/log(map_density_high/map_density_low);
+    vec3 col=map_ramp(t);
+    // Keep a little of the relief shading under the flat colour.
+    float shade=dot(ground,vec3(0.2126,0.7152,0.0722))/0.18;
+    col*=mix(1.0,clamp(shade,0.7,1.25),0.35);
+    // Thin dark border where the neighbouring cell belongs to another tile,
+    // about one screen pixel wide at any zoom.
+    vec2 fr=fract(f);
+    vec2 px=max(fwidth(f),vec2(1e-6));
+    bool edge=(fr.x<px.x && map_tile(c+ivec2(-1,0))!=i) || (fr.x>1.0-px.x && map_tile(c+ivec2(1,0))!=i)
+        || (fr.y<px.y && map_tile(c+ivec2(0,-1))!=i) || (fr.y>1.0-px.y && map_tile(c+ivec2(0,1))!=i);
+    return edge ? col*0.45 : col;
+}
 // A12 tour A/B: false drops the open-sea probe on delta coasts (sand rings
 // round étangs and channels come back).
 const bool DELTA_SHORE_PROBE=true;
@@ -356,6 +414,7 @@ void fragment() {
     float wet=(1.0-smoothstep(0.0,wet_w,max(-material_distance,0.0)))*(1.0-water);
     ground*=mix(1.0,0.78+0.05*sin(TIME*1.3+vp.x*0.7),wet*shore);
     ground=mix(ground,lagoon_color,lagoon);
+    ground=population_overlay(ground,world_position.xz);
     ALBEDO=mix(ground,sea,water);
     EMISSION=water_emission*(water+lagoon*0.4);
     ROUGHNESS=mix(mix(0.94,0.55,lagoon),mix(0.70,0.42,wave_amount),water);

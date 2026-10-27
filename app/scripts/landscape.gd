@@ -209,6 +209,7 @@ var pipeline_preparation:RefCounted
 var landscape_environment:Environment
 var environment_api:Script
 var clipmap_runtime:RefCounted
+var population_map: CanvasLayer # Kit 2 map mode, scripts/sim/population_map_mode.gd
 var snapshot_clipmap_timeout=false
 var tile_forest:RefCounted
 var clipmap_warmup:RefCounted # clipmap_pipeline_warmup.gd: invisible first draw of forest/river/shore pipelines before the tour clock
@@ -449,6 +450,13 @@ func _ready() -> void:
     if terrain_streaming and not clipmap_runtime:
         pipeline_preparation=load("res://scripts/terrain/terrain_pipeline_preparation.gd").new()
         pipeline_preparation.begin(self)
+    # Kit 2 game state from the Rust core (GDExtension); off in tours and captures.
+    if not tour and not snapshot:
+        population_map=load("res://scripts/sim/population_map_mode.gd").new()
+        add_child(population_map)
+        if not population_map.setup(self):
+            population_map.queue_free()
+            population_map=null
     start_usec=Time.get_ticks_usec()-int((tour_window[0] if not tour_window.is_empty() else 0.0)*1000000.0)
     tour_wait_started_usec=Time.get_ticks_usec()
 
