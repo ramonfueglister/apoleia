@@ -152,8 +152,15 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         # clipmap_focus is written with them: the shader's focus morph is
         # always replaced by the edge morph (clipmap_edge_width>0), so
         # per-frame focus updates have no rendered or height_at effect.
-        var state=[parent_id,blend,edge_mask]
+        # The family blend animates every frame while a tile fades in; only
+        # it (and the forest weight) is rewritten then, not the whole set.
+        var state=[parent_id,edge_mask]
         var structural=entry.get("state",[])!=state
+        if not structural and float(entry.get("blend",-1.))!=blend:
+            entry["blend"]=blend;var tile_nodes:=_tile_nodes(entry)
+            for material in _materials(tile_nodes):material.set_shader_parameter(&"clipmap_family_blend",blend)
+            for node in tile_nodes:
+                if node is MultiMeshInstance3D:forest.set_weight(node,blend)
         if not structural:
             var seen:Array=entry.get("camera",[])
             if seen==camera:continue
@@ -161,7 +168,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
             if not seen.is_empty():stale.append(id);continue
         var tile_nodes:=_tile_nodes(entry)
         if structural:
-            entry["state"]=state;entry.erase("camera")
+            entry["state"]=state;entry["blend"]=blend;entry.erase("camera")
             var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
             var parent_texture=parent.textures.height;var parent_step=parent_d.span/GRID
             var edge_width=d.span/GRID*4.;var morph_start=d.span*.8;var morph_end=d.span*1.6
