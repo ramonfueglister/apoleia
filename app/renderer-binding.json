@@ -52,11 +52,11 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-claude-landcover-r11",
-      "manifest_sha256": "8e13b33d39b47f0b0a54919ebf81da7f5dc04e3a1569879a7c2277c450c5162a",
+      "path": "artifacts/render-data/forest-layout-claude-mask-r12",
+      "manifest_sha256": "5c427259d97a34e999b03c6c72f01e20aeada65ca6c50b94b04beeab411f66f4",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
-      "record_source": "complete landcover-r11 bake (215747 records: forest carpets on regional forest share, coarse clearings, dense type from share 0.45), v3 source contract"
+      "record_source": "complete mask-r12 bake (106293 records: Paradox-style forest density mask forest-mask-r1 drives placement, density and crown size; dense grove from mask 0.6), v3 source contract"
     }
   },
   "terrain_streaming": {
