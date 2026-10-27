@@ -51,12 +51,15 @@ void fragment(){
     // slate (515f650). Coolness now comes from the underside and the
     // backlight; the albedo only a little bluer than before (0.66).
     vec3 tinted=leaf*vec3(0.61,0.70,0.70);
-    tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.35);
+    // 5b44221 crop: the reference crowns are a saturated mid green with a
+    // lighter top; ours grey-green (desaturated 35 %, flat top).
+    tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.15);
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
     float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
-    ALBEDO=tinted*mix(0.90,1.04,upper)*near_crowns;
+    // Lighter tops over the steep gumdrop walls.
+    ALBEDO=tinted*mix(0.86,1.12,smoothstep(0.15,0.65,crown_up))*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
     // Sun-averted faces: the reference keeps them a mid green (#2e4332,

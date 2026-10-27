@@ -137,9 +137,9 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: 
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
         # Reference crowns are rounded cones about 0.85 as wide as tall; ours
         # read as narrow spikes (0.66). Same draws, so the same trees: 8 %
-        # lower, 20 % wider, about 10 % more cover per crown.
+        # lower and 6 % wider; the gumdrop profile below adds the cover.
         var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)*0.92
-        var radius=height*rng.randf_range(0.30,0.36)*1.30
+        var radius=height*rng.randf_range(0.30,0.36)*1.15
         _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
     mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")+("_dense" if dense else "")
@@ -149,9 +149,9 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
     var sides=5
     # Gumdrop profile like the reference crowns: widest low, a broad
     # shoulder high up and a short blunt tip (was 0.55 h / 0.58 r, a spike
-    # at 190 km). Mid-view stages drop the shoulder and stay plain cones.
-    var levels=[-0.45,0.15,0.64,1.0]
-    var widths=[0.55,1.0,0.80,0.0]
+    # at 190 km). Coarser stages keep the shoulder and drop the skirt.
+    var levels=[-0.45,0.15,0.60,1.0]
+    var widths=[0.55,1.0,0.76,0.0]
     var phase=rng.randf()*TAU
     var lean=Vector3(rng.randf_range(-0.12,0.12),0.0,rng.randf_range(-0.12,0.12))*radius
     # Same RNG draws at every detail, so all stages show the same trees.
@@ -166,9 +166,12 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
         # ring is sub-pixel at this size.
         levels=[-0.1,levels[3]];widths=[widths[1],widths[3]];jitter=[jitter[1],jitter[3]];sides=3
     elif detail>0:
-        # Without the shoulder ring: a plain cone (crowns of a few pixels;
-        # the gumdrop shoulder only reads in the close view).
-        levels=[levels[0],levels[1],levels[3]];widths=[widths[0],widths[1],widths[3]];jitter=[jitter[0],jitter[1],jitter[3]]
+        # The clipmap tiles draw stage 2 even in the close view (A12
+        # MIN_DETAIL), so the gumdrop must survive it at the same triangle
+        # count: the widest ring sinks just below the ground instead of the
+        # skirt, and the shoulder ring stays (was a plain pyramid, about 0.6
+        # of the gumdrop's cover).
+        levels=[-0.2,levels[2],levels[3]];widths=[widths[1],widths[2],widths[3]];jitter=[jitter[1],jitter[2],jitter[3]]
         sides=[5,5,4,3][clampi(detail,0,3)]
     var rings:Array=[]
     for j in range(levels.size()):
@@ -186,7 +189,7 @@ static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rn
             var facing=0.5+0.5*cos(phase+TAU*(float(i)+0.5)/float(sides)-PI)
             # Underside: a cool shade like the reference (#1b3028), not near
             # black (ours #162917 on 11 % of the crown pixels at 190 km).
-            var tone=color.lightened(0.10*facing) if j>0 or detail>=4 else Color(color.r*0.72,color.g*0.80,minf(color.b*1.05+0.03,1.0))
+            var tone=color.lightened(0.10*facing) if j>0 or detail>=1 else Color(color.r*0.72,color.g*0.80,minf(color.b*1.05+0.03,1.0))
             _outward_triangle(st,rings[j][i],rings[j+1][i],rings[j][k],center,tone)
             if j<levels.size()-2:_outward_triangle(st,rings[j][k],rings[j+1][i],rings[j+1][k],center,tone)
 
