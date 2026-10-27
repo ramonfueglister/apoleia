@@ -56,7 +56,7 @@ void vertex() {
 		edge_size = mix(0.7, 1.0, smoothstep(0.15, 0.7, density)); // smaller at the wood edge
 		float h = tt_height_m(centre, height_lod);
 		float lat = tt_latitude(centre);
-		show = show && h < 1750.0 && cov.g < 0.7;
+		show = show && h < 1400.0 && cov.g < 0.7;
 		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
 		// stone pines and cypresses in the warm lowlands, more of them in open land
 		bool south = lat < 44.5 && h < 700.0;

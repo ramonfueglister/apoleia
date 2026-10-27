@@ -114,10 +114,10 @@ void vertex() {
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
 
-vec3 ground_colour(vec2 p, vec4 cov) {
+vec3 ground_colour(vec2 p, vec4 cov, float detail_m) {
 	float n = tt_fbm(p / (6.0 * max(tile_km, 0.5)));
 	float lat = tt_latitude(p);
-	float h = tt_height_m(p, height_lod);
+	float h = tt_height_m(p, height_lod) + detail_m;
 	float dry = cov.g;
 	vec3 c = mix(C_PLAIN, C_GRASS, 0.35 + 0.65 * n);
 	if (lat < 37.5) {
@@ -134,9 +134,9 @@ vec3 ground_colour(vec2 p, vec4 cov) {
 	c = mix(c, C_WET, clamp(cov.a * 2.0, 0.0, 0.8));
 	c = mix(c, C_HILL, clamp((h - 500.0) / 900.0, 0.0, 1.0) * (1.0 - dry));
 	// rock caps, the same on ramps and flat tops so slopes do not read as walls
-	float rock = clamp((h - 1250.0) / 400.0, 0.0, 1.0);
+	float rock = clamp((h - 1100.0) / 350.0, 0.0, 1.0);
 	c = mix(c, C_ROCK, rock);
-	c = mix(c, C_SNOW, clamp((h - 1750.0) / 200.0, 0.0, 1.0));
+	c = mix(c, C_SNOW, clamp((h - 1600.0) / 180.0, 0.0, 1.0));
 	if (body_level <= 2.0) {
 		c = mix(c, C_SAND, coast >= 0.99 ? 0.8 : coast * 0.65);
 	}
@@ -175,6 +175,45 @@ vec3 relief_normal(vec2 p) {
 	return normalize(vec3(-hx * k, 1.0, -hz * k));
 }
 
+// Gullies running straight down the slope: stripes across the slope
+// direction t, blended over the four nearest cells with random phases so they
+// never line up into a pattern (phacelle noise). Returns the value and its
+// gradient (per cell unit), unit amplitude.
+vec3 gullies(vec2 q, vec2 t) {
+	vec2 i = floor(q - 0.5);
+	vec2 f = q - 0.5 - i;
+	vec2 s = vec2(0.0);
+	for (int y = 0; y < 2; y++) {
+		for (int x = 0; x < 2; x++) {
+			vec2 c = i + vec2(float(x), float(y));
+			float w = (x == 0 ? 1.0 - f.x : f.x) * (y == 0 ? 1.0 - f.y : f.y);
+			float a = dot(q - c - 0.5, t) * 6.2832 + tt_hash(c) * 6.2832;
+			s += w * vec2(cos(a), sin(a));
+		}
+	}
+	float len = max(length(s), 1e-3);
+	return vec3(s.x / len, -t * 6.2832 * s.y / len);
+}
+
+// Mountain detail below the 2 km height nodes (metres, and its gradient in
+// metres per km): ridges and gullies down the slopes, only in the mountains,
+// faded out where they would be finer than a pixel (fw km).
+vec3 alpine_detail(vec2 p, float h, float fw, vec2 slope) {
+	float amp = mix(45.0, 150.0, smoothstep(800.0, 1600.0, h)) * smoothstep(250.0, 600.0, h) * smoothstep(0.04, 0.25, length(slope));
+	if (amp <= 0.0) { return vec3(0.0); }
+	vec2 t = normalize(vec2(-slope.y, slope.x));
+	vec3 d = vec3(0.0);
+	float freq = 1.0 / 5.5;
+	float a = 1.0;
+	for (int k = 0; k < 3; k++) {
+		vec3 g = gullies(p * freq + float(k) * 5.3, t);
+		d += a * (1.0 - smoothstep(0.12, 0.3, fw * freq)) * vec3(g.x, g.yz * freq);
+		a *= 0.38;
+		freq *= 2.4;
+	}
+	return d * amp;
+}
+
 // Distance (in tile units) from the tile edge on the sides set in `mask`.
 float side_distance(int mask) {
 	float d = 10.0;
@@ -193,6 +232,7 @@ void fragment() {
 	vec2 cp = p; // ground colour follows the land smoothly, no per-tile patches
 	vec3 c;
 	float rough = 1.0;
+	vec3 far_n = vec3(0.0, 1.0, 0.0); // world normal of the far relief map
 	if ((water == W_SEA || water == W_LAKE) && part == 0) {
 		if (water == W_SEA) {
 			float d_km = tt_sea_distance(p);
@@ -222,11 +262,18 @@ void fragment() {
 		rough = 0.55;
 	} else if (part == 0) {
 		vec4 cov = tt_cover(cp);
+		// far out: ridges and gullies below the data grid, so the mountains
+		// read crisp instead of as soft blobs (EU5 map)
+		float h_m = tt_height_m(p, height_lod);
+		float fw_km = length(fwidth(p));
+		vec3 rn = relief_smooth > 0.0 ? relief_normal(p) : vec3(0.0, 1.0, 0.0);
+		vec3 ad = relief_smooth > 0.0 ? alpine_detail(p, h_m, fw_km, rn.xz / rn.y) : vec3(0.0);
+		float detail = ad.x * relief_smooth;
 		int town = tt_town(tile);
 		vec3 fc;
 		float stripes;
 		if (town > 0) {
-			c = mix(ground_colour(centre, cov), C_PAVED, 0.75);
+			c = mix(ground_colour(centre, cov, 0.0), C_PAVED, 0.75);
 			// streets between the house blocks
 			vec2 g = abs(fract(tile_uv * float(house_grid)) - 0.5);
 			float street = 1.0 - smoothstep(0.38, 0.43, max(g.x, g.y));
@@ -236,7 +283,7 @@ void fragment() {
 				c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 			}
 		} else {
-			c = ground_colour(cp, cov);
+			c = ground_colour(cp, cov, detail);
 		}
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
@@ -248,7 +295,9 @@ void fragment() {
 		if (relief_smooth > 0.0) {
 			// far out: smooth per-pixel normal from the relief instead of the
 			// flat tile facets, so the relief map has no triangle sawtooth
-			nw = normalize(mix(nw, relief_normal(p), relief_smooth));
+			vec2 g = rn.xz / rn.y - ad.yz * (level_h / m_per_level);
+			nw = normalize(mix(nw, normalize(vec3(g.x, 1.0, g.y)), relief_smooth));
+			far_n = nw;
 		}
 		// SimCity 2000 slope tiles come in two clear tones: sun side light,
 		// shade side dark, with no gradient in between
@@ -256,8 +305,13 @@ void fragment() {
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.80, 1.0, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.13, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
-		float smooth_tone = clamp(1.0 + 1.8 * lit, 0.6, 1.3); // crisp hillshade (EU5 map)
-		c *= mix(mix(1.0, tone, mix(1.0, 0.6, far)), smooth_tone, relief_smooth);
+		// far relief map: bare rock on steep mountain faces, a crisp hillshade
+		// with warm sun sides and cool shade sides (EU5 map)
+		float steep = smoothstep(0.62, 0.88, 1.0 - nw.y) * smoothstep(900.0, 1500.0, h_m + detail);
+		c = mix(c, C_ROCK, steep * relief_smooth * 0.7);
+		float smooth_tone = clamp(1.0 + 1.6 * lit, 0.62, 1.22);
+		vec3 tint = mix(vec3(0.92, 0.95, 1.03), vec3(1.04, 1.0, 0.94), smoothstep(-0.25, 0.25, lit));
+		c *= mix(vec3(mix(1.0, tone, mix(1.0, 0.6, far))), smooth_tone * tint, relief_smooth);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
@@ -312,7 +366,7 @@ void fragment() {
 	vec3 n = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
 	n = n.z < 0.0 ? -n : n;
 	if (relief_smooth > 0.0 && part == 0 && water == W_LAND) {
-		n = normalize(mix(n, (VIEW_MATRIX * vec4(relief_normal(world_pos.xz), 0.0)).xyz, relief_smooth));
+		n = normalize(mix(n, (VIEW_MATRIX * vec4(far_n, 0.0)).xyz, relief_smooth));
 	}
 	NORMAL = n;
 }

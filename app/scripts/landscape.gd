@@ -86,13 +86,15 @@ func _setup_look() -> void:
 	environment.background_color = Color("1d5a8c")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("c4d4e6")
-	environment.ambient_light_energy = 0.9
-	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
+	# low ambient and a filmic curve keep the colours deep and the shade sides
+	# dark (AgX and a strong sky fill washed the map out)
+	environment.ambient_light_energy = 0.6
+	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
 	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 0.98
-	environment.adjustment_contrast = 1.06
+	environment.adjustment_saturation = 1.0
+	environment.adjustment_contrast = 1.08
 	environment.ssao_enabled = true
 	environment.ssao_radius = 0.6
 	environment.ssao_intensity = 0.6

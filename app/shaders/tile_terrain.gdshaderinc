@@ -96,19 +96,35 @@ float tt_corner_height(ivec2 c) {
 // neighbouring land tiles share their corners and form one surface of flat
 // tiles and one-level ramps. Corners at the sea sit at sea level, so the coast
 // ramps into the water; walls only remain at rivers and lakes.
-float tt_land_corner(ivec2 c) {
-	bool shore = tt_water(c) == W_SEA || tt_water(c - ivec2(1, 0)) == W_SEA
-		|| tt_water(c - ivec2(0, 1)) == W_SEA || tt_water(c - ivec2(1, 1)) == W_SEA;
-	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
-	float x = max(tt_corner_height(c), 0.0) / m_per_level;
-	float l = mix(round(x), x, relief_smooth);
-	return shore ? 0.0 : max(1.0, l);
+// Flat water level of a lake tile (levels). The baked lake level lives on the
+// 2 km nodes, so look at a few nodes around the tile and keep the lake's value.
+float tt_lake_level(ivec2 t) {
+	vec2 p = tt_tile_center(t);
+	float metres = -1000.0;
+	for (int k = 0; k < 5; k++) {
+		vec2 o = k == 0 ? vec2(0.0) : vec2(k == 1 ? 1.0 : k == 2 ? -1.0 : 0.0, k == 3 ? 1.0 : k == 4 ? -1.0 : 0.0) * 1.0;
+		vec4 a = textureLod(aux_tex, tt_node_uv(p + o), 0.0);
+		float m = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
+		if (a.g + a.b > 0.0) { metres = metres < -999.0 ? m : min(metres, m); }
+	}
+	float x = max(metres, 0.0) / m_per_level;
+	return max(mix(round(x), x, relief_smooth), 1.0);
 }
 
-float tt_lake_level(ivec2 t) {
-	vec4 a = textureLod(aux_tex, tt_node_uv(tt_tile_center(t)), 0.0);
-	float metres = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
-	return max(round(max(metres, 0.0) / m_per_level), 1.0) - 0.75;
+float tt_land_corner(ivec2 c) {
+	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
+	bool shore = false;
+	float lake = 1.0e6;
+	for (int k = 0; k < 4; k++) {
+		int w = tt_water(nb[k]);
+		shore = shore || w == W_SEA;
+		if (w == W_LAKE) { lake = min(lake, tt_lake_level(nb[k])); }
+	}
+	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
+	float x = max(tt_corner_height(c), 0.0) / m_per_level;
+	float l = max(1.0, mix(round(x), x, relief_smooth));
+	// corners at the sea or a lake sit at the water line: the shore ramps in
+	return shore ? 0.0 : min(l, lake);
 }
 
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
@@ -118,7 +134,7 @@ vec4 tt_corners(ivec2 t) {
 		return vec4(0.0);
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t));
+		return vec4(tt_lake_level(t) - 0.04);
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),
