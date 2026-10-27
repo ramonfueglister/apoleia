@@ -11,6 +11,7 @@ extends Node3D
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
+const PeopleDots = preload("res://scripts/sim/people_dots.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 4.0 # about 17 houses across (Kit 2 scale)
 const MAX_WIDTH := 3600.0
@@ -72,6 +73,11 @@ func _ready() -> void:
 	weather = WeatherSystem.new()
 	add_child(weather)
 	weather.configure(self, camera, sun, environment, Callable(self, "get_displayed_height_range"))
+	# Kit 2 people as dots (Rust GDExtension); off when it is not built
+	var dots := PeopleDots.new()
+	add_child(dots)
+	if not dots.setup(terrain):
+		dots.queue_free()
 
 static func lonlat_to_world(lon: float, lat: float) -> Vector2:
 	return Vector2(EARTH_KM * cos(deg_to_rad(41.0)) * deg_to_rad(lon - 19.0), -EARTH_KM * deg_to_rad(lat - 41.0))
