@@ -219,6 +219,13 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec3 floor_tone=land_forest_floor_color.rgb;
     vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
+    // Fine darker grass patches (100-300 m): grass structure instead of
+    // large bright plates; faded once below ~2 px.
+    float gfoot_any=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    if(gfoot_any<0.12) {
+        float gp=land_tnoise(p+vec2(71.0,7.0),0.2).r;
+        ground*=1.0-0.09*land_edge(gp,0.62)*(1.0-smoothstep(0.05,0.12,gfoot_any))*(1.0-forest);
+    }
     // Fine meadow speckles (~80 m) for the closest zooms.
     float gfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
     if(gfoot<0.04) {
@@ -392,7 +399,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         ground=mix(ground,mix(crowns,land_far_forest_color.rgb,shadow_side*0.5),far_forest*mix(0.6,1.0,shadow_side)*overview*(1.0-rock));
         ground*=mix(1.0,clamp(shade,0.45,1.5),overview);
         // Pixel-sharp grain on far plains (+-5 %).
-        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.24*overview*(1.0-upland*0.5);
+        ground*=1.0+(land_hash(floor(p/max(footprint,0.05)))-0.5)*0.32*overview*(1.0-upland*0.5);
         // High ranges: pale grey-beige rock above ~1800 m real (~1250 m
         // compressed), shaded by side; only the highest summits white.
         // Real ranges only: high plateaus (Meseta, Anatolia) stay land.
