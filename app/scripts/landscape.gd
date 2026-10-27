@@ -2607,7 +2607,7 @@ func _add_delta_arms() -> void:
         var mouths_out=[]
         var main_end=mouth+sea*14.0
         var arms=[[start,main_end,base_width,0.0]]
-        var branch_specs=[[0.15,-1.0,0.55],[0.40,1.0,0.45],[0.62,-1.0,0.35]]
+        var branch_specs=region.arms if not region.arms.is_empty() else [[0.15,-1.0,0.55],[0.40,1.0,0.45],[0.62,-1.0,0.35]]
         var main_points=_delta_arm_points(start,main_end,float(region.ra),rng)
         river_sources.append(_delta_arm_source(main_points,base_width,str(region.name),0))
         mouths_out.append(mouth)
@@ -2620,7 +2620,7 @@ func _add_delta_arms() -> void:
             var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
             river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
             mouths_out.append(coast_end)
-            if index==2:
+            if index==2 and branch_specs.size()>=3:
                 # Second-order split of the first side arm.
                 var at2=int(float(pts.size()-1)*0.45);var split2:Vector2=pts[at2]
                 var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.8
@@ -2657,7 +2657,9 @@ func _widen_river_mouths() -> void:
 # the Stagni di Ostia and Maccarese either side of the Tiber).
 const LAGOON_SCALE=Vector2(1.7,1.8)
 const RIVER_DELTAS=[
-    {"name":"Tevere","ra":7.0,"rb":4.5},
+    # The Tiber has two real outlets (Fiumara Grande, Fiumicino): one side
+    # arm only, so no arms cross (A16: overlapping bands at the mouth).
+    {"name":"Tevere","ra":7.0,"rb":4.5,"arms":[[0.55,1.0,0.5]]},
     {"name":"Po","ra":20.0,"rb":11.0},
     {"name":"Rhône","ra":18.0,"rb":10.0},
     {"name":"Ebro","ra":8.0,"rb":5.0},
@@ -2693,7 +2695,7 @@ func _setup_river_deltas() -> void:
             if _water_distance(coast_point)<0.0:break
             coast_point-=sea_direction*0.25
         inlets=[coast_point,coast_point+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
-        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,
+        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,"arms":delta.get("arms",[]),
             "center":coast_point-sea_direction*rb*0.55,"anchor_texel":INF})
         delta_apexes.append(mouth-sea_direction*rb*1.2)
     _bind_delta_uniforms()
