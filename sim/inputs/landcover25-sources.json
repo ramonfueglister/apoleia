@@ -1,6 +1,6 @@
 {
  "revision": "sim-landcover25-v1",
- "generated_utc": "2026-10-27T18:28:43Z",
+ "generated_utc": "2026-10-27T19:51:14Z",
  "tool": "tools/sim_landcover.py",
  "sources": "as data/gametiles/terrain-sources.json (ESA WorldCover 2021 v200 CC BY 4.0: ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium; Copernicus DEM GLO-90)",
  "groups": {
@@ -20,5 +20,11 @@
   "path": "sim/inputs/landcover25.csv",
   "rows": 24885,
   "sha256": "ac32a991ce41b22679da93b726ec003446281e704a2fba6788f2978897adc30b"
+ },
+ "fine": {
+  "path": "sim/inputs/landcover-fine.bin.zst",
+  "tile_m": 1562.5,
+  "layout": "per cell: row,col int32 LE; 256 x u8 land, farm_8, farm_16 samples",
+  "sha256": "07aabb382b2cdc9b68fac4c59f78b7966f196458c0d9561a751d49595ff3a2b7"
  }
 }

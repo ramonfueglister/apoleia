@@ -18,9 +18,15 @@ Slope: central differences on the DEM overview grid (~370 m spacing, from
 Output sim/inputs/landcover25.csv: row, col, land_samples, then the share of
 land samples per group and band: farm_8, farm_16, farm_30, farm_steep,
 grass_..., wood_..., other_... (16 columns, summing to 1).
+
+Output sim/inputs/landcover-fine.bin.zst (fields on tiles, S73): the same
+counts per fine tile (16 x 16 per 25-km cell, 1562.5 m, the grain economy's
+path grid). For every cell of landcover25.csv, in its order: row and col
+(int32 little endian), then 256 bytes each of land samples, farm_8 samples
+and farm_16 samples per tile (row-major, capped at 255).
 """
 import math,pathlib,sys,json,hashlib,datetime,concurrent.futures
-import numpy as np
+import numpy as np,zstandard
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent))
 import gametiles_terrain as gt
 ROOT=gt.ROOT;E=gt.E;R=gt.R;LAT0=gt.LAT0;LON0=gt.LON0;TILE=gt.TILE;SPD=gt.SPD
@@ -43,6 +49,7 @@ def main():
  kx=R*math.cos(math.radians(LAT0))*math.pi/180;kz=R*math.pi/180
  c0=math.floor(kx*(E['west']-LON0)/TILE);c1=math.floor(kx*(E['east']-LON0)/TILE-1e-9);r0=math.floor(-kz*(E['north']-LAT0)/TILE);r1=math.floor(-kz*(E['south']-LAT0)/TILE-1e-9)
  NC=c1-c0+1;NT=NC*(r1-r0+1);S=np.zeros((NT,17),np.int64);WD={}
+ FN=TILE/16;FT=np.zeros((3,NT*256),np.uint16)
  f=(np.arange(SPD)+.5)/SPD
  grp=np.full(256,3,np.int64);grp[[40,50]]=0;grp[30]=1;grp[[10,20]]=2
  for la,lo in cells:
@@ -65,18 +72,26 @@ def main():
   lz=land.ravel();tz=t.ravel()[lz];kz_=k.ravel()[lz]
   S[:,0]+=np.bincount(tz,minlength=NT)
   S[:,1:]+=np.bincount(tz*16+kz_,minlength=NT*16).reshape(NT,16)
+  fr=np.floor(-kz*(lat-LAT0)/FN).astype(int)-r0*16;fc=np.floor(kx*(lon-LON0)/FN).astype(int)-c0*16
+  ft=(((fr//16)*NC+fc//16)*256+(fr%16)*16+fc%16).ravel()[lz]
+  FT[0]+=np.bincount(ft,minlength=NT*256).astype(np.uint16)
+  for j,b in ((1,0),(2,1)):
+   sel=kz_==b;FT[j]+=np.bincount(ft[sel],minlength=NT*256).astype(np.uint16)
  head='row,col,land_samples,'+','.join(f'{g}_{b}' for g in GROUPS for b in BANDS)
- lines=[head]
+ lines=[head];fine=[]
  for i in range(NT):
   n=S[i,0]
   if not n:continue
   r,c=r0+i//NC,c0+i%NC
+  fine.append(np.array([r,c],'<i4').tobytes()+np.minimum(FT[:,i*256:(i+1)*256],255).astype(np.uint8).tobytes())
   lines.append(f'{r},{c},{n},'+','.join(f'{v/n:.4f}'.rstrip('0').rstrip('.') for v in S[i,1:]))
+ fb=zstandard.ZstdCompressor(level=19).compress(b''.join(fine));(ROOT/'sim/inputs/landcover-fine.bin.zst').write_bytes(fb)
  out=ROOT/'sim/inputs/landcover25.csv';csv=('\n'.join(lines)+'\n').encode();out.write_bytes(csv)
  src=dict(revision='sim-landcover25-v1',generated_utc=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),tool='tools/sim_landcover.py',
   sources='as data/gametiles/terrain-sources.json (ESA WorldCover 2021 v200 CC BY 4.0: ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium; Copernicus DEM GLO-90)',
   groups=dict(farm='40 cropland, 50 built-up',grass='30 grassland',wood='10 tree cover, 20 shrubland',other='60 bare, 70 snow, 90 wetland, 95 mangroves, 100 moss'),
   slope_bands_pct=['<8','8-16','16-30','>=30'],slope='central differences on the DEM overview (300 rows/deg; ~370 m), underestimates short steep slopes',
-  output=dict(path='sim/inputs/landcover25.csv',rows=len(lines)-1,sha256=hashlib.sha256(csv).hexdigest()))
+  output=dict(path='sim/inputs/landcover25.csv',rows=len(lines)-1,sha256=hashlib.sha256(csv).hexdigest()),
+  fine=dict(path='sim/inputs/landcover-fine.bin.zst',tile_m=1562.5,layout='per cell: row,col int32 LE; 256 x u8 land, farm_8, farm_16 samples',sha256=hashlib.sha256(fb).hexdigest()))
  (ROOT/'sim/inputs/landcover25-sources.json').write_text(json.dumps(src,indent=1)+'\n');print('DONE',len(lines)-1,flush=True)
 if __name__=='__main__':main()

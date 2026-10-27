@@ -14,18 +14,21 @@ GRAIN_DEBUG=1 …   # zusätzlich die grössten Märkte und Hofgrössen pro Jahr
 
 Dateien: `sim/src/grain.rs` (alles), `sim/src/bin/grain.rs` (Lauf), Haken in
 `sim/src/people.rs` (`Econ`: gegessen pro Haushalt, freies Land und Nahrung pro Kopf pro
-Region). `run100.txt` ist die ganze Ausgabe des Laufs mit Saatgut und Brache,
-`run100-seed-nofallow.txt` derselbe Lauf ohne Brache, `run100-before-s76.txt` der Stand davor;
+Region). `run100.txt` ist die ganze Ausgabe des Standardlaufs (Saatgut, Brache,
+Handelswege, Felder auf Kacheln), `run100-before-s73.txt` derselbe ohne Kacheln,
+`run100-before-s71.txt` auch ohne Handelswege,
+`run100-seed-nofallow.txt` ohne Brache, `run100-before-s76.txt` ohne Saatgut und Brache;
 `run60-noclear.txt`,
 `run60-farm-grass.txt` und `run60-farm-grass-wood.txt` sind die Vergleiche zum rodbaren Land.
-Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.csv`.
+Rodbares Land pro Zelle und pro Kachel: `tools/sim_landcover.py` → `sim/inputs/landcover25.csv`
+und `sim/inputs/landcover-fine.bin.zst`.
 
 ## Was gebaut ist
 
 | Teil | Umsetzung | Entscheidung |
 |---|---|---|
 | **Höfe** | Ein Hof pro Bauernhaushalt beim Start: Familienhof (Bauern), Pachthof (Pächter, Pacht an einen Grundherrn) und Gutshof (Unfreie, alles gehört dem Grundherrn, einem Senator oder Ritter). Tagelöhner auf dem Land haben keinen Hof und leben im Zelt. Wird ein Hof frei (Familie ausgestorben oder weggezogen), zieht automatisch ein Haushalt aus den Zelten derselben Region ein. Neue Höfe baut nur der Spieler; den gibt es im Prototyp noch nicht. | S69 |
-| **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. | S73 |
+| **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. Die Felder liegen auf Kacheln von 1,56 km um den Hofplatz, die nächsten freien zuerst (siehe unten). | S73 |
 | **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. | S72 |
 | **Saatgut und Brache** | Jeder Hof legt nach der Ernte das Saatgut fürs nächste Jahr zurück (130 kg/ha) und sät es im Herbst aus dem Hofspeicher; fehlt es, bleibt Feld ungesät. Die Ernte bringt brutto Saat mal Saatverhältnis. Zweifelderwirtschaft: Jedes Jahr liegt die Hälfte der Felder brach, ein Hof braucht also doppelt so viel Land. | S76 |
 | **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
@@ -37,7 +40,7 @@ Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.cs
 | **Geld** | Der Staat hat unbegrenzt Geld (S76): Wer weder Bauer noch Händler ist, bekommt den Taglohn des Preisedikts (25 Denar) vom Staat. Bauern bekommen Geld nur für verkauftes Getreide. | S76 |
 | **Fusswege** | Jeder Markt hat ein Wegfeld über seine Region auf dem Feinraster (Kachelebene 7, ≈ 1,56 km echt). Die Gänge zum Markt nutzen Zellen ab (Helbing 1997), die Abnutzung zerfällt mit einer Halbwertszeit von einem Jahr. Ab einer Schwelle wird eine Zelle Trampelpfad, dann Weg (mit Hysterese); beides macht das Gehen billiger, so dass die nächsten Gänge dem Pfad folgen. | S70 |
 
-## Ergebnis mit Saatgut und Brache (100 Jahre, Seed 1, Standard)
+## Ergebnis mit Saatgut und Brache (100 Jahre, Seed 1, `run100-before-s71.txt`)
 
 | Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | Zelte / Menschen darin | Ernte brutto t | Ernte verloren t | verkauft t | Handel t | gegessen | Preis Rom (Denar/kg) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -124,7 +127,7 @@ Gebiet sind das 2,4 Mio. km² heutiges Ackerland unter 16 % Hang (HYDE-Acker 200
 solange die Landlosen hungern; danach 0,6–0,9 % mit jeder Rodungsvariante. Mit Brache
 (oben) bindet das Land, und es sind über 100 Jahre 0,16 % im Jahr.
 
-## Handelswege (S71, 100 Jahre, `run100.txt`; ohne: `run100-before-s71.txt`)
+## Handelswege (S71, 100 Jahre, `run100-before-s73.txt`; ohne: `run100-before-s71.txt`)
 
 | Jahr | Handelswege / Strassen / Seewege (Zellen) | Menschen | Preis Rom (Denar/kg) ohne → mit |
 |---|---|---|---|
@@ -139,20 +142,42 @@ Wo eine Strasse liegt, kommt Getreide billiger nach Rom; in Jahr 50 halbiert sic
 Preisausschlag dort. Auf Wachstum und Bevölkerung wirkt es kaum (0,16 %/Jahr wie vorher),
 weil das Land bindet, nicht der Transport.
 
+## Felder auf Kacheln (S73, 100 Jahre, `run100.txt`; ohne: `run100-before-s73.txt`)
+
+Jede 25-km-Zelle hat 16 × 16 Kacheln zu 1,56 km (dasselbe Raster wie die Fusswege). Ihr
+freies Land liegt auf ihren Kacheln nach dem Anteil heutigen Ackerlands (WorldCover) unter
+16 % Hang, das gute HYDE-Land zuerst auf dem flachen (unter 8 %). Eine Kachel fasst höchstens
+ihre Fläche. Ein Hof nimmt seine Felder auf den freien Kacheln, die seinem Hofplatz am
+nächsten liegen: beim Start aus seiner Zelle, danach im Umkreis von 8 Kacheln, auch über die
+Zellgrenze. Zuerst gutes Land, dann rodet er (S73). Gibt er Land ab, zuerst gerodetes, zuletzt
+genommenes.
+
+| Jahr | Menschen ohne → mit Kacheln | Wachstum mit |
+|---|---|---|
+| 10 | 99'593 → 100'350 | −0,51 % |
+| 20 | 97'439 → 98'446 | −0,13 % |
+| 50 | 107'395 → 109'818 | +0,50 % |
+| 100 | 135'489 → 137'827 | +0,48 % |
+
+Über 100 Jahre sind das 0,16 % im Jahr, wie ohne Kacheln. Etwas mehr Menschen, weil ein Hof
+am Rand seiner Zelle jetzt auch freies Land der Nachbarzelle nimmt. Der Preis in Rom schwankt
+stark von Lauf zu Lauf (Jahr 100: 59,7 Denar/kg statt 30,6); das ist die Unruhe der wenigen
+Händler, nicht die Kacheln.
+
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |
 |---|---|
-| Aufbau Getreide | 81 ms (Marktgraph mit 32 Nachbarn pro Markt) |
-| **Getreide pro Tag, Median / Mittel** | **1,09 ms / 1,23 ms** (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,2 ms / 3,4 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 3,7 / 5,7 / 7,5 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 374 MB bei 135'000 Menschen |
+| Aufbau Getreide | 0,44 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
+| **Getreide pro Tag, Median / Mittel** | **1,21 ms / 1,39 ms** (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 2,6 ms / 3,8 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,0 / 6,2 / 8,0 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 457 MB bei 138'000 Menschen (ohne Kacheln 374 MB) |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,20 ms, Arbeitsbörse 0,16, Märkte und
-Nachrichten 0,18, Essen und Kaufen 0,18, Händler mit Handelswegen 0,19 (ohne 0,04), Fusswege
-0,26, Aussaat und Ernte 0,01, Haushaltszählung 0,15.
+Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,18 ms, Arbeitsbörse 0,12, Märkte und
+Nachrichten 0,19, Essen und Kaufen 0,20, Händler mit Handelswegen 0,21 (ohne 0,04), Fusswege
+0,27, Aussaat und Ernte mit Kachelsuche 0,06 (ohne 0,01), Haushaltszählung 0,16.
 
 **Handelswege.** Ändert sich eine Zelle, sucht nur ein Markt neu, dessen Nachbarsuche diese
 Zelle berührt hat (Rechteck um alle besuchten Zellen). Die betroffenen Märkte verteilen sich
@@ -208,6 +233,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
 | Not (S66) | weniger als 80 % gegessen | frei gewählt |
 | Handelswege | Halbwertszeit 2 Jahre, Handelsweg ab 100, Strasse ab 400 Fahrten im Jahr (zurück unter 50 / 200), Wagenfracht 80 % / 65 %; Seewege ohne Wirkung | Werte frei, wie Fusswege |
+| Felder auf Kacheln | Umkreis 8 Kacheln um den Hofplatz; Hofplatz per Zufall in der Zelle; was die 25-km-Daten mehr Land haben als die Kacheln fassen, liegt über (wenige Zellen) | Echte Feldgrösse (S51) auf einer Karte mit Wegen 1 : 23,8 (S50) hat keine natürliche Grenze für den Weg zum Feld |
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe bis zur Ernte + 60 Tage, Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
@@ -220,8 +246,9 @@ in Arrays nach ID statt in Hashtabellen.
 - **Neue Märkte, Verödung, Elendsviertel** (S75): Es gibt genau einen Markt pro Region.
 - **Häfen und Flüsse**: Seewege werden gezählt, machen die Fahrt aber nicht billiger.
   Flüsse fehlen im Marktgraph.
-- **Felder als Kacheln**: Felder sind eine Fläche pro Hof, noch nicht auf dem Feinraster
-  verteilt; dafür fehlen Boden und Hang pro Kachel.
+- **Felder einzeichnen, Land sperren** (S73): Es gibt noch keinen Spieler. Hofplätze sind
+  noch keine echten Orte; sie sollen später auf die Dorfplätze aus `settle.rs` (Thread
+  „Bewohner als Punkte“) gelegt werden.
 
 ## Was auffällt und zu klären ist
 
