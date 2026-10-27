@@ -1,0 +1,14 @@
+; Kit 2 game state (Rust, bevy_ecs) as a GDExtension, see docs/kit2/ARCHITECTURE.md
+; S40/S45/S46. Build with sim/godot/build.sh; the libraries are not committed.
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.7
+reloadable = false
+
+[libraries]
+macos.debug = "res://bin/libapoleia_godot.dylib"
+macos.release = "res://bin/libapoleia_godot.dylib"
+linux.debug.x86_64 = "res://bin/libapoleia_godot.so"
+linux.release.x86_64 = "res://bin/libapoleia_godot.so"
+windows.debug.x86_64 = "res://bin/apoleia_godot.dll"
+windows.release.x86_64 = "res://bin/apoleia_godot.dll"
