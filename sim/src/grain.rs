@@ -276,6 +276,7 @@ struct Farm {
     store: i64,
     money: i64,
     harvest_doy: i64,
+    sow_doy: i64,
     peak: Option<Peak>,
     to_sell: i64,
     /// Grain sold for the landlord before the farm's own.
@@ -409,6 +410,8 @@ pub struct GrainStats {
     /// Households without workers or kin sent to the tents (S79).
     pub to_tents: u64,
     pub field_rebuilds: u64,
+    /// Heirs' households given a share of the father's farm (INHERIT_EQUAL).
+    pub heirs_given: u64,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -966,6 +969,10 @@ impl Grain {
     /// moved away or died out are given to landless households of the same
     /// region (S69: a free farm is taken automatically).
     fn reconcile(&mut self, p: &mut People, start: bool) {
+        if !start && p.inherit == crate::people::INHERIT_EQUAL {
+            let log = std::mem::take(&mut p.split_log);
+            self.inherit_equal(&log);
+        }
         // Households gone or moved: free their farm.
         let ids = sorted_keys(&self.hh);
         for id in ids {
@@ -1180,6 +1187,7 @@ impl Grain {
             store: 0,
             money: 0,
             harvest_doy,
+            sow_doy,
             peak: None,
             to_sell: 0,
             rent_due: 0,
@@ -1193,6 +1201,134 @@ impl Grain {
         self.by_doy[sow_doy as usize].push(k);
         self.farms.push(f);
         k
+    }
+
+    /// INHERIT_EQUAL (S83): the family farm of a household whose
+    /// married sons left at the father's death is shared in equal parts
+    /// between the old household (if anyone is left in it) and the sons'
+    /// households, fields, sown area and store alike. The fields stay on
+    /// their tiles. If the old household is empty, the first son takes the
+    /// farm itself. Tenancies and estates stay with the old household.
+    fn inherit_equal(&mut self, log: &[(u32, u32)]) {
+        let mut k = 0;
+        while k < log.len() {
+            let old = log[k].0;
+            let n_log = log[k..].iter().take_while(|e| e.0 == old).count();
+            let sons: Vec<u32> = log[k..k + n_log]
+                .iter()
+                .map(|e| e.1)
+                .filter(|id| self.info.contains_key(id) && self.hh.get(id).is_none_or(|h| h.farm == NONE))
+                .collect();
+            k += n_log;
+            let Some(s) = self.hh.get(&old).copied() else { continue };
+            if s.farm == NONE || self.farms[s.farm as usize].kind != FAMILY || sons.is_empty() {
+                continue;
+            }
+            let f = s.farm;
+            let kept = self.info.contains_key(&old);
+            let n = sons.len() as i64 + kept as i64;
+            let (area, sown, store) = (self.farms[f as usize].area, self.farms[f as usize].sown, self.farms[f as usize].store);
+            for (j, &id) in sons.iter().enumerate() {
+                let i = self.info[&id];
+                let fine = self.settle.home_fine(i.home, id, i.stand);
+                let to = if j == 0 && !kept {
+                    // The farm itself goes to the first son.
+                    self.hh.get_mut(&old).unwrap().farm = NONE;
+                    let fm = &mut self.farms[f as usize];
+                    fm.hh = id;
+                    fm.fine = fine;
+                    f
+                } else {
+                    let t = self.new_farm_for_heir(id, &i, fine, f);
+                    self.move_land(f as usize, t as usize, area / n);
+                    let sh = (sown / n, store / n);
+                    self.farms[f as usize].sown -= sh.0;
+                    self.farms[f as usize].store -= sh.1;
+                    self.farms[t as usize].sown = sh.0;
+                    self.farms[t as usize].store = sh.1;
+                    t
+                };
+                if !self.hh.contains_key(&id) {
+                    self.hh.insert(id, HhState { kind: FARM, pantry: 0, money: 0, farm: NONE, fine, fed: 1000, busy: false, trading: false });
+                }
+                let h = self.hh.get_mut(&id).unwrap();
+                h.kind = FARM;
+                h.farm = to;
+                h.fine = fine;
+                self.stats.heirs_given += 1;
+            }
+        }
+    }
+
+    /// An heir's farm without fields, with the calendar of the father's
+    /// farm `like` (the share is sown and harvested with it).
+    fn new_farm_for_heir(&mut self, id: u32, i: &HhInfo, fine: u32, like: u32) -> u32 {
+        let fm = &self.farms[like as usize];
+        let f = Farm {
+            hh: id,
+            kind: FAMILY,
+            landlord: NONE,
+            cell: i.home,
+            fine,
+            market: fm.market,
+            area: 0,
+            poor: 0,
+            sown: 0,
+            net_kg_ha: fm.net_kg_ha,
+            store: 0,
+            money: 0,
+            harvest_doy: fm.harvest_doy,
+            sow_doy: fm.sow_doy,
+            peak: None,
+            to_sell: 0,
+            rent_due: 0,
+            retry: false,
+            off_need: 0,
+            off_done: 0,
+            plots: Vec::new(),
+        };
+        let k = self.farms.len() as u32;
+        self.by_doy[f.harvest_doy as usize].push(k);
+        self.by_doy[f.sow_doy as usize].push(k);
+        self.farms.push(f);
+        k
+    }
+
+    /// Moves `n` m² of fields from farm `from` to farm `to` on the same
+    /// tiles: cleared land first, the plots taken last first (as give_land).
+    fn move_land(&mut self, from: usize, to: usize, n: i64) {
+        let mut plots = std::mem::take(&mut self.farms[from].plots);
+        let mut left = n;
+        for poor in [true, false] {
+            for pl in plots.iter_mut().rev() {
+                let have = if poor { &mut pl.poor } else { &mut pl.good };
+                let k = left.min(*have as i64);
+                if k == 0 {
+                    continue;
+                }
+                *have -= k as u32;
+                left -= k;
+                let tp = &mut self.farms[to].plots;
+                let j = match tp.iter().position(|p| p.tile == pl.tile) {
+                    Some(j) => j,
+                    None => {
+                        tp.push(Plot { tile: pl.tile, good: 0, poor: 0 });
+                        tp.len() - 1
+                    }
+                };
+                if poor {
+                    tp[j].poor += k as u32;
+                    self.farms[to].poor += k;
+                    self.farms[from].poor -= k;
+                } else {
+                    tp[j].good += k as u32;
+                }
+                self.farms[to].area += k;
+                self.farms[from].area -= k;
+            }
+        }
+        plots.retain(|p| p.good + p.poor > 0);
+        self.farms[from].plots = plots;
     }
 
     fn xz(&self, p: &People, cell: u32) -> (f64, f64) {
@@ -2207,6 +2343,25 @@ impl Grain {
         (n, k, tents, tent_people, area as f64 / 1e4, store as f64 / 1e3, market as f64 / 1e3)
     }
 
+    /// Farms with a household: count, field ha at p10/p50/p90 and mean,
+    /// and the share (%) whose fields at their yield, fallow included,
+    /// cannot feed the household.
+    pub fn land_report(&self) -> (usize, [f64; 4], f64) {
+        let mut ha = Vec::new();
+        let mut short = 0;
+        for f in self.farms.iter().filter(|f| f.hh != NONE) {
+            ha.push(f.area as f64 / 1e4);
+            if let Some(i) = self.info.get(&f.hh) {
+                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 10_000 / f.net_kg_ha.max(1) * 100 / self.crop_pct;
+                short += (f.area < feed) as usize;
+            }
+        }
+        ha.sort_by(f64::total_cmp);
+        let q = |x: f64| ha.get(((ha.len().max(1) - 1) as f64 * x) as usize).copied().unwrap_or(0.0);
+        let mean = ha.iter().sum::<f64>() / ha.len().max(1) as f64;
+        (ha.len(), [q(0.1), q(0.5), q(0.9), mean], 100.0 * short as f64 / ha.len().max(1) as f64)
+    }
+
     /// Price of the market of the region of `cell`, denarii per kg.
     pub fn price_at(&self, cell: u32) -> f64 {
         self.markets[self.cell_market[cell as usize] as usize].price as f64 / 1000.0
@@ -2804,6 +2959,38 @@ mod tests {
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
+    }
+
+    /// S83: an heir's share moves on the same tiles: no land appears or
+    /// vanishes, the tiles' free land is untouched, plots add up to area.
+    #[test]
+    fn inheritance_moves_land_on_the_same_tiles() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        let f = (0..g.farms.len()).find(|&f| g.farms[f].hh != NONE && g.farms[f].area > 20_000 && g.farms[f].plots.len() > 1).unwrap();
+        let free: (i64, i64) = (g.free_m2.iter().sum(), g.free_poor.iter().sum());
+        let tiles: Vec<[u16; 2]> = g.tiles.clone();
+        let (area, poor) = (g.farms[f].area, g.farms[f].poor);
+        let i = g.info[&g.farms[f].hh];
+        let t = g.new_farm_for_heir(u32::MAX - 1, &i, g.farms[f].fine, f as u32) as usize;
+        g.move_land(f, t, area / 3);
+        let sum = |fm: &Farm| fm.plots.iter().map(|p| (p.good + p.poor) as i64).sum::<i64>();
+        let sum_poor = |fm: &Farm| fm.plots.iter().map(|p| p.poor as i64).sum::<i64>();
+        assert_eq!(g.farms[t].area, area / 3);
+        assert_eq!(g.farms[f].area + g.farms[t].area, area);
+        assert_eq!(g.farms[f].poor + g.farms[t].poor, poor);
+        for fm in [&g.farms[f], &g.farms[t]] {
+            assert_eq!(sum(fm), fm.area);
+            assert_eq!(sum_poor(fm), fm.poor);
+        }
+        assert_eq!((g.free_m2.iter().sum::<i64>(), g.free_poor.iter().sum::<i64>()), free);
+        assert!(g.tiles == tiles);
+        // The share keeps the father's calendar.
+        assert_eq!((g.farms[t].harvest_doy, g.farms[t].sow_doy), (g.farms[f].harvest_doy, g.farms[f].sow_doy));
     }
 
     #[test]

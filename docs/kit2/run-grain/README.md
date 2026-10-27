@@ -168,6 +168,32 @@ wächst die Bevölkerung nach 50 Jahren nicht mehr, über 100 Jahre −0,07 % im
 Vergleich vor S81 (Handelswege, ohne → mit Kacheln, je 4 Threads allein): Jahr 100 135'489 →
 137'827.
 
+## Erbe (S83, 100 Jahre, Seed 1, `run100-inherit-equal.txt`, `-now`, `-one`)
+
+Stirbt der Vater, gründen die verheirateten Söhne eigene Haushalte (S81). Wer den Hof
+bekommt, war offen; drei Regeln im Vergleich (`grain --inherit equal|now|one`):
+
+- **equal** (Standard, S83): Felder, gesäte Fläche und Vorrat zu gleichen Teilen an alten
+  Haushalt und Söhne; die Felder bleiben auf ihren Kacheln (römisches Erbrecht ohne Testament).
+- **now**: der Hof bleibt beim alten Haushalt, die Söhne beginnen ohne Land (Tagelöhner).
+- **one**: der älteste verheiratete Sohn bleibt mit Mutter und Ledigen auf dem Hof, die
+  anderen beginnen ohne Land.
+
+| Jahr 100 | now | equal | one |
+|---|---|---|---|
+| Menschen (Wachstum) | 110'089 (−0,02 %) | 122'646 (+0,13 %) | 133'823 (+0,46 %) |
+| Zelte: Haushalte / Menschen | 1'064 / 3'850 | 153 / 420 | 374 / 1'656 |
+| Höfe; Fläche p10 / Median / p90 ha | 10'284; 4,0 / 11,4 / 32,9 | 15'007; 1,9 / 6,5 / 22,0 | 9'399; 4,9 / 14,4 / 37,7 |
+| Höfe, die ihren Haushalt nicht ernähren | 9,6 % | 21,7 % | 13,2 % |
+| Ernte t | 39'446 | 35'265 | 41'858 |
+| Hungertote / Abgewanderte pro Jahr | 265 / 672 | 317 / 810 | 419 / 412 |
+| Grain ms pro Tag (Mittel) | 1,78 | 1,86 | 1,66 |
+
+Gleiche Teile beenden fast alle Landlosigkeit, zersplittern aber die Höfe: jeder fünfte
+ernährt seine Familie nicht mehr, die Ernte sinkt. Ein Erbe hält die Höfe gross und die
+Bevölkerung wächst weiter, dafür mehr Hungertote unter den landlosen Brüdern. Ohne Teilung der
+Haushalte (vor S81) waren es 136'500. Fingerprint gleich mit 1 und 4 Threads (30 Jahre).
+
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |

@@ -75,6 +75,16 @@ const CAP_SOFT: f64 = 0.9;
 /// S80 PLACEHOLDER: share of households a year that leave at the cap, the
 /// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
 const CAP_LEAVE_PER_YEAR: f64 = 0.03;
+/// Inheritance at the father's death (S83). INHERIT_EQUAL, the default:
+/// the father's family farm is shared in equal parts between the old
+/// household and the married sons' new households (Roman intestate
+/// succession, Twelve Tables V.4, Gaius Inst. 3.1–8; no primogeniture,
+/// Saller 1994). For comparison runs: INHERIT_NOW, the farm stays with the
+/// old household and the sons start landless; INHERIT_ONE, the eldest
+/// married son stays in the household with the farm.
+pub const INHERIT_NOW: u8 = 0;
+pub const INHERIT_EQUAL: u8 = 1;
+pub const INHERIT_ONE: u8 = 2;
 /// Women are not sought after this age.
 const MARRY_AGE_MAX_F: f64 = 45.0;
 /// Preferred age gap husband − wife in years (Saller: about 10).
@@ -659,6 +669,11 @@ pub struct People {
     kids: Vec<(u32, u32)>,
     /// Fathers who died since the last split, with their household (S81).
     splits: Vec<(u32, u32)>,
+    /// INHERIT_EQUAL (default), INHERIT_NOW or INHERIT_ONE (S83).
+    pub inherit: u8,
+    /// With the grain economy and INHERIT_EQUAL: (old household, new
+    /// household of a son) for each split since crate::grain took them.
+    pub split_log: Vec<(u32, u32)>,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
     /// (household, person) sorted, rebuilt monthly.
@@ -900,6 +915,8 @@ impl People {
             parents: Vec::new(),
             kids: Vec::new(),
             splits: Vec::new(),
+            inherit: INHERIT_EQUAL,
+            split_log: Vec::new(),
             by_cell: Csr::default(),
             households: Vec::new(),
             grooms: Vec::new(),
@@ -1669,8 +1686,8 @@ impl People {
     /// wives); the widow, the unmarried and everyone else stay. Runs monthly
     /// on the day the household lists are fresh, so a split follows the
     /// death by up to a month. The new household's id is the son's id; it
-    /// stays in the same cell. PLACEHOLDER (open): who inherits farm and
-    /// store (crate::grain).
+    /// stays in the same cell. Who inherits the farm: People::inherit
+    /// (S83, crate::grain).
     fn split_households(&mut self) {
         let mut splits = std::mem::take(&mut self.splits);
         splits.sort_unstable();
@@ -1690,11 +1707,15 @@ impl People {
                 let (f, sex, spouse) = get(self, m);
                 f == father && sex == 1 && spouse != NONE
             }).collect();
+            // INHERIT_ONE: the eldest (lowest id on the same day) stays.
+            let heir = (self.inherit == INHERIT_ONE)
+                .then(|| sons.iter().copied().min_by_key(|&s| (self.world.get::<Born>(self.ent[s as usize]).unwrap().0, s)))
+                .flatten();
             let mut taken: Vec<u32> = Vec::new();
             for son in sons {
                 // A son whose id is already the household's keeps it; the
                 // id of another household with people in it is not reused.
-                if son == house || taken.contains(&son) {
+                if son == house || taken.contains(&son) || Some(son) == heir {
                     continue;
                 }
                 let lo2 = self.households.partition_point(|p| p.0 < son);
@@ -1725,6 +1746,9 @@ impl People {
                 }
                 self.stats.split_households += 1;
                 self.stats.split_people += group.len() as u64;
+                if self.inherit == INHERIT_EQUAL && self.econ.is_some() {
+                    self.split_log.push((house, son));
+                }
                 taken.extend(group);
             }
         }

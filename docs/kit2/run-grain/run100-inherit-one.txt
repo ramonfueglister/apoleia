@@ -1,0 +1,209 @@
+clearable land: farm_8,farm_16
+fields under grain each year: 50 % (fallow 50 %)
+people=116805 markets=1783 farms=22321 (family 12215 tenant 7493 estate 2613) tents=2815 (11070 people) fields_ha=146624 farm_store_t=7091 market_t=2681 | spawn people 3067 ms, grain 1456 ms, rss_mb=236
+year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day
+   1  114825  -1.70    2990   4640    457   352  19501  5879/12295     40006    423          298   141544    3277     2384       24222     6483     158        2    91.5  2.22/ 9.86/69.97 35.44   1913    29   23527   5.91
+      eaten by kind (farm/tent/wage/trader/elite): 93% 53% 93% 99% 99% | to tents without workers or kin (S79): 5245 | trade tracks/roads/sea lanes (cells): (53, 2, 174)
+   2  113853  -0.85    7224   6909   1597  1358  17112  7695/21061     40083    322          326   182827    4491     2629       22862     7715     417        3    78.8  2.22/ 6.45/69.97 17.60   8273   367   23647   6.47
+      eaten by kind (farm/tent/wage/trader/elite): 81% 38% 95% 99% 99% | to tents without workers or kin (S79): 415 | trade tracks/roads/sea lanes (cells): (99, 8, 359)
+   3  110537  -2.91    6302   6690   1333  2932  16489  7381/19375     39929    412          348   209376    4061     2607       21272     7623     490        3    81.4  2.22/ 5.02/69.97 14.30  11998   686   19154   6.78
+      eaten by kind (farm/tent/wage/trader/elite): 87% 37% 96% 99% 100% | to tents without workers or kin (S79): 414 | trade tracks/roads/sea lanes (cells): (109, 14, 468)
+   4  107725  -2.54    6192   6177   1059  2893  16068  6847/16983     40120    435          432   233147    3848     2616       20133     7211     414        3    84.3  2.22/ 3.71/69.97 13.92  14182   880   15827   6.06
+      eaten by kind (farm/tent/wage/trader/elite): 90% 39% 96% 99% 99% | to tents without workers or kin (S79): 373 | trade tracks/roads/sea lanes (cells): (114, 19, 516)
+   5  105558  -2.01    6150   5947    847  2279  15697  6354/14948     40022    527          404   247344    3716     2642       19822     7329     342        2    86.7  2.22/ 3.87/69.97  5.72  15347   960   13041   5.24
+      eaten by kind (farm/tent/wage/trader/elite): 91% 41% 97% 99% 100% | to tents without workers or kin (S79): 352 | trade tracks/roads/sea lanes (cells): (118, 20, 555)
+   6  103909  -1.56    5959   5795    718  1806  15432  5899/13228     40076    621          494   257401    3352     2631       17820     6552     294        2    88.6  2.22/ 3.12/69.97  6.83  16222  1017   10748   5.49
+      eaten by kind (farm/tent/wage/trader/elite): 93% 43% 97% 99% 100% | to tents without workers or kin (S79): 313 | trade tracks/roads/sea lanes (cells): (123, 23, 565)
+   7  102508  -1.35    5825   5686    670  1577  15271  5313/11307     40154    671          521   266707    3386     2614       17895     6559     238        2    90.1  2.22/ 3.39/69.97 10.99  16926  1042    8951   5.37
+      eaten by kind (farm/tent/wage/trader/elite): 94% 45% 97% 99% 100% | to tents without workers or kin (S79): 290 | trade tracks/roads/sea lanes (cells): (128, 23, 567)
+   8  101760  -0.73    5767   5464    536  1117  15089  4909/10061     40124    723          515   272758    3170     2630       16805     6250     187        1    91.3  2.22/ 2.79/69.97  6.85  17235  1064    7466   5.46
+      eaten by kind (farm/tent/wage/trader/elite): 94% 48% 97% 99% 99% | to tents without workers or kin (S79): 280 | trade tracks/roads/sea lanes (cells): (127, 24, 571)
+   9  101176  -0.57    5774   5307    492   987  14849  4524/ 9209     40162    782          530   279553    2958     2595       12527     4614     163        1    92.3  2.22/ 2.68/69.97  3.37  17587  1082    6520   5.51
+      eaten by kind (farm/tent/wage/trader/elite): 95% 50% 97% 99% 100% | to tents without workers or kin (S79): 257 | trade tracks/roads/sea lanes (cells): (126, 23, 558)
+  10  100574  -0.60    5606   5280    450   931  14745  4013/ 8059     40204    850          525   284161    2899     2595       12098     4490     139        1    93.0  2.22/ 2.54/69.97  3.36  17959  1096    5599   5.14
+      eaten by kind (farm/tent/wage/trader/elite): 96% 51% 97% 99% 100% | to tents without workers or kin (S79): 222 | trade tracks/roads/sea lanes (cells): (124, 22, 542)
+  11  100348  -0.22    5640   5150    433   687  14632  3614/ 7265     40039   1037          649   289345    2705     2565       10658     3925     117        1    93.8  2.22/ 2.38/69.97  4.44  18077  1097    4936   5.46
+      eaten by kind (farm/tent/wage/trader/elite): 96% 53% 97% 99% 100% | to tents without workers or kin (S79): 197 | trade tracks/roads/sea lanes (cells): (120, 20, 513)
+  12  100223  -0.12    5603   5154    380   576  14569  3143/ 6357     40028    947          635   275549    2893     2568       11976     4389     106        1    94.4  2.22/ 2.76/69.97  8.21  18163  1113    4526   5.16
+      eaten by kind (farm/tent/wage/trader/elite): 96% 53% 97% 98% 100% | to tents without workers or kin (S79): 203 | trade tracks/roads/sea lanes (cells): (118, 17, 490)
+  13  100060  -0.16    5428   5091    356   503  14435  2742/ 5659     40061    970          708   255657    2931     2589       12918     4822      92        1    94.8  2.22/ 2.60/69.97  3.22  18407  1111    4156   5.46
+      eaten by kind (farm/tent/wage/trader/elite): 97% 54% 97% 98% 99% | to tents without workers or kin (S79): 193 | trade tracks/roads/sea lanes (cells): (115, 17, 485)
+  14   99936  -0.12    5418   5066    326   472  14363  2337/ 4955     40177    922          765   244665    2764     2600       10808     3981      81        0    95.1  2.22/ 2.48/69.97  5.97  18583  1128    3972   5.65
+      eaten by kind (farm/tent/wage/trader/elite): 97% 54% 97% 98% 99% | to tents without workers or kin (S79): 221 | trade tracks/roads/sea lanes (cells): (113, 16, 469)
+  15   99988   0.05    5451   5032    352   387  14268  1938/ 4342     40164   1006          760   236175    2833     2598       12200     4530      68        0    95.3  2.22/ 2.86/69.97  4.35  18593  1118    3710   5.22
+      eaten by kind (farm/tent/wage/trader/elite): 97% 54% 96% 97% 100% | to tents without workers or kin (S79): 194 | trade tracks/roads/sea lanes (cells): (111, 16, 459)
+  16   99924  -0.06    5213   4841    303   421  13986  1845/ 4161     40227    936          687   234024    2811     2599       11565     4365      57        0    95.5  2.22/ 2.85/69.97  5.38  18666  1104    3470   5.12
+      eaten by kind (farm/tent/wage/trader/elite): 97% 55% 96% 97% 100% | to tents without workers or kin (S79): 174 | trade tracks/roads/sea lanes (cells): (111, 16, 448)
+  17   99595  -0.33    5079   4947    289   463  13775  1696/ 3837     40194    930          651   226834    2765     2577       11753     4351      49        0    95.7  2.22/ 2.88/69.97 10.01  18703  1077    3126   5.38
+      eaten by kind (farm/tent/wage/trader/elite): 97% 57% 96% 97% 100% | to tents without workers or kin (S79): 168 | trade tracks/roads/sea lanes (cells): (108, 16, 441)
+  18   99435  -0.16    5183   4830    288   509  13580  1587/ 3600     40308    834          622   223016    2713     2586       11189     4228      44        0    95.8  2.22/ 3.00/69.97  6.79  18814  1065    3161   5.13
+      eaten by kind (farm/tent/wage/trader/elite): 97% 58% 96% 97% 100% | to tents without workers or kin (S79): 147 | trade tracks/roads/sea lanes (cells): (110, 15, 440)
+  19   99510   0.08    5240   4742    279   430  13423  1468/ 3295     40337    897          633   217299    2724     2566       11135     4194      40        0    96.0  2.22/ 3.07/69.97  8.19  18847  1085    3063   4.88
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 96% 97% 100% | to tents without workers or kin (S79): 131 | trade tracks/roads/sea lanes (cells): (112, 15, 432)
+  20   99501  -0.01    5193   4856    287   366  13228  1386/ 3207     40326    917          659   211244    2522     2566        9251     3442      36        0    96.1  2.22/ 2.79/69.97  5.07  18788  1079    2612   4.98
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 96% 97% 99% | to tents without workers or kin (S79): 113 | trade tracks/roads/sea lanes (cells): (107, 15, 416)
+  21   99290  -0.21    4993   4745    231   423  13055  1332/ 3036     40401    849          580   211085    2700     2561       10556     3944      35        0    96.3  2.22/ 3.10/69.97  9.60  18784  1077    2546   4.90
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 97% 98% 100% | to tents without workers or kin (S79): 102 | trade tracks/roads/sea lanes (cells): (110, 11, 409)
+  22   99406   0.12    5050   4697    274   262  12873  1255/ 2873     40382    934          638   203724    2658     2570       10474     3930      34        0    96.5  2.22/ 2.83/69.97 11.16  18771  1081    2439   5.30
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 96% 98% 99% | to tents without workers or kin (S79): 102 | trade tracks/roads/sea lanes (cells): (107, 11, 405)
+  23   99524   0.12    5090   4621    267   347  12698  1175/ 2694     40400    892          596   198570    2716     2554       10180     3799      33        0    96.5  2.22/ 3.02/69.97 13.34  18800  1081    2464   5.37
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 96% 98% 99% | to tents without workers or kin (S79): 99 | trade tracks/roads/sea lanes (cells): (105, 11, 401)
+  24   99747   0.22    5194   4721    220   241  12516  1112/ 2593     40452    852          646   194973    2659     2563        9766     3589      31        0    96.5  2.22/ 2.78/69.97 19.91  18789  1096    2387   5.53
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 96% 98% 98% | to tents without workers or kin (S79): 100 | trade tracks/roads/sea lanes (cells): (105, 11, 406)
+  25   99889   0.14    5234   4810    234   283  12353  1041/ 2387     40411    870          630   191124    2684     2555        9706     3559      28        0    96.6  2.22/ 3.21/69.97 16.14  18773  1104    2496   5.78
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 96% 97% 99% | to tents without workers or kin (S79): 87 | trade tracks/roads/sea lanes (cells): (106, 11, 399)
+  26  100091   0.20    5341   4852    254   285  12207   969/ 2244     40340    872          658   188859    2655     2525        9508     3418      26        0    96.4  2.22/ 3.11/69.97 13.99  18748  1107    2679   5.32
+      eaten by kind (farm/tent/wage/trader/elite): 97% 69% 95% 97% 98% | to tents without workers or kin (S79): 74 | trade tracks/roads/sea lanes (cells): (105, 11, 392)
+  27  100242   0.15    5350   4783    263   430  12084   902/ 2047     40291    881          709   182325    2639     2492        9031     3194      25        0    96.3  2.22/ 3.07/69.97 21.67  18730  1108    2872   5.07
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 94% 96% 98% | to tents without workers or kin (S79): 74 | trade tracks/roads/sea lanes (cells): (103, 11, 386)
+  28  100695   0.45    5665   4888    289   345  11906   881/ 2092     40246    860          673   184218    2712     2476        8930     3097      24        0    96.2  2.22/ 3.37/69.97 26.43  18690  1111    2609   5.74
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 94% 96% 99% | to tents without workers or kin (S79): 59 | trade tracks/roads/sea lanes (cells): (103, 11, 386)
+  29  100805   0.11    5519   4965    246   460  11800   807/ 1858     40182    912          747   178508    2797     2457        8738     2986      23        0    96.3  2.22/ 3.13/69.97 27.75  18606  1111    2446   6.01
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 94% 96% 98% | to tents without workers or kin (S79): 61 | trade tracks/roads/sea lanes (cells): (107, 11, 388)
+  30  100947   0.14    5559   4959    263   432  11676   759/ 1777     40121    940          765   184310    2704     2422        8402     2793      21        0    96.2  2.22/ 3.07/69.97 27.69  18558  1114    2528   6.22
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 93% 96% 98% | to tents without workers or kin (S79): 57 | trade tracks/roads/sea lanes (cells): (102, 11, 386)
+  31  101319   0.37    5751   5036    276   335  11561   696/ 1756     40046    969          764   182910    2747     2408        8491     2853      21        0    96.3  2.22/ 3.25/69.97 38.53  18538  1103    2549   5.72
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 93% 96% 96% | to tents without workers or kin (S79): 44 | trade tracks/roads/sea lanes (cells): (101, 11, 384)
+  32  101511   0.19    5638   5122    287   319  11453   626/ 1500     39954   1005          800   179785    2709     2393        8209     2730      19        0    96.3  2.22/ 2.79/69.97 31.07  18518  1094    2345   5.41
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 93% 96% 97% | to tents without workers or kin (S79): 35 | trade tracks/roads/sea lanes (cells): (100, 11, 378)
+  33  101876   0.36    5785   5142    289   300  11353   577/ 1465     39837   1025          820   178350    2673     2383        8071     2579      17        0    96.3  2.22/ 2.88/69.97 63.68  18435  1091    2469   5.77
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 93% 96% 97% | to tents without workers or kin (S79): 39 | trade tracks/roads/sea lanes (cells): (101, 11, 381)
+  34  102391   0.51    5801   4924    273   359  11280   543/ 1426     39856    996          922   176062    2716     2382        8175     2651      17        0    96.3  2.22/ 3.12/69.97 47.50  18354  1087    2400   6.15
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 94% 95% 95% | to tents without workers or kin (S79): 32 | trade tracks/roads/sea lanes (cells): (100, 11, 379)
+  35  102877   0.47    5855   5055    307   290  11182   511/ 1403     39870    899          865   176574    2680     2356        8029     2579      17        0    96.3  2.22/ 2.78/69.97 55.65  18341  1082    2437   5.04
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 93% 96% 98% | to tents without workers or kin (S79): 39 | trade tracks/roads/sea lanes (cells): (99, 10, 379)
+  36  103400   0.51    5881   5092    279   286  11068   463/ 1282     39852    951          890   172321    2616     2353        7928     2606      15        0    96.3  2.22/ 2.85/69.97 66.50  18237  1084    2382   5.13
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 92% 96% 99% | to tents without workers or kin (S79): 32 | trade tracks/roads/sea lanes (cells): (101, 9, 381)
+  37  103887   0.47    5973   5148    271   324  10988   432/ 1273     39860    903          821   172555    2713     2359        7759     2575      14        0    96.4  2.22/ 2.85/69.97 62.97  18181  1084    2199   5.26
+      eaten by kind (farm/tent/wage/trader/elite): 97% 69% 93% 95% 96% | to tents without workers or kin (S79): 37 | trade tracks/roads/sea lanes (cells): (100, 9, 373)
+  38  104564   0.65    6009   5050    265   278  10923   392/ 1153     39875    957          812   171537    2898     2397        7869     2762      15        0    96.5  2.22/ 2.65/69.97 38.02  18173  1076    2356   5.04
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 94% 96% 98% | to tents without workers or kin (S79): 21 | trade tracks/roads/sea lanes (cells): (99, 7, 373)
+  39  105292   0.70    6079   5136    259   217  10850   374/ 1125     39886    924          831   167653    2828     2403        7735     2838      15        0    96.6  2.22/ 2.60/69.97 27.44  18149  1079    1998   5.10
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 95% 97% 100% | to tents without workers or kin (S79): 27 | trade tracks/roads/sea lanes (cells): (97, 7, 360)
+  40  105645   0.34    5882   5166    252   399  10774   360/ 1140     39986    849          769   168767    2772     2417        7736     2820      16        0    96.7  2.22/ 2.69/69.97 15.66  18050  1073    1960   5.46
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 95% 97% 98% | to tents without workers or kin (S79): 25 | trade tracks/roads/sea lanes (cells): (95, 7, 356)
+  41  106281   0.60    6041   5131    272   283  10703   357/ 1159     39999    874          791   163984    2764     2401        7764     2829      16        0    96.8  2.22/ 2.71/69.97 19.81  17940  1061    2004   5.16
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 96% 97% 98% | to tents without workers or kin (S79): 20 | trade tracks/roads/sea lanes (cells): (92, 7, 351)
+  42  106712   0.41    5950   5235    232   244  10643   333/ 1044     40014    839          719   162448    2693     2396        7546     2779      15        0    96.8  2.22/ 2.65/69.97 33.38  17920  1062    1813   5.44
+      eaten by kind (farm/tent/wage/trader/elite): 97% 69% 96% 97% 99% | to tents without workers or kin (S79): 19 | trade tracks/roads/sea lanes (cells): (93, 6, 342)
+  43  107196   0.45    5910   5212    256   252  10618   289/  926     40079    821          846   160652    2602     2402        7276     2679      13        0    96.8  2.22/ 2.69/69.97 30.77  17874  1051    1967   5.94
+      eaten by kind (farm/tent/wage/trader/elite): 97% 69% 96% 97% 100% | to tents without workers or kin (S79): 13 | trade tracks/roads/sea lanes (cells): (92, 6, 328)
+  44  107801   0.56    6038   5112    229   304  10548   301/ 1045     40103    780          772   161931    2583     2394        7350     2624      12        0    96.8  2.22/ 3.03/69.97 23.18  17749  1039    2149   5.51
+      eaten by kind (farm/tent/wage/trader/elite): 97% 73% 96% 97% 100% | to tents without workers or kin (S79): 15 | trade tracks/roads/sea lanes (cells): (94, 6, 320)
+  45  108395   0.55    6043   5170    240   294  10481   289/ 1047     40126    809          760   160937    2583     2384        7272     2613      14        0    96.6  2.22/ 2.78/69.97 34.09  17686  1039    2307   5.69
+      eaten by kind (farm/tent/wage/trader/elite): 97% 70% 94% 97% 99% | to tents without workers or kin (S79): 14 | trade tracks/roads/sea lanes (cells): (93, 6, 312)
+  46  108795   0.37    5870   5139    285   335  10425   293/ 1182     40105    820          795   158624    2506     2363        7080     2518      17        0    96.5  2.22/ 2.74/69.97 29.15  17614  1020    2535   5.88
+      eaten by kind (farm/tent/wage/trader/elite): 97% 69% 93% 96% 99% | to tents without workers or kin (S79): 7 | trade tracks/roads/sea lanes (cells): (94, 6, 310)
+  47  109246   0.41    6156   5187    255   504  10370   269/ 1025     40176    745          771   159555    2526     2324        7024     2402      17        0    96.4  2.22/ 2.70/69.97 31.09  17466  1007    2463   5.62
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 93% 96% 98% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (96, 5, 303)
+  48  109861   0.56    6081   5162    268   306  10311   272/ 1114     40209    792          784   156712    2492     2313        6884     2326      17        0    96.5  2.22/ 2.96/69.97 60.60  17445  1004    2484   5.75
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 93% 97% 99% | to tents without workers or kin (S79): 15 | trade tracks/roads/sea lanes (cells): (96, 5, 301)
+  49  110219   0.33    6023   5266    325   386  10310   249/  955     40236    788          687   157882    2485     2291        6985     2267      16        0    96.2  2.22/ 3.01/69.97 41.90  17354   996    2826   5.39
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 92% 96% 97% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (94, 5, 301)
+  50  110828   0.55    6241   5301    322   329  10286   273/ 1193     40335    759          758   156991    2499     2277        6911     2200      16        0    96.1  2.22/ 3.13/69.97 49.89  17286   998    2852   6.18
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 92% 96% 98% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (97, 5, 297)
+  51  111109   0.25    6018   5333    328   424  10274   259/ 1104     40319    789          731   156257    2549     2263        6772     2175      18        0    96.1  2.22/ 2.89/69.97 60.46  17240   982    2594   5.44
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 92% 95% 93% | to tents without workers or kin (S79): 10 | trade tracks/roads/sea lanes (cells): (93, 5, 296)
+  52  111520   0.37    6034   5271    317   331  10231   278/ 1177     40465    729          693   155359    2539     2277        6782     2180      19        0    96.4  2.22/ 2.83/69.97 61.82  17184   992    2517   5.99
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 93% 96% 98% | to tents without workers or kin (S79): 17 | trade tracks/roads/sea lanes (cells): (93, 5, 295)
+  53  111956   0.39    6012   5242    263   342  10227   283/ 1145     40582    721          722   153191    2626     2254        7052     2331      19        0    96.4  2.22/ 2.70/69.97 29.98  17062   990    2610   5.79
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 93% 97% 97% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (94, 5, 295)
+  54  112503   0.49    6211   5261    291   472  10206   285/ 1166     40602    710          706   157189    2687     2273        7303     2516      21        0    96.3  2.22/ 2.36/69.97 27.32  16998   993    2653   5.99
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 93% 98% 97% | to tents without workers or kin (S79): 12 | trade tracks/roads/sea lanes (cells): (94, 5, 294)
+  55  112771   0.24    6076   5434    296   304  10166   305/ 1323     40693    702          693   157375    2584     2260        7065     2430      20        0    96.3  2.22/ 2.47/69.97 36.62  16964   997    2532   5.75
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 93% 97% 98% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (95, 5, 294)
+  56  113013   0.21    6084   5352    279   511  10134   305/ 1299     40761    690          675   154329    2651     2263        7317     2546      21        0    96.4  2.22/ 2.47/69.97 38.72  16953   994    2193   5.54
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 93% 98% 97% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (95, 5, 295)
+  57  113661   0.57    6202   5242    293   301  10086   299/ 1256     40795    708          786   155572    2562     2279        7283     2606      20        0    96.5  2.22/ 2.56/69.97 19.27  16922   989    2184   5.86
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 94% 98% 98% | to tents without workers or kin (S79): 12 | trade tracks/roads/sea lanes (cells): (94, 5, 292)
+  58  114208   0.48    6265   5438    289   268  10060   297/ 1328     40774    649          671   156983    2530     2292        7281     2607      23        0    96.6  2.22/ 2.58/69.97 19.59  16861   978    2405   6.03
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 94% 99% 98% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (92, 5, 289)
+  59  114651   0.39    6317   5430    321   452  10021   297/ 1300     40840    659          637   153741    2500     2299        7140     2578      25        0    96.5  2.22/ 2.55/69.97 32.44  16832   979    2483   6.14
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 94% 98% 98% | to tents without workers or kin (S79): 6 | trade tracks/roads/sea lanes (cells): (91, 5, 284)
+  60  115034   0.33    6159   5406    303   357   9967   294/ 1285     40863    623          601   151761    2472     2280        7266     2609      23        0    96.5  2.22/ 2.94/69.97 30.09  16828   965    2294   6.38
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 94% 98% 98% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (92, 5, 279)
+  61  115625   0.51    6327   5437    274   337   9959   285/ 1287     40898    629          594   146731    2366     2284        7305     2584      23        0    96.6  2.22/ 2.73/69.97 22.82  16768   957    2285   5.68
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 95% 98% 98% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (88, 5, 282)
+  62  116275   0.56    6520   5402    295   430   9939   293/ 1255     40987    614          549   148303    2415     2274        7061     2481      23        0    96.6  2.22/ 2.65/69.97 25.46  16737   939    2360   5.88
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 95% 98% 99% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (88, 5, 286)
+  63  116865   0.51    6352   5471    313   327   9915   283/ 1262     40990    626          546   145686    2396     2257        7102     2395      23        0    96.5  2.22/ 2.62/69.97 27.95  16692   923    2566   5.84
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 94% 98% 98% | to tents without workers or kin (S79): 7 | trade tracks/roads/sea lanes (cells): (88, 5, 286)
+  64  117394   0.45    6486   5518    313   420   9886   276/ 1165     41040    587          593   141350    2377     2249        6741     2159      20        0    96.5  2.22/ 2.57/69.97 57.52  16687   909    2522   5.91
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 94% 96% 97% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (91, 5, 284)
+  65  118112   0.61    6612   5491    290   394   9875   270/ 1249     41092    577          601   143228    2413     2209        6751     2128      21        0    96.5  2.22/ 2.58/69.97 42.61  16632   900    2537   5.93
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 93% 96% 96% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (92, 5, 283)
+  66  118690   0.49    6513   5452    284   494   9844   285/ 1225     41143    580          588   144756    2407     2208        6630     2144      20        0    96.4  2.22/ 2.38/69.97 36.77  16600   890    2278   6.08
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 93% 96% 95% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (92, 5, 282)
+  67  119229   0.45    6520   5656    318   317   9835   289/ 1246     41224    543          595   145944    2418     2204        6555     2149      19        0    96.3  2.22/ 2.70/69.97 34.91  16536   901    2710   5.72
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 93% 96% 97% | to tents without workers or kin (S79): 7 | trade tracks/roads/sea lanes (cells): (89, 5, 277)
+  68  119755   0.44    6664   5684    317   466   9798   289/ 1372     41211    555          488   148693    2372     2211        6641     2192      23        0    96.2  2.22/ 2.69/69.97 25.79  16446   912    2714   6.39
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 94% 96% 98% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (85, 5, 274)
+  69  120387   0.53    6732   5741    315   378   9807   284/ 1315     41224    602          567   145654    2367     2200        6747     2234      25        0    96.2  2.22/ 2.72/69.97 29.13  16338   912    2606   7.00
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 95% 97% 98% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (83, 5, 275)
+  70  120762   0.31    6633   5831    349   443   9773   307/ 1476     41248    584          529   144058    2369     2199        6730     2281      28        0    96.2  2.22/ 2.73/69.97 26.18  16315   898    2720   6.16
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 95% 97% 98% | to tents without workers or kin (S79): 7 | trade tracks/roads/sea lanes (cells): (80, 5, 275)
+  71  121226   0.38    6727   5752    327   516   9768   275/ 1377     41306    567          535   144315    2339     2202        6757     2235      28        0    96.2  2.22/ 3.01/69.97 31.02  16335   895    2588   6.28
+      eaten by kind (farm/tent/wage/trader/elite): 97% 56% 94% 98% 98% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (78, 5, 274)
+  72  121553   0.27    6761   5870    339   522   9736   285/ 1192     41242    601          482   143037    2333     2202        6792     2265      27        0    96.4  2.22/ 2.70/69.97 28.73  16267   867    2103   6.49
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 94% 98% 99% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (79, 5, 274)
+  73  122015   0.38    6739   5883    339   405   9718   280/ 1352     41315    568          507   143822    2249     2191        6838     2266      24        0    96.4  2.22/ 2.92/69.97 27.14  16206   855    2352   6.44
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 94% 97% 99% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (81, 5, 269)
+  74  122354   0.28    6623   5786    308   494   9719   265/ 1289     41300    571          463   144276    2286     2166        6925     2341      26        0    96.3  2.22/ 2.98/69.97 25.83  16139   842    2424   6.30
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 94% 98% 99% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (80, 5, 268)
+  75  123012   0.54    6793   5772    329   359   9696   290/ 1462     41310    576          542   142878    2267     2185        6946     2376      30        0    96.4  2.22/ 3.13/69.97 31.14  16152   830    2347   6.55
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 95% 98% 99% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (79, 5, 268)
+  76  123333   0.26    6750   5952    355   501   9670   288/ 1363     41310    542          539   139724    2237     2172        6896     2373      30        0    96.3  2.22/ 2.88/69.97 21.82  16136   829    2436   6.55
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 95% 97% 99% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (77, 5, 268)
+  77  123849   0.42    6739   5818    307   377   9672   311/ 1482     41368    516          540   137642    2275     2175        7006     2362      32        0    96.3  2.22/ 2.78/69.97 24.47  16114   829    2387   6.62
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 95% 97% 100% | to tents without workers or kin (S79): 7 | trade tracks/roads/sea lanes (cells): (77, 5, 271)
+  78  124283   0.35    6914   6105    357   372   9665   332/ 1567     41408    557          541   141846    2290     2161        7094     2414      32        0    96.2  2.22/ 3.18/69.97 34.09  16033   828    2748   6.40
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 95% 97% 99% | to tents without workers or kin (S79): 1 | trade tracks/roads/sea lanes (cells): (77, 5, 269)
+  79  124909   0.50    6786   5839    337   330   9637   338/ 1674     41397    520          515   138803    2317     2156        7018     2383      36        0    96.1  2.22/ 3.13/69.97 25.75  15972   833    3004   6.40
+      eaten by kind (farm/tent/wage/trader/elite): 97% 58% 95% 97% 99% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (69, 5, 268)
+  80  125445   0.43    6986   5930    330   540   9620   316/ 1546     41457    529          537   138567    2430     2164        7318     2484      35        0    96.2  2.22/ 3.31/69.97 24.82  15931   841    2702   6.62
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 95% 98% 99% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (69, 5, 275)
+  81  126015   0.45    6899   5937    351   382   9615   327/ 1739     41436    508          513   138787    2344     2155        6812     2279      42        0    96.2  2.22/ 3.31/69.97 23.32  15972   841    2894   7.15
+      eaten by kind (farm/tent/wage/trader/elite): 97% 57% 95% 97% 98% | to tents without workers or kin (S79): 2 | trade tracks/roads/sea lanes (cells): (69, 5, 274)
+  82  126278   0.21    6896   6156    366   481   9627   328/ 1479     41511    505          542   138593    2394     2126        6925     2259      34        0    96.2  2.22/ 3.13/69.97 30.35  15979   838    2600   7.19
+      eaten by kind (farm/tent/wage/trader/elite): 97% 59% 95% 96% 99% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (70, 5, 274)
+  83  126693   0.33    6886   5958    325   539   9599   346/ 1583     41584    480          501   139079    2424     2148        6925     2334      30        0    96.2  2.22/ 2.94/69.97 38.41  16000   836    2529   6.95
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 95% 97% 98% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (70, 5, 270)
+  84  127167   0.37    6868   5959    344   396   9578   339/ 1483     41588    476          524   135030    2349     2147        6968     2374      32        0    96.3  2.22/ 2.97/69.97 37.90  16023   811    2580   6.77
+      eaten by kind (farm/tent/wage/trader/elite): 97% 61% 95% 97% 99% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (67, 5, 270)
+  85  127556   0.31    6878   6122    353   401   9584   346/ 1611     41711    452          559   136460    2350     2139        6842     2314      31        0    96.3  2.22/ 3.04/69.97 25.50  15937   814    2495   6.84
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 96% 97% 98% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (65, 5, 268)
+  86  127910   0.28    6923   6146    358   399   9577   333/ 1549     41689    458          477   137322    2359     2151        6940     2334      34        0    96.3  2.22/ 2.87/69.97 29.06  15856   822    2492   6.49
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 96% 97% 99% | to tents without workers or kin (S79): 8 | trade tracks/roads/sea lanes (cells): (66, 5, 271)
+  87  128464   0.43    7055   6114    316   406   9551   346/ 1491     41747    479          468   136726    2394     2144        6784     2332      30        0    96.3  2.22/ 2.95/69.97 29.85  15808   815    2390   6.81
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 96% 98% 99% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (66, 5, 270)
+  88  128950   0.38    7082   6143    358   433   9549   335/ 1422     41785    445          415   133517    2420     2147        6910     2402      30        0    96.3  2.22/ 2.95/69.97 37.24  15805   802    2422   6.29
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 96% 98% 97% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (66, 5, 268)
+  89  129536   0.45    7046   6058    361   410   9531   336/ 1536     41806    453          452   137141    2384     2145        7002     2436      30        0    96.2  2.22/ 3.08/69.97 27.45  15788   801    2252   6.65
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 96% 98% 99% | to tents without workers or kin (S79): 2 | trade tracks/roads/sea lanes (cells): (65, 5, 269)
+  90  130128   0.46    7199   6189    351   434   9519   331/ 1679     41792    462          418   137765    2396     2159        7045     2488      36        0    96.2  2.22/ 3.19/69.97 22.67  15778   800    2622   6.81
+      eaten by kind (farm/tent/wage/trader/elite): 97% 61% 96% 98% 99% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (64, 5, 270)
+  91  130833   0.54    7160   6028    372   437   9511   339/ 1699     41814    429          413   138659    2368     2165        7114     2469      39        0    96.2  2.22/ 2.98/69.97 32.84  15750   799    2797   6.53
+      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 97% 98% 99% | to tents without workers or kin (S79): 9 | trade tracks/roads/sea lanes (cells): (64, 5, 265)
+  92  131134   0.23    7055   6331    389   400   9508   340/ 1807     41802    426          405   137870    2347     2172        7042     2418      36        0    96.1  2.22/ 3.13/69.97 25.88  15685   794    2702   6.75
+      eaten by kind (farm/tent/wage/trader/elite): 97% 56% 97% 98% 99% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (64, 5, 266)
+  93  131645   0.39    7217   6239    352   457   9473   349/ 1833     41792    453          433   137373    2317     2159        6951     2350      42        0    96.0  2.22/ 3.45/69.97 34.46  15647   789    2997   6.64
+      eaten by kind (farm/tent/wage/trader/elite): 97% 56% 97% 97% 98% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (65, 5, 267)
+  94  131980   0.25    7184   6305    341   570   9470   365/ 1829     41751    441          452   135414    2351     2163        6805     2188      44        0    96.0  2.22/ 3.46/69.97 55.68  15589   790    2995   6.85
+      eaten by kind (farm/tent/wage/trader/elite): 97% 55% 96% 97% 97% | to tents without workers or kin (S79): 1 | trade tracks/roads/sea lanes (cells): (64, 5, 268)
+  95  132410   0.33    7179   6157    364   571   9452   348/ 1740     41765    457          436   134476    2302     2142        6748     2053      41        0    95.9  2.22/ 3.35/69.97 63.33  15497   776    3230   5.94
+      eaten by kind (farm/tent/wage/trader/elite): 96% 56% 95% 96% 93% | to tents without workers or kin (S79): 5 | trade tracks/roads/sea lanes (cells): (63, 5, 267)
+  96  132585   0.13    7109   6353    375   618   9446   358/ 1862     41756    434          444   133743    2291     2094        6726     1960      45        0    95.8  2.22/ 2.92/69.97 60.72  15448   763    3249   6.88
+      eaten by kind (farm/tent/wage/trader/elite): 97% 54% 94% 94% 92% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (60, 5, 266)
+  97  132802   0.16    7230   6413    448   611   9427   357/ 1809     41741    464          448   136974    2267     2050        6603     1842      43        0    95.6  2.22/ 3.35/69.97 43.77  15448   755    3422   6.62
+      eaten by kind (farm/tent/wage/trader/elite): 96% 56% 94% 91% 90% | to tents without workers or kin (S79): 2 | trade tracks/roads/sea lanes (cells): (61, 5, 267)
+  98  133094   0.22    7267   6329    385   638   9419   353/ 1743     41740    400          401   133074    2327     2066        6595     1897      42        0    95.7  2.22/ 3.15/69.97 44.03  15422   739    2959   6.22
+      eaten by kind (farm/tent/wage/trader/elite): 96% 56% 95% 93% 89% | to tents without workers or kin (S79): 4 | trade tracks/roads/sea lanes (cells): (59, 5, 260)
+  99  133212   0.09    7168   6397    389   686   9436   358/ 1609     41789    447          449   131888    2387     2080        6523     2010      37        0    95.9  2.22/ 3.13/69.97 48.33  15445   735    2707   5.21
+      eaten by kind (farm/tent/wage/trader/elite): 96% 58% 96% 95% 91% | to tents without workers or kin (S79): 6 | trade tracks/roads/sea lanes (cells): (58, 5, 256)
+ 100  133823   0.46    7389   6322    419   412   9399   374/ 1656     41858    391          393   132097    2369     2106        6503     2053      34        0    96.0  2.22/ 3.30/69.97 44.09  15355   732    2664   5.08
+      eaten by kind (farm/tent/wage/trader/elite): 96% 59% 96% 97% 94% | to tents without workers or kin (S79): 3 | trade tracks/roads/sea lanes (cells): (57, 5, 252)
+day_us all p50=5461 p95=9509 p99=12955 max=38814 | grain p50=1325 mean=1662 p95=3471 p99=6172 max=35333 (day 22604) | rss_mb=489 peak_people=133823
+grain per day us: events=198 peaks=83 labour=133 markets=184 eat=227 traders=259 paths=353 (rebuild 42, first builds in total 334 ms) | per month us: census=6689
+busiest trade cells (trips, cell): [(75189, 14286), (70338, 14095), (58432, 18557), (58214, 18174), (50224, 16197), (48245, 18366), (46137, 14478), (45343, 15051), (43828, 16006), (43762, 15815)]
+inherit=one | splits 8045, heirs given land 0 | farms 9399: ha p10 4.9 median 14.4 p90 37.7 mean 18.2; too small to feed their household 13.2 %
+fingerprint people=0e278d267ff4ef35 grain=304ce20a124216cb

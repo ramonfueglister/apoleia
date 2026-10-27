@@ -5,6 +5,7 @@
 //!
 //! Usage: grain [--years N] [--seed S] [--threads N] [--root DIR]
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
+//!              [--inherit equal|now|one]
 
 use apoleia_sim::grain::Grain;
 use apoleia_sim::people::People;
@@ -38,6 +39,13 @@ fn main() {
     let inp = apoleia_sim::inputs::load(&root, false).expect("inputs");
     let t0 = Instant::now();
     let mut p = People::new(&inp, seed);
+    // Inheritance at the father's death (S83): equal (default) | now | one.
+    p.inherit = match arg("--inherit").as_deref() {
+        Some("now") => apoleia_sim::people::INHERIT_NOW,
+        None | Some("equal") => apoleia_sim::people::INHERIT_EQUAL,
+        Some("one") => apoleia_sim::people::INHERIT_ONE,
+        Some(v) => panic!("--inherit now|equal|one, not {v}"),
+    };
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
@@ -76,7 +84,10 @@ fn main() {
     println!(
         "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day"
     );
+    let (mut heirs, mut splits) = (0u64, 0u64);
     for y in 1..=years {
+        heirs += g.stats.heirs_given;
+        splits += p.stats.split_households;
         p.stats = Default::default();
         g.stats = Default::default();
         let mut ysum = 0.0;
@@ -173,5 +184,16 @@ fn main() {
     let mut lanes: Vec<(i64, u32)> = g.lanes.iter().map(|(&c, &n)| (n, c)).collect();
     lanes.sort_unstable_by(|a, b| b.cmp(a));
     println!("busiest trade cells (trips, cell): {:?}", &lanes[..lanes.len().min(10)]);
+    heirs += g.stats.heirs_given;
+    splits += p.stats.split_households;
+    let (n, ha, short) = g.land_report();
+    println!(
+        "inherit={} | splits {splits}, heirs given land {heirs} | farms {n}: ha p10 {:.1} median {:.1} p90 {:.1} mean {:.1}; too small to feed their household {short:.1} %",
+        arg("--inherit").unwrap_or_else(|| "equal".into()),
+        ha[0],
+        ha[1],
+        ha[2],
+        ha[3]
+    );
     println!("fingerprint people={:016x} grain={:016x}", p.fingerprint(), g.fingerprint());
 }
