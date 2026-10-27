@@ -25,7 +25,11 @@ void vertex(){
     // masses like the reference near view (a117124 A/B: crown share nah
     // 0.115 -> 0.125, no measurable cost; in the mid view it went too dark,
     // 0.148 against 0.131, so it fades out by ~380 km).
-    float crown_width=mix(1.25,1.0,smoothstep(220.0,380.0,view_width));
+    // Mid view (b6c8e1a, 450 km): crown share 0.107 against 0.164 with the
+    // dark share already on the reference (0.133 / 0.131); the reference
+    // crowns there are wider and lighter (82.9 % in v 0.3-0.42, ours 61 %).
+    // 20 % wider up to ~700 km, lighter in fragment().
+    float crown_width=mix(1.25,mix(1.2,1.0,smoothstep(600.0,900.0,view_width)),smoothstep(220.0,380.0,view_width));
     VERTEX.xz=MODEL_MATRIX[3].xz+(VERTEX.xz-MODEL_MATRIX[3].xz)*crown_width;
     if(clipmap_enabled){
         // Clipmap tiles store the settled ground per instance in
@@ -83,6 +87,7 @@ void fragment(){
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
     float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
+    near_crowns*=1.0+0.15*smoothstep(280.0,400.0,view_width)*(1.0-smoothstep(600.0,900.0,view_width));
     // Lighter tops over the steep gumdrop walls.
     ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns;
     ROUGHNESS=0.96;
