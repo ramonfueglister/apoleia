@@ -393,8 +393,9 @@ func _prewarm_cells() -> void:
 			# Placed so the front appears on the right of the view, not above it.
 			# Far side of the view, right half: the foreground stays sunny.
 			var away := Vector2(_forward.x, _forward.z).normalized()
-			# On the horizon side of the view, right: never between camera and focus.
-			cell.pos = _focus() + away * _ground_width * 0.9 + Vector2(-away.y, away.x) * _ground_width * 0.3
+			# Just beyond the focus (a flat camera sees little further), right side:
+			# upper right of the picture, never between camera and focus.
+			cell.pos = _focus() + away * _ground_width * 0.18 + Vector2(-away.y, away.x) * _ground_width * 0.32
 			cell.ra = maxf(_ground_width * 0.35, 60.0)
 			cell.rc = maxf(_ground_width * 0.5, 90.0)
 			break
@@ -612,7 +613,8 @@ func _apply_look() -> void:
 	_environment.fog_light_color = fog
 	# LandscapeLook rewrites fog_density per view; only scale its latest value.
 	if not is_equal_approx(_environment.fog_density, _written_fog): _fog_base = _environment.fog_density
-	_written_fog = _fog_base * (1.0 + state_rain * 2.5) + state_rain * 0.04
+	# Relative only: an absolute fog increase greyed out the whole continental view.
+	_written_fog = _fog_base * (1.0 + state_rain * 1.5)
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.1 * w.y - 0.55 * state_rain)
 	# Cloud shadows darken by about 25-30 %; more under storm fronts.
