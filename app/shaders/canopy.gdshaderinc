@@ -93,9 +93,15 @@ void fragment(){
     // pixels in v 0.2-0.3 (reference 17 %). Mid crowns ~10 % lighter, near
     // crowns a little less deep.
     float near_crowns=1.0-0.12*(1.0-smoothstep(150.0,320.0,view_width));
-    near_crowns*=1.0+0.27*smoothstep(280.0,400.0,view_width)*(1.0-smoothstep(600.0,900.0,view_width));
+    float mid_view=smoothstep(280.0,400.0,view_width)*(1.0-smoothstep(600.0,900.0,view_width));
+    near_crowns*=1.0+0.27*mid_view;
+    // 3d27516 (r11): dark shares on the reference in all three views, but
+    // the mid carpets read blue-grey: v 0.3-0.42 band #435c43 against
+    // #485e3b, lit land-only #607950 against #5d723f. Warmer mid crowns
+    // (ambient and direct alike; the near view is on target).
+    vec3 mid_warm=mix(vec3(1.0),vec3(1.08,0.95,0.72),mid_view);
     // Lighter tops over the steep gumdrop walls.
-    ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns;
+    ALBEDO=tinted*mix(0.86,1.12,top)*near_crowns*mid_warm;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
     // Sun-averted faces: the reference keeps them a mid green (#2e4332,
