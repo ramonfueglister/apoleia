@@ -19,6 +19,7 @@
 //! and every structural change runs serially in person id order, so the
 //! result does not depend on thread count or iteration order.
 
+use crate::body;
 use crate::groups::{self, Groups};
 use crate::inputs::Inputs;
 use crate::life::{self, Calendar, Ev, BIRTH, DEATH, YEAR};
@@ -106,11 +107,6 @@ const BIRTH_GAP: f64 = 1.25;
 const PREGNANCY: f64 = 0.75;
 /// Death of the mother per birth (pre-modern order of magnitude).
 const MATERNAL_DEATH_PER_10K: u64 = 100;
-/// Health multiplies the death hazard by 1 + HUNGER_DEATH × (1 − h) and
-/// the birth hazard by h (h = health / 1000).
-const HUNGER_DEATH: f64 = 2.0;
-/// Health moves this fraction of the way to its target each month.
-const HEALTH_STEP: i32 = 3;
 
 /// Neighbour offsets; index d and 7 − d are opposite directions.
 const DIRS: [(i32, i32); 8] = [
@@ -167,7 +163,9 @@ impl Intelligence {
     }
 }
 
-/// 0–1000; driven by food (S64, S65).
+/// Health as body weight, ‰ of the normal weight (S84, crate::body): 1000
+/// at BMI 21 for adults, at the usual weight for their age for children.
+/// Hunger lowers it, and it sets the death risk (S64, S65).
 #[derive(Component, Clone, Copy)]
 pub struct Health(pub u16);
 #[derive(Component, Clone, Copy)]
@@ -195,11 +193,20 @@ pub struct Spouse(pub u32);
 /// Father and mother (NONE for the start population).
 #[derive(Component, Clone, Copy)]
 pub struct Parents(pub u32, pub u32);
-/// Generation of the scheduled death and birth events.
-#[derive(Component, Clone, Copy, Default)]
+/// Generation of the scheduled death and birth events, and the household's
+/// food share (‰ of need) at the last health step, which sets fertility
+/// (crate::body::fert_mult).
+#[derive(Component, Clone, Copy)]
 pub struct Sched {
     pub death: u16,
     pub birth: u16,
+    pub fed: u16,
+}
+
+impl Default for Sched {
+    fn default() -> Self {
+        Sched { death: 0, birth: 0, fed: 1000 }
+    }
 }
 /// Months the family has searched a spouse without success.
 #[derive(Component, Clone, Copy, Default)]
@@ -772,8 +779,15 @@ fn mu(sex: u8) -> &'static [f64; 21] {
     }
 }
 
-fn death_mult(health: u16) -> f64 {
-    1.0 + HUNGER_DEATH * (1.0 - health as f64 / 1000.0)
+/// Base death hazard per year of the life table at `age`.
+fn mu_at(sex: u8, age: f64) -> f64 {
+    let i = life::AGES.iter().rposition(|&a| a <= age).unwrap_or(0);
+    mu(sex)[i]
+}
+
+/// Death hazard multiplier from body weight (S84).
+fn death_mult(weight: u16, age: f64, sex: u8) -> f64 {
+    body::death_mult(weight, age, sex, mu_at(sex, age))
 }
 
 /// Fertility rate per year raised so that with a gap of BIRTH_GAP after
@@ -998,7 +1012,7 @@ impl People {
         for (pid, born, sex, spouse, health, sched) in first {
             p.schedule_death(pid, sched.death, born, sex, health, 0);
             if sex == 0 && spouse != NONE {
-                p.schedule_birth(pid, sched.birth, born, health, 0, PREGNANCY);
+                p.schedule_birth(pid, sched.birth, born, sched.fed, 0, PREGNANCY);
             }
         }
         p.refresh_index();
@@ -1012,17 +1026,19 @@ impl People {
 
     fn schedule_death(&mut self, pid: u32, gen: u16, born: i32, sex: u8, health: u16, day: i64) {
         let h = rnd(self.seed(), pid, 0xdead ^ (gen as u32) << 8, day);
-        let w = life::wait(&life::AGES, mu(sex), age_y(day, born), death_mult(health), h).unwrap_or(100.0);
+        let age = age_y(day, born);
+        let w = life::wait(&life::AGES, mu(sex), age, death_mult(health, age, sex), h).unwrap_or(100.0);
         let at = day + ((w * YEAR as f64) as i64).max(1);
         self.cal.push(at, Ev { kind: DEATH, pid, gen });
     }
 
-    /// Next birth for a married woman, at the earliest `gap` years from now.
-    fn schedule_birth(&mut self, pid: u32, gen: u16, born: i32, health: u16, day: i64, gap: f64) {
+    /// Next birth for a married woman, at the earliest `gap` years from now,
+    /// at the fertility of a household food share of `fed` ‰ (S84).
+    fn schedule_birth(&mut self, pid: u32, gen: u16, born: i32, fed: u16, day: i64, gap: f64) {
         let h = rnd(self.seed(), pid, 0xb127 ^ (gen as u32) << 8, day);
         let rates = fert_adjusted();
         let age = age_y(day, born) + gap;
-        if let Some(w) = life::wait(&life::FERT_AGES, &rates, age, health as f64 / 1000.0, h) {
+        if let Some(w) = life::wait(&life::FERT_AGES, &rates, age, body::fert_mult(fed), h) {
             let at = day + (((gap + w) * YEAR as f64) as i64).max(1);
             self.cal.push(at, Ev { kind: BIRTH, pid, gen });
         }
@@ -1290,8 +1306,9 @@ impl People {
                 DEATH if sched.death == ev.gen => {
                     let h = self.world.get::<Health>(e).unwrap().0;
                     let born = self.world.get::<Born>(e).unwrap().0;
+                    let sex = self.world.get::<Sex>(e).unwrap().0;
                     let a = age_y(day, born);
-                    let m = death_mult(h);
+                    let m = death_mult(h, a, sex);
                     let u = life::unit(rnd(self.seed(), ev.pid, 0xca05e, day));
                     let cause = if u < (m - 1.0) / m {
                         2
@@ -1389,20 +1406,20 @@ impl People {
             self.die(mother, day, 3);
             return;
         }
-        let (born, health) = (self.world.get::<Born>(me).unwrap().0, self.world.get::<Health>(me).unwrap().0);
-        let gen = {
+        let born = self.world.get::<Born>(me).unwrap().0;
+        let (gen, fed) = {
             let mut s = self.world.get_mut::<Sched>(me).unwrap();
             s.birth += 1;
-            s.birth
+            (s.birth, s.fed)
         };
-        self.schedule_birth(mother, gen, born, health, day, BIRTH_GAP);
+        self.schedule_birth(mother, gen, born, fed, day, BIRTH_GAP);
     }
 
-    /// Health follows the food share of the home cell (S65). When it crosses
-    /// a band of 100 the death and birth draws are redone (S64).
-    /// Health follows the food share of the home cell (S65). When it crosses
-    /// a band of 100 the death and birth draws are redone (S64). Runs on the
-    /// day's 1/30 of every table, so each person about once a month.
+    /// Body weight follows the household's food share (S84, crate::body:
+    /// a month of the way to the target weight of Hall et al. 2011). When
+    /// the band of the death risk or of fertility changes, the death or
+    /// birth draw is redone (S64). Runs on the day's 1/30 of every table,
+    /// so each person about once a month.
     fn health(&mut self, day: i64, slice: u32) {
         let mut redo = Vec::new();
         let (food, pop, region) = (&self.region_food, &self.region_pop, &self.cell_region);
@@ -1419,26 +1436,33 @@ impl People {
                         let r = region[home[i].0 as usize] as usize;
                         food[r] as f64 / pop[r].max(1) as f64
                     }
-                };
-                let target = (1000.0 * share.min(1.0)) as i32;
-                let h = health[i].0 as i32;
-                let new = (h + (target - h) / HEALTH_STEP) as u16;
-                if new / 100 != health[i].0 / 100 {
-                    sched[i].death += 1;
-                    let birth = sex[i].0 == 0 && spouse[i].0 != NONE;
-                    if birth {
-                        sched[i].birth += 1;
-                    }
-                    redo.push((pid[i].0, born[i].0, sex[i].0, new, sched[i], birth));
                 }
-                health[i].0 = new;
+                .min(1.0);
+                let age = age_y(day, born[i].0);
+                let (w, w2) = (health[i].0, body::month(health[i].0, share));
+                let (f, f2) = (sched[i].fed, (share * 1000.0) as u16);
+                let death = body::death_band(w, age) != body::death_band(w2, age);
+                let birth = sex[i].0 == 0 && spouse[i].0 != NONE && body::fert_band(f) != body::fert_band(f2);
+                health[i].0 = w2;
+                sched[i].fed = f2;
+                if death {
+                    sched[i].death += 1;
+                }
+                if birth {
+                    sched[i].birth += 1;
+                }
+                if death || birth {
+                    redo.push((pid[i].0, born[i].0, sex[i].0, w2, f2, sched[i], death, birth));
+                }
             }
         }
         redo.sort_unstable_by_key(|r| r.0);
-        for (pid, born, sex, h, s, birth) in redo {
-            self.schedule_death(pid, s.death, born, sex, h, day);
+        for (pid, born, sex, w, f, s, death, birth) in redo {
+            if death {
+                self.schedule_death(pid, s.death, born, sex, w, day);
+            }
             if birth {
-                self.schedule_birth(pid, s.birth, born, h, day, 0.0);
+                self.schedule_birth(pid, s.birth, born, f, day, 0.0);
             }
         }
     }
@@ -1575,11 +1599,10 @@ impl People {
         w.get_mut::<Household>().unwrap().0 = house;
         w.get_mut::<Stand>().unwrap().0 = stand;
         let born = w.get::<Born>().unwrap().0;
-        let health = w.get::<Health>().unwrap().0;
-        let gen = {
+        let (gen, fed) = {
             let mut s = w.get_mut::<Sched>().unwrap();
             s.birth += 1;
-            s.birth
+            (s.birth, s.fed)
         };
         self.stats.marriages += 1;
         self.stats.marry_age_f += age_y(day, born);
@@ -1593,7 +1616,7 @@ impl People {
         }
         // Marriages before day 1 (the start) are scheduled in People::new.
         if day > 0 {
-            self.schedule_birth(b, gen, born, health, day, PREGNANCY);
+            self.schedule_birth(b, gen, born, fed, day, PREGNANCY);
         }
     }
 

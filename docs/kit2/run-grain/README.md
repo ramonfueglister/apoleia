@@ -194,6 +194,26 @@ ernährt seine Familie nicht mehr, die Ernte sinkt. Ein Erbe hält die Höfe gro
 Bevölkerung wächst weiter, dafür mehr Hungertote unter den landlosen Brüdern. Ohne Teilung der
 Haushalte (vor S81) waren es 136'500. Fingerprint gleich mit 1 und 4 Threads (30 Jahre).
 
+## Gesundheit als Körpergewicht (S84, 100 Jahre, Seed 1, `run100-s84.txt`; vorher: `run100-inherit-equal.txt`)
+
+Hunger senkt das Gewicht nach Hall et al. 2011, das Sterberisiko folgt dem BMI, die
+Fruchtbarkeit dem Essensanteil (`sim/src/body.rs`). Beide Läufe mit Erbe zu gleichen Teilen
+(S83); S84 zusätzlich mit IQ-Partnerwahl (S82):
+
+| Jahr | Menschen vorher → S84 | Hungertote vorher → S84 | Abgewandert vorher → S84 |
+|---|---|---|---|
+| 2 | 113'853 → 100'114 | 1'597 → 15'466 | 1'358 → 503 |
+| 5 | 105'558 → 92'825 | 847 → 1'240 | 2'279 → 107 |
+| 50 | 109'073 → 99'754 | 233 → 348 | 394 → 56 |
+| 100 | 122'646 → 107'903 | 317 → 743 | 810 → 204 |
+
+**Hungersnot zu Beginn:** In den ersten zwei Jahren essen die Zelte 40–53 % ihres Bedarfs.
+Bei so wenig Essen sinkt das Gewicht nach Hall innert gut eines Jahres gegen die Grenze des
+Überlebens. Früher wanderten diese Menschen ab, jetzt sterben sie vorher (Jahr 2: 15'466
+Hungertote, −12 %). Ohne Getreidewirtschaft ändert S84 fast nichts (Jahr 100: 152'384 statt
+152'465), weil wer genug isst die Sterbetafel behält. Fingerprint gleich mit 1 und 4 Threads.
+Grain im Mittel 1,44 ms pro Tag.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, `run100-timing.txt`)
 
 | Grösse | Wert |

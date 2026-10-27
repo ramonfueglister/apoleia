@@ -73,7 +73,7 @@ fn main() {
     // Mean time per day of the month and per part (--slices).
     let slices = args.iter().any(|a| a == "--slices");
     let mut by_slice = vec![[0.0f64; 13]; 30];
-    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map joined_hh/people split_hh/people health%  hungry  events_in_cal  rss_mb");
+    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map joined_hh/people split_hh/people weight%  hungry  events_in_cal  rss_mb");
     let mut all_stats = apoleia_sim::people::Stats::default();
     for y in 1..=years {
         all_stats.add_marry(&p.stats);
