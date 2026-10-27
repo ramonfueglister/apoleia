@@ -2577,35 +2577,76 @@ func _delta_arm_source(pts:Array[Vector2],width:float,name:String,k:int)->Dictio
 
 func _add_delta_arms() -> void:
     for region in delta_regions:
+        # The source data carries the real distributaries (Rhône: Grand and
+        # Petit Rhône; the Grand also a terrain channel): no cut, no fan. At
+        # 40 km (903029a) the synthetic main arm ran beside the channel and
+        # the Petit Rhône arm across the Vaccarès.
+        if region.get("real_courses",false):continue
         var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
         var length=float(region.rb)*2.2
         var base_width=0.03
         for source in river_sources:
             if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
         var start=mouth-sea*length
+        # From the apex (Rhône): the arms replace every source branch on the
+        # seaward side of it (a half plane across the sea direction; one
+        # along apex-mouth kept the Petit Rhône's westward first 20 km).
+        var below:Vector2=sea;var reach=length*1.6
+        if region.has("apex"):
+            start=region.apex;below=(mouth-start).normalized();reach=start.distance_to(mouth)*1.3
         # The source course below the split is replaced by the fan (it would
         # otherwise run as an extra band through the middle: the "braid").
+        # Per polyline everything downstream of the first cut segment goes
+        # too: a meander swinging back across the cut line was kept and ended
+        # square in the land (Tiber at 90 km, r31 preview).
+        var cut_ends=[]
         for source in river_sources:
             if str(source.get("name",""))!=str(region.name):continue
+            var segments:Array=source.segments
+            var spans={}
+            for i in range(segments.size()):
+                var id=str(segments[i][4])
+                if not spans.has(id):spans[id]=[i,i,-1,-1]
+                spans[id][1]=i
+                var m=(Vector2(segments[i][0])+Vector2(segments[i][1]))*.5
+                if (m-start).dot(sea)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:
+                    if spans[id][2]<0:spans[id][2]=i
+                    spans[id][3]=i
             var kept=[]
-            for segment in source.segments:
-                var m=(Vector2(segment[0])+Vector2(segment[1]))*.5
-                if (m-start).dot(sea)>0.0 and m.distance_to(mouth)<length*1.6:continue
-                kept.append(segment)
+            for i in range(segments.size()):
+                var span:Array=spans[str(segments[i][4])]
+                if span[2]>=0:
+                    var forward=Vector2(segments[span[1]][1]).distance_to(mouth)<Vector2(segments[span[0]][0]).distance_to(mouth)
+                    if (forward and i>=span[2]) or (not forward and i<=span[3]):continue
+                    # The point where the kept course meets the cut.
+                    if forward and i==span[2]-1:cut_ends.append(Vector2(segments[i][1]))
+                    if not forward and i==span[3]+1:cut_ends.append(Vector2(segments[i][0]))
+                kept.append(segments[i])
             source.segments=kept
-        var root_distance=INF
-        for source in river_sources:
-            if str(source.get("name",""))!=str(region.name):continue
-            for segment in source.segments:
-                for q in [Vector2(segment[0]),Vector2(segment[1])]:
-                    if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);start=q if root_distance<length*0.6 else start
+        # The fan starts where the kept course ends. The nearest kept point
+        # (a greedy walk that moved start as it went) could lie ~5 km
+        # upstream of that end, and the course between them stayed as a stub
+        # ending square in the land (Tiber at 90 km, b76c6c5).
+        var root_distance=INF;var root:Vector2=start
+        for q in cut_ends:
+            if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+        if cut_ends.is_empty():
+            for source in river_sources:
+                if str(source.get("name",""))!=str(region.name):continue
+                for segment in source.segments:
+                    for q in [Vector2(segment[0]),Vector2(segment[1])]:
+                        if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+            if root_distance>=length*0.6:root=start
+        start=root
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
         # Hierarchical branching: the main arm (width 1.0) runs to the mouth;
         # side arms (0.35-0.6) leave it at different points, one of them
         # splits again. Every arm meanders with a random phase, amplitude
         # fading towards the coast.
         var mouths_out=[]
-        var main_end=mouth+sea*14.0
+        # Arms run on into the sea (clipped there); from an apex along their
+        # own direction, so they cross the coast at the real outlet.
+        var main_end=mouth+(below if region.has("apex") else sea)*14.0
         var arms=[[start,main_end,base_width,0.0]]
         var branch_specs=region.arms if not region.arms.is_empty() else [[0.15,-1.0,0.55],[0.40,1.0,0.45],[0.62,-1.0,0.35]]
         var main_points=_delta_arm_points(start,main_end,float(region.ra),rng)
@@ -2615,12 +2656,15 @@ func _add_delta_arms() -> void:
         for spec in branch_specs:
             var at=int(float(main_points.size()-1)*float(spec[0]))
             var split:Vector2=main_points[at]
-            var lateral=float(spec[1])*float(region.ra)*rng.randf_range(1.6,2.0)*(1.0-float(spec[0])*0.45)
-            var coast_end=mouth+tangent*lateral
-            var pts=_delta_arm_points(split,coast_end+sea*14.0,float(region.ra)*0.6,rng)
+            # A real outlet [lon, lat], or a side (+1/-1) at a random spread.
+            var coast_end:Vector2;var run_on:Vector2=sea
+            if spec[1] is Array:
+                coast_end=geographic_to_world(float(spec[1][0]),float(spec[1][1]));run_on=(coast_end-split).normalized()
+            else:coast_end=mouth+tangent*float(spec[1])*float(region.ra)*rng.randf_range(1.6,2.0)*(1.0-float(spec[0])*0.45)
+            var pts=_delta_arm_points(split,coast_end+run_on*14.0,float(region.ra)*0.6,rng)
             river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
             mouths_out.append(coast_end)
-            if index==2 and branch_specs.size()>=3:
+            if index==2 and branch_specs.size()>=3 and not (spec[1] is Array):
                 # Second-order split of the first side arm.
                 var at2=int(float(pts.size()-1)*0.45);var split2:Vector2=pts[at2]
                 var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.8
@@ -2661,7 +2705,13 @@ const RIVER_DELTAS=[
     # arm only, so no arms cross (A16: overlapping bands at the mouth).
     {"name":"Tevere","ra":7.0,"rb":4.5,"arms":[[0.55,1.0,0.5]]},
     {"name":"Po","ra":20.0,"rb":11.0},
-    {"name":"Rhône","ra":18.0,"rb":10.0},
+    # Rhône: the source ends inland of both real outlets (Grand Rhône at
+    # 4.70/43.58, 27 km short; the Petit Rhône end has no sea within 6 km on
+    # the CPU grid, so it never counted as a mouth). Both arms split at
+    # Arles, the apex; the lagoon field sits over the Camargue (Vaccarès),
+    # west of the Grand Rhône mouth.
+    {"name":"Rhône","ra":14.0,"rb":10.0,"mouth":[4.845,43.33],"apex":[4.615896,43.709133],"from_apex":true,"real_courses":true,
+        "lagoon_center":[4.56,43.47],"arms":[[0.03,[4.42,43.445],0.6]]},
     {"name":"Ebro","ra":8.0,"rb":5.0},
     {"name":"Nile","ra":45.0,"rb":16.0,"mouth":[31.05,31.50],"apex":[31.25,30.10]}]
 var delta_regions:Array=[]
@@ -2695,8 +2745,12 @@ func _setup_river_deltas() -> void:
             if _water_distance(coast_point)<0.0:break
             coast_point-=sea_direction*0.25
         inlets=[coast_point,coast_point+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
-        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,"arms":delta.get("arms",[]),
-            "center":coast_point-sea_direction*rb*0.55,"anchor_texel":INF})
+        var region={"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,"arms":delta.get("arms",[]),
+            "center":coast_point-sea_direction*rb*0.55,"anchor_texel":INF}
+        if delta.get("from_apex",false):region["apex"]=geographic_to_world(float(delta.apex[0]),float(delta.apex[1]))
+        if delta.has("lagoon_center"):region["lagoon_center"]=geographic_to_world(float(delta.lagoon_center[0]),float(delta.lagoon_center[1]))
+        if delta.get("real_courses",false):region["real_courses"]=true
+        delta_regions.append(region)
         delta_apexes.append(mouth-sea_direction*rb*1.2)
     _bind_delta_uniforms()
 
@@ -2707,7 +2761,11 @@ func _bind_delta_uniforms() -> void:
     var frames=PackedVector4Array();var shapes=PackedVector4Array()
     for region in delta_regions.slice(0,6):
         frames.append(Vector4(region.mouth.x,region.mouth.y,region.sea.x,region.sea.y))
-        shapes.append(Vector4(region.ra*LAGOON_SCALE.x,region.rb*LAGOON_SCALE.y,region.seed,0.0))
+        # w: lagoon centre along the coast from the mouth (the shader's
+        # tangent, (-sea.y, sea.x)).
+        var offset=0.0
+        if region.has("lagoon_center"):offset=(Vector2(region.lagoon_center)-Vector2(region.mouth)).dot(Vector2(-region.sea.y,region.sea.x))
+        shapes.append(Vector4(region.ra*LAGOON_SCALE.x,region.rb*LAGOON_SCALE.y,region.seed,offset))
     var values={"delta_count":frames.size()}
     if not frames.is_empty():values["delta_frame"]=frames;values["delta_shape"]=shapes
     # Crowns read the same uniforms and stay out of the lagoon water.

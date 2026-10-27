@@ -78,6 +78,15 @@ vec2 clipmap_tile_uv(vec2 p) {
 }
 vec4 clipmap_material(vec2 p){return textureLod(tile_material_tex,clipmap_tile_uv(p),0.0);}
 float clipmap_water_distance(vec2 p){return clipmap_encoded(tile_water_tex,tile_rect,p,0.125,-4096.0);}
+// One nearest texel, unfiltered: x role (0 dry, 1 sea, 2 lake), y signed
+// distance in metres. For coarse probes (delta shore) where the filtered
+// taps and the role search above cost too much.
+vec2 clipmap_water_texel(vec2 p) {
+    ivec2 last=textureSize(tile_water_tex,0)-ivec2(1);
+    vec2 q=clamp((p-tile_rect.xy)/max(tile_rect.zw,vec2(0.000001)),vec2(0.0),vec2(1.0))*vec2(last);
+    vec4 t=texelFetch(tile_water_tex,ivec2(round(q)),0);
+    return vec2(round(t.b*255.0),clipmap_code(t.rg)*0.125-4096.0);
+}
 float clipmap_water_kind(vec2 p) {
     if(clipmap_water_distance(p)<=0.0)return 0.0;
     ivec2 size=textureSize(tile_water_tex,0);
