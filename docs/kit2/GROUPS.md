@@ -37,33 +37,34 @@ Vaters (Platzhalter).
 
 Ergibt beim Start im ganzen Reich: Landwirtschaft (Bauern, Pächter, Tagelöhner) rund
 78 %, Unfreie 10,8 %, Handwerker 6,5 %, Händler 2,8 %, Soldaten 0,6 %.
+Korrektur gegenüber der ersten Fassung: Die Sklavenquote stützt sich auf Scheidel
+(1997), nicht auf Scheidel (2011); dieses Kapitel nennt keine Anteile. Für die
+Verstädterung (Wilson, 2011) wurde keine Zahl bestätigt; sie ist entfernt. Der
+Stadtanteil im Modell kommt aus den Startdaten (SCALE.md).
 
-Woran sich die Schätzung hält (aus dem Gedächtnis, im Einzelnen zu prüfen):
+Woran sich die Schätzung hält (geprüft am 27.10.2026; wo nur eine Sekundärquelle
+eingesehen wurde, steht es dabei):
 
-- **Landwirtschaft ≈ 75–80 % der Menschen**, Städte ≈ 10–20 %: Scheidel und Friesen
-  (2009); Wilson (2011). Viele Städter bestellten Land vor der Stadt (daher Bauern in
-  der Stadt).
-- **Sklaven ≈ 10 % reichsweit**, in Städten mehr als auf dem Land (ägyptische Zensuslisten
-  ≈ 11 % in Städten, weniger in Dörfern): Scheidel (2011); Bagnall und Frier (1994).
-- **Heer ≈ 400'000 Mann** bei 60–70 Mio. Menschen, also ≈ 0,6 %: MacMullen (1980).
-- **Pächter (coloni) neben freien Kleinbauern**, Lohnarbeit vor allem zur Ernte: Anteile
-  sind nicht belegt; geschätzt.
-- **Beamte, Geistliche, Gelehrte** sind winzige Gruppen (die Reichsverwaltung zählte nur
-  wenige hundert hohe Amtsträger; Priester waren meist Ehrenämter der Oberschicht).
-  Geschätzt.
+| Grösse | Beleg | Modell beim Start |
+|---|---|---|
+| Landwirtschaft | „mindestens 80 %“ der Bewohner arbeiteten in der Landwirtschaft (Mattingly, 2006, S. 356; zitiert nach Wikipedia „Economics of the Roman army“, Buch nicht eingesehen) | Bauern, Pächter, Tagelöhner 78 %, mit den Unfreien auf dem Land ≈ 85 % |
+| Unfreie | Scheidel (1997) rechnet reichsweit mit 10 % und nennt das eher eine Untergrenze; die ägyptischen Zensuslisten zeigen 11 % (118 von 1'084 Personen; Bagnall & Frier, 1994, nach Scheidel, 1997) | 10,8 % |
+| Heer | etwa 438'000 Mann ohne Flotte gegen Ende des 2. Jahrhunderts (MacMullen, 1980; nach Wikipedia „Size of the Roman army“), bei rund 70 Mio. Einwohnern (Scheidel & Friesen, 2009) ≈ 0,6 % | 0,6 % |
+| Oberschicht | Senatoren, Ritter und Dekurionen ≈ 1,5 % der Bevölkerung (Scheidel & Friesen, 2009) | kleiner: Senat und Ritter nach S58 (≈ 100 Personen), Dekurionen sind noch kein eigener Stand |
+| Pächter neben freien Bauern, Handwerker, Händler, Beamte, Geistliche, Gelehrte | keine belastbaren Anteile gefunden | geschätzt |
 
 Quellen (APA 7):
 
 - Bagnall, R. S., & Frier, B. W. (1994). *The demography of Roman Egypt*. Cambridge
   University Press.
-- MacMullen, R. (1980). How big was the Roman imperial army? *Klio, 62*, 451–460.
-- Scheidel, W. (2011). The Roman slave supply. In K. Bradley & P. Cartledge (Hrsg.),
-  *The Cambridge world history of slavery* (Bd. 1, S. 287–310). Cambridge University Press.
+- MacMullen, R. (1980). How big was the Roman imperial army? *Klio, 62*(2), 451–460.
+- Mattingly, D. (2006). *An imperial possession: Britain in the Roman Empire, 54 BC–AD 409*.
+  Allen Lane.
+- Scheidel, W. (1997). Quantifying the sources of slaves in the early Roman Empire.
+  *Journal of Roman Studies, 87*, 156–169. https://doi.org/10.2307/301373
 - Scheidel, W., & Friesen, S. J. (2009). The size of the economy and the distribution of
   income in the Roman Empire. *Journal of Roman Studies, 99*, 61–91.
-- Wilson, A. (2011). City sizes and urbanization in the Roman Empire. In A. Bowman &
-  A. Wilson (Hrsg.), *Settlement, urbanization, and population* (S. 161–195). Oxford
-  University Press.
+  https://doi.org/10.3815/007543509789745223
 
 ## Platzhalter (im Code `PLACEHOLDER`)
 
