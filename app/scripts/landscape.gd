@@ -418,6 +418,8 @@ func _ready() -> void:
             # Region coverage (A02) needs every pyramid level; a partial build
             # silently shows coarse parents. Report it instead of hiding it.
             push_warning("Clipmap pyramid READY is '"+clipmap_runtime.stream.ready_state+"', not 'complete': finer tiles may be missing; run tools/region_coverage_check.py")
+        var tile_manifest:Dictionary=clipmap_runtime.stream.manifest
+        _build_edge_haze(Rect2(Vector2(tile_manifest.world_min[0],tile_manifest.world_min[1]),Vector2(tile_manifest.world_size[0],tile_manifest.world_size[1])))
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
@@ -2560,13 +2562,13 @@ func _setup_rivers() -> void:
 # barrier spit sit at their ends. The main course stays the central arm.
 func _delta_arm_points(a:Vector2,b:Vector2,amplitude:float,rng:RandomNumberGenerator)->Array[Vector2]:
     var direction=(b-a).normalized();var normal=direction.orthogonal()
-    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.0,3.2);var phase2=rng.randf()*TAU
+    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.6,3.8);var phase2=rng.randf()*TAU
     var pts:Array[Vector2]=[a]
     var count=48
     for i in range(1,count+1):
         var t=float(i)/count
         var fade=smoothstep(0.0,0.12,t)*(1.0-0.55*t)
-        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.14*fade
+        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.2*fade
         pts.append(a.lerp(b,t)+normal*wobble)
     return pts
 
@@ -2696,6 +2698,32 @@ func _setup_river_deltas() -> void:
             "center":coast_point-sea_direction*rb*0.55})
         delta_apexes.append(mouth-sea_direction*rb*1.2)
 
+# Edge haze: the overview (7600 km at 50 deg) sees past the atlas, most of
+# all north of ~61 N, where the background showed as a hard grey band. A
+# frame over the last ~180 km of the atlas fades into the background colour
+# and covers everything outside, so the map ends in haze instead of an edge.
+# Drawn last without depth test; flat at sea level, so relief parallax is
+# small against the fade width.
+func _build_edge_haze(world:Rect2) -> void:
+    var rings=[world.grow(-180.0),world,world.grow(8000.0)]
+    var alphas=[0.0,1.0,1.0]
+    var vertices=PackedVector3Array();var colors=PackedColorArray();var indices=PackedInt32Array()
+    for k in range(3):
+        var r:Rect2=rings[k]
+        for corner in [r.position,Vector2(r.end.x,r.position.y),r.end,Vector2(r.position.x,r.end.y)]:
+            vertices.append(Vector3(corner.x,0.0,corner.y));colors.append(Color(1,1,1,float(alphas[k])))
+    for k in range(2):
+        for side in range(4):
+            var a=k*4+side;var b=k*4+(side+1)%4;var c=a+4;var d=b+4
+            indices.append_array(PackedInt32Array([a,c,b,b,c,d]))
+    var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_COLOR]=colors;arrays[Mesh.ARRAY_INDEX]=indices
+    var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+    var material=ShaderMaterial.new();material.shader=load("res://shaders/edge_haze.gdshader");material.render_priority=100
+    material.set_shader_parameter("haze_color",landscape_environment.background_color if landscape_environment else Color("9fc2d6"))
+    var node=MeshInstance3D.new();node.name="EdgeHaze";node.mesh=mesh;node.material_override=material
+    node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.extra_cull_margin=16384.0
+    add_child(node)
+
 # Built once the surface heights are available (streaming loads them after
 # setup); retried from _process until then.
 func _build_delta_surfaces() -> void:
@@ -2764,14 +2792,13 @@ func _build_delta_surfaces() -> void:
         var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.UP)
         var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV]=coast;arrays[Mesh.ARRAY_INDEX]=indices
         var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-        var material=ShaderMaterial.new();material.shader=shader
+        # Below the river ribbons, so the arms cut the barrier and islands.
+        var material=ShaderMaterial.new();material.shader=shader;material.render_priority=-1
         for uniform in shader.get_shader_uniform_list():
             var value=marine_material.get_shader_parameter(uniform.name) if marine_material else null
             if value!=null:material.set_shader_parameter(uniform.name,value)
-        var inlets=PackedVector2Array(region.inlets)
         material.set_shader_parameter("delta_center",region.center);material.set_shader_parameter("delta_sea",region.sea)
         material.set_shader_parameter("delta_radii",Vector2(region.ra,region.rb));material.set_shader_parameter("delta_seed",float(region.seed))
-        material.set_shader_parameter("delta_inlet_a",inlets[0]);material.set_shader_parameter("delta_inlet_b",inlets[1])
         var node=MeshInstance3D.new();node.name="Delta_"+str(region.name);node.mesh=mesh;node.material_override=material
         node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         add_child(node);delta_nodes.append(node)

@@ -58,13 +58,11 @@ void fragment() {
     float calm=1.0-smoothstep(1500.0,4000.0,view_width)*0.85;
     float saum_scale=1.0-smoothstep(700.0,2600.0,view_width)*0.85;
     vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
-    float mouth=0.0;float delta_region=0.0;float gap=1e9;
+    float mouth=0.0;
     for(int i=0;i<32;i++) {
         if(i>=river_mouth_count) break;
         float d=length(p-river_mouths[i].xy);
         mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,d));
-        if(river_mouths[i].w>0.5) delta_region=max(delta_region,1.0-smoothstep(10.0,20.0,d));
-        if(river_mouths[i].w>1.5) gap=min(gap,d);
     }
     WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
     // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
@@ -105,12 +103,6 @@ void fragment() {
         c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.6);
         ALBEDO=mix(ALBEDO,c,near_sea);
     }
-    // Barrier sand spit (Nehrung) in front of deltas, open where arms exit.
-    float spit_c=max(px_m*3.0,700.0);float spit_w=max(px_m*1.4,260.0);
-    // One continuous arc; only open mouths break it.
-    float spit=(1.0-smoothstep(spit_w*0.5,spit_w,abs(coast_m-spit_c)))*delta_region*smoothstep(0.8,1.4,gap);
-    spit*=0.75+0.25*wl_fnoise(p*1.3,footprint*1.3);
-    ALBEDO=mix(ALBEDO,vec3(0.70,0.58,0.30),spit);
     EMISSION=w.emission;
     ROUGHNESS=w.roughness;
     // Sun glints come from water_look; the engine lobe would form a blob.
