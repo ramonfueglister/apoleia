@@ -45,6 +45,16 @@ pub struct Params {
     /// Attraction differences up to this cause no migration (EU5: only
     /// locations far enough from their surroundings migrate).
     pub migration_threshold: f64,
+    /// Pre-modern cities had more deaths than births ("urban graveyard",
+    /// Kit 2 MIGRATION.md): yearly excess deaths among a tile's city
+    /// population, refilled only by migration. 0 switches it off.
+    pub urban_excess_death: f64,
+    /// Share of a city tile's free capacity (K − P) that it asks for from
+    /// its region each month (jobs, grain, EU5's market-wide pull).
+    pub city_pull_rate: f64,
+    /// At most this share of a region's rural population leaves for its
+    /// cities in one month.
+    pub city_draw_cap: f64,
     /// With HYDE data: true = K from HYDE cropland × `people_per_cropland_km2`;
     /// false = K anchored on the HYDE start population (start = `start_fill` × K).
     pub k_from_cropland: bool,
@@ -65,6 +75,9 @@ impl Default for Params {
             adaptive: true,
             k_from_cropland: false,
             migration_rate: 0.02,
+            urban_excess_death: 0.01,
+            city_pull_rate: 0.05,
+            city_draw_cap: 0.002,
             migration_threshold: 0.05,
         }
     }

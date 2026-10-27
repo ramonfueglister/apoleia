@@ -77,6 +77,10 @@ pub struct TickConst {
     adaptive: bool,
     migration_rate: f64,
     migration_threshold: f64,
+    /// Monthly keep factor of the city population, Q32.
+    urban_keep_q32: i128,
+    city_pull_rate: f64,
+    city_draw_cap: f64,
 }
 
 /// Quadtree bookkeeping in ID order (Paradox-style lookup table, S41).
@@ -104,6 +108,15 @@ impl Neighbors {
     pub fn indices(&self) -> &[u32] {
         &self.at[..self.len as usize]
     }
+}
+
+/// City share of a tile's capacity (fixed point Q16: 65536 = all urban).
+#[derive(Component, Default, Clone, Copy, Debug)]
+pub struct UrbanShare(pub i64);
+
+fn urban_share(local: f64, urban: f64) -> UrbanShare {
+    let k = local + urban;
+    UrbanShare(if k > 0.0 { to_fx(urban / k) } else { 0 })
 }
 
 /// Net migration of the current month (fixed point, + = arrivals).
@@ -258,6 +271,132 @@ fn migrate(
     });
 }
 
+/// The 200 km root squares as a dense grid: a city draws its migrants from
+/// the rural population of its own root square (S12 level 0).
+#[derive(Resource, Clone, Copy)]
+pub struct Regions {
+    row0: i32,
+    col0: i32,
+    cols: usize,
+    count: usize,
+}
+
+impl Regions {
+    fn of(start: &[Key]) -> Regions {
+        let roots: Vec<Key> = start.iter().map(|k| k.at_level(0)).collect();
+        let (row0, row1) = (roots.iter().map(|k| k.row).min().unwrap_or(0), roots.iter().map(|k| k.row).max().unwrap_or(0));
+        let (col0, col1) = (roots.iter().map(|k| k.col).min().unwrap_or(0), roots.iter().map(|k| k.col).max().unwrap_or(0));
+        let cols = (col1 - col0 + 1) as usize;
+        Regions { row0, col0, cols, count: cols * (row1 - row0 + 1) as usize }
+    }
+
+    /// The root square and its eight neighbours (inside the grid).
+    fn around(&self, r: usize) -> impl Iterator<Item = usize> + '_ {
+        let rows = self.count / self.cols;
+        let (row, col) = ((r / self.cols) as i64, (r % self.cols) as i64);
+        (-1..=1).flat_map(move |dr| (-1..=1).map(move |dc| (row + dr, col + dc))).filter_map(move |(y, x)| {
+            (y >= 0 && x >= 0 && (y as usize) < rows && (x as usize) < self.cols).then(|| y as usize * self.cols + x as usize)
+        })
+    }
+
+    fn index(&self, k: Key) -> usize {
+        let r = k.at_level(0);
+        (r.row - self.row0) as usize * self.cols + (r.col - self.col0) as usize
+    }
+}
+
+/// Cities draw migrants from their surroundings (MIGRATION.md, step
+/// "Städte"): neighbour diffusion alone cannot feed Rome, which historically
+/// drew on all of Italy. A city in root square r asks for a share of its
+/// free city capacity from the rural people of the 3×3 root squares around
+/// r (about 600 km, EU5's market-wide pull with a distance limit). Every
+/// rural tile gives the same fraction asked of its catchment (capped). The
+/// total taken is shared by all cities by what they asked, in ID order, the
+/// last taking the remainder, so the sum is exact. Two passes over the tiles
+/// plus a few hundred root squares.
+fn city_draw(
+    c: Res<TickConst>,
+    regions: Res<Regions>,
+    mut scratch: Local<(Vec<f64>, Vec<f64>)>,
+    mut tiles: Query<(&TileKey, &Pop, &Cap, &UrbanShare, &mut Moved)>,
+) {
+    let c = *c;
+    if c.city_pull_rate <= 0.0 {
+        return;
+    }
+    let n = regions.count;
+    let (demand, pool) = &mut *scratch;
+    demand.clear();
+    demand.resize(n, 0.0);
+    pool.clear();
+    pool.resize(n, 0.0);
+    let mut cities: Vec<(Key, i64)> = Vec::new();
+    // A tile is city and country at once: its city share u asks for
+    // u·(K − P), its rural share (1 − u) of the people can be drawn.
+    for (key, p, k, u, _) in &tiles {
+        let r = regions.index(key.0);
+        let uf = u.0 as f64 / FX as f64;
+        if u.0 > 0 {
+            let want = (c.city_pull_rate * uf * (k.0 - p.0).max(0) as f64) as i64;
+            if want >= 1 {
+                demand[r] += want as f64;
+                cities.push((key.0, want));
+            }
+        }
+        pool[r] += p.0.max(0) as f64 * (1.0 - uf);
+    }
+    // Rate asked of each catchment, then summed back onto each root square.
+    let catchment = |r: usize| regions.around(r);
+    let asked: Vec<f64> = (0..n)
+        .map(|r| {
+            let p3: f64 = catchment(r).map(|q| pool[q]).sum();
+            if p3 > 0.0 { demand[r] / p3 } else { 0.0 }
+        })
+        .collect();
+    let rate: Vec<f64> = (0..n).map(|q| catchment(q).map(|r| asked[r]).sum::<f64>().min(c.city_draw_cap)).collect();
+    // Only the rural birth surplus leaves (landless children, Wrigley 1967;
+    // de Vries 1984): this month's logistic gain of the rural share. A
+    // drained countryside therefore stops sending instead of emptying.
+    let d = c.decay_q32 as f64 / Q32 as f64;
+    let mut taken = 0i64;
+    for (key, p, k, u, mut moved) in &mut tiles {
+        if u.0 < FX && p.0 > 0 && k.0 > p.0 {
+            let rest = 1.0 - u.0 as f64 / FX as f64;
+            let (pp, kk) = (p.0 as f64, k.0 as f64);
+            let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
+            let asked = pp * rest * rate[regions.index(key.0)];
+            let out = (asked.min(surplus) + 0.5) as i64;
+            if out > 0 {
+                moved.0 -= out;
+                taken += out;
+            }
+        }
+    }
+    if cities.is_empty() {
+        // Nobody to receive: give it back (cannot happen with taken > 0,
+        // since rates are zero without demand).
+        debug_assert_eq!(taken, 0);
+        return;
+    }
+    // Hand out in ID order: the last city takes the remainder.
+    cities.sort_unstable();
+    let wanted: i64 = cities.iter().map(|c| c.1).sum();
+    let mut left = taken;
+    let mut gets: HashMap<Key, i64> = HashMap::with_capacity(cities.len());
+    for (i, &(key, want)) in cities.iter().enumerate() {
+        let g = if i + 1 == cities.len() { left } else { ((taken as i128 * want as i128) / wanted as i128) as i64 };
+        left -= g;
+        gets.insert(key, g);
+    }
+    for (key, _, _, u, mut moved) in &mut tiles {
+        if u.0 > 0 {
+            if let Some(g) = gets.get(&key.0) {
+                moved.0 += g;
+            }
+        }
+    }
+}
+
 /// Per-thread candidate lists filled during the parallel growth pass.
 #[derive(Default)]
 pub struct Found {
@@ -275,13 +414,14 @@ pub struct Scratch(Parallel<Found>);
 /// avoids a 128-bit division per tile. Independent per tile, so it runs in
 /// parallel and notes split and merge candidates on the way (one pass over
 /// the tiles, like the reference loop).
-fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow, &Moved)>) {
+fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow, &Moved, &UrbanShare)>) {
     let c = *c;
     let d = c.decay_q32 as f64 / Q32 as f64;
     // Dense tile table: work on whole column slices (bevy_ecs 0.19
     // contiguous iteration), one chunk per task.
     let chunks = q.contiguous_par_iter_mut().expect("tiles live in tables");
-    chunks.for_each(|(keys, pop, cap, land, low, moved)| {
+    let keep = c.urban_keep_q32 as f64 / Q32 as f64;
+    chunks.for_each(|(keys, pop, cap, land, low, moved, urban)| {
         // Population changes on practically every tile each month, so the
         // whole chunk is marked changed once instead of per tile (S47).
         let (pop, _) = ContiguousMut::split(pop);
@@ -295,6 +435,13 @@ fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut P
                 // Values are positive, so +0.5 and truncation round to nearest
                 // without calling the software `round`.
                 *p = if kk > 0.0 { (kk * pp / (pp + (kk - pp) * d) + 0.5) as i64 } else { (pp * d + 0.5) as i64 };
+                // Urban graveyard: the city share of the tile loses its
+                // excess deaths; only migration refills it.
+                let u = urban[i].0;
+                if u > 0 {
+                    let city = *p as f64 * (u as f64 / FX as f64);
+                    *p -= (city * (1.0 - keep) + 0.5) as i64;
+                }
             }
             let land = land[i].0;
             let below = land <= 0 || *p < c.merge_density * land;
@@ -423,19 +570,19 @@ fn split(world: &mut World, idx: &mut TileIndex, c: &TickConst, k: Key) -> bool 
     let parent = world.get::<Pop>(e).expect("pop").0 as i128;
     world.despawn(e);
     let kids = k.children();
-    let parts: Vec<(i64, i64)> = {
+    let parts: Vec<(i64, i64, UrbanShare)> = {
         let db = &world.resource::<InputDb>().0;
         kids.iter()
             .map(|&ch| {
                 let (local, urban, land) = db.capacity_parts(ch);
-                (to_fx(local + urban), to_fx(land))
+                (to_fx(local + urban), to_fx(land), urban_share(local, urban))
             })
             .collect()
     };
     let ksum: i128 = parts.iter().map(|p| p.0 as i128).sum();
     let lsum: i128 = parts.iter().map(|p| p.1 as i128).sum();
     let mut given = 0i128;
-    for (i, (&ch, &(cap, land))) in kids.iter().zip(parts.iter()).enumerate() {
+    for (i, (&ch, &(cap, land, urban))) in kids.iter().zip(parts.iter()).enumerate() {
         // S33: weight by capacity, else by land; the last child takes the rest.
         let p = if i == 3 {
             parent - given
@@ -447,7 +594,7 @@ fn split(world: &mut World, idx: &mut TileIndex, c: &TickConst, k: Key) -> bool 
             parent / 4
         };
         given += p;
-        let ent = world.spawn((TileKey(ch), Pop(p.max(0) as i64), Cap(cap), Land(land), MonthsLow(0), Neighbors::default(), Moved(0))).id();
+        let ent = world.spawn((TileKey(ch), Pop(p.max(0) as i64), Cap(cap), Land(land), MonthsLow(0), Neighbors::default(), Moved(0), urban)).id();
         idx.leaves.insert(ch, ent);
         idx.born.push(ch);
     }
@@ -499,7 +646,7 @@ fn merge(world: &mut World, idx: &mut TileIndex, q: Key) {
         }
     }
     let (local, urban, land) = world.resource::<InputDb>().0.capacity_parts(q);
-    let e = world.spawn((TileKey(q), Pop(p), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0))).id();
+    let e = world.spawn((TileKey(q), Pop(p), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0), urban_share(local, urban))).id();
     idx.leaves.insert(q, e);
     idx.born.push(q);
     idx.internal.remove(&q);
@@ -553,6 +700,9 @@ impl Sim {
             adaptive: params.adaptive,
             migration_rate: params.migration_rate,
             migration_threshold: params.migration_threshold,
+            urban_keep_q32: exp_neg_q32((params.urban_excess_death / 12.0 * Q32 as f64).round() as i128),
+            city_pull_rate: params.city_pull_rate,
+            city_draw_cap: params.city_draw_cap,
         };
         let db = Inputs::new(params, &[], cells, cities);
         let mut world = World::new();
@@ -560,7 +710,7 @@ impl Sim {
         for &k in start {
             let (local, urban, land) = db.capacity_parts(k);
             let p = db.start_population(k, local, urban);
-            let e = world.spawn((TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0))).id();
+            let e = world.spawn((TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0), urban_share(local, urban))).id();
             idx.leaves.insert(k, e);
             idx.born.push(k);
             let mut a = k;
@@ -575,6 +725,7 @@ impl Sim {
         world.insert_resource(idx);
         world.insert_resource(Candidates::default());
         world.insert_resource(Scratch::default());
+        world.insert_resource(Regions::of(start));
         world.insert_resource(Stats::default());
         // Any two systems that touch the same data without an order are a
         // build error, so the result can never depend on thread timing.
@@ -585,7 +736,7 @@ impl Sim {
         // overlap and only adds about 60 µs of wake-up cost per tick; the
         // parallelism is inside growth (parallel chunks on the task pool).
         monthly.set_executor(bevy_ecs::schedule::SingleThreadedExecutor::new());
-        monthly.add_systems((migrate, growth, collect, structure).chain_weak());
+        monthly.add_systems((migrate, city_draw, growth, collect, structure).chain_weak());
         let views = world.query::<(&TileKey, &Pop, &Cap, &Land, &Moved)>();
         let mut sim = Sim {
             world,
@@ -752,7 +903,7 @@ mod tests {
 
     #[test]
     fn splitting_conserves_population_exactly() {
-        let still = Params { migration_rate: 0.0, ..Params::default() };
+        let still = Params { migration_rate: 0.0, urban_excess_death: 0.0, city_pull_rate: 0.0, ..Params::default() };
         let mut s = sim(still.clone());
         let mut q = s.world.query::<&Pop>();
         let before: i64 = q.iter(&s.world).map(|p| p.0).sum();
@@ -794,8 +945,8 @@ mod tests {
 
     #[test]
     fn matches_reference_within_rounding() {
-        // The reference has no migration.
-        let mut s = sim(Params { migration_rate: 0.0, ..Params::default() });
+        // The reference has no migration and no urban excess deaths.
+        let mut s = sim(Params { migration_rate: 0.0, urban_excess_death: 0.0, city_pull_rate: 0.0, ..Params::default() });
         let mut cells = HashMap::new();
         for r in 0..4 {
             for c in 0..4 {
@@ -874,5 +1025,33 @@ mod tests {
             let want: Vec<Entity> = leaf_neighbors(idx, k).iter().map(|n| idx.leaves[n]).collect();
             assert_eq!(*s.world.get::<Neighbors>(e).unwrap(), Neighbors::of(&want), "{}", k.id());
         }
+    }
+
+    /// Population of the leaves that cover the big test city (x 30 km, z 30 km).
+    fn city_pop(s: &mut Sim) -> f64 {
+        s.snapshot()
+            .tiles
+            .iter()
+            .filter(|t| {
+                let (size, x0, z0) = (t.key.size_m(), t.key.col as f64 * t.key.size_m(), t.key.row as f64 * t.key.size_m());
+                (x0..x0 + size).contains(&30_000.0) && (z0..z0 + size).contains(&30_000.0)
+            })
+            .map(|t| t.pop)
+            .sum()
+    }
+
+    #[test]
+    fn cities_shrink_alone_and_are_refilled_by_migration() {
+        let years = 50 * 12;
+        let mut alone = sim(Params { migration_rate: 0.0, city_pull_rate: 0.0, ..Params::default() });
+        let mut fed = sim(Params::default());
+        let start = city_pop(&mut alone);
+        for _ in 0..years {
+            alone.tick();
+            fed.tick();
+        }
+        let (a, f) = (city_pop(&mut alone), city_pop(&mut fed));
+        assert!(a < start, "without migration the city loses people: {start:.0} -> {a:.0}");
+        assert!(f > a, "migration from the countryside refills it: {a:.0} vs {f:.0}");
     }
 }

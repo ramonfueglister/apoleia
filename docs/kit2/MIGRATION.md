@@ -70,3 +70,32 @@ ist statisch. Damit gibt es fast keinen Attraktivitätsunterschied; die Wanderun
 die Startunterschiede um die Städte aus und kommt dann zum Stillstand. Sie wird erst wirksam,
 wenn sich K oder P örtlich ändern: Ernten/Hunger, Verwüstung, oder Städte mit eigener
 Sterblichkeit, die laufend Zuzug brauchen.
+
+## Mechanik 2: Städte mit Sterbeüberschuss (27.10.2026)
+
+Vorbild: Wrigley 1967 (London braucht laufend Zuzug, Sterbeüberschuss rund 1 %/Jahr) und
+de Vries 1984 (das Land schickt seinen Geburtenüberschuss in die Städte).
+
+- **Sterbeüberschuss:** Der Stadtanteil `u` eines Tiles (aus `cities.csv`) verliert jeden Monat
+  `urban_excess_death = 1 %/Jahr`. Ohne Zuzug schrumpft jede Stadt.
+- **Sog:** Jede Stadt fragt `city_pull_rate · u · (K − P)` Menschen pro Monat nach (freie
+  Plätze: Arbeit und Brot). Die Nachfrage wird auf das Land der 3×3 umliegenden
+  200-km-Wurzelquadrate verteilt.
+- **Nur der Überschuss geht:** Ein Land-Tile gibt höchstens seinen eigenen logistischen
+  Monatszuwachs ab (die landlosen Kinder). Ein ausgedünntes Umland schickt also weniger,
+  statt leerzulaufen. Ohne diese Grenze (erster Versuch, Obergrenze 0,2 %/Monat) fiel die
+  Gesamtbevölkerung in 1600 Jahren von 66 auf 34 Mio., weil die Städte mehr verlangten, als
+  das Land nachwachsen lassen kann.
+- Verteilt wird in ID-Reihenfolge, die letzte Stadt bekommt den Rest; die Summe bleibt exakt.
+
+Lauf 1600 Jahre HYDE 3.3 (Container):
+
+| Jahr | Gesamt | Rom (K 921 K) | Umland Rom < 300 km, Füllung |
+|---|---|---|---|
+| 180 | 66,1 Mio. | 925 K | 0,77–0,88 |
+| 580 | 70,2 Mio. | 790 K | 0,81–0,84 |
+| 1780 | 71,4 Mio. | 781 K | 0,81–0,83 |
+
+Ergebnis: stabiles Gleichgewicht. Rom hält sich bei rund 85 % seiner Kapazität, das Umland
+bleibt voll, die Gesamtzahl nähert sich K von unten. Tick p50 1,8 ms im Container
+(Mac-Messung folgt).
