@@ -188,8 +188,12 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float sfade=1.0-smoothstep(0.3,0.9,max(min(length(dFdx(p)),length(dFdy(p))),0.001)/0.4*2.0);
     // Where the speckles are not resolved (mid), the dry tone is weak.
     float dry=mix(dry_zone,dry_zone*mix(0.3,land_edge(speck,0.62),sfade),1.0-overview);
-    // Bare land below the tree line is sand/steppe, not rock.
-    float sand=use_land_cover ? land_edge(soft.g+edge*0.2,0.5)*(1.0-smoothstep(900.0,1300.0,h)) : 0.0;
+    // Bare land: sand/steppe low down, rock above ~1400 m real. A hard,
+    // noise-warped split: the soft height fade left pale, translucent sand
+    // patches on Alpine slopes.
+    float bare=use_land_cover ? land_edge(soft.g+edge*0.2,0.5) : 0.0;
+    float bare_high=land_edge(h+edge*160.0,1050.0);
+    float sand=bare*(1.0-bare_high);
 
     // Neighbourhood relief from the represented height (near only).
     // Relief position (h minus its 4.5 km ring mean) is precomputed in the
@@ -205,7 +209,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float midv=smoothstep(0.2,0.45,footprint)*(1.0-overview);
     // Near views (~160-350 km wide): colour masses as hard painted steps.
     float cfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
-    float crisp=smoothstep(0.06,0.12,cfoot)*(1.0-smoothstep(0.5,0.8,cfoot))*(1.0-overview);
+    // Down to ~20 km wide views as well: below 0.06 km/px the soft masses
+    // read as blurred camouflage blotches. Calmer there (lower contrast).
+    float crisp=smoothstep(0.012,0.025,cfoot)*(1.0-smoothstep(0.5,0.8,cfoot))*(1.0-overview);
+    var_amt*=mix(0.75,1.0,smoothstep(0.03,0.07,cfoot));
     grass=mix(grass,land_lime_color.rgb,land_crisp(0.45,0.70,mix(meso,nz.a,midv),crisp)*0.4*var_amt*mix(1.0,0.4,midv));
     grass=mix(grass,land_ochre_color.rgb,land_crisp(0.55,0.80,macro*0.6+meso*0.4,crisp)*0.6*var_amt*mix(0.4,1.0,overview));
     grass=mix(grass,land_olive_color.rgb,land_crisp(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4,crisp)*0.85*var_amt);
@@ -230,7 +237,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     grass=mix(grass,mix(land_lime_color.rgb,land_grass_color.rgb,0.4),valley_floor*0.9);
     hill_country*=1.0-valley_floor;
     vec3 floor_tone=land_forest_floor_color.rgb;
-    vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
+    // Near views (~0.1-0.4 km/px): drawn crowns carry the forest dark; the
+    // ground under them stays closer to meadow (no mid-tone carpet).
+    float crowns_carry=smoothstep(0.05,0.1,cfoot)*(1.0-smoothstep(0.4,0.7,cfoot))*(1.0-overview);
+    vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8)*(1.0-0.45*crowns_carry));
     // Close views (<~0.12 km/px): crop land mostly meadow, only a hint of dry tone.
     float close_dry=1.0-0.6*(1.0-smoothstep(0.05,0.12,max(min(length(dFdx(p)),length(dFdy(p))),0.001)));
     ground=mix(ground,land_dry_color.rgb,dry*0.6*close_dry*(1.0-hill_country*0.6));
@@ -257,7 +267,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
     float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
     // Near: crowns carry the dark, the ground only hints at the forest.
-    float fg_strength=mix(mix(0.45,0.6,smoothstep(0.25,0.5,footprint)),0.85,overview);
+    float fg_strength=mix(mix(0.45,0.6,smoothstep(0.25,0.5,footprint)),0.85,overview)*(1.0-0.35*crowns_carry);
     ground=mix(ground,land_forest_ground_color.rgb,forest_ground*fg_strength*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
@@ -292,6 +302,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     rock_field=max(rock_field,smoothstep(1780.0,1840.0,h));
     // Mid zoom: the high Alps as a closed light rock massif (real > ~1900 m).
     rock_field=max(rock_field,smoothstep(1220.0,1300.0,h)*smoothstep(0.2,0.45,footprint));
+    // High bare land (scree, outcrops) is rock, not sand (near and mid only).
+    rock_field=max(rock_field,bare*bare_high*(1.0-overview));
     float rock=land_edge(rock_field+edge*0.25,0.5);
 
     // Normals: stable facet lattice on the represented form (near only).
@@ -380,6 +392,10 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview)*smoothstep(0.08,0.2,cfoot);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
 
+    // Open ground a touch warmer from ~0.1 km/px out (reference meadow hue
+    // ~56 deg, measured 62-66 here); the 40 km plains keep their lime.
+    float warm=(1.0-forest_ground)*(1.0-rock)*smoothstep(0.06,0.12,cfoot);
+    ground*=mix(vec3(1.0),vec3(1.12,1.02,0.93),warm);
     // Crown hand-off: clipmap crowns end at view_width 2048; the forest tone
     // is complete there (crown colour x forest share), so zooming out
     // leaves no gap between drawn trees and painted forest.
