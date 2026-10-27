@@ -65,7 +65,7 @@ const EQUITES: usize = 60;
 // PLACEHOLDER values for what S63–S66 leave open. Ages after Saller (first
 // marriage: commoner women late teens, men late 20s; elite earlier).
 /// Age from which a family looks for a spouse: (women, men) by estate.
-const MARRY_AGE: [(f64, f64); 4] = [(15.0, 25.0), (15.0, 25.0), (13.0, 20.0), (13.0, 20.0)];
+const MARRY_AGE: [(f64, f64); 4] = [(15.0, 20.0), (15.0, 20.0), (13.0, 20.0), (13.0, 20.0)];
 /// Women are not sought after this age.
 const MARRY_AGE_MAX_F: f64 = 45.0;
 /// Preferred age gap husband − wife in years (Saller: about 10).
