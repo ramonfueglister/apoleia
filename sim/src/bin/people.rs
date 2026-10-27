@@ -65,16 +65,33 @@ fn main() {
     let (mut plain, mut month, mut year) = (Vec::new(), Vec::new(), Vec::new());
     let mut all = Vec::new();
     let mut worst = (0.0, 0);
-    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal");
+    let mut worst_parts = String::new();
+    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal  rss_mb");
     for y in 1..=years {
         p.stats = Default::default();
         for _ in 0..360 {
+            let before = p.timing;
             let t = Instant::now();
             let (m, yr) = p.day();
             let us = t.elapsed().as_secs_f64() * 1e6;
             all.push(us);
             if us > worst.0 {
+                let a = p.timing;
                 worst = (us, all.len());
+                worst_parts = format!(
+                    "events={:.0} needs={:.0} travel={:.0} health={:.0} marriage={:.0} relations={:.0} trips={:.0} jobs={:.0} migration={:.0} index={:.0} pops={:.0}",
+                    a.events - before.events,
+                    a.needs - before.needs,
+                    a.travel - before.travel,
+                    a.health - before.health,
+                    a.marriage - before.marriage,
+                    a.relations - before.relations,
+                    a.trips - before.trips,
+                    a.jobs - before.jobs,
+                    a.migration - before.migration,
+                    a.index - before.index,
+                    a.pops - before.pops
+                );
             }
             match (m, yr) {
                 (_, true) => year.push(us),
@@ -86,7 +103,7 @@ fn main() {
         let (mw, w, health, hungry) = p.census();
         let m = s.marriages.max(1) as f64;
         println!(
-            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:6.1} {:7} {:8}",
+            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:6.1} {:7} {:8} {:6.0}",
             p.count,
             s.births,
             s.deaths.iter().sum::<u64>(),
@@ -106,7 +123,8 @@ fn main() {
             s.left_map,
             health,
             hungry,
-            p.scheduled()
+            p.scheduled(),
+            rss_mb()
         );
     }
     println!(
@@ -124,7 +142,7 @@ fn main() {
         apoleia_sim::people::CAP
     );
     let _ = plain;
-    println!("slowest day: {:.0} us on day {}", worst.0, worst.1);
+    println!("slowest day: {:.0} us on day {} ({worst_parts})", worst.0, worst.1);
     let days = (years * 360) as f64;
     let t = p.timing;
     println!(

@@ -510,6 +510,14 @@ pub struct People {
     /// Food capacity K and people per cell, in simulated people.
     pub food: Vec<f32>,
     pub pop: Vec<u32>,
+    /// Food is shared within a region through its market (S70), so food per
+    /// person is counted per region: dense region index per cell (NONE at
+    /// sea), region key, food and people per region.
+    cell_region: Vec<u32>,
+    region_key: Vec<u32>,
+    region_index: FxHashMap<u32, u32>,
+    pub region_food: Vec<f32>,
+    pub region_pop: Vec<u32>,
     cal: Calendar,
     pub timing: Timing,
     pub stats: Stats,
@@ -648,7 +656,15 @@ impl People {
                 )
             })
             .collect();
+        // Reserve table rows up to the cap (S59), so later births never
+        // regrow the tables (a regrow copies every column, 50–80 ms).
+        let spare = (CAP as usize).saturating_sub(batch.len());
+        let template = batch[0];
         let ent: Vec<Entity> = world.spawn_batch(batch).collect();
+        let dummies: Vec<Entity> = world.spawn_batch(std::iter::repeat_n(template, spare)).collect();
+        for e in dummies {
+            world.despawn(e);
+        }
         let count = seeds.len() as u32;
         let t0 = std::time::Instant::now();
         let mut dests = places.clone();
@@ -676,7 +692,29 @@ impl People {
         for s in &seeds {
             pop[s.home as usize] += 1;
         }
+        let mut cell_region = vec![NONE; grid.kind.len()];
+        let mut region_key: Vec<u32> = region_cells.keys().copied().collect();
+        region_key.sort_unstable();
+        let region_index: FxHashMap<u32, u32> = region_key.iter().enumerate().map(|(i, &k)| (k, i as u32)).collect();
+        let mut region_food = vec![0f32; region_key.len()];
+        let mut region_pop = vec![0u32; region_key.len()];
+        for (&k, cells) in &region_cells {
+            for &c in cells {
+                cell_region[c as usize] = region_index[&k];
+            }
+        }
+        for c in 0..grid.kind.len() {
+            if cell_region[c] != NONE {
+                region_food[cell_region[c] as usize] += food[c];
+                region_pop[cell_region[c] as usize] += pop[c];
+            }
+        }
         let mut p = People {
+            cell_region,
+            region_key,
+            region_index,
+            region_food,
+            region_pop,
             world,
             grid,
             places,
@@ -744,6 +782,24 @@ impl People {
         }
     }
 
+    /// Add `d` people to a cell (and its region).
+    fn add_pop(&mut self, cell: u32, d: i32) {
+        let c = cell as usize;
+        self.pop[c] = (self.pop[c] as i32 + d) as u32;
+        let r = self.cell_region[c];
+        if r != NONE {
+            self.region_pop[r as usize] = (self.region_pop[r as usize] as i32 + d) as u32;
+        }
+    }
+
+    /// Food per person in the region of `cell` with `add` more people.
+    fn share(&self, cell: u32, add: u32) -> f64 {
+        match self.cell_region[cell as usize] {
+            NONE => 0.0,
+            r => self.region_food[r as usize] as f64 / (self.region_pop[r as usize] + add).max(1) as f64,
+        }
+    }
+
     fn alive(&self, pid: u32) -> Option<Entity> {
         self.ent.get(pid as usize).copied().filter(|&e| e != Entity::PLACEHOLDER)
     }
@@ -755,7 +811,7 @@ impl People {
         let n = self.next_pid as usize;
         // Per id: home, flags (1 groom, 2 bride), stand; NONE home = gone.
         let mut row = vec![(NONE, 0u8, 0u8); n];
-        let parts: Parallel<Vec<(u32, (u32, u8, u8))>> = Parallel::default();
+        let mut parts: Parallel<Vec<(u32, (u32, u8, u8))>> = Parallel::default();
         let mut q = self.world.query::<(&Pid, &Home, &Born, &Sex, &Stand, &Spouse, Has<Travel>)>();
         q.par_iter(&self.world).for_each_init(
             || parts.borrow_local_mut(),
@@ -772,8 +828,8 @@ impl People {
                 out.push((pid.0, (h.0, f, st.0)));
             },
         );
-        for v in parts.into_inner() {
-            for (pid, r) in v {
+        for v in parts.iter_mut() {
+            for &(pid, r) in v.iter() {
                 row[pid as usize] = r;
             }
         }
@@ -880,6 +936,9 @@ impl People {
             self.timing.pops += us(t0);
         }
         self.peak = self.peak.max(self.count);
+        // Removal and change trackers grow without bound unless cleared
+        // once per tick (a Bevy app does this every frame).
+        self.world.clear_trackers();
         (month, yslice == 0)
     }
 
@@ -928,7 +987,7 @@ impl People {
             self.world.get_mut::<Sched>(se).unwrap().birth += 1;
         }
         if !leaving {
-            self.pop[home as usize] -= 1;
+            self.add_pop(home, -1);
         }
         self.world.despawn(e);
         self.ent[pid as usize] = Entity::PLACEHOLDER;
@@ -964,12 +1023,14 @@ impl People {
             (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel),
             (f.1, f.2, f.3, Spouse(NONE), Parents(father, mother), Sched::default(), Search(0)),
         ));
+        let leaving = travel.is_some();
         if let Some(t) = travel {
             ec.insert(t);
-        } else {
-            self.pop[m_home as usize] += 1;
         }
         let e = ec.id();
+        if !leaving {
+            self.add_pop(m_home, 1);
+        }
         self.ent.push(e);
         self.traits.push(traits);
         self.count += 1;
@@ -996,13 +1057,14 @@ impl People {
     /// day's 1/30 of every table, so each person about once a month.
     fn health(&mut self, day: i64, slice: u32) {
         let mut redo = Vec::new();
-        let (food, pop) = (&self.food, &self.pop);
+        let (food, pop, region) = (&self.region_food, &self.region_pop, &self.cell_region);
         let mut q = self.world.query_filtered::<(&Pid, &Home, &Born, &Sex, &Spouse, &mut Health, &mut Sched), Without<Travel>>();
         for (pid, home, born, sex, spouse, health, sched) in q.contiguous_iter_mut(&mut self.world).expect("people live in tables") {
             let (health, _) = ContiguousMut::split(health);
             let (sched, _) = ContiguousMut::split(sched);
             for i in part(pid.len(), slice, MONTH) {
-                let share = food[home[i].0 as usize] as f64 / pop[home[i].0 as usize].max(1) as f64;
+                let r = region[home[i].0 as usize] as usize;
+                let share = food[r] as f64 / pop[r].max(1) as f64;
                 let target = (1000.0 * share.min(1.0)) as i32;
                 let h = health[i].0 as i32;
                 let new = (h + (target - h) / HEALTH_STEP) as u16;
@@ -1056,7 +1118,7 @@ impl People {
                 self.world.get::<Household>(ge).unwrap().0,
             );
             // S65: without free land the family waits.
-            if self.pop[home as usize] as f32 >= self.food[home as usize]
+            if self.share(home, 0) <= 1.0
                 && rnd(seed, g, 0x1a2d, day) % 16 >= NO_LAND_MARRY_PER_16
             {
                 self.stats.waited_for_land += 1;
@@ -1145,8 +1207,8 @@ impl People {
         self.world.get_mut::<Spouse>(ge).unwrap().0 = b;
         self.world.get_mut::<Search>(ge).unwrap().0 = 0;
         let old = self.world.get::<Home>(be).unwrap().0;
-        self.pop[old as usize] -= 1;
-        self.pop[home as usize] += 1;
+        self.add_pop(old, -1);
+        self.add_pop(home, 1);
         let mut w = self.world.entity_mut(be);
         w.get_mut::<Spouse>().unwrap().0 = g;
         w.get_mut::<Home>().unwrap().0 = home;
@@ -1170,8 +1232,9 @@ impl People {
 
     /// Households in need compare their cell with the reachable ones about
     /// once a year and move; with nothing better they leave the map (S66).
-    /// PLACEHOLDER: need = food share below 1; reachable = own and the eight
-    /// neighbouring 100 km regions; better = higher food share after moving.
+    /// PLACEHOLDER: need = food per person in the region below 1; reachable
+    /// = the eight neighbouring 100 km regions; better = more food per
+    /// person there after moving.
     fn migration(&mut self, day: i64, yslice: u32) {
         let mut moves: Vec<(Vec<u32>, Option<u32>)> = Vec::new();
         for &(i, j) in &self.hh_slices[yslice as usize] {
@@ -1182,20 +1245,25 @@ impl People {
                 .collect();
             let Some(&first) = members.first() else { continue };
             let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
-            let share = |c: u32, add: u32| self.food[c as usize] as f64 / (self.pop[c as usize] + add).max(1) as f64;
-            let now = share(home, 0);
+            let now = self.share(home, 0);
             if now < 1.0 {
+                // The best region around (food per person once they are
+                // there), and in it the cell with the most free food.
                 let n = members.len() as u32;
-                let mut best = (now, None);
-                for r in Grid::regions_around(self.grid.region(home)) {
-                    for &c in self.region_cells.get(&r).map_or(&[][..], |v| v) {
-                        let s = share(c, n);
-                        if c != home && s > best.0 {
-                            best = (s, Some(c));
-                        }
+                let own = self.cell_region[home as usize];
+                let mut best = (now, NONE);
+                for k in Grid::regions_around(self.grid.region(home)) {
+                    let Some(&r) = self.region_index.get(&k) else { continue };
+                    let s = self.region_food[r as usize] as f64 / (self.region_pop[r as usize] + n) as f64;
+                    if r != own && s > best.0 {
+                        best = (s, r);
                     }
                 }
-                moves.push((members, best.1));
+                let to = (best.1 != NONE).then(|| {
+                    let cells = &self.region_cells[&self.region_key[best.1 as usize]];
+                    *cells.iter().max_by(|&&a, &&b| (self.food[a as usize] - self.pop[a as usize] as f32).total_cmp(&(self.food[b as usize] - self.pop[b as usize] as f32)).then(b.cmp(&a))).unwrap()
+                });
+                moves.push((members, to));
             }
         }
         let at = |p: &Self, pid: u32| p.world.get::<Home>(p.ent[pid as usize]).unwrap().0;
@@ -1205,8 +1273,8 @@ impl People {
                 Some(c) => {
                     for &m in &members {
                         let old = at(self, m);
-                        self.pop[old as usize] -= 1;
-                        self.pop[c as usize] += 1;
+                        self.add_pop(old, -1);
+                        self.add_pop(c, 1);
                         self.world.get_mut::<Home>(self.ent[m as usize]).unwrap().0 = c;
                     }
                     self.stats.moved_households += 1;
@@ -1215,7 +1283,7 @@ impl People {
                 None => {
                     for &m in &members {
                         let old = at(self, m);
-                        self.pop[old as usize] -= 1;
+                        self.add_pop(old, -1);
                         self.world.entity_mut(self.ent[m as usize]).insert(Travel { to: old, at: old, km: 0, back: false, leave: true, path: Vec::new() });
                     }
                     self.stats.left_households += 1;
@@ -1465,7 +1533,7 @@ impl People {
             }
             h += he.0 as f64;
             n += 1;
-            if self.pop[home.0 as usize] as f32 > self.food[home.0 as usize] {
+            if self.share(home.0, 0) < 1.0 {
                 hungry += 1;
             }
         }
