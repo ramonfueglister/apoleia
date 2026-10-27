@@ -2652,7 +2652,10 @@ func _widen_river_mouths() -> void:
 # Display deltas: an area mask per delta (delta_lagoon.gdshaderinc) instead of band
 # arms. The main course stays a river band and ends in a lagoon with organic
 # islands, sand rims and a beach arc with inlets. Radii in model units
-# (km), along the coast (ra) and inland (rb).
+# (km), along the coast (ra) and inland (rb), for the arms; the lagoon
+# region is LAGOON_SCALE larger (Roman-era coasts had broad lagoons, e.g.
+# the Stagni di Ostia and Maccarese either side of the Tiber).
+const LAGOON_SCALE=Vector2(1.7,1.8)
 const RIVER_DELTAS=[
     {"name":"Tevere","ra":7.0,"rb":4.5},
     {"name":"Po","ra":20.0,"rb":11.0},
@@ -2701,8 +2704,8 @@ func _setup_river_deltas() -> void:
 func _bind_delta_uniforms() -> void:
     var frames=PackedVector4Array();var shapes=PackedVector4Array()
     for region in delta_regions.slice(0,6):
-        frames.append(Vector4(region.center.x,region.center.y,region.sea.x,region.sea.y))
-        shapes.append(Vector4(region.ra,region.rb,region.seed,0.0))
+        frames.append(Vector4(region.mouth.x,region.mouth.y,region.sea.x,region.sea.y))
+        shapes.append(Vector4(region.ra*LAGOON_SCALE.x,region.rb*LAGOON_SCALE.y,region.seed,0.0))
     var values={"delta_count":frames.size()}
     if not frames.is_empty():values["delta_frame"]=frames;values["delta_shape"]=shapes
     for uniform_name in values:
@@ -2711,21 +2714,27 @@ func _bind_delta_uniforms() -> void:
         if clipmap_runtime:clipmap_runtime.set_land_parameter(uniform_name,values[uniform_name])
 
 # Deltas sit on the rendered (tile) coast; the CPU distance field can be km
-# off it (Po: the barrier came out 8-10 km inland). Re-anchored on the tile
-# coast whenever a finer drawn tile covers the mouth: from 15 km out at sea,
-# the first land sample inland.
+# off it (Po: the tile delta lobe reaches 20-30 km further out, the barrier
+# came out inland). Re-anchored on the tile coast whenever a finer drawn
+# tile covers the mouth: from the old mouth along the sea direction, out to
+# the last land sample if it is land (up to 60 km), else in to the first.
 func _anchor_deltas() -> void:
     if delta_regions.is_empty() or not clipmap_runtime or not clipmap_runtime.metrics.root_ready:return
     var moved=false
     for region in delta_regions:
-        var probe:Vector2=clipmap_runtime.water_distance_at(region.mouth)
+        var probe:Vector3=clipmap_runtime.water_distance_at(region.mouth)
         if is_nan(probe.x) or probe.y>2000.0 or probe.y>=float(region.anchor_texel)*0.75:continue
-        var sea:Vector2=region.sea;var start:Vector2=Vector2(region.mouth)+sea*15.0
-        var coast_point:=Vector2.ZERO;var found=false
-        for k in range(240):
-            var d=clipmap_runtime.water_distance_at(start-sea*0.25*float(k)).x
-            if is_nan(d) or (k==0 and d<0.0):break
-            if d<0.0:coast_point=start-sea*0.25*float(k);found=true;break
+        var sea:Vector2=region.sea;var mouth:Vector2=region.mouth
+        # Lakes and lagoons inside the delta do not count as the sea.
+        var outward=probe.z<0.5
+        var coast_point:=Vector2.ZERO;var found=false;var covered=true
+        for k in range(1,241):
+            var q=mouth+sea*0.25*float(k)*(1.0 if outward else -1.0)
+            var sample:Vector3=clipmap_runtime.water_distance_at(q)
+            if is_nan(sample.x):covered=false;break
+            if outward and sample.z>0.5:coast_point=q-sea*0.25;found=true;break
+            if not outward and sample.z<0.5:coast_point=q;found=true;break
+        if not covered and not found:continue
         region.anchor_texel=probe.y
         if not found:continue
         var shift:Vector2=coast_point-Vector2(region.mouth)

@@ -7,9 +7,10 @@
 // drawn over the land, so they cut the barrier as inlets and run through the
 // islands as channels. Needs wl_noise (water_look.gdshaderinc).
 uniform int delta_count=0;
-// xy centre, zw unit direction towards the sea (model units, km).
+// xy mouth on the tile coast, zw unit direction towards the sea (model
+// units, km).
 uniform vec4 delta_frame[6];
-// x radius along the coast, y radius inland (km), z seed.
+// x lagoon radius along the coast, y inland (km), z seed.
 uniform vec4 delta_shape[6];
 
 struct DeltaMask {float barrier;float lagoon;float rim;float marsh;float shallow;};
@@ -27,26 +28,31 @@ DeltaMask delta_mask(vec2 p,float land_m,float px_m,float view_width) {
         if(i>=delta_count) break;
         vec2 sea=delta_frame[i].zw;
         vec2 tangent=vec2(-sea.y,sea.x);
-        vec2 q=p-delta_frame[i].xy;
         vec2 radii=delta_shape[i].xy;
         float seed=delta_shape[i].z;
+        // Ellipse centred a little inland of the mouth.
+        vec2 q=p-delta_frame[i].xy+sea*radii.y*0.55;
         vec2 local=vec2(dot(q,tangent)/radii.x,dot(q,-sea)/radii.y);
         // Radial fade, so the effect never ends at a hard edge.
         float region=1.0-smoothstep(0.7,1.0,length(local*vec2(0.85,1.0)));
         if(region<=0.0) continue;
-        // Barrier beach: 0.55-0.85 km of sand along the coast, >= 3 px.
-        float bw=max(px_m*3.0,550.0+300.0*dl_fbm(p*0.4+vec2(seed)));
+        // The tile coast distance saturates at ~4 km; beyond ~3 km it
+        // continues as the distance from the coast line through the mouth.
+        float line_m=dot(delta_frame[i].xy-p,sea)*1000.0;
+        float inland_m=land_m>0.0 ? mix(land_m,max(land_m,line_m),smoothstep(2800.0,3600.0,land_m)) : 0.0;
+        // Barrier beach: 1.0-1.6 km of sand along the coast, >= 3 px (the
+        // reference near view shows a broad spit).
+        float bw=max(px_m*3.0,1000.0+600.0*dl_fbm(p*0.4+vec2(seed)));
         m.barrier=(1.0-smoothstep(bw-max(px_m,40.0),bw,land_m))*region;
-        // Lagoon belt behind it, deepest in front of the centre. The tile
-        // coast distance saturates at ~4 km, so the belt stays within 3.4 km.
-        float belt_m=min(radii.y*mix(350.0,900.0,1.0-clamp(abs(local.x),0.0,1.0)),3400.0-bw);
-        float behind=max(land_m-bw,0.0)/max(belt_m,100.0);
+        // Lagoon belt behind it, deepest in front of the centre.
+        float belt_m=radii.y*mix(350.0,900.0,1.0-clamp(abs(local.x),0.0,1.0));
+        float behind=max(inland_m-bw,0.0)/max(belt_m,100.0);
         float bias=(1.0-smoothstep(0.0,1.0,behind))*region;
-        // Organic islands: domain-warped noise (features ~1-2 km); more water
+        // Organic islands: domain-warped noise (features ~2-3 km); more water
         // near the barrier, single ponds inland. Fades out where islands
         // would fall below a few pixels.
-        vec2 warp=vec2(dl_fbm(p*0.45+vec2(seed,1.7)),dl_fbm(p*0.45+vec2(5.2,seed)))-0.5;
-        float n=dl_fbm(p*0.9+warp*2.2+vec2(seed*0.37));
+        vec2 warp=vec2(dl_fbm(p*0.3+vec2(seed,1.7)),dl_fbm(p*0.3+vec2(5.2,seed)))-0.5;
+        float n=dl_fbm(p*0.55+warp*2.0+vec2(seed*0.37));
         float thr=mix(0.70,0.32,bias);
         float aa=max(fwidth(n)*0.8,0.004);
         float detail=(1.0-smoothstep(350.0,800.0,view_width))*smoothstep(0.0,0.08,bias)*(1.0-m.barrier);
@@ -56,7 +62,7 @@ DeltaMask delta_mask(vec2 p,float land_m,float px_m,float view_width) {
         m.rim=smoothstep(thr-aa-rim_w,thr-aa,n)*(1.0-smoothstep(thr-aa,thr+aa,n))*detail;
         m.shallow=1.0-smoothstep(thr+aa,thr+0.09,n);
         // Marsh: richer green on the islands and the delta plain.
-        m.marsh=(bias*0.75+(1.0-smoothstep(0.5,0.95,length(local*vec2(0.8,1.0))))*0.25)*region;
+        m.marsh=(bias*0.85+(1.0-smoothstep(0.5,0.95,length(local*vec2(0.8,1.0))))*0.3)*region;
         break;
     }
     return m;
