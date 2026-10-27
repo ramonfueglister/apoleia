@@ -39,12 +39,28 @@ eigene Annahmen und werden kalibriert.
 
 | ID | Entscheidung |
 |---|---|
-| S30 | **Eine Zahl pro Tile.** Gespeichert als Liste von Gruppen mit zunächst einer Gruppe, damit ein späterer Ausbau auf Vic3-Niveau eine Erweiterung ist. |
+| S30 | **Ersetzt durch S53 (27.10.2026).** Bisher: Eine Zahl pro Tile. Gespeichert als Liste von Gruppen mit zunächst einer Gruppe, damit ein späterer Ausbau auf Vic3-Niveau eine Erweiterung ist. |
 | S31 | **Kapazität aus Nahrung:** K = Nahrung / Bedarf pro Kopf. Nahrung = Ackerfläche × Boden × Klima (+ Importe, sobald Handel existiert). Keine feste Tabelle wie in EU5. |
-| S32 | **Wachstum logistisch:** dP = r × P × (1 − P/K) pro Monat, r je Epoche, Modifikatoren nur als Faktoren. P ist eine Kommazahl. Liegt P über K, schrumpft P über dieselbe Formel. |
+| S32 | **Ersetzt durch S54 (27.10.2026).** Bisher: Wachstum logistisch: dP = r × P × (1 − P/K) pro Monat, r je Epoche, Modifikatoren nur als Faktoren. P ist eine Kommazahl. Liegt P über K, schrumpft P über dieselbe Formel. |
 | S33 | **Teilen:** P_kind = P × K_kind / ΣK_kinder (sonst nach Landfläche; ohne Land kein Teilen wegen Bevölkerung). Rest exakt auf das letzte Kind in ID-Reihenfolge. So behalten alle Kinder dasselbe P/K. Zusammenlegen: P = ΣP. |
 | S34 | **Performance:** Werte als Arrays pro Tile, nur aktive Tiles (kein Meer/Ödland ohne Bevölkerung) werden gerechnet. |
 | S35 | **Übergang bis zum Landwirtschafts-Subsystem (Ramon, 26.10.2026):** K pro 25-km-Zelle = HYDE-3.3-Landbevölkerung (`rurc`) 200 n. Chr. / 0,7, Städte (Hanson 117) zusätzlich; Start = Landbevölkerung + Städte (HYDE kennt fast keine Stadtbevölkerung). S31 (K aus Ackerland × Ertrag) gilt weiter als Ziel und folgt, sobald es regionale Erträge gibt. Begründung: Mit einer Einheitszahl pro km² Ackerland starten 5 552 Tiles über K (run-1). |
+
+## Massstab und Einzelpersonen (27.10.2026)
+
+Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. Details und Eckwerte: [SCALE.md](SCALE.md).
+
+| ID | Entscheidung |
+|---|---|
+| S50 | **Ein Massstab für alles:** Anzahl Menschen und Fläche 1 : 1'133 (56,65 Mio. → 50'000), Längen, Distanzen und jede Bewegung 1 : 33,7. Kalender und Lebensalter echt. Höhe zusätzlich 7,5-fach überhöht (K06 nach PR #29). |
+| S51 | **Der einzelne Mensch wird nicht verkleinert:** Körper, Haus, Wagen, Boot und Feld einer Familie in echter Grösse. Gemeinschaftsbauten nach Nutzerzahl. |
+| S52 | **Koordinaten:** Geodaten und Tile-IDs bleiben in echten Metern; `DIORAMA_LAENGE = 1/33,66` rechnet in Diorama-Meter um. Dichteschwellen (S15) gelten in Diorama-km². |
+| S53 | **Jeder Einwohner ist ein eigener Charakter** (CK3-Stil): Name, Alter, Geschlecht, Familie und Dynastie, Eigenschaften, Fähigkeiten, Gesundheit, Kultur, Religion, Stand, Wohnhaus, Arbeit, Besitz, Beziehungen zu einem begrenzten Kreis (Startwert höchstens 30). Ersetzt S30. |
+| S54 | **Bevölkerung entsteht aus Geburten und Todesfällen**, gesteuert über Nahrung (K), Gesundheit und Heirat. Startwerte geschätzt: 40 Geburten und 35 Todesfälle pro 1'000 und Jahr. Ersetzt S32. |
+| S55 | **Reisen** laufen als Reise mit Route und Dauer in Tagen; Alltag am Wohn-/Arbeitsort wird nicht als Weg simuliert. |
+| S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
+
+Offen: Mindestzahl für Ämter (Senat ≈ 0,5 Personen), Umgang mit Orten unter 1 Einwohner, Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
