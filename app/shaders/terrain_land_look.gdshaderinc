@@ -130,6 +130,10 @@ vec3 land_cell_facet(vec3 n,vec2 p,float size,out float facet_id) {
 float land_edge(float v,float threshold) {
     return clamp((v-threshold)/max(fwidth(v)*1.5,1e-4)+0.5,0.0,1.0);
 }
+// Smoothstep that turns into a hard painted step (at its midpoint) by crisp.
+float land_crisp(float a,float b,float v,float crisp) {
+    return mix(smoothstep(a,b,v),land_edge(v,(a+b)*0.5),crisp);
+}
 
 LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_normal,float footprint,float rel,float vw,float dhs) {
     // Real height, then the reference curve used by every threshold below.
@@ -174,11 +178,13 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Fields: R forest, G bare/rock, B dry, A snow (land cover), or the
     // source material weights (FOREST/ROCK/DRY/SHORE) without it.
     vec4 soft=LAND_FIELDS(pw);
-    float forest=land_edge(soft.r+edge*0.30,0.5);
+    float speck=land_tnoise(p+vec2(53.0,29.0),0.4).r;
+    // Frayed by the 4.5 km patch and 0.4 km speckle noise as well: the 2 km
+    // forest share alone left round, disc-like clearings at ~40 km.
+    float forest=land_edge(soft.r+edge*0.30+(nz.a-0.5)*0.25+(speck-0.5)*0.30,0.5);
     // Dry/crop land: in mid and near views only light speckles (0.3-0.5 km)
     // within the dry zone, not continuous beige plates.
     float dry_zone=land_edge(soft.b+edge*0.25,0.7);
-    float speck=land_tnoise(p+vec2(53.0,29.0),0.4).r;
     float sfade=1.0-smoothstep(0.3,0.9,max(min(length(dFdx(p)),length(dFdy(p))),0.001)/0.4*2.0);
     // Where the speckles are not resolved (mid), the dry tone is weak.
     float dry=mix(dry_zone,dry_zone*mix(0.3,land_edge(speck,0.62),sfade),1.0-overview);
@@ -197,23 +203,30 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float var_amt=mix(1.0,0.25,overview);
     // Mid views: bright patches half as strong and finer (patch noise, not meso).
     float midv=smoothstep(0.2,0.45,footprint)*(1.0-overview);
-    grass=mix(grass,land_lime_color.rgb,smoothstep(0.45,0.70,mix(meso,nz.a,midv))*0.4*var_amt*mix(1.0,0.4,midv));
-    grass=mix(grass,land_ochre_color.rgb,smoothstep(0.55,0.80,macro*0.6+meso*0.4)*0.6*var_amt*mix(0.4,1.0,overview));
-    grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4)*0.85*var_amt);
+    // Near views (~160-350 km wide): colour masses as hard painted steps.
+    float cfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    float crisp=smoothstep(0.06,0.12,cfoot)*(1.0-smoothstep(0.5,0.8,cfoot))*(1.0-overview);
+    grass=mix(grass,land_lime_color.rgb,land_crisp(0.45,0.70,mix(meso,nz.a,midv),crisp)*0.4*var_amt*mix(1.0,0.4,midv));
+    grass=mix(grass,land_ochre_color.rgb,land_crisp(0.55,0.80,macro*0.6+meso*0.4,crisp)*0.6*var_amt*mix(0.4,1.0,overview));
+    grass=mix(grass,land_olive_color.rgb,land_crisp(0.50,0.66,(1.0-meso)*0.6+(1.0-macro)*0.4,crisp)*0.85*var_amt);
     if(footprint<1.2) {
         float patch=nz.a;
         float f=1.0-smoothstep(0.6,1.2,footprint);
-        grass=mix(grass,land_ochre_color.rgb*1.05,smoothstep(0.55,0.80,patch)*0.25*f);
-        grass=mix(grass,land_olive_color.rgb,smoothstep(0.50,0.22,patch)*0.45*f);
+        grass=mix(grass,land_ochre_color.rgb*1.05,land_crisp(0.55,0.80,patch,crisp)*0.25*f);
+        grass=mix(grass,land_olive_color.rgb,land_crisp(0.22,0.50,0.72-patch,crisp)*0.45*f);
     }
     // Hill country: dark fir-green flanks on the golden ground.
     float hill_country=clamp(smoothstep(0.035,0.16,slope)*0.75+smoothstep(250.0,900.0,h)*0.35+smoothstep(20.0,160.0,crest)*0.2,0.0,1.0);
+    // Near: hill ground as hard-edged areas (warped so edges are not contour lines).
+    hill_country=mix(hill_country,land_edge(hill_country+edge*0.4,0.45),crisp*0.85);
     // Near hill ground a touch warmer (towards grassland), less cool green.
     // Hill ground close to meadow; the forest look comes from the forest ground.
     grass=mix(grass,mix(land_hill_color.rgb,land_olive_color.rgb,0.35*(1.0-smoothstep(0.3,0.8,footprint))),hill_country*mix(0.35,0.9,overview));
     // Settleable valley floors: flat ground below its surroundings reads as
     // bright meadow, never as dark forest floor.
-    float valley_floor=land_edge((1.0-smoothstep(0.015,0.05,slope))*smoothstep(30.0,140.0,-crest)*smoothstep(150.0,350.0,h),0.5);
+    // Frayed by the 4.5 km patch and 0.4 km speckle noise: the 2 km relief
+    // channel alone gave round, disc-like floors at ~40 km.
+    float valley_floor=land_edge((1.0-smoothstep(0.015,0.05,slope))*smoothstep(30.0,140.0,-crest)*smoothstep(150.0,350.0,h)+(nz.a-0.5)*0.55+(speck-0.5)*0.35,0.5);
     grass=mix(grass,mix(land_lime_color.rgb,land_grass_color.rgb,0.4),valley_floor*0.9);
     hill_country*=1.0-valley_floor;
     vec3 floor_tone=land_forest_floor_color.rgb;
@@ -363,7 +376,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     cool=mix(cool,vec3(dot(cool,vec3(0.3,0.59,0.11))),0.18);
     ground=mix(ground,cool,shade_amt);
     // Valley occlusion with a cool tint.
-    float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview);
+    // Faded at close zooms: the 2 km relief channel shows as round blobs there.
+    float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview)*smoothstep(0.08,0.2,cfoot);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
 
     // Crown hand-off: clipmap crowns end at view_width 2048; the forest tone
@@ -430,6 +444,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     o.albedo=mix(o.albedo,vec3(1.0,0.0,1.0),valley_floor);
 #endif
     o.normal=n;
-    o.ao=1.0-forest*0.18-cavity*0.25;
+    // Forest AO only from the frayed forest ground, and not at close zooms:
+    // round gaps in the 2 km forest share read as pale discs at ~40 km.
+    o.ao=1.0-forest_ground*0.18*smoothstep(0.08,0.2,cfoot)-cavity*0.25;
     return o;
 }
