@@ -14,7 +14,9 @@ GRAIN_DEBUG=1 …   # zusätzlich die grössten Märkte und Hofgrössen pro Jahr
 
 Dateien: `sim/src/grain.rs` (alles), `sim/src/bin/grain.rs` (Lauf), Haken in
 `sim/src/people.rs` (`Econ`: gegessen pro Haushalt, freies Land und Nahrung pro Kopf pro
-Region). `run100.txt` ist die ganze Ausgabe des Laufs unten; `run60-noclear.txt`,
+Region). `run100.txt` ist die ganze Ausgabe des Laufs mit Saatgut und Brache,
+`run100-seed-nofallow.txt` derselbe Lauf ohne Brache, `run100-before-s76.txt` der Stand davor;
+`run60-noclear.txt`,
 `run60-farm-grass.txt` und `run60-farm-grass-wood.txt` sind die Vergleiche zum rodbaren Land.
 Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.csv`.
 
@@ -25,6 +27,7 @@ Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.cs
 | **Höfe** | Ein Hof pro Bauernhaushalt beim Start: Familienhof (Bauern), Pachthof (Pächter, Pacht an einen Grundherrn) und Gutshof (Unfreie, alles gehört dem Grundherrn, einem Senator oder Ritter). Tagelöhner auf dem Land haben keinen Hof und leben im Zelt. Wird ein Hof frei (Familie ausgestorben oder weggezogen), zieht automatisch ein Haushalt aus den Zelten derselben Region ein. Neue Höfe baut nur der Spieler; den gibt es im Prototyp noch nicht. | S69 |
 | **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. | S73 |
 | **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. | S72 |
+| **Saatgut und Brache** | Jeder Hof legt nach der Ernte das Saatgut fürs nächste Jahr zurück (130 kg/ha) und sät es im Herbst aus dem Hofspeicher; fehlt es, bleibt Feld ungesät. Die Ernte bringt brutto Saat mal Saatverhältnis. Zweifelderwirtschaft: Jedes Jahr liegt die Hälfte der Felder brach, ein Hof braucht also doppelt so viel Land. | S76 |
 | **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
 | **Markt** | Ein Markt pro 100-km-Region, am grössten Ort nach Hanson, sonst an der Zelle mit den meisten Menschen (1'783 Märkte). Lager, Bargeld der Händler am Markt und ein Preis, der jeden Tag gedämpft auf einen Zielpreis aus der Lagerreichweite zuläuft. Ankauf 10 % unter, Verkauf 10 % über dem Preis. Der Markt kauft nur, so weit sein Bargeld reicht; was er nicht nimmt, trägt der Bauer wieder heim. | S70, S22 |
 | **Träger** | Jede Fahrt zum Markt ist eine echte Person des Haushalts (zuerst ein Mann 15–60) mit Last und Tempo nach ORBIS und Preisedikt: Familien- und Pachthof mit Esel (97 kg, 30 km/Tag), Gutshof mit Ochsenkarren (388 kg, 12 km/Tag), ohne Hof zu Fuss (30 kg pro Erwachsenem, 20 km/Tag). Die Reise ist ein Ereignis mit Ankunftstag, kein Schritt pro Tag. Wer im Marktort wohnt, kauft sofort. | S70, S76 |
@@ -34,10 +37,43 @@ Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.cs
 | **Geld** | Der Staat hat unbegrenzt Geld (S76): Wer weder Bauer noch Händler ist, bekommt den Taglohn des Preisedikts (25 Denar) vom Staat. Bauern bekommen Geld nur für verkauftes Getreide. | S76 |
 | **Fusswege** | Jeder Markt hat ein Wegfeld über seine Region auf dem Feinraster (Kachelebene 7, ≈ 1,56 km echt). Die Gänge zum Markt nutzen Zellen ab (Helbing 1997), die Abnutzung zerfällt mit einer Halbwertszeit von einem Jahr. Ab einer Schwelle wird eine Zelle Trampelpfad, dann Weg (mit Hysterese); beides macht das Gehen billiger, so dass die nächsten Gänge dem Pfad folgen. | S70 |
 
-## Ergebnis (100 Jahre, Seed 1)
+## Ergebnis mit Saatgut und Brache (100 Jahre, Seed 1, Standard)
+
+| Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | Zelte / Menschen darin | Ernte brutto t | Ernte verloren t | verkauft t | Handel t | gegessen | Preis Rom (Denar/kg) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 114'870 | −1,66 % | 452 | 352 | 19'499 | 5'883 / 12'330 | 40'007 | 425 | 3'321 | 6'538 | 91 % | 28,1 |
+| 2 | 113'948 | −0,80 % | 1'577 | 1'397 | 17'185 | 7'623 / 20'764 | 39'130 | 308 | 4'470 | 7'919 | 79 % | 21,2 |
+| 5 | 105'556 | −1,91 % | 905 | 2'099 | 15'706 | 6'388 / 15'021 | 39'143 | 494 | 3'592 | 7'107 | 86 % | 7,8 |
+| 10 | 99'803 | −0,61 % | 443 | 810 | 14'665 | 4'094 / 8'240 | 39'495 | 771 | 2'753 | 3'761 | 93 % | 4,5 |
+| 20 | 97'735 | −0,21 % | 273 | 459 | 12'944 | 1'501 / 3'651 | 39'804 | 969 | 2'731 | 3'821 | 96 % | 9,8 |
+| 30 | 98'636 | +0,21 % | 291 | 487 | 11'351 | 787 / 2'014 | 40'279 | 1'005 | 2'700 | 2'870 | 96 % | 28,7 |
+| 50 | 107'345 | +0,36 % | 304 | 352 | 9'187 | 181 / 821 | 40'999 | 948 | 2'513 | 2'143 | 96 % | 60,8 |
+| 70 | 119'046 | +0,50 % | 369 | 274 | 7'945 | 77 / 594 | 41'691 | 748 | 2'417 | 2'056 | 96 % | 45,7 |
+| 100 | 136'942 | +0,41 % | 501 | 152 | 6'760 | 42 / 423 | 41'980 | 499 | 2'377 | 1'462 | 95 % | 28,2 |
+
+**Jetzt bindet das Land.** Die Ernte bleibt über 100 Jahre fast gleich (39'000–42'000 t
+brutto), weil die Höfe für dieselbe Getreidefläche doppelt so viel Land brauchen und das
+rodbare Land (heutiges Ackerland unter 16 % Hang) in den dichten Zellen ausgeht. Die
+Bevölkerung fällt in den ersten 20 Jahren von 117'000 auf 98'000 (Hunger in den Zelten,
+Auswanderung) und wächst danach mit 0,2–0,5 % im Jahr auf 137'000. **Über 100 Jahre sind
+das 0,16 % im Jahr**, nahe an den historischen 0,1 %. Gegessen wird im Mittel 95–96 % des
+Bedarfs. Rom wird teuer (bis 61 Denar/kg nach 50 Jahren), weil die Überschüsse im Umland
+kleiner werden; Händler bringen weniger.
+
+Die weiche Obergrenze (S80: ab 90 % von CAP = 180'000 wandern Haushalte in Not eher aus)
+greift mit Brache nicht; der Lauf ist mit und ohne S80 Bit für Bit gleich.
+
+**Ohne Brache, nur mit Saatgut** (`--crop-pct 100`, `run100-seed-nofallow.txt`): 117'000 →
+184'000, 0,46 % im Jahr; die Ernte wächst mit (54'000 → 73'000 t). Ab etwa Jahr 85 greift
+S80: Das Wachstum fällt auf 0,2 % und die Auswanderung steigt (1'256 im Jahr 100).
+
+Tempo mit Brache (100 Jahre, 2 Threads, gleichzeitig mit dem Vergleichslauf): Getreide
+Median 1,02 ms, Mittel 1,21 ms, 99 % 3,5 ms; ganzer Tag 99 % 9,1 ms.
+
+## Ergebnis ohne Saatgut und Brache (vorheriger Stand, `run100-before-s76.txt`)
 
 Rodbar ist heutiges Ackerland unter 16 % Hang (Standard). Die Bevölkerungszahlen
-des Personen-Prototyps sind die vom 27.10.2026 abends (S78 Heirat ab 20, S79 Waisen).
+des Personen-Prototyps sind die vom 27.10.2026 abends (Heirat ab 20 als Platzhalter, S79 Waisen; vor S80).
 
 | Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | Zelte / Menschen darin | Ernte t | Ernte verloren t | verkauft t | Handel t | Preis Rom (Denar/kg) | Trampelpfade / Wege (Zellen) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -84,11 +120,9 @@ Gebiet sind das 2,4 Mio. km² heutiges Ackerland unter 16 % Hang (HYDE-Acker 200
 | plus Grasland und Wald | 125'256 / 172'780 | 0,9 % |
 | alles nutzbare Land (alter Stand, `--clear-cover usable`) | 125'356 / 174'353 | 0,8 % |
 
-**Antwort auf die Frage nach 0,1 % im Jahr:** Nur in den ersten 20 Jahren, solange die
-Landlosen hungern. Danach wächst die Bevölkerung mit jeder Rodungsvariante mit 0,6–0,9 %,
-und selbst ohne Rodung nach einem Rückgang mit 0,5 %. Bei diesen Dichten reicht das Land
-noch Jahrzehnte; mit Brache (S76) stünde nur etwa die Hälfte der Felder unter Getreide.
-Bremsen müssen Brache, Missernten und Seuchen (später).
+**Antwort auf die Frage nach 0,1 % im Jahr:** Ohne Brache nur in den ersten 20 Jahren,
+solange die Landlosen hungern; danach 0,6–0,9 % mit jeder Rodungsvariante. Mit Brache
+(oben) bindet das Land, und es sind über 100 Jahre 0,16 % im Jahr.
 
 ## Tempo und Speicher (4 Cloud-Kerne)
 
@@ -145,6 +179,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Steuer | 10 % der Ernte, verlässt vorerst das System | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
 | Grundherr eines Pacht- oder Gutshofs | ein Senator oder Ritter per Zufall | S69 offen |
+| Brache | Zweifelderwirtschaft: 50 % der Felder unter Getreide; Brache braucht keine Arbeit | GRAIN-NUMBERS 2; Pflügen der Brache nicht belegt |
+| Steuer und Pacht mit Saatgut | auf die Ernte abzüglich der Saat | frei gewählt |
 | Vorrat und Kauf | Höfe behalten Nahrung bis zur nächsten Ernte plus 60 Tage; andere kaufen unter 30 Tagen bis 60 Tage | frei gewählt |
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
 | Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
@@ -158,7 +194,7 @@ in Arrays nach ID statt in Hashtabellen.
 
 ## Nicht gebaut
 
-- **Saatgut, Brache, Missernten, Verderb** (S72, S76: später).
+- **Missernten, Verderb** (S72: vorerst keine Missernten).
 - **Neue Höfe und Strassen durch den Spieler** (S69, S74): Landlose können nur frei
   gewordene Höfe übernehmen.
 - **Neue Märkte, Verödung, Elendsviertel** (S75): Es gibt genau einen Markt pro Region.
@@ -175,6 +211,5 @@ in Arrays nach ID statt in Hashtabellen.
 - **Arbeitslose Landlose.** Arbeit gibt es fast nur in Aussaat und Ernte, darum hungern
   die Zelte und verschwinden in 30 Jahren fast ganz. Ob das so gewollt ist, hängt an
   S69 (Arbeit, Betteln, Stehlen) und S74 (der Spieler baut Höfe).
-- **Das Land bremst das Wachstum noch nicht.** Mit jeder Rodungsvariante wächst die
-  Bevölkerung nach 20 Jahren mit 0,6–0,9 % im Jahr. Bremsen müssen Brache, Missernten und
-  Seuchen (später).
+- **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
+  rodbaren Land und an der Brache; beides sind Platzhalter.
