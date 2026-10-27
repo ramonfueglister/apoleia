@@ -639,8 +639,9 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * 0.7)
-	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 0.6)
+	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * lerpf(1.3, 0.7, smoothstep(300.0, 700.0, _ground_width)))
+	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
+	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 1.0)
 	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.6, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
@@ -648,7 +649,7 @@ func _update_tiers() -> void:
 		material.set_shader_parameter("view_camera", _camera.global_position)
 		material.set_shader_parameter("sun_xz", sun_xz)
 		material.set_shader_parameter("peek", peek)
-	var puffs := lerpf(STATE_PUFFS.get(_puff_from, 1.0), STATE_PUFFS[state], smoothstep(0.0, 1.0, _transition))
+	var puffs := lerpf(STATE_PUFFS.get(_puff_from, 1.0), STATE_PUFFS[state], smoothstep(0.0, 1.0, _transition)) * lerpf(1.0, 0.55, smoothstep(1500.0, 3000.0, _ground_width))
 	var bank_grey := lerpf(STATE_BANK_GREY.get(_puff_from, 0.0), STATE_BANK_GREY[state], smoothstep(0.0, 1.0, _transition))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("puff_amount", puffs)
