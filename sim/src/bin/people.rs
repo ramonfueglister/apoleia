@@ -1,6 +1,7 @@
-//! Load test for individually simulated people (S50–S60): spawns about
-//! 100,000 people from HYDE and Hanson, runs them day by day and reports tick
-//! times, memory and a fingerprint.
+//! Prototype run for individually simulated people (S50–S67): spawns about
+//! 117,000 people from HYDE and Hanson, runs them day by day with births,
+//! marriages, deaths and migration, and reports a yearly census, tick times,
+//! memory and a fingerprint.
 //!
 //! Usage: people [--years N] [--seed S] [--threads N] [--root DIR]
 
@@ -62,43 +63,79 @@ fn main() {
         rss_mb() - rss0
     );
     let (mut plain, mut month, mut year) = (Vec::new(), Vec::new(), Vec::new());
+    let mut all = Vec::new();
+    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map  health%  hungry  events_in_cal");
     for y in 1..=years {
+        p.stats = Default::default();
         for _ in 0..360 {
             let t = Instant::now();
             let (m, yr) = p.day();
             let us = t.elapsed().as_secs_f64() * 1e6;
+            all.push(us);
             match (m, yr) {
                 (_, true) => year.push(us),
                 (true, _) => month.push(us),
                 _ => plain.push(us),
             }
         }
-        let travelling = p.travelling();
-        println!("year {y}: travelling={travelling} rss_mb={:.0}", rss_mb());
+        let s = p.stats;
+        let (mw, w, health, hungry) = p.census();
+        let m = s.marriages.max(1) as f64;
+        println!(
+            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:6.1} {:7} {:8}",
+            p.count,
+            s.births,
+            s.deaths.iter().sum::<u64>(),
+            s.deaths[0],
+            s.deaths[1],
+            s.deaths[2],
+            s.deaths[3],
+            s.deaths_under1,
+            s.marriages,
+            s.marry_age_f / m,
+            s.marry_age_m / m,
+            100.0 * mw as f64 / w.max(1) as f64,
+            s.waited_for_land,
+            s.moved_households,
+            s.left_households,
+            s.left_people,
+            s.left_map,
+            health,
+            hungry,
+            p.scheduled()
+        );
     }
     println!(
-        "day_us p50={:.0} p95={:.0} max={:.0} | month_day_us p50={:.0} p95={:.0} max={:.0} | year_day_us p50={:.0} max={:.0}",
-        pct(plain.clone(), 0.5),
-        pct(plain.clone(), 0.95),
-        pct(plain, 1.0),
+        "day_us p50={:.0} p95={:.0} p99={:.0} max={:.0} | first_of_month_us p50={:.0} max={:.0} | new_year_us p50={:.0} max={:.0} | rss_mb={:.0} peak_people={} cap={}",
+        pct(all.clone(), 0.5),
+        pct(all.clone(), 0.95),
+        pct(all.clone(), 0.99),
+        pct(all, 1.0),
         pct(month.clone(), 0.5),
-        pct(month.clone(), 0.95),
         pct(month, 1.0),
         pct(year.clone(), 0.5),
-        pct(year, 1.0)
+        pct(year, 1.0),
+        rss_mb(),
+        p.peak,
+        apoleia_sim::people::CAP
     );
+    let _ = plain;
     let days = (years * 360) as f64;
     let t = p.timing;
     println!(
-        "per day us: needs={:.0} travel={:.0} | per month us: index={:.0} relations={:.0} trips={:.0} pops={:.0} ({} pops) | per year us: jobs={:.0}",
+        "per day us: events={:.1} needs={:.0} travel={:.1} health={:.0} marriage={:.0} relations={:.0} trips={:.0} jobs={:.0} migration={:.0} | per month us: index={:.0} pops={:.0} ({} pops)",
+        t.events / days,
         t.needs / days,
         t.travel / days,
+        t.health / days,
+        t.marriage / days,
+        t.relations / days,
+        t.trips / days,
+        t.jobs / days,
+        t.migration / days,
         t.index / (days / 30.0),
-        t.relations / (days / 30.0),
-        t.trips / (days / 30.0),
         t.pops / (days / 30.0),
         p.groups.pops.len(),
-        t.jobs / (days / 360.0)
     );
     println!("fingerprint={:016x}", p.fingerprint());
 }

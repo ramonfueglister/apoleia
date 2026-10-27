@@ -1,16 +1,26 @@
-//! Load prototype for individually simulated people (decisions S50–S60,
-//! docs/kit2/SCALE.md).
+//! Prototype for individually simulated people (decisions S50–S67,
+//! docs/kit2/SCALE.md, docs/kit2/run-people/README.md).
 //!
-//! Measures whether 100,000 people as ECS entities fit the tick budget. The
-//! rules here are placeholders that generate realistic load (needs, relations,
-//! trips with path search, a yearly job choice); they are not game rules.
-//! There are no births, deaths or marriages: those are still open (S54, S59).
+//! Population rules follow the decisions: children only from couples (S62),
+//! marriage arranged by the family with a search radius by estate (S63),
+//! death from a model life table plus health (S64), food and living space
+//! as an emergent brake (S65), households in need move or leave the map
+//! (S66). Values the decisions leave open are marked `PLACEHOLDER` and are
+//! not game rules. Needs, trips and the yearly job choice are load
+//! placeholders as before.
 //!
-//! Determinism: every random draw is a hash of (seed, person, salt, day), so
-//! the result does not depend on thread count or iteration order. Structural
-//! changes (trips starting and ending) run serially, sorted by person id.
+//! Performance: births and deaths run from an event calendar (crate::life),
+//! so a day only touches the people with an event that day. Everything that
+//! runs monthly or yearly per person is spread over the days by person id
+//! (staggering, as CK2 2.6 did with its year end), so no day carries a
+//! whole month of work.
+//!
+//! Determinism: every random draw is a hash of (seed, person, salt, day),
+//! and every structural change runs serially in person id order, so the
+//! result does not depend on thread count or iteration order.
 
 use crate::inputs::Inputs;
+use crate::life::{self, Calendar, Ev, BIRTH, DEATH, YEAR};
 use bevy_ecs::change_detection::ContiguousMut;
 use bevy_ecs::prelude::*;
 use rustc_hash::FxHashMap;
@@ -22,16 +32,60 @@ use xxhash_rust::xxh3::xxh3_64;
 pub const PEOPLE_PER_PERSON: f64 = 566.5;
 /// Minimum inhabitants of a listed place (S57).
 pub const MIN_PER_PLACE: u32 = 2;
+/// Fixed population cap (S59). What happens there (S67) is not built yet.
+pub const CAP: u32 = 200_000;
+/// No person (spouse, parent).
+pub const NONE: u32 = u32::MAX;
 /// Size of the path-search grid cell in real metres (the 25 km cells).
 const CELL_M: f64 = 25_000.0;
 pub const MAX_REL: usize = 30;
 const NEEDS: usize = 4;
+const MONTH: i64 = 30;
 /// Placeholder travel speeds in real km per day: on foot and by ship.
 const LAND_KM_DAY: i32 = 30;
 const SEA_KM_DAY: i32 = 100;
 /// Placeholder: share of people starting a trip each month, per 10,000.
 const TRIPS_PER_10K_MONTH: u64 = 30;
 const JOBS: u8 = 12;
+/// HYDE rural population is taken as this share of the food capacity K, as
+/// in the tile model (Params::start_fill).
+const START_FILL: f64 = 0.7;
+
+/// Estates in the prototype. Senators and equites are placed by S58 (40 and
+/// about 60); decurions are not separated yet.
+pub const RURAL: u8 = 0;
+pub const CITY: u8 = 1;
+pub const EQUES: u8 = 2;
+pub const SENATOR: u8 = 3;
+const SENATORS: usize = 40;
+const EQUITES: usize = 60;
+
+// PLACEHOLDER values for what S63–S66 leave open. Ages after Saller (first
+// marriage: commoner women late teens, men late 20s; elite earlier).
+/// Age from which a family looks for a spouse: (women, men) by estate.
+const MARRY_AGE: [(f64, f64); 4] = [(15.0, 25.0), (15.0, 25.0), (13.0, 20.0), (13.0, 20.0)];
+/// Women are not sought after this age.
+const MARRY_AGE_MAX_F: f64 = 45.0;
+/// Preferred age gap husband − wife in years (Saller: about 10).
+const PREF_GAP: f64 = 10.0;
+/// Months without a match before the search widens (S63 "mehrere Monate").
+const WIDEN_MONTHS: u8 = 6;
+/// Without free land in the cell a marriage goes ahead with this chance
+/// per month (S65: later marriage), otherwise the family waits.
+const NO_LAND_MARRY_PER_16: u64 = 4;
+/// Minimum time from a birth to the next (pregnancy plus nursing), years.
+/// The fertility rate is raised so the yearly rate of the table holds.
+const BIRTH_GAP: f64 = 1.25;
+/// Pregnancy, years: the earliest first birth after a marriage.
+const PREGNANCY: f64 = 0.75;
+/// Death of the mother per birth (pre-modern order of magnitude).
+const MATERNAL_DEATH_PER_10K: u64 = 100;
+/// Health multiplies the death hazard by 1 + HUNGER_DEATH × (1 − h) and
+/// the birth hazard by h (h = health / 1000).
+const HUNGER_DEATH: f64 = 2.0;
+/// Health moves this fraction of the way to its target each month.
+const HEALTH_STEP: i32 = 3;
+
 /// Neighbour offsets; index d and 7 − d are opposite directions.
 const DIRS: [(i32, i32); 8] = [
     (-1, -1),
@@ -46,8 +100,10 @@ const DIRS: [(i32, i32); 8] = [
 
 #[derive(Component, Clone, Copy)]
 pub struct Pid(pub u32);
+/// Day of birth.
 #[derive(Component, Clone, Copy)]
 pub struct Born(pub i32);
+/// 0 = female, 1 = male.
 #[derive(Component, Clone, Copy)]
 pub struct Sex(pub u8);
 #[derive(Component, Clone, Copy)]
@@ -58,6 +114,7 @@ pub struct Home(pub u32);
 pub struct Job(pub u8);
 #[derive(Component, Clone, Copy)]
 pub struct Traits(pub u32);
+/// 0–1000; driven by food (S64, S65).
 #[derive(Component, Clone, Copy)]
 pub struct Health(pub u16);
 #[derive(Component, Clone, Copy)]
@@ -79,15 +136,31 @@ pub struct Relations {
     pub ids: [u32; MAX_REL],
     pub opinion: [i8; MAX_REL],
 }
-/// A trip in progress: there and back home. `at` is the current cell, `km`
-/// the distance walked on the current leg. The way to the destination comes
-/// from its flow field; the way back retraces the cells walked.
+#[derive(Component, Clone, Copy)]
+pub struct Spouse(pub u32);
+/// Father and mother (NONE for the start population).
+#[derive(Component, Clone, Copy)]
+pub struct Parents(pub u32, pub u32);
+/// Generation of the scheduled death and birth events.
+#[derive(Component, Clone, Copy, Default)]
+pub struct Sched {
+    pub death: u16,
+    pub birth: u16,
+}
+/// Months the family has searched a spouse without success.
+#[derive(Component, Clone, Copy, Default)]
+pub struct Search(pub u8);
+/// A trip in progress. Round trips go there and back home: the way there
+/// comes from the destination's flow field, the way back retraces the cells
+/// walked. Emigrants (`leave`) follow the field to the map edge and are gone
+/// when they reach it (S66).
 #[derive(Component, Clone)]
 pub struct Travel {
     pub to: u32,
     pub at: u32,
     pub km: i32,
     pub back: bool,
+    pub leave: bool,
     pub path: Vec<u32>,
 }
 
@@ -147,16 +220,34 @@ impl Grid {
         ((r + 64) as u32) << 16 | (c + 64) as u32
     }
 
-    /// Dijkstra from `to` over the whole grid (costs are symmetric): for every
-    /// cell the direction (0–7) of the next step towards `to`, 255 if none.
-    /// One field per destination serves every trip there (flow field).
-    pub fn flow_field(&self, to: u32) -> Vec<u8> {
+    /// The region and its eight neighbours.
+    pub fn regions_around(region: u32) -> [u32; 9] {
+        let (r, c) = (region >> 16, region & 0xffff);
+        let mut out = [0; 9];
+        let mut k = 0;
+        for dr in [0u32, 1, 2] {
+            for dc in [0u32, 1, 2] {
+                out[k] = (r + dr - 1) << 16 | (c + dc - 1);
+                k += 1;
+            }
+        }
+        out.swap(0, 4);
+        out
+    }
+
+    /// Dijkstra from `sources` over the whole grid (costs are symmetric): for
+    /// every cell the direction (0–7) of the next step towards the nearest
+    /// source, 255 at a source or where none can be reached. One field per
+    /// destination serves every trip there (flow field).
+    pub fn flow_field_from(&self, sources: &[u32]) -> Vec<u8> {
         let n = self.kind.len();
         let mut best = vec![i32::MAX; n];
         let mut dir = vec![255u8; n];
         let mut open = BinaryHeap::new();
-        best[to as usize] = 0;
-        open.push(Reverse((0, to)));
+        for &s in sources {
+            best[s as usize] = 0;
+            open.push(Reverse((0, s)));
+        }
         while let Some(Reverse((g, i))) = open.pop() {
             if g > best[i as usize] {
                 continue;
@@ -183,6 +274,23 @@ impl Grid {
         dir
     }
 
+    pub fn flow_field(&self, to: u32) -> Vec<u8> {
+        self.flow_field_from(&[to])
+    }
+
+    /// The field to the nearest cell on the edge of the map (S66).
+    pub fn edge_field(&self) -> Vec<u8> {
+        let mut edge = Vec::new();
+        for r in 0..self.rows {
+            for c in 0..self.cols {
+                if r == 0 || c == 0 || r == self.rows - 1 || c == self.cols - 1 {
+                    edge.push((r * self.cols + c) as u32);
+                }
+            }
+        }
+        self.flow_field_from(&edge)
+    }
+
     /// The next step from `i` along a flow field: cell and km (negative for
     /// a sea leg). None at the destination or where it cannot be reached.
     pub fn next(&self, field: &[u8], i: u32) -> Option<(u32, i32)> {
@@ -207,8 +315,10 @@ pub struct Seed {
 
 /// Places people on the grid: rural people from HYDE (rural200), city people
 /// from Hanson 117, at least MIN_PER_PLACE per place. Rounding is stochastic
-/// but deterministic (hash of the cell).
-pub fn populate(inp: &Inputs, seed: u64) -> (Grid, Vec<Seed>, Vec<u32>) {
+/// but deterministic (hash of the cell). Also returns the listed places and
+/// the food capacity K of every cell in simulated people (HYDE rural / 0.7
+/// plus the cities, which import grain), the source of food in S65.
+pub fn populate(inp: &Inputs, seed: u64) -> (Grid, Vec<Seed>, Vec<u32>, Vec<f32>) {
     let (mut r0, mut r1, mut c0, mut c1) = (i32::MAX, i32::MIN, i32::MAX, i32::MIN);
     for &(r, c) in inp.cells.keys() {
         r0 = r0.min(r);
@@ -228,6 +338,7 @@ pub fn populate(inp: &Inputs, seed: u64) -> (Grid, Vec<Seed>, Vec<u32>) {
         let i = grid.index(r, c).unwrap() as usize;
         grid.kind[i] = if cell.land_km2 > 0.9 * 625.0 { 2 } else { 1 };
     }
+    let mut food = vec![0f32; grid.kind.len()];
     let mut cells: Vec<_> = inp.cells.iter().collect();
     cells.sort_by_key(|(rc, _)| **rc);
     let mut people = Vec::new();
@@ -239,27 +350,23 @@ pub fn populate(inp: &Inputs, seed: u64) -> (Grid, Vec<Seed>, Vec<u32>) {
     };
     for (&(r, c), cell) in &cells {
         let rural = cell.hyde.as_ref().and_then(|h| h.rural).unwrap_or(0.0);
-        let n = round(
-            rural / PEOPLE_PER_PERSON,
-            ((r as u64) << 32) ^ (c as u32 as u64),
-        );
+        let n = round(rural / PEOPLE_PER_PERSON, ((r as u64) << 32) ^ (c as u32 as u64));
         let home = grid.index(r, c).unwrap();
-        people.extend((0..n).map(|_| Seed { home, stand: 0 }));
+        food[home as usize] += (rural / START_FILL / PEOPLE_PER_PERSON) as f32;
+        people.extend((0..n).map(|_| Seed { home, stand: RURAL }));
     }
     let mut places = Vec::new();
     for (k, city) in inp.cities.iter().enumerate() {
-        let (r, c) = (
-            (city.z_m / CELL_M).floor() as i32,
-            (city.x_m / CELL_M).floor() as i32,
-        );
+        let (r, c) = ((city.z_m / CELL_M).floor() as i32, (city.x_m / CELL_M).floor() as i32);
         let Some(home) = grid.index(r, c) else {
             continue;
         };
         let n = round(city.pop / PEOPLE_PER_PERSON, 0x5eed_0000_0000 ^ k as u64).max(MIN_PER_PLACE);
+        food[home as usize] += (city.pop / PEOPLE_PER_PERSON) as f32;
         places.push(home);
-        people.extend((0..n).map(|_| Seed { home, stand: 1 }));
+        people.extend((0..n).map(|_| Seed { home, stand: CITY }));
     }
-    (grid, people, places)
+    (grid, people, places, food)
 }
 
 #[derive(Resource)]
@@ -272,19 +379,46 @@ pub struct Clock {
 pub struct Fields {
     /// Flow field per destination cell (every listed place).
     pub map: FxHashMap<u32, Vec<u8>>,
+    /// Flow field to the map edge (emigrants).
+    pub edge: Vec<u8>,
     pub build_ms: f64,
 }
 
 /// Time per part, summed over the run (µs).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Timing {
+    pub events: f64,
     pub needs: f64,
     pub travel: f64,
-    pub index: f64,
+    pub health: f64,
+    pub marriage: f64,
     pub relations: f64,
     pub trips: f64,
-    pub jobs: f64,
+    pub index: f64,
     pub pops: f64,
+    pub jobs: f64,
+    pub migration: f64,
+}
+
+/// Named causes of death (S64). War, accidents, murder and plague come later.
+pub const CAUSES: [&str; 4] = ["Krankheit", "Alter", "Hunger", "Geburt"];
+
+/// Counters, reset by the caller when it wants yearly figures.
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Stats {
+    pub births: u64,
+    pub deaths: [u64; 4],
+    pub deaths_under1: u64,
+    pub age_at_death_sum: f64,
+    pub marriages: u64,
+    pub marry_age_f: f64,
+    pub marry_age_m: f64,
+    pub waited_for_land: u64,
+    pub moved_households: u64,
+    pub moved_people: u64,
+    pub left_households: u64,
+    pub left_people: u64,
+    pub left_map: u64,
 }
 
 /// Pops as a derived layer (S61): every person belongs to the pop
@@ -297,25 +431,139 @@ pub struct Groups {
     pub political: FxHashMap<u16, u32>,
 }
 
+/// Person ids grouped by a key (compressed rows): ids of key k are
+/// ids[start[k]..start[k + 1]], ascending.
+#[derive(Default)]
+pub struct Csr {
+    pub start: Vec<u32>,
+    pub ids: Vec<u32>,
+}
+
+impl Csr {
+    fn build(keys: usize, mut pairs: Vec<(u32, u32)>) -> Csr {
+        pairs.sort_unstable();
+        let mut start = vec![0u32; keys + 1];
+        for &(k, _) in &pairs {
+            start[k as usize + 1] += 1;
+        }
+        for k in 0..keys {
+            start[k + 1] += start[k];
+        }
+        Csr { start, ids: pairs.into_iter().map(|p| p.1).collect() }
+    }
+    pub fn get(&self, k: u32) -> &[u32] {
+        let k = k as usize;
+        if k + 1 >= self.start.len() {
+            return &[];
+        }
+        &self.ids[self.start[k] as usize..self.start[k + 1] as usize]
+    }
+}
+
 pub struct People {
     pub world: World,
     pub grid: Grid,
     pub places: Vec<u32>,
+    /// People alive.
     pub count: u32,
-    /// Traits by person id, refreshed monthly for relation updates.
+    pub peak: u32,
+    next_pid: u32,
+    /// Entity by person id; PLACEHOLDER once the person is gone.
+    ent: Vec<Entity>,
+    /// Traits by person id (kept for the dead too, for old relations).
     traits: Vec<u32>,
-    /// Person ids by home cell (sorted), refreshed monthly.
-    by_cell: FxHashMap<u32, Vec<u32>>,
+    /// Person ids by home cell, rebuilt monthly.
+    by_cell: Csr,
+    /// (household, person) sorted, rebuilt monthly.
+    households: Vec<(u32, u32)>,
+    /// Single women looking for a husband by (region, estate), and by
+    /// estate empire-wide for the elite search; rebuilt monthly.
+    brides: FxHashMap<(u32, u8), Vec<u32>>,
+    brides_by_stand: [Vec<u32>; 4],
+    /// Land cells by region (for the move search, S66).
+    region_cells: FxHashMap<u32, Vec<u32>>,
+    /// Food capacity K and people per cell, in simulated people.
+    pub food: Vec<f32>,
+    pub pop: Vec<u32>,
+    cal: Calendar,
     pub timing: Timing,
+    pub stats: Stats,
     pub groups: Groups,
+}
+
+fn age_y(day: i64, born: i32) -> f64 {
+    (day - born as i64) as f64 / YEAR as f64
+}
+
+fn mu(sex: u8) -> &'static [f64; 21] {
+    if sex == 0 {
+        &life::MU_F
+    } else {
+        &life::MU_M
+    }
+}
+
+fn death_mult(health: u16) -> f64 {
+    1.0 + HUNGER_DEATH * (1.0 - health as f64 / 1000.0)
+}
+
+/// Fertility rate per year raised so that with a gap of BIRTH_GAP after
+/// each birth the mean yearly rate stays that of the table: r / (1 − r·gap).
+fn fert_adjusted() -> [f64; 8] {
+    let mut out = [0.0; 8];
+    for (o, &r) in out.iter_mut().zip(life::FERT.iter()) {
+        *o = r / (1.0 - r * BIRTH_GAP);
+    }
+    out
 }
 
 impl People {
     pub fn new(inp: &Inputs, seed: u64) -> People {
         bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
-        let (grid, seeds, places) = populate(inp, seed);
+        let (grid, mut seeds, places, food) = populate(inp, seed);
         let mut world = World::new();
         world.insert_resource(Clock { day: 0, seed });
+
+        // Elite (S58): 40 senators in the largest place, about 60 equites in
+        // the next largest places, both men of 25–60.
+        let mut city_order: Vec<(u32, u32)> = Vec::new();
+        {
+            let mut n: FxHashMap<u32, u32> = FxHashMap::default();
+            for s in seeds.iter().filter(|s| s.stand == CITY) {
+                *n.entry(s.home).or_default() += 1;
+            }
+            city_order.extend(n.into_iter().map(|(c, k)| (k, c)));
+            city_order.sort_unstable_by_key(|&(k, c)| (Reverse(k), c));
+        }
+        let born: Vec<(u8, i32)> = (0..seeds.len() as u32)
+            .map(|pid| {
+                let sex = (rnd(seed, pid, 2, 0) & 1) as u8;
+                let a = life::stable_age(mu(sex), life::unit(rnd(seed, pid, 1, 0)));
+                (sex, -((a * YEAR as f64) as i32))
+            })
+            .collect();
+        let mut want = [(SENATOR, SENATORS), (EQUES, EQUITES)];
+        for (ci, &(_, cell)) in city_order.iter().enumerate() {
+            for w in want.iter_mut() {
+                if w.1 == 0 || (w.0 == SENATOR && ci > 0) || (w.0 == EQUES && ci == 0) {
+                    continue;
+                }
+                let mut taken = 0;
+                for (pid, s) in seeds.iter_mut().enumerate() {
+                    let (sex, b) = born[pid];
+                    let a = -b as f64 / YEAR as f64;
+                    if s.home == cell && s.stand == CITY && sex == 1 && (25.0..60.0).contains(&a) {
+                        s.stand = w.0;
+                        w.1 -= 1;
+                        taken += 1;
+                        // Equites: a few per large city.
+                        if w.1 == 0 || (w.0 == EQUES && taken == 3) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         let mut by_cell: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
         for (pid, s) in seeds.iter().enumerate() {
@@ -331,11 +579,7 @@ impl People {
                 let me = mates.binary_search(&pid).unwrap();
                 // Household: blocks of five neighbours in the cell list.
                 let hh = me / 5 * 5;
-                let mut rel = Relations {
-                    n: 0,
-                    ids: [0; MAX_REL],
-                    opinion: [0; MAX_REL],
-                };
+                let mut rel = Relations { n: 0, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
                 for &o in &mates[hh..(hh + 5).min(mates.len())] {
                     if o != pid {
                         rel.ids[rel.n as usize] = o;
@@ -353,27 +597,23 @@ impl People {
                         rel.n += 1;
                     }
                 }
+                let (sex, b) = born[pid as usize];
                 (
-                    Pid(pid),
-                    Born(-((r(1) % (60 * 365)) as i32)),
-                    Sex((r(2) & 1) as u8),
-                    Household(mates[hh]),
-                    Home(s.home),
-                    Job((r(3) % JOBS as u64) as u8),
-                    Traits(r(4) as u32),
-                    Health(800 + (r(5) % 200) as u16),
+                    (Pid(pid), Born(b), Sex(sex), Household(mates[hh]), Home(s.home), Job((r(3) % JOBS as u64) as u8)),
+                    (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel),
                     (
-                        Stand(s.stand),
-                        Needs([30000; NEEDS]),
-                        rel,
                         Culture((s.home % 192 / 16) as u16),
                         Religion((s.home / 192 / 40) as u16),
                         Faction((r(6) % 8) as u16),
+                        Spouse(NONE),
+                        Parents(NONE, NONE),
+                        Sched::default(),
+                        Search(0),
                     ),
                 )
             })
             .collect();
-        world.spawn_batch(batch);
+        let ent: Vec<Entity> = world.spawn_batch(batch).collect();
         let count = seeds.len() as u32;
         let t0 = std::time::Instant::now();
         let mut dests = places.clone();
@@ -383,47 +623,126 @@ impl People {
         let built: Vec<(u32, Vec<u8>)> = bevy_tasks::ComputeTaskPool::get()
             .scope(|s| {
                 for chunk in dests.chunks(dests.len().div_ceil(16).max(1)) {
-                    s.spawn(async move {
-                        chunk
-                            .iter()
-                            .map(|&d| (d, grid_ref.flow_field(d)))
-                            .collect::<Vec<_>>()
-                    });
+                    s.spawn(async move { chunk.iter().map(|&d| (d, grid_ref.flow_field(d))).collect::<Vec<_>>() });
                 }
             })
             .into_iter()
             .flatten()
             .collect();
-        world.insert_resource(Fields {
-            map: built.into_iter().collect(),
-            build_ms: t0.elapsed().as_secs_f64() * 1e3,
-        });
+        let edge = grid.edge_field();
+        world.insert_resource(Fields { map: built.into_iter().collect(), edge, build_ms: t0.elapsed().as_secs_f64() * 1e3 });
+        let mut region_cells: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
+        for i in 0..grid.kind.len() as u32 {
+            if grid.kind[i as usize] != 0 {
+                region_cells.entry(grid.region(i)).or_default().push(i);
+            }
+        }
+        let mut pop = vec![0u32; grid.kind.len()];
+        for s in &seeds {
+            pop[s.home as usize] += 1;
+        }
         let mut p = People {
             world,
             grid,
             places,
             count,
+            peak: count,
+            next_pid: count,
+            ent,
             traits: Vec::new(),
-            by_cell,
+            by_cell: Csr::default(),
+            households: Vec::new(),
+            brides: FxHashMap::default(),
+            brides_by_stand: Default::default(),
+            region_cells,
+            food,
+            pop,
+            cal: Calendar::new(0),
             timing: Timing::default(),
+            stats: Stats::default(),
             groups: Groups::default(),
         };
+        let mut q = p.world.query::<&Traits>();
+        p.traits = q.iter(&p.world).map(|t| t.0).collect();
+        // Marriages at the start: let the families search for a year.
+        for m in 0..12 {
+            p.refresh_index();
+            p.marriages(None, -12 + m);
+        }
+        p.stats = Stats::default();
+        // First death and birth for everyone.
+        let mut q = p.world.query::<(&Pid, &Born, &Sex, &Spouse, &Health, &Sched)>();
+        let mut first: Vec<_> = q.iter(&p.world).map(|(a, b, c, d, e, f)| (a.0, b.0, c.0, d.0, e.0, *f)).collect();
+        first.sort_unstable_by_key(|f| f.0);
+        for (pid, born, sex, spouse, health, sched) in first {
+            p.schedule_death(pid, sched.death, born, sex, health, 0);
+            if sex == 0 && spouse != NONE {
+                p.schedule_birth(pid, sched.birth, born, health, 0, PREGNANCY);
+            }
+        }
         p.refresh_index();
         p
     }
 
+    fn seed(&self) -> u64 {
+        self.world.resource::<Clock>().seed
+    }
+
+    fn schedule_death(&mut self, pid: u32, gen: u16, born: i32, sex: u8, health: u16, day: i64) {
+        let h = rnd(self.seed(), pid, 0xdead ^ (gen as u32) << 8, day);
+        let w = life::wait(&life::AGES, mu(sex), age_y(day, born), death_mult(health), h).unwrap_or(100.0);
+        let at = day + ((w * YEAR as f64) as i64).max(1);
+        self.cal.push(at, Ev { kind: DEATH, pid, gen });
+    }
+
+    /// Next birth for a married woman, at the earliest `gap` years from now.
+    fn schedule_birth(&mut self, pid: u32, gen: u16, born: i32, health: u16, day: i64, gap: f64) {
+        let h = rnd(self.seed(), pid, 0xb127 ^ (gen as u32) << 8, day);
+        let rates = fert_adjusted();
+        let age = age_y(day, born) + gap;
+        if let Some(w) = life::wait(&life::FERT_AGES, &rates, age, health as f64 / 1000.0, h) {
+            let at = day + (((gap + w) * YEAR as f64) as i64).max(1);
+            self.cal.push(at, Ev { kind: BIRTH, pid, gen });
+        }
+    }
+
+    fn alive(&self, pid: u32) -> Option<Entity> {
+        self.ent.get(pid as usize).copied().filter(|&e| e != Entity::PLACEHOLDER)
+    }
+
     fn refresh_index(&mut self) {
-        self.traits.resize(self.count as usize, 0);
-        let mut q = self.world.query::<(&Pid, &Traits)>();
-        for (pid, t) in q.iter(&self.world) {
-            self.traits[pid.0 as usize] = t.0;
+        let day = self.world.resource::<Clock>().day;
+        let cells = self.grid.kind.len();
+        let mut q = self.world.query::<(&Pid, &Home, &Household)>();
+        let mut by_cell = Vec::with_capacity(self.count as usize);
+        let mut hh = Vec::with_capacity(self.count as usize);
+        for (pid, h, house) in q.iter(&self.world) {
+            by_cell.push((h.0, pid.0));
+            hh.push((house.0, pid.0));
         }
-        self.by_cell.clear();
-        let mut q = self.world.query::<(&Pid, &Home)>();
-        for (pid, h) in q.iter(&self.world) {
-            self.by_cell.entry(h.0).or_default().push(pid.0);
+        hh.sort_unstable();
+        self.households = hh;
+        self.by_cell = Csr::build(cells, by_cell);
+        for v in self.brides.values_mut() {
+            v.clear();
         }
-        for v in self.by_cell.values_mut() {
+        for v in self.brides_by_stand.iter_mut() {
+            v.clear();
+        }
+        let mut q = self.world.query_filtered::<(&Pid, &Home, &Born, &Sex, &Stand, &Spouse), Without<Travel>>();
+        for (pid, h, b, sex, st, sp) in q.iter(&self.world) {
+            let a = age_y(day, b.0);
+            if sex.0 == 0 && sp.0 == NONE && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F {
+                self.brides.entry((self.grid.region(h.0), st.0)).or_default().push(pid.0);
+                if st.0 >= CITY {
+                    self.brides_by_stand[st.0 as usize].push(pid.0);
+                }
+            }
+        }
+        for v in self.brides.values_mut() {
+            v.sort_unstable();
+        }
+        for v in self.brides_by_stand.iter_mut() {
             v.sort_unstable();
         }
     }
@@ -434,34 +753,394 @@ impl People {
         self.world.resource_mut::<Clock>().day = day;
         let t = std::time::Instant::now;
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
+        let slice = day.rem_euclid(MONTH) as u32;
+        let yslice = day.rem_euclid(YEAR) as u32;
+
+        let t0 = t();
+        self.events(day);
+        self.timing.events += us(t0);
         let t0 = t();
         self.daily_needs();
         self.timing.needs += us(t0);
         let t0 = t();
         self.daily_travel();
         self.timing.travel += us(t0);
-        let month = (day as u64).is_multiple_of(30);
-        let year = (day as u64).is_multiple_of(360);
+        let t0 = t();
+        self.health(day, slice);
+        self.timing.health += us(t0);
+        let t0 = t();
+        self.marriages(Some(slice), day);
+        self.timing.marriage += us(t0);
+        let t0 = t();
+        self.relations(day, slice);
+        self.timing.relations += us(t0);
+        let t0 = t();
+        self.trips(day, slice);
+        self.timing.trips += us(t0);
+        let t0 = t();
+        self.jobs(day, yslice);
+        self.timing.jobs += us(t0);
+        let t0 = t();
+        self.migration(day, yslice);
+        self.timing.migration += us(t0);
+        let month = slice == 0;
         if month {
             let t0 = t();
             self.refresh_index();
             self.timing.index += us(t0);
-            let t0 = t();
-            self.monthly_relations();
-            self.timing.relations += us(t0);
-            let t0 = t();
-            self.monthly_trips();
-            self.timing.trips += us(t0);
+        }
+        if slice == MONTH as u32 / 2 {
             let t0 = t();
             self.monthly_groups();
             self.timing.pops += us(t0);
         }
-        if year {
-            let t0 = t();
-            self.yearly_jobs();
-            self.timing.jobs += us(t0);
+        self.peak = self.peak.max(self.count);
+        (month, yslice == 0)
+    }
+
+    /// Births and deaths due today, in (kind, person) order.
+    fn events(&mut self, day: i64) {
+        for ev in self.cal.take(day) {
+            let Some(e) = self.alive(ev.pid) else { continue };
+            let sched = *self.world.get::<Sched>(e).unwrap();
+            match ev.kind {
+                DEATH if sched.death == ev.gen => {
+                    let h = self.world.get::<Health>(e).unwrap().0;
+                    let born = self.world.get::<Born>(e).unwrap().0;
+                    let a = age_y(day, born);
+                    let m = death_mult(h);
+                    let u = life::unit(rnd(self.seed(), ev.pid, 0xca05e, day));
+                    let cause = if u < (m - 1.0) / m {
+                        2
+                    } else if a >= 60.0 {
+                        1
+                    } else {
+                        0
+                    };
+                    self.die(ev.pid, day, cause);
+                }
+                BIRTH if sched.birth == ev.gen => self.birth(ev.pid, e, day),
+                _ => {}
+            }
         }
-        (month, year)
+    }
+
+    fn die(&mut self, pid: u32, day: i64, cause: usize) {
+        let e = self.ent[pid as usize];
+        let born = self.world.get::<Born>(e).unwrap().0;
+        let home = self.world.get::<Home>(e).unwrap().0;
+        let spouse = self.world.get::<Spouse>(e).unwrap().0;
+        let leaving = self.world.get::<Travel>(e).is_some_and(|t| t.leave);
+        let a = age_y(day, born);
+        self.stats.deaths[cause] += 1;
+        self.stats.age_at_death_sum += a;
+        if a < 1.0 {
+            self.stats.deaths_under1 += 1;
+        }
+        if let Some(se) = self.alive(spouse) {
+            self.world.get_mut::<Spouse>(se).unwrap().0 = NONE;
+            // A widow's next birth is void.
+            self.world.get_mut::<Sched>(se).unwrap().birth += 1;
+        }
+        if !leaving {
+            self.pop[home as usize] -= 1;
+        }
+        self.world.despawn(e);
+        self.ent[pid as usize] = Entity::PLACEHOLDER;
+        self.count -= 1;
+    }
+
+    fn birth(&mut self, mother: u32, me: Entity, day: i64) {
+        let father = self.world.get::<Spouse>(me).unwrap().0;
+        let Some(fe) = self.alive(father) else { return };
+        let seed = self.seed();
+        let pid = self.next_pid;
+        self.next_pid += 1;
+        let r = |salt| rnd(seed, pid, salt, day);
+        let m_home = self.world.get::<Home>(me).unwrap().0;
+        let m_house = self.world.get::<Household>(me).unwrap().0;
+        let travel = self.world.get::<Travel>(me).filter(|t| t.leave).cloned();
+        let f = (
+            *self.world.get::<Stand>(fe).unwrap(),
+            *self.world.get::<Culture>(fe).unwrap(),
+            *self.world.get::<Religion>(fe).unwrap(),
+            *self.world.get::<Faction>(fe).unwrap(),
+        );
+        let mask = r(1) as u32;
+        let traits = ((self.traits[father as usize] & mask) | (self.traits[mother as usize] & !mask)) ^ (1 << (r(2) % 32));
+        let sex = (r(3) & 1) as u8;
+        let mut rel = Relations { n: 2, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
+        rel.ids[0] = mother;
+        rel.ids[1] = father;
+        rel.opinion[0] = 80;
+        rel.opinion[1] = 80;
+        let mut ec = self.world.spawn((
+            (Pid(pid), Born(day as i32), Sex(sex), Household(m_house), Home(m_home), Job((r(4) % JOBS as u64) as u8)),
+            (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel),
+            (f.1, f.2, f.3, Spouse(NONE), Parents(father, mother), Sched::default(), Search(0)),
+        ));
+        if let Some(t) = travel {
+            ec.insert(t);
+        } else {
+            self.pop[m_home as usize] += 1;
+        }
+        let e = ec.id();
+        self.ent.push(e);
+        self.traits.push(traits);
+        self.count += 1;
+        self.stats.births += 1;
+        self.schedule_death(pid, 0, day as i32, sex, 1000, day);
+        // The mother may die in childbirth (S64).
+        if rnd(seed, mother, 0xb0b, day) % 10_000 < MATERNAL_DEATH_PER_10K {
+            self.die(mother, day, 3);
+            return;
+        }
+        let (born, health) = (self.world.get::<Born>(me).unwrap().0, self.world.get::<Health>(me).unwrap().0);
+        let gen = {
+            let mut s = self.world.get_mut::<Sched>(me).unwrap();
+            s.birth += 1;
+            s.birth
+        };
+        self.schedule_birth(mother, gen, born, health, day, BIRTH_GAP);
+    }
+
+    /// Health follows the food share of the home cell (S65). When it crosses
+    /// a band of 100 the death and birth draws are redone (S64).
+    fn health(&mut self, day: i64, slice: u32) {
+        let mut redo = Vec::new();
+        let (food, pop) = (&self.food, &self.pop);
+        let mut q = self.world.query_filtered::<(&Pid, &Home, &Born, &Sex, &Spouse, &mut Health, &mut Sched), Without<Travel>>();
+        for (pid, home, born, sex, spouse, mut health, mut sched) in q.iter_mut(&mut self.world) {
+            if pid.0 % MONTH as u32 != slice {
+                continue;
+            }
+            let share = food[home.0 as usize] as f64 / pop[home.0 as usize].max(1) as f64;
+            let target = (1000.0 * share.min(1.0)) as i32;
+            let h = health.0 as i32;
+            let new = (h + (target - h) / HEALTH_STEP) as u16;
+            if new / 100 != health.0 / 100 {
+                sched.death += 1;
+                let birth = sex.0 == 0 && spouse.0 != NONE;
+                if birth {
+                    sched.birth += 1;
+                }
+                redo.push((pid.0, born.0, sex.0, new, *sched, birth));
+            }
+            health.0 = new;
+        }
+        for (pid, born, sex, h, s, birth) in redo {
+            self.schedule_death(pid, s.death, born, sex, h, day);
+            if birth {
+                self.schedule_birth(pid, s.birth, born, h, day, 0.0);
+            }
+        }
+    }
+
+    /// Marriage by the family (S63). The groom's family searches for single
+    /// men of age in today's slice (all men with `slice` None), in id order.
+    fn marriages(&mut self, slice: Option<u32>, day: i64) {
+        let seed = self.seed();
+        let mut grooms = Vec::new();
+        let mut q = self.world.query_filtered::<(&Pid, &Born, &Sex, &Stand, &Spouse), Without<Travel>>();
+        for (pid, born, sex, st, sp) in q.iter(&self.world) {
+            if sex.0 == 1 && sp.0 == NONE && slice.is_none_or(|s| pid.0 % MONTH as u32 == s) && age_y(day, born.0) >= MARRY_AGE[st.0 as usize].1 {
+                grooms.push(pid.0);
+            }
+        }
+        grooms.sort_unstable();
+        let mut cands: Vec<u32> = Vec::new();
+        for g in grooms {
+            let ge = self.ent[g as usize];
+            let (home, born, stand, culture, religion, parents, search, rel, house) = (
+                self.world.get::<Home>(ge).unwrap().0,
+                self.world.get::<Born>(ge).unwrap().0,
+                self.world.get::<Stand>(ge).unwrap().0,
+                self.world.get::<Culture>(ge).unwrap().0,
+                self.world.get::<Religion>(ge).unwrap().0,
+                *self.world.get::<Parents>(ge).unwrap(),
+                self.world.get::<Search>(ge).unwrap().0,
+                *self.world.get::<Relations>(ge).unwrap(),
+                self.world.get::<Household>(ge).unwrap().0,
+            );
+            // S65: without free land the family waits.
+            if self.pop[home as usize] as f32 >= self.food[home as usize]
+                && rnd(seed, g, 0x1a2d, day) % 16 >= NO_LAND_MARRY_PER_16
+            {
+                self.stats.waited_for_land += 1;
+                continue;
+            }
+            cands.clear();
+            // Acquaintances of the groom and his father.
+            cands.extend_from_slice(&rel.ids[..rel.n as usize]);
+            if let Some(fe) = self.alive(parents.0) {
+                let fr = self.world.get::<Relations>(fe).unwrap();
+                cands.extend_from_slice(&fr.ids[..fr.n as usize]);
+            }
+            let region = self.grid.region(home);
+            if stand >= EQUES {
+                // Elite: empire-wide among their own estate, then one below.
+                cands.extend_from_slice(&self.brides_by_stand[stand as usize]);
+                if search >= WIDEN_MONTHS {
+                    cands.extend_from_slice(&self.brides_by_stand[stand as usize - 1]);
+                }
+            } else {
+                let around = Grid::regions_around(region);
+                let n = if search >= WIDEN_MONTHS { 9 } else { 1 };
+                for &r in &around[..n] {
+                    if let Some(v) = self.brides.get(&(r, stand)) {
+                        cands.extend_from_slice(v);
+                    }
+                }
+            }
+            cands.sort_unstable();
+            cands.dedup();
+            let ga = age_y(day, born);
+            let mut best: Option<(i64, u32)> = None;
+            for &c in &cands {
+                let Some(ce) = self.alive(c) else { continue };
+                let w = (
+                    self.world.get::<Sex>(ce).unwrap().0,
+                    self.world.get::<Spouse>(ce).unwrap().0,
+                    self.world.get::<Born>(ce).unwrap().0,
+                    self.world.get::<Stand>(ce).unwrap().0,
+                    *self.world.get::<Parents>(ce).unwrap(),
+                    self.world.get::<Household>(ce).unwrap().0,
+                    self.world.get::<Travel>(ce).is_some(),
+                );
+                let wa = age_y(day, w.2);
+                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house {
+                    continue;
+                }
+                // No siblings.
+                if (parents.0 != NONE && w.4 .0 == parents.0) || (parents.1 != NONE && w.4 .1 == parents.1) {
+                    continue;
+                }
+                // CK3-like weighting, in tenths.
+                let mut s = -(((ga - wa) - PREF_GAP).abs() * 10.0) as i64;
+                s -= 50 * (stand as i64 - w.3 as i64).abs();
+                if self.world.get::<Culture>(ce).unwrap().0 == culture {
+                    s += 30;
+                }
+                if self.world.get::<Religion>(ce).unwrap().0 == religion {
+                    s += 30;
+                }
+                if let Some(k) = rel.ids[..rel.n as usize].iter().position(|&x| x == c) {
+                    s += rel.opinion[k] as i64 / 2;
+                }
+                s += (rnd(seed, g ^ c, 0x5c0e, day) % 20) as i64;
+                if best.is_none_or(|b| s > b.0) {
+                    best = Some((s, c));
+                }
+            }
+            match best {
+                Some((_, b)) => self.marry(g, b, day),
+                None => {
+                    let mut s = self.world.get_mut::<Search>(ge).unwrap();
+                    s.0 = s.0.saturating_add(1);
+                }
+            }
+        }
+    }
+
+    /// The bride moves into the groom's household (S63).
+    fn marry(&mut self, g: u32, b: u32, day: i64) {
+        let (ge, be) = (self.ent[g as usize], self.ent[b as usize]);
+        let home = self.world.get::<Home>(ge).unwrap().0;
+        let house = self.world.get::<Household>(ge).unwrap().0;
+        let stand = self.world.get::<Stand>(ge).unwrap().0;
+        let gborn = self.world.get::<Born>(ge).unwrap().0;
+        self.world.get_mut::<Spouse>(ge).unwrap().0 = b;
+        self.world.get_mut::<Search>(ge).unwrap().0 = 0;
+        let old = self.world.get::<Home>(be).unwrap().0;
+        self.pop[old as usize] -= 1;
+        self.pop[home as usize] += 1;
+        let mut w = self.world.entity_mut(be);
+        w.get_mut::<Spouse>().unwrap().0 = g;
+        w.get_mut::<Home>().unwrap().0 = home;
+        w.get_mut::<Household>().unwrap().0 = house;
+        w.get_mut::<Stand>().unwrap().0 = stand;
+        let born = w.get::<Born>().unwrap().0;
+        let health = w.get::<Health>().unwrap().0;
+        let gen = {
+            let mut s = w.get_mut::<Sched>().unwrap();
+            s.birth += 1;
+            s.birth
+        };
+        self.stats.marriages += 1;
+        self.stats.marry_age_f += age_y(day, born);
+        self.stats.marry_age_m += age_y(day, gborn);
+        // Marriages before day 1 (the start) are scheduled in People::new.
+        if day > 0 {
+            self.schedule_birth(b, gen, born, health, day, PREGNANCY);
+        }
+    }
+
+    /// Households in need compare their cell with the reachable ones about
+    /// once a year and move; with nothing better they leave the map (S66).
+    /// PLACEHOLDER: need = food share below 1; reachable = own and the eight
+    /// neighbouring 100 km regions; better = higher food share after moving.
+    fn migration(&mut self, day: i64, yslice: u32) {
+        let mut i = 0;
+        let mut moves: Vec<(Vec<u32>, Option<u32>)> = Vec::new();
+        while i < self.households.len() {
+            let h = self.households[i].0;
+            let mut j = i;
+            while j < self.households.len() && self.households[j].0 == h {
+                j += 1;
+            }
+            if h % YEAR as u32 == yslice {
+                let members: Vec<u32> = self.households[i..j]
+                    .iter()
+                    .map(|p| p.1)
+                    .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none()))
+                    .collect();
+                if let Some(&first) = members.first() {
+                    let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
+                    let share = |c: u32, add: u32| self.food[c as usize] as f64 / (self.pop[c as usize] + add).max(1) as f64;
+                    let now = share(home, 0);
+                    if now < 1.0 {
+                        let n = members.len() as u32;
+                        let mut best = (now, None);
+                        for r in Grid::regions_around(self.grid.region(home)) {
+                            for &c in self.region_cells.get(&r).map_or(&[][..], |v| v) {
+                                let s = share(c, n);
+                                if c != home && s > best.0 {
+                                    best = (s, Some(c));
+                                }
+                            }
+                        }
+                        moves.push((members, best.1));
+                    }
+                }
+            }
+            i = j;
+        }
+        let at = |p: &Self, pid: u32| p.world.get::<Home>(p.ent[pid as usize]).unwrap().0;
+        for (members, to) in moves {
+            let n = members.len() as u64;
+            match to {
+                Some(c) => {
+                    for &m in &members {
+                        let old = at(self, m);
+                        self.pop[old as usize] -= 1;
+                        self.pop[c as usize] += 1;
+                        self.world.get_mut::<Home>(self.ent[m as usize]).unwrap().0 = c;
+                    }
+                    self.stats.moved_households += 1;
+                    self.stats.moved_people += n;
+                }
+                None => {
+                    for &m in &members {
+                        let old = at(self, m);
+                        self.pop[old as usize] -= 1;
+                        self.world.entity_mut(self.ent[m as usize]).insert(Travel { to: old, at: old, km: 0, back: false, leave: true, path: Vec::new() });
+                    }
+                    self.stats.left_households += 1;
+                    self.stats.left_people += n;
+                }
+            }
+        }
+        let _ = day;
     }
 
     fn daily_needs(&mut self) {
@@ -469,42 +1148,39 @@ impl People {
             let c = self.world.resource::<Clock>();
             (c.seed, c.day)
         };
-        let mut q = self
-            .world
-            .query::<(&Pid, &Job, &Traits, &mut Needs, &mut Health)>();
-        q.contiguous_par_iter_mut(&mut self.world)
-            .expect("people live in tables")
-            .for_each(|(pid, job, tr, needs, health)| {
-                let (needs, _) = ContiguousMut::split(needs);
-                let (health, _) = ContiguousMut::split(health);
-                for i in 0..pid.len() {
-                    let r = rnd(seed, pid[i].0, 7, day);
-                    let n = &mut needs[i].0;
-                    for (k, v) in n.iter_mut().enumerate() {
-                        let decay = 300 + ((tr[i].0 >> (k * 4)) & 0xf) as u16 * 20;
-                        let gain = if (job[i].0 as usize + k) % 3 == 0 {
-                            400
-                        } else {
-                            200
-                        } + ((r >> (k * 8)) & 0xff) as u16;
-                        *v = v.saturating_sub(decay).saturating_add(gain).min(60000);
-                    }
-                    let low = n.iter().filter(|&&v| v < 10000).count() as u16;
-                    let h = &mut health[i].0;
-                    *h = (*h + 1).saturating_sub(low).min(1000);
+        let mut q = self.world.query::<(&Pid, &Job, &Traits, &mut Needs)>();
+        q.contiguous_par_iter_mut(&mut self.world).expect("people live in tables").for_each(|(pid, job, tr, needs)| {
+            let (needs, _) = ContiguousMut::split(needs);
+            for i in 0..pid.len() {
+                let r = rnd(seed, pid[i].0, 7, day);
+                let n = &mut needs[i].0;
+                for (k, v) in n.iter_mut().enumerate() {
+                    let decay = 300 + ((tr[i].0 >> (k * 4)) & 0xf) as u16 * 20;
+                    let gain = if (job[i].0 as usize + k) % 3 == 0 { 400 } else { 200 } + ((r >> (k * 8)) & 0xff) as u16;
+                    *v = v.saturating_sub(decay).saturating_add(gain).min(60000);
                 }
-            });
+            }
+        });
     }
 
     fn daily_travel(&mut self) {
-        let fields = std::mem::take(&mut self.world.resource_mut::<Fields>().map);
+        let fields = std::mem::take(&mut *self.world.resource_mut::<Fields>());
         let grid = &self.grid;
         let mut done = Vec::new();
         let mut q = self.world.query::<(Entity, &Pid, &mut Travel, &Home)>();
         for (e, pid, mut t, home) in q.iter_mut(&mut self.world) {
             let mut budget = 1.0f32;
+            let mut gone = false;
             while budget > 0.0 {
-                let step = if t.back {
+                let step = if t.leave {
+                    match grid.next(&fields.edge, t.at) {
+                        Some(s) => s,
+                        None => {
+                            gone = true;
+                            break;
+                        }
+                    }
+                } else if t.back {
                     let Some(&prev) = t.path.last() else { break };
                     grid.leg(t.at, prev)
                 } else {
@@ -512,7 +1188,7 @@ impl People {
                         t.back = true;
                         continue;
                     }
-                    match grid.next(&fields[&t.to], t.at) {
+                    match grid.next(&fields.map[&t.to], t.at) {
                         Some(s) => s,
                         None => {
                             t.back = true;
@@ -529,7 +1205,7 @@ impl People {
                     t.km = 0;
                     if t.back {
                         t.path.pop();
-                    } else {
+                    } else if !t.leave {
                         let at = t.at;
                         t.path.push(at);
                     }
@@ -539,71 +1215,91 @@ impl People {
                     budget = 0.0;
                 }
             }
-            if t.back && t.at == home.0 {
-                done.push((pid.0, e));
+            if gone {
+                done.push((pid.0, e, true));
+            } else if t.back && t.at == home.0 {
+                done.push((pid.0, e, false));
             }
         }
-        self.world.resource_mut::<Fields>().map = fields;
+        *self.world.resource_mut::<Fields>() = fields;
         done.sort_unstable_by_key(|d| d.0);
-        for (_, e) in done {
-            self.world.entity_mut(e).remove::<Travel>();
+        for (pid, e, gone) in done {
+            if gone {
+                // Off the map and out of the system (S66); spouses left behind are widowed.
+                let spouse = self.world.get::<Spouse>(e).unwrap().0;
+                if let Some(se) = self.alive(spouse) {
+                    if self.world.get::<Travel>(se).is_none_or(|t| !t.leave) {
+                        self.world.get_mut::<Spouse>(se).unwrap().0 = NONE;
+                        self.world.get_mut::<Sched>(se).unwrap().birth += 1;
+                    }
+                }
+                self.world.despawn(e);
+                self.ent[pid as usize] = Entity::PLACEHOLDER;
+                self.count -= 1;
+                self.stats.left_map += 1;
+            } else {
+                self.world.entity_mut(e).remove::<Travel>();
+            }
         }
     }
 
-    fn monthly_relations(&mut self) {
-        let (seed, day) = {
-            let c = self.world.resource::<Clock>();
-            (c.seed, c.day)
-        };
+    fn relations(&mut self, day: i64, slice: u32) {
+        let seed = self.seed();
         let traits = &self.traits;
         let by_cell = &self.by_cell;
+        let ent = &self.ent;
         let mut q = self.world.query::<(&Pid, &Home, &Traits, &mut Relations)>();
-        q.contiguous_par_iter_mut(&mut self.world)
-            .expect("people live in tables")
-            .for_each(|(pid, home, tr, rel)| {
-                let (rel, _) = ContiguousMut::split(rel);
-                for i in 0..pid.len() {
-                    let rel = &mut rel[i];
-                    let mine = tr[i].0;
-                    let mut weakest = (i8::MAX, usize::MAX);
-                    for k in 0..rel.n as usize {
-                        let other = traits[rel.ids[k] as usize];
-                        let same = (!(mine ^ other)).count_ones() as i32 - 16;
-                        let o = (rel.opinion[k] as i32 + same / 4).clamp(-100, 100);
-                        rel.opinion[k] = o as i8;
-                        if (o as i8) < weakest.0 {
-                            weakest = (o as i8, k);
-                        }
+        q.contiguous_par_iter_mut(&mut self.world).expect("people live in tables").for_each(|(pid, home, tr, rel)| {
+            let (rel, _) = ContiguousMut::split(rel);
+            for i in 0..pid.len() {
+                if pid[i].0 % MONTH as u32 != slice {
+                    continue;
+                }
+                let rel = &mut rel[i];
+                let mine = tr[i].0;
+                let mut weakest = (i8::MAX, usize::MAX);
+                for k in 0..rel.n as usize {
+                    let id = rel.ids[k];
+                    if ent[id as usize] == Entity::PLACEHOLDER {
+                        weakest = (i8::MIN, k);
+                        continue;
                     }
-                    // Meet someone new in the home cell, replacing the weakest tie.
-                    let r = rnd(seed, pid[i].0, 11, day);
-                    if let Some(mates) = by_cell.get(&home[i].0) {
-                        let o = mates[(r % mates.len() as u64) as usize];
-                        if o != pid[i].0 && !rel.ids[..rel.n as usize].contains(&o) {
-                            let k = if (rel.n as usize) < MAX_REL {
-                                rel.n += 1;
-                                rel.n as usize - 1
-                            } else {
-                                weakest.1
-                            };
-                            rel.ids[k] = o;
-                            rel.opinion[k] = 0;
-                        }
+                    let other = traits[id as usize];
+                    let same = (!(mine ^ other)).count_ones() as i32 - 16;
+                    let o = (rel.opinion[k] as i32 + same / 4).clamp(-100, 100);
+                    rel.opinion[k] = o as i8;
+                    if (o as i8) < weakest.0 {
+                        weakest = (o as i8, k);
                     }
                 }
-            });
+                // Meet someone new in the home cell, replacing the weakest tie.
+                let r = rnd(seed, pid[i].0, 11, day);
+                let mates = by_cell.get(home[i].0);
+                if !mates.is_empty() {
+                    let o = mates[(r % mates.len() as u64) as usize];
+                    if o != pid[i].0 && ent[o as usize] != Entity::PLACEHOLDER && !rel.ids[..rel.n as usize].contains(&o) {
+                        let k = if (rel.n as usize) < MAX_REL {
+                            rel.n += 1;
+                            rel.n as usize - 1
+                        } else {
+                            weakest.1
+                        };
+                        rel.ids[k] = o;
+                        rel.opinion[k] = 0;
+                    }
+                }
+            }
+        });
     }
 
-    fn monthly_trips(&mut self) {
-        let (seed, day) = {
-            let c = self.world.resource::<Clock>();
-            (c.seed, c.day)
-        };
+    fn trips(&mut self, day: i64, slice: u32) {
+        let seed = self.seed();
         let mut start = Vec::new();
-        let mut q = self
-            .world
-            .query_filtered::<(Entity, &Pid, &Home), Without<Travel>>();
+        let mut q = self.world.query_filtered::<(Entity, &Pid, &Home), Without<Travel>>();
         for (e, pid, home) in q.iter(&self.world) {
+            if pid.0 % MONTH as u32 != slice {
+                continue;
+            }
             let r = rnd(seed, pid.0, 13, day);
             if r % 10_000 < TRIPS_PER_10K_MONTH {
                 let to = self.places[((r >> 20) % self.places.len() as u64) as usize];
@@ -613,9 +1309,8 @@ impl People {
             }
         }
         start.sort_unstable_by_key(|s| s.0);
-        for (_, e, _, to) in start {
-            let from = self.world.get::<Home>(e).unwrap().0;
-            self.world.entity_mut(e).insert(Travel { to, at: from, km: 0, back: false, path: Vec::new() });
+        for (_, e, from, to) in start {
+            self.world.entity_mut(e).insert(Travel { to, at: from, km: 0, back: false, leave: false, path: Vec::new() });
         }
     }
 
@@ -625,9 +1320,7 @@ impl People {
         g.pops.clear();
         g.economic = [0; JOBS as usize];
         g.political.clear();
-        let mut q = self
-            .world
-            .query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
+        let mut q = self.world.query::<(&Home, &Stand, &Culture, &Religion, &Job, &Faction)>();
         for (h, st, cu, re, job, fa) in q.iter(&self.world) {
             *g.pops.entry((grid.region(h.0), st.0, cu.0, re.0)).or_default() += 1;
             g.economic[job.0 as usize] += 1;
@@ -635,52 +1328,68 @@ impl People {
         }
     }
 
-    fn yearly_jobs(&mut self) {
-        let (seed, day) = {
-            let c = self.world.resource::<Clock>();
-            (c.seed, c.day)
-        };
-        let mut q = self
-            .world
-            .query::<(&Pid, &Traits, &Needs, &Health, &mut Job)>();
-        q.contiguous_par_iter_mut(&mut self.world)
-            .expect("people live in tables")
-            .for_each(|(pid, tr, needs, health, job)| {
-                let (job, _) = ContiguousMut::split(job);
-                for i in 0..pid.len() {
-                    let mut best = (i64::MIN, job[i].0);
-                    for cand in 0..JOBS {
-                        let fit = ((tr[i].0 >> (cand as u32 * 2)) & 0xff) as i64;
-                        let need = needs[i].0[cand as usize % NEEDS] as i64 / 1000;
-                        let noise = (rnd(seed, pid[i].0, 17 + cand as u32, day) & 0x3f) as i64;
-                        let stay = if cand == job[i].0 { 40 } else { 0 };
-                        let score = fit - need + noise + stay + health[i].0 as i64 / 100;
-                        if score > best.0 {
-                            best = (score, cand);
-                        }
-                    }
-                    job[i].0 = best.1;
+    fn jobs(&mut self, day: i64, yslice: u32) {
+        let seed = self.seed();
+        let mut q = self.world.query::<(&Pid, &Traits, &Needs, &Health, &mut Job)>();
+        q.contiguous_par_iter_mut(&mut self.world).expect("people live in tables").for_each(|(pid, tr, needs, health, job)| {
+            let (job, _) = ContiguousMut::split(job);
+            for i in 0..pid.len() {
+                if pid[i].0 % YEAR as u32 != yslice {
+                    continue;
                 }
-            });
+                let mut best = (i64::MIN, job[i].0);
+                for cand in 0..JOBS {
+                    let fit = ((tr[i].0 >> (cand as u32 * 2)) & 0xff) as i64;
+                    let need = needs[i].0[cand as usize % NEEDS] as i64 / 1000;
+                    let noise = (rnd(seed, pid[i].0, 17 + cand as u32, day) & 0x3f) as i64;
+                    let stay = if cand == job[i].0 { 40 } else { 0 };
+                    let score = fit - need + noise + stay + health[i].0 as i64 / 100;
+                    if score > best.0 {
+                        best = (score, cand);
+                    }
+                }
+                job[i].0 = best.1;
+            }
+        });
     }
 
     pub fn travelling(&mut self) -> usize {
         self.world.query::<&Travel>().iter(&self.world).count()
     }
 
+    /// Events waiting in the calendar.
+    pub fn scheduled(&self) -> usize {
+        self.cal.len
+    }
+
+    /// (married women 15–49, all women 15–49, mean health, people in cells
+    /// with less food than people).
+    pub fn census(&mut self) -> (u32, u32, f64, u32) {
+        let day = self.world.resource::<Clock>().day;
+        let (mut mw, mut w, mut h, mut n, mut hungry) = (0, 0, 0.0, 0, 0);
+        let mut q = self.world.query_filtered::<(&Born, &Sex, &Spouse, &Health, &Home), Without<Travel>>();
+        for (b, s, sp, he, home) in q.iter(&self.world) {
+            let a = age_y(day, b.0);
+            if s.0 == 0 && (15.0..50.0).contains(&a) {
+                w += 1;
+                if sp.0 != NONE {
+                    mw += 1;
+                }
+            }
+            h += he.0 as f64;
+            n += 1;
+            if self.pop[home.0 as usize] as f32 > self.food[home.0 as usize] {
+                hungry += 1;
+            }
+        }
+        (mw, w, h / n.max(1) as f64 / 10.0, hungry)
+    }
+
     /// Hash of every person's state in id order.
     pub fn fingerprint(&mut self) -> u64 {
-        let mut rows: Vec<(u32, [u64; 6])> = Vec::with_capacity(self.count as usize);
-        let mut q = self.world.query::<(
-            &Pid,
-            &Home,
-            &Job,
-            &Health,
-            &Needs,
-            &Relations,
-            Option<&Travel>,
-        )>();
-        for (pid, home, job, health, needs, rel, t) in q.iter(&self.world) {
+        let mut rows: Vec<(u32, [u64; 7])> = Vec::with_capacity(self.count as usize);
+        let mut q = self.world.query::<(&Pid, &Home, &Job, &Health, &Needs, &Relations, &Spouse, &Born, Option<&Travel>)>();
+        for (pid, home, job, health, needs, rel, sp, born, t) in q.iter(&self.world) {
             let n = needs.0;
             let mut h = 0u64;
             for k in 0..rel.n as usize {
@@ -696,18 +1405,12 @@ impl People {
                     h,
                     t,
                     rel.n as u64,
+                    (sp.0 as u64) << 32 | born.0 as u32 as u64,
                 ],
             ));
         }
         rows.sort_unstable_by_key(|r| r.0);
-        let bytes: Vec<u8> = rows
-            .iter()
-            .flat_map(|(p, v)| {
-                p.to_le_bytes()
-                    .into_iter()
-                    .chain(v.iter().flat_map(|x| x.to_le_bytes()))
-            })
-            .collect();
+        let bytes: Vec<u8> = rows.iter().flat_map(|(p, v)| p.to_le_bytes().into_iter().chain(v.iter().flat_map(|x| x.to_le_bytes()))).collect();
         xxh3_64(&bytes)
     }
 }
@@ -734,5 +1437,14 @@ mod tests {
         let a = run();
         assert!(a.0 > 50_000);
         assert_eq!(a, run());
+    }
+
+    #[test]
+    fn csr_groups() {
+        let c = Csr::build(4, vec![(2, 7), (0, 3), (2, 1)]);
+        assert_eq!(c.get(0), &[3]);
+        assert_eq!(c.get(1), &[] as &[u32]);
+        assert_eq!(c.get(2), &[1, 7]);
+        assert_eq!(c.get(9), &[] as &[u32]);
     }
 }
