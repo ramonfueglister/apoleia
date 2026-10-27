@@ -21,6 +21,12 @@ const MIN_DETAIL=2
 ## Full-weight tiles draw canopy_opaque (no alpha-hash discard, back faces
 ## culled); the alpha-hash canopy material is swapped in only while fading.
 const OPAQUE_SHADER="res://shaders/canopy_opaque.gdshader"
+## Density layers (EU5-style): every grove belongs to one of three layers by a
+## stable hash of its position; level L keeps the groves with layer <
+## LAYERS_KEPT[L] and draws them larger by sqrt(3/kept), so the forest area
+## stays the same while far levels draw a half / a third of the groves.
+const LAYERS=3
+const LAYERS_KEPT=[3,2,1]
 var reader:RefCounted
 var templates:Array=[]
 var meshes:Array=[]
@@ -90,25 +96,51 @@ func build(id:String,manifest:Dictionary,images:Dictionary={})->Dictionary:
     if level>2:return {}
     var span=1<<level
     var first=Vector2i(int(id.get_slice("/",1))*span,int(id.get_slice("/",2))*span)+Vector2i(int(manifest.origin[0]/128.),int(manifest.origin[1]/128.))
-    var rows=[]
+    var rows=[];var ratios=PackedFloat32Array()
+    var keep=int(LAYERS_KEPT[level]);var scale=sqrt(float(LAYERS)/keep)
+    var parent_keep=int(LAYERS_KEPT[level+1]) if level+1<LAYERS_KEPT.size() else keep
+    var parent_scale=sqrt(float(LAYERS)/parent_keep) if level+1<LAYERS_KEPT.size() else scale
     for z in range(span):
         for x in range(span):
             var cell=first+Vector2i(x,z)
             if not reader.entries.has(cell):continue
             var loaded=reader.read_records(cell,262144)
             if not loaded.get("ok",false):continue
-            # Every level shows all original crowns (same density at every
-            # distance); far levels are cheaper only through facet stages.
             for i in range(loaded.records.size()):
-                var row=loaded.records[i];row[7]=0.;rows.append(row)
+                var row=loaded.records[i];var layer=grove_layer(float(row[2]),float(row[3]))
+                if layer>=keep:continue
+                # INSTANCE_CUSTOM.b: this grove's size on the parent level
+                # relative to here (0 = not on the parent); the canopy grows
+                # it to 1 with the family blend instead of popping.
+                row[7]=0.;rows.append(row)
+                ratios.append(parent_scale/scale if layer<parent_keep else 0.)
     var payload=Compact.build(rows,first,0,"terrain-tile",templates,"terrain-tile",prepared)
-    if payload.has("buckets"):payload["level"]=level
+    if payload.has("buckets"):
+        payload["level"]=level
+        # Layer scale on the packed basis, not on record heights (the record
+        # contract bounds heights to 0.25..8.6); attach pads the tile AABB.
+        if scale!=1.:
+            for bucket in payload.buckets:
+                var t:PackedFloat32Array=bucket.transforms
+                for i in range(int(bucket.count)):
+                    for k in [0,1,2,4,5,6,8,9,10]:t[i*12+k]*=scale
+                bucket.transforms=t
+        payload["layer_scale"]=scale
     if payload.has("buckets") and images.has("height") and images.has("water"):
         var tile_span=float(manifest.base_span)*span
         var origin=Vector2(manifest.origin[0],manifest.origin[1])+Vector2(int(id.get_slice("/",1)),int(id.get_slice("/",2)))*tile_span
         var corners=_settled_corners(images,origin,tile_span)
-        for bucket in payload.buckets:bucket["buffer"]=_custom_buffer(bucket.transforms,_instance_ground(bucket.transforms,corners,origin,tile_span))
+        for bucket in payload.buckets:
+            var bucket_ratios=PackedFloat32Array()
+            for index in bucket.record_indices:bucket_ratios.append(ratios[index])
+            bucket["buffer"]=_custom_buffer(bucket.transforms,_instance_ground(bucket.transforms,corners,origin,tile_span),bucket_ratios)
     return payload
+## Stable layer 0..LAYERS-1 of a grove from its layout position (identical on
+## every level, so zooming never reshuffles which groves stay).
+static func grove_layer(x:float,z:float)->int:
+    var h:int=(int(floor(x*256.))*73856093)^(int(floor(z*256.))*19349663)
+    h=(h^(h>>13))*1274126177
+    return absi(h^(h>>16))%LAYERS
 ## Settled source surface on the 65-grid (clipmap_surface_vertex with ring
 ## weight 1): 0 on marine water, else the bilinear source height in metres.
 ## Runs on the tile IO worker, so the vertex shader reads one value per tree.
@@ -180,7 +212,9 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
         var node=MultiMeshInstance3D.new();node.multimesh=multimesh;node.material_override=fade
         if opaque:node.set_meta("fade_material",fade);node.set_meta("opaque_material",opaque);node.material_override=opaque
         node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        var box:AABB=multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio
+        # Padded for the grove reach and for kept groves that start at the
+        # parent's larger size while the family blends in.
+        var box:AABB=multimesh.custom_aabb;var pad=box.size.y*grove_pad_ratio*2.*float(payload.get("layer_scale",1.))
         node.custom_aabb=AABB(Vector3(box.position.x-pad,-100.,box.position.z-pad),Vector3(box.size.x+2.*pad,300.,box.size.z+2.*pad))
         parent.add_child(node);result.append(node)
         if level<SHADOW_LEVELS:result.append(_shadow_copy(parent,node,bucket))
@@ -196,13 +230,14 @@ func _shadow_copy(parent:Node3D,node:MultiMeshInstance3D,bucket:Dictionary)->Mul
     copy.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
     parent.add_child(copy);return copy
 ## Instance buffer as transform+custom, packed on the IO worker:
-## INSTANCE_CUSTOM.r carries the precomputed ground and .a marks it valid
+## INSTANCE_CUSTOM.r carries the precomputed ground, .b the size on the parent
+## level relative to this one (density layers) and .a marks it valid
 ## (canopy.gdshader). The main thread only hands the buffer over.
-static func _custom_buffer(source:PackedFloat32Array,ground:PackedFloat32Array)->PackedFloat32Array:
+static func _custom_buffer(source:PackedFloat32Array,ground:PackedFloat32Array,ratios:PackedFloat32Array=PackedFloat32Array())->PackedFloat32Array:
     var count=ground.size();var buffer=PackedFloat32Array();buffer.resize(count*16)
     for i in range(count):
         for k in range(12):buffer[i*16+k]=source[i*12+k]
-        buffer[i*16+12]=ground[i];buffer[i*16+15]=1.
+        buffer[i*16+12]=ground[i];buffer[i*16+14]=ratios[i] if i<ratios.size() else 1.;buffer[i*16+15]=1.
     return buffer
 ## One MultiMesh with its final format, so the instance buffer is uploaded
 ## once (the worker-packed transform+ground buffer when present).

@@ -35,6 +35,11 @@ const CAMERA_TILE_BUDGET=16
 ## parent's at mid-blend instead of cross-fading both with the alpha-hash
 ## material (no early depth, two forests drawn for the whole fade).
 const FOREST_SWAP=true
+## Density layers (tile_forest LAYERS_KEPT): the child's forest replaces the
+## parent's as soon as the family starts blending; its kept groves start at the
+## parent's size and its new groves at 0, both reaching their own size with the
+## blend (canopy forest_layer_blend). Opaque throughout, no swap pop.
+const FOREST_LAYER_GROW=true
 const FOREST_TOP=2 # tile_forest FOREST_LEVELS-1: highest level with forest
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
@@ -146,7 +151,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         entry.land.visible=shown;entry.water.visible=shown and entry.marine
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
-            for tree in entry.forests:_forest_weight(tree,float(fading_forests[id]),_description(id).level<=FOREST_TOP)
+            for tree in entry.forests:_forest_weight(tree,float(fading_forests[id]),_description(id).level<=FOREST_TOP,false)
             entry.erase("state");entry.erase("camera")
         if not shown:continue
         entry.used=_frame;var d=_description(id);var parent_id=str(_draw[id].parent)
@@ -196,11 +201,16 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         if not nodes.has(id):metrics.missing+=1
 ## Forest weight for a fading family; swap: the other side carries the same
 ## trees (both levels <= FOREST_TOP), so show one or the other, opaque.
-func _forest_weight(node:GeometryInstance3D,weight:float,swap:bool)->void:
+func _forest_weight(node:GeometryInstance3D,weight:float,swap:bool,child:bool=true)->void:
     if FOREST_SWAP and swap and weight<1.:
-        node.visible=weight>=.5;forest.set_weight(node,1.)
+        if FOREST_LAYER_GROW:
+            node.visible=child and weight>0.;forest.set_weight(node,1.)
+            if child:node.material_override.set_shader_parameter(&"forest_layer_blend",weight)
+        else:
+            node.visible=weight>=.5;forest.set_weight(node,1.)
     else:
         node.visible=true;forest.set_weight(node,weight)
+        if child:node.material_override.set_shader_parameter(&"forest_layer_blend",1.)
 func _tile_nodes(entry:Dictionary)->Array:
     var tile_nodes:Array=[entry.land]+([entry.water] if entry.marine else [])+entry.get("forests",[])
     if entry.get("river")!=null:tile_nodes.append(entry.river)

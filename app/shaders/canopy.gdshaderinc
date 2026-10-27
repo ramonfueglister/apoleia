@@ -13,6 +13,10 @@ uniform float terrain_morph_alpha=1.0;
 uniform float display_height_scale=12.0;
 // Set per clipmap tile with the other camera uniforms (clipmap_terrain.gd).
 uniform float view_width=400.0;
+// Density-layer family blend of this tile (clipmap_terrain.gd): kept groves
+// go from their parent size (INSTANCE_CUSTOM.b) to their own, groves new on
+// this level grow from 0 (b=0). 1 when the tile is not blending.
+uniform float forest_layer_blend=1.0;
 varying float crown_up;
 // Direct sunlight sees the warm lit crown colour, ambient (shade) the cool
 // albedo; set in fragment(), used in light().
@@ -31,6 +35,10 @@ void vertex(){
     // 20 % wider up to ~700 km, lighter in fragment().
     float crown_width=mix(1.25,mix(1.2,1.0,smoothstep(600.0,900.0,view_width)),smoothstep(220.0,380.0,view_width));
     VERTEX.xz=MODEL_MATRIX[3].xz+(VERTEX.xz-MODEL_MATRIX[3].xz)*crown_width;
+    if(clipmap_enabled && INSTANCE_CUSTOM.a>0.5){
+        float layer_scale=mix(INSTANCE_CUSTOM.b,1.0,clamp(forest_layer_blend,0.0,1.0));
+        VERTEX=MODEL_MATRIX[3].xyz+(VERTEX-MODEL_MATRIX[3].xyz)*layer_scale;
+    }
     if(clipmap_enabled){
         // Clipmap tiles store the settled ground per instance in
         // INSTANCE_CUSTOM (r metres, a=1); morphing cells sample it again.
