@@ -2577,6 +2577,11 @@ func _delta_arm_source(pts:Array[Vector2],width:float,name:String,k:int)->Dictio
 
 func _add_delta_arms() -> void:
     for region in delta_regions:
+        # The source data carries the real distributaries (Rhône: Grand and
+        # Petit Rhône; the Grand also a terrain channel): no cut, no fan. At
+        # 40 km (903029a) the synthetic main arm ran beside the channel and
+        # the Petit Rhône arm across the Vaccarès.
+        if region.get("real_courses",false):continue
         var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
         var length=float(region.rb)*2.2
         var base_width=0.03
@@ -2705,7 +2710,7 @@ const RIVER_DELTAS=[
     # the CPU grid, so it never counted as a mouth). Both arms split at
     # Arles, the apex; the lagoon field sits over the Camargue (Vaccarès),
     # west of the Grand Rhône mouth.
-    {"name":"Rhône","ra":14.0,"rb":10.0,"mouth":[4.845,43.33],"apex":[4.615896,43.709133],"from_apex":true,
+    {"name":"Rhône","ra":14.0,"rb":10.0,"mouth":[4.845,43.33],"apex":[4.615896,43.709133],"from_apex":true,"real_courses":true,
         "lagoon_center":[4.56,43.47],"arms":[[0.03,[4.42,43.445],0.6]]},
     {"name":"Ebro","ra":8.0,"rb":5.0},
     {"name":"Nile","ra":45.0,"rb":16.0,"mouth":[31.05,31.50],"apex":[31.25,30.10]}]
@@ -2744,6 +2749,7 @@ func _setup_river_deltas() -> void:
             "center":coast_point-sea_direction*rb*0.55,"anchor_texel":INF}
         if delta.get("from_apex",false):region["apex"]=geographic_to_world(float(delta.apex[0]),float(delta.apex[1]))
         if delta.has("lagoon_center"):region["lagoon_center"]=geographic_to_world(float(delta.lagoon_center[0]),float(delta.lagoon_center[1]))
+        if delta.get("real_courses",false):region["real_courses"]=true
         delta_regions.append(region)
         delta_apexes.append(mouth-sea_direction*rb*1.2)
     _bind_delta_uniforms()
