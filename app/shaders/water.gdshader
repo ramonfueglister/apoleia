@@ -80,12 +80,25 @@ void fragment() {
         // #1c5789) where the reference fades over ~30 px (#257197, #1f6595,
         // 20 px #1b5f90). The coast distance saturates at ~3 km, so the
         // shelf depth carries the wide part of the band.
-        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(1.0,1.12,1.05);
+        // a117124: close (4 px #246993 against #257197) but 4-14 px a step
+        // dark and short, red 3-5 high throughout.
+        // b6c8e1a: 10-20 px on the reference, but 30-90 px too light and
+        // red (#1f618e / #1d5f8d against #1b5c8d / #19588a): the green
+        // lift now only through the shelf band, and less red.
+        // 08cd36c: barely moved, the 450 km view lies almost wholly on the
+        // 40-450 m shelf band: flat #206490-#1c608e from 10 to 60 px where
+        // the reference falls from #1f6695 to #19588a; 2-6 px a step dark
+        // (#246a92 against #257197), red ~4 high throughout. Darker, less
+        // red base; stronger coast ramp; the shelf band only to ~300 m.
+        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(0.68,0.88,0.90);
         float near=1.0-smoothstep(0.0,4000.0,coast_m);
-        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(40.0,400.0,depth))*0.45);
+        // de679e4: 2-10 px on the reference; from 14 px out G/B 5-8 high
+        // (30 px #1e6492 against #1b5c8d): the shelf term is ~full there
+        // (Adriatic, Lazio shelf), so its weight sets the level.
+        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(30.0,300.0,depth))*0.45);
         // Keep the open sea's facet and wave tone steps.
         float texture_tone=clamp(dot(w.albedo,vec3(1.0))/max(dot(open,vec3(1.0)),0.0001),0.85,1.15);
-        vec3 c=open*mix(vec3(1.0),vec3(1.0,1.6,1.2),band)*mix(texture_tone,1.0,near);
+        vec3 c=open*mix(vec3(1.0),vec3(1.0,2.1,1.42),band)*mix(texture_tone,1.0,near);
         ALBEDO=mix(ALBEDO,mix(c,water_foam_tint.rgb,w.foam*0.4),mid_sea);
     }
     // Reference calibration (h~207 s0.80-0.83 v0.52-0.55): slightly darker,
@@ -101,7 +114,16 @@ void fragment() {
     // 903029a far view: open basins #194d81 against #175788 (green and blue
     // low), shelves 6-14 px #195a93 against #165e90 / #17598c (blue high):
     // the deep sea greener and lighter, the shelves a little less blue.
-    vec3 far_gain=mix(vec3(0.89,1.28,1.12),vec3(0.93,1.0,0.95)*1.20,shelf_light);
+    // a117124: open sea beyond 30 px #1c598c against #175689 (a little
+    // light and red); 10-14 px on the reference; the lighter edge at 2-6 px
+    // (#176698, #176294, #165e91) missing, ours flat #175990. The coast
+    // distance saturates at ~3 km (under 2 px here), so the edge uses it
+    // only below 2.9 km and otherwise the shallow shelf (under ~120 m).
+    vec3 far_gain=mix(vec3(0.70,1.19,1.06),vec3(0.93,1.0,0.95)*1.20,shelf_light);
+    float far_rim=max((1.0-smoothstep(0.0,2900.0,coast_m))*(1.0-step(2900.0,coast_m)),(1.0-smoothstep(20.0,120.0,depth))*0.6);
+    // b6c8e1a: the edge is there, even, no halo or shelf blotches, but at
+    // about half the lift (2 px #195e92 against #176698).
+    far_gain*=mix(vec3(1.0),vec3(0.88,1.45,1.18),far_rim);
     ALBEDO*=mix(1.04,1.12,far_sea)*mix(vec3(1.0+0.20*shelf_light),far_gain,far_sea);
     ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),(0.10+far_sea*0.06)*(1.0-0.5*shelf_light));
     // Close views: shallow water as a broad, even ramp like the reference
