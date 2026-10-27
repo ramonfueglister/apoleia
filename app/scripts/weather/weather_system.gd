@@ -639,7 +639,11 @@ func _update_tiers() -> void:
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
 	# Clouds closer to the camera than this dissolve (perspective near zoom).
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	_cloud_material.set_shader_parameter("near_fade_distance", focus_distance * lerpf(1.3, 0.7, smoothstep(300.0, 700.0, _ground_width)))
+	var near_hide := focus_distance * lerpf(0.85, 0.7, smoothstep(300.0, 700.0, _ground_width))
+	_cloud_material.set_shader_parameter("near_fade_distance", near_hide)
+	# Hidden near clouds drop their shadows too (no cloudless dark blobs).
+	_cloud_shadow_material.set_shader_parameter("near_fade_distance", near_hide)
+	_cloud_mask_material.set_shader_parameter("near_fade_distance", near_hide)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
 	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 1.0)
 	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.6, smoothstep(0.2, 0.6, _current_field().z)))
