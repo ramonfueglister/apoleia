@@ -30,6 +30,12 @@ var _frame=0
 ## already showing an earlier camera are updated oldest first, at most this
 ## many per frame (each costs several material writes; ~140 tiles are drawn).
 const CAMERA_TILE_BUDGET=16
+## A tile family's forests hold the same trees on L0..L2 (tile_forest), so
+## where the parent also carries forest the child's crowns replace the
+## parent's at mid-blend instead of cross-fading both with the alpha-hash
+## material (no early depth, two forests drawn for the whole fade).
+const FOREST_SWAP=true
+const FOREST_TOP=2 # tile_forest FOREST_LEVELS-1: highest level with forest
 const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_height_scale",&"viewport_width",&"projection_vertical_scale"]
 var _shader_uniforms:Dictionary={}
 # refining: tiles that want finer children but are not fully faded to them yet;
@@ -41,6 +47,10 @@ var tile_timeline:Array=[]
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
     owner=scene;terrain_template=terrain;water_template=water
+    # Lakes shade in the terrain material: same water palette as the sea
+    # (without it they fell back to the shader defaults, pale sky blue).
+    var palette=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+    for key in palette:terrain_template.set_shader_parameter(key,palette[key])
     if water_template==null:
         water_template=ShaderMaterial.new();water_template.shader=load("res://shaders/water.gdshader")
         load("res://scripts/water/water_style.gd").apply_to(water_template)
@@ -136,7 +146,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         entry.land.visible=shown;entry.water.visible=shown and entry.marine
         entry.forest_holder.visible=shown or fading_forests.has(id)
         if fading_forests.has(id):
-            for tree in entry.forests:forest.set_weight(tree,float(fading_forests[id]))
+            for tree in entry.forests:_forest_weight(tree,float(fading_forests[id]),_description(id).level<=FOREST_TOP)
             entry.erase("state");entry.erase("camera")
         if not shown:continue
         entry.used=_frame;var d=_description(id);var parent_id=str(_draw[id].parent)
@@ -148,8 +158,15 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
         # clipmap_focus is written with them: the shader's focus morph is
         # always replaced by the edge morph (clipmap_edge_width>0), so
         # per-frame focus updates have no rendered or height_at effect.
-        var state=[parent_id,blend,edge_mask]
+        # The family blend animates every frame while a tile fades in; only
+        # it (and the forest weight) is rewritten then, not the whole set.
+        var state=[parent_id,edge_mask]
         var structural=entry.get("state",[])!=state
+        if not structural and float(entry.get("blend",-1.))!=blend:
+            entry["blend"]=blend;var tile_nodes:=_tile_nodes(entry)
+            for material in _materials(tile_nodes):material.set_shader_parameter(&"clipmap_family_blend",blend)
+            for node in tile_nodes:
+                if node is MultiMeshInstance3D:_forest_weight(node,blend,_description(parent_id).level<=FOREST_TOP)
         if not structural:
             var seen:Array=entry.get("camera",[])
             if seen==camera:continue
@@ -157,7 +174,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
             if not seen.is_empty():stale.append(id);continue
         var tile_nodes:=_tile_nodes(entry)
         if structural:
-            entry["state"]=state;entry.erase("camera")
+            entry["state"]=state;entry["blend"]=blend;entry.erase("camera")
             var parent_rect=_rect(parent_id);var rect_value=Vector4(parent_rect.position.x,parent_rect.position.y,parent_rect.size.x,parent_rect.size.y)
             var parent_texture=parent.textures.height;var parent_step=parent_d.span/GRID
             var edge_width=d.span/GRID*4.;var morph_start=d.span*.8;var morph_end=d.span*1.6
@@ -169,7 +186,7 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
                 material.set_shader_parameter(&"clipmap_edge_mask",edge_mask);material.set_shader_parameter(&"clipmap_edge_width",edge_width)
                 material.set_shader_parameter(&"clipmap_morph_start",morph_start);material.set_shader_parameter(&"clipmap_morph_end",morph_end)
             for node in tile_nodes:
-                if node is MultiMeshInstance3D:forest.set_weight(node,blend) # last write: may swap opaque/alpha
+                if node is MultiMeshInstance3D:_forest_weight(node,blend,_description(parent_id).level<=FOREST_TOP) # last write: may swap opaque/alpha
         _write_camera(entry,camera)
     # Oldest camera first, at most CAMERA_TILE_BUDGET tiles per frame.
     stale.sort_custom(func(a,b):return int(nodes[a].get("camera_frame",0))<int(nodes[b].get("camera_frame",0)))
@@ -177,6 +194,13 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     _evict();metrics.draw_tiles=_draw.size();metrics.gpu_bytes=_gpu_bytes;metrics.missing=0
     for id in _wanted:
         if not nodes.has(id):metrics.missing+=1
+## Forest weight for a fading family; swap: the other side carries the same
+## trees (both levels <= FOREST_TOP), so show one or the other, opaque.
+func _forest_weight(node:GeometryInstance3D,weight:float,swap:bool)->void:
+    if FOREST_SWAP and swap and weight<1.:
+        node.visible=weight>=.5;forest.set_weight(node,1.)
+    else:
+        node.visible=true;forest.set_weight(node,weight)
 func _tile_nodes(entry:Dictionary)->Array:
     var tile_nodes:Array=[entry.land]+([entry.water] if entry.marine else [])+entry.get("forests",[])
     if entry.get("river")!=null:tile_nodes.append(entry.river)
@@ -273,6 +297,39 @@ func height_at(p:Vector2)->float:
         var e=_query_vertex_height(corner+Vector2.ONE*step_size,query)
         return _query_triangle_height(a,b,c,e,f)*.001
     return 0.
+
+## Signed coast distance (m, >0 water, sea or lake) of the finest drawn tile
+## at p, that tile's water texel (m) and 1 for sea; x is NAN while no drawn
+## tile covers p.
+func water_distance_at(p:Vector2)->Vector3:
+    var relative=(p-Vector2(stream.manifest.origin[0],stream.manifest.origin[1]))/float(stream.manifest.base_span)
+    for level in range(int(stream.manifest.max_level)+1):
+        var divisor=pow(2.,level)
+        var id=stream.key(level,int(floor(relative.x/divisor)),int(floor(relative.y/divisor)))
+        if not _draw.has(id) or not nodes.has(id) or not nodes[id].land.visible:continue
+        var images:Dictionary=stream.cache.get(id,{}).get("images",{})
+        var image:Image=images.get("water")
+        if image==null:continue
+        var rect=_rect(id)
+        return Vector3(_query_encoded_height(image,rect,p)*.125-4096.,rect.size.x*1000./float(image.get_width()-1),1. if _query_marine(images,rect,p) else 0.)
+    return Vector3(NAN,INF,0.)
+
+## A land-surface uniform for the template and every resident tile.
+func set_land_parameter(uniform_name:StringName,value:Variant)->void:
+    terrain_template.set_shader_parameter(uniform_name,value)
+    for id in nodes:nodes[id].land.material_override.set_shader_parameter(uniform_name,value)
+
+## A crown uniform for the forest templates and every resident tile's
+## fade and opaque materials.
+func set_forest_parameter(uniform_name:StringName,value:Variant)->void:
+    if forest==null:return
+    for template in [forest.get("material"),forest.get("opaque_material")]:
+        if template:template.set_shader_parameter(uniform_name,value)
+    var seen={}
+    for id in nodes:
+        for node in nodes[id].get("forests",[]):
+            for material in [node.material_override,node.get_meta("fade_material",null),node.get_meta("opaque_material",null)]:
+                if material and not seen.has(material):seen[material]=true;material.set_shader_parameter(uniform_name,value)
 
 func _query_triangle_height(a:float,b:float,c:float,d:float,f:Vector2)->float:
     return a+(b-a)*f.x+(c-a)*f.y if f.x+f.y<1. else d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y)

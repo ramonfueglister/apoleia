@@ -28,6 +28,10 @@ var _started_usec=0
 var _sun:DirectionalLight3D
 var _environment:Environment
 var _held_draws=0
+## One kind of warm draw is added per frame: each first draw compiles its
+## pipelines synchronously, and all kinds in one frame made a single 4 s frame.
+var _steps:Array=[]
+var _kinds:Array=[]
 
 func begin(scene:Node3D,clipmap:RefCounted)->bool:
     var root_id=str(clipmap.stream.manifest.root)
@@ -45,58 +49,47 @@ func begin(scene:Node3D,clipmap:RefCounted)->bool:
     if environment is Environment:_environment=environment
     if _sun or _environment:RenderingServer.frame_pre_draw.connect(_hold_view_state)
     holder=Node3D.new();holder.name="ClipmapPipelineWarmup";scene.add_child(holder)
-    var kinds=[]
-    if clipmap.forest and not clipmap.forest.meshes.is_empty():
-        var count=0
-        # Real tiles carry a precomputed ground (MultiMesh custom data, a
-        # specialization) and draw the alpha-hash fade material while their
-        # family fades in, the opaque one afterwards; both for the visible
-        # crowns and the L0 shadow-only copies. Warm every combination.
-        for fading in [false,true]:
-            # Without the fade/opaque swap (set_weight) there is no fade variant to warm.
-            if fading and not clipmap.forest.has_method("set_weight"):continue
-            var buckets=[]
-            for variant in range(clipmap.forest.meshes.size()):
-                var s=.001
-                var transforms=PackedFloat32Array([s,0.,0.,p.x,0.,s,0.,p.y,0.,0.,s,p.z])
-                var bucket={"variant":variant,"count":1,"transforms":transforms,"ground":PackedFloat32Array([0.]),"aabb":AABB(p-Vector3.ONE,Vector3.ONE*2.)}
-                # Real tiles hand over a worker-packed transform+ground buffer
-                # (use_custom_data); without it the warm draw lacks that specialization.
-                if clipmap.forest.has_method("_custom_buffer"):bucket["buffer"]=clipmap.forest._custom_buffer(transforms,PackedFloat32Array([0.]))
-                buckets.append(bucket)
-            var trees:Array=clipmap.forest.attach(holder,{"buckets":buckets,"support_id":"pipeline-warmup","support_stride":0,"cell":Vector2i.ZERO},textures,rect)
-            for tree in trees:
-                tree.custom_aabb=everywhere
-                if fading:clipmap.forest.set_weight(tree,0.) # fade material, alpha hash discards all
-                else:tree.set_instance_shader_parameter("representation_weight",0.)
-            count+=trees.size()
-        kinds.append("forest_multimesh_x%d"%count)
     var c=Vector3(p.x,0.,p.z)
-    var quad_v=PackedVector3Array([c,c,c,c]);var quad_n=PackedVector3Array([Vector3.UP,Vector3.UP,Vector3.UP,Vector3.UP])
-    var quad_i=PackedInt32Array([0,2,1,1,2,3])
-    if clipmap.rivers:
-        var river:Node3D=clipmap.rivers.attach(holder,{"vertices":quad_v,"normals":quad_n,"uv":PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO,Vector2.ZERO]),"uv2":PackedVector2Array([Vector2(-1.,1.),Vector2(1.,1.),Vector2(-1.,1.),Vector2(1.,1.)]),"indices":quad_i},textures,rect)
-        if river:
-            river.custom_aabb=everywhere;_tile_origin(river,d);kinds.append("river")
-    if clipmap.shores:
-        var shore:Node3D=clipmap.shores.attach(holder,{"vertices":quad_v,"normals":quad_n,"indices":quad_i},textures,rect,clipmap.terrain_template)
-        if shore:
-            shore.custom_aabb=everywhere;_tile_origin(shore,d);kinds.append("shore")
-    # Delta surfaces (landscape.gd _build_delta_surfaces) appear only once the
-    # root is resident, usually just after the tour clock starts; their first
-    # draw stalled ~4.5 s. Same mesh format (vertex, normal, uv, index), shader
-    # and shadow setting, zero-area triangles. Skipped once the deltas are drawn
-    # by the terrain shader instead (no _build_delta_surfaces).
-    if scene.has_method("_build_delta_surfaces") and not scene.get("delta_regions").is_empty():
-        var arrays=[];arrays.resize(Mesh.ARRAY_MAX)
-        arrays[Mesh.ARRAY_VERTEX]=quad_v;arrays[Mesh.ARRAY_NORMAL]=quad_n;arrays[Mesh.ARRAY_TEX_UV]=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO,Vector2.ZERO]);arrays[Mesh.ARRAY_INDEX]=quad_i
-        var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-        var material=ShaderMaterial.new();material.shader=load("res://shaders/delta.gdshader")
-        var delta=MeshInstance3D.new();delta.name="Delta";delta.mesh=mesh;delta.material_override=material
-        delta.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;delta.custom_aabb=everywhere
-        holder.add_child(delta);kinds.append("delta")
-    result={"kinds":kinds}
+    var quad={"vertices":PackedVector3Array([c,c,c,c]),"normals":PackedVector3Array([Vector3.UP,Vector3.UP,Vector3.UP,Vector3.UP]),"indices":PackedInt32Array([0,2,1,1,2,3])}
+    if clipmap.forest and not clipmap.forest.meshes.is_empty():
+        # Real tiles draw the alpha-hash fade material while their family
+        # fades in, the opaque one afterwards; both for the visible crowns and
+        # the L0 shadow-only copies. Without the fade/opaque swap (set_weight)
+        # there is no fade variant to warm.
+        for fading in ([false,true] if clipmap.forest.has_method("set_weight") else [false]):
+            _steps.append(func():_warm_forest(clipmap,p,textures,rect,everywhere,fading))
+    if clipmap.rivers:_steps.append(func():_warm_river(clipmap,quad,textures,rect,d,everywhere))
+    if clipmap.shores:_steps.append(func():_warm_shore(clipmap,quad,textures,rect,d,everywhere))
+    result={"kinds":_kinds}
     return true
+
+func _warm_forest(clipmap:RefCounted,p:Vector3,textures:Dictionary,rect:Rect2,everywhere:AABB,fading:bool)->void:
+    var buckets=[]
+    for variant in range(clipmap.forest.meshes.size()):
+        var s=.001
+        var transforms=PackedFloat32Array([s,0.,0.,p.x,0.,s,0.,p.y,0.,0.,s,p.z])
+        var bucket={"variant":variant,"count":1,"transforms":transforms,"ground":PackedFloat32Array([0.]),"aabb":AABB(p-Vector3.ONE,Vector3.ONE*2.)}
+        # Real tiles hand over a worker-packed transform+ground buffer
+        # (use_custom_data, a specialization); warm the same.
+        if clipmap.forest.has_method("_custom_buffer"):bucket["buffer"]=clipmap.forest._custom_buffer(transforms,PackedFloat32Array([0.]))
+        buckets.append(bucket)
+    var trees:Array=clipmap.forest.attach(holder,{"buckets":buckets,"support_id":"pipeline-warmup","support_stride":0,"cell":Vector2i.ZERO},textures,rect)
+    for tree in trees:
+        tree.custom_aabb=everywhere
+        if fading:clipmap.forest.set_weight(tree,0.) # fade material, alpha hash discards all
+        else:tree.set_instance_shader_parameter("representation_weight",0.)
+    _kinds.append("forest_%s_x%d"%["fade" if fading else "opaque",trees.size()])
+
+func _warm_river(clipmap:RefCounted,quad:Dictionary,textures:Dictionary,rect:Rect2,d:Dictionary,everywhere:AABB)->void:
+    var zero=PackedVector2Array([Vector2.ZERO,Vector2.ZERO,Vector2.ZERO,Vector2.ZERO])
+    var river:Node3D=clipmap.rivers.attach(holder,{"vertices":quad.vertices,"normals":quad.normals,"uv":zero,"uv2":PackedVector2Array([Vector2(-1.,1.),Vector2(1.,1.),Vector2(-1.,1.),Vector2(1.,1.)]),"indices":quad.indices},textures,rect)
+    if river:
+        river.custom_aabb=everywhere;_tile_origin(river,d);_kinds.append("river")
+
+func _warm_shore(clipmap:RefCounted,quad:Dictionary,textures:Dictionary,rect:Rect2,d:Dictionary,everywhere:AABB)->void:
+    var shore:Node3D=clipmap.shores.attach(holder,quad,textures,rect,clipmap.terrain_template)
+    if shore:
+        shore.custom_aabb=everywhere;_tile_origin(shore,d);_kinds.append("shore")
 
 func _hold_view_state()->void:
     _held_draws+=1
@@ -114,6 +107,7 @@ func _tile_origin(node:Node3D,d:Dictionary)->void:
 func update(counts:Dictionary)->void:
     if done or holder==null:return
     frames+=1
+    if not _steps.is_empty():_steps.pop_front().call();quiet=0;return
     if counts!=last_counts:last_counts=counts.duplicate();quiet=0
     else:quiet+=1
     if (frames>=MIN_FRAMES and quiet>=QUIET_FRAMES) or frames>=MAX_FRAMES:

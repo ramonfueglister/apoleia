@@ -177,11 +177,15 @@ var river_completed_key=""
 var river_set_cache: Dictionary={}
 var river_build_selection: Dictionary={}
 var river_sources_sha256=""
+# River polylines are parsed, projected and smoothed on a worker while the
+# terrain root loads; _setup_rivers() joins it (was ~1.4 s on the main thread).
+var river_load_task:=-1
+var river_load_result:Dictionary={}
+var river_supplement_sha256=""
 # Display-only estuaries: detected mouths (pos, inland dir, width) and
 # curated delta branches appended as extra river sources.
 var river_mouths:Array=[]
 var delta_apexes:Array=[]
-var delta_nodes:Array=[]
 const RIVER_SET_CACHE_LIMIT=8
 const RIVER_SET_CACHE_BYTES=67108864
 # Set-Schluessel quantisiert: Breitenboden (Mindestpixel*Welt/Pixel) in Viertel-
@@ -371,6 +375,7 @@ func _ready() -> void:
     if not _load_dataset():
         get_tree().quit(2)
         return
+    _start_river_load()
     if terrain_streaming:
         var root_started=Time.get_ticks_msec()
         while terrain_streaming.root_record().is_empty():
@@ -412,6 +417,8 @@ func _ready() -> void:
             # Region coverage (A02) needs every pyramid level; a partial build
             # silently shows coarse parents. Report it instead of hiding it.
             push_warning("Clipmap pyramid READY is '"+clipmap_runtime.stream.ready_state+"', not 'complete': finer tiles may be missing; run tools/region_coverage_check.py")
+        var tile_manifest:Dictionary=clipmap_runtime.stream.manifest
+        _build_edge_haze(Rect2(Vector2(tile_manifest.world_min[0],tile_manifest.world_min[1]),Vector2(tile_manifest.world_size[0],tile_manifest.world_size[1])))
     if RenderingServer.has_method("viewport_set_measure_render_time"):
         RenderingServer.call("viewport_set_measure_render_time",get_viewport().get_viewport_rid(),true)
         render_timing_enabled=true
@@ -915,7 +922,6 @@ func _setup_scene() -> void:
         terrain_streaming.attach(self,terrain_material)
     elif fixed_surface: _setup_fixed_surface()
     _setup_rivers()
-    _build_delta_surfaces()
 
 func _setup_fixed_surface() -> void:
     var texture=ImageTexture.create_from_image(Image.create_from_data(fixed_surface.width,fixed_surface.height,false,Image.FORMAT_RG8,fixed_surface.bytes))
@@ -1454,10 +1460,8 @@ func _update_camera() -> void:
     if marine_material:
         for material in _marine_materials():material.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
     if marine_material: _bind_visible_river_mouths()
-    if delta_nodes.is_empty() and frame_number%15==0:_build_delta_surfaces()
-    for node in delta_nodes:
-        node.material_override.set_shader_parameter("relief",relief);node.material_override.set_shader_parameter("view_width",view_width);node.material_override.set_shader_parameter("display_height_scale",display_height_scale)
-        node.material_override.set_shader_parameter("water_sun_dir",sun_light.global_transform.basis.z)
+    if frame_number%15==0:_anchor_deltas()
+    if edge_haze_material:edge_haze_material.set_shader_parameter("edge_fade",clampf(view_width*0.05,60.0,EDGE_HAZE_MAX_FADE))
     LandscapeLook.update_view(sun_light,view_width,camera_distance,camera.fov,elevation_degrees)
     tree_material.set_shader_parameter("relief",1.0 if warmup_frames_remaining>0 else relief)
     if canopy_material: canopy_material.set_shader_parameter("relief",relief)
@@ -1868,7 +1872,7 @@ func _configure_forest_mesh_cache() -> void:
         root_integrity_fatal=true;push_error("Unknown forest representation");return
     if forest_representation_format=="compact":
         forest_base_crown_arrays=style_api.prepare_diorama_crown_arrays()
-        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays)
+        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays,style_api.prepare_dense_crown_arrays())
         forest_compact_meshes=CompactForestMaterialize.shared_meshes(forest_compact_templates)
         forest_grove_lod_arrays={1:forest_compact_templates}
         for lod in [2,3]:forest_grove_lod_arrays[lod]=CompactForest.variants(style_api.create_tree_mesh(0,lod).surface_get_arrays(0))
@@ -2466,12 +2470,71 @@ func _append_crown(st: SurfaceTool,rings: Array,offset: Vector3,color: Color,sid
             for v in [v0,v2,v1,v1,v2,v3]: st.add_vertex(v)
 
 
-func _setup_rivers() -> void:
+func _start_river_load() -> void:
     if not manifest.has("rivers_path"): return
     var bytes=_read_relative(manifest.rivers_path)
-    var data=JSON.parse_string(bytes.get_string_from_utf8())
     var river_hash=HashingContext.new();river_hash.start(HashingContext.HASH_SHA256);river_hash.update(bytes);river_sources_sha256=river_hash.finish().hex_encode()
-    if not data is Dictionary: push_error("Invalid source rivers"); return
+    var payloads:Array=[{"bytes":bytes,"smoothing":2}]
+    # Display-only supplement (Natural Earth Europe rivers, see its manifest);
+    # the canonical dataset rivers stay unchanged.
+    var supplement:Dictionary=product_binding.get("visual_extensions",{}).get("rivers_supplement",{})
+    if bool(supplement.get("enabled",false)):
+        var path=source_root.path_join(str(supplement.path))
+        # Optional: a package without it draws the canonical rivers only.
+        if not FileAccess.file_exists(path):push_warning("River supplement not packaged; drawn without it")
+        else:
+            river_supplement_sha256=FileAccess.get_sha256(path)
+            if river_supplement_sha256==str(supplement.sha256):payloads.append({"bytes":FileAccess.get_file_as_bytes(path),"smoothing":1})
+            else:push_error("River supplement hash mismatch; drawn without it")
+    river_load_task=WorkerThreadPool.add_task(_load_river_features.bind(payloads),false,"river polylines")
+
+# Worker: pure data (JSON, projection, Chaikin), no scene or main-thread state.
+func _load_river_features(payloads:Array) -> void:
+    var sources:Array=[];var feature_count=0;var valid=true
+    for payload_index in range(payloads.size()):
+        var data=JSON.parse_string(payloads[payload_index].bytes.get_string_from_utf8())
+        if not data is Dictionary:
+            if payload_index==0:valid=false;break
+            continue
+        var smoothing=int(payloads[payload_index].smoothing)
+        for feature in data.get("features",[]):
+            var geom=feature.get("geometry",{})
+            var lines=[]
+            if geom.get("type")=="LineString": lines=[geom.coordinates]
+            elif geom.get("type")=="MultiLineString": lines=geom.coordinates
+            else: continue
+            var rank=float(feature.get("properties",{}).get("scalerank",5))
+            var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
+            var segments: Array=[]
+            var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
+            var line_index=0
+            for line in lines:
+                var station=0.
+                var polyline_id=str(feature_count)+":"+str(line_index);line_index+=1
+                # Display smoothing (Chaikin, endpoints kept) once at load, so every
+                # renderer path (fixed, streaming, clipmap) draws smooth meanders.
+                var points:Array[Vector2]=[]
+                for coordinate in line:
+                    var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
+                    if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
+                for _iteration in range(smoothing):
+                    if points.size()<3:break
+                    var smoothed:Array[Vector2]=[points[0]]
+                    for k in range(points.size()-1):
+                        smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
+                    smoothed.append(points[-1]);points=smoothed
+                for j in range(points.size()-1):
+                    var a=points[j];var b=points[j+1]
+                    segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
+                    minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
+            if not segments.is_empty(): sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name","")),"supplement":payload_index>0,"base_width":width})
+            feature_count+=1
+    river_load_result={"valid":valid,"sources":sources,"feature_count":feature_count}
+
+func _setup_rivers() -> void:
+    if river_load_task<0: return
+    WorkerThreadPool.wait_for_task_completion(river_load_task);river_load_task=-1
+    if not bool(river_load_result.get("valid",false)): push_error("Invalid source rivers"); return
     river_material=ShaderMaterial.new()
     river_material.shader=load("res://shaders/rivers.gdshader")
     for param in ["elevation_tex","water_tex","world_size","world_min","height_packed","water_distance_tex","use_water_distance","detail_elevation_tex","detail_height_packed","use_detail_elevation","detail_world_min","detail_world_size","detail_water_tex","use_detail_water","detail_water_distance_tex","use_detail_water_distance","use_water_tile","use_water_tile_distance","water_tile_tex","water_tile_distance_tex","water_tile_world_min","water_tile_world_size","use_c2_domains","fine_inner_world_min","fine_inner_world_size","local_inner_world_min","local_inner_world_size"]:
@@ -2480,38 +2543,9 @@ func _setup_rivers() -> void:
     if style_api:
         for param in style_api.water_parameters(): river_material.set_shader_parameter(param,style_api.water_parameters()[param])
     for param in LandscapeLook.water_parameters(): river_material.set_shader_parameter(param,LandscapeLook.water_parameters()[param])
-    for feature in data.get("features",[]):
-        var geom=feature.get("geometry",{})
-        var lines=[]
-        if geom.get("type")=="LineString": lines=[geom.coordinates]
-        elif geom.get("type")=="MultiLineString": lines=geom.coordinates
-        else: continue
-        var rank=float(feature.get("properties",{}).get("scalerank",5))
-        var width=lerpf(0.060,0.014,clampf(rank/10.0,0,1))
-        var segments: Array=[]
-        var minimum=Vector2(INF,INF);var maximum=Vector2(-INF,-INF)
-        var line_index=0
-        for line in lines:
-            var station=0.
-            var polyline_id=str(river_feature_count)+":"+str(line_index);line_index+=1
-            # Display smoothing (Chaikin, endpoints kept) once at load, so every
-            # renderer path (fixed, streaming, clipmap) draws smooth meanders.
-            var points:Array[Vector2]=[]
-            for coordinate in line:
-                var q=geographic_to_world(float(coordinate[0]),float(coordinate[1]))
-                if points.is_empty() or not points[-1].is_equal_approx(q):points.append(q)
-            for _iteration in range(2):
-                if points.size()<3:break
-                var smoothed:Array[Vector2]=[points[0]]
-                for k in range(points.size()-1):
-                    smoothed.append(points[k].lerp(points[k+1],.25));smoothed.append(points[k].lerp(points[k+1],.75))
-                smoothed.append(points[-1]);points=smoothed
-            for j in range(points.size()-1):
-                var a=points[j];var b=points[j+1]
-                segments.append([a,b,width,station,polyline_id]);station+=a.distance_to(b)
-                minimum=minimum.min(a).min(b);maximum=maximum.max(a).max(b)
-        if not segments.is_empty(): river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(feature.get("properties",{}).get("name",""))})
-        river_feature_count+=1
+    river_sources.append_array(river_load_result.sources)
+    river_feature_count+=int(river_load_result.feature_count)
+    river_load_result={}
     _detect_river_mouths()
     _setup_river_deltas()
     _add_delta_arms()
@@ -2522,42 +2556,122 @@ func _setup_rivers() -> void:
 # the main course): over the last ~12 km the course splits into 3-4 strongly
 # meandering arms of 60-100% width that fan to the coast; inlets of the
 # barrier spit sit at their ends. The main course stays the central arm.
+func _delta_arm_points(a:Vector2,b:Vector2,amplitude:float,rng:RandomNumberGenerator)->Array[Vector2]:
+    var direction=(b-a).normalized();var normal=direction.orthogonal()
+    var phase=rng.randf()*TAU;var waves=rng.randf_range(2.6,3.8);var phase2=rng.randf()*TAU
+    var pts:Array[Vector2]=[a]
+    var count=48
+    for i in range(1,count+1):
+        var t=float(i)/count
+        var fade=smoothstep(0.0,0.12,t)*(1.0-0.55*t)
+        var wobble=(sin(t*TAU*waves+phase)*0.8+sin(t*TAU*waves*2.3+phase2)*0.2)*amplitude*0.2*fade
+        pts.append(a.lerp(b,t)+normal*wobble)
+    return pts
+
+func _delta_arm_source(pts:Array[Vector2],width:float,name:String,k:int)->Dictionary:
+    var segments=[];var station=0.0;var minimum=pts[0];var maximum=pts[0]
+    for i in range(pts.size()-1):
+        segments.append([pts[i],pts[i+1],width,station,"delta:"+name+":"+str(k)]);station+=pts[i].distance_to(pts[i+1])
+        minimum=minimum.min(pts[i+1]);maximum=maximum.max(pts[i+1])
+    return {"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":name+" delta arm","synthetic_delta":true,"base_width":width}
+
 func _add_delta_arms() -> void:
     for region in delta_regions:
+        # The source data carries the real distributaries (Rhône: Grand and
+        # Petit Rhône; the Grand also a terrain channel): no cut, no fan. At
+        # 40 km (903029a) the synthetic main arm ran beside the channel and
+        # the Petit Rhône arm across the Vaccarès.
+        if region.get("real_courses",false):continue
         var sea:Vector2=region.sea;var tangent:Vector2=region.tangent;var mouth:Vector2=region.mouth
         var length=float(region.rb)*2.2
         var base_width=0.03
         for source in river_sources:
             if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
         var start=mouth-sea*length
+        # From the apex (Rhône): the arms replace every source branch on the
+        # seaward side of it (a half plane across the sea direction; one
+        # along apex-mouth kept the Petit Rhône's westward first 20 km).
+        var below:Vector2=sea;var reach=length*1.6
+        if region.has("apex"):
+            start=region.apex;below=(mouth-start).normalized();reach=start.distance_to(mouth)*1.3
+        # The source course below the split is replaced by the fan (it would
+        # otherwise run as an extra band through the middle: the "braid").
+        # Per polyline everything downstream of the first cut segment goes
+        # too: a meander swinging back across the cut line was kept and ended
+        # square in the land (Tiber at 90 km, r31 preview).
+        var cut_ends=[]
+        for source in river_sources:
+            if str(source.get("name",""))!=str(region.name):continue
+            var segments:Array=source.segments
+            var spans={}
+            for i in range(segments.size()):
+                var id=str(segments[i][4])
+                if not spans.has(id):spans[id]=[i,i,-1,-1]
+                spans[id][1]=i
+                var m=(Vector2(segments[i][0])+Vector2(segments[i][1]))*.5
+                if (m-start).dot(sea)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:
+                    if spans[id][2]<0:spans[id][2]=i
+                    spans[id][3]=i
+            var kept=[]
+            for i in range(segments.size()):
+                var span:Array=spans[str(segments[i][4])]
+                if span[2]>=0:
+                    var forward=Vector2(segments[span[1]][1]).distance_to(mouth)<Vector2(segments[span[0]][0]).distance_to(mouth)
+                    if (forward and i>=span[2]) or (not forward and i<=span[3]):continue
+                    # The point where the kept course meets the cut.
+                    if forward and i==span[2]-1:cut_ends.append(Vector2(segments[i][1]))
+                    if not forward and i==span[3]+1:cut_ends.append(Vector2(segments[i][0]))
+                kept.append(segments[i])
+            source.segments=kept
+        # The fan starts where the kept course ends. The nearest kept point
+        # (a greedy walk that moved start as it went) could lie ~5 km
+        # upstream of that end, and the course between them stayed as a stub
+        # ending square in the land (Tiber at 90 km, b76c6c5).
+        var root_distance=INF;var root:Vector2=start
+        for q in cut_ends:
+            if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+        if cut_ends.is_empty():
+            for source in river_sources:
+                if str(source.get("name",""))!=str(region.name):continue
+                for segment in source.segments:
+                    for q in [Vector2(segment[0]),Vector2(segment[1])]:
+                        if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+            if root_distance>=length*0.6:root=start
+        start=root
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
-        var ends=[]
-        var arm_count=3
-        for k in range(arm_count):
-            var spread=(float(k)/float(arm_count-1)-0.5)*2.0*float(region.ra)*0.75
-            ends.append(mouth+tangent*spread)
+        # Hierarchical branching: the main arm (width 1.0) runs to the mouth;
+        # side arms (0.35-0.6) leave it at different points, one of them
+        # splits again. Every arm meanders with a random phase, amplitude
+        # fading towards the coast.
         var mouths_out=[]
-        for k in range(arm_count):
-            # Monotonic fan: arm k keeps its lateral slot (offset grows from 0
-            # at the split to its coast position), small random meander below
-            # half the slot spacing, so arms diverge and never cross.
-            var end:Vector2=ends[k]+sea*14.0
-            var direction=(end-start).normalized();var normal=direction.orthogonal()
-            var span=start.distance_to(end)
-            var slot=float(region.ra)*0.75/float(arm_count-1)
-            var phases=[rng.randf()*TAU,rng.randf()*TAU];var freqs=[rng.randf_range(2.0,3.2),rng.randf_range(4.5,6.5)]
-            var width=base_width*(1.0 if k==1 else rng.randf_range(0.6,0.85))
-            var segments=[];var station=0.0
-            var previous=start;var count=48
-            var minimum=start;var maximum=start
-            for i in range(1,count+1):
-                var t=float(i)/count
-                var wobble=(sin(t*TAU*freqs[0]+phases[0])*0.7+sin(t*TAU*freqs[1]+phases[1])*0.3)*slot*0.28*sin(t*PI)
-                var p=start.lerp(end,t)+normal*wobble
-                segments.append([previous,p,width,station,"delta:"+str(region.name)+":"+str(k)]);station+=previous.distance_to(p)
-                minimum=minimum.min(p);maximum=maximum.max(p);previous=p
-            river_sources.append({"segments":segments,"rect":Rect2(minimum,maximum-minimum).grow(.001),"name":str(region.name)+" delta arm","synthetic_delta":true})
-            mouths_out.append(ends[k])
+        # Arms run on into the sea (clipped there); from an apex along their
+        # own direction, so they cross the coast at the real outlet.
+        var main_end=mouth+(below if region.has("apex") else sea)*14.0
+        var arms=[[start,main_end,base_width,0.0]]
+        var branch_specs=region.arms if not region.arms.is_empty() else [[0.15,-1.0,0.55],[0.40,1.0,0.45],[0.62,-1.0,0.35]]
+        var main_points=_delta_arm_points(start,main_end,float(region.ra),rng)
+        river_sources.append(_delta_arm_source(main_points,base_width,str(region.name),0))
+        mouths_out.append(mouth)
+        var index=1
+        for spec in branch_specs:
+            var at=int(float(main_points.size()-1)*float(spec[0]))
+            var split:Vector2=main_points[at]
+            # A real outlet [lon, lat], or a side (+1/-1) at a random spread.
+            var coast_end:Vector2;var run_on:Vector2=sea
+            if spec[1] is Array:
+                coast_end=geographic_to_world(float(spec[1][0]),float(spec[1][1]));run_on=(coast_end-split).normalized()
+            else:coast_end=mouth+tangent*float(spec[1])*float(region.ra)*rng.randf_range(1.6,2.0)*(1.0-float(spec[0])*0.45)
+            var pts=_delta_arm_points(split,coast_end+run_on*14.0,float(region.ra)*0.6,rng)
+            river_sources.append(_delta_arm_source(pts,base_width*float(spec[2]),str(region.name),index));index+=1
+            mouths_out.append(coast_end)
+            if index==2 and branch_specs.size()>=3 and not (spec[1] is Array):
+                # Second-order split of the first side arm.
+                var at2=int(float(pts.size()-1)*0.45);var split2:Vector2=pts[at2]
+                var coast2=coast_end+tangent*float(spec[1])*float(region.ra)*0.8
+                var pts2=_delta_arm_points(split2,coast2+sea*14.0,float(region.ra)*0.4,rng)
+                river_sources.append(_delta_arm_source(pts2,base_width*0.35,str(region.name),index));index+=1
+                mouths_out.append(coast2)
+        var arm_count=mouths_out.size()
         # Spit inlets at the two outer arms.
         region.inlets=[mouths_out[0],mouths_out[arm_count-1]]
         region.arm_ends=mouths_out
@@ -2566,21 +2680,38 @@ func _add_delta_arms() -> void:
 # and a wider lower course towards a delta. Shared by all renderer paths.
 func _widen_river_mouths() -> void:
     for source in river_sources:
+        # Gains end at 4 km from a mouth and 25 km from an apex: only those
+        # within the source's rect grown by 25 km can change its segments.
+        var reach=Rect2(source.rect).grow(25.0)
+        var mouths=river_mouths.filter(func(mouth):return reach.has_point(mouth.position))
+        var apexes=delta_apexes.filter(func(apex):return reach.has_point(apex))
+        if mouths.is_empty() and apexes.is_empty():continue
         for segment in source.segments:
             var p:Vector2=(Vector2(segment[0])+Vector2(segment[1]))*.5
             var gain=1.0
-            for mouth in river_mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
-            for apex in delta_apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
+            for mouth in mouths:gain=maxf(gain,1.0+0.9*(1.0-smoothstep(0.0,4.0,p.distance_to(mouth.position))))
+            for apex in apexes:gain*=1.0+0.7*(1.0-smoothstep(0.0,25.0,p.distance_to(apex)))
             segment[2]=float(segment[2])*gain
 
-# Display deltas: an area mask per delta (delta.gdshader) instead of band
+# Display deltas: an area mask per delta (delta_lagoon.gdshaderinc) instead of band
 # arms. The main course stays a river band and ends in a lagoon with organic
 # islands, sand rims and a beach arc with inlets. Radii in model units
-# (km), along the coast (ra) and inland (rb).
+# (km), along the coast (ra) and inland (rb), for the arms; the lagoon
+# region is LAGOON_SCALE larger (Roman-era coasts had broad lagoons, e.g.
+# the Stagni di Ostia and Maccarese either side of the Tiber).
+const LAGOON_SCALE=Vector2(1.7,1.8)
 const RIVER_DELTAS=[
-    {"name":"Tevere","ra":7.0,"rb":4.5},
+    # The Tiber has two real outlets (Fiumara Grande, Fiumicino): one side
+    # arm only, so no arms cross (A16: overlapping bands at the mouth).
+    {"name":"Tevere","ra":7.0,"rb":4.5,"arms":[[0.55,1.0,0.5]]},
     {"name":"Po","ra":20.0,"rb":11.0},
-    {"name":"Rhône","ra":18.0,"rb":10.0},
+    # Rhône: the source ends inland of both real outlets (Grand Rhône at
+    # 4.70/43.58, 27 km short; the Petit Rhône end has no sea within 6 km on
+    # the CPU grid, so it never counted as a mouth). Both arms split at
+    # Arles, the apex; the lagoon field sits over the Camargue (Vaccarès),
+    # west of the Grand Rhône mouth.
+    {"name":"Rhône","ra":14.0,"rb":10.0,"mouth":[4.845,43.33],"apex":[4.615896,43.709133],"from_apex":true,"real_courses":true,
+        "lagoon_center":[4.56,43.47],"arms":[[0.03,[4.42,43.445],0.6]]},
     {"name":"Ebro","ra":8.0,"rb":5.0},
     {"name":"Nile","ra":45.0,"rb":16.0,"mouth":[31.05,31.50],"apex":[31.25,30.10]}]
 var delta_regions:Array=[]
@@ -2614,89 +2745,93 @@ func _setup_river_deltas() -> void:
             if _water_distance(coast_point)<0.0:break
             coast_point-=sea_direction*0.25
         inlets=[coast_point,coast_point+tangent*ra*rng.randf_range(0.35,0.6)*(1.0 if rng.randf()<0.5 else -1.0)]
-        delta_regions.append({"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,
-            "center":coast_point-sea_direction*rb*0.55})
+        var region={"name":delta.name,"mouth":coast_point,"sea":sea_direction,"tangent":tangent,"ra":ra,"rb":rb,"inlets":inlets,"seed":rng.randf()*100.0,"arms":delta.get("arms",[]),
+            "center":coast_point-sea_direction*rb*0.55,"anchor_texel":INF}
+        if delta.get("from_apex",false):region["apex"]=geographic_to_world(float(delta.apex[0]),float(delta.apex[1]))
+        if delta.has("lagoon_center"):region["lagoon_center"]=geographic_to_world(float(delta.lagoon_center[0]),float(delta.lagoon_center[1]))
+        if delta.get("real_courses",false):region["real_courses"]=true
+        delta_regions.append(region)
         delta_apexes.append(mouth-sea_direction*rb*1.2)
+    _bind_delta_uniforms()
 
-# Built once the surface heights are available (streaming loads them after
-# setup); retried from _process until then.
-func _build_delta_surfaces() -> void:
-    if delta_regions.is_empty() or not fixed_surface or not delta_nodes.is_empty():return
-    if terrain_streaming or bool(product_binding.get("clipmap",{}).get("enabled",false)):
-        # Streamed/clipmap heights are only valid once the root is resident.
-        if not clipmap_runtime or not clipmap_runtime.metrics.root_ready or frame_number<30:return
+# The land surface draws the deltas (delta_lagoon.gdshaderinc in
+# terrain_look) from the exact tile coast distance, as a uniform branch of
+# the one terrain shader (no extra pipeline, nothing compiles on approach).
+func _bind_delta_uniforms() -> void:
+    var frames=PackedVector4Array();var shapes=PackedVector4Array()
+    for region in delta_regions.slice(0,6):
+        frames.append(Vector4(region.mouth.x,region.mouth.y,region.sea.x,region.sea.y))
+        # w: lagoon centre along the coast from the mouth (the shader's
+        # tangent, (-sea.y, sea.x)).
+        var offset=0.0
+        if region.has("lagoon_center"):offset=(Vector2(region.lagoon_center)-Vector2(region.mouth)).dot(Vector2(-region.sea.y,region.sea.x))
+        shapes.append(Vector4(region.ra*LAGOON_SCALE.x,region.rb*LAGOON_SCALE.y,region.seed,offset))
+    var values={"delta_count":frames.size()}
+    if not frames.is_empty():values["delta_frame"]=frames;values["delta_shape"]=shapes
+    # Crowns read the same uniforms and stay out of the lagoon water.
+    for uniform_name in values:
+        for material in [terrain_material,feature_material,canopy_material]:
+            if material:material.set_shader_parameter(uniform_name,values[uniform_name])
+        if clipmap_runtime:
+            clipmap_runtime.set_land_parameter(uniform_name,values[uniform_name])
+            clipmap_runtime.set_forest_parameter(uniform_name,values[uniform_name])
+
+# Deltas sit on the rendered (tile) coast; the CPU distance field can be km
+# off it (Po: the tile delta lobe reaches 20-30 km further out, the barrier
+# came out inland). Re-anchored on the tile coast whenever a finer drawn
+# tile covers the mouth: from the old mouth along the sea direction, out to
+# the last land sample if it is land (up to 60 km), else in to the first.
+func _anchor_deltas() -> void:
+    if delta_regions.is_empty() or not clipmap_runtime or not clipmap_runtime.metrics.root_ready:return
+    var moved=false
     for region in delta_regions:
-        if not is_finite(_render_height(region.center)):return
-    # Re-anchor each delta on the RENDERED coastline (the CPU SDF can be km
-    # off the streamed/clipmap coast): from the sea side, first land sample.
-    for region in delta_regions:
-        var sea:Vector2=region.sea;var start:Vector2=Vector2(region.mouth)+sea*15.0
-        var coast_point=Vector2(region.mouth)
-        for k in range(240):
-            var q=start-sea*0.25*float(k)
-            if _render_height(q)>0.0005:coast_point=q;break
-        var shift=coast_point-Vector2(region.mouth)
+        var probe:Vector3=clipmap_runtime.water_distance_at(region.mouth)
+        if is_nan(probe.x) or probe.y>2000.0 or probe.y>=float(region.anchor_texel)*0.75:continue
+        var sea:Vector2=region.sea;var mouth:Vector2=region.mouth
+        # Lakes and lagoons inside the delta do not count as the sea.
+        var outward=probe.z<0.5
+        var coast_point:=Vector2.ZERO;var found=false;var covered=true
+        for k in range(1,241):
+            var q=mouth+sea*0.25*float(k)*(1.0 if outward else -1.0)
+            var sample:Vector3=clipmap_runtime.water_distance_at(q)
+            if is_nan(sample.x):covered=false;break
+            if outward and sample.z>0.5:coast_point=q-sea*0.25;found=true;break
+            if not outward and sample.z<0.5:coast_point=q;found=true;break
+        if not covered and not found:continue
+        region.anchor_texel=probe.y
+        print("delta anchor %s: %s at texel %.0f m, sea %s, %s" % [region.name,str(world_to_geographic(mouth)),probe.y,str(sea),("moved to "+str(world_to_geographic(coast_point))) if found else "no sea found"])
+        if not found:continue
+        var shift:Vector2=coast_point-Vector2(region.mouth)
         region.mouth=coast_point;region.center=Vector2(region.center)+shift
         region.inlets=[Vector2(region.inlets[0])+shift,Vector2(region.inlets[1])+shift]
-    var shader=load("res://shaders/delta.gdshader")
-    for region in delta_regions:
-        var center:Vector2=region.center;var size=Vector2.ONE*maxf(region.ra,region.rb)*2.6
-        var origin=center-size*0.5
-        var n=192
-        var vertices=PackedVector3Array();var indices=PackedInt32Array();var coast=PackedVector2Array()
-        for z in range(n+1):
-            for x in range(n+1):
-                var p=origin+size*Vector2(float(x)/n,float(z)/n)
-                coast.append(Vector2.ZERO)
-                # Same height source as the visible terrain (clipmap/stream).
-                # Unscaled model height; the shader applies the current
-                # display scale and relief (both change with zoom).
-                var h=_render_height(p)/maxf(relief*display_height_scale,.0001)
-                vertices.append(Vector3(p.x,maxf(h,0.0) if is_finite(h) else 0.0,p.y))
-        for z in range(n):
-            for x in range(n):
-                var a=z*(n+1)+x;var b=a+1;var c=a+n+1;var d=c+1
-                indices.append_array(PackedInt32Array([a,c,b,b,c,d]))
-        # Signed shore distance (m, >0 sea) from the RENDERED surface (sea =
-        # height at/below 0): the CPU SDF and the clipmap coast can differ by
-        # km. Two-pass chamfer distance on the grid.
-        var cell_m=size.x/n*1000.0
-        var land:Array=[];var dist=PackedFloat32Array();dist.resize(vertices.size())
-        for i in range(vertices.size()):land.append(vertices[i].y>0.0004)
-        for i in range(vertices.size()):dist[i]=0.0
-        var boundary=PackedFloat32Array();boundary.resize(vertices.size())
-        for z in range(n+1):
-            for x in range(n+1):
-                var i=z*(n+1)+x;var edge=false
-                for o in [Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1)]:
-                    var xx=x+o.x;var zz=z+o.y
-                    if xx>=0 and zz>=0 and xx<=n and zz<=n and land[zz*(n+1)+xx]!=land[i]:edge=true
-                boundary[i]=0.0 if edge else 1e9
-        for z in range(n+1):
-            for x in range(n+1):
-                var i=z*(n+1)+x
-                if x>0:boundary[i]=minf(boundary[i],boundary[i-1]+cell_m)
-                if z>0:boundary[i]=minf(boundary[i],boundary[i-(n+1)]+cell_m)
-        for z in range(n,-1,-1):
-            for x in range(n,-1,-1):
-                var i=z*(n+1)+x
-                if x<n:boundary[i]=minf(boundary[i],boundary[i+1]+cell_m)
-                if z<n:boundary[i]=minf(boundary[i],boundary[i+(n+1)]+cell_m)
-        for i in range(vertices.size()):coast[i]=Vector2(-boundary[i] if land[i] else boundary[i],0.0)
-        var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.UP)
-        var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_TEX_UV]=coast;arrays[Mesh.ARRAY_INDEX]=indices
-        var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-        var material=ShaderMaterial.new();material.shader=shader
-        for uniform in shader.get_shader_uniform_list():
-            var value=marine_material.get_shader_parameter(uniform.name) if marine_material else null
-            if value!=null:material.set_shader_parameter(uniform.name,value)
-        var inlets=PackedVector2Array(region.inlets)
-        material.set_shader_parameter("delta_center",region.center);material.set_shader_parameter("delta_sea",region.sea)
-        material.set_shader_parameter("delta_radii",Vector2(region.ra,region.rb));material.set_shader_parameter("delta_seed",float(region.seed))
-        material.set_shader_parameter("delta_inlet_a",inlets[0]);material.set_shader_parameter("delta_inlet_b",inlets[1])
-        var node=MeshInstance3D.new();node.name="Delta_"+str(region.name);node.mesh=mesh;node.material_override=material
-        node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        add_child(node);delta_nodes.append(node)
+        moved=moved or shift.length()>0.05
+    if moved:_bind_delta_uniforms()
+
+# Edge haze: the overview (7600 km at 50 deg) sees past the atlas, most of
+# all north of ~61 N, where the background showed as a hard grey band. A
+# frame over the outer atlas fades into the background colour and covers
+# everything outside, so the map ends in haze instead of an edge. The fade
+# width follows the view (5 % of the visible width, 60-600 km; a fixed
+# 180 km fade still read as a line in the overview). Drawn last without
+# depth test; flat at sea level, so relief parallax is small against it.
+const EDGE_HAZE_MAX_FADE=600.0
+var edge_haze_material:ShaderMaterial
+func _build_edge_haze(world:Rect2) -> void:
+    var rings=[world.grow(-EDGE_HAZE_MAX_FADE),world.grow(8000.0)]
+    var vertices=PackedVector3Array();var indices=PackedInt32Array()
+    for r in rings:
+        for corner in [r.position,Vector2(r.end.x,r.position.y),r.end,Vector2(r.position.x,r.end.y)]:vertices.append(Vector3(corner.x,0.0,corner.y))
+    for side in range(4):
+        var a=side;var b=(side+1)%4;var c=a+4;var d=b+4
+        indices.append_array(PackedInt32Array([a,c,b,b,c,d]))
+    var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_INDEX]=indices
+    var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+    edge_haze_material=ShaderMaterial.new();edge_haze_material.shader=load("res://shaders/edge_haze.gdshader");edge_haze_material.render_priority=100
+    edge_haze_material.set_shader_parameter("haze_color",landscape_environment.background_color if landscape_environment else Color("9fc2d6"))
+    edge_haze_material.set_shader_parameter("world_rect",Vector4(world.position.x,world.position.y,world.size.x,world.size.y))
+    var node=MeshInstance3D.new();node.name="EdgeHaze";node.mesh=mesh;node.material_override=edge_haze_material
+    node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;node.extra_cull_margin=16384.0
+    add_child(node)
 
 # Endpoints within ~2.5 km of the sea are mouths: funnel widening, colour
 # blend and no surf in the mouth radius.
@@ -3408,7 +3543,7 @@ func _bootstrap_terrain_stream()->bool:
 
 func _configure_stream_forest()->bool:
     forest_representation_format="compact"
-    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays())
+    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays(),style_api.prepare_dense_crown_arrays())
     var expected=load("res://scripts/cache/forest_layout_source_contract.gd").binding({"surface":fixed_surface,"style":style_api,"policy":diorama_policy,"templates":forest_compact_templates,"world_min":world_min,"world_size":world_size,"display_height_scale":display_height_scale,"source_manifest_sha256":snapshot_manifest_sha256,"projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),"canonical_surface_identity":fixed_surface.identity,"source_root":source_root})
     var cfg:Dictionary=product_binding.forest_rendering.streaming_layout
     var reader=FixedForestLayout.new()
