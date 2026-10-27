@@ -105,6 +105,16 @@ def collect_current(repository):
     for relative in ['data/anchors.json', 'data/protection-rules.json', 'data/projection.json',
                      'docs/product-renderer/camera-profile.json']:
         add(relative, role='runtime-sidecar')
+    # Optional land-cover nodes read by landscape_look/landscape_style (not in the binding).
+    land_cover = Path('artifacts/render-data/landcover-node-2km')
+    if (Path(repository) / land_cover / 'manifest.json').exists():
+        cover = transport.read_json(add(land_cover / 'manifest.json', role='land-cover-manifest'))
+        for key in ['look', 'classes']:
+            entry = cover.get(key)
+            if isinstance(entry, dict) and entry.get('path'):
+                add(land_cover / entry['path'], entry.get('sha256'), role='land-cover-' + key)
+            else:
+                add(land_cover / (key + ('.rgba8' if key == 'look' else '.u8')), role='land-cover-' + key)
     # The stream branch reads these two dataset-relative resources directly.
     for key in ['rivers_path', 'water_distance_manifest_path']:
         raw = dataset[key]
