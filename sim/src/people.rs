@@ -1581,6 +1581,19 @@ impl People {
         }
     }
 
+    /// S79 for the grain economy: nobody alive in `members` is of working
+    /// age and `kin_to_join` finds no relative, so the household goes to
+    /// the tents (crate::grain).
+    pub fn alone_without_workers(&self, members: &[u32]) -> bool {
+        let day = self.world.resource::<Clock>().day;
+        let alive: Vec<u32> = members.iter().copied().filter(|&m| self.alive(m).is_some()).collect();
+        if alive.is_empty() {
+            return false;
+        }
+        let works = alive.iter().any(|&m| (WORK_AGE.0..WORK_AGE.1).contains(&age_y(day, self.world.get::<Born>(self.ent[m as usize]).unwrap().0)));
+        !works && self.kin_to_join(&alive, day).is_none()
+    }
+
     /// S79: if nobody in the household is of working age, the nearest
     /// living relative of working age at home in another household, in the
     /// order parent, child, sibling, uncle or aunt (lowest id first within

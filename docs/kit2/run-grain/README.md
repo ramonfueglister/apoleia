@@ -1,6 +1,6 @@
 # Lauf „grain“: Höfe, Markt, Getreidehandel und Fusswege (S69–S76)
 
-**Stand:** 27.10.2026, Cloud-Container mit 4 Kernen · **Status:** `implementiert` (Prototyp). Die Messung auf dem Mac steht noch aus.
+**Stand:** 27.10.2026 abends, Cloud-Container mit 4 Kernen · **Status:** `implementiert` (Prototyp). Die Messung auf dem Mac steht noch aus.
 
 Die Getreidewirtschaft läuft neben dem Personen-Prototyp ([run-people](../run-people/README.md))
 mit denselben rund 117'000 Menschen. Sie ersetzt die Nahrung K aus S35: Gesundheit,
@@ -8,89 +8,121 @@ Heirat und Wanderung hängen jetzt daran, was jeder Haushalt wirklich gegessen h
 Plan und Zahlen: [GRAIN.md](../GRAIN.md), [GRAIN-NUMBERS.md](../GRAIN-NUMBERS.md).
 
 ```
-cd sim && cargo run --release --bin grain -- --years 100 [--seed S] [--threads N] [--clear-pct P]
+cd sim && cargo run --release --bin grain -- --years 100 [--seed S] [--threads N] [--clear-pct P] [--clear-cover SPALTEN|usable]
 GRAIN_DEBUG=1 …   # zusätzlich die grössten Märkte und Hofgrössen pro Jahr
 ```
 
 Dateien: `sim/src/grain.rs` (alles), `sim/src/bin/grain.rs` (Lauf), Haken in
 `sim/src/people.rs` (`Econ`: gegessen pro Haushalt, freies Land und Nahrung pro Kopf pro
-Region). `run100.txt` ist die ganze Ausgabe des Laufs unten, `run50-noclear.txt` der
-Vergleich ohne Rodung.
+Region). `run100.txt` ist die ganze Ausgabe des Laufs unten; `run60-noclear.txt`,
+`run60-farm-grass.txt` und `run60-farm-grass-wood.txt` sind die Vergleiche zum rodbaren Land.
+Rodbares Land pro Zelle: `tools/sim_landcover.py` → `sim/inputs/landcover25.csv`.
 
 ## Was gebaut ist
 
 | Teil | Umsetzung | Entscheidung |
 |---|---|---|
 | **Höfe** | Ein Hof pro Bauernhaushalt beim Start: Familienhof (Bauern), Pachthof (Pächter, Pacht an einen Grundherrn) und Gutshof (Unfreie, alles gehört dem Grundherrn, einem Senator oder Ritter). Tagelöhner auf dem Land haben keinen Hof und leben im Zelt. Wird ein Hof frei (Familie ausgestorben oder weggezogen), zieht automatisch ein Haushalt aus den Zelten derselben Region ein. Neue Höfe baut nur der Spieler; den gibt es im Prototyp noch nicht. | S69 |
-| **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. | S73 |
+| **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. | S73 |
 | **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. | S72 |
 | **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
 | **Markt** | Ein Markt pro 100-km-Region, am grössten Ort nach Hanson, sonst an der Zelle mit den meisten Menschen (1'783 Märkte). Lager, Bargeld der Händler am Markt und ein Preis, der jeden Tag gedämpft auf einen Zielpreis aus der Lagerreichweite zuläuft. Ankauf 10 % unter, Verkauf 10 % über dem Preis. Der Markt kauft nur, so weit sein Bargeld reicht; was er nicht nimmt, trägt der Bauer wieder heim. | S70, S22 |
 | **Träger** | Jede Fahrt zum Markt ist eine echte Person des Haushalts (zuerst ein Mann 15–60) mit Last und Tempo nach ORBIS und Preisedikt: Familien- und Pachthof mit Esel (97 kg, 30 km/Tag), Gutshof mit Ochsenkarren (388 kg, 12 km/Tag), ohne Hof zu Fuss (30 kg pro Erwachsenem, 20 km/Tag). Die Reise ist ein Ereignis mit Ankunftstag, kein Schritt pro Tag. Wer im Marktort wohnt, kauft sofort. | S70, S76 |
 | **Händler** | Erwachsene mit Beruf Händler. Sie kennen höchstens 32 Märkte (die billigsten Wege über Land mit Wagen, über See mit Schiff) mit Preisen, die so alt sind wie die Reise von dort. Einmal pro Woche: ausführen (hier kaufen, dort verkaufen) oder einführen (leer hin, dort kaufen, hier verkaufen), wenn die Marge nach Fracht über 10 % liegt. Fracht nach Preisedikt (Wagen 0,035 Denar pro kg·km) und ORBIS (See ≈ 0,001). Wo sie fahren, wird gezählt (Handelswege, Seewege). | S71 |
+| **Waisen und Alte** | Haushalte ohne jemanden von 15–60 ziehen einmal im Jahr zum nächsten Verwandten (S79, Personen-Prototyp). Wer keinen hat, geht ins Zelt: Der Hof wird frei (der Hofspeicher bleibt beim Hof), der Vorrat bleibt beim Haushalt. Ein Zelt ohne Erwachsene übernimmt keinen freien Hof. | S79 |
 | **Hunger** | Jeder Haushalt isst einmal im Monat aus seinem Vorrat. Der Anteil, den er bekommt, treibt die Gesundheit (S64) und damit Tod und Geburt. Wer zu wenig hat, kauft; wer nichts hat, bettelt am Markt und stiehlt dann von einem Hof der Region. Haushalte, die weniger als 80 % bekommen, ziehen in die Nachbarregion mit der meisten Nahrung pro Kopf oder verlassen die Karte (S66). | S69, S71 |
 | **Geld** | Der Staat hat unbegrenzt Geld (S76): Wer weder Bauer noch Händler ist, bekommt den Taglohn des Preisedikts (25 Denar) vom Staat. Bauern bekommen Geld nur für verkauftes Getreide. | S76 |
 | **Fusswege** | Jeder Markt hat ein Wegfeld über seine Region auf dem Feinraster (Kachelebene 7, ≈ 1,56 km echt). Die Gänge zum Markt nutzen Zellen ab (Helbing 1997), die Abnutzung zerfällt mit einer Halbwertszeit von einem Jahr. Ab einer Schwelle wird eine Zelle Trampelpfad, dann Weg (mit Hysterese); beides macht das Gehen billiger, so dass die nächsten Gänge dem Pfad folgen. | S70 |
 
 ## Ergebnis (100 Jahre, Seed 1)
 
-| Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | in Zelten | Ernte t | Ernte verloren t | verkauft t | Handel t | Preis Rom (Denar/kg) | Trampelpfade / Wege (Zellen) |
+Rodbar ist heutiges Ackerland unter 16 % Hang (Standard). Die Bevölkerungszahlen
+des Personen-Prototyps sind die vom 27.10.2026 abends (S78 Heirat ab 20, S79 Waisen).
+
+| Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | Zelte / Menschen darin | Ernte t | Ernte verloren t | verkauft t | Handel t | Preis Rom (Denar/kg) | Trampelpfade / Wege (Zellen) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 115'095 | −1,46 % | 348 | 263 | 21'115 | 14'184 | 47'347 | 777 | 4'598 | 7'298 | 19,9 | 2'647 / 102 |
-| 2 | 115'649 | +0,48 % | 669 | 976 | 20'719 | 13'886 | 47'345 | 865 | 5'555 | 8'470 | 18,5 | 9'760 / 658 |
-| 10 | 114'762 | +0,07 % | 200 | 252 | 19'819 | 6'336 | 48'203 | 3'295 | 2'566 | 1'269 | 2,9 | 18'619 / 1'719 |
-| 20 | 116'236 | +0,15 % | 116 | 103 | 18'404 | 2'885 | 50'977 | 3'595 | 2'943 | 1'357 | 3,1 | 19'780 / 1'864 |
-| 30 | 117'524 | +0,20 % | 83 | 77 | 17'190 | 1'494 | 52'496 | 4'317 | 3'067 | 1'648 | 2,7 | 19'814 / 1'899 |
-| 50 | 127'034 | +0,36 % | 76 | 61 | 15'044 | 385 | 55'236 | 4'672 | 3'069 | 1'471 | 3,7 | 19'513 / 1'932 |
-| 70 | 135'657 | +0,42 % | 57 | 64 | 13'465 | 149 | 58'219 | 5'246 | 3'018 | 1'490 | 3,9 | 19'001 / 1'900 |
-| 100 | 149'906 | +0,35 % | 63 | 60 | 11'690 | 30 | 62'706 | 5'350 | 2'961 | 1'369 | 3,8 | 17'964 / 1'825 |
+| 1 | 114'970 | −1,57 % | 403 | 405 | 19'533 | 5'838 / 12'165 | 42'212 | 651 | 3'798 | 6'682 | 25,0 | 2'141 / 98 |
+| 2 | 115'332 | +0,31 % | 1'019 | 930 | 18'307 | 6'599 / 16'031 | 43'892 | 738 | 5'460 | 8'127 | 25,6 | 8'684 / 529 |
+| 10 | 113'523 | +0,11 % | 290 | 318 | 17'031 | 3'779 / 7'156 | 45'752 | 1'769 | 2'943 | 2'553 | 3,3 | 16'689 / 1'434 |
+| 20 | 116'507 | +0,15 % | 217 | 277 | 15'649 | 1'488 / 3'694 | 47'246 | 1'811 | 3'139 | 2'582 | 4,6 | 17'792 / 1'524 |
+| 30 | 121'894 | +0,61 % | 183 | 159 | 13'987 | 797 / 2'059 | 48'383 | 2'236 | 2'951 | 2'215 | 4,9 | 17'630 / 1'495 |
+| 50 | 141'044 | +0,64 % | 229 | 111 | 11'623 | 175 / 809 | 51'491 | 2'033 | 3'402 | 2'354 | 5,7 | 16'705 / 1'456 |
+| 70 | 164'219 | +0,75 % | 299 | 127 | 10'286 | 75 / 447 | 54'991 | 1'814 | 3'694 | 2'511 | 6,8 | 16'164 / 1'382 |
+| 100 | 202'462 | +0,59 % | 421 | 364 | 9'070 | 36 / 359 | 59'548 | 1'266 | 4'040 | 1'961 | 16,7 | 15'428 / 1'298 |
 
 **Was emergent passiert:**
-- **Die ersten 30 Jahre wächst fast nichts (−0,1 bis +0,2 % im Jahr).** Es bremsen die
-  Landlosen: Wer im Zelt lebt, findet nur in Aussaat und Ernte und auf Höfen mit zu wenig
-  Händen Arbeit, bekommt im Mittel nur 60–75 % seiner Nahrung, wird krank, stirbt oder
-  wandert ab. Von 14'000 Menschen in Zelten sind nach 30 Jahren 1'500 übrig.
-- **Danach wächst die Bevölkerung wieder mit 0,3–0,5 % im Jahr**, wie ohne Getreide.
-  Getreide ist dann nirgends knapp: Die Höfe ernten etwa doppelt so viel, wie gegessen
-  wird, weil Brache und Missernten noch fehlen (S72, S76; der Ertrag ist schon ohne Saat
-  gerechnet) und weil Familien Land roden können (S73). Der Preis liegt fast überall am unteren Anschlag (2,2 Denar/kg).
-- **Rom wird über Händler versorgt.** Im ersten Jahr steht der Preis dort bei 20 Denar/kg
-  (2,3 × Grundpreis), Händler bringen 7'000 t aus billigen Regionen, nach drei Jahren ist
-  der Preis bei 7 und danach bei 3–4 Denar/kg. Eine Sonderregel für Rom gibt es nicht (S72).
+- **Die ersten 20 Jahre wächst fast nichts (−0,1 bis +0,3 % im Jahr).** Im ersten Jahr
+  gehen 5'244 Haushalte ohne Arbeitsfähige und ohne Verwandte ins Zelt (S79); ihre Höfe
+  übernehmen Landlose. Zelte finden nur in Aussaat und Ernte Arbeit, essen im Mittel
+  60–75 % ihres Bedarfs, werden krank, sterben oder wandern ab. Nach 30 Jahren leben noch
+  2'000 Menschen in Zelten, nach 100 Jahren 360.
+- **Danach wächst die Bevölkerung mit 0,6–0,75 % im Jahr**, über 100 Jahre 0,55 %
+  (117'000 → 202'000). Getreide ist fast nirgends knapp, der Preis liegt meist am unteren
+  Anschlag (2,2 Denar/kg). Brache und Missernten fehlen noch (S72, S76).
+- **Rom wird über Händler versorgt.** Im ersten Jahr steht der Preis dort bei 25 Denar/kg,
+  Händler bringen 6'700 t, nach zehn Jahren liegt er bei 3–5. Weil Rom stark wächst,
+  steigt er nach 100 Jahren wieder auf 17. Eine Sonderregel für Rom gibt es nicht (S72).
 - **Höfe werden weniger, aber grösser.** Haushalte teilen sich im Personen-Prototyp nie
   (Kinder bleiben, die Braut zieht ein), darum wachsen sie, und frei gewordene Höfe finden
   ohne Landlose keinen neuen Haushalt.
-- **Fusswege:** Nach etwa 10 Jahren stehen rund 18'000 Feinraster-Zellen als Trampelpfad
-  und 1'700 als Weg. Sie bündeln sich auf den Linien zu den Märkten und bleiben danach
-  stabil.
+- **Fusswege:** Nach etwa 10 Jahren stehen rund 17'000 Feinraster-Zellen als Trampelpfad
+  und 1'400 als Weg. Sie bündeln sich auf den Linien zu den Märkten und bleiben stabil.
 
-**Ohne Rodung** (`--clear-pct 0`, nur HYDE-Ackerland, `run50-noclear.txt`) bindet das
-Land: Die Bevölkerung fällt in 20 Jahren von 117'000 auf etwa 93'000 und bleibt dort
-(−0,1 bis +0,2 % im Jahr), weil in vielen Zellen HYDE viel weniger Acker als Menschen
-hat (Median 0,73 ha Acker pro Landbewohner, 25 % unter 0,18 ha).
+**Rodbares Land aus Daten (S73, Ramon: erst Landbedeckung holen).** Für jede 25-km-Zelle
+zählt `tools/sim_landcover.py` auf demselben Stichprobenraster wie Kit 1 (1/300 Grad)
+ESA WorldCover 2021 nach Gruppen (Acker und Siedlung, Grasland, Wald und Busch, Rest)
+und den Hang aus dem Copernicus-DEM (FAO-Klassen unter 8, 8–16, 16–30, über 30 %).
+Rodbar ist immer nur, was über das HYDE-Ackerland von 200 hinausgeht. Über das ganze
+Gebiet sind das 2,4 Mio. km² heutiges Ackerland unter 16 % Hang (HYDE-Acker 200:
+0,6 Mio. km²), mit Grasland 4,3 Mio., mit Wald 6,7 Mio. 60 Jahre, Seed 1, vor S79:
 
-**Antwort auf die Frage nach 0,1 % im Jahr:** Mit Rodung wird das Wachstum nur
-vorübergehend gebremst; über 100 Jahre sind es 0,25 % im Jahr (117'000 → 150'000).
-Ohne Rodung bleibt die Bevölkerung bei 0 %. Wie viel Land gerodet werden kann (S73),
-entscheidet also über das Wachstum. Mit Brache (S76, später) stünde nur etwa die Hälfte
-der Felder unter Getreide.
+| Rodbar | Menschen nach 20 / 60 Jahren | Wachstum Jahr 30–60 |
+|---|---|---|
+| nichts (nur HYDE-Acker) | 100'842 / 121'947 | 0,5 % |
+| heutiges Ackerland, Hang < 16 % (Standard) | 116'163 / 152'666 | 0,8 % |
+| plus Grasland | 122'630 / 167'608 | 0,8 % |
+| plus Grasland und Wald | 125'256 / 172'780 | 0,9 % |
+| alles nutzbare Land (alter Stand, `--clear-cover usable`) | 125'356 / 174'353 | 0,8 % |
+
+**Antwort auf die Frage nach 0,1 % im Jahr:** Nur in den ersten 20 Jahren, solange die
+Landlosen hungern. Danach wächst die Bevölkerung mit jeder Rodungsvariante mit 0,6–0,9 %,
+und selbst ohne Rodung nach einem Rückgang mit 0,5 %. Bei diesen Dichten reicht das Land
+noch Jahrzehnte; mit Brache (S76) stünde nur etwa die Hälfte der Felder unter Getreide.
+Bremsen müssen Brache, Missernten und Seuchen (später).
 
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |
 |---|---|
-| Aufbau Getreide | 70 ms (Marktgraph mit 32 Nachbarn pro Markt) |
-| **Getreide pro Tag, Median / Mittel** | **1,44 ms / 2,0 ms** (Ziel 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,8 ms / 18,9 ms |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,6 / 11,8 / 22,3 ms |
-| Speicher nach 100 Jahren | 337 MB (Menschen allein 184 MB) |
+| Aufbau Getreide | 81 ms (Marktgraph mit 32 Nachbarn pro Markt) |
+| **Getreide pro Tag, Median / Mittel** | **1,15 ms / 1,32 ms** (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 2,4 ms / 3,5 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,5 / 7,2 / 9,4 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 385 MB bei 202'000 Menschen |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,24 ms, Arbeitsbörse 0,31, Märkte und
-Nachrichten 0,21, Essen und Kaufen 0,34, Händler 0,06, Fusswege 0,34, Aussaat und Ernte
-0,02. Einmal im Monat zählt die Getreidewirtschaft die Haushalte neu: 15 ms an einem Tag.
-Dieser Tag macht das 99-%-Perzentil aus; er sollte als Nächstes über den Monat verteilt
-werden. Der langsamste Tag (114 ms an Tag 1'281) ist noch nicht geklärt.
+Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,20 ms, Arbeitsbörse 0,16, Märkte und
+Nachrichten 0,19, Essen und Kaufen 0,24, Händler 0,04, Fusswege 0,29, Aussaat und Ernte
+0,01, Haushaltszählung 0,18.
+
+**Haushaltszählung über eine Woche verteilt.** Früher zählte die Getreidewirtschaft alle
+Haushalte an einem Tag des Monats neu (15 ms, bei 250'000 Menschen 18 ms). Jetzt nimmt sie
+an Tag 11 einen Schnappschuss der Lebenden (0,9 ms) und zählt ihn auf einem eigenen
+Thread. Das Ergebnis übernimmt sie an Tag 14, verteilt freie Höfe an Tag 15, ordnet die
+Tagesgruppen an Tag 16 neu und rechnet die Summen pro Markt an Tag 17, je etwa 1 ms. Ein
+Haushalt, der dazwischen ausstirbt, wird übersprungen, ein neuer isst ein paar Tage später.
+Beim Umzug auf einen freien Hof kommen die Mitglieder aus der Zählung; wer seither geboren
+wurde oder eingeheiratet hat, bleibt zurück (wenige Fälle pro Jahrhundert).
+
+**Fusswege.** Die Gänge fliessen einmal den Baum des Wegfelds hinab statt Weg für Weg,
+die Märkte eines Tages laufen auf dem Task-Pool, und die Dial-Warteschlange läuft auf
+einem Raster mit Rand ohne Bereichsprüfung (25 % schneller). Die Ergebnisse sind Bit für
+Bit gleich.
+
+**Der langsamste Tag (früher 114 ms an Tag 1'281) ist Rauschen der Cloud-Maschine.** Bei
+gleichem Seed wandert er zwischen den Läufen (Tag 5'861, 2'791, 7'123 …) und trifft jedes
+Mal einen anderen Teil (einmal Essen mit 64 ms, sonst 0,4 ms). Die Arbeit ist aber
+deterministisch und jedes Mal dieselbe.
 
 Wie das Budget gehalten wird: Reisen sind Ereignisse, Felder werden nur bei Aussaat und
 Ernte angefasst, Essen läuft für 1/30 der Haushalte pro Tag, Händler für 1/7, Fusswege
@@ -102,8 +134,9 @@ in Arrays nach ID statt in Hashtabellen.
 
 | Wert | Platzhalter | Grundlage |
 |---|---|---|
-| Ertrag | 5,5 : 1 auf offenem Land, bis 3 : 1 mit Land über 1500 m; gerodetes Land 3 : 1 | Spurr über Devereaux; keine Boden- und Hangdaten auf dem 25-km-Raster |
-| Rodbares Land | alles nutzbare Land ausser HYDE-Acker (nicht kahl, Schnee, über 1500 m), 0,5 ha pro Erwachsenem und Jahr | S73 offen; Landbedeckung fehlt |
+| Ertrag | 5,5 : 1 auf offenem Land, bis 3 : 1 mit Land über 1500 m; gerodetes Land 3 : 1 | Spurr über Devereaux; keine Bodendaten auf dem 25-km-Raster |
+| Rodbares Land | heutiges Acker- und Siedlungsland (WorldCover) unter 16 % Hang, abzüglich HYDE-Acker; 0,5 ha pro Erwachsenem und Jahr | Daten: ESA WorldCover 2021 (CC BY 4.0), Copernicus DEM GLO-90; Auswahl der Gruppen und die Hanggrenze (FAO GAEZ) liegen bei Ramon |
+| Hang | aus dem DEM-Überblick mit ≈ 370 m Abstand; unterschätzt kurze steile Hänge | Copernicus DEM GLO-90 |
 | Arbeit in Aussaat / Ernte | 25 % / 30 % der 70 Tage pro ha, je in 40 Tagen; in den Spitzen arbeiten alle von 10–65 | GRAIN-NUMBERS: „Verteilung offen“ |
 | Wer arbeitet | übers Jahr Erwachsene 15–60 | frei gewählt |
 | Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
@@ -136,11 +169,12 @@ in Arrays nach ID statt in Hashtabellen.
 
 ## Was auffällt und zu klären ist
 
-- **Haushalte aus nur Kindern oder Alten.** Etwa 17 % der Höfe haben beim Start niemanden
-  zwischen 15 und 60, unter anderem weil die Starthaushalte Fünferblöcke aus der Zellenliste
-  sind und Bräute wegziehen. Diese Höfe stellen jetzt Tagelöhner ein; im Personen-Prototyp sollten
-  Waisen und Alte zu Verwandten ziehen.
+- **Haushalte aus nur Kindern oder Alten** ziehen jetzt zu Verwandten oder gehen ins Zelt
+  (S79). Was mit dem Vorrat eines Haushalts geschieht, der dabei leer wird, ist offen: Er
+  verschwindet mit dem Haushalt. Der Hofspeicher bleibt beim Hof.
 - **Arbeitslose Landlose.** Arbeit gibt es fast nur in Aussaat und Ernte, darum hungern
   die Zelte und verschwinden in 30 Jahren fast ganz. Ob das so gewollt ist, hängt an
   S69 (Arbeit, Betteln, Stehlen) und S74 (der Spieler baut Höfe).
-- **Rodung bestimmt das Wachstum.** Siehe oben.
+- **Das Land bremst das Wachstum noch nicht.** Mit jeder Rodungsvariante wächst die
+  Bevölkerung nach 20 Jahren mit 0,6–0,9 % im Jahr. Bremsen müssen Brache, Missernten und
+  Seuchen (später).

@@ -367,6 +367,8 @@ pub struct GrainStats {
     pub thefts: u64,
     pub farms_taken: u64,
     pub farms_abandoned: u64,
+    /// Households without workers or kin sent to the tents (S79).
+    pub to_tents: u64,
     pub field_rebuilds: u64,
 }
 
@@ -777,6 +779,28 @@ impl Grain {
                 }
             }
         }
+        // S79: a household with nobody of working age and no relative to
+        // join goes to the tents; its farm is free (the store stays with
+        // the farm, the pantry with the household). Relatives are joined
+        // by people.rs on the household's day in the year.
+        if !start {
+            let ids = sorted_keys(&self.info);
+            for id in ids {
+                let i = self.info[&id];
+                let Some(s) = self.hh.get(&id).copied() else { continue };
+                if i.adults > 0 || s.kind == TENT || !p.alone_without_workers(&self.members[i.at as usize..(i.at + i.size as u32) as usize]) {
+                    continue;
+                }
+                if s.farm != NONE {
+                    self.farms[s.farm as usize].hh = NONE;
+                    self.stats.farms_abandoned += 1;
+                }
+                let h = self.hh.get_mut(&id).unwrap();
+                h.farm = NONE;
+                h.kind = TENT;
+                self.stats.to_tents += 1;
+            }
+        }
         // New households.
         let ids = sorted_keys(&self.info);
         for &id in &ids {
@@ -819,7 +843,8 @@ impl Grain {
         if !free.is_empty() {
             let mut tents: FxHashMap<u32, Vec<(u32, u32)>> = FxHashMap::default();
             for &id in &ids {
-                if self.hh[&id].kind == TENT {
+                // Someone must be able to work the farm (S79).
+                if self.hh[&id].kind == TENT && self.info[&id].adults > 0 {
                     let home = self.info[&id].home;
                     tents.entry(self.cell_market[home as usize]).or_default().push((home, id));
                 }

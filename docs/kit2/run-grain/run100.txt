@@ -1,1206 +1,207 @@
-people=116805 markets=1783 farms=21216 (family 11657 tenant 6450 estate 3109) tents=3947 (15239 people) fields_ha=112092 farm_store_t=6671 market_t=3116 | spawn people 1507 ms, grain 68 ms, rss_mb=173
+clearable land: farm_8,farm_16
+people=116805 markets=1783 farms=22321 (family 12215 tenant 7493 estate 2613) tents=2815 (11070 people) fields_ha=92874 farm_store_t=7091 market_t=2681 | spawn people 1448 ms, grain 81 ms, rss_mb=175
 year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day
-   1  115095  -1.46    3217   4676    348   263  21115  3669/14184     47347    777         1056   438762    4598     2507       25332     7298     242        3    94.0  2.22/ 8.17/69.97 19.89   2647   102    9486   4.87
-  market 1234: people 2370 tents 30 store 46 t demand 511 kg/d price 8.90 traders [389, 30, 48, 22, 0] free_ha 175
-  market 762: people 1712 tents 2 store 79 t demand 1884 kg/d price 19.89 traders [56, 2, 146, 126, 16] free_ha 138
-  market 1143: people 1158 tents 19 store 26 t demand 254 kg/d price 8.96 traders [171, 19, 31, 13, 0] free_ha 459
-  market 928: people 1112 tents 14 store 30 t demand 386 kg/d price 24.50 traders [115, 14, 62, 41, 6] free_ha 530
-  market 1233: people 984 tents 49 store 3 t demand 21 kg/d price 4.08 traders [150, 49, 14, 0, 0] free_ha 477
-  market 1282: people 981 tents 0 store 4 t demand 118 kg/d price 17.37 traders [176, 0, 21, 7, 1] free_ha 0
-  hungry wage households: no carrier 12, empty market 7, no money 152, on the way 60, in market cell 158, other 60
-  zero-area farms: no hands 0, no land 139; farm sizes [0, 3495, 2966, 3054, 3619, 3351, 2476, 2154], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.21 p25 0.62 p50 1.27 p75 1.90 p90 2.07; zero 139
-  field rebuilds 446 sell trips 133816 buy trips 11103
-      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 90% 99% 99%
-   2  115649   0.48    7531   6018    669   976  20719  3623/13886     47345    865         1258   503180    5555     2625       22953     8470     317        2    92.3  2.22/ 4.15/69.97 18.52   9760   658    8168   5.88
-  market 1234: people 2026 tents 0 store 50 t demand 682 kg/d price 8.10 traders [344, 0, 46, 22, 0] free_ha 168
-  market 762: people 1702 tents 1 store 77 t demand 2045 kg/d price 18.52 traders [56, 1, 131, 125, 16] free_ha 139
-  market 1233: people 1172 tents 78 store 2 t demand 55 kg/d price 9.99 traders [150, 78, 18, 1, 0] free_ha 468
-  market 928: people 979 tents 0 store 62 t demand 355 kg/d price 11.46 traders [102, 0, 55, 41, 5] free_ha 527
-  market 1143: people 939 tents 0 store 48 t demand 258 kg/d price 4.27 traders [146, 0, 30, 13, 0] free_ha 451
-  market 1185: people 891 tents 3 store 45 t demand 1023 kg/d price 14.16 traders [52, 3, 71, 46, 2] free_ha 97
-  hungry wage households: no carrier 9, empty market 8, no money 102, on the way 34, in market cell 22, other 32
-  zero-area farms: no hands 0, no land 124; farm sizes [0, 3496, 2817, 3111, 3254, 2980, 2319, 2742], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.28 p25 0.64 p50 1.27 p75 1.90 p90 2.07; zero 124
-  field rebuilds 1540 sell trips 243705 buy trips 13089
-      eaten by kind (farm/tent/wage/trader/elite): 97% 60% 94% 99% 98%
-   3  114962  -0.59    6509   5980    525  1208  20581  3257/12341     47619   1217         1594   542004    4772     2634       19998     7631     255        2    93.8  2.22/ 2.75/69.97  6.93  13250  1148    6471   5.52
-  market 1234: people 1980 tents 0 store 57 t demand 397 kg/d price 6.29 traders [330, 0, 45, 22, 0] free_ha 155
-  market 762: people 1727 tents 1 store 208 t demand 2221 kg/d price 6.93 traders [56, 1, 131, 124, 16] free_ha 134
-  market 1233: people 1006 tents 47 store 2 t demand 38 kg/d price 9.23 traders [150, 47, 18, 1, 0] free_ha 468
-  market 928: people 945 tents 0 store 71 t demand 407 kg/d price 3.81 traders [99, 0, 54, 39, 5] free_ha 522
-  market 1143: people 906 tents 0 store 72 t demand 216 kg/d price 3.32 traders [137, 0, 30, 13, 0] free_ha 436
-  market 1185: people 901 tents 3 store 104 t demand 941 kg/d price 4.39 traders [52, 3, 71, 46, 2] free_ha 93
-  hungry wage households: no carrier 4, empty market 17, no money 68, on the way 30, in market cell 12, other 32
-  zero-area farms: no hands 0, no land 113; farm sizes [0, 3498, 2794, 3116, 3100, 2799, 2227, 3047], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.32 p25 0.71 p50 1.33 p75 1.90 p90 2.22; zero 113
-  field rebuilds 1174 sell trips 246898 buy trips 12931
-      eaten by kind (farm/tent/wage/trader/elite): 98% 62% 96% 99% 99%
-   4  114653  -0.27    6419   5952    411   771  20475  2984/11043     47781   1618         2017   567593    4018     2628       13844     5289     192        1    94.8  2.22/ 2.28/69.97  2.22  15454  1345    5265   5.62
-  market 1234: people 1977 tents 0 store 75 t demand 176 kg/d price 3.09 traders [324, 0, 44, 22, 0] free_ha 144
-  market 762: people 1704 tents 1 store 194 t demand 547 kg/d price 2.22 traders [56, 1, 128, 123, 16] free_ha 138
-  market 1233: people 1002 tents 47 store 24 t demand 41 kg/d price 2.77 traders [150, 47, 18, 1, 0] free_ha 465
-  market 928: people 937 tents 0 store 75 t demand 222 kg/d price 3.80 traders [96, 0, 55, 38, 5] free_ha 513
-  market 1108: people 900 tents 9 store 34 t demand 37 kg/d price 2.22 traders [160, 9, 11, 2, 0] free_ha 435
-  market 1143: people 900 tents 0 store 92 t demand 305 kg/d price 2.62 traders [137, 0, 30, 12, 0] free_ha 440
-  hungry wage households: no carrier 1, empty market 21, no money 35, on the way 31, in market cell 12, other 28
-  zero-area farms: no hands 0, no land 109; farm sizes [0, 3486, 2807, 3076, 2995, 2664, 2103, 3344], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.32 p25 0.76 p50 1.36 p75 1.90 p90 2.35; zero 109
-  field rebuilds 715 sell trips 245631 buy trips 12547
-      eaten by kind (farm/tent/wage/trader/elite): 98% 64% 96% 99% 99%
-   5  114507  -0.13    6376   5795    337   739  20352  2726/ 9946     47874   2039         2153   585103    2533     2624        3748     1403     149        1    95.6  2.22/ 2.22/69.97  3.33  16083  1491    4322   4.88
-  market 1234: people 1937 tents 0 store 90 t demand 154 kg/d price 2.24 traders [321, 0, 43, 22, 0] free_ha 129
-  market 762: people 1721 tents 1 store 115 t demand 537 kg/d price 3.33 traders [56, 1, 127, 122, 16] free_ha 133
-  market 1233: people 930 tents 29 store 7 t demand 30 kg/d price 2.88 traders [150, 29, 19, 1, 0] free_ha 457
-  market 1185: people 914 tents 3 store 64 t demand 241 kg/d price 3.11 traders [52, 3, 70, 46, 2] free_ha 95
-  market 1143: people 913 tents 0 store 100 t demand 90 kg/d price 2.22 traders [136, 0, 29, 12, 0] free_ha 422
-  market 1108: people 898 tents 7 store 36 t demand 30 kg/d price 2.22 traders [160, 7, 11, 2, 0] free_ha 430
-  hungry wage households: no carrier 0, empty market 14, no money 25, on the way 35, in market cell 7, other 40
-  zero-area farms: no hands 0, no land 103; farm sizes [0, 3459, 2754, 3048, 2951, 2560, 1983, 3597], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.32 p25 0.80 p50 1.36 p75 1.90 p90 2.38; zero 103
-  field rebuilds 309 sell trips 239439 buy trips 12260
-      eaten by kind (farm/tent/wage/trader/elite): 99% 67% 97% 99% 99%
-   6  114301  -0.18    6056   5774    283   485  20258  2511/ 8978     48067   2343         2647   605973    2855     2627        4976     1824     116        1    96.3  2.22/ 2.22/69.97  2.60  16693  1574    3555   4.60
-  market 1234: people 1933 tents 0 store 110 t demand 227 kg/d price 2.26 traders [320, 0, 43, 22, 0] free_ha 116
-  market 762: people 1714 tents 0 store 149 t demand 559 kg/d price 2.60 traders [56, 0, 126, 120, 16] free_ha 131
-  market 1233: people 1034 tents 44 store 10 t demand 36 kg/d price 3.84 traders [150, 44, 22, 1, 0] free_ha 457
-  market 1143: people 919 tents 0 store 108 t demand 90 kg/d price 2.22 traders [136, 0, 29, 12, 0] free_ha 410
-  market 1185: people 907 tents 3 store 53 t demand 223 kg/d price 3.34 traders [52, 3, 67, 46, 2] free_ha 99
-  market 1108: people 901 tents 6 store 37 t demand 27 kg/d price 2.22 traders [160, 6, 12, 2, 0] free_ha 424
-  hungry wage households: no carrier 2, empty market 27, no money 14, on the way 39, in market cell 11, other 29
-  zero-area farms: no hands 0, no land 95; farm sizes [0, 3440, 2748, 3031, 2828, 2496, 1928, 3787], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.34 p25 0.84 p50 1.36 p75 1.90 p90 2.40; zero 95
-  field rebuilds 251 sell trips 245370 buy trips 12042
-      eaten by kind (farm/tent/wage/trader/elite): 99% 70% 97% 99% 99%
-   7  114340   0.03    6128   5703    250   387  20169  2292/ 8153     48114   2581         2982   605244    2805     2627        4829     1807      92        1    96.8  2.22/ 2.22/69.97  3.86  17559  1595    3108   4.65
-  market 1234: people 1925 tents 0 store 131 t demand 253 kg/d price 2.37 traders [317, 0, 42, 21, 0] free_ha 116
-  market 762: people 1709 tents 0 store 98 t demand 546 kg/d price 3.86 traders [55, 0, 122, 120, 16] free_ha 127
-  market 1233: people 991 tents 34 store 12 t demand 35 kg/d price 3.53 traders [150, 34, 24, 1, 0] free_ha 462
-  market 1143: people 921 tents 0 store 121 t demand 244 kg/d price 2.22 traders [133, 0, 29, 12, 0] free_ha 407
-  market 1108: people 902 tents 5 store 39 t demand 34 kg/d price 2.22 traders [160, 5, 12, 2, 0] free_ha 422
-  market 1185: people 897 tents 3 store 79 t demand 350 kg/d price 4.31 traders [52, 3, 67, 46, 2] free_ha 96
-  hungry wage households: no carrier 0, empty market 23, no money 16, on the way 35, in market cell 13, other 25
-  zero-area farms: no hands 0, no land 90; farm sizes [0, 3460, 2772, 2917, 2724, 2393, 1947, 3956], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.39 p25 0.89 p50 1.36 p75 1.90 p90 2.49; zero 90
-  field rebuilds 250 sell trips 246969 buy trips 11922
-      eaten by kind (farm/tent/wage/trader/elite): 99% 72% 97% 99% 99%
-   8  114557   0.19    6020   5589    182   219  20059  2155/ 7558     48146   2851         3466   611581    2869     2637        4976     1891      76        0    97.2  2.22/ 2.22/69.97  3.20  17901  1647    2766   4.77
-  market 1234: people 1931 tents 0 store 150 t demand 173 kg/d price 2.22 traders [313, 0, 41, 21, 0] free_ha 110
-  market 762: people 1719 tents 0 store 122 t demand 531 kg/d price 3.20 traders [55, 0, 120, 120, 16] free_ha 132
-  market 1233: people 986 tents 36 store 10 t demand 44 kg/d price 3.50 traders [150, 36, 25, 1, 0] free_ha 453
-  market 1143: people 920 tents 0 store 130 t demand 94 kg/d price 2.22 traders [132, 0, 29, 12, 0] free_ha 402
-  market 1185: people 919 tents 3 store 47 t demand 242 kg/d price 3.43 traders [52, 3, 67, 46, 2] free_ha 97
-  market 1108: people 908 tents 4 store 41 t demand 29 kg/d price 2.22 traders [160, 4, 12, 2, 0] free_ha 398
-  hungry wage households: no carrier 0, empty market 20, no money 17, on the way 28, in market cell 13, other 29
-  zero-area farms: no hands 0, no land 84; farm sizes [0, 3434, 2714, 2900, 2660, 2334, 1859, 4158], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.43 p25 0.95 p50 1.36 p75 1.90 p90 2.54; zero 84
-  field rebuilds 148 sell trips 248742 buy trips 12041
-      eaten by kind (farm/tent/wage/trader/elite): 99% 74% 97% 99% 99%
-   9  114683   0.11    5905   5555    197   231  19947  1999/ 6974     48088   3137         3788   613492    3187     2631        6565     2530      65        0    97.4  2.22/ 2.22/69.97  2.36  18221  1682    2476   4.53
-  market 1234: people 1938 tents 0 store 175 t demand 198 kg/d price 2.22 traders [311, 0, 40, 21, 0] free_ha 109
-  market 762: people 1711 tents 0 store 205 t demand 541 kg/d price 2.36 traders [55, 0, 118, 119, 16] free_ha 131
-  market 1233: people 989 tents 34 store 9 t demand 45 kg/d price 3.52 traders [150, 34, 27, 2, 0] free_ha 451
-  market 1143: people 918 tents 0 store 142 t demand 114 kg/d price 2.22 traders [131, 0, 29, 12, 0] free_ha 395
-  market 1108: people 911 tents 3 store 43 t demand 31 kg/d price 2.22 traders [160, 3, 12, 2, 0] free_ha 383
-  market 1185: people 909 tents 3 store 71 t demand 247 kg/d price 3.02 traders [52, 3, 64, 45, 2] free_ha 89
-  hungry wage households: no carrier 0, empty market 18, no money 13, on the way 33, in market cell 13, other 32
-  zero-area farms: no hands 0, no land 81; farm sizes [0, 3420, 2676, 2838, 2624, 2294, 1796, 4299], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.43 p25 0.95 p50 1.39 p75 1.90 p90 2.54; zero 81
-  field rebuilds 131 sell trips 252337 buy trips 12034
-      eaten by kind (farm/tent/wage/trader/elite): 99% 75% 97% 99% 99%
-  10  114762   0.07    5784   5455    200   252  19819  1837/ 6336     48203   3295         4270   611503    2566     2632        3389     1269      58        0    97.7  2.22/ 2.22/69.97  2.92  18619  1719    2136   4.02
-  market 1234: people 1903 tents 0 store 193 t demand 185 kg/d price 2.22 traders [304, 0, 40, 20, 0] free_ha 116
-  market 762: people 1693 tents 0 store 131 t demand 493 kg/d price 2.92 traders [55, 0, 116, 117, 16] free_ha 132
-  market 1233: people 1024 tents 35 store 12 t demand 54 kg/d price 3.69 traders [150, 35, 29, 3, 0] free_ha 441
-  market 1108: people 927 tents 1 store 45 t demand 28 kg/d price 2.22 traders [160, 1, 11, 2, 0] free_ha 381
-  market 1185: people 905 tents 3 store 52 t demand 263 kg/d price 3.85 traders [52, 3, 64, 45, 2] free_ha 87
-  market 1143: people 902 tents 0 store 149 t demand 87 kg/d price 2.22 traders [131, 0, 28, 12, 0] free_ha 395
-  hungry wage households: no carrier 0, empty market 19, no money 13, on the way 37, in market cell 9, other 26
-  zero-area farms: no hands 0, no land 78; farm sizes [0, 3417, 2661, 2704, 2508, 2296, 1818, 4415], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.43 p25 0.95 p50 1.43 p75 1.90 p90 2.66; zero 78
-  field rebuilds 133 sell trips 248875 buy trips 12146
-      eaten by kind (farm/tent/wage/trader/elite): 99% 77% 97% 99% 98%
-  11  114950   0.16    5816   5457    174   180  19685  1690/ 5787     47942   3723         5016   610019    3163     2617        6617     2520      49        0    98.0  2.22/ 2.22/69.97  3.03  18858  1753    1794   4.15
-  market 1234: people 1885 tents 0 store 223 t demand 467 kg/d price 2.22 traders [299, 0, 39, 19, 0] free_ha 124
-  market 762: people 1694 tents 0 store 126 t demand 546 kg/d price 3.03 traders [55, 0, 117, 116, 16] free_ha 132
-  market 1233: people 1036 tents 36 store 12 t demand 65 kg/d price 3.95 traders [150, 36, 28, 3, 0] free_ha 428
-  market 1185: people 935 tents 3 store 63 t demand 359 kg/d price 5.06 traders [52, 3, 64, 45, 2] free_ha 87
-  market 1108: people 928 tents 1 store 47 t demand 36 kg/d price 2.22 traders [160, 1, 11, 2, 0] free_ha 380
-  market 1143: people 908 tents 0 store 161 t demand 169 kg/d price 2.22 traders [130, 0, 28, 12, 0] free_ha 399
-  hungry wage households: no carrier 0, empty market 15, no money 8, on the way 33, in market cell 12, other 28
-  zero-area farms: no hands 0, no land 75; farm sizes [0, 3355, 2642, 2637, 2493, 2231, 1741, 4586], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.44 p25 0.95 p50 1.43 p75 1.90 p90 2.71; zero 75
-  field rebuilds 106 sell trips 254076 buy trips 12048
-      eaten by kind (farm/tent/wage/trader/elite): 99% 79% 97% 99% 99%
-  12  115186   0.21    5893   5485    172   147  19534  1558/ 5290     48112   3262         4585   593850    2807     2628        4349     1659      43        0    98.2  2.22/ 2.22/69.97  3.08  19040  1765    1779   4.70
-  market 1234: people 1861 tents 0 store 247 t demand 198 kg/d price 2.22 traders [296, 0, 39, 19, 0] free_ha 126
-  market 762: people 1710 tents 0 store 128 t demand 545 kg/d price 3.08 traders [54, 0, 114, 114, 16] free_ha 132
-  market 1233: people 1031 tents 35 store 14 t demand 54 kg/d price 3.23 traders [150, 35, 24, 4, 0] free_ha 421
-  market 1185: people 945 tents 2 store 61 t demand 202 kg/d price 3.10 traders [52, 2, 64, 45, 2] free_ha 85
-  market 1108: people 918 tents 0 store 49 t demand 37 kg/d price 2.22 traders [159, 0, 10, 2, 0] free_ha 368
-  market 1143: people 892 tents 0 store 169 t demand 101 kg/d price 2.22 traders [129, 0, 28, 12, 0] free_ha 402
-  hungry wage households: no carrier 0, empty market 19, no money 3, on the way 34, in market cell 9, other 30
-  zero-area farms: no hands 0, no land 72; farm sizes [0, 3329, 2599, 2546, 2447, 2165, 1729, 4719], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.48 p25 0.95 p50 1.43 p75 1.90 p90 2.76; zero 72
-  field rebuilds 70 sell trips 249793 buy trips 11960
-      eaten by kind (farm/tent/wage/trader/elite): 99% 81% 97% 99% 98%
-  13  115306   0.10    5741   5485    145   149  19398  1440/ 4951     48741   3236         4843   583919    2845     2636        4951     1873      38        0    98.2  2.22/ 2.22/69.97  3.37  19217  1781    1781   4.30
-  market 1234: people 1857 tents 0 store 271 t demand 368 kg/d price 2.22 traders [294, 0, 38, 19, 0] free_ha 124
-  market 762: people 1692 tents 0 store 112 t demand 530 kg/d price 3.37 traders [53, 0, 110, 114, 16] free_ha 128
-  market 1233: people 1027 tents 33 store 10 t demand 52 kg/d price 3.45 traders [150, 33, 23, 5, 0] free_ha 411
-  market 1185: people 929 tents 2 store 55 t demand 201 kg/d price 3.35 traders [52, 2, 64, 45, 2] free_ha 78
-  market 1108: people 915 tents 0 store 50 t demand 15 kg/d price 2.22 traders [159, 0, 10, 1, 0] free_ha 362
-  market 1143: people 891 tents 0 store 178 t demand 100 kg/d price 2.22 traders [128, 0, 27, 12, 0] free_ha 390
-  hungry wage households: no carrier 0, empty market 27, no money 1, on the way 28, in market cell 15, other 32
-  zero-area farms: no hands 0, no land 66; farm sizes [0, 3300, 2543, 2501, 2410, 2126, 1738, 4780], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.50 p25 0.95 p50 1.43 p75 1.90 p90 2.76; zero 66
-  field rebuilds 64 sell trips 249321 buy trips 11844
-      eaten by kind (farm/tent/wage/trader/elite): 99% 80% 97% 98% 99%
-  14  115537   0.20    5695   5290    151   164  19237  1313/ 4493     49123   3216         4596   583597    2769     2649        3709     1375      32        0    98.3  2.22/ 2.22/69.97  3.32  19367  1792    1813   4.66
-  market 1234: people 1843 tents 0 store 290 t demand 145 kg/d price 2.22 traders [291, 0, 37, 19, 0] free_ha 120
-  market 762: people 1677 tents 0 store 115 t demand 555 kg/d price 3.32 traders [53, 0, 106, 114, 15] free_ha 129
-  market 1233: people 1048 tents 31 store 12 t demand 65 kg/d price 3.37 traders [150, 31, 26, 5, 0] free_ha 407
-  market 1185: people 947 tents 1 store 66 t demand 296 kg/d price 4.26 traders [52, 1, 63, 45, 2] free_ha 78
-  market 1108: people 920 tents 0 store 51 t demand 14 kg/d price 2.22 traders [158, 0, 10, 1, 0] free_ha 353
-  market 1143: people 896 tents 0 store 185 t demand 131 kg/d price 2.22 traders [126, 0, 27, 12, 0] free_ha 392
-  hungry wage households: no carrier 1, empty market 20, no money 0, on the way 35, in market cell 17, other 29
-  zero-area farms: no hands 0, no land 61; farm sizes [0, 3236, 2457, 2448, 2359, 2119, 1738, 4880], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.57 p25 1.03 p50 1.43 p75 1.90 p90 2.78; zero 61
-  field rebuilds 50 sell trips 247646 buy trips 11730
-      eaten by kind (farm/tent/wage/trader/elite): 99% 82% 97% 98% 99%
-  15  115740   0.18    5702   5332    119   161  19084  1175/ 4054     49534   3244         4713   575179    3219     2660        5311     1999      27        0    98.4  2.22/ 2.22/69.97  3.15  19446  1807    1723   4.94
-  market 1234: people 1813 tents 0 store 324 t demand 400 kg/d price 2.22 traders [283, 0, 36, 19, 0] free_ha 119
-  market 762: people 1675 tents 0 store 120 t demand 543 kg/d price 3.15 traders [53, 0, 104, 114, 15] free_ha 126
-  market 1233: people 1078 tents 34 store 14 t demand 64 kg/d price 4.95 traders [150, 34, 26, 6, 0] free_ha 397
-  market 1108: people 926 tents 0 store 52 t demand 12 kg/d price 2.22 traders [157, 0, 10, 1, 0] free_ha 344
-  market 1185: people 925 tents 0 store 103 t demand 311 kg/d price 3.71 traders [52, 0, 62, 44, 2] free_ha 77
-  market 1143: people 903 tents 0 store 195 t demand 147 kg/d price 2.22 traders [127, 0, 25, 12, 0] free_ha 396
-  hungry wage households: no carrier 1, empty market 21, no money 0, on the way 35, in market cell 13, other 40
-  zero-area farms: no hands 0, no land 57; farm sizes [0, 3126, 2389, 2469, 2309, 2061, 1736, 4994], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.63 p25 1.06 p50 1.43 p75 1.90 p90 2.86; zero 57
-  field rebuilds 46 sell trips 249044 buy trips 11789
-      eaten by kind (farm/tent/wage/trader/elite): 99% 83% 97% 98% 98%
-  16  115812   0.06    5577   5379    127   136  18915  1059/ 3731     49765   3323         4571   570392    3231     2664        5030     1897      27        0    98.4  2.22/ 2.22/69.97  3.68  19500  1830    1530   4.91
-  market 1234: people 1807 tents 0 store 346 t demand 352 kg/d price 2.22 traders [280, 0, 36, 18, 0] free_ha 128
-  market 762: people 1640 tents 0 store 98 t demand 513 kg/d price 3.68 traders [53, 0, 103, 113, 15] free_ha 125
-  market 1233: people 1078 tents 26 store 13 t demand 66 kg/d price 5.54 traders [150, 26, 26, 8, 0] free_ha 386
-  market 1108: people 927 tents 0 store 53 t demand 15 kg/d price 2.22 traders [156, 0, 10, 1, 0] free_ha 348
-  market 1185: people 915 tents 0 store 110 t demand 306 kg/d price 2.69 traders [52, 0, 62, 42, 2] free_ha 77
-  market 1050: people 874 tents 0 store 226 t demand 76 kg/d price 2.22 traders [117, 0, 25, 9, 1] free_ha 585
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 30, in market cell 9, other 31
-  zero-area farms: no hands 0, no land 53; farm sizes [0, 3015, 2407, 2404, 2251, 2028, 1692, 5118], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.63 p25 1.06 p50 1.43 p75 1.90 p90 2.86; zero 53
-  field rebuilds 43 sell trips 247277 buy trips 11929
-      eaten by kind (farm/tent/wage/trader/elite): 99% 82% 97% 98% 98%
-  17  115975   0.14    5511   5282    112    63  18773   986/ 3497     50071   3272         4527   561408    3051     2659        3771     1397      24        0    98.5  2.22/ 2.22/69.97  3.20  19589  1839    1689   4.59
-  market 1234: people 1794 tents 0 store 365 t demand 139 kg/d price 2.22 traders [277, 0, 35, 16, 0] free_ha 120
-  market 762: people 1634 tents 0 store 114 t demand 526 kg/d price 3.20 traders [53, 0, 103, 109, 15] free_ha 125
-  market 1233: people 1104 tents 27 store 8 t demand 69 kg/d price 5.05 traders [150, 27, 26, 8, 0] free_ha 371
-  market 1108: people 950 tents 0 store 54 t demand 12 kg/d price 2.22 traders [156, 0, 10, 1, 0] free_ha 341
-  market 1185: people 913 tents 0 store 138 t demand 495 kg/d price 2.84 traders [52, 0, 62, 42, 2] free_ha 75
-  market 1050: people 868 tents 0 store 233 t demand 112 kg/d price 2.22 traders [117, 0, 25, 8, 0] free_ha 575
-  hungry wage households: no carrier 1, empty market 32, no money 0, on the way 29, in market cell 11, other 30
-  zero-area farms: no hands 0, no land 54; farm sizes [0, 2894, 2391, 2400, 2212, 2002, 1697, 5177], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.07 p50 1.43 p75 1.90 p90 2.86; zero 54
-  field rebuilds 30 sell trips 243904 buy trips 11945
-      eaten by kind (farm/tent/wage/trader/elite): 99% 84% 97% 98% 98%
-  18  116077   0.09    5568   5263    131   211  18637   920/ 3261     50358   3403         4821   545479    3026     2645        3868     1436      20        0    98.5  2.22/ 2.22/69.97  2.81  19614  1845    1553   4.54
-  market 1234: people 1781 tents 0 store 388 t demand 229 kg/d price 2.22 traders [272, 0, 35, 16, 0] free_ha 116
-  market 762: people 1614 tents 0 store 133 t demand 491 kg/d price 2.81 traders [53, 0, 103, 109, 14] free_ha 130
-  market 1233: people 1089 tents 27 store 9 t demand 76 kg/d price 5.62 traders [150, 27, 25, 8, 0] free_ha 358
-  market 1108: people 941 tents 0 store 55 t demand 14 kg/d price 2.22 traders [156, 0, 10, 1, 0] free_ha 351
-  market 1185: people 903 tents 0 store 166 t demand 499 kg/d price 2.49 traders [51, 0, 60, 42, 2] free_ha 75
-  market 1050: people 870 tents 0 store 241 t demand 87 kg/d price 2.22 traders [116, 0, 24, 8, 0] free_ha 595
-  hungry wage households: no carrier 0, empty market 24, no money 0, on the way 32, in market cell 9, other 45
-  zero-area farms: no hands 0, no land 51; farm sizes [0, 2760, 2332, 2387, 2242, 1998, 1669, 5249], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.43 p75 1.90 p90 2.76; zero 51
-  field rebuilds 25 sell trips 242305 buy trips 11710
-      eaten by kind (farm/tent/wage/trader/elite): 99% 84% 96% 97% 98%
-  19  116065  -0.01    5423   5306    125   125  18534   839/ 3008     50654   3462         4846   547234    3146     2638        4350     1648      19        0    98.6  2.22/ 2.22/69.97  3.49  19713  1858    1450   4.60
-  market 1234: people 1752 tents 0 store 412 t demand 222 kg/d price 2.22 traders [267, 0, 34, 16, 0] free_ha 109
-  market 762: people 1612 tents 0 store 104 t demand 497 kg/d price 3.49 traders [53, 0, 102, 109, 14] free_ha 128
-  market 1233: people 1108 tents 23 store 10 t demand 64 kg/d price 4.47 traders [150, 23, 24, 8, 0] free_ha 336
-  market 1108: people 935 tents 0 store 56 t demand 12 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 353
-  market 1185: people 907 tents 0 store 159 t demand 390 kg/d price 2.73 traders [50, 0, 60, 41, 2] free_ha 80
-  market 1050: people 854 tents 0 store 250 t demand 115 kg/d price 2.22 traders [115, 0, 23, 8, 0] free_ha 590
-  hungry wage households: no carrier 0, empty market 23, no money 0, on the way 38, in market cell 8, other 43
-  zero-area farms: no hands 0, no land 52; farm sizes [0, 2655, 2305, 2404, 2200, 2009, 1698, 5263], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.43 p75 1.90 p90 2.86; zero 52
-  field rebuilds 33 sell trips 241910 buy trips 11518
-      eaten by kind (farm/tent/wage/trader/elite): 99% 85% 96% 98% 97%
-  20  116236   0.15    5459   5180    116   103  18404   785/ 2885     50977   3595         5208   541428    2943     2647        3633     1357      18        0    98.6  2.22/ 2.22/69.97  3.07  19780  1864    1440   4.69
-  market 1234: people 1752 tents 0 store 434 t demand 347 kg/d price 2.22 traders [264, 0, 33, 16, 0] free_ha 107
-  market 762: people 1589 tents 0 store 120 t demand 507 kg/d price 3.07 traders [51, 0, 102, 109, 14] free_ha 128
-  market 1233: people 1136 tents 26 store 5 t demand 69 kg/d price 6.95 traders [150, 26, 25, 8, 0] free_ha 340
-  market 1108: people 945 tents 0 store 56 t demand 12 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 356
-  market 1185: people 893 tents 0 store 109 t demand 459 kg/d price 3.11 traders [50, 0, 61, 40, 2] free_ha 78
-  market 1050: people 856 tents 0 store 257 t demand 79 kg/d price 2.22 traders [113, 0, 22, 8, 0] free_ha 578
-  hungry wage households: no carrier 0, empty market 36, no money 0, on the way 45, in market cell 7, other 34
-  zero-area farms: no hands 0, no land 42; farm sizes [0, 2526, 2311, 2356, 2207, 1983, 1719, 5302], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.43 p75 1.90 p90 2.82; zero 42
-  field rebuilds 22 sell trips 238261 buy trips 11447
-      eaten by kind (farm/tent/wage/trader/elite): 99% 86% 96% 98% 97%
-  21  116266   0.03    5412   5208    110   193  18297   741/ 2723     51153   3645         5253   540644    3068     2630        4281     1621      19        0    98.6  2.22/ 2.22/69.97  3.23  19807  1885    1449   4.73
-  market 1234: people 1717 tents 0 store 459 t demand 141 kg/d price 2.22 traders [260, 0, 33, 16, 0] free_ha 94
-  market 762: people 1558 tents 0 store 110 t demand 497 kg/d price 3.23 traders [51, 0, 100, 107, 14] free_ha 124
-  market 1233: people 1096 tents 26 store 7 t demand 55 kg/d price 4.80 traders [150, 26, 21, 8, 0] free_ha 334
-  market 1108: people 958 tents 0 store 57 t demand 13 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 346
-  market 1185: people 868 tents 0 store 94 t demand 251 kg/d price 2.45 traders [49, 0, 59, 40, 2] free_ha 78
-  market 1050: people 852 tents 0 store 267 t demand 67 kg/d price 2.22 traders [112, 0, 22, 7, 0] free_ha 569
-  hungry wage households: no carrier 0, empty market 27, no money 0, on the way 40, in market cell 12, other 28
-  zero-area farms: no hands 0, no land 40; farm sizes [0, 2427, 2238, 2394, 2204, 1955, 1692, 5387], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.43 p75 1.90 p90 2.76; zero 40
-  field rebuilds 33 sell trips 237581 buy trips 11206
-      eaten by kind (farm/tent/wage/trader/elite): 99% 85% 96% 98% 98%
-  22  116193  -0.06    5379   5338     97   104  18180   689/ 2504     51386   3781         5552   538422    2812     2630        3058     1157      18        0    98.7  2.22/ 2.22/69.97  3.46  19803  1882    1201   4.58
-  market 1234: people 1728 tents 0 store 480 t demand 142 kg/d price 2.22 traders [259, 0, 32, 16, 0] free_ha 94
-  market 762: people 1550 tents 0 store 103 t demand 488 kg/d price 3.46 traders [51, 0, 100, 107, 14] free_ha 123
-  market 1233: people 1147 tents 27 store 9 t demand 60 kg/d price 4.21 traders [150, 27, 23, 8, 0] free_ha 337
-  market 1108: people 957 tents 0 store 58 t demand 13 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 335
-  market 1185: people 857 tents 0 store 59 t demand 293 kg/d price 2.91 traders [49, 0, 58, 40, 2] free_ha 78
-  market 1050: people 855 tents 0 store 274 t demand 102 kg/d price 2.22 traders [112, 0, 22, 7, 0] free_ha 585
-  hungry wage households: no carrier 1, empty market 15, no money 0, on the way 36, in market cell 12, other 29
-  zero-area farms: no hands 0, no land 38; farm sizes [0, 2287, 2252, 2428, 2170, 1957, 1686, 5400], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.44 p75 1.90 p90 2.76; zero 38
-  field rebuilds 33 sell trips 234561 buy trips 11108
-      eaten by kind (farm/tent/wage/trader/elite): 99% 85% 96% 98% 97%
-  23  116428   0.20    5400   5078    115    75  18076   632/ 2316     51531   3861         5657   529079    3265     2633        5101     1928      15        0    98.8  2.22/ 2.22/69.97  3.12  19816  1884    1135   4.63
-  market 1234: people 1699 tents 0 store 503 t demand 151 kg/d price 2.22 traders [256, 0, 30, 16, 0] free_ha 90
-  market 762: people 1539 tents 0 store 116 t demand 485 kg/d price 3.12 traders [51, 0, 99, 105, 13] free_ha 119
-  market 1233: people 1137 tents 25 store 10 t demand 60 kg/d price 3.85 traders [150, 25, 21, 8, 0] free_ha 326
-  market 1108: people 962 tents 0 store 59 t demand 14 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 334
-  market 1185: people 856 tents 0 store 87 t demand 261 kg/d price 2.51 traders [49, 0, 58, 40, 2] free_ha 85
-  market 1050: people 852 tents 0 store 285 t demand 83 kg/d price 2.22 traders [111, 0, 21, 7, 0] free_ha 580
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 32, in market cell 9, other 23
-  zero-area farms: no hands 0, no land 38; farm sizes [0, 2148, 2290, 2337, 2161, 2010, 1631, 5499], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.44 p75 1.90 p90 2.86; zero 38
-  field rebuilds 29 sell trips 236759 buy trips 10992
-      eaten by kind (farm/tent/wage/trader/elite): 99% 86% 97% 98% 97%
-  24  116483   0.05    5315   5180     97    92  17956   575/ 2105     51823   3916         5921   527131    2982     2636        4156     1565      12        0    98.9  2.22/ 2.22/69.97  3.29  19835  1882    1066   4.78
-  market 1234: people 1659 tents 0 store 523 t demand 202 kg/d price 2.22 traders [254, 0, 29, 16, 0] free_ha 92
-  market 762: people 1520 tents 0 store 109 t demand 501 kg/d price 3.29 traders [51, 0, 99, 105, 13] free_ha 116
-  market 1233: people 1084 tents 19 store 11 t demand 61 kg/d price 4.82 traders [150, 19, 22, 8, 0] free_ha 316
-  market 1108: people 954 tents 0 store 60 t demand 11 kg/d price 2.22 traders [154, 0, 10, 1, 0] free_ha 331
-  market 1185: people 858 tents 0 store 74 t demand 276 kg/d price 2.79 traders [49, 0, 58, 40, 2] free_ha 89
-  market 1050: people 844 tents 0 store 294 t demand 69 kg/d price 2.22 traders [110, 0, 19, 6, 0] free_ha 577
-  hungry wage households: no carrier 0, empty market 19, no money 0, on the way 35, in market cell 4, other 28
-  zero-area farms: no hands 0, no land 35; farm sizes [0, 2028, 2235, 2348, 2196, 1976, 1633, 5540], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.09 p50 1.44 p75 1.90 p90 2.86; zero 35
-  field rebuilds 24 sell trips 233426 buy trips 10873
-      eaten by kind (farm/tent/wage/trader/elite): 99% 87% 97% 98% 96%
-  25  116726   0.21    5441   5125     74    61  17831   546/ 2031     51946   4069         6309   526345    2979     2638        3928     1499      11        0    98.9  2.22/ 2.22/69.97  2.90  19828  1888    1068   5.09
-  market 1234: people 1651 tents 0 store 548 t demand 228 kg/d price 2.22 traders [254, 0, 28, 16, 0] free_ha 98
-  market 762: people 1511 tents 0 store 123 t demand 494 kg/d price 2.90 traders [50, 0, 99, 103, 13] free_ha 112
-  market 1233: people 1121 tents 20 store 10 t demand 65 kg/d price 5.67 traders [150, 20, 22, 10, 0] free_ha 312
-  market 1108: people 948 tents 0 store 61 t demand 11 kg/d price 2.22 traders [152, 0, 9, 1, 0] free_ha 320
-  market 1185: people 855 tents 0 store 56 t demand 264 kg/d price 3.19 traders [49, 0, 57, 40, 2] free_ha 87
-  market 1050: people 836 tents 0 store 300 t demand 70 kg/d price 2.22 traders [109, 0, 19, 6, 0] free_ha 564
-  hungry wage households: no carrier 1, empty market 14, no money 0, on the way 33, in market cell 7, other 26
-  zero-area farms: no hands 0, no land 33; farm sizes [0, 1872, 2214, 2373, 2178, 1938, 1686, 5570], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.11 p50 1.45 p75 1.90 p90 2.86; zero 33
-  field rebuilds 31 sell trips 232044 buy trips 10804
-      eaten by kind (farm/tent/wage/trader/elite): 99% 88% 97% 98% 96%
-  26  116824   0.08    5419   5232     79    89  17716   509/ 1947     52107   4101         6308   521015    3196     2635        5427     2055      11        0    98.9  2.22/ 2.22/69.97  3.69  19840  1902    1051   4.82
-  market 1234: people 1650 tents 0 store 576 t demand 219 kg/d price 2.22 traders [249, 0, 27, 16, 0] free_ha 98
-  market 762: people 1494 tents 0 store 95 t demand 506 kg/d price 3.69 traders [50, 0, 98, 101, 12] free_ha 113
-  market 1233: people 1133 tents 20 store 17 t demand 70 kg/d price 3.48 traders [150, 20, 22, 10, 0] free_ha 309
-  market 1108: people 954 tents 0 store 62 t demand 10 kg/d price 2.22 traders [151, 0, 9, 1, 0] free_ha 320
-  market 1050: people 855 tents 0 store 314 t demand 144 kg/d price 2.22 traders [108, 0, 19, 6, 0] free_ha 561
-  market 1185: people 849 tents 0 store 80 t demand 370 kg/d price 3.71 traders [49, 0, 56, 39, 2] free_ha 86
-  hungry wage households: no carrier 1, empty market 19, no money 0, on the way 31, in market cell 7, other 16
-  zero-area farms: no hands 0, no land 36; farm sizes [0, 1838, 2144, 2347, 2196, 1968, 1586, 5637], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.11 p50 1.47 p75 1.90 p90 2.86; zero 36
-  field rebuilds 22 sell trips 232113 buy trips 10798
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 97% 99% 96%
-  27  116847   0.02    5189   5066     90   101  17585   483/ 1874     52313   4099         6650   522206    3125     2628        4150     1579      10        0    98.9  2.22/ 2.22/69.97  2.80  19847  1906     994   5.08
-  market 1234: people 1647 tents 0 store 593 t demand 252 kg/d price 2.22 traders [248, 0, 27, 16, 0] free_ha 88
-  market 762: people 1491 tents 0 store 125 t demand 470 kg/d price 2.80 traders [49, 0, 97, 100, 12] free_ha 112
-  market 1233: people 1136 tents 17 store 9 t demand 94 kg/d price 6.21 traders [150, 17, 22, 10, 0] free_ha 306
-  market 1108: people 933 tents 0 store 63 t demand 10 kg/d price 2.22 traders [150, 0, 9, 1, 0] free_ha 319
-  market 1050: people 861 tents 0 store 320 t demand 110 kg/d price 2.22 traders [107, 0, 19, 6, 0] free_ha 543
-  market 1185: people 855 tents 0 store 59 t demand 462 kg/d price 6.08 traders [47, 0, 55, 39, 2] free_ha 84
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 33, in market cell 9, other 15
-  zero-area farms: no hands 0, no land 31; farm sizes [0, 1799, 2083, 2333, 2159, 1937, 1588, 5686], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.12 p50 1.48 p75 1.90 p90 2.86; zero 31
-  field rebuilds 22 sell trips 230324 buy trips 10707
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 97% 99% 98%
-  28  117116   0.23    5514   5151     93    93  17449   461/ 1729     52324   4156         6647   516554    2987     2622        4263     1635      10        0    99.0  2.22/ 2.22/69.97  3.29  19852  1910     938   4.90
-  market 1234: people 1631 tents 0 store 614 t demand 207 kg/d price 2.22 traders [242, 0, 27, 16, 0] free_ha 92
-  market 762: people 1438 tents 0 store 102 t demand 476 kg/d price 3.29 traders [48, 0, 94, 98, 12] free_ha 117
-  market 1233: people 1129 tents 17 store 13 t demand 77 kg/d price 4.19 traders [150, 17, 22, 8, 0] free_ha 316
-  market 1108: people 929 tents 0 store 64 t demand 9 kg/d price 2.22 traders [150, 0, 8, 1, 0] free_ha 329
-  market 1050: people 857 tents 0 store 329 t demand 77 kg/d price 2.22 traders [107, 0, 19, 6, 0] free_ha 537
-  market 1185: people 856 tents 0 store 70 t demand 248 kg/d price 2.84 traders [47, 0, 55, 38, 2] free_ha 83
-  hungry wage households: no carrier 1, empty market 15, no money 0, on the way 23, in market cell 12, other 21
-  zero-area farms: no hands 0, no land 29; farm sizes [0, 1750, 1956, 2340, 2163, 1885, 1625, 5730], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.12 p50 1.47 p75 1.90 p90 2.86; zero 29
-  field rebuilds 21 sell trips 227656 buy trips 10536
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 97% 99% 98%
-  29  117290   0.15    5538   5256     89   107  17332   418/ 1565     52527   4153         6874   516435    3003     2617        4276     1602       9        0    99.0  2.22/ 2.22/69.97  3.32  19776  1903     893   4.53
-  market 1234: people 1622 tents 0 store 638 t demand 376 kg/d price 2.22 traders [240, 0, 27, 15, 0] free_ha 82
-  market 762: people 1430 tents 0 store 100 t demand 477 kg/d price 3.32 traders [48, 0, 91, 97, 12] free_ha 117
-  market 1233: people 1145 tents 17 store 9 t demand 79 kg/d price 5.66 traders [150, 17, 22, 8, 0] free_ha 307
-  market 1108: people 900 tents 0 store 65 t demand 9 kg/d price 2.22 traders [148, 0, 8, 1, 0] free_ha 323
-  market 1050: people 859 tents 0 store 336 t demand 135 kg/d price 2.22 traders [106, 0, 19, 6, 0] free_ha 530
-  market 1185: people 849 tents 0 store 63 t demand 397 kg/d price 4.63 traders [47, 0, 55, 37, 2] free_ha 83
-  hungry wage households: no carrier 0, empty market 15, no money 0, on the way 28, in market cell 6, other 22
-  zero-area farms: no hands 0, no land 29; farm sizes [0, 1727, 1887, 2247, 2186, 1943, 1565, 5777], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.12 p50 1.48 p75 1.90 p90 2.86; zero 29
-  field rebuilds 21 sell trips 226142 buy trips 10513
-      eaten by kind (farm/tent/wage/trader/elite): 99% 90% 97% 99% 98%
-  30  117524   0.20    5561   5250     83    77  17190   391/ 1494     52496   4317         7093   509090    3067     2617        4324     1648       9        0    99.0  2.22/ 2.22/69.97  2.73  19814  1899     892   4.82
-  market 1234: people 1600 tents 0 store 661 t demand 148 kg/d price 2.22 traders [239, 0, 27, 14, 0] free_ha 83
-  market 762: people 1430 tents 0 store 123 t demand 470 kg/d price 2.73 traders [46, 0, 89, 97, 12] free_ha 118
-  market 1233: people 1143 tents 16 store 10 t demand 81 kg/d price 4.50 traders [150, 16, 21, 8, 0] free_ha 310
-  market 1108: people 908 tents 0 store 66 t demand 9 kg/d price 2.22 traders [148, 0, 8, 1, 0] free_ha 322
-  market 1050: people 859 tents 0 store 348 t demand 78 kg/d price 2.22 traders [104, 0, 19, 6, 0] free_ha 522
-  market 1185: people 847 tents 0 store 72 t demand 229 kg/d price 2.66 traders [46, 0, 53, 37, 2] free_ha 83
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 31, in market cell 6, other 16
-  zero-area farms: no hands 0, no land 26; farm sizes [0, 1688, 1814, 2194, 2169, 1916, 1568, 5841], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.11 p50 1.48 p75 1.90 p90 2.86; zero 26
-  field rebuilds 16 sell trips 224969 buy trips 10367
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 97% 98% 99%
-  31  117792   0.23    5594   5254     82    73  17069   358/ 1426     52568   4353         7119   504386    3159     2621        4780     1838       9        0    99.1  2.22/ 2.22/69.97  3.20  19790  1913     824   4.66
-  market 1234: people 1571 tents 0 store 682 t demand 170 kg/d price 2.22 traders [237, 0, 26, 14, 0] free_ha 81
-  market 762: people 1403 tents 0 store 100 t demand 477 kg/d price 3.20 traders [46, 0, 87, 94, 12] free_ha 113
-  market 1233: people 1150 tents 14 store 7 t demand 78 kg/d price 6.00 traders [150, 14, 21, 8, 0] free_ha 312
-  market 1108: people 909 tents 0 store 67 t demand 9 kg/d price 2.22 traders [148, 0, 7, 1, 0] free_ha 317
-  market 1050: people 856 tents 0 store 356 t demand 78 kg/d price 2.22 traders [103, 0, 19, 5, 0] free_ha 512
-  market 1185: people 847 tents 0 store 83 t demand 213 kg/d price 2.37 traders [45, 0, 53, 36, 2] free_ha 83
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 21, in market cell 2, other 21
-  zero-area farms: no hands 0, no land 28; farm sizes [0, 1675, 1739, 2150, 2191, 1894, 1592, 5828], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.12 p50 1.48 p75 1.90 p90 2.86; zero 28
-  field rebuilds 25 sell trips 224785 buy trips 10262
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 98% 99% 97%
-  32  118199   0.35    5689   5245     75    41  16953   339/ 1329     52654   4427         7469   506539    3046     2619        4287     1629       8        0    99.1  2.22/ 2.22/69.97  3.16  19778  1918     847   5.45
-  market 1234: people 1554 tents 0 store 701 t demand 131 kg/d price 2.22 traders [231, 0, 28, 14, 0] free_ha 79
-  market 762: people 1388 tents 0 store 104 t demand 470 kg/d price 3.16 traders [44, 0, 86, 94, 11] free_ha 118
-  market 1233: people 1167 tents 13 store 8 t demand 72 kg/d price 5.23 traders [150, 13, 20, 8, 1] free_ha 309
-  market 1108: people 909 tents 0 store 68 t demand 12 kg/d price 2.22 traders [146, 0, 8, 1, 0] free_ha 321
-  market 1050: people 851 tents 0 store 363 t demand 78 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 509
-  market 1143: people 840 tents 0 store 308 t demand 68 kg/d price 2.22 traders [109, 0, 19, 6, 0] free_ha 355
-  hungry wage households: no carrier 1, empty market 11, no money 0, on the way 23, in market cell 10, other 21
-  zero-area farms: no hands 0, no land 25; farm sizes [0, 1682, 1653, 2051, 2156, 1960, 1560, 5891], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.11 p50 1.48 p75 1.90 p90 2.86; zero 25
-  field rebuilds 22 sell trips 222506 buy trips 10160
-      eaten by kind (farm/tent/wage/trader/elite): 99% 89% 98% 99% 96%
-  33  118515   0.27    5775   5381     86    74  16811   308/ 1201     52608   4497         7482   509720    2993     2625        4006     1515       7        0    99.2  2.22/ 2.22/69.97  3.56  19771  1920     798   5.43
-  market 1234: people 1502 tents 0 store 720 t demand 189 kg/d price 2.22 traders [225, 0, 27, 14, 0] free_ha 80
-  market 762: people 1383 tents 0 store 92 t demand 446 kg/d price 3.56 traders [44, 0, 83, 93, 11] free_ha 121
-  market 1233: people 1184 tents 13 store 8 t demand 75 kg/d price 5.84 traders [150, 13, 21, 7, 0] free_ha 301
-  market 1108: people 903 tents 0 store 69 t demand 15 kg/d price 2.22 traders [144, 0, 8, 1, 0] free_ha 319
-  market 1050: people 854 tents 0 store 371 t demand 87 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 506
-  market 1143: people 849 tents 0 store 313 t demand 53 kg/d price 2.22 traders [107, 0, 19, 6, 0] free_ha 351
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 21, in market cell 6, other 24
-  zero-area farms: no hands 0, no land 22; farm sizes [0, 1656, 1587, 1988, 2146, 1925, 1553, 5956], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.11 p50 1.48 p75 1.90 p90 2.86; zero 22
-  field rebuilds 14 sell trips 220994 buy trips 10004
-      eaten by kind (farm/tent/wage/trader/elite): 99% 88% 98% 99% 96%
-  34  118910   0.33    5803   5373     74    35  16685   291/ 1172     52732   4524         7756   504453    3251     2640        5168     1989       7        0    99.2  2.22/ 2.22/69.97  2.92  19779  1922     880   5.57
-  market 1234: people 1500 tents 0 store 741 t demand 261 kg/d price 2.22 traders [223, 0, 26, 14, 0] free_ha 79
-  market 762: people 1372 tents 0 store 110 t demand 458 kg/d price 2.92 traders [43, 0, 80, 92, 11] free_ha 122
-  market 1233: people 1183 tents 14 store 12 t demand 66 kg/d price 4.79 traders [150, 14, 19, 7, 0] free_ha 291
-  market 1108: people 907 tents 0 store 70 t demand 15 kg/d price 2.22 traders [143, 0, 7, 1, 0] free_ha 308
-  market 1050: people 856 tents 0 store 380 t demand 91 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 504
-  market 1143: people 844 tents 0 store 322 t demand 94 kg/d price 2.22 traders [105, 0, 19, 6, 0] free_ha 347
-  hungry wage households: no carrier 0, empty market 9, no money 0, on the way 23, in market cell 4, other 22
-  zero-area farms: no hands 0, no land 21; farm sizes [0, 1604, 1546, 1949, 2149, 1857, 1606, 5974], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.12 p50 1.48 p75 1.90 p90 2.86; zero 21
-  field rebuilds 23 sell trips 221377 buy trips 10009
-      eaten by kind (farm/tent/wage/trader/elite): 99% 88% 98% 99% 97%
-  35  119350   0.37    5850   5362     88    48  16569   273/ 1076     52829   4501         7815   504064    3354     2651        5671     2177       6        0    99.2  2.22/ 2.22/69.97  3.09  19793  1927     823   5.00
-  market 1234: people 1488 tents 0 store 763 t demand 286 kg/d price 2.22 traders [223, 0, 26, 13, 0] free_ha 82
-  market 762: people 1370 tents 0 store 104 t demand 484 kg/d price 3.09 traders [43, 0, 77, 90, 11] free_ha 120
-  market 1233: people 1198 tents 14 store 14 t demand 72 kg/d price 5.29 traders [150, 14, 20, 7, 0] free_ha 275
-  market 1108: people 914 tents 0 store 70 t demand 14 kg/d price 2.22 traders [142, 0, 7, 2, 0] free_ha 309
-  market 1050: people 869 tents 0 store 391 t demand 136 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 503
-  market 1143: people 845 tents 0 store 331 t demand 125 kg/d price 2.22 traders [104, 0, 19, 6, 0] free_ha 352
-  hungry wage households: no carrier 0, empty market 10, no money 0, on the way 23, in market cell 13, other 24
-  zero-area farms: no hands 0, no land 20; farm sizes [0, 1584, 1514, 1888, 2107, 1864, 1572, 6040], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 20
-  field rebuilds 23 sell trips 221024 buy trips 10038
-      eaten by kind (farm/tent/wage/trader/elite): 99% 90% 98% 99% 97%
-  36  119984   0.53    6031   5307     72    90  16462   252/ 1017     52982   4528         7800   505001    3071     2653        3774     1461       6        0    99.2  2.22/ 2.22/69.97  3.47  19771  1918     795   4.76
-  market 1234: people 1477 tents 0 store 785 t demand 167 kg/d price 2.22 traders [222, 0, 25, 13, 0] free_ha 82
-  market 762: people 1358 tents 0 store 92 t demand 494 kg/d price 3.47 traders [42, 0, 77, 85, 11] free_ha 122
-  market 1233: people 1217 tents 12 store 12 t demand 69 kg/d price 4.38 traders [150, 12, 21, 7, 0] free_ha 259
-  market 1108: people 911 tents 0 store 72 t demand 15 kg/d price 2.22 traders [141, 0, 7, 1, 0] free_ha 309
-  market 1050: people 871 tents 0 store 400 t demand 86 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 503
-  market 1143: people 851 tents 0 store 339 t demand 66 kg/d price 2.22 traders [103, 0, 19, 6, 0] free_ha 358
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 19, in market cell 6, other 18
-  zero-area farms: no hands 0, no land 20; farm sizes [0, 1556, 1509, 1823, 2038, 1860, 1498, 6178], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 20
-  field rebuilds 29 sell trips 217922 buy trips 9944
-      eaten by kind (farm/tent/wage/trader/elite): 100% 90% 98% 98% 98%
-  37  120505   0.43    5952   5405     68    29  16334   239/  979     53092   4608         7881   507879    3096     2652        4430     1705       5        0    99.2  2.22/ 2.22/69.97  3.53  19757  1916     759   5.11
-  market 1234: people 1461 tents 0 store 807 t demand 267 kg/d price 2.22 traders [218, 0, 24, 13, 0] free_ha 84
-  market 762: people 1350 tents 0 store 92 t demand 468 kg/d price 3.53 traders [41, 0, 76, 84, 11] free_ha 114
-  market 1233: people 1251 tents 10 store 14 t demand 69 kg/d price 5.19 traders [150, 10, 23, 6, 0] free_ha 247
-  market 1108: people 913 tents 0 store 73 t demand 13 kg/d price 2.22 traders [141, 0, 7, 1, 0] free_ha 307
-  market 1050: people 869 tents 0 store 407 t demand 83 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 507
-  market 1143: people 861 tents 0 store 345 t demand 67 kg/d price 2.22 traders [101, 0, 18, 6, 0] free_ha 346
-  hungry wage households: no carrier 0, empty market 10, no money 0, on the way 20, in market cell 8, other 14
-  zero-area farms: no hands 0, no land 21; farm sizes [0, 1532, 1457, 1781, 1998, 1809, 1587, 6170], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 21
-  field rebuilds 22 sell trips 217214 buy trips 9824
-      eaten by kind (farm/tent/wage/trader/elite): 100% 90% 98% 98% 97%
-  38  121008   0.42    5958   5406     77    49  16223   224/  923     53153   4729         8006   506563    3254     2659        4575     1728       6        0    99.2  2.22/ 2.22/69.97  2.97  19789  1928     804   5.06
-  market 1234: people 1446 tents 0 store 829 t demand 328 kg/d price 2.22 traders [216, 0, 24, 12, 0] free_ha 88
-  market 762: people 1348 tents 0 store 109 t demand 486 kg/d price 2.97 traders [41, 0, 71, 84, 11] free_ha 109
-  market 1233: people 1257 tents 8 store 16 t demand 97 kg/d price 4.57 traders [150, 8, 24, 6, 0] free_ha 238
-  market 1108: people 914 tents 0 store 74 t demand 14 kg/d price 2.22 traders [137, 0, 7, 1, 0] free_ha 305
-  market 1050: people 876 tents 0 store 416 t demand 78 kg/d price 2.22 traders [102, 0, 19, 5, 0] free_ha 508
-  market 1143: people 864 tents 0 store 353 t demand 93 kg/d price 2.22 traders [101, 0, 17, 6, 0] free_ha 336
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 25, in market cell 10, other 13
-  zero-area farms: no hands 0, no land 17; farm sizes [0, 1505, 1447, 1769, 1918, 1816, 1544, 6224], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 17
-  field rebuilds 21 sell trips 217342 buy trips 9730
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 98% 96%
-  39  121513   0.42    6048   5482     73    58  16118   212/  891     53291   4705         8330   507616    3065     2663        4096     1611       6        0    99.2  2.22/ 2.22/69.97  3.40  19787  1928     873   5.04
-  market 1234: people 1438 tents 0 store 849 t demand 158 kg/d price 2.22 traders [216, 0, 24, 12, 0] free_ha 87
-  market 762: people 1345 tents 0 store 94 t demand 508 kg/d price 3.40 traders [40, 0, 69, 83, 11] free_ha 111
-  market 1233: people 1285 tents 8 store 14 t demand 93 kg/d price 4.38 traders [150, 8, 24, 7, 0] free_ha 247
-  market 1108: people 917 tents 0 store 75 t demand 13 kg/d price 2.22 traders [138, 0, 7, 1, 0] free_ha 295
-  market 1050: people 884 tents 0 store 425 t demand 78 kg/d price 2.22 traders [102, 0, 18, 5, 0] free_ha 511
-  market 1143: people 855 tents 0 store 361 t demand 50 kg/d price 2.22 traders [101, 0, 17, 6, 0] free_ha 340
-  hungry wage households: no carrier 0, empty market 7, no money 0, on the way 33, in market cell 10, other 18
-  zero-area farms: no hands 0, no land 17; farm sizes [0, 1494, 1423, 1740, 1858, 1796, 1520, 6287], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 17
-  field rebuilds 13 sell trips 214793 buy trips 9682
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 98% 96%
-  40  122147   0.52    6113   5419     67    74  16019   190/  817     53374   4655         8303   510340    3059     2648        3802     1463       5        0    99.2  2.22/ 2.22/69.97  3.20  19724  1929     735   5.24
-  market 1234: people 1440 tents 0 store 869 t demand 209 kg/d price 2.22 traders [214, 0, 24, 11, 0] free_ha 87
-  market 762: people 1346 tents 0 store 103 t demand 507 kg/d price 3.20 traders [39, 0, 67, 81, 11] free_ha 110
-  market 1233: people 1261 tents 5 store 13 t demand 87 kg/d price 4.60 traders [150, 5, 21, 7, 0] free_ha 235
-  market 1108: people 911 tents 0 store 75 t demand 13 kg/d price 2.22 traders [138, 0, 6, 1, 0] free_ha 300
-  market 1050: people 890 tents 0 store 432 t demand 96 kg/d price 2.22 traders [101, 0, 18, 5, 0] free_ha 498
-  market 1143: people 860 tents 0 store 366 t demand 89 kg/d price 2.22 traders [100, 0, 17, 6, 0] free_ha 345
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 23, in market cell 12, other 22
-  zero-area farms: no hands 0, no land 15; farm sizes [0, 1461, 1400, 1719, 1835, 1752, 1501, 6351], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 15
-  field rebuilds 20 sell trips 213847 buy trips 9575
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 98% 98%
-  41  122698   0.45    6140   5532     72    50  15930   177/  758     53502   4725         8538   507937    2970     2651        3270     1273       5        0    99.2  2.22/ 2.22/69.97  3.41  19706  1926     766   5.56
-  market 1234: people 1455 tents 0 store 894 t demand 360 kg/d price 2.22 traders [214, 0, 24, 11, 0] free_ha 90
-  market 762: people 1346 tents 0 store 95 t demand 514 kg/d price 3.41 traders [37, 0, 67, 78, 11] free_ha 110
-  market 1233: people 1291 tents 5 store 17 t demand 92 kg/d price 5.35 traders [150, 5, 23, 7, 0] free_ha 229
-  market 1108: people 902 tents 0 store 76 t demand 17 kg/d price 2.22 traders [137, 0, 7, 1, 0] free_ha 301
-  market 1050: people 900 tents 0 store 439 t demand 86 kg/d price 2.22 traders [101, 0, 18, 5, 0] free_ha 488
-  market 1143: people 864 tents 0 store 372 t demand 53 kg/d price 2.22 traders [100, 0, 16, 6, 0] free_ha 339
-  hungry wage households: no carrier 1, empty market 10, no money 0, on the way 27, in market cell 8, other 18
-  zero-area farms: no hands 0, no land 14; farm sizes [0, 1436, 1402, 1686, 1767, 1763, 1508, 6368], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 14
-  field rebuilds 15 sell trips 212180 buy trips 9416
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 98% 98%
-  42  123238   0.44    6061   5482     59    32  15819   173/  737     53701   4710         8516   510854    3214     2649        4669     1789       5        0    99.2  2.22/ 2.22/69.97  3.53  19690  1927     868   5.12
-  market 1234: people 1448 tents 0 store 913 t demand 281 kg/d price 2.22 traders [211, 0, 24, 11, 0] free_ha 89
-  market 762: people 1335 tents 0 store 88 t demand 473 kg/d price 3.53 traders [37, 0, 66, 75, 11] free_ha 110
-  market 1233: people 1322 tents 7 store 9 t demand 97 kg/d price 7.08 traders [150, 7, 22, 6, 0] free_ha 225
-  market 1108: people 921 tents 0 store 78 t demand 15 kg/d price 2.22 traders [134, 0, 8, 0, 0] free_ha 293
-  market 1050: people 901 tents 0 store 449 t demand 130 kg/d price 2.22 traders [100, 0, 17, 4, 0] free_ha 492
-  market 1143: people 867 tents 0 store 380 t demand 102 kg/d price 2.22 traders [99, 0, 15, 6, 0] free_ha 331
-  hungry wage households: no carrier 2, empty market 14, no money 0, on the way 23, in market cell 10, other 18
-  zero-area farms: no hands 0, no land 13; farm sizes [0, 1396, 1437, 1630, 1781, 1678, 1461, 6436], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 13
-  field rebuilds 18 sell trips 212936 buy trips 9445
-      eaten by kind (farm/tent/wage/trader/elite): 100% 88% 98% 98% 100%
-  43  123805   0.46    6169   5564     82    53  15716   154/  649     53879   4672         8647   514596    3022     2661        3370     1315       4        0    99.2  2.22/ 2.22/69.97  2.94  19670  1927     810   5.14
-  market 1234: people 1459 tents 0 store 937 t demand 329 kg/d price 2.22 traders [211, 0, 24, 11, 0] free_ha 80
-  market 1233: people 1347 tents 8 store 15 t demand 101 kg/d price 5.63 traders [150, 8, 23, 6, 0] free_ha 221
-  market 762: people 1330 tents 0 store 109 t demand 470 kg/d price 2.94 traders [35, 0, 64, 73, 11] free_ha 110
-  market 1108: people 934 tents 0 store 79 t demand 24 kg/d price 2.22 traders [134, 0, 8, 1, 0] free_ha 291
-  market 1050: people 903 tents 0 store 456 t demand 82 kg/d price 2.22 traders [100, 0, 17, 4, 0] free_ha 496
-  market 1143: people 872 tents 0 store 385 t demand 46 kg/d price 2.22 traders [98, 0, 14, 6, 0] free_ha 339
-  hungry wage households: no carrier 1, empty market 12, no money 0, on the way 24, in market cell 5, other 26
-  zero-area farms: no hands 0, no land 13; farm sizes [0, 1396, 1370, 1626, 1784, 1606, 1428, 6506], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 13
-  field rebuilds 14 sell trips 210445 buy trips 9437
-      eaten by kind (farm/tent/wage/trader/elite): 100% 90% 97% 98% 100%
-  44  124141   0.27    6038   5619     68    69  15607   142/  597     53947   4830         8754   509694    3371     2662        5546     2106       4        0    99.2  2.22/ 2.22/69.97  3.73  19698  1934     758   5.59
-  market 1234: people 1453 tents 0 store 961 t demand 331 kg/d price 2.22 traders [207, 0, 24, 11, 0] free_ha 80
-  market 762: people 1360 tents 0 store 84 t demand 469 kg/d price 3.73 traders [35, 0, 65, 72, 11] free_ha 111
-  market 1233: people 1325 tents 5 store 10 t demand 112 kg/d price 7.21 traders [150, 5, 23, 6, 0] free_ha 214
-  market 1108: people 928 tents 0 store 82 t demand 37 kg/d price 2.22 traders [132, 0, 8, 1, 0] free_ha 291
-  market 1050: people 920 tents 0 store 465 t demand 134 kg/d price 2.22 traders [100, 0, 17, 4, 0] free_ha 507
-  market 1143: people 878 tents 0 store 393 t demand 79 kg/d price 2.22 traders [96, 0, 14, 6, 0] free_ha 348
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 30, in market cell 7, other 14
-  zero-area farms: no hands 0, no land 13; farm sizes [0, 1362, 1398, 1567, 1729, 1616, 1405, 6530], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 13
-  field rebuilds 22 sell trips 212072 buy trips 9468
-      eaten by kind (farm/tent/wage/trader/elite): 100% 88% 98% 98% 100%
-  45  124588   0.36    6115   5622     76    46  15506   134/  576     54173   4713         8594   516752    3041     2658        3551     1394       3        0    99.2  2.22/ 2.22/69.97  3.35  19676  1933     830   5.66
-  market 1234: people 1454 tents 0 store 983 t demand 233 kg/d price 2.22 traders [204, 0, 24, 11, 0] free_ha 89
-  market 762: people 1343 tents 0 store 95 t demand 477 kg/d price 3.35 traders [35, 0, 65, 70, 11] free_ha 111
-  market 1233: people 1343 tents 5 store 12 t demand 96 kg/d price 5.93 traders [150, 5, 23, 7, 0] free_ha 213
-  market 1108: people 930 tents 0 store 84 t demand 20 kg/d price 2.22 traders [130, 0, 8, 1, 0] free_ha 292
-  market 1050: people 918 tents 0 store 473 t demand 90 kg/d price 2.22 traders [100, 0, 16, 4, 0] free_ha 492
-  market 1143: people 881 tents 0 store 398 t demand 49 kg/d price 2.22 traders [96, 0, 14, 6, 0] free_ha 340
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 28, in market cell 8, other 20
-  zero-area farms: no hands 0, no land 12; farm sizes [0, 1327, 1385, 1551, 1699, 1587, 1376, 6581], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.48 p75 1.90 p90 2.86; zero 12
-  field rebuilds 21 sell trips 208379 buy trips 9408
-      eaten by kind (farm/tent/wage/trader/elite): 100% 90% 97% 98% 99%
-  46  125038   0.36    6138   5617     77    71  15407   125/  533     54299   4877         8806   512638    3172     2659        4658     1797       4        0    99.2  2.22/ 2.22/69.97  3.48  19644  1937     882   5.21
-  market 1234: people 1473 tents 0 store 1005 t demand 219 kg/d price 2.22 traders [202, 0, 24, 11, 0] free_ha 86
-  market 762: people 1344 tents 0 store 92 t demand 486 kg/d price 3.48 traders [35, 0, 63, 70, 10] free_ha 109
-  market 1233: people 1336 tents 3 store 9 t demand 83 kg/d price 7.37 traders [150, 3, 23, 6, 0] free_ha 203
-  market 1108: people 950 tents 0 store 86 t demand 25 kg/d price 2.22 traders [129, 0, 8, 1, 0] free_ha 287
-  market 1050: people 939 tents 0 store 482 t demand 124 kg/d price 2.22 traders [99, 0, 16, 4, 0] free_ha 495
-  market 1143: people 876 tents 0 store 406 t demand 105 kg/d price 2.22 traders [93, 0, 15, 6, 0] free_ha 338
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 34, in market cell 8, other 25
-  zero-area farms: no hands 0, no land 12; farm sizes [0, 1312, 1391, 1487, 1690, 1576, 1358, 6593], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.50 p75 1.90 p90 2.86; zero 12
-  field rebuilds 14 sell trips 208361 buy trips 9366
-      eaten by kind (farm/tent/wage/trader/elite): 100% 89% 98% 98% 100%
-  47  125714   0.54    6190   5419     84    95  15312   118/  505     54512   4783         8644   512752    3143     2667        4141     1614       3        0    99.2  2.22/ 2.22/69.97  3.10  19622  1940     819   5.28
-  market 1234: people 1458 tents 0 store 1029 t demand 184 kg/d price 2.22 traders [200, 0, 23, 11, 0] free_ha 87
-  market 762: people 1336 tents 0 store 103 t demand 481 kg/d price 3.10 traders [34, 0, 63, 70, 10] free_ha 109
-  market 1233: people 1335 tents 3 store 16 t demand 89 kg/d price 4.21 traders [150, 3, 23, 6, 0] free_ha 195
-  market 1108: people 967 tents 0 store 88 t demand 16 kg/d price 2.22 traders [128, 0, 8, 1, 0] free_ha 289
-  market 1050: people 953 tents 0 store 491 t demand 72 kg/d price 2.22 traders [99, 0, 16, 4, 0] free_ha 483
-  market 1143: people 881 tents 0 store 412 t demand 49 kg/d price 2.22 traders [93, 0, 14, 6, 0] free_ha 333
-  hungry wage households: no carrier 1, empty market 9, no money 0, on the way 29, in market cell 6, other 27
-  zero-area farms: no hands 0, no land 12; farm sizes [0, 1308, 1330, 1532, 1624, 1540, 1297, 6681], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.50 p75 1.90 p90 2.86; zero 12
-  field rebuilds 19 sell trips 206680 buy trips 9312
-      eaten by kind (farm/tent/wage/trader/elite): 100% 89% 98% 98% 100%
-  48  126170   0.36    6051   5562     74    50  15223   109/  437     54660   4870         8939   505847    3094     2672        3787     1459       3        0    99.3  2.22/ 2.22/69.97  3.83  19580  1936     857   5.28
-  market 1234: people 1455 tents 0 store 1052 t demand 176 kg/d price 2.22 traders [199, 0, 23, 11, 0] free_ha 85
-  market 762: people 1348 tents 0 store 84 t demand 499 kg/d price 3.83 traders [34, 0, 62, 70, 10] free_ha 111
-  market 1233: people 1335 tents 2 store 14 t demand 95 kg/d price 4.28 traders [150, 2, 23, 7, 0] free_ha 189
-  market 1108: people 984 tents 0 store 89 t demand 21 kg/d price 2.22 traders [127, 0, 8, 1, 0] free_ha 294
-  market 1050: people 953 tents 0 store 499 t demand 72 kg/d price 2.22 traders [99, 0, 16, 4, 0] free_ha 481
-  market 1143: people 889 tents 0 store 417 t demand 48 kg/d price 2.22 traders [93, 0, 14, 6, 0] free_ha 327
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 33, in market cell 9, other 22
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1313, 1285, 1500, 1650, 1454, 1293, 6728], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.50 p75 1.90 p90 2.86; zero 11
-  field rebuilds 19 sell trips 205351 buy trips 9209
-      eaten by kind (farm/tent/wage/trader/elite): 100% 89% 98% 98% 100%
-  49  126580   0.32    6099   5609     59    62  15142    95/  418     54939   4675         8864   504713    3057     2671        3793     1469       2        0    99.3  2.22/ 2.22/69.97  3.36  19548  1934     814   5.79
-  market 1234: people 1434 tents 0 store 1074 t demand 325 kg/d price 2.22 traders [196, 0, 23, 11, 0] free_ha 87
-  market 1233: people 1346 tents 0 store 16 t demand 94 kg/d price 5.18 traders [149, 0, 23, 6, 0] free_ha 181
-  market 762: people 1325 tents 0 store 102 t demand 493 kg/d price 3.36 traders [33, 0, 62, 68, 9] free_ha 113
-  market 1108: people 990 tents 0 store 91 t demand 20 kg/d price 2.22 traders [127, 0, 8, 1, 0] free_ha 291
-  market 1050: people 938 tents 0 store 506 t demand 126 kg/d price 2.22 traders [97, 0, 15, 3, 0] free_ha 480
-  market 1143: people 893 tents 0 store 422 t demand 42 kg/d price 2.22 traders [93, 0, 14, 6, 0] free_ha 322
-  hungry wage households: no carrier 0, empty market 7, no money 0, on the way 27, in market cell 9, other 22
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1314, 1260, 1464, 1614, 1469, 1270, 6751], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.52 p75 1.90 p90 2.86; zero 11
-  field rebuilds 24 sell trips 203941 buy trips 9072
-      eaten by kind (farm/tent/wage/trader/elite): 100% 91% 98% 98% 100%
-  50  127034   0.36    6085   5570     76    61  15044    91/  385     55236   4672         8875   506156    3069     2656        3830     1471       2        0    99.2  2.22/ 2.22/69.97  3.74  19513  1932     910   5.40
-  market 1234: people 1431 tents 0 store 1094 t demand 252 kg/d price 2.22 traders [194, 0, 22, 11, 0] free_ha 88
-  market 1233: people 1335 tents 0 store 12 t demand 85 kg/d price 5.18 traders [148, 0, 23, 6, 0] free_ha 180
-  market 762: people 1322 tents 0 store 85 t demand 450 kg/d price 3.74 traders [33, 0, 61, 68, 9] free_ha 110
-  market 1108: people 988 tents 0 store 93 t demand 26 kg/d price 2.22 traders [127, 0, 8, 1, 0] free_ha 292
-  market 1050: people 950 tents 0 store 513 t demand 84 kg/d price 2.22 traders [96, 0, 15, 3, 0] free_ha 477
-  market 1143: people 889 tents 0 store 427 t demand 48 kg/d price 2.22 traders [93, 0, 13, 6, 0] free_ha 339
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 28, in market cell 8, other 22
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1289, 1236, 1431, 1623, 1444, 1245, 6776], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.64 p25 1.14 p50 1.52 p75 1.90 p90 2.86; zero 11
-  field rebuilds 17 sell trips 203422 buy trips 8887
-      eaten by kind (farm/tent/wage/trader/elite): 100% 91% 98% 98% 99%
-  51  127442   0.32    5977   5487     69    82  14952    81/  363     55299   4805         8883   502548    3203     2653        4864     1879       2        0    99.2  2.22/ 2.22/69.97  3.46  19510  1931     849   5.63
-  market 1234: people 1417 tents 0 store 1119 t demand 328 kg/d price 2.22 traders [189, 0, 22, 10, 0] free_ha 88
-  market 1233: people 1364 tents 0 store 19 t demand 104 kg/d price 6.43 traders [149, 0, 25, 8, 0] free_ha 180
-  market 762: people 1318 tents 0 store 91 t demand 429 kg/d price 3.46 traders [33, 0, 60, 67, 9] free_ha 109
-  market 1108: people 987 tents 0 store 95 t demand 48 kg/d price 2.22 traders [125, 0, 8, 1, 0] free_ha 288
-  market 1050: people 952 tents 0 store 522 t demand 186 kg/d price 2.22 traders [96, 0, 15, 3, 0] free_ha 473
-  market 1143: people 894 tents 0 store 435 t demand 98 kg/d price 2.22 traders [93, 0, 13, 6, 0] free_ha 341
-  hungry wage households: no carrier 0, empty market 13, no money 0, on the way 30, in market cell 2, other 18
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1256, 1231, 1410, 1545, 1444, 1283, 6783], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.65 p25 1.16 p50 1.52 p75 1.90 p90 2.86; zero 11
-  field rebuilds 21 sell trips 203330 buy trips 8747
-      eaten by kind (farm/tent/wage/trader/elite): 100% 89% 97% 98% 99%
-  52  128044   0.47    6160   5482     83    76  14842    68/  300     55593   4765         8952   502745    2953     2662        3429     1323       2        0    99.2  2.22/ 2.22/69.97  3.49  19525  1931     823   6.02
-  market 1234: people 1402 tents 0 store 1140 t demand 349 kg/d price 2.22 traders [190, 0, 21, 9, 0] free_ha 89
-  market 1233: people 1372 tents 0 store 15 t demand 109 kg/d price 5.82 traders [148, 0, 24, 9, 0] free_ha 184
-  market 762: people 1313 tents 0 store 93 t demand 448 kg/d price 3.49 traders [33, 0, 62, 64, 7] free_ha 107
-  market 1108: people 972 tents 0 store 97 t demand 40 kg/d price 2.22 traders [122, 0, 8, 1, 0] free_ha 284
-  market 1050: people 956 tents 0 store 529 t demand 101 kg/d price 2.22 traders [95, 0, 14, 3, 0] free_ha 484
-  market 1143: people 901 tents 0 store 440 t demand 78 kg/d price 2.22 traders [93, 0, 12, 6, 0] free_ha 337
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 30, in market cell 6, other 25
-  zero-area farms: no hands 0, no land 10; farm sizes [0, 1219, 1194, 1376, 1552, 1405, 1228, 6868], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.16 p50 1.52 p75 1.90 p90 2.86; zero 10
-  field rebuilds 9 sell trips 200406 buy trips 8609
-      eaten by kind (farm/tent/wage/trader/elite): 100% 88% 97% 98% 100%
-  53  128419   0.29    6099   5678     72    53  14758    63/  287     55734   4763         9060   498613    3273     2669        4815     1882       2        0    99.2  2.22/ 2.22/69.97  3.48  19484  1931     769   5.74
-  market 1234: people 1401 tents 0 store 1165 t demand 226 kg/d price 2.22 traders [188, 0, 21, 9, 0] free_ha 84
-  market 1233: people 1371 tents 0 store 15 t demand 104 kg/d price 5.29 traders [147, 0, 25, 9, 0] free_ha 168
-  market 762: people 1320 tents 0 store 93 t demand 420 kg/d price 3.48 traders [33, 0, 62, 64, 7] free_ha 106
-  market 1108: people 987 tents 0 store 99 t demand 25 kg/d price 2.22 traders [122, 0, 8, 1, 0] free_ha 287
-  market 1050: people 958 tents 0 store 539 t demand 88 kg/d price 2.22 traders [95, 0, 14, 3, 0] free_ha 481
-  market 1143: people 914 tents 0 store 448 t demand 70 kg/d price 2.22 traders [93, 0, 12, 5, 0] free_ha 334
-  hungry wage households: no carrier 0, empty market 10, no money 0, on the way 29, in market cell 1, other 16
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1198, 1197, 1356, 1496, 1391, 1261, 6859], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.65 p25 1.18 p50 1.52 p75 1.90 p90 2.86; zero 11
-  field rebuilds 16 sell trips 201283 buy trips 8557
-      eaten by kind (farm/tent/wage/trader/elite): 100% 86% 98% 98% 100%
-  54  128744   0.25    6097   5673     86    97  14682    61/  274     56064   4698         9121   506641    2999     2682        3714     1437       2        0    99.3  2.22/ 2.22/69.97  3.27  19467  1928     794   5.34
-  market 1234: people 1373 tents 0 store 1190 t demand 213 kg/d price 2.22 traders [187, 0, 21, 8, 0] free_ha 85
-  market 1233: people 1338 tents 0 store 14 t demand 121 kg/d price 5.27 traders [143, 0, 24, 11, 0] free_ha 169
-  market 762: people 1322 tents 0 store 101 t demand 449 kg/d price 3.27 traders [33, 0, 62, 64, 7] free_ha 104
-  market 1108: people 993 tents 0 store 101 t demand 18 kg/d price 2.22 traders [122, 0, 8, 1, 0] free_ha 289
-  market 1050: people 951 tents 0 store 546 t demand 93 kg/d price 2.22 traders [95, 0, 13, 3, 0] free_ha 473
-  market 1143: people 894 tents 0 store 453 t demand 72 kg/d price 2.22 traders [92, 0, 12, 5, 0] free_ha 331
-  hungry wage households: no carrier 1, empty market 10, no money 0, on the way 28, in market cell 7, other 20
-  zero-area farms: no hands 0, no land 12; farm sizes [0, 1184, 1178, 1325, 1477, 1365, 1285, 6868], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.65 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 12
-  field rebuilds 15 sell trips 198406 buy trips 8530
-      eaten by kind (farm/tent/wage/trader/elite): 100% 85% 97% 98% 100%
-  55  129167   0.33    5987   5466     63    92  14600    60/  285     56200   4715         9233   506172    3170     2674        4457     1713       2        0    99.3  2.22/ 2.22/69.97  3.44  19449  1925     774   4.94
-  market 1234: people 1380 tents 0 store 1209 t demand 265 kg/d price 2.22 traders [184, 0, 21, 8, 0] free_ha 85
-  market 762: people 1319 tents 0 store 96 t demand 475 kg/d price 3.44 traders [33, 0, 61, 62, 7] free_ha 104
-  market 1233: people 1317 tents 0 store 12 t demand 117 kg/d price 5.53 traders [141, 0, 24, 10, 0] free_ha 162
-  market 1108: people 1000 tents 0 store 103 t demand 19 kg/d price 2.22 traders [122, 0, 8, 1, 0] free_ha 283
-  market 1050: people 955 tents 0 store 554 t demand 71 kg/d price 2.22 traders [94, 0, 12, 3, 0] free_ha 462
-  market 1143: people 916 tents 0 store 462 t demand 95 kg/d price 2.22 traders [92, 0, 12, 5, 0] free_ha 334
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 27, in market cell 3, other 21
-  zero-area farms: no hands 0, no land 11; farm sizes [0, 1177, 1167, 1315, 1432, 1374, 1201, 6934], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.65 p25 1.18 p50 1.52 p75 1.90 p90 2.86; zero 11
-  field rebuilds 13 sell trips 198951 buy trips 8377
-      eaten by kind (farm/tent/wage/trader/elite): 100% 79% 97% 98% 100%
-  56  129508   0.26    6008   5628     67    61  14515    60/  280     56407   4719         9350   509517    2972     2669        3961     1529       2        0    99.3  2.22/ 2.22/69.97  3.51  19426  1925     766   5.21
-  market 1233: people 1357 tents 0 store 17 t demand 112 kg/d price 4.59 traders [142, 0, 25, 10, 0] free_ha 157
-  market 1234: people 1347 tents 0 store 1232 t demand 230 kg/d price 2.22 traders [177, 0, 20, 8, 0] free_ha 91
-  market 762: people 1310 tents 0 store 93 t demand 466 kg/d price 3.51 traders [31, 0, 59, 61, 7] free_ha 104
-  market 1108: people 1008 tents 0 store 104 t demand 21 kg/d price 2.22 traders [122, 0, 8, 1, 0] free_ha 279
-  market 1050: people 957 tents 0 store 561 t demand 86 kg/d price 2.22 traders [93, 0, 12, 3, 0] free_ha 459
-  market 1143: people 910 tents 0 store 469 t demand 102 kg/d price 2.22 traders [92, 0, 12, 5, 0] free_ha 341
-  hungry wage households: no carrier 0, empty market 18, no money 0, on the way 31, in market cell 2, other 21
-  zero-area farms: no hands 0, no land 9; farm sizes [0, 1155, 1140, 1290, 1393, 1385, 1204, 6948], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 9
-  field rebuilds 13 sell trips 196624 buy trips 8173
-      eaten by kind (farm/tent/wage/trader/elite): 100% 84% 97% 98% 100%
-  57  129768   0.20    5996   5672     59    52  14442    54/  240     56586   4733         9527   513638    3039     2669        4585     1764       2        0    99.3  2.22/ 2.22/69.97  3.28  19410  1920     783   5.61
-  market 1233: people 1356 tents 0 store 13 t demand 115 kg/d price 6.12 traders [140, 0, 25, 11, 0] free_ha 155
-  market 1234: people 1346 tents 0 store 1255 t demand 207 kg/d price 2.22 traders [178, 0, 20, 8, 0] free_ha 92
-  market 762: people 1291 tents 0 store 100 t demand 427 kg/d price 3.28 traders [30, 0, 58, 59, 7] free_ha 104
-  market 1108: people 984 tents 0 store 106 t demand 29 kg/d price 2.22 traders [121, 0, 8, 1, 0] free_ha 268
-  market 1050: people 945 tents 0 store 568 t demand 79 kg/d price 2.22 traders [92, 0, 12, 3, 0] free_ha 459
-  market 1143: people 893 tents 0 store 474 t demand 71 kg/d price 2.22 traders [91, 0, 12, 4, 0] free_ha 336
-  hungry wage households: no carrier 1, empty market 10, no money 0, on the way 29, in market cell 5, other 16
-  zero-area farms: no hands 0, no land 7; farm sizes [0, 1153, 1105, 1307, 1365, 1331, 1196, 6985], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 7
-  field rebuilds 17 sell trips 196393 buy trips 8188
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 97% 98% 99%
-  58  130073   0.24    6030   5634     65    82  14349    57/  263     56651   4802         9345   511945    2982     2674        3935     1500       1        0    99.3  2.22/ 2.22/69.97  3.49  19367  1919     785   5.79
-  market 1233: people 1370 tents 0 store 15 t demand 118 kg/d price 4.88 traders [140, 0, 26, 11, 0] free_ha 149
-  market 1234: people 1358 tents 0 store 1282 t demand 242 kg/d price 2.22 traders [177, 0, 20, 8, 0] free_ha 88
-  market 762: people 1279 tents 0 store 94 t demand 446 kg/d price 3.49 traders [29, 0, 58, 58, 7] free_ha 104
-  market 1108: people 988 tents 0 store 108 t demand 28 kg/d price 2.22 traders [118, 0, 8, 1, 0] free_ha 264
-  market 1050: people 955 tents 0 store 576 t demand 132 kg/d price 2.22 traders [91, 0, 12, 3, 0] free_ha 456
-  market 1143: people 908 tents 0 store 479 t demand 100 kg/d price 2.22 traders [89, 0, 12, 4, 0] free_ha 331
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 25, in market cell 14, other 15
-  zero-area farms: no hands 0, no land 6; farm sizes [0, 1134, 1070, 1281, 1367, 1327, 1200, 6970], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 6
-  field rebuilds 20 sell trips 194853 buy trips 8133
-      eaten by kind (farm/tent/wage/trader/elite): 100% 92% 98% 99% 99%
-  59  130470   0.31    6058   5617     57    44  14269    51/  252     56953   4816         9428   519476    3313     2680        4981     1936       1        0    99.3  2.22/ 2.22/69.97  3.48  19337  1920     775   5.82
-  market 1233: people 1399 tents 0 store 12 t demand 134 kg/d price 6.60 traders [142, 0, 25, 11, 0] free_ha 145
-  market 1234: people 1349 tents 0 store 1304 t demand 202 kg/d price 2.22 traders [173, 0, 20, 8, 0] free_ha 91
-  market 762: people 1271 tents 0 store 93 t demand 445 kg/d price 3.48 traders [28, 0, 57, 58, 7] free_ha 104
-  market 1108: people 1005 tents 0 store 110 t demand 23 kg/d price 2.22 traders [119, 0, 8, 1, 0] free_ha 259
-  market 1050: people 964 tents 0 store 586 t demand 94 kg/d price 2.22 traders [91, 0, 12, 3, 0] free_ha 458
-  market 1143: people 909 tents 0 store 486 t demand 69 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 329
-  hungry wage households: no carrier 1, empty market 12, no money 0, on the way 30, in market cell 13, other 19
-  zero-area farms: no hands 0, no land 6; farm sizes [0, 1090, 1091, 1244, 1379, 1270, 1205, 6990], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.65 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 6
-  field rebuilds 26 sell trips 196372 buy trips 8078
-      eaten by kind (farm/tent/wage/trader/elite): 100% 92% 98% 99% 99%
-  60  130882   0.32    6085   5617     65    62  14187    45/  210     57075   4855         9556   517267    3111     2689        4284     1631       1        0    99.3  2.22/ 2.22/69.97  3.50  19302  1920     671   6.01
-  market 1233: people 1400 tents 0 store 16 t demand 121 kg/d price 5.16 traders [141, 0, 25, 11, 0] free_ha 142
-  market 1234: people 1337 tents 0 store 1333 t demand 343 kg/d price 2.22 traders [172, 0, 19, 8, 0] free_ha 88
-  market 762: people 1275 tents 0 store 94 t demand 460 kg/d price 3.50 traders [28, 0, 56, 57, 7] free_ha 107
-  market 1108: people 1021 tents 0 store 112 t demand 25 kg/d price 2.22 traders [117, 0, 7, 1, 0] free_ha 260
-  market 1050: people 960 tents 0 store 593 t demand 118 kg/d price 2.22 traders [90, 0, 12, 3, 0] free_ha 449
-  market 1143: people 923 tents 0 store 493 t demand 132 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 321
-  hungry wage households: no carrier 1, empty market 10, no money 0, on the way 23, in market cell 4, other 14
-  zero-area farms: no hands 0, no land 6; farm sizes [0, 1075, 1043, 1236, 1353, 1283, 1159, 7038], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 6
-  field rebuilds 15 sell trips 194216 buy trips 7995
-      eaten by kind (farm/tent/wage/trader/elite): 100% 93% 98% 99% 100%
-  61  131288   0.31    6219   5750     55    76  14114    43/  211     57294   4857         9632   517140    3359     2668        5565     2165       1        0    99.3  2.22/ 2.22/69.97  3.38  19268  1923     703   5.94
-  market 1233: people 1399 tents 0 store 13 t demand 137 kg/d price 6.15 traders [140, 0, 25, 11, 0] free_ha 142
-  market 1234: people 1342 tents 0 store 1360 t demand 303 kg/d price 2.22 traders [173, 0, 19, 8, 0] free_ha 92
-  market 762: people 1280 tents 0 store 96 t demand 452 kg/d price 3.38 traders [28, 0, 55, 57, 7] free_ha 108
-  market 1108: people 1020 tents 0 store 114 t demand 27 kg/d price 2.22 traders [117, 0, 7, 1, 0] free_ha 250
-  market 1050: people 965 tents 0 store 601 t demand 80 kg/d price 2.22 traders [90, 0, 12, 3, 0] free_ha 452
-  market 1143: people 931 tents 0 store 501 t demand 64 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 308
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 22, in market cell 7, other 13
-  zero-area farms: no hands 0, no land 5; farm sizes [0, 1055, 1042, 1251, 1312, 1240, 1162, 7052], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 5
-  field rebuilds 16 sell trips 195010 buy trips 7756
-      eaten by kind (farm/tent/wage/trader/elite): 100% 94% 98% 98% 100%
-  62  131487   0.15    6152   5836     68    97  14040    42/  217     57426   4851         9549   520556    2818     2660        3119     1203       1        0    99.3  2.22/ 2.22/69.97  3.62  19250  1919     682   5.72
-  market 1233: people 1370 tents 0 store 15 t demand 111 kg/d price 5.90 traders [138, 0, 24, 12, 0] free_ha 139
-  market 1234: people 1356 tents 0 store 1385 t demand 322 kg/d price 2.22 traders [171, 0, 19, 8, 0] free_ha 92
-  market 762: people 1278 tents 0 store 90 t demand 476 kg/d price 3.62 traders [27, 0, 54, 57, 7] free_ha 106
-  market 1108: people 1030 tents 0 store 116 t demand 24 kg/d price 2.22 traders [117, 0, 7, 1, 0] free_ha 251
-  market 1050: people 963 tents 0 store 608 t demand 88 kg/d price 2.22 traders [90, 0, 12, 3, 0] free_ha 443
-  market 1143: people 933 tents 0 store 506 t demand 57 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 304
-  hungry wage households: no carrier 1, empty market 10, no money 0, on the way 21, in market cell 9, other 15
-  zero-area farms: no hands 0, no land 5; farm sizes [0, 1027, 1064, 1150, 1333, 1275, 1139, 7052], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 5
-  field rebuilds 19 sell trips 190192 buy trips 7703
-      eaten by kind (farm/tent/wage/trader/elite): 100% 92% 98% 98% 100%
-  63  131898   0.31    6202   5741     68    50  13956    37/  195     57652   4884         9646   521012    3180     2669        4501     1733       1        0    99.3  2.22/ 2.22/69.97  3.79  19219  1916     741   5.94
-  market 1233: people 1409 tents 0 store 19 t demand 120 kg/d price 5.29 traders [139, 0, 21, 12, 0] free_ha 127
-  market 1234: people 1335 tents 0 store 1411 t demand 321 kg/d price 2.22 traders [170, 0, 19, 6, 0] free_ha 96
-  market 762: people 1284 tents 0 store 87 t demand 488 kg/d price 3.79 traders [27, 0, 54, 56, 7] free_ha 104
-  market 1108: people 1022 tents 0 store 118 t demand 24 kg/d price 2.22 traders [115, 0, 7, 1, 0] free_ha 258
-  market 1050: people 956 tents 0 store 617 t demand 132 kg/d price 2.22 traders [89, 0, 11, 3, 0] free_ha 443
-  market 1143: people 923 tents 0 store 515 t demand 93 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 298
-  hungry wage households: no carrier 1, empty market 9, no money 0, on the way 31, in market cell 9, other 13
-  zero-area farms: no hands 0, no land 5; farm sizes [0, 1011, 1033, 1158, 1299, 1251, 1105, 7099], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 5
-  field rebuilds 17 sell trips 192037 buy trips 7615
-      eaten by kind (farm/tent/wage/trader/elite): 100% 92% 98% 98% 100%
-  64  132564   0.50    6277   5531     58    84  13891    36/  188     57801   4916         9808   528909    3070     2661        3950     1518       1        0    99.3  2.22/ 2.22/69.97  3.69  19187  1913     642   5.88
-  market 1233: people 1398 tents 0 store 16 t demand 126 kg/d price 5.62 traders [138, 0, 21, 12, 0] free_ha 129
-  market 1234: people 1341 tents 0 store 1433 t demand 202 kg/d price 2.22 traders [169, 0, 19, 6, 0] free_ha 95
-  market 762: people 1298 tents 0 store 92 t demand 478 kg/d price 3.69 traders [27, 0, 53, 56, 7] free_ha 104
-  market 1108: people 1013 tents 0 store 120 t demand 16 kg/d price 2.22 traders [115, 0, 7, 1, 0] free_ha 264
-  market 1050: people 965 tents 0 store 623 t demand 120 kg/d price 2.22 traders [89, 0, 11, 3, 0] free_ha 456
-  market 1143: people 939 tents 0 store 521 t demand 67 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 289
-  hungry wage households: no carrier 1, empty market 13, no money 0, on the way 27, in market cell 9, other 10
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 998, 1021, 1121, 1306, 1257, 1040, 7148], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 16 sell trips 190029 buy trips 7559
-      eaten by kind (farm/tent/wage/trader/elite): 100% 93% 98% 99% 100%
-  65  133065   0.38    6328   5775     67    48  13819    33/  176     57793   5069         9819   530307    3140     2668        4430     1699       0        0    99.3  2.22/ 2.22/69.97  3.38  19142  1907     688   5.79
-  market 1233: people 1412 tents 0 store 16 t demand 144 kg/d price 5.32 traders [138, 0, 20, 13, 0] free_ha 124
-  market 1234: people 1328 tents 0 store 1459 t demand 181 kg/d price 2.22 traders [167, 0, 19, 6, 0] free_ha 99
-  market 762: people 1311 tents 0 store 101 t demand 485 kg/d price 3.38 traders [27, 0, 54, 56, 6] free_ha 104
-  market 1108: people 1016 tents 0 store 122 t demand 22 kg/d price 2.22 traders [113, 0, 7, 1, 0] free_ha 268
-  market 1050: people 972 tents 0 store 631 t demand 93 kg/d price 2.22 traders [89, 0, 11, 3, 0] free_ha 446
-  market 1143: people 949 tents 0 store 528 t demand 80 kg/d price 2.22 traders [88, 0, 12, 4, 0] free_ha 275
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 18, in market cell 4, other 12
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 987, 991, 1093, 1307, 1236, 1043, 7162], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 19 sell trips 190114 buy trips 7576
-      eaten by kind (farm/tent/wage/trader/elite): 100% 88% 98% 99% 99%
-  66  133580   0.39    6386   5816     72    67  13751    32/  159     58095   4964         9759   532881    3068     2656        4016     1531       0        0    99.3  2.22/ 2.22/69.97  3.78  19110  1911     634   6.17
-  market 1233: people 1414 tents 0 store 12 t demand 137 kg/d price 6.76 traders [137, 0, 20, 13, 0] free_ha 116
-  market 1234: people 1317 tents 0 store 1480 t demand 394 kg/d price 2.22 traders [166, 0, 19, 6, 0] free_ha 98
-  market 762: people 1297 tents 0 store 89 t demand 492 kg/d price 3.78 traders [27, 0, 53, 56, 6] free_ha 103
-  market 1108: people 1021 tents 0 store 123 t demand 21 kg/d price 2.22 traders [110, 0, 8, 1, 0] free_ha 248
-  market 1050: people 964 tents 0 store 638 t demand 86 kg/d price 2.22 traders [88, 0, 11, 3, 0] free_ha 447
-  market 1143: people 953 tents 0 store 535 t demand 83 kg/d price 2.22 traders [88, 0, 11, 4, 0] free_ha 264
-  hungry wage households: no carrier 0, empty market 14, no money 0, on the way 18, in market cell 6, other 12
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 962, 968, 1117, 1236, 1233, 1083, 7152], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 17 sell trips 188554 buy trips 7514
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 99% 99%
-  67  133967   0.29    6339   5887     65    52  13665    32/  163     58094   5186        10285   532050    3293     2663        5047     1948       0        0    99.4  2.22/ 2.22/69.97  3.82  19088  1907     614   5.87
-  market 1233: people 1425 tents 0 store 30 t demand 133 kg/d price 5.32 traders [138, 0, 20, 13, 0] free_ha 115
-  market 1234: people 1316 tents 0 store 1484 t demand 491 kg/d price 2.22 traders [164, 0, 18, 6, 0] free_ha 101
-  market 762: people 1301 tents 0 store 87 t demand 481 kg/d price 3.82 traders [27, 0, 51, 56, 6] free_ha 101
-  market 1108: people 1038 tents 0 store 126 t demand 24 kg/d price 2.22 traders [111, 0, 7, 1, 0] free_ha 242
-  market 1050: people 959 tents 0 store 647 t demand 101 kg/d price 2.22 traders [86, 0, 11, 3, 0] free_ha 445
-  market 1143: people 924 tents 0 store 546 t demand 137 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 259
-  hungry wage households: no carrier 1, empty market 9, no money 0, on the way 15, in market cell 0, other 11
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 946, 928, 1104, 1208, 1207, 1112, 7160], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 18 sell trips 189284 buy trips 7461
-      eaten by kind (farm/tent/wage/trader/elite): 100% 83% 98% 99% 99%
-  68  134595   0.47    6415   5744     64    51  13602    29/  146     58026   5146        10042   536054    3136     2669        4220     1644       0        0    99.4  2.22/ 2.22/69.97  3.63  19096  1904     611   5.93
-  market 1233: people 1432 tents 0 store 16 t demand 137 kg/d price 6.02 traders [136, 0, 20, 13, 0] free_ha 110
-  market 1234: people 1301 tents 0 store 1523 t demand 292 kg/d price 2.22 traders [164, 0, 18, 6, 0] free_ha 96
-  market 762: people 1295 tents 0 store 90 t demand 481 kg/d price 3.63 traders [27, 0, 51, 55, 6] free_ha 99
-  market 1108: people 1027 tents 0 store 128 t demand 18 kg/d price 2.22 traders [111, 0, 7, 1, 0] free_ha 240
-  market 1050: people 954 tents 0 store 654 t demand 63 kg/d price 2.22 traders [86, 0, 11, 3, 0] free_ha 457
-  market 1143: people 930 tents 0 store 553 t demand 64 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 255
-  hungry wage households: no carrier 0, empty market 13, no money 0, on the way 10, in market cell 5, other 13
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 938, 924, 1095, 1209, 1156, 1101, 7179], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 24 sell trips 186928 buy trips 7411
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 99% 100%
-  69  135088   0.37    6553   5999     59    63  13550    28/  150     58229   5176        10251   541997    3052     2652        3921     1516       0        0    99.4  2.22/ 2.22/69.97  2.99  19054  1901     618   6.05
-  market 1233: people 1465 tents 0 store 16 t demand 137 kg/d price 5.93 traders [137, 0, 20, 14, 0] free_ha 107
-  market 1234: people 1288 tents 0 store 1536 t demand 208 kg/d price 2.22 traders [162, 0, 17, 6, 0] free_ha 92
-  market 762: people 1280 tents 0 store 114 t demand 439 kg/d price 2.99 traders [27, 0, 51, 55, 6] free_ha 95
-  market 1108: people 1016 tents 0 store 129 t demand 15 kg/d price 2.22 traders [111, 0, 7, 1, 0] free_ha 236
-  market 1050: people 953 tents 0 store 662 t demand 67 kg/d price 2.22 traders [85, 0, 11, 3, 0] free_ha 458
-  market 1143: people 925 tents 0 store 559 t demand 69 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 254
-  hungry wage households: no carrier 0, empty market 12, no money 0, on the way 16, in market cell 3, other 11
-  zero-area farms: no hands 0, no land 4; farm sizes [0, 940, 911, 1074, 1186, 1138, 1103, 7198], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 4
-  field rebuilds 16 sell trips 185449 buy trips 7328
-      eaten by kind (farm/tent/wage/trader/elite): 100% 91% 98% 99% 99%
-  70  135657   0.42    6517   5874     57    64  13465    28/  149     58219   5246        10378   535922    3018     2655        3859     1490       0        0    99.4  2.22/ 2.22/69.97  3.92  19001  1900     609   5.82
-  market 1233: people 1469 tents 0 store 17 t demand 134 kg/d price 5.67 traders [136, 0, 21, 14, 0] free_ha 104
-  market 1234: people 1297 tents 0 store 1539 t demand 302 kg/d price 2.22 traders [160, 0, 17, 6, 0] free_ha 94
-  market 762: people 1283 tents 0 store 85 t demand 443 kg/d price 3.92 traders [27, 0, 50, 55, 6] free_ha 96
-  market 1108: people 1012 tents 0 store 131 t demand 16 kg/d price 2.22 traders [111, 0, 7, 1, 0] free_ha 241
-  market 1143: people 936 tents 0 store 566 t demand 74 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 248
-  market 1050: people 930 tents 0 store 668 t demand 60 kg/d price 2.22 traders [85, 0, 10, 3, 0] free_ha 456
-  hungry wage households: no carrier 0, empty market 18, no money 0, on the way 10, in market cell 7, other 14
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 911, 925, 1061, 1133, 1123, 1068, 7244], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 3
-  field rebuilds 17 sell trips 184346 buy trips 7273
-      eaten by kind (farm/tent/wage/trader/elite): 100% 93% 98% 99% 98%
-  71  136124   0.34    6502   5983     62    62  13403    29/  161     58343   5198        10401   544837    2955     2664        3661     1411       0        0    99.4  2.22/ 2.22/69.97  3.90  18950  1902     643   6.07
-  market 1233: people 1506 tents 0 store 16 t demand 137 kg/d price 5.81 traders [136, 0, 21, 14, 0] free_ha 105
-  market 1234: people 1287 tents 0 store 1546 t demand 172 kg/d price 2.22 traders [159, 0, 17, 6, 0] free_ha 97
-  market 762: people 1285 tents 0 store 85 t demand 441 kg/d price 3.90 traders [27, 0, 50, 55, 6] free_ha 100
-  market 1108: people 1002 tents 0 store 132 t demand 15 kg/d price 2.22 traders [111, 0, 7, 0, 0] free_ha 250
-  market 1143: people 943 tents 0 store 572 t demand 85 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 246
-  market 1050: people 921 tents 0 store 674 t demand 72 kg/d price 2.22 traders [84, 0, 10, 3, 0] free_ha 457
-  hungry wage households: no carrier 1, empty market 8, no money 0, on the way 15, in market cell 12, other 12
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 927, 911, 1006, 1102, 1157, 1043, 7257], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.86; zero 3
-  field rebuilds 16 sell trips 182891 buy trips 7233
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 98% 99%
-  72  136611   0.36    6651   6081     67    82  13324    25/  125     58360   5273        10525   539461    3272     2653        5221     2000       0        0    99.4  2.22/ 2.22/69.97  3.36  18889  1904     663   6.54
-  market 1233: people 1532 tents 0 store 24 t demand 164 kg/d price 5.41 traders [136, 0, 22, 14, 0] free_ha 102
-  market 762: people 1277 tents 0 store 98 t demand 428 kg/d price 3.36 traders [26, 0, 49, 53, 6] free_ha 101
-  market 1234: people 1261 tents 0 store 1473 t demand 491 kg/d price 2.22 traders [155, 0, 17, 6, 0] free_ha 94
-  market 1108: people 1016 tents 0 store 133 t demand 11 kg/d price 2.22 traders [111, 0, 7, 0, 0] free_ha 248
-  market 1143: people 943 tents 0 store 582 t demand 110 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 246
-  market 1050: people 933 tents 0 store 684 t demand 101 kg/d price 2.22 traders [82, 0, 10, 3, 0] free_ha 453
-  hungry wage households: no carrier 0, empty market 18, no money 0, on the way 15, in market cell 7, other 16
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 886, 922, 968, 1107, 1117, 988, 7336], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.18 p50 1.52 p75 1.90 p90 2.86; zero 3
-  field rebuilds 20 sell trips 184264 buy trips 7116
-      eaten by kind (farm/tent/wage/trader/elite): 100% 78% 98% 98% 99%
-  73  137084   0.35    6633   6056     78   103  13257    22/  115     58428   5269        10364   542895    3045     2643        3783     1474       0        0    99.4  2.22/ 2.22/69.97  3.79  18850  1898     605   6.49
-  market 1233: people 1540 tents 0 store 17 t demand 147 kg/d price 5.31 traders [134, 0, 20, 14, 0] free_ha 97
-  market 762: people 1284 tents 0 store 88 t demand 430 kg/d price 3.79 traders [26, 0, 49, 53, 6] free_ha 101
-  market 1234: people 1252 tents 0 store 1473 t demand 364 kg/d price 2.22 traders [153, 0, 17, 6, 0] free_ha 92
-  market 1108: people 1028 tents 0 store 135 t demand 17 kg/d price 2.22 traders [111, 0, 7, 0, 0] free_ha 255
-  market 1143: people 959 tents 0 store 589 t demand 64 kg/d price 2.22 traders [87, 0, 11, 4, 0] free_ha 244
-  market 1050: people 946 tents 0 store 692 t demand 156 kg/d price 2.22 traders [83, 0, 10, 3, 0] free_ha 459
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 14, in market cell 7, other 15
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 880, 878, 975, 1093, 1118, 960, 7353], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.18 p50 1.52 p75 1.90 p90 2.81; zero 3
-  field rebuilds 17 sell trips 181703 buy trips 7008
-      eaten by kind (farm/tent/wage/trader/elite): 100% 85% 98% 99% 99%
-  74  137694   0.44    6697   6042     61    38  13188    23/  119     58585   5316        10559   540648    3093     2646        4099     1584       1        0    99.4  2.22/ 2.22/69.97  3.78  18815  1891     616   6.63
-  market 1233: people 1539 tents 0 store 19 t demand 129 kg/d price 4.49 traders [133, 0, 19, 14, 0] free_ha 97
-  market 762: people 1274 tents 0 store 88 t demand 427 kg/d price 3.78 traders [26, 0, 48, 53, 6] free_ha 101
-  market 1234: people 1258 tents 0 store 1456 t demand 137 kg/d price 2.22 traders [150, 0, 17, 6, 0] free_ha 89
-  market 1108: people 1030 tents 0 store 136 t demand 21 kg/d price 2.22 traders [111, 0, 7, 0, 0] free_ha 264
-  market 1143: people 948 tents 0 store 597 t demand 97 kg/d price 2.22 traders [86, 0, 11, 4, 0] free_ha 242
-  market 1050: people 937 tents 0 store 700 t demand 118 kg/d price 2.22 traders [81, 0, 10, 3, 0] free_ha 459
-  hungry wage households: no carrier 0, empty market 17, no money 0, on the way 17, in market cell 6, other 8
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 857, 890, 945, 1077, 1097, 971, 7351], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.18 p50 1.52 p75 1.90 p90 2.78; zero 3
-  field rebuilds 14 sell trips 181511 buy trips 6971
-      eaten by kind (farm/tent/wage/trader/elite): 100% 86% 98% 98% 99%
-  75  138108   0.30    6524   6047     47    62  13112    25/  129     58640   5327        10506   541241    3093     2656        4181     1618       1        0    99.4  2.22/ 2.22/69.97  3.61  18809  1892     547   6.34
-  market 1233: people 1527 tents 0 store 16 t demand 138 kg/d price 5.78 traders [132, 0, 18, 14, 0] free_ha 97
-  market 762: people 1274 tents 0 store 92 t demand 460 kg/d price 3.61 traders [26, 0, 48, 53, 6] free_ha 99
-  market 1234: people 1268 tents 0 store 1448 t demand 195 kg/d price 2.22 traders [149, 0, 16, 6, 0] free_ha 89
-  market 1108: people 1036 tents 0 store 137 t demand 26 kg/d price 2.22 traders [110, 0, 7, 0, 0] free_ha 266
-  market 1143: people 943 tents 0 store 605 t demand 66 kg/d price 2.22 traders [86, 0, 11, 4, 0] free_ha 240
-  market 1050: people 940 tents 0 store 710 t demand 84 kg/d price 2.22 traders [81, 0, 10, 3, 0] free_ha 450
-  hungry wage households: no carrier 0, empty market 11, no money 0, on the way 20, in market cell 6, other 12
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 837, 862, 937, 1084, 1059, 979, 7354], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 3
-  field rebuilds 13 sell trips 180478 buy trips 6941
-      eaten by kind (farm/tent/wage/trader/elite): 100% 78% 98% 99% 99%
-  76  138671   0.41    6784   6171     58    69  13028    22/  110     58856   5260        10766   545462    2994     2652        3678     1423       1        0    99.4  2.22/ 2.22/69.97  4.12  18762  1882     479   6.43
-  market 1233: people 1555 tents 0 store 17 t demand 136 kg/d price 6.40 traders [134, 0, 17, 14, 0] free_ha 105
-  market 762: people 1270 tents 0 store 81 t demand 487 kg/d price 4.12 traders [25, 0, 47, 52, 6] free_ha 99
-  market 1234: people 1266 tents 0 store 1431 t demand 337 kg/d price 2.22 traders [145, 0, 16, 6, 0] free_ha 90
-  market 1108: people 1047 tents 0 store 139 t demand 25 kg/d price 2.22 traders [110, 0, 7, 0, 0] free_ha 254
-  market 1050: people 939 tents 0 store 718 t demand 62 kg/d price 2.22 traders [80, 0, 10, 3, 0] free_ha 442
-  market 1143: people 937 tents 0 store 611 t demand 60 kg/d price 2.22 traders [84, 0, 11, 4, 0] free_ha 236
-  hungry wage households: no carrier 0, empty market 10, no money 0, on the way 19, in market cell 5, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 802, 829, 927, 1088, 1073, 927, 7382], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.18 p50 1.51 p75 1.90 p90 2.76; zero 2
-  field rebuilds 22 sell trips 178962 buy trips 6838
-      eaten by kind (farm/tent/wage/trader/elite): 100% 85% 98% 99% 99%
-  77  138983   0.22    6472   6075     51    71  12962    22/  120     58985   5193        10621   547408    3195     2646        4488     1726       1        0    99.4  2.22/ 2.22/69.97  3.92  18707  1883     504   6.57
-  market 1233: people 1512 tents 0 store 19 t demand 182 kg/d price 5.54 traders [132, 0, 18, 12, 0] free_ha 97
-  market 1234: people 1261 tents 0 store 1421 t demand 294 kg/d price 2.22 traders [145, 0, 16, 6, 0] free_ha 90
-  market 762: people 1257 tents 0 store 85 t demand 433 kg/d price 3.92 traders [25, 0, 47, 51, 6] free_ha 100
-  market 1108: people 1050 tents 0 store 140 t demand 26 kg/d price 2.22 traders [109, 0, 7, 0, 0] free_ha 257
-  market 1143: people 947 tents 0 store 618 t demand 67 kg/d price 2.22 traders [84, 0, 11, 4, 0] free_ha 237
-  market 1050: people 938 tents 0 store 726 t demand 124 kg/d price 2.22 traders [79, 0, 10, 3, 0] free_ha 434
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 13, in market cell 6, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 800, 817, 916, 1049, 1037, 935, 7408], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.18 p50 1.50 p75 1.90 p90 2.76; zero 2
-  field rebuilds 16 sell trips 179483 buy trips 6796
-      eaten by kind (farm/tent/wage/trader/elite): 100% 83% 99% 99% 99%
-  78  139504   0.37    6692   6118     65    50  12902    22/  115     59193   5165        10409   555559    3166     2643        4298     1666       1        0    99.4  2.22/ 2.22/69.97  4.14  18657  1883     581   6.19
-  market 1233: people 1542 tents 0 store 19 t demand 139 kg/d price 4.91 traders [133, 0, 21, 12, 0] free_ha 94
-  market 762: people 1261 tents 0 store 80 t demand 444 kg/d price 4.14 traders [25, 0, 47, 51, 6] free_ha 99
-  market 1234: people 1254 tents 0 store 1390 t demand 265 kg/d price 2.22 traders [144, 0, 16, 6, 0] free_ha 91
-  market 1108: people 1060 tents 0 store 142 t demand 23 kg/d price 2.22 traders [110, 0, 7, 0, 0] free_ha 250
-  market 1050: people 946 tents 0 store 735 t demand 79 kg/d price 2.22 traders [80, 0, 10, 3, 0] free_ha 436
-  market 1143: people 942 tents 0 store 624 t demand 82 kg/d price 2.22 traders [84, 0, 11, 4, 0] free_ha 233
-  hungry wage households: no carrier 0, empty market 7, no money 0, on the way 15, in market cell 8, other 14
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 809, 773, 922, 1007, 1041, 934, 7416], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.18 p50 1.50 p75 1.90 p90 2.76; zero 2
-  field rebuilds 19 sell trips 178625 buy trips 6736
-      eaten by kind (farm/tent/wage/trader/elite): 100% 77% 99% 99% 99%
-  79  140023   0.37    6644   6058     63    65  12842    22/  129     59294   5257        10466   548791    2945     2641        3319     1296       1        0    99.5  2.22/ 2.22/69.97  4.42  18632  1883     483   6.04
-  market 1233: people 1532 tents 0 store 16 t demand 140 kg/d price 5.46 traders [131, 0, 21, 11, 0] free_ha 86
-  market 1234: people 1258 tents 0 store 1383 t demand 286 kg/d price 2.22 traders [141, 0, 16, 6, 0] free_ha 90
-  market 762: people 1248 tents 0 store 72 t demand 438 kg/d price 4.42 traders [25, 0, 45, 51, 6] free_ha 100
-  market 1108: people 1080 tents 0 store 143 t demand 23 kg/d price 2.22 traders [110, 0, 7, 0, 0] free_ha 252
-  market 1143: people 943 tents 0 store 631 t demand 74 kg/d price 2.22 traders [84, 0, 11, 4, 0] free_ha 231
-  market 1050: people 937 tents 0 store 741 t demand 52 kg/d price 2.22 traders [79, 0, 9, 3, 0] free_ha 426
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 10, in market cell 5, other 14
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 795, 780, 901, 1001, 985, 978, 7402], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.19 p50 1.50 p75 1.90 p90 2.76; zero 2
-  field rebuilds 16 sell trips 176418 buy trips 6585
-      eaten by kind (farm/tent/wage/trader/elite): 100% 80% 99% 99% 99%
-  80  140454   0.31    6601   6135     57    37  12782    18/   81     59546   5221        10381   553777    3140     2640        4417     1693       1        0    99.5  2.22/ 2.22/69.97  4.46  18583  1882     607   6.27
-  market 1233: people 1524 tents 0 store 17 t demand 217 kg/d price 7.10 traders [131, 0, 21, 11, 0] free_ha 85
-  market 1234: people 1268 tents 0 store 1346 t demand 290 kg/d price 2.22 traders [141, 0, 16, 6, 0] free_ha 94
-  market 762: people 1254 tents 0 store 70 t demand 462 kg/d price 4.46 traders [25, 0, 45, 50, 6] free_ha 99
-  market 1108: people 1097 tents 0 store 144 t demand 23 kg/d price 2.22 traders [106, 0, 7, 0, 0] free_ha 248
-  market 1050: people 936 tents 0 store 748 t demand 91 kg/d price 2.22 traders [79, 0, 9, 3, 0] free_ha 425
-  market 1143: people 935 tents 0 store 639 t demand 108 kg/d price 2.22 traders [84, 0, 11, 4, 0] free_ha 232
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 16, in market cell 7, other 15
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 794, 784, 871, 977, 984, 941, 7431], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.51 p75 1.90 p90 2.76; zero 2
-  field rebuilds 16 sell trips 177405 buy trips 6548
-      eaten by kind (farm/tent/wage/trader/elite): 100% 87% 98% 99% 98%
-  81  140885   0.31    6666   6164     62    74  12711    20/  134     59718   5230        10508   556869    3167     2649        4180     1627       1        0    99.4  2.22/ 2.22/69.97  3.70  18575  1881     484   6.80
-  market 1233: people 1504 tents 0 store 13 t demand 140 kg/d price 6.46 traders [130, 0, 21, 12, 0] free_ha 79
-  market 1234: people 1273 tents 0 store 1334 t demand 279 kg/d price 2.22 traders [138, 0, 16, 6, 0] free_ha 90
-  market 762: people 1266 tents 0 store 89 t demand 465 kg/d price 3.70 traders [25, 0, 44, 49, 6] free_ha 102
-  market 1108: people 1078 tents 0 store 146 t demand 22 kg/d price 2.22 traders [106, 0, 7, 0, 0] free_ha 247
-  market 1143: people 943 tents 0 store 648 t demand 84 kg/d price 2.22 traders [83, 0, 11, 3, 0] free_ha 227
-  market 1050: people 922 tents 0 store 755 t demand 65 kg/d price 2.22 traders [79, 0, 9, 3, 0] free_ha 430
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 9, in market cell 6, other 14
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 789, 742, 877, 980, 966, 934, 7423], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 176830 buy trips 6495
-      eaten by kind (farm/tent/wage/trader/elite): 100% 84% 98% 99% 98%
-  82  141420   0.38    6791   6172     62    88  12657    17/   85     59881   5177        10219   555589    3017     2650        3919     1514       1        0    99.5  2.22/ 2.22/69.97  3.79  18560  1880     443   5.94
-  market 1233: people 1501 tents 0 store 20 t demand 146 kg/d price 5.87 traders [129, 0, 21, 12, 0] free_ha 78
-  market 1234: people 1262 tents 0 store 1303 t demand 280 kg/d price 2.22 traders [137, 0, 16, 6, 0] free_ha 87
-  market 762: people 1254 tents 0 store 86 t demand 450 kg/d price 3.79 traders [25, 0, 43, 48, 6] free_ha 101
-  market 1108: people 1083 tents 0 store 147 t demand 15 kg/d price 2.22 traders [105, 0, 6, 0, 0] free_ha 242
-  market 1143: people 939 tents 0 store 654 t demand 159 kg/d price 2.22 traders [83, 0, 11, 3, 0] free_ha 223
-  market 1050: people 925 tents 0 store 760 t demand 74 kg/d price 2.22 traders [79, 0, 9, 3, 0] free_ha 440
-  hungry wage households: no carrier 1, empty market 6, no money 0, on the way 12, in market cell 4, other 14
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 776, 760, 833, 993, 960, 899, 7436], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 18 sell trips 174830 buy trips 6478
-      eaten by kind (farm/tent/wage/trader/elite): 100% 89% 99% 99% 99%
-  83  141889   0.33    6770   6270     57    31  12595    16/   85     60016   5272        10550   556227    3046     2652        3620     1414       1        0    99.5  2.22/ 2.22/69.97  3.68  18518  1878     491   6.56
-  market 1233: people 1512 tents 0 store 21 t demand 150 kg/d price 5.72 traders [129, 0, 20, 12, 0] free_ha 72
-  market 1234: people 1277 tents 0 store 1283 t demand 322 kg/d price 2.22 traders [137, 0, 16, 6, 0] free_ha 85
-  market 762: people 1259 tents 0 store 87 t demand 483 kg/d price 3.68 traders [25, 0, 43, 48, 6] free_ha 101
-  market 1108: people 1091 tents 0 store 149 t demand 18 kg/d price 2.22 traders [105, 0, 6, 0, 0] free_ha 246
-  market 1143: people 938 tents 0 store 662 t demand 68 kg/d price 2.22 traders [82, 0, 11, 3, 0] free_ha 218
-  market 1050: people 918 tents 0 store 766 t demand 42 kg/d price 2.22 traders [79, 0, 9, 3, 0] free_ha 437
-  hungry wage households: no carrier 0, empty market 7, no money 0, on the way 8, in market cell 7, other 11
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 764, 728, 857, 974, 975, 873, 7424], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 3
-  field rebuilds 14 sell trips 174830 buy trips 6430
-      eaten by kind (farm/tent/wage/trader/elite): 100% 91% 99% 99% 99%
-  84  142475   0.41    6785   6151     57    43  12533    16/   75     60200   5204        10546   555811    3026     2650        3721     1425       0        0    99.5  2.22/ 2.22/69.97  4.84  18473  1868     535   6.01
-  market 1233: people 1512 tents 0 store 21 t demand 154 kg/d price 6.31 traders [127, 0, 20, 12, 0] free_ha 72
-  market 762: people 1297 tents 0 store 68 t demand 494 kg/d price 4.84 traders [25, 0, 43, 48, 6] free_ha 100
-  market 1234: people 1291 tents 0 store 1261 t demand 492 kg/d price 2.22 traders [137, 0, 16, 6, 0] free_ha 84
-  market 1108: people 1105 tents 0 store 150 t demand 15 kg/d price 2.22 traders [104, 0, 6, 0, 0] free_ha 239
-  market 1050: people 926 tents 0 store 772 t demand 72 kg/d price 2.22 traders [78, 0, 9, 3, 0] free_ha 443
-  market 1143: people 923 tents 0 store 669 t demand 112 kg/d price 2.22 traders [81, 0, 11, 3, 0] free_ha 220
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 10, in market cell 5, other 16
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 751, 734, 862, 923, 926, 886, 7451], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 173772 buy trips 6352
-      eaten by kind (farm/tent/wage/trader/elite): 100% 95% 99% 99% 100%
-  85  142840   0.26    6510   6108     58    37  12478    17/   79     60482   5116        10441   559223    3013     2647        3660     1419       1        0    99.5  2.22/ 2.22/69.97  4.39  18445  1868     511   6.17
-  market 1233: people 1526 tents 0 store 21 t demand 134 kg/d price 5.22 traders [129, 0, 20, 12, 0] free_ha 70
-  market 762: people 1294 tents 0 store 75 t demand 500 kg/d price 4.39 traders [25, 0, 43, 48, 6] free_ha 103
-  market 1234: people 1285 tents 0 store 1247 t demand 323 kg/d price 2.22 traders [135, 0, 16, 6, 0] free_ha 76
-  market 1108: people 1107 tents 0 store 151 t demand 16 kg/d price 2.22 traders [104, 0, 6, 0, 0] free_ha 237
-  market 1050: people 941 tents 0 store 778 t demand 86 kg/d price 2.22 traders [78, 0, 9, 3, 0] free_ha 447
-  market 1143: people 930 tents 0 store 675 t demand 80 kg/d price 2.22 traders [81, 0, 11, 3, 0] free_ha 217
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 14, in market cell 7, other 13
-  zero-area farms: no hands 0, no land 3; farm sizes [0, 744, 717, 854, 919, 934, 866, 7444], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.20 p50 1.52 p75 1.90 p90 2.76; zero 3
-  field rebuilds 10 sell trips 173140 buy trips 6300
-      eaten by kind (farm/tent/wage/trader/elite): 100% 80% 98% 99% 100%
-  86  143473   0.44    6923   6260     57    29  12412    19/   80     60536   5271        10450   553241    3202     2658        4615     1794       1        0    99.5  2.22/ 2.22/69.97  3.54  18436  1868     554   6.54
-  market 1233: people 1528 tents 0 store 17 t demand 150 kg/d price 5.56 traders [129, 0, 20, 12, 0] free_ha 71
-  market 762: people 1312 tents 0 store 92 t demand 489 kg/d price 3.54 traders [25, 0, 43, 48, 6] free_ha 100
-  market 1234: people 1282 tents 0 store 1212 t demand 150 kg/d price 2.22 traders [134, 0, 15, 6, 0] free_ha 79
-  market 1108: people 1113 tents 0 store 152 t demand 17 kg/d price 2.22 traders [104, 0, 6, 0, 0] free_ha 237
-  market 1143: people 941 tents 0 store 680 t demand 67 kg/d price 2.22 traders [80, 0, 10, 3, 0] free_ha 217
-  market 1050: people 934 tents 0 store 785 t demand 43 kg/d price 2.22 traders [78, 0, 9, 3, 0] free_ha 447
-  hungry wage households: no carrier 0, empty market 3, no money 0, on the way 11, in market cell 6, other 11
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 735, 686, 852, 901, 914, 862, 7462], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 18 sell trips 173797 buy trips 6235
-      eaten by kind (farm/tent/wage/trader/elite): 100% 75% 99% 98% 100%
-  87  143879   0.28    6746   6283     48    57  12356    19/   77     60819   5146        10338   554999    3010     2654        3841     1474       1        0    99.5  2.22/ 2.22/69.97  4.10  18410  1868     478   6.55
-  market 1233: people 1530 tents 0 store 23 t demand 115 kg/d price 4.98 traders [129, 0, 20, 12, 0] free_ha 68
-  market 762: people 1328 tents 0 store 81 t demand 416 kg/d price 4.10 traders [25, 0, 42, 48, 6] free_ha 100
-  market 1234: people 1275 tents 0 store 1190 t demand 328 kg/d price 2.22 traders [134, 0, 14, 6, 0] free_ha 77
-  market 1108: people 1126 tents 0 store 153 t demand 19 kg/d price 2.22 traders [103, 0, 6, 0, 0] free_ha 235
-  market 1143: people 944 tents 0 store 687 t demand 103 kg/d price 2.22 traders [80, 0, 10, 3, 0] free_ha 220
-  market 1050: people 942 tents 0 store 792 t demand 73 kg/d price 2.22 traders [77, 0, 9, 3, 0] free_ha 441
-  hungry wage households: no carrier 0, empty market 5, no money 0, on the way 8, in market cell 8, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 717, 697, 824, 919, 884, 879, 7436], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 171844 buy trips 6220
-      eaten by kind (farm/tent/wage/trader/elite): 100% 73% 99% 99% 99%
-  88  144405   0.37    6768   6223     61    34  12301    18/   71     60963   5208        10461   555938    3124     2670        4373     1703       1        0    99.5  2.22/ 2.22/69.97  4.13  18422  1865     531   6.33
-  market 1233: people 1528 tents 0 store 15 t demand 143 kg/d price 5.53 traders [128, 0, 20, 10, 0] free_ha 72
-  market 762: people 1325 tents 0 store 82 t demand 438 kg/d price 4.13 traders [24, 0, 42, 48, 6] free_ha 100
-  market 1234: people 1263 tents 0 store 1154 t demand 140 kg/d price 2.22 traders [131, 0, 14, 5, 0] free_ha 76
-  market 1108: people 1125 tents 0 store 155 t demand 22 kg/d price 2.22 traders [103, 0, 6, 0, 0] free_ha 236
-  market 1143: people 948 tents 0 store 694 t demand 45 kg/d price 2.22 traders [79, 0, 10, 3, 0] free_ha 218
-  market 1050: people 945 tents 0 store 799 t demand 40 kg/d price 2.22 traders [77, 0, 7, 3, 0] free_ha 440
-  hungry wage households: no carrier 0, empty market 3, no money 0, on the way 11, in market cell 2, other 11
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 712, 696, 800, 911, 861, 866, 7455], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.70 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 172257 buy trips 6213
-      eaten by kind (farm/tent/wage/trader/elite): 100% 71% 99% 99% 99%
-  89  144855   0.31    6805   6289     45    58  12246    18/   72     61099   5236        10540   557265    2968     2659        3646     1396       1        0    99.5  2.22/ 2.22/69.97  3.99  18393  1864     577   6.29
-  market 1233: people 1547 tents 0 store 17 t demand 136 kg/d price 5.75 traders [128, 0, 20, 10, 0] free_ha 71
-  market 762: people 1343 tents 0 store 85 t demand 441 kg/d price 3.99 traders [24, 0, 41, 48, 5] free_ha 101
-  market 1234: people 1258 tents 0 store 1133 t demand 254 kg/d price 2.22 traders [130, 0, 14, 5, 0] free_ha 70
-  market 1108: people 1128 tents 0 store 156 t demand 18 kg/d price 2.22 traders [102, 0, 6, 0, 0] free_ha 234
-  market 1143: people 951 tents 0 store 699 t demand 79 kg/d price 2.22 traders [79, 0, 10, 3, 0] free_ha 222
-  market 1050: people 945 tents 0 store 805 t demand 50 kg/d price 2.22 traders [77, 0, 7, 3, 0] free_ha 435
-  hungry wage households: no carrier 0, empty market 9, no money 0, on the way 10, in market cell 7, other 9
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 702, 690, 805, 850, 885, 878, 7436], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 170399 buy trips 6101
-      eaten by kind (farm/tent/wage/trader/elite): 100% 72% 98% 99% 98%
-  90  145355   0.35    6767   6230     41    30  12194    19/   75     61143   5307        10681   559305    3153     2669        4738     1823       1        0    99.4  2.22/ 2.22/69.97  4.90  18334  1858     625   6.42
-  market 1233: people 1552 tents 0 store 16 t demand 143 kg/d price 6.59 traders [128, 0, 21, 10, 0] free_ha 69
-  market 762: people 1358 tents 0 store 69 t demand 464 kg/d price 4.90 traders [24, 0, 39, 48, 5] free_ha 100
-  market 1234: people 1256 tents 0 store 1086 t demand 298 kg/d price 2.22 traders [128, 0, 14, 5, 0] free_ha 67
-  market 1108: people 1133 tents 0 store 157 t demand 19 kg/d price 2.22 traders [101, 0, 6, 0, 0] free_ha 234
-  market 1143: people 958 tents 0 store 705 t demand 69 kg/d price 2.22 traders [79, 0, 10, 3, 0] free_ha 228
-  market 1050: people 953 tents 0 store 811 t demand 62 kg/d price 2.22 traders [77, 0, 7, 3, 0] free_ha 432
-  hungry wage households: no carrier 0, empty market 7, no money 0, on the way 13, in market cell 8, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 699, 693, 770, 859, 912, 830, 7431], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 24 sell trips 171208 buy trips 6016
-      eaten by kind (farm/tent/wage/trader/elite): 100% 67% 98% 99% 97%
-  91  146033   0.47    6989   6213     47   137  12148    17/   64     61363   5199        10549   558137    2942     2663        3842     1505       1        0    99.5  2.22/ 2.22/69.97  4.44  18256  1858     533   6.17
-  market 1233: people 1551 tents 0 store 22 t demand 142 kg/d price 5.26 traders [128, 0, 22, 10, 0] free_ha 65
-  market 762: people 1369 tents 0 store 76 t demand 436 kg/d price 4.44 traders [24, 0, 38, 48, 5] free_ha 100
-  market 1234: people 1256 tents 0 store 1065 t demand 337 kg/d price 2.22 traders [127, 0, 13, 5, 0] free_ha 65
-  market 1108: people 1139 tents 0 store 158 t demand 17 kg/d price 2.22 traders [101, 0, 6, 0, 0] free_ha 237
-  market 1143: people 950 tents 0 store 709 t demand 45 kg/d price 2.22 traders [78, 0, 10, 3, 0] free_ha 226
-  market 1050: people 949 tents 0 store 816 t demand 41 kg/d price 2.22 traders [77, 0, 7, 3, 0] free_ha 430
-  hungry wage households: no carrier 0, empty market 5, no money 0, on the way 9, in market cell 4, other 10
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 678, 706, 744, 878, 886, 841, 7415], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 20 sell trips 169078 buy trips 5919
-      eaten by kind (farm/tent/wage/trader/elite): 100% 70% 98% 99% 97%
-  92  146388   0.24    6855   6447     56    18  12096    16/   54     61663   5132        10366   559267    3067     2661        4531     1726       1        0    99.5  2.22/ 2.22/69.97  5.00  18230  1857     559   6.38
-  market 1233: people 1576 tents 0 store 13 t demand 166 kg/d price 8.03 traders [127, 0, 24, 10, 0] free_ha 62
-  market 762: people 1367 tents 0 store 77 t demand 490 kg/d price 5.00 traders [24, 0, 38, 48, 5] free_ha 100
-  market 1234: people 1254 tents 0 store 1039 t demand 243 kg/d price 2.22 traders [128, 0, 13, 5, 0] free_ha 63
-  market 1108: people 1141 tents 0 store 159 t demand 20 kg/d price 2.22 traders [101, 0, 6, 0, 0] free_ha 231
-  market 1143: people 962 tents 0 store 715 t demand 71 kg/d price 2.22 traders [78, 0, 10, 3, 0] free_ha 232
-  market 1050: people 953 tents 0 store 823 t demand 68 kg/d price 2.22 traders [77, 0, 7, 3, 0] free_ha 432
-  hungry wage households: no carrier 0, empty market 5, no money 0, on the way 8, in market cell 3, other 15
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 678, 663, 752, 867, 891, 822, 7423], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.20 p50 1.52 p75 1.90 p90 2.72; zero 2
-  field rebuilds 22 sell trips 169667 buy trips 5835
-      eaten by kind (farm/tent/wage/trader/elite): 100% 78% 98% 99% 100%
-  93  146865   0.33    6866   6353     63    44  12055    16/   58     61777   5271        10408   563683    3039     2654        4356     1704       0        0    99.5  2.22/ 2.22/69.97  3.52  18204  1853     548   6.72
-  market 1233: people 1588 tents 0 store 20 t demand 156 kg/d price 4.93 traders [126, 0, 24, 10, 0] free_ha 60
-  market 762: people 1361 tents 0 store 96 t demand 447 kg/d price 3.52 traders [24, 0, 38, 48, 4] free_ha 100
-  market 1234: people 1253 tents 0 store 1008 t demand 192 kg/d price 2.22 traders [126, 0, 13, 5, 0] free_ha 65
-  market 1108: people 1143 tents 0 store 160 t demand 15 kg/d price 2.22 traders [101, 0, 4, 1, 0] free_ha 230
-  market 1143: people 951 tents 0 store 722 t demand 47 kg/d price 2.22 traders [78, 0, 10, 3, 0] free_ha 230
-  market 1050: people 946 tents 0 store 829 t demand 61 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 435
-  hungry wage households: no carrier 0, empty market 4, no money 0, on the way 13, in market cell 5, other 11
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 687, 644, 764, 829, 854, 810, 7467], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.19 p50 1.52 p75 1.90 p90 2.74; zero 2
-  field rebuilds 14 sell trips 168955 buy trips 5860
-      eaten by kind (farm/tent/wage/trader/elite): 100% 84% 99% 99% 100%
-  94  147199   0.23    6803   6408     74    51  11993    12/   36     61980   5233        10390   565374    2999     2649        4148     1598       1        0    99.5  2.22/ 2.22/69.97  3.50  18200  1833     452   5.97
-  market 1233: people 1568 tents 0 store 22 t demand 138 kg/d price 4.45 traders [126, 0, 22, 10, 0] free_ha 59
-  market 762: people 1346 tents 0 store 99 t demand 447 kg/d price 3.50 traders [24, 0, 36, 48, 4] free_ha 100
-  market 1234: people 1256 tents 0 store 968 t demand 265 kg/d price 2.22 traders [126, 0, 13, 5, 0] free_ha 63
-  market 1108: people 1164 tents 0 store 161 t demand 15 kg/d price 2.22 traders [101, 0, 4, 1, 0] free_ha 228
-  market 1143: people 968 tents 0 store 728 t demand 82 kg/d price 2.22 traders [78, 0, 10, 3, 0] free_ha 229
-  market 1050: people 950 tents 0 store 834 t demand 46 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 435
-  hungry wage households: no carrier 0, empty market 3, no money 0, on the way 14, in market cell 5, other 10
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 659, 656, 753, 840, 831, 804, 7450], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.66 p25 1.20 p50 1.52 p75 1.90 p90 2.72; zero 2
-  field rebuilds 18 sell trips 167775 buy trips 5729
-      eaten by kind (farm/tent/wage/trader/elite): 100% 74% 99% 99% 100%
-  95  147523   0.22    6763   6407     65    37  11944    13/   59     62181   5186        10388   568373    2934     2659        3571     1385       1        0    99.5  2.22/ 2.22/69.97  3.96  18152  1833     506   5.92
-  market 1233: people 1563 tents 0 store 21 t demand 145 kg/d price 5.34 traders [125, 0, 23, 9, 0] free_ha 57
-  market 762: people 1347 tents 0 store 85 t demand 508 kg/d price 3.96 traders [24, 0, 36, 48, 4] free_ha 98
-  market 1234: people 1241 tents 0 store 948 t demand 277 kg/d price 2.22 traders [124, 0, 14, 5, 0] free_ha 63
-  market 1108: people 1158 tents 0 store 162 t demand 15 kg/d price 2.22 traders [100, 0, 4, 1, 0] free_ha 224
-  market 1143: people 957 tents 0 store 733 t demand 79 kg/d price 2.22 traders [77, 0, 10, 3, 0] free_ha 227
-  market 1050: people 950 tents 0 store 840 t demand 73 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 427
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 8, in market cell 6, other 13
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 669, 621, 753, 851, 827, 777, 7446], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.21 p50 1.52 p75 1.90 p90 2.69; zero 2
-  field rebuilds 17 sell trips 166793 buy trips 5679
-      eaten by kind (farm/tent/wage/trader/elite): 100% 60% 99% 99% 100%
-  96  148001   0.32    6780   6274     62    23  11900    11/   38     62203   5313        10449   568368    2951     2652        3641     1405       1        0    99.5  2.22/ 2.22/69.97  3.68  18125  1831     496   5.45
-  market 1233: people 1577 tents 0 store 20 t demand 143 kg/d price 5.10 traders [124, 0, 23, 9, 0] free_ha 55
-  market 762: people 1361 tents 0 store 92 t demand 511 kg/d price 3.68 traders [24, 0, 36, 48, 3] free_ha 98
-  market 1234: people 1243 tents 0 store 923 t demand 200 kg/d price 2.22 traders [124, 0, 14, 5, 0] free_ha 63
-  market 1108: people 1166 tents 0 store 163 t demand 8 kg/d price 2.22 traders [100, 0, 4, 1, 0] free_ha 220
-  market 1143: people 964 tents 0 store 739 t demand 59 kg/d price 2.22 traders [76, 0, 10, 3, 0] free_ha 228
-  market 1050: people 958 tents 0 store 846 t demand 45 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 439
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 7, in market cell 8, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 675, 612, 729, 848, 835, 780, 7421], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.67 p25 1.20 p50 1.52 p75 1.90 p90 2.72; zero 2
-  field rebuilds 11 sell trips 166358 buy trips 5631
-      eaten by kind (farm/tent/wage/trader/elite): 100% 72% 99% 99% 100%
-  97  148424   0.29    6937   6436     49    78  11846    12/   68     62314   5338        10636   567819    3039     2643        3988     1546       1        0    99.5  2.22/ 2.22/69.97  3.73  18067  1830     488   6.09
-  market 1233: people 1534 tents 0 store 14 t demand 170 kg/d price 7.43 traders [122, 0, 22, 9, 0] free_ha 61
-  market 762: people 1363 tents 0 store 92 t demand 519 kg/d price 3.73 traders [24, 0, 36, 48, 3] free_ha 96
-  market 1234: people 1248 tents 0 store 898 t demand 309 kg/d price 2.22 traders [124, 0, 14, 5, 0] free_ha 63
-  market 1108: people 1188 tents 0 store 164 t demand 11 kg/d price 2.22 traders [100, 0, 4, 1, 0] free_ha 223
-  market 1050: people 958 tents 0 store 853 t demand 138 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 432
-  market 1143: people 958 tents 0 store 745 t demand 82 kg/d price 2.22 traders [75, 0, 10, 3, 0] free_ha 227
-  hungry wage households: no carrier 0, empty market 4, no money 0, on the way 14, in market cell 9, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 664, 609, 736, 813, 845, 752, 7427], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.21 p50 1.52 p75 1.90 p90 2.76; zero 2
-  field rebuilds 17 sell trips 166536 buy trips 5553
-      eaten by kind (farm/tent/wage/trader/elite): 100% 53% 99% 99% 100%
-  98  148943   0.35    6948   6396     76    37  11798    10/   34     62493   5257        10798   566016    3111     2658        4437     1715       1        0    99.5  2.22/ 2.22/69.97  3.65  18049  1826     507   6.49
-  market 1233: people 1569 tents 0 store 20 t demand 140 kg/d price 5.67 traders [123, 0, 23, 9, 0] free_ha 64
-  market 762: people 1358 tents 0 store 95 t demand 540 kg/d price 3.65 traders [24, 0, 36, 48, 3] free_ha 96
-  market 1234: people 1217 tents 0 store 861 t demand 373 kg/d price 2.22 traders [123, 0, 14, 5, 0] free_ha 65
-  market 1108: people 1179 tents 0 store 166 t demand 11 kg/d price 2.22 traders [100, 0, 4, 1, 0] free_ha 222
-  market 1143: people 959 tents 0 store 752 t demand 108 kg/d price 2.22 traders [75, 0, 10, 3, 0] free_ha 233
-  market 1050: people 947 tents 0 store 862 t demand 119 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 422
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 9, in market cell 3, other 12
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 659, 607, 719, 800, 832, 743, 7438], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.20 p50 1.52 p75 1.90 p90 2.67; zero 2
-  field rebuilds 14 sell trips 166185 buy trips 5523
-      eaten by kind (farm/tent/wage/trader/elite): 100% 66% 99% 99% 100%
-  99  149380   0.29    6954   6447     60    75  11738    12/   89     62615   5264        10673   571582    2949     2641        3641     1413       2        0    99.5  2.22/ 2.22/69.97  3.47  18034  1825     474   6.57
-  market 1233: people 1545 tents 0 store 30 t demand 133 kg/d price 3.34 traders [122, 0, 23, 9, 0] free_ha 64
-  market 762: people 1366 tents 0 store 101 t demand 509 kg/d price 3.47 traders [24, 0, 34, 48, 3] free_ha 94
-  market 1234: people 1215 tents 0 store 883 t demand 100 kg/d price 2.22 traders [122, 0, 14, 5, 0] free_ha 65
-  market 1108: people 1179 tents 0 store 167 t demand 17 kg/d price 2.22 traders [100, 0, 4, 1, 0] free_ha 223
-  market 1050: people 968 tents 0 store 869 t demand 68 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 417
-  market 1143: people 937 tents 0 store 758 t demand 81 kg/d price 2.22 traders [75, 0, 8, 3, 0] free_ha 227
-  hungry wage households: no carrier 0, empty market 8, no money 0, on the way 4, in market cell 4, other 11
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 644, 585, 739, 783, 813, 751, 7423], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.69 p25 1.21 p50 1.52 p75 1.90 p90 2.69; zero 2
-  field rebuilds 10 sell trips 164449 buy trips 5472
-      eaten by kind (farm/tent/wage/trader/elite): 100% 62% 99% 99% 100%
- 100  149906   0.35    7149   6557     63    60  11690     9/   30     62706   5350        10699   564058    2961     2653        3540     1369       1        0    99.5  2.22/ 2.22/69.97  3.77  17964  1825     427   6.47
-  market 1233: people 1532 tents 0 store 42 t demand 153 kg/d price 2.80 traders [120, 0, 20, 9, 0] free_ha 65
-  market 762: people 1375 tents 0 store 92 t demand 493 kg/d price 3.77 traders [23, 0, 34, 48, 3] free_ha 94
-  market 1234: people 1226 tents 0 store 907 t demand 101 kg/d price 2.22 traders [122, 0, 14, 5, 0] free_ha 64
-  market 1108: people 1177 tents 0 store 168 t demand 16 kg/d price 2.22 traders [99, 0, 4, 1, 0] free_ha 223
-  market 1050: people 966 tents 0 store 876 t demand 87 kg/d price 2.22 traders [75, 0, 6, 3, 0] free_ha 411
-  market 1143: people 939 tents 0 store 763 t demand 104 kg/d price 2.22 traders [75, 0, 7, 3, 0] free_ha 225
-  hungry wage households: no carrier 0, empty market 6, no money 0, on the way 4, in market cell 5, other 13
-  zero-area farms: no hands 0, no land 2; farm sizes [0, 625, 594, 702, 810, 781, 747, 7431], without hands by size [0, 0, 0, 0, 0, 0, 0, 0]
-  farm ha per head: p10 0.68 p25 1.21 p50 1.52 p75 1.90 p90 2.68; zero 2
-  field rebuilds 16 sell trips 163825 buy trips 5387
-      eaten by kind (farm/tent/wage/trader/elite): 100% 70% 99% 99% 100%
-day_us all p50=4613 p95=11780 p99=22258 max=272820 | grain p50=1440 mean=2026 p95=2800 p99=18870 max=113624 (day 1281) | rss_mb=337 peak_people=149916
-grain per day us: events=243 peaks=18 labour=308 markets=207 eat=338 traders=56 paths=344 (rebuild 44, first builds in total 287 ms) | per month us: census=15319
-busiest trade cells (trips, cell): [(27441, 18557), (27247, 18174), (26740, 13901), (24458, 18756), (21064, 18366), (20896, 13902), (20130, 13709), (19573, 22981), (17244, 22984), (17170, 22983)]
-fingerprint people=463c5a59dd1f04e3 grain=a081a04b8bb8f099
+   1  114970  -1.57    3073   4534    403   405  19533  5838/12165     42212    651          641   220878    3798     2373       24184     6682     143        2    92.5  2.22/ 8.71/69.97 24.95   2141    98   15305   4.26
+      eaten by kind (farm/tent/wage/trader/elite): 94% 58% 94% 98% 97% | to tents without workers or kin (S79): 5244
+   2  115332   0.31    7708   6444   1019   930  18307  6599/16031     43892    738          651   290576    5460     2515       22728     8127     286        2    87.4  2.22/ 4.82/69.97 25.59   8684   529   12138   4.22
+      eaten by kind (farm/tent/wage/trader/elite): 90% 48% 97% 99% 99% | to tents without workers or kin (S79): 404
+   3  114180  -1.00    6857   6334    738  1688  17965  6324/14759     44799    896          767   332941    4600     2525       20917     7805     301        2    90.5  2.22/ 2.67/69.97  8.51  12276   936    9274   4.67
+      eaten by kind (farm/tent/wage/trader/elite): 94% 49% 98% 99% 100% | to tents without workers or kin (S79): 426
+   4  113485  -0.61    6809   6024    586  1457  17756  5901/12984     45419    926          818   370439    3245     2513       12200     4615     241        2    92.6  2.22/ 2.30/69.97  3.43  14038  1129    7220   4.45
+      eaten by kind (farm/tent/wage/trader/elite): 96% 53% 98% 99% 100% | to tents without workers or kin (S79): 392
+   5  113195  -0.26    6729   6152    477   892  17612  5518/11636     45642   1223          757   399322    2707     2527        7077     2533     187        2    94.0  2.22/ 2.25/69.97  4.82  14762  1210    5862   4.43
+      eaten by kind (farm/tent/wage/trader/elite): 96% 57% 99% 99% 99% | to tents without workers or kin (S79): 368
+   6  112833  -0.32    6657   6111    444   869  17487  5155/10359     45827   1391         1007   423493    2976     2540        6969     2612     145        1    94.8  2.22/ 2.23/69.97  3.67  15316  1286    4730   4.53
+      eaten by kind (farm/tent/wage/trader/elite): 97% 61% 99% 99% 99% | to tents without workers or kin (S79): 311
+   7  112799  -0.03    6557   5918    359   695  17387  4794/ 9271     45865   1455         1006   441123    2690     2543        5530     1983     111        1    95.5  2.22/ 2.22/69.97  3.67  15821  1325    3968   3.98
+      eaten by kind (farm/tent/wage/trader/elite): 97% 65% 99% 99% 100% | to tents without workers or kin (S79): 324
+   8  112829   0.03    6468   5954    328   458  17253  4488/ 8496     45830   1613         1080   447745    3042     2546        6960     2605      96        0    95.9  2.22/ 2.22/69.97  3.76  16110  1364    3480   3.95
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 99% 99% 100% | to tents without workers or kin (S79): 320
+   9  113398   0.50    6583   5693    270   328  17150  4129/ 7745     45848   1666         1202   453984    3223     2523        7871     2909      81        1    96.2  2.22/ 2.24/69.97  4.11  16323  1410    3263   3.90
+      eaten by kind (farm/tent/wage/trader/elite): 97% 71% 99% 99% 100% | to tents without workers or kin (S79): 278
+  10  113523   0.11    6319   5873    290   318  17031  3779/ 7156     45752   1769         1260   458882    2943     2529        6854     2553      73        1    96.3  2.22/ 2.22/69.97  3.33  16689  1434    3145   4.23
+      eaten by kind (farm/tent/wage/trader/elite): 97% 73% 98% 99% 100% | to tents without workers or kin (S79): 266
+  11  113920   0.35    6337   5704    273   235  16931  3432/ 6506     45539   2022         1610   464142    2837     2535        5540     2073      66        0    96.5  2.22/ 2.22/69.97  4.33  16902  1439    2954   4.07
+      eaten by kind (farm/tent/wage/trader/elite): 97% 74% 98% 99% 99% | to tents without workers or kin (S79): 245
+  12  114394   0.42    6321   5585    249   268  16889  3021/ 5942     45443   1861         1414   440191    2752     2564        5450     2000      59        0    96.7  2.22/ 2.22/69.97  4.72  17079  1448    2788   3.94
+      eaten by kind (farm/tent/wage/trader/elite): 97% 74% 98% 99% 100% | to tents without workers or kin (S79): 220
+  13  114940   0.48    6385   5659    257   179  16829  2660/ 5375     45690   1958         1723   415483    2889     2586        5350     1945      58        0    96.8  2.22/ 2.22/69.97  3.75  17163  1458    2741   3.87
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 98% 99% 100% | to tents without workers or kin (S79): 213
+  14  115157   0.19    6143   5638    267   282  16734  2287/ 4882     45977   1746         1636   403470    3083     2605        6972     2579      51        0    96.8  2.22/ 2.22/69.97  4.94  17289  1459    2796   4.16
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 99% 100% | to tents without workers or kin (S79): 214
+  15  115465   0.27    6193   5649    241   251  16667  1898/ 4288     46220   1847         1750   390876    3239     2618        7323     2788      48        0    96.8  2.22/ 2.22/69.97  3.46  17419  1478    2773   4.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 98% 100% | to tents without workers or kin (S79): 214
+  16  115723   0.22    6074   5598    275   215  16409  1823/ 4254     46392   1831         1624   380934    2616     2631        4722     1755      45        0    96.9  2.22/ 2.22/69.97  4.02  17504  1480    2702   3.84
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 98% 100% | to tents without workers or kin (S79): 168
+  17  115704  -0.02    5797   5548    239   264  16231  1712/ 4045     46466   1793         1587   375763    3081     2617        6726     2505      45        0    97.0  2.22/ 2.22/69.97  4.01  17542  1517    2908   4.10
+      eaten by kind (farm/tent/wage/trader/elite): 98% 75% 97% 97% 100% | to tents without workers or kin (S79): 166
+  18  115927   0.19    6139   5621    245   313  16044  1618/ 3892     46718   1824         1645   368805    3010     2607        6396     2409      41        0    97.1  2.22/ 2.22/69.97  3.86  17649  1514    2495   4.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 99% | to tents without workers or kin (S79): 159
+  19  116334   0.35    6079   5407    214   245  15841  1576/ 3818     47072   1766         1586   367464    2713     2601        4885     1836      39        0    97.2  2.22/ 2.22/69.97  4.52  17698  1523    2467   3.83
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 100% | to tents without workers or kin (S79): 164
+  20  116507   0.15    6106   5666    217   277  15649  1488/ 3694     47246   1811         1740   362539    3139     2588        6891     2582      37        0    97.3  2.22/ 2.22/69.97  4.62  17792  1524    2333   3.86
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 98% 100% | to tents without workers or kin (S79): 133
+  21  116901   0.34    6072   5512    237   153  15501  1416/ 3545     47475   1760         1629   358313    3274     2594        7642     2894      34        0    97.3  2.22/ 2.22/69.97  4.11  17822  1516    2653   3.95
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 98% 98% 100% | to tents without workers or kin (S79): 125
+  22  117104   0.17    5982   5638    248   147  15311  1371/ 3530     47623   1866         1729   357632    2950     2598        5953     2260      35        0    97.3  2.22/ 2.22/69.97  4.20  17837  1510    2384   3.86
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 98% 100% | to tents without workers or kin (S79): 117
+  23  117543   0.37    6118   5488    205   189  15121  1295/ 3349     47709   1868         1805   351162    2818     2616        5284     1993      33        0    97.4  2.22/ 2.22/69.97  4.04  17843  1513    2294   4.00
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 98% 99% | to tents without workers or kin (S79): 102
+  24  117909   0.31    6183   5594    250   227  14944  1205/ 3081     47835   1928         1876   348966    2832     2613        5182     1951      32        0    97.5  2.22/ 2.22/69.97  4.63  17868  1505    2200   4.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 97% 98% 100% | to tents without workers or kin (S79): 100
+  25  118469   0.47    6372   5688    213   133  14785  1129/ 2876     48028   1894         1996   350672    3156     2616        6739     2522      26        0    97.5  2.22/ 2.22/69.97  4.23  17851  1507    2147   3.92
+      eaten by kind (farm/tent/wage/trader/elite): 98% 81% 97% 98% 99% | to tents without workers or kin (S79): 77
+  26  119064   0.50    6401   5603    218   213  14603  1069/ 2709     48060   1985         1942   351218    2988     2628        5890     2195      24        0    97.5  2.22/ 2.22/69.97  4.46  17816  1496    2135   3.77
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 97% 98% 100% | to tents without workers or kin (S79): 89
+  27  119792   0.61    6588   5646    215   185  14438   999/ 2506     48212   2037         2199   344093    2966     2632        6022     2275      22        0    97.5  2.22/ 2.22/69.97  3.78  17775  1497    2091   3.80
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 97% 98% 100% | to tents without workers or kin (S79): 83
+  28  120564   0.64    6662   5646    209   250  14298   942/ 2366     48259   2095         2219   347221    2995     2629        5859     2212      18        0    97.6  2.22/ 2.22/69.97  4.15  17708  1496    2076   3.89
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 97% 98% 98% | to tents without workers or kin (S79): 69
+  29  121158   0.49    6646   5831    201   221  14143   870/ 2198     48362   2137         2407   342520    3012     2635        5904     2248      16        0    97.6  2.22/ 2.22/69.97  4.63  17638  1495    1991   3.81
+      eaten by kind (farm/tent/wage/trader/elite): 98% 83% 97% 98% 97% | to tents without workers or kin (S79): 53
+  30  121894   0.61    6642   5740    183   159  13987   797/ 2059     48383   2236         2397   344577    2951     2636        5933     2215      15        0    97.7  2.22/ 2.22/69.97  4.90  17630  1495    2058   3.93
+      eaten by kind (farm/tent/wage/trader/elite): 98% 83% 97% 98% 97% | to tents without workers or kin (S79): 61
+  31  122882   0.81    6922   5802    207   132  13810   761/ 1999     48499   2257         2519   341609    3111     2657        6193     2362      15        0    97.7  2.22/ 2.22/69.97  4.72  17610  1495    1942   4.29
+      eaten by kind (farm/tent/wage/trader/elite): 98% 83% 97% 98% 97% | to tents without workers or kin (S79): 71
+  32  123882   0.81    7039   5888    206   158  13674   698/ 1806     48587   2250         2516   338912    3011     2672        6040     2281      13        0    97.8  2.22/ 2.22/69.97  4.96  17607  1487    1950   4.07
+      eaten by kind (farm/tent/wage/trader/elite): 98% 84% 98% 98% 99% | to tents without workers or kin (S79): 45
+  33  124751   0.70    7101   6122    209   104  13510   655/ 1818     48714   2251         2556   332525    3109     2672        6332     2397      13        0    97.8  2.22/ 2.22/69.97  5.08  17569  1482    1900   4.11
+      eaten by kind (farm/tent/wage/trader/elite): 98% 84% 97% 98% 99% | to tents without workers or kin (S79): 39
+  34  125703   0.76    7112   5998    229   168  13366   602/ 1683     48892   2201         2659   332274    2973     2674        5819     2183      14        0    97.8  2.22/ 2.22/69.97  4.93  17491  1483    1975   4.02
+      eaten by kind (farm/tent/wage/trader/elite): 98% 83% 97% 98% 99% | to tents without workers or kin (S79): 51
+  35  126770   0.85    7214   6031    228   109  13246   567/ 1576     48999   2218         2640   336201    3032     2692        6021     2262      13        0    97.8  2.22/ 2.22/69.97  4.42  17421  1482    1898   4.11
+      eaten by kind (farm/tent/wage/trader/elite): 98% 84% 97% 98% 100% | to tents without workers or kin (S79): 47
+  36  127678   0.72    7243   6204    196   151  13105   524/ 1567     49026   2342         2734   329979    3313     2704        7191     2706      15        0    97.8  2.22/ 2.22/69.97  5.00  17396  1478    1835   4.36
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 98% 98% 100% | to tents without workers or kin (S79): 30
+  37  128611   0.73    7193   6118    219   121  12993   476/ 1421     49262   2243         2644   331831    3062     2716        5852     2242      13        0    97.8  2.22/ 2.22/69.97  4.73  17343  1472    2009   4.46
+      eaten by kind (farm/tent/wage/trader/elite): 98% 81% 97% 98% 98% | to tents without workers or kin (S79): 25
+  38  129623   0.79    7419   6182    237   226  12868   440/ 1380     49401   2291         2681   330896    3224     2721        6590     2501      12        0    97.7  2.22/ 2.22/69.97  4.42  17299  1472    1904   4.72
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 97% 98% 100% | to tents without workers or kin (S79): 22
+  39  130559   0.72    7217   6139    180   143  12759   421/ 1364     49540   2216         2693   332067    3102     2724        6167     2337      14        0    97.8  2.22/ 2.22/69.97  4.87  17216  1473    1957   4.10
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 97% 98% 100% | to tents without workers or kin (S79): 22
+  40  131521   0.74    7314   6162    212   192  12653   379/ 1216     49646   2303         2646   331649    3048     2752        5794     2192      14        0    97.7  2.22/ 2.22/69.97  4.89  17169  1469    1769   4.16
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 98% 98% 99% | to tents without workers or kin (S79): 26
+  41  132560   0.79    7437   6272    233   133  12521   346/ 1164     49871   2219         2675   333789    3205     2753        6521     2478      12        0    97.7  2.22/ 2.22/69.97  4.70  17180  1468    1825   4.11
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 97% 98% 100% | to tents without workers or kin (S79): 16
+  42  133462   0.68    7374   6329    189   136  12418   323/ 1138     49971   2219         2725   328322    3234     2767        6413     2435      12        0    97.7  2.22/ 2.22/69.97  4.70  17145  1480    1861   4.42
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 98% 98% 99% | to tents without workers or kin (S79): 20
+  43  134408   0.71    7546   6459    228   141  12314   294/ 1084     50201   2226         2931   326274    3148     2782        5971     2293      11        0    97.7  2.22/ 2.22/69.97  5.08  17124  1466    1898   4.40
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 97% 98% 98% | to tents without workers or kin (S79): 19
+  44  135294   0.66    7454   6442    235   159  12226   272/ 1024     50274   2160         2717   323253    3233     2785        6547     2477      14        0    97.7  2.22/ 2.22/69.97  5.21  17055  1471    1713   4.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 99% | to tents without workers or kin (S79): 13
+  45  136136   0.62    7457   6454    250   127  12107   253/  989     50480   2227         2688   324357    3228     2799        5975     2294      12        0    97.7  2.22/ 2.22/69.97  5.00  16961  1476    1862   4.68
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 97% 98% 98% | to tents without workers or kin (S79): 10
+  46  137219   0.80    7607   6348    225   177  11997   222/  886     50675   2190         2682   320888    3169     2821        6068     2303      10        0    97.7  2.22/ 2.22/69.97  5.17  16920  1472    1832   4.31
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 98% 98% 94% | to tents without workers or kin (S79): 12
+  47  138145   0.67    7479   6406    218   152  11903   212/  886     50926   2135         2625   324934    3233     2838        6295     2374      10        0    97.7  2.22/ 2.22/69.97  4.97  16859  1472    1746   4.25
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 98% 98% 92% | to tents without workers or kin (S79): 14
+  48  139114   0.70    7562   6421    234   168  11808   200/  825     51145   2108         2599   319341    3435     2859        7004     2683      10        0    97.7  2.22/ 2.22/69.97  5.10  16857  1462    1712   4.41
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 98% 98% 92% | to tents without workers or kin (S79): 15
+  49  140154   0.75    7574   6424    221   149  11710   188/  772     51363   2037         2597   315813    3341     2881        6432     2446      10        0    97.8  2.22/ 2.22/69.97  4.89  16766  1462    1611   4.34
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 98% 99% 91% | to tents without workers or kin (S79): 14
+  50  141044   0.64    7641   6597    229   111  11623   175/  809     51491   2033         2569   310145    3402     2889        6165     2354      12        0    97.7  2.22/ 2.22/69.97  5.72  16705  1456    1674   4.40
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 98% 98% 91% | to tents without workers or kin (S79): 11
+  51  142176   0.80    7787   6560    233    96  11550   178/  867     51717   1982         2436   312720    3312     2916        5456     2070      13        0    97.7  2.22/ 2.22/69.97  5.28  16652  1454    1937   4.52
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 98% 98% 92% | to tents without workers or kin (S79): 14
+  52  143226   0.74    7772   6527    220   194  11457   183/  938     51901   2019         2486   310088    3424     2942        5842     2220      16        0    97.7  2.22/ 2.22/69.97  5.39  16654  1459    1762   4.92
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 98% 90% | to tents without workers or kin (S79): 21
+  53  144309   0.76    7773   6550    256   140  11402   164/  729     52088   2009         2467   310620    3501     2971        5927     2250      17        0    97.8  2.22/ 2.22/69.97  5.36  16685  1458    1809   4.38
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 98% 98% 92% | to tents without workers or kin (S79): 11
+  54  145401   0.76    7946   6749    211   106  11327   163/  772     52370   2006         2455   313068    3392     2991        5579     2137      13        0    97.9  2.22/ 2.22/69.97  5.42  16675  1436    1537   4.41
+      eaten by kind (farm/tent/wage/trader/elite): 98% 68% 98% 99% 92% | to tents without workers or kin (S79): 6
+  55  146560   0.80    7929   6667    237   103  11262   144/  711     52565   1991         2509   309590    3382     3008        5981     2271      14        0    97.9  2.22/ 2.22/69.97  5.32  16623  1427    1581   4.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 65% 98% 98% 92% | to tents without workers or kin (S79): 6
+  56  147680   0.76    8021   6805    206    95  11195   131/  636     52772   1945         2436   310885    3426     3015        6467     2440      14        0    97.9  2.22/ 2.22/69.97  5.37  16528  1418    1496   4.72
+      eaten by kind (farm/tent/wage/trader/elite): 98% 70% 98% 98% 92% | to tents without workers or kin (S79): 4
+  57  148885   0.82    8114   6816    242    93  11124   133/  694     53007   1955         2519   309202    3392     3044        6235     2369       9        0    97.8  2.22/ 2.22/69.97  5.24  16514  1418    1707   4.61
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 98% 98% 93% | to tents without workers or kin (S79): 16
+  58  149831   0.64    8114   7030    258   152  11059   118/  626     53128   1956         2440   307952    3460     3069        6415     2438      11        0    97.8  2.22/ 2.22/69.97  5.37  16508  1411    1572   4.77
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 98% 94% | to tents without workers or kin (S79): 12
+  59  151193   0.91    8375   6864    262   146  10991   110/  653     53356   1968         2561   308663    3385     3055        6307     2421      11        0    97.8  2.22/ 2.22/69.97  5.56  16430  1409    1649   4.69
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 99% 94% | to tents without workers or kin (S79): 9
+  60  152400   0.80    8324   7025    251    80  10911   109/  705     53493   1954         2462   307001    3425     3065        6418     2444      11        0    97.7  2.22/ 2.22/69.97  7.34  16412  1398    1771   4.72
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 98% 98% 93% | to tents without workers or kin (S79): 13
+  61  153892   0.98    8573   6969    231   122  10867   101/  648     53668   1981         2406   309015    3668     3102        6837     2611      12        0    97.7  2.22/ 2.22/69.97  5.60  16467  1398    1775   4.63
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 98% 98% 94% | to tents without workers or kin (S79): 1
+  62  154954   0.69    8360   7089    281   199  10795    99/  652     53902   1928         2394   310001    3556     3126        6663     2513      10        0    97.7  2.22/ 2.22/69.97  6.05  16487  1394    1912   4.67
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 98% 93% | to tents without workers or kin (S79): 8
+  63  155887   0.60    8524   7443    287   156  10720    94/  635     54036   1903         2477   312819    3621     3122        6852     2577      13        0    97.7  2.22/ 2.22/69.97  6.84  16437  1395    1758   4.70
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 98% 98% 92% | to tents without workers or kin (S79): 6
+  64  157031   0.73    8476   7238    255    84  10654    88/  572     54115   1901         2513   313065    3635     3138        6985     2665      11        0    97.7  2.22/ 2.22/69.97  6.03  16413  1387    1890   4.79
+      eaten by kind (farm/tent/wage/trader/elite): 98% 70% 97% 98% 94% | to tents without workers or kin (S79): 9
+  65  158164   0.72    8659   7223    251   304  10583    85/  495     54237   1907         2366   310549    3577     3136        6650     2517       9        0    97.7  2.22/ 2.22/69.97  7.73  16343  1386    1925   5.20
+      eaten by kind (farm/tent/wage/trader/elite): 98% 68% 97% 98% 93% | to tents without workers or kin (S79): 10
+  66  159351   0.75    8689   7357    296   151  10526    80/  520     54480   1870         2433   306822    3684     3125        6949     2644       9        0    97.6  2.22/ 2.22/69.97  6.47  16317  1402    1873   5.14
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 97% 98% 88% | to tents without workers or kin (S79): 1
+  67  160585   0.77    8903   7487    282   183  10469    78/  498     54456   1962         2287   307039    3645     3161        6694     2546      10        0    97.6  2.22/ 2.22/69.97  7.12  16279  1400    1824   5.02
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 98% 99% 90% | to tents without workers or kin (S79): 6
+  68  161748   0.72    8824   7577    291    78  10411    75/  474     54715   1887         2318   314592    3656     3203        6821     2592       8        0    97.6  2.22/ 2.22/69.97 10.16  16212  1403    1850   4.88
+      eaten by kind (farm/tent/wage/trader/elite): 98% 60% 98% 99% 93% | to tents without workers or kin (S79): 6
+  69  162995   0.77    8908   7512    290   149  10350    72/  430     54748   1938         2294   306787    3651     3203        6748     2595       6        0    97.6  2.22/ 2.22/69.97  8.91  16174  1392    1840   4.73
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 98% 98% 95% | to tents without workers or kin (S79): 4
+  70  164219   0.75    8931   7597    299   127  10286    75/  447     54991   1814         2234   308013    3694     3232        6585     2511       6        0    97.6  2.22/ 2.22/69.97  6.77  16164  1382    1768   4.75
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 98% 93% | to tents without workers or kin (S79): 6
+  71  165254   0.63    8855   7634    312   172  10223    76/  497     55108   1856         2349   307612    3744     3214        6661     2548       7        0    97.6  2.22/ 2.22/69.97 10.45  16164  1378    1582   4.89
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 98% 93% | to tents without workers or kin (S79): 3
+  72  166447   0.72    8906   7591    279   124  10174    74/  411     55257   1809         2233   306451    3738     3238        6593     2515       7        0    97.6  2.22/ 2.22/69.97 12.41  16048  1378    1978   5.07
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 98% 98% 93% | to tents without workers or kin (S79): 7
+  73  167764   0.79    9121   7723    294    82  10106    77/  485     55364   1843         2211   303341    3711     3261        6382     2449       6        0    97.6  2.22/ 2.22/69.97  7.45  16045  1371    1943   4.97
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 98% 96% | to tents without workers or kin (S79): 7
+  74  168989   0.73    9229   7927    342    78  10071    68/  422     55409   1934         2110   305488    3565     3263        6196     2356       6        0    97.6  2.22/ 2.22/69.97 25.17  15999  1370    1926   5.15
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 97% 97% 94% | to tents without workers or kin (S79): 4
+  75  170130   0.68    9282   7953    301   211  10020    62/  414     55643   1867         2085   306463    3659     3288        6234     2375       6        0    97.6  2.22/ 2.22/69.97 18.65  15961  1358    1693   5.30
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 97% 98% 96% | to tents without workers or kin (S79): 1
+  76  171306   0.69    9240   7955    304   128   9975    63/  455     55821   1799         2095   301859    3718     3319        6208     2357       6        0    97.6  2.22/ 2.22/69.97 12.69  15825  1358    1767   5.30
+      eaten by kind (farm/tent/wage/trader/elite): 98% 64% 97% 98% 95% | to tents without workers or kin (S79): 2
+  77  172490   0.69    9369   8042    316   104   9929    62/  553     55959   1742         2112   302226    3743     3326        5969     2287       9        0    97.6  2.22/ 2.22/69.97 21.42  15828  1357    1931   5.52
+      eaten by kind (farm/tent/wage/trader/elite): 98% 63% 97% 98% 97% | to tents without workers or kin (S79): 2
+  78  173538   0.61    9429   8096    328   310   9874    63/  576     56049   1735         2231   295816    3729     3337        6034     2281      13        0    97.5  2.22/ 2.22/69.97 33.66  15804  1353    1843   5.22
+      eaten by kind (farm/tent/wage/trader/elite): 98% 54% 97% 98% 97% | to tents without workers or kin (S79): 4
+  79  174943   0.81    9615   8016    347   172   9827    54/  414     56221   1633         2012   298882    3793     3327        6020     2293      11        0    97.5  2.22/ 2.22/69.97 47.10  15840  1350    1617   5.90
+      eaten by kind (farm/tent/wage/trader/elite): 98% 54% 97% 97% 98% | to tents without workers or kin (S79): 5
+  80  176148   0.69    9746   8351    355   188   9777    61/  441     56367   1688         2099   296636    3790     3335        6070     2297      10        0    97.5  2.22/ 2.22/69.97 60.85  15800  1346    1915   5.70
+      eaten by kind (farm/tent/wage/trader/elite): 98% 55% 97% 97% 95% | to tents without workers or kin (S79): 4
+  81  177291   0.65    9615   8307    346   202   9737    52/  360     56498   1642         1944   295406    3807     3341        6031     2317       8        0    97.4  2.22/ 2.22/69.97 29.89  15772  1346    1681   5.61
+      eaten by kind (farm/tent/wage/trader/elite): 98% 58% 97% 97% 90% | to tents without workers or kin (S79): 4
+  82  178677   0.78    9749   8213    318   115   9698    50/  370     56613   1687         1972   296873    3716     3357        5998     2271       8        0    97.6  2.22/ 2.22/69.97 17.37  15782  1346    1797   5.43
+      eaten by kind (farm/tent/wage/trader/elite): 98% 56% 97% 98% 91% | to tents without workers or kin (S79): 0
+  83  180032   0.76    9769   8283    344   133   9668    43/  336     56806   1640         2012   294256    3733     3335        5908     2244       6        0    97.4  2.22/ 2.22/69.97 20.50  15711  1349    1879   5.85
+      eaten by kind (farm/tent/wage/trader/elite): 98% 65% 96% 97% 95% | to tents without workers or kin (S79): 3
+  84  181280   0.69    9770   8280    325   248   9634    42/  315     57046   1549         1907   293947    3796     3342        5960     2221       8        0    97.5  2.22/ 2.22/69.97 21.62  15696  1326    1983   5.87
+      eaten by kind (farm/tent/wage/trader/elite): 98% 60% 96% 97% 96% | to tents without workers or kin (S79): 5
+  85  182446   0.64    9980   8645    365   161   9597    40/  317     57306   1541         2078   292404    3936     3349        6040     2246       8        0    97.4  2.22/ 2.22/69.97 23.94  15728  1322    2039   5.48
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 96% 97% 96% | to tents without workers or kin (S79): 2
+  86  183623   0.65    9980   8586    348   218   9553    40/  345     57429   1508         2012   296887    3845     3382        5791     2151       9        0    97.4  2.22/ 2.22/69.97 19.44  15689  1325    2329   5.90
+      eaten by kind (farm/tent/wage/trader/elite): 98% 55% 96% 98% 98% | to tents without workers or kin (S79): 4
+  87  184927   0.71   10183   8484    387   419   9508    42/  303     57592   1532         2053   293274    3851     3381        5735     2119       8        0    97.4  2.22/ 2.22/69.97 37.37  15712  1324    1650   5.88
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 96% 97% 97% | to tents without workers or kin (S79): 7
+  88  186304   0.74   10193   8538    365   253   9471    38/  333     57730   1531         1869   289395    3860     3390        5668     2094       8        0    97.4  2.22/ 2.22/69.97 57.76  15691  1329    1881   5.53
+      eaten by kind (farm/tent/wage/trader/elite): 98% 58% 97% 98% 98% | to tents without workers or kin (S79): 1
+  89  187756   0.78   10317   8720    362   154   9434    36/  386     57897   1558         1910   284770    3895     3378        5515     2029       9        0    97.3  2.22/ 2.22/69.97 63.32  15613  1324    2030   5.75
+      eaten by kind (farm/tent/wage/trader/elite): 98% 59% 95% 97% 98% | to tents without workers or kin (S79): 1
+  90  189094   0.71   10361   8840    362   198   9405    38/  368     58080   1483         1959   285821    3905     3390        5552     2061       9        0    97.4  2.22/ 2.22/69.97 29.43  15579  1325    1865   5.66
+      eaten by kind (farm/tent/wage/trader/elite): 98% 53% 96% 97% 95% | to tents without workers or kin (S79): 3
+  91  190469   0.73   10474   8915    373   162   9377    36/  383     58235   1428         1899   289903    3860     3424        5551     2053      10        0    97.5  2.22/ 2.22/69.97 51.62  15566  1319    1989   6.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 57% 97% 97% 99% | to tents without workers or kin (S79): 5
+  92  191958   0.78   10572   8916    375   167   9330    38/  309     58322   1465         1938   287278    3888     3430        5564     2070       8        0    97.4  2.22/ 2.22/69.97 48.98  15535  1296    1771   5.73
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 96% 97% 90% | to tents without workers or kin (S79): 4
+  93  193228   0.66   10579   9104    366   205   9299    33/  296     58536   1381         1846   288828    3911     3423        5647     2096       7        0    97.4  2.22/ 2.22/69.97 58.26  15484  1295    1859   5.97
+      eaten by kind (farm/tent/wage/trader/elite): 98% 63% 96% 98% 98% | to tents without workers or kin (S79): 3
+  94  194566   0.69   10589   9055    372   198   9268    34/  332     58699   1388         1896   286087    3873     3433        5502     2031       6        0    97.3  2.22/ 2.22/69.97 67.85  15476  1282    1927   6.16
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 96% 97% 99% | to tents without workers or kin (S79): 4
+  95  195727   0.60   10704   9152    411   400   9227    37/  362     58768   1383         1792   290599    3947     3418        5534     2035       9        0    97.3  2.22/ 2.22/69.97 68.78  15425  1267    1530   6.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 65% 96% 97% 99% | to tents without workers or kin (S79): 4
+  96  197249   0.78   10765   9074    364   216   9198    31/  244     58932   1429         1866   286152    4037     3469        5473     2063       6        0    97.4  2.22/ 2.22/69.97 26.49  15455  1272    1768   6.29
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 96% 97% 98% | to tents without workers or kin (S79): 4
+  97  198553   0.66   10763   9273    398   130   9167    38/  299     59100   1382         1889   288562    4028     3505        5317     1996       5        0    97.4  2.22/ 2.22/69.97 19.99  15471  1284    1506   6.29
+      eaten by kind (farm/tent/wage/trader/elite): 97% 74% 97% 98% 100% | to tents without workers or kin (S79): 6
+  98  200035   0.75   10952   9304    408   233   9146    35/  277     59282   1333         1787   290387    4074     3483        5342     2007       6        0    97.4  2.22/ 2.22/69.97 15.96  15423  1299    1714   6.21
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 96% 97% 99% | to tents without workers or kin (S79): 3
+  99  201268   0.62   10943   9383    422   265   9107    40/  339     59362   1365         1890   286648    4108     3520        5334     2009       5        0    97.4  2.22/ 2.22/69.97 14.78  15489  1301    1789   5.82
+      eaten by kind (farm/tent/wage/trader/elite): 97% 63% 97% 98% 98% | to tents without workers or kin (S79): 4
+ 100  202462   0.59   10935   9399    421   364   9070    36/  359     59548   1266         1723   290708    4040     3541        5214     1961       4        0    97.4  2.22/ 2.22/69.97 16.71  15428  1298    1568   6.55
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 98% 97% 97% | to tents without workers or kin (S79): 3
+day_us all p50=4457 p95=7238 p99=9384 max=36850 | grain p50=1145 mean=1320 p95=2364 p99=3480 max=23172 (day 32564) | rss_mb=385 peak_people=202464
+grain per day us: events=204 peaks=13 labour=159 markets=187 eat=244 traders=43 paths=290 (rebuild 39, first builds in total 239 ms) | per month us: census=5381
+busiest trade cells (trips, cell): [(30736, 18557), (30097, 18174), (29831, 14286), (27746, 13901), (26638, 22793), (25033, 22785), (25032, 14095), (24119, 21848), (23795, 17928), (22347, 13902)]
+fingerprint people=12ead96d0348522a grain=5018ca34b682e402

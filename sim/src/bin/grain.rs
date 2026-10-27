@@ -132,7 +132,7 @@ fn main() {
             print!("{}", g.debug());
             println!("  field rebuilds {} sell trips {} buy trips {}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips);
         }
-        println!("      eaten by kind (farm/tent/wage/trader/elite): {}", by.join(" "));
+        println!("      eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {}", by.join(" "), gs.to_tents);
     }
     println!(
         "day_us all p50={:.0} p95={:.0} p99={:.0} max={:.0} | grain p50={:.0} mean={:.0} p95={:.0} p99={:.0} max={:.0} (day {}) | rss_mb={:.0} peak_people={}",
