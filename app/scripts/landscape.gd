@@ -2583,7 +2583,9 @@ func _add_delta_arms() -> void:
         for source in river_sources:
             if str(source.get("name",""))==str(region.name) and not source.segments.is_empty():base_width=float(source.segments[0][2]);break
         var start=mouth-sea*length
-        # From the apex (Rhône): the arms replace every source branch below it.
+        # From the apex (Rhône): the arms replace every source branch on the
+        # seaward side of it (a half plane across the sea direction; one
+        # along apex-mouth kept the Petit Rhône's westward first 20 km).
         var below:Vector2=sea;var reach=length*1.6
         if region.has("apex"):
             start=region.apex;below=(mouth-start).normalized();reach=start.distance_to(mouth)*1.3
@@ -2594,7 +2596,7 @@ func _add_delta_arms() -> void:
             var kept=[]
             for segment in source.segments:
                 var m=(Vector2(segment[0])+Vector2(segment[1]))*.5
-                if (m-start).dot(below)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:continue
+                if (m-start).dot(sea)>0.0 and m.distance_to(start if region.has("apex") else mouth)<reach:continue
                 kept.append(segment)
             source.segments=kept
         var root_distance=INF

@@ -73,15 +73,17 @@ DeltaField delta_field(vec2 p,float land_m,float px_m) {
     return f;
 }
 
-DeltaMask delta_mask(vec2 p,float land_m,float px_m,float view_width) {
+// open_sea: 1 where the nearest water is the open sea (the barrier beach
+// faces it), 0 at lakes, étangs and channels inside the delta.
+DeltaMask delta_mask(vec2 p,float land_m,float px_m,float view_width,float open_sea) {
     DeltaMask m;
     m.barrier=0.0;m.lagoon=0.0;m.rim=0.0;m.marsh=0.0;m.shallow=0.0;
     DeltaField f=delta_field(p,land_m,px_m);
     if(f.region<=0.0) return m;
-    m.barrier=f.barrier;
+    m.barrier=f.barrier*open_sea;
     float aa=max(fwidth(f.n)*0.8,0.004);
     // Fades out where islands would fall below a few pixels.
-    float detail=(1.0-smoothstep(350.0,800.0,view_width))*smoothstep(0.0,0.08,f.bias)*(1.0-f.barrier);
+    float detail=(1.0-smoothstep(350.0,800.0,view_width))*smoothstep(0.0,0.08,f.bias)*(1.0-m.barrier);
     m.lagoon=smoothstep(f.thr-aa,f.thr+aa,f.n)*detail;
     // Thin wet sand rim on the island side of every lagoon edge (~1 px; a
     // wider rim turned the small islands into sand).
@@ -106,10 +108,11 @@ bool delta_inside(vec2 p) {
     return false;
 }
 
-// Lagoon water at p (0/1, no anti-aliasing), for vertex shaders.
+// Lagoon water at p (0/1, no anti-aliasing), for vertex shaders. Without the
+// open-sea probe the barrier is ignored: crowns may also go on the beach.
 float delta_lagoon_at(vec2 p,float land_m,float view_width) {
     if(delta_count==0) return 0.0;
     DeltaField f=delta_field(p,land_m,1.0);
     if(f.region<=0.0) return 0.0;
-    return step(f.thr,f.n)*step(0.04,f.bias)*step(f.barrier,0.5)*(1.0-step(575.0,view_width));
+    return step(f.thr,f.n)*step(0.04,f.bias)*(1.0-step(575.0,view_width));
 }

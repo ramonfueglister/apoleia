@@ -267,11 +267,21 @@ void fragment() {
     // suppressed the real shoreline color twice (confirmed frozen-scene A/B).
     // Broad sand beaches on flat, low coasts (clipmap path): 0.9-2 km, about
     // 12 px up close; rock coasts and steep shores keep the narrow band.
-    float beach=0.0;
+    float beach=0.0;float open_sea=1.0;
     if(!graphic_coast) {
         float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
         // Low, flat coasts only (rivers are separate meshes, not in this distance).
         beach=(1.0-smoothstep(25.0,45.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
+        // Sand faces the open sea only: probe ~6 km past the nearest shore.
+        // Lakes, étangs and channels are narrower and keep the plain shore
+        // band (Camargue: 1.2 km sand rings round the Vaccarès and along the
+        // Grand Rhône). Low coastal land only, three distance taps.
+        if(material_distance<=0.0 && -material_distance<1800.0 && (beach>0.001 || (delta_count>0 && delta_inside(vp)))) {
+            float land_m=max(-material_distance,0.0);
+            vec2 g=vec2(water_distance_at(vp+vec2(0.25,0.0)),water_distance_at(vp+vec2(0.0,0.25)))-vec2(distance);
+            open_sea=smoothstep(3000.0,3800.0,water_distance_at(vp+g/max(length(g),0.001)*(land_m*0.001+6.0)));
+        }
+        beach*=open_sea;
         // Reference: a warm sand ribbon of ~3 px in the mid view (#e6cb98)
         // and ~10 px in the near view; ours was under 1 px (0.2-0.5 km).
         shore_span=mix(shore_span,clamp(contour_m_per_px*3.5,700.0,1400.0),beach);
@@ -283,7 +293,7 @@ void fragment() {
     // Display deltas (uniform branch, delta_lagoon.gdshaderinc): warm barrier
     // sand (reference #e2bf8c), marsh-green islands (#8f944b) with wet sand
     // rims, lagoon water below.
-    DeltaMask dm=delta_mask(vp,max(-material_distance,0.0),max(contour_m_per_px,1.0),view_width);
+    DeltaMask dm=delta_mask(vp,max(-material_distance,0.0),max(contour_m_per_px,1.0),view_width,open_sea);
     float lagoon=0.0;
     if(delta_count>0) {
         // Measured e6782ba: sand #cdbc97 (too grey), belt land #ada054.
