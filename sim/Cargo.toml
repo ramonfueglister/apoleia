@@ -9,6 +9,9 @@ publish = false
 bevy_ecs = { version = "0.20", features = ["multi_threaded"] }
 bevy_tasks = { version = "0.20", features = ["multi_threaded"] }
 bevy_utils = { version = "0.20", features = ["parallel"] }
+rustc-hash = "2"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+zstd = { version = "0.13", features = ["zstdmt"] }
 
 [workspace]
 members = [".", "godot"]
@@ -18,3 +21,5 @@ debug = false
 
 [dev-dependencies]
 bevy_ecs = { version = "0.20", features = ["multi_threaded", "debug"] }
+proptest = "1"
+

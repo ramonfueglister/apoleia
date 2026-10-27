@@ -72,6 +72,8 @@ pub struct ApoleiaSim {
     sim: Option<Arc<Mutex<Sim>>>,
     shared: Arc<Shared>,
     worker: Option<JoinHandle<()>>,
+    /// Repository root the inputs were loaded from (needed to load saves).
+    root: String,
     snap: Option<Arc<Snapshot>>,
     /// Finest-level grid covering all tiles: origin column/row and size.
     grid: (i64, i64, usize, usize),
@@ -91,35 +93,47 @@ impl ApoleiaSim {
     /// Loads the inputs below `repo_root` and builds the start state.
     #[func]
     fn load(&mut self, repo_root: GString) -> bool {
-        let root = repo_root.to_string();
-        match apoleia_sim::inputs::load(Path::new(&root), false) {
+        self.root = repo_root.to_string();
+        match apoleia_sim::inputs::load(Path::new(&self.root), false) {
             Ok(d) => {
-                let mut sim = Sim::new(Params::default(), &d.start, d.cells, d.cities);
-                let snap = sim.snapshot();
-                let shift = |level: u8| 1i64 << (MAX_LEVEL - level);
-                let (mut c0, mut r0, mut c1, mut r1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-                for t in &snap.tiles {
-                    let s = shift(t.key.level);
-                    let (c, r) = (t.key.col as i64 * s, t.key.row as i64 * s);
-                    c0 = c0.min(c);
-                    r0 = r0.min(r);
-                    c1 = c1.max(c + s);
-                    r1 = r1.max(r + s);
-                }
-                self.grid = (c0, r0, (c1 - c0) as usize, (r1 - r0) as usize);
-                self.stop();
-                let sim = Arc::new(Mutex::new(sim));
-                let shared = Arc::new(Shared::default());
-                let (s, sh) = (sim.clone(), shared.clone());
-                self.worker = Some(std::thread::Builder::new().name("apoleia-sim".into()).spawn(move || run(s, sh)).expect("sim thread"));
-                self.sim = Some(sim);
-                self.shared = shared;
-                self.snap = Some(snap);
-                self.index_structure = None;
+                self.start(Sim::new(Params::default(), &d.start, d.cells, d.cities));
                 true
             }
             Err(e) => {
                 godot_error!("ApoleiaSim.load: {e}");
+                false
+            }
+        }
+    }
+
+    /// Writes a save game (absolute path). Waits for the month the sim
+    /// thread is computing; queued months continue afterwards.
+    #[func]
+    fn save_game(&mut self, path: GString) -> bool {
+        let Some(sim) = self.sim.as_ref() else { return false };
+        match sim.lock().unwrap().save_to(Path::new(&path.to_string())) {
+            Ok(()) => true,
+            Err(e) => {
+                godot_error!("ApoleiaSim.save_game: {e}");
+                false
+            }
+        }
+    }
+
+    /// Replaces the running game with a save game (absolute path). The save
+    /// must come from the same inputs and parameters.
+    #[func]
+    fn load_game(&mut self, path: GString) -> bool {
+        let loaded = apoleia_sim::inputs::load(Path::new(&self.root), false)
+            .map_err(|e| e.to_string())
+            .and_then(|d| Sim::load_from(Params::default(), d.cells, d.cities, Path::new(&path.to_string())).map_err(|e| e.to_string()));
+        match loaded {
+            Ok(sim) => {
+                self.start(sim);
+                true
+            }
+            Err(e) => {
+                godot_error!("ApoleiaSim.load_game: {e}");
                 false
             }
         }
@@ -276,6 +290,31 @@ impl ApoleiaSim {
 }
 
 impl ApoleiaSim {
+    /// Hands a game to a new sim thread (after stopping the old one).
+    fn start(&mut self, mut sim: Sim) {
+        let snap = sim.snapshot();
+        let shift = |level: u8| 1i64 << (MAX_LEVEL - level);
+        let (mut c0, mut r0, mut c1, mut r1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+        for t in &snap.tiles {
+            let s = shift(t.key.level);
+            let (c, r) = (t.key.col as i64 * s, t.key.row as i64 * s);
+            c0 = c0.min(c);
+            r0 = r0.min(r);
+            c1 = c1.max(c + s);
+            r1 = r1.max(r + s);
+        }
+        self.grid = (c0, r0, (c1 - c0) as usize, (r1 - r0) as usize);
+        self.stop();
+        let sim = Arc::new(Mutex::new(sim));
+        let shared = Arc::new(Shared::default());
+        let (s, sh) = (sim.clone(), shared.clone());
+        self.worker = Some(std::thread::Builder::new().name("apoleia-sim".into()).spawn(move || run(s, sh)).expect("sim thread"));
+        self.sim = Some(sim);
+        self.shared = shared;
+        self.snap = Some(snap);
+        self.index_structure = None;
+    }
+
     fn stop(&mut self) {
         if let Some(w) = self.worker.take() {
             self.shared.queue.lock().unwrap().quit = true;

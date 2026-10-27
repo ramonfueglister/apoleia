@@ -6,6 +6,7 @@ extends CanvasLayer
 #   B      map mode on/off
 #   Space  run/pause the clock (one month per tick)
 #   1-5    speed
+#   F5/F9  quick save / quick load (user://quicksave.apsave)
 
 const START_YEAR=180
 const MODEL_SCALE=0.001 # km per metre, as in landscape.gd
@@ -71,9 +72,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
             running=not running
         KEY_1,KEY_2,KEY_3,KEY_4,KEY_5:
             speed=event.keycode-KEY_1
+        KEY_F5:
+            var ok=sim.save_game(_save_path())
+            print("ApoleiaSim: saved month %d to %s: %s" % [sim.month(),_save_path(),ok])
+        KEY_F9:
+            if sim.load_game(_save_path()):
+                print("ApoleiaSim: loaded month %d from %s" % [sim.month(),_save_path()])
+                _upload(true)
         _: return
     _update_clock()
     get_viewport().set_input_as_handled()
+
+# Quick save slot (F5 save, F9 load).
+func _save_path() -> String:
+    return ProjectSettings.globalize_path("user://quicksave.apsave")
 
 func _process(delta: float) -> void:
     if sim==null or host.terrain_material==null: return

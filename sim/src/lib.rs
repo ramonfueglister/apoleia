@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub mod ecs;
 pub mod inputs;
+pub mod save;
 
 pub const MAX_LEVEL: u8 = 7;
 pub const ROOT_SIZE_M: f64 = 200_000.0;
@@ -167,6 +168,10 @@ pub struct Tile {
     pub land_km2: f64,
     /// Consecutive months below the merge density.
     pub months_low: u16,
+    /// City share of the capacity, urban / (local + urban).
+    pub u: f64,
+    /// Net migration of the last flow month (+ = arrivals).
+    pub moved: f64,
 }
 
 pub struct World {
@@ -184,6 +189,9 @@ pub struct World {
     pending_merge: BTreeSet<Key>,
     pub splits: u64,
     pub merges: u64,
+    /// Root squares spanned by the start grid: first row, first column,
+    /// rows, columns (catchments of the city draw).
+    roots: (i32, i32, i32, i32),
 }
 
 impl World {
@@ -205,11 +213,18 @@ impl World {
             pending_merge: BTreeSet::new(),
             splits: 0,
             merges: 0,
+            roots: (0, 0, 0, 0),
         };
+        if !start.is_empty() {
+            let r: Vec<Key> = start.iter().map(|k| k.at_level(0)).collect();
+            let (r0, r1) = (r.iter().map(|k| k.row).min().unwrap(), r.iter().map(|k| k.row).max().unwrap());
+            let (c0, c1) = (r.iter().map(|k| k.col).min().unwrap(), r.iter().map(|k| k.col).max().unwrap());
+            w.roots = (r0, c0, r1 - r0 + 1, c1 - c0 + 1);
+        }
         for &k in start {
-            let (local, urban, land) = w.capacity_parts(k);
+            let (local, urban, _) = w.capacity_parts(k);
             let p = w.start_population(k, local, urban);
-            w.leaves.insert(k, Tile { p, k: local + urban, land_km2: land, months_low: 0 });
+            w.leaves.insert(k, Tile { p, ..w.fresh_tile(k) });
             let mut a = k;
             while a.level > 0 {
                 a = a.parent();
@@ -332,25 +347,47 @@ impl World {
         self.leaves.values().map(|t| t.p).sum()
     }
 
-    /// One monthly tick (S21): capacity is static in v1, so growth, then
-    /// split/merge.
+    /// A tile at `k` with its static values and no people yet.
+    fn fresh_tile(&self, k: Key) -> Tile {
+        let (local, urban, land) = self.capacity_parts(k);
+        let cap = local + urban;
+        Tile { p: 0.0, k: cap, land_km2: land, months_low: 0, u: if cap > 0.0 { urban / cap } else { 0.0 }, moved: 0.0 }
+    }
+
+    /// One monthly tick (S21), written as plainly as possible so it can serve
+    /// as the test oracle of the ECS core (differential testing): once a
+    /// year (first month) migration and the city draw, then every month
+    /// growth with urban excess deaths, then split/merge.
     pub fn tick(&mut self) {
+        let flow = self.month % 12 == 0;
+        if flow {
+            self.migrate();
+            self.city_draw();
+        }
         let rm = self.params.r_per_year / 12.0;
         let decay = (-rm).exp();
         let merge_d = self.params.merge_density;
         let need = self.params.merge_months;
         let split_d = self.params.split_density;
+        let (excess, from) = (self.params.urban_excess_death / 12.0, self.params.urban_excess_from);
         // Parents whose children just became eligible for merging, and leaves
         // over the split density (collected here to avoid a second scan).
         let mut fresh: Vec<Key> = Vec::new();
         let mut split_cand: Vec<(Key, f64)> = Vec::new();
         for (k, t) in self.leaves.iter_mut() {
-            if t.p <= 0.0 {
-                continue;
+            if flow {
+                t.p += t.moved;
             }
-            // Exact solution of the logistic equation over one month: stable,
-            // never negative, approaches K without overshoot.
-            t.p = if t.k > 0.0 { t.k / (1.0 + (t.k - t.p) / t.p * decay) } else { t.p * decay };
+            if t.p > 0.0 {
+                // Exact solution of the logistic equation over one month:
+                // stable, never negative, approaches K without overshoot.
+                t.p = if t.k > 0.0 { t.k / (1.0 + (t.k - t.p) / t.p * decay) } else { t.p * decay };
+                // Urban graveyard: excess deaths grow with city size.
+                let city = t.p * t.u;
+                if city > from {
+                    t.p -= city * excess * (city / from).log10();
+                }
+            }
             let d = Self::density(t);
             t.months_low = if d < merge_d { t.months_low.saturating_add(1) } else { 0 };
             if t.months_low == need && k.level > 0 {
@@ -370,6 +407,137 @@ impl World {
             self.merge_pass(fresh);
         }
         self.month += 1;
+    }
+
+    /// Leaves sharing an edge with leaf `k`: per side, the leaf covering
+    /// the same-level neighbour position, or the two finer leaves along that
+    /// side when the position is subdivided (2:1 rule).
+    pub fn neighbors(&self, k: Key) -> Vec<Key> {
+        let mut out = Vec::new();
+        for (dr, dc) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+            let n = Key::new(k.level, k.row + dr, k.col + dc);
+            if let Some(c) = self.covering_leaf(n) {
+                out.push(c);
+                continue;
+            }
+            // The two children of n that touch k.
+            let (r, c) = (n.row * 2, n.col * 2);
+            let touching = match (dr, dc) {
+                (-1, 0) => [(r + 1, c), (r + 1, c + 1)],
+                (1, 0) => [(r, c), (r, c + 1)],
+                (0, -1) => [(r, c + 1), (r + 1, c + 1)],
+                _ => [(r, c), (r + 1, c)],
+            };
+            for (r, c) in touching {
+                let ch = Key::new(k.level + 1, r, c);
+                if self.leaves.contains_key(&ch) {
+                    out.push(ch);
+                }
+            }
+        }
+        out.sort();
+        out.dedup();
+        out
+    }
+
+    /// Neighbour migration (MIGRATION.md): along each edge, people move from
+    /// the fuller to the emptier tile when their attraction 1 − P/K differs
+    /// by more than the threshold.
+    fn migrate(&mut self) {
+        let rate = self.params.migration_rate;
+        let threshold = self.params.migration_threshold;
+        // Attraction, people, free places of a tile at the start of the month.
+        let side = |t: &Tile| {
+            let a = if t.k > 0.0 { (1.0 - t.p / t.k).clamp(-1.0, 1.0) } else { -1.0 };
+            (a, t.p.max(0.0), (t.k - t.p).max(0.0))
+        };
+        // Share of a tile's perimeter that one neighbour's edge covers.
+        let w = |from: u8, to: u8| if to <= from { 0.25 } else { 0.25 / f64::from(1u32 << (to - from)) };
+        let mut moved: BTreeMap<Key, f64> = BTreeMap::new();
+        for (&a, ta) in &self.leaves {
+            let (aa, pa, fa) = side(ta);
+            let mut net = 0.0;
+            for b in self.neighbors(a) {
+                let (ab, pb, fb) = side(&self.leaves[&b]);
+                let d = ab - aa;
+                if rate > 0.0 && d > threshold {
+                    net -= rate * d * (pa * w(a.level, b.level)).min(fb * w(b.level, a.level));
+                } else if rate > 0.0 && -d > threshold {
+                    net += rate * -d * (pb * w(b.level, a.level)).min(fa * w(a.level, b.level));
+                }
+            }
+            moved.insert(a, net);
+        }
+        for (k, m) in moved {
+            self.leaves.get_mut(&k).unwrap().moved = m;
+        }
+    }
+
+    /// City draw (MIGRATION.md): each city asks for a share of its free city
+    /// places from the rural people of the 3×3 root squares around it; every
+    /// rural tile gives the rate asked of it, at most its own yearly birth
+    /// surplus; the total goes to the cities in proportion to what they asked.
+    fn city_draw(&mut self) {
+        let pull = self.params.city_pull_rate;
+        if pull <= 0.0 {
+            return;
+        }
+        let (row0, col0, rows, cols) = self.roots;
+        let root = |k: &Key| {
+            let r = k.at_level(0);
+            ((r.row - row0) * cols + (r.col - col0)) as usize
+        };
+        let around = |i: usize| {
+            let (r, c) = (i as i32 / cols, i as i32 % cols);
+            let mut v = Vec::new();
+            for y in r - 1..=r + 1 {
+                for x in c - 1..=c + 1 {
+                    if y >= 0 && x >= 0 && y < rows && x < cols {
+                        v.push((y * cols + x) as usize);
+                    }
+                }
+            }
+            v
+        };
+        let n = (rows * cols) as usize;
+        let (mut demand, mut pool) = (vec![0.0; n], vec![0.0; n]);
+        let mut wants: Vec<(Key, f64)> = Vec::new();
+        for (k, t) in &self.leaves {
+            if t.u > 0.0 {
+                let want = pull * t.u * (t.k - t.p).max(0.0);
+                if want > 0.0 {
+                    demand[root(k)] += want;
+                    wants.push((*k, want));
+                }
+            }
+            pool[root(k)] += t.p.max(0.0) * (1.0 - t.u);
+        }
+        if wants.is_empty() {
+            return;
+        }
+        let asked: Vec<f64> = (0..n)
+            .map(|r| {
+                let p: f64 = around(r).iter().map(|&q| pool[q]).sum();
+                if p > 0.0 { demand[r] / p } else { 0.0 }
+            })
+            .collect();
+        let cap = self.params.city_draw_cap;
+        let rate: Vec<f64> = (0..n).map(|q| around(q).iter().map(|&r| asked[r]).sum::<f64>().min(cap)).collect();
+        let year = (-self.params.r_per_year).exp();
+        let mut taken = 0.0;
+        for (k, t) in self.leaves.iter_mut() {
+            if t.u < 1.0 && t.p > 0.0 && t.k > t.p {
+                let rural = t.p * (1.0 - t.u);
+                let surplus = t.p * (t.k - t.p) * (1.0 - year) / (t.p + (t.k - t.p) * year) * (1.0 - t.u);
+                let out = (rural * rate[root(k)]).min(surplus);
+                t.moved -= out;
+                taken += out;
+            }
+        }
+        let wanted: f64 = wants.iter().map(|w| w.1).sum();
+        for (k, want) in wants {
+            self.leaves.get_mut(&k).unwrap().moved += taken * want / wanted;
+        }
     }
 
     fn split_pass(&mut self, mut cand: Vec<(Key, f64)>) {
@@ -423,7 +591,7 @@ impl World {
                 parent.p / 4.0
             };
             given += p;
-            self.leaves.insert(c, Tile { p: p.max(0.0), k: local + urban, land_km2: land, months_low: 0 });
+            self.leaves.insert(c, Tile { p: p.max(0.0), ..self.fresh_tile(c) });
         }
         self.internal.insert(k);
         self.split_nodes.insert(k);
@@ -468,8 +636,7 @@ impl World {
         for c in q.children() {
             p += self.leaves.remove(&c).map_or(0.0, |t| t.p);
         }
-        let (local, urban, land) = self.capacity_parts(q);
-        self.leaves.insert(q, Tile { p, k: local + urban, land_km2: land, months_low: 0 });
+        self.leaves.insert(q, Tile { p, ..self.fresh_tile(q) });
         self.internal.remove(&q);
         self.split_nodes.remove(&q);
         self.merges += 1;
@@ -506,6 +673,10 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn growth_only() -> Params {
+        Params { migration_rate: 0.0, urban_excess_death: 0.0, city_pull_rate: 0.0, ..Params::default() }
+    }
 
     /// A 4×4 block of 25 km cells with one large city, started at 50 km.
     fn small_world(params: Params) -> World {
@@ -564,7 +735,7 @@ mod tests {
 
     #[test]
     fn stays_balanced_finite_and_within_budget() {
-        let params = Params { budget: 40, ..Params::default() };
+        let params = Params { budget: 40, ..growth_only() };
         let mut w = small_world(params);
         let p0 = w.total_population();
         for _ in 0..1200 {
@@ -579,7 +750,8 @@ mod tests {
 
     #[test]
     fn approaches_capacity_without_overshoot() {
-        let params = Params { adaptive: false, ..Params::default() };
+        // Growth alone (migration and cities move people around).
+        let params = Params { adaptive: false, ..growth_only() };
         let mut w = small_world(params);
         let mut prev: Vec<f64> = w.leaves.values().map(|t| t.p).collect();
         for _ in 0..12_000 {

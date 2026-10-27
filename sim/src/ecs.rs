@@ -14,7 +14,8 @@ use bevy_ecs::change_detection::ContiguousMut;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{LogLevel, ScheduleBuildSettings};
 use bevy_utils::Parallel;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
 /// Fixed point scale: 1.0 person (or km²) = 65 536 units.
@@ -112,6 +113,7 @@ pub struct Neighbors {
 }
 
 impl Neighbors {
+    #[cfg(test)]
     fn of(list: &[Entity]) -> Neighbors {
         let mut n = Neighbors::default();
         for (slot, e) in n.at.iter_mut().zip(list) {
@@ -126,30 +128,39 @@ impl Neighbors {
     }
 }
 
-/// City share of a tile's capacity (fixed point Q16: 65536 = all urban).
+/// City share of a tile's capacity, fixed point Q32 (2^32 = all urban).
+/// Q32, not Q16: in a city tile the rural rest 1 − u is tiny (Rome: 4e-5),
+/// and Q16 got it wrong by 13 % (found by the reference comparison).
 #[derive(Component, Default, Clone, Copy, Debug)]
 pub struct UrbanShare(pub i64);
 
+const U_ONE: i64 = 1 << 32;
+
 fn urban_share(local: f64, urban: f64) -> UrbanShare {
     let k = local + urban;
-    UrbanShare(if k > 0.0 { to_fx(urban / k) } else { 0 })
+    UrbanShare(if k > 0.0 { (urban / k * U_ONE as f64).round() as i64 } else { 0 })
 }
 
 /// Net migration of the current month (fixed point, + = arrivals).
 #[derive(Component, Default, Clone, Copy, Debug)]
 pub struct Moved(pub i64);
 
+/// Quadtree bookkeeping (Paradox-style lookup table, S41). Hash tables:
+/// lookups are O(1) at any map size (a B-tree costs ~20 key comparisons at
+/// a million tiles). Nothing iterates them to make a decision, so their
+/// order never reaches the results; where an order is needed (fingerprint,
+/// save) the keys are sorted.
 #[derive(Resource, Default)]
 pub struct TileIndex {
-    pub leaves: BTreeMap<Key, Entity>,
+    pub leaves: FxHashMap<Key, Entity>,
     /// Ancestors of leaves.
-    pub internal: BTreeSet<Key>,
+    pub internal: FxHashSet<Key>,
     /// Positions split at runtime; only these can merge back.
-    pub split_nodes: BTreeSet<Key>,
+    pub split_nodes: FxHashSet<Key>,
     /// Nodes a merge may have unblocked; checked next month.
-    pending_merge: BTreeSet<Key>,
+    pub(crate) pending_merge: BTreeSet<Key>,
     /// Leaves created this month; their neighbourhoods need new lists.
-    born: Vec<Key>,
+    pub(crate) born: Vec<Key>,
 }
 
 /// Work handed from the parallel tasks to the structure task.
@@ -306,10 +317,10 @@ fn migrate(
 /// the rural population of its own root square (S12 level 0).
 #[derive(Resource, Clone, Copy)]
 pub struct Regions {
-    row0: i32,
-    col0: i32,
-    cols: usize,
-    count: usize,
+    pub(crate) row0: i32,
+    pub(crate) col0: i32,
+    pub(crate) cols: usize,
+    pub(crate) count: usize,
 }
 
 impl Regions {
@@ -379,7 +390,7 @@ fn city_draw(
         for i in 0..keys.len() {
             let (p, k, u) = (pop[i].0, cap[i].0, urban[i].0);
             let r = regions.index(keys[i].0);
-            let uf = u as f64 * (1.0 / FX as f64);
+            let uf = u as f64 * (1.0 / U_ONE as f64);
             if u > 0 {
                 let want = (c.city_pull_rate * uf * (k - p).max(0) as f64) as i64;
                 if want >= 1 {
@@ -388,7 +399,7 @@ fn city_draw(
                 }
             }
             s.pool[r] += p.max(0) as f64 * (1.0 - uf);
-            if u < FX && p > 0 && k > p {
+            if u < U_ONE && p > 0 && k > p {
                 let rest = 1.0 - uf;
                 let (pp, kk) = (p as f64, k as f64);
                 let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
@@ -500,7 +511,7 @@ fn growth(c: Res<TickConst>, stats: Res<Stats>, found: Res<Scratch>, mut q: Quer
                 // excess deaths; only migration refills it.
                 let u = urban[i].0;
                 if u > 0 {
-                    let city = *p as f64 * (u as f64 / FX as f64);
+                    let city = *p as f64 * (u as f64 / U_ONE as f64);
                     // Size in people (P is fixed point).
                     let size = city / FX as f64;
                     if size > c.urban_excess_from {
@@ -570,48 +581,109 @@ fn structure(world: &mut World) {
 /// Leaves sharing an edge with leaf `k`: the covering leaf of each edge
 /// neighbour (same or coarser level), or, where that position is split,
 /// its children along the shared edge (2:1 rule keeps them leaves).
-fn leaf_neighbors(idx: &TileIndex, k: Key) -> Vec<Key> {
-    let mut out = Vec::with_capacity(6);
-    for n in k.edge_neighbors() {
+fn leaf_neighbors(idx: &TileIndex, k: Key) -> KeyList {
+    let mut out = KeyList::default();
+    for (i, n) in k.edge_neighbors().into_iter().enumerate() {
         if let Some(c) = covering_leaf(idx, n) {
             out.push(c);
         } else if idx.internal.contains(&n) {
-            for ch in n.children() {
-                if idx.leaves.contains_key(&ch) && ch.edge_neighbors().iter().any(|m| m.at_level(k.level) == k) {
+            // The two children of n along the shared edge (up, down, left,
+            // right as in `edge_neighbors`); the 2:1 rule keeps them leaves.
+            let (r, c, l) = (n.row * 2, n.col * 2, n.level + 1);
+            let pair = match i {
+                0 => [(r + 1, c), (r + 1, c + 1)],
+                1 => [(r, c), (r, c + 1)],
+                2 => [(r, c + 1), (r + 1, c + 1)],
+                _ => [(r, c), (r + 1, c)],
+            };
+            for (r, c) in pair {
+                let ch = Key::new(l, r, c);
+                if idx.leaves.contains_key(&ch) {
                     out.push(ch);
                 }
             }
         }
     }
-    out.sort();
-    out.dedup();
+    out.sort_dedup();
     out
+}
+
+/// Up to eight keys inline (no heap allocation per tile).
+#[derive(Clone, Copy)]
+struct KeyList {
+    len: usize,
+    at: [Key; 8],
+}
+
+impl Default for KeyList {
+    fn default() -> Self {
+        KeyList { len: 0, at: [Key::new(0, 0, 0); 8] }
+    }
+}
+
+impl KeyList {
+    fn push(&mut self, k: Key) {
+        self.at[self.len] = k;
+        self.len += 1;
+    }
+    fn sort_dedup(&mut self) {
+        let v = &mut self.at[..self.len];
+        v.sort_unstable();
+        let mut n = 0;
+        for i in 0..v.len() {
+            if n == 0 || v[i] != v[n - 1] {
+                v[n] = v[i];
+                n += 1;
+            }
+        }
+        self.len = n;
+    }
+    fn keys(&self) -> &[Key] {
+        &self.at[..self.len]
+    }
 }
 
 /// New neighbour lists for leaves born this month and every leaf next to
 /// them (their old lists may point at despawned tiles).
-fn refresh_neighbors(world: &mut World, idx: &mut TileIndex) {
+pub(crate) fn refresh_neighbors(world: &mut World, idx: &mut TileIndex) {
     let born = std::mem::take(&mut idx.born);
     if born.is_empty() {
         return;
     }
-    let mut dirty: BTreeSet<Key> = BTreeSet::new();
-    for &k in &born {
-        if idx.leaves.contains_key(&k) {
-            dirty.insert(k);
-            dirty.extend(leaf_neighbors(idx, k));
+    let mut dirty: Vec<Key>;
+    if born.len() >= idx.leaves.len() {
+        // A new or loaded game: every leaf.
+        dirty = idx.leaves.keys().copied().collect();
+    } else {
+        dirty = Vec::with_capacity(born.len() * 5);
+        for &k in &born {
+            if idx.leaves.contains_key(&k) {
+                dirty.push(k);
+                dirty.extend_from_slice(leaf_neighbors(idx, k).keys());
+            }
         }
+        dirty.sort_unstable();
+        dirty.dedup();
     }
     for k in dirty {
-        let list: Vec<Entity> = leaf_neighbors(idx, k).iter().map(|n| idx.leaves[n]).collect();
-        debug_assert!(list.len() <= 8, "2:1 rule allows at most two neighbours per edge");
-        let e = idx.leaves[&k];
-        *world.get_mut::<Neighbors>(e).expect("neighbors") = Neighbors::of(&list);
+        let list = leaf_neighbors(idx, k);
+        let mut n = Neighbors { len: list.len as u8, ..Neighbors::default() };
+        for (slot, key) in n.at.iter_mut().zip(list.keys()) {
+            *slot = idx.leaves[key].index_u32();
+        }
+        *world.get_mut::<Neighbors>(idx.leaves[&k]).expect("neighbors") = n;
     }
 }
 
 fn covering_leaf(idx: &TileIndex, k: Key) -> Option<Key> {
-    (0..=k.level).rev().map(|l| k.at_level(l)).find(|a| idx.leaves.contains_key(a))
+    if idx.leaves.contains_key(&k) {
+        return Some(k);
+    }
+    // A subdivided position has no leaf above it either.
+    if idx.internal.contains(&k) {
+        return None;
+    }
+    (0..k.level).rev().map(|l| k.at_level(l)).find(|a| idx.leaves.contains_key(a))
 }
 
 fn split_balanced(world: &mut World, idx: &mut TileIndex, c: &TickConst, k: Key) -> bool {
@@ -727,15 +799,83 @@ fn merge(world: &mut World, idx: &mut TileIndex, q: Key) {
 
 // ---- Simulation handle -----------------------------------------------------
 
+/// Hash of the parameters and static inputs (cells in key order, cities in
+/// list order), xxh3 over their exact bits.
+#[derive(Resource, Clone, Copy)]
+pub struct InputsHash(pub u64);
+
+pub(crate) fn hash_inputs(params: &Params, cells: &HashMap<(i32, i32), Cell>, cities: &[City]) -> u64 {
+    let mut h = xxhash_rust::xxh3::Xxh3::new();
+    // Debug prints every f64 as its shortest round-trip form: exact bits.
+    h.update(format!("{params:?}").as_bytes());
+    let mut keys: Vec<&(i32, i32)> = cells.keys().collect();
+    keys.sort_unstable();
+    let mut buf = Vec::with_capacity(keys.len() * 72);
+    let mut f = |v: f64| buf.extend_from_slice(&v.to_bits().to_le_bytes());
+    for k in keys {
+        let c = &cells[k];
+        f(k.0 as f64);
+        f(k.1 as f64);
+        f(c.land_km2);
+        f(c.frac_bare);
+        f(c.frac_snow);
+        f(c.frac_above_1500m);
+        // NaN marks "no value", distinct from every real number.
+        let hy = c.hyde.unwrap_or(crate::Hyde { crop_km2: f64::NAN, pop: f64::NAN, rural: None });
+        f(hy.crop_km2);
+        f(hy.pop);
+        f(hy.rural.unwrap_or(f64::NAN));
+    }
+    for c in cities {
+        f(c.x_m);
+        f(c.z_m);
+        f(c.pop);
+    }
+    h.update(&buf);
+    h.digest()
+}
+
+/// The world without tiles: inputs, tick constants and empty work buffers.
+/// `hash`: the inputs hash when the caller already has it.
+pub(crate) fn base_world(params: Params, cells: HashMap<(i32, i32), Cell>, cities: Vec<City>, regions: Regions, hash: Option<u64>) -> World {
+    bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
+    let r_month_q32 = (params.r_per_year / 12.0 * Q32 as f64).round() as i128;
+    let tc = TickConst {
+        decay_q32: exp_neg_q32(r_month_q32),
+        split_density: params.split_density.round() as i64,
+        merge_density: params.merge_density.round() as i64,
+        merge_months: params.merge_months,
+        budget: params.budget,
+        adaptive: params.adaptive,
+        migration_rate: params.migration_rate,
+        migration_threshold: params.migration_threshold,
+        urban_excess_month: params.urban_excess_death / 12.0,
+        decay_year_q32: exp_neg_q32((params.r_per_year * Q32 as f64).round() as i128),
+        urban_excess_from: params.urban_excess_from,
+        city_pull_rate: params.city_pull_rate,
+        city_draw_cap: params.city_draw_cap,
+    };
+    let hash = hash.unwrap_or_else(|| hash_inputs(&params, &cells, &cities));
+    let mut world = World::new();
+    world.insert_resource(InputDb(Inputs::new(params, &[], cells, cities)));
+    world.insert_resource(tc);
+    world.insert_resource(InputsHash(hash));
+    world.insert_resource(Candidates::default());
+    world.insert_resource(Scratch::default());
+    world.insert_resource(regions);
+    world.insert_resource(Stats::default());
+    world
+}
+
 /// The authoritative game state (S40) and its monthly schedule.
 pub struct Sim {
     pub world: World,
     monthly: Schedule,
     /// Submitted, not yet applied: (issuer, sequence, command).
-    pending: Vec<(u32, u32, Command)>,
-    seq: u32,
+    pub(crate) pending: Vec<(u32, u32, Command)>,
+    pub(crate) seq: u32,
     /// Applied commands with the month they were applied in.
-    log: Vec<(u32, Command)>,
+    pub(crate) log: Vec<(u32, Command)>,
     /// Double buffer (S45): readers keep `front` alive while the next one is
     /// written into `back`, which is reused when no reader holds it.
     front: Arc<Snapshot>,
@@ -753,48 +893,39 @@ impl Sim {
         start: &[Key],
         cells: HashMap<(i32, i32), Cell>,
         cities: Vec<City>,
-        mut settings: ScheduleBuildSettings,
+        settings: ScheduleBuildSettings,
     ) -> Sim {
-        bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
-        let r_month_q32 = (params.r_per_year / 12.0 * Q32 as f64).round() as i128;
-        let tc = TickConst {
-            decay_q32: exp_neg_q32(r_month_q32),
-            split_density: params.split_density.round() as i64,
-            merge_density: params.merge_density.round() as i64,
-            merge_months: params.merge_months,
-            budget: params.budget,
-            adaptive: params.adaptive,
-            migration_rate: params.migration_rate,
-            migration_threshold: params.migration_threshold,
-            urban_excess_month: params.urban_excess_death / 12.0,
-            decay_year_q32: exp_neg_q32((params.r_per_year * Q32 as f64).round() as i128),
-            urban_excess_from: params.urban_excess_from,
-            city_pull_rate: params.city_pull_rate,
-            city_draw_cap: params.city_draw_cap,
-        };
-        let db = Inputs::new(params, &[], cells, cities);
-        let mut world = World::new();
+        let mut world = base_world(params, cells, cities, Regions::of(start), None);
         let mut idx = TileIndex::default();
-        for &k in start {
-            let (local, urban, land) = db.capacity_parts(k);
-            let p = db.start_population(k, local, urban);
-            let e = world.spawn((TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0), urban_share(local, urban))).id();
+        let db = &world.resource::<InputDb>().0;
+        let tiles: Vec<_> = start
+            .iter()
+            .map(|&k| {
+                let (local, urban, land) = db.capacity_parts(k);
+                let p = db.start_population(k, local, urban);
+                (TileKey(k), Pop(to_fx(p)), Cap(to_fx(local + urban)), Land(to_fx(land)), MonthsLow(0), Neighbors::default(), Moved(0), urban_share(local, urban))
+            })
+            .collect();
+        // One batch: the table grows once instead of per tile.
+        for (&k, e) in start.iter().zip(world.spawn_batch(tiles)) {
             idx.leaves.insert(k, e);
             idx.born.push(k);
             let mut a = k;
             while a.level > 0 {
                 a = a.parent();
-                idx.internal.insert(a);
+                if !idx.internal.insert(a) {
+                    break;
+                }
             }
         }
-        world.insert_resource(InputDb(db));
-        world.insert_resource(tc);
         refresh_neighbors(&mut world, &mut idx);
         world.insert_resource(idx);
-        world.insert_resource(Candidates::default());
-        world.insert_resource(Scratch::default());
-        world.insert_resource(Regions::of(start));
-        world.insert_resource(Stats::default());
+        Sim::assemble(world, settings)
+    }
+
+    /// Schedule, queues and snapshot around a world whose tiles and index
+    /// are in place (a new game or a loaded save).
+    pub(crate) fn assemble(mut world: World, mut settings: ScheduleBuildSettings) -> Sim {
         // Any two systems that touch the same data without an order are a
         // build error, so the result can never depend on thread timing.
         settings.ambiguity_detection = LogLevel::Error;
@@ -802,7 +933,7 @@ impl Sim {
         monthly.set_build_settings(settings);
         // The tasks form one chain, so a multi-threaded executor has nothing to
         // overlap and only adds about 60 µs of wake-up cost per tick; the
-        // parallelism is inside growth (parallel chunks on the task pool).
+        // parallelism is inside the tasks (parallel chunks on the task pool).
         monthly.set_executor(bevy_ecs::schedule::SingleThreadedExecutor::new());
         monthly.add_systems((migrate, city_draw, growth, collect, structure).chain_weak());
         let views = world.query::<(&TileKey, &Pop, &Cap, &Land, &Moved)>();
@@ -818,6 +949,12 @@ impl Sim {
         };
         sim.publish();
         sim
+    }
+
+    /// Hash of the parameters and static inputs this game was built from;
+    /// a save only loads into the same ones.
+    pub fn inputs_hash(&self) -> u64 {
+        self.world.resource::<InputsHash>().0
     }
 
     /// Queues a command; it takes effect at the next `step` (S43).
@@ -907,8 +1044,10 @@ impl Sim {
     /// FNV fingerprint over keys and fixed-point populations in ID order.
     pub fn fingerprint(&self) -> u64 {
         let idx = self.world.resource::<TileIndex>();
+        let mut leaves: Vec<(&Key, &Entity)> = idx.leaves.iter().collect();
+        leaves.sort_unstable_by_key(|l| *l.0);
         let mut h: u64 = 0xcbf29ce484222325;
-        for (k, &e) in &idx.leaves {
+        for (k, &e) in leaves {
             let p = self.world.get::<Pop>(e).unwrap().0;
             for v in [k.level as u64, k.row as u64, k.col as u64, p as u64] {
                 h ^= v;
@@ -1018,25 +1157,72 @@ mod tests {
         a.tick();
     }
 
-    #[test]
-    fn matches_reference_within_rounding() {
-        // The reference has no migration and no urban excess deaths.
-        let mut s = sim(Params { migration_rate: 0.0, urban_excess_death: 0.0, city_pull_rate: 0.0, ..Params::default() });
+    fn test_cells() -> HashMap<(i32, i32), Cell> {
         let mut cells = HashMap::new();
         for r in 0..4 {
             for c in 0..4 {
                 cells.insert((r, c), Cell { land_km2: 625.0, frac_bare: 0.0, frac_snow: 0.0, frac_above_1500m: 0.0, hyde: None });
             }
         }
-        let start: Vec<Key> = (0..2).flat_map(|r| (0..2).map(move |c| Key::new(2, r, c))).collect();
-        let mut r = Inputs::new(Params::default(), &start, cells, cities());
-        for _ in 0..240 {
-            s.tick();
-            r.tick();
+        cells
+    }
+
+    fn test_start() -> Vec<Key> {
+        (0..2).flat_map(|r| (0..2).map(move |c| Key::new(2, r, c))).collect()
+    }
+
+    /// Largest per-tile difference between the ECS core and the plain
+    /// reference (`crate::World`) after each month, or None when their tile
+    /// sets differ. Differential testing (McKeeman, 1998): the reference is
+    /// written independently, in f64 and without fixed point, columns or
+    /// parallelism, so a disagreement points at a bug in either.
+    fn max_deviation(params: Params, months: u32) -> Vec<Option<f64>> {
+        let mut s = Sim::new(params.clone(), &test_start(), test_cells(), cities());
+        let mut r = Inputs::new(params, &test_start(), test_cells(), cities());
+        (0..months)
+            .map(|_| {
+                s.tick();
+                r.tick();
+                let snap = s.snapshot();
+                if snap.tiles.len() != r.leaves.len() {
+                    return None;
+                }
+                let mut worst = 0.0f64;
+                for t in &snap.tiles {
+                    let want = r.leaves.get(&t.key)?.p;
+                    // Relative, with a floor of 1000 people: fixed point
+                    // rounds every step to 1/65536 person, which is a large
+                    // share of a nearly empty tile.
+                    worst = worst.max((t.pop - want).abs() / want.max(1000.0));
+                }
+                Some(worst)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn matches_the_reference_month_by_month() {
+        // Every mechanic on, and each one alone with the others off.
+        let all = Params::default();
+        let none = Params { migration_rate: 0.0, urban_excess_death: 0.0, city_pull_rate: 0.0, ..Params::default() };
+        let cases = [
+            ("all", all.clone()),
+            ("growth", none.clone()),
+            ("migration", Params { migration_rate: all.migration_rate, ..none.clone() }),
+            ("urban deaths", Params { urban_excess_death: all.urban_excess_death, ..none.clone() }),
+            ("city draw", Params { urban_excess_death: all.urban_excess_death, city_pull_rate: all.city_pull_rate, ..none.clone() }),
+        ];
+        for (name, params) in cases {
+            let dev = max_deviation(params, 50 * 12);
+            for (m, d) in dev.iter().enumerate() {
+                let d = d.unwrap_or_else(|| panic!("{name}: tile sets differ in month {m}"));
+                // Fixed point rounds every step to 1/65536 person, so a
+                // tile near K loses sub-unit growth (measured: 0.003 people
+                // in 50 years). 1e-5 is far below anything a wrong mechanic
+                // would produce.
+                assert!(d < 1e-5, "{name}: month {m} differs by {d:e}");
+            }
         }
-        assert_eq!(s.leaf_count(), r.leaves.len());
-        let rel = (s.total_population() - r.total_population()).abs() / r.total_population();
-        assert!(rel < 1e-6, "relative difference {rel}");
     }
 
     #[test]
@@ -1069,7 +1255,8 @@ mod tests {
         assert!((total - s.total_population()).abs() < 1e-6);
         let mut keys: Vec<Key> = second.tiles.iter().map(|t| t.key).collect();
         keys.sort();
-        let leaves: Vec<Key> = s.world.resource::<TileIndex>().leaves.keys().copied().collect();
+        let mut leaves: Vec<Key> = s.world.resource::<TileIndex>().leaves.keys().copied().collect();
+        leaves.sort();
         assert_eq!(keys, leaves, "every leaf exactly once");
     }
 
@@ -1097,8 +1284,103 @@ mod tests {
         }
         let idx = s.world.resource::<TileIndex>();
         for (&k, &e) in &idx.leaves {
-            let want: Vec<Entity> = leaf_neighbors(idx, k).iter().map(|n| idx.leaves[n]).collect();
+            let want: Vec<Entity> = leaf_neighbors(idx, k).keys().iter().map(|n| idx.leaves[n]).collect();
             assert_eq!(*s.world.get::<Neighbors>(e).unwrap(), Neighbors::of(&want), "{}", k.id());
+        }
+    }
+
+    /// The small test world's state after 20 years, pinned: any change to
+    /// results must update this number on purpose (golden master).
+    #[test]
+    fn pinned_fingerprint() {
+        let mut s = sim(Params::default());
+        for _ in 0..240 {
+            s.tick();
+        }
+        assert_eq!(format!("{:016x}", s.fingerprint()), "41e5847821cf0fe2");
+    }
+
+    mod props {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn params() -> impl Strategy<Value = Params> {
+            (0.0f64..0.5, 0.01f64..0.2, 0.0f64..0.01, 0.0f64..1.0, 0.001f64..0.05, 0.001f64..0.02).prop_map(
+                |(m, t, e, p, c, r)| Params {
+                    migration_rate: m,
+                    migration_threshold: t,
+                    urban_excess_death: e,
+                    city_pull_rate: p,
+                    city_draw_cap: c,
+                    r_per_year: r,
+                    ..Params::default()
+                },
+            )
+        }
+
+        fn world(params: Params, pops: [f64; 3]) -> (Sim, Inputs) {
+            let cities = vec![
+                City { x_m: 30_000.0, z_m: 30_000.0, pop: pops[0] },
+                City { x_m: 80_000.0, z_m: 20_000.0, pop: pops[1] },
+                City { x_m: 60_000.0, z_m: 90_000.0, pop: pops[2] },
+            ];
+            (
+                Sim::new(params.clone(), &test_start(), test_cells(), cities.clone()),
+                Inputs::new(params, &test_start(), test_cells(), cities),
+            )
+        }
+
+        proptest! {
+            // Fixed seed: the same cases on every run and machine.
+            #![proptest_config(ProptestConfig { cases: 32, rng_seed: proptest::test_runner::RngSeed::Fixed(0xA9014), failure_persistence: None, ..ProptestConfig::default() })]
+
+            /// Migration and the city draw only move people: in every flow
+            /// month the balances add up to exactly zero.
+            #[test]
+            fn flows_conserve_people(p in params(), pops in prop::array::uniform3(1_000.0f64..1_500_000.0)) {
+                let (mut s, _) = world(Params { adaptive: false, ..p }, pops);
+                for m in 0..10 * 12u32 {
+                    s.tick();
+                    if m % 12 == 0 {
+                        let mut q = s.world.query::<&Moved>();
+                        prop_assert_eq!(q.iter(&s.world).map(|x| x.0).sum::<i64>(), 0);
+                    }
+                }
+            }
+
+            /// Whatever the rates: no negative or lost people, the 2:1 rule
+            /// holds, the budget holds, snapshot and index agree.
+            #[test]
+            fn invariants_hold(p in params(), pops in prop::array::uniform3(1_000.0f64..1_500_000.0), budget in 16usize..200) {
+                let (mut s, _) = world(Params { budget, ..p }, pops);
+                for _ in 0..10 * 12 {
+                    s.tick();
+                    prop_assert!(s.leaf_count() <= budget);
+                    prop_assert!(s.balanced());
+                    let mut q = s.world.query::<&Pop>();
+                    prop_assert!(q.iter(&s.world).all(|p| p.0 >= 0));
+                    prop_assert_eq!(s.snapshot().tiles.len(), s.leaf_count());
+                }
+            }
+
+            /// Differential test over random rates and cities: same tiles
+            /// and the same people as the reference, month by month.
+            #[test]
+            fn agrees_with_reference(p in params(), pops in prop::array::uniform3(1_000.0f64..1_500_000.0)) {
+                let (mut s, mut r) = world(p, pops);
+                for m in 0..20 * 12 {
+                    s.tick();
+                    r.tick();
+                    let snap = s.snapshot();
+                    prop_assert_eq!(snap.tiles.len(), r.leaves.len(), "tile count, month {}", m);
+                    for t in &snap.tiles {
+                        let want = r.leaves.get(&t.key).map(|x| x.p);
+                        prop_assert!(want.is_some(), "tile {} only in ECS, month {}", t.key.id(), m);
+                        let d = (t.pop - want.unwrap()).abs() / want.unwrap().max(1000.0);
+                        prop_assert!(d < 1e-5, "month {}: {} differs by {:e}", m, t.key.id(), d);
+                    }
+                }
+            }
         }
     }
 
