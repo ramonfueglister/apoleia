@@ -66,5 +66,5 @@ um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 
 - macOS-Paketierung des Tile-Geländes.
 - Leistungsmessung auf dem Mac (Patch 320² Kacheln, vier Prop-MultiMeshes mit je 90.000 Slots).
-- Flussbreite: Flüsse sind noch ganze Kacheln breit (der Tiber wäre im Diorama etwa 2 m).
+- Flüsse sind schmale Bänder in der Kachel (mindestens Bootsbreite), Kurven diagonal.
 - Feldmuster, Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.

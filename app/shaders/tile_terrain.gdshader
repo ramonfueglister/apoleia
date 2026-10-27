@@ -23,6 +23,7 @@ varying flat float flat_top;
 varying flat float body_level;
 varying flat int land_sides;  // sea tile: bit k = land across side k
 varying flat int wall_sides;  // core town tile: bit k = no town across side k
+varying flat int river_sides; // river tile: bit k = water across side k
 
 const vec3 C_PLAIN = vec3(0.494, 0.600, 0.290);
 const vec3 C_GRASS = vec3(0.392, 0.545, 0.251);
@@ -100,11 +101,13 @@ void vertex() {
 	}
 	land_sides = 0;
 	wall_sides = 0;
+	river_sides = 0;
 	bool core = water == W_LAND && tt_town(tile) == 3;
 	for (int k = 0; k < 4; k++) {
 		int nc = tt_cell(tile + SIDE[k]);
 		if (water == W_SEA && (nc & 3) != W_SEA) { land_sides |= 1 << k; }
 		if (core && ((nc & 3) != W_LAND || (nc >> 2) < 2)) { wall_sides |= 1 << k; }
+		if (water == W_RIVER && (nc & 3) != W_LAND) { river_sides |= 1 << k; }
 	}
 	VERTEX = (VIEW_MATRIX * vec4(world_pos, 1.0)).xyz;
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
@@ -130,8 +133,8 @@ vec3 ground_colour(vec2 p, vec4 cov) {
 	c = mix(c, wood, 0.15 * cov.r + 0.75 * trees);
 	c = mix(c, C_WET, clamp(cov.a * 2.0, 0.0, 0.8));
 	c = mix(c, C_HILL, clamp((h - 500.0) / 900.0, 0.0, 1.0) * (1.0 - dry));
-	// rock caps: ramps go to rock first, flat tops stay green a little longer
-	float rock = clamp((h - (flat_top > 0.5 ? 1450.0 : 1150.0)) / 350.0, 0.0, 1.0);
+	// rock caps, the same on ramps and flat tops so slopes do not read as walls
+	float rock = clamp((h - 1250.0) / 400.0, 0.0, 1.0);
 	c = mix(c, C_ROCK, rock);
 	c = mix(c, C_SNOW, clamp((h - 1750.0) / 200.0, 0.0, 1.0));
 	if (body_level <= 2.0) {
@@ -176,11 +179,11 @@ void fragment() {
 	vec2 p = world_pos.xz;
 	vec2 centre = tt_tile_center(tile);
 	// far out the colour follows the ground, not the tile, so the map is smooth
-	float far = smoothstep(3.0, 9.0, tile_km);
+	float far = smoothstep(1.0, 2.0, tile_km);
 	vec2 cp = mix(centre, p, far);
 	vec3 c;
 	float rough = 1.0;
-	if (water != W_LAND && part == 0) {
+	if ((water == W_SEA || water == W_LAKE) && part == 0) {
 		if (water == W_SEA) {
 			float d_km = tt_sea_distance(p);
 			d_km = max(d_km, coast > 0.5 ? 0.0 : tile_km * 1.5);
@@ -235,14 +238,46 @@ void fragment() {
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
 		float lit = dot(nw, light_dir) - light_dir.y;
-		c *= clamp(1.0 + slope_light * lit, 0.7, 1.25);
+		c *= clamp(1.0 + slope_light * mix(1.0, 0.55, far) * lit, 0.7, 1.25);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
 		float line = 1.0 - smoothstep(0.0, 1.0, min(e.x / max(fw.x, 1e-5), e.y / max(fw.y, 1e-5)));
 		// fade the outline out when tiles get only a few pixels wide
 		float fade = smoothstep(5.0, 12.0, 1.0 / max(max(fw.x, fw.y), 1e-5));
-		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.7) * fade;
+		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.3) * fade;
+		if (water == W_RIVER) {
+			// a band from the tile centre to each side with water beyond it;
+			// at least a boat wide, never more than half a tile
+			float half_w = clamp(0.075 / tile_km, 0.06, 0.22);
+			vec2 q = tile_uv - 0.5;
+			const vec2 MID[4] = vec2[](vec2(0.0, -0.5), vec2(0.5, 0.0), vec2(0.0, 0.5), vec2(-0.5, 0.0));
+			int m = river_sides;
+			bool bend = m == 3 || m == 6 || m == 12 || m == 9;
+			float d = 10.0;
+			if (bend) {
+				// a turn cuts the corner: straight from one side to the other,
+				// so the 4-connected staircase reads as a diagonal river
+				int a = m == 9 ? 3 : (m == 3 ? 0 : m == 6 ? 1 : 2);
+				vec2 p0 = MID[a];
+				vec2 p1 = MID[(a + 1) % 4];
+				vec2 e = p1 - p0;
+				d = length(q - p0 - e * clamp(dot(q - p0, e) / dot(e, e), 0.0, 1.0));
+			} else {
+				d = length(q);
+				for (int k = 0; k < 4; k++) {
+					if ((m & (1 << k)) != 0) {
+						vec2 e = MID[k];
+						d = min(d, length(q - e * clamp(dot(q, e) / dot(e, e), 0.0, 1.0)));
+					}
+				}
+			}
+			float aa = fwidth(d) * 1.2;
+			float bank = 1.0 - smoothstep(half_w + 0.02, half_w + 0.02 + aa, d);
+			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
+			c = mix(c, C_SAND_DARK, bank * 0.6);
+			c = mix(c, W_INLAND * (0.97 + 0.06 * tt_hash(vec2(tile))), river);
+		}
 	} else {
 		// walls: earth, sand at the coast, rock in the mountains; strata per level
 		float hm = world_pos.y / level_h * m_per_level;

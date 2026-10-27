@@ -85,7 +85,9 @@ int tt_town(ivec2 t) {
 // m_per_level per tile_km (tools/build_tile_terrain.py, sc2k_relief), so the
 // rounded levels of neighbouring corners differ by at most one.
 float tt_corner_height(ivec2 c) {
-	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod).r;
+	// one mip of blur: mountains become long coherent ramps instead of
+	// single-tile bumps and pits (the blur only lowers slopes)
+	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + 1.0).r;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
@@ -119,11 +121,7 @@ vec4 tt_corners(ivec2 t) {
 		tt_land_corner(t + ivec2(1, 0)),
 		tt_land_corner(t + ivec2(1, 1)),
 		tt_land_corner(t + ivec2(0, 1)));
-	if (w == W_RIVER) {
-		// the water follows the land a little below the banks: no walls,
-		// only a thin bank edge, and rivers run down slopes like rapids
-		return max(l - 0.08, vec4(0.02));
-	}
+	// river tiles keep the land shape; the river is a narrow band drawn on top
 	return l;
 }
 
