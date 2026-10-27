@@ -96,19 +96,35 @@ float tt_corner_height(ivec2 c) {
 // neighbouring land tiles share their corners and form one surface of flat
 // tiles and one-level ramps. Corners at the sea sit at sea level, so the coast
 // ramps into the water; walls only remain at rivers and lakes.
-float tt_land_corner(ivec2 c) {
-	bool shore = tt_water(c) == W_SEA || tt_water(c - ivec2(1, 0)) == W_SEA
-		|| tt_water(c - ivec2(0, 1)) == W_SEA || tt_water(c - ivec2(1, 1)) == W_SEA;
-	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
-	float x = max(tt_corner_height(c), 0.0) / m_per_level;
-	float l = mix(round(x), x, relief_smooth);
-	return shore ? 0.0 : max(1.0, l);
+// Flat water level of a lake tile (levels). The baked lake level lives on the
+// 2 km nodes, so look at a few nodes around the tile and keep the lake's value.
+float tt_lake_level(ivec2 t) {
+	vec2 p = tt_tile_center(t);
+	float metres = -1000.0;
+	for (int k = 0; k < 5; k++) {
+		vec2 o = k == 0 ? vec2(0.0) : vec2(k == 1 ? 1.0 : k == 2 ? -1.0 : 0.0, k == 3 ? 1.0 : k == 4 ? -1.0 : 0.0) * 1.0;
+		vec4 a = textureLod(aux_tex, tt_node_uv(p + o), 0.0);
+		float m = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
+		if (a.g + a.b > 0.0) { metres = metres < -999.0 ? m : min(metres, m); }
+	}
+	float x = max(metres, 0.0) / m_per_level;
+	return max(mix(round(x), x, relief_smooth), 1.0);
 }
 
-float tt_lake_level(ivec2 t) {
-	vec4 a = textureLod(aux_tex, tt_node_uv(tt_tile_center(t)), 0.0);
-	float metres = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
-	return max(round(max(metres, 0.0) / m_per_level), 1.0) - 0.75;
+float tt_land_corner(ivec2 c) {
+	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
+	bool shore = false;
+	float lake = 1.0e6;
+	for (int k = 0; k < 4; k++) {
+		int w = tt_water(nb[k]);
+		shore = shore || w == W_SEA;
+		if (w == W_LAKE) { lake = min(lake, tt_lake_level(nb[k])); }
+	}
+	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
+	float x = max(tt_corner_height(c), 0.0) / m_per_level;
+	float l = max(1.0, mix(round(x), x, relief_smooth));
+	// corners at the sea or a lake sit at the water line: the shore ramps in
+	return shore ? 0.0 : min(l, lake);
 }
 
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
@@ -118,7 +134,7 @@ vec4 tt_corners(ivec2 t) {
 		return vec4(0.0);
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t));
+		return vec4(tt_lake_level(t) - 0.04);
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),
@@ -127,6 +143,21 @@ vec4 tt_corners(ivec2 t) {
 		tt_land_corner(t + ivec2(0, 1)));
 	// river tiles keep the land shape; the river is a narrow band drawn on top
 	return l;
+}
+
+// The corners of every tile in the drawn patch, computed once per frame by
+// tile_corner_prep.gdshader (a small 2D pass) instead of once per vertex.
+// Tiles outside that texture fall back to the full rule.
+uniform sampler2D corner_tex : filter_nearest, repeat_disable;
+uniform ivec2 corner_origin;
+uniform ivec2 corner_size = ivec2(0);
+
+vec4 tt_corners_cached(ivec2 t) {
+	ivec2 q = t - corner_origin;
+	if (q.x >= 0 && q.y >= 0 && q.x < corner_size.x && q.y < corner_size.y) {
+		return texelFetch(corner_tex, q, 0);
+	}
+	return tt_corners(t);
 }
 
 // Clumped woods: land cover forest share through a noisy threshold. The noise
@@ -145,6 +176,20 @@ float tt_sea_distance(vec2 p) {
 	float c = texelFetch(aux_tex, i + ivec2(0, 1), 0).r;
 	float d = texelFetch(aux_tex, i + ivec2(1, 1), 0).r;
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 * 2.0;
+}
+
+// Bilinear share of sea nodes (x) and lake nodes (y) at p, 0 dry .. 1 wet:
+// its 0.5 contour is a smooth shoreline for the far relief map.
+vec2 tt_water_share(vec2 p) {
+	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
+	ivec2 i = ivec2(floor(g));
+	vec2 f = fract(g);
+	vec2 w[4];
+	for (int k = 0; k < 4; k++) {
+		vec4 a = texelFetch(aux_tex, i + ivec2(k & 1, k >> 1), 0);
+		w[k] = vec2(a.r > 0.0 ? 1.0 : 0.0, a.g + a.b > 0.0 ? 1.0 : 0.0);
+	}
+	return mix(mix(w[0], w[1], f.x), mix(w[2], w[3], f.x), f.y);
 }
 
 float tt_latitude(vec2 p) {

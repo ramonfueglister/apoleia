@@ -36,6 +36,8 @@ var _focus_y := 0.0
 var _dragging := false
 var _snapshot_path := ""
 var _snapshot_frames := 45
+var _bench_frames := 0 # --bench=n: time n frames after the warm-up, print, quit
+var _bench_start := 0
 var _frame := 0
 
 func _ready() -> void:
@@ -52,6 +54,7 @@ func _ready() -> void:
 					yaw_turns = int(parts[3])
 			"--snapshot": _snapshot_path = value
 			"--snapshot-frames": _snapshot_frames = int(value)
+			"--bench": _bench_frames = int(value)
 	terrain = TileTerrain.new()
 	add_child(terrain)
 	if not terrain.load_data():
@@ -92,13 +95,15 @@ func _setup_look() -> void:
 	environment.background_color = Color("1d5a8c")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("c4d4e6")
-	environment.ambient_light_energy = 0.9
-	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
+	# low ambient and a filmic curve keep the colours deep and the shade sides
+	# dark (AgX and a strong sky fill washed the map out)
+	environment.ambient_light_energy = 0.6
+	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
 	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 0.98
-	environment.adjustment_contrast = 1.06
+	environment.adjustment_saturation = 1.0
+	environment.adjustment_contrast = 1.08
 	environment.ssao_enabled = true
 	environment.ssao_radius = 0.6
 	environment.ssao_intensity = 0.6
@@ -227,7 +232,14 @@ func _process(delta: float) -> void:
 	_focus_y = lerpf(_focus_y, terrain.ground_y(target), k)
 	_place_camera()
 	_frame += 1
-	if _snapshot_path != "" and _frame == _snapshot_frames:
+	if _bench_frames > 0:
+		if _frame == _snapshot_frames:
+			_bench_start = Time.get_ticks_usec()
+		elif _frame == _snapshot_frames + _bench_frames:
+			var ms := (Time.get_ticks_usec() - _bench_start) / 1000.0 / _bench_frames
+			print(JSON.stringify({"event": "bench", "frame_ms": ms, "level": terrain.level, "width_km": width}))
+			get_tree().quit()
+	elif _snapshot_path != "" and _frame == _snapshot_frames:
 		RenderingServer.frame_post_draw.connect(_save_snapshot, CONNECT_ONE_SHOT)
 
 func _save_snapshot() -> void:

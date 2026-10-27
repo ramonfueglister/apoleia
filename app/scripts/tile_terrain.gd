@@ -8,6 +8,8 @@ extends Node3D
 const DATA_DIR = "artifacts/render-data/tile-terrain-r1"
 const TERRAIN_SHADER = preload("res://shaders/tile_terrain.gdshader")
 const PROPS_SHADER = preload("res://shaders/tile_props.gdshader")
+const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
+const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 
 # Zoom levels by tile size. A height level is relief_slope (m/km, from the
@@ -16,10 +18,12 @@ const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 # 2000 ratio (12 px per level on a 32 x 16 px tile).
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
-const SMOOTH_FROM_KM := 30.0 # view width where the tile steps start to melt
-const SMOOTH_TO_KM := 90.0   # view width from where the relief is fully smooth
+const SMOOTH_FROM_KM := 20.0 # view width where the tile steps start to melt
+const SMOOTH_TO_KM := 45.0   # view width from where the relief is fully smooth
 const PATCH_N := 320 # tiles per side of the terrain patch
-const PROP_N := 100 # tiles per side of the tree and house patch
+const PROP_N := 100 # most tiles per side of the tree and house patch
+const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
+const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
 const PROP_SLOTS := [9, 9, 0, 0, 0, 0] # tree slots per tile and level
 const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0] # house blocks per town tile and level
 # Kit 2 scale (docs/kit2/SCALE.md): lengths 1:23.8 against the real world, but
@@ -41,6 +45,10 @@ var m_per_level := 110.0
 var level_h := 0.6
 var patch_origin := Vector2i.ZERO
 var prop_origin := Vector2i.ZERO
+var prop_n := PROP_N
+var _props_low := false
+var _meshes_full: Array = []
+var _meshes_low: Array = []
 
 var relief_slope := 80.0
 var _heights: PackedFloat32Array
@@ -49,6 +57,10 @@ var _cell_images: Array[Image] = []
 var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
 var _terrain_material: ShaderMaterial
+var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
+var _corner_view: SubViewport
+var _place_material: ShaderMaterial # 2D pass: where each tree and house slot stands
+var _place_view: SubViewport
 var _prop_materials: Array[ShaderMaterial] = []
 var _terrain: MultiMeshInstance3D
 var _props: Array[MultiMeshInstance3D] = []
@@ -100,6 +112,10 @@ func load_data() -> bool:
 		"world_size": world_size,
 		"grid_size": Vector2(grid_size),
 	}
+	_corner_material = ShaderMaterial.new()
+	_corner_material.shader = CORNER_PREP_SHADER
+	_place_material = ShaderMaterial.new()
+	_place_material.shader = PROP_PREP_SHADER
 	for kind in PROP_KINDS.size():
 		var material := ShaderMaterial.new()
 		material.shader = PROPS_SHADER
@@ -113,11 +129,19 @@ func load_data() -> bool:
 	return true
 
 func _all_materials() -> Array[ShaderMaterial]:
-	var list: Array[ShaderMaterial] = [_terrain_material]
+	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material]
 	list.append_array(_prop_materials)
 	return list
 
 func _build_nodes() -> void:
+	# the corner levels of the patch (one margin tile for the walls), as
+	# float pixels; redrawn every frame because zoom changes them smoothly
+	_corner_view = _prep_view("TileCorners", Vector2i(PATCH_N + 2, PATCH_N + 2), _corner_material)
+	_terrain_material.set_shader_parameter("corner_tex", _corner_view.get_texture())
+	_terrain_material.set_shader_parameter("corner_size", _corner_view.size)
+	# one float pixel per prop slot: 3 x 3 per tile, trees left, houses right
+	_place_view = _prep_view("TilePropSlots", Vector2i(PROP_N * 6, PROP_N * 3), _place_material)
+	_place_material.set_shader_parameter("tree_w", PROP_N * 3)
 	var huge := AABB(Vector3(-20000, -100, -20000), Vector3(40000, 2000, 40000))
 	_terrain = MultiMeshInstance3D.new()
 	_terrain.name = "TileTerrain"
@@ -131,7 +155,9 @@ func _build_nodes() -> void:
 	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
-	var meshes := [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), PropMeshes.house(), PropMeshes.umbrella_pine()]
+	_meshes_full = [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), PropMeshes.house(), PropMeshes.umbrella_pine()]
+	_meshes_low = [PropMeshes.broadleaf(true), PropMeshes.conifer(true), PropMeshes.cypress(true), _meshes_full[3], PropMeshes.umbrella_pine(true)]
+	var meshes := _meshes_full
 	for kind in PROP_KINDS.size():
 		var node := MultiMeshInstance3D.new()
 		node.name = "Tile" + PROP_KINDS[kind].capitalize()
@@ -141,11 +167,59 @@ func _build_nodes() -> void:
 		pm.instance_count = PROP_N * PROP_N * 9
 		node.multimesh = pm
 		node.material_override = _prop_materials[kind]
+		_prop_materials[kind].set_shader_parameter("corner_tex", _corner_view.get_texture())
+		_prop_materials[kind].set_shader_parameter("corner_size", _corner_view.size)
+		_prop_materials[kind].set_shader_parameter("place_tex", _place_view.get_texture())
+		_prop_materials[kind].set_shader_parameter("place_tree_w", PROP_N * 3)
+		_prop_materials[kind].set_shader_parameter("place_ready", true)
 		node.custom_aabb = huge
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(node)
 		_props.append(node)
 		_prop_materials[kind].set_shader_parameter("prop_n", PROP_N)
+
+## Hide the tree kinds that cannot grow anywhere in the prop patch (the shader
+## rule: conifers above 700 m or north of 50°, stone pines and cypresses below
+## 700 m south of 44.5°), so their slots cost no vertex work.
+var _culled_origin := Vector2i(-1, -1)
+func _cull_prop_kinds() -> void:
+	if prop_origin == _culled_origin or PROP_SLOTS[level] == 0:
+		return
+	_culled_origin = prop_origin
+	var lo := world_min + Vector2(prop_origin) * tile_km
+	var span := float(prop_n) * tile_km
+	var h_min := INF
+	var h_max := -INF
+	for j in 17:
+		for i in 17:
+			var h := height_m(lo + Vector2(i, j) / 16.0 * span)
+			h_min = minf(h_min, h)
+			h_max = maxf(h_max, h)
+	var lat_south := 41.0 - rad_to_deg((lo.y + span) / 6371.0088)
+	var lat_north := 41.0 - rad_to_deg(lo.y / 6371.0088)
+	# a margin for the shader sampling heights at tile centres, not these points
+	var conifer := h_max > 600.0 or lat_north > 49.8
+	var south := lat_south < 44.7 and h_min < 800.0
+	_props[1].visible = conifer
+	_props[2].visible = south
+	_props[4].visible = south
+
+## A float viewport that redraws `material` over its full size every frame
+## (the per-frame 2D passes for corner levels and prop slots).
+func _prep_view(view_name: String, size: Vector2i, material: ShaderMaterial) -> SubViewport:
+	var view := SubViewport.new()
+	view.name = view_name
+	view.size = size
+	view.use_hdr_2d = true
+	view.transparent_bg = true
+	view.disable_3d = true
+	view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var rect := ColorRect.new()
+	rect.size = Vector2(size)
+	rect.material = material
+	view.add_child(rect)
+	add_child(view)
+	return view
 
 ## Level for a visible ground width (km): about 50 tiles across up close,
 ## about 250 across the whole Mediterranean.
@@ -172,15 +246,19 @@ func _apply_level(value: int) -> void:
 			material.set_shader_parameter(key, params[key])
 	var slots: int = PROP_SLOTS[level]
 	var house_slots: int = HOUSE_SLOTS[level]
+	# the slot pass only runs while props are drawn
+	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
 	for kind in _props.size():
 		var node := _props[kind]
 		var house := kind == 3
 		var n: int = house_slots if house else slots
 		node.visible = n > 0
-		node.multimesh.visible_instance_count = PROP_N * PROP_N * maxi(n, 1)
+		_culled_origin = Vector2i(-1, -1) # _cull_prop_kinds runs again
+		node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1)
 		var material := _prop_materials[kind]
 		material.set_shader_parameter("slots", maxi(n, 1))
+		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
 		var size_m := HOUSE_M if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 
@@ -201,11 +279,30 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	_terrain_material.set_shader_parameter("patch_origin", patch_origin)
+	var corner_origin := patch_origin - Vector2i.ONE
+	for material in _all_materials():
+		material.set_shader_parameter("corner_origin", corner_origin)
+	# props only around the visible ground: every slot costs vertex work
+	var wanted_n := clampi(int(ceil(PROP_SPAN * width / tile_km / 8.0)) * 8 + 4, 12, PROP_N)
+	if wanted_n != prop_n:
+		prop_n = wanted_n
+		_apply_level(level)
+	# far out the trees are a few pixels tall: low-poly and no shadows
+	var low := width > PROP_LOW_KM
+	if low != _props_low:
+		_props_low = low
+		for kind in _props.size():
+			_props[kind].multimesh.mesh = (_meshes_low if low else _meshes_full)[kind]
+			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if low else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	var f := ((focus.lerp(centre, 0.35) - world_min) / tile_km).floor()
-	prop_origin = Vector2i(int(f.x) - PROP_N / 2, int(f.y) - PROP_N / 2)
+	prop_origin = Vector2i(int(f.x) - prop_n / 2, int(f.y) - prop_n / 2)
 	for material in _prop_materials:
 		material.set_shader_parameter("prop_origin", prop_origin)
+		material.set_shader_parameter("prop_n", prop_n)
 		material.set_shader_parameter("patch_origin", patch_origin)
+	_place_material.set_shader_parameter("prop_origin", prop_origin)
+	_place_material.set_shader_parameter("prop_n", prop_n)
+	_cull_prop_kinds()
 
 # ------------------------------------------------------------- CPU mirror
 

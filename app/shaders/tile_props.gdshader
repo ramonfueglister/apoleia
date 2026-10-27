@@ -1,17 +1,22 @@
 // Trees and houses on the tile terrain. One MultiMesh per kind; every instance
-// is a fixed slot (tile of the prop patch, slot number). The vertex stage
-// decides from the tile data whether the slot shows a prop and where it stands,
+// is a fixed slot (tile of the prop patch, slot number). A small 2D pass
+// (tile_prop_prep.gdshader) decides once per frame from the tile data whether
+// each slot shows a prop and where it stands; the vertex stage only reads that,
 // so props follow the terrain at every zoom without CPU placement.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
+#include "res://shaders/tile_props.gdshaderinc"
 
 uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house, 4 stone pine
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
 uniform int slots = 4;
 uniform float prop_scale = 0.4; // world units of a unit prop
+uniform sampler2D place_tex : filter_nearest, repeat_disable; // tile_prop_prep output
+uniform bool place_ready = false;
+uniform int place_tree_w = 300;
 
 varying vec3 tint;
 
@@ -23,58 +28,20 @@ void vertex() {
 	int id = INSTANCE_ID;
 	int slot = id % slots;
 	int ti = id / slots;
-	ivec2 t = prop_origin + ivec2(ti % prop_n, ti / prop_n);
-	int cell = tt_cell(t);
-	int water = cell & 3;
-	int town = cell >> 2;
-	vec2 centre = tt_tile_center(t);
+	ivec2 local = ivec2(ti % prop_n, ti / prop_n);
+	ivec2 t = prop_origin + local;
+	// placed once per frame by tile_prop_prep.gdshader; the full rule only
+	// before that pass has run
+	ivec2 px = local * 3 + ivec2(slot % 3, slot / 3) + ivec2(prop_kind == 3 ? place_tree_w : 0, 0);
+	vec4 d = place_ready ? texelFetch(place_tex, px, 0) : tt_prop_place(t, slot, slots, prop_kind == 3);
 	float r0 = tt_hash3(vec3(vec2(t), float(slot) * 3.17));
 	float r1 = tt_hash3(vec3(vec2(t) + 11.3, float(slot) * 1.91));
 	float r2 = tt_hash3(vec3(vec2(t) - 4.7, float(slot) * 5.03));
-	bool show = water == W_LAND;
-	float edge_size = 1.0;
-	vec2 uv;
-	if (prop_kind == 3) {
-		// house blocks on the street grid of the town tile (house_grid^2 = slots)
-		int side = int(ceil(sqrt(float(slots))));
-		float share = town == 3 ? 1.0 : town == 2 ? 0.6 : town == 1 ? 0.15 : 0.0;
-		int count = max(int(round(share * float(slots))), town > 0 ? 1 : 0);
-		show = show && slot < count;
-		int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
-		vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
-		uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
-	} else {
-		show = show && town == 0;
-		vec4 cov = tt_cover(centre);
-		float density = tt_tree_density(centre, cov.r);
-		// single trees mostly where the wood thins out, few in open land
-		float edge = smoothstep(0.0, 0.25, density) * (1.0 - smoothstep(0.5, 0.9, density));
-		float lone = 0.015 + 0.10 * cov.g * 0.3 + 0.35 * edge;
-		float n = floor(density * float(slots) + tt_hash(vec2(t) * 0.913) * 0.8);
-		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
-		show = show && (float(slot) < n || lone_tree);
-		edge_size = mix(0.7, 1.0, smoothstep(0.15, 0.7, density)); // smaller at the wood edge
-		float h = tt_height_m(centre, height_lod);
-		float lat = tt_latitude(centre);
-		show = show && h < 1750.0 && cov.g < 0.7;
-		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
-		// stone pines and cypresses in the warm lowlands, more of them in open land
-		bool south = lat < 44.5 && h < 700.0;
-		float pine_p = south ? 0.12 + 0.35 * (1.0 - smoothstep(0.2, 0.7, density)) : 0.0;
-		int kind = r0 < conifer_p ? 1
-			: (south && r0 < conifer_p + pine_p) ? 4
-			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;
-		show = show && kind == prop_kind;
-		// slots on a jittered grid, so a dense wood covers the tile evenly
-		int side = int(ceil(sqrt(float(slots))));
-		vec2 g = vec2(float(slot % side), float(slot / side));
-		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
-	}
-	vec4 c = show ? tt_corners(t) : vec4(0.0);
-	if (prop_kind != 3 && max(max(c.x, c.y), max(c.z, c.w)) - min(min(c.x, c.y), min(c.z, c.w)) > 1.5) {
-		show = false;
-	}
-	float level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
+	bool show = d.w >= 0.0 && (prop_kind == 3 || int(floor(d.w)) == prop_kind);
+	float edge_size = prop_kind == 3 ? 1.0 : fract(d.w) * 4.0;
+	int town = int(d.w);
+	vec2 uv = d.xy;
+	float level = d.z;
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
 	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0) * edge_size);
 	float a = prop_kind == 3 ? floor(r2 * 4.0) * 1.5707963 : r2 * 6.2831853;
