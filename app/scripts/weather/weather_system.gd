@@ -395,9 +395,9 @@ func _prewarm_cells() -> void:
 			var away := Vector2(_forward.x, _forward.z).normalized()
 			# Just beyond the focus (a flat camera sees little further), right side:
 			# upper right of the picture, never between camera and focus.
-			cell.pos = _focus() + away * _ground_width * 0.18 + Vector2(-away.y, away.x) * _ground_width * 0.32
-			cell.ra = maxf(_ground_width * 0.35, 60.0)
-			cell.rc = maxf(_ground_width * 0.5, 90.0)
+			cell.pos = _focus() + away * _ground_width * 0.25 + Vector2(-away.y, away.x) * _ground_width * 0.35
+			cell.ra = maxf(_ground_width * 0.22, 50.0)
+			cell.rc = maxf(_ground_width * 0.3, 70.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -652,6 +652,9 @@ func _update_tiers() -> void:
 	var layer_fade := smoothstep(1500.0, 2200.0, view_width)
 	_layer.visible = layer_fade > 0.01
 	_layer_material.set_shader_parameter("layer_fade", layer_fade)
+	if _coverage_hidden:
+		# Coverage check: keep the cloud visuals off for the reference frame.
+		for node in _coverage_nodes(): node.visible = false
 	var footprint := _ground_rect
 	var sun_dir := _sun.global_basis.z.normalized()
 	var top := get_display_altitude()
@@ -859,6 +862,12 @@ func _unhandled_input(event: InputEvent) -> void:
 var _coverage_image: Image
 var _coverage_plain: Image
 var _coverage_no_shadow := false
+var _coverage_hidden := false
+
+func _coverage_nodes() -> Array:
+	var nodes: Array = _fine.visual + _coarse.visual + [_layer]
+	if _fine.rain_instance: nodes.append(_fine.rain_instance)
+	return nodes
 var _coverage_result := {}
 
 static func _image_diff(a: Image, b: Image) -> Vector2:
@@ -877,11 +886,10 @@ static func _image_diff(a: Image, b: Image) -> Vector2:
 	return Vector2(float(changed) / total, float(upper) / total)
 
 func _measure_coverage() -> void:
-	var visuals: Array = _fine.visual + _coarse.visual + [_layer]
-	if _fine.rain_instance: visuals.append(_fine.rain_instance)
 	if _frame == 240:
 		_coverage_image = get_viewport().get_texture().get_image()
-		for node in visuals: node.set_meta("coverage_visible", node.visible); node.visible = false
+		_coverage_hidden = true
+		for node in _coverage_nodes(): node.visible = false
 	elif _frame == 244 and _coverage_image:
 		_coverage_plain = get_viewport().get_texture().get_image()
 		var clouds := _image_diff(_coverage_image, _coverage_plain)
@@ -892,7 +900,7 @@ func _measure_coverage() -> void:
 		_coverage_result["shadow_fraction"] = snappedf(shadows.x, 0.001)
 		print("WEATHERCOVERAGE ", JSON.stringify(_coverage_result))
 		_coverage_no_shadow = false
-		for node in visuals: node.visible = node.get_meta("coverage_visible", true)
+		_coverage_hidden = false
 
 func _capture() -> void:
 	if _capture_dir == "" or _capture_frames <= 0 or _frame % _capture_every != 0: return
