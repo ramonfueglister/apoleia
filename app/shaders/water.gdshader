@@ -65,14 +65,21 @@ void fragment() {
         mouth=max(mouth,1.0-smoothstep(0.0,river_mouths[i].z,d));
     }
     WaterSample w=water_shade(p,coast_m,depth,footprint,calm,view_world,vec2(0.0),px_m,saum_scale,mouth);
-    // Crisp shoreline: a thin lighter line exactly at the contour in the map view.
+    // Crisp shoreline: a faint lighter line exactly at the contour in the
+    // map view (was much lighter than the reference: 1 px #65a3bd against
+    // #286e94 in the far view).
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
-    ALBEDO=mix(w.albedo,w.albedo*1.25+0.05,edge*(1.0-saum_scale)*0.6);
+    ALBEDO=mix(w.albedo,w.albedo*1.12+0.01,edge*(1.0-saum_scale)*0.5);
     // Reference calibration (h~207 s0.80-0.83 v0.52-0.55): slightly darker,
     // and less saturated in the continental view where AgX pushes chroma.
     float far_sea=smoothstep(800.0,2800.0,view_width);
-    ALBEDO*=mix(1.04,1.12,far_sea);
-    ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),0.10+far_sea*0.06);
+    // Far and mid views: the reference sea brightens over the shelves and
+    // towards the coasts over tens of km (v 0.50-0.52 open, 0.58-0.64 near
+    // the coasts, Adriatic ~0.57; ours was a flat 0.51). The tile coast
+    // distance ends at ~4 km, so the bathymetry carries this ramp.
+    float shelf_light=(1.0-smoothstep(150.0,2200.0,depth))*smoothstep(300.0,700.0,view_width);
+    ALBEDO*=mix(1.04,1.12,far_sea)*(1.0+0.30*shelf_light);
+    ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),(0.10+far_sea*0.06)*(1.0-0.5*shelf_light));
     // Close views: shallow water as a broad, even ramp like the reference
     // near view (open #185585 -> #1f708d -> teal #2f7b8c -> #528f94 at the
     // beach). Shallowness comes from the bathymetry (0-100 m, ~10-20 km off
@@ -82,7 +89,9 @@ void fragment() {
     // and faint per-triangle tone steps keep the low-poly seabed. Targets
     // are linear albedo, fitted to the reference through the open sea's
     // screen gain.
-    float near_sea=(1.0-smoothstep(250.0,800.0,view_width))*(1.0-mouth*0.6);
+    // Teal ramp for the near view only; the mid view reference is blue
+    // up to the coast (#1e7097 at 0.5 km, #257197 at 1 km).
+    float near_sea=(1.0-smoothstep(220.0,520.0,view_width))*(1.0-mouth*0.6);
     if(near_sea>0.0) {
         float shelf_id;
         wl_facet_center(p,2.2,shelf_id);
@@ -101,12 +110,14 @@ void fragment() {
         float shelf_deep=mix(75.0,40.0,smoothstep(250.0,800.0,view_width));
         float s_depth=1.0-smoothstep(2.0,shelf_deep,shelf_d*0.125);
         float s=max(s_depth,(1.0-smoothstep(0.0,3500.0,coast_m))*0.9);
-        vec3 c=mix(vec3(0.0085,0.040,0.107),vec3(0.0098,0.0704,0.121),smoothstep(0.0,0.5,s));
-        c=mix(c,vec3(0.0203,0.0861,0.119),smoothstep(0.4,0.9,s));
+        // Mid and teal stops a little greener and brighter (measured 2-5 km
+        // #327387, 10 km #216a86 against #2f7b8c and #1f708d).
+        vec3 c=mix(vec3(0.0085,0.040,0.107),vec3(0.0090,0.0770,0.130),smoothstep(0.0,0.5,s));
+        c=mix(c,vec3(0.0190,0.0950,0.122),smoothstep(0.4,0.9,s));
         // Light water right at the beach; only a hairline in the mid view
         // (measured #9db8ad at 0.5 km there).
         float beach=1.0-smoothstep(0.0,max(px_m*2.0,800.0),coast_m);
-        c=mix(c,vec3(0.060,0.120,0.135),beach*mix(0.85,0.35,smoothstep(200.0,500.0,view_width)));
+        c=mix(c,vec3(0.060,0.120,0.135),beach*mix(0.85,0.08,smoothstep(200.0,450.0,view_width)));
         c*=1.0+(shelf_id-0.5)*0.05*smoothstep(0.1,0.4,s);
         c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.6);
         ALBEDO=mix(ALBEDO,c,near_sea);

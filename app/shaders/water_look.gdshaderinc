@@ -118,8 +118,10 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
     // Mostly uniform open sea; bathymetry only a faint deepening.
     col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25);
-    // Narrow teal strip right at the beach.
-    col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5));
+    // Narrow teal strip right at the beach, close views only (in the mid
+    // view it read as a pale 2-3 px rim, #97b5ac against the reference's
+    // blue #1e7097).
+    col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5)*(1.0-smoothstep(130.0,260.0,px_m)));
     // Facets (low-poly surface) with smooth detail between them.
     float facet_id;
     vec2 centre=wl_facet_center(p,water_facet_size,facet_id);

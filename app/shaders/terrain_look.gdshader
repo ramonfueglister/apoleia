@@ -284,9 +284,10 @@ void fragment() {
     DeltaMask dm=delta_mask(vp,max(-material_distance,0.0),max(contour_m_per_px,1.0),view_width);
     float lagoon=0.0;
     if(delta_count>0) {
-        ground=mix(ground,vec3(0.15,0.19,0.035)*(0.9+0.2*wl_noise(vp*0.8)),dm.marsh*0.8);
-        ground=mix(ground,vec3(0.50,0.36,0.17),dm.rim);
-        ground=mix(ground,vec3(0.68,0.43,0.15)*(0.95+0.08*wl_noise(vp*1.7)),dm.barrier);
+        // Measured e6782ba: sand #cdbc97 (too grey), belt land #ada054.
+        ground=mix(ground,vec3(0.15,0.19,0.035)*(0.9+0.2*wl_noise(vp*0.8)),min(dm.marsh,1.0)*0.85);
+        ground=mix(ground,vec3(0.55,0.38,0.16),dm.rim);
+        ground=mix(ground,vec3(0.80,0.46,0.13)*(0.95+0.08*wl_noise(vp*1.7)),dm.barrier);
         lagoon=dm.lagoon*(1.0-water);
         normal=normalize(mix(normal,vec3(0.0,1.0,0.0),lagoon));
     }
