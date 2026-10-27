@@ -45,7 +45,7 @@ fn percentiles(mut us: Vec<f64>) -> (f64, f64, f64) {
 fn run_ecs(mut sim: Sim, years: u32, snap_every: u32, out: &Path, inputs: &str) {
     write_views(&mut sim, &out.join(format!("leaves-{START_YEAR}.csv")));
     let mut series = fs::File::create(out.join("series.csv")).unwrap();
-    writeln!(series, "year,population,capacity,leaves,max_level,splits,merges,mean_tick_us,max_tick_us,migrants_dec").unwrap();
+    writeln!(series, "year,population,capacity,leaves,max_level,splits,merges,mean_tick_us,max_tick_us,migrants_year").unwrap();
     let level = |v: &[apoleia_sim::ecs::TileView]| v.iter().map(|t| t.key.level).max().unwrap();
     let v = sim.snapshot();
     let v = &v.tiles;

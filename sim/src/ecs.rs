@@ -92,6 +92,8 @@ pub struct TickConst {
     migration_threshold: f64,
     /// Monthly excess deaths per tenfold city size, and the size they start at.
     urban_excess_month: f64,
+    /// Yearly logistic decay factor e^(−r), Q32 (rural surplus of a year).
+    decay_year_q32: i128,
     urban_excess_from: f64,
     city_pull_rate: f64,
     city_draw_cap: f64,
@@ -250,14 +252,29 @@ fn flux(c: &TickConst, a: Side, b: Side) -> i64 {
 /// state, so it runs in parallel and in any order. The state is first copied
 /// into a dense array indexed by entity index; random `Query::get` calls per
 /// neighbour cost several times more.
+/// Migration and the city draw run in the first month of each year: people
+/// move once a year (the slow flows hardly change within a year), which
+/// takes their cost out of the other eleven months.
+fn flow_month(stats: &Stats) -> bool {
+    stats.month % 12 == 0
+}
+
 fn migrate(
     c: Res<TickConst>,
+    stats: Res<Stats>,
     mut dense: Local<Vec<Side>>,
     state: Query<(Entity, &TileKey, &Pop, &Cap)>,
     mut tiles: Query<(Entity, &Neighbors, &mut Moved)>,
 ) {
     let c = *c;
+    if !flow_month(&stats) {
+        return;
+    }
     if c.migration_rate <= 0.0 {
+        // Still clear last year's balance (the city draw adds to it).
+        for (_, _, mut m) in &mut tiles {
+            m.0 = 0;
+        }
         return;
     }
     for (ents, keys, pop, cap) in state.contiguous_iter().expect("tiles live in tables") {
@@ -314,8 +331,9 @@ impl Regions {
     }
 
     fn index(&self, k: Key) -> usize {
-        let r = k.at_level(0);
-        (r.row - self.row0) as usize * self.cols + (r.col - self.col0) as usize
+        // Arithmetic shift = floor division by 2^level (as `at_level(0)`).
+        let (row, col) = (k.row >> k.level, k.col >> k.level);
+        (row - self.row0) as usize * self.cols + (col - self.col0) as usize
     }
 }
 
@@ -326,89 +344,116 @@ impl Regions {
 /// r (about 600 km, EU5's market-wide pull with a distance limit). Every
 /// rural tile gives the same fraction asked of its catchment (capped). The
 /// total taken is shared by all cities by what they asked, in ID order, the
-/// last taking the remainder, so the sum is exact. Two passes over the tiles
-/// plus a few hundred root squares.
+/// last taking the remainder, so the sum is exact. Runs once a year: one
+/// pass over the columns, then only the giving tiles and the cities.
 fn city_draw(
     c: Res<TickConst>,
     regions: Res<Regions>,
-    mut scratch: Local<(Vec<f64>, Vec<f64>)>,
-    mut tiles: Query<(&TileKey, &Pop, &Cap, &UrbanShare, &mut Moved)>,
+    stats: Res<Stats>,
+    mut s: Local<DrawScratch>,
+    state: Query<(&TileKey, &Pop, &Cap, &UrbanShare)>,
+    mut moved: Query<&mut Moved>,
 ) {
     let c = *c;
-    if c.city_pull_rate <= 0.0 {
+    if c.city_pull_rate <= 0.0 || !flow_month(&stats) {
         return;
     }
     let n = regions.count;
-    let (demand, pool) = &mut *scratch;
-    demand.clear();
-    demand.resize(n, 0.0);
-    pool.clear();
-    pool.resize(n, 0.0);
-    let mut cities: Vec<(Key, i64)> = Vec::new();
+    let s = &mut *s;
+    s.demand.clear();
+    s.demand.resize(n, 0.0);
+    s.pool.clear();
+    s.pool.resize(n, 0.0);
+    s.tiles.clear();
+    s.cities.clear();
+    // Only the rural birth surplus leaves (landless children, Wrigley 1967;
+    // de Vries 1984): this year's logistic gain of the rural share. A
+    // drained countryside therefore stops sending instead of emptying.
+    let d = c.decay_year_q32 as f64 / Q32 as f64;
+    // Pass 1 over the columns: what each city asks, what each root square
+    // can give, and per tile its root square, rural people and surplus.
     // A tile is city and country at once: its city share u asks for
     // u·(K − P), its rural share (1 − u) of the people can be drawn.
-    for (key, p, k, u, _) in &tiles {
-        let r = regions.index(key.0);
-        let uf = u.0 as f64 / FX as f64;
-        if u.0 > 0 {
-            let want = (c.city_pull_rate * uf * (k.0 - p.0).max(0) as f64) as i64;
-            if want >= 1 {
-                demand[r] += want as f64;
-                cities.push((key.0, want));
+    let mut at = 0u32;
+    for (keys, pop, cap, urban) in state.contiguous_iter().expect("tiles live in tables") {
+        for i in 0..keys.len() {
+            let (p, k, u) = (pop[i].0, cap[i].0, urban[i].0);
+            let r = regions.index(keys[i].0);
+            let uf = u as f64 * (1.0 / FX as f64);
+            if u > 0 {
+                let want = (c.city_pull_rate * uf * (k - p).max(0) as f64) as i64;
+                if want >= 1 {
+                    s.demand[r] += want as f64;
+                    s.cities.push((keys[i].0, want, at + i as u32));
+                }
+            }
+            s.pool[r] += p.max(0) as f64 * (1.0 - uf);
+            if u < FX && p > 0 && k > p {
+                let rest = 1.0 - uf;
+                let (pp, kk) = (p as f64, k as f64);
+                let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
+                s.tiles.push((at + i as u32, r as u32, pp * rest, surplus));
             }
         }
-        pool[r] += p.0.max(0) as f64 * (1.0 - uf);
+        at += keys.len() as u32;
+    }
+    if s.cities.is_empty() {
+        // Rates are zero without demand: nobody leaves.
+        return;
     }
     // Rate asked of each catchment, then summed back onto each root square.
-    let catchment = |r: usize| regions.around(r);
+    let (demand, pool) = (&s.demand, &s.pool);
     let asked: Vec<f64> = (0..n)
         .map(|r| {
-            let p3: f64 = catchment(r).map(|q| pool[q]).sum();
+            let p3: f64 = regions.around(r).map(|q| pool[q]).sum();
             if p3 > 0.0 { demand[r] / p3 } else { 0.0 }
         })
         .collect();
-    let rate: Vec<f64> = (0..n).map(|q| catchment(q).map(|r| asked[r]).sum::<f64>().min(c.city_draw_cap)).collect();
-    // Only the rural birth surplus leaves (landless children, Wrigley 1967;
-    // de Vries 1984): this month's logistic gain of the rural share. A
-    // drained countryside therefore stops sending instead of emptying.
-    let d = c.decay_q32 as f64 / Q32 as f64;
+    let rate: Vec<f64> = (0..n).map(|q| regions.around(q).map(|r| asked[r]).sum::<f64>().min(c.city_draw_cap)).collect();
+    // Pass 2: what leaves each giving tile, in table order.
     let mut taken = 0i64;
-    for (key, p, k, u, mut moved) in &mut tiles {
-        if u.0 < FX && p.0 > 0 && k.0 > p.0 {
-            let rest = 1.0 - u.0 as f64 / FX as f64;
-            let (pp, kk) = (p.0 as f64, k.0 as f64);
-            let surplus = pp * (kk - pp) * (1.0 - d) / (pp + (kk - pp) * d) * rest;
-            let asked = pp * rest * rate[regions.index(key.0)];
-            let out = (asked.min(surplus) + 0.5) as i64;
-            if out > 0 {
-                moved.0 -= out;
-                taken += out;
-            }
-        }
-    }
-    if cities.is_empty() {
-        // Nobody to receive: give it back (cannot happen with taken > 0,
-        // since rates are zero without demand).
-        debug_assert_eq!(taken, 0);
-        return;
+    for t in &mut s.tiles {
+        let out = ((t.2 * rate[t.1 as usize]).min(t.3) + 0.5) as i64;
+        t.2 = out as f64;
+        taken += out;
     }
     // Hand out in ID order: the last city takes the remainder.
-    cities.sort_unstable();
-    let wanted: i64 = cities.iter().map(|c| c.1).sum();
+    s.cities.sort_unstable_by_key(|c| c.0);
+    let wanted: i64 = s.cities.iter().map(|c| c.1).sum();
     let mut left = taken;
-    let mut gets: HashMap<Key, i64> = HashMap::with_capacity(cities.len());
-    for (i, &(key, want)) in cities.iter().enumerate() {
-        let g = if i + 1 == cities.len() { left } else { ((taken as i128 * want as i128) / wanted as i128) as i64 };
+    let last = s.cities.len() - 1;
+    for (i, c) in s.cities.iter_mut().enumerate() {
+        let g = if i == last { left } else { ((taken as i128 * c.1 as i128) / wanted as i128) as i64 };
         left -= g;
-        gets.insert(key, g);
+        c.1 = g;
     }
-    for (key, _, _, u, mut moved) in &mut tiles {
-        if u.0 > 0 {
-            if let Some(g) = gets.get(&key.0) {
-                moved.0 += g;
-            }
+    s.cities.sort_unstable_by_key(|c| c.2);
+    // Pass 3: write both lists into the Moved columns (same table order).
+    let (mut give, mut get) = (s.tiles.iter().peekable(), s.cities.iter().peekable());
+    let mut at = 0u32;
+    for chunk in moved.contiguous_iter_mut().expect("tiles live in tables") {
+        let (chunk, _) = ContiguousMut::split(chunk);
+        let end = at + chunk.len() as u32;
+        while let Some(t) = give.next_if(|t| t.0 < end) {
+            chunk[(t.0 - at) as usize].0 -= t.2 as i64;
         }
+        while let Some(c) = get.next_if(|c| c.2 < end) {
+            chunk[(c.2 - at) as usize].0 += c.1;
+        }
+        at = end;
     }
+}
+
+/// Reused buffers of `city_draw`.
+#[derive(Default)]
+pub struct DrawScratch {
+    demand: Vec<f64>,
+    pool: Vec<f64>,
+    /// Tiles that can give: position, root square, rural people (then the
+    /// people leaving), surplus.
+    /// Positions are in table order.
+    tiles: Vec<(u32, u32, f64, f64)>,
+    cities: Vec<(Key, i64, u32)>,
 }
 
 /// Per-thread candidate lists filled during the parallel growth pass.
@@ -428,9 +473,10 @@ pub struct Scratch(Parallel<Found>);
 /// avoids a 128-bit division per tile. Independent per tile, so it runs in
 /// parallel and notes split and merge candidates on the way (one pass over
 /// the tiles, like the reference loop).
-fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow, &Moved, &UrbanShare)>) {
+fn growth(c: Res<TickConst>, stats: Res<Stats>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut Pop, &Cap, &Land, &mut MonthsLow, &Moved, &UrbanShare)>) {
     let c = *c;
     let d = c.decay_q32 as f64 / Q32 as f64;
+    let flow = flow_month(&stats);
     // Dense tile table: work on whole column slices (bevy_ecs 0.19
     // contiguous iteration), one chunk per task.
     let chunks = q.contiguous_par_iter_mut().expect("tiles live in tables");
@@ -442,7 +488,9 @@ fn growth(c: Res<TickConst>, found: Res<Scratch>, mut q: Query<(&TileKey, &mut P
         for i in 0..keys.len() {
             let p = &mut pop[i].0;
             // Migration first (computed from the start-of-month state).
-            *p += moved[i].0;
+            if flow {
+                *p += moved[i].0;
+            }
             if *p > 0 {
                 let (pp, kk) = (*p as f64, cap[i].0 as f64);
                 // Values are positive, so +0.5 and truncation round to nearest
@@ -719,6 +767,7 @@ impl Sim {
             migration_rate: params.migration_rate,
             migration_threshold: params.migration_threshold,
             urban_excess_month: params.urban_excess_death / 12.0,
+            decay_year_q32: exp_neg_q32((params.r_per_year * Q32 as f64).round() as i128),
             urban_excess_from: params.urban_excess_from,
             city_pull_rate: params.city_pull_rate,
             city_draw_cap: params.city_draw_cap,

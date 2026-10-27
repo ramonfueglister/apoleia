@@ -122,3 +122,20 @@ Plattform dieselben Bits ergibt.
 Lauf 1600 Jahre: Gesamt 66,1 → 81,7 Mio. (stabil ab ~1000), Rom 925 K → 869 K (580) → 830 K
 (1780), Alexandria 412 K → 375 K. Kleinstädte verlieren nichts mehr, daher wächst das Land
 näher an K. Tick p50 2,0 ms im Container.
+
+### Nachtrag: Tempo, Wanderung einmal im Jahr
+
+Nach den Städten kostete ein Monat auf dem Mac 0,57 ms statt 0,06 ms (Container: Wanderung
+~0,7 ms, Stadtzug ~1,1 ms, Wachstum ~0,3 ms). Zwei Schritte:
+
+1. **Stadtzug ohne Zufallszugriffe:** ein Durchlauf über die Spalten; dann nur noch die
+   gebenden Tiles und die Städte, zurückgeschrieben in Tabellenreihenfolge statt per
+   `Query::get` und HashMap. Bitgleiches Ergebnis (gleicher Fingerprint), 1,15 → 0,48 ms.
+2. **Wanderung und Stadtzug laufen einmal im Jahr (Januar)** mit Jahresraten
+   (`migration_rate` 0,24, `city_pull_rate` 0,6, `city_draw_cap` 0,024, Überschuss = logistischer
+   Jahreszuwachs). Die Ströme sind langsam, HYDE und die Quellen sind jährlich. Die übrigen elf
+   Monate rechnen nur Wachstum und Sterben.
+
+Ergebnis 1600 Jahre: Gesamt 81,72 Mio. (monatlich 81,69), Rom 823 K (monatlich 830 K).
+Container: Tick p50 2,0 ms → 0,21 ms, Mittel pro Monat ~1,5 ms → ~0,3 ms. Die Spalte
+`migrants_year` in `series.csv` ist jetzt der Jahresstrom.

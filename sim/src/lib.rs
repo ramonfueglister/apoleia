@@ -40,7 +40,8 @@ pub struct Params {
     pub adaptive: bool,
     /// Migration (Kit 2 MIGRATION.md): share of the smaller of sender
     /// population and receiver free capacity, per unit attraction difference
-    /// and month, across a full edge. 0 switches migration off.
+    /// and year, across a full edge. Migration and the city draw run once a
+    /// year (January). 0 switches migration off.
     pub migration_rate: f64,
     /// Attraction differences up to this cause no migration (EU5: only
     /// locations far enough from their surroundings migrate).
@@ -54,10 +55,10 @@ pub struct Params {
     /// City size (people) from which excess deaths start.
     pub urban_excess_from: f64,
     /// Share of a city tile's free capacity (K − P) that it asks for from
-    /// its region each month (jobs, grain, EU5's market-wide pull).
+    /// its region each year (jobs, grain, EU5's market-wide pull).
     pub city_pull_rate: f64,
     /// At most this share of a region's rural population leaves for its
-    /// cities in one month.
+    /// cities in one year.
     pub city_draw_cap: f64,
     /// With HYDE data: true = K from HYDE cropland × `people_per_cropland_km2`;
     /// false = K anchored on the HYDE start population (start = `start_fill` × K).
@@ -78,11 +79,11 @@ impl Default for Params {
             budget: 65_536,
             adaptive: true,
             k_from_cropland: false,
-            migration_rate: 0.02,
+            migration_rate: 0.24,
             urban_excess_death: 0.005,
             urban_excess_from: 5000.0,
-            city_pull_rate: 0.05,
-            city_draw_cap: 0.002,
+            city_pull_rate: 0.6,
+            city_draw_cap: 0.024,
             migration_threshold: 0.05,
         }
     }
