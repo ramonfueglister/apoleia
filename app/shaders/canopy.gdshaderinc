@@ -46,14 +46,14 @@ void fragment(){
     // Warmer olive crowns as in the reference.
     // Reference crowns: deep, slightly bluish green (h~100, s~0.36).
     // Reference crowns ~#2c3e2c: cool blue-green, low saturation.
-    vec3 tinted=leaf*vec3(0.62,0.70,0.66);
+    // 2c4cfcf: our shaded bands are yellower than the reference (mid
+    // #2e4323 against #2e4332, dark #1b2c16 against #1b3028): bluer.
+    vec3 tinted=leaf*vec3(0.60,0.69,0.76);
     tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.35);
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
     float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
-    // Mid view slightly lighter (dark share 0.147 against the reference 0.131).
-    near_crowns*=1.0+0.08*smoothstep(320.0,450.0,view_width)*(1.0-smoothstep(1000.0,1600.0,view_width));
     ALBEDO=tinted*mix(0.90,1.04,upper)*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
@@ -61,7 +61,9 @@ void fragment(){
     // about 0.3 of the lit side); ours fell to near black (#152917 on 18 %
     // of the crown pixels at 190 km, reference 1 %). Backlight wraps the
     // direct light round the crown; the ground and its shadows are unchanged.
-    BACKLIGHT=vec3(0.22);
+    // 0.22 overshot (2c4cfcf: dark share nah 0.102, mittel 0.089 against
+    // 0.165 / 0.131, near-black 6.8 %); half of it, a little cooler.
+    BACKLIGHT=vec3(0.09,0.11,0.13);
     AO=mix(0.90,1.0,upper);
 #ifdef CANOPY_FADE
     ALPHA=clamp(representation_weight*residency_weight,0.0,1.0);

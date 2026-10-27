@@ -267,19 +267,27 @@ void fragment() {
     // suppressed the real shoreline color twice (confirmed frozen-scene A/B).
     // Broad sand beaches on flat, low coasts (clipmap path): 0.9-2 km, about
     // 12 px up close; rock coasts and steep shores keep the narrow band.
+    // World direction to the nearest water from the screen derivatives of
+    // the distance field (no taps; top level, outside divergent branches).
+    vec2 vp_dx=dFdx(vp);vec2 vp_dy=dFdy(vp);float d_dx=dFdx(distance);float d_dy=dFdy(distance);
+    vec2 to_water=vec2(d_dx*vp_dy.y-d_dy*vp_dx.y,vp_dx.x*d_dy-vp_dy.x*d_dx)*sign(vp_dx.x*vp_dy.y-vp_dx.y*vp_dy.x);
     float beach=0.0;float open_sea=1.0;
     if(!graphic_coast) {
         float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
         // Low, flat coasts only (rivers are separate meshes, not in this distance).
         beach=(1.0-smoothstep(25.0,45.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
-        // Sand faces the open sea only: probe ~6 km past the nearest shore.
-        // Lakes, étangs and channels are narrower and keep the plain shore
-        // band (Camargue: 1.2 km sand rings round the Vaccarès and along the
-        // Grand Rhône). Low coastal land only, three distance taps.
-        if(material_distance<=0.0 && -material_distance<1800.0 && (beach>0.001 || (delta_count>0 && delta_inside(vp)))) {
-            float land_m=max(-material_distance,0.0);
-            vec2 g=vec2(water_distance_at(vp+vec2(0.25,0.0)),water_distance_at(vp+vec2(0.0,0.25)))-vec2(distance);
-            open_sea=smoothstep(3000.0,3800.0,water_distance_at(vp+g/max(length(g),0.001)*(land_m*0.001+6.0)));
+        // Inside deltas, sand faces the open sea only. Lakes, étangs and
+        // channels keep the plain shore band (Camargue: 1.2 km sand rings
+        // round the Vaccarès and along the Grand Rhône). Open sea: the sea
+        // role just past the nearest shore, and still >= ~2 km from any
+        // shore 5 km on (the packed distance saturates near 3 km, so a
+        // probe for more never passed: 2c4cfcf lost all delta sand).
+        // Delta coasts only; the tour cost of the first, everywhere version
+        // was ~0.8 ms p95 at 190 km.
+        if(delta_count>0 && material_distance<=0.0 && -material_distance<1800.0 && delta_inside(vp)) {
+            vec2 dir=to_water/max(length(to_water),1e-9);
+            float land_km=max(-material_distance,0.0)*0.001;
+            open_sea=(1.0-step(0.5,abs(water_kind_at(vp+dir*(land_km+0.4))-1.0)))*smoothstep(1600.0,2200.0,water_distance_at(vp+dir*(land_km+5.0)));
         }
         beach*=open_sea;
         // Reference: a warm sand ribbon of ~3 px in the mid view (#e6cb98)
