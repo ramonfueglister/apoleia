@@ -140,11 +140,34 @@ Mittel über die ersten 36 Monate: 100 000 Zellen 1,5 ms (vorher 1,9), 300 000 Z
 - Ein Szenario kann als bereits verfeinerter Spielstand ausgeliefert werden; dann fällt der
   Teilungsschub nach dem Start weg.
 
+### Nachtrag: Kartenmodus im Spiel (55d36f8)
+
+Gemessen mit `--simprof` (eigene Kosten des Kartenmodus pro Bild, vier feste Phasen),
+M3 Pro, 1440×810, Godot 4.7, Startansicht, ~33 000 Tiles.
+
+| Posten bei Tempo 5, Kartenmodus an | vorher | nachher |
+|---|---|---|
+| Index-Textur nach Teilen/Zusammenlegen | ganze Textur neu, ~9 ms je Mal | nur betroffene 256er-Seiten, meist < 0,02 ms pro Bild |
+| Tooltip (Boden-Picking) | 1–4 ms pro Bild | nur bei Maus- oder Kamerabewegung |
+| Shader-Parameter | jeden Monat an jedes Clipmap-Material | nur wenn eine Textur neu entsteht |
+| Gesamt Kartenmodus (CPU, Mittel) | ~2 ms pro Bild | 0,3–0,6 ms pro Bild |
+| Render-CPU (Godot) | 1,7–2,0 ms | 0,2–0,5 ms |
+
+Das Spiel hält in allen Phasen 144 Bilder/s (6,9 ms, Bildschirmtakt). Die früher gemessenen
+„~28 FPS“ waren ein Messfehler: macOS drosselt ein Fenster, das nicht vorne ist, auf
+30 Bilder/s. Messungen nur mit Fenster im Vordergrund werten.
+
+Offen: einzelne Ausreisser-Bilder (36–143 ms), vermutlich der erste Aufbau aller Seiten und
+Teilungsschübe; die GPU-Zeit liefert Godot auf Metal nicht (immer 0).
+
 ## Quellen (APA 7)
 
 Barr, E. T., Harman, M., McMinn, P., Shahbaz, M., & Yoo, S. (2015). The oracle problem in
 software testing: A survey. *IEEE Transactions on Software Engineering, 41*(5), 507–525.
 https://doi.org/10.1109/TSE.2014.2372785
+
+Barrett, S. (2008). *Sparse virtual textures* [Conference presentation]. Game Developers
+Conference 2008, San Francisco, CA, United States. http://silverspaceship.com/src/svt/
 
 Bettner, P., & Terrano, M. (2001). *1500 archers on a 28.8: Network programming in Age of
 Empires and beyond* [Conference presentation]. Game Developers Conference, San Jose, CA,
@@ -184,6 +207,10 @@ Pillai, T. S., Chidambaram, V., Alagappan, R., Al-Kiswany, S., Arpaci-Dusseau, A
 Arpaci-Dusseau, R. H. (2014). All file systems are not created equal: On the complexity of
 crafting crash-consistent applications. In *11th USENIX Symposium on Operating Systems Design
 and Implementation (OSDI 14)* (pp. 433–448). USENIX Association.
+
+van Waveren, J. M. P. (2009). *id Tech 5 challenges: From texture virtualization to massive
+parallelization* [Conference presentation]. SIGGRAPH 2009, Beyond Programmable Shading
+course, New Orleans, LA, United States.
 
 Wube Software. (2018, 23. November). *Friday Facts #270 – HR substation & save/load overview*.
 https://factorio.com/blog/post/fff-270
