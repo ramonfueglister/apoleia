@@ -69,7 +69,20 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def acquire_lock():
+def _owner_alive():
+    try:
+        pid = LOCK.read_text().split()[0].removeprefix('pid=')
+        os.kill(int(pid), 0)
+        return True
+    except (OSError, ValueError, IndexError):
+        return False
+
+
+def acquire_lock(wait_s=3600):
+    """Create the shared perf lock with our PID. A foreign lock is only removed
+    when it is older than LOCK_STALE_S and its PID is dead; otherwise wait, and
+    after wait_s abort without touching it."""
+    deadline = time.time() + wait_s
     while True:
         try:
             fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -77,15 +90,25 @@ def acquire_lock():
             os.close(fd)
             return
         except FileExistsError:
-            if time.time() - LOCK.stat().st_mtime > LOCK_STALE_S:
+            try:
+                stale = time.time() - LOCK.stat().st_mtime > LOCK_STALE_S and not _owner_alive()
+            except FileNotFoundError:
+                continue
+            if stale:
                 LOCK.unlink(missing_ok=True)
                 continue
+            if time.time() > deadline:
+                raise SystemExit('perf lock not acquired; left untouched: ' + LOCK.read_text().strip())
             time.sleep(5)
 
 
 def release_lock():
-    if LOCK.exists() and 'kit1-integration' in LOCK.read_text():
-        LOCK.unlink()
+    """Remove the lock only while it still holds our PID."""
+    try:
+        if LOCK.read_text().split()[0] == str(os.getpid()):
+            LOCK.unlink()
+    except (FileNotFoundError, IndexError):
+        pass
 
 
 def capture(pose, variant, work):
@@ -100,8 +123,12 @@ def capture(pose, variant, work):
     acquire_lock()
     try:
         with (out / 'log.txt').open('w') as log:
-            rc = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=RUN_TIMEOUT_S,
-                                start_new_session=True).returncode
+            process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            try:
+                rc = process.wait(timeout=RUN_TIMEOUT_S)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, 15)
+                rc = process.wait()
     finally:
         release_lock()
     shown = ['godot', *WINDOW, '--path', 'app', '--', *app_args[:-1], '<out>']
