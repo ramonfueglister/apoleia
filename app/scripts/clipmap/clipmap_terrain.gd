@@ -2,7 +2,7 @@ extends RefCounted
 ## Camera-centred geomipmap rings. Every tile shares one permanent 65² grid.
 const Tiles=preload("res://scripts/clipmap/tile_stream.gd")
 const GRID=64
-const GPU_LIMIT=192*1024*1024
+const GPU_LIMIT=320*1024*1024 # three RGBA8 images, ~0.8 MB per tile
 var stream=Tiles.new()
 var owner:Node3D
 var terrain_template:ShaderMaterial
@@ -34,7 +34,10 @@ const CAMERA_UNIFORMS:Array[StringName]=[&"view_width",&"relief",&"display_heigh
 var _shader_uniforms:Dictionary={}
 # refining: tiles that want finer children but are not fully faded to them yet;
 # missing can be 0 between levels while a fade is still running.
-var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missing":0,"refining":0,"upload_ms":0.}
+var metrics={"root_ready":false,"draw_tiles":0,"gpu_bytes":0,"uploads":0,"missing":0,"refining":0,"upload_ms":0.,"upload_bytes":0}
+## A12: per-tile request -> load -> upload times (engine usec), bounded.
+const TIMELINE_LIMIT=8192
+var tile_timeline:Array=[]
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
     owner=scene;terrain_template=terrain;water_template=water
@@ -107,8 +110,15 @@ func update(focus:Vector2,view_width:float,relief:float,display_scale:float,delt
     _frame+=1;_focus=focus;_width=view_width;_dt=minf(delta,.05)
     _finest=clampi(int(floor(log(maxf(view_width/(float(stream.manifest.base_span)*2.),1.))/log(2.))),0,int(stream.manifest.max_level))
     _uploads.append_array(stream.poll());var started=Time.get_ticks_usec()
-    if not _uploads.is_empty() and _gpu_bytes+int(_uploads[0].bytes)<=GPU_LIMIT:
-        _upload(_uploads.pop_front());metrics.uploads+=1
+    # Soft budget: a wanted or pinned tile is uploaded even over GPU_LIMIT;
+    # holding it back would leave its region on the parent forever.
+    # Tiles no longer wanted are dropped from the head instead of blocking it.
+    while not _uploads.is_empty() and _gpu_bytes+int(_uploads[0].bytes)>GPU_LIMIT and not (_wanted.has(str(_uploads[0].id)) or _pins.has(str(_uploads[0].id))):
+        _uploads.pop_front()
+    metrics.upload_bytes=0
+    if not _uploads.is_empty():
+        var tile:Dictionary=_uploads.pop_front();_upload(tile);metrics.uploads+=1;metrics.upload_bytes=int(tile.bytes)
+        if tile_timeline.size()<TIMELINE_LIMIT:tile_timeline.append([str(tile.id),int(tile.get("requested_usec",-1)),int(tile.get("loaded_usec",-1)),Time.get_ticks_usec(),int(tile.bytes)])
     metrics.upload_ms=float(Time.get_ticks_usec()-started)/1000.
     _wanted={};_pins={};_draw={};metrics.refining=0;var root_id=str(stream.manifest.root);_pins[root_id]=true;_request(root_id,1000000.)
     if nodes.has(root_id):_visit(root_id);metrics.root_ready=true
@@ -318,7 +328,7 @@ func _query_vertex_height(p:Vector2,query:Dictionary)->float:
         for axis in range(4):morph=maxf(morph,(1.-smoothstep(0.,float(query.edge_width),edges[axis]))*mask[axis])
     return lerpf(parent_height,child_height,clampf(float(query.blend),0.,1.)*(1.-morph))
 
-func stats()->Dictionary:return {"clipmap":metrics,"tiles":stream.stats(),"grid_vertices":(GRID+1)*(GRID+1),"geometry_rebuilt_per_frame":false}
+func stats()->Dictionary:return {"limits":{"cpu_bytes":Tiles.CPU_LIMIT,"gpu_bytes":GPU_LIMIT,"uploads_per_frame":1},"clipmap":metrics,"tiles":stream.stats(),"grid_vertices":(GRID+1)*(GRID+1),"geometry_rebuilt_per_frame":false}
 func shutdown()->void:stream.shutdown()
 
 func _edge_mask(id:String)->Vector4:

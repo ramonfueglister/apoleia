@@ -1,0 +1,1162 @@
+{
+ "01-forward_plus-vsyncoff": {
+  "rendering_method": "forward_plus",
+  "vsync": "off",
+  "order": 1,
+  "start_epoch": 1793059297,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 7574.909,
+  "startup_timeline": {
+   "first_frame_msec": 4754,
+   "coverage_ready_msec": 12329,
+   "coverage_ready_frame": 298
+  },
+  "frame_ms_tour": {
+   "p50": 9.446,
+   "p95": 18.15,
+   "p99": 27.296,
+   "max": 117.331,
+   "n": 4428
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3678,
+   "16.7": 279,
+   "33.3": 28,
+   "50": 10,
+   "100": 2,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    4731.1,
+    120
+   ],
+   [
+    195.0,
+    2
+   ],
+   [
+    117.3,
+    2901
+   ],
+   [
+    103.5,
+    2900
+   ],
+   [
+    98.3,
+    2899
+   ],
+   [
+    95.7,
+    2897
+   ],
+   [
+    95.5,
+    2898
+   ],
+   [
+    77.9,
+    116
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 793,
+    "p50": 0.11100000143051147,
+    "p95": 0.30000001192092896,
+    "max": 0.515999972820282
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 793,
+    "p50": 0.112,
+    "p95": 1.668,
+    "max": 6.424
+   }
+  },
+  "memory": {
+   "rss_max": 1531953152,
+   "rss_median": 1438973952,
+   "static_max": 723210873,
+   "gpu_max": 793034752.0,
+   "gpu_texture_max": 479279744.0,
+   "gpu_texture_null_samples": 0,
+   "gpu_buffer_max": 202996408.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 509.77,
+    "p95": 1587.059,
+    "max": 4818.217
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 39.108,
+    "p95": 567.882,
+    "max": 721.172
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 664.622,
+    "p95": 1856.811,
+    "max": 4856.037
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 4.091,
+    "p95": 1.2650000000000001
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 629,
+   "tour_frames": 4429,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "e91501306befd886cc519f660872caa29def4c7ae94781930d4b5ebd2bcc8752",
+  "trimmed_gz": "runs/01-forward_plus-vsyncoff.runtime-trim.json.gz"
+ },
+ "02-mobile-vsyncoff": {
+  "rendering_method": "mobile",
+  "vsync": "off",
+  "order": 2,
+  "start_epoch": 1793059364,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 17106.254,
+  "startup_timeline": {
+   "first_frame_msec": 6717,
+   "coverage_ready_msec": 23823,
+   "coverage_ready_frame": 182
+  },
+  "frame_ms_tour": {
+   "p50": 8.407,
+   "p95": 12.401,
+   "p99": 20.388,
+   "max": 58.443,
+   "n": 5192
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3514,
+   "16.7": 105,
+   "33.3": 11,
+   "50": 5,
+   "100": 0,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    7433.8,
+    1
+   ],
+   [
+    5012.4,
+    30
+   ],
+   [
+    1540.7,
+    3
+   ],
+   [
+    1290.0,
+    10
+   ],
+   [
+    58.4,
+    3486
+   ],
+   [
+    57.5,
+    3482
+   ],
+   [
+    57.2,
+    3485
+   ],
+   [
+    55.5,
+    3484
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 902,
+    "p50": 0.08399999886751175,
+    "p95": 0.2070000022649765,
+    "max": 0.35100001096725464
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 903,
+    "p50": 0.275,
+    "p95": 1.718,
+    "max": 10.253
+   }
+  },
+  "memory": {
+   "rss_max": 1331576832,
+   "rss_median": 1226874880.0,
+   "static_max": 724986084,
+   "gpu_max": 778698752.0,
+   "gpu_texture_max": 474757760.0,
+   "gpu_texture_null_samples": 1,
+   "gpu_buffer_max": 196599888.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 450.162,
+    "p95": 1412.657,
+    "max": 7435.981
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 26.548,
+    "p95": 308.724,
+    "max": 368.028
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 532.112,
+    "p95": 1432.443,
+    "max": 7466.639
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.6990000000000003,
+    "p95": 1.0210000000000001
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 758,
+   "tour_frames": 5193,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "fca43e9876190ee52c7ca26fe15d49b75c612352831b93b95ccd5d2d6507f27c",
+  "trimmed_gz": "runs/02-mobile-vsyncoff.runtime-trim.json.gz"
+ },
+ "03-forward_plus-vsyncoff": {
+  "rendering_method": "forward_plus",
+  "vsync": "off",
+  "order": 3,
+  "start_epoch": 1793059443,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 12783.738,
+  "startup_timeline": {
+   "first_frame_msec": 7186,
+   "coverage_ready_msec": 19970,
+   "coverage_ready_frame": 221
+  },
+  "frame_ms_tour": {
+   "p50": 8.696,
+   "p95": 17.541,
+   "p99": 26.146,
+   "max": 118.475,
+   "n": 4582
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3778,
+   "16.7": 261,
+   "33.3": 26,
+   "50": 11,
+   "100": 2,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    4943.2,
+    30
+   ],
+   [
+    3832.1,
+    1
+   ],
+   [
+    1262.6,
+    15
+   ],
+   [
+    724.8,
+    23
+   ],
+   [
+    118.5,
+    2970
+   ],
+   [
+    103.6,
+    2969
+   ],
+   [
+    99.3,
+    2968
+   ],
+   [
+    96.2,
+    2966
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 805,
+    "p50": 0.09700000286102295,
+    "p95": 0.2750000059604645,
+    "max": 0.4230000078678131
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 806,
+    "p50": 0.152,
+    "p95": 1.612,
+    "max": 6.432
+   }
+  },
+  "memory": {
+   "rss_max": 1388003328,
+   "rss_median": 1237762048.0,
+   "static_max": 724263493,
+   "gpu_max": 793346048.0,
+   "gpu_texture_max": 479279744.0,
+   "gpu_texture_null_samples": 0,
+   "gpu_buffer_max": 203142744.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 473.387,
+    "p95": 1408.524,
+    "max": 7055.67
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 43.315,
+    "p95": 587.424,
+    "max": 737.085
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 631.218,
+    "p95": 1751.407,
+    "max": 7090.36
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.555,
+    "p95": 1.171
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 628,
+   "tour_frames": 4583,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "4eb29c847dd14a05a3571bcb38cecbe45625ce94381df1a5c72b9ca6fc2388e1",
+  "trimmed_gz": "runs/03-forward_plus-vsyncoff.runtime-trim.json.gz"
+ },
+ "04-mobile-vsyncoff": {
+  "rendering_method": "mobile",
+  "vsync": "off",
+  "order": 4,
+  "start_epoch": 1793059518,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 11310.458,
+  "startup_timeline": {
+   "first_frame_msec": 6051,
+   "coverage_ready_msec": 17362,
+   "coverage_ready_frame": 429
+  },
+  "frame_ms_tour": {
+   "p50": 8.39,
+   "p95": 12.165,
+   "p99": 20.055,
+   "max": 58.191,
+   "n": 5228
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3538,
+   "16.7": 101,
+   "33.3": 10,
+   "50": 5,
+   "100": 0,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    5021.7,
+    255
+   ],
+   [
+    1466.6,
+    253
+   ],
+   [
+    916.5,
+    1
+   ],
+   [
+    58.2,
+    3760
+   ],
+   [
+    56.0,
+    3759
+   ],
+   [
+    55.9,
+    3756
+   ],
+   [
+    55.0,
+    3758
+   ],
+   [
+    54.2,
+    3757
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 950,
+    "p50": 0.0820000022649765,
+    "p95": 0.19599999487400055,
+    "max": 0.36899998784065247
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 951,
+    "p50": 0.141,
+    "p95": 1.674,
+    "max": 5.838
+   }
+  },
+  "memory": {
+   "rss_max": 1565638656,
+   "rss_median": 1236361216.0,
+   "static_max": 728660324,
+   "gpu_max": 778698752.0,
+   "gpu_texture_max": 474757760.0,
+   "gpu_texture_null_samples": 1,
+   "gpu_buffer_max": 196599888.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 452.568,
+    "p95": 1388.562,
+    "max": 6505.302
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 22.495,
+    "p95": 329.134,
+    "max": 382.425
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 532.7,
+    "p95": 1409.499,
+    "max": 6537.869
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.508,
+    "p95": 1.036
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 760,
+   "tour_frames": 5229,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "753fd10ee6f93b0f87d4efa6b09d94b3202f8b7c593829503a20c2da60f31b30",
+  "trimmed_gz": "runs/04-mobile-vsyncoff.runtime-trim.json.gz"
+ },
+ "05-forward_plus-vsyncoff": {
+  "rendering_method": "forward_plus",
+  "vsync": "off",
+  "order": 5,
+  "start_epoch": 1793059590,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 12871.234,
+  "startup_timeline": {
+   "first_frame_msec": 6195,
+   "coverage_ready_msec": 19066,
+   "coverage_ready_frame": 208
+  },
+  "frame_ms_tour": {
+   "p50": 8.751,
+   "p95": 17.269,
+   "p99": 26.449,
+   "max": 116.733,
+   "n": 4597
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3767,
+   "16.7": 260,
+   "33.3": 29,
+   "50": 9,
+   "100": 2,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    4738.2,
+    30
+   ],
+   [
+    3354.3,
+    1
+   ],
+   [
+    1600.7,
+    11
+   ],
+   [
+    1236.1,
+    3
+   ],
+   [
+    116.7,
+    2970
+   ],
+   [
+    103.0,
+    2969
+   ],
+   [
+    98.2,
+    2968
+   ],
+   [
+    95.5,
+    2966
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 807,
+    "p50": 0.09300000220537186,
+    "p95": 0.2619999945163727,
+    "max": 0.4059999883174896
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 808,
+    "p50": 0.169,
+    "p95": 1.559,
+    "max": 7.499
+   }
+  },
+  "memory": {
+   "rss_max": 1363804160,
+   "rss_median": 1239908352,
+   "static_max": 724023017,
+   "gpu_max": 791560192.0,
+   "gpu_texture_max": 479279744.0,
+   "gpu_texture_null_samples": 0,
+   "gpu_buffer_max": 202928860.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 470.227,
+    "p95": 1418.585,
+    "max": 7811.996
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 44.162,
+    "p95": 560.969,
+    "max": 706.552
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 618.437,
+    "p95": 1741.892,
+    "max": 7831.173
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 5.987,
+    "p95": 1.1500000000000001
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 625,
+   "tour_frames": 4598,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "15d7c771a8b74eecd6852b1513d9d255f8a88fcb9efeb80ae5cc7c7c4799ec8d",
+  "trimmed_gz": "runs/05-forward_plus-vsyncoff.runtime-trim.json.gz"
+ },
+ "06-mobile-vsyncoff": {
+  "rendering_method": "mobile",
+  "vsync": "off",
+  "order": 6,
+  "start_epoch": 1793059662,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 10429.379,
+  "startup_timeline": {
+   "first_frame_msec": 5603,
+   "coverage_ready_msec": 16032,
+   "coverage_ready_frame": 365
+  },
+  "frame_ms_tour": {
+   "p50": 8.455,
+   "p95": 12.144,
+   "p99": 20.126,
+   "max": 58.127,
+   "n": 5235
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3383,
+   "16.7": 108,
+   "33.3": 10,
+   "50": 5,
+   "100": 0,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    4933.6,
+    195
+   ],
+   [
+    1159.6,
+    190
+   ],
+   [
+    897.1,
+    1
+   ],
+   [
+    84.5,
+    36
+   ],
+   [
+    58.1,
+    3701
+   ],
+   [
+    56.5,
+    3700
+   ],
+   [
+    55.2,
+    3699
+   ],
+   [
+    55.1,
+    3697
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 941,
+    "p50": 0.0820000022649765,
+    "p95": 0.20399999618530273,
+    "max": 1148.3079833984375
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 942,
+    "p50": 0.141,
+    "p95": 1.644,
+    "max": 7.11
+   }
+  },
+  "memory": {
+   "rss_max": 1556168704,
+   "rss_median": 1441005568,
+   "static_max": 727995112,
+   "gpu_max": 780075008.0,
+   "gpu_texture_max": 474757760.0,
+   "gpu_texture_null_samples": 1,
+   "gpu_buffer_max": 196599888.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 453.019,
+    "p95": 1416.112,
+    "max": 6135.648
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 24.52,
+    "p95": 302.79,
+    "max": 342.283
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 531.421,
+    "p95": 1433.053,
+    "max": 6167.04
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.737,
+    "p95": 1.051
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 767,
+   "tour_frames": 5236,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "7209d19bc4276035f363c14dc75fa29eb8576541f40b17655d0c6cea8c63e361",
+  "trimmed_gz": "runs/06-mobile-vsyncoff.runtime-trim.json.gz"
+ },
+ "07-forward_plus-vsyncon": {
+  "rendering_method": "forward_plus",
+  "vsync": "on",
+  "order": 7,
+  "start_epoch": 1793059732,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 11048.827,
+  "startup_timeline": {
+   "first_frame_msec": 5712,
+   "coverage_ready_msec": 16761,
+   "coverage_ready_frame": 302
+  },
+  "frame_ms_tour": {
+   "p50": 8.543,
+   "p95": 16.639,
+   "p99": 25.461,
+   "max": 127.221,
+   "n": 4693
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3700,
+   "16.7": 231,
+   "33.3": 26,
+   "50": 11,
+   "100": 3,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    5113.0,
+    30
+   ],
+   [
+    3224.8,
+    1
+   ],
+   [
+    127.2,
+    3133
+   ],
+   [
+    107.8,
+    3132
+   ],
+   [
+    104.7,
+    3131
+   ],
+   [
+    99.9,
+    3129
+   ],
+   [
+    99.2,
+    3130
+   ],
+   [
+    81.5,
+    38
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 840,
+    "p50": 0.09099999815225601,
+    "p95": 0.23399999737739563,
+    "max": 0.38999998569488525
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 841,
+    "p50": 0.137,
+    "p95": 1.537,
+    "max": 6.136
+   }
+  },
+  "memory": {
+   "rss_max": 1364197376,
+   "rss_median": 1242136576,
+   "static_max": 726725245,
+   "gpu_max": 791740416.0,
+   "gpu_texture_max": 481737344.0,
+   "gpu_texture_null_samples": 0,
+   "gpu_buffer_max": 203287924.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 501.739,
+    "p95": 1393.74,
+    "max": 5849.258
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 39.397,
+    "p95": 584.594,
+    "max": 738.585
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 633.445,
+    "p95": 1723.145,
+    "max": 5866.268
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.508,
+    "p95": 1.095
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 647,
+   "tour_frames": 4694,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "7fdadea186943e06ac30abdc5463a49ac1065c42655c24477b9c871c1705ce2b",
+  "trimmed_gz": "runs/07-forward_plus-vsyncon.runtime-trim.json.gz"
+ },
+ "08-mobile-vsyncon": {
+  "rendering_method": "mobile",
+  "vsync": "on",
+  "order": 8,
+  "start_epoch": 1793059801,
+  "thermal_before": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "thermal_after": [
+   "Note: No thermal warning level has been recorded",
+   "Note: No performance warning level has been recorded",
+   "Note: No CPU power status has been recorded"
+  ],
+  "viewport": [
+   640,
+   360
+  ],
+  "startup_wait_ms": 9951.197,
+  "startup_timeline": {
+   "first_frame_msec": 5689,
+   "coverage_ready_msec": 15640,
+   "coverage_ready_frame": 290
+  },
+  "frame_ms_tour": {
+   "p50": 8.38,
+   "p95": 11.58,
+   "p99": 19.407,
+   "max": 59.67,
+   "n": 5306
+  },
+  "tour_frames_over_ms": {
+   "8.3": 3799,
+   "16.7": 104,
+   "33.3": 10,
+   "50": 5,
+   "100": 0,
+   "250": 0
+  },
+  "spikes_top8_ms_frame": [
+   [
+    5003.0,
+    120
+   ],
+   [
+    1121.2,
+    115
+   ],
+   [
+    857.4,
+    1
+   ],
+   [
+    110.0,
+    14
+   ],
+   [
+    75.2,
+    47
+   ],
+   [
+    59.7,
+    3685
+   ],
+   [
+    58.2,
+    23
+   ],
+   [
+    58.1,
+    3684
+   ]
+  ],
+  "render_timing": {
+   "viewport_cpu_ms": {
+    "n": 939,
+    "p50": 0.07500000298023224,
+    "p95": 0.17100000381469727,
+    "max": 0.3179999887943268
+   },
+   "viewport_gpu_ms": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "frame_setup_cpu_ms": {
+    "n": 940,
+    "p50": 0.203,
+    "p95": 1.603,
+    "max": 8.885
+   }
+  },
+  "memory": {
+   "rss_max": 1336721408,
+   "rss_median": 1230479360.0,
+   "static_max": 728054284,
+   "gpu_max": 779206656.0,
+   "gpu_texture_max": 474757760.0,
+   "gpu_texture_null_samples": 1,
+   "gpu_buffer_max": 196741748.0
+  },
+  "clipmap": {
+   "limits": {
+    "cpu_bytes": 134217728,
+    "gpu_bytes": 335544320,
+    "uploads_per_frame": 1
+   },
+   "tile_request_to_load_ms": {
+    "n": 393,
+    "p50": 446.212,
+    "p95": 1340.953,
+    "max": 6148.705
+   },
+   "tile_load_to_upload_ms": {
+    "n": 393,
+    "p50": 23.378,
+    "p95": 288.428,
+    "max": 354.357
+   },
+   "tile_request_to_upload_ms": {
+    "n": 393,
+    "p50": 516.315,
+    "p95": 1368.296,
+    "max": 6181.71
+   },
+   "tour_upload_bytes_per_frame": {
+    "max": 332820,
+    "p95": 332820,
+    "frames_with_upload": 366
+   },
+   "tour_upload_ms_per_frame": {
+    "max": 3.5140000000000002,
+    "p95": 0.922
+   },
+   "tour_gpu_bytes_max": 251611920,
+   "tour_frames_visibly_too_coarse": 772,
+   "tour_frames": 5307,
+   "tour_missing_max": 100,
+   "tour_refining_max": 25
+  },
+  "runtime_json_sha256": "3a79e924bda6ae63691c80f963806f93b71c99bccd8cb8ac1714d38380701819",
+  "trimmed_gz": "runs/08-mobile-vsyncon.runtime-trim.json.gz"
+ }
+}
