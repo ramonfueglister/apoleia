@@ -70,6 +70,11 @@ const MARRY_AGE: [(f64, f64); 4] = [(15.0, 20.0), (15.0, 20.0), (13.0, 20.0), (1
 /// relative. PLACEHOLDER ages (the decision names 15–60) and order of kin:
 /// parent, child, sibling, uncle or aunt; within a degree the lowest id.
 const WORK_AGE: (f64, f64) = (15.0, 60.0);
+/// S80: from this share of the cap (S59) on, emigration rises softly.
+const CAP_SOFT: f64 = 0.9;
+/// S80 PLACEHOLDER: share of households a year that leave at the cap, the
+/// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
+const CAP_LEAVE_PER_YEAR: f64 = 0.03;
 /// Women are not sought after this age.
 const MARRY_AGE_MAX_F: f64 = 45.0;
 /// Preferred age gap husband − wife in years (Saller: about 10).
@@ -1485,6 +1490,13 @@ impl People {
     fn migration(&mut self, day: i64, yslice: u32) {
         let mut moves: Vec<(Vec<u32>, Option<u32>)> = Vec::new();
         let mut joins: Vec<(Vec<u32>, u32)> = Vec::new();
+        // S80: near the cap, households in need rather leave than move, and
+        // a share of the others leaves too, the worst fed first.
+        let seed = self.seed();
+        let pressure = ((self.count as f64 / CAP as f64 - CAP_SOFT) / (1.0 - CAP_SOFT)).clamp(0.0, 1.0);
+        let leave_instead = |pid: u32| pressure > 0.0 && life::unit(rnd(seed, pid, 0xca9, day)) <= pressure;
+        let mut rest: Vec<(u32, u32, Vec<u32>)> = Vec::new();
+        let mut checked = 0usize;
         for &(i, j) in &self.hh_slices[yslice as usize] {
             let members: Vec<u32> = self.households[i as usize..j as usize]
                 .iter()
@@ -1498,11 +1510,15 @@ impl People {
             }
             let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
             let house = self.households[i as usize].0;
+            checked += 1;
             if let Some(e) = &self.econ {
                 // Grain economy: a household that ate too little looks for
                 // the region around with the most food per head (stores
                 // and free land, crate::grain); PLACEHOLDER as below.
                 if !self.in_need(house, home) {
+                    if pressure > 0.0 {
+                        rest.push((e.fed.get(house as usize).map_or(1000, |&f| f as u32), house, members));
+                    }
                     continue;
                 }
                 let own = self.grid.region(home);
@@ -1515,11 +1531,16 @@ impl People {
                         }
                     }
                 }
-                moves.push((members, (best.1 != NONE).then_some(best.1)));
+                let to = (best.1 != NONE && !leave_instead(house)).then_some(best.1);
+                moves.push((members, to));
                 continue;
             }
             let now = self.share(home, 0);
-            if now < 1.0 {
+            if now >= 1.0 {
+                if pressure > 0.0 {
+                    rest.push(((now * 1000.0).min(u32::MAX as f64) as u32, house, members));
+                }
+            } else {
                 // The best region around (food per person once they are
                 // there), and in it the cell with the most free food.
                 let n = members.len() as u32;
@@ -1532,11 +1553,20 @@ impl People {
                         best = (s, r);
                     }
                 }
-                let to = (best.1 != NONE).then(|| {
+                let to = (best.1 != NONE && !leave_instead(house)).then(|| {
                     let cells = &self.region_cells[&self.region_key[best.1 as usize]];
                     *cells.iter().max_by(|&&a, &&b| (self.food[a as usize] - self.pop[a as usize] as f32).total_cmp(&(self.food[b as usize] - self.pop[b as usize] as f32)).then(b.cmp(&a))).unwrap()
                 });
                 moves.push((members, to));
+            }
+        }
+        if pressure > 0.0 {
+            // This day's share of the yearly leavers, rounded by chance.
+            let want = pressure * CAP_LEAVE_PER_YEAR * checked as f64;
+            let k = want as usize + (life::unit(rnd(seed, yslice, 0xca8, day)) <= want.fract()) as usize;
+            rest.sort_unstable_by_key(|r| (r.0, r.1));
+            for (_, _, members) in rest.into_iter().take(k) {
+                moves.push((members, None));
             }
         }
         let at = |p: &Self, pid: u32| p.world.get::<Home>(p.ent[pid as usize]).unwrap().0;
