@@ -83,7 +83,7 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 | Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2,5 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |
 | Kleine Orte | 133 Orte liegen unter 2 Einwohnern, 66 davon sogar unter 1 (z. B. Toledo, Siena, Eleusis, Carcassonne) | **entschieden (S57):** jeder Ort bekommt mindestens 2 Einwohner, ein Paar als Familie (zusammen rund +125 Personen). |
 | Kleine Zahlen | Zufall wirkt stärker: Ein Hof kann aussterben, ein Dorf ohne Heiratspartner bleiben | Heiratskreis über die Reisedauer begrenzen; Verwandtschaftsgrad wie in CK3 führen. |
-| Wachstum | 680 n. Chr. ≈ 145'000; 200'000 sind bei ≈ 113 Mio. echten Menschen erreicht (Mittelalter) | ab etwa 200'000 Menschen den Faktor pro Epoche anheben (später entscheiden). |
+| Wachstum | 680 n. Chr. ≈ 145'000; 200'000 sind bei ≈ 113 Mio. echten Menschen erreicht (Mittelalter) | **entschieden (S59):** feste Obergrenze, Startwert 200'000 Personen. Der Massstab bleibt 1:566,5 für alle Epochen. |
 | Kamera | nächster Zoom zeigt einzelne Häuser (≈ 10 m) | Ausschnittsbreiten aus Kit 1 („Stadt 5–10 km“, „500 m“) gelten in echten Metern; im Diorama ist Rom 190 m breit. |
 
 ## Was sich in Kit 2 ändert

@@ -61,8 +61,9 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
 | S57 | **Jeder Ort aus `places.csv` bekommt mindestens 2 Einwohner** (ein Paar als Familie), auch wenn er nach Massstab darunter liegt (133 Orte, zusammen rund +125 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
 | S58 | **Ämter nach Aufgabe, nicht nach Massstab:** Senat 40 Senatoren (≈ 30 senatorische Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom für Fraktionen und Erbfolge), mit Familien ≈ 150 Personen. Jede Provinz einen Statthalter, jede Legion einen Legaten, Ritterstand ≈ 60 Personen für die Prokuratoren. Alle übrigen Zahlen im Massstab (S50). |
+| S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Die Grenze wirkt weich über die Tragfähigkeit: Ab etwa 90 % sinken Heirat und Geburten weltweit, so dass die Summe die Grenze nicht überschreitet. Regionen können sich weiter verschieben (eine wächst, eine andere schrumpft). Vorbild: Dwarf Fortress, RimWorld, Songs of Syx. |
 
-Offen: Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
+Offen: Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
