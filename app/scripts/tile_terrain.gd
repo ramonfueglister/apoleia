@@ -27,7 +27,7 @@ const DIORAMA_LAENGE := 1.0 / 23.80
 const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
 const HOUSE_M := 10.0 # house length (house mesh is 1 unit long)
 const TREE_M := 12.0  # tree height (tree meshes are about 1.1 units tall)
-const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house"]
+const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
 
 var manifest: Dictionary
 var world_min := Vector2.ZERO
@@ -129,7 +129,7 @@ func _build_nodes() -> void:
 	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
-	var meshes := [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), PropMeshes.house()]
+	var meshes := [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), PropMeshes.house(), PropMeshes.umbrella_pine()]
 	for kind in PROP_KINDS.size():
 		var node := MultiMeshInstance3D.new()
 		node.name = "Tile" + PROP_KINDS[kind].capitalize()

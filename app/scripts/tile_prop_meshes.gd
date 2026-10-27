@@ -50,34 +50,36 @@ static func _icosphere(subdivisions: int) -> Array:
 		f = nf
 	return [v, f]
 
-## Smooth blob: icosphere scaled and lumped, coloured dark below, light on top.
-static func _blob(st: SurfaceTool, centre: Vector3, radius: Vector3, low: Color, high: Color, seed: float, detail := 1) -> void:
+## Faceted crown: an icosphere scaled to `radius`, every face flat with its own
+## normal (Dorfromantik / Islanders style), dark below and light on top.
+static func _crown(st: SurfaceTool, centre: Vector3, radius: Vector3, low: Color, high: Color, detail := 1) -> void:
 	var ico := _icosphere(detail)
 	var v: Array[Vector3] = ico[0]
 	for tri in ico[1]:
+		var p: Array[Vector3] = []
 		for k in [0, 2, 1]:
-			var n: Vector3 = v[tri[k]]
-			var lump := 1.0 + 0.09 * sin(n.x * 5.1 + seed) * cos(n.z * 4.3 - seed) + 0.05 * sin(n.y * 7.0 + seed * 2.0)
-			var p := centre + n * radius * lump
-			var shade := clampf(n.y * 0.5 + 0.5, 0.0, 1.0)
-			st.set_color(low.lerp(high, shade * shade))
-			st.set_normal((n / radius).normalized())
-			st.add_vertex(p)
+			p.append(centre + v[tri[k]] * radius)
+		var n := (p[1] - p[0]).cross(p[2] - p[0]).normalized()
+		var mid := (p[0] + p[1] + p[2]) / 3.0
+		var t := clampf((mid.y - (centre.y - radius.y)) / (2.0 * radius.y), 0.0, 1.0)
+		var colour := low.lerp(high, t)
+		for q in p:
+			st.set_color(colour); st.set_normal(n); st.add_vertex(q)
 
+## Faceted cone, flat sides.
 static func _cone(st: SurfaceTool, base_y: float, top_y: float, radius: float, sides: int, low: Color, high: Color) -> void:
-	var slope := radius / (top_y - base_y)
+	var top := Vector3(0, top_y, 0)
 	for s in sides:
 		var a0 := TAU * s / sides
 		var a1 := TAU * (s + 1) / sides
-		var am := (a0 + a1) * 0.5
 		var p0 := Vector3(cos(a0) * radius, base_y, sin(a0) * radius)
 		var p1 := Vector3(cos(a1) * radius, base_y, sin(a1) * radius)
-		var n0 := Vector3(cos(a0), slope, sin(a0)).normalized()
-		var n1 := Vector3(cos(a1), slope, sin(a1)).normalized()
-		var nm := Vector3(cos(am), slope, sin(am)).normalized()
-		st.set_color(low); st.set_normal(n0); st.add_vertex(p0)
-		st.set_color(high); st.set_normal(nm); st.add_vertex(Vector3(0, top_y, 0))
-		st.set_color(low); st.set_normal(n1); st.add_vertex(p1)
+		var n := (top - p0).cross(p1 - p0).normalized()
+		if n.y < 0: n = -n
+		var lit := low.lerp(high, 0.35 + 0.3 * float(s % 2))
+		st.set_color(low); st.set_normal(n); st.add_vertex(p0)
+		st.set_color(lit); st.set_normal(n); st.add_vertex(top)
+		st.set_color(low); st.set_normal(n); st.add_vertex(p1)
 		# underside, so the cone does not look hollow from steep cameras
 		st.set_color(low.darkened(0.3)); st.set_normal(Vector3.DOWN); st.add_vertex(p0)
 		st.set_normal(Vector3.DOWN); st.add_vertex(p1)
@@ -95,38 +97,42 @@ static func _trunk(st: SurfaceTool, height: float, radius: float, colour: Color)
 		for p in [b0, b0 + up, b1, b1, b0 + up, b1 + up]:
 			st.set_color(colour); st.set_normal(n); st.add_vertex(p)
 
-static func _commit(st: SurfaceTool) -> ArrayMesh:
-	st.index()
-	return st.commit()
-
+## Deciduous tree (oak, beech): one faceted crown on a short trunk.
 static func broadleaf() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.42, 0.045, Color(0.36, 0.26, 0.17))
-	var low := Color(0.17, 0.27, 0.13)
-	var high := Color(0.38, 0.50, 0.22)
-	_blob(st, Vector3(0, 0.66, 0), Vector3(0.34, 0.30, 0.34), low, high, 0.7)
-	_blob(st, Vector3(0.14, 0.86, -0.06), Vector3(0.22, 0.2, 0.22), low.lightened(0.05), high.lightened(0.08), 2.1, 0)
-	_blob(st, Vector3(-0.15, 0.74, 0.12), Vector3(0.2, 0.18, 0.2), low, high, 4.2, 0)
-	return _commit(st)
+	_trunk(st, 0.42, 0.05, Color(0.40, 0.28, 0.18))
+	_crown(st, Vector3(0, 0.70, 0), Vector3(0.36, 0.32, 0.36), Color(0.20, 0.36, 0.15), Color(0.47, 0.64, 0.25))
+	return st.commit()
 
+## Conifer (fir, spruce): three stacked flat-sided cones.
 static func conifer() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.25, 0.04, Color(0.33, 0.23, 0.15))
-	var low := Color(0.12, 0.22, 0.13)
-	var high := Color(0.27, 0.40, 0.22)
-	_cone(st, 0.18, 0.78, 0.30, 9, low, high)
-	_cone(st, 0.45, 1.02, 0.23, 9, low.lightened(0.04), high)
-	_cone(st, 0.70, 1.18, 0.15, 8, low.lightened(0.06), high.lightened(0.06))
-	return _commit(st)
+	_trunk(st, 0.2, 0.04, Color(0.36, 0.25, 0.16))
+	var low := Color(0.16, 0.34, 0.20)
+	var high := Color(0.38, 0.60, 0.33)
+	_cone(st, 0.14, 0.66, 0.30, 7, low, high)
+	_cone(st, 0.42, 0.92, 0.23, 7, low, high)
+	_cone(st, 0.68, 1.14, 0.15, 6, low, high)
+	return st.commit()
 
+## Mediterranean cypress: a slim faceted column.
 static func cypress() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.12, 0.03, Color(0.33, 0.23, 0.15))
-	_blob(st, Vector3(0, 0.62, 0), Vector3(0.11, 0.55, 0.11), Color(0.11, 0.20, 0.11), Color(0.26, 0.38, 0.20), 1.3)
-	return _commit(st)
+	_trunk(st, 0.1, 0.03, Color(0.36, 0.25, 0.16))
+	_crown(st, Vector3(0, 0.62, 0), Vector3(0.12, 0.54, 0.12), Color(0.10, 0.24, 0.12), Color(0.27, 0.44, 0.20), 0)
+	return st.commit()
+
+## Stone pine (Pinus pinea), the Roman umbrella pine: a flat parasol crown on a
+## tall bare trunk.
+static func umbrella_pine() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_trunk(st, 0.82, 0.04, Color(0.45, 0.30, 0.20))
+	_crown(st, Vector3(0, 0.92, 0), Vector3(0.46, 0.13, 0.46), Color(0.16, 0.32, 0.15), Color(0.40, 0.56, 0.24))
+	return st.commit()
 
 static func house() -> ArrayMesh:
 	var st := SurfaceTool.new()

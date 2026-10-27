@@ -7,7 +7,7 @@ render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled
 
 #include "res://shaders/tile_terrain.gdshaderinc"
 
-uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house
+uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house, 4 stone pine
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
 uniform int slots = 4;
@@ -32,6 +32,7 @@ void vertex() {
 	float r1 = tt_hash3(vec3(vec2(t) + 11.3, float(slot) * 1.91));
 	float r2 = tt_hash3(vec3(vec2(t) - 4.7, float(slot) * 5.03));
 	bool show = water == W_LAND;
+	float edge_size = 1.0;
 	vec2 uv;
 	if (prop_kind == 3) {
 		// house blocks on the street grid of the town tile (house_grid^2 = slots)
@@ -52,11 +53,17 @@ void vertex() {
 		float n = floor(density * float(slots) + tt_hash(vec2(t) * 0.913) * 0.8);
 		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
 		show = show && (float(slot) < n || lone_tree);
+		edge_size = mix(0.7, 1.0, smoothstep(0.15, 0.7, density)); // smaller at the wood edge
 		float h = tt_height_m(centre, height_lod);
 		float lat = tt_latitude(centre);
 		show = show && h < 1750.0 && cov.g < 0.7;
 		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
-		int kind = r0 < conifer_p ? 1 : (lat < 44.5 && r0 < conifer_p + 0.08) ? 2 : 0;
+		// stone pines and cypresses in the warm lowlands, more of them in open land
+		bool south = lat < 44.5 && h < 700.0;
+		float pine_p = south ? 0.12 + 0.35 * (1.0 - smoothstep(0.2, 0.7, density)) : 0.0;
+		int kind = r0 < conifer_p ? 1
+			: (south && r0 < conifer_p + pine_p) ? 4
+			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;
 		show = show && kind == prop_kind;
 		// slots on a jittered grid, so a dense wood covers the tile evenly
 		int side = int(ceil(sqrt(float(slots))));
@@ -69,7 +76,7 @@ void vertex() {
 	}
 	float level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
-	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0));
+	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0) * edge_size);
 	float a = prop_kind == 3 ? floor(r2 * 4.0) * 1.5707963 : r2 * 6.2831853;
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
@@ -86,5 +93,6 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = pow(COLOR.rgb * tint, vec3(2.2)); // vertex colours are sRGB
+
 	ROUGHNESS = 1.0;
 }
