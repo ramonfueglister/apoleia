@@ -66,18 +66,24 @@ ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
 |---|---|
 | Laden | 1,4 s, davon 0,65 s für 724 Flussfelder |
 | Tag, Median | **2,8 ms** (vorher ohne Geburt und Tod 0,74 ms, aber mit 15–25 ms an Monatstagen) |
-| Tag, 95 % / 99 % | 7,5 ms / 10,6 ms |
-| Monatsanfang, Median | 8,4 ms (Index neu bauen) |
-| Langsamster Tag in 100 Jahren | 48 ms (Tag 12022, im parallelen Teil „Bedürfnisse“). Ein zweiter Lauf hatte seinen Ausreisser an einem anderen Tag (Tag 9713), bei gleichem Ergebnis. Die Arbeit ist also an beiden Tagen dieselbe, und der Ausreisser kommt von der geteilten Cloud-Maschine (ein Thread wird verdrängt). Die Messung auf dem Mac prüft das. Ohne solche Ausreisser ist der langsamste Tag ein Monatsanfang mit rund 30 ms. |
-| Speicher | 155 MB beim Start, **188 MB** nach 100 Jahren (mehr Menschen im Kalender), ab Jahr 60 fast gleichbleibend |
+| Tag, 95 % / 99 % | 4,7 ms / 6,8 ms (vorher 7,5 / 10,6) |
+| Monatsanfang, Median | 4,2 ms, höchstens 11 ms (vorher 8,4 und 29 ms) |
+| Langsamster Tag in 100 Jahren | 41 ms, je Lauf an einem anderen Tag und in einem anderen parallelen Teil (Bedürfnisse, Bekanntschaften), bei gleichem Ergebnis. Die Arbeit ist also dieselbe, und der Ausreisser kommt von der geteilten Cloud-Maschine (ein Thread wird verdrängt). Ohne solche Ausreisser ist der langsamste Tag ein Monatsanfang mit rund 11 ms. Die Messung auf dem Mac steht noch aus. |
+| Speicher | 155 MB beim Start, **187 MB** nach 100 Jahren (mehr Menschen im Kalender), ab Jahr 60 fast gleichbleibend |
 | Ereignisse im Kalender | ≈ 380'000 |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `people::tests::deterministic_fingerprint` |
 
-Pro Tag (Mittel): Ereignisse 0,10 ms, Bedürfnisse 0,63 ms, Reisen 0,27 ms, Gesundheit
-0,14 ms, Heiratssuche 0,27 ms, Bekanntschaften 1,3 ms, Umzug 0,07 ms (Berufswechsel gibt
-es nicht mehr, S77). Pro Monat: Index 11,1 ms (bis 7 ms am Monatsanfang, der Rest am 10.
-für Haushalte), Pops 2,4 ms. Der Wirtschafts-Thread verteilt Index, Haushalte und Pops
-gerade gleichmässig über die Tage.
+Pro Tag (Mittel): Ereignisse 0,10 ms, Bedürfnisse 0,59 ms, Reisen 0,25 ms, Gesundheit
+0,13 ms, Heiratssuche 0,26 ms, Bekanntschaften 1,2 ms, Umzug 0,07 ms (Berufswechsel gibt
+es nicht mehr, S77). Pro Monat: Index und Haushalte 5,7 ms, Pops 3,9 ms.
+
+Jeder Tag soll ungefähr gleich viel kosten. Deshalb arbeiten Index und Haushalte nur
+noch über die Lebenden (Radix-Sort statt Felder über alle je vergebenen IDs, die über
+700 Jahre auf Millionen wachsen würden). Am Monatstag wird nur ein Schnappschuss
+gemacht; gebaut wird auf einem Hintergrund-Thread und übernommen, bevor am nächsten
+Tag der erste Leser kommt. Die Pops werden aus einem Schnappschuss zur Monatsmitte über
+10 Tage gezählt. Die Ergebnisse sind gleich geblieben (gleicher Fingerabdruck).
+Am 2. des Monats wartet die Heiratssuche auf 4 Kernen noch rund 4 ms auf den Index.
 
 Ein Spieltag kostet im Median also 2,8 ms. Das reicht für rund 350 Tage pro Sekunde,
 wenn nichts anderes läuft.
@@ -89,7 +95,6 @@ wenn nichts anderes läuft.
   `clear_trackers()` läuft jetzt jeden Tag.
 
 **Nächste Schritte für mehr Tempo:**
-- Den Monatsindex schrittweise statt auf einmal pflegen (bei Heirat, Tod und Geburtstag).
 - Die Bekanntschaften (der grösste Posten) in Blöcken mit dichteren Personen-IDs rechnen.
 
 ## Platzhalter (nicht entschieden)
