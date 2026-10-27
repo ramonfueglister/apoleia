@@ -17,7 +17,7 @@ static func configure_environment(environment: Environment, sun: DirectionalLigh
     environment.tonemap_exposure = 1.18
     environment.tonemap_white = 4.0
     environment.adjustment_enabled = true
-    environment.adjustment_saturation = 0.86
+    environment.adjustment_saturation = 1.0
     environment.adjustment_contrast = 1.10
     environment.glow_enabled = false
     # Forward+ only; soft contact darkening under crowns and in valleys.
@@ -62,8 +62,9 @@ static func update_view(sun: DirectionalLight3D, view_width: float, camera_dista
 
 # Vertical exaggeration: one parameter for the medium/close views (low,
 # gentle hills), easing to the regional/continental value further out.
-const CLOSE_HEIGHT_SCALE = 7.0
-const FAR_HEIGHT_SCALE = 14.0
+# Tuned against the r6 atlas, which compresses high relief logarithmically.
+const CLOSE_HEIGHT_SCALE = 3.5
+const FAR_HEIGHT_SCALE = 9.0
 
 static func display_height_scale(view_width: float) -> float:
     return lerpf(CLOSE_HEIGHT_SCALE, FAR_HEIGHT_SCALE, smoothstep(600.0, 4500.0, view_width))
@@ -175,12 +176,12 @@ static func water_parameters() -> Dictionary:
 
 static func water_look_parameters() -> Dictionary:
     return {
-        "water_deep_tint": Color("123c6a"),
-        "water_open_tint": Color("17467a"),
-        "water_shallow_tint": Color("4fa3a8"),
+        "water_deep_tint": Color("102e55"),
+        "water_open_tint": Color("12355e"),
+        "water_shallow_tint": Color("2b8cb0"),
         "water_seabed_tint": Color("9fae8a"),
         "water_foam_tint": Color("eef6f2"),
-        "water_sky_zenith": Color("3f6690"),
+        "water_sky_zenith": Color("2f5378"),
         "water_sky_horizon": Color("8eaabd"),
         "water_sun_tint": Color("fff0d0"),
         "water_facet_size": 1.4,

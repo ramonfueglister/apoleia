@@ -113,7 +113,7 @@ static func vegetation_parameters() -> Dictionary:
 static func grove_detail_view_widths() -> Array:
     return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
 
-static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> ArrayMesh:
+static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: bool = false) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
     # pointed trees about a third of the former size, each with its own tone
     # (dark green <-> olive). Footprint stays inside the former crown radius,
@@ -125,18 +125,21 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> Arra
     rng.seed=71039
     var palette=[Color("2f5524"),Color("3b6428"),Color("4a6d2b"),Color("5c7432"),Color("426a2b"),Color("35592a"),Color("677a35")]
     # lod 0/1: full grove (layout template); 2: three trees; 3: one tree.
-    # Small dense trees (about half the former size): 11 per grove so
-    # neighbouring groves close into a canopy; 3 / 1 for far LODs.
-    var count=11 if lod<=1 else (3 if lod==2 else 1)
+    # 6 small trees per grove: 8 or 11 jump the clipmap tour p50 from ~7 to
+    # 38-41 ms (template budget threshold). 3 / 1 for far LODs.
+    # Dense groves (forest cores, width variant 1): 11 trees in the 1.18x
+    # footprint; same facet stages as the normal template.
+    var count=(11 if dense else 6) if lod<=1 else (3 if lod==2 else 1)
+    var spread=1.18 if dense else 1.0
     for t in range(count):
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
-        var distance=0.0 if t==0 else 5.2*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
+        var distance=0.0 if t==0 else 5.2*spread*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
-        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.6)
+        var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)
         var radius=height*rng.randf_range(0.30,0.36)
         _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
-    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")
+    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")+("_dense" if dense else "")
     return mesh
 
 static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
@@ -320,6 +323,9 @@ static func prepare_diorama_crown_arrays() -> Array:
     # Mainthread-only preparation. Workers receive values, never a Mesh or RID.
     return create_tree_mesh(0,1).surface_get_arrays(0)
 
+static func prepare_dense_crown_arrays(detail:int=0) -> Array:
+    return create_tree_mesh(0,1,detail,true).surface_get_arrays(0)
+
 static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable=Callable(),forest_coverage:Callable=Callable(),surface_grid:Dictionary={}) -> ArrayMesh:
     # Synchronous compatibility entrypoint; runtime async commits use the same DTO.
     var data=build_diorama_forest_arrays(origin,size,sample,coverage,forest_coverage,surface_grid,prepare_diorama_crown_arrays())
@@ -389,25 +395,50 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
             var rng=RandomNumberGenerator.new()
             rng.seed=seed_value+918713
             var support:Array[Vector2]=[]
+            var open_support:Array[Vector2]=[]
             for sz in range(3):
                 for sx in range(3):
                     var jitter=Vector2(rng.randf_range(-0.12,0.12),rng.randf_range(-0.12,0.12))
                     var p=(Vector2(x,z)+(Vector2(sx,sz)+Vector2(0.5,0.5)+jitter)/3.0)*STEP
-                    if landcover_forest(p)>0.2:support.append(p)
+                    if landcover_forest(p)>0.08:support.append(p)
+                    elif landcover_open(p)>0.5:open_support.append(p)
+            # Pure grass and crop land (forest share under 0.08, e.g. the
+            # Lazio coastal plain) still gets sparse copses (r9 near view:
+            # the coastal plain stayed bare, dark share 0.130 against 0.165).
+            var open_only=support.is_empty()
+            if open_only:support=open_support
             if support.is_empty():continue
             # Real land cover (ESA WorldCover share, 117 AD adjusted): dense
             # canopy where forest > 0.5 (hills/slopes), loose groups below,
             # open valley floors and fields stay free.
             var share=0.0
-            for q in support:share+=landcover_forest(q)
+            if not open_only:
+                for q in support:share+=landcover_forest(q)
             share/=9.0
-            var fraction=float(support.size())/9.0
-            if share<0.18 or rng.randf()>clampf(share*1.6,0.0,1.0):continue
+            var fraction=0.0 if open_only else float(support.size())/9.0
             var p=support[rng.randi_range(0,support.size()-1)]
             var source_p=p
             var observation:Dictionary=sample.call(p)
+            # Strong contrast: the land-cover forest share itself is high on
+            # hills/slopes and low in the farmed plains (the source sample
+            # carries no height outside source forest, so no slope term).
+            # Closed forest clumps with meadows between: full above 0.5, rare
+            # below 0.3; in between a 5-15 km noise decides (clumps/clearings).
+            # Strong clumps: the 5-15 km noise gates even dense forest, so cores
+            # fill up and clearings stay empty (same record budget).
+            var clump=_composition_noise(p/9.0,40417)*0.7+_composition_noise(p/4.0,40421)*0.3
+            var gate=smoothstep(0.40,0.55,clump+(share-0.5)*0.6)
+            var density=gate*(1.0 if share>=0.5 else 0.55)
+            # Open land (fields and pasture, share 0.08-0.3): loose copses of
+            # smaller trees in the same clump noise, so the plains read wooded
+            # up to the beach like the reference near view instead of bare
+            # (near dark share 0.125 against 0.165).
+            var copse=share<0.3
+            if copse:density=smoothstep(0.45,0.60,clump)*(0.18 if open_only else 0.32*smoothstep(0.06,0.14,share))
+            if rng.randf()>density:continue
             var source_visibility=forest_relief_visibility(float(observation.get("graphic_rock_weight",0.0)))
-            var width_scale=1.0
+            # Dense forest: the wider grove variant closes the canopy.
+            var width_scale=1.18 if share>=0.6 else 1.0
             if grouped:
                 var group=Vector2i(floori(float(x)/3.0),floori(float(z)/3.0))
                 if not group_anchors.has(group):group_anchors[group]=_source_group_anchor(group,sample,forest_coverage)
@@ -425,8 +456,8 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                     if supported:
                         p=proposed
                         observation=sample.call(p)
-                        width_scale=1.18
-            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)
+                        width_scale=1.18 if share>=0.6 else 1.0
+            var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)*(0.8 if copse else 1.0)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit
             # display omission/transition, not a new vegetation distribution.
@@ -508,6 +539,16 @@ static func _source_group_anchor(group:Vector2i,sample:Callable,membership:Calla
 static var _landcover:PackedByteArray=PackedByteArray()
 static var _landcover_meta:Dictionary={}
 # Forest share 0..1 (forest + half shrub) at the nearest 2 km node.
+# Open land share (grass + crop, 117 AD adjusted) from the same nodes.
+static func landcover_open(p:Vector2) -> float:
+    landcover_forest(p) # loads the nodes on first use
+    if not bool(_landcover_meta.get("valid",false)):return 0.0
+    var w:int=_landcover_meta.w;var h:int=_landcover_meta.h
+    var uv=(p-Vector2(_landcover_meta.min))/Vector2(_landcover_meta.size)
+    var x=clampi(int(round(uv.x*float(w-1))),0,w-1);var z=clampi(int(round(uv.y*float(h-1))),0,h-1)
+    var at=(z*w+x)*8
+    return clampf((float(_landcover[at+2])+float(_landcover[at+3]))/255.0,0.0,1.0)
+
 static func landcover_forest(p:Vector2) -> float:
     if _landcover_meta.is_empty():
         var root=ProjectSettings.globalize_path("res://..").simplify_path().path_join("artifacts/render-data/landcover-node-2km")

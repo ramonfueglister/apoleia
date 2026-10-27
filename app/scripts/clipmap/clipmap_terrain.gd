@@ -41,6 +41,10 @@ var tile_timeline:Array=[]
 func configure(path:String,scene:Node3D,terrain:ShaderMaterial,water:ShaderMaterial,tile_forest:RefCounted=null)->bool:
     if not stream.configure(path):return false
     owner=scene;terrain_template=terrain;water_template=water
+    # Lakes shade in the terrain material: same water palette as the sea
+    # (without it they fell back to the shader defaults, pale sky blue).
+    var palette=load("res://scripts/style/landscape_look.gd").water_look_parameters()
+    for key in palette:terrain_template.set_shader_parameter(key,palette[key])
     if water_template==null:
         water_template=ShaderMaterial.new();water_template.shader=load("res://shaders/water.gdshader")
         load("res://scripts/water/water_style.gd").apply_to(water_template)
@@ -280,6 +284,39 @@ func height_at(p:Vector2)->float:
         var e=_query_vertex_height(corner+Vector2.ONE*step_size,query)
         return _query_triangle_height(a,b,c,e,f)*.001
     return 0.
+
+## Signed coast distance (m, >0 water, sea or lake) of the finest drawn tile
+## at p, that tile's water texel (m) and 1 for sea; x is NAN while no drawn
+## tile covers p.
+func water_distance_at(p:Vector2)->Vector3:
+    var relative=(p-Vector2(stream.manifest.origin[0],stream.manifest.origin[1]))/float(stream.manifest.base_span)
+    for level in range(int(stream.manifest.max_level)+1):
+        var divisor=pow(2.,level)
+        var id=stream.key(level,int(floor(relative.x/divisor)),int(floor(relative.y/divisor)))
+        if not _draw.has(id) or not nodes.has(id) or not nodes[id].land.visible:continue
+        var images:Dictionary=stream.cache.get(id,{}).get("images",{})
+        var image:Image=images.get("water")
+        if image==null:continue
+        var rect=_rect(id)
+        return Vector3(_query_encoded_height(image,rect,p)*.125-4096.,rect.size.x*1000./float(image.get_width()-1),1. if _query_marine(images,rect,p) else 0.)
+    return Vector3(NAN,INF,0.)
+
+## A land-surface uniform for the template and every resident tile.
+func set_land_parameter(uniform_name:StringName,value:Variant)->void:
+    terrain_template.set_shader_parameter(uniform_name,value)
+    for id in nodes:nodes[id].land.material_override.set_shader_parameter(uniform_name,value)
+
+## A crown uniform for the forest templates and every resident tile's
+## fade and opaque materials.
+func set_forest_parameter(uniform_name:StringName,value:Variant)->void:
+    if forest==null:return
+    for template in [forest.get("material"),forest.get("opaque_material")]:
+        if template:template.set_shader_parameter(uniform_name,value)
+    var seen={}
+    for id in nodes:
+        for node in nodes[id].get("forests",[]):
+            for material in [node.material_override,node.get_meta("fade_material",null),node.get_meta("opaque_material",null)]:
+                if material and not seen.has(material):seen[material]=true;material.set_shader_parameter(uniform_name,value)
 
 func _query_triangle_height(a:float,b:float,c:float,d:float,f:Vector2)->float:
     return a+(b-a)*f.x+(c-a)*f.y if f.x+f.y<1. else d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y)

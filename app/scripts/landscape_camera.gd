@@ -35,7 +35,12 @@ static func profile(width: float, _overview_width: float=7606.0) -> Vector2:
     # medium (450 km), 50 deg continental (2300 km+), smooth in log width.
     var t=clampf((log(maxf(width,1.0))-log(100.0))/(log(2600.0)-log(100.0)),0.0,1.0)
     t=t*t*(3.0-2.0*t)
-    return Vector2(lerpf(35.2643897,50.0,t),1.0)
+    # Beyond the continental view the overview steepens towards 60 deg: at
+    # 50 deg the 7606 km frame reached ~15 deg of latitude past the atlas
+    # (A16 zoom 0.0: a grey band over 12.5 % of the image); 60 deg roughly
+    # halves that, the rest fades in the edge haze. 3000 km gains 0.5 deg.
+    var u=clampf((log(maxf(width,1.0))-log(2600.0))/(log(7606.0)-log(2600.0)),0.0,1.0)
+    return Vector2(lerpf(35.2643897,50.0,t)+10.0*u*u*(3.0-2.0*u),1.0)
 
 static func damp(value: float, velocity: float, goal: float, delta: float) -> Vector2:
     var offset = value-goal
