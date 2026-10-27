@@ -23,9 +23,14 @@ unabhängig und unverändert.
   (`shore.r16f`) begrenzt: Sie steigt von jedem Ufer um eine Stufe pro Kachel. Der
   Bake setzt dafür jeden Knoten unter einer 0,5-km-Seezelle auf den Seespiegel,
   so entstehen keine Kraterwände am Seeufer.
-- Uferlinie: Je Kachelecke zählt der Anteil der vier Nachbarkacheln, die Wasser
-  sind. Die Uferlinie ist die 0,5-Linie davon, bilinear über die Kachel. So läuft
-  eine Treppe aus Wasserkacheln als Diagonale mit Sand und Schaum davor.
+- Ufer wie in SimCity 2000: Meer und Seen liegen um `water_drop` (0,3 Stufen)
+  tiefer als das Land, das Land endet also mit einer kleinen Erdkante am Wasser.
+  Hat eine Landkachel auf zwei benachbarten Seiten und der Diagonale dazwischen
+  Wasser, ist die Hälfte zu dieser Ecke hin ebenfalls Wasser, geschnitten an der
+  Kacheldiagonale (`tt_coast_cut`). So läuft eine Treppe aus Wasserkacheln als
+  45-Grad-Küste. Die Kachel ist dafür aus zwei getrennten Dreiecken gebaut, und
+  ein fünftes Wandstück steht als Kante auf der Diagonale. Weit draußen
+  verschwindet die Kante mit den Stufen, die Uferlinie folgt dann den Wasserknoten.
   Kacheln werden an der Diagonale geteilt, deren Ecken näher beieinander liegen
   (wie SimCity 2000): eine einzelne gehobene Ecke ergibt ein flaches und ein
   geneigtes Dreieck statt einer Falte. `MOUNTAIN_SLOPE` erlaubt im Hochgebirge

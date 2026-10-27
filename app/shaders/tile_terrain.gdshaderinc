@@ -153,14 +153,56 @@ float tt_land_corner(ivec2 c) {
 	return shore ? 0.0 : min(l, lake);
 }
 
+// SimCity 2000 shore: the water lies a little below the land, so the land
+// ends in a low earth edge. Melts away with the steps on the far map.
+uniform float water_drop = 0.3; // levels
+float tt_water_drop() {
+	return water_drop * (1.0 - relief_smooth);
+}
+
+// Coast cut of a land tile: with the sea (or a lake) on two neighbouring sides
+// and on the diagonal between them, the half of the tile on that side is
+// water too (cut along the tile diagonal), so a staircase of water tiles
+// reads as a 45-degree coast, as in SimCity 2000. Returns the corner at the
+// tip of the wet half (0..3), or -1.
+// nb: tt_cell of the side neighbours (N, E, S, W), which the caller often has.
+int tt_coast_cut_nb(ivec2 t, int cell, int nb[4]) {
+	if ((cell & 3) != W_LAND || (cell >> 2) >= 2) {
+		return -1;
+	}
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	for (int k = 0; k < 4; k++) {
+		int a = nb[k] & 3;
+		int b = nb[(k + 1) & 3] & 3;
+		bool wet = (a == W_SEA || a == W_LAKE) && b == a;
+		bool rest_dry = (nb[(k + 2) & 3] & 3) != a && (nb[(k + 3) & 3] & 3) != a;
+		if (wet && rest_dry && tt_water(t + S[k] + S[(k + 1) & 3]) == a) {
+			return (k + 1) & 3;
+		}
+	}
+	return -1;
+}
+
+int tt_coast_cut(ivec2 t) {
+	int nb[4] = int[](tt_cell(t + ivec2(0, -1)), tt_cell(t + ivec2(1, 0)), tt_cell(t + ivec2(0, 1)), tt_cell(t + ivec2(-1, 0)));
+	return tt_coast_cut_nb(t, tt_cell(t), nb);
+}
+
+// Level of the water in the wet half of a cut tile (tip corner a).
+float tt_cut_level(ivec2 t, int a) {
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	ivec2 n = t + S[a];
+	return tt_water(n) == W_LAKE ? tt_lake_level(n) - tt_water_drop() : -tt_water_drop();
+}
+
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
 vec4 tt_corners(ivec2 t) {
 	int w = tt_water(t);
 	if (w == W_SEA) {
-		return vec4(0.0);
+		return vec4(-tt_water_drop());
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t));
+		return vec4(tt_lake_level(t) - tt_water_drop());
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),

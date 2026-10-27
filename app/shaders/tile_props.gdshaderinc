@@ -61,8 +61,14 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 	if (!show) { return vec4(0.0, 0.0, 0.0, -1.0); }
 	// on the tile's own triangles (split as in tile_terrain.gdshader), so
 	// trees stand on steep two-level tiles too instead of leaving bare holes
+	// nothing in the wet half of a coast cut tile; the dry half keeps its split
+	int cut = tt_coast_cut(t);
+	if (cut >= 0) {
+		vec2 tip = vec2(float(cut == 1 || cut == 2), float(cut >= 2));
+		if (abs(uv.x - tip.x) + abs(uv.y - tip.y) < 1.1) { return vec4(0.0, 0.0, 0.0, -1.0); }
+	}
 	float level;
-	if (abs(c.x - c.z) <= abs(c.y - c.w)) {
+	if (cut >= 0 ? (cut & 1) == 1 : abs(c.x - c.z) <= abs(c.y - c.w)) {
 		level = uv.x >= uv.y
 			? c.x + (c.y - c.x) * uv.x + (c.z - c.y) * uv.y
 			: c.x + (c.w - c.x) * uv.y + (c.z - c.w) * uv.x;
