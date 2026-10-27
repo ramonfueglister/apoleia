@@ -99,6 +99,10 @@ Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulier
 Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
 die echte Dichte.
 
+Runde 9 (Heim-Tiles, Farben, Klick; a928933), 60 km, Rom: ohne Punkte 26,6 ms,
+mit Punkten +0,39 ms, schwarz und nach Gruppe gefärbt gleich teuer. Sim-Tag
+0,6 ms, View 0,5 ms (Sim-Thread). Die Stadt-Tiles von Rom bleiben sichtbar.
+
 ## Wohnorte: Familien, Dörfer und Heim-Tiles
 
 Jeder Haushalt hat in der Simulation ein festes Dorf und ein Haus-Tile
