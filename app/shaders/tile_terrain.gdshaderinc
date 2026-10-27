@@ -85,9 +85,9 @@ int tt_town(ivec2 t) {
 // m_per_level per tile_km (tools/build_tile_terrain.py, sc2k_relief), so the
 // rounded levels of neighbouring corners differ by at most one.
 float tt_corner_height(ivec2 c) {
-	// one mip of blur: mountains become long coherent ramps instead of
-	// single-tile bumps and pits (the blur only lowers slopes)
-	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + 1.0).r;
+	// blurred, so level contours run as long clean lines (as in SimCity 2000)
+	// instead of single-tile bumps and pits; the blur only lowers slopes
+	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + 1.5).r;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so

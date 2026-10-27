@@ -1,6 +1,6 @@
 // Tile terrain surface. One MultiMesh instance per tile of the patch; the
 // instance mesh holds the tile top (two triangles) and four walls. The vertex
-// stage reads the tile data and builds the terraced surface, so no terrain
+// stage reads the tile data and builds the stepped surface, so no terrain
 // geometry is ever built on the CPU.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
@@ -38,6 +38,7 @@ const vec3 C_SNOW = vec3(0.945, 0.957, 0.965);
 const vec3 C_WET = vec3(0.408, 0.502, 0.337);
 const vec3 C_CROP = vec3(0.698, 0.659, 0.365);
 const vec3 C_EARTH = vec3(0.588, 0.463, 0.314);
+const vec3 C_SLOPE = vec3(0.600, 0.490, 0.290); // ramps: a touch of bare earth
 const vec3 C_CLIFF = vec3(0.502, 0.478, 0.408);
 const vec3 C_PAVED = vec3(0.776, 0.729, 0.596);
 const vec3 C_STREET = vec3(0.612, 0.573, 0.494);
@@ -230,6 +231,10 @@ void fragment() {
 		} else {
 			c = ground_colour(cp, cov);
 		}
+		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
+		if (flat_top < 0.5 && town == 0) {
+			c = mix(c, C_SLOPE, 0.22);
+		}
 		// fine speckle inside the tile (SimCity 2000 grass texture)
 		vec2 sub = floor(tile_uv * 8.0);
 		float px = 1.0 / max(max(fwidth(tile_uv).x, fwidth(tile_uv).y) * 8.0, 1e-5);
@@ -237,8 +242,13 @@ void fragment() {
 		// slope shading: ramps facing the sun bright, the others dark
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
+		// SimCity 2000 slope tiles come in two clear tones: sun side light,
+		// shade side dark, with no gradient in between
 		float lit = dot(nw, light_dir) - light_dir.y;
-		c *= clamp(1.0 + slope_light * mix(1.0, 0.55, far) * lit, 0.7, 1.25);
+		float aa_l = fwidth(lit) + 0.02;
+		float tone = mix(0.80, 1.0, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
+		tone = mix(tone, 1.13, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
+		c *= mix(1.0, tone, mix(1.0, 0.6, far));
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
