@@ -18,7 +18,7 @@ void vertex() {
 	vec2 world_xz = origin.xz + air_drift;
 	vec3 field = weather_field(world_xz);
 	// Same near rule as the clouds: no veil between camera and focus.
-	amount = smoothstep(0.2, 0.6, field.y) * INSTANCE_CUSTOM.z * step(0.5, view_keep(vec3(world_xz.x, cloud_base, world_xz.y), 0.0, CAMERA_POSITION_WORLD));
+	amount = smoothstep(0.2, 0.6, field.y) * INSTANCE_CUSTOM.z * step(0.5, view_keep(vec3(world_xz.x, cloud_base, world_xz.y), 0.0, CAMERA_POSITION_WORLD, 1.0));
 	seed = INSTANCE_CUSTOM.y;
 	vec3 side = (MODEL_MATRIX * vec4(VERTEX.x, 0.0, VERTEX.z, 0.0)).xyz * 1.1 * mix(1.0, 0.7, -VERTEX.y);
 	vec3 world = vec3(world_xz.x, cloud_base * (1.0 + VERTEX.y), world_xz.y) + side * step(0.001, amount);

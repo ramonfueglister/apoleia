@@ -27,7 +27,7 @@ void vertex() {
 	// Flat proxy just above the cloud base keeps the cast shape compact.
 	p.y = cloud_base + (p.y - cloud_base) * 0.25;
 	vec2 centre = MODEL_MATRIX[3].xz + air_drift;
-	float keep = view_keep(vec3(centre.x, cloud_base, centre.y), 3.4 * info.x * length(MODEL_MATRIX[0].xyz), view_camera);
+	float keep = view_keep(vec3(centre.x, cloud_base, centre.y), 3.4 * info.x * length(MODEL_MATRIX[0].xyz), view_camera, smoothstep(0.55, 0.85, info.y));
 	p.xz = centre + (p.xz - centre) * keep;
 	p.y = cloud_base + (p.y - cloud_base) * keep;
 	float t = (view_camera.y - ground_y) / max(view_camera.y - cloud_base, 1.0);

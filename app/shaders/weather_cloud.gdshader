@@ -34,7 +34,7 @@ void vertex() {
 	VERTEX = place_cluster(VERTEX, origin, INSTANCE_CUSTOM, info);
 	vec3 centre = vec3(origin.x + air_drift.x, cloud_base, origin.z + air_drift.y);
 	// Whole clusters shrink away near the camera instead of a dithered cut.
-	float keep = view_keep(centre, 3.4 * info.x * length(MODEL_MATRIX[0].xyz), CAMERA_POSITION_WORLD);
+	float keep = view_keep(centre, 3.4 * info.x * length(MODEL_MATRIX[0].xyz), CAMERA_POSITION_WORLD, smoothstep(0.55, 0.85, info.y));
 	// Tier cross-fade (zoom) also shrinks instead of dithering.
 	VERTEX = centre + (VERTEX - centre) * keep * smoothstep(0.0, 1.0, fade);
 	world_pos = VERTEX;

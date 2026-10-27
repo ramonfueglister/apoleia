@@ -13,14 +13,17 @@ float bank_amount(float cover) { return smoothstep(0.55, 0.85, cover); }
 
 // One rule for every cloud type: nothing between camera and focus. Clusters
 // closer than near_hide_distance, or wider than 25 % of the screen, shrink away.
-uniform float near_hide_distance = 0.0;
+uniform float near_hide_distance = 0.0;   // banks and fronts
+uniform float near_hide_fair = 0.0;       // small fair clusters (size limit still applies)
+uniform float bank_growth = 2.2;          // how far bank clusters grow; less in close views
 uniform float view_tan = 1.0; // 2 * tan(fov/2) * aspect: screen width at unit distance
-float view_keep(vec3 centre, float width, vec3 camera) {
+float view_keep(vec3 centre, float width, vec3 camera, float bank) {
 	float d = distance(centre, camera);
+	float near = mix(near_hide_fair, near_hide_distance, bank);
 	float screen = width / max(d * view_tan, 0.001);
 	// The size limit applies near the focus; distant fronts on the horizon may be wide.
 	float size_limit = 1.0 - smoothstep(0.2, 0.25, screen) * (1.0 - smoothstep(1.05, 1.3, d / max(near_hide_distance, 0.001)));
-	return smoothstep(near_hide_distance * 0.85, near_hide_distance, d) * size_limit;
+	return smoothstep(near * 0.85, near, d) * size_limit;
 }
 
 // Cumulus: returns the world vertex; x of `info` is the cluster scale (0 = absent).
@@ -34,7 +37,7 @@ vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	float presence = smoothstep(h - 0.06, h + 0.06, cluster_cover);
 	// Banks and fronts: clusters grow until they merge into one mass.
 	// Small fair clusters in close views; banks and fronts keep their full size.
-	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + 2.2 * bank) * mix(cluster_scale, 1.0, bank);
+	float s = presence * (0.8 + 0.5 * field.x) * (1.0 + bank_growth * bank) * mix(cluster_scale, 1.0, bank);
 	info = vec4(s, field.x, max(field.y, bank * 0.8 * bank_grey), field.z);
 	// Banks spread wide and flat; fair clusters keep their height.
 	vec3 local = (vertex_world - origin) * s;
