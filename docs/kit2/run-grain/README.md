@@ -239,7 +239,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
 | Not (S66) | weniger als 80 % gegessen | frei gewählt |
 | Handelswege | Halbwertszeit 2 Jahre, Handelsweg ab 100, Strasse ab 400 Fahrten im Jahr (zurück unter 50 / 200), Wagenfracht 80 % / 65 %; Seewege ohne Wirkung | Werte frei, wie Fusswege |
-| Felder auf Kacheln | Umkreis 8 Kacheln um den Hofplatz; Hofplatz per Zufall in der Zelle; was die 25-km-Daten mehr Land haben als die Kacheln fassen, liegt über (wenige Zellen) | Echte Feldgrösse (S51) auf einer Karte mit Wegen 1 : 23,8 (S50) hat keine natürliche Grenze für den Weg zum Feld |
+| Felder auf Kacheln | Umkreis 8 Kacheln um den Hofplatz; Hofplatz im Dorf des Haushalts (`settle.rs`: ein Dorf je 25 Menschen auf den Kacheln mit dem meisten flachen Ackerland, Platzhalter dort); was die 25-km-Daten mehr Land haben als die Kacheln fassen, liegt über (wenige Zellen) | Echte Feldgrösse (S51) auf einer Karte mit Wegen 1 : 23,8 (S50) hat keine natürliche Grenze für den Weg zum Feld |
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe bis zur Ernte + 60 Tage, Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
@@ -252,9 +252,8 @@ in Arrays nach ID statt in Hashtabellen.
 - **Neue Märkte, Verödung, Elendsviertel** (S75): Es gibt genau einen Markt pro Region.
 - **Häfen und Flüsse**: Seewege werden gezählt, machen die Fahrt aber nicht billiger.
   Flüsse fehlen im Marktgraph.
-- **Felder einzeichnen, Land sperren** (S73): Es gibt noch keinen Spieler. Hofplätze sind
-  noch keine echten Orte; sie sollen später auf die Dorfplätze aus `settle.rs` (Thread
-  „Bewohner als Punkte“) gelegt werden.
+- **Felder einzeichnen, Land sperren** (S73): Es gibt noch keinen Spieler. Hofplätze liegen
+  jetzt in den Dörfern aus `settle.rs`, denselben, die die Punkte-Ansicht zeigt.
 
 ## Was auffällt und zu klären ist
 
