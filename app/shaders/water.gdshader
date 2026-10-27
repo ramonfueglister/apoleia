@@ -144,7 +144,9 @@ void fragment() {
         // b757b7f at 190 km: light for 1 px only (#588893, then #347a89);
         // the reference fades over ~5 px (#5b8f8e, #498a8f, #40868e,
         // #38828e, #2a7a8d at 6 px), lighter and greener.
-        float beach=1.0-smoothstep(0.0,max(px_m*5.0,1000.0),coast_m);
+        // 5b44221: 2-4 px still a step dark (#3a7c8a / #2b7887 against
+        // #498a8f / #38828e): a little wider.
+        float beach=1.0-smoothstep(0.0,max(px_m*6.5,1300.0),coast_m);
         c=mix(c,vec3(0.062,0.150,0.158),beach*mix(0.85,0.08,smoothstep(200.0,450.0,view_width)));
         c*=1.0+(shelf_id-0.5)*0.05*smoothstep(0.1,0.4,s);
         c=mix(c*w.tone,water_foam_tint.rgb,w.foam*0.6);
