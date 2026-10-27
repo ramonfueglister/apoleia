@@ -448,6 +448,9 @@ pub struct Stats {
     /// Households with nobody of working age that joined a relative (S79).
     pub joined_households: u64,
     pub joined_people: u64,
+    /// New households of married sons after the father's death (S81).
+    pub split_households: u64,
+    pub split_people: u64,
 }
 
 /// Person ids grouped by a key (compressed rows): ids of key k are
@@ -628,6 +631,8 @@ pub struct People {
     parents: Vec<(u32, u32)>,
     /// (parent, child) of the living children, rebuilt monthly (S79).
     kids: Vec<(u32, u32)>,
+    /// Fathers who died since the last split, with their household (S81).
+    splits: Vec<(u32, u32)>,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
     /// (household, person) sorted, rebuilt monthly.
@@ -868,6 +873,7 @@ impl People {
             traits: Vec::new(),
             parents: Vec::new(),
             kids: Vec::new(),
+            splits: Vec::new(),
             by_cell: Csr::default(),
             households: Vec::new(),
             grooms: Vec::new(),
@@ -1156,6 +1162,9 @@ impl People {
         self.timing.index += us(t0);
         let t0 = t();
         self.migration(day, yslice);
+        if slice == 11 {
+            self.split_households();
+        }
         self.timing.migration += us(t0);
         let month = slice == 0;
         if month {
@@ -1216,6 +1225,9 @@ impl People {
         let home = self.world.get::<Home>(e).unwrap().0;
         let spouse = self.world.get::<Spouse>(e).unwrap().0;
         let leaving = self.world.get::<Travel>(e).is_some_and(|t| t.leave);
+        if !leaving && self.world.get::<Sex>(e).unwrap().0 == 1 {
+            self.splits.push((pid, self.world.get::<Household>(e).unwrap().0));
+        }
         let a = age_y(day, born);
         self.stats.deaths[cause] += 1;
         self.stats.age_at_death_sum += a;
@@ -1501,7 +1513,7 @@ impl People {
             let members: Vec<u32> = self.households[i as usize..j as usize]
                 .iter()
                 .map(|p| p.1)
-                .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none()))
+                .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none() && self.world.get::<Household>(e).unwrap().0 == self.households[i as usize].0))
                 .collect();
             let Some(&first) = members.first() else { continue };
             if let Some(to) = self.kin_to_join(&members, day) {
@@ -1622,6 +1634,72 @@ impl People {
         }
         let works = alive.iter().any(|&m| (WORK_AGE.0..WORK_AGE.1).contains(&age_y(day, self.world.get::<Born>(self.ent[m as usize]).unwrap().0)));
         !works && self.kin_to_join(&alive, day).is_none()
+    }
+
+    /// S81: when a father has died, each of his married sons in the
+    /// household founds his own with his wife and his descendants (and their
+    /// wives); the widow, the unmarried and everyone else stay. Runs monthly
+    /// on the day the household lists are fresh, so a split follows the
+    /// death by up to a month. The new household's id is the son's id; it
+    /// stays in the same cell. PLACEHOLDER (open): who inherits farm and
+    /// store (crate::grain).
+    fn split_households(&mut self) {
+        let mut splits = std::mem::take(&mut self.splits);
+        splits.sort_unstable();
+        for (father, house) in splits {
+            let lo = self.households.partition_point(|p| p.0 < house);
+            let members: Vec<u32> = self.households[lo..]
+                .iter()
+                .take_while(|p| p.0 == house)
+                .map(|p| p.1)
+                .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Household>(e).unwrap().0 == house))
+                .collect();
+            let get = |p: &Self, m: u32| {
+                let e = p.ent[m as usize];
+                (p.world.get::<Parents>(e).unwrap().0, p.world.get::<Sex>(e).unwrap().0, p.world.get::<Spouse>(e).unwrap().0)
+            };
+            let sons: Vec<u32> = members.iter().copied().filter(|&m| {
+                let (f, sex, spouse) = get(self, m);
+                f == father && sex == 1 && spouse != NONE
+            }).collect();
+            let mut taken: Vec<u32> = Vec::new();
+            for son in sons {
+                // A son whose id is already the household's keeps it; the
+                // id of another household with people in it is not reused.
+                if son == house || taken.contains(&son) {
+                    continue;
+                }
+                let lo2 = self.households.partition_point(|p| p.0 < son);
+                if self.households[lo2..].iter().take_while(|p| p.0 == son).any(|p| self.alive(p.1).is_some_and(|e| self.world.get::<Household>(e).unwrap().0 == son)) {
+                    continue;
+                }
+                // The son, then everyone whose father is in the group, and
+                // the wives of the men in it.
+                let mut group = vec![son];
+                loop {
+                    let before = group.len();
+                    for &m in &members {
+                        if group.contains(&m) || taken.contains(&m) {
+                            continue;
+                        }
+                        let (f, _, spouse) = get(self, m);
+                        let wife_of = spouse != NONE && get(self, m).1 == 0 && group.contains(&spouse);
+                        if group.contains(&f) || wife_of {
+                            group.push(m);
+                        }
+                    }
+                    if group.len() == before {
+                        break;
+                    }
+                }
+                for &m in &group {
+                    self.world.get_mut::<Household>(self.ent[m as usize]).unwrap().0 = son;
+                }
+                self.stats.split_households += 1;
+                self.stats.split_people += group.len() as u64;
+                taken.extend(group);
+            }
+        }
     }
 
     /// S79: if nobody in the household is of working age, the nearest
