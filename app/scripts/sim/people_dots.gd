@@ -5,12 +5,15 @@ extends MultiMeshInstance3D
 ## uploads them into one texture array and draws all people with a single
 ## MultiMesh whose instances never move on the CPU (people_dots.gdshader).
 ##
+## Dots of people on the road (or on a ship) are dark red.
 ## Keys: P shows or hides the dots, [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
 ## (relative paths start at the repository root).
 
 const SHADER = preload("res://shaders/people_dots.gdshader")
+const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
+const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
@@ -101,7 +104,16 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		_material.set_shader_parameter(key, source.get_shader_parameter(key))
-	_material.set_shader_parameter("dot_px", clampf(2.0 + 40.0 / maxf(terrain.tile_km * 8.0, 1.0), 2.0, 4.0))
+	# 3.5 px up close, about 1.7 px at 360 km and 1 px over the whole sea, so
+	# the dots stay single people instead of melting into black regions
+	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
+	var px := clampf(3.5 - 0.5 * log(maxf(view_km, 1.0) / 30.0) / log(2.0), 1.0, 3.5)
+	_material.set_shader_parameter("dot_px", px)
+	var want_round := px >= ROUND_FROM_PX
+	if want_round != (_material.shader == SHADER_ROUND):
+		_material.shader = SHADER_ROUND if want_round else SHADER
+		_material.set_shader_parameter("people_tex", _texture)
+		_material.set_shader_parameter("page_side", people.page_side())
 	if _bench_path != "":
 		_bench_step()
 
