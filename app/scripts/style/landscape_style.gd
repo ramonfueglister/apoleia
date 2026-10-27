@@ -566,7 +566,7 @@ static func landcover_open(p:Vector2) -> float:
 
 static func landcover_forest(p:Vector2) -> float:
     if _landcover_meta.is_empty():
-        var root=ProjectSettings.globalize_path("res://..").simplify_path().path_join("artifacts/render-data/landcover-node-2km")
+        var root=preload("res://scripts/style/landscape_look.gd").data_root().path_join(preload("res://scripts/style/landscape_look.gd").LAND_COVER_DIR)
         var manifest=JSON.parse_string(FileAccess.get_file_as_string(root.path_join("manifest.json")))
         if not manifest is Dictionary:_landcover_meta={"valid":false};return 0.0
         _landcover=FileAccess.get_file_as_bytes(root.path_join("classes.u8"))

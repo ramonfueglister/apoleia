@@ -1,0 +1,108 @@
+{
+  "criterion": "A16-image",
+  "commit": "1dd0cb140c6e82edf302375517f6e3f9de956257",
+  "commit_note": "Manifest commit is 1dd0cb14 = main a676442 + land-cover source-root fix (branch claude/project-thread-gsv7uc, not an ancestor of origin/main e707db8). The fix only changes behaviour when --source-root is passed; the capture commands do not pass it, so rendering should be equivalent to a676442 for these frames (judged from the diff, not re-rendered). origin/main has since moved on to e707db8.",
+  "evidence": "docs/kit1/evidence/a16-zoom-a676442/ (manifest.json, 17 PNGs rome-zoom-0.0..1.0 + rome-width-200/160/120/90/60/40km, excerpts/*.json)",
+  "previous_review": "docs/kit1/evidence/a16-zoom-independent-review/review.json (FAIL, frames from f589e37)",
+  "reviewer": "independent-claude-subagent",
+  "date": "2026-10-27",
+  "verdict": "FAIL",
+  "overall_verdict": "FAIL",
+  "verdict_reason": "Clearly better than the previous capture. The rectangular land-cover domains at 0.0/0.1 are gone, the sequence now reaches a near range (40 km), three lakes are consistently present around Rome, and the relief reads much more three-dimensional. It still fails: Arno, Volturno and Liri-Garigliano are missing with no source or rule reference (A16 requires one for intended omissions), the lower Tiber renders as overlapping, crossing ribbons with a pale straight bar at the mouth (200-60 km), and a 45 px void strip with clouds drawn over it remains at 0.0. Stippled clouds at 0.4 and stair-stepped coasts at 0.0-0.4 persist. Single snapshots still cannot show transitions.",
+  "hash_check": "All 17 PNG sha256 values and byte sizes match manifest.json (recomputed with hashlib). All 640x360. 13 frames are RGB; rome-zoom-1.0, rome-width-200km, -160km and -120km are 8-bit palette (quantized, so lossy) as the manifest's sha256_note allows.",
+  "criteria": [
+    {"id": "C1", "name": "Evidence integrity (hashes, commit, command, camera)", "verdict": "PASS", "note": "Hashes match. Command, camera basis/FOV/elevation, weather state and renderer/dataset hashes are bound per frame. The commit is not literally main (see commit_note)."},
+    {"id": "C2", "name": "No hard-edged data/land-cover domain seams across zoom", "verdict": "PASS", "note": "The Sahara/Arabia pale rectangle and the Baltic/Russia dark-green block are gone at 0.0 and 0.1. No new rectangular domain seams at 0.0-1.0 or in the width series."},
+    {"id": "C3", "name": "Coastline fidelity", "verdict": "PARTIAL", "note": "Stair-stepped raster coasts remain at 0.0-0.4 (Morocco, Sardinia, Corsica, Sicily, Dalmatia). From 0.5 the coasts are smooth and positionally stable. The shallow-water band at 120 km has blocky steps."},
+    {"id": "C4", "name": "Protected lakes", "verdict": "PARTIAL", "note": "Three lakes are now consistently present from 0.6 to 1.0 (previously one), and two to one remain in the near frames as the view narrows. Their positions are consistent with Trasimeno/Bolsena/Bracciano (or Vico), but identification is visual only, with no vector overlay."},
+    {"id": "C5", "name": "Protected river network", "verdict": "FAIL", "note": "Only the Tiber, Po and Ofanto are visible in Italy. The Arno, Volturno and Liri-Garigliano are absent at all steps, and there is no source or rule reference (the supplement is known not to be on main). The lower Tiber at 200-60 km is drawn as 3-4 overlapping, crossing translucent ribbons with a pale straight bar across the mouth, which is an unexpected geometry artifact. The river is about 1 km wide at 40 km (roughly 8x real), and the upper reach at 120 km is dashed."},
+    {"id": "C6", "name": "World edge / overview frame", "verdict": "FAIL", "note": "At 0.0, rows 0-44 (12.5% of the frame) are a uniform grey void (RGB 170,184,192) with cloud flakes drawn over it. This is a known open item but still visible. 0.1 and later are fine."},
+    {"id": "C7", "name": "Relief / terrain readability", "verdict": "PASS", "note": "The Apennine relief is markedly more plastic than in f589e37 (0.3-1.0), the Roman Campagna stays plausibly flat at 40-90 km, and no flat gaps or holes are visible."},
+    {"id": "C8", "name": "Overview-to-near range", "verdict": "PASS", "note": "7607 km to 40 km in 17 steps. The width series 200-40 km continues 1.0 without jumps in position or feature set."},
+    {"id": "C9", "name": "Step-to-step consistency / transitions", "verdict": "PARTIAL", "note": "Features are positionally stable across all steps. The 0.4 stippled clouds and the abrupt 0.3->0.4 forest switch (tint to speckle) remain. These are single fresh-start snapshots, so popping and transition residuals cannot be observed."},
+    {"id": "C10", "name": "Near-range surface quality", "verdict": "PARTIAL", "note": "At 90-40 km the ground colour shows magnified raster-cell steps of the land-cover grid (staircase edges on green/tan patches, clearest at 60 and 40 km)."},
+    {"id": "C11", "name": "Manifest / provenance completeness", "verdict": "PARTIAL", "note": "Much improved over the previous manifest (gaps listed under manifest_assessment)."}
+  ],
+  "findings": [
+    {"image": "rome-zoom-0.0.png", "severity": "P1", "detail": "Grey void strip at the top, rows 0-44 (uniform RGB 170,184,192), with white cloud flakes rendered over it and a hard straight northern terrain edge at y=45. The rectangles from f589e37 are gone (fixed). Coasts stay stair-stepped (West Africa, Morocco, Aegean). Rivers are drawn as wide bands (Iberia, Morocco, Russia). Gibraltar appears closed at this scale."},
+    {"image": "rome-zoom-0.1.png", "severity": "P2", "detail": "No domain rectangles (fixed) and no grey strip. Coasts are still stair-stepped (Corsica, Sardinia, Sicily, Dalmatia, Aegean). Many small white cloud flakes read as noise."},
+    {"image": "rome-zoom-0.2.png", "severity": "P3", "detail": "Clean and consistent. Relief is stronger than in f589e37. Minor coast stepping."},
+    {"image": "rome-zoom-0.3.png", "severity": "P2", "detail": "Relief is much more plastic than in f589e37. The Tiber is visible. The Arno and Volturno are absent. The forest is still tint-only (switches abruptly at 0.4)."},
+    {"image": "rome-zoom-0.4.png", "severity": "P2", "detail": "Clouds still render as stippled/dithered dot clusters over the Tyrrhenian Sea and Adriatic, while 0.3 and 0.5 show soft blobs (unchanged from previous P2). Sardinia and Corsica coasts are stair-stepped. The forest appears as dark speckle."},
+    {"image": "rome-zoom-0.5.png", "severity": "P3", "detail": "Consistent. Coasts are smooth from here on. Small lakes are starting to appear in Lazio/Umbria."},
+    {"image": "rome-zoom-0.6.png", "severity": "P2", "detail": "Three lakes are now visible west of the Tiber, where f589e37 showed one (improvement). The Tiber is continuous. The Arno (Florence-Pisa) is not visible, with no rule reference."},
+    {"image": "rome-zoom-0.7.png", "severity": "P2", "detail": "Same three lakes. The Tiber and the Ofanto (lower right) are visible. There is no Arno or Volturno."},
+    {"image": "rome-zoom-0.8.png", "severity": "P3", "detail": "Three lakes and the Tiber are consistent. Clouds with shadows cover part of the Campanian coast and the Apennines."},
+    {"image": "rome-zoom-0.9.png", "severity": "P3", "detail": "Consistent. Tree sprites are dense. A cloud covers part of the central Apennines."},
+    {"image": "rome-zoom-1.0.png", "severity": "P3", "detail": "Three lakes, versus one in f589e37. The previous 'softer at 1.0' observation is explained by palette quantization (8-bit colormap file), not blur, so the earlier file-size argument is void. The lower Tiber starts to widen into a broad band near the mouth."},
+    {"image": "rome-width-200km.png", "severity": "P2", "detail": "Lower Tiber near the mouth is drawn as multiple overlapping channels, and the river is about 3-4 km wide on screen scale. Coast and lakes are consistent with 1.0."},
+    {"image": "rome-width-160km.png", "severity": "P2", "detail": "Same overlapping lower-Tiber ribbons, plus a pale straight element at the mouth."},
+    {"image": "rome-width-120km.png", "severity": "P2", "detail": "Lower Tiber is 3-4 crossing translucent ribbons with visible overlap seams and a pale straight bar across the mouth. The upper reach (top right) is broken into dashes. The shallow-water coastal band shows blocky steps."},
+    {"image": "rome-width-90km.png", "severity": "P2", "detail": "Clearest view of the Tiber mouth artifact: four interleaved ribbons and a straight pale diagonal bar across the coastline. The real delta has two outlets (Fiumara Grande, Fiumicino canal), so this reads as duplicated or overlapping geometry rather than data. Land-cover colour shows raster stair-steps."},
+    {"image": "rome-width-60km.png", "severity": "P2", "detail": "Overlapping river ribbons at the bottom left. Land-cover patches have stair-stepped cell edges (bottom right). The river is about 1 km wide."},
+    {"image": "rome-width-40km.png", "severity": "P3", "detail": "The near range is reached (improvement). The Tiber is continuous but about 1 km wide (roughly 8x real). The ground shows mottled square land-cover cells. The flat Campagna is plausible. Tree sprites are very large relative to scale (A08 matter)."}
+  ],
+  "previous_findings_status": [
+    {"previous": "P1 pale rectangle Sahara/Arabia (0.0, 0.1)", "status": "fixed", "evidence": "rome-zoom-0.0.png, rome-zoom-0.1.png"},
+    {"previous": "P1 dark-green rectangle Baltic/Russia (0.0, 0.1)", "status": "fixed", "evidence": "rome-zoom-0.0.png, rome-zoom-0.1.png"},
+    {"previous": "P1 no near/diorama range", "status": "fixed", "evidence": "rome-width-200km..40km.png"},
+    {"previous": "P2 stippled clouds at 0.4", "status": "open", "evidence": "rome-zoom-0.4.png"},
+    {"previous": "P2 missing lakes", "status": "largely fixed (3 lakes consistent 0.6-1.0; identification unverified without overlay)", "evidence": "rome-zoom-0.6..1.0.png"},
+    {"previous": "P2 sparse rivers (Arno, Volturno, Liri missing; Tiber segmented at 0.3)", "status": "open (Tiber now continuous at 0.3; others still absent, known open supplement)", "evidence": "rome-zoom-0.3..1.0.png"},
+    {"previous": "P2 stair-stepped coasts, cloud flakes, grey top edge (0.0, 0.1)", "status": "partly open: coasts stair-stepped 0.0-0.4; grey strip at 0.0 remains (known); flakes remain", "evidence": "rome-zoom-0.0.png, rome-zoom-0.1.png, rome-zoom-0.4.png"},
+    {"previous": "P3 abrupt forest switch 0.3->0.4", "status": "open", "evidence": "rome-zoom-0.3.png, rome-zoom-0.4.png"},
+    {"previous": "P3 softer texture at 1.0", "status": "explained (palette quantization, not render blur)", "evidence": "rome-zoom-1.0.png"},
+    {"previous": "P3 clouds occlude Apennines 0.8-1.0", "status": "open (cloud_layer_enabled false but weather_clouds on; no cloud-free control)", "evidence": "rome-zoom-0.8..1.0.png"},
+    {"previous": "flat-looking terrain (A08 note)", "status": "improved: relief clearly more plastic", "evidence": "rome-zoom-0.3..1.0.png"}
+  ],
+  "new_findings": [
+    "Lower Tiber rendered as overlapping/crossing ribbons with a pale straight bar at the mouth (rome-width-200km, -160km, -120km, -90km, -60km); this was not visible in f589e37 because that sequence ended at 240 km.",
+    "Magnified land-cover raster cells with staircase edges at 90-40 km (rome-width-90km, -60km, -40km).",
+    "River width exaggerated about 8x at near range (rome-width-40km)."
+  ],
+  "manifest_assessment": {
+    "adequate": [
+      "commit (full SHA) with note on delta to a676442",
+      "per-frame exact command line, view, zoom, view width (model and source metres)",
+      "camera azimuth, elevation, vertical FOV, basis, position",
+      "weather state and cloud layer flag",
+      "renderer_binding/renderer_source/dataset_manifest sha256 per frame",
+      "sha256_note explains source_capture_sha256 -> sha256 (lossless re-encode, quantized if large)",
+      "per-frame runtime excerpts with startup timeline and runtime_json_sha256"
+    ],
+    "gaps": [
+      "No geodata_policy.json hash bound (A16 requires the policy to be versioned before measurement)",
+      "Source captures and runtime.json are not tracked; only their hashes are",
+      "excerpts' last_clipmap_line shows missing>0 / pending>0 for rome-zoom-0.0 (missing 11), 0.5 (1), 0.9 (8) and width-160km (4), while the capture note claims missing==0 at snapshot; the excerpt does not show the snapshot-time line, so 'coverage complete' is still not directly evidenced",
+      "No cloud seed; clouds are on (weather_clouds on) despite cloud_layer_enabled false",
+      "4 frames are palette-quantized (lossy), which limits fine colour/banding judgement",
+      "Commit is a branch commit, not main; main has advanced to e707db8",
+      "excerpts/ contains runtime JSON only, not image crops"
+    ]
+  },
+  "limitations": [
+    "640x360 only: small lakes, minor rivers and fine coast detail cannot be judged reliably",
+    "One fresh-start snapshot per step; popping and transition residuals cannot be observed",
+    "Single location (Rome), single heading",
+    "Clouds enabled; no cloud-free control",
+    "No source-vector overlay (coast/river/lake); feature identification is visual",
+    "Reviewer did not re-render; render equivalence of 1dd0cb14 to a676442 judged from the diff only"
+  ],
+  "needed_for_pass": [
+    "River supplement on main (Arno, Volturno, Liri-Garigliano) or an explicit source/rule reference for their omission, then re-capture",
+    "Fix the lower-Tiber overlapping ribbons and the pale bar at the mouth (rome-width-200km..60km)",
+    "Remove the grey void strip at zoom 0.0, or document it with a rule reference as an intended world edge and keep clouds off the void",
+    "Make the 0.4 cloud style consistent with neighbouring steps, or capture with clouds off",
+    "Reduce stair-stepped coasts at 0.0-0.4 (or justify them as an intended generalisation level with a rule reference)",
+    "Bind the geodata_policy.json hash, and include snapshot-time clipmap state (missing==0) in the excerpts",
+    "A continuous zoom recording (or dense step series) to evidence transitions/popping",
+    "A source-vector overlay for coast, rivers and lakes for at least the Rome frames"
+  ],
+  "a08_preliminary": {
+    "verdict": "not assessed here",
+    "notes": [
+      "Relief is clearly more plastic than in f589e37 (positive).",
+      "Tree sprites at 90-40 km are very large relative to map scale, and rivers are strongly exaggerated; whether this is acceptable stylisation is an A08 decision."
+    ]
+  }
+}

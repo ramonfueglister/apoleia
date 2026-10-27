@@ -1,0 +1,116 @@
+{
+  "bundle": "artifacts/kit1-bundle-main-26ec82f-r4/Apoleia-kit1-main-26ec82f.app (local, not in Git)",
+  "commit": "c02c4e8c (main 26ec82f merged into gsv7uc + river supplement in exporter)",
+  "engine": "Godot 4.7.2.stable.custom_build.ed1daf0bf, export_baked_macos.py (Metal-baked PCK, SPIR-V only; no Xcode Metal toolchain)",
+  "contents_sha256_of_sorted_file_list": "eb63f777eadb89aaf71ca2bb14e921e5da265ffe88915e411798849c762617e5",
+  "files": 13829,
+  "size": "3.1 GB",
+  "override_cfg_in_bundle": false,
+  "inventory_checked": {
+    "forest_layout_r10_manifest": "92090137bbb9032f\u2026",
+    "forest_layout_r10_layout_bin": "8a731bfa2965\u2026",
+    "rivers_supplement_geojson": "490e9c987497\u2026",
+    "rivers_supplement_manifest": "deb65cca72f0\u2026",
+    "land_cover": {
+      "look": "b23e592a935a\u2026",
+      "classes": "da2fcd2792c2\u2026",
+      "manifest": "ac4966734103\u2026"
+    },
+    "clipmap_r8_manifest": "75096f887633\u2026"
+  },
+  "start_tests": {
+    "window": "640x360 via launcher engine flags before --",
+    "runs": [
+      {
+        "label": "cold (unique bundle id clone, fresh HOME)",
+        "view": "Rome 0.5",
+        "exit": 0,
+        "first_frame_msec": 15717,
+        "coverage_ready_msec": 38326,
+        "max_frame_before_tour_ms": 6943,
+        "stalls_s": [
+          6.9,
+          5.1,
+          0.6,
+          0.4,
+          1.4,
+          3.5
+        ],
+        "note": "baked shader container parse error once (Failed to parse shader container from binary), recompiled"
+      },
+      {
+        "label": "product bundle id",
+        "view": "Rome 0.0",
+        "exit": 0,
+        "first_frame_msec": 4207,
+        "coverage_ready_msec": 7652,
+        "max_frame_before_tour_ms": 35
+      },
+      {
+        "label": "warm",
+        "view": "Rome 0.5",
+        "exit": 0,
+        "first_frame_msec": 3513,
+        "coverage_ready_msec": 9515,
+        "max_frame_before_tour_ms": 51
+      },
+      {
+        "label": "warm",
+        "view": "Rome 1.0",
+        "exit": 0,
+        "first_frame_msec": 3566,
+        "coverage_ready_msec": 9512,
+        "max_frame_before_tour_ms": 32
+      },
+      {
+        "label": "warm repeat",
+        "view": "Rome 0.5",
+        "exit": 0,
+        "first_frame_msec": 3491,
+        "coverage_ready_msec": 9287,
+        "max_frame_before_tour_ms": 31
+      }
+    ],
+    "pipeline_warmup_warm": {
+      "kinds": [
+        "forest_opaque_x4",
+        "forest_fade_x4",
+        "river",
+        "shore"
+      ],
+      "frames": 11,
+      "elapsed_ms": 82.5,
+      "timed_out": false,
+      "counts_after": {
+        "SURFACE": 31,
+        "SPECIALIZATION": 22
+      }
+    }
+  },
+  "a05_on_bundle": {
+    "fixture": "runs/kit1-landscape-v5-2026-10-25/fixture.json",
+    "visible_screen_residual_max_px": 0.897,
+    "source_height_read_residual_native_max_m": 9.06,
+    "anchor_native_check": "9/9 native, 0 timeouts",
+    "tile_mismatch_count": 0,
+    "samples": 8199,
+    "visible_samples": 3978,
+    "tour_start": {
+      "frame": 384,
+      "wait_ms": 3487.9
+    },
+    "frame_ms": {
+      "p50": 8.719,
+      "p95": 13.011,
+      "p99": 18.82,
+      "max": 41.506
+    }
+  },
+  "hardware": "Apple M3 Pro, 18 GB, macOS 26.5",
+  "incident": {
+    "what": "perf-lock breach 06:46-06:50 CET 2026-10-27: the capture lock wrapper treated a lock older than 10 min as stale without checking that its PID was alive and replaced another thread's lock",
+    "invalidated": "first A05 tour on this bundle (started 06:46:15; frame p50 18.2/p95 36.3 ms caused by the parallel GPU run); its telemetry was discarded",
+    "rerun": "start tests (whose 06:43 lock acquisition could not be verified) and A05 were repeated 07:3x under the fixed lock; values above are from the reruns",
+    "fix": "lock removed only if older than 10 min AND owner PID dead; never broken on timeout; released only while it holds our PID (tools/kit1_capture_evidence.py 2b617576 and the capture wrapper)"
+  }
+}

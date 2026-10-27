@@ -105,9 +105,17 @@ static func land_noise_texture() -> Texture2D:
     _land_noise = ImageTexture.create_from_image(image)
     return _land_noise
 
+# Data root: --source-root when given (baked bundles keep data in Resources/world),
+# else the checkout around res://.
+static func data_root() -> String:
+    var args = OS.get_cmdline_user_args()
+    for i in range(args.size() - 1):
+        if args[i] == "--source-root": return String(args[i + 1]).simplify_path()
+    return ProjectSettings.globalize_path("res://..").simplify_path()
+
 static func land_cover_parameters() -> Dictionary:
     if not _land_cover.is_empty(): return _land_cover
-    var root = ProjectSettings.globalize_path("res://..").simplify_path().path_join(LAND_COVER_DIR)
+    var root = data_root().path_join(LAND_COVER_DIR)
     var manifest_text = FileAccess.get_file_as_string(root.path_join("manifest.json"))
     var manifest = JSON.parse_string(manifest_text) if manifest_text != "" else null
     if manifest == null:
