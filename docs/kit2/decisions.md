@@ -52,7 +52,7 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 
 | ID | Entscheidung |
 |---|---|
-| S50 | **Ein Massstab für alles:** Anzahl Menschen und Fläche 1 : 566,5 (56,65 Mio. → 100'000), Längen, Distanzen und jede Bewegung 1 : 23,8. Kalender und Lebensalter echt. Höhe zusätzlich 7,5-fach überhöht (K06 nach PR #29). |
+| S50 | **Ein Massstab für alles:** Anzahl Menschen und Fläche 1 : 566,5 (56,65 Mio. → 100'000), Längen, Distanzen und jede Bewegung 1 : 23,8. Kalender und Lebensalter echt. Höhe zusätzlich 7,5-fach überhöht (K06 nach PR #29). Mit dem Start nach S35 (HYDE-Land plus Städte nach Hanson, 66,1 Mio.) ergibt der Faktor rund **117'000 Personen**; so bestätigt (Ramon, 27.10.2026). |
 | S51 | **Der einzelne Mensch wird nicht verkleinert:** Körper, Haus, Wagen, Boot und Feld einer Familie in echter Grösse. Gemeinschaftsbauten nach Nutzerzahl. |
 | S52 | **Koordinaten:** Geodaten und Tile-IDs bleiben in echten Metern; `DIORAMA_LAENGE = 1/23,80` rechnet in Diorama-Meter um. Dichteschwellen (S15) gelten in Diorama-km². |
 | S53 | **Jeder Einwohner ist ein eigener Charakter** (CK3-Stil): Name, Alter, Geschlecht, Familie und Dynastie, Eigenschaften, Fähigkeiten, Gesundheit, Kultur, Religion, Stand, Wohnhaus, Arbeit, Besitz, Beziehungen zu einem begrenzten Kreis (Startwert höchstens 30). Ersetzt S30. |

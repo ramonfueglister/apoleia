@@ -57,4 +57,4 @@ S50 rechnet 56,65 Mio. (HYDE `pop200`) zu 100'000. Der Start nach S35 nimmt aber
 die HYDE-Landbevölkerung (`rural200`, 56,09 Mio.) **plus** die Städte nach Hanson
 (10,0 Mio.), zusammen 66,1 Mio. Daraus werden bei 1 : 566,5 rund 117'000 Personen
 (dazu die Mindestzahl 2 pro Ort, S57). Für genau 100'000 müsste der Faktor bei
-diesen Startdaten 1 : 661 sein; das ist zu entscheiden.
+diesen Startdaten 1 : 661 sein. Entschieden (Ramon, 27.10.2026): Faktor bleibt, Start mit rund 117'000.
