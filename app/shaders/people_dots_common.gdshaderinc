@@ -87,7 +87,7 @@ vec2 dot_village(vec2 c, float r, uint key) {
 // Where the person in `slot` stands: (offset x, offset z) in km from the
 // record's anchor and the height in levels. Records: sim/src/view.rs.
 vec3 dot_place(vec4 rec, uint slot) {
-	uint key = uint(rec.w) >> 2u;
+	uint key = uint(rec.w) >> 8u;
 	vec2 p;
 	if (rec.z < 0.0) {
 		// city: the household's house in the city disk

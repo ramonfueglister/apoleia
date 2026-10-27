@@ -8,20 +8,23 @@
 //!
 //! A record is four f32 (RGBA32F texel): x and z of the anchor in world
 //! km (eqc41, as tiles.csv and the tile terrain), the area and
-//! `key * 4 + kind`. Area: 0 = empty slot; 1..=VILLAGES = a village of the
+//! `key << 8 | job << 4 | estate << 2 | kind` (the occupation of S77 and
+//! the estate, for colouring the dots by group). Area: 0 = empty slot; 1..=VILLAGES = a village of the
 //! 25 km cell around the anchor (1 + village seed); ROAD = anywhere in the
 //! cell (people on the road); < 0 = disk of that radius in km around a city.
 //! At home the anchor is the centre of the household's village tile
 //! (crate::settle, 1.5625 km fine tile) and the area 1 + a seed of that
 //! tile; the GPU puts the village on the best open land of the tile and the
-//! household's house within 0.6 km of it. The key is the low 22 bits of the
+//! household's house within 0.6 km of it. The key is the low 16 bits of the
 //! household id (the person id on the road), so a family shares one house.
 //! The GPU picks those spots from hashes of the keys, so they never change
 //! while the people stay put. Floats only carry whole numbers below 2^24 in
 //! the last two fields, so no bit pattern can turn into a NaN on the way to
 //! the GPU.
 
-use crate::people::{Home, Household, People, Pid, Stand, Travel};
+use crate::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
+use crate::life::YEAR;
+use crate::people::{Born, Clock, Culture, Faction, Health, Home, Household, Intelligence, Job, People, Pid, Religion, Sex, Spouse, Stand, Travel};
 use crate::settle::{Settle, Spot};
 use crate::City;
 use bevy_ecs::prelude::*;
@@ -30,7 +33,8 @@ use bevy_ecs::prelude::*;
 pub const PAGE: usize = 4096;
 /// Record size in f32.
 pub const REC: usize = 4;
-/// Dot kinds (low two bits of the last field).
+/// Dot kinds (low two bits of the last field; the key starts at bit 8, so
+/// the field stays below 2^24).
 pub const AT_HOME: u32 = 0;
 pub const IN_CITY: u32 = 1;
 pub const TRAVELLING: u32 = 2;
@@ -59,7 +63,7 @@ pub struct PeopleView {
     dirty: Vec<bool>,
     /// Village and house of each household.
     pub settle: Settle,
-    query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, Option<&'static Travel>)>>,
+    query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, Option<&'static Travel>)>>,
 }
 
 fn hash(v: u32) -> u32 {
@@ -103,20 +107,25 @@ impl PeopleView {
         ((c as f32 + 0.5) * CELL_KM, (r as f32 + 0.5) * CELL_KM)
     }
 
-    fn record(&self, p: &People, pid: u32, home: u32, household: u32, stand: u8, travel: Option<&Travel>) -> [f32; REC] {
+    #[allow(clippy::too_many_arguments)]
+    fn record(&self, p: &People, pid: u32, home: u32, household: u32, stand: u8, job: u8, travel: Option<&Travel>) -> [f32; REC] {
+        let w = |key: u32, kind: u32| ((key & 0xffff) << 8 | (job as u32 & 15) << 4 | (stand as u32 & 3) << 2 | kind) as f32;
         if let Some(t) = travel {
             let (x, z) = self.cell_centre(p, t.at);
-            let kind = if t.leave { LEAVING } else { TRAVELLING };
-            return [x, z, ROAD, (pid & 0x3f_ffff) as f32 * 4.0 + kind as f32];
+            return [x, z, ROAD, w(pid, if t.leave { LEAVING } else { TRAVELLING })];
         }
-        let key = (household & 0x3f_ffff) as f32 * 4.0;
         match self.settle.spot(home, household, stand) {
-            Spot::City { place } => [place.x, place.z, -place.r, key + IN_CITY as f32],
+            Spot::City { place } => [place.x, place.z, -place.r, w(household, IN_CITY)],
             Spot::Village { fine, .. } => {
                 let (x, z) = self.settle.fine_centre_km(fine);
-                [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, key + AT_HOME as f32]
+                [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, w(household, AT_HOME)]
             }
         }
+    }
+
+    /// Person id in a slot (picking a dot), if the slot is in use.
+    pub fn pid_at(&self, slot: usize) -> Option<u32> {
+        self.pid_of.get(slot).copied().filter(|&p| p != NONE)
     }
 
     /// Brings the records to the people's current state. Returns the pages
@@ -127,7 +136,7 @@ impl PeopleView {
         let mut query = self.query.take().unwrap_or_else(|| p.world.query());
         let mut grew = false;
         let mut writes: Vec<(u32, [f32; REC])> = Vec::with_capacity(1024);
-        for (pid, home, household, stand, travel) in query.iter(&p.world) {
+        for (pid, home, household, stand, job, travel) in query.iter(&p.world) {
             let pid = pid.0;
             if pid as usize >= self.slot_of.len() {
                 self.slot_of.resize(pid as usize + 1, NONE);
@@ -152,12 +161,12 @@ impl PeopleView {
                 self.inputs[slot as usize] = [NONE; 3];
             }
             self.seen[slot as usize] = stamp;
-            let now = if travel.is_some() { [NONE; 3] } else { [home.0, household.0, stand.0 as u32] };
+            let now = if travel.is_some() { [NONE; 3] } else { [home.0, household.0, stand.0 as u32 | (job.0 as u32) << 8] };
             if now[0] != NONE && self.inputs[slot as usize] == now {
                 continue;
             }
             self.inputs[slot as usize] = now;
-            let rec = self.record(p, pid, home.0, household.0, stand.0, travel);
+            let rec = self.record(p, pid, home.0, household.0, stand.0, job.0, travel);
             let o = slot as usize * REC;
             if self.data[o..o + REC] != rec {
                 writes.push((slot, rec));
@@ -193,6 +202,36 @@ impl PeopleView {
         out
     }
 
+    /// What a click on a dot shows: one person and their household, read
+    /// from the world (a pass over all people, only on request).
+    pub fn person(p: &mut People, pid: u32) -> Option<Person> {
+        let day = p.world.resource::<Clock>().day;
+        let mut q = p.world.query::<(&Pid, &Born, &Sex, &Household, &Home, &Job, &Stand, &Health, &Faction, &Culture, &Religion, Option<&Intelligence>, Option<&Spouse>, Option<&Travel>)>();
+        let (_, born, sex, hh, home, job, stand, health, faction, culture, religion, iq, spouse, travel) = q.iter(&p.world).find(|t| t.0 .0 == pid)?;
+        let age = (day - born.0 as i64) as f64 / YEAR as f64;
+        let mut out = Person {
+            pid,
+            age,
+            female: sex.0 == 0,
+            household: hh.0,
+            members: 0,
+            home: home.0,
+            job: JOB_NAMES.get(job.0 as usize).copied().unwrap_or("?"),
+            group: JOB_GROUP.get(job.0 as usize).and_then(|&g| POLITICAL_NAMES.get(g as usize)).copied().unwrap_or("?"),
+            factions: (0..8).filter(|b| faction.0 >> b & 1 == 1).filter_map(|b| POLITICAL_NAMES.get(b)).copied().collect(),
+            stand: stand.0,
+            health: health.0,
+            culture: culture.0,
+            religion: religion.0,
+            iq: iq.map(|i| i.iq(age)),
+            spouse: spouse.map(|s| s.0).filter(|&s| s != NONE),
+            travelling: travel.map(|t| t.leave),
+        };
+        let house = hh.0;
+        out.members = q.iter(&p.world).filter(|t| t.3 .0 == house).count() as u32;
+        Some(out)
+    }
+
     /// Records of one page.
     pub fn page(&self, page: usize) -> &[f32] {
         &self.data[page * PAGE * REC..(page + 1) * PAGE * REC]
@@ -221,5 +260,33 @@ mod tests {
         let used = (0..v.slots()).filter(|&s| v.data[s * REC + 2] != 0.0).count();
         assert_eq!(used, p.count as usize);
         assert!(pages.len() <= v.pages());
+        let pid = v.pid_at((0..v.slots()).find(|&s| v.data[s * REC + 2] != 0.0).unwrap()).unwrap();
+        let who = PeopleView::person(&mut p, pid).expect("a living person");
+        assert!(who.members >= 1 && who.age >= 0.0);
     }
+}
+
+/// One person as a click on their dot shows them.
+#[derive(Clone, Debug)]
+pub struct Person {
+    pub pid: u32,
+    pub age: f64,
+    pub female: bool,
+    pub household: u32,
+    /// People in the household, the person included.
+    pub members: u32,
+    pub home: u32,
+    pub job: &'static str,
+    /// Political group of the occupation (groups::JOB_GROUP).
+    pub group: &'static str,
+    /// Political groups the person belongs to (Faction).
+    pub factions: Vec<&'static str>,
+    pub stand: u8,
+    pub health: u16,
+    pub culture: u16,
+    pub religion: u16,
+    pub iq: Option<f64>,
+    pub spouse: Option<u32>,
+    /// On the road: Some(leaving for good).
+    pub travelling: Option<bool>,
 }

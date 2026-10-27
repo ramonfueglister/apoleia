@@ -12,7 +12,8 @@
 //! taking them.
 
 use apoleia_sim::people::People;
-use apoleia_sim::view::{PeopleView, PAGE, REC};
+use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
+use apoleia_sim::view::{PeopleView, Person, PAGE, REC};
 use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
 use godot::prelude::*;
@@ -32,11 +33,21 @@ struct Front {
     count: u32,
     day_usec: f64,
     view_usec: f64,
+    /// Answer to the last `ask_person`.
+    person: Option<Person>,
+}
+
+/// Work for the sim thread: days to run, stop, a slot whose person to look up.
+#[derive(Default)]
+struct Queue {
+    days: u64,
+    stop: bool,
+    ask: Option<usize>,
 }
 
 #[derive(Default)]
 struct Shared {
-    queue: Mutex<(u64, bool)>,
+    queue: Mutex<Queue>,
     wake: Condvar,
     front: Mutex<Front>,
 }
@@ -55,15 +66,24 @@ fn publish(view: &PeopleView, pages: &[u32], f: &mut Front) {
 
 fn run(mut people: People, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
-        {
+        let ask = {
             let mut q = shared.queue.lock().unwrap();
-            while q.0 == 0 && !q.1 {
+            while q.days == 0 && !q.stop && q.ask.is_none() {
                 q = shared.wake.wait(q).unwrap();
             }
-            if q.1 {
+            if q.stop {
                 return;
             }
-            q.0 -= 1;
+            let ask = q.ask.take();
+            if ask.is_none() {
+                q.days -= 1;
+            }
+            ask
+        };
+        if let Some(slot) = ask {
+            let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
+            shared.front.lock().unwrap().person = who;
+            continue;
         }
         let t0 = Instant::now();
         people.day();
@@ -134,14 +154,14 @@ impl ApoleiaPeople {
         if self.worker.is_none() || days <= 0 {
             return;
         }
-        self.shared.queue.lock().unwrap().0 += days as u64;
+        self.shared.queue.lock().unwrap().days += days as u64;
         self.shared.wake.notify_one();
     }
 
     /// Days queued but not yet computed.
     #[func]
     fn backlog(&self) -> i64 {
-        self.shared.queue.lock().unwrap().0 as i64
+        self.shared.queue.lock().unwrap().days as i64
     }
 
     /// Layers the texture array needs (pages of 4096 people).
@@ -229,6 +249,115 @@ impl ApoleiaPeople {
         Image::create_from_data(SIDE as i32, SIDE as i32, false, Format::RGBAF, &bytes)
     }
 
+    /// The slot of the dot nearest to `pixel` within `max_px`, or -1.
+    /// `place` is the placement texture (people_dots_prep, RGBAH or RGBAF),
+    /// `view_proj` the camera's projection × view matrix as 16 floats,
+    /// column by column, `level_h` the terrain's height per level.
+    #[func]
+    fn pick(&self, place: Gd<Image>, view_proj: PackedFloat32Array, viewport: Vector2, pixel: Vector2, level_h: f32, max_px: f32) -> i64 {
+        let m = view_proj.as_slice();
+        if m.len() != 16 {
+            return -1;
+        }
+        let half = match place.get_format() {
+            Format::RGBAH => true,
+            Format::RGBAF => false,
+            _ => return -1,
+        };
+        let bytes = place.get_data();
+        let bytes = bytes.as_slice();
+        let (w, h) = (place.get_width() as usize, place.get_height() as usize);
+        let texel = |i: usize, c: usize| -> f32 {
+            if half {
+                let o = (i * 4 + c) * 2;
+                f16_to_f32(u16::from_le_bytes([bytes[o], bytes[o + 1]]))
+            } else {
+                let o = (i * 4 + c) * 4;
+                f32::from_le_bytes([bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]])
+            }
+        };
+        let side = SIDE;
+        let mut best = (-1i64, max_px * max_px);
+        for slot in 0..self.data.len() / REC {
+            let rec = &self.data[slot * REC..slot * REC + REC];
+            if rec[2] == 0.0 {
+                continue;
+            }
+            // slot → pixel of the placement texture, as in people_dots_prep
+            let (layer, in_page) = (slot / PAGE, slot % PAGE);
+            let (px, py) = (in_page % side, layer * side + in_page / side);
+            if px >= w || py >= h {
+                continue;
+            }
+            let i = py * w + px;
+            if texel(i, 3) < 0.5 {
+                continue;
+            }
+            let v = [rec[0] + texel(i, 0) - 32.0, (texel(i, 2) + 0.12) * level_h, rec[1] + texel(i, 1) - 32.0, 1.0];
+            let row = |r: usize| m[r] * v[0] + m[4 + r] * v[1] + m[8 + r] * v[2] + m[12 + r] * v[3];
+            let cw = row(3);
+            if cw <= 0.0 {
+                continue;
+            }
+            let sx = (row(0) / cw * 0.5 + 0.5) * viewport.x;
+            let sy = (0.5 - row(1) / cw * 0.5) * viewport.y;
+            let d = (sx - pixel.x).powi(2) + (sy - pixel.y).powi(2);
+            if d < best.1 {
+                best = (slot as i64, d);
+            }
+        }
+        best.0
+    }
+
+    /// Asks the sim thread for the person in `slot`; the answer comes with
+    /// `take_person` (between two days, so within a frame or two).
+    #[func]
+    fn ask_person(&mut self, slot: i64) {
+        if self.worker.is_none() || slot < 0 {
+            return;
+        }
+        self.shared.front.lock().unwrap().person = None;
+        self.shared.queue.lock().unwrap().ask = Some(slot as usize);
+        self.shared.wake.notify_one();
+    }
+
+    /// The person asked for, once; empty until the sim thread answered.
+    #[func]
+    fn take_person(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        let Some(p) = self.shared.front.lock().unwrap().person.take() else {
+            return d;
+        };
+        d.set("pid", p.pid as i64);
+        d.set("age", p.age);
+        d.set("female", p.female);
+        d.set("household", p.household as i64);
+        d.set("members", p.members as i64);
+        d.set("home", p.home as i64);
+        d.set("job", p.job);
+        d.set("group", p.group);
+        d.set("factions", &PackedStringArray::from_iter(p.factions.iter().map(|f| GString::from(*f))));
+        d.set("stand", p.stand as i64);
+        d.set("health", p.health as i64);
+        d.set("culture", p.culture as i64);
+        d.set("religion", p.religion as i64);
+        d.set("iq", p.iq.unwrap_or(-1.0));
+        d.set("spouse", p.spouse.map_or(-1, |s| s as i64));
+        d.set("travelling", p.travelling.map_or(0, |leave| if leave { 2 } else { 1 }));
+        d
+    }
+
+    /// Names for the colour legend: occupations, political groups and the
+    /// political group of each occupation (crate::groups).
+    #[func]
+    fn legend(&self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        d.set("jobs", &PackedStringArray::from_iter(JOB_NAMES.iter().map(|s| GString::from(*s))));
+        d.set("groups", &PackedStringArray::from_iter(POLITICAL_NAMES.iter().map(|s| GString::from(*s))));
+        d.set("job_group", &PackedInt32Array::from_iter(JOB_GROUP.iter().map(|&g| g as i32)));
+        d
+    }
+
     /// Simulated days so far (the sim thread's, also while no dots show).
     #[func]
     fn day(&self) -> i64 {
@@ -259,7 +388,7 @@ impl ApoleiaPeople {
 impl ApoleiaPeople {
     fn stop(&mut self) {
         if let Some(w) = self.worker.take() {
-            self.shared.queue.lock().unwrap().1 = true;
+            self.shared.queue.lock().unwrap().stop = true;
             self.shared.wake.notify_one();
             let _ = w.join();
         }
@@ -270,4 +399,27 @@ impl Drop for ApoleiaPeople {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+/// IEEE half to float (the placement texture is RGBA16F).
+fn f16_to_f32(h: u16) -> f32 {
+    let sign = ((h >> 15) as u32) << 31;
+    let exp = ((h >> 10) & 0x1f) as u32;
+    let man = (h & 0x3ff) as u32;
+    let bits = match exp {
+        0 if man == 0 => sign,
+        0 => {
+            // subnormal: normalise
+            let mut e = 127 - 15 + 1;
+            let mut m = man;
+            while m & 0x400 == 0 {
+                m <<= 1;
+                e -= 1;
+            }
+            sign | (e as u32) << 23 | (m & 0x3ff) << 13
+        }
+        31 => sign | 0x7f80_0000 | man << 13,
+        _ => sign | (exp + 127 - 15) << 23 | man << 13,
+    };
+    f32::from_bits(bits)
 }

@@ -137,10 +137,27 @@ die Terrain Bäume und Häuser zeichnet (`TileTerrain.PROP_SLOTS > 0`, Tiles von
 und der Platzierungs-Pass läuft nicht. Die Messwerte bei 360 und 1800 km oben
 stammen von vor dieser Regel.
 
+## Farben und Klick
+
+- **Farben (Taste C):** schwarz, nach Beruf (13 Berufe von S77), nach
+  politischer Gruppe (die Gruppe des Berufs, `groups::JOB_GROUP`) oder nach
+  Stand (Landvolk, Stadtvolk, Ritter, Senatoren). Beruf und Stand stehen im
+  letzten Feld des Datensatzes (`key << 8 | job << 4 | estate << 2 | kind`,
+  Schlüssel 16 Bit), die Farbtabelle kommt als Uniform aus `people_dots.gd`.
+  Rechts oben steht die Legende.
+- **Klick auf einen Punkt:** `people_dots.gd` liest die Platzierungs-Textur
+  einmal zurück, `ApoleiaPeople.pick` sucht in Rust den nächsten Punkt auf
+  dem Bildschirm (bis 10 px), und der Sim-Thread liest die Person zwischen zwei
+  Tagen aus der Welt (`PeopleView::person`): Geschlecht, Alter, Beruf, Stand,
+  politische Gruppen, Haushalt mit Grösse, Ehe, Gesundheit, IQ, Kultur,
+  Religion, unterwegs. Der Punkt wird gross und gelb, Esc schliesst.
+  Kosten nur beim Klick, kein Aufwand pro Frame.
+
 ## Bedienung
 
-`P` Punkte an/aus, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
-Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`.
+`P` Punkte an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
+`--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots).
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

@@ -11,10 +11,14 @@ extends MultiMeshInstance3D
 ## The dots belong to the close LOD: they show only at the zoom levels where
 ## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
 ## Dots of people on the road (or on a ship) are dark red.
+## C colours the dots by occupation, political group or estate (and back to
+## black); a click on a dot shows that person and their household, Esc
+## closes it.
 ## Keys: P shows or hides the dots, [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
-## (relative paths start at the repository root).
+## (relative paths start at the repository root), --people-colour=n starts
+## in colour mode n (MODES), --people-click=x,y clicks that pixel once.
 
 const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
@@ -24,6 +28,17 @@ const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 const PLACE_KEYS: Array[StringName] = [&"tile_km", &"relief_smooth", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
 const DOTS_PER_INSTANCE := 64 # people_dots.gdshaderinc, divides the page size
+const PICK_PX := 10.0 # a click finds the nearest dot within this many pixels
+const CLICK_PX := 4.0 # a press and release further apart is a drag, not a click
+const MODES := ["schwarz", "Beruf", "politische Gruppe", "Stand"]
+const STANDS := ["Landvolk", "Stadtvolk", "Ritter", "Senatoren"]
+# colours by occupation (crate::groups JOBS order), political group, estate
+const JOB_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.97, 0.97, 0.97), Color(0.75, 0.05, 0.05),
+	Color(1.0, 0.5, 0.1), Color(0.2, 0.4, 0.95), Color(0.2, 0.85, 0.9), Color(0.5, 0.3, 0.15),
+	Color(0.04, 0.04, 0.04), Color(0.3, 0.3, 0.3), Color(0.62, 0.62, 0.62), Color(1.0, 0.15, 0.15), Color(0.95, 0.3, 0.7)]
+const GROUP_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.2, 0.85, 0.9), Color(1.0, 0.5, 0.1),
+	Color(0.04, 0.04, 0.04), Color(1.0, 0.15, 0.15), Color(0.97, 0.97, 0.97), Color(0.35, 0.45, 0.65)]
+const STAND_COLOURS := [Color(0.04, 0.04, 0.04), Color(1.0, 0.5, 0.1), Color(0.2, 0.4, 0.95), Color(0.75, 0.15, 0.85)]
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -31,6 +46,16 @@ var people: RefCounted
 var terrain: Node3D
 var days_per_second := 10.0
 var shown := true # P key
+var colour_mode := 0 # C key, index into MODES
+var selected := -1 # slot of the clicked person
+var _waiting := false # asked the sim thread for the selected person
+var _legend: Dictionary
+var _hud: CanvasLayer
+var _legend_label: RichTextLabel
+var _info_label: RichTextLabel
+var _press_at := Vector2.INF
+var _click_at := Vector2.INF # --people-click, for screenshots
+var _frames := 0
 var _material := ShaderMaterial.new()
 var _prep_material := ShaderMaterial.new()
 var _prep_view: SubViewport
@@ -60,6 +85,8 @@ func setup(tile_terrain: Node3D) -> bool:
 		match key:
 			"--people-days": days_per_second = float(value)
 			"--people-bench": _bench_path = value if value.is_absolute_path() else TileTerrain.data_root().path_join(value)
+			"--people-colour": colour_mode = clampi(int(value), 0, MODES.size() - 1)
+			"--people-click": _click_at = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 	people = ClassDB.instantiate("ApoleiaPeople")
 	var started := Time.get_ticks_usec()
 	if not people.load(TileTerrain.data_root(), 1):
@@ -83,6 +110,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+	_legend = people.legend()
+	_build_hud()
 	_rebuild()
 	if _bench_path != "":
 		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
@@ -107,6 +136,7 @@ func _rebuild() -> void:
 	mm.mesh = _dot_mesh()
 	mm.instance_count = _texture.get_layers() * people.page_side() * people.page_side() / DOTS_PER_INSTANCE
 	multimesh = mm
+	_apply_colours()
 
 ## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
 ## shader scales each to pixels and cuts the round dot out of it.
@@ -121,9 +151,129 @@ static func _dot_mesh() -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
+func _build_hud() -> void:
+	_hud = CanvasLayer.new()
+	_hud.name = "PeopleHud"
+	add_child(_hud)
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud.add_child(root)
+	_legend_label = _hud_label(root)
+	_legend_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
+	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_info_label = _hud_label(root)
+	_info_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 12)
+	_info_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+static func _hud_label(parent: Node) -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.custom_minimum_size = Vector2(220, 0)
+	label.add_theme_font_size_override("normal_font_size", 13)
+	label.add_theme_font_size_override("bold_font_size", 13)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.08, 0.07, 0.05, 0.75)
+	box.set_content_margin_all(8)
+	box.set_corner_radius_all(4)
+	label.add_theme_stylebox_override("normal", box)
+	label.visible = false
+	parent.add_child(label)
+	return label
+
+## Palette by occupation (modes 1 and 2) or estate (mode 3), and the legend.
+func _apply_colours() -> void:
+	var palette := PackedVector3Array()
+	palette.resize(16)
+	var lines := []
+	match colour_mode:
+		1:
+			for j in JOB_COLOURS.size():
+				palette[j] = _linear(JOB_COLOURS[j])
+				lines.append([JOB_COLOURS[j], _legend.jobs[j]])
+		2:
+			for j in _legend.job_group.size():
+				palette[j] = _linear(GROUP_COLOURS[_legend.job_group[j]])
+			for g in GROUP_COLOURS.size():
+				lines.append([GROUP_COLOURS[g], _legend.groups[g]])
+		3:
+			for k in STAND_COLOURS.size():
+				palette[k] = _linear(STAND_COLOURS[k])
+				lines.append([STAND_COLOURS[k], STANDS[k]])
+	_material.set_shader_parameter("colour_mode", colour_mode)
+	_material.set_shader_parameter("palette", palette)
+	_material.set_shader_parameter("selected_slot", selected)
+	var text := "[b]Bewohner: %s[/b]  (C)" % MODES[colour_mode]
+	for line in lines:
+		text += "\n[outline_size=3][outline_color=#ffffff90][color=#%s][font_size=17]●[/font_size][/color][/outline_color][/outline_size] %s" % [line[0].to_html(false), line[1]]
+	_legend_label.text = text
+	_legend_label.visible = colour_mode != 0
+
+## Palette entries as linear colour, as source_color uniforms arrive.
+static func _linear(c: Color) -> Vector3:
+	var l := c.srgb_to_linear()
+	return Vector3(l.r, l.g, l.b)
+
+## The dot under `pixel`: reads the placement texture back (only on a
+## click) and lets ApoleiaPeople find the nearest dot on screen.
+func _pick(pixel: Vector2) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or not visible:
+		return
+	var vp := cam.get_camera_projection() * Projection(cam.get_camera_transform().affine_inverse())
+	var m := PackedFloat32Array()
+	for c in 4:
+		var col: Vector4 = vp[c]
+		m.append_array([col.x, col.y, col.z, col.w])
+	var level_h: float = terrain._terrain_material.get_shader_parameter("level_h")
+	selected = people.pick(_prep_view.get_texture().get_image(), m, get_viewport().get_visible_rect().size, pixel, level_h, PICK_PX)
+	_material.set_shader_parameter("selected_slot", selected)
+	print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "slot": selected}))
+	_waiting = selected >= 0
+	_info_label.visible = _waiting
+	if _waiting:
+		people.ask_person(selected)
+		_info_label.text = "…"
+
+func _show_person(p: Dictionary) -> void:
+	if p.is_empty():
+		_info_label.text = "[i]nicht mehr da[/i]"
+		return
+	var lines := PackedStringArray()
+	lines.append("[b]%s, %d Jahre[/b]  #%d" % ["Frau" if p.female else "Mann", int(p.age), p.pid])
+	lines.append("%s, %s" % [p.job, STANDS[clampi(p.stand, 0, 3)]])
+	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
+	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])
+	lines.append("verheiratet" if p.spouse >= 0 else ("Kind" if p.age < 14.0 else "ledig oder verwitwet"))
+	var health := "Gesundheit %d %%" % int(p.health / 10.0)
+	if p.iq >= 0.0:
+		health += ", IQ %d" % roundi(p.iq)
+	lines.append(health)
+	lines.append("Kultur %d, Religion %d" % [p.culture, p.religion])
+	if p.travelling > 0:
+		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
+	_info_label.text = "\n".join(lines)
+	print(JSON.stringify({"event": "people_person", "pid": p.pid}))
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_press_at = event.position
+		elif _press_at.distance_to(event.position) <= CLICK_PX:
+			_pick(event.position)
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_C:
+				colour_mode = (colour_mode + 1) % MODES.size()
+				_apply_colours()
+			KEY_ESCAPE:
+				selected = -1
+				_waiting = false
+				_material.set_shader_parameter("selected_slot", -1)
+				_info_label.visible = false
 			KEY_P: shown = not shown
 			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
 			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
@@ -136,7 +286,16 @@ func _process(delta: float) -> void:
 	if whole > 0 and people.backlog() < 4:
 		people.advance(whole)
 	_day_debt -= whole
+	_frames += 1
+	if _frames == 20 and _click_at != Vector2.INF:
+		_pick(_click_at)
+	if _waiting:
+		var p: Dictionary = people.take_person()
+		if not p.is_empty():
+			_waiting = false
+			_show_person(p)
 	visible = shown and TileTerrain.PROP_SLOTS[terrain.level] > 0
+	_hud.visible = visible
 	if not visible:
 		# out of the close LOD the frame does nothing for the dots: no upload,
 		# no placement pass, no draw. The sim thread keeps running and its
@@ -175,6 +334,7 @@ func _process(delta: float) -> void:
 		_material.set_shader_parameter("people_tex", _texture)
 		_material.set_shader_parameter("page_side", people.page_side())
 		_material.set_shader_parameter("place_tex", _prep_view.get_texture())
+		_apply_colours()
 	if _bench_path != "":
 		_bench_step()
 

@@ -11,7 +11,7 @@
 //! Tiles are the fine grid of the grain economy (grain.rs): 16 × 16 fine
 //! tiles of 1.5625 km per 25 km cell, index `fr * cols_f + fc` counted from
 //! the grid origin. Villages sit on the fine tiles with the most farmland
-//! (`FineCover`, landcover-fine); without that data they sit on hashed
+//! (`CoverOf`, landcover-fine); without that data they sit on hashed
 //! tiles of the cell and the renderer moves each dot to land.
 //!
 //! City people (estate CITY) live in a disk around one of the listed places
@@ -36,13 +36,10 @@ const SALT_SITE: u64 = 0x5e77_1e00_0000_0002;
 const SALT_HOUSE: u64 = 0x5e77_1e00_0000_0003;
 const SALT_PLACE: u64 = 0x5e77_1e00_0000_0004;
 
-/// Land cover per fine tile (grain.rs `fine_cover`, from
-/// sim/inputs/landcover-fine.bin.zst), indexed like the fine grid: samples
-/// on land and samples of farmland.
-pub struct FineCover {
-    pub land: Vec<u16>,
-    pub farm: Vec<u16>,
-}
+/// Land cover of the fine tiles of one 25 km cell by absolute (row, col),
+/// laid out as grain.rs `FineCover::get` gives it (landcover-fine): 256
+/// land samples, then 256 farmland samples (farm_8), row-major by tile.
+pub type CoverOf<'a> = &'a dyn Fn(i32, i32) -> Option<&'a [u8]>;
 
 /// A listed place: centre and radius in km, and its share of the city
 /// people of its cell (cumulative, 0–65535).
@@ -100,19 +97,21 @@ pub fn city_radius_km(pop: f64) -> f32 {
 
 impl Settle {
     /// `pop`: simulated people per cell at the start (People::pop).
-    pub fn new(grid: &Grid, pop: &[u32], cities: &[City], cover: Option<&FineCover>, seed: u64) -> Settle {
+    pub fn new(grid: &Grid, pop: &[u32], cities: &[City], cover: Option<CoverOf>, seed: u64) -> Settle {
         let cols_f = grid.cols * FINE;
         let mut villages = Vec::with_capacity(pop.len());
         for (cell, &n) in pop.iter().enumerate() {
             let want = (n / PEOPLE_PER_VILLAGE).clamp(1, 255) as usize;
             let (r, c) = (cell as i32 / grid.cols, cell as i32 % grid.cols);
             let tiles: Vec<u32> = (0..FINE * FINE).map(|k| ((r * FINE + k / FINE) * cols_f + c * FINE + k % FINE) as u32).collect();
+            let fine = cover.and_then(|f| f(r + grid.row0, c + grid.col0)).filter(|b| b.len() >= 512);
             // score: farmland first, then land; the hash breaks ties and
-            // stands in for the cover until the fine data is there
+            // stands in for the cover where there is no fine data
             let mut scored: Vec<(u64, u64, u32)> = tiles
                 .iter()
-                .map(|&t| {
-                    let (farm, land) = cover.map_or((0, 1), |cv| (cv.farm.get(t as usize).copied().unwrap_or(0) as u64, cv.land.get(t as usize).copied().unwrap_or(0) as u64));
+                .enumerate()
+                .map(|(k, &t)| {
+                    let (farm, land) = fine.map_or((0, 1), |b| (b[256 + k] as u64, b[k] as u64));
                     (farm, land, t)
                 })
                 .filter(|&(_, land, _)| land > 0)
