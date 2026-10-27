@@ -119,6 +119,24 @@ float tt_lake_level(ivec2 t) {
 	return max(mix(round(x), x, relief_smooth), 1.0);
 }
 
+float tt_corner_x(ivec2 c) {
+	return max(tt_corner_height(c), 0.0) / m_per_level;
+}
+
+// Removes ridges and pits one corner wide: a corner above both neighbours
+// along one axis (and not below either along the other) drops a level, and
+// the other way round. Otherwise a plain right at a level boundary shows
+// single-tile bumps and notches instead of clean terraces (SimCity 2000).
+float tt_clean_level(ivec2 c, float l) {
+	vec2 ax = vec2(round(tt_corner_x(c - ivec2(1, 0))), round(tt_corner_x(c + ivec2(1, 0))));
+	vec2 az = vec2(round(tt_corner_x(c - ivec2(0, 1))), round(tt_corner_x(c + ivec2(0, 1))));
+	float hx = max(ax.x, ax.y), lx = min(ax.x, ax.y);
+	float hz = max(az.x, az.y), lz = min(az.x, az.y);
+	if ((l > hx && l >= hz) || (l > hz && l >= hx)) { return l - 1.0; }
+	if ((l < lx && l <= lz) || (l < lz && l <= lx)) { return l + 1.0; }
+	return l;
+}
+
 float tt_land_corner(ivec2 c) {
 	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
 	bool shore = false;
@@ -129,8 +147,8 @@ float tt_land_corner(ivec2 c) {
 		if (w == W_LAKE) { lake = min(lake, tt_lake_level(nb[k])); }
 	}
 	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
-	float x = max(tt_corner_height(c), 0.0) / m_per_level;
-	float l = max(1.0, mix(round(x), x, relief_smooth));
+	float x = tt_corner_x(c);
+	float l = max(1.0, mix(tt_clean_level(c, round(x)), x, relief_smooth));
 	// corners at the sea or a lake sit at the water line: the shore ramps in
 	return shore ? 0.0 : min(l, lake);
 }
