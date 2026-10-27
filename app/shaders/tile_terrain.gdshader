@@ -432,20 +432,30 @@ void fragment() {
 		// far out the shoreline follows the water nodes smoothly instead of
 		// the tile staircase (EU5 map); only once the relief is nearly smooth,
 		// so the tiles never show through as ghosts
+		// four bilinear taps half a node apart: a wider tent filter, so the
+		// contour of the 2 km water nodes runs as a curve, not a staircase
+		// (only near the shore; elsewhere the share is all 0 or all 1)
 		vec2 ws = tt_water_share(p);
+		if (any(greaterThan(ws, vec2(0.0))) && any(lessThan(ws, vec2(1.0)))) {
+			float nk = world_size.x / (grid_size.x - 1.0) * 0.5;
+			ws = 0.25 * (tt_water_share(p + vec2(nk, nk)) + tt_water_share(p + vec2(-nk, nk))
+				+ tt_water_share(p + vec2(nk, -nk)) + tt_water_share(p + vec2(-nk, -nk)));
+		}
 		vec2 aa = fwidth(ws) * 0.75 + 0.01;
 		// a little noise on the contour so the 2 km nodes do not show as octagons
 		float edge = 0.5 + 0.22 * (tt_fbm(p / 1.7) - 0.5);
 		vec2 wet = smoothstep(edge - aa, edge + aa, ws);
+		// both sides of the contour use the same colours on sea and land
+		// tiles, so the tile staircase does not show through as a sawtooth
+		float beach = smoothstep(edge - 0.3, edge - 0.08, ws.x) * (1.0 - wet.x);
 		if (water == W_SEA || water == W_LAKE) {
 			float dry = 1.0 - (water == W_SEA ? wet.x : wet.y);
 			vec3 land = ground_colour(p, tt_cover(p), 0.0);
-			land = water == W_SEA ? mix(land, C_SAND, 0.45) : land;
+			land = mix(land, C_SAND, beach * 0.75);
 			c = mix(c, land, dry * shore_smooth);
 		} else if (water == W_LAND || water == W_RIVER) {
-			float beach = smoothstep(edge - 0.3, edge - 0.08, ws.x) * (1.0 - wet.x);
 			c = mix(c, C_SAND, beach * 0.75 * shore_smooth);
-			c = mix(c, W_LAGOON, wet.x * shore_smooth);
+			c = mix(c, sea_colour(p), wet.x * shore_smooth);
 			c = mix(c, W_INLAND, wet.y * (1.0 - wet.x) * shore_smooth);
 		}
 	}

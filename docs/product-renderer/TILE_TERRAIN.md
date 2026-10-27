@@ -95,5 +95,4 @@ um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 
 - macOS-Paketierung des Tile-Geländes.
 - Leistungsmessung auf dem Mac nach dem Umbau (vorher 142 ms bei 25 km Sichtbreite).
-- Bei 400 km Sichtbreite zeigt die Küstenkante noch kleine Zacken.
 - Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.
