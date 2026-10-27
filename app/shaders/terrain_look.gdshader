@@ -286,11 +286,15 @@ void fragment() {
         // shore 5 km on (the packed distance saturates near 3 km, so a
         // probe for more never passed: 2c4cfcf lost all delta sand).
         // Delta coasts only; the tour cost of the first, everywhere version
-        // was ~0.8 ms p95 at 190 km.
-        if(DELTA_SHORE_PROBE && delta_count>0 && material_distance<=0.0 && -material_distance<1800.0 && delta_inside(vp)) {
+        // was ~0.8 ms p95 at 190 km. Two nearest texels, no filtering: with
+        // water_kind_at/water_distance_at (filtered taps, role search loop)
+        // the branch alone cost ~1 ms p50 on every land pixel (98ef0a6 A/B,
+        // register pressure). A dry texel 0.4 km out (coarse tiles) passes;
+        // only a lake there, or land/narrow water 5 km on, stops the sand.
+        if(DELTA_SHORE_PROBE && clipmap_enabled && delta_count>0 && material_distance<=0.0 && -material_distance<1800.0 && delta_inside(vp)) {
             vec2 dir=to_water/max(length(to_water),1e-9);
             float land_km=max(-material_distance,0.0)*0.001;
-            open_sea=(1.0-step(0.5,abs(water_kind_at(vp+dir*(land_km+0.4))-1.0)))*smoothstep(1600.0,2200.0,water_distance_at(vp+dir*(land_km+5.0)));
+            open_sea=(1.0-step(1.5,clipmap_water_texel(vp+dir*(land_km+0.4)).x))*smoothstep(1600.0,2200.0,clipmap_water_texel(vp+dir*(land_km+5.0)).y);
         }
         beach*=open_sea;
         // Reference: a warm sand ribbon of ~3 px in the mid view (#e6cb98)
