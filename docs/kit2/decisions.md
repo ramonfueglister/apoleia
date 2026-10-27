@@ -64,6 +64,7 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Wie die Grenze eingehalten wird, ist offen. |
 | S60 | **Richtung für später (Ramon, 27.10.2026), noch ohne Regeln:** Nahrung und Lebensraum sollen das Wachstum der Bevölkerung begrenzen. Menschen können auswandern: Sie verlassen die Karte und damit das System. Wie das genau funktioniert, ist offen. |
 | S61 | **Zugehörigkeiten (Ramon, 27.10.2026):** Jeder Einwohner gehört einer Pop an (Region, Stand, Kultur, Religion; Region vorerst ≈ 100 km, d. h. Tile-Ebene 1, später die Provinz, so bestätigt von Ramon; ≈ 2'000 Pops mit je 40–100 Menschen statt 32'000 bei 25-km-Zellen), einer wirtschaftlichen Gruppe und einer oder mehreren politischen Gruppen. Die Zugehörigkeit ist ein Merkmal des einzelnen Menschen; Gruppen werden aus ihren Mitgliedern berechnet und zählen niemanden doppelt. Wer Stand, Beruf oder Wohnort wechselt, wechselt die Gruppe. Offen: welche Gruppen es gibt, ihre Werte und Regeln. |
+| S62 | **Kinder entstehen nur aus Paaren**, wie in CK3 (Ramon, 27.10.2026). Jedes Kind hat Mutter und Vater; Familien und Dynastien entstehen daraus. Chance, Alter und Fruchtbarkeit: offen. |
 
 Offen: Wachstum und Rückgang der Bevölkerung (S54), wie die Obergrenze eingehalten wird (S59), Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
 
