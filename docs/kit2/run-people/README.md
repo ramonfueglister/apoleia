@@ -114,6 +114,7 @@ wenn nichts anderes läuft.
 | Bevorzugter Altersabstand | 10 Jahre | Saller |
 | Monate, bis die Suche weiter reicht | 6 | S63 „mehrere Monate“ |
 | Heirat ohne freies Land | Chance 1/4 pro Monat | S65 |
+| Stärke der Auswanderung an der Obergrenze | linear von 0 bei 90 % bis 3 % der Haushalte pro Jahr bei 100 %, die am schlechtesten versorgten zuerst | S80 (90 % aus der Entscheidung) |
 | Arbeitsfähiges Alter, Reihenfolge der Verwandten | 15–60; Vater oder Mutter, Kind, Geschwister, Onkel oder Tante, je die kleinste ID | S79 (Beispiele aus der Entscheidung) |
 | Mindestabstand zwischen zwei Geburten | 15 Monate | Schwangerschaft und Stillzeit |
 | Tod der Mutter bei der Geburt | 1 % | vormoderne Grössenordnung, zu prüfen |
@@ -122,8 +123,11 @@ wenn nichts anderes läuft.
 | Nahrung K | HYDE ländlich / 0,7 plus Städte, pro Region geteilt | S35, S70; ersetzt durch Höfe (S69–S76) |
 | Senatoren und Ritter | 40 Männer in Rom, je 3 Ritter in den nächstgrösseren Orten | S58 |
 
-Die Obergrenze S59 wurde nicht erreicht (Spitze 151'244); wie S67 sie auslöst, ist
-noch offen.
+Die Obergrenze S59 wird in diesem Lauf nicht erreicht (Spitze rund 153'000). Mit der
+Getreidewirtschaft schon: Dort greift S80. Ab 90 % der Grenze ziehen Haushalte in Not
+eher weg als um, und ein Teil der übrigen wandert aus, die am schlechtesten versorgten
+zuerst. Die Bevölkerung bleibt so bei rund 185'000 stehen (92 % der Grenze) statt auf
+202'000 zu steigen ([run-grain](../run-grain/README.md)).
 
 ## Startzahl 116'805 statt 100'000
 
