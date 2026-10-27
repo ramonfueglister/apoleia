@@ -99,6 +99,21 @@ Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulier
 Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
 die echte Dichte.
 
+## Wohnorte: Familien und Dörfer (Anzeige-Regel)
+
+Die Simulation kennt pro Person nur die 25-km-Zelle (`Home`). Bis sie echte
+Heim-Tiles hat, ordnet die Anzeige deterministisch zu:
+
+- **Familie:** Alle Mitglieder eines Haushalts (`Household`) teilen ein Haus;
+  jede Person steht bis 35 m daneben.
+- **Dorf:** Jede Zelle hat feste Dörfer, eines pro 25 simulierte Personen beim
+  Start (mindestens 1). Ein Haushalt gehört per Hash zu einem davon. Der Ort des
+  Dorfs ist die beste von 16 Stellen der Zelle nach Ackerland und offenem Land
+  (`cover_tex`), also an Feldern statt im Wald oder Sumpf; die Häuser liegen
+  im Umkreis von 0,6 km.
+- **Stadt:** Stadtbewohner haushaltsweise in der Scheibe ihrer Stadt (wie bisher).
+- **Unterwegs:** irgendwo auf Land in der aktuellen Zelle, dunkelrot.
+
 ## Sichtbarkeit (LOD)
 
 Die Punkte gehören zur Nahstufe: Sie erscheinen nur in den Zoomstufen, in denen
