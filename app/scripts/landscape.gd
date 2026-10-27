@@ -2594,6 +2594,7 @@ func _add_delta_arms() -> void:
         # Per polyline everything downstream of the first cut segment goes
         # too: a meander swinging back across the cut line was kept and ended
         # square in the land (Tiber at 90 km, r31 preview).
+        var cut_ends=[]
         for source in river_sources:
             if str(source.get("name",""))!=str(region.name):continue
             var segments:Array=source.segments
@@ -2612,14 +2613,26 @@ func _add_delta_arms() -> void:
                 if span[2]>=0:
                     var forward=Vector2(segments[span[1]][1]).distance_to(mouth)<Vector2(segments[span[0]][0]).distance_to(mouth)
                     if (forward and i>=span[2]) or (not forward and i<=span[3]):continue
+                    # The point where the kept course meets the cut.
+                    if forward and i==span[2]-1:cut_ends.append(Vector2(segments[i][1]))
+                    if not forward and i==span[3]+1:cut_ends.append(Vector2(segments[i][0]))
                 kept.append(segments[i])
             source.segments=kept
-        var root_distance=INF
-        for source in river_sources:
-            if str(source.get("name",""))!=str(region.name):continue
-            for segment in source.segments:
-                for q in [Vector2(segment[0]),Vector2(segment[1])]:
-                    if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);start=q if root_distance<length*0.6 else start
+        # The fan starts where the kept course ends. The nearest kept point
+        # (a greedy walk that moved start as it went) could lie ~5 km
+        # upstream of that end, and the course between them stayed as a stub
+        # ending square in the land (Tiber at 90 km, b76c6c5).
+        var root_distance=INF;var root:Vector2=start
+        for q in cut_ends:
+            if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+        if cut_ends.is_empty():
+            for source in river_sources:
+                if str(source.get("name",""))!=str(region.name):continue
+                for segment in source.segments:
+                    for q in [Vector2(segment[0]),Vector2(segment[1])]:
+                        if q.distance_to(start)<root_distance:root_distance=q.distance_to(start);root=q
+            if root_distance>=length*0.6:root=start
+        start=root
         var rng=RandomNumberGenerator.new();rng.seed=hash(str(region.name)+":arms")
         # Hierarchical branching: the main arm (width 1.0) runs to the mouth;
         # side arms (0.35-0.6) leave it at different points, one of them
