@@ -75,6 +75,11 @@ const CAP_SOFT: f64 = 0.9;
 /// S80 PLACEHOLDER: share of households a year that leave at the cap, the
 /// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
 const CAP_LEAVE_PER_YEAR: f64 = 0.03;
+/// S82 PROPOSAL (Ramon to decide, off until then): partners further apart
+/// than this many IQ points are not considered. Calibrated so that new
+/// couples correlate at about life::IQ_MATE_R (30 gives r = 0.44 over 10
+/// years, ~19,500 marriages); inheritance then uses life::IQ_MATE_RG.
+pub const IQ_MATE_GAP_PROPOSED: f64 = 30.0;
 /// Inheritance at the father's death (S83). INHERIT_EQUAL, the default:
 /// the father's family farm is shared in equal parts between the old
 /// household and the married sons' new households (Roman intestate
@@ -487,6 +492,35 @@ pub struct Stats {
     /// New households of married sons after the father's death (S81).
     pub split_households: u64,
     pub split_people: u64,
+    /// IQ of the partners at marriage: n, Σx, Σy, Σx², Σy², Σxy (S82).
+    pub marry_iq: [f64; 6],
+    /// The same for the partners' genetic values.
+    pub marry_gene: [f64; 6],
+}
+
+fn corr([n, sx, sy, sxx, syy, sxy]: [f64; 6]) -> f64 {
+    let cov = sxy / n - sx / n * sy / n;
+    cov / ((sxx / n - (sx / n).powi(2)) * (syy / n - (sy / n).powi(2))).sqrt()
+}
+
+impl Stats {
+    /// Correlation of the partners' IQ at marriage.
+    pub fn marry_iq_r(&self) -> f64 {
+        corr(self.marry_iq)
+    }
+
+    /// Correlation of the partners' genetic values at marriage.
+    pub fn marry_gene_r(&self) -> f64 {
+        corr(self.marry_gene)
+    }
+
+    /// Adds another period's partner sums.
+    pub fn add_marry(&mut self, o: &Stats) {
+        for k in 0..6 {
+            self.marry_iq[k] += o.marry_iq[k];
+            self.marry_gene[k] += o.marry_gene[k];
+        }
+    }
 }
 
 /// Person ids grouped by a key (compressed rows): ids of key k are
@@ -674,6 +708,10 @@ pub struct People {
     /// With the grain economy and INHERIT_EQUAL: (old household, new
     /// household of a son) for each split since crate::grain took them.
     pub split_log: Vec<(u32, u32)>,
+    /// Largest IQ gap between partners (infinite: no choice by IQ) and the
+    /// partners' genetic correlation inheritance assumes (S82).
+    pub iq_mate_gap: f64,
+    pub iq_mate_rg: f64,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
     /// (household, person) sorted, rebuilt monthly.
@@ -750,6 +788,12 @@ fn fert_adjusted() -> [f64; 8] {
 
 impl People {
     pub fn new(inp: &Inputs, seed: u64) -> People {
+        People::with_iq_mate_gap(inp, seed, f64::INFINITY)
+    }
+
+    /// As `new`, with partners at most `iq_mate_gap` IQ points apart
+    /// (calibration, IQ_MATE_GAP_PROPOSED).
+    pub fn with_iq_mate_gap(inp: &Inputs, seed: u64, iq_mate_gap: f64) -> People {
         bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
         let (grid, mut seeds, places, food) = populate(inp, seed);
         let mut world = World::new();
@@ -917,6 +961,8 @@ impl People {
             splits: Vec::new(),
             inherit: INHERIT_EQUAL,
             split_log: Vec::new(),
+            iq_mate_gap,
+            iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
             households: Vec::new(),
             grooms: Vec::new(),
@@ -1310,7 +1356,7 @@ impl People {
         let mask = r(1) as u32;
         let traits = ((self.traits[father as usize] & mask) | (self.traits[mother as usize] & !mask)) ^ (1 << (r(2) % 32));
         let sex = (r(3) & 1) as u8;
-        let gene = life::child_gene(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))));
+        let gene = life::child_gene_rg(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))), self.iq_mate_rg);
         let mind = Intelligence::from(gene, life::normal(life::unit(r(6))));
         let mut rel = Relations { n: 2, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
         rel.ids[0] = mother;
@@ -1459,6 +1505,7 @@ impl People {
             cands.sort_unstable();
             cands.dedup();
             let ga = age_y(day, born);
+            let g_iq = self.world.get::<Intelligence>(ge).unwrap().iq(ga);
             let mut best: Option<(i64, u32)> = None;
             for &c in &cands {
                 let Some(ce) = self.alive(c) else { continue };
@@ -1477,6 +1524,10 @@ impl People {
                 }
                 // No siblings.
                 if (parents.0 != NONE && w.4 .0 == parents.0) || (parents.1 != NONE && w.4 .1 == parents.1) {
+                    continue;
+                }
+                // S82: partners of similar intelligence (Horwitz et al. 2023).
+                if (g_iq - self.world.get::<Intelligence>(ce).unwrap().iq(wa)).abs() > self.iq_mate_gap {
                     continue;
                 }
                 // CK3-like weighting, in tenths.
@@ -1533,6 +1584,13 @@ impl People {
         self.stats.marriages += 1;
         self.stats.marry_age_f += age_y(day, born);
         self.stats.marry_age_m += age_y(day, gborn);
+        let (gi, bi) = (*self.world.get::<Intelligence>(ge).unwrap(), *self.world.get::<Intelligence>(be).unwrap());
+        let (x, y) = (gi.iq(age_y(day, gborn)), bi.iq(age_y(day, born)));
+        let (u, v) = (gi.gene(), bi.gene());
+        for k in 0..6 {
+            self.stats.marry_iq[k] += [1.0, x, y, x * x, y * y, x * y][k];
+            self.stats.marry_gene[k] += [1.0, u, v, u * u, v * v, u * v][k];
+        }
         // Marriages before day 1 (the start) are scheduled in People::new.
         if day > 0 {
             self.schedule_birth(b, gen, born, health, day, PREGNANCY);
@@ -2121,6 +2179,40 @@ mod tests {
         let a = run();
         assert!(a.0 > 50_000);
         assert_eq!(a, run());
+    }
+
+    /// S82 over decades: couples correlate in IQ as in Horwitz et al. 2023
+    /// (r 0.44), and the adult IQ keeps mean 100 and SD 15 over two
+    /// generations because inheritance (life::child_gene) assumes the
+    /// genetic correlation the rule produces (life::IQ_MATE_RG).
+    /// Without the gap rule couples are uncorrelated. Slow: run with
+    /// cargo test --release -- --ignored iq_mating_over_decades
+    #[test]
+    #[ignore]
+    fn iq_mating_over_decades() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let run = |gap: f64, years: i64| {
+            let mut p = People::with_iq_mate_gap(&inp, 3, gap);
+            for _ in 0..years * 360 {
+                p.day();
+            }
+            let n = p.stats.marry_iq[0];
+            (p.stats.marry_iq_r(), p.stats.marry_gene_r(), n, p.iq_summary())
+        };
+        let (r, rg, n, (mean, sd, lo, hi)) = run(IQ_MATE_GAP_PROPOSED, 60);
+        assert!(n > 100_000.0, "marriages {n}");
+        assert!((r - crate::life::IQ_MATE_R).abs() < 0.05, "partner r {r}");
+        // Inheritance must assume the genetic correlation the rule produces.
+        assert!((rg - crate::life::IQ_MATE_RG).abs() < 0.03, "genetic r {rg}");
+        assert!((mean - 100.0).abs() < 1.0, "mean {mean}");
+        assert!((sd - 15.0).abs() < 0.6, "sd {sd}");
+        // Normal tails: 2.28 % below 70 and above 130.
+        assert!((lo - 2.28).abs() < 0.5 && (hi - 2.28).abs() < 0.5, "tails {lo} {hi}");
+        let (r0, _, _, _) = run(f64::INFINITY, 10);
+        assert!(r0.abs() < 0.05, "partner r without the rule {r0}");
     }
 
     #[test]

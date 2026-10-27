@@ -128,11 +128,37 @@ pub fn iq(g: f64, e: f64, age: f64) -> f64 {
     100.0 + 15.0 * (h2.sqrt() * g + (1.0 - h2).sqrt() * e)
 }
 
-/// A child's standardized genetic value under additive inheritance:
-/// the parents' mean plus Mendelian segregation with variance 1/2, so that
-/// under random mating the spread stays 1 over the generations.
+/// Partners' IQ correlation the marriage search aims at: r = 0.44
+/// (Horwitz et al. 2023, meta-analysis, 17 samples, 5,672 couples).
+pub const IQ_MATE_R: f64 = 0.44;
+
+/// Adult heritability (the last point of IQ_H2).
+pub const IQ_H2_ADULT: f64 = IQ_H2[IQ_H2.len() - 1].1;
+
+/// Genetic correlation of the partners in the people sim with the proposed
+/// S82 gap rule (people::IQ_MATE_GAP_PROPOSED) (measured over 30 years, 61,332 marriages: 0.316). It is below
+/// IQ_MATE_R · IQ_H2_ADULT = 0.35 because brides are young and their IQ
+/// carries less of their genes (IQ_H2 at 15–20).
+pub const IQ_MATE_RG: f64 = 0.32;
+
+/// A child's standardized genetic value under additive inheritance: the
+/// parents' mean plus Mendelian segregation. Partners with genetic
+/// correlation rg add genetic variance each generation; with segregation
+/// variance (1 − rg) / 2 the spread stays 1, which is the equilibrium of
+/// the infinitesimal model under assortative mating (Crow and Felsenstein
+/// 1968). The start population is taken to be in that equilibrium.
 pub fn child_gene(father: f64, mother: f64, z: f64) -> f64 {
-    (father + mother) / 2.0 + std::f64::consts::FRAC_1_SQRT_2 * z
+    child_gene_rg(father, mother, z, IQ_MATE_RG)
+}
+
+/// As `child_gene` for partners chosen on adult IQ with correlation r
+/// (genetic correlation r · h²).
+pub fn child_gene_r(father: f64, mother: f64, z: f64, r: f64) -> f64 {
+    child_gene_rg(father, mother, z, r * IQ_H2_ADULT)
+}
+
+pub fn child_gene_rg(father: f64, mother: f64, z: f64, rg: f64) -> f64 {
+    (father + mother) / 2.0 + ((1.0 - rg) / 2.0).sqrt() * z
 }
 
 /// Years until the next event under a piecewise-constant yearly hazard
@@ -283,31 +309,113 @@ mod tests {
         }
     }
 
-    /// Adult IQ has mean 100 and SD 15, and the regression of child on
-    /// mid-parent IQ gives the adult heritability (about 0.8).
-    #[test]
-    fn iq_distribution_and_heritability() {
-        let h = |i: u64, s: u64| normal(unit(xxhash_rust::xxh3::xxh3_64(&(i * 8 + s).to_le_bytes())));
-        let n = 200_000u64;
-        let (mut sp, mut sc, mut spp, mut spc, mut sum, mut sq) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        for i in 0..n {
-            let (gf, gm) = (h(i, 0), h(i, 1));
-            let pf = iq(gf, h(i, 2), 40.0);
-            let pm = iq(gm, h(i, 3), 40.0);
-            let c = iq(child_gene(gf, gm, h(i, 4)), h(i, 5), 40.0);
-            let mid = (pf + pm) / 2.0;
-            sp += mid;
-            sc += c;
-            spp += mid * mid;
-            spc += mid * c;
-            sum += pf;
-            sq += pf * pf;
+    fn draw(i: u64, s: u64) -> f64 {
+        normal(unit(xxhash_rust::xxh3::xxh3_64(&(i * 16 + s).to_le_bytes())))
+    }
+
+    /// Pearson correlation.
+    fn corr(x: &[f64], y: &[f64]) -> f64 {
+        let n = x.len() as f64;
+        let (mx, my) = (x.iter().sum::<f64>() / n, y.iter().sum::<f64>() / n);
+        let (mut sxy, mut sxx, mut syy) = (0.0, 0.0, 0.0);
+        for (a, b) in x.iter().zip(y) {
+            sxy += (a - mx) * (b - my);
+            sxx += (a - mx).powi(2);
+            syy += (b - my).powi(2);
         }
-        let nf = n as f64;
-        let (mean, sd) = (sum / nf, (sq / nf - (sum / nf).powi(2)).sqrt());
-        assert!((mean - 100.0).abs() < 0.2 && (sd - 15.0).abs() < 0.2, "{mean} {sd}");
-        let slope = (spc / nf - sp / nf * sc / nf) / (spp / nf - (sp / nf).powi(2));
-        assert!((slope - 0.8).abs() < 0.02, "{slope}");
+        sxy / (sxx * syy).sqrt()
+    }
+
+    fn sd(x: &[f64]) -> f64 {
+        let n = x.len() as f64;
+        let m = x.iter().sum::<f64>() / n;
+        (x.iter().map(|v| (v - m).powi(2)).sum::<f64>() / n).sqrt()
+    }
+
+    /// Adult IQ from random draws has mean 100 and SD 15 at every age.
+    #[test]
+    fn iq_scale_at_every_age() {
+        for age in [0.0, 5.0, 9.0, 14.0, 17.0, 20.0, 50.0] {
+            let v: Vec<f64> = (0..100_000).map(|i| iq(draw(i, 0), draw(i, 1), age)).collect();
+            let m = v.iter().sum::<f64>() / v.len() as f64;
+            assert!((m - 100.0).abs() < 0.2 && (sd(&v) - 15.0).abs() < 0.15, "{age}: {m} {}", sd(&v));
+        }
+    }
+
+    /// Heritability by age is the table: 0.41 at 9, 0.55 at 12, 0.66 at
+    /// 17, 0.8 from 20, rising in between.
+    #[test]
+    fn heritability_by_age() {
+        assert!((iq_h2(9.0) - 0.41).abs() < 1e-12 && (iq_h2(12.0) - 0.55).abs() < 1e-12);
+        assert!((iq_h2(17.0) - 0.66).abs() < 1e-12 && (iq_h2(60.0) - 0.8).abs() < 1e-12);
+        let mut last = 0.0;
+        for a in 0..80 {
+            let h = iq_h2(a as f64);
+            assert!(h >= last && (0.0..=1.0).contains(&h));
+            last = h;
+        }
+    }
+
+    /// Regression to the mean: the child's adult IQ on the mid-parent IQ
+    /// has slope h² = 0.8 (random pairing here), and two parents of 130
+    /// give children of 124 on average.
+    #[test]
+    fn regression_to_the_mean() {
+        let n = 200_000u64;
+        let (mut mid, mut kid) = (Vec::new(), Vec::new());
+        for i in 0..n {
+            let (gf, gm) = (draw(i, 0), draw(i, 1));
+            mid.push((iq(gf, draw(i, 2), 40.0) + iq(gm, draw(i, 3), 40.0)) / 2.0);
+            kid.push(iq(child_gene(gf, gm, draw(i, 4)), draw(i, 5), 40.0));
+        }
+        let slope = corr(&mid, &kid) * sd(&kid) / sd(&mid);
+        assert!((slope - IQ_H2_ADULT).abs() < 0.02, "{slope}");
+        // E[g | IQ 130] = √h² · 2; expected child IQ = 100 + 15 · √h² · that.
+        let e = 100.0 + 15.0 * IQ_H2_ADULT.sqrt() * (IQ_H2_ADULT.sqrt() * 2.0);
+        assert!((e - 124.0).abs() < 1e-9);
+    }
+
+    /// Ten generations with partners matched on adult IQ at r = 0.44: the
+    /// genetic spread stays 1 and adult IQ stays 100 / 15, the partner
+    /// correlation is the target. With the segregation of random mating
+    /// instead, the spread would grow (control).
+    #[test]
+    fn assortative_mating_equilibrium() {
+        let n = 60_000usize;
+        let h = IQ_H2_ADULT.sqrt();
+        // Matching on IQ plus noise of variance 1/r − 1 gives r.
+        let noise = (1.0 / IQ_MATE_R - 1.0).sqrt();
+        let run = |r_seg: f64| {
+            let mut g: Vec<f64> = (0..2 * n as u64).map(|i| draw(i, 0)).collect();
+            let mut last = (0.0, 0.0, 0.0);
+            for gen in 0..10u64 {
+                let p: Vec<f64> = (0..2 * n).map(|i| h * g[i] + (1.0 - h * h).sqrt() * draw(i as u64 + gen * 1_000_000, 1)).collect();
+                let key = |i: usize| p[i] + noise * draw(i as u64 + gen * 1_000_000, 2);
+                let mut men: Vec<usize> = (0..n).collect();
+                let mut women: Vec<usize> = (n..2 * n).collect();
+                men.sort_by(|&a, &b| key(a).total_cmp(&key(b)));
+                women.sort_by(|&a, &b| key(a).total_cmp(&key(b)));
+                let pm: Vec<f64> = men.iter().map(|&i| p[i]).collect();
+                let pw: Vec<f64> = women.iter().map(|&i| p[i]).collect();
+                // Two children per couple keep the size.
+                let mut next = Vec::with_capacity(2 * n);
+                for k in 0..2 {
+                    for (j, (&m, &w)) in men.iter().zip(&women).enumerate() {
+                        next.push(child_gene_r(g[m], g[w], draw((j + k * n) as u64 + gen * 1_000_000, 3), r_seg));
+                    }
+                }
+                let iqs: Vec<f64> = p.iter().map(|x| 100.0 + 15.0 * x).collect();
+                last = (corr(&pm, &pw), sd(&g), sd(&iqs));
+                g = next;
+            }
+            (last, sd(&g))
+        };
+        let ((r, _, iq_sd), g_sd) = run(IQ_MATE_R);
+        assert!((r - IQ_MATE_R).abs() < 0.02, "partner r {r}");
+        assert!((g_sd - 1.0).abs() < 0.03, "genetic sd {g_sd}");
+        assert!((iq_sd - 15.0).abs() < 0.4, "iq sd {iq_sd}");
+        let (_, g_sd0) = run(0.0);
+        assert!(g_sd0 > 1.1, "control: random-mating segregation under assortative mating {g_sd0}");
     }
 
     #[test]
