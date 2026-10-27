@@ -194,26 +194,29 @@ ernährt seine Familie nicht mehr, die Ernte sinkt. Ein Erbe hält die Höfe gro
 Bevölkerung wächst weiter, dafür mehr Hungertote unter den landlosen Brüdern. Ohne Teilung der
 Haushalte (vor S81) waren es 136'500. Fingerprint gleich mit 1 und 4 Threads (30 Jahre).
 
-## Tempo und Speicher (4 Cloud-Kerne)
+## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, `run100-timing.txt`)
 
 | Grösse | Wert |
 |---|---|
 | Aufbau Getreide | 0,42 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
-| **Getreide pro Tag, Median / Mittel** | **1,41 ms / 1,63 ms** (ohne Kacheln 1,44 / 1,62; vor S81 1,09 / 1,23) (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 3,0 ms / 4,1 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,1 / 6,5 / 8,3 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 448 MB (ohne Kacheln 368 MB) |
+| **Getreide pro Tag, Median / Mittel** | **0,96 ms / 1,23 ms** (vorher auf derselben Maschine 1,16 / 1,44) (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 2,9 ms / 4,7 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 3,1 / 5,8 / 7,8 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 500 MB bei 123'000 Menschen |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-**Das Mittel liegt jetzt über dem Ziel von 1,5 ms, mit und ohne Kacheln.** Grund sind die
-vielen kleineren Haushalte seit S81: Essen, Arbeitsbörse und Reisen wachsen mit der Zahl der
-Haushalte. Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,22 ms, Arbeitsbörse 0,17, Märkte
-und Nachrichten 0,19, Essen und Kaufen 0,25, Händler mit Handelswegen 0,23, Fusswege 0,28,
-Aussaat und Ernte mit Kachelsuche 0,07 (ohne 0,02), Haushaltszählung 0,20.
+Die Cloud-Maschinen sind verschieden schnell: Derselbe Lauf brauchte auf der Maschine des
+Personen-Threads 1,86 ms (vor der Beschleunigung), hier 1,44 ms. Pro Tag im Mittel: Reisen
+(Ankunft, Rückkehr) 0,18 ms, Arbeitsbörse 0,10, Märkte und Nachrichten 0,13, Essen und Kaufen
+0,17, Händler mit Handelswegen 0,11 (vorher 0,22), Fusswege 0,24, Aussaat und Ernte mit
+Kachelsuche 0,09, Haushaltszählung 0,21.
 
 **Handelswege.** Ändert sich eine Zelle, sucht nur ein Markt neu, dessen Nachbarsuche diese
-Zelle berührt hat (Rechteck um alle besuchten Zellen). Die betroffenen Märkte verteilen sich
-über das Jahr und laufen parallel. Ohne diese Prüfung kostete es 0,54 ms pro Tag.
+Zelle erreicht hat (die Liste der erreichten Landzellen; was die Suche nie erreicht hat, liegt
+hinter ihrem Rand und kann das Ergebnis nicht ändern). Die Suchen eines Tages laufen auf einem
+eigenen Thread, während der Tag weiterläuft, und werden am Ende des Tages übernommen; gelesen
+werden die Nachbarn erst am nächsten Tag. Die Suche verwendet ihre Puffer über das ganze Raster
+wieder. Alles Bit für Bit gleich.
 
 **Haushaltszählung über eine Woche verteilt.** Früher zählte die Getreidewirtschaft alle
 Haushalte an einem Tag des Monats neu (15 ms, bei 250'000 Menschen 18 ms). Jetzt nimmt sie
