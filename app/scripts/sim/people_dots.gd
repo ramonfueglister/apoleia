@@ -8,6 +8,8 @@ extends MultiMeshInstance3D
 ## people are then drawn with a single MultiMesh whose instances never move
 ## on the CPU (people_dots.gdshader), two texel fetches per dot.
 ##
+## The dots belong to the close LOD: they show only at the zoom levels where
+## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
 ## Dots of people on the road (or on a ship) are dark red.
 ## Keys: P shows or hides the dots, [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
@@ -28,6 +30,7 @@ const BENCH_FRAMES := 240
 var people: RefCounted
 var terrain: Node3D
 var days_per_second := 10.0
+var shown := true # P key
 var _material := ShaderMaterial.new()
 var _prep_material := ShaderMaterial.new()
 var _prep_view: SubViewport
@@ -121,7 +124,7 @@ static func _dot_mesh() -> ArrayMesh:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_P: visible = not visible
+			KEY_P: shown = not shown
 			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
 			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
 
@@ -133,6 +136,7 @@ func _process(delta: float) -> void:
 	if whole > 0 and people.backlog() < 4:
 		people.advance(whole)
 	_day_debt -= whole
+	visible = shown and TileTerrain.PROP_SLOTS[terrain.level] > 0
 	var synced: int = people.sync(_texture)
 	if synced < 0:
 		_rebuild()
@@ -190,7 +194,7 @@ func _bench_step() -> void:
 		_bench.process_off.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
 	_bench_prep_last = prep_runs
 	if f == BENCH_FRAMES:
-		visible = false
+		shown = false
 	if f == 2 * BENCH_FRAMES:
 		var out := {"people": people.count(), "day": people.day(), "instances": multimesh.instance_count,
 			"timings_last": people.timings(), "renderer": RenderingServer.get_video_adapter_name(),
@@ -205,7 +209,7 @@ func _bench_step() -> void:
 		file.store_string(JSON.stringify(out, "  "))
 		file.close()
 		print(JSON.stringify({"event": "people_bench", "path": _bench_path}))
-		visible = true
+		shown = true
 
 static func _mean(v: Array) -> float:
 	var total := 0.0

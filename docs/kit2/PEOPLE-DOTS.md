@@ -99,6 +99,14 @@ Rom erscheint bei 360 km als schwarze Scheibe von etwa 50 px: rund 1800 simulier
 Personen in einer Scheibe von 6 km Radius (Stadtradius der Town-Tiles), das ist
 die echte Dichte.
 
+## Sichtbarkeit (LOD)
+
+Die Punkte gehören zur Nahstufe: Sie erscheinen nur in den Zoomstufen, in denen
+die Terrain Bäume und Häuser zeichnet (`TileTerrain.PROP_SLOTS > 0`, Tiles von
+0,5 und 1 km, also bis etwa 110 km Ansichtsbreite). Weiter draußen sind sie aus,
+und der Platzierungs-Pass läuft nicht. Die Messwerte bei 360 und 1800 km oben
+stammen von vor dieser Regel.
+
 ## Bedienung
 
 `P` Punkte an/aus, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
