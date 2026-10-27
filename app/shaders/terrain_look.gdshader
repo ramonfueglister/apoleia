@@ -271,8 +271,10 @@ void fragment() {
     if(!graphic_coast) {
         float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
         // Low, flat coasts only (rivers are separate meshes, not in this distance).
-        beach=(1.0-smoothstep(15.0,25.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
-        shore_span=mix(shore_span,clamp(contour_m_per_px*4.0,200.0,500.0),beach);
+        beach=(1.0-smoothstep(25.0,45.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
+        // Reference: a warm sand ribbon of ~3 px in the mid view (#e6cb98)
+        // and ~10 px in the near view; ours was under 1 px (0.2-0.5 km).
+        shore_span=mix(shore_span,clamp(contour_m_per_px*3.5,700.0,1400.0),beach);
     }
     float shore_d=max(-material_distance,0.0);
     float shore=graphic_coast ? (1.0-smoothstep(shore_span*0.2,shore_span,shore_d))

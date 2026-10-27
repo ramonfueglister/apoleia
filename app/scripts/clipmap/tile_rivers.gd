@@ -46,7 +46,9 @@ func build(id:String,manifest:Dictionary)->Dictionary:
             if j<segs.size()-1 and Vector2(segs[j+1][0]).is_equal_approx(b):
                 var t1=(Vector2(segs[j+1][1])-b).normalized();var mitre=(side+Vector2(-t1.y,t1.x)).normalized()
                 side_b=mitre/maxf(mitre.dot(side),.5)
-            var count=maxi(1,mini(64,int(ceil(length*(portion.y-portion.x)/maxf(span/128.,.2)))))
+            # 0.5 km steps on the close levels carry the display meanders
+            # (rivers.gdshader) as curves rather than corners.
+            var count=maxi(1,mini(64,int(ceil(length*(portion.y-portion.x)/maxf(span/(256. if level<=1 else 128.),.2)))))
             for step in range(count):
                 var ta=lerpf(portion.x,portion.y,float(step)/count);var tb=lerpf(portion.x,portion.y,float(step+1)/count)
                 var first=a+delta*ta;var last=a+delta*tb;var base=vertices.size()
