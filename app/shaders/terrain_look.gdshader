@@ -293,10 +293,16 @@ void fragment() {
         vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
         WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale,0.0);
         sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
-        // Lakes: lighter teal-blue than the open sea (reference #3a768d to
-        // #277183; measured #5c8193 with a 4.5/2.2/1.08 lift, too grey and
-        // light); foam and the shore strip keep the shared optics.
-        if(physical_water_kind==2.0) sea=mix(sea*vec3(1.3,1.75,0.97),sea,w.foam);
+        // Lakes: teal-blue, lighter than the open sea (reference #40778e to
+        // #277183). Their own colour instead of the shared saum: the sea's
+        // shallow strip and foam made a pale grey-cyan rim inside every lake
+        // shore (measured Bolsena #497a90, Bracciano #648b9a). Only a thin,
+        // slightly lighter teal edge stays.
+        if(physical_water_kind==2.0) {
+            float lake_edge=1.0-smoothstep(0.0,max(px*2.5,250.0),max(material_distance,0.0));
+            sea=water_open_tint.rgb*vec3(1.0,1.6,0.97)*w.tone;
+            sea=mix(sea,sea*vec3(1.3,1.45,1.08),lake_edge*0.6);
+        }
         wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
     }
     // Wet, darker sand right at the waterline.
