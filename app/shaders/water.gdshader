@@ -80,9 +80,11 @@ void fragment() {
         // #1c5789) where the reference fades over ~30 px (#257197, #1f6595,
         // 20 px #1b5f90). The coast distance saturates at ~3 km, so the
         // shelf depth carries the wide part of the band.
-        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(1.0,1.12,1.05);
+        // a117124: close (4 px #246993 against #257197) but 4-14 px a step
+        // dark and short, red 3-5 high throughout.
+        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(0.93,1.12,1.05);
         float near=1.0-smoothstep(0.0,4000.0,coast_m);
-        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(40.0,400.0,depth))*0.45);
+        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(40.0,500.0,depth))*0.6);
         // Keep the open sea's facet and wave tone steps.
         float texture_tone=clamp(dot(w.albedo,vec3(1.0))/max(dot(open,vec3(1.0)),0.0001),0.85,1.15);
         vec3 c=open*mix(vec3(1.0),vec3(1.0,1.6,1.2),band)*mix(texture_tone,1.0,near);
@@ -101,7 +103,14 @@ void fragment() {
     // 903029a far view: open basins #194d81 against #175788 (green and blue
     // low), shelves 6-14 px #195a93 against #165e90 / #17598c (blue high):
     // the deep sea greener and lighter, the shelves a little less blue.
-    vec3 far_gain=mix(vec3(0.89,1.28,1.12),vec3(0.93,1.0,0.95)*1.20,shelf_light);
+    // a117124: open sea beyond 30 px #1c598c against #175689 (a little
+    // light and red); 10-14 px on the reference; the lighter edge at 2-6 px
+    // (#176698, #176294, #165e91) missing, ours flat #175990. The coast
+    // distance saturates at ~3 km (under 2 px here), so the edge uses it
+    // only below 2.9 km and otherwise the shallow shelf (under ~120 m).
+    vec3 far_gain=mix(vec3(0.70,1.19,1.06),vec3(0.93,1.0,0.95)*1.20,shelf_light);
+    float far_rim=max((1.0-smoothstep(0.0,2900.0,coast_m))*(1.0-step(2900.0,coast_m)),(1.0-smoothstep(20.0,120.0,depth))*0.6);
+    far_gain*=mix(vec3(1.0),vec3(0.95,1.22,1.06),far_rim);
     ALBEDO*=mix(1.04,1.12,far_sea)*mix(vec3(1.0+0.20*shelf_light),far_gain,far_sea);
     ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),(0.10+far_sea*0.06)*(1.0-0.5*shelf_light));
     // Close views: shallow water as a broad, even ramp like the reference
