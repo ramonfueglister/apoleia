@@ -137,6 +137,13 @@ func _process(delta: float) -> void:
 		people.advance(whole)
 	_day_debt -= whole
 	visible = shown and TileTerrain.PROP_SLOTS[terrain.level] > 0
+	if not visible:
+		# out of the close LOD the frame does nothing for the dots: no upload,
+		# no placement pass, no draw. The sim thread keeps running and its
+		# front buffer collects the changed pages until the dots show again.
+		if _bench_path != "":
+			_bench_step()
+		return
 	var synced: int = people.sync(_texture)
 	if synced < 0:
 		_rebuild()
