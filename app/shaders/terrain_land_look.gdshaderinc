@@ -218,13 +218,18 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     hill_country*=1.0-valley_floor;
     vec3 floor_tone=land_forest_floor_color.rgb;
     vec3 ground=mix(grass,floor_tone,forest*mix(0.6,0.92,hill_country)*(1.0-overview*0.55)*(1.0-valley_floor*0.8));
-    ground=mix(ground,land_dry_color.rgb,dry*0.6*(1.0-hill_country*0.6));
+    // Close views (<~0.12 km/px): crop land mostly meadow, only a hint of dry tone.
+    float close_dry=1.0-0.6*(1.0-smoothstep(0.05,0.12,max(min(length(dFdx(p)),length(dFdy(p))),0.001)));
+    ground=mix(ground,land_dry_color.rgb,dry*0.6*close_dry*(1.0-hill_country*0.6));
     // Fine darker grass patches (100-300 m): grass structure instead of
     // large bright plates; faded once below ~2 px.
     float gfoot_any=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
     if(gfoot_any<0.12) {
         float gp=land_tnoise(p+vec2(71.0,7.0),0.2).r;
-        ground*=1.0-0.09*land_edge(gp,0.62)*(1.0-smoothstep(0.05,0.12,gfoot_any))*(1.0-forest);
+        float close40=1.0-smoothstep(0.05,0.12,gfoot_any);
+        // 40 km plains: lime #939346 instead of yellow-beige (measured 164/153/71).
+        ground*=mix(vec3(1.0),vec3(0.79,0.91,0.98),close40*(1.0-forest));
+        ground*=1.0-0.18*land_edge(gp,0.58)*close40*(1.0-forest);
     }
     // Fine meadow speckles (~80 m) for the closest zooms.
     float gfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
@@ -293,9 +298,16 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         hill_facet=normalize(vec3(hill_facet.x*shade_k,hill_facet.y,hill_facet.z*shade_k));
         n=normalize(mix(smooth_n,hill_facet,land_facet_strength*sslope*fv*rel));
         ground*=1.0+(fid-0.5)*0.40*fv*(1.0-rock)*mix(0.35,1.0,sslope);
-        // No mesh-triangle normal here: clipmap parent tiles have km-sized
-        // triangles, which showed as dark blocks. Facets come from the
-        // stable world lattice above only.
+        // Mid footprint: stronger facets and lit/shaded contrast on slopes so
+        // hills read as faceted planes (heights unchanged).
+        float midf=smoothstep(0.15,0.3,ffoot)*(1.0-smoothstep(0.8,1.2,ffoot));
+        n=normalize(mix(n,hill_facet,0.5*midf*sslope*rel));
+        // Mesh triangles only where they are small (fine clipmap levels at
+        // ~40 km): low-poly read. Parent tiles' km-sized triangles appear
+        // only at larger footprints and stay out (no dark blocks).
+        float meshf=1.0-smoothstep(0.08,0.15,ffoot);
+        vec3 fn=normalize(vec3(facet_normal.x*shade_k,facet_normal.y,facet_normal.z*shade_k));
+        n=normalize(mix(n,fn,0.6*meshf*smoothstep(0.004,0.03,1.0-facet_normal.y)*rel));
     }
     float rfid=0.5;
     vec3 rock_facet=facet_normal;
@@ -335,7 +347,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Painted lift of shaded hill and forest flanks (albedo, not ambient).
     float lit_n=dot(n,normalize(vec3(-0.676,0.643,-0.360)));
     // Compress the flank contrast: lit flanks a bit darker, shaded ones lighter.
-    float flank=max(hill_country,forest)*(1.0-rock)*(1.0-overview);
+    // Less contrast compression in mid views: facets need lit/shaded sides.
+    float flank=max(hill_country,forest)*(1.0-rock)*(1.0-overview)*(1.0-0.7*smoothstep(0.15,0.3,footprint));
     ground*=mix(1.0,clamp(0.86+0.55*(1.0-clamp(lit_n,0.0,1.0)),0.86,1.3),flank);
     // Near meadow: shaded facet sides stay light (no mid-tone carpet); the
     // contrast comes from brighter sunlit sides instead.
@@ -409,6 +422,15 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec3 belt=mix(land_far_rock_color.rgb,land_far_peak_color.rgb,smoothstep(1720.0,1800.0,h)*max(0.5,smoothstep(0.1,0.3,soft.g)));
         belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*overview*0.92);
+    }
+    // Regional views (A08 alps/rome-mid, alps-out): facetted relief planes on
+    // slopes, lattice scaled to ~6 px so planes stay readable.
+    if(overview>0.0 && rel>0.001) {
+        float rfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+        float rid;
+        vec3 rf=land_cell_facet(n,p,max(rfoot*6.0,3.0),rid);
+        rf=normalize(vec3(rf.x*2.0,rf.y,rf.z*2.0));
+        n=normalize(mix(n,rf,0.7*overview*smoothstep(0.01,0.06,slope)));
     }
     // Weit: only real ranges read as relief; lowland and hill country calm.
     n=normalize(mix(n,vec3(0.0,1.0,0.0),0.7*overview*(1.0-smoothstep(250.0,350.0,h))));
