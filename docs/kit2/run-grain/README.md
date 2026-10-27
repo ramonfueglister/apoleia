@@ -15,8 +15,8 @@ GRAIN_DEBUG=1 …   # zusätzlich die grössten Märkte und Hofgrössen pro Jahr
 Dateien: `sim/src/grain.rs` (alles), `sim/src/bin/grain.rs` (Lauf), Haken in
 `sim/src/people.rs` (`Econ`: gegessen pro Haushalt, freies Land und Nahrung pro Kopf pro
 Region). `run100.txt` ist die ganze Ausgabe des Standardlaufs (Saatgut, Brache,
-Handelswege, Felder auf Kacheln), `run100-before-s73.txt` derselbe ohne Kacheln,
-`run100-before-s71.txt` auch ohne Handelswege,
+Handelswege, Felder auf Kacheln, Personen mit S81 und S82), `run100-before-s73.txt` derselbe
+ohne Kacheln, `run100-s71.txt` die Handelswege vor S81, `run100-before-s71.txt` auch ohne Handelswege,
 `run100-seed-nofallow.txt` ohne Brache, `run100-before-s76.txt` ohne Saatgut und Brache;
 `run60-noclear.txt`,
 `run60-farm-grass.txt` und `run60-farm-grass-wood.txt` sind die Vergleiche zum rodbaren Land.
@@ -127,7 +127,7 @@ Gebiet sind das 2,4 Mio. km² heutiges Ackerland unter 16 % Hang (HYDE-Acker 200
 solange die Landlosen hungern; danach 0,6–0,9 % mit jeder Rodungsvariante. Mit Brache
 (oben) bindet das Land, und es sind über 100 Jahre 0,16 % im Jahr.
 
-## Handelswege (S71, 100 Jahre, `run100-before-s73.txt`; ohne: `run100-before-s71.txt`)
+## Handelswege (S71, 100 Jahre, vor S81, `run100-s71.txt`; ohne: `run100-before-s71.txt`)
 
 | Jahr | Handelswege / Strassen / Seewege (Zellen) | Menschen | Preis Rom (Denar/kg) ohne → mit |
 |---|---|---|---|
@@ -152,32 +152,38 @@ nächsten liegen: beim Start aus seiner Zelle, danach im Umkreis von 8 Kacheln, 
 Zellgrenze. Zuerst gutes Land, dann rodet er (S73). Gibt er Land ab, zuerst gerodetes, zuletzt
 genommenes.
 
-| Jahr | Menschen ohne → mit Kacheln | Wachstum mit |
-|---|---|---|
-| 10 | 99'593 → 100'350 | −0,51 % |
-| 20 | 97'439 → 98'446 | −0,13 % |
-| 50 | 107'395 → 109'818 | +0,50 % |
-| 100 | 135'489 → 137'827 | +0,48 % |
+Beide Läufe auf dem Stand mit S81 (Haushalte teilen sich, wenn der Vater stirbt) und S82:
 
-Über 100 Jahre sind das 0,16 % im Jahr, wie ohne Kacheln. Etwas mehr Menschen, weil ein Hof
-am Rand seiner Zelle jetzt auch freies Land der Nachbarzelle nimmt. Der Preis in Rom schwankt
-stark von Lauf zu Lauf (Jahr 100: 59,7 Denar/kg statt 30,6); das ist die Unruhe der wenigen
-Händler, nicht die Kacheln.
+| Jahr | Menschen ohne → mit Kacheln | Wachstum ohne / mit | Preis Rom ohne → mit |
+|---|---|---|---|
+| 10 | 99'782 → 100'371 | −0,72 % / −0,60 % | 4,9 → 4,2 |
+| 20 | 98'255 → 99'114 | −0,01 % / −0,07 % | |
+| 50 | 104'708 → 105'607 | +0,20 % / +0,29 % | 24,0 → 15,0 |
+| 100 | 108'327 → 108'900 | −0,00 % / −0,07 % | 20,8 → 23,6 |
+
+Die Kacheln ändern wenig: etwas mehr Menschen, weil ein Hof am Rand seiner Zelle jetzt auch
+freies Land der Nachbarzelle nimmt. **Auffällig ist der neue Stand der Personen:** Mit S81
+wächst die Bevölkerung nach 50 Jahren nicht mehr, über 100 Jahre −0,07 % im Jahr (vor S81
++0,16 %). Es gibt mehr und kleinere Haushalte (9'900 Höfe im Jahr 100 statt 6'700).
+Vergleich vor S81 (Handelswege, ohne → mit Kacheln, je 4 Threads allein): Jahr 100 135'489 →
+137'827.
 
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |
 |---|---|
-| Aufbau Getreide | 0,44 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
-| **Getreide pro Tag, Median / Mittel** | **1,21 ms / 1,39 ms** (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,6 ms / 3,8 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,0 / 6,2 / 8,0 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 457 MB bei 138'000 Menschen (ohne Kacheln 374 MB) |
+| Aufbau Getreide | 0,42 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
+| **Getreide pro Tag, Median / Mittel** | **1,41 ms / 1,63 ms** (ohne Kacheln 1,44 / 1,62; vor S81 1,09 / 1,23) (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 3,0 ms / 4,1 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 4,1 / 6,5 / 8,3 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 448 MB (ohne Kacheln 368 MB) |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,18 ms, Arbeitsbörse 0,12, Märkte und
-Nachrichten 0,19, Essen und Kaufen 0,20, Händler mit Handelswegen 0,21 (ohne 0,04), Fusswege
-0,27, Aussaat und Ernte mit Kachelsuche 0,06 (ohne 0,01), Haushaltszählung 0,16.
+**Das Mittel liegt jetzt über dem Ziel von 1,5 ms, mit und ohne Kacheln.** Grund sind die
+vielen kleineren Haushalte seit S81: Essen, Arbeitsbörse und Reisen wachsen mit der Zahl der
+Haushalte. Pro Tag im Mittel: Reisen (Ankunft, Rückkehr) 0,22 ms, Arbeitsbörse 0,17, Märkte
+und Nachrichten 0,19, Essen und Kaufen 0,25, Händler mit Handelswegen 0,23, Fusswege 0,28,
+Aussaat und Ernte mit Kachelsuche 0,07 (ohne 0,02), Haushaltszählung 0,20.
 
 **Handelswege.** Ändert sich eine Zelle, sucht nur ein Markt neu, dessen Nachbarsuche diese
 Zelle berührt hat (Rechteck um alle besuchten Zellen). Die betroffenen Märkte verteilen sich

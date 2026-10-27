@@ -523,8 +523,10 @@ pub struct FineCover {
 }
 
 impl FineCover {
-    /// Samples of kind `k` (0 land, 1 farm_8, 2 farm_16) per tile of a cell.
-    fn get(&self, key: (i32, i32)) -> Option<&[u8]> {
+    /// The samples of a 25 km cell (absolute row, col) per tile: 768
+    /// bytes, land [0..256], farm_8 [256..512], farm_16 [512..768], each
+    /// row-major (tile row * 16 + tile col; fine index fr * cols_f + fc).
+    pub fn get(&self, key: (i32, i32)) -> Option<&[u8]> {
         self.cells.get(&key).map(|&o| &self.data[o + 8..o + 8 + 3 * 256])
     }
 }
