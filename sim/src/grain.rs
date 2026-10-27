@@ -339,9 +339,9 @@ pub struct Market {
     /// Known prices: (market, price, day seen).
     board: Vec<(u32, i64, i64)>,
     neigh: Vec<Neigh>,
-    /// Cells the neighbour search touched (row min, row max, col min,
-    /// col max); a road change inside makes the search `stale`.
-    reach: (i32, i32, i32, i32),
+    /// Land cells the neighbour search reached, sorted; a road level
+    /// change on one of them makes the search `stale`.
+    reach: Vec<u32>,
     stale: bool,
     field: Option<Field>,
     dirty: bool,
@@ -480,6 +480,11 @@ pub struct Grain {
     road_level: Vec<u8>,
     /// Market index at each 25 km cell (NONE elsewhere).
     market_at: Vec<u32>,
+    /// The neighbour search's inputs, its thread and the markets it is
+    /// searching for today.
+    net: std::sync::Arc<Net>,
+    road_worker: Option<RoadWorker>,
+    road_todo: Vec<usize>,
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
@@ -748,7 +753,7 @@ impl Grain {
                 sold_today: 0,
                 board: Vec::new(),
                 neigh: Vec::new(),
-                reach: (0, -1, 0, -1),
+                reach: Vec::new(),
                 stale: false,
                 field: None,
                 dirty: true,
@@ -800,6 +805,9 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
+            net: std::sync::Arc::new(Net { rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
+            road_worker: None,
+            road_todo: Vec::new(),
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
@@ -846,12 +854,13 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
+        self.net = std::sync::Arc::new(Net { rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
-        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
-        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get()
+        let net = &*self.net;
+        let built: Vec<(Vec<Neigh>, Vec<u32>)> = bevy_tasks::ComputeTaskPool::get()
             .scope(|s| {
                 for chunk in cells.chunks(cells.len().div_ceil(16).max(1)) {
-                    s.spawn(async move { chunk.iter().map(|&c| neighbours(grid, at, level, c)).collect::<Vec<_>>() });
+                    s.spawn(async move { chunk.iter().map(|&c| neighbours(net, c)).collect::<Vec<_>>() });
                 }
             })
             .into_iter()
@@ -869,9 +878,9 @@ impl Grain {
     /// touched a land cell whose level changed searches again on its day
     /// (1/360 of the markets a day, on the task pool). Known prices are
     /// kept for markets still known.
-    fn roads(&mut self, p: &People, day: i64) {
+    fn roads(&mut self, day: i64) {
         if doy(day) == 0 && day > 0 {
-            let mut changed: Vec<(i32, i32)> = Vec::new();
+            let mut changed: Vec<u32> = Vec::new();
             for c in 0..self.road_rate.len() {
                 let t = std::mem::take(&mut self.road_trips[c]);
                 if t == 0 && self.road_rate[c] == 0 {
@@ -889,27 +898,38 @@ impl Grain {
                 }
                 if lv != old {
                     self.road_level[c] = lv;
-                    if p.grid.kind[c] != 0 {
-                        changed.push((c as i32 / p.grid.cols, c as i32 % p.grid.cols));
+                    if self.net.kind[c] != 0 {
+                        changed.push(c as u32);
                     }
                 }
             }
             for m in self.markets.iter_mut() {
-                let (r0, r1, c0, c1) = m.reach;
-                m.stale |= changed.iter().any(|&(r, c)| r >= r0 && r <= r1 && c >= c0 && c <= c1);
+                m.stale |= changed.iter().any(|c| m.reach.binary_search(c).is_ok());
+            }
+            if !changed.is_empty() {
+                let net = &*self.net;
+                self.net = std::sync::Arc::new(Net { rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
             }
         }
         let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
         if todo.is_empty() {
             return;
         }
-        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
+        // Searched on the road thread while the day goes on; taken over at
+        // its end (`roads_done`), before anything reads the neighbours again.
         let cells: Vec<u32> = todo.iter().map(|&mi| self.markets[mi].cell).collect();
-        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get().scope(|s| {
-            for &c in &cells {
-                s.spawn(async move { neighbours(grid, at, level, c) });
-            }
-        });
+        let w = self.road_worker.get_or_insert_with(RoadWorker::new);
+        w.send.send((self.net.clone(), cells)).expect("road worker");
+        self.road_todo = todo;
+    }
+
+    /// Takes over the neighbour searches started by `roads` today.
+    fn roads_done(&mut self) {
+        if self.road_todo.is_empty() {
+            return;
+        }
+        let built = self.road_worker.as_ref().expect("road worker").recv.recv().expect("road worker");
+        let todo = std::mem::take(&mut self.road_todo);
         for (mi, (nb, reach)) in todo.into_iter().zip(built) {
             let m = &mut self.markets[mi];
             let old = std::mem::take(&mut m.board);
@@ -1518,7 +1538,7 @@ impl Grain {
         self.timing.eat += us(t0);
         let t0 = t();
         self.traders(day);
-        self.roads(p, day);
+        self.roads(day);
         self.timing.traders += us(t0);
         let t0 = t();
         self.paths(p, day);
@@ -1536,6 +1556,9 @@ impl Grain {
             _ => {}
         }
         self.timing.census += us(t0);
+        let t0 = t();
+        self.roads_done();
+        self.timing.traders += us(t0);
     }
 
     fn push(&mut self, day: i64, ev: GEv) {
@@ -2538,18 +2561,42 @@ fn sorted_keys<V>(m: &IdMap<V>) -> Vec<u32> {
 /// (Dijkstra over 25 km cells: wagon over land, cheaper on trade roads;
 /// ship at sea; no step between sea and blocked land).
 /// Also returns the box of all cells it touched.
-fn neighbours(grid: &Grid, at: &[u32], level: &[u8], src: u32) -> (Vec<Neigh>, (i32, i32, i32, i32)) {
-    let n = grid.kind.len();
-    let (rows, cols, kind) = (grid.rows, grid.cols, &grid.kind);
-    let mut best = vec![i64::MAX; n];
-    let mut days = vec![0i64; n];
-    let mut par = vec![NONE; n];
+fn neighbours(net: &Net, src: u32) -> (Vec<Neigh>, Vec<u32>) {
+    // Per-thread buffers over the whole grid, reset only where touched
+    // (a fresh 25 km grid per search cost more than the search).
+    thread_local! {
+        static BUF: std::cell::RefCell<(Vec<i64>, Vec<i64>, Vec<u32>, Vec<u32>)> = const { std::cell::RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
+    }
+    BUF.with_borrow_mut(|(best, days, par, touched)| {
+        let n = net.kind.len();
+        if best.len() != n {
+            *best = vec![i64::MAX; n];
+            *days = vec![0; n];
+            *par = vec![NONE; n];
+        }
+        touched.push(src);
+        let out = search(net, src, best, days, par, touched);
+        // The land cells the search reached: only a change of their trade
+        // road level can change its result (a cell it never reached lies
+        // behind its frontier, which is past the farthest neighbour).
+        let mut reach: Vec<u32> = touched.iter().copied().filter(|&j| net.kind[j as usize] != 0).collect();
+        reach.sort_unstable();
+        for &j in touched.iter() {
+            best[j as usize] = i64::MAX;
+            days[j as usize] = 0;
+            par[j as usize] = NONE;
+        }
+        touched.clear();
+        (out, reach)
+    })
+}
+
+fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u32], touched: &mut Vec<u32>) -> Vec<Neigh> {
+    let (rows, cols, kind, at, level) = (net.rows, net.cols, &net.kind, &net.at, &net.level);
     let mut open = BinaryHeap::new();
     best[src as usize] = 0;
     open.push(Reverse((0i64, src)));
     let mut out = Vec::new();
-    let (sr, sc) = (src as i32 / cols, src as i32 % cols);
-    let mut reach = (sr, sr, sc, sc);
     while let Some(Reverse((c, i))) = open.pop() {
         if c > best[i as usize] {
             continue;
@@ -2587,16 +2634,53 @@ fn neighbours(grid: &Grid, at: &[u32], level: &[u8], src: u32) -> (Vec<Neigh>, (
                 };
                 let nc_ = c + cost;
                 if nc_ < best[j as usize] {
+                    if best[j as usize] == i64::MAX {
+                        touched.push(j);
+                    }
                     best[j as usize] = nc_;
                     days[j as usize] = days[i as usize] + d;
                     par[j as usize] = i;
                     open.push(Reverse((nc_, j)));
-                    reach = (reach.0.min(nr), reach.1.max(nr), reach.2.min(nc), reach.3.max(nc));
                 }
             }
         }
     }
-    (out, reach)
+    out
+}
+
+/// What the neighbour search reads: the 25 km grid, the market at each
+/// cell and the trade road levels. Shared with the road worker thread;
+/// replaced when the levels change.
+struct Net {
+    rows: i32,
+    cols: i32,
+    kind: Vec<u8>,
+    at: Vec<u32>,
+    level: Vec<u8>,
+}
+
+type Searched = Vec<(Vec<Neigh>, Vec<u32>)>;
+
+/// A thread that runs the neighbour searches of a day while the day goes
+/// on (they are only used from the next day).
+struct RoadWorker {
+    send: std::sync::mpsc::Sender<(std::sync::Arc<Net>, Vec<u32>)>,
+    recv: std::sync::mpsc::Receiver<Searched>,
+}
+
+impl RoadWorker {
+    fn new() -> RoadWorker {
+        let (send, jobs) = std::sync::mpsc::channel::<(std::sync::Arc<Net>, Vec<u32>)>();
+        let (done, recv) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for (net, cells) in jobs {
+                if done.send(cells.iter().map(|&c| neighbours(&net, c)).collect::<Searched>()).is_err() {
+                    break;
+                }
+            }
+        });
+        RoadWorker { send, recv }
+    }
 }
 
 /// One market's walk on a path day (see `Grain::paths`).
