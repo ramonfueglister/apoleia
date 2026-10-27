@@ -1,0 +1,43 @@
+{
+ "startup_timeline": {
+  "first_frame_msec": 3743,
+  "coverage_ready_msec": 11593,
+  "coverage_ready_frame": 387
+ },
+ "coverage_rule": "snapshot waits for root_ready, missing==0, refining==0 (120 s cap)",
+ "coverage_cap_hit": false,
+ "last_clipmap_line": {
+  "clipmap": {
+   "draw_tiles": 52,
+   "gpu_bytes": 60706368,
+   "missing": 1,
+   "refining": 7,
+   "root_ready": true,
+   "upload_ms": 0.754,
+   "uploads": 76
+  },
+  "geometry_rebuilt_per_frame": false,
+  "grid_vertices": 4225,
+  "tiles": {
+   "cpu_bytes": 26093088,
+   "cpu_limit": 134217728,
+   "evicted": 0,
+   "io_ms": 2.126,
+   "loaded": 77,
+   "pending": 0,
+   "ready": "complete",
+   "resident": 77,
+   "worker_active": false,
+   "workers": 0
+  }
+ },
+ "frame_count": 394,
+ "pipeline_counts_final": {
+  "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+  "PIPELINE_COMPILATIONS_MESH": 0.0,
+  "PIPELINE_COMPILATIONS_SURFACE": 35.0,
+  "PIPELINE_COMPILATIONS_DRAW": 0.0,
+  "PIPELINE_COMPILATIONS_SPECIALIZATION": 23.0
+ },
+ "runtime_json_sha256": "83cd5ad893f0e25c737e20ed9af19cc2fac76ebaf4f04d76a0786c03e59b31e0"
+}
