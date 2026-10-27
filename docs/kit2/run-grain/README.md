@@ -60,16 +60,20 @@ das 0,16 % im Jahr**, nahe an den historischen 0,1 %. Gegessen wird im Mittel 95
 Bedarfs. Rom wird teuer (bis 61 Denar/kg nach 50 Jahren), weil die Überschüsse im Umland
 kleiner werden; Händler bringen weniger.
 
+Die weiche Obergrenze (S80: ab 90 % von CAP = 180'000 wandern Haushalte in Not eher aus)
+greift mit Brache nicht; der Lauf ist mit und ohne S80 Bit für Bit gleich.
+
 **Ohne Brache, nur mit Saatgut** (`--crop-pct 100`, `run100-seed-nofallow.txt`): 117'000 →
-193'000, 0,43 % im Jahr; die Ernte wächst mit (54'000 → 76'000 t).
+184'000, 0,46 % im Jahr; die Ernte wächst mit (54'000 → 73'000 t). Ab etwa Jahr 85 greift
+S80: Das Wachstum fällt auf 0,2 % und die Auswanderung steigt (1'256 im Jahr 100).
 
 Tempo mit Brache (100 Jahre, 2 Threads, gleichzeitig mit dem Vergleichslauf): Getreide
-Median 1,06 ms, Mittel 1,24 ms, 99 % 3,5 ms; ganzer Tag 99 % 9,5 ms.
+Median 1,02 ms, Mittel 1,21 ms, 99 % 3,5 ms; ganzer Tag 99 % 9,1 ms.
 
 ## Ergebnis ohne Saatgut und Brache (vorheriger Stand, `run100-before-s76.txt`)
 
 Rodbar ist heutiges Ackerland unter 16 % Hang (Standard). Die Bevölkerungszahlen
-des Personen-Prototyps sind die vom 27.10.2026 abends (S78 Heirat ab 20, S79 Waisen).
+des Personen-Prototyps sind die vom 27.10.2026 abends (Heirat ab 20 als Platzhalter, S79 Waisen; vor S80).
 
 | Jahr | Menschen | Wachstum | Hungertote | ausgewandert | Höfe | Zelte / Menschen darin | Ernte t | Ernte verloren t | verkauft t | Handel t | Preis Rom (Denar/kg) | Trampelpfade / Wege (Zellen) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
