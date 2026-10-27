@@ -105,6 +105,12 @@ def collect_current(repository):
     for relative in ['data/anchors.json', 'data/protection-rules.json', 'data/projection.json',
                      'docs/product-renderer/camera-profile.json']:
         add(relative, role='runtime-sidecar')
+    # Display-only river supplement (landscape.gd reads it when enabled in the binding).
+    supplement = binding.get('visual_extensions', {}).get('rivers_supplement', {})
+    if supplement.get('enabled'):
+        add(supplement['path'], supplement.get('sha256'), role='rivers-supplement')
+        if supplement.get('manifest'):
+            add(supplement['manifest'], supplement.get('manifest_sha256'), role='rivers-supplement-manifest')
     # Optional land-cover nodes read by landscape_look/landscape_style (not in the binding).
     land_cover = Path('artifacts/render-data/landcover-node-2km')
     if (Path(repository) / land_cover / 'manifest.json').exists():
