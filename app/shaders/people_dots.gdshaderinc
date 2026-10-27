@@ -42,6 +42,8 @@ void vertex() {
 #else
 			float size = dot_px * 0.6; // the bare triangle about as big as the dot
 #endif
+			// city people are packed tight; smaller dots keep the roofs visible
+			size *= kind == 1u ? 0.55 : 1.0;
 			clip.xy += VERTEX.xy * size * 2.0 / VIEWPORT_SIZE * clip.w;
 			POSITION = clip;
 		}
