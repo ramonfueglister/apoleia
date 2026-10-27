@@ -12,6 +12,7 @@ const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
 const float DOT_FINE_HALF_KM = 0.78125; // half a 1.5625 km village tile (sim/src/settle.rs)
 const float DOT_VILLAGE_KM = 0.6;       // houses of a village within this radius
 const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
+const float DOT_YARD_KM = 0.17;         // around a drawn village house (0.24 km long, tile_terrain.gd HOUSE_M)
 const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
 
 uint dot_hash(uint x) {
@@ -85,10 +86,13 @@ vec2 dot_village(vec2 c, float r, uint key) {
 }
 
 // Where the person in `slot` stands: (offset x, offset z) in km from the
-// record's anchor and the height in levels. Records: sim/src/view.rs.
-vec3 dot_place(vec4 rec, uint slot) {
+// record's anchor and the height in levels. Records: sim/src/view.rs. A house
+// record (`house`) stands on the household's house spot itself, without the
+// family spread around it.
+vec3 dot_place(vec4 rec, uint slot, bool house) {
 	uint key = uint(rec.w) >> 8u;
 	vec2 p;
+	bool village = false;
 	if (rec.z < 0.0) {
 		// city: the household's house in the city disk
 		p = dot_land(rec.xy, rec.z, key);
@@ -100,9 +104,20 @@ vec3 dot_place(vec4 rec, uint slot) {
 		uint vkey = dot_hash((uint(rec.z) - 1u) * 0x2545f491u);
 		vec2 v = dot_village(rec.xy, DOT_FINE_HALF_KM, vkey);
 		p = dot_land(v, -DOT_VILLAGE_KM, key);
+		village = true;
 	}
-	// the family around its house, one spot per person
-	p += (dot_rand2(slot, 99u) - 0.5) * 2.0 * DOT_FAMILY_KM;
+	// the family around its house, one spot per person; in a village the
+	// house is drawn (people_houses.gdshader), so they stand in a ring
+	// outside its walls
+	if (!house) {
+		vec2 h = dot_rand2(slot, 99u);
+		if (village) {
+			float a = h.x * 6.2831853;
+			p += vec2(cos(a), sin(a)) * (DOT_YARD_KM + 0.4 * DOT_YARD_KM * h.y);
+		} else {
+			p += (h - 0.5) * 2.0 * DOT_FAMILY_KM;
+		}
+	}
 	// far out the smooth relief is the surface; up close the dot stands on
 	// its tile's corner levels, as trees and houses do
 	float level = max(1.0, max(tt_corner_height(dot_tile(p)), 0.0) / m_per_level);

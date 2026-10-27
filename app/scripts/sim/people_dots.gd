@@ -10,6 +10,10 @@ extends MultiMeshInstance3D
 ##
 ## The dots belong to the close LOD: they show only at the zoom levels where
 ## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
+## Every village household also gets a house (the terrain's house mesh) at
+## its house spot, from the house table of the view (sim/src/view.rs
+## Houses), drawn by a second MultiMesh (people_houses.gdshader) with its own
+## placement pass; city people live in the town tiles.
 ## Dots of people on the road (or on a ship) are dark red.
 ## C colours the dots by occupation, political group or estate (and back to
 ## black); a click on a dot shows that person and their household, Esc
@@ -24,6 +28,8 @@ const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
 const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
 const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
+const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
+const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 const PLACE_KEYS: Array[StringName] = [&"tile_km", &"relief_smooth", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
@@ -62,6 +68,13 @@ var _prep_view: SubViewport
 var _prep_rect: ColorRect
 var _place_key := []
 var _prep_frames := 0
+var _houses: MultiMeshInstance3D
+var _house_material := ShaderMaterial.new()
+var _house_prep_material := ShaderMaterial.new()
+var _house_prep_view: SubViewport
+var _house_prep_rect: ColorRect
+var _house_texture: Texture2DArray
+var _house_prep_frames := 0
 var prep_runs := 0
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
@@ -95,16 +108,19 @@ func setup(tile_terrain: Node3D) -> bool:
 	name = "PeopleDots"
 	_material.shader = SHADER
 	_prep_material.shader = PREP_SHADER
-	_prep_view = SubViewport.new()
-	_prep_view.name = "PeoplePlaces"
-	_prep_view.use_hdr_2d = true # RGBA16F
-	_prep_view.transparent_bg = true
-	_prep_view.disable_3d = true
-	_prep_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	_prep_rect = ColorRect.new()
-	_prep_rect.material = _prep_material
-	_prep_view.add_child(_prep_rect)
-	add_child(_prep_view)
+	_prep_view = _make_prep("PeoplePlaces", _prep_rect, _prep_material)
+	_house_material.shader = HOUSE_SHADER
+	_house_material.set_shader_parameter("prop_scale", TileTerrain.HOUSE_M * TileTerrain.DIORAMA_KM_PER_M)
+	_house_prep_material.shader = PREP_SHADER
+	_house_prep_material.set_shader_parameter("houses", true)
+	_house_prep_rect = ColorRect.new()
+	_house_prep_view = _make_prep("HousePlaces", _house_prep_rect, _house_prep_material)
+	_houses = MultiMeshInstance3D.new()
+	_houses.name = "PeopleHouses"
+	_houses.material_override = _house_material
+	_houses.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+	add_child(_houses)
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
 		_shared_uniforms.append(StringName(u.name))
 	material_override = _material
@@ -113,11 +129,43 @@ func setup(tile_terrain: Node3D) -> bool:
 	_legend = people.legend()
 	_build_hud()
 	_rebuild()
+	_rebuild_houses()
 	if _bench_path != "":
 		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		Engine.max_fps = 0
 	return true
+
+## A float render target with one pixel per record, rendered on demand.
+func _make_prep(view_name: String, rect: ColorRect, material: ShaderMaterial) -> SubViewport:
+	var view := SubViewport.new()
+	view.name = view_name
+	view.use_hdr_2d = true # RGBA16F
+	view.transparent_bg = true
+	view.disable_3d = true
+	view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	rect.material = material
+	view.add_child(rect)
+	add_child(view)
+	return view
+
+## House texture and instance count for the current number of house pages.
+func _rebuild_houses() -> void:
+	_house_texture = people.make_house_texture()
+	var side: int = people.page_side()
+	var size := Vector2i(side, side * _house_texture.get_layers())
+	_house_prep_view.size = size
+	_house_prep_rect.size = Vector2(size)
+	for m in [_house_material, _house_prep_material]:
+		m.set_shader_parameter("people_tex", _house_texture)
+		m.set_shader_parameter("page_side", side)
+	_house_material.set_shader_parameter("place_tex", _house_prep_view.get_texture())
+	_house_prep_frames = 2
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = PropMeshes.house()
+	mm.instance_count = _house_texture.get_layers() * side * side
+	_houses.multimesh = mm
 
 ## Texture and instance count for the current number of pages.
 func _rebuild() -> void:
@@ -306,19 +354,30 @@ func _process(delta: float) -> void:
 	var synced: int = people.sync(_texture)
 	if synced < 0:
 		_rebuild()
+	var synced_houses: int = people.sync_houses(_house_texture)
+	if synced_houses < 0:
+		_rebuild_houses()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		_material.set_shader_parameter(key, value)
-		_prep_material.set_shader_parameter(key, value)
+		for m in [_material, _prep_material, _house_material, _house_prep_material]:
+			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
 		var v = source.get_shader_parameter(k)
 		return snappedf(v, 0.001) if v is float else v)
-	if synced > 0 or key_now != _place_key:
+	if key_now != _place_key:
 		_place_key = key_now
 		_prep_frames = 2 # this frame and the next (the corner cache may lag a frame)
+		_house_prep_frames = 2
+	if synced > 0:
+		_prep_frames = 2
+	if synced_houses > 0:
+		_house_prep_frames = 2
+	if _house_prep_frames > 0:
+		_house_prep_frames -= 1
+		_house_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	if _prep_frames > 0 and visible:
 		_prep_frames -= 1
 		prep_runs += 1

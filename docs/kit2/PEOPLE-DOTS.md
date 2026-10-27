@@ -141,6 +141,19 @@ die Terrain Bäume und Häuser zeichnet (`TileTerrain.PROP_SLOTS > 0`, Tiles von
 und der Platzierungs-Pass läuft nicht. Die Messwerte bei 360 und 1800 km oben
 stammen von vor dieser Regel.
 
+## Häuser
+
+Jeder Dorf-Haushalt hat ein Haus: das Haus-Mesh der Terrain (`tile_prop_meshes.gd`,
+10 m im Diorama-Massstab wie die Stadthäuser) auf seinem Hausplatz. Die View
+führt dafür eine eigene Tabelle (`view::Houses`, ein Datensatz pro Haushalt
+und Heimzelle, gezählt über die Mitglieder, Reisende eingeschlossen), in
+festen Slots und Seiten wie die Personen: rund 25 600 Häuser in 7 Seiten, pro
+Tag ändert meist 1 Seite. Ein zweites MultiMesh (`people_houses.gdshader`)
+zeichnet sie, ein eigener Platzierungs-Pass (derselbe Shader mit `houses`)
+läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Die Familie steht
+im Ring 170–240 m um ihr Haus. Stadtbewohner haben kein eigenes Haus, sie
+wohnen in den Stadt-Tiles.
+
 ## Farben und Klick
 
 - **Farben (Taste C):** schwarz, nach Beruf (13 Berufe von S77), nach
