@@ -99,3 +99,23 @@
   then the same 4x4 sub-grid gdalwarp as before.
 - `tools/build_landcover_nodes.py`: land nodes without class data take the
   nearest covered node (no hard data edges).
+
+## Clipmap tiles r8 (clipmap-tiles-r8-etopo15) – current
+- Heights as r7. Water rebuilt (no longer copied from r4); material still from r4.
+- Coarse levels L >= 3: the water distance (0.125 m code, saturating at
+  +-4096 m) stored as a pseudo distance from the 8x8 subsampled water share
+  per texel, d = (share - 0.5) * 2 * 4096, so the bilinear zero crossing
+  follows the real coast instead of texel centres (no staircase coasts in
+  the overview). L0-L2 unchanged.
+- Lakes: Natural Earth 1:10m lakes, Europe supplement v5.1.2
+  (public domain, "Made with Natural Earth"), featurecla Lake, scalerank
+  <= 10, centroid in the atlas (tools/build_lake_supplement.py, source sha256
+  pinned; artifacts/render-data/lakes-europe-supplement-r1, 115 lakes incl.
+  Trasimeno, Bolsena, Bracciano). Signed distance merged as role 2 (lake).
+- Build: `python3 tools/build_clipmap_tiles.py --output artifacts/render-data/clipmap-tiles-r8-etopo15
+  --surface artifacts/render-data/fixed-source-v2-mountain-r7/surface.json
+  --fine-detail artifacts/render-data/fine-relief-detail-500m-r3
+  --reuse-from artifacts/render-data/clipmap-tiles-r4-mountain-r4
+  --lakes artifacts/render-data/lakes-europe-supplement-r1/lakes.geojson --coverage-from-level 3`
+  (17.5 min).
+- 4187 tiles, 267 MB; manifest sha256 75096f88763321955f2dffea185b8ace47357675c936f84f7534ebeabe6397e7.
