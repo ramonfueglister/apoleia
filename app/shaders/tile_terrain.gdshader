@@ -165,6 +165,16 @@ bool field(vec2 p, vec4 cov, out vec3 colour, out float stripes) {
 	return true;
 }
 
+// Smooth surface normal of the relief at p (world), for the far relief map.
+vec3 relief_normal(vec2 p) {
+	float e = tile_km * 0.75;
+	float lod = height_lod + 0.3;
+	float hx = textureLod(relief_tex, tt_node_uv(p + vec2(e, 0.0)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(e, 0.0)), lod).r;
+	float hz = textureLod(relief_tex, tt_node_uv(p + vec2(0.0, e)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(0.0, e)), lod).r;
+	float k = level_h / m_per_level / (2.0 * e);
+	return normalize(vec3(-hx * k, 1.0, -hz * k));
+}
+
 // Distance (in tile units) from the tile edge on the sides set in `mask`.
 float side_distance(int mask) {
 	float d = 10.0;
@@ -235,13 +245,18 @@ void fragment() {
 		// slope shading: ramps facing the sun bright, the others dark
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
+		if (relief_smooth > 0.0) {
+			// far out: smooth per-pixel normal from the relief instead of the
+			// flat tile facets, so the relief map has no triangle sawtooth
+			nw = normalize(mix(nw, relief_normal(p), relief_smooth));
+		}
 		// SimCity 2000 slope tiles come in two clear tones: sun side light,
 		// shade side dark, with no gradient in between
 		float lit = dot(nw, light_dir) - light_dir.y;
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.80, 1.0, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.13, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
-		float smooth_tone = clamp(1.0 + 1.1 * lit, 0.72, 1.2); // plain relief shading
+		float smooth_tone = clamp(1.0 + 1.8 * lit, 0.6, 1.3); // crisp hillshade (EU5 map)
 		c *= mix(mix(1.0, tone, mix(1.0, 0.6, far)), smooth_tone, relief_smooth);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
@@ -295,5 +310,9 @@ void fragment() {
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
 	vec3 n = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
-	NORMAL = n.z < 0.0 ? -n : n;
+	n = n.z < 0.0 ? -n : n;
+	if (relief_smooth > 0.0 && part == 0 && water == W_LAND) {
+		n = normalize(mix(n, (VIEW_MATRIX * vec4(relief_normal(world_pos.xz), 0.0)).xyz, relief_smooth));
+	}
+	NORMAL = n;
 }

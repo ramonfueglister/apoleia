@@ -88,7 +88,8 @@ int tt_town(ivec2 t) {
 float tt_corner_height(ivec2 c) {
 	// blurred, so level contours run as long clean lines (as in SimCity 2000)
 	// instead of single-tile bumps and pits; the blur only lowers slopes
-	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + 1.5).r;
+	// (the smooth far relief keeps more of the ridges, so it stays crisp)
+	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + mix(1.5, 0.3, relief_smooth)).r;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
