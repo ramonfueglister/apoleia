@@ -452,6 +452,8 @@ pub struct Grain {
     /// Fine offsets within a cell's reach, nearest first: (dr, dc, d²).
     offsets: Vec<(i32, i32, i32)>,
     rows_f: i32,
+    /// Home spots: villages on the most farmland, listed places.
+    settle: crate::settle::Settle,
     /// Farms by day of year of their sowing and harvest start.
     by_doy: Vec<Vec<u32>>,
     trips: Vec<Trip>,
@@ -775,6 +777,12 @@ impl Grain {
             block_cell,
             offsets,
             rows_f,
+            settle: {
+                // Seed 1 as in the people view (view.rs), so both show the
+                // same spots.
+                let lookup = |r: i32, c: i32| fine.and_then(|cv| cv.get((r, c)));
+                crate::settle::Settle::new(&p.grid, &p.pop, &inp.cities, fine.map(|_| &lookup as crate::settle::CoverOf), 1)
+            },
             by_doy: vec![Vec::new(); YEAR as usize],
             trips: Vec::new(),
             free_trips: Vec::new(),
@@ -1018,7 +1026,9 @@ impl Grain {
                 _ if i.trader != NONE => TRADER,
                 _ => WAGE,
             };
-            let fine = self.fine_in(p, i.home, id as u64);
+            // The farmstead (or house) stands at the household's village or
+            // place (settle.rs, the same spots the people view shows).
+            let fine = self.settle.home_fine(i.home, id, i.stand);
             let money = match kind {
                 ELITE => ELITE_MONEY,
                 TRADER => TRADER_MONEY,
@@ -1141,13 +1151,6 @@ impl Grain {
         }
     }
 
-    /// A fine cell inside the 25 km cell `cell`, by hash.
-    fn fine_in(&self, p: &People, cell: u32, salt: u64) -> u32 {
-        let (r, c) = (cell as i32 / p.grid.cols, cell as i32 % p.grid.cols);
-        let h = xxh3_64(&(salt ^ self.seed.rotate_left(17)).to_le_bytes());
-        let (fr, fc) = (r * FINE + (h % FINE as u64) as i32, c * FINE + ((h >> 8) % FINE as u64) as i32);
-        (fr * self.cols_f + fc) as u32
-    }
 
     fn new_farm(&mut self, p: &People, id: u32, i: &HhInfo, fine: u32) -> u32 {
         let kind = match i.job {
