@@ -70,8 +70,9 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S65 | **Nahrung und Lebensraum bremsen emergent, über die Menschen** (Ramon, 27.10.2026; konkretisiert S60). Wenig Nahrung im Haushalt senkt Gesundheit (→ S64) und Fruchtbarkeit (→ S62). Fehlen freies Haus oder Land, wird später geheiratet (→ S63). Keine Formel, die das Wachstum direkt an K bindet; K aus Ackerland, Boden und Klima bleibt die Quelle der Nahrung. Offen: wie Nahrung auf Haushalte verteilt wird, was als Lebensraum zählt, die Stärke der Effekte. |
 | S66 | **Umzug und Auswanderung: der Haushalt entscheidet nach Lage** (Ramon, 27.10.2026; konkretisiert S60). Haushalte in Not (nicht Einzelne) vergleichen etwa einmal im Jahr ihre Lage mit erreichbaren Orten und ziehen um, wenn ein Ort besser ist. Ist kein erreichbarer Ort besser, verlassen sie die Karte am nächsten Rand und damit das System. Keine feste Rate; Wanderung entsteht aus der Lage der Menschen. Offen: was als Not zählt, wie weit gesucht wird, was als besser gilt. |
 | S67 | **An der Obergrenze: mehr Auswanderung** (Ramon, 27.10.2026; konkretisiert S59). Erreicht die Bevölkerung 200'000, wandern mehr Haushalte aus (→ S66). Niemand stirbt durch eine Regel. Offen: wie das ausgelöst wird. |
+| S68 | **Der Spieler ist ein Weltgeist wie in EU5** (Ramon, 27.10.2026), keine einzelne Figur. Offen: ob er an einen Staat gebunden ist oder die ganze Welt lenkt. |
 
-Offen: Wachstum und Rückgang der Bevölkerung (S54), Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
+Offen: Wachstum und Rückgang der Bevölkerung (S54), Flussbreite gegenüber Bootsgrösse.
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
