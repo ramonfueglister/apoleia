@@ -77,7 +77,7 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 
 | Bereich | Folge des Massstabs | Vorschlag |
 |---|---|---|
-| Stände | Senat (600) ≈ 1 Senator, Ritter (≈ 20'000–30'000, geschätzt) ≈ 35–55, Dekurionen (≈ 100'000–150'000, geschätzt) ≈ 175–265, Sklaven (10–15 %, geschätzt) ≈ 10'000–15'000 | strikt verkleinern; der Senat ist ein Senator mit Familie. Ob Ämter eine Mindestzahl bekommen, entscheidet Ramon. |
+| Stände | Senat (600) ≈ 1 Senator, Ritter (≈ 20'000–30'000, geschätzt) ≈ 35–55, Dekurionen (≈ 100'000–150'000, geschätzt) ≈ 175–265, Sklaven (10–15 %, geschätzt) ≈ 10'000–15'000 | **entschieden (S58):** Ämter nach Aufgabe statt nach Massstab. Senat **40 Senatoren** (≈ 30 Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom), mit Familien ≈ 150 Personen. Jede Provinz hat einen Statthalter, jede Legion einen Legaten, Ritter ≈ 60 (Prokuratoren). Übrige Stände im Massstab. |
 | Heer | Reichsheer ≈ 350'000 (geschätzt) → ≈ 620 Soldaten; eine Legion ≈ 10 Mann | Schlachten sind Gefechte weniger Personen; jeder Soldat ist ein Charakter. |
 | Wirtschaft | Verbrauch und Leistung pro Kopf bleiben, Summen /566,5. Preise pro Stück bleiben, Staatshaushalt ≈ 900 Mio. Sesterzen → ≈ 1,6 Mio. (geschätzt) | Wirtschafts-Thread rechnet pro Kopf; aggregierte Mengen aus Quellen durch 566,5 teilen. |
 | Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2,5 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |

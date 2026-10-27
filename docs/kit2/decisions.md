@@ -60,8 +60,9 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S55 | **Reisen** laufen als Reise mit Route und Dauer in Tagen; Alltag am Wohn-/Arbeitsort wird nicht als Weg simuliert. |
 | S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
 | S57 | **Jeder Ort aus `places.csv` bekommt mindestens 2 Einwohner** (ein Paar als Familie), auch wenn er nach Massstab darunter liegt (133 Orte, zusammen rund +125 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
+| S58 | **Ämter nach Aufgabe, nicht nach Massstab:** Senat 40 Senatoren (≈ 30 senatorische Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom für Fraktionen und Erbfolge), mit Familien ≈ 150 Personen. Jede Provinz einen Statthalter, jede Legion einen Legaten, Ritterstand ≈ 60 Personen für die Prokuratoren. Alle übrigen Zahlen im Massstab (S50). |
 
-Offen: Mindestzahl für Ämter (Senat ≈ 1 Senator), Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
+Offen: Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
