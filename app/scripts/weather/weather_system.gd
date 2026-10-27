@@ -9,6 +9,7 @@ const CloudMeshes = preload("res://scripts/weather/cloud_meshes.gd")
 const CLOUD_SHADER = preload("res://shaders/weather_cloud.gdshader")
 const RAIN_SHADER = preload("res://shaders/weather_rain.gdshader")
 const PROXY_SHADER = preload("res://shaders/weather_proxy.gdshader")
+const LAYER_SHADER = preload("res://shaders/weather_layer.gdshader")
 # Low resolution on purpose: bilinear sampling softens the shadow edges on water.
 const MASK_SIZE := 160
 # Thin bluish-white core with a soft glow towards the ribbon edges (UV.x 0..1 across).
@@ -39,7 +40,7 @@ const TIME_LOOK := {
 	# Warmth mostly in highlights and glitter: mildly saturated sun, ambient kept.
 	"morning": [Vector3(-17.0, 72.0, 0.0), Color(1.0, 0.88, 0.80), 1.2, Color(0.92, 0.95, 1.04), 1.0, Color(1.0, 0.95, 0.94)],
 	# Low sun behind-left of the default view: backlight and golden glitter on the sea.
-	"evening": [Vector3(-18.0, -160.0, 0.0), Color(1.0, 0.84, 0.62), 1.45, Color(0.95, 0.97, 1.04), 1.05, Color(1.04, 0.95, 0.88)],
+	"evening": [Vector3(-14.5, -167.0, 0.0), Color(1.0, 0.84, 0.62), 1.45, Color(0.95, 0.97, 1.04), 1.05, Color(1.04, 0.95, 0.88)],
 }
 const WIND_SPEED := 3.0
 const NOISE_PERIOD := 1100.0
@@ -81,6 +82,8 @@ var _cloud_material: ShaderMaterial
 var _cloud_shadow_material: ShaderMaterial
 var _cloud_mask_material: ShaderMaterial
 var _rain_material: ShaderMaterial
+var _layer_material: ShaderMaterial
+var _layer: MeshInstance3D
 var _mask_viewport: SubViewport
 var _mask_root: Node3D
 var _mask_camera: Camera3D
@@ -163,6 +166,16 @@ func configure(landscape: Node3D, camera: Camera3D, sun: DirectionalLight3D, env
 	_cloud_shadow_material = _material(PROXY_SHADER, 1)
 	_cloud_mask_material = _material(PROXY_SHADER, 2)
 	_rain_material = _material(RAIN_SHADER, -1)
+	_layer_material = _material(LAYER_SHADER, -1)
+	_layer = MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2.ONE
+	_layer.mesh = plane
+	_layer.material_override = _layer_material
+	_layer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_layer.custom_aabb = AABB(Vector3(-0.5, -1.0, -0.5), Vector3(1.0, 2.0, 1.0))
+	_layer.visible = false
+	add_child(_layer)
 	_build_shadow_mask()
 	_fine = CloudMeshes.CloudTier.new(CloudMeshes, self, FINE_CELL, FINE_SCALE, seed * 31 + 3, _cloud_material, _cloud_shadow_material, _rain_material)
 	_coarse = CloudMeshes.CloudTier.new(CloudMeshes, self, COARSE_CELL, COARSE_SCALE, seed * 31 + 11, _cloud_material, _cloud_shadow_material, null)
@@ -365,7 +378,7 @@ func _prewarm_cells() -> void:
 	# Fair weather starts with a cumulus group in view.
 	for cell in cells:
 		if cell.kind == 0 and state == "fair":
-			cell.pos = _focus() - _apparent_offset(cloud_base) * 0.5
+			cell.pos = _focus() + Vector2(_forward.x, _forward.z).normalized() * _ground_width * 0.5
 			cell.ra = maxf(_ground_width * 0.7, 120.0)
 			cell.rc = maxf(_ground_width * 0.9, 150.0)
 			break
@@ -375,9 +388,10 @@ func _prewarm_cells() -> void:
 			# Placed so the front appears on the right of the view, not above it.
 			# Far side of the view, right half: the foreground stays sunny.
 			var away := Vector2(_forward.x, _forward.z).normalized()
-			cell.pos = _focus() + away * _ground_width * 0.15 + Vector2(-away.y, away.x) * _ground_width * 0.3
-			cell.ra = maxf(_ground_width * 0.6, 60.0)
-			cell.rc = maxf(_ground_width * 0.75, 90.0)
+			# On the horizon side of the view, right: never between camera and focus.
+			cell.pos = _focus() + away * _ground_width * 0.9 + Vector2(-away.y, away.x) * _ground_width * 0.3
+			cell.ra = maxf(_ground_width * 0.35, 60.0)
+			cell.rc = maxf(_ground_width * 0.5, 90.0)
 			break
 
 func _spawn_cell(kind: int, upwind: bool, distance: float) -> void:
@@ -500,6 +514,13 @@ func _process(delta: float) -> void:
 			if _frame > 20:
 				_bolt_frames = 2
 				lightning = maxf(lightning, 0.25)
+		if "coverage" in _debug: _measure_coverage()
+		if _frame == 30:
+			# Horizontal angle between view direction and sun azimuth (positive = sun left).
+			var sun_dir := _sun.global_basis.z
+			var view := Vector2(_forward.x, _forward.z).normalized()
+			var sun_h := Vector2(sun_dir.x, sun_dir.z).normalized()
+			print("WEATHERSUN ", JSON.stringify({"sun_y": snappedf(sun_dir.y, 0.001), "sun_left_of_view_deg": snappedf(rad_to_deg(sun_h.angle_to(view)), 0.1)}))
 		if _frame == 30: print("WEATHERDEBUG ", JSON.stringify(describe()))
 	if _frame == 50 and OS.get_environment("WEATHER_MASK_DUMP") != "":
 		_mask_viewport.get_texture().get_image().save_png(OS.get_environment("WEATHER_MASK_DUMP"))
@@ -612,15 +633,17 @@ func _update_tiers() -> void:
 	# Fade clouds out up close and whenever the camera comes near the cloud layer.
 	var clearance := _camera.global_position.y - get_display_altitude()
 	var near_fade := smoothstep(0.0, 10.0, clearance)
+	# Zoom rules: 3D clouds only up to regional width; the continental view gets
+	# a flat translucent layer for banks/fronts only (fair stays clear there).
 	var fine_fade := near_fade * (1.0 - smoothstep(1500.0, 2200.0, view_width))
-	var coarse_fade := smoothstep(1500.0, 2200.0, view_width)
 	var rain_fade := 1.0 - smoothstep(1300.0, 1800.0, view_width)
 	var fine_on := view_width < 2200.0
-	var coarse_on := view_width > 1500.0
-	_fine.set_fade(fine_fade, fine_on and view_width < 1850.0, rain_fade if fine_on else 0.0)
-	_coarse.set_fade(coarse_fade, coarse_on and view_width >= 1850.0, 0.0)
+	_fine.set_fade(fine_fade, fine_on, rain_fade if fine_on else 0.0)
 	if not fine_on: _fine.set_visible(false)
-	if not coarse_on: _coarse.set_visible(false)
+	_coarse.set_visible(false)
+	var layer_fade := smoothstep(1500.0, 2200.0, view_width)
+	_layer.visible = layer_fade > 0.01
+	_layer_material.set_shader_parameter("layer_fade", layer_fade)
 	var footprint := _ground_rect
 	var sun_dir := _sun.global_basis.z.normalized()
 	var top := get_display_altitude()
@@ -637,16 +660,17 @@ func _update_tiers() -> void:
 	_shadow_rect = Vector4(centre.x - side * 0.5, centre.y - side * 0.5, side, side)
 	_mask_camera.size = side
 	_mask_camera.position = Vector3(centre.x, 3000.0, centre.y)
-	# Clouds closer to the camera than this dissolve (perspective near zoom).
+	# Nothing between camera and focus in near views (1.2 x focus distance);
+	# hidden clouds drop their shadows too, so no cloudless dark blobs.
 	var focus_distance := _camera.global_position.distance_to(Vector3(_focus().x, cloud_base, _focus().y))
-	var near_hide := focus_distance * lerpf(0.85, 0.7, smoothstep(300.0, 700.0, _ground_width))
-	_cloud_material.set_shader_parameter("near_fade_distance", near_hide)
-	# Hidden near clouds drop their shadows too (no cloudless dark blobs).
-	_cloud_shadow_material.set_shader_parameter("near_fade_distance", near_hide)
-	_cloud_mask_material.set_shader_parameter("near_fade_distance", near_hide)
+	var near_hide := focus_distance * lerpf(1.2, 0.7, smoothstep(400.0, 900.0, _ground_width))
+	var size := get_viewport().get_visible_rect().size
+	var view_tan := 2.0 * tan(deg_to_rad(_camera.fov) * 0.5) * size.x / maxf(size.y, 1.0) if _camera.projection == Camera3D.PROJECTION_PERSPECTIVE else _ground_width / maxf(focus_distance, 1.0)
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
+		material.set_shader_parameter("near_hide_distance", near_hide)
+		material.set_shader_parameter("view_tan", view_tan)
 	# Close views: small clusters; continental view: fewer, larger fields (no noise speckle).
 	var cluster_scale := clampf(_ground_width / 1400.0, 0.2, 1.0)
-	_cloud_material.set_shader_parameter("near_cull_distance", focus_distance * lerpf(0.0, 0.6, smoothstep(0.2, 0.6, _current_field().z)))
 	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material]:
 		material.set_shader_parameter("cluster_scale", cluster_scale)
 	for material in [_cloud_shadow_material, _cloud_mask_material]:
@@ -661,7 +685,9 @@ func _update_tiers() -> void:
 	_cloud_mask_material.set_shader_parameter("mask_darkness", 0.22)
 	_rain_material.set_shader_parameter("strength", lerpf(1.25, 0.5, smoothstep(700.0, 1600.0, view_width)))
 	if fine_on: _fine.ensure(region.grow(FINE_SCALE.y * 1.8))
-	if coarse_on: _coarse.ensure(region.grow(COARSE_SCALE.y * 1.8))
+	var layer_rect := footprint.grow(footprint.size.x * 0.3)
+	_layer.position = Vector3(layer_rect.get_center().x, cloud_base + 6.0, layer_rect.get_center().y)
+	_layer.scale = Vector3(layer_rect.size.x, 1.0, layer_rect.size.y)
 
 func _upload_uniforms() -> void:
 	var shape: Array[Vector4] = []
@@ -676,7 +702,7 @@ func _upload_uniforms() -> void:
 	var sun_dir := _sun.global_basis.z.normalized()
 	var sun_color := _sun.light_color
 	var ambient := _environment.ambient_light_color
-	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _rain_material]:
+	for material in [_cloud_material, _cloud_shadow_material, _cloud_mask_material, _rain_material, _layer_material]:
 		material.set_shader_parameter("air_drift", drift)
 		material.set_shader_parameter("weather_state", field)
 		material.set_shader_parameter("cell_shape", shape)
@@ -788,6 +814,7 @@ func _apply_enabled() -> void:
 	if not configured: return
 	_fine.set_visible(enabled)
 	_coarse.set_visible(enabled)
+	_layer.visible = _layer.visible and enabled
 	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if enabled else SubViewport.UPDATE_DISABLED
 	if not enabled:
 		_restore_look()
@@ -812,6 +839,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F7:
 			set_enabled(not enabled)
 			print(JSON.stringify({"event": "weather_enabled", "enabled": enabled}))
+
+## Debug acceptance check: share of screen pixels changed by the visible clouds
+## (render with and without the cloud/rain/layer visuals; shadows stay on in both).
+var _coverage_image: Image
+func _measure_coverage() -> void:
+	var visuals: Array = _fine.visual + _coarse.visual + [_layer]
+	if _fine.rain_instance: visuals.append(_fine.rain_instance)
+	if _frame == 240:
+		_coverage_image = get_viewport().get_texture().get_image()
+		for node in visuals: node.set_meta("coverage_visible", node.visible); node.visible = false
+	elif _frame == 244 and _coverage_image:
+		var plain := get_viewport().get_texture().get_image()
+		var size := plain.get_size()
+		var changed := 0
+		var lower := 0
+		var total := 0
+		for y in range(0, size.y, 3):
+			for x in range(0, size.x, 3):
+				total += 1
+				var a := _coverage_image.get_pixel(x, y)
+				var b := plain.get_pixel(x, y)
+				if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.06:
+					changed += 1
+					if y > size.y / 2: lower += 1
+		print("WEATHERCOVERAGE ", JSON.stringify({"state": state, "ground_width": snappedf(_ground_width, 1.0), "cloud_fraction": snappedf(float(changed) / total, 0.001), "lower_half_fraction": snappedf(float(lower) / total, 0.001)}))
+		for node in visuals: node.visible = node.get_meta("coverage_visible", true)
 
 func _capture() -> void:
 	if _capture_dir == "" or _capture_frames <= 0 or _frame % _capture_every != 0: return

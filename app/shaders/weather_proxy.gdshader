@@ -14,7 +14,6 @@ uniform vec3 view_camera;
 uniform vec2 sun_xz;          // sun direction xz / sun direction y
 uniform vec2 peek;
 uniform float ground_y = 0.0;
-uniform float near_fade_distance = 0.0;
 uniform float mask_darkness = 0.5;
 
 varying float amount;
@@ -28,8 +27,7 @@ void vertex() {
 	// Flat proxy just above the cloud base keeps the cast shape compact.
 	p.y = cloud_base + (p.y - cloud_base) * 0.25;
 	vec2 centre = MODEL_MATRIX[3].xz + air_drift;
-	float d = distance(vec3(centre.x, cloud_base, centre.y), view_camera);
-	float keep = mix(smoothstep(near_fade_distance * 0.75, near_fade_distance, d), 1.0, step(0.05, info.w));
+	float keep = view_keep(vec3(centre.x, cloud_base, centre.y), 3.4 * info.x * length(MODEL_MATRIX[0].xyz), view_camera);
 	p.xz = centre + (p.xz - centre) * keep;
 	p.y = cloud_base + (p.y - cloud_base) * keep;
 	float t = (view_camera.y - ground_y) / max(view_camera.y - cloud_base, 1.0);

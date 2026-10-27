@@ -11,6 +11,16 @@ uniform float bank_grey = 0.0;     // how grey merged banks turn (0 fair, 1 rain
 
 float bank_amount(float cover) { return smoothstep(0.55, 0.85, cover); }
 
+// One rule for every cloud type: nothing between camera and focus. Clusters
+// closer than near_hide_distance, or wider than 25 % of the screen, shrink away.
+uniform float near_hide_distance = 0.0;
+uniform float view_tan = 1.0; // 2 * tan(fov/2) * aspect: screen width at unit distance
+float view_keep(vec3 centre, float width, vec3 camera) {
+	float d = distance(centre, camera);
+	float screen = width / max(d * view_tan, 0.001);
+	return smoothstep(near_hide_distance * 0.85, near_hide_distance, d) * (1.0 - smoothstep(0.2, 0.25, screen));
+}
+
 // Cumulus: returns the world vertex; x of `info` is the cluster scale (0 = absent).
 vec3 place_cluster(vec3 vertex_world, vec3 origin, vec4 custom, out vec4 info) {
 	vec2 world_xz = origin.xz + air_drift;

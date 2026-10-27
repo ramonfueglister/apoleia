@@ -19,8 +19,6 @@ uniform float brightness = 1.0;
 uniform vec3 flash_pos;
 uniform float flash = 0.0;
 uniform float flash_radius = 80.0;
-uniform float near_fade_distance = 0.0;
-uniform float near_cull_distance = 0.0; // whole clusters closer than this shrink away (rain keeps the foreground clear)
 instance uniform float fade = 1.0;
 
 varying vec3 world_pos;
@@ -36,8 +34,7 @@ void vertex() {
 	VERTEX = place_cluster(VERTEX, origin, INSTANCE_CUSTOM, info);
 	vec3 centre = vec3(origin.x + air_drift.x, cloud_base, origin.z + air_drift.y);
 	// Whole clusters shrink away near the camera instead of a dithered cut.
-	float d = distance(centre, CAMERA_POSITION_WORLD);
-	float keep = smoothstep(near_cull_distance * 0.8, near_cull_distance, d) * mix(smoothstep(near_fade_distance * 0.75, near_fade_distance, d), 1.0, step(0.05, info.w));
+	float keep = view_keep(centre, 3.4 * info.x * length(MODEL_MATRIX[0].xyz), CAMERA_POSITION_WORLD);
 	// Tier cross-fade (zoom) also shrinks instead of dithering.
 	VERTEX = centre + (VERTEX - centre) * keep * smoothstep(0.0, 1.0, fade);
 	world_pos = VERTEX;
