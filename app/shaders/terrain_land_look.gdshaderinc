@@ -110,6 +110,17 @@ vec4 land_cover_at(vec2 p,float bias) {
     vec2 uv=(i+f+0.5)/land_cover_size;
     return texture(land_cover_tex,uv,bias);
 }
+// Paradox-style forest mask on the land-cover grid (tools/build_forest_mask.py):
+// the same mask places the groves, so the painted forest floor sits under
+// them at every distance. Same quintic weights as land_cover_at.
+uniform bool use_forest_mask=false;
+uniform sampler2D forest_mask_tex : filter_linear_mipmap, repeat_disable;
+float forest_mask_at(vec2 p,float bias) {
+    vec2 q=(p-land_cover_world_min)/land_cover_spacing;
+    vec2 i=floor(q),f=q-i;
+    f=f*f*f*(f*(f*6.0-15.0)+10.0);
+    return texture(forest_mask_tex,(i+f+0.5)/land_cover_size,bias).r;
+}
 // Only the selected source is sampled (?: evaluates one operand).
 #define LAND_FIELDS(q) (use_land_cover ? land_cover_at(q,cover_bias) : LAND_LOOK_WEIGHTS(q))
 
@@ -174,6 +185,8 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Fields: R forest, G bare/rock, B dry, A snow (land cover), or the
     // source material weights (FOREST/ROCK/DRY/SHORE) without it.
     vec4 soft=LAND_FIELDS(pw);
+    // The groves stand at unwarped positions: read the mask at p, not pw.
+    float fmask=use_forest_mask ? forest_mask_at(p,cover_bias) : soft.r;
     float forest=land_edge(soft.r+edge*0.30,0.5);
     // Dry/crop land: in mid and near views only light speckles (0.3-0.5 km)
     // within the dry zone, not continuous beige plates.
@@ -238,6 +251,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // from 1-2 km noise, still crisp.
     float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
     float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
+    // Forest mask: the floor follows the forest masses, edges frayed only a
+    // little (copse spots at mask 0.42 keep plain ground).
+    if(use_forest_mask) forest_ground=land_edge(fmask+(nz.a-0.5)*0.12+(nm.r-0.5)*0.05,0.5);
     // Near: crowns carry the dark, the ground only hints at the forest.
     float fg_strength=mix(mix(0.45,0.6,smoothstep(0.25,0.5,footprint)),0.85,overview);
     ground=mix(ground,land_forest_ground_color.rgb,forest_ground*fg_strength*(1.0-valley_floor));
@@ -357,7 +373,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // is complete there (crown colour x forest share), so zooming out
     // leaves no gap between drawn trees and painted forest.
     float crown_cut=smoothstep(1400.0,2048.0,vw);
-    ground=mix(ground,land_forest_floor_color.rgb*0.92,clamp(soft.r,0.0,1.0)*crown_cut*(1.0-rock));
+    ground=mix(ground,land_forest_floor_color.rgb*0.92,clamp(fmask,0.0,1.0)*crown_cut*(1.0-rock));
     // Weit view: the map must stay three-dimensional. Painted hillshade
     // from the atlas normal at full display exaggeration (independent of the
     // camera's relief fade), slopes keep their dark green structure, high
@@ -366,7 +382,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Weit: no per-pixel facet noise; large forms only. Forest share as
         // clear dark green areas, uplands green, shading from the large atlas
         // normal plus the precomputed ridge/valley position (channel A).
-        float far_forest=smoothstep(0.35,0.75,soft.r)*0.9;
+        float far_forest=smoothstep(0.35,0.75,fmask)*0.9;
         float upland=smoothstep(300.0,800.0,h);
         ground=mix(ground,mix(land_hill_color.rgb,land_forest_floor_color.rgb,0.3),upland*overview*0.45);
         ground=mix(ground,land_forest_stipple_light.rgb,smoothstep(300.0,500.0,h)*(1.0-smoothstep(1000.0,1200.0,h))*overview*0.35);

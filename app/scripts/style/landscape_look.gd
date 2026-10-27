@@ -124,6 +124,17 @@ static func land_cover_parameters() -> Dictionary:
         "land_cover_world_min": Vector2(manifest.world_min[0], manifest.world_min[1]),
         "land_cover_spacing": float(manifest.world_size[0]) / float(w - 1),
         "land_cover_size": Vector2(w, h)}
+    # Forest mask on the same grid (LandscapeStyle.FOREST_MASK_DIR): the land
+    # shader paints the forest floor from the mask that places the groves.
+    var mask_root = ProjectSettings.globalize_path("res://..").simplify_path().path_join(LandscapeStyle.FOREST_MASK_DIR)
+    var mask_manifest = JSON.parse_string(FileAccess.get_file_as_string(mask_root.path_join("manifest.json")))
+    if mask_manifest is Dictionary and int(mask_manifest.width) == w and int(mask_manifest.height) == h:
+        var mask_bytes = FileAccess.get_file_as_bytes(mask_root.path_join(str(mask_manifest.mask.path)))
+        if mask_bytes.size() == w * h:
+            var mask_image = Image.create_from_data(w, h, false, Image.FORMAT_L8, mask_bytes)
+            mask_image.generate_mipmaps()
+            _land_cover["forest_mask_tex"] = ImageTexture.create_from_image(mask_image)
+            _land_cover["use_forest_mask"] = true
     return _land_cover
 
 static func terrain_parameters() -> Dictionary:
