@@ -63,12 +63,13 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S58 | **Ämter nach Aufgabe, nicht nach Massstab:** Senat 40 Senatoren (≈ 30 senatorische Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom für Fraktionen und Erbfolge), mit Familien ≈ 150 Personen. Jede Provinz einen Statthalter, jede Legion einen Legaten, Ritterstand ≈ 60 Personen für die Prokuratoren. Alle übrigen Zahlen im Massstab (S50). |
 | S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Wie die Grenze eingehalten wird, ist offen. |
 | S60 | **Richtung für später (Ramon, 27.10.2026), noch ohne Regeln:** Nahrung und Lebensraum sollen das Wachstum der Bevölkerung begrenzen. Menschen können auswandern: Sie verlassen die Karte und damit das System. Wie das genau funktioniert, ist offen. |
+| S61 | **Zugehörigkeiten (Ramon, 27.10.2026):** Jeder Einwohner gehört einer Pop an (Kachel, Stand, Kultur, Religion), einer wirtschaftlichen Gruppe und einer oder mehreren politischen Gruppen. Die Zugehörigkeit ist ein Merkmal des einzelnen Menschen; Gruppen werden aus ihren Mitgliedern berechnet und zählen niemanden doppelt. Wer Stand, Beruf oder Wohnort wechselt, wechselt die Gruppe. Offen: welche Gruppen es gibt, ihre Werte und Regeln. |
 
 Offen: Wachstum und Rückgang der Bevölkerung (S54), wie die Obergrenze eingehalten wird (S59), Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
-Hunger-Sterblichkeit, Seuchen, Migration, Bevölkerungsgruppen, Handel und
+Hunger-Sterblichkeit, Seuchen, Migration, Regeln der Bevölkerungsgruppen (Struktur steht in S61), Handel und
 Importe, Preise, emergente Wege, gezieltes Bauen der KI, Staaten, Krieg, Technik,
 Umwelt. Bisherige Ideen dazu (nicht entschieden): Wege entstehen emergent aus
 Verkehr und werden gezielt ausgebaut; die KI plant Bauprojekte zielbasiert etwa

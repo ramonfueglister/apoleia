@@ -12,4 +12,4 @@
 | Eingabewerte Subsystem 1 | Startbevölkerung `belegt` (HYDE 3.3), K und r `geschätzt` | [ESTIMATES.md](ESTIMATES.md) |
 | B08 Performance | `implementiert`, Mac-Messung `offen` | Tick p50 0,35 ms, p95 ~0,53 ms (Cloud); Spitzen bis 5 ms nur in Monaten mit Tausenden Teilungen |
 | Datensatz Startbevölkerung 180 n. Chr. | `implementiert` | HYDE 3.3 Baseline 200 n. Chr. (popc, rurc, urbc, cropland), CC BY 4.0, `data/hyde33/`, `tools/sim_hyde.py` |
-| Massstab und Einzelpersonen (S50–S60) | `entschieden` (27.10.2026), Umsetzung `offen` | [SCALE.md](SCALE.md); Prototyp mit 100'000 Personen über 100 Jahre steht aus |
+| Massstab und Einzelpersonen (S50–S61) | `entschieden` (27.10.2026), Umsetzung `offen` | [SCALE.md](SCALE.md); Prototyp mit 100'000 Personen über 100 Jahre steht aus |
