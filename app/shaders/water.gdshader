@@ -85,12 +85,17 @@ void fragment() {
         // b6c8e1a: 10-20 px on the reference, but 30-90 px too light and
         // red (#1f618e / #1d5f8d against #1b5c8d / #19588a): the green
         // lift now only through the shelf band, and less red.
-        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(0.85,1.0,0.98);
+        // 08cd36c: barely moved, the 450 km view lies almost wholly on the
+        // 40-450 m shelf band: flat #206490-#1c608e from 10 to 60 px where
+        // the reference falls from #1f6695 to #19588a; 2-6 px a step dark
+        // (#246a92 against #257197), red ~4 high throughout. Darker, less
+        // red base; stronger coast ramp; the shelf band only to ~300 m.
+        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone*vec3(0.68,0.88,0.90);
         float near=1.0-smoothstep(0.0,4000.0,coast_m);
-        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(40.0,450.0,depth))*0.75);
+        float band=max(near*near*(3.0-2.0*near),(1.0-smoothstep(30.0,300.0,depth))*0.6);
         // Keep the open sea's facet and wave tone steps.
         float texture_tone=clamp(dot(w.albedo,vec3(1.0))/max(dot(open,vec3(1.0)),0.0001),0.85,1.15);
-        vec3 c=open*mix(vec3(1.0),vec3(1.0,1.6,1.2),band)*mix(texture_tone,1.0,near);
+        vec3 c=open*mix(vec3(1.0),vec3(1.0,2.1,1.42),band)*mix(texture_tone,1.0,near);
         ALBEDO=mix(ALBEDO,mix(c,water_foam_tint.rgb,w.foam*0.4),mid_sea);
     }
     // Reference calibration (h~207 s0.80-0.83 v0.52-0.55): slightly darker,
