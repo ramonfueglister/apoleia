@@ -1,0 +1,48 @@
+{
+ "startup_timeline": {
+  "first_frame_msec": 3847,
+  "coverage_ready_msec": 10909,
+  "coverage_ready_frame": 298
+ },
+ "coverage_cap_hit": false,
+ "last_clipmap_line": {
+  "clipmap": {
+   "draw_tiles": 18,
+   "gpu_bytes": 21566736,
+   "missing": 0,
+   "refining": 0,
+   "root_ready": true,
+   "upload_bytes": 0,
+   "upload_ms": 0.001,
+   "uploads": 27
+  },
+  "geometry_rebuilt_per_frame": false,
+  "grid_vertices": 4225,
+  "limits": {
+   "cpu_bytes": 134217728,
+   "gpu_bytes": 335544320,
+   "uploads_per_frame": 1
+  },
+  "tiles": {
+   "cpu_bytes": 8986140,
+   "cpu_limit": 134217728,
+   "evicted": 0,
+   "io_ms": 54.875,
+   "loaded": 27,
+   "pending": 0,
+   "ready": "complete",
+   "resident": 27,
+   "worker_active": false,
+   "workers": 0
+  }
+ },
+ "frame_count": 305,
+ "pipeline_counts_final": {
+  "PIPELINE_COMPILATIONS_CANVAS": 0.0,
+  "PIPELINE_COMPILATIONS_MESH": 0.0,
+  "PIPELINE_COMPILATIONS_SURFACE": 35.0,
+  "PIPELINE_COMPILATIONS_DRAW": 0.0,
+  "PIPELINE_COMPILATIONS_SPECIALIZATION": 23.0
+ },
+ "runtime_json_sha256": "76d9524146c739ecbe3dcad3bd6aaebb0e68899ccbef1d89b074fb28bf9a42c3"
+}
