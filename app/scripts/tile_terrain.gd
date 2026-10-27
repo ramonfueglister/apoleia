@@ -16,6 +16,8 @@ const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 # 2000 ratio (12 px per level on a 32 x 16 px tile).
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
+const SMOOTH_FROM_KM := 30.0 # view width where the tile steps start to melt
+const SMOOTH_TO_KM := 90.0   # view width from where the relief is fully smooth
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # tiles per side of the tree and house patch
 const PROP_SLOTS := [9, 9, 0, 0, 0, 0] # tree slots per tile and level
@@ -192,6 +194,10 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var wanted := level_for_width(width)
 	if wanted != level:
 		_apply_level(wanted)
+	# SimCity 2000 tiles up close, EU5-style smooth relief map from far away
+	var smooth_relief := smoothstep(SMOOTH_FROM_KM, SMOOTH_TO_KM, width)
+	for material in _all_materials():
+		material.set_shader_parameter("relief_smooth", smooth_relief)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	_terrain_material.set_shader_parameter("patch_origin", patch_origin)

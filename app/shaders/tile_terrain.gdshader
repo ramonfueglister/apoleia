@@ -8,7 +8,7 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 #include "res://shaders/tile_terrain.gdshaderinc"
 
 uniform float grid_line = 0.12;
-uniform bool show_fields = true;
+uniform bool show_fields = false; // patchwork fields (off: SimCity 2000 tiles are plain)
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
 uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
 uniform int house_grid = 2;                      // house blocks per tile side
@@ -116,7 +116,6 @@ void vertex() {
 
 vec3 ground_colour(vec2 p, vec4 cov) {
 	float n = tt_fbm(p / (6.0 * max(tile_km, 0.5)));
-	float n2 = tt_hash(vec2(tile));
 	float lat = tt_latitude(p);
 	float h = tt_height_m(p, height_lod);
 	float dry = cov.g;
@@ -127,7 +126,7 @@ vec3 ground_colour(vec2 p, vec4 cov) {
 	} else {
 		c = mix(c, C_DRY, clamp(dry * 1.1, 0.0, 0.85));
 	}
-	c = mix(c, C_CROP, clamp(cov.b * 1.4, 0.0, 0.6) * (0.6 + 0.4 * n2));
+	c = mix(c, C_CROP, clamp(cov.b * 1.4, 0.0, 0.6) * 0.5);
 	float trees = tt_tree_density(p, cov.r);
 	// dark floor under drawn trees; without trees (far levels) a lighter wood green
 	vec3 wood = mix(C_FOREST, vec3(0.294, 0.420, 0.212), smoothstep(1.0, 2.0, tile_km));
@@ -141,7 +140,7 @@ vec3 ground_colour(vec2 p, vec4 cov) {
 	if (body_level <= 2.0) {
 		c = mix(c, C_SAND, coast >= 0.99 ? 0.8 : coast * 0.65);
 	}
-	return c * (0.97 + 0.06 * n2);
+	return c;
 }
 
 // Roman farmland patchwork on open, low, flat land: colour and stripes.
@@ -181,7 +180,7 @@ void fragment() {
 	vec2 centre = tt_tile_center(tile);
 	// far out the colour follows the ground, not the tile, so the map is smooth
 	float far = smoothstep(1.0, 2.0, tile_km);
-	vec2 cp = mix(centre, p, far);
+	vec2 cp = p; // ground colour follows the land smoothly, no per-tile patches
 	vec3 c;
 	float rough = 1.0;
 	if ((water == W_SEA || water == W_LAKE) && part == 0) {
@@ -226,8 +225,6 @@ void fragment() {
 			if (wall_sides != 0) {
 				c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 			}
-		} else if (far < 0.5 && field(centre, cov, fc, stripes)) {
-			c = fc * (1.0 - 0.12 * stripes);
 		} else {
 			c = ground_colour(cp, cov);
 		}
@@ -235,10 +232,6 @@ void fragment() {
 		if (flat_top < 0.5 && town == 0) {
 			c = mix(c, C_SLOPE, 0.22);
 		}
-		// fine speckle inside the tile (SimCity 2000 grass texture)
-		vec2 sub = floor(tile_uv * 8.0);
-		float px = 1.0 / max(max(fwidth(tile_uv).x, fwidth(tile_uv).y) * 8.0, 1e-5);
-		c *= 1.0 + (tt_hash(sub + vec2(tile) * 8.0) - 0.5) * 0.09 * smoothstep(2.0, 5.0, px);
 		// slope shading: ramps facing the sun bright, the others dark
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
@@ -248,14 +241,15 @@ void fragment() {
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.80, 1.0, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.13, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
-		c *= mix(1.0, tone, mix(1.0, 0.6, far));
+		float smooth_tone = clamp(1.0 + 1.1 * lit, 0.72, 1.2); // plain relief shading
+		c *= mix(mix(1.0, tone, mix(1.0, 0.6, far)), smooth_tone, relief_smooth);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
 		float line = 1.0 - smoothstep(0.0, 1.0, min(e.x / max(fw.x, 1e-5), e.y / max(fw.y, 1e-5)));
 		// fade the outline out when tiles get only a few pixels wide
 		float fade = smoothstep(5.0, 12.0, 1.0 / max(max(fw.x, fw.y), 1e-5));
-		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.3) * fade;
+		c *= 1.0 - grid_line * line * (flat_top > 0.5 ? 1.0 : 0.3) * fade * (1.0 - relief_smooth);
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile

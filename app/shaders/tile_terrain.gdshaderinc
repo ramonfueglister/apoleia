@@ -17,6 +17,7 @@ uniform float tile_km = 2.0;
 uniform float level_h = 0.36;  // world units per height level
 uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
+uniform float relief_smooth = 0.0; // 0 tile steps (near) .. 1 smooth relief map (far)
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
 
@@ -97,7 +98,9 @@ float tt_corner_height(ivec2 c) {
 float tt_land_corner(ivec2 c) {
 	bool shore = tt_water(c) == W_SEA || tt_water(c - ivec2(1, 0)) == W_SEA
 		|| tt_water(c - ivec2(0, 1)) == W_SEA || tt_water(c - ivec2(1, 1)) == W_SEA;
-	float l = round(max(tt_corner_height(c), 0.0) / m_per_level);
+	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
+	float x = max(tt_corner_height(c), 0.0) / m_per_level;
+	float l = mix(round(x), x, relief_smooth);
 	return shore ? 0.0 : max(1.0, l);
 }
 
