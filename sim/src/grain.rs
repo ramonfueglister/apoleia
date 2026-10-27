@@ -145,6 +145,15 @@ const SPREAD_PCT: i64 = 10;
 /// Traders: at most 32 markets known (GRAIN.md), go when the margin per
 /// kg after freight is above this share of the price. PLACEHOLDER.
 const KNOWN: usize = 32;
+/// Trade roads and sea lanes from traffic (S71): each 25 km cell keeps a
+/// smoothed count of trader trips per year (kept share per year in
+/// 1/10000: half-life 2 years); a cell becomes a trade track, then a trade
+/// road above the first number and falls back below the second (trips per
+/// year). On land the wagon freight into the cell falls to
+/// LEVEL_COST_PCT; sea lanes are counted but cost the same (ORBIS sea
+/// cost is already low). PLACEHOLDER: all numbers frei gewählt.
+const ROAD_KEEP: i64 = 7071;
+const ROAD_LEVELS: [(i64, i64); 2] = [(100, 50), (400, 200)];
 const TRADE_MARGIN_PCT: i64 = 10;
 /// Landless (S69): PLACEHOLDER alms at the market, as a share of the
 /// household's monthly need, and chance per month to steal from a farm
@@ -312,6 +321,10 @@ pub struct Market {
     /// Known prices: (market, price, day seen).
     board: Vec<(u32, i64, i64)>,
     neigh: Vec<Neigh>,
+    /// Cells the neighbour search touched (row min, row max, col min,
+    /// col max); a road change inside makes the search `stale`.
+    reach: (i32, i32, i32, i32),
+    stale: bool,
     field: Option<Field>,
     dirty: bool,
     /// Trips per origin fine cell since the last walk.
@@ -429,6 +442,13 @@ pub struct Grain {
     census_job: Option<std::thread::JoinHandle<(IdMap<HhInfo>, Vec<u32>, Vec<Row>)>>,
     /// Trader traffic per 25 km cell (roads and sea lanes, S71), counted.
     pub lanes: FxHashMap<u32, i64>,
+    /// Per 25 km cell: trips this year, smoothed trips per year × 1000,
+    /// trade road level (S71); generation bumped when a level changes.
+    road_trips: Vec<i64>,
+    road_rate: Vec<i64>,
+    road_level: Vec<u8>,
+    /// Market index at each 25 km cell (NONE elsewhere).
+    market_at: Vec<u32>,
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
@@ -562,6 +582,8 @@ impl Grain {
                 sold_today: 0,
                 board: Vec::new(),
                 neigh: Vec::new(),
+                reach: (0, -1, 0, -1),
+                stale: false,
                 field: None,
                 dirty: true,
                 walked: FxHashMap::default(),
@@ -597,6 +619,10 @@ impl Grain {
             members: Vec::new(),
             census_job: None,
             lanes: FxHashMap::default(),
+            road_trips: vec![0; n],
+            road_rate: vec![0; n],
+            road_level: vec![0; n],
+            market_at: Vec::new(),
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
@@ -638,84 +664,82 @@ impl Grain {
     /// ship over sea, ports at coast cells): each market's 32 cheapest
     /// markets with cost, days and route. Built once at the start.
     fn build_graph(&mut self, p: &People) {
-        let g = &p.grid;
-        let n = g.kind.len();
-        let mut at = vec![NONE; n];
+        let mut at = vec![NONE; p.grid.kind.len()];
         for (k, m) in self.markets.iter().enumerate() {
             at[m.cell as usize] = k as u32;
         }
+        self.market_at = at;
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
-        let (rows, cols) = (g.rows, g.cols);
-        let kind = &g.kind;
-        let at = &at;
-        let one = |src: u32| -> Vec<Neigh> {
-            let mut best = vec![i64::MAX; n];
-            let mut days = vec![0i64; n];
-            let mut par = vec![NONE; n];
-            let mut open = BinaryHeap::new();
-            best[src as usize] = 0;
-            open.push(Reverse((0i64, src)));
-            let mut out = Vec::new();
-            while let Some(Reverse((c, i))) = open.pop() {
-                if c > best[i as usize] {
-                    continue;
-                }
-                if i != src && at[i as usize] != NONE {
-                    let mut route = Vec::new();
-                    let mut j = i;
-                    while j != src {
-                        route.push(j);
-                        j = par[j as usize];
-                    }
-                    route.reverse();
-                    out.push(Neigh { m: at[i as usize], cost: c, days: ((days[i as usize] + 999) / 1000).max(1), route });
-                    if out.len() >= KNOWN {
-                        break;
-                    }
-                }
-                let (r, col) = (i as i32 / cols, i as i32 % cols);
-                for dr in -1..=1 {
-                    for dc in -1..=1 {
-                        if dr == 0 && dc == 0 {
-                            continue;
-                        }
-                        let (nr, nc) = (r + dr, col + dc);
-                        if nr < 0 || nc < 0 || nr >= rows || nc >= cols {
-                            continue;
-                        }
-                        let j = (nr * cols + nc) as u32;
-                        let (ka, kb) = (kind[i as usize], kind[j as usize]);
-                        let km = if dr != 0 && dc != 0 { 35 } else { 25 };
-                        let (cost, d) = match (ka, kb) {
-                            (0, 2) | (2, 0) => continue,
-                            (0, _) | (_, 0) => (km * SEA_COST * 1, km * 1000 / SEA_KM_DAY),
-                            _ => (km * WAGON_COST, km * 1000 / WAGON.1),
-                        };
-                        let nc_ = c + cost;
-                        if nc_ < best[j as usize] {
-                            best[j as usize] = nc_;
-                            days[j as usize] = days[i as usize] + d;
-                            par[j as usize] = i;
-                            open.push(Reverse((nc_, j)));
-                        }
-                    }
-                }
-            }
-            out
-        };
-        let one = &one;
-        let built: Vec<Vec<Neigh>> = bevy_tasks::ComputeTaskPool::get()
+        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
+        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get()
             .scope(|s| {
                 for chunk in cells.chunks(cells.len().div_ceil(16).max(1)) {
-                    s.spawn(async move { chunk.iter().map(|&c| one(c)).collect::<Vec<_>>() });
+                    s.spawn(async move { chunk.iter().map(|&c| neighbours(grid, at, level, c)).collect::<Vec<_>>() });
                 }
             })
             .into_iter()
             .flatten()
             .collect();
-        for (m, nb) in self.markets.iter_mut().zip(built) {
+        for (m, (nb, reach)) in self.markets.iter_mut().zip(built) {
             m.board = nb.iter().map(|x| (x.m, BASE_PRICE, 0)).collect();
             m.neigh = nb;
+            m.reach = reach;
+        }
+    }
+
+    /// Trade roads (S71): once a year the year's trips per cell go into the
+    /// smoothed rate and the levels; a market whose last neighbour search
+    /// touched a land cell whose level changed searches again on its day
+    /// (1/360 of the markets a day, on the task pool). Known prices are
+    /// kept for markets still known.
+    fn roads(&mut self, p: &People, day: i64) {
+        if doy(day) == 0 && day > 0 {
+            let mut changed: Vec<(i32, i32)> = Vec::new();
+            for c in 0..self.road_rate.len() {
+                let t = std::mem::take(&mut self.road_trips[c]);
+                if t == 0 && self.road_rate[c] == 0 {
+                    continue;
+                }
+                let r = (self.road_rate[c] * ROAD_KEEP + t * 1000 * (10_000 - ROAD_KEEP)) / 10_000;
+                self.road_rate[c] = r;
+                let old = self.road_level[c];
+                let mut lv = old;
+                while (lv as usize) < ROAD_LEVELS.len() && r >= ROAD_LEVELS[lv as usize].0 * 1000 {
+                    lv += 1;
+                }
+                while lv > 0 && r < ROAD_LEVELS[lv as usize - 1].1 * 1000 {
+                    lv -= 1;
+                }
+                if lv != old {
+                    self.road_level[c] = lv;
+                    if p.grid.kind[c] != 0 {
+                        changed.push((c as i32 / p.grid.cols, c as i32 % p.grid.cols));
+                    }
+                }
+            }
+            for m in self.markets.iter_mut() {
+                let (r0, r1, c0, c1) = m.reach;
+                m.stale |= changed.iter().any(|&(r, c)| r >= r0 && r <= r1 && c >= c0 && c <= c1);
+            }
+        }
+        let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
+        if todo.is_empty() {
+            return;
+        }
+        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
+        let cells: Vec<u32> = todo.iter().map(|&mi| self.markets[mi].cell).collect();
+        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get().scope(|s| {
+            for &c in &cells {
+                s.spawn(async move { neighbours(grid, at, level, c) });
+            }
+        });
+        for (mi, (nb, reach)) in todo.into_iter().zip(built) {
+            let m = &mut self.markets[mi];
+            let old = std::mem::take(&mut m.board);
+            m.board = nb.iter().map(|x| old.iter().find(|o| o.0 == x.m).copied().unwrap_or((x.m, BASE_PRICE, 0))).collect();
+            m.neigh = nb;
+            m.reach = reach;
+            m.stale = false;
         }
     }
 
@@ -1101,6 +1125,7 @@ impl Grain {
         self.timing.eat += us(t0);
         let t0 = t();
         self.traders(day);
+        self.roads(p, day);
         self.timing.traders += us(t0);
         let t0 = t();
         self.paths(p, day);
@@ -1819,6 +1844,7 @@ impl Grain {
             }
             for &c in &self.markets[h].neigh[k].route.clone() {
                 *self.lanes.entry(c).or_default() += 1;
+                self.road_trips[c as usize] += 1;
             }
             let t = self.new_trip(Trip { kind, pid: info.trader, hh: id, farm: NONE, market: h as u32, dest, kg, back_days: days });
             self.hh.get_mut(&id).unwrap().trading = true;
@@ -1934,6 +1960,20 @@ impl Grain {
     }
 
     /// Fine cells by path level (trail, path), as of the last walk.
+    /// Trade tracks and roads on land, lanes at sea (cells, S71).
+    pub fn road_cells(&self, p: &People) -> (usize, usize, usize) {
+        let (mut a, mut b, mut sea) = (0, 0, 0);
+        for (c, &l) in self.road_level.iter().enumerate() {
+            match (p.grid.kind[c], l) {
+                (_, 0) => {}
+                (0, _) => sea += 1,
+                (_, 1) => a += 1,
+                _ => b += 1,
+            }
+        }
+        (a, b, sea)
+    }
+
     pub fn path_cells(&self) -> (usize, usize) {
         let (mut a, mut b) = (0, 0);
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
@@ -2050,6 +2090,7 @@ impl Grain {
                 b.extend_from_slice(&x.to_le_bytes());
             }
         }
+        b.extend_from_slice(&self.road_level);
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             let mut w: Vec<u16> = f.worn.clone();
             w.sort_unstable();
@@ -2083,6 +2124,71 @@ fn sorted_keys<V>(m: &IdMap<V>) -> Vec<u32> {
     let mut v = m.ids.clone();
     v.sort_unstable();
     v
+}
+
+/// The KNOWN cheapest markets from the market at `src` by freight
+/// (Dijkstra over 25 km cells: wagon over land, cheaper on trade roads;
+/// ship at sea; no step between sea and blocked land).
+/// Also returns the box of all cells it touched.
+fn neighbours(grid: &Grid, at: &[u32], level: &[u8], src: u32) -> (Vec<Neigh>, (i32, i32, i32, i32)) {
+    let n = grid.kind.len();
+    let (rows, cols, kind) = (grid.rows, grid.cols, &grid.kind);
+    let mut best = vec![i64::MAX; n];
+    let mut days = vec![0i64; n];
+    let mut par = vec![NONE; n];
+    let mut open = BinaryHeap::new();
+    best[src as usize] = 0;
+    open.push(Reverse((0i64, src)));
+    let mut out = Vec::new();
+    let (sr, sc) = (src as i32 / cols, src as i32 % cols);
+    let mut reach = (sr, sr, sc, sc);
+    while let Some(Reverse((c, i))) = open.pop() {
+        if c > best[i as usize] {
+            continue;
+        }
+        if i != src && at[i as usize] != NONE {
+            let mut route = Vec::new();
+            let mut j = i;
+            while j != src {
+                route.push(j);
+                j = par[j as usize];
+            }
+            route.reverse();
+            out.push(Neigh { m: at[i as usize], cost: c, days: ((days[i as usize] + 999) / 1000).max(1), route });
+            if out.len() >= KNOWN {
+                break;
+            }
+        }
+        let (r, col) = (i as i32 / cols, i as i32 % cols);
+        for dr in -1..=1 {
+            for dc in -1..=1 {
+                if dr == 0 && dc == 0 {
+                    continue;
+                }
+                let (nr, nc) = (r + dr, col + dc);
+                if nr < 0 || nc < 0 || nr >= rows || nc >= cols {
+                    continue;
+                }
+                let j = (nr * cols + nc) as u32;
+                let (ka, kb) = (kind[i as usize], kind[j as usize]);
+                let km = if dr != 0 && dc != 0 { 35 } else { 25 };
+                let (cost, d) = match (ka, kb) {
+                    (0, 2) | (2, 0) => continue,
+                    (0, _) | (_, 0) => (km * SEA_COST, km * 1000 / SEA_KM_DAY),
+                    _ => (km * WAGON_COST * LEVEL_COST_PCT[level[j as usize] as usize] / 100, km * 1000 / WAGON.1),
+                };
+                let nc_ = c + cost;
+                if nc_ < best[j as usize] {
+                    best[j as usize] = nc_;
+                    days[j as usize] = days[i as usize] + d;
+                    par[j as usize] = i;
+                    open.push(Reverse((nc_, j)));
+                    reach = (reach.0.min(nr), reach.1.max(nr), reach.2.min(nc), reach.3.max(nc));
+                }
+            }
+        }
+    }
+    (out, reach)
 }
 
 /// One market's walk on a path day (see `Grain::paths`).
