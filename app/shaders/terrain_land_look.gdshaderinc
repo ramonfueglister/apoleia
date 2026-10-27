@@ -423,15 +423,6 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         belt=mix(land_far_rock_shade_color.rgb,belt,clamp(0.5+0.6*side*max(ridge,0.3)+1.5*(lit-0.643),0.0,1.0));
         ground=mix(ground,belt,alpine*overview*overview*0.92);
     }
-    // Regional views (A08 alps/rome-mid, alps-out): facetted relief planes on
-    // slopes, lattice scaled to ~6 px so planes stay readable.
-    if(overview>0.0 && rel>0.001) {
-        float rfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
-        float rid;
-        vec3 rf=land_cell_facet(n,p,max(rfoot*6.0,3.0),rid);
-        rf=normalize(vec3(rf.x*2.0,rf.y,rf.z*2.0));
-        n=normalize(mix(n,rf,0.7*overview*smoothstep(0.01,0.06,slope)));
-    }
     // Weit: only real ranges read as relief; lowland and hill country calm.
     n=normalize(mix(n,vec3(0.0,1.0,0.0),0.7*overview*(1.0-smoothstep(250.0,350.0,h))));
     o.albedo=ground;
