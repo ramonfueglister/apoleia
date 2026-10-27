@@ -1,6 +1,7 @@
 // Shared crown body of canopy.gdshader (alpha-hash fade, both faces) and
 // canopy_opaque.gdshader (full-weight clipmap tiles, back faces culled).
 #include "res://shaders/terrain_clipmap.gdshaderinc"
+#include "res://shaders/delta_lagoon.gdshaderinc"
 uniform float relief=1.0;
 // Expanded meshes arrive encoded unit normals; instanced uniform scale does not.
 uniform bool normalize_instanced_normals=false;
@@ -22,6 +23,9 @@ void vertex(){
         vec2 root=MODEL_MATRIX[3].xz;
         float ground=INSTANCE_CUSTOM.a>0.5 && clipmap_cell_settled(root) ? INSTANCE_CUSTOM.r : clipmap_surface_height(root);
         VERTEX.y+=ground*0.001*display_height_scale;
+        // No crowns in the delta lagoons (terrain_look draws water there;
+        // the forest layout does not know them): collapse the crown.
+        if(delta_count>0 && view_width<575.0 && delta_inside(root) && delta_lagoon_at(root,max(-clipmap_water_distance(root),0.0),view_width)>0.5) VERTEX=vec3(0.0);
     }else if(stream_ground){
         vec4 a=texelFetch(ground_vertices,ivec2(0,INSTANCE_ID),0);
         vec4 b=texelFetch(ground_vertices,ivec2(1,INSTANCE_ID),0);

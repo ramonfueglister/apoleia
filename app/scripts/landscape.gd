@@ -2708,10 +2708,13 @@ func _bind_delta_uniforms() -> void:
         shapes.append(Vector4(region.ra*LAGOON_SCALE.x,region.rb*LAGOON_SCALE.y,region.seed,0.0))
     var values={"delta_count":frames.size()}
     if not frames.is_empty():values["delta_frame"]=frames;values["delta_shape"]=shapes
+    # Crowns read the same uniforms and stay out of the lagoon water.
     for uniform_name in values:
-        for material in [terrain_material,feature_material]:
+        for material in [terrain_material,feature_material,canopy_material]:
             if material:material.set_shader_parameter(uniform_name,values[uniform_name])
-        if clipmap_runtime:clipmap_runtime.set_land_parameter(uniform_name,values[uniform_name])
+        if clipmap_runtime:
+            clipmap_runtime.set_land_parameter(uniform_name,values[uniform_name])
+            clipmap_runtime.set_forest_parameter(uniform_name,values[uniform_name])
 
 # Deltas sit on the rendered (tile) coast; the CPU distance field can be km
 # off it (Po: the tile delta lobe reaches 20-30 km further out, the barrier
@@ -2736,6 +2739,7 @@ func _anchor_deltas() -> void:
             if not outward and sample.z<0.5:coast_point=q;found=true;break
         if not covered and not found:continue
         region.anchor_texel=probe.y
+        print("delta anchor %s: %s at texel %.0f m, sea %s, %s" % [region.name,str(world_to_geographic(mouth)),probe.y,str(sea),("moved to "+str(world_to_geographic(coast_point))) if found else "no sea found"])
         if not found:continue
         var shift:Vector2=coast_point-Vector2(region.mouth)
         region.mouth=coast_point;region.center=Vector2(region.center)+shift

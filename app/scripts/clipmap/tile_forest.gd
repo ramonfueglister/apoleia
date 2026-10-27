@@ -166,6 +166,8 @@ func attach(parent:Node3D,payload:Dictionary,textures:Dictionary,rect:Rect2)->Ar
     fade.set_shader_parameter("normalize_instanced_normals",true);fade.set_shader_parameter("stream_ground",false)
     fade.set_shader_parameter("clipmap_enabled",true);fade.set_shader_parameter("clipmap_height_tex",textures.height)
     fade.set_shader_parameter("clipmap_height_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
+    # Coast distance for the delta lagoon test (canopy vertex shader).
+    fade.set_shader_parameter("tile_water_tex",textures.water);fade.set_shader_parameter("tile_rect",Vector4(rect.position.x,rect.position.y,rect.size.x,rect.size.y))
     var opaque:ShaderMaterial=null
     if opaque_material:opaque=opaque_material.duplicate();_copy_params(fade,opaque)
     for bucket in filled:

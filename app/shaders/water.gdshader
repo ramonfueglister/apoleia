@@ -70,6 +70,18 @@ void fragment() {
     // #286e94 in the far view).
     float edge=1.0-smoothstep(0.0,px_m*1.2,coast_m);
     ALBEDO=mix(w.albedo,w.albedo*1.12+0.01,edge*(1.0-saum_scale)*0.5);
+    // Mid view: blue, gently lighter towards the coast, no turquoise saum
+    // (reference #1e7097 at 0.5 km, #257197 at 1 km, #1d6392 at ~4 km,
+    // #1b5b8d open; ours had a pale 1-3 px rim, #77b6cb / #59a2be).
+    float mid_sea=smoothstep(250.0,450.0,view_width)*(1.0-smoothstep(900.0,1600.0,view_width));
+    if(mid_sea>0.0) {
+        vec3 open=mix(water_open_tint.rgb,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25)*w.tone;
+        float near=1.0-smoothstep(0.0,4000.0,coast_m);
+        // Keep the open sea's facet and wave tone steps.
+        float texture_tone=clamp(dot(w.albedo,vec3(1.0))/max(dot(open,vec3(1.0)),0.0001),0.85,1.15);
+        vec3 c=open*mix(vec3(1.0),vec3(1.15,1.6,1.2),near*near*(3.0-2.0*near))*mix(texture_tone,1.0,near);
+        ALBEDO=mix(ALBEDO,mix(c,water_foam_tint.rgb,w.foam*0.4),mid_sea);
+    }
     // Reference calibration (h~207 s0.80-0.83 v0.52-0.55): slightly darker,
     // and less saturated in the continental view where AgX pushes chroma.
     float far_sea=smoothstep(800.0,2800.0,view_width);
@@ -77,8 +89,10 @@ void fragment() {
     // towards the coasts over tens of km (v 0.50-0.52 open, 0.58-0.64 near
     // the coasts, Adriatic ~0.57; ours was a flat 0.51). The tile coast
     // distance ends at ~4 km, so the bathymetry carries this ramp.
-    float shelf_light=(1.0-smoothstep(150.0,2200.0,depth))*smoothstep(300.0,700.0,view_width);
-    ALBEDO*=mix(1.04,1.12,far_sea)*(1.0+0.30*shelf_light);
+    // r9: far median v 0.57 against 0.52-0.55 and blotchy deep basins, so
+    // only the shelves and slopes (under ~1600 m) and a smaller gain.
+    float shelf_light=(1.0-smoothstep(150.0,1600.0,depth))*smoothstep(300.0,700.0,view_width);
+    ALBEDO*=mix(1.04,1.12,far_sea)*(1.0+0.20*shelf_light);
     ALBEDO=mix(ALBEDO,vec3(dot(ALBEDO,vec3(0.2126,0.7152,0.0722))),(0.10+far_sea*0.06)*(1.0-0.5*shelf_light));
     // Close views: shallow water as a broad, even ramp like the reference
     // near view (open #185585 -> #1f708d -> teal #2f7b8c -> #528f94 at the

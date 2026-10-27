@@ -299,6 +299,18 @@ func set_land_parameter(uniform_name:StringName,value:Variant)->void:
     terrain_template.set_shader_parameter(uniform_name,value)
     for id in nodes:nodes[id].land.material_override.set_shader_parameter(uniform_name,value)
 
+## A crown uniform for the forest templates and every resident tile's
+## fade and opaque materials.
+func set_forest_parameter(uniform_name:StringName,value:Variant)->void:
+    if forest==null:return
+    for template in [forest.get("material"),forest.get("opaque_material")]:
+        if template:template.set_shader_parameter(uniform_name,value)
+    var seen={}
+    for id in nodes:
+        for node in nodes[id].get("forests",[]):
+            for material in [node.material_override,node.get_meta("fade_material",null),node.get_meta("opaque_material",null)]:
+                if material and not seen.has(material):seen[material]=true;material.set_shader_parameter(uniform_name,value)
+
 func _query_triangle_height(a:float,b:float,c:float,d:float,f:Vector2)->float:
     return a+(b-a)*f.x+(c-a)*f.y if f.x+f.y<1. else d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y)
 
