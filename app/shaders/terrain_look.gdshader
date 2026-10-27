@@ -196,6 +196,9 @@ void vertex() {
     world_position=VERTEX;
     local_render_position=vec3(VERTEX.x-shading_origin.x,VERTEX.y,VERTEX.z-shading_origin.y);
 }
+// A12 tour A/B: false drops the open-sea probe on delta coasts (sand rings
+// round étangs and channels come back).
+const bool DELTA_SHORE_PROBE=true;
 void fragment() {
     // Exclusive physical ownership: one zero-height ocean plane, one land /
     // inland surface. No coincident ocean triangles from overlapping terrain.
@@ -284,7 +287,7 @@ void fragment() {
         // probe for more never passed: 2c4cfcf lost all delta sand).
         // Delta coasts only; the tour cost of the first, everywhere version
         // was ~0.8 ms p95 at 190 km.
-        if(delta_count>0 && material_distance<=0.0 && -material_distance<1800.0 && delta_inside(vp)) {
+        if(DELTA_SHORE_PROBE && delta_count>0 && material_distance<=0.0 && -material_distance<1800.0 && delta_inside(vp)) {
             vec2 dir=to_water/max(length(to_water),1e-9);
             float land_km=max(-material_distance,0.0)*0.001;
             open_sea=(1.0-step(0.5,abs(water_kind_at(vp+dir*(land_km+0.4))-1.0)))*smoothstep(1600.0,2200.0,water_distance_at(vp+dir*(land_km+5.0)));
