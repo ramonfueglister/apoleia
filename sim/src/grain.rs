@@ -26,7 +26,7 @@
 
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
-use crate::people::{Born, Clock, Econ, Grid, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
+use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
 use crate::groups::{BAUERN, HAENDLER, PAECHTER, TAGELOEHNER, UNFREIE};
 
 use bevy_ecs::prelude::Without;
@@ -462,7 +462,7 @@ pub struct Grain {
     trips: Vec<Trip>,
     free_trips: Vec<u32>,
     wheel: Vec<Vec<GEv>>,
-    decay: Vec<i64>,
+    decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
     crop_pct: i64,
     /// Reused buffer for the monthly count.
@@ -485,6 +485,8 @@ pub struct Grain {
     net: std::sync::Arc<Net>,
     road_worker: Option<RoadWorker>,
     road_todo: Vec<usize>,
+    walk_worker: Option<WalkWorker>,
+    walking: bool,
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
@@ -795,7 +797,7 @@ impl Grain {
             trips: Vec::new(),
             free_trips: Vec::new(),
             wheel: vec![Vec::new(); 1024],
-            decay: decay_table(),
+            decay: std::sync::Arc::new(decay_table()),
             crop_pct: crop_pct.clamp(1, 100),
             scratch: Vec::new(),
             members: Vec::new(),
@@ -805,9 +807,11 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
-            net: std::sync::Arc::new(Net { rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
+            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
             road_worker: None,
             road_todo: Vec::new(),
+            walk_worker: None,
+            walking: false,
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
@@ -854,7 +858,7 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
-        self.net = std::sync::Arc::new(Net { rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
+        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
         let net = &*self.net;
         let built: Vec<(Vec<Neigh>, Vec<u32>)> = bevy_tasks::ComputeTaskPool::get()
@@ -908,7 +912,7 @@ impl Grain {
             }
             if !changed.is_empty() {
                 let net = &*self.net;
-                self.net = std::sync::Arc::new(Net { rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
+                self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
             }
         }
         let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
@@ -916,14 +920,15 @@ impl Grain {
             return;
         }
         // Searched on the road thread while the day goes on; taken over at
-        // its end (`roads_done`), before anything reads the neighbours again.
+        // the start of the next (`roads_done`), before the traders' news
+        // read the neighbours again.
         let cells: Vec<u32> = todo.iter().map(|&mi| self.markets[mi].cell).collect();
         let w = self.road_worker.get_or_insert_with(RoadWorker::new);
         w.send.send((self.net.clone(), cells)).expect("road worker");
         self.road_todo = todo;
     }
 
-    /// Takes over the neighbour searches started by `roads` today.
+    /// Takes over the neighbour searches started by `roads` the day before.
     fn roads_done(&mut self) {
         if self.road_todo.is_empty() {
             return;
@@ -1521,6 +1526,12 @@ impl Grain {
         let t = std::time::Instant::now;
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let t0 = t();
+        self.walks_done();
+        self.timing.paths += us(t0);
+        let t0 = t();
+        self.roads_done();
+        self.timing.traders += us(t0);
+        let t0 = t();
         self.events(p, day);
         self.timing.events += us(t0);
         let t0 = t();
@@ -1541,7 +1552,7 @@ impl Grain {
         self.roads(day);
         self.timing.traders += us(t0);
         let t0 = t();
-        self.paths(p, day);
+        self.paths(day);
         self.timing.paths += us(t0);
         let t0 = t();
         match slice {
@@ -1556,9 +1567,6 @@ impl Grain {
             _ => {}
         }
         self.timing.census += us(t0);
-        let t0 = t();
-        self.roads_done();
-        self.timing.traders += us(t0);
     }
 
     fn push(&mut self, day: i64, ev: GEv) {
@@ -2273,7 +2281,7 @@ impl Grain {
     /// marks the field for a rebuild, so later trips follow and deepen the
     /// path. The day's markets are independent, so they run on the task
     /// pool; the result does not depend on the number of threads.
-    fn paths(&mut self, p: &People, day: i64) {
+    fn paths(&mut self, day: i64) {
         let q = day.rem_euclid(WALK_DAYS) as usize;
         let mut jobs: Vec<Walk> = Vec::new();
         for mi in (q..self.markets.len()).step_by(WALK_DAYS as usize) {
@@ -2285,13 +2293,24 @@ impl Grain {
             origins.sort_unstable();
             jobs.push(Walk { m: mi as u32, region: m.region, fine: m.fine, origins, field: m.field.take(), dirty: m.dirty, first_us: 0.0, rebuild_us: 0.0, rebuilt: false });
         }
-        let (grid, cols_f, tab) = (&p.grid, self.cols_f, &self.decay[..]);
-        // One task per market: rebuilds are few and uneven.
-        bevy_tasks::ComputeTaskPool::get().scope(|s| {
-            for w in jobs.iter_mut() {
-                s.spawn(async move { walk(grid, cols_f, tab, w, day) });
-            }
-        });
+        if jobs.is_empty() {
+            return;
+        }
+        // The walks run on the path thread until the next day starts
+        // (`walks_done`): nothing reads the fields or their wear before.
+        let job = (self.net.clone(), self.decay.clone(), self.cols_f, jobs, day);
+        self.walk_worker.get_or_insert_with(WalkWorker::new).send.send(job).expect("path worker");
+        self.walking = true;
+    }
+
+    /// Takes over the walks started by `paths` (start of the next day, and
+    /// before anything outside reads the fields).
+    fn walks_done(&mut self) {
+        if !self.walking {
+            return;
+        }
+        self.walking = false;
+        let jobs = self.walk_worker.as_ref().expect("path worker").recv.recv().expect("path worker");
         for w in jobs {
             let m = &mut self.markets[w.m as usize];
             m.field = w.field;
@@ -2306,7 +2325,7 @@ impl Grain {
         let mk = &mut self.markets[m as usize];
         if mk.field.is_none() {
             let t0 = std::time::Instant::now();
-            mk.field = Some(build_field(&p.grid, self.cols_f, mk.region, mk.fine, None, p.world.resource::<Clock>().day));
+            mk.field = Some(build_field(&self.net, self.cols_f, mk.region, mk.fine, None, p.world.resource::<Clock>().day));
             mk.dirty = false;
             self.timing.first_build += t0.elapsed().as_secs_f64() * 1e6;
         }
@@ -2405,7 +2424,8 @@ impl Grain {
         (a, b, sea)
     }
 
-    pub fn path_cells(&self) -> (usize, usize) {
+    pub fn path_cells(&mut self) -> (usize, usize) {
+        self.walks_done();
         let (mut a, mut b) = (0, 0);
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             for &i in &f.worn {
@@ -2503,7 +2523,8 @@ impl Grain {
         self.wheel.iter().map(|v| v.len()).sum()
     }
 
-    pub fn fingerprint(&self) -> u64 {
+    pub fn fingerprint(&mut self) -> u64 {
+        self.walks_done();
         let mut b: Vec<u8> = Vec::new();
         for f in &self.farms {
             for x in [f.hh as i64, f.area, f.sown, f.store, f.money, f.to_sell] {
@@ -2652,6 +2673,8 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
 /// cell and the trade road levels. Shared with the road worker thread;
 /// replaced when the levels change.
 struct Net {
+    row0: i32,
+    col0: i32,
     rows: i32,
     cols: i32,
     kind: Vec<u8>,
@@ -2683,6 +2706,37 @@ impl RoadWorker {
     }
 }
 
+type WalkJob = (std::sync::Arc<Net>, std::sync::Arc<Vec<i64>>, i32, Vec<Walk>, i64);
+
+/// A thread that runs a day's path walks (one task per market on the
+/// task pool) while the rest of the day and the next people day go on.
+struct WalkWorker {
+    send: std::sync::mpsc::Sender<WalkJob>,
+    recv: std::sync::mpsc::Receiver<Vec<Walk>>,
+}
+
+impl WalkWorker {
+    fn new() -> WalkWorker {
+        let (send, jobs) = std::sync::mpsc::channel::<WalkJob>();
+        let (done, recv) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for (net, tab, cols_f, mut walks, day) in jobs {
+                let (net, tab) = (&*net, &tab[..]);
+                // One task per market: rebuilds are few and uneven.
+                bevy_tasks::ComputeTaskPool::get().scope(|s| {
+                    for w in walks.iter_mut() {
+                        s.spawn(async move { walk(net, cols_f, tab, w, day) });
+                    }
+                });
+                if done.send(walks).is_err() {
+                    break;
+                }
+            }
+        });
+        WalkWorker { send, recv }
+    }
+}
+
 /// One market's walk on a path day (see `Grain::paths`).
 struct Walk {
     m: u32,
@@ -2696,7 +2750,7 @@ struct Walk {
     rebuilt: bool,
 }
 
-fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
+fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
     if w.field.is_none() {
         let t0 = std::time::Instant::now();
         w.field = Some(build_field(grid, cols_f, w.region, w.fine, None, day));
@@ -2777,7 +2831,7 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
 
 /// Dijkstra over the market's region (64 × 64 fine cells) from the
 /// market, step cost by path level; sea cells (coarse) are blocked.
-fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>, day: i64) -> Field {
+fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>, day: i64) -> Field {
     let n = 4 * FINE;
     let (rr, rc) = ((key >> 16) as i32 - 64, (key & 0xffff) as i32 - 64);
     let (r0, c0) = ((rr * 4 - grid.row0) * FINE, (rc * 4 - grid.col0) * FINE);

@@ -214,29 +214,32 @@ Hungertote, −12 %). Ohne Getreidewirtschaft ändert S84 fast nichts (Jahr 100:
 152'465), weil wer genug isst die Sterbetafel behält. Fingerprint gleich mit 1 und 4 Threads.
 Grain im Mittel 1,44 ms pro Tag.
 
-## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, `run100-timing.txt`)
+## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82 und S84, `run100-timing.txt`)
 
 | Grösse | Wert |
 |---|---|
 | Aufbau Getreide | 0,42 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
-| **Getreide pro Tag, Median / Mittel** | **0,96 ms / 1,23 ms** (vorher auf derselben Maschine 1,16 / 1,44) (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,9 ms / 4,7 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 3,1 / 5,8 / 7,8 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 500 MB bei 123'000 Menschen |
+| **Getreide pro Tag, Median / Mittel** | **0,66 ms / 0,93 ms** (vor S84, ohne die beiden Threads, auf derselben Maschine 0,91 / 1,17) (Ziel Mittel ≤ 1,5 ms) |
+| Getreide pro Tag, 95 % / 99 % | 2,3 ms / 3,9 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 2,8 / 5,0 / 6,7 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 440 MB bei 108'000 Menschen |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-Die Cloud-Maschinen sind verschieden schnell: Derselbe Lauf brauchte auf der Maschine des
-Personen-Threads 1,86 ms (vor der Beschleunigung), hier 1,44 ms. Pro Tag im Mittel: Reisen
-(Ankunft, Rückkehr) 0,18 ms, Arbeitsbörse 0,10, Märkte und Nachrichten 0,13, Essen und Kaufen
-0,17, Händler mit Handelswegen 0,11 (vorher 0,22), Fusswege 0,24, Aussaat und Ernte mit
-Kachelsuche 0,09, Haushaltszählung 0,21.
+Pro Tag im Mittel auf dem Hauptthread: Reisen (Ankunft, Rückkehr) 0,16 ms, Arbeitsbörse 0,10,
+Märkte und Nachrichten 0,12, Essen und Kaufen 0,16, Händler mit Handelswegen 0,06, Fusswege
+0,03 (Warten auf den Fussweg-Thread), Aussaat und Ernte mit Kachelsuche 0,09,
+Haushaltszählung 0,21.
+
+**Fusswege und Nachbarsuche auf eigenen Threads.** Die Gänge eines Tages (Wegfelder ablaufen,
+neu rechnen) und die neuen Nachbarsuchen der Märkte laufen am Ende des Getreidetags auf je
+einem eigenen Thread los und werden am Anfang des nächsten Getreidetags übernommen; dazwischen
+liest niemand Wegfelder oder Nachbarn. Sie laufen also neben dem Tag der Menschen. Das Ergebnis
+ist Bit für Bit gleich (gleicher Fingerabdruck nach 100 Jahren).
 
 **Handelswege.** Ändert sich eine Zelle, sucht nur ein Markt neu, dessen Nachbarsuche diese
 Zelle erreicht hat (die Liste der erreichten Landzellen; was die Suche nie erreicht hat, liegt
-hinter ihrem Rand und kann das Ergebnis nicht ändern). Die Suchen eines Tages laufen auf einem
-eigenen Thread, während der Tag weiterläuft, und werden am Ende des Tages übernommen; gelesen
-werden die Nachbarn erst am nächsten Tag. Die Suche verwendet ihre Puffer über das ganze Raster
-wieder. Alles Bit für Bit gleich.
+hinter ihrem Rand und kann das Ergebnis nicht ändern). Die Suche verwendet ihre Puffer über das
+ganze Raster wieder.
 
 **Haushaltszählung über eine Woche verteilt.** Früher zählte die Getreidewirtschaft alle
 Haushalte an einem Tag des Monats neu (15 ms, bei 250'000 Menschen 18 ms). Jetzt nimmt sie
