@@ -269,11 +269,14 @@ void fragment() {
     float beach=0.0;
     if(!graphic_coast) {
         float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
-        beach=(1.0-smoothstep(40.0,80.0,h))*(1.0-smoothstep(0.04,0.12,coast_slope));
-        shore_span=mix(shore_span,clamp(contour_m_per_px*12.0,900.0,2000.0),beach);
+        // Low, flat coasts only (rivers are separate meshes, not in this distance).
+        beach=(1.0-smoothstep(15.0,25.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
+        shore_span=mix(shore_span,clamp(contour_m_per_px*4.0,200.0,500.0),beach);
     }
-    float shore=(1.0-smoothstep(graphic_coast ? shore_span*0.2 : shore_span*0.55*beach,shore_span,max(-material_distance,0.0)));
-    ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : mix(0.60+weights.a*0.15,0.92,beach)));
+    float shore_d=max(-material_distance,0.0);
+    float shore=graphic_coast ? (1.0-smoothstep(shore_span*0.2,shore_span,shore_d))
+        : mix(1.0-smoothstep(0.0,shore_span,shore_d),clamp((shore_span-shore_d)/max(fwidth(shore_d)*1.5,1e-3)+0.5,0.0,1.0),beach);
+    ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : mix(0.60+weights.a*0.15,0.95,beach)));
     // Packed SDFs saturate around3km. Saturated open ocean must NEVER become
     // shallow water when the overview pixel footprint grows beyond that range.
     float shallow=(1.0-smoothstep(0.0,shallow_span,max(material_distance,0.0)));

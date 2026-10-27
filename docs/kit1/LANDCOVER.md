@@ -56,3 +56,66 @@
   ```
 - The forest layout binds the atlas (r4), not the tiles; crowns read their
   ground height from the tiles, so they follow the new relief.
+
+## Flat, round mountains (atlas r6, clipmap-tiles-r6-etopo15)
+- Atlas r6 (`fixed-source-v2-mountain-r6`, `tools/build_mountain_facet_surface.py`
+  defaults): no crest sharpening; detail band above ~1500 m real x0.6 with a
+  wider low-pass; broader flat valley floors (floor share 0.35, radius 9);
+  step limiter 300 m; one global monotonic compression of all land heights
+  h = H0*ln(1+h_real/H0), H0 = 800 m (3000 m -> ~1250, 1000 m -> ~650).
+  Real height = H0*(exp(h/H0)-1). Valley floors stay real after the
+  back-conversion (Sion 606 m vs ETOPO 595, Innsbruck 674 vs 645).
+- Fine detail r2 (`fine-relief-detail-500m-r2`): the H0 800 derivative and x0.6.
+- Tiles `clipmap-tiles-r6-etopo15`: levels 0-1 atlas r6 + fine detail r2,
+  coarser levels atlas r6; material/water from r4; 4187 tiles, 256 MB;
+  manifest sha256 3ebf0cb8e19a85ae15a0c9cea7f199a155082c39a5e551bcaa4b528fea492f62.
+- Land shader: `land_h0` converts back to real metres; thresholds are kept on
+  the H0 1900 reference curve (tree line 1900-2000 m real, alpine pasture to
+  2500 m, rock on summits from 2500 m, snow from land cover above 3000 m).
+- The land-cover relief channel (A) is computed from atlas r6 converted to
+  that reference curve.
+
+## Knee compression (atlas r7, clipmap-tiles-r7-etopo15) – current
+- Atlas r7 (`fixed-source-v2-mountain-r7`): as r6, but the compression is a
+  soft knee: heights up to K = 1000 m stay real, above
+  h = K + H1*ln(1+(h-K)/H1) with H1 = 500 m (slope 1 at K):
+  1500 -> 1347, 2000 -> 1549, 3000 -> 1805, 4000 -> 1973.
+  Hills, the Apennines below 1000 m and valley floors stay real; only the
+  high mountains flatten. Real = K + H1*(exp((h-K)/H1)-1) above K.
+- Fine detail r3 (`fine-relief-detail-500m-r3`): knee-curve derivative x0.6.
+- Tiles `clipmap-tiles-r7-etopo15`: 4187 tiles, 266 MB, manifest sha256 see below.
+- Land shader: `land_knee` = 1000, `land_h0` = 500 (H1).
+- clipmap-tiles-r7-etopo15 manifest sha256: 75096f88763321955f2dffea185b8ace47357675c936f84f7534ebeabe6397e7
+
+## Full land-cover coverage (landcover-node-2km-r2)
+- `tools/data_worldcover.py --out artifacts/render-data/worldcover-atlas-r1
+  --atlas-manifest artifacts/render-data/landcover-node-2km/manifest.json
+  --seed-from data/raw/worldcover`: every 3 degree WorldCover tile that
+  intersects the atlas (lon -44..79, lat 18..61, plus one tile margin):
+  748 positions, 549 downloaded (same frozen 562 px overview method),
+  199 open-ocean tiles unavailable (404). 18 MB, not in Git; inventory in
+  `artifacts/render-data/landcover-node-2km/worldcover-inventory.json`.
+- `gdalbuildvrt -srcnodata 0 worldcover-atlas.vrt worldcover-atlas-r1/*.tif`,
+  then the same 4x4 sub-grid gdalwarp as before.
+- `tools/build_landcover_nodes.py`: land nodes without class data take the
+  nearest covered node (no hard data edges).
+
+## Clipmap tiles r8 (clipmap-tiles-r8-etopo15) – current
+- Heights as r7. Water rebuilt (no longer copied from r4); material still from r4.
+- Coarse levels L >= 3: the water distance (0.125 m code, saturating at
+  +-4096 m) stored as a pseudo distance from the 8x8 subsampled water share
+  per texel, d = (share - 0.5) * 2 * 4096, so the bilinear zero crossing
+  follows the real coast instead of texel centres (no staircase coasts in
+  the overview). L0-L2 unchanged.
+- Lakes: Natural Earth 1:10m lakes, Europe supplement v5.1.2
+  (public domain, "Made with Natural Earth"), featurecla Lake, scalerank
+  <= 10, centroid in the atlas (tools/build_lake_supplement.py, source sha256
+  pinned; artifacts/render-data/lakes-europe-supplement-r1, 115 lakes incl.
+  Trasimeno, Bolsena, Bracciano). Signed distance merged as role 2 (lake).
+- Build: `python3 tools/build_clipmap_tiles.py --output artifacts/render-data/clipmap-tiles-r8-etopo15
+  --surface artifacts/render-data/fixed-source-v2-mountain-r7/surface.json
+  --fine-detail artifacts/render-data/fine-relief-detail-500m-r3
+  --reuse-from artifacts/render-data/clipmap-tiles-r4-mountain-r4
+  --lakes artifacts/render-data/lakes-europe-supplement-r1/lakes.geojson --coverage-from-level 3`
+  (17.5 min).
+- 4187 tiles, 267 MB; manifest sha256 75096f88763321955f2dffea185b8ace47357675c936f84f7534ebeabe6397e7.

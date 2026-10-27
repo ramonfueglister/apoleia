@@ -27,6 +27,7 @@ Outputs (artifacts/render-data/landcover-node-2km):
 """
 import hashlib, json, pathlib
 import numpy as np, rasterio
+from scipy import ndimage
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / 'artifacts/render-data/landcover-node-2km'
@@ -46,16 +47,31 @@ wetland, water = share(90, 95, 100), share(80)
 forest_r = np.clip(forest + 0.25 * crop, 0, 1)
 crop_r = 0.45 * crop + 0.5 * built
 grass_r = grass + 0.30 * crop + 0.5 * built
+# Land nodes without any class data (outside the frozen WorldCover tiles,
+# e.g. open-ocean tiles at the edge) take the nearest covered node, so no
+# hard data edge can appear.
+covered = (blocks != 0).mean(-1) > 0
+if (~covered).any():
+    _, idx = ndimage.distance_transform_edt(~covered, return_indices=True)
+    for a in (forest, shrub, grass, crop, built, bare, snow, wetland, water):
+        a[...] = a[idx[0], idx[1]]
+    forest_r = np.clip(forest + 0.25 * crop, 0, 1)
+    crop_r = 0.45 * crop + 0.5 * built
+    grass_r = grass + 0.30 * crop + 0.5 * built
 classes = np.stack([forest_r, shrub, grass_r, crop_r, bare, snow, wetland, water], -1)
 OUT.mkdir(parents=True, exist_ok=True)
 np.rint(np.clip(classes, 0, 1) * 255).astype(np.uint8).tofile(OUT / 'classes.u8')
 # Shader look: dry/golden = shrub/macchia, cereal fields and dry bare land.
 dry = np.clip(shrub + 0.8 * crop_r + 0.5 * bare + 0.15 * grass_r, 0, 1)
-ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r5'
+ATLAS = ROOT / 'artifacts/render-data/fixed-source-v2-mountain-r7'
 am = json.loads((ATLAS / 'surface.json').read_text())
 q = np.fromfile(ATLAS / 'height.rg8', dtype=np.uint8).reshape(am['height'], am['width'], 2)
 h = (q[..., 0].astype(np.float32) * 256 + q[..., 1]) * .25 - 8192
-from scipy import ndimage
+# Relief position in the land shader's reference metres: atlas r6 heights
+# (global H0 800 compression) back to real, then the H0 1900 curve the
+# shader thresholds are expressed in.
+real_h = np.where(h > 1000.0, 1000.0 + 500.0 * np.expm1(np.maximum(h - 1000.0, 0) / 500.0), h)
+h = np.where(real_h > 0, 1900.0 * np.log1p(np.maximum(real_h, 0) / 1900.0), real_h)
 yy, xx = np.mgrid[-3:4, -3:4]
 ring = ((np.hypot(yy, xx) > 1.6) & (np.hypot(yy, xx) < 2.9)).astype(np.float32)
 around = ndimage.convolve(h, ring / ring.sum(), mode='nearest')
@@ -64,7 +80,7 @@ look = np.stack([forest_r, np.clip(bare + snow, 0, 1), dry, crest], -1)
 np.rint(look * 255).astype(np.uint8).tofile(OUT / 'look.rgba8')
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 manifest = {
-    'revision': 'landcover-node-2km-r1', 'width': W, 'height': H,
+    'revision': 'landcover-node-2km-r2', 'coverage': 'all 3 degree WorldCover tiles intersecting the atlas (artifacts/render-data/worldcover-atlas-r1, inventory worldcover-inventory.json); uncovered land nodes filled from the nearest covered node', 'width': W, 'height': H,
     'world_min': base['world_min'], 'world_size': base['world_size'], 'grid': 'node centred, same as the fixed display atlas',
     'source': 'ESA WorldCover 2021 v200, CC BY 4.0, frozen COG overviews (data/raw/worldcover)',
     'roman_adjustment': 'built -> 0.5 crop + 0.5 grass; crop -> 0.25 forest + 0.30 grass + 0.45 crop',
