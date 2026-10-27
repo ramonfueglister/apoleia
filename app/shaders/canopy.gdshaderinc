@@ -10,6 +10,8 @@ uniform bool stream_ground=false;
 uniform sampler2D ground_vertices : filter_nearest, repeat_disable;
 uniform float terrain_morph_alpha=1.0;
 uniform float display_height_scale=12.0;
+// Set per clipmap tile with the other camera uniforms (clipmap_terrain.gd).
+uniform float view_width=400.0;
 varying float crown_up;
 void vertex(){
     if(normalize_instanced_normals) NORMAL=normalize(NORMAL);
@@ -42,7 +44,11 @@ void fragment(){
     // Reference crowns ~#2c3e2c: cool blue-green, low saturation.
     vec3 tinted=leaf*vec3(0.62,0.70,0.66);
     tinted=mix(tinted,vec3(dot(tinted,vec3(0.2126,0.7152,0.0722))),0.35);
-    ALBEDO=tinted*mix(0.90,1.04,upper);
+    // Close views: deeper crowns, so the dense groves carry the dark share
+    // of the reference near view (measured r29: 0.133 against 0.161) while
+    // the mid view (0.141 against 0.132) stays as it is.
+    float near_crowns=1.0-0.18*(1.0-smoothstep(150.0,320.0,view_width));
+    ALBEDO=tinted*mix(0.90,1.04,upper)*near_crowns;
     ROUGHNESS=0.96;
     SPECULAR=0.12;
     AO=mix(0.80,1.0,upper);
