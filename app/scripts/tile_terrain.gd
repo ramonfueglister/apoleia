@@ -18,7 +18,15 @@ const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # tiles per side of the tree and house patch
-const PROP_SLOTS := [4, 4, 3, 2, 0, 0] # tree slots per tile and level
+const PROP_SLOTS := [9, 9, 0, 0, 0, 0] # tree slots per tile and level
+const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0] # house blocks per town tile and level
+# Kit 2 scale (docs/kit2/SCALE.md): lengths 1:23.8 against the real world, but
+# houses and trees keep their real size. World units are real km, so a diorama
+# metre is DIORAMA_KM_PER_M world units.
+const DIORAMA_LAENGE := 1.0 / 23.80
+const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
+const HOUSE_M := 10.0 # house length (house mesh is 1 unit long)
+const TREE_M := 12.0  # tree height (tree meshes are about 1.1 units tall)
 const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house"]
 
 var manifest: Dictionary
@@ -128,7 +136,7 @@ func _build_nodes() -> void:
 		var pm := MultiMesh.new()
 		pm.transform_format = MultiMesh.TRANSFORM_3D
 		pm.mesh = meshes[kind]
-		pm.instance_count = PROP_N * PROP_N * 4
+		pm.instance_count = PROP_N * PROP_N * 9
 		node.multimesh = pm
 		node.material_override = _prop_materials[kind]
 		node.custom_aabb = huge
@@ -161,15 +169,22 @@ func _apply_level(value: int) -> void:
 		for key in params:
 			material.set_shader_parameter(key, params[key])
 	var slots: int = PROP_SLOTS[level]
+	var house_slots: int = HOUSE_SLOTS[level]
+	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
 	for kind in _props.size():
 		var node := _props[kind]
 		var house := kind == 3
-		var n: int = 4 if house else slots
-		node.visible = n > 0 and (not house or level <= 2)
+		var n: int = house_slots if house else slots
+		node.visible = n > 0
 		node.multimesh.visible_instance_count = PROP_N * PROP_N * maxi(n, 1)
 		var material := _prop_materials[kind]
 		material.set_shader_parameter("slots", maxi(n, 1))
-		material.set_shader_parameter("prop_scale", tile_km * (0.36 if house else 0.62))
+		var size_m := HOUSE_M if house else TREE_M / 1.1
+		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
+
+## Direction towards the sun (world), for the stylised slope shading.
+func set_light_dir(dir: Vector3) -> void:
+	_terrain_material.set_shader_parameter("light_dir", dir.normalized())
 
 ## Move the patches: `focus` is the ground point the camera looks at, `centre`
 ## the middle of the visible ground (further back in oblique views).

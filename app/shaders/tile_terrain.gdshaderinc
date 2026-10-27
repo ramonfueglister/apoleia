@@ -120,9 +120,9 @@ vec4 tt_corners(ivec2 t) {
 		tt_land_corner(t + ivec2(1, 1)),
 		tt_land_corner(t + ivec2(0, 1)));
 	if (w == W_RIVER) {
-		// water a little below the lowest bank, so the bank is a low step
-		float m = min(min(l.x, l.y), min(l.z, l.w));
-		return vec4(max(m - 0.35, 0.0) + 0.05);
+		// the water follows the land a little below the banks: no walls,
+		// only a thin bank edge, and rivers run down slopes like rapids
+		return max(l - 0.08, vec4(0.02));
 	}
 	return l;
 }

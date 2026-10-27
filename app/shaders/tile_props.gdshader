@@ -34,27 +34,34 @@ void vertex() {
 	bool show = water == W_LAND;
 	vec2 uv;
 	if (prop_kind == 3) {
-		int count = town == 3 ? 4 : town == 2 ? 3 : town == 1 ? 1 : 0;
+		// house blocks on the street grid of the town tile (house_grid^2 = slots)
+		int side = int(ceil(sqrt(float(slots))));
+		float share = town == 3 ? 1.0 : town == 2 ? 0.6 : town == 1 ? 0.15 : 0.0;
+		int count = max(int(round(share * float(slots))), town > 0 ? 1 : 0);
 		show = show && slot < count;
-		vec2 sub = vec2(float(slot % 2), float(slot / 2));
-		if (town == 1) { sub = vec2(0.5); }
-		uv = (sub + 0.5) * 0.5 + (vec2(r1, r2) - 0.5) * 0.12;
-		if (town == 1) { uv = vec2(0.5) + (vec2(r1, r2) - 0.5) * 0.3; }
+		int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
+		vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
+		uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
 	} else {
 		show = show && town == 0;
 		vec4 cov = tt_cover(centre);
 		float density = tt_tree_density(centre, cov.r);
-		float lone = 0.06 * (1.0 - cov.r - cov.g - cov.b) + 0.10 * cov.g + 0.04 * cov.b;
+		// single trees mostly where the wood thins out, few in open land
+		float edge = smoothstep(0.0, 0.25, density) * (1.0 - smoothstep(0.5, 0.9, density));
+		float lone = 0.015 + 0.10 * cov.g * 0.3 + 0.35 * edge;
 		float n = floor(density * float(slots) + tt_hash(vec2(t) * 0.913) * 0.8);
-		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone * float(slots);
+		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
 		show = show && (float(slot) < n || lone_tree);
 		float h = tt_height_m(centre, height_lod);
 		float lat = tt_latitude(centre);
-		show = show && h < 1900.0 && cov.g < 0.7;
+		show = show && h < 1750.0 && cov.g < 0.7;
 		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
 		int kind = r0 < conifer_p ? 1 : (lat < 44.5 && r0 < conifer_p + 0.08) ? 2 : 0;
 		show = show && kind == prop_kind;
-		uv = vec2(r1, r2) * 0.76 + 0.12;
+		// slots on a jittered grid, so a dense wood covers the tile evenly
+		int side = int(ceil(sqrt(float(slots))));
+		vec2 g = vec2(float(slot % side), float(slot / side));
+		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
 	}
 	vec4 c = show ? tt_corners(t) : vec4(0.0);
 	if (prop_kind != 3 && max(max(c.x, c.y), max(c.z, c.w)) - min(min(c.x, c.y), min(c.z, c.w)) > 1.5) {
@@ -62,11 +69,11 @@ void vertex() {
 	}
 	float level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
-	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.8 + 0.4 * r0));
+	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0));
 	float a = prop_kind == 3 ? floor(r2 * 4.0) * 1.5707963 : r2 * 6.2831853;
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
-	if (prop_kind == 3) { v.y *= 0.8 + 0.5 * r1 * float(town >= 2); }
+	if (prop_kind == 3) { v.y *= 0.8 + 0.6 * r1 * float(town >= 2); }
 	v.xz = rot * v.xz;
 	vec3 world = vec3(p.x, level * level_h, p.y) + v;
 	vec3 nrm = NORMAL;

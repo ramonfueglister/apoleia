@@ -9,6 +9,9 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 
 uniform float grid_line = 0.12;
 uniform bool show_fields = true;
+uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
+uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
+uniform int house_grid = 2;                      // house blocks per tile side
 
 varying vec3 world_pos;
 varying vec2 tile_uv;
@@ -18,22 +21,27 @@ varying flat int water;
 varying flat float coast;
 varying flat float flat_top;
 varying flat float body_level;
+varying flat int land_sides;  // sea tile: bit k = land across side k
+varying flat int wall_sides;  // core town tile: bit k = no town across side k
 
-const vec3 C_PLAIN = vec3(0.580, 0.592, 0.322);
-const vec3 C_GRASS = vec3(0.459, 0.522, 0.275);
-const vec3 C_DRY = vec3(0.694, 0.643, 0.380);
-const vec3 C_HILL = vec3(0.380, 0.451, 0.271);
-const vec3 C_FOREST = vec3(0.306, 0.400, 0.235);
+const vec3 C_PLAIN = vec3(0.494, 0.600, 0.290);
+const vec3 C_GRASS = vec3(0.392, 0.545, 0.251);
+const vec3 C_DRY = vec3(0.706, 0.655, 0.388);
+const vec3 C_HILL = vec3(0.353, 0.475, 0.255);
+const vec3 C_FOREST = vec3(0.216, 0.318, 0.165);
 const vec3 C_SAND = vec3(0.847, 0.753, 0.549);
 const vec3 C_SAND_DARK = vec3(0.773, 0.694, 0.467);
-const vec3 C_ROCK = vec3(0.553, 0.553, 0.455);
+const vec3 C_ROCK = vec3(0.612, 0.584, 0.506);
 const vec3 C_PEAK = vec3(0.859, 0.780, 0.635);
-const vec3 C_SNOW = vec3(0.94, 0.94, 0.91);
+const vec3 C_SNOW = vec3(0.945, 0.957, 0.965);
 const vec3 C_WET = vec3(0.408, 0.502, 0.337);
-const vec3 C_CROP = vec3(0.729, 0.667, 0.384);
+const vec3 C_CROP = vec3(0.698, 0.659, 0.365);
 const vec3 C_EARTH = vec3(0.588, 0.463, 0.314);
 const vec3 C_CLIFF = vec3(0.502, 0.478, 0.408);
 const vec3 C_PAVED = vec3(0.776, 0.729, 0.596);
+const vec3 C_STREET = vec3(0.612, 0.573, 0.494);
+const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
+const vec3 C_FOAM = vec3(0.93, 0.96, 0.95);
 const vec3 W_DEEP = vec3(0.094, 0.282, 0.502);
 const vec3 W_MID = vec3(0.133, 0.384, 0.612);
 const vec3 W_SHALLOW = vec3(0.204, 0.549, 0.675);
@@ -90,6 +98,14 @@ void vertex() {
 			else if (n2 == W_SEA) { coast = max(coast, 0.45); }
 		}
 	}
+	land_sides = 0;
+	wall_sides = 0;
+	bool core = water == W_LAND && tt_town(tile) == 3;
+	for (int k = 0; k < 4; k++) {
+		int nc = tt_cell(tile + SIDE[k]);
+		if (water == W_SEA && (nc & 3) != W_SEA) { land_sides |= 1 << k; }
+		if (core && ((nc & 3) != W_LAND || (nc >> 2) < 2)) { wall_sides |= 1 << k; }
+	}
 	VERTEX = (VIEW_MATRIX * vec4(world_pos, 1.0)).xyz;
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
@@ -109,16 +125,19 @@ vec3 ground_colour(vec2 p, vec4 cov) {
 	}
 	c = mix(c, C_CROP, clamp(cov.b * 1.4, 0.0, 0.6) * (0.6 + 0.4 * n2));
 	float trees = tt_tree_density(p, cov.r);
-	c = mix(c, C_FOREST, 0.15 * cov.r + 0.75 * trees);
+	// dark floor under drawn trees; without trees (far levels) a lighter wood green
+	vec3 wood = mix(C_FOREST, vec3(0.294, 0.420, 0.212), smoothstep(1.0, 2.0, tile_km));
+	c = mix(c, wood, 0.15 * cov.r + 0.75 * trees);
 	c = mix(c, C_WET, clamp(cov.a * 2.0, 0.0, 0.8));
 	c = mix(c, C_HILL, clamp((h - 500.0) / 900.0, 0.0, 1.0) * (1.0 - dry));
-	c = mix(c, C_ROCK, clamp((h - 1300.0) / 500.0, 0.0, 1.0));
-	c = mix(c, C_PEAK, clamp((h - 1800.0) / 300.0, 0.0, 1.0));
-	c = mix(c, C_SNOW, clamp((h - 2050.0) / 150.0, 0.0, 1.0));
+	// rock caps: ramps go to rock first, flat tops stay green a little longer
+	float rock = clamp((h - (flat_top > 0.5 ? 1450.0 : 1150.0)) / 350.0, 0.0, 1.0);
+	c = mix(c, C_ROCK, rock);
+	c = mix(c, C_SNOW, clamp((h - 1750.0) / 200.0, 0.0, 1.0));
 	if (body_level <= 2.0) {
 		c = mix(c, C_SAND, coast >= 0.99 ? 0.8 : coast * 0.65);
 	}
-	return c * (0.96 + 0.08 * n2);
+	return c * (0.97 + 0.06 * n2);
 }
 
 // Roman farmland patchwork on open, low, flat land: colour and stripes.
@@ -143,9 +162,22 @@ bool field(vec2 p, vec4 cov, out vec3 colour, out float stripes) {
 	return true;
 }
 
+// Distance (in tile units) from the tile edge on the sides set in `mask`.
+float side_distance(int mask) {
+	float d = 10.0;
+	if ((mask & 1) != 0) { d = min(d, tile_uv.y); }
+	if ((mask & 2) != 0) { d = min(d, 1.0 - tile_uv.x); }
+	if ((mask & 4) != 0) { d = min(d, 1.0 - tile_uv.y); }
+	if ((mask & 8) != 0) { d = min(d, tile_uv.x); }
+	return d;
+}
+
 void fragment() {
 	vec2 p = world_pos.xz;
 	vec2 centre = tt_tile_center(tile);
+	// far out the colour follows the ground, not the tile, so the map is smooth
+	float far = smoothstep(3.0, 9.0, tile_km);
+	vec2 cp = mix(centre, p, far);
 	vec3 c;
 	float rough = 1.0;
 	if (water != W_LAND && part == 0) {
@@ -162,23 +194,48 @@ void fragment() {
 			float r = tt_hash(cell + floor(TIME * 0.15 + tt_hash(cell) * 7.0));
 			float dash = step(0.82, r) * (1.0 - smoothstep(0.0, 0.05, abs(f.y - 0.5))) * step(0.2, f.x) * step(f.x, 0.55);
 			c = mix(c, vec3(0.86, 0.93, 0.92), dash * 0.5 * (coast > 0.5 ? 1.2 : 0.6));
+			// surf: a bright line along the shore with a softer second band
+			if (land_sides != 0) {
+				float d = side_distance(land_sides);
+				float pulse = 0.5 + 0.5 * sin(TIME * 1.3 + tt_hash(vec2(tile)) * 6.28);
+				float foam = 1.0 - smoothstep(0.06, 0.12, d);
+				foam = max(foam, (1.0 - smoothstep(0.02, 0.05, abs(d - 0.22 - 0.05 * pulse))) * 0.45);
+				c = mix(c, C_FOAM, foam * (1.0 - far));
+			}
 		} else {
 			c = W_INLAND;
 		}
 		c *= 0.985 + 0.03 * tt_hash(vec2(tile) + 3.1);
 		rough = 0.55;
 	} else if (part == 0) {
-		vec4 cov = tt_cover(centre);
+		vec4 cov = tt_cover(cp);
 		int town = tt_town(tile);
 		vec3 fc;
 		float stripes;
 		if (town > 0) {
 			c = mix(ground_colour(centre, cov), C_PAVED, 0.75);
-		} else if (field(centre, cov, fc, stripes)) {
+			// streets between the house blocks
+			vec2 g = abs(fract(tile_uv * float(house_grid)) - 0.5);
+			float street = 1.0 - smoothstep(0.38, 0.43, max(g.x, g.y));
+			if (town >= 2) { c = mix(c, C_STREET, 1.0 - street); }
+			// city wall along the edge of the core
+			if (wall_sides != 0) {
+				c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
+			}
+		} else if (far < 0.5 && field(centre, cov, fc, stripes)) {
 			c = fc * (1.0 - 0.12 * stripes);
 		} else {
-			c = ground_colour(centre, cov);
+			c = ground_colour(cp, cov);
 		}
+		// fine speckle inside the tile (SimCity 2000 grass texture)
+		vec2 sub = floor(tile_uv * 8.0);
+		float px = 1.0 / max(max(fwidth(tile_uv).x, fwidth(tile_uv).y) * 8.0, 1e-5);
+		c *= 1.0 + (tt_hash(sub + vec2(tile) * 8.0) - 0.5) * 0.09 * smoothstep(2.0, 5.0, px);
+		// slope shading: ramps facing the sun bright, the others dark
+		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
+		nw = nw.y < 0.0 ? -nw : nw;
+		float lit = dot(nw, light_dir) - light_dir.y;
+		c *= clamp(1.0 + slope_light * lit, 0.7, 1.25);
 		// tile outline, about one pixel wide at every zoom
 		vec2 e = min(tile_uv, 1.0 - tile_uv);
 		vec2 fw = fwidth(tile_uv);
@@ -196,7 +253,7 @@ void fragment() {
 		base *= 1.0 - 0.1 * (1.0 - smoothstep(0.0, sw * 1.5 + 0.02, min(strata, 1.0 - strata)));
 		c = base;
 	}
-	ALBEDO = pow(c, vec3(2.2)); // palette is sRGB
+	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
 	vec3 n = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
 	NORMAL = n.z < 0.0 ? -n : n;

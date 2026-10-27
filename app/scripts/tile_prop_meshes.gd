@@ -51,8 +51,8 @@ static func _icosphere(subdivisions: int) -> Array:
 	return [v, f]
 
 ## Smooth blob: icosphere scaled and lumped, coloured dark below, light on top.
-static func _blob(st: SurfaceTool, centre: Vector3, radius: Vector3, low: Color, high: Color, seed: float) -> void:
-	var ico := _icosphere(1)
+static func _blob(st: SurfaceTool, centre: Vector3, radius: Vector3, low: Color, high: Color, seed: float, detail := 1) -> void:
+	var ico := _icosphere(detail)
 	var v: Array[Vector3] = ico[0]
 	for tri in ico[1]:
 		for k in [0, 2, 1]:
@@ -106,8 +106,8 @@ static func broadleaf() -> ArrayMesh:
 	var low := Color(0.17, 0.27, 0.13)
 	var high := Color(0.38, 0.50, 0.22)
 	_blob(st, Vector3(0, 0.66, 0), Vector3(0.34, 0.30, 0.34), low, high, 0.7)
-	_blob(st, Vector3(0.14, 0.86, -0.06), Vector3(0.22, 0.2, 0.22), low.lightened(0.05), high.lightened(0.08), 2.1)
-	_blob(st, Vector3(-0.15, 0.74, 0.12), Vector3(0.2, 0.18, 0.2), low, high, 4.2)
+	_blob(st, Vector3(0.14, 0.86, -0.06), Vector3(0.22, 0.2, 0.22), low.lightened(0.05), high.lightened(0.08), 2.1, 0)
+	_blob(st, Vector3(-0.15, 0.74, 0.12), Vector3(0.2, 0.18, 0.2), low, high, 4.2, 0)
 	return _commit(st)
 
 static func conifer() -> ArrayMesh:

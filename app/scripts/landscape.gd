@@ -12,7 +12,7 @@ extends Node3D
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const EARTH_KM := 6371.0088
-const MIN_WIDTH := 14.0
+const MIN_WIDTH := 4.0 # about 17 houses across (Kit 2 scale)
 const MAX_WIDTH := 3600.0
 const FOV := 24.0
 const ZOOM_STEP := 1.18
@@ -114,6 +114,7 @@ func _setup_look() -> void:
 	add_child(sun)
 
 func _update_look(distance: float) -> void:
+	terrain.set_light_dir(sun.global_transform.basis.z)
 	sun.directional_shadow_max_distance = distance * 2.2
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
