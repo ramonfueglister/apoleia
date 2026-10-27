@@ -156,7 +156,9 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     vec4 nm=land_tnoise(pc+vec2(37.0,11.0),22.0); // R meso
     vec4 nM=land_tnoise(pc+vec2(5.0,73.0),120.0); // R macro
     float edge=(nz.r-0.5)*noise_fade;
-    vec2 pw=pc+(nz.gb*2.2-1.1)*noise_fade;
+    // The warp is low-frequency (3 km): keep it at every distance, otherwise
+    // the 2 km land-cover texels show as blocks once it fades out.
+    vec2 pw=pc+(nz.gb*2.0-1.0)*1.6;
     // Fields: R forest, G bare/rock, B dry, A snow (land cover), or the
     // source material weights (FOREST/ROCK/DRY/SHORE) without it.
     vec4 soft=LAND_FIELDS(pw);
@@ -204,7 +206,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     float frayed=soft.r+(nz.a-0.5)*0.35+(nm.r-0.5)*0.15;
     float forest_ground=land_edge(smoothstep(0.50,0.85,frayed),0.5);
     // Near: crowns carry the dark, the ground only hints at the forest.
-    float fg_strength=mix(mix(0.45,0.55,smoothstep(0.25,0.5,footprint)),0.85,overview);
+    float fg_strength=mix(mix(0.45,0.6,smoothstep(0.25,0.5,footprint)),0.85,overview);
     ground=mix(ground,land_forest_ground_color.rgb,forest_ground*fg_strength*(1.0-valley_floor));
     // Field mosaic on open plains: jittered rectangular parcels, each a
     // slightly different meadow/crop tone; parcel seams a touch lighter.
@@ -219,7 +221,7 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         vec2 fh=land_hash2(fc+vec2(3.0,8.0));
         vec3 parcel=mix(land_lime_color.rgb,land_olive_color.rgb,step(0.55,fh.x));
         parcel=mix(parcel,land_ochre_color.rgb,step(0.78,fh.y)*smoothstep(0.2,0.6,soft.b+0.3));
-        ground=mix(ground,parcel,0.12*field_fade);
+        ground=mix(ground,parcel,0.06*field_fade);
         // Irregular darker grass patches (0.5-2 km) from the existing noise
         // fetch, hard-edged: meadow, not a parcel quilt.
         ground*=1.0-0.10*land_edge(nz.a*0.6+nm.r*0.4,0.62)*field_fade;
@@ -246,16 +248,19 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
         // Facets ~1.25 km near, ~3 km mid; tilt exaggerated like the shading
         // normal so flat geometry still shows lit/shaded triangles. Only on
         // slopes (of the exaggerated shading normal); plains stay calm.
-        float fsize=mix(1.25,3.0,smoothstep(0.25,0.6,footprint));
-        float fv=1.0-smoothstep(0.30,0.9,footprint/fsize*2.0);
-        float sslope=smoothstep(0.02,0.10,1.0-smooth_n.y);
+        // Visibility from the smaller screen footprint: at the oblique camera
+        // the vertical footprint is several times larger and hid the facets.
+        float ffoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+        float fsize=mix(0.6,3.0,smoothstep(0.2,0.6,ffoot));
+        float fv=1.0-smoothstep(0.30,0.9,ffoot/fsize*2.0);
+        float sslope=smoothstep(0.004,0.04,1.0-smooth_n.y);
         vec3 hill_facet=land_cell_facet(smooth_n,p,fsize,fid);
         hill_facet=normalize(vec3(hill_facet.x*shade_k,hill_facet.y,hill_facet.z*shade_k));
         n=normalize(mix(smooth_n,hill_facet,land_facet_strength*sslope*fv*rel));
-        ground*=1.0+(fid-0.5)*0.32*fv*(1.0-rock)*mix(0.3,1.0,sslope);
-        // Hard light/dark per mesh triangle on slopes, exaggerated like k.
-        vec3 fn=normalize(vec3(facet_normal.x*shade_k,facet_normal.y,facet_normal.z*shade_k));
-        n=normalize(mix(n,fn,0.55*fv*sslope*rel));
+        ground*=1.0+(fid-0.5)*0.40*fv*(1.0-rock)*mix(0.35,1.0,sslope);
+        // No mesh-triangle normal here: clipmap parent tiles have km-sized
+        // triangles, which showed as dark blocks. Facets come from the
+        // stable world lattice above only.
     }
     float rfid=0.5;
     vec3 rock_facet=facet_normal;
@@ -298,8 +303,21 @@ LandLook land_look(vec2 p,float h,vec4 weights,vec3 source_normal,vec3 facet_nor
     // Near meadow: shaded facet sides stay light (no mid-tone carpet); the
     // contrast comes from brighter sunlit sides instead.
     float meadow_near=(1.0-forest_ground)*(1.0-rock)*(1.0-smoothstep(0.3,0.6,footprint));
+    // Near meadow warmer yellow-green (reference #939346).
+    ground*=mix(vec3(1.0),vec3(1.11,1.05,1.0),meadow_near*(1.0-hill_country*0.5));
     float sl=clamp(lit_n,0.0,1.0);
-    ground*=mix(1.0,mix(1.0+0.45*(0.6-sl),1.0+0.12*(sl-0.6),step(0.6,sl)),meadow_near);
+    ground*=mix(1.0,mix(1.0+0.45*(0.6-sl),1.0+0.35*(sl-0.6),step(0.6,sl)),meadow_near);
+    // Crisp facet edges on hills: the facet id changes per triangle; a thin
+    // darker seam on the boundary makes the low-poly triangles readable.
+    float sfoot=max(min(length(dFdx(p)),length(dFdy(p))),0.001);
+    if(sfoot<0.6) {
+        vec2 q=p/mix(0.6,3.0,smoothstep(0.2,0.6,sfoot));
+        vec2 sk=vec2(q.x+q.y*0.57735,q.y*1.1547);
+        vec2 f=fract(sk);
+        float e=min(min(f.x,f.y),abs(1.0-f.x-f.y)*0.7071);
+        float seam=1.0-land_edge(e,0.03);
+        ground*=1.0-0.14*seam*smoothstep(0.004,0.04,1.0-smooth_n.y)*(1.0-smoothstep(0.3,0.6,sfoot));
+    }
     // Valley occlusion with a cool tint.
     float cavity=smoothstep(0.0,240.0,-crest)*(1.0-overview);
     ground=mix(ground,ground*land_valley_tint.rgb,cavity*land_cavity_strength);
