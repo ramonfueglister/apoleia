@@ -62,6 +62,7 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S57 | **Jeder Ort aus `places.csv` bekommt mindestens 2 Einwohner** (ein Paar als Familie), auch wenn er nach Massstab darunter liegt (133 Orte, zusammen rund +125 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
 | S58 | **Ämter nach Aufgabe, nicht nach Massstab:** Senat 40 Senatoren (≈ 30 senatorische Statthalter, 2 Konsuln, Legaten, ≈ 10 in Rom für Fraktionen und Erbfolge), mit Familien ≈ 150 Personen. Jede Provinz einen Statthalter, jede Legion einen Legaten, Ritterstand ≈ 60 Personen für die Prokuratoren. Alle übrigen Zahlen im Massstab (S50). |
 | S59 | **Feste Obergrenze für die Bevölkerung**, Startwert 200'000 Personen (nach dem Prototyp zu prüfen). Kein Wechsel des Massstabs. Wie die Grenze eingehalten wird, ist offen. |
+| S60 | **Richtung für später (Ramon, 27.10.2026), noch ohne Regeln:** Nahrung und Lebensraum sollen das Wachstum der Bevölkerung begrenzen. Menschen können auswandern: Sie verlassen die Karte und damit das System. Wie das genau funktioniert, ist offen. |
 
 Offen: Wachstum und Rückgang der Bevölkerung (S54), wie die Obergrenze eingehalten wird (S59), Flussbreite gegenüber Bootsgrösse, Rolle des Spielers (Familie wie in CK3?).
 
