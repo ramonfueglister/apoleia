@@ -16,6 +16,7 @@ headless Prototyp bauen und messen. Keine Subsysteme vorwegnehmen.
 |---|---|
 | [decisions.md](decisions.md) | Bestätigte Entscheidungen (S-IDs), offene Punkte |
 | [SCALE.md](SCALE.md) | Massstab der Modellwelt: 100'000 Einzelpersonen, alles 1:24 |
+| [GRAIN.md](GRAIN.md) | Vorschlag: Getreidewirtschaft, Handel und Wege flüssig bauen (S69–S76), mit Leistungsbudget |
 | [TASK.md](TASK.md) | Aktueller Bauauftrag: Subsystem 1 Bevölkerung |
 | [ACCEPTANCE.md](ACCEPTANCE.md) | Abnahme für Subsystem 1 |
 | [REFERENCES.md](REFERENCES.md) | Wie andere Spiele es lösen, mit Quellen |
