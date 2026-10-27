@@ -1,0 +1,166 @@
+{
+  "revision": "fixed-diorama-mountain-facets-r7",
+  "status": "implementiert; GPU/visual validation pending",
+  "canonical_source_unchanged": true,
+  "source_manifest_sha256": "937f1737c819aa346425de026aef9690ad54c9616000d5b3e455b2056e0a1aeb",
+  "sampling_contract": "canonical-c2-domains-v2",
+  "source_to_grid_node_budget_m": 1500,
+  "kernel": "fixed land-only 3x3 Gaussian weights1/2/4 at4km axis offsets; coastal/water samples retain original height",
+  "kernel_axis_span_model": 4.0,
+  "named_anchor_protection_radius_model": 8.0,
+  "named_anchor_protection": "C2 radial weight returns to original local source height; exact named point inserted into its fixed grid cell",
+  "fixed_grid_spacing_working_model": 2.0,
+  "fixed_surface_definition": "unchanged2km RG8 triangular grid definition and named anchor star cells; globally fixed across every zoom",
+  "render_error_budget_px": 0.75,
+  "render_method": "exact fixed-grid triangles with shared indices and bounded streamed chunks; no height simplification or parent morph",
+  "dominant_source_landforms": "the fixed4km field suppresses minor peaks; dominant source structures and named shoulders belong to the field, not per-view selection",
+  "world_min": [
+    -5286.959516530886,
+    -2223.9016046706583
+  ],
+  "world_size": [
+    10322.15905608411,
+    4781.388450041915
+  ],
+  "width": 5163,
+  "height": 2392,
+  "height_encoding": {
+    "minimum_m": -8192,
+    "step_m": 0.25,
+    "channels": "RG8 high-byte/low-byte"
+  },
+  "anchors": [
+    {
+      "id": "massif-anchor:0",
+      "world_x": -1018.7537231445312,
+      "world_z": -537.2112426757812,
+      "height_source_m": 4532.0625,
+      "source_sample": [
+        2920,
+        4286
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-02816-04096.features.json",
+        "sha256": "cba103b1c58740b4e544fd27584882cbd8e80f9d5f91321a730ef278a1fc32d5",
+        "bytes": 2957066
+      }
+    },
+    {
+      "id": "massif-anchor:1",
+      "world_x": -691.4657592773438,
+      "world_z": -612.731201171875,
+      "height_source_m": 2755.028076171875,
+      "source_sample": [
+        2757,
+        5222
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-02560-05120.features.json",
+        "sha256": "29fd1755fb3bcc298296c62b92dabe69660da947232eaad3bac0061324dc34bd",
+        "bytes": 3487376
+      }
+    },
+    {
+      "id": "massif-anchor:2",
+      "world_x": -336.55413818359375,
+      "world_z": 361.61566162109375,
+      "height_source_m": 3131.174560546875,
+      "source_sample": [
+        4860,
+        6237
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04608-06144.features.json",
+        "sha256": "4637f38b7fea12c1aa3ee31c7f7986fe8a4af038cea8ef2ac019bc28ce2f993f",
+        "bytes": 493948
+      }
+    },
+    {
+      "id": "massif-anchor:3",
+      "world_x": -1510.385009765625,
+      "world_z": -178.14378356933594,
+      "height_source_m": 2521.36181640625,
+      "source_sample": [
+        3695,
+        2880
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-03584-02816.features.json",
+        "sha256": "4447f3041f581e3e37f19e2ab8a7b0b72f205235526681844be8bc29833480db",
+        "bytes": 2926889
+      }
+    },
+    {
+      "id": "massif-anchor:4",
+      "world_x": 1410.03076171875,
+      "world_z": 477.9071960449219,
+      "height_source_m": -49.0,
+      "source_sample": [
+        5111,
+        11232
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04864-11008.features.json",
+        "sha256": "cb89b1bbc846a6dffb390974de46f9ae2a18c292ca7b1cb040ce60bf14ed3a6a",
+        "bytes": 701145
+      }
+    },
+    {
+      "id": "massif-anchor:5",
+      "world_x": 1930.334716796875,
+      "world_z": 389.4144287109375,
+      "height_source_m": 1012.8621215820312,
+      "source_sample": [
+        4920,
+        12720
+      ],
+      "source_feature_inventory": {
+        "path": "data/gameworld-v1/payload/blocks/core-04864-12544.features.json",
+        "sha256": "55242762421fc004cea062d76e836cc8ef2b07606fa2b4be56b1527266ba1b38",
+        "bytes": 311013
+      }
+    }
+  ],
+  "source_to_grid_node_generalization_sample_max_m": 1193.7098446025184,
+  "source_to_grid_node_generalization_scope": "all fixed grid nodes; not all original native source centers or all triangle interiors",
+  "height_range_source_equivalent_m": [
+    -498.0,
+    2201.54997507232
+  ],
+  "macrofacet_partition": "global24km addresses; source-land representative closest to local mean plus dominant ridge/valley extrema; source node positions; Delaunay interpolation; coast/water and named-original shoulders protected",
+  "macro_control_count": 195979,
+  "macro_source_height_budget_m": 2500,
+  "macro_source_to_grid_node_max_m": 2185.391004029194,
+  "macro_base_to_grid_node_max_m": 1630.4568965517246,
+  "base_surface_manifest_sha256": "53d029beb7b9abfe9736a8ead9c2686004d453eef07c2fa0624232fd6ac817e8",
+  "numpy_version": "1.26.4",
+  "scipy_method": "Delaunay/LinearNDInterpolator, existing Anaconda runtime",
+  "river_valley_protection": {
+    "revision": "source-river-valley-protection-v1",
+    "status": "validiert",
+    "source_rivers_sha256": "662c3aee12ad58dfcc4b87ff1879650bff5cd74cc1ee3de7540a4dee3b268f58",
+    "source_features": 264,
+    "source_centerline_changed": false,
+    "dense_source_line_samples": 164019,
+    "maximum_before_after_model_height_delta_source_equivalent_m": 0.0,
+    "inner_original_surface_radius_model": 4.0,
+    "outer_C2_radius_model": 8.0,
+    "bound_scope": "source line vertices and <=1km dense segment samples, not missing rivers, hydraulic flow or historical180 shore validation"
+  },
+  "source_to_model_bound_after_river_protection": "convex mixture of the bound base and macro grid-node samples; must be remeasured against the bound canonical source after river protection; no native source accuracy claim",
+  "valley_floor": 0.35,
+  "valley_radius_nodes": 9,
+  "real_nodes": "artifacts/render-data/etopo15-node-2km/nodes.tif",
+  "real_source": "ETOPO 2022 v1 15 arc-second surface (NOAA NCEI), area mean per 2 km node",
+  "hill_gain": 0.0,
+  "wall_step_m": 300.0,
+  "valley_floor_share": 0.4210786448193858,
+  "look_pass": "relief areas blend the macro atlas back to the fixed 2km base grid with ridge sharpening; plains/coast/water keep macro heights",
+  "ridge_gain": 0.0,
+  "compress_m": 500.0,
+  "compression": "knee: real up to knee_m, then knee + H1*ln(1+(h-knee)/H1)",
+  "knee_m": 1000.0,
+  "high_detail": 0.6,
+  "macro_surface_manifest_sha256": "3bcb739078cc8a438cd21b8855a28ba47dc8aba78f67e600629a402d1ec0c4f3",
+  "mountain_mask_mean": 0.06330587573172437
+}

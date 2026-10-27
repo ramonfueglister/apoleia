@@ -5,7 +5,7 @@ const REVISION = "perspective-diorama-display-v5"
 const PERSPECTIVE_FOV = 27.0
 const OVERVIEW_FOV = 8.0
 # A07: closest view about 80 km of ground (3x closer than 240).
-const NEAR_WIDTH = 80.0
+const NEAR_WIDTH = 40.0 # settlement view (A07); zoom stays continuous
 # Legacy fixtures address zoom against the former 240-unit endpoint.
 const LEGACY_NEAR_WIDTH = 240.0
 const MIN_HEIGHT = -1.0
@@ -30,15 +30,17 @@ static func zoom_from_legacy(zoom: float, overview_width: float, near_width: flo
     # their widths, not their normalized numbers, so established views remain.
     return zoom_for_width(width_for_zoom(zoom,overview_width,LEGACY_NEAR_WIDTH),overview_width,near_width)
 
-static func profile(width: float, overview_width: float=7606.0) -> Vector2:
-    # Oblique 3D diorama at every zoom (reference "weit" shows real relief):
-    # 35.26 deg close, rising slightly to 40 deg for the continental view.
-    # Relief stays 1; there is no flat map endpoint any more.
-    var regional_width=3400.0
-    if width<=regional_width: return Vector2(35.2643897,1.0)
-    var t=clampf(log(width/regional_width)/log(maxf(overview_width,regional_width+1.0)/regional_width),0.0,1.0)
+static func profile(width: float, _overview_width: float=7606.0) -> Vector2:
+    # Oblique 3D diorama at every zoom: about 35 deg close (100 km), 39 deg
+    # medium (450 km), 50 deg continental (2300 km+), smooth in log width.
+    var t=clampf((log(maxf(width,1.0))-log(100.0))/(log(2600.0)-log(100.0)),0.0,1.0)
     t=t*t*(3.0-2.0*t)
-    return Vector2(lerpf(35.2643897,40.0,t),1.0)
+    # Beyond the continental view the overview steepens towards 60 deg: at
+    # 50 deg the 7606 km frame reached ~15 deg of latitude past the atlas
+    # (A16 zoom 0.0: a grey band over 12.5 % of the image); 60 deg roughly
+    # halves that, the rest fades in the edge haze. 3000 km gains 0.5 deg.
+    var u=clampf((log(maxf(width,1.0))-log(2600.0))/(log(7606.0)-log(2600.0)),0.0,1.0)
+    return Vector2(lerpf(35.2643897,50.0,t)+10.0*u*u*(3.0-2.0*u),1.0)
 
 static func damp(value: float, velocity: float, goal: float, delta: float) -> Vector2:
     var offset = value-goal

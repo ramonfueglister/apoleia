@@ -73,7 +73,9 @@ vec2 wl_facet_center(vec2 p,float size,out float facet_id) {
     return centroid;
 }
 
-struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float foam;};
+// tone: the cloud-shadow and storm factor already applied to albedo, for
+// callers that replace the colour ramp but keep the weather.
+struct WaterSample {vec3 albedo;vec3 emission;vec3 normal;float roughness;float foam;vec3 tone;};
 
 // coast_m: distance to the shore (m, >=0 in water). depth: water depth (m).
 // view_world: unit vector from surface towards the camera. calm: 0 far map
@@ -107,8 +109,8 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     // Close view: broad soft turquoise -> teal -> blue (~6 km, patchy).
     // Clipmap water distance is encoded to +-4096 m and saturates beyond:
     // keep the gradient inside ~3.3 km and treat saturated texels as open sea.
-    float saum_w=mix(max(3300.0*(0.6+0.5*patch),px_m*1.5),px_m*1.2,far_view);
-    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),1.1)+coast_m*0.002;
+    float saum_w=mix(max(3800.0*(0.7+0.4*patch),px_m*1.5),px_m*1.2,far_view);
+    float eff=2.0+90.0*pow(smoothstep(0.0,saum_w,coast_m),0.85)+coast_m*0.002;
     eff=coast_m>3900.0 ? 200.0 : eff;
     eff=mix(eff,min(eff,12.0+coast_m*0.004),mouth*0.75);
     // Beer-Lambert style absorption: seabed -> turquoise -> blue -> navy.
@@ -116,8 +118,10 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     col=mix(col,water_open_tint.rgb,smoothstep(6.0,85.0,eff));
     // Mostly uniform open sea; bathymetry only a faint deepening.
     col=mix(col,water_deep_tint.rgb,smoothstep(500.0,3600.0,depth)*0.25);
-    // Narrow teal strip right at the beach.
-    col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5));
+    // Narrow teal strip right at the beach, close views only (in the mid
+    // view it read as a pale 2-3 px rim, #97b5ac against the reference's
+    // blue #1e7097).
+    col=mix(col,water_shallow_tint.rgb*1.08,(1.0-smoothstep(0.0,max(px_m*5.0,700.0),coast_m))*0.55*(1.0-mouth*0.5)*(1.0-smoothstep(130.0,260.0,px_m)));
     // Facets (low-poly surface) with smooth detail between them.
     float facet_id;
     vec2 centre=wl_facet_center(p,water_facet_size,facet_id);
@@ -191,6 +195,7 @@ WaterSample water_shade(vec2 p,float coast_m,float depth,float footprint,float c
     foam*=1.0-smoothstep(1.2,3.5,footprint)*0.7;
     col=mix(col,water_foam_tint.rgb,foam*0.85);
     s.albedo=col*mix(0.80,1.0,sun_mask);
+    s.tone=mix(vec3(1.0),vec3(0.62,0.68,0.72),storm*0.6)*mix(0.80,1.0,sun_mask);
     s.emission=sky*sheen*0.25+water_sun_tint.rgb*glitter*0.45+glare_tint*glare*0.8+vec3(0.55,0.62,0.75)*clamp(weather_lightning,0.0,1.0)*0.35;
     s.normal=n;
     s.roughness=mix(0.75,0.45,anim);

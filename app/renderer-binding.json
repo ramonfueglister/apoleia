@@ -27,6 +27,14 @@
     }
   },
   "visual_extensions": {
+    "rivers_supplement": {
+      "enabled": true,
+      "path": "artifacts/render-data/rivers-europe-supplement-r1/rivers.geojson",
+      "sha256": "490e9c98749727a0a106feeeaa741923809e89c1089fa470cc394dc9e0e3dcc1",
+      "manifest": "artifacts/render-data/rivers-europe-supplement-r1/manifest.json",
+      "manifest_sha256": "deb65cca72f01bba29f7efbf98b2494bd269075acf0b2452771df7e46d128893",
+      "status": "display only: Natural Earth v5.1.2 10m Europe rivers, scalerank <= 10, no canonical duplicates (tools/build_river_supplement.py); the dataset rivers stay unchanged"
+    },
     "clouds": {
       "enabled": false,
       "status": "weather system (weather_system.gd) owns clouds; the former bounded cloud volume (cloud_layer.gd) stays retired; explicit --clouds-enabled opts in, --clouds-disabled opts out"
@@ -44,8 +52,8 @@
       "policy": "strict current binding and complete READY required; missing inner entry is an error; only proven disjoint outside owners are empty"
     },
     "streaming_layout": {
-      "path": "artifacts/render-data/forest-layout-sourcev2-v19-mountain-r4-complete-r1-source-root",
-      "manifest_sha256": "5e207135a80276857e4fa671efd0fd7cc2cfc3a9f7fda7f2df127848afa2a112",
+      "path": "artifacts/render-data/forest-layout-claude-landcover-r9",
+      "manifest_sha256": "51c44a24f2e0021e31cbf8f15453a8836344c968726f5ff6299a0dfdd25085a4",
       "format": "v19-layout64-le-r1",
       "producer_contract": "v19-layout-source-binding-v3",
       "record_source": "complete r4 bake against fixed-source-v2-mountain-r4 (164313 records), rebound to v3 source contract"
@@ -62,6 +70,6 @@
   },
   "clipmap": {
     "enabled": true,
-    "path": "artifacts/render-data/clipmap-tiles-r4-mountain-r4/manifest.json"
+    "path": "artifacts/render-data/clipmap-tiles-r8-etopo15/manifest.json"
   }
 }
