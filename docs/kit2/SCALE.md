@@ -1,7 +1,7 @@
 # Kit 2 — Massstab der Modellwelt
 
-**Stand:** 27.10.2026 · **Status:** `entschieden` (Ramon, Projekt-Thread „Design a scaled-down diorama world“).
-Konzeptseite mit Herleitung: Artifact „Diorama mit 50'000 Menschen“.
+**Stand:** 27.10.2026 (umgestellt von 50'000 auf 100'000 Personen) · **Status:** `entschieden` (Ramon, Projekt-Thread „Design a scaled-down diorama world“).
+Konzeptseite mit Herleitung: Artifact „Diorama mit 100'000 Menschen“.
 Werte mit „geschätzt“ sind eigene Annahmen.
 
 ## Grundregel
@@ -12,11 +12,11 @@ mit Familie, Eigenschaften und Lebenslauf wie in Crusader Kings 3.
 
 | Grösse | Faktor | Herleitung |
 |---|---|---|
-| Menschen, Häuser, Betriebe, Schiffe, Soldaten (Anzahl) | 1 : 1'133 | 56,65 Mio. im Spielgebiet (HYDE 3.3, 200 n. Chr.) → 50'000 |
-| Fläche | 1 : 1'133 | gleiche Dichte wie damals |
-| Länge, Distanz | 1 : 33,7 (gerundet 1 : 34) | √1'133 |
-| Höhe | 1 : 33,7, danach 7,5-fach überhöht | SimCity 2000, PR #29 (K06) |
-| Geschwindigkeit jeder Bewegung | 1 : 33,7 | damit jede Reise so lange dauert wie damals |
+| Menschen, Häuser, Betriebe, Schiffe, Soldaten (Anzahl) | 1 : 566,5 | 56,65 Mio. im Spielgebiet (HYDE 3.3, 200 n. Chr.) → 100'000 |
+| Fläche | 1 : 566,5 | gleiche Dichte wie damals |
+| Länge, Distanz | 1 : 23,8 (gerundet 1 : 24) | √566,5 |
+| Höhe | 1 : 23,8, danach 7,5-fach überhöht | SimCity 2000, PR #29 (K06) |
+| Geschwindigkeit jeder Bewegung | 1 : 23,8 | damit jede Reise so lange dauert wie damals |
 | Kalender, Lebensalter, Tageslänge | 1 : 1 | ein Spieljahr ist ein Jahr |
 
 **Nicht verkleinert** wird der einzelne Mensch und was zu ihm gehört: Körper, Haus,
@@ -26,23 +26,23 @@ von Feld, Wald, Weide und Ödland bleiben gleich.
 
 **Gemeinschaftsbauten** (Forum, Tempel, Thermen, Arena, Hafen, Lager) werden nach
 ihrer Nutzerzahl bemessen, nicht nach ihrer echten Grösse. Das Kolosseum (50'000
-Plätze) wird zu einer Arena mit etwa 45 Plätzen.
+Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 
 ## Eckwerte
 
 | Was | Damals | Im Diorama |
 |---|---:|---:|
-| Kartenausschnitt (`data/region.json`) | 4'900 × 4'100 km | 145 × 122 km |
-| Landfläche (`data/gametiles/tiles.csv`) | 15,6 Mio. km² | 13'800 km² |
-| Italien, Länge | ≈ 1'000 km | ≈ 30 km |
-| Rom | ≈ 920'000 Einw., ≈ 20 km² | 813 Einw., ≈ 150 × 150 m, gut 100 Häuser |
-| Städte ab 100 / 20 / 5 Einw. (Hanson 117, `places.csv`) | – | 7 / 100 / 360 |
-| Landbevölkerung | ≈ 80 % | ≈ 41'200 |
-| Häuser (≈ 6 Menschen je Haushalt, geschätzt) | – | ≈ 8'300 |
-| Basis-Tile 25 km (K25) | 25 km | ≈ 740 m |
-| Feinstes Tile Ebene 7 | 1,56 km | ≈ 46 m |
-| Grafikkachel 0,5 / 16 km (PR #29) | 0,5 / 16 km | ≈ 15 m / 475 m |
-| Höhenpunkt ETOPO 15″ | ≈ 460 m | ≈ 14 m |
+| Kartenausschnitt (`data/region.json`) | 4'900 × 4'100 km | 206 × 173 km |
+| Landfläche (`data/gametiles/tiles.csv`) | 15,6 Mio. km² | 27'600 km² |
+| Italien, Länge | ≈ 1'000 km | ≈ 42 km |
+| Rom | ≈ 920'000 Einw., ≈ 20 km² | 1'626 Einw., ≈ 190 × 190 m, gut 250 Häuser |
+| Städte ab 100 / 20 / 5 Einw. (Hanson 117, `places.csv`) | – | 19 / 203 / 537 |
+| Landbevölkerung | ≈ 80 % | ≈ 82'300 |
+| Häuser (≈ 6 Menschen je Haushalt, geschätzt) | – | ≈ 16'700 |
+| Basis-Tile 25 km (K25) | 25 km | ≈ 1'050 m |
+| Feinstes Tile Ebene 7 | 1,56 km | ≈ 66 m |
+| Grafikkachel 0,5 / 16 km (PR #29) | 0,5 / 16 km | ≈ 21 m / 670 m |
+| Höhenpunkt ETOPO 15″ | ≈ 460 m | ≈ 19 m |
 
 ## Koordinaten
 
@@ -51,20 +51,20 @@ Plätze) wird zu einer Arena mit etwa 45 Plätzen.
 - Weil Längen und Geschwindigkeiten mit demselben Faktor schrumpfen, rechnet die
   Simulation Wege und Reisezeiten direkt in echten Metern und echtem Tempo; das
   Ergebnis ist dasselbe.
-- Die Konstante `DIORAMA_LAENGE = 1 / 33,66` rechnet echte Meter in Diorama-Meter um.
+- Die Konstante `DIORAMA_LAENGE = 1 / 23,80` rechnet echte Meter in Diorama-Meter um.
   Sie gilt für Darstellung und für alle Dinge in Menschengrösse (Haus, Feld, Figur),
   die in Diorama-Metern definiert sind und beim Platzieren umgerechnet werden.
 - Dichten (Einw./km²) sind in Diorama-km² gleich wie damals. In echten Koordinaten
-  gerechnet sind sie 1'133-mal kleiner. Die Schwellen S15 gelten in Diorama-km².
+  gerechnet sind sie 566,5-mal kleiner. Die Schwellen S15 gelten in Diorama-km².
 
 ## Zeit und Bewegung
 
 | Weg | Im Diorama | Dauer |
 |---|---:|---:|
-| Zu Fuss | ≈ 0,12 km/h | wie 4 km/h |
-| Quer durch Rom | ≈ 150 m | ≈ 1 Stunde |
-| Rom – Brundisium zu Fuss | ≈ 17 km | ≈ 2 Wochen |
-| Rom – Alexandria per Schiff | ≈ 56 km | ≈ 2–3 Wochen |
+| Zu Fuss | ≈ 0,17 km/h | wie 4 km/h |
+| Quer durch Rom | ≈ 190 m | ≈ 1 Stunde |
+| Rom – Brundisium zu Fuss | ≈ 24 km | ≈ 2 Wochen |
+| Rom – Alexandria per Schiff | ≈ 80 km | ≈ 2–3 Wochen |
 
 - Reisen laufen wie in CK3 als Reise mit Ziel, Route und Dauer in Tagen.
 - Der Alltag (Feld, Werkstatt, Markt) wird nicht als einzelner Gang simuliert. Man
@@ -77,21 +77,21 @@ Plätze) wird zu einer Arena mit etwa 45 Plätzen.
 
 | Bereich | Folge des Massstabs | Vorschlag |
 |---|---|---|
-| Stände | Senat (600) ≈ 0,5 Personen, Ritter (≈ 20'000–30'000, geschätzt) ≈ 20–25, Dekurionen (≈ 100'000–150'000, geschätzt) ≈ 90–130, Sklaven (10–15 %, geschätzt) ≈ 5'000–7'500 | strikt verkleinern; der Senat ist eine Familie. Ob Ämter eine Mindestzahl bekommen, entscheidet Ramon. |
-| Heer | Reichsheer ≈ 350'000 (geschätzt) → ≈ 300 Soldaten; eine Legion ≈ 5 Mann | Schlachten sind Gefechte weniger Personen; jeder Soldat ist ein Charakter. |
-| Wirtschaft | Verbrauch und Leistung pro Kopf bleiben, Summen /1'133. Preise pro Stück bleiben, Staatshaushalt ≈ 900 Mio. Sesterzen → ≈ 0,8 Mio. (geschätzt) | Wirtschafts-Thread rechnet pro Kopf; aggregierte Mengen aus Quellen durch 1'133 teilen. |
-| Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |
-| Kleine Orte | 133 Orte haben unter 1 Einwohner | als einzelner Hof oder weglassen, entscheidet Ramon. |
+| Stände | Senat (600) ≈ 1 Senator, Ritter (≈ 20'000–30'000, geschätzt) ≈ 35–55, Dekurionen (≈ 100'000–150'000, geschätzt) ≈ 175–265, Sklaven (10–15 %, geschätzt) ≈ 10'000–15'000 | strikt verkleinern; der Senat ist ein Senator mit Familie. Ob Ämter eine Mindestzahl bekommen, entscheidet Ramon. |
+| Heer | Reichsheer ≈ 350'000 (geschätzt) → ≈ 620 Soldaten; eine Legion ≈ 10 Mann | Schlachten sind Gefechte weniger Personen; jeder Soldat ist ein Charakter. |
+| Wirtschaft | Verbrauch und Leistung pro Kopf bleiben, Summen /566,5. Preise pro Stück bleiben, Staatshaushalt ≈ 900 Mio. Sesterzen → ≈ 1,6 Mio. (geschätzt) | Wirtschafts-Thread rechnet pro Kopf; aggregierte Mengen aus Quellen durch 566,5 teilen. |
+| Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2,5 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |
+| Kleine Orte | 66 Orte haben unter 1 Einwohner | als einzelner Hof oder weglassen, entscheidet Ramon. |
 | Kleine Zahlen | Zufall wirkt stärker: Ein Hof kann aussterben, ein Dorf ohne Heiratspartner bleiben | Heiratskreis über die Reisedauer begrenzen; Verwandtschaftsgrad wie in CK3 führen. |
-| Wachstum | 680 n. Chr. ≈ 73'000, Neuzeit mehrere 100'000 | ab etwa 200'000 Menschen den Faktor pro Epoche anheben (später entscheiden). |
-| Kamera | nächster Zoom zeigt einzelne Häuser (≈ 10 m) | Ausschnittsbreiten aus Kit 1 („Stadt 5–10 km“, „500 m“) gelten in echten Metern; im Diorama ist Rom 150 m breit. |
+| Wachstum | 680 n. Chr. ≈ 145'000; 200'000 sind bei ≈ 113 Mio. echten Menschen erreicht (Mittelalter) | ab etwa 200'000 Menschen den Faktor pro Epoche anheben (später entscheiden). |
+| Kamera | nächster Zoom zeigt einzelne Häuser (≈ 10 m) | Ausschnittsbreiten aus Kit 1 („Stadt 5–10 km“, „500 m“) gelten in echten Metern; im Diorama ist Rom 190 m breit. |
 
 ## Was sich in Kit 2 ändert
 
 - **S30 und S32 werden ersetzt** (siehe decisions.md S50–S56): Bevölkerung ist die
   Summe einzelner Menschen; Wachstum entsteht aus Geburten und Todesfällen.
 - Kapazität K (S31, S35) bleibt und wirkt über Nahrung auf Gesundheit, Heirat und Kinderzahl.
-- HYDE (S35) verteilt die 50'000 Menschen zum Start, deterministisch mit Seed.
+- HYDE (S35) verteilt die 100'000 Menschen zum Start, deterministisch mit Seed.
 - Tile-Raster, IDs, Teilen und Zusammenlegen (S10–S15) bleiben als Gliederung für
   Märkte, Provinzen und Kartenmodi.
 - Rust-Kern, Befehle, Festkomma und Snapshots (S40–S48) bleiben; Menschen sind Entities.

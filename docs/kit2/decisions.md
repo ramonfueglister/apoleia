@@ -52,15 +52,15 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 
 | ID | Entscheidung |
 |---|---|
-| S50 | **Ein Massstab für alles:** Anzahl Menschen und Fläche 1 : 1'133 (56,65 Mio. → 50'000), Längen, Distanzen und jede Bewegung 1 : 33,7. Kalender und Lebensalter echt. Höhe zusätzlich 7,5-fach überhöht (K06 nach PR #29). |
+| S50 | **Ein Massstab für alles:** Anzahl Menschen und Fläche 1 : 566,5 (56,65 Mio. → 100'000), Längen, Distanzen und jede Bewegung 1 : 23,8. Kalender und Lebensalter echt. Höhe zusätzlich 7,5-fach überhöht (K06 nach PR #29). |
 | S51 | **Der einzelne Mensch wird nicht verkleinert:** Körper, Haus, Wagen, Boot und Feld einer Familie in echter Grösse. Gemeinschaftsbauten nach Nutzerzahl. |
-| S52 | **Koordinaten:** Geodaten und Tile-IDs bleiben in echten Metern; `DIORAMA_LAENGE = 1/33,66` rechnet in Diorama-Meter um. Dichteschwellen (S15) gelten in Diorama-km². |
+| S52 | **Koordinaten:** Geodaten und Tile-IDs bleiben in echten Metern; `DIORAMA_LAENGE = 1/23,80` rechnet in Diorama-Meter um. Dichteschwellen (S15) gelten in Diorama-km². |
 | S53 | **Jeder Einwohner ist ein eigener Charakter** (CK3-Stil): Name, Alter, Geschlecht, Familie und Dynastie, Eigenschaften, Fähigkeiten, Gesundheit, Kultur, Religion, Stand, Wohnhaus, Arbeit, Besitz, Beziehungen zu einem begrenzten Kreis (Startwert höchstens 30). Ersetzt S30. |
 | S54 | **Bevölkerung entsteht aus Geburten und Todesfällen**, gesteuert über Nahrung (K), Gesundheit und Heirat. Startwerte geschätzt: 40 Geburten und 35 Todesfälle pro 1'000 und Jahr. Ersetzt S32. |
 | S55 | **Reisen** laufen als Reise mit Route und Dauer in Tagen; Alltag am Wohn-/Arbeitsort wird nicht als Weg simuliert. |
 | S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
 
-Offen: Mindestzahl für Ämter (Senat ≈ 0,5 Personen), Umgang mit Orten unter 1 Einwohner, Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
+Offen: Mindestzahl für Ämter (Senat ≈ 1 Senator), Umgang mit Orten unter 1 Einwohner, Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
 
 ## Ausdrücklich später (je eigenes Subsystem)
 
