@@ -14,6 +14,10 @@ uniform float display_height_scale=12.0;
 // Set per clipmap tile with the other camera uniforms (clipmap_terrain.gd).
 uniform float view_width=400.0;
 varying float crown_up;
+// Direct sunlight sees the warm lit crown colour, ambient (shade) the cool
+// albedo; set in fragment(), used in light().
+varying vec3 crown_warm;
+const vec3 CROWN_BACKLIGHT=vec3(0.09,0.11,0.13);
 void vertex(){
     if(normalize_instanced_normals) NORMAL=normalize(NORMAL);
     crown_up=NORMAL.y;
@@ -62,7 +66,13 @@ void fragment(){
     // 903029a: bands below v 0.42 on the reference, but the lit parts went
     // slate (#657a56 against #5c7f73: red +9, green -5; lit band blue +8).
     // Tops: red back, a little more green; walls a little less cool.
-    tinted*=mix(vec3(1.35,1.0,1.85),vec3(1.02,1.07,1.4),top);
+    // 35305b1: still slate where lit (land only #637a53 against #5e723d,
+    // blue +22): the reference shade is cool, its sunlit side yellow-green.
+    // The cool shift now stays in the ambient term; light() gives the
+    // direct sun the warm colour (red 1.0, green 0.88, blue 0.8 of tinted).
+    vec3 cool=mix(vec3(1.35,1.0,1.85),vec3(1.02,1.07,1.4),top);
+    tinted*=cool;
+    crown_warm=vec3(1.0,0.88,0.8)/cool;
     // Close views: deeper crowns, so the dense groves carry the dark share
     // of the reference near view (measured r29: 0.133 against 0.161) while
     // the mid view (0.141 against 0.132) stays as it is.
@@ -77,10 +87,17 @@ void fragment(){
     // direct light round the crown; the ground and its shadows are unchanged.
     // 0.22 overshot (2c4cfcf: dark share nah 0.102, mittel 0.089 against
     // 0.165 / 0.131, near-black 6.8 %); half of it, a little cooler.
-    BACKLIGHT=vec3(0.09,0.11,0.13);
+    BACKLIGHT=CROWN_BACKLIGHT;
     AO=mix(0.90,1.0,upper);
 #ifdef CANOPY_FADE
     ALPHA=clamp(representation_weight*residency_weight,0.0,1.0);
     ALPHA_HASH_SCALE=1.0;
 #endif
+}
+// Lambert with Godot's backlight term (as the built-in path; burley differs
+// by under 1 % at these view and sun angles; the 0.12 specular on 0.96
+// roughness is dropped). LIGHT_COLOR carries energy * PI.
+void light(){
+    float nl=clamp(dot(NORMAL,LIGHT),0.0,1.0);
+    DIFFUSE_LIGHT+=ATTENUATION*LIGHT_COLOR/PI*(nl*crown_warm+(1.0-nl)*CROWN_BACKLIGHT);
 }
