@@ -1,0 +1,26 @@
+{
+  "format": "apoleia-river-supplement-v1",
+  "role": "display only; the canonical dataset rivers stay unchanged",
+  "source": {
+    "name": "Natural Earth 1:10m rivers, Europe supplement",
+    "version": "v5.1.2",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_rivers_europe.geojson",
+    "sha256": "90712202ac46985812e90840df9acd5101599a9c649868d5bc55ee96c2fedd4c",
+    "license": "Public domain; Made with Natural Earth"
+  },
+  "rule": "featurecla River, scalerank <= 10, a vertex inside the atlas world, not a duplicate of a canonical river (>50 % of vertices on 0.05 deg cells the canonical set covers)",
+  "features": 290,
+  "vertices": 23046,
+  "skipped": {
+    "feature_class": 467,
+    "rank": 495,
+    "outside": 73,
+    "duplicate": 0
+  },
+  "payload": {
+    "path": "rivers.geojson",
+    "sha256": "490e9c98749727a0a106feeeaa741923809e89c1089fa470cc394dc9e0e3dcc1",
+    "bytes": 555576
+  },
+  "known_gaps": "Natural Earth has no Liri/Garigliano at 1:10m; its tributary Sacco is scalerank 11 and therefore not drawn"
+}

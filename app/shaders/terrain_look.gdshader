@@ -4,6 +4,7 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
 #include "res://shaders/model_sampling.gdshaderinc"
 #include "res://shaders/water_look.gdshaderinc"
+#include "res://shaders/delta_lagoon.gdshaderinc"
 uniform bool streamed_terrain=false;
 uniform float terrain_morph_alpha=1.0;
 uniform sampler2D mapped_cover_tex : filter_linear_mipmap, repeat_disable;
@@ -270,13 +271,28 @@ void fragment() {
     if(!graphic_coast) {
         float coast_slope=1.0-normalize(vec3(source_normal.x,source_normal.y/max(display_height_scale,0.00001),source_normal.z)).y;
         // Low, flat coasts only (rivers are separate meshes, not in this distance).
-        beach=(1.0-smoothstep(15.0,25.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
-        shore_span=mix(shore_span,clamp(contour_m_per_px*4.0,200.0,500.0),beach);
+        beach=(1.0-smoothstep(25.0,45.0,h))*(1.0-smoothstep(0.03,0.08,coast_slope));
+        // Reference: a warm sand ribbon of ~3 px in the mid view (#e6cb98)
+        // and ~10 px in the near view; ours was under 1 px (0.2-0.5 km).
+        shore_span=mix(shore_span,clamp(contour_m_per_px*3.5,700.0,1400.0),beach);
     }
     float shore_d=max(-material_distance,0.0);
     float shore=graphic_coast ? (1.0-smoothstep(shore_span*0.2,shore_span,shore_d))
         : mix(1.0-smoothstep(0.0,shore_span,shore_d),clamp((shore_span-shore_d)/max(fwidth(shore_d)*1.5,1e-3)+0.5,0.0,1.0),beach);
     ground=mix(ground,shore_color.rgb,shore*(graphic_coast ? (0.85+weights.a*0.15) : mix(0.60+weights.a*0.15,0.95,beach)));
+    // Display deltas (uniform branch, delta_lagoon.gdshaderinc): warm barrier
+    // sand (reference #e2bf8c), marsh-green islands (#8f944b) with wet sand
+    // rims, lagoon water below.
+    DeltaMask dm=delta_mask(vp,max(-material_distance,0.0),max(contour_m_per_px,1.0),view_width);
+    float lagoon=0.0;
+    if(delta_count>0) {
+        // Measured e6782ba: sand #cdbc97 (too grey), belt land #ada054.
+        ground=mix(ground,vec3(0.15,0.19,0.035)*(0.9+0.2*wl_noise(vp*0.8)),min(dm.marsh,1.0)*0.85);
+        ground=mix(ground,vec3(0.55,0.38,0.16),dm.rim*0.8);
+        ground=mix(ground,vec3(0.80,0.46,0.13)*(0.95+0.08*wl_noise(vp*1.7)),dm.barrier);
+        lagoon=dm.lagoon*(1.0-water);
+        normal=normalize(mix(normal,vec3(0.0,1.0,0.0),lagoon));
+    }
     // Packed SDFs saturate around3km. Saturated open ocean must NEVER become
     // shallow water when the overview pixel footprint grows beyond that range.
     float shallow=(1.0-smoothstep(0.0,shallow_span,max(material_distance,0.0)));
@@ -287,22 +303,38 @@ void fragment() {
     float px=max(contour_m_per_px,1.0);
     vec3 sea=vec3(0.0);vec3 water_emission=vec3(0.0);vec3 wave_normal=vec3(0.0,1.0,0.0);
     float wave_amount=0.0;
-    if(water>0.001) {
+    vec3 lagoon_color=vec3(0.0);
+    if(water>0.001 || lagoon>0.001) {
         float depth=physical_water_kind==1.0 ? max(-model_height_at(vp),0.0) : 25.0;
         float saum_scale=physical_water_kind==2.0 ? 0.0 : mix(0.22,1.0,smoothstep(0.7,1.0,relief));
         vec3 view_world=normalize((INV_VIEW_MATRIX*vec4(VIEW,0.0)).xyz);
         WaterSample w=water_shade(vp,max(material_distance,0.0),depth,footprint,smoothstep(0.05,0.6,relief),view_world,vec2(0.0),px,saum_scale,0.0);
         sea=w.albedo;water_emission=w.emission;wave_normal=w.normal;
+        // Lakes: teal-blue, lighter than the open sea (reference #40778e to
+        // #277183). Their own colour instead of the shared saum: the sea's
+        // shallow strip and foam made a pale grey-cyan rim inside every lake
+        // shore (measured Bolsena #497a90, Bracciano #648b9a). Only a thin,
+        // slightly lighter teal edge stays.
+        if(physical_water_kind==2.0) {
+            float lake_edge=1.0-smoothstep(0.0,max(px*2.5,250.0),max(material_distance,0.0));
+            sea=water_open_tint.rgb*vec3(1.0,1.6,0.97)*w.tone;
+            sea=mix(sea,sea*vec3(1.3,1.45,1.08),lake_edge*0.6);
+        }
+        // Delta lagoon: greener teal than the lakes (reference #2d7b8c),
+        // lighter in the shallows along the islands.
+        lagoon_color=water_open_tint.rgb*vec3(0.65,1.95,0.97)*w.tone;
+        lagoon_color=mix(lagoon_color,lagoon_color*vec3(1.3,1.4,1.08),dm.shallow*0.6);
         wave_amount=smoothstep(0.05,0.6,relief)*(1.0-smoothstep(0.35,1.1,footprint));
     }
     // Wet, darker sand right at the waterline.
     float wet_w=max(px*2.2,260.0);
     float wet=(1.0-smoothstep(0.0,wet_w,max(-material_distance,0.0)))*(1.0-water);
     ground*=mix(1.0,0.78+0.05*sin(TIME*1.3+vp.x*0.7),wet*shore);
+    ground=mix(ground,lagoon_color,lagoon);
     ALBEDO=mix(ground,sea,water);
-    EMISSION=water_emission*water;
-    ROUGHNESS=mix(0.94,mix(0.70,0.42,wave_amount),water);
-    SPECULAR=mix(0.15,mix(0.18,0.34,wave_amount),water);
-    AO=mix(land.ao,1.0,water);
+    EMISSION=water_emission*(water+lagoon*0.4);
+    ROUGHNESS=mix(mix(0.94,0.55,lagoon),mix(0.70,0.42,wave_amount),water);
+    SPECULAR=mix(mix(0.15,0.25,lagoon),mix(0.18,0.34,wave_amount),water);
+    AO=mix(land.ao,1.0,max(water,lagoon));
     NORMAL=normalize((VIEW_MATRIX*vec4(normalize(mix(normal,wave_normal,water)),0.0)).xyz);
 }
