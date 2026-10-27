@@ -520,6 +520,7 @@ func _process(delta: float) -> void:
 				_bolt_frames = 2
 				lightning = maxf(lightning, 0.25)
 		if "coverage" in _debug: _measure_coverage()
+		_layer_material.set_shader_parameter("debug_solid", "layer-solid" in _debug)
 		if _frame == 30:
 			# Horizontal angle between view direction and sun azimuth (positive = sun left).
 			var sun_dir := _sun.global_basis.z
