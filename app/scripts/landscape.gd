@@ -1856,7 +1856,7 @@ func _configure_forest_mesh_cache() -> void:
         root_integrity_fatal=true;push_error("Unknown forest representation");return
     if forest_representation_format=="compact":
         forest_base_crown_arrays=style_api.prepare_diorama_crown_arrays()
-        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays)
+        forest_compact_templates=CompactForest.variants(forest_base_crown_arrays,style_api.prepare_dense_crown_arrays())
         forest_compact_meshes=CompactForestMaterialize.shared_meshes(forest_compact_templates)
         forest_grove_lod_arrays={1:forest_compact_templates}
         for lod in [2,3]:forest_grove_lod_arrays[lod]=CompactForest.variants(style_api.create_tree_mesh(0,lod).surface_get_arrays(0))
@@ -3462,7 +3462,7 @@ func _bootstrap_terrain_stream()->bool:
 
 func _configure_stream_forest()->bool:
     forest_representation_format="compact"
-    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays())
+    forest_compact_templates=CompactForest.variants(style_api.prepare_diorama_crown_arrays(),style_api.prepare_dense_crown_arrays())
     var expected=load("res://scripts/cache/forest_layout_source_contract.gd").binding({"surface":fixed_surface,"style":style_api,"policy":diorama_policy,"templates":forest_compact_templates,"world_min":world_min,"world_size":world_size,"display_height_scale":display_height_scale,"source_manifest_sha256":snapshot_manifest_sha256,"projection_sha256":FileAccess.get_sha256(source_root.path_join("data/projection.json")),"canonical_surface_identity":fixed_surface.identity,"source_root":source_root})
     var cfg:Dictionary=product_binding.forest_rendering.streaming_layout
     var reader=FixedForestLayout.new()

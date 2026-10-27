@@ -113,7 +113,7 @@ static func vegetation_parameters() -> Dictionary:
 static func grove_detail_view_widths() -> Array:
     return [[220.0,0],[700.0,2],[2200.0,3],[4400.0,4]]
 
-static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> ArrayMesh:
+static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0, dense: bool = false) -> ArrayMesh:
     # One source crown record renders as a small grove: several low-poly
     # pointed trees about a third of the former size, each with its own tone
     # (dark green <-> olive). Footprint stays inside the former crown radius,
@@ -127,16 +127,19 @@ static func create_tree_mesh(family: int, lod: int = 0, detail: int = 0) -> Arra
     # lod 0/1: full grove (layout template); 2: three trees; 3: one tree.
     # 6 small trees per grove: 8 or 11 jump the clipmap tour p50 from ~7 to
     # 38-41 ms (template budget threshold). 3 / 1 for far LODs.
-    var count=6 if lod<=1 else (3 if lod==2 else 1)
+    # Dense groves (forest cores, width variant 1): 11 trees in the 1.18x
+    # footprint; same facet stages as the normal template.
+    var count=(11 if dense else 6) if lod<=1 else (3 if lod==2 else 1)
+    var spread=1.18 if dense else 1.0
     for t in range(count):
         var angle=float(t)*2.399963+rng.randf_range(-0.3,0.3)
-        var distance=0.0 if t==0 else 5.2*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
+        var distance=0.0 if t==0 else 5.2*spread*sqrt(float(t)/float(maxi(count-1,1)))*rng.randf_range(0.8,1.05)
         var base=Vector3(cos(angle)*distance,0.0,sin(angle)*distance*0.82)
         var height=rng.randf_range(2.5,3.5)*(1.0 if lod<=1 else 1.4)
         var radius=height*rng.randf_range(0.30,0.36)
         _small_tree(st,base,height,radius,rng,palette[rng.randi_range(0,palette.size()-1)],detail)
     var mesh=st.commit()
-    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")
+    mesh.resource_name="own_reference_small_grove_"+str(family)+"_lod"+str(lod)+("_detail"+str(detail) if detail>0 else "")+("_dense" if dense else "")
     return mesh
 
 static func _small_tree(st:SurfaceTool,base:Vector3,height:float,radius:float,rng:RandomNumberGenerator,color:Color,detail:int=0)->void:
@@ -320,6 +323,9 @@ static func prepare_diorama_crown_arrays() -> Array:
     # Mainthread-only preparation. Workers receive values, never a Mesh or RID.
     return create_tree_mesh(0,1).surface_get_arrays(0)
 
+static func prepare_dense_crown_arrays(detail:int=0) -> Array:
+    return create_tree_mesh(0,1,detail,true).surface_get_arrays(0)
+
 static func create_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,coverage:Callable=Callable(),forest_coverage:Callable=Callable(),surface_grid:Dictionary={}) -> ArrayMesh:
     # Synchronous compatibility entrypoint; runtime async commits use the same DTO.
     var data=build_diorama_forest_arrays(origin,size,sample,coverage,forest_coverage,surface_grid,prepare_diorama_crown_arrays())
@@ -436,7 +442,7 @@ static func _build_diorama_forest(origin:Vector2,size:Vector2,sample:Callable,co
                     if supported:
                         p=proposed
                         observation=sample.call(p)
-                        width_scale=1.18
+                        width_scale=1.18 if share>=0.6 else 1.0
             var height=rng.randf_range(5.8,8.6)*lerpf(0.72,1.0,fraction)
             # The fixed world's existing rock role takes visual precedence.
             # Source membership/root identity is untouched; this is an explicit

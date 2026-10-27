@@ -55,7 +55,7 @@ func _configure_detail()->void:
         level_detail.append(detail)
     for detail in level_detail+[SHADOW_DETAIL]:
         if not detail_meshes.has(detail):
-            detail_meshes[detail]=Materialize.shared_meshes(Compact.variants(Style.create_tree_mesh(0,1,detail).surface_get_arrays(0)))
+            detail_meshes[detail]=Materialize.shared_meshes(Compact.variants(Style.create_tree_mesh(0,1,detail).surface_get_arrays(0),Style.create_tree_mesh(0,1,detail,true).surface_get_arrays(0)))
     var reach=0.
     for detail in detail_meshes:
         for mesh in detail_meshes[detail]:
