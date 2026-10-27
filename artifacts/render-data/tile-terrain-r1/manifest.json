@@ -138,19 +138,19 @@
   },
   "relief_half": {
     "path": "relief.r16f",
-    "sha256": "ff354072f3cf55f5baf51f82e6abf1046a76b0397fbe12cc5b810efcfdba4228",
+    "sha256": "e1939018af09daa6859ef9cead45fad40f7418bf363795b2a85034e6f71353d6",
     "format": "float16 LE, metres",
-    "slope_m_per_km": 80.0,
-    "mountain_slope_m_per_km": 240.0,
+    "slope_m_per_km": 160.0,
+    "mountain_slope_m_per_km": 160.0,
     "mountain_from_to_m": [
       500.0,
       1300.0
     ],
-    "height_exaggeration": 7.5
+    "height_exaggeration": 3.75
   },
   "shore_half": {
     "path": "shore.r16f",
-    "sha256": "98c6d777e2bb68a0a2751ae0ca56568c6957c6a8644f380c1cb5bc4f54ef7796",
+    "sha256": "089298b9081ecc85583b76ec6fa94cec36b0e0195427b7e2f27bf2401a27d5bf",
     "format": "float16 LE, metres",
     "rule": "highest land next to the water: sea 0 m, lakes at their level, rising slope_m_per_km"
   }

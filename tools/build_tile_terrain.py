@@ -51,12 +51,12 @@ SS = 2  # supersampling of the polygon raster
 # tile_terrain.gd), so it stands for RELIEF_SLOPE * tile_km real metres, and the
 # relief is limited to that slope: neighbouring tile corners never differ by
 # more than one level.
-HEIGHT_EXAGGERATION = 7.5
+HEIGHT_EXAGGERATION = 3.75
 LEVEL_HEIGHT = 0.6
 RELIEF_SLOPE = 1000.0 * LEVEL_HEIGHT / HEIGHT_EXAGGERATION  # m per km
-# High mountains may rise up to three levels per tile (diorama massifs);
-# the steepness blends in between these heights of the 10 km mean.
-MOUNTAIN_SLOPE = 3.0 * RELIEF_SLOPE
+# Optional steeper slope in high mountains (blended in between these heights
+# of the 10 km mean). Kept at the one-level rule (SimCity 2000, Kit 1 K06).
+MOUNTAIN_SLOPE = 1.0 * RELIEF_SLOPE
 MOUNTAIN_FROM_M = 500.0
 MOUNTAIN_TO_M = 1300.0
 

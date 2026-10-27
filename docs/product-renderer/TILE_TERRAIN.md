@@ -14,8 +14,9 @@ unabhängig und unverändert.
   das gebackene Relief (`sc2k_relief`), das auf `RELIEF_SLOPE` m/km begrenzt ist.
 - Eine Stufe ist **0,6 Kachelbreiten** hoch (SimCity 2000: 12 px Stufe auf einer
   32 × 16 px Kachel). Eine Stufe entspricht `RELIEF_SLOPE × Kachelbreite` echten Metern.
-- Höhen sind weltweit **7,5-fach** überhöht (`HEIGHT_EXAGGERATION`, Kit 1 K06,
-  geändert am 27.10.2026). Daraus folgt `RELIEF_SLOPE` = 80 m/km.
+- Höhen sind weltweit **3,75-fach** überhöht (`HEIGHT_EXAGGERATION`, Kit 1 K06,
+  geändert am 27.10.2026). Daraus folgt `RELIEF_SLOPE` = 160 m/km: wenige, lange
+  Terrassen wie in SimCity 2000 statt vieler schmaler Streifen.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
   Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
@@ -27,9 +28,9 @@ unabhängig und unverändert.
   eine Treppe aus Wasserkacheln als Diagonale mit Sand und Schaum davor.
   Kacheln werden an der Diagonale geteilt, deren Ecken näher beieinander liegen
   (wie SimCity 2000): eine einzelne gehobene Ecke ergibt ein flaches und ein
-  geneigtes Dreieck statt einer Falte. Im Hochgebirge (Mittel über 10 km ab
-  500 m, voll ab 1300 m) darf das Relief bis zu drei Stufen pro Kachel steigen
-  (`MOUNTAIN_SLOPE`), damit Gebirge als steile Massive stehen.
+  geneigtes Dreieck statt einer Falte. `MOUNTAIN_SLOPE` erlaubt im Hochgebirge
+  (Mittel über 10 km ab 500 m, voll ab 1300 m) eine steilere Rampe, steht aber
+  auf 1 × `RELIEF_SLOPE`: auch Gebirge folgen der Ein-Stufen-Regel.
   Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
   (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
 - Optik: Kacheln sind einfarbig ohne Muster, wie in SimCity 2000. Rampen haben
@@ -57,7 +58,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
-| Höhe | 7,5-fach, eine Stufe = 40 / 80 / 160 / 320 / 640 / 1280 m echt |
+| Höhe | 3,75-fach, eine Stufe = 80 / 160 / 320 / 640 / 1280 / 2560 m echt |
 | Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
 | Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1; weiter draußen zeigt der Boden den Wald |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
@@ -95,7 +96,6 @@ Mausrad oder Pinch zoomt zum Cursor, Ziehen oder WASD/Pfeile verschiebt, Q/E dre
 um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
 `--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
 `--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
-Umgebungsvariable `TT_SMOOTH=1`: glattes Relief auf jeder Zoomstufe (Look-Vergleich).
 
 ## Offen
 
