@@ -59,7 +59,7 @@ Nutzerentscheidung im Projekt-Thread „Design a scaled-down diorama world“. D
 | S54 | **Bevölkerung entsteht aus Geburten und Todesfällen**, gesteuert über Nahrung (K), Gesundheit und Heirat. Startwerte geschätzt: 40 Geburten und 35 Todesfälle pro 1'000 und Jahr. Ersetzt S32. |
 | S55 | **Reisen** laufen als Reise mit Route und Dauer in Tagen; Alltag am Wohn-/Arbeitsort wird nicht als Weg simuliert. |
 | S56 | **Takte für Personen:** Routine täglich, Bedürfnisse und Beziehungen monatlich, Heirat, Beruf und Umzug jährlich. Wenige wichtige Personen mit voller Planungs-KI, alle übrigen mit einfachen Bewertungsregeln. |
-| S57 | **Jeder Ort aus `places.csv` bekommt mindestens 1 Einwohner**, auch wenn er nach Massstab darunter liegt (66 Orte, +66 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
+| S57 | **Jeder Ort aus `places.csv` bekommt mindestens 2 Einwohner** (ein Paar als Familie), auch wenn er nach Massstab darunter liegt (133 Orte, zusammen rund +125 Personen). So bleiben spätere Städte wie Toledo, Siena oder Eleusis auf der Karte und können wachsen. |
 
 Offen: Mindestzahl für Ämter (Senat ≈ 1 Senator), Flussbreite gegenüber Bootsgrösse, Faktor ab etwa 200'000 Menschen, Rolle des Spielers (Familie wie in CK3?).
 

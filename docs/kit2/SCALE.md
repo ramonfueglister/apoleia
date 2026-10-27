@@ -81,7 +81,7 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 | Heer | Reichsheer ≈ 350'000 (geschätzt) → ≈ 620 Soldaten; eine Legion ≈ 10 Mann | Schlachten sind Gefechte weniger Personen; jeder Soldat ist ein Charakter. |
 | Wirtschaft | Verbrauch und Leistung pro Kopf bleiben, Summen /566,5. Preise pro Stück bleiben, Staatshaushalt ≈ 900 Mio. Sesterzen → ≈ 1,6 Mio. (geschätzt) | Wirtschafts-Thread rechnet pro Kopf; aggregierte Mengen aus Quellen durch 566,5 teilen. |
 | Flüsse und Strassen | Tiber ≈ 60 m → ≈ 2,5 m, aber Boote und Wagen bleiben in Menschengrösse | Wasserläufe und Strassen mit Verkehr bekommen mindestens die Breite ihres Verkehrsmittels. Abweichung offen ausweisen. |
-| Kleine Orte | 66 Orte haben unter 1 Einwohner (z. B. Toledo, Siena, Eleusis, Carcassonne) | **entschieden (S57):** jeder Ort bekommt mindestens 1 Einwohner, also einen Hof oder eine Herberge mit einer Familie (+66 Personen). |
+| Kleine Orte | 133 Orte liegen unter 2 Einwohnern, 66 davon sogar unter 1 (z. B. Toledo, Siena, Eleusis, Carcassonne) | **entschieden (S57):** jeder Ort bekommt mindestens 2 Einwohner, ein Paar als Familie (zusammen rund +125 Personen). |
 | Kleine Zahlen | Zufall wirkt stärker: Ein Hof kann aussterben, ein Dorf ohne Heiratspartner bleiben | Heiratskreis über die Reisedauer begrenzen; Verwandtschaftsgrad wie in CK3 führen. |
 | Wachstum | 680 n. Chr. ≈ 145'000; 200'000 sind bei ≈ 113 Mio. echten Menschen erreicht (Mittelalter) | ab etwa 200'000 Menschen den Faktor pro Epoche anheben (später entscheiden). |
 | Kamera | nächster Zoom zeigt einzelne Häuser (≈ 10 m) | Ausschnittsbreiten aus Kit 1 („Stadt 5–10 km“, „500 m“) gelten in echten Metern; im Diorama ist Rom 190 m breit. |
