@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "apoleia-sim",
  "godot",
+ "rustc-hash 2.1.3",
 ]
 
 [[package]]

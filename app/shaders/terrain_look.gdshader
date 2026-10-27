@@ -197,12 +197,16 @@ void vertex() {
     local_render_position=vec3(VERTEX.x-shading_origin.x,VERTEX.y,VERTEX.z-shading_origin.y);
 }
 // Kit 2 map mode "Bevölkerung" (docs/kit2/ARCHITECTURE.md S46). The Rust
-// snapshot provides a tile index per 1.5625 km cell (index + 1, 0 = none)
-// and one value texel per tile (population, people per km²); the colour
-// follows the density and is
+// bridge provides the tile slot per 1.5625 km cell (slot + 1, 0 = none) and
+// one value texel per slot (population, people per km²); a tile keeps its
+// slot until it is split or merged. The colour follows the density and is
 // computed here, so a new month only re-uploads the value texture.
 uniform bool map_mode_population=false;
-uniform sampler2D map_index_tex : filter_nearest, repeat_disable;
+// The index is cut into square pages, one array layer each, so a split or
+// merge re-uploads only the pages it touches; page (x, y) is layer
+// y * map_index_pages_x + x.
+uniform sampler2DArray map_index_tex : filter_nearest, repeat_disable;
+uniform int map_index_pages_x=1;
 uniform sampler2D map_value_tex : filter_nearest, repeat_disable;
 uniform vec2 map_index_origin=vec2(0.0);
 uniform float map_index_cell=1.5625;
@@ -223,9 +227,12 @@ vec3 map_ramp(float t) {
     return map_srgb_to_linear(mix(stops[a],stops[a+1],x-float(a))/255.0);
 }
 int map_tile(ivec2 c) {
-    ivec2 size=textureSize(map_index_tex,0);
-    if(any(lessThan(c,ivec2(0))) || any(greaterThanEqual(c,size))) return -1;
-    return int(texelFetch(map_index_tex,c,0).r+0.5)-1;
+    if(any(lessThan(c,ivec2(0)))) return -1;
+    ivec3 size=textureSize(map_index_tex,0);
+    ivec2 page=c/size.xy;
+    int layer=page.y*map_index_pages_x+page.x;
+    if(page.x>=map_index_pages_x || layer>=size.z) return -1;
+    return int(texelFetch(map_index_tex,ivec3(c-page*size.xy,layer),0).r+0.5)-1;
 }
 vec3 population_overlay(vec3 ground,vec2 p) {
     if(!map_mode_population) return ground;
