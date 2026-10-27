@@ -746,11 +746,11 @@ func _strike(p: Vector2, view_width: float) -> void:
 	var vertices := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	for path in paths:
-		var scale := 1.0 if path == points else 0.6
+		var scale: float = 1.0 if path == points else 0.6
 		for k in path.size() - 1:
 			var a: Vector3 = path[k]
 			var b: Vector3 = path[k + 1]
-			var w := width * 4.0 * scale * (1.0 - 0.4 * float(k) / path.size())
+			var w: float = width * 4.0 * scale * (1.0 - 0.4 * float(k) / path.size())
 			vertices.append_array([a + Vector3(-w, 0, 0), a + Vector3(w, 0, 0), b + Vector3(w, 0, 0), a + Vector3(-w, 0, 0), b + Vector3(w, 0, 0), b + Vector3(-w, 0, 0)])
 			uvs.append_array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1)])
 	var arrays := []
