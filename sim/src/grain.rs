@@ -92,9 +92,9 @@ const OFF_DAYS: i64 = YEAR - 2 * PEAK_DAYS;
 /// follows the adults 15–60; in the peaks everybody 10–65 works every day.
 const ADULT: (f64, f64) = (15.0, 60.0);
 const PEAK_HANDS: (f64, f64) = (10.0, 65.0);
-/// PLACEHOLDER: share of a week that a farm outside its own peak, or a
-/// person in a tent, can sell as day labour, per cent.
-const SPARE_FARM_PCT: i64 = 30;
+/// PLACEHOLDER: share of a week that a person in a tent can sell as day
+/// labour, per cent. A farm outside its peak sells the adults' working
+/// days its own fields do not need (`spare_week`).
 const SPARE_TENT_PCT: i64 = 80;
 /// Day wage in grain, kg. PLACEHOLDER from the price edict (VII.1a: farm
 /// labourer 25 den. a day with keep) at the base price below: about 3 kg.
@@ -545,6 +545,36 @@ impl FineCover {
     }
 }
 
+/// body::work_factor of a share eaten (per mille), per mille, from a table.
+fn work_of_fed(fed: u16) -> i64 {
+    static TAB: std::sync::OnceLock<Vec<i64>> = std::sync::OnceLock::new();
+    let tab = TAB.get_or_init(|| (0..=1000).map(|k| (crate::body::work_factor(k as f64 / 1000.0) * 1000.0).round() as i64).collect());
+    tab[(fed as usize).min(1000)]
+}
+
+/// A farm's store and money on 1 January as last year's harvest left them
+/// (S84 a), by the rules of a normal year: the crop of its fields under
+/// grain, fully worked, less tax; the rent carried to market at the base
+/// price (its money to the landlord); the surplus stays in the store, as
+/// the dealers' cash does not buy it (it pays day labour, `labour`); then
+/// the family's food from the harvest to the new year and the autumn's
+/// seed. Returns (store, rent), kg.
+fn last_harvest(f: &Farm, cropped: i64, need_day: i64) -> (i64, i64) {
+    let sown = cropped;
+    let poor = if f.area == 0 { 0 } else { sown * f.poor / f.area };
+    let crop = ((sown - poor) * f.net_kg_ha + poor * NET_POOR + sown * SEED_KG_HA) / 10_000;
+    let seed = sown * SEED_KG_HA / 10_000;
+    let net = (crop - seed).max(0);
+    let tax = net * TAX_PCT / 100;
+    let rent = if f.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
+    let mut store = crop - tax - rent;
+    // From the harvest to the new year: food, then the autumn's seed.
+    store = (store - need_day * (YEAR - f.harvest_doy)).max(0);
+    store = (store - seed).max(0);
+    (store, rent)
+}
+
+
 pub fn fine_cover(root: &std::path::Path, farmland: bool) -> Result<FineCover, String> {
     let path = root.join("sim/inputs/landcover-fine.bin.zst");
     let raw = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -818,24 +848,41 @@ impl Grain {
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
-        // Start stocks (PLACEHOLDER, so the first half year is not an
-        // artefact of starting in January): farms hold food until their
-        // harvest plus the reserve, markets the region's buyers' need until
-        // midsummer plus the reserve, households without a farm a month,
-        // the landless three.
+        // Start stocks: farms hold what last year's harvest left them
+        // (`last_harvest`); PLACEHOLDER, so the first half year is not an
+        // artefact of starting in January: markets the region's buyers'
+        // need until midsummer plus the reserve, households without a farm
+        // a month, the landless three.
         let mut demand = vec![0i64; gr.markets.len()];
+        let mut lords: Vec<(u32, i64)> = Vec::new();
         let ids: Vec<u32> = sorted_keys(&gr.hh);
         for id in ids {
             let info = gr.info[&id];
             let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
             let s = gr.hh.get_mut(&id).unwrap();
             if s.kind == FARM {
-                let f = &mut gr.farms[s.farm as usize];
-                f.store += need_day * (f.harvest_doy + RESERVE_DAYS);
+                let k = s.farm as usize;
+                let cropped = gr.cropped(gr.farms[k].area);
+                let f = &mut gr.farms[k];
+                // At least food to the harvest plus the reserve, so that no
+                // farm starts empty (PLACEHOLDER for farms whose fields fed
+                // them less last year: what they then lived on).
+                let (store, rent) = last_harvest(f, cropped, need_day);
+                f.store = store.max(need_day * (f.harvest_doy + RESERVE_DAYS));
+                let lord = f.landlord;
+                let to_lord = rent * BASE_PRICE;
+                if to_lord > 0 && lord != NONE {
+                    lords.push((lord, to_lord));
+                }
             } else {
                 s.pantry = need_day * if s.kind == TENT { 3 * MONTH } else { MONTH };
                 let m = gr.cell_market[info.home as usize];
                 demand[m as usize] += need_day;
+            }
+        }
+        for (lord, pay) in lords {
+            if let Some(h) = gr.hh.get_mut(&lord) {
+                h.money += pay;
             }
         }
         // Dealers start with the cash for 60 days of their buyers' demand
@@ -1487,7 +1534,22 @@ impl Grain {
     /// Field area a household's adults can work over the year (290
     /// working days / 70 days per ha).
     fn year_m2(&self, id: u32) -> i64 {
-        self.info.get(&id).map_or(0, |i| i.adults as i64) * WORK_DAYS_YEAR * 10_000 / DAYS_PER_HA
+        self.info.get(&id).map_or(0, |i| i.adults as i64) * WORK_DAYS_YEAR * 10_000 / DAYS_PER_HA * self.work_x1000(id) / 1000
+    }
+
+    /// Days a week a farm outside its peak can sell as day labour: its
+    /// adults' working days (290 a year) less the off-peak work of its own
+    /// fields, so a farm with little land works mostly for others (S84).
+    fn spare_week(&self, i: &HhInfo, farm: u32) -> i64 {
+        let own = self.cropped(self.farms[farm as usize].area) * DAYS_PER_HA * OFF_SHARE_PCT / 100 / 10_000 * 7 / OFF_DAYS;
+        (i.adults as i64 * 7 * WORK_DAYS_YEAR / YEAR - own).max(0)
+    }
+
+    /// Share of normal physical work a household still does, per mille:
+    /// hungry people lower their activity first (S84 b, body::work_factor
+    /// of the share eaten last month).
+    fn work_x1000(&self, id: u32) -> i64 {
+        self.hh.get(&id).map_or(1000, |s| work_of_fed(s.fed))
     }
 
     /// Field area a farm wants (S73). A family farm: what its adults
@@ -1872,7 +1934,7 @@ impl Grain {
                     // clearing (S73), as much as the adults clear in a year.
                     self.take_land(f, want - area, false, false);
                     let adults = self.info.get(&hh).map_or(0, |i| i.adults as i64);
-                    let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR).max(0);
+                    let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR * self.work_x1000(hh) / 1000).max(0);
                     self.take_land(f, clear, true, false);
                 } else if area > want * 3 / 2 {
                     self.give_land(f, area - want * 3 / 2);
@@ -1882,7 +1944,7 @@ impl Grain {
             let ha_x = if harvest { fm.sown } else { self.cropped(fm.area) };
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
-            let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS;
+            let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS * self.work_x1000(fm.hh) / 1000;
             let fm = &mut self.farms[f as usize];
             fm.peak = Some(Peak { harvest, demand, done: family.min(demand) });
             if family < demand {
@@ -1899,23 +1961,38 @@ impl Grain {
     fn labour(&mut self, day: i64) {
         let wd = day.rem_euclid(7) as usize;
         for mi in (wd..self.markets.len()).step_by(7) {
-            if self.markets[mi].open.is_empty() && self.markets[mi].hirers.is_empty() {
-                continue;
-            }
             // Supply: landless adults of the region and farms not in a peak.
             let region = self.markets[mi].region;
             let mut offers: Vec<(u32, i64)> = Vec::new();
             let mut farm_offers: Vec<(u32, i64)> = Vec::new();
+            // Farms with a surplus beyond food to the next harvest, the
+            // reserve and next year's seed, in household order: (id, days).
+            let mut surplus: Vec<(u32, i64)> = Vec::new();
             let _ = region;
             let ids = std::mem::take(&mut self.market_hh[mi]);
             for &id in &ids {
                 // Gone since the count (the lists follow a day later).
-                let (Some(&s), Some(&i)) = (self.hh.get(&id), self.info.get(&id)) else { continue };
+                let Some(&s) = self.hh.get(&id) else { continue };
+                if s.kind != FARM && s.kind != TENT {
+                    continue;
+                }
+                let Some(&i) = self.info.get(&id) else { continue };
+                if s.kind == FARM {
+                    let fm = &self.farms[s.farm as usize];
+                    if fm.peak.is_none() {
+                        let need_day = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
+                        let keep = need_day * (doy_until(day, fm.harvest_doy) + RESERVE_DAYS) + self.cropped(fm.area) * SEED_KG_HA / 10_000;
+                        let days = (fm.store - fm.to_sell - keep) / WAGE_KG_DAY;
+                        if days > 0 {
+                            surplus.push((id, days));
+                        }
+                    }
+                }
                 let days = match s.kind {
                     TENT => i.hands as i64 * 7 * SPARE_TENT_PCT / 100,
-                    FARM if self.farms[s.farm as usize].peak.is_none() => i.hands as i64 * 7 * SPARE_FARM_PCT / 100,
+                    FARM if self.farms[s.farm as usize].peak.is_none() => self.spare_week(&i, s.farm),
                     _ => 0,
-                };
+                } * work_of_fed(s.fed) / 1000;
                 if days > 0 {
                     if s.kind == TENT {
                         offers.push((id, days));
@@ -2006,6 +2083,37 @@ impl Grain {
                 }
             }
             self.markets[mi].hirers = hirers;
+            // Farms with more in store than food to the next harvest, the
+            // reserve and next year's seed pay day labour from the surplus,
+            // in household order (S84; Erdkamp 2005: smallholders worked on
+            // the estates). PLACEHOLDER: the work makes nothing yet (ditches,
+            // buildings, gardens, clearing).
+            for (id, mut want) in surplus {
+                let farm = self.hh[&id].farm;
+                while want > 0 && o < offers.len() {
+                    if offers[o].0 == id {
+                        o += 1;
+                        continue;
+                    }
+                    let take = want.min(offers[o].1);
+                    offers[o].1 -= take;
+                    want -= take;
+                    let wage = take * WAGE_KG_DAY;
+                    self.farms[farm as usize].store -= wage;
+                    self.stats.hired_days += take;
+                    self.stats.wage_kg += wage;
+                    let w = offers[o].0;
+                    let ws = self.hh.get_mut(&w).unwrap();
+                    if ws.farm != NONE {
+                        self.farms[ws.farm as usize].store += wage;
+                    } else {
+                        ws.pantry += wage;
+                    }
+                    if offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
+            }
         }
     }
 

@@ -29,7 +29,7 @@ und `sim/inputs/landcover-fine.bin.zst`.
 |---|---|---|
 | **Höfe** | Ein Hof pro Bauernhaushalt beim Start: Familienhof (Bauern), Pachthof (Pächter, Pacht an einen Grundherrn) und Gutshof (Unfreie, alles gehört dem Grundherrn, einem Senator oder Ritter). Tagelöhner auf dem Land haben keinen Hof und leben im Zelt. Wird ein Hof frei (Familie ausgestorben oder weggezogen), zieht automatisch ein Haushalt aus den Zelten derselben Region ein. Neue Höfe baut nur der Spieler; den gibt es im Prototyp noch nicht. | S69 |
 | **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. Die Felder liegen auf Kacheln von 1,56 km um den Hofplatz, die nächsten freien zuerst (siehe unten). | S73 |
-| **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. | S72 |
+| **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. Danach stellt jeder Hof, der mehr im Speicher hat als Nahrung bis zur nächsten Ernte, Reserve und Saatgut, mit diesem Überschuss Tagelöhner an, jede Woche. Ein Hof bietet die Arbeitstage seiner Erwachsenen an, die seine eigenen Felder nicht brauchen; wer kaum Land hat, arbeitet fast ganz für andere. Wer hungert, arbeitet weniger (S84 b). | S72, S84 |
 | **Saatgut und Brache** | Jeder Hof legt nach der Ernte das Saatgut fürs nächste Jahr zurück (130 kg/ha) und sät es im Herbst aus dem Hofspeicher; fehlt es, bleibt Feld ungesät. Die Ernte bringt brutto Saat mal Saatverhältnis. Zweifelderwirtschaft: Jedes Jahr liegt die Hälfte der Felder brach, ein Hof braucht also doppelt so viel Land. | S76 |
 | **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
 | **Markt** | Ein Markt pro 100-km-Region, am grössten Ort nach Hanson, sonst an der Zelle mit den meisten Menschen (1'783 Märkte). Lager, Bargeld der Händler am Markt und ein Preis, der jeden Tag gedämpft auf einen Zielpreis aus der Lagerreichweite zuläuft. Ankauf 10 % unter, Verkauf 10 % über dem Preis. Der Markt kauft nur, so weit sein Bargeld reicht; was er nicht nimmt, trägt der Bauer wieder heim. | S70, S22 |
@@ -214,21 +214,57 @@ Hungertote, −12 %). Ohne Getreidewirtschaft ändert S84 fast nichts (Jahr 100:
 152'465), weil wer genug isst die Sterbetafel behält. Fingerprint gleich mit 1 und 4 Threads.
 Grain im Mittel 1,44 ms pro Tag.
 
-## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82 und S84, `run100-timing.txt`)
+## Hungersnot zu Beginn behoben (S84 a und b, 100 Jahre, Seed 1, `run100-s84-work.txt`; vorher: `run100-s84.txt`)
+
+Ramon: „mach a und b“, dann Arbeit aus dem Überschuss. Die Hungersnot kam nicht von zu wenig
+Getreide: Die Höfe horteten jedes Jahr rund 13'000 t mehr, weil die Händler nicht genug
+Bargeld hatten, um den Überschuss zu kaufen. Gehungert haben die Zelte und etwa 3'500 Höfe mit
+kaum Land (im Mittel 0,24 ha pro Kopf; mit Brache braucht ein Mensch etwa 1,2 ha). Sie
+hatten kein Geld und nur in Aussaat und Ernte Arbeit. Historisch arbeiteten solche
+Kleinbauern als Tagelöhner auf den Gütern (Erdkamp 2005, Cato, Varro).
+
+- **(a) Startvorräte:** Ein Hof startet mit dem, was die letzte Ernte nach den Regeln eines
+  normalen Jahrs übrig lässt: Ernte seiner Felder minus Steuer und Pacht, minus Essen seit der
+  Ernte und Herbstsaat. Den Überschuss hat er nicht verkauft (den Händlern fehlt das Geld),
+  er liegt im Speicher. Mindestens hat jeder Hof Nahrung bis zur Ernte plus 60 Tage.
+- **(b) Weniger Arbeit bei Hunger:** Die Hände in Aussaat und Ernte, die Arbeit übers Jahr,
+  die Rodung und die angebotenen Taglohntage folgen `body::work_factor` des gegessenen Anteils
+  (1 satt, 0,6 bei PAL 1,45).
+- **Arbeit aus dem Überschuss:** Jede Woche stellt jeder Hof mit Überschuss Tagelöhner an,
+  zuerst aus den Zelten, dann Bauern mit freier Zeit, 3 kg Getreide pro Tag.
+- **Freie Zeit eines Hofs:** die Arbeitstage seiner Erwachsenen (290 im Jahr) minus die
+  Arbeit seiner eigenen Felder ausserhalb der Spitzen. Das ersetzt den Platzhalter 30 %; für
+  einen voll bestellten Hof kommt etwa dasselbe heraus.
+
+| Jahr | Menschen vorher → jetzt | Hungertote vorher → jetzt | Abgewandert vorher → jetzt |
+|---|---|---|---|
+| 1 | 113'661 → 115'003 | 1'644 → 337 | 367 → 64 |
+| 2 | 100'114 → 113'393 | 15'466 → 4'168 | 503 → 129 |
+| 5 | 92'825 → 112'424 | 1'240 → 681 | 107 → 96 |
+| 50 | 99'754 → 143'382 | 348 → 446 | 56 → 78 |
+| 100 | 107'903 → 181'410 | 743 → 906 | 204 → 932 |
+
+Die Zelte essen ab Jahr 3 über 90 % ihres Bedarfs (vorher 58–88 %). **Wachstum:** 0,44 % im
+Jahr über 100 Jahre, historisch etwa 0,1 %. Im Jahr 100 ist das Land knapp: 42,7 % der Höfe
+sind zu klein für ihren Haushalt, Hungertote und Abwanderung steigen wieder. Taglohn wird viel
+bezahlt (14 Mio. Tage im Jahr 100). Die Arbeit selbst bringt noch nichts hervor
+(Platzhalter). Fingerprint gleich mit 1 und 4 Threads (10 Jahre).
+
+## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
 |---|---|
 | Aufbau Getreide | 0,42 s (Marktgraph mit 32 Nachbarn pro Markt, Land auf 4,9 Mio. Kacheln verteilen) |
-| **Getreide pro Tag, Median / Mittel** | **0,66 ms / 0,93 ms** (vor S84, ohne die beiden Threads, auf derselben Maschine 0,91 / 1,17) (Ziel Mittel ≤ 1,5 ms) |
-| Getreide pro Tag, 95 % / 99 % | 2,3 ms / 3,9 ms (Ziel Spitze ≤ 5 ms) |
-| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 2,8 / 5,0 / 6,7 ms (Ziel 99 % ≤ 12 ms) |
-| Speicher nach 100 Jahren | 440 MB bei 108'000 Menschen |
+| **Getreide pro Tag, Median / Mittel** | **0,93 ms / 1,24 ms** (Ziel Mittel ≤ 1,5 ms; ohne Arbeit aus dem Überschuss 0,66 / 0,93 bei 108'000 Menschen) |
+| Getreide pro Tag, 95 % / 99 % | 3,0 ms / 4,9 ms (Ziel Spitze ≤ 5 ms) |
+| Ganzer Tag mit Menschen, Median / 95 % / 99 % | 3,7 / 6,8 / 9,0 ms (Ziel 99 % ≤ 12 ms) |
+| Speicher nach 100 Jahren | 465 MB bei 181'000 Menschen |
 | Determinismus | gleicher Fingerabdruck mit 1 und 4 Threads; Test `grain::tests::deterministic_fingerprint` |
 
-Pro Tag im Mittel auf dem Hauptthread: Reisen (Ankunft, Rückkehr) 0,16 ms, Arbeitsbörse 0,10,
-Märkte und Nachrichten 0,12, Essen und Kaufen 0,16, Händler mit Handelswegen 0,06, Fusswege
-0,03 (Warten auf den Fussweg-Thread), Aussaat und Ernte mit Kachelsuche 0,09,
-Haushaltszählung 0,21.
+Pro Tag im Mittel auf dem Hauptthread: Reisen (Ankunft, Rückkehr) 0,17 ms, Arbeitsbörse 0,33
+(jede Region jede Woche, alle Höfe und Zelte), Märkte und Nachrichten 0,13, Essen und Kaufen
+0,18, Händler mit Handelswegen 0,06, Fusswege 0,03 (Warten auf den Fussweg-Thread), Aussaat
+und Ernte mit Kachelsuche 0,11, Haushaltszählung 0,22.
 
 **Fusswege und Nachbarsuche auf eigenen Threads.** Die Gänge eines Tages (Wegfelder ablaufen,
 neu rechnen) und die neuen Nachbarsuchen der Märkte laufen am Ende des Getreidetags auf je
@@ -293,7 +329,9 @@ in Arrays nach ID statt in Hashtabellen.
 | Handelswege | Halbwertszeit 2 Jahre, Handelsweg ab 100, Strasse ab 400 Fahrten im Jahr (zurück unter 50 / 200), Wagenfracht 80 % / 65 %; Seewege ohne Wirkung | Werte frei, wie Fusswege |
 | Felder auf Kacheln | Umkreis 8 Kacheln um den Hofplatz; Hofplatz im Dorf des Haushalts (`settle.rs`: ein Dorf je 25 Menschen auf den Kacheln mit dem meisten flachen Ackerland, Platzhalter dort); was die 25-km-Daten mehr Land haben als die Kacheln fassen, liegt über (wenige Zellen) | Echte Feldgrösse (S51) auf einer Karte mit Wegen 1 : 23,8 (S50) hat keine natürliche Grenze für den Weg zum Feld |
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
-| Startvorräte | Höfe bis zur Ernte + 60 Tage, Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
+| Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
+| Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
+| Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
 
 ## Nicht gebaut
@@ -312,8 +350,8 @@ in Arrays nach ID statt in Hashtabellen.
 - **Haushalte aus nur Kindern oder Alten** ziehen jetzt zu Verwandten oder gehen ins Zelt
   (S79). Was mit dem Vorrat eines Haushalts geschieht, der dabei leer wird, ist offen: Er
   verschwindet mit dem Haushalt. Der Hofspeicher bleibt beim Hof.
-- **Arbeitslose Landlose.** Arbeit gibt es fast nur in Aussaat und Ernte, darum hungern
-  die Zelte und verschwinden in 30 Jahren fast ganz. Ob das so gewollt ist, hängt an
-  S69 (Arbeit, Betteln, Stehlen) und S74 (der Spieler baut Höfe).
+- **Wachstum 0,44 % im Jahr** seit der Arbeit aus dem Überschuss, historisch etwa 0,1 %.
+  Gebremst wird es erst, wenn das Land knapp wird (Jahr 100). Verderb (S72 offen) würde das
+  Horten begrenzen.
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.
