@@ -47,10 +47,10 @@ func _ready() -> void:
 func _environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("8fb9d6")
+	env.background_color = Color("8aa9b8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("c9d6e0")
-	env.ambient_light_energy = 0.45
+	env.ambient_light_color = Color("b4ab90")
+	env.ambient_light_energy = 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.ssao_enabled = args.get("scene", "hero") != "bench"
 	var we := WorldEnvironment.new()
@@ -58,8 +58,8 @@ func _environment() -> void:
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.0
-	sun.light_color = Color("fff1dc")
+	sun.light_energy = 1.15
+	sun.light_color = Color("fff0dc")
 	sun.shadow_enabled = not args.has("noshadow")
 	sun.directional_shadow_max_distance = 260.0
 	add_child(sun)
@@ -85,12 +85,12 @@ func _camera(target: Vector3, distance: float, fov := 30.0) -> void:
 	cam.look_at_from_position(target + dir * distance, target)
 
 func _hero() -> void:
-	_ground(400.0, Color("5d8a35"))
+	_ground(400.0, Color("56692f"))
 	var plaza := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(22, 0.12, 19)
 	var pm := StandardMaterial3D.new()
-	pm.albedo_color = Color("b8a07a")
+	pm.albedo_color = Color("b8a184")
 	box.material = pm
 	plaza.mesh = box
 	add_child(plaza)
@@ -98,7 +98,7 @@ func _hero() -> void:
 	_camera(Vector3(0, 1.2, 0), float(args.get("dist", "42")))
 
 func _lods() -> void:
-	_ground(400.0, Color("5d8a35"))
+	_ground(400.0, Color("56692f"))
 	for i in 3:
 		_add(meshes[i], Transform3D(Basis(), Vector3((i - 1) * 15.0, 0, -(i - 1) * 15.0)))
 	_camera(Vector3(0, 1.5, 0), 62.0)
@@ -134,7 +134,7 @@ func _bench() -> void:
 	var count := int(args.get("count", "10000"))
 	var xfs := _grid(count)
 	var extent := sqrt(count) * SPACING
-	_ground(extent + 200.0, Color("5d8a35"))
+	_ground(extent + 200.0, Color("56692f"))
 	match args.get("mode", "chunked"):
 		"naive":
 			for xf in xfs:

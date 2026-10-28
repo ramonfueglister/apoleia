@@ -5,7 +5,7 @@ Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in
 ## Was es ist
 
 - `colosseum_mesh.gd` baut das Kolosseum prozedural in drei Detailstufen:
-  LOD0 1412, LOD1 276, LOD2 40 Dreiecke. Nur Vertex-Farben und flache
+  LOD0 1440, LOD1 276, LOD2 40 Dreiecke. Nur Vertex-Farben und flache
   Normalen, ein gemeinsames `StandardMaterial3D`, keine Texturen.
 - `main.gd` zeigt es (`--scene=hero`, `--scene=lods`) oder misst
   (`--scene=bench`) mit vier Varianten:
@@ -28,15 +28,18 @@ und Caesar 3 (App 517790), lokal angesehen, nicht im Repo.
 - Urbek: kompakte, klotzige Volumen, flache Facetten, weiches Licht.
   Übernommen als Idee: flache Normalen, dicke Kranzgesims-Kante, eingebackene
   Bodenverdunkelung (AO) in den Vertex-Farben.
-- Caesar III: Palette aus einem Ausschnitt des Kolosseums quantisiert
-  (helles Travertin `e9d8bd`/`bca691`, dunkle Bögen `4a3428`, Sand,
-  rote Wimpel). Die Tribünen-„Menge“ ist ein Farbrauschen je Segment, ohne
+- Caesar III: Palette aus Ausschnitten von Kolosseum, Wiese und Dächern
+  quantisiert: warmes, eher graues Travertin (`d8cbb6`/`a08a70`), tiefe
+  Bogenschatten (`2e2419`), olivgrüne Wiese (`56692f`), braunes Sandfeld,
+  dichter Kranz roter Wimpel. Dazu warmes, kontrastreiches Licht mit wenig
+  Umgebungslicht. Die Tribünen-„Menge“ ist ein Farbrauschen je Segment, ohne
   zusätzliche Dreiecke.
 
 ## Messung (M3 Pro, Metal, 1280×720, Schatten an)
 
 Zählwerte aus `RenderingServer.get_rendering_info` (Primitive inklusive
-Schattenpässe). `Bildzeit` = Median über 120 Bilder ohne VSync, am Netzteil,
+Schattenpässe). Gemessen mit LOD0 = 1412 Dreiecken (vor dem
+Farbdurchgang mit dichteren Wimpeln). `Bildzeit` = Median über 120 Bilder ohne VSync, am Netzteil,
 mit den damaligen LOD-Grenzen 140/420. Der Code steht jetzt auf 200/600
 (weniger sichtbares Umspringen); ein zweiter Lauf damit lief auf Akku, blieb
 bei 120 Hz (8,3 ms) gedeckelt und zeigte etwa 60 % mehr Primitive in der

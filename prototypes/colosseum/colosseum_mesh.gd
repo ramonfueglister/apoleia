@@ -14,16 +14,17 @@ const SEAT_TOP := 4.0       # seating starts below the rim
 const ARENA := 0.45         # arena half-axes as a share of the outer ones
 const PODIUM := 0.55        # wall between arena and lowest seats
 
-# Palette sampled from a Caesar III colosseum screenshot (quantized crop).
-const STONE := Color("e9d8bd")        # lit travertine
-const STONE_DARK := Color("bca691")   # cornice, shadowed stone
-const ARCH := Color("4a3428")         # arch openings
-const REVEAL := Color("8a6e58")       # arch side walls
-const SEATS_A := Color("c9b79c")
-const SEATS_B := Color("a8937a")
-const SAND := Color("c4a26e")
-const RED := Color("b8352b")
-const CROWD := [Color("8d8a86"), Color("e4ddd0"), Color("6e5a48"), Color("a3402f"), Color("b9b2a5")]
+# Palette sampled from Caesar III screenshots (quantized crops of the
+# colosseum, grass and roofs): warm, darker midtones, deep arch shadows.
+const STONE := Color("d8cbb6")        # lit travertine
+const STONE_DARK := Color("a08a70")   # cornice, shadowed stone
+const ARCH := Color("2e2419")         # arch openings
+const REVEAL := Color("6b5644")       # arch side walls
+const SEATS_A := Color("b7a28d")
+const SEATS_B := Color("8d7a62")
+const SAND := Color("b09070")
+const RED := Color("a8302a")
+const CROWD := [Color("6f6a62"), Color("dfcfbc"), Color("5b4839"), Color("b05e3a"), Color("9a9177")]
 
 ## Emits a flat quad. `out` is a rough direction the visible side faces.
 static func _quad(st: SurfaceTool, p: Array, colour: Color, out: Vector3) -> void:
@@ -34,7 +35,7 @@ static func _quad(st: SurfaceTool, p: Array, colour: Color, out: Vector3) -> voi
 	for k in [0, 2, 1, 0, 3, 2]:  # Godot: clockwise is the front
 		# Baked ambient occlusion: stone darkens towards the ground.
 		var q: Vector3 = p[k]
-		var ao := lerpf(0.72, 1.0, clampf(q.y / 0.9, 0.0, 1.0))
+		var ao := lerpf(0.62, 1.0, clampf(q.y / 0.9, 0.0, 1.0))
 		st.set_color(Color(colour.r * ao, colour.g * ao, colour.b * ao))
 		st.set_normal(n)
 		st.add_vertex(q)
@@ -149,7 +150,7 @@ static func lod0() -> ArrayMesh:
 		_quad(st, [at.call(0.0, lip, -0.22), at.call(1.0, lip, -0.22), at.call(1.0, H, -0.22), at.call(0.0, H, -0.22)], STONE, out)
 		_quad(st, [at.call(0.0, H, -0.22), at.call(1.0, H, -0.22), at.call(1.0, H), at.call(0.0, H)], STONE, Vector3.UP)
 	_bowl(st, n, 2)
-	_pennants(st, 9)
+	_pennants(st, 16)
 	return st.commit()
 
 ## LOD1, about 200 triangles: arches become a dark band per storey.
