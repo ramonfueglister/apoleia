@@ -12,7 +12,7 @@ extends Node3D
 const Col := preload("res://colosseum_mesh.gd")
 const SPACING := 20.0
 const CHUNK := 4                         # chunk = CHUNK x CHUNK colosseums
-const LOD_RANGES := [0.0, 200.0, 600.0, 6000.0]
+const LOD_RANGES := [0.0, 90.0, 300.0, 6000.0]
 const WARMUP := 40
 const FRAMES := 120
 
@@ -49,17 +49,25 @@ func _environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("8aa9b8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("b4ab90")
-	env.ambient_light_energy = 0.3
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	# Urbek-like light: cool sky fill in the shadows, soft occlusion, a
+	# warm sun, colours kept bright rather than filmic-washed.
+	env.ambient_light_color = Color("a9bfd8")
+	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.tonemap_exposure = 0.95
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.12
 	env.ssao_enabled = args.get("scene", "hero") != "bench"
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 1.6
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.3
-	sun.light_color = Color("fff0dc")
+	sun.light_energy = 1.1
+	sun.light_color = Color("fff1de")
+	sun.shadow_blur = 1.5
 	sun.shadow_enabled = not args.has("noshadow")
 	sun.directional_shadow_max_distance = 260.0
 	add_child(sun)
@@ -85,7 +93,7 @@ func _camera(target: Vector3, distance: float, fov := 30.0) -> void:
 	cam.look_at_from_position(target + dir * distance, target)
 
 func _hero() -> void:
-	_ground(400.0, Color("56692f"))
+	_ground(400.0, Color("7ea24a"))
 	var plaza := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(22, 0.12, 19)
@@ -96,9 +104,15 @@ func _hero() -> void:
 	add_child(plaza)
 	_add(meshes[0], Transform3D.IDENTITY)
 	_camera(Vector3(0, 1.2, 0), float(args.get("dist", "42")))
+	if args.has("elev"):
+		# Straight side view, orthographic: checks proportions.
+		var cam: Camera3D = get_children().filter(func(c): return c is Camera3D)[0]
+		cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+		cam.size = 12.0
+		cam.look_at_from_position(Vector3(0, 3.5, 40), Vector3(0, 3.5, 0))
 
 func _lods() -> void:
-	_ground(400.0, Color("56692f"))
+	_ground(400.0, Color("7ea24a"))
 	for i in 3:
 		_add(meshes[i], Transform3D(Basis(), Vector3((i - 1) * 15.0, 0, -(i - 1) * 15.0)))
 	_camera(Vector3(0, 1.5, 0), 62.0)
@@ -138,7 +152,7 @@ func _bench() -> void:
 	var count := int(args.get("count", "10000"))
 	var xfs := _grid(count)
 	var extent := sqrt(count) * SPACING
-	_ground(extent + 200.0, Color("56692f"))
+	_ground(extent + 200.0, Color("7ea24a"))
 	match args.get("mode", "chunked"):
 		"naive":
 			for xf in xfs:

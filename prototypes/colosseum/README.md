@@ -4,16 +4,29 @@ Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in
 
 ## Was es ist
 
-- `colosseum_mesh.gd` baut das Kolosseum prozedural in drei Detailstufen:
-  LOD0 1940, LOD1 504, LOD2 90 Dreiecke. Nur Vertex-Farben und flache
-  Normalen, ein gemeinsames `StandardMaterial3D`, keine Texturen.
-- `main.gd` zeigt es (`--scene=hero`, `--scene=lods`) oder misst
-  (`--scene=bench`) mit vier Varianten:
+- `colosseum_mesh.gd` baut das Kolosseum als Voxel-Modell im Stil von Urbek:
+  Jede der 28 Achsen ist ein kleines gerades Voxel-Gebäude (25-cm-Blöcke),
+  das auf sein Stück der Ellipse gebogen wird. So bleiben Bögen und Stufen
+  sauber statt treppig wie in einem weltachsigen Gitter. Gemeshed werden nur
+  sichtbare Flächen; gleichfarbige Flächen verschmelzen, wo die
+  Ecken-Schattierung (Voxel-AO in den Vertex-Farben) es zulässt;
+  Unterseiten entfallen. Ein gemeinsames Material, keine Texturen.
+  - LOD0: 25 cm, ca. 23 000 Dreiecke (Bögen, Säulen, Gesimse, Attika,
+    Ränge mit Menge, Vomitorien, Sandarena, roter Fahnenkranz)
+  - LOD1: 50 cm, ca. 6 000 Dreiecke (gewichtete Mehrheit der Feinproben:
+    Menge und Fahnen bleiben sichtbar)
+  - LOD2: 168 Dreiecke, ein 12-eckiger Ring mit den Farbmassen
+- `main.gd` zeigt es (`--scene=hero`, `--scene=lods`, `--elev` für die
+  Seitenansicht) oder misst (`--scene=bench`) wie unten beschrieben; die
+  LOD-Grenzen stehen auf 0–90, 90–300, 300–6000.
+- Licht nach Urbek: kühles Himmelslicht in den Schatten, SSAO, weiche
+  Sonnenschatten, linearer Tonemapper mit leicht erhöhter Sättigung.
+- Varianten der Messung:
   - `naive`: ein `MeshInstance3D` je Kolosseum, volles Detail
   - `nodes_lod`: drei `MeshInstance3D` je Kolosseum mit Visibility Ranges
   - `multimesh`: ein `MultiMesh` mit allen Kolosseen, volles Detail
   - `chunked`: `MultiMesh`-Chunks zu 4×4 Kolosseen, je Chunk drei LODs
-    über Visibility Ranges (0–200, 200–600, 600–6000), LOD2 ohne Schatten
+    über Visibility Ranges, LOD2 ohne Schatten
 
 ```sh
 godot --path prototypes/colosseum --windowed --resolution 1280x720 -- \
@@ -38,7 +51,21 @@ und Caesar 3 (App 517790), lokal angesehen, nicht im Repo.
   Kritiker widersprechen sich von Runde zu Runde (z. B. Stein heller vs.
   dunkler, Gesimse tiefer vs. flacher, Menge gesprenkelt vs. geordnet).
 
-## Messung (M3 Pro, Metal, 1280×720, Schatten an)
+## Messung Voxel-Modell (M3 Pro, Metal, 1280×720, Schatten an, Chunks + LOD)
+
+Auf Akku gemessen, Bildzeit deshalb bei 120 Hz (8,3 ms) gedeckelt;
+Primitive inklusive Schattenpässe.
+
+| Fall | Primitive | Bildzeit | Render-CPU | Speicher |
+|---|---:|---:|---:|---:|
+| 10 000, Stadtzoom | 4,8 Mio. | ≤ 8,3 ms | 0,3 ms | 67 MB |
+| 10 000, ganze Karte | 1,6 Mio. | ≤ 8,3 ms | 0,7 ms | 68 MB |
+| 50 000, ganze Karte | 4,0 Mio. | 11,6 ms | 1,1 ms | 156 MB |
+
+Aufbau der drei Meshes beim Start: ca. 1 s in GDScript (für ein Spiel
+einmal vorab backen).
+
+## Frühere Messungen (Low-Poly-Version, gleiches Gerüst)
 
 Nach dem Gauntlet-Loop (LOD0 1940 / LOD1 504 / LOD2 90, LOD-Grenzen
 200/600, auf Akku, Bildzeit deshalb bei 8,3 ms gedeckelt), ganze Karte:
