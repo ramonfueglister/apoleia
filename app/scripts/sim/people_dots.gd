@@ -48,6 +48,7 @@ const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
 const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
+const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used.
@@ -265,11 +266,13 @@ func _rebuild() -> void:
 	multimesh = mm
 	_apply_colours()
 
-## A person 1 unit tall (1.7 m), low-poly like the houses: legs with
-## sandals, tunic, arms, neck, head and hair, plus the props of the trades
-## (tool or spear, shield, sword, cloak, apron, bundle) that
-## people_figures.gdshader shows by occupation and estate and folds away
-## for everyone else. Vertex colours are sRGB; UV.x names the part (FIG_*).
+## A person 1 unit tall (1.7 m) of blocks, in the voxel style of the houses
+## (Urbek): feet, legs, tunic, arms, head and hair as boxes on a grid of
+## 0.04 units (7 cm), each part its own block so it can swing, plus the
+## props of the trades (tool or spear, shield, sword, cloak, apron, bundle)
+## that people_figures.gdshader shows by occupation and estate and folds
+## away for everyone else. Vertex colours are sRGB with the corner shading
+## of the voxel meshes (VoxelMesh.AO) in alpha; UV.x names the part (FIG_*).
 const FIG_TUNIC := 0 # dyed, a long dress on women, a robe on clergy and scholars
 const FIG_LEG_L := 1
 const FIG_LEG_R := 2
@@ -292,53 +295,37 @@ static func _figure_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var skin := Color(0.84, 0.64, 0.48)
+	var hair := Color(0.26, 0.17, 0.1)
 	var sandal := Color(0.36, 0.24, 0.15)
 	var wood := Color(0.42, 0.3, 0.18)
 	var iron := Color(0.55, 0.56, 0.58)
 	for side in [-1.0, 1.0]:
 		var left: bool = side < 0.0
-		_prism(st, Vector3(0.055 * side, 0.0, 0.015), 0.05, 0.045, 0.0, 0.05, 6, sandal, FIG_SANDAL_L if left else FIG_SANDAL_R, 1.3)
-		_prism(st, Vector3(0.055 * side, 0.0, 0.0), 0.04, 0.05, 0.05, 0.47, 6, skin, FIG_LEG_L if left else FIG_LEG_R)
-		_prism(st, Vector3(0.165 * side, 0.0, 0.0), 0.032, 0.04, 0.47, 0.79, 6, skin, FIG_ARM_L if left else FIG_ARM_R)
-	_prism(st, Vector3.ZERO, 0.16, 0.14, 0.43, 0.81, 8, Color.WHITE, FIG_TUNIC, 0.72)
-	_prism(st, Vector3.ZERO, 0.035, 0.035, 0.80, 0.85, 6, skin, FIG_FIXED)
-	_prism(st, Vector3.ZERO, 0.06, 0.068, 0.84, 0.96, 8, skin, FIG_FIXED)
-	_prism(st, Vector3(0, 0, -0.008), 0.072, 0.045, 0.93, 1.0, 8, Color(0.26, 0.17, 0.1), FIG_HAIR)
+		_box(st, Vector3(0.06 * side, 0.02, 0.02), Vector3(0.04, 0.02, 0.06), sandal, FIG_SANDAL_L if left else FIG_SANDAL_R)
+		_box(st, Vector3(0.06 * side, 0.26, 0.0), Vector3(0.04, 0.22, 0.04), skin, FIG_LEG_L if left else FIG_LEG_R)
+		_box(st, Vector3(0.16 * side, 0.62, 0.0), Vector3(0.04, 0.16, 0.04), skin, FIG_ARM_L if left else FIG_ARM_R)
+	# the tunic's hem stays the only geometry below 0.5 (the shader lets it
+	# down into a long dress)
+	_box(st, Vector3(0.0, 0.62, 0.0), Vector3(0.12, 0.18, 0.08), Color.WHITE, FIG_TUNIC)
+	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(0.08, 0.08, 0.08), skin, FIG_FIXED)
+	_box(st, Vector3(0.0, 0.97, -0.01), Vector3(0.088, 0.03, 0.088), hair, FIG_HAIR)
+	_box(st, Vector3(0.0, 0.9, -0.07), Vector3(0.088, 0.06, 0.028), hair, FIG_HAIR)
 	# props
-	_prism(st, Vector3(0.2, 0.0, 0.05), 0.014, 0.012, 0.0, 1.12, 4, wood, FIG_POLE)
-	_box(st, Vector3(0.2, 1.08, 0.12), Vector3(0.012, 0.035, 0.075), iron, FIG_HOE)
-	_prism(st, Vector3(0.2, 0.0, 0.05), 0.026, 0.0, 1.12, 1.26, 4, iron, FIG_SPEAR)
-	_box(st, Vector3(-0.235, 0.56, 0.02), Vector3(0.018, 0.21, 0.12), Color(0.58, 0.16, 0.12), FIG_SHIELD)
-	_box(st, Vector3(-0.255, 0.56, 0.02), Vector3(0.008, 0.035, 0.035), Color(0.78, 0.66, 0.34), FIG_SHIELD)
-	_box(st, Vector3(-0.15, 0.36, 0.06), Vector3(0.012, 0.13, 0.02), iron, FIG_SWORD)
-	_box(st, Vector3(-0.15, 0.5, 0.06), Vector3(0.02, 0.012, 0.035), wood, FIG_SWORD)
-	_box(st, Vector3(0.0, 0.53, -0.125), Vector3(0.15, 0.27, 0.012), Color.WHITE, FIG_CLOAK)
-	_box(st, Vector3(0.0, 0.47, 0.12), Vector3(0.1, 0.16, 0.01), Color(0.4, 0.27, 0.16), FIG_APRON)
-	_box(st, Vector3(0.0, 0.66, -0.17), Vector3(0.09, 0.11, 0.06), Color(0.6, 0.5, 0.34), FIG_BUNDLE)
+	_box(st, Vector3(0.2, 0.56, 0.06), Vector3(0.016, 0.56, 0.016), wood, FIG_POLE)
+	_box(st, Vector3(0.2, 1.08, 0.12), Vector3(0.016, 0.04, 0.08), iron, FIG_HOE)
+	_box(st, Vector3(0.2, 1.18, 0.06), Vector3(0.024, 0.06, 0.024), iron, FIG_SPEAR)
+	_box(st, Vector3(-0.24, 0.56, 0.02), Vector3(0.02, 0.2, 0.12), Color(0.58, 0.16, 0.12), FIG_SHIELD)
+	_box(st, Vector3(-0.264, 0.56, 0.02), Vector3(0.008, 0.04, 0.04), Color(0.78, 0.66, 0.34), FIG_SHIELD)
+	_box(st, Vector3(-0.16, 0.36, 0.06), Vector3(0.012, 0.12, 0.02), iron, FIG_SWORD)
+	_box(st, Vector3(-0.16, 0.5, 0.06), Vector3(0.02, 0.012, 0.036), wood, FIG_SWORD)
+	_box(st, Vector3(0.0, 0.54, -0.1), Vector3(0.14, 0.26, 0.012), Color.WHITE, FIG_CLOAK)
+	_box(st, Vector3(0.0, 0.5, 0.092), Vector3(0.1, 0.16, 0.012), Color(0.4, 0.27, 0.16), FIG_APRON)
+	_box(st, Vector3(0.0, 0.66, -0.14), Vector3(0.08, 0.1, 0.06), Color(0.6, 0.5, 0.34), FIG_BUNDLE)
 	return st.commit()
 
-## An upright prism of `sides` around `base` from y0 to y1, radius r0 at the
-## bottom and r1 at the top, depth scaled by `depth`, with both caps.
-static func _prism(st: SurfaceTool, base: Vector3, r0: float, r1: float, y0: float, y1: float, sides: int, colour: Color, part: int, depth := 1.0) -> void:
-	var ring := func(r: float, y: float, k: int) -> Vector3:
-		var a := TAU * (float(k) + 0.5) / float(sides)
-		return base + Vector3(cos(a) * r, y, sin(a) * r * depth)
-	var uv := Vector2(part, 0)
-	for k in sides:
-		var b0: Vector3 = ring.call(r0, y0, k)
-		var b1: Vector3 = ring.call(r0, y0, k + 1)
-		var t0: Vector3 = ring.call(r1, y1, k)
-		var t1: Vector3 = ring.call(r1, y1, k + 1)
-		var mid := TAU * (float(k) + 1.0) / float(sides)
-		var n := Vector3(cos(mid), (r0 - r1) / maxf(y1 - y0, 0.001), sin(mid) / depth).normalized()
-		for v in [b0, t0, t1, b0, t1, b1]:
-			st.set_color(colour); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
-		for cap in [[y1, r1, Vector3.UP], [y0, r0, Vector3.DOWN]]:
-			var c := base + Vector3(0, cap[0], 0)
-			for v in [c, ring.call(cap[1], cap[0], k + 1), ring.call(cap[1], cap[0], k)]:
-				st.set_color(colour); st.set_uv(uv); st.set_normal(cap[2]); st.add_vertex(v)
-
-## An axis-aligned box around `centre` with half extents `half`.
+## An axis-aligned box around `centre` with half extents `half`. The side
+## faces darken towards the bottom like a voxel model's corner shading
+## (VoxelMesh.AO), kept in the vertex alpha.
 static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color, part: int) -> void:
 	var uv := Vector2(part, 0)
 	for axis in 3:
@@ -353,7 +340,13 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 			var q := [c - u - w, c + u - w, c + u + w, c - u + w]
 			var order := [0, 1, 2, 0, 2, 3] if sgn > 0.0 else [0, 2, 1, 0, 3, 2]
 			for i in order:
-				st.set_color(colour); st.set_uv(uv); st.set_normal(n); st.add_vertex(q[i])
+				var v: Vector3 = q[i]
+				var ao: float = VoxelMesh.AO[3]
+				if axis != 1:
+					ao = VoxelMesh.AO[2] if v.y < centre.y else VoxelMesh.AO[3]
+				elif sgn < 0.0:
+					ao = VoxelMesh.AO[1]
+				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
 ## The grain layers on the terrain material: the road map when a month is
 ## built, the fine window when the month changes or the camera leaves its

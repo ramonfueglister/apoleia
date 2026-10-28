@@ -122,7 +122,9 @@ gleich (Test `settle::tests`).
   solange er in der Zelle bleibt.
 - **Anzeige:** Der Datensatz trägt die Mitte des Dorf-Tiles. Die GPU setzt das
   Dorf auf die beste von 16 Stellen des Tiles nach Ackerland und offenem Land
-  (`cover_tex`), das Haus in 0,6 km Umkreis, jede Person bis 35 m daneben.
+  (`cover_tex`), das Haus in 0,8 km Umkreis auf einer Parzelle eines Rasters
+  von 0,36 km (Reihen statt Überlappung; zwei Häuser auf einer Parzelle sehen
+  wie eines aus), jede Person bis 35 m daneben.
   Hat das Tile kein Land (gehashtes Tile an der Küste), sucht sie Land in der
   ganzen Zelle.
 - **Stadt:** Stadtbewohner haushaltsweise in der Scheibe ihrer Stadt; ihr
@@ -144,10 +146,11 @@ stammen von vor dieser Regel.
 ## Figuren in echter Grösse (Ramon, 28.10.2026)
 
 Realistisch statt Übersicht: Bis 10 km Bildbreite steht jede Person als kleine
-Low-Poly-Figur in echter Grösse auf ihrem Platz (1,7 m im Diorama-Massstab wie
+Klötzchenfigur in echter Grösse auf ihrem Platz (1,7 m im Diorama-Massstab wie
 Häuser und Bäume, also 1,7 m × 23,8 in Welt-km; `people_figures.gdshader`).
-Sandalen, Beine, Tunika, Arme, Hals, Kopf und Haar als kleine Prismen (rund
-250 Dreiecke); Frauen tragen ein langes Kleid und ein Kopftuch, Kinder unter 14
+Füsse, Beine, Tunika, Arme, Kopf und Haar als Quader auf einem Raster von
+7 cm im Voxel-Stil der Häuser (Urbek), mit der Eckschattierung der Voxel-Meshes
+im Vertex-Alpha, jedes Teil ein eigener Block, damit es schwingen kann; Frauen tragen ein langes Kleid und ein Kopftuch, Kinder unter 14
 sind kleiner (Geschlecht und Kind stehen im Datensatz, der Schlüssel hat dafür
 14 statt 16 Bit). Kleider in Woll-, Leinen-, Krapp- und Waidfarben oder nach
 Farbmodus. Reisende gehen mit schwingenden Beinen und Armen, die anderen
@@ -176,14 +179,28 @@ sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 
 ## Häuser
 
-Jeder Dorf-Haushalt hat ein Haus: das Haus-Mesh der Terrain (`tile_prop_meshes.gd`,
-10 m im Diorama-Massstab wie die Stadthäuser) auf seinem Hausplatz. Die View
+Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
+rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
+(`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
+Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster, Walmdach aus
+Terrakotta mit dunkleren Ziegelreihen und Graten, Schuppen mit Heu, Holzstoss
+und Busch. Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
+Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
+eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten. Drei
+Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
+gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v1_*.res`
+gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
+nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
+aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km
+Bildbreite), die nächsten 4096 mittel (bis 20 km), den Rest grob, zusammen
+höchstens 16 384. Die View
 führt dafür eine eigene Tabelle (`view::Houses`, ein Datensatz pro Haushalt
 und Heimzelle, gezählt über die Mitglieder, Reisende eingeschlossen), in
 festen Slots und Seiten wie die Personen: rund 25 600 Häuser in 7 Seiten, pro
-Tag ändert meist 1 Seite. Ein zweites MultiMesh (`people_houses.gdshader`)
+Tag ändert meist 1 Seite. `people_houses.gdshader`
 zeichnet sie, ein eigener Platzierungs-Pass (derselbe Shader mit `houses`)
-läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Die Familie steht
+läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Drehung, Grösse
+und Ton hängen an der Parzelle. Die Familie steht
 im Ring 170–240 m um ihr Haus. Stadtbewohner haben kein eigenes Haus, sie
 wohnen in den Stadt-Tiles.
 
@@ -266,3 +283,14 @@ Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 - Reisende (auch per Schiff) sind dunkelrot und dürfen auf See liegen.
   Daheim-Personen suchen 8 Stellen in ihrer Fläche und 8 in der doppelten, bevor
   ein Punkt auf Wasser fallen kann.
+
+## Cloud-Renders mit Forward+
+
+Ohne GPU rendert die Cloud mit Software-Vulkan (Mesa lavapipe) im gleichen
+Renderer wie der Mac, also mit Filmic-Tonemapping und denselben Farben, nicht
+mehr mit dem helleren und satteren `opengl3`:
+
+    apt-get install -y mesa-vulkan-drivers
+    VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json xvfb-run -a \
+      godot --rendering-driver vulkan --path app landscape.tscn -- \
+      --view=12.7534,41.9063,2 --people-warm=730 --snapshot=dorf.png

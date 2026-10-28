@@ -1,4 +1,4 @@
-// The people up close: a small low-poly figure (people_dots.gd _figure_mesh,
+// The people up close: a small figure of blocks (people_dots.gd _figure_mesh,
 // 1 unit = 1.7 m, drawn at diorama scale like the houses and trees) at the
 // spot the placement pass gave each person. Only the people near the camera
 // are drawn: ApoleiaPeople.near lists their slots into `list_tex`, one
@@ -201,7 +201,7 @@ void vertex() {
 	if (part != TUNIC) {
 		stripes = 0.0;
 	}
-	colour = part == TUNIC ? tunic : own;
+	colour = (part == TUNIC ? tunic : own) * COLOR.a; // alpha: corner shading
 }
 
 void fragment() {
