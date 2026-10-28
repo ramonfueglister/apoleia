@@ -266,8 +266,9 @@ Gesamtzahlen des Zensus eingestellt; siehe run-people).
 Von Jahr 10 bis 100 wächst die Bevölkerung um 0,05 % im Jahr (Ziel 0,1–0,2 %), gegen
 Ende schneller (0,37 % im Jahr 100). Die Hungersnot der ersten zwei Jahre (S84 a) drückt
 den Start von 116'805 auf 106'000. Fingerprint gleich mit 1 und 4 Threads (10 Jahre).
-Grain im Mittel 1,75 ms pro Tag; gemessen mit einem zweiten Lauf gleichzeitig auf der
-Maschine, also nicht mit `run100-timing.txt` vergleichbar.
+Tempo auf einer ruhigen Maschine (100 Jahre): Grain im Mittel 1,28 ms pro Tag, 99 % 4,0 ms;
+ganzer Tag Median 4,7 ms, 99 % 9,5 ms. (`run100-s86.txt` selbst lief neben einem zweiten
+Lauf und zeigt darum 1,75 ms.)
 
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
