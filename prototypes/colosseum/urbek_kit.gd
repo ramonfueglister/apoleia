@@ -30,7 +30,7 @@ enum { EMPTY,
 	POMPEII, POMPEII_W, DOCHRE, DOCHRE_W, BRICKFACE, BRICKFACE_W, TIMBER, TIMBER_W, MORTAR, DADO,
 	PAVE_J, BORDER, YARD, SEAT_HI, SEAT_MID, SEAT_WOOD, STATUE, STREAK, VIA_P, VIA_PD, WATER_D, SAIL,
 	POOL, WATER_L, REED, REED_D, MUD, HELMET, SHIELD, MILL,
-	MUD_D, SACK, SOIL, VINE, WOOL, PATH, FLOWER_W,
+	MUD_D, SACK, SOIL, VINE, WOOL, PATH, FLOWER_W, COURSE, COURSE_J, SMOKE, LAVA,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -47,13 +47,13 @@ const COLOURS := {
 	EAVE2: ["5a3a2c", "d88e68"], RIDGE2: ["9a5e45", "bf7a58"],
 	TILEB: ["3f5f8c", "5b80b0"], TILEB_D: ["37547d", "4f729f"], TILEB_L: ["4a6c99", "6a8fbd"],
 	EAVEB: ["2f3d52", "5b80b0"], RIDGEB: ["33496b", "466892"],
-	GLASS: ["3d3d48"], DARK: ["3a302c"], DOOR: ["7b5034"], DOOR_D: ["5d3b27"],
+	GLASS: ["3d3d48"], DARK: ["4a3f38"], DOOR: ["7b5034"], DOOR_D: ["5d3b27"],
 	SHUTTER_G: ["4f6a3b"], SHUTTER_B: ["7a4e2e"], SHUTTER_U: ["5e7c99"], WOOD: ["8a6040", "9c6e4a"], WOOD_D: ["5f4029"],
 	CLOTH_R: ["c8433a"], CLOTH_W: ["f1ebdf"], CLOTH_B: ["3f6ea6"], CLOTH_G: ["5c8c47"], CLOTH_Y: ["e3b24a"],
 	POT: ["b3603f"], AMPHORA: ["8e4e2e", "b8693e"], FRUIT_R: ["d0402f"], FRUIT_Y: ["eec24a"], FRUIT_G: ["8cb84a"],
 	BREAD: ["d6a35c"],
 	LEAF: ["5e8538", "86a84e"], LEAF_D: ["4f7530", "769a45"], LEAF_L: ["6c9440", "93b65a"],
-	CYPRESS: ["3d6233", "4b733c"], CYPRESS_D: ["324f2b", "3f6233"], PINE: ["4f7a37", "5f8f41"], PINE_D: ["3e6230", "4d7639"],
+	CYPRESS: ["3d6233", "4b733c"], CYPRESS_D: ["324f2b", "3f6233"], PINE: ["557a34", "6e9a44"], PINE_D: ["466a2c", "5a8238"],
 	TRUNK: ["6e4b33"], FLOWER_R: ["d8463a"], FLOWER_P: ["c45bb0"], FLOWER_Y: ["f0c64a"], HEDGE: ["4f8037", "5f923f"],
 	GRASS: ["648f40", "6fa048"], GRASS_D: ["557f36", "5e8f3c"], GRASS_L: ["76a24b", "84b556"],
 	EARTH: ["b59263", "c49f6e"], EARTH_D: ["a5845a", "b38f63"],
@@ -82,6 +82,7 @@ const COLOURS := {
 	MUD: ["6e5a48", "7a6450"], HELMET: ["c9c9c4"], SHIELD: ["a8392e"], MILL: ["8c8880", "9a968e"],
 	MUD_D: ["52443a", "5a4a3e"], SACK: ["b8a47c", "c8b48a"], SOIL: ["6e5a48", "7a6450"], VINE: ["5a7f34", "6c9440"],
 	WOOL: ["e8e2d4", "f2ede2"], PATH: ["a89272", "b8a07a"], FLOWER_W: ["f2f2f2"],
+	COURSE: ["a89a84", "b6a890"], COURSE_J: ["968872", "a4967e"], SMOKE: ["b9b6b0", "cfccc6"], LAVA: ["4a4644", "56524f"],
 }
 
 static var _side := PackedColorArray()

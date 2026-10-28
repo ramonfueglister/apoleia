@@ -39,7 +39,7 @@ func _environment() -> void:
 	env.background_color = Color("9cc3e0")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("7d8cc0")
-	env.ambient_light_energy = 0.34
+	env.ambient_light_energy = 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.tonemap_exposure = 0.95
 	env.ssao_enabled = true
@@ -90,7 +90,7 @@ func _mesh(key: String) -> ArrayMesh:
 			"farm": meshes[key] = Town.farm(seed)
 			"vineyard": meshes[key] = Town.vineyard(seed)
 			"pasture": meshes[key] = Town.pasture(seed)
-			"terrace": meshes[key] = Town.terrace(seed & 3, seed >> 2, seed >> 5)
+			"terrace": meshes[key] = Town.terrace(seed & 3, (seed >> 2) & 15, seed >> 6)
 			"h00": meshes[key] = Town.house_lot(seed, false, false)
 			"h10": meshes[key] = Town.house_lot(seed, true, false)
 			"h01": meshes[key] = Town.house_lot(seed, false, true)
@@ -105,6 +105,9 @@ func _mesh(key: String) -> ArrayMesh:
 func _put(key: String, lx: int, lz: int, south := true, size := Vector2i.ONE, y := 0.0) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = _mesh(key)
+	# Both sides into the shadow map: the voxel shells have no undersides
+	# and thin eaves would let light through.
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
 	var o := Vector3(lx * LOT_M, y, lz * LOT_M)
 	if south:
 		mi.transform = Transform3D(Basis.IDENTITY, o)
@@ -147,6 +150,7 @@ func _colosseum(taken: Dictionary) -> void:
 	var t0 := Time.get_ticks_msec()
 	var mi := MeshInstance3D.new()
 	mi.mesh = Colosseum.mesh()
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
 	mi.position = Vector3(c.x, 0.0, c.y)
 	vp.add_child(mi)
 	print("colosseum: ", Kit.triangles(mi.mesh), " triangles, ", Time.get_ticks_msec() - t0, " ms")
@@ -180,7 +184,9 @@ func _hill(taken: Dictionary) -> void:
 				walls |= 2
 			if _hill_level(lx + 1, lz) < lvl:
 				walls |= 4
-			_put("terrace:%d" % (lvl | (walls << 2) | (((lx + lz) & 1) << 5)), lx, lz)
+			if covered.has(Vector2i(lx, lz)):
+				walls |= 8
+			_put("terrace:%d" % (lvl | (walls << 2) | (((lx + lz) & 1) << 6)), lx, lz)
 			taken[Vector2i(lx, lz)] = true
 			if not covered.has(Vector2i(lx, lz)):
 				_put("garden:%d" % ((lx * 3 + lz) & 3), lx, lz, true, Vector2i.ONE, lvl * Town.TERRACE * Kit.V)
@@ -230,7 +236,7 @@ func _layout() -> void:
 	plane.material = gm
 	var ground := MeshInstance3D.new()
 	ground.mesh = plane
-	ground.position = Vector3(0, -1.6, 0)
+	ground.position = Vector3(0, -3.2, 0)
 	vp.add_child(ground)
 	var taken := {}
 	_colosseum(taken)
@@ -273,7 +279,10 @@ func _layout() -> void:
 					south = false
 				if Town.is_river_lot(lx, lz + 1):
 					south = true
-				if absi(lx) == 1 and lz >= 8:
+				if lz == HILL.end.y and lx >= HILL.position.x and lx < HILL.end.x:
+					# the foot of the hill stays open so its walls show
+					_put("garden:%d" % (h & 3), lx, lz, south)
+				elif absi(lx) == 1 and lz >= 8:
 					# tombs line the road out of town beyond the river
 					_put("tombs:%d" % (h & 7), lx, lz)
 				elif lz >= 7 and absi(lx) > 4:
