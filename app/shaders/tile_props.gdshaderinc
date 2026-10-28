@@ -2,6 +2,19 @@
 // per-frame placement pass (tile_prop_prep.gdshader) and, as a fallback, the
 // prop vertex shader. Needs tile_terrain.gdshaderinc first.
 
+// Rome's landmarks (tile_terrain.gd): no houses on their blocks (world x0, z0,
+// x1, z1).
+uniform vec4 landmark_rects[8];
+uniform int landmark_count = 0;
+
+bool tt_in_landmark(vec2 p) {
+	for (int k = 0; k < landmark_count; k++) {
+		vec4 r = landmark_rects[k];
+		if (p.x > r.x && p.y > r.y && p.x < r.z && p.y < r.w) { return true; }
+	}
+	return false;
+}
+
 // One slot of tile t: xy the spot in the tile (0..1), z its level, w the code:
 // < 0 empty; trees kind + 0.25 * size (0.7..1); houses the town class.
 vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
@@ -25,6 +38,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
 		vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
 		uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
+		show = show && !tt_in_landmark(world_min + (vec2(t) + uv) * tile_km);
 	} else {
 		show = show && town == 0;
 		uv = vec2(0.5);

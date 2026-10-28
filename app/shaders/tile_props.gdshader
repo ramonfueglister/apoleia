@@ -43,11 +43,14 @@ void vertex() {
 	vec2 uv = d.xy;
 	float level = d.z;
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
-	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0) * edge_size);
+	// houses leave room for the streets of their block grid
+	float s = prop_scale * (prop_kind == 3 ? (0.62 + 0.12 * r0) : (0.75 + 0.5 * r0) * edge_size);
 	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
-	if (prop_kind == 3) { v.y *= 0.8 + 0.6 * r1 * float(town >= 2); }
+	// in towns two to three storeys, in the city core insulae of up to four
+	// (lower than Rome's temples and the Colosseum)
+	if (prop_kind == 3) { v.y *= 1.0 + (town == 3 ? 1.0 : town == 2 ? 0.5 : 0.0) * r1; }
 	v.xz = rot * v.xz;
 	vec3 world = vec3(p.x, level * level_h, p.y) + v;
 	vec3 nrm = NORMAL;

@@ -76,6 +76,7 @@ const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
 const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
+const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
 const vec3 C_ROOF = vec3(0.600, 0.290, 0.204); // terracotta, not salmon
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
 const vec3 C_SEA = vec3(0.314, 0.541, 0.824);   // Urbek water, #6db3df on screen
@@ -214,7 +215,8 @@ vec3 ground_rgb_at(int g, float band) {
 	if (open && band >= 1.0) {
 		far = band >= 3.0 ? mix(far, C_MOUNT_FAR, 0.75) : mix(far, C_HILLS_FAR, band >= 2.0 ? 0.8 : 0.5);
 	}
-	if (g == G_ROCK && band >= 4.0) { far = C_HIGH_ROCK; }
+	if ((g == G_FOREST || g == G_CONIFER) && band >= 2.0) { far = mix(far, GROUND_FAR[G_CONIFER] * 0.85, 0.6); }
+	if (g == G_ROCK && band >= 3.0) { far = C_HIGH_ROCK; }
 	return mix(GROUND_RGB[g], far, far_share());
 }
 
@@ -274,6 +276,15 @@ void fragment() {
 			// coloured tiles and villages vanish into the land around them
 			c = props ? mix(c, C_PAVED, town == 1 ? 0.5 : 1.0)
 				: mix(c, C_ROOF, town == 3 ? 1.0 : town == 2 ? 0.6 : 0.0);
+			// streets between the house blocks of towns and cities (the grid of
+			// house_grid blocks per tile; half a street on each tile edge)
+			if (props && town >= 2) {
+				vec2 g = tile_uv * float(house_grid);
+				vec2 e = abs(g - round(g)) / float(house_grid);
+				float d = min(e.x, e.y);
+				float aa = fwidth(d) + 1e-4;
+				c = mix(c, C_STREET, 1.0 - smoothstep(0.035 - aa, 0.035 + aa, d));
+			}
 		}
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0) {

@@ -153,3 +153,260 @@ static func house() -> ArrayMesh:
 		_box(st, Vector3(-hx - 0.04, y, -half_z), Vector3(hx + 0.04, y + dy, half_z), shade.lightened(0.05), shade)
 		y += dy
 	return st.commit()
+
+# ------------------------------------------------------------ landmarks
+# Rome's great buildings after Urbek and Caesar III: voxel blocks in
+# travertine, marble and terracotta. 1 unit = 1 m of the building (the
+# terrain scales them, see tile_terrain.gd LANDMARK_SCALE).
+
+## The landmark mesh by name (tile_terrain.gd LANDMARKS).
+static func landmark(which: String) -> ArrayMesh:
+	match which:
+		"colosseum": return colosseum()
+		"circus": return circus()
+		"forum": return forum()
+		"temple": return temple()
+		"pantheon": return pantheon()
+	return null
+
+## A flat quad with outward normal n (winding fixed for Godot).
+static func _quad(st: SurfaceTool, q: Array, n: Vector3, colour: Color) -> void:
+	var a: Vector3 = q[0]
+	var b: Vector3 = q[1]
+	var c: Vector3 = q[2]
+	var d: Vector3 = q[3]
+	if (b - a).cross(c - a).dot(n) > 0.0:
+		var x := b; b = d; d = x
+	for v in [a, b, c, a, c, d]:
+		st.set_color(colour); st.set_normal(n); st.add_vertex(v)
+
+## A block turned to the tangent t (horizontal, unit) with outward normal n:
+## half length hx along t, half depth hz along n, from y0 to y1.
+static func _obox(st: SurfaceTool, centre: Vector3, t: Vector3, n: Vector3, hx: float, hz: float, y0: float, y1: float, top: Color, side: Color) -> void:
+	var c := []
+	for k in 8:
+		var sx := -1.0 if (k & 1) == 0 else 1.0
+		var sz := -1.0 if (k & 2) == 0 else 1.0
+		var y := y0 if k < 4 else y1
+		c.append(centre + t * (sx * hx) + n * (sz * hz) + Vector3(0, y, 0))
+	_quad(st, [c[4], c[5], c[7], c[6]], Vector3.UP, top)
+	_quad(st, [c[2], c[3], c[7], c[6]], n, side)
+	_quad(st, [c[0], c[1], c[5], c[4]], -n, side)
+	_quad(st, [c[1], c[3], c[7], c[5]], t, side)
+	_quad(st, [c[0], c[2], c[6], c[4]], -t, side)
+
+## An n-sided prism around centre (radius r, from y0 to y1) with its top.
+static func _prism(st: SurfaceTool, centre: Vector3, r: float, y0: float, y1: float, sides: int, top: Color, side: Color) -> void:
+	for k in sides:
+		var a0 := TAU * k / sides
+		var a1 := TAU * (k + 1) / sides
+		var p0 := centre + Vector3(cos(a0) * r, 0, sin(a0) * r)
+		var p1 := centre + Vector3(cos(a1) * r, 0, sin(a1) * r)
+		var n := Vector3(cos((a0 + a1) * 0.5), 0, sin((a0 + a1) * 0.5))
+		_quad(st, [p0 + Vector3(0, y0, 0), p1 + Vector3(0, y0, 0), p1 + Vector3(0, y1, 0), p0 + Vector3(0, y1, 0)], n, side)
+		var cy := centre + Vector3(0, y1, 0)
+		var tri := [cy, p0 + Vector3(0, y1, 0), p1 + Vector3(0, y1, 0)]
+		if (tri[1] - tri[0]).cross(tri[2] - tri[0]).dot(Vector3.UP) > 0.0:
+			tri = [tri[0], tri[2], tri[1]]
+		for v in tri:
+			st.set_color(top); st.set_normal(Vector3.UP); st.add_vertex(v)
+
+## Point and outward normal on an ellipse (half axes a along x, b along z).
+static func _ellipse(a: float, b: float, angle: float) -> Array:
+	var p := Vector3(a * cos(angle), 0, b * sin(angle))
+	var n := Vector3(cos(angle) / a, 0, sin(angle) / b).normalized()
+	return [p, n]
+
+## The Colosseum (188 x 156 m, 48 m): three storeys of arches with cornices
+## and the attic outside; stepped seating down to the sand of the arena.
+static func colosseum() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stone := Color(0.86, 0.80, 0.68)
+	var cornice := Color(0.93, 0.88, 0.78)
+	var arch := Color(0.30, 0.27, 0.25)
+	var sand := Color(0.86, 0.75, 0.53)
+	var seats := [Color(0.80, 0.74, 0.63), Color(0.72, 0.66, 0.57), Color(0.80, 0.74, 0.63)]
+	var a := 94.0
+	var b := 78.0
+	var n := 32
+	for k in n:
+		var e0: Array = _ellipse(a, b, TAU * k / n)
+		var e1: Array = _ellipse(a, b, TAU * (k + 1) / n)
+		var p0: Vector3 = e0[0]
+		var p1: Vector3 = e1[0]
+		var mid := (p0 + p1) * 0.5
+		var t := (p1 - p0).normalized()
+		var nn := (e0[1] + e1[1]).normalized() as Vector3
+		var half := (p1 - p0).length() * 0.5 + 0.3
+		_obox(st, mid - nn * 3.0, t, nn, half, 3.0, 0.0, 48.0, stone, stone)
+		for y in [13.0, 25.0, 37.0]:
+			_obox(st, mid + nn * 0.5, t, nn, half, 0.7, y, y + 1.6, cornice, cornice)
+		for y in [7.5, 19.5, 31.0]:
+			_pane(st, mid + Vector3(0, y, 0), nn, half * 1.1, 8.0, arch)
+		_pane(st, mid + Vector3(0, 43.0, 0), nn, half * 0.4, 2.5, arch)
+	# seating: three tiers stepping down to the arena wall, then the sand
+	var tiers := [[0.94, 0.78, 40.0], [0.78, 0.63, 30.0], [0.63, 0.50, 19.0]]
+	for i in tiers.size():
+		var s0: float = tiers[i][0]
+		var s1: float = tiers[i][1]
+		var h: float = tiers[i][2]
+		var below: float = tiers[i + 1][2] if i + 1 < tiers.size() else 2.0
+		for k in n:
+			var o0: Vector3 = _ellipse(a * s0, b * s0, TAU * k / n)[0]
+			var o1: Vector3 = _ellipse(a * s0, b * s0, TAU * (k + 1) / n)[0]
+			var i0: Vector3 = _ellipse(a * s1, b * s1, TAU * k / n)[0]
+			var i1: Vector3 = _ellipse(a * s1, b * s1, TAU * (k + 1) / n)[0]
+			var up := Vector3(0, h, 0)
+			_quad(st, [o0 + up, o1 + up, i1 + up, i0 + up], Vector3.UP, seats[i] if k % 4 != 0 else arch)
+			var inward := -((_ellipse(a, b, TAU * (k + 0.5) / n)[1]) as Vector3)
+			_quad(st, [i0 + Vector3(0, below, 0), i1 + Vector3(0, below, 0), i1 + up, i0 + up], inward, stone)
+	for k in n:
+		var q0: Vector3 = _ellipse(a * 0.5, b * 0.5, TAU * k / n)[0]
+		var q1: Vector3 = _ellipse(a * 0.5, b * 0.5, TAU * (k + 1) / n)[0]
+		var tri := [Vector3(0, 2, 0), q0 + Vector3(0, 2, 0), q1 + Vector3(0, 2, 0)]
+		if (tri[1] - tri[0]).cross(tri[2] - tri[0]).dot(Vector3.UP) > 0.0:
+			tri = [tri[0], tri[2], tri[1]]
+		for v in tri:
+			st.set_color(sand); st.set_normal(Vector3.UP); st.add_vertex(v)
+	return st.commit()
+
+## The Circus Maximus, shortened for the map (330 x 100 m): stepped stands
+## with arches on the long sides and around the curve in the east, the
+## starting gates in the west, the spina with its obelisk on the sand.
+static func circus() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stone := Color(0.86, 0.80, 0.68)
+	var seat := Color(0.80, 0.74, 0.63)
+	var seat_low := Color(0.72, 0.66, 0.57)
+	var arch := Color(0.30, 0.27, 0.25)
+	var sand := Color(0.86, 0.75, 0.53)
+	var roof := Color(0.74, 0.37, 0.23)
+	_box(st, Vector3(-150, 0, -32), Vector3(115, 1.0, 32), sand, sand)
+	for z in [-1.0, 1.0]:
+		# outer stands high, inner low, the arches on the outer wall
+		_box(st, Vector3(-150, 0, minf(40.0 * z, 50.0 * z)), Vector3(115, 20, maxf(40.0 * z, 50.0 * z)), seat, stone)
+		_box(st, Vector3(-150, 0, minf(32.0 * z, 40.0 * z)), Vector3(115, 11, maxf(32.0 * z, 40.0 * z)), seat_low, stone)
+		for x in range(-140, 111, 12):
+			_pane(st, Vector3(x, 7, 50.0 * z), Vector3(0, 0, z), 6.0, 8.0, arch)
+			_pane(st, Vector3(x, 15.5, 50.0 * z), Vector3(0, 0, z), 6.0, 4.0, arch)
+	for k in 12:
+		var a0 := -PI * 0.5 + PI * k / 12.0
+		var a1 := -PI * 0.5 + PI * (k + 1) / 12.0
+		var am := (a0 + a1) * 0.5
+		var nn := Vector3(cos(am), 0, sin(am))
+		var t := Vector3(-sin(am), 0, cos(am))
+		var centre := Vector3(115, 0, 0)
+		_obox(st, centre + nn * 45.0, t, nn, 50.0 * PI / 24.0 + 0.8, 5.0, 0.0, 20.0, seat, stone)
+		_obox(st, centre + nn * 36.0, t, nn, 40.0 * PI / 24.0 + 0.8, 4.0, 0.0, 11.0, seat_low, stone)
+		_pane(st, centre + nn * 50.0 + Vector3(0, 7, 0), nn, 6.0, 8.0, arch)
+		var q0 := centre + Vector3(cos(a0), 0, sin(a0)) * 32.0
+		var q1 := centre + Vector3(cos(a1), 0, sin(a1)) * 32.0
+		var tri := [centre + Vector3(0, 1, 0), q0 + Vector3(0, 1, 0), q1 + Vector3(0, 1, 0)]
+		if (tri[1] - tri[0]).cross(tri[2] - tri[0]).dot(Vector3.UP) > 0.0:
+			tri = [tri[0], tri[2], tri[1]]
+		for v in tri:
+			st.set_color(sand); st.set_normal(Vector3.UP); st.add_vertex(v)
+	# the carceres: a row of gates under a terracotta roof
+	_box(st, Vector3(-165, 0, -50), Vector3(-150, 16, 50), stone, stone)
+	for w in [[0.0, 7.5], [2.5, 5.0]]:
+		_box(st, Vector3(-165 + w[0], 16 + w[0], -50 + w[0]), Vector3(-150 - w[0], 16 + w[0] + 2.5, 50 - w[0]), roof.lightened(0.05), roof)
+	for z in range(-40, 41, 10):
+		_pane(st, Vector3(-150, 6, z), Vector3.RIGHT, 6.0, 9.0, arch)
+	_pane(st, Vector3(-157.5, 8, 50), Vector3.BACK, 10.0, 10.0, arch)
+	# the spina down the middle, the obelisk of Augustus and the turning posts
+	_box(st, Vector3(-95, 1, -3), Vector3(80, 4, 3), stone, stone)
+	_box(st, Vector3(-10, 4, -2), Vector3(-6, 34, 2), Color(0.72, 0.56, 0.46), Color(0.62, 0.48, 0.40))
+	for x in [-99.0, 84.0]:
+		_box(st, Vector3(x - 3, 1, -3), Vector3(x + 3, 11, 3), Color(0.82, 0.70, 0.40), Color(0.70, 0.60, 0.35))
+	return st.commit()
+
+## The Forum Romanum on one city tile (84 x 84 m): travertine paving, the
+## Basilica Julia along the south, a temple in the east, the round temple of
+## Vesta, the brick Curia and a row of honorary columns.
+static func forum() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var paving := Color(0.88, 0.84, 0.74)
+	var stone := Color(0.86, 0.80, 0.68)
+	var marble := Color(0.93, 0.91, 0.86)
+	var brick := Color(0.72, 0.50, 0.38)
+	var roof := Color(0.74, 0.37, 0.23)
+	var arch := Color(0.30, 0.27, 0.25)
+	_box(st, Vector3(-42, 0, -42), Vector3(42, 0.8, 42), paving, stone)
+	# Basilica Julia: two storeys of arches under a low roof
+	_box(st, Vector3(-38, 0.8, 18), Vector3(14, 13, 36), stone, stone)
+	for x in range(-34, 13, 6):
+		_pane(st, Vector3(x, 4.5, 36), Vector3.BACK, 3.6, 6.0, arch)
+		_pane(st, Vector3(x, 10.0, 36), Vector3.BACK, 3.6, 4.0, arch)
+	for w in [[0.0, 2.0], [3.0, 2.0], [6.0, 1.5]]:
+		_box(st, Vector3(-39 + w[0], 13 + w[0] * 0.66, 17 + w[0]), Vector3(15 - w[0], 13 + w[0] * 0.66 + w[1], 37 - w[0]), roof.lightened(0.05), roof)
+	# a temple in the east (Castor and Pollux), facing the square
+	_box(st, Vector3(22, 0.8, -6), Vector3(38, 6, 26), stone, stone)
+	_box(st, Vector3(24, 6, -4), Vector3(36, 17, 12), marble, marble)
+	for x in [24.5, 28.5, 31.5, 35.5]:
+		_box(st, Vector3(x - 1, 6, 21), Vector3(x + 1, 17, 23), marble, marble)
+	for w in [[0.0, 2.0], [3.0, 2.0], [5.5, 1.5]]:
+		_box(st, Vector3(23 + w[0], 17 + w[0] * 0.66, -5), Vector3(37 - w[0], 17 + w[0] * 0.66 + w[1], 24), roof.lightened(0.05), roof)
+	# the round temple of Vesta
+	_prism(st, Vector3(-10, 0, -22), 7.0, 0.8, 9.0, 12, marble, marble)
+	_prism(st, Vector3(-10, 0, -22), 7.6, 9.0, 10.5, 12, roof.lightened(0.05), roof)
+	_prism(st, Vector3(-10, 0, -22), 4.0, 10.5, 12.5, 12, roof.lightened(0.08), roof)
+	# the Curia, tall brick with a terracotta roof
+	_box(st, Vector3(-38, 0.8, -38), Vector3(-24, 18, -22), brick, brick)
+	_pane(st, Vector3(-31, 6, -22), Vector3.BACK, 4.0, 7.0, arch)
+	_box(st, Vector3(-39, 18, -39), Vector3(-23, 20, -21), roof.lightened(0.05), roof)
+	_box(st, Vector3(-35, 20, -39), Vector3(-27, 21.5, -21), roof.lightened(0.05), roof)
+	# honorary columns along the square
+	for x in range(-18, 16, 8):
+		_box(st, Vector3(x - 1.2, 0.8, 2), Vector3(x + 1.2, 15, 4.4), marble, marble)
+	return st.commit()
+
+## The temple of Jupiter on the Capitol (60 x 54 m): a high podium with
+## stairs in the south, six columns across the front, the cella behind them
+## and a terracotta roof in voxel steps.
+static func temple() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var marble := Color(0.93, 0.91, 0.86)
+	var stone := Color(0.86, 0.80, 0.68)
+	var roof := Color(0.74, 0.37, 0.23)
+	_box(st, Vector3(-27, 0, -30), Vector3(27, 8, 24), stone, stone)
+	for k in 3:
+		_box(st, Vector3(-14, 0, 24), Vector3(14, 6.0 - 2.0 * k, 26.0 + 2.0 * k + 2.0), stone, stone)
+	_box(st, Vector3(-20, 8, -26), Vector3(20, 30, 2), marble, marble)
+	for k in 6:
+		var x := -20.0 + 8.0 * k
+		for z in [8.0, 16.0]:
+			_box(st, Vector3(x - 1.3, 8, z - 1.3), Vector3(x + 1.3, 28, z + 1.3), marble, marble)
+	var layers := [[24.0, 2.5], [17.0, 2.5], [10.0, 2.5], [4.0, 2.0]]
+	var y := 30.0
+	for layer in layers:
+		_box(st, Vector3(-layer[0], y, -28), Vector3(layer[0], y + layer[1], 20), roof.lightened(0.05), roof)
+		y += layer[1]
+	return st.commit()
+
+## The Pantheon (rotunda 44 m across under a stepped dome, portico in the
+## north with eight columns).
+static func pantheon() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stone := Color(0.84, 0.78, 0.67)
+	var dome := Color(0.66, 0.64, 0.61)
+	var marble := Color(0.93, 0.91, 0.86)
+	var roof := Color(0.74, 0.37, 0.23)
+	_prism(st, Vector3.ZERO, 24.0, 0.0, 30.0, 20, stone, stone)
+	var rings := [[22.0, 30.0, 34.0], [18.0, 34.0, 38.0], [13.0, 38.0, 41.0], [7.0, 41.0, 43.0]]
+	for r in rings:
+		_prism(st, Vector3.ZERO, r[0], r[1], r[2], 20, dome, dome.darkened(0.08))
+	_box(st, Vector3(-17, 0, -40), Vector3(17, 3, -20), stone, stone)
+	_box(st, Vector3(-14, 3, -30), Vector3(14, 22, -20), stone, stone)
+	for k in 8:
+		var x := -14.0 + 4.0 * k
+		_box(st, Vector3(x - 1.0, 3, -39), Vector3(x + 1.0, 19, -37), marble, marble)
+	var y := 19.0
+	for w in [17.0, 12.0, 7.0, 2.5]:
+		_box(st, Vector3(-w, y, -40), Vector3(w, y + 2.0, -20), roof.lightened(0.05), roof)
+		y += 2.0
+	return st.commit()

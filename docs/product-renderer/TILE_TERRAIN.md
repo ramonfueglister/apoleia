@@ -77,7 +77,10 @@ unabhängig und unverändert.
   #9aa35a, dunkelgrüner Wald #4f7a35, Fels, tiefes Meer #1d5e93 mit
   Flachwasser #2f7db5. Offenes Land bekommt dort zusätzlich eine flache Farbe
   je Höhenstufe (Hügel #849252, Gebirge #958e6c, hoher Fels #b3aba0), so lesen
-  Hügel und Gebirge als Flächen und nicht nur über ihre Rampen.
+  Hügel und Gebirge als Flächen und nicht nur über ihre Rampen; Wald auf
+  Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
+  Stufe hell, und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
+  so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
   Rampen haben drei feste Töne wie in SimCity 2000 (Lichtseite 1,12,
   Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
   bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
@@ -101,7 +104,21 @@ unabhängig und unverändert.
   (Rang 5) und Arno (Rang 7) zählen als Flüsse Roms höher, als Natural Earth
   sie für heutige Karten einstuft. Städte
   nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
-  weit draußen im Land auf.
+  weit draußen im Land auf. In Städten (ab Ortsklasse 2) laufen nah
+  graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
+  Hausplätze; die Häuser lassen dafür Platz (Grundfläche 0,62 bis 0,74 der
+  Hauslänge). Im Stadtkern stehen Insulae bis doppelt so hoch, in Städten
+  anderthalbfach.
+- Rom hat seine großen Bauten als Voxel-Modelle nach Urbek und Caesar III
+  (Travertin, Marmor, Terrakotta), jedes auf einem Block von Stadtkacheln, auf
+  dem keine Häuser stehen: der Jupitertempel auf dem Kapitol am Tiber, östlich
+  davon das Forum Romanum (Basilica Julia, Dioskurentempel, Vestatempel,
+  Curia, Ehrensäulen), das Kolosseum auf 2 × 2 Kacheln, das Pantheon im
+  Norden und südlich des Palatins der Circus Maximus auf 4 × 1 Kacheln
+  (`LANDMARKS` in tile_terrain.gd). Sie sind 6-mal so groß wie in echt, nicht
+  24-mal wie die Häuser, damit die Stadt ihre Kacheln behält, und noch einmal
+  um die Hälfte höher, damit Kolosseum und Tempel über die Insulae ragen. Sie
+  stehen, solange die Häuser gezeichnet werden (0,5- und 1-km-Kacheln).
 
 ## Fernsicht (Kacheln bis Europa)
 
@@ -125,6 +142,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
 | Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 170 / 190 / 210 / 230 m ab 100 m |
 | Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem gestuften Dach von einem Drittel der Höhe (Urbek), auf Stufe 0 und 1 gezeichnet |
+| Wahrzeichen Roms | 6-mal echt in der Fläche, 9-mal in der Höhe (`LANDMARK_KM_PER_M`, `LANDMARK_RISE`): Kolosseum 1,1 × 0,9 km Welt, Circus Maximus (gekürzt auf 330 m) 2 × 0,6 km |
 | Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
@@ -164,7 +182,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
   Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
   Stadthäuser nach Urbek (Putzkasten mit Fenstern und Tür, Dach aus
-  Voxel-Stufen in Terrakotta).
+  Voxel-Stufen in Terrakotta) und die Wahrzeichen Roms (`landmark`), die
+  `tile_landmark.gdshader` wie die Häuser beleuchtet.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.
