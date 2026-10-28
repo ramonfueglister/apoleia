@@ -51,7 +51,7 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
-// Far out (from 2 km tiles, full at 4 km) the land takes the palette of the
+// Far out (from 1 km tiles) the land takes the palette of the
 // painted far view (gauntlet refs/gemalt-weit-mittel-nah.png): olive lowland,
 // dark green forest, light rock, a deep sea; on screen e.g. lowland #9aa35a,
 // forest #4f7a35, sea #1d5e93. Open land also takes a flat tint per height
@@ -66,12 +66,12 @@ const vec3 GROUND_FAR[11] = vec3[](
 	vec3(0.239, 0.357, 0.196),  // forest
 	vec3(0.204, 0.314, 0.208),  // conifer forest
 	vec3(0.408, 0.447, 0.294),  // alpine meadow
-	vec3(0.415, 0.396, 0.394),  // rock
+	vec3(0.440, 0.420, 0.380),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
 const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
 const vec3 C_MOUNT_FAR = vec3(0.435, 0.414, 0.344); // #958e6c
-const vec3 C_HIGH_ROCK = vec3(0.540, 0.511, 0.529); // #b3aba0
+const vec3 C_HIGH_ROCK = vec3(0.604, 0.580, 0.533); // #9a9488, warm limestone grey, not lilac
 const vec3 C_SEA_FAR = vec3(0.129, 0.282, 0.482);
 const vec3 C_SHORE_FAR = vec3(0.169, 0.365, 0.604);
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
@@ -93,6 +93,15 @@ const ivec4 WALL[4] = ivec4[](ivec4(0, 1, 3, 2), ivec4(1, 2, 0, 3), ivec4(2, 3, 
 
 float pick(vec4 v, int k) {
 	return k == 0 ? v.x : k == 1 ? v.y : k == 2 ? v.z : v.w;
+}
+
+// A land tile with the sea on all four sides: a one tile island gets no
+// light lagoon ring (a big pale square around a speck of land).
+bool lone_land(ivec2 t) {
+	for (int k = 0; k < 4; k++) {
+		if (tt_water(t + SIDE[k]) != W_SEA) { return false; }
+	}
+	return true;
 }
 
 void vertex() {
@@ -168,7 +177,7 @@ void vertex() {
 		lake_near = lake_near || n1 == W_LAKE;
 		int n2 = tt_water(tile + SIDE[k] * 2);
 		if (water == W_SEA) {
-			if (n1 != W_SEA) { coast = 1.0; }
+			if (n1 != W_SEA && !lone_land(tile + SIDE[k])) { coast = 1.0; }
 		} else {
 			if (n1 == W_SEA) { coast = 1.0; }
 			else if (n2 == W_SEA) { coast = max(coast, 0.45); }
@@ -176,7 +185,8 @@ void vertex() {
 	}
 	if (water == W_SEA && coast < 1.0) {
 		for (int k = 0; k < 4; k++) {
-			if (tt_water(tile + SIDE[k] + SIDE[(k + 1) & 3]) != W_SEA) { coast = 1.0; }
+			ivec2 d = tile + SIDE[k] + SIDE[(k + 1) & 3];
+			if (tt_water(d) != W_SEA && !lone_land(d)) { coast = 1.0; }
 		}
 	}
 	shore_lake = lake_near ? 1 : 0;
@@ -208,7 +218,8 @@ void vertex() {
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
 
-float far_share() { return clamp((tile_km - 1.0) / 3.0, 0.0, 1.0); }
+// near palette (Urbek) on the 0.5 km tiles, the painted one from 1 km tiles
+float far_share() { return clamp((tile_km - 0.5) / 0.5, 0.0, 1.0); }
 
 // `band`: height band of the tile (0 lowland, 1-2 hills, 3 and up mountains)
 vec3 ground_rgb_at(int g, float band) {
@@ -269,7 +280,8 @@ void fragment() {
 		int town = tt_town(tile);
 		// one flat colour per tile; where two landscapes meet, the half towards
 		// the corner of the other one takes its colour (cut at the diagonal)
-		float band = max(body_level - 1.0, 0.0);
+		// in far levels whatever the scale of the tile's own levels
+		float band = max((near_scale ? tt_far_level_x(tt_level_metres(body_level)) : body_level) - 1.0, 0.0);
 		c = ground_rgb_at(ground, band);
 		if (ground_tip >= 0) {
 			vec2 tip = vec2(CORNER[ground_tip]);
@@ -317,10 +329,12 @@ void fragment() {
 		// footpaths, markets and trade roads from the grain economy
 		c = sim_ways(p, c, length(fwidth(p)));
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
-		// gradient: lit from the left of the screen, so slopes turned left
-		// are light (1.10), those facing the camera a little darker (0.85),
-		// those turned right dark (0.65) and the back slopes, seen edge on,
-		// near the flat tone (0.90, else they draw dark cracks); strong enough that
+		// gradient: lit from the front left like the sun, so slopes turned
+		// left are light (1.15), those facing the camera a little lighter than
+		// flat ground (1.06; a hillside turned to the sun stands out instead of
+		// matching the plain), those turned right dark (0.68) and the back
+		// slopes, seen edge on, near the flat tone (0.90, else they draw dark
+		// cracks); strong enough that
 		// the stacked ramps read even on the map of Europe. The light itself
 		// sees every top as flat (NORMAL below), so this is the only shading:
 		// lambert on top of it washed sun-side ramps out like glass and made
@@ -334,8 +348,8 @@ void fragment() {
 		float fb = dot(slope, cam_back);
 		// a corner slope takes both of its sides' tones by their share, so the
 		// tone never flips between two sides from pixel to pixel
-		float side_x = fr < 0.0 ? 1.10 : 0.65;
-		float side_z = fb > 0.0 ? 0.85 : 0.90;
+		float side_x = fr < 0.0 ? 1.15 : 0.68;
+		float side_z = fb > 0.0 ? 1.06 : 0.90;
 		float tone = (fr * fr * side_x + fb * fb * side_z) / max(fr * fr + fb * fb, 1e-6);
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {

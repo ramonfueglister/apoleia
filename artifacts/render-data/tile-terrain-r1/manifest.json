@@ -131,6 +131,70 @@
   },
   "levels": [
     {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20646,
+      "height": 9564,
+      "scale": "near",
+      "level_steps_m": [
+        0.0,
+        20.0,
+        40.0,
+        60.0,
+        80.0,
+        100.0,
+        120.0,
+        170.0,
+        220.0,
+        270.0,
+        320.0,
+        370.0,
+        420.0
+      ],
+      "beyond_m": 120.0,
+      "blur_tiles": 0.7,
+      "clean_corners": 2,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8
+      },
+      "path": "levels-L0.png",
+      "sha256": "9caedc968a5cc817e0612425b05814de0038d27516087e681c47956a3b2f22bb",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10324,
+      "height": 4783,
+      "scale": "near",
+      "level_steps_m": [
+        0.0,
+        40.0,
+        80.0,
+        120.0,
+        160.0,
+        200.0,
+        240.0,
+        340.0,
+        440.0,
+        540.0,
+        640.0,
+        740.0,
+        840.0
+      ],
+      "beyond_m": 240.0,
+      "blur_tiles": 1.2,
+      "clean_corners": 3,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8
+      },
+      "path": "levels-L1.png",
+      "sha256": "2dbf963636265a2ee98b9ac3226c1d336238c5e2d559daa7c7db2485862c9225",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
       "level": 2,
       "cell_km": 2.0,
       "width": 5163,

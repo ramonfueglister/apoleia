@@ -19,8 +19,10 @@ uniform float tile_km = 2.0;
 uniform float level_h = 0.36;  // world units per height level
 uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
-uniform sampler2D levels_tex : filter_nearest, repeat_disable; // far levels: baked corner levels (8 bit)
+uniform sampler2D levels_tex : filter_nearest, repeat_disable; // baked corner levels (8 bit)
 uniform bool levels_ready = false;
+uniform ivec2 levels_origin;   // first corner in levels_tex (near levels: a window around the patch)
+uniform bool near_scale = false; // levels on the near scale (NEAR_STEPS_M), else LEVEL_STEPS_M
 uniform sampler2D ground_tex : filter_nearest, repeat_disable; // landscape per tile, two per byte
 uniform bool ground_ready = false;
 uniform ivec2 patch_origin;    // first tile of the drawn patch
@@ -186,12 +188,59 @@ float tt_far_level_x(float m) {
 	return 8.0 + (m - LEVEL_STEPS_M[8]) / 800.0;
 }
 
-// Metres of a height in levels, near (m_per_level) and far (LEVEL_STEPS_M).
+// The near levels' scale (tools/build_tile_terrain.py NEAR_STEPS_M) at 0.5 km
+// tiles, twice the metres at 1 km: 20 m levels in the lowlands, so Rome's
+// hills and gentle land show as terraces, 50 m above 120 m, 120 m above 420 m.
+const float NEAR_STEPS_M[13] = float[](0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0);
+const float NEAR_BEYOND_M = 120.0;
+float tt_near_level_x(float metres) {
+	float m = max(metres, 0.0) * (0.5 / tile_km);
+	for (int k = 1; k < 13; k++) {
+		if (m < NEAR_STEPS_M[k]) {
+			return float(k - 1) + (m - NEAR_STEPS_M[k - 1]) / (NEAR_STEPS_M[k] - NEAR_STEPS_M[k - 1]);
+		}
+	}
+	return 12.0 + (m - NEAR_STEPS_M[12]) / NEAR_BEYOND_M;
+}
+
+float tt_level_x(float metres) {
+	return !levels_ready ? max(metres, 0.0) / m_per_level : near_scale ? tt_near_level_x(metres) : tt_far_level_x(metres);
+}
+
+// Metres of a height in levels (the inverse of tt_level_x).
 float tt_level_metres(float x) {
 	if (!levels_ready) { return x * m_per_level; }
+	x = max(x, 0.0);
+	if (near_scale) {
+		float m = x >= 12.0 ? NEAR_STEPS_M[12] + (x - 12.0) * NEAR_BEYOND_M
+			: mix(NEAR_STEPS_M[int(floor(x))], NEAR_STEPS_M[min(int(floor(x)) + 1, 12)], fract(x));
+		return m * (tile_km / 0.5);
+	}
 	if (x >= 8.0) { return LEVEL_STEPS_M[8] + (x - 8.0) * 800.0; }
-	int k = int(floor(max(x, 0.0)));
-	return mix(LEVEL_STEPS_M[k], LEVEL_STEPS_M[k + 1], fract(max(x, 0.0)));
+	int k = int(floor(x));
+	return mix(LEVEL_STEPS_M[k], LEVEL_STEPS_M[k + 1], fract(x));
+}
+
+// Rome's landmarks (tile_terrain.gd): their blocks (world x0, z0, x1, z1) are
+// flat at their own level up close, and carry no houses.
+uniform vec4 landmark_rects[8];
+uniform float landmark_levels[8];
+uniform int landmark_count = 0;
+
+bool tt_in_landmark(vec2 p) {
+	for (int k = 0; k < landmark_count; k++) {
+		vec4 r = landmark_rects[k];
+		if (p.x > r.x && p.y > r.y && p.x < r.z && p.y < r.w) { return true; }
+	}
+	return false;
+}
+
+float tt_landmark_level(vec2 p, float l) {
+	for (int k = 0; k < landmark_count; k++) {
+		vec4 r = landmark_rects[k];
+		if (p.x >= r.x && p.y >= r.y && p.x <= r.z && p.y <= r.w) { return landmark_levels[k]; }
+	}
+	return l;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
@@ -211,8 +260,7 @@ float tt_lake_level(ivec2 t) {
 	}
 	// small lakes between the nodes: the bake pinned their nodes in the envelope
 	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
-	float x = levels_ready ? tt_far_level_x(metres) : max(metres, 0.0) / m_per_level;
-	return max(round(x), 1.0);
+	return max(round(tt_level_x(metres)), 1.0);
 }
 
 float tt_corner_x(ivec2 c) {
@@ -235,11 +283,13 @@ float tt_clean_level(ivec2 c, float l) {
 
 float tt_land_corner(ivec2 c) {
 	if (levels_ready) {
-		// far levels: baked with the same rules (tools/build_tile_terrain.py,
-		// corner_levels), shores and lakes included
+		// baked with the same rules (tools/build_tile_terrain.py, corner_levels
+		// and near_corner_levels), shores and lakes included
+		ivec2 q = c - levels_origin;
 		ivec2 n = textureSize(levels_tex, 0);
-		if (c.x < 0 || c.y < 0 || c.x >= n.x || c.y >= n.y) { return 0.0; }
-		return round(texelFetch(levels_tex, c, 0).r * 255.0);
+		if (q.x < 0 || q.y < 0 || q.x >= n.x || q.y >= n.y) { return 0.0; }
+		float l = round(texelFetch(levels_tex, q, 0).r * 255.0);
+		return landmark_count > 0 ? tt_landmark_level(tt_corner_pos(c), l) : l;
 	}
 	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
 	bool shore = false;

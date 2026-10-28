@@ -50,7 +50,7 @@ const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
 # the temples stand above the insulae. Each block is snapped to the 0.5 km
 # tiles around its place, the layout after the real city: the Capitol temple
 # by the Tiber, the Forum east of it, the Colosseum beyond, the Pantheon in the
-# north, the Circus Maximus south of the Palatine.
+# north, the Circus Maximus south of the Palatine, two bridges over the Tiber.
 const LANDMARK_KM_PER_M := 0.006
 const LANDMARK_RISE := 1.5
 const LANDMARK_TILE_KM := 0.5
@@ -62,6 +62,9 @@ const LANDMARKS := [
 	["colosseum", Vector2(12.5002, 41.8894), Vector2i(2, 2), 0.2],
 	["pantheon", Vector2(12.4853, 41.9007), Vector2i(1, 1), 0.09],
 	["circus", Vector2(12.4883, 41.8782), Vector2i(4, 1), 0.15],
+	# two Tiber bridges on the river tiles by the Capitol and in the north
+	["bridge", Vector2(12.4734, 41.8872), Vector2i(1, 1), 0.0],
+	["bridge", Vector2(12.4734, 41.9142), Vector2i(1, 1), 0.0],
 ]
 
 var manifest: Dictionary
@@ -86,7 +89,14 @@ var _cell_images: Array[Image] = []
 var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
-var _level_textures := {}
+var _level_textures := {} # far levels: the whole map
+var _near_levels := {}    # zoom levels on the near scale (levels-L0/L1, too big for one texture)
+# near levels: a LEVEL_WINDOW square of corners around the patch, cut from the
+# image when the patch moves on
+const LEVEL_WINDOW := 1024
+var _level_window: ImageTexture
+var _level_window_key := Vector3i(-1, 0, 0) # level, origin
+var _landmark_rects := PackedVector4Array()
 var _ground_textures := {}  # zoom level -> landscape per tile (two per byte)
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
@@ -143,7 +153,10 @@ func load_data() -> bool:
 		image.convert(Image.FORMAT_R8)
 		var key := int(entry.level)
 		_level_images[key] = image
-		_level_textures[key] = ImageTexture.create_from_image(image)
+		if entry.get("scale", "far") == "near":
+			_near_levels[key] = true
+		else:
+			_level_textures[key] = ImageTexture.create_from_image(image)
 	for entry in manifest.get("ground", []):
 		var image := Image.load_from_file(dir.path_join(entry.path))
 		image.convert(Image.FORMAT_R8)
@@ -256,23 +269,36 @@ func _build_landmarks() -> void:
 		var b := centre + Vector2(reach.end.x, reach.end.z) * LANDMARK_KM_PER_M
 		var free: float = entry[3]
 		rects.append(Vector4(minf(lo.x, a.x - free), minf(lo.y, a.y - free), maxf(hi.x, b.x + free), maxf(hi.y, b.y + free)))
-	_place_material.set_shader_parameter("landmark_rects", rects)
-	_place_material.set_shader_parameter("landmark_count", rects.size())
-	for kind in _prop_materials.size():
-		_prop_materials[kind].set_shader_parameter("landmark_rects", rects)
-		_prop_materials[kind].set_shader_parameter("landmark_count", rects.size())
+	_landmark_rects = rects
+	for target in _all_materials():
+		target.set_shader_parameter("landmark_rects", rects)
 
-## Level of the ground under a landmark (the city is flat at the near
-## levels); beyond them the grown houses fill Rome.
+## Up close each landmark block is flat at the middle level of its corners
+## (the shader levels the corners in its rectangle); beyond the near levels
+## the grown houses fill Rome.
 func _place_landmarks() -> void:
 	var near := level <= 1
-	for node in _landmarks:
-		var p := Vector2(node.position.x, node.position.z)
+	var levels := PackedFloat32Array()
+	for k in _landmarks.size():
+		var node := _landmarks[k]
+		var r := _landmark_rects[k]
+		var found: Array[float] = []
+		var image: Image = _level_images.get(level)
+		if near and image != null:
+			var c0 := ((Vector2(r.x, r.y) - world_min) / tile_km).ceil()
+			var c1 := ((Vector2(r.z, r.w) - world_min) / tile_km).floor()
+			for j in range(int(c0.y), int(c1.y) + 1):
+				for i in range(int(c0.x), int(c1.x) + 1):
+					found.append(round(image.get_pixel(i, j).r * 255.0))
+		found.sort()
+		var at := found[found.size() >> 1] if found.size() > 0 else \
+			maxf(1.0, round(ground_y(Vector2(node.position.x, node.position.z)) / level_h))
+		levels.append(at)
 		node.visible = near
-		node.position.y = maxf(1.0, round(maxf(relief_m(p), 0.0) / m_per_level)) * level_h
+		node.position.y = at * level_h
 	var count := _landmarks.size() if near else 0
-	_place_material.set_shader_parameter("landmark_count", count)
-	for material in _prop_materials:
+	for material in _all_materials():
+		material.set_shader_parameter("landmark_levels", levels)
 		material.set_shader_parameter("landmark_count", count)
 
 ## Hide the tree kinds that cannot grow anywhere in the prop patch (the shader
@@ -329,6 +355,10 @@ func _apply_level(value: int) -> void:
 	level = value
 	tile_km = LEVELS[level]
 	var baked := _level_images.has(level)
+	var near_scale := _near_levels.has(level)
+	if near_scale:
+		_level_window_key = Vector3i(-1, 0, 0)
+		_update_level_window()
 	m_per_level = relief_slope * tile_km # near levels; far ones are baked (LEVEL_STEPS_M)
 	level_h = tile_km * LEVEL_HEIGHTS[level]
 	var params := {
@@ -339,7 +369,9 @@ func _apply_level(value: int) -> void:
 		"m_per_level": m_per_level,
 		"height_lod": maxf(0.0, log(tile_km / 2.0) / log(2.0)),
 		"levels_ready": baked,
-		"levels_tex": _level_textures[level] if baked else null,
+		"levels_tex": _level_window if near_scale else _level_textures.get(level),
+		"levels_origin": Vector2i(_level_window_key.y, _level_window_key.z) if near_scale else Vector2i.ZERO,
+		"near_scale": near_scale,
 		"ground_ready": _ground_textures.has(level),
 		"ground_tex": _ground_textures.get(level),
 	}
@@ -369,6 +401,24 @@ func _apply_level(value: int) -> void:
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 	_place_landmarks()
 
+## Cut the near level window around the patch (snapped, so it moves on only
+## every quarter window). True when it changed.
+func _update_level_window() -> bool:
+	var image: Image = _level_images[level]
+	var centre := patch_origin + Vector2i(PATCH_N / 2, PATCH_N / 2)
+	var origin := ((Vector2(centre) - Vector2(LEVEL_WINDOW / 2, LEVEL_WINDOW / 2)) / float(LEVEL_WINDOW / 4)).floor() * float(LEVEL_WINDOW / 4)
+	var o := Vector2i(clampi(int(origin.x), 0, image.get_width() - LEVEL_WINDOW), clampi(int(origin.y), 0, image.get_height() - LEVEL_WINDOW))
+	var key := Vector3i(level, o.x, o.y)
+	if key == _level_window_key:
+		return false
+	_level_window_key = key
+	var part := image.get_region(Rect2i(o, Vector2i(LEVEL_WINDOW, LEVEL_WINDOW)))
+	if _level_window == null:
+		_level_window = ImageTexture.create_from_image(part)
+	else:
+		_level_window.update(part)
+	return true
+
 ## Direction towards the sun (world), for the stylised slope shading.
 func set_light_dir(dir: Vector3) -> void:
 	_terrain_material.set_shader_parameter("light_dir", dir.normalized())
@@ -382,6 +432,9 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	_terrain_material.set_shader_parameter("patch_origin", patch_origin)
+	if _near_levels.has(level) and _update_level_window():
+		for material in _all_materials():
+			material.set_shader_parameter("levels_origin", Vector2i(_level_window_key.y, _level_window_key.z))
 	var corner_origin := patch_origin - Vector2i.ONE
 	for material in _all_materials():
 		material.set_shader_parameter("corner_origin", corner_origin)

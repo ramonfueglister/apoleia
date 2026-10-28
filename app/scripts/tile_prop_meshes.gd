@@ -52,22 +52,27 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 static func broadleaf(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.29, 0.54, 0.28)
-	var side := Color(0.25, 0.47, 0.24)
+	# Urbek crown: a light top, darker sides; a core with a belt on all four
+	# sides and a low cap, so it reads round from every side and shows no
+	# dark slit on top (the cap's sides stay close to the top tone)
+	# measured on Urbek's crowns: tops about #458d33, sides #29521f on screen,
+	# darker than the meadow and more saturated
+	var top := Color(0.20, 0.42, 0.17)
+	var side := Color(0.13, 0.29, 0.12)
 	_box(st, Vector3(-0.06, 0, -0.06), Vector3(0.06, 0.42, 0.06), Color(0.42, 0.29, 0.18), Color(0.42, 0.29, 0.18), false)
-	_box(st, Vector3(-0.32, 0.36, -0.32), Vector3(0.32, 0.86, 0.32), top, side)
-	_box(st, Vector3(-0.20, 0.86, -0.20), Vector3(0.16, 1.04, 0.18), top.lightened(0.06), side)
+	_box(st, Vector3(-0.30, 0.38, -0.30), Vector3(0.30, 0.84, 0.30), top, side)
+	_box(st, Vector3(-0.20, 0.84, -0.20), Vector3(0.20, 0.98, 0.20), top, top.lerp(side, 0.35))
 	if not low:
-		_box(st, Vector3(0.18, 0.46, -0.22), Vector3(0.42, 0.76, 0.10), top.darkened(0.06), side.darkened(0.06))
-		_box(st, Vector3(-0.24, 0.42, 0.16), Vector3(0.06, 0.70, 0.42), top, side)
+		_box(st, Vector3(-0.38, 0.46, -0.22), Vector3(0.38, 0.76, 0.22), top, side)
+		_box(st, Vector3(-0.22, 0.46, -0.38), Vector3(0.22, 0.76, 0.38), top, side)
 	return st.commit()
 
 ## Conifer (fir, spruce): stacked voxel tiers getting smaller to the tip.
 static func conifer(far := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.22, 0.43, 0.28)
-	var side := Color(0.17, 0.35, 0.23)
+	var top := Color(0.16, 0.33, 0.20)
+	var side := Color(0.11, 0.24, 0.15)
 	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.2, 0.05), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
 	if far:
 		_box(st, Vector3(-0.28, 0.14, -0.28), Vector3(0.28, 0.55, 0.28), top, side)
@@ -83,8 +88,8 @@ static func conifer(far := false) -> ArrayMesh:
 static func cypress(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.25, 0.47, 0.26)
-	var side := Color(0.21, 0.41, 0.22)
+	var top := Color(0.184, 0.353, 0.173) # #2f5a2c, as the farmhouse cypresses
+	var side := Color(0.13, 0.26, 0.13)
 	_box(st, Vector3(-0.03, 0, -0.03), Vector3(0.03, 0.1, 0.03), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
 	_box(st, Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side)
 	if not low:
@@ -96,8 +101,8 @@ static func cypress(low := false) -> ArrayMesh:
 static func umbrella_pine(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.29, 0.52, 0.26)
-	var side := Color(0.23, 0.43, 0.21)
+	var top := Color(0.22, 0.40, 0.18)
+	var side := Color(0.15, 0.29, 0.13)
 	_box(st, Vector3(-0.04, 0, -0.04), Vector3(0.04, 0.86, 0.04), Color(0.45, 0.30, 0.20), Color(0.45, 0.30, 0.20), false)
 	_box(st, Vector3(-0.44, 0.82, -0.40), Vector3(0.44, 0.98, 0.40), top, side)
 	if not low:
@@ -127,7 +132,7 @@ static func house() -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var wall := Color(0.95, 0.87, 0.72, 0.5)
 	var roof := Color(0.72, 0.32, 0.21)
-	var window := Color(0.28, 0.27, 0.30)
+	var window := Color(0.29, 0.306, 0.369) # #4a4e5e, a dark blue grey, not black
 	var door := Color(0.45, 0.30, 0.20)
 	var hx := 0.5
 	var hz := 0.42
@@ -144,14 +149,14 @@ static func house() -> ArrayMesh:
 			_pane(st, Vector3(x, floor_y, -hz), Vector3.FORWARD, 0.09, 0.11, window)
 		_pane(st, Vector3(hx, floor_y, 0), Vector3.RIGHT, 0.09, 0.11, window)
 		_pane(st, Vector3(-hx, floor_y, 0), Vector3.LEFT, 0.09, 0.11, window)
-	# roof: eaves, then layers stepping in towards the ridge; the risers a
-	# little lighter than the treads, so the steps do not stripe the town
+	# roof: eaves, then layers stepping in towards the ridge; the risers in
+	# the roof tone too, so the steps do not stripe the town
 	var layers := [[0.48, 0.07], [0.36, 0.07], [0.24, 0.07], [0.12, 0.06]]
 	var y := h
 	for k in layers.size():
 		var half_z: float = layers[k][0]
 		var dy: float = layers[k][1]
-		_box(st, Vector3(-hx - 0.04, y, -half_z), Vector3(hx + 0.04, y + dy, half_z), roof, roof.lightened(0.08))
+		_box(st, Vector3(-hx - 0.04, y, -half_z), Vector3(hx + 0.04, y + dy, half_z), roof, roof)
 		y += dy
 	return st.commit()
 
@@ -168,6 +173,7 @@ static func landmark(which: String) -> ArrayMesh:
 		"forum": return forum()
 		"temple": return temple()
 		"pantheon": return pantheon()
+		"bridge": return bridge()
 	return null
 
 ## A flat quad with outward normal n (winding fixed for Godot).
@@ -223,11 +229,12 @@ static func _ellipse(a: float, b: float, angle: float) -> Array:
 static func colosseum() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var stone := Color(0.86, 0.80, 0.68)
-	var cornice := Color(0.93, 0.88, 0.78)
-	var arch := Color(0.30, 0.27, 0.25)
+	# travertine (#ddd3ba) with arches in shade (#6a6052), not black holes
+	var stone := Color(0.867, 0.827, 0.729)
+	var cornice := Color(0.93, 0.90, 0.82)
+	var arch := Color(0.416, 0.376, 0.322)
 	var sand := Color(0.86, 0.75, 0.53)
-	var seats := [Color(0.80, 0.74, 0.63), Color(0.72, 0.66, 0.57), Color(0.80, 0.74, 0.63)]
+	var seats := [Color(0.82, 0.77, 0.66), Color(0.74, 0.69, 0.60), Color(0.82, 0.77, 0.66)]
 	var a := 94.0
 	var b := 78.0
 	var n := 32
@@ -278,10 +285,10 @@ static func colosseum() -> ArrayMesh:
 static func circus() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var stone := Color(0.86, 0.80, 0.68)
-	var seat := Color(0.80, 0.74, 0.63)
-	var seat_low := Color(0.72, 0.66, 0.57)
-	var arch := Color(0.30, 0.27, 0.25)
+	var stone := Color(0.867, 0.827, 0.729)
+	var seat := Color(0.82, 0.77, 0.66)
+	var seat_low := Color(0.74, 0.69, 0.60)
+	var arch := Color(0.416, 0.376, 0.322)
 	var sand := Color(0.86, 0.75, 0.53)
 	var roof := Color(0.72, 0.32, 0.21)
 	_box(st, Vector3(-150, 0, -32), Vector3(115, 1.0, 32), sand, sand)
@@ -319,8 +326,8 @@ static func circus() -> ArrayMesh:
 	# the spina down the middle, the obelisk of Augustus and the turning posts
 	_box(st, Vector3(-95, 1, -3), Vector3(80, 4, 3), stone, stone)
 	# the obelisk: red granite on a pedestal, tapering to a pyramid tip
-	var granite := Color(0.74, 0.58, 0.49)
-	var granite_side := Color(0.66, 0.50, 0.42)
+	var granite := Color(0.86, 0.73, 0.64)
+	var granite_side := Color(0.78, 0.65, 0.57)
 	_box(st, Vector3(-12, 4, -4), Vector3(-4, 9, 4), stone, stone)
 	_box(st, Vector3(-10.5, 9, -2.5), Vector3(-5.5, 32, 2.5), granite, granite_side)
 	_box(st, Vector3(-9.8, 32, -1.8), Vector3(-6.2, 40, 1.8), granite, granite_side)
@@ -346,7 +353,7 @@ static func forum() -> ArrayMesh:
 	var marble := Color(0.93, 0.91, 0.86)
 	var brick := Color(0.72, 0.50, 0.38)
 	var roof := Color(0.72, 0.32, 0.21)
-	var arch := Color(0.30, 0.27, 0.25)
+	var arch := Color(0.416, 0.376, 0.322)
 	_box(st, Vector3(-42, 0, -42), Vector3(42, 0.8, 42), paving, stone)
 	# Basilica Julia: two storeys of arches under a low roof
 	_box(st, Vector3(-38, 0.8, 18), Vector3(14, 13, 36), stone, stone)
@@ -395,7 +402,7 @@ static func temple() -> ArrayMesh:
 	var marble := Color(0.95, 0.93, 0.88)
 	var stone := Color(0.87, 0.83, 0.73)
 	var roof := Color(0.72, 0.32, 0.21)
-	var shadow := Color(0.40, 0.37, 0.34)
+	var shadow := Color(0.541, 0.506, 0.439) # #8a8170: the porch in shade
 	_box(st, Vector3(-27, 0, -30), Vector3(27, 8, 24), stone, stone)
 	for k in 3:
 		_box(st, Vector3(-14, 0, 24), Vector3(14, 6.0 - 2.0 * k, 26.0 + 2.0 * k + 2.0), stone, stone)
@@ -408,7 +415,7 @@ static func temple() -> ArrayMesh:
 			_box(st, Vector3(x - 1.4, 8, z - 1.4), Vector3(x + 1.4, 28, z + 1.4), marble, marble)
 	# architrave, then the stepped roof with a white gable at the front
 	_box(st, Vector3(-22, 28, -27), Vector3(22, 30, 20), marble, marble)
-	var layers := [[24.0, 2.5], [17.0, 2.5], [10.0, 2.5], [4.0, 2.0]]
+	var layers := [[24.0, 1.8], [20.0, 1.8], [16.0, 1.8], [12.0, 1.8], [8.0, 1.6], [4.0, 1.4]]
 	var y := 30.0
 	for layer in layers:
 		_box(st, Vector3(-layer[0], y, -28), Vector3(layer[0], y + layer[1], 19), roof, roof.lightened(0.08))
@@ -422,20 +429,41 @@ static func pantheon() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var stone := Color(0.84, 0.78, 0.67)
-	var dome := Color(0.66, 0.64, 0.61)
+	var dome := Color(0.72, 0.70, 0.66)
 	var marble := Color(0.93, 0.91, 0.86)
 	var roof := Color(0.72, 0.32, 0.21)
 	_prism(st, Vector3.ZERO, 24.0, 0.0, 30.0, 20, stone, stone)
 	var rings := [[22.0, 30.0, 34.0], [18.0, 34.0, 38.0], [13.0, 38.0, 41.0], [7.0, 41.0, 43.0]]
 	for r in rings:
 		_prism(st, Vector3.ZERO, r[0], r[1], r[2], 20, dome, dome.darkened(0.08))
-	_box(st, Vector3(-17, 0, -40), Vector3(17, 3, -20), stone, stone)
-	_box(st, Vector3(-14, 3, -30), Vector3(14, 22, -20), stone, stone)
+	# the portico (in fact in the north) turned south, to the camera
+	_box(st, Vector3(-17, 0, 20), Vector3(17, 3, 40), stone, stone)
+	_box(st, Vector3(-14, 3, 20), Vector3(14, 22, 30), stone, stone)
+	_pane(st, Vector3(0, 11, 30), Vector3.BACK, 28, 16, Color(0.541, 0.506, 0.439))
 	for k in 8:
 		var x := -14.0 + 4.0 * k
-		_box(st, Vector3(x - 1.0, 3, -39), Vector3(x + 1.0, 19, -37), marble, marble)
-	var y := 19.0
-	for w in [17.0, 12.0, 7.0, 2.5]:
-		_box(st, Vector3(-w, y, -40), Vector3(w, y + 2.0, -20), roof, roof.lightened(0.08))
-		y += 2.0
+		_box(st, Vector3(x - 1.0, 3, 37), Vector3(x + 1.0, 19, 39), marble, marble)
+	_box(st, Vector3(-17, 19, 20), Vector3(17, 20.5, 40), marble, marble)
+	var y := 20.5
+	for w in [17.0, 13.0, 9.0, 5.0]:
+		_box(st, Vector3(-w, y, 20), Vector3(w, y + 1.6, 38.5), roof, roof.lightened(0.08))
+		_box(st, Vector3(-w, y, 38.5), Vector3(w, y + 1.6, 40), marble, marble)
+		y += 1.6
+	return st.commit()
+
+## A Tiber bridge (Pons Aemilius, Pons Aelius; 70 x 10 m): a travertine deck on
+## three arches across the river, running east to west.
+static func bridge() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stone := Color(0.867, 0.827, 0.729)
+	var deck := Color(0.62, 0.60, 0.57)
+	var arch := Color(0.416, 0.376, 0.322)
+	_box(st, Vector3(-35, 6.5, -5), Vector3(35, 9, 5), deck, stone)
+	for x in [-35.0, -12.0, 12.0, 35.0]:
+		_box(st, Vector3(x - 3.5, 0, -5.5), Vector3(x + 3.5, 6.5, 5.5), stone, stone)
+	for z in [-1.0, 1.0]:
+		_box(st, Vector3(-35, 9, minf(4.0 * z, 5.0 * z)), Vector3(35, 10.5, maxf(4.0 * z, 5.0 * z)), stone, stone)
+		for x in [-23.5, 0.0, 23.5]:
+			_pane(st, Vector3(x, 3.2, 5.0 * z), Vector3(0, 0, z), 16.0, 6.4, arch)
 	return st.commit()

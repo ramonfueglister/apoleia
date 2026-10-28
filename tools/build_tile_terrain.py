@@ -17,15 +17,17 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
                    rule, see sc2k_relief); the terrain shape is built from this
   shore.r16f       highest the land may stand next to the water (sea 0 m, lakes at
                    their level, same slope); caps the blurred relief at the shores
-  levels-L{n}.png  for the far zoom levels (n >= BAKED_FROM): the height level of
-                   every tile corner (8 bit), built by corner_levels(); up close the
-                   shader builds the corners from relief.r16f itself
+  levels-L{n}.png  the height level of every tile corner (8 bit): far zoom levels
+                   (n >= BAKED_FROM) from the 2 km heights (corner_levels), the near
+                   ones (NEAR_LEVELS) from the terrain tiles (near_corner_levels,
+                   downloaded once to DEM_DIR, not in Git)
   ground-L{n}.png  per zoom level: the landscape of every tile (GROUND, one colour
                    each), two tiles per byte like cells-L{n}.png; 15 = water
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
-    python3 tools/build_tile_terrain.py --levels-only   # only levels-L*.png, from the outputs above
+    python3 tools/build_tile_terrain.py --levels-only   # only the far levels-L*.png, from the outputs above
+    python3 tools/build_tile_terrain.py --near-only     # only levels-L0/L1.png (--level=N for one)
     python3 tools/build_tile_terrain.py --ground-only   # only ground-L*.png
 """
 
@@ -84,12 +86,44 @@ LEVEL_STEPS_M = [100.0, 250.0, 450.0, 700.0, 1000.0, 1400.0, 1900.0, 2500.0, 320
 CORNER_BLUR = 1.2
 
 
-def far_level_x(metres):
-    """Height in far levels (unrounded) on the LEVEL_STEPS_M scale."""
-    steps = np.array(LEVEL_STEPS_M)
+def _steps_level_x(metres, steps, beyond):
+    steps = np.array(steps, np.float64)
     m = np.asarray(metres, np.float64)
     x = np.interp(m, steps, np.arange(len(steps), dtype=np.float64))
-    return np.where(m > steps[-1], len(steps) - 1 + (m - steps[-1]) / 800.0, x)
+    return np.where(m > steps[-1], len(steps) - 1 + (m - steps[-1]) / beyond, x)
+
+
+def far_level_x(metres):
+    """Height in far levels (unrounded) on the LEVEL_STEPS_M scale."""
+    return _steps_level_x(metres, LEVEL_STEPS_M, 800.0)
+
+
+# The near levels (0.5 and 1 km tiles) are baked from a finer height model
+# (terrain tiles, terrarium zoom DEM_ZOOM, about 450 m): on the 2 km nodes the
+# hills of a few km are gone (Tivoli stood at 70 m instead of 235 m, Rome's
+# hills were missing). Their scale is fine in the lowlands, so gentle land and
+# Rome's hills show as SimCity 2000 terraces (NEAR_STEPS_M at 0.5 km tiles:
+# 20 m levels up to 120 m, 50 m up to 420 m, NEAR_BEYOND_M above; twice the
+# metres at 1 km tiles). At 0.5 km tiles the corners are blurred and cleaned
+# at the scale of one tile (Rome's hills are a tile or two), at 1 km tiles as
+# far out (a jumble of one tile bumps over the Apennines otherwise).
+NEAR_LEVELS = (0, 1)
+NEAR_STEPS_M = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0]
+NEAR_BEYOND_M = 120.0
+NEAR_BLUR = [0.7, CORNER_BLUR]  # tiles, per near level
+NEAR_CLEAN = [2, 3]  # corner square of the cleaning, per near level
+DEM_ZOOM = 8
+DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
+DEM_DIR = RD / "terrarium-z8"  # download cache, not in Git
+
+
+def near_level_x(metres, tile_km):
+    """Height in near levels (unrounded) on the NEAR_STEPS_M scale of tile_km."""
+    return _steps_level_x(np.asarray(metres, np.float64) * (BASE_CELL_KM / tile_km), NEAR_STEPS_M, NEAR_BEYOND_M)
+
+
+def level_x(metres, tile_km):
+    return near_level_x(metres, tile_km) if tile_km < BASE_CELL_KM * 2 ** BAKED_FROM else far_level_x(metres)
 # Landscape of a tile, one colour each (Ramon, 28.10.2026: one colour per
 # tile, two where landscapes meet; the shader splits those at the diagonal).
 GROUND = ["meadow", "dry_grass", "field", "wetland", "scrub", "sand", "forest", "conifer",
@@ -532,7 +566,7 @@ def tile_lake_levels(water, tile_km, lake_enc, shore):
         metres = np.where(e > 0, np.fmin(metres, e - 1000), metres)
     metres = np.where(np.isnan(metres), node_bilinear(shore, cx, cz), metres)
     level = np.full(water.shape, np.inf, np.float32)
-    level[jj, ii] = np.maximum(np.round(far_level_x(metres)), 1)
+    level[jj, ii] = np.maximum(np.round(level_x(metres, tile_km)), 1)
     return level
 
 
@@ -595,7 +629,7 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
 
 
 def bake_levels(manifest, cells, height, lake_enc, shore):
-    manifest["levels"] = []
+    manifest["levels"] = [e for e in manifest.get("levels", []) if e["level"] < BAKED_FROM]
     for level in range(BAKED_FROM, LEVELS):
         tile = BASE_CELL_KM * 2 ** level
         lv = corner_levels(cells[level], tile, height, lake_enc, shore)
@@ -608,6 +642,184 @@ def bake_levels(manifest, cells, height, lake_enc, shore):
                                    "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
                                            "between all eight neighbours, sea corners 0, land >= 1"})
         print("levels", level, lv.shape, "max", int(lv.max()))
+    manifest["levels"].sort(key=lambda e: e["level"])
+
+
+def _merc_tile(lon, lat, z):
+    """Fractional web mercator tile coordinates (x, y) at zoom z."""
+    n = 2 ** z
+    lat = np.radians(np.clip(lat, -85.0, 85.0))
+    return ((np.asarray(lon, np.float64) + 180.0) / 360.0 * n,
+            (1.0 - np.log(np.tan(lat) + 1.0 / np.cos(lat)) / math.pi) / 2.0 * n)
+
+
+def dem_mosaic(land1):
+    """Terrarium tiles (DEM_URL, zoom DEM_ZOOM) over the region rectangle
+    (data/region.json) wherever the 1 km cells hold land, as one mosaic of
+    metres (NaN where no tile was fetched). Returns (mosaic, first tile x, y).
+    Tiles are cached in DEM_DIR."""
+    import urllib.request
+    from concurrent.futures import ThreadPoolExecutor
+    region = json.loads((ROOT / "data/region.json").read_text())["extent"]
+    z = DEM_ZOOM
+    tx0, ty0 = (int(math.floor(v)) for v in _merc_tile(region["west"], region["north"], z))
+    tx1, ty1 = (int(math.floor(v)) for v in _merc_tile(region["east"], region["south"], z))
+    n = 2 ** z
+    wanted = []
+    for ty in range(ty0, ty1 + 1):
+        lat_n = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * ty / n))))
+        lat_s = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (ty + 1) / n))))
+        for tx in range(tx0, tx1 + 1):
+            lon_w, lon_e = tx / n * 360 - 180, (tx + 1) / n * 360 - 180
+            x0, z0 = lonlat_to_world(lon_w, lat_n)
+            x1, z1 = lonlat_to_world(lon_e, lat_s)
+            i0, i1 = int((x0 - WORLD_MIN[0]) / 1.0), int(math.ceil((x1 - WORLD_MIN[0]) / 1.0))
+            j0, j1 = int((z0 - WORLD_MIN[1]) / 1.0), int(math.ceil((z1 - WORLD_MIN[1]) / 1.0))
+            if land1[max(j0, 0):max(j1, 0), max(i0, 0):max(i1, 0)].any():
+                wanted.append((tx, ty))
+    DEM_DIR.mkdir(parents=True, exist_ok=True)
+
+    def fetch(t):
+        path = DEM_DIR / f"{z}-{t[0]}-{t[1]}.png"
+        if not path.exists():
+            for attempt in range(5):
+                try:
+                    data = urllib.request.urlopen(DEM_URL.format(z=z, x=t[0], y=t[1]), timeout=60).read()
+                    path.with_suffix(".part").write_bytes(data)
+                    path.with_suffix(".part").rename(path)
+                    break
+                except OSError:
+                    if attempt == 4:
+                        raise
+        return t, path
+
+    mosaic = np.full(((ty1 - ty0 + 1) * 256, (tx1 - tx0 + 1) * 256), np.nan, np.float32)
+    with ThreadPoolExecutor(16) as pool:
+        for (tx, ty), path in pool.map(fetch, wanted):
+            rgb = np.array(Image.open(path).convert("RGB")).astype(np.float32)
+            m = rgb[..., 0] * 256 + rgb[..., 1] + rgb[..., 2] / 256 - 32768
+            mosaic[(ty - ty0) * 256:(ty - ty0 + 1) * 256, (tx - tx0) * 256:(tx - tx0 + 1) * 256] = m
+    print("dem tiles", len(wanted), "of", (tx1 - tx0 + 1) * (ty1 - ty0 + 1))
+    return mosaic, tx0, ty0
+
+
+def near_heights(tile_km, height, dem):
+    """Metres at the tile corners of a near level: the terrain tiles inside the
+    region rectangle, the 2 km heights elsewhere (as the land rule there)."""
+    mosaic, tx0, ty0 = dem
+    region = json.loads((ROOT / "data/region.json").read_text())["extent"]
+    rx0, rz0 = lonlat_to_world(region["west"], region["north"])
+    rx1, rz1 = lonlat_to_world(region["east"], region["south"])
+    nx = int(math.ceil(WORLD_SIZE[0] / tile_km)) + 1
+    ny = int(math.ceil(WORLD_SIZE[1] / tile_km)) + 1
+    px = WORLD_MIN[0] + np.arange(nx, dtype=np.float64) * tile_km
+    lon = 19.0 + np.degrees(px / (R_KM * math.cos(math.radians(41))))
+    out = np.empty((ny, nx), np.float32)
+    mh, mw = mosaic.shape
+    for j0 in range(0, ny, 256):
+        pz = WORLD_MIN[1] + np.arange(j0, min(j0 + 256, ny), dtype=np.float64) * tile_km
+        lat = 41.0 - np.degrees(pz / R_KM)
+        fx, fy = _merc_tile(lon[None, :], lat[:, None], DEM_ZOOM)
+        gx = (fx - tx0) * 256 - 0.5
+        gy = (fy - ty0) * 256 - 0.5
+        i = np.clip(np.floor(gx).astype(np.int64), 0, mw - 2)
+        j = np.clip(np.floor(gy).astype(np.int64), 0, mh - 2)
+        ax = np.clip(gx - i, 0, 1).astype(np.float32)
+        ay = np.clip(gy - j, 0, 1).astype(np.float32)
+        d = ((mosaic[j, i] * (1 - ax) + mosaic[j, i + 1] * ax) * (1 - ay)
+             + (mosaic[j + 1, i] * (1 - ax) + mosaic[j + 1, i + 1] * ax) * ay)
+        inside = (px[None, :] >= rx0) & (px[None, :] <= rx1) & (pz[:, None] >= rz0) & (pz[:, None] <= rz1)
+        d = np.where(inside, d, np.nan)
+        coarse = node_bilinear(height, np.broadcast_to(px[None, :], d.shape), np.broadcast_to(pz[:, None], d.shape))
+        out[j0:j0 + d.shape[0]] = np.where(np.isfinite(d), d, coarse)
+    return np.maximum(out, 0)
+
+
+def _shifted2(a, back):
+    """The four corners of the 2 x 2 squares at a (back: the squares ending at a)."""
+    p = np.pad(a, ((1, 0), (1, 0)) if back else ((0, 1), (0, 1)), mode="edge")
+    h, w = a.shape
+    return [p[dy:dy + h, dx:dx + w] for dy in (0, 1) for dx in (0, 1)]
+
+
+def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
+    """SimCity 2000 terrain at a near zoom level, as corner_levels() far out,
+    from the terrain tile heights on the NEAR_STEPS_M scale, blurred over `blur`
+    tiles; level sets are opened and closed with a `clean` x `clean` corner
+    square (2: lone corner bumps, pits and one corner ridges go while hills of
+    a tile or two, Rome's, stay)."""
+    ny, nx = water.shape
+    x = near_level_x(gauss(heights, blur), tile_km).astype(np.float32)
+    low, high = x.copy(), x.copy()
+    while True:
+        low2 = np.minimum(low, min3(low) + 1)
+        high2 = np.maximum(high, max3(high) - 1)
+        if np.array_equal(low2, low) and np.array_equal(high2, high):
+            break
+        low, high = low2, high2
+    del x, low2, high2
+    level = np.round((low + high) * 0.5).astype(np.float32)
+    del low, high
+    wp = np.pad(water, 1, constant_values=1)
+    lakes = np.pad(tile_lake_levels(water, tile_km, lake_enc, shore), 1, constant_values=np.inf)
+    sea = np.zeros((ny + 1, nx + 1), bool)
+    cap = np.full((ny + 1, nx + 1), np.inf, np.float32)
+    for dj in (0, 1):
+        for di in (0, 1):
+            sea |= wp[dj:dj + ny + 1, di:di + nx + 1] == 1
+            cap = np.minimum(cap, lakes[dj:dj + ny + 1, di:di + nx + 1])
+    del wp, lakes
+    fixed = sea | np.isfinite(cap)
+    cap = np.minimum(cap, 255).astype(np.int16)
+
+    def settle(lv):
+        # in whole levels (int16): a quarter of the float work on 0.2 G corners
+        lv = np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap)).astype(np.int16)
+        while True:
+            lv2 = np.minimum(lv, min3(lv) + 1)
+            if np.array_equal(lv2, lv):
+                return lv
+            lv = lv2
+
+    def erode(m):
+        return min3(m) if clean == 3 else np.minimum.reduce(_shifted2(m, False))
+
+    def dilate(m):
+        return max3(m) if clean == 3 else np.maximum.reduce(_shifted2(m, True))
+
+    level = settle(np.minimum(level, 255)).astype(np.uint8)
+    for _ in range(2):
+        cleaned = np.zeros(level.shape, np.uint8)
+        for k in range(1, int(level.max()) + 1):
+            m = (level >= k).view(np.uint8)
+            if k > 1:
+                opened = dilate(erode(m))
+                closed = erode(dilate(opened))
+                m = np.where(fixed, opened, closed)
+            cleaned += m
+        level = settle(cleaned).astype(np.uint8)
+    return level
+
+
+def bake_near_levels(manifest, cells, height, lake_enc, shore, only=NEAR_LEVELS):
+    dem = dem_mosaic(cells[1] != 1)
+    manifest["levels"] = [e for e in manifest.get("levels", []) if e["level"] not in only]
+    for level in only:
+        tile = BASE_CELL_KM * 2 ** level
+        lv = near_corner_levels(cells[level], tile, near_heights(tile, height, dem), lake_enc, shore,
+                                NEAR_BLUR[level], NEAR_CLEAN[level])
+        path = OUT / f"levels-L{level}.png"
+        Image.fromarray(lv, "L").save(path, optimize=True)
+        manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
+                                   "scale": "near", "level_steps_m": [v * tile / BASE_CELL_KM for v in NEAR_STEPS_M],
+                                   "beyond_m": NEAR_BEYOND_M * tile / BASE_CELL_KM, "blur_tiles": NEAR_BLUR[level],
+                                   "clean_corners": NEAR_CLEAN[level],
+                                   "heights": {"url": DEM_URL, "zoom": DEM_ZOOM},
+                                   "path": path.name, "sha256": sha(path),
+                                   "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
+                                           "between all eight neighbours, sea corners 0, land >= 1"})
+        print("near levels", level, lv.shape, "max", int(lv.max()))
+    manifest["levels"].sort(key=lambda e: e["level"])
 
 
 def _hash01(i, j, seed):
@@ -798,6 +1010,20 @@ def levels_only():
     print("done")
 
 
+def near_only():
+    """Rebuild only the near levels (levels-L0/L1.png) from the outputs of a full bake."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    height = np.fromfile(OUT / "height.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    shore = np.fromfile(OUT / "shore.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    aux = np.array(Image.open(OUT / "aux.png"))
+    lake_enc = aux[..., 1].astype(np.uint16) * 256 + aux[..., 2]
+    cells = {e["level"]: unpack_cells(e) for e in manifest["cells"] if e["level"] in NEAR_LEVELS}
+    only = tuple(int(a.split("=")[1]) for a in sys.argv if a.startswith("--level=")) or NEAR_LEVELS
+    bake_near_levels(manifest, cells, height, lake_enc, shore, only)
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
 def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
@@ -907,6 +1133,8 @@ def main():
     manifest["height_half"] = {"path": "height.r16f", "sha256": sha(OUT / "height.r16f"), "format": "float16 LE, metres"}
     print("corner levels")
     bake_levels(manifest, water_by_level, height, lake_enc, water)
+    print("near corner levels")
+    bake_near_levels(manifest, water_by_level, height, lake_enc, water)
     print("ground")
     bake_ground(manifest, water_by_level, height, ground_cover())
     forest, shrub, grass, crop, bare, snow, wet, _ = np.moveaxis(classes, -1, 0)
@@ -933,6 +1161,8 @@ def main():
 if __name__ == "__main__":
     if "--levels-only" in sys.argv:
         levels_only()
+    elif "--near-only" in sys.argv:
+        near_only()
     elif "--ground-only" in sys.argv:
         ground_only()
     else:
