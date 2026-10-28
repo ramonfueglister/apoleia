@@ -223,11 +223,25 @@ etwa 25 ms:
 - **Strassenebene** (eine RG8-Kachel pro 25-km-Zelle): Handelsweg (Stufe 1),
   Strasse (Stufe 2), auf See Seeweg, mit den Nachbarn, die sie verbindet.
 
-`sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von etwa 130 m
-bis zum Feldanteil der Kachel, eingesäte nach Jahreszeit (Erde, Keimlinge,
-grün, reif, Stoppeln), die übrigen als Brache; Pfade zum Markt, Marktplatz mit
-Ständen, gepflasterte Strassen, auf der Karte dunkle Linien, Seewege
-gestrichelt. Taste `G` schaltet das aus und an. Ein Klick auf eine Person
+`sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
+Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
+Kachel, so gross wie ihr Feldanteil, eingesäte nach Jahreszeit (Erde,
+Keimlinge, grün, reif, Stoppeln), die übrigen als Wiese; Pfade zum Markt,
+Marktplatz mit Ständen, gepflasterte Strassen, auf der Karte dunkle Linien,
+Seewege gestrichelt. Taste `G` schaltet das aus und an. Was gezeigt wird,
+hängt an der Sichtbreite (`sim_view_km`), nicht an der Pixelgrösse, damit
+kein Umschalten als Naht durchs Bild läuft: einzelne Parzellen und Saat bis
+8 km, ganze Feldblöcke in einer Farbe bis 30 km, Trampelpfade bis 10 km,
+Handelswege unter 100 km, Strassen unter 500 km, Seewege bis 150 km.
+
+Bis 8 km steht die Saat als Voxel-Büschel auf den eingesäten Parzellen
+(`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
+40 × 40 um die Kamera, 6 × 6 Büschel): Keimlinge, grünes Korn, reifer Weizen
+als geschlossene Fläche mit Furchen, Stoppeln. Die Regel, welche Parzelle
+bestellt ist, liegt in `sim_fields.gdshaderinc` und gilt für Bodenfarbe und
+Büschel gleich. Eine Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`,
+ein Pixel pro Parzelle von 0,36 km mit Bauernhaus) hält Haus, Garten und Hof
+frei; die Terrain malt diese Parzellen als Wiese. Ein Klick auf eine Person
 zeigt jetzt auch die Art des Haushalts (Hof mit Feldgrösse, Lohn, Zelt,
 Händler, Oberschicht), wie viel er im letzten Monat gegessen hat und seinen
 Vorrat.

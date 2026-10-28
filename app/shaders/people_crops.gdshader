@@ -22,11 +22,13 @@ varying vec3 colour;
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
-// the plants through the season (sRGB): fresh sprouts, green corn, ripe
-// wheat after Urbek's measured wheat, straw stubble
-const vec3 SPROUT = vec3(0.52, 0.72, 0.3);
-const vec3 GREEN = vec3(0.4, 0.62, 0.24);
-const vec3 WHEAT = vec3(0.84, 0.77, 0.44);
+// the plants through the season (sRGB), by crop: fresh sprouts, green
+// corn, ripe wheat after Urbek's measured wheat; barley a little paler; beans
+// low, bushy and dark, ripening brown; straw stubble after the harvest
+const vec3 SPROUT[3] = vec3[](vec3(0.52, 0.72, 0.3), vec3(0.62, 0.78, 0.37), vec3(0.36, 0.58, 0.24));
+const vec3 GREEN[3] = vec3[](vec3(0.4, 0.62, 0.24), vec3(0.55, 0.71, 0.3), vec3(0.27, 0.47, 0.2));
+const vec3 RIPE[3] = vec3[](vec3(0.84, 0.77, 0.44), vec3(0.9, 0.84, 0.58), vec3(0.6, 0.53, 0.3));
+const float CROP_H[3] = float[](1.0, 0.85, 0.6); // ripe height (m)
 const vec3 STUBBLE = vec3(0.78, 0.68, 0.43);
 
 void vertex() {
@@ -40,16 +42,21 @@ void vertex() {
 	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
 	bool open = tt_town(t) == 0 && tt_water(t) == W_LAND && (land == G_FIELD || land == G_MEADOW || land == G_DRY_GRASS);
 	float g = f.b;
+	// one crop per parcel, half of them wheat, so the farmland is a patchwork
+	float pick = sim_hash(cell + 5.1);
+	int kind = pick < 0.5 ? 0 : pick < 0.75 ? 1 : 2;
 	// height (m) and width (share of the row spacing) by the season;
 	// ploughed earth has none
 	float h = 0.0;
 	float w = 0.0;
-	vec3 c = GREEN;
+	vec3 c = GREEN[kind];
 	if (g <= 0.0) { h = 0.15; w = 0.9; c = STUBBLE; }
 	else if (g < 0.12) { h = 0.0; }
-	else if (g < 0.4) { h = 0.2 + 0.4 * (g - 0.12) / 0.28; w = 0.35; c = SPROUT; }
-	else if (g < 0.75) { h = 0.6 + 0.3 * (g - 0.4) / 0.35; w = 0.6; c = GREEN; }
-	else { h = 1.0; w = 1.0; c = WHEAT; }
+	else if (g < 0.4) { h = 0.2 + 0.4 * (g - 0.12) / 0.28; w = 0.35; c = SPROUT[kind]; }
+	else if (g < 0.75) { h = 0.6 + 0.3 * (g - 0.4) / 0.35; w = 0.6; c = GREEN[kind]; }
+	else { h = 1.0; w = 1.0; c = RIPE[kind]; }
+	if (kind == 2 && g > 0.0) { h *= CROP_H[2]; w = max(w, 0.75); } // beans: low bushes
+	else if (g >= 0.75) { h = CROP_H[kind]; }
 	// the farmhouses keep their lot (house, garden, yard) free of corn
 	bool house = sim_house_lot(cell * size + UV * size);
 	bool show = state == 2 && open && h > 0.0 && !house;
