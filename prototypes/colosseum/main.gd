@@ -107,28 +107,73 @@ func _hero() -> void:
 ## Test-scene context in the same voxel language: a paved plaza in two
 ## stone tones and a ring of cypresses, as around Caesar III's colosseum.
 func _plaza() -> void:
-	var tiles := {Color("d9ccb2"): [], Color("cbbda0"): []}
+	# Paving in two stone tones, with a darker path cross to the four axes.
+	var tiles := {Color("d9ccb2"): [], Color("cbbda0"): [], Color("b8a58a"): []}
 	var keys := tiles.keys()
-	for x in range(-12, 12):
-		for z in range(-10, 10):
-			tiles[keys[(x + z) & 1]].append(Vector3(x + 0.5, 0.06, z + 0.5))
+	for x in range(-14, 14):
+		for z in range(-12, 12):
+			var key: Color = keys[2] if (absi(x) <= 1 or absi(z) <= 1) else keys[(x + z) & 1]
+			tiles[key].append(Vector3(x + 0.5, 0.06, z + 0.5))
 	for colour in keys:
 		_boxes(tiles[colour], Vector3(1, 0.12, 1), colour)
-	var greens := [Color("3f6b32"), Color("4d7c3a"), Color("5b8b42")]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
-	for i in 26:
-		var t := TAU * i / 26.0
-		var base := Vector3(cos(t) * 13.5, 0.0, sin(t) * 11.5)
-		_boxes([base + Vector3(0, 0.2, 0)], Vector3(0.25, 0.4, 0.25), Color("6b4a32"))
-		var h := rng.randf_range(2.2, 3.2)
-		var layers := 6
-		for k in layers:
-			var w := lerpf(0.9, 0.3, float(k) / layers)
-			var y := 0.4 + h * (k + 0.5) / layers
-			_boxes([base + Vector3(0, y, 0)], Vector3(w, h / layers, w), greens[(i + k) % greens.size()])
+	# Cypresses and round voxel trees alternate in a ring, off the paths.
+	for i in 32:
+		var t := TAU * (i + 0.5) / 32.0
+		var base := Vector3(cos(t) * 13.0, 0.12, sin(t) * 11.0)
+		if absf(base.x) < 2.5 or absf(base.z) < 2.5:
+			continue
+		if i % 2 == 0:
+			_cypress(base, rng.randf_range(2.2, 3.2), i)
+		else:
+			_round_tree(base, rng.randf_range(1.6, 2.2), i)
+	# Benches along the paths and market stalls at the corners.
+	for s in [-1, 1]:
+		for k in [4, 7, 10]:
+			_seat(Vector3(s * k, 0.12, 2.1), 0.0)
+			_seat(Vector3(s * k, 0.12, -2.1), 0.0)
+			_seat(Vector3(2.1, 0.12, s * (k - 1)), PI * 0.5)
+	var awnings := [[Color("c8372a"), Color("f2ebdd")], [Color("e0b03a"), Color("f2ebdd")], [Color("3f6fa0"), Color("f2ebdd")]]
+	var n := 0
+	for corner in [Vector3(-11, 0.12, -9.5), Vector3(11, 0.12, -9.5), Vector3(-11, 0.12, 9.5), Vector3(11, 0.12, 9.5)]:
+		for j in 2:
+			_stall(corner + Vector3((j - 0.5) * 2.4 * signf(corner.x), 0, 0), awnings[n % awnings.size()])
+			n += 1
 
-func _boxes(at: Array, size: Vector3, colour: Color) -> void:
+func _cypress(base: Vector3, h: float, i: int) -> void:
+	var greens := [Color("3f6b32"), Color("4d7c3a"), Color("5b8b42")]
+	_boxes([base + Vector3(0, 0.2, 0)], Vector3(0.25, 0.4, 0.25), Color("6b4a32"))
+	var layers := 6
+	for k in layers:
+		var w := lerpf(0.9, 0.3, float(k) / layers)
+		_boxes([base + Vector3(0, 0.4 + h * (k + 0.5) / layers, 0)], Vector3(w, h / layers, w), greens[(i + k) % greens.size()])
+
+## Urbek-like deciduous tree: trunk and a crown of stacked, offset cubes.
+func _round_tree(base: Vector3, h: float, i: int) -> void:
+	var greens := [Color("5f9a3c"), Color("6fae45"), Color("4f8a34")]
+	_boxes([base + Vector3(0, h * 0.25, 0)], Vector3(0.25, h * 0.5, 0.25), Color("6b4a32"))
+	_boxes([base + Vector3(0, h * 0.75, 0)], Vector3(1.5, h * 0.5, 1.5), greens[i % 3])
+	_boxes([base + Vector3(0.25, h * 1.05, -0.2)], Vector3(1.0, 0.5, 1.0), greens[(i + 1) % 3])
+	_boxes([base + Vector3(-0.45, h * 0.7, 0.35)], Vector3(0.75, 0.6, 0.75), greens[(i + 2) % 3])
+
+func _seat(at: Vector3, rot: float) -> void:
+	var b := Basis(Vector3.UP, rot)
+	_boxes([at + b * Vector3(0, 0.25, 0)], Vector3(1.0, 0.08, 0.3), Color("8a5a36"), rot)
+	for x in [-0.4, 0.4]:
+		_boxes([at + b * Vector3(x, 0.12, 0)], Vector3(0.1, 0.25, 0.3), Color("4a4a4a"), rot)
+
+## Market stall: counter, posts and a striped awning.
+func _stall(at: Vector3, stripes: Array) -> void:
+	_boxes([at + Vector3(0, 0.35, 0)], Vector3(1.8, 0.7, 0.8), Color("9a6a40"))
+	for x in [-0.85, 0.85]:
+		_boxes([at + Vector3(x, 0.9, -0.35)], Vector3(0.1, 1.8, 0.1), Color("6b4a32"))
+	for k in 6:
+		_boxes([at + Vector3(-0.75 + k * 0.3, 1.85 - 0.04 * (k % 2), 0.05)], Vector3(0.3, 0.12, 1.3), stripes[k % 2])
+	for k in 5:
+		_boxes([at + Vector3(-0.6 + k * 0.3, 0.78, 0.1)], Vector3(0.2, 0.15, 0.2), [Color("d9553a"), Color("e8c040"), Color("6fae45")][k % 3])
+
+func _boxes(at: Array, size: Vector3, colour: Color, rot := 0.0) -> void:
 	var box := BoxMesh.new()
 	box.size = size
 	var m := StandardMaterial3D.new()
@@ -139,6 +184,7 @@ func _boxes(at: Array, size: Vector3, colour: Color) -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = box
 		mi.position = p
+		mi.rotation.y = rot
 		add_child(mi)
 
 func _lods() -> void:

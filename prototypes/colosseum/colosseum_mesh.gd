@@ -25,7 +25,7 @@ const ARENA_Y := 2.5
 const ARENA_E := 0.5        # arena edge as a share of the radius
 const ROW_D := 0.25         # seat row depth
 const FINE := 0.125         # LOD0 voxel size; coarser LODs supersample at this step
-const CACHE := "user://colosseum_v7_%s.res"
+const CACHE := "user://colosseum_v8_%s.res"
 # Voxel sizes of the LODs, and the camera distances where each one shows.
 const LOD_VOXELS := [0.125, 0.25, 0.5]
 const LOD_RANGES := [0.0, 50.0, 140.0, 320.0, 6000.0]
@@ -140,15 +140,25 @@ static func _ashlar_at(dx: float, y: float, variant: int, base: int) -> int:
 	var block := floori((dx + 0.5 * BAY_W) / 0.5 + 0.5 * (course % 2))
 	return STONE_B if absi(hash(Vector3i(variant, course, block))) % 100 < 28 else base
 
-## A statue on a pedestal in an upper arch; every third one is bronze.
+## A statue on a pedestal in an upper arch: legs, toga, one raised arm,
+## head. Every third one is bronze.
 static func _statue(dx: float, h: float, which: int) -> int:
 	var material := BRONZE if which % 3 == 0 else STATUE
+	var side := -1.0 if which % 2 == 0 else 1.0
+	var x := dx * side
 	if h < 0.125:
-		return STONE_MID if absf(dx) < 0.19 else EMPTY
+		return STONE_MID if absf(dx) < 0.25 else EMPTY
+	if h < 0.25:
+		return material if absf(dx) < 0.125 and absf(dx) > 0.02 else EMPTY
 	if h < 0.625:
-		return material if absf(dx) < 0.125 else EMPTY
+		if absf(dx) < 0.125:
+			return material
+		# The raised arm, from the shoulder up.
+		return material if x >= 0.125 and x < 0.25 and h >= 0.5 else EMPTY
 	if h < 0.75:
-		return material if absf(dx) < 0.07 else EMPTY
+		if absf(dx) < 0.07:
+			return material
+		return material if x >= 0.125 and x < 0.25 else EMPTY
 	return EMPTY
 
 ## Ambulatory behind the arches: floors, radial walls at the piers, a dark
