@@ -300,7 +300,8 @@ diesen Zellen.
 
 Von Jahr 10 bis 100 wächst die Bevölkerung um 0,08 % im Jahr. Die Hungertoten in Jahr 2 und
 3 sind vor allem Tagelöhner in Zelten ohne Geld und Höfe in knappen Zellen. Fingerprint
-gleich mit 1 und 4 Threads (10 Jahre). **Offen (Ramon: später):** Der Lohn kommt vom Staat
+gleich mit 1 und 4 Threads (10 Jahre). Tempo auf einer ruhigen Maschine: Grain im Mittel
+1,24 ms pro Tag (99 % 3,9 ms), ganzer Tag Median 4,6 ms, 99 % 9,5 ms, 433 MB. **Offen (Ramon: später):** Der Lohn kommt vom Staat
 mit unbegrenztem Geld; historisch verdienten diese Leute an Handwerk, Wein, Öl und Gärten.
 
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
