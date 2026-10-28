@@ -153,10 +153,25 @@ void vertex() {
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
 
-vec3 ground_colour(vec2 p, vec4 cov, float detail_m) {
+// Size of one data node (the 2 km height grid) in world km.
+float node_km() {
+	return world_size.x / (grid_size.x - 1.0);
+}
+
+// Mip level of the 2 km data that matches one screen pixel at p: the far map
+// reads the data as sharp as the screen allows, not as coarse as the tile.
+float pixel_lod(vec2 p) {
+	return clamp(log2(max(length(fwidth(p)) / node_km(), 1.0)), 0.0, 8.0);
+}
+
+vec4 cover_at(vec2 p, float lod) {
+	return textureLod(cover_tex, tt_node_uv(p), lod);
+}
+
+vec3 ground_colour(vec2 p, vec4 cov, float detail_m, float lod) {
 	float n = tt_fbm(p / (6.0 * max(tile_km, 0.5)));
 	float lat = tt_latitude(p);
-	float h = tt_height_m(p, height_lod) + detail_m;
+	float h = tt_height_m(p, lod) + detail_m;
 	float dry = cov.g;
 	vec3 c = mix(C_PLAIN, C_GRASS, 0.35 + 0.65 * n);
 	if (lat < 37.5) {
@@ -206,14 +221,17 @@ bool field(vec2 p, vec4 cov, out vec3 colour, out float stripes) {
 }
 
 // Smooth surface normal of the relief at p (world), for the far relief map.
-vec3 relief_normal(vec2 p) {
-	float e = tile_km * 0.75;
-	float lod = height_lod + 0.3;
+// `data_lod` is the mip level of the data (pixel_lod far out), so the
+// hillshade is as fine as a pixel instead of as coarse as a tile.
+vec3 relief_normal(vec2 p, float data_lod) {
+	float blur = exp2(data_lod); // data nodes per sample
+	float e = node_km() * blur * 0.75;
+	float lod = data_lod + 0.3;
 	float hx = textureLod(relief_tex, tt_node_uv(p + vec2(e, 0.0)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(e, 0.0)), lod).r;
 	float hz = textureLod(relief_tex, tt_node_uv(p + vec2(0.0, e)), lod).r - textureLod(relief_tex, tt_node_uv(p - vec2(0.0, e)), lod).r;
-	// the coarse levels see only blurred heights: shade them steeper so the
-	// mountain ranges still stand out on the world map
-	float k = level_h / m_per_level / (2.0 * e) * mix(1.0, 3.0, smoothstep(2.0, 16.0, tile_km));
+	// blurred data (coarse mip levels) flattens the slopes: shade those
+	// steeper so the mountain ranges still stand out on the world map
+	float k = level_h / m_per_level / (2.0 * e) * mix(1.0, 3.0, smoothstep(1.0, 8.0, blur));
 	return normalize(vec3(-hx * k, 1.0, -hz * k));
 }
 
@@ -289,6 +307,8 @@ void fragment() {
 	// shading and colour switch to the relief map only once the geometry is
 	// nearly smooth; half-blended tile lighting looks smeared
 	float look_smooth = smoothstep(0.5, 1.0, relief_smooth);
+	// data detail: by tile size up close (the tile look), by pixel far out
+	float data_lod = mix(height_lod, pixel_lod(p), look_smooth);
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
 			c = sea_colour(p);
@@ -304,12 +324,12 @@ void fragment() {
 		}
 		rough = 0.55;
 	} else if (part == 0) {
-		vec4 cov = tt_cover(cp);
+		vec4 cov = cover_at(cp, data_lod);
 		// far out: ridges and gullies below the data grid, so the mountains
 		// read crisp instead of as soft blobs (EU5 map)
-		float h_m = tt_height_m(p, height_lod);
+		float h_m = tt_height_m(p, data_lod);
 		float fw_km = length(fwidth(p));
-		vec3 rn = look_smooth > 0.0 ? relief_normal(p) : vec3(0.0, 1.0, 0.0);
+		vec3 rn = look_smooth > 0.0 ? relief_normal(p, data_lod) : vec3(0.0, 1.0, 0.0);
 		vec3 ad = look_smooth > 0.0 ? alpine_detail(p, h_m, fw_km, rn.xz / rn.y) : vec3(0.0);
 		float detail = ad.x * look_smooth;
 		int town = tt_town(tile);
@@ -320,9 +340,9 @@ void fragment() {
 			float r = length(tile_uv - 0.5);
 			float size = town == 3 ? 0.72 : 0.2 + 0.06 * float(town);
 			float aa = fwidth(r) + 1e-4;
-			c = mix(ground_colour(cp, cov, detail), vec3(0.74, 0.47, 0.34), 1.0 - smoothstep(size - aa, size + aa, r));
+			c = mix(ground_colour(cp, cov, detail, data_lod), vec3(0.74, 0.47, 0.34), 1.0 - smoothstep(size - aa, size + aa, r));
 		} else if (town > 0) {
-			c = mix(ground_colour(centre, cov, 0.0), C_PAVED, 0.75);
+			c = mix(ground_colour(centre, cov, 0.0, height_lod), C_PAVED, 0.75);
 			// streets between the house blocks
 			vec2 g = abs(fract(tile_uv * float(house_grid)) - 0.5);
 			float street = 1.0 - smoothstep(0.38, 0.43, max(g.x, g.y));
@@ -332,7 +352,7 @@ void fragment() {
 				c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 			}
 		} else {
-			c = ground_colour(cp, cov, detail);
+			c = ground_colour(cp, cov, detail, data_lod);
 		}
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
@@ -434,7 +454,7 @@ void fragment() {
 		float beach = smoothstep(edge - 0.3, edge - 0.08, ws.x) * (1.0 - wet.x);
 		if (water == W_SEA || water == W_LAKE || wet_tri == 1) {
 			float dry = 1.0 - (water == W_SEA || (wet_tri == 1 && shore_lake == 0) ? wet.x : wet.y);
-			vec3 land = ground_colour(p, tt_cover(p), 0.0);
+			vec3 land = ground_colour(p, cover_at(p, data_lod), 0.0, data_lod);
 			land = mix(land, C_SAND, beach * 0.75);
 			c = mix(c, land, dry * shore_smooth);
 		} else if (water == W_LAND || water == W_RIVER) {
