@@ -247,11 +247,13 @@ Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Bl
 Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Fern ist das
-Ackerland ein Flickenteppich aus Blöcken von 2 × 2 Kacheln, jeder ganz
-eine Frucht, Brache oder Weide (nach Feld- und Saatanteil seiner feinen
-Kachel, Brache seltener als in der Sim) und etwas früher oder später gesät
-als seine Nachbarn, leicht zur Wiese hin; nicht ihr Mittelwert, der alles
-in ein Oliv tauchte; Brache als Trockengras; Pfade zum
+Ackerland ein Flickenteppich aus Blöcken von 3 × 3 Datenkacheln, jeder
+ganz wachsend, reif, brach oder Weide (nach Feld- und Saatanteil seiner
+feinen Kachel, Brache seltener als in der Sim), in vier ruhigen Farben wie
+Urbeks Ferne: Wiese, frischeres Grün für wachsende Saat und Reben, Weizen
+für reife, helle Stoppeln für Brache, Stoppeln und Acker; nicht ihr
+Mittelwert, der alles in ein Oliv tauchte, und kein Tarnmuster aus jeder
+Frucht und jedem Stand; Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an
 der Seite, der jeder Hof zugewandt ist (dort trifft sein Torweg die Gasse), Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.

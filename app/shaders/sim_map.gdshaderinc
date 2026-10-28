@@ -52,11 +52,11 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 // a mosaic of slabs, grass edges and fallow; the ramps between the
 // terraces stay grass (SimCity 2000 farms only on flat ground, and a
 // parcel colour split by the ramp's two triangles reads as broken glass).
-// From SIM_CROPS_KM of view the farmland is blocks of 2 x 2 data tiles, each
-// one crop for the season, fallow or pasture as a whole (by its fine tile's
-// shares, and sown a little earlier or later than its neighbours): a
-// patchwork of wheat, barley, beans, vines, fallow and tilled soil, not
-// their average. From SIM_FIELDS_KM the farmland is the terrain's own.
+// From SIM_CROPS_KM of view the farmland is blocks of 3 x 3 data tiles, each
+// as a whole growing, ripe, fallow or pasture (by its fine tile's shares),
+// in four calm colours: a patchwork of large fields, not their average
+// and not a quilt of every crop and stage. From SIM_FIELDS_KM the farmland
+// is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
@@ -77,26 +77,19 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 		// on the sown ones (people_crops.gdshader)
 		return state == 0 ? pasture : state == 1 ? straw : meadow;
 	}
-	float size = data_km * 2.0;
+	float size = data_km * 3.0;
 	vec2 block = floor((p - world_min) / size);
 	vec4 f = sim_fine_at(ivec2(floor((world_min + (block + 0.5) * size - sim_fine_origin) / sim_fine_km)));
 	if (f.r < 0.25 || sim_hash(block + 1.3) >= f.r * 1.4) { return pasture; }
-	// fallow (fewer than in the sim, a calmer patchwork): grazed stubble
-	// going back to grass
-	if (sim_hash(block + 17.3) >= 0.4 + 0.6 * f.g) { return mix(mix(straw, GROUND_RGB[G_DRY_GRASS], 0.45), meadow, 0.15); }
-	int kind = sim_crop_kind(block);
-	float g = f.b > 0.0 ? clamp(f.b + (sim_hash(block + 23.1) - 0.5) * 0.4, 0.01, 1.0) : f.b;
-	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // tilled, darker than the paths
-	vec3 stubble = mix(field, C_EARTH, 0.4);
-	// as the crops up close (people_crops.gdshader) seen from afar: wheat and
-	// beans green rows on dark soil, barley a closed lush sheet
-	vec3 green = kind == SIM_WHEAT ? mix(soil, meadow * vec3(0.7, 0.92, 0.65), 0.6)
-		: kind == SIM_BARLEY ? meadow * vec3(0.72, 0.88, 0.7) : mix(soil, meadow * vec3(0.62, 0.8, 0.6), 0.55);
-	vec3 ripe = kind == SIM_WHEAT ? field : kind == SIM_BARLEY ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
-	vec3 crop = kind == SIM_VINES ? mix(soil, meadow * vec3(0.72, 0.85, 0.7), 0.7) : g <= 0.0 ? stubble : g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.3) : g < 0.75 ? green : ripe;
-	// from afar a little toward the meadow, so the patchwork leaves the
-	// towns and the relief in front
-	return mix(meadow, crop, 0.85);
+	// four farmland colours from afar, as Urbek's far land: the meadow,
+	// a fresher green for growing crops and vines, wheat for the ripe
+	// ones, pale stubble for fallow, stubble and tilled soil
+	vec3 stubble = vec3(0.572, 0.549, 0.353); // #b9b06e on screen
+	vec3 growing = vec3(0.377, 0.55, 0.333);  // #86b86a on screen
+	// fallow (fewer than in the sim, a calmer patchwork)
+	if (sim_hash(block + 17.3) >= 0.4 + 0.6 * f.g) { return stubble; }
+	float g = f.b;
+	return sim_crop_kind(block) == SIM_VINES || (g >= 0.12 && g < 0.75) ? growing : g >= 0.75 ? field : stubble;
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and
