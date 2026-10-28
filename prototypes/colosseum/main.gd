@@ -278,8 +278,11 @@ var _rng := RandomNumberGenerator.new()
 func _town_mesh(key: String) -> ArrayMesh:
 	if not _town_meshes.has(key):
 		var m: ArrayMesh
+		if key.begins_with("h") and key.substr(1).is_valid_int():
+			m = City.house(int(key.substr(1)))
 		match key:
-			"house0", "house1", "house2", "house3": m = City.house(int(key.right(1)))
+			"stall0", "stall1": m = City.stall(int(key.right(1)))
+			"paving": m = City.paving()
 			"insula0", "insula1", "insula2": m = City.insula(int(key.right(1)))
 			"villa": m = City.villa()
 			"temple0", "temple1": m = City.temple(int(key.right(1)))
@@ -320,7 +323,7 @@ func _city() -> void:
 			var x := (cx + 0.5) * CELL
 			var z := (cz + 0.5) * CELL
 			if PLAZA.has_point(Vector2i(cx, cz)):
-				_put("mosaic", x, z)
+				_put("mosaic" if (cx + cz) % 2 == 0 else "paving", x, z)
 			elif cx in ROAD_X and cz in ROAD_Z:
 				_put("crossing", x, z)
 			elif cx in ROAD_X:
@@ -349,13 +352,19 @@ func _city() -> void:
 			else:
 				var roll := _rng.randf()
 				if roll < 0.62:
-					_houses(r)
+					_terraces(r)
 				elif roll < 0.78:
 					_villa(r)
 				elif roll < 0.9:
 					_insulae(r)
 				else:
 					_park(r)
+	# Market stalls along the plaza's south and north edges.
+	for k in range(-5, 5):
+		if k in [-1, 0]:
+			continue
+		_put("stall%d" % (posmod(k, 2)), k * 8.0 + 4.0, PLAZA.end.y * CELL - 4.0, 0.0)
+		_put("stall%d" % (posmod(k + 1, 2)), k * 8.0 + 4.0, PLAZA.position.y * CELL + 4.0, 180.0)
 	# Townsfolk on the plaza and the streets.
 	var robes := [Color("e8e0d0"), Color("b8483a"), Color("6f7f9a"), Color("c9a050"), Color("8a6a50")]
 	for i in 260:
@@ -382,6 +391,38 @@ func _facing(r: Rect2, p: Vector2) -> float:
 			best = i
 	return [0.0, 90.0, 180.0, 270.0][best]
 
+## Row houses of mixed sizes along all four streets of a block, touching
+## like Caesar III's dense quarters; the yard inside gets gardens and trees.
+func _terraces(r: Rect2) -> void:
+	var deepest := 0.0
+	for spec in City.HOUSE_TYPES:
+		deepest = maxf(deepest, spec[1] * 0.5)
+	# South and north rows run the full width, east and west rows fill in.
+	for side in 4:
+		var along := r.size.x if side % 2 == 0 else r.size.y - 2.0 * deepest
+		var start := r.position.x if side % 2 == 0 else r.position.y + deepest
+		var cursor := 0.0
+		while true:
+			var t := _rng.randi_range(0, City.HOUSE_TYPES.size() - 1)
+			var spec: Array = City.HOUSE_TYPES[t]
+			var wm: float = spec[0] * 0.5
+			var dm: float = spec[1] * 0.5
+			if cursor + wm > along + 0.01:
+				break
+			var a := start + cursor + wm * 0.5
+			match side:
+				0: _put("h%d" % t, a, r.end.y - dm * 0.5, 0.0)
+				1: _put("h%d" % t, r.end.x - dm * 0.5, a, 90.0)
+				2: _put("h%d" % t, a, r.position.y + dm * 0.5, 180.0)
+				3: _put("h%d" % t, r.position.x + dm * 0.5, a, 270.0)
+			cursor += wm
+	var yard := r.grow(-deepest)
+	if yard.size.x > 6.0 and yard.size.y > 6.0:
+		var c := yard.get_center()
+		_put("garden", c.x, c.y)
+		_put("tree%d" % _rng.randi_range(0, 1), c.x + yard.size.x * 0.3, c.y)
+		_put("cypress", c.x - yard.size.x * 0.3, c.y)
+
 ## Small houses on lots of about 11 m, each facing its nearest street; the
 ## inner lots are gardens with trees.
 func _houses(r: Rect2) -> void:
@@ -395,18 +436,23 @@ func _houses(r: Rect2) -> void:
 				_put("garden", c.x, c.y)
 				_put("tree%d" % (i % 2), c.x + 3.0, c.y - 3.0)
 				continue
-			_put("house%d" % _rng.randi_range(0, 3), c.x, c.y, _facing(r, c))
+			_put("h%d" % _rng.randi_range(0, City.HOUSE_TYPES.size() - 1), c.x, c.y, _facing(r, c))
 			if _rng.randf() < 0.35:
 				_put("cypress", c.x + 4.6, c.y + 4.6)
 
+## Insulae shoulder to shoulder on the south and north streets, row houses
+## on the side streets between them.
 func _insulae(r: Rect2) -> void:
-	var nx := maxi(1, floori(r.size.x / 16.0))
-	var nz := maxi(1, floori(r.size.y / 16.0))
-	for j in nz:
-		for i in nx:
-			var c := r.position + Vector2((i + 0.5) * r.size.x / nx, (j + 0.5) * r.size.y / nz)
-			var face := 0.0 if j == nz - 1 else 180.0
-			_put("insula%d" % _rng.randi_range(0, 2), c.x, c.y, face)
+	var n := maxi(1, floori(r.size.x / 12.5))
+	for i in n:
+		var x := r.position.x + (i + 0.5) * r.size.x / n
+		_put("insula%d" % _rng.randi_range(0, 2), x, r.end.y - 8.0, 0.0)
+		_put("insula%d" % _rng.randi_range(0, 2), x, r.position.y + 8.0, 180.0)
+	var gap := r.size.y - 32.0
+	if gap >= 6.0:
+		var c := r.get_center()
+		_put("h%d" % _rng.randi_range(0, City.HOUSE_TYPES.size() - 1), r.position.x + 5.0, c.y, 270.0)
+		_put("h%d" % _rng.randi_range(0, City.HOUSE_TYPES.size() - 1), r.end.x - 5.0, c.y, 90.0)
 
 func _villa(r: Rect2) -> void:
 	var c := r.get_center()
@@ -449,6 +495,10 @@ func _civic(r: Rect2, key: String) -> void:
 	for k in range(int(r.position.y) + 3, int(r.end.y) - 2, 5):
 		_put("cypress", r.position.x + 2.0, k)
 		_put("cypress", r.end.x - 2.0, k)
+	if key == "market":
+		for k in 8:
+			var a := TAU * (k + 0.5) / 8.0
+			_put("stall%d" % (k % 2), c.x + cos(a) * 12.5, c.y + sin(a) * 12.5, 90.0 - rad_to_deg(a))
 
 func _lods() -> void:
 	_ground(400.0, Color("7ea24a"))

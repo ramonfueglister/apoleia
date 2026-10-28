@@ -56,9 +56,10 @@ static func _done(g: Grid, floor_y := 0.0) -> ArrayMesh:
 	return g.mesh(PALETTE, TOP, floor_y)
 
 ## Stepped tile roof over [x0, x1) x [z0, z1) from row y: each layer half a
-## metre up and one metre in (about 27 degrees), the eaves one voxel out.
-## `gable` steps only in x and closes both ends with marble pediments.
-static func _roof(g: Grid, x0: int, z0: int, x1: int, z1: int, y: int, tile := ROOF, gable := false) -> int:
+## metre up and `step` voxels in (2: about 27 degrees, 3: about 18), the
+## eaves one voxel out. `gable` steps only in x, so the ridge runs along z,
+## and closes both ends with `ends` (marble pediments, or the house wall).
+static func _roof(g: Grid, x0: int, z0: int, x1: int, z1: int, y: int, tile := ROOF, gable := false, step := 2, ends := MARBLE) -> int:
 	var a := x0 - 1
 	var b := x1 + 1
 	var c := z0 if gable else z0 - 1
@@ -67,13 +68,13 @@ static func _roof(g: Grid, x0: int, z0: int, x1: int, z1: int, y: int, tile := R
 	while a < b and c < d:
 		g.box(a, y + layer, c, b, y + layer + 1, d, tile)
 		if gable:
-			g.box(a, y + layer, c, b, y + layer + 1, c + 1, MARBLE)
-			g.box(a, y + layer, d - 1, b, y + layer + 1, d, MARBLE)
-		a += 2
-		b -= 2
+			g.box(a + 1, y + layer, c, b - 1, y + layer + 1, c + 1, ends)
+			g.box(a + 1, y + layer, d - 1, b - 1, y + layer + 1, d, ends)
+		a += step
+		b -= step
 		if not gable:
-			c += 2
-			d -= 2
+			c += step
+			d -= step
 		layer += 1
 	return y + layer
 
@@ -126,12 +127,26 @@ static func _shuttered(g: Grid, x0: int, z0: int, x1: int, z1: int, y: int, h: i
 				g.box(x + 3, y, face[2], x + 4, y + 1, face[2] + 1, LEAF)
 		k += 1
 
+## House types: width and depth in voxels, storeys, wall colour, gabled
+## (ridge along the depth) or hipped, roof tiles. Widths of 6 to 10 m let
+## a street front be filled with houses of different sizes, as in Caesar III.
+const HOUSE_TYPES := [
+	[12, 18, 1, PLASTER, true, ROOF], [14, 20, 1, PLASTER_PINK, true, ROOF_OLD],
+	[16, 18, 2, PLASTER_OCHRE, false, ROOF], [12, 22, 2, PLASTER, true, ROOF],
+	[18, 20, 1, PLASTER, false, ROOF_OLD], [14, 24, 2, PLASTER_PINK, true, ROOF],
+	[20, 18, 2, PLASTER, false, ROOF], [16, 22, 1, PLASTER_OCHRE, true, ROOF_OLD],
+	[12, 20, 2, PLASTER_OCHRE, true, ROOF_OLD], [18, 24, 2, PLASTER_PINK, false, ROOF],
+	[14, 18, 1, PLASTER, false, ROOF], [16, 20, 2, PLASTER, true, ROOF]]
+
 ## Domus: one or two storeys of plaster on a stone plinth, a door, windows
-## with sills, a hipped tile roof. Variants 0-1 one storey, 2-3 two.
-static func house(variant: int) -> ArrayMesh:
-	var w := 14 if variant % 2 == 0 else 16
-	var d := 18
-	var storeys := 1 if variant < 2 else 2
+## (with coloured shutters upstairs), a white cornice, a tile roof.
+static func house(t: int) -> ArrayMesh:
+	var spec: Array = HOUSE_TYPES[t]
+	var w: int = spec[0]
+	var d: int = spec[1]
+	var storeys: int = spec[2]
+	var wall: int = spec[3]
+	var gable: bool = spec[4]
 	var h := 1 + 6 * storeys
 	var g := Grid.new(Vector3i(w + 4, h + w / 4 + 3, d + 4))
 	var x0 := 2
@@ -140,13 +155,13 @@ static func house(variant: int) -> ArrayMesh:
 	var z1 := z0 + d
 	var cx := (x0 + x1) / 2
 	g.box(x0, 0, z0, x1, 1, z1, STONE)
-	g.box(x0, 1, z0, x1, h, z1, WALLS[variant % 4])
-	for st in storeys:
-		var skip := Vector2i(cx - 2, cx + 2) if st == 0 else Vector2i(-1, -1)
-		_windows(g, x0, z0, x1, z1, 1 + st * 6 + 2, 2 if storeys == 1 else 3, skip)
+	g.box(x0, 1, z0, x1, h, z1, wall)
+	_windows(g, x0, z0, x1, z1, 3, 2, Vector2i(cx - 2, cx + 2))
+	if storeys == 2:
+		_shuttered(g, x0, z0, x1, z1, 9, 3, SHUTTERS[t % 2], t % 3 == 0)
 	_hole_z(g, cx - 1, cx + 1, 1, 5, z1 - 1, -1, DOOR)
 	_cornice(g, x0, z0, x1, z1, h)
-	_roof(g, x0, z0, x1, z1, h, ROOFS[variant])
+	_roof(g, x0, z0, x1, z1, h, spec[5], gable, 2, wall)
 	return _done(g)
 
 ## Insula: three or four storeys, shops with striped awnings on the ground
@@ -176,7 +191,7 @@ static func insula(variant: int) -> ArrayMesh:
 			g.box(x + i, 5, z1, x + i + 1, 6, z1 + 2, AWNING_RED if (i + variant) % 2 == 0 else AWNING_WHITE)
 	_hole_z(g, x0 + w / 2 - 1, x0 + w / 2 + 1, 1, 5, z0, 1, DOOR)
 	_cornice(g, x0, z0, x1, z1, h)
-	_roof(g, x0, z0, x1, z1, h, ROOFS[variant])
+	_roof(g, x0, z0, x1, z1, h, ROOFS[variant], false, 3)
 	return _done(g)
 
 ## Villa with a peristyle: four wings round a courtyard garden with a pool,
@@ -418,4 +433,29 @@ static func crossing() -> ArrayMesh:
 	g.box(0, 0, 0, 16, 1, 16, COBBLE)
 	for c in [Vector2i(0, 0), Vector2i(13, 0), Vector2i(0, 13), Vector2i(13, 13)]:
 		g.box(c.x, 0, c.y, c.x + 3, 1, c.y + 3, SIDEWALK)
+	return _done(g, -0.4)
+
+## Market stall, 4 m: a wooden counter with goods, four posts and a striped
+## awning (red or blue).
+static func stall(variant: int) -> ArrayMesh:
+	var g := Grid.new(Vector3i(8, 7, 8))
+	var stripe := AWNING_RED if variant == 0 else ROOF_BLUE
+	g.box(1, 0, 3, 7, 2, 6, TRUNK)
+	var goods := [FLOWER_RED, FLOWER_YELLOW, LEAF, FLOWER_RED, GOLD, LEAF]
+	for x in range(1, 7):
+		g.box(x, 2, 4, x + 1, 3, 5, goods[(x + variant) % goods.size()])
+	for c in [Vector2i(1, 2), Vector2i(6, 2), Vector2i(1, 6), Vector2i(6, 6)]:
+		g.box(c.x, 0, c.y, c.x + 1, 5, c.y + 1, TRUNK)
+	for x in 8:
+		g.box(x, 5, 1, x + 1, 6, 8, stripe if x % 2 == 0 else AWNING_WHITE)
+	return _done(g)
+
+## Plain plaza tile, 8 m: light paving with a darker border and centre.
+static func paving() -> ArrayMesh:
+	var g := Grid.new(Vector3i(16, 1, 16))
+	g.box(0, 0, 0, 16, 1, 16, PAVE)
+	g.box(0, 0, 0, 16, 1, 1, PAVE_DARK)
+	g.box(0, 0, 0, 1, 1, 16, PAVE_DARK)
+	g.box(6, 0, 6, 10, 1, 10, PAVE_DARK)
+	g.box(7, 0, 7, 9, 1, 9, MOSAIC_CREAM)
 	return _done(g, -0.4)
