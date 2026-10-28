@@ -31,7 +31,7 @@ und `sim/inputs/landcover-fine.bin.zst`.
 | **Felder** | Fläche pro Hof in echter Grösse (S51). Land pro 25-km-Zelle: HYDE-Ackerland 200 im Massstab 1 : 566,5, danach rodbares Land mit schlechterem Ertrag. Rodbar ist, was heute Acker oder Siedlung ist (ESA WorldCover 2021) und unter 16 % Hang liegt (Copernicus-DEM), abzüglich des HYDE-Ackers. Ein Hof bestellt, was seine Erwachsenen übers Jahr und alle Hände in der Ernte schaffen, mindestens aber, was den Haushalt ernährt. Wächst die Familie, nimmt sie bei der Aussaat freies Land und rodet dazu. Die Felder liegen auf Kacheln von 1,56 km um den Hofplatz, die nächsten freien zuerst (siehe unten). | S73 |
 | **Ernte und Saisonarbeit** | Aussaat und Ernte sind Ereignisse pro Hof (Erntetag nach Breite, Höhe und Hof gestreut). Was die Familie im Fenster nicht schafft, sucht der Hof an der wöchentlichen Arbeitsbörse der Region: zuerst Leute aus den Zelten, dann Höfe mit freien Händen. Lohn in Getreide. Fehlen Hände, bleibt ein Teil der Ernte auf dem Feld oder ein Teil des Feldes ungesät. Danach stellt jeder Hof, der mehr im Speicher hat als Nahrung bis zur nächsten Ernte, Reserve und Saatgut, mit diesem Überschuss Tagelöhner an, jede Woche. Ein Hof bietet die Arbeitstage seiner Erwachsenen an, die seine eigenen Felder nicht brauchen; wer kaum Land hat, arbeitet fast ganz für andere. Wer hungert, arbeitet weniger (S84 b). | S72, S84 |
 | **Saatgut und Brache** | Jeder Hof legt nach der Ernte das Saatgut fürs nächste Jahr zurück (130 kg/ha) und sät es im Herbst aus dem Hofspeicher; fehlt es, bleibt Feld ungesät. Die Ernte bringt brutto Saat mal Saatverhältnis. Zweifelderwirtschaft: Jedes Jahr liegt die Hälfte der Felder brach, ein Hof braucht also doppelt so viel Land. | S76 |
-| **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Kein Verderb (keine Quelle). | S72 |
+| **Speicher** | Getreide liegt im Hofspeicher, im Vorrat jedes Haushalts und im Lager jedes Markts, in ganzen kg. Steuer geht beim Ernten ab. Verderb: 4 % im Jahr, jeden Monat ein Zwölftel davon, in jedem Speicher. | S72 |
 | **Markt** | Ein Markt pro 100-km-Region, am grössten Ort nach Hanson, sonst an der Zelle mit den meisten Menschen (1'783 Märkte). Lager, Bargeld der Händler am Markt und ein Preis, der jeden Tag gedämpft auf einen Zielpreis aus der Lagerreichweite zuläuft. Ankauf 10 % unter, Verkauf 10 % über dem Preis. Der Markt kauft nur, so weit sein Bargeld reicht; was er nicht nimmt, trägt der Bauer wieder heim. | S70, S22 |
 | **Träger** | Jede Fahrt zum Markt ist eine echte Person des Haushalts (zuerst ein Mann 15–60) mit Last und Tempo nach ORBIS und Preisedikt: Familien- und Pachthof mit Esel (97 kg, 30 km/Tag), Gutshof mit Ochsenkarren (388 kg, 12 km/Tag), ohne Hof zu Fuss (30 kg pro Erwachsenem, 20 km/Tag). Die Reise ist ein Ereignis mit Ankunftstag, kein Schritt pro Tag. Wer im Marktort wohnt, kauft sofort. | S70, S76 |
 | **Händler** | Erwachsene mit Beruf Händler. Sie kennen höchstens 32 Märkte (die billigsten Wege über Land mit Wagen, über See mit Schiff) mit Preisen, die so alt sind wie die Reise von dort. Einmal pro Woche: ausführen (hier kaufen, dort verkaufen) oder einführen (leer hin, dort kaufen, hier verkaufen), wenn die Marge nach Fracht über 10 % liegt. Fracht nach Preisedikt (Wagen 0,035 Denar pro kg·km) und ORBIS (See ≈ 0,001). Wo sie fahren, entstehen Handelswege: Jede 25-km-Zelle zählt die Fahrten, geglättet mit zwei Jahren Halbwertszeit; ab 100 Fahrten im Jahr wird sie Handelsweg, ab 400 Strasse (mit Hysterese). Der Wagen fährt dort 20 % bzw. 35 % billiger, und die Märkte in Reichweite suchen ihre Nachbarn neu. Seewege werden nur gezählt. | S71 |
@@ -304,6 +304,25 @@ gleich mit 1 und 4 Threads (10 Jahre). Tempo auf einer ruhigen Maschine: Grain i
 1,24 ms pro Tag (99 % 3,9 ms), ganzer Tag Median 4,6 ms, 99 % 9,5 ms, 433 MB. **Offen (Ramon: später):** Der Lohn kommt vom Staat
 mit unbegrenztem Geld; historisch verdienten diese Leute an Handwerk, Wein, Öl und Gärten.
 
+## Verderb im Lager (S72, 100 Jahre, Seed 1, `run100-verderb.txt`; vorher: `run100-s87.txt`)
+
+Ramon: „Verderb ja“. Gelagertes Getreide verliert 4 % im Jahr: im Hofspeicher, im Vorrat der
+Haushalte und im Marktlager, jeden Monat ein Zwölftel davon. Die Zahl ist der Lagerverlust von
+Weizen im bäuerlichen Lager (APHLIS 2011, nach Stathers für die FAO; FAO y4011e: bis 4 %).
+Antike Quellen sagen nur, dass Weizen in trockenen, gelüfteten Speichern oder Erdgruben jahrelang
+hielt (Varro RR 1.57, Columella 1.6.9–17), nennen aber keine Rate.
+
+| Jahr | Menschen vorher → jetzt | Hungertote vorher → jetzt | Verderb t |
+|---|---|---|---|
+| 2 | 112'828 → 112'817 | 1'888 → 1'930 | 1'684 |
+| 50 | 107'740 → 106'429 | 231 → 226 | 9'797 |
+| 100 | 117'906 → 110'617 | 210 → 343 | 7'391 |
+
+Die Höfe horten weniger, darum zahlen sie weniger Taglohn aus dem Überschuss. Die Bevölkerung
+bleibt fast gleich (−0,05 % im Jahr über 100 Jahre, historisch etwa +0,1 %). Fingerprint gleich
+mit 1 und 4 Threads (10 Jahre). Grain im Mittel 1,41 ms pro Tag (99 % 4,1 ms), ganzer Tag
+99 % 9,9 ms.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -386,13 +405,14 @@ in Arrays nach ID statt in Hashtabellen.
 | Felder auf Kacheln | Umkreis 8 Kacheln um den Hofplatz; Hofplatz im Dorf des Haushalts (`settle.rs`: ein Dorf je 25 Menschen auf den Kacheln mit dem meisten flachen Ackerland, Platzhalter dort); was die 25-km-Daten mehr Land haben als die Kacheln fassen, liegt über (wenige Zellen) | Echte Feldgrösse (S51) auf einer Karte mit Wegen 1 : 23,8 (S50) hat keine natürliche Grenze für den Weg zum Feld |
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
+| Verderb | 4 % im Jahr in allen Speichern, für jedes Klima gleich | APHLIS 2011 (Weizen im Hoflager), FAO |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
 
 ## Nicht gebaut
 
-- **Missernten, Verderb** (S72: vorerst keine Missernten).
+- **Missernten** (S72: vorerst keine).
 - **Neue Höfe und Strassen durch den Spieler** (S69, S74): Landlose können nur frei
   gewordene Höfe übernehmen.
 - **Neue Märkte, Verödung, Elendsviertel** (S75): Es gibt genau einen Markt pro Region.
@@ -406,8 +426,7 @@ in Arrays nach ID statt in Hashtabellen.
 - **Haushalte aus nur Kindern oder Alten** ziehen jetzt zu Verwandten oder gehen ins Zelt
   (S79). Was mit dem Vorrat eines Haushalts geschieht, der dabei leer wird, ist offen: Er
   verschwindet mit dem Haushalt. Der Hofspeicher bleibt beim Hof.
-- **Wachstum 0,44 % im Jahr** seit der Arbeit aus dem Überschuss, historisch etwa 0,1 %.
-  Gebremst wird es erst, wenn das Land knapp wird (Jahr 100). Verderb (S72 offen) würde das
-  Horten begrenzen.
+- **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87) und Verderb: −0,05 % im
+  Jahr über 100 Jahre, historisch etwa +0,1 %.
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.
