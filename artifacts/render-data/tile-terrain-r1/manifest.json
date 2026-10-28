@@ -42,8 +42,8 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "9073cc8da384d041a92496bae30e6e923fbb37ba030407078a7b3509585290d8",
-      "river_max_scalerank": 7
+      "sha256": "ef932b16c5dec28e72af1038c4c317d283b98badaf9e5294f59186ec624af7ac",
+      "river_max_scalerank": 8
     },
     {
       "level": 3,
@@ -52,8 +52,8 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "e36a95aac78505b4013dad65b2618d5f07738b207fc197b32dc95884d116da7f",
-      "river_max_scalerank": 5
+      "sha256": "e337b06891d581696da466be40ec35d9d0ce42b6443245a396e325b8622b93cb",
+      "river_max_scalerank": 6
     },
     {
       "level": 4,
@@ -62,8 +62,8 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "8152a74dbb4c9ec08ce9de52d6abdd0e314227a4bfcb1df9ec61abef3a2f9203",
-      "river_max_scalerank": 3
+      "sha256": "a75e921f4d64be084c48568d3bbdbbcda0d361e544489b8f3ce4e2e0ccc6c53a",
+      "river_max_scalerank": 5
     },
     {
       "level": 5,
@@ -72,8 +72,8 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "a109760411db4c266045e4deb13f1ce411e1e21bebc45961a5eef965ca1c5158",
-      "river_max_scalerank": 2
+      "sha256": "48fede9e6bc9dec3015b95b2b5453bb002cf3904a14f2c61c0ba6f9b9763f450",
+      "river_max_scalerank": 4
     }
   ],
   "inputs": {
@@ -179,6 +179,146 @@
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
+  "ground": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20645,
+      "height": 9563,
+      "packed_width": 10323,
+      "path": "ground-L0.png",
+      "sha256": "c1ab849bc0a9e73dc01744df5db5454b289ddeb596ee131d46e0ccbc7e4216e9",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10323,
+      "height": 4782,
+      "packed_width": 5162,
+      "path": "ground-L1.png",
+      "sha256": "1c520cb72ad5371889dac34d58a088f56446458b7aee21201b991b102a893f1e",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5162,
+      "height": 2391,
+      "packed_width": 2581,
+      "path": "ground-L2.png",
+      "sha256": "d72d09a467064213b4f5f346b577d72499d7b73467d766ad61b173b6eba73168",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2581,
+      "height": 1196,
+      "packed_width": 1291,
+      "path": "ground-L3.png",
+      "sha256": "425826c69c6e831ca2b1c86ac2b29a5d381c2c311b20d83ae082d82a5818571f",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1291,
+      "height": 598,
+      "packed_width": 646,
+      "path": "ground-L4.png",
+      "sha256": "51c173a8b3feac6f10e1cd011e14924849e1b7ca8cef60bbbb020089595e4941",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 646,
+      "height": 299,
+      "packed_width": 323,
+      "path": "ground-L5.png",
+      "sha256": "09ac1dde0cc32197b4071e085db87e7ada02d704055ccf1f243927915ab4175d",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    }
+  ],
   "cover": {
     "path": "cover.png",
     "sha256": "3c3a893f67f8b5fdc65f81d8743a5324a4b8f56470e89ed3c06f4381cd600cc3",
@@ -203,145 +343,5 @@
     "path": "../fixed-source-v2-mountain-r7/height.rg8",
     "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
-  },
-  "ground": [
-    {
-      "level": 0,
-      "cell_km": 0.5,
-      "width": 20645,
-      "height": 9563,
-      "packed_width": 10323,
-      "path": "ground-L0.png",
-      "sha256": "5d690786e53444be5dc13ad22b6f12cba644592d39afeb060e43aea26d65b428",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    },
-    {
-      "level": 1,
-      "cell_km": 1.0,
-      "width": 10323,
-      "height": 4782,
-      "packed_width": 5162,
-      "path": "ground-L1.png",
-      "sha256": "be7eb5c90411735626b674abb7861c543c02d4300286650eb029e57c3050a19a",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    },
-    {
-      "level": 2,
-      "cell_km": 2.0,
-      "width": 5162,
-      "height": 2391,
-      "packed_width": 2581,
-      "path": "ground-L2.png",
-      "sha256": "a12a097e6da5d8930bacddcd2e78a77a4af88c7a65cd40c278178391ac13ec10",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    },
-    {
-      "level": 3,
-      "cell_km": 4.0,
-      "width": 2581,
-      "height": 1196,
-      "packed_width": 1291,
-      "path": "ground-L3.png",
-      "sha256": "5207437ca1b9c0f011c1636a4415b8ac7df45e69040a5dd0458693c36fd3ef5d",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    },
-    {
-      "level": 4,
-      "cell_km": 8.0,
-      "width": 1291,
-      "height": 598,
-      "packed_width": 646,
-      "path": "ground-L4.png",
-      "sha256": "6a052a2476e5b534efdb1b0be0f41d7f5e8210d14ee1a1fd4959299ef03b6b7a",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    },
-    {
-      "level": 5,
-      "cell_km": 16.0,
-      "width": 646,
-      "height": 299,
-      "packed_width": 323,
-      "path": "ground-L5.png",
-      "sha256": "a7403f0eb5b2448c4461435e27c72ddf4186db83b04c4513d66ac844b4076ccd",
-      "classes": [
-        "meadow",
-        "dry_grass",
-        "field",
-        "wetland",
-        "scrub",
-        "sand",
-        "forest",
-        "conifer",
-        "alpine",
-        "rock",
-        "snow"
-      ],
-      "water": 15
-    }
-  ]
+  }
 }

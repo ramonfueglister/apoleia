@@ -256,6 +256,9 @@ void fragment() {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
 			float half_w = clamp(0.075 / tile_km, 0.06, 0.22);
+			// and never thinner than about a pixel and a half, so the big
+			// rivers still read on the map of Europe
+			half_w = min(max(half_w, 0.75 * length(fwidth(tile_uv))), 0.3);
 			vec2 q = tile_uv - 0.5;
 			const vec2 MID[4] = vec2[](vec2(0.0, -0.5), vec2(0.5, 0.0), vec2(0.0, 0.5), vec2(-0.5, 0.0));
 			int m = river_sides;

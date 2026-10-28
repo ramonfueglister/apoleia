@@ -52,7 +52,7 @@ R_KM = 6371.0088
 BASE_CELL_KM = 0.5
 LEVELS = 6  # 0.5, 1, 2, 4, 8, 16 km
 # Natural Earth scalerank shown per level (more rivers up close)
-RIVER_RANK = [10, 10, 7, 5, 3, 2]
+RIVER_RANK = [10, 10, 8, 6, 5, 4]
 SS = 2  # supersampling of the polygon raster
 # Diorama heights: one documented factor for the whole world, SimCity 2000
 # style (Kit 1 K06 as changed 27.10.2026). A height level is
@@ -637,7 +637,8 @@ def ground_classes(water, tile_km, height, cover, band=1024):
     sigma = 0.5 * tile_km / NODE_KM if tile_km > 2.0 else 0.0
     scale = max(6.0, 2.5 * tile_km)
     fine = max(3.0, tile_km)
-    noise = [_node_noise(scale, 1), _node_noise(scale, 2), _node_noise(fine, 3)]
+    glade = max(5.0, 2.0 * tile_km)
+    noise = [_node_noise(scale, 1), _node_noise(scale, 2), _node_noise(fine, 3), _node_noise(glade, 4)]
     fields = [gauss(a, sigma) for a in [height] + [cover[..., k] for k in range(cover.shape[-1])]] + noise
     out = np.full((ny, nx), NO_GROUND, np.uint8)
     gx = (np.arange(nx) + 0.5) * tile_km / NODE_KM
@@ -655,7 +656,7 @@ def ground_classes(water, tile_km, height, cover, band=1024):
             return ((f[jj, i] * (1 - fx) + f[jj, i + 1] * fx) * (1 - fz)
                     + (f[jj + 1, i] * (1 - fx) + f[jj + 1, i + 1] * fx) * fz)
 
-        h, forest, dry, crop, wet, glacier, n1, n2, n3 = (at(f) for f in fields)
+        h, forest, dry, crop, wet, glacier, n1, n2, n3, n4 = (at(f) for f in fields)
         lat = (41.0 - np.degrees(z / R_KM)).astype(np.float32)[:, None]
         g = np.full(h.shape, G["meadow"], np.uint8)
         g[(lat + 4.0 * n2 < 43.0) | (dry + 0.5 * n2 > 0.4)] = G["dry_grass"]
@@ -670,7 +671,8 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         farmed = np.clip(crop / 0.45, 0, 1)
         g[farmed + 0.6 * n2 > 0.6] = G["field"]
         g[wet + 0.5 * n2 > 0.45] = G["wetland"]
-        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400)
+        # clearings: even a dense wood opens into meadows every few km
+        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400) & (n4 < 0.12)
         g[wood] = G["forest"]
         g[wood & ((h + 150 * n3 > 850) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
         g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
