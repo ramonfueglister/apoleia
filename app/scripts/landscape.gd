@@ -3,11 +3,12 @@ extends Node3D
 ## World units are model kilometres (x east, z south, y up), mapping-v1.
 ##
 ## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
-## middle; fully out the view turns north-up over Europe), drag (left or middle
-## mouse, two-finger pan) moves the map, WASD or arrow keys pan, Q/E turn the
-## view by 90 degrees, +/- zoom. Weather keys F5-F7 belong to weather_system.gd.
+## middle; fully out the view settles over Europe), drag (left or middle
+## mouse, two-finger pan) moves the map, WASD or arrow keys pan, +/- zoom.
+## The view always looks north and never turns (turning made the map swim).
+## Weather keys F5-F7 belong to weather_system.gd.
 ##
-## Command line (after --): --view=lon,lat,width[,turns] start view,
+## Command line (after --): --view=lon,lat,width start view,
 ## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait.
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
@@ -15,8 +16,8 @@ const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 4.0 # about 17 houses across (Kit 2 scale)
 const MAX_WIDTH := 4400.0 # all of Europe, Lisbon to Moscow
-## Zoomed out, the view turns north-up and settles on Europe (EU5 map): the
-## turn and the pull run between these widths (km).
+## Zoomed out, the view settles on Europe (EU5 map): the pull runs between
+## these widths (km).
 const MAP_FROM := 700.0
 const MAP_TO := 3000.0
 const EUROPE := Rect2(-12.0, 34.0, 54.0, 26.0) # lon, lat, extent in degrees
@@ -34,10 +35,8 @@ var weather: Node3D
 ## Read by weather_system.gd: the ground point in the middle of the view.
 var target := Vector2.ZERO
 var width := 360.0
-var yaw_turns := 0 # quarter turns away from the default south-east view
 var _goal_target := Vector2.ZERO
 var _goal_width := 360.0
-var _yaw := 45.0
 var _focus_y := 0.0
 var _dragging := false
 var _snapshot_path := ""
@@ -56,8 +55,6 @@ func _ready() -> void:
 				var parts := value.split(",")
 				if parts.size() >= 3:
 					start = Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
-				if parts.size() >= 4:
-					yaw_turns = int(parts[3])
 			"--snapshot": _snapshot_path = value
 			"--snapshot-frames": _snapshot_frames = int(value)
 			"--bench": _bench_frames = int(value)
@@ -76,7 +73,6 @@ func _ready() -> void:
 	_goal_target = target
 	width = clampf(start.z, MIN_WIDTH, MAX_WIDTH)
 	_goal_width = width
-	_yaw = yaw_for_width(width)
 	_focus_y = terrain.ground_y(target)
 	_place_camera()
 	weather = WeatherSystem.new()
@@ -145,18 +141,13 @@ func map_share(w: float) -> float:
 	var t := clampf((log(w) - log(MAP_FROM)) / (log(MAP_TO) - log(MAP_FROM)), 0.0, 1.0)
 	return t * t * (3.0 - 2.0 * t)
 
-## Yaw for a view width: the SimCity 2000 diagonal up close, north-up on the map.
-func yaw_for_width(w: float) -> float:
-	var close := 45.0 + 90.0 * yaw_turns
-	var north := 360.0 * roundf(close / 360.0)
-	return lerpf(close, north, map_share(w))
 
 func _distance() -> float:
 	var aspect := get_viewport().get_visible_rect().size.aspect()
 	return width / (2.0 * tan(deg_to_rad(FOV) * 0.5) * maxf(aspect, 0.1))
 
 func _view_basis() -> Basis:
-	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), deg_to_rad(_yaw), 0.0))
+	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), 0.0, 0.0))
 
 func _place_camera() -> void:
 	var basis := _view_basis()
@@ -242,8 +233,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom_at(event.factor, event.position)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_Q: yaw_turns -= 1
-			KEY_E: yaw_turns += 1
 			KEY_PLUS, KEY_EQUAL, KEY_KP_ADD: _zoom_at(ZOOM_STEP * ZOOM_STEP, get_viewport().get_visible_rect().size * 0.5)
 			KEY_MINUS, KEY_KP_SUBTRACT: _zoom_at(1.0 / (ZOOM_STEP * ZOOM_STEP), get_viewport().get_visible_rect().size * 0.5)
 
@@ -258,7 +247,6 @@ func _process(delta: float) -> void:
 	width = exp(lerpf(log(width), log(_goal_width), k))
 	_goal_target = _clamp_target(_goal_target, _goal_width)
 	target = _clamp_target(target, width)
-	_yaw = lerpf(_yaw, yaw_for_width(width), k)
 	_focus_y = lerpf(_focus_y, terrain.ground_y(target), k)
 	_place_camera()
 	_frame += 1

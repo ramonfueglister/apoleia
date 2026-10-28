@@ -97,9 +97,11 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 ## Bedienung
 
-Mausrad oder Pinch zoomt zum Cursor, Ziehen oder WASD/Pfeile verschiebt, Q/E dreht
-um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
-`--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
+Mausrad oder Pinch zoomt hinein zum Cursor und hinaus um die Bildmitte, Ziehen oder
+WASD/Pfeile verschiebt, +/− zoomt. Die Ansicht schaut immer nach Norden und dreht sich
+nie (Ramon, 28.10.2026: „kein rotieren“). Ganz draussen (4400 km) steht sie fast senkrecht
+über ganz Europa. F5–F7 steuern das Wetter. Startoptionen:
+`--view=lon,lat,breite_km`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
 `--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
 
 ## Offen
