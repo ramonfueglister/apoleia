@@ -14,6 +14,23 @@ unabhängig und unverändert.
   allen acht Nachbarn, im Bake gesichert).
 - Eine Stufe ist **0,6 Kachelbreiten** hoch (SimCity 2000: 12 px Stufe auf einer
   32 × 16 px Kachel).
+- Ganz nah (bis etwa 12 km Sichtbreite) sind die Kacheln **Viertel der
+  0,5-km-Kacheln** (250 m, `SUB_KM`): eine Kachel trägt ein Haus wie in Urbek
+  (Haus und Feldparzelle sind 250 m groß), bei 3 km Sichtbreite stehen 12
+  statt 6 Kacheln nebeneinander. Zellen und Landschaften sind die ihrer
+  0,5-km-Kachel; die Viertel an der Spitze eines Küsten- oder
+  Landschaftsschnitts nehmen das Wasser bzw. die andere Landschaft an, so
+  bleibt der Schnitt eine Diagonale. Die Ecken der 0,5-km-Kacheln behalten ihre
+  Stufe, eine Ecke dazwischen nimmt die höhere ihrer Nachbarn (am Wasser die
+  tiefere, so bleibt das Ufer auf dem Wasserspiegel): Aus jeder 0,5-km-Rampe
+  wird ein flaches Viertel auf der oberen Terrasse und eine Viertelrampe
+  darunter, drei Viertel der Kacheln sind flach statt knapp die Hälfte, und
+  die Hänge stehen als gestapelte Plateaus (Kritik r4: „glatte Dreiecke statt
+  Plateaus“). Eine Stufe ist dort so hoch wie bei 0,5 km (`SUB_LEVEL_HEIGHT`,
+  1,2 Viertelbreiten), damit die Hügel beim Zoomen ihre Höhe behalten. Ein
+  kleiner 2D-Pass (`tile_sub_prep.gdshader`) schneidet Zellen, Landschaften
+  und Eckstufen der Viertel einmal je Fensterwechsel in eine Textur
+  (`sub_tex`, 1024 × 1024 Viertel um den Ausschnitt).
 - Nah (0,5- und 1-km-Kacheln) kommen die Eckstufen aus einem feineren
   Höhenmodell (Terrain Tiles, terrarium Zoom 8, etwa 450 m; `DEM_URL`, im Bake
   zwischengespeichert in `artifacts/render-data/terrarium-z8/`, nicht in Git;
@@ -26,9 +43,9 @@ unabhängig und unverändert.
   zwei Stufen über dem Tibertal, Tivoli liegt am Hang über der Campagna, das
   Land um Rom zeigt Terrassen und Rampen wie SimCity 2000. Der Bake
   (`near_corner_levels`) folgt denselben Regeln wie fern, zeichnet aber bei
-  0,5 km nur über 0,7 Kacheln weich und räumt mit 2 × 2 Ecken auf (Hügel von
-  ein bis zwei Kacheln bleiben), bei 1 km wie fern (1,2 Kacheln, 3 × 3), sonst
-  wird der Apennin bei 70 km ein Gewirr einzelner Buckel. Die 0,5-km-Stufen
+  0,5 km nur über 1,0 Kacheln weich (bei 1 km wie fern über 1,2 Kacheln) und
+  räumt mit 3 × 3 Ecken auf, sonst zerfällt das Land in lose einzelne Rampen
+  (bei 22 km) und der Apennin bei 70 km in ein Gewirr einzelner Buckel. Die 0,5-km-Stufen
   sind für eine Textur zu groß (20646 Ecken breit): das Skript schneidet ein
   Fenster von 1024 × 1024 Ecken um den gezeichneten Ausschnitt heraus
   (`_update_level_window`, `levels_origin`).
@@ -86,22 +103,27 @@ unabhängig und unverändert.
   Waldränder als 45-Grad-Linien statt als Treppe, und eine Kachel hat höchstens
   zwei Farben. Die Palette ist aus Urbek-Screenshots gemessen und auf diese
   Töne am Bildschirm abgestimmt (Wiese #73af5f, trockenes Gras #9baf5f,
-  Weizen #cdc373, Wald als Kronendach von oben #3c7440, Wasser #6db3df,
+  Weizen #cdc373, Waldboden zwischen den Kronen #2c5e26, Wasser #6db3df,
   Flachwasser #8ccbef, Flüsse und Seen #5ea8da). Ab 1-km-Kacheln (etwa ab
   30 km Sichtbreite, mit dem Wechsel der Kachelgröße) geht sie in die Palette der gemalten Fernsicht
   über (Gauntlet-Referenz gemalt-weit-mittel-nah.png): olives Tiefland
-  #9aa35a, dunkelgrüner Wald #4f7a35, Fels, tiefes Meer #1d5e93 mit
-  Flachwasser #2f7db5. Offenes Land bekommt dort zusätzlich eine flache Farbe
+  #9aa35a, olivgrüner Wald #56683c (nicht #4f7b36, das sprang nach dem
+  olivfarbenen 70-km-Bild zurück ins Grün), Fels, tiefes Meer #19588c mit
+  Flachwasser #24689e; Seen wie die Flüsse im Flachwasserton. Offenes Land bekommt dort zusätzlich eine flache Farbe
   je Höhenstufe (Hügel #849252, Gebirge #958e6c, hoher Fels warm #9a9488,
   nicht lila; das Höhenband zählt in fernen Stufen, auch auf den nahen Kacheln), so lesen
   Hügel und Gebirge als Flächen und nicht nur über ihre Rampen; Wald auf
   Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
   Stufe hell, und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
   so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
-  Rampen haben einen festen Ton je Seite wie in SimCity 2000 (nach links
-  gewandt 1,15, zur Kamera 1,06 wie die Sonne von vorn links, nach rechts 0,68, abgewandt 0,90; Eckrampen
-  mischen die Töne ihrer beiden Seiten nach Anteil), kräftig genug, dass die
-  gestapelten Rampen bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
+  Rampen haben einen festen Ton je Seite wie in SimCity 2000: nach links
+  gewandt +18 % (ab 1-km-Kacheln +10 %, hellere Rampen lasen dort als
+  Glasstreifen), nach rechts −20 %, zur Kamera −10 %, so lesen gestapelte
+  Terrassen als Tritt und Stufe (Kritik r4: Tivoli hatte „keine
+  Schattenseite“). Diagonale Rampen mischen beide Seiten stetig (Südwest
+  +8 %, Südost −19 %). Rampen, die von der Kamera weg zeigen, sieht man nur
+  als Kante; sie bleiben im flachen Ton, sonst zeichnet eine lange Stufe
+  einen dunklen Strich durchs Land (die „Naht“ bei 120 km). Die Töne kommen von einem festen
   SimCity-Licht von links und hinter der Kamera (`tt_art_light`, aus der
   Kameralage), nicht von der Sonne des Wetters: So sind die der Kamera
   zugewandten Rampen und Wände bei jedem Kamerawinkel hell wie in SimCity 2000
@@ -114,8 +136,10 @@ unabhängig und unverändert.
   ein tiefes Blau, heller, wo die Kachel Land berührt (nicht um Inseln aus
   einer Kachel, sonst liegt ein heller Kasten um einen Punkt Land); Flüsse und Seen sind
   dunkler als dieses Flachwasser. Bäume stehen nah genau auf den
-  Waldkacheln (und Waldhälften), dazu einzelne Bäume und kleine Baumgruppen
-  auf offenem Grasland und an Feldern. Auch dichter Wald öffnet sich alle paar
+  Waldkacheln (und Waldhälften), auf den Vierteln so dicht wie auf den
+  0,5-km-Kacheln (gut zwei der vier Plätze, der Waldboden zeigt sich
+  zwischen den Kronen), dazu kleine Gruppen von drei bis sieben Bäumen auf
+  offenem Grasland und an Feldern (keine Einzelbäume, sie lasen als Tischchen). Auch dichter Wald öffnet sich alle paar
   Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb
   Pixel breit. Natural Earth scalerank je Ebene: bis 10 bei 0,5 und 1 km,
   8 bei 2 km, 7 bei 4 km, 6 bei 8 km und 5 auf der Europakarte (16 km). Tiber
@@ -129,12 +153,26 @@ unabhängig und unverändert.
   Mischfarben); Dörfer gehen dort im Land auf. In Städten (ab Ortsklasse 2)
   laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
   Hausplätze; die Häuser lassen dafür Platz (Grundfläche 0,62 bis 0,74 der
-  Hauslänge, je Haus etwas breiter oder tiefer). Jedes Haus hat seinen
-  Putzton (Creme, Ocker, Kalkweiß), blaugraue Fenster (#4a4e5e); die Stufen
-  der Dächer haben den Ton der Flächen, damit die Stadt nicht streift. Im
-  Stadtkern stehen Insulae bis doppelt so hoch, in Städten anderthalbfach. Auf
-  einer Rampe reichen die Wände bis zum tiefsten Boden unter dem Haus hinab,
-  wie ein Haus am Hang auf seinem Untergeschoss steht.
+  Hauslänge, je Haus etwas breiter oder tiefer). Städte sind gepflastert,
+  Dörfer nicht (vorher halb gepflastert, das las als halbdurchsichtiger
+  Stadtrand); auf den Vierteln pflastert ein Dorf nur den Hof unter seinen
+  Häusern. Auf den Vierteln stehen Häuser nur auf flachen Kacheln, Rampen
+  bleiben Land: Ein Ort am Hang steigt in Terrassen an. Jedes Haus hat seinen
+  Putzton (Creme, Ocker, Kalkweiß), blaugraue Fenster (#4a4e5e) und ein
+  Satteldach in Terrakotta mit dem First längs (zwei glatte Dachflächen, die
+  die Sonne in hell und dunkel teilt, Giebel im Putzton, eine Traufe über
+  den Wänden mit dunkler Kante #5e3a2a, ein dunklerer First); vorher war das
+  Dach aus Voxelstufen mit Giebeln im Dachton („orange Grabsteine“). Die
+  Häuser kehren ihre Längsseite der Straße zu, in Orten die Hälfte die
+  Giebelseite zur Kamera; im Stadtkern laufen alle Firste Nord-Süd, die
+  Giebel schauen zur Kamera, und jedes Haus ist so lang wie sein Block, so
+  schließen sich die Häuser einer Straße zu Zeilen (vorher lagen die Dächer
+  quer und lasen bei 8 km als oranger Teppich). Jedes Dach hat einen von drei
+  Terrakottatönen (die Hälfte Grundton, drei Zehntel dunkler, zwei Zehntel
+  heller), und jedes achte Kernhaus fehlt als Hof. Im Stadtkern stehen
+  Insulae bis doppelt so hoch, in Städten anderthalbfach. Auf einer Rampe
+  reichen die Wände bis zum tiefsten Boden unter dem Haus hinab, wie ein Haus
+  am Hang auf seinem Untergeschoss steht.
 - Rom hat seine großen Bauten als Voxel-Modelle nach Urbek und Caesar III
   (Travertin, Marmor, Terrakotta), jedes auf einem Block von Stadtkacheln, auf
   dem keine Häuser stehen: der Jupitertempel auf dem Kapitol am Tiber, östlich
@@ -143,7 +181,10 @@ unabhängig und unverändert.
   Norden (seine Vorhalle nach Süden zur Kamera gedreht, in echt im Norden),
   südlich des Palatins der Circus Maximus auf 4 × 1 Kacheln und zwei
   Tiberbrücken (`LANDMARKS` in tile_terrain.gd). Travertin #ddd3ba, Bögen im
-  Schatten #6a6052 statt schwarzer Löcher. Nah ist jeder Block eben, auf der
+  Schatten #6a6052 statt schwarzer Löcher; das Kolosseum ist als drei flache
+  Wände beleuchtet (links, vorn, rechts) statt Facette für Facette, das
+  Pantheon hat eine Trommel niedriger als breit und einen Giebel aus Stein.
+  Die Blöcke liegen als offene Plätze in Travertin #e6dfcf ohne Straßenraster. Nah ist jeder Block eben, auf der
   mittleren Stufe seiner Ecken (`landmark_levels`, der Shader setzt die Ecken
   im Block darauf). Sie sind 6-mal so groß wie in echt, nicht
   24-mal wie die Häuser, damit die Stadt ihre Kacheln behält, und noch einmal
@@ -169,9 +210,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Größe | Wert |
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
-| Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
+| Kachel je Zoomstufe | 0,25 (Viertel, `SUB_KM`) / 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 10,5 m … 670 m Diorama (`LEVELS`) |
 | Höhe | nah eine Stufe = 20 / 50 / 120 m echt (Tiefland, Hügel, Gebirge; bei 1-km-Kacheln das Doppelte), weiter draußen die steigende Skala `LEVEL_STEPS_M` (150 bis 800 m je Stufe) |
-| Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem gestuften Dach von einem Drittel der Höhe (Urbek), auf Stufe 0 und 1 gezeichnet |
+| Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem Satteldach von einem Drittel der Höhe (Urbek), ein Haus je Viertelkachel, vier je 0,5-km-Kachel; gezeichnet bis 4-km-Kacheln |
 | Wahrzeichen Roms | 6-mal echt in der Fläche, 9-mal in der Höhe (`LANDMARK_KM_PER_M`, `LANDMARK_RISE`): Kolosseum 1,1 × 0,9 km Welt, Circus Maximus (gekürzt auf 330 m) 2 × 0,6 km |
 | Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün. Laubbäume mit runder Voxelkrone (Kern, Gürtel auf vier Seiten, flache Kappe), dunkler und satter als die Wiese wie bei Urbek gemessen (Oberseite etwa #458d33, Seiten #29521f); Zypressen #2f5a2c wie an den Höfen |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
@@ -208,17 +249,18 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Vertex selbst rechnen müsste: `tile_corner_prep.gdshader` die Eckhöhen jeder
   Kachel im Patch, `tile_prop_prep.gdshader` (mit `tile_props.gdshaderinc`) Ort,
   Art und Größe jedes Baum- und Hausplatzes. Gelände und Props lesen nur noch
-  einen Texel.
+  einen Texel. Auf den Vierteln kommt `tile_sub_prep.gdshader` dazu, nur wenn
+  sein Fenster weiterrückt.
 - Leistung: Der Prop-Patch ist nur so groß wie die Sicht (`PROP_SPAN`), ab
   10 km Sichtbreite gibt es Low-Poly-Bäume ohne Schatten (`PROP_LOW_KM`), und
   Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
-  2-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
-  zeichnete dort nur Streifen).
+  1-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
+  zeichnete dort nur dunkle Striche an den Stufen).
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
   Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
-  Stadthäuser nach Urbek (Putzkasten mit Fenstern und Tür, Dach aus
-  Voxel-Stufen in Terrakotta) und die Wahrzeichen Roms (`landmark`), die
+  Stadthäuser nach Urbek (Putzkasten mit Fenstern und Tür, Satteldach in
+  Terrakotta mit Giebeln im Putz) und die Wahrzeichen Roms (`landmark`), die
   `tile_landmark.gdshader` wie die Häuser beleuchtet.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.

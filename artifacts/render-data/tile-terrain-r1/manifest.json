@@ -152,14 +152,14 @@
         420.0
       ],
       "beyond_m": 120.0,
-      "blur_tiles": 0.7,
-      "clean_corners": 2,
+      "blur_tiles": 1.0,
+      "clean_corners": 3,
       "heights": {
         "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
         "zoom": 8
       },
       "path": "levels-L0.png",
-      "sha256": "9caedc968a5cc817e0612425b05814de0038d27516087e681c47956a3b2f22bb",
+      "sha256": "161ba3cef6cf2d9dabd9d52c5c3be61c92c1e316f899debea1dc9958ab959b58",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {

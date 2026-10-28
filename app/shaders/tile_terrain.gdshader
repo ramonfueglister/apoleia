@@ -45,7 +45,7 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.278, 0.447, 0.282),  // wetland
 	vec3(0.400, 0.447, 0.278),  // scrub
 	vec3(0.655, 0.580, 0.408),  // sand
-	vec3(0.196, 0.337, 0.224),  // forest (the canopy seen from above, #3c7440)
+	vec3(0.165, 0.300, 0.150),  // forest floor (between the crowns, #2c5e26-#33692c)
 	vec3(0.173, 0.302, 0.224),  // conifer forest
 	vec3(0.396, 0.561, 0.322),  // alpine meadow
 	vec3(0.439, 0.420, 0.396),  // rock
@@ -63,8 +63,8 @@ const vec3 GROUND_FAR[11] = vec3[](
 	vec3(0.388, 0.447, 0.290),  // wetland
 	vec3(0.485, 0.447, 0.308),  // scrub
 	vec3(0.615, 0.564, 0.451),  // sand
-	vec3(0.239, 0.357, 0.196),  // forest
-	vec3(0.204, 0.314, 0.208),  // conifer forest
+	vec3(0.262, 0.316, 0.184),  // forest (olive like the painted strip, #56683c, not #4f7b36)
+	vec3(0.220, 0.290, 0.200),  // conifer forest
 	vec3(0.408, 0.447, 0.294),  // alpine meadow
 	vec3(0.440, 0.420, 0.380),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
@@ -72,13 +72,14 @@ const vec3 GROUND_FAR[11] = vec3[](
 const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
 const vec3 C_MOUNT_FAR = vec3(0.435, 0.414, 0.344); // #958e6c
 const vec3 C_HIGH_ROCK = vec3(0.604, 0.580, 0.533); // #9a9488, warm limestone grey, not lilac
-const vec3 C_SEA_FAR = vec3(0.129, 0.282, 0.482);
-const vec3 C_SHORE_FAR = vec3(0.169, 0.365, 0.604);
+const vec3 C_SEA_FAR = vec3(0.111, 0.264, 0.424);   // #19588c on screen
+const vec3 C_SHORE_FAR = vec3(0.130, 0.302, 0.506); // #24689e
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
 const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
 const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
+const vec3 C_PLAZA = vec3(0.750, 0.720, 0.660);  // travertine squares of the landmarks, #e6dfcf
 const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
 const vec3 C_ROOF = vec3(0.580, 0.250, 0.190); // terracotta, not salmon or orange
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
@@ -204,7 +205,9 @@ void vertex() {
 	for (int k = 0; k < 4; k++) {
 		if (water != W_SEA && (nc[k] & 3) == W_SEA) { shore_sides |= 1 << k; }
 		if (core && ((nc[k] & 3) != W_LAND || (nc[k] >> 2) < 2)) { wall_sides |= 1 << k; }
-		if (water == W_RIVER && (nc[k] & 3) != W_LAND) { river_sides |= 1 << k; }
+		// quarter tiles draw the river of their data tile
+		int rn = sub_tiles ? tt_data_cell((tile >> ivec2(1)) + SIDE[k]) : nc[k];
+		if (water == W_RIVER && (rn & 3) != W_LAND) { river_sides |= 1 << k; }
 	}
 	side_bits = wall_sides | (river_sides << 4);
 	if (water != W_SEA && part == 0) {
@@ -269,7 +272,7 @@ void fragment() {
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
 			c = coast >= 1.0 || wet_tri == 1 ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
 		} else {
-			c = mix(C_INLAND, C_SEA_FAR, far);
+			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
 		}
 		rough = 0.55;
 	} else if (part == 0) {
@@ -291,14 +294,21 @@ void fragment() {
 			// whole roof coloured tiles and villages vanish into the land
 			ivec2 pl = tile - prop_origin;
 			bool housed = town_props && pl.x >= 0 && pl.y >= 0 && pl.x < prop_n && pl.y < prop_n;
+			// up close only the flat quarters are built on (tile_props: one
+			// house each); villages pave just the yard under their houses
+			bool built = !sub_tiles || flat_top > 0.5;
+			bool yard = sub_tiles && built && tt_sub_house(tile, town);
 			if (housed) {
-				c = town >= 2 ? C_PAVED : tile_km < 1.5 ? mix(c, C_PAVED, 0.5) : c;
+				c = (town >= 2 && built) || yard ? C_PAVED : c;
 			} else if (town >= 2) {
 				c = C_ROOF;
 			}
 			// streets between the house blocks of towns and cities (the grid of
 			// house_grid blocks per tile; half a street on each tile edge)
-			if (housed && town >= 2) {
+			// the landmarks stand on open travertine squares
+			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
+			if (plaza) { c = C_PLAZA; }
+			if (housed && town >= 2 && built && !plaza) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
 				float d = min(e.x, e.y);
@@ -307,7 +317,7 @@ void fragment() {
 			}
 		}
 		// city wall along the edge of the core
-		if (town == 3 && wall_sides != 0) {
+		if (town == 3 && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 		}
 		// beach: a strip of sand along the sea, on the diagonal of a coast cut
@@ -321,37 +331,40 @@ void fragment() {
 			c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 		}
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
-		// gradient: lit from the front left like the sun, so slopes turned
-		// left are light (1.15), those facing the camera a little lighter than
-		// flat ground (1.06; a hillside turned to the sun stands out instead of
-		// matching the plain), those turned right dark (0.68) and the back
-		// slopes, seen edge on, near the flat tone (0.90, else they draw dark
-		// cracks); strong enough that
-		// the stacked ramps read even on the map of Europe. The light itself
-		// sees every top as flat (NORMAL below), so this is the only shading:
-		// lambert on top of it washed sun-side ramps out like glass and made
-		// single shade-side steps black walls.
+		// gradient: lit from the left, so slopes turned left are light (+18 %
+		// up close, +10 % far out, where light ramps read as glass strips),
+		// those turned right dark (-20 %), and the steps facing the camera or
+		// away from it a little darker than the flat terraces (-10 %), so a
+		// stack of terraces reads as treads and risers. Diagonal slopes take
+		// both (south-west +8 %, south-east -19 %). The light itself sees every
+		// top as flat (NORMAL below), so this is the only shading: lambert on
+		// top of it washed sun-side ramps out like glass and made single
+		// shade-side steps black walls.
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
 		vec2 cam_right = normalize(INV_VIEW_MATRIX[0].xz + vec2(1e-5, 0.0));
 		vec2 cam_back = vec2(-cam_right.y, cam_right.x); // towards the camera
 		vec2 slope = nw.xz;
-		float fr = dot(slope, cam_right);
-		float fb = dot(slope, cam_back);
-		// a corner slope takes both of its sides' tones by their share, so the
-		// tone never flips between two sides from pixel to pixel
-		float side_x = fr < 0.0 ? 1.15 : 0.68;
-		float side_z = fb > 0.0 ? 1.06 : 0.90;
-		float tone = (fr * fr * side_x + fb * fb * side_z) / max(fr * fr + fb * fb, 1e-6);
+		vec2 dir = slope / max(length(slope), 1e-6);
+		float fr = dot(dir, cam_right);
+		float fb = dot(dir, cam_back);
+		// continuous in the direction, so the tone never flips between two
+		// sides from pixel to pixel
+		float lit = mix(0.18, 0.10, far_share());
+		// slopes turned away from the camera are seen edge on: they fade to
+		// the flat tone, else a long step draws a dark crack across the land
+		float away = clamp(1.0 + min(fb, 0.0), 0.0, 1.0);
+		float tone = 1.0 - ((fr < 0.0 ? lit : 0.20) * fr + 0.10 * fb * fb) * away;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
-			float half_w = clamp(0.075 / tile_km, 0.06, 0.22);
+			float half_w = clamp(0.075 / tt_data_km(), 0.06, 0.22);
+			// on the data tile (a quarter tile draws its part of the band)
+			vec2 q = (sub_tiles ? (tile_uv + vec2(tile & ivec2(1))) * 0.5 : tile_uv) - 0.5;
 			// and never thinner than about a pixel and a half, so the big
 			// rivers still read on the map of Europe
-			half_w = min(max(half_w, 0.75 * length(fwidth(tile_uv))), 0.3);
-			vec2 q = tile_uv - 0.5;
+			half_w = min(max(half_w, 0.75 * length(fwidth(q))), 0.3);
 			const vec2 MID[4] = vec2[](vec2(0.0, -0.5), vec2(0.5, 0.0), vec2(0.0, 0.5), vec2(-0.5, 0.0));
 			int m = river_sides;
 			bool bend = m == 3 || m == 6 || m == 12 || m == 9;

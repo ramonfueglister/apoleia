@@ -110,8 +110,8 @@ def far_level_x(metres):
 NEAR_LEVELS = (0, 1)
 NEAR_STEPS_M = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0]
 NEAR_BEYOND_M = 120.0
-NEAR_BLUR = [0.7, CORNER_BLUR]  # tiles, per near level
-NEAR_CLEAN = [2, 3]  # corner square of the cleaning, per near level
+NEAR_BLUR = [1.0, CORNER_BLUR]  # tiles, per near level
+NEAR_CLEAN = [3, 3]  # corner square of the cleaning, per near level
 DEM_ZOOM = 8
 DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 DEM_DIR = RD / "terrarium-z8"  # download cache, not in Git

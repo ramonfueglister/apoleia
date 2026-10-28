@@ -27,6 +27,27 @@ uniform sampler2D ground_tex : filter_nearest, repeat_disable; // landscape per 
 uniform bool ground_ready = false;
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
+// Up close the tiles are quarters of the 0.5 km data tiles (tile_terrain.gd,
+// SUB_KM): one house per tile, as in Urbek. tile_sub_prep.gdshader cuts their
+// cells, landscapes and corner levels from the data tiles into sub_tex, a
+// window around the patch; the cells, landscapes and levels below read it.
+uniform bool sub_tiles = false;
+uniform sampler2D sub_tex : filter_nearest, repeat_disable; // r cell, g landscape, b level of corner c00
+uniform ivec2 sub_origin;      // first quarter tile in sub_tex
+
+// Size of the tiles the data (cells, landscapes, levels) belongs to.
+float tt_data_km() {
+	return sub_tiles ? tile_km * 2.0 : tile_km;
+}
+
+// The sub_tex texel of quarter tile t, or false outside the window.
+bool tt_sub_texel(ivec2 t, out vec4 v) {
+	ivec2 q = t - sub_origin;
+	ivec2 n = textureSize(sub_tex, 0);
+	if (!sub_tiles || q.x < 0 || q.y < 0 || q.x >= n.x || q.y >= n.y) { return false; }
+	v = texelFetch(sub_tex, q, 0);
+	return true;
+}
 
 const int W_LAND = 0;
 const int W_SEA = 1;
@@ -86,12 +107,21 @@ vec2 tt_tile_center(ivec2 t) {
 	return world_min + (vec2(t) + 0.5) * tile_km;
 }
 
-int tt_cell(ivec2 t) {
+// Cell of data tile t (the quarter tiles: tt_cell).
+int tt_data_cell(ivec2 t) {
 	if (t.x < 0 || t.y < 0 || t.x >= cells_size.x || t.y >= cells_size.y) {
 		return W_SEA;
 	}
 	int b = int(texelFetch(cells_tex, ivec2(t.x >> 1, t.y), 0).r * 255.0 + 0.5);
 	return (t.x & 1) == 0 ? (b & 15) : (b >> 4);
+}
+
+int tt_cell(ivec2 t) {
+	if (sub_tiles) {
+		vec4 v;
+		return tt_sub_texel(t, v) ? int(v.r + 0.5) : tt_data_cell(t >> ivec2(1));
+	}
+	return tt_data_cell(t);
 }
 
 int tt_water(ivec2 t) {
@@ -113,6 +143,11 @@ vec3 tt_art_light(mat4 inv_view) {
 }
 
 int tt_ground(ivec2 t) {
+	if (sub_tiles) {
+		vec4 v;
+		if (tt_sub_texel(t, v)) { return int(v.g + 0.5); }
+		t = t >> ivec2(1);
+	}
 	if (!ground_ready || t.x < 0 || t.y < 0 || t.x >= cells_size.x || t.y >= cells_size.y) {
 		return G_NONE;
 	}
@@ -161,6 +196,21 @@ int tt_town(ivec2 t) {
 	return tt_cell(t) >> 2;
 }
 
+// Share of a town tile's house blocks that hold a house (by town class).
+float tt_house_share(int town) {
+	return town == 3 ? 1.0 : town == 2 ? 0.6 : town == 1 ? 0.15 : 0.0;
+}
+
+// Quarter tiles: a quarter is one block of its data tile's 2 x 2 grid and
+// holds a house where the data tile has one there (the same count of houses
+// as the 0.5 km tiles show).
+bool tt_sub_house(ivec2 t, int town) {
+	int k = (t.x & 1) + 2 * (t.y & 1);
+	int count = town == 3 ? 4 : max(int(round(tt_house_share(town) * 4.0)), town > 0 ? 1 : 0);
+	int rank = (k * 3 + int(tt_hash(vec2(t >> ivec2(1))) * 4.0)) % 4;
+	return rank < count;
+}
+
 // Display relief at a tile corner. The baked relief rises at most
 // m_per_level per tile_km (tools/build_tile_terrain.py, sc2k_relief), so the
 // rounded levels of neighbouring corners differ by at most one.
@@ -194,7 +244,7 @@ float tt_far_level_x(float m) {
 const float NEAR_STEPS_M[13] = float[](0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0);
 const float NEAR_BEYOND_M = 120.0;
 float tt_near_level_x(float metres) {
-	float m = max(metres, 0.0) * (0.5 / tile_km);
+	float m = max(metres, 0.0) * (0.5 / tt_data_km());
 	for (int k = 1; k < 13; k++) {
 		if (m < NEAR_STEPS_M[k]) {
 			return float(k - 1) + (m - NEAR_STEPS_M[k - 1]) / (NEAR_STEPS_M[k] - NEAR_STEPS_M[k - 1]);
@@ -214,7 +264,7 @@ float tt_level_metres(float x) {
 	if (near_scale) {
 		float m = x >= 12.0 ? NEAR_STEPS_M[12] + (x - 12.0) * NEAR_BEYOND_M
 			: mix(NEAR_STEPS_M[int(floor(x))], NEAR_STEPS_M[min(int(floor(x)) + 1, 12)], fract(x));
-		return m * (tile_km / 0.5);
+		return m * (tt_data_km() / 0.5);
 	}
 	if (x >= 8.0) { return LEVEL_STEPS_M[8] + (x - 8.0) * 800.0; }
 	int k = int(floor(x));
@@ -282,6 +332,12 @@ float tt_clean_level(ivec2 c, float l) {
 }
 
 float tt_land_corner(ivec2 c) {
+	if (sub_tiles) {
+		vec4 v;
+		// beyond the window: the data corner below (only the margin of a far view)
+		float l = tt_sub_texel(c, v) ? v.b : round(texelFetch(levels_tex, (c >> ivec2(1)) - levels_origin, 0).r * 255.0);
+		return landmark_count > 0 ? tt_landmark_level(tt_corner_pos(c), l) : l;
+	}
 	if (levels_ready) {
 		// baked with the same rules (tools/build_tile_terrain.py, corner_levels
 		// and near_corner_levels), shores and lakes included
@@ -393,4 +449,57 @@ float tt_sea_distance(vec2 p) {
 
 float tt_latitude(vec2 p) {
 	return 41.0 - degrees(p.y / 6371.0088);
+}
+
+// ------------------------------------------------- quarter tiles (sub_tex)
+// Evaluated by tile_sub_prep.gdshader on the data tiles (sub_tiles off).
+
+// Cell of quarter tile s. The quarter at the tip of a coast cut data tile is
+// water, and the rule cuts the two beside it again, so the coast keeps its
+// 45-degree line through the data tile.
+int tt_sub_cell(ivec2 s) {
+	ivec2 t = s >> ivec2(1);
+	int cell = tt_cell(t);
+	int cut = tt_coast_cut(t);
+	const ivec2 C[4] = ivec2[](ivec2(0, 0), ivec2(1, 0), ivec2(1, 1), ivec2(0, 1));
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	if (cut >= 0 && (s & ivec2(1)) == C[cut]) { return tt_water(t + S[cut]); }
+	return cell;
+}
+
+// Landscape of quarter tile s: the quarter at the tip of a split data tile
+// takes the other landscape, so the split stays one diagonal as well.
+int tt_sub_ground(ivec2 s) {
+	ivec2 t = s >> ivec2(1);
+	int g = tt_ground(t);
+	const ivec2 C[4] = ivec2[](ivec2(0, 0), ivec2(1, 0), ivec2(1, 1), ivec2(0, 1));
+	int cut = tt_coast_cut(t);
+	if (cut >= 0) { return (s & ivec2(1)) == C[cut] ? G_NONE : g; }
+	int wet = tt_water(t);
+	if (wet == W_SEA || wet == W_LAKE) { return g; }
+	int alt;
+	int k = tt_ground_cut(t, g, alt);
+	return k >= 0 && (s & ivec2(1)) == C[k] ? alt : g;
+}
+
+// Level of quarter corner s (its tile's corner c00). The data corners keep
+// their level; a corner between two or four of them takes the highest, so
+// every data ramp becomes a flat quarter on the upper terrace and a quarter
+// ramp below it (SimCity 2000 terraces: three quarters of the tiles are flat),
+// and next to the water the lowest, so the shore stays at the water line.
+float tt_sub_corner(ivec2 s) {
+	ivec2 p = s >> ivec2(1);
+	ivec2 o = s & ivec2(1);
+	float a = tt_land_corner(p);
+	float lo = a;
+	float hi = a;
+	if (o.x == 1) { float b = tt_land_corner(p + ivec2(1, 0)); lo = min(lo, b); hi = max(hi, b); }
+	if (o.y == 1) { float b = tt_land_corner(p + ivec2(0, 1)); lo = min(lo, b); hi = max(hi, b); }
+	if (o.x == 1 && o.y == 1) { float b = tt_land_corner(p + ivec2(1, 1)); lo = min(lo, b); hi = max(hi, b); }
+	if (lo == hi) { return a; }
+	for (int k = 0; k < 4; k++) {
+		int w = tt_sub_cell(s - ivec2(k & 1, k >> 1)) & 3;
+		if (w == W_SEA || w == W_LAKE) { return lo; }
+	}
+	return hi;
 }
