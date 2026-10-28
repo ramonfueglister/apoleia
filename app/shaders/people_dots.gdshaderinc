@@ -1,12 +1,12 @@
 // Every simulated person as a dot on the tile terrain, black or coloured by
 // group. One MultiMesh instance per 64 person slots; the record comes from
 // the people texture array (sim/src/view.rs: x, z, spread radius in km,
-// key << 8 | job << 4 | estate << 2 | kind), filled by ApoleiaPeople.sync
-// with only the pages that changed. Where each person stands (a land tile
-// in their area, on its corner levels) is worked out once per person by
-// people_dots_prep.gdshader whenever the people or the terrain view change;
-// the vertex stage here only reads it, so a frame costs two texel fetches
-// per dot.
+// child << 23 | female << 22 | key << 8 | job << 4 | estate << 2 | kind),
+// filled by ApoleiaPeople.sync with only the pages that changed. Where each
+// person stands (a land tile in their area, on its corner levels) is worked
+// out once per person by people_dots_prep.gdshader whenever the people or
+// the terrain view change; the vertex stage here only reads it, so a frame
+// costs two texel fetches per dot.
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 

@@ -146,8 +146,13 @@ stammen von vor dieser Regel.
 Realistisch statt Übersicht: Bis 10 km Bildbreite steht jede Person als kleine
 Low-Poly-Figur in echter Grösse auf ihrem Platz (1,7 m im Diorama-Massstab wie
 Häuser und Bäume, also 1,7 m × 23,8 in Welt-km; `people_figures.gdshader`).
-Beine, Tunika und Kopf als Quader, Tunika in Woll- und Leinenfarben oder nach
-Farbmodus, Reisende wippen beim Gehen. Gezeichnet werden nur die Personen nahe
+Sandalen, Beine, Tunika, Arme, Hals, Kopf und Haar als kleine Prismen (rund
+250 Dreiecke); Frauen tragen ein langes Kleid und ein Kopftuch, Kinder unter 14
+sind kleiner (Geschlecht und Kind stehen im Datensatz, der Schlüssel hat dafür
+14 statt 16 Bit). Kleider in Woll-, Leinen-, Krapp- und Waidfarben oder nach
+Farbmodus. Reisende gehen mit schwingenden Beinen und Armen, die anderen
+wiegen leicht und drehen sich ab und zu. Die Figuren werfen Schatten wie die
+Bäume. Gezeichnet werden nur die Personen nahe
 der Ansicht: `ApoleiaPeople.near` liefert ihre Slots (Rust, ein Durchlauf über
 die Anker, nur wenn sich die Ansicht deutlich bewegt oder ein Tag kam), höchstens
 16 384, als Liste in einer kleinen Textur; das MultiMesh zeichnet genau so viele.

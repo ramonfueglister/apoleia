@@ -8,14 +8,15 @@
 //!
 //! A record is four f32 (RGBA32F texel): x and z of the anchor in world
 //! km (eqc41, as tiles.csv and the tile terrain), the area and
-//! `key << 8 | job << 4 | estate << 2 | kind` (the occupation of S77 and
-//! the estate, for colouring the dots by group). Area: 0 = empty slot; 1..=VILLAGES = a village of the
+//! `child << 23 | female << 22 | key << 8 | job << 4 | estate << 2 | kind`
+//! (the occupation of S77 and the estate for colouring by group, sex and
+//! childhood for the figures up close). Area: 0 = empty slot; 1..=VILLAGES = a village of the
 //! 25 km cell around the anchor (1 + village seed); ROAD = anywhere in the
 //! cell (people on the road); < 0 = disk of that radius in km around a city.
 //! At home the anchor is the centre of the household's village tile
 //! (crate::settle, 1.5625 km fine tile) and the area 1 + a seed of that
 //! tile; the GPU puts the village on the best open land of the tile and the
-//! household's house within 0.6 km of it. The key is the low 16 bits of the
+//! household's house within 0.6 km of it. The key is the low 14 bits of the
 //! household id (the person id on the road), so a family shares one house.
 //! The GPU picks those spots from hashes of the keys, so they never change
 //! while the people stay put. Floats only carry whole numbers below 2^24 in
@@ -47,6 +48,10 @@ pub const VILLAGES: u32 = 4096;
 /// Area code of people on the road (anywhere in their current cell).
 pub const ROAD: f32 = 8192.0;
 const NONE: u32 = u32::MAX;
+/// Household (or person) key bits in the record.
+const KEY_MASK: u32 = 0x3fff;
+/// Younger than this, a person is drawn as a child.
+const CHILD_YEARS: i64 = 14;
 
 pub struct PeopleView {
     /// Records by slot.
@@ -71,7 +76,7 @@ pub struct PeopleView {
     pub houses: Houses,
     /// Village and house of each household.
     pub settle: Settle,
-    query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, Option<&'static Travel>)>>,
+    query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, &'static Sex, &'static Born, Option<&'static Travel>)>>,
 }
 
 fn hash(v: u32) -> u32 {
@@ -121,8 +126,8 @@ impl PeopleView {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn record(&self, p: &People, pid: u32, home: u32, household: u32, stand: u8, job: u8, travel: Option<&Travel>) -> [f32; REC] {
-        let w = |key: u32, kind: u32| ((key & 0xffff) << 8 | (job as u32 & 15) << 4 | (stand as u32 & 3) << 2 | kind) as f32;
+    fn record(&self, p: &People, pid: u32, home: u32, household: u32, stand: u8, job: u8, look: u32, travel: Option<&Travel>) -> [f32; REC] {
+        let w = |key: u32, kind: u32| (look << 22 | (key & KEY_MASK) << 8 | (job as u32 & 15) << 4 | (stand as u32 & 3) << 2 | kind) as f32;
         if let Some(t) = travel {
             let (x, z) = self.cell_centre(p, t.at);
             return [x, z, ROAD, w(pid, if t.leave { LEAVING } else { TRAVELLING })];
@@ -149,7 +154,10 @@ impl PeopleView {
         let mut query = self.query.take().unwrap_or_else(|| p.world.query());
         let mut grew = false;
         let mut writes: Vec<(u32, [f32; REC])> = Vec::with_capacity(1024);
-        for (pid, home, household, stand, job, travel) in query.iter(&p.world) {
+        let day = p.world.resource::<Clock>().day;
+        for (pid, home, household, stand, job, sex, born, travel) in query.iter(&p.world) {
+            // female bit and child bit for the figures
+            let look = (sex.0 == 0) as u32 | ((day - born.0 as i64) < CHILD_YEARS * YEAR) as u32 * 2;
             let pid = pid.0;
             if pid as usize >= self.slot_of.len() {
                 self.slot_of.resize(pid as usize + 1, NONE);
@@ -185,7 +193,7 @@ impl PeopleView {
                 let key = match self.settle.spot(home.0, household.0, stand.0) {
                     Spot::Village { fine, .. } => {
                         let (x, z) = self.settle.fine_centre_km(fine);
-                        Some((house_key(household.0, home.0), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((household.0 & 0xffff) << 8) as f32]))
+                        Some((house_key(household.0, home.0), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((household.0 & KEY_MASK) << 8) as f32]))
                     }
                     Spot::City { .. } => None,
                 };
@@ -197,12 +205,12 @@ impl PeopleView {
                     }
                 }
             }
-            let now = if travel.is_some() { [NONE; 3] } else { [home.0, household.0, stand.0 as u32 | (job.0 as u32) << 8] };
+            let now = if travel.is_some() { [NONE; 3] } else { [home.0, household.0, stand.0 as u32 | (job.0 as u32) << 8 | look << 16] };
             if now[0] != NONE && self.inputs[slot as usize] == now {
                 continue;
             }
             self.inputs[slot as usize] = now;
-            let rec = self.record(p, pid, home.0, household.0, stand.0, job.0, travel);
+            let rec = self.record(p, pid, home.0, household.0, stand.0, job.0, look, travel);
             let o = slot as usize * REC;
             if self.data[o..o + REC] != rec {
                 writes.push((slot, rec));

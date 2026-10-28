@@ -144,6 +144,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figures = MultiMeshInstance3D.new()
 	_figures.name = "PeopleFigures"
 	_figures.material_override = _figure_material
+	_figures.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON # like the trees up close
 	_figures.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	var fm := MultiMesh.new()
 	fm.transform_format = MultiMesh.TRANSFORM_3D
@@ -221,28 +222,55 @@ func _rebuild() -> void:
 	multimesh = mm
 	_apply_colours()
 
-## A person 1 unit tall (1.7 m) in the blocky style of the houses: legs,
-## tunic and head as boxes. Vertex colours are sRGB; alpha 0 marks the tunic,
-## which the shader colours.
+## A person 1 unit tall (1.7 m), low-poly like the houses: legs with
+## sandals, tunic, arms, neck, head and hair. Vertex colours are sRGB; the
+## alpha names the part for people_figures.gdshader: FIG_TUNIC (dyed, a long
+## dress on women), the legs and arms (they swing while walking), FIG_HAIR
+## (a headscarf on women) and FIG_FIXED.
+const FIG_TUNIC := 0.0
+const FIG_LEG_L := 0.2
+const FIG_LEG_R := 0.4
+const FIG_ARM_L := 0.6
+const FIG_ARM_R := 0.8
+const FIG_HAIR := 0.9
+const FIG_FIXED := 1.0
+
 static func _figure_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_box(st, Vector3(-0.09, 0.0, -0.055), Vector3(0.09, 0.47, 0.055), Color(0.32, 0.24, 0.17, 1.0))
-	_box(st, Vector3(-0.14, 0.45, -0.08), Vector3(0.14, 0.83, 0.08), Color(1, 1, 1, 0.0))
-	_box(st, Vector3(-0.07, 0.83, -0.07), Vector3(0.07, 1.0, 0.07), Color(0.86, 0.66, 0.5, 1.0))
+	var skin := Color(0.84, 0.64, 0.48)
+	var sandal := Color(0.36, 0.24, 0.15)
+	for side in [-1.0, 1.0]:
+		var leg := FIG_LEG_L if side < 0.0 else FIG_LEG_R
+		var arm := FIG_ARM_L if side < 0.0 else FIG_ARM_R
+		_prism(st, Vector3(0.055 * side, 0.0, 0.015), 0.05, 0.045, 0.0, 0.05, 6, Color(sandal, leg), 1.3)
+		_prism(st, Vector3(0.055 * side, 0.0, 0.0), 0.04, 0.05, 0.05, 0.47, 6, Color(skin, leg))
+		_prism(st, Vector3(0.165 * side, 0.0, 0.0), 0.032, 0.04, 0.47, 0.79, 6, Color(skin, arm))
+	_prism(st, Vector3.ZERO, 0.16, 0.14, 0.43, 0.81, 8, Color(1, 1, 1, FIG_TUNIC), 0.72)
+	_prism(st, Vector3.ZERO, 0.035, 0.035, 0.80, 0.85, 6, Color(skin, FIG_FIXED))
+	_prism(st, Vector3.ZERO, 0.06, 0.068, 0.84, 0.96, 8, Color(skin, FIG_FIXED))
+	_prism(st, Vector3(0, 0, -0.008), 0.072, 0.045, 0.93, 1.0, 8, Color(0.26, 0.17, 0.1, FIG_HAIR))
 	return st.commit()
 
-static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, colour: Color) -> void:
-	var c := [Vector3(lo.x, lo.y, lo.z), Vector3(hi.x, lo.y, lo.z), Vector3(hi.x, lo.y, hi.z), Vector3(lo.x, lo.y, hi.z),
-		Vector3(lo.x, hi.y, lo.z), Vector3(hi.x, hi.y, lo.z), Vector3(hi.x, hi.y, hi.z), Vector3(lo.x, hi.y, hi.z)]
-	# faces wound clockwise seen from outside (Godot's front faces)
-	var faces := [[4, 5, 6, 7, Vector3.UP], [0, 3, 2, 1, Vector3.DOWN], [0, 1, 5, 4, Vector3.FORWARD],
-		[2, 3, 7, 6, Vector3.BACK], [1, 2, 6, 5, Vector3.RIGHT], [3, 0, 4, 7, Vector3.LEFT]]
-	for f in faces:
-		for k in [0, 1, 2, 0, 2, 3]:
-			st.set_color(colour)
-			st.set_normal(f[4])
-			st.add_vertex(c[f[k]])
+## An upright prism of `sides` around `base` from y0 to y1, radius r0 at the
+## bottom and r1 at the top, depth scaled by `depth`, with both caps.
+static func _prism(st: SurfaceTool, base: Vector3, r0: float, r1: float, y0: float, y1: float, sides: int, colour: Color, depth := 1.0) -> void:
+	var ring := func(r: float, y: float, k: int) -> Vector3:
+		var a := TAU * (float(k) + 0.5) / float(sides)
+		return base + Vector3(cos(a) * r, y, sin(a) * r * depth)
+	for k in sides:
+		var b0: Vector3 = ring.call(r0, y0, k)
+		var b1: Vector3 = ring.call(r0, y0, k + 1)
+		var t0: Vector3 = ring.call(r1, y1, k)
+		var t1: Vector3 = ring.call(r1, y1, k + 1)
+		var mid := TAU * (float(k) + 1.0) / float(sides)
+		var n := Vector3(cos(mid), (r0 - r1) / maxf(y1 - y0, 0.001), sin(mid) / depth).normalized()
+		for v in [b0, t0, t1, b0, t1, b1]:
+			st.set_color(colour); st.set_normal(n); st.add_vertex(v)
+		for cap in [[y1, r1, Vector3.UP], [y0, r0, Vector3.DOWN]]:
+			var c := base + Vector3(0, cap[0], 0)
+			for v in [c, ring.call(cap[1], cap[0], k + 1), ring.call(cap[1], cap[0], k)]:
+				st.set_color(colour); st.set_normal(cap[2]); st.add_vertex(v)
 
 ## The people near the view, as a slot list for the figure shader.
 func _update_figures(view_km: float, synced: bool) -> void:

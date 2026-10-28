@@ -90,7 +90,7 @@ vec2 dot_village(vec2 c, float r, uint key) {
 // record (`house`) stands on the household's house spot itself, without the
 // family spread around it.
 vec3 dot_place(vec4 rec, uint slot, bool house) {
-	uint key = uint(rec.w) >> 8u;
+	uint key = (uint(rec.w) >> 8u) & 0x3fffu;
 	vec2 p;
 	bool village = false;
 	if (rec.z < 0.0) {

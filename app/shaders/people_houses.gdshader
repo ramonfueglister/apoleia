@@ -21,7 +21,7 @@ void vertex() {
 	ivec2 px = ivec2(in_page % page_side, (id / per) * page_side + in_page / page_side);
 	vec4 rec = dot_record(px);
 	vec4 place = texelFetch(place_tex, px, 0);
-	uint key = uint(rec.w) >> 8u;
+	uint key = (uint(rec.w) >> 8u) & 0x3fffu;
 	vec2 r = dot_rand2(key, 7u);
 	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
