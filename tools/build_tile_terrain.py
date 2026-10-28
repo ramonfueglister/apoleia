@@ -71,15 +71,25 @@ MOUNTAIN_SLOPE = 1.0 * RELIEF_SLOPE
 MOUNTAIN_FROM_M = 500.0
 MOUNTAIN_TO_M = 1300.0
 # Far zoom levels (2 km tiles and up) get their corner levels from the bake
-# (corner_levels), so the tiles follow SimCity 2000 rules there too: real
-# metres per level, coarser the farther out (lowland 0, hills 1-2, ranges 3-5
-# steps; finer steps drew a maze of thin terrace lines), counted from
-# LEVEL_FLOOR_M (plains stay one flat level), the land height blurred over
-# CORNER_BLUR tiles first. The app draws far steps taller (LEVEL_HEIGHTS).
+# (corner_levels), so the tiles follow SimCity 2000 rules there too, on a
+# rising scale: LEVEL_STEPS_M are the heights where the count reaches 0, 1,
+# 2, ... levels (800 m per level above the last), the land height blurred
+# over CORNER_BLUR tiles first. Plains stay one flat level, hills get 2, the
+# Apennines a ridge of 3 to 4 and the Alps 5 to 7 (equal steps either drew a
+# maze of thin terraces in the hills or left the Apennines one flat step).
+# The shader mirrors the scale (tt_far_level_x); the app draws far steps
+# taller (LEVEL_HEIGHTS).
 BAKED_FROM = 2
-LEVEL_METRES = {2: 200.0, 3: 280.0, 4: 360.0, 5: 440.0}
-LEVEL_FLOOR_M = 150.0
+LEVEL_STEPS_M = [100.0, 250.0, 450.0, 700.0, 1000.0, 1400.0, 1900.0, 2500.0, 3200.0]
 CORNER_BLUR = 1.2
+
+
+def far_level_x(metres):
+    """Height in far levels (unrounded) on the LEVEL_STEPS_M scale."""
+    steps = np.array(LEVEL_STEPS_M)
+    m = np.asarray(metres, np.float64)
+    x = np.interp(m, steps, np.arange(len(steps), dtype=np.float64))
+    return np.where(m > steps[-1], len(steps) - 1 + (m - steps[-1]) / 800.0, x)
 # Landscape of a tile, one colour each (Ramon, 28.10.2026: one colour per
 # tile, two where landscapes meet; the shader splits those at the diagonal).
 GROUND = ["meadow", "dry_grass", "field", "wetland", "scrub", "sand", "forest", "conifer",
@@ -506,11 +516,11 @@ def node_bilinear(field, px, pz):
             + (field[j + 1, i] * (1 - fx) + field[j + 1, i + 1] * fx) * fz)
 
 
-def tile_lake_levels(water, tile_km, metres_per_level, lake_enc, shore):
+def tile_lake_levels(water, tile_km, lake_enc, shore):
     """Water level of every lake tile in levels, by the shader rule
     (tt_lake_level): the lowest lake level on the nearest node of the tile
     centre and of four points 1 km around it, else the shore field there;
-    counted from LEVEL_FLOOR_M like the land."""
+    on the far level scale like the land."""
     jj, ii = np.nonzero(water == 2)
     cx = WORLD_MIN[0] + (ii + 0.5) * tile_km
     cz = WORLD_MIN[1] + (jj + 0.5) * tile_km
@@ -522,16 +532,16 @@ def tile_lake_levels(water, tile_km, metres_per_level, lake_enc, shore):
         metres = np.where(e > 0, np.fmin(metres, e - 1000), metres)
     metres = np.where(np.isnan(metres), node_bilinear(shore, cx, cz), metres)
     level = np.full(water.shape, np.inf, np.float32)
-    level[jj, ii] = np.maximum(np.round(np.maximum(metres - LEVEL_FLOOR_M, 0) / metres_per_level), 1)
+    level[jj, ii] = np.maximum(np.round(far_level_x(metres)), 1)
     return level
 
 
-def corner_levels(water, tile_km, metres_per_level, height, lake_enc, shore):
+def corner_levels(water, tile_km, height, lake_enc, shore):
     """SimCity 2000 terrain at a far zoom level: the height level of every tile
     corner ((ny + 1) x (nx + 1) for ny x nx tiles).
 
-    The land height above LEVEL_FLOOR_M, blurred over CORNER_BLUR tiles, in
-    metres_per_level steps, is limited to one level
+    The land height, blurred over CORNER_BLUR tiles, on the LEVEL_STEPS_M
+    scale, is limited to one level
     per tile between all eight neighbours (mean of the lower and upper
     envelope, so peaks and valleys keep half their excess) and rounded.
     Corners at the sea sit at 0, corners at a lake at most at its level, land
@@ -543,7 +553,7 @@ def corner_levels(water, tile_km, metres_per_level, height, lake_enc, shore):
     h = gauss(np.maximum(height, 0).astype(np.float32), CORNER_BLUR * tile_km / (WORLD_SIZE[0] / (GRID_W - 1)))
     px = WORLD_MIN[0] + np.arange(nx + 1, dtype=np.float64) * tile_km
     pz = WORLD_MIN[1] + np.arange(ny + 1, dtype=np.float64) * tile_km
-    x = np.maximum(node_bilinear(h, px[None, :], pz[:, None]) - LEVEL_FLOOR_M, 0) / metres_per_level
+    x = far_level_x(node_bilinear(h, px[None, :], pz[:, None]))
     low, high = x.copy(), x.copy()
     while True:
         low2 = np.minimum(low, min3(low) + 1)
@@ -554,7 +564,7 @@ def corner_levels(water, tile_km, metres_per_level, height, lake_enc, shore):
     level = np.round((low + high) * 0.5)
     # the four tiles around each corner (outside the map is sea, as in tt_cell)
     wp = np.pad(water, 1, constant_values=1)
-    lakes = np.pad(tile_lake_levels(water, tile_km, metres_per_level, lake_enc, shore), 1, constant_values=np.inf)
+    lakes = np.pad(tile_lake_levels(water, tile_km, lake_enc, shore), 1, constant_values=np.inf)
     sea = np.zeros((ny + 1, nx + 1), bool)
     cap = np.full((ny + 1, nx + 1), np.inf, np.float32)
     for dj in (0, 1):
@@ -588,11 +598,11 @@ def bake_levels(manifest, cells, height, lake_enc, shore):
     manifest["levels"] = []
     for level in range(BAKED_FROM, LEVELS):
         tile = BASE_CELL_KM * 2 ** level
-        lv = corner_levels(cells[level], tile, LEVEL_METRES[level], height, lake_enc, shore)
+        lv = corner_levels(cells[level], tile, height, lake_enc, shore)
         path = OUT / f"levels-L{level}.png"
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
-                                   "metres_per_level": LEVEL_METRES[level], "floor_m": LEVEL_FLOOR_M,
+                                   "level_steps_m": LEVEL_STEPS_M,
                                    "blur_tiles": CORNER_BLUR,
                                    "path": path.name, "sha256": sha(path),
                                    "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
@@ -673,10 +683,13 @@ def ground_classes(water, tile_km, height, cover, band=1024):
                     + (f[jj + 1, i] * (1 - fx) + f[jj + 1, i + 1] * fx) * fz)
 
         h, forest, dry, crop, wet, glacier, n1, n2, n3, n4 = (at(f) for f in fields)
+        n2_raw = n2
         n1, n2, n3 = n1 * amp, n2 * amp, n3 * amp
         lat = (41.0 - np.degrees(z / R_KM)).astype(np.float32)[:, None]
         g = np.full(h.shape, G["meadow"], np.uint8)
-        g[(lat + 4.0 * n2 < 43.0) | (dry + 0.5 * n2 > 0.4)] = G["dry_grass"]
+        # Urbek's green meadow is the ground; dry grass only on dry land and in
+        # the far south
+        g[(lat + 4.0 * n2 < 39.0) | (dry + 0.5 * n2 > 0.4)] = G["dry_grass"]
         # mountain belts climb to the south (no bare rock on the Anatolian steppe)
         south = np.maximum(45 - lat, 0) * 60
         g[h + 200 * n3 > 1000 - 60 * lod + south] = G["alpine"]
@@ -689,13 +702,18 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         g[farmed + 0.6 * n2 > 0.6] = G["field"]
         g[wet + 0.5 * n2 > 0.45] = G["wetland"]
         # clearings: even a dense wood opens into meadows every few km
-        # (only up close: far out the glades are noise)
-        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400)
+        # (only up close: far out the glades are noise); far out only the
+        # dense woods stay forest, so the land reads light with dark woods as
+        # in the painted map instead of one dark green
+        wood_min = 0.45 + 0.05 * max(math.log2(tile_km), 0.0)
+        wood = (forest - 0.25 * farmed + 0.6 * n1 > wood_min) & (h + 100 * n3 < 1400)
         if tile_km <= 2.0:
             wood &= n4 < 0.12
         g[wood] = G["forest"]
         # conifers in the subalpine belt and the north (beech below)
-        g[wood & ((h + 150 * n3 > 1050) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
+        # (the latitude edge wanders by a few degrees at every zoom, else it ran
+        # as a straight line through Russia on the map)
+        g[wood & ((h + 150 * n3 > 1050) | (lat + 5.0 * n2_raw > 57.0))] = G["conifer"]
         g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
         # far out the mean height is far below the peaks: the snow line drops
         # faster than the rock line, so ranges keep white caps on the map

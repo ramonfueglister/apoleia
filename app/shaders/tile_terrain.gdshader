@@ -12,6 +12,9 @@ uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
 // the sun of the weather (which still lights the tops and the props).
 uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
 uniform int house_grid = 2;                      // house blocks per tile side
+uniform bool town_props = true;                  // houses are drawn as models at this level
+uniform ivec2 prop_origin;                       // the tiles that have them (tile_props.gdshader)
+uniform int prop_n = 96;
 
 varying vec3 world_pos;
 varying vec2 tile_uv;
@@ -77,7 +80,7 @@ const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
 const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
 const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
-const vec3 C_ROOF = vec3(0.600, 0.290, 0.204); // terracotta, not salmon
+const vec3 C_ROOF = vec3(0.580, 0.250, 0.190); // terracotta, not salmon or orange
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
 const vec3 C_SEA = vec3(0.314, 0.541, 0.824);   // Urbek water, #6db3df on screen
 const vec3 C_SHORE = vec3(0.396, 0.643, 0.953);  // sea tiles that touch the land
@@ -263,7 +266,6 @@ void fragment() {
 		}
 		rough = 0.55;
 	} else if (part == 0) {
-		bool props = tile_km < 1.5; // trees and houses are drawn as models
 		int town = tt_town(tile);
 		// one flat colour per tile; where two landscapes meet, the half towards
 		// the corner of the other one takes its colour (cut at the diagonal)
@@ -276,13 +278,19 @@ void fragment() {
 			c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
 		}
 		if (town > 0) {
-			// up close the houses stand on paved ground; far out towns are roof
-			// coloured tiles and villages vanish into the land around them
-			c = props ? mix(c, C_PAVED, town == 1 ? 0.5 : 1.0)
-				: mix(c, C_ROOF, town == 3 ? 1.0 : town == 2 ? 0.6 : 0.0);
+			// the houses stand on paved ground (villages on half paved ground up
+			// close, on their land farther out); beyond the houses towns are
+			// whole roof coloured tiles and villages vanish into the land
+			ivec2 pl = tile - prop_origin;
+			bool housed = town_props && pl.x >= 0 && pl.y >= 0 && pl.x < prop_n && pl.y < prop_n;
+			if (housed) {
+				c = town >= 2 ? C_PAVED : tile_km < 1.5 ? mix(c, C_PAVED, 0.5) : c;
+			} else if (town >= 2) {
+				c = C_ROOF;
+			}
 			// streets between the house blocks of towns and cities (the grid of
 			// house_grid blocks per tile; half a street on each tile edge)
-			if (props && town >= 2) {
+			if (housed && town >= 2) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
 				float d = min(e.x, e.y);
@@ -308,19 +316,28 @@ void fragment() {
 		}
 		// footpaths, markets and trade roads from the grain economy
 		c = sim_ways(p, c, length(fwidth(p)));
-		// SimCity 2000 slope tiles come in clear tones: sun side light, shade
-		// side dark, the rest in between, with no gradient; strong enough that
+		// SimCity 2000 slope tiles come in one clear tone per side, with no
+		// gradient: lit from the left of the screen, so slopes turned left
+		// are light (1.10), those facing the camera a little darker (0.85),
+		// those turned right dark (0.65) and the back slopes, seen edge on,
+		// near the flat tone (0.90, else they draw dark cracks); strong enough that
 		// the stacked ramps read even on the map of Europe. The light itself
 		// sees every top as flat (NORMAL below), so this is the only shading:
 		// lambert on top of it washed sun-side ramps out like glass and made
 		// single shade-side steps black walls.
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
-		float lit = dot(nw, art) - art.y;
-		float aa_l = fwidth(lit) + 0.02;
-		float tone = mix(0.72, 0.90, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
-		tone = mix(tone, 1.12, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
-		c *= flat_top > 0.5 ? 1.0 : tone; // flat tiles never flicker between tones
+		vec2 cam_right = normalize(INV_VIEW_MATRIX[0].xz + vec2(1e-5, 0.0));
+		vec2 cam_back = vec2(-cam_right.y, cam_right.x); // towards the camera
+		vec2 slope = nw.xz;
+		float fr = dot(slope, cam_right);
+		float fb = dot(slope, cam_back);
+		// a corner slope takes both of its sides' tones by their share, so the
+		// tone never flips between two sides from pixel to pixel
+		float side_x = fr < 0.0 ? 1.10 : 0.65;
+		float side_z = fb > 0.0 ? 0.85 : 0.90;
+		float tone = (fr * fr * side_x + fb * fb * side_z) / max(fr * fr + fb * fb, 1e-6);
+		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
@@ -358,7 +375,7 @@ void fragment() {
 		}
 	} else {
 		// walls: one darker earth tone (sand at the coast, rock up high), no texture
-		float hm = world_pos.y / level_h * m_per_level;
+		float hm = tt_level_metres(world_pos.y / level_h);
 		vec3 base = water == W_SEA ? mix(C_SEA, C_SEA_FAR, far_share()) * 0.8 : (coast > 0.0 && body_level <= 3.0) ? C_BANK : C_EARTH;
 		if (water == W_LAND && hm > 1200.0) { base = C_CLIFF; }
 		// lit like the ramps: light on the walls facing the camera, darker

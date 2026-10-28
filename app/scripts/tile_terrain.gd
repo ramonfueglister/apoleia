@@ -30,7 +30,11 @@ const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
 const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
 const PROP_SLOTS := [9, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
-const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0] # house blocks per town tile and level
+const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0] # house blocks per town tile and level
+# Far out (2 and 4 km tiles) the houses grow with the tiles, as buildings do
+# when SimCity 2000 zooms out: towns stay a mosaic of roofs instead of
+# coloured squares. Beyond that towns are roof coloured tiles.
+const HOUSE_GROW_FROM_KM := 1.0
 # Kit 2 scale (docs/kit2/SCALE.md): lengths 1:23.8 against the real world, but
 # houses and trees keep their real size. World units are real km, so a diorama
 # metre is DIORAMA_KM_PER_M world units.
@@ -51,12 +55,13 @@ const LANDMARK_KM_PER_M := 0.006
 const LANDMARK_RISE := 1.5
 const LANDMARK_TILE_KM := 0.5
 const LANDMARKS := [
-	# mesh, block centre (lon, lat), block size in tiles
-	["temple", Vector2(12.4853, 41.8917), Vector2i(1, 1)],
-	["forum", Vector2(12.4913, 41.8917), Vector2i(1, 1)],
-	["colosseum", Vector2(12.5002, 41.8894), Vector2i(2, 2)],
-	["pantheon", Vector2(12.4853, 41.9007), Vector2i(1, 1)],
-	["circus", Vector2(12.4883, 41.8782), Vector2i(4, 1)],
+	# mesh, block centre (lon, lat), block size in tiles, free ground around
+	# the building (km; a square around the Colosseum and the Circus)
+	["temple", Vector2(12.4853, 41.8917), Vector2i(1, 1), 0.09],
+	["forum", Vector2(12.4913, 41.8917), Vector2i(1, 1), 0.09],
+	["colosseum", Vector2(12.5002, 41.8894), Vector2i(2, 2), 0.2],
+	["pantheon", Vector2(12.4853, 41.9007), Vector2i(1, 1), 0.09],
+	["circus", Vector2(12.4883, 41.8782), Vector2i(4, 1), 0.15],
 ]
 
 var manifest: Dictionary
@@ -82,9 +87,7 @@ var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
 var _level_textures := {}
-var _level_metres := {}
 var _ground_textures := {}  # zoom level -> landscape per tile (two per byte)
-var _level_floor := {}
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
 var _corner_view: SubViewport
@@ -141,8 +144,6 @@ func load_data() -> bool:
 		var key := int(entry.level)
 		_level_images[key] = image
 		_level_textures[key] = ImageTexture.create_from_image(image)
-		_level_metres[key] = float(entry.metres_per_level)
-		_level_floor[key] = float(entry.get("floor_m", 0.0))
 	for entry in manifest.get("ground", []):
 		var image := Image.load_from_file(dir.path_join(entry.path))
 		image.convert(Image.FORMAT_R8)
@@ -253,19 +254,26 @@ func _build_landmarks() -> void:
 		var reach := node.mesh.get_aabb()
 		var a := centre + Vector2(reach.position.x, reach.position.z) * LANDMARK_KM_PER_M
 		var b := centre + Vector2(reach.end.x, reach.end.z) * LANDMARK_KM_PER_M
-		rects.append(Vector4(minf(lo.x, a.x - 0.09), minf(lo.y, a.y - 0.09), maxf(hi.x, b.x + 0.09), maxf(hi.y, b.y + 0.09)))
+		var free: float = entry[3]
+		rects.append(Vector4(minf(lo.x, a.x - free), minf(lo.y, a.y - free), maxf(hi.x, b.x + free), maxf(hi.y, b.y + free)))
 	_place_material.set_shader_parameter("landmark_rects", rects)
 	_place_material.set_shader_parameter("landmark_count", rects.size())
 	for kind in _prop_materials.size():
 		_prop_materials[kind].set_shader_parameter("landmark_rects", rects)
 		_prop_materials[kind].set_shader_parameter("landmark_count", rects.size())
 
-## Level of the ground under a landmark (the city is flat at the near levels).
+## Level of the ground under a landmark (the city is flat at the near
+## levels); beyond them the grown houses fill Rome.
 func _place_landmarks() -> void:
+	var near := level <= 1
 	for node in _landmarks:
 		var p := Vector2(node.position.x, node.position.z)
-		node.visible = HOUSE_SLOTS[level] > 0
+		node.visible = near
 		node.position.y = maxf(1.0, round(maxf(relief_m(p), 0.0) / m_per_level)) * level_h
+	var count := _landmarks.size() if near else 0
+	_place_material.set_shader_parameter("landmark_count", count)
+	for material in _prop_materials:
+		material.set_shader_parameter("landmark_count", count)
 
 ## Hide the tree kinds that cannot grow anywhere in the prop patch (the shader
 ## rule: conifers above 700 m or north of 50°, stone pines and cypresses below
@@ -321,7 +329,7 @@ func _apply_level(value: int) -> void:
 	level = value
 	tile_km = LEVELS[level]
 	var baked := _level_images.has(level)
-	m_per_level = _level_metres[level] if baked else relief_slope * tile_km
+	m_per_level = relief_slope * tile_km # near levels; far ones are baked (LEVEL_STEPS_M)
 	level_h = tile_km * LEVEL_HEIGHTS[level]
 	var params := {
 		"cells_tex": _cell_textures[level],
@@ -331,7 +339,6 @@ func _apply_level(value: int) -> void:
 		"m_per_level": m_per_level,
 		"height_lod": maxf(0.0, log(tile_km / 2.0) / log(2.0)),
 		"levels_ready": baked,
-		"level_floor_m": _level_floor[level] if baked else 0.0,
 		"levels_tex": _level_textures[level] if baked else null,
 		"ground_ready": _ground_textures.has(level),
 		"ground_tex": _ground_textures.get(level),
@@ -343,10 +350,11 @@ func _apply_level(value: int) -> void:
 	var house_slots: int = HOUSE_SLOTS[level]
 	# no cast shadows from the tiles once the props are gone: the shadow map is
 	# coarse that far out and only draws streaks; the ramps carry the relief
-	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if slots + house_slots > 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if level <= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# the slot pass only runs while props are drawn
 	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
+	_terrain_material.set_shader_parameter("town_props", house_slots > 0)
 	for kind in _props.size():
 		var node := _props[kind]
 		var house := kind == 3
@@ -357,7 +365,7 @@ func _apply_level(value: int) -> void:
 		var material := _prop_materials[kind]
 		material.set_shader_parameter("slots", maxi(n, 1))
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
-		var size_m := HOUSE_M if house else TREE_M / 1.1
+		var size_m := HOUSE_M * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 	_place_landmarks()
 
@@ -397,6 +405,9 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 		material.set_shader_parameter("patch_origin", patch_origin)
 	_place_material.set_shader_parameter("prop_origin", prop_origin)
 	_place_material.set_shader_parameter("prop_n", prop_n)
+	# beyond the prop patch towns are roof coloured tiles again
+	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
+	_terrain_material.set_shader_parameter("prop_n", prop_n)
 	_cull_prop_kinds()
 
 # ------------------------------------------------------------- CPU mirror

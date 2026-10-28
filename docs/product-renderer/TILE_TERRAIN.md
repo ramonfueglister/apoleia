@@ -20,11 +20,13 @@ unabhängig und unverändert.
   `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in SimCity 2000 statt
   vieler schmaler Streifen.
 - Ab 2-km-Kacheln kommen die Eckstufen aus dem Bake (`levels-L*.png`,
-  `corner_levels`): eine Stufe sind 200 / 280 / 360 / 440 m echt
-  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 150 m
-  (`LEVEL_FLOOR_M`), also weiter draußen gröber: Tiefland 0, Hügel 1 bis 2,
-  Gebirge 3 bis 5 Stufen (feinere Stufen zeichneten ein Labyrinth dünner
-  Terrassenlinien). Dafür ist eine Stufe weit draußen höher gezeichnet
+  `corner_levels`) auf einer steigenden Skala (`LEVEL_STEPS_M`: 0, 1, 2, …
+  Stufen bei 100 / 250 / 450 / 700 / 1000 / 1400 / 1900 / 2500 / 3200 m,
+  darüber 800 m je Stufe; der Shader spiegelt sie in `tt_far_level_x`):
+  Tiefland eine Stufe, Hügel zwei, der Apennin ein Rücken aus drei bis vier
+  Stufen, die Alpen fünf bis sieben (gleiche Stufen zeichneten in den Hügeln
+  ein Labyrinth dünner Terrassen oder ließen den Apennin eine flache Stufe).
+  Eine Stufe ist weit draußen höher gezeichnet
   (`LEVEL_HEIGHTS` in tile_terrain.gd: 0,6 / 0,9 / 1,2 / 1,5 Kachelbreiten bei
   2 / 4 / 8 / 16 km), so stehen die gestapelten Plateaus der Gebirge auch auf
   der Europakarte. Die Höhe wird vorher über
@@ -60,8 +62,8 @@ unabhängig und unverändert.
   Flussarme um größere Inseln bleiben als Schlaufe erhalten.
 - Optik nach Urbek (Ramon, 28.10.2026: „einzelne Tiles eine Farbe, resp. 2 Farben
   wenn Terrain übereinander fließt“, „Referenz Urbek“): **jede Kachel hat eine
-  flache Farbe** nach ihrer Landschaft (`ground-L*.png`): Wiese, trockenes Gras
-  (Mittelmeer), Feld, Feuchtgebiet, Gestrüpp, Sand, Laubwald, Nadelwald, Alm,
+  flache Farbe** nach ihrer Landschaft (`ground-L*.png`): Wiese (der Grundton, wie
+  Urbek), trockenes Gras (nur auf trockenem Land und im tiefen Süden), Feld, Feuchtgebiet, Gestrüpp, Sand, Laubwald, Nadelwald, Alm,
   Fels, Schnee. Keine Rauschränder, keine Muster, keine Überblendungen, kein
   Farbzittern, keine Gitterlinien. Wo zwei Landschaften aneinanderstoßen, gilt
   die Küstenregel: Haben beide Seiten an einer Ecke und die Kachel über Eck eine
@@ -81,9 +83,10 @@ unabhängig und unverändert.
   Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
   Stufe hell, und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
   so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
-  Rampen haben drei feste Töne wie in SimCity 2000 (Lichtseite 1,12,
-  Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
-  bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
+  Rampen haben einen festen Ton je Seite wie in SimCity 2000 (nach links
+  gewandt 1,10, zur Kamera 0,85, nach rechts 0,65, abgewandt 0,90; Eckrampen
+  mischen die Töne ihrer beiden Seiten nach Anteil), kräftig genug, dass die
+  gestapelten Rampen bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
   SimCity-Licht von links und hinter der Kamera (`tt_art_light`, aus der
   Kameralage), nicht von der Sonne des Wetters: So sind die der Kamera
   zugewandten Rampen und Wände bei jedem Kamerawinkel hell wie in SimCity 2000
@@ -94,8 +97,7 @@ unabhängig und unverändert.
   dunkler. Am Meer ein Sandsaum an
   den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
   ein tiefes Blau, heller, wo die Kachel Land berührt; Flüsse und Seen sind
-  dunkler als dieses Flachwasser. Städte sind weit draußen Kacheln in
-  Terrakotta. Bäume stehen nah genau auf den
+  dunkler als dieses Flachwasser. Bäume stehen nah genau auf den
   Waldkacheln (und Waldhälften), dazu einzelne Bäume und kleine Baumgruppen
   auf offenem Grasland und an Feldern. Auch dichter Wald öffnet sich alle paar
   Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb
@@ -103,12 +105,18 @@ unabhängig und unverändert.
   8 bei 2 km, 7 bei 4 km, 6 bei 8 km und 5 auf der Europakarte (16 km). Tiber
   (Rang 5) und Arno (Rang 7) zählen als Flüsse Roms höher, als Natural Earth
   sie für heutige Karten einstuft. Städte
-  nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
-  weit draußen im Land auf. In Städten (ab Ortsklasse 2) laufen nah
-  graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
+  sind gepflastert mit Häusern, bis zu 4-km-Kacheln: weiter draußen wachsen
+  die Häuser mit der Kachel (bei 2 km doppelt, bei 4 km vierfach so groß), wie
+  Gebäude in SimCity 2000 beim Herauszoomen, so bleiben Städte ein Mosaik aus
+  Dächern statt Farbflächen. Erst auf den beiden fernsten Stufen und jenseits
+  des Hausbereichs sind Städte ganze Kacheln in Terrakotta (keine
+  Mischfarben); Dörfer gehen dort im Land auf. In Städten (ab Ortsklasse 2)
+  laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
   Hausplätze; die Häuser lassen dafür Platz (Grundfläche 0,62 bis 0,74 der
-  Hauslänge). Im Stadtkern stehen Insulae bis doppelt so hoch, in Städten
-  anderthalbfach.
+  Hauslänge, je Haus etwas breiter oder tiefer). Jedes Haus hat seinen
+  Putzton (Creme, Ocker, Kalkweiß); die Stufen der Dächer sind nur wenig
+  heller als die Flächen, damit die Stadt nicht streift. Im Stadtkern stehen
+  Insulae bis doppelt so hoch, in Städten anderthalbfach.
 - Rom hat seine großen Bauten als Voxel-Modelle nach Urbek und Caesar III
   (Travertin, Marmor, Terrakotta), jedes auf einem Block von Stadtkacheln, auf
   dem keine Häuser stehen: der Jupitertempel auf dem Kapitol am Tiber, östlich
@@ -140,7 +148,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
-| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 170 / 190 / 210 / 230 m ab 100 m |
+| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen die steigende Skala `LEVEL_STEPS_M` (250 bis 800 m je Stufe) |
 | Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem gestuften Dach von einem Drittel der Höhe (Urbek), auf Stufe 0 und 1 gezeichnet |
 | Wahrzeichen Roms | 6-mal echt in der Fläche, 9-mal in der Höhe (`LANDMARK_KM_PER_M`, `LANDMARK_RISE`): Kolosseum 1,1 × 0,9 km Welt, Circus Maximus (gekürzt auf 330 m) 2 × 0,6 km |
 | Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün |
@@ -159,7 +167,10 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; weiter draußen
   sind die Daten stärker weichgezeichnet und das Rauschen schwächer, und
   Lichtungen gibt es nur bis 2-km-Kacheln, so stehen auf der Europakarte
-  ruhige große Landschaften statt Flecken; allein neu mit
+  ruhige große Landschaften statt Flecken; fern bleibt nur dichter Wald
+  Wald, so liest das Land hell mit dunklen Wäldern wie die gemalte Karte, und
+  die Grenze zum Nadelwald im Norden wandert um einige Breitengrade statt
+  als Gerade durch Russland zu laufen; allein neu mit
   `--ground-only`, etwa 8 Minuten). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
