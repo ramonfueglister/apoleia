@@ -14,21 +14,30 @@ extends MultiMeshInstance3D
 ## its house spot, from the house table of the view (sim/src/view.rs
 ## Houses), drawn by a second MultiMesh (people_houses.gdshader) with its own
 ## placement pass; city people live in the town tiles.
+## Up close (view width up to FIGURE_KM) people are small figures at their
+## real size (1.7 m at diorama scale, people_figures.gdshader) instead of
+## dots; only the people near the view are drawn (ApoleiaPeople.near).
 ## Dots of people on the road (or on a ship) are dark red.
 ## C colours the dots by occupation, political group or estate (and back to
 ## black); a click on a dot shows that person and their household, Esc
 ## closes it.
-## Keys: P shows or hides the dots, [ and ] slow down or speed up the days.
+## Keys: P shows or hides the dots (an overview, off by default), [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
 ## (relative paths start at the repository root), --people-colour=n starts
-## in colour mode n (MODES), --people-click=x,y clicks that pixel once.
+## in colour mode n (MODES), --people-click=x,y clicks that pixel once,
+## --people-dots starts with the dot overview on.
 
 const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
 const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
 const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
 const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
+const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
+const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
+const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
+const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
+const LIST_W := 128 # width of the slot list texture
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
@@ -51,7 +60,7 @@ const BENCH_FRAMES := 240
 var people: RefCounted
 var terrain: Node3D
 var days_per_second := 10.0
-var shown := true # P key
+var shown := false # P key: the dots as an overview (map view), off by default
 var colour_mode := 0 # C key, index into MODES
 var selected := -1 # slot of the clicked person
 var _waiting := false # asked the sim thread for the selected person
@@ -75,6 +84,11 @@ var _house_prep_view: SubViewport
 var _house_prep_rect: ColorRect
 var _house_texture: Texture2DArray
 var _house_prep_frames := 0
+var _figures: MultiMeshInstance3D
+var _figure_material := ShaderMaterial.new()
+var _list_image := Image.create_empty(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF)
+var _list_tex: ImageTexture
+var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
@@ -99,6 +113,7 @@ func setup(tile_terrain: Node3D) -> bool:
 			"--people-days": days_per_second = float(value)
 			"--people-bench": _bench_path = value if value.is_absolute_path() else TileTerrain.data_root().path_join(value)
 			"--people-colour": colour_mode = clampi(int(value), 0, MODES.size() - 1)
+			"--people-dots": shown = true
 			"--people-click": _click_at = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 	people = ClassDB.instantiate("ApoleiaPeople")
 	var started := Time.get_ticks_usec()
@@ -121,6 +136,22 @@ func setup(tile_terrain: Node3D) -> bool:
 	_houses.material_override = _house_material
 	_houses.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	add_child(_houses)
+	_figure_material.shader = FIGURE_SHADER
+	_figure_material.set_shader_parameter("figure_scale", FIGURE_M * TileTerrain.DIORAMA_KM_PER_M)
+	_figure_material.set_shader_parameter("list_w", LIST_W)
+	_list_tex = ImageTexture.create_from_image(_list_image)
+	_figure_material.set_shader_parameter("list_tex", _list_tex)
+	_figures = MultiMeshInstance3D.new()
+	_figures.name = "PeopleFigures"
+	_figures.material_override = _figure_material
+	_figures.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+	var fm := MultiMesh.new()
+	fm.transform_format = MultiMesh.TRANSFORM_3D
+	fm.mesh = _figure_mesh()
+	fm.instance_count = FIGURE_MAX
+	fm.visible_instance_count = 0
+	_figures.multimesh = fm
+	add_child(_figures)
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
 		_shared_uniforms.append(StringName(u.name))
 	material_override = _material
@@ -178,6 +209,10 @@ func _rebuild() -> void:
 		m.set_shader_parameter("people_tex", _texture)
 		m.set_shader_parameter("page_side", side)
 	_material.set_shader_parameter("place_tex", _prep_view.get_texture())
+	_figure_material.set_shader_parameter("people_tex", _texture)
+	_figure_material.set_shader_parameter("page_side", side)
+	_figure_material.set_shader_parameter("place_tex", _prep_view.get_texture())
+	_list_at = Vector3.INF
 	_prep_frames = 2
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -185,6 +220,46 @@ func _rebuild() -> void:
 	mm.instance_count = _texture.get_layers() * people.page_side() * people.page_side() / DOTS_PER_INSTANCE
 	multimesh = mm
 	_apply_colours()
+
+## A person 1 unit tall (1.7 m) in the blocky style of the houses: legs,
+## tunic and head as boxes. Vertex colours are sRGB; alpha 0 marks the tunic,
+## which the shader colours.
+static func _figure_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_box(st, Vector3(-0.09, 0.0, -0.055), Vector3(0.09, 0.47, 0.055), Color(0.32, 0.24, 0.17, 1.0))
+	_box(st, Vector3(-0.14, 0.45, -0.08), Vector3(0.14, 0.83, 0.08), Color(1, 1, 1, 0.0))
+	_box(st, Vector3(-0.07, 0.83, -0.07), Vector3(0.07, 1.0, 0.07), Color(0.86, 0.66, 0.5, 1.0))
+	return st.commit()
+
+static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, colour: Color) -> void:
+	var c := [Vector3(lo.x, lo.y, lo.z), Vector3(hi.x, lo.y, lo.z), Vector3(hi.x, lo.y, hi.z), Vector3(lo.x, lo.y, hi.z),
+		Vector3(lo.x, hi.y, lo.z), Vector3(hi.x, hi.y, lo.z), Vector3(hi.x, hi.y, hi.z), Vector3(lo.x, hi.y, hi.z)]
+	# faces wound clockwise seen from outside (Godot's front faces)
+	var faces := [[4, 5, 6, 7, Vector3.UP], [0, 3, 2, 1, Vector3.DOWN], [0, 1, 5, 4, Vector3.FORWARD],
+		[2, 3, 7, 6, Vector3.BACK], [1, 2, 6, 5, Vector3.RIGHT], [3, 0, 4, 7, Vector3.LEFT]]
+	for f in faces:
+		for k in [0, 1, 2, 0, 2, 3]:
+			st.set_color(colour)
+			st.set_normal(f[4])
+			st.add_vertex(c[f[k]])
+
+## The people near the view, as a slot list for the figure shader.
+func _update_figures(view_km: float, synced: bool) -> void:
+	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
+	var radius := view_km * 1.2 # the oblique view reaches further back than wide
+	var moved := Vector2(_list_at.x, _list_at.y).distance_to(centre) > view_km * 0.2
+	if not synced and not moved and absf(radius - _list_at.z) < radius * 0.2:
+		return
+	_list_at = Vector3(centre.x, centre.y, radius)
+	var slots: PackedInt32Array = people.near(centre.x, centre.y, radius, FIGURE_MAX)
+	var values := PackedFloat32Array()
+	values.resize(FIGURE_MAX)
+	for i in slots.size():
+		values[i] = float(slots[i])
+	_list_image.set_data(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
+	_list_tex.update(_list_image)
+	_figures.multimesh.visible_instance_count = slots.size()
 
 ## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
 ## shader scales each to pixels and cuts the round dot out of it.
@@ -251,9 +326,10 @@ func _apply_colours() -> void:
 			for k in STAND_COLOURS.size():
 				palette[k] = _linear(STAND_COLOURS[k])
 				lines.append([STAND_COLOURS[k], STANDS[k]])
-	_material.set_shader_parameter("colour_mode", colour_mode)
-	_material.set_shader_parameter("palette", palette)
-	_material.set_shader_parameter("selected_slot", selected)
+	for m in [_material, _figure_material]:
+		m.set_shader_parameter("colour_mode", colour_mode)
+		m.set_shader_parameter("palette", palette)
+		m.set_shader_parameter("selected_slot", selected)
 	var text := "[b]Bewohner: %s[/b]  (C)" % MODES[colour_mode]
 	for line in lines:
 		text += "\n[outline_size=3][outline_color=#ffffff90][color=#%s][font_size=17]●[/font_size][/color][/outline_color][/outline_size] %s" % [line[0].to_html(false), line[1]]
@@ -278,7 +354,8 @@ func _pick(pixel: Vector2) -> void:
 		m.append_array([col.x, col.y, col.z, col.w])
 	var level_h: float = terrain._terrain_material.get_shader_parameter("level_h")
 	selected = people.pick(_prep_view.get_texture().get_image(), m, get_viewport().get_visible_rect().size, pixel, level_h, PICK_PX)
-	_material.set_shader_parameter("selected_slot", selected)
+	for mat in [_material, _figure_material]:
+		mat.set_shader_parameter("selected_slot", selected)
 	print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "slot": selected}))
 	_waiting = selected >= 0
 	_info_label.visible = _waiting
@@ -321,7 +398,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				selected = -1
 				_waiting = false
-				_material.set_shader_parameter("selected_slot", -1)
+				for m in [_material, _figure_material]:
+					m.set_shader_parameter("selected_slot", -1)
 				_info_label.visible = false
 			KEY_P: shown = not shown
 			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
@@ -343,12 +421,17 @@ func _process(delta: float) -> void:
 		if not p.is_empty():
 			_waiting = false
 			_show_person(p)
-	visible = shown and TileTerrain.PROP_SLOTS[terrain.level] > 0
-	_hud.visible = visible
+	visible = TileTerrain.PROP_SLOTS[terrain.level] > 0
+	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
+	# realistic by default: figures at their real size up close, houses in the
+	# close LOD, no people from further up; P adds the dots as an overview
+	var figures := view_km <= FIGURE_KM
+	var dots := shown and not figures
+	_hud.visible = visible and (figures or dots)
 	if not visible:
-		# out of the close LOD the frame does nothing for the dots: no upload,
-		# no placement pass, no draw. The sim thread keeps running and its
-		# front buffer collects the changed pages until the dots show again.
+		# out of the close LOD the frame does nothing for the people: no
+		# upload, no placement pass, no draw. The sim thread keeps running and
+		# its front buffer collects the changed pages until they show again.
 		if _bench_path != "":
 			_bench_step()
 		return
@@ -362,7 +445,7 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_material, _house_prep_material]:
+		for m in [_material, _prep_material, _house_material, _house_prep_material, _figure_material]:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
@@ -379,14 +462,17 @@ func _process(delta: float) -> void:
 	if _house_prep_frames > 0:
 		_house_prep_frames -= 1
 		_house_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
-	if _prep_frames > 0 and visible:
+	if _prep_frames > 0 and (figures or dots):
 		_prep_frames -= 1
 		prep_runs += 1
 		_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	# 3.5 px up close, about 1.7 px at 360 km and 1 px over the whole sea, so
 	# the dots stay single people instead of melting into black regions
-	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
 	var px := clampf(3.5 - 0.5 * log(maxf(view_km, 1.0) / 30.0) / log(2.0), 1.0, 3.5)
+	_figures.visible = figures
+	multimesh.visible_instance_count = -1 if dots else 0
+	if figures:
+		_update_figures(view_km, synced > 0)
 	_material.set_shader_parameter("dot_px", px)
 	var want_round := px >= ROUND_FROM_PX
 	if want_round != (_material.shader == SHADER_ROUND):

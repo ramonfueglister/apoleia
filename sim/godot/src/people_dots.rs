@@ -13,7 +13,7 @@
 
 use apoleia_sim::people::People;
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
-use apoleia_sim::view::{PeopleView, Person, PAGE, REC};
+use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
 use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
 use godot::prelude::*;
@@ -330,6 +330,34 @@ impl ApoleiaPeople {
             }
         }
         best.0
+    }
+
+    /// Slots of the people whose dot can lie within `radius` km of (x, z)
+    /// (world km), at most `max`, nearest anchors first: the people drawn
+    /// as figures up close. Anchors are the records' centres; the margin
+    /// covers how far the placement pass moves a person from it (village
+    /// tile and house, city disk, a traveller anywhere in the cell).
+    #[func]
+    fn near(&self, x: f32, z: f32, radius: f32, max: i64) -> PackedInt32Array {
+        let mut hits: Vec<(f32, i32)> = Vec::new();
+        for slot in 0..self.data.len() / REC {
+            let rec = &self.data[slot * REC..slot * REC + REC];
+            let area = rec[2];
+            if area == 0.0 {
+                continue;
+            }
+            let margin = if area < 0.0 { -area } else if area >= ROAD { 18.0 } else { 1.8 };
+            let d2 = (rec[0] - x).powi(2) + (rec[1] - z).powi(2);
+            let reach = radius + margin;
+            if d2 <= reach * reach {
+                hits.push((d2, slot as i32));
+            }
+        }
+        if hits.len() > max.max(0) as usize {
+            hits.select_nth_unstable_by(max as usize, |a, b| a.0.total_cmp(&b.0));
+            hits.truncate(max as usize);
+        }
+        PackedInt32Array::from_iter(hits.into_iter().map(|h| h.1))
     }
 
     /// Asks the sim thread for the person in `slot`; the answer comes with

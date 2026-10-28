@@ -141,6 +141,19 @@ die Terrain Bäume und Häuser zeichnet (`TileTerrain.PROP_SLOTS > 0`, Tiles von
 und der Platzierungs-Pass läuft nicht. Die Messwerte bei 360 und 1800 km oben
 stammen von vor dieser Regel.
 
+## Figuren in echter Grösse (Ramon, 28.10.2026)
+
+Realistisch statt Übersicht: Bis 10 km Bildbreite steht jede Person als kleine
+Low-Poly-Figur in echter Grösse auf ihrem Platz (1,7 m im Diorama-Massstab wie
+Häuser und Bäume, also 1,7 m × 23,8 in Welt-km; `people_figures.gdshader`).
+Beine, Tunika und Kopf als Quader, Tunika in Woll- und Leinenfarben oder nach
+Farbmodus, Reisende wippen beim Gehen. Gezeichnet werden nur die Personen nahe
+der Ansicht: `ApoleiaPeople.near` liefert ihre Slots (Rust, ein Durchlauf über
+die Anker, nur wenn sich die Ansicht deutlich bewegt oder ein Tag kam), höchstens
+16 384, als Liste in einer kleinen Textur; das MultiMesh zeichnet genau so viele.
+Weiter oben sieht man keine Menschen, nur Häuser, Felder und Städte. Die Punkte
+sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
+
 ## Häuser
 
 Jeder Dorf-Haushalt hat ein Haus: das Haus-Mesh der Terrain (`tile_prop_meshes.gd`,
@@ -172,7 +185,7 @@ wohnen in den Stadt-Tiles.
 
 ## Bedienung
 
-`P` Punkte an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+`P` Punkte-Übersicht an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots).
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
