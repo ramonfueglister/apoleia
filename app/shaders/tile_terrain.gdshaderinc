@@ -1,4 +1,4 @@
-// Tile terrain (SimCity 2000 meets EU5): shared data access and tile rules.
+// Tile terrain (SimCity 2000 tiles at every zoom): shared data access and tile rules.
 // Used by tile_terrain.gdshader and tile_props.gdshader; tile_terrain.gd sets
 // the same uniforms on all materials and mirrors the height rule on the CPU
 // (ground_y) for the camera and the weather.
@@ -19,7 +19,7 @@ uniform float tile_km = 2.0;
 uniform float level_h = 0.36;  // world units per height level
 uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
-uniform float relief_smooth = 0.0; // 0 tile steps (near) .. 1 smooth relief map (far)
+uniform float relief_blur = 1.5; // extra mip levels on the relief for the corner levels
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
 
@@ -90,9 +90,9 @@ int tt_town(ivec2 t) {
 float tt_corner_height(ivec2 c) {
 	// blurred, so level contours run as long clean lines (as in SimCity 2000)
 	// instead of single-tile bumps and pits; the blur only lowers slopes
-	// (the smooth far relief keeps more of the ridges, so it stays crisp)
+	// (less far out, where a tile already spans many data nodes)
 	vec2 uv = tt_node_uv(tt_corner_pos(c));
-	float h = textureLod(relief_tex, uv, height_lod + mix(1.5, 0.3, relief_smooth)).r;
+	float h = textureLod(relief_tex, uv, height_lod + relief_blur).r;
 	// the blur must not lift the land next to the water: cap it with the sharp
 	// water envelope, which rises one level per tile from every shore
 	return shore_ready ? min(h, textureLod(shore_tex, uv, 0.0).r) : h;
@@ -116,7 +116,7 @@ float tt_lake_level(ivec2 t) {
 	// small lakes between the nodes: the bake pinned their nodes in the envelope
 	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
 	float x = max(metres, 0.0) / m_per_level;
-	return max(mix(round(x), x, relief_smooth), 1.0);
+	return max(round(x), 1.0);
 }
 
 float tt_corner_x(ivec2 c) {
@@ -146,18 +146,16 @@ float tt_land_corner(ivec2 c) {
 		shore = shore || w == W_SEA;
 		if (w == W_LAKE) { lake = min(lake, tt_lake_level(nb[k])); }
 	}
-	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
-	float x = tt_corner_x(c);
-	float l = max(1.0, mix(tt_clean_level(c, round(x)), x, relief_smooth));
+	float l = max(1.0, tt_clean_level(c, round(tt_corner_x(c))));
 	// corners at the sea or a lake sit at the water line: the shore ramps in
 	return shore ? 0.0 : min(l, lake);
 }
 
 // SimCity 2000 shore: the water lies a little below the land, so the land
-// ends in a low earth edge. Melts away with the steps on the far map.
+// ends in a low earth edge.
 uniform float water_drop = 0.3; // levels
 float tt_water_drop() {
-	return water_drop * (1.0 - relief_smooth);
+	return water_drop;
 }
 
 // Coast cut of a land tile: with the sea (or a lake) on two neighbouring sides
@@ -229,9 +227,10 @@ vec4 tt_corners_cached(ivec2 t) {
 }
 
 // Clumped woods: land cover forest share through a noisy threshold. The noise
-// is anchored in the world, so woods keep their place across zoom levels.
+// is anchored in the world, so woods keep their place across zoom levels; far
+// out its clumps span a few tiles, so the woods do not break up into specks.
 float tt_tree_density(vec2 p, float forest) {
-	return smoothstep(0.5, 0.95, forest + (tt_fbm(p / 9.0) - 0.5) * 0.5);
+	return smoothstep(0.5, 0.95, forest + (tt_fbm(p / max(9.0, 3.0 * tile_km)) - 0.5) * 0.5);
 }
 
 // Distance to the coast in km (bilinear over the 2 km nodes).
@@ -244,20 +243,6 @@ float tt_sea_distance(vec2 p) {
 	float c = texelFetch(aux_tex, i + ivec2(0, 1), 0).r;
 	float d = texelFetch(aux_tex, i + ivec2(1, 1), 0).r;
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 * 2.0;
-}
-
-// Bilinear share of sea nodes (x) and lake nodes (y) at p, 0 dry .. 1 wet:
-// its 0.5 contour is a smooth shoreline for the far relief map.
-vec2 tt_water_share(vec2 p) {
-	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
-	ivec2 i = ivec2(floor(g));
-	vec2 f = fract(g);
-	vec2 w[4];
-	for (int k = 0; k < 4; k++) {
-		vec4 a = texelFetch(aux_tex, i + ivec2(k & 1, k >> 1), 0);
-		w[k] = vec2(a.r > 0.0 ? 1.0 : 0.0, a.g + a.b > 0.0 ? 1.0 : 0.0);
-	}
-	return mix(mix(w[0], w[1], f.x), mix(w[2], w[3], f.x), f.y);
 }
 
 float tt_latitude(vec2 p) {

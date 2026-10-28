@@ -1,5 +1,5 @@
 extends Node3D
-## Tile terrain (SimCity 2000 meets EU5). Loads the baked tile data
+## Tile terrain (SimCity 2000 tiles at every zoom). Loads the baked tile data
 ## (artifacts/render-data/tile-terrain-r1, tools/build_tile_terrain.py), draws
 ## a patch of tiles around the view with one MultiMesh, and trees and houses
 ## with four more. All placement happens in the shaders; this script only picks
@@ -12,14 +12,18 @@ const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 
-# Zoom levels by tile size. A height level is relief_slope (m/km, from the
-# bake) times the tile size, so a ramp rises one level per tile at most, as in
-# SimCity 2000. Its height on screen is LEVEL_HEIGHT of the tile, the SimCity
-# 2000 ratio (12 px per level on a 32 x 16 px tile).
+# Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
+# Europe. A height level is relief_slope (m/km, from the bake) times the tile
+# size, so a ramp rises one level per tile at most, as in SimCity 2000. Its
+# height on screen is LEVEL_HEIGHT of the tile, the SimCity 2000 ratio (12 px
+# per level on a 32 x 16 px tile). Beyond FAR_FROM_KM tiles a level grows
+# slower than the tile (FAR_POW), so the mountain ranges keep several steps
+# on the world map instead of flattening to one.
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
-const SMOOTH_FROM_KM := 20.0 # view width where the tile steps start to melt
-const SMOOTH_TO_KM := 45.0   # view width from where the relief is fully smooth
+const FAR_FROM_KM := 2.0
+const FAR_POW := 0.4
+const RELIEF_BLUR := [1.5, 1.5, 1.5, 1.0, 0.75, 0.5] # mip levels per zoom level
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
@@ -237,7 +241,7 @@ static func level_for_width(width: float) -> int:
 func _apply_level(value: int) -> void:
 	level = value
 	tile_km = LEVELS[level]
-	m_per_level = relief_slope * tile_km
+	m_per_level = relief_slope * minf(tile_km, FAR_FROM_KM) * pow(maxf(tile_km / FAR_FROM_KM, 1.0), FAR_POW)
 	level_h = tile_km * LEVEL_HEIGHT
 	var params := {
 		"cells_tex": _cell_textures[level],
@@ -246,12 +250,16 @@ func _apply_level(value: int) -> void:
 		"level_h": level_h,
 		"m_per_level": m_per_level,
 		"height_lod": maxf(0.0, log(tile_km / 2.0) / log(2.0)),
+		"relief_blur": RELIEF_BLUR[level],
 	}
 	for material in _all_materials():
 		for key in params:
 			material.set_shader_parameter(key, params[key])
 	var slots: int = PROP_SLOTS[level]
 	var house_slots: int = HOUSE_SLOTS[level]
+	# no cast shadows from the tiles once the props are gone: the shadow map is
+	# coarse that far out and only draws streaks; the ramps carry the relief
+	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if slots + house_slots > 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# the slot pass only runs while props are drawn
 	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
@@ -278,10 +286,6 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var wanted := level_for_width(width)
 	if wanted != level:
 		_apply_level(wanted)
-	# SimCity 2000 tiles up close, EU5-style smooth relief map from far away
-	var smooth_relief := smoothstep(SMOOTH_FROM_KM, SMOOTH_TO_KM, width)
-	for material in _all_materials():
-		material.set_shader_parameter("relief_smooth", smooth_relief)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	_terrain_material.set_shader_parameter("patch_origin", patch_origin)
