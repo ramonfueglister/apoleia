@@ -2,7 +2,8 @@ extends Node3D
 ## Apoleia landscape: tile terrain (SimCity 2000 meets EU5), camera and weather.
 ## World units are model kilometres (x east, z south, y up), mapping-v1.
 ##
-## Controls: mouse wheel / pinch zoom towards the cursor, drag (left or middle
+## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
+## middle; fully out the view turns north-up over Europe), drag (left or middle
 ## mouse, two-finger pan) moves the map, WASD or arrow keys pan, Q/E turn the
 ## view by 90 degrees, +/- zoom. Weather keys F5-F7 belong to weather_system.gd.
 ##
@@ -13,7 +14,13 @@ const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 4.0 # about 17 houses across (Kit 2 scale)
-const MAX_WIDTH := 3600.0
+const MAX_WIDTH := 4400.0 # all of Europe, Lisbon to Moscow
+## Zoomed out, the view turns north-up and settles on Europe (EU5 map): the
+## turn and the pull run between these widths (km).
+const MAP_FROM := 700.0
+const MAP_TO := 3000.0
+const EUROPE := Rect2(-12.0, 34.0, 54.0, 26.0) # lon, lat, extent in degrees
+const MAP := Rect2(-11.0, 21.0, 57.0, 37.0) # the playable map (the data is padded)
 const FOV := 24.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
@@ -69,7 +76,7 @@ func _ready() -> void:
 	_goal_target = target
 	width = clampf(start.z, MIN_WIDTH, MAX_WIDTH)
 	_goal_width = width
-	_yaw = 45.0 + 90.0 * yaw_turns
+	_yaw = yaw_for_width(width)
 	_focus_y = terrain.ground_y(target)
 	_place_camera()
 	weather = WeatherSystem.new()
@@ -129,9 +136,20 @@ func _update_look(distance: float) -> void:
 # ---------------------------------------------------------------- camera
 
 func pitch_for_width(w: float) -> float:
-	# 30 degrees up close (SimCity 2000), steeper towards the world map.
-	var t := clampf((log(w) - log(40.0)) / (log(3500.0) - log(40.0)), 0.0, 1.0)
-	return lerpf(30.0, 62.0, t * t * (3.0 - 2.0 * t))
+	# 30 degrees up close (SimCity 2000), nearly top-down on the world map.
+	var t := clampf((log(w) - log(40.0)) / (log(MAX_WIDTH) - log(40.0)), 0.0, 1.0)
+	return lerpf(30.0, 72.0, t * t * (3.0 - 2.0 * t))
+
+## 0 up close, 1 on the world map (log width between MAP_FROM and MAP_TO).
+func map_share(w: float) -> float:
+	var t := clampf((log(w) - log(MAP_FROM)) / (log(MAP_TO) - log(MAP_FROM)), 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)
+
+## Yaw for a view width: the SimCity 2000 diagonal up close, north-up on the map.
+func yaw_for_width(w: float) -> float:
+	var close := 45.0 + 90.0 * yaw_turns
+	var north := 360.0 * roundf(close / 360.0)
+	return lerpf(close, north, map_share(w))
 
 func _distance() -> float:
 	var aspect := get_viewport().get_visible_rect().size.aspect()
@@ -171,15 +189,31 @@ func _ground_under(pixel: Vector2) -> Vector2:
 	var p := origin + ray * t
 	return Vector2(p.x, p.z)
 
-func _clamp_target(p: Vector2) -> Vector2:
-	return p.clamp(terrain.world_min, terrain.world_min + terrain.world_size)
+## Keeps the view on the map: anywhere in the data up close; zoomed out the
+## allowed centres shrink to Europe, so the whole continent stays in frame.
+func _clamp_target(p: Vector2, w: float) -> Vector2:
+	var map_min := lonlat_to_world(MAP.position.x, MAP.end.y)
+	var all := Rect2(map_min, lonlat_to_world(MAP.end.x, MAP.position.y) - map_min)
+	var eu_min := lonlat_to_world(EUROPE.position.x, EUROPE.end.y)
+	var eu := Rect2(eu_min, lonlat_to_world(EUROPE.end.x, EUROPE.position.y) - eu_min)
+	var s := map_share(w)
+	var area := Rect2(all.position.lerp(eu.position, s), all.size.lerp(eu.size, s))
+	var aspect := maxf(get_viewport().get_visible_rect().size.aspect(), 0.1)
+	var half := Vector2(w, w / aspect) * 0.5 * s
+	var lo := area.position + half
+	var hi := area.end - half
+	return Vector2(
+		clampf(p.x, lo.x, hi.x) if lo.x <= hi.x else area.get_center().x,
+		clampf(p.y, lo.y, hi.y) if lo.y <= hi.y else area.get_center().y)
 
 func _zoom_at(factor: float, pixel: Vector2) -> void:
-	var before := _ground_under(pixel)
+	# in towards the cursor, out around the middle: on the tilted view a cursor
+	# near the horizon would throw the centre far off the map
+	var before := _ground_under(pixel) if factor > 1.0 else _goal_target
 	var new_width := clampf(_goal_width / factor, MIN_WIDTH, MAX_WIDTH)
 	# keep the ground point under the cursor in place
 	var k := new_width / _goal_width
-	_goal_target = _clamp_target(before + (_goal_target - before) * k)
+	_goal_target = _clamp_target(before + (_goal_target - before) * k, new_width)
 	_goal_width = new_width
 
 func _pan_pixels(delta: Vector2) -> void:
@@ -189,8 +223,8 @@ func _pan_pixels(delta: Vector2) -> void:
 	var down := Vector2(basis.z.x, basis.z.z).normalized()
 	var pitch := deg_to_rad(pitch_for_width(width))
 	var move := -right * delta.x * scale - down * delta.y * scale / maxf(sin(pitch), 0.3)
-	_goal_target = _clamp_target(_goal_target + move)
-	target = _clamp_target(target + move)
+	_goal_target = _clamp_target(_goal_target + move, _goal_width)
+	target = _clamp_target(target + move, width)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -222,7 +256,9 @@ func _process(delta: float) -> void:
 	var k := 1.0 - exp(-SETTLE * delta)
 	target = target.lerp(_goal_target, k)
 	width = exp(lerpf(log(width), log(_goal_width), k))
-	_yaw = lerpf(_yaw, 45.0 + 90.0 * yaw_turns, k)
+	_goal_target = _clamp_target(_goal_target, _goal_width)
+	target = _clamp_target(target, width)
+	_yaw = lerpf(_yaw, yaw_for_width(width), k)
 	_focus_y = lerpf(_focus_y, terrain.ground_y(target), k)
 	_place_camera()
 	_frame += 1
