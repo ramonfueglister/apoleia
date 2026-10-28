@@ -31,6 +31,7 @@ enum { EMPTY,
 	PAVE_J, BORDER, YARD, SEAT_HI, SEAT_MID, SEAT_WOOD, STATUE, STREAK, VIA_P, VIA_PD, WATER_D, SAIL,
 	POOL, WATER_L, REED, REED_D, MUD, HELMET, SHIELD, MILL,
 	MUD_D, SACK, SOIL, VINE, WOOL, PATH, FLOWER_W, COURSE, COURSE_J, SMOKE, LAVA,
+	SMOKE_D, SMOKE_L, WET, ALGAE, GRAVEL, LETTER,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -39,7 +40,7 @@ const COLOURS := {
 	CREAM: ["ecdfc3"], CREAM_W: ["cdbd9c"], OCHRE: ["e9c98b"], OCHRE_W: ["c6a66a"],
 	PINK: ["e8bea9"], PINK_W: ["c79a84"], WHITE: ["f2eee6"], WHITE_W: ["d0c9bc"],
 	REDWASH: ["b9543e"], REDWASH_W: ["a54a37"], BRICK: ["bf6b4b"], BRICK_W: ["a95b3f"],
-	TRIM: ["f3ede1"], STONE: ["cfc4ae"], STONE_W: ["bcb099"], MARBLE: ["f6f3ec"], MARBLE_W: ["e2ddd2"],
+	TRIM: ["f3ede1"], STONE: ["cfc4ae"], STONE_W: ["bcb099"], MARBLE: ["efe6d6"], MARBLE_W: ["ddd2bf"],
 	STEP: ["e2dacb", "ece5d7"],
 	TILE: ["9d5536", "c46a44"], TILE_D: ["954d33", "b96140"], TILE_L: ["a45d3e", "cc7550"],
 	EAVE: ["4a2e24", "c46a44"], RIDGE: ["8a4330", "a9573f"],
@@ -82,7 +83,9 @@ const COLOURS := {
 	MUD: ["6e5a48", "7a6450"], HELMET: ["c9c9c4"], SHIELD: ["a8392e"], MILL: ["8c8880", "9a968e"],
 	MUD_D: ["52443a", "5a4a3e"], SACK: ["b8a47c", "c8b48a"], SOIL: ["6e5a48", "7a6450"], VINE: ["5a7f34", "6c9440"],
 	WOOL: ["e8e2d4", "f2ede2"], PATH: ["a89272", "b8a07a"], FLOWER_W: ["f2f2f2"],
-	COURSE: ["a89a84", "b6a890"], COURSE_J: ["968872", "a4967e"], SMOKE: ["b9b6b0", "cfccc6"], LAVA: ["4a4644", "56524f"],
+	COURSE: ["a89a84", "b6a890"], COURSE_J: ["968872", "a4967e"], SMOKE: ["aaa69f", "b4b0a9"], LAVA: ["4a4644", "56524f"],
+	SMOKE_D: ["8e8a84", "96928b"], SMOKE_L: ["c9c5bd", "d3cfc8"], WET: ["6a6658"], ALGAE: ["5e6e44"],
+	GRAVEL: ["c7bca6", "d2c8b3"], LETTER: ["a8392e"],
 }
 
 static var _side := PackedColorArray()

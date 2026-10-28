@@ -88,6 +88,7 @@ func _mesh(key: String) -> ArrayMesh:
 			"rstrip": meshes[key] = Town.river_strip(seed, 7, RIVER_ROW, 7)
 			"tombs": meshes[key] = Town.tombs(seed)
 			"farm": meshes[key] = Town.farm(seed)
+			"tgarden": meshes[key] = Town.terrace_garden(seed)
 			"vineyard": meshes[key] = Town.vineyard(seed)
 			"pasture": meshes[key] = Town.pasture(seed)
 			"terrace": meshes[key] = Town.terrace(seed & 3, (seed >> 2) & 15, seed >> 6)
@@ -189,7 +190,7 @@ func _hill(taken: Dictionary) -> void:
 			_put("terrace:%d" % (lvl | (walls << 2) | (((lx + lz) & 1) << 6)), lx, lz)
 			taken[Vector2i(lx, lz)] = true
 			if not covered.has(Vector2i(lx, lz)):
-				_put("garden:%d" % ((lx * 3 + lz) & 3), lx, lz, true, Vector2i.ONE, lvl * Town.TERRACE * Kit.V)
+				_put("tgarden:%d" % ((lx * 3 + lz) & 3), lx, lz, true, Vector2i.ONE, lvl * Town.TERRACE * Kit.V)
 
 ## Blocks away from the forum: some get an atrium house, an apartment
 ## block, a temple, a market or a park, the rest row houses.

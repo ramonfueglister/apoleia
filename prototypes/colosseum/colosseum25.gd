@@ -32,9 +32,11 @@ const PODIUM := SEAT_TOP - 34
 const FLOOR := PODIUM - 6
 const PAVING := 4              # grid margin round the plinth, voxels
 const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
-const CACHE := "user://colosseum25_v7.res"
+const CACHE := "user://colosseum25_v8.res"
 const AISLES := 40
-const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.CLOTH_Y, Kit.CLOTH_G, Kit.LINEN]
+const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.LINEN, Kit.LINEN, Kit.ROBE_W, Kit.LINEN,
+	Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE_B, Kit.ROBE_B,
+	Kit.CLOTH_Y, Kit.CLOTH_Y, Kit.CLOTH_Y, Kit.CLOTH_G, Kit.CLOTH_G]
 
 # --- plan -----------------------------------------------------------------
 
@@ -249,10 +251,11 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, x: int, z: int, t
 		return Kit.TRAV_L if aisle else seat
 	# spectators fill whole sectors of a band, shoulder to shoulder
 	if not aisle and j % 4 >= 1 and j % 4 <= 2 and r <= top + 1:
-		if Kit.rnd(floori(round), band, 0, 3) % 100 < 45:
+		if Kit.rnd(floori(round), band, 0, 3) % 100 < 45 and Kit.rnd(x / 2, z / 2, 1, 4) % 100 >= 15:
+			var tunic: int = CROWD[Kit.rnd(x / 2, z / 2, 0, 4) % CROWD.size()]
 			if r == top + 1:
-				return Kit.HAIR if (x + z) % 3 == 0 else Kit.SKIN
-			return CROWD[Kit.rnd(x / 2, z / 2, 0, 4) % CROWD.size()]
+				return Kit.SKIN if (x + z) % 2 == 0 else tunic
+			return tunic
 	# low walls splitting the cavea into three bands, entrances in them
 	if j % 4 == 3 and (step == 5 or step == 10) and r < top + 3:
 		if posmod(b, 4) == 0 and s >= 3 and s <= 8:
@@ -284,7 +287,10 @@ static func grid() -> Kit.Grid:
 			var row := x + nx * g.n.y * z
 			for r in g.n.y:
 				var c := Kit.EMPTY
-				if d < 0:
+				if d >= SHELL and r == WALL + 1 and e < SHELL + 34 and absf(t) < 0.45:
+					# the awning (velarium) over the eastern seats, in stripes
+					c = Kit.CLOTH_R if floori(t * 30.0 + 100.0) % 2 == 0 else Kit.CLOTH_W
+				elif d < 0:
 					c = _outside(d, plan.y, plan.z, r, x, z)
 				elif d < SHELL:
 					c = _shell(d, plan.y, plan.z, r) if r < WALL else _mast(d, plan.y, plan.z, r - WALL)
