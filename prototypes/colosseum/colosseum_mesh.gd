@@ -24,35 +24,37 @@ const MAST_ROWS := 4
 const P := 6                # facade columns per bay: pier (2, shared), 4 opening
 const SHELL := 3            # wall thickness, voxels; arches are recessed 2
 const RIM := 3              # top walkway behind the attic
-const ARENA_E := 0.5        # arena edge as a share of the radius
+const ARENA_A := 18.5       # arena half-axes, metres: elongated, so the
+const ARENA_B := 12.0       # cavea is about as wide all round
 const SEAT_TOP_ROW := WALL_ROWS - 4  # walkway level, 2 m under the rim
-const BALTEUS := [3, 6]     # steps after which a low wall splits the cavea
-const PODIUM_ROW := SEAT_TOP_ROW - 10
+const BALTEUS := [5, 10]    # steps after which a low wall splits the cavea
+const PODIUM_ROW := SEAT_TOP_ROW - 18
 const FLOOR_ROW := PODIUM_ROW - 3    # raised arena floor, so the sand shows from above
 const LOD_FACTORS := [1, 2, 4, 8]
 # Camera distances for the near-orthographic Urbek camera (FOV 10): LOD0
 # while the view is under about 260 m wide, LOD1 to 700 m, LOD2 to 1.6 km.
 const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v4_%d.res"
+const CACHE := "user://colosseum_urbek_v6_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
 	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f4ecd8"),
 	Color("7e7064"), Color("e8dcc2"), Color("4a3c30"), Color("b5a184"), Color("c9b898"),
-	Color("d9a660"), Color("c79552"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
+	Color("d4aa6c"), Color("c49a5c"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
 	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("b8402f"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
-	Color("66594f"), Color("c8b99c")]
+	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
-	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE }
+	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK }
 const CROWD_COUNT := 3
 const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
 # Top faces that differ from the sides: a tread is light on top and darker
 # on its riser; the arch floor is shaded.
-const TOP := {TREAD: Color("d6c6a8"), ARCH_BACK: Color("7e7064")}
+const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("bca98a"), ARCH_BACK: Color("7e7064"),
+	BALTEUS_WALL: Color("efe5d0")}
 # Corner occlusion: 0 = both sides blocked, 3 = open.
 const AO := [0.5, 0.68, 0.85, 1.0]
 
@@ -76,7 +78,8 @@ static func _origin(n: Vector3i) -> Vector3:
 ## ellipse at its middle. Neighbouring bays step back, so the curve reads as
 ## a staircase of flat bays with arches all round; the steps' side walls face
 ## east and west and are edge-on to the camera. Bay 0 is centred on x = 0.
-static func _columns(n: Vector3i, lo: Vector3) -> Dictionary:
+## With `smooth`, the facade follows the oval itself (for the far LODs).
+static func _columns(n: Vector3i, lo: Vector3, smooth := false) -> Dictionary:
 	var av := A / V
 	var bv := B / V
 	var count := n.x * n.z
@@ -103,7 +106,15 @@ static func _columns(n: Vector3i, lo: Vector3) -> Dictionary:
 			var e := Vector2(p.x / A, p.z / B).length()
 			var rr := Vector2(A * cos(atan2(p.z / B, p.x / A)), B * sin(atan2(p.z / B, p.x / A))).length()
 			ellipse[c] = floori((1.0 - e) * rr / V)
-			arena[c] = floori((1.0 - ARENA_E) * rr / V)
+			# Arena edge depth: this column's ellipse depth plus its distance
+			# outside the arena ellipse (inside it, e >= arena).
+			var ea := Vector2(p.x / ARENA_A, p.z / ARENA_B).length()
+			var ra := Vector2(ARENA_A * cos(atan2(p.z / ARENA_B, p.x / ARENA_A)), ARENA_B * sin(atan2(p.z / ARENA_B, p.x / ARENA_A))).length()
+			arena[c] = ellipse[c] + floori((ea - 1.0) * ra / V) + 1
+			# Far LODs follow the smooth oval: per-bay steps are finer than
+			# their voxels and would only leave single protruding blocks.
+			if smooth:
+				depth[c] = ellipse[c]
 	return {"depth": depth, "sub": sub, "bay": bay, "ellipse": ellipse, "arena": arena}
 
 ## What fills one voxel: d = depth in voxels from the outer face, s = facade
@@ -194,10 +205,10 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, seed: int) -> int
 			return TREAD
 		if r == SEAT_TOP_ROW - 1:
 			return WALKWAY
-		# Portico over the walkway: a roof level with the rim on columns
-		# along its inner edge.
+		# Portico over the walkway: a roof level with the rim, a step darker,
+		# on columns along its inner edge.
 		if r == WALL_ROWS - 1:
-			return CORNICE
+			return PORTICO
 		if e == first - 1 and posmod(b * P + s, 3) == 0:
 			return COLUMN
 		return EMPTY
@@ -207,8 +218,17 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, seed: int) -> int
 	if r < top:
 		return TREAD
 	if r == top:
-		if seed % 100 < 10:
-			return CROWD + (seed / 100) % CROWD_COUNT
+		# A shadow row under the portico sets the rim off from the seats.
+		if j == 0:
+			return RIM_SHADOW
+		# Each tread: a darker strip against the riser behind, a light edge;
+		# spectators sit in short runs on the edge.
+		if j % 2 == 0:
+			return TREAD_BACK
+		var run := floori((b * P + s) / 3.0)
+		var h := absi(hash(Vector2i(run, step)))
+		if h % 100 < 10:
+			return CROWD + (h / 100) % CROWD_COUNT
 		return TREAD
 	# Low wall at the start of a band, with entrances every eight bays.
 	if j % 2 == 0 and step in BALTEUS and r <= top + 2:
@@ -227,11 +247,11 @@ static func _mast(d: int, s: int, b: int, mr: int) -> int:
 		return RED
 	return EMPTY
 
-## The LOD0 grid.
-static func _fine() -> Dictionary:
+## The grid at the finest voxel size; `smooth` for the far LODs.
+static func _fine(smooth := false) -> Dictionary:
 	var n := _dims()
 	var lo := _origin(n)
-	var cols := _columns(n, lo)
+	var cols := _columns(n, lo, smooth)
 	var depth: PackedInt32Array = cols.depth
 	var sub: PackedInt32Array = cols.sub
 	var bay: PackedInt32Array = cols.bay
@@ -285,18 +305,43 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 							counts[s] += 1 << sy
 				var c := EMPTY
 				var muted := CROWD_MUTED + absi(hash(Vector3i(x, y, z))) % CROWD_MUTED_COUNT
+				var sand := counts[SAND] + counts[SAND_DARK]
+				var rim := y * f <= WALL_ROWS - 1 and WALL_ROWS - 1 < (y + 1) * f
 				if counts[RED] > 0:
 					c = RED
+				elif f >= 4 and rim and counts[CORNICE] > 0:
+					# Far away the flags become one continuous red band on
+					# the top cornice.
+					c = RED_BAND
+				elif sand > 0:
+					# The one-voxel sand layer must not vanish under the
+					# fill below it, or the arena gets holes and shrinks.
+					c = SAND
 				elif solid * 8 >= f * f * f * 3 or people * 4 >= f * f:
 					var best := 0
 					for i in range(1, counts.size()):
 						if counts[i] > counts[best]:
 							best = i
 					c = muted if best == CROWD else best
-					# Far away the flags become a red band on the top cornice.
-					if f >= 4 and best == CORNICE and y * f <= WALL_ROWS - 1 and WALL_ROWS - 1 < (y + 1) * f:
-						c = RED_BAND
+					# Far away the arcade keeps its dark rhythm.
+					var arch := counts[ARCH_BACK] + counts[ARCH_HEAD]
+					if f >= 4 and (best == STONE or best == SHADOW_LINE) and arch * 2 >= counts[best]:
+						c = ARCH_BACK
 				grid[x + n.x * (y + n.y * z)] = c
+	# The red band keeps to the outer edge: one block wide, not the whole rim.
+	if f >= 4:
+		var yr := (WALL_ROWS - 1) / f
+		for z in n.z:
+			for x in n.x:
+				var i := x + n.x * (yr + n.y * z)
+				if grid[i] != RED_BAND:
+					continue
+				var ox := x + (1 if x >= n.x / 2 else -1)
+				var oz := z + (1 if z >= n.z / 2 else -1)
+				var outer := ox < 0 or ox >= n.x or oz < 0 or oz >= n.z \
+					or grid[ox + n.x * (yr + n.y * z)] == EMPTY or grid[x + n.x * (yr + n.y * oz)] == EMPTY
+				if not outer:
+					grid[i] = CORNICE
 	return {"grid": grid, "n": n, "v": V * f, "lo": fine.lo}
 
 static func _at(vox: Dictionary, c: Vector3i) -> int:
@@ -422,13 +467,20 @@ static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Co
 ## meshes are cached in user://; bump CACHE after changing the model.
 static func lods() -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
-	var fine := {}
+	var stepped := {}
+	var smooth := {}
 	for f: int in LOD_FACTORS:
 		var path := CACHE % f
 		var mesh: ArrayMesh = load(path) if ResourceLoader.exists(path) else null
 		if mesh == null:
-			if fine.is_empty():
-				fine = _fine()
+			var fine := stepped
+			if f >= 4:
+				if smooth.is_empty():
+					smooth = _fine(true)
+				fine = smooth
+			elif stepped.is_empty():
+				stepped = _fine()
+				fine = stepped
 			mesh = _mesh(fine if f == 1 else _coarse(fine, f))
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)
