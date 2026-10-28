@@ -1,7 +1,8 @@
 //! Body weight as the measure of health (S84, replaces the 0–1000 health
 //! of S64/S65): how hunger changes a person's weight, how weight changes
 //! the death risk of the life table, and how food changes fertility.
-//! Pure functions; crate::people keeps the weight per person.
+//! Pure functions; crate::people keeps the weight per person. Hungry people
+//! first lower their activity (FAO/WHO/UNU 2004 PAL 1.75 → 1.45).
 //!
 //! Weight is kept in ‰ of the person's normal weight: for adults the
 //! weight at BMI_NORMAL, for children the usual weight for their age.
@@ -42,6 +43,33 @@ pub const HALL_KJ_PER_KG: f64 = 100.0;
 /// Share of the way to the target weight gone in a month: half in a year
 /// (Hall et al. 2011), 1 − 2^(−1/12).
 pub const MONTH_STEP: f64 = 0.056_125_687_3;
+
+/// Activity (PAL, multiple of the basal metabolic rate) of the need the
+/// grain economy counts, and the lowest someone who goes hungry falls to
+/// (FAO/WHO/UNU 2004: moderately active 1.70–1.99, sedentary from 1.40).
+/// Ramon, 28.10.2026: who goes hungry works less and needs up to 17 % less.
+pub const PAL_ACTIVE: f64 = 1.75;
+pub const PAL_LOW: f64 = 1.45;
+
+/// Activity of someone whose household gets `share` of its need: lowered to
+/// match the food, at most down to PAL_LOW.
+pub fn pal(share: f64) -> f64 {
+    (PAL_ACTIVE * share.clamp(0.0, 1.0)).clamp(PAL_LOW, PAL_ACTIVE)
+}
+
+/// Share of the need the body sees after lowering its activity: 1 as long
+/// as the food covers PAL_LOW (about 83 % of the need), below that the
+/// share of the lowered need.
+pub fn effective_share(share: f64) -> f64 {
+    (share.clamp(0.0, 1.0) * PAL_ACTIVE / pal(share)).min(1.0)
+}
+
+/// Share of the normal physical work someone at `share` of the need still
+/// does: activity above the basal rate, (PAL − 1) / (PAL_ACTIVE − 1);
+/// 1 when fed, 0.6 at PAL_LOW.
+pub fn work_factor(share: f64) -> f64 {
+    (pal(share) - 1.0) / (PAL_ACTIVE - 1.0)
+}
 
 /// Death risk multipliers by BMI from the lower bound of each band (Global
 /// BMI Mortality Collaboration 2016, never-smokers, reference 20–25).
@@ -158,7 +186,8 @@ mod tests {
 
     /// Minnesota Starvation Experiment (Keys et al. 1950): about 1,570 of
     /// 3,200 kcal a day for 24 weeks cost the men about a quarter of their
-    /// weight. Monthly steps: after 5 months between 18 and 30 % less.
+    /// weight. Monthly steps: after 5 months between 18 and 30 % less. The
+    /// men had to keep walking, so no lowered activity (raw share).
     #[test]
     fn minnesota_semistarvation() {
         let share = 1570.0 / 3200.0;
@@ -245,6 +274,33 @@ mod tests {
         assert!(fert_mult(0) >= 0.0 && fert_mult(0) < 0.69);
         for k in 1..=1000u16 {
             assert!(fert_mult(k) >= fert_mult(k - 1));
+        }
+    }
+
+    /// Who goes hungry lowers activity first (PAL 1.75 → 1.45, FAO/WHO/UNU
+    /// 2004): down to about 83 % of the need the weight holds, the work
+    /// falls to 60 %; below that the lowered need sets the deficit.
+    #[test]
+    fn activity_adapts_to_hunger() {
+        assert_eq!(effective_share(1.0), 1.0);
+        assert_eq!(work_factor(1.0), 1.0);
+        let low = PAL_LOW / PAL_ACTIVE;
+        assert!((low - 0.8286).abs() < 1e-3);
+        assert!((effective_share(low) - 1.0).abs() < 1e-12);
+        assert!((work_factor(low) - 0.6).abs() < 1e-12);
+        assert!((effective_share(0.9) - 1.0).abs() < 1e-12);
+        assert!((work_factor(0.9) - (PAL_ACTIVE * 0.9 - 1.0) / 0.75).abs() < 1e-12);
+        assert!((effective_share(0.5) - 0.5 / low).abs() < 1e-12);
+        assert_eq!(work_factor(0.2), work_factor(0.5));
+        // A household at 90 % keeps its weight for good.
+        let mut w = 1000u16;
+        for _ in 0..120 {
+            w = month(w, effective_share(0.9));
+        }
+        assert_eq!(w, 1000);
+        for k in 1..=100 {
+            let (a, b) = ((k - 1) as f64 / 100.0, k as f64 / 100.0);
+            assert!(effective_share(b) >= effective_share(a) && work_factor(b) >= work_factor(a));
         }
     }
 

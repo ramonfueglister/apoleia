@@ -1439,7 +1439,8 @@ impl People {
                 }
                 .min(1.0);
                 let age = age_y(day, born[i].0);
-                let (w, w2) = (health[i].0, body::month(health[i].0, share));
+                // Who goes hungry first lowers activity (body::pal).
+                let (w, w2) = (health[i].0, body::month(health[i].0, body::effective_share(share)));
                 let (f, f2) = (sched[i].fed, (share * 1000.0) as u16);
                 let death = body::death_band(w, age) != body::death_band(w2, age);
                 let birth = sex[i].0 == 0 && spouse[i].0 != NONE && body::fert_band(f) != body::fert_band(f2);
