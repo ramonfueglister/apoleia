@@ -25,7 +25,7 @@ const ARENA_Y := 2.5
 const ARENA_E := 0.5        # arena edge as a share of the radius
 const ROW_D := 0.25         # seat row depth
 const FINE := 0.125         # LOD0 voxel size; coarser LODs supersample at this step
-const CACHE := "user://colosseum_v6_%s.res"
+const CACHE := "user://colosseum_v7_%s.res"
 # Voxel sizes of the LODs, and the camera distances where each one shows.
 const LOD_VOXELS := [0.125, 0.25, 0.5]
 const LOD_RANGES := [0.0, 50.0, 140.0, 320.0, 6000.0]
@@ -37,16 +37,21 @@ const PALETTE := [
 	Color("dcb87e"), Color("c9a26a"), Color("e2d4b8"), Color("7a5236"), Color("c8372a"),
 	Color("3a2c24"), Color("d9a27a"), Color("4a3426"), Color("eadbbd"),
 	Color("f2ebdd"), Color("d9c7a8"), Color("a5835f"), Color("b8483a"), Color("6f7f9a"),
-	Color("c9a050"), Color("8a6a50"), Color("e6d8c0"), Color("9a4434")]
+	Color("c9a050"), Color("8a6a50"), Color("e6d8c0"), Color("9a4434"),
+	Color("dccaa8"), Color("d1bd99"), Color("f1ece2"), Color("a8783a"), Color("efe6d2"),
+	Color("c7ae92"), Color("b39a80"), Color("bfa58a"), Color("b47a62")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, GALLERY, GALLERY_FLOOR, WINDOW, SEAT_STONE,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, SKIN, HAIR, SILL, CROWD,
-	PODIUM_BAND = 27 }
+	PODIUM_BAND = 27, STONE_LOW, STONE_B, STATUE, BRONZE, COLUMN, CROWD_MUTED }
 const CROWD_COUNT := 8
+const CROWD_MUTED_COUNT := 4
+# Ashlar variation is only worth its triangles at the nearest LOD.
+static var _ashlar := true
 # Top faces that differ from the sides: a sill is stone in front, but its top
 # is the shaded arcade floor seen through the arch.
 const TOP := {SILL: Color("8a7a66")}
 # Corner occlusion: 0 = both sides blocked, 3 = open.
-const AO := [0.55, 0.72, 0.87, 1.0]
+const AO := [0.5, 0.68, 0.85, 1.0]
 # Arch geometry of one arcade storey, shared by the opening and its frame.
 const ARCH_HALF := 0.47
 const ARCH_SPRING := 0.7
@@ -83,7 +88,7 @@ static func _outside(d: float, y: float, pier: float, dx: float) -> int:
 	if y >= WALL_TOP - 0.375:
 		return CORNICE if d >= -0.125 else EMPTY
 	if y >= TIER * 3.0:
-		return STONE if pier < 0.16 and d >= -0.125 else EMPTY
+		return COLUMN if pier < 0.16 and d >= -0.125 else EMPTY
 	var k := int(y / TIER)
 	var ly := y - k * TIER
 	if ly >= TIER - 0.125:
@@ -95,7 +100,7 @@ static func _outside(d: float, y: float, pier: float, dx: float) -> int:
 		if pier < 0.25 and d >= -0.25:
 			return CORNICE
 	elif pier < 0.19 and d >= -sqrt(maxf(0.0, 0.19 * 0.19 - pier * pier)) - 0.03:
-		return STONE
+		return COLUMN
 	# Arch frame and keystone, one voxel proud of the wall.
 	if d >= -0.125:
 		var r := Vector2(dx, ly - ARCH_SPRING).length()
@@ -115,12 +120,36 @@ static func _shell(d: float, y: float, dx: float, variant: int) -> int:
 		var floor_y := PLINTH if k == 0 else 0.125
 		var top := ARCH_SPRING + sqrt(maxf(0.0, ARCH_HALF * ARCH_HALF - dx * dx))
 		if absf(dx) < ARCH_HALF and ly >= floor_y and ly < top:
+			if k > 0 and d >= 0.25:
+				return _statue(dx, ly - floor_y, variant + k)
 			return EMPTY
-		return SILL if ly < floor_y else STONE
+		return SILL if ly < floor_y else _ashlar_at(dx, y, variant, STONE_LOW if k == 0 else STONE)
 	var ly := y - TIER * 3.0
 	if variant % 2 == 0 and absf(dx) < 0.19 and ly >= 0.375 and ly < 0.75:
 		return EMPTY if d < 0.125 else WINDOW
-	return STONE
+	# Bronze shields between the attic windows, one voxel proud.
+	if variant % 2 == 1 and Vector2(dx, ly - 0.56).length() < 0.2:
+		return BRONZE if d < 0.125 else STONE
+	return _ashlar_at(dx, y, variant, STONE)
+
+## Ashlar courses: a few blocks a shade darker, so the wall reads as stone.
+static func _ashlar_at(dx: float, y: float, variant: int, base: int) -> int:
+	if not _ashlar:
+		return base
+	var course := floori(y / 0.25)
+	var block := floori((dx + 0.5 * BAY_W) / 0.5 + 0.5 * (course % 2))
+	return STONE_B if absi(hash(Vector3i(variant, course, block))) % 100 < 28 else base
+
+## A statue on a pedestal in an upper arch; every third one is bronze.
+static func _statue(dx: float, h: float, which: int) -> int:
+	var material := BRONZE if which % 3 == 0 else STATUE
+	if h < 0.125:
+		return STONE_MID if absf(dx) < 0.19 else EMPTY
+	if h < 0.625:
+		return material if absf(dx) < 0.125 else EMPTY
+	if h < 0.75:
+		return material if absf(dx) < 0.07 else EMPTY
+	return EMPTY
 
 ## Ambulatory behind the arches: floors, radial walls at the piers, a dark
 ## back wall. This is what the eye sees through every arch.
@@ -255,7 +284,6 @@ static func _voxelize(variant: int, v: float) -> Dictionary:
 					counts.fill(0)
 					var solid := 0
 					var people := 0
-					var crowd := CROWD
 					for sz in ss:
 						for sy in ss:
 							for sx in ss:
@@ -267,22 +295,20 @@ static func _voxelize(variant: int, v: float) -> Dictionary:
 									people += 1
 								if s >= CROWD and s < CROWD + CROWD_COUNT:
 									people += 1
-									if counts[CROWD] == 0:
-										crowd = s
 									s = CROWD
 								counts[s] += 1 << sy
 					if counts[RED] > 0:
 						c = RED
 					elif people * 16 >= ss * ss * ss:
 						# Seated figures are thinner than a coarse voxel: they
-						# become crowd-coloured blocks instead of vanishing.
-						c = crowd if counts[CROWD] > 0 else SKIN
+						# become calm mixed crowd tones, not vanishing or confetti.
+						c = CROWD_MUTED + absi(hash(Vector4i(variant, x, y, z))) % CROWD_MUTED_COUNT
 					elif solid * 8 >= ss * ss * ss * 3:
 						var best := 0
 						for i in range(1, counts.size()):
 							if counts[i] > counts[best]:
 								best = i
-						c = crowd if best == CROWD else best
+						c = CROWD_MUTED + absi(hash(Vector4i(variant, x, y, z))) % CROWD_MUTED_COUNT if best == CROWD else best
 				grid[x + n.x * (y + n.y * z)] = c
 	return {"grid": grid, "n": n, "v": v}
 
@@ -421,6 +447,7 @@ static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Co
 ## The ring at voxel size v: each variant is voxelized and meshed once, then
 ## bent onto every bay that uses it.
 static func build(v: float) -> ArrayMesh:
+	_ashlar = v <= FINE
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for variant in VARIANTS:
@@ -448,7 +475,7 @@ static func drum() -> ArrayMesh:
 		_flat(st, [_onto(p0, 0.0, WALL_TOP), _onto(p1, 0.0, WALL_TOP), _onto(p1, 0.75, WALL_TOP), _onto(p0, 0.75, WALL_TOP)],
 			PALETTE[CORNICE].lerp(PALETTE[RED], 0.55), Vector3.UP)
 		_flat(st, [_onto(p0, 1.0, SEAT_TOP), _onto(p1, 1.0, SEAT_TOP), _onto(p1, arena, PODIUM_TOP), _onto(p0, arena, PODIUM_TOP)],
-			PALETTE[CROWD + 1].lerp(PALETTE[CROWD + 2], 0.5), Vector3.UP)
+			PALETTE[CROWD_MUTED + 1], Vector3.UP)
 		_flat(st, [_onto(p0, 0.75, WALL_TOP), _onto(p1, 0.75, WALL_TOP), _onto(p1, 0.75, SEAT_TOP), _onto(p0, 0.75, SEAT_TOP)], PALETTE[STONE_MID], -out)
 		_flat(st, [_onto(p0, arena, PODIUM_TOP), _onto(p1, arena, PODIUM_TOP), _onto(p1, arena, ARENA_Y), _onto(p0, arena, ARENA_Y)], PALETTE[PODIUM], -out)
 		var centre := Vector3(0, ARENA_Y, 0)

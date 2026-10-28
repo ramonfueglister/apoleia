@@ -52,7 +52,7 @@ func _environment() -> void:
 	# Urbek-like light: cool sky fill in the shadows, soft occlusion, a
 	# warm sun, colours kept bright rather than filmic-washed.
 	env.ambient_light_color = Color("a9bfd8")
-	env.ambient_light_energy = 0.55
+	env.ambient_light_energy = 0.42
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.tonemap_exposure = 0.95
 	env.adjustment_enabled = true
@@ -65,7 +65,7 @@ func _environment() -> void:
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.1
+	sun.light_energy = 1.25
 	sun.light_color = Color("fff1de")
 	sun.shadow_blur = 1.5
 	sun.shadow_enabled = not args.has("noshadow")
