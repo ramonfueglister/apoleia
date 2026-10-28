@@ -356,6 +356,9 @@ func _update_map() -> void:
 	mat.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
 		return
+	# the layers switch by view width, not by pixel size, so the switch never
+	# runs as a seam across the screen
+	mat.set_shader_parameter("sim_view_km", get_parent().width if "width" in get_parent() else 360.0)
 	var version: int = people.map_version()
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
 	var moved := _map_at == Vector2.INF or _map_at.distance_to(centre) > MAP_N * 1.5625 * 0.25

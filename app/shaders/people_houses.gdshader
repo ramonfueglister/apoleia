@@ -19,6 +19,8 @@ uniform int list_w = 128;
 uniform int list_offset = 0; // this level of detail's first entry in the list
 
 varying vec3 tint;
+varying vec3 art_light; // ART_LIGHT in view space
+const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;
@@ -44,14 +46,26 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = vec3(0.94 + 0.12 * r.y);
-	// the sides turned to the camera (south and west) lighter, as the
-	// terrain's SimCity light has them (tile_props.gdshader); the sun comes
-	// from the north-west
-	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), vec2(-0.65, 0.76)) : 0.0;
-	tint *= 1.0 + 0.3 * max(facing, 0.0);
+	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 
 void fragment() {
 	ALBEDO = pow(COLOR.rgb * tint, vec3(2.2)); // vertex colours are sRGB
 	ROUGHNESS = 1.0;
 }
+
+// The sun's light from the terrain's fixed SimCity direction (south-west,
+// ART_LIGHT) instead of its own, so the walls turned
+// to the camera are the lit ones, as in Urbek and SimCity 2000; colour,
+// strength and the shadows of other things stay the sun's. Faces turned
+// away from the real sun are not darkened by its shadow map.
+
+void light() {
+	if (LIGHT_IS_DIRECTIONAL) {
+		float shadow = dot(NORMAL, LIGHT) > 0.05 ? ATTENUATION : 1.0;
+		DIFFUSE_LIGHT += max(dot(NORMAL, art_light), 0.0) * shadow * LIGHT_COLOR / PI;
+	} else {
+		DIFFUSE_LIGHT += max(dot(NORMAL, LIGHT), 0.0) * ATTENUATION * LIGHT_COLOR / PI;
+	}
+}
+

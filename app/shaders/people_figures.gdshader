@@ -25,6 +25,8 @@ uniform vec3 selected_colour : source_color = vec3(1.0, 0.9, 0.1);
 varying vec3 colour;
 varying vec3 local;     // unit-figure position, for the toga stripes
 varying float stripes;  // stripe half width, 0 = none
+varying vec3 art_light; // ART_LIGHT in view space
+const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 // undyed wool, linen, madder red, woad blue and browns: clothes when the
 // people are not coloured by group (sRGB)
@@ -203,9 +205,7 @@ void vertex() {
 		stripes = 0.0;
 	}
 	colour = (part == TUNIC ? tunic : own) * COLOR.a; // alpha: corner shading
-	// the sides turned to the camera lighter, like the houses
-	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), vec2(-0.65, 0.76)) : 0.0;
-	colour *= 1.0 + 0.3 * max(facing, 0.0);
+	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 
 void fragment() {
@@ -213,4 +213,19 @@ void fragment() {
 	bool stripe = stripes > 0.0 && abs(abs(local.x) - 0.07) < stripes && local.y > 0.45;
 	ALBEDO = stripe ? pow(PURPLE, vec3(2.2)) : colour;
 	ROUGHNESS = 1.0;
+}
+
+// The sun's light from the terrain's fixed SimCity direction (south-west,
+// ART_LIGHT) instead of its own, so the walls turned
+// to the camera are the lit ones, as in Urbek and SimCity 2000; colour,
+// strength and the shadows of other things stay the sun's. Faces turned
+// away from the real sun are not darkened by its shadow map.
+
+void light() {
+	if (LIGHT_IS_DIRECTIONAL) {
+		float shadow = dot(NORMAL, LIGHT) > 0.05 ? ATTENUATION : 1.0;
+		DIFFUSE_LIGHT += max(dot(NORMAL, art_light), 0.0) * shadow * LIGHT_COLOR / PI;
+	} else {
+		DIFFUSE_LIGHT += max(dot(NORMAL, LIGHT), 0.0) * ATTENUATION * LIGHT_COLOR / PI;
+	}
 }

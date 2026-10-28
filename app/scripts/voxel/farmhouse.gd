@@ -20,10 +20,10 @@ const PITCH := 0.5 # roof rise per metre (about 27 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
 const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 holds the path, flush with the ground
-const BOUNDS_HI := Vector3(7.5, 5.75, 6.75)
-const FENCE_LO := Vector2(-7.0, -6.25) # x, z of the fence posts
-const FENCE_HI := Vector2(7.25, 6.5)
-const CACHE := "user://farmhouse_v3_%s.res"
+const BOUNDS_HI := Vector3(7.5, 5.75, 6.5)
+const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
+const FENCE_HI := Vector2(7.375, 6.375)
+const CACHE := "user://farmhouse_v4_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -148,9 +148,11 @@ static func _fence(p: Vector3) -> int:
 		return EMPTY
 	if on_x and p.z > 0.0 and absf(p.x) < 1.0:
 		return EMPTY # gate
-	var along := p.x if on_x else p.z
-	var post := absf(along * 0.5 - roundf(along * 0.5)) < 0.0625
-	var rail := p.y >= 0.5 and p.y < 0.75
+	# a post on every eighth quarter metre, a rail one block high at hip
+	# height, both on whole voxels of the finest level
+	var along := p.x - BOUNDS_LO.x if on_x else p.z - BOUNDS_LO.z
+	var post := posmod(int(floor(along / 0.25)), 8) == 4
+	var rail := p.y >= 0.375 and p.y < 0.625
 	return FENCE if post or rail else EMPTY
 
 ## The levels of detail, nearest first, scaled to the unit house. Built

@@ -23,6 +23,7 @@ uniform sampler2D sim_road_tex : filter_nearest, repeat_disable;
 uniform vec2 sim_cell_origin;      // world km of the grid's corner
 uniform float sim_cell_km = 25.0;
 uniform ivec2 sim_cell_n = ivec2(0);
+uniform float sim_view_km = 30.0;  // view width: what is drawn (fields, paths, roads, lanes)
 
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
@@ -65,17 +66,18 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 // scatter; inside the block the sown parcels take the season's colour
 // (earth, sprouts, green, ripe wheat, stubble), the fallow ones stay
 // meadow. `tile_size` is the terrain tile (km), the parcel is half of it.
-// From about 8 km of view a block is one colour (the season's, no fallow
-// parcels in it); from about 30 km there are no blocks, the farmland is the
+// From 8 km of view a block is one colour (its sown and fallow parcels
+// averaged); from 30 km there are no blocks, the farmland is the
 // terrain's own.
-vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
-	if (!sim_map_on || sim_fine_n == 0 || fw_km > 0.02) { return c; }
+vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
+	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > 30.0) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
 	float size = tile_size * 0.5;
 	vec2 cell = floor(p / size);
 	vec2 mid = (cell + 0.5) * size;
 	vec2 q = (mid - sim_fine_origin) / sim_fine_km;
 	vec4 f = sim_fine_at(ivec2(floor(q)));
+	bool whole = sim_view_km > 8.0;
 	// the sim decides where the fields are: farmland it does not farm lies
 	// as pasture
 	vec3 open_land = land == G_FIELD ? GROUND_RGB[G_MEADOW] : c;
@@ -85,7 +87,6 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
 	vec2 d = abs(fract(q) - 0.5) * 2.0;
 	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
 	if (r * r + (whole ? 0.0 : 0.12 * (sim_hash(cell) - 0.5)) >= f.r) { return open_land; }
-	bool whole = fw_km > 0.005;
 	if (!whole && sim_hash(cell + 17.3) >= f.g) {
 		return GROUND_RGB[G_MEADOW];
 	}
@@ -94,7 +95,8 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
 	vec3 field = GROUND_RGB[G_FIELD];
 	// stubble, ploughed earth, sprouts on the soil, green corn, ripe wheat:
 	// sown land never takes the meadow's own green, so it reads as farmland
-	return g <= 0.0 ? mix(field, C_EARTH, 0.4) : g < 0.12 ? C_EARTH : g < 0.4 ? mix(C_EARTH, meadow, 0.5) : g < 0.75 ? mix(meadow, field, 0.4) : field;
+	vec3 sown = g <= 0.0 ? mix(field, C_EARTH, 0.4) : g < 0.12 ? C_EARTH : g < 0.4 ? mix(C_EARTH, meadow, 0.5) : g < 0.75 ? mix(meadow, field, 0.4) : field;
+	return whole ? mix(meadow, sown, clamp(f.g, 0.25, 1.0)) : sown;
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and
@@ -173,8 +175,8 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 	if (!sim_map_on) { return c; }
 	if (sim_fine_n > 0) {
 		vec3 w = sim_paths(p);
-		// footpaths only up close (about 10 km of view), at least 1.5 px
-		if (w.y > 0.0 && fw_km < 0.006) {
+		// footpaths only up close (10 km of view), at least 1.5 px
+		if (w.y > 0.0 && sim_view_km <= 10.0) {
 			float half_w = max(w.y >= 2.0 ? SIM_PATH_KM : SIM_TRAIL_KM, fw_km * 1.5) * 0.5;
 			c = mix(c, C_BANK, sim_band(w.x, half_w, fw_km));
 		}
@@ -191,10 +193,10 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 	// trade roads up to a few hundred km of view, only the paved ones from
 	// about 100 km: a light travertine band with darker kerbs, at least
 	// 2 px, so they read as roads and not as scratches
-	if (fw_km < 0.3) {
+	if (sim_view_km < 500.0) {
 		vec3 r = sim_roads(p);
 		bool road = r.y >= 2.0;
-		if (r.y > 0.0 && (road || fw_km < 0.06)) {
+		if (r.y > 0.0 && (road || sim_view_km < 100.0)) {
 			float half_w = max(road ? SIM_ROAD_KM : SIM_TRACK_KM, fw_km * 2.0) * 0.5;
 			vec3 top = road ? mix(C_PAVED, vec3(1.0), 0.3) : C_BANK;
 			// kerbs only where the road is wide enough to carry them; a thin
@@ -212,7 +214,7 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 // off at any zoom, up to about 150 km of view (further out they are only
 // a grid of lines over the sea).
 vec3 sim_lanes(vec2 p, vec3 c, float fw_km) {
-	if (!sim_map_on || fw_km > 0.1) { return c; }
+	if (!sim_map_on || sim_view_km > 150.0) { return c; }
 	vec3 r = sim_roads(p);
 	if (r.y <= 0.0) { return c; }
 	float half_w = max(0.05, fw_km * 1.5) * 0.5;
