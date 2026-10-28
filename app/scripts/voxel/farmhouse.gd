@@ -26,7 +26,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v14_%s.res"
+const CACHE := "user://farmhouse_v15_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -35,16 +35,17 @@ const CACHE := "user://farmhouse_v14_%s.res"
 # roof steps (TOPS), green or brown shutters. people_houses.gdshader turns
 # the plaster cream, pink or ochre and the shutters green or brown per farm.
 const PALETTE := [
-	Color(0, 0, 0), Color("ebdfc8"), Color("d9c9a8"), Color("d6ccb4"), Color("b3563f"),
+	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("b3563f"),
 	Color("a84c38"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
-	Color("5e3f28"), Color("86705a"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
+	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46"), Color("2f5a2c"), Color("3b6c35"), Color("667f4c"), Color("52663d"),
+	Color("5f7f46"), Color("1f4228"), Color("2a5534"), Color("667f4c"), Color("52663d"),
 	Color("75695a"), Color("dcc06c")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY }
-const TOPS := {ROOF: Color("cf6a4c"), ROOF_DARK: Color("bd5d44")}
+# the lit treads darker than they show: sun and tone map lift them
+const TOPS := {ROOF: Color("b8553c"), ROOF_DARK: Color("a54a36")}
 
 ## What fills point p (metres).
 static func sample(p: Vector3) -> int:
@@ -199,13 +200,14 @@ const OLIVE_CLUMPS: Array[Vector4] = [Vector4(-0.75, 0.25, 1.5, 2.75), Vector4(0
 static func _lot(p: Vector3) -> int:
 	if p.y < 0.0:
 		return EMPTY
-	# cypresses: a tall narrow crown down to the ground, tapering to a point
+	# cypresses: a slim dark crown down to the ground (a sixth as wide as
+	# tall), tapering to a point
 	var cz := absf(p.z - 8.75)
 	var cx := absf(absf(p.x) - 8.75)
-	if cx < 0.75 and cz < 0.75:
-		var r := 0.5 if p.y < 0.5 else 0.75 if p.y < 4.5 else 0.5 if p.y < 5.75 else 0.25 if p.y < 6.5 else 0.0
+	if cx < 0.5 and cz < 0.5:
+		var r := 0.375 if p.y < 0.5 else 0.5 if p.y < 3.5 else 0.375 if p.y < 5.0 else 0.25 if p.y < 6.25 else 0.125 if p.y < 6.75 else 0.0
 		if cx < r and cz < r and cx + cz < r * 1.5:
-			return CYPRESS_DARK if p.y < 2.25 else CYPRESS
+			return CYPRESS_DARK if p.y < 1.0 else CYPRESS
 		return EMPTY
 	# an olive tree: a crooked grey trunk and a wide crown of three uneven
 	# clumps, silver-green, darker underneath

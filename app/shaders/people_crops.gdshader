@@ -58,7 +58,7 @@ void vertex() {
 	vec2 cell = crop_cell0 + vec2(float(INSTANCE_ID % crop_n), float(INSTANCE_ID / crop_n));
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec4 f = vec4(0.0);
-	int state = sim_map_on && sim_view_km <= SIM_CROPS_KM ? sim_parcel(cell, size, false, f) : 0;
+	int state = sim_map_on && sim_view_km <= SIM_CROPS_KM ? sim_parcel(cell, size, f) : 0;
 	// fields lie only on open land outside the towns, as sim_fields, never
 	// on a farmhouse's lot and only on flat tiles (a ramp shows their colour)
 	ivec2 t = dot_tile(mid);
@@ -89,13 +89,13 @@ void vertex() {
 	} else if (grain) {
 		if (g <= 0.0) { slab = 0.15; c = STUBBLE; }
 		else if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; }
-		else if (g < 0.75) { h = 0.45; w = 0.5; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 16.0; fill = 0.6; }
+		else if (g < 0.4) { h = 0.15; w = 0.35; rc = SPROUT; clumps = 16.0; fill = 0.7; }
+		else if (g < 0.75) { h = 0.45; w = 0.55; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 16.0; fill = 0.85; }
 		else { slab = 0.8; c = RIPE[kind]; }
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; }
-		else { h = 0.5; w = 0.35; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; }
+		else if (g < 0.4) { h = 0.15; w = 0.35; rc = SPROUT; clumps = 12.0; fill = 0.7; }
+		else { h = 0.5; w = 0.4; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; fill = 0.7; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		slab = 0.2;

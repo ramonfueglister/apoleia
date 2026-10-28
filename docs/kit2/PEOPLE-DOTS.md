@@ -188,7 +188,10 @@ Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster, Walmdach aus
 Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und Graten,
 Schuppen mit Heu, Holzstoss, Busch, Gemüsebeet, Obstbaum, Zaun und ein Weg
 durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
-Zypressen in den vorderen Ecken, ein Olivenbaum und ein Heuhaufen. Die Palette teilt es mit den Stadtgebäuden des
+schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
+hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, Dach tiefes
+Terrakotta: die Trittflächen sind dunkler angelegt, als sie erscheinen, da
+Sonne und Tonemapping sie sonst nach Orange heben. Die Palette teilt es mit den Stadtgebäuden des
 Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
 seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
 Palettenindex, den der Mesher in UV.y schreibt, dazu je Hof einen von vier
@@ -239,10 +242,14 @@ etwa 25 ms:
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
 Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
-Kachel, so gross wie ihr Feldanteil; fern ist jede feine Kachel mit
-mindestens einem Viertel Feldern ein ganzer Block ohne Wiesenstreifen, in
-der Farbe ihrer Frucht, nach ihrem Brachanteil strohfarben gemischt und
-leicht zur Wiese hin; Brache als Trockengras; Pfade zum
+Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
+bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
+einer Rampe verschieden tönen, sah aus wie Glasscherben). Fern ist das
+Ackerland ein Flickenteppich aus Blöcken von 2 × 2 Kacheln, jeder ganz
+eine Frucht, Brache oder Weide (nach Feld- und Saatanteil seiner feinen
+Kachel, Brache seltener als in der Sim) und etwas früher oder später gesät
+als seine Nachbarn, leicht zur Wiese hin; nicht ihr Mittelwert, der alles
+in ein Oliv tauchte; Brache als Trockengras; Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an
 der Seite, der jeder Hof zugewandt ist (dort trifft sein Torweg die Gasse), Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.
@@ -258,7 +265,7 @@ Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 (`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
 40 × 40 um die Kamera), 2,5 % vom Parzellenrand eingerückt, damit schmale
 Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
-Ackerland: dunkle rotbraune Erde mit Reihen grüner Büschel und eine
+Ackerland: dunkle braune Erde mit dichten Reihen grüner Büschel und eine
 geschlossene strohgelbe Fläche. Weizen und Gerste wachsen von nackter Erde
 über Reihen kleiner Büschel zu dichten Büschelreihen, reifen zu einer
 strohgelben Fläche und werden zu Stoppeln; eine brachliegende Parzelle ist

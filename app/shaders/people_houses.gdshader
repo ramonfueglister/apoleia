@@ -22,13 +22,13 @@ varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
-// plaster (cream, pink, ochre, lime white) and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB
-const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.788, 0.698), vec3(0.851, 0.718, 0.478), vec3(0.937, 0.910, 0.847));
+// plaster (cream, pink, ochre, warm white) and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB; only their ratios to the first tint the farmhouse (farmhouse.gd PLASTER)
+const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.769, 0.659), vec3(0.851, 0.706, 0.471), vec3(0.937, 0.886, 0.784));
 const vec3 SHUTTER_GREEN = vec3(0.373, 0.498, 0.275);
 const vec3 SHUTTER_BROWN = vec3(0.604, 0.353, 0.227);
-// roof tiles by farm: as built, rusty, orange or dark red (#b5532e, #c4613a,
-// #a8452a on the base tile)
-const vec3 ROOFS[4] = vec3[](vec3(1.0), vec3(1.01, 0.96, 0.73), vec3(1.1, 1.13, 0.92), vec3(0.94, 0.8, 0.67));
+// roof tiles by farm: as built, rusty, a little lighter or dark red
+// (Caesar III terracotta, never orange)
+const vec3 ROOFS[4] = vec3[](vec3(1.0), vec3(1.02, 0.94, 0.8), vec3(1.06, 1.02, 0.96), vec3(0.92, 0.82, 0.74));
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;

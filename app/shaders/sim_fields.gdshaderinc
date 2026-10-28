@@ -17,7 +17,7 @@ uniform int sim_lots_n = 0;        // lots per side of the mask, 0 without one
 uniform float sim_lot_km = 0.5;    // people_dots_common.gdshaderinc DOT_LOT_KM
 
 // View width up to which the parcels are single and the crops stand on
-// them as plants; up to 30 km the fields are whole blocks of one colour.
+// them as plants; up to 40 km the fields are whole blocks of one colour.
 const float SIM_CROPS_KM = 8.0;
 const float SIM_FIELDS_KM = 40.0;
 
@@ -110,15 +110,11 @@ float sim_lane(vec2 p) {
 // The parcel `cell` (of side `size` km): 0 not farmed, 1 fallow, 2 sown;
 // `f` is its fine texel. Each fine tile farms one block around its middle,
 // as large as its field share (a rounded square, with a little jitter for a
-// ragged edge), so the farmland reads as calm blocks around the villages;
-// from afar (`whole`) a fine tile with a quarter or more in fields is one
-// whole field block, so the blocks join into a patchwork without meadow
-// strips between them, and has no fallow parcels.
-int sim_parcel(vec2 cell, float size, bool whole, out vec4 f) {
+// ragged edge), so the farmland reads as calm blocks around the villages.
+int sim_parcel(vec2 cell, float size, out vec4 f) {
 	vec2 q = (world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km;
 	f = sim_fine_at(ivec2(floor(q)));
 	if (f.r <= 0.0) { return 0; }
-	if (whole) { return f.r >= 0.25 ? 2 : 0; }
 	vec2 d = abs(fract(q) - 0.5) * 2.0;
 	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
 	if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= f.r) { return 0; }
