@@ -32,11 +32,13 @@ const PODIUM := SEAT_TOP - 34
 const FLOOR := PODIUM - 6
 const PAVING := 4              # grid margin round the plinth, voxels
 const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
-const CACHE := "user://colosseum25_v9.res"
+const CACHE := "user://colosseum25_v11.res"
 const AISLES := 40
+# Citizens came in togas and light tunics; darker wool and dyed cloth
+# among them.
 const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.LINEN, Kit.LINEN, Kit.ROBE_W, Kit.LINEN,
-	Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE_B, Kit.ROBE_B,
-	Kit.CLOTH_Y, Kit.CLOTH_Y, Kit.CLOTH_Y, Kit.CLOTH_G, Kit.CLOTH_G]
+	Kit.ROBE_W, Kit.LINEN, Kit.ROBE_N, Kit.ROBE_N, Kit.ROBE_N, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R,
+	Kit.ROBE_O, Kit.ROBE_O, Kit.ROBE_B, Kit.ROBE_B]
 
 # --- plan -----------------------------------------------------------------
 
@@ -124,7 +126,9 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 			# a statue in every other upper arch, just behind the parapet:
 			# a plinth, the robe flaring at the hem, the body as wide as the
 			# shoulders, a head; three poses, every eighth one gilt
-			if storey > 0 and posmod(b, 2) == 0 and (d == 2 or d == 3) and o >= 2 and o <= 5:
+			# (Platner and Ashby: a statue in every arch of the second and
+			# third arcades)
+			if storey > 0 and (d == 2 or d == 3) and o >= 2 and o <= 5 and not (storey == 2 and posmod(b, 8) == 4):
 				var c := Kit.GOLD if posmod(b, 8) == 0 else Kit.STATUE
 				var pose := posmod(b / 2, 3)
 				if lr <= 2:
@@ -307,8 +311,8 @@ static func grid() -> Kit.Grid:
 			for r in g.n.y:
 				var c := Kit.EMPTY
 				if d >= SHELL and r == WALL + 1 and e < SHELL + 34 and absf(t) < 0.45:
-					# the awning (velarium) over the eastern seats, in stripes
-					c = Kit.CLOTH_R if floori(t * 30.0 + 100.0) % 2 == 0 else Kit.CLOTH_W
+					# the awning (velarium) over the eastern seats, in plain linen strips
+					c = Kit.LINEN if floori(t * 30.0 + 100.0) % 2 == 0 else Kit.SACK
 				elif d < 0:
 					c = _outside(d, plan.y, plan.z, r, x, z)
 				elif d < SHELL:

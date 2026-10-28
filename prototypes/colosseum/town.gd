@@ -86,7 +86,7 @@ func _mesh(key: String) -> ArrayMesh:
 			"vx": meshes[key] = Town.via_crossing(seed, 0)
 			"vxs": meshes[key] = Town.via_crossing(seed, 1)
 			"rstrip": meshes[key] = Town.river_strip(seed, 7, RIVER_ROW, 7)
-			"tombs": meshes[key] = Town.tombs(seed)
+			"tombs": meshes[key] = Town.tombs(seed >> 1, seed & 1 == 1)
 			"farm": meshes[key] = Town.farm(seed)
 			"tgarden": meshes[key] = Town.terrace_garden(seed)
 			"vineyard": meshes[key] = Town.vineyard(seed)
@@ -285,7 +285,7 @@ func _layout() -> void:
 					_put("garden:%d" % (h & 3), lx, lz, south)
 				elif absi(lx) == 1 and lz >= 8:
 					# tombs line the road out of town beyond the river
-					_put("tombs:%d" % (h & 7), lx, lz)
+					_put("tombs:%d" % (((h & 7) << 1) | (1 if lx < 0 else 0)), lx, lz)
 				elif lz >= 7 and absi(lx) > 4:
 					# beyond the river the country: gardens, vines, sheep
 					var r := Kit.rnd(lx, lz, 0, 21) % 100
