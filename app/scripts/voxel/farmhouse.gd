@@ -20,10 +20,11 @@ const PITCH := 0.5 # roof rise per metre (about 27 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
 const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 holds the path, flush with the ground
-const BOUNDS_HI := Vector3(7.5, 5.75, 6.5)
+const BOUNDS_HI := Vector3(7.5, 5.75, 11.0)
+const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v8_%s.res"
+const CACHE := "user://farmhouse_v9_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -134,8 +135,8 @@ static func _yard(p: Vector3) -> int:
 	var tree := _tree(p)
 	if tree != EMPTY:
 		return tree
-	# earth path from the door to the gate, flush with the ground
-	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < FENCE_HI.y:
+	# earth path from the door through the gate to the lane, flush with the ground
+	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < PATH_END:
 		return EARTH
 	if p.y < 0.0:
 		return EMPTY # the rest of the sunk layer is the terrain's

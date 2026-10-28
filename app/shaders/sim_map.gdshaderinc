@@ -45,39 +45,39 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 
 // Fields on open land (`land`, the terrain's landscape here), on parcels of
 // half a terrain tile (`tile_size`, km), on the terrain's own grid so a
-// parcel never cuts a tile (sim_parcel). Each parcel is one flat colour:
-// up close the sown ones are dark ploughed soil (or the ripe crop's sheet)
-// and the plants stand on them (people_crops.gdshader); from SIM_CROPS_KM
-// of view each field block (no fallow parcels) takes its crop's colour for
-// the season, so the farmland reads as a patchwork of wheat, barley, beans
-// and soil; fallow parcels stay meadow. From SIM_FIELDS_KM the farmland is the terrain's own.
+// parcel never cuts a tile (sim_parcel). Each parcel is one flat colour.
+// Up close a sown parcel is grass round the raised field slab that stands
+// on it (people_crops.gdshader), a fallow one dry grass, so the farmland is
+// a mosaic of slabs, grass edges and fallow. From SIM_CROPS_KM of view each
+// field block (no fallow parcels) takes its crop's colour for the season:
+// a patchwork of wheat, barley, vegetables and vines. From SIM_FIELDS_KM
+// the farmland is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
-	if (sim_house_lot(p)) { return land == G_FIELD ? GROUND_RGB[G_MEADOW] : c; } // the farmhouse's yard
+	vec3 meadow = GROUND_RGB[G_MEADOW];
+	if (sim_house_lot(p)) { return land == G_FIELD ? meadow : c; } // the farmhouse's yard
 	float size = tile_size * 0.5;
 	bool near = sim_view_km <= SIM_CROPS_KM;
 	vec2 cell = floor(p / size);
 	vec4 f;
 	int state = sim_parcel(cell, size, !near, f);
-	vec3 meadow = GROUND_RGB[G_MEADOW];
 	// the sim decides where the fields are: farmland it does not farm lies
-	// as pasture
+	// as pasture, fallow parcels as dry grass
 	if (state == 0) { return land == G_FIELD ? meadow : c; }
-	if (state == 1) { return meadow; }
-	float g = f.b;
-	// one crop per parcel up close, further out one per field block (its
-	// fine tile), so the farmland is calm blocks and not a speckle
+	if (state == 1) { return mix(meadow, GROUND_RGB[G_DRY_GRASS], 0.6); }
+	if (near) { return meadow; }
+	// one crop per field block (its fine tile), calm blocks and not a speckle
 	vec2 block = floor(((cell + 0.5) * size - sim_fine_origin) / sim_fine_km) + floor(sim_fine_origin / sim_fine_km + 0.5);
-	int kind = sim_crop_kind(near ? cell : block);
+	int kind = sim_crop_kind(block);
+	float g = f.b;
 	vec3 field = GROUND_RGB[G_FIELD];
-	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // ploughed, darker than the paths
+	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // tilled, darker than the paths
 	vec3 stubble = mix(field, C_EARTH, 0.4);
-	// wheat, paler barley, low dark beans: green, then ripe
-	vec3 green = kind == 0 ? mix(meadow, field, 0.35) : kind == 1 ? mix(meadow, field, 0.6) : meadow * vec3(0.78, 0.86, 0.78);
-	vec3 ripe = kind == 0 ? field : kind == 1 ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
+	if (kind == SIM_VINES) { return mix(soil, meadow * vec3(0.72, 0.85, 0.7), 0.7); }
+	vec3 green = kind == SIM_WHEAT ? mix(meadow, field, 0.35) : kind == SIM_BARLEY ? mix(meadow, field, 0.6) : meadow * vec3(0.86, 0.92, 0.86);
+	vec3 ripe = kind == SIM_WHEAT ? field : kind == SIM_BARLEY ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
 	if (g <= 0.0) { return stubble; }
-	if (near) { return g >= 0.75 && kind != 2 ? ripe : soil; }
 	return g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.55) : g < 0.75 ? green : ripe;
 }
 
@@ -171,6 +171,12 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 			vec3 m = stall ? (sim_hash(id + 5.0) < 0.5 ? C_ROOF : C_WALL) : C_PAVED;
 			c = mix(c, m, sim_band(w.z, sq, fw_km));
 		}
+	}
+	// the village lanes round the farmhouse lots, earth with a darker edge
+	float lane = sim_lane(p);
+	if (lane < SIM_LANE_KM + fw_km) {
+		c = mix(c, C_BANK * 0.82, sim_band(lane, SIM_LANE_KM + fw_km, fw_km));
+		c = mix(c, C_BANK * vec3(1.02, 0.94, 0.9), sim_band(lane, SIM_LANE_KM, fw_km));
 	}
 	// trade roads up to 100 km of view: a light paved band with a darker
 	// edge, at least 3 px, so they read as roads and not as scratches;

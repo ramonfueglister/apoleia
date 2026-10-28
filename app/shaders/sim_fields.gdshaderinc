@@ -14,7 +14,7 @@ uniform float sim_view_km = 30.0;  // view width: what is drawn (fields, crops, 
 uniform sampler2D sim_lot_tex : filter_nearest, repeat_disable; // lots with a farmhouse (people_lots.gdshader)
 uniform vec2 sim_lot_origin;       // lot index of the mask's first pixel
 uniform int sim_lots_n = 0;        // lots per side of the mask, 0 without one
-uniform float sim_lot_km = 0.36;   // people_dots_common.gdshaderinc DOT_LOT_KM
+uniform float sim_lot_km = 0.5;    // people_dots_common.gdshaderinc DOT_LOT_KM
 
 // View width up to which the parcels are single and the crops stand on
 // them as plants; up to 30 km the fields are whole blocks of one colour.
@@ -31,11 +31,16 @@ vec4 sim_fine_at(ivec2 t) {
 	return texelFetch(sim_fine_tex, t, 0);
 }
 
-// The crop of a sown parcel: 0 wheat (half of them), 1 barley, 2 beans, so
-// the farmland is a patchwork; its rows run east-west or north-south.
+// The crop of a sown parcel, so the farmland is a patchwork: 0 wheat,
+// 1 barley (both a closed sheet), 2 vegetables and beans in rows, 3 vines;
+// rows run east-west or north-south.
+const int SIM_WHEAT = 0;
+const int SIM_BARLEY = 1;
+const int SIM_BEANS = 2;
+const int SIM_VINES = 3;
 int sim_crop_kind(vec2 cell) {
 	float pick = sim_hash(cell + 5.1);
-	return pick < 0.5 ? 0 : pick < 0.75 ? 1 : 2;
+	return pick < 0.4 ? SIM_WHEAT : pick < 0.6 ? SIM_BARLEY : pick < 0.85 ? SIM_BEANS : SIM_VINES;
 }
 
 bool sim_crop_rows_ns(vec2 cell) {
@@ -50,6 +55,25 @@ bool sim_house_lot(vec2 p) {
 	vec2 lot = floor(p / sim_lot_km) - sim_lot_origin;
 	if (lot.x < 0.0 || lot.y < 0.0 || lot.x >= float(sim_lots_n) || lot.y >= float(sim_lots_n)) { return false; }
 	return texelFetch(sim_lot_tex, ivec2(lot), 0).a > 0.5;
+}
+
+// Village lanes run round the farmhouse lots, on the lot lines, which are
+// parcel lines too (a lot is 2 x 2 parcels), so they pass between the
+// fields. Distance (km) from p to the nearest lane, large without one.
+const float SIM_LANE_KM = 0.013; // half width
+float sim_lane(vec2 p) {
+	if (sim_lots_n == 0 || sim_view_km > SIM_CROPS_KM) { return 1e9; }
+	vec2 q = p / sim_lot_km;
+	vec2 f = fract(q);
+	vec2 lot = floor(q);
+	vec2 side = vec2(f.x < 0.5 ? -1.0 : 1.0, f.y < 0.5 ? -1.0 : 1.0);
+	vec2 d = min(f, 1.0 - f) * sim_lot_km;
+	vec2 c = (lot + 0.5) * sim_lot_km;
+	bool here = sim_house_lot(c);
+	float best = 1e9;
+	if (here || sim_house_lot(c + vec2(side.x, 0.0) * sim_lot_km)) { best = d.x; }
+	if (here || sim_house_lot(c + vec2(0.0, side.y) * sim_lot_km)) { best = min(best, d.y); }
+	return best;
 }
 
 // The parcel `cell` (of side `size` km): 0 not farmed, 1 fallow, 2 sown;

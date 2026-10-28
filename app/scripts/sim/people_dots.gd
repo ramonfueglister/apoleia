@@ -45,10 +45,10 @@ const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
 const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
-const CROP_ROWS := 6 # rows of plants per parcel (and clumps per row)
+const CROP_ROWS := 12 # rows of vegetables or vines per parcel
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
-const LOT_KM := 0.36 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
+const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const LOTS_N := 64 # lots per side of the house-lot mask around the camera
 const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
@@ -395,7 +395,7 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 			w[(axis + 2) % 3] = half[(axis + 2) % 3]
 			var c := centre + n * half[axis]
 			var q := [c - u - w, c + u - w, c + u + w, c - u + w]
-			var order := [0, 1, 2, 0, 2, 3] if sgn > 0.0 else [0, 2, 1, 0, 3, 2]
+			var order := [0, 2, 1, 0, 3, 2] if sgn > 0.0 else [0, 1, 2, 0, 2, 3] # Godot fronts are clockwise
 			for i in order:
 				var v: Vector3 = q[i]
 				var ao: float = VoxelMesh.AO[3]
@@ -405,33 +405,31 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 					ao = VoxelMesh.AO[1]
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
-## A parcel's crop: CROP_ROWS rows of CROP_ROWS clumps, each a unit box
-## (x, z -0.5..0.5, y 0..1, no bottom) with its place in the parcel in UV;
-## people_crops.gdshader sizes them by the season. Corner shading of the
-## voxel meshes in the vertex alpha (darker at the foot).
+## A parcel's field: the slab (UV.x = -1) and CROP_ROWS rows (UV.x their
+## place across the parcel, UV.y their number), each a unit box (x, z
+## -0.5..0.5, y 0..1, no bottom); people_crops.gdshader sizes them by crop
+## and season. Flat faces: the sides a step darker in the vertex alpha.
 static func _crop_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in CROP_ROWS:
-		for j in CROP_ROWS:
-			var uv := Vector2((j + 0.5) / CROP_ROWS, (i + 0.5) / CROP_ROWS)
-			for axis in 3:
-				for sgn in [-1.0, 1.0]:
-					if axis == 1 and sgn < 0.0:
-						continue
-					var n := Vector3.ZERO
-					n[axis] = sgn
-					var u := Vector3.ZERO
-					u[(axis + 1) % 3] = 0.5
-					var w := Vector3.ZERO
-					w[(axis + 2) % 3] = 0.5
-					var c := Vector3(0, 0.5, 0) + n * 0.5
-					var q := [c - u - w, c + u - w, c + u + w, c - u + w]
-					var order := [0, 1, 2, 0, 2, 3] if sgn > 0.0 else [0, 2, 1, 0, 3, 2]
-					for k in order:
-						var v: Vector3 = q[k]
-						var ao: float = VoxelMesh.AO[3] if axis == 1 or v.y > 0.5 else VoxelMesh.AO[1]
-						st.set_color(Color(1, 1, 1, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
+	for i in CROP_ROWS + 1:
+		var uv := Vector2(-1.0, 0.0) if i == 0 else Vector2((i - 0.5) / CROP_ROWS, i - 1)
+		for axis in 3:
+			for sgn in [-1.0, 1.0]:
+				if axis == 1 and sgn < 0.0:
+					continue
+				var n := Vector3.ZERO
+				n[axis] = sgn
+				var u := Vector3.ZERO
+				u[(axis + 1) % 3] = 0.5
+				var w := Vector3.ZERO
+				w[(axis + 2) % 3] = 0.5
+				var c := Vector3(0, 0.5, 0) + n * 0.5
+				var q := [c - u - w, c + u - w, c + u + w, c - u + w]
+				var order := [0, 2, 1, 0, 3, 2] if sgn > 0.0 else [0, 1, 2, 0, 2, 3] # Godot fronts are clockwise
+				var shade := 1.0 if axis == 1 else 0.8
+				for k in order:
+					st.set_color(Color(1, 1, 1, shade)); st.set_uv(uv); st.set_normal(n); st.add_vertex(q[k])
 	return st.commit()
 
 ## The grain layers on the terrain material: the road map when a month is

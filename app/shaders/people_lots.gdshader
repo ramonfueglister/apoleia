@@ -12,7 +12,7 @@ uniform sampler2D place_tex : filter_nearest, repeat_disable; // house placement
 uniform sampler2D list_tex : filter_nearest, repeat_disable;  // house slots (float)
 uniform int list_w = 128;
 uniform vec2 lot_origin; // lot index of the mask's first pixel
-uniform float lot_km = 0.36;
+uniform float lot_km = 0.5;
 
 void vertex() {
 	int i = INSTANCE_ID;

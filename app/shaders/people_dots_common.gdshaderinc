@@ -12,7 +12,7 @@ uniform float dot_km_per_m = 0.0238; // diorama scale (TileTerrain.DIORAMA_KM_PE
 const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
 const float DOT_FINE_HALF_KM = 0.78125; // half a 1.5625 km village tile (sim/src/settle.rs)
 const float DOT_VILLAGE_KM = 0.8;       // houses of a village within this radius
-const float DOT_LOT_KM = 0.36;          // village houses on a grid of lots (a 15 m farmhouse, scripts/voxel/farmhouse.gd)
+const float DOT_LOT_KM = 0.5;           // village houses on a grid of lots: a 15 m farmhouse (scripts/voxel/farmhouse.gd) with a lane round it, 2 x 2 field parcels
 const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
 const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
 
@@ -100,7 +100,7 @@ mat2 dot_house_turn(vec2 p, out vec2 size_tint) {
 	vec2 r = dot_rand2(key, 7u);
 	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
 	float m = dot_rand2(key, 8u).x < 0.5 ? -1.0 : 1.0;
-	size_tint = vec2(0.85 + 0.3 * r.y, 0.94 + 0.12 * r.y);
+	size_tint = vec2(0.9 + 0.2 * r.y, 0.94 + 0.12 * r.y); // its path just reaches the lane round the lot
 	return mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * mat2(vec2(m, 0.0), vec2(0.0, 1.0));
 }
 
@@ -133,21 +133,31 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 	}
 	// the family around its house, one spot per person; in a village the
 	// house is drawn (people_houses.gdshader, scripts/voxel/farmhouse.gd), so
-	// about half of them stand in the front yard between the door and the
-	// gate, the others out in the fields beyond the fence, never on it
+	// a quarter of them are about the front yard, a third on the lane round
+	// the lot, the others out in the fields; never on the fence or in a row
 	if (!house) {
 		vec2 h = dot_rand2(slot, 99u);
 		if (village) {
+			vec2 h2 = dot_rand2(slot, 98u);
 			vec2 st;
 			mat2 turn = dot_house_turn(p, st);
+			float m_km = dot_km_per_m * st.x;
 			vec2 local; // metres in the farmhouse's frame, front towards +z
-			if (h.y < 0.45) {
-				local = vec2((h.x - 0.5) * 9.0, 3.9 + h.y / 0.45 * 1.8);
+			if (h.y < 0.25) {
+				local = vec2((h.x - 0.5) * 9.0, 3.9 + 1.9 * h2.x);
+			} else if (h.y < 0.6) {
+				// anywhere along the lane, a square round the lot's middle
+				float half_lot = DOT_LOT_KM * 0.5 / m_km;
+				float along = (h.x * 2.0 - 1.0) * half_lot;
+				float across = (h2.x - 0.5) * 0.02 / m_km;
+				int side = int(h2.y * 4.0);
+				local = side == 0 ? vec2(along, half_lot + across) : side == 1 ? vec2(along, -half_lot + across)
+					: side == 2 ? vec2(half_lot + across, along) : vec2(-half_lot + across, along);
 			} else {
 				float a = h.x * 6.2831853;
-				local = vec2(cos(a), sin(a)) * (9.0 + 6.0 * (h.y - 0.45) / 0.55);
+				local = vec2(cos(a), sin(a)) * (12.0 + 8.0 * h2.x);
 			}
-			p += turn * local * dot_km_per_m * st.x;
+			p += turn * local * m_km;
 		} else {
 			p += (h - 0.5) * 2.0 * DOT_FAMILY_KM;
 		}
