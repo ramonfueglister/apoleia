@@ -44,7 +44,7 @@ void vertex() {
 	float level = d.z;
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
 	float s = prop_scale * (prop_kind == 3 ? (0.85 + 0.3 * r0) : (0.75 + 0.5 * r0) * edge_size);
-	float a = prop_kind == 3 ? floor(r2 * 4.0) * 1.5707963 : r2 * 6.2831853;
+	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
 	if (prop_kind == 3) { v.y *= 0.8 + 0.6 * r1 * float(town >= 2); }

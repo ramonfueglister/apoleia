@@ -33,15 +33,15 @@ varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut ha
 // are darker than they appear: sun, ambient and the filmic tone map lift them
 // to the Urbek colours on screen (e.g. meadow shows as #428c34).
 const vec3 GROUND_RGB[11] = vec3[](
-	vec3(0.224, 0.408, 0.188),  // meadow
-	vec3(0.439, 0.475, 0.235),  // dry grass (Mediterranean)
-	vec3(0.600, 0.624, 0.345),  // field
-	vec3(0.259, 0.357, 0.235),  // wetland
-	vec3(0.510, 0.455, 0.306),  // scrub
+	vec3(0.224, 0.408, 0.188),  // meadow (Urbek grass, #428a36 on screen)
+	vec3(0.345, 0.463, 0.212),  // dry grass (Mediterranean; Urbek light grass)
+	vec3(0.600, 0.557, 0.294),  // field (wheat)
+	vec3(0.216, 0.373, 0.212),  // wetland
+	vec3(0.412, 0.424, 0.220),  // scrub
 	vec3(0.655, 0.580, 0.408),  // sand
-	vec3(0.141, 0.294, 0.149),  // forest
-	vec3(0.110, 0.255, 0.188),  // conifer forest
-	vec3(0.333, 0.439, 0.235),  // alpine meadow
+	vec3(0.165, 0.341, 0.145),  // forest (the canopy seen from above)
+	vec3(0.141, 0.298, 0.165),  // conifer forest
+	vec3(0.361, 0.478, 0.235),  // alpine meadow
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
@@ -246,8 +246,9 @@ void fragment() {
 			float aa = fwidth(d) + 1e-4;
 			c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 		}
-		// SimCity 2000 slope tiles come in two clear tones: sun side a little
-		// light, shade side dark, with no gradient in between. The light itself
+		// SimCity 2000 slope tiles come in clear tones: sun side light, shade
+		// side dark, the rest in between, with no gradient; strong enough that
+		// the stacked ramps read even on the map of Europe. The light itself
 		// sees every top as flat (NORMAL below), so this is the only shading:
 		// lambert on top of it washed sun-side ramps out like glass and made
 		// single shade-side steps black walls.
@@ -255,8 +256,8 @@ void fragment() {
 		nw = nw.y < 0.0 ? -nw : nw;
 		float lit = dot(nw, light_dir) - light_dir.y;
 		float aa_l = fwidth(lit) + 0.02;
-		float tone = mix(0.80, 0.97, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
-		tone = mix(tone, 1.05, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
+		float tone = mix(0.72, 0.90, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
+		tone = mix(tone, 1.12, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
 		c *= flat_top > 0.5 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;

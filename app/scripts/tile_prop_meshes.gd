@@ -1,7 +1,7 @@
 extends RefCounted
 ## Procedural meshes of the tile terrain: the tile template (top and four
-## walls, positioned by tile_terrain.gdshader) and low-poly trees and houses
-## with vertex colours. Units: a prop is about 1 unit tall, origin on the ground.
+## walls, positioned by tile_terrain.gdshader), voxel trees after Urbek and
+## low-poly houses with vertex colours. Units: a prop is about 1 unit tall, origin on the ground.
 
 static func tile_template() -> ArrayMesh:
 	# VERTEX.x = part (0 top, 1..4 walls N, E, S, W, 5 coast edge along the
@@ -25,123 +25,83 @@ static func tile_template() -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
-static func _icosphere(subdivisions: int) -> Array:
-	var t := (1.0 + sqrt(5.0)) / 2.0
-	var v: Array[Vector3] = []
-	for p in [Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0),
-			Vector3(0, -1, t), Vector3(0, 1, t), Vector3(0, -1, -t), Vector3(0, 1, -t),
-			Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1)]:
-		v.append(p.normalized())
-	var f: Array = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4],
-		[11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-		[4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
-	for s in subdivisions:
-		var cache := {}
-		var nf: Array = []
-		for tri in f:
-			var m: Array[int] = []
-			for k in 3:
-				var a: int = tri[k]
-				var b: int = tri[(k + 1) % 3]
-				var key := Vector2i(mini(a, b), maxi(a, b))
-				if not cache.has(key):
-					cache[key] = v.size()
-					v.append(((v[a] + v[b]) * 0.5).normalized())
-				m.append(cache[key])
-			nf.append([tri[0], m[0], m[2]])
-			nf.append([tri[1], m[1], m[0]])
-			nf.append([tri[2], m[2], m[1]])
-			nf.append([m[0], m[1], m[2]])
-		f = nf
-	return [v, f]
+## One block of a voxel prop (Urbek style): flat faces, light top, darker
+## sides and underside (the sides are mostly in shade, so not by much). `caps`: also draw the top and bottom.
+static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Color, caps := true) -> void:
+	var c := [Vector3(lo.x, lo.y, lo.z), Vector3(hi.x, lo.y, lo.z), Vector3(hi.x, lo.y, hi.z), Vector3(lo.x, lo.y, hi.z),
+		Vector3(lo.x, hi.y, lo.z), Vector3(hi.x, hi.y, lo.z), Vector3(hi.x, hi.y, hi.z), Vector3(lo.x, hi.y, hi.z)]
+	var faces := [[[4, 5, 6, 7], Vector3.UP, top], [[0, 1, 5, 4], Vector3.FORWARD, side], [[1, 2, 6, 5], Vector3.RIGHT, side],
+		[[2, 3, 7, 6], Vector3.BACK, side], [[3, 0, 4, 7], Vector3.LEFT, side], [[0, 3, 2, 1], Vector3.DOWN, side.darkened(0.4)]]
+	for face in faces:
+		var n: Vector3 = face[1]
+		if not caps and absf(n.y) > 0.5:
+			continue
+		var q: Array = face[0]
+		var a: Vector3 = c[q[0]]
+		var b: Vector3 = c[q[1]]
+		var d: Vector3 = c[q[3]]
+		# Godot draws clockwise faces, seen from outside
+		if (b - a).cross(c[q[2]] - a).dot(n) > 0.0:
+			var t: Vector3 = b; b = d; d = t
+		for p in [a, b, c[q[2]], a, c[q[2]], d]:
+			st.set_color(face[2]); st.set_normal(n); st.add_vertex(p)
 
-## Faceted crown: an icosphere scaled to `radius`, every face flat with its own
-## normal (Dorfromantik / Islanders style), dark below and light on top.
-static func _crown(st: SurfaceTool, centre: Vector3, radius: Vector3, low: Color, high: Color, detail := 1) -> void:
-	var ico := _icosphere(detail)
-	var v: Array[Vector3] = ico[0]
-	for tri in ico[1]:
-		var p: Array[Vector3] = []
-		for k in [0, 2, 1]:
-			p.append(centre + v[tri[k]] * radius)
-		var n := (p[1] - p[0]).cross(p[2] - p[0]).normalized()
-		var mid := (p[0] + p[1] + p[2]) / 3.0
-		var t := clampf((mid.y - (centre.y - radius.y)) / (2.0 * radius.y), 0.0, 1.0)
-		var colour := low.lerp(high, t)
-		for q in p:
-			st.set_color(colour); st.set_normal(n); st.add_vertex(q)
-
-## Faceted cone, flat sides.
-static func _cone(st: SurfaceTool, base_y: float, top_y: float, radius: float, sides: int, low: Color, high: Color, underside := true) -> void:
-	var top := Vector3(0, top_y, 0)
-	for s in sides:
-		var a0 := TAU * s / sides
-		var a1 := TAU * (s + 1) / sides
-		var p0 := Vector3(cos(a0) * radius, base_y, sin(a0) * radius)
-		var p1 := Vector3(cos(a1) * radius, base_y, sin(a1) * radius)
-		var n := (top - p0).cross(p1 - p0).normalized()
-		if n.y < 0: n = -n
-		var lit := low.lerp(high, 0.35 + 0.3 * float(s % 2))
-		st.set_color(low); st.set_normal(n); st.add_vertex(p0)
-		st.set_color(lit); st.set_normal(n); st.add_vertex(top)
-		st.set_color(low); st.set_normal(n); st.add_vertex(p1)
-		# underside, so the cone does not look hollow from steep cameras
-		if not underside: continue
-		st.set_color(low.darkened(0.3)); st.set_normal(Vector3.DOWN); st.add_vertex(p0)
-		st.set_normal(Vector3.DOWN); st.add_vertex(p1)
-		st.set_normal(Vector3.DOWN); st.add_vertex(Vector3(0, base_y, 0))
-
-static func _trunk(st: SurfaceTool, height: float, radius: float, colour: Color, sides := 5) -> void:
-	for s in sides:
-		var a0 := TAU * s / sides
-		var a1 := TAU * (s + 1) / sides
-		var b0 := Vector3(cos(a0) * radius, 0, sin(a0) * radius)
-		var b1 := Vector3(cos(a1) * radius, 0, sin(a1) * radius)
-		var n := Vector3(cos((a0 + a1) * 0.5), 0, sin((a0 + a1) * 0.5))
-		var up := Vector3(0, height, 0)
-		for p in [b0, b0 + up, b1, b1, b0 + up, b1 + up]:
-			st.set_color(colour); st.set_normal(n); st.add_vertex(p)
-
-## Deciduous tree (oak, beech): one faceted crown on a short trunk.
-## `low`: the far version (fewer faces, for trees a few pixels tall).
+## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
+## trunk, Urbek's bright top and dark sides. `low`: the far version (two
+## blocks, for trees a few pixels tall).
 static func broadleaf(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.42, 0.05, Color(0.40, 0.28, 0.18), 3 if low else 5)
-	_crown(st, Vector3(0, 0.70, 0), Vector3(0.36, 0.32, 0.36), Color(0.20, 0.36, 0.15), Color(0.47, 0.64, 0.25), 0 if low else 1)
+	var top := Color(0.36, 0.62, 0.22)
+	var side := Color(0.30, 0.54, 0.19)
+	_box(st, Vector3(-0.06, 0, -0.06), Vector3(0.06, 0.42, 0.06), Color(0.42, 0.29, 0.18), Color(0.42, 0.29, 0.18), false)
+	_box(st, Vector3(-0.32, 0.36, -0.32), Vector3(0.32, 0.86, 0.32), top, side)
+	_box(st, Vector3(-0.20, 0.86, -0.20), Vector3(0.16, 1.04, 0.18), top.lightened(0.06), side)
+	if not low:
+		_box(st, Vector3(0.18, 0.46, -0.22), Vector3(0.42, 0.76, 0.10), top.darkened(0.06), side.darkened(0.06))
+		_box(st, Vector3(-0.24, 0.42, 0.16), Vector3(0.06, 0.70, 0.42), top, side)
 	return st.commit()
 
-## Conifer (fir, spruce): three stacked flat-sided cones.
+## Conifer (fir, spruce): stacked voxel tiers getting smaller to the tip.
 static func conifer(far := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.2, 0.04, Color(0.36, 0.25, 0.16), 3 if far else 5)
-	var low := Color(0.22, 0.42, 0.25)
-	var high := Color(0.46, 0.68, 0.38)
+	var top := Color(0.27, 0.50, 0.28)
+	var side := Color(0.21, 0.42, 0.23)
+	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.2, 0.05), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
 	if far:
-		_cone(st, 0.14, 0.80, 0.30, 5, low, high, false)
-		_cone(st, 0.55, 1.14, 0.20, 5, low, high, false)
+		_box(st, Vector3(-0.28, 0.14, -0.28), Vector3(0.28, 0.55, 0.28), top, side)
+		_box(st, Vector3(-0.15, 0.55, -0.15), Vector3(0.15, 1.12, 0.15), top, side)
 	else:
-		_cone(st, 0.14, 0.66, 0.30, 7, low, high)
-		_cone(st, 0.42, 0.92, 0.23, 7, low, high)
-		_cone(st, 0.68, 1.14, 0.15, 6, low, high)
+		_box(st, Vector3(-0.30, 0.14, -0.30), Vector3(0.30, 0.40, 0.30), top, side)
+		_box(st, Vector3(-0.22, 0.40, -0.22), Vector3(0.22, 0.66, 0.22), top, side)
+		_box(st, Vector3(-0.14, 0.66, -0.14), Vector3(0.14, 0.92, 0.14), top, side)
+		_box(st, Vector3(-0.06, 0.92, -0.06), Vector3(0.06, 1.14, 0.06), top, side)
 	return st.commit()
 
-## Mediterranean cypress: a slim faceted column.
+## Mediterranean cypress: a slim voxel column.
 static func cypress(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.1, 0.03, Color(0.36, 0.25, 0.16), 3 if low else 5)
-	_crown(st, Vector3(0, 0.62, 0), Vector3(0.12, 0.54, 0.12), Color(0.14, 0.30, 0.15), Color(0.32, 0.50, 0.23), 0)
+	var top := Color(0.30, 0.52, 0.24)
+	var side := Color(0.27, 0.49, 0.22)
+	_box(st, Vector3(-0.03, 0, -0.03), Vector3(0.03, 0.1, 0.03), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
+	_box(st, Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side)
+	if not low:
+		_box(st, Vector3(-0.07, 0.98, -0.07), Vector3(0.07, 1.16, 0.07), top, side)
 	return st.commit()
 
-## Stone pine (Pinus pinea), the Roman umbrella pine: a flat parasol crown on a
+## Stone pine (Pinus pinea), the Roman umbrella pine: a flat voxel parasol on a
 ## tall bare trunk.
 static func umbrella_pine(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_trunk(st, 0.82, 0.04, Color(0.45, 0.30, 0.20), 3 if low else 5)
-	_crown(st, Vector3(0, 0.92, 0), Vector3(0.46, 0.13, 0.46), Color(0.16, 0.32, 0.15), Color(0.40, 0.56, 0.24), 0 if low else 1)
+	var top := Color(0.33, 0.54, 0.22)
+	var side := Color(0.26, 0.46, 0.19)
+	_box(st, Vector3(-0.04, 0, -0.04), Vector3(0.04, 0.86, 0.04), Color(0.45, 0.30, 0.20), Color(0.45, 0.30, 0.20), false)
+	_box(st, Vector3(-0.44, 0.82, -0.40), Vector3(0.44, 0.98, 0.40), top, side)
+	if not low:
+		_box(st, Vector3(-0.26, 0.98, -0.24), Vector3(0.24, 1.06, 0.26), top.lightened(0.05), side)
 	return st.commit()
 
 static func house() -> ArrayMesh:

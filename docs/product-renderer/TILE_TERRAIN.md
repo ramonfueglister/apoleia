@@ -20,11 +20,11 @@ unabhängig und unverändert.
   `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in SimCity 2000 statt
   vieler schmaler Streifen.
 - Ab 2-km-Kacheln kommen die Eckstufen aus dem Bake (`levels-L*.png`,
-  `corner_levels`): eine Stufe sind 200 / 240 / 280 / 320 m echt
-  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 150 m
-  (`LEVEL_FLOOR_M`). Ebenen und flaches Hügelland bleiben so eine Stufe, ohne
-  Terrassenlinien quer durchs Flachland, und Gebirge behalten auf der
-  Europakarte mehrere Stufen (Alpen bis 10 Stufen). Die Höhe wird vorher über
+  `corner_levels`): eine Stufe sind 170 / 190 / 210 / 230 m echt
+  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 100 m
+  (`LEVEL_FLOOR_M`). Ebenen bleiben so eine Stufe, Hügelland bekommt ein bis
+  zwei Stufen, und Gebirge zeigen auch auf der Europakarte die gestapelten
+  Rampen von SimCity 2000 (Alpen bis 9 Stufen bei 16-km-Kacheln). Die Höhe wird vorher über
   1,2 Kacheln weichgezeichnet, danach räumt der Bake je Stufe auf (Öffnen und
   Schließen mit 3 × 3 Ecken): einzelne Buckel, Löcher und eine Kachel breite
   Stege verschwinden, Gebirge bleiben als zusammenhängende Massive stehen.
@@ -66,17 +66,22 @@ unabhängig und unverändert.
   Hälfte zu dieser Ecke hin sie an, geschnitten an der Diagonale. So laufen
   Waldränder als 45-Grad-Linien statt als Treppe, und eine Kachel hat höchstens
   zwei Farben. Die Palette ist auf die Urbek-Töne am Bildschirm abgestimmt
-  (satte Grüns, blasses Weizengelb, flaches helles Wasser). Rampen haben zwei
-  feste Töne (Sonnenseite leicht hell, Schattenseite dunkel); das Licht sieht
-  jede Oberseite als flach, damit Rampen weder glasig noch schwarz werden.
+  (Wiese im Urbek-Grasgrün #428a36, trockenes Gras im hellen Urbek-Grün,
+  Weizen goldgelb, Wald als Kronendach von oben, flaches helles Wasser).
+  Rampen haben drei feste Töne wie in SimCity 2000 (Sonnenseite 1,12,
+  Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
+  bis zur Europakarte lesbar bleiben; das Licht sieht jede Oberseite als
+  flach, damit Rampen weder glasig noch schwarz werden.
   Wände sind ein dunklerer Erdton ohne Schichtlinien. Am Meer ein Sandsaum an
   den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
   heller, wo die Kachel Land berührt. Bäume stehen nah genau auf den
   Waldkacheln (und Waldhälften), dazu einzelne Bäume und kleine Baumgruppen
   auf offenem Grasland und an Feldern. Auch dichter Wald öffnet sich alle paar
   Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb
-  Pixel breit; auf der Europakarte stehen die großen Ströme (Natural Earth
-  scalerank bis 4, bei 8-km-Kacheln bis 5). Städte
+  Pixel breit. Natural Earth scalerank je Ebene: bis 10 bei 0,5 und 1 km,
+  8 bei 2 km, 7 bei 4 km, 6 bei 8 km und 5 auf der Europakarte (16 km). Tiber
+  (Rang 5) und Arno (Rang 7) zählen als Flüsse Roms höher, als Natural Earth
+  sie für heutige Karten einstuft. Städte
   nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
   weit draußen im Land auf.
 
@@ -100,7 +105,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
-| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 200 / 240 / 280 / 320 m ab 150 m |
+| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 170 / 190 / 210 / 230 m ab 100 m |
 | Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
 | Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1 auf den Waldkacheln; weiter draußen sind Waldkacheln dunkelgrün |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
@@ -115,7 +120,10 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   allein neu mit `--levels-only`, etwa 1 Minute) und die Landschaft jeder Kachel
   je Zoomstufe (`ground-L*.png`, `ground_classes`: Bodenbedeckung und Höhe an
   der Kachelmitte, ein wenig Rauschen in km macht aus Anteilen Flecken dieser
-  Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; allein neu mit
+  Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; weiter draußen
+  sind die Daten stärker weichgezeichnet und das Rauschen schwächer, und
+  Lichtungen gibt es nur bis 2-km-Kacheln, so stehen auf der Europakarte
+  ruhige große Landschaften statt Flecken; allein neu mit
   `--ground-only`, etwa 8 Minuten). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
@@ -134,8 +142,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
   2-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
   zeichnete dort nur Streifen).
-- `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die facettierten
-  Low-Poly-Bäume (flache Normalen, Farbverlauf nach oben) und die Häuser.
+- `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
+  nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
+  Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die Häuser.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.
