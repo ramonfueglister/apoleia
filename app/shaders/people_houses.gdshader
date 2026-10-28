@@ -8,7 +8,7 @@
 // spot from the house placement pass (people_dots_prep.gdshader with
 // `houses`), which runs only when houses or the terrain view change.
 shader_type spatial;
-render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled;
+render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled; // mirrored houses turn their faces round
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 
@@ -19,6 +19,7 @@ uniform int list_w = 128;
 uniform int list_offset = 0; // this level of detail's first entry in the list
 
 varying vec3 tint;
+varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
@@ -31,26 +32,26 @@ void vertex() {
 	vec4 rec = dot_record(px);
 	vec4 place = texelFetch(place_tex, px, 0);
 	vec2 p = rec.xy + place.xy - 32.0;
-	// turn, size and tint by the lot, so two houses on one lot are one
-	ivec2 lot = ivec2(floor(p / DOT_LOT_KM));
-	vec2 r = dot_rand2(dot_hash(uint(lot.x) * 0x9e3779b1u ^ uint(lot.y) * 0x85ebca77u), 7u);
-	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
-	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
-	vec3 v = VERTEX * prop_scale * (0.85 + 0.3 * r.y);
-	v.xz = rot * v.xz;
+	// turn, mirror, size and tint by the lot, so two houses on one lot are one
+	vec2 st;
+	mat2 turn = dot_house_turn(p, st);
+	vec3 v = VERTEX * prop_scale * st.x;
+	v.xz = turn * v.xz;
 	vec3 world = vec3(p.x, place.z * level_h, p.y) + v;
 	vec3 nrm = NORMAL;
-	nrm.xz = rot * nrm.xz;
+	nrm.xz = turn * nrm.xz;
 	bool show = rec.z != 0.0 && place.a > 0.5;
 	// empty slots: all vertices on one point behind the camera, no area
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
-	tint = vec3(0.94 + 0.12 * r.y);
+	normal = NORMAL;
+	tint = vec3(st.y);
 	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 
 void fragment() {
 	ALBEDO = pow(COLOR.rgb * tint, vec3(2.2)); // vertex colours are sRGB
+	NORMAL = normalize(normal);
 	ROUGHNESS = 1.0;
 }
 

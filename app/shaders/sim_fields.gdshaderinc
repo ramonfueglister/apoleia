@@ -19,7 +19,7 @@ uniform float sim_lot_km = 0.36;   // people_dots_common.gdshaderinc DOT_LOT_KM
 // View width up to which the parcels are single and the crops stand on
 // them as plants; up to 30 km the fields are whole blocks of one colour.
 const float SIM_CROPS_KM = 8.0;
-const float SIM_FIELDS_KM = 30.0;
+const float SIM_FIELDS_KM = 40.0;
 
 float sim_hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -29,6 +29,17 @@ float sim_hash(vec2 p) {
 vec4 sim_fine_at(ivec2 t) {
 	if (t.x < 0 || t.y < 0 || t.x >= sim_fine_n || t.y >= sim_fine_n) { return vec4(0.0); }
 	return texelFetch(sim_fine_tex, t, 0);
+}
+
+// The crop of a sown parcel: 0 wheat (half of them), 1 barley, 2 beans, so
+// the farmland is a patchwork; its rows run east-west or north-south.
+int sim_crop_kind(vec2 cell) {
+	float pick = sim_hash(cell + 5.1);
+	return pick < 0.5 ? 0 : pick < 0.75 ? 1 : 2;
+}
+
+bool sim_crop_rows_ns(vec2 cell) {
+	return sim_hash(cell + 9.7) < 0.5;
 }
 
 // Whether a farmhouse stands on the lot under p (world km); its house,

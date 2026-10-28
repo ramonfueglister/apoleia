@@ -24,9 +24,10 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 
 // the plants through the season (sRGB), by crop: fresh sprouts, green
 // corn, ripe wheat after Urbek's measured wheat; barley a little paler; beans
-// low, bushy and dark, ripening brown; straw stubble after the harvest
-const vec3 SPROUT[3] = vec3[](vec3(0.52, 0.72, 0.3), vec3(0.62, 0.78, 0.37), vec3(0.36, 0.58, 0.24));
-const vec3 GREEN[3] = vec3[](vec3(0.4, 0.62, 0.24), vec3(0.55, 0.71, 0.3), vec3(0.27, 0.47, 0.2));
+// low, bushy and dark, ripening brown; straw stubble after the harvest. Lit
+// like Urbek's vegetable rows (about #7ab741 on the sunny side).
+const vec3 SPROUT[3] = vec3[](vec3(0.62, 0.8, 0.36), vec3(0.7, 0.84, 0.42), vec3(0.46, 0.68, 0.3));
+const vec3 GREEN[3] = vec3[](vec3(0.5, 0.73, 0.28), vec3(0.64, 0.78, 0.34), vec3(0.34, 0.56, 0.24));
 const vec3 RIPE[3] = vec3[](vec3(0.84, 0.77, 0.44), vec3(0.9, 0.84, 0.58), vec3(0.6, 0.53, 0.3));
 const float CROP_H[3] = float[](1.0, 0.85, 0.6); // ripe height (m)
 const vec3 STUBBLE = vec3(0.78, 0.68, 0.43);
@@ -42,9 +43,7 @@ void vertex() {
 	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
 	bool open = tt_town(t) == 0 && tt_water(t) == W_LAND && (land == G_FIELD || land == G_MEADOW || land == G_DRY_GRASS);
 	float g = f.b;
-	// one crop per parcel, half of them wheat, so the farmland is a patchwork
-	float pick = sim_hash(cell + 5.1);
-	int kind = pick < 0.5 ? 0 : pick < 0.75 ? 1 : 2;
+	int kind = sim_crop_kind(cell); // one crop per parcel, as the ground colour
 	// height (m) and width (share of the row spacing) by the season;
 	// ploughed earth has none
 	float h = 0.0;
@@ -61,14 +60,17 @@ void vertex() {
 	bool house = sim_house_lot(cell * size + UV * size);
 	bool show = state == 2 && open && h > 0.0 && !house;
 	float step = size / crop_rows;
-	// ripe wheat closes along the row and leaves a furrow between rows
-	vec2 half_w = vec2(w, w >= 1.0 ? 0.8 : w) * step;
+	// the plants close along their row into a ridge, as in the farmhouse's
+	// vegetable bed; ripe corn closes across the rows too and leaves a
+	// narrow furrow
+	vec2 extent = vec2(1.0, w >= 1.0 ? 0.8 : w) * step;
+	if (sim_crop_rows_ns(cell)) { extent = extent.yx; }
 	vec2 r = vec2(sim_hash(cell + UV * 31.0), sim_hash(cell - UV * 17.0));
-	vec2 p = cell * size + UV * size + VERTEX.xz * half_w;
+	vec2 p = cell * size + UV * size + VERTEX.xz * extent;
 	vec4 k = tt_corners_cached(dot_tile(p));
 	vec2 uv = fract((p - world_min) / tile_km);
 	float level = mix(mix(k.x, k.y, uv.x), mix(k.w, k.z, uv.x), uv.y);
-	float plant = h * km_per_m * (w >= 1.0 ? 1.0 : 0.85 + 0.3 * r.x);
+	float plant = h * km_per_m * (w >= 1.0 ? 1.0 : 0.92 + 0.16 * r.x);
 	vec3 world = vec3(p.x, level * level_h + VERTEX.y * plant, p.y);
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);

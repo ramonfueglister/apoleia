@@ -23,17 +23,19 @@ const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 
 const BOUNDS_HI := Vector3(7.5, 5.75, 6.5)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v5_%s.res"
+const CACHE := "user://farmhouse_v6_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
+# The roof is a red terracotta (hue about 8 degrees): the warm sun pushes it
+# towards orange on screen.
 const PALETTE := [
-	Color(0, 0, 0), Color("efe2c6"), Color("d9c7a2"), Color("d6ccb4"), Color("c8643c"),
-	Color("b4573a"), Color("9c4a2c"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
-	Color("5e3f28"), Color("a5835f"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
-	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f")]
+	Color(0, 0, 0), Color("f0dcb8"), Color("dcc59c"), Color("d6ccb4"), Color("bd5345"),
+	Color("a8473b"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color("5e3f28"), Color("86705a"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
+	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
-	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT }
+	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH }
 
 ## What fills point p (metres).
 static func sample(p: Vector3) -> int:
@@ -50,7 +52,7 @@ static func _house(p: Vector3) -> int:
 	var az := absf(p.z)
 	if p.y < WALL:
 		if p.y < 0.375:
-			return STONE if ax < HALF_X + 0.125 and az < HALF_Z + 0.125 else EMPTY
+			return PLINTH if ax < HALF_X + 0.125 and az < HALF_Z + 0.125 else EMPTY
 		if ax >= HALF_X or az >= HALF_Z:
 			return EMPTY
 		var outer := ax >= HALF_X - 0.25 or az >= HALF_Z - 0.25

@@ -7,13 +7,13 @@
 
 uniform sampler2DArray people_tex : filter_nearest, repeat_disable;
 uniform int page_side = 64;
+uniform float dot_km_per_m = 0.0238; // diorama scale (TileTerrain.DIORAMA_KM_PER_M), for the yards
 
 const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
 const float DOT_FINE_HALF_KM = 0.78125; // half a 1.5625 km village tile (sim/src/settle.rs)
 const float DOT_VILLAGE_KM = 0.8;       // houses of a village within this radius
 const float DOT_LOT_KM = 0.36;          // village houses on a grid of lots (a 15 m farmhouse, scripts/voxel/farmhouse.gd)
 const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
-const float DOT_YARD_KM = 0.17;         // around a drawn village house (0.24 km long, tile_terrain.gd HOUSE_M)
 const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
 
 uint dot_hash(uint x) {
@@ -91,6 +91,19 @@ vec2 dot_lot(vec2 p) {
 	return (floor(p / DOT_LOT_KM) + 0.5) * DOT_LOT_KM;
 }
 
+// The farmhouse on the lot under p (people_houses.gdshader), the same for
+// everything on that lot: its quarter turn and mirror as one matrix on the
+// local x, z, and in `size_tint` its size and brightness factors.
+mat2 dot_house_turn(vec2 p, out vec2 size_tint) {
+	ivec2 lot = ivec2(floor(p / DOT_LOT_KM));
+	uint key = dot_hash(uint(lot.x) * 0x9e3779b1u ^ uint(lot.y) * 0x85ebca77u);
+	vec2 r = dot_rand2(key, 7u);
+	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
+	float m = dot_rand2(key, 8u).x < 0.5 ? -1.0 : 1.0;
+	size_tint = vec2(0.85 + 0.3 * r.y, 0.94 + 0.12 * r.y);
+	return mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * mat2(vec2(m, 0.0), vec2(0.0, 1.0));
+}
+
 // Where the person in `slot` stands: (offset x, offset z) in km from the
 // record's anchor and the height in levels. Records: sim/src/view.rs. A house
 // record (`house`) stands on the household's house spot itself, without the
@@ -119,13 +132,22 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 		village = true;
 	}
 	// the family around its house, one spot per person; in a village the
-	// house is drawn (people_houses.gdshader), so they stand in a ring
-	// outside its walls
+	// house is drawn (people_houses.gdshader, scripts/voxel/farmhouse.gd), so
+	// about half of them stand in the front yard between the door and the
+	// gate, the others out in the fields beyond the fence, never on it
 	if (!house) {
 		vec2 h = dot_rand2(slot, 99u);
 		if (village) {
-			float a = h.x * 6.2831853;
-			p += vec2(cos(a), sin(a)) * (DOT_YARD_KM + 0.4 * DOT_YARD_KM * h.y);
+			vec2 st;
+			mat2 turn = dot_house_turn(p, st);
+			vec2 local; // metres in the farmhouse's frame, front towards +z
+			if (h.y < 0.45) {
+				local = vec2((h.x - 0.5) * 9.0, 3.9 + h.y / 0.45 * 1.8);
+			} else {
+				float a = h.x * 6.2831853;
+				local = vec2(cos(a), sin(a)) * (9.0 + 6.0 * (h.y - 0.45) / 0.55);
+			}
+			p += turn * local * dot_km_per_m * st.x;
 		} else {
 			p += (h - 0.5) * 2.0 * DOT_FAMILY_KM;
 		}

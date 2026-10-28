@@ -45,34 +45,40 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 
 // Fields on open land (`land`, the terrain's landscape here), on parcels of
 // half a terrain tile (`tile_size`, km), on the terrain's own grid so a
-// parcel never cuts a tile (sim_parcel). Up close the sown parcels are
-// soil and the crops stand on them (people_crops.gdshader), the fallow ones
-// stay meadow; from SIM_CROPS_KM of view a block is one colour, the
-// season's (earth, sprouts, green, ripe wheat, stubble) averaged with its
-// fallow share; from SIM_FIELDS_KM the farmland is the terrain's own.
+// parcel never cuts a tile (sim_parcel). Each parcel is one flat colour:
+// up close the sown ones are dark ploughed soil (or the ripe crop's sheet)
+// and the plants stand on them (people_crops.gdshader); from SIM_CROPS_KM
+// of view each field block (no fallow parcels) takes its crop's colour for
+// the season, so the farmland reads as a patchwork of wheat, barley, beans
+// and soil; fallow parcels stay meadow. From SIM_FIELDS_KM the farmland is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
 	if (sim_house_lot(p)) { return land == G_FIELD ? GROUND_RGB[G_MEADOW] : c; } // the farmhouse's yard
 	float size = tile_size * 0.5;
-	bool whole = sim_view_km > SIM_CROPS_KM;
+	bool near = sim_view_km <= SIM_CROPS_KM;
+	vec2 cell = floor(p / size);
 	vec4 f;
-	int state = sim_parcel(floor(p / size), size, whole, f);
+	int state = sim_parcel(cell, size, !near, f);
 	vec3 meadow = GROUND_RGB[G_MEADOW];
 	// the sim decides where the fields are: farmland it does not farm lies
 	// as pasture
 	if (state == 0) { return land == G_FIELD ? meadow : c; }
 	if (state == 1) { return meadow; }
 	float g = f.b;
+	// one crop per parcel up close, further out one per field block (its
+	// fine tile), so the farmland is calm blocks and not a speckle
+	vec2 block = floor(((cell + 0.5) * size - sim_fine_origin) / sim_fine_km) + floor(sim_fine_origin / sim_fine_km + 0.5);
+	int kind = sim_crop_kind(near ? cell : block);
 	vec3 field = GROUND_RGB[G_FIELD];
+	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // ploughed, darker than the paths
 	vec3 stubble = mix(field, C_EARTH, 0.4);
-	if (!whole) {
-		return g >= 0.75 ? field : g <= 0.0 ? stubble : C_EARTH;
-	}
-	// stubble, ploughed earth, sprouts on the soil, green corn, ripe wheat:
-	// sown land never takes the meadow's own green, so it reads as farmland
-	vec3 sown = g <= 0.0 ? stubble : g < 0.12 ? C_EARTH : g < 0.4 ? mix(C_EARTH, meadow, 0.5) : g < 0.75 ? mix(meadow, field, 0.4) : field;
-	return mix(meadow, sown, clamp(f.g, 0.25, 1.0));
+	// wheat, paler barley, low dark beans: green, then ripe
+	vec3 green = kind == 0 ? mix(meadow, field, 0.35) : kind == 1 ? mix(meadow, field, 0.6) : meadow * vec3(0.78, 0.86, 0.78);
+	vec3 ripe = kind == 0 ? field : kind == 1 ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
+	if (g <= 0.0) { return stubble; }
+	if (near) { return g >= 0.75 && kind != 2 ? ripe : soil; }
+	return g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.55) : g < 0.75 ? green : ripe;
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and
@@ -154,7 +160,7 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 		// footpaths only up close (10 km of view), at least 1.5 px
 		if (w.y > 0.0 && sim_view_km <= 10.0) {
 			float half_w = max(w.y >= 2.0 ? SIM_PATH_KM : SIM_TRAIL_KM, fw_km * 1.5) * 0.5;
-			c = mix(c, C_BANK, sim_band(w.x, half_w, fw_km));
+			c = mix(c, C_PAVED * 0.96, sim_band(w.x, half_w, fw_km));
 		}
 		// a paved square with rows of stalls under red and white awnings
 		float sq = 0.16;
@@ -166,20 +172,16 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 			c = mix(c, m, sim_band(w.z, sq, fw_km));
 		}
 	}
-	// trade roads up to a few hundred km of view, only the paved ones from
-	// about 100 km: a light travertine band with darker kerbs, at least
-	// 2 px, so they read as roads and not as scratches
-	if (sim_view_km < 500.0) {
+	// trade roads up to 100 km of view: a light paved band with a darker
+	// edge, at least 3 px, so they read as roads and not as scratches;
+	// further out the map is calm
+	if (sim_view_km < 100.0) {
 		vec3 r = sim_roads(p);
-		bool road = r.y >= 2.0;
-		if (r.y > 0.0 && (road || sim_view_km < 100.0)) {
-			float half_w = max(road ? SIM_ROAD_KM : SIM_TRACK_KM, fw_km * 2.0) * 0.5;
-			vec3 top = road ? mix(C_PAVED, vec3(1.0), 0.3) : C_BANK;
-			// kerbs only where the road is wide enough to carry them; a thin
-			// dark line reads as a crack
-			if (half_w > fw_km * 1.9) {
-				c = mix(c, C_PAVED * 0.8, sim_band(r.x, half_w + fw_km, fw_km));
-			}
+		if (r.y > 0.0) {
+			bool road = r.y >= 2.0;
+			float half_w = max(road ? SIM_ROAD_KM : SIM_TRACK_KM, fw_km * 3.0) * 0.5;
+			vec3 top = road ? mix(C_PAVED, vec3(1.0), 0.15) : C_PAVED;
+			c = mix(c, C_BANK * 0.75, sim_band(r.x, half_w + fw_km, fw_km));
 			c = mix(c, top, sim_band(r.x, half_w, fw_km));
 		}
 	}

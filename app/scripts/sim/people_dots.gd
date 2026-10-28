@@ -167,6 +167,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	name = "PeopleDots"
 	_material.shader = SHADER
 	_prep_material.shader = PREP_SHADER
+	_prep_material.set_shader_parameter("dot_km_per_m", TileTerrain.DIORAMA_KM_PER_M) # the family in the farmyard
 	_prep_rect = ColorRect.new()
 	_prep_view = _make_prep("PeoplePlaces", _prep_rect, _prep_material)
 	_house_prep_material.shader = PREP_SHADER
@@ -353,28 +354,30 @@ static func _figure_mesh() -> ArrayMesh:
 	var sandal := Color(0.36, 0.24, 0.15)
 	var wood := Color(0.42, 0.3, 0.18)
 	var iron := Color(0.55, 0.56, 0.58)
+	# chunky like Urbek's people: legs and arms two blocks apart, a broad
+	# tunic and a big head
 	for side in [-1.0, 1.0]:
 		var left: bool = side < 0.0
-		_box(st, Vector3(0.06 * side, 0.02, 0.02), Vector3(0.04, 0.02, 0.06), sandal, FIG_SANDAL_L if left else FIG_SANDAL_R)
-		_box(st, Vector3(0.06 * side, 0.26, 0.0), Vector3(0.04, 0.22, 0.04), skin, FIG_LEG_L if left else FIG_LEG_R)
-		_box(st, Vector3(0.16 * side, 0.62, 0.0), Vector3(0.04, 0.16, 0.04), skin, FIG_ARM_L if left else FIG_ARM_R)
+		_box(st, Vector3(0.075 * side, 0.02, 0.02), Vector3(0.05, 0.02, 0.07), sandal, FIG_SANDAL_L if left else FIG_SANDAL_R)
+		_box(st, Vector3(0.075 * side, 0.26, 0.0), Vector3(0.05, 0.22, 0.05), skin, FIG_LEG_L if left else FIG_LEG_R)
+		_box(st, Vector3(0.2 * side, 0.62, 0.0), Vector3(0.05, 0.16, 0.05), skin, FIG_ARM_L if left else FIG_ARM_R)
 	# the tunic's hem stays the only geometry below 0.5 (the shader lets it
 	# down into a long dress)
-	_box(st, Vector3(0.0, 0.62, 0.0), Vector3(0.12, 0.18, 0.08), Color.WHITE, FIG_TUNIC)
-	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(0.08, 0.08, 0.08), skin, FIG_FIXED)
-	_box(st, Vector3(0.0, 0.97, -0.01), Vector3(0.088, 0.03, 0.088), hair, FIG_HAIR)
-	_box(st, Vector3(0.0, 0.9, -0.07), Vector3(0.088, 0.06, 0.028), hair, FIG_HAIR)
+	_box(st, Vector3(0.0, 0.62, 0.0), Vector3(0.15, 0.18, 0.1), Color.WHITE, FIG_TUNIC)
+	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(0.095, 0.095, 0.095), skin, FIG_FIXED)
+	_box(st, Vector3(0.0, 0.985, -0.01), Vector3(0.104, 0.03, 0.104), hair, FIG_HAIR)
+	_box(st, Vector3(0.0, 0.9, -0.085), Vector3(0.104, 0.07, 0.03), hair, FIG_HAIR)
 	# props
-	_box(st, Vector3(0.2, 0.56, 0.06), Vector3(0.016, 0.56, 0.016), wood, FIG_POLE)
-	_box(st, Vector3(0.2, 1.08, 0.12), Vector3(0.016, 0.04, 0.08), iron, FIG_HOE)
-	_box(st, Vector3(0.2, 1.18, 0.06), Vector3(0.024, 0.06, 0.024), iron, FIG_SPEAR)
-	_box(st, Vector3(-0.24, 0.56, 0.02), Vector3(0.02, 0.2, 0.12), Color(0.58, 0.16, 0.12), FIG_SHIELD)
-	_box(st, Vector3(-0.264, 0.56, 0.02), Vector3(0.008, 0.04, 0.04), Color(0.78, 0.66, 0.34), FIG_SHIELD)
-	_box(st, Vector3(-0.16, 0.36, 0.06), Vector3(0.012, 0.12, 0.02), iron, FIG_SWORD)
-	_box(st, Vector3(-0.16, 0.5, 0.06), Vector3(0.02, 0.012, 0.036), wood, FIG_SWORD)
-	_box(st, Vector3(0.0, 0.54, -0.1), Vector3(0.14, 0.26, 0.012), Color.WHITE, FIG_CLOAK)
-	_box(st, Vector3(0.0, 0.5, 0.092), Vector3(0.1, 0.16, 0.012), Color(0.4, 0.27, 0.16), FIG_APRON)
-	_box(st, Vector3(0.0, 0.66, -0.14), Vector3(0.08, 0.1, 0.06), Color(0.6, 0.5, 0.34), FIG_BUNDLE)
+	_box(st, Vector3(0.25, 0.56, 0.06), Vector3(0.018, 0.56, 0.018), wood, FIG_POLE)
+	_box(st, Vector3(0.25, 1.08, 0.12), Vector3(0.018, 0.04, 0.08), iron, FIG_HOE)
+	_box(st, Vector3(0.25, 1.18, 0.06), Vector3(0.026, 0.06, 0.026), iron, FIG_SPEAR)
+	_box(st, Vector3(-0.29, 0.56, 0.02), Vector3(0.02, 0.2, 0.12), Color(0.58, 0.16, 0.12), FIG_SHIELD)
+	_box(st, Vector3(-0.314, 0.56, 0.02), Vector3(0.008, 0.04, 0.04), Color(0.78, 0.66, 0.34), FIG_SHIELD)
+	_box(st, Vector3(-0.2, 0.36, 0.07), Vector3(0.012, 0.12, 0.02), iron, FIG_SWORD)
+	_box(st, Vector3(-0.2, 0.5, 0.07), Vector3(0.02, 0.012, 0.036), wood, FIG_SWORD)
+	_box(st, Vector3(0.0, 0.54, -0.115), Vector3(0.17, 0.26, 0.012), Color.WHITE, FIG_CLOAK)
+	_box(st, Vector3(0.0, 0.5, 0.112), Vector3(0.12, 0.16, 0.012), Color(0.4, 0.27, 0.16), FIG_APRON)
+	_box(st, Vector3(0.0, 0.66, -0.16), Vector3(0.09, 0.1, 0.06), Color(0.6, 0.5, 0.34), FIG_BUNDLE)
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half`. The side

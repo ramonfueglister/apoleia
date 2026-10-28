@@ -210,7 +210,7 @@ void vertex() {
 
 void fragment() {
 	// the clavi run down from the shoulders, front and back
-	bool stripe = stripes > 0.0 && abs(abs(local.x) - 0.07) < stripes && local.y > 0.45;
+	bool stripe = stripes > 0.0 && abs(abs(local.x) - 0.085) < stripes && local.y > 0.45;
 	ALBEDO = stripe ? pow(PURPLE, vec3(2.2)) : colour;
 	ROUGHNESS = 1.0;
 }
