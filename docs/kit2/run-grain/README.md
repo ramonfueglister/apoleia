@@ -250,6 +250,25 @@ sind zu klein für ihren Haushalt, Hungertote und Abwanderung steigen wieder. Ta
 bezahlt (14 Mio. Tage im Jahr 100). Die Arbeit selbst bringt noch nichts hervor
 (Platzhalter). Fingerprint gleich mit 1 und 4 Threads (10 Jahre).
 
+## Ehe nach dem Zensus (S86, 100 Jahre, Seed 1, `run100-s86.txt`; vorher: `run100-s84-work.txt`)
+
+Ramon: „Alle drei belegten Wege“. 20 % der Frauen heiraten nie, 10 % der Ehen enden pro
+Jahr durch Scheidung, Frauen werden nur bis 35 gesucht (alles PLACEHOLDER, auf die
+Gesamtzahlen des Zensus eingestellt; siehe run-people).
+
+| Jahr | Menschen vorher → jetzt | Geburten pro 1'000 | Hungertote vorher → jetzt | Frauen 15–49 verheiratet |
+|---|---|---|---|---|
+| 2 | 113'393 → 111'030 | 46 | 4'168 → 3'508 | 55 % |
+| 10 | 115'265 → 106'130 | 45 | 284 → 213 | 62 % |
+| 50 | 143'382 → 104'090 | 46 | 446 → 137 | 65 % |
+| 100 | 181'410 → 110'673 | 47 | 906 → 125 | 65 % |
+
+Von Jahr 10 bis 100 wächst die Bevölkerung um 0,05 % im Jahr (Ziel 0,1–0,2 %), gegen
+Ende schneller (0,37 % im Jahr 100). Die Hungersnot der ersten zwei Jahre (S84 a) drückt
+den Start von 116'805 auf 106'000. Fingerprint gleich mit 1 und 4 Threads (10 Jahre).
+Grain im Mittel 1,75 ms pro Tag; gemessen mit einem zweiten Lauf gleichzeitig auf der
+Maschine, also nicht mit `run100-timing.txt` vergleichbar.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |

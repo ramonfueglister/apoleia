@@ -4,6 +4,7 @@
 //! memory and a fingerprint.
 //!
 //! Usage: people [--years N] [--seed S] [--threads N] [--root DIR] [--iq-gap G]
+//!   [--never PER_1000] [--divorce PER_10K_YEAR]
 
 use apoleia_sim::people::{Fields, People, PEOPLE_PER_PERSON};
 use std::path::PathBuf;
@@ -54,6 +55,12 @@ fn main() {
         Some(w) => People::with_iq_mate_gap(&inp, seed, w),
         None => People::new(&inp, seed),
     };
+    if let Some(v) = arg("--never") {
+        p.never_marry_per_1000 = v.parse().unwrap();
+    }
+    if let Some(v) = arg("--divorce") {
+        p.divorce_per_10k_year = v.parse().unwrap();
+    }
     let spawn_ms = t0.elapsed().as_secs_f64() * 1e3;
     println!(
         "people={} (1 per {PEOPLE_PER_PERSON} real) places={} grid={}x{} spawn_ms={spawn_ms:.0} (flow fields {} in {:.0} ms) rss_mb={:.0} (+{:.0})",
@@ -73,7 +80,7 @@ fn main() {
     // Mean time per day of the month and per part (--slices).
     let slices = args.iter().any(|a| a == "--slices");
     let mut by_slice = vec![[0.0f64; 13]; 30];
-    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages age_f age_m  married_w%  waited  moved_hh left_hh/people left_map joined_hh/people split_hh/people weight%  hungry  events_in_cal  rss_mb");
+    println!("year  people  births  deaths(krank/alter/hunger/geburt)  <1y  marriages divorces age_f age_m  married_w%  waited  moved_hh left_hh/people left_map joined_hh/people split_hh/people weight%  hungry  events_in_cal  rss_mb");
     let mut all_stats = apoleia_sim::people::Stats::default();
     for y in 1..=years {
         all_stats.add_marry(&p.stats);
@@ -120,7 +127,7 @@ fn main() {
         let (mw, w, health, hungry) = p.census();
         let m = s.marriages.max(1) as f64;
         println!(
-            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:5}/{:5} {:5}/{:5} {:6.1} {:7} {:8} {:6.0}",
+            "{y:4} {:7} {:7} {:6} ({}/{}/{}/{}) {:5} {:6} {:5} {:5.1} {:5.1} {:6.1} {:7} {:6} {:5}/{:5} {:6} {:5}/{:5} {:5}/{:5} {:6.1} {:7} {:8} {:6.0}",
             p.count,
             s.births,
             s.deaths.iter().sum::<u64>(),
@@ -130,6 +137,7 @@ fn main() {
             s.deaths[3],
             s.deaths_under1,
             s.marriages,
+            s.divorces,
             s.marry_age_f / m,
             s.marry_age_m / m,
             100.0 * mw as f64 / w.max(1) as f64,

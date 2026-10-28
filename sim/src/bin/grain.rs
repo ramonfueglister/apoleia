@@ -46,6 +46,13 @@ fn main() {
         Some("one") => apoleia_sim::people::INHERIT_ONE,
         Some(v) => panic!("--inherit now|equal|one, not {v}"),
     };
+    // S86 calibration: never-married women per 1,000, divorces per 10,000 marriages and year.
+    if let Some(v) = arg("--never") {
+        p.never_marry_per_1000 = v.parse().unwrap();
+    }
+    if let Some(v) = arg("--divorce") {
+        p.divorce_per_10k_year = v.parse().unwrap();
+    }
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
@@ -82,7 +89,7 @@ fn main() {
     let mut worst = (0.0, 0i64);
     let mut last = p.count as f64;
     println!(
-        "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day"
+        "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day married_w% divorces"
     );
     let (mut heirs, mut splits) = (0u64, 0u64);
     for y in 1..=years {
@@ -107,14 +114,14 @@ fn main() {
         }
         let s = p.stats;
         let gs = g.stats;
-        let (_, _, _, hungry) = p.census();
+        let (mw, w, _, hungry) = p.census();
         let (farms, _, tents, tent_people, _, _, _) = g.summary();
         let (pmin, pmed, pmax) = g.price_spread();
         let (trails, paths) = g.path_cells();
         let growth = 100.0 * (p.count as f64 / last - 1.0);
         last = p.count as f64;
         println!(
-            "{y:4} {:7} {:6.2} {:7} {:6} {:6} {:5} {:6} {:5}/{:5} {:9.0} {:6.0} {:12.0} {:8} {:7.0} {:8.0} {:11} {:8.0} {:7.0} {:8.0} {:7.1} {:5.2}/{:5.2}/{:5.2} {:5.2} {:6} {:5} {:7} {:6.2}",
+            "{y:4} {:7} {:6.2} {:7} {:6} {:6} {:5} {:6} {:5}/{:5} {:9.0} {:6.0} {:12.0} {:8} {:7.0} {:8.0} {:11} {:8.0} {:7.0} {:8.0} {:7.1} {:5.2}/{:5.2}/{:5.2} {:5.2} {:6} {:5} {:7} {:6.2} {:6.1} {:5}",
             p.count,
             growth,
             s.births,
@@ -142,7 +149,9 @@ fn main() {
             trails,
             paths,
             hungry,
-            ysum / 360.0 / 1e3
+            ysum / 360.0 / 1e3,
+            100.0 * mw as f64 / w.max(1) as f64,
+            s.divorces
         );
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
         if std::env::var("GRAIN_DEBUG").is_ok() {

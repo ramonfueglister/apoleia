@@ -91,8 +91,17 @@ pub const IQ_MATE_GAP: f64 = 30.0;
 pub const INHERIT_NOW: u8 = 0;
 pub const INHERIT_EQUAL: u8 = 1;
 pub const INHERIT_ONE: u8 = 2;
-/// Women are not sought after this age.
-const MARRY_AGE_MAX_F: f64 = 45.0;
+/// Women are not sought after this age (S86: older widows and divorced
+/// women seldom married again, Bagnall and Frier 1994). PLACEHOLDER: the age.
+const MARRY_AGE_MAX_F: f64 = 35.0;
+/// S86: share of women, per 1,000, who never marry (Huebner 2019: about a
+/// quarter of adult women in the Egyptian census without sign of a
+/// marriage, the divorced included). PLACEHOLDER, set so the totals of the
+/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year).
+pub const NEVER_MARRY_PER_1000: u64 = 200;
+/// S86: divorces per 10,000 marriages and year (frequent and informal in
+/// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
+pub const DIVORCE_PER_10K_YEAR: u64 = 1000;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -485,6 +494,8 @@ pub struct Stats {
     pub deaths_under1: u64,
     pub age_at_death_sum: f64,
     pub marriages: u64,
+    /// S86: divorces.
+    pub divorces: u64,
     pub marry_age_f: f64,
     pub marry_age_m: f64,
     pub waited_for_land: u64,
@@ -715,6 +726,9 @@ pub struct People {
     /// With the grain economy and INHERIT_EQUAL: (old household, new
     /// household of a son) for each split since crate::grain took them.
     pub split_log: Vec<(u32, u32)>,
+    /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
+    pub never_marry_per_1000: u64,
+    pub divorce_per_10k_year: u64,
     /// Largest IQ gap between partners (infinite: no choice by IQ) and the
     /// partners' genetic correlation inheritance assumes (S82).
     pub iq_mate_gap: f64,
@@ -765,6 +779,11 @@ pub struct People {
 fn part(len: usize, slice: u32, parts: i64) -> std::ops::Range<usize> {
     let (s, p) = (slice as usize, parts as usize);
     len * s / p..len * (s + 1) / p
+}
+
+/// S86: whether this woman never marries (one draw per person).
+fn never_marries(seed: u64, pid: u32, per_1000: u64) -> bool {
+    rnd(seed, pid, 0x6e7e, 0) % 1000 < per_1000
 }
 
 fn age_y(day: i64, born: i32) -> f64 {
@@ -974,6 +993,8 @@ impl People {
             kids: Vec::new(),
             splits: Vec::new(),
             inherit: INHERIT_EQUAL,
+            never_marry_per_1000: NEVER_MARRY_PER_1000,
+            divorce_per_10k_year: DIVORCE_PER_10K_YEAR,
             split_log: Vec::new(),
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
@@ -1116,6 +1137,7 @@ impl People {
     /// flags (1 groom, 2 bride) and estate. One parallel pass.
     fn index_rows(&mut self) -> Vec<IndexRow> {
         let day = self.world.resource::<Clock>().day;
+        let (seed, never) = (self.seed(), self.never_marry_per_1000);
         let grid = &self.grid;
         let mut parts: Parallel<Vec<IndexRow>> = Parallel::default();
         let mut q = self.world.query::<(&Pid, &Home, &Born, &Sex, &Stand, &Spouse, Has<Travel>)>();
@@ -1128,7 +1150,7 @@ impl People {
                 if single && sex.0 == 1 && a >= MARRY_AGE[st.0 as usize].1 {
                     f |= 1;
                 }
-                if single && sex.0 == 0 && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F {
+                if single && sex.0 == 0 && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F && !never_marries(seed, pid.0, never) {
                     f |= 2;
                 }
                 let region = if f & 2 != 0 && h.0 != NONE { grid.region(h.0) } else { 0 };
@@ -1269,6 +1291,7 @@ impl People {
         self.migration(day, yslice);
         if slice == 11 {
             self.split_households();
+            self.divorces(day);
         }
         self.timing.migration += us(t0);
         let month = slice == 0;
@@ -1544,7 +1567,7 @@ impl People {
                     self.world.get::<Travel>(ce).is_some(),
                 );
                 let wa = age_y(day, w.2);
-                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house {
+                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house || never_marries(seed, c, self.never_marry_per_1000) {
                     continue;
                 }
                 // No siblings.
@@ -1833,6 +1856,61 @@ impl People {
                 }
                 taken.extend(group);
             }
+        }
+    }
+
+    /// S86: a marriage ends in divorce with DIVORCE_PER_10K_YEAR a year,
+    /// drawn monthly per wife. The children stay in the husband's household
+    /// (PLACEHOLDER: in Roman law they were in the father's power). The wife
+    /// returns to her father's household if he lives at home, otherwise she
+    /// founds her own in the same cell (household id = her id); she may
+    /// marry again.
+    fn divorces(&mut self, day: i64) {
+        let seed = self.seed();
+        let per_month = self.divorce_per_10k_year;
+        let mut q = self.world.query::<(&Pid, &Sex, &Spouse, Has<Travel>)>();
+        let mut wives: Vec<u32> = q
+            .iter(&self.world)
+            .filter(|(p, sex, sp, travel)| sex.0 == 0 && sp.0 != NONE && !travel && rnd(seed, p.0, 0xd1f0, day) % (10_000 * 12) < per_month)
+            .map(|(p, ..)| p.0)
+            .collect();
+        wives.sort_unstable();
+        for w in wives {
+            let we = self.ent[w as usize];
+            let h = self.world.get::<Spouse>(we).unwrap().0;
+            let Some(he) = self.alive(h) else { continue };
+            if self.world.get::<Travel>(he).is_some() {
+                continue;
+            }
+            self.world.get_mut::<Spouse>(he).unwrap().0 = NONE;
+            let father = self.world.get::<Parents>(we).unwrap().0;
+            let to = self.alive(father).filter(|&fe| self.world.get::<Travel>(fe).is_none()).map(|fe| {
+                (self.world.get::<Home>(fe).unwrap().0, self.world.get::<Household>(fe).unwrap().0, self.world.get::<Stand>(fe).unwrap().0)
+            });
+            let old = self.world.get::<Home>(we).unwrap().0;
+            self.world.get_mut::<Spouse>(we).unwrap().0 = NONE;
+            // Her next birth is void.
+            self.world.get_mut::<Sched>(we).unwrap().birth += 1;
+            match to {
+                Some((home, house, stand)) => {
+                    let mut e = self.world.entity_mut(we);
+                    e.get_mut::<Home>().unwrap().0 = home;
+                    e.get_mut::<Household>().unwrap().0 = house;
+                    e.get_mut::<Stand>().unwrap().0 = stand;
+                    self.add_pop(old, -1);
+                    self.add_pop(home, 1);
+                }
+                None => {
+                    // Her id may still name the household she came from
+                    // (start population): then she stays in it.
+                    let lo = self.households.partition_point(|p| p.0 < w);
+                    let used = self.households[lo..].iter().take_while(|p| p.0 == w).any(|p| p.1 != w && self.alive(p.1).is_some_and(|x| self.world.get::<Household>(x).unwrap().0 == w));
+                    if !used {
+                        self.world.get_mut::<Household>(we).unwrap().0 = w;
+                    }
+                }
+            }
+            self.stats.divorces += 1;
         }
     }
 

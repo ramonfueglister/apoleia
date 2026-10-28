@@ -26,6 +26,7 @@ Fruchtbarkeit, Wartezeiten, Kalender), `west3.py` (rechnet die Sterbetafel nach)
 | **Kosten hängen an der Zahl der Objekte** | Pops sind nur eine abgeleitete Zählung (S61), keine eigenen Objekte. Personen-IDs werden nie wiederverwendet; die Tabellen sind bis zur Obergrenze von 200'000 (S59) vorab reserviert. | Victoria 3: „die Zahl der Pops ist der Schlüssel, nicht die Bevölkerung“ ([DD 105](https://admin-forum.paradoxplaza.com/forum/developer-diary/victoria-3-dev-diary-105-migration-in-1-6.1624226)) |
 | **Sterbetafel** | Coale–Demeny Model West, Level 3, Frauen e0 = 25,0, Männer 22,9, Säuglingssterblichkeit 0,306 bzw. 0,352. Genau diese Tafel nimmt Frier für das Römische Reich. Nachgerechnet mit den Koeffizienten aus demogR `cdmltw` (Coale, Demeny und Vaughan 1983, mit Oeppens Korrekturen von 2018); die Werte für q0 stimmen mit der Literatur überein. | [Demography of the Roman Empire](https://en.wikipedia.org/wiki/Demography_of_the_Roman_Empire) (Frier 2000, Bagnall und Frier 1994, Scheidel 2001); [demogR](https://search.r-project.org/CRAN/refmans/demogR/html/cdmltw.html) |
 | **Fruchtbarkeit in der Ehe** | Form der natürlichen Fruchtbarkeit nach Coale–Trussell, skaliert auf den Spitzenwert von 0,343 Geburten pro verheirateter Frau und Jahr im Alter von 20–24 Jahren, den die ägyptischen Zensuslisten zeigen. Nach einer Geburt folgen mindestens 15 Monate ohne neue Geburt; die Rate ist so angehoben, dass die Jahresrate gleich bleibt. Kinder nur von Paaren (S62). | Bagnall und Frier 1994 (über Wikipedia, im Buch zu prüfen) |
+| **Ehe nach dem Zensus** | 20 % der Frauen heiraten nie (eine Ziehung pro Frau). Jede Ehe endet mit 10 % im Jahr durch Scheidung; die Frau geht in den Haushalt ihres Vaters zurück, sonst gründet sie einen eigenen, die Kinder bleiben beim Vater. Frauen werden nur bis 35 gesucht, ältere Witwen und Geschiedene heiraten also nicht mehr. Die Raten sind so eingestellt, dass die Gesamtzahlen des Zensus stimmen. | S86; Bagnall und Frier 1994, Huebner 2019, Ziel 0,1–0,2 % Wachstum (Frier 2000, Scheidel 2007) |
 | **Heiratsmarkt** | Die Familie des Mannes sucht. Kandidatinnen sind Bekannte des Mannes und seines Vaters sowie ledige Frauen derselben Region und desselben Standes. Nach 6 Monaten ohne Erfolg kommen die acht Nachbarregionen dazu. Die Oberschicht sucht reichsweit und später auch eine Stufe tiefer. Gewertet wird wie in CK3 (Altersabstand, Stand, Kultur, Religion, Meinung, etwas Zufall). Die Braut zieht zum Mann. Kandidaten liegen monatlich in Listen nach (Region, Stand); es gibt keine Suche über alle. | S63; Wertung nach DYNASIM/APPSIM wie bei [Walker und Davis 2013](https://jasss.soc.surrey.ac.uk/16/1/6.html) |
 | **Nahrung, Gesundheit, Wanderung** | Die Nahrung pro Kopf zählt pro 100-km-Region, weil die Region über ihren Markt teilt (S70). Das Körpergewicht folgt ihr monatlich (Hall et al. 2011) und ändert die Sterberate, der Essensanteil die Geburtsrate (S64, S65, S84). Ohne freies Land wartet die Familie mit der Heirat (S65). Haushalte in Not vergleichen jährlich die Nachbarregionen und ziehen um; ist keine besser, gehen sie zu Fuss oder per Schiff an den Kartenrand und verschwinden (S66). | S64–S66; Victoria 3: Wanderung nach Unterschieden der Attraktivität, ganze Pops bevorzugt (DD 105) |
 | **Haushaltsteilung (S81)** | Stirbt ein Mann, wird er vorgemerkt. Einmal im Monat, am Tag mit frischen Haushaltslisten, gründet jeder seiner verheirateten Söhne im Haushalt einen eigenen: der Sohn, seine Frau, alle, deren Vater zur Gruppe gehört, und deren Frauen. Witwe, Ledige und alle anderen bleiben. Der neue Haushalt bekommt die ID des Sohnes und bleibt in derselben Zelle. | S81; patria potestas bis zum Tod des Vaters; Bagnall und Frier 1994 |
@@ -68,12 +69,28 @@ ersten Jahr fehlen Geburten, weil die Startpaare erst schwanger werden.
   beginnt mit 20 statt 25, das mittlere Alter bei der ersten Ehe liegt bei 28 (vorher
   32). Mit Suchbeginn 22 lag es bei 30. Weil mehr Frauen verheiratet sind (84 % statt
   74 %), gibt es mehr Geburten und mehr Auswanderung; das Plateau bleibt bei 150'000.
-- Das Wachstum ist mit 0,7 % pro Jahr höher als die historischen 0,1 % (Scheidel).
-  Es fehlen noch Missernten, Seuchen, Krieg und Städte mit mehr Toten als Geburten.
+- Das Wachstum war mit 0,7 % pro Jahr höher als die historischen 0,1 % (Scheidel).
+  Behoben mit S86 (siehe unten): Es lag an zu vielen verheirateten Frauen.
 - Hungertote gibt es kaum, weil die Menschen wandern, bevor sie hungern. Ob das so
   sein soll, entscheiden die Regeln zur Nahrung (S69–S76).
 - Wer bei einer Teilung Hof und Vorrat erbt, ist offen (S81). Die neuen Haushalte
   bleiben in derselben Zelle.
+
+## Ehe nach dem Zensus (S86, 100 Jahre, Seed 1, `run100-s86.txt`; vorher: `run100.txt`)
+
+Ramon: „Alle drei belegten Wege“ (Dokument „Wachstum: Zahlen mit Quellen“). Ohne
+Getreidewirtschaft:
+
+| Grösse | vorher | jetzt | Zensus und Forschung |
+|---|---|---|---|
+| Frauen 15–49 verheiratet | 85 % | 64,8 % | etwa die Hälfte der Erwachsenen ledig (Huebner 2019) |
+| Geburten pro 1'000 und Jahr | 54 | 46 | etwa 45 (Bagnall und Frier 1994) |
+| Tote pro 1'000 und Jahr | 44 | 43 | knapp über 40 |
+| Menschen im Jahr 100 | 152'465 | 130'805 | – |
+| Wachstum über 100 Jahre | 0,7 % bis das Land voll ist | 0,13 % | 0,1–0,2 % |
+
+Rund 1'900 Scheidungen und 3'400 Ehen pro Jahr. Die Bevölkerung erreicht die Grenze des
+Landes nicht mehr, darum gibt es kaum Auswanderung.
 
 ## Tempo und Speicher (4 Cloud-Kerne)
 
