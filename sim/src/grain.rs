@@ -706,8 +706,7 @@ impl Grain {
             // the rest goes to the cell's other land tiles with room, and
             // stays over if the cell is full (the 25 km land and cover
             // data do not quite agree).
-            let lat = (41.0 - (r as f64 * 25_000.0 + 12_500.0) / 6_371_008.8 * 180.0 / std::f64::consts::PI).to_radians();
-            let room = (1562.5 * 1562.5 * lat.cos() / 41f64.to_radians().cos() / crate::people::PEOPLE_PER_PERSON) as i64;
+            let room = tile_room_m2(r);
             let mut over = 0;
             for x in cap.iter_mut() {
                 over += (*x - room).max(0);
@@ -2716,6 +2715,99 @@ impl Grain {
         }
         xxh3_64(&b)
     }
+}
+
+/// Household kinds by name (`HouseholdLook::kind`).
+pub const KIND_NAMES: [&str; 5] = ["Hof", "Zelt", "Lohn", "Händler", "Oberschicht"];
+/// Farm kinds by name (`HouseholdLook::farm_kind`).
+pub const FARM_KIND_NAMES: [&str; 3] = ["Familienhof", "Pachthof", "Gut"];
+
+/// What the game shows of a household (read only).
+#[derive(Clone, Copy, Debug)]
+pub struct HouseholdLook {
+    /// Index into KIND_NAMES.
+    pub kind: u8,
+    /// Share of its need the household ate at the last meal count, ‰.
+    pub fed: u16,
+    pub pantry_kg: i64,
+    /// Money, milli-denarii.
+    pub money: i64,
+    /// Its farm: kind (FARM_KIND_NAMES) and field area in m², if it has one.
+    pub farm: Option<(u8, i64)>,
+}
+
+/// Read-only views of the grain economy for the game (presentation, S45):
+/// nothing here changes the state or the fingerprint.
+impl Grain {
+    /// Calls `f(fine tile, field m², sown m², growth)` for each piece of a
+    /// field of the farms with a household (S73 plots; a tile can come up
+    /// more than once). Growth runs from 0 at sowing to 255 at the start of
+    /// the farm's harvest, 0 outside.
+    pub fn for_each_plot(&self, day: i64, mut f: impl FnMut(u32, u32, u32, u8)) {
+        let cols = self.cols_f / FINE;
+        let now = doy(day);
+        for farm in self.farms.iter().filter(|x| x.hh != NONE && x.area > 0) {
+            let len = (farm.harvest_doy - farm.sow_doy).rem_euclid(YEAR).max(1);
+            let since = (now - farm.sow_doy).rem_euclid(YEAR);
+            let growth = if farm.sown > 0 && since <= len { (since * 255 / len) as u8 } else { 0 };
+            for pl in &farm.plots {
+                let m2 = (pl.good + pl.poor) as i64;
+                if m2 == 0 {
+                    continue;
+                }
+                let cl = self.block_cell[pl.tile as usize / 256] as i32;
+                let local = pl.tile as i32 % 256;
+                let fine = ((cl / cols * FINE + local / FINE) * self.cols_f + cl % cols * FINE + local % FINE) as u32;
+                f(fine, m2 as u32, (m2 * farm.sown / farm.area) as u32, growth);
+            }
+        }
+    }
+
+    /// Fine raster size: (rows, columns), 16 × 16 per 25 km cell.
+    pub fn fine_size(&self) -> (i32, i32) {
+        (self.rows_f, self.cols_f)
+    }
+
+    /// Footpaths of a market as of its last walk: (fine tile, level 1 trail
+    /// or 2 path, direction of the next step towards the market as an index
+    /// into the 8 neighbours row by row, 255 at the market). None while the
+    /// market's walk is out on the path worker.
+    pub fn market_paths(&self, m: usize) -> Option<Vec<(u32, u8, u8)>> {
+        let f = self.markets[m].field.as_ref()?;
+        let mut v = Vec::with_capacity(f.worn.len());
+        for &i in &f.worn {
+            let level = f.level[i as usize];
+            if level == 0 {
+                continue;
+            }
+            let (r, c) = (f.r0 + i as i32 / f.n, f.c0 + i as i32 % f.n);
+            v.push(((r * self.cols_f + c) as u32, level, f.dir[i as usize]));
+        }
+        v.sort_unstable();
+        Some(v)
+    }
+
+    /// Trade road level per 25 km cell (S71): 0 none, 1 track, 2 road on
+    /// land; any level at sea is a sea lane.
+    pub fn road_levels(&self) -> &[u8] {
+        &self.road_level
+    }
+
+    /// A household's kind, food, stores and farm, if the grain economy
+    /// knows it (it counts the households once a month).
+    pub fn household(&self, hh: u32) -> Option<HouseholdLook> {
+        let s = self.hh.get(&hh)?;
+        let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh).map(|f| (f.kind, f.area));
+        Some(HouseholdLook { kind: s.kind, fed: s.fed, pantry_kg: s.pantry, money: s.money, farm })
+    }
+}
+
+/// Most field m² a fine tile in absolute 25 km row `r` holds: its area
+/// (eqc, data/projection.json: true at 41° N, east-west by cos(lat) /
+/// cos(41°) elsewhere) per simulated person.
+pub fn tile_room_m2(r: i32) -> i64 {
+    let lat = (41.0 - (r as f64 * 25_000.0 + 12_500.0) / 6_371_008.8 * 180.0 / std::f64::consts::PI).to_radians();
+    (1562.5 * 1562.5 * lat.cos() / 41f64.to_radians().cos() / crate::people::PEOPLE_PER_PERSON) as i64
 }
 
 const DIRS: [(i32, i32); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
