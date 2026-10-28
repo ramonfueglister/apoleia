@@ -361,6 +361,24 @@ Hungernden der Umgebung zogen gleichzeitig hin. Jetzt zählen beide mit.
 Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 0e18f2cf1303bdcd,
 grain 2618ab53b25545a4), 53 Tests grün.
 
+## Ägyptens Ackerland nach Butzer (S90, 100 Jahre, Seed 1, `run100-s90.txt`; vorher: `run100-migration-fix.txt`)
+
+Ramon: „Butzer: 27'300 km²“. HYDE 3.3 gab dem Niltal und dem Delta 3'900 km² Acker für
+4,5 Mio. Menschen; jetzt sind es Butzers 27'300 km² (1976, Tabelle 4), verteilt auf das
+heutige Ackerland der Nilzellen (Anteil 0,79), 10 : 1, ohne zusätzliche Rodung.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Hungertote Jahr 2 | 1'820 | 1'068 |
+| davon in Ägypten (Probelauf) | 678 | 18 |
+| Hungertote pro Jahr, Jahr 11 bis 100 | 285 | 228 |
+| Menschen im Jahr 100 | 129'583 | 138'384 |
+| Wachstum Jahr 10 bis 100 | 0,18 % | 0,21 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 619df6385640848d,
+grain 858ecccb8e7678ba), 53 Tests grün. Der Anteil der Hungertoten an allen Todesfällen
+liegt jetzt bei 4,3 % statt bei den 5 %, die S89 von der Sterbetafel abzieht.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |

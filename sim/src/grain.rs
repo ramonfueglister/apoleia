@@ -58,6 +58,12 @@ const RATIO_NILE_X10: i64 = 100;
 /// The Nile land: Delta to the First Cataract, as a box in degrees (west,
 /// east, south, north). PLACEHOLDER until there are provinces.
 const NILE_BOX: (f64, f64, f64, f64) = (29.0, 33.5, 24.0, 31.7);
+/// S90 (Ramon, 28.10.2026): the field land of Egypt is Butzer's cultivable
+/// land of about 150 BC (Early Hydraulic Civilization in Egypt, 1976,
+/// table 4: valley 10,000, Faiyum 1,300, Delta 16,000 km², for 4.9
+/// million people) instead of HYDE 3.3 (3,900 km² for 4.5 million), spread
+/// over the clearable land of the Nile cells, none cleared on top.
+const NILE_FIELDS_KM2: f64 = 27_300.0;
 
 /// Longitude and latitude of a 25 km cell centre (data/projection.json:
 /// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
@@ -669,19 +675,35 @@ impl Grain {
         let mut free_poor = vec![0i64; n];
         let mut net = vec![0i64; n];
         let mut usable_m2 = vec![0i64; n];
+        let usable_km2 = |r: i32, c: i32, cell: &crate::Cell| match cover {
+            Some(m) => cell.land_km2 * m.get(&(r, c)).copied().unwrap_or(0.0),
+            None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
+        };
+        let in_nile = |r: i32, c: i32| {
+            let (lon, lat) = cell_lon_lat(r, c);
+            (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat)
+        };
+        // S90: Butzer's Egypt over the Nile cells' usable land (summed in
+        // cell order, so the share is the same on every run).
+        let nile_share = {
+            let mut keys: Vec<&(i32, i32)> = inp.cells.keys().filter(|&&(r, c)| in_nile(r, c)).collect();
+            keys.sort_unstable();
+            let sum: f64 = keys.iter().map(|&&(r, c)| usable_km2(r, c, &inp.cells[&(r, c)])).sum();
+            if sum > 0.0 { NILE_FIELDS_KM2 / sum } else { 0.0 }
+        };
         for (&(r, c), cell) in &inp.cells {
             let Some(i) = g.index(r, c) else { continue };
             let crop = cell.hyde.as_ref().map_or(0.0, |h| h.crop_km2);
             free_m2[i as usize] = (crop * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
-            let usable = match cover {
-                Some(m) => cell.land_km2 * m.get(&(r, c)).copied().unwrap_or(0.0),
-                None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
-            };
+            let usable = usable_km2(r, c, cell);
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
             usable_m2[i as usize] = (usable * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
-            let (lon, lat) = cell_lon_lat(r, c);
-            let nile = (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat);
+            let nile = in_nile(r, c);
+            if nile {
+                free_m2[i as usize] = (usable * nile_share * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
+                free_poor[i as usize] = 0;
+            }
             let ratio = if nile { RATIO_NILE_X10 as f64 } else { RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64 };
             net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
         }
