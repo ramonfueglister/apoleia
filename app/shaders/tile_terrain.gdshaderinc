@@ -21,7 +21,6 @@ uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
 uniform sampler2D levels_tex : filter_nearest, repeat_disable; // far levels: baked corner levels (8 bit)
 uniform bool levels_ready = false;
-uniform float level_floor_m = 0.0; // far levels count from this height (metres)
 uniform sampler2D ground_tex : filter_nearest, repeat_disable; // landscape per tile, two per byte
 uniform bool ground_ready = false;
 uniform ivec2 patch_origin;    // first tile of the drawn patch
@@ -173,6 +172,28 @@ float tt_corner_height(ivec2 c) {
 	return shore_ready ? min(h, textureLod(shore_tex, uv, 0.0).r) : h;
 }
 
+// The far levels' rising height scale (tools/build_tile_terrain.py
+// LEVEL_STEPS_M): the heights where the count reaches 0, 1, 2, ... levels,
+// 800 m per level above the last.
+const float LEVEL_STEPS_M[9] = float[](100.0, 250.0, 450.0, 700.0, 1000.0, 1400.0, 1900.0, 2500.0, 3200.0);
+float tt_far_level_x(float m) {
+	if (m <= LEVEL_STEPS_M[0]) { return 0.0; }
+	for (int k = 1; k < 9; k++) {
+		if (m < LEVEL_STEPS_M[k]) {
+			return float(k - 1) + (m - LEVEL_STEPS_M[k - 1]) / (LEVEL_STEPS_M[k] - LEVEL_STEPS_M[k - 1]);
+		}
+	}
+	return 8.0 + (m - LEVEL_STEPS_M[8]) / 800.0;
+}
+
+// Metres of a height in levels, near (m_per_level) and far (LEVEL_STEPS_M).
+float tt_level_metres(float x) {
+	if (!levels_ready) { return x * m_per_level; }
+	if (x >= 8.0) { return LEVEL_STEPS_M[8] + (x - 8.0) * 800.0; }
+	int k = int(floor(max(x, 0.0)));
+	return mix(LEVEL_STEPS_M[k], LEVEL_STEPS_M[k + 1], fract(max(x, 0.0)));
+}
+
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
 // neighbouring land tiles share their corners and form one surface of flat
 // tiles and one-level ramps. Corners at the sea sit at sea level, so the coast
@@ -190,7 +211,7 @@ float tt_lake_level(ivec2 t) {
 	}
 	// small lakes between the nodes: the bake pinned their nodes in the envelope
 	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
-	float x = max(metres - level_floor_m, 0.0) / m_per_level;
+	float x = levels_ready ? tt_far_level_x(metres) : max(metres, 0.0) / m_per_level;
 	return max(round(x), 1.0);
 }
 

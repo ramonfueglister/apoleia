@@ -48,6 +48,12 @@ void vertex() {
 	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
+	// houses of their own width and depth (the windows stretch with them)
+	if (prop_kind == 3) {
+		float r3 = tt_hash3(vec3(vec2(t) + 3.1, float(slot) * 2.31));
+		v.x *= 0.9 + 0.25 * r3;
+		v.z *= 0.9 + 0.2 * fract(r3 * 5.7);
+	}
 	// in towns two to three storeys, in the city core insulae of up to four
 	// (lower than Rome's temples and the Colosseum)
 	if (prop_kind == 3) { v.y *= 1.0 + (town == 3 ? 1.0 : town == 2 ? 0.5 : 0.0) * r1; }
@@ -59,6 +65,11 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = prop_kind == 3 ? vec3(0.94 + 0.12 * r1) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
+	// every house its own plaster (marked by alpha 0.5): cream, ochre or lime white
+	if (prop_kind == 3 && COLOR.a < 0.75) {
+		float k = fract(r0 * 7.31 + r2 * 3.17);
+		tint *= k < 0.4 ? vec3(1.0) : k < 0.75 ? vec3(0.98, 0.91, 0.78) : vec3(0.99, 1.0, 1.06);
+	}
 	// the sides turned to the SimCity light of the terrain a little lighter
 	vec3 art = tt_art_light(INV_VIEW_MATRIX);
 	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), normalize(art.xz)) : 0.0;
