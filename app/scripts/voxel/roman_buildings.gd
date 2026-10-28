@@ -9,7 +9,9 @@ extends RefCounted
 ## Levels of detail: 0 is the full model; 1 is light, for thousands of
 ## instances at 8 to 22 km: 1 m voxels by weighted majority, people and
 ## other small things gone, a few hundred triangles a lot; 2 is coarser
-## still (2.5 m voxels). Meshes are cached in user://.
+## still (2.5 m voxels). Meshes are cached in user://. Worker threads may
+## call in while the main thread keeps running frames (meshes go through
+## the rendering server); models are built one at a time.
 
 const Kit := preload("res://scripts/voxel/roman_kit.gd")
 const Town := preload("res://scripts/voxel/roman_town.gd")
@@ -43,6 +45,10 @@ static func footprint(kind: String) -> Vector2i:
 		return ARCHETYPES[kind][1]
 	return LANDMARKS.get(kind, Vector2i.ONE)
 
+# roman_town.gd hands its grids over through static state, so builds take
+# turns.
+static var _lock := Mutex.new()
+
 static func _cached(key: String, lod: int, build: Callable) -> ArrayMesh:
 	var path := "%s/%s_%d.res" % [CACHE_DIR, key, lod]
 	if ResourceLoader.exists(path):
@@ -51,19 +57,27 @@ static func _cached(key: String, lod: int, build: Callable) -> ArrayMesh:
 			if mesh.get_surface_count() > 0:
 				mesh.surface_set_material(0, Kit.material())
 			return mesh
+	_lock.lock()
 	var g: Kit.Grid = build.call()
 	if g == null:
+		_lock.unlock()
 		return null
+	# Centred on the full model, so the coarse levels sit exactly on it.
+	var lo := Vector3(-g.n.x * 0.5, 0.0, -g.n.z * 0.5) * Kit.V
 	var f: int = LOD_FACTORS[clampi(lod, 0, LOD_FACTORS.size() - 1)]
 	if f > 1:
-		g = _coarse(g, f)
-	var mesh := Kit.mesh(g, Vector3(-g.n.x * 0.5, 0.0, -g.n.z * 0.5) * Kit.V * f, Kit.V * f)
+		# Cells start on the lot's edge, so neighbouring lots meet cleanly.
+		var pad := (f - Town.MARGIN % f) % f
+		g = _coarse(g, f, pad)
+		lo -= Vector3(pad, 0, pad) * Kit.V
+	var mesh := Kit.mesh(g, lo, Kit.V * f)
+	_lock.unlock()
 	DirAccess.make_dir_recursive_absolute(CACHE_DIR)
 	ResourceSaver.save(mesh, path)
 	return mesh
 
-## A lot model's grid with its ground layers left out, cropped to the lot
-## and its overhangs, centred.
+## A lot model's grid from its floor up (the lot's ground layers left out),
+## with the margin its overhangs reach into; the lot sits in the middle.
 static func _lot_grid(kind: String, variant: int) -> Kit.Grid:
 	Town.keep_grid = true
 	match kind:
@@ -104,38 +118,63 @@ static func _without_ground(g: Kit.Grid, floor: int) -> Kit.Grid:
 				out.g[dst + x] = g.g[src + x]
 	return out
 
-## A coarser grid, `f` voxels to a side: a cell is solid where at least a
-## quarter of it is, in the colour that covers most of it, upper layers
-## counting double so roofs keep their tiles; people and other small
-## things dropped first.
+## A coarser grid, `f` voxels to a side and shifted by `pad` voxels in x
+## and z: a cell is solid where at least a quarter of it is, or where
+## something raised (a roof, an awning) covers three quarters of its plan.
+## Where voxels open to the sky cover half its plan, it takes the colour
+## most of them have, so roofs stay roofs; otherwise the colour most of it
+## has. People and other small things are dropped first.
 static var _small := PackedByteArray()
 
-static func _coarse(g: Kit.Grid, f: int) -> Kit.Grid:
+# Voxels above the floor from which a thin cover counts (beds and paving
+# below it do not).
+const RAISED := 4
+
+static func _coarse(g: Kit.Grid, f: int, pad: int) -> Kit.Grid:
 	if _small.is_empty():
 		_small.resize(256)
 		for c: int in SMALL:
 			_small[c] = 1
-	var out := Kit.Grid.new(Vector3i(ceili(g.n.x / float(f)), ceili(g.n.y / float(f)), ceili(g.n.z / float(f))))
+	var out := Kit.Grid.new(Vector3i(ceili((g.n.x + pad) / float(f)), ceili(g.n.y / float(f)), ceili((g.n.z + pad) / float(f))))
 	var weight := PackedInt32Array()
 	weight.resize(256)
+	var sky := PackedInt32Array()
+	sky.resize(256)
+	var column := PackedByteArray()
+	column.resize(f * f)
 	for cz in out.n.z:
 		for cy in out.n.y:
 			for cx in out.n.x:
 				weight.fill(0)
+				sky.fill(0)
+				column.fill(0)
 				var solid := 0
+				var open := 0
+				var covered := 0
 				for sz in f:
 					for sy in f:
 						for sx in f:
-							var c := g.at(cx * f + sx, cy * f + sy, cz * f + sz)
+							var x := cx * f + sx - pad
+							var y := cy * f + sy
+							var z := cz * f + sz - pad
+							var c := g.at(x, y, z)
 							if c == Kit.EMPTY or _small[c] == 1:
 								continue
 							solid += 1
-							weight[c] += 1 << sy
-				if solid * 4 < f * f * f:
+							weight[c] += 1
+							var above := g.at(x, y + 1, z)
+							if above == Kit.EMPTY or _small[above] == 1:
+								sky[c] += 1
+								open += 1
+							if y >= RAISED and column[sx + f * sz] == 0:
+								column[sx + f * sz] = 1
+								covered += 1
+				if solid * 4 < f * f * f and covered * 4 < f * f * 3:
 					continue
+				var votes := sky if open * 2 >= f * f else weight
 				var best := 0
 				for c in range(1, 256):
-					if weight[c] > weight[best]:
+					if votes[c] > votes[best]:
 						best = c
 				out.put(cx, cy, cz, best)
 	return out
