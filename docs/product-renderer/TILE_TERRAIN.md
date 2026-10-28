@@ -68,13 +68,20 @@ unabhängig und unverändert.
   zwei Farben. Die Palette ist auf die Urbek-Töne am Bildschirm abgestimmt
   (Wiese im Urbek-Grasgrün #428a36, trockenes Gras im hellen Urbek-Grün,
   Weizen goldgelb, Wald als Kronendach von oben, flaches helles Wasser).
-  Rampen haben drei feste Töne wie in SimCity 2000 (Sonnenseite 1,12,
+  Rampen haben drei feste Töne wie in SimCity 2000 (Lichtseite 1,12,
   Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
-  bis zur Europakarte lesbar bleiben; das Licht sieht jede Oberseite als
-  flach, damit Rampen weder glasig noch schwarz werden.
-  Wände sind ein dunklerer Erdton ohne Schichtlinien. Am Meer ein Sandsaum an
+  bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
+  SimCity-Licht aus Südwesten (`ART_LIGHT`), nicht von der Sonne des Wetters:
+  Die Kamera schaut immer nach Norden, so sind die ihr zugewandten Rampen und
+  Wände hell wie in SimCity 2000 und Urbek. Das Licht sieht jede Oberseite und
+  Wand als flach, damit Rampen weder glasig noch schwarz werden; Bäume und
+  Häuser sind auf ihren Süd- und Westseiten etwas heller getönt.
+  Wände sind ein dunklerer Erdton ohne Schichtlinien, nach Osten gewandt
+  dunkler. Am Meer ein Sandsaum an
   den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
-  heller, wo die Kachel Land berührt. Bäume stehen nah genau auf den
+  ein tiefes Blau, heller, wo die Kachel Land berührt; Flüsse und Seen sind
+  dunkler als dieses Flachwasser. Städte sind weit draußen Kacheln in
+  Terrakotta. Bäume stehen nah genau auf den
   Waldkacheln (und Waldhälften), dazu einzelne Bäume und kleine Baumgruppen
   auf offenem Grasland und an Feldern. Auch dichter Wald öffnet sich alle paar
   Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb

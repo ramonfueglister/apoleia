@@ -8,6 +8,11 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 #include "res://shaders/tile_terrain.gdshaderinc"
 
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
+// The slope and wall tones take a fixed SimCity 2000 light from the south-west
+// (towards the light, world, unit length): the faces turned to the camera,
+// which always looks north, are the lit ones, as in SimCity 2000 and Urbek.
+// The sun (weather) still lights the tops and the props.
+const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53);
 uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
 uniform int house_grid = 2;                      // house blocks per tile side
 
@@ -39,8 +44,8 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.216, 0.373, 0.212),  // wetland
 	vec3(0.412, 0.424, 0.220),  // scrub
 	vec3(0.655, 0.580, 0.408),  // sand
-	vec3(0.165, 0.341, 0.145),  // forest (the canopy seen from above)
-	vec3(0.141, 0.298, 0.165),  // conifer forest
+	vec3(0.200, 0.353, 0.180),  // forest (the canopy seen from above, #3a7a30 on screen)
+	vec3(0.165, 0.310, 0.188),  // conifer forest
 	vec3(0.361, 0.478, 0.235),  // alpine meadow
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
@@ -50,11 +55,11 @@ const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
 const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
-const vec3 C_ROOF = vec3(0.655, 0.333, 0.271);
+const vec3 C_ROOF = vec3(0.600, 0.290, 0.204); // terracotta, not salmon
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
-const vec3 C_SEA = vec3(0.282, 0.490, 0.722);
+const vec3 C_SEA = vec3(0.192, 0.400, 0.682);
 const vec3 C_SHORE = vec3(0.369, 0.596, 0.839);  // sea tiles that touch the land
-const vec3 C_INLAND = vec3(0.341, 0.557, 0.839);
+const vec3 C_INLAND = vec3(0.220, 0.447, 0.757); // rivers and lakes, darker than the shore
 
 const ivec2 CORNER[4] = ivec2[](ivec2(0, 0), ivec2(1, 0), ivec2(1, 1), ivec2(0, 1));
 const ivec2 SIDE[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
@@ -262,7 +267,7 @@ void fragment() {
 		// single shade-side steps black walls.
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
-		float lit = dot(nw, light_dir) - light_dir.y;
+		float lit = dot(nw, ART_LIGHT) - ART_LIGHT.y;
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.72, 0.90, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.12, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
@@ -307,13 +312,14 @@ void fragment() {
 		float hm = world_pos.y / level_h * m_per_level;
 		vec3 base = water == W_SEA ? C_SEA * 0.8 : (coast > 0.0 && body_level <= 3.0) ? C_BANK : C_EARTH;
 		if (water == W_LAND && hm > 1200.0) { base = C_CLIFF; }
-		c = base;
+		// lit like the ramps: light on the walls facing the camera, darker
+		// the more a wall turns east
+		vec2 wn = part >= 1 && part <= 4 ? vec2(SIDE[part - 1]) : vec2(0.0, 1.0);
+		float f = dot(wn, normalize(ART_LIGHT.xz));
+		c = base * mix(0.70, 1.0, smoothstep(-0.8, 0.8, f));
 	}
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
-	vec3 n = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
-	n = n.z < 0.0 ? -n : n;
-	// tops are lit as flat ground (the slope tones above do the relief); walls
-	// keep their own facing
-	NORMAL = part == 0 ? normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz) : n;
+	// tops and walls are lit as flat ground; the fixed tones above do the relief
+	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 }
