@@ -7,7 +7,7 @@ extends RefCounted
 ## diagonally across the grid. Meshing keeps exposed faces only, merges
 ## coplanar faces of one colour where the baked corner occlusion allows,
 ## and skips downward faces. Coarser LODs downsample the same grid. One
-## shared material with flat vertex colours, as in Urbek.
+## shared material: vertex colours with soft weathering, as in Urbek.
 ## In Urbek's proportions: 74 x 61 m and 21.5 m to the rim (three arcades of
 ## 5.5 m and the attic), about 7 Urbek houses long; origin at ground centre.
 
@@ -36,17 +36,17 @@ const LOD_FACTORS := [1, 2, 4, 8]
 # LOD3 to 1.75 km; beyond, a colosseum is under 55 pixels and a drum of
 # 144 triangles carries its colours.
 const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 20000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v13_%d.res"
+const CACHE := "user://colosseum_urbek_v16_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
 	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f7f2e7"),
-	Color("4f4a55"), Color("f0e7d4"), Color("3a4568"), Color("b5a184"), Color("c9b898"),
+	Color("7a7f96"), Color("f0e7d4"), Color("3d4f8f"), Color("b5a184"), Color("c9b898"),
 	Color("d4aa6c"), Color("c49a5c"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
 	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("f4ecd8"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
-	Color("3f3b46"), Color("c8b99c"), Color("c8654a"), Color("a8977c"), Color("bca98a"),
+	Color("6a6f86"), Color("c8b99c"), Color("c8654a"), Color("a8977c"), Color("bca98a"),
 	Color("b3a390"), Color("857868")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
@@ -56,7 +56,7 @@ const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
 # Top faces that differ from the sides: a tread is light on top and darker
 # on its riser; the arch floor is shaded.
-const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("c4b293"), ARCH_BACK: Color("6a6470"),
+const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("c4b293"), ARCH_BACK: Color("9a9cab"),
 	BALTEUS_WALL: Color("efe5d0")}
 # Far away the flags show as a red strip this wide on the rim's outer edge.
 const BAND_M := 1.0
@@ -200,9 +200,14 @@ static func _outside(d: int, s: int, b: int, r: int) -> int:
 			return CORNICE
 		if _is_pier(s):
 			return CORNICE if lr == ROWS - 2 or lr == 0 else COLUMN
+		# Dentils: a row of alternating blocks under each cornice.
+		if lr == ROWS - 2 and posmod(s, 2) == 1:
+			return CORNICE
 		return EMPTY
 	var ar := r - ARCADE_TOP
 	if ar >= ATTIC_ROWS - 2 or ar == 0:
+		return CORNICE
+	if ar == ATTIC_ROWS - 3 and posmod(s, 2) == 1:
 		return CORNICE
 	if _is_pier(s):
 		return COLUMN
@@ -226,7 +231,7 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 			return ARCH_BACK
 		# Archivolt round the head, in cornice white; a shadow line under
 		# the cornice everywhere else.
-		if d == 0 and ((lr == 8 and (s == 1 or s == 4)) or (lr == 9 and (s == 2 or s == 3))):
+		if d == 0 and lr == 9 and (s == 2 or s == 3):
 			return CORNICE
 		if lr == 9:
 			return SHADOW_LINE
@@ -632,6 +637,13 @@ static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Co
 		ao = [ao[0], ao[3], ao[2], ao[1]]
 		normal = -normal
 	normal = normal.normalized()
+	# Grow each quad by a hair within its plane: merged quads meet smaller
+	# neighbours at T-junctions, whose rasterisation leaves pin-hole cracks.
+	var centre := (p[0] + p[1] + p[2] + p[3]) * 0.25
+	for k in 4:
+		var dir := p[k] - centre
+		if dir.length_squared() > 1e-8:
+			p[k] = p[k] + dir.normalized() * 0.012
 	# Godot fronts are clockwise; the diagonal follows the occlusion so
 	# corner shading does not streak across the quad.
 	var order := [0, 2, 1, 0, 3, 2] if ao[0] + ao[2] >= ao[1] + ao[3] else [0, 3, 1, 1, 3, 2]
@@ -704,14 +716,49 @@ static func lods() -> Array[ArrayMesh]:
 	out.append(drum())
 	return out
 
-## Vertex colours (sRGB, with baked corner occlusion), flat like Urbek's;
-## per-voxel noise read as dirt at the city zoom.
-static func material() -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.vertex_color_use_as_albedo = true
-	m.vertex_color_is_srgb = true
-	m.roughness = 1.0
-	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+## Vertex colours (sRGB, with baked corner occlusion) with soft weathering
+## like Urbek's walls: low-frequency patches and vertical streaks a few
+## metres across, a few percent darker. Per-voxel noise read as dirt; this
+## stays smooth and costs no geometry.
+const SHADER := """
+shader_type spatial;
+render_mode diffuse_lambert, specular_disabled;
+varying vec3 world;
+
+void vertex() {
+	world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+vec3 to_linear(vec3 c) {
+	return mix(pow((c + 0.055) / 1.055, vec3(2.4)), c / 12.92, lessThan(c, vec3(0.04045)));
+}
+
+void fragment() {
+	vec3 n = abs((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	// Walls: patches plus streaks running down; tops: patches only.
+	vec2 p = n.y > 0.5 ? world.xz / 3.0 : vec2(n.x > n.z ? world.z : world.x, world.y * 0.35) / 2.0;
+	float d = noise(p) * 0.6 + noise(p * 2.7 + 17.0) * 0.4;
+	ALBEDO = to_linear(COLOR.rgb) * (0.94 + 0.08 * d);
+	ROUGHNESS = 1.0;
+}
+"""
+
+static func material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = SHADER
+	var m := ShaderMaterial.new()
+	m.shader = shader
 	return m
 
 static func triangles(mesh: ArrayMesh) -> int:
