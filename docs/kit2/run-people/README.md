@@ -93,6 +93,14 @@ Rund 1'700 Scheidungen und 3'100 Ehen pro Jahr (20 % nie verheiratet, 7 % Scheid
 pro Jahr; zuerst 10 %, nach S87 nachgestellt). Die Bevölkerung erreicht die Grenze des
 Landes nicht mehr, darum gibt es kaum Auswanderung.
 
+## Hungertote aus der Sterbetafel (S89, 100 Jahre, Seed 1, `run100-s89.txt`; vorher: `run100-s86.txt`)
+
+Die Sterblichkeit der Tafel sinkt um 5 %, weil die Getreidewirtschaft die Hungertoten
+selbst erzeugt (S89). Ohne Getreidewirtschaft verhungert hier aber kaum jemand, darum
+wächst die Bevölkerung jetzt etwas schneller als die Quellen: 150'539 statt 140'235
+Menschen im Jahr 100, 0,28 % statt 0,22 % im Jahr von Jahr 10 bis 100. Massgebend ist der
+Lauf mit Getreidewirtschaft (`run-grain`, 0,17 %), den auch das Spiel rechnet.
+
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |

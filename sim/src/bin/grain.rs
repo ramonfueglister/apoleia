@@ -53,6 +53,10 @@ fn main() {
     if let Some(v) = arg("--divorce") {
         p.divorce_per_10k_year = v.parse().unwrap();
     }
+    // S89: hunger deaths per 1,000 deaths taken out of the life table.
+    if let Some(v) = arg("--table-hunger") {
+        p.table_hunger_per_1000 = v.parse().unwrap();
+    }
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
@@ -159,7 +163,7 @@ fn main() {
             print!("{}", g.debug());
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
-        println!("      eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | trade tracks/roads/sea lanes (cells): {:?}", by.join(" "), gs.to_tents, g.road_cells(&p));
+        println!("      spoiled t {:.0} | eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | trade tracks/roads/sea lanes (cells): {:?}", gs.spoiled_kg as f64 / 1e3, by.join(" "), gs.to_tents, g.road_cells(&p));
     }
     println!(
         "day_us all p50={:.0} p95={:.0} p99={:.0} max={:.0} | grain p50={:.0} mean={:.0} p95={:.0} p99={:.0} max={:.0} (day {}) | rss_mb={:.0} peak_people={}",

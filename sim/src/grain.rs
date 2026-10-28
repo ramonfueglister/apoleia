@@ -124,6 +124,13 @@ const BASE_PRICE: i64 = 8_750;
 /// soldiers, clergy) is paid this much per working day by the state; the
 /// edict's unskilled day wage, 25 den.
 const STATE_WAGE: i64 = 25_000;
+/// Loss of stored grain per year, per cent, taken monthly from every farm
+/// store, pantry and market store (S72 Verderb). Wheat in farm storage:
+/// 4 % (APHLIS 2011, via Stathers, FAO; FAO y4011e: up to 4 %). Ancient
+/// granaries kept wheat for years when dry and aired (Varro RR 1.57,
+/// Columella 1.6.9–17) but give no rate. PLACEHOLDER: one rate for all
+/// stores and climates.
+const SPOIL_PCT_YEAR: i64 = 4;
 /// PLACEHOLDER: start money of a trader's household (about one cart load
 /// at the base price) and of a senator's or eques' household.
 const TRADER_MONEY: i64 = 5_000_000;
@@ -420,6 +427,8 @@ pub struct GrainStats {
     pub trade_profit: i64,
     pub alms_kg: i64,
     pub stolen_kg: i64,
+    /// Lost in store (S72 Verderb).
+    pub spoiled_kg: i64,
     pub thefts: u64,
     pub farms_taken: u64,
     pub farms_abandoned: u64,
@@ -1658,6 +1667,12 @@ impl Grain {
         let t0 = t();
         self.news(day);
         self.prices();
+        // Verderb in the market stores (S72), each market once a month.
+        for m in self.markets.iter_mut().skip(slice as usize).step_by(MONTH as usize) {
+            let lost = m.store.max(0) * SPOIL_PCT_YEAR / 1200;
+            m.store -= lost;
+            self.stats.spoiled_kg += lost;
+        }
         self.timing.markets += us(t0);
         let t0 = t();
         self.eat(p, day, slice as usize);
@@ -2282,6 +2297,17 @@ impl Grain {
                 s.money += info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
             }
             let mk = self.cell_market[info.home as usize];
+            // Verderb (S72): a twelfth of the year's loss.
+            if s.farm != NONE {
+                let f = &mut self.farms[s.farm as usize];
+                let lost = f.store.max(0) * SPOIL_PCT_YEAR / 1200;
+                f.store -= lost;
+                self.stats.spoiled_kg += lost;
+            } else {
+                let lost = s.pantry.max(0) * SPOIL_PCT_YEAR / 1200;
+                s.pantry -= lost;
+                self.stats.spoiled_kg += lost;
+            }
             let mut have = if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry };
             // The landless beg at the market, then steal (S69).
             if s.kind == TENT && have < need {

@@ -102,6 +102,12 @@ pub const NEVER_MARRY_PER_1000: u64 = 200;
 /// S86: divorces per 10,000 marriages and year (frequent and informal in
 /// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
 pub const DIVORCE_PER_10K_YEAR: u64 = 700;
+/// S89: the life table (Coale-Demeny West 3) already holds the deaths from
+/// hunger, which the simulation adds on top (S84, S88), so the table's
+/// hazard is lowered by their share of all deaths, per 1,000. PLACEHOLDER:
+/// about the share of hunger deaths in normal years of the 100-year run
+/// with spoilage (5-7 %); one value for all ages and places.
+pub const TABLE_HUNGER_PER_1000: u64 = 50;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -729,6 +735,8 @@ pub struct People {
     /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
     pub never_marry_per_1000: u64,
     pub divorce_per_10k_year: u64,
+    /// S89: TABLE_HUNGER_PER_1000 unless set.
+    pub table_hunger_per_1000: u64,
     /// Largest IQ gap between partners (infinite: no choice by IQ) and the
     /// partners' genetic correlation inheritance assumes (S82).
     pub iq_mate_gap: f64,
@@ -995,6 +1003,7 @@ impl People {
             inherit: INHERIT_EQUAL,
             never_marry_per_1000: NEVER_MARRY_PER_1000,
             divorce_per_10k_year: DIVORCE_PER_10K_YEAR,
+            table_hunger_per_1000: TABLE_HUNGER_PER_1000,
             split_log: Vec::new(),
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
@@ -1048,7 +1057,10 @@ impl People {
     fn schedule_death(&mut self, pid: u32, gen: u16, born: i32, sex: u8, health: u16, day: i64) {
         let h = rnd(self.seed(), pid, 0xdead ^ (gen as u32) << 8, day);
         let age = age_y(day, born);
-        let w = life::wait(&life::AGES, mu(sex), age, death_mult(health, age, sex), h).unwrap_or(100.0);
+        // S89: the table's hazard without the hunger deaths it holds; the
+        // weight multiplier (S84) adds them back for those who go hungry.
+        let base = (1000 - self.table_hunger_per_1000.min(1000)) as f64 / 1000.0;
+        let w = life::wait(&life::AGES, mu(sex), age, base * death_mult(health, age, sex), h).unwrap_or(100.0);
         let at = day + ((w * YEAR as f64) as i64).max(1);
         self.cal.push(at, Ev { kind: DEATH, pid, gen });
     }
