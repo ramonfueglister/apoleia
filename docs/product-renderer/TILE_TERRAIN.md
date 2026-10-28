@@ -20,11 +20,14 @@ unabhängig und unverändert.
   `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in SimCity 2000 statt
   vieler schmaler Streifen.
 - Ab 2-km-Kacheln kommen die Eckstufen aus dem Bake (`levels-L*.png`,
-  `corner_levels`): eine Stufe sind 170 / 190 / 210 / 230 m echt
-  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 100 m
-  (`LEVEL_FLOOR_M`). Ebenen bleiben so eine Stufe, Hügelland bekommt ein bis
-  zwei Stufen, und Gebirge zeigen auch auf der Europakarte die gestapelten
-  Rampen von SimCity 2000 (Alpen bis 9 Stufen bei 16-km-Kacheln). Die Höhe wird vorher über
+  `corner_levels`): eine Stufe sind 200 / 280 / 360 / 440 m echt
+  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 150 m
+  (`LEVEL_FLOOR_M`), also weiter draußen gröber: Tiefland 0, Hügel 1 bis 2,
+  Gebirge 3 bis 5 Stufen (feinere Stufen zeichneten ein Labyrinth dünner
+  Terrassenlinien). Dafür ist eine Stufe weit draußen höher gezeichnet
+  (`LEVEL_HEIGHTS` in tile_terrain.gd: 0,6 / 0,9 / 1,2 / 1,5 Kachelbreiten bei
+  2 / 4 / 8 / 16 km), so stehen die gestapelten Plateaus der Gebirge auch auf
+  der Europakarte. Die Höhe wird vorher über
   1,2 Kacheln weichgezeichnet, danach räumt der Bake je Stufe auf (Öffnen und
   Schließen mit 3 × 3 Ecken): einzelne Buckel, Löcher und eine Kachel breite
   Stege verschwinden, Gebirge bleiben als zusammenhängende Massive stehen.
@@ -65,15 +68,23 @@ unabhängig und unverändert.
   stärkere Landschaft (Schnee vor Fels vor Wald vor offenem Land), nimmt die
   Hälfte zu dieser Ecke hin sie an, geschnitten an der Diagonale. So laufen
   Waldränder als 45-Grad-Linien statt als Treppe, und eine Kachel hat höchstens
-  zwei Farben. Die Palette ist auf die Urbek-Töne am Bildschirm abgestimmt
-  (Wiese im Urbek-Grasgrün #428a36, trockenes Gras im hellen Urbek-Grün,
-  Weizen goldgelb, Wald als Kronendach von oben, flaches helles Wasser).
+  zwei Farben. Die Palette ist aus Urbek-Screenshots gemessen und auf diese
+  Töne am Bildschirm abgestimmt (Wiese #73af5f, trockenes Gras #9baf5f,
+  Weizen #cdc373, Wald als Kronendach von oben #3c7440, Wasser #6db3df,
+  Flachwasser #8ccbef, Flüsse und Seen #5ea8da). Weit draußen (ab
+  2-km-Kacheln, voll bei 4 km) geht sie in die Palette der gemalten Fernsicht
+  über (Gauntlet-Referenz gemalt-weit-mittel-nah.png): olives Tiefland
+  #9aa35a, dunkelgrüner Wald #4f7a35, Fels, tiefes Meer #1d5e93 mit
+  Flachwasser #2f7db5. Offenes Land bekommt dort zusätzlich eine flache Farbe
+  je Höhenstufe (Hügel #849252, Gebirge #958e6c, hoher Fels #b3aba0), so lesen
+  Hügel und Gebirge als Flächen und nicht nur über ihre Rampen.
   Rampen haben drei feste Töne wie in SimCity 2000 (Lichtseite 1,12,
   Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
   bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
-  SimCity-Licht aus Südwesten (`ART_LIGHT`), nicht von der Sonne des Wetters:
-  Die Kamera schaut immer nach Norden, so sind die ihr zugewandten Rampen und
-  Wände hell wie in SimCity 2000 und Urbek. Das Licht sieht jede Oberseite und
+  SimCity-Licht von links und hinter der Kamera (`tt_art_light`, aus der
+  Kameralage), nicht von der Sonne des Wetters: So sind die der Kamera
+  zugewandten Rampen und Wände bei jedem Kamerawinkel hell wie in SimCity 2000
+  und Urbek (bei Blick nach Norden kommt es aus Südwesten). Das Licht sieht jede Oberseite und
   Wand als flach, damit Rampen weder glasig noch schwarz werden; Bäume und
   Häuser sind auf ihren Süd- und Westseiten etwas heller getönt.
   Wände sind ein dunklerer Erdton ohne Schichtlinien, nach Osten gewandt
@@ -113,8 +124,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
 | Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 170 / 190 / 210 / 230 m ab 100 m |
-| Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
-| Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1 auf den Waldkacheln; weiter draußen sind Waldkacheln dunkelgrün |
+| Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem gestuften Dach von einem Drittel der Höhe (Urbek), auf Stufe 0 und 1 gezeichnet |
+| Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
 ## Aufbau
@@ -151,7 +162,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   zeichnete dort nur Streifen).
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
-  Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die Häuser.
+  Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
+  Stadthäuser nach Urbek (Putzkasten mit Fenstern und Tür, Dach aus
+  Voxel-Stufen in Terrakotta).
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.

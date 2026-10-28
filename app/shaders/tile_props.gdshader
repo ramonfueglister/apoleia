@@ -56,9 +56,9 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = prop_kind == 3 ? vec3(0.94 + 0.12 * r1) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
-	// the sides turned to the camera (south and west) a little lighter, as the
-	// terrain's SimCity light has them; the sun comes from the north-west
-	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), vec2(-0.65, 0.76)) : 0.0;
+	// the sides turned to the SimCity light of the terrain a little lighter
+	vec3 art = tt_art_light(INV_VIEW_MATRIX);
+	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), normalize(art.xz)) : 0.0;
 	tint *= 1.0 + 0.25 * max(facing, 0.0);
 }
 

@@ -52,8 +52,8 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 static func broadleaf(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.36, 0.62, 0.22)
-	var side := Color(0.30, 0.54, 0.19)
+	var top := Color(0.29, 0.54, 0.28)
+	var side := Color(0.25, 0.47, 0.24)
 	_box(st, Vector3(-0.06, 0, -0.06), Vector3(0.06, 0.42, 0.06), Color(0.42, 0.29, 0.18), Color(0.42, 0.29, 0.18), false)
 	_box(st, Vector3(-0.32, 0.36, -0.32), Vector3(0.32, 0.86, 0.32), top, side)
 	_box(st, Vector3(-0.20, 0.86, -0.20), Vector3(0.16, 1.04, 0.18), top.lightened(0.06), side)
@@ -66,8 +66,8 @@ static func broadleaf(low := false) -> ArrayMesh:
 static func conifer(far := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.27, 0.50, 0.28)
-	var side := Color(0.21, 0.42, 0.23)
+	var top := Color(0.22, 0.43, 0.28)
+	var side := Color(0.17, 0.35, 0.23)
 	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.2, 0.05), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
 	if far:
 		_box(st, Vector3(-0.28, 0.14, -0.28), Vector3(0.28, 0.55, 0.28), top, side)
@@ -83,8 +83,8 @@ static func conifer(far := false) -> ArrayMesh:
 static func cypress(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.30, 0.52, 0.24)
-	var side := Color(0.27, 0.49, 0.22)
+	var top := Color(0.25, 0.47, 0.26)
+	var side := Color(0.21, 0.41, 0.22)
 	_box(st, Vector3(-0.03, 0, -0.03), Vector3(0.03, 0.1, 0.03), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
 	_box(st, Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side)
 	if not low:
@@ -96,42 +96,60 @@ static func cypress(low := false) -> ArrayMesh:
 static func umbrella_pine(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var top := Color(0.33, 0.54, 0.22)
-	var side := Color(0.26, 0.46, 0.19)
+	var top := Color(0.29, 0.52, 0.26)
+	var side := Color(0.23, 0.43, 0.21)
 	_box(st, Vector3(-0.04, 0, -0.04), Vector3(0.04, 0.86, 0.04), Color(0.45, 0.30, 0.20), Color(0.45, 0.30, 0.20), false)
 	_box(st, Vector3(-0.44, 0.82, -0.40), Vector3(0.44, 0.98, 0.40), top, side)
 	if not low:
 		_box(st, Vector3(-0.26, 0.98, -0.24), Vector3(0.24, 1.06, 0.26), top.lightened(0.05), side)
 	return st.commit()
 
+## A flat quad on a wall (window, door), a hair in front of it.
+static func _pane(st: SurfaceTool, centre: Vector3, n: Vector3, w: float, h: float, colour: Color) -> void:
+	var t := Vector3(-n.z, 0, n.x) * (w * 0.5)
+	var up := Vector3(0, h * 0.5, 0)
+	var c := centre + n * 0.004
+	var q := [c - t - up, c + t - up, c + t + up, c - t + up]
+	var a: Vector3 = q[0]
+	var b: Vector3 = q[1]
+	var d: Vector3 = q[3]
+	if (b - a).cross(q[2] - a).dot(n) > 0.0:
+		var x: Vector3 = b; b = d; d = x
+	for v in [a, b, q[2], a, q[2], d]:
+		st.set_color(colour); st.set_normal(n); st.add_vertex(v)
+
+## Town house after Urbek: 10 x 8.5 m, two storeys of cream plaster with
+## windows and a door, under a stepped terracotta roof (voxel layers, a third
+## of the height). 1 unit = HOUSE_M.
 static func house() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var wall := Color(0.93, 0.88, 0.77)
 	var roof := Color(0.74, 0.37, 0.23)
+	var window := Color(0.28, 0.27, 0.30)
+	var door := Color(0.45, 0.30, 0.20)
 	var hx := 0.5
-	var hz := 0.38
-	var h := 0.42
-	var corners := [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]
-	for k in 4:
-		var a: Vector3 = corners[k]
-		var b: Vector3 = corners[(k + 1) % 4]
-		var n := (a + b).normalized()
-		n = Vector3(signf(n.x) if absf(n.x) > absf(n.z) else 0.0, 0, signf(n.z) if absf(n.z) >= absf(n.x) else 0.0)
-		var up := Vector3(0, h, 0)
-		for p in [a, b, b + up, a, b + up, a + up]:
-			st.set_color(wall); st.set_normal(n); st.add_vertex(p)
-	# hip roof with eaves
-	var e := 1.12
-	var top_a := Vector3(-hx * 0.45, h + 0.3, 0)
-	var top_b := Vector3(hx * 0.45, h + 0.3, 0)
-	var r := [Vector3(-hx * e, h, -hz * e), Vector3(hx * e, h, -hz * e), Vector3(hx * e, h, hz * e), Vector3(-hx * e, h, hz * e)]
-	var faces := [[r[0], r[1], top_b, top_a], [r[1], r[2], top_b], [r[2], r[3], top_a, top_b], [r[3], r[0], top_a]]
-	for face in faces:
-		var n: Vector3 = (face[1] - face[0]).cross(face[2] - face[0]).normalized()
-		if n.y < 0: n = -n
-		var tris := [[0, 1, 2]] if face.size() == 3 else [[0, 1, 2], [0, 2, 3]]
-		for tri in tris:
-			for k in tri:
-				st.set_color(roof); st.set_normal(n); st.add_vertex(face[k])
+	var hz := 0.42
+	var h := 0.6
+	_box(st, Vector3(-hx, 0, -hz), Vector3(hx, h, hz), wall, wall)
+	# windows: three per floor on the long sides, one on the short ones; a door
+	# in the middle of the south side
+	for floor_y in [0.18, 0.44]:
+		for x in [-0.3, 0.0, 0.3]:
+			if floor_y < 0.3 and x == 0.0:
+				_pane(st, Vector3(0, 0.12, hz), Vector3.BACK, 0.1, 0.24, door)
+			else:
+				_pane(st, Vector3(x, floor_y, hz), Vector3.BACK, 0.09, 0.11, window)
+			_pane(st, Vector3(x, floor_y, -hz), Vector3.FORWARD, 0.09, 0.11, window)
+		_pane(st, Vector3(hx, floor_y, 0), Vector3.RIGHT, 0.09, 0.11, window)
+		_pane(st, Vector3(-hx, floor_y, 0), Vector3.LEFT, 0.09, 0.11, window)
+	# roof: eaves, then layers stepping in towards the ridge
+	var layers := [[0.48, 0.07], [0.36, 0.07], [0.24, 0.07], [0.12, 0.06]]
+	var y := h
+	for k in layers.size():
+		var half_z: float = layers[k][0]
+		var dy: float = layers[k][1]
+		var shade := roof.darkened(0.04 * k)
+		_box(st, Vector3(-hx - 0.04, y, -half_z), Vector3(hx + 0.04, y + dy, half_z), shade.lightened(0.05), shade)
+		y += dy
 	return st.commit()

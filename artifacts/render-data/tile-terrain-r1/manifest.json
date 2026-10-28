@@ -42,7 +42,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "ef932b16c5dec28e72af1038c4c317d283b98badaf9e5294f59186ec624af7ac",
+      "sha256": "f444b283b0eae2c38aff8008476a1f933dc3a3df4ef83324690414090965908a",
       "river_max_scalerank": 8
     },
     {
@@ -52,8 +52,8 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "e337b06891d581696da466be40ec35d9d0ce42b6443245a396e325b8622b93cb",
-      "river_max_scalerank": 6
+      "sha256": "147d406d86a6352d718b7727dff2309aecc23f1af73ccf31ada12c36adaab4a0",
+      "river_max_scalerank": 7
     },
     {
       "level": 4,
@@ -62,8 +62,8 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "a75e921f4d64be084c48568d3bbdbbcda0d361e544489b8f3ce4e2e0ccc6c53a",
-      "river_max_scalerank": 5
+      "sha256": "287797d5b03f67fc8491f939eb0d3f586dc1a745cb85860b11c24dc37ea0176d",
+      "river_max_scalerank": 6
     },
     {
       "level": 5,
@@ -72,8 +72,8 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "48fede9e6bc9dec3015b95b2b5453bb002cf3904a14f2c61c0ba6f9b9763f450",
-      "river_max_scalerank": 4
+      "sha256": "e6e6df832aaf64f638a8ec98ba065fa2b035b8632635d5798ed324d04a8177ba",
+      "river_max_scalerank": 5
     }
   ],
   "inputs": {
@@ -135,11 +135,11 @@
       "cell_km": 2.0,
       "width": 5163,
       "height": 2392,
-      "metres_per_level": 170.0,
-      "floor_m": 100.0,
+      "metres_per_level": 200.0,
+      "floor_m": 150.0,
       "blur_tiles": 1.2,
       "path": "levels-L2.png",
-      "sha256": "f41a7361b703697e4edfd756d7bf090e4e308b323137f98edc1a84a5d59ba285",
+      "sha256": "6310934cfc54fe16530efdf16d8345b3b08f6580096f3aeb125ffa43b31b5207",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -147,11 +147,11 @@
       "cell_km": 4.0,
       "width": 2582,
       "height": 1197,
-      "metres_per_level": 190.0,
-      "floor_m": 100.0,
+      "metres_per_level": 280.0,
+      "floor_m": 150.0,
       "blur_tiles": 1.2,
       "path": "levels-L3.png",
-      "sha256": "fc8765b9256383f9ae31f03eaef6876d888a335759fbd334d0fc314fcc2322f4",
+      "sha256": "7aeff5885c47157ca3278cd1501bde2fcac6d7ea1eb78fd94f2bf111037edf7b",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -159,11 +159,11 @@
       "cell_km": 8.0,
       "width": 1292,
       "height": 599,
-      "metres_per_level": 210.0,
-      "floor_m": 100.0,
+      "metres_per_level": 360.0,
+      "floor_m": 150.0,
       "blur_tiles": 1.2,
       "path": "levels-L4.png",
-      "sha256": "afac959e7f7b2729dfaa5290648a6f9bb6bcd0e3febeca4ab2db1b6ff59bdb77",
+      "sha256": "4e802598ab190eaef1dd6a7faf77811d24f00880eb793fe6f454c8b4ba447c37",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -171,11 +171,11 @@
       "cell_km": 16.0,
       "width": 647,
       "height": 300,
-      "metres_per_level": 230.0,
-      "floor_m": 100.0,
+      "metres_per_level": 440.0,
+      "floor_m": 150.0,
       "blur_tiles": 1.2,
       "path": "levels-L5.png",
-      "sha256": "815dbd82b04ca753016f5d4f9f69bd112d6223052cd4404c0fdf21859142d888",
+      "sha256": "d99dabacb1fd927aeefcfa7fbfbc4b9bb151f86a45390d508875674110d23ea5",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
@@ -187,7 +187,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "ground-L0.png",
-      "sha256": "b1a433479829d2dfd19fe92f30d32b77a28fcfa3aa02cabd4c3a49b1968f00df",
+      "sha256": "a1235780867369443702c43c60581e52fa20fab301fec263d3ed373ef4c28322",
       "classes": [
         "meadow",
         "dry_grass",
@@ -210,7 +210,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "ground-L1.png",
-      "sha256": "8bb6e627f1f6f642dc2f1c6f590fe2b19473219edc1c3f6fe3a8a816a8a0f5d0",
+      "sha256": "0b1642464ea7cda939c90735d1d6260e6e58d989de8ca87ca3aa2c4dcdcd7ec2",
       "classes": [
         "meadow",
         "dry_grass",
@@ -233,7 +233,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "ground-L2.png",
-      "sha256": "f7d3791c7dea66619202d997c0129e14a6e02cf7894b78c2e90794767cc89f51",
+      "sha256": "1fde4e9e80e6b2923cea5babd0e055871a471af19e10bae023e337df14b1c494",
       "classes": [
         "meadow",
         "dry_grass",
@@ -256,7 +256,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "ground-L3.png",
-      "sha256": "b50e053b923e1aed54b7ade0c614c8ca943b8887d165a5dd92637420ad703608",
+      "sha256": "5de1828d85401c5effafd0e18abe2459daa8649455abc8f0d25619c1b3d0feb0",
       "classes": [
         "meadow",
         "dry_grass",
@@ -279,7 +279,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "ground-L4.png",
-      "sha256": "3290a9c9e022c035fed067b8656c7ff1b241b48a7f771e897d96347346ff3971",
+      "sha256": "0cadb149d39a64e0fe02674b4eb193822304a4d649b6661e49ad28bfa7a9a05f",
       "classes": [
         "meadow",
         "dry_grass",
@@ -302,7 +302,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "ground-L5.png",
-      "sha256": "9b90821bcb5fe85f9a67c24f8eba5e847ce6ae1dfe573bcf3b16026025d64323",
+      "sha256": "11c7fe0060fa907709e941fb13b790b2a22e2f6a9d05faf408893e96d5ff49e5",
       "classes": [
         "meadow",
         "dry_grass",

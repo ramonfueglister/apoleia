@@ -97,6 +97,20 @@ int tt_water(ivec2 t) {
 	return tt_cell(t) & 3;
 }
 
+// The SimCity 2000 light of the slope and wall tones (towards the light,
+// world, unit length): from the left of the screen and from behind the
+// camera, so the faces turned to the camera are the lit ones at any camera
+// angle, as in SimCity 2000 and Urbek. `inv_view` is INV_VIEW_MATRIX.
+vec3 tt_art_light(mat4 inv_view) {
+	vec3 r = inv_view[0].xyz;
+	vec3 u = inv_view[1].xyz;
+	vec3 b = inv_view[2].xyz;
+	vec2 right = normalize(r.xz + vec2(1e-5, 0.0));
+	vec2 back = normalize(b.xz - u.xz + vec2(0.0, 1e-5)); // screen down, also top-down
+	vec2 h = -0.45 * right + 0.53 * back;
+	return normalize(vec3(h.x, 0.72, h.y));
+}
+
 int tt_ground(ivec2 t) {
 	if (!ground_ready || t.x < 0 || t.y < 0 || t.x >= cells_size.x || t.y >= cells_size.y) {
 		return G_NONE;
