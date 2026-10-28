@@ -60,12 +60,12 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// Fields on open land (`ground`, the terrain's landscape here): parcels by
+// Fields on open land (`land`, the terrain's landscape here): parcels by
 // hash up to the fine tile's field share; sown ones by the season (earth,
 // sprouts, green, ripe wheat, stubble), the others fallow meadow.
-vec3 sim_fields(vec2 p, vec3 c, int ground) {
+vec3 sim_fields(vec2 p, vec3 c, int land) {
 	if (!sim_map_on || sim_fine_n == 0) { return c; }
-	if (ground != G_FIELD && ground != G_MEADOW && ground != G_DRY_GRASS) { return c; }
+	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
 	vec2 cell = floor(p / SIM_PARCEL_KM);
 	vec2 mid = (cell + 0.5) * SIM_PARCEL_KM;
 	vec4 f = sim_fine_at(ivec2(floor((mid - sim_fine_origin) / sim_fine_km)));

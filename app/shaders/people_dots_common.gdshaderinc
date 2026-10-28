@@ -118,13 +118,9 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 			p += (h - 0.5) * 2.0 * DOT_FAMILY_KM;
 		}
 	}
-	// far out the smooth relief is the surface; up close the dot stands on
-	// its tile's corner levels, as trees and houses do
-	float level = max(1.0, max(tt_corner_height(dot_tile(p)), 0.0) / m_per_level);
-	if (relief_smooth < 0.999) {
-		vec2 uv = fract((p - world_min) / tile_km);
-		vec4 c = tt_corners_cached(dot_tile(p));
-		level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
-	}
+	// the dot stands on its tile's corner levels, as trees and houses do
+	vec2 uv = fract((p - world_min) / tile_km);
+	vec4 c = tt_corners_cached(dot_tile(p));
+	float level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
 	return vec3(p - rec.xy, level);
 }

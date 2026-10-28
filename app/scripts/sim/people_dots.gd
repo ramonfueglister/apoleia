@@ -48,7 +48,7 @@ const LIST_W := 128 # width of the slot list texture
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
-const PLACE_KEYS: Array[StringName] = [&"tile_km", &"relief_smooth", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
+const PLACE_KEYS: Array[StringName] = [&"tile_km", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
 const DOTS_PER_INSTANCE := 64 # people_dots.gdshaderinc, divides the page size
 const PICK_PX := 10.0 # a click finds the nearest dot within this many pixels
 const CLICK_PX := 4.0 # a press and release further apart is a drag, not a click
