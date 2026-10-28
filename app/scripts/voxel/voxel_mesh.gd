@@ -140,7 +140,8 @@ static func faces(vox: Dictionary) -> Array:
 
 ## Appends the quads to `st`: corners scaled from grid units to metres,
 ## then by `scale`, vertex colours from `palette` (sRGB) times the corner
-## occlusion, UV.x = `part` (for shaders that move parts).
+## occlusion, UV.x = `part` (for shaders that move parts), UV.y the palette
+## index (for shaders that recolour, e.g. walls per house).
 static func emit(st: SurfaceTool, vox: Dictionary, quads: Array, palette: Array, scale: float, part := 0, tops := {}) -> void:
 	var v: float = vox.v
 	var lo: Vector3 = vox.lo
@@ -157,13 +158,21 @@ static func emit(st: SurfaceTool, vox: Dictionary, quads: Array, palette: Array,
 		if normal.dot(nv) < 0.0:
 			p = [p[0], p[3], p[2], p[1]]
 			ao = [ao[0], ao[3], ao[2], ao[1]]
+		# grow each quad by a hair (1.2 cm) within its plane: merged quads
+		# meet smaller neighbours at T-junctions, whose rasterisation leaves
+		# pin-hole cracks (as prototypes/colosseum/colosseum_mesh.gd _emit)
+		var centre := (p[0] + p[1] + p[2] + p[3]) * 0.25
+		for k in 4:
+			var dir := p[k] - centre
+			if dir.length_squared() > 1e-12:
+				p[k] += dir.normalized() * 0.012 * scale
 		# Godot fronts are clockwise; the diagonal follows the occlusion so
 		# corner shading does not streak across the quad.
 		var order := [0, 2, 1, 0, 3, 2] if ao[0] + ao[2] >= ao[1] + ao[3] else [0, 3, 1, 1, 3, 2]
 		for k in order:
 			var f: float = AO[ao[k]]
 			st.set_color(Color(colour.r * f, colour.g * f, colour.b * f))
-			st.set_uv(Vector2(part, 0))
+			st.set_uv(Vector2(part, q[2]))
 			st.set_normal(nv)
 			st.add_vertex(p[k])
 

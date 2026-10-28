@@ -23,19 +23,23 @@ const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 
 const BOUNDS_HI := Vector3(7.5, 5.75, 6.5)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v6_%s.res"
+const CACHE := "user://farmhouse_v8_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
-# The roof is a red terracotta (hue about 8 degrees): the warm sun pushes it
-# towards orange on screen.
+# The palette of the town buildings (prototypes/colosseum/city_buildings.gd,
+# after Caesar III): cream plaster, red terracotta with lighter treads on the
+# roof steps (TOPS), green or brown shutters. people_houses.gdshader turns
+# the plaster cream, pink or ochre and the shutters green or brown per farm.
 const PALETTE := [
-	Color(0, 0, 0), Color("f0dcb8"), Color("dcc59c"), Color("d6ccb4"), Color("bd5345"),
-	Color("a8473b"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color(0, 0, 0), Color("ebdfc8"), Color("d9c9a8"), Color("d6ccb4"), Color("b3563f"),
+	Color("a84c38"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("86705a"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
-	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586")]
+	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
+	Color("5f7f46")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
-	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH }
+	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER }
+const TOPS := {ROOF: Color("cf6a4c"), ROOF_DARK: Color("bd5d44")}
 
 ## What fills point p (metres).
 static func sample(p: Vector3) -> int:
@@ -74,12 +78,12 @@ static func _house(p: Vector3) -> int:
 			if k < 0.25:
 				return WINDOW
 			if k < 0.5:
-				return WOOD
+				return SHUTTER
 		if win_y and ax >= HALF_X - 0.25:
 			if az < 0.25:
 				return WINDOW
 			if az < 0.5:
-				return WOOD
+				return SHUTTER
 		return PLASTER_LOW if p.y < 0.875 else PLASTER
 	# hipped roof over the eaves
 	var dx := HALF_X + EAVES - ax
@@ -184,7 +188,7 @@ static func lods(unit_m: float) -> Array[ArrayMesh]:
 		var path := CACHE % str(v)
 		var mesh: ArrayMesh = load(path) if ResourceLoader.exists(path) else null
 		if mesh == null:
-			mesh = VoxelMesh.build(sample, BOUNDS_LO, BOUNDS_HI, v, FINE, PALETTE, 1.0 / unit_m)
+			mesh = VoxelMesh.build(sample, BOUNDS_LO, BOUNDS_HI, v, FINE, PALETTE, 1.0 / unit_m, TOPS)
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)
 	return out

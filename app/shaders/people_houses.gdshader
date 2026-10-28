@@ -22,6 +22,10 @@ varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
+// plaster and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB
+const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.788, 0.698), vec3(0.902, 0.776, 0.565), vec3(0.922, 0.875, 0.784));
+const vec3 SHUTTER_GREEN = vec3(0.373, 0.498, 0.275);
+const vec3 SHUTTER_BROWN = vec3(0.604, 0.353, 0.227);
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;
@@ -46,6 +50,17 @@ void vertex() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	normal = NORMAL;
 	tint = vec3(st.y);
+	// each farm its own plaster (cream, pink, ochre, as the town's
+	// WALLS) and shutters (green or brown), by the palette index in UV.y
+	// (scripts/voxel/farmhouse.gd); the vertex colour keeps its corner shading
+	ivec2 lot = ivec2(floor(p / DOT_LOT_KM));
+	uint key = dot_hash(uint(lot.x) * 0x2545f491u ^ uint(lot.y) * 0x9e3779b9u);
+	int index = int(UV.y + 0.5);
+	if (index == 1 || index == 2) {
+		tint *= WALLS[key % 4u] / WALLS[0];
+	} else if (index == 20) {
+		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
+	}
 	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 
