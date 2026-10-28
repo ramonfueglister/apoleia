@@ -81,7 +81,13 @@ func _mesh(key: String) -> ArrayMesh:
 			"garden": meshes[key] = Town.garden(seed)
 			"market": meshes[key] = Town.market(seed)
 			"plaza": meshes[key] = Town.plaza(seed)
-			"via": meshes[key] = Town.via(seed)
+			"via": meshes[key] = Town.via(seed, 0)
+			"vias": meshes[key] = Town.via(seed, 1)
+			"vx": meshes[key] = Town.via_crossing(seed, 0)
+			"vxs": meshes[key] = Town.via_crossing(seed, 1)
+			"rivn": meshes[key] = Town.river(seed, "n")
+			"rivs": meshes[key] = Town.river(seed, "s")
+			"bridge": meshes[key] = Town.bridge(seed)
 			"hvia": meshes[key] = Town.house_lot(seed, true)
 			"forum": meshes[key] = Town.forum(seed)
 			"baths": meshes[key] = Town.baths(seed)
@@ -89,10 +95,10 @@ func _mesh(key: String) -> ArrayMesh:
 
 ## Puts lot model `key` (`size` lots) with its north-west corner on lot
 ## (lx, lz); `south` false turns it to face north.
-func _put(key: String, lx: int, lz: int, south := true, size := Vector2i.ONE) -> void:
+func _put(key: String, lx: int, lz: int, south := true, size := Vector2i.ONE, y := 0.0) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = _mesh(key)
-	var o := Vector3(lx * LOT_M, 0.0, lz * LOT_M)
+	var o := Vector3(lx * LOT_M, y, lz * LOT_M)
 	if south:
 		mi.transform = Transform3D(Basis.IDENTITY, o)
 	else:
@@ -104,12 +110,13 @@ func _put(key: String, lx: int, lz: int, south := true, size := Vector2i.ONE) ->
 ## the nearer street, with a forum (temple, market, gardens), atrium houses
 ## and apartment blocks placed first.
 const STREETS_EW := [3, 0, -3, -6, -9, -12]
+const RIVER := 5      # the river runs east-west over rows 5 and 6
 const STREETS_NS := [-6, 0, 6]
 const SPECIAL := [
 	["forum:0", 1, -5, Vector2i(5, 5)], ["baths:0", -5, -2, Vector2i(3, 2)],
 	["insula:2", 8, -1, Vector2i(2, 1)], ["insula:5", -2, -1, Vector2i(2, 1)],
-	["insula:4", 3, 1, Vector2i(2, 1), false], ["insula:8", -9, 1, Vector2i(2, 1), false],
-	["insula:7", 10, 1, Vector2i(2, 1), false],
+	["insula:4", 3, 2, Vector2i(2, 1), false], ["insula:8", -9, 2, Vector2i(2, 1), false],
+	["insula:7", 10, 2, Vector2i(2, 1), false],
 	["domus:0", -11, -2, Vector2i(2, 2)], ["market:0", -9, -2, Vector2i(2, 2)],
 	["temple:0", 7, -5, Vector2i(2, 2)], ["garden:2", -1, -4, Vector2i.ONE],
 	["garden:3", 5, -7, Vector2i.ONE],
@@ -125,7 +132,10 @@ func _colosseum(taken: Dictionary) -> void:
 			taken[Vector2i(lx, lz)] = true
 			var p := (Vector2(lx, lz) + Vector2(0.5, 0.5)) * LOT_M - c
 			var under := (p.x / 42.0) ** 2 + (p.y / 36.0) ** 2 < 1.0
-			_put("plaza:%d" % (0 if under else 1 + ((lx * 3 + lz * 5) & 7)), lx, lz)
+			if lx == COLOSSEUM.end.x - 1 and lz == COLOSSEUM.end.y - 1:
+				_put("plaza:8", lx, lz)
+				continue
+			_put("plaza:%d" % (0 if under else 4 + ((lx * 3 + lz * 5) & 3) + 8 * ((lx + lz) & 1)), lx, lz)
 	var t0 := Time.get_ticks_msec()
 	var mi := MeshInstance3D.new()
 	mi.mesh = Colosseum.mesh()
@@ -136,7 +146,7 @@ func _colosseum(taken: Dictionary) -> void:
 ## Blocks away from the forum: some get an atrium house, an apartment
 ## block, a temple, a market or a park, the rest row houses.
 func _blocks(taken: Dictionary) -> void:
-	for kz in range(-9, 3):
+	for kz: int in [-9, -8, -7, -6, -5, -4, -3, -2, -1, 2]:
 		for kx in range(-3, 3):
 			var x0 := 6 * kx + 1
 			var north := 3 * kz + 1
@@ -178,7 +188,7 @@ func _layout() -> void:
 	plane.material = gm
 	var ground := MeshInstance3D.new()
 	ground.mesh = plane
-	ground.position = Vector3(0, 0.2, 0)
+	ground.position = Vector3(0, -1.6, 0)
 	vp.add_child(ground)
 	var taken := {}
 	_colosseum(taken)
@@ -190,28 +200,41 @@ func _layout() -> void:
 		_put(sp[0], sp[1], sp[2], sp[4] if sp.size() > 4 else true, size)
 	_blocks(taken)
 	var n := 0
-	for lz in range(-26, 9):
+	for lz in range(-26, 10):
 		for lx in range(-17, 18):
 			if taken.has(Vector2i(lx, lz)):
 				continue
-			var ew: bool = posmod(lz, 3) == 0
 			var ns: bool = posmod(lx, 6) == 0
 			var h := (lx * 7 + lz * 13) & 15
+			if lz == 0 or lz == 1:
+				# the main street, two lots wide
+				var half := "" if lz == 0 else "s"
+				_put(("vx%s:%d" if ns else "via%s:%d") % [half, (lx * 5 + lz) & 7], lx, lz)
+				continue
+			if lz == RIVER or lz == RIVER + 1:
+				if lx == 0:
+					_put("bridge:%d" % (lz & 1), lx, lz, true, Vector2i.ONE, -Town.RIVER_DROP * Kit.V)
+				else:
+					_put(("rivn:%d" if lz == RIVER else "rivs:%d") % (h & 7), lx, lz, true, Vector2i.ONE, -Town.RIVER_DROP * Kit.V)
+				continue
+			var ew: bool = posmod(lz, 3) == 0 and lz != RIVER + 2
 			if ew and ns:
 				_put("x:%d" % h, lx, lz)
 			elif ns:
 				_put("ns:%d" % h, lx, lz)
-			elif ew and lz == 0:
-				_put("via:%d" % ((lx * 5) & 7), lx, lz)
 			elif ew:
 				_put("ew:%d" % ((lx * 5 + lz * 3) & 15), lx, lz)
 			else:
 				n += 1
-				var south: bool = posmod(lz + 1, 3) == 0
+				# face the main street or the river where they are next door,
+				# else the street to the south, else the one to the north
+				var south: bool = posmod(lz + 1, 3) == 0 or lz == -1 or lz == RIVER - 1
+				if lz == 2 or lz == RIVER + 2:
+					south = false
 				if ((lx * 11 + lz * 5) & 15) in [3, 9, 14]:
 					_put("garden:%d" % (h & 3), lx, lz, south)
 				else:
-					var hk := "hvia" if lz == -1 or lz == 1 else "house"
+					var hk := "hvia" if lz == -1 or lz == 2 else "house"
 					_put("%s:%d" % [hk, (lx * 31 + lz * 17) & 31], lx, lz, south)
 	var tris := 0
 	for m: ArrayMesh in meshes.values():

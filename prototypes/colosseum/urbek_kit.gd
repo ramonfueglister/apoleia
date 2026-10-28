@@ -27,6 +27,8 @@ enum { EMPTY,
 	TILE3, TILE3_D, TILE3_L, EAVE3, RIDGE3, TILE4, TILE4_D, TILE4_L, EAVE4, RIDGE4,
 	LEAD, LEAD_D, LEAD_L, EAVEL, RIDGEL, SHUTTER_O, MULE, LINEN, VAULT_L,
 	TILE5, TILE5_D, TILE5_L, EAVE5, RIDGE5, VERGE, ARCADE, DEEP,
+	POMPEII, POMPEII_W, DOCHRE, DOCHRE_W, BRICKFACE, BRICKFACE_W, TIMBER, TIMBER_W, MORTAR, DADO,
+	PAVE_J, BORDER, YARD, SEAT_HI, SEAT_MID, SEAT_WOOD, STATUE, STREAK, VIA_P, VIA_PD, WATER_D, SAIL,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -54,9 +56,9 @@ const COLOURS := {
 	GRASS: ["74994a", "7aa24c"], GRASS_D: ["6f9447", "759c49"], GRASS_L: ["79a04e", "80a852"],
 	EARTH: ["b59263", "c49f6e"], EARTH_D: ["a5845a", "b38f63"],
 	PAVE: ["d2c6ae", "ddd2bb"], PAVE_D: ["cbbfa7", "d6cab3"], PAVE_L: ["d8cdb6", "e3d8c3"],
-	BASALT: ["66625d", "706b65"], BASALT_D: ["605c57", "6a655f"], BASALT_L: ["6c6863", "77726b"],
+	BASALT: ["79726b", "857e76"], BASALT_D: ["706a63", "7b746d"], BASALT_L: ["827b74", "8f8880"],
 	CURB: ["b9ad97", "c6bba5"],
-	WATER: ["4f97c9", "5fa8d8"], BRONZE: ["9c7438"], GOLD: ["dcae4c", "e8bf5c"],
+	WATER: ["4f8fb8", "5e9cc0"], BRONZE: ["9c7438"], GOLD: ["dcae4c", "e8bf5c"],
 	ROBE_W: ["eee7da"], ROBE_R: ["b8483a"], ROBE_B: ["4f6f9a"], SKIN: ["d9a27a"], HAIR: ["4a3326"],
 	TRAV: ["e2d3b5", "ebdec3"], TRAV_W: ["d3c3a2", "ddcfb1"], TRAV_D: ["c6b392", "d1c0a0"], TRAV_L: ["efe6d2", "f5eedd"],
 	VAULT: ["585a6a", "6a6b78"], SEAT: ["bfae8f", "dccfb2"], SEAT_D: ["ad9b7c", "c9ba9a"],
@@ -67,6 +69,13 @@ const COLOURS := {
 	SHUTTER_O: ["a08c5e"], MULE: ["7a6656"], LINEN: ["f4efe4"], VAULT_L: ["6e6f7c", "7d7e8a"],
 	TILE5: ["7d6f66", "9c8b80"], TILE5_D: ["766960", "948377"], TILE5_L: ["84766c", "a69488"], EAVE5: ["4a3e36", "9c8b80"], RIDGE5: ["6e625a", "877a70"],
 	VERGE: ["7e3a2a", "9a4a35"], ARCADE: ["9a8e7e", "a99d8c"], DEEP: ["2e2824"],
+	POMPEII: ["a4433a"], POMPEII_W: ["8f3a32"], DOCHRE: ["c99542"], DOCHRE_W: ["b3843a"],
+	BRICKFACE: ["a65a40"], BRICKFACE_W: ["924f38"], TIMBER: ["6e4c34"], TIMBER_W: ["5e412d"],
+	MORTAR: ["c4b49b"], DADO: ["9c3a30"],
+	PAVE_J: ["c2b69e", "cbbfa7"], BORDER: ["a99c84", "b5a88f"], YARD: ["cdb98f", "d8c49a"],
+	SEAT_HI: ["d3ccbf", "e6dfd2"], SEAT_MID: ["b9ad99", "cfc3ae"], SEAT_WOOD: ["7a6853", "8e7a62"],
+	STATUE: ["e6dccb", "efe7d8"], STREAK: ["9a8f7f"], VIA_P: ["bfb19a", "cdbfa6"], VIA_PD: ["b8aa92", "c4b69d"],
+	WATER_D: ["477fa4", "5591b5"], SAIL: ["eee6d4"],
 }
 
 static var _side := PackedColorArray()

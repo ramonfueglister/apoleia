@@ -32,7 +32,7 @@ const PODIUM := SEAT_TOP - 34
 const FLOOR := PODIUM - 6
 const PAVING := 4              # grid margin round the plinth, voxels
 const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
-const CACHE := "user://colosseum25_v5.res"
+const CACHE := "user://colosseum25_v6.res"
 const AISLES := 40
 const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.CLOTH_Y, Kit.CLOTH_G, Kit.LINEN]
 
@@ -119,9 +119,17 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 		if _open(o, lr):
 			if storey > 0 and lr <= 3 and d == 1:
 				return Kit.TRAV_L
-			# a statue in every other upper arch, behind the parapet
-			if storey > 0 and posmod(b, 2) == 0 and d == 3 and (o == 3 or o == 4) and lr <= 10:
-				return Kit.MARBLE
+			# a statue in every other upper arch, behind the parapet: a
+			# pedestal, legs, shoulders three wide, a head
+			if storey > 0 and posmod(b, 2) == 0 and (d == 3 or d == 4):
+				if o >= 2 and o <= 5 and lr <= 2:
+					return Kit.TRAV_L
+				if (o == 3 or o == 4) and lr >= 3 and lr <= 6 and d == 3:
+					return Kit.STATUE
+				if o >= 2 and o <= 5 and lr >= 7 and lr <= 8 and d == 3:
+					return Kit.STATUE
+				if (o == 3 or o == 4) and lr >= 9 and lr <= 10:
+					return Kit.STATUE
 			if d < SHELL - 2:
 				return Kit.EMPTY
 			# the corridor wall in the half light, a smaller arch in it
@@ -231,18 +239,19 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, x: int, z: int, t
 	# radial stairways; spectators in groups on some treads
 	var round := t * AISLES / TAU
 	var aisle := fposmod(round, 1.0) < 0.07
+	# three bands: marble by the arena, stone, timber at the top
+	var band := 0 if step < 5 else (1 if step < 10 else 2)
+	var seat: int = [Kit.SEAT_WOOD, Kit.SEAT_MID, Kit.SEAT_HI][band]
 	if r < top - 2:
 		return Kit.TRAV_D
 	if r < top:
-		if aisle:
-			return Kit.TRAV_L
-		return Kit.SEAT_D if j % 4 == 0 else Kit.SEAT
-	if not aisle and j % 4 == 2 and r <= top + 1 and (x + z) % 2 == 0:
-		var group := Kit.rnd(floori(round * 3.0), step, 0, 3) % 100
-		if group < 28:
+		return Kit.TRAV_L if aisle else seat
+	# spectators fill whole sectors of a band, shoulder to shoulder
+	if not aisle and j % 4 >= 1 and j % 4 <= 2 and r <= top + 1:
+		if Kit.rnd(floori(round), band, 0, 3) % 100 < 45:
 			if r == top + 1:
-				return Kit.SKIN
-			return CROWD[Kit.rnd(x, z, 0, 4) % CROWD.size()]
+				return Kit.HAIR if (x + z) % 3 == 0 else Kit.SKIN
+			return CROWD[Kit.rnd(x / 2, z / 2, 0, 4) % CROWD.size()]
 	# low walls splitting the cavea into three bands, entrances in them
 	if j % 4 == 3 and (step == 5 or step == 10) and r < top + 3:
 		if posmod(b, 4) == 0 and s >= 3 and s <= 8:
