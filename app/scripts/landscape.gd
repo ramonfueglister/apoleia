@@ -5,10 +5,8 @@ extends Node3D
 ## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
 ## middle; fully out the view settles over Europe), drag (left or middle
 ## mouse, two-finger pan) moves the map, WASD or arrow keys pan, +/- zoom.
-## Up close the view is Urbek's: a near-orthographic camera tilted 30 degrees,
-## turned YAW_CLOSE degrees off north; zoomed out it looks north. The turn
-## happens only inside one zoom band (YAW_FROM..YAW_TO), so panning and most
-## zooming never swim.
+## The view always looks north and never turns (turning made the map swim).
+## Up close it is Urbek's camera: tilted 30 degrees and near-orthographic.
 ## Weather keys F5-F7 belong to weather_system.gd.
 ##
 ## Command line (after --): --view=lon,lat,width start view,
@@ -31,10 +29,6 @@ const FOV_CLOSE := 9.0
 const FOV_FAR := 24.0
 const FOV_FROM := 12.0 # view width (km) where the view starts to open up
 const FOV_TO := 300.0
-## Turn off north up close, in degrees (45 = Urbek's diagonal; 0 = north up).
-const YAW_CLOSE := 0.0
-const YAW_FROM := 6.0 # view width (km) below which the view is fully turned
-const YAW_TO := 14.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
 
@@ -152,9 +146,6 @@ static func _zoom_share(w: float, from: float, to: float) -> float:
 func fov_for_width(w: float) -> float:
 	return lerpf(FOV_CLOSE, FOV_FAR, _zoom_share(w, FOV_FROM, FOV_TO))
 
-func yaw_for_width(w: float) -> float:
-	return lerpf(YAW_CLOSE, 0.0, _zoom_share(w, YAW_FROM, YAW_TO))
-
 func pitch_for_width(w: float) -> float:
 	# 30 degrees up close (SimCity 2000), nearly top-down on the world map.
 	var t := clampf((log(w) - log(40.0)) / (log(MAX_WIDTH) - log(40.0)), 0.0, 1.0)
@@ -171,7 +162,7 @@ func _distance() -> float:
 	return width / (2.0 * tan(deg_to_rad(fov_for_width(width)) * 0.5) * maxf(aspect, 0.1))
 
 func _view_basis() -> Basis:
-	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), deg_to_rad(yaw_for_width(width)), 0.0), EULER_ORDER_YXZ)
+	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), 0.0, 0.0))
 
 func _place_camera() -> void:
 	var basis := _view_basis()
