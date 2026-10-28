@@ -72,7 +72,11 @@ unabhängig und unverändert.
   Wände sind ein dunklerer Erdton ohne Schichtlinien. Am Meer ein Sandsaum an
   den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
   heller, wo die Kachel Land berührt. Bäume stehen nah genau auf den
-  Waldkacheln (und Waldhälften), einzelne Bäume auf offenem Grasland. Städte
+  Waldkacheln (und Waldhälften), dazu einzelne Bäume und kleine Baumgruppen
+  auf offenem Grasland und an Feldern. Auch dichter Wald öffnet sich alle paar
+  Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb
+  Pixel breit; auf der Europakarte stehen die großen Ströme (Natural Earth
+  scalerank bis 4, bei 8-km-Kacheln bis 5). Städte
   nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
   weit draußen im Land auf.
 

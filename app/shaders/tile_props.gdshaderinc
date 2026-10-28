@@ -40,9 +40,18 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		int land = tt_ground_at(t, uv);
 		bool wood = land == G_FOREST || land == G_CONIFER;
 		bool open = land == G_MEADOW || land == G_DRY_GRASS || land == G_ALPINE || land == G_SCRUB;
-		float lone = open ? 0.08 : 0.0;
+		// open land: a lone tree here and there, and small groves of a few
+		// trees around one spot of the tile, as in Urbek
+		bool field = land == G_FIELD;
+		float lone = open ? 0.08 : field ? 0.03 : 0.0;
 		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
-		show = show && (wood || lone_tree);
+		bool grove = false;
+		if (open || field) {
+			float gh = tt_hash(vec2(t) * 0.613 + 7.1);
+			vec2 spot = 0.3 + 0.4 * vec2(tt_hash(vec2(t) + 1.7), tt_hash(vec2(t) - 2.9));
+			grove = gh < (open ? 0.07 : 0.03) && length(uv - spot) < 0.2;
+		}
+		show = show && (wood || lone_tree || grove);
 		edge_size = mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);

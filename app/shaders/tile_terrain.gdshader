@@ -21,13 +21,12 @@ varying flat float flat_top;
 varying flat float body_level;
 varying flat int shore_sides; // land tile: bit k = sea across side k, bit 4 + k = sea at corner k only
 varying flat int cut_tip;     // coast cut: corner at the tip of the wet half, or -1
-varying flat int wall_sides;  // core town tile: bit k = no town across side k
-varying flat int river_sides; // river tile: bit k = water across side k
+// Metal allows 31 varying components in all (Godot uses some itself), so
+// small flags share an int
+varying flat int side_bits;   // bit k: core town tile, no town across side k; bit 4 + k: river tile, water across side k
 varying flat int shore_lake;  // 1: that water is a lake
 varying flat int wet_tri;     // the wet half of a coast cut tile
-varying flat int ground;      // landscape of the tile (G_*)
-varying flat int ground_tip;  // corner whose half takes ground_alt, or -1
-varying flat int ground_alt;
+varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut half (4-7), cut corner + 1 (8-10, 0: none)
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
 // saturated greens, pale wheat, flat light water. Indexed by G_*. The values
@@ -151,21 +150,23 @@ void vertex() {
 		}
 	}
 	shore_lake = lake_near ? 1 : 0;
-	ground = tt_ground(tile);
-	ground_tip = -1;
-	ground_alt = ground;
+	int ground = tt_ground(tile);
+	int ground_alt = ground;
+	int ground_tip = -1;
 	if (water != W_SEA && water != W_LAKE && part == 0 && cut < 0) {
 		ground_tip = tt_ground_cut(tile, ground, ground_alt);
 	}
+	ground_bits = ground | (ground_alt << 4) | ((ground_tip + 1) << 8);
 	shore_sides = 0;
-	wall_sides = 0;
-	river_sides = 0;
+	int wall_sides = 0;
+	int river_sides = 0;
 	bool core = water == W_LAND && (cell >> 2) == 3;
 	for (int k = 0; k < 4; k++) {
 		if (water != W_SEA && (nc[k] & 3) == W_SEA) { shore_sides |= 1 << k; }
 		if (core && ((nc[k] & 3) != W_LAND || (nc[k] >> 2) < 2)) { wall_sides |= 1 << k; }
 		if (water == W_RIVER && (nc[k] & 3) != W_LAND) { river_sides |= 1 << k; }
 	}
+	side_bits = wall_sides | (river_sides << 4);
 	if (water != W_SEA && part == 0) {
 		for (int k = 0; k < 4; k++) {
 			int a = (k + 3) & 3; // the sides at corner k: k - 1 and k
@@ -199,6 +200,11 @@ float side_distance(int mask) {
 }
 
 void fragment() {
+	int ground = ground_bits & 15;
+	int ground_alt = (ground_bits >> 4) & 15;
+	int ground_tip = (ground_bits >> 8) - 1;
+	int wall_sides = side_bits & 15;
+	int river_sides = side_bits >> 4;
 	vec2 p = world_pos.xz;
 	vec2 centre = tt_tile_center(tile);
 	vec3 c;
@@ -264,6 +270,9 @@ void fragment() {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
 			float half_w = clamp(0.075 / tile_km, 0.06, 0.22);
+			// and never thinner than about a pixel and a half, so the big
+			// rivers still read on the map of Europe
+			half_w = min(max(half_w, 0.75 * length(fwidth(tile_uv))), 0.3);
 			vec2 q = tile_uv - 0.5;
 			const vec2 MID[4] = vec2[](vec2(0.0, -0.5), vec2(0.5, 0.0), vec2(0.0, 0.5), vec2(-0.5, 0.0));
 			int m = river_sides;
