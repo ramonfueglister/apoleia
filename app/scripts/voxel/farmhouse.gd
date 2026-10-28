@@ -3,7 +3,9 @@ extends RefCounted
 ## the colosseum prototype: plastered walls on a stone plinth with stone
 ## corners, a beam under the eaves, a plank door and small dark windows, a
 ## hipped roof of terracotta tiles with darker rows and hip ridges, a
-## lean-to shed with hay on one side and a woodpile on the other. Metres,
+## lean-to shed with hay on one side and a woodpile on the other, a
+## vegetable garden at the back, an earth path to the gate and a wooden
+## fence round the lot (it fits a 15 m lot when turned). Metres,
 ## origin at ground centre of the main house, front towards +z. Built at
 ## three voxel sizes for the levels of detail (VoxelMesh), scaled to the
 ## unit house of the terrain (1 unit = TileTerrain.HOUSE_M).
@@ -17,18 +19,21 @@ const EAVES := 0.5
 const PITCH := 0.5 # roof rise per metre (about 27 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
-const BOUNDS_LO := Vector3(-5.75, 0.0, -4.0)
-const BOUNDS_HI := Vector3(7.5, 5.75, 5.0)
-const CACHE := "user://farmhouse_v1_%s.res"
+const BOUNDS_LO := Vector3(-7.25, 0.0, -6.5)
+const BOUNDS_HI := Vector3(7.5, 5.75, 6.75)
+const FENCE_LO := Vector2(-7.0, -6.25) # x, z of the fence posts
+const FENCE_HI := Vector2(7.25, 6.5)
+const CACHE := "user://farmhouse_v2_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
 const PALETTE := [
-	Color(0, 0, 0), Color("e6d8c0"), Color("d8c8aa"), Color("cfc3ab"), Color("b8483a"),
-	Color("9a4434"), Color("7a3a2c"), Color("7a5236"), Color("3a2c24"), Color("dcb87e"),
-	Color("4a3426"), Color("a5835f"), Color("4d7c3a"), Color("3f6b32")]
+	Color(0, 0, 0), Color("efe2c6"), Color("d9c7a2"), Color("d6ccb4"), Color("c8643c"),
+	Color("b4573a"), Color("8a432c"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color("5e3f28"), Color("a5835f"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
+	Color("8a6a46"), Color("b59a6c"), Color("7d6a48")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
-	WOOD_DARK, BEAM, LEAF, LEAF_DARK }
+	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL }
 
 ## What fills point p (metres).
 static func sample(p: Vector3) -> int:
@@ -59,13 +64,20 @@ static func _house(p: Vector3) -> int:
 		# plank door in the middle of the front, set back one block
 		if p.z > 0.0 and az >= HALF_Z - 0.25 and absf(p.x) < 0.625 and p.y < 2.375:
 			return EMPTY if az >= HALF_Z - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
-		# small windows high in the wall: two at the front and back, one on
-		# each end
-		var win_y := p.y >= 1.875 and p.y < 2.5
-		if win_y and az >= HALF_Z - 0.25 and absf(ax - 2.75) < 0.375:
-			return WINDOW
-		if win_y and ax >= HALF_X - 0.25 and az < 0.375:
-			return WINDOW
+		# small windows high in the wall, with wooden shutters either side:
+		# two at the front and back, one on each end
+		var win_y := p.y >= 1.625 and p.y < 2.5
+		if win_y and az >= HALF_Z - 0.25:
+			var k := absf(ax - 2.75)
+			if k < 0.25:
+				return WINDOW
+			if k < 0.5:
+				return WOOD
+		if win_y and ax >= HALF_X - 0.25:
+			if az < 0.25:
+				return WINDOW
+			if az < 0.5:
+				return WOOD
 		return PLASTER_LOW if p.y < 0.875 else PLASTER
 	# hipped roof over the eaves
 	var dx := HALF_X + EAVES - ax
@@ -94,7 +106,7 @@ static func _shed(p: Vector3) -> int:
 	if p.y >= roof - 0.25:
 		return ROOF_DARK if posmod(int(floor(p.z / 0.25)), 3) == 0 else ROOF
 	if p.x >= x1 or p.z < -2.25:
-		return WOOD if posmod(int(floor((p.x + p.z) / 0.25)), 2) == 0 else WOOD_DARK
+		return WOOD if posmod(int(floor((p.x + p.z) / 0.5)), 2) == 0 else WOOD_DARK
 	if p.z >= 1.5:
 		# open front, with posts at the corners
 		return WOOD_DARK if p.x >= x1 - 0.25 else EMPTY
@@ -103,15 +115,41 @@ static func _shed(p: Vector3) -> int:
 		return STRAW
 	return EMPTY
 
-## Woodpile against the -x end and a shrub by the front corner.
+## Woodpile against the -x end, a shrub by the front corner, the garden
+## beds at the back, the path to the gate and the fence.
 static func _yard(p: Vector3) -> int:
+	# a stack of logs, cut ends showing, bark on top
 	if p.x >= -5.75 and p.x < -HALF_X - 0.125 and p.z >= -2.0 and p.z < 0.75 and p.y < 1.0:
-		return WOOD if posmod(int(floor(p.y / 0.25)) + int(floor(p.z / 0.25)), 2) == 0 else WOOD_DARK
+		return WOOD if p.y >= 0.75 else LOG
 	var s := Vector3(-3.5, 0.6, 4.25)
 	var d := Vector2(p.x - s.x, p.z - s.z).length()
 	if p.y < 1.25 and d < 0.75 - 0.3 * maxf(0.0, p.y - 0.6):
 		return LEAF if p.y >= 0.75 else LEAF_DARK
-	return EMPTY
+	# earth path from the door to the gate, flush with the ground
+	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < FENCE_HI.y:
+		return EARTH
+	# vegetable beds behind the house: rows of greens on dark soil
+	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y < 0.375:
+		var row := posmod(int(floor(p.x / 0.5)), 2) == 0
+		if p.y < 0.125:
+			return SOIL
+		return LEAF if row else EMPTY
+	return _fence(p)
+
+## Posts every metre and two rails round the lot, a gate gap at the path.
+static func _fence(p: Vector3) -> int:
+	if p.y >= 1.0:
+		return EMPTY
+	var on_x := (absf(p.z - FENCE_LO.y) < 0.125 or absf(p.z - FENCE_HI.y) < 0.125) and p.x >= FENCE_LO.x - 0.125 and p.x < FENCE_HI.x + 0.125
+	var on_z := (absf(p.x - FENCE_LO.x) < 0.125 or absf(p.x - FENCE_HI.x) < 0.125) and p.z >= FENCE_LO.y - 0.125 and p.z < FENCE_HI.y + 0.125
+	if not on_x and not on_z:
+		return EMPTY
+	if on_x and p.z > 0.0 and absf(p.x) < 1.0:
+		return EMPTY # gate
+	var along := p.x if on_x else p.z
+	var post := absf(along - roundf(along)) < 0.125
+	var rail := (p.y >= 0.375 and p.y < 0.5) or (p.y >= 0.75 and p.y < 0.875)
+	return FENCE if post or rail else EMPTY
 
 ## The levels of detail, nearest first, scaled to the unit house. Built
 ## once and kept in user://.

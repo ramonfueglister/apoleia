@@ -28,8 +28,9 @@ varying float stripes;  // stripe half width, 0 = none
 
 // undyed wool, linen, madder red, woad blue and browns: clothes when the
 // people are not coloured by group (sRGB)
-const vec3 TUNICS[8] = vec3[](vec3(0.66, 0.58, 0.44), vec3(0.84, 0.8, 0.7), vec3(0.5, 0.36, 0.24),
-	vec3(0.62, 0.27, 0.2), vec3(0.36, 0.42, 0.56), vec3(0.46, 0.48, 0.36), vec3(0.74, 0.64, 0.42), vec3(0.56, 0.44, 0.38));
+// (none close to the skin, so no one reads as naked)
+const vec3 TUNICS[8] = vec3[](vec3(0.91, 0.88, 0.8), vec3(0.84, 0.8, 0.7), vec3(0.5, 0.33, 0.22),
+	vec3(0.62, 0.27, 0.2), vec3(0.36, 0.42, 0.56), vec3(0.46, 0.48, 0.36), vec3(0.42, 0.26, 0.2), vec3(0.3, 0.4, 0.5));
 const vec3 SCARVES[4] = vec3[](vec3(0.88, 0.84, 0.74), vec3(0.7, 0.36, 0.28), vec3(0.42, 0.48, 0.62), vec3(0.78, 0.7, 0.5));
 // part ids in UV.x (people_dots.gd FIG_*)
 const int TUNIC = 0;

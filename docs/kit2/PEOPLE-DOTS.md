@@ -188,7 +188,7 @@ und Busch. Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten. Drei
 Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
-gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v1_*.res`
+gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v2_*.res`
 gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
 nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
 aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km

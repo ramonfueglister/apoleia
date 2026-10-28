@@ -237,7 +237,7 @@ void fragment() {
 				: mix(c, C_ROOF, town == 3 ? 1.0 : town == 2 ? 0.6 : 0.0);
 		}
 		// the farms' fields from the grain economy, up close
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, tt_ground_at(tile, tile_uv)); }
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, tt_ground_at(tile, tile_uv), tile_km); }
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
