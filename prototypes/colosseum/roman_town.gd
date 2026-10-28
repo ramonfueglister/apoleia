@@ -14,9 +14,17 @@ const FLOOR := 2
 const STOREY0 := 14
 const STOREY := 12
 
+## When set, the builders keep their voxel grid in `last_grid` and return
+## no mesh (the game's roman_buildings.gd makes its own levels of detail).
+static var keep_grid := false
+static var last_grid: Kit.Grid
+
 ## The mesh of a grid whose lot corner sits at (MARGIN, 0, MARGIN): local
 ## origin at the lot's north-west corner on the ground's base.
 static func _done(g: Kit.Grid) -> ArrayMesh:
+	if keep_grid:
+		last_grid = g
+		return null
 	return Kit.mesh(g, Vector3(-MARGIN * V, 0.0, -MARGIN * V))
 
 static func _grid(lots_x: int, lots_z: int, height: int) -> Kit.Grid:

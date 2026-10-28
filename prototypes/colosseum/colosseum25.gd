@@ -321,6 +321,11 @@ static func grid() -> Kit.Grid:
 					c = _cavea(e, plan.y, plan.z, r, arena, x, z, t)
 				if c != Kit.EMPTY:
 					g.g[row + nx * r] = c
+	# fighters in pairs on the sand
+	var k := 0
+	for p: Vector2i in [Vector2i(-26, -8), Vector2i(-19, -8), Vector2i(8, 6), Vector2i(15, 6), Vector2i(-8, 18), Vector2i(-1, 18), Vector2i(22, -16), Vector2i(29, -16)]:
+		_gladiator(g, nx / 2 + p.x, FLOOR + 1, nz / 2 + p.y, 1 if k % 2 == 0 else -1, k)
+		k += 1
 	return g
 
 ## A gladiator on the sand: helmet, red loincloth, a shield on his arm.
@@ -339,13 +344,6 @@ static func mesh() -> ArrayMesh:
 			cached.surface_set_material(0, Kit.material())
 			return cached
 	var g := grid()
-	# fighters in pairs on the sand
-	var cx := g.n.x / 2
-	var cz := g.n.z / 2
-	var k := 0
-	for p: Vector2i in [Vector2i(-26, -8), Vector2i(-19, -8), Vector2i(8, 6), Vector2i(15, 6), Vector2i(-8, 18), Vector2i(-1, 18), Vector2i(22, -16), Vector2i(29, -16)]:
-		_gladiator(g, cx + p.x, FLOOR + 1, cz + p.y, 1 if k % 2 == 0 else -1, k)
-		k += 1
 	var m := Kit.mesh(g, Vector3(-g.n.x * V * 0.5, 0.0, -g.n.z * V * 0.5))
 	ResourceSaver.save(m, CACHE)
 	return m
