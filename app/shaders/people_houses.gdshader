@@ -44,6 +44,11 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = vec3(0.94 + 0.12 * r.y);
+	// the sides turned to the camera (south and west) lighter, as the
+	// terrain's SimCity light has them (tile_props.gdshader); the sun comes
+	// from the north-west
+	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), vec2(-0.65, 0.76)) : 0.0;
+	tint *= 1.0 + 0.3 * max(facing, 0.0);
 }
 
 void fragment() {

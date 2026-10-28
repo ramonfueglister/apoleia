@@ -19,17 +19,17 @@ const EAVES := 0.5
 const PITCH := 0.5 # roof rise per metre (about 27 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
-const BOUNDS_LO := Vector3(-7.25, 0.0, -6.5)
+const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 holds the path, flush with the ground
 const BOUNDS_HI := Vector3(7.5, 5.75, 6.75)
 const FENCE_LO := Vector2(-7.0, -6.25) # x, z of the fence posts
 const FENCE_HI := Vector2(7.25, 6.5)
-const CACHE := "user://farmhouse_v2_%s.res"
+const CACHE := "user://farmhouse_v3_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
 const PALETTE := [
 	Color(0, 0, 0), Color("efe2c6"), Color("d9c7a2"), Color("d6ccb4"), Color("c8643c"),
-	Color("b4573a"), Color("8a432c"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color("b4573a"), Color("9c4a2c"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("a5835f"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("8a6a46"), Color("b59a6c"), Color("7d6a48")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
@@ -128,6 +128,8 @@ static func _yard(p: Vector3) -> int:
 	# earth path from the door to the gate, flush with the ground
 	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < FENCE_HI.y:
 		return EARTH
+	if p.y < 0.0:
+		return EMPTY # the rest of the sunk layer is the terrain's
 	# vegetable beds behind the house: rows of greens on dark soil
 	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y < 0.375:
 		var row := posmod(int(floor(p.x / 0.5)), 2) == 0
@@ -136,7 +138,7 @@ static func _yard(p: Vector3) -> int:
 		return LEAF if row else EMPTY
 	return _fence(p)
 
-## Posts every metre and two rails round the lot, a gate gap at the path.
+## Posts every two metres and one rail round the lot, a gate gap at the path.
 static func _fence(p: Vector3) -> int:
 	if p.y >= 1.0:
 		return EMPTY
@@ -147,8 +149,8 @@ static func _fence(p: Vector3) -> int:
 	if on_x and p.z > 0.0 and absf(p.x) < 1.0:
 		return EMPTY # gate
 	var along := p.x if on_x else p.z
-	var post := absf(along - roundf(along)) < 0.125
-	var rail := (p.y >= 0.375 and p.y < 0.5) or (p.y >= 0.75 and p.y < 0.875)
+	var post := absf(along * 0.5 - roundf(along * 0.5)) < 0.0625
+	var rail := p.y >= 0.5 and p.y < 0.75
 	return FENCE if post or rail else EMPTY
 
 ## The levels of detail, nearest first, scaled to the unit house. Built

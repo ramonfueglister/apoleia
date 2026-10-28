@@ -203,6 +203,9 @@ void vertex() {
 		stripes = 0.0;
 	}
 	colour = (part == TUNIC ? tunic : own) * COLOR.a; // alpha: corner shading
+	// the sides turned to the camera lighter, like the houses
+	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), vec2(-0.65, 0.76)) : 0.0;
+	colour *= 1.0 + 0.3 * max(facing, 0.0);
 }
 
 void fragment() {
