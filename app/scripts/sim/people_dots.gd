@@ -43,6 +43,13 @@ const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
 const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
 const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
 const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
+const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
+const CROP_N := 40 # parcels per side of the square of crops around the camera
+const CROP_ROWS := 6 # rows of plants per parcel (and clumps per row)
+const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
+const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
+const LOT_KM := 0.36 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
+const LOTS_N := 64 # lots per side of the house-lot mask around the camera
 const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
@@ -111,6 +118,11 @@ var _house_texture: Texture2DArray
 var _house_prep_frames := 0
 var _figures: MultiMeshInstance3D
 var _figure_material := ShaderMaterial.new()
+var _crops: MultiMeshInstance3D
+var _crop_material := ShaderMaterial.new()
+var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
+var _lots: MultiMeshInstance2D
+var _lots_material := ShaderMaterial.new()
 var _list_image := Image.create_empty(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF)
 var _list_tex: ImageTexture
 var _list_at := Vector3.INF # centre x, z and radius of the current list
@@ -199,6 +211,48 @@ func setup(tile_terrain: Node3D) -> bool:
 	fm.visible_instance_count = 0
 	_figures.multimesh = fm
 	add_child(_figures)
+	_crop_material.shader = CROP_SHADER
+	_crop_material.set_shader_parameter("crop_n", CROP_N)
+	_crop_material.set_shader_parameter("crop_rows", float(CROP_ROWS))
+	_crop_material.set_shader_parameter("km_per_m", TileTerrain.DIORAMA_KM_PER_M)
+	_crops = MultiMeshInstance3D.new()
+	_crops.name = "PeopleCrops"
+	_crops.material_override = _crop_material
+	_crops.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_crops.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+	var cm := MultiMesh.new()
+	cm.transform_format = MultiMesh.TRANSFORM_3D
+	cm.mesh = _crop_mesh()
+	cm.instance_count = CROP_N * CROP_N
+	_crops.multimesh = cm
+	_crops.visible = false
+	add_child(_crops)
+	_lots_view = SubViewport.new()
+	_lots_view.name = "HouseLots"
+	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
+	_lots_view.transparent_bg = true
+	_lots_view.disable_3d = true
+	_lots_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_lots_material.shader = LOTS_SHADER
+	_lots_material.set_shader_parameter("list_tex", _house_list_tex)
+	_lots_material.set_shader_parameter("list_w", LIST_W)
+	_lots_material.set_shader_parameter("lot_km", LOT_KM)
+	_lots = MultiMeshInstance2D.new()
+	_lots.material = _lots_material
+	var lm := MultiMesh.new()
+	lm.transform_format = MultiMesh.TRANSFORM_2D
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE
+	lm.mesh = quad
+	lm.instance_count = HOUSE_MAX
+	lm.visible_instance_count = 0
+	_lots.multimesh = lm
+	_lots_view.add_child(_lots)
+	add_child(_lots_view)
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
+		m.set_shader_parameter("sim_lot_tex", _lots_view.get_texture())
+		m.set_shader_parameter("sim_lots_n", LOTS_N)
+		m.set_shader_parameter("sim_lot_km", LOT_KM)
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
 		if not String(u.name).begins_with("sim_"): # the grain layers are the terrain's own
 			_shared_uniforms.append(StringName(u.name))
@@ -235,10 +289,10 @@ func _rebuild_houses() -> void:
 	var size := Vector2i(side, side * _house_texture.get_layers())
 	_house_prep_view.size = size
 	_house_prep_rect.size = Vector2(size)
-	for m in _house_materials + [_house_prep_material]:
+	for m in _house_materials + [_house_prep_material, _lots_material]:
 		m.set_shader_parameter("people_tex", _house_texture)
 		m.set_shader_parameter("page_side", side)
-	for m in _house_materials:
+	for m in _house_materials + [_lots_material]:
 		m.set_shader_parameter("place_tex", _house_prep_view.get_texture())
 	_house_prep_frames = 2
 	_house_list_at = Vector3.INF
@@ -348,17 +402,49 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 					ao = VoxelMesh.AO[1]
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
+## A parcel's crop: CROP_ROWS rows of CROP_ROWS clumps, each a unit box
+## (x, z -0.5..0.5, y 0..1, no bottom) with its place in the parcel in UV;
+## people_crops.gdshader sizes them by the season. Corner shading of the
+## voxel meshes in the vertex alpha (darker at the foot).
+static func _crop_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in CROP_ROWS:
+		for j in CROP_ROWS:
+			var uv := Vector2((j + 0.5) / CROP_ROWS, (i + 0.5) / CROP_ROWS)
+			for axis in 3:
+				for sgn in [-1.0, 1.0]:
+					if axis == 1 and sgn < 0.0:
+						continue
+					var n := Vector3.ZERO
+					n[axis] = sgn
+					var u := Vector3.ZERO
+					u[(axis + 1) % 3] = 0.5
+					var w := Vector3.ZERO
+					w[(axis + 2) % 3] = 0.5
+					var c := Vector3(0, 0.5, 0) + n * 0.5
+					var q := [c - u - w, c + u - w, c + u + w, c - u + w]
+					var order := [0, 1, 2, 0, 2, 3] if sgn > 0.0 else [0, 2, 1, 0, 3, 2]
+					for k in order:
+						var v: Vector3 = q[k]
+						var ao: float = VoxelMesh.AO[3] if axis == 1 or v.y > 0.5 else VoxelMesh.AO[1]
+						st.set_color(Color(1, 1, 1, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
+	return st.commit()
+
 ## The grain layers on the terrain material: the road map when a month is
 ## built, the fine window when the month changes or the camera leaves its
 ## middle half.
 func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
-	mat.set_shader_parameter("sim_map_on", map_on)
+	var mats: Array[ShaderMaterial] = [mat, _crop_material] # the crops read the fine layer too
+	for m in mats:
+		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
 		return
 	# the layers switch by view width, not by pixel size, so the switch never
 	# runs as a seam across the screen
-	mat.set_shader_parameter("sim_view_km", get_parent().width if "width" in get_parent() else 360.0)
+	for m in mats:
+		m.set_shader_parameter("sim_view_km", get_parent().width if "width" in get_parent() else 360.0)
 	var version: int = people.map_version()
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
 	var moved := _map_at == Vector2.INF or _map_at.distance_to(centre) > MAP_N * 1.5625 * 0.25
@@ -382,10 +468,11 @@ func _update_map() -> void:
 			_map_tex = ImageTexture.create_from_image(win.image)
 		else:
 			_map_tex.update(win.image)
-		mat.set_shader_parameter("sim_fine_tex", _map_tex)
-		mat.set_shader_parameter("sim_fine_origin", win.origin)
-		mat.set_shader_parameter("sim_fine_km", win.tile_km)
-		mat.set_shader_parameter("sim_fine_n", MAP_N)
+		for m in mats:
+			m.set_shader_parameter("sim_fine_tex", _map_tex)
+			m.set_shader_parameter("sim_fine_origin", win.origin)
+			m.set_shader_parameter("sim_fine_km", win.tile_km)
+			m.set_shader_parameter("sim_fine_n", MAP_N)
 	_map_version = version
 	_map_at = centre
 
@@ -405,6 +492,23 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	_list_image.set_data(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_list_tex.update(_list_image)
 	_figures.multimesh.visible_instance_count = slots.size()
+
+## The square of parcels whose crops stand, around the camera; only up
+## close and on the finest terrain tiles (the parcel is half a tile).
+func _update_crops(view_km: float) -> void:
+	var tile_km: float = terrain._terrain_material.get_shader_parameter("tile_km")
+	_crops.visible = map_on and view_km <= CROP_KM and tile_km <= 0.5
+	if not _crops.visible:
+		return
+	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
+	var size := tile_km * 0.5
+	var cell0 := (centre / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)
+	_crop_material.set_shader_parameter("crop_cell0", cell0)
+	var lot0 := (centre / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
+	_lots_material.set_shader_parameter("lot_origin", lot0)
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
+		m.set_shader_parameter("sim_lot_origin", lot0)
+	_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 ## The houses near the camera, nearest first, split over the levels of
 ## detail: the nearest in the finest one the view width allows.
@@ -430,6 +534,7 @@ func _update_houses(view_km: float, synced: bool) -> void:
 		_house_materials[lod].set_shader_parameter("list_offset", start)
 		_houses[lod].multimesh.visible_instance_count = n
 		start += n
+	_lots.multimesh.visible_instance_count = slots.size()
 
 ## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
 ## shader scales each to pixels and cuts the round dot out of it.
@@ -631,7 +736,7 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_prep_material, _figure_material] + _house_materials:
+		for m in [_material, _prep_material, _house_prep_material, _figure_material, _crop_material] + _house_materials:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
@@ -656,6 +761,7 @@ func _process(delta: float) -> void:
 	# the dots stay single people instead of melting into black regions
 	var px := clampf(3.5 - 0.5 * log(maxf(view_km, 1.0) / 30.0) / log(2.0), 1.0, 3.5)
 	_update_houses(view_km, synced_houses != 0)
+	_update_crops(view_km)
 	_figures.visible = figures
 	multimesh.visible_instance_count = -1 if dots else 0
 	if figures:

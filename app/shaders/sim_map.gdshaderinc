@@ -8,42 +8,25 @@
 // this after its palette): one flat colour per parcel, crisp edges, no
 // noise, furrows or fades, colours from the terrain palette.
 //
-// Fine texel: R share of the tile under fields, G sown share of them, B
-// growth (0 bare … 1 ripe), A footpath level (bits 0-1), its next step
-// towards the market + 1 (bits 2-5) and market tile (bit 6).
+// Fine texel (sim_fields.gdshaderinc): A footpath level (bits 0-1), its next
+// step towards the market + 1 (bits 2-5) and market tile (bit 6).
 // Road texel: R level (1 track, 2 road; at sea a lane), G the neighbours it
 // joins (bit k = SIM_DIRS[k]).
 
-uniform bool sim_map_on = false;
-uniform sampler2D sim_fine_tex : filter_nearest, repeat_disable;
-uniform vec2 sim_fine_origin;      // world km of the window's first texel corner
-uniform float sim_fine_km = 1.5625;
-uniform int sim_fine_n = 0;
+#include "res://shaders/sim_fields.gdshaderinc"
+
 uniform sampler2D sim_road_tex : filter_nearest, repeat_disable;
 uniform vec2 sim_cell_origin;      // world km of the grid's corner
 uniform float sim_cell_km = 25.0;
 uniform ivec2 sim_cell_n = ivec2(0);
-uniform float sim_view_km = 30.0;  // view width: what is drawn (fields, paths, roads, lanes)
 
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
-// Field parcels: half a terrain tile on a side (250 m up close), on the
-// terrain's own grid, so a parcel never cuts a tile.
 const float SIM_ROAD_KM = 0.12;  // a paved road at diorama scale (as the houses)
 const float SIM_TRACK_KM = 0.07;
 const float SIM_PATH_KM = 0.03;  // a worn path
 const float SIM_TRAIL_KM = 0.018;
 
-
-float sim_hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-// Fine texel at window tile t, zero outside the window.
-vec4 sim_fine_at(ivec2 t) {
-	if (t.x < 0 || t.y < 0 || t.x >= sim_fine_n || t.y >= sim_fine_n) { return vec4(0.0); }
-	return texelFetch(sim_fine_tex, t, 0);
-}
 
 int sim_byte(float v) {
 	return int(v * 255.0 + 0.5);
@@ -60,43 +43,36 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// Fields on open land (`land`, the terrain's landscape here). Each fine
-// tile farms one block around its middle, as large as its field share, so
-// the farmland reads as calm blocks around the villages instead of a
-// scatter; inside the block the sown parcels take the season's colour
-// (earth, sprouts, green, ripe wheat, stubble), the fallow ones stay
-// meadow. `tile_size` is the terrain tile (km), the parcel is half of it.
-// From 8 km of view a block is one colour (its sown and fallow parcels
-// averaged); from 30 km there are no blocks, the farmland is the
-// terrain's own.
+// Fields on open land (`land`, the terrain's landscape here), on parcels of
+// half a terrain tile (`tile_size`, km), on the terrain's own grid so a
+// parcel never cuts a tile (sim_parcel). Up close the sown parcels are
+// soil and the crops stand on them (people_crops.gdshader), the fallow ones
+// stay meadow; from SIM_CROPS_KM of view a block is one colour, the
+// season's (earth, sprouts, green, ripe wheat, stubble) averaged with its
+// fallow share; from SIM_FIELDS_KM the farmland is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
-	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > 30.0) { return c; }
+	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
+	if (sim_house_lot(p)) { return land == G_FIELD ? GROUND_RGB[G_MEADOW] : c; } // the farmhouse's yard
 	float size = tile_size * 0.5;
-	vec2 cell = floor(p / size);
-	vec2 mid = (cell + 0.5) * size;
-	vec2 q = (mid - sim_fine_origin) / sim_fine_km;
-	vec4 f = sim_fine_at(ivec2(floor(q)));
-	bool whole = sim_view_km > 8.0;
+	bool whole = sim_view_km > SIM_CROPS_KM;
+	vec4 f;
+	int state = sim_parcel(floor(p / size), size, whole, f);
+	vec3 meadow = GROUND_RGB[G_MEADOW];
 	// the sim decides where the fields are: farmland it does not farm lies
 	// as pasture
-	vec3 open_land = land == G_FIELD ? GROUND_RGB[G_MEADOW] : c;
-	if (f.r <= 0.0) { return open_land; }
-	// rank of the parcel in its tile: the share of the tile nearer the
-	// middle (a rounded square), with a little jitter for a ragged edge
-	vec2 d = abs(fract(q) - 0.5) * 2.0;
-	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
-	if (r * r + (whole ? 0.0 : 0.12 * (sim_hash(cell) - 0.5)) >= f.r) { return open_land; }
-	if (!whole && sim_hash(cell + 17.3) >= f.g) {
-		return GROUND_RGB[G_MEADOW];
-	}
+	if (state == 0) { return land == G_FIELD ? meadow : c; }
+	if (state == 1) { return meadow; }
 	float g = f.b;
-	vec3 meadow = GROUND_RGB[G_MEADOW];
 	vec3 field = GROUND_RGB[G_FIELD];
+	vec3 stubble = mix(field, C_EARTH, 0.4);
+	if (!whole) {
+		return g >= 0.75 ? field : g <= 0.0 ? stubble : C_EARTH;
+	}
 	// stubble, ploughed earth, sprouts on the soil, green corn, ripe wheat:
 	// sown land never takes the meadow's own green, so it reads as farmland
-	vec3 sown = g <= 0.0 ? mix(field, C_EARTH, 0.4) : g < 0.12 ? C_EARTH : g < 0.4 ? mix(C_EARTH, meadow, 0.5) : g < 0.75 ? mix(meadow, field, 0.4) : field;
-	return whole ? mix(meadow, sown, clamp(f.g, 0.25, 1.0)) : sown;
+	vec3 sown = g <= 0.0 ? stubble : g < 0.12 ? C_EARTH : g < 0.4 ? mix(C_EARTH, meadow, 0.5) : g < 0.75 ? mix(meadow, field, 0.4) : field;
+	return mix(meadow, sown, clamp(f.g, 0.25, 1.0));
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and
