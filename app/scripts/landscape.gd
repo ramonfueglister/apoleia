@@ -5,7 +5,10 @@ extends Node3D
 ## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
 ## middle; fully out the view settles over Europe), drag (left or middle
 ## mouse, two-finger pan) moves the map, WASD or arrow keys pan, +/- zoom.
-## The view always looks north and never turns (turning made the map swim).
+## Up close the view is Urbek's: a near-orthographic camera tilted 30 degrees,
+## turned YAW_CLOSE degrees off north; zoomed out it looks north. The turn
+## happens only inside one zoom band (YAW_FROM..YAW_TO), so panning and most
+## zooming never swim.
 ## Weather keys F5-F7 belong to weather_system.gd.
 ##
 ## Command line (after --): --view=lon,lat,width start view,
@@ -14,7 +17,7 @@ extends Node3D
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const EARTH_KM := 6371.0088
-const MIN_WIDTH := 4.0 # about 17 houses across (Kit 2 scale)
+const MIN_WIDTH := 2.0 # about 8 houses across (Kit 2 scale), Urbek's closest view
 const MAX_WIDTH := 4400.0 # all of Europe, Lisbon to Moscow
 ## Zoomed out, the view settles on Europe (EU5 map): the pull runs between
 ## these widths (km).
@@ -22,7 +25,16 @@ const MAP_FROM := 700.0
 const MAP_TO := 3000.0
 const EUROPE := Rect2(-12.0, 34.0, 54.0, 26.0) # lon, lat, extent in degrees
 const MAP := Rect2(-11.0, 21.0, 57.0, 37.0) # the playable map (the data is padded)
-const FOV := 24.0
+## Field of view: near-orthographic up close like Urbek (vertical walls stay
+## parallel), wider over the world map.
+const FOV_CLOSE := 9.0
+const FOV_FAR := 24.0
+const FOV_FROM := 12.0 # view width (km) where the view starts to open up
+const FOV_TO := 300.0
+## Turn off north up close, in degrees (45 = Urbek's diagonal; 0 = north up).
+const YAW_CLOSE := 0.0
+const YAW_FROM := 6.0 # view width (km) below which the view is fully turned
+const YAW_TO := 14.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
 
@@ -64,7 +76,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	_setup_look()
-	camera.fov = FOV
+	camera.fov = fov_for_width(start.z)
 	camera.near = 0.05
 	camera.far = 20000.0
 	add_child(camera)
@@ -123,13 +135,25 @@ func _setup_look() -> void:
 
 func _update_look(distance: float) -> void:
 	terrain.set_light_dir(sun.global_transform.basis.z)
-	sun.directional_shadow_max_distance = distance * 2.2
+	# Shadows cover the view, not the (long, near-orthographic) camera distance.
+	sun.directional_shadow_max_distance = distance + width * 1.6
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
 	environment.fog_depth_end = distance + patch_reach * 0.95
 
 # ---------------------------------------------------------------- camera
+
+## 0 at or below `from`, 1 at or above `to`, smooth on a log scale.
+static func _zoom_share(w: float, from: float, to: float) -> float:
+	var t := clampf((log(w) - log(from)) / (log(to) - log(from)), 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)
+
+func fov_for_width(w: float) -> float:
+	return lerpf(FOV_CLOSE, FOV_FAR, _zoom_share(w, FOV_FROM, FOV_TO))
+
+func yaw_for_width(w: float) -> float:
+	return lerpf(YAW_CLOSE, 0.0, _zoom_share(w, YAW_FROM, YAW_TO))
 
 func pitch_for_width(w: float) -> float:
 	# 30 degrees up close (SimCity 2000), nearly top-down on the world map.
@@ -144,14 +168,15 @@ func map_share(w: float) -> float:
 
 func _distance() -> float:
 	var aspect := get_viewport().get_visible_rect().size.aspect()
-	return width / (2.0 * tan(deg_to_rad(FOV) * 0.5) * maxf(aspect, 0.1))
+	return width / (2.0 * tan(deg_to_rad(fov_for_width(width)) * 0.5) * maxf(aspect, 0.1))
 
 func _view_basis() -> Basis:
-	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), 0.0, 0.0))
+	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), deg_to_rad(yaw_for_width(width)), 0.0), EULER_ORDER_YXZ)
 
 func _place_camera() -> void:
 	var basis := _view_basis()
 	var distance := _distance()
+	camera.fov = fov_for_width(width)
 	camera.global_transform = Transform3D(basis, Vector3(target.x, _focus_y, target.y) + basis.z * distance)
 	terrain.update_view(target, _footprint_centre(distance), width)
 	_update_look(distance)
