@@ -5,7 +5,9 @@ extends RefCounted
 ## hipped roof of terracotta tiles with darker rows and hip ridges, a
 ## lean-to shed with hay on one side and a woodpile on the other, a
 ## vegetable garden and a fruit tree at the back, an earth path to the gate and a wooden
-## fence round the lot (it fits a 15 m lot when turned). Metres,
+## fence round the yard (it fits a 15 m yard when turned); outside the fence,
+## on the rest of the 21 m lot, two cypresses at the front corners, an olive
+## tree and a haystack. Metres,
 ## origin at ground centre of the main house, front towards +z. Built at
 ## three voxel sizes for the levels of detail (VoxelMesh), scaled to the
 ## unit house of the terrain (1 unit = TileTerrain.HOUSE_M).
@@ -19,12 +21,12 @@ const EAVES := 0.5
 const PITCH := 0.5 # roof rise per metre (about 27 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
-const BOUNDS_LO := Vector3(-7.25, -0.125, -6.5) # the voxel layer -0.125..0.125 holds the path, flush with the ground
-const BOUNDS_HI := Vector3(7.5, 5.75, 11.0)
+const BOUNDS_LO := Vector3(-10.0, -0.125, -10.0) # the voxel layer -0.125..0.125 holds the path, flush with the ground
+const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v9_%s.res"
+const CACHE := "user://farmhouse_v12_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -37,9 +39,11 @@ const PALETTE := [
 	Color("a84c38"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("86705a"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46")]
+	Color("5f7f46"), Color("2f5a2c"), Color("3b6c35"), Color("667f4c"), Color("52663d"),
+	Color("75695a"), Color("dcc06c")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
-	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER }
+	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
+	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY }
 const TOPS := {ROOF: Color("cf6a4c"), ROOF_DARK: Color("bd5d44")}
 
 ## What fills point p (metres).
@@ -135,6 +139,9 @@ static func _yard(p: Vector3) -> int:
 	var tree := _tree(p)
 	if tree != EMPTY:
 		return tree
+	tree = _lot(p)
+	if tree != EMPTY:
+		return tree
 	# earth path from the door through the gate to the lane, flush with the ground
 	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < PATH_END:
 		return EARTH
@@ -180,6 +187,37 @@ static func _fence(p: Vector3) -> int:
 	var post := posmod(int(floor(along / 0.25)), 8) == 4
 	var rail := p.y >= 0.375 and p.y < 0.625
 	return FENCE if post or rail else EMPTY
+
+## Outside the fence: a cypress in either front corner of the lot (clear of
+## the house front), an olive tree in one back corner and a haystack in the
+## other. Each in colours of its own, so people_houses.gdshader can leave
+## them out by farm.
+static func _lot(p: Vector3) -> int:
+	if p.y < 0.0:
+		return EMPTY
+	# cypresses: a tall narrow crown down to the ground, tapering to a point
+	var cz := absf(p.z - 8.75)
+	var cx := absf(absf(p.x) - 8.75)
+	if cx < 0.75 and cz < 0.75:
+		var r := 0.5 if p.y < 0.5 else 0.75 if p.y < 4.5 else 0.5 if p.y < 5.75 else 0.25 if p.y < 6.5 else 0.0
+		if cx < r and cz < r and cx + cz < r * 1.5:
+			return CYPRESS_DARK if p.y < 2.25 else CYPRESS
+		return EMPTY
+	# an olive tree: a crooked grey trunk, a wide low crown, silver-green
+	var o := Vector2(p.x - 8.0, p.z + 8.0)
+	if p.y < 1.75:
+		if absf(o.x - 0.25 * floorf(p.y / 0.75)) < 0.25 and absf(o.y) < 0.25:
+			return OLIVE_TRUNK
+	elif p.y < 3.5:
+		var r := 1.75 if p.y < 3.0 else 1.0
+		if absf(o.x) < r and absf(o.y) < r and absf(o.x) + absf(o.y) < r * 1.5:
+			return OLIVE_DARK if p.y < 2.25 else OLIVE
+	# a haystack: a round stack of straw, narrowing to a top
+	var hd := Vector2(p.x + 8.0, p.z + 8.25).length()
+	var hr := 1.375 - maxf(0.0, p.y - 1.0) * 0.6
+	if p.y < 2.75 and hd < hr:
+		return HAY
+	return EMPTY
 
 ## The levels of detail, nearest first, scaled to the unit house. Built
 ## once and kept in user://.

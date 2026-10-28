@@ -187,7 +187,8 @@ rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster, Walmdach aus
 Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und Graten,
 Schuppen mit Heu, Holzstoss, Busch, Gemüsebeet, Obstbaum, Zaun und ein Weg
-durchs Tor bis zur Gasse. Die Palette teilt es mit den Stadtgebäuden des
+durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
+Zypressen in den vorderen Ecken, ein Olivenbaum und ein Heuhaufen. Die Palette teilt es mit den Stadtgebäuden des
 Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
 seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
 Palettenindex, den der Mesher in UV.y schreibt, und spiegelt das Haus je
@@ -196,7 +197,7 @@ Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
 Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
 Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
-gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v9_*.res`
+gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v11_*.res`
 gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
 nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
 aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km
@@ -233,7 +234,8 @@ etwa 25 ms:
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
 Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
-Kachel, so gross wie ihr Feldanteil; Brache als Trockengras; Pfade zum
+Kachel, so gross wie ihr Feldanteil, fern halb zur Wiese hin gemischt, damit
+das Flickwerk ruhig bleibt; Brache als Trockengras; Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen um die Hofparzellen, Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.
 Taste `G` schaltet das aus und an. Was gezeigt wird, hängt an der
@@ -247,10 +249,16 @@ je Feldblock): Weizen 40 %, Gerste 20 %, Gemüse und Bohnen 25 %, Reben 15 %.
 Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 (`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
 40 × 40 um die Kamera), 6 % vom Parzellenrand eingerückt, damit Grasränder
-und Gassen dazwischen laufen. Weizen und Gerste sind die Platte selbst
-(Erde, Keimlinge, grün, gold, Stoppeln nach dem Wachstum der Sim), Gemüse
-steht in 12 dünnen Reihen auf rotbrauner Erde, Reben in jeder zweiten Reihe
-höher. Die Regel, welche Parzelle bestellt ist, liegt in
+und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks Ackerland: dunkle
+rotbraune Erde mit grünen Reihen und eine geschlossene Fläche, strohgelb
+wenn reif. Weizen wächst von nackter Erde über Reihen kleiner Büschel zu
+dichten grünen Reihen, Gerste zu einer satten grünen Fläche; beide reifen
+strohgelb und werden zu Stoppeln. Gemüse und Bohnen stehen in 12 Reihen
+einzelner Büschel hinter einem Holzzaun auf drei oder vier Seiten, Reben in
+jeder zweiten Reihe höher. Büschelreihen laufen immer ost-west, damit ihre
+Vorderseiten zur Kamera zeigen; die Lücken schneidet der Fragment-Shader.
+Nord-süd-Reihen werden gedreht, nie gespiegelt (Spiegeln kehrt die
+Flächen nach innen). Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die

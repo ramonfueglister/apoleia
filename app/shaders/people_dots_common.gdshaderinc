@@ -133,8 +133,9 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 	}
 	// the family around its house, one spot per person; in a village the
 	// house is drawn (people_houses.gdshader, scripts/voxel/farmhouse.gd), so
-	// a quarter of them are about the front yard, a third on the lane round
-	// the lot, the others out in the fields; never on the fence or in a row
+	// a quarter of them are in the yard (in front or at the garden beds
+	// behind), a third on the lane round the lot, the others out in the
+	// fields; never on the fence or in a row
 	if (!house) {
 		vec2 h = dot_rand2(slot, 99u);
 		if (village) {
@@ -144,7 +145,7 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 			float m_km = dot_km_per_m * st.x;
 			vec2 local; // metres in the farmhouse's frame, front towards +z
 			if (h.y < 0.25) {
-				local = vec2((h.x - 0.5) * 9.0, 3.9 + 1.9 * h2.x);
+				local = h2.y < 0.5 ? vec2((h.x - 0.5) * 12.0, 3.9 + 1.9 * h2.x) : vec2((h.x - 0.5) * 7.0, -4.0 - 1.6 * h2.x);
 			} else if (h.y < 0.6) {
 				// anywhere along the lane, a square round the lot's middle
 				float half_lot = DOT_LOT_KM * 0.5 / m_km;

@@ -74,11 +74,15 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	vec3 field = GROUND_RGB[G_FIELD];
 	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // tilled, darker than the paths
 	vec3 stubble = mix(field, C_EARTH, 0.4);
-	if (kind == SIM_VINES) { return mix(soil, meadow * vec3(0.72, 0.85, 0.7), 0.7); }
-	vec3 green = kind == SIM_WHEAT ? mix(meadow, field, 0.35) : kind == SIM_BARLEY ? mix(meadow, field, 0.6) : meadow * vec3(0.86, 0.92, 0.86);
+	// as the crops up close (people_crops.gdshader) seen from afar: wheat and
+	// beans green rows on dark soil, barley a closed lush sheet
+	vec3 green = kind == SIM_WHEAT ? mix(soil, meadow * vec3(0.7, 0.92, 0.65), 0.6)
+		: kind == SIM_BARLEY ? meadow * vec3(0.72, 0.88, 0.7) : mix(soil, meadow * vec3(0.62, 0.8, 0.6), 0.55);
 	vec3 ripe = kind == SIM_WHEAT ? field : kind == SIM_BARLEY ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
-	if (g <= 0.0) { return stubble; }
-	return g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.55) : g < 0.75 ? green : ripe;
+	vec3 crop = kind == SIM_VINES ? mix(soil, meadow * vec3(0.72, 0.85, 0.7), 0.7) : g <= 0.0 ? stubble : g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.3) : g < 0.75 ? green : ripe;
+	// from afar half way to the meadow: a calm patchwork that leaves the
+	// towns and the relief in front
+	return mix(meadow, crop, 0.5);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and

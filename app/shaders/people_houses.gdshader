@@ -26,6 +26,8 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.788, 0.698), vec3(0.902, 0.776, 0.565), vec3(0.922, 0.875, 0.784));
 const vec3 SHUTTER_GREEN = vec3(0.373, 0.498, 0.275);
 const vec3 SHUTTER_BROWN = vec3(0.604, 0.353, 0.227);
+// roof tiles a little browner or more orange by farm
+const vec3 ROOFS[3] = vec3[](vec3(1.0), vec3(0.9, 0.86, 0.86), vec3(1.05, 1.0, 0.9));
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;
@@ -45,10 +47,6 @@ void vertex() {
 	vec3 nrm = NORMAL;
 	nrm.xz = turn * nrm.xz;
 	bool show = rec.z != 0.0 && place.a > 0.5;
-	// empty slots: all vertices on one point behind the camera, no area
-	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
-	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
-	normal = NORMAL;
 	tint = vec3(st.y);
 	// each farm its own plaster (cream, pink, ochre, as the town's
 	// WALLS) and shutters (green or brown), by the palette index in UV.y
@@ -60,7 +58,20 @@ void vertex() {
 		tint *= WALLS[key % 4u] / WALLS[0];
 	} else if (index == 20) {
 		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
+	} else if (index >= 4 && index <= 6) {
+		tint *= ROOFS[(key >> 9u) % 3u];
 	}
+	// not every farm has the cypresses, the olive tree or the haystack
+	// on its lot (farmhouse.gd _lot)
+	bool cypress = index == 21 || index == 22;
+	bool olive = index >= 23 && index <= 25;
+	if ((cypress && (key & 96u) == 0u) || (olive && (key & 128u) == 0u) || (index == 26 && (key & 256u) == 0u)) {
+		show = false;
+	}
+	// empty slots: all vertices on one point behind the camera, no area
+	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
+	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
+	normal = NORMAL;
 	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 

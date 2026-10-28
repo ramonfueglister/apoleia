@@ -46,6 +46,7 @@ const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
 const CROP_ROWS := 12 # rows of vegetables or vines per parcel
+const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
@@ -355,7 +356,7 @@ static func _figure_mesh() -> ArrayMesh:
 	var wood := Color(0.42, 0.3, 0.18)
 	var iron := Color(0.55, 0.56, 0.58)
 	# chunky like Urbek's people: legs and arms two blocks apart, a broad
-	# tunic and a big head
+	# tunic and a head a little big
 	for side in [-1.0, 1.0]:
 		var left: bool = side < 0.0
 		_box(st, Vector3(0.075 * side, 0.02, 0.02), Vector3(0.05, 0.02, 0.07), sandal, FIG_SANDAL_L if left else FIG_SANDAL_R)
@@ -364,9 +365,9 @@ static func _figure_mesh() -> ArrayMesh:
 	# the tunic's hem stays the only geometry below 0.5 (the shader lets it
 	# down into a long dress)
 	_box(st, Vector3(0.0, 0.62, 0.0), Vector3(0.15, 0.18, 0.1), Color.WHITE, FIG_TUNIC)
-	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(0.095, 0.095, 0.095), skin, FIG_FIXED)
-	_box(st, Vector3(0.0, 0.985, -0.01), Vector3(0.104, 0.03, 0.104), hair, FIG_HAIR)
-	_box(st, Vector3(0.0, 0.9, -0.085), Vector3(0.104, 0.07, 0.03), hair, FIG_HAIR)
+	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(0.08, 0.08, 0.08), skin, FIG_FIXED)
+	_box(st, Vector3(0.0, 0.975, -0.01), Vector3(0.088, 0.025, 0.088), hair, FIG_HAIR)
+	_box(st, Vector3(0.0, 0.9, -0.072), Vector3(0.088, 0.06, 0.025), hair, FIG_HAIR)
 	# props
 	_box(st, Vector3(0.25, 0.56, 0.06), Vector3(0.018, 0.56, 0.018), wood, FIG_POLE)
 	_box(st, Vector3(0.25, 1.08, 0.12), Vector3(0.018, 0.04, 0.08), iron, FIG_HOE)
@@ -405,15 +406,21 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 					ao = VoxelMesh.AO[1]
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
-## A parcel's field: the slab (UV.x = -1) and CROP_ROWS rows (UV.x their
-## place across the parcel, UV.y their number), each a unit box (x, z
-## -0.5..0.5, y 0..1, no bottom); people_crops.gdshader sizes them by crop
+## A parcel's field: the slab (UV.x = -1), CROP_ROWS rows (UV.x their
+## place across the parcel, UV.y their number) and the fence (UV.x = -2,
+## UV.y side * 16 + post, 15 the rail), each a unit box (x, z -0.5..0.5,
+## y 0..1, no bottom); people_crops.gdshader sizes and places them by crop
 ## and season. Flat faces: the sides a step darker in the vertex alpha.
 static func _crop_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in CROP_ROWS + 1:
-		var uv := Vector2(-1.0, 0.0) if i == 0 else Vector2((i - 0.5) / CROP_ROWS, i - 1)
+	var parts: Array[Vector2] = [Vector2(-1.0, 0.0)]
+	for i in CROP_ROWS:
+		parts.append(Vector2((i + 0.5) / CROP_ROWS, i))
+	for side in 4:
+		for k: int in range(FENCE_POSTS) + [15]:
+			parts.append(Vector2(-2.0, side * 16 + k))
+	for uv in parts:
 		for axis in 3:
 			for sgn in [-1.0, 1.0]:
 				if axis == 1 and sgn < 0.0:

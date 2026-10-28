@@ -57,9 +57,10 @@ bool sim_house_lot(vec2 p) {
 	return texelFetch(sim_lot_tex, ivec2(lot), 0).a > 0.5;
 }
 
-// Village lanes run round the farmhouse lots, on the lot lines, which are
-// parcel lines too (a lot is 2 x 2 parcels), so they pass between the
-// fields. Distance (km) from p to the nearest lane, large without one.
+// Village lanes run between neighbouring farmhouse lots, on the lot lines,
+// which are parcel lines too (a lot is 2 x 2 parcels): the streets of a
+// village, and no ring round a lone farm (graph paper). Distance (km) from
+// p to the nearest lane, large without one.
 const float SIM_LANE_KM = 0.013; // half width
 float sim_lane(vec2 p) {
 	if (sim_lots_n == 0 || sim_view_km > SIM_CROPS_KM) { return 1e9; }
@@ -69,10 +70,10 @@ float sim_lane(vec2 p) {
 	vec2 side = vec2(f.x < 0.5 ? -1.0 : 1.0, f.y < 0.5 ? -1.0 : 1.0);
 	vec2 d = min(f, 1.0 - f) * sim_lot_km;
 	vec2 c = (lot + 0.5) * sim_lot_km;
-	bool here = sim_house_lot(c);
+	if (!sim_house_lot(c)) { return 1e9; }
 	float best = 1e9;
-	if (here || sim_house_lot(c + vec2(side.x, 0.0) * sim_lot_km)) { best = d.x; }
-	if (here || sim_house_lot(c + vec2(0.0, side.y) * sim_lot_km)) { best = min(best, d.y); }
+	if (sim_house_lot(c + vec2(side.x, 0.0) * sim_lot_km)) { best = d.x; }
+	if (sim_house_lot(c + vec2(0.0, side.y) * sim_lot_km)) { best = min(best, d.y); }
 	return best;
 }
 
