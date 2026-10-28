@@ -3,8 +3,8 @@ extends Node3D
 ## Arguments after `--`:
 ##   --scene=hero|lods|bench   what to build (default hero)
 ##   --mode=naive|nodes_lod|multimesh|chunked   bench: one node per colosseum,
-##       three LOD nodes per colosseum, one MultiMesh at full detail, or
-##       MultiMesh chunks with three LODs
+##       one node per LOD and colosseum, one MultiMesh at full detail, or
+##       MultiMesh chunks with all LODs
 ##   --count=10000   bench: number of colosseums on a square grid
 ##   --view=close|far   bench: city view or the whole map
 ##   --shot=path.png   save a frame;  --out=path.json   append bench result
@@ -12,7 +12,7 @@ extends Node3D
 const Col := preload("res://colosseum_mesh.gd")
 const SPACING := 20.0
 const CHUNK := 4                         # chunk = CHUNK x CHUNK colosseums
-const LOD_RANGES := [0.0, 90.0, 300.0, 6000.0]
+const LOD_RANGES: Array = Col.LOD_RANGES
 const WARMUP := 40
 const FRAMES := 120
 
@@ -31,7 +31,7 @@ func _ready() -> void:
 		var kv := a.trim_prefix("--").split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	var t0 := Time.get_ticks_usec()
-	meshes = [Col.lod0(), Col.lod1(), Col.lod2()]
+	meshes = Col.lods()
 	for m in meshes:
 		m.surface_set_material(0, material)
 	print("triangles per LOD: ", meshes.map(func(m): return Col.triangles(m)))
@@ -94,14 +94,7 @@ func _camera(target: Vector3, distance: float, fov := 30.0) -> void:
 
 func _hero() -> void:
 	_ground(400.0, Color("7ea24a"))
-	var plaza := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(22, 0.12, 19)
-	var pm := StandardMaterial3D.new()
-	pm.albedo_color = Color("b8a184")
-	box.material = pm
-	plaza.mesh = box
-	add_child(plaza)
+	_plaza()
 	_add(meshes[0], Transform3D.IDENTITY)
 	_camera(Vector3(0, 1.2, 0), float(args.get("dist", "42")))
 	if args.has("elev"):
@@ -111,15 +104,53 @@ func _hero() -> void:
 		cam.size = 12.0
 		cam.look_at_from_position(Vector3(0, 3.5, 40), Vector3(0, 3.5, 0))
 
+## Test-scene context in the same voxel language: a paved plaza in two
+## stone tones and a ring of cypresses, as around Caesar III's colosseum.
+func _plaza() -> void:
+	var tiles := {Color("d9ccb2"): [], Color("cbbda0"): []}
+	var keys := tiles.keys()
+	for x in range(-12, 12):
+		for z in range(-10, 10):
+			tiles[keys[(x + z) & 1]].append(Vector3(x + 0.5, 0.06, z + 0.5))
+	for colour in keys:
+		_boxes(tiles[colour], Vector3(1, 0.12, 1), colour)
+	var greens := [Color("3f6b32"), Color("4d7c3a"), Color("5b8b42")]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i in 26:
+		var t := TAU * i / 26.0
+		var base := Vector3(cos(t) * 13.5, 0.0, sin(t) * 11.5)
+		_boxes([base + Vector3(0, 0.2, 0)], Vector3(0.25, 0.4, 0.25), Color("6b4a32"))
+		var h := rng.randf_range(2.2, 3.2)
+		var layers := 6
+		for k in layers:
+			var w := lerpf(0.9, 0.3, float(k) / layers)
+			var y := 0.4 + h * (k + 0.5) / layers
+			_boxes([base + Vector3(0, y, 0)], Vector3(w, h / layers, w), greens[(i + k) % greens.size()])
+
+func _boxes(at: Array, size: Vector3, colour: Color) -> void:
+	var box := BoxMesh.new()
+	box.size = size
+	var m := StandardMaterial3D.new()
+	m.albedo_color = colour
+	m.roughness = 1.0
+	box.material = m
+	for p: Vector3 in at:
+		var mi := MeshInstance3D.new()
+		mi.mesh = box
+		mi.position = p
+		add_child(mi)
+
 func _lods() -> void:
 	_ground(400.0, Color("7ea24a"))
-	for i in 3:
-		_add(meshes[i], Transform3D(Basis(), Vector3((i - 1) * 15.0, 0, -(i - 1) * 15.0)))
+	var half := (meshes.size() - 1) * 0.5
+	for i in meshes.size():
+		_add(meshes[i], Transform3D(Basis(), Vector3((i - half) * 18.0, 0, -(i - half) * 18.0)))
 	_camera(Vector3(0, 1.5, 0), 62.0)
 	# Orthographic, so the three LODs are compared at the same size.
 	var cam: Camera3D = get_children().filter(func(c): return c is Camera3D)[0]
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 34.0
+	cam.size = 30.0 + 8.0 * meshes.size()
 
 func _add(mesh: Mesh, xf: Transform3D) -> void:
 	var mi := MeshInstance3D.new()
@@ -160,13 +191,13 @@ func _bench() -> void:
 		"nodes_lod":
 			# One node per LOD and colosseum, switched by visibility range.
 			for xf in xfs:
-				for lod in 3:
+				for lod in meshes.size():
 					var mi := MeshInstance3D.new()
 					mi.mesh = meshes[lod]
 					mi.transform = xf
 					mi.visibility_range_begin = LOD_RANGES[lod]
 					mi.visibility_range_end = LOD_RANGES[lod + 1]
-					if lod == 2:
+					if lod == meshes.size() - 1:
 						mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					add_child(mi)
 		"multimesh":
@@ -182,13 +213,13 @@ func _bench() -> void:
 				var local: Array[Transform3D] = []
 				for xf in list:
 					local.append(Transform3D(xf.basis, xf.origin - centre))
-				for lod in 3:
+				for lod in meshes.size():
 					var mmi := _multimesh(meshes[lod], local)
 					mmi.position = centre
 					mmi.visibility_range_begin = LOD_RANGES[lod]
 					mmi.visibility_range_end = LOD_RANGES[lod + 1]
 					# The far LOD casts no shadow: it is too small to matter.
-					if lod == 2:
+					if lod == meshes.size() - 1:
 						mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					add_child(mmi)
 	if args.get("view", "far") == "close":

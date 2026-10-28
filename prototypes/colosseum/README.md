@@ -5,20 +5,26 @@ Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in
 ## Was es ist
 
 - `colosseum_mesh.gd` baut das Kolosseum als Voxel-Modell im Stil von Urbek:
-  Jede der 28 Achsen ist ein kleines gerades Voxel-Gebäude (25-cm-Blöcke),
-  das auf sein Stück der Ellipse gebogen wird. So bleiben Bögen und Stufen
-  sauber statt treppig wie in einem weltachsigen Gitter. Gemeshed werden nur
-  sichtbare Flächen; gleichfarbige Flächen verschmelzen, wo die
-  Ecken-Schattierung (Voxel-AO in den Vertex-Farben) es zulässt;
-  Unterseiten entfallen. Ein gemeinsames Material, keine Texturen.
-  - LOD0: 25 cm, ca. 23 000 Dreiecke (Bögen, Säulen, Gesimse, Attika,
-    Ränge mit Menge, Vomitorien, Sandarena, roter Fahnenkranz)
-  - LOD1: 50 cm, ca. 6 000 Dreiecke (gewichtete Mehrheit der Feinproben:
-    Menge und Fahnen bleiben sichtbar)
-  - LOD2: 168 Dreiecke, ein 12-eckiger Ring mit den Farbmassen
-- `main.gd` zeigt es (`--scene=hero`, `--scene=lods`, `--elev` für die
-  Seitenansicht) oder misst (`--scene=bench`) wie unten beschrieben; die
-  LOD-Grenzen stehen auf 0–90, 90–300, 300–6000.
+  Eine Achse der Arkade ist als Körper in Metern beschrieben, wird mit
+  12,5-cm-Blöcken voxelisiert und auf jedes der 28 gleich langen
+  Ellipsenstücke gebogen (vier Varianten: Fenster, Eingänge, Menge). So
+  bleiben Bögen, Säulen und Sitzreihen sauber statt treppig wie in einem
+  weltachsigen Gitter. Gemeshed werden nur sichtbare Flächen; gleichfarbige
+  Flächen verschmelzen, wo die Ecken-Schattierung (Voxel-AO in den
+  Vertex-Farben) es zulässt; Unterseiten entfallen. Ein Material, keine
+  Texturen. Details: Rundbögen mit Rahmen und Schlussstein, Halbsäulen mit
+  Basis und Kapitell, getreppte Gesimse, Attika mit Fenstern, Galerie hinter
+  den Bögen, Sitzreihen mit sitzenden Figuren, Eingänge, Podium mit rotem
+  Band, Sandarena, Wimpel an dünnen Masten.
+  - LOD 12,5 cm: ca. 64 000 Dreiecke (bis 50 m Kameradistanz)
+  - LOD 25 cm: ca. 21 500 (50–140 m)
+  - LOD 50 cm: ca. 6 000 (140–320 m); dünne Figuren werden zu Mengenblöcken
+  - Ring: 168 Dreiecke (ab 320 m)
+  - Die Voxel-LODs werden beim ersten Start gebaut (ca. 1 s) und in
+    `user://` zwischengespeichert.
+- `main.gd` zeigt es (`--scene=hero` mit Platz und Zypressen,
+  `--scene=lods`, `--elev` für die Seitenansicht) oder misst
+  (`--scene=bench`) wie unten beschrieben.
 - Licht nach Urbek: kühles Himmelslicht in den Schatten, SSAO, weiche
   Sonnenschatten, linearer Tonemapper mit leicht erhöhter Sättigung.
 - Varianten der Messung:
@@ -51,19 +57,22 @@ und Caesar 3 (App 517790), lokal angesehen, nicht im Repo.
   Kritiker widersprechen sich von Runde zu Runde (z. B. Stein heller vs.
   dunkler, Gesimse tiefer vs. flacher, Menge gesprenkelt vs. geordnet).
 
-## Messung Voxel-Modell (M3 Pro, Metal, 1280×720, Schatten an, Chunks + LOD)
+## Messung Voxel-Modell (M3 Pro, Metal, 1280×720, Schatten an)
 
 Auf Akku gemessen, Bildzeit deshalb bei 120 Hz (8,3 ms) gedeckelt;
 Primitive inklusive Schattenpässe.
 
 | Fall | Primitive | Bildzeit | Render-CPU | Speicher |
 |---|---:|---:|---:|---:|
-| 10 000, Stadtzoom | 4,8 Mio. | ≤ 8,3 ms | 0,3 ms | 67 MB |
-| 10 000, ganze Karte | 1,6 Mio. | ≤ 8,3 ms | 0,7 ms | 68 MB |
-| 50 000, ganze Karte | 4,0 Mio. | 11,6 ms | 1,1 ms | 156 MB |
+| 10 000 naiv (volles Detail), ganze Karte | 578 Mio. | 792 ms | 0,6 ms | 95 MB |
+| 10 000 LOD je Node, ganze Karte | 1,5 Mio. | ≤ 8,3 ms | 2,4 ms | 246 MB |
+| 10 000 Chunks + LOD, Stadtzoom | 5,3 Mio. | ≤ 8,3 ms | 0,1 ms | 74 MB |
+| 10 000 Chunks + LOD, ganze Karte | 1,6 Mio. | ≤ 8,3 ms | 0,7 ms | 75 MB |
+| 50 000 Chunks + LOD, ganze Karte | 4,0 Mio. | 11,5 ms | 1,2 ms | 191 MB |
 
-Aufbau der drei Meshes beim Start: ca. 1 s in GDScript (für ein Spiel
-einmal vorab backen).
+Ohne Detailstufen ist das Voxel-Modell bei tausenden Instanzen unbrauchbar
+(792 ms); mit Chunks und LOD bleibt es im 120-Hz-Rahmen bis 10 000 und bei
+50 000 knapp darüber.
 
 ## Frühere Messungen (Low-Poly-Version, gleiches Gerüst)
 
