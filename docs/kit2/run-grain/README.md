@@ -343,6 +343,24 @@ Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 6dc338f1747dec
 grain b1841fc00f4cd0a3), 53 Tests grün. Tempo auf dem ruhigen Rechner wie vorher:
 Getreide im Mittel 1,57 ms pro Tag (p99 3,9), ganzer Tag p50 4,8 ms, p99 9,0 ms.
 
+## Fehler behoben: Wanderung zählt die Ankommenden (S66, 100 Jahre, Seed 1, `run100-migration-fix.txt`; vorher: `run100-s89.txt`)
+
+S66 sagt: besser ist eine Region mit mehr Nahrung pro Kopf *nach* dem Umzug. Mit der
+Getreidewirtschaft verglich die Wanderung aber die Nahrung pro Kopf vor dem Umzug und
+zählte weder den eigenen Haushalt noch die anderen, die im selben Durchgang dorthin
+ziehen. Fast leere Regionen (kleine Inseln, Wüstenränder) sahen darum reich aus, und alle
+Hungernden der Umgebung zogen gleichzeitig hin. Jetzt zählen beide mit.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Hungertote Jahr 2 | 1'919 | 1'820 |
+| Hungertote pro Jahr, Jahr 11 bis 100 | 314 | 285 |
+| Menschen im Jahr 100 | 129'207 | 129'583 |
+| Wachstum Jahr 10 bis 100 | 0,17 % | 0,18 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 0e18f2cf1303bdcd,
+grain 2618ab53b25545a4), 53 Tests grün.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |

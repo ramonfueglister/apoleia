@@ -467,8 +467,9 @@ pub struct Fields {
 pub struct Econ {
     /// Permille of its need a household ate last month, by household id.
     pub fed: Vec<u16>,
-    /// Per region key: (food per head, free land, cell to move to).
-    pub region: FxHashMap<u32, (f32, bool, u32)>,
+    /// Per region key: (food in kg: stores plus free land at its yield,
+    /// people, free land, cell to move to).
+    pub region: FxHashMap<u32, (f64, u32, bool, u32)>,
     /// Below this a household is in need (S66).
     pub need_fed: u16,
 }
@@ -1134,7 +1135,7 @@ impl People {
     /// S65: without free land the family waits with the marriage.
     fn no_land(&self, home: u32) -> bool {
         match &self.econ {
-            Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.1),
+            Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.2),
             None => self.share(home, 0) <= 1.0,
         }
     }
@@ -1676,6 +1677,8 @@ impl People {
         let leave_instead = |pid: u32| pressure > 0.0 && life::unit(rnd(seed, pid, 0xca9, day)) <= pressure;
         let mut rest: Vec<(u32, u32, Vec<u32>)> = Vec::new();
         let mut checked = 0usize;
+        // People already moving to a region this round (grain economy).
+        let mut arriving: FxHashMap<u32, u32> = FxHashMap::default();
         for &(i, j) in &self.hh_slices[yslice as usize] {
             let members: Vec<u32> = self.households[i as usize..j as usize]
                 .iter()
@@ -1692,8 +1695,9 @@ impl People {
             checked += 1;
             if let Some(e) = &self.econ {
                 // Grain economy: a household that ate too little looks for
-                // the region around with the most food per head (stores
-                // and free land, crate::grain); PLACEHOLDER as below.
+                // the region around with the most food per head once it is
+                // there, counting those already on their way (stores and
+                // free land, crate::grain); PLACEHOLDER as below.
                 if !self.in_need(house, home) {
                     if pressure > 0.0 {
                         rest.push((e.fed.get(house as usize).map_or(1000, |&f| f as u32), house, members));
@@ -1701,16 +1705,23 @@ impl People {
                     continue;
                 }
                 let own = self.grid.region(home);
-                let now = e.region.get(&own).map_or(0.0, |r| r.0);
-                let mut best = (now, NONE);
+                let n = members.len() as u32;
+                let per_head = |k: u32, add: u32| {
+                    e.region.get(&k).map_or(0.0, |r| r.0 / ((r.1 + arriving.get(&k).copied().unwrap_or(0) + add).max(1) as f64 * crate::grain::KG_PER_ADULT_YEAR as f64))
+                };
+                let mut best = (per_head(own, 0), NONE, NONE);
                 for k in Grid::regions_around(own) {
                     if let Some(r) = e.region.get(&k) {
-                        if k != own && r.0 > best.0 {
-                            best = (r.0, r.2);
+                        let s = per_head(k, n);
+                        if k != own && s > best.0 {
+                            best = (s, r.3, k);
                         }
                     }
                 }
                 let to = (best.1 != NONE && !leave_instead(house)).then_some(best.1);
+                if to.is_some() {
+                    *arriving.entry(best.2).or_insert(0) += n;
+                }
                 moves.push((members, to));
                 continue;
             }

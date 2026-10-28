@@ -40,7 +40,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 /// Wheat per adult and year, kg (GRAIN-NUMBERS 1: proposal 200, range
 /// 175–250). Children under 10 eat half (proposal there).
-const KG_PER_ADULT_YEAR: i64 = 200;
+pub(crate) const KG_PER_ADULT_YEAR: i64 = 200;
 const CHILD_AGE: f64 = 10.0;
 /// Seed per ha, kg (Columella 2.9 via Devereaux 2025).
 const SEED_KG_HA: i64 = 130;
@@ -2533,16 +2533,15 @@ impl Grain {
         let mut region = FxHashMap::default();
         for m in &self.markets {
             let food = m.grain + m.free_area * 400 / 10_000;
-            let score = food as f64 / (m.people.max(1) as f64 * KG_PER_ADULT_YEAR as f64);
             // A cell with free land, else the market cell.
-            region.insert(m.region, (score as f32, m.free_area > 0, m.cell));
+            region.insert(m.region, (food as f64, m.people, m.free_area > 0, m.cell));
         }
         for (c, &a) in self.free_m2.iter().enumerate() {
             let a = a + self.free_poor[c];
             if a > 10_000 {
                 if let Some(e) = region.get_mut(&p.grid.region(c as u32)) {
-                    if self.free_m2[e.2 as usize] + self.free_poor[e.2 as usize] < a {
-                        e.2 = c as u32;
+                    if self.free_m2[e.3 as usize] + self.free_poor[e.3 as usize] < a {
+                        e.3 = c as u32;
                     }
                 }
             }
