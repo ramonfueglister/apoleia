@@ -10,7 +10,8 @@ uniform int page_side = 64;
 
 const float DOT_CELL_HALF_KM = 12.5;    // half a 25 km sim cell
 const float DOT_FINE_HALF_KM = 0.78125; // half a 1.5625 km village tile (sim/src/settle.rs)
-const float DOT_VILLAGE_KM = 0.6;       // houses of a village within this radius
+const float DOT_VILLAGE_KM = 0.8;       // houses of a village within this radius
+const float DOT_LOT_KM = 0.36;          // village houses on a grid of lots (a 15 m farmhouse, scripts/voxel/farmhouse.gd)
 const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
 const float DOT_YARD_KM = 0.17;         // around a drawn village house (0.24 km long, tile_terrain.gd HOUSE_M)
 const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
@@ -85,6 +86,11 @@ vec2 dot_village(vec2 c, float r, uint key) {
 	return score < 0.0 ? dot_land(c, DOT_CELL_HALF_KM, key) : best;
 }
 
+// Centre of the village lot under p (world km).
+vec2 dot_lot(vec2 p) {
+	return (floor(p / DOT_LOT_KM) + 0.5) * DOT_LOT_KM;
+}
+
 // Where the person in `slot` stands: (offset x, offset z) in km from the
 // record's anchor and the height in levels. Records: sim/src/view.rs. A house
 // record (`house`) stands on the household's house spot itself, without the
@@ -104,6 +110,12 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 		uint vkey = dot_hash((uint(rec.z) - 1u) * 0x2545f491u);
 		vec2 v = dot_village(rec.xy, DOT_FINE_HALF_KM, vkey);
 		p = dot_land(v, -DOT_VILLAGE_KM, key);
+		// on its lot, so houses stand side by side in rows instead of
+		// cutting into each other (two on one lot look like one house)
+		vec2 lot = dot_lot(p);
+		if (tt_water(dot_tile(lot)) == W_LAND) {
+			p = lot;
+		}
 		village = true;
 	}
 	// the family around its house, one spot per person; in a village the

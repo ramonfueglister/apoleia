@@ -405,6 +405,32 @@ impl ApoleiaPeople {
         PackedInt32Array::from_iter(hits.into_iter().map(|h| h.1))
     }
 
+    /// Slots of the houses within `radius` km of (x, z), nearest first, at
+    /// most `max` (the houses drawn, nearest in the finest detail). A house
+    /// stands within 1.8 km of its record's anchor (village tile).
+    #[func]
+    fn houses_near(&self, x: f32, z: f32, radius: f32, max: i64) -> PackedInt32Array {
+        let mut hits: Vec<(f32, i32)> = Vec::new();
+        let reach = radius + 1.8;
+        for slot in 0..self.houses.len() / REC {
+            let rec = &self.houses[slot * REC..slot * REC + REC];
+            if rec[2] == 0.0 {
+                continue;
+            }
+            let d2 = (rec[0] - x).powi(2) + (rec[1] - z).powi(2);
+            if d2 <= reach * reach {
+                hits.push((d2, slot as i32));
+            }
+        }
+        let max = max.max(0) as usize;
+        if hits.len() > max {
+            hits.select_nth_unstable_by(max, |a, b| a.0.total_cmp(&b.0));
+            hits.truncate(max);
+        }
+        hits.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
+        PackedInt32Array::from_iter(hits.into_iter().map(|h| h.1))
+    }
+
     /// Asks the sim thread for the person in `slot`; the answer comes with
     /// `take_person` (between two days, so within a frame or two).
     #[func]

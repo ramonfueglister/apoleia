@@ -10,10 +10,12 @@ extends MultiMeshInstance3D
 ##
 ## The dots belong to the close LOD: they show only at the zoom levels where
 ## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
-## Every village household also gets a house (the terrain's house mesh) at
-## its house spot, from the house table of the view (sim/src/view.rs
-## Houses), drawn by a second MultiMesh (people_houses.gdshader) with its own
-## placement pass; city people live in the town tiles.
+## Every village household also gets a house at its house spot, from the
+## house table of the view (sim/src/view.rs Houses): a voxel farmhouse in the
+## Urbek style (scripts/voxel/farmhouse.gd), the nearest houses
+## (ApoleiaPeople.houses_near) in up to three levels of detail by distance and
+## view width (people_houses.gdshader), with their own placement pass; city
+## people live in the town tiles.
 ## Up close (view width up to FIGURE_KM) people are small figures at their
 ## real size (1.7 m at diorama scale, people_figures.gdshader) instead of
 ## dots; only the people near the view are drawn (ApoleiaPeople.near).
@@ -45,7 +47,12 @@ const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
 const LIST_W := 128 # width of the slot list texture
-const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
+const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
+const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
+# Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
+# nearest houses each may take and up to which view width (km) it is used.
+const HOUSE_LOD_MAX := [1024, 4096, HOUSE_MAX]
+const HOUSE_LOD_KM := [5.0, 20.0, INF]
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 const PLACE_KEYS: Array[StringName] = [&"tile_km", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
@@ -91,8 +98,11 @@ var _prep_view: SubViewport
 var _prep_rect: ColorRect
 var _place_key := []
 var _prep_frames := 0
-var _houses: MultiMeshInstance3D
-var _house_material := ShaderMaterial.new()
+var _houses: Array[MultiMeshInstance3D] = []
+var _house_materials: Array[ShaderMaterial] = []
+var _house_list_image := Image.create_empty(LIST_W, HOUSE_MAX / LIST_W, false, Image.FORMAT_RF)
+var _house_list_tex: ImageTexture
+var _house_list_at := Vector3.INF
 var _house_prep_material := ShaderMaterial.new()
 var _house_prep_view: SubViewport
 var _house_prep_rect: ColorRect
@@ -146,17 +156,31 @@ func setup(tile_terrain: Node3D) -> bool:
 	_prep_material.shader = PREP_SHADER
 	_prep_rect = ColorRect.new()
 	_prep_view = _make_prep("PeoplePlaces", _prep_rect, _prep_material)
-	_house_material.shader = HOUSE_SHADER
-	_house_material.set_shader_parameter("prop_scale", TileTerrain.HOUSE_M * TileTerrain.DIORAMA_KM_PER_M)
 	_house_prep_material.shader = PREP_SHADER
 	_house_prep_material.set_shader_parameter("houses", true)
 	_house_prep_rect = ColorRect.new()
 	_house_prep_view = _make_prep("HousePlaces", _house_prep_rect, _house_prep_material)
-	_houses = MultiMeshInstance3D.new()
-	_houses.name = "PeopleHouses"
-	_houses.material_override = _house_material
-	_houses.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
-	add_child(_houses)
+	_house_list_tex = ImageTexture.create_from_image(_house_list_image)
+	var lods := Farmhouse.lods(TileTerrain.HOUSE_M)
+	for lod in lods.size():
+		var m := ShaderMaterial.new()
+		m.shader = HOUSE_SHADER
+		m.set_shader_parameter("prop_scale", TileTerrain.HOUSE_M * TileTerrain.DIORAMA_KM_PER_M)
+		m.set_shader_parameter("list_tex", _house_list_tex)
+		m.set_shader_parameter("list_w", LIST_W)
+		_house_materials.append(m)
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "PeopleHouses%d" % lod
+		mmi.material_override = m
+		mmi.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = lods[lod]
+		mm.instance_count = HOUSE_LOD_MAX[lod]
+		mm.visible_instance_count = 0
+		mmi.multimesh = mm
+		_houses.append(mmi)
+		add_child(mmi)
 	_figure_material.shader = FIGURE_SHADER
 	_figure_material.set_shader_parameter("figure_scale", FIGURE_M * TileTerrain.DIORAMA_KM_PER_M)
 	_figure_material.set_shader_parameter("list_w", LIST_W)
@@ -203,23 +227,20 @@ func _make_prep(view_name: String, rect: ColorRect, material: ShaderMaterial) ->
 	add_child(view)
 	return view
 
-## House texture and instance count for the current number of house pages.
+## House texture for the current number of house pages.
 func _rebuild_houses() -> void:
 	_house_texture = people.make_house_texture()
 	var side: int = people.page_side()
 	var size := Vector2i(side, side * _house_texture.get_layers())
 	_house_prep_view.size = size
 	_house_prep_rect.size = Vector2(size)
-	for m in [_house_material, _house_prep_material]:
+	for m in _house_materials + [_house_prep_material]:
 		m.set_shader_parameter("people_tex", _house_texture)
 		m.set_shader_parameter("page_side", side)
-	_house_material.set_shader_parameter("place_tex", _house_prep_view.get_texture())
+	for m in _house_materials:
+		m.set_shader_parameter("place_tex", _house_prep_view.get_texture())
 	_house_prep_frames = 2
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = PropMeshes.house()
-	mm.instance_count = _house_texture.get_layers() * side * side
-	_houses.multimesh = mm
+	_house_list_at = Vector3.INF
 
 ## Texture and instance count for the current number of pages.
 func _rebuild() -> void:
@@ -388,6 +409,31 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	_list_image.set_data(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_list_tex.update(_list_image)
 	_figures.multimesh.visible_instance_count = slots.size()
+
+## The houses near the camera, nearest first, split over the levels of
+## detail: the nearest in the finest one the view width allows.
+func _update_houses(view_km: float, synced: bool) -> void:
+	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
+	var radius := view_km * 1.2
+	var moved := Vector2(_house_list_at.x, _house_list_at.y).distance_to(centre) > view_km * 0.2
+	if not synced and not moved and absf(radius - _house_list_at.z) < radius * 0.2:
+		return
+	_house_list_at = Vector3(centre.x, centre.y, radius)
+	var slots: PackedInt32Array = people.houses_near(centre.x, centre.y, radius, HOUSE_MAX)
+	var values := PackedFloat32Array()
+	values.resize(HOUSE_MAX)
+	for i in slots.size():
+		values[i] = float(slots[i])
+	_house_list_image.set_data(LIST_W, HOUSE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
+	_house_list_tex.update(_house_list_image)
+	var start := 0
+	for lod in _houses.size():
+		var n := 0
+		if view_km <= HOUSE_LOD_KM[lod]:
+			n = mini(slots.size() - start, HOUSE_LOD_MAX[lod])
+		_house_materials[lod].set_shader_parameter("list_offset", start)
+		_houses[lod].multimesh.visible_instance_count = n
+		start += n
 
 ## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
 ## shader scales each to pixels and cuts the round dot out of it.
@@ -589,7 +635,7 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_material, _house_prep_material, _figure_material]:
+		for m in [_material, _prep_material, _house_prep_material, _figure_material] + _house_materials:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
@@ -613,6 +659,7 @@ func _process(delta: float) -> void:
 	# 3.5 px up close, about 1.7 px at 360 km and 1 px over the whole sea, so
 	# the dots stay single people instead of melting into black regions
 	var px := clampf(3.5 - 0.5 * log(maxf(view_km, 1.0) / 30.0) / log(2.0), 1.0, 3.5)
+	_update_houses(view_km, synced_houses != 0)
 	_figures.visible = figures
 	multimesh.visible_instance_count = -1 if dots else 0
 	if figures:
