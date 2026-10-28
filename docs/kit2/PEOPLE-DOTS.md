@@ -156,7 +156,10 @@ Bäume. Gezeichnet werden nur die Personen nahe
 der Ansicht: `ApoleiaPeople.near` liefert ihre Slots (Rust, ein Durchlauf über
 die Anker, nur wenn sich die Ansicht deutlich bewegt oder ein Tag kam), höchstens
 16 384, als Liste in einer kleinen Textur; das MultiMesh zeichnet genau so viele.
-Weiter oben sieht man keine Menschen, nur Häuser, Felder und Städte. Die Punkte
+Weiter oben sieht man keine Menschen, nur Häuser, Felder und Städte. Die Kamera
+kommt bis 1 km Bildbreite heran (`MIN_WIDTH` in `landscape.gd`, vorher 4 km):
+dann sind die Figuren 40–50 px hoch und Kleid, Kopftuch und Beine erkennbar,
+bei 2 km sieht man mehrere Höfe mit ihren Leuten. Die Punkte
 sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 
 ## Häuser
