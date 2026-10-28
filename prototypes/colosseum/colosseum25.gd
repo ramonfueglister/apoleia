@@ -32,7 +32,7 @@ const PODIUM := SEAT_TOP - 34
 const FLOOR := PODIUM - 6
 const PAVING := 4              # grid margin round the plinth, voxels
 const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
-const CACHE := "user://colosseum25_v6.res"
+const CACHE := "user://colosseum25_v7.res"
 const AISLES := 40
 const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.CLOTH_Y, Kit.CLOTH_G, Kit.LINEN]
 
@@ -119,16 +119,17 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 		if _open(o, lr):
 			if storey > 0 and lr <= 3 and d == 1:
 				return Kit.TRAV_L
-			# a statue in every other upper arch, behind the parapet: a
-			# pedestal, legs, shoulders three wide, a head
-			if storey > 0 and posmod(b, 2) == 0 and (d == 3 or d == 4):
-				if o >= 2 and o <= 5 and lr <= 2:
+			# a statue in every other upper arch, just behind the parapet:
+			# a plinth, the robe flaring at the hem, the body as wide as the
+			# shoulders, a head
+			if storey > 0 and posmod(b, 2) == 0 and (d == 2 or d == 3) and o >= 2 and o <= 5:
+				if lr <= 2:
 					return Kit.TRAV_L
-				if (o == 3 or o == 4) and lr >= 3 and lr <= 6 and d == 3:
+				if lr <= 4:
 					return Kit.STATUE
-				if o >= 2 and o <= 5 and lr >= 7 and lr <= 8 and d == 3:
+				if lr <= 8 and d == 2:
 					return Kit.STATUE
-				if (o == 3 or o == 4) and lr >= 9 and lr <= 10:
+				if lr <= 10 and d == 2 and (o == 3 or o == 4):
 					return Kit.STATUE
 			if d < SHELL - 2:
 				return Kit.EMPTY
@@ -293,6 +294,14 @@ static func grid() -> Kit.Grid:
 					g.g[row + nx * r] = c
 	return g
 
+## A gladiator on the sand: helmet, red loincloth, a shield on his arm.
+static func _gladiator(g: Kit.Grid, x: int, y: int, z: int, face: int, seed: int) -> void:
+	g.box(x, y, z, x + 2, y + 2, z + 1, Kit.SKIN)
+	g.box(x, y + 2, z, x + 2, y + 3, z + 1, Kit.SHIELD if seed % 2 == 0 else Kit.ROBE_W)
+	g.box(x, y + 3, z, x + 2, y + 5, z + 1, Kit.SKIN)
+	g.box(x, y + 5, z, x + 2, y + 7, z + 1, Kit.HELMET)
+	g.box(x + (2 if face > 0 else -1), y + 2, z, x + (3 if face > 0 else 0), y + 6, z + 2, Kit.SHIELD if seed % 2 == 1 else Kit.BRONZE)
+
 ## The full-detail mesh, centred on the arena, base at y = 0; cached.
 static func mesh() -> ArrayMesh:
 	if ResourceLoader.exists(CACHE):
@@ -301,6 +310,13 @@ static func mesh() -> ArrayMesh:
 			cached.surface_set_material(0, Kit.material())
 			return cached
 	var g := grid()
+	# fighters in pairs on the sand
+	var cx := g.n.x / 2
+	var cz := g.n.z / 2
+	var k := 0
+	for p: Vector2i in [Vector2i(-26, -8), Vector2i(-19, -8), Vector2i(8, 6), Vector2i(15, 6), Vector2i(-8, 18), Vector2i(-1, 18), Vector2i(22, -16), Vector2i(29, -16)]:
+		_gladiator(g, cx + p.x, FLOOR + 1, cz + p.y, 1 if k % 2 == 0 else -1, k)
+		k += 1
 	var m := Kit.mesh(g, Vector3(-g.n.x * V * 0.5, 0.0, -g.n.z * V * 0.5))
 	ResourceSaver.save(m, CACHE)
 	return m

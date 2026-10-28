@@ -36,13 +36,25 @@ static func _zp(g: Kit.Grid, x0: int, y0: int, x1: int, y1: int, zf: int, a: int
 
 # --- ground ---------------------------------------------------------------
 
-## Grass over [x0, x1) x [z0, z1), two layers, in calm patches of 6.
+## Grass over [x0, x1) x [z0, z1), two layers: three greens in patches of
+## three, tufts on one voxel in twenty, now and then a cluster of flowers.
 static func _grass(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) -> void:
+	_lawn(g, x0, z0, x1, z1, 0, FLOOR, seed)
+
+static func _lawn(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, y0: int, y1: int, seed: int) -> void:
 	for z in range(z0, z1):
 		for x in range(x0, x1):
-			var r := Kit.rnd((x + (z / 6 % 2) * 3) / 6, z / 6, 0, seed) % 100
-			var c := Kit.GRASS_D if r < 20 else (Kit.GRASS_L if r < 32 else Kit.GRASS)
-			g.box(x, 0, z, x + 1, FLOOR, z + 1, c)
+			var r := Kit.rnd((x + (z / 3 % 2)) / 3, z / 3, 0, seed) % 100
+			var c := Kit.GRASS if r < 55 else (Kit.GRASS_D if r < 85 else Kit.GRASS_L)
+			g.box(x, y0, z, x + 1, y1, z + 1, c)
+			var t := Kit.rnd(x, z, 1, seed) % 1000
+			if t < 50:
+				g.put(x, y1, z, Kit.GRASS_D)
+			elif t < 58 and x > x0 + 1 and z > z0 + 1 and x < x1 - 2 and z < z1 - 2:
+				var f: int = [Kit.FLOWER_Y, Kit.FLOWER_R, Kit.FLOWER_W][Kit.rnd(x, z, 2, seed) % 3]
+				g.put(x, y1, z, f)
+				g.put(x + 1, y1, z, f)
+				g.put(x, y1, z + 1, f)
 
 ## Paving of square slabs (4 voxels, staggered rows), a few a shade off.
 static func _paving(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) -> void:
@@ -132,6 +144,18 @@ static func crossing(seed: int) -> ArrayMesh:
 	if seed % 2 == 0:
 		_fountain(g, m + LOT - 7, FLOOR, m + 1, 6)
 		_person(g, m + LOT - 9, FLOOR, m + 3, seed)
+	else:
+		# a crossroads shrine: a painted niche under a small gable, an altar
+		var sx := m + LOT - 6
+		var sz := m + 1
+		g.box(sx, FLOOR, sz, sx + 4, FLOOR + 3, sz + 2, Kit.STONE)
+		g.box(sx, FLOOR + 3, sz, sx + 4, FLOOR + 8, sz + 1, Kit.POMPEII)
+		g.box(sx + 1, FLOOR + 4, sz + 1, sx + 3, FLOOR + 7, sz + 2, Kit.GOLD)
+		g.box(sx - 1, FLOOR + 8, sz, sx + 5, FLOOR + 9, sz + 2, Kit.TRIM)
+		g.box(sx, FLOOR + 9, sz, sx + 4, FLOOR + 10, sz + 2, Kit.TILE)
+		g.box(sx + 1, FLOOR + 10, sz, sx + 3, FLOOR + 11, sz + 2, Kit.TILE)
+		g.box(sx + 1, FLOOR, sz + 3, sx + 3, FLOOR + 2, sz + 5, Kit.TRIM)
+		g.put(sx + 1, FLOOR + 2, sz + 3, Kit.FRUIT_R)
 	return _done(g)
 
 ## A mule cart along x with a load of amphorae, the mule at +x.
@@ -374,10 +398,17 @@ static func _weather(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, wall: int, 
 		g.swap(x, y, zf, x + 1, y + h, zf + 1, wall, wall + 1)
 
 static func _streaks(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, wall: int, seed: int) -> void:
-	for x in range(x0, x1):
-		if Kit.chance(x, y, zf, seed, 32):
-			var n := 3 + Kit.rnd(x, y, 1, seed) % 5
-			g.swap(x, y - n, zf, x + 1, y, zf + 1, wall, wall + 1)
+	var c := _grime(wall)
+	for x in range(x0, x1, 2):
+		if Kit.chance(x, y, zf, seed, 40):
+			var n := 4 + Kit.rnd(x, y, 1, seed) % 6
+			g.swap(x, y - n, zf, x + 2, y, zf + 1, wall, c)
+			g.swap(x, y - n - 2, zf, x + 1, y - n, zf + 1, wall, c)
+
+## The colour rain streaks leave on a wall: grey-brown grime on the pale
+## plasters, a darker shade of the colour on the strong ones.
+static func _grime(wall: int) -> int:
+	return Kit.STREAK if wall in [Kit.CREAM, Kit.WHITE, Kit.OCHRE, Kit.PINK] else wall + 1
 
 ## Windows across a face layer: `count` evenly spaced over [x0, x1), a
 ## fifth of them with closed shutters.
@@ -454,7 +485,7 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 	# rain streaks down from the cornice
 	for x in range(x0, x1):
 		if Kit.chance(x, top, zf, seed, 12):
-			g.swap(x, top - 3 - Kit.rnd(x, 2, zf, seed) % 6, zf, x + 1, top - 2, zf + 1, wall, wall + 1)
+			g.swap(x, top - 3 - Kit.rnd(x, 2, zf, seed) % 6, zf, x + 1, top - 2, zf + 1, wall, _grime(wall))
 	_weather(g, x0, x1, y + 3, z0, wall, seed + 1)
 	_blotches(g, x0, x1, y + 8, top - 3, zf, wall, seed)
 	_blotches(g, x0, x1, y + 8, top - 3, z0, wall, seed + 2)
@@ -470,10 +501,22 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 		if sx - x0 >= 8:
 			_door(g, x0 + 2, y + 2, zf)
 	else:
-		var dx := x0 + 3 + seed % 3
-		_door(g, dx, y + 2, zf)
+		var zg := zf
+		if o.get("porch", false):
+			# a porch: the ground floor set back four voxels behind columns
+			zg = zf - 4
+			g.box(x0 + 1, y + 3, zf - 3, x1 - 1, y + g0 - 1, zf + 1, Kit.EMPTY)
+			g.box(x0 + 1, y + 2, zf - 3, x1 - 1, y + 3, zf + 1, Kit.PAVE_L)
+			for cx in range(x0 + 1, x1 - 2, 8):
+				g.box(cx, y + 3, zf - 1, cx + 2, y + g0 - 1, zf + 1, Kit.WHITE)
+				g.box(cx, y + g0 - 2, zf - 1, cx + 2, y + g0 - 1, zf + 1, Kit.TRIM)
+			g.box(x1 - 3, y + 3, zf - 1, x1 - 1, y + g0 - 1, zf + 1, Kit.WHITE)
+			g.box(x0 + 3, y + 3, zf - 2, x0 + 5, y + 5, zf, Kit.POT)
+			g.box(x0 + 2, y + 5, zf - 3, x0 + 6, y + 8, zf, Kit.LEAF)
+		var dx := x0 + 7 + seed % 3
+		_door(g, dx, y + 2 + (1 if zg != zf else 0), zg)
 		if x1 - dx > 16:
-			_window_row(g, dx + 7, x1 - 2, y + 6, zf, (x1 - dx - 7) / 9, 3, 5, {"shutter": shutter}, wall, seed)
+			_window_row(g, dx + 7, x1 - 2, y + 6, zg, (x1 - dx - 7) / 9, 3, 5, {"shutter": shutter}, wall, seed)
 	# upper floors
 	var nw := maxi(1, (w - 4) / 10)
 	for k in range(1, storeys):
@@ -494,13 +537,42 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 	if o.get("dentils", false) and not front:
 		for x in range(x0, x1, 2):
 			g.put(x, top - 1, zf + 1, Kit.WOOD_D)
-	var h := _gable(g, x0, z0, x1, z1, top, o.get("roof", TILES), wall, seed, front, o.get("steep", false))
+	var h := 0
+	if o.get("hip", false) and not front:
+		h = _roof(g, Rect2i(x0 - 1, z0 - 2, w + 2, z1 - z0 + 4), [], [Rect2i(x0, z0, w, z1 - z0)], top, "hip", o.get("roof", TILES), wall, seed)
+	else:
+		h = _gable(g, x0, z0, x1, z1, top, o.get("roof", TILES), wall, seed, front, o.get("steep", false))
+	if o.get("tower", false) and w >= 20:
+		# a tower room over one end, a storey above the ridge, hipped roof
+		var tx0 := x0 + 2 if seed % 2 == 0 else x1 - 14
+		var tz0 := z0 + 4
+		var tz1 := z1 - 6
+		var tt := top + h + 8
+		g.box(tx0, top, tz0, tx0 + 12, tt, tz1, wall)
+		g.box(tx0, tt - 2, tz1, tx0 + 12, tt - 1, tz1 + 1, Kit.TRIM)
+		_window_row(g, tx0, tx0 + 12, tt - 8, tz1 - 1, 2, 3, 5, {"shutter": shutter}, wall, seed + 9)
+		_roof(g, Rect2i(tx0 - 1, tz0 - 1, 14, tz1 - tz0 + 2), [], [Rect2i(tx0, tz0, 12, tz1 - tz0)], tt, "hip", o.get("roof", TILES), wall, seed)
 	if front and h >= 4:
 		# a small window in the gable
 		var xc := x0 + w / 2 - 1
 		_zb(g, xc, top + h / 2 - 1, xc + 2, top + h / 2 + 1, zf, 0, 1, Kit.EMPTY, 1)
 		_zb(g, xc, top + h / 2 - 1, xc + 2, top + h / 2 + 1, zf, -1, 0, Kit.DARK, 1)
 		_zb(g, xc - 1, top + h / 2 - 2, xc + 3, top + h / 2 - 1, zf, 0, 2, Kit.TRIM, 1)
+	if o.get("wing", false) and w >= 16:
+		# a one-storey wing at the back, into the yard: an L-shaped plan
+		var wx0 := x0 if seed % 2 == 0 else x1 - w / 2
+		var wx1 := wx0 + w / 2
+		g.box(wx0, y, z0 - 8, wx1, y + 12, z0, wall)
+		g.box(wx0, y, z0 - 9, wx1, y + 2, z0 - 7, Kit.STONE)
+		g.paint(wx0 + 2, y + 2, z0 - 8, wx0 + 6, y + 10, z0 - 7, Kit.DOOR_D)
+		g.paint(wx1 - 6, y + 6, z0 - 8, wx1 - 3, y + 10, z0 - 7, Kit.GLASS)
+		for z in range(z0 - 10, z0):
+			var hh := (z - (z0 - 10)) / 3
+			for x in range(wx0, wx1):
+				g.put(x, y + 12 + hh, z, Kit.EAVE if z == z0 - 10 else _field(x, z, hh + 1, o.get("roof", TILES), seed, "x"))
+			if hh > 0:
+				g.box(wx0, y + 12, z, wx0 + 1, y + 12 + hh, z + 1, wall)
+				g.box(wx1 - 1, y + 12, z, wx1, y + 12 + hh, z + 1, wall)
 	# back: a door to the yard, windows with sills and shutters
 	var bx := x1 - 7 - seed % 3
 	_door(g, bx, y + 2, z0, -1)
@@ -542,7 +614,40 @@ static func _yard(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) ->
 	var depth := z1 - z0
 	if depth < 8:
 		return
-	match seed % 4:
+	if seed % 10 == 7:
+		# a wooden shed in the corner
+		g.box(x1 - 9, FLOOR, z0 + 1, x1 - 2, FLOOR + 6, z0 + 6, Kit.WOOD)
+		g.box(x1 - 7, FLOOR, z0 + 6, x1 - 4, FLOOR + 5, z0 + 7, Kit.WOOD_D)
+		for z in range(z0, z0 + 8):
+			g.box(x1 - 10, FLOOR + 6 + (7 - (z - z0)) / 4, z, x1 - 1, FLOOR + 7 + (7 - (z - z0)) / 4, z + 1, Kit.TILE4 if z > z0 else Kit.EAVE4)
+	match seed % 6:
+		4:
+			# a bakery: lava mills turned by a donkey, a domed oven, sacks
+			for k in 2:
+				var mx := x0 + 4 + k * 9
+				var mz := z0 + depth / 2 - 2
+				g.box(mx, FLOOR, mz, mx + 4, FLOOR + 3, mz + 4, Kit.MILL)
+				g.box(mx + 1, FLOOR + 3, mz + 1, mx + 3, FLOOR + 5, mz + 3, Kit.MILL)
+				g.box(mx, FLOOR + 5, mz, mx + 4, FLOOR + 7, mz + 4, Kit.MILL)
+				g.box(mx - 3, FLOOR + 4, mz + 1, mx + 7, FLOOR + 5, mz + 2, Kit.WOOD_D)
+			_donkey(g, x0 + 2, FLOOR, z0 + depth / 2 + 3, seed)
+			_disc(g, x0 + 27, FLOOR, z0 + depth / 2, 4, 5, Kit.BRICK)
+			_disc(g, x0 + 27, FLOOR + 5, z0 + depth / 2, 3, 2, Kit.BRICK)
+			g.box(x0 + 26, FLOOR, z0 + depth / 2 + 3, x0 + 29, FLOOR + 3, z0 + depth / 2 + 5, Kit.DEEP)
+			for k in 3:
+				g.box(x0 + 3 + 3 * k, FLOOR, z1 - 3, x0 + 5 + 3 * k, FLOOR + 2, z1 - 1, Kit.CLOTH_W)
+		5:
+			# a fullery: vats of dye and water, cloth on lines
+			for k in 6:
+				var vx := x0 + 3 + (k % 3) * 7
+				var vz := z0 + 2 + (k / 3) * 6
+				g.box(vx, FLOOR, vz, vx + 5, FLOOR + 2, vz + 5, Kit.TRIM)
+				g.box(vx + 1, FLOOR, vz + 1, vx + 4, FLOOR + 2, vz + 4, [Kit.WATER, Kit.CLOTH_R, Kit.CLOTH_Y, Kit.CLOTH_B, Kit.WATER, Kit.CLOTH_G][k])
+				if k % 2 == 0:
+					_person(g, vx + 1, FLOOR, vz + 2, seed + k)
+			g.box(x0 + 24, FLOOR + 8, z0 + 3, x0 + 25, FLOOR + 9, z1 - 3, Kit.WOOD_D)
+			for z in range(z0 + 4, z1 - 4, 3):
+				g.box(x0 + 24, FLOOR + 4, z, x0 + 25, FLOOR + 8, z + 2, [Kit.CLOTH_R, Kit.LINEN, Kit.CLOTH_Y, Kit.CLOTH_B][z % 4])
 		0:
 			_tree(g, x0 + 9, FLOOR, z0 + depth / 2 - 1, 5, seed)
 		1:
@@ -591,11 +696,13 @@ static func _options(seed: int, width: int) -> Dictionary:
 		"dentils": r.call(12, 2) == 0, "string": r.call(13, 10) < 8, "quoins": r.call(16, 10) < 3,
 		"steep": r.call(17, 10) < 3, "loggia": storeys >= 3 and r.call(18, 4) == 0,
 		"timber": r.call(19, 10) == 0, "lift": r.call(20, 5),
+		"hip": r.call(21, 7) == 0, "tower": storeys >= 2 and r.call(22, 7) == 0,
+		"wing": r.call(23, 4) == 0, "porch": shop == 0 and r.call(24, 7) == 0,
 	}
 
 ## A street-front lot with one or two row houses (variant `seed`), their
 ## fronts on the lot's south edge, yards behind.
-static func house_lot(seed: int, via := false) -> ArrayMesh:
+static func house_lot(seed: int, via := false, low := false) -> ArrayMesh:
 	var g := _grid(1, 1, 72)
 	var m := MARGIN
 	var depth := 24 + 2 * (seed % 3)
@@ -604,20 +711,28 @@ static func house_lot(seed: int, via := false) -> ArrayMesh:
 	_paving(g, m, z0, m + LOT, z1, seed)
 	_yard(g, m, m, m + LOT, z0 - 1, seed)
 	if seed % 4 < 2:
-		_house(g, m, z0, m + LOT, z1, _street_front(_options(seed, LOT), via))
+		_house(g, m, z0, m + LOT, z1, _street_front(_options(seed, LOT), via, low))
 	else:
 		var a := 16 + 4 * (seed % 3)
-		_house(g, m, z0, m + a, z1, _street_front(_options(seed * 7 + 1, a), via))
-		_house(g, m + a, z0, m + LOT, z1, _street_front(_options(seed * 7 + 2, LOT - a), via))
+		# now and then a passage four voxels wide between the two houses
+		var gap := 2 if seed % 5 == 0 else 0
+		_house(g, m, z0, m + a - gap, z1, _street_front(_options(seed * 7 + 1, a), via, low))
+		_house(g, m + a + gap, z0, m + LOT, z1, _street_front(_options(seed * 7 + 2, LOT - a), via, low))
 	return _done(g)
 
 ## On the main street the porticoes shade the fronts: no awnings, no
-## balconies, taller houses.
-static func _street_front(o: Dictionary, via: bool) -> Dictionary:
+## balconies, taller houses. Houses facing north (`low`) keep to two
+## storeys, so the street before them stays in view of the camera.
+static func _street_front(o: Dictionary, via: bool, low := false) -> Dictionary:
 	if via:
 		o["awning"] = []
 		o["balcony"] = false
 		o["storeys"] = maxi(o["storeys"], 3)
+	if low:
+		o["storeys"] = mini(o["storeys"], 2)
+		o["loggia"] = false
+		o["lift"] = 0
+		o["tower"] = false
 	return o
 
 # --- plants and people ----------------------------------------------------
@@ -626,6 +741,10 @@ static func _street_front(o: Dictionary, via: bool) -> Dictionary:
 ## cubes in three greens, chunky like Urbek's trees. `r` is the core's half
 ## width in voxels (crown about 4r across).
 static func _tree(g: Kit.Grid, x: int, y: int, z: int, r: int, seed: int) -> void:
+	for dz in range(-r - 1, r + 3):
+		for dx in range(-r - 1, r + 3):
+			g.swap(x + dx, y - 1, z + dz, x + dx + 1, y, z + dz + 1, Kit.GRASS, Kit.GRASS_D)
+			g.swap(x + dx, y - 1, z + dz, x + dx + 1, y, z + dz + 1, Kit.GRASS_L, Kit.GRASS)
 	var trunk := r + 4
 	g.box(x, y, z, x + 2, y + trunk + r, z + 2, Kit.TRUNK)
 	var c := Vector3i(x + 1, y + trunk + r, z + 1)
@@ -1179,10 +1298,11 @@ static func _donkey(g: Kit.Grid, x: int, y: int, z: int, seed: int) -> void:
 ## A back wall with shop doors, a walkway, a lean-to roof that stops three
 ## voxels short of the column line, so a marble beam on columns three
 ## voxels square, every eight, shows along the square. `side` names where
-## the back wall is ("w", "e" or "s"); `gap` leaves [gap.x, gap.y) open.
+## the back wall is ("w", "e", "s" or "n"); `gap` leaves [gap.x, gap.y) open.
 static func _stoa(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, side: String, seed: int, gap := Vector2i(-1, -1)) -> void:
-	var along := z1 - z0 if side != "s" else x1 - x0
-	var depth := x1 - x0 if side != "s" else z1 - z0
+	var across_z := side == "s" or side == "n"
+	var along := x1 - x0 if across_z else z1 - z0
+	var depth := z1 - z0 if across_z else x1 - x0
 	for u in along:
 		if u >= gap.x and u < gap.y:
 			continue
@@ -1192,6 +1312,8 @@ static func _stoa(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, side: String,
 				p = Vector2i(x1 - 1 - v, z0 + u)
 			elif side == "s":
 				p = Vector2i(x0 + u, z1 - 1 - v)
+			elif side == "n":
+				p = Vector2i(x0 + u, z0 + v)
 			g.box(p.x, 0, p.y, p.x + 1, FLOOR, p.y + 1, Kit.BORDER)
 			var colline := v >= depth - 3
 			if v == 0:
@@ -1207,27 +1329,31 @@ static func _stoa(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, side: String,
 				g.put(p.x, FLOOR + 15, p.y, Kit.TRIM)
 			else:
 				var h := (depth - 4 - v) / 3
-				g.put(p.x, FLOOR + 16 + h, p.y, Kit.EAVE if v == depth - 4 else _field(p.x, p.y, h + 1, TILES, seed, "x" if side == "s" else "z"))
+				g.put(p.x, FLOOR + 16 + h, p.y, Kit.EAVE if v == depth - 4 else _field(p.x, p.y, h + 1, TILES, seed, "x" if across_z else "z"))
 				if v == 0:
 					g.box(p.x, FLOOR + 18, p.y, p.x + 1, FLOOR + 16 + h, p.y + 1, Kit.CREAM)
 
-## A statue on a pedestal 3 x 3: legs, shoulders three wide, a head 2 x 2.
+## A draped statue on a plinth 4 x 3: the robe flares to four at the hem,
+## the body as wide as the shoulders, arms down, a head on top.
 static func _figure(g: Kit.Grid, x: int, y: int, z: int, c: int) -> void:
-	g.box(x, y, z, x + 3, y + 2, z + 3, Kit.STONE)
-	g.box(x, y + 2, z, x + 3, y + 3, z + 3, Kit.TRIM)
-	g.box(x + 1, y + 3, z + 1, x + 2, y + 6, z + 2, c)
-	g.box(x, y + 6, z + 1, x + 3, y + 8, z + 2, c)
-	g.box(x + 1, y + 6, z, x + 2, y + 8, z + 3, c)
-	g.box(x + 1, y + 8, z + 1, x + 2, y + 10, z + 2, c)
+	g.box(x, y, z, x + 4, y + 2, z + 3, Kit.STONE)
+	g.box(x, y + 1, z, x + 4, y + 2, z + 3, Kit.TRIM)
+	g.box(x, y + 2, z, x + 4, y + 4, z + 2, c)
+	g.box(x, y + 4, z, x + 3, y + 8, z + 2, c)
+	g.box(x + 1, y + 8, z, x + 3, y + 10, z + 2, c)
 
-## An honorific column: a base, a shaft 28 high, a bronze figure on top.
+## An honorific column: a base 6 x 6, a fluted shaft 4 x 4 and 28 high, a
+## capital 5 x 5, a bronze figure 3 x 3 x 7 on top.
 static func _honour(g: Kit.Grid, x: int, y: int, z: int) -> void:
-	g.box(x - 1, y, z - 1, x + 4, y + 4, z + 4, Kit.STONE)
-	g.box(x - 1, y + 4, z - 1, x + 4, y + 5, z + 4, Kit.TRIM)
-	g.box(x, y + 5, z, x + 3, y + 30, z + 3, Kit.MARBLE)
-	g.box(x - 1, y + 30, z - 1, x + 4, y + 31, z + 4, Kit.TRIM)
-	g.box(x + 1, y + 31, z + 1, x + 2, y + 35, z + 2, Kit.BRONZE)
-	g.box(x, y + 33, z + 1, x + 3, y + 34, z + 2, Kit.BRONZE)
+	g.box(x - 1, y, z - 1, x + 5, y + 3, z + 5, Kit.STONE)
+	g.box(x - 1, y + 2, z - 1, x + 5, y + 3, z + 5, Kit.TRIM)
+	g.box(x, y + 3, z, x + 4, y + 31, z + 4, Kit.MARBLE)
+	for k in 4:
+		g.box(x + k, y + 4, z + 3, x + k + 1, y + 30, z + 4, Kit.MARBLE_W if k % 2 == 1 else Kit.MARBLE)
+	g.box(x, y + 31, z, x + 5, y + 32, z + 5, Kit.TRIM)
+	g.box(x + 1, y + 32, z + 1, x + 4, y + 35, z + 4, Kit.BRONZE)
+	g.box(x + 1, y + 35, z + 1, x + 4, y + 37, z + 3, Kit.BRONZE)
+	g.box(x + 2, y + 37, z + 1, x + 3, y + 39, z + 3, Kit.BRONZE)
 
 ## A triumphal arch across z: piers, a round-headed opening, an attic with
 ## an inscription, a bronze chariot on top. x0 is its west edge.
@@ -1294,8 +1420,11 @@ static func forum(seed: int) -> ArrayMesh:
 	for z in range(m + 104, m + n - 24, 16):
 		for x: int in [m + d + 6, m + n - d - 9]:
 			_figure(g, x, FLOOR, z, Kit.STATUE if (z / 16) % 2 == 0 else Kit.BRONZE)
-			g.box(x, FLOOR, z + 7, x + 3, FLOOR + 2, z + 10, Kit.POT)
-			g.box(x - 1, FLOOR + 2, z + 6, x + 4, FLOOR + 5, z + 11, Kit.LEAF)
+			g.box(x, FLOOR, z + 7, x + 4, FLOOR + 3, z + 11, Kit.STONE)
+			g.box(x, FLOOR + 2, z + 7, x + 4, FLOOR + 3, z + 11, Kit.TRIM)
+			g.box(x - 2, FLOOR + 3, z + 5, x + 6, FLOOR + 6, z + 13, Kit.LEAF)
+			g.box(x - 1, FLOOR + 6, z + 6, x + 4, FLOOR + 8, z + 11, Kit.LEAF_L)
+			g.box(x + 2, FLOOR + 4, z + 9, x + 7, FLOOR + 7, z + 13, Kit.LEAF_D)
 	for z in range(m + 112, m + n - 30, 32):
 		_bench(g, m + d + 12, FLOOR, z)
 		_bench(g, m + n - d - 18, FLOOR, z)
@@ -1310,20 +1439,21 @@ static func forum(seed: int) -> ArrayMesh:
 		_person(g, px, FLOOR, m + 96 + Kit.rnd(i, 5, 0, seed) % (n - 114), seed + i)
 	return _done(g)
 
-## Baths (thermae) on 3 x 2 lots: a brick block with plastered bands and
-## arched windows; side halls under barrel vaults running to the front,
-## their round ends with big half-round windows; a ribbed lead dome on a
-## drum over the hot bath; in front an exercise yard of sand inside a
-## colonnade with the open-air pool, bathers and trees.
+## Baths (thermae) on 3 x 2 lots: on the east a brick block with
+## plastered bands and arched windows, two halls under barrel vaults
+## running to the front, their round ends with big half-round windows, a
+## ribbed lead dome on a drum over the hot bath, a pedimented porch; on the
+## west the exercise yard of sand with a colonnade on two sides and the
+## open-air pool in the middle, bathers, trees at the edges.
 static func baths(seed: int) -> ArrayMesh:
 	var g := _grid(3, 2, 110)
 	var m := MARGIN
 	var y := FLOOR
 	_paving(g, m, m, m + 120, m + 80, seed)
-	var x0 := m + 4
-	var x1 := m + 116
+	var x0 := m + 46
+	var x1 := m + 118
 	var z0 := m + 4
-	var z1 := m + 44
+	var z1 := m + 52
 	var zf := z1 - 1
 	var h := 26
 	g.box(x0, y, z0, x1, y + h, z1, Kit.BRICK)
@@ -1331,37 +1461,42 @@ static func baths(seed: int) -> ArrayMesh:
 		for yy in range(y, y + h):
 			if Kit.chance(xx / 3, yy, 1, seed, 9):
 				g.put(xx, yy, zf, Kit.BRICK_W)
+				if xx - x0 + z0 < z1:
+					g.put(x0, yy, xx - x0 + z0, Kit.BRICK_W)
 	g.box(x0, y, zf, x1, y + 2, zf + 2, Kit.STONE)
 	g.box(x0, y + 12, zf, x1, y + 13, zf + 2, Kit.TRIM)
 	g.box(x0, y + h - 2, zf, x1, y + h, zf + 2, Kit.TRIM)
-	for wx in range(x0 + 4, x1 - 10, 12):
-		if wx > m + 50 and wx < m + 66:
+	var c := Vector2i((x0 + x1) / 2, (z0 + z1) / 2)
+	for wx in range(x0 + 4, x1 - 8, 12):
+		if absi(wx + 3 - c.x) < 10:
 			continue
 		for wy: int in [y + 3, y + 14]:
 			_zb(g, wx, wy, wx + 6, wy + 6, zf, -1, 1, Kit.EMPTY, 1)
 			_zb(g, wx + 1, wy + 6, wx + 5, wy + 8, zf, -1, 1, Kit.EMPTY, 1)
 			_zb(g, wx, wy, wx + 6, wy + 8, zf, -2, -1, Kit.GLASS, 1)
 			g.box(wx - 1, wy - 1, zf, wx + 7, wy, zf + 2, Kit.TRIM)
-	# vaults over the side halls, running north-south, half-round ends
-	for hall: Vector2i in [Vector2i(x0 + 2, m + 42), Vector2i(m + 78, x1 - 2)]:
+	# arched windows on the west wall over the yard
+	for wz in range(z0 + 6, z1 - 8, 12):
+		for wy: int in [y + 3, y + 14]:
+			g.box(x0, wy, wz, x0 + 1, wy + 8, wz + 6, Kit.EMPTY)
+			g.box(x0 + 1, wy, wz, x0 + 2, wy + 8, wz + 6, Kit.GLASS)
+			g.box(x0 - 1, wy - 1, wz - 1, x0 + 1, wy, wz + 7, Kit.TRIM)
+	for hall: Vector2i in [Vector2i(x0 + 2, x0 + 22), Vector2i(x1 - 22, x1 - 2)]:
 		var xc := (hall.x + hall.y - 1) / 2.0
 		var half := (hall.y - hall.x) / 2.0
 		for x in range(hall.x, hall.y):
 			var t := (x - xc) / half
-			var vh := roundi(14.0 * sqrt(maxf(0.0, 1.0 - t * t)))
+			var vh := roundi(12.0 * sqrt(maxf(0.0, 1.0 - t * t)))
 			for z in range(z0, z1 + 1):
 				g.box(x, y + h, z, x + 1, y + h + vh, z + 1, Kit.BRICK)
 				g.put(x, y + h + vh, z, Kit.EAVE if vh == 0 else _field(x, z, vh, TILES, seed, "z"))
-		# the half-round window in the front end
-		var r := 10
+		var r := 9
 		for x in range(hall.x, hall.y):
 			for yy in range(y + h, y + h + r):
-				if Vector2(x - xc, yy - (y + h)).length() < r:
-					var mull := absi(roundi(x - xc)) == 3
-					g.put(x, yy, z1, Kit.TRIM if mull or Vector2(x - xc, yy - (y + h)).length() > r - 1.2 else Kit.GLASS)
-	# drum and ribbed dome over the middle
-	var c := Vector2i(m + 60, (z0 + z1) / 2)
-	var rr := 18
+				var dd := Vector2(x - xc, yy - (y + h)).length()
+				if dd < r:
+					g.put(x, yy, z1, Kit.TRIM if absi(roundi(x - xc)) == 3 or dd > r - 1.2 else Kit.GLASS)
+	var rr := 16
 	var drum := y + h + 10
 	for z in range(c.y - rr - 1, c.y + rr + 2):
 		for x in range(c.x - rr - 1, c.x + rr + 2):
@@ -1385,109 +1520,365 @@ static func baths(seed: int) -> ArrayMesh:
 		var pz := c.y + roundi(sin(a) * (rr + 0.3))
 		if pz >= c.y:
 			g.box(px - 1, y + h + 2, pz, px + 2, y + h + 8, pz + 1, Kit.GLASS)
-	# entrance: a pedimented porch in the middle of the front
 	var stairs := _temple(g, c.x, zf - 2, 9, zf + 6, 4, 2, 18, false, seed)
 	g.box(c.x - 3, y + 2, zf - 1, c.x + 3, y + 14, zf + 1, Kit.DOOR_D)
-	# exercise yard of sand with a colonnade round it and the open pool
-	var ya := maxi(stairs + 1, m + 50)
-	for z in range(ya, m + 80):
-		for x in range(m, m + 120):
+	# the exercise yard and its pool, west of the halls
+	var yx0 := m + 2
+	var yx1 := x0 - 2
+	for z in range(m + 2, m + 78):
+		for x in range(yx0, yx1):
 			g.box(x, 0, z, x + 1, FLOOR, z + 1, Kit.YARD)
-	_stoa(g, m, ya, m + 8, m + 80, "w", seed + 3)
-	_stoa(g, m + 112, ya, m + 120, m + 80, "e", seed + 4)
-	_stoa(g, m + 8, m + 72, m + 112, m + 80, "s", seed + 5, Vector2i(44, 60))
-	g.box(m + 38, 0, ya + 3, m + 82, FLOOR + 1, ya + 19, Kit.MARBLE)
-	g.box(m + 40, 0, ya + 5, m + 80, FLOOR + 1, ya + 17, Kit.EMPTY)
-	g.box(m + 40, 0, ya + 5, m + 80, 1, ya + 17, Kit.WATER)
-	for x in range(m + 42, m + 79, 6):
-		if Kit.chance(x, 1, 0, seed, 50):
-			g.box(x, 1, ya + 6 + Kit.rnd(x, 2, 0, seed) % 9, x + 2, FLOOR + 1, ya + 7 + Kit.rnd(x, 2, 0, seed) % 9, Kit.SKIN)
-	for p: Vector2i in [Vector2i(m + 14, ya + 4), Vector2i(m + 102, ya + 4)]:
+	_stoa(g, yx0, m + 2, yx0 + 8, m + 78, "w", seed + 3)
+	_stoa(g, yx0 + 8, m + 2, yx1, m + 10, "n", seed + 4)
+	var px0 := yx0 + 14
+	g.box(px0 - 2, 0, m + 22, px0 + 18, FLOOR + 1, m + 66, Kit.MARBLE)
+	g.box(px0, 0, m + 24, px0 + 16, FLOOR + 1, m + 64, Kit.EMPTY)
+	g.box(px0, 0, m + 24, px0 + 16, 1, m + 64, Kit.POOL)
+	for k in 7:
+		var bz := m + 27 + k * 5
+		var bxx := px0 + 2 + Kit.rnd(k, 1, 0, seed) % 12
+		g.box(bxx, 1, bz, bxx + 2, FLOOR + 1, bz + 1, Kit.SKIN)
+		g.put(bxx, FLOOR + 1, bz, Kit.HAIR)
+	for p: Vector2i in [Vector2i(yx0 + 10, m + 70), Vector2i(yx1 - 6, m + 70), Vector2i(yx1 - 6, m + 14)]:
 		_tree(g, p.x, FLOOR, p.y, 4, seed + p.x)
-	for i in 14:
-		_person(g, m + 12 + Kit.rnd(i, 7, 0, seed) % 96, FLOOR, ya + 2 + Kit.rnd(i, 8, 0, seed) % maxi(1, m + 70 - ya), seed + i)
+	for i in 12:
+		_person(g, yx0 + 10 + Kit.rnd(i, 7, 0, seed) % maxi(1, yx1 - yx0 - 12), FLOOR, m + 14 + Kit.rnd(i, 8, 0, seed) % 60, seed + i)
+	for i in 6:
+		_person(g, x0 + 4 + Kit.rnd(i, 9, 0, seed) % (x1 - x0 - 8), FLOOR, stairs + 2 + Kit.rnd(i, 10, 0, seed) % 8, seed + 20 + i)
 	return _done(g)
-
 
 # --- river ----------------------------------------------------------------
 
-const RIVER_DROP := 6   # river lots sit this many voxels below the town
+const RIVER_DROP := 6       # river models sit this many voxels below the town
+const RIVER_Z := 58.0       # metres: the river's centre line at x = 0
+const RIVER_A := 14.0       # half the southward swing of its bends, metres
+const RIVER_L := 240.0      # length of one bend, metres
+const QUAY_X := 72.0        # stone quays where |x| is less, banks beyond
+const BANK := 7.0           # metres of bank kept clear of houses
 
-## A river lot, set RIVER_DROP voxels below the town: water with darker
-## streaks, a stone quay on the bank side (`bank` "n" or "s", "" for none)
-## up to the street level with a parapet, mooring posts and steps down to
-## the water, people; now and then a boat with a sail.
-static func river(seed: int, bank := "n") -> ArrayMesh:
-	var g := _grid(1, 1, 20)
+## The river's centre line z and half width at x (metres): straight and
+## narrow at the bridge (x = 0), bending south and widening either side.
+static func river_at(x: float) -> Vector2:
+	var c := 1.0 - cos(TAU * x / RIVER_L)
+	return Vector2(RIVER_Z + RIVER_A * c, 7.0 + 1.5 * c)
+
+## Whether lot (lx, lz) belongs to the river (water, banks, quays).
+static func is_river_lot(lx: int, lz: int) -> bool:
+	for k in 5:
+		var x := (lx + k / 4.0) * 10.0
+		var r := river_at(x)
+		if lz * 10.0 < r.x + r.y + BANK and lz * 10.0 + 10.0 > r.x - r.y - BANK:
+			return true
+	return false
+
+## The river over lot columns [lx0, lx0 + lots) and rows [lz0, lz0 + rows),
+## RIVER_DROP voxels below the town: water with a darker band along the
+## edges and a few ripples; stone quays with parapets, steps and mooring
+## posts near the town centre, sloping banks of mud, reeds and grass with
+## trees beyond; the arched bridge of the main north-south street; on the
+## north quay warehouses, a treadwheel crane, stacks of amphorae; moored
+## boats. Fills only river lots, every column of them.
+static func river_strip(lx0: int, lots: int, lz0: int, rows: int) -> ArrayMesh:
+	var g := _grid(lots, rows, 40)
 	var m := MARGIN
 	var top := RIVER_DROP + FLOOR
-	for z in range(m, m + LOT):
-		for x in range(m, m + LOT):
-			var streak := Kit.rnd(x / 8 + (z % 2), z / 2, 0, seed) % 100 < 12
-			g.box(x, 0, z, x + 1, 2, z + 1, Kit.WATER_D if streak else Kit.WATER)
-	if bank != "":
-		var s := 1 if bank == "n" else -1
-		var q0 := m if bank == "n" else m + LOT - 8
-		var edge := q0 + 7 if bank == "n" else q0
-		g.box(m, 0, q0, m + LOT, top, q0 + 8, Kit.STONE)
-		for x in range(m, m + LOT):
-			for yy in range(0, top - 1):
-				if (x / 3 + yy / 2) % 5 == 0:
-					g.put(x, yy, edge, Kit.STONE_W)
-			for z in range(q0, q0 + 8):
-				g.put(x, top - 1, z, Kit.TRIM if z == edge else Kit.PAVE)
-			if x % 10 != 4 and (x < m + 13 or x > m + 18):
-				g.put(x, top, edge, Kit.TRIM)
-		for k in top - 2:
-			var z := edge + s * (1 + k)
-			g.box(m + 14, 0, mini(z, z), m + 18, top - 1 - k, z + 1, Kit.STEP)
-		for x in range(m + 4, m + LOT, 10):
-			g.box(x, top, edge, x + 1, top + 2, edge + 1, Kit.WOOD_D)
-		for k in 2:
-			_person(g, m + 4 + Kit.rnd(k, 1, 0, seed) % 30, top, q0 + 1 + Kit.rnd(k, 2, 0, seed) % 4, seed + k)
-	if seed % 3 == 1:
-		var bz := m + 14 + seed % 10
-		var bx := m + 4 + seed % 20
-		g.box(bx, 1, bz, bx + 12, 3, bz + 4, Kit.WOOD)
-		g.box(bx + 1, 3, bz, bx + 11, 4, bz + 1, Kit.WOOD_D)
-		g.box(bx + 1, 3, bz + 3, bx + 11, 4, bz + 4, Kit.WOOD_D)
-		g.box(bx + 3, 3, bz + 1, bx + 6, 5, bz + 3, Kit.AMPHORA)
-		g.box(bx + 7, 3, bz + 2, bx + 8, 14, bz + 3, Kit.WOOD_D)
-		g.box(bx + 5, 8, bz + 1, bx + 10, 13, bz + 2, Kit.SAIL)
-		_person(g, bx + 9, 3, bz + 1, seed)
+	for z in range(m, m + rows * LOT):
+		var gz := (lz0 * LOT + z - m + 0.5) * V
+		for x in range(m, m + lots * LOT):
+			var gx := (lx0 * LOT + x - m + 0.5) * V
+			if not is_river_lot(floori(gx / 10.0), floori(gz / 10.0)):
+				continue
+			var r := river_at(gx)
+			var e := absf(gz - r.x) - r.y
+			# quays on the town side near the centre; on the far bank a
+			# stone edge, then grass and trees
+			var quay := absf(gx) < QUAY_X and gz < r.x
+			if e < 0.0:
+				var c := Kit.WATER
+				if e > -0.5:
+					c = Kit.WATER_D
+				elif Kit.rnd((x + z % 3) / 3, z, 0, 31) % 100 < 3:
+					c = Kit.WATER_L
+				g.box(x, 0, z, x + 1, 2, z + 1, c)
+			elif quay:
+				g.box(x, 0, z, x + 1, top - 1, z + 1, Kit.STONE_W if (x / 3 + z) % 5 == 0 else Kit.STONE)
+				var edge := e < V
+				g.put(x, top - 1, z, Kit.TRIM if edge else (Kit.PAVE if (x / 4 + z / 4) % 3 else Kit.PAVE_D))
+				if edge and posmod(x, 12) != 5:
+					g.put(x, top, z, Kit.TRIM)
+			else:
+				# an earth bank: mud darkening to the waterline, reed clumps,
+				# stones, then grass up to the street level
+				var h := clampi(2 + floori(e / V / 2.0), 2, top)
+				if h >= top - 1:
+					_lawn(g, x, z, x + 1, z + 1, 0, top, x * 7 + z)
+				else:
+					g.box(x, 0, z, x + 1, h, z + 1, Kit.EARTH)
+					g.put(x, h - 1, z, Kit.MUD_D if h <= 3 else Kit.MUD)
+					if h <= 4 and Kit.rnd(x / 2, z / 2, 9, 7) % 100 < 3:
+						g.box(x - x % 2, h, z - z % 2, x - x % 2 + 2, h + 1, z - z % 2 + 2, Kit.MILL)
+				var cell := x / 14
+				var clump := Kit.rnd(cell, z / 40, 0, 8) % 100 < 55 and x % 14 < 6 + Kit.rnd(cell, 1, 0, 8) % 7
+				if clump and e < 1.4 and Kit.rnd(x, z, 0, 6) % 100 < 55:
+					g.box(x, h, z, x + 1, h + 3 + Kit.rnd(x, z, 1, 6) % 3, z + 1, Kit.REED if (x + z) % 3 else Kit.REED_D)
+				elif e > 3.0 and e < 6.0 and x % 11 == 0 and z % 11 == 0 and Kit.rnd(x, z, 2, 7) % 100 < 40:
+					_tree(g, x, h, z, 4, x * 3 + z)
+	# the bridge: lot column 0, a hump of four voxels, five arches
+	var bx0 := m - lx0 * LOT + 6
+	if bx0 >= m and bx0 + 28 <= m + lots * LOT:
+		var r0 := river_at(5.0)
+		var z0 := m + roundi(((r0.x - r0.y - 3.0) / V)) - lz0 * LOT
+		var z1 := m + roundi(((r0.x + r0.y + 3.0) / V)) - lz0 * LOT
+		var span := z1 - z0
+		for z in range(z0, z1):
+			var t := float(z - z0) / span
+			var deck := top + roundi(8.0 * sin(PI * t))
+			var u := posmod(z - z0, 26)
+			var lo := 0
+			if u >= 6 and z - z0 > 4 and z1 - z > 4:
+				var a := (u - 15.5) / 10.0
+				lo = mini(2 + roundi(11.0 * sqrt(maxf(0.0, 1.0 - a * a))), deck - 3)
+			for x in range(bx0, bx0 + 28):
+				g.box(x, lo, z, x + 1, deck, z + 1, Kit.STONE_W if lo > 0 and (x - bx0) % 9 == 0 else Kit.STONE)
+				g.put(x, deck - 1, z, Kit.VIA_PD if (z / 4 + x / 6) % 3 == 0 else Kit.VIA_P)
+			if lo > 0:
+				g.box(bx0, lo, z, bx0 + 28, lo + 1, z + 1, Kit.STONE_W)
+			elif u == 0:
+				# pier with a cutwater upstream (west)
+				for k in 4:
+					g.box(bx0 - 1 - k, 0, z + k / 2, bx0 - k, deck - 3, z + 6 - k / 2, Kit.STONE)
+			g.box(bx0, deck, z, bx0 + 2, deck + 3, z + 1, Kit.TRIM)
+			g.box(bx0 + 26, deck, z, bx0 + 28, deck + 3, z + 1, Kit.TRIM)
+		for k in 3:
+			_person(g, bx0 + 5 + Kit.rnd(k, 1, 0, 3) % 18, top + 3, z0 + 10 + Kit.rnd(k, 2, 0, 3) % (span - 20), k)
+	# trade on the north quay: warehouses, a crane, amphorae, boats
+	for w: Vector2i in [Vector2i(-62, -36), Vector2i(-28, -12), Vector2i(16, 40), Vector2i(46, 66)]:
+		var wx0 := m + roundi(w.x / V) - lx0 * LOT
+		var wx1 := m + roundi(w.y / V) - lx0 * LOT
+		if wx0 < m or wx1 > m + lots * LOT:
+			continue
+		var r := river_at((w.x + w.y) * 0.5)
+		var front := m + roundi((r.x - r.y - 2.0) / V) - lz0 * LOT
+		_warehouse(g, wx0, wx1, front - 14, front, top, w.x + w.y)
+		for k in range(wx0 + 4, wx1 - 6, 14):
+			_amphorae(g, k, top, front + 2)
+		var bz := m + roundi((r.x - r.y + 1.2) / V) - lz0 * LOT
+		_boat(g, wx0 + 6, 2, bz, w.x)
+	var cxv := m + roundi(-4.0 / V) - lx0 * LOT
+	if cxv > m + 20 and cxv < m + lots * LOT - 20:
+		var r := river_at(-4.0)
+		_crane(g, cxv - 20, top, m + roundi((r.x - r.y - 1.0) / V) - lz0 * LOT)
+	return Kit.mesh(g, Vector3(-MARGIN * V, -RIVER_DROP * V, -MARGIN * V))
+
+## A warehouse (horreum) along x, front on z1 - 1 facing the river: two
+## storeys of brick, an arcade of shop doors below, small windows above,
+## a tiled roof.
+static func _warehouse(g: Kit.Grid, x0: int, x1: int, z0: int, z1: int, y: int, seed: int) -> void:
+	var top := y + 24
+	g.box(x0, y, z0, x1, top, z1, Kit.BRICK)
+	for x in range(x0, x1):
+		for yy in range(y, top):
+			if Kit.chance(x / 3, yy, 2, seed, 10):
+				g.put(x, yy, z1 - 1, Kit.BRICK_W)
+	for x in range(x0 + 3, x1 - 7, 8):
+		_zb(g, x, y, x + 5, y + 8, z1 - 1, -2, 1, Kit.EMPTY, 1)
+		_zb(g, x + 1, y + 8, x + 4, y + 9, z1 - 1, -2, 1, Kit.EMPTY, 1)
+		_zb(g, x, y, x + 5, y + 9, z1 - 1, -3, -2, Kit.DARK, 1)
+		g.box(x - 1, y + 9, z1 - 1, x + 6, y + 10, z1, Kit.TRIM)
+		_zb(g, x + 1, y + 14, x + 4, y + 18, z1 - 1, -1, 1, Kit.EMPTY, 1)
+		_zb(g, x + 1, y + 14, x + 4, y + 18, z1 - 1, -2, -1, Kit.GLASS, 1)
+	g.box(x0, y + 11, z1 - 1, x1, y + 12, z1 + 1, Kit.TRIM)
+	g.box(x0, top - 2, z1 - 1, x1, top - 1, z1 + 1, Kit.TRIM)
+	_gable(g, x0, z0, x1, z1, top, TILES_OLD if seed % 2 else TILES, Kit.BRICK, seed)
+
+## Goods on the quay: jars of 2 x 2 x 3 with a neck and a light rim in
+## two staggered rows with gaps, a crate, sacks.
+static func _amphorae(g: Kit.Grid, x: int, y: int, z: int) -> void:
+	for row in 2:
+		for k in 3 - row:
+			var ax := x + row * 1 + 3 * k + row
+			var ay := y + row * 3
+			g.box(ax, ay, z + row, ax + 2, ay + 3, z + row + 2, Kit.AMPHORA)
+			g.put(ax, ay + 3, z + row, Kit.AMPHORA)
+			g.put(ax, ay + 4, z + row, Kit.TRIM)
+	g.box(x + 10, y, z, x + 13, y + 3, z + 3, Kit.WOOD)
+	g.box(x + 10, y + 3, z, x + 13, y + 4, z + 3, Kit.WOOD_D)
+	g.box(x + 10, y, z + 4, x + 12, y + 2, z + 6, Kit.SACK)
+	g.box(x + 12, y, z + 4, x + 14, y + 2, z + 6, Kit.SACK)
+	g.box(x + 11, y + 2, z + 4, x + 13, y + 3, z + 6, Kit.SACK)
+
+## A river boat along x with a load of amphorae, a mast and a furled sail.
+static func _boat(g: Kit.Grid, x: int, y: int, z: int, seed: int) -> void:
+	g.box(x, y, z, x + 16, y + 2, z + 5, Kit.WOOD)
+	g.box(x + 1, y + 2, z, x + 15, y + 3, z + 1, Kit.WOOD_D)
+	g.box(x + 1, y + 2, z + 4, x + 15, y + 3, z + 5, Kit.WOOD_D)
+	g.box(x + 16, y + 1, z + 1, x + 18, y + 3, z + 4, Kit.WOOD)
+	for k in 4:
+		g.box(x + 2 + 3 * k, y + 2, z + 1, x + 4 + 3 * k, y + 5, z + 3, Kit.AMPHORA)
+	g.box(x + 6, y + 2, z + 3, x + 7, y + 14, z + 4, Kit.WOOD_D)
+	g.box(x + 3, y + 12, z + 3, x + 11, y + 13, z + 4, Kit.SAIL)
+	_person(g, x + 13, y + 2, z + 2, seed)
+
+## A treadwheel crane on the quay: a wheel 12 voxels across between two
+## frames, a jib leaning out over the water, a rope and a load.
+static func _crane(g: Kit.Grid, x: int, y: int, z: int) -> void:
+	for t in 48:
+		var a := TAU * t / 48.0
+		var wx := x + roundi(6.0 * cos(a))
+		var wy := y + 7 + roundi(6.0 * sin(a))
+		g.box(wx, wy, z - 6, wx + 1, wy + 1, z - 4, Kit.WOOD_D)
+	for k in 4:
+		var a := TAU * k / 8.0
+		for s in range(-5, 6):
+			g.put(x + roundi(s * cos(a)), y + 7 + roundi(s * sin(a)), z - 5, Kit.WOOD)
+	g.box(x - 1, y, z - 7, x + 1, y + 14, z - 6, Kit.WOOD_D)
+	g.box(x - 1, y, z - 4, x + 1, y + 14, z - 3, Kit.WOOD_D)
+	for k in 16:
+		g.box(x, y + 12 + k / 2, z - 5 + k, x + 1, y + 13 + k / 2, z - 4 + k, Kit.WOOD_D)
+	g.box(x, y + 4, z + 10, x + 1, y + 20, z + 11, Kit.DEEP)
+	g.box(x - 1, y + 2, z + 9, x + 2, y + 5, z + 12, Kit.AMPHORA)
+
+
+# --- necropolis -----------------------------------------------------------
+
+## A lot of tombs along the road out of town: grass, a path, two or three
+## monuments of different kinds (a drum on a square base with a planted
+## mound, a temple tomb, an altar tomb, a pyramid), cypresses between them.
+static func tombs(seed: int) -> ArrayMesh:
+	var g := _grid(1, 1, 48)
+	var m := MARGIN
+	_grass(g, m, m, m + LOT, m + LOT, seed)
+	g.box(m + 17, 0, m, m + 23, FLOOR, m + LOT, Kit.EARTH)
+	var slots: Array[Vector2i] = [Vector2i(m + 3, m + 3), Vector2i(m + 26, m + 3), Vector2i(m + 3, m + 24), Vector2i(m + 26, m + 24)]
+	for k in slots.size():
+		var p := slots[k]
+		match (seed + k) % 5:
+			0:
+				g.box(p.x, FLOOR, p.y, p.x + 12, FLOOR + 4, p.y + 12, Kit.STONE)
+				g.box(p.x, FLOOR + 3, p.y, p.x + 12, FLOOR + 4, p.y + 12, Kit.TRIM)
+				_disc(g, p.x + 6, FLOOR + 4, p.y + 6, 5, 9, Kit.TRAV)
+				_disc(g, p.x + 6, FLOOR + 12, p.y + 6, 5, 1, Kit.TRIM)
+				_disc(g, p.x + 6, FLOOR + 13, p.y + 6, 4, 2, Kit.GRASS)
+				_disc(g, p.x + 6, FLOOR + 15, p.y + 6, 2, 2, Kit.GRASS)
+			1:
+				g.box(p.x + 1, FLOOR, p.y, p.x + 11, FLOOR + 4, p.y + 12, Kit.STONE)
+				g.box(p.x + 2, FLOOR + 4, p.y + 1, p.x + 10, FLOOR + 12, p.y + 8, Kit.MARBLE)
+				for x: int in [p.x + 2, p.x + 8]:
+					g.box(x, FLOOR + 4, p.y + 9, x + 2, FLOOR + 12, p.y + 11, Kit.MARBLE)
+				g.box(p.x + 1, FLOOR + 12, p.y, p.x + 11, FLOOR + 13, p.y + 12, Kit.TRIM)
+				_roof(g, Rect2i(p.x + 1, p.y, 10, 12), [], [Rect2i(p.x + 1, p.y, 10, 12)], FLOOR + 13, "z", TILES, Kit.MARBLE, seed + k)
+			2:
+				g.box(p.x + 2, FLOOR, p.y + 2, p.x + 10, FLOOR + 3, p.y + 10, Kit.STONE)
+				g.box(p.x + 3, FLOOR + 3, p.y + 3, p.x + 9, FLOOR + 10, p.y + 9, Kit.MARBLE)
+				g.box(p.x + 2, FLOOR + 10, p.y + 2, p.x + 10, FLOOR + 11, p.y + 10, Kit.TRIM)
+				for c: Vector2i in [Vector2i(p.x + 2, p.y + 2), Vector2i(p.x + 9, p.y + 2), Vector2i(p.x + 2, p.y + 9), Vector2i(p.x + 9, p.y + 9)]:
+					g.box(c.x, FLOOR + 11, c.y, c.x + 1, FLOOR + 13, c.y + 1, Kit.TRIM)
+				g.box(p.x + 4, FLOOR + 5, p.y + 9, p.x + 8, FLOOR + 8, p.y + 10, Kit.POMPEII)
+			3:
+				for layer in 7:
+					g.box(p.x + layer, FLOOR + 2 * layer, p.y + layer, p.x + 12 - layer, FLOOR + 2 * layer + 2, p.y + 12 - layer, Kit.MARBLE if layer % 2 == 0 else Kit.MARBLE_W)
+			_:
+				_cypress(g, p.x + 3, FLOOR, p.y + 3, 22 + seed % 6, seed + k)
+				_cypress(g, p.x + 8, FLOOR, p.y + 6, 18, seed + k + 1)
+	_person(g, m + 19, FLOOR, m + 10 + seed % 20, seed)
 	return _done(g)
 
-## A stone bridge across a river lot, north-south: a deck at street level
-## with parapets, on piers with low round arches over the water.
-static func bridge(seed: int) -> ArrayMesh:
-	var g := _grid(1, 1, 20)
+# --- country --------------------------------------------------------------
+
+## A market garden: beds of soil with rows of crops two voxels apart, a
+## worn path, a low stone wall, a hut, a gardener.
+static func farm(seed: int) -> ArrayMesh:
+	var g := _grid(1, 1, 24)
 	var m := MARGIN
-	var top := RIVER_DROP + FLOOR
-	for z in range(m, m + LOT):
-		for x in range(m, m + LOT):
-			g.box(x, 0, z, x + 1, 2, z + 1, Kit.WATER)
-	var x0 := m + 6
-	var x1 := m + 34
-	for z in range(m, m + LOT):
-		var u := posmod(z - m - 3, 20)
-		var lo := 0
-		if u < 14:
-			var t := (u - 6.5) / 7.0
-			lo = 2 + roundi(5.0 * sqrt(maxf(0.0, 1.0 - t * t)))
-		for x in range(x0, x1):
-			g.box(x, lo, z, x + 1, top, z + 1, Kit.STONE if lo == 0 or (x - x0) % 7 else Kit.STONE_W)
-		if u < 14:
-			g.box(x0, lo, z, x1, lo + 1, z + 1, Kit.STONE_W)
-	_via_paving(g, x0 + 2, m, x1 - 2, m + LOT, top, seed)
-	g.box(x0 + 2, 0, m, x1 - 2, 2, m + LOT, Kit.EMPTY)
-	for z in range(m, m + LOT):
-		var u := posmod(z - m - 3, 20)
-		var lo := 0 if u >= 14 else 2 + roundi(5.0 * sqrt(maxf(0.0, 1.0 - ((u - 6.5) / 7.0) ** 2)))
-		g.box(x0 + 2, 0, z, x1 - 2, lo, z + 1, Kit.EMPTY)
-		g.box(x0 + 2, 0, z, x1 - 2, mini(lo, 2), z + 1, Kit.WATER)
-		g.box(x0 + 2, lo, z, x1 - 2, top - 1, z + 1, Kit.STONE)
-	g.box(x0, top, m, x0 + 2, top + 3, m + LOT, Kit.TRIM)
-	g.box(x1 - 2, top, m, x1, top + 3, m + LOT, Kit.TRIM)
-	for k in 2:
-		_person(g, x0 + 4 + Kit.rnd(k, 1, 0, seed) % 20, top, m + 4 + Kit.rnd(k, 2, 0, seed) % 30, seed + k)
+	_grass(g, m, m, m + LOT, m + LOT, seed)
+	var crops := [Kit.LEAF_L, Kit.FRUIT_R, Kit.LEAF, Kit.FRUIT_Y, Kit.VINE, Kit.LEAF_D]
+	for bed in 2:
+		var bz0 := m + 3 + bed * 18
+		var crop: int = crops[(seed + bed) % crops.size()]
+		for z in range(bz0, bz0 + 15):
+			for x in range(m + 3, m + LOT - 3):
+				g.box(x, 0, z, x + 1, FLOOR, z + 1, Kit.SOIL)
+				if (z - bz0) % 2 == 0 and x % 3 != 0:
+					g.put(x, FLOOR, z, crop if (x + z) % 5 else Kit.LEAF)
+	g.box(m + 3, 0, m + 18, m + LOT - 3, FLOOR, m + 21, Kit.PATH)
+	for side: Array in [[m, m, m + LOT, m + 1], [m, m, m + 1, m + LOT], [m + LOT - 1, m, m + LOT, m + LOT]]:
+		g.box(side[0], FLOOR, side[1], side[2], FLOOR + 2, side[3], Kit.STONE)
+	if seed % 2 == 0:
+		g.box(m + 30, FLOOR, m + 30, m + 37, FLOOR + 6, m + 37, Kit.WOOD)
+		g.box(m + 32, FLOOR, m + 37, m + 34, FLOOR + 5, m + 38, Kit.WOOD_D)
+		for z in range(m + 29, m + 39):
+			g.box(m + 29, FLOOR + 6 + (38 - z) / 4, z, m + 38, FLOOR + 7 + (38 - z) / 4, z + 1, Kit.TILE4)
+	_person(g, m + 10 + seed % 20, FLOOR, m + 19, seed)
+	return _done(g)
+
+## A vineyard: rows of posts four voxels apart, vines on them, grass
+## between, a worn path.
+static func vineyard(seed: int) -> ArrayMesh:
+	var g := _grid(1, 1, 24)
+	var m := MARGIN
+	_grass(g, m, m, m + LOT, m + LOT, seed)
+	for z in range(m + 2, m + LOT - 2, 4):
+		for x in range(m + 2, m + LOT - 2):
+			g.box(x, 0, z, x + 1, FLOOR, z + 1, Kit.SOIL)
+			if x % 3 == 0:
+				g.box(x, FLOOR, z, x + 1, FLOOR + 4, z + 1, Kit.WOOD_D)
+			g.box(x, FLOOR + 3, z, x + 1, FLOOR + 5, z + 1, Kit.VINE if (x + z) % 4 else Kit.LEAF_L)
+			if (x + z) % 7 == 0:
+				g.put(x, FLOOR + 2, z, Kit.SHUTTER_U)
+	g.box(m + 18, 0, m, m + 21, FLOOR, m + LOT, Kit.PATH)
+	_person(g, m + 19, FLOOR, m + 6 + seed % 26, seed)
+	return _done(g)
+
+## A pasture with sheep, a shepherd and a wooden fence.
+static func pasture(seed: int) -> ArrayMesh:
+	var g := _grid(1, 1, 24)
+	var m := MARGIN
+	_grass(g, m, m, m + LOT, m + LOT, seed)
+	for x in range(m, m + LOT):
+		if x % 4 == 0:
+			g.box(x, FLOOR, m, x + 1, FLOOR + 3, m + 1, Kit.WOOD_D)
+	g.box(m, FLOOR + 2, m, m + LOT, FLOOR + 3, m + 1, Kit.WOOD)
+	for k in 5 + seed % 3:
+		var sx := m + 3 + Kit.rnd(k, 1, 0, seed) % 32
+		var sz := m + 4 + Kit.rnd(k, 2, 0, seed) % 30
+		g.box(sx, FLOOR + 1, sz, sx + 4, FLOOR + 3, sz + 2, Kit.WOOL)
+		g.box(sx, FLOOR, sz, sx + 1, FLOOR + 1, sz + 2, Kit.HAIR)
+		g.box(sx + 3, FLOOR, sz, sx + 4, FLOOR + 1, sz + 2, Kit.HAIR)
+		g.box(sx + 4, FLOOR + 2, sz, sx + 5, FLOOR + 4, sz + 2, Kit.HAIR)
+	_person(g, m + 20, FLOOR, m + 20, seed)
+	g.box(m + 22, FLOOR, m + 20, m + 23, FLOOR + 9, m + 21, Kit.WOOD_D)
+	_tree(g, m + 30, FLOOR, m + 30, 5, seed)
+	return _done(g)
+
+# --- terraces -------------------------------------------------------------
+
+const TERRACE := 6   # voxels a terrace stands above the one below
+
+## The base of a raised lot `level` terraces up: earth under a stone
+## facing; retaining walls with buttresses and a light coping where the
+## neighbour is lower (`walls` bits: 1 south, 2 west, 4 east), a stair up
+## the south wall on some. Lot content stands on it at level * TERRACE.
+static func terrace(level: int, walls: int, seed: int) -> ArrayMesh:
+	var top := level * TERRACE
+	var g := _grid(1, 1, top + 3)
+	var m := MARGIN
+	g.box(m, 0, m, m + LOT, top, m + LOT, Kit.EARTH)
+	for side in 3:
+		if walls & (1 << side) == 0:
+			continue
+		for k in LOT:
+			var p := Vector2i(m + k, m + LOT - 1) if side == 0 else (Vector2i(m, m + k) if side == 1 else Vector2i(m + LOT - 1, m + k))
+			for yy in top:
+				var c := Kit.STONE_W if (k / 4 + yy / 2) % 3 == 0 else Kit.STONE
+				g.put(p.x, yy, p.y, c)
+			if k % 10 == 5:
+				var o := Vector2i(0, 1) if side == 0 else (Vector2i(-1, 0) if side == 1 else Vector2i(1, 0))
+				g.box(p.x + o.x, 0, p.y + o.y, p.x + o.x + 1, top - 1, p.y + o.y + 1, Kit.STONE)
+				g.box(p.x + o.x * 2, 0, p.y + o.y * 2, p.x + o.x * 2 + 1, top / 2, p.y + o.y * 2 + 1, Kit.STONE)
+			if k % 8 != 3:
+				g.put(p.x, top + 2, p.y, Kit.TRIM)
+	if walls & 1 and seed % 2 == 0:
+		# a stair against the south wall, rising west to east
+		for k in top:
+			g.box(m + 14 + k, 0, m + LOT, m + 15 + k, k + 1, m + LOT + 3, Kit.STEP)
 	return _done(g)

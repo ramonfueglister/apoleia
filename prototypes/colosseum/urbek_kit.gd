@@ -29,13 +29,15 @@ enum { EMPTY,
 	TILE5, TILE5_D, TILE5_L, EAVE5, RIDGE5, VERGE, ARCADE, DEEP,
 	POMPEII, POMPEII_W, DOCHRE, DOCHRE_W, BRICKFACE, BRICKFACE_W, TIMBER, TIMBER_W, MORTAR, DADO,
 	PAVE_J, BORDER, YARD, SEAT_HI, SEAT_MID, SEAT_WOOD, STATUE, STREAK, VIA_P, VIA_PD, WATER_D, SAIL,
+	POOL, WATER_L, REED, REED_D, MUD, HELMET, SHIELD, MILL,
+	MUD_D, SACK, SOIL, VINE, WOOL, PATH, FLOWER_W,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
 ## warm plaster, terracotta and marble, at Urbek's brightness.
 const COLOURS := {
-	CREAM: ["ecdfc3"], CREAM_W: ["d5c5a5"], OCHRE: ["e9c98b"], OCHRE_W: ["cfb072"],
-	PINK: ["e8bea9"], PINK_W: ["d0a38d"], WHITE: ["f2eee6"], WHITE_W: ["d9d3c7"],
+	CREAM: ["ecdfc3"], CREAM_W: ["cdbd9c"], OCHRE: ["e9c98b"], OCHRE_W: ["c6a66a"],
+	PINK: ["e8bea9"], PINK_W: ["c79a84"], WHITE: ["f2eee6"], WHITE_W: ["d0c9bc"],
 	REDWASH: ["b9543e"], REDWASH_W: ["a54a37"], BRICK: ["bf6b4b"], BRICK_W: ["a95b3f"],
 	TRIM: ["f3ede1"], STONE: ["cfc4ae"], STONE_W: ["bcb099"], MARBLE: ["f6f3ec"], MARBLE_W: ["e2ddd2"],
 	STEP: ["e2dacb", "ece5d7"],
@@ -48,17 +50,17 @@ const COLOURS := {
 	GLASS: ["3d3d48"], DARK: ["3a302c"], DOOR: ["7b5034"], DOOR_D: ["5d3b27"],
 	SHUTTER_G: ["4f6a3b"], SHUTTER_B: ["7a4e2e"], SHUTTER_U: ["5e7c99"], WOOD: ["8a6040", "9c6e4a"], WOOD_D: ["5f4029"],
 	CLOTH_R: ["c8433a"], CLOTH_W: ["f1ebdf"], CLOTH_B: ["3f6ea6"], CLOTH_G: ["5c8c47"], CLOTH_Y: ["e3b24a"],
-	POT: ["b3603f"], AMPHORA: ["c27a52", "d08a60"], FRUIT_R: ["d0402f"], FRUIT_Y: ["eec24a"], FRUIT_G: ["8cb84a"],
+	POT: ["b3603f"], AMPHORA: ["8e4e2e", "b8693e"], FRUIT_R: ["d0402f"], FRUIT_Y: ["eec24a"], FRUIT_G: ["8cb84a"],
 	BREAD: ["d6a35c"],
 	LEAF: ["5e8538", "86a84e"], LEAF_D: ["4f7530", "769a45"], LEAF_L: ["6c9440", "93b65a"],
 	CYPRESS: ["3d6233", "4b733c"], CYPRESS_D: ["324f2b", "3f6233"], PINE: ["4f7a37", "5f8f41"], PINE_D: ["3e6230", "4d7639"],
 	TRUNK: ["6e4b33"], FLOWER_R: ["d8463a"], FLOWER_P: ["c45bb0"], FLOWER_Y: ["f0c64a"], HEDGE: ["4f8037", "5f923f"],
-	GRASS: ["74994a", "7aa24c"], GRASS_D: ["6f9447", "759c49"], GRASS_L: ["79a04e", "80a852"],
+	GRASS: ["648f40", "6fa048"], GRASS_D: ["557f36", "5e8f3c"], GRASS_L: ["76a24b", "84b556"],
 	EARTH: ["b59263", "c49f6e"], EARTH_D: ["a5845a", "b38f63"],
 	PAVE: ["d2c6ae", "ddd2bb"], PAVE_D: ["cbbfa7", "d6cab3"], PAVE_L: ["d8cdb6", "e3d8c3"],
 	BASALT: ["79726b", "857e76"], BASALT_D: ["706a63", "7b746d"], BASALT_L: ["827b74", "8f8880"],
 	CURB: ["b9ad97", "c6bba5"],
-	WATER: ["4f8fb8", "5e9cc0"], BRONZE: ["9c7438"], GOLD: ["dcae4c", "e8bf5c"],
+	WATER: ["4a87a8", "4f8faf"], BRONZE: ["9c7438"], GOLD: ["dcae4c", "e8bf5c"],
 	ROBE_W: ["eee7da"], ROBE_R: ["b8483a"], ROBE_B: ["4f6f9a"], SKIN: ["d9a27a"], HAIR: ["4a3326"],
 	TRAV: ["e2d3b5", "ebdec3"], TRAV_W: ["d3c3a2", "ddcfb1"], TRAV_D: ["c6b392", "d1c0a0"], TRAV_L: ["efe6d2", "f5eedd"],
 	VAULT: ["585a6a", "6a6b78"], SEAT: ["bfae8f", "dccfb2"], SEAT_D: ["ad9b7c", "c9ba9a"],
@@ -74,8 +76,12 @@ const COLOURS := {
 	MORTAR: ["c4b49b"], DADO: ["9c3a30"],
 	PAVE_J: ["c2b69e", "cbbfa7"], BORDER: ["a99c84", "b5a88f"], YARD: ["cdb98f", "d8c49a"],
 	SEAT_HI: ["d3ccbf", "e6dfd2"], SEAT_MID: ["b9ad99", "cfc3ae"], SEAT_WOOD: ["7a6853", "8e7a62"],
-	STATUE: ["e6dccb", "efe7d8"], STREAK: ["9a8f7f"], VIA_P: ["bfb19a", "cdbfa6"], VIA_PD: ["b8aa92", "c4b69d"],
-	WATER_D: ["477fa4", "5591b5"], SAIL: ["eee6d4"],
+	STATUE: ["e6dccb", "efe7d8"], STREAK: ["a99d88"], VIA_P: ["bfb19a", "cdbfa6"], VIA_PD: ["b8aa92", "c4b69d"],
+	WATER_D: ["477fa4", "4a85a6"], SAIL: ["eee6d4"],
+	POOL: ["5f9fc8", "6fb0d8"], WATER_L: ["5a97b8", "62a0c0"], REED: ["8e9a4e", "8e9a4e"], REED_D: ["a9a15e", "a9a15e"],
+	MUD: ["6e5a48", "7a6450"], HELMET: ["c9c9c4"], SHIELD: ["a8392e"], MILL: ["8c8880", "9a968e"],
+	MUD_D: ["52443a", "5a4a3e"], SACK: ["b8a47c", "c8b48a"], SOIL: ["6e5a48", "7a6450"], VINE: ["5a7f34", "6c9440"],
+	WOOL: ["e8e2d4", "f2ede2"], PATH: ["a89272", "b8a07a"], FLOWER_W: ["f2f2f2"],
 }
 
 static var _side := PackedColorArray()

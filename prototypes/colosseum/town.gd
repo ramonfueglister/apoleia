@@ -85,9 +85,16 @@ func _mesh(key: String) -> ArrayMesh:
 			"vias": meshes[key] = Town.via(seed, 1)
 			"vx": meshes[key] = Town.via_crossing(seed, 0)
 			"vxs": meshes[key] = Town.via_crossing(seed, 1)
-			"rivn": meshes[key] = Town.river(seed, "n")
-			"rivs": meshes[key] = Town.river(seed, "s")
-			"bridge": meshes[key] = Town.bridge(seed)
+			"rstrip": meshes[key] = Town.river_strip(seed, 7, RIVER_ROW, 7)
+			"tombs": meshes[key] = Town.tombs(seed)
+			"farm": meshes[key] = Town.farm(seed)
+			"vineyard": meshes[key] = Town.vineyard(seed)
+			"pasture": meshes[key] = Town.pasture(seed)
+			"terrace": meshes[key] = Town.terrace(seed & 3, seed >> 2, seed >> 5)
+			"h00": meshes[key] = Town.house_lot(seed, false, false)
+			"h10": meshes[key] = Town.house_lot(seed, true, false)
+			"h01": meshes[key] = Town.house_lot(seed, false, true)
+			"h11": meshes[key] = Town.house_lot(seed, true, true)
 			"hvia": meshes[key] = Town.house_lot(seed, true)
 			"forum": meshes[key] = Town.forum(seed)
 			"baths": meshes[key] = Town.baths(seed)
@@ -110,13 +117,14 @@ func _put(key: String, lx: int, lz: int, south := true, size := Vector2i.ONE, y 
 ## the nearer street, with a forum (temple, market, gardens), atrium houses
 ## and apartment blocks placed first.
 const STREETS_EW := [3, 0, -3, -6, -9, -12]
-const RIVER := 5      # the river runs east-west over rows 5 and 6
+const RIVER_ROW := 4  # the river's models start on this row
 const STREETS_NS := [-6, 0, 6]
 const SPECIAL := [
 	["forum:0", 1, -5, Vector2i(5, 5)], ["baths:0", -5, -2, Vector2i(3, 2)],
 	["insula:2", 8, -1, Vector2i(2, 1)], ["insula:5", -2, -1, Vector2i(2, 1)],
-	["insula:4", 3, 2, Vector2i(2, 1), false], ["insula:8", -9, 2, Vector2i(2, 1), false],
-	["insula:7", 10, 2, Vector2i(2, 1), false],
+	["insula:4", 10, -1, Vector2i(2, 1)], ["insula:8", -14, -1, Vector2i(2, 1)],
+	["insula:7", 13, -1, Vector2i(2, 1)],
+	["domus:1", -9, 10, Vector2i(2, 2)], ["domus:2", 7, 10, Vector2i(2, 2)],
 	["domus:0", -11, -2, Vector2i(2, 2)], ["market:0", -9, -2, Vector2i(2, 2)],
 	["temple:0", 7, -5, Vector2i(2, 2)], ["garden:2", -1, -4, Vector2i.ONE],
 	["garden:3", 5, -7, Vector2i.ONE],
@@ -142,6 +150,40 @@ func _colosseum(taken: Dictionary) -> void:
 	mi.position = Vector3(c.x, 0.0, c.y)
 	vp.add_child(mi)
 	print("colosseum: ", Kit.triangles(mi.mesh), " triangles, ", Time.get_ticks_msec() - t0, " ms")
+
+## A terraced hill: lots raised one to three terraces, rising to the
+## north, on retaining walls where the ground drops; atrium houses, a
+## temple on the top and gardens on them.
+const HILL := Rect2i(8, -16, 6, 6)
+const HILL_SPECIAL := [["domus:1", 8, -12], ["domus:2", 12, -14], ["temple:4", 10, -16], ["domus:0", 8, -14]]
+
+func _hill_level(lx: int, lz: int) -> int:
+	if not HILL.has_point(Vector2i(lx, lz)):
+		return 0
+	return 1 + (-11 - lz) / 2
+
+func _hill(taken: Dictionary) -> void:
+	var covered := {}
+	for sp: Array in HILL_SPECIAL:
+		var lvl := _hill_level(sp[1], sp[2])
+		_put(sp[0], sp[1], sp[2], true, Vector2i(2, 2), lvl * Town.TERRACE * Kit.V)
+		for dz in 2:
+			for dx in 2:
+				covered[Vector2i(sp[1] + dx, sp[2] + dz)] = true
+	for lz in range(HILL.position.y, HILL.end.y):
+		for lx in range(HILL.position.x, HILL.end.x):
+			var lvl := _hill_level(lx, lz)
+			var walls := 0
+			if _hill_level(lx, lz + 1) < lvl:
+				walls |= 1
+			if _hill_level(lx - 1, lz) < lvl:
+				walls |= 2
+			if _hill_level(lx + 1, lz) < lvl:
+				walls |= 4
+			_put("terrace:%d" % (lvl | (walls << 2) | (((lx + lz) & 1) << 5)), lx, lz)
+			taken[Vector2i(lx, lz)] = true
+			if not covered.has(Vector2i(lx, lz)):
+				_put("garden:%d" % ((lx * 3 + lz) & 3), lx, lz, true, Vector2i.ONE, lvl * Town.TERRACE * Kit.V)
 
 ## Blocks away from the forum: some get an atrium house, an apartment
 ## block, a temple, a market or a park, the rest row houses.
@@ -192,6 +234,7 @@ func _layout() -> void:
 	vp.add_child(ground)
 	var taken := {}
 	_colosseum(taken)
+	_hill(taken)
 	for sp: Array in SPECIAL:
 		var size: Vector2i = sp[3]
 		for dz in size.y:
@@ -200,9 +243,11 @@ func _layout() -> void:
 		_put(sp[0], sp[1], sp[2], sp[4] if sp.size() > 4 else true, size)
 	_blocks(taken)
 	var n := 0
-	for lz in range(-26, 10):
+	for lx0: int in [-17, -10, -3, 4, 11]:
+		_put("rstrip:%d" % lx0, lx0, RIVER_ROW)
+	for lz in range(-26, 14):
 		for lx in range(-17, 18):
-			if taken.has(Vector2i(lx, lz)):
+			if taken.has(Vector2i(lx, lz)) or Town.is_river_lot(lx, lz):
 				continue
 			var ns: bool = posmod(lx, 6) == 0
 			var h := (lx * 7 + lz * 13) & 15
@@ -211,13 +256,7 @@ func _layout() -> void:
 				var half := "" if lz == 0 else "s"
 				_put(("vx%s:%d" if ns else "via%s:%d") % [half, (lx * 5 + lz) & 7], lx, lz)
 				continue
-			if lz == RIVER or lz == RIVER + 1:
-				if lx == 0:
-					_put("bridge:%d" % (lz & 1), lx, lz, true, Vector2i.ONE, -Town.RIVER_DROP * Kit.V)
-				else:
-					_put(("rivn:%d" if lz == RIVER else "rivs:%d") % (h & 7), lx, lz, true, Vector2i.ONE, -Town.RIVER_DROP * Kit.V)
-				continue
-			var ew: bool = posmod(lz, 3) == 0 and lz != RIVER + 2
+			var ew: bool = posmod(lz, 3) == 0
 			if ew and ns:
 				_put("x:%d" % h, lx, lz)
 			elif ns:
@@ -227,15 +266,27 @@ func _layout() -> void:
 			else:
 				n += 1
 				# face the main street or the river where they are next door,
-				# else the street to the south, else the one to the north
-				var south: bool = posmod(lz + 1, 3) == 0 or lz == -1 or lz == RIVER - 1
-				if lz == 2 or lz == RIVER + 2:
+				# else the street to the south, else the one to the north;
+				# houses facing north stay low so the street shows
+				var south: bool = posmod(lz + 1, 3) == 0 or lz == -1
+				if lz == 2 or Town.is_river_lot(lx, lz - 1):
 					south = false
-				if ((lx * 11 + lz * 5) & 15) in [3, 9, 14]:
+				if Town.is_river_lot(lx, lz + 1):
+					south = true
+				if absi(lx) == 1 and lz >= 8:
+					# tombs line the road out of town beyond the river
+					_put("tombs:%d" % (h & 7), lx, lz)
+				elif lz >= 7 and absi(lx) > 4:
+					# beyond the river the country: gardens, vines, sheep
+					var r := Kit.rnd(lx, lz, 0, 21) % 100
+					var key := "farm" if r < 30 else ("vineyard" if r < 55 else ("pasture" if r < 75 else "garden"))
+					_put("%s:%d" % [key, h & 7], lx, lz)
+				elif ((lx * 11 + lz * 5) & 15) in [3, 9, 14]:
 					_put("garden:%d" % (h & 3), lx, lz, south)
 				else:
-					var hk := "hvia" if lz == -1 or lz == 2 else "house"
-					_put("%s:%d" % [hk, (lx * 31 + lz * 17) & 31], lx, lz, south)
+					var v := 1 if lz == -1 or lz == 2 else 0
+					var l := 0 if south else 1
+					_put("h%d%d:%d" % [v, l, (lx * 31 + lz * 17) & 31], lx, lz, south)
 	var tris := 0
 	for m: ArrayMesh in meshes.values():
 		tris += Kit.triangles(m)
