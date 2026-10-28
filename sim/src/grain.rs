@@ -2029,6 +2029,17 @@ impl Grain {
             let id = t.hh;
             self.start_carry(p, day, id, SELL);
         }
+        // A household that could not carry home what it buys for (it buys
+        // when below BUY_BELOW days of food) goes again, as a farm with
+        // more to sell does.
+        if t.kind == BUY && t.kg > 0 {
+            let id = t.hh;
+            let h = self.hh[&id];
+            let have = if h.farm != NONE { self.farms[h.farm as usize].store } else { h.pantry };
+            if have < self.need_day(id) * BUY_BELOW {
+                self.start_carry(p, day, id, BUY);
+            }
+        }
     }
 
     /// Sowing and harvest start on the farm's day: the work needed in the

@@ -403,6 +403,24 @@ Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 5e2e78adb0f54d
 grain 9f839fc3b75fef97), 53 Tests grün. Tempo gleich wie ohne (auf demselben Rechner
 gemessen: Getreide im Mittel 1,79 statt 1,76 ms pro Tag).
 
+## Fehler behoben: Einkaufen, bis der Vorrat reicht (100 Jahre, Seed 1, `run100-buy-again.txt`; vorher: `run100-s75-tents.txt`)
+
+Ein Haushalt ohne Hof kauft, wenn sein Vorrat unter 30 Tage fällt, für bis zu 60 Tage ein,
+trägt aber nur 30 kg pro Erwachsenen. Bei vielen Kindern reichte das nicht für einen Monat,
+und der nächste Einkauf kam erst einen Monat später. Jetzt geht er gleich nochmals, solange
+er unter 30 Tagen bleibt, wie ein Hof, der noch mehr zu verkaufen hat.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Hungertote Jahr 2 / Jahr 3 | 671 / 448 | 590 / 376 |
+| Hungertote pro Jahr, Jahr 11 bis 100 | 223 | 254 |
+| Menschen im Jahr 100 | 139'419 | 142'911 |
+| Wachstum Jahr 10 bis 100 | 0,21 % | 0,24 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 0df6a9cf176aaeb1,
+grain 4c87aa8d380d9cd3), 53 Tests grün. Mehr Menschen im Jahr 100 heisst mehr Hungertote
+dann, wenn das Land voll wird.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
