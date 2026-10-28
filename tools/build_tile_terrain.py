@@ -52,7 +52,9 @@ R_KM = 6371.0088
 BASE_CELL_KM = 0.5
 LEVELS = 6  # 0.5, 1, 2, 4, 8, 16 km
 # Natural Earth scalerank shown per level (more rivers up close)
-RIVER_RANK = [10, 10, 8, 6, 5, 4]
+RIVER_RANK = [10, 10, 8, 7, 6, 5]
+# Natural Earth ranks rivers for today's maps; the rivers of Rome rank higher
+ROMAN_RIVER_RANK = {"Tevere": 5, "Arno": 7}
 SS = 2  # supersampling of the polygon raster
 # Diorama heights: one documented factor for the whole world, SimCity 2000
 # style (Kit 1 K06 as changed 27.10.2026). A height level is
@@ -75,8 +77,8 @@ MOUNTAIN_TO_M = 1300.0
 # one flat level instead of being crossed by terrace lines), the land height
 # blurred over CORNER_BLUR tiles first.
 BAKED_FROM = 2
-LEVEL_METRES = {2: 200.0, 3: 240.0, 4: 280.0, 5: 320.0}
-LEVEL_FLOOR_M = 150.0
+LEVEL_METRES = {2: 170.0, 3: 190.0, 4: 210.0, 5: 230.0}
+LEVEL_FLOOR_M = 100.0
 CORNER_BLUR = 1.2
 # Landscape of a tile, one colour each (Ramon, 28.10.2026: one colour per
 # tile, two where landscapes meet; the shader splits those at the diagonal).
@@ -142,7 +144,7 @@ def raster_rivers(feats, cell_km, n_x, n_y, max_rank, band_rows=4096):
     """River centre lines, one cell wide (the shader draws the band itself)."""
     lines = []
     for props, geoms in feats:
-        rank = props.get("scalerank") or 10
+        rank = min(props.get("scalerank") or 10, ROMAN_RIVER_RANK.get(props.get("name"), 10))
         if rank > max_rank or props.get("featurecla", "River") not in ("River", None):
             continue
         for line, _ in geoms:
@@ -634,7 +636,10 @@ def ground_classes(water, tile_km, height, cover, band=1024):
     read bilinearly at the tile centres, as the GPU would."""
     ny, nx = water.shape
     lod = max(math.log2(tile_km / 2.0), 0.0)
-    sigma = 0.5 * tile_km / NODE_KM if tile_km > 2.0 else 0.0
+    # far out the landscapes form wide calm regions: the data is blurred over
+    # more tiles and the noise that breaks shares into patches fades
+    sigma = (0.5 + 0.4 * lod) * tile_km / NODE_KM if tile_km > 2.0 else 0.0
+    amp = 1.0 / (1.0 + 0.6 * lod)
     scale = max(6.0, 2.5 * tile_km)
     fine = max(3.0, tile_km)
     glade = max(5.0, 2.0 * tile_km)
@@ -657,6 +662,7 @@ def ground_classes(water, tile_km, height, cover, band=1024):
                     + (f[jj + 1, i] * (1 - fx) + f[jj + 1, i + 1] * fx) * fz)
 
         h, forest, dry, crop, wet, glacier, n1, n2, n3, n4 = (at(f) for f in fields)
+        n1, n2, n3 = n1 * amp, n2 * amp, n3 * amp
         lat = (41.0 - np.degrees(z / R_KM)).astype(np.float32)[:, None]
         g = np.full(h.shape, G["meadow"], np.uint8)
         g[(lat + 4.0 * n2 < 43.0) | (dry + 0.5 * n2 > 0.4)] = G["dry_grass"]
@@ -672,9 +678,13 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         g[farmed + 0.6 * n2 > 0.6] = G["field"]
         g[wet + 0.5 * n2 > 0.45] = G["wetland"]
         # clearings: even a dense wood opens into meadows every few km
-        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400) & (n4 < 0.12)
+        # (only up close: far out the glades are noise)
+        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400)
+        if tile_km <= 2.0:
+            wood &= n4 < 0.12
         g[wood] = G["forest"]
-        g[wood & ((h + 150 * n3 > 850) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
+        # conifers in the subalpine belt and the north (beech below)
+        g[wood & ((h + 150 * n3 > 1050) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
         g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
         snow_line = 1600 - 120 * lod + np.maximum(45 - lat, 0) * 70 + 500 * dry
         g[(h + 160 * n3 > snow_line) | (glacier + 0.5 * n3 > 0.5)] = G["snow"]
@@ -707,7 +717,7 @@ def bake_ground(manifest, cells, height, cover):
     manifest["ground"] = []
     for level in range(LEVELS):
         tile = BASE_CELL_KM * 2 ** level
-        g = tidy_ground(ground_classes(cells[level], tile, height, cover))
+        g = tidy_ground(ground_classes(cells[level], tile, height, cover), passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
         path = OUT / f"ground-L{level}.png"
         Image.fromarray(packed, "L").save(path, optimize=True)

@@ -135,11 +135,11 @@
       "cell_km": 2.0,
       "width": 5163,
       "height": 2392,
-      "metres_per_level": 200.0,
-      "floor_m": 150.0,
+      "metres_per_level": 170.0,
+      "floor_m": 100.0,
       "blur_tiles": 1.2,
       "path": "levels-L2.png",
-      "sha256": "0b9398fafcb3611908eca69cacddd7abbdd5fcc5e5886d77ce729dc6ab3d9c04",
+      "sha256": "f41a7361b703697e4edfd756d7bf090e4e308b323137f98edc1a84a5d59ba285",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -147,11 +147,11 @@
       "cell_km": 4.0,
       "width": 2582,
       "height": 1197,
-      "metres_per_level": 240.0,
-      "floor_m": 150.0,
+      "metres_per_level": 190.0,
+      "floor_m": 100.0,
       "blur_tiles": 1.2,
       "path": "levels-L3.png",
-      "sha256": "5b77d066e1fd73996e6dd3c02dfe4e9117d9b7b3d088598b751b2db0b9ce2c69",
+      "sha256": "fc8765b9256383f9ae31f03eaef6876d888a335759fbd334d0fc314fcc2322f4",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -159,11 +159,11 @@
       "cell_km": 8.0,
       "width": 1292,
       "height": 599,
-      "metres_per_level": 280.0,
-      "floor_m": 150.0,
+      "metres_per_level": 210.0,
+      "floor_m": 100.0,
       "blur_tiles": 1.2,
       "path": "levels-L4.png",
-      "sha256": "571d0f3bcb991c3d17ec4710e23ccc1508a24466498ffc3997c57aca17c46fb6",
+      "sha256": "afac959e7f7b2729dfaa5290648a6f9bb6bcd0e3febeca4ab2db1b6ff59bdb77",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -171,11 +171,11 @@
       "cell_km": 16.0,
       "width": 647,
       "height": 300,
-      "metres_per_level": 320.0,
-      "floor_m": 150.0,
+      "metres_per_level": 230.0,
+      "floor_m": 100.0,
       "blur_tiles": 1.2,
       "path": "levels-L5.png",
-      "sha256": "c1c057d30abe5688ea47cc4762ba257e60645b6eae5eecb011fde1ca7b0f65fb",
+      "sha256": "815dbd82b04ca753016f5d4f9f69bd112d6223052cd4404c0fdf21859142d888",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
@@ -187,7 +187,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "ground-L0.png",
-      "sha256": "c1ab849bc0a9e73dc01744df5db5454b289ddeb596ee131d46e0ccbc7e4216e9",
+      "sha256": "b1a433479829d2dfd19fe92f30d32b77a28fcfa3aa02cabd4c3a49b1968f00df",
       "classes": [
         "meadow",
         "dry_grass",
@@ -210,7 +210,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "ground-L1.png",
-      "sha256": "1c520cb72ad5371889dac34d58a088f56446458b7aee21201b991b102a893f1e",
+      "sha256": "8bb6e627f1f6f642dc2f1c6f590fe2b19473219edc1c3f6fe3a8a816a8a0f5d0",
       "classes": [
         "meadow",
         "dry_grass",
@@ -233,7 +233,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "ground-L2.png",
-      "sha256": "d72d09a467064213b4f5f346b577d72499d7b73467d766ad61b173b6eba73168",
+      "sha256": "f7d3791c7dea66619202d997c0129e14a6e02cf7894b78c2e90794767cc89f51",
       "classes": [
         "meadow",
         "dry_grass",
@@ -256,7 +256,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "ground-L3.png",
-      "sha256": "425826c69c6e831ca2b1c86ac2b29a5d381c2c311b20d83ae082d82a5818571f",
+      "sha256": "b50e053b923e1aed54b7ade0c614c8ca943b8887d165a5dd92637420ad703608",
       "classes": [
         "meadow",
         "dry_grass",
@@ -279,7 +279,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "ground-L4.png",
-      "sha256": "51c173a8b3feac6f10e1cd011e14924849e1b7ca8cef60bbbb020089595e4941",
+      "sha256": "3290a9c9e022c035fed067b8656c7ff1b241b48a7f771e897d96347346ff3971",
       "classes": [
         "meadow",
         "dry_grass",
@@ -302,7 +302,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "ground-L5.png",
-      "sha256": "09ac1dde0cc32197b4071e085db87e7ada02d704055ccf1f243927915ab4175d",
+      "sha256": "9b90821bcb5fe85f9a67c24f8eba5e847ce6ae1dfe573bcf3b16026025d64323",
       "classes": [
         "meadow",
         "dry_grass",
