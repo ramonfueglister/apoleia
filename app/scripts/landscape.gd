@@ -97,10 +97,12 @@ func _setup_look() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("1d5a8c")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("c4d4e6")
-	# low ambient and a filmic curve keep the colours deep and the shade sides
-	# dark (AgX and a strong sky fill washed the map out)
-	environment.ambient_light_energy = 0.6
+	# A cool sky fill under a warm sun: shade is about two thirds as light as
+	# the lit ground and slightly blue (meadow #73af60 in the sun, about
+	# #458048 in shade); the filmic curve keeps the lit colours where the
+	# terrain palette expects them (AgX washed the map out).
+	environment.ambient_light_color = Color("c4cff0")
+	environment.ambient_light_energy = 0.95
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
@@ -117,15 +119,22 @@ func _setup_look() -> void:
 	environment.fog_light_color = Color("a9c6d3")
 	environment.fog_density = 1.0
 	environment.fog_depth_curve = 1.4
-	# Warm sun from the front left of the north-up view (south-west), as in
-	# Urbek: the faces the camera sees are lit, shadows fall back and right.
-	sun.rotation_degrees = Vector3(-48.0, -45.0, 0.0)
-	sun.light_color = Color("fff1de")
-	sun.light_energy = 1.9
+	# Warm sun from the front left of the north-up view (south-west, 45
+	# degrees up), as in Urbek: the faces the camera sees are lit, shadows
+	# fall back and right.
+	sun.rotation_degrees = Vector3(-45.0, -45.0, 0.0)
+	sun.light_color = Color("ffeccb")
+	sun.light_energy = 1.8
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.9
-	sun.shadow_blur = 0.4
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_opacity = 0.85
+	# Hard shadows as in Urbek: one map over the view only (see _update_look),
+	# no blur and no dithered soft filter, so every house, tree and figure
+	# casts a crisp shadow from its foot.
+	sun.shadow_blur = 0.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_fade_start = 0.98
+	RenderingServer.directional_shadow_atlas_set_size(4096, true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
 	add_child(sun)
 
 func _update_look(distance: float) -> void:
@@ -134,11 +143,12 @@ func _update_look(distance: float) -> void:
 	# must cover only the view, or the shadow map spreads over kilometres of
 	# empty air and houses get blurred, detached shadows. Godot fits the
 	# directional splits from the camera's near plane, so the near plane moves
-	# up to just before the highest ground in view.
+	# up to just before the highest ground in view. The far end lies past the
+	# top of the picture, so the shadows fade out only beyond it.
 	var pitch := deg_to_rad(pitch_for_width(width))
 	var relief: float = maxf(get_displayed_height_range().max_y - _focus_y, 0.0)
 	camera.near = maxf(0.05, distance - width * 0.9 - relief / maxf(sin(pitch), 0.2) - 0.2)
-	sun.directional_shadow_max_distance = distance + width * 0.9
+	sun.directional_shadow_max_distance = distance + width * 1.2
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
