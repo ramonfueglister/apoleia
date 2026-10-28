@@ -32,6 +32,7 @@ enum { EMPTY,
 	POOL, WATER_L, REED, REED_D, MUD, HELMET, SHIELD, MILL,
 	MUD_D, SACK, SOIL, VINE, WOOL, PATH, FLOWER_W, COURSE, COURSE_J, SMOKE, LAVA,
 	SMOKE_D, SMOKE_L, WET, ALGAE, GRAVEL, LETTER,
+	FLOWER_M1, FLOWER_M2, FLOWER_M3, FLOWER_M4, BRONZE_D, PANEL, BLOSSOM_P, BLOSSOM_W, BLOSSOM_O, BOX,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -85,7 +86,10 @@ const COLOURS := {
 	WOOL: ["e8e2d4", "f2ede2"], PATH: ["a89272", "b8a07a"], FLOWER_W: ["f2f2f2"],
 	COURSE: ["a89a84", "b6a890"], COURSE_J: ["968872", "a4967e"], SMOKE: ["aaa69f", "b4b0a9"], LAVA: ["4a4644", "56524f"],
 	SMOKE_D: ["8e8a84", "96928b"], SMOKE_L: ["c9c5bd", "d3cfc8"], WET: ["6a6658"], ALGAE: ["5e6e44"],
-	GRAVEL: ["c7bca6", "d2c8b3"], LETTER: ["a8392e"],
+	GRAVEL: ["c7bca6", "cfc3a8"], LETTER: ["a8392e"],
+	FLOWER_M1: ["b8504a"], FLOWER_M2: ["8e6aa0"], FLOWER_M3: ["e6ded0"], FLOWER_M4: ["c9a84a"],
+	BRONZE_D: ["6e5a3a", "7c6744"], PANEL: ["3a3530"], BLOSSOM_P: ["c07890", "e7a0b4"], BLOSSOM_W: ["d8ccd0", "efe6ea"],
+	BLOSSOM_O: ["b85f28", "d9772e"], BOX: ["44702e", "4e7a34"],
 }
 
 static var _side := PackedColorArray()

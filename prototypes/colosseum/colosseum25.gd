@@ -32,7 +32,7 @@ const PODIUM := SEAT_TOP - 34
 const FLOOR := PODIUM - 6
 const PAVING := 4              # grid margin round the plinth, voxels
 const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
-const CACHE := "user://colosseum25_v8.res"
+const CACHE := "user://colosseum25_v9.res"
 const AISLES := 40
 const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.LINEN, Kit.LINEN, Kit.ROBE_W, Kit.LINEN,
 	Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE_B, Kit.ROBE_B,
@@ -123,16 +123,32 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 				return Kit.TRAV_L
 			# a statue in every other upper arch, just behind the parapet:
 			# a plinth, the robe flaring at the hem, the body as wide as the
-			# shoulders, a head
+			# shoulders, a head; three poses, every eighth one gilt
 			if storey > 0 and posmod(b, 2) == 0 and (d == 2 or d == 3) and o >= 2 and o <= 5:
+				var c := Kit.GOLD if posmod(b, 8) == 0 else Kit.STATUE
+				var pose := posmod(b / 2, 3)
 				if lr <= 2:
 					return Kit.TRAV_L
 				if lr <= 4:
-					return Kit.STATUE
+					return c
 				if lr <= 8 and d == 2:
-					return Kit.STATUE
+					return c
 				if lr <= 10 and d == 2 and (o == 3 or o == 4):
-					return Kit.STATUE
+					return c
+				if pose == 1 and d == 2 and o == 5 and lr <= 11:
+					return c
+				if pose == 2 and d == 3 and o == 2 and lr <= 12:
+					return Kit.WOOD_D
+			# a banner in one upper arch of eight
+			if storey == 2 and posmod(b, 8) == 4 and d == 1 and o >= 2 and o <= 5 and lr >= 6:
+				return Kit.GOLD if lr == 15 else Kit.CLOTH_R
+			# people in the passages of the ground floor
+			if storey == 0 and posmod(b, 3) == 1 and d == 4 and (o == 3 or o == 4) and lr <= 7:
+				if lr <= 2:
+					return Kit.SKIN
+				if lr <= 5:
+					return CROWD[posmod(b * 7 + o, CROWD.size())]
+				return Kit.SKIN if lr == 6 else Kit.HAIR
 			if d < SHELL - 2:
 				return Kit.EMPTY
 			# the corridor wall in the half light, a smaller arch in it
@@ -147,6 +163,9 @@ static func _shell(d: int, s: int, b: int, r: int) -> int:
 		if lr == 21:
 			return Kit.TRAV_L
 		if lr == 20:
+			# the gate numbers over the ground floor arches, in red
+			if storey == 0 and d == 0 and o >= 1 and o <= 6 and posmod(o + b, 2) == 0:
+				return Kit.LETTER
 			return Kit.TRAV
 		return _ashlar(s, b, r)
 	var ar := r - ARCADE_TOP

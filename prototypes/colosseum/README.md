@@ -1,6 +1,49 @@
-# Kolosseum-Prototyp: Urbek-Formen, Caesar-III-Farben, viele Instanzen
+# Römische Stadt und Kolosseum im Urbek-Raster
 
 Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in `app/` eingebunden).
+
+## Was es ist
+
+Prozedurale Voxel-Modelle in der Machart von Urbek City Builder, Inhalte
+nach Caesar III. Urbeks eigene Modelle (MagicaVoxel, Urbek-Modding-Anleitung)
+haben 40 Voxel pro Feld, die ersten zwei Lagen sind Boden; hier ist ein Feld
+10 m, ein Voxel also 0,25 m und ein Stockwerk 12 bis 14 Voxel, im selben
+Massstab wie die Bauernhäuser (`app/scripts/voxel/farmhouse.gd`).
+
+- `urbek_kit.gd`: Palette (Seiten- und Oberseitenfarbe je Material), Voxel-
+  Gitter mit Zeichenbefehlen, schneller Mesher (nur sichtbare Flächen, keine
+  Unterseiten, Flächen gleicher Farbe zusammengefasst, Ecken-Verschattung in
+  den Vertexfarben), ein Material.
+- `roman_town.gd`: Grundstücke von 10 m: Strassen (Basalt, Bordsteine,
+  Trittsteine, Karren, Esel, Leute), Kreuzungen mit Brunnen oder Wegschrein,
+  die Hauptstrasse zwei Felder breit mit Säulenhallen, Reihenhäuser in vielen
+  Varianten (Läden mit Markisen, Tavernen, Balkone, Loggien, Türme,
+  Giebel zur Strasse, Anbauten, Vorhöfe mit Bäckerei oder Walkerei, Alterung),
+  Domus mit Atrium und Peristyl, Insulae bis sechs Stockwerke mit Dachterrasse,
+  Tempel in Varianten, das Forum mit Kapitol, Säulenhallen, Ehrenbogen und
+  Rednerbühne, Thermen mit Kuppel, Tonnengewölben und Becken, Märkte, Gärten,
+  Plätze, ein Terrassenhügel mit Stützmauern, der gewundene Fluss mit Kais,
+  Lagerhäusern, Kran, Booten und Bogenbrücke, Gräberstrasse, Felder,
+  Weinberge, Weiden.
+- `colosseum25.gd`: das Kolosseum im selben Raster: getreppter Grundriss,
+  dessen nach Süden zeigende Bogenläufe weit herumreichen (die Spielkamera
+  dreht nie), tiefe Arkaden mit Statuen, Attika mit Masten, drei Rangzonen mit
+  Zuschauern, Sonnensegel, Gladiatoren.
+- `town.gd`/`town.tscn`: setzt eine Stadt aus diesen Grundstücken zusammen und
+  rendert sie mit der Spielkamera (Norden oben, 30 Grad Neigung, fast
+  orthografisch) ausserhalb des Fensters:
+  `godot --path . res://town.tscn -- --tx=0 --tz=-45 --width=260 --res=2560x1440 --shot=bild.png`.
+  Regel für diese Kamera: Häuser, die nach Norden schauen (Südseite einer
+  Ost-West-Strasse), bleiben zweistöckig, damit die Strasse davor sichtbar
+  bleibt.
+
+Stilvorlage: Steam-Screenshots von Urbek City Builder und Caesar 3, lokal
+angesehen, nicht im Repo. Gauntlet-Loop am 2026-10-28 mit einem festen
+Kritiker gegen Urbek-Ausschnitte im selben Pixelmassstab, neun Runden, bis
+alle sechs Kriterien (Voxel-Handwerk, Formen, Farbe, Licht, Komposition,
+Lesbarkeit) bei 8 von 10 standen.
+
+# Ältere Version: Kolosseum mit 0,5-m-Voxeln
 
 ## Was es ist
 
