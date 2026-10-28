@@ -32,9 +32,11 @@ const PODIUM_ROW := SEAT_TOP_ROW - 18
 const FLOOR_ROW := PODIUM_ROW - 3    # raised arena floor, so the sand shows from above
 const LOD_FACTORS := [1, 2, 4, 8]
 # Camera distances for the near-orthographic Urbek camera (FOV 10): LOD0
-# while the view is under about 260 m wide, LOD1 to 700 m, LOD2 to 1.6 km.
-const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v11_%d.res"
+# while the view is under about 130 m wide, LOD1 to 350 m, LOD2 to 800 m,
+# LOD3 to 1.75 km; beyond, a colosseum is under 55 pixels and a drum of
+# 144 triangles carries its colours.
+const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 20000.0, 400000.0]
+const CACHE := "user://colosseum_urbek_v12_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
@@ -45,7 +47,7 @@ const PALETTE := [
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
 	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a"),
-	Color("a89886"), Color("8f8173")]
+	Color("b3a390"), Color("857868")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
 	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK, FACADE_MID, FACADE_DARK }
@@ -475,9 +477,9 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 					if f == 4 and arcade:
 						# Bays and 2 m blocks cannot line up, so the rhythm is a
 						# regular alternation of full-height dark and light columns.
-						c = ARCH_BACK if posmod(x + z, 2) == 0 else STONE
+						c = ARCH_BACK if posmod(x - n.x / 2 + z - n.z / 2, 2) == 0 else STONE
 					elif f >= 8 and arcade:
-						c = FACADE_MID if posmod(x + z, 2) == 0 else FACADE_DARK
+						c = FACADE_MID if posmod(x - n.x / 2 + z - n.z / 2, 2) == 0 else FACADE_DARK
 				grid[x + n.x * (y + n.y * z)] = c
 	# The red band keeps to the outer edge: one block wide, not the whole rim.
 	if f >= 4:
@@ -644,7 +646,43 @@ static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Co
 		st.set_normal(normal)
 		st.add_vertex(p[k])
 
-## All LODs, nearest first: the voxel grid at 0.5, 1, 2 and 4 m. Built
+## The farthest LOD, 144 triangles: a 16-sided drum in LOD3's colours
+## (arcade mid tone, light rim, seating, sand).
+static func drum() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n := 16
+	var h_wall := WALL_ROWS * V
+	var h_seat := SEAT_TOP_ROW * V
+	var h_podium := PODIUM_ROW * V
+	var h_floor := (FLOOR_ROW + 1) * V
+	var rim := 1.0 - (SHELL + RIM) * V / B
+	var at := func(phi: float, a: float, b: float, y: float) -> Vector3:
+		return Vector3(a * cos(phi), y, b * sin(phi))
+	var arcade: Color = PALETTE[FACADE_MID].lerp(PALETTE[FACADE_DARK], 0.5)
+	for i in n:
+		var p0 := TAU * i / n
+		var p1 := TAU * (i + 1) / n
+		var out: Vector3 = at.call((p0 + p1) * 0.5, 1.0, 1.0, 0.0)
+		var quads := [
+			[[at.call(p0, A, B, 0.0), at.call(p1, A, B, 0.0), at.call(p1, A, B, h_wall), at.call(p0, A, B, h_wall)], arcade, out],
+			[[at.call(p0, A, B, h_wall), at.call(p1, A, B, h_wall), at.call(p1, A * rim, B * rim, h_wall), at.call(p0, A * rim, B * rim, h_wall)], PALETTE[CORNICE], Vector3.UP],
+			[[at.call(p0, A * rim, B * rim, h_wall), at.call(p1, A * rim, B * rim, h_wall), at.call(p1, A * rim, B * rim, h_seat), at.call(p0, A * rim, B * rim, h_seat)], PALETTE[PORTICO], -out],
+			[[at.call(p0, A * rim, B * rim, h_seat), at.call(p1, A * rim, B * rim, h_seat), at.call(p1, ARENA_A, ARENA_B, h_podium), at.call(p0, ARENA_A, ARENA_B, h_podium)], TOP[TREAD], Vector3.UP],
+			[[at.call(p0, ARENA_A, ARENA_B, h_podium), at.call(p1, ARENA_A, ARENA_B, h_podium), at.call(p1, ARENA_A, ARENA_B, h_floor), at.call(p0, ARENA_A, ARENA_B, h_floor)], PALETTE[PODIUM], -out],
+		]
+		for q in quads:
+			var corners: Array[Vector3] = []
+			for c: Vector3 in q[0]:
+				corners.append(c)
+			_emit(st, corners, [3, 3, 3, 3], q[1], q[2], 4.0)
+		var centre := Vector3(0, h_floor, 0)
+		var tri: Array[Vector3] = [centre, at.call(p0, ARENA_A, ARENA_B, h_floor), at.call(p1, ARENA_A, ARENA_B, h_floor), at.call(p1, ARENA_A, ARENA_B, h_floor)]
+		_emit(st, tri, [3, 3, 3, 3], PALETTE[SAND], Vector3.UP, 4.0)
+	return st.commit()
+
+## All LODs, nearest first: the voxel grid at 0.5, 1, 2 and 4 m, then the
+## drum. Built
 ## meshes are cached in user://; bump CACHE after changing the model.
 static func lods() -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
@@ -668,6 +706,7 @@ static func lods() -> Array[ArrayMesh]:
 			mesh = _mesh(vox)
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)
+	out.append(drum())
 	return out
 
 ## Vertex colours (sRGB, baked occlusion) with a faint per-voxel brightness

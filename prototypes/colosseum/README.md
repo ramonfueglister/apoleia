@@ -4,75 +4,73 @@ Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in
 
 ## Was es ist
 
-- `colosseum_mesh.gd` baut das Kolosseum als Voxel-Modell im Stil von Urbek:
-  Eine Achse der Arkade ist als Körper in Metern beschrieben, wird mit
-  12,5-cm-Blöcken voxelisiert und auf jedes der 28 gleich langen
-  Ellipsenstücke gebogen (vier Varianten: Fenster, Eingänge, Menge). So
-  bleiben Bögen, Säulen und Sitzreihen sauber statt treppig wie in einem
-  weltachsigen Gitter. Gemeshed werden nur sichtbare Flächen; gleichfarbige
-  Flächen verschmelzen, wo die Ecken-Schattierung (Voxel-AO in den
-  Vertex-Farben) es zulässt; Unterseiten entfallen. Ein Material, keine
-  Texturen. Details: Rundbögen mit Rahmen und Schlussstein, Halbsäulen mit
-  Basis und Kapitell, getreppte Gesimse, Attika mit Fenstern, Galerie hinter
-  den Bögen, Sitzreihen mit sitzenden Figuren, Eingänge, Podium mit rotem
-  Band, Sandarena, Wimpel an dünnen Masten.
-  - LOD 12,5 cm: ca. 64 000 Dreiecke (bis 50 m Kameradistanz)
-  - LOD 25 cm: ca. 21 500 (50–140 m)
-  - LOD 50 cm: ca. 6 000 (140–320 m); dünne Figuren werden zu Mengenblöcken
-  - Ring: 168 Dreiecke (ab 320 m)
-  - Die Voxel-LODs werden beim ersten Start gebaut (ca. 1 s) und in
-    `user://` zwischengespeichert.
-- `main.gd` zeigt es (`--scene=hero` mit Platz und Zypressen,
-  `--scene=lods`, `--elev` für die Seitenansicht) oder misst
-  (`--scene=bench`) wie unten beschrieben.
-- Licht nach Urbek: kühles Himmelslicht in den Schatten, SSAO, weiche
-  Sonnenschatten, linearer Tonemapper mit leicht erhöhter Sättigung.
-- Varianten der Messung:
-  - `naive`: ein `MeshInstance3D` je Kolosseum, volles Detail
-  - `nodes_lod`: drei `MeshInstance3D` je Kolosseum mit Visibility Ranges
-  - `multimesh`: ein `MultiMesh` mit allen Kolosseen, volles Detail
-  - `chunked`: `MultiMesh`-Chunks zu 4×4 Kolosseen, je Chunk drei LODs
-    über Visibility Ranges, LOD2 ohne Schatten
+- `colosseum_mesh.gd` baut das Kolosseum als Voxel-Modell nach den Regeln von
+  Urbek City Builder (abgelesen an 38 Steam-Store- und 90 Steam-Community-
+  Screenshots): 0,5-m-Voxel auf festem Weltraster (ein Urbek-Stockwerk sind
+  6 Voxel), 74 × 61 m, 21,5 m bis zum Rand, also rund 7 Urbek-Häuser lang.
+  Die Rundung ist sichtbar getreppt: jede Achse ist ein gerader Lauf von
+  6 Voxeln (Pfeiler 2, Bogen 4); wo das Oval flacher als 45° läuft, schauen
+  die Läufe nach Süden/Norden, sonst nach Osten/Westen, so zeigen auch
+  gedrehte Instanzen Bögen. Fassade: drei Arkaden mit eingetieften
+  Rundbögen, Archivolte, Halbsäulen mit Kapitell, Gesimse mit Schattenlinie,
+  geschlossene Attika mit Fenstern und Bronzeschilden, Fahnenmasten auf jeder
+  zweiten Achse. Innen: Säulengang am oberen Umgang, Sitzstufen mit
+  Reihenstreifen, zwei Umgangsmauern mit Eingängen, Zuschauer in kurzen
+  Gruppen (10 %), längliche Arena 37 × 24 m mit rotem Podium.
+- Meshing: nur sichtbare Flächen, gleichfarbige Flächen verschmolzen, wo die
+  Voxel-Eckverschattung es erlaubt, keine Unterseiten. Ein Shader-Material:
+  Vertex-Farben plus leichtes Farbrauschen pro Voxel, keine Texturen.
+- Detailstufen (im Cache unter `user://`, Erstaufbau ca. 5 s):
 
-```sh
-godot --path prototypes/colosseum --windowed --resolution 1280x720 -- \
-  --scene=bench --mode=chunked --count=10000 --view=far --out=bench.jsonl
-```
+  | Stufe | Voxel | Dreiecke | sichtbar bis Bildbreite |
+  |---|---:|---:|---:|
+  | LOD0 | 0,5 m | 70 000 | ca. 130 m |
+  | LOD1 | 1 m, Fassade nach Bogenregeln | 25 000 | 350 m |
+  | LOD2 | 2 m, glattes Oval | 4 000 | 800 m |
+  | LOD3 | 4 m, glattes Oval | 1 200 | 1,75 km |
+  | LOD4 | Trommel | 192 | darüber |
 
-## Stilvorlage (beobachtet, nicht kopiert)
+- `main.gd`: Testszenen mit der Spielkamera (Norden oben, 30° Neigung, FOV 10°)
+  und Umgebung in Urbek-Proportionen (Häuser mit 2 bis 4 Stockwerken à 3 m,
+  Bäume 5 bis 8 m, Menschen 1,8 m). `--scene=hero|lods|bench`, `--width=m`.
 
-Verglichen mit Steam-Store-Screenshots von Urbek City Builder (App 1411740)
+## Stilvorlage und Gauntlet-Loop
+
+Referenzen: Steam-Screenshots von Urbek City Builder (App 1411740 und DLCs)
 und Caesar 3 (App 517790), lokal angesehen, nicht im Repo.
 
-- Urbek: kompakte Volumen, flache Facetten, kantige Gesimse, weiches Licht,
-  eingebackene Bodenverdunkelung in den Vertex-Farben.
-- Caesar III: Palette aus Ausschnitten von Kolosseum, Wiese und Dächern
-  gemessen: graubeiges Travertin, warme dunkle Bögen, Terrakotta-Kranz,
-  Sandarena, roter Fahnenkranz. Die Menge auf den Rängen ist ein geordnetes
-  Farbmuster je Segment und Rang, mit vier dunklen Eingängen (Vomitorien),
-  ohne zusätzliche Dreiecke.
-- Gauntlet-Loop (2026-10-28): sechs Runden mit je einem frischen, unabhängigen
-  Kritiker gegen die Screenshots. Noten (Form/Farbe/Handwerk/Lesbarkeit/
-  Gesamt) von 5/5/4/5/5 auf 6/6/5/6/6; das Ziel ≥ 8 ist nicht erreicht. Die
-  Kritiker widersprechen sich von Runde zu Runde (z. B. Stein heller vs.
-  dunkler, Gesimse tiefer vs. flacher, Menge gesprenkelt vs. geordnet).
+Gauntlet-Loop am 2026-10-28 mit einem festen Kritiker und fester Rubrik
+(Voxel-Sprache, Form, Proportion, Farbe/Licht, Lesbarkeit):
 
-## Messung Voxel-Modell (M3 Pro, Metal, 1280×720, Schatten an)
+| Runde | Voxel | Form | Proportion | Farbe | Lesbarkeit |
+|---|---:|---:|---:|---:|---:|
+| 1 | 5 | 4 | 5 | 5 | 5 |
+| 2 | 7 | 7 | 6 | 7 | 6 |
+| 3 | 7 | 7 | 8 | 7 | 7 |
+| 4 | 8 | 8 | 8 | 8 | 7 |
+| 5 | 8 | 8 | 8 | 8 | 7 |
+| 6 | 8 | 8 | 8 | 8 | 8 |
 
-Auf Akku gemessen, Bildzeit deshalb bei 120 Hz (8,3 ms) gedeckelt;
-Primitive inklusive Schattenpässe.
+Offen (Kritiker, Politur): Rücksprünge der Treppung, die quer zur Kamera
+liegen, könnten schräg gesehene Bögen zeigen statt heller Pfeilerfläche.
 
-| Fall | Primitive | Bildzeit | Render-CPU | Speicher |
-|---|---:|---:|---:|---:|
-| 10 000 naiv (volles Detail), ganze Karte | 578 Mio. | 792 ms | 0,6 ms | 95 MB |
-| 10 000 LOD je Node, ganze Karte | 1,5 Mio. | ≤ 8,3 ms | 2,4 ms | 246 MB |
-| 10 000 Chunks + LOD, Stadtzoom | 5,3 Mio. | ≤ 8,3 ms | 0,1 ms | 74 MB |
-| 10 000 Chunks + LOD, ganze Karte | 1,6 Mio. | ≤ 8,3 ms | 0,7 ms | 75 MB |
-| 50 000 Chunks + LOD, ganze Karte | 4,0 Mio. | 11,5 ms | 1,2 ms | 191 MB |
+## Messung (M3 Pro, Metal, 1280×720, Schatten über die ganze Sicht, Netzteil)
 
-Ohne Detailstufen ist das Voxel-Modell bei tausenden Instanzen unbrauchbar
-(792 ms); mit Chunks und LOD bleibt es im 120-Hz-Rahmen bis 10 000 und bei
-50 000 knapp darüber.
+Parallel lief eine zweite apoleia-Godot-Instanz einer anderen Sitzung; das
+Display deckelt bei 120 Hz (8,3 ms), Werte darunter heißen nur „unter
+8,3 ms“. Primitive ohne Schattenpass.
+
+| Fall | Primitive | Bildzeit | Render-CPU | Draw Calls | Speicher |
+|---|---:|---:|---:|---:|---:|
+| 10 000, Stadtzoom, Chunks + LOD | 4,8 Mio. | ≤ 8,3 ms | 0,2 ms | 15 | 82 MB |
+| 10 000, ganze Karte, Chunks + LOD | 1,9 Mio. | ≤ 8,3 ms | 0,7 ms | 678 | 83 MB |
+| 10 000, ganze Karte, LOD je Node | 1,9 Mio. | ≤ 8,3 ms | 2,2 ms | 3 | 299 MB |
+| 50 000, ganze Karte, Chunks + LOD | 9,6 Mio. | 22 ms | 2,4 ms | 3 138 | 225 MB |
+| 1 000, ganze Karte, volles Detail | 140 Mio. | – | – | 6 | 51 MB |
+
+Ohne Detailstufen ist das Voxel-Modell nicht tragbar (70 000 Dreiecke je
+Bau). 50 000 auf einmal im Bild bräuchten noch eine Stufe über der Trommel
+(z. B. ein zusammengefasstes Mesh je Chunk).
 
 ## Frühere Messungen (Low-Poly-Version, gleiches Gerüst)
 
