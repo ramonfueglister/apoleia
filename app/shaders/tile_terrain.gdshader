@@ -8,11 +8,8 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 #include "res://shaders/tile_terrain.gdshaderinc"
 
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
-// The slope and wall tones take a fixed SimCity 2000 light from the south-west
-// (towards the light, world, unit length): the faces turned to the camera,
-// which always looks north, are the lit ones, as in SimCity 2000 and Urbek.
-// The sun (weather) still lights the tops and the props.
-const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53);
+// The slope and wall tones take the SimCity 2000 light of tt_art_light, not
+// the sun of the weather (which still lights the tops and the props).
 uniform float slope_light = 0.9;                 // SimCity 2000 slope contrast
 uniform int house_grid = 2;                      // house blocks per tile side
 
@@ -209,6 +206,7 @@ void fragment() {
 	int river_sides = side_bits >> 4;
 	vec2 p = world_pos.xz;
 	vec2 centre = tt_tile_center(tile);
+	vec3 art = tt_art_light(INV_VIEW_MATRIX);
 	vec3 c;
 	float rough = 1.0;
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
@@ -259,7 +257,7 @@ void fragment() {
 		// single shade-side steps black walls.
 		vec3 nw = normalize(cross(dFdy(world_pos), dFdx(world_pos)));
 		nw = nw.y < 0.0 ? -nw : nw;
-		float lit = dot(nw, ART_LIGHT) - ART_LIGHT.y;
+		float lit = dot(nw, art) - art.y;
 		float aa_l = fwidth(lit) + 0.02;
 		float tone = mix(0.72, 0.90, smoothstep(-0.05 - aa_l, -0.05 + aa_l, lit));
 		tone = mix(tone, 1.12, smoothstep(0.05 - aa_l, 0.05 + aa_l, lit));
@@ -307,7 +305,7 @@ void fragment() {
 		// lit like the ramps: light on the walls facing the camera, darker
 		// the more a wall turns east
 		vec2 wn = part >= 1 && part <= 4 ? vec2(SIDE[part - 1]) : vec2(0.0, 1.0);
-		float f = dot(wn, normalize(ART_LIGHT.xz));
+		float f = dot(wn, normalize(art.xz));
 		c = base * mix(0.70, 1.0, smoothstep(-0.8, 0.8, f));
 	}
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB

@@ -71,9 +71,10 @@ unabhängig und unverändert.
   Rampen haben drei feste Töne wie in SimCity 2000 (Lichtseite 1,12,
   Seite 0,90, Schattenseite 0,72), kräftig genug, dass die gestapelten Rampen
   bis zur Europakarte lesbar bleiben. Die Töne kommen von einem festen
-  SimCity-Licht aus Südwesten (`ART_LIGHT`), nicht von der Sonne des Wetters:
-  Die Kamera schaut immer nach Norden, so sind die ihr zugewandten Rampen und
-  Wände hell wie in SimCity 2000 und Urbek. Das Licht sieht jede Oberseite und
+  SimCity-Licht von links und hinter der Kamera (`tt_art_light`, aus der
+  Kameralage), nicht von der Sonne des Wetters: So sind die der Kamera
+  zugewandten Rampen und Wände bei jedem Kamerawinkel hell wie in SimCity 2000
+  und Urbek (bei Blick nach Norden kommt es aus Südwesten). Das Licht sieht jede Oberseite und
   Wand als flach, damit Rampen weder glasig noch schwarz werden; Bäume und
   Häuser sind auf ihren Süd- und Westseiten etwas heller getönt.
   Wände sind ein dunklerer Erdton ohne Schichtlinien, nach Osten gewandt
