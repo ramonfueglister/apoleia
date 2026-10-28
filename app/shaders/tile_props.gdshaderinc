@@ -37,7 +37,9 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 			vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
 			uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
 		}
-		show = show && !tt_in_landmark(world_min + (vec2(t) + uv) * tile_km);
+		// the whole house off the landmark blocks (its centre was not enough:
+		// houses reached into the Pantheon)
+		show = show && !tt_near_landmark(world_min + (vec2(t) + uv) * tile_km, 0.45 * tile_km / (sub_tiles ? 1.0 : float(side)));
 	} else {
 		show = show && town == 0;
 		uv = vec2(0.5);

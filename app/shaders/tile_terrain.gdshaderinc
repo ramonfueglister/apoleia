@@ -226,16 +226,17 @@ float tt_corner_height(ivec2 c) {
 
 // The far levels' rising height scale (tools/build_tile_terrain.py
 // LEVEL_STEPS_M): the heights where the count reaches 0, 1, 2, ... levels,
-// 800 m per level above the last.
-const float LEVEL_STEPS_M[9] = float[](100.0, 250.0, 450.0, 700.0, 1000.0, 1400.0, 1900.0, 2500.0, 3200.0);
+// 600 m per level above the last (LEVEL_BEYOND_M).
+const float LEVEL_STEPS_M[12] = float[](100.0, 250.0, 450.0, 700.0, 1000.0, 1300.0, 1600.0, 1900.0, 2200.0, 2500.0, 2900.0, 3400.0);
+const float LEVEL_BEYOND_M = 600.0;
 float tt_far_level_x(float m) {
 	if (m <= LEVEL_STEPS_M[0]) { return 0.0; }
-	for (int k = 1; k < 9; k++) {
+	for (int k = 1; k < 12; k++) {
 		if (m < LEVEL_STEPS_M[k]) {
 			return float(k - 1) + (m - LEVEL_STEPS_M[k - 1]) / (LEVEL_STEPS_M[k] - LEVEL_STEPS_M[k - 1]);
 		}
 	}
-	return 8.0 + (m - LEVEL_STEPS_M[8]) / 800.0;
+	return 11.0 + (m - LEVEL_STEPS_M[11]) / LEVEL_BEYOND_M;
 }
 
 // The near levels' scale (tools/build_tile_terrain.py NEAR_STEPS_M) at 0.5 km
@@ -266,7 +267,7 @@ float tt_level_metres(float x) {
 			: mix(NEAR_STEPS_M[int(floor(x))], NEAR_STEPS_M[min(int(floor(x)) + 1, 12)], fract(x));
 		return m * (tt_data_km() / 0.5);
 	}
-	if (x >= 8.0) { return LEVEL_STEPS_M[8] + (x - 8.0) * 800.0; }
+	if (x >= 11.0) { return LEVEL_STEPS_M[11] + (x - 11.0) * LEVEL_BEYOND_M; }
 	int k = int(floor(x));
 	return mix(LEVEL_STEPS_M[k], LEVEL_STEPS_M[k + 1], fract(x));
 }
@@ -281,6 +282,15 @@ bool tt_in_landmark(vec2 p) {
 	for (int k = 0; k < landmark_count; k++) {
 		vec4 r = landmark_rects[k];
 		if (p.x > r.x && p.y > r.y && p.x < r.z && p.y < r.w) { return true; }
+	}
+	return false;
+}
+
+// p within m (km) of a landmark block: a house there would reach into it
+bool tt_near_landmark(vec2 p, float m) {
+	for (int k = 0; k < landmark_count; k++) {
+		vec4 r = landmark_rects[k];
+		if (p.x > r.x - m && p.y > r.y - m && p.x < r.z + m && p.y < r.w + m) { return true; }
 	}
 	return false;
 }
@@ -393,6 +403,28 @@ int tt_coast_cut_nb(ivec2 t, int cell, int nb[4]) {
 int tt_coast_cut(ivec2 t) {
 	int nb[4] = int[](tt_cell(t + ivec2(0, -1)), tt_cell(t + ivec2(1, 0)), tt_cell(t + ivec2(0, 1)), tt_cell(t + ivec2(-1, 0)));
 	return tt_coast_cut_nb(t, tt_cell(t), nb);
+}
+
+// Lake corner cut, the coast cut turned round: a lake tile at a corner of its
+// lake (land on two neighbouring sides and on the diagonal between them, the
+// lake on the other two) is land on the half towards that corner, so a lake
+// of a few tiles has 45-degree corners and not the outline of a box. Not
+// where those land tiles are cut themselves (a staircase shore), which would
+// draw the shore twice. Returns the corner at the tip of the wet half, or -1.
+int tt_lake_corner_cut(ivec2 t, int nb[4]) {
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	for (int k = 0; k < 4; k++) {
+		int a = nb[k] & 3;
+		int b = nb[(k + 1) & 3] & 3;
+		bool dry = (a == W_LAND || a == W_RIVER) && (b == W_LAND || b == W_RIVER);
+		bool rest_wet = (nb[(k + 2) & 3] & 3) == W_LAKE && (nb[(k + 3) & 3] & 3) == W_LAKE;
+		int d = tt_water(t + S[k] + S[(k + 1) & 3]);
+		if (dry && rest_wet && (d == W_LAND || d == W_RIVER)
+				&& tt_coast_cut(t + S[k]) < 0 && tt_coast_cut(t + S[(k + 1) & 3]) < 0) {
+			return (k + 3) & 3;
+		}
+	}
+	return -1;
 }
 
 // Level of the water in the wet half of a cut tile (tip corner a).

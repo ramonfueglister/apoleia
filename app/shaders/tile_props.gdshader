@@ -13,6 +13,7 @@ uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house, 4 
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
 uniform int slots = 4;
+const float HOUSE_WALL = 0.6; // wall height of the house mesh (tile_prop_meshes.gd)
 uniform float prop_scale = 0.4; // world units of a unit prop
 uniform sampler2D place_tex : filter_nearest, repeat_disable; // tile_prop_prep output
 uniform bool place_ready = false;
@@ -47,12 +48,14 @@ void vertex() {
 	float s = prop_scale * (prop_kind == 3 ? (0.62 + 0.12 * r0) : (0.75 + 0.5 * r0) * edge_size);
 	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
 	// houses stand square to the streets: in towns and villages half of them
-	// turn their gable to the camera; in the city core every ridge runs
-	// north-south and the houses of a block join into a row (below), so the
-	// camera sees gable fronts and both roof slopes, light and dark, as in
-	// Urbek, not one orange slab per house
+	// turn their gable to the camera; in the city core the houses of a block
+	// join into a row (below) whose ridge runs east-west on half of the blocks
+	// (long roof flanks to the camera) and north-south on the others (gable
+	// fronts), block by block (2 x 2 quarters), so the core is neither one
+	// orange carpet nor a field of zippers
 	if (prop_kind == 3) {
-		float turn = town == 3 || fract(r2 * 7.31) < 0.5 ? 1.0 : 0.0;
+		float block = tt_hash(vec2(sub_tiles ? t >> ivec2(1) : t) * 0.731 + 2.3);
+		float turn = (town == 3 ? block < 0.5 : fract(r2 * 7.31) < 0.5) ? 1.0 : 0.0;
 		a = (turn + 2.0 * floor(r2 * 2.0)) * 1.5707963;
 	}
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
@@ -63,12 +66,17 @@ void vertex() {
 		v.x *= 0.9 + 0.25 * r3;
 		v.z *= 0.9 + 0.2 * fract(r3 * 5.7);
 		// city core: each house as long as its block, so the houses of a
-		// street join into one row (an insula of a few houses)
-		if (town == 3) { v.x = VERTEX.x * 0.92 * tile_km / ceil(sqrt(float(slots))); }
+		// street join into one row (an insula of a few houses); not from the
+		// 1 km tiles on, where the rows ran together into red bars
+		if (town == 3 && tile_km < 0.75) { v.x = VERTEX.x * 0.86 * tile_km / ceil(sqrt(float(slots))); }
 	}
 	// in towns two to three storeys, in the city core insulae of up to four
-	// (lower than Rome's temples and the Colosseum)
-	if (prop_kind == 3) { v.y *= 1.0 + (town == 3 ? 1.0 : town == 2 ? 0.5 : 0.0) * r1; }
+	// (lower than Rome's temples and the Colosseum); only the walls grow, the
+	// roof keeps its low Roman pitch
+	if (prop_kind == 3) {
+		float grow = (town == 3 ? 1.0 : town == 2 ? 0.5 : 0.0) * r1;
+		v.y += min(VERTEX.y, HOUSE_WALL) * grow * s;
+	}
 	// on a ramp the walls reach down to the lowest ground under the house, as
 	// a house on a hillside stands on its lower storey
 	if (prop_kind == 3 && VERTEX.y < 0.01) {

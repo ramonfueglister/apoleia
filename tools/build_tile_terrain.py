@@ -75,15 +75,21 @@ MOUNTAIN_TO_M = 1300.0
 # Far zoom levels (2 km tiles and up) get their corner levels from the bake
 # (corner_levels), so the tiles follow SimCity 2000 rules there too, on a
 # rising scale: LEVEL_STEPS_M are the heights where the count reaches 0, 1,
-# 2, ... levels (800 m per level above the last), the land height blurred
-# over CORNER_BLUR tiles first. Plains stay one flat level, hills get 2, the
-# Apennines a ridge of 3 to 4 and the Alps 5 to 7 (equal steps either drew a
-# maze of thin terraces in the hills or left the Apennines one flat step).
-# The shader mirrors the scale (tt_far_level_x); the app draws far steps
-# taller (LEVEL_HEIGHTS).
+# 2, ... levels (LEVEL_BEYOND_M per level above the last), the land height
+# blurred over CORNER_BLUR tiles first. Plains stay one flat level, hills get
+# 2, the Apennines a ridge of 3 to 5 and the Alps 6 to 8 (equal steps either
+# drew a maze of thin terraces in the hills or left the Apennines one flat
+# step). Above 1000 m a level is 300 m, so the ranges rise to a crest instead
+# of one wide table at 1400 to 1900 m (the Alps read as a mesa). The height
+# takes PEAK_SHARE of the highest point within a tile before the blur, so a
+# narrow range (Apennines, Pyrenees) keeps its crest instead of melting into
+# the plains. The shader mirrors the scale (tt_far_level_x); the app draws far
+# steps taller (LEVEL_HEIGHTS).
 BAKED_FROM = 2
-LEVEL_STEPS_M = [100.0, 250.0, 450.0, 700.0, 1000.0, 1400.0, 1900.0, 2500.0, 3200.0]
-CORNER_BLUR = 1.2
+LEVEL_STEPS_M = [100.0, 250.0, 450.0, 700.0, 1000.0, 1300.0, 1600.0, 1900.0, 2200.0, 2500.0, 2900.0, 3400.0]
+LEVEL_BEYOND_M = 600.0
+CORNER_BLUR = 0.7
+PEAK_SHARE = 0.75
 
 
 def _steps_level_x(metres, steps, beyond):
@@ -95,7 +101,7 @@ def _steps_level_x(metres, steps, beyond):
 
 def far_level_x(metres):
     """Height in far levels (unrounded) on the LEVEL_STEPS_M scale."""
-    return _steps_level_x(metres, LEVEL_STEPS_M, 800.0)
+    return _steps_level_x(metres, LEVEL_STEPS_M, LEVEL_BEYOND_M)
 
 
 # The near levels (0.5 and 1 km tiles) are baked from a finer height model
@@ -110,7 +116,7 @@ def far_level_x(metres):
 NEAR_LEVELS = (0, 1)
 NEAR_STEPS_M = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0]
 NEAR_BEYOND_M = 120.0
-NEAR_BLUR = [1.0, CORNER_BLUR]  # tiles, per near level
+NEAR_BLUR = [1.0, 1.2]  # tiles, per near level
 NEAR_CLEAN = [3, 3]  # corner square of the cleaning, per near level
 DEM_ZOOM = 8
 DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
@@ -574,7 +580,8 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     """SimCity 2000 terrain at a far zoom level: the height level of every tile
     corner ((ny + 1) x (nx + 1) for ny x nx tiles).
 
-    The land height, blurred over CORNER_BLUR tiles, on the LEVEL_STEPS_M
+    The land height (PEAK_SHARE of it the highest point within a tile),
+    blurred over CORNER_BLUR tiles, on the LEVEL_STEPS_M
     scale, is limited to one level
     per tile between all eight neighbours (mean of the lower and upper
     envelope, so peaks and valleys keep half their excess) and rounded.
@@ -584,7 +591,9 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     the land shows clean terraces and whole massifs instead of boxes. The one
     level rule is enforced again at the end (only by lowering)."""
     ny, nx = water.shape
-    h = gauss(np.maximum(height, 0).astype(np.float32), CORNER_BLUR * tile_km / (WORLD_SIZE[0] / (GRID_W - 1)))
+    h = np.maximum(height, 0).astype(np.float32)
+    h = (1.0 - PEAK_SHARE) * h + PEAK_SHARE * ndimage.maximum_filter(h, size=max(int(round(tile_km / NODE_KM)), 1) + 1)
+    h = gauss(h, CORNER_BLUR * tile_km / (WORLD_SIZE[0] / (GRID_W - 1)))
     px = WORLD_MIN[0] + np.arange(nx + 1, dtype=np.float64) * tile_km
     pz = WORLD_MIN[1] + np.arange(ny + 1, dtype=np.float64) * tile_km
     x = far_level_x(node_bilinear(h, px[None, :], pz[:, None]))
@@ -637,7 +646,8 @@ def bake_levels(manifest, cells, height, lake_enc, shore):
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
                                    "level_steps_m": LEVEL_STEPS_M,
-                                   "blur_tiles": CORNER_BLUR,
+                                   "blur_tiles": CORNER_BLUR, "peak_share": PEAK_SHARE,
+                                   "beyond_m": LEVEL_BEYOND_M,
                                    "path": path.name, "sha256": sha(path),
                                    "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
                                            "between all eight neighbours, sea corners 0, land >= 1"})
@@ -859,6 +869,13 @@ def _node_noise(scale_km, seed):
     return _NOISE[key]
 
 
+# Least forest share of a tile for a wood, by tile size (km). Far out only the
+# dense woods stay forest: the Roman cover holds woods on over half of Italy,
+# which drew the far views as one dark olive camouflage; from the 1 km tiles a
+# wood needs a denser cover (Italy about 40 % wood, Europe 12 % instead of 17 %).
+WOOD_MIN = {0.5: 0.45, 1.0: 0.75, 2.0: 0.78, 4.0: 0.70, 8.0: 0.66, 16.0: 0.65}
+
+
 def ground_classes(water, tile_km, height, cover, band=1024):
     """The landscape of every tile at one zoom level, from the data at the
     tile centre (averaged over the tile when it is wider than the 2 km data).
@@ -917,7 +934,7 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         # (only up close: far out the glades are noise); far out only the
         # dense woods stay forest, so the land reads light with dark woods as
         # in the painted map instead of one dark green
-        wood_min = 0.45 + 0.05 * max(math.log2(tile_km), 0.0)
+        wood_min = WOOD_MIN.get(tile_km, 0.65)
         wood = (forest - 0.25 * farmed + 0.6 * n1 > wood_min) & (h + 100 * n3 < 1400)
         if tile_km <= 2.0:
             wood &= n4 < 0.12
@@ -956,9 +973,10 @@ def tidy_ground(g, passes=2):
     return g
 
 
-def bake_ground(manifest, cells, height, cover):
-    manifest["ground"] = []
-    for level in range(LEVELS):
+def bake_ground(manifest, cells, height, cover, only=None):
+    only = tuple(range(LEVELS)) if only is None else only
+    manifest["ground"] = [e for e in manifest.get("ground", []) if e["level"] not in only]
+    for level in only:
         tile = BASE_CELL_KM * 2 ** level
         g = tidy_ground(ground_classes(cells[level], tile, height, cover), passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
@@ -984,7 +1002,9 @@ def ground_only():
     manifest = json.loads((OUT / "manifest.json").read_text())
     height = np.fromfile(OUT / "height.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
     cells = {e["level"]: unpack_cells(e) for e in manifest["cells"]}
-    bake_ground(manifest, cells, height, ground_cover())
+    only = tuple(int(a.split("=")[1]) for a in sys.argv if a.startswith("--level=")) or None
+    bake_ground(manifest, cells, height, ground_cover(), only)
+    manifest["ground"].sort(key=lambda e: e["level"])
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
 

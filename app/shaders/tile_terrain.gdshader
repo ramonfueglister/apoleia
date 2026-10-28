@@ -115,6 +115,13 @@ void vertex() {
 	int nc[4];
 	for (int k = 0; k < 4; k++) { nc[k] = tt_cell(tile + SIDE[k]); }
 	vec4 own = tt_corners_cached(tile);
+	// a lake tile at a corner of its lake is land on that half, at the level
+	// of the shore around it (tt_lake_corner_cut)
+	int lake_cut = !sub_tiles && water == W_LAKE ? tt_lake_corner_cut(tile, nc) : -1;
+	if (lake_cut >= 0) {
+		water = W_LAND;
+		own = vec4(tt_lake_level(tile));
+	}
 	body_level = min(min(own.x, own.y), min(own.z, own.w));
 	// flat by the rounded levels, so tiles keep their flat/ramp look while the
 	// steps melt into the smooth relief
@@ -126,10 +133,10 @@ void vertex() {
 	// closer in level, so a single raised or lowered corner makes one flat and
 	// one sloped triangle instead of a folded pair. A coast cut forces the
 	// diagonal and lowers the half at its tip to the water.
-	int cut = tt_coast_cut_nb(tile, cell, nc);
+	int cut = lake_cut >= 0 ? lake_cut : tt_coast_cut_nb(tile, cell, nc);
 	cut_tip = cut;
 	int split = cut >= 0 ? (cut + 1) & 3 : (abs(own.x - own.z) <= abs(own.y - own.w) ? 0 : 1);
-	float cut_level = cut >= 0 ? tt_cut_level(tile, cut) : 0.0;
+	float cut_level = lake_cut >= 0 ? own.x - tt_water_drop() : cut >= 0 ? tt_cut_level(tile, cut) : 0.0;
 	wet_tri = 0;
 	if (part == 0) {
 		// two separate triangles (roles 0..2 and 3..5), so the wet half can
@@ -191,7 +198,7 @@ void vertex() {
 		}
 	}
 	shore_lake = lake_near ? 1 : 0;
-	int ground = tt_ground(tile);
+	int ground = lake_cut >= 0 ? tt_ground(tile + SIDE[(lake_cut + 1) & 3]) : tt_ground(tile);
 	int ground_alt = ground;
 	int ground_tip = -1;
 	if (water != W_SEA && water != W_LAKE && part == 0 && cut < 0) {
@@ -295,12 +302,16 @@ void fragment() {
 			ivec2 pl = tile - prop_origin;
 			bool housed = town_props && pl.x >= 0 && pl.y >= 0 && pl.x < prop_n && pl.y < prop_n;
 			// up close only the flat quarters are built on (tile_props: one
-			// house each); villages pave just the yard under their houses
+			// house each); villages pave just the yard under their houses,
+			// towns and cities their ramps too, as stairs a little darker than
+			// the squares (no field or meadow strips inside a town)
 			bool built = !sub_tiles || flat_top > 0.5;
 			bool yard = sub_tiles && built && tt_sub_house(tile, town);
 			if (housed) {
-				c = (town >= 2 && built) || yard ? C_PAVED : c;
-			} else if (town >= 2) {
+				c = town >= 2 ? C_PAVED * (built ? 1.0 : 0.92) : yard ? C_PAVED : c;
+			} else if (town >= 2 && tile_km < 8.0) {
+				// (from 8 km tiles a town is one roof coloured tile: a red
+				// marker on the map, so they go there)
 				c = C_ROOF;
 			}
 			// streets between the house blocks of towns and cities (the grid of
@@ -332,9 +343,9 @@ void fragment() {
 		}
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient: lit from the left, so slopes turned left are light (+18 %
-		// up close, +10 % far out, where light ramps read as glass strips),
-		// those turned right dark (-20 %), and the steps facing the camera or
-		// away from it a little darker than the flat terraces (-10 %), so a
+		// up close, +15 % far out, so forest slopes keep a lit side), those
+		// turned right dark (-20 %), and the steps facing the camera or
+		// away from it a little darker than the flat terraces (-12 %), so a
 		// stack of terraces reads as treads and risers. Diagonal slopes take
 		// both (south-west +8 %, south-east -19 %). The light itself sees every
 		// top as flat (NORMAL below), so this is the only shading: lambert on
@@ -350,11 +361,11 @@ void fragment() {
 		float fb = dot(dir, cam_back);
 		// continuous in the direction, so the tone never flips between two
 		// sides from pixel to pixel
-		float lit = mix(0.18, 0.10, far_share());
+		float lit = mix(0.18, 0.15, far_share());
 		// slopes turned away from the camera are seen edge on: they fade to
 		// the flat tone, else a long step draws a dark crack across the land
 		float away = clamp(1.0 + min(fb, 0.0), 0.0, 1.0);
-		float tone = 1.0 - ((fr < 0.0 ? lit : 0.20) * fr + 0.10 * fb * fb) * away;
+		float tone = 1.0 - ((fr < 0.0 ? lit : 0.20) * fr + 0.12 * fb * fb) * away;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
