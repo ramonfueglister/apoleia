@@ -30,18 +30,25 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		uv = vec2(0.5);
 	}
 	if (!house && show) {
-		// the costly part only for slots that can hold a tree
-		vec4 cov = tt_cover(centre);
-		float density = tt_tree_density(centre, cov.r);
+		// slots on a jittered grid, so a dense wood covers the tile evenly
+		int side = int(ceil(sqrt(float(slots))));
+		vec2 g = vec2(float(slot % side), float(slot / side));
+		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
+		// the costly part only for slots that can hold a tree: a tree stands
+		// where the wood of the ground colour reaches its spot (the same field
+		// and wobble as ground_colour), so wood edges run through the tiles
+		vec2 at = world_min + (vec2(t) + uv) * tile_km;
+		vec4 cov = tt_cover(at);
+		float density = tt_tree_density(at, cov.r);
+		float wood = density + 0.15 * (tt_fbm(at / (0.9 * tile_km)) - 0.5);
 		// single trees mostly where the wood thins out, few in open land
 		float edge = smoothstep(0.0, 0.25, density) * (1.0 - smoothstep(0.5, 0.9, density));
 		float lone = 0.015 + 0.10 * cov.g * 0.3 + 0.35 * edge;
-		float n = floor(density * float(slots) + tt_hash(vec2(t) * 0.913) * 0.8);
 		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
-		show = show && (float(slot) < n || lone_tree);
+		show = show && (wood > 0.3 || lone_tree);
 		edge_size = mix(0.7, 1.0, smoothstep(0.15, 0.7, density)); // smaller at the wood edge
-		float h = tt_height_m(centre, height_lod);
-		float lat = tt_latitude(centre);
+		float h = tt_height_m(at, height_lod);
+		float lat = tt_latitude(at);
 		show = show && h < 1400.0 && cov.g < 0.7;
 		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
 		// stone pines and cypresses in the warm lowlands, more of them in open land
@@ -51,10 +58,6 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;
 		code = float(kind) + 0.25 * edge_size;
-		// slots on a jittered grid, so a dense wood covers the tile evenly
-		int side = int(ceil(sqrt(float(slots))));
-		vec2 g = vec2(float(slot % side), float(slot / side));
-		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
 	}
 	vec4 c = show ? tt_corners_cached(t) : vec4(0.0);
 	if (house) { code = float(town); }

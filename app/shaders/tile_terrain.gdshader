@@ -31,6 +31,7 @@ varying flat int wet_tri;     // the wet half of a coast cut tile
 const vec3 C_PLAIN = vec3(0.494, 0.600, 0.290);
 const vec3 C_GRASS = vec3(0.392, 0.545, 0.251);
 const vec3 C_DRY = vec3(0.706, 0.655, 0.388);
+const vec3 C_DRY_GRASS = vec3(0.612, 0.627, 0.318);
 const vec3 C_HILL = vec3(0.353, 0.475, 0.255);
 const vec3 C_FOREST = vec3(0.216, 0.318, 0.165);
 const vec3 C_SAND = vec3(0.847, 0.753, 0.549);
@@ -185,31 +186,42 @@ void vertex() {
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
 
-// Colour of a land tile: one colour per tile, as in SimCity 2000, from the
-// land cover and height at its centre (the data mip that matches the tile).
-vec3 tile_colour(vec2 centre, vec4 cov, float h, float trees) {
-	float n = tt_fbm(centre / (6.0 * tile_km));
-	float lat = tt_latitude(centre);
+// A crisp edge where x crosses t: anti-aliased over one pixel, never a blur.
+float edge(float x, float t) {
+	float aa = fwidth(x) * 0.75 + 1e-4;
+	return smoothstep(t - aa, t + aa, x);
+}
+
+// Ground colour at p. The landscape may change inside a tile (Ramon,
+// 28.10.2026): wood, fields, dry land, rock and snow are classes with crisp,
+// slightly wavy edges that run through the tiles like natural borders,
+// instead of soft blends or one colour per tile. The data is read at half a
+// tile (`lod`), the wobble is a fraction of a tile, so it looks alike at
+// every zoom. `wood` returns the share of forest floor at p.
+vec3 ground_colour(vec2 p, float lod, out float wood, out float h) {
+	vec4 cov = textureLod(cover_tex, tt_node_uv(p), lod);
+	h = tt_height_m(p, lod);
+	float lat = tt_latitude(p);
+	float w1 = tt_fbm(p / (0.9 * tile_km)) - 0.5;
+	float w2 = tt_fbm(p / (1.7 * tile_km) + 31.7) - 0.5;
+	vec3 c = mix(C_PLAIN, C_GRASS, 0.35 + 0.65 * tt_fbm(p / (6.0 * tile_km)));
+	// summer-dry grass towards the Mediterranean
+	c = mix(c, C_DRY_GRASS, smoothstep(45.5, 39.0, lat) * 0.55);
 	float dry = cov.g;
-	vec3 c = mix(C_PLAIN, C_GRASS, 0.35 + 0.65 * n);
-	if (lat < 37.5) {
-		c = mix(c, C_DRY, clamp(dry * 1.2, 0.0, 1.0));
-		c = mix(c, C_SAND_DARK, clamp((dry - 0.6) * 2.0, 0.0, 1.0));
-	} else {
-		c = mix(c, C_DRY, clamp(dry * 1.1, 0.0, 0.85));
-	}
-	c = mix(c, C_CROP, clamp(cov.b * 1.4, 0.0, 0.6) * 0.5);
-	c = mix(c, C_FOREST, 0.15 * cov.r + 0.75 * trees);
-	c = mix(c, C_WET, clamp(cov.a * 2.0, 0.0, 0.8));
+	c = mix(c, C_DRY, 0.25 * dry);
+	c = mix(c, lat < 37.5 ? C_SAND_DARK : C_DRY, edge(dry + 0.3 * w1, 0.55) * 0.8);
+	c = mix(c, C_CROP, edge(cov.b + 0.35 * w2, 0.5) * 0.55);
+	c = mix(c, C_WET, edge(cov.a + 0.3 * w2, 0.35) * 0.7);
 	c = mix(c, C_HILL, clamp((h - 500.0) / 900.0, 0.0, 1.0) * (1.0 - dry));
-	// the tile height is a mean over the tile: far out the peaks average lower;
-	// the snow line climbs to the south and stays off dry high plateaus
-	float lower = 60.0 * height_lod;
+	wood = edge(tt_tree_density(p, cov.r) + 0.15 * w1, 0.3) * (1.0 - edge(h, 1400.0));
+	// rock and snow above wavy lines; far out the data mean is lower than the
+	// peaks, and the snow line climbs to the south and stays off dry plateaus
+	float lower = 60.0 * lod;
 	float snow_line = 1600.0 - 2.0 * lower + max(45.0 - lat, 0.0) * 70.0 + 500.0 * dry;
-	c = mix(c, C_ROCK, clamp((h - 1100.0 + lower) / 350.0, 0.0, 1.0));
-	c = mix(c, C_SNOW, clamp((h - snow_line) / 180.0, 0.0, 1.0));
+	c = mix(c, C_ROCK, edge(h + 220.0 * w1, 1150.0 - lower));
+	c = mix(c, C_SNOW, edge(h + 160.0 * w2, snow_line));
 	// a touch of variation from tile to tile, like hand-laid diorama tiles
-	return c * (0.975 + 0.05 * tt_hash(vec2(tile) * 0.731 + 3.1));
+	return c * (0.985 + 0.03 * tt_hash(vec2(tile) * 0.731 + 3.1));
 }
 
 // How sharply a pattern of `cells` per tile can be drawn: 1 while a cell
@@ -220,8 +232,9 @@ float pattern_detail(float cells) {
 }
 
 // Wood far out, where no tree props are drawn: round crowns on a jittered
-// grid, lit from the sun side, as on the SimCity 2000 forest tiles.
-vec3 forest_crowns(vec3 floor_c, float trees, float h) {
+// grid, lit from the sun side, as on the SimCity 2000 forest tiles. A crown
+// stands where the wood reaches its centre, so the wood edge stays natural.
+vec3 forest_crowns(vec3 floor_c, float wood, float h, float lod) {
 	float k = tile_km >= 4.0 ? 2.0 : 3.0;
 	vec2 q = tile_uv * k;
 	vec2 cell = floor(q);
@@ -229,7 +242,9 @@ vec3 forest_crowns(vec3 floor_c, float trees, float h) {
 	float r = 0.36 + 0.1 * tt_hash(id + 7.7);
 	vec2 o = (vec2(tt_hash(id), tt_hash(id + 3.3)) - 0.5) * (0.9 - 2.0 * r) ;
 	vec2 d = fract(q) - 0.5 - o;
-	bool tree = tt_hash(id * 1.37 + 0.5) < trees * 1.15;
+	vec2 at = world_min + (vec2(tile) + (cell + 0.5 + o) / k) * tile_km;
+	float wood_at = tt_tree_density(at, textureLod(cover_tex, tt_node_uv(at), lod).r);
+	bool tree = wood_at > 0.3 + 0.2 * tt_hash(id * 1.37 + 0.5) && h < 1400.0;
 	// conifers in the mountains: darker and bluer
 	float conifer = smoothstep(700.0, 1100.0, h);
 	vec3 dark = mix(vec3(0.165, 0.271, 0.129), vec3(0.122, 0.231, 0.161), conifer);
@@ -240,10 +255,10 @@ vec3 forest_crowns(vec3 floor_c, float trees, float h) {
 	float crown = tree ? 1.0 - smoothstep(r - aa, r + aa, dist) : 0.0;
 	float shine = clamp(dot(d / r, sun) * 0.8 + 0.35, 0.0, 1.0);
 	vec3 crown_c = mix(dark, light, shine * (1.0 - smoothstep(0.55, 1.0, dist / r) * 0.6));
-	vec3 ground = floor_c * 0.78;
+	vec3 ground = mix(floor_c, floor_c * 0.78, wood);
 	vec3 c = mix(ground, crown_c, crown);
 	// the average of the pattern once crowns get smaller than a few pixels
-	vec3 mean_c = mix(ground, mix(dark, light, 0.45), min(trees * 1.15, 1.0) * 0.55);
+	vec3 mean_c = mix(ground, mix(dark, light, 0.45), wood * 0.55);
 	return mix(mean_c, c, pattern_detail(k));
 }
 
@@ -274,11 +289,12 @@ vec3 town_roofs(vec3 ground_c, int town) {
 }
 
 // Sea colour: a shore band one tile wide, built from the tiles (`shallow`),
-// then one calm blue, as in SimCity 2000. Nothing comes from the finer coast
-// data, so islets smaller than a tile leave no halo, at every zoom.
+// in two crisp steps like the land terraces, then one calm blue, as in
+// SimCity 2000. Nothing comes from the finer coast data, so islets smaller
+// than a tile leave no halo, at every zoom.
 vec3 sea_colour() {
-	vec3 c = mix(W_LAGOON, W_SHALLOW, smoothstep(0.0, 0.5, shallow));
-	return mix(c, W_OPEN, smoothstep(0.4, 1.0, shallow));
+	vec3 c = mix(W_LAGOON, W_SHALLOW, edge(shallow, 0.3));
+	return mix(c, W_OPEN, edge(shallow, 0.65));
 }
 
 // Distance (in tile units) from the tile edge on the sides set in `mask`
@@ -315,15 +331,15 @@ void fragment() {
 		}
 		rough = 0.55;
 	} else if (part == 0) {
-		vec4 cov = tt_cover(centre);
-		float h = tt_height_m(centre, height_lod);
 		bool props = tile_km < 1.5; // trees and houses are drawn as models
-		// far out the colour reads the cover a little wider than the tile, so
-		// woods and fields form calm patches instead of single-tile specks
-		vec4 cov_c = props ? cov : textureLod(cover_tex, tt_node_uv(centre), height_lod + 0.7);
-		float trees = tt_tree_density(centre, cov_c.r);
+		float lod = max(height_lod - 1.0, 0.0); // half a tile
+		float wood;
+		float h;
 		int town = tt_town(tile);
-		c = tile_colour(centre, cov_c, h, props ? trees : 0.0);
+		c = ground_colour(p, lod, wood, h);
+		if (props) {
+			c = mix(c, C_FOREST, wood * 0.8); // the floor under the tree models
+		}
 		if (town > 0 && props) {
 			c = mix(c, C_PAVED, 0.75);
 			// streets between the house blocks
@@ -332,8 +348,8 @@ void fragment() {
 			if (town >= 2) { c = mix(c, C_STREET, 1.0 - street); }
 		} else if (town > 0) {
 			c = town_roofs(c, town);
-		} else if (trees > 0.12 && !props && h < 1400.0) {
-			c = forest_crowns(c, trees, h);
+		} else if (!props) {
+			c = forest_crowns(c, wood, h, lod);
 		}
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0) {
@@ -351,7 +367,7 @@ void fragment() {
 		}
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
-			c = mix(c, C_SLOPE, 0.22);
+			c = mix(c, C_SLOPE, 0.12);
 		}
 		// SimCity 2000 slope tiles come in two clear tones: sun side light,
 		// shade side dark, with no gradient in between

@@ -19,7 +19,9 @@ uniform float tile_km = 2.0;
 uniform float level_h = 0.36;  // world units per height level
 uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
-uniform float relief_blur = 1.5; // extra mip levels on the relief for the corner levels
+uniform sampler2D levels_tex : filter_nearest, repeat_disable; // far levels: baked corner levels (8 bit)
+uniform bool levels_ready = false;
+uniform float level_floor_m = 0.0; // far levels count from this height (metres)
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
 
@@ -90,9 +92,8 @@ int tt_town(ivec2 t) {
 float tt_corner_height(ivec2 c) {
 	// blurred, so level contours run as long clean lines (as in SimCity 2000)
 	// instead of single-tile bumps and pits; the blur only lowers slopes
-	// (less far out, where a tile already spans many data nodes)
 	vec2 uv = tt_node_uv(tt_corner_pos(c));
-	float h = textureLod(relief_tex, uv, height_lod + relief_blur).r;
+	float h = textureLod(relief_tex, uv, height_lod + 1.5).r;
 	// the blur must not lift the land next to the water: cap it with the sharp
 	// water envelope, which rises one level per tile from every shore
 	return shore_ready ? min(h, textureLod(shore_tex, uv, 0.0).r) : h;
@@ -115,7 +116,7 @@ float tt_lake_level(ivec2 t) {
 	}
 	// small lakes between the nodes: the bake pinned their nodes in the envelope
 	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
-	float x = max(metres, 0.0) / m_per_level;
+	float x = max(metres - level_floor_m, 0.0) / m_per_level;
 	return max(round(x), 1.0);
 }
 
@@ -138,6 +139,13 @@ float tt_clean_level(ivec2 c, float l) {
 }
 
 float tt_land_corner(ivec2 c) {
+	if (levels_ready) {
+		// far levels: baked with the same rules (tools/build_tile_terrain.py,
+		// corner_levels), shores and lakes included
+		ivec2 n = textureSize(levels_tex, 0);
+		if (c.x < 0 || c.y < 0 || c.x >= n.x || c.y >= n.y) { return 0.0; }
+		return round(texelFetch(levels_tex, c, 0).r * 255.0);
+	}
 	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
 	bool shore = false;
 	float lake = 1.0e6;

@@ -10,17 +10,24 @@ unabhängig und unverändert.
   benachbarte Kacheln teilen ihre Ecken. Dadurch ist das Land eine durchgehende
   Fläche aus flachen Kacheln und Rampen, wie in SimCity 2000 (XTER-Formen
   00–0D: jede Ecke liegt auf der Kachelhöhe oder eine Stufe darüber).
-- Benachbarte Ecken liegen bis zu 2-km-Kacheln **höchstens eine Stufe**
+- Benachbarte Ecken liegen bei 0,5- und 1-km-Kacheln **höchstens eine Stufe**
   auseinander. Das sichert das gebackene Relief (`sc2k_relief`), das auf
   `RELIEF_SLOPE` m/km begrenzt ist. Weiter draußen sind steilere Rampen erlaubt.
 - Eine Stufe ist **0,6 Kachelbreiten** hoch (SimCity 2000: 12 px Stufe auf einer
-  32 × 16 px Kachel). Bis 2-km-Kacheln entspricht eine Stufe `RELIEF_SLOPE ×
-  Kachelbreite` echten Metern, darüber wächst sie nur mit (Kachel / 2 km)^0,4.
-- Höhen sind bis 2-km-Kacheln **3,75-fach** überhöht (`HEIGHT_EXAGGERATION`,
-  Kit 1 K06, geändert am 27.10.2026), weiter draußen stärker (bis 13-fach bei
-  16-km-Kacheln), damit Gebirge auf der Europakarte mehrere Stufen behalten.
-  Daraus folgt `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in
-  SimCity 2000 statt vieler schmaler Streifen.
+  32 × 16 px Kachel). Bei 0,5- und 1-km-Kacheln entspricht eine Stufe
+  `RELIEF_SLOPE × Kachelbreite` echten Metern, also 3,75-fach überhöht
+  (`HEIGHT_EXAGGERATION`, Kit 1 K06, geändert am 27.10.2026). Daraus folgt
+  `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in SimCity 2000 statt
+  vieler schmaler Streifen.
+- Ab 2-km-Kacheln kommen die Eckstufen aus dem Bake (`levels-L*.png`,
+  `corner_levels`): eine Stufe sind 200 / 240 / 280 / 320 m echt
+  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 150 m
+  (`LEVEL_FLOOR_M`). Ebenen und flaches Hügelland bleiben so eine Stufe, ohne
+  Terrassenlinien quer durchs Flachland, und Gebirge behalten auf der
+  Europakarte mehrere Stufen (Alpen bis 10 Stufen). Die Höhe wird vorher über
+  1,2 Kacheln weichgezeichnet, danach räumt der Bake je Stufe auf (Öffnen und
+  Schließen mit 3 × 3 Ecken): einzelne Buckel, Löcher und eine Kachel breite
+  Stege verschwinden, Gebirge bleiben als zusammenhängende Massive stehen.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
   Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
@@ -41,14 +48,25 @@ unabhängig und unverändert.
   auf 1 × `RELIEF_SLOPE`: auch Gebirge folgen der Ein-Stufen-Regel.
   Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
   (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
-- Optik: Jede Kachel hat **eine Farbe**, wie in SimCity 2000, aus Bewuchs und
-  Höhe in ihrer Mitte (Datenstufe passend zur Kachelgröße), mit einer kleinen
-  Abweichung von Kachel zu Kachel. Rampen haben zwei klare Töne (Sonnenseite hell,
-  Schattenseite dunkel). Fels ab etwa 1100 m, Schnee ab etwa 1600 m. Am Meer
-  ein Sandsaum (ein Viertel Kachel) an den Wasserseiten und auf der Schnittdiagonale.
-  Das Meer hat einen hellen Uferstreifen, der aus den Kachelecken entsteht (eine
-  Kachel breit, folgt Treppe und Diagonalen genau), und wird weiter draußen nach
-  Abstand in Kacheln dunkel. Städte mit Straßenraster und Mauer am Kern.
+- Flüsse sind je Zoomstufe **eine saubere Linie aus Kacheln**: Der Bake zeichnet
+  die Mittellinie jedes Flusses (eine Kachel breit), verbindet reine
+  Diagonalschritte über eine Landkachel, füllt Schlaufen um bis zu 4 Kacheln,
+  dünnt doppelte Läufe auf eine Kachel aus (4-einfache Zellen, Ränder und Enden
+  bleiben) und kappt Seitenstummel bis 3 Kacheln Länge sowie einzelne Zellen
+  (`clean_rivers`). Mündungen am Meer und an Seen bleiben stehen. Echte
+  Flussarme um größere Inseln bleiben als Schlaufe erhalten.
+- Optik: Die Landschaft wechselt **innerhalb der Kacheln** (Ramon, 28.10.2026):
+  Wiese, trockenes Grasland, Felder, Feuchtgebiet, Wald, Fels und Schnee sind
+  Flächen mit klaren, leicht gewellten Rändern (Rauschen über 0,9 und 1,7
+  Kacheln), gelesen eine halbe Kachel fein. Im Mittelmeerraum wird die Wiese
+  trockener. Fels ab etwa 1150 m, Schnee ab etwa 1600 m, im Süden und im
+  Trockenen höher (kein Schnee auf dem anatolischen Hochland). Rampen haben
+  zwei klare Töne (Sonnenseite hell, Schattenseite dunkel). Am Meer ein
+  Sandsaum (ein Viertel Kachel) an den Wasserseiten und auf der
+  Schnittdiagonale. Das Meer hat zwei klar gestufte Uferstreifen aus den
+  Kachelecken (Lagune, flaches Wasser), danach offenes Meer in einem Ton.
+  Städte mit Straßenraster und Mauer am Kern. Bäume stehen genau dort, wo der
+  Boden Wald zeigt (dieselbe Waldgrenze für Modelle und Bodenfarbe).
 
 ## Fernsicht (Kacheln bis Europa)
 
@@ -58,9 +76,9 @@ Regeln wie nah. Wo keine Baum- und Hausmodelle mehr stehen (ab 2-km-Kacheln),
 zeichnet der Shader Wald als runde Baumkronen im Raster und Städte als rote
 Dächer mit Sonnen- und Schattenseite, so wie die Modelle nah. Werden diese Muster
 kleiner als ein paar Pixel, gehen sie in ihre Mittelfarbe über. Damit Gebirge
-draußen nicht zu einer Stufe zusammenfallen, wächst eine Stufe ab 2-km-Kacheln
-langsamer als die Kachel (`FAR_POW`), und das Relief für die Eckhöhen wird
-weniger weichgezeichnet (`RELIEF_BLUR`). Licht: wenig Umgebungslicht und
+draußen nicht zu einer Stufe zusammenfallen und das Flachland ruhig bleibt,
+kommen die Eckstufen ab 2-km-Kacheln aus dem Bake (siehe Geländeregeln). Ohne
+Modelle werfen die Kacheln keine Schatten. Licht: wenig Umgebungslicht und
 Filmic-Tonemapping, damit die Farben nicht auswaschen.
 
 ## Maßstab
@@ -73,7 +91,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
-| Höhe | eine Stufe = 80 / 160 / 320 / 422 / 557 / 735 m echt, 3,75- bis 13-fach überhöht |
+| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 200 / 240 / 280 / 320 m ab 150 m |
 | Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
 | Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1; weiter draußen zeichnet der Shader Baumkronen |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
@@ -82,8 +100,11 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 - `tools/build_tile_terrain.py` backt `artifacts/render-data/tile-terrain-r1/`
   (etwa 6 Minuten): Bewuchs, Meeresabstand und Seespiegel (2-km-Knoten), Wasser-
-  und Ortsklassen je Zoomstufe (`cells-L*.png`), Höhe und begrenztes Relief
-  (`height.r16f`, `relief.r16f`) und die Wasserhülle (`shore.r16f`). Eingaben sind im Manifest mit Hash geführt.
+  und Ortsklassen je Zoomstufe (`cells-L*.png`, Flüsse bereinigt), Höhe und
+  begrenztes Relief (`height.r16f`, `relief.r16f`), die Wasserhülle
+  (`shore.r16f`) und die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
+  allein neu mit `--levels-only`, etwa 1 Minute). Braucht numpy, Pillow und
+  scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
   für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).

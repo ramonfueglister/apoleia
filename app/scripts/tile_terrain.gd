@@ -13,17 +13,14 @@ const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
-# Europe. A height level is relief_slope (m/km, from the bake) times the tile
-# size, so a ramp rises one level per tile at most, as in SimCity 2000. Its
-# height on screen is LEVEL_HEIGHT of the tile, the SimCity 2000 ratio (12 px
-# per level on a 32 x 16 px tile). Beyond FAR_FROM_KM tiles a level grows
-# slower than the tile (FAR_POW), so the mountain ranges keep several steps
-# on the world map instead of flattening to one.
+# Europe. Up close a height level is relief_slope (m/km, from the bake) times
+# the tile size, so a ramp rises one level per tile at most, as in SimCity
+# 2000; the far levels read their corner levels from the bake (levels-L*.png,
+# with their own metres per level, so ranges keep several steps on the world
+# map). A level is LEVEL_HEIGHT of the tile on screen, the SimCity 2000 ratio
+# (12 px per level on a 32 x 16 px tile).
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
-const FAR_FROM_KM := 2.0
-const FAR_POW := 0.4
-const RELIEF_BLUR := [1.5, 1.5, 1.5, 1.0, 0.75, 0.5] # mip levels per zoom level
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
@@ -60,6 +57,10 @@ var _relief: PackedFloat32Array
 var _cell_images: Array[Image] = []
 var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
+var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
+var _level_textures := {}
+var _level_metres := {}
+var _level_floor := {}
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
 var _corner_view: SubViewport
@@ -109,6 +110,14 @@ func load_data() -> bool:
 		_cell_images.append(image)
 		_cell_sizes.append(Vector2i(int(entry.width), int(entry.height)))
 		_cell_textures.append(ImageTexture.create_from_image(image))
+	for entry in manifest.get("levels", []):
+		var image := Image.load_from_file(dir.path_join(entry.path))
+		image.convert(Image.FORMAT_R8)
+		var key := int(entry.level)
+		_level_images[key] = image
+		_level_textures[key] = ImageTexture.create_from_image(image)
+		_level_metres[key] = float(entry.metres_per_level)
+		_level_floor[key] = float(entry.get("floor_m", 0.0))
 	_terrain_material = ShaderMaterial.new()
 	_terrain_material.shader = TERRAIN_SHADER
 	var shared := {
@@ -241,7 +250,8 @@ static func level_for_width(width: float) -> int:
 func _apply_level(value: int) -> void:
 	level = value
 	tile_km = LEVELS[level]
-	m_per_level = relief_slope * minf(tile_km, FAR_FROM_KM) * pow(maxf(tile_km / FAR_FROM_KM, 1.0), FAR_POW)
+	var baked := _level_images.has(level)
+	m_per_level = _level_metres[level] if baked else relief_slope * tile_km
 	level_h = tile_km * LEVEL_HEIGHT
 	var params := {
 		"cells_tex": _cell_textures[level],
@@ -250,7 +260,9 @@ func _apply_level(value: int) -> void:
 		"level_h": level_h,
 		"m_per_level": m_per_level,
 		"height_lod": maxf(0.0, log(tile_km / 2.0) / log(2.0)),
-		"relief_blur": RELIEF_BLUR[level],
+		"levels_ready": baked,
+		"level_floor_m": _level_floor[level] if baked else 0.0,
+		"levels_tex": _level_textures[level] if baked else null,
 	}
 	for material in _all_materials():
 		for key in params:
@@ -346,6 +358,18 @@ func water_at(p: Vector2) -> int:
 ## Smooth display height of the ground (world y) at p, for the camera focus.
 func ground_y(p: Vector2) -> float:
 	if water_at(p) == 1: return 0.0
+	if _level_images.has(level):
+		# baked corner levels, bilinear between the four corners around p
+		var image: Image = _level_images[level]
+		var g := ((p - world_min) / tile_km).clamp(Vector2.ZERO, Vector2(image.get_size()) - Vector2(1.001, 1.001))
+		var i := int(g.x)
+		var j := int(g.y)
+		var f := g - Vector2(i, j)
+		var a := image.get_pixel(i, j).r
+		var b := image.get_pixel(i + 1, j).r
+		var c := image.get_pixel(i, j + 1).r
+		var d := image.get_pixel(i + 1, j + 1).r
+		return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y) * 255.0 * level_h
 	return maxf(1.0, maxf(relief_m(p), 0.0) / m_per_level) * level_h
 
 ## Highest display height in a rectangle (coarse sampling), for the weather.

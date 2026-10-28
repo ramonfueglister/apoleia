@@ -17,9 +17,13 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
                    rule, see sc2k_relief); the terrain shape is built from this
   shore.r16f       highest the land may stand next to the water (sea 0 m, lakes at
                    their level, same slope); caps the blurred relief at the shores
+  levels-L{n}.png  for the far zoom levels (n >= BAKED_FROM): the height level of
+                   every tile corner (8 bit), built by corner_levels(); up close the
+                   shader builds the corners from relief.r16f itself
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
+    python3 tools/build_tile_terrain.py --levels-only   # only levels-L*.png, from the outputs above
 """
 
 from __future__ import annotations
@@ -28,10 +32,12 @@ import csv
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[1]
 RD = ROOT / "artifacts" / "render-data"
@@ -59,6 +65,16 @@ RELIEF_SLOPE = 1000.0 * LEVEL_HEIGHT / HEIGHT_EXAGGERATION  # m per km
 MOUNTAIN_SLOPE = 1.0 * RELIEF_SLOPE
 MOUNTAIN_FROM_M = 500.0
 MOUNTAIN_TO_M = 1300.0
+# Far zoom levels (2 km tiles and up) get their corner levels from the bake
+# (corner_levels), so the tiles follow SimCity 2000 rules there too: real
+# metres per level (fewer than the 3.75x rule, so ranges keep several steps
+# on the world map), counted from LEVEL_FLOOR_M (plains and low hills stay
+# one flat level instead of being crossed by terrace lines), the land height
+# blurred over CORNER_BLUR tiles first.
+BAKED_FROM = 2
+LEVEL_METRES = {2: 200.0, 3: 240.0, 4: 280.0, 5: 320.0}
+LEVEL_FLOOR_M = 150.0
+CORNER_BLUR = 1.2
 
 
 def lonlat_to_world(lon, lat):
@@ -112,42 +128,127 @@ def raster_polygons(feats, cell_km, n_x, n_y, band_rows=1024):
     return out
 
 
-def raster_rivers(feats, cell_km, n_x, n_y, max_rank, band_rows=2048):
-    k = 4
-    out = np.zeros((n_y, n_x), bool)
+def raster_rivers(feats, cell_km, n_x, n_y, max_rank, band_rows=4096):
+    """River centre lines, one cell wide (the shader draws the band itself)."""
     lines = []
     for props, geoms in feats:
         rank = props.get("scalerank") or 10
         if rank > max_rank or props.get("featurecla", "River") not in ("River", None):
             continue
-        width_km = 1.2 if rank <= 3 else 0.6 if rank <= 6 else 0.35
-        wpx = max(width_km / cell_km, 1.0) * k
         for line, _ in geoms:
-            px = (line[:, 0] - WORLD_MIN[0]) / cell_km * k
-            pz = (line[:, 1] - WORLD_MIN[1]) / cell_km * k
-            lines.append((px, pz, int(round(wpx)), pz.min(), pz.max()))
+            px = (line[:, 0] - WORLD_MIN[0]) / cell_km
+            pz = (line[:, 1] - WORLD_MIN[1]) / cell_km
+            lines.append((px, pz))
+    out = np.zeros((n_y, n_x), bool)
     for r0 in range(0, n_y, band_rows):
         r1 = min(n_y, r0 + band_rows)
-        y0 = r0 * k
-        img = Image.new("L", (n_x * k, (r1 - r0) * k), 0)
+        img = Image.new("L", (n_x, r1 - r0), 0)
         dr = ImageDraw.Draw(img)
-        for px, pz, w, zmin, zmax in lines:
-            if zmax < y0 - 50 or zmin > r1 * k + 50:
+        for px, pz in lines:
+            if pz.max() < r0 - 1 or pz.min() > r1 + 1:
                 continue
-            dr.line(list(zip(px.tolist(), (pz - y0).tolist())), fill=255, width=w, joint="curve")
-        a = np.asarray(img, np.float32).reshape(r1 - r0, k, n_x, k).mean((1, 3)) / 255
-        out[r0:r1] = a > 0.3
-    return four_connect(out)
+            # PIL truncates the coordinates, i.e. the cell under each point
+            dr.line(list(zip(px.tolist(), (pz - r0).tolist())), fill=255, width=1)
+        out[r0:r1] = np.asarray(img) > 0
+    return out
 
 
-def four_connect(m):
-    """Diagonal-only steps read as broken rivers on a tile grid; bridge them."""
+def four_connect(m, allowed):
+    """Diagonal-only steps read as broken rivers on a tile grid; bridge them
+    through a cell that may hold a river."""
     out = m.copy()
     dn = m[1:, 1:] & m[:-1, :-1] & ~m[:-1, 1:] & ~m[1:, :-1]
-    out[:-1, 1:] |= dn
+    a = dn & allowed[:-1, 1:]
+    out[:-1, 1:] |= a
+    out[1:, :-1] |= dn & ~a & allowed[1:, :-1]
     ad = m[1:, :-1] & m[:-1, 1:] & ~m[:-1, :-1] & ~m[1:, 1:]
-    out[:-1, :-1] |= ad
+    a = ad & allowed[:-1, :-1]
+    out[:-1, :-1] |= a
+    out[1:, 1:] |= ad & ~a & allowed[1:, 1:]
     return out
+
+
+# 8-neighbourhood in turning order (E, NE, N, NW, W, SW, S, SE) as (row, col)
+RING = [(0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1)]
+
+
+def _thin_lut():
+    """Cells a river may lose without breaking or merging anything: 4-simple
+    (Yokoi connectivity number 1) and not the end of a river."""
+    lut = np.zeros(256, bool)
+    for code in range(256):
+        x = [(code >> k) & 1 for k in range(8)]
+        c4 = sum(x[k] - x[k] * x[(k + 1) % 8] * x[(k + 2) % 8] for k in (0, 2, 4, 6))
+        lut[code] = c4 == 1 and x[0] + x[2] + x[4] + x[6] >= 2
+    return lut
+
+
+THIN_LUT = _thin_lut()
+
+
+def _count4(m):
+    n = np.zeros(m.shape, np.uint8)
+    n[1:] += m[:-1]
+    n[:-1] += m[1:]
+    n[:, 1:] += m[:, :-1]
+    n[:, :-1] += m[:, 1:]
+    return n
+
+
+def clean_rivers(river, land, water, holes=4, spur=3):
+    """One clean line per river, as SimCity 2000 draws it: fill small loops,
+    thin double runs to one cell, cut short side stubs and lone cells.
+    land: cells that may hold a river; water: sea and lake cells."""
+    river = four_connect(river & land, land)
+    # loops around a few dry cells become solid first, thinning then leaves one line
+    lab, _ = ndimage.label(~river, structure=np.ones((3, 3), bool))
+    size = np.bincount(lab.ravel())
+    wet = np.bincount(lab.ravel(), weights=(~land).ravel()) > 0
+    fill = (size <= holes) & ~wet
+    fill[0] = False
+    river |= fill[lab]
+    del lab
+    # thinning: border cells from each side in turn, in four interleaved
+    # subgrids so that cells removed together never touch
+    h, w = river.shape
+    m = np.zeros((h + 2, w + 2), bool)
+    m[1:-1, 1:-1] = river
+    flat = m.ravel()
+    offs = np.array([dr * (w + 2) + dc for dr, dc in RING])
+    sides = [offs[2], offs[0], offs[6], offs[4]]  # N, E, S, W
+    idx = np.flatnonzero(flat)
+    while True:
+        changed = 0
+        for side in sides:
+            for par in range(4):
+                r, c = np.divmod(idx, w + 2)
+                cand = idx[((r & 1) * 2 + (c & 1) == par) & ~flat[idx + side]]
+                if cand.size == 0:
+                    continue
+                code = np.zeros(cand.size, np.uint8)
+                for k, o in enumerate(offs):
+                    code |= flat[cand + o].astype(np.uint8) << k
+                gone = cand[THIN_LUT[code]]
+                flat[gone] = False
+                changed += gone.size
+            idx = np.flatnonzero(flat)
+        if changed == 0:
+            break
+    river = m[1:-1, 1:-1].copy()
+    # stubs: peel the ends `spur` times, then let the ends that are left grow
+    # back; a side branch that short has no end left to grow back from.
+    # Cells at the sea or a lake are mouths and stay.
+    at_water = _count4(water) > 0
+    keep = river.copy()
+    for _ in range(spur):
+        keep &= ~((_count4(keep) <= 1) & ~at_water)
+    removed = river & ~keep
+    grow = keep & (_count4(keep) <= 1)
+    for _ in range(spur):
+        grow = (_count4(grow) > 0) & removed
+        keep |= grow
+        removed &= ~grow
+    return keep & (_count4(keep) > 0)
 
 
 def block_mean(a, f):
@@ -340,6 +441,163 @@ def sc2k_relief(height, node_land, water, step):
     return np.minimum((low + high) * 0.5, water)
 
 
+def _shifted(a):
+    """The eight neighbours and the cell itself (edges repeat)."""
+    p = np.pad(a, 1, mode="edge")
+    h, w = a.shape
+    return [p[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] for dy in (-1, 0, 1) for dx in (-1, 0, 1)]
+
+
+def min3(a):
+    return np.minimum.reduce(_shifted(a))
+
+
+def max3(a):
+    return np.maximum.reduce(_shifted(a))
+
+
+def gauss(a, sigma):
+    """Gaussian blur (sigma in cells) as three box passes."""
+    r = int(round(math.sqrt(sigma * sigma * 4 / 3 + 0.25) - 0.5))
+    if r < 1:
+        return a
+    for _ in range(3):
+        for ax in (0, 1):
+            pad = [(r + 1, r) if k == ax else (0, 0) for k in (0, 1)]
+            c = np.cumsum(np.pad(a, pad, mode="edge"), axis=ax, dtype=np.float64)
+            n = a.shape[ax]
+            a = ((np.take(c, np.arange(2 * r + 1, 2 * r + 1 + n), axis=ax) - np.take(c, np.arange(n), axis=ax))
+                 / (2 * r + 1)).astype(np.float32)
+    return a
+
+
+def node_bilinear(field, px, pz):
+    """Bilinear sample of a node-grid field at world points (as the GPU does)."""
+    gx = (px - WORLD_MIN[0]) / WORLD_SIZE[0] * (GRID_W - 1)
+    gz = (pz - WORLD_MIN[1]) / WORLD_SIZE[1] * (GRID_H - 1)
+    i = np.clip(np.floor(gx).astype(int), 0, GRID_W - 2)
+    j = np.clip(np.floor(gz).astype(int), 0, GRID_H - 2)
+    fx = np.clip(gx - i, 0, 1).astype(np.float32)
+    fz = np.clip(gz - j, 0, 1).astype(np.float32)
+    return ((field[j, i] * (1 - fx) + field[j, i + 1] * fx) * (1 - fz)
+            + (field[j + 1, i] * (1 - fx) + field[j + 1, i + 1] * fx) * fz)
+
+
+def tile_lake_levels(water, tile_km, metres_per_level, lake_enc, shore):
+    """Water level of every lake tile in levels, by the shader rule
+    (tt_lake_level): the lowest lake level on the nearest node of the tile
+    centre and of four points 1 km around it, else the shore field there;
+    counted from LEVEL_FLOOR_M like the land."""
+    jj, ii = np.nonzero(water == 2)
+    cx = WORLD_MIN[0] + (ii + 0.5) * tile_km
+    cz = WORLD_MIN[1] + (jj + 0.5) * tile_km
+    metres = np.full(cx.shape, np.nan)
+    for ox, oz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+        ni = np.clip(np.floor((cx + ox - WORLD_MIN[0]) / WORLD_SIZE[0] * (GRID_W - 1) + 0.5).astype(int), 0, GRID_W - 1)
+        nj = np.clip(np.floor((cz + oz - WORLD_MIN[1]) / WORLD_SIZE[1] * (GRID_H - 1) + 0.5).astype(int), 0, GRID_H - 1)
+        e = lake_enc[nj, ni].astype(np.float64)
+        metres = np.where(e > 0, np.fmin(metres, e - 1000), metres)
+    metres = np.where(np.isnan(metres), node_bilinear(shore, cx, cz), metres)
+    level = np.full(water.shape, np.inf, np.float32)
+    level[jj, ii] = np.maximum(np.round(np.maximum(metres - LEVEL_FLOOR_M, 0) / metres_per_level), 1)
+    return level
+
+
+def corner_levels(water, tile_km, metres_per_level, height, lake_enc, shore):
+    """SimCity 2000 terrain at a far zoom level: the height level of every tile
+    corner ((ny + 1) x (nx + 1) for ny x nx tiles).
+
+    The land height above LEVEL_FLOOR_M, blurred over CORNER_BLUR tiles, in
+    metres_per_level steps, is limited to one level
+    per tile between all eight neighbours (mean of the lower and upper
+    envelope, so peaks and valleys keep half their excess) and rounded.
+    Corners at the sea sit at 0, corners at a lake at most at its level, land
+    at least at 1. Then every level set is opened and closed with a 3 x 3
+    corner square: lone hills, ridges and notches up to two tiles wide go, so
+    the land shows clean terraces and whole massifs instead of boxes. The one
+    level rule is enforced again at the end (only by lowering)."""
+    ny, nx = water.shape
+    h = gauss(np.maximum(height, 0).astype(np.float32), CORNER_BLUR * tile_km / (WORLD_SIZE[0] / (GRID_W - 1)))
+    px = WORLD_MIN[0] + np.arange(nx + 1, dtype=np.float64) * tile_km
+    pz = WORLD_MIN[1] + np.arange(ny + 1, dtype=np.float64) * tile_km
+    x = np.maximum(node_bilinear(h, px[None, :], pz[:, None]) - LEVEL_FLOOR_M, 0) / metres_per_level
+    low, high = x.copy(), x.copy()
+    while True:
+        low2 = np.minimum(low, min3(low) + 1)
+        high2 = np.maximum(high, max3(high) - 1)
+        if np.array_equal(low2, low) and np.array_equal(high2, high):
+            break
+        low, high = low2, high2
+    level = np.round((low + high) * 0.5)
+    # the four tiles around each corner (outside the map is sea, as in tt_cell)
+    wp = np.pad(water, 1, constant_values=1)
+    lakes = np.pad(tile_lake_levels(water, tile_km, metres_per_level, lake_enc, shore), 1, constant_values=np.inf)
+    sea = np.zeros((ny + 1, nx + 1), bool)
+    cap = np.full((ny + 1, nx + 1), np.inf, np.float32)
+    for dj in (0, 1):
+        for di in (0, 1):
+            sea |= wp[dj:dj + ny + 1, di:di + nx + 1] == 1
+            cap = np.minimum(cap, lakes[dj:dj + ny + 1, di:di + nx + 1])
+    fixed = sea | np.isfinite(cap)
+
+    def settle(lv):
+        lv = np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap))
+        while True:
+            lv2 = np.minimum(lv, min3(lv) + 1)
+            if np.array_equal(lv2, lv):
+                return lv
+            lv = lv2
+
+    level = settle(level)
+    for _ in range(2):
+        cleaned = np.zeros_like(level)
+        for k in range(1, int(level.max()) + 1):
+            m = level >= k
+            if k > 1:
+                m = max3(min3(m.astype(np.uint8))).astype(bool)
+                m = (min3(max3(m.astype(np.uint8))).astype(bool) & ~fixed) | m
+            cleaned += m
+        level = settle(cleaned)
+    return level.astype(np.uint8)
+
+
+def bake_levels(manifest, cells, height, lake_enc, shore):
+    manifest["levels"] = []
+    for level in range(BAKED_FROM, LEVELS):
+        tile = BASE_CELL_KM * 2 ** level
+        lv = corner_levels(cells[level], tile, LEVEL_METRES[level], height, lake_enc, shore)
+        path = OUT / f"levels-L{level}.png"
+        Image.fromarray(lv, "L").save(path, optimize=True)
+        manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
+                                   "metres_per_level": LEVEL_METRES[level], "floor_m": LEVEL_FLOOR_M,
+                                   "blur_tiles": CORNER_BLUR,
+                                   "path": path.name, "sha256": sha(path),
+                                   "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
+                                           "between all eight neighbours, sea corners 0, land >= 1"})
+        print("levels", level, lv.shape, "max", int(lv.max()))
+
+
+def unpack_cells(entry):
+    packed = np.array(Image.open(OUT / entry["path"]).convert("L"))
+    a = np.zeros((packed.shape[0], packed.shape[1] * 2), np.uint8)
+    a[:, 0::2] = packed & 15
+    a[:, 1::2] = packed >> 4
+    return a[:, :entry["width"]] & 3
+
+
+def levels_only():
+    """Rebuild only levels-L*.png from the outputs of a full bake."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    height = np.fromfile(OUT / "height.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    shore = np.fromfile(OUT / "shore.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    aux = np.array(Image.open(OUT / "aux.png"))
+    lake_enc = aux[..., 1].astype(np.uint16) * 256 + aux[..., 2]
+    cells = {e["level"]: unpack_cells(e) for e in manifest["cells"]}
+    bake_levels(manifest, cells, height, lake_enc, shore)
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
 def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
@@ -381,6 +639,7 @@ def main():
                 "node_grid": {"width": GRID_W, "height": GRID_H, "world_min": WORLD_MIN, "world_size": WORLD_SIZE,
                               "rule": "node i at world_min + i * world_size / (width - 1)"},
                 "cells": [], "inputs": {}}
+    water_by_level = {}
     for level in range(LEVELS):
         f = 2 ** level
         cell = BASE_CELL_KM * f
@@ -389,12 +648,14 @@ def main():
         ny, nx = lf.shape
         is_land = lf >= 0.5
         is_lake = is_land & (kf >= 0.5 * lf)
-        river = raster_rivers(rivers, cell, nx, ny, RIVER_RANK[level]) & is_land & ~is_lake
+        river = clean_rivers(raster_rivers(rivers, cell, nx, ny, RIVER_RANK[level]),
+                             is_land & ~is_lake, ~is_land | is_lake)
         water = np.where(is_land, 0, 1).astype(np.uint8)
         water[is_lake] = 2
         if level == 0:
             lake_cells = is_lake
         water[river] = 3
+        water_by_level[level] = water & 3
         town = settlements(cell, nx, ny) * (water == 0)
         packed = pack_nibbles(water | (town << 2))
         path = OUT / f"cells-L{level}.png"
@@ -442,6 +703,8 @@ def main():
                               "format": "float16 LE, metres",
                               "rule": "highest land next to the water: sea 0 m, lakes at their level, rising slope_m_per_km"}
     manifest["height_half"] = {"path": "height.r16f", "sha256": sha(OUT / "height.r16f"), "format": "float16 LE, metres"}
+    print("corner levels")
+    bake_levels(manifest, water_by_level, height, lake_enc, water)
     forest, shrub, grass, crop, bare, snow, wet, _ = np.moveaxis(classes, -1, 0)
     cover = np.stack([forest, np.clip(bare + 0.6 * shrub, 0, 1), crop, wet], -1)
     Image.fromarray(np.round(cover * 255).astype(np.uint8), "RGBA").save(OUT / "cover.png", optimize=True)
@@ -464,4 +727,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    levels_only() if "--levels-only" in sys.argv else main()
