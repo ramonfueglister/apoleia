@@ -31,22 +31,46 @@ varying flat int wet_tri;     // the wet half of a coast cut tile
 varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut half (4-7), cut corner + 1 (8-10, 0: none)
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
-// saturated greens, pale wheat, flat light water. Indexed by G_*. The values
+// measured from Urbek screenshots (urbek-landschaft-*.jpg): fresh light
+// greens, pale wheat, flat light water. Indexed by G_*. The values
 // are darker than they appear: sun, ambient and the filmic tone map lift them
 // to the Urbek colours on screen (e.g. meadow shows as #428c34).
 const vec3 GROUND_RGB[11] = vec3[](
-	vec3(0.224, 0.408, 0.188),  // meadow (Urbek grass, #428a36 on screen)
-	vec3(0.345, 0.463, 0.212),  // dry grass (Mediterranean; Urbek light grass)
-	vec3(0.600, 0.557, 0.294),  // field (wheat)
-	vec3(0.216, 0.373, 0.212),  // wetland
-	vec3(0.412, 0.424, 0.220),  // scrub
+	vec3(0.325, 0.525, 0.298),  // meadow (Urbek grass, #73af5f on screen)
+	vec3(0.451, 0.525, 0.298),  // dry grass (Urbek's yellow grass, #9baf5f)
+	vec3(0.631, 0.608, 0.369),  // field (Urbek wheat, #cdc373)
+	vec3(0.278, 0.447, 0.282),  // wetland
+	vec3(0.400, 0.447, 0.278),  // scrub
 	vec3(0.655, 0.580, 0.408),  // sand
-	vec3(0.200, 0.353, 0.180),  // forest (the canopy seen from above, #3a7a30 on screen)
-	vec3(0.165, 0.310, 0.188),  // conifer forest
-	vec3(0.361, 0.478, 0.235),  // alpine meadow
+	vec3(0.196, 0.337, 0.224),  // forest (the canopy seen from above, #3c7440)
+	vec3(0.173, 0.302, 0.224),  // conifer forest
+	vec3(0.396, 0.561, 0.322),  // alpine meadow
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
+// Far out (from 2 km tiles, full at 4 km) the land takes the palette of the
+// painted far view (gauntlet refs/gemalt-weit-mittel-nah.png): olive lowland,
+// dark green forest, light rock, a deep sea; on screen e.g. lowland #9aa35a,
+// forest #4f7a35, sea #1d5e93. Open land also takes a flat tint per height
+// band, so hills and ranges read as areas and not only by their ramps.
+const vec3 GROUND_FAR[11] = vec3[](
+	vec3(0.455, 0.478, 0.286),  // meadow
+	vec3(0.520, 0.486, 0.294),  // dry grass
+	vec3(0.592, 0.549, 0.337),  // field
+	vec3(0.388, 0.447, 0.290),  // wetland
+	vec3(0.485, 0.447, 0.308),  // scrub
+	vec3(0.615, 0.564, 0.451),  // sand
+	vec3(0.239, 0.357, 0.196),  // forest
+	vec3(0.204, 0.314, 0.208),  // conifer forest
+	vec3(0.408, 0.447, 0.294),  // alpine meadow
+	vec3(0.415, 0.396, 0.394),  // rock
+	vec3(0.953, 0.965, 0.973)   // snow
+);
+const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
+const vec3 C_MOUNT_FAR = vec3(0.435, 0.414, 0.344); // #958e6c
+const vec3 C_HIGH_ROCK = vec3(0.540, 0.511, 0.529); // #b3aba0
+const vec3 C_SEA_FAR = vec3(0.129, 0.282, 0.482);
+const vec3 C_SHORE_FAR = vec3(0.169, 0.365, 0.604);
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
 const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
@@ -54,9 +78,9 @@ const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
 const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
 const vec3 C_ROOF = vec3(0.600, 0.290, 0.204); // terracotta, not salmon
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
-const vec3 C_SEA = vec3(0.192, 0.400, 0.682);
-const vec3 C_SHORE = vec3(0.369, 0.596, 0.839);  // sea tiles that touch the land
-const vec3 C_INLAND = vec3(0.220, 0.447, 0.757); // rivers and lakes, darker than the shore
+const vec3 C_SEA = vec3(0.314, 0.541, 0.824);   // Urbek water, #6db3df on screen
+const vec3 C_SHORE = vec3(0.396, 0.643, 0.953);  // sea tiles that touch the land
+const vec3 C_INLAND = vec3(0.275, 0.498, 0.780); // rivers and lakes, a little darker than the sea
 
 const ivec2 CORNER[4] = ivec2[](ivec2(0, 0), ivec2(1, 0), ivec2(1, 1), ivec2(0, 1));
 const ivec2 SIDE[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
@@ -180,6 +204,20 @@ void vertex() {
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
 
+float far_share() { return clamp((tile_km - 1.0) / 3.0, 0.0, 1.0); }
+
+// `band`: height band of the tile (0 lowland, 1-2 hills, 3 and up mountains)
+vec3 ground_rgb_at(int g, float band) {
+	g = clamp(g, 0, 10);
+	vec3 far = GROUND_FAR[g];
+	bool open = g == G_MEADOW || g == G_DRY_GRASS || g == G_FIELD || g == G_WETLAND || g == G_SCRUB || g == G_ALPINE;
+	if (open && band >= 1.0) {
+		far = band >= 3.0 ? mix(far, C_MOUNT_FAR, 0.75) : mix(far, C_HILLS_FAR, band >= 2.0 ? 0.8 : 0.5);
+	}
+	if (g == G_ROCK && band >= 4.0) { far = C_HIGH_ROCK; }
+	return mix(GROUND_RGB[g], far, far_share());
+}
+
 vec3 ground_rgb(int g) {
 	return GROUND_RGB[clamp(g, 0, 10)];
 }
@@ -211,10 +249,11 @@ void fragment() {
 	float rough = 1.0;
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
 		// one flat colour per water tile, a lighter one where it touches the land
+		float far = far_share();
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
-			c = coast >= 1.0 || wet_tri == 1 ? C_SHORE : C_SEA;
+			c = coast >= 1.0 || wet_tri == 1 ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
 		} else {
-			c = C_INLAND;
+			c = mix(C_INLAND, C_SEA_FAR, far);
 		}
 		rough = 0.55;
 	} else if (part == 0) {
@@ -222,12 +261,13 @@ void fragment() {
 		int town = tt_town(tile);
 		// one flat colour per tile; where two landscapes meet, the half towards
 		// the corner of the other one takes its colour (cut at the diagonal)
-		c = ground_rgb(ground);
+		float band = max(body_level - 1.0, 0.0);
+		c = ground_rgb_at(ground, band);
 		if (ground_tip >= 0) {
 			vec2 tip = vec2(CORNER[ground_tip]);
 			float d = (abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
 			float aa = fwidth(d) * 0.75 + 1e-4;
-			c = mix(ground_rgb(ground_alt), c, smoothstep(-aa, aa, d));
+			c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
 		}
 		if (town > 0) {
 			// up close the houses stand on paved ground; far out towns are roof
@@ -295,12 +335,12 @@ void fragment() {
 			float bank = 1.0 - smoothstep(half_w + 0.02, half_w + 0.02 + aa, d);
 			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
 			c = mix(c, C_BANK, bank);
-			c = mix(c, C_INLAND, river);
+			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
 		}
 	} else {
 		// walls: one darker earth tone (sand at the coast, rock up high), no texture
 		float hm = world_pos.y / level_h * m_per_level;
-		vec3 base = water == W_SEA ? C_SEA * 0.8 : (coast > 0.0 && body_level <= 3.0) ? C_BANK : C_EARTH;
+		vec3 base = water == W_SEA ? mix(C_SEA, C_SEA_FAR, far_share()) * 0.8 : (coast > 0.0 && body_level <= 3.0) ? C_BANK : C_EARTH;
 		if (water == W_LAND && hm > 1200.0) { base = C_CLIFF; }
 		// lit like the ramps: light on the walls facing the camera, darker
 		// the more a wall turns east

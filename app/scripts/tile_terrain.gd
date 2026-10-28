@@ -18,14 +18,17 @@ const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 # 2000; the far levels read their corner levels from the bake (levels-L*.png,
 # with their own metres per level, so ranges keep several steps on the world
 # map). A level is LEVEL_HEIGHT of the tile on screen, the SimCity 2000 ratio
-# (12 px per level on a 32 x 16 px tile).
+# (12 px per level on a 32 x 16 px tile); far out a step grows taller
+# (LEVEL_HEIGHTS), so the stacked plateaus of the ranges still stand out when a
+# tile is a few pixels wide.
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
+const LEVEL_HEIGHTS := [0.6, 0.6, 0.6, 0.9, 1.2, 1.5]
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
 const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
-const PROP_SLOTS := [9, 9, 0, 0, 0, 0] # tree slots per tile and level
+const PROP_SLOTS := [9, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
 const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0] # house blocks per town tile and level
 # Kit 2 scale (docs/kit2/SCALE.md): lengths 1:23.8 against the real world, but
 # houses and trees keep their real size. World units are real km, so a diorama
@@ -33,7 +36,7 @@ const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0] # house blocks per town tile and level
 const DIORAMA_LAENGE := 1.0 / 23.80
 const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
 const HOUSE_M := 10.0 # house length (house mesh is 1 unit long)
-const TREE_M := 12.0  # tree height (tree meshes are about 1.1 units tall)
+const TREE_M := 8.0  # tree height (tree meshes are about 1.1 units tall; Urbek: 5-8 m, a house 6-12 m)
 const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
 
 var manifest: Dictionary
@@ -257,7 +260,7 @@ func _apply_level(value: int) -> void:
 	tile_km = LEVELS[level]
 	var baked := _level_images.has(level)
 	m_per_level = _level_metres[level] if baked else relief_slope * tile_km
-	level_h = tile_km * LEVEL_HEIGHT
+	level_h = tile_km * LEVEL_HEIGHTS[level]
 	var params := {
 		"cells_tex": _cell_textures[level],
 		"cells_size": _cell_sizes[level],

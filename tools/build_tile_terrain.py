@@ -72,13 +72,13 @@ MOUNTAIN_FROM_M = 500.0
 MOUNTAIN_TO_M = 1300.0
 # Far zoom levels (2 km tiles and up) get their corner levels from the bake
 # (corner_levels), so the tiles follow SimCity 2000 rules there too: real
-# metres per level (fewer than the 3.75x rule, so ranges keep several steps
-# on the world map), counted from LEVEL_FLOOR_M (plains and low hills stay
-# one flat level instead of being crossed by terrace lines), the land height
-# blurred over CORNER_BLUR tiles first.
+# metres per level, coarser the farther out (lowland 0, hills 1-2, ranges 3-5
+# steps; finer steps drew a maze of thin terrace lines), counted from
+# LEVEL_FLOOR_M (plains stay one flat level), the land height blurred over
+# CORNER_BLUR tiles first. The app draws far steps taller (LEVEL_HEIGHTS).
 BAKED_FROM = 2
-LEVEL_METRES = {2: 170.0, 3: 190.0, 4: 210.0, 5: 230.0}
-LEVEL_FLOOR_M = 100.0
+LEVEL_METRES = {2: 200.0, 3: 280.0, 4: 360.0, 5: 440.0}
+LEVEL_FLOOR_M = 150.0
 CORNER_BLUR = 1.2
 # Landscape of a tile, one colour each (Ramon, 28.10.2026: one colour per
 # tile, two where landscapes meet; the shader splits those at the diagonal).
@@ -205,6 +205,17 @@ def _count4(m):
     n[:, 1:] += m[:, :-1]
     n[:, :-1] += m[:, 1:]
     return n
+
+
+def prune_land_spurs(land, passes=2):
+    """Far out a land tile with only one land neighbour (side by side) is an
+    arm one tile wide; the coast rule cuts it down to a thin strip, so small
+    islands read as crosses. Such arms go under water; a lone tile stays a
+    square island."""
+    land = land.copy()
+    for _ in range(passes):
+        land &= ~(land & (_count4(land) == 1))
+    return land
 
 
 def clean_rivers(river, land, water, holes=4, spur=3):
@@ -816,6 +827,8 @@ def main():
         kf = lake_frac if f == 1 else block_mean(lake_frac, f)
         ny, nx = lf.shape
         is_land = lf >= 0.5
+        if level >= BAKED_FROM:
+            is_land = prune_land_spurs(is_land)
         is_lake = is_land & (kf >= 0.5 * lf)
         river = clean_rivers(raster_rivers(rivers, cell, nx, ny, RIVER_RANK[level]),
                              is_land & ~is_lake, ~is_land | is_lake)
