@@ -5,7 +5,7 @@ Status: `implementiert` (Prototyp, eigenständiges Godot-4.7.2-Projekt, nicht in
 ## Was es ist
 
 - `colosseum_mesh.gd` baut das Kolosseum prozedural in drei Detailstufen:
-  LOD0 1440, LOD1 276, LOD2 40 Dreiecke. Nur Vertex-Farben und flache
+  LOD0 1940, LOD1 504, LOD2 90 Dreiecke. Nur Vertex-Farben und flache
   Normalen, ein gemeinsames `StandardMaterial3D`, keine Texturen.
 - `main.gd` zeigt es (`--scene=hero`, `--scene=lods`) oder misst
   (`--scene=bench`) mit vier Varianten:
@@ -25,17 +25,32 @@ godot --path prototypes/colosseum --windowed --resolution 1280x720 -- \
 Verglichen mit Steam-Store-Screenshots von Urbek City Builder (App 1411740)
 und Caesar 3 (App 517790), lokal angesehen, nicht im Repo.
 
-- Urbek: kompakte, klotzige Volumen, flache Facetten, weiches Licht.
-  Übernommen als Idee: flache Normalen, dicke Kranzgesims-Kante, eingebackene
-  Bodenverdunkelung (AO) in den Vertex-Farben.
+- Urbek: kompakte Volumen, flache Facetten, kantige Gesimse, weiches Licht,
+  eingebackene Bodenverdunkelung in den Vertex-Farben.
 - Caesar III: Palette aus Ausschnitten von Kolosseum, Wiese und Dächern
-  quantisiert: warmes, eher graues Travertin (`d8cbb6`/`a08a70`), tiefe
-  Bogenschatten (`2e2419`), olivgrüne Wiese (`56692f`), braunes Sandfeld,
-  dichter Kranz roter Wimpel. Dazu warmes, kontrastreiches Licht mit wenig
-  Umgebungslicht. Die Tribünen-„Menge“ ist ein Farbrauschen je Segment, ohne
-  zusätzliche Dreiecke.
+  gemessen: graubeiges Travertin, warme dunkle Bögen, Terrakotta-Kranz,
+  Sandarena, roter Fahnenkranz. Die Menge auf den Rängen ist ein geordnetes
+  Farbmuster je Segment und Rang, mit vier dunklen Eingängen (Vomitorien),
+  ohne zusätzliche Dreiecke.
+- Gauntlet-Loop (2026-10-28): sechs Runden mit je einem frischen, unabhängigen
+  Kritiker gegen die Screenshots. Noten (Form/Farbe/Handwerk/Lesbarkeit/
+  Gesamt) von 5/5/4/5/5 auf 6/6/5/6/6; das Ziel ≥ 8 ist nicht erreicht. Die
+  Kritiker widersprechen sich von Runde zu Runde (z. B. Stein heller vs.
+  dunkler, Gesimse tiefer vs. flacher, Menge gesprenkelt vs. geordnet).
 
 ## Messung (M3 Pro, Metal, 1280×720, Schatten an)
+
+Nach dem Gauntlet-Loop (LOD0 1940 / LOD1 504 / LOD2 90, LOD-Grenzen
+200/600, auf Akku, Bildzeit deshalb bei 8,3 ms gedeckelt), ganze Karte:
+
+| Fall | Primitive | Render-CPU | Speicher | Aufbau |
+|---|---:|---:|---:|---:|
+| 10 000 naiv | 17,5 Mio. | 0,55 ms (Bild 30 ms) | 95 MB | 31 ms |
+| 10 000 Chunks + LOD | 0,83 Mio. | 0,67 ms | 68 MB | 26 ms |
+| 50 000 LOD je Node | 2,1 Mio. | 6,1 ms | 804 MB | 330 ms |
+| 50 000 Chunks + LOD | 2,15 Mio. | 1,0 ms | 156 MB | 90 ms |
+
+Erste Messung mit dem einfacheren Modell (1412/276/40):
 
 Zählwerte aus `RenderingServer.get_rendering_info` (Primitive inklusive
 Schattenpässe). Gemessen mit LOD0 = 1412 Dreiecken (vor dem

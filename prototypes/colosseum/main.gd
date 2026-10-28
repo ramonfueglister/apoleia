@@ -50,7 +50,7 @@ func _environment() -> void:
 	env.background_color = Color("8aa9b8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("b4ab90")
-	env.ambient_light_energy = 0.38
+	env.ambient_light_energy = 0.3
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.ssao_enabled = args.get("scene", "hero") != "bench"
 	var we := WorldEnvironment.new()
@@ -58,7 +58,7 @@ func _environment() -> void:
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.15
+	sun.light_energy = 1.3
 	sun.light_color = Color("fff0dc")
 	sun.shadow_enabled = not args.has("noshadow")
 	sun.directional_shadow_max_distance = 260.0
@@ -102,6 +102,10 @@ func _lods() -> void:
 	for i in 3:
 		_add(meshes[i], Transform3D(Basis(), Vector3((i - 1) * 15.0, 0, -(i - 1) * 15.0)))
 	_camera(Vector3(0, 1.5, 0), 62.0)
+	# Orthographic, so the three LODs are compared at the same size.
+	var cam: Camera3D = get_children().filter(func(c): return c is Camera3D)[0]
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = 34.0
 
 func _add(mesh: Mesh, xf: Transform3D) -> void:
 	var mi := MeshInstance3D.new()
