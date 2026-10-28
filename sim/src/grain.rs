@@ -27,7 +27,7 @@
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
 use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
-use crate::groups::{BAUERN, HAENDLER, PAECHTER, TAGELOEHNER, UNFREIE};
+use crate::groups::{BAUERN, HAENDLER, HANDWERKER, PAECHTER, TAGELOEHNER, UNFREIE};
 
 use bevy_ecs::prelude::Without;
 use rustc_hash::FxHashMap;
@@ -50,6 +50,22 @@ const SEED_KG_HA: i64 = 130;
 /// of land above 1500 m.
 const RATIO_PLAIN_X10: i64 = 55;
 const RATIO_HILL_X10: i64 = 30;
+/// S87 (Ramon, 28.10.2026): the Nile land of Egypt yields 10 : 1 ("normal"
+/// yields at Oxyrhynchus about 1 : 10, Manning 2007; 10-12 artabas per
+/// aroura sown with one, Hickey via Bransbourg 2016, Rowlandson 1999).
+/// Grain still on half the fields (Manning: rotation with legumes).
+const RATIO_NILE_X10: i64 = 100;
+/// The Nile land: Delta to the First Cataract, as a box in degrees (west,
+/// east, south, north). PLACEHOLDER until there are provinces.
+const NILE_BOX: (f64, f64, f64, f64) = (29.0, 33.5, 24.0, 31.7);
+
+/// Longitude and latitude of a 25 km cell centre (data/projection.json:
+/// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
+fn cell_lon_lat(row: i32, col: i32) -> (f64, f64) {
+    const R: f64 = 6_371_008.8;
+    let (x, z) = (col as f64 * 25_000.0 + 12_500.0, row as f64 * 25_000.0 + 12_500.0);
+    (19.0 + (x / (R * 41f64.to_radians().cos())).to_degrees(), 41.0 - (z / R).to_degrees())
+}
 /// Net kg per ha on cleared land (slopes, forest edge, S73): PLACEHOLDER
 /// at 3 : 1 (Spurr: hill country 3–4 : 1).
 const NET_POOR: i64 = (RATIO_HILL_X10 - 10) * SEED_KG_HA / 10;
@@ -412,6 +428,8 @@ pub struct GrainStats {
     pub field_rebuilds: u64,
     /// Heirs' households given a share of the father's farm (INHERIT_EQUAL).
     pub heirs_given: u64,
+    /// S87: farm households that start with a wage instead of a farm.
+    pub start_by_wage: u64,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -653,7 +671,9 @@ impl Grain {
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
             usable_m2[i as usize] = (usable * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
-            let ratio = RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64;
+            let (lon, lat) = cell_lon_lat(r, c);
+            let nile = (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat);
+            let ratio = if nile { RATIO_NILE_X10 as f64 } else { RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64 };
             net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
         }
         // Free land on fine tiles (S73). The cell's fields lie on its
@@ -1093,6 +1113,39 @@ impl Grain {
         }
         // New households.
         let ids = sorted_keys(&self.info);
+        // S87 (Ramon, 28.10.2026): at the start, farm households beyond
+        // what their cell's land can feed (lowest id first keeps a farm;
+        // PLACEHOLDER order) live by a wage instead: they become
+        // craftsmen (Handwerker, PLACEHOLDER) and buy their grain at the
+        // market. Such places lived by crafts and imported grain (Attica,
+        // Rome's hinterland, Phoenicia; Garnsey 1988).
+        let mut by_wage: FxHashMap<u32, ()> = FxHashMap::default();
+        if start {
+            let mut used: FxHashMap<u32, i64> = FxHashMap::default();
+            for &id in &ids {
+                let i = self.info[&id];
+                if i.stand > CITY || !matches!((i.stand, i.job), (_, BAUERN) | (RURAL, PAECHTER) | (RURAL, UNFREIE)) {
+                    continue;
+                }
+                let c = i.home as usize;
+                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 10_000 / self.net_kg_ha[c].max(1) * 100 / self.crop_pct;
+                let u = used.entry(i.home).or_default();
+                if *u + feed > self.free_m2[c] + self.free_poor[c] {
+                    by_wage.insert(id, ());
+                    for &m in &self.members[i.at as usize..(i.at + i.size as u32) as usize] {
+                        if let Some(e) = p.alive_entity(m) {
+                            let mut j = p.world.get_mut::<Job>(e).unwrap();
+                            if matches!(j.0, BAUERN | PAECHTER | UNFREIE) {
+                                j.0 = HANDWERKER;
+                            }
+                        }
+                    }
+                } else {
+                    *u += feed;
+                }
+            }
+            self.stats.start_by_wage = by_wage.len() as u64;
+        }
         for &id in &ids {
             if self.hh.contains_key(&id) {
                 continue;
@@ -1117,6 +1170,7 @@ impl Grain {
             // the count after a birth into a new id, which does not happen
             // (children stay in the household); moved households are tents.
             let kind = if kind == FARM && !start { TENT } else { kind };
+            let kind = if kind == FARM && by_wage.contains_key(&id) { WAGE } else { kind };
             let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
             self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false });
         }

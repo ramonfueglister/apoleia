@@ -101,7 +101,7 @@ const MARRY_AGE_MAX_F: f64 = 35.0;
 pub const NEVER_MARRY_PER_1000: u64 = 200;
 /// S86: divorces per 10,000 marriages and year (frequent and informal in
 /// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
-pub const DIVORCE_PER_10K_YEAR: u64 = 1000;
+pub const DIVORCE_PER_10K_YEAR: u64 = 700;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -1125,6 +1125,11 @@ impl People {
             Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.1),
             None => self.share(home, 0) <= 1.0,
         }
+    }
+
+    /// The entity of a living person.
+    pub fn alive_entity(&self, pid: u32) -> Option<Entity> {
+        self.alive(pid)
     }
 
     fn alive(&self, pid: u32) -> Option<Entity> {

@@ -91,8 +91,9 @@ fn main() {
     println!(
         "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day married_w% divorces"
     );
-    let (mut heirs, mut splits) = (0u64, 0u64);
+    let (mut heirs, mut splits, mut by_wage) = (0u64, 0u64, 0u64);
     for y in 1..=years {
+        by_wage += g.stats.start_by_wage;
         heirs += g.stats.heirs_given;
         splits += p.stats.split_households;
         p.stats = Default::default();
@@ -193,11 +194,12 @@ fn main() {
     let mut lanes: Vec<(i64, u32)> = g.lanes.iter().map(|(&c, &n)| (n, c)).collect();
     lanes.sort_unstable_by(|a, b| b.cmp(a));
     println!("busiest trade cells (trips, cell): {:?}", &lanes[..lanes.len().min(10)]);
+    by_wage += g.stats.start_by_wage;
     heirs += g.stats.heirs_given;
     splits += p.stats.split_households;
     let (n, ha, short) = g.land_report();
     println!(
-        "inherit={} | splits {splits}, heirs given land {heirs} | farms {n}: ha p10 {:.1} median {:.1} p90 {:.1} mean {:.1}; too small to feed their household {short:.1} %",
+        "start: farm households living by a wage instead (S87) {by_wage} | inherit={} | splits {splits}, heirs given land {heirs} | farms {n}: ha p10 {:.1} median {:.1} p90 {:.1} mean {:.1}; too small to feed their household {short:.1} %",
         arg("--inherit").unwrap_or_else(|| "equal".into()),
         ha[0],
         ha[1],

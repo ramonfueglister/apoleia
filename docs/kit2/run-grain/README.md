@@ -253,7 +253,7 @@ bezahlt (14 Mio. Tage im Jahr 100). Die Arbeit selbst bringt noch nichts hervor
 ## Ehe nach dem Zensus (S86, 100 Jahre, Seed 1, `run100-s86.txt`; vorher: `run100-s84-work.txt`)
 
 Ramon: „Alle drei belegten Wege“. 20 % der Frauen heiraten nie, 10 % der Ehen enden pro
-Jahr durch Scheidung, Frauen werden nur bis 35 gesucht (alles PLACEHOLDER, auf die
+Jahr durch Scheidung (nach S87 auf 7 % nachgestellt, siehe unten), Frauen werden nur bis 35 gesucht (alles PLACEHOLDER, auf die
 Gesamtzahlen des Zensus eingestellt; siehe run-people).
 
 | Jahr | Menschen vorher → jetzt | Geburten pro 1'000 | Hungertote vorher → jetzt | Frauen 15–49 verheiratet |
@@ -269,6 +269,39 @@ den Start von 116'805 auf 106'000. Fingerprint gleich mit 1 und 4 Threads (10 Ja
 Tempo auf einer ruhigen Maschine (100 Jahre): Grain im Mittel 1,28 ms pro Tag, 99 % 4,0 ms;
 ganzer Tag Median 4,7 ms, 99 % 9,5 ms. (`run100-s86.txt` selbst lief neben einem zweiten
 Lauf und zeigt darum 1,75 ms.)
+
+## Hungersnot zu Beginn: Nil 10 : 1 und Lohnarbeit statt Hof (S87, 100 Jahre, Seed 1, `run100-s87.txt`; vorher: `run100-s86.txt`)
+
+Ramon: „okay fixe ägypten. lohnarbeit statt hof macht sinn“. Gefunden: Die Hungernden
+lebten in Zellen, deren Ackerland nicht für ihre Bauern reicht (Niltal und Delta, Küste
+Phöniziens, Attika, Umland Roms und Neapels), und auch die Nachbarzellen bis 50 km haben
+dort kein Land. Getestet (10 Jahre, Hungertote im Jahr 2, vorher 3'508): Felder über die
+Zellgrenze bis 12,5 km 3'334, Umsiedeln beim Start bis 50 km 3'386, hungernde Höfe bleiben
+statt umzuziehen 4'016, Nil 10 : 1 allein 3'064, Lohnarbeit allein 1'970, beides 1'828.
+64 % der Hungertoten im Jahr 2 waren Haushalte, die schon umgezogen waren; sie kamen aus
+diesen Zellen.
+
+- **Nil 10 : 1:** Die Felder vom Delta bis zum ersten Katarakt tragen 10 : 1 (Manning 2007:
+  „normal“ in Oxyrhynchos 1 : 10; Hickey: 10–12 Artaben pro Arure bei 1 Artabe Saat).
+  Getreide weiter auf der Hälfte der Felder.
+- **Lohnarbeit statt Hof:** Beim Start behalten in jeder Zelle die Bauernhaushalte (kleinste
+  ID zuerst) einen Hof, solange das Ackerland der Zelle sie ernährt; die übrigen 3'641
+  Haushalte werden Handwerker mit Staatslohn (S76) und kaufen am Markt.
+- Die Scheidungsrate von S86 ist danach von 10 % auf 7 % im Jahr nachgestellt, damit das
+  Wachstum wieder bei 0,1 % liegt.
+
+| Jahr | Menschen S86 → S87 | Hungertote S86 → S87 | Geburten / Tote pro 1'000 | Frauen 15–49 verheiratet |
+|---|---|---|---|---|
+| 2 | 111'030 → 112'828 | 3'508 → 1'888 | 47 / 58 | 55 % |
+| 3 | 108'298 → 111'339 | 2'771 → 1'588 | 44 / 57 | 56 % |
+| 10 | 106'130 → 109'524 | 213 → 254 | 46 / 46 | 63 % |
+| 50 | 104'090 → 107'740 | 137 → 231 | 47 / 44 | 67 % |
+| 100 | 110'673 → 117'906 | 125 → 210 | 47 / 45 | 67 % |
+
+Von Jahr 10 bis 100 wächst die Bevölkerung um 0,08 % im Jahr. Die Hungertoten in Jahr 2 und
+3 sind vor allem Tagelöhner in Zelten ohne Geld und Höfe in knappen Zellen. Fingerprint
+gleich mit 1 und 4 Threads (10 Jahre). **Offen (Ramon: später):** Der Lohn kommt vom Staat
+mit unbegrenztem Geld; historisch verdienten diese Leute an Handwerk, Wein, Öl und Gärten.
 
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
@@ -326,7 +359,9 @@ in Arrays nach ID statt in Hashtabellen.
 
 | Wert | Platzhalter | Grundlage |
 |---|---|---|
-| Ertrag | 5,5 : 1 auf offenem Land, bis 3 : 1 mit Land über 1500 m; gerodetes Land 3 : 1 | Spurr über Devereaux; keine Bodendaten auf dem 25-km-Raster |
+| Ertrag | 5,5 : 1 auf offenem Land, bis 3 : 1 mit Land über 1500 m; gerodetes Land 3 : 1; Nil 10 : 1 (S87) | Spurr über Devereaux; keine Bodendaten auf dem 25-km-Raster; Nil: Manning 2007, Hickey |
+| Nilland | Kasten 29–33,5° O, 24–31,7° N (Delta bis erster Katarakt) | S87, bis es Provinzen gibt |
+| Wer beim Start den Hof behält (S87) | kleinste Haushalts-ID zuerst, die übrigen werden Handwerker | S87 |
 | Rodbares Land | heutiges Acker- und Siedlungsland (WorldCover) unter 16 % Hang, abzüglich HYDE-Acker; 0,5 ha pro Erwachsenem und Jahr | Daten: ESA WorldCover 2021 (CC BY 4.0), Copernicus DEM GLO-90; Auswahl der Gruppen und die Hanggrenze (FAO GAEZ) liegen bei Ramon |
 | Hang | aus dem DEM-Überblick mit ≈ 370 m Abstand; unterschätzt kurze steile Hänge | Copernicus DEM GLO-90 |
 | Arbeit in Aussaat / Ernte | 25 % / 30 % der 70 Tage pro ha, je in 40 Tagen; in den Spitzen arbeiten alle von 10–65 | GRAIN-NUMBERS: „Verteilung offen“ |
