@@ -34,27 +34,28 @@ const LOD_FACTORS := [1, 2, 4, 8]
 # Camera distances for the near-orthographic Urbek camera (FOV 10): LOD0
 # while the view is under about 260 m wide, LOD1 to 700 m, LOD2 to 1.6 km.
 const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v6_%d.res"
+const CACHE := "user://colosseum_urbek_v9_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
 	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f4ecd8"),
 	Color("7e7064"), Color("e8dcc2"), Color("4a3c30"), Color("b5a184"), Color("c9b898"),
 	Color("d4aa6c"), Color("c49a5c"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
-	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("b8402f"),
+	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("f4ecd8"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
-	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a")]
+	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a"),
+	Color("a89886")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
-	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK }
+	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK, FACADE_MID }
 const CROWD_COUNT := 3
 const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
 # Top faces that differ from the sides: a tread is light on top and darker
 # on its riser; the arch floor is shaded.
 const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("bca98a"), ARCH_BACK: Color("7e7064"),
-	BALTEUS_WALL: Color("efe5d0")}
+	BALTEUS_WALL: Color("efe5d0"), RED_BAND: Color("b8402f")}
 # Corner occlusion: 0 = both sides blocked, 3 = open.
 const AO := [0.5, 0.68, 0.85, 1.0]
 
@@ -114,7 +115,7 @@ static func _columns(n: Vector3i, lo: Vector3, smooth := false) -> Dictionary:
 			# Far LODs follow the smooth oval: per-bay steps are finer than
 			# their voxels and would only leave single protruding blocks.
 			if smooth:
-				depth[c] = ellipse[c]
+				depth[c] = ellipse[c] - 2
 	return {"depth": depth, "sub": sub, "bay": bay, "ellipse": ellipse, "arena": arena}
 
 ## What fills one voxel: d = depth in voxels from the outer face, s = facade
@@ -247,6 +248,103 @@ static func _mast(d: int, s: int, b: int, mr: int) -> int:
 		return RED
 	return EMPTY
 
+## The kind of facade row a fine row is, for the LOD1 grammar.
+enum { K_PLINTH, K_WALL, K_OPEN, K_HEAD, K_SHADOW, K_CORNICE, K_ATTIC, K_WINDOW }
+static func _row_kind(fr: int) -> int:
+	if fr < PLINTH_ROWS:
+		return K_PLINTH
+	if fr < ARCADE_TOP:
+		var lr := (fr - PLINTH_ROWS) % ROWS
+		if lr == ROWS - 1:
+			return K_CORNICE
+		if lr == ROWS - 2:
+			return K_SHADOW
+		if lr == ROWS - 3:
+			return K_HEAD
+		return K_OPEN if lr >= 1 else K_WALL
+	var ar := fr - ARCADE_TOP
+	if ar >= ATTIC_ROWS - 2 or ar == 0:
+		return K_CORNICE
+	if ar == ATTIC_ROWS - 3:
+		return K_SHADOW
+	return K_WINDOW if ar == 3 or ar == 4 else K_ATTIC
+
+## LOD1 facade by rule instead of by downsampling: 1 m voxels, bays of 3
+## (pier 1, opening 2) phase-locked to LOD0's bays, the same per-bay plan
+## steps, arch rows where both fine rows are open, light cornice rows. The
+## seating, arena and masts keep their downsampled voxels.
+static func _facade_lod1(vox: Dictionary) -> void:
+	var n: Vector3i = vox.n
+	var grid: PackedByteArray = vox.grid
+	var kinds := []
+	for y in n.y:
+		var k0 := _row_kind(2 * y)
+		var k1 := _row_kind(2 * y + 1)
+		var k := K_WALL
+		if 2 * y >= WALL_ROWS:
+			k = -1
+		elif K_CORNICE in [k0, k1]:
+			k = K_CORNICE
+		elif k0 in [K_OPEN, K_HEAD] and k1 in [K_OPEN, K_HEAD]:
+			k = K_HEAD if k1 == K_HEAD else K_OPEN
+		elif K_SHADOW in [k0, k1]:
+			k = K_SHADOW
+		elif K_WINDOW in [k0, k1]:
+			k = K_WINDOW
+		elif K_PLINTH in [k0, k1]:
+			k = K_PLINTH
+		elif K_ATTIC in [k0, k1]:
+			k = K_ATTIC
+		kinds.append(k)
+	for z in n.z:
+		for x in n.x:
+			var ix := x - n.x / 2
+			var iz := z - n.z / 2
+			var qz := iz if iz >= 0 else -iz - 1
+			var band := floori((ix + 1) / 3.0)
+			if absf(band) * 3.0 - 1.5 >= A:
+				continue
+			var bx := minf(absf(band) * 3.0, A - V)
+			var face := roundi(B * sqrt(maxf(0.0, 1.0 - (bx / A) ** 2)))
+			var d := face - 1 - qz
+			if d < -2 or d > 1:
+				continue
+			var s1 := posmod(ix - 1, 3)
+			var pier := s1 == 0
+			var b := band + (1000 if iz < 0 else 0)
+			for y in n.y:
+				var k: int = kinds[y]
+				var c := EMPTY
+				if k == -1:
+					if d < 0:
+						grid[x + n.x * (y + n.y * z)] = EMPTY
+					continue
+				match k:
+					K_PLINTH:
+						c = PAVE if d == -2 else STONE_MID
+					K_CORNICE:
+						c = CORNICE if d >= -1 else EMPTY
+					K_OPEN, K_HEAD:
+						if d == -2:
+							c = EMPTY
+						elif pier:
+							c = COLUMN if d == -1 else STONE
+						elif d == 1:
+							c = ARCH_HEAD if k == K_HEAD else ARCH_BACK
+					K_SHADOW:
+						c = (COLUMN if pier else EMPTY) if d == -1 else (EMPTY if d == -2 else SHADOW_LINE)
+					K_WINDOW:
+						if d == -1:
+							c = COLUMN if pier else EMPTY
+						elif d >= 0:
+							c = WINDOW if not pier and posmod(b, 2) == 0 and d == 1 else (EMPTY if not pier and posmod(b, 2) == 0 else STONE)
+					_:
+						if d == -1:
+							c = COLUMN if pier else EMPTY
+						elif d >= 0:
+							c = STONE
+				grid[x + n.x * (y + n.y * z)] = c
+
 ## The grid at the finest voxel size; `smooth` for the far LODs.
 static func _fine(smooth := false) -> Dictionary:
 	var n := _dims()
@@ -266,6 +364,11 @@ static func _fine(smooth := false) -> Dictionary:
 				continue
 			for y in n.y:
 				var seed := absi(hash(Vector3i(x, y, z)))
+				# The far LODs leave out everything in front of the wall
+				# (columns, cornices, paving): thinner than their voxels, it only
+				# made single protruding blocks.
+				if smooth and depth[c] < 0:
+					continue
 				grid[x + n.x * (y + n.y * z)] = _voxel(depth[c], sub[c], bay[c], y, ellipse[c], arena[c], seed)
 	return {"grid": grid, "n": n, "v": V, "lo": lo}
 
@@ -309,7 +412,7 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 				var rim := y * f <= WALL_ROWS - 1 and WALL_ROWS - 1 < (y + 1) * f
 				if counts[RED] > 0:
 					c = RED
-				elif f >= 4 and rim and counts[CORNICE] > 0:
+				elif f >= 4 and rim and counts[STONE] + counts[CORNICE] + counts[PORTICO] > 0:
 					# Far away the flags become one continuous red band on
 					# the top cornice.
 					c = RED_BAND
@@ -323,10 +426,17 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 						if counts[i] > counts[best]:
 							best = i
 					c = muted if best == CROWD else best
-					# Far away the arcade keeps its dark rhythm.
+					# Far away the arcade keeps its value: at 2 m it alternates
+					# dark and light, at 4 m the whole arcade is
+					# the average of pier and arch; the attic stays light.
 					var arch := counts[ARCH_BACK] + counts[ARCH_HEAD]
-					if f >= 4 and (best == STONE or best == SHADOW_LINE) and arch * 2 >= counts[best]:
-						c = ARCH_BACK
+					var arcade := y * f < ARCADE_TOP and best in [STONE, SHADOW_LINE, COLUMN, ARCH_BACK, ARCH_HEAD]
+					if f == 4 and arcade:
+						# Bays and 2 m blocks cannot line up, so the rhythm is a
+						# regular alternation instead of a sampled one.
+						c = ARCH_BACK if posmod(x + z, 2) == 0 else STONE
+					elif f >= 8 and arcade:
+						c = FACADE_MID
 				grid[x + n.x * (y + n.y * z)] = c
 	# The red band keeps to the outer edge: one block wide, not the whole rim.
 	if f >= 4:
@@ -481,7 +591,10 @@ static func lods() -> Array[ArrayMesh]:
 			elif stepped.is_empty():
 				stepped = _fine()
 				fine = stepped
-			mesh = _mesh(fine if f == 1 else _coarse(fine, f))
+			var vox := fine if f == 1 else _coarse(fine, f)
+			if f == 2:
+				_facade_lod1(vox)
+			mesh = _mesh(vox)
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)
 	return out

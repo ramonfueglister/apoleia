@@ -70,7 +70,7 @@ func _environment() -> void:
 	sun.shadow_blur = 1.0
 	sun.shadow_enabled = not args.has("noshadow")
 	# Crisp contact shadows under ledges, as in Urbek; no acne on voxel faces.
-	sun.directional_shadow_max_distance = 260.0 if args.get("scene", "hero") == "bench" else 70.0
+	sun.name = "Sun"
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.shadow_bias = 0.04
 	sun.shadow_normal_bias = 1.0
@@ -97,6 +97,10 @@ func _camera(target: Vector3, width: float, fov := 10.0) -> void:
 	cam.far = 400000.0
 	add_child(cam)
 	var distance := width / (2.0 * tan(deg_to_rad(fov) * 0.5))
+	# Shadows reach over the whole view, as in the game camera.
+	var sun: DirectionalLight3D = get_node_or_null("Sun")
+	if sun:
+		sun.directional_shadow_max_distance = distance + width * 1.6
 	var dir := Basis.from_euler(Vector3(deg_to_rad(-30.0), 0.0, 0.0)).z
 	cam.look_at_from_position(target + dir * distance, target)
 
