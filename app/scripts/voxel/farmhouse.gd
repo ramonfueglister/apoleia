@@ -26,7 +26,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v15_%s.res"
+const CACHE := "user://farmhouse_v16_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -39,7 +39,7 @@ const PALETTE := [
 	Color("a84c38"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46"), Color("1f4228"), Color("2a5534"), Color("667f4c"), Color("52663d"),
+	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("667f4c"), Color("52663d"),
 	Color("75695a"), Color("dcc06c")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
@@ -200,12 +200,12 @@ const OLIVE_CLUMPS: Array[Vector4] = [Vector4(-0.75, 0.25, 1.5, 2.75), Vector4(0
 static func _lot(p: Vector3) -> int:
 	if p.y < 0.0:
 		return EMPTY
-	# cypresses: a slim dark crown down to the ground (a sixth as wide as
-	# tall), tapering to a point
+	# cypresses: a slim dark spindle (a fifth as wide as tall, no taller
+	# than 1.7 eaves), widest low down and drawn in to a point
 	var cz := absf(p.z - 8.75)
 	var cx := absf(absf(p.x) - 8.75)
-	if cx < 0.5 and cz < 0.5:
-		var r := 0.375 if p.y < 0.5 else 0.5 if p.y < 3.5 else 0.375 if p.y < 5.0 else 0.25 if p.y < 6.25 else 0.125 if p.y < 6.75 else 0.0
+	if cx < 0.625 and cz < 0.625:
+		var r := 0.375 if p.y < 0.5 else 0.625 if p.y < 2.0 else 0.5 if p.y < 3.25 else 0.375 if p.y < 4.5 else 0.25 if p.y < 5.5 else 0.125 if p.y < 6.0 else 0.0
 		if cx < r and cz < r and cx + cz < r * 1.5:
 			return CYPRESS_DARK if p.y < 1.0 else CYPRESS
 		return EMPTY

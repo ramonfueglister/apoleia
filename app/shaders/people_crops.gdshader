@@ -2,11 +2,12 @@
 // sown parcel is a raised slab, a little in from the parcel lines so grass
 // edges and the village lanes run between the fields. Two looks, as in
 // Urbek's farmland (gauntlet refs/urbek-landschaft-02, -05): dark tilled
-// soil with rows of green clumps, and a closed sheet of straw. Wheat and
-// barley grow from bare soil through rows of sprouts to dense rows of green
-// clumps, ripen to a straw sheet and are cut to stubble; a fallow parcel
-// lies as a low sheet of dry stubble. Beans stand in rows of darker clumps
-// behind a wooden fence, vines in taller rows. One instance per parcel of a square around the
+// soil with green plants in rows, the soil showing between them, and a
+// closed sheet of straw. Wheat and barley grow from bare soil through
+// sparse sprouts to narrow unbroken green rows, ripen to a straw sheet and
+// are cut to stubble; a fallow parcel lies as a low sheet of dry stubble.
+// Beans stand in rows of darker clumps behind a wooden fence, vines in
+// low hedges on every other row. One instance per parcel of a square around the
 // camera (people_dots.gd _update_crops); the parcel's state, crop and
 // growth come from the same fine layer and rule as the field colours
 // (sim_fields.gdshaderinc). The crop mesh (people_dots.gd _crop_mesh) holds
@@ -36,7 +37,7 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // dark red-brown tilled soil, deep green rows, pale straw grain; a step
 // lighter than Urbek's as the meadow round them is.
 const vec3 SOIL = vec3(0.38, 0.25, 0.2);
-const vec3 SOIL_DRY = vec3(0.56, 0.42, 0.3);   // under the vines
+const vec3 SOIL_DRY = vec3(0.46, 0.34, 0.25);  // under the vines
 const vec3 SPROUT = vec3(0.4, 0.62, 0.26);
 const vec3 GRAIN_GREEN = vec3(0.3, 0.55, 0.22);  // Urbek's young crops #5aa845 lit
 const vec3 BARLEY_GREEN = vec3(0.42, 0.58, 0.24); // a little yellower than the wheat
@@ -44,7 +45,7 @@ const vec3 FALLOW = vec3(0.62, 0.6, 0.32);       // dry stubble and grass, Urbek
 const vec3 RIPE[2] = vec3[](vec3(0.68, 0.64, 0.36), vec3(0.72, 0.68, 0.46)); // wheat, barley (Urbek's wheat #c0c672 lit)
 const vec3 STUBBLE = vec3(0.62, 0.54, 0.38);
 const vec3 LEAVES = vec3(0.24, 0.5, 0.2);
-const vec3 VINE = vec3(0.3, 0.5, 0.18);
+const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
 const vec3 FENCE = vec3(0.54, 0.42, 0.28);     // the farmhouse fence (farmhouse.gd FENCE)
 const float FENCE_POSTS = 6.0;   // posts per side, about two metres apart
@@ -89,21 +90,22 @@ void vertex() {
 	} else if (grain) {
 		if (g <= 0.0) { slab = 0.15; c = STUBBLE; }
 		else if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.35; rc = SPROUT; clumps = 16.0; fill = 0.7; }
-		else if (g < 0.75) { h = 0.45; w = 0.55; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 16.0; fill = 0.85; }
+		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; fill = 0.35; }
+		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; }
 		else { slab = 0.8; c = RIPE[kind]; }
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.35; rc = SPROUT; clumps = 12.0; fill = 0.7; }
-		else { h = 0.5; w = 0.4; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; fill = 0.7; }
+		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; fill = 0.35; }
+		else { h = 0.45; w = 0.45; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; fill = 0.6; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		slab = 0.2;
 		c = SOIL_DRY;
-		h = g < 0.12 ? 0.8 : 1.1;
-		w = 0.4;
+		h = g < 0.12 ? 0.6 : 0.8;
+		w = 0.5;
 		rc = g < 0.12 ? VINE_BARE : VINE;
 		clumps = 8.0;
+		fill = 0.75;
 	}
 	bool base = UV.x == -1.0;
 	bool fence = UV.x == -2.0;
@@ -124,9 +126,11 @@ void vertex() {
 		float step = inner / crop_rows;
 		off = vec2(VERTEX.x * inner * 0.97, (UV.x - 0.5) * inner + VERTEX.z * w * step);
 		// clumps in staggered rows; rows of clumps run east-west, so their
-		// fronts face the camera
+		// fronts face the camera; unbroken rows run north-south, away from
+		// the camera, as lines with the soil between them (east-west their
+		// stacked fronts read as blinds)
 		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
-		quarter = sim_crop_rows_ns(cell) && clumps == 0.0 ? 1 : 0;
+		quarter = clumps == 0.0 ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;

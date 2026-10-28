@@ -267,16 +267,18 @@ Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 (`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
 40 × 40 um die Kamera), 2,5 % vom Parzellenrand eingerückt, damit schmale
 Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
-Ackerland: dunkle braune Erde mit dichten Reihen grüner Büschel und eine
-geschlossene strohgelbe Fläche. Weizen und Gerste wachsen von nackter Erde
-über Reihen kleiner Büschel zu dichten Büschelreihen, reifen zu einer
-strohgelben Fläche und werden zu Stoppeln; eine brachliegende Parzelle ist
-eine niedrige Fläche aus trockenen Stoppeln. Gemüse und Bohnen stehen in 12 Reihen
-einzelner Büschel hinter einem Holzzaun auf drei oder vier Seiten, Reben in
-jeder zweiten Reihe höher. Büschelreihen laufen immer ost-west, damit ihre
-Vorderseiten zur Kamera zeigen; die Lücken schneidet der Fragment-Shader.
-Nord-süd-Reihen werden gedreht, nie gespiegelt (Spiegeln kehrt die
-Flächen nach innen). Auf gut der Hälfte der Weideparzellen (nicht bestellt,
+Ackerland: dunkle braune Erde mit grünen Reihen, zwischen denen die Erde
+sichtbar bleibt, und eine geschlossene strohgelbe Fläche. Weizen und Gerste
+wachsen von nackter Erde über lockere Sprossen zu schmalen durchgehenden
+Reihen, reifen zu einer strohgelben Fläche und werden zu Stoppeln; eine
+brachliegende Parzelle ist eine niedrige Fläche aus trockenen Stoppeln.
+Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel hinter einem
+Holzzaun auf drei oder vier Seiten, Reben als niedrige Hecken in jeder
+zweiten Reihe. Büschelreihen laufen ost-west, damit ihre Vorderseiten zur
+Kamera zeigen (die Lücken schneidet der Fragment-Shader); durchgehende
+Reihen laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen sich
+ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
+gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen (nicht bestellt,
 offenes Land, kein Hof) steht eine kleine Schafherde, vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro

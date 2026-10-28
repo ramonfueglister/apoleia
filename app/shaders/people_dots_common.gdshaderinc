@@ -109,14 +109,19 @@ vec2 dot_lot(vec2 p) {
 	return world_min + (floor((p - world_min) / DOT_LOT_KM) + 0.5) * DOT_LOT_KM;
 }
 
-// A lot a farmhouse can stand on: land (or by a river), and with `level`
-// also open level ground, no ramp and no wood: the lot is a whole tile, or
-// 2 x 2 quarter tiles up close (tile_terrain.gdshaderinc sub_tiles), all
-// flat at one level; on the coarser levels further out every lot on land
-// counts.
-const ivec2 DOT_RING[8] = ivec2[](ivec2(1, 0), ivec2(1, 1), ivec2(0, 1), ivec2(-1, 1), ivec2(-1, 0), ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1));
-bool dot_lot_ok(vec2 lot, bool level) {
-	int n = tile_km > DOT_LOT_KM * 1.01 ? 1 : int(round(DOT_LOT_KM / tile_km));
+// A lot a farmhouse can stand on, by `need`: 0 land (or by a river); 1 also
+// open level ground, no ramp and no wood (the lot a whole tile, or 2 x 2
+// quarter tiles up close, tile_terrain.gdshaderinc sub_tiles, all flat at
+// one level); 2 also no ground rising just south of it, which would hide
+// the house from the camera (it always looks north). On the coarser levels
+// further out every lot on land counts.
+// the lots round a lot: the eight next to it, then the sixteen beyond
+const ivec2 DOT_RING[24] = ivec2[](ivec2(1, 0), ivec2(1, 1), ivec2(0, 1), ivec2(-1, 1), ivec2(-1, 0), ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
+	ivec2(2, 0), ivec2(2, 1), ivec2(2, 2), ivec2(1, 2), ivec2(0, 2), ivec2(-1, 2), ivec2(-2, 2), ivec2(-2, 1),
+	ivec2(-2, 0), ivec2(-2, -1), ivec2(-2, -2), ivec2(-1, -2), ivec2(0, -2), ivec2(1, -2), ivec2(2, -2), ivec2(2, -1));
+bool dot_lot_ok(vec2 lot, int need) {
+	bool coarse = tile_km > DOT_LOT_KM * 1.01;
+	int n = coarse ? 1 : int(round(DOT_LOT_KM / tile_km));
 	float lo = 1e9;
 	float hi = -1e9;
 	for (int j = 0; j < n; j++) {
@@ -125,13 +130,21 @@ bool dot_lot_ok(vec2 lot, bool level) {
 			int water = tt_water(t);
 			if (water != W_LAND && water != W_RIVER) { return false; }
 			int g = tt_ground(t);
-			if (level && (g == G_FOREST || g == G_CONIFER || g == G_ROCK || g == G_SNOW)) { return false; }
+			if (need >= 1 && (g == G_FOREST || g == G_CONIFER || g == G_ROCK || g == G_SNOW)) { return false; }
 			vec4 k = round(tt_corners_cached(t));
 			lo = min(lo, min(min(k.x, k.y), min(k.z, k.w)));
 			hi = max(hi, max(max(k.x, k.y), max(k.z, k.w)));
 		}
 	}
-	return !level || tile_km > DOT_LOT_KM * 1.01 || hi - lo < 0.01;
+	if (need == 0 || coarse) { return true; }
+	if (hi - lo > 0.01) { return false; }
+	if (need == 2) {
+		for (int i = -1; i <= n; i++) {
+			vec4 k = round(tt_corners_cached(dot_tile(lot + (vec2(float(i), float(n)) + 0.5 - float(n) * 0.5) * tile_km)));
+			if (max(max(k.x, k.y), max(k.z, k.w)) > hi + 0.01) { return false; }
+		}
+	}
+	return true;
 }
 
 // The farmhouse on the lot under p (people_houses.gdshader), the same for
@@ -169,19 +182,21 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 		// on its lot, so houses stand side by side in rows instead of
 		// cutting into each other (two on one lot look like one house)
 		// (a river is a narrow band on the land tile, so a lot by it counts);
-		// a level lot if there is one: its own or the first of its eight
-		// neighbours, from a hashed start round the ring, as a ramp would
-		// cut through the farmhouse and its yard
+		// the best lot of its own and the two rings round it (each from a
+		// hashed start): open, level and in view, else open and level, as a
+		// ramp would cut through the farmhouse and its yard
 		vec2 lot = dot_lot(p);
-		if (dot_lot_ok(lot, false)) {
+		if (dot_lot_ok(lot, 0)) {
 			p = lot;
-			if (!dot_lot_ok(lot, true)) {
-				int start = int(dot_hash(key ^ 0x51ed27u) & 7u);
-				for (int i = 0; i < 8; i++) {
-					int r = (start + i) & 7;
-					vec2 next = lot + vec2(DOT_RING[r]) * DOT_LOT_KM;
-					if (dot_lot_ok(next, true)) {
+			int start = int(dot_hash(key ^ 0x51ed27u) & 7u);
+			bool found = false;
+			for (int need = 2; need >= 1 && !found; need--) {
+				for (int i = -1; i < 24; i++) {
+					int r = i < 8 ? (start + i) & 7 : 8 + ((start * 2 + i) & 15);
+					vec2 next = i < 0 ? lot : lot + vec2(DOT_RING[r]) * DOT_LOT_KM;
+					if (dot_lot_ok(next, need)) {
 						p = next;
+						found = true;
 						break;
 					}
 				}

@@ -32,8 +32,8 @@ vec4 sim_fine_at(ivec2 t) {
 }
 
 // The crop of a sown parcel, so the farmland is a patchwork: 0 wheat,
-// 1 barley (both a closed sheet), 2 vegetables and beans in rows, 3 vines;
-// rows run east-west or north-south.
+// 1 barley (both in unbroken rows, ripe a closed sheet), 2 vegetables and
+// beans in rows of clumps, 3 vines.
 const int SIM_WHEAT = 0;
 const int SIM_BARLEY = 1;
 const int SIM_BEANS = 2;
@@ -41,10 +41,6 @@ const int SIM_VINES = 3;
 int sim_crop_kind(vec2 cell) {
 	float pick = sim_hash(cell + 5.1);
 	return pick < 0.4 ? SIM_WHEAT : pick < 0.6 ? SIM_BARLEY : pick < 0.85 ? SIM_BEANS : SIM_VINES;
-}
-
-bool sim_crop_rows_ns(vec2 cell) {
-	return sim_hash(cell + 9.7) < 0.5;
 }
 
 // Whether a farmhouse stands on the lot under p (world km); its house,
