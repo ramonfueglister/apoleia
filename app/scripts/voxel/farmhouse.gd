@@ -26,7 +26,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v12_%s.res"
+const CACHE := "user://farmhouse_v14_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -147,12 +147,14 @@ static func _yard(p: Vector3) -> int:
 		return EARTH
 	if p.y < 0.0:
 		return EMPTY # the rest of the sunk layer is the terrain's
-	# vegetable beds behind the house: rows of greens on dark soil
-	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y < 0.375:
-		var row := posmod(int(floor(p.x / 0.5)), 2) == 0
+	# vegetable beds behind the house: small bushy plants in rows on dark soil
+	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y < 0.625:
 		if p.y < 0.125:
 			return SOIL
-		return LEAF if row else EMPTY
+		var plant := posmod(int(floor(p.x / 0.5)), 2) == 0 and posmod(int(floor((p.z + 5.75) / 0.5)), 2) == 0
+		if not plant:
+			return EMPTY
+		return LEAF if p.y >= 0.375 else LEAF_DARK
 	return _fence(p)
 
 ## A fruit tree in the back corner of the yard: a trunk and a round crown
@@ -188,6 +190,8 @@ static func _fence(p: Vector3) -> int:
 	var rail := p.y >= 0.375 and p.y < 0.625
 	return FENCE if post or rail else EMPTY
 
+const OLIVE_CLUMPS: Array[Vector4] = [Vector4(-0.75, 0.25, 1.5, 2.75), Vector4(0.75, -0.25, 1.75, 3.25), Vector4(0.25, 0.75, 2.0, 3.5)]
+
 ## Outside the fence: a cypress in either front corner of the lot (clear of
 ## the house front), an olive tree in one back corner and a haystack in the
 ## other. Each in colours of its own, so people_houses.gdshader can leave
@@ -203,15 +207,17 @@ static func _lot(p: Vector3) -> int:
 		if cx < r and cz < r and cx + cz < r * 1.5:
 			return CYPRESS_DARK if p.y < 2.25 else CYPRESS
 		return EMPTY
-	# an olive tree: a crooked grey trunk, a wide low crown, silver-green
+	# an olive tree: a crooked grey trunk and a wide crown of three uneven
+	# clumps, silver-green, darker underneath
 	var o := Vector2(p.x - 8.0, p.z + 8.0)
 	if p.y < 1.75:
 		if absf(o.x - 0.25 * floorf(p.y / 0.75)) < 0.25 and absf(o.y) < 0.25:
 			return OLIVE_TRUNK
-	elif p.y < 3.5:
-		var r := 1.75 if p.y < 3.0 else 1.0
-		if absf(o.x) < r and absf(o.y) < r and absf(o.x) + absf(o.y) < r * 1.5:
-			return OLIVE_DARK if p.y < 2.25 else OLIVE
+	for clump: Vector4 in OLIVE_CLUMPS: # x, z, bottom, top
+		var d := Vector2(absf(o.x - clump.x), absf(o.y - clump.y))
+		var r := 1.0 if p.y < clump.w - 0.5 else 0.625
+		if p.y >= clump.z and p.y < clump.w and d.x < r and d.y < r and d.x + d.y < r * 1.5:
+			return OLIVE_DARK if p.y < clump.z + 0.5 else OLIVE
 	# a haystack: a round stack of straw, narrowing to a top
 	var hd := Vector2(p.x + 8.0, p.z + 8.25).length()
 	var hr := 1.375 - maxf(0.0, p.y - 1.0) * 0.6

@@ -22,12 +22,13 @@ varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
-// plaster and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB
-const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.788, 0.698), vec3(0.902, 0.776, 0.565), vec3(0.922, 0.875, 0.784));
+// plaster (cream, pink, ochre, lime white) and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB
+const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.788, 0.698), vec3(0.851, 0.718, 0.478), vec3(0.937, 0.910, 0.847));
 const vec3 SHUTTER_GREEN = vec3(0.373, 0.498, 0.275);
 const vec3 SHUTTER_BROWN = vec3(0.604, 0.353, 0.227);
-// roof tiles a little browner or more orange by farm
-const vec3 ROOFS[3] = vec3[](vec3(1.0), vec3(0.9, 0.86, 0.86), vec3(1.05, 1.0, 0.9));
+// roof tiles by farm: as built, rusty, orange or dark red (#b5532e, #c4613a,
+// #a8452a on the base tile)
+const vec3 ROOFS[4] = vec3[](vec3(1.0), vec3(1.01, 0.96, 0.73), vec3(1.1, 1.13, 0.92), vec3(0.94, 0.8, 0.67));
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;
@@ -51,7 +52,7 @@ void vertex() {
 	// each farm its own plaster (cream, pink, ochre, as the town's
 	// WALLS) and shutters (green or brown), by the palette index in UV.y
 	// (scripts/voxel/farmhouse.gd); the vertex colour keeps its corner shading
-	ivec2 lot = ivec2(floor(p / DOT_LOT_KM));
+	ivec2 lot = ivec2(floor((p - world_min) / DOT_LOT_KM));
 	uint key = dot_hash(uint(lot.x) * 0x2545f491u ^ uint(lot.y) * 0x9e3779b9u);
 	int index = int(UV.y + 0.5);
 	if (index == 1 || index == 2) {
@@ -59,7 +60,7 @@ void vertex() {
 	} else if (index == 20) {
 		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
 	} else if (index >= 4 && index <= 6) {
-		tint *= ROOFS[(key >> 9u) % 3u];
+		tint *= ROOFS[(key >> 9u) % 4u];
 	}
 	// not every farm has the cypresses, the olive tree or the haystack
 	// on its lot (farmhouse.gd _lot)

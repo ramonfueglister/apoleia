@@ -13,6 +13,7 @@ uniform sampler2D list_tex : filter_nearest, repeat_disable;  // house slots (fl
 uniform int list_w = 128;
 uniform vec2 lot_origin; // lot index of the mask's first pixel
 uniform float lot_km = 0.5;
+uniform vec2 world_min;  // the terrain's tile grid starts here; so do the lots
 
 void vertex() {
 	int i = INSTANCE_ID;
@@ -23,7 +24,7 @@ void vertex() {
 	vec4 rec = texelFetch(people_tex, ivec3(px.x, px.y % page_side, px.y / page_side), 0);
 	vec4 place = texelFetch(place_tex, px, 0);
 	vec2 p = rec.xy + place.xy - 32.0;
-	vec2 lot = floor(p / lot_km) - lot_origin;
+	vec2 lot = floor((p - world_min) / lot_km) - lot_origin;
 	bool show = rec.z > 0.0 && place.a > 0.5;
 	VERTEX = show ? lot + 0.5 + VERTEX : vec2(-1.0e6);
 }

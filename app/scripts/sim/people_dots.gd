@@ -47,6 +47,7 @@ const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
 const CROP_ROWS := 12 # rows of vegetables or vines per parcel
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
+const FLOCK_MAX := 8 # sheep in the largest flock on a pasture parcel
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
@@ -64,7 +65,10 @@ const HOUSE_LOD_MAX := [1024, 4096, HOUSE_MAX]
 const HOUSE_LOD_KM := [5.0, 20.0, INF]
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
-const PLACE_KEYS: Array[StringName] = [&"tile_km", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size"]
+# the uniforms the placement passes depend on; the near relief (levels_*,
+# near_scale) is baked later and moves its window with the camera
+const PLACE_KEYS: Array[StringName] = [&"tile_km", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size",
+	&"level_h", &"levels_ready", &"levels_origin", &"near_scale", &"ground_ready"]
 const DOTS_PER_INSTANCE := 64 # people_dots.gdshaderinc, divides the page size
 const PICK_PX := 10.0 # a click finds the nearest dot within this many pixels
 const CLICK_PX := 4.0 # a press and release further apart is a drag, not a click
@@ -408,9 +412,10 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 
 ## A parcel's field: the slab (UV.x = -1), CROP_ROWS rows (UV.x their
 ## place across the parcel, UV.y their number) and the fence (UV.x = -2,
-## UV.y side * 16 + post, 15 the rail), each a unit box (x, z -0.5..0.5,
-## y 0..1, no bottom); people_crops.gdshader sizes and places them by crop
-## and season. Flat faces: the sides a step darker in the vertex alpha.
+## UV.y side * 16 + post, 15 the rail) and a flock for the pasture (UV.x =
+## -3, UV.y sheep * 4 + body, legs or head), each a unit box (x, z
+## -0.5..0.5, y 0..1, no bottom); people_crops.gdshader sizes and places
+## them by crop and season. Flat faces: the sides a step darker in the vertex alpha.
 static func _crop_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -420,6 +425,9 @@ static func _crop_mesh() -> ArrayMesh:
 	for side in 4:
 		for k: int in range(FENCE_POSTS) + [15]:
 			parts.append(Vector2(-2.0, side * 16 + k))
+	for k in FLOCK_MAX:
+		for part in 3:
+			parts.append(Vector2(-3.0, k * 4 + part))
 	for uv in parts:
 		for axis in 3:
 			for sgn in [-1.0, 1.0]:
@@ -510,10 +518,13 @@ func _update_crops(view_km: float) -> void:
 		return
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
 	var size := tile_km * 0.5
-	var cell0 := (centre / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)
+	# parcels and lots on the terrain's tile grid, counted from world_min
+	var from: Vector2 = centre - terrain.world_min
+	var cell0 := (from / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)
 	_crop_material.set_shader_parameter("crop_cell0", cell0)
-	var lot0 := (centre / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
+	var lot0 := (from / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
 	_lots_material.set_shader_parameter("lot_origin", lot0)
+	_lots_material.set_shader_parameter("world_min", terrain.world_min)
 	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
 		m.set_shader_parameter("sim_lot_origin", lot0)
 	_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -786,6 +797,7 @@ func _process(delta: float) -> void:
 		_bench_step()
 
 func _bench_step() -> void:
+
 	_bench_frame += 1
 	var f := _bench_frame - BENCH_WARMUP
 	if f < 0:

@@ -191,13 +191,15 @@ durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 Zypressen in den vorderen Ecken, ein Olivenbaum und ein Heuhaufen. Die Palette teilt es mit den Stadtgebäuden des
 Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
 seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
-Palettenindex, den der Mesher in UV.y schreibt, und spiegelt das Haus je
+Palettenindex, den der Mesher in UV.y schreibt, dazu je Hof einen von vier
+Dachtönen und nicht auf jedem Hof Zypressen, Olivenbaum und Heuhaufen (deren
+Farben haben eigene Indizes), und spiegelt das Haus je
 Parzelle (vier Drehungen, gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
 Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
 Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
-gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v11_*.res`
+gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v14_*.res`
 gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
 nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
 aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km
@@ -208,8 +210,11 @@ und Heimzelle, gezählt über die Mitglieder, Reisende eingeschlossen), in
 festen Slots und Seiten wie die Personen: rund 25 600 Häuser in 7 Seiten, pro
 Tag ändert meist 1 Seite. `people_houses.gdshader`
 zeichnet sie, ein eigener Platzierungs-Pass (derselbe Shader mit `houses`)
-läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Drehung, Grösse
-und Ton hängen an der Parzelle. Die Familie steht im Vorhof, auf der Gasse
+läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern (auch das
+nachgebackene Nahrelief, `levels_*`, `near_scale`). Ein Bauernhaus steht auf
+einer ebenen Hofparzelle: auf seiner eigenen oder, liegt die auf einer Rampe,
+auf der ersten ebenen der acht Nachbarparzellen (wie in SimCity 2000 wird
+am Hang nicht gebaut). Drehung, Grösse und Ton hängen an der Parzelle. Die Familie steht im Vorhof, auf der Gasse
 oder auf den Feldern (siehe Wohnorte). Stadtbewohner haben kein eigenes Haus, sie
 wohnen in den Stadt-Tiles.
 
@@ -234,9 +239,12 @@ etwa 25 ms:
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
 Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
-Kachel, so gross wie ihr Feldanteil, fern halb zur Wiese hin gemischt, damit
-das Flickwerk ruhig bleibt; Brache als Trockengras; Pfade zum
-Markt, Marktplatz mit Ständen, Dorfgassen um die Hofparzellen, Handelswege
+Kachel, so gross wie ihr Feldanteil; fern ist jede feine Kachel mit
+mindestens einem Viertel Feldern ein ganzer Block ohne Wiesenstreifen, in
+der Farbe ihrer Frucht, nach ihrem Brachanteil strohfarben gemischt und
+leicht zur Wiese hin; Brache als Trockengras; Pfade zum
+Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an
+der Seite, der jeder Hof zugewandt ist (dort trifft sein Torweg die Gasse), Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.
 Taste `G` schaltet das aus und an. Was gezeigt wird, hängt an der
 Sichtbreite (`sim_view_km`), nicht an der Pixelgrösse, damit kein Umschalten
@@ -248,17 +256,19 @@ Jede Parzelle trägt eine Frucht (`sim_crop_kind`, Hash der Parzelle; fern
 je Feldblock): Weizen 40 %, Gerste 20 %, Gemüse und Bohnen 25 %, Reben 15 %.
 Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 (`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
-40 × 40 um die Kamera), 6 % vom Parzellenrand eingerückt, damit Grasränder
-und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks Ackerland: dunkle
-rotbraune Erde mit grünen Reihen und eine geschlossene Fläche, strohgelb
-wenn reif. Weizen wächst von nackter Erde über Reihen kleiner Büschel zu
-dichten grünen Reihen, Gerste zu einer satten grünen Fläche; beide reifen
-strohgelb und werden zu Stoppeln. Gemüse und Bohnen stehen in 12 Reihen
+40 × 40 um die Kamera), 2,5 % vom Parzellenrand eingerückt, damit schmale
+Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
+Ackerland: dunkle rotbraune Erde mit Reihen grüner Büschel und eine
+geschlossene strohgelbe Fläche. Weizen und Gerste wachsen von nackter Erde
+über Reihen kleiner Büschel zu dichten Büschelreihen, reifen zu einer
+strohgelben Fläche und werden zu Stoppeln; eine brachliegende Parzelle ist
+eine niedrige Fläche aus trockenen Stoppeln. Gemüse und Bohnen stehen in 12 Reihen
 einzelner Büschel hinter einem Holzzaun auf drei oder vier Seiten, Reben in
 jeder zweiten Reihe höher. Büschelreihen laufen immer ost-west, damit ihre
 Vorderseiten zur Kamera zeigen; die Lücken schneidet der Fragment-Shader.
 Nord-süd-Reihen werden gedreht, nie gespiegelt (Spiegeln kehrt die
-Flächen nach innen). Die Regel, welche Parzelle bestellt ist, liegt in
+Flächen nach innen). Auf gut der Hälfte der Weideparzellen (nicht bestellt,
+offenes Land, kein Hof) steht eine kleine Schafherde, vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die

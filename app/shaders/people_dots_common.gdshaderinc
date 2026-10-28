@@ -35,6 +35,22 @@ ivec2 dot_tile(vec2 p) {
 	return ivec2(floor((p - world_min) / tile_km));
 }
 
+// The ground's level at p as the terrain draws it (tile_terrain.gdshader
+// vertex): each tile cut along the diagonal whose corners are closer in
+// level into two flat or sloped triangles, not a bilinear surface, so
+// people, houses and crops stand on the ramps and not in them.
+float dot_ground_level(vec2 p) {
+	ivec2 t = dot_tile(p);
+	vec4 k = tt_corners_cached(t);
+	vec2 uv = (p - world_min) / tile_km - vec2(t);
+	if (abs(k.x - k.z) <= abs(k.y - k.w)) {
+		return uv.x >= uv.y ? k.x + (k.y - k.x) * uv.x + (k.z - k.y) * uv.y
+			: k.x + (k.z - k.w) * uv.x + (k.w - k.x) * uv.y;
+	}
+	return uv.x + uv.y <= 1.0 ? k.x + (k.y - k.x) * uv.x + (k.w - k.x) * uv.y
+		: k.z + (k.z - k.w) * (uv.x - 1.0) + (k.z - k.y) * (uv.y - 1.0);
+}
+
 // Record of a slot: slot = layer * page_side^2 + y * page_side + x, which is
 // pixel (x, layer * page_side + y) of the prep texture.
 vec4 dot_record(ivec2 px) {
@@ -86,16 +102,31 @@ vec2 dot_village(vec2 c, float r, uint key) {
 	return score < 0.0 ? dot_land(c, DOT_CELL_HALF_KM, key) : best;
 }
 
-// Centre of the village lot under p (world km).
+// Centre of the village lot under p (world km). Lots, like the field
+// parcels (sim_fields.gdshaderinc), lie on the terrain's tile grid from
+// world_min, so a farmhouse and its fields sit on whole tiles.
 vec2 dot_lot(vec2 p) {
-	return (floor(p / DOT_LOT_KM) + 0.5) * DOT_LOT_KM;
+	return world_min + (floor((p - world_min) / DOT_LOT_KM) + 0.5) * DOT_LOT_KM;
+}
+
+// A lot a farmhouse can stand on: land (or by a river), and with `level`
+// also a flat tile, no ramp (with the lot a whole tile up close; on the
+// coarser levels further out every lot on land counts).
+const ivec2 DOT_RING[8] = ivec2[](ivec2(1, 0), ivec2(1, 1), ivec2(0, 1), ivec2(-1, 1), ivec2(-1, 0), ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1));
+bool dot_lot_ok(vec2 lot, bool level) {
+	ivec2 t = dot_tile(lot);
+	int water = tt_water(t);
+	if (water != W_LAND && water != W_RIVER) { return false; }
+	if (!level || tile_km > DOT_LOT_KM * 1.01) { return true; }
+	vec4 k = round(tt_corners_cached(t));
+	return max(max(k.x, k.y), max(k.z, k.w)) - min(min(k.x, k.y), min(k.z, k.w)) < 0.01;
 }
 
 // The farmhouse on the lot under p (people_houses.gdshader), the same for
 // everything on that lot: its quarter turn and mirror as one matrix on the
 // local x, z, and in `size_tint` its size and brightness factors.
 mat2 dot_house_turn(vec2 p, out vec2 size_tint) {
-	ivec2 lot = ivec2(floor(p / DOT_LOT_KM));
+	ivec2 lot = ivec2(floor((p - world_min) / DOT_LOT_KM));
 	uint key = dot_hash(uint(lot.x) * 0x9e3779b1u ^ uint(lot.y) * 0x85ebca77u);
 	vec2 r = dot_rand2(key, 7u);
 	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
@@ -125,9 +156,24 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 		p = dot_land(v, -DOT_VILLAGE_KM, key);
 		// on its lot, so houses stand side by side in rows instead of
 		// cutting into each other (two on one lot look like one house)
+		// (a river is a narrow band on the land tile, so a lot by it counts);
+		// a level lot if there is one: its own or the first of its eight
+		// neighbours, from a hashed start round the ring, as a ramp would
+		// cut through the farmhouse and its yard
 		vec2 lot = dot_lot(p);
-		if (tt_water(dot_tile(lot)) == W_LAND) {
+		if (dot_lot_ok(lot, false)) {
 			p = lot;
+			if (!dot_lot_ok(lot, true)) {
+				int start = int(dot_hash(key ^ 0x51ed27u) & 7u);
+				for (int i = 0; i < 8; i++) {
+					int r = (start + i) & 7;
+					vec2 next = lot + vec2(DOT_RING[r]) * DOT_LOT_KM;
+					if (dot_lot_ok(next, true)) {
+						p = next;
+						break;
+					}
+				}
+			}
 		}
 		village = true;
 	}
@@ -163,9 +209,6 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 			p += (h - 0.5) * 2.0 * DOT_FAMILY_KM;
 		}
 	}
-	// the dot stands on its tile's corner levels, as trees and houses do
-	vec2 uv = fract((p - world_min) / tile_km);
-	vec4 c = tt_corners_cached(dot_tile(p));
-	float level = mix(mix(c.x, c.y, uv.x), mix(c.w, c.z, uv.x), uv.y);
-	return vec3(p - rec.xy, level);
+	// the dot stands on the ground as the terrain draws it
+	return vec3(p - rec.xy, dot_ground_level(p));
 }

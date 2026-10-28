@@ -31,8 +31,8 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // undyed wool, linen, madder red, saffron, woad blue: clothes when the
 // people are not coloured by group (sRGB); clear enough to stand out on
 // the grass and the fields (none close to the skin, so no one reads as naked)
-const vec3 TUNICS[8] = vec3[](vec3(0.92, 0.88, 0.8), vec3(0.71, 0.54, 0.35), vec3(0.65, 0.26, 0.18),
-	vec3(0.77, 0.58, 0.25), vec3(0.3, 0.42, 0.58), vec3(0.44, 0.5, 0.56), vec3(0.72, 0.3, 0.22), vec3(0.55, 0.36, 0.24));
+const vec3 TUNICS[8] = vec3[](vec3(0.92, 0.88, 0.8), vec3(0.71, 0.54, 0.35), vec3(0.71, 0.33, 0.23),
+	vec3(0.77, 0.58, 0.25), vec3(0.5, 0.56, 0.65), vec3(0.44, 0.5, 0.56), vec3(0.79, 0.71, 0.54), vec3(0.55, 0.36, 0.24));
 const vec3 SCARVES[4] = vec3[](vec3(0.88, 0.84, 0.74), vec3(0.7, 0.36, 0.28), vec3(0.42, 0.48, 0.62), vec3(0.78, 0.7, 0.5));
 // part ids in UV.x (people_dots.gd FIG_*)
 const int TUNIC = 0;

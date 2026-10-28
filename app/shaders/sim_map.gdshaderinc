@@ -59,19 +59,23 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (sim_house_lot(p)) { return land == G_FIELD ? meadow : c; } // the farmhouse's yard
 	float size = tile_size * 0.5;
 	bool near = sim_view_km <= SIM_CROPS_KM;
-	vec2 cell = floor(p / size);
+	vec2 cell = floor((p - world_min) / size); // parcels on the tile grid
 	vec4 f;
 	int state = sim_parcel(cell, size, !near, f);
 	// the sim decides where the fields are: farmland it does not farm lies
-	// as pasture, fallow parcels as dry grass
-	if (state == 0) { return land == G_FIELD ? meadow : c; }
-	if (state == 1) { return mix(meadow, GROUND_RGB[G_DRY_GRASS], 0.6); }
-	if (near) { return meadow; }
-	// one crop per field block (its fine tile), calm blocks and not a speckle
-	vec2 block = floor(((cell + 0.5) * size - sim_fine_origin) / sim_fine_km) + floor(sim_fine_origin / sim_fine_km + 0.5);
-	int kind = sim_crop_kind(block);
-	float g = f.b;
+	// as pasture, fallow parcels as straw stubble
 	vec3 field = GROUND_RGB[G_FIELD];
+	vec3 straw = field * vec3(0.98, 0.98, 0.9);
+	if (state == 0) { return land == G_FIELD ? meadow : c; }
+	if (state == 1) { return straw; }
+	// up close the crops stand on the flat tiles (people_crops.gdshader);
+	// a ramp carries the parcel's colour
+	if (near && sim_flat(p)) { return meadow; }
+	// one crop per parcel up close, per field block (its fine tile) from
+	// afar: calm blocks and not a speckle
+	vec2 block = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km) + floor(sim_fine_origin / sim_fine_km + 0.5);
+	int kind = sim_crop_kind(near ? cell : block);
+	float g = f.b;
 	vec3 soil = C_EARTH * vec3(0.66, 0.57, 0.54); // tilled, darker than the paths
 	vec3 stubble = mix(field, C_EARTH, 0.4);
 	// as the crops up close (people_crops.gdshader) seen from afar: wheat and
@@ -80,9 +84,13 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 		: kind == SIM_BARLEY ? meadow * vec3(0.72, 0.88, 0.7) : mix(soil, meadow * vec3(0.62, 0.8, 0.6), 0.55);
 	vec3 ripe = kind == SIM_WHEAT ? field : kind == SIM_BARLEY ? mix(field, C_PAVED, 0.45) : mix(C_EARTH, field, 0.35);
 	vec3 crop = kind == SIM_VINES ? mix(soil, meadow * vec3(0.72, 0.85, 0.7), 0.7) : g <= 0.0 ? stubble : g < 0.12 ? soil : g < 0.4 ? mix(soil, green, 0.3) : g < 0.75 ? green : ripe;
-	// from afar half way to the meadow: a calm patchwork that leaves the
+	if (near) { return crop; }
+	// the block's fallow parcels (its share not sown) as straw, the colour
+	// the parcels average to up close
+	crop = mix(crop, straw, 1.0 - f.g);
+	// from afar a little toward the meadow, so the patchwork leaves the
 	// towns and the relief in front
-	return mix(meadow, crop, 0.5);
+	return mix(meadow, crop, 0.8);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and
