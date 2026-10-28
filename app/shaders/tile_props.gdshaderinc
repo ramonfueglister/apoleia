@@ -19,12 +19,24 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 	if (house) {
 		// house blocks on the street grid of the town tile (house_grid^2 = slots)
 		int side = int(ceil(sqrt(float(slots))));
-		float share = town == 3 ? 1.0 : town == 2 ? 0.6 : town == 1 ? 0.15 : 0.0;
-		int count = max(int(round(share * float(slots))), town > 0 ? 1 : 0);
-		show = show && slot < count;
-		int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
-		vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
-		uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
+		float share = tt_house_share(town);
+		if (sub_tiles) {
+			// one house on a flat quarter (a hill town steps up in terraces;
+			// tt_sub_house decides which quarters hold one)
+			vec4 q = tt_corners_cached(t);
+			bool level = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) < 0.01;
+			show = show && slot == 0 && level && tt_sub_house(t, town);
+			// now and then a courtyard in the rows of the city core
+			show = show && !(town == 3 && tt_hash(vec2(t) * 1.91 + 0.7) < 0.12);
+			uv = vec2(0.5) + (vec2(r1, r2) - 0.5) * 0.03;
+		} else {
+			int count = max(int(round(share * float(slots))), town > 0 ? 1 : 0);
+			show = show && slot < count;
+			show = show && !(town == 3 && tt_hash3(vec3(vec2(t), float(slot) + 9.1)) < 0.12);
+			int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
+			vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
+			uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
+		}
 		show = show && !tt_in_landmark(world_min + (vec2(t) + uv) * tile_km);
 	} else {
 		show = show && town == 0;
@@ -41,18 +53,21 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		int land = tt_ground_at(t, uv);
 		bool wood = land == G_FOREST || land == G_CONIFER;
 		bool open = land == G_MEADOW || land == G_DRY_GRASS || land == G_ALPINE || land == G_SCRUB;
-		// open land: a lone tree here and there, and small groves of a few
-		// trees around one spot of the tile, as in Urbek
+		// open land: small groves of a few trees around one spot of the data
+		// tile, as in Urbek (no single trees: they read as specks)
 		bool field = land == G_FIELD;
-		float lone = open ? 0.08 : field ? 0.03 : 0.0;
-		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
 		bool grove = false;
 		if (open || field) {
-			float gh = tt_hash(vec2(t) * 0.613 + 7.1);
-			vec2 spot = 0.3 + 0.4 * vec2(tt_hash(vec2(t) + 1.7), tt_hash(vec2(t) - 2.9));
-			grove = gh < (open ? 0.07 : 0.03) && length(uv - spot) < 0.2;
+			ivec2 dt = sub_tiles ? t >> ivec2(1) : t;
+			vec2 duv = sub_tiles ? (vec2(t & ivec2(1)) + uv) * 0.5 : uv;
+			float gh = tt_hash(vec2(dt) * 0.613 + 7.1);
+			vec2 spot = 0.3 + 0.4 * vec2(tt_hash(vec2(dt) + 1.7), tt_hash(vec2(dt) - 2.9));
+			grove = gh < (open ? 0.07 : 0.03) && length(duv - spot) < 0.3; // three to seven trees
 		}
-		show = show && (wood || lone_tree || grove);
+		// up close a wood keeps the density of the 0.5 km tiles (about 2 of
+		// the 4 slots of a quarter), so the ground shows between the crowns
+		bool thin = sub_tiles && tt_hash3(vec3(vec2(t) * 0.37, float(slot) + 0.5)) > 0.6;
+		show = show && (wood || grove) && !thin;
 		edge_size = mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);

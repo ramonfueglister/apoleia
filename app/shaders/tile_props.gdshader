@@ -46,6 +46,15 @@ void vertex() {
 	// houses leave room for the streets of their block grid
 	float s = prop_scale * (prop_kind == 3 ? (0.62 + 0.12 * r0) : (0.75 + 0.5 * r0) * edge_size);
 	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
+	// houses stand square to the streets: in towns and villages half of them
+	// turn their gable to the camera; in the city core every ridge runs
+	// north-south and the houses of a block join into a row (below), so the
+	// camera sees gable fronts and both roof slopes, light and dark, as in
+	// Urbek, not one orange slab per house
+	if (prop_kind == 3) {
+		float turn = town == 3 || fract(r2 * 7.31) < 0.5 ? 1.0 : 0.0;
+		a = (turn + 2.0 * floor(r2 * 2.0)) * 1.5707963;
+	}
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
 	// houses of their own width and depth (the windows stretch with them)
@@ -53,6 +62,9 @@ void vertex() {
 		float r3 = tt_hash3(vec3(vec2(t) + 3.1, float(slot) * 2.31));
 		v.x *= 0.9 + 0.25 * r3;
 		v.z *= 0.9 + 0.2 * fract(r3 * 5.7);
+		// city core: each house as long as its block, so the houses of a
+		// street join into one row (an insula of a few houses)
+		if (town == 3) { v.x = VERTEX.x * 0.92 * tile_km / ceil(sqrt(float(slots))); }
 	}
 	// in towns two to three storeys, in the city core insulae of up to four
 	// (lower than Rome's temples and the Colosseum)
@@ -73,7 +85,13 @@ void vertex() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = prop_kind == 3 ? vec3(0.94 + 0.12 * r1) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
 	// every house its own plaster (marked by alpha 0.5): cream, ochre or lime white
-	if (prop_kind == 3 && COLOR.a < 0.75) {
+	// and its own roof: terracotta, a darker red brown or a faded ochre
+	// (the roof slopes are marked by alpha 0.8)
+	if (prop_kind == 3 && COLOR.a > 0.7 && COLOR.a < 0.9) {
+		float k = fract(r0 * 3.71 + r1 * 1.37);
+		tint *= k < 0.5 ? vec3(1.0) : k < 0.8 ? vec3(0.86, 0.79, 0.80) : vec3(1.04, 1.03, 0.92);
+	}
+	if (prop_kind == 3 && COLOR.a < 0.65) {
 		float k = fract(r0 * 7.31 + r2 * 3.17);
 		tint *= k < 0.4 ? vec3(1.0) : k < 0.75 ? vec3(0.98, 0.91, 0.78) : vec3(0.99, 1.0, 1.06);
 	}

@@ -96,21 +96,26 @@ static func cypress(low := false) -> ArrayMesh:
 		_box(st, Vector3(-0.07, 0.98, -0.07), Vector3(0.07, 1.16, 0.07), top, side)
 	return st.commit()
 
-## Stone pine (Pinus pinea), the Roman umbrella pine: a flat voxel parasol on a
-## tall bare trunk.
+## Stone pine (Pinus pinea), the Roman umbrella pine: a domed voxel parasol
+## (a narrower underside, the wide crown, a cap) on a tall trunk that forks
+## under the crown; rounded so it does not read as a table.
 static func umbrella_pine(low := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var top := Color(0.22, 0.40, 0.18)
 	var side := Color(0.15, 0.29, 0.13)
-	_box(st, Vector3(-0.04, 0, -0.04), Vector3(0.04, 0.86, 0.04), Color(0.45, 0.30, 0.20), Color(0.45, 0.30, 0.20), false)
-	_box(st, Vector3(-0.44, 0.82, -0.40), Vector3(0.44, 0.98, 0.40), top, side)
+	var bark := Color(0.45, 0.30, 0.20)
+	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.70, 0.05), bark, bark, false)
 	if not low:
-		_box(st, Vector3(-0.26, 0.98, -0.24), Vector3(0.24, 1.06, 0.26), top.lightened(0.05), side)
+		_box(st, Vector3(-0.16, 0.62, -0.04), Vector3(0.16, 0.70, 0.04), bark, bark)
+	_box(st, Vector3(-0.32, 0.66, -0.30), Vector3(0.32, 0.78, 0.30), top, side)
+	_box(st, Vector3(-0.44, 0.74, -0.40), Vector3(0.44, 0.92, 0.40), top, side)
+	_box(st, Vector3(-0.28, 0.92, -0.26), Vector3(0.28, 1.02, 0.26), top, top.lerp(side, 0.35))
 	return st.commit()
 
-## A flat quad on a wall (window, door), a hair in front of it.
-static func _pane(st: SurfaceTool, centre: Vector3, n: Vector3, w: float, h: float, colour: Color) -> void:
+## A flat quad on a wall (window, door), a hair in front of it. `shade`:
+## the normal it is lit by, if not n.
+static func _pane(st: SurfaceTool, centre: Vector3, n: Vector3, w: float, h: float, colour: Color, shade := Vector3.ZERO) -> void:
 	var t := Vector3(-n.z, 0, n.x) * (w * 0.5)
 	var up := Vector3(0, h * 0.5, 0)
 	var c := centre + n * 0.004
@@ -120,18 +125,24 @@ static func _pane(st: SurfaceTool, centre: Vector3, n: Vector3, w: float, h: flo
 	var d: Vector3 = q[3]
 	if (b - a).cross(q[2] - a).dot(n) > 0.0:
 		var x: Vector3 = b; b = d; d = x
+	var lit_n := n if shade == Vector3.ZERO else shade
 	for v in [a, b, q[2], a, q[2], d]:
-		st.set_color(colour); st.set_normal(n); st.add_vertex(v)
+		st.set_color(colour); st.set_normal(lit_n); st.add_vertex(v)
 
 ## Town house after Urbek: 10 x 8.5 m, two storeys of cream plaster with
-## windows and a door, under a stepped terracotta roof (voxel layers, a third
-## of the height). 1 unit = HOUSE_M. The plaster has alpha 0.5, so
-## tile_props.gdshader can give every house its own plaster tone.
+## windows and a door, under a terracotta gable roof (a third of the height)
+## with its ridge along the long side: two plain slopes, which the sun parts
+## into a light and a dark one, gable ends in the plaster, eaves a hand wide
+## over the walls with a dark edge, a darker ridge. 1 unit = HOUSE_M. The
+## plaster has alpha 0.5 and the roof 0.8, so tile_props.gdshader can give
+## every house its own plaster and roof tone.
 static func house() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var wall := Color(0.95, 0.87, 0.72, 0.5)
-	var roof := Color(0.72, 0.32, 0.21)
+	var roof := Color(0.66, 0.31, 0.20, 0.8) # alpha 0.8: each house its own roof tone
+	var ridge_tone := Color(0.60, 0.28, 0.18)
+	var eave := Color(0.40, 0.25, 0.17) # #5e3a2a under the eaves
 	var window := Color(0.29, 0.306, 0.369) # #4a4e5e, a dark blue grey, not black
 	var door := Color(0.45, 0.30, 0.20)
 	var hx := 0.5
@@ -149,15 +160,32 @@ static func house() -> ArrayMesh:
 			_pane(st, Vector3(x, floor_y, -hz), Vector3.FORWARD, 0.09, 0.11, window)
 		_pane(st, Vector3(hx, floor_y, 0), Vector3.RIGHT, 0.09, 0.11, window)
 		_pane(st, Vector3(-hx, floor_y, 0), Vector3.LEFT, 0.09, 0.11, window)
-	# roof: eaves, then layers stepping in towards the ridge; the risers in
-	# the roof tone too, so the steps do not stripe the town
-	var layers := [[0.48, 0.07], [0.36, 0.07], [0.24, 0.07], [0.12, 0.06]]
-	var y := h
-	for k in layers.size():
-		var half_z: float = layers[k][0]
-		var dy: float = layers[k][1]
-		_box(st, Vector3(-hx - 0.04, y, -half_z), Vector3(hx + 0.04, y + dy, half_z), roof, roof)
-		y += dy
+	# the roof: a slab 0.035 thick, its top through the wall top at the walls
+	var ridge := h + 0.3
+	var pitch := (ridge - h) / hz
+	var ex := hx + 0.05
+	var ez := hz + 0.07
+	var ey := h - (ez - hz) * pitch
+	var thick := 0.035
+	for sx in [-1.0, 1.0]:
+		# gable end in the plaster, up to the underside of the roof
+		var tri := [Vector3(sx * hx, h - thick, -hz), Vector3(sx * hx, h - thick, hz), Vector3(sx * hx, ridge - thick, 0)]
+		if (tri[1] - tri[0]).cross(tri[2] - tri[0]).dot(Vector3(sx, 0, 0)) > 0.0:
+			tri = [tri[0], tri[2], tri[1]]
+		for v in tri:
+			st.set_color(wall); st.set_normal(Vector3(sx, 0, 0)); st.add_vertex(v)
+	for sz in [-1.0, 1.0]:
+		var n := Vector3(0, ez, sz * (ridge - ey)).normalized()
+		var down := Vector3(0, -thick, 0)
+		var top := [Vector3(-ex, ridge, 0), Vector3(ex, ridge, 0), Vector3(ex, ey, sz * ez), Vector3(-ex, ey, sz * ez)]
+		_quad(st, top, n, roof)
+		_quad(st, [top[0] + down, top[1] + down, top[2] + down, top[3] + down], -n, eave)
+		_quad(st, [top[3], top[2], top[2] + down, top[3] + down], Vector3(0, 0, sz), eave)
+		for sx in [-1.0, 1.0]:
+			var a: Vector3 = top[0 if sx < 0.0 else 1]
+			var b: Vector3 = top[3 if sx < 0.0 else 2]
+			_quad(st, [a, b, b + down, a + down], Vector3(sx, 0, 0), Color(eave.lerp(roof, 0.5), 1.0))
+	_box(st, Vector3(-ex, ridge - 0.02, -0.03), Vector3(ex, ridge + 0.025, 0.03), ridge_tone, ridge_tone)
 	return st.commit()
 
 # ------------------------------------------------------------ landmarks
@@ -176,20 +204,23 @@ static func landmark(which: String) -> ArrayMesh:
 		"bridge": return bridge()
 	return null
 
-## A flat quad with outward normal n (winding fixed for Godot).
-static func _quad(st: SurfaceTool, q: Array, n: Vector3, colour: Color) -> void:
+## A flat quad with outward normal n (winding fixed for Godot), lit by
+## `shade` if given.
+static func _quad(st: SurfaceTool, q: Array, n: Vector3, colour: Color, shade := Vector3.ZERO) -> void:
 	var a: Vector3 = q[0]
 	var b: Vector3 = q[1]
 	var c: Vector3 = q[2]
 	var d: Vector3 = q[3]
 	if (b - a).cross(c - a).dot(n) > 0.0:
 		var x := b; b = d; d = x
+	var lit_n := n if shade == Vector3.ZERO else shade
 	for v in [a, b, c, a, c, d]:
-		st.set_color(colour); st.set_normal(n); st.add_vertex(v)
+		st.set_color(colour); st.set_normal(lit_n); st.add_vertex(v)
 
 ## A block turned to the tangent t (horizontal, unit) with outward normal n:
-## half length hx along t, half depth hz along n, from y0 to y1.
-static func _obox(st: SurfaceTool, centre: Vector3, t: Vector3, n: Vector3, hx: float, hz: float, y0: float, y1: float, top: Color, side: Color) -> void:
+## half length hx along t, half depth hz along n, from y0 to y1. `shade`: the
+## normal its outer face is lit by, if not n.
+static func _obox(st: SurfaceTool, centre: Vector3, t: Vector3, n: Vector3, hx: float, hz: float, y0: float, y1: float, top: Color, side: Color, shade := Vector3.ZERO) -> void:
 	var c := []
 	for k in 8:
 		var sx := -1.0 if (k & 1) == 0 else 1.0
@@ -197,7 +228,7 @@ static func _obox(st: SurfaceTool, centre: Vector3, t: Vector3, n: Vector3, hx: 
 		var y := y0 if k < 4 else y1
 		c.append(centre + t * (sx * hx) + n * (sz * hz) + Vector3(0, y, 0))
 	_quad(st, [c[4], c[5], c[7], c[6]], Vector3.UP, top)
-	_quad(st, [c[2], c[3], c[7], c[6]], n, side)
+	_quad(st, [c[2], c[3], c[7], c[6]], n, side, shade)
 	_quad(st, [c[0], c[1], c[5], c[4]], -n, side)
 	_quad(st, [c[1], c[3], c[7], c[5]], t, side)
 	_quad(st, [c[0], c[2], c[6], c[4]], -t, side)
@@ -247,12 +278,14 @@ static func colosseum() -> ArrayMesh:
 		var t := (p1 - p0).normalized()
 		var nn := (e0[1] + e1[1]).normalized() as Vector3
 		var half := (p1 - p0).length() * 0.5 + 0.3
-		_obox(st, mid - nn * 3.0, t, nn, half, 3.0, 0.0, 48.0, stone, stone)
+		# lit as three flat walls (left, front, right), not facet by facet
+		var lit := Vector3(signf(nn.x), 0, 0) if absf(nn.x) > 0.6 else Vector3(0, 0, signf(nn.z))
+		_obox(st, mid - nn * 3.0, t, nn, half, 3.0, 0.0, 48.0, stone, stone, lit)
 		for y in [13.0, 25.0, 37.0]:
-			_obox(st, mid + nn * 0.5, t, nn, half, 0.7, y, y + 1.6, cornice, cornice)
+			_obox(st, mid + nn * 0.5, t, nn, half, 0.7, y, y + 1.6, cornice, cornice, lit)
 		for y in [7.5, 19.5, 31.0]:
-			_pane(st, mid + Vector3(0, y, 0), nn, half * 1.1, 8.0, arch)
-		_pane(st, mid + Vector3(0, 43.0, 0), nn, half * 0.4, 2.5, arch)
+			_pane(st, mid + Vector3(0, y, 0), nn, half * 1.1, 8.0, arch, lit)
+		_pane(st, mid + Vector3(0, 43.0, 0), nn, half * 0.4, 2.5, arch, lit)
 	# seating: three tiers stepping down to the arena wall, then the sand
 	var tiers := [[0.94, 0.78, 40.0], [0.78, 0.63, 30.0], [0.63, 0.50, 19.0]]
 	for i in tiers.size():
@@ -268,7 +301,8 @@ static func colosseum() -> ArrayMesh:
 			var up := Vector3(0, h, 0)
 			_quad(st, [o0 + up, o1 + up, i1 + up, i0 + up], Vector3.UP, seats[i] if k % 4 != 0 else arch)
 			var inward := -((_ellipse(a, b, TAU * (k + 0.5) / n)[1]) as Vector3)
-			_quad(st, [i0 + Vector3(0, below, 0), i1 + Vector3(0, below, 0), i1 + up, i0 + up], inward, stone)
+			var lit := Vector3(signf(inward.x), 0, 0) if absf(inward.x) > 0.6 else Vector3(0, 0, signf(inward.z))
+			_quad(st, [i0 + Vector3(0, below, 0), i1 + Vector3(0, below, 0), i1 + up, i0 + up], inward, stone, lit)
 	for k in n:
 		var q0: Vector3 = _ellipse(a * 0.5, b * 0.5, TAU * k / n)[0]
 		var q1: Vector3 = _ellipse(a * 0.5, b * 0.5, TAU * (k + 1) / n)[0]
@@ -423,32 +457,31 @@ static func temple() -> ArrayMesh:
 		y += layer[1]
 	return st.commit()
 
-## The Pantheon (rotunda 44 m across under a stepped dome, portico in the
-## north with eight columns).
+## The Pantheon (rotunda 44 m across under a stepped dome, a portico with
+## eight columns under a stone pediment). The drum is lower than it is wide
+## (the terrain raises landmarks by half again).
 static func pantheon() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var stone := Color(0.84, 0.78, 0.67)
 	var dome := Color(0.72, 0.70, 0.66)
 	var marble := Color(0.93, 0.91, 0.86)
-	var roof := Color(0.72, 0.32, 0.21)
-	_prism(st, Vector3.ZERO, 24.0, 0.0, 30.0, 20, stone, stone)
-	var rings := [[22.0, 30.0, 34.0], [18.0, 34.0, 38.0], [13.0, 38.0, 41.0], [7.0, 41.0, 43.0]]
+	_prism(st, Vector3.ZERO, 24.0, 0.0, 20.0, 20, stone, stone)
+	var rings := [[22.0, 20.0, 24.0], [18.0, 24.0, 27.5], [13.0, 27.5, 30.0], [7.0, 30.0, 31.5]]
 	for r in rings:
 		_prism(st, Vector3.ZERO, r[0], r[1], r[2], 20, dome, dome.darkened(0.08))
 	# the portico (in fact in the north) turned south, to the camera
 	_box(st, Vector3(-17, 0, 20), Vector3(17, 3, 40), stone, stone)
-	_box(st, Vector3(-14, 3, 20), Vector3(14, 22, 30), stone, stone)
-	_pane(st, Vector3(0, 11, 30), Vector3.BACK, 28, 16, Color(0.541, 0.506, 0.439))
+	_box(st, Vector3(-14, 3, 20), Vector3(14, 18, 30), stone, stone)
+	_pane(st, Vector3(0, 10, 30), Vector3.BACK, 28, 14, Color(0.541, 0.506, 0.439))
 	for k in 8:
 		var x := -14.0 + 4.0 * k
-		_box(st, Vector3(x - 1.0, 3, 37), Vector3(x + 1.0, 19, 39), marble, marble)
-	_box(st, Vector3(-17, 19, 20), Vector3(17, 20.5, 40), marble, marble)
-	var y := 20.5
+		_box(st, Vector3(x - 1.0, 3, 37), Vector3(x + 1.0, 16, 39), marble, marble)
+	_box(st, Vector3(-17, 16, 20), Vector3(17, 17.5, 40), marble, marble)
+	var y := 17.5
 	for w in [17.0, 13.0, 9.0, 5.0]:
-		_box(st, Vector3(-w, y, 20), Vector3(w, y + 1.6, 38.5), roof, roof.lightened(0.08))
-		_box(st, Vector3(-w, y, 38.5), Vector3(w, y + 1.6, 40), marble, marble)
-		y += 1.6
+		_box(st, Vector3(-w, y, 20), Vector3(w, y + 1.3, 40), stone, marble)
+		y += 1.3
 	return st.commit()
 
 ## A Tiber bridge (Pons Aemilius, Pons Aelius; 70 x 10 m): a travertine deck on
