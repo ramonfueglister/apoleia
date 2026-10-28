@@ -12,6 +12,7 @@ const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const SUB_PREP_SHADER = preload("res://shaders/tile_sub_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
+const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
@@ -54,28 +55,43 @@ const HOUSE_GROW_FROM_KM := 1.0
 # metre is DIORAMA_KM_PER_M world units.
 const DIORAMA_LAENGE := 1.0 / 23.80
 const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
-const HOUSE_M := 10.0 # house length (house mesh is 1 unit long)
+const HOUSE_M := 10.0 # a house lot (voxel/roman_buildings.gd), before the diorama scale
 const TREE_M := 8.0  # tree height (tree meshes are about 1.1 units tall; Urbek: 5-8 m, a house 6-12 m)
 const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
-# Rome's great buildings (tile_prop_meshes.gd) on blocks of city tiles, drawn
-# while the houses are (the two nearest levels). Real shapes at LANDMARK_KM_PER_M
-# (6 times their size: next to the 24-times houses they keep the city's tiles
-# free for houses), a half higher again (LANDMARK_RISE), so the Colosseum and
-# the temples stand above the insulae. Each block is snapped to the 0.5 km
-# tiles around its place, the layout after the real city: the Capitol temple
-# by the Tiber, the Forum east of it, the Colosseum beyond, the Pantheon in the
-# north, the Circus Maximus south of the Palatine, two bridges over the Tiber.
+# The houses are the Roman town's lot models (voxel/roman_buildings.gd, from
+# the Colosseum prototype: Urbek's 40 voxels to a 10 m lot), at the diorama
+# scale a lot to a quarter tile. One MultiMesh per model; each draws every
+# LOT_KINDS.size()-th house slot (tile_props.gdshader lot_variant), so the
+# models together cost what one house mesh did. Up close level 1 (a few
+# hundred triangles a lot), from PROP_LOW_KM level 2.
+const LOT_KINDS := [
+	["house", 0], ["house", 2], ["house", 4], ["house", 6], ["house", 8], ["house", 10], ["house", 12],
+	["house", 14], ["house", 16], ["house", 18], ["house", 20], ["house", 22], ["house", 24], ["house", 26],
+	["garden", 0], ["garden", 2],
+]
+const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
+# Rome's great buildings on blocks of city tiles, drawn while the houses are
+# (the two nearest levels). The Colosseum, the Forum (with the Capitolium)
+# and the baths are the Roman town's models ("kit:", voxel/roman_buildings.gd)
+# at the houses' diorama scale, so their voxels match the lots: the Colosseum
+# is eight lots long, about 1.8 km. That is three times the real city, so the
+# blocks keep the order of the real one but not its distances: the Forum west
+# of the Colosseum, the baths on the hill north of it, the Circus Maximus to
+# the south, the Pantheon in the Campus Martius by the river. The Pantheon and
+# the Circus are still the old shapes (tile_prop_meshes.gd) at
+# LANDMARK_KM_PER_M (6 times their real size) and a half higher again
+# (LANDMARK_RISE). Each block is snapped to the 0.5 km tiles around its place.
 const LANDMARK_KM_PER_M := 0.006
 const LANDMARK_RISE := 1.5
 const LANDMARK_TILE_KM := 0.5
 const LANDMARKS := [
 	# mesh, block centre (lon, lat), block size in tiles, free ground around
-	# the building (km; a square around the Colosseum and the Circus)
-	["temple", Vector2(12.4853, 41.8917), Vector2i(1, 1), 0.09],
-	["forum", Vector2(12.4913, 41.8917), Vector2i(1, 1), 0.09],
-	["colosseum", Vector2(12.5002, 41.8894), Vector2i(2, 2), 0.2],
-	["pantheon", Vector2(12.4853, 41.9007), Vector2i(1, 1), 0.09],
-	["circus", Vector2(12.4883, 41.8782), Vector2i(4, 1), 0.15],
+	# the building (km)
+	["kit:colosseum", Vector2(12.5065, 41.8894), Vector2i(4, 4), 0.05],
+	["kit:forum", Vector2(12.4854, 41.8917), Vector2i(3, 3), 0.05],
+	["kit:baths", Vector2(12.5065, 41.9010), Vector2i(2, 1), 0.05],
+	["pantheon", Vector2(12.4790, 41.9060), Vector2i(1, 1), 0.09],
+	["circus", Vector2(12.4883, 41.8760), Vector2i(4, 1), 0.15],
 	# two Tiber bridges on the river tiles by the Capitol and in the north
 	["bridge", Vector2(12.4734, 41.8872), Vector2i(1, 1), 0.0],
 	["bridge", Vector2(12.4734, 41.9142), Vector2i(1, 1), 0.0],
@@ -199,10 +215,12 @@ func load_data() -> bool:
 	_place_material.shader = PROP_PREP_SHADER
 	_sub_material = ShaderMaterial.new()
 	_sub_material.shader = SUB_PREP_SHADER
-	for kind in PROP_KINDS.size():
+	for kind in _prop_count():
 		var material := ShaderMaterial.new()
 		material.shader = PROPS_SHADER
-		material.set_shader_parameter("prop_kind", kind)
+		material.set_shader_parameter("prop_kind", 3 if _lot_of(kind) >= 0 else kind)
+		material.set_shader_parameter("lot_variant", _lot_of(kind))
+		material.set_shader_parameter("lot_variants", LOT_KINDS.size())
 		_prop_materials.append(material)
 	for material in _all_materials():
 		for key in shared:
@@ -212,6 +230,17 @@ func load_data() -> bool:
 	_build_nodes()
 	_apply_level(zoom)
 	return true
+
+## Prop kinds: PROP_KINDS, with the house replaced by the first lot model
+## and the other lot models after them.
+func _prop_count() -> int:
+	return PROP_KINDS.size() + LOT_KINDS.size() - 1
+
+## The lot model (LOT_KINDS) a prop kind draws, or -1 for the trees.
+func _lot_of(kind: int) -> int:
+	if kind == 3:
+		return 0
+	return kind - PROP_KINDS.size() + 1 if kind >= PROP_KINDS.size() else -1
 
 func _all_materials() -> Array[ShaderMaterial]:
 	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material]
@@ -245,16 +274,29 @@ func _build_nodes() -> void:
 	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
-	_meshes_full = [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), PropMeshes.house(), PropMeshes.umbrella_pine()]
-	_meshes_low = [PropMeshes.broadleaf(true), PropMeshes.conifer(true), PropMeshes.cypress(true), _meshes_full[3], PropMeshes.umbrella_pine(true)]
+	_meshes_full = [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), null, PropMeshes.umbrella_pine()]
+	_meshes_low = [PropMeshes.broadleaf(true), PropMeshes.conifer(true), PropMeshes.cypress(true), null, PropMeshes.umbrella_pine(true)]
+	for kind in _prop_count():
+		var lot := _lot_of(kind)
+		if lot < 0:
+			continue
+		var full: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 1)
+		var low: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 2)
+		if kind < _meshes_full.size():
+			_meshes_full[kind] = full
+			_meshes_low[kind] = low
+		else:
+			_meshes_full.append(full)
+			_meshes_low.append(low)
 	var meshes := _meshes_full
-	for kind in PROP_KINDS.size():
+	for kind in _prop_count():
+		var lot := _lot_of(kind)
 		var node := MultiMeshInstance3D.new()
-		node.name = "Tile" + PROP_KINDS[kind].capitalize()
+		node.name = "Tile" + (PROP_KINDS[kind].capitalize() if lot < 0 else "Lot%d" % lot)
 		var pm := MultiMesh.new()
 		pm.transform_format = MultiMesh.TRANSFORM_3D
 		pm.mesh = meshes[kind]
-		pm.instance_count = PROP_N * PROP_N * 9
+		pm.instance_count = PROP_N * PROP_N * 9 / (LOT_KINDS.size() if lot >= 0 else 1)
 		node.multimesh = pm
 		node.material_override = _prop_materials[kind]
 		_prop_materials[kind].set_shader_parameter("corner_tex", _corner_view.get_texture())
@@ -282,19 +324,22 @@ func _build_landmarks() -> void:
 		var first := ((_lonlat_world(entry[1]) - world_min) / LANDMARK_TILE_KM - size * 0.5).round()
 		var lo := world_min + first * LANDMARK_TILE_KM
 		var hi := lo + size * LANDMARK_TILE_KM
+		var kit := String(entry[0]).begins_with("kit:")
+		var which := String(entry[0]).trim_prefix("kit:")
+		var km_per_m := DIORAMA_KM_PER_M if kit else LANDMARK_KM_PER_M
 		var node := MeshInstance3D.new()
-		node.name = "Landmark" + String(entry[0]).capitalize()
-		node.mesh = PropMeshes.landmark(entry[0])
+		node.name = "Landmark" + which.capitalize()
+		node.mesh = RomanBuildings.landmark_mesh(which, 1) if kit else PropMeshes.landmark(which)
 		node.material_override = material
-		node.scale = Vector3(1.0, LANDMARK_RISE, 1.0) * LANDMARK_KM_PER_M
+		node.scale = Vector3(1.0, 1.0 if kit else LANDMARK_RISE, 1.0) * km_per_m
 		var centre := (lo + hi) * 0.5
 		node.position = Vector3(centre.x, 0.0, centre.y)
 		add_child(node)
 		_landmarks.append(node)
 		# no houses on the block, nor where the building reaches past it
 		var reach := node.mesh.get_aabb()
-		var a := centre + Vector2(reach.position.x, reach.position.z) * LANDMARK_KM_PER_M
-		var b := centre + Vector2(reach.end.x, reach.end.z) * LANDMARK_KM_PER_M
+		var a := centre + Vector2(reach.position.x, reach.position.z) * km_per_m
+		var b := centre + Vector2(reach.end.x, reach.end.z) * km_per_m
 		var free: float = entry[3]
 		rects.append(Vector4(minf(lo.x, a.x - free), minf(lo.y, a.y - free), maxf(hi.x, b.x + free), maxf(hi.y, b.y + free)))
 	_landmark_rects = rects
@@ -428,15 +473,17 @@ func _apply_level(value: int) -> void:
 	_terrain_material.set_shader_parameter("town_props", house_slots > 0)
 	for kind in _props.size():
 		var node := _props[kind]
-		var house := kind == 3
+		var house := _lot_of(kind) >= 0
 		var n: int = house_slots if house else slots
 		node.visible = n > 0
 		_culled_origin = Vector2i(-1, -1) # _cull_prop_kinds runs again
-		node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1)
+		# (prop_n is 4 more than a multiple of 8, so its square divides by 16)
+		node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1) / (LOT_KINDS.size() if house else 1)
 		var material := _prop_materials[kind]
 		material.set_shader_parameter("slots", maxi(n, 1))
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
-		var size_m := HOUSE_M * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
+		# lot models are in metres, the tree meshes about 1.1 units tall
+		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 	_place_landmarks()
 
