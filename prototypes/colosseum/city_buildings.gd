@@ -191,7 +191,9 @@ static func insula(variant: int) -> ArrayMesh:
 			g.box(x + i, 5, z1, x + i + 1, 6, z1 + 2, AWNING_RED if (i + variant) % 2 == 0 else AWNING_WHITE)
 	_hole_z(g, x0 + w / 2 - 1, x0 + w / 2 + 1, 1, 5, z0, 1, DOOR)
 	_cornice(g, x0, z0, x1, z1, h)
-	_roof(g, x0, z0, x1, z1, h, ROOFS[variant], false, 3)
+	# Gabled along the depth: hipped roofs on near-square insulae read as
+	# stepped pyramids.
+	_roof(g, x0, z0, x1, z1, h, ROOFS[variant], true, 2, WALLS[(variant + 2) % 4])
 	return _done(g)
 
 ## Villa with a peristyle: four wings round a courtyard garden with a pool,

@@ -347,8 +347,10 @@ func _city() -> void:
 				_civic(r, "market")
 			elif ring and iz == 3 and ix in [1, 4]:
 				_park(r)
-			elif ring:
+			elif ring and iz == 4:
 				_insulae(r)
+			elif ring:
+				_terraces(r)
 			else:
 				var roll := _rng.randf()
 				if roll < 0.62:
