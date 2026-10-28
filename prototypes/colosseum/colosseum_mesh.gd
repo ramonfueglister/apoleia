@@ -8,50 +8,51 @@ extends RefCounted
 ## coplanar faces of one colour where the baked corner occlusion allows,
 ## and skips downward faces. Coarser LODs downsample the same grid. One
 ## shared shader material adds Urbek's faint per-voxel colour noise.
-## About 16 x 13 m, 7.8 m tall with masts, origin at ground centre.
+## In Urbek's proportions: 74 x 61 m and 21.5 m to the rim (three arcades of
+## 5.5 m and the attic), about 7 Urbek houses long; origin at ground centre.
 
-const V := 0.2
-const A := 8.0              # outer half-axis along x, metres
-const B := 6.6              # outer half-axis along z
-const ROWS := 9             # voxel rows per arcade storey
+const V := 0.5             # voxel edge, metres: an Urbek storey is 6 voxels
+const A := 37.0             # outer half-axis along x, metres
+const B := 30.5             # outer half-axis along z
+const PLINTH_ROWS := 2      # stepped plinth under the arcades
+const ROWS := 11            # voxel rows per arcade storey (5.5 m)
 const STOREYS := 3
-const ARCADE_ROWS := ROWS * STOREYS
-const ATTIC_ROWS := 6
-const WALL_ROWS := ARCADE_ROWS + ATTIC_ROWS
-const MAST_ROWS := 5
-const P := 6                # facade columns per bay: pier, 4 arch, pier
-const C0 := P / 2 - 1       # the two centre columns of a bay
-const C1 := P / 2
-const SHELL := 3            # wall thickness, voxels
-const GALLERY := 5          # gallery depth behind the wall, voxels
-const RIM := 2              # walkway behind the wall above the gallery
+const ARCADE_TOP := PLINTH_ROWS + ROWS * STOREYS
+const ATTIC_ROWS := 8
+const WALL_ROWS := ARCADE_TOP + ATTIC_ROWS  # 43 rows, 21.5 m to the rim
+const MAST_ROWS := 4
+const P := 6                # facade columns per bay: pier (2, shared), 4 opening
+const SHELL := 3            # wall thickness, voxels; arches are recessed 2
+const RIM := 3              # top walkway behind the attic
 const ARENA_E := 0.5        # arena edge as a share of the radius
-const SEAT_TOP_ROW := 27    # highest seat row, level with the attic base
-const PODIUM_ROW := 15
-const FLOOR_ROW := 12       # raised arena floor, so the sand shows from above
-const LOD_FACTORS := [1, 2, 4]
-const LOD_RANGES := [0.0, 50.0, 140.0, 320.0, 6000.0]
-const CACHE := "user://colosseum_grid_v6_%d.res"
+const SEAT_TOP_ROW := WALL_ROWS - 4  # walkway level, 2 m under the rim
+const BALTEUS := [3, 6]     # steps after which a low wall splits the cavea
+const PODIUM_ROW := SEAT_TOP_ROW - 10
+const FLOOR_ROW := PODIUM_ROW - 3    # raised arena floor, so the sand shows from above
+const LOD_FACTORS := [1, 2, 4, 8]
+# Camera distances for the near-orthographic Urbek camera (FOV 10): LOD0
+# while the view is under about 260 m wide, LOD1 to 700 m, LOD2 to 1.6 km.
+const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 400000.0]
+const CACHE := "user://colosseum_urbek_v4_%d.res"
 
-# Palette: Caesar III travertine and crowd, Urbek's clear part colours.
+# Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
-	Color(0, 0, 0), Color("c9bca4"), Color("dcc39c"), Color("c8ad86"), Color("f2e6cc"),
-	Color("3b2f2a"), Color("8a7360"), Color("2f2a33"), Color("d8c6a6"), Color("cdbb9a"),
-	Color("d9b47a"), Color("cfa66a"), Color("efe3cc"), Color("6b4a32"), Color("c8372a"),
-	Color("2e2420"), Color("9a4434"), Color("ecdcbc"), Color("eadcbf"), Color("b0802f"),
-	Color("f4f1ea"), Color("9a8670"), Color("cdb28c"),
-	Color("e8e0d0"), Color("c65a43"), Color("5f7fa6"), Color("d9b46a"), Color("7a5a44"),
-	Color("b9b0a0"), Color("a39385"), Color("c9a888"),
-	Color("bfa58a"), Color("b39a80"), Color("c7ae92"), Color("b47a62")]
-enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, GALLERY_BACK, GALLERY_FLOOR, WINDOW, SEAT_STONE,
-	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, FRAME, COLUMN, BRONZE,
-	STATUE, SILL, STONE_LOW, CROWD }
-const CROWD_COUNT := 8
+	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f4ecd8"),
+	Color("7e7064"), Color("e8dcc2"), Color("4a3c30"), Color("b5a184"), Color("c9b898"),
+	Color("d9a660"), Color("c79552"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
+	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("b8402f"),
+	Color("a89a88"), Color("b0574a"), Color("7a8796"),
+	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
+	Color("66594f"), Color("c8b99c")]
+enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
+	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
+	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE }
+const CROWD_COUNT := 3
 const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
-# Top faces that differ from the sides: a sill is stone in front, but its top
-# is the shaded arcade floor seen through the arch.
-const TOP := {SILL: Color("9a8670")}
+# Top faces that differ from the sides: a tread is light on top and darker
+# on its riser; the arch floor is shaded.
+const TOP := {TREAD: Color("d6c6a8"), ARCH_BACK: Color("7e7064")}
 # Corner occlusion: 0 = both sides blocked, 3 = open.
 const AO := [0.5, 0.68, 0.85, 1.0]
 
@@ -70,30 +71,14 @@ static func _origin(n: Vector3i) -> Vector3:
 ## facade column within its bay, the bay, and the depth from the ellipse
 ## with the arena edge, which shape the seating.
 ##
-## The facade is built like an Urbek building: every bay is a straight,
-## axis-aligned panel P voxels long, set at the ellipse at its middle.
-## Where the ellipse curves, neighbouring panels step back, so the outline
-## is a clean staircase of flat bays instead of a ragged curve. Bays on the
-## long sides face x, the others face z; one quadrant is built and mirrored.
+## The facade is built like an Urbek building for the north-up camera: every
+## bay is a straight run of P voxels facing south (or north), set at the
+## ellipse at its middle. Neighbouring bays step back, so the curve reads as
+## a staircase of flat bays with arches all round; the steps' side walls face
+## east and west and are edge-on to the camera. Bay 0 is centred on x = 0.
 static func _columns(n: Vector3i, lo: Vector3) -> Dictionary:
 	var av := A / V
 	var bv := B / V
-	var xp := PackedInt32Array()      # x-facing panels: facade x per band of z
-	var zp := PackedInt32Array()      # z-facing panels: facade z per band of x
-	while true:
-		var z := xp.size() * P + P * 0.5
-		var x := av * sqrt(maxf(0.0, 1.0 - (z / bv) ** 2))
-		if x / (av * av) <= z / (bv * bv):
-			break
-		xp.append(roundi(x))
-	while true:
-		var x := zp.size() * P + P * 0.5
-		var z := bv * sqrt(maxf(0.0, 1.0 - (x / av) ** 2))
-		if z / (bv * bv) <= x / (av * av):
-			break
-		zp.append(roundi(z))
-	var zc := xp.size() * P
-	var xc := zp.size() * P
 	var count := n.x * n.z
 	var depth := PackedInt32Array()
 	var sub := PackedInt32Array()
@@ -106,23 +91,14 @@ static func _columns(n: Vector3i, lo: Vector3) -> Dictionary:
 		for x in n.x:
 			var ix := x - n.x / 2
 			var iz := z - n.z / 2
-			var qx := ix if ix >= 0 else -ix - 1
 			var qz := iz if iz >= 0 else -iz - 1
-			var quadrant := int(ix < 0) + 2 * int(iz < 0)
-			# Depth behind the x-facing and the z-facing panel of this column.
-			# Beyond its last band a panel family has no face (-1000); in the
-			# corner beyond both, the farther corner edge counts.
-			var dx := xp[qz / P] - 1 - qx if qz < zc else -1000
-			var dz := zp[qx / P] - 1 - qz if qx < xc else -1000
-			var corner := qz >= zc and qx >= xc
-			if corner:
-				dx = xc - 1 - qx
-				dz = zc - 1 - qz
-			var face_x := dx <= dz if (dx >= 0 and dz >= 0) or corner else dx >= dz
+			var band := floori((ix + P * 0.5) / P)
+			var bx := minf(absf(band) * P, av - 1.0)
+			var face := roundi(bv * sqrt(maxf(0.0, 1.0 - (bx / av) ** 2)))
 			var c := x + z * n.x
-			depth[c] = dx if face_x else dz
-			sub[c] = (qz if face_x else qx) % P
-			bay[c] = quadrant * 32 + int(face_x) * 16 + (qz if face_x else qx) / P
+			depth[c] = face - 1 - qz if absf(band) * P - P * 0.5 < av else -1000
+			sub[c] = posmod(ix + P / 2, P)
+			bay[c] = band + (1000 if iz < 0 else 0)
 			var p := lo + Vector3(x + 0.5, 0, z + 0.5) * V
 			var e := Vector2(p.x / A, p.z / B).length()
 			var rr := Vector2(A * cos(atan2(p.z / B, p.x / A)), B * sin(atan2(p.z / B, p.x / A))).length()
@@ -131,144 +107,123 @@ static func _columns(n: Vector3i, lo: Vector3) -> Dictionary:
 	return {"depth": depth, "sub": sub, "bay": bay, "ellipse": ellipse, "arena": arena}
 
 ## What fills one voxel: d = depth in voxels from the outer face, s = facade
-## column in the bay (0..P-1, piers at P-1 and 0), b = bay, r = row, e = depth
-## from the ellipse (for the seating).
+## column in the bay (0..P-1, the pier is P-1 and 0), b = bay, r = row,
+## e = depth from the ellipse (for the seating).
 static func _voxel(d: int, s: int, b: int, r: int, e: int, arena: int, seed: int) -> int:
 	if d < -3:
 		return EMPTY
 	if r >= WALL_ROWS:
-		return _mast(d, s, r - WALL_ROWS)
+		return _mast(d, s, b, r - WALL_ROWS)
 	if d < 0:
 		return _outside(d, s, b, r)
 	if d < SHELL:
 		return _shell(d, s, b, r)
-	if d < SHELL + GALLERY and r < ARCADE_ROWS:
-		return _gallery(d, s, r)
 	return _cavea(e, s, b, r, arena, seed)
 
 static func _is_pier(s: int) -> bool:
 	return s == 0 or s == P - 1
 
-## Paving steps, plinth, half columns with capitals, storey cornices, attic
-## pilasters, bronze shields and the heavy top cornice.
+## Paving, stepped plinth, engaged columns with capitals, a cornice one voxel
+## proud on every storey, attic pilasters, bronze shields, heavy top cornice.
 static func _outside(d: int, s: int, b: int, r: int) -> int:
 	if r == 0:
-		return PAVE
-	if r == 1:
-		return PAVE if d >= -2 else EMPTY
+		return PAVE if d >= -3 else EMPTY
+	if r < PLINTH_ROWS:
+		return STONE_MID if d >= -2 else EMPTY
 	if d < -1:
-		return CORNICE if r == WALL_ROWS - 1 and d >= -2 else EMPTY
-	if r == 2:
-		return STONE_MID
-	if r < ARCADE_ROWS:
-		var lr := r % ROWS
+		return CORNICE if r == WALL_ROWS - 1 and d == -2 else EMPTY
+	if r < ARCADE_TOP:
+		var lr := (r - PLINTH_ROWS) % ROWS
 		if lr == ROWS - 1:
 			return CORNICE
 		if _is_pier(s):
-			return CORNICE if lr == ROWS - 2 else COLUMN
+			return CORNICE if lr == ROWS - 2 or lr == 0 else COLUMN
 		return EMPTY
-	var ar := r - ARCADE_ROWS
-	if ar >= ATTIC_ROWS - 2:
+	var ar := r - ARCADE_TOP
+	if ar >= ATTIC_ROWS - 2 or ar == 0:
 		return CORNICE
 	if _is_pier(s):
 		return COLUMN
-	if b % 2 == 1 and (s == C0 or s == C1) and (ar == 1 or ar == 2):
+	if posmod(b, 2) == 1 and (s == 2 or s == 3) and (ar == 3 or ar == 4):
 		return BRONZE
 	return EMPTY
 
-## Outer wall: three arcades of round-topped arches with light shoulders and
-## statues in the upper ones, attic with small windows.
+## Outer wall: three arcades of round-headed arches recessed two voxels into
+## a shaded back wall; a closed attic with a window in every second bay.
 static func _shell(d: int, s: int, b: int, r: int) -> int:
-	if r < ARCADE_ROWS:
-		var k := r / ROWS
-		var lr := r % ROWS
-		var bottom := 3 if k == 0 else 1
-		var wall := STONE_LOW if k == 0 else STONE
-		if lr == 0 and k > 0:
-			return SILL if s >= 1 and s <= P - 2 else wall
-		var open := (s >= 1 and s <= P - 2 and lr >= bottom and lr <= 6) or ((s == C0 or s == C1) and lr == 7)
-		if open:
-			if k > 0 and d == SHELL - 1:
-				return _statue(s, lr, b + k)
-			return EMPTY
-		if (s == 1 or s == P - 2) and lr == 7:
-			return FRAME
-		if r < 3:
-			return STONE_MID
-		return wall
-	var ar := r - ARCADE_ROWS
-	if b % 2 == 0 and (s == C0 or s == C1) and (ar == 1 or ar == 2):
-		return EMPTY if d == 0 else WINDOW
-	return STONE
-
-## A statue in an upper arch: pedestal, body, head, one raised arm.
-## Every third one is bronze.
-static func _statue(s: int, lr: int, which: int) -> int:
-	var material := BRONZE if which % 3 == 0 else STATUE
-	if lr == 1:
-		return STONE_MID if s == C0 or s == C1 else EMPTY
-	if lr >= 2 and lr <= 4:
-		if s == C0 or s == C1:
-			return material
-		return material if s == C1 + 1 and lr >= 3 else EMPTY
-	if lr == 5:
-		return material if s == C0 else EMPTY
-	return EMPTY
-
-## Ambulatory behind the arches: floors, radial walls at the piers, a dark
-## back wall. This is what the eye sees through every arch.
-static func _gallery(d: int, s: int, r: int) -> int:
-	var k := r / ROWS
-	var lr := r % ROWS
-	if lr < (3 if k == 0 else 1):
-		return GALLERY_FLOOR
-	if d == SHELL + GALLERY - 1:
-		return GALLERY_BACK
-	if _is_pier(s):
+	if r < PLINTH_ROWS:
 		return STONE_MID
-	return EMPTY
+	if r < ARCADE_TOP:
+		var lr := (r - PLINTH_ROWS) % ROWS
+		var open := (s >= 1 and s <= P - 2 and lr >= 1 and lr <= 7) or ((s == 2 or s == 3) and lr == 8)
+		if open:
+			if d < SHELL - 1:
+				return EMPTY
+			return ARCH_HEAD if lr == 8 else ARCH_BACK
+		if lr == 0 and s >= 1 and s <= P - 2 and d < SHELL - 1:
+			return ARCH_BACK
+		# Archivolt round the head, in cornice white; a shadow line under
+		# the cornice everywhere else.
+		if d == 0 and ((lr == 8 and (s == 1 or s == 4)) or (lr == 9 and (s == 2 or s == 3))):
+			return CORNICE
+		if lr == 9:
+			return SHADOW_LINE
+		return STONE
+	var ar := r - ARCADE_TOP
+	if posmod(b, 2) == 0 and (s == 2 or s == 3) and (ar == 3 or ar == 4):
+		return EMPTY if d == 0 else WINDOW
+	return SHADOW_LINE if ar == ATTIC_ROWS - 3 else STONE
 
-## Walkway behind the wall, stepped seating with a crowd, a middle walkway,
-## entrances, podium and arena.
-static func _cavea(d: int, s: int, b: int, r: int, arena: int, seed: int) -> int:
-	if d >= arena:
+## Top walkway under a portico, then the cavea: 1-voxel risers and 2-voxel
+## treads, two low walls splitting it into three bands, entrances in them,
+## a sparse muted crowd, podium and arena.
+static func _cavea(e: int, s: int, b: int, r: int, arena: int, seed: int) -> int:
+	if e >= arena:
 		if r < FLOOR_ROW:
-			return SEAT_STONE
+			return TREAD
 		if r == FLOOR_ROW:
 			return SAND_DARK if seed % 100 < 18 else SAND
 		return EMPTY
-	if d == arena - 1:
+	if e == arena - 1:
 		if r < PODIUM_ROW:
 			return PODIUM
 		return PODIUM_BAND if r == PODIUM_ROW else EMPTY
 	var first := SHELL + RIM
-	if d < first:
+	if e < first:
 		if r < SEAT_TOP_ROW - 1:
-			return SEAT_STONE
-		return WALKWAY if r == SEAT_TOP_ROW - 1 else EMPTY
-	# One step per column of depth, evenly down to the podium.
-	var depth := arena - 1 - first
-	var j := d - first
-	var top := SEAT_TOP_ROW - 1 - floori(float(j + 1) * (SEAT_TOP_ROW - 1 - PODIUM_ROW) / depth)
-	if r > top:
+			return TREAD
+		if r == SEAT_TOP_ROW - 1:
+			return WALKWAY
+		# Portico over the walkway: a roof level with the rim on columns
+		# along its inner edge.
+		if r == WALL_ROWS - 1:
+			return CORNICE
+		if e == first - 1 and posmod(b * P + s, 3) == 0:
+			return COLUMN
 		return EMPTY
+	var j := e - first
+	var step := j / 2
+	var top := maxi(SEAT_TOP_ROW - 2 - step, PODIUM_ROW + 1)
 	if r < top:
-		return SEAT_STONE
-	if j == depth / 3:
-		return WALKWAY
-	if b % 7 == 3 and (s == C0 or s == C1) and j > depth / 3:
-		return VOMITORIUM
-	if seed % 100 < 22:
-		return SEAT_STONE
-	return CROWD + (seed / 100) % CROWD_COUNT
+		return TREAD
+	if r == top:
+		if seed % 100 < 10:
+			return CROWD + (seed / 100) % CROWD_COUNT
+		return TREAD
+	# Low wall at the start of a band, with entrances every eight bays.
+	if j % 2 == 0 and step in BALTEUS and r <= top + 2:
+		if posmod(b, 8) == 0 and (s == 2 or s == 3):
+			return VOMITORIUM
+		return BALTEUS_WALL
+	return EMPTY
 
-## A mast with a red pennant above every pier of the rim.
-static func _mast(d: int, s: int, mr: int) -> int:
-	if d != 0 or mr >= 5:
+## A mast with a red flag on the pier of every second bay.
+static func _mast(d: int, s: int, b: int, mr: int) -> int:
+	if d != 0 or mr >= MAST_ROWS or posmod(b, 2) == 1:
 		return EMPTY
-	if s == P - 1:
+	if s == 0:
 		return MAST
-	if (s == P - 2 and (mr == 3 or mr == 4)) or (s == P - 3 and mr == 4):
+	if s == 1 and mr >= MAST_ROWS - 2:
 		return RED
 	return EMPTY
 
@@ -295,8 +250,9 @@ static func _fine() -> Dictionary:
 	return {"grid": grid, "n": n, "v": V, "lo": lo}
 
 ## Downsamples by f: weighted majority of the fine voxels (each layer up
-## weighs double, so the visible top layer wins), red always wins, and a few
-## crowd voxels make a calm, mixed crowd tone instead of confetti.
+## weighs double, so the visible top layer wins), red flags always win up
+## close and become a red band on the cornice far away, and a few crowd
+## voxels make a calm, mixed crowd tone instead of confetti.
 static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 	var fn: Vector3i = fine.n
 	var fg: PackedByteArray = fine.grid
@@ -317,6 +273,11 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 							var s: int = fg[x * f + sx + fn.x * (y * f + sy + fn.y * (z * f + sz))]
 							if s == EMPTY:
 								continue
+							if f >= 4:
+								if s == MAST or s == RED:
+									continue
+								if s == PODIUM_BAND:
+									s = PODIUM
 							solid += 1
 							if s >= CROWD and s < CROWD + CROWD_COUNT:
 								people += 1
@@ -332,6 +293,9 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 						if counts[i] > counts[best]:
 							best = i
 					c = muted if best == CROWD else best
+					# Far away the flags become a red band on the top cornice.
+					if f >= 4 and best == CORNICE and y * f <= WALL_ROWS - 1 and WALL_ROWS - 1 < (y + 1) * f:
+						c = RED_BAND
 				grid[x + n.x * (y + n.y * z)] = c
 	return {"grid": grid, "n": n, "v": V * f, "lo": fine.lo}
 
@@ -454,48 +418,8 @@ static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Co
 		st.set_normal(normal)
 		st.add_vertex(p[k])
 
-## The far LOD, a 12-sided drum carrying the colour masses: arcade band,
-## attic, the red crown of flags, crowd, sand.
-static func drum() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n := 12
-	var h_arcade := ARCADE_ROWS * V
-	var h_wall := WALL_ROWS * V
-	var h_seat := SEAT_TOP_ROW * V
-	var h_podium := PODIUM_ROW * V
-	var h_floor := (FLOOR_ROW + 1) * V
-	var at := func(phi: float, share: float, y: float) -> Vector3:
-		return Vector3(A * cos(phi) * share, y, B * sin(phi) * share)
-	var arcade: Color = PALETTE[STONE].lerp(PALETTE[GALLERY_BACK], 0.35)
-	for i in n:
-		var p0 := TAU * i / n
-		var p1 := TAU * (i + 1) / n
-		var out: Vector3 = at.call((p0 + p1) * 0.5, 1.0, 0.0)
-		var inner := 0.9
-		var arena := ARENA_E
-		_flat(st, [at.call(p0, 1.0, 0.0), at.call(p1, 1.0, 0.0), at.call(p1, 1.0, h_arcade), at.call(p0, 1.0, h_arcade)], arcade, out)
-		_flat(st, [at.call(p0, 1.0, h_arcade), at.call(p1, 1.0, h_arcade), at.call(p1, 1.0, h_wall), at.call(p0, 1.0, h_wall)], PALETTE[STONE], out)
-		_flat(st, [at.call(p0, 1.0, h_wall), at.call(p1, 1.0, h_wall), at.call(p1, inner, h_wall), at.call(p0, inner, h_wall)],
-			PALETTE[CORNICE].lerp(PALETTE[RED], 0.55), Vector3.UP)
-		_flat(st, [at.call(p0, inner, h_wall), at.call(p1, inner, h_wall), at.call(p1, inner, h_seat), at.call(p0, inner, h_seat)], PALETTE[STONE_MID], -out)
-		_flat(st, [at.call(p0, inner, h_seat), at.call(p1, inner, h_seat), at.call(p1, arena, h_podium), at.call(p0, arena, h_podium)],
-			PALETTE[CROWD_MUTED + 1], Vector3.UP)
-		_flat(st, [at.call(p0, arena, h_podium), at.call(p1, arena, h_podium), at.call(p1, arena, h_floor), at.call(p0, arena, h_floor)], PALETTE[PODIUM], -out)
-		var centre := Vector3(0, h_floor, 0)
-		_flat(st, [centre, at.call(p0, arena, h_floor), at.call(p1, arena, h_floor), centre], PALETTE[SAND], Vector3.UP)
-	return st.commit()
-
-## A flat-coloured quad (or triangle, when the last corner repeats the first).
-static func _flat(st: SurfaceTool, p: Array, colour: Color, out: Vector3) -> void:
-	var corners: Array[Vector3] = [p[0], p[1], p[2], p[3]]
-	if corners[3].is_equal_approx(corners[0]):
-		corners = [p[0], p[1], p[2], p[2]]
-	_emit(st, corners, [3, 3, 3, 3], colour, out, 1.0)
-
-## All LODs, nearest first: the voxel grid at 20, 40 and 80 cm, then the
-## drum. Built meshes are cached in user://; bump CACHE after changing the
-## model.
+## All LODs, nearest first: the voxel grid at 0.5, 1, 2 and 4 m. Built
+## meshes are cached in user://; bump CACHE after changing the model.
 static func lods() -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
 	var fine := {}
@@ -508,7 +432,6 @@ static func lods() -> Array[ArrayMesh]:
 			mesh = _mesh(fine if f == 1 else _coarse(fine, f))
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)
-	out.append(drum())
 	return out
 
 ## Vertex colours (sRGB, baked occlusion) with a faint per-voxel brightness

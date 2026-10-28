@@ -10,7 +10,7 @@ extends Node3D
 ##   --shot=path.png   save a frame;  --out=path.json   append bench result
 
 const Col := preload("res://colosseum_mesh.gd")
-const SPACING := 20.0
+const SPACING := 90.0
 const CHUNK := 4                         # chunk = CHUNK x CHUNK colosseums
 const LOD_RANGES: Array = Col.LOD_RANGES
 const WARMUP := 40
@@ -87,79 +87,141 @@ func _ground(size: float, colour: Color) -> void:
 	g.mesh = plane
 	add_child(g)
 
-## Urbek-like camera: narrow perspective, 45 degrees around, pitched down.
-func _camera(target: Vector3, distance: float, fov := 30.0) -> void:
+## The game's camera up close: north up (never turned), tilted 30 degrees
+## down like Urbek, nearly orthographic. `width` is the ground width across
+## the picture.
+func _camera(target: Vector3, width: float, fov := 10.0) -> void:
 	var cam := Camera3D.new()
 	cam.fov = fov
-	cam.far = 8000.0
+	cam.keep_aspect = Camera3D.KEEP_WIDTH
+	cam.far = 400000.0
 	add_child(cam)
-	var dir := Vector3(1, 0.95, 1).normalized()
+	var distance := width / (2.0 * tan(deg_to_rad(fov) * 0.5))
+	var dir := Basis.from_euler(Vector3(deg_to_rad(-30.0), 0.0, 0.0)).z
 	cam.look_at_from_position(target + dir * distance, target)
 
 func _hero() -> void:
 	_ground(400.0, Color("7ea24a"))
 	_plaza()
 	_add(meshes[0], Transform3D.IDENTITY)
-	_camera(Vector3(0, 1.2, 0), float(args.get("dist", "42")))
+	_camera(Vector3(0, 4.0, 0), float(args.get("width", "120")))
 	if args.has("elev"):
 		# Straight side view, orthographic: checks proportions.
 		var cam: Camera3D = get_children().filter(func(c): return c is Camera3D)[0]
 		cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-		cam.size = 12.0
-		cam.look_at_from_position(Vector3(0, 3.5, 40), Vector3(0, 3.5, 0))
+		cam.size = 40.0
+		cam.look_at_from_position(Vector3(0, 10.0, 200), Vector3(0, 10.0, 0))
 
-## Test-scene context in the same voxel language: a paved plaza in two
-## stone tones and a ring of cypresses, as around Caesar III's colosseum.
+## Test-scene context in Urbek's proportions (storey 3 m, trees 5-8 m,
+## people 1.8 m): a paved plaza with a path cross, trees, benches, market
+## stalls, people, and a ring of town houses beyond.
 func _plaza() -> void:
-	# Paving in two stone tones, with a darker path cross to the four axes.
+	var ax := Col.A + 9.0
+	var bz := Col.B + 9.0
 	var tiles := {Color("d9ccb2"): [], Color("cbbda0"): [], Color("b8a58a"): []}
 	var keys := tiles.keys()
-	for x in range(-14, 14):
-		for z in range(-12, 12):
-			var key: Color = keys[2] if (absi(x) <= 1 or absi(z) <= 1) else keys[(x + z) & 1]
-			tiles[key].append(Vector3(x + 0.5, 0.06, z + 0.5))
+	for x in range(-int(ax / 2.0), int(ax / 2.0)):
+		for z in range(-int(bz / 2.0), int(bz / 2.0)):
+			var key: Color = keys[2] if (absi(x) < 2 or absi(z) < 2) else keys[(x + z) & 1]
+			tiles[key].append(Vector3(x * 2.0 + 1.0, 0.1, z * 2.0 + 1.0))
 	for colour in keys:
-		_boxes(tiles[colour], Vector3(1, 0.12, 1), colour)
+		_boxes(tiles[colour], Vector3(2, 0.2, 2), colour)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
-	# Cypresses and round voxel trees alternate in a ring, off the paths.
-	for i in 32:
-		var t := TAU * (i + 0.5) / 32.0
-		var base := Vector3(cos(t) * 13.0, 0.12, sin(t) * 11.0)
-		if absf(base.x) < 2.5 or absf(base.z) < 2.5:
+	# Cypresses and round trees alternate in a ring, off the paths.
+	for i in 40:
+		var t := TAU * (i + 0.5) / 40.0
+		var base := Vector3(cos(t) * (Col.A + 5.0), 0.2, sin(t) * (Col.B + 5.0))
+		if absf(base.x) < 5.0 or absf(base.z) < 5.0:
 			continue
 		if i % 2 == 0:
-			_cypress(base, rng.randf_range(2.2, 3.2), i)
+			_cypress(base, rng.randf_range(6.0, 8.0), i)
 		else:
-			_round_tree(base, rng.randf_range(1.6, 2.2), i)
-	# Benches along the paths and market stalls at the corners.
+			_round_tree(base, rng.randf_range(5.0, 6.5), i)
+	# Benches along the paths, stalls at the corners, people everywhere.
 	for s in [-1, 1]:
-		for k in [4, 7, 10]:
-			_seat(Vector3(s * k, 0.12, 2.1), 0.0)
-			_seat(Vector3(s * k, 0.12, -2.1), 0.0)
-			_seat(Vector3(2.1, 0.12, s * (k - 1)), PI * 0.5)
+		for k in range(int(Col.A) + 3, int(ax) - 1, 4):
+			_seat(Vector3(s * k, 0.2, 2.6), 0.0)
+		for k in range(int(Col.B) + 3, int(bz) - 1, 4):
+			_seat(Vector3(2.6, 0.2, s * k), PI * 0.5)
 	var awnings := [[Color("c8372a"), Color("f2ebdd")], [Color("e0b03a"), Color("f2ebdd")], [Color("3f6fa0"), Color("f2ebdd")]]
 	var n := 0
-	for corner in [Vector3(-11, 0.12, -9.5), Vector3(11, 0.12, -9.5), Vector3(-11, 0.12, 9.5), Vector3(11, 0.12, 9.5)]:
-		for j in 2:
-			_stall(corner + Vector3((j - 0.5) * 2.4 * signf(corner.x), 0, 0), awnings[n % awnings.size()])
+	for corner in [Vector3(-ax + 6, 0.2, -bz + 5), Vector3(ax - 6, 0.2, -bz + 5), Vector3(-ax + 6, 0.2, bz - 5), Vector3(ax - 6, 0.2, bz - 5)]:
+		for j in 3:
+			_stall(corner + Vector3((j - 1) * 3.0, 0, 0), awnings[n % awnings.size()])
 			n += 1
+	var robes := [Color("e8e0d0"), Color("b8483a"), Color("6f7f9a"), Color("c9a050"), Color("8a6a50")]
+	for i in 160:
+		var p := Vector3(rng.randf_range(-ax, ax), 0.2, rng.randf_range(-bz, bz))
+		var e := Vector2(p.x / (Col.A + 1.5), p.z / (Col.B + 1.5)).length()
+		if e < 1.0:
+			continue
+		_person(p, robes[i % robes.size()])
+	# Town houses beyond the plaza: 2-4 storeys, stepped tile roofs.
+	var walls := [Color("eadfc6"), Color("e6c9a8"), Color("d9b48c"), Color("f0e2c8"), Color("cfb8a0")]
+	for side in [0, 2, 3]: # no row in front (south), it would hide the facade
+		var along := ax * 2.0 if side < 2 else bz * 2.0
+		var k := -along * 0.5
+		while k < along * 0.5 - 10.0:
+			var w := rng.randf_range(9.0, 13.0)
+			var d := rng.randf_range(10.0, 13.0)
+			var storeys := rng.randi_range(2, 4)
+			var c := Vector3(k + w * 0.5, 0, -bz - 8.0 - d * 0.5) if side == 0 else \
+				Vector3(k + w * 0.5, 0, bz + 8.0 + d * 0.5) if side == 1 else \
+				Vector3(-ax - 8.0 - d * 0.5, 0, k + w * 0.5) if side == 2 else Vector3(ax + 8.0 + d * 0.5, 0, k + w * 0.5)
+			var size := Vector2(w, d) if side < 2 else Vector2(d, w)
+			_house(c, size, storeys, walls[rng.randi() % walls.size()])
+			k += w + rng.randf_range(0.0, 3.0)
+
+## Urbek town house: storeys of 3 m, a window every 3 m, a stepped tile roof
+## of 0.5 m layers (about 27 degrees).
+func _house(c: Vector3, size: Vector2, storeys: int, wall: Color) -> void:
+	var h := storeys * 3.0
+	_boxes([c + Vector3(0, h * 0.5, 0)], Vector3(size.x, h, size.y), wall)
+	_boxes([c + Vector3(0, 0.3, 0)], Vector3(size.x + 0.2, 0.6, size.y + 0.2), wall.darkened(0.15))
+	var windows := []
+	for st in storeys:
+		var y := st * 3.0 + 1.6
+		for x in range(1, int(size.x / 3.0)):
+			var px := -size.x * 0.5 + x * size.x / int(size.x / 3.0)
+			windows.append(c + Vector3(px, y, size.y * 0.5 + 0.05))
+			windows.append(c + Vector3(px, y, -size.y * 0.5 - 0.05))
+	_boxes(windows, Vector3(1.0, 1.5, 0.2), Color("3a4560"))
+	var windows_z := []
+	for st in storeys:
+		var y := st * 3.0 + 1.6
+		for z in range(1, int(size.y / 3.0)):
+			var pz := -size.y * 0.5 + z * size.y / int(size.y / 3.0)
+			windows_z.append(c + Vector3(size.x * 0.5 + 0.05, y, pz))
+			windows_z.append(c + Vector3(-size.x * 0.5 - 0.05, y, pz))
+	_boxes(windows_z, Vector3(0.2, 1.5, 1.0), Color("3a4560"))
+	var roof := [Color("c86a50"), Color("b85c44")]
+	var layer := 0
+	var depth := size.y + 0.6
+	while depth > 0.4:
+		_boxes([c + Vector3(0, h + 0.25 + layer * 0.5, 0)], Vector3(size.x + 0.6, 0.5, depth), roof[layer % 2])
+		depth -= 2.0
+		layer += 1
+
+func _person(at: Vector3, robe: Color) -> void:
+	_boxes([at + Vector3(0, 0.65, 0)], Vector3(0.5, 1.3, 0.35), robe)
+	_boxes([at + Vector3(0, 1.55, 0)], Vector3(0.35, 0.4, 0.35), Color("d9a27a"))
 
 func _cypress(base: Vector3, h: float, i: int) -> void:
 	var greens := [Color("3f6b32"), Color("4d7c3a"), Color("5b8b42")]
-	_boxes([base + Vector3(0, 0.2, 0)], Vector3(0.25, 0.4, 0.25), Color("6b4a32"))
+	_boxes([base + Vector3(0, 0.5, 0)], Vector3(0.5, 1.0, 0.5), Color("6b4a32"))
 	var layers := 6
 	for k in layers:
-		var w := lerpf(0.9, 0.3, float(k) / layers)
-		_boxes([base + Vector3(0, 0.4 + h * (k + 0.5) / layers, 0)], Vector3(w, h / layers, w), greens[(i + k) % greens.size()])
+		var w := lerpf(2.0, 0.75, float(k) / layers)
+		_boxes([base + Vector3(0, 1.0 + (h - 1.0) * (k + 0.5) / layers, 0)], Vector3(w, (h - 1.0) / layers, w), greens[(i + k) % greens.size()])
 
 ## Urbek-like deciduous tree: trunk and a crown of stacked, offset cubes.
 func _round_tree(base: Vector3, h: float, i: int) -> void:
 	var greens := [Color("5f9a3c"), Color("6fae45"), Color("4f8a34")]
-	_boxes([base + Vector3(0, h * 0.25, 0)], Vector3(0.25, h * 0.5, 0.25), Color("6b4a32"))
-	_boxes([base + Vector3(0, h * 0.75, 0)], Vector3(1.5, h * 0.5, 1.5), greens[i % 3])
-	_boxes([base + Vector3(0.25, h * 1.05, -0.2)], Vector3(1.0, 0.5, 1.0), greens[(i + 1) % 3])
-	_boxes([base + Vector3(-0.45, h * 0.7, 0.35)], Vector3(0.75, 0.6, 0.75), greens[(i + 2) % 3])
+	_boxes([base + Vector3(0, h * 0.25, 0)], Vector3(0.5, h * 0.5, 0.5), Color("6b4a32"))
+	_boxes([base + Vector3(0, h * 0.72, 0)], Vector3(4.0, h * 0.45, 4.0), greens[i % 3])
+	_boxes([base + Vector3(0.5, h * 0.95, -0.5)], Vector3(2.5, h * 0.15, 2.5), greens[(i + 1) % 3])
+	_boxes([base + Vector3(-1.0, h * 0.62, 1.0)], Vector3(2.0, h * 0.3, 2.0), greens[(i + 2) % 3])
 
 func _seat(at: Vector3, rot: float) -> void:
 	var b := Basis(Vector3.UP, rot)
@@ -195,12 +257,12 @@ func _lods() -> void:
 	_ground(400.0, Color("7ea24a"))
 	var half := (meshes.size() - 1) * 0.5
 	for i in meshes.size():
-		_add(meshes[i], Transform3D(Basis(), Vector3((i - half) * 18.0, 0, -(i - half) * 18.0)))
-	_camera(Vector3(0, 1.5, 0), 62.0)
+		_add(meshes[i], Transform3D(Basis(), Vector3((i - half) * 85.0, 0, 0)))
+	_camera(Vector3(0, 4.0, 0), 360.0)
 	# Orthographic, so the three LODs are compared at the same size.
 	var cam: Camera3D = get_children().filter(func(c): return c is Camera3D)[0]
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 30.0 + 8.0 * meshes.size()
+	cam.size = 90.0 * meshes.size()
 
 func _add(mesh: Mesh, xf: Transform3D) -> void:
 	var mi := MeshInstance3D.new()
@@ -273,9 +335,9 @@ func _bench() -> void:
 						mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					add_child(mmi)
 	if args.get("view", "far") == "close":
-		_camera(Vector3.ZERO, 120.0)
+		_camera(Vector3.ZERO, 360.0)
 	else:
-		_camera(Vector3.ZERO, extent * 1.25)
+		_camera(Vector3.ZERO, extent * 1.6)
 
 func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
