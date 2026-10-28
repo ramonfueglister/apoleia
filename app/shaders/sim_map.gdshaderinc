@@ -44,14 +44,15 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 }
 
 // Fields on open land (`land`, the terrain's landscape here), on parcels of
-// half a terrain tile (`tile_size`, km), on the terrain's own grid so a
-// parcel never cuts a tile (sim_parcel). Each parcel is one flat colour.
+// half a terrain data tile (`tile_size` km the drawn tile; up close the
+// drawn tiles are quarter tiles, one parcel each), on the terrain's own grid
+// so a parcel never cuts a tile (sim_parcel). Each parcel is one flat colour.
 // Up close a sown parcel is grass round the raised field slab that stands
 // on it (people_crops.gdshader), a fallow one dry grass, so the farmland is
 // a mosaic of slabs, grass edges and fallow; the ramps between the
 // terraces stay grass (SimCity 2000 farms only on flat ground, and a
 // parcel colour split by the ramp's two triangles reads as broken glass).
-// From SIM_CROPS_KM of view the farmland is blocks of 2 x 2 tiles, each
+// From SIM_CROPS_KM of view the farmland is blocks of 2 x 2 data tiles, each
 // one crop for the season, fallow or pasture as a whole (by its fine tile's
 // shares, and sown a little earlier or later than its neighbours): a
 // patchwork of wheat, barley, beans, vines, fallow and tilled soil, not
@@ -63,9 +64,11 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	vec3 pasture = land == G_FIELD ? meadow : c; // farmland the sim does not farm
 	vec3 field = GROUND_RGB[G_FIELD];
 	vec3 straw = field * vec3(0.98, 0.98, 0.9);
+	// parcels of half a data tile: up close a quarter tile each
+	float data_km = sub_tiles ? tile_size * 2.0 : tile_size;
 	if (sim_view_km <= SIM_CROPS_KM) {
 		if (sim_house_lot(p) || !sim_flat(p)) { return pasture; } // the farmhouse's yard, a ramp
-		float size = tile_size * 0.5;
+		float size = data_km * 0.5;
 		vec2 cell = floor((p - world_min) / size); // parcels on the tile grid
 		vec4 f;
 		int state = sim_parcel(cell, size, f);
@@ -74,7 +77,7 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 		// on the sown ones (people_crops.gdshader)
 		return state == 0 ? pasture : state == 1 ? straw : meadow;
 	}
-	float size = tile_size * 2.0;
+	float size = data_km * 2.0;
 	vec2 block = floor((p - world_min) / size);
 	vec4 f = sim_fine_at(ivec2(floor((world_min + (block + 0.5) * size - sim_fine_origin) / sim_fine_km)));
 	if (f.r < 0.25 || sim_hash(block + 1.3) >= f.r * 1.4) { return pasture; }

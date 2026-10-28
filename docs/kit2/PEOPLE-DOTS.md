@@ -214,10 +214,12 @@ festen Slots und Seiten wie die Personen: rund 25 600 Häuser in 7 Seiten, pro
 Tag ändert meist 1 Seite. `people_houses.gdshader`
 zeichnet sie, ein eigener Platzierungs-Pass (derselbe Shader mit `houses`)
 läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern (auch das
-nachgebackene Nahrelief, `levels_*`, `near_scale`). Ein Bauernhaus steht auf
-einer ebenen Hofparzelle: auf seiner eigenen oder, liegt die auf einer Rampe,
-auf der ersten ebenen der acht Nachbarparzellen (wie in SimCity 2000 wird
-am Hang nicht gebaut). Drehung, Grösse und Ton hängen an der Parzelle. Die Familie steht im Vorhof, auf der Gasse
+nachgebackene Nahrelief, `levels_*`, `near_scale`, und das Fenster der
+Viertelkacheln, `sub_*`). Ein Bauernhaus steht auf einer ebenen, offenen
+Hofparzelle (kein Wald, Fels oder Schnee; bis etwa 12 km Sichtbreite 2 × 2
+Viertelkacheln auf einer Höhe): auf seiner eigenen oder, liegt die auf
+einer Rampe oder im Wald, auf der ersten passenden der acht
+Nachbarparzellen (wie in SimCity 2000 wird am Hang nicht gebaut). Drehung, Grösse und Ton hängen an der Parzelle. Die Familie steht im Vorhof, auf der Gasse
 oder auf den Feldern (siehe Wohnorte). Stadtbewohner haben kein eigenes Haus, sie
 wohnen in den Stadt-Tiles.
 
@@ -241,7 +243,7 @@ etwa 25 ms:
   Strasse (Stufe 2), auf See Seeweg, mit den Nachbarn, die sie verbindet.
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
-Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
+Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Block um die Mitte jeder feinen
 Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Fern ist das

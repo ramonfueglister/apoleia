@@ -66,9 +66,10 @@ const HOUSE_LOD_KM := [5.0, 20.0, INF]
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 # the uniforms the placement passes depend on; the near relief (levels_*,
-# near_scale) is baked later and moves its window with the camera
+# near_scale) is baked later and, like the quarter tiles (sub_*), moves its
+# window with the camera
 const PLACE_KEYS: Array[StringName] = [&"tile_km", &"corner_origin", &"corner_size", &"m_per_level", &"height_lod", &"cells_size",
-	&"level_h", &"levels_ready", &"levels_origin", &"near_scale", &"ground_ready"]
+	&"level_h", &"levels_ready", &"levels_origin", &"near_scale", &"ground_ready", &"sub_tiles", &"sub_origin"]
 const DOTS_PER_INSTANCE := 64 # people_dots.gdshaderinc, divides the page size
 const PICK_PX := 10.0 # a click finds the nearest dot within this many pixels
 const CLICK_PX := 4.0 # a press and release further apart is a drag, not a click
@@ -517,7 +518,8 @@ func _update_crops(view_km: float) -> void:
 	if not _crops.visible:
 		return
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
-	var size := tile_km * 0.5
+	# a parcel is half a data tile: up close one quarter tile (sub_tiles)
+	var size := tile_km * (1.0 if terrain.sub_tiles else 0.5)
 	# parcels and lots on the terrain's tile grid, counted from world_min
 	var from: Vector2 = centre - terrain.world_min
 	var cell0 := (from / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)

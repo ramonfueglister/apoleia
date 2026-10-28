@@ -110,16 +110,28 @@ vec2 dot_lot(vec2 p) {
 }
 
 // A lot a farmhouse can stand on: land (or by a river), and with `level`
-// also a flat tile, no ramp (with the lot a whole tile up close; on the
-// coarser levels further out every lot on land counts).
+// also open level ground, no ramp and no wood: the lot is a whole tile, or
+// 2 x 2 quarter tiles up close (tile_terrain.gdshaderinc sub_tiles), all
+// flat at one level; on the coarser levels further out every lot on land
+// counts.
 const ivec2 DOT_RING[8] = ivec2[](ivec2(1, 0), ivec2(1, 1), ivec2(0, 1), ivec2(-1, 1), ivec2(-1, 0), ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1));
 bool dot_lot_ok(vec2 lot, bool level) {
-	ivec2 t = dot_tile(lot);
-	int water = tt_water(t);
-	if (water != W_LAND && water != W_RIVER) { return false; }
-	if (!level || tile_km > DOT_LOT_KM * 1.01) { return true; }
-	vec4 k = round(tt_corners_cached(t));
-	return max(max(k.x, k.y), max(k.z, k.w)) - min(min(k.x, k.y), min(k.z, k.w)) < 0.01;
+	int n = tile_km > DOT_LOT_KM * 1.01 ? 1 : int(round(DOT_LOT_KM / tile_km));
+	float lo = 1e9;
+	float hi = -1e9;
+	for (int j = 0; j < n; j++) {
+		for (int i = 0; i < n; i++) {
+			ivec2 t = dot_tile(lot + (vec2(float(i), float(j)) + 0.5 - float(n) * 0.5) * tile_km);
+			int water = tt_water(t);
+			if (water != W_LAND && water != W_RIVER) { return false; }
+			int g = tt_ground(t);
+			if (level && (g == G_FOREST || g == G_CONIFER || g == G_ROCK || g == G_SNOW)) { return false; }
+			vec4 k = round(tt_corners_cached(t));
+			lo = min(lo, min(min(k.x, k.y), min(k.z, k.w)));
+			hi = max(hi, max(max(k.x, k.y), max(k.z, k.w)));
+		}
+	}
+	return !level || tile_km > DOT_LOT_KM * 1.01 || hi - lo < 0.01;
 }
 
 // The farmhouse on the lot under p (people_houses.gdshader), the same for

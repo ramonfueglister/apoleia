@@ -54,7 +54,7 @@ const vec3 SHEEP_DARK = vec3(0.27, 0.22, 0.18); // face and legs
 const float FLOCK_SHARE = 0.55;   // share of the pasture parcels with a flock
 
 void vertex() {
-	float size = tile_km * 0.5;
+	float size = tt_data_km() * 0.5; // a quarter tile up close, half a data tile
 	vec2 cell = crop_cell0 + vec2(float(INSTANCE_ID % crop_n), float(INSTANCE_ID / crop_n));
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec4 f = vec4(0.0);
