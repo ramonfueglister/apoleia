@@ -379,6 +379,30 @@ Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 619df638564084
 grain 858ecccb8e7678ba), 53 Tests grün. Der Anteil der Hungertoten an allen Todesfällen
 liegt jetzt bei 4,3 % statt bei den 5 %, die S89 von der Sterbetafel abzieht.
 
+## Zelte suchen den Ort mit den besten Chancen (S75, 100 Jahre, Seed 1, `run100-s75-tents.txt`; vorher: `run100-s90.txt`)
+
+S75 (Ramon, 27.10.2026) war entschieden, aber nicht gebaut: Ein Zelt zog nur um, wenn in
+seiner Region ein Hof frei wurde, oder einmal im Jahr bei der Wanderung (S66, erst unter
+80 % gegessen). Jetzt vergleicht jeder Zelthaushalt, der nicht satt wurde, einmal im Monat
+seinen Markt mit den Märkten bis 5 Reisetage weit: Was bekäme eine Person dort im Monat
+aus Taglohn (bezahlte Löhne und liegengebliebene Arbeit des letzten Monats) und Almosen
+aus dem Marktvorrat, geteilt durch die Zeltleute dort und die Neuen? Bietet ein Ort
+mindestens das 1,5-Fache, zieht der Haushalt hin (sofort). Zur Erntezeit ziehen Zelte so
+zu den Höfen, die Hände brauchen.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Hungertote Jahr 2 / Jahr 3 | 1'068 / 644 | 671 / 448 |
+| Zelte essen (Jahr 1 / 2) | 91 % / 90 % | 96 % / 98 % |
+| Umzüge von Zelten (Jahr 1 / 2 / 6) | – | 736 / 298 / 64 |
+| Hungertote pro Jahr, Jahr 11 bis 100 | 228 | 223 |
+| Menschen im Jahr 100 | 138'384 | 139'419 |
+| Wachstum Jahr 10 bis 100 | 0,21 % | 0,21 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 5e2e78adb0f54db3,
+grain 9f839fc3b75fef97), 53 Tests grün. Tempo gleich wie ohne (auf demselben Rechner
+gemessen: Getreide im Mittel 1,79 statt 1,76 ms pro Tag).
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -462,6 +486,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Verderb | 4 % im Jahr in allen Speichern, für jedes Klima gleich | APHLIS 2011 (Weizen im Hoflager), FAO |
+| Zelte ziehen um (S75) | einmal im Monat, wenn nicht satt; Märkte bis 5 Reisetage; ab dem 1,5-Fachen an Lohn und Almosen pro Zeltperson; Umzug sofort; Nähe zu anderen Zelten zählt nur über die geteilte Arbeit | frei gewählt |
 | Hungertote in der Sterbetafel (S89) | 5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in normalen Jahren dieses Laufs (5–7 %) |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |

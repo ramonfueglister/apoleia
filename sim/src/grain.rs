@@ -197,6 +197,17 @@ const STEAL_PER_16: u64 = 5;
 const STEAL_KG: i64 = 40;
 /// Hunger signal for moving (S66), permille eaten of need. PLACEHOLDER.
 const NEED_FED: u16 = 800;
+/// S75 (Ramon, 27.10.2026): the landless seek the place with the best
+/// chances. Once a month a tent household that did not eat its fill
+/// compares its market with the markets within TENT_REACH_DAYS (the market
+/// graph's travel days) by what a tent person could get there in a month:
+/// the wages paid to day labourers and the work left undone there last
+/// month, plus alms from the market store, shared among the tent people
+/// there and the newcomers. It moves when a place offers TENT_MOVE_PCT of
+/// its own or more. PLACEHOLDER: reach, threshold, the move takes no time,
+/// nearness to other tents counts only through the shared work.
+const TENT_REACH_DAYS: i64 = 5;
+const TENT_MOVE_PCT: i64 = 150;
 
 // Footpaths (Helbing et al. 1997 as in GRAIN.md). Fine raster: tile level
 // 7, 16 × 16 per 25 km cell (≈ 1.56 km real). PLACEHOLDER all: wear
@@ -385,6 +396,11 @@ pub struct Market {
     /// Grain in the region (farm stores, market, pantries), kg.
     pub grain: i64,
     pub free_area: i64,
+    /// S75: day labour wages paid and work left undone (kg of wage) since
+    /// the last count, and as of the last count; people in tents.
+    work_acc: i64,
+    work_month: i64,
+    tent_people: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -440,6 +456,8 @@ pub struct GrainStats {
     pub farms_abandoned: u64,
     /// Households without workers or kin sent to the tents (S79).
     pub to_tents: u64,
+    /// S75: tent households that moved to a market with better chances.
+    pub tent_moves: u64,
     pub field_rebuilds: u64,
     /// Heirs' households given a share of the father's farm (INHERIT_EQUAL).
     pub heirs_given: u64,
@@ -838,6 +856,9 @@ impl Grain {
                 reach: Vec::new(),
                 stale: false,
                 field: None,
+                work_acc: 0,
+                work_month: 0,
+                tent_people: 0,
                 dirty: true,
                 walked: FxHashMap::default(),
                 open: Vec::new(),
@@ -1292,8 +1313,11 @@ impl Grain {
         for m in self.markets.iter_mut() {
             m.people = 0;
             m.tents = 0;
+            m.tent_people = 0;
             m.grain = m.store;
             m.free_area = 0;
+            m.work_month = m.work_acc;
+            m.work_acc = 0;
         }
         for (&id, i) in self.info.iter() {
             let mk = self.cell_market[i.home as usize] as usize;
@@ -1301,6 +1325,9 @@ impl Grain {
             let m = &mut self.markets[mk];
             m.people += i.size as u32;
             m.tents += u32::from(s.kind == TENT);
+            if s.kind == TENT {
+                m.tent_people += i.size as u32;
+            }
             m.grain += s.pantry;
             if s.farm != NONE {
                 m.grain += self.farms[s.farm as usize].store;
@@ -2119,6 +2146,7 @@ impl Grain {
                     fm.store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2160,6 +2188,7 @@ impl Grain {
                     fm.store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2192,6 +2221,7 @@ impl Grain {
                     self.farms[farm as usize].store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2215,6 +2245,8 @@ impl Grain {
         let Some(pk) = self.farms[f as usize].peak.take() else { return };
         let cropped = self.cropped(self.farms[f as usize].area);
         let fm = &mut self.farms[f as usize];
+        // S75: the hands that were missing, as wages a worker could have had.
+        self.markets[fm.market as usize].work_acc += (pk.demand - pk.done).max(0) * WAGE_KG_DAY;
         let frac_x1000 = if pk.demand == 0 { 1000 } else { pk.done * 1000 / pk.demand };
         if !pk.harvest {
             let worked = cropped * frac_x1000 / 1000;
@@ -2361,6 +2393,9 @@ impl Grain {
                 s.pantry = have;
             }
             self.hh.insert(id, s);
+            if s.kind == TENT && s.fed < 1000 && !s.busy {
+                self.tent_move(p, id, &info, mk);
+            }
             if let Some(e) = p.econ.as_mut() {
                 if (id as usize) < e.fed.len() {
                     e.fed[id as usize] = s.fed;
@@ -2399,6 +2434,46 @@ impl Grain {
             }
         }
         self.hh_slices[slice] = ids;
+    }
+
+    /// S75: what a tent person can get in a month at market `m` with `add`
+    /// more tent people there, kg.
+    fn tent_chance(&self, m: usize, add: u32) -> i64 {
+        let mk = &self.markets[m];
+        let n = (mk.tent_people + add).max(1) as i64;
+        let alms = (KG_PER_ADULT_YEAR / 12 * ALMS_PCT / 100).min(mk.store.max(0) / n);
+        mk.work_month / n + alms
+    }
+
+    /// S75: a tent household moves to the market with the best chances
+    /// within reach, if they are clearly better than at its own.
+    fn tent_move(&mut self, p: &mut People, id: u32, info: &HhInfo, mk: u32) {
+        if mk == NONE {
+            return;
+        }
+        let n = info.size as u32;
+        let own = self.tent_chance(mk as usize, 0);
+        let mut best = (own * TENT_MOVE_PCT / 100, NONE);
+        for nb in &self.markets[mk as usize].neigh {
+            if nb.days > TENT_REACH_DAYS {
+                continue;
+            }
+            let c = self.tent_chance(nb.m as usize, n);
+            if c > best.0 {
+                best = (c, nb.m);
+            }
+        }
+        let to = best.1;
+        if to == NONE {
+            return;
+        }
+        let (cell, fine) = (self.markets[to as usize].cell, self.markets[to as usize].fine);
+        p.relocate_household(id, &self.members[info.at as usize..(info.at + info.size as u32) as usize], cell);
+        self.info.get_mut(&id).unwrap().home = cell;
+        self.hh.get_mut(&id).unwrap().fine = fine;
+        self.markets[mk as usize].tent_people = self.markets[mk as usize].tent_people.saturating_sub(n);
+        self.markets[to as usize].tent_people += n;
+        self.stats.tent_moves += 1;
     }
 
     /// A farm store in the cell (else the region) to steal from, by hash.
