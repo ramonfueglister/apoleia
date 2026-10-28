@@ -323,6 +323,26 @@ bleibt fast gleich (−0,05 % im Jahr über 100 Jahre, historisch etwa +0,1 %). 
 mit 1 und 4 Threads (10 Jahre). Grain im Mittel 1,41 ms pro Tag (99 % 4,1 ms), ganzer Tag
 99 % 9,9 ms.
 
+## Hungertote aus der Sterbetafel (S89, 100 Jahre, Seed 1, `run100-s89.txt`; vorher: `run100-verderb.txt`)
+
+Ramon: „Hungertote aus der Sterbetafel nehmen“. Die Sterbetafel (West 3) enthält die
+Hungertoten schon; die Simulation lässt zusätzlich verhungern, darum sinkt die
+Sterblichkeit der Tafel um 5 % (PLACEHOLDER, Anteil der Hungertoten in normalen Jahren).
+Probeläufe mit 3 %, 5 % und 7 % gaben 0,09 %, 0,17 % und 0,21 % Wachstum im Jahr.
+
+| Grösse | vorher (Verderb) | jetzt | Quellen |
+|---|---|---|---|
+| Menschen im Jahr 100 | 110'617 | 129'207 | – |
+| Wachstum Jahr 10 bis 100 | 0,01 % im Jahr | 0,17 % im Jahr | 0,1–0,2 % (Frier 2000, Scheidel 2007, Harper 2017) |
+| Geburten pro 1'000 (Jahr 100) | 47,8 | 47,0 | etwa 45 (Bagnall und Frier 1994) |
+| Tote pro 1'000 (Jahr 100) | 47,2 | 43,6 | – |
+| Frauen 15–49 verheiratet | 66,6 % | 67,1 % | etwa 65 % |
+| Hungertote Jahr 2 / Jahr 100 | 1'930 / 343 | 1'919 / 368 | – |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 6dc338f1747decce,
+grain b1841fc00f4cd0a3), 53 Tests grün. Tempo auf dem ruhigen Rechner wie vorher:
+Getreide im Mittel 1,57 ms pro Tag (p99 3,9), ganzer Tag p50 4,8 ms, p99 9,0 ms.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -406,6 +426,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Verderb | 4 % im Jahr in allen Speichern, für jedes Klima gleich | APHLIS 2011 (Weizen im Hoflager), FAO |
+| Hungertote in der Sterbetafel (S89) | 5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in normalen Jahren dieses Laufs (5–7 %) |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
@@ -426,7 +447,8 @@ in Arrays nach ID statt in Hashtabellen.
 - **Haushalte aus nur Kindern oder Alten** ziehen jetzt zu Verwandten oder gehen ins Zelt
   (S79). Was mit dem Vorrat eines Haushalts geschieht, der dabei leer wird, ist offen: Er
   verschwindet mit dem Haushalt. Der Hofspeicher bleibt beim Hof.
-- **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87) und Verderb: −0,05 % im
-  Jahr über 100 Jahre, historisch etwa +0,1 %.
+- **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87), Verderb (S88) und
+  ohne die doppelt gezählten Hungertoten (S89): 0,17 % im Jahr von Jahr 10 bis 100,
+  historisch 0,1–0,2 %.
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.

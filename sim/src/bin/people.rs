@@ -61,6 +61,10 @@ fn main() {
     if let Some(v) = arg("--divorce") {
         p.divorce_per_10k_year = v.parse().unwrap();
     }
+    // S89: hunger deaths per 1,000 deaths taken out of the life table.
+    if let Some(v) = arg("--table-hunger") {
+        p.table_hunger_per_1000 = v.parse().unwrap();
+    }
     let spawn_ms = t0.elapsed().as_secs_f64() * 1e3;
     println!(
         "people={} (1 per {PEOPLE_PER_PERSON} real) places={} grid={}x{} spawn_ms={spawn_ms:.0} (flow fields {} in {:.0} ms) rss_mb={:.0} (+{:.0})",

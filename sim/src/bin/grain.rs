@@ -53,6 +53,10 @@ fn main() {
     if let Some(v) = arg("--divorce") {
         p.divorce_per_10k_year = v.parse().unwrap();
     }
+    // S89: hunger deaths per 1,000 deaths taken out of the life table.
+    if let Some(v) = arg("--table-hunger") {
+        p.table_hunger_per_1000 = v.parse().unwrap();
+    }
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
