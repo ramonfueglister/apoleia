@@ -161,7 +161,7 @@ static func house() -> ArrayMesh:
 		_pane(st, Vector3(hx, floor_y, 0), Vector3.RIGHT, 0.09, 0.11, window)
 		_pane(st, Vector3(-hx, floor_y, 0), Vector3.LEFT, 0.09, 0.11, window)
 	# the roof: a slab 0.035 thick, its top through the wall top at the walls
-	var ridge := h + 0.3
+	var ridge := h + 0.2 # low Roman tegula roof (25 degrees), no Alpine chalet
 	var pitch := (ridge - h) / hz
 	var ex := hx + 0.05
 	var ez := hz + 0.07

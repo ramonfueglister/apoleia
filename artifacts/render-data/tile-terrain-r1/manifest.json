@@ -205,14 +205,19 @@
         450.0,
         700.0,
         1000.0,
-        1400.0,
+        1300.0,
+        1600.0,
         1900.0,
+        2200.0,
         2500.0,
-        3200.0
+        2900.0,
+        3400.0
       ],
-      "blur_tiles": 1.2,
+      "blur_tiles": 0.7,
+      "peak_share": 0.75,
+      "beyond_m": 600.0,
       "path": "levels-L2.png",
-      "sha256": "b01d5915550b922de5b6e47d45dbb9beead76b3ed836d5bcce615f67eaf63544",
+      "sha256": "ce4352c626fbd5100429ec6f9742b23665b621a561daa8f79db714f309ea711d",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -226,14 +231,19 @@
         450.0,
         700.0,
         1000.0,
-        1400.0,
+        1300.0,
+        1600.0,
         1900.0,
+        2200.0,
         2500.0,
-        3200.0
+        2900.0,
+        3400.0
       ],
-      "blur_tiles": 1.2,
+      "blur_tiles": 0.7,
+      "peak_share": 0.75,
+      "beyond_m": 600.0,
       "path": "levels-L3.png",
-      "sha256": "e0b252bf415286a3c3eab305246117b8eca7593f418774e83de25e3af16096db",
+      "sha256": "f862efaeff6109374507e50c073726097d85328c93094e9700154921cdb8b984",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -247,14 +257,19 @@
         450.0,
         700.0,
         1000.0,
-        1400.0,
+        1300.0,
+        1600.0,
         1900.0,
+        2200.0,
         2500.0,
-        3200.0
+        2900.0,
+        3400.0
       ],
-      "blur_tiles": 1.2,
+      "blur_tiles": 0.7,
+      "peak_share": 0.75,
+      "beyond_m": 600.0,
       "path": "levels-L4.png",
-      "sha256": "6ab25f07e507968a6c8b1979d9eecb6edd787da09b3e06f7d7e6f7cf2264f47b",
+      "sha256": "6899c8037b7de752d874652522ae1b91f46328d7d4ca4ddcc8347846de9fd33c",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -268,14 +283,19 @@
         450.0,
         700.0,
         1000.0,
-        1400.0,
+        1300.0,
+        1600.0,
         1900.0,
+        2200.0,
         2500.0,
-        3200.0
+        2900.0,
+        3400.0
       ],
-      "blur_tiles": 1.2,
+      "blur_tiles": 0.7,
+      "peak_share": 0.75,
+      "beyond_m": 600.0,
       "path": "levels-L5.png",
-      "sha256": "0d3513dc3b9bf989ec9c8eaee3a47e7c6b649d0dafe7713a05aa46f65385e368",
+      "sha256": "f8f633ebc1802181588146c04ee15b87483f3267971783fd758a7143ff168b6f",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
@@ -310,7 +330,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "ground-L1.png",
-      "sha256": "36a1d9972093e3925b83b92f5b02fe9c4dd81d2f4c4672bd2476915e8ee95da5",
+      "sha256": "94b95af9e1a1e1c482f5553e09e39d0490e25310eb749e4378534af7b7a0680f",
       "classes": [
         "meadow",
         "dry_grass",
@@ -333,7 +353,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "ground-L2.png",
-      "sha256": "c227909bc7b9f1f6152e6aec987c8b4a80e52c5dbfacaa25bb1028587c923dfe",
+      "sha256": "6aecdace963f285a51673ce51decaa58b7f74898eb6a620ea168ae56a61fad1c",
       "classes": [
         "meadow",
         "dry_grass",
@@ -356,7 +376,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "ground-L3.png",
-      "sha256": "f78aaf0fa0b38b1785162b06dd3562323af2cadf3460e68ddf88e8719223cccf",
+      "sha256": "21f32ca23c89c65b2122a104ca041f6b50ab20386abff684359a940bafa77978",
       "classes": [
         "meadow",
         "dry_grass",
@@ -379,7 +399,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "ground-L4.png",
-      "sha256": "99bac64051cf1f017d9550218b3a18eac413f7bd53b4ac36d4c451a3420982e7",
+      "sha256": "3119e39ab9857318474c49dd02d48ce6b323657dce33eab480e4694901b52ccf",
       "classes": [
         "meadow",
         "dry_grass",
