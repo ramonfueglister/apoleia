@@ -22,6 +22,8 @@ uniform float height_lod = 0.0;
 uniform sampler2D levels_tex : filter_nearest, repeat_disable; // far levels: baked corner levels (8 bit)
 uniform bool levels_ready = false;
 uniform float level_floor_m = 0.0; // far levels count from this height (metres)
+uniform sampler2D ground_tex : filter_nearest, repeat_disable; // landscape per tile, two per byte
+uniform bool ground_ready = false;
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
 
@@ -29,6 +31,19 @@ const int W_LAND = 0;
 const int W_SEA = 1;
 const int W_LAKE = 2;
 const int W_RIVER = 3;
+// landscape of a tile (tools/build_tile_terrain.py, GROUND): one colour each
+const int G_MEADOW = 0;
+const int G_DRY_GRASS = 1;
+const int G_FIELD = 2;
+const int G_WETLAND = 3;
+const int G_SCRUB = 4;
+const int G_SAND = 5;
+const int G_FOREST = 6;
+const int G_CONIFER = 7;
+const int G_ALPINE = 8;
+const int G_ROCK = 9;
+const int G_SNOW = 10;
+const int G_NONE = 15; // water
 
 float tt_hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -80,6 +95,51 @@ int tt_cell(ivec2 t) {
 
 int tt_water(ivec2 t) {
 	return tt_cell(t) & 3;
+}
+
+int tt_ground(ivec2 t) {
+	if (!ground_ready || t.x < 0 || t.y < 0 || t.x >= cells_size.x || t.y >= cells_size.y) {
+		return G_NONE;
+	}
+	int b = int(texelFetch(ground_tex, ivec2(t.x >> 1, t.y), 0).r * 255.0 + 0.5);
+	return (t.x & 1) == 0 ? (b & 15) : (b >> 4);
+}
+
+// Two landscapes meet in a tile like the coast does: when both sides at a
+// corner and the tile across that corner share another, stronger landscape,
+// the half of the tile towards that corner takes it (cut at the diagonal). Returns the
+// corner (0..3) or -1; `alt` is the landscape of that half.
+int tt_ground_cut(ivec2 t, int g, out int alt) {
+	alt = g;
+	if (g == G_NONE) { return -1; }
+	const ivec2 SIDES[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	// only the stronger landscape spills over (snow over rock over wood over
+	// open land), as only the water cuts into the land at the coast; cutting
+	// both sides of a staircase would leave teeth instead of one diagonal
+	const int RANK[11] = int[](0, 1, 4, 5, 3, 2, 7, 8, 6, 9, 10);
+	for (int k = 0; k < 4; k++) {
+		ivec2 a = SIDES[(k + 3) & 3];
+		ivec2 b = SIDES[k];
+		int ga = tt_ground(t + a);
+		if (ga == g || ga == G_NONE || RANK[clamp(ga, 0, 10)] < RANK[clamp(g, 0, 10)]) { continue; }
+		if (tt_ground(t + b) == ga && tt_ground(t + a + b) == ga) {
+			alt = ga;
+			return k;
+		}
+	}
+	return -1;
+}
+
+// Landscape at a point of tile t (uv 0..1 in the tile).
+int tt_ground_at(ivec2 t, vec2 uv) {
+	int g = tt_ground(t);
+	int alt;
+	int k = tt_ground_cut(t, g, alt);
+	if (k >= 0) {
+		vec2 tip = vec2(float(k == 1 || k == 2), float(k >= 2));
+		if (abs(uv.x - tip.x) + abs(uv.y - tip.y) < 1.0) { return alt; }
+	}
+	return g;
 }
 
 int tt_town(ivec2 t) {
@@ -232,13 +292,6 @@ vec4 tt_corners_cached(ivec2 t) {
 		return texelFetch(corner_tex, q, 0);
 	}
 	return tt_corners(t);
-}
-
-// Clumped woods: land cover forest share through a noisy threshold. The noise
-// is anchored in the world, so woods keep their place across zoom levels; far
-// out its clumps span a few tiles, so the woods do not break up into specks.
-float tt_tree_density(vec2 p, float forest) {
-	return smoothstep(0.5, 0.95, forest + (tt_fbm(p / max(9.0, 3.0 * tile_km)) - 0.5) * 0.5);
 }
 
 // Distance to the coast in km (bilinear over the 2 km nodes).

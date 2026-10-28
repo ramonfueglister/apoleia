@@ -60,6 +60,7 @@ var _cell_textures: Array[ImageTexture] = []
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
 var _level_textures := {}
 var _level_metres := {}
+var _ground_textures := {}  # zoom level -> landscape per tile (two per byte)
 var _level_floor := {}
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
@@ -118,6 +119,10 @@ func load_data() -> bool:
 		_level_textures[key] = ImageTexture.create_from_image(image)
 		_level_metres[key] = float(entry.metres_per_level)
 		_level_floor[key] = float(entry.get("floor_m", 0.0))
+	for entry in manifest.get("ground", []):
+		var image := Image.load_from_file(dir.path_join(entry.path))
+		image.convert(Image.FORMAT_R8)
+		_ground_textures[int(entry.level)] = ImageTexture.create_from_image(image)
 	_terrain_material = ShaderMaterial.new()
 	_terrain_material.shader = TERRAIN_SHADER
 	var shared := {
@@ -263,6 +268,8 @@ func _apply_level(value: int) -> void:
 		"levels_ready": baked,
 		"level_floor_m": _level_floor[level] if baked else 0.0,
 		"levels_tex": _level_textures[level] if baked else null,
+		"ground_ready": _ground_textures.has(level),
+		"ground_tex": _ground_textures.get(level),
 	}
 	for material in _all_materials():
 		for key in params:

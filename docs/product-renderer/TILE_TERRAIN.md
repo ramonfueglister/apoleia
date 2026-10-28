@@ -55,27 +55,32 @@ unabhängig und unverändert.
   bleiben) und kappt Seitenstummel bis 3 Kacheln Länge sowie einzelne Zellen
   (`clean_rivers`). Mündungen am Meer und an Seen bleiben stehen. Echte
   Flussarme um größere Inseln bleiben als Schlaufe erhalten.
-- Optik: Die Landschaft wechselt **innerhalb der Kacheln** (Ramon, 28.10.2026):
-  Wiese, trockenes Grasland, Felder, Feuchtgebiet, Wald, Fels und Schnee sind
-  Flächen mit klaren, leicht gewellten Rändern (Rauschen über 0,9 und 1,7
-  Kacheln), gelesen eine halbe Kachel fein. Im Mittelmeerraum wird die Wiese
-  trockener. Fels ab etwa 1150 m, Schnee ab etwa 1600 m, im Süden und im
-  Trockenen höher (kein Schnee auf dem anatolischen Hochland). Rampen haben
-  zwei klare Töne (Sonnenseite hell, Schattenseite dunkel). Am Meer ein
-  Sandsaum (ein Viertel Kachel) an den Wasserseiten und auf der
-  Schnittdiagonale. Das Meer hat zwei klar gestufte Uferstreifen aus den
-  Kachelecken (Lagune, flaches Wasser), danach offenes Meer in einem Ton.
-  Städte mit Straßenraster und Mauer am Kern. Bäume stehen genau dort, wo der
-  Boden Wald zeigt (dieselbe Waldgrenze für Modelle und Bodenfarbe).
+- Optik nach Urbek (Ramon, 28.10.2026: „einzelne Tiles eine Farbe, resp. 2 Farben
+  wenn Terrain übereinander fließt“, „Referenz Urbek“): **jede Kachel hat eine
+  flache Farbe** nach ihrer Landschaft (`ground-L*.png`): Wiese, trockenes Gras
+  (Mittelmeer), Feld, Feuchtgebiet, Gestrüpp, Sand, Laubwald, Nadelwald, Alm,
+  Fels, Schnee. Keine Rauschränder, keine Muster, keine Überblendungen, kein
+  Farbzittern, keine Gitterlinien. Wo zwei Landschaften aneinanderstoßen, gilt
+  die Küstenregel: Haben beide Seiten an einer Ecke und die Kachel über Eck eine
+  stärkere Landschaft (Schnee vor Fels vor Wald vor offenem Land), nimmt die
+  Hälfte zu dieser Ecke hin sie an, geschnitten an der Diagonale. So laufen
+  Waldränder als 45-Grad-Linien statt als Treppe, und eine Kachel hat höchstens
+  zwei Farben. Die Palette ist auf die Urbek-Töne am Bildschirm abgestimmt
+  (satte Grüns, blasses Weizengelb, flaches helles Wasser). Rampen haben zwei
+  feste Töne (Sonnenseite leicht hell, Schattenseite dunkel); das Licht sieht
+  jede Oberseite als flach, damit Rampen weder glasig noch schwarz werden.
+  Wände sind ein dunklerer Erdton ohne Schichtlinien. Am Meer ein Sandsaum an
+  den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
+  heller, wo die Kachel Land berührt. Bäume stehen nah genau auf den
+  Waldkacheln (und Waldhälften), einzelne Bäume auf offenem Grasland. Städte
+  nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
+  weit draußen im Land auf.
 
 ## Fernsicht (Kacheln bis Europa)
 
 Ramon, 28.10.2026: „Kachel-Look konsequent bis immer“. Es gibt keine weiche
 Reliefkarte mehr; auch ganz draußen (16-km-Kacheln, ganz Europa) gelten dieselben
-Regeln wie nah. Wo keine Baum- und Hausmodelle mehr stehen (ab 2-km-Kacheln),
-zeichnet der Shader Wald als runde Baumkronen im Raster und Städte als rote
-Dächer mit Sonnen- und Schattenseite, so wie die Modelle nah. Werden diese Muster
-kleiner als ein paar Pixel, gehen sie in ihre Mittelfarbe über. Damit Gebirge
+Regeln wie nah: eine Farbe pro Kachel aus der Landschaft dieser Zoomstufe. Damit Gebirge
 draußen nicht zu einer Stufe zusammenfallen und das Flachland ruhig bleibt,
 kommen die Eckstufen ab 2-km-Kacheln aus dem Bake (siehe Geländeregeln). Ohne
 Modelle werfen die Kacheln keine Schatten. Licht: wenig Umgebungslicht und
@@ -93,7 +98,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
 | Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 200 / 240 / 280 / 320 m ab 150 m |
 | Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
-| Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1; weiter draußen zeichnet der Shader Baumkronen |
+| Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1 auf den Waldkacheln; weiter draußen sind Waldkacheln dunkelgrün |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
 ## Aufbau
@@ -102,9 +107,12 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   (etwa 6 Minuten): Bewuchs, Meeresabstand und Seespiegel (2-km-Knoten), Wasser-
   und Ortsklassen je Zoomstufe (`cells-L*.png`, Flüsse bereinigt), Höhe und
   begrenztes Relief (`height.r16f`, `relief.r16f`), die Wasserhülle
-  (`shore.r16f`) und die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
-  allein neu mit `--levels-only`, etwa 1 Minute). Braucht numpy, Pillow und
-  scipy. Eingaben sind im Manifest mit Hash geführt.
+  (`shore.r16f`), die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
+  allein neu mit `--levels-only`, etwa 1 Minute) und die Landschaft jeder Kachel
+  je Zoomstufe (`ground-L*.png`, `ground_classes`: Bodenbedeckung und Höhe an
+  der Kachelmitte, ein wenig Rauschen in km macht aus Anteilen Flecken dieser
+  Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; allein neu mit
+  `--ground-only`, etwa 8 Minuten). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
   für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).

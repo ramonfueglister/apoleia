@@ -34,26 +34,23 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		int side = int(ceil(sqrt(float(slots))));
 		vec2 g = vec2(float(slot % side), float(slot / side));
 		uv = (g + 0.2 + 0.6 * vec2(r1, r2)) / float(side) * 0.9 + 0.05;
-		// the costly part only for slots that can hold a tree: a tree stands
-		// where the wood of the ground colour reaches its spot (the same field
-		// and wobble as ground_colour), so wood edges run through the tiles
+		// trees stand on the forest tiles (and forest halves of a split tile),
+		// single ones now and then on open grassland
 		vec2 at = world_min + (vec2(t) + uv) * tile_km;
-		vec4 cov = tt_cover(at);
-		float density = tt_tree_density(at, cov.r);
-		float wood = density + 0.15 * (tt_fbm(at / (0.9 * tile_km)) - 0.5);
-		// single trees mostly where the wood thins out, few in open land
-		float edge = smoothstep(0.0, 0.25, density) * (1.0 - smoothstep(0.5, 0.9, density));
-		float lone = 0.015 + 0.10 * cov.g * 0.3 + 0.35 * edge;
+		int land = tt_ground_at(t, uv);
+		bool wood = land == G_FOREST || land == G_CONIFER;
+		bool open = land == G_MEADOW || land == G_DRY_GRASS || land == G_ALPINE || land == G_SCRUB;
+		float lone = open ? 0.08 : 0.0;
 		bool lone_tree = slot == slots - 1 && tt_hash(vec2(t) * 1.37 + 2.0) < lone;
-		show = show && (wood > 0.3 || lone_tree);
-		edge_size = mix(0.7, 1.0, smoothstep(0.15, 0.7, density)); // smaller at the wood edge
+		show = show && (wood || lone_tree);
+		edge_size = mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
-		show = show && h < 1400.0 && cov.g < 0.7;
-		float conifer_p = clamp((h - 700.0) / 700.0, 0.0, 1.0) + clamp((lat - 50.0) / 4.0, 0.0, 1.0);
+		show = show && h < 1400.0;
+		float conifer_p = land == G_CONIFER ? 0.9 : clamp((lat - 50.0) / 4.0, 0.0, 1.0);
 		// stone pines and cypresses in the warm lowlands, more of them in open land
 		bool south = lat < 44.5 && h < 700.0;
-		float pine_p = south ? 0.12 + 0.35 * (1.0 - smoothstep(0.2, 0.7, density)) : 0.0;
+		float pine_p = south ? (wood ? 0.12 : 0.45) : 0.0;
 		int kind = r0 < conifer_p ? 1
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;

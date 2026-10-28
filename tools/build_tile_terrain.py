@@ -20,10 +20,13 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
   levels-L{n}.png  for the far zoom levels (n >= BAKED_FROM): the height level of
                    every tile corner (8 bit), built by corner_levels(); up close the
                    shader builds the corners from relief.r16f itself
+  ground-L{n}.png  per zoom level: the landscape of every tile (GROUND, one colour
+                   each), two tiles per byte like cells-L{n}.png; 15 = water
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
     python3 tools/build_tile_terrain.py --levels-only   # only levels-L*.png, from the outputs above
+    python3 tools/build_tile_terrain.py --ground-only   # only ground-L*.png
 """
 
 from __future__ import annotations
@@ -75,6 +78,13 @@ BAKED_FROM = 2
 LEVEL_METRES = {2: 200.0, 3: 240.0, 4: 280.0, 5: 320.0}
 LEVEL_FLOOR_M = 150.0
 CORNER_BLUR = 1.2
+# Landscape of a tile, one colour each (Ramon, 28.10.2026: one colour per
+# tile, two where landscapes meet; the shader splits those at the diagonal).
+GROUND = ["meadow", "dry_grass", "field", "wetland", "scrub", "sand", "forest", "conifer",
+          "alpine", "rock", "snow"]
+G = {name: k for k, name in enumerate(GROUND)}
+NO_GROUND = 15  # sea and lakes
+NODE_KM = WORLD_SIZE[0] / (GRID_W - 1)
 
 
 def lonlat_to_world(lon, lat):
@@ -577,6 +587,153 @@ def bake_levels(manifest, cells, height, lake_enc, shore):
         print("levels", level, lv.shape, "max", int(lv.max()))
 
 
+def _hash01(i, j, seed):
+    h = (i * 374761393 + j * 668265263 + seed * 1442695041) & 0xFFFFFFFF
+    h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
+    return ((h ^ (h >> 16)) & 0xFFFFFF).astype(np.float32) / float(0x1000000)
+
+
+def value_noise(x, z, seed):
+    i = np.floor(x).astype(np.int64)
+    j = np.floor(z).astype(np.int64)
+    fx = (x - i).astype(np.float32)
+    fz = (z - j).astype(np.float32)
+    fx = fx * fx * (3 - 2 * fx)
+    fz = fz * fz * (3 - 2 * fz)
+    a = _hash01(i, j, seed) * (1 - fx) + _hash01(i + 1, j, seed) * fx
+    b = _hash01(i, j + 1, seed) * (1 - fx) + _hash01(i + 1, j + 1, seed) * fx
+    return a * (1 - fz) + b * fz
+
+
+def fbm(x, z, seed):
+    """Three octaves of value noise, -0.5 .. 0.5 around 0."""
+    return (0.5 * value_noise(x, z, seed) + 0.3 * value_noise(2.03 * x, 2.03 * z, seed + 7)
+            + 0.2 * value_noise(4.11 * x, 4.11 * z, seed + 13)) - 0.5
+
+
+_NOISE = {}
+
+
+def _node_noise(scale_km, seed):
+    """fbm at the 2 km nodes, `scale_km` per noise cell (cached per scale)."""
+    key = (scale_km, seed)
+    if key not in _NOISE:
+        xs = (WORLD_MIN[0] + np.arange(GRID_W) * NODE_KM)[None, :]
+        zs = (WORLD_MIN[1] + np.arange(GRID_H) * WORLD_SIZE[1] / (GRID_H - 1))[:, None]
+        _NOISE[key] = fbm(xs / scale_km, zs / scale_km, seed)
+    return _NOISE[key]
+
+
+def ground_classes(water, tile_km, height, cover, band=1024):
+    """The landscape of every tile at one zoom level, from the data at the
+    tile centre (averaged over the tile when it is wider than the 2 km data).
+    Land cover is a share per node; a little noise in km turns a share into
+    patches of about that area. Rock and snow by height (lower far out, where
+    the mean is below the peaks; snow climbs to the south and on dry land),
+    mapped glaciers are snow too. All fields live on the 2 km nodes and are
+    read bilinearly at the tile centres, as the GPU would."""
+    ny, nx = water.shape
+    lod = max(math.log2(tile_km / 2.0), 0.0)
+    sigma = 0.5 * tile_km / NODE_KM if tile_km > 2.0 else 0.0
+    scale = max(6.0, 2.5 * tile_km)
+    fine = max(3.0, tile_km)
+    noise = [_node_noise(scale, 1), _node_noise(scale, 2), _node_noise(fine, 3)]
+    fields = [gauss(a, sigma) for a in [height] + [cover[..., k] for k in range(cover.shape[-1])]] + noise
+    out = np.full((ny, nx), NO_GROUND, np.uint8)
+    gx = (np.arange(nx) + 0.5) * tile_km / NODE_KM
+    i = np.clip(np.floor(gx).astype(int), 0, GRID_W - 2)
+    fx = np.clip(gx - i, 0, 1).astype(np.float32)[None, :]
+    for r0 in range(0, ny, band):
+        r1 = min(ny, r0 + band)
+        z = WORLD_MIN[1] + (np.arange(r0, r1) + 0.5) * tile_km
+        gz = (z - WORLD_MIN[1]) / WORLD_SIZE[1] * (GRID_H - 1)
+        j = np.clip(np.floor(gz).astype(int), 0, GRID_H - 2)
+        fz = np.clip(gz - j, 0, 1).astype(np.float32)[:, None]
+        jj = j[:, None]
+
+        def at(f):
+            return ((f[jj, i] * (1 - fx) + f[jj, i + 1] * fx) * (1 - fz)
+                    + (f[jj + 1, i] * (1 - fx) + f[jj + 1, i + 1] * fx) * fz)
+
+        h, forest, dry, crop, wet, glacier, n1, n2, n3 = (at(f) for f in fields)
+        lat = (41.0 - np.degrees(z / R_KM)).astype(np.float32)[:, None]
+        g = np.full(h.shape, G["meadow"], np.uint8)
+        g[(lat + 4.0 * n2 < 43.0) | (dry + 0.5 * n2 > 0.4)] = G["dry_grass"]
+        # mountain belts climb to the south (no bare rock on the Anatolian steppe)
+        south = np.maximum(45 - lat, 0) * 60
+        g[h + 200 * n3 > 1000 - 60 * lod + south] = G["alpine"]
+        scrub = dry + 0.5 * n1 > 0.62
+        g[scrub] = G["scrub"]
+        g[scrub & (lat < 37.5)] = G["sand"]
+        # the cover carries a Roman adjustment (landcover manifest): cropland
+        # counts 0.45 crop + 0.25 forest + 0.30 grass, so undo it for the shares
+        farmed = np.clip(crop / 0.45, 0, 1)
+        g[farmed + 0.6 * n2 > 0.6] = G["field"]
+        g[wet + 0.5 * n2 > 0.45] = G["wetland"]
+        wood = (forest - 0.25 * farmed + 0.6 * n1 > 0.45) & (h + 100 * n3 < 1400)
+        g[wood] = G["forest"]
+        g[wood & ((h + 150 * n3 > 850) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
+        g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
+        snow_line = 1600 - 120 * lod + np.maximum(45 - lat, 0) * 70 + 500 * dry
+        g[(h + 160 * n3 > snow_line) | (glacier + 0.5 * n3 > 0.5)] = G["snow"]
+        g[(water[r0:r1] & 3) % 3 != 0] = NO_GROUND  # sea and lakes; rivers run on land
+        out[r0:r1] = g
+    return out
+
+
+def tidy_ground(g, passes=2):
+    """No lone tiles: a tile whose landscape has fewer than two of its eight
+    neighbours takes the landscape most of them have."""
+    for _ in range(passes):
+        best = np.zeros(g.shape, np.uint8)
+        best_n = np.zeros(g.shape, np.uint8)
+        own_n = np.zeros(g.shape, np.uint8)
+        for k in range(len(GROUND)):
+            m = (g == k).astype(np.uint8)
+            n = np.add.reduce(_shifted(m), dtype=np.uint8)
+            more = n > best_n
+            best[more] = k
+            best_n[more] = n[more]
+            own_n[g == k] = n[g == k]
+            del m, n, more
+        lone = (g != NO_GROUND) & (own_n < 3)
+        g = np.where(lone, best, g)
+    return g
+
+
+def bake_ground(manifest, cells, height, cover):
+    manifest["ground"] = []
+    for level in range(LEVELS):
+        tile = BASE_CELL_KM * 2 ** level
+        g = tidy_ground(ground_classes(cells[level], tile, height, cover))
+        packed = pack_nibbles(g)
+        path = OUT / f"ground-L{level}.png"
+        Image.fromarray(packed, "L").save(path, optimize=True)
+        manifest["ground"].append({"level": level, "cell_km": tile, "width": g.shape[1], "height": g.shape[0],
+                                   "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
+                                   "classes": GROUND, "water": NO_GROUND})
+        land = g[g != NO_GROUND]
+        share = np.bincount(land, minlength=len(GROUND)) / max(land.size, 1)  # whole map, deserts included
+        print("ground", level, g.shape, " ".join(f"{n} {v:.2f}" for n, v in zip(GROUND, share)))
+
+
+def ground_cover():
+    """forest, dry (bare + 0.6 shrub), crop, wetland, glacier at the 2 km nodes."""
+    classes = np.fromfile(RD / "landcover-node-2km" / "classes.u8", np.uint8).reshape(GRID_H, GRID_W, 8).astype(np.float32) / 255
+    forest, shrub, grass, crop, bare, snow, wet, _ = np.moveaxis(classes, -1, 0)
+    return np.stack([forest, np.clip(bare + 0.6 * shrub, 0, 1), crop, wet, snow], -1)
+
+
+def ground_only():
+    """Rebuild only ground-L*.png from the outputs of a full bake."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    height = np.fromfile(OUT / "height.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    cells = {e["level"]: unpack_cells(e) for e in manifest["cells"]}
+    bake_ground(manifest, cells, height, ground_cover())
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
 def unpack_cells(entry):
     packed = np.array(Image.open(OUT / entry["path"]).convert("L"))
     a = np.zeros((packed.shape[0], packed.shape[1] * 2), np.uint8)
@@ -705,6 +862,8 @@ def main():
     manifest["height_half"] = {"path": "height.r16f", "sha256": sha(OUT / "height.r16f"), "format": "float16 LE, metres"}
     print("corner levels")
     bake_levels(manifest, water_by_level, height, lake_enc, water)
+    print("ground")
+    bake_ground(manifest, water_by_level, height, ground_cover())
     forest, shrub, grass, crop, bare, snow, wet, _ = np.moveaxis(classes, -1, 0)
     cover = np.stack([forest, np.clip(bare + 0.6 * shrub, 0, 1), crop, wet], -1)
     Image.fromarray(np.round(cover * 255).astype(np.uint8), "RGBA").save(OUT / "cover.png", optimize=True)
@@ -727,4 +886,9 @@ def main():
 
 
 if __name__ == "__main__":
-    levels_only() if "--levels-only" in sys.argv else main()
+    if "--levels-only" in sys.argv:
+        levels_only()
+    elif "--ground-only" in sys.argv:
+        ground_only()
+    else:
+        main()
