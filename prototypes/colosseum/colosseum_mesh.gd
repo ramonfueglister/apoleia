@@ -7,7 +7,7 @@ extends RefCounted
 ## diagonally across the grid. Meshing keeps exposed faces only, merges
 ## coplanar faces of one colour where the baked corner occlusion allows,
 ## and skips downward faces. Coarser LODs downsample the same grid. One
-## shared shader material adds Urbek's faint per-voxel colour noise.
+## shared material with flat vertex colours, as in Urbek.
 ## In Urbek's proportions: 74 x 61 m and 21.5 m to the rim (three arcades of
 ## 5.5 m and the attic), about 7 Urbek houses long; origin at ground centre.
 
@@ -36,17 +36,17 @@ const LOD_FACTORS := [1, 2, 4, 8]
 # LOD3 to 1.75 km; beyond, a colosseum is under 55 pixels and a drum of
 # 144 triangles carries its colours.
 const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 20000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v12_%d.res"
+const CACHE := "user://colosseum_urbek_v13_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
-	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f4ecd8"),
-	Color("7e7064"), Color("e8dcc2"), Color("4a3c30"), Color("b5a184"), Color("c9b898"),
+	Color(0, 0, 0), Color("c9bca4"), Color("e3d5ba"), Color("cdb894"), Color("f7f2e7"),
+	Color("4f4a55"), Color("f0e7d4"), Color("3a4568"), Color("b5a184"), Color("c9b898"),
 	Color("d4aa6c"), Color("c49a5c"), Color("d8ccb0"), Color("6b4a32"), Color("c0392b"),
 	Color("5a4a3c"), Color("a8402c"), Color("e6dac2"), Color("b0802f"), Color("f4ecd8"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
-	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a"),
+	Color("3f3b46"), Color("c8b99c"), Color("c8654a"), Color("a8977c"), Color("bca98a"),
 	Color("b3a390"), Color("857868")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
@@ -56,7 +56,7 @@ const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
 # Top faces that differ from the sides: a tread is light on top and darker
 # on its riser; the arch floor is shaded.
-const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("bca98a"), ARCH_BACK: Color("7e7064"),
+const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("c4b293"), ARCH_BACK: Color("6a6470"),
 	BALTEUS_WALL: Color("efe5d0")}
 # Far away the flags show as a red strip this wide on the rim's outer edge.
 const BAND_M := 1.0
@@ -256,8 +256,8 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, seed: int) -> int
 			return TREAD
 		if r == SEAT_TOP_ROW - 1:
 			return WALKWAY
-		# Portico over the walkway: a roof level with the rim, a step darker,
-		# on columns along its inner edge.
+		# Portico over the walkway: a terracotta roof level with the rim, on
+		# columns along its inner edge.
 		if r == WALL_ROWS - 1:
 			return PORTICO
 		if e == first - 1 and posmod(b * P + s, 3) == 0:
@@ -272,14 +272,10 @@ static func _cavea(e: int, s: int, b: int, r: int, arena: int, seed: int) -> int
 		# A shadow row under the portico sets the rim off from the seats.
 		if j == 0:
 			return RIM_SHADOW
-		# Each tread: a darker strip against the riser behind, a light edge;
-		# spectators sit in short runs on the edge.
+		# Each tread: a darker strip against the riser behind, a light edge.
 		if j % 2 == 0:
 			return TREAD_BACK
-		var run := floori((b * P + s) / 3.0)
-		var h := absi(hash(Vector2i(run, step)))
-		if h % 100 < 10:
-			return CROWD + (h / 100) % CROWD_COUNT
+		# No spectators: single voxels read as noise at the city zoom.
 		return TREAD
 	# Low wall at the start of a band, with entrances every eight bays.
 	if j % 2 == 0 and step in BALTEUS and r <= top + 2:
@@ -626,8 +622,7 @@ static func _red_strip(st: SurfaceTool, vox: Dictionary) -> void:
 						Vector3(r.end.x, top, r.end.y), Vector3(r.position.x, top, r.end.y)]
 					_emit(st, p, [3, 3, 3, 3], BAND_COLOUR, Vector3.UP, v)
 
-## One quad. The voxel size goes into the vertex alpha, so the shader can
-## find each voxel for its colour noise.
+## One quad.
 static func _emit(st: SurfaceTool, p: Array[Vector3], ao: Array[int], colour: Color, out: Vector3, v: float) -> void:
 	var normal := (p[1] - p[0]).cross(p[2] - p[0])
 	if normal.length_squared() < 1e-12:
@@ -709,37 +704,14 @@ static func lods() -> Array[ArrayMesh]:
 	out.append(drum())
 	return out
 
-## Vertex colours (sRGB, baked occlusion) with a faint per-voxel brightness
-## noise, as on Urbek's walls. The voxel is found from the model-space
-## position half a voxel behind the face; its size comes from vertex alpha.
-const SHADER := """
-shader_type spatial;
-render_mode diffuse_lambert, specular_disabled;
-varying vec3 voxel_pos;
-varying float voxel_size;
-
-void vertex() {
-	voxel_size = COLOR.a;
-	voxel_pos = VERTEX - NORMAL * COLOR.a * 0.5;
-}
-
-vec3 to_linear(vec3 c) {
-	return mix(pow((c + 0.055) / 1.055, vec3(2.4)), c / 12.92, lessThan(c, vec3(0.04045)));
-}
-
-void fragment() {
-	vec3 cell = floor(voxel_pos / voxel_size + 0.001);
-	float h = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-	ALBEDO = to_linear(COLOR.rgb) * (0.965 + 0.07 * h);
-	ROUGHNESS = 1.0;
-}
-"""
-
-static func material() -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = SHADER
-	var m := ShaderMaterial.new()
-	m.shader = shader
+## Vertex colours (sRGB, with baked corner occlusion), flat like Urbek's;
+## per-voxel noise read as dirt at the city zoom.
+static func material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.vertex_color_use_as_albedo = true
+	m.vertex_color_is_srgb = true
+	m.roughness = 1.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return m
 
 static func triangles(mesh: ArrayMesh) -> int:
