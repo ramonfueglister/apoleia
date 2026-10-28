@@ -51,7 +51,7 @@ func _environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	# Urbek-like light: cool sky fill in the shadows, soft occlusion, a
 	# warm sun, colours kept bright rather than filmic-washed.
-	env.ambient_light_color = Color("c4cad2")
+	env.ambient_light_color = Color("8fa6c8")
 	env.ambient_light_energy = 0.42
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.tonemap_exposure = 0.92
@@ -68,6 +68,7 @@ func _environment() -> void:
 	sun.light_energy = 1.05
 	sun.light_color = Color("fff1de")
 	sun.shadow_blur = 1.0
+	sun.shadow_opacity = 0.7
 	sun.shadow_enabled = not args.has("noshadow")
 	# Crisp contact shadows under ledges, as in Urbek; no acne on voxel faces.
 	sun.name = "Sun"

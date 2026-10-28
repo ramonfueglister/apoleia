@@ -34,7 +34,7 @@ const LOD_FACTORS := [1, 2, 4, 8]
 # Camera distances for the near-orthographic Urbek camera (FOV 10): LOD0
 # while the view is under about 260 m wide, LOD1 to 700 m, LOD2 to 1.6 km.
 const LOD_RANGES := [0.0, 1500.0, 4000.0, 9000.0, 400000.0]
-const CACHE := "user://colosseum_urbek_v9_%d.res"
+const CACHE := "user://colosseum_urbek_v11_%d.res"
 
 # Palette: Caesar III travertine within Urbek's soft light. 0 is empty.
 const PALETTE := [
@@ -45,17 +45,20 @@ const PALETTE := [
 	Color("a89a88"), Color("b0574a"), Color("7a8796"),
 	Color("a89a88"), Color("b0574a"), Color("7a8796"), Color("c2b49c"),
 	Color("66594f"), Color("c8b99c"), Color("cdbb9c"), Color("a8977c"), Color("bca98a"),
-	Color("a89886")]
+	Color("a89886"), Color("8f8173")]
 enum { EMPTY, PAVE, STONE, STONE_MID, CORNICE, ARCH_BACK, COLUMN, WINDOW, TREAD,
 	WALKWAY, SAND, SAND_DARK, PODIUM, MAST, RED, VOMITORIUM, PODIUM_BAND, BALTEUS_WALL, BRONZE,
-	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK, FACADE_MID }
+	RED_BAND, CROWD, ARCH_HEAD = 27, SHADOW_LINE, PORTICO, RIM_SHADOW, TREAD_BACK, FACADE_MID, FACADE_DARK }
 const CROWD_COUNT := 3
 const CROWD_MUTED := CROWD + CROWD_COUNT
 const CROWD_MUTED_COUNT := 4
 # Top faces that differ from the sides: a tread is light on top and darker
 # on its riser; the arch floor is shaded.
 const TOP := {TREAD: Color("d6c6a8"), TREAD_BACK: Color("bca98a"), ARCH_BACK: Color("7e7064"),
-	BALTEUS_WALL: Color("efe5d0"), RED_BAND: Color("b8402f")}
+	BALTEUS_WALL: Color("efe5d0")}
+# Far away the flags show as a red strip this wide on the rim's outer edge.
+const BAND_M := 1.0
+const BAND_COLOUR := Color("b8402f")
 # Corner occlusion: 0 = both sides blocked, 3 = open.
 const AO := [0.5, 0.68, 0.85, 1.0]
 
@@ -74,15 +77,63 @@ static func _origin(n: Vector3i) -> Vector3:
 ## facade column within its bay, the bay, and the depth from the ellipse
 ## with the arena edge, which shape the seating.
 ##
-## The facade is built like an Urbek building for the north-up camera: every
-## bay is a straight run of P voxels facing south (or north), set at the
-## ellipse at its middle. Neighbouring bays step back, so the curve reads as
-## a staircase of flat bays with arches all round; the steps' side walls face
-## east and west and are edge-on to the camera. Bay 0 is centred on x = 0.
+## The facade is built like an Urbek building: every bay is a straight run
+## of P voxels set at the ellipse at its middle (see _plan); neighbouring
+## bays step back, so the curve reads as a staircase of flat bays with arches
+## all round. Bay 0 is centred on x = 0.
 ## With `smooth`, the facade follows the oval itself (for the far LODs).
+## Bay band and column within the bay along one axis, centred on 0. LOD1
+## (bays of 3 at 1 m) is phase-shifted so its piers sit on LOD0's piers.
+static func _band(i: int, p: int) -> int:
+	return floori((i + 1) / 3.0) if p == 3 else floori((i + p / 2) / float(p))
+
+static func _band_sub(i: int, p: int) -> int:
+	return posmod(i - 1, 3) if p == 3 else posmod(i + p / 2, p)
+
+## Facade position (voxels from the centre) of a run of bays centred at
+## `band`, on an ellipse with half-axes `along` (the run's axis) and `across`.
+static func _run_face(band: int, p: int, along: float, across: float) -> int:
+	var b := minf(absf(band) * p, along - 1.0)
+	return roundi(across * sqrt(maxf(0.0, 1.0 - (b / along) ** 2)))
+
+## The stepped plan at voxel size v with bays of p voxels: [depth from the
+## facade, column in the bay, bay id]. Where the oval runs flatter than 45
+## degrees the bays are runs facing south or north, stepping in z; where it
+## is steeper they face east or west, stepping in x. So arches show from
+## every side, whichever way an instance is rotated.
+static func _plan(ix: int, iz: int, v: float, p: int) -> Vector3i:
+	var av := A / v
+	var bv := B / v
+	var x45 := av * av / sqrt(av * av + bv * bv)
+	var z45 := bv * bv / sqrt(av * av + bv * bv)
+	var qx := ix if ix >= 0 else -ix - 1
+	var qz := iz if iz >= 0 else -iz - 1
+	var bxn := _band(ix, p)
+	var bzn := _band(iz, p)
+	var zfam := absi(bxn) * p <= x45
+	var xfam := absi(bzn) * p <= z45
+	var dz := _run_face(bxn, p, av, bv) - 1 - qz
+	var dx := _run_face(bzn, p, bv, av) - 1 - qx
+	var use_z := true
+	var d := 0
+	if zfam and xfam:
+		use_z = dz <= dx
+		d = mini(dz, dx)
+	elif zfam:
+		d = dz
+	elif xfam:
+		use_z = false
+		d = dx
+	else:
+		# Beyond both families: only the corner between the last runs.
+		var xe := int(x45 / p + 1) * p
+		var ze := int(z45 / p + 1) * p
+		d = mini(xe - 1 - qx, ze - 1 - qz)
+	if use_z:
+		return Vector3i(d, _band_sub(ix, p), bxn + (1000 if iz < 0 else 0))
+	return Vector3i(d, _band_sub(iz, p), bzn + 2000 + (1000 if ix < 0 else 0))
+
 static func _columns(n: Vector3i, lo: Vector3, smooth := false) -> Dictionary:
-	var av := A / V
-	var bv := B / V
 	var count := n.x * n.z
 	var depth := PackedInt32Array()
 	var sub := PackedInt32Array()
@@ -95,14 +146,11 @@ static func _columns(n: Vector3i, lo: Vector3, smooth := false) -> Dictionary:
 		for x in n.x:
 			var ix := x - n.x / 2
 			var iz := z - n.z / 2
-			var qz := iz if iz >= 0 else -iz - 1
-			var band := floori((ix + P * 0.5) / P)
-			var bx := minf(absf(band) * P, av - 1.0)
-			var face := roundi(bv * sqrt(maxf(0.0, 1.0 - (bx / av) ** 2)))
+			var plan := _plan(ix, iz, V, P)
 			var c := x + z * n.x
-			depth[c] = face - 1 - qz if absf(band) * P - P * 0.5 < av else -1000
-			sub[c] = posmod(ix + P / 2, P)
-			bay[c] = band + (1000 if iz < 0 else 0)
+			depth[c] = plan.x
+			sub[c] = plan.y
+			bay[c] = plan.z
 			var p := lo + Vector3(x + 0.5, 0, z + 0.5) * V
 			var e := Vector2(p.x / A, p.z / B).length()
 			var rr := Vector2(A * cos(atan2(p.z / B, p.x / A)), B * sin(atan2(p.z / B, p.x / A))).length()
@@ -298,20 +346,12 @@ static func _facade_lod1(vox: Dictionary) -> void:
 		kinds.append(k)
 	for z in n.z:
 		for x in n.x:
-			var ix := x - n.x / 2
-			var iz := z - n.z / 2
-			var qz := iz if iz >= 0 else -iz - 1
-			var band := floori((ix + 1) / 3.0)
-			if absf(band) * 3.0 - 1.5 >= A:
-				continue
-			var bx := minf(absf(band) * 3.0, A - V)
-			var face := roundi(B * sqrt(maxf(0.0, 1.0 - (bx / A) ** 2)))
-			var d := face - 1 - qz
+			var plan := _plan(x - n.x / 2, z - n.z / 2, 1.0, 3)
+			var d := plan.x
 			if d < -2 or d > 1:
 				continue
-			var s1 := posmod(ix - 1, 3)
-			var pier := s1 == 0
-			var b := band + (1000 if iz < 0 else 0)
+			var pier := plan.y == 0
+			var b := plan.z
 			for y in n.y:
 				var k: int = kinds[y]
 				var c := EMPTY
@@ -430,13 +470,14 @@ static func _coarse(fine: Dictionary, f: int) -> Dictionary:
 					# dark and light, at 4 m the whole arcade is
 					# the average of pier and arch; the attic stays light.
 					var arch := counts[ARCH_BACK] + counts[ARCH_HEAD]
-					var arcade := y * f < ARCADE_TOP and best in [STONE, SHADOW_LINE, COLUMN, ARCH_BACK, ARCH_HEAD]
+					var arcade := (y + 1) * f > PLINTH_ROWS and y * f < ARCADE_TOP \
+						and best in [STONE, STONE_MID, SHADOW_LINE, COLUMN, ARCH_BACK, ARCH_HEAD, CORNICE]
 					if f == 4 and arcade:
 						# Bays and 2 m blocks cannot line up, so the rhythm is a
-						# regular alternation instead of a sampled one.
+						# regular alternation of full-height dark and light columns.
 						c = ARCH_BACK if posmod(x + z, 2) == 0 else STONE
 					elif f >= 8 and arcade:
-						c = FACADE_MID
+						c = FACADE_MID if posmod(x + z, 2) == 0 else FACADE_DARK
 				grid[x + n.x * (y + n.y * z)] = c
 	# The red band keeps to the outer edge: one block wide, not the whole rim.
 	if f >= 4:
@@ -551,7 +592,37 @@ static func _mesh(vox: Dictionary) -> ArrayMesh:
 						var colour: Color = TOP[col_id] if axis == 1 and TOP.has(col_id) else PALETTE[col_id]
 						_emit(st, corners, aos, colour, Vector3(nv), v)
 						a += wide
+	_red_strip(st, vox)
 	return st.commit()
+
+## The red strip on the rim's top faces: BAND_M wide along each outer edge
+## of a RED_BAND block, a hair above the face, so it looks the same width
+## from every side whatever the block size.
+static func _red_strip(st: SurfaceTool, vox: Dictionary) -> void:
+	var n: Vector3i = vox.n
+	var v: float = vox.v
+	var lo: Vector3 = vox.lo
+	for z in n.z:
+		for y in n.y:
+			for x in n.x:
+				if _at(vox, Vector3i(x, y, z)) != RED_BAND or _at(vox, Vector3i(x, y + 1, z)) != EMPTY:
+					continue
+				var top := lo.y + (y + 1) * v + 0.02
+				var x0 := lo.x + x * v
+				var z0 := lo.z + z * v
+				var cx := x - n.x / 2 + 0.5
+				var cz := z - n.z / 2 + 0.5
+				for dir in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					if dir.x * cx + dir.y * cz <= 0.0 or _at(vox, Vector3i(x + dir.x, y, z + dir.y)) != EMPTY:
+						continue
+					var r := Rect2(x0, z0, v, v)
+					if dir.x > 0: r = Rect2(x0 + v - BAND_M, z0, BAND_M, v)
+					elif dir.x < 0: r = Rect2(x0, z0, BAND_M, v)
+					elif dir.y > 0: r = Rect2(x0, z0 + v - BAND_M, v, BAND_M)
+					else: r = Rect2(x0, z0, v, BAND_M)
+					var p: Array[Vector3] = [Vector3(r.position.x, top, r.position.y), Vector3(r.end.x, top, r.position.y),
+						Vector3(r.end.x, top, r.end.y), Vector3(r.position.x, top, r.end.y)]
+					_emit(st, p, [3, 3, 3, 3], BAND_COLOUR, Vector3.UP, v)
 
 ## One quad. The voxel size goes into the vertex alpha, so the shader can
 ## find each voxel for its colour noise.
