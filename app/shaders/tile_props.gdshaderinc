@@ -26,16 +26,17 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 			vec4 q = tt_corners_cached(t);
 			bool level = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) < 0.01;
 			show = show && slot == 0 && level && tt_sub_house(t, town);
-			// now and then a courtyard in the rows of the city core
-			show = show && !(town == 3 && tt_hash(vec2(t) * 1.91 + 0.7) < 0.12);
-			uv = vec2(0.5) + (vec2(r1, r2) - 0.5) * 0.03;
+			// now and then a small paved square in the city core (the lot
+			// models bring their own gardens)
+			show = show && !(town == 3 && tt_hash(vec2(t) * 1.91 + 0.7) < 0.06);
+			uv = vec2(0.5); // the lots line up into streets
 		} else {
 			int count = max(int(round(share * float(slots))), town > 0 ? 1 : 0);
 			show = show && slot < count;
-			show = show && !(town == 3 && tt_hash3(vec3(vec2(t), float(slot) + 9.1)) < 0.12);
+			show = show && !(town == 3 && tt_hash3(vec3(vec2(t), float(slot) + 9.1)) < 0.06);
 			int cell_k = town == 3 ? slot : (slot * 7 + int(tt_hash(vec2(t)) * float(slots))) % slots;
 			vec2 sub = vec2(float(cell_k % side), float(cell_k / side));
-			uv = (sub + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.03;
+			uv = (sub + 0.5) / float(side);
 		}
 		// the whole house off the landmark blocks (its centre was not enough:
 		// houses reached into the Pantheon)

@@ -162,51 +162,41 @@ unabhängig und unverändert.
   16-km-Kacheln lasen sie als rote Markierungen und gehen wie die Dörfer im
   Land auf. In Städten (ab Ortsklasse 2)
   laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
-  Hausplätze; die Häuser lassen dafür Platz (Grundfläche 0,62 bis 0,74 der
-  Hauslänge, je Haus etwas breiter oder tiefer). Städte sind gepflastert,
+  Hausplätze; die Häuser lassen dafür Platz (ein Grundstück füllt 0,92 seines
+  Platzes, `LOT_SHARE`). Städte sind gepflastert,
   Dörfer nicht (vorher halb gepflastert, das las als halbdurchsichtiger
   Stadtrand); auf den Vierteln pflastert ein Dorf nur den Hof unter seinen
   Häusern. Auf den Vierteln stehen Häuser nur auf flachen Kacheln: Ein Ort am
   Hang steigt in Terrassen an. Im Dorf bleiben die Rampen Land, in Städten
   sind sie gepflastert wie Treppen, etwas dunkler als die Plätze (vorher
-  liefen Weizenstreifen durch Rom). Jedes Haus hat seinen
-  Putzton (Creme, Ocker, Kalkweiß), blaugraue Fenster (#4a4e5e) und ein
-  flaches römisches Satteldach (25 Grad, vorher 35 Grad: „Alpenchalets“) in Terrakotta mit dem First längs (zwei glatte Dachflächen, die
-  die Sonne in hell und dunkel teilt, Giebel im Putzton, eine Traufe über
-  den Wänden mit dunkler Kante #5e3a2a, ein dunklerer First); vorher war das
-  Dach aus Voxelstufen mit Giebeln im Dachton („orange Grabsteine“). Die
-  Häuser kehren ihre Längsseite der Straße zu, in Orten die Hälfte die
-  Giebelseite zur Kamera; im Stadtkern ist jedes Haus so lang wie sein Block,
-  so schließen sich die Häuser einer Straße zu Zeilen, deren First Block für
-  Block (2 × 2 Viertel) zur Hälfte Ost-West läuft (lange Dachflächen zur
-  Kamera) und zur Hälfte Nord-Süd (Giebelfronten). Alle Firste quer lasen bei
-  8 km als oranger Teppich, alle längs als Reißverschlüsse. Ab 1-km-Kacheln
-  sind die Zeilen wieder einzelne Häuser (sonst rote Balken). Höhere Häuser
-  wachsen nur in den Wänden, das Dach behält seine Neigung. Häuser halten mit
-  ihrer ganzen Grundfläche Abstand zu den Wahrzeichen (vorher nur mit der
-  Mitte, sie ragten ins Pantheon). Jedes Dach hat einen von drei
-  Terrakottatönen (die Hälfte Grundton, drei Zehntel dunkler, zwei Zehntel
-  heller), und jedes achte Kernhaus fehlt als Hof. Im Stadtkern stehen
-  Insulae bis doppelt so hoch, in Städten anderthalbfach. Auf einer Rampe
-  reichen die Wände bis zum tiefsten Boden unter dem Haus hinab, wie ein Haus
-  am Hang auf seinem Untergeschoss steht.
-- Rom hat seine großen Bauten als Voxel-Modelle nach Urbek und Caesar III
-  (Travertin, Marmor, Terrakotta), jedes auf einem Block von Stadtkacheln, auf
-  dem keine Häuser stehen: der Jupitertempel auf dem Kapitol am Tiber, östlich
-  davon das Forum Romanum (Basilica Julia, Dioskurentempel, Vestatempel,
-  Curia, Ehrensäulen), das Kolosseum auf 2 × 2 Kacheln, das Pantheon im
-  Norden (seine Vorhalle nach Süden zur Kamera gedreht, in echt im Norden),
-  südlich des Palatins der Circus Maximus auf 4 × 1 Kacheln und zwei
-  Tiberbrücken (`LANDMARKS` in tile_terrain.gd). Travertin #ddd3ba, Bögen im
-  Schatten #6a6052 statt schwarzer Löcher; das Kolosseum ist als drei flache
-  Wände beleuchtet (links, vorn, rechts) statt Facette für Facette, das
-  Pantheon hat eine Trommel niedriger als breit und einen Giebel aus Stein.
-  Die Blöcke liegen als offene Plätze in Travertin #e6dfcf ohne Straßenraster. Nah ist jeder Block eben, auf der
-  mittleren Stufe seiner Ecken (`landmark_levels`, der Shader setzt die Ecken
-  im Block darauf). Sie sind 6-mal so groß wie in echt, nicht
-  24-mal wie die Häuser, damit die Stadt ihre Kacheln behält, und noch einmal
-  um die Hälfte höher, damit Kolosseum und Tempel über die Insulae ragen. Sie
-  stehen, solange die Häuser gezeichnet werden (0,5- und 1-km-Kacheln).
+  liefen Weizenstreifen durch Rom). Die Häuser sind die Grundstücke der
+  römischen Stadt aus dem Kolosseum-Prototyp (`voxel/roman_buildings.gd`, eine
+  Kopie aus PR #45, 40 Voxel auf 10 m wie Urbek): 14 Hausvarianten (Domus mit
+  Atrium, Insulae mit Läden, Werkstätten, Putz in Creme, Ocker und Kalkweiß,
+  Terrakottadächer mit Dachgärten) und zwei Gärten, ein Grundstück je
+  Viertelkachel (`LOT_KINDS`). Jedes Modell ist eine eigene MultiMesh und
+  zeichnet jeden 16. Hausplatz, in jedem Block von 16 Plätzen einen anderen,
+  so kosten alle Modelle zusammen so viel wie vorher ein Haus. Nah die feine
+  Stufe der Modelle, ab `PROP_LOW_KM` die grobe. Ein Grundstück zeigt der
+  Kamera seine Vorderseite oder eine Flanke, nie die Rückseite, und ist nie
+  schräg gedreht. Häuser halten mit
+  ihrer ganzen Grundfläche Abstand zu den Wahrzeichen, und jedes 16.
+  Kernhaus fehlt als Hof. Auf einer Rampe reichen die Wände bis zum tiefsten
+  Boden unter dem Haus hinab, wie ein Haus am Hang auf seinem Untergeschoss
+  steht.
+- Rom hat seine großen Bauten, jedes auf einem Block von Stadtkacheln, auf
+  dem keine Häuser stehen (`LANDMARKS` in tile_terrain.gd). Kolosseum (4 × 4
+  Viertel), Forum Romanum mit dem Kapitol und seinem goldenen Jupitertempel
+  (3 × 3) und die Thermen (2 × 1) sind die Modelle der römischen Stadt
+  (`kit:`), im selben Maßstab wie die Häuser (1:23,8 in der Fläche, Häuser
+  und Bauten in echter Größe), so passen sie Voxel für Voxel zu den
+  Grundstücken. Pantheon und Circus Maximus sind noch die alten Platzhalter
+  (6-mal echt in der Fläche, 9-mal in der Höhe, `LANDMARK_KM_PER_M`,
+  `LANDMARK_RISE`), bis die Stadt sie liefert; dazu zwei Tiberbrücken. Die
+  Blöcke liegen als offene Plätze in Travertin #e6dfcf ohne Straßenraster.
+  Nah ist jeder Block eben, auf der mittleren Stufe seiner Ecken
+  (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
+  stehen, solange die Häuser gezeichnet werden.
 
 ## Fernsicht (Kacheln bis Europa)
 
@@ -229,8 +219,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,25 (Viertel, `SUB_KM`) / 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 10,5 m … 670 m Diorama (`LEVELS`) |
 | Höhe | nah eine Stufe = 20 / 50 / 120 m echt (Tiefland, Hügel, Gebirge; bei 1-km-Kacheln das Doppelte), weiter draußen die steigende Skala `LEVEL_STEPS_M` (150 bis 600 m je Stufe) |
-| Haus | 10 × 8,5 m Diorama (`HOUSE_M`), zwei Stockwerke (6 m Wand) unter einem Satteldach von einem Drittel der Höhe (Urbek), ein Haus je Viertelkachel, vier je 0,5-km-Kachel; gezeichnet bis 4-km-Kacheln |
-| Wahrzeichen Roms | 6-mal echt in der Fläche, 9-mal in der Höhe (`LANDMARK_KM_PER_M`, `LANDMARK_RISE`): Kolosseum 1,1 × 0,9 km Welt, Circus Maximus (gekürzt auf 330 m) 2 × 0,6 km |
+| Haus | ein römisches Grundstück von 10 × 10 m Diorama (`HOUSE_M`, 238 m Welt), eins je Viertelkachel, vier je 0,5-km-Kachel; gezeichnet bis 4-km-Kacheln |
+| Wahrzeichen Roms | Modelle der römischen Stadt im Diorama-Maßstab wie die Häuser (Kolosseum auf 4 × 4 Vierteln); Pantheon und Circus noch als Platzhalter 6-mal echt in der Fläche, 9-mal in der Höhe |
 | Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün. Laubbäume mit runder Voxelkrone (Kern, Gürtel auf vier Seiten, flache Kappe), dunkler und satter als die Wiese wie bei Urbek gemessen (Oberseite etwa #458d33, Seiten #29521f); Zypressen #2f5a2c wie an den Höfen |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
@@ -279,9 +269,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
   Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
-  Stadthäuser nach Urbek (Putzkasten mit Fenstern und Tür, Satteldach in
-  Terrakotta mit Giebeln im Putz) und die Wahrzeichen Roms (`landmark`), die
-  `tile_landmark.gdshader` wie die Häuser beleuchtet.
+  Wahrzeichen-Platzhalter (Pantheon, Circus, Brücken), die
+  `tile_landmark.gdshader` beleuchtet; Häuser, Kolosseum, Forum und Thermen
+  kommen aus `app/scripts/voxel/roman_buildings.gd`.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.
