@@ -3,6 +3,7 @@
 /artifacts/runtime/
 /artifacts/render-data/*.bin
 /artifacts/render-data/*.u8
+/artifacts/render-data/terrarium-z8/
 /runs/**/captures/
 /runs/**/evidence/runtime/
 /runs/**/data/raw/

@@ -57,6 +57,13 @@ void vertex() {
 	// in towns two to three storeys, in the city core insulae of up to four
 	// (lower than Rome's temples and the Colosseum)
 	if (prop_kind == 3) { v.y *= 1.0 + (town == 3 ? 1.0 : town == 2 ? 0.5 : 0.0) * r1; }
+	// on a ramp the walls reach down to the lowest ground under the house, as
+	// a house on a hillside stands on its lower storey
+	if (prop_kind == 3 && VERTEX.y < 0.01) {
+		vec4 c = tt_corners_cached(t);
+		float slope = max(abs(c.y - c.x), abs(c.z - c.w)) + max(abs(c.w - c.x), abs(c.z - c.y));
+		v.y -= slope * 0.5 * s / tile_km * level_h;
+	}
 	v.xz = rot * v.xz;
 	vec3 world = vec3(p.x, level * level_h, p.y) + v;
 	vec3 nrm = NORMAL;
