@@ -117,20 +117,28 @@ func _setup_look() -> void:
 	environment.fog_light_color = Color("a9c6d3")
 	environment.fog_density = 1.0
 	environment.fog_depth_curve = 1.4
-	# Warm sun from the upper left of the default view (west-north-west).
-	sun.rotation_degrees = Vector3(-48.0, -106.0, 0.0)
+	# Warm sun from the front left of the north-up view (south-west), as in
+	# Urbek: the faces the camera sees are lit, shadows fall back and right.
+	sun.rotation_degrees = Vector3(-48.0, -45.0, 0.0)
 	sun.light_color = Color("fff1de")
 	sun.light_energy = 1.9
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.55
-	sun.shadow_blur = 0.6
+	sun.shadow_opacity = 0.9
+	sun.shadow_blur = 0.4
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	add_child(sun)
 
 func _update_look(distance: float) -> void:
 	terrain.set_light_dir(sun.global_transform.basis.z)
-	# Shadows cover the view, not the (long, near-orthographic) camera distance.
-	sun.directional_shadow_max_distance = distance + width * 1.6
+	# The near-orthographic camera stands far back (6 view widths); shadows
+	# must cover only the view, or the shadow map spreads over kilometres of
+	# empty air and houses get blurred, detached shadows. Godot fits the
+	# directional splits from the camera's near plane, so the near plane moves
+	# up to just before the highest ground in view.
+	var pitch := deg_to_rad(pitch_for_width(width))
+	var relief: float = maxf(get_displayed_height_range().max_y - _focus_y, 0.0)
+	camera.near = maxf(0.05, distance - width * 0.9 - relief / maxf(sin(pitch), 0.2) - 0.2)
+	sun.directional_shadow_max_distance = distance + width * 0.9
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
