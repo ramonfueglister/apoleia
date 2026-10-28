@@ -11,7 +11,9 @@
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
 
-use apoleia_sim::people::People;
+use crate::grain_map::{GrainMap, MapLayers, FINE};
+use apoleia_sim::grain::{Grain, HouseholdLook, FARM_KIND_NAMES, KIND_NAMES};
+use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
 use godot::classes::image::Format;
@@ -37,8 +39,12 @@ struct Front {
     houses: Vec<f32>,
     house_dirty: Vec<bool>,
     house_count: u32,
-    /// Answer to the last `ask_person`.
-    person: Option<Person>,
+    /// Answer to the last `ask_person`, with the household as the grain
+    /// economy sees it.
+    person: Option<(Person, Option<HouseholdLook>)>,
+    grain_usec: f64,
+    /// The grain economy's map layers as of the last month.
+    map: MapLayers,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look up.
@@ -83,7 +89,11 @@ fn publish(view: &PeopleView, pages: &[u32], f: &mut Front) {
     }
 }
 
-fn run(mut people: People, mut view: PeopleView, shared: Arc<Shared>) {
+/// Edge of a 25 km cell and of a fine tile, km.
+const CELL_KM: f32 = 25.0;
+const FINE_KM: f32 = CELL_KM / FINE as f32;
+
+fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
         let ask = {
             let mut q = shared.queue.lock().unwrap();
@@ -101,12 +111,25 @@ fn run(mut people: People, mut view: PeopleView, shared: Arc<Shared>) {
         };
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
+            let who = who.map(|p| {
+                let hh = grain.household(p.household);
+                (p, hh)
+            });
             shared.front.lock().unwrap().person = who;
             continue;
         }
         let t0 = Instant::now();
         people.day();
         let day_usec = t0.elapsed().as_secs_f64() * 1e6;
+        // the grain economy (S69–S87) on the same day, as bin/grain.rs
+        let tg = Instant::now();
+        grain.day(&mut people);
+        let grain_usec = tg.elapsed().as_secs_f64() * 1e6;
+        let today = people.world.resource::<Clock>().day;
+        let month = today % 30 == 0;
+        if month {
+            map.build(&grain, today);
+        }
         let t1 = Instant::now();
         let pages = view.update(&mut people);
         let view_usec = t1.elapsed().as_secs_f64() * 1e6;
@@ -117,6 +140,10 @@ fn run(mut people: People, mut view: PeopleView, shared: Arc<Shared>) {
         f.count = people.count;
         f.day_usec = day_usec;
         f.view_usec = view_usec;
+        f.grain_usec = grain_usec;
+        if month {
+            f.map = map.layers.clone();
+        }
     }
 }
 
@@ -164,6 +191,21 @@ impl ApoleiaPeople {
                 None
             }
         };
+        // the grain economy with the defaults of bin/grain.rs: today's
+        // farmland clearable, fields on the fine tiles
+        let cols: Vec<String> = apoleia_sim::grain::CLEAR_COVER.iter().map(|c| c.to_string()).collect();
+        let clear = match apoleia_sim::grain::clearable(Path::new(&root), &cols) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no landcover25.csv ({e}), all usable land clearable");
+                None
+            }
+        };
+        let tg = Instant::now();
+        let grain = Grain::with_clearing(&inp, &mut people, apoleia_sim::grain::CLEAR_PCT, clear.as_ref(), cover.as_ref(), apoleia_sim::grain::CROP_PCT);
+        let grain_ms = tg.elapsed().as_secs_f64() * 1e3;
+        let mut map = GrainMap::new(&people);
+        map.build(&grain, people.world.resource::<Clock>().day);
         let mut view = PeopleView::new(&people, &inp.cities, cover.as_ref());
         let pages = view.update(&mut people);
         let shared = Arc::new(Shared::default());
@@ -172,9 +214,11 @@ impl ApoleiaPeople {
             publish(&view, &pages, &mut f);
             publish_houses(&mut view, &mut f);
             f.count = people.count;
+            f.map = map.layers.clone();
         }
+        godot_print!("{{\"event\":\"grain_loaded\",\"ms\":{grain_ms:.0},\"markets\":{}}}", grain.markets.len());
         let sh = shared.clone();
-        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(people, view, sh)).expect("people thread"));
+        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(people, grain, map, view, sh)).expect("people thread"));
         self.shared = shared;
         self.data.clear();
         self.houses.clear();
@@ -275,9 +319,10 @@ impl ApoleiaPeople {
     /// The slot of the dot nearest to `pixel` within `max_px`, or -1.
     /// `place` is the placement texture (people_dots_prep, RGBAH or RGBAF),
     /// `view_proj` the camera's projection × view matrix as 16 floats,
-    /// column by column, `level_h` the terrain's height per level.
+    /// column by column, `level_h` the terrain's height per level, `lift`
+    /// how far above the ground the drawn person's middle is (world units).
     #[func]
-    fn pick(&self, place: Gd<Image>, view_proj: PackedFloat32Array, viewport: Vector2, pixel: Vector2, level_h: f32, max_px: f32) -> i64 {
+    fn pick(&self, place: Gd<Image>, view_proj: PackedFloat32Array, viewport: Vector2, pixel: Vector2, level_h: f32, lift: f32, max_px: f32) -> i64 {
         let m = view_proj.as_slice();
         if m.len() != 16 {
             return -1;
@@ -316,7 +361,7 @@ impl ApoleiaPeople {
             if texel(i, 3) < 0.5 {
                 continue;
             }
-            let v = [rec[0] + texel(i, 0) - 32.0, (texel(i, 2) + 0.12) * level_h, rec[1] + texel(i, 1) - 32.0, 1.0];
+            let v = [rec[0] + texel(i, 0) - 32.0, texel(i, 2) * level_h + lift, rec[1] + texel(i, 1) - 32.0, 1.0];
             let row = |r: usize| m[r] * v[0] + m[4 + r] * v[1] + m[8 + r] * v[2] + m[12 + r] * v[3];
             let cw = row(3);
             if cw <= 0.0 {
@@ -376,9 +421,19 @@ impl ApoleiaPeople {
     #[func]
     fn take_person(&mut self) -> VarDictionary {
         let mut d = VarDictionary::new();
-        let Some(p) = self.shared.front.lock().unwrap().person.take() else {
+        let Some((p, hh)) = self.shared.front.lock().unwrap().person.take() else {
             return d;
         };
+        if let Some(h) = hh {
+            d.set("hh_kind", KIND_NAMES[h.kind as usize]);
+            d.set("fed", h.fed as i64);
+            d.set("pantry_kg", h.pantry_kg);
+            if let Some((kind, m2)) = h.farm {
+                d.set("farm_kind", FARM_KIND_NAMES[kind as usize]);
+                // field m² are per simulated person (PEOPLE_PER_PERSON)
+                d.set("farm_ha", m2 as f64 / 1e4);
+            }
+        }
         d.set("pid", p.pid as i64);
         d.set("age", p.age);
         d.set("female", p.female);
@@ -463,6 +518,48 @@ impl ApoleiaPeople {
         self.shared.front.lock().unwrap().house_count as i64
     }
 
+    /// Rebuild count of the grain map layers (once a month).
+    #[func]
+    fn map_version(&self) -> i64 {
+        self.shared.front.lock().unwrap().map.version as i64
+    }
+
+    /// The fine grain layer (crate::grain_map) for `n` × `n` tiles of
+    /// 1.5625 km around (x, z) world km: {"image": RGBA8 Image, "origin":
+    /// world km of its first texel's corner, "tile_km"}.
+    #[func]
+    fn map_window(&self, x: f32, z: f32, n: i64) -> VarDictionary {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let n = n.clamp(1, 4096) as i32;
+        let fr0 = (z / FINE_KM).floor() as i32 - map.row0 * FINE - n / 2;
+        let fc0 = (x / FINE_KM).floor() as i32 - map.col0 * FINE - n / 2;
+        let bytes = PackedByteArray::from(map.window(fr0, fc0, n));
+        let mut d = VarDictionary::new();
+        if let Some(img) = Image::create_from_data(n, n, false, Format::RGBA8, &bytes) {
+            d.set("image", &img);
+        }
+        d.set("origin", Vector2::new((fc0 + map.col0 * FINE) as f32 * FINE_KM, (fr0 + map.row0 * FINE) as f32 * FINE_KM));
+        d.set("tile_km", FINE_KM);
+        d
+    }
+
+    /// The trade roads and sea lanes, one RG8 texel per 25 km cell:
+    /// {"image", "origin" world km of the grid corner, "cell_km"}.
+    #[func]
+    fn road_map(&self) -> VarDictionary {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let mut d = VarDictionary::new();
+        if map.roads.len() == (map.rows * map.cols * 2) as usize && map.rows > 0 {
+            let bytes = PackedByteArray::from(map.roads.as_slice());
+            if let Some(img) = Image::create_from_data(map.cols, map.rows, false, Format::RG8, &bytes) {
+                d.set("image", &img);
+            }
+        }
+        d.set("origin", Vector2::new(map.col0 as f32 * CELL_KM, map.row0 as f32 * CELL_KM));
+        d.set("cell_km", CELL_KM);
+        d
+    }
+
     /// Simulated days so far (the sim thread's, also while no dots show).
     #[func]
     fn day(&self) -> i64 {
@@ -483,6 +580,7 @@ impl ApoleiaPeople {
         let f = self.shared.front.lock().unwrap();
         d.set("day_usec", f.day_usec);
         d.set("view_usec", f.view_usec);
+        d.set("grain_usec", f.grain_usec);
         drop(f);
         d.set("sync_usec", self.upload_usec);
         d.set("sync_layers", self.uploaded_pages);

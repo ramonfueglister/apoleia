@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
+#include "res://shaders/sim_map.gdshaderinc"
 
 uniform float grid_line = 0.12;
 uniform bool show_fields = false; // patchwork fields (off: SimCity 2000 tiles are plain)
@@ -264,6 +265,7 @@ void fragment() {
 				foam = max(foam, (1.0 - smoothstep(0.02, 0.05, abs(d - 0.22 - 0.05 * pulse))) * 0.45);
 				c = mix(c, C_FOAM, foam * (1.0 - far) * (1.0 - smoothstep(0.5, 0.9, relief_smooth)));
 			}
+			c = sim_lanes(p, c, length(fwidth(p)));
 		} else {
 			c = W_INLAND;
 		}
@@ -299,7 +301,11 @@ void fragment() {
 			}
 		} else {
 			c = ground_colour(cp, cov, detail);
+			// the farms' fields from the grain economy, up close
+			if (look_smooth < 1.0) { c = sim_fields(p, c); }
 		}
+		// footpaths, markets and trade roads from the grain economy
+		c = sim_ways(p, c, fw_km);
 		// ramps: a touch of bare earth, as on SimCity 2000 slope tiles
 		if (flat_top < 0.5 && town == 0) {
 			c = mix(c, C_SLOPE, 0.22 * (1.0 - look_smooth));

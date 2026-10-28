@@ -21,12 +21,19 @@ extends MultiMeshInstance3D
 ## C colours the dots by occupation, political group or estate (and back to
 ## black); a click on a dot shows that person and their household, Esc
 ## closes it.
-## Keys: P shows or hides the dots (an overview, off by default), [ and ] slow down or speed up the days.
+## The grain economy (crate::grain, run beside the people) shows on the
+## terrain: fields by season around the farms, footpaths to the markets,
+## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
+## from ApoleiaPeople.map_window and road_map, rebuilt once a month).
+## A click shows the household's kind and how much it ate.
+## Keys: P shows or hides the dots (an overview, off by default), G the
+## grain economy on the map (on by default), [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
 ## (relative paths start at the repository root), --people-colour=n starts
 ## in colour mode n (MODES), --people-click=x,y clicks that pixel once,
-## --people-dots starts with the dot overview on.
+## --people-dots starts with the dot overview on, --people-warm=n runs n
+## days before the first frame (screenshots of a later year).
 
 const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
@@ -54,6 +61,8 @@ const JOB_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.97
 const GROUP_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.2, 0.85, 0.9), Color(1.0, 0.5, 0.1),
 	Color(0.04, 0.04, 0.04), Color(1.0, 0.15, 0.15), Color(0.97, 0.97, 0.97), Color(0.35, 0.45, 0.65)]
 const STAND_COLOURS := [Color(0.04, 0.04, 0.04), Color(1.0, 0.5, 0.1), Color(0.2, 0.4, 0.95), Color(0.75, 0.15, 0.85)]
+const MAP_N := 256 # fine tiles (1.5625 km) in the grain window around the camera
+const KIND_NOTES := {"Zelt": "lebt im Zelt (landlos)", "Lohn": "lebt von Lohnarbeit", "Händler": "Händlerhaushalt", "Oberschicht": "Oberschicht", "Hof": "Hof"}
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -63,6 +72,11 @@ var days_per_second := 10.0
 var shown := false # P key: the dots as an overview (map view), off by default
 var colour_mode := 0 # C key, index into MODES
 var selected := -1 # slot of the clicked person
+var map_on := true # G key: the grain economy on the terrain
+var _map_version := -1
+var _map_at := Vector2.INF
+var _map_tex: ImageTexture
+var _road_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
 var _legend: Dictionary
 var _hud: CanvasLayer
@@ -106,6 +120,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	if not ClassDB.class_exists("ApoleiaPeople"):
 		push_warning("ApoleiaPeople GDExtension not built (sim/godot/build.sh); people dots off")
 		return false
+	var warm := 0
 	for arg in OS.get_cmdline_user_args():
 		var key := arg.get_slice("=", 0)
 		var value := arg.get_slice("=", 1) if "=" in arg else ""
@@ -114,12 +129,18 @@ func setup(tile_terrain: Node3D) -> bool:
 			"--people-bench": _bench_path = value if value.is_absolute_path() else TileTerrain.data_root().path_join(value)
 			"--people-colour": colour_mode = clampi(int(value), 0, MODES.size() - 1)
 			"--people-dots": shown = true
+			"--people-warm": warm = int(value)
 			"--people-click": _click_at = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 	people = ClassDB.instantiate("ApoleiaPeople")
 	var started := Time.get_ticks_usec()
 	if not people.load(TileTerrain.data_root(), 1):
 		return false
 	print(JSON.stringify({"event": "people_loaded", "people": people.count(), "ms": (Time.get_ticks_usec() - started) / 1000.0}))
+	if warm > 0:
+		people.advance(warm)
+		while people.backlog() > 0 or people.day() < warm:
+			OS.delay_msec(50)
+		print(JSON.stringify({"event": "people_warm", "day": people.day(), "ms": (Time.get_ticks_usec() - started) / 1000.0}))
 	name = "PeopleDots"
 	_material.shader = SHADER
 	_prep_material.shader = PREP_SHADER
@@ -154,7 +175,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figures.multimesh = fm
 	add_child(_figures)
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
-		_shared_uniforms.append(StringName(u.name))
+		if not String(u.name).begins_with("sim_"): # the grain layers are the terrain's own
+			_shared_uniforms.append(StringName(u.name))
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
@@ -312,6 +334,44 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 			for i in order:
 				st.set_color(colour); st.set_uv(uv); st.set_normal(n); st.add_vertex(q[i])
 
+## The grain layers on the terrain material: the road map when a month is
+## built, the fine window when the month changes or the camera leaves its
+## middle half.
+func _update_map() -> void:
+	var mat: ShaderMaterial = terrain._terrain_material
+	mat.set_shader_parameter("sim_map_on", map_on)
+	if not map_on:
+		return
+	var version: int = people.map_version()
+	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
+	var moved := _map_at == Vector2.INF or _map_at.distance_to(centre) > MAP_N * 1.5625 * 0.25
+	if version == _map_version and not moved:
+		return
+	if version != _map_version:
+		var roads: Dictionary = people.road_map()
+		if roads.has("image"):
+			var img: Image = roads.image
+			if _road_tex == null or _road_tex.get_size() != Vector2(img.get_size()):
+				_road_tex = ImageTexture.create_from_image(img)
+			else:
+				_road_tex.update(img)
+			mat.set_shader_parameter("sim_road_tex", _road_tex)
+			mat.set_shader_parameter("sim_cell_origin", roads.origin)
+			mat.set_shader_parameter("sim_cell_km", roads.cell_km)
+			mat.set_shader_parameter("sim_cell_n", img.get_size())
+	var win: Dictionary = people.map_window(centre.x, centre.y, MAP_N)
+	if win.has("image"):
+		if _map_tex == null:
+			_map_tex = ImageTexture.create_from_image(win.image)
+		else:
+			_map_tex.update(win.image)
+		mat.set_shader_parameter("sim_fine_tex", _map_tex)
+		mat.set_shader_parameter("sim_fine_origin", win.origin)
+		mat.set_shader_parameter("sim_fine_km", win.tile_km)
+		mat.set_shader_parameter("sim_fine_n", MAP_N)
+	_map_version = version
+	_map_at = centre
+
 ## The people near the view, as a slot list for the figure shader.
 func _update_figures(view_km: float, synced: bool) -> void:
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
@@ -421,7 +481,9 @@ func _pick(pixel: Vector2) -> void:
 		var col: Vector4 = vp[c]
 		m.append_array([col.x, col.y, col.z, col.w])
 	var level_h: float = terrain._terrain_material.get_shader_parameter("level_h")
-	selected = people.pick(_prep_view.get_texture().get_image(), m, get_viewport().get_visible_rect().size, pixel, level_h, PICK_PX)
+	# aim at a figure's middle, or at a dot (drawn 0.12 levels up)
+	var lift := FIGURE_M * TileTerrain.DIORAMA_KM_PER_M * 0.5 if _figures.visible else 0.12 * level_h
+	selected = people.pick(_prep_view.get_texture().get_image(), m, get_viewport().get_visible_rect().size, pixel, level_h, lift, PICK_PX)
 	for mat in [_material, _figure_material]:
 		mat.set_shader_parameter("selected_slot", selected)
 	print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "slot": selected}))
@@ -447,6 +509,16 @@ func _show_person(p: Dictionary) -> void:
 		health += ", IQ %d" % roundi(p.iq)
 	lines.append(health)
 	lines.append("Kultur %d, Religion %d" % [p.culture, p.religion])
+	if p.has("hh_kind"):
+		# the household as the grain economy sees it (counted once a month)
+		var kind: String = p.hh_kind
+		var farm := ""
+		if p.has("farm_kind"):
+			farm = "%s, %.2f ha Feld" % [p.farm_kind, p.farm_ha]
+		lines.append(farm if kind == "Hof" and farm != "" else KIND_NOTES.get(kind, kind))
+		var fed: float = p.fed / 10.0
+		var colour := "#e05040" if fed < 80.0 else ("#e0a040" if fed < 95.0 else "#80c060")
+		lines.append("[color=%s]gegessen: %d %% des Bedarfs[/color], Vorrat %d kg" % [colour, int(fed), int(p.pantry_kg)])
 	if p.travelling > 0:
 		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
 	_info_label.text = "\n".join(lines)
@@ -470,6 +542,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					m.set_shader_parameter("selected_slot", -1)
 				_info_label.visible = false
 			KEY_P: shown = not shown
+			KEY_G:
+				map_on = not map_on
+				_map_version = -1
 			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
 			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
 
@@ -489,6 +564,7 @@ func _process(delta: float) -> void:
 		if not p.is_empty():
 			_waiting = false
 			_show_person(p)
+	_update_map()
 	visible = TileTerrain.PROP_SLOTS[terrain.level] > 0
 	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
 	# realistic by default: figures at their real size up close, houses in the

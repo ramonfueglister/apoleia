@@ -187,6 +187,34 @@ läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Die Familie steh
 im Ring 170–240 m um ihr Haus. Stadtbewohner haben kein eigenes Haus, sie
 wohnen in den Stadt-Tiles.
 
+## Getreidewirtschaft auf der Karte
+
+Der Sim-Thread der GDExtension rechnet neben den Leuten auch die
+Getreidewirtschaft (`grain::Grain`, S69–S87) mit denselben Vorgaben wie
+`bin/grain.rs` (heutiges Ackerland rodbar, Felder auf den feinen Kacheln):
+`people.day()`, dann `grain.day()`. Der Aufbau kostet beim Laden etwa 1,4 s.
+Einmal im Monat baut `grain_map.rs` daraus zwei Kartenebenen, nur über die
+lesenden Zugriffe von `grain.rs` (`for_each_plot`, `market_paths`,
+`road_levels`, `household`; Fingerprint unverändert mit 1 und 4 Threads), in
+etwa 25 ms:
+
+- **Feine Ebene** (eine RGBA8-Kachel pro 1,5625 km): Anteil der Kachel unter
+  Feldern, davon eingesät, Wachstum der Saat; Trampelpfade (Stufe und Richtung
+  zum Markt) und Marktplätze. `people_dots.gd` lädt ein Fenster von 256 × 256
+  Kacheln um die Kamera hoch, wenn ein Monat kommt oder die Kamera die Mitte
+  verlässt.
+- **Strassenebene** (eine RG8-Kachel pro 25-km-Zelle): Handelsweg (Stufe 1),
+  Strasse (Stufe 2), auf See Seeweg, mit den Nachbarn, die sie verbindet.
+
+`sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von etwa 130 m
+bis zum Feldanteil der Kachel, eingesäte nach Jahreszeit (Erde, Keimlinge,
+grün, reif, Stoppeln), die übrigen als Brache; Pfade zum Markt, Marktplatz mit
+Ständen, gepflasterte Strassen, auf der Karte dunkle Linien, Seewege
+gestrichelt. Taste `G` schaltet das aus und an. Ein Klick auf eine Person
+zeigt jetzt auch die Art des Haushalts (Hof mit Feldgrösse, Lohn, Zelt,
+Händler, Oberschicht), wie viel er im letzten Monat gegessen hat und seinen
+Vorrat.
+
 ## Farben und Klick
 
 - **Farben (Taste C):** schwarz, nach Beruf (13 Berufe von S77), nach
@@ -205,9 +233,10 @@ wohnen in den Stadt-Tiles.
 
 ## Bedienung
 
-`P` Punkte-Übersicht an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
-`--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots).
+`--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
+`--people-warm=n` (n Tage vor dem ersten Bild rechnen).
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

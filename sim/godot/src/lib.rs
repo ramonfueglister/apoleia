@@ -8,6 +8,7 @@
 //! sim thread publishes a snapshot after each month; `refresh` picks up the
 //! newest one. Results stay deterministic (one thread owns the world).
 
+mod grain_map;
 mod map_index;
 mod people_dots;
 
