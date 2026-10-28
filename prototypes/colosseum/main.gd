@@ -1,7 +1,9 @@
 extends Node3D
 ## Colosseum prototype: showcase shots and a draw-call benchmark.
 ## Arguments after `--`:
-##   --scene=hero|lods|bench   what to build (default hero)
+##   --scene=hero|lods|bench|city   what to build (default hero); city is the
+##       colosseum in a Roman town of Caesar III buildings
+##   --width=m --tx=m --tz=m   hero/city: view width and centre
 ##   --mode=naive|nodes_lod|multimesh|chunked   bench: one node per colosseum,
 ##       one node per LOD and colosseum, one MultiMesh at full detail, or
 ##       MultiMesh chunks with all LODs
@@ -10,6 +12,7 @@ extends Node3D
 ##   --shot=path.png   save a frame;  --out=path.json   append bench result
 
 const Col := preload("res://colosseum_mesh.gd")
+const City := preload("res://city_buildings.gd")
 const SPACING := 90.0
 const CHUNK := 4                         # chunk = CHUNK x CHUNK colosseums
 const LOD_RANGES: Array = Col.LOD_RANGES
@@ -40,6 +43,7 @@ func _ready() -> void:
 		"hero": _hero()
 		"lods": _lods()
 		"bench": _bench()
+		"city": _city()
 	build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	last_us = Time.get_ticks_usec()
@@ -257,6 +261,194 @@ func _boxes(at: Array, size: Vector3, colour: Color, rot := 0.0) -> void:
 		mi.position = p
 		mi.rotation.y = rot
 		add_child(mi)
+
+# ------------------------------------------------------------------ town
+
+const CELL := 8.0
+## Street lines in cells of 8 m on each axis, and the plaza round the
+## colosseum (cells -7..6 by -6..5); everything between is a town block.
+const ROAD_X := [-18, -13, -8, -1, 0, 7, 12, 17]
+const ROAD_Z := [-17, -12, -7, -1, 0, 6, 11, 16]
+const PLAZA := Rect2i(-7, -6, 14, 12)
+
+var _town_meshes := {}
+var _town_xfs := {}
+var _rng := RandomNumberGenerator.new()
+
+func _town_mesh(key: String) -> ArrayMesh:
+	if not _town_meshes.has(key):
+		var m: ArrayMesh
+		match key:
+			"house0", "house1", "house2", "house3": m = City.house(int(key.right(1)))
+			"insula0", "insula1", "insula2": m = City.insula(int(key.right(1)))
+			"villa": m = City.villa()
+			"temple0", "temple1": m = City.temple(int(key.right(1)))
+			"market": m = City.rotunda(false)
+			"shrine": m = City.rotunda(true)
+			"fountain": m = City.fountain()
+			"statue0", "statue1": m = City.statue(int(key.right(1)))
+			"garden": m = City.garden()
+			"cypress": m = City.cypress()
+			"tree0", "tree1": m = City.tree(int(key.right(1)))
+			"mosaic": m = City.mosaic()
+			"street": m = City.street()
+			"crossing": m = City.crossing()
+		m.surface_set_material(0, material)
+		_town_meshes[key] = m
+	return _town_meshes[key]
+
+## Places a model; `facing` in degrees turns its front (+z, south) about y:
+## 0 south, 90 east, 180 north, 270 west.
+func _put(key: String, x: float, z: float, facing := 0.0) -> void:
+	_town_mesh(key)
+	_town_xfs.get_or_add(key, []).append(Transform3D(Basis(Vector3.UP, deg_to_rad(facing)), Vector3(x, 0, z)))
+
+func _intervals(roads: Array) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for i in roads.size() - 1:
+		if roads[i + 1] - roads[i] > 1:
+			out.append(Vector2i(roads[i] + 1, roads[i + 1] - 1))
+	return out
+
+func _city() -> void:
+	_rng.seed = 11
+	_ground(4000.0, Color("7ea24a"))
+	_add(meshes[0], Transform3D.IDENTITY)
+	# Paving: mosaic on the plaza, streets with kerbs, plain crossings.
+	for cz in range(ROAD_Z[0], ROAD_Z[-1] + 1):
+		for cx in range(ROAD_X[0], ROAD_X[-1] + 1):
+			var x := (cx + 0.5) * CELL
+			var z := (cz + 0.5) * CELL
+			if PLAZA.has_point(Vector2i(cx, cz)):
+				_put("mosaic", x, z)
+			elif cx in ROAD_X and cz in ROAD_Z:
+				_put("crossing", x, z)
+			elif cx in ROAD_X:
+				_put("street", x, z)
+			elif cz in ROAD_Z:
+				_put("street", x, z, 90.0)
+	var xs := _intervals(ROAD_X)
+	var zs := _intervals(ROAD_Z)
+	for iz in zs.size():
+		for ix in xs.size():
+			var plaza := ix in [2, 3] and iz in [2, 3]
+			if plaza:
+				continue
+			var r := Rect2(xs[ix].x * CELL, zs[iz].x * CELL, (xs[ix].y - xs[ix].x + 1) * CELL, (zs[iz].y - zs[iz].x + 1) * CELL)
+			var ring := ix >= 1 and ix <= 4 and iz >= 1 and iz <= 4
+			if ring and iz == 1 and ix in [2, 3]:
+				_civic(r, "temple%d" % (ix - 2))
+			elif ring and ix == 1 and iz == 2:
+				_civic(r, "shrine")
+			elif ring and ix == 4 and iz == 2:
+				_civic(r, "market")
+			elif ring and iz == 3 and ix in [1, 4]:
+				_park(r)
+			elif ring:
+				_insulae(r)
+			else:
+				var roll := _rng.randf()
+				if roll < 0.62:
+					_houses(r)
+				elif roll < 0.78:
+					_villa(r)
+				elif roll < 0.9:
+					_insulae(r)
+				else:
+					_park(r)
+	# Townsfolk on the plaza and the streets.
+	var robes := [Color("e8e0d0"), Color("b8483a"), Color("6f7f9a"), Color("c9a050"), Color("8a6a50")]
+	for i in 260:
+		var cx: int = ROAD_X[_rng.randi() % ROAD_X.size()] if i % 2 == 0 else _rng.randi_range(ROAD_X[0], ROAD_X[-1])
+		var cz: int = _rng.randi_range(ROAD_Z[0], ROAD_Z[-1]) if i % 2 == 0 else ROAD_Z[_rng.randi() % ROAD_Z.size()]
+		var p := Vector3((cx + _rng.randf()) * CELL, 0.1, (cz + _rng.randf()) * CELL)
+		if Vector2(p.x / (Col.A + 2.0), p.z / (Col.B + 2.0)).length() > 1.0:
+			_person(p, robes[i % robes.size()])
+	for key in _town_xfs:
+		var list: Array[Transform3D] = []
+		list.assign(_town_xfs[key])
+		add_child(_multimesh(_town_meshes[key], list))
+	var tx := float(args.get("tx", "0"))
+	var tz := float(args.get("tz", "0"))
+	_camera(Vector3(tx, 4.0, tz), float(args.get("width", "230")))
+	print("town: ", _town_xfs.keys().map(func(k): return "%s %d" % [k, _town_xfs[k].size()]))
+
+## Side of the block nearest to p, as a facing angle.
+func _facing(r: Rect2, p: Vector2) -> float:
+	var d := [r.end.y - p.y, r.end.x - p.x, p.y - r.position.y, p.x - r.position.x]
+	var best := 0
+	for i in 4:
+		if d[i] < d[best]:
+			best = i
+	return [0.0, 90.0, 180.0, 270.0][best]
+
+## Small houses on lots of about 11 m, each facing its nearest street; the
+## inner lots are gardens with trees.
+func _houses(r: Rect2) -> void:
+	var nx := maxi(1, floori(r.size.x / 10.5))
+	var nz := maxi(1, floori(r.size.y / 10.5))
+	for j in nz:
+		for i in nx:
+			var c := r.position + Vector2((i + 0.5) * r.size.x / nx, (j + 0.5) * r.size.y / nz)
+			var inner := i > 0 and i < nx - 1 and j > 0 and j < nz - 1
+			if inner:
+				_put("garden", c.x, c.y)
+				_put("tree%d" % (i % 2), c.x + 3.0, c.y - 3.0)
+				continue
+			_put("house%d" % _rng.randi_range(0, 3), c.x, c.y, _facing(r, c))
+			if _rng.randf() < 0.35:
+				_put("cypress", c.x + 4.6, c.y + 4.6)
+
+func _insulae(r: Rect2) -> void:
+	var nx := maxi(1, floori(r.size.x / 16.0))
+	var nz := maxi(1, floori(r.size.y / 16.0))
+	for j in nz:
+		for i in nx:
+			var c := r.position + Vector2((i + 0.5) * r.size.x / nx, (j + 0.5) * r.size.y / nz)
+			var face := 0.0 if j == nz - 1 else 180.0
+			_put("insula%d" % _rng.randi_range(0, 2), c.x, c.y, face)
+
+func _villa(r: Rect2) -> void:
+	var c := r.get_center()
+	_put("villa", c.x, c.y, _facing(r, c + Vector2(0, 1)))
+	for k in range(int(r.position.x) + 2, int(r.end.x) - 1, 4):
+		_put("cypress", k, r.position.y + 2.0)
+		_put("cypress", k, r.end.y - 2.0)
+	_put("tree0", r.position.x + 3.0, c.y)
+	_put("tree1", r.end.x - 3.0, c.y)
+
+func _park(r: Rect2) -> void:
+	var c := r.get_center()
+	for d in [Vector2(-4, -4), Vector2(4, -4), Vector2(-4, 4), Vector2(4, 4)]:
+		_put("garden", c.x + d.x, c.y + d.y)
+	_put("fountain", c.x, c.y)
+	for k in 12:
+		var t := TAU * (k + 0.5) / 12.0
+		var p := c + Vector2(cos(t) * (r.size.x * 0.5 - 3.0), sin(t) * (r.size.y * 0.5 - 3.0))
+		_put("tree%d" % (k % 2) if k % 3 else "cypress", p.x, p.y)
+
+## A civic block: mosaic paving, the building facing the colosseum, statues
+## on both sides of its front, cypress rows along the side streets.
+func _civic(r: Rect2, key: String) -> void:
+	for z in range(int(r.position.y / CELL), int(r.end.y / CELL)):
+		for x in range(int(r.position.x / CELL), int(r.end.x / CELL)):
+			_put("mosaic", (x + 0.5) * CELL, (z + 0.5) * CELL)
+	var c := r.get_center()
+	# Face the colosseum: the block side nearest to it.
+	var face := _facing(r, c - c.normalized() * 1000.0)
+	_put(key, c.x, c.y, face)
+	var front := Vector2(sin(deg_to_rad(face)), cos(deg_to_rad(face)))
+	var side := Vector2(front.y, -front.x)
+	var half := 12.0
+	for s in [-1.0, 1.0]:
+		var p: Vector2 = c + front * half + side * s * 9.0
+		_put("statue%d" % int(s > 0), p.x, p.y, face)
+		var f: Vector2 = c + front * half + side * s * 4.5
+		if key in ["market", "shrine"]:
+			_put("fountain", f.x, f.y)
+	for k in range(int(r.position.y) + 3, int(r.end.y) - 2, 5):
+		_put("cypress", r.position.x + 2.0, k)
+		_put("cypress", r.end.x - 2.0, k)
 
 func _lods() -> void:
 	_ground(400.0, Color("7ea24a"))

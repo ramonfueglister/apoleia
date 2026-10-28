@@ -508,6 +508,9 @@ static func _at(vox: Dictionary, c: Vector3i) -> int:
 ## their corner shading allows it exactly. Downward faces are skipped: the
 ## city camera never looks up.
 static func _mesh(vox: Dictionary) -> ArrayMesh:
+	# Other voxel models (the city's buildings) bring their own palette.
+	var palette: Array = vox.get("palette", PALETTE)
+	var top: Dictionary = vox.get("top", TOP)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n: Vector3i = vox.n
@@ -592,10 +595,11 @@ static func _mesh(vox: Dictionary) -> ArrayMesh:
 						for k in 4:
 							aos.append((ao4 >> (k * 2)) & 3)
 						var col_id := key & 0xFF
-						var colour: Color = TOP[col_id] if axis == 1 and TOP.has(col_id) else PALETTE[col_id]
+						var colour: Color = top[col_id] if axis == 1 and top.has(col_id) else palette[col_id]
 						_emit(st, corners, aos, colour, Vector3(nv), v)
 						a += wide
-	_red_strip(st, vox)
+	if not vox.has("palette"):
+		_red_strip(st, vox)
 	return st.commit()
 
 ## The red strip on the rim's top faces: BAND_M wide along each outer edge
