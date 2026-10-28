@@ -22,7 +22,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "cells-L0.png",
-      "sha256": "100d4bc7fe055458bd47212fbd6cfc5f0d7d7287409a3dc562fba1d8449aa6e4",
+      "sha256": "c23e17d1ec50997959f23f0f54731de7597ad38aed453424a5a2d3c6c988541d",
       "river_max_scalerank": 10
     },
     {
@@ -32,7 +32,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "cells-L1.png",
-      "sha256": "2e4e74a9152af509b1b35db73a1615e434029b597f1d007a8b22d6e257ef346e",
+      "sha256": "a665936f68809bc563d892cb16ecead1b5135d76c97782bd3880a1ca7f1ca849",
       "river_max_scalerank": 10
     },
     {
@@ -42,7 +42,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "816a79cc1c447d89d8942f68b94a20421c71ec737876f265b640b6cd281cb539",
+      "sha256": "9073cc8da384d041a92496bae30e6e923fbb37ba030407078a7b3509585290d8",
       "river_max_scalerank": 7
     },
     {
@@ -52,7 +52,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "944323956b907ecfef2f8f25e13ce39045763647a117342501662d4cc0207931",
+      "sha256": "e36a95aac78505b4013dad65b2618d5f07738b207fc197b32dc95884d116da7f",
       "river_max_scalerank": 5
     },
     {
@@ -62,7 +62,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "db5d34dd8fb9f15020cb5651f1165e83dfa44a90ea1c7565ec16c65283ac3a53",
+      "sha256": "8152a74dbb4c9ec08ce9de52d6abdd0e314227a4bfcb1df9ec61abef3a2f9203",
       "river_max_scalerank": 3
     },
     {
@@ -72,7 +72,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "20c5a79edd2204901fe39eea122cd3ab06b7d1cbb0a7378a7da0719431307e59",
+      "sha256": "a109760411db4c266045e4deb13f1ce411e1e21bebc45961a5eef965ca1c5158",
       "river_max_scalerank": 2
     }
   ],
@@ -106,6 +106,79 @@
       "sha256": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036"
     }
   },
+  "relief_half": {
+    "path": "relief.r16f",
+    "sha256": "e1939018af09daa6859ef9cead45fad40f7418bf363795b2a85034e6f71353d6",
+    "format": "float16 LE, metres",
+    "slope_m_per_km": 160.0,
+    "mountain_slope_m_per_km": 160.0,
+    "mountain_from_to_m": [
+      500.0,
+      1300.0
+    ],
+    "height_exaggeration": 3.75
+  },
+  "shore_half": {
+    "path": "shore.r16f",
+    "sha256": "f61b900c6760738e9c6cc5195da0c42e9373cf95648e89a6f4f70f192ea017e6",
+    "format": "float16 LE, metres",
+    "rule": "highest land next to the water: sea 0 m, lakes at their level, rising slope_m_per_km"
+  },
+  "height_half": {
+    "path": "height.r16f",
+    "sha256": "5adc1acb3953562f320e1d44c45eea41a4dfd464e4a4f5241278462c565c1dd1",
+    "format": "float16 LE, metres"
+  },
+  "levels": [
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5163,
+      "height": 2392,
+      "metres_per_level": 200.0,
+      "floor_m": 150.0,
+      "blur_tiles": 1.2,
+      "path": "levels-L2.png",
+      "sha256": "0b9398fafcb3611908eca69cacddd7abbdd5fcc5e5886d77ce729dc6ab3d9c04",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2582,
+      "height": 1197,
+      "metres_per_level": 240.0,
+      "floor_m": 150.0,
+      "blur_tiles": 1.2,
+      "path": "levels-L3.png",
+      "sha256": "5b77d066e1fd73996e6dd3c02dfe4e9117d9b7b3d088598b751b2db0b9ce2c69",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1292,
+      "height": 599,
+      "metres_per_level": 280.0,
+      "floor_m": 150.0,
+      "blur_tiles": 1.2,
+      "path": "levels-L4.png",
+      "sha256": "571d0f3bcb991c3d17ec4710e23ccc1508a24466498ffc3997c57aca17c46fb6",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 647,
+      "height": 300,
+      "metres_per_level": 320.0,
+      "floor_m": 150.0,
+      "blur_tiles": 1.2,
+      "path": "levels-L5.png",
+      "sha256": "c1c057d30abe5688ea47cc4762ba257e60645b6eae5eecb011fde1ca7b0f65fb",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    }
+  ],
   "cover": {
     "path": "cover.png",
     "sha256": "3c3a893f67f8b5fdc65f81d8743a5324a4b8f56470e89ed3c06f4381cd600cc3",
@@ -131,16 +204,144 @@
     "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
   },
-  "height_half": {
-    "path": "height.r16f",
-    "sha256": "5adc1acb3953562f320e1d44c45eea41a4dfd464e4a4f5241278462c565c1dd1",
-    "format": "float16 LE, metres"
-  },
-  "relief_half": {
-    "path": "relief.r16f",
-    "sha256": "4796944684d9b40d2b208eb7c324f490b855d70c8624e84b351627a964cca070",
-    "format": "float16 LE, metres",
-    "slope_m_per_km": 80.0,
-    "height_exaggeration": 7.5
-  }
+  "ground": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20645,
+      "height": 9563,
+      "packed_width": 10323,
+      "path": "ground-L0.png",
+      "sha256": "5d690786e53444be5dc13ad22b6f12cba644592d39afeb060e43aea26d65b428",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10323,
+      "height": 4782,
+      "packed_width": 5162,
+      "path": "ground-L1.png",
+      "sha256": "be7eb5c90411735626b674abb7861c543c02d4300286650eb029e57c3050a19a",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5162,
+      "height": 2391,
+      "packed_width": 2581,
+      "path": "ground-L2.png",
+      "sha256": "a12a097e6da5d8930bacddcd2e78a77a4af88c7a65cd40c278178391ac13ec10",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2581,
+      "height": 1196,
+      "packed_width": 1291,
+      "path": "ground-L3.png",
+      "sha256": "5207437ca1b9c0f011c1636a4415b8ac7df45e69040a5dd0458693c36fd3ef5d",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1291,
+      "height": 598,
+      "packed_width": 646,
+      "path": "ground-L4.png",
+      "sha256": "6a052a2476e5b534efdb1b0be0f41d7f5e8210d14ee1a1fd4959299ef03b6b7a",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 646,
+      "height": 299,
+      "packed_width": 323,
+      "path": "ground-L5.png",
+      "sha256": "a7403f0eb5b2448c4461435e27c72ddf4186db83b04c4513d66ac844b4076ccd",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15
+    }
+  ]
 }

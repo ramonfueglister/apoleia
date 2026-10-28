@@ -1,4 +1,4 @@
-# Tile-Gelände (SimCity 2000 meets EU5)
+# Tile-Gelände (SimCity 2000 auf jeder Zoomstufe)
 
 Status: `implementiert`, seit 27.10.2026 das einzige Gelände der App. Das Wetter
 (`app/scripts/weather/`, `app/shaders/weather_*`, `cloud_layer`) ist davon
@@ -10,30 +10,81 @@ unabhängig und unverändert.
   benachbarte Kacheln teilen ihre Ecken. Dadurch ist das Land eine durchgehende
   Fläche aus flachen Kacheln und Rampen, wie in SimCity 2000 (XTER-Formen
   00–0D: jede Ecke liegt auf der Kachelhöhe oder eine Stufe darüber).
-- Benachbarte Ecken liegen **höchstens eine Stufe** auseinander. Das sichert
-  das gebackene Relief (`sc2k_relief`), das auf `RELIEF_SLOPE` m/km begrenzt ist.
+- Benachbarte Ecken liegen bei 0,5- und 1-km-Kacheln **höchstens eine Stufe**
+  auseinander. Das sichert das gebackene Relief (`sc2k_relief`), das auf
+  `RELIEF_SLOPE` m/km begrenzt ist. Weiter draußen sind steilere Rampen erlaubt.
 - Eine Stufe ist **0,6 Kachelbreiten** hoch (SimCity 2000: 12 px Stufe auf einer
-  32 × 16 px Kachel). Eine Stufe entspricht `RELIEF_SLOPE × Kachelbreite` echten Metern.
-- Höhen sind weltweit **7,5-fach** überhöht (`HEIGHT_EXAGGERATION`, Kit 1 K06,
-  geändert am 27.10.2026). Daraus folgt `RELIEF_SLOPE` = 80 m/km.
+  32 × 16 px Kachel). Bei 0,5- und 1-km-Kacheln entspricht eine Stufe
+  `RELIEF_SLOPE × Kachelbreite` echten Metern, also 3,75-fach überhöht
+  (`HEIGHT_EXAGGERATION`, Kit 1 K06, geändert am 27.10.2026). Daraus folgt
+  `RELIEF_SLOPE` = 160 m/km: wenige, lange Terrassen wie in SimCity 2000 statt
+  vieler schmaler Streifen.
+- Ab 2-km-Kacheln kommen die Eckstufen aus dem Bake (`levels-L*.png`,
+  `corner_levels`): eine Stufe sind 200 / 240 / 280 / 320 m echt
+  (`LEVEL_METRES`, 2 / 4 / 8 / 16-km-Kacheln), gezählt ab 150 m
+  (`LEVEL_FLOOR_M`). Ebenen und flaches Hügelland bleiben so eine Stufe, ohne
+  Terrassenlinien quer durchs Flachland, und Gebirge behalten auf der
+  Europakarte mehrere Stufen (Alpen bis 10 Stufen). Die Höhe wird vorher über
+  1,2 Kacheln weichgezeichnet, danach räumt der Bake je Stufe auf (Öffnen und
+  Schließen mit 3 × 3 Ecken): einzelne Buckel, Löcher und eine Kachel breite
+  Stege verschwinden, Gebirge bleiben als zusammenhängende Massive stehen.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
+  Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
+  (`shore.r16f`) begrenzt: Sie steigt von jedem Ufer um eine Stufe pro Kachel. Der
+  Bake setzt dafür jeden Knoten unter einer 0,5-km-Seezelle auf den Seespiegel,
+  so entstehen keine Kraterwände am Seeufer.
+- Ufer wie in SimCity 2000: Meer und Seen liegen um `water_drop` (0,3 Stufen)
+  tiefer als das Land, das Land endet also mit einer kleinen Erdkante am Wasser.
+  Hat eine Landkachel auf zwei benachbarten Seiten und der Diagonale dazwischen
+  Wasser, ist die Hälfte zu dieser Ecke hin ebenfalls Wasser, geschnitten an der
+  Kacheldiagonale (`tt_coast_cut`). So läuft eine Treppe aus Wasserkacheln als
+  45-Grad-Küste. Die Kachel ist dafür aus zwei getrennten Dreiecken gebaut, und
+  ein fünftes Wandstück steht als Kante auf der Diagonale.
+  Kacheln werden an der Diagonale geteilt, deren Ecken näher beieinander liegen
+  (wie SimCity 2000): eine einzelne gehobene Ecke ergibt ein flaches und ein
+  geneigtes Dreieck statt einer Falte. `MOUNTAIN_SLOPE` erlaubt im Hochgebirge
+  (Mittel über 10 km ab 500 m, voll ab 1300 m) eine steilere Rampe, steht aber
+  auf 1 × `RELIEF_SLOPE`: auch Gebirge folgen der Ein-Stufen-Regel.
   Im Land gibt es keine Klippen. Flüsse sind schmale Bänder in der Landkachel
   (mindestens Bootsbreite), Kurven schneiden die Ecke diagonal.
-- Optik: Kacheln sind einfarbig ohne Muster, wie in SimCity 2000. Rampen haben
-  zwei klare Töne (Sonnenseite hell, Schattenseite dunkel). Schaumlinie an der
-  Küste, Fels ab etwa 1100 m und Schnee ab etwa 1600 m (geglättete Höhe),
-  Städte mit Straßenraster und Mauer am Kern.
+- Flüsse sind je Zoomstufe **eine saubere Linie aus Kacheln**: Der Bake zeichnet
+  die Mittellinie jedes Flusses (eine Kachel breit), verbindet reine
+  Diagonalschritte über eine Landkachel, füllt Schlaufen um bis zu 4 Kacheln,
+  dünnt doppelte Läufe auf eine Kachel aus (4-einfache Zellen, Ränder und Enden
+  bleiben) und kappt Seitenstummel bis 3 Kacheln Länge sowie einzelne Zellen
+  (`clean_rivers`). Mündungen am Meer und an Seen bleiben stehen. Echte
+  Flussarme um größere Inseln bleiben als Schlaufe erhalten.
+- Optik nach Urbek (Ramon, 28.10.2026: „einzelne Tiles eine Farbe, resp. 2 Farben
+  wenn Terrain übereinander fließt“, „Referenz Urbek“): **jede Kachel hat eine
+  flache Farbe** nach ihrer Landschaft (`ground-L*.png`): Wiese, trockenes Gras
+  (Mittelmeer), Feld, Feuchtgebiet, Gestrüpp, Sand, Laubwald, Nadelwald, Alm,
+  Fels, Schnee. Keine Rauschränder, keine Muster, keine Überblendungen, kein
+  Farbzittern, keine Gitterlinien. Wo zwei Landschaften aneinanderstoßen, gilt
+  die Küstenregel: Haben beide Seiten an einer Ecke und die Kachel über Eck eine
+  stärkere Landschaft (Schnee vor Fels vor Wald vor offenem Land), nimmt die
+  Hälfte zu dieser Ecke hin sie an, geschnitten an der Diagonale. So laufen
+  Waldränder als 45-Grad-Linien statt als Treppe, und eine Kachel hat höchstens
+  zwei Farben. Die Palette ist auf die Urbek-Töne am Bildschirm abgestimmt
+  (satte Grüns, blasses Weizengelb, flaches helles Wasser). Rampen haben zwei
+  feste Töne (Sonnenseite leicht hell, Schattenseite dunkel); das Licht sieht
+  jede Oberseite als flach, damit Rampen weder glasig noch schwarz werden.
+  Wände sind ein dunklerer Erdton ohne Schichtlinien. Am Meer ein Sandsaum an
+  den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
+  heller, wo die Kachel Land berührt. Bäume stehen nah genau auf den
+  Waldkacheln (und Waldhälften), einzelne Bäume auf offenem Grasland. Städte
+  nah gepflastert mit Häusern, weit draußen Kacheln in Dachfarbe; Dörfer gehen
+  weit draußen im Land auf.
 
-## Fernsicht (Reliefkarte, EU5)
+## Fernsicht (Kacheln bis Europa)
 
-Zwischen 20 und 45 km Sichtbreite blendet `relief_smooth` von den Kachelstufen
-zu einer glatten Reliefkarte über: Ecken nicht mehr auf Stufen gerundet,
-Normalen je Pixel, kein Kachelraster. Weil die Höhendaten nur ein 2-km-Raster
-haben, legt der Shader in den Bergen Grate und Rinnen darunter, die hangabwärts
-laufen (Phacelle-Rauschen, `alpine_detail`). Steile Bergflanken werden Fels,
-die Schattierung hat warme Sonnen- und kühle Schattenseiten. Licht: wenig
-Umgebungslicht und Filmic-Tonemapping, damit die Farben nicht auswaschen.
+Ramon, 28.10.2026: „Kachel-Look konsequent bis immer“. Es gibt keine weiche
+Reliefkarte mehr; auch ganz draußen (16-km-Kacheln, ganz Europa) gelten dieselben
+Regeln wie nah: eine Farbe pro Kachel aus der Landschaft dieser Zoomstufe. Damit Gebirge
+draußen nicht zu einer Stufe zusammenfallen und das Flachland ruhig bleibt,
+kommen die Eckstufen ab 2-km-Kacheln aus dem Bake (siehe Geländeregeln). Ohne
+Modelle werfen die Kacheln keine Schatten. Licht: wenig Umgebungslicht und
+Filmic-Tonemapping, damit die Farben nicht auswaschen.
 
 ## Maßstab
 
@@ -45,17 +96,23 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
 | Kachel je Zoomstufe | 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 21 m … 670 m Diorama (`LEVELS`) |
-| Höhe | 7,5-fach, eine Stufe = 40 / 80 / 160 / 320 / 640 / 1280 m echt |
+| Höhe | eine Stufe = 80 / 160 m echt (3,75-fach überhöht), weiter draußen 200 / 240 / 280 / 320 m ab 150 m |
 | Haus | 10 m Diorama (`HOUSE_M`), auf Stufe 0 und 1 gezeichnet |
-| Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1; weiter draußen zeigt der Boden den Wald |
+| Baum | 12 m Diorama (`TREE_M`), auf Stufe 0 und 1 auf den Waldkacheln; weiter draußen sind Waldkacheln dunkelgrün |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
 ## Aufbau
 
 - `tools/build_tile_terrain.py` backt `artifacts/render-data/tile-terrain-r1/`
   (etwa 6 Minuten): Bewuchs, Meeresabstand und Seespiegel (2-km-Knoten), Wasser-
-  und Ortsklassen je Zoomstufe (`cells-L*.png`), Höhe und begrenztes Relief
-  (`height.r16f`, `relief.r16f`). Eingaben sind im Manifest mit Hash geführt.
+  und Ortsklassen je Zoomstufe (`cells-L*.png`, Flüsse bereinigt), Höhe und
+  begrenztes Relief (`height.r16f`, `relief.r16f`), die Wasserhülle
+  (`shore.r16f`), die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
+  allein neu mit `--levels-only`, etwa 1 Minute) und die Landschaft jeder Kachel
+  je Zoomstufe (`ground-L*.png`, `ground_classes`: Bodenbedeckung und Höhe an
+  der Kachelmitte, ein wenig Rauschen in km macht aus Anteilen Flecken dieser
+  Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; allein neu mit
+  `--ground-only`, etwa 8 Minuten). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
   für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).
@@ -70,7 +127,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   einen Texel.
 - Leistung: Der Prop-Patch ist nur so groß wie die Sicht (`PROP_SPAN`), ab
   10 km Sichtbreite gibt es Low-Poly-Bäume ohne Schatten (`PROP_LOW_KM`), und
-  Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet.
+  Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
+  2-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
+  zeichnete dort nur Streifen).
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die facettierten
   Low-Poly-Bäume (flache Normalen, Farbverlauf nach oben) und die Häuser.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
@@ -79,14 +138,15 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 ## Bedienung
 
-Mausrad oder Pinch zoomt zum Cursor, Ziehen oder WASD/Pfeile verschiebt, Q/E dreht
-um 90°, +/− zoomt. F5–F7 steuern das Wetter. Startoptionen:
-`--view=lon,lat,breite_km[,drehungen]`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
+Mausrad oder Pinch zoomt hinein zum Cursor und hinaus um die Bildmitte, Ziehen oder
+WASD/Pfeile verschiebt, +/− zoomt. Die Ansicht schaut immer nach Norden und dreht sich
+nie (Ramon, 28.10.2026: „kein rotieren“). Ganz draussen (4400 km) steht sie fast senkrecht
+über ganz Europa. F5–F7 steuern das Wetter. Startoptionen:
+`--view=lon,lat,breite_km`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
 `--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
 
 ## Offen
 
 - macOS-Paketierung des Tile-Geländes.
 - Leistungsmessung auf dem Mac nach dem Umbau (vorher 142 ms bei 25 km Sichtbreite).
-- Küsten und Seeufer bleiben in der Fernsicht Kacheltreppen.
 - Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.

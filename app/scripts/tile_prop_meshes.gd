@@ -4,10 +4,15 @@ extends RefCounted
 ## with vertex colours. Units: a prop is about 1 unit tall, origin on the ground.
 
 static func tile_template() -> ArrayMesh:
-	# VERTEX.x = part (0 top, 1..4 walls N, E, S, W), VERTEX.y = corner or role
+	# VERTEX.x = part (0 top, 1..4 walls N, E, S, W, 5 coast edge along the
+	# diagonal), VERTEX.y = corner or role. The top is two separate triangles
+	# (roles 0..2, 3..5), so a coast cut can lower one of them.
 	var verts := PackedVector3Array()
 	var index := PackedInt32Array()
-	for part in 5:
+	for role in 6:
+		verts.append(Vector3(0, role, 0))
+		index.append(role)
+	for part in range(1, 6):
 		var base := verts.size()
 		for role in 4:
 			verts.append(Vector3(part, role, 0))

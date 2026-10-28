@@ -1,4 +1,4 @@
-// Tile terrain (SimCity 2000 meets EU5): shared data access and tile rules.
+// Tile terrain (SimCity 2000 tiles at every zoom): shared data access and tile rules.
 // Used by tile_terrain.gdshader and tile_props.gdshader; tile_terrain.gd sets
 // the same uniforms on all materials and mirrors the height rule on the CPU
 // (ground_y) for the camera and the weather.
@@ -8,6 +8,8 @@ uniform sampler2D height_tex : filter_linear_mipmap, repeat_disable; // metres, 
 uniform sampler2D relief_tex : filter_linear_mipmap, repeat_disable; // slope-limited metres (shape)
 uniform sampler2D cover_tex : filter_linear_mipmap, repeat_disable;  // forest, dry, crop, wetland
 uniform sampler2D aux_tex : filter_nearest, repeat_disable;          // sea distance, lake level hi/lo
+uniform sampler2D shore_tex : filter_linear, repeat_disable;          // highest land next to the water (metres)
+uniform bool shore_ready = false;
 uniform sampler2D cells_tex : filter_nearest, repeat_disable;        // two cells per byte
 uniform vec2 world_min;
 uniform vec2 world_size;
@@ -17,7 +19,11 @@ uniform float tile_km = 2.0;
 uniform float level_h = 0.36;  // world units per height level
 uniform float m_per_level = 110.0;
 uniform float height_lod = 0.0;
-uniform float relief_smooth = 0.0; // 0 tile steps (near) .. 1 smooth relief map (far)
+uniform sampler2D levels_tex : filter_nearest, repeat_disable; // far levels: baked corner levels (8 bit)
+uniform bool levels_ready = false;
+uniform float level_floor_m = 0.0; // far levels count from this height (metres)
+uniform sampler2D ground_tex : filter_nearest, repeat_disable; // landscape per tile, two per byte
+uniform bool ground_ready = false;
 uniform ivec2 patch_origin;    // first tile of the drawn patch
 uniform int patch_n = 256;
 
@@ -25,6 +31,19 @@ const int W_LAND = 0;
 const int W_SEA = 1;
 const int W_LAKE = 2;
 const int W_RIVER = 3;
+// landscape of a tile (tools/build_tile_terrain.py, GROUND): one colour each
+const int G_MEADOW = 0;
+const int G_DRY_GRASS = 1;
+const int G_FIELD = 2;
+const int G_WETLAND = 3;
+const int G_SCRUB = 4;
+const int G_SAND = 5;
+const int G_FOREST = 6;
+const int G_CONIFER = 7;
+const int G_ALPINE = 8;
+const int G_ROCK = 9;
+const int G_SNOW = 10;
+const int G_NONE = 15; // water
 
 float tt_hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -78,6 +97,51 @@ int tt_water(ivec2 t) {
 	return tt_cell(t) & 3;
 }
 
+int tt_ground(ivec2 t) {
+	if (!ground_ready || t.x < 0 || t.y < 0 || t.x >= cells_size.x || t.y >= cells_size.y) {
+		return G_NONE;
+	}
+	int b = int(texelFetch(ground_tex, ivec2(t.x >> 1, t.y), 0).r * 255.0 + 0.5);
+	return (t.x & 1) == 0 ? (b & 15) : (b >> 4);
+}
+
+// Two landscapes meet in a tile like the coast does: when both sides at a
+// corner and the tile across that corner share another, stronger landscape,
+// the half of the tile towards that corner takes it (cut at the diagonal). Returns the
+// corner (0..3) or -1; `alt` is the landscape of that half.
+int tt_ground_cut(ivec2 t, int g, out int alt) {
+	alt = g;
+	if (g == G_NONE) { return -1; }
+	const ivec2 SIDES[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	// only the stronger landscape spills over (snow over rock over wood over
+	// open land), as only the water cuts into the land at the coast; cutting
+	// both sides of a staircase would leave teeth instead of one diagonal
+	const int RANK[11] = int[](0, 1, 4, 5, 3, 2, 7, 8, 6, 9, 10);
+	for (int k = 0; k < 4; k++) {
+		ivec2 a = SIDES[(k + 3) & 3];
+		ivec2 b = SIDES[k];
+		int ga = tt_ground(t + a);
+		if (ga == g || ga == G_NONE || RANK[clamp(ga, 0, 10)] < RANK[clamp(g, 0, 10)]) { continue; }
+		if (tt_ground(t + b) == ga && tt_ground(t + a + b) == ga) {
+			alt = ga;
+			return k;
+		}
+	}
+	return -1;
+}
+
+// Landscape at a point of tile t (uv 0..1 in the tile).
+int tt_ground_at(ivec2 t, vec2 uv) {
+	int g = tt_ground(t);
+	int alt;
+	int k = tt_ground_cut(t, g, alt);
+	if (k >= 0) {
+		vec2 tip = vec2(float(k == 1 || k == 2), float(k >= 2));
+		if (abs(uv.x - tip.x) + abs(uv.y - tip.y) < 1.0) { return alt; }
+	}
+	return g;
+}
+
 int tt_town(ivec2 t) {
 	return tt_cell(t) >> 2;
 }
@@ -88,8 +152,11 @@ int tt_town(ivec2 t) {
 float tt_corner_height(ivec2 c) {
 	// blurred, so level contours run as long clean lines (as in SimCity 2000)
 	// instead of single-tile bumps and pits; the blur only lowers slopes
-	// (the smooth far relief keeps more of the ridges, so it stays crisp)
-	return textureLod(relief_tex, tt_node_uv(tt_corner_pos(c)), height_lod + mix(1.5, 0.3, relief_smooth)).r;
+	vec2 uv = tt_node_uv(tt_corner_pos(c));
+	float h = textureLod(relief_tex, uv, height_lod + 1.5).r;
+	// the blur must not lift the land next to the water: cap it with the sharp
+	// water envelope, which rises one level per tile from every shore
+	return shore_ready ? min(h, textureLod(shore_tex, uv, 0.0).r) : h;
 }
 
 // SimCity 2000 rule: the level belongs to the corner, not to the tile, so
@@ -107,11 +174,38 @@ float tt_lake_level(ivec2 t) {
 		float m = (a.g * 255.0 * 256.0 + a.b * 255.0) - 1000.0;
 		if (a.g + a.b > 0.0) { metres = metres < -999.0 ? m : min(metres, m); }
 	}
-	float x = max(metres, 0.0) / m_per_level;
-	return max(mix(round(x), x, relief_smooth), 1.0);
+	// small lakes between the nodes: the bake pinned their nodes in the envelope
+	if (metres < -999.0 && shore_ready) { metres = textureLod(shore_tex, tt_node_uv(p), 0.0).r; }
+	float x = max(metres - level_floor_m, 0.0) / m_per_level;
+	return max(round(x), 1.0);
+}
+
+float tt_corner_x(ivec2 c) {
+	return max(tt_corner_height(c), 0.0) / m_per_level;
+}
+
+// Removes ridges and pits one corner wide: a corner above both neighbours
+// along one axis (and not below either along the other) drops a level, and
+// the other way round. Otherwise a plain right at a level boundary shows
+// single-tile bumps and notches instead of clean terraces (SimCity 2000).
+float tt_clean_level(ivec2 c, float l) {
+	vec2 ax = vec2(round(tt_corner_x(c - ivec2(1, 0))), round(tt_corner_x(c + ivec2(1, 0))));
+	vec2 az = vec2(round(tt_corner_x(c - ivec2(0, 1))), round(tt_corner_x(c + ivec2(0, 1))));
+	float hx = max(ax.x, ax.y), lx = min(ax.x, ax.y);
+	float hz = max(az.x, az.y), lz = min(az.x, az.y);
+	if ((l > hx && l >= hz) || (l > hz && l >= hx)) { return l - 1.0; }
+	if ((l < lx && l <= lz) || (l < lz && l <= lx)) { return l + 1.0; }
+	return l;
 }
 
 float tt_land_corner(ivec2 c) {
+	if (levels_ready) {
+		// far levels: baked with the same rules (tools/build_tile_terrain.py,
+		// corner_levels), shores and lakes included
+		ivec2 n = textureSize(levels_tex, 0);
+		if (c.x < 0 || c.y < 0 || c.x >= n.x || c.y >= n.y) { return 0.0; }
+		return round(texelFetch(levels_tex, c, 0).r * 255.0);
+	}
 	ivec2 nb[4] = ivec2[](c, c - ivec2(1, 0), c - ivec2(0, 1), c - ivec2(1, 1));
 	bool shore = false;
 	float lake = 1.0e6;
@@ -120,21 +214,61 @@ float tt_land_corner(ivec2 c) {
 		shore = shore || w == W_SEA;
 		if (w == W_LAKE) { lake = min(lake, tt_lake_level(nb[k])); }
 	}
-	// far out the steps melt into a smooth relief (EU5 map); up close they are tiles
-	float x = max(tt_corner_height(c), 0.0) / m_per_level;
-	float l = max(1.0, mix(round(x), x, relief_smooth));
+	float l = max(1.0, tt_clean_level(c, round(tt_corner_x(c))));
 	// corners at the sea or a lake sit at the water line: the shore ramps in
 	return shore ? 0.0 : min(l, lake);
+}
+
+// SimCity 2000 shore: the water lies a little below the land, so the land
+// ends in a low earth edge.
+uniform float water_drop = 0.3; // levels
+float tt_water_drop() {
+	return water_drop;
+}
+
+// Coast cut of a land tile: with the sea (or a lake) on two neighbouring sides
+// and on the diagonal between them, the half of the tile on that side is
+// water too (cut along the tile diagonal), so a staircase of water tiles
+// reads as a 45-degree coast, as in SimCity 2000. Returns the corner at the
+// tip of the wet half (0..3), or -1.
+// nb: tt_cell of the side neighbours (N, E, S, W), which the caller often has.
+int tt_coast_cut_nb(ivec2 t, int cell, int nb[4]) {
+	if ((cell & 3) != W_LAND || (cell >> 2) >= 2) {
+		return -1;
+	}
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	for (int k = 0; k < 4; k++) {
+		int a = nb[k] & 3;
+		int b = nb[(k + 1) & 3] & 3;
+		bool wet = (a == W_SEA || a == W_LAKE) && b == a;
+		bool rest_dry = (nb[(k + 2) & 3] & 3) != a && (nb[(k + 3) & 3] & 3) != a;
+		if (wet && rest_dry && tt_water(t + S[k] + S[(k + 1) & 3]) == a) {
+			return (k + 1) & 3;
+		}
+	}
+	return -1;
+}
+
+int tt_coast_cut(ivec2 t) {
+	int nb[4] = int[](tt_cell(t + ivec2(0, -1)), tt_cell(t + ivec2(1, 0)), tt_cell(t + ivec2(0, 1)), tt_cell(t + ivec2(-1, 0)));
+	return tt_coast_cut_nb(t, tt_cell(t), nb);
+}
+
+// Level of the water in the wet half of a cut tile (tip corner a).
+float tt_cut_level(ivec2 t, int a) {
+	const ivec2 S[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	ivec2 n = t + S[a];
+	return tt_water(n) == W_LAKE ? tt_lake_level(n) - tt_water_drop() : -tt_water_drop();
 }
 
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
 vec4 tt_corners(ivec2 t) {
 	int w = tt_water(t);
 	if (w == W_SEA) {
-		return vec4(0.0);
+		return vec4(-tt_water_drop());
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t) - 0.04);
+		return vec4(tt_lake_level(t) - tt_water_drop());
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),
@@ -160,12 +294,6 @@ vec4 tt_corners_cached(ivec2 t) {
 	return tt_corners(t);
 }
 
-// Clumped woods: land cover forest share through a noisy threshold. The noise
-// is anchored in the world, so woods keep their place across zoom levels.
-float tt_tree_density(vec2 p, float forest) {
-	return smoothstep(0.5, 0.95, forest + (tt_fbm(p / 9.0) - 0.5) * 0.5);
-}
-
 // Distance to the coast in km (bilinear over the 2 km nodes).
 float tt_sea_distance(vec2 p) {
 	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
@@ -176,20 +304,6 @@ float tt_sea_distance(vec2 p) {
 	float c = texelFetch(aux_tex, i + ivec2(0, 1), 0).r;
 	float d = texelFetch(aux_tex, i + ivec2(1, 1), 0).r;
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 * 2.0;
-}
-
-// Bilinear share of sea nodes (x) and lake nodes (y) at p, 0 dry .. 1 wet:
-// its 0.5 contour is a smooth shoreline for the far relief map.
-vec2 tt_water_share(vec2 p) {
-	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
-	ivec2 i = ivec2(floor(g));
-	vec2 f = fract(g);
-	vec2 w[4];
-	for (int k = 0; k < 4; k++) {
-		vec4 a = texelFetch(aux_tex, i + ivec2(k & 1, k >> 1), 0);
-		w[k] = vec2(a.r > 0.0 ? 1.0 : 0.0, a.g + a.b > 0.0 ? 1.0 : 0.0);
-	}
-	return mix(mix(w[0], w[1], f.x), mix(w[2], w[3], f.x), f.y);
 }
 
 float tt_latitude(vec2 p) {

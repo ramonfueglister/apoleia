@@ -1,5 +1,5 @@
 extends Node3D
-## Tile terrain (SimCity 2000 meets EU5). Loads the baked tile data
+## Tile terrain (SimCity 2000 tiles at every zoom). Loads the baked tile data
 ## (artifacts/render-data/tile-terrain-r1, tools/build_tile_terrain.py), draws
 ## a patch of tiles around the view with one MultiMesh, and trees and houses
 ## with four more. All placement happens in the shaders; this script only picks
@@ -12,14 +12,15 @@ const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 
-# Zoom levels by tile size. A height level is relief_slope (m/km, from the
-# bake) times the tile size, so a ramp rises one level per tile at most, as in
-# SimCity 2000. Its height on screen is LEVEL_HEIGHT of the tile, the SimCity
-# 2000 ratio (12 px per level on a 32 x 16 px tile).
+# Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
+# Europe. Up close a height level is relief_slope (m/km, from the bake) times
+# the tile size, so a ramp rises one level per tile at most, as in SimCity
+# 2000; the far levels read their corner levels from the bake (levels-L*.png,
+# with their own metres per level, so ranges keep several steps on the world
+# map). A level is LEVEL_HEIGHT of the tile on screen, the SimCity 2000 ratio
+# (12 px per level on a 32 x 16 px tile).
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const LEVEL_HEIGHT := 0.6
-const SMOOTH_FROM_KM := 20.0 # view width where the tile steps start to melt
-const SMOOTH_TO_KM := 45.0   # view width from where the relief is fully smooth
 const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
@@ -56,6 +57,11 @@ var _relief: PackedFloat32Array
 var _cell_images: Array[Image] = []
 var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
+var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
+var _level_textures := {}
+var _level_metres := {}
+var _ground_textures := {}  # zoom level -> landscape per tile (two per byte)
+var _level_floor := {}
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
 var _corner_view: SubViewport
@@ -92,6 +98,10 @@ func load_data() -> bool:
 	relief_float.convert(Image.FORMAT_RF)
 	_relief = relief_float.get_data().to_float32_array()
 	relief_image.generate_mipmaps()
+	var shore_texture: ImageTexture = null
+	if manifest.has("shore_half"):
+		raw = FileAccess.get_file_as_bytes(dir.path_join(manifest.shore_half.path))
+		shore_texture = ImageTexture.create_from_image(Image.create_from_data(grid_size.x, grid_size.y, false, Image.FORMAT_RH, raw))
 	var cover := Image.load_from_file(dir.path_join(manifest.cover.path))
 	cover.generate_mipmaps()
 	var aux := Image.load_from_file(dir.path_join(manifest.aux.path))
@@ -101,6 +111,18 @@ func load_data() -> bool:
 		_cell_images.append(image)
 		_cell_sizes.append(Vector2i(int(entry.width), int(entry.height)))
 		_cell_textures.append(ImageTexture.create_from_image(image))
+	for entry in manifest.get("levels", []):
+		var image := Image.load_from_file(dir.path_join(entry.path))
+		image.convert(Image.FORMAT_R8)
+		var key := int(entry.level)
+		_level_images[key] = image
+		_level_textures[key] = ImageTexture.create_from_image(image)
+		_level_metres[key] = float(entry.metres_per_level)
+		_level_floor[key] = float(entry.get("floor_m", 0.0))
+	for entry in manifest.get("ground", []):
+		var image := Image.load_from_file(dir.path_join(entry.path))
+		image.convert(Image.FORMAT_R8)
+		_ground_textures[int(entry.level)] = ImageTexture.create_from_image(image)
 	_terrain_material = ShaderMaterial.new()
 	_terrain_material.shader = TERRAIN_SHADER
 	var shared := {
@@ -111,6 +133,8 @@ func load_data() -> bool:
 		"world_min": world_min,
 		"world_size": world_size,
 		"grid_size": Vector2(grid_size),
+		"shore_tex": shore_texture,
+		"shore_ready": shore_texture != null,
 	}
 	_corner_material = ShaderMaterial.new()
 	_corner_material.shader = CORNER_PREP_SHADER
@@ -231,7 +255,8 @@ static func level_for_width(width: float) -> int:
 func _apply_level(value: int) -> void:
 	level = value
 	tile_km = LEVELS[level]
-	m_per_level = relief_slope * tile_km
+	var baked := _level_images.has(level)
+	m_per_level = _level_metres[level] if baked else relief_slope * tile_km
 	level_h = tile_km * LEVEL_HEIGHT
 	var params := {
 		"cells_tex": _cell_textures[level],
@@ -240,12 +265,20 @@ func _apply_level(value: int) -> void:
 		"level_h": level_h,
 		"m_per_level": m_per_level,
 		"height_lod": maxf(0.0, log(tile_km / 2.0) / log(2.0)),
+		"levels_ready": baked,
+		"level_floor_m": _level_floor[level] if baked else 0.0,
+		"levels_tex": _level_textures[level] if baked else null,
+		"ground_ready": _ground_textures.has(level),
+		"ground_tex": _ground_textures.get(level),
 	}
 	for material in _all_materials():
 		for key in params:
 			material.set_shader_parameter(key, params[key])
 	var slots: int = PROP_SLOTS[level]
 	var house_slots: int = HOUSE_SLOTS[level]
+	# no cast shadows from the tiles once the props are gone: the shadow map is
+	# coarse that far out and only draws streaks; the ramps carry the relief
+	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if slots + house_slots > 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# the slot pass only runs while props are drawn
 	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
@@ -272,10 +305,6 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var wanted := level_for_width(width)
 	if wanted != level:
 		_apply_level(wanted)
-	# SimCity 2000 tiles up close, EU5-style smooth relief map from far away
-	var smooth_relief := smoothstep(SMOOTH_FROM_KM, SMOOTH_TO_KM, width)
-	for material in _all_materials():
-		material.set_shader_parameter("relief_smooth", smooth_relief)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	_terrain_material.set_shader_parameter("patch_origin", patch_origin)
@@ -336,6 +365,18 @@ func water_at(p: Vector2) -> int:
 ## Smooth display height of the ground (world y) at p, for the camera focus.
 func ground_y(p: Vector2) -> float:
 	if water_at(p) == 1: return 0.0
+	if _level_images.has(level):
+		# baked corner levels, bilinear between the four corners around p
+		var image: Image = _level_images[level]
+		var g := ((p - world_min) / tile_km).clamp(Vector2.ZERO, Vector2(image.get_size()) - Vector2(1.001, 1.001))
+		var i := int(g.x)
+		var j := int(g.y)
+		var f := g - Vector2(i, j)
+		var a := image.get_pixel(i, j).r
+		var b := image.get_pixel(i + 1, j).r
+		var c := image.get_pixel(i, j + 1).r
+		var d := image.get_pixel(i + 1, j + 1).r
+		return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y) * 255.0 * level_h
 	return maxf(1.0, maxf(relief_m(p), 0.0) / m_per_level) * level_h
 
 ## Highest display height in a rectangle (coarse sampling), for the weather.
