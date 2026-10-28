@@ -30,8 +30,8 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // gold, straw stubble; rows of vegetables and vines in deep greens.
 const vec3 SOIL = vec3(0.47, 0.3, 0.22);
 const vec3 SOIL_DRY = vec3(0.6, 0.46, 0.31);   // under the vines
-const vec3 SPROUT = vec3(0.72, 0.85, 0.42);
-const vec3 GREEN[2] = vec3[](vec3(0.62, 0.8, 0.34), vec3(0.72, 0.83, 0.42)); // lighter and yellower than the meadow
+const vec3 SPROUT = vec3(0.66, 0.82, 0.36);
+const vec3 GREEN[2] = vec3[](vec3(0.56, 0.78, 0.3), vec3(0.66, 0.8, 0.36)); // lighter and yellower than the meadow
 const vec3 RIPE[2] = vec3[](vec3(0.85, 0.8, 0.5), vec3(0.89, 0.83, 0.6));
 const vec3 STUBBLE = vec3(0.8, 0.72, 0.5);
 const vec3 LEAVES = vec3(0.42, 0.66, 0.26);

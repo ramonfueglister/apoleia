@@ -122,9 +122,11 @@ gleich (Test `settle::tests`).
   solange er in der Zelle bleibt.
 - **Anzeige:** Der Datensatz trägt die Mitte des Dorf-Tiles. Die GPU setzt das
   Dorf auf die beste von 16 Stellen des Tiles nach Ackerland und offenem Land
-  (`cover_tex`), das Haus in 0,8 km Umkreis auf einer Parzelle eines Rasters
-  von 0,36 km (Reihen statt Überlappung; zwei Häuser auf einer Parzelle sehen
-  wie eines aus), jede Person bis 35 m daneben.
+  (`cover_tex`), das Haus in 0,8 km Umkreis auf einer Hofparzelle eines
+  Rasters von 0,5 km (2 × 2 Feldparzellen; Reihen statt Überlappung; zwei
+  Häuser auf einer Parzelle sehen wie eines aus). Im Dorf steht ein Viertel
+  der Familie im Vorhof, ein Drittel auf der Gasse um die Hofparzelle, der
+  Rest draussen auf den Feldern; in der Stadt jede Person bis 35 m daneben.
   Hat das Tile kein Land (gehashtes Tile an der Küste), sucht sie Land in der
   ganzen Zelle.
 - **Stadt:** Stadtbewohner haushaltsweise in der Scheibe ihrer Stadt; ihr
@@ -183,12 +185,18 @@ Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
 rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
 Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster, Walmdach aus
-Terrakotta mit dunkleren Ziegelreihen und Graten, Schuppen mit Heu, Holzstoss
-und Busch. Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
+Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und Graten,
+Schuppen mit Heu, Holzstoss, Busch, Gemüsebeet, Obstbaum, Zaun und ein Weg
+durchs Tor bis zur Gasse. Die Palette teilt es mit den Stadtgebäuden des
+Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
+seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
+Palettenindex, den der Mesher in UV.y schreibt, und spiegelt das Haus je
+Parzelle (vier Drehungen, gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
-eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten. Drei
+eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
+Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
 Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
-gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v4_*.res`
+gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v9_*.res`
 gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
 nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
 aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km
@@ -200,8 +208,8 @@ festen Slots und Seiten wie die Personen: rund 25 600 Häuser in 7 Seiten, pro
 Tag ändert meist 1 Seite. `people_houses.gdshader`
 zeichnet sie, ein eigener Platzierungs-Pass (derselbe Shader mit `houses`)
 läuft nur, wenn sich Häuser oder die Terrain-Ansicht ändern. Drehung, Grösse
-und Ton hängen an der Parzelle. Die Familie steht
-im Ring 170–240 m um ihr Haus. Stadtbewohner haben kein eigenes Haus, sie
+und Ton hängen an der Parzelle. Die Familie steht im Vorhof, auf der Gasse
+oder auf den Feldern (siehe Wohnorte). Stadtbewohner haben kein eigenes Haus, sie
 wohnen in den Stadt-Tiles.
 
 ## Getreidewirtschaft auf der Karte
@@ -225,26 +233,32 @@ etwa 25 ms:
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
 Kachel (250 m auf der feinsten Stufe) als Block um die Mitte jeder feinen
-Kachel, so gross wie ihr Feldanteil, eingesäte nach Jahreszeit (Erde,
-Keimlinge, grün, reif, Stoppeln), die übrigen als Wiese; Pfade zum Markt,
-Marktplatz mit Ständen, gepflasterte Strassen, auf der Karte dunkle Linien,
-Seewege gestrichelt. Taste `G` schaltet das aus und an. Was gezeigt wird,
-hängt an der Sichtbreite (`sim_view_km`), nicht an der Pixelgrösse, damit
-kein Umschalten als Naht durchs Bild läuft: einzelne Parzellen und Saat bis
-8 km, ganze Feldblöcke in einer Farbe bis 30 km, Trampelpfade bis 10 km,
-Handelswege unter 100 km, Strassen unter 500 km, Seewege bis 150 km.
+Kachel, so gross wie ihr Feldanteil; Brache als Trockengras; Pfade zum
+Markt, Marktplatz mit Ständen, Dorfgassen um die Hofparzellen, Handelswege
+und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.
+Taste `G` schaltet das aus und an. Was gezeigt wird, hängt an der
+Sichtbreite (`sim_view_km`), nicht an der Pixelgrösse, damit kein Umschalten
+als Naht durchs Bild läuft: einzelne Parzellen, Feldplatten und Dorfgassen
+bis 8 km, ganze Feldblöcke je eine Frucht bis 40 km, Trampelpfade bis 10 km,
+Handelswege und Strassen unter 100 km, Seewege bis 150 km.
 
-Bis 8 km steht die Saat als Voxel-Büschel auf den eingesäten Parzellen
+Jede Parzelle trägt eine Frucht (`sim_crop_kind`, Hash der Parzelle; fern
+je Feldblock): Weizen 40 %, Gerste 20 %, Gemüse und Bohnen 25 %, Reben 15 %.
+Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 (`people_crops.gdshader`, eine Instanz pro Parzelle in einem Quadrat von
-40 × 40 um die Kamera, 6 × 6 Büschel): Keimlinge, grünes Korn, reifer Weizen
-als geschlossene Fläche mit Furchen, Stoppeln. Die Regel, welche Parzelle
-bestellt ist, liegt in `sim_fields.gdshaderinc` und gilt für Bodenfarbe und
-Büschel gleich. Eine Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`,
-ein Pixel pro Parzelle von 0,36 km mit Bauernhaus) hält Haus, Garten und Hof
-frei; die Terrain malt diese Parzellen als Wiese. Ein Klick auf eine Person
-zeigt jetzt auch die Art des Haushalts (Hof mit Feldgrösse, Lohn, Zelt,
-Händler, Oberschicht), wie viel er im letzten Monat gegessen hat und seinen
-Vorrat.
+40 × 40 um die Kamera), 6 % vom Parzellenrand eingerückt, damit Grasränder
+und Gassen dazwischen laufen. Weizen und Gerste sind die Platte selbst
+(Erde, Keimlinge, grün, gold, Stoppeln nach dem Wachstum der Sim), Gemüse
+steht in 12 dünnen Reihen auf rotbrauner Erde, Reben in jeder zweiten Reihe
+höher. Die Regel, welche Parzelle bestellt ist, liegt in
+`sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
+Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
+Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die
+Gassen; die Terrain malt Hofparzellen als Wiese.
+
+Ein Klick auf eine Person zeigt auch die Art des Haushalts (Hof mit
+Feldgrösse, Lohn, Zelt, Händler, Oberschicht), wie viel er im letzten Monat
+gegessen hat und seinen Vorrat.
 
 ## Farben und Klick
 
