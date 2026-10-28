@@ -189,9 +189,11 @@ Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und Graten,
 Schuppen mit Heu, Holzstoss, Busch, Gemüsebeet, Obstbaum, Zaun und ein Weg
 durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
-hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, Dach tiefes
-Terrakotta: die Trittflächen sind dunkler angelegt, als sie erscheinen, da
-Sonne und Tonemapping sie sonst nach Orange heben. Die Palette teilt es mit den Stadtgebäuden des
+hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4 m hohe Wände
+unter einem flachen Walmdach (23°), damit das Dach das Haus von oben nicht
+verschluckt; Dach tiefes, nicht grelles Terrakotta: die Trittflächen sind
+dunkler angelegt, als sie erscheinen, da Sonne und Tonemapping sie sonst
+nach Orange heben. Die Palette teilt es mit den Stadtgebäuden des
 Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
 seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
 Palettenindex, den der Mesher in UV.y schreibt, dazu je Hof einen von vier
@@ -271,15 +273,16 @@ Bis 8 km steht jede eingesäte Parzelle als erhöhte Feldplatte wie bei Urbek
 Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
 Ackerland: dunkle braune Erde mit grünen Reihen, zwischen denen die Erde
 sichtbar bleibt, und eine geschlossene strohgelbe Fläche. Weizen und Gerste
-wachsen von nackter Erde über lockere Sprossen zu schmalen durchgehenden
+wachsen von nackter Erde über lockere Sprossen zu schmalen, buckligen
 Reihen, reifen zu einer strohgelben Fläche und werden zu Stoppeln; eine
 brachliegende Parzelle ist eine niedrige Fläche aus trockenen Stoppeln.
-Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel hinter einem
-Holzzaun auf drei oder vier Seiten, Reben als niedrige Hecken in jeder
-zweiten Reihe. Büschelreihen laufen ost-west, damit ihre Vorderseiten zur
-Kamera zeigen (die Lücken schneidet der Fragment-Shader); durchgehende
-Reihen laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen sich
-ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
+Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel, Reben als
+niedrige Hecken in jeder zweiten Reihe; die Felder neben einem Hof sind
+ringsum eingezäunt, weiter draussen keines. Die Grüntöne liegen dunkler als
+die Wiese daneben, wie bei Urbek. Büschelreihen laufen ost-west, damit ihre Vorderseiten zur
+Kamera zeigen (die Lücken schneidet der Fragment-Shader); die Reihen des
+Getreides laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen
+sich ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
 gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen (nicht bestellt,
 offenes Land, kein Hof) steht eine kleine Schafherde, vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine

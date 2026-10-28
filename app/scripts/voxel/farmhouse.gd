@@ -16,9 +16,9 @@ const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 
 const HALF_X := 4.5
 const HALF_Z := 3.25
-const WALL := 3.5
+const WALL := 4.0 # tall enough that the roof does not swallow the house from above
 const EAVES := 0.5
-const PITCH := 0.5 # roof rise per metre (about 27 degrees)
+const PITCH := 0.42 # roof rise per metre (about 23 degrees)
 const LOD_VOXELS := [0.25, 0.5, 1.0]
 const FINE := 0.125
 const BOUNDS_LO := Vector3(-10.0, -0.125, -10.0) # the voxel layer -0.125..0.125 holds the path, flush with the ground
@@ -26,7 +26,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v16_%s.res"
+const CACHE := "user://farmhouse_v18_%s.res"
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -35,8 +35,8 @@ const CACHE := "user://farmhouse_v16_%s.res"
 # roof steps (TOPS), green or brown shutters. people_houses.gdshader turns
 # the plaster cream, pink or ochre and the shutters green or brown per farm.
 const PALETTE := [
-	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("b3563f"),
-	Color("a84c38"), Color("8c372f"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("ad5a44"),
+	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("667f4c"), Color("52663d"),
@@ -45,7 +45,7 @@ enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY }
 # the lit treads darker than they show: sun and tone map lift them
-const TOPS := {ROOF: Color("b8553c"), ROOF_DARK: Color("a54a36")}
+const TOPS := {ROOF: Color("b45a42"), ROOF_DARK: Color("a34c3a")}
 
 ## What fills point p (metres).
 static func sample(p: Vector3) -> int:
@@ -78,7 +78,7 @@ static func _house(p: Vector3) -> int:
 			return EMPTY if az >= HALF_Z - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
 		# small windows high in the wall, with wooden shutters either side:
 		# two at the front and back, one on each end
-		var win_y := p.y >= 1.625 and p.y < 2.5
+		var win_y := p.y >= 1.875 and p.y < 2.75
 		if win_y and az >= HALF_Z - 0.25:
 			var k := absf(ax - 2.75)
 			if k < 0.25:
