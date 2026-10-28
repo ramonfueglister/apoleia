@@ -421,6 +421,36 @@ Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 0df6a9cf176aae
 grain 4c87aa8d380d9cd3), 53 Tests grün. Mehr Menschen im Jahr 100 heisst mehr Hungertote
 dann, wenn das Land voll wird.
 
+## Platzhalter nachgestimmt: 22 % Ledige, 3,5 % Hungertote in der Tafel (S86, S89, 100 Jahre, Seed 1, `run100-retune.txt`; vorher: `run100-buy-again.txt`)
+
+Nach S90, S75 für die Zelte und dem Einkauf-Fix wuchs die Bevölkerung um 0,24 % im Jahr,
+über dem Ziel von S86 (0,1–0,2 %), und die Hungertote machten noch 3,4–3,7 % aller
+Todesfälle aus statt 5 %. Beide Platzhalter sind so definiert, dass sie diesen Zahlen
+folgen; neu nachgestimmt nach je zwei 100-Jahre-Läufen (200, 220 und 240 ‰ Ledige, mit
+5 % und 3,7 % Hungeranteil). Keine neue Regel.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Frauen, die nie heiraten | 20 % | 22 % |
+| Hungertote in der Sterbetafel | 5 % | 3,5 % |
+| Geburten pro 1'000, Jahr 11 bis 100 | 46,2 | 45,3 |
+| Todesfälle pro 1'000 | 43,0 | 43,1 |
+| Hungertote pro Jahr / Anteil an allen Toten | 254 / 4,6 % | 190 / 3,6 % |
+| Hungertote Jahr 2 / Jahr 3 | 590 / 376 | 588 / 386 |
+| Verheiratete Frauen 15–49 im Jahr 100 | 67 % | 66 % |
+| Menschen im Jahr 100 | 142'911 | 129'799 |
+| **Wachstum Jahr 10 bis 100** | **0,24 %** | **0,14 %** |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people d92e779e135480e4,
+grain 4802e747a932ce6f), 53 Tests grün. Getreide pro Tag im Mittel 2,1 ms auf der
+heute langsameren Cloud-Maschine (vorher 2,0 ms im selben Zustand).
+
+**Händler geprüft.** Die Preise reichen bis zur Obergrenze (das 8-Fache), aber das sind
+fast leere Märkte am Kartenrand (Schottland, Nordrussland) mit 0–30 Menschen, die kein
+Händler auf seiner Liste hat. Im Jahr 10 hungern im ganzen Reich nur 56 Lohnhaushalte,
+davon 5 an solchen Märkten. Die Händler sind also nicht der Grund für die übrigen
+Hungertoten.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -505,7 +535,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Verderb | 4 % im Jahr in allen Speichern, für jedes Klima gleich | APHLIS 2011 (Weizen im Hoflager), FAO |
 | Zelte ziehen um (S75) | einmal im Monat, wenn nicht satt; Märkte bis 5 Reisetage; ab dem 1,5-Fachen an Lohn und Almosen pro Zeltperson; Umzug sofort; Nähe zu anderen Zelten zählt nur über die geteilte Arbeit | frei gewählt |
-| Hungertote in der Sterbetafel (S89) | 5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in normalen Jahren dieses Laufs (5–7 %) |
+| Hungertote in der Sterbetafel (S89) | 3,5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in den Jahren 11–100 dieses Laufs (3,4–3,7 %; mit dem Verderb allein 5–7 %) |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |

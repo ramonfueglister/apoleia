@@ -97,17 +97,19 @@ const MARRY_AGE_MAX_F: f64 = 35.0;
 /// S86: share of women, per 1,000, who never marry (Huebner 2019: about a
 /// quarter of adult women in the Egyptian census without sign of a
 /// marriage, the divorced included). PLACEHOLDER, set so the totals of the
-/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year).
-pub const NEVER_MARRY_PER_1000: u64 = 200;
+/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year);
+/// 200 until the S75 tents and S90 Egypt, then 0.235 % growth.
+pub const NEVER_MARRY_PER_1000: u64 = 220;
 /// S86: divorces per 10,000 marriages and year (frequent and informal in
 /// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
 pub const DIVORCE_PER_10K_YEAR: u64 = 700;
 /// S89: the life table (Coale-Demeny West 3) already holds the deaths from
 /// hunger, which the simulation adds on top (S84, S88), so the table's
 /// hazard is lowered by their share of all deaths, per 1,000. PLACEHOLDER:
-/// about the share of hunger deaths in normal years of the 100-year run
-/// with spoilage (5-7 %); one value for all ages and places.
-pub const TABLE_HUNGER_PER_1000: u64 = 50;
+/// about the share of hunger deaths in years 11-100 of the 100-year run
+/// (5-7 % with spoilage; 3.4-3.7 % after S90, S75 for tents and the
+/// buy fix); one value for all ages and places.
+pub const TABLE_HUNGER_PER_1000: u64 = 35;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
