@@ -156,6 +156,18 @@ Bäume. Gezeichnet werden nur die Personen nahe
 der Ansicht: `ApoleiaPeople.near` liefert ihre Slots (Rust, ein Durchlauf über
 die Anker, nur wenn sich die Ansicht deutlich bewegt oder ein Tag kam), höchstens
 16 384, als Liste in einer kleinen Textur; das MultiMesh zeichnet genau so viele.
+Kleidung und Werkzeug zeigen Beruf und Stand (nur aus dem Datensatz, keine
+neuen Sim-Daten): Bauern und Pächter mit Hacke, Soldaten mit Speer, Schild und
+rotem Waffenrock, Offiziere mit Schild, Schwert und rotem Umhang, Geistliche im
+weissen Gewand mit Stab, Gelehrte im langen grauen Gewand, Handwerker mit
+Lederschürze, Händler, Tagelöhner und Unfreie mit Bündel, Unfreie barfuss in
+grober Wolle. Senatoren und Adel tragen weisse Wolle mit breiten Purpurstreifen
+(clavi) und Purpurumhang, Ritter und Beamte schmale Streifen; Wohlhabende und
+Händler leuchtende Farben (Krapp, Waid, Safran). Die Teile stecken alle im
+einen Figuren-Mesh (Teil-Nummer in UV.x), der Shader faltet weg, was die Person
+nicht trägt. Kinder rennen ums Haus. Für alte Leute fehlt das Alter im
+Datensatz, das wäre eine Sim-Änderung.
+
 Weiter oben sieht man keine Menschen, nur Häuser, Felder und Städte. Die Kamera
 kommt bis 1 km Bildbreite heran (`MIN_WIDTH` in `landscape.gd`, vorher 4 km):
 dann sind die Figuren 40–50 px hoch und Kleid, Kopftuch und Beine erkennbar,
