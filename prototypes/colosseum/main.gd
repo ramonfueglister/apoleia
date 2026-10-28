@@ -51,10 +51,10 @@ func _environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	# Urbek-like light: cool sky fill in the shadows, soft occlusion, a
 	# warm sun, colours kept bright rather than filmic-washed.
-	env.ambient_light_color = Color("a9bfd8")
+	env.ambient_light_color = Color("c4cad2")
 	env.ambient_light_energy = 0.42
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	env.tonemap_exposure = 0.95
+	env.tonemap_exposure = 0.92
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.12
 	env.ssao_enabled = args.get("scene", "hero") != "bench"
@@ -65,11 +65,15 @@ func _environment() -> void:
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -35, 0)
-	sun.light_energy = 1.25
+	sun.light_energy = 1.05
 	sun.light_color = Color("fff1de")
-	sun.shadow_blur = 1.5
+	sun.shadow_blur = 1.0
 	sun.shadow_enabled = not args.has("noshadow")
-	sun.directional_shadow_max_distance = 260.0
+	# Crisp contact shadows under ledges, as in Urbek; no acne on voxel faces.
+	sun.directional_shadow_max_distance = 260.0 if args.get("scene", "hero") == "bench" else 70.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_bias = 0.04
+	sun.shadow_normal_bias = 1.0
 	add_child(sun)
 
 func _ground(size: float, colour: Color) -> void:
