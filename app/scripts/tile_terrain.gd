@@ -11,6 +11,7 @@ const PROPS_SHADER = preload("res://shaders/tile_props.gdshader")
 const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
+const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
 # Europe. Up close a height level is relief_slope (m/km, from the bake) times
@@ -38,6 +39,25 @@ const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
 const HOUSE_M := 10.0 # house length (house mesh is 1 unit long)
 const TREE_M := 8.0  # tree height (tree meshes are about 1.1 units tall; Urbek: 5-8 m, a house 6-12 m)
 const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
+# Rome's great buildings (tile_prop_meshes.gd) on blocks of city tiles, drawn
+# while the houses are (the two nearest levels). Real shapes at LANDMARK_KM_PER_M
+# (6 times their size: next to the 24-times houses they keep the city's tiles
+# free for houses), a half higher again (LANDMARK_RISE), so the Colosseum and
+# the temples stand above the insulae. Each block is snapped to the 0.5 km
+# tiles around its place, the layout after the real city: the Capitol temple
+# by the Tiber, the Forum east of it, the Colosseum beyond, the Pantheon in the
+# north, the Circus Maximus south of the Palatine.
+const LANDMARK_KM_PER_M := 0.006
+const LANDMARK_RISE := 1.5
+const LANDMARK_TILE_KM := 0.5
+const LANDMARKS := [
+	# mesh, block centre (lon, lat), block size in tiles
+	["temple", Vector2(12.4853, 41.8917), Vector2i(1, 1)],
+	["forum", Vector2(12.4913, 41.8917), Vector2i(1, 1)],
+	["colosseum", Vector2(12.5002, 41.8894), Vector2i(2, 2)],
+	["pantheon", Vector2(12.4853, 41.9007), Vector2i(1, 1)],
+	["circus", Vector2(12.4883, 41.8782), Vector2i(4, 1)],
+]
 
 var manifest: Dictionary
 var world_min := Vector2.ZERO
@@ -73,6 +93,7 @@ var _place_view: SubViewport
 var _prop_materials: Array[ShaderMaterial] = []
 var _terrain: MultiMeshInstance3D
 var _props: Array[MultiMeshInstance3D] = []
+var _landmarks: Array[MeshInstance3D] = []
 
 static func data_root() -> String:
 	return ProjectSettings.globalize_path("res://").path_join("..").simplify_path()
@@ -204,6 +225,47 @@ func _build_nodes() -> void:
 		add_child(node)
 		_props.append(node)
 		_prop_materials[kind].set_shader_parameter("prop_n", PROP_N)
+	_build_landmarks()
+
+## Same as landscape.gd lonlat_to_world.
+static func _lonlat_world(ll: Vector2) -> Vector2:
+	return Vector2(6371.0088 * cos(deg_to_rad(41.0)) * deg_to_rad(ll.x - 19.0), -6371.0088 * deg_to_rad(ll.y - 41.0))
+
+func _build_landmarks() -> void:
+	var material := ShaderMaterial.new()
+	material.shader = LANDMARK_SHADER
+	var rects := PackedVector4Array()
+	for entry in LANDMARKS:
+		var size := Vector2(entry[2])
+		var first := ((_lonlat_world(entry[1]) - world_min) / LANDMARK_TILE_KM - size * 0.5).round()
+		var lo := world_min + first * LANDMARK_TILE_KM
+		var hi := lo + size * LANDMARK_TILE_KM
+		var node := MeshInstance3D.new()
+		node.name = "Landmark" + String(entry[0]).capitalize()
+		node.mesh = PropMeshes.landmark(entry[0])
+		node.material_override = material
+		node.scale = Vector3(1.0, LANDMARK_RISE, 1.0) * LANDMARK_KM_PER_M
+		var centre := (lo + hi) * 0.5
+		node.position = Vector3(centre.x, 0.0, centre.y)
+		add_child(node)
+		_landmarks.append(node)
+		# no houses on the block, nor where the building reaches past it
+		var reach := node.mesh.get_aabb()
+		var a := centre + Vector2(reach.position.x, reach.position.z) * LANDMARK_KM_PER_M
+		var b := centre + Vector2(reach.end.x, reach.end.z) * LANDMARK_KM_PER_M
+		rects.append(Vector4(minf(lo.x, a.x - 0.09), minf(lo.y, a.y - 0.09), maxf(hi.x, b.x + 0.09), maxf(hi.y, b.y + 0.09)))
+	_place_material.set_shader_parameter("landmark_rects", rects)
+	_place_material.set_shader_parameter("landmark_count", rects.size())
+	for kind in _prop_materials.size():
+		_prop_materials[kind].set_shader_parameter("landmark_rects", rects)
+		_prop_materials[kind].set_shader_parameter("landmark_count", rects.size())
+
+## Level of the ground under a landmark (the city is flat at the near levels).
+func _place_landmarks() -> void:
+	for node in _landmarks:
+		var p := Vector2(node.position.x, node.position.z)
+		node.visible = HOUSE_SLOTS[level] > 0
+		node.position.y = maxf(1.0, round(maxf(relief_m(p), 0.0) / m_per_level)) * level_h
 
 ## Hide the tree kinds that cannot grow anywhere in the prop patch (the shader
 ## rule: conifers above 700 m or north of 50°, stone pines and cypresses below
@@ -297,6 +359,7 @@ func _apply_level(value: int) -> void:
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
 		var size_m := HOUSE_M if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
+	_place_landmarks()
 
 ## Direction towards the sun (world), for the stylised slope shading.
 func set_light_dir(dir: Vector3) -> void:

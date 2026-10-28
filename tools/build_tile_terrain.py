@@ -697,7 +697,9 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         # conifers in the subalpine belt and the north (beech below)
         g[wood & ((h + 150 * n3 > 1050) | (lat + 3.0 * n2 > 57.0))] = G["conifer"]
         g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
-        snow_line = 1600 - 120 * lod + np.maximum(45 - lat, 0) * 70 + 500 * dry
+        # far out the mean height is far below the peaks: the snow line drops
+        # faster than the rock line, so ranges keep white caps on the map
+        snow_line = 1600 - 180 * lod + np.maximum(45 - lat, 0) * 70 + 500 * dry
         g[(h + 160 * n3 > snow_line) | (glacier + 0.5 * n3 > 0.5)] = G["snow"]
         g[(water[r0:r1] & 3) % 3 != 0] = NO_GROUND  # sea and lakes; rivers run on land
         out[r0:r1] = g
