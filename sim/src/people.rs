@@ -19,6 +19,7 @@
 //! and every structural change runs serially in person id order, so the
 //! result does not depend on thread count or iteration order.
 
+use crate::body;
 use crate::groups::{self, Groups};
 use crate::inputs::Inputs;
 use crate::life::{self, Calendar, Ev, BIRTH, DEATH, YEAR};
@@ -75,8 +76,32 @@ const CAP_SOFT: f64 = 0.9;
 /// S80 PLACEHOLDER: share of households a year that leave at the cap, the
 /// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
 const CAP_LEAVE_PER_YEAR: f64 = 0.03;
-/// Women are not sought after this age.
-const MARRY_AGE_MAX_F: f64 = 45.0;
+/// S82 (Ramon, 27.10.2026): partners further apart than this many IQ
+/// points are not considered. Calibrated so that new couples correlate at
+/// about life::IQ_MATE_R (30 gives r = 0.44 over 10 years, ~19,500
+/// marriages); inheritance then uses life::IQ_MATE_RG.
+pub const IQ_MATE_GAP: f64 = 30.0;
+/// Inheritance at the father's death (S83). INHERIT_EQUAL, the default:
+/// the father's family farm is shared in equal parts between the old
+/// household and the married sons' new households (Roman intestate
+/// succession, Twelve Tables V.4, Gaius Inst. 3.1–8; no primogeniture,
+/// Saller 1994). For comparison runs: INHERIT_NOW, the farm stays with the
+/// old household and the sons start landless; INHERIT_ONE, the eldest
+/// married son stays in the household with the farm.
+pub const INHERIT_NOW: u8 = 0;
+pub const INHERIT_EQUAL: u8 = 1;
+pub const INHERIT_ONE: u8 = 2;
+/// Women are not sought after this age (S86: older widows and divorced
+/// women seldom married again, Bagnall and Frier 1994). PLACEHOLDER: the age.
+const MARRY_AGE_MAX_F: f64 = 35.0;
+/// S86: share of women, per 1,000, who never marry (Huebner 2019: about a
+/// quarter of adult women in the Egyptian census without sign of a
+/// marriage, the divorced included). PLACEHOLDER, set so the totals of the
+/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year).
+pub const NEVER_MARRY_PER_1000: u64 = 200;
+/// S86: divorces per 10,000 marriages and year (frequent and informal in
+/// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
+pub const DIVORCE_PER_10K_YEAR: u64 = 700;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -91,11 +116,6 @@ const BIRTH_GAP: f64 = 1.25;
 const PREGNANCY: f64 = 0.75;
 /// Death of the mother per birth (pre-modern order of magnitude).
 const MATERNAL_DEATH_PER_10K: u64 = 100;
-/// Health multiplies the death hazard by 1 + HUNGER_DEATH × (1 − h) and
-/// the birth hazard by h (h = health / 1000).
-const HUNGER_DEATH: f64 = 2.0;
-/// Health moves this fraction of the way to its target each month.
-const HEALTH_STEP: i32 = 3;
 
 /// Neighbour offsets; index d and 7 − d are opposite directions.
 const DIRS: [(i32, i32); 8] = [
@@ -152,7 +172,9 @@ impl Intelligence {
     }
 }
 
-/// 0–1000; driven by food (S64, S65).
+/// Health as body weight, ‰ of the normal weight (S84, crate::body): 1000
+/// at BMI 21 for adults, at the usual weight for their age for children.
+/// Hunger lowers it, and it sets the death risk (S64, S65).
 #[derive(Component, Clone, Copy)]
 pub struct Health(pub u16);
 #[derive(Component, Clone, Copy)]
@@ -180,11 +202,20 @@ pub struct Spouse(pub u32);
 /// Father and mother (NONE for the start population).
 #[derive(Component, Clone, Copy)]
 pub struct Parents(pub u32, pub u32);
-/// Generation of the scheduled death and birth events.
-#[derive(Component, Clone, Copy, Default)]
+/// Generation of the scheduled death and birth events, and the household's
+/// food share (‰ of need) at the last health step, which sets fertility
+/// (crate::body::fert_mult).
+#[derive(Component, Clone, Copy)]
 pub struct Sched {
     pub death: u16,
     pub birth: u16,
+    pub fed: u16,
+}
+
+impl Default for Sched {
+    fn default() -> Self {
+        Sched { death: 0, birth: 0, fed: 1000 }
+    }
 }
 /// Months the family has searched a spouse without success.
 #[derive(Component, Clone, Copy, Default)]
@@ -463,6 +494,8 @@ pub struct Stats {
     pub deaths_under1: u64,
     pub age_at_death_sum: f64,
     pub marriages: u64,
+    /// S86: divorces.
+    pub divorces: u64,
     pub marry_age_f: f64,
     pub marry_age_m: f64,
     pub waited_for_land: u64,
@@ -477,6 +510,35 @@ pub struct Stats {
     /// New households of married sons after the father's death (S81).
     pub split_households: u64,
     pub split_people: u64,
+    /// IQ of the partners at marriage: n, Σx, Σy, Σx², Σy², Σxy (S82).
+    pub marry_iq: [f64; 6],
+    /// The same for the partners' genetic values.
+    pub marry_gene: [f64; 6],
+}
+
+fn corr([n, sx, sy, sxx, syy, sxy]: [f64; 6]) -> f64 {
+    let cov = sxy / n - sx / n * sy / n;
+    cov / ((sxx / n - (sx / n).powi(2)) * (syy / n - (sy / n).powi(2))).sqrt()
+}
+
+impl Stats {
+    /// Correlation of the partners' IQ at marriage.
+    pub fn marry_iq_r(&self) -> f64 {
+        corr(self.marry_iq)
+    }
+
+    /// Correlation of the partners' genetic values at marriage.
+    pub fn marry_gene_r(&self) -> f64 {
+        corr(self.marry_gene)
+    }
+
+    /// Adds another period's partner sums.
+    pub fn add_marry(&mut self, o: &Stats) {
+        for k in 0..6 {
+            self.marry_iq[k] += o.marry_iq[k];
+            self.marry_gene[k] += o.marry_gene[k];
+        }
+    }
 }
 
 /// Person ids grouped by a key (compressed rows): ids of key k are
@@ -659,6 +721,18 @@ pub struct People {
     kids: Vec<(u32, u32)>,
     /// Fathers who died since the last split, with their household (S81).
     splits: Vec<(u32, u32)>,
+    /// INHERIT_EQUAL (default), INHERIT_NOW or INHERIT_ONE (S83).
+    pub inherit: u8,
+    /// With the grain economy and INHERIT_EQUAL: (old household, new
+    /// household of a son) for each split since crate::grain took them.
+    pub split_log: Vec<(u32, u32)>,
+    /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
+    pub never_marry_per_1000: u64,
+    pub divorce_per_10k_year: u64,
+    /// Largest IQ gap between partners (infinite: no choice by IQ) and the
+    /// partners' genetic correlation inheritance assumes (S82).
+    pub iq_mate_gap: f64,
+    pub iq_mate_rg: f64,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
     /// (household, person) sorted, rebuilt monthly.
@@ -707,6 +781,11 @@ fn part(len: usize, slice: u32, parts: i64) -> std::ops::Range<usize> {
     len * s / p..len * (s + 1) / p
 }
 
+/// S86: whether this woman never marries (one draw per person).
+fn never_marries(seed: u64, pid: u32, per_1000: u64) -> bool {
+    rnd(seed, pid, 0x6e7e, 0) % 1000 < per_1000
+}
+
 fn age_y(day: i64, born: i32) -> f64 {
     (day - born as i64) as f64 / YEAR as f64
 }
@@ -719,8 +798,15 @@ fn mu(sex: u8) -> &'static [f64; 21] {
     }
 }
 
-fn death_mult(health: u16) -> f64 {
-    1.0 + HUNGER_DEATH * (1.0 - health as f64 / 1000.0)
+/// Base death hazard per year of the life table at `age`.
+fn mu_at(sex: u8, age: f64) -> f64 {
+    let i = life::AGES.iter().rposition(|&a| a <= age).unwrap_or(0);
+    mu(sex)[i]
+}
+
+/// Death hazard multiplier from body weight (S84).
+fn death_mult(weight: u16, age: f64, sex: u8) -> f64 {
+    body::death_mult(weight, age, sex, mu_at(sex, age))
 }
 
 /// Fertility rate per year raised so that with a gap of BIRTH_GAP after
@@ -735,6 +821,12 @@ fn fert_adjusted() -> [f64; 8] {
 
 impl People {
     pub fn new(inp: &Inputs, seed: u64) -> People {
+        People::with_iq_mate_gap(inp, seed, IQ_MATE_GAP)
+    }
+
+    /// As `new`, with partners at most `iq_mate_gap` IQ points apart
+    /// (calibration; infinite: no choice by IQ).
+    pub fn with_iq_mate_gap(inp: &Inputs, seed: u64, iq_mate_gap: f64) -> People {
         bevy_tasks::ComputeTaskPool::get_or_init(bevy_tasks::TaskPool::default);
         let (grid, mut seeds, places, food) = populate(inp, seed);
         let mut world = World::new();
@@ -900,6 +992,12 @@ impl People {
             parents: Vec::new(),
             kids: Vec::new(),
             splits: Vec::new(),
+            inherit: INHERIT_EQUAL,
+            never_marry_per_1000: NEVER_MARRY_PER_1000,
+            divorce_per_10k_year: DIVORCE_PER_10K_YEAR,
+            split_log: Vec::new(),
+            iq_mate_gap,
+            iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
             households: Vec::new(),
             grooms: Vec::new(),
@@ -935,7 +1033,7 @@ impl People {
         for (pid, born, sex, spouse, health, sched) in first {
             p.schedule_death(pid, sched.death, born, sex, health, 0);
             if sex == 0 && spouse != NONE {
-                p.schedule_birth(pid, sched.birth, born, health, 0, PREGNANCY);
+                p.schedule_birth(pid, sched.birth, born, sched.fed, 0, PREGNANCY);
             }
         }
         p.refresh_index();
@@ -949,17 +1047,19 @@ impl People {
 
     fn schedule_death(&mut self, pid: u32, gen: u16, born: i32, sex: u8, health: u16, day: i64) {
         let h = rnd(self.seed(), pid, 0xdead ^ (gen as u32) << 8, day);
-        let w = life::wait(&life::AGES, mu(sex), age_y(day, born), death_mult(health), h).unwrap_or(100.0);
+        let age = age_y(day, born);
+        let w = life::wait(&life::AGES, mu(sex), age, death_mult(health, age, sex), h).unwrap_or(100.0);
         let at = day + ((w * YEAR as f64) as i64).max(1);
         self.cal.push(at, Ev { kind: DEATH, pid, gen });
     }
 
-    /// Next birth for a married woman, at the earliest `gap` years from now.
-    fn schedule_birth(&mut self, pid: u32, gen: u16, born: i32, health: u16, day: i64, gap: f64) {
+    /// Next birth for a married woman, at the earliest `gap` years from now,
+    /// at the fertility of a household food share of `fed` ‰ (S84).
+    fn schedule_birth(&mut self, pid: u32, gen: u16, born: i32, fed: u16, day: i64, gap: f64) {
         let h = rnd(self.seed(), pid, 0xb127 ^ (gen as u32) << 8, day);
         let rates = fert_adjusted();
         let age = age_y(day, born) + gap;
-        if let Some(w) = life::wait(&life::FERT_AGES, &rates, age, health as f64 / 1000.0, h) {
+        if let Some(w) = life::wait(&life::FERT_AGES, &rates, age, body::fert_mult(fed), h) {
             let at = day + (((gap + w) * YEAR as f64) as i64).max(1);
             self.cal.push(at, Ev { kind: BIRTH, pid, gen });
         }
@@ -1027,6 +1127,11 @@ impl People {
         }
     }
 
+    /// The entity of a living person.
+    pub fn alive_entity(&self, pid: u32) -> Option<Entity> {
+        self.alive(pid)
+    }
+
     fn alive(&self, pid: u32) -> Option<Entity> {
         self.ent.get(pid as usize).copied().filter(|&e| e != Entity::PLACEHOLDER)
     }
@@ -1037,6 +1142,7 @@ impl People {
     /// flags (1 groom, 2 bride) and estate. One parallel pass.
     fn index_rows(&mut self) -> Vec<IndexRow> {
         let day = self.world.resource::<Clock>().day;
+        let (seed, never) = (self.seed(), self.never_marry_per_1000);
         let grid = &self.grid;
         let mut parts: Parallel<Vec<IndexRow>> = Parallel::default();
         let mut q = self.world.query::<(&Pid, &Home, &Born, &Sex, &Stand, &Spouse, Has<Travel>)>();
@@ -1049,7 +1155,7 @@ impl People {
                 if single && sex.0 == 1 && a >= MARRY_AGE[st.0 as usize].1 {
                     f |= 1;
                 }
-                if single && sex.0 == 0 && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F {
+                if single && sex.0 == 0 && a >= MARRY_AGE[st.0 as usize].0 && a < MARRY_AGE_MAX_F && !never_marries(seed, pid.0, never) {
                     f |= 2;
                 }
                 let region = if f & 2 != 0 && h.0 != NONE { grid.region(h.0) } else { 0 };
@@ -1190,6 +1296,7 @@ impl People {
         self.migration(day, yslice);
         if slice == 11 {
             self.split_households();
+            self.divorces(day);
         }
         self.timing.migration += us(t0);
         let month = slice == 0;
@@ -1227,8 +1334,9 @@ impl People {
                 DEATH if sched.death == ev.gen => {
                     let h = self.world.get::<Health>(e).unwrap().0;
                     let born = self.world.get::<Born>(e).unwrap().0;
+                    let sex = self.world.get::<Sex>(e).unwrap().0;
                     let a = age_y(day, born);
-                    let m = death_mult(h);
+                    let m = death_mult(h, a, sex);
                     let u = life::unit(rnd(self.seed(), ev.pid, 0xca05e, day));
                     let cause = if u < (m - 1.0) / m {
                         2
@@ -1293,7 +1401,7 @@ impl People {
         let mask = r(1) as u32;
         let traits = ((self.traits[father as usize] & mask) | (self.traits[mother as usize] & !mask)) ^ (1 << (r(2) % 32));
         let sex = (r(3) & 1) as u8;
-        let gene = life::child_gene(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))));
+        let gene = life::child_gene_rg(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))), self.iq_mate_rg);
         let mind = Intelligence::from(gene, life::normal(life::unit(r(6))));
         let mut rel = Relations { n: 2, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
         rel.ids[0] = mother;
@@ -1326,20 +1434,20 @@ impl People {
             self.die(mother, day, 3);
             return;
         }
-        let (born, health) = (self.world.get::<Born>(me).unwrap().0, self.world.get::<Health>(me).unwrap().0);
-        let gen = {
+        let born = self.world.get::<Born>(me).unwrap().0;
+        let (gen, fed) = {
             let mut s = self.world.get_mut::<Sched>(me).unwrap();
             s.birth += 1;
-            s.birth
+            (s.birth, s.fed)
         };
-        self.schedule_birth(mother, gen, born, health, day, BIRTH_GAP);
+        self.schedule_birth(mother, gen, born, fed, day, BIRTH_GAP);
     }
 
-    /// Health follows the food share of the home cell (S65). When it crosses
-    /// a band of 100 the death and birth draws are redone (S64).
-    /// Health follows the food share of the home cell (S65). When it crosses
-    /// a band of 100 the death and birth draws are redone (S64). Runs on the
-    /// day's 1/30 of every table, so each person about once a month.
+    /// Body weight follows the household's food share (S84, crate::body:
+    /// a month of the way to the target weight of Hall et al. 2011). When
+    /// the band of the death risk or of fertility changes, the death or
+    /// birth draw is redone (S64). Runs on the day's 1/30 of every table,
+    /// so each person about once a month.
     fn health(&mut self, day: i64, slice: u32) {
         let mut redo = Vec::new();
         let (food, pop, region) = (&self.region_food, &self.region_pop, &self.cell_region);
@@ -1356,26 +1464,34 @@ impl People {
                         let r = region[home[i].0 as usize] as usize;
                         food[r] as f64 / pop[r].max(1) as f64
                     }
-                };
-                let target = (1000.0 * share.min(1.0)) as i32;
-                let h = health[i].0 as i32;
-                let new = (h + (target - h) / HEALTH_STEP) as u16;
-                if new / 100 != health[i].0 / 100 {
-                    sched[i].death += 1;
-                    let birth = sex[i].0 == 0 && spouse[i].0 != NONE;
-                    if birth {
-                        sched[i].birth += 1;
-                    }
-                    redo.push((pid[i].0, born[i].0, sex[i].0, new, sched[i], birth));
                 }
-                health[i].0 = new;
+                .min(1.0);
+                let age = age_y(day, born[i].0);
+                // Who goes hungry first lowers activity (body::pal).
+                let (w, w2) = (health[i].0, body::month(health[i].0, body::effective_share(share)));
+                let (f, f2) = (sched[i].fed, (share * 1000.0) as u16);
+                let death = body::death_band(w, age) != body::death_band(w2, age);
+                let birth = sex[i].0 == 0 && spouse[i].0 != NONE && body::fert_band(f) != body::fert_band(f2);
+                health[i].0 = w2;
+                sched[i].fed = f2;
+                if death {
+                    sched[i].death += 1;
+                }
+                if birth {
+                    sched[i].birth += 1;
+                }
+                if death || birth {
+                    redo.push((pid[i].0, born[i].0, sex[i].0, w2, f2, sched[i], death, birth));
+                }
             }
         }
         redo.sort_unstable_by_key(|r| r.0);
-        for (pid, born, sex, h, s, birth) in redo {
-            self.schedule_death(pid, s.death, born, sex, h, day);
+        for (pid, born, sex, w, f, s, death, birth) in redo {
+            if death {
+                self.schedule_death(pid, s.death, born, sex, w, day);
+            }
             if birth {
-                self.schedule_birth(pid, s.birth, born, h, day, 0.0);
+                self.schedule_birth(pid, s.birth, born, f, day, 0.0);
             }
         }
     }
@@ -1442,6 +1558,7 @@ impl People {
             cands.sort_unstable();
             cands.dedup();
             let ga = age_y(day, born);
+            let g_iq = self.world.get::<Intelligence>(ge).unwrap().iq(ga);
             let mut best: Option<(i64, u32)> = None;
             for &c in &cands {
                 let Some(ce) = self.alive(c) else { continue };
@@ -1455,11 +1572,15 @@ impl People {
                     self.world.get::<Travel>(ce).is_some(),
                 );
                 let wa = age_y(day, w.2);
-                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house {
+                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house || never_marries(seed, c, self.never_marry_per_1000) {
                     continue;
                 }
                 // No siblings.
                 if (parents.0 != NONE && w.4 .0 == parents.0) || (parents.1 != NONE && w.4 .1 == parents.1) {
+                    continue;
+                }
+                // S82: partners of similar intelligence (Horwitz et al. 2023).
+                if (g_iq - self.world.get::<Intelligence>(ce).unwrap().iq(wa)).abs() > self.iq_mate_gap {
                     continue;
                 }
                 // CK3-like weighting, in tenths.
@@ -1507,18 +1628,24 @@ impl People {
         w.get_mut::<Household>().unwrap().0 = house;
         w.get_mut::<Stand>().unwrap().0 = stand;
         let born = w.get::<Born>().unwrap().0;
-        let health = w.get::<Health>().unwrap().0;
-        let gen = {
+        let (gen, fed) = {
             let mut s = w.get_mut::<Sched>().unwrap();
             s.birth += 1;
-            s.birth
+            (s.birth, s.fed)
         };
         self.stats.marriages += 1;
         self.stats.marry_age_f += age_y(day, born);
         self.stats.marry_age_m += age_y(day, gborn);
+        let (gi, bi) = (*self.world.get::<Intelligence>(ge).unwrap(), *self.world.get::<Intelligence>(be).unwrap());
+        let (x, y) = (gi.iq(age_y(day, gborn)), bi.iq(age_y(day, born)));
+        let (u, v) = (gi.gene(), bi.gene());
+        for k in 0..6 {
+            self.stats.marry_iq[k] += [1.0, x, y, x * x, y * y, x * y][k];
+            self.stats.marry_gene[k] += [1.0, u, v, u * u, v * v, u * v][k];
+        }
         // Marriages before day 1 (the start) are scheduled in People::new.
         if day > 0 {
-            self.schedule_birth(b, gen, born, health, day, PREGNANCY);
+            self.schedule_birth(b, gen, born, fed, day, PREGNANCY);
         }
     }
 
@@ -1669,8 +1796,8 @@ impl People {
     /// wives); the widow, the unmarried and everyone else stay. Runs monthly
     /// on the day the household lists are fresh, so a split follows the
     /// death by up to a month. The new household's id is the son's id; it
-    /// stays in the same cell. PLACEHOLDER (open): who inherits farm and
-    /// store (crate::grain).
+    /// stays in the same cell. Who inherits the farm: People::inherit
+    /// (S83, crate::grain).
     fn split_households(&mut self) {
         let mut splits = std::mem::take(&mut self.splits);
         splits.sort_unstable();
@@ -1690,11 +1817,15 @@ impl People {
                 let (f, sex, spouse) = get(self, m);
                 f == father && sex == 1 && spouse != NONE
             }).collect();
+            // INHERIT_ONE: the eldest (lowest id on the same day) stays.
+            let heir = (self.inherit == INHERIT_ONE)
+                .then(|| sons.iter().copied().min_by_key(|&s| (self.world.get::<Born>(self.ent[s as usize]).unwrap().0, s)))
+                .flatten();
             let mut taken: Vec<u32> = Vec::new();
             for son in sons {
                 // A son whose id is already the household's keeps it; the
                 // id of another household with people in it is not reused.
-                if son == house || taken.contains(&son) {
+                if son == house || taken.contains(&son) || Some(son) == heir {
                     continue;
                 }
                 let lo2 = self.households.partition_point(|p| p.0 < son);
@@ -1725,8 +1856,66 @@ impl People {
                 }
                 self.stats.split_households += 1;
                 self.stats.split_people += group.len() as u64;
+                if self.inherit == INHERIT_EQUAL && self.econ.is_some() {
+                    self.split_log.push((house, son));
+                }
                 taken.extend(group);
             }
+        }
+    }
+
+    /// S86: a marriage ends in divorce with DIVORCE_PER_10K_YEAR a year,
+    /// drawn monthly per wife. The children stay in the husband's household
+    /// (PLACEHOLDER: in Roman law they were in the father's power). The wife
+    /// returns to her father's household if he lives at home, otherwise she
+    /// founds her own in the same cell (household id = her id); she may
+    /// marry again.
+    fn divorces(&mut self, day: i64) {
+        let seed = self.seed();
+        let per_month = self.divorce_per_10k_year;
+        let mut q = self.world.query::<(&Pid, &Sex, &Spouse, Has<Travel>)>();
+        let mut wives: Vec<u32> = q
+            .iter(&self.world)
+            .filter(|(p, sex, sp, travel)| sex.0 == 0 && sp.0 != NONE && !travel && rnd(seed, p.0, 0xd1f0, day) % (10_000 * 12) < per_month)
+            .map(|(p, ..)| p.0)
+            .collect();
+        wives.sort_unstable();
+        for w in wives {
+            let we = self.ent[w as usize];
+            let h = self.world.get::<Spouse>(we).unwrap().0;
+            let Some(he) = self.alive(h) else { continue };
+            if self.world.get::<Travel>(he).is_some() {
+                continue;
+            }
+            self.world.get_mut::<Spouse>(he).unwrap().0 = NONE;
+            let father = self.world.get::<Parents>(we).unwrap().0;
+            let to = self.alive(father).filter(|&fe| self.world.get::<Travel>(fe).is_none()).map(|fe| {
+                (self.world.get::<Home>(fe).unwrap().0, self.world.get::<Household>(fe).unwrap().0, self.world.get::<Stand>(fe).unwrap().0)
+            });
+            let old = self.world.get::<Home>(we).unwrap().0;
+            self.world.get_mut::<Spouse>(we).unwrap().0 = NONE;
+            // Her next birth is void.
+            self.world.get_mut::<Sched>(we).unwrap().birth += 1;
+            match to {
+                Some((home, house, stand)) => {
+                    let mut e = self.world.entity_mut(we);
+                    e.get_mut::<Home>().unwrap().0 = home;
+                    e.get_mut::<Household>().unwrap().0 = house;
+                    e.get_mut::<Stand>().unwrap().0 = stand;
+                    self.add_pop(old, -1);
+                    self.add_pop(home, 1);
+                }
+                None => {
+                    // Her id may still name the household she came from
+                    // (start population): then she stays in it.
+                    let lo = self.households.partition_point(|p| p.0 < w);
+                    let used = self.households[lo..].iter().take_while(|p| p.0 == w).any(|p| p.1 != w && self.alive(p.1).is_some_and(|x| self.world.get::<Household>(x).unwrap().0 == w));
+                    if !used {
+                        self.world.get_mut::<Household>(we).unwrap().0 = w;
+                    }
+                }
+            }
+            self.stats.divorces += 1;
         }
     }
 
@@ -2097,6 +2286,40 @@ mod tests {
         let a = run();
         assert!(a.0 > 50_000);
         assert_eq!(a, run());
+    }
+
+    /// S82 over decades: couples correlate in IQ as in Horwitz et al. 2023
+    /// (r 0.44), and the adult IQ keeps mean 100 and SD 15 over two
+    /// generations because inheritance (life::child_gene) assumes the
+    /// genetic correlation the rule produces (life::IQ_MATE_RG).
+    /// Without the gap rule couples are uncorrelated. Slow: run with
+    /// cargo test --release -- --ignored iq_mating_over_decades
+    #[test]
+    #[ignore]
+    fn iq_mating_over_decades() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let run = |gap: f64, years: i64| {
+            let mut p = People::with_iq_mate_gap(&inp, 3, gap);
+            for _ in 0..years * 360 {
+                p.day();
+            }
+            let n = p.stats.marry_iq[0];
+            (p.stats.marry_iq_r(), p.stats.marry_gene_r(), n, p.iq_summary())
+        };
+        let (r, rg, n, (mean, sd, lo, hi)) = run(IQ_MATE_GAP, 60);
+        assert!(n > 100_000.0, "marriages {n}");
+        assert!((r - crate::life::IQ_MATE_R).abs() < 0.05, "partner r {r}");
+        // Inheritance must assume the genetic correlation the rule produces.
+        assert!((rg - crate::life::IQ_MATE_RG).abs() < 0.03, "genetic r {rg}");
+        assert!((mean - 100.0).abs() < 1.0, "mean {mean}");
+        assert!((sd - 15.0).abs() < 0.6, "sd {sd}");
+        // Normal tails: 2.28 % below 70 and above 130.
+        assert!((lo - 2.28).abs() < 0.5 && (hi - 2.28).abs() < 0.5, "tails {lo} {hi}");
+        let (r0, _, _, _) = run(f64::INFINITY, 10);
+        assert!(r0.abs() < 0.05, "partner r without the rule {r0}");
     }
 
     #[test]

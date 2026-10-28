@@ -5,6 +5,7 @@
 //!
 //! Usage: grain [--years N] [--seed S] [--threads N] [--root DIR]
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
+//!              [--inherit equal|now|one]
 
 use apoleia_sim::grain::Grain;
 use apoleia_sim::people::People;
@@ -38,6 +39,20 @@ fn main() {
     let inp = apoleia_sim::inputs::load(&root, false).expect("inputs");
     let t0 = Instant::now();
     let mut p = People::new(&inp, seed);
+    // Inheritance at the father's death (S83): equal (default) | now | one.
+    p.inherit = match arg("--inherit").as_deref() {
+        Some("now") => apoleia_sim::people::INHERIT_NOW,
+        None | Some("equal") => apoleia_sim::people::INHERIT_EQUAL,
+        Some("one") => apoleia_sim::people::INHERIT_ONE,
+        Some(v) => panic!("--inherit now|equal|one, not {v}"),
+    };
+    // S86 calibration: never-married women per 1,000, divorces per 10,000 marriages and year.
+    if let Some(v) = arg("--never") {
+        p.never_marry_per_1000 = v.parse().unwrap();
+    }
+    if let Some(v) = arg("--divorce") {
+        p.divorce_per_10k_year = v.parse().unwrap();
+    }
     let people_ms = t0.elapsed().as_secs_f64() * 1e3;
     let t0 = Instant::now();
     let clear: i64 = arg("--clear-pct").map_or(apoleia_sim::grain::CLEAR_PCT, |v| v.parse().unwrap());
@@ -74,9 +89,13 @@ fn main() {
     let mut worst = (0.0, 0i64);
     let mut last = p.count as f64;
     println!(
-        "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day"
+        "year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day married_w% divorces"
     );
+    let (mut heirs, mut splits, mut by_wage) = (0u64, 0u64, 0u64);
     for y in 1..=years {
+        by_wage += g.stats.start_by_wage;
+        heirs += g.stats.heirs_given;
+        splits += p.stats.split_households;
         p.stats = Default::default();
         g.stats = Default::default();
         let mut ysum = 0.0;
@@ -96,14 +115,14 @@ fn main() {
         }
         let s = p.stats;
         let gs = g.stats;
-        let (_, _, _, hungry) = p.census();
+        let (mw, w, _, hungry) = p.census();
         let (farms, _, tents, tent_people, _, _, _) = g.summary();
         let (pmin, pmed, pmax) = g.price_spread();
         let (trails, paths) = g.path_cells();
         let growth = 100.0 * (p.count as f64 / last - 1.0);
         last = p.count as f64;
         println!(
-            "{y:4} {:7} {:6.2} {:7} {:6} {:6} {:5} {:6} {:5}/{:5} {:9.0} {:6.0} {:12.0} {:8} {:7.0} {:8.0} {:11} {:8.0} {:7.0} {:8.0} {:7.1} {:5.2}/{:5.2}/{:5.2} {:5.2} {:6} {:5} {:7} {:6.2}",
+            "{y:4} {:7} {:6.2} {:7} {:6} {:6} {:5} {:6} {:5}/{:5} {:9.0} {:6.0} {:12.0} {:8} {:7.0} {:8.0} {:11} {:8.0} {:7.0} {:8.0} {:7.1} {:5.2}/{:5.2}/{:5.2} {:5.2} {:6} {:5} {:7} {:6.2} {:6.1} {:5}",
             p.count,
             growth,
             s.births,
@@ -131,7 +150,9 @@ fn main() {
             trails,
             paths,
             hungry,
-            ysum / 360.0 / 1e3
+            ysum / 360.0 / 1e3,
+            100.0 * mw as f64 / w.max(1) as f64,
+            s.divorces
         );
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
         if std::env::var("GRAIN_DEBUG").is_ok() {
@@ -173,5 +194,17 @@ fn main() {
     let mut lanes: Vec<(i64, u32)> = g.lanes.iter().map(|(&c, &n)| (n, c)).collect();
     lanes.sort_unstable_by(|a, b| b.cmp(a));
     println!("busiest trade cells (trips, cell): {:?}", &lanes[..lanes.len().min(10)]);
+    by_wage += g.stats.start_by_wage;
+    heirs += g.stats.heirs_given;
+    splits += p.stats.split_households;
+    let (n, ha, short) = g.land_report();
+    println!(
+        "start: farm households living by a wage instead (S87) {by_wage} | inherit={} | splits {splits}, heirs given land {heirs} | farms {n}: ha p10 {:.1} median {:.1} p90 {:.1} mean {:.1}; too small to feed their household {short:.1} %",
+        arg("--inherit").unwrap_or_else(|| "equal".into()),
+        ha[0],
+        ha[1],
+        ha[2],
+        ha[3]
+    );
     println!("fingerprint people={:016x} grain={:016x}", p.fingerprint(), g.fingerprint());
 }

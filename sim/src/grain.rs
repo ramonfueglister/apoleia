@@ -26,8 +26,8 @@
 
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
-use crate::people::{Born, Clock, Econ, Grid, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
-use crate::groups::{BAUERN, HAENDLER, PAECHTER, TAGELOEHNER, UNFREIE};
+use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
+use crate::groups::{BAUERN, HAENDLER, HANDWERKER, PAECHTER, TAGELOEHNER, UNFREIE};
 
 use bevy_ecs::prelude::Without;
 use rustc_hash::FxHashMap;
@@ -50,6 +50,22 @@ const SEED_KG_HA: i64 = 130;
 /// of land above 1500 m.
 const RATIO_PLAIN_X10: i64 = 55;
 const RATIO_HILL_X10: i64 = 30;
+/// S87 (Ramon, 28.10.2026): the Nile land of Egypt yields 10 : 1 ("normal"
+/// yields at Oxyrhynchus about 1 : 10, Manning 2007; 10-12 artabas per
+/// aroura sown with one, Hickey via Bransbourg 2016, Rowlandson 1999).
+/// Grain still on half the fields (Manning: rotation with legumes).
+const RATIO_NILE_X10: i64 = 100;
+/// The Nile land: Delta to the First Cataract, as a box in degrees (west,
+/// east, south, north). PLACEHOLDER until there are provinces.
+const NILE_BOX: (f64, f64, f64, f64) = (29.0, 33.5, 24.0, 31.7);
+
+/// Longitude and latitude of a 25 km cell centre (data/projection.json:
+/// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
+fn cell_lon_lat(row: i32, col: i32) -> (f64, f64) {
+    const R: f64 = 6_371_008.8;
+    let (x, z) = (col as f64 * 25_000.0 + 12_500.0, row as f64 * 25_000.0 + 12_500.0);
+    (19.0 + (x / (R * 41f64.to_radians().cos())).to_degrees(), 41.0 - (z / R).to_degrees())
+}
 /// Net kg per ha on cleared land (slopes, forest edge, S73): PLACEHOLDER
 /// at 3 : 1 (Spurr: hill country 3–4 : 1).
 const NET_POOR: i64 = (RATIO_HILL_X10 - 10) * SEED_KG_HA / 10;
@@ -92,9 +108,9 @@ const OFF_DAYS: i64 = YEAR - 2 * PEAK_DAYS;
 /// follows the adults 15–60; in the peaks everybody 10–65 works every day.
 const ADULT: (f64, f64) = (15.0, 60.0);
 const PEAK_HANDS: (f64, f64) = (10.0, 65.0);
-/// PLACEHOLDER: share of a week that a farm outside its own peak, or a
-/// person in a tent, can sell as day labour, per cent.
-const SPARE_FARM_PCT: i64 = 30;
+/// PLACEHOLDER: share of a week that a person in a tent can sell as day
+/// labour, per cent. A farm outside its peak sells the adults' working
+/// days its own fields do not need (`spare_week`).
 const SPARE_TENT_PCT: i64 = 80;
 /// Day wage in grain, kg. PLACEHOLDER from the price edict (VII.1a: farm
 /// labourer 25 den. a day with keep) at the base price below: about 3 kg.
@@ -276,6 +292,7 @@ struct Farm {
     store: i64,
     money: i64,
     harvest_doy: i64,
+    sow_doy: i64,
     peak: Option<Peak>,
     to_sell: i64,
     /// Grain sold for the landlord before the farm's own.
@@ -338,9 +355,9 @@ pub struct Market {
     /// Known prices: (market, price, day seen).
     board: Vec<(u32, i64, i64)>,
     neigh: Vec<Neigh>,
-    /// Cells the neighbour search touched (row min, row max, col min,
-    /// col max); a road change inside makes the search `stale`.
-    reach: (i32, i32, i32, i32),
+    /// Land cells the neighbour search reached, sorted; a road level
+    /// change on one of them makes the search `stale`.
+    reach: Vec<u32>,
     stale: bool,
     field: Option<Field>,
     dirty: bool,
@@ -409,6 +426,10 @@ pub struct GrainStats {
     /// Households without workers or kin sent to the tents (S79).
     pub to_tents: u64,
     pub field_rebuilds: u64,
+    /// Heirs' households given a share of the father's farm (INHERIT_EQUAL).
+    pub heirs_given: u64,
+    /// S87: farm households that start with a wage instead of a farm.
+    pub start_by_wage: u64,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -452,12 +473,14 @@ pub struct Grain {
     /// Fine offsets within a cell's reach, nearest first: (dr, dc, d²).
     offsets: Vec<(i32, i32, i32)>,
     rows_f: i32,
+    /// Home spots: villages on the most farmland, listed places.
+    settle: crate::settle::Settle,
     /// Farms by day of year of their sowing and harvest start.
     by_doy: Vec<Vec<u32>>,
     trips: Vec<Trip>,
     free_trips: Vec<u32>,
     wheel: Vec<Vec<GEv>>,
-    decay: Vec<i64>,
+    decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
     crop_pct: i64,
     /// Reused buffer for the monthly count.
@@ -475,6 +498,13 @@ pub struct Grain {
     road_level: Vec<u8>,
     /// Market index at each 25 km cell (NONE elsewhere).
     market_at: Vec<u32>,
+    /// The neighbour search's inputs, its thread and the markets it is
+    /// searching for today.
+    net: std::sync::Arc<Net>,
+    road_worker: Option<RoadWorker>,
+    road_todo: Vec<usize>,
+    walk_worker: Option<WalkWorker>,
+    walking: bool,
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
@@ -532,6 +562,36 @@ impl FineCover {
         self.cells.get(&key).map(|&o| &self.data[o + 8..o + 8 + 3 * 256])
     }
 }
+
+/// body::work_factor of a share eaten (per mille), per mille, from a table.
+fn work_of_fed(fed: u16) -> i64 {
+    static TAB: std::sync::OnceLock<Vec<i64>> = std::sync::OnceLock::new();
+    let tab = TAB.get_or_init(|| (0..=1000).map(|k| (crate::body::work_factor(k as f64 / 1000.0) * 1000.0).round() as i64).collect());
+    tab[(fed as usize).min(1000)]
+}
+
+/// A farm's store and money on 1 January as last year's harvest left them
+/// (S84 a), by the rules of a normal year: the crop of its fields under
+/// grain, fully worked, less tax; the rent carried to market at the base
+/// price (its money to the landlord); the surplus stays in the store, as
+/// the dealers' cash does not buy it (it pays day labour, `labour`); then
+/// the family's food from the harvest to the new year and the autumn's
+/// seed. Returns (store, rent), kg.
+fn last_harvest(f: &Farm, cropped: i64, need_day: i64) -> (i64, i64) {
+    let sown = cropped;
+    let poor = if f.area == 0 { 0 } else { sown * f.poor / f.area };
+    let crop = ((sown - poor) * f.net_kg_ha + poor * NET_POOR + sown * SEED_KG_HA) / 10_000;
+    let seed = sown * SEED_KG_HA / 10_000;
+    let net = (crop - seed).max(0);
+    let tax = net * TAX_PCT / 100;
+    let rent = if f.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
+    let mut store = crop - tax - rent;
+    // From the harvest to the new year: food, then the autumn's seed.
+    store = (store - need_day * (YEAR - f.harvest_doy)).max(0);
+    store = (store - seed).max(0);
+    (store, rent)
+}
+
 
 pub fn fine_cover(root: &std::path::Path, farmland: bool) -> Result<FineCover, String> {
     let path = root.join("sim/inputs/landcover-fine.bin.zst");
@@ -611,7 +671,9 @@ impl Grain {
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
             usable_m2[i as usize] = (usable * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
-            let ratio = RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64;
+            let (lon, lat) = cell_lon_lat(r, c);
+            let nile = (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat);
+            let ratio = if nile { RATIO_NILE_X10 as f64 } else { RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64 };
             net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
         }
         // Free land on fine tiles (S73). The cell's fields lie on its
@@ -743,7 +805,7 @@ impl Grain {
                 sold_today: 0,
                 board: Vec::new(),
                 neigh: Vec::new(),
-                reach: (0, -1, 0, -1),
+                reach: Vec::new(),
                 stale: false,
                 field: None,
                 dirty: true,
@@ -775,11 +837,17 @@ impl Grain {
             block_cell,
             offsets,
             rows_f,
+            settle: {
+                // Seed 1 as in the people view (view.rs), so both show the
+                // same spots.
+                let lookup = |r: i32, c: i32| fine.and_then(|cv| cv.get((r, c)));
+                crate::settle::Settle::new(&p.grid, &p.pop, &inp.cities, fine.map(|_| &lookup as crate::settle::CoverOf), 1)
+            },
             by_doy: vec![Vec::new(); YEAR as usize],
             trips: Vec::new(),
             free_trips: Vec::new(),
             wheel: vec![Vec::new(); 1024],
-            decay: decay_table(),
+            decay: std::sync::Arc::new(decay_table()),
             crop_pct: crop_pct.clamp(1, 100),
             scratch: Vec::new(),
             members: Vec::new(),
@@ -789,30 +857,52 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
+            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
+            road_worker: None,
+            road_todo: Vec::new(),
+            walk_worker: None,
+            walking: false,
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
-        // Start stocks (PLACEHOLDER, so the first half year is not an
-        // artefact of starting in January): farms hold food until their
-        // harvest plus the reserve, markets the region's buyers' need until
-        // midsummer plus the reserve, households without a farm a month,
-        // the landless three.
+        // Start stocks: farms hold what last year's harvest left them
+        // (`last_harvest`); PLACEHOLDER, so the first half year is not an
+        // artefact of starting in January: markets the region's buyers'
+        // need until midsummer plus the reserve, households without a farm
+        // a month, the landless three.
         let mut demand = vec![0i64; gr.markets.len()];
+        let mut lords: Vec<(u32, i64)> = Vec::new();
         let ids: Vec<u32> = sorted_keys(&gr.hh);
         for id in ids {
             let info = gr.info[&id];
             let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
             let s = gr.hh.get_mut(&id).unwrap();
             if s.kind == FARM {
-                let f = &mut gr.farms[s.farm as usize];
-                f.store += need_day * (f.harvest_doy + RESERVE_DAYS);
+                let k = s.farm as usize;
+                let cropped = gr.cropped(gr.farms[k].area);
+                let f = &mut gr.farms[k];
+                // At least food to the harvest plus the reserve, so that no
+                // farm starts empty (PLACEHOLDER for farms whose fields fed
+                // them less last year: what they then lived on).
+                let (store, rent) = last_harvest(f, cropped, need_day);
+                f.store = store.max(need_day * (f.harvest_doy + RESERVE_DAYS));
+                let lord = f.landlord;
+                let to_lord = rent * BASE_PRICE;
+                if to_lord > 0 && lord != NONE {
+                    lords.push((lord, to_lord));
+                }
             } else {
                 s.pantry = need_day * if s.kind == TENT { 3 * MONTH } else { MONTH };
                 let m = gr.cell_market[info.home as usize];
                 demand[m as usize] += need_day;
+            }
+        }
+        for (lord, pay) in lords {
+            if let Some(h) = gr.hh.get_mut(&lord) {
+                h.money += pay;
             }
         }
         // Dealers start with the cash for 60 days of their buyers' demand
@@ -835,12 +925,13 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
+        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
-        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
-        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get()
+        let net = &*self.net;
+        let built: Vec<(Vec<Neigh>, Vec<u32>)> = bevy_tasks::ComputeTaskPool::get()
             .scope(|s| {
                 for chunk in cells.chunks(cells.len().div_ceil(16).max(1)) {
-                    s.spawn(async move { chunk.iter().map(|&c| neighbours(grid, at, level, c)).collect::<Vec<_>>() });
+                    s.spawn(async move { chunk.iter().map(|&c| neighbours(net, c)).collect::<Vec<_>>() });
                 }
             })
             .into_iter()
@@ -858,9 +949,9 @@ impl Grain {
     /// touched a land cell whose level changed searches again on its day
     /// (1/360 of the markets a day, on the task pool). Known prices are
     /// kept for markets still known.
-    fn roads(&mut self, p: &People, day: i64) {
+    fn roads(&mut self, day: i64) {
         if doy(day) == 0 && day > 0 {
-            let mut changed: Vec<(i32, i32)> = Vec::new();
+            let mut changed: Vec<u32> = Vec::new();
             for c in 0..self.road_rate.len() {
                 let t = std::mem::take(&mut self.road_trips[c]);
                 if t == 0 && self.road_rate[c] == 0 {
@@ -878,27 +969,39 @@ impl Grain {
                 }
                 if lv != old {
                     self.road_level[c] = lv;
-                    if p.grid.kind[c] != 0 {
-                        changed.push((c as i32 / p.grid.cols, c as i32 % p.grid.cols));
+                    if self.net.kind[c] != 0 {
+                        changed.push(c as u32);
                     }
                 }
             }
             for m in self.markets.iter_mut() {
-                let (r0, r1, c0, c1) = m.reach;
-                m.stale |= changed.iter().any(|&(r, c)| r >= r0 && r <= r1 && c >= c0 && c <= c1);
+                m.stale |= changed.iter().any(|c| m.reach.binary_search(c).is_ok());
+            }
+            if !changed.is_empty() {
+                let net = &*self.net;
+                self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
             }
         }
         let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
         if todo.is_empty() {
             return;
         }
-        let (grid, at, level) = (&p.grid, &self.market_at[..], &self.road_level[..]);
+        // Searched on the road thread while the day goes on; taken over at
+        // the start of the next (`roads_done`), before the traders' news
+        // read the neighbours again.
         let cells: Vec<u32> = todo.iter().map(|&mi| self.markets[mi].cell).collect();
-        let built: Vec<(Vec<Neigh>, (i32, i32, i32, i32))> = bevy_tasks::ComputeTaskPool::get().scope(|s| {
-            for &c in &cells {
-                s.spawn(async move { neighbours(grid, at, level, c) });
-            }
-        });
+        let w = self.road_worker.get_or_insert_with(RoadWorker::new);
+        w.send.send((self.net.clone(), cells)).expect("road worker");
+        self.road_todo = todo;
+    }
+
+    /// Takes over the neighbour searches started by `roads` the day before.
+    fn roads_done(&mut self) {
+        if self.road_todo.is_empty() {
+            return;
+        }
+        let built = self.road_worker.as_ref().expect("road worker").recv.recv().expect("road worker");
+        let todo = std::mem::take(&mut self.road_todo);
         for (mi, (nb, reach)) in todo.into_iter().zip(built) {
             let m = &mut self.markets[mi];
             let old = std::mem::take(&mut m.board);
@@ -958,6 +1061,10 @@ impl Grain {
     /// moved away or died out are given to landless households of the same
     /// region (S69: a free farm is taken automatically).
     fn reconcile(&mut self, p: &mut People, start: bool) {
+        if !start && p.inherit == crate::people::INHERIT_EQUAL {
+            let log = std::mem::take(&mut p.split_log);
+            self.inherit_equal(&log);
+        }
         // Households gone or moved: free their farm.
         let ids = sorted_keys(&self.hh);
         for id in ids {
@@ -1006,6 +1113,39 @@ impl Grain {
         }
         // New households.
         let ids = sorted_keys(&self.info);
+        // S87 (Ramon, 28.10.2026): at the start, farm households beyond
+        // what their cell's land can feed (lowest id first keeps a farm;
+        // PLACEHOLDER order) live by a wage instead: they become
+        // craftsmen (Handwerker, PLACEHOLDER) and buy their grain at the
+        // market. Such places lived by crafts and imported grain (Attica,
+        // Rome's hinterland, Phoenicia; Garnsey 1988).
+        let mut by_wage: FxHashMap<u32, ()> = FxHashMap::default();
+        if start {
+            let mut used: FxHashMap<u32, i64> = FxHashMap::default();
+            for &id in &ids {
+                let i = self.info[&id];
+                if i.stand > CITY || !matches!((i.stand, i.job), (_, BAUERN) | (RURAL, PAECHTER) | (RURAL, UNFREIE)) {
+                    continue;
+                }
+                let c = i.home as usize;
+                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 10_000 / self.net_kg_ha[c].max(1) * 100 / self.crop_pct;
+                let u = used.entry(i.home).or_default();
+                if *u + feed > self.free_m2[c] + self.free_poor[c] {
+                    by_wage.insert(id, ());
+                    for &m in &self.members[i.at as usize..(i.at + i.size as u32) as usize] {
+                        if let Some(e) = p.alive_entity(m) {
+                            let mut j = p.world.get_mut::<Job>(e).unwrap();
+                            if matches!(j.0, BAUERN | PAECHTER | UNFREIE) {
+                                j.0 = HANDWERKER;
+                            }
+                        }
+                    }
+                } else {
+                    *u += feed;
+                }
+            }
+            self.stats.start_by_wage = by_wage.len() as u64;
+        }
         for &id in &ids {
             if self.hh.contains_key(&id) {
                 continue;
@@ -1018,7 +1158,9 @@ impl Grain {
                 _ if i.trader != NONE => TRADER,
                 _ => WAGE,
             };
-            let fine = self.fine_in(p, i.home, id as u64);
+            // The farmstead (or house) stands at the household's village or
+            // place (settle.rs, the same spots the people view shows).
+            let fine = self.settle.home_fine(i.home, id, i.stand);
             let money = match kind {
                 ELITE => ELITE_MONEY,
                 TRADER => TRADER_MONEY,
@@ -1028,6 +1170,7 @@ impl Grain {
             // the count after a birth into a new id, which does not happen
             // (children stay in the household); moved households are tents.
             let kind = if kind == FARM && !start { TENT } else { kind };
+            let kind = if kind == FARM && by_wage.contains_key(&id) { WAGE } else { kind };
             let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
             self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false });
         }
@@ -1141,13 +1284,6 @@ impl Grain {
         }
     }
 
-    /// A fine cell inside the 25 km cell `cell`, by hash.
-    fn fine_in(&self, p: &People, cell: u32, salt: u64) -> u32 {
-        let (r, c) = (cell as i32 / p.grid.cols, cell as i32 % p.grid.cols);
-        let h = xxh3_64(&(salt ^ self.seed.rotate_left(17)).to_le_bytes());
-        let (fr, fc) = (r * FINE + (h % FINE as u64) as i32, c * FINE + ((h >> 8) % FINE as u64) as i32);
-        (fr * self.cols_f + fc) as u32
-    }
 
     fn new_farm(&mut self, p: &People, id: u32, i: &HhInfo, fine: u32) -> u32 {
         let kind = match i.job {
@@ -1177,6 +1313,7 @@ impl Grain {
             store: 0,
             money: 0,
             harvest_doy,
+            sow_doy,
             peak: None,
             to_sell: 0,
             rent_due: 0,
@@ -1190,6 +1327,134 @@ impl Grain {
         self.by_doy[sow_doy as usize].push(k);
         self.farms.push(f);
         k
+    }
+
+    /// INHERIT_EQUAL (S83): the family farm of a household whose
+    /// married sons left at the father's death is shared in equal parts
+    /// between the old household (if anyone is left in it) and the sons'
+    /// households, fields, sown area and store alike. The fields stay on
+    /// their tiles. If the old household is empty, the first son takes the
+    /// farm itself. Tenancies and estates stay with the old household.
+    fn inherit_equal(&mut self, log: &[(u32, u32)]) {
+        let mut k = 0;
+        while k < log.len() {
+            let old = log[k].0;
+            let n_log = log[k..].iter().take_while(|e| e.0 == old).count();
+            let sons: Vec<u32> = log[k..k + n_log]
+                .iter()
+                .map(|e| e.1)
+                .filter(|id| self.info.contains_key(id) && self.hh.get(id).is_none_or(|h| h.farm == NONE))
+                .collect();
+            k += n_log;
+            let Some(s) = self.hh.get(&old).copied() else { continue };
+            if s.farm == NONE || self.farms[s.farm as usize].kind != FAMILY || sons.is_empty() {
+                continue;
+            }
+            let f = s.farm;
+            let kept = self.info.contains_key(&old);
+            let n = sons.len() as i64 + kept as i64;
+            let (area, sown, store) = (self.farms[f as usize].area, self.farms[f as usize].sown, self.farms[f as usize].store);
+            for (j, &id) in sons.iter().enumerate() {
+                let i = self.info[&id];
+                let fine = self.settle.home_fine(i.home, id, i.stand);
+                let to = if j == 0 && !kept {
+                    // The farm itself goes to the first son.
+                    self.hh.get_mut(&old).unwrap().farm = NONE;
+                    let fm = &mut self.farms[f as usize];
+                    fm.hh = id;
+                    fm.fine = fine;
+                    f
+                } else {
+                    let t = self.new_farm_for_heir(id, &i, fine, f);
+                    self.move_land(f as usize, t as usize, area / n);
+                    let sh = (sown / n, store / n);
+                    self.farms[f as usize].sown -= sh.0;
+                    self.farms[f as usize].store -= sh.1;
+                    self.farms[t as usize].sown = sh.0;
+                    self.farms[t as usize].store = sh.1;
+                    t
+                };
+                if !self.hh.contains_key(&id) {
+                    self.hh.insert(id, HhState { kind: FARM, pantry: 0, money: 0, farm: NONE, fine, fed: 1000, busy: false, trading: false });
+                }
+                let h = self.hh.get_mut(&id).unwrap();
+                h.kind = FARM;
+                h.farm = to;
+                h.fine = fine;
+                self.stats.heirs_given += 1;
+            }
+        }
+    }
+
+    /// An heir's farm without fields, with the calendar of the father's
+    /// farm `like` (the share is sown and harvested with it).
+    fn new_farm_for_heir(&mut self, id: u32, i: &HhInfo, fine: u32, like: u32) -> u32 {
+        let fm = &self.farms[like as usize];
+        let f = Farm {
+            hh: id,
+            kind: FAMILY,
+            landlord: NONE,
+            cell: i.home,
+            fine,
+            market: fm.market,
+            area: 0,
+            poor: 0,
+            sown: 0,
+            net_kg_ha: fm.net_kg_ha,
+            store: 0,
+            money: 0,
+            harvest_doy: fm.harvest_doy,
+            sow_doy: fm.sow_doy,
+            peak: None,
+            to_sell: 0,
+            rent_due: 0,
+            retry: false,
+            off_need: 0,
+            off_done: 0,
+            plots: Vec::new(),
+        };
+        let k = self.farms.len() as u32;
+        self.by_doy[f.harvest_doy as usize].push(k);
+        self.by_doy[f.sow_doy as usize].push(k);
+        self.farms.push(f);
+        k
+    }
+
+    /// Moves `n` m² of fields from farm `from` to farm `to` on the same
+    /// tiles: cleared land first, the plots taken last first (as give_land).
+    fn move_land(&mut self, from: usize, to: usize, n: i64) {
+        let mut plots = std::mem::take(&mut self.farms[from].plots);
+        let mut left = n;
+        for poor in [true, false] {
+            for pl in plots.iter_mut().rev() {
+                let have = if poor { &mut pl.poor } else { &mut pl.good };
+                let k = left.min(*have as i64);
+                if k == 0 {
+                    continue;
+                }
+                *have -= k as u32;
+                left -= k;
+                let tp = &mut self.farms[to].plots;
+                let j = match tp.iter().position(|p| p.tile == pl.tile) {
+                    Some(j) => j,
+                    None => {
+                        tp.push(Plot { tile: pl.tile, good: 0, poor: 0 });
+                        tp.len() - 1
+                    }
+                };
+                if poor {
+                    tp[j].poor += k as u32;
+                    self.farms[to].poor += k;
+                    self.farms[from].poor -= k;
+                } else {
+                    tp[j].good += k as u32;
+                }
+                self.farms[to].area += k;
+                self.farms[from].area -= k;
+            }
+        }
+        plots.retain(|p| p.good + p.poor > 0);
+        self.farms[from].plots = plots;
     }
 
     fn xz(&self, p: &People, cell: u32) -> (f64, f64) {
@@ -1323,7 +1588,22 @@ impl Grain {
     /// Field area a household's adults can work over the year (290
     /// working days / 70 days per ha).
     fn year_m2(&self, id: u32) -> i64 {
-        self.info.get(&id).map_or(0, |i| i.adults as i64) * WORK_DAYS_YEAR * 10_000 / DAYS_PER_HA
+        self.info.get(&id).map_or(0, |i| i.adults as i64) * WORK_DAYS_YEAR * 10_000 / DAYS_PER_HA * self.work_x1000(id) / 1000
+    }
+
+    /// Days a week a farm outside its peak can sell as day labour: its
+    /// adults' working days (290 a year) less the off-peak work of its own
+    /// fields, so a farm with little land works mostly for others (S84).
+    fn spare_week(&self, i: &HhInfo, farm: u32) -> i64 {
+        let own = self.cropped(self.farms[farm as usize].area) * DAYS_PER_HA * OFF_SHARE_PCT / 100 / 10_000 * 7 / OFF_DAYS;
+        (i.adults as i64 * 7 * WORK_DAYS_YEAR / YEAR - own).max(0)
+    }
+
+    /// Share of normal physical work a household still does, per mille:
+    /// hungry people lower their activity first (S84 b, body::work_factor
+    /// of the share eaten last month).
+    fn work_x1000(&self, id: u32) -> i64 {
+        self.hh.get(&id).map_or(1000, |s| work_of_fed(s.fed))
     }
 
     /// Field area a farm wants (S73). A family farm: what its adults
@@ -1362,6 +1642,12 @@ impl Grain {
         let t = std::time::Instant::now;
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let t0 = t();
+        self.walks_done();
+        self.timing.paths += us(t0);
+        let t0 = t();
+        self.roads_done();
+        self.timing.traders += us(t0);
+        let t0 = t();
         self.events(p, day);
         self.timing.events += us(t0);
         let t0 = t();
@@ -1379,10 +1665,10 @@ impl Grain {
         self.timing.eat += us(t0);
         let t0 = t();
         self.traders(day);
-        self.roads(p, day);
+        self.roads(day);
         self.timing.traders += us(t0);
         let t0 = t();
-        self.paths(p, day);
+        self.paths(day);
         self.timing.paths += us(t0);
         let t0 = t();
         match slice {
@@ -1702,7 +1988,7 @@ impl Grain {
                     // clearing (S73), as much as the adults clear in a year.
                     self.take_land(f, want - area, false, false);
                     let adults = self.info.get(&hh).map_or(0, |i| i.adults as i64);
-                    let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR).max(0);
+                    let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR * self.work_x1000(hh) / 1000).max(0);
                     self.take_land(f, clear, true, false);
                 } else if area > want * 3 / 2 {
                     self.give_land(f, area - want * 3 / 2);
@@ -1712,7 +1998,7 @@ impl Grain {
             let ha_x = if harvest { fm.sown } else { self.cropped(fm.area) };
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
-            let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS;
+            let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS * self.work_x1000(fm.hh) / 1000;
             let fm = &mut self.farms[f as usize];
             fm.peak = Some(Peak { harvest, demand, done: family.min(demand) });
             if family < demand {
@@ -1729,23 +2015,38 @@ impl Grain {
     fn labour(&mut self, day: i64) {
         let wd = day.rem_euclid(7) as usize;
         for mi in (wd..self.markets.len()).step_by(7) {
-            if self.markets[mi].open.is_empty() && self.markets[mi].hirers.is_empty() {
-                continue;
-            }
             // Supply: landless adults of the region and farms not in a peak.
             let region = self.markets[mi].region;
             let mut offers: Vec<(u32, i64)> = Vec::new();
             let mut farm_offers: Vec<(u32, i64)> = Vec::new();
+            // Farms with a surplus beyond food to the next harvest, the
+            // reserve and next year's seed, in household order: (id, days).
+            let mut surplus: Vec<(u32, i64)> = Vec::new();
             let _ = region;
             let ids = std::mem::take(&mut self.market_hh[mi]);
             for &id in &ids {
                 // Gone since the count (the lists follow a day later).
-                let (Some(&s), Some(&i)) = (self.hh.get(&id), self.info.get(&id)) else { continue };
+                let Some(&s) = self.hh.get(&id) else { continue };
+                if s.kind != FARM && s.kind != TENT {
+                    continue;
+                }
+                let Some(&i) = self.info.get(&id) else { continue };
+                if s.kind == FARM {
+                    let fm = &self.farms[s.farm as usize];
+                    if fm.peak.is_none() {
+                        let need_day = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
+                        let keep = need_day * (doy_until(day, fm.harvest_doy) + RESERVE_DAYS) + self.cropped(fm.area) * SEED_KG_HA / 10_000;
+                        let days = (fm.store - fm.to_sell - keep) / WAGE_KG_DAY;
+                        if days > 0 {
+                            surplus.push((id, days));
+                        }
+                    }
+                }
                 let days = match s.kind {
                     TENT => i.hands as i64 * 7 * SPARE_TENT_PCT / 100,
-                    FARM if self.farms[s.farm as usize].peak.is_none() => i.hands as i64 * 7 * SPARE_FARM_PCT / 100,
+                    FARM if self.farms[s.farm as usize].peak.is_none() => self.spare_week(&i, s.farm),
                     _ => 0,
-                };
+                } * work_of_fed(s.fed) / 1000;
                 if days > 0 {
                     if s.kind == TENT {
                         offers.push((id, days));
@@ -1836,6 +2137,37 @@ impl Grain {
                 }
             }
             self.markets[mi].hirers = hirers;
+            // Farms with more in store than food to the next harvest, the
+            // reserve and next year's seed pay day labour from the surplus,
+            // in household order (S84; Erdkamp 2005: smallholders worked on
+            // the estates). PLACEHOLDER: the work makes nothing yet (ditches,
+            // buildings, gardens, clearing).
+            for (id, mut want) in surplus {
+                let farm = self.hh[&id].farm;
+                while want > 0 && o < offers.len() {
+                    if offers[o].0 == id {
+                        o += 1;
+                        continue;
+                    }
+                    let take = want.min(offers[o].1);
+                    offers[o].1 -= take;
+                    want -= take;
+                    let wage = take * WAGE_KG_DAY;
+                    self.farms[farm as usize].store -= wage;
+                    self.stats.hired_days += take;
+                    self.stats.wage_kg += wage;
+                    let w = offers[o].0;
+                    let ws = self.hh.get_mut(&w).unwrap();
+                    if ws.farm != NONE {
+                        self.farms[ws.farm as usize].store += wage;
+                    } else {
+                        ws.pantry += wage;
+                    }
+                    if offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
+            }
         }
     }
 
@@ -2111,7 +2443,7 @@ impl Grain {
     /// marks the field for a rebuild, so later trips follow and deepen the
     /// path. The day's markets are independent, so they run on the task
     /// pool; the result does not depend on the number of threads.
-    fn paths(&mut self, p: &People, day: i64) {
+    fn paths(&mut self, day: i64) {
         let q = day.rem_euclid(WALK_DAYS) as usize;
         let mut jobs: Vec<Walk> = Vec::new();
         for mi in (q..self.markets.len()).step_by(WALK_DAYS as usize) {
@@ -2123,13 +2455,24 @@ impl Grain {
             origins.sort_unstable();
             jobs.push(Walk { m: mi as u32, region: m.region, fine: m.fine, origins, field: m.field.take(), dirty: m.dirty, first_us: 0.0, rebuild_us: 0.0, rebuilt: false });
         }
-        let (grid, cols_f, tab) = (&p.grid, self.cols_f, &self.decay[..]);
-        // One task per market: rebuilds are few and uneven.
-        bevy_tasks::ComputeTaskPool::get().scope(|s| {
-            for w in jobs.iter_mut() {
-                s.spawn(async move { walk(grid, cols_f, tab, w, day) });
-            }
-        });
+        if jobs.is_empty() {
+            return;
+        }
+        // The walks run on the path thread until the next day starts
+        // (`walks_done`): nothing reads the fields or their wear before.
+        let job = (self.net.clone(), self.decay.clone(), self.cols_f, jobs, day);
+        self.walk_worker.get_or_insert_with(WalkWorker::new).send.send(job).expect("path worker");
+        self.walking = true;
+    }
+
+    /// Takes over the walks started by `paths` (start of the next day, and
+    /// before anything outside reads the fields).
+    fn walks_done(&mut self) {
+        if !self.walking {
+            return;
+        }
+        self.walking = false;
+        let jobs = self.walk_worker.as_ref().expect("path worker").recv.recv().expect("path worker");
         for w in jobs {
             let m = &mut self.markets[w.m as usize];
             m.field = w.field;
@@ -2144,7 +2487,7 @@ impl Grain {
         let mk = &mut self.markets[m as usize];
         if mk.field.is_none() {
             let t0 = std::time::Instant::now();
-            mk.field = Some(build_field(&p.grid, self.cols_f, mk.region, mk.fine, None, p.world.resource::<Clock>().day));
+            mk.field = Some(build_field(&self.net, self.cols_f, mk.region, mk.fine, None, p.world.resource::<Clock>().day));
             mk.dirty = false;
             self.timing.first_build += t0.elapsed().as_secs_f64() * 1e6;
         }
@@ -2204,6 +2547,25 @@ impl Grain {
         (n, k, tents, tent_people, area as f64 / 1e4, store as f64 / 1e3, market as f64 / 1e3)
     }
 
+    /// Farms with a household: count, field ha at p10/p50/p90 and mean,
+    /// and the share (%) whose fields at their yield, fallow included,
+    /// cannot feed the household.
+    pub fn land_report(&self) -> (usize, [f64; 4], f64) {
+        let mut ha = Vec::new();
+        let mut short = 0;
+        for f in self.farms.iter().filter(|f| f.hh != NONE) {
+            ha.push(f.area as f64 / 1e4);
+            if let Some(i) = self.info.get(&f.hh) {
+                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 10_000 / f.net_kg_ha.max(1) * 100 / self.crop_pct;
+                short += (f.area < feed) as usize;
+            }
+        }
+        ha.sort_by(f64::total_cmp);
+        let q = |x: f64| ha.get(((ha.len().max(1) - 1) as f64 * x) as usize).copied().unwrap_or(0.0);
+        let mean = ha.iter().sum::<f64>() / ha.len().max(1) as f64;
+        (ha.len(), [q(0.1), q(0.5), q(0.9), mean], 100.0 * short as f64 / ha.len().max(1) as f64)
+    }
+
     /// Price of the market of the region of `cell`, denarii per kg.
     pub fn price_at(&self, cell: u32) -> f64 {
         self.markets[self.cell_market[cell as usize] as usize].price as f64 / 1000.0
@@ -2224,7 +2586,8 @@ impl Grain {
         (a, b, sea)
     }
 
-    pub fn path_cells(&self) -> (usize, usize) {
+    pub fn path_cells(&mut self) -> (usize, usize) {
+        self.walks_done();
         let (mut a, mut b) = (0, 0);
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             for &i in &f.worn {
@@ -2322,7 +2685,8 @@ impl Grain {
         self.wheel.iter().map(|v| v.len()).sum()
     }
 
-    pub fn fingerprint(&self) -> u64 {
+    pub fn fingerprint(&mut self) -> u64 {
+        self.walks_done();
         let mut b: Vec<u8> = Vec::new();
         for f in &self.farms {
             for x in [f.hh as i64, f.area, f.sown, f.store, f.money, f.to_sell] {
@@ -2380,18 +2744,42 @@ fn sorted_keys<V>(m: &IdMap<V>) -> Vec<u32> {
 /// (Dijkstra over 25 km cells: wagon over land, cheaper on trade roads;
 /// ship at sea; no step between sea and blocked land).
 /// Also returns the box of all cells it touched.
-fn neighbours(grid: &Grid, at: &[u32], level: &[u8], src: u32) -> (Vec<Neigh>, (i32, i32, i32, i32)) {
-    let n = grid.kind.len();
-    let (rows, cols, kind) = (grid.rows, grid.cols, &grid.kind);
-    let mut best = vec![i64::MAX; n];
-    let mut days = vec![0i64; n];
-    let mut par = vec![NONE; n];
+fn neighbours(net: &Net, src: u32) -> (Vec<Neigh>, Vec<u32>) {
+    // Per-thread buffers over the whole grid, reset only where touched
+    // (a fresh 25 km grid per search cost more than the search).
+    thread_local! {
+        static BUF: std::cell::RefCell<(Vec<i64>, Vec<i64>, Vec<u32>, Vec<u32>)> = const { std::cell::RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
+    }
+    BUF.with_borrow_mut(|(best, days, par, touched)| {
+        let n = net.kind.len();
+        if best.len() != n {
+            *best = vec![i64::MAX; n];
+            *days = vec![0; n];
+            *par = vec![NONE; n];
+        }
+        touched.push(src);
+        let out = search(net, src, best, days, par, touched);
+        // The land cells the search reached: only a change of their trade
+        // road level can change its result (a cell it never reached lies
+        // behind its frontier, which is past the farthest neighbour).
+        let mut reach: Vec<u32> = touched.iter().copied().filter(|&j| net.kind[j as usize] != 0).collect();
+        reach.sort_unstable();
+        for &j in touched.iter() {
+            best[j as usize] = i64::MAX;
+            days[j as usize] = 0;
+            par[j as usize] = NONE;
+        }
+        touched.clear();
+        (out, reach)
+    })
+}
+
+fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u32], touched: &mut Vec<u32>) -> Vec<Neigh> {
+    let (rows, cols, kind, at, level) = (net.rows, net.cols, &net.kind, &net.at, &net.level);
     let mut open = BinaryHeap::new();
     best[src as usize] = 0;
     open.push(Reverse((0i64, src)));
     let mut out = Vec::new();
-    let (sr, sc) = (src as i32 / cols, src as i32 % cols);
-    let mut reach = (sr, sr, sc, sc);
     while let Some(Reverse((c, i))) = open.pop() {
         if c > best[i as usize] {
             continue;
@@ -2429,16 +2817,86 @@ fn neighbours(grid: &Grid, at: &[u32], level: &[u8], src: u32) -> (Vec<Neigh>, (
                 };
                 let nc_ = c + cost;
                 if nc_ < best[j as usize] {
+                    if best[j as usize] == i64::MAX {
+                        touched.push(j);
+                    }
                     best[j as usize] = nc_;
                     days[j as usize] = days[i as usize] + d;
                     par[j as usize] = i;
                     open.push(Reverse((nc_, j)));
-                    reach = (reach.0.min(nr), reach.1.max(nr), reach.2.min(nc), reach.3.max(nc));
                 }
             }
         }
     }
-    (out, reach)
+    out
+}
+
+/// What the neighbour search reads: the 25 km grid, the market at each
+/// cell and the trade road levels. Shared with the road worker thread;
+/// replaced when the levels change.
+struct Net {
+    row0: i32,
+    col0: i32,
+    rows: i32,
+    cols: i32,
+    kind: Vec<u8>,
+    at: Vec<u32>,
+    level: Vec<u8>,
+}
+
+type Searched = Vec<(Vec<Neigh>, Vec<u32>)>;
+
+/// A thread that runs the neighbour searches of a day while the day goes
+/// on (they are only used from the next day).
+struct RoadWorker {
+    send: std::sync::mpsc::Sender<(std::sync::Arc<Net>, Vec<u32>)>,
+    recv: std::sync::mpsc::Receiver<Searched>,
+}
+
+impl RoadWorker {
+    fn new() -> RoadWorker {
+        let (send, jobs) = std::sync::mpsc::channel::<(std::sync::Arc<Net>, Vec<u32>)>();
+        let (done, recv) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for (net, cells) in jobs {
+                if done.send(cells.iter().map(|&c| neighbours(&net, c)).collect::<Searched>()).is_err() {
+                    break;
+                }
+            }
+        });
+        RoadWorker { send, recv }
+    }
+}
+
+type WalkJob = (std::sync::Arc<Net>, std::sync::Arc<Vec<i64>>, i32, Vec<Walk>, i64);
+
+/// A thread that runs a day's path walks (one task per market on the
+/// task pool) while the rest of the day and the next people day go on.
+struct WalkWorker {
+    send: std::sync::mpsc::Sender<WalkJob>,
+    recv: std::sync::mpsc::Receiver<Vec<Walk>>,
+}
+
+impl WalkWorker {
+    fn new() -> WalkWorker {
+        let (send, jobs) = std::sync::mpsc::channel::<WalkJob>();
+        let (done, recv) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for (net, tab, cols_f, mut walks, day) in jobs {
+                let (net, tab) = (&*net, &tab[..]);
+                // One task per market: rebuilds are few and uneven.
+                bevy_tasks::ComputeTaskPool::get().scope(|s| {
+                    for w in walks.iter_mut() {
+                        s.spawn(async move { walk(net, cols_f, tab, w, day) });
+                    }
+                });
+                if done.send(walks).is_err() {
+                    break;
+                }
+            }
+        });
+        WalkWorker { send, recv }
+    }
 }
 
 /// One market's walk on a path day (see `Grain::paths`).
@@ -2454,7 +2912,7 @@ struct Walk {
     rebuilt: bool,
 }
 
-fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
+fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
     if w.field.is_none() {
         let t0 = std::time::Instant::now();
         w.field = Some(build_field(grid, cols_f, w.region, w.fine, None, day));
@@ -2535,7 +2993,7 @@ fn walk(grid: &Grid, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
 
 /// Dijkstra over the market's region (64 × 64 fine cells) from the
 /// market, step cost by path level; sea cells (coarse) are blocked.
-fn build_field(grid: &Grid, cols_f: i32, key: u32, fine: u32, old: Option<Field>, day: i64) -> Field {
+fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>, day: i64) -> Field {
     let n = 4 * FINE;
     let (rr, rc) = ((key >> 16) as i32 - 64, (key & 0xffff) as i32 - 64);
     let (r0, c0) = ((rr * 4 - grid.row0) * FINE, (rc * 4 - grid.col0) * FINE);
@@ -2801,6 +3259,38 @@ mod tests {
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
+    }
+
+    /// S83: an heir's share moves on the same tiles: no land appears or
+    /// vanishes, the tiles' free land is untouched, plots add up to area.
+    #[test]
+    fn inheritance_moves_land_on_the_same_tiles() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        let f = (0..g.farms.len()).find(|&f| g.farms[f].hh != NONE && g.farms[f].area > 20_000 && g.farms[f].plots.len() > 1).unwrap();
+        let free: (i64, i64) = (g.free_m2.iter().sum(), g.free_poor.iter().sum());
+        let tiles: Vec<[u16; 2]> = g.tiles.clone();
+        let (area, poor) = (g.farms[f].area, g.farms[f].poor);
+        let i = g.info[&g.farms[f].hh];
+        let t = g.new_farm_for_heir(u32::MAX - 1, &i, g.farms[f].fine, f as u32) as usize;
+        g.move_land(f, t, area / 3);
+        let sum = |fm: &Farm| fm.plots.iter().map(|p| (p.good + p.poor) as i64).sum::<i64>();
+        let sum_poor = |fm: &Farm| fm.plots.iter().map(|p| p.poor as i64).sum::<i64>();
+        assert_eq!(g.farms[t].area, area / 3);
+        assert_eq!(g.farms[f].area + g.farms[t].area, area);
+        assert_eq!(g.farms[f].poor + g.farms[t].poor, poor);
+        for fm in [&g.farms[f], &g.farms[t]] {
+            assert_eq!(sum(fm), fm.area);
+            assert_eq!(sum_poor(fm), fm.poor);
+        }
+        assert_eq!((g.free_m2.iter().sum::<i64>(), g.free_poor.iter().sum::<i64>()), free);
+        assert!(g.tiles == tiles);
+        // The share keeps the father's calendar.
+        assert_eq!((g.farms[t].harvest_doy, g.farms[t].sow_doy), (g.farms[f].harvest_doy, g.farms[f].sow_doy));
     }
 
     #[test]
