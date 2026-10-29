@@ -377,8 +377,13 @@ void fragment() {
 		// (gone by north-east and north-west: diagonal steps facing away drew
 		// hairlines across the 70 km view)
 		float away = clamp(1.0 + 2.0 * min(fb, 0.0), 0.0, 1.0);
-		float side = fr < 0.0 ? 0.12 : -0.15;
-		float front = fb > 0.0 ? -0.10 : -0.18;
+		// from the 1 km tiles the shadow map is off and these tones are all
+		// the relief has: 1.6 times as strong (west +19 %, east -24 %, risers
+		// -16 %), so lit and shaded sides differ by half (Kritik r9 and the
+		// people critic r16: the risers vanished at 70 km, ratio 1.05 to 1.2)
+		float amp = tile_km >= 1.0 ? 1.6 : 1.0;
+		float side = (fr < 0.0 ? 0.12 : -0.15) * amp;
+		float front = (fb > 0.0 ? -0.10 : -0.18) * amp;
 		// continuous in the direction (a blend into the corner tone), so the
 		// tone never flips between two sides from pixel to pixel
 		float t = abs(fr) - abs(fb);

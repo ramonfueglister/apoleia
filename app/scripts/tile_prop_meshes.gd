@@ -56,8 +56,8 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 ## the top and a base row at the foot.
 ## x and z: tenths of the block (-5..5). y: 0 foot, 1 top (the shader
 ## stretches the wall between them). UV.x: an offset in metres from that end,
-## so the coping and base rows keep their height. UV.y = 1: the west strip of
-## the yard, which turns into a cross street every few lots.
+## so the coping and base rows keep their height. On a street tile the
+## shader paves the whole top (tile_props.gdshader STREET_EVERY).
 const PLINTH_STREET := 1.2 # street, tenths of the block
 const PLINTH_KERB := 0.2
 const PLINTH_ROW_M := 0.5 # coping and base rows
@@ -72,12 +72,10 @@ static func plinth() -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var road := 5.0 - PLINTH_STREET
 	var kerb := road - PLINTH_KERB
-	var cross := -5.0 + PLINTH_STREET
-	# top: yard (the west strip flagged), kerb, street
-	_plinth_quad(st, Vector2(cross, -5.0), Vector2(5.0, kerb), PLINTH_YARD, 0.0)
-	_plinth_quad(st, Vector2(-5.0, -5.0), Vector2(cross, kerb), PLINTH_YARD, 1.0)
-	_plinth_quad(st, Vector2(-5.0, kerb), Vector2(5.0, road), PLINTH_KERB_RGB, 0.0)
-	_plinth_quad(st, Vector2(-5.0, road), Vector2(5.0, 5.0), PLINTH_ROAD, 0.0)
+	# top: yard, kerb, street
+	_plinth_quad(st, Vector2(-5.0, -5.0), Vector2(5.0, kerb), PLINTH_YARD)
+	_plinth_quad(st, Vector2(-5.0, kerb), Vector2(5.0, road), PLINTH_KERB_RGB)
+	_plinth_quad(st, Vector2(-5.0, road), Vector2(5.0, 5.0), PLINTH_ROAD)
 	# walls: base row, masonry, coping row (y anchor, offset in metres)
 	var rows := [[0.0, 0.0, 0.0, PLINTH_ROW_M, Color("#968c6f")],
 		[0.0, PLINTH_ROW_M, 1.0, -PLINTH_ROW_M, Color()],
@@ -103,10 +101,10 @@ static func plinth() -> ArrayMesh:
 				st.set_color(rgb); st.set_normal(n); st.set_uv(Vector2(quad[k][1], 0.0)); st.add_vertex(quad[k][0])
 	return st.commit()
 
-static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color, flag: float) -> void:
+static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color) -> void:
 	# clockwise seen from above
 	for p in [Vector2(lo.x, lo.y), Vector2(hi.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, hi.y)]:
-		st.set_color(rgb); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, flag)); st.add_vertex(Vector3(p.x, 1.0, p.y))
+		st.set_color(rgb); st.set_normal(Vector3.UP); st.set_uv(Vector2.ZERO); st.add_vertex(Vector3(p.x, 1.0, p.y))
 
 ## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
 ## trunk, Urbek's bright top and dark sides. `low`: the far version (two

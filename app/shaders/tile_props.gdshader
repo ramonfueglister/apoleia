@@ -21,21 +21,21 @@ uniform bool place_ready = false;
 uniform int place_tree_w = 300;
 
 varying vec3 tint;
-varying float road; // the cross street on a terrace's west strip
+varying float road; // a paved street tile's terrace top
+varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc)
 
 // Up close (quarter tiles) every lot stands on a terrace block of the whole
 // tile with a street along its south side (Kritik r8: lots butted front to
 // back with no street): the lot keeps its width, is SUB_LOT_DEPTH as deep and
-// stands at the north side; every CROSS_EVERY-th column a cross street runs
-// along the west side, and its lots are SUB_LOT_DEPTH as wide too. (Seen at
-// the 30 degree tilt the houses hide the street behind them unless the next
-// row stands lower; the cross streets run along the view and stay open.)
+// stands at the north side. On a street block (tt_sub_street) the terrace is
+// paved and holds no lot.
 const float SUB_LOT_DEPTH = 0.9;
 const float SUB_LOT_NORTH = 0.01; // gap behind the lot, tile units
-const int CROSS_EVERY = 5;
-const float CROSS_STREET = 0.12; // tile units (tile_prop_meshes.gd PLINTH_STREET)
 const float TERRACE_STEP_M = 0.25; // a terrace on flat ground stands this high
 const vec3 ROAD_RGB = vec3(0.639, 0.596, 0.463); // as the street on the terrace top (PLINTH_ROAD)
+// an olive crown's grey green on the broadleaf's (Kritik r9: lit #8a9a64,
+// shade #5e7048 on screen)
+const vec3 OLIVE_TINT = vec3(2.0, 1.09, 1.9);
 
 float pick(vec4 v, int k) {
 	return k == 0 ? v.x : k == 1 ? v.y : k == 2 ? v.z : v.w;
@@ -74,6 +74,7 @@ void vertex() {
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
 	road = 0.0;
+	olive = !house && prop_kind == 0 && edge_size < OLIVE_SIZE + 0.05 ? 1.0 : 0.0;
 	float lift = 0.0;
 	if (house && sub_tiles) {
 		// the terrace block covers the tile: level at its highest corner,
@@ -81,39 +82,39 @@ void vertex() {
 		vec4 c = tt_corners_cached(t);
 		float hi = max(max(c.x, c.y), max(c.z, c.w));
 		float lo = min(min(c.x, c.y), min(c.z, c.w));
-		bool cross = ((t.x % CROSS_EVERY) + CROSS_EVERY) % CROSS_EVERY == 0;
+		bool street = d.w >= STREET_CODE;
 		lift = TERRACE_STEP_M * s;
 		level = hi;
 		if (prop_kind == 5) {
 			float wall = (hi - lo) * level_h + lift;
 			float off = UV.x * s; // the coping and base rows keep their height
 			v = vec3(VERTEX.x * tile_km * 0.1, 0.0, VERTEX.z * tile_km * 0.1);
+			// the south face a hair in front of the ground's step below it
+			// (tt_corners lowers the ground south of a lot)
+			v.z += VERTEX.z > 4.9 ? 0.003 * tile_km : 0.0;
 			v.y = VERTEX.y > 0.5 ? max(off, -0.5 * wall) : -wall + min(off, 0.5 * wall);
-			road = cross && UV.y > 0.5 ? 1.0 : 0.0;
+			road = street && NORMAL.y > 0.5 ? 1.0 : 0.0;
 			uv = vec2(0.5);
 		} else {
 			float lot = 10.0 * s / tile_km; // lot width in tile units
+			show = show && !street;
 			v.z *= SUB_LOT_DEPTH;
 			uv.y = SUB_LOT_NORTH + 0.5 * lot * SUB_LOT_DEPTH;
-			if (cross) {
-				v.x *= SUB_LOT_DEPTH;
-				uv.x = CROSS_STREET + 0.01 + 0.5 * lot * SUB_LOT_DEPTH;
-			}
 		}
 		p = world_min + (vec2(t) + uv) * tile_km;
 	} else if (house) {
-		// a lot stands level at the highest ground under it; on a ramp a
-		// stone terrace (prop kind 5) fills the space down to the lowest, as
-		// the houses of a hill town stand on retaining walls (they tilted
-		// with the ramp before: slanted cards at 22 km)
+		// the lots of a town tile stand level at its highest corner; on a
+		// ramp a stone terrace (prop kind 5) fills the space down to the
+		// ground, as the houses of a hill town stand on retaining walls (they
+		// tilted with the ramp before: slanted cards at 22 km; each lot on its
+		// own step drew a town on a slope as a sheared bar code at 70 km,
+		// Kritik r9)
 		vec4 c = tt_corners_cached(t);
 		float e = 0.5 * s * 10.0 / tile_km; // half the lot in tile units
-		float hi = -1e6, lo = 1e6;
+		float hi = max(max(c.x, c.y), max(c.z, c.w)), lo = 1e6;
 		for (int k = 0; k < 4; k++) {
 			vec2 f = clamp(uv + vec2(k == 1 || k == 2 ? e : -e, k >= 2 ? e : -e), 0.0, 1.0);
-			float l = tt_level_in_tile(t, c, f);
-			hi = max(hi, l);
-			lo = min(lo, l);
+			lo = min(lo, tt_level_in_tile(t, c, f));
 		}
 		level = hi;
 		if (prop_kind == 5) {
@@ -137,7 +138,9 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = pow(mix(COLOR.rgb, ROAD_RGB, road) * tint, vec3(2.2)); // vertex colours are sRGB
+	vec3 c = mix(COLOR.rgb, ROAD_RGB, road);
+	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
+	ALBEDO = pow(c * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;
 }

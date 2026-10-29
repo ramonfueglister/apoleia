@@ -434,6 +434,25 @@ float tt_cut_level(ivec2 t, int a) {
 	return tt_water(n) == W_LAKE ? tt_lake_level(n) - tt_water_drop() : -tt_water_drop();
 }
 
+// Quarter tile t holds a lot (a house on its terrace block, or a paved
+// street block: tile_props.gdshader). The corners are the data corners
+// (tt_land_corner), not tt_corners, which lowers the tiles south of the lots.
+bool tt_sub_lot(ivec2 t) {
+	int cell = tt_cell(t);
+	int town = cell >> 2;
+	if ((cell & 3) != W_LAND || town == 0 || !tt_sub_house(t, town)) { return false; }
+	// now and then a small paved square in the city core (the lot models
+	// bring their own gardens)
+	if (town == 3 && tt_hash(vec2(t) * 1.91 + 0.7) < 0.06) { return false; }
+	// a village house only on a flat quarter (a town's lots stand on terraces)
+	if (town < 2) {
+		vec4 q = vec4(tt_land_corner(t), tt_land_corner(t + ivec2(1, 0)), tt_land_corner(t + ivec2(1, 1)), tt_land_corner(t + ivec2(0, 1)));
+		if (max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) >= 0.01) { return false; }
+	}
+	// the whole house off the landmark blocks
+	return !tt_near_landmark(world_min + (vec2(t) + 0.5) * tile_km, 0.45 * tile_km);
+}
+
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
 vec4 tt_corners(ivec2 t) {
 	int w = tt_water(t);
@@ -448,6 +467,13 @@ vec4 tt_corners(ivec2 t) {
 		tt_land_corner(t + ivec2(1, 0)),
 		tt_land_corner(t + ivec2(1, 1)),
 		tt_land_corner(t + ivec2(0, 1)));
+	// up close the ground south of a lot is level with the lot's lowest corner
+	// along their side, so the lot's terrace wall shows to the camera as a
+	// whole rectangle; it was a triangle wherever the ground fell sideways
+	// (Kritik r9). The neighbours' walls (tile_terrain.gdshader) close the step.
+	if (sub_tiles && w == W_LAND && l.x != l.y && tt_sub_lot(t - ivec2(0, 1)) && !tt_sub_lot(t)) {
+		l.xy = vec2(min(l.x, l.y));
+	}
 	// river tiles keep the land shape; the river is a narrow band drawn on top
 	return l;
 }

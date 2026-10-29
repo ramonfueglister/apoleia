@@ -18,7 +18,8 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
   shore.r16f       highest the land may stand next to the water (sea 0 m, lakes at
                    their level, same slope); caps the blurred relief at the shores
   levels-L{n}.png  the height level of every tile corner (8 bit): far zoom levels
-                   (n >= BAKED_FROM) from the 2 km heights (corner_levels), the near
+                   (n >= BAKED_FROM) from the terrain tiles' 2 km squares
+                   (corner_levels, dem_node_heights), the near
                    ones (NEAR_LEVELS) from the terrain tiles (near_corner_levels,
                    downloaded once to DEM_DIR, not in Git)
   ground-L{n}.png  per zoom level: the landscape of every tile (GROUND, one colour
@@ -30,6 +31,7 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
     python3 tools/build_tile_terrain.py --near-only     # only levels-L0/L1.png (--level=N for one)
     python3 tools/build_tile_terrain.py --ground-only   # only ground-L*.png
     python3 tools/build_tile_terrain.py --towns-only    # only the settlements in cells-L*.png
+    python3 tools/build_tile_terrain.py --cells-only    # only cells-L*.png (water, rivers, towns)
 """
 
 from __future__ import annotations
@@ -82,6 +84,9 @@ MOUNTAIN_TO_M = 1300.0
 # drew a maze of thin terraces in the hills or left the Apennines one flat
 # step). Above 1000 m a level is 300 m, so the ranges rise to a crest instead
 # of one wide table at 1400 to 1900 m (the Alps read as a mesa). The height
+# is the terrain tiles' mean over the 2 km squares (dem_node_heights; on the
+# smooth 2 km heights the Alps topped out at 1900 m and the ranges were wide
+# flat tables, Kritik r9). It
 # takes PEAK_SHARE of the highest point within a tile before the blur, so a
 # narrow range (Apennines, Pyrenees) keeps its crest instead of melting into
 # the plains. The shader mirrors the scale (tt_far_level_x); the app draws far
@@ -110,13 +115,14 @@ def far_level_x(metres):
 # hills of a few km are gone (Tivoli stood at 70 m instead of 235 m, Rome's
 # hills were missing). Their scale is fine in the lowlands, so gentle land and
 # Rome's hills show as SimCity 2000 terraces (NEAR_STEPS_M at 0.5 km tiles:
-# 20 m levels up to 120 m, 50 m up to 420 m, NEAR_BEYOND_M above; twice the
+# 20 m levels up to 120 m, 50 m up to 420 m, NEAR_BEYOND_M above, so the
+# mountains climb in many narrow steps instead of a few wide tables; twice the
 # metres at 1 km tiles). At 0.5 km tiles the corners are blurred and cleaned
 # at the scale of one tile (Rome's hills are a tile or two), at 1 km tiles as
 # far out (a jumble of one tile bumps over the Apennines otherwise).
 NEAR_LEVELS = (0, 1)
 NEAR_STEPS_M = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0]
-NEAR_BEYOND_M = 120.0
+NEAR_BEYOND_M = 60.0
 NEAR_BLUR = [1.0, 1.2]  # tiles, per near level
 NEAR_CLEAN = [3, 3]  # corner square of the cleaning, per near level
 DEM_ZOOM = 8
@@ -192,11 +198,20 @@ def raster_polygons(feats, cell_km, n_x, n_y, band_rows=1024):
 
 
 def raster_rivers(feats, cell_km, n_x, n_y, max_rank, band_rows=4096):
-    """River centre lines, one cell wide (the shader draws the band itself)."""
+    """River centre lines, one cell wide (the shader draws the band itself).
+    A named river takes the best rank of its parts, and its stretches through
+    lakes (Lake Centerline) count too: where the lake is a reservoir the map
+    does not have, the river ran on in pieces (Kritik r9: the Tagus ended
+    inland at 4400 km); in a lake clean_rivers drops them."""
+    best = {}
+    for props, _ in feats:
+        if props.get("name"):
+            best[props["name"]] = min(best.get(props["name"], 10), props.get("scalerank") or 10)
     lines = []
     for props, geoms in feats:
-        rank = min(props.get("scalerank") or 10, ROMAN_RIVER_RANK.get(props.get("name"), 10))
-        if rank > max_rank or props.get("featurecla", "River") not in ("River", None):
+        name = props.get("name")
+        rank = min(best.get(name, props.get("scalerank") or 10), ROMAN_RIVER_RANK.get(name, 10))
+        if rank > max_rank or props.get("featurecla", "River") not in ("River", "Lake Centerline", None):
             continue
         for line, _ in geoms:
             px = (line[:, 0] - WORLD_MIN[0]) / cell_km
@@ -340,6 +355,14 @@ TOWN_EXTRA_KM = 0.45
 # farmstead in the woods (Kritik r8); the woods keep a tile away from the
 # towns up close (TOWN_CLEARING).
 TOWN_MIN_KM = 0.8
+# Towns stand on land; from 4 km tiles also across the rivers, so a city
+# astride a river stays one block (Kritik r9: Rome at 400 km was a bar of
+# one tile column east of the Tiber).
+TOWN_ON_RIVER_KM = 4.0
+
+
+def town_ground(water, cell_km):
+    return (water == 0) | ((water == 3) & (cell_km >= TOWN_ON_RIVER_KM))
 
 
 def settlements(cell_km, n_x, n_y):
@@ -652,17 +675,28 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     return level.astype(np.uint8)
 
 
+def dem_node_heights(height, dem):
+    """Metres at the 2 km nodes from the terrain tiles (their mean over the
+    node's square), the 2 km heights outside them. The 2 km heights are smooth
+    (the Alps reach 1900 m on them, the 2 km squares of the terrain tiles
+    4000 m), so the far ranges drew wide flat tables (Kritik r9)."""
+    m = dem_tile_means(NODE_KM, GRID_W, GRID_H, dem, centred=True)
+    return np.where(np.isfinite(m), m, height).astype(np.float32)
+
+
 def bake_levels(manifest, cells, height, lake_enc, shore):
     manifest["levels"] = [e for e in manifest.get("levels", []) if e["level"] < BAKED_FROM]
+    relief_h = dem_node_heights(height, dem_mosaic(cells[1] != 1))
     for level in range(BAKED_FROM, LEVELS):
         tile = BASE_CELL_KM * 2 ** level
-        lv = corner_levels(cells[level], tile, height, lake_enc, shore)
+        lv = corner_levels(cells[level], tile, relief_h, lake_enc, shore)
         path = OUT / f"levels-L{level}.png"
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
                                    "level_steps_m": LEVEL_STEPS_M,
                                    "blur_tiles": CORNER_BLUR, "peak_share": PEAK_SHARE,
                                    "beyond_m": LEVEL_BEYOND_M,
+                                   "heights": {"url": DEM_URL, "zoom": DEM_ZOOM, "node_squares_km": NODE_KM},
                                    "path": path.name, "sha256": sha(path),
                                    "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile "
                                            "between all eight neighbours, sea corners 0, land >= 1"})
@@ -964,8 +998,9 @@ def ground_classes(water, tile_km, height, cover, metres, relief=None, band=1024
             # far out the woods draw the relief: in hilly land the valleys
             # stay open and the slopes carry the forest (the plains and
             # plateaus keep their woods)
+            # (the valley floors are cleared in compose_ground, by level)
             hilly = relief[r0:r1] >= HILLY_M
-            wood_min = wood_min + hilly * np.where(m < VALLEY_M, VALLEY_WOOD, np.where(m < TREELINE_M, -SLOPE_WOOD, 0.0))
+            wood_min = wood_min - hilly * (m < TREELINE_M) * SLOPE_WOOD
         wood = (forest - 0.25 * farmed + 0.6 * n1 > wood_min) & (m + 100 * n3 < TREELINE_M)
         if tile_km <= 2.0:
             wood &= n4 < 0.12
@@ -1010,26 +1045,28 @@ def tidy_ground(g, passes=2):
 # so the rock no longer hangs on the levels around it (top two levels within
 # 10 km left 0.2 % rock at 70 km). ROCK_M and SNOW_M fall a little far out,
 # where a tile averages crests and valleys (rock about 10 % of the Abruzzo at
-# 70 km, 4 % at 120 km; snow about 2 % of the Alps at 1500 km). From the 1 km
-# tiles, in hilly land, the woods leave the valleys (below VALLEY_M) and grow
-# on the slopes up to TREELINE_M; plains and plateaus keep their woods. Wood,
+# 70 km, 4 % at 120 km). Kritik r9: snow only on the summits above 2500 m
+# (about 1.5 % of the Alps at 1500 km, it was 5.6 %). From the 1 km tiles, in
+# hilly land, the woods leave the valley floors (the lowest level around and
+# VALLEY_LEVELS above it) and grow on the slopes up to TREELINE_M; plains and
+# plateaus keep their woods. Wood,
 # rock and snow are bound to the levels (level_snap):
 # a tile takes them where most of its own level around it does, so they run
 # in bands along the risers instead of blobs across them.
 ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0}
-SNOW_M = {0.5: 2400.0, 1.0: 2300.0, 2.0: 2300.0, 4.0: 2300.0, 8.0: 2300.0, 16.0: 2100.0}
-VALLEY_M = 400.0
+SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0}
+VALLEY_LEVELS = 1  # levels above the valley floor that stay open in hilly land
 TREELINE_M = 1700.0
 CONIFER_M = 1450.0  # beech below (the Apennine woods), spruce and larch above
 HILLY_M = 400.0  # height range within RELIEF_KM that makes land hilly
 RELIEF_KM = 10.0
-VALLEY_WOOD = 0.12  # more forest share needed in the valleys
 SLOPE_WOOD = 0.14  # less on the slopes
 SNAP_TILES = 1.5
 
 
-def dem_tile_means(tile_km, nx, ny, dem):
-    """Mean metres of the terrain tiles over every tile (NaN where none)."""
+def dem_tile_means(tile_km, nx, ny, dem, centred=False):
+    """Mean metres of the terrain tiles over every tile (NaN where none);
+    `centred`: over the squares centred on the grid points instead."""
     mosaic, tx0, ty0 = dem
     mh, mw = mosaic.shape
     n = 2 ** DEM_ZOOM
@@ -1038,8 +1075,9 @@ def dem_tile_means(tile_km, nx, ny, dem):
     x, _ = lonlat_to_world(lon, 41.0)
     _, z = lonlat_to_world(19.0, lat)
     # the projection is separable: a mosaic column lies in one tile column
-    ci = np.floor((x - WORLD_MIN[0]) / tile_km).astype(np.int64)
-    rj = np.floor((z - WORLD_MIN[1]) / tile_km).astype(np.int64)
+    shift = 0.5 if centred else 0.0
+    ci = np.floor((x - WORLD_MIN[0]) / tile_km + shift).astype(np.int64)
+    rj = np.floor((z - WORLD_MIN[1]) / tile_km + shift).astype(np.int64)
     okc, okr = (ci >= 0) & (ci < nx), (rj >= 0) & (rj < ny)
     m = mosaic[okr][:, okc]
     ci, rj = ci[okc], rj[okr]
@@ -1101,9 +1139,15 @@ def level_snap(mask, lv, sigma, block=2048):
 TOWN_CLEARING = {0.5: 1, 1.0: 1}  # tiles of open land around the towns, per tile size
 
 
-def compose_ground(open_g, wood, conifer, rock, snow, lv, tile_km, town=None):
+def compose_ground(open_g, wood, conifer, rock, snow, lv, tile_km, town=None, hilly=None):
     """The landscape with woods, rock and snow bound to the levels; snow in
-    patches of at least 2 x 2 tiles; no wood next to a town up close."""
+    patches of at least 2 x 2 tiles; no wood next to a town up close. In
+    `hilly` land the valley floors stay open: no wood on the lowest level
+    around (within RELIEF_KM) nor on the VALLEY_LEVELS above it (Kritik r9:
+    the woods filled the valleys and hid the steps)."""
+    if hilly is not None:
+        size = max(int(round(2 * RELIEF_KM / tile_km)) | 1, 3)
+        wood &= ~(hilly & (lv.astype(np.int16) - ndimage.minimum_filter(lv, size) <= VALLEY_LEVELS))
     if tile_km >= 1.0:
         wood = level_snap(wood, lv, SNAP_TILES)
     if town is not None and tile_km in TOWN_CLEARING:
@@ -1128,13 +1172,14 @@ def bake_ground(manifest, cells, height, cover, only=None):
         tile = BASE_CELL_KM * 2 ** level
         ny, nx = cells[level].shape
         metres = tile_metres(tile, nx, ny, height, dem)
-        relief = None
+        relief = hilly = None
         if tile >= 1.0:
             size = max(int(round(2 * RELIEF_KM / tile)) | 1, 3)
             relief = ndimage.maximum_filter(metres, size) - ndimage.minimum_filter(metres, size)
+            hilly = relief >= HILLY_M
         parts = ground_classes(cells[level], tile, height, cover, metres, relief)
         del metres, relief
-        g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level))
+        g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level), hilly)
         del parts
         g = tidy_ground(g, passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
@@ -1144,7 +1189,7 @@ def bake_ground(manifest, cells, height, cover, only=None):
                                    "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
                                    "classes": GROUND, "water": NO_GROUND,
                                    "relief_cover": {"rock_m": ROCK_M[tile], "snow_m": SNOW_M[tile],
-                                                    "valley_m": VALLEY_M, "treeline_m": TREELINE_M,
+                                                    "valley_levels": VALLEY_LEVELS, "treeline_m": TREELINE_M,
                                                     "heights": {"url": DEM_URL, "zoom": DEM_ZOOM}}})
         land = g[g != NO_GROUND]
         share = np.bincount(land, minlength=len(GROUND)) / max(land.size, 1)  # whole map, deserts included
@@ -1175,7 +1220,7 @@ def towns_only():
     manifest = json.loads((OUT / "manifest.json").read_text())
     for e in manifest["cells"]:
         water = unpack_cells(e)
-        town = settlements(e["cell_km"], e["width"], e["height"]) * (water == 0)
+        town = settlements(e["cell_km"], e["width"], e["height"]) * town_ground(water, e["cell_km"])
         path = OUT / e["path"]
         Image.fromarray(pack_nibbles(water | (town << 2)), "L").save(path, optimize=True)
         e["sha256"] = sha(path)
@@ -1183,6 +1228,7 @@ def towns_only():
     manifest["inputs"]["places"] = {"path": "data/gametiles/places.csv", "sha256": sha(ROOT / "data/gametiles/places.csv")}
     manifest["town_extra_km"] = TOWN_EXTRA_KM
     manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
 
@@ -1234,16 +1280,8 @@ def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
-def main():
-    OUT.mkdir(parents=True, exist_ok=True)
-    raw = np.fromfile(RD / "fixed-source-v2-mountain-r7" / "height.rg8", np.uint8).reshape(GRID_H, GRID_W, 2)
-    height = (raw[..., 0].astype(np.float32) * 256 + raw[..., 1]) * 0.25 - 8192
-    classes = np.fromfile(RD / "landcover-node-2km" / "classes.u8", np.uint8).reshape(GRID_H, GRID_W, 8).astype(np.float32) / 255
-    land = load_features(ROOT / "data/derived/land.geojson")
-    lakes = load_features(ROOT / "data/derived/lakes.geojson") + load_features(RD / "lakes-europe-supplement-r1/lakes.geojson")
-    rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
-        RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
-
+def bake_cells(manifest, height, land, lakes, rivers):
+    """cells-L*.png: sea, lakes, rivers and towns of every zoom level."""
     n0x = int(math.ceil(WORLD_SIZE[0] / BASE_CELL_KM))
     n0y = int(math.ceil(WORLD_SIZE[1] / BASE_CELL_KM))
     print("raster land", n0x, n0y)
@@ -1266,11 +1304,7 @@ def main():
     print("raster lakes")
     lake_frac = raster_polygons(lakes, BASE_CELL_KM, n0x, n0y).astype(np.float32) / (SS * SS)
     lake_frac = np.minimum(lake_frac, land_frac)
-
-    manifest = {"revision": "tile-terrain-r1", "status": "implementiert",
-                "node_grid": {"width": GRID_W, "height": GRID_H, "world_min": WORLD_MIN, "world_size": WORLD_SIZE,
-                              "rule": "node i at world_min + i * world_size / (width - 1)"},
-                "cells": [], "inputs": {}}
+    manifest["cells"] = []
     water_by_level = {}
     for level in range(LEVELS):
         f = 2 ** level
@@ -1290,7 +1324,7 @@ def main():
             lake_cells = is_lake
         water[river] = 3
         water_by_level[level] = water & 3
-        town = settlements(cell, nx, ny) * (water == 0)
+        town = settlements(cell, nx, ny) * town_ground(water, cell)
         packed = pack_nibbles(water | (town << 2))
         path = OUT / f"cells-L{level}.png"
         Image.fromarray(packed, "L").save(path, optimize=True)
@@ -1298,6 +1332,43 @@ def main():
                                   "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
                                   "river_max_scalerank": RIVER_RANK[level]})
         print("level", level, cell, nx, ny, "land", is_land.mean().round(3), "river", int(river.sum()))
+    return water_by_level, land_frac, lake_frac, lake_cells
+
+
+def cells_only():
+    """Rebuild only cells-L*.png (the water and the towns); the levels and the
+    ground do not read the rivers or the towns' cells."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    height = np.fromfile(OUT / "height.r16f", "<f2").reshape(GRID_H, GRID_W).astype(np.float32)
+    land = load_features(ROOT / "data/derived/land.geojson")
+    lakes = load_features(ROOT / "data/derived/lakes.geojson") + load_features(RD / "lakes-europe-supplement-r1/lakes.geojson")
+    rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
+        RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
+    bake_cells(manifest, height, land, lakes, rivers)
+    manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    raw = np.fromfile(RD / "fixed-source-v2-mountain-r7" / "height.rg8", np.uint8).reshape(GRID_H, GRID_W, 2)
+    height = (raw[..., 0].astype(np.float32) * 256 + raw[..., 1]) * 0.25 - 8192
+    classes = np.fromfile(RD / "landcover-node-2km" / "classes.u8", np.uint8).reshape(GRID_H, GRID_W, 8).astype(np.float32) / 255
+    land = load_features(ROOT / "data/derived/land.geojson")
+    lakes = load_features(ROOT / "data/derived/lakes.geojson") + load_features(RD / "lakes-europe-supplement-r1/lakes.geojson")
+    rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
+        RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
+
+    manifest = {"revision": "tile-terrain-r1", "status": "implementiert",
+                "node_grid": {"width": GRID_W, "height": GRID_H, "world_min": WORLD_MIN, "world_size": WORLD_SIZE,
+                              "rule": "node i at world_min + i * world_size / (width - 1)"},
+                "cells": [], "inputs": {}}
+    water_by_level, land_frac, lake_frac, lake_cells = bake_cells(manifest, height, land, lakes, rivers)
+    manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
+    n0y, n0x = land_frac.shape
 
     # node-grid products
     xs = WORLD_MIN[0] + np.arange(GRID_W) * WORLD_SIZE[0] / (GRID_W - 1)
@@ -1373,5 +1444,7 @@ if __name__ == "__main__":
         ground_only()
     elif "--towns-only" in sys.argv:
         towns_only()
+    elif "--cells-only" in sys.argv:
+        cells_only()
     else:
         main()
