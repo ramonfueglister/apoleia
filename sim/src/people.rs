@@ -76,6 +76,9 @@ const CAP_SOFT: f64 = 0.9;
 /// S80 PLACEHOLDER: share of households a year that leave at the cap, the
 /// worst fed first (in between it rises linearly from 0 at CAP_SOFT).
 const CAP_LEAVE_PER_YEAR: f64 = 0.03;
+/// S93 PLACEHOLDER: a buyer in need moves to a market around that has this
+/// share of its own market's store per buyer or more (as TENT_MOVE_PCT, S75).
+const MONTH_MOVE_PCT: u32 = 150;
 /// S82 (Ramon, 27.10.2026): partners further apart than this many IQ
 /// points are not considered. Calibrated so that new couples correlate at
 /// about life::IQ_MATE_R (30 gives r = 0.44 over 10 years, ~19,500
@@ -108,8 +111,9 @@ pub const DIVORCE_PER_10K_YEAR: u64 = 700;
 /// hazard is lowered by their share of all deaths, per 1,000. PLACEHOLDER:
 /// about the share of hunger deaths in years 11-100 of the 100-year run
 /// (5-7 % with spoilage; 3.4-3.7 % after S90, S75 for tents and the
-/// buy fix); one value for all ages and places.
-pub const TABLE_HUNGER_PER_1000: u64 = 35;
+/// buy fix; 2.9 % with the monthly search of S93); one value for all ages
+/// and places.
+pub const TABLE_HUNGER_PER_1000: u64 = 29;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -474,6 +478,14 @@ pub struct Econ {
     pub region: FxHashMap<u32, (f64, u32, bool, u32)>,
     /// Below this a household is in need (S66).
     pub need_fed: u16,
+    /// Whether a household lives from buying food (no farm, no tent, not
+    /// outside the grain economy), by household id (S93).
+    pub buyer: Vec<bool>,
+    /// Per region key: (market store in kg, people buying there, market
+    /// cell), for the monthly search of the buyers (S93).
+    pub market: FxHashMap<u32, (f64, u32, u32)>,
+    /// Buyers already moving to a region this month (S93).
+    pub arriving: FxHashMap<u32, u32>,
 }
 
 /// Time per part, summed over the run (µs).
@@ -510,6 +522,8 @@ pub struct Stats {
     pub waited_for_land: u64,
     pub moved_households: u64,
     pub moved_people: u64,
+    /// Of those, people of buyers moving at a monthly check (S93).
+    pub moved_monthly: u64,
     pub left_households: u64,
     pub left_people: u64,
     pub left_map: u64,
@@ -1683,8 +1697,14 @@ impl People {
         }
     }
 
-    /// Households in need compare their cell with the reachable ones about
-    /// once a year and move; with nothing better they leave the map (S66).
+    /// Households in need compare their cell with the reachable ones once a
+    /// year and move; with nothing better they leave the map (S66). With the
+    /// grain economy, households that buy their food also check every month
+    /// (S93): the day's yearly slice, and for them the eleven other slices
+    /// of the same day of the month. They only move, to the market around
+    /// with more grain per buyer; joining kin (S79), leaving the map (S66)
+    /// and leaving near the cap (S80) stay yearly. Tents look monthly on
+    /// their own (S75), farmers stay with their land.
     /// PLACEHOLDER: need = food per person in the region below 1; reachable
     /// = the eight neighbouring 100 km regions; better = more food per
     /// person there after moving.
@@ -1700,76 +1720,119 @@ impl People {
         let mut checked = 0usize;
         // People already moving to a region this round (grain economy).
         let mut arriving: FxHashMap<u32, u32> = FxHashMap::default();
-        for &(i, j) in &self.hh_slices[yslice as usize] {
-            let members: Vec<u32> = self.households[i as usize..j as usize]
-                .iter()
-                .map(|p| p.1)
-                .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none() && self.world.get::<Household>(e).unwrap().0 == self.households[i as usize].0))
-                .collect();
-            let Some(&first) = members.first() else { continue };
-            if let Some(to) = self.kin_to_join(&members, day) {
-                joins.push((members, to));
-                continue;
-            }
-            let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
-            let house = self.households[i as usize].0;
-            checked += 1;
-            if let Some(e) = &self.econ {
-                // Grain economy: a household that ate too little looks for
-                // the region around with the most food per head once it is
-                // there, counting those already on their way (stores and
-                // free land, crate::grain); PLACEHOLDER as below.
-                if !self.in_need(house, home) {
-                    if pressure > 0.0 {
-                        rest.push((e.fed.get(house as usize).map_or(1000, |&f| f as u32), house, members));
+        let mut month_arr = self.econ.as_mut().map(|e| std::mem::take(&mut e.arriving)).unwrap_or_default();
+        let months = (YEAR / MONTH) as u32;
+        for ys in (0..months).map(|k| yslice % MONTH as u32 + k * MONTH as u32) {
+            let yearly = ys == yslice;
+            for &(i, j) in &self.hh_slices[ys as usize] {
+                // Outside the yearly slice only the households in need count;
+                // with the grain economy that is known before the members.
+                if !yearly {
+                    let Some(e) = &self.econ else { break };
+                    let h = self.households[i as usize].0 as usize;
+                    if !e.fed.get(h).is_some_and(|&f| f < e.need_fed) || !e.buyer.get(h).copied().unwrap_or(false) {
+                        continue;
                     }
-                    continue;
                 }
-                let own = self.grid.region(home);
-                let n = members.len() as u32;
-                let per_head = |k: u32, add: u32| {
-                    e.region.get(&k).map_or(0.0, |r| r.0 / ((r.1 + arriving.get(&k).copied().unwrap_or(0) + add).max(1) as f64 * crate::grain::KG_PER_ADULT_YEAR as f64))
-                };
-                let mut best = (per_head(own, 0), NONE, NONE);
-                for k in Grid::regions_around(own) {
-                    if let Some(r) = e.region.get(&k) {
-                        let s = per_head(k, n);
-                        if k != own && s > best.0 {
-                            best = (s, r.3, k);
+                let members: Vec<u32> = self.households[i as usize..j as usize]
+                    .iter()
+                    .map(|p| p.1)
+                    .filter(|&p| self.alive(p).is_some_and(|e| self.world.get::<Travel>(e).is_none() && self.world.get::<Household>(e).unwrap().0 == self.households[i as usize].0))
+                    .collect();
+                let Some(&first) = members.first() else { continue };
+                if yearly {
+                    if let Some(to) = self.kin_to_join(&members, day) {
+                        joins.push((members, to));
+                        continue;
+                    }
+                }
+                let home = self.world.get::<Home>(self.ent[first as usize]).unwrap().0;
+                let house = self.households[i as usize].0;
+                checked += yearly as usize;
+                if let Some(e) = &self.econ {
+                    // Grain economy: a household that ate too little looks for
+                    // the region around with the most food per head once it is
+                    // there, counting those already on their way (stores and
+                    // free land, crate::grain); PLACEHOLDER as below.
+                    if !self.in_need(house, home) {
+                        if pressure > 0.0 && yearly {
+                            rest.push((e.fed.get(house as usize).map_or(1000, |&f| f as u32), house, members));
+                        }
+                        continue;
+                    }
+                    let own = self.grid.region(home);
+                    let n = members.len() as u32;
+                    if !yearly {
+                        // S93: a buyer in need looks for the market around
+                        // with the most grain in store per buyer, counting
+                        // those on their way this month, and moves when it
+                        // offers MONTH_MOVE_PCT of its own market or more.
+                        let per_buyer = |k: u32, add: u32| {
+                            e.market.get(&k).map_or(0.0, |r| r.0 / (r.1 + month_arr.get(&k).copied().unwrap_or(0) + add).max(1) as f64)
+                        };
+                        let mut best = (per_buyer(own, 0) * MONTH_MOVE_PCT as f64 / 100.0, NONE, NONE);
+                        for k in Grid::regions_around(own) {
+                            if let Some(r) = e.market.get(&k) {
+                                let s = per_buyer(k, n);
+                                if k != own && s > best.0 {
+                                    best = (s, r.2, k);
+                                }
+                            }
+                        }
+                        if best.1 != NONE {
+                            *month_arr.entry(best.2).or_insert(0) += n;
+                            self.stats.moved_monthly += n as u64;
+                            moves.push((members, Some(best.1)));
+                        }
+                        continue;
+                    }
+                    let per_head = |k: u32, add: u32| {
+                        e.region.get(&k).map_or(0.0, |r| r.0 / ((r.1 + arriving.get(&k).copied().unwrap_or(0) + add).max(1) as f64 * crate::grain::KG_PER_ADULT_YEAR as f64))
+                    };
+                    let mut best = (per_head(own, 0), NONE, NONE);
+                    for k in Grid::regions_around(own) {
+                        if let Some(r) = e.region.get(&k) {
+                            let s = per_head(k, n);
+                            if k != own && s > best.0 {
+                                best = (s, r.3, k);
+                            }
                         }
                     }
-                }
-                let to = (best.1 != NONE && !leave_instead(house)).then_some(best.1);
-                if to.is_some() {
-                    *arriving.entry(best.2).or_insert(0) += n;
-                }
-                moves.push((members, to));
-                continue;
-            }
-            let now = self.share(home, 0);
-            if now >= 1.0 {
-                if pressure > 0.0 {
-                    rest.push(((now * 1000.0).min(u32::MAX as f64) as u32, house, members));
-                }
-            } else {
-                // The best region around (food per person once they are
-                // there), and in it the cell with the most free food.
-                let n = members.len() as u32;
-                let own = self.cell_region[home as usize];
-                let mut best = (now, NONE);
-                for k in Grid::regions_around(self.grid.region(home)) {
-                    let Some(&r) = self.region_index.get(&k) else { continue };
-                    let s = self.region_food[r as usize] as f64 / (self.region_pop[r as usize] + n) as f64;
-                    if r != own && s > best.0 {
-                        best = (s, r);
+                    let to = (best.1 != NONE && !leave_instead(house)).then_some(best.1);
+                    if to.is_some() {
+                        *arriving.entry(best.2).or_insert(0) += n;
                     }
+                    moves.push((members, to));
+                    continue;
                 }
-                let to = (best.1 != NONE && !leave_instead(house)).then(|| {
-                    let cells = &self.region_cells[&self.region_key[best.1 as usize]];
-                    *cells.iter().max_by(|&&a, &&b| (self.food[a as usize] - self.pop[a as usize] as f32).total_cmp(&(self.food[b as usize] - self.pop[b as usize] as f32)).then(b.cmp(&a))).unwrap()
-                });
-                moves.push((members, to));
+                let now = self.share(home, 0);
+                if now >= 1.0 {
+                    if pressure > 0.0 {
+                        rest.push(((now * 1000.0).min(u32::MAX as f64) as u32, house, members));
+                    }
+                } else {
+                    // The best region around (food per person once they are
+                    // there), and in it the cell with the most free food.
+                    let n = members.len() as u32;
+                    let own = self.cell_region[home as usize];
+                    let mut best = (now, NONE);
+                    for k in Grid::regions_around(self.grid.region(home)) {
+                        let Some(&r) = self.region_index.get(&k) else { continue };
+                        let s = self.region_food[r as usize] as f64 / (self.region_pop[r as usize] + n) as f64;
+                        if r != own && s > best.0 {
+                            best = (s, r);
+                        }
+                    }
+                    let to = (best.1 != NONE && !leave_instead(house)).then(|| {
+                        let cells = &self.region_cells[&self.region_key[best.1 as usize]];
+                        *cells.iter().max_by(|&&a, &&b| (self.food[a as usize] - self.pop[a as usize] as f32).total_cmp(&(self.food[b as usize] - self.pop[b as usize] as f32)).then(b.cmp(&a))).unwrap()
+                    });
+                    moves.push((members, to));
+                }
             }
+        }
+        if let Some(e) = self.econ.as_mut() {
+            e.arriving = month_arr;
         }
         if pressure > 0.0 {
             // This day's share of the yearly leavers, rounded by chance.

@@ -486,12 +486,35 @@ mehr Höfe).
 heiraten aber nicht, weil ihre Region kein freies Land hat (S65). Ramon: so lassen, bis
 andere Nahrung (Datteln, Gärten, Herden) gebaut ist.
 
-**S93 (monatlich wandern) ist gebaut, aber nicht drin.** Im 10-Jahre-Lauf stieg die Zahl der
-Hungertoten auf 250–320 im Jahr (statt 120–150), und die Bevölkerung sank bis Jahr 10 auf
-110'500 statt 114'200. Wer vor der Ernte einen Monat zu wenig hat, zieht in eine
-Nachbarregion mit mehr Getreide pro Kopf (Vorräte plus freies Land), kommt dort landlos an,
-und viele ziehen gleichzeitig. Nur Landlose monatlich oder das Verlassen der Karte nur
-jährlich ändert daran nichts. Die Frage liegt bei Ramon.
+## Lohnhaushalte suchen jeden Monat einen besseren Markt (S93, 100 Jahre, Seed 1, `run100-s93.txt`; vorher: `run100-s91-s92.txt`)
+
+Die erste Fassung von S93 liess alle Haushalte in Not jeden Monat die Regionen rundum nach
+Getreide pro Kopf vergleichen, Vorräte plus freies Land. Im 10-Jahre-Lauf stieg die Zahl
+der Hungertoten auf 250–320 im Jahr (statt 120–150): Wer zieht, kommt landlos an, das freie
+Land nützt ihm nichts, und viele ziehen gleichzeitig. Darum blieb sie aus.
+
+Jetzt prüfen monatlich nur die Lohnhaushalte, die ihr Essen am Markt kaufen. Sie
+vergleichen das Getreide im Lager des eigenen Markts pro Käufer mit dem der Märkte rundum,
+zählen alle mit, die im selben Monat schon dorthin ziehen, und ziehen ab dem 1,5-Fachen
+(wie die Zelte, S75) in die Marktzelle. Die Karte verlassen sie nur bei der jährlichen
+Prüfung (S66). Zelte suchen weiter monatlich nach Arbeit und Almosen (S75), Bauern prüfen
+einmal im Jahr. Etwa 1'100 Menschen im Jahr ziehen so monatlich um (im ersten Jahr 10'000,
+gegen Ende wieder mehr, weil das Land knapp wird), 400–500 jährlich.
+
+Weil weniger verhungern, ist der Anteil der Hungertoten in der Sterbetafel (S89) von 3,5 %
+auf 2,9 % nachgestellt, den Anteil dieses Laufs.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Hungertote Jahr 2 / Jahr 3 | 567 / 405 | 387 / 265 |
+| Hungertote pro Jahr, Jahr 11 bis 100 / Anteil | 189 / 3,6 % | 151 / 2,9 % |
+| Verlassen die Karte, Jahr 11 bis 100, pro Jahr | 87 | 54 |
+| Geburten / Todesfälle pro 1'000, Jahr 11 bis 100 | 45,2 / 43,2 | 45,0 / 43,0 |
+| Menschen im Jahr 10 / Jahr 100 | 114'198 / 127'386 | 114'480 / 131'781 |
+| Wachstum Jahr 10 bis 100 | 0,12 % | 0,16 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
+d2967522adc83ce9), 54 Tests grün. Ohne Getreidewirtschaft (`people`) ändert sich nichts.
 
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
@@ -579,7 +602,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Wüste (S91) | kein Feld- und kein Rodland und mehr als 50 % der Landfläche kahl (ESA-Landbedeckung); wer zuzieht, gehört nicht dazu | frei gewählt |
 | Lex Manciana (S92) | bei der monatlichen Zählung alle zugleich, mindestens 1 ha frei in der Zelle, nur Zellen mit Dorf; gutes Land bis zum Wunsch, dann Rodung wie S73 im ersten Jahr; beim Start gesät und mit Vorrat wie die anderen Höfe | frei gewählt; Drittel und zwei Jahre aus der Lex Manciana |
 | Zelte ziehen um (S75) | einmal im Monat, wenn nicht satt; Märkte bis 5 Reisetage; ab dem 1,5-Fachen an Lohn und Almosen pro Zeltperson; Umzug sofort; Nähe zu anderen Zelten zählt nur über die geteilte Arbeit | frei gewählt |
-| Hungertote in der Sterbetafel (S89) | 3,5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in den Jahren 11–100 dieses Laufs (3,4–3,7 %; mit dem Verderb allein 5–7 %) |
+| Hungertote in der Sterbetafel (S89) | 2,9 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in den Jahren 11–100 dieses Laufs (2,9 %; vor S93 3,4–3,7 %, mit dem Verderb allein 5–7 %) |
+| Monatlich wandern (S93) | nur Lohnhaushalte in Not; Getreide im Marktlager pro Käufer; ab dem 1,5-Fachen des eigenen Markts; die acht Nachbarregionen; Ziel ist die Marktzelle; wer im selben Monat schon unterwegs ist, zählt mit | frei gewählt, Schwelle wie S75 |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
@@ -602,6 +626,6 @@ in Arrays nach ID statt in Hashtabellen.
   verschwindet mit dem Haushalt. Der Hofspeicher bleibt beim Hof.
 - **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87), Verderb (S88) und
   ohne die doppelt gezählten Hungertoten (S89): 0,17 % im Jahr von Jahr 10 bis 100,
-  historisch 0,1–0,2 %.
+  historisch 0,1–0,2 %. Mit S91–S93 jetzt 0,16 % (`run100-s93.txt`).
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.
