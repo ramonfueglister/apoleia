@@ -46,6 +46,11 @@ pub const LEAVING: u32 = 3;
 const CELL_KM: f32 = 25.0;
 /// Village seeds per cell are 0..VILLAGES-1; the area code is seed + 1.
 pub const VILLAGES: u32 = 4096;
+/// Village code of a house that stands exactly on its order's 0.5 km lot
+/// (a farm built from the build menu) instead of finding a place in a
+/// village; negative for its building site (people_dots_common.gdshaderinc
+/// DOT_AT_LOT).
+pub const AT_LOT: f32 = 12288.0;
 /// Area code of people on the road (anywhere in their current cell).
 pub const ROAD: f32 = 8192.0;
 const NONE: u32 = u32::MAX;
@@ -169,7 +174,7 @@ impl PeopleView {
             .iter()
             .map(|&(t, fine, built)| {
                 let (x, z) = spot_km(t);
-                (house_key(SITE, spot_code(t)), [x as f32, z as f32, -(1.0 + (hash(fine) % VILLAGES) as f32), (site_key(Some(t), fine) << 8 | built as u32) as f32])
+                (house_key(SITE, spot_code(t)), [x as f32, z as f32, -AT_LOT, (site_key(Some(t), fine) << 8 | built as u32) as f32])
             })
             .collect();
         self.houses.set_sites(now);
@@ -181,6 +186,15 @@ impl PeopleView {
         match self.homes.get(&household) {
             Some(&(fine, _)) => Spot::Village { fine, village: 0 },
             None => self.settle.spot(home, household, stand),
+        }
+    }
+
+    /// The village code of a household's house and people at home on
+    /// `fine`: AT_LOT on its order's spot, else the tile's village.
+    fn village_code(&self, household: u32, fine: u32) -> f32 {
+        match self.homes.get(&household) {
+            Some(&(f, Some(_))) if f == fine => AT_LOT,
+            _ => 1.0 + (hash(fine) % VILLAGES) as f32,
         }
     }
 
@@ -232,7 +246,7 @@ impl PeopleView {
             Spot::City { place } => [place.x, place.z, -place.r, w(household, IN_CITY)],
             Spot::Village { fine, .. } => {
                 let (x, z) = self.house_at(household, fine);
-                [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, w(self.key_of(household), AT_HOME)]
+                [x as f32, z as f32, self.village_code(household, fine), w(self.key_of(household), AT_HOME)]
             }
         }
     }
@@ -289,7 +303,7 @@ impl PeopleView {
                 let key = match self.spot(home.0, household.0, stand.0) {
                     Spot::Village { fine, .. } => {
                         let (x, z) = self.house_at(household.0, fine);
-                        Some((house_key(household.0, fine), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((self.key_of(household.0) & KEY_MASK) << 8) as f32]))
+                        Some((house_key(household.0, fine), [x as f32, z as f32, self.village_code(household.0, fine), ((self.key_of(household.0) & KEY_MASK) << 8) as f32]))
                     }
                     Spot::City { .. } => None,
                 };
@@ -489,10 +503,10 @@ mod tests {
         assert_eq!(PeopleView::member_of(&mut p, u32::MAX - 1), None);
     }
 
-    /// A farm's building site is a house record on the order's spot with a
-    /// negative village code and the share built; the family that takes
-    /// the farm gets a house with the same key on the same spot, so it
-    /// stands where the site stood. A second site on the same fine tile
+    /// A farm's building site is a house record on the order's spot with
+    /// the negative lot code (-AT_LOT) and the share built; the family that
+    /// takes the farm gets a house with the same key on the same spot and
+    /// AT_LOT, so it stands where the site stood. A second site on the same fine tile
     /// has a key of its own. Workshops leave sites alone.
     #[test]
     fn sites_turn_into_the_farm() {
@@ -510,7 +524,7 @@ mod tests {
         v.set_sites(&[(t, fine, 100)]);
         let r = site(&v).expect("a site house");
         assert_eq!((r[0], r[1]), (1.75, 41.25), "on the spot");
-        assert!(r[2] < 0.0 && r[2] == -(1.0 + (hash(fine) % VILLAGES) as f32));
+        assert_eq!(r[2], -AT_LOT, "exactly on its lot");
         assert_eq!(r[3] as u32, site_key(Some(t), fine) << 8 | 100);
         assert_ne!(site_key(Some(t), fine), site_key(Some(beside), fine));
         assert_eq!((v.houses.count(), v.take_house_pages().len()), (n + 1, 1));

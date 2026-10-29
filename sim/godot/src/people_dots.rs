@@ -84,6 +84,9 @@ struct Front {
     /// The finished roads (S113), x and z of each lot in world metres; their
     /// orders are gone, so the map draws them from here.
     roads: Vec<i32>,
+    /// The finished fields (S116), x and z of each lot in world metres:
+    /// state land, drawn as fields once a farm leases it.
+    fields: Vec<i32>,
     /// Bumped whenever `orders` or `progress` go out; carried over to the
     /// game a save starts, so the build menu never misses a change.
     built: u64,
@@ -259,7 +262,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
 }
 
 /// The statuses of `take_build_check` (apoleia_sim::grain::CHECK_*).
-const CHECK_STATES: [&str; 4] = ["wird gebaut", "hier baut niemand: kein Markt, Meer oder ausserhalb der Karte", "Felder und Strassen baut noch niemand", "wird gebaut, aber in der Gegend zieht heute niemand ein"];
+const CHECK_STATES: [&str; 5] = ["wird gebaut", "hier baut niemand: kein Markt, Meer oder ausserhalb der Karte", "wird nicht gebaut", "wird gebaut, aber in der Gegend zieht heute niemand ein", "kein freies Land zum Pflügen oder Roden"];
 
 /// What orders would come to before they are placed (`ask_build_check`).
 struct BuildCheck {
@@ -352,6 +355,7 @@ fn publish_orders(game: &Game, f: &mut Front) {
     f.orders = game.orders.clone();
     f.progress = progress(game);
     f.roads = game.grain.road_lots().flat_map(|(z, x)| [x, z]).collect();
+    f.fields = game.grain.field_lots().flat_map(|(z, x)| [x, z]).collect();
     f.built += 1;
 }
 
@@ -731,7 +735,8 @@ impl ApoleiaPeople {
     /// work days needed for each, in the same order (0, 0 while it has no
     /// building site or nobody builds it yet; once a week), "roads": x, z
     /// of each finished road lot (world metres; built roads stay after
-    /// their orders are gone), "names": the kinds}.
+    /// their orders are gone), "fields": the same for finished field lots
+    /// (state land, S116), "names": the kinds}.
     #[func]
     fn build_orders(&self) -> VarDictionary {
         let f = self.shared.front.lock().unwrap();
@@ -744,6 +749,7 @@ impl ApoleiaPeople {
         d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
         d.set("progress", &PackedInt32Array::from(f.progress.as_slice()));
         d.set("roads", &PackedInt32Array::from(f.roads.as_slice()));
+        d.set("fields", &PackedInt32Array::from(f.fields.as_slice()));
         d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
         d
     }
