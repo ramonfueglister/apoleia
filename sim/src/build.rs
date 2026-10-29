@@ -12,7 +12,7 @@
 //! a cancel removes it. Orders are kept by tile, so going over them is the
 //! same on every run.
 //!
-//! Not yet built: carrying the orders out. Per S102 day labourers from the
+//! Not yet built: carrying the orders out. Per S113 day labourers from the
 //! tents and from farms with time to spare build them, paid the market
 //! wage in denarii from the treasury; the building time follows from the
 //! work days. Until then an order stays a plan on the map.

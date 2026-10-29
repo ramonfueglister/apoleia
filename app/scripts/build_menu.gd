@@ -17,7 +17,7 @@ extends Node3D
 ## applied between two days; this node draws what build_orders() returns
 ## whenever its version changes. Without the GDExtension it keeps them
 ## itself, so the menu can be tried on the bare landscape. Carrying the
-## orders out (day labourers paid from the treasury, S102) is not built yet.
+## orders out (day labourers paid from the treasury, S113) is not built yet.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const FINE_KM := 25.0 / 16.0 # apoleia_sim::settle::FINE_KM
