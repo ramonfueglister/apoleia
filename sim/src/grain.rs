@@ -39,7 +39,7 @@ use xxhash_rust::xxh3::xxh3_64;
 mod crafts;
 mod sites;
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
-pub use crafts::{GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
+pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
 
 // ---------------------------------------------------------------------
@@ -747,6 +747,8 @@ pub struct Grain {
     /// For comparison only: the state wage for all wage and trader
     /// households as before S110.
     pub wage_all: bool,
+    /// For the view only (`goods_moves_in`): (day, from, to, good, units).
+    goods_moves: Vec<(i64, u32, u32, u8, i64)>,
     history: History,
     /// For the view only (crate::events): the day being simulated and the
     /// events of the last days.
@@ -1164,6 +1166,7 @@ impl Grain {
             pasture: vec![1000; n],
             goods_on: false,
             wage_all: false,
+            goods_moves: Vec::new(),
             treasury: Treasury::default(),
             history: History::default(),
             today: 0,
