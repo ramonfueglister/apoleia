@@ -832,6 +832,76 @@ Was auffällt:
 - Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
 - Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
 
+## Konsum mit Puffersparen, Schweinefleisch, Staatskorn (S117, S118, S119, 100 Jahre, Seed 1, `run100-s117-s119.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s112-s115.txt`)
+
+Ramon (29.10.2026), Karte „Was soll ich für Schritt 3 Konsum bauen?“, Option „Alles, mit
+Staatskorn“. Haushalte geben nach der Konsumfunktion des Puffersparens aus (S117): zuerst
+Werkzeug und Fässer der Höfe, einfache Kleidung und Geschirr, der Rest für Schweinefleisch,
+mehr Kleidung und Dienste. Höfe mästen Schweine mit Getreide, solange Fleisch mehr bringt als
+das Korn im Lager wert ist (S118). Staatsdiener bekommen ihren Monatsbedarf aus dem
+Staatsspeicher, vom Lohn abgezogen (S119). Neue Werte im Lauf: Ausgaben der Haushalte,
+Schweine im Jahr, verfüttertes Korn, Rationen; in den Tabellen Staats- und Herrenspeicher pro
+Markt und Schweinefleisch als Ware.
+
+| Grösse | main (Band) | S112–S115 | jetzt |
+|---|---|---|---|
+| Menschen im Jahr 10 / 30 / 100 | 109'535 / 107'911 / 109'276 | 111'400 / 107'239 / 87'799 | 109'643 / 106'081 / 84'343 |
+| Wachstum, Mittel Jahr 11–100 | 0,00 % | −0,26 % | −0,29 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 6'712 / 5'579 / 23'487 | 5'061 / 6'945 / 48'294 | 6'815 / 6'351 / 49'097 |
+| Ernte im Jahr 10 / 100 | 23'623 / 23'838 t | 29'866 / 17'646 t | 31'450 / 18'050 t |
+| Höfe mit Haushalt im Jahr 100 | 14'993 | 10'641 | 10'375 |
+| Üblicher Preis Korn, nach Absatz gewichtet, Jahr 1 / 10 / 100 | – | 7,03 / 0,29 / 0,20 Denar/kg | 7,04 / 0,34 / 0,37 Denar/kg |
+| Üblicher Preis Korn, Median der Märkte, Jahr 100 | – | 1,40 Denar/kg | 1,55 Denar/kg |
+| Reallohn p10 / p50, Jahr 100 | – | 1,2 / 4,7 kg | 1,2 / 4,9 kg |
+| Werkzeug auf den Höfen im Jahr 100 | 25'975 kg | 2'696 kg | 4'371 kg |
+| Ausgaben der Haushalte, Jahr 1 / 10 / 100 | – | – | 104 / 34 / 71 Mio. Denar |
+| Korn an Schweine, Jahr 1 / 10 / 50 / 100 | – | – | 2'830 / 2'117 / 455 / 318 t |
+| Rationen an Staatsdiener, Jahr 1 / 10 / 100 | – | – | 90 / 51 / 17 t |
+| Staats- und Herrenspeicher im Jahr 100 | – | 29'604 / 5'711 t | 26'798 / 7'224 t |
+| Nicht gebucht | 0 | 0 | 0 |
+| Getreide pro Tag, Median | 4,3 ms | 5,4 ms | 5,5 ms |
+
+Was auffällt:
+
+- **Der Konsum läuft wie im Modell.** Im ersten Jahr bauen die Haushalte ihr Startgeld über
+  dem Puffer ab (104 Mio. Denar Ausgaben), danach 34–71 Mio. im Jahr. Wer wenig verdient,
+  kauft nur den Grundbedarf.
+- **Die Schweinemast kostet anfangs Menschen.** Im Jahr 2 sterben 3'730 Menschen an Hunger,
+  gegen 2'772 mit S112–S115. Gegenprobe ohne Mast (3 Jahre, nicht eingecheckt): 2'946. Die
+  Höfe verfüttern das Korn, das sie sonst bis zum Frühjahr gehalten und verkauft hätten; den
+  Lohnhaushalten fehlt es dann (gegessen 85 statt 88 %). Das ist der bekannte Wettbewerb
+  zwischen Futter und Brot. Zwei Korrekturen sind schon drin: das übliche Einkommen kommt aus
+  dem wirklich Verdienten (vorher zu hoch geschätzt), und das Korn im Lager zählt beim Füttern
+  mit dem üblichen Preis, nicht mit dem tiefen Tagespreis. Beide ändern den Hunger im Jahr 2
+  kaum.
+- **Staatskorn ist zu klein, um zu wirken.** Es gibt rund 180 Haushalte von Staatsdienern;
+  ihre Rationen sind 17–90 t im Jahr gegen 27'000 t im Staatsspeicher.
+- **Der Getreidepreis fällt weiter.** Nach Absatz gewichtet 0,34 Denar/kg im Jahr 10 statt
+  0,29, im Jahr 100 0,37 statt 0,20. Die Mast nimmt im Jahr 1 bis 10 nur 2'000–3'000 t im Jahr
+  ab, später weniger, weil es weniger Höfe mit Überschuss gibt. Die billigsten grossen Märkte
+  liegen im Nildelta (Benha 0,01, Tell el-Balamun 0,04 Denar/kg im Jahr 100), Rom zahlt 5,37.
+  Der Überschuss kommt dort nicht weg: Die Marktleute holen nur, was ihr eigener Absatz für
+  eine Woche braucht (S114), und niemand bringt Korn aus vollen Märkten zu teureren oder
+  hinaus.
+- **Folgerung:** Mehr Nachfrage allein hält den Preis nicht. Es fehlt der Handel, der
+  Überschuss dorthin bringt, wo er mehr wert ist (räumliches Gleichgewicht: Samuelson, 1952;
+  Takayama & Judge, 1971), dazu Eisen aus dem Reich und Missernten (S101), damit Lagern sich
+  lohnt.
+- Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 70 Tests grün.
+
+### Quellen zu S117, S118, S119 (APA 7)
+
+- Allen, R. C. (2009). How prosperous were the Romans? Evidence from Diocletian's price edict (AD 301). In A. Bowman & A. Wilson (Eds.), *Quantifying the Roman economy: Methods and problems* (pp. 327–345). Oxford University Press.
+- Barquín, R. (2005). The demand elasticity for wheat in the 14th to 18th centuries. *Revista de Historia Económica, 23*(2), 241–267.
+- Bartnik, A. (2023). Żywienie trzody chlewnej w starożytnym Rzymie [Pig feeding in ancient Rome]. *Zeszyty Wiejskie, 29*, 139–153. https://doi.org/10.18778/1506-6541.29.07
+- Carroll, C. D. (1997). Buffer-stock saving and the life cycle/permanent income hypothesis. *The Quarterly Journal of Economics, 112*(1), 1–55. https://doi.org/10.1162/003355397555109
+- Carroll, C. D. (2006). The method of endogenous gridpoints for solving dynamic stochastic optimization problems. *Economics Letters, 91*(3), 312–320. https://doi.org/10.1016/j.econlet.2005.09.013
+- Comin, D., Lashkari, D., & Mestieri, M. (2021). Structural change with long-run income and price effects. *Econometrica, 89*(1), 311–374. https://doi.org/10.3982/ECTA16317
+- Fagereng, A., Holm, M. B., & Natvik, G. J. (2021). MPC heterogeneity and household balance sheets. *American Economic Journal: Macroeconomics, 13*(4), 1–54. https://doi.org/10.1257/mac.20190211
+- Friedman, M. (1957). *A theory of the consumption function*. Princeton University Press.
+- Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic, and administrative survey*. Blackwell.
+- Persson, K. G. (1999). *Grain markets in Europe, 1500–1900: Integration and deregulation*. Cambridge University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -923,7 +993,11 @@ in Arrays nach ID statt in Hashtabellen.
 | Kleidung (S107) | 1,5 Stück pro Kopf im Jahr, Kind halb; Ziel 1 Stück pro Kopf, bis dreifach für Reiche; selbst gemacht bis zur Hälfte der Arbeitstage | Cato 59; Rest frei |
 | Werkzeug (S108) | 2 kg pro ha unter Getreide, 10 % Verschleiss im Jahr, ohne Werkzeug 70 % Arbeit | frei gewählt |
 | Keramik (S109) | 5 kg Geschirr pro Haushalt, 100 % Verschleiss; Fässer 1 kg Ton für 3 kg Getreide, 4 % Verschleiss; ohne Fass 12 % Verderb | Peña 2007 (Lebensdauer dolium); Rest frei |
-| Leute einstellen (S111) | Ersparnis 60 Tage Essen plus ein Jahr Taglohn der Erwachsenen, davon 2 % im Monat für Arbeit zum Geldwert des Taglohns; Marktleute über 180 Tagen Getreide und 90 Tagen Waren | frei gewählt |
+| Leute einstellen (S111, S117) | Haushalte: 30 % des Budgets über dem Grundbedarf (S117) für Arbeit zum Taglohn; Marktleute 2 % im Monat ihres Bargelds über 180 Tagen Getreide und 90 Tagen Waren | frei gewählt |
+| Konsumfunktion (S117) | Tabelle nach Carroll (1997), gelöst mit endogenen Gitterpunkten (Carroll, 2006): Risikoaversion 2, Geduld 0,85 im Jahr, dauernde Schocks 10 % im Jahr, vorübergehende 30 % im Monat, ein Monat ohne Einkommen 1 in 200, kein Zins; übliches Einkommen über 12 Monate geglättet; Essensgeld für 60 Tage bleibt | Geduld so, dass ein Geschenk von drei Monatseinkommen zur Hälfte im Jahr ausgegeben ist (Fagereng u. a., 2021); Rest frei |
+| Budget über dem Grundbedarf (S117) | 50 % Schweinefleisch (höchstens 20 kg pro Erwachsenen im Jahr), 20 % mehr Kleidung (bis dreifach), 30 % Dienste | frei gewählt; mit dem Einkommen wandernde Anteile (Comin u. a., 2021) brauchen antike Werte |
+| Schweinemast (S118) | 5 kg Getreide pro kg Fleisch, höchstens 60 kg Fleisch pro Kopf des Hofs im Jahr, 60 kg pro Schwein; Fleisch ersetzt kein Getreide in der Nahrung | Startpreis Edikt IV.1a; Futter frei (Bartnik, 2023: keine Zahl) |
+| Staatskorn (S119) | Monatsbedarf der Staatsdiener aus dem Staatsspeicher ihres Markts, zum Ankaufspreis vom Lohn abgezogen | Jones 1964 (annona militaris); Rest frei |
 | Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt | S95 (leere Kasse: nachprägen); Preise folgen der Geldmenge noch nicht |
 | Steuer | 10 % der Ernte, als Korn in den Staatsspeicher beim Markt; verkauft nur zum üblichen Preis, das Geld in die Staatskasse (S115) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, als Korn in den Speicher des Grundherrn beim Markt; verkauft nur zum üblichen Preis (S115) | S69 offen |
