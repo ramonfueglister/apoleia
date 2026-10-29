@@ -260,6 +260,8 @@ func _all_materials() -> Array[ShaderMaterial]:
 	return list
 
 func _build_nodes() -> void:
+	# the Roman models baked at once (in parallel) instead of one by one below
+	RomanBuildings.prepare(LOT_KINDS, LANDMARKS.filter(func(e: Array) -> bool: return String(e[0]).begins_with("kit:")).map(func(e: Array) -> String: return String(e[0]).trim_prefix("kit:")))
 	# the quarter tiles' data (before the corner pass, which reads it)
 	_sub_view = _prep_view("TileQuarters", Vector2i(SUB_WINDOW, SUB_WINDOW), _sub_material)
 	_sub_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
