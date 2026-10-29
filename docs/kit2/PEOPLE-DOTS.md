@@ -184,10 +184,14 @@ sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
 rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
-Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster, Walmdach aus
-Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und Graten,
-Schuppen mit Heu, Holzstoss, Busch, Gemüsebeet, Obstbaum, Zaun und ein Weg
-durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
+Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster mit Läden,
+Dach aus Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und
+Graten. Drei Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
+eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite; Langhaus
+unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
+(Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
+vor dem Haus, durch deren offenes Tor das Heu zu sehen ist. Dazu Holzstoss,
+Gemüsebeet, Obstbaum, Zaun und ein Weg durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
 hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4 m hohe Wände
 unter einem flachen Walmdach (23°), damit das Dach das Haus von oben nicht
@@ -203,11 +207,11 @@ Parzelle (vier Drehungen, gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxe
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
 Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
-Detailstufen mit 0,25, 0,5 und 1 m Voxeln (3584, 706 und 206 Dreiecke),
-gebaut beim ersten Start (etwa 2 s) und in `user://farmhouse_v14_*.res`
-gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
-nächstes zuerst, als Liste in einer Textur; drei MultiMeshes zeichnen
-aufeinanderfolgende Stücke davon: die nächsten 1024 fein (bis 5 km
+Detailstufen mit 0,25, 0,5 und 1 m Voxeln, für jede Bauform gebaut beim
+ersten Start und in `user://farmhouse_v19_*.res` gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
+nächstes zuerst, als Liste in einer Textur; drei MultiMeshes je Bauform
+zeichnen aufeinanderfolgende Stücke davon (jedes lässt die Parzellen der
+anderen Bauformen aus): die nächsten 1024 fein (bis 5 km
 Bildbreite), die nächsten 4096 mittel (bis 20 km), den Rest grob, zusammen
 höchstens 16 384. Die View
 führt dafür eine eigene Tabelle (`view::Houses`, ein Datensatz pro Haushalt

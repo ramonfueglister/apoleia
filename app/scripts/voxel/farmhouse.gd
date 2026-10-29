@@ -1,10 +1,14 @@
 extends RefCounted
 ## A Roman farmhouse (casa rustica) as a voxel model in the Urbek style of
 ## the colosseum prototype: plastered walls on a stone plinth with stone
-## corners, a beam under the eaves, a plank door and small dark windows, a
-## hipped roof of terracotta tiles with darker rows and hip ridges, a
-## lean-to shed with hay on one side and a woodpile on the other, a
-## vegetable garden and a fruit tree at the back, an earth path to the gate and a wooden
+## corners, a beam under the eaves, a plank door and small dark windows
+## with shutters, under terracotta tiles with darker rows and ridges. Three
+## builds (VARIANTS), so a village is not one house repeated: a hipped-roof
+## house with a lean-to shed with hay on one end; a long house under a
+## gable roof with a portico of plastered columns along its front; and the
+## hipped-roof house with a plank barn as a wing in front, its open door
+## showing the hay inside. Around each a woodpile, a vegetable garden and a
+## fruit tree at the back, an earth path to the gate and a wooden
 ## fence round the yard (it fits a 15 m yard when turned); outside the fence,
 ## on the rest of the 21 m lot, two cypresses at the front corners, an olive
 ## tree and a haystack. Metres,
@@ -14,8 +18,19 @@ extends RefCounted
 
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 
+const VARIANTS := 3 # people_houses.gdshader picks one per lot
 const HALF_X := 4.5
 const HALF_Z := 3.25
+const LONG_X := 5.75 # the long house
+const LONG_Z := 2.75
+const PORCH_Z := 4.75 # front edge of its portico
+const PORCH_X := 4.375
+const COLUMNS: Array[float] = [-4.0, -1.25, 1.25, 4.0]
+const BARN_X := -4.5 # middle of the barn wing, its walls 2 m either side
+const BARN_Z := Vector2(1.5, 6.0) # back and front of the barn
+const BARN_WALL := 2.75
+const WINS_HOUSE: Array[float] = [2.75] # windows from the middle of the front
+const WINS_LONG: Array[float] = [2.5, 4.75]
 const WALL := 4.0 # tall enough that the roof does not swallow the house from above
 const EAVES := 0.5
 const PITCH := 0.42 # roof rise per metre (about 23 degrees)
@@ -26,7 +41,8 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v18_%s.res"
+const CACHE := "user://farmhouse_v19_%d_%s.res"
+static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
 # Urbek's brightness, like the colosseum. 0 is empty.
@@ -47,50 +63,62 @@ enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW,
 # the lit treads darker than they show: sun and tone map lift them
 const TOPS := {ROOF: Color("b45a42"), ROOF_DARK: Color("a34c3a")}
 
-## What fills point p (metres).
+## What fills point p (metres) in the build _variant.
 static func sample(p: Vector3) -> int:
-	var c := _house(p)
-	if c != EMPTY:
-		return c
-	c = _shed(p)
-	if c != EMPTY:
-		return c
-	return _yard(p)
+	var c := EMPTY
+	if _variant == 1:
+		c = _long_house(p)
+		if c == EMPTY:
+			c = _portico(p)
+	else:
+		c = _house(p)
+		if c == EMPTY:
+			c = _barn(p) if _variant == 2 else _shed(p)
+	return c if c != EMPTY else _yard(p)
+
+## The walls of a house of half extents hx, hz up to WALL: plaster on a
+## stone plinth, stone corners, a beam under the eaves, the plank door in
+## the middle of the front and small windows high up with wooden shutters
+## either side, at the distances `wins` from the middle of the front and
+## back and one in the middle of each end.
+static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float]) -> int:
+	var ax := absf(p.x)
+	var az := absf(p.z)
+	if p.y < 0.375:
+		return PLINTH if ax < hx + 0.125 and az < hz + 0.125 else EMPTY
+	if ax >= hx or az >= hz:
+		return EMPTY
+	var outer := ax >= hx - 0.25 or az >= hz - 0.25
+	if not outer:
+		return PLASTER
+	# stone corners, every other course standing out
+	if ax >= hx - 0.5 and az >= hz - 0.5:
+		return STONE
+	if p.y >= WALL - 0.25:
+		return BEAM
+	# plank door in the middle of the front, set back one block
+	if p.z > 0.0 and az >= hz - 0.25 and absf(p.x) < 0.625 and p.y < 2.375:
+		return EMPTY if az >= hz - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
+	var win_y := p.y >= 1.875 and p.y < 2.75
+	if win_y and az >= hz - 0.25:
+		for w: float in wins:
+			var k := absf(ax - w)
+			if k < 0.25:
+				return WINDOW
+			if k < 0.5:
+				return SHUTTER
+	if win_y and ax >= hx - 0.25:
+		if az < 0.25:
+			return WINDOW
+		if az < 0.5:
+			return SHUTTER
+	return PLASTER_LOW if p.y < 0.875 else PLASTER
 
 static func _house(p: Vector3) -> int:
 	var ax := absf(p.x)
 	var az := absf(p.z)
 	if p.y < WALL:
-		if p.y < 0.375:
-			return PLINTH if ax < HALF_X + 0.125 and az < HALF_Z + 0.125 else EMPTY
-		if ax >= HALF_X or az >= HALF_Z:
-			return EMPTY
-		var outer := ax >= HALF_X - 0.25 or az >= HALF_Z - 0.25
-		if not outer:
-			return PLASTER
-		# stone corners, every other course standing out
-		if ax >= HALF_X - 0.5 and az >= HALF_Z - 0.5:
-			return STONE
-		if p.y >= WALL - 0.25:
-			return BEAM
-		# plank door in the middle of the front, set back one block
-		if p.z > 0.0 and az >= HALF_Z - 0.25 and absf(p.x) < 0.625 and p.y < 2.375:
-			return EMPTY if az >= HALF_Z - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
-		# small windows high in the wall, with wooden shutters either side:
-		# two at the front and back, one on each end
-		var win_y := p.y >= 1.875 and p.y < 2.75
-		if win_y and az >= HALF_Z - 0.25:
-			var k := absf(ax - 2.75)
-			if k < 0.25:
-				return WINDOW
-			if k < 0.5:
-				return SHUTTER
-		if win_y and ax >= HALF_X - 0.25:
-			if az < 0.25:
-				return WINDOW
-			if az < 0.5:
-				return SHUTTER
-		return PLASTER_LOW if p.y < 0.875 else PLASTER
+		return _walls(p, HALF_X, HALF_Z, WINS_HOUSE)
 	# hipped roof over the eaves
 	var dx := HALF_X + EAVES - ax
 	var dz := HALF_Z + EAVES - az
@@ -104,6 +132,77 @@ static func _house(p: Vector3) -> int:
 		return RIDGE
 	var along := p.z if dx < dz else p.x
 	return ROOF_DARK if posmod(int(floor(along / 0.25)), 3) == 0 else ROOF
+
+## The long house: four windows along the front, a gable roof with its
+## ridge along the house, the end walls carried up as plaster gables under
+## a rim of tiles.
+static func _long_house(p: Vector3) -> int:
+	var ax := absf(p.x)
+	var az := absf(p.z)
+	if p.y < WALL:
+		return _walls(p, LONG_X, LONG_Z, WINS_LONG)
+	var dz := LONG_Z + EAVES - az
+	if dz < 0.0 or ax >= LONG_X + 0.125:
+		return EMPTY
+	var top := WALL + PITCH * dz
+	if p.y >= top:
+		return EMPTY
+	if p.y >= WALL + PITCH * (LONG_Z + EAVES) - 0.25:
+		return RIDGE
+	if ax >= LONG_X - 0.25 and az < LONG_Z and p.y < top - 0.375:
+		return PLASTER
+	return ROOF_DARK if posmod(int(floor(p.x / 0.25)), 3) == 0 else ROOF
+
+## The portico along the long house's front: a stone floor one step up,
+## plastered columns under a beam and a lean-to roof of tiles.
+static func _portico(p: Vector3) -> int:
+	if absf(p.x) >= PORCH_X or p.z < LONG_Z or p.z >= PORCH_Z:
+		return EMPTY
+	if p.y < 0.25:
+		return PLINTH
+	var roof := 3.5 - 0.3 * (p.z - LONG_Z)
+	if p.y >= roof:
+		return EMPTY
+	if p.y >= roof - 0.25:
+		return ROOF_DARK if posmod(int(floor(p.x / 0.25)), 3) == 0 else ROOF
+	if p.z < PORCH_Z - 0.5:
+		return EMPTY
+	if p.y >= roof - 0.5:
+		return BEAM
+	for c: float in COLUMNS:
+		if absf(p.x - c) < 0.25:
+			return PLASTER_LOW if p.y < 0.5 else PLASTER
+	return EMPTY
+
+## A plank barn as a wing in front of the hipped-roof house: stone plinth,
+## brown planks, a gable roof with its ridge running to the front and a
+## wide open door in the front gable with the hay inside.
+static func _barn(p: Vector3) -> int:
+	var dx := absf(p.x - BARN_X)
+	if p.z < BARN_Z.x or p.z >= BARN_Z.y + 0.125 or dx >= 2.375:
+		return EMPTY
+	var top := BARN_WALL + 0.5 * (2.375 - dx)
+	if p.y >= top:
+		return EMPTY
+	var inside := dx < 2.0 and p.z < BARN_Z.y
+	if p.y >= top - 0.375 or not inside:
+		if p.y < BARN_WALL - 0.25 and not inside:
+			return EMPTY # under the eaves
+		if p.y >= BARN_WALL + 0.5 * 2.375 - 0.25:
+			return RIDGE
+		return ROOF_DARK if posmod(int(floor(p.z / 0.25)), 3) == 0 else ROOF
+	var front := p.z >= BARN_Z.y - 0.25
+	var end := front or p.z < BARN_Z.x + 0.25
+	if not end and dx < 1.75:
+		return STRAW # the hay, seen through the door
+	if p.y < 0.375:
+		return PLINTH
+	if dx >= 1.75 and end:
+		return WOOD_DARK # corner posts
+	if front and dx < 1.0 and p.y < 2.25:
+		return EMPTY # the open door
+	var along := p.x if end else p.z
+	return WOOD if posmod(int(floor(along / 0.5)), 2) == 0 else WOOD_DARK
 
 ## Lean-to shed on the +x end: plank walls, open front with hay, a roof
 ## sloping away from the house.
@@ -135,7 +234,7 @@ static func _yard(p: Vector3) -> int:
 		return WOOD if p.y >= 0.75 else LOG
 	var s := Vector3(-3.5, 0.6, 4.25)
 	var d := Vector2(p.x - s.x, p.z - s.z).length()
-	if p.y < 1.25 and d < 0.75 - 0.3 * maxf(0.0, p.y - 0.6):
+	if _variant == 0 and p.y < 1.25 and d < 0.75 - 0.3 * maxf(0.0, p.y - 0.6):
 		return LEAF if p.y >= 0.75 else LEAF_DARK
 	var tree := _tree(p)
 	if tree != EMPTY:
@@ -227,14 +326,15 @@ static func _lot(p: Vector3) -> int:
 		return HAY
 	return EMPTY
 
-## The levels of detail, nearest first, scaled to the unit house. Built
-## once and kept in user://.
-static func lods(unit_m: float) -> Array[ArrayMesh]:
+## The levels of detail of one build, nearest first, scaled to the unit
+## house. Built once and kept in user://.
+static func lods(unit_m: float, variant: int) -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
 	for v: float in LOD_VOXELS:
-		var path := CACHE % str(v)
+		var path := CACHE % [variant, str(v)]
 		var mesh: ArrayMesh = load(path) if ResourceLoader.exists(path) else null
 		if mesh == null:
+			_variant = variant
 			mesh = VoxelMesh.build(sample, BOUNDS_LO, BOUNDS_HI, v, FINE, PALETTE, 1.0 / unit_m, TOPS)
 			ResourceSaver.save(mesh, path)
 		out.append(mesh)

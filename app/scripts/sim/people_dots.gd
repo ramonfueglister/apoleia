@@ -12,7 +12,7 @@ extends MultiMeshInstance3D
 ## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
 ## Every village household also gets a house at its house spot, from the
 ## house table of the view (sim/src/view.rs Houses): a voxel farmhouse in the
-## Urbek style (scripts/voxel/farmhouse.gd), the nearest houses
+## Urbek style in one of three builds (scripts/voxel/farmhouse.gd), the nearest houses
 ## (ApoleiaPeople.houses_near) in up to three levels of detail by distance and
 ## view width (people_houses.gdshader), with their own placement pass; city
 ## people live in the town tiles.
@@ -181,26 +181,30 @@ func setup(tile_terrain: Node3D) -> bool:
 	_house_prep_rect = ColorRect.new()
 	_house_prep_view = _make_prep("HousePlaces", _house_prep_rect, _house_prep_material)
 	_house_list_tex = ImageTexture.create_from_image(_house_list_image)
-	var lods := Farmhouse.lods(TileTerrain.HOUSE_M)
-	for lod in lods.size():
-		var m := ShaderMaterial.new()
-		m.shader = HOUSE_SHADER
-		m.set_shader_parameter("prop_scale", TileTerrain.HOUSE_M * TileTerrain.DIORAMA_KM_PER_M)
-		m.set_shader_parameter("list_tex", _house_list_tex)
-		m.set_shader_parameter("list_w", LIST_W)
-		_house_materials.append(m)
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "PeopleHouses%d" % lod
-		mmi.material_override = m
-		mmi.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = lods[lod]
-		mm.instance_count = HOUSE_LOD_MAX[lod]
-		mm.visible_instance_count = 0
-		mmi.multimesh = mm
-		_houses.append(mmi)
-		add_child(mmi)
+	# one MultiMesh per build and level of detail, build-major; each draws
+	# the houses of its level and leaves out the lots of the other builds
+	for variant in Farmhouse.VARIANTS:
+		var lods := Farmhouse.lods(TileTerrain.HOUSE_M, variant)
+		for lod in lods.size():
+			var m := ShaderMaterial.new()
+			m.shader = HOUSE_SHADER
+			m.set_shader_parameter("prop_scale", TileTerrain.HOUSE_M * TileTerrain.DIORAMA_KM_PER_M)
+			m.set_shader_parameter("list_tex", _house_list_tex)
+			m.set_shader_parameter("list_w", LIST_W)
+			m.set_shader_parameter("variant", variant)
+			_house_materials.append(m)
+			var mmi := MultiMeshInstance3D.new()
+			mmi.name = "PeopleHouses%d_%d" % [variant, lod]
+			mmi.material_override = m
+			mmi.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = lods[lod]
+			mm.instance_count = HOUSE_LOD_MAX[lod]
+			mm.visible_instance_count = 0
+			mmi.multimesh = mm
+			_houses.append(mmi)
+			add_child(mmi)
 	_figure_material.shader = FIGURE_SHADER
 	_figure_material.set_shader_parameter("figure_scale", FIGURE_M * TileTerrain.DIORAMA_KM_PER_M)
 	_figure_material.set_shader_parameter("list_w", LIST_W)
@@ -548,12 +552,15 @@ func _update_houses(view_km: float, synced: bool) -> void:
 	_house_list_image.set_data(LIST_W, HOUSE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_house_list_tex.update(_house_list_image)
 	var start := 0
-	for lod in _houses.size():
+	var levels := HOUSE_LOD_MAX.size()
+	for lod in levels:
 		var n := 0
 		if view_km <= HOUSE_LOD_KM[lod]:
 			n = mini(slots.size() - start, HOUSE_LOD_MAX[lod])
-		_house_materials[lod].set_shader_parameter("list_offset", start)
-		_houses[lod].multimesh.visible_instance_count = n
+		for variant in Farmhouse.VARIANTS:
+			var i := variant * levels + lod
+			_house_materials[i].set_shader_parameter("list_offset", start)
+			_houses[i].multimesh.visible_instance_count = n
 		start += n
 	_lots.multimesh.visible_instance_count = slots.size()
 

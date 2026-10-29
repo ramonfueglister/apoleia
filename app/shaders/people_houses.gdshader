@@ -3,10 +3,12 @@
 // household's house spot. The houses near the camera are listed nearest
 // first (ApoleiaPeople.houses_near) into `list_tex`; three MultiMeshes with the
 // voxel farmhouse in three levels of detail (scripts/voxel/farmhouse.gd) draw
-// consecutive runs of that list from `list_offset`. The record comes from the
-// house texture array (ApoleiaPeople.sync_houses, only changed pages), the
-// spot from the house placement pass (people_dots_prep.gdshader with
-// `houses`), which runs only when houses or the terrain view change.
+// consecutive runs of that list from `list_offset`, once for each of the
+// farmhouse's three builds (`variant`), each lot showing one of them. The
+// record comes from the house texture array (ApoleiaPeople.sync_houses, only
+// changed pages), the spot from the house placement pass
+// (people_dots_prep.gdshader with `houses`), which runs only when houses or
+// the terrain view change.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled; // mirrored houses turn their faces round
 
@@ -17,6 +19,8 @@ uniform float prop_scale = 0.24; // world units of the unit house (tile_terrain.
 uniform sampler2D list_tex : filter_nearest, repeat_disable; // house slots to draw (float)
 uniform int list_w = 128;
 uniform int list_offset = 0; // this level of detail's first entry in the list
+uniform int variant = 0; // the farmhouse build this MultiMesh draws (farmhouse.gd VARIANTS)
+const uint VARIANTS = 3u;
 
 varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
@@ -54,6 +58,8 @@ void vertex() {
 	// (scripts/voxel/farmhouse.gd); the vertex colour keeps its corner shading
 	ivec2 lot = ivec2(floor((p - world_min) / DOT_LOT_KM));
 	uint key = dot_hash(uint(lot.x) * 0x2545f491u ^ uint(lot.y) * 0x9e3779b9u);
+	// one of the three builds per lot, drawn by its own MultiMesh
+	show = show && int((key >> 12u) % VARIANTS) == variant;
 	int index = int(UV.y + 0.5);
 	if (index == 1 || index == 2) {
 		tint *= WALLS[key % 4u] / WALLS[0];
