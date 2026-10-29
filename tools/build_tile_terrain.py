@@ -55,9 +55,9 @@ WORLD_MIN = (-5286.959516530886, -2223.9016046706583)
 WORLD_SIZE = (10322.15905608411, 4781.388450041915)
 R_KM = 6371.0088
 BASE_CELL_KM = 0.5
-LEVELS = 6  # 0.5, 1, 2, 4, 8, 16 km
+LEVELS = 7  # 0.5, 1, 2, 4, 8, 16, 32 km (32: the whole Kit 1 map in view)
 # Natural Earth scalerank shown per level (more rivers up close)
-RIVER_RANK = [10, 10, 8, 7, 6, 5]
+RIVER_RANK = [10, 10, 8, 7, 6, 5, 4]
 # Natural Earth ranks rivers for today's maps; the rivers of Rome rank higher
 ROMAN_RIVER_RANK = {"Tevere": 5, "Arno": 7}
 SS = 2  # supersampling of the polygon raster
@@ -997,7 +997,7 @@ def _node_noise(scale_km, seed):
 # which drew the far views as one dark olive camouflage; from the 1 km tiles a
 # wood needs a denser cover (Italy about 40 % wood, Europe 12 % instead of 17 %);
 # Kritik r7: at most a quarter of central Italy at 70 and 120 km (24 % each).
-WOOD_MIN = {0.5: 0.45, 1.0: 0.80, 2.0: 0.92, 4.0: 0.80, 8.0: 0.70, 16.0: 0.66}
+WOOD_MIN = {0.5: 0.45, 1.0: 0.80, 2.0: 0.92, 4.0: 0.80, 8.0: 0.70, 16.0: 0.66, 32.0: 0.62}
 
 
 def ground_classes(water, tile_km, height, cover, metres, relief=None, band=1024):
@@ -1127,8 +1127,8 @@ def tidy_ground(g, passes=2):
 # rock and snow are bound to the levels (level_snap):
 # a tile takes them where most of its own level around it does, so they run
 # in bands along the risers instead of blobs across them.
-ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0}
-SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0}
+ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0, 32.0: 1200.0}
+SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0, 32.0: 2100.0}
 VALLEY_LEVELS = 1  # levels above the valley floor that stay open in hilly land
 # only up to these tiles: on coarser ones every slope tile has a neighbour a
 # level lower, so the rule cleared the woods off the flanks of every range

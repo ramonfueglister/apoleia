@@ -3,27 +3,35 @@ extends Node3D
 ## World units are model kilometres (x east, z south, y up), mapping-v1.
 ##
 ## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
-## middle; fully out the view settles over Europe), drag (left or middle
+## middle; fully out the whole Kit 1 map is in view), drag (left or middle
 ## mouse, two-finger pan) moves the map, WASD or arrow keys pan, +/- zoom.
 ## The view always looks north and never turns (turning made the map swim).
 ## Up close it is Urbek's camera: tilted 30 degrees and near-orthographic.
 ## Weather keys F5-F7 belong to weather_system.gd.
 ##
 ## Command line (after --): --view=lon,lat,width start view,
-## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait.
+## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait,
+## --tour=result.json fly the benchmark tour and save its frame times
+## (tour_bench.gd), --tour-passes=n how often.
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
+const TourBench = preload("res://scripts/tour_bench.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const PeopleDots = preload("res://scripts/sim/people_dots.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 1.0 # about 4 houses across (Kit 2 scale), people readable as figures
-const MAX_WIDTH := 4400.0 # all of Europe, Lisbon to Moscow
-## Zoomed out, the view settles on Europe (EU5 map): the pull runs between
+## The whole Kit 1 map in a 16:9 window, from Ireland to the Caspian and
+## from the Baltic to Upper Egypt (4800 x 4100 km)
+const MAX_WIDTH := 8000.0
+## Zoomed out, the view settles on the Kit 1 map: the pull runs between
 ## these widths (km).
 const MAP_FROM := 700.0
 const MAP_TO := 3000.0
-const EUROPE := Rect2(-12.0, 34.0, 54.0, 26.0) # lon, lat, extent in degrees
-const MAP := Rect2(-11.0, 21.0, 57.0, 37.0) # the playable map (the data is padded)
+## The Kit 1 map (data/region.json), lon, lat, extent in degrees; the data
+## is padded around it. Zoomed out it was held to Europe (34-60 N), which cut
+## off Africa, Egypt and the Levant.
+const MAP := Rect2(-11.0, 21.0, 57.0, 37.0)
+const PITCH_TO := 4400.0 # view width (km) from where the view looks down steepest
 ## Field of view: near-orthographic up close like Urbek (vertical walls stay
 ## parallel), wider over the world map.
 const FOV_CLOSE := 9.0
@@ -45,12 +53,17 @@ var width := 360.0
 var _goal_target := Vector2.ZERO
 var _goal_width := 360.0
 var _focus_y := 0.0
+var _footprint_size := Vector2.ZERO # of the visible ground (km), _footprint_centre
 var _dragging := false
 var _snapshot_path := ""
 var _snapshot_frames := 45
 var _bench_frames := 0 # --bench=n: time n frames after the warm-up, print, quit
 var _bench_start := 0
 var _frame := 0
+var _views: Array = [] # --views=lon,lat,w;lon,lat,w: one shot of each into the --snapshot folder
+var _tour := ""
+var _tour_passes := 2
+var _view_index := 0
 
 func _ready() -> void:
 	var start := Vector3(12.6, 41.9, 360.0) # Rome and the Tyrrhenian coast
@@ -65,6 +78,16 @@ func _ready() -> void:
 			"--snapshot": _snapshot_path = value
 			"--snapshot-frames": _snapshot_frames = int(value)
 			"--bench": _bench_frames = int(value)
+			"--tour":
+				_tour = value
+				var first := TourBench.view_at(0)
+				start = first
+			"--tour-passes": _tour_passes = int(value)
+			"--views":
+				for v in value.split(";"):
+					var q := v.split(",")
+					_views.append(Vector3(float(q[0]), float(q[1]), float(q[2])))
+				start = _views[0]
 	terrain = TileTerrain.new()
 	add_child(terrain)
 	if not terrain.load_data():
@@ -90,6 +113,13 @@ func _ready() -> void:
 	add_child(dots)
 	if not dots.setup(terrain):
 		dots.queue_free()
+	if _tour != "":
+		var tour := TourBench.new()
+		tour.landscape = self
+		tour.out_path = _tour
+		tour.passes = _tour_passes
+		tour.warmup = _snapshot_frames
+		add_child(tour)
 
 static func lonlat_to_world(lon: float, lat: float) -> Vector2:
 	return Vector2(EARTH_KM * cos(deg_to_rad(41.0)) * deg_to_rad(lon - 19.0), -EARTH_KM * deg_to_rad(lat - 41.0))
@@ -170,7 +200,10 @@ func _update_look(distance: float) -> void:
 	sun.directional_shadow_max_distance = distance + half + width * 0.26
 	# no shadow map beyond 40 km across: the terrain's own shading carries
 	# the relief there, and nothing small enough to cast a shadow is drawn
-	sun.shadow_enabled = width < 40.0
+	# (set only when it changes: each set re-notifies everything the light
+	# touches)
+	if sun.shadow_enabled != (width < 40.0):
+		sun.shadow_enabled = width < 40.0
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
@@ -188,7 +221,7 @@ func fov_for_width(w: float) -> float:
 
 func pitch_for_width(w: float) -> float:
 	# 30 degrees up close (SimCity 2000), nearly top-down on the world map.
-	var t := clampf((log(w) - log(40.0)) / (log(MAX_WIDTH) - log(40.0)), 0.0, 1.0)
+	var t := clampf((log(w) - log(40.0)) / (log(PITCH_TO) - log(40.0)), 0.0, 1.0)
 	return lerpf(30.0, 72.0, t * t * (3.0 - 2.0 * t))
 
 ## 0 up close, 1 on the world map (log width between MAP_FROM and MAP_TO).
@@ -209,8 +242,18 @@ func _place_camera() -> void:
 	var distance := _distance()
 	camera.fov = fov_for_width(width)
 	camera.global_transform = Transform3D(basis, Vector3(target.x, _focus_y, target.y) + basis.z * distance)
-	terrain.update_view(target, _footprint_centre(distance), width)
+	var centre := _footprint_centre(distance)
+	terrain.update_view(target, centre, width, _drawn_span())
 	_update_look(distance)
+
+## Ground (km) the drawn terrain must cover around the middle of the view:
+## the visible ground, a margin, and how far beyond its edge high ground can
+## still rise into the picture or cast a shadow into it.
+func _drawn_span() -> float:
+	var around := Rect2(target - Vector2(width, width) * 2.0, Vector2(width, width) * 4.0)
+	var relief := maxf(terrain.max_y(around) - _focus_y, 0.0)
+	var top := deg_to_rad(pitch_for_width(width) - fov_for_width(width) * 0.5)
+	return maxf(_footprint_size.x, _footprint_size.y) * 1.25 + 2.0 * relief / tan(maxf(top, 0.15))
 
 ## Middle of the visible ground: the four screen corner rays meet the focus
 ## plane (far rays capped), the centre of their hull in the tile frame.
@@ -226,6 +269,7 @@ func _footprint_centre(distance: float) -> Vector2:
 		var p := origin + ray * t
 		low = low.min(Vector2(p.x, p.z))
 		high = high.max(Vector2(p.x, p.z))
+	_footprint_size = high - low
 	return (low + high) * 0.5
 
 func _ground_under(pixel: Vector2) -> Vector2:
@@ -236,15 +280,13 @@ func _ground_under(pixel: Vector2) -> Vector2:
 	var p := origin + ray * t
 	return Vector2(p.x, p.z)
 
-## Keeps the view on the map: anywhere in the data up close; zoomed out the
-## allowed centres shrink to Europe, so the whole continent stays in frame.
+## Keeps the view on the Kit 1 map: anywhere on it up close; zoomed out the
+## allowed centres shrink, so the map stays in frame, and once the view is
+## wider than the map it sits in the middle.
 func _clamp_target(p: Vector2, w: float) -> Vector2:
 	var map_min := lonlat_to_world(MAP.position.x, MAP.end.y)
-	var all := Rect2(map_min, lonlat_to_world(MAP.end.x, MAP.position.y) - map_min)
-	var eu_min := lonlat_to_world(EUROPE.position.x, EUROPE.end.y)
-	var eu := Rect2(eu_min, lonlat_to_world(EUROPE.end.x, EUROPE.position.y) - eu_min)
+	var area := Rect2(map_min, lonlat_to_world(MAP.end.x, MAP.position.y) - map_min)
 	var s := map_share(w)
-	var area := Rect2(all.position.lerp(eu.position, s), all.size.lerp(eu.size, s))
 	var aspect := maxf(get_viewport().get_visible_rect().size.aspect(), 0.1)
 	var half := Vector2(w, w / aspect) * 0.5 * s
 	var lo := area.position + half
@@ -318,9 +360,22 @@ func _process(delta: float) -> void:
 
 func _save_snapshot() -> void:
 	var image := get_viewport().get_texture().get_image()
-	DirAccess.make_dir_recursive_absolute(_snapshot_path.get_base_dir())
-	image.save_png(_snapshot_path)
-	print(JSON.stringify({"event": "snapshot", "path": _snapshot_path, "level": terrain.level, "tile_km": terrain.tile_km}))
+	var path := _snapshot_path
+	if not _views.is_empty():
+		path = _snapshot_path.path_join("v%d-w%d.png" % [_view_index + 1, int(_views[_view_index].z)])
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	image.save_png(path)
+	print(JSON.stringify({"event": "snapshot", "path": path, "level": terrain.level, "tile_km": terrain.tile_km}))
+	_view_index += 1
+	if _view_index < _views.size():
+		var v: Vector3 = _views[_view_index]
+		target = lonlat_to_world(v.x, v.y)
+		_goal_target = target
+		width = clampf(v.z, MIN_WIDTH, MAX_WIDTH)
+		_goal_width = width
+		_focus_y = terrain.ground_y(target)
+		_frame = 0
+		return
 	get_tree().quit()
 
 # ------------------------------------------------- weather height provider

@@ -74,6 +74,16 @@
       "path": "cells-L5.png",
       "sha256": "19bb96cd36940a9d061f42262e8a845ba4363f5aab9e4d9dc84d77b31c84fa5c",
       "river_max_scalerank": 5
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 323,
+      "height": 150,
+      "packed_width": 162,
+      "path": "cells-L6.png",
+      "sha256": "732d9104ffa22dba09e1f2d4bc377f12c7482752c57854607422b5b40957de8f",
+      "river_max_scalerank": 4
     }
   ],
   "inputs": {
@@ -317,6 +327,37 @@
       "path": "levels-L5.png",
       "sha256": "9428dbb1fe236080bec4389fd668df565724ea78c9aaba01f76df59f6a864107",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 324,
+      "height": 151,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L6.png",
+      "sha256": "211cd5b30b8975addaea28e05fa30cc8abf671acb359a37f48d340123c92b3c3",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
   "ground": [
@@ -510,6 +551,39 @@
       "relief_cover": {
         "rock_m": 1300.0,
         "snow_m": 2300.0,
+        "valley_levels": 1,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 323,
+      "height": 150,
+      "packed_width": 162,
+      "path": "ground-L6.png",
+      "sha256": "d793784e849e3daece6594ee8e29145092e8c956dd0763baf69eb94d032e90dd",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1200.0,
+        "snow_m": 2100.0,
         "valley_levels": 1,
         "treeline_m": 1700.0,
         "heights": {

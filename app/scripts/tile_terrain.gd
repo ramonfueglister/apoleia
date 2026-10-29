@@ -15,8 +15,8 @@ const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 
-# Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to all of
-# Europe. Up close a height level is relief_slope (m/km, from the bake) times
+# Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
+# Kit 1 map (32 km tiles: about 150 across it). Up close a height level is relief_slope (m/km, from the bake) times
 # the tile size, so a ramp rises one level per tile at most, as in SimCity
 # 2000; the far levels read their corner levels from the bake (levels-L*.png,
 # with their own metres per level, so ranges keep several steps on the world
@@ -24,16 +24,17 @@ const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 # (12 px per level on a 32 x 16 px tile); far out a step grows taller
 # (LEVEL_HEIGHTS), so the stacked plateaus of the ranges still stand out when a
 # tile is a few pixels wide.
-const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0]
 const LEVEL_HEIGHT := 0.6
-const LEVEL_HEIGHTS := [0.6, 0.6, 0.6, 0.9, 1.2, 1.5]
-const PATCH_N := 320 # tiles per side of the terrain patch
+const LEVEL_HEIGHTS := [0.6, 0.6, 0.6, 0.9, 1.2, 1.5, 1.5]
+const PATCH_N := 320 # tiles per side of the terrain patch (most drawn, and the corner cache)
+const DRAW_MIN := 32 # fewest tiles per side drawn
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
 const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
 const PROP_DETAIL_KM := 5.0 # up to this view width: the lots and landmarks in full detail
-const PROP_SLOTS := [9, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
-const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0] # house blocks per town tile and level
+const PROP_SLOTS := [9, 0, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
+const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0, 0] # house blocks per town tile and level
 # Closest zoom (zoom -1): quarter tiles of the 0.5 km data tiles, one house
 # (diorama size) per tile as in Urbek. Their cells and landscapes are their
 # data tile's, their corners those of the data tiles and, between them, the
@@ -112,6 +113,7 @@ var tile_km := 2.0
 var m_per_level := 110.0
 var level_h := 0.6
 var patch_origin := Vector2i.ZERO
+var draw_n := PATCH_N # tiles per side drawn, around the middle of the patch
 var prop_origin := Vector2i.ZERO
 var prop_n := PROP_N
 var _props_tier := 1 # 0 full detail, 1 light, 2 low (PROP_DETAIL_KM, PROP_LOW_KM)
@@ -147,6 +149,9 @@ var _prop_materials: Array[ShaderMaterial] = []
 var _terrain: MultiMeshInstance3D
 var _props: Array[MultiMeshInstance3D] = []
 var _landmarks: Array[MeshInstance3D] = []
+## What changed in this frame's update_view (level, props, tier, windows), for
+## the tour benchmark (landscape.gd --tour); whoever reads it clears it.
+var events := PackedStringArray()
 
 static func data_root() -> String:
 	return ProjectSettings.globalize_path("res://").path_join("..").simplify_path()
@@ -353,6 +358,8 @@ func _build_landmarks() -> void:
 		var node := MeshInstance3D.new()
 		node.name = "Landmark" + which.capitalize()
 		node.mesh = RomanBuildings.landmark_mesh(which, 0 if _props_tier < 2 else 1) if kit else PropMeshes.landmark(which)
+		if kit:
+			RomanBuildings.landmark_mesh(which, 1) # loaded now, not on the first zoom past PROP_LOW_KM
 		node.material_override = material
 		node.scale = Vector3(1.0, 1.0 if kit else LANDMARK_RISE, 1.0) * km_per_m
 		var centre := (lo + hi) * 0.5
@@ -443,11 +450,14 @@ func _prep_view(view_name: String, size: Vector2i, material: ShaderMaterial) -> 
 
 ## Zoom for a visible ground width (km): about 50 tiles across up close,
 ## about 250 across the whole Mediterranean; -1 (quarter tiles) up to about
-## 12 km.
+## 12 km. Far out at least a level whose patch spans the top edge of the
+## picture (1.1 view widths on the tilted map view).
 static func level_for_width(width: float) -> int:
 	var across := 50.0 * pow(maxf(width, 1.0) / 25.0, 0.317)
 	var tile := width / across
-	return clampi(int(round(log(tile / 0.5) / log(2.0) + 0.2)), -1, LEVELS.size() - 1)
+	var wanted := int(round(log(tile / 0.5) / log(2.0) + 0.2))
+	var spans := int(ceil(log(width * 1.15 / PATCH_N / 0.5) / log(2.0)))
+	return clampi(maxi(wanted, spans), -1, LEVELS.size() - 1)
 
 func _apply_level(value: int) -> void:
 	zoom = value
@@ -494,6 +504,17 @@ func _apply_level(value: int) -> void:
 	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))
 	_terrain_material.set_shader_parameter("town_props", house_slots > 0)
+	_apply_prop_count()
+	_place_landmarks()
+	events.append("level %d" % value)
+
+## Slots and instance counts of the prop patch. Only these change with
+## prop_n, every few frames while zooming: the level's windows and passes
+## stay (redoing them all on each change, a 1 MB window cut and the quarter
+## tile pass, made zooming stutter).
+func _apply_prop_count() -> void:
+	var slots: int = SUB_TREE_SLOTS if sub_tiles else PROP_SLOTS[level]
+	var house_slots: int = SUB_HOUSE_SLOTS if sub_tiles else HOUSE_SLOTS[level]
 	for kind in _props.size():
 		var node := _props[kind]
 		var house := _is_house(kind)
@@ -508,7 +529,6 @@ func _apply_level(value: int) -> void:
 		# lot models are in metres, the tree meshes about 1.1 units tall
 		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
-	_place_landmarks()
 
 ## Cut the near level window around the patch (snapped, so it moves on only
 ## every quarter window). True when it changed.
@@ -522,6 +542,7 @@ func _update_level_window() -> bool:
 	var key := Vector3i(level, o.x, o.y)
 	if key == _level_window_key:
 		return false
+	events.append("level_window")
 	_level_window_key = key
 	var part := image.get_region(Rect2i(o, Vector2i(LEVEL_WINDOW, LEVEL_WINDOW)))
 	if _level_window == null:
@@ -543,20 +564,30 @@ func _update_sub_window() -> void:
 	for material in _all_materials():
 		material.set_shader_parameter("sub_origin", o)
 	_sub_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	events.append("sub_window")
 
 ## Direction towards the sun (world), for the stylised slope shading.
 func set_light_dir(dir: Vector3) -> void:
 	_terrain_material.set_shader_parameter("light_dir", dir.normalized())
 
 ## Move the patches: `focus` is the ground point the camera looks at, `centre`
-## the middle of the visible ground (further back in oblique views).
-func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
+## the middle of the visible ground (further back in oblique views), `span`
+## the ground (km) the drawn tiles must cover around it.
+func update_view(focus: Vector2, centre: Vector2, width: float, span := INF) -> void:
 	var wanted := level_for_width(width)
 	if wanted != zoom:
 		_apply_level(wanted)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
-	_terrain_material.set_shader_parameter("patch_origin", patch_origin)
+	# only the tiles around the view are drawn: each costs vertex work (and
+	# again for the shadow map), and up close the near-orthographic view
+	# sees a few dozen tiles across of the 320 (100 000 tiles a frame)
+	var n := clampi(int(ceil(span / tile_km / 8.0)) * 8 + 8, DRAW_MIN, PATCH_N) if is_finite(span) else PATCH_N
+	if n != draw_n:
+		draw_n = n
+		_terrain.multimesh.visible_instance_count = n * n
+		_terrain_material.set_shader_parameter("patch_n", n)
+	_terrain_material.set_shader_parameter("patch_origin", Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2))
 	if _near_levels.has(level) and _update_level_window():
 		for material in _all_materials() + [_sub_material]:
 			material.set_shader_parameter("levels_origin", Vector2i(_level_window_key.y, _level_window_key.z))
@@ -568,12 +599,14 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	var wanted_n := clampi(int(ceil(PROP_SPAN * width / tile_km / 8.0)) * 8 + 4, 12, PROP_N)
 	if wanted_n != prop_n:
 		prop_n = wanted_n
-		_apply_level(zoom)
+		_apply_prop_count()
+		events.append("props")
 	# far out the trees are a few pixels tall: low-poly and no shadows; up
 	# close the lots and landmarks in full detail
 	var tier := 2 if width > PROP_LOW_KM else 0 if width <= PROP_DETAIL_KM else 1
 	if tier != _props_tier:
 		_props_tier = tier
+		events.append("tier %d" % tier)
 		for kind in _props.size():
 			_props[kind].multimesh.mesh = [_meshes_detail, _meshes_full, _meshes_low][tier][kind]
 			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if tier == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON

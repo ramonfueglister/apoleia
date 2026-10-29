@@ -288,10 +288,10 @@ unabhängig und unverändert.
   (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
   stehen, solange die Häuser gezeichnet werden.
 
-## Fernsicht (Kacheln bis Europa)
+## Fernsicht (Kacheln bis zur ganzen Karte)
 
 Ramon, 28.10.2026: „Kachel-Look konsequent bis immer“. Es gibt keine weiche
-Reliefkarte mehr; auch ganz draußen (16-km-Kacheln, ganz Europa) gelten dieselben
+Reliefkarte mehr; auch ganz draußen (32-km-Kacheln, die ganze Kit-1-Karte) gelten dieselben
 Regeln wie nah: eine Farbe pro Kachel aus der Landschaft dieser Zoomstufe. Damit Gebirge
 draußen nicht zu einer Stufe zusammenfallen und das Flachland ruhig bleibt,
 kommen die Eckstufen ab 2-km-Kacheln aus dem Bake (siehe Geländeregeln). Ohne
@@ -307,7 +307,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Größe | Wert |
 |---|---|
 | Fläche | 1 Welteinheit = 1 echter km = 42 m Diorama, mapping-v1 |
-| Kachel je Zoomstufe | 0,25 (Viertel, `SUB_KM`) / 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 10,5 m … 670 m Diorama (`LEVELS`) |
+| Kachel je Zoomstufe | 0,25 (Viertel, `SUB_KM`) / 0,5 / 1 / 2 / 4 / 8 / 16 / 32 km echt = 10,5 m … 1340 m Diorama (`LEVELS`) |
 | Höhe | nah eine Stufe = 20 / 50 / 60 m echt (Tiefland, Hügel, Gebirge; bei 1-km-Kacheln das Doppelte), weiter draußen die steigende Skala `LEVEL_STEPS_M` (150 bis 600 m je Stufe) |
 | Haus | ein römisches Grundstück von 10 × 10 m Diorama (`HOUSE_M`, 238 m Welt), eins je Viertelkachel, vier je 0,5-km-Kachel; gezeichnet bis 4-km-Kacheln |
 | Wahrzeichen Roms | Modelle der römischen Stadt im Diorama-Maßstab wie die Häuser (Kolosseum 8 × 7 Grundstücke auf 4 × 4 Blöcken von 0,5 km) |
@@ -348,8 +348,18 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Höhen für Fels, Schnee und Wald kommen aus denselben Terrain Tiles wie
   die nahen Stufen). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
-  verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
-  für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).
+  verschiebt die Patches. Ein MultiMesh mit bis zu 320 × 320 Kacheln, davon
+  gezeichnet nur die um die Sicht (`draw_n`: die sichtbare Fläche mal 1,25 und
+  so weit darüber hinaus, wie hohes Land noch ins Bild ragen oder Schatten
+  hineinwerfen kann); ganz nah sind das ein paar Tausend statt 100 000
+  Kacheln. Die Eckstufen rechnet der 2D-Pass weiter für den ganzen Patch vor.
+  Weit draussen ist die Stufe mindestens so grob, dass der Patch den oberen
+  Bildrand überspannt (1,1 Sichtbreiten auf der geneigten Karte), darum
+  kommen die 32-km-Kacheln ab etwa 4500 km. Fünf MultiMeshes
+  für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln);
+  ändert sich beim Zoomen nur ihre Zahl, stellt `_apply_prop_count` nur die
+  Zahlen um (vorher baute jede Änderung die ganze Stufe neu, mit 1 MB
+  Stufenfenster und dem Viertelpass: beim Zoomen ruckelte es).
 - `app/shaders/tile_terrain.gdshaderinc` enthält die Kachelregeln, die
   `tile_terrain.gdshader` (Oberseite und Wände) und `tile_props.gdshader`
   (Platzierung der Bäume und Häuser) gemeinsam nutzen. Die gesamte Geometrie
@@ -380,10 +390,19 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 Mausrad oder Pinch zoomt hinein zum Cursor und hinaus um die Bildmitte, Ziehen oder
 WASD/Pfeile verschiebt, +/− zoomt. Die Ansicht schaut immer nach Norden und dreht sich
-nie (Ramon, 28.10.2026: „kein rotieren“). Ganz draussen (4400 km) steht sie fast senkrecht
-über ganz Europa. F5–F7 steuern das Wetter. Startoptionen:
+nie (Ramon, 28.10.2026: „kein rotieren“). Ganz draussen (8000 km) steht sie fast senkrecht
+über der ganzen Kit-1-Karte (`data/region.json`: −11 bis 46° Ost, 21 bis 58° Nord,
+von Irland bis zum Kaspischen Meer und von der Ostsee bis Oberägypten); die
+Kamera bleibt auf dieser Karte und rückt sie ganz draussen in die Mitte
+(bis 29.10. hielt sie die Sicht auf Europa, 34 bis 60° Nord, und schnitt
+Afrika, Ägypten und die Levante ab). F5–F7 steuern das Wetter. Startoptionen:
 `--view=lon,lat,breite_km`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
-`--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus).
+`--views=lon,lat,breite;…` mit `--snapshot=ordner` (ein Bild je Ansicht),
+`--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus),
+`--tour=ergebnis.json` (`tour_bench.gd`: fliegt Bild für Bild denselben Weg,
+Rom nah, die ganze Karte, Alexandria, Antiochia, die Levante, Athen, und
+schreibt Bildzeiten, die schlimmsten Bilder mit dem, was das Gelände in ihnen
+änderte, und die Pipeline-Kompilierungen; `--tour-passes=n`, Vorgabe 2).
 
 ## Offen
 
