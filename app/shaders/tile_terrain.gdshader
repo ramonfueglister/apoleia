@@ -48,7 +48,10 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.165, 0.300, 0.150),  // forest floor (between the crowns, #2c5e26-#33692c)
 	vec3(0.173, 0.302, 0.224),  // conifer forest
 	vec3(0.396, 0.561, 0.322),  // alpine meadow
-	vec3(0.439, 0.420, 0.396),  // rock
+	// rock as far out (#c4b290, light limestone): the grey #9e928a laid the
+	// Abruzzo tops at 8 km out like concrete (Kritik r16), and the crests
+	// changed colour between the 0.5 and the 1 km tiles
+	vec3(0.561, 0.519, 0.413),  // rock
 	// snow as far out (#e8e4dc): at the cotton white #f3f6f8 the tone map
 	// clipped it, a riser stood 2 % below the flat (Kritik r15, Mont Blanc
 	// at 8 km a blank sheet) and the shade fell lavender under the blue sky

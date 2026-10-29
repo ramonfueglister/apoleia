@@ -410,7 +410,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "ground-L0.png",
-      "sha256": "3c50c1a84074d48eb4b6546f0b296d1c71759d83eb0790c0491ddc0efdf9b75b",
+      "sha256": "3a02f48ef654ac540fc2c2c24ef9e25e3dd4b77d65e82e353b2b8db78a6c0933",
       "classes": [
         "meadow",
         "dry_grass",
@@ -426,7 +426,7 @@
       ],
       "water": 15,
       "relief_cover": {
-        "rock_m": 1600.0,
+        "rock_m": 2000.0,
         "snow_m": 2600.0,
         "valley_levels": 1,
         "treeline_m": 1700.0,

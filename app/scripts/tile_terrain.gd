@@ -309,7 +309,12 @@ func _build_nodes() -> void:
 	_terrain.multimesh = mm
 	_terrain.material_override = _terrain_material
 	_terrain.custom_aabb = huge
-	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# the tiles cast no shadows: the side tones carry the relief, as in
+	# SimCity 2000. A steep quarter ramp turned from the sun shadowed itself
+	# and split its tile into a lit strip and a near black triangle (Kritik
+	# r16: #3b3741 on the rock, lavender on the snow); far out the coarse map
+	# only drew streaks at the steps. Houses, trees and landmarks still do.
+	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
 	_meshes_full = [PropMeshes.tree_template(), null]
@@ -500,9 +505,6 @@ func _apply_level(value: int) -> void:
 	_sub_origin = NO_WINDOW # redrawn by the next update_view
 	var slots: int = SUB_TREE_SLOTS if sub_tiles else PROP_SLOTS[level]
 	var house_slots: int = SUB_HOUSE_SLOTS if sub_tiles else HOUSE_SLOTS[level]
-	# no cast shadows from the tiles once the trees are gone: the shadow map is
-	# coarse that far out and only draws streaks; the ramps carry the relief
-	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if level == 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# the slot pass only runs while props are drawn
 	_place_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if slots + house_slots > 0 else SubViewport.UPDATE_DISABLED
 	_terrain_material.set_shader_parameter("house_grid", int(ceil(sqrt(float(maxi(house_slots, 1))))))

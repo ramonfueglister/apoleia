@@ -1186,7 +1186,11 @@ def tidy_ground(g, passes=2):
 # rock and snow are bound to the levels (level_snap):
 # a tile takes them where most of its own level around it does, so they run
 # in bands along the risers instead of blobs across them.
-ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0, 32.0: 1200.0}
+# Up close (0.5 km tiles, views of 5 to 30 km) bare rock only from 2000 m: from
+# 1600 m the high pastures of the Abruzzo (Campo Imperatore, the Velino) lay
+# as bare rock plateaus at 8 km, 18 to 30 % of each massif (Kritik r16); the
+# tops above the tree line are alpine meadow up to there.
+ROCK_M = {0.5: 2000.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0, 32.0: 1200.0}
 SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0, 32.0: 2100.0}
 # levels above the valley floor that stay open in hilly land, per tile size;
 # only up to 2 km tiles: on coarser ones every slope tile has a neighbour a

@@ -169,7 +169,10 @@ unabhängig und unverändert.
   aus den Terrain Tiles (`tile_metres`, `ROCK_M` und `SNOW_M` je
   Kachelgröße, etwas höher im trockenen Süden): etwa 11 % Fels im
   70-km-Bild der Abruzzen, 4 % bei 120 km, die Alpen bei 1500 km ein
-  Felsgrat, die Pyrenäen auf der Europakarte. Schnee nur über 2500 m
+  Felsgrat, die Pyrenäen auf der Europakarte. Nah (0,5-km-Kacheln) Fels erst
+  ab 2000 m, darunter Bergweide (Kritik r16: ab 1600 m lagen die Hochweiden
+  der Abruzzen bei 8 km als graue Felsplatten da, 18 bis 30 % jedes Massivs,
+  jetzt 2 bis 13 %); der Fels ist nah so hell wie fern (#c4b290). Schnee nur über 2500 m
   (16-km-Kacheln 2300 m), etwa 1,5 % der Alpen bei 1500 km (Kritik r9: 5,6 %
   in flachen weißen Flecken). Auf den
   Kacheln bis 2 km (`VALLEY_LEVELS` je Kachelgröße: auf gröberen Kacheln
@@ -417,9 +420,13 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Eckpunkte einmal statt einmal je Art. Vorher lief jede der vier Arten als
   eigenes MultiMesh über alle Plätze, und die Bäume waren zwischen 5 und 30 km
   über die Hälfte eines Bildes (Messtour 29.10.: 19 ms mit, 9,4 ms ohne
-  Bäume). Ab
-  1-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
-  zeichnete dort nur dunkle Striche an den Stufen).
+  Bäume). Die
+  Kacheln werfen keine Schatten, nur Häuser, Bäume und Bauwerke: die Seitentöne
+  tragen das Relief wie in SimCity 2000. Eine steile Viertelrampe, die von der
+  Sonne weg schaut, beschattete sich selbst und teilte ihre Kachel in einen
+  hellen Streifen und ein fast schwarzes Dreieck (Kritik r16: #3b3741 am Fels,
+  lila am Schnee); fern zeichnete die grobe Schattenkarte nur Striche an den
+  Stufen.
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
   Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
