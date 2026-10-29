@@ -1,0 +1,17 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.custom_build, safeguards balanced)
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M3 Pro (Apple9)
+
+{"event":"grain_loaded","ms":704,"markets":1783}
+{"event":"people_loaded","ms":3997.121,"people":116805}
+{"bytes":229376,"changed":28668,"event":"house_builds"}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v1-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v2-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v3-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v4-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v5-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v6-w8.png","tile_km":0.25}
+{"event":"people_pick","pixel":[1900.0,705.0],"slot":-1}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v7-w22.png","tile_km":0.5}
+{"event":"snapshot","level":1,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v8-w70.png","tile_km":1.0}
+{"event":"snapshot","level":4,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s4/v9-w1500.png","tile_km":8.0}
