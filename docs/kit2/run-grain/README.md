@@ -608,6 +608,26 @@ Der Rest der früheren Senke geht an Verwandte. Gleicher Fingerabdruck mit 1 und
 (people 1047146168fd41e0, grain dd0699dc38689749), 55 Tests grün. In der Tabelle `state` ersetzen `estates`
 (erbloser Nachlass) und `left_map` die Spalte `dissolved`.
 
+## Märkte ausserhalb der Karte (S98, 10 Jahre, Seed 1, `run10-s98-outside.txt`)
+
+209 Märkte sind Tore nach draussen: Häfen mit Seeweg zum Kartenrand (Atlantik, Nordsee,
+Rotes Meer) und Regionen, die den Rand über Land erreichen. Sie verkaufen nach draussen,
+wenn sich das nach Fracht lohnt, und kaufen ein, wenn draussen billiger ist. Über Land
+lohnt es sich praktisch nie (500 km Wagen kosten 17,5 Denar/kg), über See fast immer.
+
+| Grösse | Jahr 1 | Jahr 5 | Jahr 10 |
+|---|---|---|---|
+| Ausfuhr nach draussen | 336 t | 218 t | 215 t |
+| Einfuhr von draussen | 9 t | 20 t | 13 t |
+| Hoflager | 46'066 t | 111'731 t | 182'484 t |
+| Marktlager | 3'944 t | 6'682 t | 10'065 t |
+| Menschen in Märkten am Mindestpreis | 50'175 | 86'575 | 98'426 |
+
+Die Ausfuhr bleibt klein, weil das Korn auf den Höfen liegt: Höfe verkaufen nur an den
+eigenen Markt, soweit dessen Bargeld reicht, und Fernhändler fahren je 388 kg. Der
+Überschuss von rund 14'000 t im Jahr kommt so nicht zum Tor. Gleicher Fingerabdruck mit
+1 und 4 Threads (people b977f0990b749f21, grain 3e4d918d99a43cad), Geldbilanz geht auf.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -702,6 +722,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Vorrat und Kauf | Höfe behalten Nahrung bis zur nächsten Ernte plus 60 Tage; andere kaufen unter 30 Tagen bis 60 Tage | frei gewählt |
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
 | Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
+| Märkte ausserhalb (S98) | Preis draussen = Grundpreis ± 10 %, 500 km hinter dem Rand; pro Woche ein Viertel des Lagers hinaus oder eine Woche Verkauf herein | frei gewählt |
 | Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht; Unverkauftes in die eigene Vorratskammer (S96) | frei gewählt |
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |

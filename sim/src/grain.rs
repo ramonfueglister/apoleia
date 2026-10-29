@@ -171,6 +171,16 @@ const SEA_KM_DAY: i64 = 100;
 /// about 0.001 (ORBIS: about 0.1 den. per kg and day at about 100 km).
 const WAGON_COST: i64 = 35;
 const SEA_COST: i64 = 1;
+/// Markets beyond the map (S98, Ramon: sell as much as possible, also to
+/// markets outside the game). The map is the Empire's extent; past its
+/// edge lie Germania, Parthia, Arabia, the Sahara and the Atlantic coasts.
+/// PLACEHOLDER: they buy and sell grain at the base price ± SPREAD, OUT_KM
+/// beyond the edge, by sea from the sea cells at the edge, by wagon from
+/// regions that reach the edge by land; each week a gate market sells
+/// them up to a quarter of its store, or buys from them up to a week of
+/// its sales, as far as its dealers' cash goes.
+const OUT_PRICE: i64 = BASE_PRICE;
+const OUT_KM: i64 = 500;
 /// Market (EU5-like, GRAIN.md): the price moves 1/PRICE_STEP of the way
 /// to a target each day; the target is the base price × (TARGET_DAYS /
 /// days of supply), clamped. Buy and sell price are the price ∓ SPREAD.
@@ -421,6 +431,8 @@ pub struct Market {
     /// than their family can work over the year.
     open: Vec<u32>,
     hirers: Vec<u32>,
+    /// S98: freight per kg to the markets beyond the map (0: no gate).
+    pub out_cost: i64,
     /// For the view only (`work_in`): the day of this week's labour
     /// exchange and who worked where: (worker household, farm, days, kind).
     work_day: i64,
@@ -488,6 +500,9 @@ pub struct GrainStats {
     pub buy_trips: u64,
     pub trade_trips: u64,
     pub traded_kg: i64,
+    /// S98: grain sold to / bought from the markets beyond the map.
+    pub out_export_kg: i64,
+    pub out_import_kg: i64,
     pub trade_profit: i64,
     pub alms_kg: i64,
     pub stolen_kg: i64,
@@ -532,8 +547,8 @@ pub struct GrainTiming {
 /// in milli-denarii since the start. Booking only: nothing here changes
 /// what households, farms or dealers do, and it is not in the fingerprint.
 /// At every day's end: money held (households, farms, dealers) + the
-/// treasury's cash = start + minted + endowed − freight − left_map −
-/// no_payee (`Grain::money_unbooked` is 0).
+/// treasury's cash = start + minted + endowed + exports − imports −
+/// freight − left_map − no_payee (`Grain::money_unbooked` is 0).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Money {
     /// Held by households, farms and dealers when the run starts (the
@@ -553,6 +568,10 @@ pub struct Money {
     /// Payments whose receiver is gone: rent for a landlord who died or a
     /// farm without one, a load sold for a trader who died on the way.
     pub no_payee: i64,
+    /// S98: paid by the markets beyond the map for grain (a source) and
+    /// paid to them (a sink).
+    pub exports: i64,
+    pub imports: i64,
 }
 
 /// The state's account (S94, step 1), since the start. In: the Manciana
@@ -1019,6 +1038,7 @@ impl Grain {
                 walked: FxHashMap::default(),
                 open: Vec::new(),
                 hirers: Vec::new(),
+                out_cost: 0,
                 work_day: 0,
                 work: Vec::new(),
                 people: 0,
@@ -1083,6 +1103,7 @@ impl Grain {
             events: Vec::new(),
         };
         gr.build_graph(p);
+        gr.gates(p);
         gr.census(p, 0, true);
         // Start stocks: farms hold what last year's harvest left them
         // (`last_harvest`); PLACEHOLDER, so the first half year is not an
@@ -1137,6 +1158,105 @@ impl Grain {
         gr.export(p);
         gr.money.start = gr.money_held();
         gr
+    }
+
+    /// S98: freight to the markets beyond the map for each market: by sea
+    /// from its port (the cheapest way over sea cells to a sea cell at the
+    /// map's edge, then OUT_KM), or by wagon OUT_KM from a region that has
+    /// a land cell at the edge; the cheaper of the two.
+    fn gates(&mut self, p: &People) {
+        let (rows, cols) = (p.grid.rows, p.grid.cols);
+        let n = (rows * cols) as usize;
+        let kind = &p.grid.kind;
+        let edge = |i: usize| {
+            let (r, c) = (i as i32 / cols, i as i32 % cols);
+            r == 0 || c == 0 || r == rows - 1 || c == cols - 1
+        };
+        // Sea km × 1000 from each sea cell to the edge (Dijkstra, 8 ways).
+        let mut dist = vec![i64::MAX; n];
+        let mut open = BinaryHeap::new();
+        for i in 0..n {
+            if kind[i] == 0 && edge(i) {
+                dist[i] = 0;
+                open.push(Reverse((0i64, i as u32)));
+            }
+        }
+        while let Some(Reverse((d, i))) = open.pop() {
+            if d > dist[i as usize] {
+                continue;
+            }
+            let (r, c) = (i as i32 / cols, i as i32 % cols);
+            for (dr, dc) in DIRS {
+                let (rr, cc) = (r + dr, c + dc);
+                if rr < 0 || cc < 0 || rr >= rows || cc >= cols {
+                    continue;
+                }
+                let j = (rr * cols + cc) as usize;
+                if kind[j] != 0 {
+                    continue;
+                }
+                let nd = d + if dr != 0 && dc != 0 { 35_355 } else { 25_000 };
+                if nd < dist[j] {
+                    dist[j] = nd;
+                    open.push(Reverse((nd, j as u32)));
+                }
+            }
+        }
+        let mut cost = vec![i64::MAX; self.markets.len()];
+        for (i, &m) in self.cell_market.iter().enumerate() {
+            if m != NONE && edge(i) {
+                cost[m as usize] = cost[m as usize].min(OUT_KM * WAGON_COST);
+            }
+        }
+        for (k, mk) in self.markets.iter().enumerate() {
+            let c = mk.cell as usize;
+            if kind[c] != 1 {
+                continue;
+            }
+            let (r, col) = (c as i32 / cols, c as i32 % cols);
+            for (dr, dc) in DIRS {
+                let (rr, cc) = (r + dr, col + dc);
+                if rr < 0 || cc < 0 || rr >= rows || cc >= cols {
+                    continue;
+                }
+                let d = dist[(rr * cols + cc) as usize];
+                if d != i64::MAX {
+                    cost[k] = cost[k].min((d / 1000 + 25 + OUT_KM) * SEA_COST);
+                }
+            }
+        }
+        for (mk, c) in self.markets.iter_mut().zip(cost) {
+            mk.out_cost = if c == i64::MAX { 0 } else { c.max(1) };
+        }
+    }
+
+    /// S98: each gate market trades with the markets beyond the map on its
+    /// day of the week: it sells them grain when their price less freight
+    /// beats its own selling price, and buys from them when their price
+    /// plus freight is below its own buying price.
+    fn outside(&mut self, day: i64) {
+        let wd = day.rem_euclid(7) as usize;
+        for mi in (wd..self.markets.len()).step_by(7) {
+            let m = &mut self.markets[mi];
+            if m.out_cost == 0 {
+                continue;
+            }
+            let out_buy = OUT_PRICE * (100 - SPREAD_PCT) / 100 - m.out_cost;
+            let out_sell = OUT_PRICE * (100 + SPREAD_PCT) / 100 + m.out_cost;
+            if out_buy > Self::sell_price(m) {
+                let kg = (m.store / 4).max(0);
+                m.store -= kg;
+                m.money += kg * out_buy;
+                self.money.exports += kg * out_buy;
+                self.stats.out_export_kg += kg;
+            } else if out_sell < Self::buy_price(m) {
+                let kg = (m.demand / 1000 * 7).min(m.money / out_sell.max(1)).max(0);
+                m.store += kg;
+                m.money -= kg * out_sell;
+                self.money.imports += kg * out_sell;
+                self.stats.out_import_kg += kg;
+            }
+        }
     }
 
     /// Market graph over the 25 km grid by freight cost (wagon over land,
@@ -2040,6 +2160,7 @@ impl Grain {
         self.timing.eat += us(t0);
         let t0 = t();
         self.traders(day);
+        self.outside(day);
         self.roads(day);
         self.timing.traders += us(t0);
         let t0 = t();
@@ -2362,7 +2483,7 @@ impl Grain {
     /// Money that appeared or vanished without a booking (S94: 0).
     pub fn money_unbooked(&self) -> i64 {
         let m = self.money;
-        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed - m.freight - m.left_map - m.no_payee)
+        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed + m.exports - m.imports - m.freight - m.left_map - m.no_payee)
     }
 
     fn money_of(&self, id: u32) -> i64 {
