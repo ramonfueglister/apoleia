@@ -72,12 +72,17 @@ bool sim_no_field(vec2 p, int land) {
 
 // Whether a farmhouse stands on the lot under p (world km); its house,
 // garden and yard are kept free of fields. The mask is kept only while the
-// crops stand.
+// crops stand. Branch free: always one fetch (clamped), masked after. With
+// the fetch behind early returns, its dozen inlined copies in the terrain's
+// fragment stage (sim_lane, sim_fields) crashed Apple's Metal compiler
+// (MTLCompilerService, LLVM fatal error; Godot: XPC_ERROR_CONNECTION_INTERRUPTED)
+// and the terrain pipeline was never built.
 bool sim_house_lot(vec2 p) {
-	if (sim_lots_n == 0 || sim_view_km > SIM_CROPS_KM) { return false; }
 	vec2 lot = floor((p - world_min) / sim_lot_km) - sim_lot_origin;
-	if (lot.x < 0.0 || lot.y < 0.0 || lot.x >= float(sim_lots_n) || lot.y >= float(sim_lots_n)) { return false; }
-	return texelFetch(sim_lot_tex, ivec2(lot), 0).a > 0.5;
+	bool inside = sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM
+		&& all(greaterThanEqual(lot, vec2(0.0))) && all(lessThan(lot, vec2(float(sim_lots_n))));
+	float a = texelFetch(sim_lot_tex, clamp(ivec2(lot), ivec2(0), ivec2(max(sim_lots_n - 1, 0))), 0).a;
+	return inside && a > 0.5;
 }
 
 // A flat tile under p (no ramp): the crops stand only on flat ground, the
