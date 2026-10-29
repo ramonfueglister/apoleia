@@ -566,6 +566,25 @@ der Kasse aufbauen (S94 Schritt 1, nach Ramons Entscheid).
 Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
 d2967522adc83ce9), 55 Tests grün.
 
+## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
+
+Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
+Personen-Thread zeichnet (`sim/godot/src/tables.rs`, `trips.rs`).
+
+| Was | Aufruf | Inhalt |
+|---|---|---|
+| Tabellen | `Grain::table(key)`, `TABLES` | Märkte, Bevölkerung, Höfe, Staat, Verlauf (eine Zeile pro Monat: Geburten, Tote, Hungertote, Umzüge, Ernte, Verkauf, Fernhandel, Almosen, Diebstahl, Anteil gegessen, Taglohn, Preise, Geld, Kasse, Zelte, Höfe, Lager) |
+| Fahrten | `Grain::trips_in(box)` | Marktgänge und Händlerwagen mit Route (Pfadfeld Kachel für Kachel, Handelsroute über die 25-km-Zellen), Ladung, Tage hin und zurück |
+| Erntearbeit | `Grain::work_in(box)` | wer bei der letzten Wochenbörse auf welchem Hof arbeitet: Saat, Ernte, übers Jahr, aus dem Überschuss (S84) |
+| Ereignisse | `Grain::events_in(since, box)` | Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten, Diebstahl, Almosen, Zelt zieht um, Hof übernommen, Erbteil, Ins Zelt, Hof nach Lex Manciana, Hof verlassen; 60 Tage zurück (`crate::events`) |
+| Preise auf der Karte | `Grain::cell_markets()` | Region jeder 25-km-Zelle, mit der Tabelle `markets` einzufärben |
+| Haushalt | `Grain::household(id)` | Art, satt, Vorrat, Geld, Hof |
+
+Der Verlauf summiert die Zähler Tag für Tag und stimmt auch dann genau, wenn der Lauf sie
+jährlich zurücksetzt (geprüft über drei Jahre: Geburten und Ernte gleich). Alles ist nur
+gelesen: gleicher Fingerabdruck mit 1 und 4 Threads (grain d2967522adc83ce9, people allein
+3f6cf7db2bc31a0c), gleiches Tempo.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |

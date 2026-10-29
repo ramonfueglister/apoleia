@@ -754,6 +754,8 @@ pub struct People {
     /// With the grain economy and INHERIT_EQUAL: (old household, new
     /// household of a son) for each split since crate::grain took them.
     pub split_log: Vec<(u32, u32)>,
+    /// For the view only (crate::events): hunger deaths and moves.
+    pub events: Vec<crate::events::Event>,
     /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
     pub never_marry_per_1000: u64,
     pub divorce_per_10k_year: u64,
@@ -1035,6 +1037,7 @@ impl People {
             divorce_per_10k_year: DIVORCE_PER_10K_YEAR,
             table_hunger_per_1000: TABLE_HUNGER_PER_1000,
             split_log: Vec::new(),
+            events: Vec::new(),
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
@@ -1307,6 +1310,9 @@ impl People {
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let slice = day.rem_euclid(MONTH) as u32;
         let yslice = day.rem_euclid(YEAR) as u32;
+        if slice == 0 {
+            crate::events::prune(&mut self.events, day);
+        }
 
         let t0 = t();
         self.events(day);
@@ -1407,6 +1413,10 @@ impl People {
             self.splits.push((pid, self.world.get::<Household>(e).unwrap().0));
         }
         let a = age_y(day, born);
+        if cause == 2 {
+            let household = self.world.get::<Household>(e).unwrap().0;
+            self.events.push(crate::events::Event { day, kind: crate::events::HUNGER_DEATH, household, pid, cell: home, to: NONE, fine: NONE, other: NONE, amount: 0 });
+        }
         self.stats.deaths[cause] += 1;
         self.stats.age_at_death_sum += a;
         if a < 1.0 {
@@ -1848,6 +1858,11 @@ impl People {
             // The relative's household and home as of now (S79).
             let Some(ke) = self.alive(kin) else { continue };
             let (house, home) = (self.world.get::<Household>(ke).unwrap().0, self.world.get::<Home>(ke).unwrap().0);
+            if let Some(&m) = members.first() {
+                let (day, old) = (self.world.resource::<Clock>().day, at(self, m));
+                let household = self.world.get::<Household>(self.ent[m as usize]).unwrap().0;
+                self.events.push(crate::events::Event { day, kind: crate::events::JOINED, household, pid: m, cell: old, to: home, fine: NONE, other: house, amount: members.len() as i64 });
+            }
             for &m in &members {
                 let old = at(self, m);
                 self.add_pop(old, -1);
@@ -1861,6 +1876,12 @@ impl People {
         }
         for (members, to) in moves {
             let n = members.len() as u64;
+            if let Some(&m) = members.first() {
+                let (day, old) = (self.world.resource::<Clock>().day, at(self, m));
+                let household = self.world.get::<Household>(self.ent[m as usize]).unwrap().0;
+                let kind = if to.is_some() { crate::events::MOVED } else { crate::events::LEFT_MAP };
+                self.events.push(crate::events::Event { day, kind, household, pid: m, cell: old, to: to.unwrap_or(NONE), fine: NONE, other: NONE, amount: n as i64 });
+            }
             match to {
                 Some(c) => {
                     for &m in &members {
