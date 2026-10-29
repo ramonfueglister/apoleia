@@ -314,7 +314,7 @@ unabhängig und unverändert.
 
 ## Bildstimmung (Urbek/Islanders, seit 29.10.2026)
 
-Status: `implementiert`, Runden 1 bis 3. Ramon, 29.10.2026: Die Grafik soll auf das
+Status: `implementiert`, Runden 1 bis 5. Ramon, 29.10.2026: Die Grafik soll auf das
 Niveau von Urbek und Islanders. Runde 1 änderte nur Licht und Nachbearbeitung
 (`landscape.gd`):
 
@@ -356,16 +356,28 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Geschosse) sammeln sich in den Stadtkernen, die niedrigen in den Dörfern.
 - Grauer Steinbelag statt Creme (`C_PAVED`, `C_PLAZA`, `tt_paving`) und weiche
   Schattenkanten.
-- Felder (`people_crops.gdshader`): Saatreihen als lange Striche mit kurzen
-  Lücken statt Punktraster, Nord-Süd oder Ost-West je Parzelle. Gepflügte
-  Felder zeigen Furchen. Etwa ein Drittel der Feldseiten bekommt einen Zaun,
-  nicht nur die beim Hof. Die Strohplatten haben eine feine Körnung.
-- Wiese (`tt_grass`): Flecken in einem tieferen, satteren Grün, dunkle
-  Grasbüschel und vereinzelte Blumen. Das Muster blendet aus, bevor es flimmern
-  würde.
-- Einzelbäume und Büsche (`tt_scatter_free` in `tile_props.gdshaderinc`) auf
-  Rampen und auf den Parzellen, die die Höfe als Weide liegen lassen, nie auf
-  Feldern oder Hoflosen. Dafür setzt `people_dots.gd` die Feld- und Losdaten
+- Felder (`sim_strip`, `people_parcels.gdshader`, `people_crops.gdshader`):
+  Die Parzellen wachsen zu Äckern von 3–5 × 1–2 Parzellen zusammen, Ramon zu
+  Runde 3: „die felder sehn extrem müllig aus“. Ein Acker hat eine Frucht und
+  ist ganz gesät oder ganz brach. Seine Platten laufen ohne Fuge durch; die
+  Seiten, an denen sie das tun, liegen im B-Kanal der Parzellentextur. Die
+  Reihen laufen längs des Ackers als kräftige Striche mit Höhe. Gepflügte
+  Felder zeigen Furchen. Zäune stehen nur am Rand eines Ackers, und dort nur
+  manchmal; beim Hof immer. Die Strohplatten sind dünner und haben eine
+  feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
+  winzig.
+- Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
+  Loslinie (alle 1,5 km) ein brauner Feldweg, mit Lücken. Die Äcker halten
+  Abstand wie bei den Dorfwegen.
+- Wiese (`tt_grass`): nah ein dunkleres, nicht satteres Grün mit dunklen
+  Grasbüscheln und vereinzelten Blumen. Flecken wirkten weich wie eine Textur
+  (Runde 3) und kantig wie Tarnmuster (Runde 4). Das Muster blendet aus,
+  bevor es flimmern würde.
+- Einzelbäume (`tt_scatter_free` in `tile_props.gdshaderinc`) auf Rampen und
+  auf den Parzellen, die die Höfe als Weide liegen lassen, nie auf Feldern
+  oder Hoflosen. Sie sind etwa so hoch wie ein eingeschossiges Haus und alle
+  Bäume fast gleich gross wie bei Urbek. Kleine Büsche lasen sich als
+  Setzlinge. Dafür setzt `people_dots.gd` die Feld- und Losdaten
   auch auf den Platzierungsdurchgang.
 - Städte: Ein Stadtviertel ohne Los (an den Landmarken, die kleinen Plätze im
   Kern) ist ein Garten mit Rasen, Schnitthecke, Zypressen, Pinien und

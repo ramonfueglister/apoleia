@@ -63,8 +63,8 @@ bool tt_olive_grove(ivec2 dt, bool ramp) {
 // ramps, where no field ever lies, and on the parcels the farms leave as
 // pasture (sim_parcel), never on a sown or fallow parcel or a farmhouse's
 // lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs.
-const float SCATTER_TREE = 0.05; // share of the slots with a tree
-const float SCATTER_BUSH = 0.12; // and with a bush
+const float SCATTER_TREE = 0.09; // share of the slots with a tree
+const float SCATTER_BUSH = 0.0; // and with a bush (s4: little trees read as saplings, sizes all over the place)
 bool tt_scatter_free(vec2 at, bool ramp, bool field) {
 	if (!sim_map_on || sim_fine_n == 0) { return !field; }
 	if (sim_house_lot(at)) { return false; }
@@ -179,7 +179,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// against its fields and houses); kept in the middle of its quarter,
 		// clear of the fields round it
 		if (scatter) { uv = 0.5 + (uv - 0.5) * 0.4; }
-		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.25, 0.35, r0) : scatter ? mix(0.65, 0.78, r0) : planted ? mix(0.65, 0.8, r0) : mix(0.8, 1.0, r0);
+		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.25, 0.35, r0) : scatter ? 0.75 : planted ? 0.75 : mix(0.85, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;

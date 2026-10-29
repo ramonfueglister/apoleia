@@ -37,11 +37,12 @@ vec4 sim_fine_at(ivec2 t) {
 	return texelFetch(sim_fine_tex, t, 0);
 }
 
-// Up close the parcels lie in fields of three to six by two or three, as
+// Up close the parcels lie in fields of three to five by one or two, as
 // Urbek's long fields (Ramon 29.10.2026 on s3: "die felder sehn extrem
-// müllig aus", a chessboard of single parcels): east-west or north-south by
-// block of 6 x 6 parcels, the rows of a block in bands of two or three,
-// each band cut at its own length and offset. The parcels of a field share
+// müllig aus", a chessboard of single parcels; s4 with 3-6 by 2-3 they
+// dwarfed the trees and houses): east-west or north-south by block of 6 x 6
+// parcels, the rows of a block in bands of one or two, each band cut at its
+// own length and offset. The parcels of a field share
 // their crop and whether they lie fallow, and their slabs join into one
 // (people_parcels.gdshader). xy the field's id, z its axis (0 long along x,
 // 1 along y).
@@ -49,9 +50,9 @@ vec3 sim_strip(vec2 cell) {
 	vec2 block = floor(cell / 6.0);
 	float axis = sim_hash(block + 41.3) < 0.5 ? 0.0 : 1.0;
 	vec2 c = axis < 0.5 ? cell : cell.yx;
-	float wide = 2.0 + floor(sim_hash(block + 3.9) * 2.0);
+	float wide = 1.0 + floor(sim_hash(block + 3.9) * 2.0);
 	float band = floor((c.y + floor(sim_hash(block + 8.3) * wide)) / wide);
-	float len = 3.0 + floor(sim_hash(vec2(band, 7.7) + axis) * 4.0);
+	float len = 3.0 + floor(sim_hash(vec2(band, 7.7) + axis) * 3.0);
 	float off = floor(sim_hash(vec2(band, 13.1) + axis) * len);
 	return vec3(floor((c.x + off) / len), band, axis);
 }

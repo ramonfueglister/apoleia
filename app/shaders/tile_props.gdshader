@@ -108,7 +108,9 @@ void vertex() {
 		float level = d.z;
 		vec2 p = world_min + (vec2(t) + uv) * tile_km;
 		// the lots fill their slot but for a street (prop_scale); trees vary
-		float s = prop_scale * (house ? 1.0 : (0.75 + 0.5 * r0) * edge_size);
+		// (trees vary a little: Urbek's are of one size; from 0.75 to 1.25 they
+		// jumped from saplings to giants, s4)
+		float s = prop_scale * (house ? 1.0 : (0.9 + 0.2 * r0) * edge_size);
 		// voxel props keep to the tile grid; a lot shows its front (+z, with the
 		// door) to the camera (Kritik r7: turned lots showed blank side walls)
 		float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;

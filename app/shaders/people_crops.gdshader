@@ -91,9 +91,11 @@ void vertex() {
 	vec3 rc = LEAVES;
 	clumps = 0.0;
 	fill = 0.38;
-	// Urbek's rows run the length of the field as dashes of a few voxels
-	// with a voxel's gap (29.10.: our sprouts in short clumps read as a grid
-	// of dots); a ploughed field shows its furrows
+	// Urbek's rows run the length of the field as bold dashes of a few
+	// voxels with a voxel's gap, high enough to throw a shadow on the soil
+	// (29.10.: our sprouts in short clumps read as a grid of dots; s4: low
+	// fine dashes flickered as a moire over a large field); a ploughed
+	// field shows its furrows
 	if (state == 1) {
 		// a flat sheet as Urbek's, high enough to show its edge (dark tufts
 		// on it read as ticks, round 16; light sheaves as studs, round 18)
@@ -102,18 +104,18 @@ void vertex() {
 	} else if (grain) {
 		if (g <= 0.0) { c = STUBBLE; h = 0.1; w = 0.35; rc = STUBBLE * 0.85; }
 		else if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
-		else if (g < 0.4) { h = 0.2; w = 0.45; rc = SPROUT; clumps = 16.0; fill = 0.8; }
-		else if (g < 0.75) { h = 0.4; w = 0.6; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 14.0; fill = 0.82; }
+		else if (g < 0.4) { h = 0.35; w = 0.5; rc = SPROUT; clumps = 6.0; fill = 0.85; }
+		else if (g < 0.75) { h = 0.7; w = 0.6; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 5.0; fill = 0.88; }
 		else {
 			c = RIPE[kind];
 			// the ears stand in dense light rows on the sheet (a bare sheet
 			// read as an empty tray, rounds 17 and 20)
-			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 14.0; fill = 0.8;
+			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 6.0; fill = 0.85;
 		}
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
-		else if (g < 0.4) { h = 0.2; w = 0.45; rc = SPROUT; clumps = 14.0; fill = 0.8; }
-		else { h = 0.45; w = 0.6; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 10.0; fill = 0.8; }
+		else if (g < 0.4) { h = 0.35; w = 0.5; rc = SPROUT; clumps = 6.0; fill = 0.85; }
+		else { h = 0.7; w = 0.6; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 5.0; fill = 0.85; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		c = SOIL_DRY;
@@ -153,10 +155,11 @@ void vertex() {
 	} else if (row) {
 		float step = inner / crop_rows;
 		off = vec2(VERTEX.x * inner * 0.97, (UV.x - 0.5) * inner + VERTEX.z * w * step);
-		// clumps in staggered rows along the strip, so they run on from
-		// parcel to parcel (the camera looks along the diagonal, so either
-		// way reads alike)
-		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
+		// clumps along the field, each row shifted by its own amount (a
+		// strict stagger drew a checker), so they run on from parcel to
+		// parcel (the camera looks along the diagonal, so either way reads
+		// alike)
+		along = VERTEX.x * 0.97 + 0.5 + sim_hash(vec2(UV.y, 2.3)) / max(clumps, 1.0);
 		quarter = along_y ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {

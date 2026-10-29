@@ -472,7 +472,7 @@ void fragment() {
 		// up close a gentle ramp a gentler tone (the steps are drawn lower
 		// there, TileTerrain.relief_for_width): a whole hillside in one hard
 		// facet read as folded paper (s2)
-		float steep = sub_tiles ? mix(0.55, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
+		float steep = sub_tiles ? mix(0.4, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
 		float tone = 1.0 + shade * away * steep;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
