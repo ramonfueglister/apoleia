@@ -141,28 +141,33 @@ func _setup_look() -> void:
 	# casts a crisp shadow from its foot.
 	sun.shadow_blur = 0.0
 	# A strong normal offset keeps slopes and ramps free of acne ripples in
-	# a map that spans the whole deep view of the far-off camera; the depth
-	# bias stays low, so small things keep their shadows.
+	# a map that spans the whole deep view of the far-off camera (counted in
+	# texels of the 8192 map: about 3.5 % of a 1 km view); the depth bias
+	# stays low, so small things keep their shadows.
 	sun.shadow_bias = 0.1
-	sun.shadow_normal_bias = 14.0
+	sun.shadow_normal_bias = 28.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_fade_start = 0.98
-	RenderingServer.directional_shadow_atlas_set_size(4096, true)
+	RenderingServer.directional_shadow_atlas_set_size(8192, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
 	add_child(sun)
 
 func _update_look(distance: float) -> void:
 	terrain.set_light_dir(sun.global_transform.basis.z)
-	# The near-orthographic camera stands far back (6 view widths); shadows
+	# The near-orthographic camera stands far back (3.6 view widths); shadows
 	# must cover only the view, or the shadow map spreads over kilometres of
-	# empty air and houses get blurred, detached shadows. Godot fits the
-	# directional splits from the camera's near plane, so the near plane moves
-	# up to just before the highest ground in view. The far end lies past the
-	# top of the picture, so the shadows fade out only beyond it.
+	# empty air and shadow edges turn to steps. Godot fits the directional
+	# shadow from the camera's near plane, so the near plane moves up to just
+	# before the nearest ground in view: the bottom edge of the picture meets
+	# the focus plane half a view width (0.485 at 30 degrees) nearer, and ground
+	# raised by h there comes h / sin(pitch) nearer still. The far end lies a
+	# little past the top of the picture, so the shadows fade out only beyond it.
 	var pitch := deg_to_rad(pitch_for_width(width))
 	var relief: float = maxf(get_displayed_height_range().max_y - _focus_y, 0.0)
-	camera.near = maxf(0.05, distance - width * 0.9 - relief / maxf(sin(pitch), 0.2) - 0.2)
-	sun.directional_shadow_max_distance = distance + width * 1.2
+	var aspect := maxf(get_viewport().get_visible_rect().size.aspect(), 0.1)
+	var half := width * 0.5 / aspect / tan(maxf(pitch, 0.2))
+	camera.near = maxf(0.05, distance - half - width * 0.06 - relief / maxf(sin(pitch), 0.2))
+	sun.directional_shadow_max_distance = distance + half + width * 0.26
 	# no shadow map beyond 40 km across: the terrain's own shading carries
 	# the relief there, and nothing small enough to cast a shadow is drawn
 	sun.shadow_enabled = width < 40.0
