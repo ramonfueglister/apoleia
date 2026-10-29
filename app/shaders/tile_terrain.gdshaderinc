@@ -241,9 +241,10 @@ float tt_far_level_x(float m) {
 
 // The near levels' scale (tools/build_tile_terrain.py NEAR_STEPS_M) at 0.5 km
 // tiles, twice the metres at 1 km: 20 m levels in the lowlands, so Rome's
-// hills and gentle land show as terraces, 50 m above 120 m, 60 m above 420 m.
+// hills and gentle land show as terraces, 50 m above 120 m, 60 m above 420 m
+// (at 1 km tiles 240 m levels above 840 m, tools NEAR_BEYOND_M per level).
 const float NEAR_STEPS_M[13] = float[](0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0);
-const float NEAR_BEYOND_M = 60.0;
+float tt_near_beyond_m() { return tt_data_km() < 1.0 ? 60.0 : 120.0; }
 float tt_near_level_x(float metres) {
 	float m = max(metres, 0.0) * (0.5 / tt_data_km());
 	for (int k = 1; k < 13; k++) {
@@ -251,7 +252,7 @@ float tt_near_level_x(float metres) {
 			return float(k - 1) + (m - NEAR_STEPS_M[k - 1]) / (NEAR_STEPS_M[k] - NEAR_STEPS_M[k - 1]);
 		}
 	}
-	return 12.0 + (m - NEAR_STEPS_M[12]) / NEAR_BEYOND_M;
+	return 12.0 + (m - NEAR_STEPS_M[12]) / tt_near_beyond_m();
 }
 
 float tt_level_x(float metres) {
@@ -263,7 +264,7 @@ float tt_level_metres(float x) {
 	if (!levels_ready) { return x * m_per_level; }
 	x = max(x, 0.0);
 	if (near_scale) {
-		float m = x >= 12.0 ? NEAR_STEPS_M[12] + (x - 12.0) * NEAR_BEYOND_M
+		float m = x >= 12.0 ? NEAR_STEPS_M[12] + (x - 12.0) * tt_near_beyond_m()
 			: mix(NEAR_STEPS_M[int(floor(x))], NEAR_STEPS_M[min(int(floor(x)) + 1, 12)], fract(x));
 		return m * (tt_data_km() / 0.5);
 	}

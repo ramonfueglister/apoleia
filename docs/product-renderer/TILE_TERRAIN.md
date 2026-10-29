@@ -39,8 +39,10 @@ unabhängig und unverändert.
   fehlten, das Nahrelief war flach). Die Skala ist im Tiefland fein
   (`NEAR_STEPS_M` bei 0,5-km-Kacheln: 20 m je Stufe bis 120 m, 50 m bis 420 m,
   darüber 60 m, so steigen die Berge in vielen schmalen Stufen statt weniger
-  breiter Tafeln an (Kritik r9); bei 1-km-Kacheln die doppelten Meter; der Shader spiegelt sie
-  in `tt_near_level_x`): Roms Gianicolo, Quirinal und Esquilin stehen ein bis
+  breiter Tafeln an (Kritik r9); bei 1-km-Kacheln die doppelten Meter, über
+  840 m aber 240 m je Stufe: Mit 120 m zogen sich die Hänge des Apennins bei
+  70 km als Cord aus 55 % Rampen hin, Kritik r10; der Shader spiegelt sie
+  in `tt_near_level_x` und `tt_near_beyond_m`): Roms Gianicolo, Quirinal und Esquilin stehen ein bis
   zwei Stufen über dem Tibertal, Tivoli liegt am Hang über der Campagna, das
   Land um Rom zeigt Terrassen und Rampen wie SimCity 2000. Der Bake
   (`near_corner_levels`) folgt denselben Regeln wie fern, zeichnet aber bei
@@ -65,12 +67,23 @@ unabhängig und unverändert.
   Stufen. Eine Stufe ist weit draußen höher gezeichnet
   (`LEVEL_HEIGHTS` in tile_terrain.gd: 0,6 / 0,9 / 1,2 / 1,5 Kachelbreiten bei
   2 / 4 / 8 / 16 km), so stehen die gestapelten Plateaus der Gebirge auch auf
-  der Europakarte. Die Höhe nimmt vorher zu drei Vierteln den höchsten Punkt
-  innerhalb einer Kachel (`PEAK_SHARE`) und wird über 0,7 Kacheln
+  der Europakarte. Die Höhe nimmt vorher zur Hälfte den höchsten Punkt
+  innerhalb einer Kachel (`PEAK_SHARE`) und wird über eine Kachel
   weichgezeichnet, so behalten schmale Gebirge wie Apennin und Pyrenäen ihren
-  Grat, statt in der Ebene zu zerfließen; danach räumt der Bake je Stufe auf (Öffnen und
+  Grat, statt in der Ebene zu zerfließen (mit drei Vierteln und 0,7 Kacheln
+  waren die Gipfel breite Tafelberge und die Hänge dünne Streifen, Kritik r10); danach räumt der Bake je Stufe auf (Öffnen und
   Schließen mit 3 × 3 Ecken): einzelne Buckel, Löcher und eine Kachel breite
   Stege verschwinden, Gebirge bleiben als zusammenhängende Massive stehen.
+  Weil das Aufräumen jeden Gipfel schmaler als 2 × 2 Kacheln kappt, endeten
+  die Gebirge in breiten Tafelbergen (Kritik r10: 294 × 156 px bei 70 km).
+  Über 1000 m steigt darum eine flache Kuppe von mehr als 3 × 3 Kacheln auf
+  ihrem höchsten Drittel (nach der echten Höhe, wo diese mindestens eine
+  halbe Stufe über der Fläche liegt) eine Stufe weiter an, bis zu viermal
+  (`restore_peaks`, auch auf den 1-km-Kacheln), so steigt ein Massiv in
+  eingerückten Stufen an wie die Berge in SimCity 2000, eine echte
+  Hochfläche bleibt flach. Danach bekommt eine Ecke auf einer Fläche, die
+  der höchste Punkt ihrer 3 × 3 Ecken ist und eine halbe Stufe darüber
+  liegt, eine Stufe mehr: eine Spitze, vier Rampen zu einer Ecke.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
   Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
@@ -98,7 +111,10 @@ unabhängig und unverändert.
   dünnt doppelte Läufe auf eine Kachel aus (4-einfache Zellen, Ränder und Enden
   bleiben) und kappt Seitenstummel bis 3 Kacheln Länge sowie einzelne Zellen
   (`clean_rivers`). Mündungen am Meer und an Seen bleiben stehen. Echte
-  Flussarme um größere Inseln bleiben als Schlaufe erhalten. Ein Fluss mit
+  Flussarme um größere Inseln bleiben als Schlaufe erhalten. Ab 8-km-Kacheln
+  fallen Inseln aus einer einzelnen Kachel weg (`ISLET_KM`, `ISLET_TILES`): Die
+  griechischen und dalmatinischen Inselchen lagen bei 1500 und 4400 km als
+  beige Krümel auf dem Meer. Ein Fluss mit
   Namen nimmt den besten Rang seiner Teile, und seine Strecken durch Seen
   (`Lake Centerline`) zählen mit: Wo der See ein Stausee ist, den die Karte
   nicht hat, lief der Fluss sonst in Stücken (Kritik r9: der Tajo endete bei
@@ -117,14 +133,16 @@ unabhängig und unverändert.
   Töne am Bildschirm abgestimmt (Wiese #73af5f, trockenes Gras #9baf5f,
   Weizen #cdc373, Waldboden zwischen den Kronen #2c5e26, Wasser #6db3df,
   Flachwasser #8ccbef, Flüsse und Seen #5ea8da). Ab 1-km-Kacheln (etwa ab
-  30 km Sichtbreite, mit dem Wechsel der Kachelgröße) geht sie in die Palette der gemalten Fernsicht
-  über (Gauntlet-Referenz gemalt-weit-mittel-nah.png): olives Tiefland
-  #9aa35a, olivgrüner Wald #56683c (nicht #4f7b36, das sprang nach dem
-  olivfarbenen 70-km-Bild zurück ins Grün), Fels, tiefes Meer #19588c mit
-  Flachwasser #24689e; Seen wie die Flüsse im Flachwasserton. Offenes Land bekommt dort zusätzlich eine flache Farbe
-  je Höhenstufe (Hügel #849252, Bergweide #7c8550 statt Khaki #958e6c, das den
-  Apennin zum Steinbruch machte; das Höhenband zählt in fernen Stufen, auch
-  auf den nahen Kacheln), so lesen
+  30 km Sichtbreite, mit dem Wechsel der Kachelgröße) geht sie in eine
+  eigene Fernpalette über, im selben satten Urbek-Grün wie nah, nur einen
+  Hauch kühler (`GROUND_FAR` im Shader: Wiese etwa #5d8145 im Shader, am
+  Bildschirm um ein Drittel heller; Wald #406e33, Nadelwald #335e3b), tiefes
+  Meer #19588c mit Flachwasser #24689e; Seen wie die Flüsse im
+  Flachwasserton. Der olive Ton der gemalten Fernsicht (Tiefland #9aa35a,
+  Wald #56683c) ließ Europa wie eine vergilbte Karte aussehen; Urbek bleibt
+  auch weit draußen grün (Ramon: „Referenz Urbek“). Offenes Land bekommt dort zusätzlich eine flache Farbe
+  je Höhenstufe (Hügel #557841, Bergweide #5c7046; das Höhenband zählt in
+  fernen Stufen, auch auf den nahen Kacheln), so lesen
   Hügel und Gebirge als Flächen und nicht nur über ihre Rampen; Wald auf
   Hügeln und Bergen ist dort dunkler (Nadelwaldton). Fern zeichnet die
   Bodenbedeckung das Relief (Kritik r8): nackter Fels (#a89c78 wie die
@@ -135,8 +153,9 @@ unabhängig und unverändert.
   70-km-Bild der Abruzzen, 4 % bei 120 km, die Alpen bei 1500 km ein
   Felsgrat, die Pyrenäen auf der Europakarte. Schnee nur über 2500 m
   (16-km-Kacheln 2300 m), etwa 1,5 % der Alpen bei 1500 km (Kritik r9: 5,6 %
-  in flachen weißen Flecken). Ab
-  1-km-Kacheln weicht der Wald in hügeligem Land (400 m Höhenunterschied in
+  in flachen weißen Flecken). Auf den
+  1-km-Kacheln (nur dort, `VALLEY_MAX_KM`: auf gröberen Kacheln räumte die
+  Regel die Flanken jedes Gebirges ab, Kritik r10) weicht der Wald in hügeligem Land (400 m Höhenunterschied in
   10 km) aus den Talböden, der tiefsten Stufe ringsum und der Stufe darüber
   (`VALLEY_LEVELS`, Kritik r9: der Wald füllte die Täler und verbarg die
   Stufen), und wächst an den Hängen bis 1700 m;
@@ -197,7 +216,10 @@ unabhängig und unverändert.
   r8: einzelne Häuser auf dem Weizen um Rom bei 22 km). Ab 1-km-Kacheln
   stehen alle Häuser einer Stadtkachel auf deren höchster Ecke, ein Sockel je
   Kachel (Kritik r9: jedes Haus auf eigener Stufe zeichnete eine Stadt am Hang
-  bei 70 km als schrägen Strichcode). Ab 4-km-Kacheln stehen Städte auch über
+  bei 70 km als schrägen Strichcode). Die Terrasse füllt dort den ganzen
+  Hausplatz, nicht nur das Grundstück, so schließen die Terrassen einer
+  Stadtkachel am Hang zu einem Block zusammen (Kritik r10: unter jedem Haus
+  ein eigener Sockel, dazwischen die Rampe, las bei 70 und 120 km als Stelzen). Ab 4-km-Kacheln stehen Städte auch über
   Flusskacheln (`TOWN_ON_RIVER_KM`), so bleibt eine Stadt am Fluss ein Block
   (Kritik r9: Rom war bei 400 km ein Balken östlich des Tibers). Städte sind voll bebaut, ein
   Grundstück auf jedem Viertel (Kritik r7: keine nackte Wiese in der Stadt);

@@ -51,29 +51,33 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
-// Far out (from 1 km tiles) the land takes the palette of the
-// painted far view (gauntlet refs/gemalt-weit-mittel-nah.png): olive lowland,
-// dark green forest, light rock, a deep sea; on screen e.g. lowland #9aa35a,
-// forest #4f7a35, sea #1d5e93. Open land also takes a flat tint per height
-// band, so hills and ranges read as areas and not only by their ramps.
+// Far out (from 1 km tiles) the land stays Urbek green, a little calmer than
+// up close (the painted olive strip, gauntlet refs/gemalt-weit-mittel-nah.png,
+// read as a dull military map, the Po plain and Hungary as desert): on screen
+// about meadow #79a85a, wheat land #b9bb66, forest #497e3a, light rock
+// #c4b290 on the crests, a deep sea #19588c. Open land also takes a flat tint
+// per height band, so hills and ranges read as areas and not only by their
+// ramps.
 const vec3 GROUND_FAR[11] = vec3[](
-	vec3(0.455, 0.478, 0.286),  // meadow
-	vec3(0.520, 0.486, 0.294),  // dry grass
-	vec3(0.592, 0.549, 0.337),  // field
-	vec3(0.388, 0.447, 0.290),  // wetland
-	vec3(0.485, 0.447, 0.308),  // scrub
-	vec3(0.615, 0.564, 0.451),  // sand
-	vec3(0.262, 0.316, 0.184),  // forest (olive like the painted strip, #56683c, not #4f7b36)
-	vec3(0.220, 0.290, 0.200),  // conifer forest
-	vec3(0.408, 0.447, 0.294),  // alpine meadow
-	vec3(0.510, 0.472, 0.375),  // rock (the painted crests, #a89c78 on screen; Kritik r8)
+	vec3(0.365, 0.507, 0.272),  // meadow
+	vec3(0.459, 0.516, 0.284),  // dry grass
+	vec3(0.560, 0.565, 0.310),  // field (yellow-green, not sand beige)
+	vec3(0.320, 0.465, 0.300),  // wetland
+	vec3(0.429, 0.470, 0.278),  // scrub
+	vec3(0.615, 0.564, 0.451),  // sand (the deserts)
+	// woods a third darker than the meadow, not half (at #475b30, L 80,
+	// against #a3a461, L 156, they out-shouted the ramps about 5:1)
+	vec3(0.250, 0.430, 0.200),  // forest
+	vec3(0.200, 0.370, 0.230),  // conifer forest
+	vec3(0.420, 0.505, 0.300),  // alpine meadow
+	vec3(0.561, 0.519, 0.413),  // rock (the lightest land, so the crests show; it had the lowland's value)
 	vec3(0.860, 0.845, 0.810)   // snow (#e8e4dc, not cotton white)
 );
-const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
-// mountain pasture, a little darker than the hills (#7c8550); bare rock only
-// on the crests (tools/build_tile_terrain.py ROCK_M): the khaki #958e6c here
-// made the Apennines a quarry
-const vec3 C_MOUNT_FAR = vec3(0.356, 0.388, 0.259);
+const vec3 C_HILLS_FAR = vec3(0.335, 0.470, 0.255); // a deeper green
+// mountain pasture, a little greyer than the hills; bare rock only on the
+// crests (tools/build_tile_terrain.py ROCK_M): the khaki #958e6c here made
+// the Apennines a quarry
+const vec3 C_MOUNT_FAR = vec3(0.360, 0.440, 0.275);
 const vec3 C_SEA_FAR = vec3(0.111, 0.264, 0.424);   // #19588c on screen
 const vec3 C_SHORE_FAR = vec3(0.130, 0.302, 0.506); // #24689e
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
@@ -362,13 +366,12 @@ void fragment() {
 		c = sim_ways(p, c, length(fwidth(p)));
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient, matched to the west-south-west sun: slopes turned west
-		// light (+12 %), east dark (-15 %), south (the risers the camera sees
-		// head on) -10 % and north -18 %, so every step reads as tread and
-		// riser; a corner facet takes the darker of its two sides (south-west
-		// -10 %, south-east -15 %). Slopes turned away fade to the flat tone
-		// as they turn edge on. (Kritik r7: with the risers +5 % lighter, as in
-		// round 9, the steps vanished; with the west +18 % and nothing else,
-		// hillsides read as striped lawns.) The light itself sees every
+		// light, east dark, south (the risers the camera sees head on) and
+		// north darker, so every step reads as tread and riser (values
+		// below); a corner facet takes the darker of its two sides. (Kritik
+		// r7: with the risers +5 % lighter, as in round 9, the steps
+		// vanished; with the west +18 % and nothing else, hillsides read as
+		// striped lawns.) The light itself sees every
 		// top as flat (NORMAL below), so this is the only shading: lambert on
 		// top of it washed sun-side ramps out like glass and made single
 		// shade-side steps black walls.
@@ -380,18 +383,24 @@ void fragment() {
 		vec2 dir = slope / max(length(slope), 1e-6);
 		float fr = dot(dir, cam_right);
 		float fb = dot(dir, cam_back);
-		// slopes turned away from the camera are seen edge on: they fade to
-		// the flat tone, else a long step draws a dark crack across the land
-		// (gone by north-east and north-west: diagonal steps facing away drew
-		// hairlines across the 70 km view)
-		float away = clamp(1.0 + 2.0 * min(fb, 0.0), 0.0, 1.0);
-		// from the 1 km tiles the shadow map is off and these tones are all
-		// the relief has: 1.6 times as strong (west +19 %, east -24 %, risers
-		// -16 %), so lit and shaded sides differ by half (Kritik r9 and the
-		// people critic r16: the risers vanished at 70 km, ratio 1.05 to 1.2)
-		float amp = tile_km >= 1.0 ? 1.6 : 1.0;
-		float side = (fr < 0.0 ? 0.12 : -0.15) * amp;
-		float front = (fb > 0.0 ? -0.10 : -0.18) * amp;
+		// far out slopes turned away from the camera are seen edge on: they
+		// fade to the flat tone, else a long step draws a dark crack across
+		// the land (gone by north-east and north-west: diagonal steps facing
+		// away drew hairlines across the 70 km view); up close they are whole
+		// quarter tiles and keep their tone (people critic r18/r19: north
+		// ramps measured the flat #76b066, the hills read as paper folds)
+		float away = tile_km >= 1.0 ? clamp(1.0 + 2.0 * min(fb, 0.0), 0.0, 1.0) : 1.0;
+		// west, east, risers (south), north. From the 1 km tiles the shadow
+		// map is off and these tones are all the relief has: 1.6 times the
+		// old near tones (west +19 %, east -24 %, risers -16 %; Kritik r9 and
+		// the people critic r16: the risers vanished at 70 km). Up close
+		// west +22 %, east -22 %, risers -12 %, north -24 % (they were +12 %
+		// / -15 %, a sun-facing ramp only 12-14 % above the flat; with north
+		// -30 % a shaded north ramp under a cast shadow fell to L 70, Kritik
+		// r10)
+		vec4 tones = tile_km >= 1.0 ? vec4(0.192, -0.24, -0.16, -0.288) : vec4(0.22, -0.22, -0.12, -0.24);
+		float side = fr < 0.0 ? tones.x : tones.y;
+		float front = fb > 0.0 ? tones.z : tones.w;
 		// continuous in the direction (a blend into the corner tone), so the
 		// tone never flips between two sides from pixel to pixel
 		float t = abs(fr) - abs(fb);

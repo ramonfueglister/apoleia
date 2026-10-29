@@ -89,13 +89,15 @@ MOUNTAIN_TO_M = 1300.0
 # flat tables, Kritik r9). It
 # takes PEAK_SHARE of the highest point within a tile before the blur, so a
 # narrow range (Apennines, Pyrenees) keeps its crest instead of melting into
-# the plains. The shader mirrors the scale (tt_far_level_x); the app draws far
-# steps taller (LEVEL_HEIGHTS).
+# the plains; with the terrain tiles' heights half of it is enough (at 0.75
+# the summits were wide mesas and the slopes thin stripes, Kritik r10, so the
+# blur is a little wider too). The shader mirrors the scale (tt_far_level_x);
+# the app draws far steps taller (LEVEL_HEIGHTS).
 BAKED_FROM = 2
 LEVEL_STEPS_M = [100.0, 250.0, 450.0, 700.0, 1000.0, 1300.0, 1600.0, 1900.0, 2200.0, 2500.0, 2900.0, 3400.0]
 LEVEL_BEYOND_M = 600.0
-CORNER_BLUR = 0.7
-PEAK_SHARE = 0.75
+CORNER_BLUR = 1.0
+PEAK_SHARE = 0.5
 
 
 def _steps_level_x(metres, steps, beyond):
@@ -117,12 +119,13 @@ def far_level_x(metres):
 # Rome's hills show as SimCity 2000 terraces (NEAR_STEPS_M at 0.5 km tiles:
 # 20 m levels up to 120 m, 50 m up to 420 m, NEAR_BEYOND_M above, so the
 # mountains climb in many narrow steps instead of a few wide tables; twice the
-# metres at 1 km tiles). At 0.5 km tiles the corners are blurred and cleaned
+# metres at 1 km tiles, and above 840 m 240 m levels there: with 120 m the
+# 70 km view's slopes were 55 % ramps, corduroy, Kritik r10). At 0.5 km tiles the corners are blurred and cleaned
 # at the scale of one tile (Rome's hills are a tile or two), at 1 km tiles as
 # far out (a jumble of one tile bumps over the Apennines otherwise).
 NEAR_LEVELS = (0, 1)
 NEAR_STEPS_M = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0]
-NEAR_BEYOND_M = 60.0
+NEAR_BEYOND_M = [60.0, 120.0]  # per near level, in metres at 0.5 km tiles
 NEAR_BLUR = [1.0, 1.2]  # tiles, per near level
 NEAR_CLEAN = [3, 3]  # corner square of the cleaning, per near level
 DEM_ZOOM = 8
@@ -132,7 +135,8 @@ DEM_DIR = RD / "terrarium-z8"  # download cache, not in Git
 
 def near_level_x(metres, tile_km):
     """Height in near levels (unrounded) on the NEAR_STEPS_M scale of tile_km."""
-    return _steps_level_x(np.asarray(metres, np.float64) * (BASE_CELL_KM / tile_km), NEAR_STEPS_M, NEAR_BEYOND_M)
+    beyond = NEAR_BEYOND_M[0 if tile_km < 2 * BASE_CELL_KM else 1]
+    return _steps_level_x(np.asarray(metres, np.float64) * (BASE_CELL_KM / tile_km), NEAR_STEPS_M, beyond)
 
 
 def level_x(metres, tile_km):
@@ -359,6 +363,10 @@ TOWN_MIN_KM = 0.8
 # astride a river stays one block (Kritik r9: Rome at 400 km was a bar of
 # one tile column east of the Tiber).
 TOWN_ON_RIVER_KM = 4.0
+
+
+ISLET_KM = 8.0  # from these tiles islands of fewer than ISLET_TILES tiles go
+ISLET_TILES = 2
 
 
 def town_ground(water, cell_km):
@@ -618,6 +626,51 @@ def clean_levels(level, fixed, erode, dilate, block=1024, halo=4):
     return out
 
 
+# The cleaning cuts every summit narrower than 2 x 2 tiles, so the ranges
+# ended in wide flat mesas (Kritik r10: 294 x 156 px at 70 km, 368 x 152 px
+# at 120 km; a peak on each top alone did not break them up). Above
+# PEAK_FROM_M a flat top of more than FLAT_MAX corners gets one level more on
+# its highest PEAK_TOP_SHARE (by the real height, where that stands
+# PEAK_ABOVE levels over the flat), and so on, up to PEAK_ROUNDS times, so a
+# massif climbs in inset steps like the mountains of SimCity 2000 (a real high
+# plain stays flat). Then a corner on a flat that is the highest point of its
+# 3 x 3 corners and stands PEAK_ABOVE levels over it gets one more: a peak,
+# four ramps up to one corner.
+PEAK_FROM_M = 1000.0
+PEAK_ABOVE = 0.5
+FLAT_MAX = 16  # corners, a top of 3 x 3 tiles
+PEAK_TOP_SHARE = 0.3
+PEAK_ROUNDS = 4
+
+
+def restore_peaks(level, x, fixed, from_x):
+    lv = level.astype(np.int16)
+    high = ~fixed & (x >= from_x)
+    raised = 0
+    for _ in range(PEAK_ROUNDS):
+        # corners on a flat (all eight neighbours at least as high; two such
+        # neighbours are on the same level)
+        lab, n = ndimage.label((min3(lv) >= lv) & high, np.ones((3, 3), bool))
+        idx = np.flatnonzero(lab)
+        lab_i = lab.ravel()[idx]
+        del lab
+        size = np.bincount(lab_i, minlength=n + 1)
+        big = size[lab_i] > FLAT_MAX
+        idx, lab_i = idx[big], lab_i[big]
+        if idx.size == 0:
+            break
+        order = np.lexsort((-x.ravel()[idx], lab_i))  # per flat, highest first
+        ranked = lab_i[order]
+        rank = np.empty(idx.size, np.int64)
+        rank[order] = np.arange(idx.size) - np.searchsorted(ranked, ranked)
+        up = rank < np.maximum(np.round(PEAK_TOP_SHARE * size[lab_i]), 1)
+        up &= x.ravel()[idx] >= lv.ravel()[idx] + PEAK_ABOVE  # only where the land is that high
+        lv.ravel()[idx[up]] += 1
+        raised += int(up.sum())
+    peak = (min3(lv) >= lv) & high & (x >= lv + PEAK_ABOVE) & (x >= max3(x))
+    return (lv + peak).astype(level.dtype), raised, int(peak.sum())
+
+
 def gauss(a, sigma):
     """Gaussian blur (sigma in cells) as three box passes."""
     r = int(round(math.sqrt(sigma * sigma * 4 / 3 + 0.25) - 0.5))
@@ -704,6 +757,8 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     level = settle(level)
     for _ in range(2):
         level = settle(clean_levels(level.astype(np.uint8), fixed, min3, max3))
+    level, raised, peaks = restore_peaks(level, x, fixed, float(far_level_x(np.float64(PEAK_FROM_M))))
+    print("tops", tile_km, "raised", raised, "peaks", peaks)
     return level.astype(np.uint8)
 
 
@@ -843,7 +898,8 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
     x = near_level_x(gauss(heights, blur), tile_km).astype(np.float32)
     level = unit_envelope(x, True)
     level += unit_envelope(x, False)
-    del x
+    if tile_km < 1.0:
+        del x  # (no peaks: nothing that high in the views at 0.5 km tiles, and 0.2 G corners)
     level = np.round(level * 0.5).astype(np.float32)
     wp = np.pad(water, 1, constant_values=1)
     lakes = np.pad(tile_lake_levels(water, tile_km, lake_enc, shore), 1, constant_values=np.inf)
@@ -870,6 +926,9 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
     level = settle(np.minimum(level, 255)).astype(np.uint8)
     for _ in range(2):
         level = settle(clean_levels(level, fixed, erode, dilate)).astype(np.uint8)
+    if tile_km >= 1.0:
+        level, raised, peaks = restore_peaks(level, x, fixed, float(near_level_x(PEAK_FROM_M, tile_km)))
+        print("tops", tile_km, "raised", raised, "peaks", peaks)
     return level
 
 
@@ -884,7 +943,7 @@ def bake_near_levels(manifest, cells, height, lake_enc, shore, only=NEAR_LEVELS)
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
                                    "scale": "near", "level_steps_m": [v * tile / BASE_CELL_KM for v in NEAR_STEPS_M],
-                                   "beyond_m": NEAR_BEYOND_M * tile / BASE_CELL_KM, "blur_tiles": NEAR_BLUR[level],
+                                   "beyond_m": NEAR_BEYOND_M[level] * tile / BASE_CELL_KM, "blur_tiles": NEAR_BLUR[level],
                                    "clean_corners": NEAR_CLEAN[level],
                                    "heights": {"url": DEM_URL, "zoom": DEM_ZOOM},
                                    "path": path.name, "sha256": sha(path),
@@ -1071,6 +1130,11 @@ def tidy_ground(g, passes=2):
 ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0}
 SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0}
 VALLEY_LEVELS = 1  # levels above the valley floor that stay open in hilly land
+# only up to these tiles: on coarser ones every slope tile has a neighbour a
+# level lower, so the rule cleared the woods off the flanks of every range
+# (Kritik r10: Apennines 22.5 % -> 4.2 % forest at 400 km, Alps 20.5 -> 1.7 %;
+# at 2 km tiles it left 1 % forest against 5 % at 1 km, the 120 km "worm")
+VALLEY_MAX_KM = 1.0
 TREELINE_M = 1700.0
 CONIFER_M = 1450.0  # beech below (the Apennine woods), spruce and larch above
 HILLY_M = 400.0  # height range within RELIEF_KM that makes land hilly
@@ -1200,7 +1264,8 @@ def bake_ground(manifest, cells, height, cover, only=None):
             hilly = relief >= HILLY_M
         parts = ground_classes(cells[level], tile, height, cover, metres, relief)
         del metres, relief
-        g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level), hilly)
+        g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level),
+                           hilly if tile <= VALLEY_MAX_KM else None)
         del parts
         g = tidy_ground(g, passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
@@ -1336,6 +1401,11 @@ def bake_cells(manifest, height, land, lakes, rivers):
         is_land = lf >= 0.5
         if level >= BAKED_FROM:
             is_land = prune_land_spurs(is_land)
+        if cell >= ISLET_KM:
+            # far out a one-tile island is a beige speck on the sea (Kritik:
+            # the Greek and Dalmatian islets read as litter at 1500 and 4400 km)
+            lab, _ = ndimage.label(is_land, np.ones((3, 3), bool))
+            is_land &= np.bincount(lab.ravel())[lab] >= ISLET_TILES
         is_lake = is_land & (kf >= 0.5 * lf)
         river = clean_rivers(raster_rivers(rivers, cell, nx, ny, RIVER_RANK[level]),
                              is_land & ~is_lake, ~is_land | is_lake)

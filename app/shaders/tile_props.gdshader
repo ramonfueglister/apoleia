@@ -108,9 +108,14 @@ void vertex() {
 		// ground, as the houses of a hill town stand on retaining walls (they
 		// tilted with the ramp before: slanted cards at 22 km; each lot on its
 		// own step drew a town on a slope as a sheared bar code at 70 km,
-		// Kritik r9)
+		// Kritik r9). The terrace fills its lot's whole slot, so the
+		// terraces of a town tile join into one podium (one under each lot
+		// stood as stilts with the ramp between them at 70 and 120 km,
+		// Kritik r10).
 		vec4 c = tt_corners_cached(t);
-		float e = 0.5 * s * 10.0 / tile_km; // half the lot in tile units
+		float fill = prop_kind == 5 ? tile_km / (ceil(sqrt(float(slots))) * s * 10.0) : 1.0;
+		v.xz *= fill;
+		float e = 0.5 * s * 10.0 / tile_km * fill; // half the lot (or slot) in tile units
 		float hi = max(max(c.x, c.y), max(c.z, c.w)), lo = 1e6;
 		for (int k = 0; k < 4; k++) {
 			vec2 f = clamp(uv + vec2(k == 1 || k == 2 ? e : -e, k >= 2 ? e : -e), 0.0, 1.0);
