@@ -11,6 +11,8 @@ pub struct Inputs {
     pub start: Vec<Key>,
     pub cells: HashMap<(i32, i32), Cell>,
     pub cities: Vec<City>,
+    /// Display name of each city (data/gametiles/places.csv), by index.
+    pub city_names: Vec<String>,
     /// True when HYDE 3.3 values were found and used.
     pub hyde: bool,
 }
@@ -62,9 +64,26 @@ pub fn load(root: &Path, estimates: bool) -> Result<Inputs, String> {
             }
         }
     }
-    let cities = read_csv(&root.join("sim/inputs/cities.csv"))?
-        .iter()
-        .map(|r| City { x_m: num(r, "x_m"), z_m: num(r, "z_m"), pop: num(r, "pop117") })
-        .collect();
-    Ok(Inputs { start, cells, cities, hyde })
+    let rows = read_csv(&root.join("sim/inputs/cities.csv"))?;
+    let cities = rows.iter().map(|r| City { x_m: num(r, "x_m"), z_m: num(r, "z_m"), pop: num(r, "pop117") }).collect();
+    let names = place_names(&root.join("data/gametiles/places.csv"));
+    let city_names = rows.iter().map(|r| r.get("id").map(|id| names.get(id).cloned().unwrap_or_else(|| id.clone())).unwrap_or_default()).collect();
+    Ok(Inputs { start, cells, cities, city_names, hyde })
+}
+
+/// id → name from places.csv (the name may be quoted and hold commas).
+/// Missing file: no names.
+fn place_names(path: &Path) -> HashMap<String, String> {
+    let Ok(text) = fs::read_to_string(path) else { return HashMap::new() };
+    text.lines()
+        .skip(1)
+        .filter_map(|l| {
+            let (id, rest) = l.split_once(',')?;
+            let name = match rest.strip_prefix('"') {
+                Some(q) => q.split_once('"')?.0,
+                None => rest.split(',').next()?,
+            };
+            Some((id.to_owned(), name.to_owned()))
+        })
+        .collect()
 }
