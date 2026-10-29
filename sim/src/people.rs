@@ -751,8 +751,9 @@ pub struct People {
     splits: Vec<(u32, u32)>,
     /// INHERIT_EQUAL (default), INHERIT_NOW or INHERIT_ONE (S83).
     pub inherit: u8,
-    /// With the grain economy and INHERIT_EQUAL: (old household, new
-    /// household of a son) for each split since crate::grain took them.
+    /// With the grain economy: (old household, new household of a son)
+    /// for each split since crate::grain took them (S83 equal shares, and
+    /// the heir of a landlord).
     pub split_log: Vec<(u32, u32)>,
     /// For the view only (crate::events): hunger deaths and moves.
     pub events: Vec<crate::events::Event>,
@@ -1997,7 +1998,7 @@ impl People {
                 }
                 self.stats.split_households += 1;
                 self.stats.split_people += group.len() as u64;
-                if self.inherit == INHERIT_EQUAL && self.econ.is_some() {
+                if self.econ.is_some() {
                     self.split_log.push((house, son));
                 }
                 taken.extend(group);

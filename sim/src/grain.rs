@@ -223,6 +223,11 @@ const DESERT_BARE_PCT: f64 = 50.0;
 /// free land in the cell, m².
 const MANCIANA_MIN_M2: i64 = 10_000;
 const MANCIANA_IDLE_YEARS: u8 = 2;
+/// A farm without a household gives its fields back to the free land of
+/// its tiles after this many sowings nobody took it for, as land under the
+/// Lex Manciana after two years unsown (PLACEHOLDER: the same two years for
+/// all farms). Its store stays with it for whoever takes it.
+const VACANT_IDLE_YEARS: u8 = 2;
 /// Hunger signal for moving (S66), permille eaten of need. PLACEHOLDER.
 const NEED_FED: u16 = 800;
 /// S75 (Ramon, 27.10.2026): the landless seek the place with the best
@@ -360,6 +365,9 @@ struct Farm {
     to_sell: i64,
     /// Grain sold for the landlord before the farm's own.
     rent_due: i64,
+    /// Tax grain sold for the state after the rent, before the farm's own
+    /// (S94: tax in money).
+    tax_due: i64,
     /// A load came back unsold: try again at the next meal count.
     retry: bool,
     /// Work outside the peaks since the last harvest: needed and done, days.
@@ -523,6 +531,9 @@ pub struct GrainStats {
     /// summed over the meals (one per household and month).
     pub own_food_people: u64,
     pub farms_abandoned: u64,
+    /// Farms without a household whose fields went back to free land
+    /// (VACANT_IDLE_YEARS).
+    pub farms_lapsed: u64,
     /// Households without workers or kin sent to the tents (S79).
     pub to_tents: u64,
     /// S75: tent households that moved to a market with better chances.
@@ -553,7 +564,7 @@ pub struct GrainTiming {
 /// what households, farms or dealers do, and it is not in the fingerprint.
 /// At every day's end: money held (households, farms, dealers) + the
 /// treasury's cash = start + minted + endowed + exports − imports −
-/// freight − left_map − no_payee (`Grain::money_unbooked` is 0).
+/// freight − left_map (`Grain::money_unbooked` is 0).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Money {
     /// Held by households, farms and dealers when the run starts (the
@@ -570,27 +581,27 @@ pub struct Money {
     pub freight: i64,
     /// Money that left the map with the households that left it (S97).
     pub left_map: i64,
-    /// Payments whose receiver is gone: rent for a landlord who died or a
-    /// farm without one, a load sold for a trader who died on the way.
-    pub no_payee: i64,
     /// S98: paid by the markets beyond the map for grain (a source) and
     /// paid to them (a sink).
     pub exports: i64,
     pub imports: i64,
 }
 
-/// The state's account (S94, step 1), since the start. In: the Manciana
-/// third (S92), sold at market with the farm's grain, in money; the money
-/// of households that died out without heirs (S97, bona vacantia); the tax
-/// in kind as grain. Out: the state wage (S76), from cash first, the rest
-/// minted (`Money::minted`, S95).
+/// The state's account (S94, step 1), since the start. In: the tax on the
+/// harvest and the rent of farms without a landlord (the Manciana third,
+/// S92, and estates whose lord is gone without heirs), both sold at market
+/// with the farm's grain, in money; the money of households that died out
+/// without heirs (S97, bona vacantia). Out: the state wage (S76), from cash
+/// first, the rest minted (`Money::minted`, S95).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Treasury {
     pub cash: i64,
     pub wages: i64,
     pub rent: i64,
     pub estates: i64,
-    /// Tax grain received, kg. It leaves the economy (no use yet, S76).
+    /// Tax in money: the tax grain sold at market (S94).
+    pub tax: i64,
+    /// Tax grain assessed at harvest, kg (sold with the farm's grain).
     pub grain_kg: i64,
 }
 
@@ -695,6 +706,9 @@ pub struct Grain {
     pub stats: GrainStats,
     pub timing: GrainTiming,
     pub money: Money,
+    /// The first son who split off from a landlord's household (S81), by
+    /// household: he takes the lordship when the old household is gone.
+    lord_heir: FxHashMap<u32, u32>,
     pub treasury: Treasury,
     history: History,
     /// For the view only (crate::events): the day being simulated and the
@@ -1102,6 +1116,7 @@ impl Grain {
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
             money: Money::default(),
+            lord_heir: FxHashMap::default(),
             treasury: Treasury::default(),
             history: History::default(),
             today: 0,
@@ -1409,10 +1424,17 @@ impl Grain {
     /// moved away or died out are given to landless households of the same
     /// region (S69: a free farm is taken automatically).
     fn reconcile(&mut self, p: &mut People, start: bool) {
+        let log = std::mem::take(&mut p.split_log);
         if !start && p.inherit == crate::people::INHERIT_EQUAL {
-            let log = std::mem::take(&mut p.split_log);
             self.inherit_equal(&log);
         }
+        let lords: FxHashMap<u32, ()> = self.farms.iter().filter(|f| f.landlord != NONE).map(|f| (f.landlord, ())).collect();
+        for &(old, son) in &log {
+            if lords.contains_key(&old) {
+                self.lord_heir.entry(old).or_insert(son);
+            }
+        }
+        let mut lord_to: FxHashMap<u32, u32> = FxHashMap::default();
         // S97: where the money of a household that is gone goes: with its
         // people to the relative they joined (following a chain of joins),
         // off the map with those who left, else (died out) to the treasury.
@@ -1454,7 +1476,8 @@ impl Grain {
                             None => break,
                         }
                     }
-                    if to != id && self.info.contains_key(&to) && self.hh.contains_key(&to) {
+                    let heir = to != id && self.info.contains_key(&to) && self.hh.contains_key(&to);
+                    if heir {
                         self.hh.get_mut(&to).unwrap().money += s.money;
                     } else if left.contains_key(&id) {
                         self.money.left_map += s.money;
@@ -1462,8 +1485,37 @@ impl Grain {
                         self.treasury.cash += s.money;
                         self.treasury.estates += s.money;
                     }
+                    // The lordship of a landlord who is gone: to the
+                    // relative his people joined, else to the first son
+                    // who split off (following sons who are gone too),
+                    // else to the state (bona vacantia; also when the
+                    // household left the map, PLACEHOLDER).
+                    if lords.contains_key(&id) {
+                        let mut lord = if heir { to } else { NONE };
+                        let mut k = id;
+                        for _ in 0..8 {
+                            if lord != NONE {
+                                break;
+                            }
+                            match self.lord_heir.get(&k) {
+                                Some(&son) if self.info.contains_key(&son) && self.hh.contains_key(&son) => lord = son,
+                                Some(&son) => k = son,
+                                None => break,
+                            }
+                        }
+                        lord_to.insert(id, lord);
+                    }
+                    self.lord_heir.remove(&id);
                 }
             }
+        }
+        if !lord_to.is_empty() {
+            for f in self.farms.iter_mut() {
+                if let Some(&l) = lord_to.get(&f.landlord) {
+                    f.landlord = l;
+                }
+            }
+            self.lord_heir.retain(|_, son| self.hh.contains_key(son) || self.info.contains_key(son));
         }
         // S79: a household with nobody of working age and no relative to
         // join goes to the tents; its farm is free (the store stays with
@@ -1599,6 +1651,7 @@ impl Grain {
                     h.own_food = false;
                     let fm = &mut self.farms[f as usize];
                     fm.hh = id;
+                    fm.idle = 0;
                     fm.store += h.pantry;
                     h.pantry = 0;
                     self.stats.farms_taken += 1;
@@ -1805,6 +1858,7 @@ impl Grain {
             peak: None,
             to_sell: 0,
             rent_due: 0,
+            tax_due: 0,
             retry: false,
             off_need: 0,
             off_done: 0,
@@ -1899,6 +1953,7 @@ impl Grain {
             peak: None,
             to_sell: 0,
             rent_due: 0,
+            tax_due: 0,
             retry: false,
             off_need: 0,
             off_done: 0,
@@ -2130,7 +2185,8 @@ impl Grain {
 
     /// S99 (Ramon: economic logic, sow less when the price is low): the
     /// area a farm sows this autumn, m². First what feeds its household
-    /// with tax and reserve (as `want_m2`; a tenant also the rent), then
+    /// with tax and reserve (as `want_m2`; a tenant also the rent) beyond
+    /// what its store will still hold at the next harvest, then
     /// of the rest of its fields under grain a share that follows the
     /// price its market pays now: all of it at the base price or more,
     /// less in proportion below (PLACEHOLDER: linear, last price known at
@@ -2139,10 +2195,16 @@ impl Grain {
     fn sow_plan(&self, f: usize) -> i64 {
         let fm = &self.farms[f];
         let full = self.cropped(fm.area);
+        // Grain in the store beyond food to the next harvest, the reserve
+        // and this sowing's seed is still there after that harvest (less
+        // the spoilage of a year): the own need is sown only as far as it
+        // does not cover it.
+        let carry = (fm.store - self.need_day(fm.hh) * (doy_until(self.today, fm.harvest_doy) + RESERVE_DAYS) - full * SEED_KG_HA / 10_000).max(0) * (100 - SPOIL_PCT_YEAR) / 100;
         let own = match (self.info.get(&fm.hh), fm.kind) {
             (_, ESTATE) | (None, _) => 0,
             (Some(i), kind) => {
-                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 * 10_000 / fm.net_kg_ha.max(1);
+                let kg = (i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 - carry).max(0);
+                let feed = kg * 10_000 / fm.net_kg_ha.max(1);
                 if kind == TENANT { feed * 100 / (100 - RENT_PCT) } else { feed }
             }
         };
@@ -2397,17 +2459,24 @@ impl Grain {
                 let owner = &mut self.farms[t.farm as usize];
                 let rent = kg.min(owner.rent_due);
                 owner.rent_due -= rent;
-                let to_lord = if owner.kind == ESTATE { pay } else { rent * price };
-                owner.money += pay - to_lord;
-                let (lord, manciana) = (owner.landlord, owner.manciana);
+                // S94: the tax grain is sold for the state after the rent.
+                let tax = (kg - rent).min(owner.tax_due);
+                owner.tax_due -= tax;
+                let to_state = tax * price;
+                self.treasury.cash += to_state;
+                self.treasury.tax += to_state;
+                let to_lord = if owner.kind == ESTATE { pay - to_state } else { rent * price };
+                owner.money += pay - to_lord - to_state;
+                let lord = owner.landlord;
+                // Rent of a farm without a landlord (Manciana, or a lord
+                // gone without heirs) is the state's.
                 if to_lord > 0 {
                     match self.hh.get_mut(&lord) {
                         Some(h) => h.money += to_lord,
-                        None if manciana => {
+                        None => {
                             self.treasury.cash += to_lord;
                             self.treasury.rent += to_lord;
                         }
-                        None => self.money.no_payee += to_lord,
                     }
                 }
                 t.kg -= kg;
@@ -2444,9 +2513,14 @@ impl Grain {
                 m.store += kg;
                 m.money -= pay;
                 self.stats.traded_kg += kg;
+                // A trader gone by now: his load's money is an estate
+                // without heir (S97, PLACEHOLDER: not followed to kin).
                 match self.hh.get_mut(&t.hh) {
                     Some(h) => h.money += pay,
-                    None => self.money.no_payee += pay,
+                    None => {
+                        self.treasury.cash += pay;
+                        self.treasury.estates += pay;
+                    }
                 }
                 t.kg -= kg;
                 self.share_news(t.market, t.dest, day);
@@ -2514,7 +2588,7 @@ impl Grain {
     /// Money that appeared or vanished without a booking (S94: 0).
     pub fn money_unbooked(&self) -> i64 {
         let m = self.money;
-        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed + m.exports - m.imports - m.freight - m.left_map - m.no_payee)
+        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed + m.exports - m.imports - m.freight - m.left_map)
     }
 
     fn money_of(&self, id: u32) -> i64 {
@@ -2601,6 +2675,17 @@ impl Grain {
         let list = std::mem::take(&mut self.by_doy[doy(day) as usize]);
         for &f in &list {
             let fm = &self.farms[f as usize];
+            if fm.hh == NONE && fm.area > 0 && doy(day) == fm.sow_doy {
+                let fm = &mut self.farms[f as usize];
+                fm.idle += 1;
+                if fm.idle >= VACANT_IDLE_YEARS {
+                    fm.idle = 0;
+                    let area = fm.area;
+                    self.give_land(f as usize, area);
+                    self.stats.farms_lapsed += 1;
+                }
+                continue;
+            }
             if fm.hh == NONE || fm.area == 0 {
                 continue;
             }
@@ -2845,17 +2930,18 @@ impl Grain {
         let crop = full * frac_x1000 / 1000 * (1000 - OFF_SHARE_PCT * (1000 - off) / 100) / 1000;
         self.stats.harvest_kg += crop;
         self.stats.harvest_lost_kg += full - crop;
-        // Tax in kind leaves the economy for now (PLACEHOLDER: the state's
-        // grain has no use until state, army and money are systems, S76).
-        // Rent is carried to market with the farm's grain and its money
-        // goes to the landlord (PLACEHOLDER: share-cropping paid on sale).
+        // Tax and rent are carried to market with the farm's grain; the
+        // money of the tax goes to the treasury (S94: tax in money), that
+        // of the rent to the landlord (PLACEHOLDER: share-cropping paid on
+        // sale).
         // Tax and rent on the crop less the seed it took (PLACEHOLDER).
         let net = (crop - seed_in).max(0);
         // S92: on Manciana land the third (RENT_PCT) to the state is all.
         let tax = if fm.manciana { 0 } else { net * TAX_PCT / 100 };
         let rent = if fm.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
-        fm.store += crop - tax;
+        fm.store += crop;
         fm.rent_due += rent;
+        fm.tax_due += tax;
         self.stats.tax_kg += tax;
         self.treasury.grain_kg += tax;
         self.stats.rent_kg += rent;
@@ -2867,7 +2953,7 @@ impl Grain {
         // Food to the next harvest plus the reserve, and next year's seed.
         let keep = need * (YEAR + RESERVE_DAYS) + cropped * SEED_KG_HA / 10_000;
         let fm = &mut self.farms[f as usize];
-        fm.to_sell = (fm.store - keep).max(0).max(fm.rent_due.min(fm.store));
+        fm.to_sell = (fm.store - keep).max(0).max((fm.rent_due + fm.tax_due).min(fm.store));
         if fm.to_sell > 0 {
             self.start_carry(p, day, id, SELL);
         }
@@ -3001,7 +3087,7 @@ impl Grain {
                 let f = &mut self.farms[s.farm as usize];
                 f.retry = false;
                 let keep = need_day * (doy_until(day, f.harvest_doy) + RESERVE_DAYS);
-                f.to_sell = (f.store - keep).max(0).max(f.rent_due.min(f.store));
+                f.to_sell = (f.store - keep).max(0).max((f.rent_due + f.tax_due).min(f.store));
                 if f.to_sell > 0 {
                     self.start_carry(p, day, id, SELL);
                 }
@@ -3272,6 +3358,20 @@ impl Grain {
         let tent_people: u32 = self.hh.iter().filter(|(_, s)| s.kind == TENT).map(|(id, _)| self.info.get(id).map_or(0, |i| i.size as u32)).sum();
         let market: i64 = self.markets.iter().map(|m| m.store).sum();
         (n, k, tents, tent_people, area as f64 / 1e4, store as f64 / 1e3, market as f64 / 1e3)
+    }
+
+    /// Households and people by kind (farm, tent, wage, trader, elite),
+    /// and farms without a household that still hold fields: count and ha.
+    pub fn kinds_report(&self) -> ([usize; 5], [u32; 5], usize, f64) {
+        let (mut hh, mut ppl) = ([0usize; 5], [0u32; 5]);
+        for (id, s) in self.hh.iter() {
+            if let Some(i) = self.info.get(id) {
+                hh[s.kind as usize] += 1;
+                ppl[s.kind as usize] += i.size as u32;
+            }
+        }
+        let idle: Vec<&Farm> = self.farms.iter().filter(|f| f.hh == NONE && f.area > 0).collect();
+        (hh, ppl, idle.len(), idle.iter().map(|f| f.area).sum::<i64>() as f64 / 1e4)
     }
 
     /// Farms with a household: count, field ha at p10/p50/p90 and mean,
@@ -3773,7 +3873,8 @@ impl Grain {
         t.float("cash", "Staatskasse", "Denar", den(tr.cash))
             .float("wages", "Staatslohn", "Denar", den(tr.wages))
             .float("minted", "Neu geprägt", "Denar", den(m.minted))
-            .float("rent", "Pacht Manciana", "Denar", den(tr.rent))
+            .float("tax", "Steuer", "Denar", den(tr.tax))
+            .float("rent", "Pacht an den Staat", "Denar", den(tr.rent))
             .float("tax_grain_t", "Steuerkorn", "t", vec![tr.grain_kg as f64 / 1000.0])
             .float("held", "Geld im Umlauf", "Denar", den(self.money_held()))
             .float("start", "Geld am Anfang", "Denar", den(m.start))
@@ -3781,7 +3882,6 @@ impl Grain {
             .float("freight", "Fracht", "Denar", den(m.freight))
             .float("estates", "Erbloser Nachlass", "Denar", den(tr.estates))
             .float("left_map", "Mit Auswanderern fort", "Denar", den(m.left_map))
-            .float("no_payee", "Ohne Empfänger", "Denar", den(m.no_payee))
             .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
         t
     }

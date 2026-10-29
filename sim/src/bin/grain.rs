@@ -162,7 +162,7 @@ fn main() {
         let (m, t) = (g.money, g.treasury);
         let den = |x: i64| x as f64 / 1e3;
         println!(
-            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} - no payee {:.0} | unbooked {:.3} | state wages {:.0} Manciana rent {:.0} estates {:.0} tax grain t {:.0}",
+            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} | unbooked {:.3} | state wages {:.0} tax {:.0} state rent {:.0} estates {:.0} tax grain t {:.0}",
             den(g.money_held()),
             den(t.cash),
             den(m.start),
@@ -170,9 +170,9 @@ fn main() {
             den(m.endowed),
             den(m.freight),
             den(m.left_map),
-            den(m.no_payee),
             den(g.money_unbooked()),
             den(t.wages),
+            den(t.tax),
             den(t.rent),
             den(t.estates),
             t.grain_kg as f64 / 1e3
@@ -183,6 +183,8 @@ fn main() {
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
         println!("      spoiled t {:.0} | eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | tent moves (S75): {} | Manciana farms new/lost (S92): {}/{} | fed by own food (S91): {} | moved people yearly/monthly (S66/S93): {}/{} | trade tracks/roads/sea lanes (cells): {:?}", gs.spoiled_kg as f64 / 1e3, by.join(" "), gs.to_tents, gs.tent_moves, gs.manciana_new, gs.manciana_lost, gs.own_food_people / 12, s.moved_people - s.moved_monthly, s.moved_monthly, g.road_cells(&p));
+        let (kh, kp, idle_n, idle_ha) = g.kinds_report();
+        println!("      households (farm/tent/wage/trader/elite): {:?} people {:?} | farms without household: {idle_n} ({idle_ha:.0} ha), fields back to free land: {}", kh, kp, gs.farms_lapsed);
     }
     println!(
         "day_us all p50={:.0} p95={:.0} p99={:.0} max={:.0} | grain p50={:.0} mean={:.0} p95={:.0} p99={:.0} max={:.0} (day {}) | rss_mb={:.0} peak_people={}",
