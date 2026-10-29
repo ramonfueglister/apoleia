@@ -226,8 +226,8 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     let mut map = GrainMap::new(&game.people);
     map.build(&game.grain, today);
     let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
-    let pages = view.update(&mut game.people);
     mark_work(game, &mut view);
+    let pages = view.update(&mut game.people);
     let mut f = shared.front.lock().unwrap();
     publish(&view, &pages, &mut f);
     publish_houses(&mut view, &mut f);
@@ -294,8 +294,11 @@ fn row_of(mut t: Table, id: i64) -> Option<Table> {
     Some(t)
 }
 
-/// Each craft household's workshop onto its house record (view.rs Houses).
+/// Each craft household's workshop onto its house record (view.rs Houses),
+/// and the families whose farm is not in their village onto its tile
+/// (Grain::homes_moved: farms built from orders, heirs).
 fn mark_work(game: &Game, view: &mut PeopleView) {
+    view.set_homes(&game.grain.homes_moved());
     let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
     view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
 }
@@ -431,8 +434,9 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         }
         let remap = today % 30 == 0 || finished;
         // the workshops at the houses (S105; the graphics put them there),
-        // once a week as the crafts sell by the week
-        if today % 7 == 0 {
+        // once a week as the crafts sell by the week; a farm just taken
+        // shows its family on its tile at once
+        if today % 7 == 0 || finished {
             mark_work(&game, &mut view);
         }
         if remap {

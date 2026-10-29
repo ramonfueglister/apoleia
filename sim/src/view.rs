@@ -68,7 +68,7 @@ pub struct PeopleView {
     /// Records rewritten by the last update (changed people).
     pub last_writes: usize,
     dirty: Vec<bool>,
-    /// Household and home behind each slot's house (`house_key`), and the
+    /// Household and fine tile behind each slot's house (`house_key`), and the
     /// (home, household, estate) it was worked out from.
     member: Vec<u64>,
     member_src: Vec<[u32; 3]>,
@@ -76,6 +76,9 @@ pub struct PeopleView {
     pub houses: Houses,
     /// Village and house of each household.
     pub settle: Settle,
+    /// Fine tile of the households whose farm stands elsewhere than their
+    /// village (`set_homes`, crate::grain homes_moved): they live there.
+    homes: FxHashMap<u32, u32>,
     query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, &'static Sex, &'static Born, Option<&'static Travel>)>>,
 }
 
@@ -107,6 +110,7 @@ impl PeopleView {
             member_src: Vec::new(),
             houses: Houses::default(),
             settle: Settle::new(&p.grid, &p.pop, cities, cover.map(|_| &lookup as CoverOf), 1),
+            homes: FxHashMap::default(),
             query: None,
         }
     }
@@ -118,6 +122,38 @@ impl PeopleView {
 
     pub fn pages(&self) -> usize {
         self.slots() / PAGE
+    }
+
+    /// Where a household lives: its farm's tile when `set_homes` named
+    /// one, else its village (crate::settle).
+    fn spot(&self, home: u32, household: u32, stand: u8) -> Spot {
+        match self.homes.get(&household) {
+            Some(&fine) => Spot::Village { fine, village: 0 },
+            None => self.settle.spot(home, household, stand),
+        }
+    }
+
+    /// The households that live on their farm's tile instead of their
+    /// village, (household, fine tile); the next update redraws the people
+    /// and houses of those that changed.
+    pub fn set_homes(&mut self, homes: &[(u32, u32)]) {
+        let homes: FxHashMap<u32, u32> = homes.iter().copied().collect();
+        if homes == self.homes {
+            return;
+        }
+        let changed: rustc_hash::FxHashSet<u32> = homes
+            .iter()
+            .filter(|(h, f)| self.homes.get(h) != Some(f))
+            .chain(self.homes.iter().filter(|(h, _)| !homes.contains_key(h)))
+            .map(|(&h, _)| h)
+            .collect();
+        self.homes = homes;
+        for slot in 0..self.member_src.len() {
+            if changed.contains(&self.member_src[slot][1]) {
+                self.inputs[slot] = [NONE; 3];
+                self.member_src[slot] = [NONE; 3];
+            }
+        }
     }
 
     fn cell_centre(&self, p: &People, cell: u32) -> (f32, f32) {
@@ -132,7 +168,7 @@ impl PeopleView {
             let (x, z) = self.cell_centre(p, t.at);
             return [x, z, ROAD, w(pid, if t.leave { LEAVING } else { TRAVELLING })];
         }
-        match self.settle.spot(home, household, stand) {
+        match self.spot(home, household, stand) {
             Spot::City { place } => [place.x, place.z, -place.r, w(household, IN_CITY)],
             Spot::Village { fine, .. } => {
                 let (x, z) = self.settle.fine_centre_km(fine);
@@ -190,10 +226,10 @@ impl PeopleView {
             let src = [home.0, household.0, stand.0 as u32];
             if self.member_src[slot as usize] != src {
                 self.member_src[slot as usize] = src;
-                let key = match self.settle.spot(home.0, household.0, stand.0) {
+                let key = match self.spot(home.0, household.0, stand.0) {
                     Spot::Village { fine, .. } => {
                         let (x, z) = self.settle.fine_centre_km(fine);
-                        Some((house_key(household.0, home.0), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((household.0 & KEY_MASK) << 8) as f32]))
+                        Some((house_key(household.0, fine), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((household.0 & KEY_MASK) << 8) as f32]))
                     }
                     Spot::City { .. } => None,
                 };
@@ -321,6 +357,35 @@ mod tests {
         assert!(who.members >= 1 && who.age >= 0.0);
     }
 
+    /// A household pinned to its farm's tile (crate::grain homes_moved)
+    /// lives there: its house and its people at home move to that tile;
+    /// the same pins again change nothing.
+    #[test]
+    fn pinned_households_live_on_their_farm() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let inp = crate::inputs::load(&root, false).expect("inputs");
+        let mut p = People::new(&inp, 1);
+        let mut v = PeopleView::new(&p, &inp.cities, None);
+        v.update(&mut p);
+        let key = *v.houses.by_key.keys().min().unwrap();
+        let (hh, from) = ((key >> 32) as u32, key as u32);
+        let to = from + 1;
+        v.set_homes(&[(hh, to)]);
+        assert!(!v.update(&mut p).is_empty());
+        assert!(!v.houses.by_key.contains_key(&key));
+        let (x, z) = v.settle.fine_centre_km(to);
+        let s = v.houses.by_key[&house_key(hh, to)].0 as usize * REC;
+        assert_eq!((v.houses.data[s], v.houses.data[s + 1]), (x as f32, z as f32));
+        let home = (0..v.slots())
+            .map(|s| &v.data[s * REC..(s + 1) * REC])
+            .filter(|r| r[2] != 0.0 && (r[3] as u32 & 3) == AT_HOME && (r[3] as u32 >> 8 & KEY_MASK) == hh & KEY_MASK)
+            .filter(|r| (r[0], r[1]) == (x as f32, z as f32))
+            .count();
+        assert!(home >= 1);
+        v.set_homes(&[(hh, to)]);
+        assert!(v.update(&mut p).is_empty());
+    }
+
     /// A workshop marks its household's house (craft and how busy) next to
     /// the key; only houses whose work changed are written again, and a
     /// house built later gets its household's work at once.
@@ -373,8 +438,8 @@ pub struct Person {
 
 const NO_HOUSE: u64 = u64::MAX;
 
-fn house_key(household: u32, home: u32) -> u64 {
-    (household as u64) << 32 | home as u64
+fn house_key(household: u32, fine: u32) -> u64 {
+    (household as u64) << 32 | fine as u64
 }
 
 /// One house per village household (city people live in the town tiles):
@@ -392,7 +457,7 @@ pub struct Houses {
     dirty: Vec<bool>,
     free: Vec<u32>,
     grew: bool,
-    /// Slot and members by household and home.
+    /// Slot and members by household and fine tile.
     by_key: FxHashMap<u64, (u32, u32)>,
     /// `craft << 22 | busy` by household, as of the last `set_work`.
     work: FxHashMap<u32, u32>,

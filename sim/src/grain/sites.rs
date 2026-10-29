@@ -183,6 +183,26 @@ impl Grain {
         WAGE_KG_DAY * Self::buy_price(&self.markets[market as usize])
     }
 
+    /// Farm households whose farm stands on another fine tile than the
+    /// village tile the view would give them (crate::settle::home_fine):
+    /// those that took a farm built from an order (S113), and some fifty
+    /// in the first months who took over a farm (heirs) or changed estate.
+    /// (household, fine tile), by household; the view draws their house
+    /// and people there, by their fields.
+    pub fn homes_moved(&self) -> Vec<(u32, u32)> {
+        let mut out: Vec<(u32, u32)> = self
+            .hh
+            .iter()
+            .filter(|(_, h)| h.kind == FARM)
+            .filter_map(|(&id, h)| {
+                let i = self.info.get(&id)?;
+                (self.settle.home_fine(i.home, id, i.stand) != h.fine).then_some((id, h.fine))
+            })
+            .collect();
+        out.sort_unstable();
+        out
+    }
+
     /// The building sites, by tile: kind, work days needed and done.
     pub fn sites(&self) -> impl Iterator<Item = (Tile, Site)> + '_ {
         self.sites.iter().map(|(&t, &s)| (t, s))
@@ -208,6 +228,7 @@ mod tests {
             let mut p = People::new(&inp, 3);
             let mut g = Grain::new(&inp, &mut p);
             let mut orders = Orders::default();
+            let mut t_fine = NONE;
             for day in 0..150 {
                 if day == 40 {
                     // the cell of the first tent household with adults, in its middle
@@ -220,6 +241,7 @@ mod tests {
                     let cols = g.cols_f / FINE;
                     let t = ((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
                     orders.apply(&Command::Place { kind: build::FARM, tiles: vec![t] }, day);
+                    t_fine = g.site_place(&p, t).expect("on the grid").0;
                 }
                 p.day();
                 g.day(&mut p);
@@ -230,6 +252,9 @@ mod tests {
             // a crew of CREW: at least FARM_DAYS / (CREW × 7) weeks
             assert!(g.stats.build_days <= FARM_DAYS + CREW * 7);
             assert_eq!(g.stats.built_farms, 1);
+            // the new farmer's house is drawn on the ordered tile
+            let built = g.farms.iter().find(|f| f.fine == t_fine && f.hh != NONE).expect("the built farm").hh;
+            assert!(g.homes_moved().contains(&(built, t_fine)));
             assert!(orders.is_empty() && g.sites.is_empty());
             (p.fingerprint(), g.fingerprint())
         };
