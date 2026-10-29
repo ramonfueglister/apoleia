@@ -36,8 +36,10 @@ uniform vec3 tree_top[20];
 uniform vec3 tree_side[20];
 
 varying vec3 tint;
-varying float road; // a paved street tile's terrace top
+varying float road; // a street tile's terrace top: tt_sub_street_dir (1 north-south, 2 east-west, 3 both), 0 none
 varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc)
+varying vec3 wpos;  // world position (masonry on the terrace walls)
+varying float wall_dir; // a terrace wall: 1 runs along x, 2 along z, 0 none
 
 // Up close (quarter tiles) every lot stands on a terrace block of the whole
 // tile with a street along its south side (Kritik r8: lots butted front to
@@ -47,7 +49,12 @@ varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc
 const float SUB_LOT_DEPTH = 0.9;
 const float SUB_LOT_NORTH = 0.01; // gap behind the lot, tile units
 const float TERRACE_STEP_M = 0.25; // a terrace on flat ground stands this high
-const vec3 ROAD_RGB = vec3(0.639, 0.596, 0.463); // as the street on the terrace top (PLINTH_ROAD)
+// A Roman street on a street block: dark basalt paving between raised
+// footways of travertine with a kerb (s2: the streets read as empty beige
+// squares; Urbek's streets are grey roads between light pavements)
+const vec3 BASALT_RGB = vec3(0.4, 0.4, 0.41);
+const vec3 FOOTWAY_RGB = vec3(0.66, 0.63, 0.56);
+const float FOOTWAY = 0.32; // from the street's middle, tile units: footways of about 1.8 m
 // an olive crown's grey green on the broadleaf's (Kritik r9: lit #8a9a64,
 // shade #5e7048 on screen)
 const vec3 OLIVE_TINT = vec3(2.0, 1.09, 1.9);
@@ -101,7 +108,9 @@ void vertex() {
 		float level = d.z;
 		vec2 p = world_min + (vec2(t) + uv) * tile_km;
 		// the lots fill their slot but for a street (prop_scale); trees vary
-		float s = prop_scale * (house ? 1.0 : (0.75 + 0.5 * r0) * edge_size);
+		// (trees vary a little: Urbek's are of one size; from 0.75 to 1.25 they
+		// jumped from saplings to giants, s4)
+		float s = prop_scale * (house ? 1.0 : (0.9 + 0.2 * r0) * edge_size);
 		// voxel props keep to the tile grid; a lot shows its front (+z, with the
 		// door) to the camera (Kritik r7: turned lots showed blank side walls)
 		float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;
@@ -115,7 +124,7 @@ void vertex() {
 			COLOR = vec4(NORMAL.y > 0.5 ? tree_top[b] : NORMAL.y < -0.5 ? tree_side[b] * 0.6 : tree_side[b], 1.0);
 		}
 		vec3 v = m * s;
-		olive = !house && int(floor(d.w)) == 0 && edge_size < OLIVE_SIZE + 0.05 ? 1.0 : 0.0;
+		olive = !house && int(floor(d.w)) == 0 && abs(edge_size - OLIVE_SIZE) < 0.03 ? 1.0 : 0.0; // (the bushes are smaller)
 		float lift = 0.0;
 		if (house && sub_tiles) {
 			// the terrace block covers the tile: level at its highest corner,
@@ -134,7 +143,7 @@ void vertex() {
 				// (tt_corners lowers the ground south of a lot)
 				v.z += VERTEX.z > 4.9 ? 0.003 * tile_km : 0.0;
 				v.y = VERTEX.y > 0.5 ? max(off, -0.5 * wall) : -wall + min(off, 0.5 * wall);
-				road = street && NORMAL.y > 0.5 ? 1.0 : 0.0;
+				road = street && NORMAL.y > 0.5 ? float(tt_sub_street_dir(t)) : 0.0;
 				uv = vec2(0.5);
 			} else {
 				float lot = 10.0 * s / tile_km; // lot width in tile units
@@ -173,6 +182,8 @@ void vertex() {
 		vec3 nrm = NORMAL;
 		nrm.xz = rot * nrm.xz;
 		VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
+		wpos = world;
+		wall_dir = prop_kind == 5 && abs(nrm.y) < 0.5 ? (abs(nrm.z) > abs(nrm.x) ? 1.0 : 2.0) : 0.0;
 		NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 		tint = prop_kind == 3 ? vec3(0.96 + 0.08 * r1) : prop_kind == 5 ? vec3(1.0) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
 		// the sides turned to the SimCity light of the terrain a little lighter
@@ -187,9 +198,39 @@ void vertex() {
 	}
 }
 
+// Ashlar courses on the terrace walls, as Urbek's stone retaining walls:
+// blocks of 1 x 0.5 diorama metres in staggered rows, dark joints and a
+// slight tone per block; they fade out before they shrink to a few pixels
+// (no shimmer farther out, where the wall is one flat tone again).
+const float DIORAMA_M = 0.0238; // world units (km) per diorama metre (docs/kit2/SCALE.md)
+float masonry() {
+	vec2 q = vec2(wall_dir < 1.5 ? wpos.x : wpos.z, wpos.y) / (DIORAMA_M * vec2(1.0, 0.5));
+	float row = floor(q.y);
+	q.x += 0.5 * mod(row, 2.0);
+	vec2 w = max(fwidth(q), vec2(1e-5));
+	float fade = 1.0 - smoothstep(0.12, 0.3, max(w.x, w.y));
+	if (fade <= 0.0) { return 1.0; }
+	vec2 e = (0.5 - abs(fract(q) - 0.5)) / w; // pixels to the nearest joint
+	float joint = 1.0 - smoothstep(0.4, 1.2, min(e.x, e.y));
+	float block = tt_hash(floor(q) + vec2(wall_dir * 17.0, 0.0)) - 0.5;
+	return 1.0 + fade * (0.06 * block - 0.16 * joint);
+}
+
 void fragment() {
-	vec3 c = mix(COLOR.rgb, ROAD_RGB, road);
+	vec3 c = COLOR.rgb;
 	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
+	if (wall_dir > 0.5) { c *= masonry(); }
+	else if (road > 0.5) {
+		vec2 q = fract((wpos.xz - world_min) / tile_km) - 0.5;
+		int dir = int(road + 0.5);
+		float across = dir == 1 ? abs(q.x) : dir == 2 ? abs(q.y) : min(abs(q.x), abs(q.y));
+		bool walk = across > FOOTWAY;
+		c = walk ? FOOTWAY_RGB : BASALT_RGB;
+		c *= tt_paving(wpos.xz, walk ? vec2(1.0, 1.0) : vec2(0.6, 0.45));
+		float aa = fwidth(across) * 1.5 + 1e-5;
+		c *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, aa, abs(across - FOOTWAY))); // the kerb
+	}
+	else if (prop_kind == 5) { c *= tt_paving(wpos.xz, vec2(1.0, 1.0)); } // the terrace top
 	ALBEDO = pow(c * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;

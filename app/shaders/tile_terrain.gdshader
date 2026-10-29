@@ -92,8 +92,11 @@ const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
 const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
-const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
-const vec3 C_PLAZA = vec3(0.750, 0.720, 0.660);  // travertine squares of the landmarks, #e6dfcf
+// Paving in a warm mid grey as Urbek's pavements (about #a8a194 on screen),
+// not the near-white cream of before (#cbbca8, the Roman squares at 3 km read
+// as blank paper: 63 % of the picture above V 200, Urbek's towns at 155-187)
+const vec3 C_PAVED = vec3(0.530, 0.505, 0.455);
+const vec3 C_PLAZA = vec3(0.640, 0.620, 0.580);  // travertine squares of the landmarks, #c4bfb3
 const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
 const vec3 C_ROOF = vec3(0.580, 0.250, 0.190); // terracotta, not salmon or orange
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
@@ -278,6 +281,37 @@ float side_distance(int mask) {
 	return d;
 }
 
+// Surf along the coast up close, as in Islanders: a white band where the
+// sea meets the land and a thin second line that drifts out from it and
+// fades. Distance in tiles from the nearest land side or corner (on a coast
+// cut, from the diagonal); gone from 2 km tiles, where it would be a hairline.
+const vec3 C_FOAM = vec3(0.900, 0.955, 1.000);
+vec3 shore_foam(vec3 c, vec2 p) {
+	if (tile_km >= 2.0) { return c; }
+	float d = 10.0;
+	if (wet_tri == 1 && cut_tip >= 0) {
+		vec2 tip = vec2(CORNER[cut_tip]);
+		d = -(abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
+	} else if (coast >= 1.0) {
+		int mask = 0;
+		for (int k = 0; k < 4; k++) {
+			if (tt_water(tile + SIDE[k]) == W_LAND) { mask |= 1 << k; }
+			if (tt_water(tile + SIDE[k] + SIDE[(k + 1) % 4]) == W_LAND) { mask |= 16 << ((k + 1) % 4); }
+		}
+		d = side_distance(mask);
+	}
+	if (d > 1.0) { return c; }
+	float aa = fwidth(d) + 1e-4;
+	float t = TIME + tt_hash(vec2(tile)) * 0.6; // neighbouring tiles a little out of step
+	float band = 0.07 + 0.025 * sin(t * 1.3);
+	float surf = 1.0 - smoothstep(band - aa, band + aa, d);
+	float phase = fract(t * 0.12);
+	float ring = 0.12 + 0.3 * phase;
+	float line = (1.0 - smoothstep(0.012, 0.012 + aa, abs(d - ring))) * (1.0 - phase) * 0.6;
+	float fade = 1.0 - smoothstep(1.0, 2.0, tile_km);
+	return mix(c, C_FOAM, max(surf * 0.85, line) * fade);
+}
+
 void fragment() {
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
@@ -295,6 +329,7 @@ void fragment() {
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
 			c = coast >= 1.0 || wet_tri == 1 ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
 			c = sim_lanes(p, c, length(fwidth(p)));
+			c = shore_foam(c, p);
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
 		}
@@ -333,7 +368,21 @@ void fragment() {
 			bool built = !sub_tiles || flat_top > 0.5;
 			bool yard = sub_tiles && (built || town >= 2) && tt_sub_house(tile, town);
 			bool paved = sub_tiles ? yard || (town == 3 && built) : true;
-			if (housed && (sub_tiles || town >= 2)) {
+			// the landmarks stand on open travertine squares
+			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
+			// up close a town's quarter without a lot (by the landmarks, the
+			// small squares of the core) is a garden with trees
+			// (tile_props.gdshaderinc), not an empty paved square (s2: Rome
+			// round the Colosseum a desert of paving)
+			bool garden = housed && tt_sub_garden(tile, town) && !plaza;
+			if (garden) {
+				paved = false;
+				c = tt_grass(p, ground_rgb_at(G_MEADOW, band) * vec3(0.86, 0.95, 0.82));
+				// a clipped hedge round it
+				vec2 e = min(tile_uv, 1.0 - tile_uv);
+				float aa = fwidth(e.x) + 1e-4;
+				c = mix(c, vec3(0.15, 0.3, 0.13), 1.0 - smoothstep(0.035 - aa, 0.035 + aa, min(e.x, e.y)));
+			} else if (housed && (sub_tiles || town >= 2)) {
 				c = paved ? C_PAVED : town >= 2 ? ground_rgb_at(G_MEADOW, band) : c;
 			} else if (town >= 2 && tile_km < 8.0) {
 				// (from 8 km tiles a town is one roof coloured tile: a red
@@ -343,9 +392,11 @@ void fragment() {
 			// streets between the house blocks of towns and cities (the grid of
 			// house_grid blocks per tile; half a street on each tile edge; up
 			// close the streets lie on the lots' terraces, tile_props)
-			// the landmarks stand on open travertine squares
-			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
+			// slabs on the paved quarters and the squares (travertine slabs larger)
+			if (sub_tiles && (plaza || (housed && paved))) {
+				c *= tt_paving(p, plaza ? vec2(2.0, 1.5) : vec2(1.2, 0.8));
+			}
 			if (housed && town >= 2 && built && paved && !plaza && !sub_tiles) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
@@ -355,7 +406,11 @@ void fragment() {
 			}
 		}
 		// the farms' fields from the grain economy, up close
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, tt_ground_at(tile, tile_uv), tile_km); }
+		int land = tt_ground_at(tile, tile_uv);
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
+		// up close the grass in patches, tufts and flowers (not the field tracks)
+		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
+		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
@@ -414,7 +469,11 @@ void fragment() {
 		float t = abs(fr) - abs(fb);
 		float corner = min(side, front);
 		float shade = t > 0.0 ? mix(corner, side, smoothstep(0.1, 0.4, t)) : mix(corner, front, smoothstep(0.1, 0.4, -t));
-		float tone = 1.0 + shade * away;
+		// up close a gentle ramp a gentler tone (the steps are drawn lower
+		// there, TileTerrain.relief_for_width): a whole hillside in one hard
+		// facet read as folded paper (s2)
+		float steep = sub_tiles ? mix(0.4, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
+		float tone = 1.0 + shade * away * steep;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
