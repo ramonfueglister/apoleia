@@ -31,6 +31,7 @@ const BuildMenu = preload("res://scripts/build_menu.gd")
 const GameClock = preload("res://scripts/sim/game_clock.gd")
 const MarketWindow = preload("res://scripts/sim/market_window.gd")
 const PauseMenu = preload("res://scripts/ui/pause_menu.gd")
+const SaveGames = preload("res://scripts/ui/save_games.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 1.0 # about 4 houses across (Kit 2 scale), people readable as figures
 ## The whole Kit 1 map in a 16:9 window, from Ireland to the Caspian and
@@ -135,7 +136,13 @@ func _ready() -> void:
 	set_process(false)
 	set_process_unhandled_input(false)
 	var automated := _snapshot_path != "" or _bench_frames > 0 or _tour != ""
-	var loading := LoadingScreen.new(["terrain", "look", "people", "build", "draw"] as Array[String])
+	# a save game chosen in the main menu plays again behind the screen too
+	var replay := SaveGames.pending
+	SaveGames.pending = ""
+	var steps: Array[String] = ["terrain", "look", "people", "build", "draw"]
+	if replay != "":
+		steps.insert(4, "replay")
+	var loading := LoadingScreen.new(steps)
 	add_child(loading)
 	await loading.step("terrain", "Gelände und Küsten werden geladen …")
 	terrain = TileTerrain.new()
@@ -192,6 +199,14 @@ func _ready() -> void:
 		tour.hide = _tour_hide
 		tour.warmup = _snapshot_frames
 		add_child(tour)
+	if replay != "" and clock != null:
+		await loading.step("replay", "Spielstand wird abgespielt …")
+		clock.load_game(replay)
+		while clock._loading:
+			var at: Dictionary = clock.people.loading()
+			if not at.is_empty():
+				loading.part(float(at.day) / maxf(float(at.of), 1.0))
+			await get_tree().process_frame
 	set_process(true)
 	set_process_unhandled_input(true)
 	await loading.finish("Die Landschaft wird gezeichnet …", automated)

@@ -6,8 +6,9 @@ extends CanvasLayer
 ## (a window, a chosen person or a build tool close first): this node is
 ## the landscape's first child, so its _unhandled_input comes last.
 ##
-## It also keeps the yearly autosave (ui/game_settings.gd) and hands a save
-## game chosen in the main menu (SaveGames.pending) to the game clock.
+## It also keeps the yearly autosave (ui/game_settings.gd). A save game
+## chosen in the main menu plays again behind the loading screen
+## (landscape.gd, SaveGames.pending).
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
@@ -71,9 +72,6 @@ func setup(game_clock: Node, music: Node) -> void:
 	hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 24)
 	hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_root.add_child(hint)
-	if SaveGames.pending != "" and clock != null:
-		clock.load_game.call_deferred(SaveGames.pending)
-	SaveGames.pending = ""
 
 func show_menu() -> void:
 	if open:
