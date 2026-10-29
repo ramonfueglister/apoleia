@@ -52,6 +52,10 @@ const NONE: u32 = u32::MAX;
 const KEY_MASK: u32 = 0x3fff;
 /// Younger than this, a person is drawn as a child.
 const CHILD_YEARS: i64 = 14;
+/// Ages at which a household member counts as one who works (the hired
+/// hand a click on a day labourer shows), as the grain economy's workers:
+/// the adults 15–60 first, then all 10–65 who work in the peaks.
+const WORK_YEARS: [std::ops::Range<i64>; 2] = [15..61, 10..66];
 /// Household of a building site's house: nobody lives there yet.
 const SITE: u32 = u32::MAX;
 
@@ -314,6 +318,23 @@ impl PeopleView {
         out
     }
 
+    /// A living member of a household who can work, the one with the
+    /// lowest id (else the youngest or eldest who works in the peaks, else
+    /// any member): who a hired hand of the household is.
+    /// A pass over all people, only on request.
+    pub fn member_of(p: &mut People, household: u32) -> Option<u32> {
+        let day = p.world.resource::<Clock>().day;
+        let mut q = p.world.query::<(&Pid, &Household, &Born)>();
+        q.iter(&p.world)
+            .filter(|t| t.1 .0 == household)
+            .map(|(pid, _, born)| {
+                let age = (day - born.0 as i64) / YEAR;
+                (WORK_YEARS.iter().position(|r| r.contains(&age)).unwrap_or(WORK_YEARS.len()), pid.0)
+            })
+            .min()
+            .map(|m| m.1)
+    }
+
     /// What a click on a dot shows: one person and their household, read
     /// from the world (a pass over all people, only on request).
     pub fn person(p: &mut People, pid: u32) -> Option<Person> {
@@ -414,6 +435,32 @@ mod tests {
         assert!(home >= 1);
         v.set_homes(&[(hh, to)]);
         assert!(v.update(&mut p).is_empty());
+    }
+
+    /// A click on a day labourer shows a member of working age when the
+    /// household has one.
+    #[test]
+    fn hired_hand_is_of_working_age() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let inp = crate::inputs::load(&root, false).expect("inputs");
+        let mut p = People::new(&inp, 1);
+        let day = p.world.resource::<Clock>().day;
+        let mut q = p.world.query::<(&Pid, &Household, &Born)>();
+        let mut ages: FxHashMap<u32, Vec<(u32, i64)>> = FxHashMap::default();
+        for (pid, hh, born) in q.iter(&p.world) {
+            ages.entry(hh.0).or_default().push((pid.0, (day - born.0 as i64) / YEAR));
+        }
+        let mut checked = 0;
+        for (&hh, m) in ages.iter().filter(|(_, m)| m.len() >= 3).take(200) {
+            let pid = PeopleView::member_of(&mut p, hh).expect("a member");
+            let age = m.iter().find(|x| x.0 == pid).unwrap().1;
+            if m.iter().any(|x| WORK_YEARS[0].contains(&x.1)) {
+                assert!(WORK_YEARS[0].contains(&age), "household {hh}: picked age {age}");
+                checked += 1;
+            }
+        }
+        assert!(checked > 100);
+        assert_eq!(PeopleView::member_of(&mut p, u32::MAX - 1), None);
     }
 
     /// A farm's building site is a house record with a negative village

@@ -21,8 +21,9 @@ extends MultiMeshInstance3D
 ## dots; only the people near the view are drawn (ApoleiaPeople.near).
 ## Dots of people on the road (or on a ship) are dark red.
 ## C colours the dots by occupation, political group or estate (and back to
-## black); a click on a dot shows that person and their household, Esc
-## closes it.
+## black); a click on a dot or figure, or on a traveller on its way
+## (carrier, trader, day labourer: people_trips.gd), shows that person and
+## their household, for a traveller also what they are doing; Esc closes it.
 ## The grain economy (crate::grain, run beside the people) shows on the
 ## terrain: fields by season around the farms, footpaths to the markets,
 ## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
@@ -113,6 +114,7 @@ var _map_tex: ImageTexture
 var _road_tex: ImageTexture
 var _region_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
+var _doing := "" # what the clicked traveller is doing (people_trips.gd pick), or ""
 var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
@@ -937,12 +939,30 @@ static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
 
-## The dot under `pixel`: reads the placement texture back (only on a
-## click) and lets ApoleiaPeople find the nearest dot on screen.
+## The person under `pixel`: a traveller on its way (people_trips.gd),
+## else the nearest dot or figure, for which it reads the placement
+## texture back (only on a click) and lets ApoleiaPeople find it on screen.
 func _pick(pixel: Vector2) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null or not visible:
 		return
+	# travellers walk over the people at home, so they come first
+	var traveller: Dictionary = _trips.pick(cam, pixel, terrain.ground_y, FIGURE_M * TileTerrain.DIORAMA_KM_PER_M * 0.5, PICK_PX)
+	if not traveller.is_empty():
+		selected = -1
+		for mat in [_material, _figure_material]:
+			mat.set_shader_parameter("selected_slot", -1)
+		print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "pid": traveller.pid, "household": traveller.household}))
+		_doing = traveller.what
+		if int(traveller.pid) >= 0:
+			people.ask_person_id(traveller.pid)
+		else:
+			people.ask_household_member(traveller.household)
+		_waiting = true
+		_info_label.visible = true
+		_info_label.text = "…"
+		return
+	_doing = ""
 	var vp := cam.get_camera_projection() * Projection(cam.get_camera_transform().affine_inverse())
 	var m := PackedFloat32Array()
 	for c in 4:
@@ -967,6 +987,8 @@ func _show_person(p: Dictionary) -> void:
 		return
 	var lines := PackedStringArray()
 	lines.append("[b]%s, %d Jahre[/b]  #%d" % ["Frau" if p.female else "Mann", int(p.age), p.pid])
+	if _doing != "":
+		lines.append("[color=#c9a45c]%s[/color]" % _doing)
 	lines.append("%s, %s" % [p.job, STANDS[clampi(p.stand, 0, 3)]])
 	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
 	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])

@@ -105,14 +105,23 @@ struct Front {
     spent_days: u64,
 }
 
-/// Work for the sim thread: days to run, stop, a slot whose person to look
-/// up, a table to build (apoleia_sim::tables), a window (world km, min x,
+/// Whom `ask_person` and its kin look up: the person in a view slot (a
+/// dot or figure clicked), a person by id (a carrier or trader on the
+/// road), or a member of a household (a day labourer on the way to work).
+#[derive(Clone, Copy)]
+enum Who {
+    Slot(usize),
+    Pid(u32),
+    Household(u32),
+}
+
+/// Work for the sim thread: days to run, stop, whose person to look up, a table to build (apoleia_sim::tables), a window (world km, min x,
 /// min z, max x, max z) whose trips under way to list.
 #[derive(Default)]
 struct Queue {
     days: u64,
     stop: bool,
-    ask: Option<usize>,
+    ask: Option<Who>,
     table: Option<String>,
     trips: Option<[f64; 4]>,
     work: Option<[f64; 4]>,
@@ -420,8 +429,13 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)));
             shared.front.lock().unwrap().goods = Some(v);
         }
-        if let Some(slot) = ask {
-            let who = view.pid_at(slot).and_then(|pid| PeopleView::person(people, pid));
+        if let Some(who) = ask {
+            let pid = match who {
+                Who::Slot(slot) => view.pid_at(slot),
+                Who::Pid(pid) => Some(pid),
+                Who::Household(h) => PeopleView::member_of(people, h),
+            };
+            let who = pid.and_then(|pid| PeopleView::person(people, pid));
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
                 (p, hh)
@@ -1142,9 +1156,24 @@ impl ApoleiaPeople {
         if self.worker.is_none() || slot < 0 {
             return;
         }
-        self.shared.front.lock().unwrap().person = None;
-        self.shared.queue.lock().unwrap().ask = Some(slot as usize);
-        self.shared.wake.notify_one();
+        self.ask(Who::Slot(slot as usize));
+    }
+
+    /// As `ask_person`, for a person by id (the pid of a trip under way).
+    #[func]
+    fn ask_person_id(&mut self, pid: i64) {
+        if (0..u32::MAX as i64).contains(&pid) {
+            self.ask(Who::Pid(pid as u32));
+        }
+    }
+
+    /// As `ask_person`, for a member of a household (a hired worker of
+    /// `ask_work`): the one with the lowest id.
+    #[func]
+    fn ask_household_member(&mut self, household: i64) {
+        if (0..u32::MAX as i64).contains(&household) {
+            self.ask(Who::Household(household as u32));
+        }
     }
 
     /// The person asked for, once; empty until the sim thread answered.
@@ -1496,6 +1525,15 @@ impl ApoleiaPeople {
 }
 
 impl ApoleiaPeople {
+    fn ask(&mut self, who: Who) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().person = None;
+        self.shared.queue.lock().unwrap().ask = Some(who);
+        self.shared.wake.notify_one();
+    }
+
     /// Takes over the shared state of a new sim thread; the main-thread
     /// copies start empty, so the next sync builds new textures.
     fn restart(&mut self, shared: Arc<Shared>) {
