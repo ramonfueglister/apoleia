@@ -632,7 +632,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
 | Grundpreis | 8,75 Denar/kg | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn für alle ausser Bauern und Händlern | 25 Denar pro Arbeitstag | S76 (Staat hat unbegrenzt Geld), Preisedikt |
-| Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt; leere Kasse hat keine Folge | S76; was bei leerer Kasse geschieht, ist offen |
+| Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt | S95 (leere Kasse: nachprägen); Preise folgen der Geldmenge noch nicht |
 | Steuer | 10 % der Ernte, als Korn in die Staatskasse, dort ohne Nutzen (S94) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
 | Grundherr eines Pacht- oder Gutshofs | ein Senator oder Ritter per Zufall | S69 offen |

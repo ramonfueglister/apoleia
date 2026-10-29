@@ -524,8 +524,8 @@ pub struct Money {
     /// PLACEHOLDER start stocks: TRADER_MONEY, ELITE_MONEY, the dealers'
     /// cash, the rent of last year's harvest).
     pub start: i64,
-    /// State wages beyond the treasury's cash: S76 (the state has
-    /// unlimited money) means the state makes the rest.
+    /// State wages beyond the treasury's cash: the state mints what is
+    /// missing (S95).
     pub minted: i64,
     /// Start money of trader and elite households formed after the start.
     pub endowed: i64,
@@ -2186,7 +2186,7 @@ impl Grain {
         merge(&mut self.markets[b as usize].board, &ba, pa);
     }
 
-    /// The state wage (S76), from the treasury's cash, the rest minted.
+    /// The state wage (S76), from the treasury's cash, the rest minted (S95).
     fn state_pays(&mut self, amount: i64) {
         let cash = amount.min(self.treasury.cash.max(0));
         self.treasury.cash -= cash;
