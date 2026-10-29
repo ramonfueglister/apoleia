@@ -77,6 +77,8 @@ struct Front {
     /// Bumped whenever `orders` or `progress` go out; carried over to the
     /// game a save starts, so the build menu never misses a change.
     built: u64,
+    /// Answer to the last `ask_build_check`.
+    check: Option<BuildCheck>,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -104,11 +106,13 @@ struct Queue {
     commands: Vec<Command>,
     /// Where to write a save game, between two days.
     save: Option<String>,
+    /// Orders to check before they are placed: kind and tiles.
+    check: Option<(u8, Vec<build::Tile>)>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
     }
 }
 
@@ -213,6 +217,45 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     (map, view)
 }
 
+/// The statuses of `take_build_check` (apoleia_sim::grain::CHECK_*).
+const CHECK_STATES: [&str; 4] = ["wird gebaut", "hier baut niemand: kein Markt, Meer oder ausserhalb der Karte", "Felder und Strassen baut noch niemand", "wird gebaut, aber in der Gegend zieht heute niemand ein"];
+
+/// What orders would come to before they are placed (`ask_build_check`).
+struct BuildCheck {
+    /// Column, row and status (apoleia_sim::grain::CHECK_*) of each tile.
+    tiles: Vec<i32>,
+    /// Work days and their cost at today's day wages, milli-denarii.
+    need: i64,
+    cost: i64,
+    /// The market of the first tile that has one, its day wage, and how
+    /// many markets the tiles lie in.
+    market: String,
+    wage: i64,
+    markets: usize,
+    /// The treasury's cash now, milli-denarii.
+    cash: i64,
+}
+
+fn build_check(game: &Game, kind: u8, tiles: &[build::Tile]) -> BuildCheck {
+    let mut c = BuildCheck { tiles: Vec::with_capacity(tiles.len() * 3), need: 0, cost: 0, market: String::new(), wage: 0, markets: 0, cash: game.grain.treasury.cash };
+    let mut seen = Vec::new();
+    for &t in tiles {
+        let s = game.grain.site_check(&game.people, kind, t);
+        c.tiles.extend_from_slice(&[t.1, t.0, s.status as i32]);
+        c.need += s.need;
+        c.cost += s.cost;
+        if s.market != apoleia_sim::people::NONE && !seen.contains(&s.market) {
+            if seen.is_empty() {
+                c.market = game.grain.markets[s.market as usize].name.clone();
+                c.wage = game.grain.day_wage(s.market);
+            }
+            seen.push(s.market);
+        }
+    }
+    c.markets = seen.len();
+    c
+}
+
 /// The build orders and how far their sites are, to the front.
 fn publish_orders(game: &Game, f: &mut Front) {
     f.orders = game.orders.clone();
@@ -236,7 +279,7 @@ fn progress(game: &Game) -> Vec<i32> {
 fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, ask, table, trips, work, events) = {
+        let (commands, save, check, ask, table, trips, work, events) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -248,7 +291,7 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -262,6 +305,10 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         if let Some(path) = &save {
             let r = game.save_to(Path::new(path)).map(|()| game.today()).map_err(|e| e.to_string());
             shared.front.lock().unwrap().saved = Some(r);
+        }
+        if let Some((kind, tiles)) = &check {
+            let c = build_check(&game, *kind, tiles);
+            shared.front.lock().unwrap().check = Some(c);
         }
         let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
@@ -288,7 +335,7 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
             });
             shared.front.lock().unwrap().person = who;
         }
-        if !commands.is_empty() || save.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -554,6 +601,43 @@ impl ApoleiaPeople {
         d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
         d.set("progress", &PackedInt32Array::from(f.progress.as_slice()));
         d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
+        d
+    }
+
+    /// Asks what orders of `kind` on `tiles` (as `order_build`) would come
+    /// to, without placing them; the answer comes with `take_build_check`,
+    /// also while paused.
+    #[func]
+    fn ask_build_check(&mut self, kind: i64, tiles: PackedInt32Array) {
+        let tiles = pairs(&tiles);
+        if self.worker.is_none() || tiles.is_empty() || !(0..build::KIND_NAMES.len() as i64).contains(&kind) {
+            return;
+        }
+        self.shared.front.lock().unwrap().check = None;
+        self.shared.queue.lock().unwrap().check = Some((kind as u8, tiles));
+        self.shared.wake.notify_one();
+    }
+
+    /// The answer to `ask_build_check`, once; empty until the sim thread
+    /// gave it. {"tiles": column, row, status for each (0 gets built, 1
+    /// nobody builds here: no market, the sea or off the map, 2 fields and
+    /// roads nobody builds yet, 3 gets built but nobody of the region could
+    /// move in today), "states": what each status means, "days": work days,
+    /// "cost": denarii at today's day wages from the treasury, "market" and
+    /// "wage": the first tile's market and its day wage in denarii,
+    /// "markets": how many markets, "cash": the treasury's denarii now}.
+    #[func]
+    fn take_build_check(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        let Some(c) = self.shared.front.lock().unwrap().check.take() else { return d };
+        d.set("tiles", &PackedInt32Array::from(c.tiles.as_slice()));
+        d.set("states", &PackedStringArray::from_iter(CHECK_STATES.iter().map(|n| GString::from(*n))));
+        d.set("days", c.need);
+        d.set("cost", c.cost as f64 / 1000.0);
+        d.set("market", c.market.as_str());
+        d.set("wage", c.wage as f64 / 1000.0);
+        d.set("markets", c.markets as i64);
+        d.set("cash", c.cash as f64 / 1000.0);
         d
     }
 

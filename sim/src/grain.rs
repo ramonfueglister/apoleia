@@ -38,7 +38,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 mod crafts;
 mod sites;
-pub use sites::Site;
+pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
 

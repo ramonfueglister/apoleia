@@ -25,6 +25,38 @@ pub const FARM_DAYS: i64 = 200;
 /// days of each weekly hiring (`labour()` hires once a week per market).
 pub const CREW: i64 = 4;
 
+/// Work days an order of `kind` needs; 0 for fields and roads, which
+/// nobody builds until it is decided what a finished one does.
+fn site_need(kind: u8) -> i64 {
+    match kind {
+        build::FARM => FARM_DAYS,
+        _ => 0,
+    }
+}
+
+/// `Grain::site_check`: the order would be built.
+pub const CHECK_BUILDS: u8 = 0;
+/// Off the map or at sea: no market, nobody builds it.
+pub const CHECK_NO_MARKET: u8 = 1;
+/// A field or a road: nobody builds it yet (`site_need`).
+pub const CHECK_UNDECIDED: u8 = 2;
+/// A farm that gets built, but no landless household of its region could
+/// move in today; done, it waits for one.
+pub const CHECK_NO_TENANT: u8 = 3;
+
+/// What an order on a tile would come to, asked before it is placed
+/// (REALTIME_GAMEPLAY.md phases 3 and 6).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SiteCheck {
+    pub status: u8,
+    /// The market whose day labourers would build it, NONE off the map.
+    pub market: u32,
+    /// Work days it needs, and what they cost the treasury at the
+    /// market's day wage today (milli-denarii).
+    pub need: i64,
+    pub cost: i64,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Site {
     pub kind: u8,
@@ -62,10 +94,7 @@ impl Grain {
             if market == NONE {
                 continue;
             }
-            let need = match o.kind {
-                build::FARM => FARM_DAYS,
-                _ => 0, // fields and roads: not decided yet
-            };
+            let need = site_need(o.kind);
             sites.insert(t, Site { kind: o.kind, market, fine, cell, need, done: 0 });
         }
         // the days worked since yesterday, to the sites in tile order
@@ -95,11 +124,7 @@ impl Grain {
     /// A landless household of the site's region takes the finished farm;
     /// false while there is none.
     fn site_moves_in(&mut self, p: &mut People, s: Site) -> bool {
-        let pick = self.market_hh[s.market as usize].iter().copied().filter(|id| {
-            let (Some(h), Some(i)) = (self.hh.get(id), self.info.get(id)) else { return false };
-            h.kind == TENT && i.adults > 0 && !h.busy && !h.own_food
-        });
-        let Some(id) = pick.min() else { return false };
+        let Some(id) = self.site_tenant(s.market) else { return false };
         let i = self.info[&id];
         if i.home != s.cell {
             p.relocate_household(id, &self.members[i.at as usize..(i.at + i.size as u32) as usize], s.cell);
@@ -122,6 +147,40 @@ impl Grain {
         self.stats.built_farms += 1;
         self.events.push(crate::events::Event { day: self.today, kind: crate::events::FARM_TAKEN, household: id, pid: NONE, cell: s.cell, to: NONE, fine: s.fine, other: NONE, amount: 0 });
         true
+    }
+
+    /// The landless household of a region that takes its next finished
+    /// farm: the first by id with adults.
+    fn site_tenant(&self, market: u32) -> Option<u32> {
+        let pick = self.market_hh[market as usize].iter().copied().filter(|id| {
+            let (Some(h), Some(i)) = (self.hh.get(id), self.info.get(id)) else { return false };
+            h.kind == TENT && i.adults > 0 && !h.busy && !h.own_food
+        });
+        pick.min()
+    }
+
+    /// What an order of `kind` on `t` would come to, without placing it.
+    pub fn site_check(&self, p: &People, kind: u8, t: Tile) -> SiteCheck {
+        let market = self.site_place(p, t).map_or(NONE, |(_, cell)| self.cell_market[cell as usize]);
+        if market == NONE {
+            return SiteCheck { status: CHECK_NO_MARKET, market, need: 0, cost: 0 };
+        }
+        let need = site_need(kind);
+        let cost = need * self.day_wage(market);
+        let status = if need == 0 {
+            CHECK_UNDECIDED
+        } else if kind == build::FARM && self.site_tenant(market).is_none() {
+            CHECK_NO_TENANT
+        } else {
+            CHECK_BUILDS
+        };
+        SiteCheck { status, market, need, cost }
+    }
+
+    /// A day of work at a market today, in milli-denarii: what the state
+    /// pays its day labourers there (S72, S113).
+    pub fn day_wage(&self, market: u32) -> i64 {
+        WAGE_KG_DAY * Self::buy_price(&self.markets[market as usize])
     }
 
     /// The building sites, by tile: kind, work days needed and done.
@@ -175,5 +234,34 @@ mod tests {
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
+    }
+
+    /// The build menu's question before placing: a farm by the tents is
+    /// built at the day wage, a field is not yet, the sea or off the map
+    /// has nobody to build.
+    #[test]
+    fn site_check_answers() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let g = Grain::new(&inp, &mut p);
+        let id = (0..g.markets.len())
+            .flat_map(|m| g.market_hh[m].clone())
+            .filter(|id| g.hh.get(id).is_some_and(|h| h.kind == TENT) && g.info.get(id).is_some_and(|i| i.adults > 0))
+            .min()
+            .expect("a tent household");
+        let cell = g.info[&id].home as i32;
+        let cols = g.cols_f / FINE;
+        let t = ((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
+        let farm = g.site_check(&p, build::FARM, t);
+        assert_eq!(farm.status, CHECK_BUILDS);
+        assert_eq!(farm.market, g.cell_market[cell as usize]);
+        assert_eq!((farm.need, farm.cost), (FARM_DAYS, FARM_DAYS * g.day_wage(farm.market)));
+        assert!(farm.cost > 0);
+        assert_eq!(g.site_check(&p, build::FIELD, t).status, CHECK_UNDECIDED);
+        let off = g.site_check(&p, build::FARM, (-1, -1));
+        assert_eq!((off.status, off.market, off.cost), (CHECK_NO_MARKET, NONE, 0));
     }
 }
