@@ -7,7 +7,9 @@ extends Node3D
 ## BUILD_MAX_KM on the tools are dimmed and switched off.
 ##
 ##   1  Hof: the farmhouse follows the cursor, a click orders it
-##   2  Feld: drag paints field lots; starting on a field takes them away
+##   2  Feld: drag a rectangle of field lots, like a zone in Cities
+##      Skylines (one lot holds little field, a farm tills some 160);
+##      starting on a field takes the fields in the rectangle away
 ##   3  Strasse: drag from A to B; the road takes the easiest way between
 ##      (gentle slopes, round hills, never through water); a click on a
 ##      road takes that stretch back
@@ -34,7 +36,8 @@ const BUILD_MAX_KM := 30.0 # view width up to which the tools work (a lot about 
 const CLICK_PX := 4.0
 const BUTTON_PX := 76.0 # tool button edge in points (44 was too small, Ramon 29.10.2026)
 const LIFT := 0.006 # km above the ground
-const FIELD_GRID := 4 # quads per lot side, so a field follows the terraces
+const FIELD_GRID := 2 # quads per lot side, so a field follows the terraces
+const FIELD_MAX_SIDE := 24 # lots per side of one field rectangle (12 km)
 const FIELD_INSET := 0.04 # of a lot left free round a field (the lane)
 const ROAD_KM := 0.1 # width of a road: a cart track of about 4 m at the diorama scale
 const ROAD_STEP_KM := 0.05 # draping: a road sample at least this often
@@ -283,9 +286,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			match tool:
 				FIELD:
-					for s in _line(_stroke[-1], l).slice(1):
-						if not s in _stroke:
-							_stroke.append(s)
+					_stroke = _rect(_stroke_from, l)
 				ROAD:
 					if _dist(_stroke_from, l) <= ROAD_MAX_LOTS:
 						var r := route(_stroke_from, l)
@@ -293,12 +294,13 @@ func _unhandled_input(event: InputEvent) -> void:
 							_stroke = r
 			_dirty = true
 
-## Lots from a to b, each touching the one before (a painted stroke).
-static func _line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
-	var out: Array[Vector2i] = [a]
-	var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
-	for i in range(1, n + 1):
-		out.append(Vector2i((Vector2(a).lerp(Vector2(b), float(i) / n)).round()))
+## The lots of the rectangle from a towards b, at most FIELD_MAX_SIDE a side.
+static func _rect(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+	var d := (b - a).clamp(-Vector2i.ONE * (FIELD_MAX_SIDE - 1), Vector2i.ONE * (FIELD_MAX_SIDE - 1))
+	var out: Array[Vector2i] = []
+	for j in range(mini(0, d.y), maxi(0, d.y) + 1):
+		for i in range(mini(0, d.x), maxi(0, d.x) + 1):
+			out.append(a + Vector2i(i, j))
 	return out
 
 ## Sends the stroke as one command (or forgets it) and clears it.
@@ -427,7 +429,7 @@ func _take_check(a: Dictionary) -> void:
 	var n := flat.size() / 3
 	var what: String = NAMES[tool]
 	if n > 1:
-		what = "%s, %s km" % [NAMES[tool], String.num(n * LOT_KM, 1)] if tool == ROAD else "%d Felder" % n
+		what = "%s, %s km" % [NAMES[tool], String.num(n * LOT_KM, 1)] if tool == ROAD else "Feld, %d Parzellen" % n
 	if bad < 0:
 		_label.text = "%s · %s Tage · %s Denar" % [what, SimTables._int(int(a.days)), SimTables._int(roundi(a.cost))]
 	else:
