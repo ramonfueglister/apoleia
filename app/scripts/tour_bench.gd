@@ -7,7 +7,9 @@ extends Node
 ## the later ones (--tour-passes, default 2) the steady ones. Writes the
 ## numbers, the worst frames and their causes to the JSON file and quits.
 ## `hide` ("trees", "houses", "terrain", "landmarks", "people", "shadows")
-## leaves those out, to weigh what each costs against a full tour.
+## leaves those out, to weigh what each costs against a full tour;
+## "people-draw" and "people-process" only draw the people or only stop their
+## per-frame work.
 
 # lon, lat, view width (km), frames to get there from the key before
 const KEYS := [
@@ -119,9 +121,11 @@ func _hide(terrain: Node3D) -> void:
 	if "landmarks" in hide:
 		for node in terrain._landmarks:
 			node.visible = false
-	if "people" in hide and landscape.people != null:
-		landscape.people.visible = false
-		landscape.people.process_mode = Node.PROCESS_MODE_DISABLED # its simulation too
+	if landscape.people != null:
+		if "people" in hide or "people-draw" in hide:
+			landscape.people.visible = false
+		if "people" in hide or "people-process" in hide:
+			landscape.people.process_mode = Node.PROCESS_MODE_DISABLED # its per-frame work
 	landscape.shadows = "shadows" not in hide
 
 func _finish_pass() -> void:

@@ -13,7 +13,8 @@ extends Node3D
 ## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait,
 ## --tour=result.json fly the benchmark tour and save its frame times
 ## (tour_bench.gd), --tour-passes=n how often, --tour-hide=trees,houses,
-## terrain,landmarks,people,shadows without those (what each costs).
+## terrain,landmarks,people,shadows without those (what each costs;
+## people-draw, people-process: half of people).
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const TourBench = preload("res://scripts/tour_bench.gd")

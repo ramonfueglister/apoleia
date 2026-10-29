@@ -432,7 +432,8 @@ Rom nah, die ganze Karte, Alexandria, Antiochia, die Levante, Athen, und
 schreibt Bildzeiten, die schlimmsten Bilder mit dem, was das Gelände in ihnen
 änderte, und die Pipeline-Kompilierungen; `--tour-passes=n`, Vorgabe 2;
 `--tour-hide=trees,houses,terrain,landmarks,people,shadows` lässt das weg,
-um zu sehen, was es kostet).
+um zu sehen, was es kostet; `people-draw` zeichnet die Menschen nicht,
+`people-process` hält nur ihre Arbeit pro Bild an).
 
 ## Offen
 
