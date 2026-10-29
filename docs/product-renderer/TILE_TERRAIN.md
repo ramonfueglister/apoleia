@@ -401,6 +401,28 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   gebauten Höhe, ohne Dach, Bäume, Werkstatt und Heuhaufen, mit einem Gerüst
   aus Stangen und Brettern (`_scaffold` in `farmhouse.gd`). Platziert wird er
   wie das spätere Haus (`dot_place`), sein Los bleibt frei von Feldern.
+- Bauen mit Anno-Gefühl (Ramon: „Strassen werden riesig“): Die gebauten
+  Strassen sind schmale Kiesbänder im Massstab der Häuser, vier Diorama-Meter
+  breit statt einer ganzen Sim-Kachel (`scripts/road_view.gd`,
+  `shaders/road.gdshaderinc`). Das Baumenü findet den Weg und glättet ihn; der
+  Knoten zeichnet ihn nur (`set_road(id, punkte, fortschritt, vorschau,
+  gesperrt)`, `remove_road(id)`). Jede Strasse liegt zweimal: der Rand in
+  Feldweg-Braun und darüber die etwas schmalere Fahrbahn mit zwei Spurrillen.
+  An Kreuzungen deckt so jede Fahrbahn die Ränder der anderen. Der
+  ungebaute Teil ist abgesteckte Erde mit Pflöcken, an der Arbeitsstelle
+  frisch umgegraben. Die Vorschau ist durchsichtig grün oder rot. Das Band
+  liegt im Vertex-Shader auf dem Gelände, wie das Gelände es zeichnet
+  (`dot_ground_level`), und rückt ein paar Meter zur Kamera, damit es auf
+  Rampen nicht einsinkt.
+- Hof-Geist (`scripts/voxel/farmhouse_ghost.gd`): Am Cursor steht genau das
+  Hofhaus, das auf diesem Los entstehen wird. Es hat dieselbe Bauform,
+  Drehung, Spiegelung und Grösse wie in `people_houses.gdshader`
+  (dieselben Hashes über das Los). Es ist durchsichtig und grün oder rot
+  getönt, ohne Bäume, Heuhaufen, Werkstatt und Gerüst.
+- Gebaute Höfe an der gewählten Stelle: Ein Hausdatensatz mit dem Code
+  `DOT_AT_LOT` (12288, beim Bauplatz negativ) steht genau auf dem Los unter
+  `rec.xy` (`dot_place`), statt sich im Dorf einen Platz zu suchen. Die Sim
+  setzt den Code, sobald sie die Stelle aus dem Auftrag kennt.
 
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 
