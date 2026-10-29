@@ -67,6 +67,26 @@ const DIORAMA_LAENGE := 1.0 / 23.80
 const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
 const HOUSE_M := 10.0 # a house lot (voxel/roman_buildings.gd), before the diorama scale
 const TREE_M := 8.0  # tree height (tree meshes are about 1.1 units tall; Urbek: 5-8 m, a house 6-12 m)
+## A grid of half floats (metres) as an image with mipmaps, and as floats
+## for the lookups on the CPU. On a worker thread.
+static func _half_floats(path: String, size: Vector2i) -> Array:
+	var image := Image.create_from_data(size.x, size.y, false, Image.FORMAT_RH, FileAccess.get_file_as_bytes(path))
+	var floats: Image = image.duplicate()
+	floats.convert(Image.FORMAT_RF)
+	var values := floats.get_data().to_float32_array()
+	image.generate_mipmaps()
+	return [image, values]
+
+## A PNG, converted to `format` (-1 keeps it) and with mipmaps if asked. On
+## a worker thread.
+static func _png(path: String, format: int, mipmaps: bool) -> Image:
+	var image := Image.load_from_file(path)
+	if format >= 0:
+		image.convert(format)
+	if mipmaps:
+		image.generate_mipmaps()
+	return image
+
 ## Prop kinds: the trees of every kind in one MultiMesh (tile_prop_meshes.gd
 ## tree_template), then the houses.
 const PROP_KINDS := ["trees", "house"]
@@ -185,7 +205,11 @@ var events := PackedStringArray()
 static func data_root() -> String:
 	return ProjectSettings.globalize_path("res://").path_join("..").simplify_path()
 
-func load_data() -> bool:
+## Loads the terrain data. A coroutine (await it): the images are decoded
+## on worker threads, all at once (PNG and the half floats were most of the
+## start, about 12 s one after another), while the frames go on for the
+## loading screen; `progress` gets the share decoded (0..1).
+func load_data(progress := Callable()) -> bool:
 	var dir := data_root().path_join(DATA_DIR)
 	var text := FileAccess.get_file_as_string(dir.path_join("manifest.json"))
 	if text == "":
@@ -196,37 +220,52 @@ func load_data() -> bool:
 	world_min = Vector2(grid.world_min[0], grid.world_min[1])
 	world_size = Vector2(grid.world_size[0], grid.world_size[1])
 	grid_size = Vector2i(int(grid.width), int(grid.height))
-	var raw := FileAccess.get_file_as_bytes(dir.path_join(manifest.height_half.path))
-	var height_image := Image.create_from_data(grid_size.x, grid_size.y, false, Image.FORMAT_RH, raw)
-	var height_float := height_image.duplicate()
-	height_float.convert(Image.FORMAT_RF)
-	_heights = height_float.get_data().to_float32_array()
-	height_image.generate_mipmaps()
+	var size := grid_size
+	var jobs: Array[Callable] = [
+		func() -> Variant: return _half_floats(dir.path_join(manifest.height_half.path), size),
+		func() -> Variant: return _half_floats(dir.path_join(manifest.relief_half.path), size),
+		func() -> Variant: return Image.create_from_data(size.x, size.y, false, Image.FORMAT_RH, FileAccess.get_file_as_bytes(dir.path_join(manifest.shore_half.path))) if manifest.has("shore_half") else null,
+		func() -> Variant: return _png(dir.path_join(manifest.cover.path), -1, true),
+		func() -> Variant: return _png(dir.path_join(manifest.aux.path), -1, false),
+	]
+	var lists := ["cells", "levels", "ground"]
+	for list in lists:
+		for entry in manifest.get(list, []):
+			var path := dir.path_join(entry.path)
+			jobs.append(func() -> Variant: return _png(path, Image.FORMAT_R8, false))
+	var done: Array = []
+	done.resize(jobs.size())
+	var lock := Mutex.new()
+	var task := WorkerThreadPool.add_group_task(func(i: int) -> void:
+		var result: Variant = jobs[i].call()
+		lock.lock()
+		done[i] = result
+		lock.unlock(), jobs.size(), -1, true, "terrain data")
+	while not WorkerThreadPool.is_group_task_completed(task):
+		if progress.is_valid():
+			progress.call(float(WorkerThreadPool.get_group_processed_element_count(task)) / jobs.size())
+		await get_tree().process_frame
+	WorkerThreadPool.wait_for_group_task_completion(task)
+	var height_image: Image = done[0][0]
+	_heights = done[0][1]
 	relief_slope = float(manifest.relief_half.slope_m_per_km)
-	raw = FileAccess.get_file_as_bytes(dir.path_join(manifest.relief_half.path))
-	var relief_image := Image.create_from_data(grid_size.x, grid_size.y, false, Image.FORMAT_RH, raw)
-	var relief_float := relief_image.duplicate()
-	relief_float.convert(Image.FORMAT_RF)
-	_relief = relief_float.get_data().to_float32_array()
-	relief_image.generate_mipmaps()
-	var shore_texture: ImageTexture = null
-	if manifest.has("shore_half"):
-		raw = FileAccess.get_file_as_bytes(dir.path_join(manifest.shore_half.path))
-		shore_texture = ImageTexture.create_from_image(Image.create_from_data(grid_size.x, grid_size.y, false, Image.FORMAT_RH, raw))
-	var cover := Image.load_from_file(dir.path_join(manifest.cover.path))
-	cover.generate_mipmaps()
-	var aux := Image.load_from_file(dir.path_join(manifest.aux.path))
+	var relief_image: Image = done[1][0]
+	_relief = done[1][1]
+	var shore_texture: ImageTexture = ImageTexture.create_from_image(done[2]) if done[2] != null else null
+	var cover: Image = done[3]
+	var aux: Image = done[4]
+	var next := 5
 	for entry in manifest.cells:
-		var image := Image.load_from_file(dir.path_join(entry.path))
-		image.convert(Image.FORMAT_R8)
+		var image: Image = done[next]
+		next += 1
 		_cell_images.append(image)
 		_cell_sizes.append(Vector2i(int(entry.width), int(entry.height)))
 		_cell_textures.append(ImageTexture.create_from_image(image))
 		if entry.has("towns"):
 			_town_lists[int(entry.level)] = FileAccess.get_file_as_bytes(dir.path_join(entry.towns.path)).to_int32_array()
 	for entry in manifest.get("levels", []):
-		var image := Image.load_from_file(dir.path_join(entry.path))
-		image.convert(Image.FORMAT_R8)
+		var image: Image = done[next]
+		next += 1
 		var key := int(entry.level)
 		_level_images[key] = image
 		if entry.get("scale", "far") == "near":
@@ -234,8 +273,8 @@ func load_data() -> bool:
 		else:
 			_level_textures[key] = ImageTexture.create_from_image(image)
 	for entry in manifest.get("ground", []):
-		var image := Image.load_from_file(dir.path_join(entry.path))
-		image.convert(Image.FORMAT_R8)
+		var image: Image = done[next]
+		next += 1
 		_ground_textures[int(entry.level)] = ImageTexture.create_from_image(image)
 	_terrain_material = ShaderMaterial.new()
 	_terrain_material.shader = TERRAIN_SHADER
