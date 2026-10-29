@@ -185,6 +185,9 @@ fn main() {
             t.grain_kg as f64 / 1e3
         );
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
+        if std::env::var("PRICE_DEBUG").is_ok() {
+            print!("{}", g.price_debug());
+        }
         if std::env::var("GRAIN_DEBUG").is_ok() {
             print!("{}", g.debug());
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
