@@ -417,6 +417,9 @@ pub struct Market {
     work_acc: i64,
     work_month: i64,
     tent_people: u32,
+    /// People in households without a farm that eat from the grain
+    /// economy, who buy their food (S93).
+    buyers: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -886,6 +889,7 @@ impl Grain {
                 work_acc: 0,
                 work_month: 0,
                 tent_people: 0,
+                buyers: 0,
                 dirty: true,
                 walked: FxHashMap::default(),
                 open: Vec::new(),
@@ -1439,6 +1443,7 @@ impl Grain {
             m.people = 0;
             m.tents = 0;
             m.tent_people = 0;
+            m.buyers = 0;
             m.grain = m.store;
             m.free_area = 0;
             m.work_month = m.work_acc;
@@ -1452,6 +1457,9 @@ impl Grain {
             m.tents += u32::from(s.kind == TENT);
             if s.kind == TENT {
                 m.tent_people += i.size as u32;
+            }
+            if s.farm == NONE && !s.own_food {
+                m.buyers += i.size as u32;
             }
             m.grain += s.pantry;
             if s.farm != NONE {
@@ -2802,7 +2810,15 @@ impl Grain {
                 }
             }
         }
-        p.econ = Some(Econ { fed, region, need_fed: NEED_FED });
+        // S93: wage households check monthly against the market stores.
+        let mut buyer = vec![false; fed.len()];
+        for (&id, s) in self.hh.iter() {
+            if (id as usize) < buyer.len() {
+                buyer[id as usize] = s.kind == WAGE && s.farm == NONE && !s.own_food;
+            }
+        }
+        let market = self.markets.iter().map(|m| (m.region, (m.store as f64, m.buyers, m.cell))).collect();
+        p.econ = Some(Econ { fed, region, need_fed: NEED_FED, buyer, market, arriving: FxHashMap::default() });
     }
 
     // Reporting -----------------------------------------------------------
