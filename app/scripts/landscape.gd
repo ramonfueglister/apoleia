@@ -400,7 +400,9 @@ func _process(delta: float) -> void:
 			_bench_start = Time.get_ticks_usec()
 		elif _frame == _snapshot_frames + _bench_frames:
 			var ms := (Time.get_ticks_usec() - _bench_start) / 1000.0 / _bench_frames
-			print(JSON.stringify({"event": "bench", "frame_ms": ms, "level": terrain.level, "width_km": width}))
+			print(JSON.stringify({"event": "bench", "frame_ms": ms, "level": terrain.level, "width_km": width,
+				"prims": int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+				"draws": int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))}))
 			get_tree().quit()
 	elif _snapshot_path != "" and _frame == _snapshot_frames:
 		RenderingServer.frame_post_draw.connect(_save_snapshot, CONNECT_ONE_SHOT)

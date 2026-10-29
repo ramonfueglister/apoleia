@@ -123,7 +123,7 @@ func _hide(terrain: Node3D) -> void:
 			node.visible = false
 	if landscape.people != null:
 		if "people" in hide or "people-draw" in hide:
-			landscape.people.visible = false
+			landscape.people.drawn = false # every people layer, not only the dots node
 		if "people" in hide or "people-process" in hide:
 			landscape.people.process_mode = Node.PROCESS_MODE_DISABLED # its per-frame work
 	landscape.shadows = "shadows" not in hide
