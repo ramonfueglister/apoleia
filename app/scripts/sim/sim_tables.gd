@@ -992,6 +992,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_show(not open)
 		elif event.keycode == KEY_ESCAPE and open:
 			_show(false)
+			get_viewport().set_input_as_handled() # the next Esc is the menu's
 
 # ------------------------------------------------------------------ build
 

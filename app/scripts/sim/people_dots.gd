@@ -1051,6 +1051,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				colour_mode = (colour_mode + 1) % MODES.size()
 				_apply_colours()
 			KEY_ESCAPE:
+				if selected >= 0 or _person_win.visible: # the next Esc is the menu's
+					get_viewport().set_input_as_handled()
 				selected = -1
 				_waiting = false
 				for m in [_material, _figure_material]:
