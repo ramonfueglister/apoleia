@@ -36,6 +36,8 @@ enum { EMPTY,
 	ROBE_N, ROBE_O, IRON,
 	LIME, LIME_W, SOCLE_R, SOCLE_B, RUBBLE, RUBBLE_D, TUFF, TUFF_D, OLIVE, OLIVE_D, PLANE, BARK_L,
 	GILT, GILT_D, GILT_L, EAVEG, RIDGEG, COCCIO, COCCIO_D, COCCIO_L, ANTEFIX, ROPE,
+	GRANITE, GRANITE_P, HORSE, HORSE_D, HORSE_W,
+	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -99,6 +101,13 @@ const COLOURS := {
 	OLIVE: ["7e8c66", "93a07a"], OLIVE_D: ["66724f", "77845e"], PLANE: ["5a8a3a", "6e9e46"], BARK_L: ["b8ab8c"],
 	GILT: ["b8913c", "d9b45a"], GILT_D: ["a8822f", "c9a24a"], GILT_L: ["c49d48", "e3c06a"], EAVEG: ["7a5e2a", "d9b45a"], RIDGEG: ["9c7a34", "c49d48"],
 	COCCIO: ["c9a490", "dbb8a2"], COCCIO_D: ["b8937f", "cba792"], COCCIO_L: ["d4b09c", "e3c3ae"], ANTEFIX: ["c46a44", "d47a52"], ROPE: ["5a4632"],
+	# grey granite of Mons Claudianus and pink granite of Aswan (the
+	# Pantheon's porch), race horses: bay, black, grey
+	GRANITE: ["8e8a85", "9c9893"], GRANITE_P: ["b08a7c", "bf9a8b"], HORSE: ["7a4a2c"], HORSE_D: ["3a2c24"], HORSE_W: ["d6d0c4"],
+	# polished Aswan granite and its cut signs, weathered bronze tiles, the
+	# shade under a porch, the dark inside an arch
+	OBELISK: ["a8665a", "b4705f"], GLYPH: ["7c4538"], ROOFB: ["7d5f33", "8a6a3b"], ROOFB_D: ["5f4626", "6b5030"],
+	PORCH: ["807870", "8a8279"], PORCH_D: ["6b655f", "756f68"], ARCH_D: ["4e4037"],
 }
 
 static var _side := PackedColorArray()

@@ -18,7 +18,7 @@ const Town := preload("res://scripts/voxel/roman_town.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
 
 const LOD_FACTORS := [1, 4, 10]
-const CACHE_DIR := "user://roman_buildings_v1"
+const CACHE_DIR := "user://roman_buildings_v2"
 
 ## Lot archetypes: number of variants and footprint in 10 m lots.
 const ARCHETYPES := {
@@ -26,7 +26,7 @@ const ARCHETYPES := {
 	"temple": [6, Vector2i(2, 2)], "garden": [4, Vector2i(1, 1)], "market": [4, Vector2i(2, 2)],
 }
 ## Landmarks and their footprints in lots.
-const LANDMARKS := {"colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(3, 2)}
+const LANDMARKS := {"colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(3, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(8, 3)}
 
 # Voxels too small to keep at the light levels: people and their clothes.
 const SMALL := [Kit.SKIN, Kit.HAIR, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE_N, Kit.ROBE_O, Kit.HELMET, Kit.SHIELD]
@@ -35,7 +35,8 @@ const SMALL := [Kit.SKIN, Kit.HAIR, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE
 static func lot_mesh(kind: String, variant: int, lod := 0) -> ArrayMesh:
 	return _cached("%s_%d" % [kind, variant], lod, func() -> Kit.Grid: return _lot_grid(kind, variant))
 
-## The mesh of landmark `name` ("colosseum", "forum", "baths") at level `lod`.
+## The mesh of landmark `name` ("colosseum", "forum", "baths", "pantheon",
+## "circus") at level `lod`.
 static func landmark_mesh(name: String, lod := 0) -> ArrayMesh:
 	return _cached(name, lod, func() -> Kit.Grid: return _landmark_grid(name))
 
@@ -97,12 +98,13 @@ static func _landmark_grid(name: String) -> Kit.Grid:
 	match name:
 		"colosseum":
 			return _without_ground(Colosseum.grid(), Colosseum.GROUND)
-		"forum", "baths":
+		"forum", "baths", "pantheon", "circus":
 			Town.keep_grid = true
-			if name == "forum":
-				Town.forum(0)
-			else:
-				Town.baths(0)
+			match name:
+				"forum": Town.forum(0)
+				"baths": Town.baths(0)
+				"pantheon": Town.pantheon(0)
+				"circus": Town.circus(0)
 			Town.keep_grid = false
 			return _without_ground(Town.last_grid, Town.FLOOR)
 	return null
