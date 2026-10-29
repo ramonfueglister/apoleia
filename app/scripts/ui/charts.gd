@@ -83,14 +83,20 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		for v in vals:
 			lo = minf(lo, v)
 			hi = maxf(hi, v)
-	# a band reaches at most BAND_REACH times beyond its line, so a single
-	# dear market (Rome) does not squash the median flat; it is cut there
-	var cut_lo := lo / BAND_REACH
-	var cut_hi := hi * BAND_REACH
+	# a band reaches at most BAND_REACH times its line's value of that month,
+	# so a single dear market (Rome) does not squash the median flat
 	for s in series:
-		for v in PackedFloat64Array(s.get("lo", [])) + PackedFloat64Array(s.get("hi", [])):
-			lo = minf(lo, maxf(v, cut_lo))
-			hi = maxf(hi, minf(v, cut_hi))
+		if s.has("lo") and s.has("hi"):
+			var vals: PackedFloat64Array = s.values
+			var cut_lo := PackedFloat64Array()
+			var cut_hi := PackedFloat64Array()
+			for i in vals.size():
+				cut_lo.append(maxf(float(s.lo[i]), vals[i] / BAND_REACH))
+				cut_hi.append(minf(float(s.hi[i]), vals[i] * BAND_REACH))
+				lo = minf(lo, cut_lo[i])
+				hi = maxf(hi, cut_hi[i])
+			s["band_lo"] = cut_lo
+			s["band_hi"] = cut_hi
 	if n < 2:
 		ci.draw_string(font, plot.get_center() - Vector2(70, 0), "Noch zu wenige Monate", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.5))
 		return
@@ -107,9 +113,9 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		if s.has("lo") and s.has("hi"):
 			var band := PackedVector2Array()
 			for i in vals.size():
-				band.append(Vector2(x_of.call(i), y_of.call(clampf(s.hi[i], lo, hi))))
+				band.append(Vector2(x_of.call(i), y_of.call(s.band_hi[i])))
 			for i in range(vals.size() - 1, -1, -1):
-				band.append(Vector2(x_of.call(i), y_of.call(clampf(s.lo[i], lo, hi))))
+				band.append(Vector2(x_of.call(i), y_of.call(s.band_lo[i])))
 			if Geometry2D.triangulate_polygon(band).size() > 0:
 				ci.draw_colored_polygon(band, Color(c, 0.2))
 		var line := PackedVector2Array()

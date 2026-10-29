@@ -94,6 +94,8 @@ var _win # ui_window.gd (untyped: its own members)
 var _overview # sim_overview.gd
 var _months := {} # market id -> PackedFloat64Array of its price, one per monthly count
 var _months_day := -1 # the table day last added to _months
+var _spark_at := -1 # the tree column of the curves, -1 for none
+var _stale := false # a new table came while the mouse was on the shown one
 var _open_button: Button
 var _tabs: TabBar
 var _stand: Label
@@ -138,6 +140,11 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 # ------------------------------------------------------------------ data
 
 func _process(_delta: float) -> void:
+	# a new month waits while the mouse is on the table, so the row under it
+	# (and its tooltip) stays where it is, as in EU5
+	if _stale and not (_tree.visible and _tree.get_global_rect().has_point(_tree.get_global_mouse_position())):
+		_stale = false
+		_refresh()
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
 		if answer.is_empty():
@@ -148,7 +155,7 @@ func _process(_delta: float) -> void:
 			_remember_months(answer)
 		_asked = -1
 		if open and (was == _kind or KINDS[_kind] == "overview" and KINDS[was] in OVERVIEW_KINDS):
-			_refresh()
+			_stale = true
 		elif was == 0:
 			_paint_regions()
 		return
@@ -350,6 +357,7 @@ func _fill_filters(t: Dictionary) -> void:
 	_place_panel()
 
 func _fill_tree(t: Dictionary) -> void:
+	_spark_at = -1
 	if _is_sheet(t):
 		_fill_sheet(t)
 		return
@@ -363,19 +371,21 @@ func _fill_tree(t: Dictionary) -> void:
 	var at := scroll.value if scroll != null else 0.0
 	_tree.set_block_signals(true) # selecting the chosen row again must not fly
 	_tree.clear()
-	var spark := _has_spark(t)
-	_tree.columns = cols.size() + (1 if spark else 0)
-	if spark: # the price's last months, after the numbers
-		_tree.set_column_title(cols.size(), "Preis, %d Monate" % SPARK_MONTHS)
-		_tree.set_column_title_alignment(cols.size(), HORIZONTAL_ALIGNMENT_CENTER)
-		_tree.set_column_expand(cols.size(), false)
-		_tree.set_column_custom_minimum_width(cols.size(), int(SPARK_PX + 16.0))
-	for i in cols.size():
-		var number := not _is_text(t, cols[i])
-		var title: String = t.labels[i]
-		if _unit[i] != "" and _unit[i] != "%":
-			title += " (%s)" % _unit[i]
-		if cols[i] == state.sort:
+	_spark_at = Array(cols).find("price") + 1 if _has_spark(t) else -1
+	_tree.columns = cols.size() + (1 if _spark_at >= 0 else 0)
+	if _spark_at >= 0: # the price's last months, right after the price
+		_tree.set_column_title(_spark_at, "%d Monate" % SPARK_MONTHS)
+		_tree.set_column_title_alignment(_spark_at, HORIZONTAL_ALIGNMENT_CENTER)
+		_tree.set_column_expand(_spark_at, false)
+		_tree.set_column_clip_content(_spark_at, true)
+		_tree.set_column_custom_minimum_width(_spark_at, int(SPARK_PX + 16.0))
+	for d in cols.size():
+		var i := _tc(d)
+		var number := not _is_text(t, cols[d])
+		var title: String = t.labels[d]
+		if _unit[d] != "" and _unit[d] != "%":
+			title += " (%s)" % _unit[d]
+		if cols[d] == state.sort:
 			title += "  ▼" if state.desc else "  ▲"
 		_tree.set_column_title(i, title)
 		_tree.set_column_title_alignment(i, HORIZONTAL_ALIGNMENT_RIGHT if number else HORIZONTAL_ALIGNMENT_LEFT)
@@ -390,10 +400,11 @@ func _fill_tree(t: Dictionary) -> void:
 	_fill_combined(total, t, rows, {cols[0]: "Alle (%s)" % _int(rows.size())})
 	var font := _tree.get_theme_font("font")
 	var font_size := _tree.get_theme_font_size("font_size")
-	for i in cols.size():
+	for d in cols.size():
+		var i := _tc(d)
 		if total.get_custom_color(i) != NEGATIVE:
 			total.set_custom_color(i, UiStyle.NAME)
-		if not _is_text(t, cols[i]): # the sum is often the widest number
+		if not _is_text(t, cols[d]): # the sum is often the widest number
 			_tree.set_column_custom_minimum_width(i, ceili(font.get_string_size(total.get_text(i), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + 20)
 	if fold_key == "":
 		_fill_rows(root, t, _sorted(t, rows))
@@ -544,13 +555,15 @@ func _draw_chart() -> void:
 	for v in data["price_median" if keys.size() > 1 else key]:
 		lo = minf(lo, float(v) * scale)
 		hi = maxf(hi, float(v) * scale)
-	if keys.size() > 1: # the band, cut where one dear market would squash the median
-		var cut_lo := lo / Charts.BAND_REACH
-		var cut_hi := hi * Charts.BAND_REACH
-		for k in ["price_min", "price_max"]:
-			for v in data[k]:
-				lo = minf(lo, maxf(float(v) * scale, cut_lo))
-				hi = maxf(hi, minf(float(v) * scale, cut_hi))
+	var band_lo := PackedFloat64Array()
+	var band_hi := PackedFloat64Array()
+	if keys.size() > 1: # the band, at most BAND_REACH times the month's median
+		for r in n:
+			var m := float(data.price_median[r]) * scale
+			band_lo.append(maxf(float(data.price_min[r]) * scale, m / Charts.BAND_REACH))
+			band_hi.append(minf(float(data.price_max[r]) * scale, m * Charts.BAND_REACH))
+			lo = minf(lo, band_lo[r])
+			hi = maxf(hi, band_hi[r])
 	if lo >= 0.0 and lo < hi * 0.5:
 		lo = 0.0 # counts from nothing
 	if hi - lo < 1e-9:
@@ -573,9 +586,9 @@ func _draw_chart() -> void:
 	if keys.size() > 1: # the range of the prices as a band
 		var band := PackedVector2Array()
 		for r in n:
-			band.append(Vector2(x_of.call(r), y_of.call(clampf(float(data.price_max[r]) * scale, lo, hi))))
+			band.append(Vector2(x_of.call(r), y_of.call(band_hi[r])))
 		for r in range(n - 1, -1, -1):
-			band.append(Vector2(x_of.call(r), y_of.call(clampf(float(data.price_min[r]) * scale, lo, hi))))
+			band.append(Vector2(x_of.call(r), y_of.call(band_lo[r])))
 		if Geometry2D.triangulate_polygon(band).size() > 0:
 			_chart.draw_colored_polygon(band, Color(Charts.SERIES[0], 0.2))
 	var main := "price_median" if keys.size() > 1 else key
@@ -596,14 +609,13 @@ func _fill_rows(parent: TreeItem, t: Dictionary, rows: PackedInt32Array) -> void
 		item.set_meta("rows", PackedInt32Array([r]))
 		for i in cols.size():
 			if _is_text(t, cols[i]):
-				item.set_text(i, t.data[cols[i]][r])
+				item.set_text(_tc(i), t.data[cols[i]][r])
 			else:
-				_set_number(item, i, float(t.data[cols[i]][r]) * _factor[i], _unit[i])
-		if _has_spark(t):
-			var c := cols.size()
-			item.set_cell_mode(c, TreeItem.CELL_MODE_CUSTOM)
-			item.set_metadata(c, int(t.data.id[r]))
-			item.set_custom_draw_callback(c, _draw_spark)
+				_set_number(item, _tc(i), float(t.data[cols[i]][r]) * _factor[i], _unit[i])
+		if _spark_at >= 0:
+			item.set_cell_mode(_spark_at, TreeItem.CELL_MODE_CUSTOM)
+			item.set_metadata(_spark_at, int(t.data.id[r]))
+			item.set_custom_draw_callback(_spark_at, _draw_spark)
 		if parent == _tree.get_root():
 			_stripe(item, n)
 		if t.data.has("id") and int(t.data.id[r]) == chosen:
@@ -622,9 +634,9 @@ func _fill_combined(item: TreeItem, t: Dictionary, rows: PackedInt32Array, names
 	item.set_meta("rows", rows)
 	for i in cols.size():
 		if _is_text(t, cols[i]):
-			item.set_text(i, names.get(cols[i], ""))
+			item.set_text(_tc(i), names.get(cols[i], ""))
 		else:
-			_set_number(item, i, _combine(t, i, rows) * _factor[i], _unit[i])
+			_set_number(item, _tc(i), _combine(t, i, rows) * _factor[i], _unit[i])
 
 ## The unit each column is shown in: kg as t where the numbers run large,
 ## Denar as D.
@@ -665,16 +677,26 @@ func _stripe(item: TreeItem, line: int) -> void:
 ## what is bad (the hungry), bronze for the rest.
 func _draw_share(item: TreeItem, rect: Rect2, column: int) -> void:
 	var t := _tables[_kind]
-	var key: String = t.columns[column] if not t.is_empty() and column < t.columns.size() else ""
+	var d := _dc(column)
+	var key: String = t.columns[d] if not t.is_empty() and d >= 0 and d < t.columns.size() else ""
 	var colour := Charts.RED if "hungry" in key else UiStyle.FRAME_LIT
 	Charts.share(_tree, Rect2(rect.position.x + 8.0, rect.position.y, rect.size.x - 14.0, rect.size.y - 1.0), float(item.get_metadata(column)), colour)
+
+## The tree column of the table's column d, and back (-1: the curves).
+func _tc(d: int) -> int:
+	return d + 1 if _spark_at >= 0 and d >= _spark_at else d
+
+func _dc(c: int) -> int:
+	if _spark_at < 0 or c < _spark_at:
+		return c
+	return -1 if c == _spark_at else c - 1
 
 ## The markets get their price's last months as a curve.
 static func _has_spark(t: Dictionary) -> bool:
 	return t.get("kind", "") == "markets" and t.data.has("id")
 
 func _draw_spark(item: TreeItem, rect: Rect2) -> void:
-	var s: PackedFloat64Array = _months.get(int(item.get_metadata(_tree.columns - 1)), PackedFloat64Array())
+	var s: PackedFloat64Array = _months.get(int(item.get_metadata(_spark_at)), PackedFloat64Array())
 	Charts.spark(_tree, Rect2(rect.position + Vector2(8, 6), rect.size - Vector2(16, 12)), s, Charts.SERIES[0])
 
 func _scroll_bar() -> VScrollBar:
@@ -718,7 +740,7 @@ func _row_tip(at: Vector2) -> Dictionary:
 	if not item.has_meta("rows") or _is_sheet(t):
 		return {}
 	var rows: PackedInt32Array = item.get_meta("rows")
-	var d := {"id": "%d:%s:%d" % [_kind, item.get_text(0), int(t.day)], "title": item.get_text(0).strip_edges(),
+	var d := {"id": "%d:%s" % [_kind, item.get_text(0)], "title": item.get_text(0).strip_edges(),
 		"kind": ROW_KINDS[_kind] if rows.size() == 1 else "%s, %s zusammen" % [TITLES[_kind], _int(rows.size())],
 		"rows": [], "hints": []}
 	for i in cols.size():
@@ -728,7 +750,7 @@ func _row_tip(at: Vector2) -> Dictionary:
 		if _unit[i] != "" and _unit[i] != "%":
 			label += " (%s)" % _unit[i]
 		var colour := Charts.RED if "hungry" in cols[i] and _combine(t, i, rows) > 0.05 else UiStyle.TEXT
-		d.rows.append([label, item.get_text(i), colour])
+		d.rows.append([label, item.get_text(_tc(i)), colour])
 	if KINDS[_kind] == "markets" and rows.size() == 1 and t.data.has("id"):
 		var m := int(t.data.id[rows[0]])
 		d.text = "Die Händler verkaufen Korn zum [url=price]Preis[/url] von [n]%s D/kg[/n]; ihr [url=store]Lager[/url] reicht für %s." % [
@@ -808,7 +830,8 @@ func _on_title(column: int, _button: int) -> void:
 	var t := _tables[_kind]
 	if t.is_empty():
 		return
-	if column >= t.columns.size():
+	column = _dc(column)
+	if column < 0 or column >= t.columns.size():
 		return # the curves do not sort
 	var key: String = t.columns[column]
 	var state: Dictionary = _state[_kind]
@@ -1106,6 +1129,7 @@ func _build() -> void:
 	_tree.column_titles_visible = true
 	_tree.select_mode = Tree.SELECT_ROW
 	_tree.allow_search = false # letters stay with the camera keys and T
+	_tree.auto_tooltip = false # the rows have EU5 tooltips (ui/tooltips.gd)
 	_tree.focus_mode = Control.FOCUS_NONE
 	_tree.column_title_clicked.connect(_on_title)
 	_tree.item_selected.connect(_on_selected)

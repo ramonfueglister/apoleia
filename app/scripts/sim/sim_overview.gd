@@ -228,7 +228,7 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 		for s in series:
 			legend.add_child(_swatch(s.colour, s.name))
 		if series.size() == 1:
-			legend.add_child(_swatch(Color(series[0].colour, 0.35), "billigster bis teuerster Markt"))
+			legend.add_child(_swatch(Color(series[0].colour, 0.35), "Spanne der Märkte, höchstens doppelter Median"))
 	entry.control.queue_redraw()
 
 ## The month under the mouse: each series' value, the price's range.
