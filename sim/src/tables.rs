@@ -95,4 +95,4 @@ impl Table {
 }
 
 /// The tables the game can ask for, by key.
-pub const TABLES: [&str; 4] = ["markets", "population", "farms", "state"];
+pub const TABLES: [&str; 5] = ["markets", "population", "farms", "state", "history"];

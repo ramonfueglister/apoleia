@@ -7,8 +7,13 @@
 //! lasts), pid, kind (0 sale, 1 purchase, 2 export, 3 import), cargo_kg,
 //! depart, arrive, home (days), back (turns home the same day), first and
 //! count (its route in points), points (world km, home to destination).
+//!
+//! Hired work (`Grain::work_in`, `work_to_dict`): worker (household),
+//! farm_household (-1 if none), day (the week's labour exchange), days,
+//! kind (0 sowing, 1 harvest, 2 outside the peaks, 3 from a surplus), from
+//! (worker's home) and to (farmstead) in world km.
 
-use apoleia_sim::grain::TripsView;
+use apoleia_sim::grain::{TripsView, WorkView};
 use godot::prelude::*;
 
 pub fn to_dict(v: &TripsView) -> VarDictionary {
@@ -29,5 +34,17 @@ pub fn to_dict(v: &TripsView) -> VarDictionary {
     d.set("first", &PackedInt32Array::from(v.first.as_slice()));
     d.set("count", &PackedInt32Array::from(v.count.as_slice()));
     d.set("points", &PackedVector2Array::from_iter(v.points.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d
+}
+
+pub fn work_to_dict(v: &WorkView) -> VarDictionary {
+    let mut d = VarDictionary::new();
+    d.set("worker", &PackedInt64Array::from(v.worker.as_slice()));
+    d.set("farm_household", &PackedInt64Array::from(v.farm_household.as_slice()));
+    d.set("day", &PackedInt64Array::from(v.day.as_slice()));
+    d.set("days", &PackedInt64Array::from(v.days.as_slice()));
+    d.set("kind", &PackedInt32Array::from(v.kind.as_slice()));
+    d.set("from", &PackedVector2Array::from_iter(v.from.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d.set("to", &PackedVector2Array::from_iter(v.to.iter().map(|&(x, z)| Vector2::new(x, z))));
     d
 }

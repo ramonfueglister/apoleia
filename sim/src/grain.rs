@@ -253,6 +253,13 @@ const TENANT: u8 = 1;
 const ESTATE: u8 = 2;
 
 // Trip kinds and event kinds.
+/// Kinds of hired work in the view (`work_in`): in the sowing or harvest
+/// peak, outside the peaks on a farm with more fields than its family
+/// works, from a farm's surplus (S84).
+pub const WORK_SOW: u8 = 0;
+pub const WORK_HARVEST: u8 = 1;
+pub const WORK_OFF: u8 = 2;
+pub const WORK_SURPLUS: u8 = 3;
 const SELL: u8 = 0;
 const BUY: u8 = 1;
 const EXPORT: u8 = 2;
@@ -414,6 +421,10 @@ pub struct Market {
     /// than their family can work over the year.
     open: Vec<u32>,
     hirers: Vec<u32>,
+    /// For the view only (`work_in`): the day of this week's labour
+    /// exchange and who worked where: (worker household, farm, days, kind).
+    work_day: i64,
+    work: Vec<(u32, u32, i64, u8)>,
     pub people: u32,
     pub tents: u32,
     /// Grain in the region (farm stores, market, pantries), kg.
@@ -557,6 +568,41 @@ pub struct Treasury {
     pub grain_kg: i64,
 }
 
+/// The flows the history sums per month: births, deaths, hunger deaths,
+/// people who left the map, people who moved, then kg harvested, sold,
+/// traded, given as alms, stolen, eaten, needed, and days of hired work.
+pub const FLOWS: [&str; 13] = ["births", "deaths", "hunger_deaths", "left", "moved", "harvest_kg", "sold_kg", "traded_kg", "alms_kg", "stolen_kg", "eaten_kg", "need_kg", "hired_days"];
+
+/// One month of the history (`Grain::history`), taken after the monthly
+/// count: the month's flows (FLOWS) and the levels on that day.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct HistoryRow {
+    pub day: i64,
+    pub people: u32,
+    pub flows: [i64; 13],
+    /// Grain price min / median / max over the markets, by people (den./kg).
+    pub price: (f64, f64, f64),
+    pub money_held: i64,
+    pub minted: i64,
+    pub cash: i64,
+    pub tax_grain_kg: i64,
+    pub tent_people: u32,
+    pub farms: usize,
+    pub farm_store_kg: i64,
+    pub market_store_kg: i64,
+}
+
+/// For the view only: the counters as of the end of the last day, the
+/// flows since the last row, and the rows. The counters of `stats` may be
+/// reset between two days (the yearly run does); a counter below its last
+/// value was reset, and its value is then that day's flow.
+#[derive(Default)]
+struct History {
+    last: [i64; 13],
+    month: [i64; 13],
+    rows: Vec<HistoryRow>,
+}
+
 pub struct Grain {
     seed: u64,
     farms: Vec<Farm>,
@@ -624,6 +670,7 @@ pub struct Grain {
     pub timing: GrainTiming,
     pub money: Money,
     pub treasury: Treasury,
+    history: History,
 }
 
 fn doy(day: i64) -> i64 {
@@ -966,6 +1013,8 @@ impl Grain {
                 walked: FxHashMap::default(),
                 open: Vec::new(),
                 hirers: Vec::new(),
+                work_day: 0,
+                work: Vec::new(),
                 people: 0,
                 tents: 0,
                 grain: 0,
@@ -1023,6 +1072,7 @@ impl Grain {
             timing: GrainTiming::default(),
             money: Money::default(),
             treasury: Treasury::default(),
+            history: History::default(),
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
@@ -1962,7 +2012,58 @@ impl Grain {
             }
             _ => {}
         }
+        self.track(p, day, slice == 17);
         self.timing.census += us(t0);
+    }
+
+    /// The history (read only for the simulation): the day's flows added
+    /// to the month's, and a row after the monthly count.
+    fn track(&mut self, p: &People, day: i64, row: bool) {
+        let (ps, gs) = (&p.stats, &self.stats);
+        let now = [
+            ps.births as i64,
+            ps.deaths.iter().sum::<u64>() as i64,
+            ps.deaths[2] as i64,
+            ps.left_people as i64,
+            ps.moved_people as i64,
+            gs.harvest_kg,
+            gs.sold_kg,
+            gs.traded_kg,
+            gs.alms_kg,
+            gs.stolen_kg,
+            gs.eaten_kg,
+            gs.need_kg,
+            gs.hired_days,
+        ];
+        let h = &mut self.history;
+        for k in 0..now.len() {
+            h.month[k] += if now[k] < h.last[k] { now[k] } else { now[k] - h.last[k] };
+        }
+        h.last = now;
+        if !row {
+            return;
+        }
+        let (farms, _, _, tent_people, _, farm_t, market_t) = self.summary();
+        let r = HistoryRow {
+            day,
+            people: p.count,
+            flows: std::mem::take(&mut self.history.month),
+            price: self.price_spread(),
+            money_held: self.money_held(),
+            minted: self.money.minted,
+            cash: self.treasury.cash,
+            tax_grain_kg: self.treasury.grain_kg,
+            tent_people,
+            farms,
+            farm_store_kg: (farm_t * 1e3) as i64,
+            market_store_kg: (market_t * 1e3) as i64,
+        };
+        self.history.rows.push(r);
+    }
+
+    /// One row per month since the start (`track`).
+    pub fn history(&self) -> &[HistoryRow] {
+        &self.history.rows
     }
 
     fn push(&mut self, day: i64, ev: GEv) {
@@ -2376,6 +2477,8 @@ impl Grain {
                 }
             }
             self.market_hh[mi] = ids;
+            self.markets[mi].work.clear();
+            self.markets[mi].work_day = day;
             // PLACEHOLDER order: the landless are hired first, then farms
             // with spare hands, each in household order.
             offers.sort_unstable_by_key(|&(id, _)| id);
@@ -2405,6 +2508,7 @@ impl Grain {
                     self.stats.wage_kg += wage;
                     self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
+                    self.markets[mi].work.push((w, f, take, if pk.harvest { WORK_HARVEST } else { WORK_SOW }));
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
                         self.farms[ws.farm as usize].store += wage;
@@ -2447,6 +2551,7 @@ impl Grain {
                     self.stats.wage_kg += wage;
                     self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
+                    self.markets[mi].work.push((w, f, take, WORK_OFF));
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
                         self.farms[ws.farm as usize].store += wage;
@@ -2480,6 +2585,7 @@ impl Grain {
                     self.stats.wage_kg += wage;
                     self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
+                    self.markets[mi].work.push((w, farm, take, WORK_SURPLUS));
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
                         self.farms[ws.farm as usize].store += wage;
@@ -3155,6 +3261,20 @@ pub struct TripsView {
     pub points: Vec<(f32, f32)>,
 }
 
+/// Hired work in a box (`Grain::work_in`), one entry per hire: worker
+/// household, the farm's household (-1 if none), the exchange day, days of
+/// work, kind (WORK_*), worker's home and farmstead in world km (x, z).
+#[derive(Default, Clone, Debug)]
+pub struct WorkView {
+    pub worker: Vec<i64>,
+    pub farm_household: Vec<i64>,
+    pub day: Vec<i64>,
+    pub days: Vec<i64>,
+    pub kind: Vec<i32>,
+    pub from: Vec<(f32, f32)>,
+    pub to: Vec<(f32, f32)>,
+}
+
 /// What the game shows of a household (read only).
 #[derive(Clone, Copy, Debug)]
 pub struct HouseholdLook {
@@ -3270,6 +3390,34 @@ impl Grain {
         v
     }
 
+    /// Who worked on whose farm at the last weekly labour exchange of each
+    /// region (S72, S84), where the worker's home or the farm lies in the
+    /// box (world km). Read only. One entry per hire: the worker's
+    /// household and home, the farm's household and farmstead, the days of
+    /// work bought that week from `day` on, and the kind (WORK_*).
+    pub fn work_in(&self, min: (f64, f64), max: (f64, f64)) -> WorkView {
+        let mut v = WorkView::default();
+        let inside = |(x, z): (f64, f64)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1;
+        for m in &self.markets {
+            for &(w, f, days, kind) in &m.work {
+                let Some(ws) = self.hh.get(&w) else { continue };
+                let fm = &self.farms[f as usize];
+                let (a, b) = (self.settle.fine_centre_km(ws.fine), self.settle.fine_centre_km(fm.fine));
+                if !inside(a) && !inside(b) {
+                    continue;
+                }
+                v.worker.push(w as i64);
+                v.farm_household.push(if fm.hh == NONE { -1 } else { fm.hh as i64 });
+                v.day.push(m.work_day);
+                v.days.push(days);
+                v.kind.push(kind as i32);
+                v.from.push((a.0 as f32, a.1 as f32));
+                v.to.push((b.0 as f32, b.1 as f32));
+            }
+        }
+        v
+    }
+
     pub fn market_paths(&self, m: usize) -> Option<Vec<(u32, u8, u8)>> {
         let f = self.markets[m].field.as_ref()?;
         let mut v = Vec::with_capacity(f.worn.len());
@@ -3283,6 +3431,14 @@ impl Grain {
         }
         v.sort_unstable();
         Some(v)
+    }
+
+    /// Market (region) of each 25 km cell, in the order of the road layer
+    /// (people grid, row by row); NONE at sea. With the `markets` table
+    /// (id = market index) the game colours regions by price or any other
+    /// column.
+    pub fn cell_markets(&self) -> &[u32] {
+        &self.cell_market
     }
 
     /// Trade road level per 25 km cell (S71): 0 none, 1 track, 2 road on
@@ -3303,8 +3459,49 @@ impl Grain {
             "population" => Some(self.population_table(p, day)),
             "farms" => Some(self.farm_table(p, day)),
             "state" => Some(self.state_table(day)),
+            "history" => Some(self.history_table(day)),
             _ => None,
         }
+    }
+
+    /// The history, one row per month (`track`): the month's flows and the
+    /// levels after the monthly count.
+    fn history_table(&self, day: i64) -> Table {
+        let rows = &self.history.rows;
+        let int = |f: &dyn Fn(&HistoryRow) -> i64| rows.iter().map(f).collect::<Vec<i64>>();
+        let float = |f: &dyn Fn(&HistoryRow) -> f64| rows.iter().map(f).collect::<Vec<f64>>();
+        let flow = |k: usize| int(&|r| r.flows[k]);
+        let tonnes = |k: usize| float(&|r| r.flows[k] as f64 / 1000.0);
+        let den = |f: &dyn Fn(&HistoryRow) -> i64| float(&|r| f(r) as f64 / 1000.0);
+        let mut t = Table::new("history", "Verlauf", day);
+        t.id((0..rows.len() as i64).collect());
+        t.int("day", "Tag", "", int(&|r| r.day))
+            .float("year", "Jahr", "", float(&|r| r.day as f64 / YEAR as f64))
+            .int("persons", "Menschen", "", int(&|r| r.people as i64))
+            .int("births", "Geburten im Monat", "", flow(0))
+            .int("deaths", "Todesfälle im Monat", "", flow(1))
+            .int("hunger_deaths", "Hungertote im Monat", "", flow(2))
+            .int("left", "Verlassen die Karte", "", flow(3))
+            .int("moved", "Umgezogen", "", flow(4))
+            .float("harvest_t", "Ernte", "t", tonnes(5))
+            .float("sold_t", "Verkauft", "t", tonnes(6))
+            .float("traded_t", "Fernhandel", "t", tonnes(7))
+            .float("alms_t", "Almosen", "t", tonnes(8))
+            .float("stolen_t", "Gestohlen", "t", tonnes(9))
+            .float("eaten", "Gegessen vom Bedarf", "%", float(&|r| if r.flows[11] == 0 { 1.0 } else { (r.flows[10] as f64 / r.flows[11] as f64).min(1.0) }))
+            .int("hired_days", "Taglohn", "Tage", flow(12))
+            .float("price_min", "Preis min", "Denar/kg", float(&|r| r.price.0))
+            .float("price_median", "Preis Median", "Denar/kg", float(&|r| r.price.1))
+            .float("price_max", "Preis max", "Denar/kg", float(&|r| r.price.2))
+            .float("money_held", "Geld im Umlauf", "Denar", den(&|r| r.money_held))
+            .float("minted", "Geprägt seit Start", "Denar", den(&|r| r.minted))
+            .float("cash", "Staatskasse", "Denar", den(&|r| r.cash))
+            .float("tax_grain_t", "Steuerkorn seit Start", "t", float(&|r| r.tax_grain_kg as f64 / 1000.0))
+            .int("tent_persons", "Im Zelt", "", int(&|r| r.tent_people as i64))
+            .int("farms", "Höfe", "", int(&|r| r.farms as i64))
+            .float("farm_store_t", "Hoflager", "t", float(&|r| r.farm_store_kg as f64 / 1000.0))
+            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0));
+        t
     }
 
     /// The treasury and the money cycle since the start (S94 step 1): one
@@ -4000,12 +4197,19 @@ mod tests {
             }
             assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
             assert!(g.money.minted > 0 && g.money.freight > 0 && g.treasury.wages >= g.money.minted);
+            // The history adds up to the counters (none reset here).
+            let h = g.history();
+            assert!(h.len() >= 6);
+            assert_eq!(h.iter().map(|r| r.flows[0]).sum::<i64>() + g.history.month[0], p.stats.births as i64);
+            assert_eq!(h.iter().map(|r| r.flows[5]).sum::<i64>() + g.history.month[5], g.stats.harvest_kg);
             // The trips view is read only and every trip has a route.
             let before = g.fingerprint();
             let v = g.trips_in(&p, (-1e9, -1e9), (1e9, 1e9));
             assert!(!v.id.is_empty() && v.kind.contains(&(SELL as i32)) && v.kind.contains(&(EXPORT as i32)));
             assert!(v.count.iter().all(|&n| n >= 2) && v.count.iter().map(|&n| n as usize).sum::<usize>() == v.points.len());
             assert!(v.depart.iter().zip(&v.arrive).zip(&v.home).all(|((d, a), h)| d <= a && a <= h && *d <= v.day as f64 && v.day as f64 <= *h));
+            let w = g.work_in((-1e9, -1e9), (1e9, 1e9));
+            assert!(!w.worker.is_empty() && w.days.iter().all(|&d| d > 0) && w.from.len() == w.worker.len());
             assert_eq!(g.fingerprint(), before);
             (p.fingerprint(), g.fingerprint())
         };
@@ -4085,10 +4289,10 @@ mod tests {
         let before = g.fingerprint();
         for key in crate::tables::TABLES {
             let t = g.table(&p, key).unwrap();
-            assert!(t.rows() > 0, "{key}");
+            assert!(t.rows() > 0 || key == "history", "{key}");
             assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
             assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
-            assert!(key == "state" || t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            assert!(matches!(key, "state" | "history") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
             for c in t.columns.iter().filter(|c| c.unit == "%") {
                 let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
                 assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);
