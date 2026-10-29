@@ -566,6 +566,26 @@ der Kasse aufbauen (S94 Schritt 1, nach Ramons Entscheid).
 Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
 d2967522adc83ce9), 55 Tests grün.
 
+## Fernhändler verkaufen nur gegen Bargeld (S96, 10 Jahre, Seed 1, `run10-s96-trader-cash.txt`)
+
+Vorher bezahlten die Marktleute jede Händlerladung voll, auch aus leerer Kasse. Nach zwei
+Jahren lag das Händlergeld zusammen bei -250 Mio. Denar, ein Kredit, den niemand beschlossen
+hatte. Jetzt kaufen sie wie bei den Bauern nur, soweit ihr Bargeld reicht. Der Rest geht
+zurück an den Heimatmarkt, und was auch dort niemand kaufen kann, kommt in die
+Vorratskammer des Händlers.
+
+| Grösse, Jahr 10 | vorher | jetzt |
+|---|---|---|
+| Märkte mit negativem Händlergeld (Jahr 5) | 708 | 0 |
+| Fernhandel | 3'414 t | 3'256 t |
+| Hungertote | 97 | 125 |
+| Getreidepreis Rom | 4,37 Denar/kg | 24,17 Denar/kg |
+| Menschen | 114'480 | 114'094 |
+
+Rom bekommt weniger Einfuhr, weil seine Marktleute nicht mehr auf Pump kaufen. Gleicher
+Fingerabdruck mit 1 und 4 Threads (people e96a6d3747c2f174, grain 39efd3bb9f66f013), die
+Geldbilanz geht auf, 55 Tests grün.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -660,7 +680,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Vorrat und Kauf | Höfe behalten Nahrung bis zur nächsten Ernte plus 60 Tage; andere kaufen unter 30 Tagen bis 60 Tage | frei gewählt |
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
 | Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
-| Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht | frei gewählt |
+| Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht; Unverkauftes in die eigene Vorratskammer (S96) | frei gewählt |
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
 | Not (S66) | weniger als 80 % gegessen | frei gewählt |
