@@ -226,12 +226,14 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 			float half_w = max(w.y >= 2.0 ? SIM_PATH_KM : SIM_TRAIL_KM, fw_km * 1.5) * 0.5;
 			c = mix(c, C_PAVED * 0.96, sim_band(w.x, half_w, fw_km));
 		}
-		// a paved square with rows of stalls under red and white awnings
+		// a paved square; further out than the standing stalls show
+		// (people_trips.gd SQUARES_KM) rows of stalls under red and white
+		// awnings painted on it
 		float sq = 0.16;
 		if (w.z < sq + fw_km) {
 			vec2 g = fract(p / 0.05);
 			vec2 id = floor(p / 0.05);
-			bool stall = abs(g.x - 0.5) < 0.3 && abs(g.y - 0.5) < 0.22 && w.z < sq - 0.03 && sim_hash(id) > 0.45;
+			bool stall = sim_view_km > 10.0 && abs(g.x - 0.5) < 0.3 && abs(g.y - 0.5) < 0.22 && w.z < sq - 0.03 && sim_hash(id) > 0.45;
 			vec3 m = stall ? (sim_hash(id + 5.0) < 0.5 ? C_ROOF : C_WALL) : C_PAVED;
 			c = mix(c, m, sim_band(w.z, sq, fw_km));
 		}
