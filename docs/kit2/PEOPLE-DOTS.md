@@ -211,7 +211,11 @@ Kolosseum-Prototyps (Caesar III): `people_houses.gdshader` gibt jedem Hof
 seinen Putz (creme, rosa, ocker) und seine Läden (grün, braun) über den
 Palettenindex, den der Mesher in UV.y schreibt, dazu je Hof einen von vier
 Dachtönen und nicht auf jedem Hof Zypressen, Olivenbaum und Heuhaufen (deren
-Farben haben eigene Indizes), und spiegelt das Haus je
+Farben haben eigene Indizes). Jede Dachfläche ist als eine Ebene nach ihrer
+Neigung beleuchtet (Tritt- und Stossflächen der Ziegelreihen bekommen die
+Normale der Dachfläche, die Stossflächen eine Stufe dunkler), so ist die
+Seite zum Licht hell, die abgewandte als Ganzes im Schatten, ohne fast
+schwarze Ziegelstreifen (Runde 16). Das Haus wird je
 Parzelle (Front mit Tür und Weg zur Kamera auf der Hälfte der Parzellen,
 sonst eine Flanke, nie die Rückseite; gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
@@ -269,17 +273,16 @@ Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite liegt das Ackerland in Streifenfluren: in jedem Hofblock (der
-feinen Kachel) bilden die 250-m-Parzellen Streifen, alle in eine Richtung,
-jeder Streifen ein Feld in einer von vier flachen Farben mit klaren
-Helligkeitsstufen: Urbeks Weizengelb, das Grün wachsenden Getreides, helle
-Stoppel und gepflügtes Braun; Brache als Stoppel oder gepflügt, Saat je
-Streifen etwas vor oder hinter der Jahreszeit; nur auf ebenen Kacheln.
-So liest sich das Land um die Dörfer bis 40 km als Feldflur, weder als
-Tarnmuster noch als Konfetti (Runden 12 bis 15: einzelne Parzellen oder
-Flecken von 2 × 2 km in zufälligen Tönen).
+feinen Kachel) bilden die 250-m-Parzellen Streifen von zwei Parzellen Breite,
+alle in eine Richtung, jeder Streifen ein Feld in einer flachen Farbe:
+Urbeks Weizengelb, das Grün wachsenden Getreides, goldene Stoppel, ab und zu
+ein helleres gepflügtes Braun; die meiste Brache ist beweidetes Gras, so
+liegen die Felder auf Grün und bleiben leiser als die Stadt; nur auf ebenen
+Kacheln. Runden 12 bis 16: einzelne Parzellen, Flecken von 2 × 2 km oder
+250-m-Streifen in vier gleich lauten Tönen lasen sich als Tarnmuster,
+Konfetti oder Strichcode.
 Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
-und tragen niedrige Büschel in Reihen (Stoppel auf Brache, goldene Ähren auf
-reifem Getreide),
+und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16),
 und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
 (`people_crop_slab.gdshaderinc`, geteilt vom Feld- und vom
 Platzierungs-Shader).

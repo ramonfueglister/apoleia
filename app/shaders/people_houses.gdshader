@@ -33,6 +33,7 @@ const vec3 SHUTTER_BROWN = vec3(0.604, 0.353, 0.227);
 // roof tiles by farm: as built, rusty, a little lighter or dark red
 // (Caesar III terracotta, never orange)
 const vec3 ROOFS[4] = vec3[](vec3(1.0), vec3(1.02, 0.94, 0.8), vec3(1.06, 1.02, 0.96), vec3(0.92, 0.82, 0.74));
+const float ROOF_PITCH = 0.42; // rise per metre (farmhouse.gd PITCH)
 
 void vertex() {
 	int i = list_offset + INSTANCE_ID;
@@ -70,14 +71,17 @@ void vertex() {
 	} else if (index == 37) {
 		tint = vec3(1.0); // the yard's grass alike on every farm
 	}
-	// each roof slope lit by the way it faces once the house is turned
-	// (farmhouse.gd _tile): turned to the sun (west) a little lighter,
-	// away from it (east) darker, so the two sides of a roof differ even
-	// where only the treads of the tile steps show
+	// each roof slope lit as one plane by the way it faces once the house
+	// is turned (farmhouse.gd _tile): the treads and the risers of its tile
+	// rows take the slope's normal, so the slope facing the light is lit
+	// and the one turned away is shaded as a whole; the risers a step
+	// darker so the rows still show (round 16: risers turned from the light
+	// read as near-black stripes)
 	if (index >= 29 && index <= 36) {
 		int d = (index - 29) / 2;
 		vec2 face = turn * (d == 0 ? vec2(1.0, 0.0) : d == 1 ? vec2(-1.0, 0.0) : d == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0));
-		tint *= face.x < -0.5 ? 1.08 : face.x > 0.5 ? 0.74 : face.y > 0.5 ? 1.0 : 0.82;
+		tint *= abs(nrm.y) < 0.5 ? 0.85 : 1.0;
+		nrm = normalize(vec3(face.x * ROOF_PITCH, 1.0, face.y * ROOF_PITCH));
 	}
 	// not every farm has the cypresses, the olive tree or the haystack
 	// on its lot (farmhouse.gd _lot)

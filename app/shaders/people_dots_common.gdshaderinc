@@ -221,7 +221,8 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 			float m_km = dot_km_per_m * st.x;
 			vec2 local; // metres in the farmhouse's frame, front towards +z
 			if (h.y < 0.25) {
-				local = h2.y < 0.5 ? vec2((h.x - 0.5) * 12.0, 3.9 + 1.9 * h2.x) : vec2((h.x - 0.5) * 7.0, -4.0 - 1.6 * h2.x);
+				// in front of the house (clear of the well, farmhouse.gd _well) or behind it
+				local = h2.y < 0.5 ? vec2(h.x * 10.25 - 6.0, 3.9 + 1.9 * h2.x) : vec2((h.x - 0.5) * 7.0, -4.0 - 1.6 * h2.x);
 			} else if (h.y < 0.6) {
 				// anywhere along the lane, a square round the lot's middle
 				float half_lot = DOT_LOT_KM * 0.5 / m_km;
