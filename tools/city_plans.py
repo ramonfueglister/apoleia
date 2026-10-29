@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """City plans on the parcel grid (docs/kit2/CITY_PLANS.md).
 
-Reads the reconstructed plans in data/cities/<id>.json (walls, gates, river,
+Reads the reconstructed plans in data/cities/plans/<id>.json (walls, gates, river,
 streets with rank and surface, buildings, quarters; real lon/lat) and lays
 each onto the 0.25 km parcel grid of the tile terrain (one house lot per
 parcel, aligned to its world_min). A city is drawn `scale` times its real
@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-CITY_DIR = ROOT / "data" / "cities"
+CITY_DIR = ROOT / "data" / "cities" / "plans"
 # tools/build_tile_terrain.py: world km of the terrain grid
 WORLD_MIN = (-5286.959516530886, -2223.9016046706583)
 PARCEL_KM = 0.25
@@ -34,16 +34,19 @@ KINDS = ["none", "house", "insula", "domus", "garden", "park", "street", "plaza"
 K = {k: i for i, k in enumerate(KINDS)}
 RANKS = ["", "via", "vicus", "angiportus"]
 SURFACES = ["", "basalt", "slabs", "gravel", "earth"]
-# links to the eight neighbours, a bit per direction (i: east, j: south)
-N, NE, E, SE, S, SW, W, NW = (1 << k for k in range(8))
-STEP = {(0, -1): N, (1, -1): NE, (1, 0): E, (1, 1): SE, (0, 1): S, (-1, 1): SW, (-1, 0): W, (-1, -1): NW}
-OPPOSITE = {N: S, NE: SW, E: W, SE: NW, S: N, SW: NE, W: E, NW: SE}
+# links to the four neighbours, a bit per direction (i: east, j: south);
+# streets are 4-connected, so a street is drawn from Urbek's pieces
+N, E, S, W = 1, 2, 4, 8
+STEP = {(0, -1): N, (1, 0): E, (0, 1): S, (-1, 0): W}
+OPPOSITE = {N: S, S: N, E: W, W: E}
 # Streets drawn at a scale: the main streets always, the quarter streets from
 # 2x, the lanes from 3x (below that a parcel stands for more than one real
 # block, and the lesser streets fall away as details do with the scale).
 RANK_FROM_SCALE = ((1.5, 1), (2.5, 2), (math.inf, 3))
 # tombs along the main roads out of the gates, real km
 TOMBS_KM = 1.5
+# the first part of that stretch is suburb (houses), the rest tombs
+SUBURB_SHARE = 0.5
 # Every house touches a street, as in Urbek and as Roman houses opened onto
 # one: where the plan's streets leave houses without one, lanes are cut
 # through the quarter, rows of two houses between east-west lanes and
@@ -53,6 +56,14 @@ LANE_EVERY_R = 3
 LANE_EVERY_Q = 7
 DWELLING = ("house", "insula", "domus")
 ACCESS = ("street", "plaza", "gate", "bridge")
+# Landmarks keep their real place but are drawn larger than their real
+# footprint, so they stay readable where a parcel stands for a whole real
+# block (Ramon's choice pending, plan doc): LANDMARK_GROW at scale 1, less
+# at larger scales, for buildings of these kinds at least LANDMARK_FROM_M long.
+LANDMARK_GROW = 2.5
+LANDMARK_FROM_M = 100
+LANDMARK_LONG_M = 500  # grown no longer than this (two parcels at scale 1)
+LANDMARK_KINDS = {"amphitheatre", "circus", "baths", "palace", "theatre", "stadium", "temple", "forum", "market", "tomb"}
 # building kinds that streets may cross (open squares)
 OPEN_BUILDINGS = {"forum", "plaza"}
 
@@ -159,11 +170,33 @@ def ring_polygon(plan, wall):
     return ring
 
 
+# buildings placed before the others where they compete for parcels
+FAMOUS = {"Amphitheatrum Flavium", "Forum Romanum", "Circus Maximus", "Thermae Antoninianae", "Pantheon",
+          "Thermae Diocletiani", "Palatium", "Forum Traiani", "Capitolium (Iuppiter Optimus Maximus)"}
+
+
+def parcel_size(plan, b):
+    """A building's extent in km along the parcel axes (grown if a
+    landmark): its long side runs east-west unless turned more than 45
+    degrees."""
+    grow = 1.0
+    if b.get("landmark", b["kind"] in LANDMARK_KINDS and max(b["size_m"]) >= LANDMARK_FROM_M):
+        grow = max(1.0, min(LANDMARK_GROW / plan.scale, LANDMARK_LONG_M / (plan.scale * max(b["size_m"]))))
+    lx, lz = (v * plan.scale * grow / 1000.0 for v in b["size_m"])
+    if 45 < abs(b.get("angle_deg", 0.0)) % 180 < 135:
+        lx, lz = lz, lx
+    return lx, lz
+
+
 def footprint(plan, b):
     """Corners of a building's footprint in km (rectangle, or an ellipse for
     arenas), scaled with the plan."""
     cx, cz = plan.km(b["centre"])
-    lx, lz = (s * plan.scale / 1000.0 for s in b["size_m"])
+    grow = 1.0
+    if b.get("landmark", b["kind"] in LANDMARK_KINDS and max(b["size_m"]) >= LANDMARK_FROM_M):
+        grow = min(LANDMARK_GROW / plan.scale, max(1.0, LANDMARK_LONG_M / (plan.scale * max(b["size_m"]))))
+        grow = max(grow, 1.0)
+    lx, lz = (s * plan.scale * grow / 1000.0 for s in b["size_m"])
     a = math.radians(b.get("angle_deg", 0.0))
     if b["kind"] in ("amphitheatre", "theatre"):
         pts = [(lx / 2 * math.cos(t), lz / 2 * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 24, endpoint=False)]
@@ -173,9 +206,36 @@ def footprint(plan, b):
     return [(cx + x * math.cos(a) + z * math.sin(a), cz - x * math.sin(a) + z * math.cos(a)) for x, z in pts]
 
 
-def build(data, scale, margin=6):
+class Terrain:
+    """Water of the tile terrain's 0.5 km cells (cells-L0.png: two cells a
+    byte, bits 0-1: 0 land, 1 sea, 2 lake, 3 river)."""
+    DIR = ROOT / "artifacts" / "render-data" / "tile-terrain-r1"
+
+    def __init__(self):
+        from PIL import Image
+        Image.MAX_IMAGE_PIXELS = None
+        e = json.loads((self.DIR / "manifest.json").read_text())["cells"][0]
+        assert e["cell_km"] == 2 * PARCEL_KM
+        self.packed = np.array(Image.open(self.DIR / e["path"]).convert("L"))
+        self.width = e["width"]
+
+    def water(self, i, j):
+        """Water class under parcel (i, j)."""
+        I, J = i // 2, j // 2
+        if not (0 <= I < self.width and 0 <= J < self.packed.shape[0]):
+            return 1
+        b = int(self.packed[J, I // 2])
+        return (b if I % 2 == 0 else b >> 4) & 3
+
+
+def build(data, scale, margin=6, terrain=None, hook=None):
+    """The parcel map of a plan. `terrain`: a Terrain, whose sea and lakes
+    (and rivers, where the plan says `terrain_rivers`) become water;
+    `hook(grid)`: called after the streets, before the houses (the
+    generated plans place their buildings there)."""
     plan = Plan(data, scale)
     pts = [w for wall in data.get("walls", []) for w in wall["ring"]]
+    pts += [p for ring in data.get("extent", []) for p in ring]
     pts += [p for s in data.get("streets", []) for p in s["line"]]
     cells = [plan.cell(p) for p in pts]
     i0 = min(c[0] for c in cells) - margin
@@ -200,68 +260,111 @@ def build(data, scale, margin=6):
 
     # inside the walls
     polys = [ring_polygon(plan, wall) for wall in data.get("walls", [])]
+    polys += [[plan.km(p) for p in ring] for ring in data.get("extent", [])]
     for r in range(h):
         for q in range(w):
             x, z = centre(r, q)
             urban[r, q] = any(inside(p, x, z) for p in polys)
+    if polys and not urban.any():  # a town smaller than a parcel: its parcel
+        urban[at(plan.cell(data["centre"]))] = True
 
-    # river (at least one parcel wide) and its island
-    for river in data.get("rivers", []):
-        half = max(river["width_m"] * scale / 1000.0 / 2, 0.0)
-        line = [plan.km(p) for p in river["line"]]
-        for c in path(plan, river["line"]):
+    # river (at least one parcel wide) and its island; streets cross rivers
+    # on bridges, never the sea
+    river = np.zeros((h, w), bool)
+    for rv in data.get("rivers", []):
+        half = max(rv["width_m"] * scale / 1000.0 / 2, 0.0)
+        line = [plan.km(p) for p in rv["line"]]
+        for c in path(plan, rv["line"]):
             if ok(c):
-                kind[at(c)] = K["water"]
+                river[at(c)] = True
         if half > PARCEL_KM / 2:
             for r in range(h):
                 for q in range(w):
                     x, z = centre(r, q)
                     if seg_dist(line, x, z) <= half:
-                        kind[r, q] = K["water"]
+                        river[r, q] = True
+    sea = np.zeros((h, w), bool)
+    if terrain is not None:
+        rivers = data.get("terrain_rivers", False)
+        for r in range(h):
+            for q in range(w):
+                wc = terrain.water(q + i0, r + j0)
+                if wc in (1, 2):
+                    sea[r, q] = True
+                elif wc == 3 and rivers:
+                    river[r, q] = True
+    kind[river | sea] = K["water"]
     water = kind == K["water"]
     urban &= ~water
 
-    # walls and gates
-    for wall in data.get("walls", []):
-        for c in path(plan, wall["ring"], walk8):
-            if ok(c) and kind[at(c)] != K["water"]:
-                kind[at(c)] = K["wall"]
-    for g in data.get("gates", []):
-        c = plan.cell(g["at"])
-        if ok(c):
-            kind[at(c)] = K["gate"]
+    # walls round the town (the parcels just outside it), gates where the
+    # plan has them and wherever a main street goes through
+    if data.get("walls"):
+        ring = np.zeros((h, w), bool)
+        ring[1:, :] |= urban[:-1, :]
+        ring[:-1, :] |= urban[1:, :]
+        ring[:, 1:] |= urban[:, :-1]
+        ring[:, :-1] |= urban[:, 1:]
+        ring &= ~urban & ~water
+        kind[ring] = K["wall"]
+        wall_cells = np.argwhere(ring)
+        for g in data.get("gates", []):
+            q, r = plan.cell(g["at"])
+            q, r = q - i0, r - j0
+            if len(wall_cells):
+                k = np.argmin((wall_cells[:, 0] - r) ** 2 + (wall_cells[:, 1] - q) ** 2)
+                if (wall_cells[k, 0] - r) ** 2 + (wall_cells[k, 1] - q) ** 2 <= 4:
+                    kind[tuple(wall_cells[k])] = K["gate"]
 
-    # buildings, largest first so a small one inside a big one stays seen
-    order = sorted(range(len(data.get("buildings", []))), key=lambda k: -np.prod(data["buildings"][k]["size_m"]))
+    # buildings as rectangles of parcels at their place, the landmarks and
+    # the big ones first; one that finds its place taken moves to the
+    # nearest free one within two parcels, or merges into its neighbour
+    blocked = (K["water"], K["wall"], K["gate"], K["bridge"], K["building"], K["plaza"])
+
+    def rect(b):
+        x, z = plan.km(b["centre"])
+        lx, lz = parcel_size(plan, b)
+        a_, b_ = max(1, round(lx / PARCEL_KM)), max(1, round(lz / PARCEL_KM))
+        q0 = math.floor((x - WORLD_MIN[0]) / PARCEL_KM - a_ / 2 + 0.5) - i0
+        r0 = math.floor((z - WORLD_MIN[1]) / PARCEL_KM - b_ / 2 + 0.5) - j0
+        return q0, r0, a_, b_
+
+    def fits(q0, r0, a_, b_):
+        if q0 < 0 or r0 < 0 or q0 + a_ > w or r0 + b_ > h:
+            return False
+        return not np.isin(kind[r0:r0 + b_, q0:q0 + a_], blocked).any()
+
+    order = sorted(range(len(data.get("buildings", []))),
+                   key=lambda k: (not data["buildings"][k].get("landmark", False) and data["buildings"][k]["name"] not in FAMOUS,
+                                  -np.prod(data["buildings"][k]["size_m"])))
     for k in order:
         b = data["buildings"][k]
-        poly = footprint(plan, b)
-        xs, zs = [p[0] for p in poly], [p[1] for p in poly]
-        hit = []
-        for r in range(h):
-            for q in range(w):
-                x, z = centre(r, q)
-                if min(xs) <= x <= max(xs) and min(zs) <= z <= max(zs) and inside(poly, x, z):
-                    hit.append((r, q))
-        if not hit:  # smaller than a parcel: the parcel under its centre
-            c = plan.cell(b["centre"])
-            hit = [at(c)] if ok(c) else []
-        for r, q in hit:
-            if kind[r, q] in (K["water"], K["wall"], K["gate"]):
-                continue
-            kind[r, q] = K["plaza"] if b["kind"] in OPEN_BUILDINGS else K["building"]
-            bld[r, q] = k
+        q0, r0, a_, b_ = rect(b)
+        spot = None
+        for d in range(3):
+            cands = [(q0 + dq, r0 + dr) for dq in range(-d, d + 1) for dr in range(-d, d + 1) if max(abs(dq), abs(dr)) == d]
+            for q1, r1 in cands:
+                if fits(q1, r1, a_, b_):
+                    spot = (q1, r1)
+                    break
+            if spot:
+                break
+        if spot is None:
+            continue
+        kind[spot[1]:spot[1] + b_, spot[0]:spot[0] + a_] = K["plaza"] if b["kind"] in OPEN_BUILDINGS else K["building"]
+        bld[spot[1]:spot[1] + b_, spot[0]:spot[0] + a_] = k
 
-    # streets, main ones first; a street ends at a closed building
+    # streets, main ones first; a street stops at a closed building and goes on
+    # beyond it (people walk round the Colosseum)
     top = next(r for lim, r in RANK_FROM_SCALE if scale < lim)
     tomb_seed = []
     for s in sorted(data.get("streets", []), key=lambda s: RANKS.index(s["rank"])):
         if RANKS.index(s["rank"]) > top and not s.get("outside"):
             continue
-        cs = path(plan, s["line"], walk8)
+        cs = path(plan, s["line"])
         if s.get("outside") and s["rank"] == "via":
             reach = TOMBS_KM * scale / PARCEL_KM
-            tomb_seed += [c for c in cs if math.dist(c, cs[0]) <= reach]
+            tomb_seed += [(c, math.dist(c, cs[0]) / reach) for c in cs if math.dist(c, cs[0]) <= reach]
         prev = None
         for c in cs:
             if not ok(c):
@@ -269,7 +372,9 @@ def build(data, scale, margin=6):
                 continue
             r, q = at(c)
             kd = kind[r, q]
-            if kd == K["building"] or kd == K["wall"]:
+            if kd == K["wall"] and s["rank"] == "via":
+                kind[r, q] = kd = K["gate"]
+            if kd == K["building"] or kd == K["wall"] or sea[r, q]:
                 prev = None
                 continue
             if kd == K["water"]:
@@ -284,6 +389,10 @@ def build(data, scale, margin=6):
                 links[at(prev)] |= d
                 links[r, q] |= OPPOSITE[d]
             prev = c
+
+    if hook is not None:
+        hook({"plan": plan, "i0": i0, "j0": j0, "kind": kind, "building": bld, "rank": rank,
+              "surface": surf, "urban": urban})
 
     # houses inside the walls by quarter, tombs along the roads outside
     areas = data.get("areas", [])
@@ -302,11 +411,13 @@ def build(data, scale, margin=6):
                         best, kd = d, a["kind"]
                 kind[r, q] = K["insula" if kd == "insulae" else kd]
     lanes(kind, rank, surf, links, SURFACES.index(data.get("lane_surface", "earth")))
-    for c in tomb_seed:
+    connect(kind, rank, surf, SURFACES.index(data.get("lane_surface", "earth")))
+    relink(kind, links)
+    for c, f in tomb_seed:
         for dq, dr in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             n = (c[0] + dq, c[1] + dr)
             if ok(n) and kind[at(n)] == K["none"] and not urban[at(n)]:
-                kind[at(n)] = K["tombs"]
+                kind[at(n)] = K["house" if f < SUBURB_SHARE else "tombs"]
 
     return {"plan": plan, "i0": i0, "j0": j0, "kind": kind, "building": bld, "rank": rank,
             "surface": surf, "links": links, "urban": urban}
@@ -347,12 +458,100 @@ def lanes(kind, rank, surf, links, surface):
     road = np.isin(kind, [K[k] for k in ACCESS])
     for r, q in zip(*np.nonzero(lane)):
         for (dq, dr), bit in STEP.items():
-            if abs(dq) + abs(dr) != 1:
-                continue
             r2, q2 = r + dr, q + dq
             if 0 <= r2 < h and 0 <= q2 < w and road[r2, q2]:
                 links[r, q] |= bit
                 links[r2, q2] |= OPPOSITE[bit]
+
+
+ROAD = ("street", "plaza", "gate", "bridge")
+# what a joining lane may cut through, and at what cost
+CUT_COST = {"house": 1, "insula": 1, "domus": 1, "garden": 2, "park": 2, "none": 8, "tombs": 8}
+
+
+def components(road):
+    h, w = road.shape
+    comp = np.full((h, w), -1, np.int32)
+    n = 0
+    for r0, q0 in zip(*np.nonzero(road)):
+        if comp[r0, q0] >= 0:
+            continue
+        stack = [(r0, q0)]
+        comp[r0, q0] = n
+        while stack:
+            r, q = stack.pop()
+            for dr, dq in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                r2, q2 = r + dr, q + dq
+                if 0 <= r2 < h and 0 <= q2 < w and road[r2, q2] and comp[r2, q2] < 0:
+                    comp[r2, q2] = n
+                    stack.append((r2, q2))
+        n += 1
+    return comp, n
+
+
+def connect(kind, rank, surf, surface):
+    """Joins every piece of the street network to the rest with the
+    cheapest lane (Dijkstra through houses and gardens), so that one can
+    walk from any street to any other, as the walkers will."""
+    import heapq
+    h, w = kind.shape
+    cost = np.full((h, w), np.inf)
+    for k, c in CUT_COST.items():
+        cost[kind == K[k]] = c
+    skip = np.zeros((h, w), bool)  # pieces that cannot be joined
+    for _ in range(256):
+        road = np.isin(kind, [K[k] for k in ROAD])
+        comp, n = components(road & ~skip)
+        if n <= 1:
+            return
+        sizes = np.bincount(comp[comp >= 0])
+        main = int(np.argmax(sizes))
+        # from the smallest piece to any other piece
+        src = int(np.argmin(np.where(np.arange(n) == main, 1 << 30, sizes)))
+        dist = np.full((h, w), np.inf)
+        prev = {}
+        heap = []
+        for r, q in zip(*np.nonzero(comp == src)):
+            dist[r, q] = 0
+            heap.append((0.0, int(r), int(q)))
+        heapq.heapify(heap)
+        goal = None
+        while heap:
+            d, r, q = heapq.heappop(heap)
+            if d > dist[r, q]:
+                continue
+            if road[r, q] and comp[r, q] != src and not skip[r, q]:
+                goal = (r, q)
+                break
+            for dr, dq in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                r2, q2 = r + dr, q + dq
+                if not (0 <= r2 < h and 0 <= q2 < w):
+                    continue
+                step = 0.0 if road[r2, q2] else cost[r2, q2]
+                if d + step < dist[r2, q2]:
+                    dist[r2, q2] = d + step
+                    prev[(r2, q2)] = (r, q)
+                    heapq.heappush(heap, (d + step, r2, q2))
+        if goal is None:  # cut off behind water or walls: left as it is
+            skip |= comp == src
+            continue
+        c = prev.get(goal)
+        while c is not None and comp[c] != src:
+            if not road[c]:
+                kind[c] = K["street"]
+                rank[c] = RANKS.index("angiportus")
+                surf[c] = surface
+            c = prev.get(c)
+
+
+def relink(kind, links):
+    """Neighbouring street parcels join, as road tiles do in Urbek."""
+    road = np.isin(kind, [K[k] for k in ROAD])
+    links[:] = 0
+    links[:-1, :] |= np.where(road[:-1, :] & road[1:, :], S, 0).astype(np.uint8)
+    links[1:, :] |= np.where(road[1:, :] & road[:-1, :], N, 0).astype(np.uint8)
+    links[:, :-1] |= np.where(road[:, :-1] & road[:, 1:], E, 0).astype(np.uint8)
+    links[:, 1:] |= np.where(road[:, 1:] & road[:, :-1], W, 0).astype(np.uint8)
 
 
 def seg_dist(line, x, z):
@@ -493,7 +692,7 @@ def main():
     ap.add_argument("--city", action="append")
     ap.add_argument("--preview", type=Path)
     ap.add_argument("--px", type=int, default=20)
-    ap.add_argument("--out", type=Path)
+    ap.add_argument("--bake", type=Path, help="write the parcel map of every city to this folder")
     ap.add_argument("--compare", help="scales side by side, e.g. 1,2,3 (with --preview)")
     a = ap.parse_args()
     ids = a.city or sorted(p.stem for p in CITY_DIR.glob("*.json"))
@@ -503,7 +702,9 @@ def main():
             data = json.loads((CITY_DIR / f"{cid}.json").read_text())
             compare(data, [float(v) for v in a.compare.split(",")], a.px, a.preview / f"{cid}-compare.png")
         return
-    plans = {}
+    if a.bake:
+        bake(a.scale, a.bake, ids if a.city else None)
+        return
     for cid in ids:
         data = json.loads((CITY_DIR / f"{cid}.json").read_text())
         g = build(data, a.scale)
@@ -511,25 +712,146 @@ def main():
         if a.preview:
             a.preview.mkdir(parents=True, exist_ok=True)
             preview(g, data, a.preview / f"{cid}-x{a.scale:g}.png", a.px)
-        plans[cid] = g
-    if a.out:
-        write(plans, a.scale, a.out)
 
 
-def write(plans, scale, out):
-    out.mkdir(parents=True, exist_ok=True)
-    doc = {"parcel_km": PARCEL_KM, "world_min": WORLD_MIN, "scale": scale, "kinds": KINDS, "ranks": RANKS,
-           "surfaces": SURFACES, "links": "bits N=1 NE=2 E=4 SE=8 S=16 SW=32 W=64 NW=128; i east, j south", "cities": {}}
-    for cid, g in plans.items():
+# The baked parcel map (docs/kit2/CITY_PLANS.md, read by app/scripts/city_plans.gd):
+# pages of PAGE x PAGE parcels aligned to world_min, those holding a city
+# stored as slots of an RGB8 atlas, ATLAS_SLOTS slots a row.
+PAGE = 64
+ATLAS_SLOTS = 32
+# R: what stands on the parcel (0: no plan, the tile terrain's own town rule)
+CODES = ["none", "house", "insula", "domus", "building", "plaza", "garden", "street", "wall", "gate",
+         "bridge", "tombs", "land", "water"]
+C = {k: i for i, k in enumerate(CODES)}
+KIND_CODE = {"none": "land", "house": "house", "insula": "insula", "domus": "domus", "garden": "garden",
+             "park": "garden", "street": "street", "plaza": "plaza", "building": "building", "wall": "wall",
+             "gate": "gate", "water": "water", "bridge": "bridge", "tombs": "tombs"}
+# G bits 0-1: surface (earth, gravel, slabs, basalt)
+SURFACE_BITS = {"": 0, "earth": 0, "gravel": 1, "slabs": 2, "basalt": 3}
+# B bits 0-5 of a public building: its model (by kind), bits 6-7 the side its
+# front faces (0 north, 1 east, 2 south, 3 west)
+MODELS = ["", "amphitheatre", "forum", "baths", "temple", "circus", "theatre", "public", "market", "palace",
+          "fort", "warehouse", "harbour", "tomb", "stadium", "portico", "agora", "spoil"]
+# named buildings that are tile_terrain.gd LANDMARKS (their own models)
+LANDMARK_MODELS = {"Amphitheatrum Flavium": "colosseum", "Forum Romanum": "forum", "Thermae Antoninianae": "baths",
+                   "Pantheon": "pantheon", "Circus Maximus": "circus"}
+# storeys of the houses (B bits 0-5), own rule: insulae 4-5, houses 2-3 in big
+# cities, domus 1-2
+STOREYS = {"insula": (4, 5), "house": (2, 3), "domus": (1, 2)}
+
+
+def encode(cid, g, pop):
+    """R, G, B of every parcel of a built plan."""
+    kind = g["kind"]
+    h, w = kind.shape
+    rgb = np.zeros((h, w, 3), np.uint8)
+    road = np.isin(kind, [K[k] for k in ("street", "plaza", "gate", "bridge")])
+    data = g["plan"].data
+    for r in range(h):
+        for q in range(w):
+            kd = KINDS[kind[r, q]]
+            code = C[KIND_CODE[kd]]
+            rk = int(g["rank"][r, q]) if kd in ("street", "gate", "bridge") else 0
+            gch = SURFACE_BITS[SURFACES[g["surface"][r, q]]] | (rk << 2) | (int(g["links"][r, q]) << 4)
+            face = 2
+            for side, (dr, dq) in ((2, (1, 0)), (1, (0, 1)), (3, (0, -1)), (0, (-1, 0))):
+                r2, q2 = r + dr, q + dq
+                if 0 <= r2 < h and 0 <= q2 < w and road[r2, q2]:
+                    face = side
+                    break
+            b = 0
+            if kd in STOREYS:
+                lo, hi = STOREYS[kd]
+                if kd == "house" and pop < 100000:
+                    hi = lo
+                b = lo + (hash_cell(cid, r, q) % (hi - lo + 1))
+            elif kd in ("building", "plaza") and g["building"][r, q] >= 0:
+                bk = data["buildings"][g["building"][r, q]]["kind"]
+                b = MODELS.index(bk) if bk in MODELS else MODELS.index("public")
+            rgb[r, q] = (code, gch, b | (face << 6))
+    return rgb
+
+
+def hash_cell(cid, r, q):
+    import zlib
+    return zlib.crc32(f"{cid}:{r}:{q}".encode())
+
+
+def bake(scale, out, only=None):
+    """Every city: the reconstructed plan where there is one, else the
+    generated one; bigger cities first where two overlap."""
+    import city_generate
+    from PIL import Image
+    facts = json.loads((ROOT / "data" / "cities" / "facts.json").read_text())["cities"]
+    terrain = Terrain()
+    hand = {p.stem for p in CITY_DIR.glob("*.json")}
+    order = sorted(facts, key=lambda c: -facts[c]["pop117"])
+    if only:
+        order = [c for c in order if c in only]
+    pages = {}
+    table = {}
+    for cid in order:
+        f = facts[cid]
+        if cid in hand:
+            data = json.loads((CITY_DIR / f"{cid}.json").read_text())
+            g = build(data, scale, terrain=terrain)
+        else:
+            data, g = city_generate.build(cid, f, scale, terrain)
+        rgb = encode(cid, g, f["pop117"])
         h, w = g["kind"].shape
-        doc["cities"][cid] = {
-            "origin": [int(g["i0"]), int(g["j0"])], "size": [int(w), int(h)],
-            "buildings": [{"name": b["name"], "kind": b["kind"]} for b in g["plan"].data.get("buildings", [])],
-            "kind": g["kind"].flatten().tolist(), "building": g["building"].flatten().tolist(),
-            "rank": g["rank"].flatten().tolist(), "surface": g["surface"].flatten().tolist(),
-            "links": g["links"].flatten().tolist(),
-        }
-    (out / f"plans-x{scale:g}.json").write_text(json.dumps(doc, separators=(",", ":")))
+        i0, j0 = g["i0"], g["j0"]
+        for r in range(h):
+            for q in range(w):
+                code = rgb[r, q, 0]
+                i, j = i0 + q, j0 + r
+                key = (i // PAGE, j // PAGE)
+                page = pages.get(key)
+                if page is None:
+                    if code in (C["land"], C["none"]):
+                        continue
+                    page = pages[key] = np.zeros((PAGE, PAGE, 3), np.uint8)
+                old = page[j % PAGE, i % PAGE, 0]
+                # a bigger city's parcels stay; plain land gives way
+                if old in (C["none"], C["land"]) and not (code == C["land"] and old == C["land"]):
+                    page[j % PAGE, i % PAGE] = rgb[r, q]
+        bl = []
+        for k, b in enumerate(data.get("buildings", [])):
+            cells = np.argwhere(g["building"] == k)
+            if len(cells) == 0:
+                continue
+            (r0, q0), (r1, q1) = cells.min(0), cells.max(0)
+            e = {"name": b["name"], "kind": b["kind"], "parcels": [int(i0 + q0), int(j0 + r0), int(q1 - q0 + 1), int(r1 - r0 + 1)]}
+            if b["name"] in LANDMARK_MODELS:
+                e["landmark"] = LANDMARK_MODELS[b["name"]]
+            bl.append(e)
+        table[cid] = {"name": data.get("name", cid), "status": data.get("status", "generated"),
+                      "origin": [int(i0), int(j0)], "size": [int(w), int(h)], "buildings": bl}
+        print(cid, data.get("status"), json.dumps(stats(g)))
+    keys = sorted(pages)
+    rows = (len(keys) + ATLAS_SLOTS - 1) // ATLAS_SLOTS
+    atlas = np.zeros((rows * PAGE, ATLAS_SLOTS * PAGE, 3), np.uint8)
+    slots = []
+    for n, key in enumerate(keys):
+        sy, sx = divmod(n, ATLAS_SLOTS)
+        atlas[sy * PAGE:(sy + 1) * PAGE, sx * PAGE:(sx + 1) * PAGE] = pages[key]
+        slots.append([key[0], key[1], n])
+    out.mkdir(parents=True, exist_ok=True)
+    name = f"city-plans-x{scale:g}"
+    Image.fromarray(atlas, "RGB").save(out / f"{name}.png", optimize=True)
+    doc = {
+        "generated_by": "tools/city_plans.py --bake", "scale": scale, "parcel_km": PARCEL_KM, "world_min": WORLD_MIN,
+        "page_parcels": PAGE, "atlas": f"{name}.png", "atlas_slots_per_row": ATLAS_SLOTS,
+        "pages": "[page_i, page_j, slot]: page (i // page_parcels, j // page_parcels) of parcel (i, j), "
+                 "parcel i = floor((x_km - world_min.x) / parcel_km), j likewise from z",
+        "page_slots": slots,
+        "r": CODES, "g": "bits 0-1 surface (0 earth, 1 gravel, 2 limestone slabs, 3 basalt), bits 2-3 rank "
+                         "(0 none, 1 via, 2 vicus, 3 lane), bits 4-7 links N=16 E=32 S=64 W=128",
+        "b": "houses: bits 0-5 storeys; public buildings and squares: bits 0-5 model (models); bits 6-7 the side "
+             "the front faces (0 north, 1 east, 2 south, 3 west)",
+        "models": MODELS, "cities": table,
+    }
+    (out / f"{name}.json").write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")))
+    print(len(table), "cities,", len(keys), "pages")
 
 
 if __name__ == "__main__":

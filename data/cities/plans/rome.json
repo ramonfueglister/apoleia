@@ -169,7 +169,7 @@
     {"name": "Thermae Antoninianae", "kind": "baths", "centre": [12.4925, 41.8790], "size_m": [337, 328], "angle_deg": -40},
     {"name": "Thermae Diocletiani", "kind": "baths", "centre": [12.4980, 41.9030], "size_m": [376, 361], "angle_deg": -38, "under_construction": "298-306"},
     {"name": "Thermae Traiani", "kind": "baths", "centre": [12.4960, 41.8935], "size_m": [330, 315], "angle_deg": -60},
-    {"name": "Pantheon", "kind": "temple", "centre": [12.4769, 41.8986], "size_m": [84, 58], "angle_deg": 0},
+    {"name": "Pantheon", "kind": "temple", "centre": [12.4769, 41.8986], "size_m": [84, 58], "angle_deg": 0, "landmark": true},
     {"name": "Thermae Agrippae", "kind": "baths", "centre": [12.4755, 41.8978], "size_m": [120, 100]},
     {"name": "Thermae Alexandrinae", "kind": "baths", "centre": [12.4743, 41.8998], "size_m": [190, 120]},
     {"name": "Stadium Domitiani", "kind": "stadium", "centre": [12.4731, 41.8992], "size_m": [275, 106], "angle_deg": 90},
