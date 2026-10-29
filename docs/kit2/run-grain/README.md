@@ -753,6 +753,83 @@ Was auffällt:
   Maschine, deshalb ist das nicht direkt mit den 4,0 ms von vorher vergleichbar. Gleicher
   Fingerabdruck mit 1 und 4 Threads; 55 Tests grün.
 
+## Preise aus Lager und Händlern, Lohn in Denar, Steuer und Pacht in Getreide (S112, S114, S115, 100 Jahre, Seed 1, `run100-s112-s115.txt` mit `PRICE_DEBUG=1`; vorher: `run100-s105-crafts.txt`, main gibt dasselbe)
+
+Ramon (29.10.2026): „okay dann setz es um. sota 2026 oktober performancemonster“ zum Vorschlag
+„Ökonomische Modelle für die Simulation“ (Schritte 1 und 2) und Karte „In Getreide, wie 301“.
+Preise kommen aus dem Lager der Marktleute und dem Lagerpfad übers Jahr, ohne Grundpreis und
+ohne Band (S112). Der Taglohn ist in Denar und folgt offenen gegen liegen gebliebene Tage;
+Fracht folgt dem Lohn, und die Marktleute holen Getreide beim billigeren Nachbarn (S114).
+Steuer und Pacht gehen als Korn in Staats- und Herrenspeicher, die nur zum üblichen Preis
+verkaufen (S115). Neue Zeilen im Lauf: „prices“ (Lager, Speicher, üblicher Preis, nach Absatz
+gewichtet) und „in t“ (Zufluss, Lohn, Reallohn, offene und leere Tage, die sechs grössten Märkte).
+
+| Grösse | vorher (Band) | jetzt |
+|---|---|---|
+| Menschen im Jahr 10 / 30 / 100 | 109'535 / 107'911 / 109'276 | 111'400 / 107'239 / 87'799 |
+| Wachstum, Mittel Jahr 11–100 | 0,00 % | −0,26 % |
+| Hungertote Jahr 11–30 / 31–100 | 5'579 / 23'487 | 6'945 / 48'294 |
+| Ernte im Jahr 10 / 100 | 23'623 / 23'838 t | 29'866 / 17'646 t |
+| Höfe mit Haushalt im Jahr 100 | 14'993 | 10'641 |
+| Median-Preis Korn im Jahr 10 / 100 | 2,27 / 2,90 Denar/kg | 0,94 / 0,31 Denar/kg |
+| Üblicher Preis Korn, nach Absatz gewichtet, Jahr 1 / 10 / 100 | – | 7,03 / 0,29 / 0,20 Denar/kg |
+| Reallohn, Median, Jahr 1 / 10 / 100 | – | 1,7 / 3,3 / 4,7 kg pro Tag |
+| Werkzeug auf den Höfen im Jahr 100 | 25'975 kg | 2'696 kg |
+| Eisen / Werkzeug, Median-Preis im Jahr 100 | 139 / 274 Denar/kg | 680 / 1'037 Denar/kg |
+| Schmiede-Monate im Jahr 100 | 525 | 26 |
+| Staats- und Herrenspeicher im Jahr 100 | – | 29'604 / 5'711 t |
+| Steuer / Staatslohn, 100 Jahre | 161 / 204 Mio. Denar | 137 / 225 Mio. Denar |
+| Neu geprägt, 100 Jahre | 3,3 Mio. Denar | 0,02 Mio. Denar |
+| Nicht gebucht | 0 | 0 |
+| Getreide pro Tag, Median | 4,3 ms | 5,4 ms |
+
+Was auffällt:
+
+- **Die ersten 30 Jahre tragen.** Der Preis steigt übers Erntejahr und fällt bei der Ernte,
+  der Reallohn liegt bei 2–4 kg Korn pro Tag (Edikt: etwa 3 kg mit Kost; Allen, 2009), der
+  Staat prägt fast nichts, und die Menschenzahl liegt wie vorher bei 107'000–111'000.
+- **Danach bricht es ein.** Ohne Band fällt der Getreidepreis, wo Getreide viel ist, immer
+  weiter: nach Absatz gewichtet von 7 auf 0,2 Denar/kg in zehn Jahren. Getreide ist im
+  Überschuss (jedes Jahr verderben 2'800–5'900 t), und niemand isst mehr, wenn es billig ist.
+  Wo die Marktleute an ihrer Lagergrenze sitzen, sinkt der übliche Preis jeden Tag um 1/365.
+- **Der tiefe Preis wird real, weil Eisen von aussen kommt.** Eisen gibt es nur an den
+  Tormärkten zum festen Preis draussen (S98, S108). Im Jahr 100 kostet 1 kg Werkzeug so viel
+  wie 3'300 kg Korn (vorher 94 kg). Die Höfe können kein Werkzeug mehr kaufen, arbeiten mit
+  70 % (S108), die Ernte sinkt, und Hunger und Abwanderung vom Hof steigen.
+- **Steuer und Pacht in Getreide wirken.** Zwangsverkäufe gibt es nicht mehr; die Speicher
+  halten das Korn, solange der Preis tief ist (bis 41'000 t beim Staat), und verderben 4 % im
+  Jahr.
+- **Versucht und verworfen:** Der übliche Preis sinkt an der Lagergrenze nur, wenn die
+  Marktleute wirklich Verkäufer abweisen. Das bremst den Fall (Jahr 15: 1,60 statt
+  0,18 Denar/kg nach Absatz), stoppt ihn aber nicht; das Korn liegt dann in Speichern und
+  Höfen (15 Jahre, nicht eingecheckt).
+- **Folgerung:** Die Preisregel allein kann den Überschuss nicht auflösen. Es fehlt die
+  Nachfrage, die auf den Preis reagiert (Schritt 3 des Vorschlags: Konsum mit Puffer-Ersparnis,
+  mehr Korn für Menschen und Tiere, wenn es billig ist). Ausserdem ist der Preis draussen der
+  einzige feste Preis in Denar; Eisen aus dem Reich (Bergbau) fehlt.
+- Tempo: Getreide pro Tag 5,4 statt 4,3 ms im Median (Märkte, Arbeitsbörse, Speicher). Beide
+  Läufe liefen teils gleichzeitig auf derselben Maschine. Gleicher Fingerabdruck mit 1 und 4
+  Threads; 70 Tests grün.
+
+### Quellen zu S112, S114, S115 (APA 7)
+
+- Allen, R. C. (2009). How prosperous were the Romans? Evidence from Diocletian's price edict (AD 301). In A. Bowman & A. Wilson (Eds.), *Quantifying the Roman economy: Methods and problems* (pp. 327–345). Oxford University Press.
+- Avellaneda, M., & Stoikov, S. (2008). High-frequency trading in a limit order book. *Quantitative Finance, 8*(3), 217–224. https://doi.org/10.1080/14697680701381228
+- Axtell, R. L., & Farmer, J. D. (2025). Agent-based modeling in economics and finance: Past, present, and future. *Journal of Economic Literature, 63*(1), 197–287. https://doi.org/10.1257/jel.20221319
+- Cafiero, C., Bobenrieth, E. S. A., Bobenrieth, J. R. A., & Wright, B. D. (2011). The empirical relevance of the competitive storage model. *Journal of Econometrics, 162*(1), 44–54. https://doi.org/10.1016/j.jeconom.2009.10.008
+- Deaton, A., & Laroque, G. (1992). On the behaviour of commodity prices. *The Review of Economic Studies, 59*(1), 1–23. https://doi.org/10.2307/2297923
+- Dosi, G., Pereira, M. C., Roventini, A., & Virgillito, M. E. (2017). When more flexibility yields more fragility: The microfoundations of Keynesian aggregate unemployment. *Journal of Economic Dynamics and Control, 81*, 162–186. https://doi.org/10.1016/j.jedc.2017.02.005
+- Erdkamp, P. (2005). *The grain market in the Roman Empire: A social, political and economic study*. Cambridge University Press.
+- Ho, T., & Stoll, H. R. (1981). Optimal dealer pricing under transactions and return uncertainty. *Journal of Financial Economics, 9*(1), 47–73. https://doi.org/10.1016/0304-405X(81)90020-9
+- Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic, and administrative survey*. Blackwell.
+- Lengnick, M. (2013). Agent-based macroeconomics: A baseline model. *Journal of Economic Behavior & Organization, 86*, 102–120. https://doi.org/10.1016/j.jebo.2012.12.021
+- Lewis, W. A. (1954). Economic development with unlimited supplies of labour. *The Manchester School, 22*(2), 139–191. https://doi.org/10.1111/j.1467-9957.1954.tb00021.x
+- Mortensen, D. T., & Pissarides, C. A. (1994). Job creation and job destruction in the theory of unemployment. *The Review of Economic Studies, 61*(3), 397–415. https://doi.org/10.2307/2297896
+- Rathbone, D. (1991). *Economic rationalism and rural society in third-century A.D. Egypt: The Heroninos archive and the Appianus estate*. Cambridge University Press.
+- Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
+- Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
+- Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -835,8 +912,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Hang | aus dem DEM-Überblick mit ≈ 370 m Abstand; unterschätzt kurze steile Hänge | Copernicus DEM GLO-90 |
 | Arbeit in Aussaat / Ernte | 25 % / 30 % der 70 Tage pro ha, je in 40 Tagen; in den Spitzen arbeiten alle von 10–65 | GRAIN-NUMBERS: „Verteilung offen“ |
 | Wer arbeitet | übers Jahr Erwachsene 15–60 | frei gewählt |
-| Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
-| Grundpreis | 8,75 Denar/kg | Preisedikt, modius castrensis 1,5–2 modii italici |
+| Taglohn (S114) | am ersten Tag 3 kg Getreide zum Startpreis, in Denar; bewegt sich jede Woche um den Anteil offener gegen liegen gebliebene Tage, höchstens 1/20; niemand arbeitet unter dem Essen seines Haushalts bei 290 Arbeitstagen; Höfe planen mit dem Lohn, über 52 Wochen geglättet | Preisedikt VII.1a, 25 Denar mit Kost; Mortensen & Pissarides 1994, Lewis 1954; Zahlen frei |
+| Startpreis (S112: kein Grundpreis mehr) | 8,75 Denar/kg am ersten Tag und draussen (S98) | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn nur für Soldaten, Offiziere, Beamte (S110) | 25 Denar pro Arbeitstag für alle Erwachsenen des Haushalts | S76, Preisedikt |
 | Waren (S105) | Grundpreise Eisen 20, Werkzeug 60 Denar/kg; Marktleute holen jede Woche beim günstigsten Nachbarn, Ware kommt am selben Tag an | frei gewählt; Wolle, Kleidung, Keramik nach Edikt |
 | Schafe (S106) | 1 pro ha Weide, Weide = Grasland/Ackerland der Zelle mal Feldfläche, höchstens 5 pro Kopf, 1 kg Wolle, Schur Tag 135 | Treacher, Sierra Mágina; Rest frei |
@@ -846,18 +923,18 @@ in Arrays nach ID statt in Hashtabellen.
 | Keramik (S109) | 5 kg Geschirr pro Haushalt, 100 % Verschleiss; Fässer 1 kg Ton für 3 kg Getreide, 4 % Verschleiss; ohne Fass 12 % Verderb | Peña 2007 (Lebensdauer dolium); Rest frei |
 | Leute einstellen (S111) | Ersparnis 60 Tage Essen plus ein Jahr Taglohn der Erwachsenen, davon 2 % im Monat für Arbeit zum Geldwert des Taglohns; Marktleute über 180 Tagen Getreide und 90 Tagen Waren | frei gewählt |
 | Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt | S95 (leere Kasse: nachprägen); Preise folgen der Geldmenge noch nicht |
-| Steuer | 10 % der Ernte, als Korn mit dem Getreide des Hofs verkauft, das Geld in die Staatskasse (S104) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
-| Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
+| Steuer | 10 % der Ernte, als Korn in den Staatsspeicher beim Markt; verkauft nur zum üblichen Preis, das Geld in die Staatskasse (S115) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
+| Pacht | ein Drittel der Ernte, als Korn in den Speicher des Grundherrn beim Markt; verkauft nur zum üblichen Preis (S115) | S69 offen |
 | Grundherr eines Pacht- oder Gutshofs | ein Senator oder Ritter per Zufall | S69 offen |
 | Brache | Zweifelderwirtschaft: 50 % der Felder unter Getreide; Brache braucht keine Arbeit | GRAIN-NUMBERS 2; Pflügen der Brache nicht belegt |
 | Steuer und Pacht mit Saatgut | auf die Ernte abzüglich der Saat | frei gewählt |
 | Vorrat und Kauf | Höfe behalten Nahrung bis zur nächsten Ernte plus 60 Tage; andere kaufen unter 30 Tagen bis 60 Tage | frei gewählt |
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
-| Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
-| Märkte ausserhalb (S98) | Preis draussen = Grundpreis ± 10 %, 500 km hinter dem Rand; pro Woche ein Viertel des Lagers hinaus oder eine Woche Verkauf herein | frei gewählt |
+| Markt (S112) | Preis läuft 1/30 pro Tag auf üblichen Preis × Lagerpfad (Zins 12 % + Verderb 4 % im Jahr) × Wurzel aus (90 + 7) / (Lagertage + 7); der übliche Preis steigt unter 30 Tagen Lager und sinkt ab 180 Tagen, höchstens 1/365 am Tag; Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | Lagermodell (Williams & Wright 1991), Händler mit Lager (Ho & Stoll 1981), Band wie Lengnick 2013; Zahlen frei, Zins aus dem Gedächtnis (Quelle prüfen) |
+| Märkte ausserhalb (S98) | Preis draussen = Startpreis ± 10 %, fest, 500 km hinter dem Rand; pro Woche ein Viertel des Lagers hinaus oder eine Woche Verkauf herein; an Tormärkten ist der übliche Preis mindestens der Preis draussen minus Fracht (S114) | frei gewählt; der einzige feste Preis in Denar |
 | Verlassene Höfe (S103) | Felder nach zwei Aussaaten ohne Haushalt zurück ins freie Land; Vorrat bleibt beim Hof | frei gewählt, zwei Jahre wie Lex Manciana |
 | Grundherrschaft (S102) | an die Verwandten, zu denen die Leute zogen, sonst an den ersten abgeteilten Sohn, sonst (auch beim Verlassen der Karte) an den Staat | frei gewählt; bona vacantia |
-| Säen nach Preis (S99) | eigener Bedarf plus 25 % Reserve, soweit der Speicher ihn nach der nächsten Ernte nicht deckt (S103), der Rest voll ab 90 % des Grundpreises im Ankauf, darunter anteilig | frei gewählt |
+| Säen nach Preis (S99, S114) | eigener Bedarf plus 25 % Reserve, soweit der Speicher ihn nach der nächsten Ernte nicht deckt (S103); der Rest voll, wenn der Erlös pro Hektar die Lohnkosten deckt (geglätteter Lohn mal Anteil eingestellter Tage), sonst nicht | frei gewählt |
 | Lagergrenze der Marktleute (S100) | kaufen nur bis 180 Tage Absatz im Lager | frei gewählt |
 | Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht; Unverkauftes in die eigene Vorratskammer (S96) | frei gewählt |
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
