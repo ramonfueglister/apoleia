@@ -194,6 +194,10 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
         // the grain economy (S69–S87) on the same day, as bin/grain.rs
         let tg = Instant::now();
         grain.day(&mut people);
+        grain.build_day(&mut people, &mut orders);
+        if orders.version != shared.front.lock().unwrap().orders.version {
+            shared.front.lock().unwrap().orders = orders.clone();
+        }
         let grain_usec = tg.elapsed().as_secs_f64() * 1e6;
         let today = people.world.resource::<Clock>().day;
         let month = today % 30 == 0;

@@ -37,6 +37,7 @@ use std::collections::BinaryHeap;
 use xxhash_rust::xxh3::xxh3_64;
 
 mod crafts;
+mod sites;
 pub use crafts::{GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
 
@@ -478,6 +479,10 @@ pub struct Market {
     hire_x1000: i64,
     /// S111: households that hire work for money this month.
     servers: Vec<u32>,
+    /// S113: work days the state's building sites here still want, and
+    /// the days hired for them since `build_day` last took them.
+    state_want: i64,
+    state_done: i64,
 }
 
 #[derive(Clone, Copy)]
@@ -507,6 +512,11 @@ struct GEv {
 /// Counters, reset by the caller for yearly figures.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct GrainStats {
+    /// S113: day labour the state hired for its building sites, days and
+    /// denarii (milli), and farms built and taken.
+    pub build_days: i64,
+    pub build_paid: i64,
+    pub built_farms: i64,
     pub harvest_kg: i64,
     pub harvest_lost_kg: i64,
     pub sow_short_m2: i64,
@@ -741,6 +751,8 @@ pub struct Grain {
     /// events of the last days.
     today: i64,
     events: Vec<crate::events::Event>,
+    /// S113: the building sites of the player's orders, by tile (sites.rs).
+    sites: std::collections::BTreeMap<crate::build::Tile, sites::Site>,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1093,6 +1105,8 @@ impl Grain {
                 goods: crafts::wares(),
                 hire_x1000: 1000,
                 servers: Vec::new(),
+                state_want: 0,
+                state_done: 0,
             });
         }
         let cell_market: Vec<u32> = (0..n as u32).map(|i| if g.kind[i as usize] == 0 { NONE } else { market_of[&g.region(i)] }).collect();
@@ -1153,6 +1167,7 @@ impl Grain {
             history: History::default(),
             today: 0,
             events: Vec::new(),
+            sites: Default::default(),
         };
         gr.build_graph(p);
         gr.gates(p);
@@ -2941,6 +2956,24 @@ impl Grain {
                 }
             }
             self.markets[mi].servers = still;
+            // S113: the state's building sites, at the same wage, paid
+            // from the treasury (sites.rs).
+            let mut want = self.markets[mi].state_want;
+            while want > 0 && o < offers.len() {
+                let take = want.min(offers[o].1);
+                offers[o].1 -= take;
+                want -= take;
+                self.state_pays(take * wage);
+                self.earn(offers[o].0, take * wage);
+                self.markets[mi].state_want -= take;
+                self.markets[mi].state_done += take;
+                self.stats.hired_days += take;
+                self.stats.build_days += take;
+                self.stats.build_paid += take * wage;
+                if offers[o].1 == 0 {
+                    o += 1;
+                }
+            }
             // The market's dealers too: of the cash beyond what buys their
             // most in store (DEALER_MAX_DAYS of grain, TARGET_DAYS of each
             // good), the same share a month (a quarter a week).
