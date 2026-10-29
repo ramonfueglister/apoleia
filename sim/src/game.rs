@@ -1,6 +1,6 @@
 //! One game of the day sim (docs/kit1/REALTIME_GAMEPLAY.md): the people
 //! (S50–S67), the grain economy (S69–S101) and the player's build orders
-//! (S102), advanced one day at a time. The game (sim/godot) owns one Game on
+//! (S113), advanced one day at a time. The game (sim/godot) owns one Game on
 //! its sim thread; commands from the build menu are applied between two
 //! days with the day they were applied on, so a game is its inputs, its seed
 //! and its command log.

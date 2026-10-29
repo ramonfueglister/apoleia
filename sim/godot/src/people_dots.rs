@@ -264,7 +264,7 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         if !commands.is_empty() || save.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
-        // the people and the grain economy (S69–S102) on the same day, as bin/grain.rs
+        // the people and the grain economy (S69–S112) on the same day, as bin/grain.rs
         let [day_usec, grain_usec] = game.day();
         let today = game.today();
         let month = today % 30 == 0;

@@ -118,9 +118,9 @@ Phase 2 und 9 können sofort parallel laufen.
 
 | # | Stand | Was gebaut ist, Nachweis |
 |---|---|---|
-| 1 | `implementiert` (PR #47) | Befehle über die Queue, angewendet zwischen zwei Tagen, mit Sim-Tag protokolliert. Ausführung durch Tagelöhner (S102) baut der Baumenü-Thread. |
+| 1 | `implementiert` (PR #47) | Befehle über die Queue, angewendet zwischen zwei Tagen, mit Sim-Tag protokolliert. Ausführung durch Tagelöhner (S113) baut der Baumenü-Thread. |
 | 2 | `implementiert` | `app/scripts/sim/game_clock.gd`: Leiste oben Mitte mit Pause, Tempo 1–4 (2, 10, 30, 100 Tage/s), Datum, Menschen, Staatskasse; Leertaste, `[` `]`. Fällt die Sim unter 80 % des Tempos, sagt die Leiste, wie viele Tage/s sie schafft. In Godot 4.7.2 (headless) mit simulierten Tasten geprüft: Pause hält den Tag an, Tempo 4 setzt 100 Tage/s. |
-| 3 | `offen` | Wartet auf S102: Erst wenn Aufträge Felder und Strassen erzeugen, gibt es Kacheln neu zu zeichnen. Die Aufträge selbst erscheinen schon im nächsten Bild (PR #47). |
+| 3 | `offen` | Wartet auf S113: Erst wenn Aufträge Felder und Strassen erzeugen, gibt es Kacheln neu zu zeichnen. Die Aufträge selbst erscheinen schon im nächsten Bild (PR #47). |
 | 4 | `implementiert` (Wiederabspielen) | `sim/src/game.rs`: Spielstand = Seed, Hash der Eingaben, Tag, Befehlsprotokoll, Fingerabdrücke (wenige hundert Byte). Laden spielt die Tage mit den Befehlen erneut ab, wie Factorio-Replays. F8 speichert, F9 lädt (`user://quicksave.apgame`); ein falscher Spielstand wird geprüft und abgelehnt, bevor das laufende Spiel stoppt. Tests `game::tests` (speichern, laden, 30 Tage weiter = gleicher Fingerabdruck; kaputte und fremde Spielstände abgelehnt) und in Godot: Tag 450 gespeichert, geladen in 9,1 s, Fingerabdruck gleich. **Grenze:** Laden dauert 3,1 s pro Spieljahr plus 3,5 s Start (4 Kerne). Ein Speicherstand des ganzen Zustands folgt, sobald die Handwerkswaren des Wirtschafts-Threads (PR #48) in `grain.rs` sind; vorher würde er an jeder Struktur mit dessen Arbeit kollidieren. |
 | 5 | `erledigt` | Im Spiel läuft nur die Tages-Sim (siehe Ausgangslage). Eine Bevölkerungskarte aus den Menschen statt aus `ApoleiaSim` ist nicht gebaut. |
 | 6 | `teilweise` | Staatskasse in der Leiste (bei leerer Kasse „Kasse leer“, der Staat prägt nach S95). Fenster „wer kauft, wer verkauft, warum“ und Warnungen folgen nach den Wirtschafts-Fixes. |
@@ -131,7 +131,7 @@ Phase 2 und 9 können sofort parallel laufen.
 ## Wie die laufenden Arbeiten dazu passen
 
 - **Baumenü** (Höfe, Felder, Strassen): ist Phase 1 und der Spieler-Teil von Phase 3. Die
-  Ausführung (S102) kommt in `Game::day` direkt nach `grain.day`.
+  Ausführung (S113) kommt in `Game::day` direkt nach `grain.day`.
 - **Wirtschafts-Fixes** (Geldkreislauf, Handwerker verkaufen Waren): Voraussetzung für Phase 6
   und den vollen Speicherstand (Phase 4) und Grundlage für Punkt 1 unter „besser als CS2“.
 - **Grafik auf Urbek/Islanders-Niveau:** unabhängig bis Phase 7.
