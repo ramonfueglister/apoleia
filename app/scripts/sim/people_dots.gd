@@ -146,6 +146,8 @@ var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
+var _shared_values := {} # what each shared uniform was last copied as
+var _shared_count := 0 # materials it was copied into
 var _day_debt := 0.0
 var _bench_path := ""
 var _bench_frame := 0
@@ -855,10 +857,19 @@ func _process(delta: float) -> void:
 	if synced_houses < 0:
 		_rebuild_houses()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
+	# only what changed: setting a texture rebuilds a material's uniform set,
+	# for some 20 materials each frame (Mac tour, 29.10.2026)
 	var source: ShaderMaterial = terrain._terrain_material
+	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _trips.material] + _house_materials
+	if targets.size() != _shared_count:
+		_shared_values.clear() # new house materials get everything
+		_shared_count = targets.size()
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _trips.material] + _house_materials:
+		if _shared_values.has(key) and typeof(_shared_values[key]) == typeof(value) and _shared_values[key] == value:
+			continue
+		_shared_values[key] = value
+		for m in targets:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
