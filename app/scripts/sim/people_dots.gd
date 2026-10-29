@@ -67,6 +67,8 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const PeopleCost = preload("res://scripts/sim/people_cost.gd")
@@ -119,6 +121,7 @@ var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
 var _info_label: RichTextLabel
+var _person_win # ui_window.gd
 var _press_at := Vector2.INF
 var _click_at := Vector2.INF # --people-click, for screenshots
 var _frames := 0
@@ -888,9 +891,16 @@ func _build_hud() -> void:
 	_legend_label = _hud_label(root)
 	_legend_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_info_label = _hud_label(root)
-	_info_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 12)
-	_info_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# the person clicked, in a window (ui/ui_window.gd) at the bottom left
+	_person_win = UiWindow.make("person", "Person", Rect2(112, -12, 340, 330), Engine.get_main_loop() as SceneTree)
+	_person_win.visible = false
+	_info_label = _hud_label(_person_win.body)
+	_info_label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	_info_label.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
+	_info_label.add_theme_font_size_override("bold_font_size", UiStyle.SIZE_TEXT)
+	_info_label.add_theme_font_override("normal_font", UiStyle.serif())
+	_info_label.add_theme_color_override("default_color", UiStyle.TEXT)
+	_info_label.visible = true
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -964,7 +974,7 @@ func _pick(pixel: Vector2) -> void:
 		else:
 			people.ask_household_member(traveller.household)
 		_waiting = true
-		_info_label.visible = true
+		_show_info(true)
 		_info_label.text = "…"
 		return
 	_doing = ""
@@ -981,10 +991,17 @@ func _pick(pixel: Vector2) -> void:
 		mat.set_shader_parameter("selected_slot", selected)
 	print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "slot": selected}))
 	_waiting = selected >= 0
-	_info_label.visible = _waiting
+	_show_info(_waiting)
 	if _waiting:
 		people.ask_person(selected)
 		_info_label.text = "…"
+
+## Opens or closes the person's window.
+func _show_info(on: bool) -> void:
+	if on:
+		_person_win.open()
+	elif _person_win.visible:
+		_person_win.close()
 
 func _show_person(p: Dictionary) -> void:
 	if p.is_empty():
@@ -1018,6 +1035,7 @@ func _show_person(p: Dictionary) -> void:
 			lines.append("Geld des Haushalts: %s Denar" % SimTables._int(roundi(p.money)))
 	if p.travelling > 0:
 		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
+	_person_win.set_title("%s, %d Jahre" % ["Frau" if p.female else "Mann", int(p.age)])
 	_info_label.text = "\n".join(lines)
 	print(JSON.stringify({"event": "people_person", "pid": p.pid}))
 
@@ -1037,7 +1055,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_waiting = false
 				for m in [_material, _figure_material]:
 					m.set_shader_parameter("selected_slot", -1)
-				_info_label.visible = false
+				_show_info(false)
 			KEY_P: shown = not shown
 			KEY_G:
 				map_on = not map_on
@@ -1051,7 +1069,7 @@ func restarted() -> void:
 	_waiting = false
 	for m in [_material, _figure_material]:
 		m.set_shader_parameter("selected_slot", -1)
-	_info_label.visible = false
+	_show_info(false)
 	_map_version = -1
 	_day_debt = 0.0
 
