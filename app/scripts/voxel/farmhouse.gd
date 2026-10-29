@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v23_%d_%s.res"
+const CACHE := "user://farmhouse_v24_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -57,8 +57,8 @@ const PALETTE := [
 	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("5e4128"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("667f4c"), Color("52663d"),
-	Color("75695a"), Color("c99a48"), Color("cebc97"), Color("9a7232"),
+	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("728f4a"), Color("56703a"),
+	Color("6b5a48"), Color("c99a48"), Color("cebc97"), Color("9a7232"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,

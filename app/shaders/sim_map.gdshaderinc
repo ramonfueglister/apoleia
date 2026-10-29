@@ -44,16 +44,19 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 }
 
 // The flat colour of parcel `cell` from afar or outside the square of
-// crops: five clearly different colours, pasture, pale stubble for fallow
-// and harvested land, brown tilled soil, the dark green of growing crops
-// and vines, and wheat for the ripe ones.
+// crops: pasture; fallow as grazed dry grass (the flocks graze it); pale
+// straw stubble on the harvested fields, brown tilled soil, the fresh green
+// of growing crops and vines, and wheat for the ripe ones. Clearly
+// different values, none of them khaki, so the farmland reads as fields
+// and not as camouflage.
 vec3 sim_parcel_rgb(int state, vec2 cell, vec4 f, vec3 pasture) {
 	if (state == 0) { return pasture; }
-	vec3 stubble = vec3(0.56, 0.47, 0.31); // #b89a62 on screen
-	vec3 soil = vec3(0.42, 0.29, 0.2);     // #8a6040 on screen
-	vec3 growing = vec3(0.27, 0.45, 0.24); // #5f9e52 on screen
+	if (state == 1) { return GROUND_RGB[G_DRY_GRASS]; }
+	vec3 stubble = GROUND_RGB[G_FIELD] * vec3(0.98, 0.96, 0.86);
+	vec3 soil = vec3(0.42, 0.27, 0.18);    // #8a5a3c on screen
+	vec3 growing = vec3(0.23, 0.4, 0.18);  // #4f8a3c on screen: darker than the meadow, not lime
 	float g = f.b;
-	if (state == 1 || g <= 0.0) { return stubble; }
+	if (g <= 0.0) { return stubble; }
 	if (sim_crop_kind(floor(cell * 0.5)) == SIM_VINES) { return growing; }
 	return g < 0.4 ? soil : g < 0.75 ? growing : GROUND_RGB[G_FIELD];
 }
@@ -86,9 +89,9 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	// from afar fallow and sown fields lie in blocks of 2 x 2 tiles (1 km),
 	// not tile by tile, so the patchwork is calm and not a checkerboard
 	if (!near && state != 0) { state = sim_hash(floor(cell * 0.5) + 17.3) >= f.g ? 1 : 2; }
-	// inside the square of crops the slabs stand on meadow
+	// inside the square of crops the slabs of the sown fields stand on meadow
 	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
-	return crops && state != 0 ? meadow : sim_parcel_rgb(state, cell, f, pasture);
+	return crops && state == 2 ? meadow : sim_parcel_rgb(state, cell, f, pasture);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and

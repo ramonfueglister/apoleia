@@ -154,7 +154,10 @@ mat2 dot_house_turn(vec2 p, out vec2 size_tint) {
 	ivec2 lot = ivec2(floor((p - world_min) / DOT_LOT_KM));
 	uint key = dot_hash(uint(lot.x) * 0x9e3779b1u ^ uint(lot.y) * 0x85ebca77u);
 	vec2 r = dot_rand2(key, 7u);
-	float a = floor(r.x * 4.0) * 1.5707963; // on the tile grid, like the town houses
+	// on the tile grid, like the town houses; the front (+z, door and path)
+	// to the camera on half the lots, a flank on the others, never the
+	// back (sim_fields.gdshaderinc sim_lot_front)
+	float a = (r.x < 0.5 ? 0.0 : r.x < 0.75 ? 1.0 : 3.0) * 1.5707963;
 	float m = dot_rand2(key, 8u).x < 0.5 ? -1.0 : 1.0;
 	size_tint = vec2(0.9 + 0.2 * r.y, 0.94 + 0.12 * r.y); // its path just reaches the lane round the lot
 	return mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * mat2(vec2(m, 0.0), vec2(0.0, 1.0));

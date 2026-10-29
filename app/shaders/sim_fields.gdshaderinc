@@ -76,8 +76,8 @@ uint sim_lot_hash(uint x) {
 vec2 sim_lot_front(vec2 lot) {
 	uint key = sim_lot_hash(uint(int(lot.x)) * 0x9e3779b1u ^ uint(int(lot.y)) * 0x85ebca77u);
 	uint a = sim_lot_hash(key * 0x9e3779b9u + 7u * 0x632be5abu);
-	int q = int(floor(float(a & 0xffffu) / 65535.0 * 4.0)) % 4;
-	return q == 0 ? vec2(0.0, 1.0) : q == 1 ? vec2(-1.0, 0.0) : q == 2 ? vec2(0.0, -1.0) : vec2(1.0, 0.0);
+	float u = float(a & 0xffffu) / 65535.0;
+	return u < 0.5 ? vec2(0.0, 1.0) : u < 0.75 ? vec2(-1.0, 0.0) : vec2(1.0, 0.0);
 }
 
 // Village lanes run on the lot lines, which are parcel lines too (a lot is
