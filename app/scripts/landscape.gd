@@ -43,11 +43,21 @@ const FOV_FROM := 12.0 # view width (km) where the view starts to open up
 const FOV_TO := 300.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
+## Tilt-shift blur: full up to TILT_FULL km view width, gone from TILT_TO.
+const TILT_AMOUNT := 0.07
+const TILT_FULL := 6.0
+const TILT_TO := 40.0
+## Share of the depth from the focus to the top / bottom edge of the
+## picture that stays sharp.
+const TILT_SHARP := 0.3
 
 var terrain: Node3D
 var camera := Camera3D.new()
 var sun := DirectionalLight3D.new()
 var environment := Environment.new()
+## Miniature look up close (tilt-shift, as in Islanders and Urbek): the
+## middle band of the picture sharp, the top and bottom edges softly blurred.
+var lens := CameraAttributesPractical.new()
 var weather: Node3D
 var people: Node3D # the Kit 2 people (sim/people_dots.gd), null when not built
 ## The sun casts shadows up to 40 km across (the tour can switch them off).
@@ -140,6 +150,10 @@ static func lonlat_to_world(lon: float, lat: float) -> Vector2:
 func _setup_look() -> void:
 	var world := WorldEnvironment.new()
 	world.environment = environment
+	world.camera_attributes = lens
+	lens.auto_exposure_enabled = false
+	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH, false)
+	RenderingServer.camera_attributes_set_dof_blur_bokeh_shape(RenderingServer.DOF_BOKEH_CIRCLE)
 	add_child(world)
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("1d5a8c")
@@ -150,8 +164,12 @@ func _setup_look() -> void:
 	# rather than teal (meadow #73af60 in the sun); the filmic
 	# curve keeps the lit colours where the terrain palette expects them
 	# (AgX washed the map out).
-	environment.ambient_light_color = Color("ccccf2")
-	environment.ambient_light_energy = 0.85
+	# Islanders and Urbek shade in a clear cool blue: the fill a little bluer
+	# and weaker than the old grey #ccccf2 at 0.85, the sun a little stronger,
+	# so lit ground keeps its palette tone (within 3 %) and the shadows fall
+	# from about a third to about a quarter of it, bluish rather than grey.
+	environment.ambient_light_color = Color("b3c2f2")
+	environment.ambient_light_energy = 0.75
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
@@ -159,8 +177,10 @@ func _setup_look() -> void:
 	environment.adjustment_saturation = 1.0
 	environment.adjustment_contrast = 1.08
 	environment.ssao_enabled = true
+	# contact shade where houses, trees and walls meet the ground; the radius
+	# follows the zoom (_update_look), a fixed 0.6 km was wider than a block
 	environment.ssao_radius = 0.6
-	environment.ssao_intensity = 0.6
+	environment.ssao_intensity = 1.1
 	environment.ssao_power = 1.4
 	environment.ssao_light_affect = 0.1
 	environment.fog_enabled = true
@@ -174,7 +194,7 @@ func _setup_look() -> void:
 	# right beside what casts them.
 	sun.rotation_degrees = Vector3(-40.0, -65.0, 0.0)
 	sun.light_color = Color("fff0d9")
-	sun.light_energy = 2.05
+	sun.light_energy = 2.2
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 1.0
 	# Hard shadows as in Urbek: one map over the view only (see _update_look),
@@ -192,6 +212,21 @@ func _setup_look() -> void:
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
 	add_child(sun)
+	_add_vignette()
+
+## A soft darkening towards the corners of the picture, drawn under the HUD,
+## as in Islanders: it holds the eye on the middle of the miniature.
+func _add_vignette() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -1
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/vignette.gdshader")
+	rect.material = mat
+	layer.add_child(rect)
+	add_child(layer)
 
 func _update_look(distance: float) -> void:
 	terrain.set_light_dir(sun.global_transform.basis.z)
@@ -219,6 +254,28 @@ func _update_look(distance: float) -> void:
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
 	environment.fog_depth_end = distance + patch_reach * 0.95
+	environment.ssao_radius = clampf(width * 0.02, 0.03, 0.6)
+	_update_tilt_shift(distance, pitch)
+
+## Depth along the view of the ground at the top and bottom edges of the
+## picture (on the focus plane); the blur grows from a sharp band around the
+## focus towards both edges, like a tilt-shift photo of a model.
+func _update_tilt_shift(distance: float, pitch: float) -> void:
+	var amount := TILT_AMOUNT * (1.0 - _zoom_share(width, TILT_FULL, TILT_TO))
+	var on := amount > 0.002
+	if lens.dof_blur_far_enabled != on:
+		lens.dof_blur_far_enabled = on
+		lens.dof_blur_near_enabled = on
+	if not on:
+		return
+	var f := deg_to_rad(camera.fov) * 0.5
+	var top := distance * sin(pitch) * cos(f) / sin(maxf(pitch - f, 0.05))
+	var bottom := distance * sin(pitch) * cos(f) / sin(pitch + f)
+	lens.dof_blur_amount = amount
+	lens.dof_blur_far_distance = distance + (top - distance) * TILT_SHARP
+	lens.dof_blur_far_transition = (top - distance) * (1.0 - TILT_SHARP)
+	lens.dof_blur_near_distance = distance - (distance - bottom) * TILT_SHARP
+	lens.dof_blur_near_transition = (distance - bottom) * (1.0 - TILT_SHARP)
 
 # ---------------------------------------------------------------- camera
 

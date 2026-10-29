@@ -278,6 +278,37 @@ float side_distance(int mask) {
 	return d;
 }
 
+// Surf along the coast up close, as in Islanders: a white band where the
+// sea meets the land and a thin second line that drifts out from it and
+// fades. Distance in tiles from the nearest land side or corner (on a coast
+// cut, from the diagonal); gone from 2 km tiles, where it would be a hairline.
+const vec3 C_FOAM = vec3(0.900, 0.955, 1.000);
+vec3 shore_foam(vec3 c, vec2 p) {
+	if (tile_km >= 2.0) { return c; }
+	float d = 10.0;
+	if (wet_tri == 1 && cut_tip >= 0) {
+		vec2 tip = vec2(CORNER[cut_tip]);
+		d = -(abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
+	} else if (coast >= 1.0) {
+		int mask = 0;
+		for (int k = 0; k < 4; k++) {
+			if (tt_water(tile + SIDE[k]) == W_LAND) { mask |= 1 << k; }
+			if (tt_water(tile + SIDE[k] + SIDE[(k + 1) % 4]) == W_LAND) { mask |= 16 << ((k + 1) % 4); }
+		}
+		d = side_distance(mask);
+	}
+	if (d > 1.0) { return c; }
+	float aa = fwidth(d) + 1e-4;
+	float t = TIME + tt_hash(vec2(tile)) * 0.6; // neighbouring tiles a little out of step
+	float band = 0.07 + 0.025 * sin(t * 1.3);
+	float surf = 1.0 - smoothstep(band - aa, band + aa, d);
+	float phase = fract(t * 0.12);
+	float ring = 0.12 + 0.3 * phase;
+	float line = (1.0 - smoothstep(0.012, 0.012 + aa, abs(d - ring))) * (1.0 - phase) * 0.6;
+	float fade = 1.0 - smoothstep(1.0, 2.0, tile_km);
+	return mix(c, C_FOAM, max(surf * 0.85, line) * fade);
+}
+
 void fragment() {
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
@@ -295,6 +326,7 @@ void fragment() {
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
 			c = coast >= 1.0 || wet_tri == 1 ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
 			c = sim_lanes(p, c, length(fwidth(p)));
+			c = shore_foam(c, p);
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
 		}
