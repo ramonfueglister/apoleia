@@ -451,6 +451,48 @@ Händler auf seiner Liste hat. Im Jahr 10 hungern im ganzen Reich nur 56 Lohnhau
 davon 5 an solchen Märkten. Die Händler sind also nicht der Grund für die übrigen
 Hungertoten.
 
+## Wüste versorgt sich selbst, Landlose roden nach der Lex Manciana (S91, S92, 100 Jahre, Seed 1, `run100-s91-s92.txt`; vorher: `run100-retune.txt`)
+
+**S91.** Haushalte, die in einer Wüstenzelle entstehen (kein Feld- und kein Rodland, mehr als
+die Hälfte der Landfläche kahl), essen ausserhalb der Getreidewirtschaft und sind satt. Das
+sind beim Start etwa 190 Personen in den Sahara-Oasen, der Syrischen Wüste und an den
+Wüstenrändern des Nils. Zellen ohne Land, die nicht kahl sind (Galicien, Alpen, Westirland,
+Nordanatolien, etwa 50'000 echte Menschen), gehören nicht dazu; dort kaufen die Menschen am
+Markt wie bisher.
+
+**S92.** Zeltleute mit Erwachsenen roden freies Land ihrer Zelle, sonst der Zelle ihrer
+Region mit dem meisten freien Land, und werden Pachthof des Staates: ein Drittel der Ernte
+nach der Saat, keine Steuer. Wer zwei Jahre nichts sät, verliert das Land. Beim Start ist das
+Gesetz schon lange in Kraft: 2'003 Zelthaushalte haben dann Felder, gesät wie die anderen
+Höfe, mit Vorrat bis zur Ernte. Die Startvorräte der Märkte werden vorher gerechnet (die
+Landlosen zählen als Käufer); sonst haben die Märkte 20 % weniger und im Jahr 2 verhungern 709
+statt 588. Danach entstehen etwa 100 Höfe im Jahr, gegen Ende 15; 320 fallen in 100 Jahren
+zurück.
+
+| Grösse | vorher | jetzt |
+|---|---|---|
+| Zelthaushalte beim Start / Jahr 10 / Jahr 100 | 2'878 / 4'203 / – | 875 / 2'586 / 466 |
+| Hungertote Jahr 2 / Jahr 3 | 588 / 386 | 567 / 405 |
+| Hungertote pro Jahr, Jahr 11 bis 100 / Anteil | 190 / 3,6 % | 189 / 3,6 % |
+| Ernte Jahr 2 | 43'955 t | 45'594 t |
+| Menschen im Jahr 100 | 129'799 | 127'386 |
+| Wachstum Jahr 10 bis 100 | 0,14 % | 0,12 % |
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 7ed8f3b44270d75d, grain
+a1af7e4043e81953), 54 Tests grün. Getreide pro Tag im Mittel 2,3 ms (vorher 2,1 ms; 10 %
+mehr Höfe).
+
+**Auffällig:** Die Wüstenhaushalte schrumpfen von 186 auf 67 Personen. Sie hungern nicht,
+heiraten aber nicht, weil ihre Region kein freies Land hat (S65). Ob Oasen und Nomaden davon
+ausgenommen sein sollen, ist offen.
+
+**S93 (monatlich wandern) ist gebaut, aber nicht drin.** Im 10-Jahre-Lauf stieg die Zahl der
+Hungertoten auf 250–320 im Jahr (statt 120–150), und die Bevölkerung sank bis Jahr 10 auf
+110'500 statt 114'200. Wer vor der Ernte einen Monat zu wenig hat, zieht in eine
+Nachbarregion mit mehr Getreide pro Kopf (Vorräte plus freies Land), kommt dort landlos an,
+und viele ziehen gleichzeitig. Nur Landlose monatlich oder das Verlassen der Karte nur
+jährlich ändert daran nichts. Die Frage liegt bei Ramon.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -534,6 +576,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Fusswege | Halbwertszeit 360 Tage, Pfad ab ≈ 140, Weg ab ≈ 700 Gängen im Jahr, Kosten 80 % / 65 %; Ablauf alle 90 Tage | Helbing 1997, Werte frei |
 | Startvorräte | Höfe: was die letzte Ernte übrig lässt (S84 a), mindestens bis zur Ernte + 60 Tage; Märkte 240 Tage ihrer Käufer, Haushalte 1 Monat, Zelte 3 Monate | damit der Start im Januar kein Artefakt ist |
 | Verderb | 4 % im Jahr in allen Speichern, für jedes Klima gleich | APHLIS 2011 (Weizen im Hoflager), FAO |
+| Wüste (S91) | kein Feld- und kein Rodland und mehr als 50 % der Landfläche kahl (ESA-Landbedeckung); wer zuzieht, gehört nicht dazu | frei gewählt |
+| Lex Manciana (S92) | bei der monatlichen Zählung alle zugleich, mindestens 1 ha frei in der Zelle, nur Zellen mit Dorf; gutes Land bis zum Wunsch, dann Rodung wie S73 im ersten Jahr; beim Start gesät und mit Vorrat wie die anderen Höfe | frei gewählt; Drittel und zwei Jahre aus der Lex Manciana |
 | Zelte ziehen um (S75) | einmal im Monat, wenn nicht satt; Märkte bis 5 Reisetage; ab dem 1,5-Fachen an Lohn und Almosen pro Zeltperson; Umzug sofort; Nähe zu anderen Zelten zählt nur über die geteilte Arbeit | frei gewählt |
 | Hungertote in der Sterbetafel (S89) | 3,5 % aller Todesfälle, für alle Alter und Orte gleich | Anteil der Hungertoten in den Jahren 11–100 dieses Laufs (3,4–3,7 %; mit dem Verderb allein 5–7 %) |
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
