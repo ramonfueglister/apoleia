@@ -63,8 +63,9 @@ static func _zp(g: Kit.Grid, x0: int, y0: int, x1: int, y1: int, zf: int, a: int
 
 # --- ground ---------------------------------------------------------------
 
-## Grass over [x0, x1) x [z0, z1), two layers: three greens in patches of
-## three, tufts on one voxel in twenty, now and then a cluster of flowers.
+## Grass over [x0, x1) x [z0, z1), two layers: three close greens in
+## patches of three, a tuft on one voxel in a hundred, now and then a
+## cluster of flowers.
 static func _grass(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) -> void:
 	_lawn(g, x0, z0, x1, z1, 0, FLOOR, seed)
 
@@ -75,9 +76,9 @@ static func _lawn(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, y0: int, y1: 
 			var c := Kit.GRASS if r < 55 else (Kit.GRASS_D if r < 85 else Kit.GRASS_L)
 			g.box(x, y0, z, x + 1, y1, z + 1, c)
 			var t := Kit.rnd(x, z, 1, seed) % 1000
-			if t < 50:
+			if t < 10:
 				g.put(x, y1, z, Kit.GRASS_D)
-			elif t < 58 and x > x0 + 1 and z > z0 + 1 and x < x1 - 2 and z < z1 - 2:
+			elif t < 14 and x > x0 + 1 and z > z0 + 1 and x < x1 - 2 and z < z1 - 2:
 				var f: int = [Kit.FLOWER_Y, Kit.FLOWER_R, Kit.FLOWER_W][Kit.rnd(x, z, 2, seed) % 3]
 				g.put(x, y1, z, f)
 				g.put(x + 1, y1, z, f)
@@ -90,7 +91,7 @@ static func _paving(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) 
 		for x in range(x0, x1):
 			var slab := (x + (row % 2) * 2) / 4
 			var r := Kit.rnd(slab, row, 7, seed) % 100
-			var c := Kit.PAVE_D if r < 10 else (Kit.PAVE_L if r < 20 else Kit.PAVE)
+			var c := Kit.PAVE_D if r < 4 else (Kit.PAVE_L if r < 8 else Kit.PAVE)
 			g.box(x, 0, z, x + 1, FLOOR, z + 1, c)
 
 ## Beaten earth with a few darker patches.
@@ -107,7 +108,7 @@ static func _basalt(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) 
 		for x in range(x0, x1):
 			var stone := (x + (row % 3)) / 3
 			var r := Kit.rnd(stone, row, 3, seed) % 100
-			var c := Kit.BASALT_D if r < 15 else (Kit.BASALT_L if r < 25 else Kit.BASALT)
+			var c := Kit.BASALT_D if r < 3 else (Kit.BASALT_L if r < 5 else Kit.BASALT)
 			g.put(x, 0, z, c)
 
 ## A street lot: `ns` false runs east-west. Road 24 voxels (6 m) between
@@ -246,20 +247,16 @@ const TILES_BRONZE := [Kit.ROOFB, Kit.ROOFB, Kit.ROOFB_L, Kit.ROOFB_D, Kit.ROOFB
 const ROOFS := [TILES, TILES, TILES, TILES, TILES, TILES, TILES, TILES, TILES, TILES,
 	TILES_DARK, TILES_DARK, TILES_DARK, TILES_DARK, TILES_PALE, TILES_PALE, TILES_PALE]
 
-## A field tile: the cover tiles (imbrices) run down the slope as faint
-## lighter ribs every third voxel; a few darker and lighter tiles in short
-## runs, as Urbek's. `along` is the eave's direction ("x" or "z").
+## A field tile: an even slope with a few darker and lighter tiles in
+## short runs, as Urbek's. `along` is the eave's direction ("x" or "z").
 static func _field(x: int, z: int, h: int, set: Array, seed: int, along := "x") -> int:
-	var across := x if along == "x" else z
-	if along != "hip" and posmod(across, 3) == 0:
-		return set[2]
 	# a metal roof (darker tile as the field): ribs only, no odd tiles
 	if set[1] == set[0]:
 		return set[0]
 	var r := Kit.rnd((x + (z % 3)) / 3, z, h, seed) % 100
-	if r < 5:
+	if r < 3:
 		return set[1]
-	if r < 8:
+	if r < 5:
 		return set[2]
 	return set[0]
 
@@ -465,29 +462,16 @@ static func _weather(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, wall: int, 
 		var h := 1 + Kit.rnd(x / 2, 0, zf, seed) % 3
 		g.swap(x, y, zf, x + 1, y + h, zf + 1, wall, wall + 1)
 
-static func _streaks(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, wall: int, seed: int) -> void:
-	var c := _grime(wall)
-	for x in range(x0, x1, 2):
-		if Kit.chance(x, y, zf, seed, 40):
-			var n := 4 + Kit.rnd(x, y, 1, seed) % 6
-			g.swap(x, y - n, zf, x + 2, y, zf + 1, wall, c)
-			g.swap(x, y - n - 2, zf, x + 1, y - n, zf + 1, wall, c)
-
-## The colour rain streaks leave on a wall: grey-brown grime on the pale
-## plasters, a darker shade of the colour on the strong ones.
-static func _grime(wall: int) -> int:
-	return Kit.STREAK if wall in [Kit.CREAM, Kit.WHITE, Kit.OCHRE, Kit.PINK, Kit.LIME] else wall + 1
-
 ## Windows across a face layer: `count` evenly spaced over [x0, x1), a
-## fifth of them with closed shutters.
-static func _window_row(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, count: int, w: int, h: int, o: Dictionary, wall: int, seed: int, s := 1) -> void:
+## few with closed shutters or a flower box. Plain, as Urbek's: a calm wall
+## reads better at a few pixels a voxel than weathering.
+static func _window_row(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, count: int, w: int, h: int, o: Dictionary, _wall: int, seed: int, s := 1) -> void:
 	for i in count:
 		var cx := x0 + ((x1 - x0) * (2 * i + 1)) / (2 * count)
 		var wo := o.duplicate()
-		wo["flowers"] = o.get("flowers", false) and Kit.chance(cx, y, zf, seed, 15)
-		wo["closed"] = Kit.chance(cx, y, zf, seed + 1, 20)
+		wo["flowers"] = o.get("flowers", false) and Kit.chance(cx, y, zf, seed, 6)
+		wo["closed"] = Kit.chance(cx, y, zf, seed + 1, 6)
 		_window(g, cx - w / 2, y, zf, w, h, wo, s)
-		_streaks(g, cx - w / 2, cx - w / 2 + w, y - 1, zf, wall, seed)
 
 ## Corner stones up both edges of a face: courses of two rows, three and
 ## two voxels long in turn.
@@ -496,23 +480,6 @@ static func _quoins(g: Kit.Grid, x0: int, x1: int, y0: int, y1: int, zf: int, c:
 		var n := 3 if (y / 2) % 2 == 0 else 2
 		g.paint(x0, y, zf, x0 + n, mini(y + 2, y1), zf + 1, c)
 		g.paint(x1 - n, y, zf, x1, mini(y + 2, y1), zf + 1, c)
-
-## Aged plaster on a face: a few blotches a shade darker, a patch where
-## the plaster is gone and the brick shows.
-static func _blotches(g: Kit.Grid, x0: int, x1: int, y0: int, y1: int, zf: int, wall: int, seed: int) -> void:
-	if x1 - x0 < 10 or y1 - y0 < 8:
-		return
-	for k in 3:
-		var w := 4 + Kit.rnd(k, 1, zf, seed) % 5
-		var h := 3 + Kit.rnd(k, 2, zf, seed) % 4
-		var x := x0 + Kit.rnd(k, 3, zf, seed) % maxi(1, x1 - x0 - w)
-		var y := y0 + Kit.rnd(k, 4, zf, seed) % maxi(1, y1 - y0 - h)
-		g.swap(x, y, zf, x + w, y + h, zf + 1, wall, wall + 1)
-	if Kit.chance(x0, y0, zf, seed, 45):
-		var x := x0 + 1 + Kit.rnd(5, 5, zf, seed) % maxi(1, x1 - x0 - 5)
-		var y := y0 + Kit.rnd(6, 6, zf, seed) % maxi(1, y1 - y0 - 3)
-		g.swap(x, y, zf, x + 3, y + 2, zf + 1, wall, Kit.BRICK)
-		g.swap(x + 1, y + 2, zf, x + 2, y + 3, zf + 1, wall, Kit.BRICK)
 
 # --- row houses -----------------------------------------------------------
 
@@ -530,11 +497,6 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 	var zf := z1 - 1
 	var w := x1 - x0
 	g.box(x0, y, z0, x1, top, z1, wall)
-	if wall == Kit.BRICKFACE:
-		# brick facing: a light mortar course every third row
-		for yy in range(y + 2, top, 3):
-			g.swap(x0, yy, zf, x1, yy + 1, zf + 1, wall, Kit.MORTAR)
-			g.swap(x0, yy, z0, x1, yy + 1, z0 + 1, wall, Kit.MORTAR)
 	if o.get("timber", false) and storeys >= 2:
 		# the top storey in timber framing: dark posts, a beam at the floor
 		var tb := y + g0 + STOREY * (storeys - 2)
@@ -551,23 +513,14 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 		for f: int in [zf, z0]:
 			for yy in range(y, top):
 				for x in range(x0, x1):
-					if Kit.rnd((x + (yy / 2) % 2) / 2, yy / 2, f, seed) % 100 < 35:
+					if Kit.rnd((x + (yy / 2) % 2) / 2, yy / 2, f, seed) % 100 < 15:
 						g.swap(x, yy, f, x + 1, yy + 1, f + 1, wall, Kit.RUBBLE_D)
 		_quoins(g, x0, x1, y + 3, top - 2, zf, Kit.BRICKFACE)
 	if wall == Kit.LIME or o.get("dado", false):
 		g.paint(x0, y + 3, zf, x1, y + 8, zf + 1, o.get("socle", Kit.SOCLE_R))
 	else:
 		_weather(g, x0, x1, y + 3, zf, wall, seed)
-	# grime under the cornice, rain streaks down from it
-	for x in range(x0, x1):
-		if Kit.chance(x / 2, top, zf, seed, 65):
-			g.swap(x, top - 4 + Kit.rnd(x, 3, zf, seed) % 2, zf, x + 1, top - 2, zf + 1, wall, _grime(wall))
-	for x in range(x0, x1):
-		if Kit.chance(x, top, zf, seed, 12):
-			g.swap(x, top - 3 - Kit.rnd(x, 2, zf, seed) % 16, zf, x + 1, top - 2, zf + 1, wall, _grime(wall))
 	_weather(g, x0, x1, y + 3, z0, wall, seed + 1)
-	_blotches(g, x0, x1, y + 8, top - 3, zf, wall, seed)
-	_blotches(g, x0, x1, y + 8, top - 3, z0, wall, seed + 2)
 	if o.get("quoins", false):
 		_quoins(g, x0, x1, y + 3, top - 2, zf, Kit.STONE)
 	if o.get("dipinti", false) and wall != Kit.BRICKFACE:
@@ -787,9 +740,9 @@ static func _yard(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, seed: int) ->
 const WALLS := [Kit.LIME, Kit.LIME, Kit.LIME, Kit.LIME, Kit.LIME, Kit.LIME, Kit.LIME, Kit.LIME,
 	Kit.LIME, Kit.CREAM, Kit.POMPEII, Kit.DOCHRE, Kit.OCHRE, Kit.BRICKFACE, Kit.BRICKFACE,
 	Kit.RUBBLE, Kit.RUBBLE, Kit.LIME]
-# Shutters were plain wood (weathered dark, brown, bleached), many windows
-# had none.
-const SHUTTERS := [Kit.WOOD_D, Kit.DOOR, Kit.DOOR_D, Kit.EMPTY, Kit.EMPTY]
+# Shutters were plain wood (weathered dark or brown); most windows had
+# none.
+const SHUTTERS := [Kit.EMPTY, Kit.EMPTY, Kit.EMPTY, Kit.WOOD_D, Kit.DOOR_D]
 # Awnings (vela) of plain linen, unbleached or dyed with madder or ochre;
 # a few with a woven band.
 const AWNINGS := [[Kit.LINEN, Kit.LINEN], [Kit.CLOTH_R, Kit.CLOTH_R], [Kit.SACK, Kit.SACK],
@@ -812,7 +765,7 @@ static func _options(seed: int, width: int) -> Dictionary:
 		"steep": false, "loggia": storeys >= 3 and r.call(18, 4) == 0,
 		"timber": r.call(19, 10) == 0, "lift": r.call(20, 5),
 		"hip": r.call(21, 7) == 0, "tower": storeys >= 2 and r.call(22, 7) == 0,
-		"wing": r.call(23, 4) == 0, "porch": false, "dipinti": r.call(25, 3) == 0,
+		"wing": r.call(23, 4) == 0, "porch": false, "dipinti": false,
 		"socle": Kit.SOCLE_B if r.call(26, 10) < 3 else Kit.SOCLE_R,
 	}
 
@@ -913,7 +866,8 @@ static func _tree(g: Kit.Grid, x: int, y: int, z: int, r: int, seed: int) -> voi
 		for dx in range(-r - 1, r + 3):
 			g.swap(x + dx, y - 1, z + dz, x + dx + 1, y, z + dz + 1, Kit.GRASS, Kit.GRASS_D)
 			g.swap(x + dx, y - 1, z + dz, x + dx + 1, y, z + dz + 1, Kit.GRASS_L, Kit.GRASS)
-	var trunk := r + 4
+	r += 1
+	var trunk := r + 6
 	g.box(x, y, z, x + 2, y + trunk + r, z + 2, Kit.TRUNK)
 	var c := Vector3i(x + 1, y + trunk + r, z + 1)
 	g.box(c.x - r, c.y - r, c.z - r, c.x + r, c.y + r + 1, c.z + r, Kit.LEAF)
@@ -1160,14 +1114,8 @@ static func insula(seed: int) -> ArrayMesh:
 	_paving(g, m, m, m + 80, m + 40, seed)
 	g.box(x0, y, z0, x1, top, z1, wall)
 	g.box(x0, y, z0, x1, y + STOREY0, z1, Kit.BRICK)
-	for x in range(x0, x1):
-		for yy in range(y, y + STOREY0):
-			if Kit.chance(x / 3, yy, 0, seed, 10):
-				g.put(x, yy, zf, Kit.BRICK_W)
-				g.put(x, yy, z0, Kit.BRICK_W)
 	g.box(x0, y, zf, x1, y + 2, zf + 2, Kit.STONE)
 	_quoins(g, x0, x1, y + STOREY0, top - 2, zf, Kit.BRICK)
-	_blotches(g, x0, x1, y + STOREY0 + 2, top - 3, zf, wall, seed)
 	# six shops, arched: an opening 9 wide with a stepped round head
 	var bay := (x1 - x0) / 6
 	for i in 6:
@@ -1189,20 +1137,16 @@ static func insula(seed: int) -> ArrayMesh:
 			_balcony(g, x0 + 2, x1 - 2, base, zf, seed)
 		else:
 			_window_row(g, x0, x1, base + 3, zf, 7, 4, 6, {"shutter": shutter, "flowers": true}, wall, seed + k)
-			g.box(x0, base - 1, zf + 1, x1, base, zf + 2, Kit.TRIM)
 		_window_row(g, x0, x1, base + 3, z0, 6, 3, 5, {"shutter": shutter}, wall, seed + 9 + k, -1)
 	_weather(g, x0, x1, y + STOREY0, zf, wall, seed)
 	if wall == Kit.BRICKFACE:
-		# mortar courses, and a flat brick arch over every window
-		for yy in range(y + STOREY0, top, 3):
-			g.swap(x0, yy, zf, x1, yy + 1, zf + 1, wall, Kit.MORTAR)
+		# a flat brick arch over every window
 		for k in range(1, storeys):
 			var base := y + STOREY0 + STOREY * (k - 1)
 			for i in 7:
 				var cx := x0 + ((x1 - x0) * (2 * i + 1)) / 14
 				var wy := base + (9 if k == 1 else 9)
 				g.swap(cx - 3, wy, zf, cx + 3, wy + 1, zf + 1, wall, Kit.BRICK_W)
-				g.swap(cx - 3, wy, zf, cx + 3, wy + 1, zf + 1, Kit.MORTAR, Kit.BRICK_W)
 				g.swap(cx - 1, wy + 1, zf, cx + 1, wy + 2, zf + 1, wall, Kit.BRICK_W)
 	g.box(x0, top - 2, zf + 1, x1, top - 1, zf + 2, Kit.TRIM)
 	for x in range(x0, x1, 2):
@@ -1498,7 +1442,7 @@ static func _via_paving(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, y1: int
 		var row := z / 4
 		for x in range(x0, x1):
 			var slab := (x + (row % 2) * 3) / 6
-			var c := Kit.VIA_PD if Kit.rnd(slab, row, 2, seed) % 100 < 22 else Kit.VIA_P
+			var c := Kit.VIA_PD if Kit.rnd(slab, row, 2, seed) % 100 < 8 else Kit.VIA_P
 			g.box(x, 0, z, x + 1, y1, z + 1, c)
 
 ## The main street (via), two lots wide east-west: this is one half, `half`
