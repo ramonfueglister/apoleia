@@ -370,8 +370,15 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Art und Größe jedes Baum- und Hausplatzes. Gelände und Props lesen nur noch
   einen Texel. Auf den Vierteln kommt `tile_sub_prep.gdshader` dazu, nur wenn
   sein Fenster weiterrückt.
-- Leistung: Der Prop-Patch ist nur so groß wie die gezeichnete Fläche (höchstens
-  `PROP_SPAN` Sichtbreiten) und liegt in ihrer Mitte. Die Hausmodelle laufen nur
+- Leistung: Der Prop-Patch ist nur so groß wie der sichtbare Boden, dazu hohes
+  Land wie beim Gelände und je Seite zweimal die höchste Figur (ein hohes Haus
+  knapp unter dem Bildrand ragt im 30-Grad-Blick 1,7-mal seine Höhe ins Bild,
+  sein Schatten ähnlich weit), höchstens `PROP_SPAN` Sichtbreiten, und liegt in
+  seiner Mitte. Jede Instanz kostet Vertex-Arbeit, ob sie etwas zeigt oder
+  nicht, und das für jede Baumart; bis 29.10. war er bis 2,5-mal so groß wie
+  der sichtbare Boden. Alle Baum- und Hausmodelle sind indiziert (jede Ecke
+  einer Fläche wird einmal gerechnet statt zweimal für zwei ihrer Ecken), ein
+  Drittel weniger Eckpunkte bei gleichen Dreiecken. Die Hausmodelle laufen nur
   über die Stadtkacheln des Patches: `towns-L*.i32` aus dem Bake listet die
   Stadtkacheln jeder Stufe (nach Zeile sortiert, `(j · breite + i) · 4 + Klasse`),
   `_update_town_list` sucht bei jedem Schritt des Patches die darin liegenden
@@ -404,14 +411,20 @@ nie (Ramon, 28.10.2026: „kein rotieren“). Ganz draussen (8000 km) steht sie 
 von Irland bis zum Kaspischen Meer und von der Ostsee bis Oberägypten); die
 Kamera bleibt auf dieser Karte und rückt sie ganz draussen in die Mitte
 (bis 29.10. hielt sie die Sicht auf Europa, 34 bis 60° Nord, und schnitt
-Afrika, Ägypten und die Levante ab). F5–F7 steuern das Wetter. Startoptionen:
+Afrika, Ägypten und die Levante ab). Das Bild bleibt immer auf den
+Geländedaten (18 bis 61° Nord): `_reach` rechnet aus Neigung und Bildwinkel,
+wie weit der sichtbare Boden nach oben und unten reicht, und `max_width`
+hält die Sicht so schmal, dass sie von oben bis unten auf die Daten passt,
+etwa 7800 km im 16:9-Fenster, 7000 km bei 16:10 (sonst lief der Datenrand
+als gerader Schnitt durch Skandinavien). F5–F7 steuern das Wetter. Startoptionen:
 `--view=lon,lat,breite_km`, `--snapshot=pfad.png`, `--snapshot-frames=n`,
 `--views=lon,lat,breite;…` mit `--snapshot=ordner` (ein Bild je Ansicht),
 `--bench=n` (misst n Bilder nach dem Vorlauf und gibt die mittlere Bildzeit aus),
 `--tour=ergebnis.json` (`tour_bench.gd`: fliegt Bild für Bild denselben Weg,
 Rom nah, die ganze Karte, Alexandria, Antiochia, die Levante, Athen, und
 schreibt Bildzeiten, die schlimmsten Bilder mit dem, was das Gelände in ihnen
-änderte, und die Pipeline-Kompilierungen; `--tour-passes=n`, Vorgabe 2).
+änderte, und die Pipeline-Kompilierungen; `--tour-passes=n`, Vorgabe 2;
+`--tour-hide=trees,houses,terrain` lässt das weg, um zu sehen, was es kostet).
 
 ## Offen
 

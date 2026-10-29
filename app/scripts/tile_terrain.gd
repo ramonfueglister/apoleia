@@ -116,6 +116,9 @@ var patch_origin := Vector2i.ZERO
 var draw_n := PATCH_N # tiles per side drawn, around the middle of the patch
 var prop_origin := Vector2i.ZERO
 var prop_n := PROP_N
+## The tallest prop drawn now (km, trees grown, lots on their plinths), for
+## how far beyond the visible ground the prop patch must reach (landscape.gd).
+var prop_height_km := 0.0
 var _props_tier := 1 # 0 full detail, 1 light, 2 low (PROP_DETAIL_KM, PROP_LOW_KM)
 var _meshes_detail: Array = []
 var _meshes_full: Array = []
@@ -530,6 +533,7 @@ func _apply_level(value: int) -> void:
 func _apply_prop_count() -> void:
 	var slots: int = SUB_TREE_SLOTS if sub_tiles else PROP_SLOTS[level]
 	var house_slots: int = SUB_HOUSE_SLOTS if sub_tiles else HOUSE_SLOTS[level]
+	prop_height_km = 0.0
 	for kind in _props.size():
 		var node := _props[kind]
 		var house := _is_house(kind)
@@ -544,6 +548,9 @@ func _apply_prop_count() -> void:
 		# lot models are in metres, the tree meshes about 1.1 units tall
 		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
+		if n > 0:
+			# trees grow to 1.25 times (tile_props.gdshader)
+			prop_height_km = maxf(prop_height_km, _meshes_detail[kind].get_aabb().end.y * size_m * DIORAMA_KM_PER_M * (1.0 if house else 1.25))
 	_town_key = Vector4i(-1, 0, 0, 0) # the house counts: _update_town_list
 
 ## The town tiles of the prop patch (towns-L*.i32) into town_tex, so the
@@ -651,7 +658,10 @@ func set_light_dir(dir: Vector3) -> void:
 
 ## Move the patches around `centre`, the middle of the visible ground;
 ## `span` is the ground (km) the drawn tiles must cover around it.
-func update_view(centre: Vector2, width: float, span := INF) -> void:
+## Draws the patch around `centre` for a view `width` km wide: the terrain
+## `span` km across, the trees and houses `prop_span` km (at most PROP_SPAN
+## view widths).
+func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -> void:
 	var wanted := level_for_width(width)
 	if wanted != zoom:
 		_apply_level(wanted)
@@ -673,9 +683,10 @@ func update_view(centre: Vector2, width: float, span := INF) -> void:
 	var corner_origin := patch_origin - Vector2i.ONE
 	for material in _all_materials():
 		material.set_shader_parameter("corner_origin", corner_origin)
-	# props only around the visible ground (the drawn span, at most
-	# PROP_SPAN view widths): every slot costs vertex work
-	var wanted_n := clampi(int(ceil(minf(PROP_SPAN * width, span) / tile_km / 8.0)) * 8 + 4, 12, PROP_N)
+	# props only around the visible ground (at most PROP_SPAN view widths):
+	# every slot costs vertex work, the trees' for each kind; one tile more
+	# each side, as the patch snaps to whole tiles
+	var wanted_n := clampi(int(ceil(minf(PROP_SPAN * width, minf(span, prop_span)) / tile_km / 2.0)) * 2 + 2, 12, PROP_N)
 	if wanted_n != prop_n:
 		prop_n = wanted_n
 		_apply_prop_count()

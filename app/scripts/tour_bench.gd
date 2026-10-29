@@ -6,6 +6,8 @@ extends Node
 ## the view stutter. The first pass shows first-use costs (shaders, meshes),
 ## the later ones (--tour-passes, default 2) the steady ones. Writes the
 ## numbers, the worst frames and their causes to the JSON file and quits.
+## `hide` ("trees", "houses", "terrain") leaves those out, to weigh what each
+## costs against a full tour.
 
 # lon, lat, view width (km), frames to get there from the key before
 const KEYS := [
@@ -37,6 +39,7 @@ var landscape: Node3D
 var out_path := ""
 var passes := 2
 var warmup := 45
+var hide := PackedStringArray()
 
 var _frame := -1
 var _pass := 0
@@ -77,6 +80,7 @@ func _process(_delta: float) -> void:
 	var events: PackedStringArray = terrain.events.duplicate()
 	terrain.events.clear()
 	var compiles := _compile_count()
+	_hide(terrain)
 	_frame += 1
 	if _frame >= warmup:
 		var f := _frame - warmup
@@ -104,6 +108,15 @@ func _process(_delta: float) -> void:
 	_compiles = compiles
 	_last_usec = now
 
+## After the landscape's update in the frame (it sets what is shown), before
+## the frame is drawn.
+func _hide(terrain: Node3D) -> void:
+	if "terrain" in hide:
+		terrain._terrain.visible = false
+	for kind in terrain._props.size():
+		if ("houses" if terrain._is_house(kind) else "trees") in hide:
+			terrain._props[kind].visible = false
+
 func _finish_pass() -> void:
 	var result := _summary(_frames)
 	result.pass = _pass + 1
@@ -125,6 +138,7 @@ func _finish_pass() -> void:
 		"window": get_viewport().get_visible_rect().size,
 		"refresh_hz": DisplayServer.screen_get_refresh_rate(),
 		"vsync": DisplayServer.window_get_vsync_mode(),
+		"hidden": ",".join(hide),
 		"passes": _results,
 	}
 	DirAccess.make_dir_recursive_absolute(out_path.get_base_dir())

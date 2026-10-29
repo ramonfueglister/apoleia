@@ -2,6 +2,8 @@ extends RefCounted
 ## Procedural meshes of the tile terrain: the tile template (top and four
 ## walls, positioned by tile_terrain.gdshader), voxel trees after Urbek and
 ## low-poly houses with vertex colours. Units: a prop is about 1 unit tall, origin on the ground.
+## Each mesh is indexed (SurfaceTool.index()): a face's shared corners are
+## shaded once, a third less vertex work for the many thousand trees.
 
 static func tile_template() -> ArrayMesh:
 	# VERTEX.x = part (0 top, 1..4 walls N, E, S, W, 5 coast edge along the
@@ -99,6 +101,7 @@ static func plinth() -> ArrayMesh:
 				order = [0, 2, 1, 0, 3, 2]
 			for k in order:
 				st.set_color(rgb); st.set_normal(n); st.set_uv(Vector2(quad[k][1], 0.0)); st.add_vertex(quad[k][0])
+	st.index()
 	return st.commit()
 
 static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color) -> void:
@@ -125,6 +128,7 @@ static func broadleaf(low := false) -> ArrayMesh:
 	if not low:
 		_box(st, Vector3(-0.38, 0.46, -0.22), Vector3(0.38, 0.76, 0.22), top, side)
 		_box(st, Vector3(-0.22, 0.46, -0.38), Vector3(0.22, 0.76, 0.38), top, side)
+	st.index()
 	return st.commit()
 
 ## Conifer (fir, spruce): stacked voxel tiers getting smaller to the tip.
@@ -142,6 +146,7 @@ static func conifer(far := false) -> ArrayMesh:
 		_box(st, Vector3(-0.22, 0.40, -0.22), Vector3(0.22, 0.66, 0.22), top, side)
 		_box(st, Vector3(-0.14, 0.66, -0.14), Vector3(0.14, 0.92, 0.14), top, side)
 		_box(st, Vector3(-0.06, 0.92, -0.06), Vector3(0.06, 1.14, 0.06), top, side)
+	st.index()
 	return st.commit()
 
 ## Mediterranean cypress: a slim voxel column.
@@ -154,6 +159,7 @@ static func cypress(low := false) -> ArrayMesh:
 	_box(st, Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side)
 	if not low:
 		_box(st, Vector3(-0.07, 0.98, -0.07), Vector3(0.07, 1.16, 0.07), top, side)
+	st.index()
 	return st.commit()
 
 ## Stone pine (Pinus pinea), the Roman umbrella pine: a domed voxel parasol
@@ -171,6 +177,7 @@ static func umbrella_pine(low := false) -> ArrayMesh:
 	_box(st, Vector3(-0.32, 0.66, -0.30), Vector3(0.32, 0.78, 0.30), top, side)
 	_box(st, Vector3(-0.44, 0.74, -0.40), Vector3(0.44, 0.92, 0.40), top, side)
 	_box(st, Vector3(-0.28, 0.92, -0.26), Vector3(0.28, 1.02, 0.26), top, top.lerp(side, 0.35))
+	st.index()
 	return st.commit()
 
 ## A flat quad on a wall (window, door), a hair in front of it. `shade`:
@@ -246,6 +253,7 @@ static func house() -> ArrayMesh:
 			var b: Vector3 = top[3 if sx < 0.0 else 2]
 			_quad(st, [a, b, b + down, a + down], Vector3(sx, 0, 0), Color(eave.lerp(roof, 0.5), 1.0))
 	_box(st, Vector3(-ex, ridge - 0.02, -0.03), Vector3(ex, ridge + 0.025, 0.03), ridge_tone, ridge_tone)
+	st.index()
 	return st.commit()
 
 # ------------------------------------------------------------ landmarks
@@ -371,6 +379,7 @@ static func colosseum() -> ArrayMesh:
 			tri = [tri[0], tri[2], tri[1]]
 		for v in tri:
 			st.set_color(sand); st.set_normal(Vector3.UP); st.add_vertex(v)
+	st.index()
 	return st.commit()
 
 ## The Circus Maximus, shortened for the map (330 x 100 m): stepped stands
@@ -434,6 +443,7 @@ static func circus() -> ArrayMesh:
 		for z in [-2.4, 0.0, 2.4]:
 			_prism(st, Vector3(x, 0, z), 1.2, 4.0, 11.0, 6, gold, gold_side)
 			_prism(st, Vector3(x, 0, z), 0.6, 11.0, 13.5, 6, gold, gold_side)
+	st.index()
 	return st.commit()
 
 ## The Forum Romanum on one city tile (84 x 84 m): travertine paving, the
@@ -485,6 +495,7 @@ static func forum() -> ArrayMesh:
 	# honorary columns along the square
 	for x in range(-18, 16, 8):
 		_box(st, Vector3(x - 1.2, 0.8, 2), Vector3(x + 1.2, 15, 4.4), marble, marble)
+	st.index()
 	return st.commit()
 
 ## The temple of Jupiter on the Capitol (60 x 54 m): a high podium with
@@ -515,6 +526,7 @@ static func temple() -> ArrayMesh:
 		_box(st, Vector3(-layer[0], y, -28), Vector3(layer[0], y + layer[1], 19), roof, roof.lightened(0.08))
 		_box(st, Vector3(-layer[0], y, 19), Vector3(layer[0], y + layer[1], 21), marble, marble)
 		y += layer[1]
+	st.index()
 	return st.commit()
 
 ## The Pantheon (rotunda 44 m across under a stepped dome, a portico with
@@ -542,6 +554,7 @@ static func pantheon() -> ArrayMesh:
 	for w in [17.0, 13.0, 9.0, 5.0]:
 		_box(st, Vector3(-w, y, 20), Vector3(w, y + 1.3, 40), stone, marble)
 		y += 1.3
+	st.index()
 	return st.commit()
 
 ## A Tiber bridge (Pons Aemilius, Pons Aelius; 70 x 10 m): a travertine deck on
@@ -559,4 +572,5 @@ static func bridge() -> ArrayMesh:
 		_box(st, Vector3(-35, 9, minf(4.0 * z, 5.0 * z)), Vector3(35, 10.5, maxf(4.0 * z, 5.0 * z)), stone, stone)
 		for x in [-23.5, 0.0, 23.5]:
 			_pane(st, Vector3(x, 3.2, 5.0 * z), Vector3(0, 0, z), 16.0, 6.4, arch)
+	st.index()
 	return st.commit()

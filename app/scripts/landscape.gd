@@ -12,7 +12,8 @@ extends Node3D
 ## Command line (after --): --view=lon,lat,width start view,
 ## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait,
 ## --tour=result.json fly the benchmark tour and save its frame times
-## (tour_bench.gd), --tour-passes=n how often.
+## (tour_bench.gd), --tour-passes=n how often, --tour-hide=trees,houses,terrain
+## without those (what each costs).
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const TourBench = preload("res://scripts/tour_bench.gd")
@@ -21,7 +22,8 @@ const PeopleDots = preload("res://scripts/sim/people_dots.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 1.0 # about 4 houses across (Kit 2 scale), people readable as figures
 ## The whole Kit 1 map in a 16:9 window, from Ireland to the Caspian and
-## from the Baltic to Upper Egypt (4800 x 4100 km)
+## from the Baltic to Upper Egypt (4800 x 4100 km); max_width() holds it a
+## little narrower where the picture would reach past the terrain data.
 const MAX_WIDTH := 8000.0
 ## Zoomed out, the view settles on the Kit 1 map: the pull runs between
 ## these widths (km).
@@ -63,6 +65,7 @@ var _frame := 0
 var _views: Array = [] # --views=lon,lat,w;lon,lat,w: one shot of each into the --snapshot folder
 var _tour := ""
 var _tour_passes := 2
+var _tour_hide := PackedStringArray()
 var _view_index := 0
 
 func _ready() -> void:
@@ -83,6 +86,7 @@ func _ready() -> void:
 				var first := TourBench.view_at(0)
 				start = first
 			"--tour-passes": _tour_passes = int(value)
+			"--tour-hide": _tour_hide = value.split(",", false)
 			"--views":
 				for v in value.split(";"):
 					var q := v.split(",")
@@ -101,7 +105,7 @@ func _ready() -> void:
 	camera.current = true
 	target = lonlat_to_world(start.x, start.y)
 	_goal_target = target
-	width = clampf(start.z, MIN_WIDTH, MAX_WIDTH)
+	width = clampf(start.z, MIN_WIDTH, max_width())
 	_goal_width = width
 	_focus_y = terrain.ground_y(target)
 	_place_camera()
@@ -118,6 +122,7 @@ func _ready() -> void:
 		tour.landscape = self
 		tour.out_path = _tour
 		tour.passes = _tour_passes
+		tour.hide = _tour_hide
 		tour.warmup = _snapshot_frames
 		add_child(tour)
 
@@ -243,17 +248,24 @@ func _place_camera() -> void:
 	camera.fov = fov_for_width(width)
 	camera.global_transform = Transform3D(basis, Vector3(target.x, _focus_y, target.y) + basis.z * distance)
 	var centre := _footprint_centre(distance)
-	terrain.update_view(centre, width, _drawn_span())
+	var spans := _drawn_spans()
+	terrain.update_view(centre, width, spans.x, spans.y)
 	_update_look(distance)
 
-## Ground (km) the drawn terrain must cover around the middle of the view:
+## Ground (km) to cover around the middle of the view: x by the terrain,
 ## the visible ground, a margin, and how far beyond its edge high ground can
-## still rise into the picture or cast a shadow into it.
-func _drawn_span() -> float:
+## still rise into the picture or cast a shadow into it; y by the trees and
+## houses, whose instances all cost vertex work, visible or not: the visible
+## ground and high ground as for the terrain, and twice the tallest prop
+## each side (a tall house just below the picture reaches up into it at the
+## 30 degree view, 1.7 times its height, and its shadow as far).
+func _drawn_spans() -> Vector2:
 	var around := Rect2(target - Vector2(width, width) * 2.0, Vector2(width, width) * 4.0)
 	var relief := maxf(terrain.max_y(around) - _focus_y, 0.0)
 	var top := deg_to_rad(pitch_for_width(width) - fov_for_width(width) * 0.5)
-	return maxf(_footprint_size.x, _footprint_size.y) * 1.25 + 2.0 * relief / tan(maxf(top, 0.15))
+	var seen := maxf(_footprint_size.x, _footprint_size.y)
+	var rises := 2.0 * relief / tan(maxf(top, 0.15))
+	return Vector2(seen * 1.25 + rises, seen + rises + 4.0 * terrain.prop_height_km)
 
 ## Middle of the visible ground: the four screen corner rays meet the focus
 ## plane (far rays capped), the centre of their hull in the tile frame.
@@ -282,24 +294,52 @@ func _ground_under(pixel: Vector2) -> Vector2:
 
 ## Keeps the view on the Kit 1 map: anywhere on it up close; zoomed out the
 ## allowed centres shrink, so the map stays in frame, and once the view is
-## wider than the map it sits in the middle.
+## wider than the map it sits in the middle. Whatever the zoom, the picture
+## stays on the terrain data (18-61 N, 44 W-79 E): beyond its edge there is
+## no ground, only a straight cut (it showed through Scandinavia at 61 N).
 func _clamp_target(p: Vector2, w: float) -> Vector2:
 	var map_min := lonlat_to_world(MAP.position.x, MAP.end.y)
 	var area := Rect2(map_min, lonlat_to_world(MAP.end.x, MAP.position.y) - map_min)
 	var s := map_share(w)
-	var aspect := maxf(get_viewport().get_visible_rect().size.aspect(), 0.1)
-	var half := Vector2(w, w / aspect) * 0.5 * s
-	var lo := area.position + half
-	var hi := area.end - half
+	var reach := _reach(w)
+	var lo := area.position + Vector2(reach.z, reach.x) * s
+	var hi := area.end - Vector2(reach.z, reach.y) * s
+	var c := Vector2(
+		clampf(p.x, lo.x, hi.x) if lo.x <= hi.x else (lo.x + hi.x) * 0.5,
+		clampf(p.y, lo.y, hi.y) if lo.y <= hi.y else (lo.y + hi.y) * 0.5)
+	var data := Rect2(terrain.world_min, terrain.world_size)
+	lo = data.position + Vector2(reach.z, reach.x)
+	hi = data.end - Vector2(reach.z, reach.y)
 	return Vector2(
-		clampf(p.x, lo.x, hi.x) if lo.x <= hi.x else area.get_center().x,
-		clampf(p.y, lo.y, hi.y) if lo.y <= hi.y else area.get_center().y)
+		clampf(c.x, lo.x, hi.x) if lo.x <= hi.x else data.get_center().x,
+		clampf(c.y, lo.y, hi.y) if lo.y <= hi.y else data.get_center().y)
+
+## How far the visible ground reaches from the middle of the view at width w
+## (km, on the focus plane): x to the top edge of the picture (north), y to
+## the bottom edge, z sideways at the top corners (the widest part).
+func _reach(w: float) -> Vector3:
+	var p := deg_to_rad(pitch_for_width(w))
+	var f := deg_to_rad(fov_for_width(w)) * 0.5
+	var aspect := maxf(get_viewport().get_visible_rect().size.aspect(), 0.1)
+	var d := w / (2.0 * tan(f) * aspect)
+	var h := d * sin(p)
+	var back := d * cos(p)
+	var top := maxf(p - f, 0.05)
+	return Vector3(h / tan(top) - back, back - h / tan(p + f), h * cos(f) / sin(top) * tan(f) * aspect)
+
+## The widest view whose picture still fits on the terrain data from top to
+## bottom: MAX_WIDTH in a 16:9 window would reach past the data's north edge
+## (about 7800 km there, 7000 km at 16:10). Pitch and field of view no longer
+## change at these widths, so the reach grows in step with the width.
+func max_width() -> float:
+	var reach := _reach(MAX_WIDTH)
+	return minf(MAX_WIDTH, MAX_WIDTH * 0.97 * terrain.world_size.y / (reach.x + reach.y))
 
 func _zoom_at(factor: float, pixel: Vector2) -> void:
 	# in towards the cursor, out around the middle: on the tilted view a cursor
 	# near the horizon would throw the centre far off the map
 	var before := _ground_under(pixel) if factor > 1.0 else _goal_target
-	var new_width := clampf(_goal_width / factor, MIN_WIDTH, MAX_WIDTH)
+	var new_width := clampf(_goal_width / factor, MIN_WIDTH, max_width())
 	# keep the ground point under the cursor in place
 	var k := new_width / _goal_width
 	_goal_target = _clamp_target(before + (_goal_target - before) * k, new_width)
@@ -341,6 +381,7 @@ func _process(delta: float) -> void:
 	if keys != Vector2.ZERO and not (get_viewport().gui_get_focus_owner() is LineEdit): # typing in the tables' search
 		_pan_pixels(-keys.normalized() * 900.0 * delta)
 	var k := 1.0 - exp(-SETTLE * delta)
+	_goal_width = minf(_goal_width, max_width()) # the window may have changed shape
 	target = target.lerp(_goal_target, k)
 	width = exp(lerpf(log(width), log(_goal_width), k))
 	_goal_target = _clamp_target(_goal_target, _goal_width)
@@ -371,7 +412,7 @@ func _save_snapshot() -> void:
 		var v: Vector3 = _views[_view_index]
 		target = lonlat_to_world(v.x, v.y)
 		_goal_target = target
-		width = clampf(v.z, MIN_WIDTH, MAX_WIDTH)
+		width = clampf(v.z, MIN_WIDTH, max_width())
 		_goal_width = width
 		_focus_y = terrain.ground_y(target)
 		_frame = 0

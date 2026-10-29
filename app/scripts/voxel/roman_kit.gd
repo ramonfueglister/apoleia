@@ -265,6 +265,7 @@ static func mesh_arrays(g: Grid, lo: Vector3, v := V) -> Array:
 	var verts := PackedVector3Array()
 	var norms := PackedVector3Array()
 	var cols := PackedColorArray()
+	var index := PackedInt32Array()
 	var grow := 0.04 * v
 	for axis in 3:
 		var u := (axis + 1) % 3
@@ -357,17 +358,24 @@ static func mesh_arrays(g: Grid, lo: Vector3, v := V) -> Array:
 						if not ccw:
 							order = [0, 1, 2, 0, 2, 3] if aos[0] + aos[2] >= aos[1] + aos[3] else [0, 1, 3, 1, 2, 3]
 						var base_col: Color = palette[key & 0xFF]
-						for k: int in order:
+						# four corners and six indices: the vertex shader runs
+						# once per corner, not twice for two of them (a third
+						# less vertex work for the town's thousands of lots)
+						var first := verts.size()
+						for k in 4:
 							var f: float = AO[aos[k]]
 							verts.append(p[k])
 							norms.append(normal)
 							cols.append(Color(base_col.r * f, base_col.g * f, base_col.b * f))
+						for k: int in order:
+							index.append(first + k)
 						a += wide
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = norms
 	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_INDEX] = index
 	return arrays
 
 # A face's key: its colour and the occlusion at its four corners, from the
