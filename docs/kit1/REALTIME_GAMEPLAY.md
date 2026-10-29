@@ -125,7 +125,7 @@ Phase 2 und 9 können sofort parallel laufen.
 | 5 | `erledigt` | Im Spiel läuft nur die Tages-Sim (siehe Ausgangslage). Eine Bevölkerungskarte aus den Menschen statt aus `ApoleiaSim` ist nicht gebaut. |
 | 6 | `teilweise` | Staatskasse in der Leiste (bei leerer Kasse „Kasse leer“, der Staat prägt nach S95). Fenster „wer kauft, wer verkauft, warum“ und Warnungen folgen nach den Wirtschafts-Fixes. |
 | 7 | `offen` | Mit dem Grafik-Thread. |
-| 8 | `teilweise` | `sim/examples/game_bench.rs` misst einen Tag gegen das Budget jeder Tempostufe und die Ladezeit. Cloud, 4 Kerne, 2 Jahre: Tag p50 7,9 ms, p95 12,6, p99 17,1, max 27,7. Tempo 1–3 halten (Budget 500, 100, 33 ms), Tempo 4 (10 ms) nicht: im Spiel 62–72 Tage/s. Mac-Messung offen. |
+| 8 | `teilweise` | `sim/examples/game_bench.rs` misst einen Tag gegen das Budget jeder Tempostufe und die Ladezeit. Cloud, 4 Kerne, 2 Jahre: Tag p50 7,9 ms, p95 12,6, p99 17,1, max 27,7; im Mittel Menschen 5,3 ms, Getreide 3,6 ms (1 Jahr). Grösster Hebel für Tempo 4 ist also `people.day()`. Tempo 1–3 halten (Budget 500, 100, 33 ms), Tempo 4 (10 ms) nicht: im Spiel 62–72 Tage/s. Mac-Messung offen. |
 | 9 | `implementiert` (S94, Wirtschafts-Thread) | `Grain::money_unbooked()` muss jeden Tag 0 sein; der Test `deterministic_fingerprint` prüft es. |
 
 ## Wie die laufenden Arbeiten dazu passen

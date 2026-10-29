@@ -35,6 +35,7 @@ fn main() {
     println!("start: {:.0} ms, {} people", t0.elapsed().as_secs_f64() * 1e3, g.people.count);
     let days = years * apoleia_sim::life::YEAR;
     let mut ms = Vec::with_capacity(days as usize);
+    let mut parts = [0.0f64; 2];
     let t1 = Instant::now();
     for d in 0..days {
         if d % 90 == 0 {
@@ -43,12 +44,15 @@ fn main() {
             g.command(&Command::Place { kind: ROAD, tiles: vec![(r, 901), (r, 902)] });
         }
         let t = Instant::now();
-        g.day();
+        let [people_us, grain_us] = g.day();
         ms.push(t.elapsed().as_secs_f64() * 1e3);
+        parts[0] += people_us / 1e3;
+        parts[1] += grain_us / 1e3;
     }
     let run_s = t1.elapsed().as_secs_f64();
     let (p50, p95, p99, max) = (pct(&mut ms, 0.5), pct(&mut ms, 0.95), pct(&mut ms, 0.99), pct(&mut ms, 1.0));
     println!("{days} days: {:.2} s per year; day p50 {p50:.2} ms, p95 {p95:.2}, p99 {p99:.2}, max {max:.2}", run_s / years as f64);
+    println!("mean per day: people {:.2} ms, grain {:.2} ms", parts[0] / days as f64, parts[1] / days as f64);
     for (i, s) in SPEEDS.iter().enumerate() {
         let budget = 1000.0 / s;
         let over = ms.iter().filter(|&&m| m > budget).count();
