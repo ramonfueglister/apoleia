@@ -334,6 +334,12 @@ def block_mean(a, f):
 
 
 TOWN_EXTRA_KM = 0.45
+# Every place of the 117 AD list is a town (Hanson's urban sites), its radius
+# at least TOWN_MIN_KM (built up within about nine tenths of it, so 3 x 3
+# tiles of 0.5 km): Aricia (2600 people) was one tile of four lots, a
+# farmstead in the woods (Kritik r8); the woods keep a tile away from the
+# towns up close (TOWN_CLEARING).
+TOWN_MIN_KM = 0.8
 
 
 def settlements(cell_km, n_x, n_y):
@@ -349,6 +355,7 @@ def settlements(cell_km, n_x, n_y):
         # houses (a lot per 0.25 km) left a town of 7000 (Tibur) three houses;
         # villages keep their size
         r_km = 0.6 * math.sqrt(pop / 10000) + TOWN_EXTRA_KM * min(max((pop - 3000) / 4000, 0.0), 1.0)
+        r_km = max(r_km, TOWN_MIN_KM)
         ci = (float(px) - WORLD_MIN[0]) / cell_km
         cj = (float(pz) - WORLD_MIN[1]) / cell_km
         rc = max(r_km / cell_km, 0.0)
@@ -885,15 +892,23 @@ def _node_noise(scale_km, seed):
 WOOD_MIN = {0.5: 0.45, 1.0: 0.80, 2.0: 0.92, 4.0: 0.80, 8.0: 0.70, 16.0: 0.66}
 
 
-def ground_classes(water, tile_km, height, cover, band=1024):
+def ground_classes(water, tile_km, height, cover, metres, relief=None, band=1024):
     """The landscape of every tile at one zoom level, from the data at the
     tile centre (averaged over the tile when it is wider than the 2 km data).
     Land cover is a share per node; a little noise in km turns a share into
-    patches of about that area. Rock and snow by height (lower far out, where
-    the mean is below the peaks; snow climbs to the south and on dry land),
-    mapped glaciers are snow too. All fields live on the 2 km nodes and are
-    read bilinearly at the tile centres, as the GPU would."""
+    patches of about that area. All fields live on the 2 km nodes and are
+    read bilinearly at the tile centres, as the GPU would. `metres` is the
+    real mean height of every tile (tile_metres): it places rock and snow and,
+    from the 1 km tiles, the forest on the slopes of hilly land (`relief`: the
+    height range around the tile, Kritik r8).
+
+    Returns the open landscape (without woods, rock and snow) and the masks of
+    wood, conifer wood, rock and snow; compose_ground binds them to the levels."""
     ny, nx = water.shape
+    wood_out = np.zeros((ny, nx), bool)
+    conifer_out = np.zeros((ny, nx), bool)
+    rock_out = np.zeros((ny, nx), bool)
+    snow_out = np.zeros((ny, nx), bool)
     lod = max(math.log2(tile_km / 2.0), 0.0)
     # far out the landscapes form wide calm regions: the data is blurred over
     # more tiles and the noise that breaks shares into patches fades
@@ -944,22 +959,29 @@ def ground_classes(water, tile_km, height, cover, band=1024):
         # dense woods stay forest, so the land reads light with dark woods as
         # in the painted map instead of one dark green
         wood_min = WOOD_MIN.get(tile_km, 0.65)
-        wood = (forest - 0.25 * farmed + 0.6 * n1 > wood_min) & (h + 100 * n3 < 1400)
+        m = metres[r0:r1]
+        if relief is not None:
+            # far out the woods draw the relief: in hilly land the valleys
+            # stay open and the slopes carry the forest (the plains and
+            # plateaus keep their woods)
+            hilly = relief[r0:r1] >= HILLY_M
+            wood_min = wood_min + hilly * np.where(m < VALLEY_M, VALLEY_WOOD, np.where(m < TREELINE_M, -SLOPE_WOOD, 0.0))
+        wood = (forest - 0.25 * farmed + 0.6 * n1 > wood_min) & (m + 100 * n3 < TREELINE_M)
         if tile_km <= 2.0:
             wood &= n4 < 0.12
-        g[wood] = G["forest"]
+        wood_out[r0:r1] = wood
         # conifers in the subalpine belt and the north (beech below)
         # (the latitude edge wanders by a few degrees at every zoom, else it ran
         # as a straight line through Russia on the map)
-        g[wood & ((h + 150 * n3 > 1050) | (lat + 5.0 * n2_raw > 57.0))] = G["conifer"]
-        g[h + 220 * n3 > 1150 - 60 * lod + south] = G["rock"]
-        # far out the mean height is far below the peaks: the snow line drops
-        # faster than the rock line, so ranges keep white caps on the map
-        snow_line = 1600 - 180 * lod + np.maximum(45 - lat, 0) * 70 + 500 * dry
-        g[(h + 160 * n3 > snow_line) | (glacier + 0.5 * n3 > 0.5)] = G["snow"]
+        hot = np.maximum(42 - lat, 0)
+        conifer_out[r0:r1] = (m + 150 * n3 > CONIFER_M + 100 * hot) | (lat + 5.0 * n2_raw > 57.0)
+        # rock and snow by the real height, a little higher in the dry south
+        # (no bare rock on the Anatolian steppe, no snow on the Atlas)
+        rock_out[r0:r1] = m > ROCK_M.get(tile_km, 1400.0) + 80 * hot
+        snow_out[r0:r1] = m > SNOW_M.get(tile_km, 2200.0) + 100 * hot
         g[(water[r0:r1] & 3) % 3 != 0] = NO_GROUND  # sea and lakes; rivers run on land
         out[r0:r1] = g
-    return out
+    return out, wood_out, conifer_out, rock_out, snow_out
 
 
 def tidy_ground(g, passes=2):
@@ -982,47 +1004,148 @@ def tidy_ground(g, passes=2):
     return g
 
 
-# Bare rock only on the top PEAK_ROCK_LEVELS levels of the land within
-# PEAK_KM, snow only on the top level (whole summit tiles): rock by height
-# alone covered the Apennines at 70 km like a quarry, and snow lay as loose
-# white patches halfway up the slopes.
-PEAK_KM = 10.0
-PEAK_ROCK_LEVELS = 2
+# Kritik r8: far out the land cover draws the relief. Bare rock on the crests
+# of the high massifs and snow only on the summits, by the real height (the
+# terrain tiles, mean over the tile: the far levels lie far below the peaks),
+# so the rock no longer hangs on the levels around it (top two levels within
+# 10 km left 0.2 % rock at 70 km). ROCK_M and SNOW_M fall a little far out,
+# where a tile averages crests and valleys (rock about 10 % of the Abruzzo at
+# 70 km, 4 % at 120 km; snow about 2 % of the Alps at 1500 km). From the 1 km
+# tiles, in hilly land, the woods leave the valleys (below VALLEY_M) and grow
+# on the slopes up to TREELINE_M; plains and plateaus keep their woods. Wood,
+# rock and snow are bound to the levels (level_snap):
+# a tile takes them where most of its own level around it does, so they run
+# in bands along the risers instead of blobs across them.
+ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0}
+SNOW_M = {0.5: 2400.0, 1.0: 2300.0, 2.0: 2300.0, 4.0: 2300.0, 8.0: 2300.0, 16.0: 2100.0}
+VALLEY_M = 400.0
+TREELINE_M = 1700.0
+CONIFER_M = 1450.0  # beech below (the Apennine woods), spruce and larch above
+HILLY_M = 400.0  # height range within RELIEF_KM that makes land hilly
+RELIEF_KM = 10.0
+VALLEY_WOOD = 0.12  # more forest share needed in the valleys
+SLOPE_WOOD = 0.14  # less on the slopes
+SNAP_TILES = 1.5
 
 
-def peaks_only(g, level, tile_km):
-    """Rock and snow only near the top of their range (levels-L{level}.png)."""
-    path = OUT / f"levels-L{level}.png"
-    if not path.exists():
-        return g
+def dem_tile_means(tile_km, nx, ny, dem):
+    """Mean metres of the terrain tiles over every tile (NaN where none)."""
+    mosaic, tx0, ty0 = dem
+    mh, mw = mosaic.shape
+    n = 2 ** DEM_ZOOM
+    lon = (tx0 + (np.arange(mw) + 0.5) / 256) / n * 360 - 180
+    lat = np.degrees(np.arctan(np.sinh(np.pi * (1 - 2 * (ty0 + (np.arange(mh) + 0.5) / 256) / n))))
+    x, _ = lonlat_to_world(lon, 41.0)
+    _, z = lonlat_to_world(19.0, lat)
+    # the projection is separable: a mosaic column lies in one tile column
+    ci = np.floor((x - WORLD_MIN[0]) / tile_km).astype(np.int64)
+    rj = np.floor((z - WORLD_MIN[1]) / tile_km).astype(np.int64)
+    okc, okr = (ci >= 0) & (ci < nx), (rj >= 0) & (rj < ny)
+    m = mosaic[okr][:, okc]
+    ci, rj = ci[okc], rj[okr]
+    cs = np.flatnonzero(np.r_[True, np.diff(ci) != 0])
+    rs = np.flatnonzero(np.r_[True, np.diff(rj) != 0])
+    fin = np.isfinite(m)
+    total = np.add.reduceat(np.add.reduceat(np.where(fin, np.maximum(m, 0), 0), rs, axis=0), cs, axis=1)
+    count = np.add.reduceat(np.add.reduceat(fin.astype(np.float32), rs, axis=0), cs, axis=1)
+    out = np.full((ny, nx), np.nan, np.float32)
+    out[np.ix_(rj[rs], ci[cs])] = np.where(count > 0, total / np.maximum(count, 1), np.nan)
+    return out
+
+
+def tile_metres(tile_km, nx, ny, height, dem):
+    """Real mean height of every tile: the near levels' corner heights (the
+    terrain tiles, near_heights) averaged, far out the terrain tiles over the
+    tile; the 2 km heights outside the terrain tiles."""
+    if tile_km < BASE_CELL_KM * 2 ** BAKED_FROM:
+        c = near_heights(tile_km, height, dem)
+        return 0.25 * (c[:ny, :nx] + c[1:ny + 1, :nx] + c[:ny, 1:nx + 1] + c[1:ny + 1, 1:nx + 1])
+    m = dem_tile_means(tile_km, nx, ny, dem)
+    px = WORLD_MIN[0] + (np.arange(nx) + 0.5) * tile_km
+    pz = WORLD_MIN[1] + (np.arange(ny) + 0.5) * tile_km
+    coarse = node_bilinear(height, np.broadcast_to(px[None, :], m.shape), np.broadcast_to(pz[:, None], m.shape))
+    return np.where(np.isfinite(m), m, np.maximum(coarse, 0)).astype(np.float32)
+
+
+def tile_low_levels(level, ny, nx):
+    """The lowest corner level of every tile (levels-L{level}.png)."""
     Image.MAX_IMAGE_PIXELS = None  # the near levels are 0.2 G corners
-    c = np.array(Image.open(path))
-    ny, nx = g.shape
-    tl = np.maximum(np.maximum(c[:ny, :nx], c[1:ny + 1, :nx]), np.maximum(c[:ny, 1:nx + 1], c[1:ny + 1, 1:nx + 1]))
-    del c
-    top = ndimage.maximum_filter(tl, size=max(int(round(2 * PEAK_KM / tile_km)) | 1, 3))
-    low = tl.astype(np.int16) < top.astype(np.int16) - (PEAK_ROCK_LEVELS - 1)
-    below = tl < top
-    snow = g == G["snow"]
-    g = np.where((g == G["rock"]) & low, G["alpine"], g).astype(np.uint8)
-    g = np.where(snow & below, np.where(low, G["alpine"], G["rock"]), g).astype(np.uint8)
+    c = np.array(Image.open(OUT / f"levels-L{level}.png"))
+    return np.minimum(np.minimum(c[:ny, :nx], c[1:ny + 1, :nx]), np.minimum(c[:ny, 1:nx + 1], c[1:ny + 1, 1:nx + 1]))
+
+
+def level_snap(mask, lv, sigma, block=2048):
+    """`mask` bound to the levels: a tile takes it where most of its own level
+    (lv) within about `sigma` tiles has it (normalised blur per level)."""
+    out = np.zeros(mask.shape, bool)
+    pad = int(4 * sigma) + 1
+    ny, nx = mask.shape
+    for r0 in range(0, ny, block):
+        for c0 in range(0, nx, block):
+            a0, b0 = max(r0 - pad, 0), max(c0 - pad, 0)
+            a1, b1 = min(r0 + block + pad, ny), min(c0 + block + pad, nx)
+            mk = mask[a0:a1, b0:b1]
+            if not mk.any():
+                continue
+            lvb = lv[a0:a1, b0:b1]
+            f = mk.astype(np.float32)
+            res = np.zeros(mk.shape, bool)
+            for k in np.unique(lvb[mk]):
+                same = (lvb == k).astype(np.float32)
+                res |= (same > 0) & (ndimage.gaussian_filter(f * same, sigma) > 0.5 * ndimage.gaussian_filter(same, sigma))
+            h, w = min(block, ny - r0), min(block, nx - c0)
+            out[r0:r0 + h, c0:c0 + w] = res[r0 - a0:r0 - a0 + h, c0 - b0:c0 - b0 + w]
+    return out
+
+
+TOWN_CLEARING = {0.5: 1, 1.0: 1}  # tiles of open land around the towns, per tile size
+
+
+def compose_ground(open_g, wood, conifer, rock, snow, lv, tile_km, town=None):
+    """The landscape with woods, rock and snow bound to the levels; snow in
+    patches of at least 2 x 2 tiles; no wood next to a town up close."""
+    if tile_km >= 1.0:
+        wood = level_snap(wood, lv, SNAP_TILES)
+    if town is not None and tile_km in TOWN_CLEARING:
+        wood &= ~ndimage.binary_dilation(town > 0, np.ones((3, 3), bool), iterations=TOWN_CLEARING[tile_km])
+    rock = level_snap(rock, lv, SNAP_TILES)
+    snow = ndimage.binary_opening(level_snap(snow, lv, 1.0), np.ones((2, 2), bool))
+    land = open_g != NO_GROUND
+    g = open_g.copy()
+    g[wood & land] = G["forest"]
+    g[wood & conifer & land] = G["conifer"]
+    g[rock & land] = G["rock"]
+    g[snow & land] = G["snow"]
     return g
 
 
 def bake_ground(manifest, cells, height, cover, only=None):
     only = tuple(range(LEVELS)) if only is None else only
     manifest["ground"] = [e for e in manifest.get("ground", []) if e["level"] not in only]
+    dem = dem_mosaic(cells[1] != 1)
+    towns = {e["level"]: unpack_towns(e) for e in manifest["cells"] if e["cell_km"] in TOWN_CLEARING and e["level"] in only}
     for level in only:
         tile = BASE_CELL_KM * 2 ** level
-        g = tidy_ground(ground_classes(cells[level], tile, height, cover), passes=2 if tile <= 2.0 else 3)
-        g = peaks_only(g, level, tile)
+        ny, nx = cells[level].shape
+        metres = tile_metres(tile, nx, ny, height, dem)
+        relief = None
+        if tile >= 1.0:
+            size = max(int(round(2 * RELIEF_KM / tile)) | 1, 3)
+            relief = ndimage.maximum_filter(metres, size) - ndimage.minimum_filter(metres, size)
+        parts = ground_classes(cells[level], tile, height, cover, metres, relief)
+        del metres, relief
+        g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level))
+        del parts
+        g = tidy_ground(g, passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
         path = OUT / f"ground-L{level}.png"
         Image.fromarray(packed, "L").save(path, optimize=True)
         manifest["ground"].append({"level": level, "cell_km": tile, "width": g.shape[1], "height": g.shape[0],
                                    "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
                                    "classes": GROUND, "water": NO_GROUND,
-                                   "peaks": {"km": PEAK_KM, "rock_levels": PEAK_ROCK_LEVELS}})
+                                   "relief_cover": {"rock_m": ROCK_M[tile], "snow_m": SNOW_M[tile],
+                                                    "valley_m": VALLEY_M, "treeline_m": TREELINE_M,
+                                                    "heights": {"url": DEM_URL, "zoom": DEM_ZOOM}}})
         land = g[g != NO_GROUND]
         share = np.bincount(land, minlength=len(GROUND)) / max(land.size, 1)  # whole map, deserts included
         print("ground", level, g.shape, " ".join(f"{n} {v:.2f}" for n, v in zip(GROUND, share)))
@@ -1059,8 +1182,17 @@ def towns_only():
         print("towns", e["level"], int((town > 0).sum()))
     manifest["inputs"]["places"] = {"path": "data/gametiles/places.csv", "sha256": sha(ROOT / "data/gametiles/places.csv")}
     manifest["town_extra_km"] = TOWN_EXTRA_KM
+    manifest["town_min_km"] = TOWN_MIN_KM
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
+
+
+def unpack_towns(entry):
+    packed = np.array(Image.open(OUT / entry["path"]).convert("L"))
+    a = np.zeros((packed.shape[0], packed.shape[1] * 2), np.uint8)
+    a[:, 0::2] = packed & 15
+    a[:, 1::2] = packed >> 4
+    return a[:, :entry["width"]] >> 2
 
 
 def unpack_cells(entry):

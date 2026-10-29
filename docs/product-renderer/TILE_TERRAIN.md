@@ -115,14 +115,26 @@ unabhängig und unverändert.
   olivfarbenen 70-km-Bild zurück ins Grün), Fels, tiefes Meer #19588c mit
   Flachwasser #24689e; Seen wie die Flüsse im Flachwasserton. Offenes Land bekommt dort zusätzlich eine flache Farbe
   je Höhenstufe (Hügel #849252, Bergweide #7c8550 statt Khaki #958e6c, das den
-  Apennin zum Steinbruch machte, hoher Fels warm #9a9488,
-  nicht lila; das Höhenband zählt in fernen Stufen, auch auf den nahen Kacheln), so lesen
+  Apennin zum Steinbruch machte; das Höhenband zählt in fernen Stufen, auch
+  auf den nahen Kacheln), so lesen
   Hügel und Gebirge als Flächen und nicht nur über ihre Rampen; Wald auf
-  Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
-  Stufe hell, nackter Fels nur auf den obersten zwei Stufen im Umkreis von
-  10 km und Schnee nur auf der obersten (`peaks_only` im Bake; vorher lagen
-  Felsflächen über dem ganzen Apennin und Schneeflecken halb am Hang), und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
-  so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
+  Hügeln und Bergen ist dort dunkler (Nadelwaldton). Fern zeichnet die
+  Bodenbedeckung das Relief (Kritik r8): nackter Fels (#a89c78 wie die
+  gemalten Grate) auf den Kämmen der hohen Massive und Schnee (#e8e4dc statt
+  Watteweiß) nur auf den Gipfeln, nach der echten mittleren Höhe der Kachel
+  aus den Terrain Tiles (`tile_metres`, `ROCK_M` und `SNOW_M` je
+  Kachelgröße, etwas höher im trockenen Süden): etwa 11 % Fels im
+  70-km-Bild der Abruzzen, 4 % bei 120 km, die Alpen bei 1500 km ein
+  Felsgrat mit Schnee auf etwa 2 %, die Pyrenäen auf der Europakarte. Ab
+  1-km-Kacheln weicht der Wald in hügeligem Land (400 m Höhenunterschied in
+  10 km) aus den Tälern unter 400 m und wächst an den Hängen bis 1700 m;
+  Ebenen und Hochflächen behalten ihre Wälder. Wald, Fels und Schnee sind an
+  die Stufen gebunden (`level_snap`: eine Kachel nimmt sie an, wo der größere
+  Teil ihrer eigenen Stufe ringsum sie trägt), so laufen sie als Bänder
+  entlang der Stufen statt als Flecken über sie hinweg; Schnee in Flecken
+  von mindestens 2 × 2 Kacheln. (Vorher: Fels nur auf den obersten zwei
+  Stufen im Umkreis von 10 km ließ bei 70 km 0,2 % Fels und graue Platten
+  wie Löcher.) Nadelwald erst ab 1450 m, darunter Buchenwald wie im Apennin.
   Rampen haben einen festen Ton je Seite wie in SimCity 2000, passend zur
   Sonne aus Westsüdwest: nach Westen +12 %, nach Osten −15 %, nach Süden
   (die Stufen, die die Kamera von vorn sieht) −10 %, nach Norden −18 %; eine
@@ -164,24 +176,38 @@ unabhängig und unverändert.
   Kacheln in Terrakotta (keine Mischfarben), bis 4-km-Kacheln; auf 8- und
   16-km-Kacheln lasen sie als rote Markierungen und gehen wie die Dörfer im
   Land auf. In Städten (ab Ortsklasse 2)
-  laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
+  laufen ab 0,5-km-Kacheln Straßen zwischen den Häuserblöcken, auf dem Raster der
   Hausplätze; die Häuser lassen dafür Platz (ein Grundstück füllt 0,92 seines
-  Platzes, `LOT_SHARE`). Städte sind voll bebaut, ein
+  Platzes, `LOT_SHARE`). Ringdörfer zeigen dort keine Häuser mehr (Kritik
+  r8: einzelne Häuser auf dem Weizen um Rom bei 22 km). Städte sind voll bebaut, ein
   Grundstück auf jedem Viertel (Kritik r7: keine nackte Wiese in der Stadt);
   gepflastert sind die Höfe unter den Häusern und im Stadtkern die leeren
   ebenen Plätze, Dörfer bleiben Land. Ein Haus steht immer waagrecht auf dem
-  höchsten Boden unter ihm; auf einer Rampe füllt eine Terrasse aus
-  Travertin (#cec2a1 oben, Mauer #b8ae96, `PropMeshes.plinth`, Prop-Art 5)
-  den Raum bis zum tiefsten Boden, so steigt ein Ort am Hang in Terrassen an
-  wie Tivoli (vorher kippten die Häuser mit der Rampe und lasen bei 22 km als
-  schräge Karten, noch früher standen sie nur auf flachen Vierteln und
-  ließen leere Hänge). In Dörfern stehen die Häuser nur auf flachen
+  höchsten Boden unter ihm, auf einer Terrasse (`PropMeshes.plinth`,
+  Prop-Art 5), so steigt ein Ort am Hang in Terrassen an wie Tivoli (vorher
+  kippten die Häuser mit der Rampe und lasen bei 22 km als schräge Karten).
+  Auf den Viertelkacheln ist die Terrasse so groß wie die Kachel, so stehen
+  die Häuser einer Stufe auf einer durchgehenden Stützmauer ohne Schlitze
+  (Kritik r8), auf ebenem Boden als niedrige Stufe von 0,25 m. Ihre Mauern
+  haben einen Ton je Seite (Süd #bab09a, dunkler als die Hauswände, West
+  #d8d0bc, Ost #a39a86), eine Mauerkrone #ece6d8 und einen Sockel #9e947e,
+  die ihre Höhe behalten. Oben liegt vor jedem Haus (Süden, die Seite mit
+  der Tür) eine Straße #c0b490 mit Bordstein #a89c7c, das Grundstück steht
+  dafür 0,9 so tief an der Nordseite; jede fünfte Spalte hat eine
+  Querstraße an der Westseite, ihre Häuser sind 0,9 so breit. Bei 30 Grad
+  Neigung verdecken die Häuser die Straße hinter sich, außer die nächste
+  Reihe steht tiefer; die Querstraßen laufen mit dem Blick und bleiben
+  offen. In Dörfern stehen die Häuser nur auf flachen
   Vierteln. Am Fluss in einer Stadt ist das Ufer ein gepflasterter Kai
   (vorher Weizen mitten in Rom). Orte wachsen mit ihren Einwohnern (Fläche
   wie bei 9000 Menschen je km²); Städte ab 3000 Einwohnern bekommen einen
   Ring dazu, bis 0,45 km ab 7000 (`TOWN_EXTRA_KM`), sonst blieben dem
-  diorama-großen Haus (ein Grundstück je 0,25 km) in Tibur drei Häuser;
-  Dörfer behalten ihre Größe. Die Häuser sind die Grundstücke der
+  diorama-großen Haus (ein Grundstück je 0,25 km) in Tibur drei Häuser.
+  Jeder Ort der Liste von 117 n. Chr. ist eine Stadt (Hansons Stadtorte) mit
+  mindestens 0,8 km Radius (`TOWN_MIN_KM`, bebaut auf etwa neun Zehnteln,
+  also 3 × 3 Kacheln zu 0,5 km; Aricia mit 2600 Einwohnern war eine Kachel
+  mit vier Häusern im Wald), und auf den 0,5- und 1-km-Kacheln
+  bleibt der Wald eine Kachel von den Orten weg (`TOWN_CLEARING`). Die Häuser sind die Grundstücke der
   römischen Stadt aus dem Kolosseum-Prototyp (`voxel/roman_buildings.gd`, eine
   Kopie aus PR #45, 40 Voxel auf 10 m wie Urbek): 14 Hausvarianten (Domus mit
   Atrium, Insulae mit Läden, Werkstätten, Putz in Creme, Ocker und Kalkweiß,
@@ -257,12 +283,15 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   ruhige große Landschaften statt Flecken; fern bleibt nur dichter Wald
   Wald (`WOOD_MIN`: ab 1-km-Kacheln braucht ein Wald 0,66 bis 0,92
   Waldanteil statt 0,45; die römische Bedeckung trägt Wald auf über der
-  Hälfte Italiens, fern las das als dunkle Tarnfarbe; Mittelitalien hat bei
-  70 und 120 km je 24 % Wald, bei 400 km 19 %), so
+  Hälfte Italiens, fern las das als dunkle Tarnfarbe; in hügeligem Land
+  verschiebt die Höhe der Kachel die Schwelle, siehe oben: Mittelitalien hat
+  bei 70 km etwa 38 % Wald an den Hängen, bei 120 km 30 %), so
   liest das Land hell mit dunklen Wäldern wie die gemalte Karte, und
   die Grenze zum Nadelwald im Norden wandert um einige Breitengrade statt
   als Gerade durch Russland zu laufen; allein neu mit
-  `--ground-only`, etwa 8 Minuten). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
+  `--ground-only`, etwa 35 Minuten, davon 25 für die 0,5-km-Kacheln; die
+  Höhen für Fels, Schnee und Wald kommen aus denselben Terrain Tiles wie
+  die nahen Stufen). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und
   verschiebt die Patches. Ein MultiMesh mit 320 × 320 Kacheln, fünf MultiMeshes
   für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln).

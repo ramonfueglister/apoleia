@@ -21,6 +21,21 @@ uniform bool place_ready = false;
 uniform int place_tree_w = 300;
 
 varying vec3 tint;
+varying float road; // the cross street on a terrace's west strip
+
+// Up close (quarter tiles) every lot stands on a terrace block of the whole
+// tile with a street along its south side (Kritik r8: lots butted front to
+// back with no street): the lot keeps its width, is SUB_LOT_DEPTH as deep and
+// stands at the north side; every CROSS_EVERY-th column a cross street runs
+// along the west side, and its lots are SUB_LOT_DEPTH as wide too. (Seen at
+// the 30 degree tilt the houses hide the street behind them unless the next
+// row stands lower; the cross streets run along the view and stay open.)
+const float SUB_LOT_DEPTH = 0.9;
+const float SUB_LOT_NORTH = 0.01; // gap behind the lot, tile units
+const int CROSS_EVERY = 5;
+const float CROSS_STREET = 0.12; // tile units (tile_prop_meshes.gd PLINTH_STREET)
+const float TERRACE_STEP_M = 0.25; // a terrace on flat ground stands this high
+const vec3 ROAD_RGB = vec3(0.639, 0.596, 0.463); // as the street on the terrace top (PLINTH_ROAD)
 
 float pick(vec4 v, int k) {
 	return k == 0 ? v.x : k == 1 ? v.y : k == 2 ? v.z : v.w;
@@ -58,7 +73,35 @@ void vertex() {
 	float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
-	if (house) {
+	road = 0.0;
+	float lift = 0.0;
+	if (house && sub_tiles) {
+		// the terrace block covers the tile: level at its highest corner,
+		// its wall down to the lowest; the lot on top, north of the street
+		vec4 c = tt_corners_cached(t);
+		float hi = max(max(c.x, c.y), max(c.z, c.w));
+		float lo = min(min(c.x, c.y), min(c.z, c.w));
+		bool cross = ((t.x % CROSS_EVERY) + CROSS_EVERY) % CROSS_EVERY == 0;
+		lift = TERRACE_STEP_M * s;
+		level = hi;
+		if (prop_kind == 5) {
+			float wall = (hi - lo) * level_h + lift;
+			float off = UV.x * s; // the coping and base rows keep their height
+			v = vec3(VERTEX.x * tile_km * 0.1, 0.0, VERTEX.z * tile_km * 0.1);
+			v.y = VERTEX.y > 0.5 ? max(off, -0.5 * wall) : -wall + min(off, 0.5 * wall);
+			road = cross && UV.y > 0.5 ? 1.0 : 0.0;
+			uv = vec2(0.5);
+		} else {
+			float lot = 10.0 * s / tile_km; // lot width in tile units
+			v.z *= SUB_LOT_DEPTH;
+			uv.y = SUB_LOT_NORTH + 0.5 * lot * SUB_LOT_DEPTH;
+			if (cross) {
+				v.x *= SUB_LOT_DEPTH;
+				uv.x = CROSS_STREET + 0.01 + 0.5 * lot * SUB_LOT_DEPTH;
+			}
+		}
+		p = world_min + (vec2(t) + uv) * tile_km;
+	} else if (house) {
 		// a lot stands level at the highest ground under it; on a ramp a
 		// stone terrace (prop kind 5) fills the space down to the lowest, as
 		// the houses of a hill town stand on retaining walls (they tilted
@@ -79,7 +122,7 @@ void vertex() {
 		}
 	}
 	v.xz = rot * v.xz;
-	vec3 world = vec3(p.x, level * level_h, p.y) + v;
+	vec3 world = vec3(p.x, level * level_h + lift, p.y) + v;
 	vec3 nrm = NORMAL;
 	nrm.xz = rot * nrm.xz;
 	// hidden slots: all vertices on one point behind the camera, no area
@@ -87,13 +130,14 @@ void vertex() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	tint = prop_kind == 3 ? vec3(0.96 + 0.08 * r1) : prop_kind == 5 ? vec3(1.0) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
 	// the sides turned to the SimCity light of the terrain a little lighter
+	// (the terrace walls carry their tone per side in the mesh)
 	vec3 art = tt_art_light(INV_VIEW_MATRIX);
-	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), normalize(art.xz)) : 0.0;
+	float facing = abs(nrm.y) < 0.5 && prop_kind != 5 ? dot(normalize(nrm.xz), normalize(art.xz)) : 0.0;
 	tint *= 1.0 + 0.25 * max(facing, 0.0);
 }
 
 void fragment() {
-	ALBEDO = pow(COLOR.rgb * tint, vec3(2.2)); // vertex colours are sRGB
+	ALBEDO = pow(mix(COLOR.rgb, ROAD_RGB, road) * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;
 }

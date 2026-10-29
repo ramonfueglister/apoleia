@@ -22,7 +22,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "cells-L0.png",
-      "sha256": "b3ac912b63dfb8715fe5121731038762304b6b6e1b6a4661b7dda62a75725103",
+      "sha256": "aeaf9b8c3444f1bb9e405e347318c579cf50c82c5a6f4c5e794f821762f2efe5",
       "river_max_scalerank": 10
     },
     {
@@ -32,7 +32,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "cells-L1.png",
-      "sha256": "9a99e2569a277b38f71e40e0c5396df81fe7e5d43fd9dcc2023a62ee50a8b6e1",
+      "sha256": "feeb352ad38411916e175f4df2f9c87400843d8b2d950d0ab313cc0f98ebca3e",
       "river_max_scalerank": 10
     },
     {
@@ -42,7 +42,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "163acbc757f07a14543873f61ebad3b40f42f45ff85699de5055849aa9bb932e",
+      "sha256": "2104739538d1ca3e31796edd80652b24096ec36123254e3f3b6d5fc5cb93549a",
       "river_max_scalerank": 8
     },
     {
@@ -52,7 +52,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "f0dbbeae38d1d5506b21635f48e74db7992ec3736528b099cd12326b94ba2a65",
+      "sha256": "2c6b9525265a77e511393f6ce412eacfb0c3c9596fa8479c50ba314df7f96fc7",
       "river_max_scalerank": 7
     },
     {
@@ -62,7 +62,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "921fcf322ddba37a75171dfda996cf7e91dffb641fe3aa1d53fe04e33474a44e",
+      "sha256": "eab6053e4d234e16452d22e052a83be65044e673f97b414d24e4f7569f853c33",
       "river_max_scalerank": 6
     },
     {
@@ -72,7 +72,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "7c4e4ebff103c2da50330213efef9cab7e4bf607fe48720bd9d9c3a1bcca5059",
+      "sha256": "7ed23b953c8a2ab877effac3233d842a38e0990a8e1791be525bfa48b8601127",
       "river_max_scalerank": 5
     }
   ],
@@ -307,7 +307,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "ground-L0.png",
-      "sha256": "cac154581e1d9fb0b4f851822685e6c436a86d11f2805e203984492d03e66c6d",
+      "sha256": "79af79c198182f3f1c4bf65627f5b9fff07567c070461eeb967426dc157b371a",
       "classes": [
         "meadow",
         "dry_grass",
@@ -322,9 +322,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1600.0,
+        "snow_m": 2400.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     },
     {
@@ -334,7 +340,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "ground-L1.png",
-      "sha256": "21335a27ee74867732434ae68789eb31c75a668ece9b0a60cace00e5b0299279",
+      "sha256": "ba7e956d1c8ce86a0ee64c11ba2767b21a139522d84071986c684e364e161f35",
       "classes": [
         "meadow",
         "dry_grass",
@@ -349,9 +355,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1600.0,
+        "snow_m": 2300.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     },
     {
@@ -361,7 +373,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "ground-L2.png",
-      "sha256": "e9511a55a960d5929c781445552ed674d84b1523ea0645ecc1d4172cf4e2df21",
+      "sha256": "adf488ad144e7a38660c45ee2afe2e9f5c3f866b155f8994f75e9edcf6d21de5",
       "classes": [
         "meadow",
         "dry_grass",
@@ -376,9 +388,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1500.0,
+        "snow_m": 2300.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     },
     {
@@ -388,7 +406,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "ground-L3.png",
-      "sha256": "9b19dc3dfcf942f22ba8ee719c470e87cec497108b8b7d9cb79155ce56d0a6c7",
+      "sha256": "2252538931f9e96ed630baee48be48272de2bd80c37423a00db9c2d2c63385e9",
       "classes": [
         "meadow",
         "dry_grass",
@@ -403,9 +421,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1350.0,
+        "snow_m": 2300.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     },
     {
@@ -415,7 +439,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "ground-L4.png",
-      "sha256": "7aaf1cfd4e9f745c71686fb7f73a1b31d32984890d0b06687bf00478c2f6d332",
+      "sha256": "7f104f9dc2dbbb3e3fc753842c7bff5f5fae13b469a12099c36967010b35b474",
       "classes": [
         "meadow",
         "dry_grass",
@@ -430,9 +454,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1450.0,
+        "snow_m": 2300.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     },
     {
@@ -442,7 +472,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "ground-L5.png",
-      "sha256": "0f491ebe9434405aafe1b1ba3c689ee8b7dd43dcd3567fe5ee620ffad25fa2d9",
+      "sha256": "d1f8d5a7829d10b29a3873c7a2fb4a532446a2fdfe6c2a418473837c8ce6ef44",
       "classes": [
         "meadow",
         "dry_grass",
@@ -457,9 +487,15 @@
         "snow"
       ],
       "water": 15,
-      "peaks": {
-        "km": 10.0,
-        "rock_levels": 2
+      "relief_cover": {
+        "rock_m": 1300.0,
+        "snow_m": 2100.0,
+        "valley_m": 400.0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
       }
     }
   ],
@@ -488,5 +524,6 @@
     "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
   },
-  "town_extra_km": 0.45
+  "town_extra_km": 0.45,
+  "town_min_km": 0.8
 }

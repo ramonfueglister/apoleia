@@ -66,15 +66,14 @@ const vec3 GROUND_FAR[11] = vec3[](
 	vec3(0.262, 0.316, 0.184),  // forest (olive like the painted strip, #56683c, not #4f7b36)
 	vec3(0.220, 0.290, 0.200),  // conifer forest
 	vec3(0.408, 0.447, 0.294),  // alpine meadow
-	vec3(0.440, 0.420, 0.380),  // rock
-	vec3(0.953, 0.965, 0.973)   // snow
+	vec3(0.510, 0.472, 0.375),  // rock (the painted crests, #a89c78 on screen; Kritik r8)
+	vec3(0.860, 0.845, 0.810)   // snow (#e8e4dc, not cotton white)
 );
 const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
 // mountain pasture, a little darker than the hills (#7c8550); bare rock only
-// on the top levels (tools/build_tile_terrain.py peaks_only): the khaki
-// #958e6c here made the Apennines a quarry
+// on the crests (tools/build_tile_terrain.py ROCK_M): the khaki #958e6c here
+// made the Apennines a quarry
 const vec3 C_MOUNT_FAR = vec3(0.356, 0.388, 0.259);
-const vec3 C_HIGH_ROCK = vec3(0.604, 0.580, 0.533); // #9a9488, warm limestone grey, not lilac
 const vec3 C_SEA_FAR = vec3(0.111, 0.264, 0.424);   // #19588c on screen
 const vec3 C_SHORE_FAR = vec3(0.130, 0.302, 0.506); // #24689e
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
@@ -243,7 +242,6 @@ vec3 ground_rgb_at(int g, float band) {
 		far = band >= 3.0 ? mix(far, C_MOUNT_FAR, 0.75) : mix(far, C_HILLS_FAR, band >= 2.0 ? 0.8 : 0.5);
 	}
 	if ((g == G_FOREST || g == G_CONIFER) && band >= 2.0) { far = mix(far, GROUND_FAR[G_CONIFER] * 0.85, 0.6); }
-	if (g == G_ROCK && band >= 3.0) { far = C_HIGH_ROCK; }
 	return mix(GROUND_RGB[g], far, far_share());
 }
 
@@ -327,11 +325,12 @@ void fragment() {
 				c = C_ROOF;
 			}
 			// streets between the house blocks of towns and cities (the grid of
-			// house_grid blocks per tile; half a street on each tile edge)
+			// house_grid blocks per tile; half a street on each tile edge; up
+			// close the streets lie on the lots' terraces, tile_props)
 			// the landmarks stand on open travertine squares
 			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
-			if (housed && town >= 2 && built && paved && !plaza) {
+			if (housed && town >= 2 && built && paved && !plaza && !sub_tiles) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
 				float d = min(e.x, e.y);
