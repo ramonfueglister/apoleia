@@ -46,6 +46,66 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 		for p in [a, b, c[q[2]], a, c[q[2]], d]:
 			st.set_color(face[2]); st.set_normal(n); st.add_vertex(p)
 
+## The terrace under a town lot (tile_props.gdshader prop kind 5), Kritik
+## r8: up close a block the size of the quarter tile, so the lots of one level
+## stand on one continuous retaining wall; its top is the lot's floor and its
+## foot the lowest ground of the tile (on flat ground a low step). The top is
+## the yard, a kerb and the street in front of the lot (south, +z); the walls
+## are masonry toned by their side (the south face the camera sees darker than
+## the house walls, so the houses sit on foundations), with a coping row along
+## the top and a base row at the foot.
+## x and z: tenths of the block (-5..5). y: 0 foot, 1 top (the shader
+## stretches the wall between them). UV.x: an offset in metres from that end,
+## so the coping and base rows keep their height. On a street tile the
+## shader paves the whole top (tile_props.gdshader STREET_EVERY).
+const PLINTH_STREET := 1.2 # street, tenths of the block
+const PLINTH_KERB := 0.2
+const PLINTH_ROW_M := 0.5 # coping and base rows
+# vertex colours, a little darker than on screen (sun and sky lift them):
+# street #c0b490, kerb #a89c7c, walls south #bab09a, west #d8d0bc, east
+# #a39a86, coping #ece6d8, base #9e947e on screen (Kritik r8)
+const PLINTH_YARD := Color("#afa484")
+const PLINTH_ROAD := Color("#a39876")
+const PLINTH_KERB_RGB := Color("#8e8466")
+static func plinth() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var road := 5.0 - PLINTH_STREET
+	var kerb := road - PLINTH_KERB
+	# top: yard, kerb, street
+	_plinth_quad(st, Vector2(-5.0, -5.0), Vector2(5.0, kerb), PLINTH_YARD)
+	_plinth_quad(st, Vector2(-5.0, kerb), Vector2(5.0, road), PLINTH_KERB_RGB)
+	_plinth_quad(st, Vector2(-5.0, road), Vector2(5.0, 5.0), PLINTH_ROAD)
+	# walls: base row, masonry, coping row (y anchor, offset in metres)
+	var rows := [[0.0, 0.0, 0.0, PLINTH_ROW_M, Color("#968c6f")],
+		[0.0, PLINTH_ROW_M, 1.0, -PLINTH_ROW_M, Color()],
+		[1.0, -PLINTH_ROW_M, 1.0, 0.0, Color("#e1d9bd")]]
+	var sides := [[Vector3.BACK, Color("#b1a687")], [Vector3.LEFT, Color("#cec4a5")],
+		[Vector3.RIGHT, Color("#9b9176")], [Vector3.FORWARD, Color("#9b9176")]]
+	for side in sides:
+		var n: Vector3 = side[0]
+		# the face's two top corners, counter-clockwise seen from outside
+		var a := Vector3(n.x * 5.0 + n.z * 5.0, 0.0, n.z * 5.0 - n.x * 5.0)
+		var b := Vector3(n.x * 5.0 - n.z * 5.0, 0.0, n.z * 5.0 + n.x * 5.0)
+		for row in rows:
+			var rgb: Color = side[1] if row[4] == Color() else row[4]
+			var lo_a := Vector3(a.x, row[0], a.z)
+			var lo_b := Vector3(b.x, row[0], b.z)
+			var hi_a := Vector3(a.x, row[2], a.z)
+			var hi_b := Vector3(b.x, row[2], b.z)
+			var quad := [[lo_a, row[1]], [lo_b, row[1]], [hi_b, row[3]], [hi_a, row[3]]]
+			var order := [0, 1, 2, 0, 2, 3]
+			if (lo_b - lo_a).cross(Vector3.UP).dot(n) > 0.0: # clockwise seen from outside
+				order = [0, 2, 1, 0, 3, 2]
+			for k in order:
+				st.set_color(rgb); st.set_normal(n); st.set_uv(Vector2(quad[k][1], 0.0)); st.add_vertex(quad[k][0])
+	return st.commit()
+
+static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color) -> void:
+	# clockwise seen from above
+	for p in [Vector2(lo.x, lo.y), Vector2(hi.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, hi.y)]:
+		st.set_color(rgb); st.set_normal(Vector3.UP); st.set_uv(Vector2.ZERO); st.add_vertex(Vector3(p.x, 1.0, p.y))
+
 ## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
 ## trunk, Urbek's bright top and dark sides. `low`: the far version (two
 ## blocks, for trees a few pixels tall).

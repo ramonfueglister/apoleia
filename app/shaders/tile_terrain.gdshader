@@ -66,12 +66,14 @@ const vec3 GROUND_FAR[11] = vec3[](
 	vec3(0.262, 0.316, 0.184),  // forest (olive like the painted strip, #56683c, not #4f7b36)
 	vec3(0.220, 0.290, 0.200),  // conifer forest
 	vec3(0.408, 0.447, 0.294),  // alpine meadow
-	vec3(0.440, 0.420, 0.380),  // rock
-	vec3(0.953, 0.965, 0.973)   // snow
+	vec3(0.510, 0.472, 0.375),  // rock (the painted crests, #a89c78 on screen; Kritik r8)
+	vec3(0.860, 0.845, 0.810)   // snow (#e8e4dc, not cotton white)
 );
 const vec3 C_HILLS_FAR = vec3(0.379, 0.425, 0.265); // #849252
-const vec3 C_MOUNT_FAR = vec3(0.435, 0.414, 0.344); // #958e6c
-const vec3 C_HIGH_ROCK = vec3(0.604, 0.580, 0.533); // #9a9488, warm limestone grey, not lilac
+// mountain pasture, a little darker than the hills (#7c8550); bare rock only
+// on the crests (tools/build_tile_terrain.py ROCK_M): the khaki #958e6c here
+// made the Apennines a quarry
+const vec3 C_MOUNT_FAR = vec3(0.356, 0.388, 0.259);
 const vec3 C_SEA_FAR = vec3(0.111, 0.264, 0.424);   // #19588c on screen
 const vec3 C_SHORE_FAR = vec3(0.130, 0.302, 0.506); // #24689e
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
@@ -240,7 +242,6 @@ vec3 ground_rgb_at(int g, float band) {
 		far = band >= 3.0 ? mix(far, C_MOUNT_FAR, 0.75) : mix(far, C_HILLS_FAR, band >= 2.0 ? 0.8 : 0.5);
 	}
 	if ((g == G_FOREST || g == G_CONIFER) && band >= 2.0) { far = mix(far, GROUND_FAR[G_CONIFER] * 0.85, 0.6); }
-	if (g == G_ROCK && band >= 3.0) { far = C_HIGH_ROCK; }
 	return mix(GROUND_RGB[g], far, far_share());
 }
 
@@ -299,31 +300,41 @@ void fragment() {
 			float aa = fwidth(d) * 0.75 + 1e-4;
 			c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
 		}
+		// inside a town the river banks are paved quays (they were wheat
+		// strips through Rome)
+		if (water == W_RIVER && tile_km < 2.0 && max(max(tt_town(tile + ivec2(1, 0)), tt_town(tile - ivec2(1, 0))),
+				max(tt_town(tile + ivec2(0, 1)), tt_town(tile - ivec2(0, 1)))) >= 2) {
+			c = C_PAVED;
+		}
 		if (town > 0) {
 			// the houses stand on paved ground (villages on half paved ground up
 			// close, on their land farther out); beyond the houses towns are
 			// whole roof coloured tiles and villages vanish into the land
 			ivec2 pl = tile - prop_origin;
 			bool housed = town_props && pl.x >= 0 && pl.y >= 0 && pl.x < prop_n && pl.y < prop_n;
-			// up close only the flat quarters are built on (tile_props: one
-			// house each); villages pave just the yard under their houses,
-			// towns and cities their ramps too, as stairs a little darker than
-			// the squares (no field or meadow strips inside a town)
+			// one house on each quarter (tile_props); in towns on the ramps
+			// too, on a stone terrace, so a hill town steps up in terraces.
+			// Paved is the yard under a house and a city core's empty
+			// squares; a village's ramps and empty quarters stay its land
+			// (Kritik r7: lawn ramps through a town read as green canals,
+			// grey paved ramps before that as empty slopes)
 			bool built = !sub_tiles || flat_top > 0.5;
-			bool yard = sub_tiles && built && tt_sub_house(tile, town);
-			if (housed) {
-				c = town >= 2 ? C_PAVED * (built ? 1.0 : 0.92) : yard ? C_PAVED : c;
+			bool yard = sub_tiles && (built || town >= 2) && tt_sub_house(tile, town);
+			bool paved = sub_tiles ? yard || (town == 3 && built) : true;
+			if (housed && (sub_tiles || town >= 2)) {
+				c = paved ? C_PAVED : town >= 2 ? ground_rgb_at(G_MEADOW, band) : c;
 			} else if (town >= 2 && tile_km < 8.0) {
 				// (from 8 km tiles a town is one roof coloured tile: a red
 				// marker on the map, so they go there)
 				c = C_ROOF;
 			}
 			// streets between the house blocks of towns and cities (the grid of
-			// house_grid blocks per tile; half a street on each tile edge)
+			// house_grid blocks per tile; half a street on each tile edge; up
+			// close the streets lie on the lots' terraces, tile_props)
 			// the landmarks stand on open travertine squares
 			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
-			if (housed && town >= 2 && built && !plaza) {
+			if (housed && town >= 2 && built && paved && !plaza && !sub_tiles) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
 				float d = min(e.x, e.y);
@@ -350,12 +361,14 @@ void fragment() {
 		// footpaths, markets and trade roads from the grain economy
 		c = sim_ways(p, c, length(fwidth(p)));
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
-		// gradient: lit from the left, so slopes turned left are light (+18 %
-		// up close, +15 % far out, so forest slopes keep a lit side), those
-		// turned right dark (-20 %), and the steps facing the camera or
-		// away from it a little darker than the flat terraces (-12 %), so a
-		// stack of terraces reads as treads and risers. Diagonal slopes take
-		// both (south-west +8 %, south-east -19 %). The light itself sees every
+		// gradient, matched to the west-south-west sun: slopes turned west
+		// light (+12 %), east dark (-15 %), south (the risers the camera sees
+		// head on) -10 % and north -18 %, so every step reads as tread and
+		// riser; a corner facet takes the darker of its two sides (south-west
+		// -10 %, south-east -15 %). Slopes turned away fade to the flat tone
+		// as they turn edge on. (Kritik r7: with the risers +5 % lighter, as in
+		// round 9, the steps vanished; with the west +18 % and nothing else,
+		// hillsides read as striped lawns.) The light itself sees every
 		// top as flat (NORMAL below), so this is the only shading: lambert on
 		// top of it washed sun-side ramps out like glass and made single
 		// shade-side steps black walls.
@@ -367,13 +380,24 @@ void fragment() {
 		vec2 dir = slope / max(length(slope), 1e-6);
 		float fr = dot(dir, cam_right);
 		float fb = dot(dir, cam_back);
-		// continuous in the direction, so the tone never flips between two
-		// sides from pixel to pixel
-		float lit = mix(0.18, 0.15, far_share());
 		// slopes turned away from the camera are seen edge on: they fade to
 		// the flat tone, else a long step draws a dark crack across the land
-		float away = clamp(1.0 + min(fb, 0.0), 0.0, 1.0);
-		float tone = 1.0 - ((fr < 0.0 ? lit : 0.20) * fr + 0.12 * fb * fb) * away;
+		// (gone by north-east and north-west: diagonal steps facing away drew
+		// hairlines across the 70 km view)
+		float away = clamp(1.0 + 2.0 * min(fb, 0.0), 0.0, 1.0);
+		// from the 1 km tiles the shadow map is off and these tones are all
+		// the relief has: 1.6 times as strong (west +19 %, east -24 %, risers
+		// -16 %), so lit and shaded sides differ by half (Kritik r9 and the
+		// people critic r16: the risers vanished at 70 km, ratio 1.05 to 1.2)
+		float amp = tile_km >= 1.0 ? 1.6 : 1.0;
+		float side = (fr < 0.0 ? 0.12 : -0.15) * amp;
+		float front = (fb > 0.0 ? -0.10 : -0.18) * amp;
+		// continuous in the direction (a blend into the corner tone), so the
+		// tone never flips between two sides from pixel to pixel
+		float t = abs(fr) - abs(fb);
+		float corner = min(side, front);
+		float shade = t > 0.0 ? mix(corner, side, smoothstep(0.1, 0.4, t)) : mix(corner, front, smoothstep(0.1, 0.4, -t));
+		float tone = 1.0 + shade * away;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
