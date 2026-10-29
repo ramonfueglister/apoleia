@@ -671,6 +671,10 @@ pub struct Grain {
     pub money: Money,
     pub treasury: Treasury,
     history: History,
+    /// For the view only (crate::events): the day being simulated and the
+    /// events of the last days.
+    today: i64,
+    events: Vec<crate::events::Event>,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1073,6 +1077,8 @@ impl Grain {
             money: Money::default(),
             treasury: Treasury::default(),
             history: History::default(),
+            today: 0,
+            events: Vec::new(),
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
@@ -1292,7 +1298,11 @@ impl Grain {
                 if s.farm != NONE {
                     let f = &mut self.farms[s.farm as usize];
                     f.hh = NONE;
+                    let (cell, fine) = (f.cell, f.fine);
                     self.stats.farms_abandoned += 1;
+                    if !start {
+                        self.events.push(crate::events::Event { day: self.today, kind: crate::events::FARM_LEFT, household: id, pid: NONE, cell: cell, to: NONE, fine: fine, other: NONE, amount: 0 });
+                    }
                 }
                 if self.info.contains_key(&id) {
                     // Moved: landless in the new place.
@@ -1325,6 +1335,7 @@ impl Grain {
                 h.farm = NONE;
                 h.kind = TENT;
                 self.stats.to_tents += 1;
+                self.events.push(crate::events::Event { day: self.today, kind: crate::events::TO_TENT, household: id, pid: NONE, cell: i.home, to: NONE, fine: NONE, other: NONE, amount: 0 });
             }
         }
         // New households.
@@ -1441,6 +1452,9 @@ impl Grain {
                     fm.store += h.pantry;
                     h.pantry = 0;
                     self.stats.farms_taken += 1;
+                    if !start {
+                        self.events.push(crate::events::Event { day: self.today, kind: crate::events::FARM_TAKEN, household: id, pid: NONE, cell: cell, to: NONE, fine: fine, other: NONE, amount: 0 });
+                    }
                 }
             }
         }
@@ -1519,6 +1533,10 @@ impl Grain {
                 fm.store = fm.store.max(need_day * (fm.harvest_doy + RESERVE_DAYS));
             }
             self.stats.manciana_new += 1;
+            if !start {
+                let fine = self.farms[f].fine;
+                self.events.push(crate::events::Event { day: self.today, kind: crate::events::MANCIANA, household: id, pid: NONE, cell: cell, to: NONE, fine: fine, other: NONE, amount: 0 });
+            }
         }
     }
 
@@ -1704,6 +1722,7 @@ impl Grain {
                 h.farm = to;
                 h.fine = fine;
                 self.stats.heirs_given += 1;
+                self.events.push(crate::events::Event { day: self.today, kind: crate::events::HEIR, household: id, pid: NONE, cell: i.home, to: NONE, fine: fine, other: old, amount: 0 });
             }
         }
     }
@@ -1963,6 +1982,7 @@ impl Grain {
     pub fn day(&mut self, p: &mut People) {
         let day = p.world.resource::<Clock>().day;
         let slice = day.rem_euclid(MONTH);
+        self.today = day;
         let t = std::time::Instant::now;
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let t0 = t();
@@ -2043,6 +2063,7 @@ impl Grain {
         if !row {
             return;
         }
+        crate::events::prune(&mut self.events, day);
         let (farms, _, _, tent_people, _, farm_t, market_t) = self.summary();
         let r = HistoryRow {
             day,
@@ -2755,6 +2776,9 @@ impl Grain {
                 m.store -= alms;
                 have += alms;
                 self.stats.alms_kg += alms;
+                if alms > 0 {
+                    self.events.push(crate::events::Event { day: self.today, kind: crate::events::ALMS, household: id, pid: NONE, cell: info.home, to: NONE, fine: NONE, other: NONE, amount: alms });
+                }
                 if have < need && rnd(self.seed, id, 0x57ea, day) % 16 < STEAL_PER_16 {
                     if let Some(v) = self.victim(id, info.home, day) {
                         let take = STEAL_KG.min(self.farms[v as usize].store).max(0);
@@ -2762,6 +2786,8 @@ impl Grain {
                         have += take;
                         self.stats.stolen_kg += take;
                         self.stats.thefts += 1;
+                        let (fine, owner) = (self.farms[v as usize].fine, self.farms[v as usize].hh);
+                        self.events.push(crate::events::Event { day: self.today, kind: crate::events::THEFT, household: id, pid: NONE, cell: info.home, to: NONE, fine: fine, other: owner, amount: take });
                     }
                 }
             }
@@ -2859,6 +2885,7 @@ impl Grain {
         self.markets[mk as usize].tent_people = self.markets[mk as usize].tent_people.saturating_sub(n);
         self.markets[to as usize].tent_people += n;
         self.stats.tent_moves += 1;
+        self.events.push(crate::events::Event { day: self.today, kind: crate::events::TENT_MOVED, household: id, pid: NONE, cell: info.home, to: cell, fine: fine, other: NONE, amount: 0 });
     }
 
     /// A farm store in the cell (else the region) to steal from, by hash.
@@ -3275,6 +3302,22 @@ pub struct WorkView {
     pub to: Vec<(f32, f32)>,
 }
 
+/// Events in a box (`Grain::events_in`), one entry each: day, kind
+/// (crate::events, names in crate::events::NAMES), household, person (-1
+/// if none), the other household (-1), amount (kg for thefts and alms,
+/// people for moves), place and place moved to in world km (x, z).
+#[derive(Default, Clone, Debug)]
+pub struct EventsView {
+    pub day: Vec<i64>,
+    pub kind: Vec<i32>,
+    pub household: Vec<i64>,
+    pub pid: Vec<i64>,
+    pub other: Vec<i64>,
+    pub amount: Vec<i64>,
+    pub at: Vec<(f32, f32)>,
+    pub to: Vec<(f32, f32)>,
+}
+
 /// What the game shows of a household (read only).
 #[derive(Clone, Copy, Debug)]
 pub struct HouseholdLook {
@@ -3414,6 +3457,38 @@ impl Grain {
                 v.from.push((a.0 as f32, a.1 as f32));
                 v.to.push((b.0 as f32, b.1 as f32));
             }
+        }
+        v
+    }
+
+    /// The events after day `since` (at most crate::events::KEEP_DAYS back)
+    /// that happened in the box or moved into it (world km), by day; those
+    /// of the people first within a day, as they happen first. Read only.
+    /// Place: the farmstead if known, else the centre of the 25 km cell;
+    /// `to` the centre of the cell moved to (the place itself if none).
+    pub fn events_in(&self, p: &People, since: i64, min: (f64, f64), max: (f64, f64)) -> EventsView {
+        let cell_km = |c: u32| {
+            let (r, col) = (c as i32 / p.grid.cols + p.grid.row0, c as i32 % p.grid.cols + p.grid.col0);
+            (col as f64 * 25.0 + 12.5, r as f64 * 25.0 + 12.5)
+        };
+        let inside = |(x, z): (f64, f64)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1;
+        let mut all: Vec<&crate::events::Event> = p.events.iter().chain(self.events.iter()).filter(|e| e.day > since).collect();
+        all.sort_by_key(|e| e.day);
+        let mut v = EventsView::default();
+        for e in all {
+            let at = if e.fine != NONE { self.settle.fine_centre_km(e.fine) } else { cell_km(e.cell) };
+            let to = if e.to != NONE { cell_km(e.to) } else { at };
+            if !inside(at) && !inside(to) {
+                continue;
+            }
+            v.day.push(e.day);
+            v.kind.push(e.kind as i32);
+            v.household.push(e.household as i64);
+            v.pid.push(if e.pid == NONE { -1 } else { e.pid as i64 });
+            v.other.push(if e.other == NONE { -1 } else { e.other as i64 });
+            v.amount.push(e.amount);
+            v.at.push((at.0 as f32, at.1 as f32));
+            v.to.push((to.0 as f32, to.1 as f32));
         }
         v
     }
@@ -4208,6 +4283,9 @@ mod tests {
             assert!(!v.id.is_empty() && v.kind.contains(&(SELL as i32)) && v.kind.contains(&(EXPORT as i32)));
             assert!(v.count.iter().all(|&n| n >= 2) && v.count.iter().map(|&n| n as usize).sum::<usize>() == v.points.len());
             assert!(v.depart.iter().zip(&v.arrive).zip(&v.home).all(|((d, a), h)| d <= a && a <= h && *d <= v.day as f64 && v.day as f64 <= *h));
+            let ev = g.events_in(&p, 0, (-1e9, -1e9), (1e9, 1e9));
+            assert!(ev.kind.contains(&(crate::events::ALMS as i32)) && ev.kind.contains(&(crate::events::HUNGER_DEATH as i32)));
+            assert!(ev.day.windows(2).all(|d| d[0] <= d[1]) && ev.day.iter().all(|&d| d > 200 - crate::events::KEEP_DAYS - MONTH));
             let w = g.work_in((-1e9, -1e9), (1e9, 1e9));
             assert!(!w.worker.is_empty() && w.days.iter().all(|&d| d > 0) && w.from.len() == w.worker.len());
             assert_eq!(g.fingerprint(), before);

@@ -13,7 +13,12 @@
 //! kind (0 sowing, 1 harvest, 2 outside the peaks, 3 from a surplus), from
 //! (worker's home) and to (farmstead) in world km.
 
-use apoleia_sim::grain::{TripsView, WorkView};
+//!
+//! Events (`Grain::events_in`, `events_to_dict`): day, kind (names in
+//! names, from apoleia_sim::events::NAMES), household, pid, other, amount,
+//! at and to (world km).
+
+use apoleia_sim::grain::{EventsView, TripsView, WorkView};
 use godot::prelude::*;
 
 pub fn to_dict(v: &TripsView) -> VarDictionary {
@@ -45,6 +50,20 @@ pub fn work_to_dict(v: &WorkView) -> VarDictionary {
     d.set("days", &PackedInt64Array::from(v.days.as_slice()));
     d.set("kind", &PackedInt32Array::from(v.kind.as_slice()));
     d.set("from", &PackedVector2Array::from_iter(v.from.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d.set("to", &PackedVector2Array::from_iter(v.to.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d
+}
+
+pub fn events_to_dict(v: &EventsView) -> VarDictionary {
+    let mut d = VarDictionary::new();
+    d.set("day", &PackedInt64Array::from(v.day.as_slice()));
+    d.set("kind", &PackedInt32Array::from(v.kind.as_slice()));
+    d.set("names", &PackedStringArray::from_iter(apoleia_sim::events::NAMES.iter().map(|n| GString::from(*n))));
+    d.set("household", &PackedInt64Array::from(v.household.as_slice()));
+    d.set("pid", &PackedInt64Array::from(v.pid.as_slice()));
+    d.set("other", &PackedInt64Array::from(v.other.as_slice()));
+    d.set("amount", &PackedInt64Array::from(v.amount.as_slice()));
+    d.set("at", &PackedVector2Array::from_iter(v.at.iter().map(|&(x, z)| Vector2::new(x, z))));
     d.set("to", &PackedVector2Array::from_iter(v.to.iter().map(|&(x, z)| Vector2::new(x, z))));
     d
 }
