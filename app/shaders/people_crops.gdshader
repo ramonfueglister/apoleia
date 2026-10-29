@@ -20,6 +20,7 @@ render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 #include "res://shaders/sim_fields.gdshaderinc"
+#include "res://shaders/people_crop_slab.gdshaderinc"
 
 uniform vec2 crop_cell0;          // parcel index (from world_min) of the square's first parcel
 uniform int crop_n = 48;          // parcels per side of the square
@@ -31,6 +32,8 @@ varying float along;  // 0..1 along a row of clumps or a fence side
 varying float clumps; // clumps per row (0: a closed row)
 varying float fill;   // share of a clump's length in its row
 varying vec3 art_light; // ART_LIGHT in view space
+varying vec2 slab_uv;   // place on the slab's top (-0.5..0.5), for its lit rim
+varying float slab_top; // 1 on a slab's top face
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 // Colours (sRGB) after Urbek's farmland (gauntlet refs/urbek-landschaft-02):
@@ -49,7 +52,6 @@ const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
 const vec3 FENCE = vec3(0.37, 0.255, 0.157);   // the farmhouse fence (farmhouse.gd FENCE)
 const float FENCE_POSTS = 6.0;   // posts per side, about two metres apart
-const float SLAB_GAP = 0.025;     // share of the parcel left free on each side
 const vec3 WOOL = vec3(0.9, 0.87, 0.78);
 const vec3 SHEEP_DARK = vec3(0.27, 0.22, 0.18); // face and legs
 const float FLOCK_SHARE = 0.55;   // share of the pasture parcels with a flock
@@ -62,20 +64,16 @@ void vertex() {
 	int state = sim_map_on && sim_view_km <= SIM_CROPS_KM ? sim_parcel(cell, size, f) : 0;
 	// fields lie only on open land outside the towns, as sim_fields, never
 	// on a farmhouse's lot and only on flat tiles (a ramp shows their colour)
-	ivec2 t = dot_tile(mid);
-	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
-	bool open = tt_town(t) == 0 && tt_water(t) == W_LAND && (land == G_FIELD || land == G_MEADOW || land == G_DRY_GRASS);
-	bool lot = sim_house_lot(mid);
+	bool open = crop_open(mid);
 	bool near = sim_map_on && sim_view_km <= SIM_CROPS_KM;
-	open = open && sim_flat(mid);
 	bool sheep = UV.x == -3.0;
-	bool show = sheep ? near && state == 0 && open && !lot && sim_hash(cell + 3.7) < FLOCK_SHARE
-		: state >= 1 && open && !lot;
+	bool show = sheep ? near && state == 0 && open && sim_hash(cell + 3.7) < FLOCK_SHARE
+		: state >= 1 && open;
 	float g = f.b;
 	int kind = sim_crop_kind(cell); // one crop per parcel, as the ground colour
 	bool grain = kind == SIM_WHEAT || kind == SIM_BARLEY;
-	// the slab: its height (m) and colour by crop and season
-	float slab = 0.12;
+	// the slab: its height (m, people_crop_slab.gdshaderinc) and colour by crop and season
+	float slab = crop_slab_m(state, kind, g);
 	vec3 c = SOIL;
 	// the rows on it: height (m), width (share of the row spacing), colour,
 	// clumps per row (0: closed)
@@ -85,21 +83,20 @@ void vertex() {
 	clumps = 0.0;
 	fill = 0.38;
 	if (state == 1) {
-		slab = 0.5; c = FALLOW; // no rows; high enough to show its edge
+		c = FALLOW; // no rows; high enough to show its edge
 		kind = -1;
 	} else if (grain) {
-		if (g <= 0.0) { slab = 0.15; c = STUBBLE; }
+		if (g <= 0.0) { c = STUBBLE; }
 		else if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; fill = 0.35; }
 		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 24.0; fill = 0.8; }
-		else { slab = 0.9; c = RIPE[kind]; }
+		else { c = RIPE[kind]; }
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; fill = 0.35; }
 		else { h = 0.45; w = 0.45; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; fill = 0.75; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
-		slab = 0.2;
 		c = SOIL_DRY;
 		h = g < 0.12 ? 0.6 : 0.8;
 		w = 0.5;
@@ -125,6 +122,8 @@ void vertex() {
 	int quarter = 0; // turned so many quarters round (never mirrored, which would turn the faces inside out)
 	float y;  // above the ground, m
 	along = 0.0;
+	slab_uv = VERTEX.xz;
+	slab_top = base && NORMAL.y > 0.5 ? 1.0 : 0.0;
 	if (base) {
 		off = VERTEX.xz * inner;
 		y = VERTEX.y * slab;
@@ -188,6 +187,13 @@ void fragment() {
 	// the gaps between the clumps of a row
 	if (clumps > 0.0 && fract(along * clumps) > fill) { discard; }
 	ALBEDO = colour;
+	// a lit lip of a pixel or two round the top of a slab, as the bevel of
+	// Urbek's field plates, so a sheet of straw reads as a raised plate
+	if (slab_top > 0.5) {
+		vec2 e = 0.5 - abs(slab_uv);
+		vec2 px = fwidth(slab_uv) * 1.5;
+		if (e.x < px.x || e.y < px.y) { ALBEDO *= 1.25; }
+	}
 	ROUGHNESS = 1.0;
 }
 

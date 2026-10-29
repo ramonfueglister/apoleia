@@ -196,7 +196,8 @@ eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
 vor dem Haus, durch deren offenes Tor das Heu zu sehen ist. Dazu Holzstoss,
-Gemüsebeet, Obstbaum, Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
+Kohlbeet (dunkle runde Köpfe in Reihen, braune Erde dazwischen), Obstbaum,
+Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
 gepflegtes Gras, eine Spur frischer als die Weide draussen, neben dem Weg ein
 Vorplatz aus gestampfter Erde (Dreschplatz) mit einem Brunnen (niedrige
 Steinfassung, dunkles Wasser, zwei Pfosten und ein Ziegeldächlein); ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
@@ -219,7 +220,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
 bleiben), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v28_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v29_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -268,15 +269,19 @@ Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite sind die Parzellen weiter 250 m gross, je zwei nebeneinander
-(quer oder längs nach Block) ein langes Feld, nach derselben Regel und nur
-auf ebenen Kacheln, in wenigen nahen Tönen: Brache halb Stoppeln (gedämpftes
-Stroh), halb beweidetes junges Grün; Saat je Feld etwas vor oder hinter der
-Jahreszeit: frisch gepflügte Erde, junges Grün, das Oliv wachsenden Getreides,
-von Bohnen und Reben, Urbeks Weizengelb erst reif. So ist das Land um die
-Dörfer bis 40 km ein feines Flickwerk wie in der gemalten Mittelansicht und
-keine grossen Flecken (Runde 13: Blöcke von 2 × 2 km in Stroh und Grün
-lasen sich als Tarnmuster; Runde 12: trockenes Gras für alle Brache und ein
-dunkles Grün für Saat ebenso).
+(quer oder längs nach Block) ein langes Feld, ab 15 km je 2 × 2 ein Feld,
+nach derselben Regel und nur auf ebenen Kacheln, in drei Tönen mit klaren
+Helligkeitsstufen: Gras der Weide, Urbeks Weizengelb und das Braun eines
+gepflügten Felds. Beweidete Brache und wachsende Saat sind Gras (so bleibt
+mindestens die Hälfte grün), gepflügte Brache und frische Saat braun,
+Getreide gelb, sobald es reift; jedes Feld etwas vor oder hinter der
+Jahreszeit. Runde 14: acht nahe Töne lagen mit dem Relief in einem
+Helligkeitsband und lasen sich als Tarnmuster, ebenso Runde 13 (Blöcke von
+2 × 2 km in Stroh und Grün) und Runde 12 (trockenes Gras für alle Brache).
+Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten,
+und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
+(`people_crop_slab.gdshaderinc`, geteilt vom Feld- und vom
+Platzierungs-Shader).
 Ausserhalb des Quadrats der Feldplatten tragen auch die nahen Parzellen
 diese Farben. Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an

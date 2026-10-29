@@ -44,27 +44,27 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 }
 
 // The flat colour of parcel `cell` from afar or outside the square of
-// crops: a few close tones, so the farmland reads as a fine quilt round the
-// villages (the painted mid view, refs/gemalt-weit-mittel-nah.png) and not
-// as large blotches of yellow on green. Fallow is stubble or grazed grass,
-// half and half; the sown parcels each a little ahead or behind the
-// season: freshly tilled soil, young green, the olive of growing grain,
-// beans and vines, and Urbek's wheat yellow only once ripe.
-const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close, so the quilt keeps its grain from 8 to 40 km
+// crops: three tones a clear step of brightness apart, so the farmland
+// reads as fields round the villages and not as camouflage (rounds 13 and
+// 14: five and eight close tones lay in one value band with the relief):
+// the grass of the pasture, Urbek's wheat yellow and the brown of a
+// ploughed field. Grazed fallow and growing crops are grass, so at least
+// half the land stays green; ploughed fallow and fresh sowing are brown;
+// grain is yellow once it turns.
+const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close
+const float SIM_BLOCK_KM = 15.0;      // view width from which a field is 2 x 2 parcels
 vec3 sim_parcel_rgb(int state, vec2 cell, vec4 f, vec3 pasture) {
 	if (state == 0) { return pasture; }
-	vec3 field = GROUND_RGB[G_FIELD];          // #cdc373 on screen
-	vec3 stubble = field * 0.9;                // #b9ad6b
-	vec3 young = GROUND_RGB[G_ALPINE];         // #86bb6a
-	vec3 olive = mix(GROUND_RGB[G_DRY_GRASS], GROUND_RGB[G_SCRUB], 0.5); // #8f9f55
-	vec3 soil = vec3(0.42, 0.27, 0.18);        // #8a5a3c
+	vec3 grass = GROUND_RGB[G_MEADOW];         // #76b066 on screen
+	vec3 wheat = GROUND_RGB[G_FIELD] * 1.04;   // #d6cb7a
+	vec3 ploughed = vec3(0.5, 0.39, 0.27);     // #a07c55
 	float h = sim_hash(cell + 3.7);
-	if (state == 1) { return h < 0.5 ? stubble : young; }
+	if (state == 1) { return h < 0.4 ? ploughed : grass; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);
 	int kind = sim_crop_kind(cell);
-	if (g < 0.1) { return soil; }
-	if (kind == SIM_VINES || kind == SIM_BEANS) { return olive; }
-	return g < 0.45 ? young : g < 0.8 ? olive : field;
+	if (g < 0.2) { return ploughed; }
+	if (kind == SIM_VINES || kind == SIM_BEANS) { return grass; }
+	return g < 0.6 ? grass : wheat;
 }
 
 // Fields on open land (`land`, the terrain's landscape here), on the
@@ -76,9 +76,9 @@ vec3 sim_parcel_rgb(int state, vec2 cell, vec4 f, vec3 pasture) {
 // quarter tile of the drawn terrain, and a sown or fallow one is grass
 // round the raised slab of crops or stubble that stands on it
 // (people_crops.gdshader), so the farmland is a mosaic of slabs with grass
-// edges. Further out a parcel is SIM_FAR_PARCEL_KM in the colours of
-// sim_parcel_rgb, so the farmland still reads as fields round the towns
-// at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
+// edges. Further out a field is two parcels of SIM_FAR_PARCEL_KM (from
+// SIM_BLOCK_KM four) in the colours of sim_parcel_rgb, so the farmland
+// still reads as fields round the towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
@@ -93,9 +93,10 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!near) {
 		// from afar two parcels make one field, side by side across or
 		// along by the block, so the quilt is of long fields and not of
-		// single squares
+		// single squares; from SIM_BLOCK_KM all four of the block
 		vec2 block = floor(cell * 0.5);
-		cell = sim_hash(block + 9.1) < 0.5 ? vec2(block.x * 2.0, cell.y) : vec2(cell.x, block.y * 2.0);
+		cell = sim_view_km >= SIM_BLOCK_KM ? block * 2.0
+			: sim_hash(block + 9.1) < 0.5 ? vec2(block.x * 2.0, cell.y) : vec2(cell.x, block.y * 2.0);
 	}
 	vec4 f;
 	int state = sim_parcel(cell, size, f);

@@ -278,7 +278,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	_lots.multimesh = lm
 	_lots_view.add_child(_lots)
 	add_child(_lots_view)
-	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material]:
 		m.set_shader_parameter("sim_lot_tex", _lots_view.get_texture())
 		m.set_shader_parameter("sim_lots_n", LOTS_N)
 		m.set_shader_parameter("sim_lot_km", LOT_KM)
@@ -498,7 +498,9 @@ static func _crop_mesh() -> ArrayMesh:
 ## middle half.
 func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
-	var mats: Array[ShaderMaterial] = [mat, _crop_material] # the crops read the fine layer too
+	# the crops read the fine layer too, and the placement of the people for
+	# the slabs they stand on
+	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material]
 	for m in mats:
 		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
@@ -535,6 +537,7 @@ func _update_map() -> void:
 			m.set_shader_parameter("sim_fine_origin", win.origin)
 			m.set_shader_parameter("sim_fine_km", win.tile_km)
 			m.set_shader_parameter("sim_fine_n", MAP_N)
+		_prep_frames = 2
 	_map_version = version
 	_map_at = centre
 
@@ -562,7 +565,8 @@ func _update_crops(view_km: float) -> void:
 	var tile_km: float = terrain._terrain_material.get_shader_parameter("tile_km")
 	_crops.visible = map_on and view_km <= CROP_KM and tile_km <= 0.5
 	if not _crops.visible:
-		terrain._terrain_material.set_shader_parameter("sim_crop_box", Vector4.ZERO)
+		for m: ShaderMaterial in [terrain._terrain_material, _prep_material]:
+			m.set_shader_parameter("sim_crop_box", Vector4.ZERO)
 		return
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
 	# a parcel is half a data tile: up close one quarter tile (sub_tiles)
@@ -574,11 +578,15 @@ func _update_crops(view_km: float) -> void:
 	# where the crops stand the ground round their slabs is meadow (sim_map.gdshaderinc)
 	var box_min: Vector2 = terrain.world_min + cell0 * size
 	var box_max := box_min + Vector2(CROP_N, CROP_N) * size
-	terrain._terrain_material.set_shader_parameter("sim_crop_box", Vector4(box_min.x, box_min.y, box_max.x, box_max.y))
+	var box := Vector4(box_min.x, box_min.y, box_max.x, box_max.y)
+	if box != terrain._terrain_material.get_shader_parameter("sim_crop_box"):
+		_prep_frames = 2 # the people on the slabs
+	for m: ShaderMaterial in [terrain._terrain_material, _prep_material]:
+		m.set_shader_parameter("sim_crop_box", box)
 	var lot0 := (from / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
 	_lots_material.set_shader_parameter("lot_origin", lot0)
 	_lots_material.set_shader_parameter("world_min", terrain.world_min)
-	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material]:
 		m.set_shader_parameter("sim_lot_origin", lot0)
 	_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 

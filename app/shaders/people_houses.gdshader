@@ -77,7 +77,7 @@ void vertex() {
 	if (index >= 29 && index <= 36) {
 		int d = (index - 29) / 2;
 		vec2 face = turn * (d == 0 ? vec2(1.0, 0.0) : d == 1 ? vec2(-1.0, 0.0) : d == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0));
-		tint *= face.x < -0.5 ? 1.06 : face.x > 0.5 ? 0.86 : face.y > 0.5 ? 1.0 : 0.93;
+		tint *= face.x < -0.5 ? 1.08 : face.x > 0.5 ? 0.74 : face.y > 0.5 ? 1.0 : 0.82;
 	}
 	// not every farm has the cypresses, the olive tree or the haystack
 	// on its lot (farmhouse.gd _lot)

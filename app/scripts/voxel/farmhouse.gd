@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v28_%d_%s.res"
+const CACHE := "user://farmhouse_v29_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -56,17 +56,17 @@ const PALETTE := [
 	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("ad5a44"),
 	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
-	Color("5e4128"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("728f4a"), Color("56703a"),
-	Color("6b5a48"), Color("c99a48"), Color("cebc97"), Color("9a7232"),
+	Color("5e4128"), Color("b59a6c"), Color("6e4a30"), Color("d2452f"), Color("b5a586"),
+	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("5c7946"), Color("3d5433"),
+	Color("5a4632"), Color("c09447"), Color("cebc97"), Color("8f6a2e"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
-	Color("5c8f51"), Color("33505e")]
+	Color("5c8f51"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
 	ROOF_E, ROOF_DARK_E, ROOF_W, ROOF_DARK_W, ROOF_S, ROOF_DARK_S, ROOF_N, ROOF_DARK_N,
-	LOT_GRASS, WATER }
+	LOT_GRASS, WATER, CABBAGE, CABBAGE_DARK }
 # roof tiles by the way their slope faces (+x, -x, +z, -z; _tile), so
 # people_houses.gdshader can light each slope by where it faces once the
 # house is turned
@@ -279,14 +279,18 @@ static func _yard(p: Vector3) -> int:
 	var well := _well(p)
 	if well != EMPTY:
 		return well
-	# vegetable beds behind the house: small bushy plants in rows on dark soil
-	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y >= 0.0 and p.y < 0.625:
+	# vegetable beds behind the house: rows of dark round cabbages on
+	# brown soil, the soil showing between them
+	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y >= 0.0 and p.y < 0.5:
 		if p.y < 0.125:
 			return SOIL
-		var plant := posmod(int(floor(p.x / 0.5)), 2) == 0 and posmod(int(floor((p.z + 5.75) / 0.5)), 2) == 0
-		if not plant:
+		var lx := fposmod(p.x + 3.5, 0.625)
+		var lz := fposmod(p.z + 5.75, 0.625)
+		if p.y < 0.375:
+			if lx >= 0.125 and lx < 0.5 and lz >= 0.125 and lz < 0.5:
+				return CABBAGE if p.y >= 0.25 else CABBAGE_DARK
 			return EMPTY
-		return LEAF if p.y >= 0.375 else LEAF_DARK
+		return CABBAGE if lx >= 0.25 and lx < 0.375 and lz >= 0.25 and lz < 0.375 else EMPTY
 	# inside the fence the yard is kept grass, a shade fresher than the
 	# pasture round it, and stamped earth on the forecourt beside the path
 	# (the threshing floor), flush with the ground like the path
