@@ -162,18 +162,19 @@ fn main() {
         let (m, t) = (g.money, g.treasury);
         let den = |x: i64| x as f64 / 1e3;
         println!(
-            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - dissolved {:.0} - no payee {:.0} | unbooked {:.3} | state wages {:.0} Manciana rent {:.0} tax grain t {:.0}",
+            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} - no payee {:.0} | unbooked {:.3} | state wages {:.0} Manciana rent {:.0} estates {:.0} tax grain t {:.0}",
             den(g.money_held()),
             den(t.cash),
             den(m.start),
             den(m.minted),
             den(m.endowed),
             den(m.freight),
-            den(m.dissolved),
+            den(m.left_map),
             den(m.no_payee),
             den(g.money_unbooked()),
             den(t.wages),
             den(t.rent),
+            den(t.estates),
             t.grain_kg as f64 / 1e3
         );
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
