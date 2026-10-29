@@ -39,6 +39,7 @@ enum { EMPTY,
 	GRANITE, GRANITE_P, HORSE, HORSE_D, HORSE_W,
 	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
 	ROOFB_L, DOME, BAND,
+	DOME_C, GRANITE_L, GRANITE_D, ARENA, ARENA_D,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -112,6 +113,9 @@ const COLOURS := {
 	# the bronze roof's ribs, the gilt dome (risers, treads), the shadow band
 	# under a cornice
 	ROOFB_L: ["66503a", "735a3f"], DOME: ["8f6b1e", "b8933c"], BAND: ["a39d95"],
+	# the dome's cap (its steps only shaded by the light), the lit and the
+	# shaded side of a granite shaft, the circus sand and its rake lines
+	DOME_C: ["b8933c"], GRANITE_L: ["a9a39d"], GRANITE_D: ["74706b"], ARENA: ["b08a55", "b8925a"], ARENA_D: ["a07c4a", "a8844f"],
 }
 
 static var _side := PackedColorArray()
