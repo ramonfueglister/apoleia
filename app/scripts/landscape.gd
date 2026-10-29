@@ -99,10 +99,11 @@ func _setup_look() -> void:
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	# A cool sky fill under a warm sun, a third of the light on open ground:
 	# shade about half as light as the lit ground and slightly blue, as in
-	# Urbek (meadow #73af60 in the sun, about #346b3e in shade); the filmic
+	# Urbek; the fill as red as it is green, so shade on grass turns grey
+	# rather than teal (meadow #73af60 in the sun); the filmic
 	# curve keeps the lit colours where the terrain palette expects them
 	# (AgX washed the map out).
-	environment.ambient_light_color = Color("c4cff0")
+	environment.ambient_light_color = Color("ccccf2")
 	environment.ambient_light_energy = 0.85
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
@@ -133,11 +134,11 @@ func _setup_look() -> void:
 	# no blur and no dithered soft filter, so every house, tree and figure
 	# casts a crisp shadow from its foot.
 	sun.shadow_blur = 0.0
-	# A strong normal offset keeps slopes free of acne stripes in a map that
-	# spans the whole deep view of the far-off camera; the depth bias stays
-	# low, so small things keep their shadows.
+	# A strong normal offset keeps slopes and ramps free of acne ripples in
+	# a map that spans the whole deep view of the far-off camera; the depth
+	# bias stays low, so small things keep their shadows.
 	sun.shadow_bias = 0.1
-	sun.shadow_normal_bias = 8.0
+	sun.shadow_normal_bias = 14.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_fade_start = 0.98
 	RenderingServer.directional_shadow_atlas_set_size(4096, true)
@@ -156,6 +157,9 @@ func _update_look(distance: float) -> void:
 	var relief: float = maxf(get_displayed_height_range().max_y - _focus_y, 0.0)
 	camera.near = maxf(0.05, distance - width * 0.9 - relief / maxf(sin(pitch), 0.2) - 0.2)
 	sun.directional_shadow_max_distance = distance + width * 1.2
+	# no shadow map beyond 40 km across: the terrain's own shading carries
+	# the relief there, and nothing small enough to cast a shadow is drawn
+	sun.shadow_enabled = width < 40.0
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
