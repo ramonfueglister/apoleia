@@ -213,6 +213,7 @@ void fragment() {
 	vec3 c = mix(COLOR.rgb, ROAD_RGB, road);
 	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
 	if (wall_dir > 0.5) { c *= masonry(); }
+	else if (prop_kind == 5) { c *= tt_paving(wpos.xz, road > 0.5 ? vec2(1.2, 0.8) : vec2(1.0, 1.0)); } // the terrace top
 	ALBEDO = pow(c * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;

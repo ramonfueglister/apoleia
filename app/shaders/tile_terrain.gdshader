@@ -92,8 +92,11 @@ const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach
 const vec3 C_BANK = vec3(0.588, 0.549, 0.392);   // river bank
 const vec3 C_EARTH = vec3(0.557, 0.498, 0.408);  // walls
 const vec3 C_CLIFF = vec3(0.533, 0.514, 0.475);
-const vec3 C_PAVED = vec3(0.655, 0.608, 0.490);
-const vec3 C_PLAZA = vec3(0.750, 0.720, 0.660);  // travertine squares of the landmarks, #e6dfcf
+// Paving in a warm mid grey as Urbek's pavements (about #a8a194 on screen),
+// not the near-white cream of before (#cbbca8, the Roman squares at 3 km read
+// as blank paper: 63 % of the picture above V 200, Urbek's towns at 155-187)
+const vec3 C_PAVED = vec3(0.530, 0.505, 0.455);
+const vec3 C_PLAZA = vec3(0.640, 0.620, 0.580);  // travertine squares of the landmarks, #c4bfb3
 const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
 const vec3 C_ROOF = vec3(0.580, 0.250, 0.190); // terracotta, not salmon or orange
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
@@ -378,6 +381,10 @@ void fragment() {
 			// the landmarks stand on open travertine squares
 			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
+			// slabs on the paved quarters and the squares (travertine slabs larger)
+			if (sub_tiles && (plaza || (housed && paved))) {
+				c *= tt_paving(p, plaza ? vec2(2.0, 1.5) : vec2(1.2, 0.8));
+			}
 			if (housed && town >= 2 && built && paved && !plaza && !sub_tiles) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);

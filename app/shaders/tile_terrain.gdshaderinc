@@ -142,6 +142,24 @@ vec3 tt_art_light(mat4 inv_view) {
 	return normalize(vec3(h.x, 0.72, h.y));
 }
 
+// Stone paving up close, as Urbek's paved squares and pavements: slabs of
+// `size` diorama metres (1 diorama metre = 0.0238 km) in staggered rows,
+// dark joints and a slight tone per slab; a factor for the colour. It fades
+// out before the slabs shrink to a few pixels, so farther out the paving is
+// one calm tone again. p in world km.
+float tt_paving(vec2 p, vec2 size) {
+	vec2 q = p / (0.0238 * size);
+	float row = floor(q.y);
+	q.x += 0.5 * mod(row, 2.0);
+	vec2 w = max(fwidth(q), vec2(1e-5));
+	float fade = 1.0 - smoothstep(0.1, 0.25, max(w.x, w.y));
+	if (fade <= 0.0) { return 1.0; }
+	vec2 e = (0.5 - abs(fract(q) - 0.5)) / w; // pixels to the nearest joint
+	float joint = 1.0 - smoothstep(0.4, 1.2, min(e.x, e.y));
+	float slab = tt_hash(floor(q) + 0.37) - 0.5;
+	return 1.0 + fade * (0.09 * slab - 0.14 * joint);
+}
+
 int tt_ground(ivec2 t) {
 	if (sub_tiles) {
 		vec4 v;
