@@ -107,6 +107,14 @@ Lauf mit Getreidewirtschaft (`run-grain`, 0,17 %), den auch das Spiel rechnet.
 Jahr (145'184 Menschen im Jahr 100); massgebend ist der Lauf mit Getreidewirtschaft
 (0,14 %).
 
+## Heiratssuche schneller (29.10.2026, gleicher Fingerabdruck)
+
+Seit S86 (22 % heiraten nie, Frauen nur bis 35) suchen viel mehr Männer jeden Monat in 9
+Regionen; die Heiratssuche brauchte 1,7 ms pro Tag statt 0,5 ms. Jetzt prüft sie zuerst
+Geschlecht und Alter aus dem monatlichen Index, dann erst die übrigen Merkmale, und liest
+jede Person nur einmal nach. 20 Jahre mit 4 Threads: Heirat 0,95 statt 1,73 ms pro Tag, ganzer
+Tag Median 3,0 statt 4,1 ms, gleicher Fingerabdruck (e3e3bccfe77dc30a).
+
 ## Tempo und Speicher (4 Cloud-Kerne)
 
 | Grösse | Wert |

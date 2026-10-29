@@ -638,6 +638,8 @@ struct IndexRow {
     region: u32,
     flags: u8,
     stand: u8,
+    sex: u8,
+    born: i32,
 }
 
 /// The monthly lists for marriage and relations, built from a snapshot.
@@ -646,15 +648,18 @@ struct Index {
     brides: FxHashMap<(u32, u8), Vec<u32>>,
     brides_by_stand: [Vec<u32>; 4],
     by_cell: Csr,
+    /// Sex and birth day by person id of those alive at the snapshot.
+    sex_born: Vec<(u8, i32)>,
 }
 
 impl Index {
     /// Everything in person id order, as the marriage search expects.
     fn build(mut rows: Vec<IndexRow>, max_pid: u32, cells: usize) -> Index {
         radix_sort(&mut rows, max_pid, |r| r.pid);
-        let mut i = Index { grooms: vec![Vec::new(); MONTH as usize], brides: FxHashMap::default(), brides_by_stand: Default::default(), by_cell: Csr::default() };
+        let mut i = Index { grooms: vec![Vec::new(); MONTH as usize], brides: FxHashMap::default(), brides_by_stand: Default::default(), by_cell: Csr::default(), sex_born: vec![(UNKNOWN_SEX, 0); max_pid as usize] };
         let mut by_cell = Vec::with_capacity(rows.len());
         for r in &rows {
+            i.sex_born[r.pid as usize] = (r.sex, r.born);
             if r.home == NONE {
                 continue;
             }
@@ -746,6 +751,9 @@ pub struct People {
     pub iq_mate_rg: f64,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
+    /// Sex and birth day by person id from the monthly index (immutable
+    /// for a person; UNKNOWN_SEX for those born since).
+    sex_born: Vec<(u8, i32)>,
     /// (household, person) sorted, rebuilt monthly.
     households: Vec<(u32, u32)>,
     /// Single men of age by id mod 30 and households (ranges into
@@ -793,6 +801,11 @@ fn part(len: usize, slice: u32, parts: i64) -> std::ops::Range<usize> {
 }
 
 /// S86: whether this woman never marries (one draw per person).
+/// Not in `sex_born`.
+const UNKNOWN_SEX: u8 = 2;
+/// Youngest marriage age of a woman in any estate.
+const MARRY_AGE_MIN_F: f64 = 13.0;
+
 fn never_marries(seed: u64, pid: u32, per_1000: u64) -> bool {
     rnd(seed, pid, 0x6e7e, 0) % 1000 < per_1000
 }
@@ -1011,6 +1024,7 @@ impl People {
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
+            sex_born: Vec::new(),
             households: Vec::new(),
             grooms: Vec::new(),
             hh_slices: Vec::new(),
@@ -1174,7 +1188,7 @@ impl People {
                     f |= 2;
                 }
                 let region = if f & 2 != 0 && h.0 != NONE { grid.region(h.0) } else { 0 };
-                out.push(IndexRow { pid: pid.0, home: h.0, region, flags: f, stand: st.0 });
+                out.push(IndexRow { pid: pid.0, home: h.0, region, flags: f, stand: st.0, sex: sex.0, born: b.0 });
             },
         );
         let mut rows = Vec::with_capacity(self.count as usize);
@@ -1211,6 +1225,7 @@ impl People {
         self.brides = i.brides;
         self.brides_by_stand = i.brides_by_stand;
         self.by_cell = i.by_cell;
+        self.sex_born = i.sex_born;
     }
 
     /// Snapshot of (household, person) of the living.
@@ -1526,19 +1541,20 @@ impl People {
             // The list is from the start of the month: skip who has died,
             // married or left since.
             let Some(ge) = self.alive(g) else { continue };
-            if self.world.get::<Spouse>(ge).unwrap().0 != NONE || self.world.get::<Travel>(ge).is_some() {
+            let gr = self.world.entity(ge);
+            if gr.get::<Spouse>().unwrap().0 != NONE || gr.contains::<Travel>() {
                 continue;
             }
             let (home, born, stand, culture, religion, parents, search, rel, house) = (
-                self.world.get::<Home>(ge).unwrap().0,
-                self.world.get::<Born>(ge).unwrap().0,
-                self.world.get::<Stand>(ge).unwrap().0,
-                self.world.get::<Culture>(ge).unwrap().0,
-                self.world.get::<Religion>(ge).unwrap().0,
-                *self.world.get::<Parents>(ge).unwrap(),
-                self.world.get::<Search>(ge).unwrap().0,
-                *self.world.get::<Relations>(ge).unwrap(),
-                self.world.get::<Household>(ge).unwrap().0,
+                gr.get::<Home>().unwrap().0,
+                gr.get::<Born>().unwrap().0,
+                gr.get::<Stand>().unwrap().0,
+                gr.get::<Culture>().unwrap().0,
+                gr.get::<Religion>().unwrap().0,
+                *gr.get::<Parents>().unwrap(),
+                gr.get::<Search>().unwrap().0,
+                *gr.get::<Relations>().unwrap(),
+                gr.get::<Household>().unwrap().0,
             );
             // S65: without free land the family waits.
             if self.no_land(home)
@@ -1577,34 +1593,37 @@ impl People {
             let mut best: Option<(i64, u32)> = None;
             for &c in &cands {
                 let Some(ce) = self.alive(c) else { continue };
-                let w = (
-                    self.world.get::<Sex>(ce).unwrap().0,
-                    self.world.get::<Spouse>(ce).unwrap().0,
-                    self.world.get::<Born>(ce).unwrap().0,
-                    self.world.get::<Stand>(ce).unwrap().0,
-                    *self.world.get::<Parents>(ce).unwrap(),
-                    self.world.get::<Household>(ce).unwrap().0,
-                    self.world.get::<Travel>(ce).is_some(),
-                );
-                let wa = age_y(day, w.2);
-                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house || never_marries(seed, c, self.never_marry_per_1000) {
+                // Cheapest and most selective tests first (most candidates
+                // are acquaintances: men, children, the married): sex and
+                // age from the monthly index, then the components.
+                let ent = self.world.entity(ce);
+                let (sex, born) = match self.sex_born.get(c as usize) {
+                    Some(&(s, b)) if s != UNKNOWN_SEX => (s, b),
+                    _ => (ent.get::<Sex>().unwrap().0, ent.get::<Born>().unwrap().0),
+                };
+                let wa = age_y(day, born);
+                if sex != 0 || !(MARRY_AGE_MIN_F..MARRY_AGE_MAX_F).contains(&wa) || ent.get::<Spouse>().unwrap().0 != NONE || ent.contains::<Travel>() {
+                    continue;
+                }
+                let w = (ent.get::<Stand>().unwrap().0, *ent.get::<Parents>().unwrap(), ent.get::<Household>().unwrap().0);
+                if wa < MARRY_AGE[w.0 as usize].0 || w.2 == house || never_marries(seed, c, self.never_marry_per_1000) {
                     continue;
                 }
                 // No siblings.
-                if (parents.0 != NONE && w.4 .0 == parents.0) || (parents.1 != NONE && w.4 .1 == parents.1) {
+                if (parents.0 != NONE && w.1 .0 == parents.0) || (parents.1 != NONE && w.1 .1 == parents.1) {
                     continue;
                 }
                 // S82: partners of similar intelligence (Horwitz et al. 2023).
-                if (g_iq - self.world.get::<Intelligence>(ce).unwrap().iq(wa)).abs() > self.iq_mate_gap {
+                if (g_iq - ent.get::<Intelligence>().unwrap().iq(wa)).abs() > self.iq_mate_gap {
                     continue;
                 }
                 // CK3-like weighting, in tenths.
                 let mut s = -(((ga - wa) - PREF_GAP).abs() * 10.0) as i64;
-                s -= 50 * (stand as i64 - w.3 as i64).abs();
-                if self.world.get::<Culture>(ce).unwrap().0 == culture {
+                s -= 50 * (stand as i64 - w.0 as i64).abs();
+                if ent.get::<Culture>().unwrap().0 == culture {
                     s += 30;
                 }
-                if self.world.get::<Religion>(ce).unwrap().0 == religion {
+                if ent.get::<Religion>().unwrap().0 == religion {
                     s += 30;
                 }
                 if let Some(k) = rel.ids[..rel.n as usize].iter().position(|&x| x == c) {
