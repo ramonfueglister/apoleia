@@ -2257,18 +2257,21 @@ impl Grain {
                 }
             }
             EXPORT => {
-                // Sell the load here, tell this market the prices known at
-                // home, then go home empty.
+                // Sell the load here as far as the dealers' cash goes (as
+                // the farms, PLACEHOLDER), tell this market the prices known
+                // at home, then go home with the rest.
                 let m = &mut self.markets[mi];
-                let pay = t.kg * Self::buy_price(m);
-                m.store += t.kg;
+                let price = Self::buy_price(m);
+                let kg = t.kg.min(m.money / price.max(1)).max(0);
+                let pay = kg * price;
+                m.store += kg;
                 m.money -= pay;
-                self.stats.traded_kg += t.kg;
+                self.stats.traded_kg += kg;
                 match self.hh.get_mut(&t.hh) {
                     Some(h) => h.money += pay,
                     None => self.money.no_payee += pay,
                 }
-                t.kg = 0;
+                t.kg -= kg;
                 self.share_news(t.market, t.dest, day);
             }
             IMPORT => {
@@ -2382,14 +2385,18 @@ impl Grain {
                     s.pantry += t.kg;
                 }
             }
-            IMPORT if t.kg > 0 => {
-                // Sell the load at home.
+            EXPORT | IMPORT if t.kg > 0 => {
+                // Sell the load at home as far as the dealers' cash goes;
+                // the rest goes into the trader's pantry (PLACEHOLDER).
                 let m = &mut self.markets[t.market as usize];
-                let pay = t.kg * Self::buy_price(m);
-                m.store += t.kg;
+                let price = Self::buy_price(m);
+                let kg = t.kg.min(m.money / price.max(1)).max(0);
+                let pay = kg * price;
+                m.store += kg;
                 m.money -= pay;
                 s.money += pay;
-                self.stats.traded_kg += t.kg;
+                s.pantry += t.kg - kg;
+                self.stats.traded_kg += kg;
             }
             _ => {}
         }
