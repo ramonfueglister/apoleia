@@ -336,7 +336,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	parcel_rect.size = Vector2(CROP_N, CROP_N)
 	_parcel_view = _make_prep("CropParcels", parcel_rect, _parcel_material)
 	_parcel_view.size = Vector2i(CROP_N, CROP_N)
-	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material]:
+	# the tree slots too: no tree on a farmhouse's lot or a field (tile_props.gdshaderinc)
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material, terrain._place_material]:
 		m.set_shader_parameter("sim_lot_tex", _lots_view.get_texture())
 		m.set_shader_parameter("sim_lots_n", LOTS_N)
 		m.set_shader_parameter("sim_lot_km", LOT_KM)
@@ -583,7 +584,7 @@ func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
 	# the crops read the fine layer too, and the placement of the people for
 	# the slabs they stand on
-	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material]
+	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material, terrain._place_material]
 	for m in mats:
 		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
@@ -721,7 +722,7 @@ func _update_crops(view_km: float) -> void:
 		_lot0 = ((lot_lo + lot_hi) * 0.5).floor() - lots * 0.5
 		_lots_material.set_shader_parameter("lot_origin", _lot0)
 		_lots_material.set_shader_parameter("world_min", world_min)
-		for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material]:
+		for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material, terrain._place_material]:
 			m.set_shader_parameter("sim_lot_origin", _lot0)
 		_lots_dirty = true
 	if _lots_dirty:

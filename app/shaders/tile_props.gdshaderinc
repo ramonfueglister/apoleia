@@ -2,6 +2,9 @@
 // per-frame placement pass (tile_prop_prep.gdshader) and, as a fallback, the
 // prop vertex shader. Needs tile_terrain.gdshaderinc first.
 
+// the farms' fields and lots (set on the placement pass by people_dots.gd)
+#include "res://shaders/sim_fields.gdshaderinc"
+
 // The ground level at uv (0..1) in tile t with corner levels c, on the
 // tile's own triangles (split as in tile_terrain.gdshader).
 float tt_level_in_tile(ivec2 t, vec4 c, vec2 uv) {
@@ -49,6 +52,23 @@ bool tt_olive_grove(ivec2 dt, bool ramp) {
 		}
 	}
 	return false;
+}
+
+// Up close single trees and bushes stand about the open land, as in Urbek
+// (Ramon 29.10.2026: whole hillsides and pastures of bare lawn): on the
+// ramps, where no field ever lies, and on the parcels the farms leave as
+// pasture (sim_parcel), never on a sown or fallow parcel or a farmhouse's
+// lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs.
+const float SCATTER_TREE = 0.05; // share of the slots with a tree
+const float SCATTER_BUSH = 0.12; // and with a bush
+bool tt_scatter_free(vec2 at, bool ramp, bool field) {
+	if (!sim_map_on || sim_fine_n == 0) { return !field; }
+	if (sim_house_lot(at)) { return false; }
+	if (ramp) { return true; }
+	if (sim_view_km > SIM_CROPS_KM) { return false; }
+	float size = tt_data_km() * 0.5;
+	vec4 f;
+	return sim_parcel(floor((at - world_min) / size), size, f) == 0;
 }
 
 // One slot of tile t: xy the spot in the tile (0..1), z its level, w the code:
@@ -111,10 +131,13 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool field = land == G_FIELD;
 		bool grove = false;
 		bool olive = false;
+		bool ramp = false;
+		if (sub_tiles) {
+			vec4 q = tt_corners_cached(t);
+			ramp = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) > 0.01;
+		}
 		if (open && sub_tiles) {
 			ivec2 dt = sub_tiles ? t >> ivec2(1) : t;
-			vec4 q = tt_corners_cached(t);
-			bool ramp = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) > 0.01;
 			vec2 here = world_min + (vec2(t) + 0.5) * tile_km;
 			olive = tt_latitude(here) < 44.5 && tt_height_m(here, height_lod) < 700.0 && tt_olive_grove(dt, ramp);
 		}
@@ -131,8 +154,12 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// up close a wood keeps the density of the 0.5 km tiles (about 2 of
 		// the 4 slots of a quarter), so the ground shows between the crowns
 		bool thin = sub_tiles && tt_hash3(vec3(vec2(t) * 0.37, float(slot) + 0.5)) > 0.6;
-		show = show && (wood || grove || olive) && (olive || !thin);
-		edge_size = olive ? OLIVE_SIZE : mix(0.8, 1.0, r0);
+		float rs = tt_hash3(vec3(vec2(t) * 0.91, float(slot) + 4.4));
+		bool scatter = sub_tiles && (open || field) && !olive && !grove && rs < SCATTER_TREE + SCATTER_BUSH
+			&& tt_scatter_free(at, ramp, field);
+		bool bush = scatter && rs >= SCATTER_TREE;
+		show = show && (wood || grove || olive || scatter) && (olive || scatter || !thin);
+		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.3, 0.45, r0) : mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;
@@ -140,7 +167,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// stone pines and cypresses in the warm lowlands, more of them in open land
 		bool south = lat < 44.5 && h < 700.0;
 		float pine_p = south ? (wood ? 0.12 : 0.45) : 0.0;
-		int kind = olive ? 0
+		int kind = olive || bush ? 0
 			: r0 < conifer_p ? 1
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;

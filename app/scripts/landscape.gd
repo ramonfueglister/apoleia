@@ -56,12 +56,14 @@ const FOV_TO := 300.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
 ## Tilt-shift blur: full up to TILT_FULL km view width, gone from TILT_TO.
-const TILT_AMOUNT := 0.07
+## Only a hint at the edges: Urbek has next to none, and stronger it
+## smeared the top and bottom of the picture (s2 against Urbek).
+const TILT_AMOUNT := 0.03
 const TILT_FULL := 6.0
 const TILT_TO := 40.0
 ## Share of the depth from the focus to the top / bottom edge of the
 ## picture that stays sharp.
-const TILT_SHARP := 0.3
+const TILT_SHARP := 0.55
 
 var terrain: Node3D
 var camera := Camera3D.new()

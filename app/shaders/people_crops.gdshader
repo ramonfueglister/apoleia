@@ -34,6 +34,7 @@ varying float fill;   // share of a clump's length in its row
 varying vec3 art_light; // ART_LIGHT in view space
 varying vec2 slab_uv;   // place on the slab's top (-0.5..0.5), for its lit rim
 varying float slab_top; // 1 on a slab's top face
+varying float grains;   // how strongly a slab's top is speckled (straw more than soil)
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 // Colours (sRGB) after Urbek's farmland (gauntlet refs/urbek-landschaft-02):
@@ -47,6 +48,7 @@ const vec3 BARLEY_GREEN = vec3(0.32, 0.48, 0.18); // a little yellower than the 
 const vec3 RIPE[2] = vec3[](vec3(0.68, 0.64, 0.36), vec3(0.72, 0.68, 0.46)); // wheat, barley (Urbek's wheat #c0c672 lit)
 const vec3 FALLOW = vec3(0.62, 0.6, 0.32);       // dry stubble, Urbek's wheat #cdc373 lit: the warm yellow of the farmland
 const vec3 STUBBLE = vec3(0.62, 0.54, 0.38);
+const vec3 FURROW = vec3(0.26, 0.18, 0.13);      // the ridges of a ploughed field, darker than its soil
 const vec3 LEAVES = vec3(0.2, 0.42, 0.17);
 const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
@@ -85,26 +87,29 @@ void vertex() {
 	vec3 rc = LEAVES;
 	clumps = 0.0;
 	fill = 0.38;
+	// Urbek's rows run the length of the field as dashes of a few voxels
+	// with a voxel's gap (29.10.: our sprouts in short clumps read as a grid
+	// of dots); a ploughed field shows its furrows
 	if (state == 1) {
 		// a flat sheet as Urbek's, high enough to show its edge (dark tufts
 		// on it read as ticks, round 16; light sheaves as studs, round 18)
 		c = FALLOW;
 		kind = -1;
 	} else if (grain) {
-		if (g <= 0.0) { c = STUBBLE; }
-		else if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.4; rc = SPROUT; clumps = 10.0; fill = 0.45; }
-		else if (g < 0.75) { h = 0.35; w = 0.55; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 12.0; fill = 0.7; }
+		if (g <= 0.0) { c = STUBBLE; h = 0.1; w = 0.35; rc = STUBBLE * 0.85; }
+		else if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
+		else if (g < 0.4) { h = 0.2; w = 0.45; rc = SPROUT; clumps = 16.0; fill = 0.8; }
+		else if (g < 0.75) { h = 0.4; w = 0.6; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 14.0; fill = 0.82; }
 		else {
 			c = RIPE[kind];
 			// the ears stand in dense light rows on the sheet (a bare sheet
 			// read as an empty tray, rounds 17 and 20)
-			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 14.0; fill = 0.7;
+			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 14.0; fill = 0.8;
 		}
 	} else if (kind == SIM_BEANS) {
-		if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.4; rc = SPROUT; clumps = 9.0; fill = 0.45; }
-		else { h = 0.45; w = 0.55; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 9.0; fill = 0.75; }
+		if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
+		else if (g < 0.4) { h = 0.2; w = 0.45; rc = SPROUT; clumps = 14.0; fill = 0.8; }
+		else { h = 0.45; w = 0.6; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 10.0; fill = 0.8; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		c = SOIL_DRY;
@@ -118,10 +123,11 @@ void vertex() {
 	bool fence = UV.x == -2.0;
 	bool row = UV.x >= 0.0;
 	if (row && (h <= 0.0 || (kind == SIM_VINES && int(UV.y) % 2 == 1))) { show = false; }
-	// the fields next to a farmhouse lot fenced all round, none further out
+	// the fields next to a farmhouse lot fenced all round, further out a
+	// fence along a side now and then, as Urbek's farmland
 	int side = int(UV.y) / 16;
 	if (fence) {
-		show = show && state == 2 && (code & SIM_P_BY_FARM) != 0;
+		show = show && state == 2 && ((code & SIM_P_BY_FARM) != 0 || sim_hash(cell * 1.31 + float(side) * 7.7) < 0.35);
 	}
 	float inner = size * (1.0 - 2.0 * SLAB_GAP);
 	vec2 off; // from the parcel's middle, km
@@ -130,18 +136,17 @@ void vertex() {
 	along = 0.0;
 	slab_uv = VERTEX.xz;
 	slab_top = base && NORMAL.y > 0.5 ? 1.0 : 0.0;
+	grains = state == 1 || (grain && g >= 0.75) ? 0.14 : 0.08;
 	if (base) {
 		off = VERTEX.xz * inner;
 		y = VERTEX.y * slab;
 	} else if (row) {
 		float step = inner / crop_rows;
 		off = vec2(VERTEX.x * inner * 0.97, (UV.x - 0.5) * inner + VERTEX.z * w * step);
-		// clumps in staggered rows; the beans' and vines' rows run
-		// east-west, so their fronts face the camera; the grain's run
-		// north-south, away from the camera, as lumpy lines with the soil
-		// between them (east-west their stacked fronts read as blinds)
+		// clumps in staggered rows, north-south or east-west by the parcel
+		// (the camera looks along the diagonal, so both read alike)
 		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
-		quarter = grain ? 1 : 0;
+		quarter = sim_hash(cell + 9.7) < 0.5 ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
@@ -208,6 +213,12 @@ void fragment() {
 		vec2 e = 0.5 - abs(slab_uv);
 		vec2 px = fwidth(slab_uv) * 1.5;
 		if (e.x < px.x || e.y < px.y) { ALBEDO *= 1.25; }
+		// a fine speckle of voxels on the top, as the grain of Urbek's
+		// straw plates (a flat tone read as a plastic tray), gone before it
+		// would shimmer
+		vec2 g = slab_uv * 40.0;
+		float n = fract(sin(dot(floor(g), vec2(12.9898, 78.233))) * 43758.5453);
+		ALBEDO *= 1.0 + (n - 0.5) * grains * (1.0 - smoothstep(0.25, 0.5, length(fwidth(g))));
 	}
 	ROUGHNESS = 1.0;
 }

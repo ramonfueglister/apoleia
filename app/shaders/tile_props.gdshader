@@ -117,7 +117,7 @@ void vertex() {
 			COLOR = vec4(NORMAL.y > 0.5 ? tree_top[b] : NORMAL.y < -0.5 ? tree_side[b] * 0.6 : tree_side[b], 1.0);
 		}
 		vec3 v = m * s;
-		olive = !house && int(floor(d.w)) == 0 && edge_size < OLIVE_SIZE + 0.05 ? 1.0 : 0.0;
+		olive = !house && int(floor(d.w)) == 0 && abs(edge_size - OLIVE_SIZE) < 0.03 ? 1.0 : 0.0; // (the bushes are smaller)
 		float lift = 0.0;
 		if (house && sub_tiles) {
 			// the terrace block covers the tile: level at its highest corner,

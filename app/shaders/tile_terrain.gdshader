@@ -394,7 +394,11 @@ void fragment() {
 			}
 		}
 		// the farms' fields from the grain economy, up close
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, tt_ground_at(tile, tile_uv), tile_km); }
+		int land = tt_ground_at(tile, tile_uv);
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
+		// up close the grass in patches, tufts and flowers (not the field tracks)
+		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
+		if (sub_tiles && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
@@ -453,7 +457,11 @@ void fragment() {
 		float t = abs(fr) - abs(fb);
 		float corner = min(side, front);
 		float shade = t > 0.0 ? mix(corner, side, smoothstep(0.1, 0.4, t)) : mix(corner, front, smoothstep(0.1, 0.4, -t));
-		float tone = 1.0 + shade * away;
+		// up close a gentle ramp a gentler tone (the steps are drawn lower
+		// there, TileTerrain.relief_for_width): a whole hillside in one hard
+		// facet read as folded paper (s2)
+		float steep = sub_tiles ? mix(0.55, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
+		float tone = 1.0 + shade * away * steep;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
