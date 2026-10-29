@@ -39,7 +39,7 @@ varying vec3 tint;
 varying float road; // a paved street tile's terrace top
 varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc)
 varying vec3 wpos;  // world position (masonry on the terrace walls)
-varying float wall; // a terrace wall: 1 runs along x, 2 along z, 0 none
+varying float wall_dir; // a terrace wall: 1 runs along x, 2 along z, 0 none
 
 // Up close (quarter tiles) every lot stands on a terrace block of the whole
 // tile with a street along its south side (Kritik r8: lots butted front to
@@ -176,7 +176,7 @@ void vertex() {
 		nrm.xz = rot * nrm.xz;
 		VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 		wpos = world;
-		wall = prop_kind == 5 && abs(nrm.y) < 0.5 ? (abs(nrm.z) > abs(nrm.x) ? 1.0 : 2.0) : 0.0;
+		wall_dir = prop_kind == 5 && abs(nrm.y) < 0.5 ? (abs(nrm.z) > abs(nrm.x) ? 1.0 : 2.0) : 0.0;
 		NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 		tint = prop_kind == 3 ? vec3(0.96 + 0.08 * r1) : prop_kind == 5 ? vec3(1.0) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
 		// the sides turned to the SimCity light of the terrain a little lighter
@@ -197,7 +197,7 @@ void vertex() {
 // (no shimmer farther out, where the wall is one flat tone again).
 const float DIORAMA_M = 0.0238; // world units (km) per diorama metre (docs/kit2/SCALE.md)
 float masonry() {
-	vec2 q = vec2(wall < 1.5 ? wpos.x : wpos.z, wpos.y) / (DIORAMA_M * vec2(1.0, 0.5));
+	vec2 q = vec2(wall_dir < 1.5 ? wpos.x : wpos.z, wpos.y) / (DIORAMA_M * vec2(1.0, 0.5));
 	float row = floor(q.y);
 	q.x += 0.5 * mod(row, 2.0);
 	vec2 w = max(fwidth(q), vec2(1e-5));
@@ -205,14 +205,14 @@ float masonry() {
 	if (fade <= 0.0) { return 1.0; }
 	vec2 e = (0.5 - abs(fract(q) - 0.5)) / w; // pixels to the nearest joint
 	float joint = 1.0 - smoothstep(0.4, 1.2, min(e.x, e.y));
-	float block = tt_hash(floor(q) + vec2(wall * 17.0, 0.0)) - 0.5;
+	float block = tt_hash(floor(q) + vec2(wall_dir * 17.0, 0.0)) - 0.5;
 	return 1.0 + fade * (0.06 * block - 0.16 * joint);
 }
 
 void fragment() {
 	vec3 c = mix(COLOR.rgb, ROAD_RGB, road);
 	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
-	if (wall > 0.5) { c *= masonry(); }
+	if (wall_dir > 0.5) { c *= masonry(); }
 	ALBEDO = pow(c * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;
