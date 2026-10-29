@@ -756,6 +756,11 @@ pub struct People {
     pub split_log: Vec<(u32, u32)>,
     /// For the view only (crate::events): hunger deaths and moves.
     pub events: Vec<crate::events::Event>,
+    /// With the grain economy (S97): (household, relative's household) for
+    /// each household that joined a relative, and the households that left
+    /// the map, since crate::grain took them.
+    pub join_log: Vec<(u32, u32)>,
+    pub leave_log: Vec<u32>,
     /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
     pub never_marry_per_1000: u64,
     pub divorce_per_10k_year: u64,
@@ -1038,6 +1043,8 @@ impl People {
             table_hunger_per_1000: TABLE_HUNGER_PER_1000,
             split_log: Vec::new(),
             events: Vec::new(),
+            join_log: Vec::new(),
+            leave_log: Vec::new(),
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
@@ -1862,6 +1869,9 @@ impl People {
                 let (day, old) = (self.world.resource::<Clock>().day, at(self, m));
                 let household = self.world.get::<Household>(self.ent[m as usize]).unwrap().0;
                 self.events.push(crate::events::Event { day, kind: crate::events::JOINED, household, pid: m, cell: old, to: home, fine: NONE, other: house, amount: members.len() as i64 });
+                if self.econ.is_some() {
+                    self.join_log.push((household, house));
+                }
             }
             for &m in &members {
                 let old = at(self, m);
@@ -1881,6 +1891,9 @@ impl People {
                 let household = self.world.get::<Household>(self.ent[m as usize]).unwrap().0;
                 let kind = if to.is_some() { crate::events::MOVED } else { crate::events::LEFT_MAP };
                 self.events.push(crate::events::Event { day, kind, household, pid: m, cell: old, to: to.unwrap_or(NONE), fine: NONE, other: NONE, amount: n as i64 });
+                if to.is_none() && self.econ.is_some() {
+                    self.leave_log.push(household);
+                }
             }
             match to {
                 Some(c) => {

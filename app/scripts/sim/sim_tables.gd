@@ -239,6 +239,8 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 func _refresh() -> void:
 	var t := _tables[_kind]
 	_chart.visible = KINDS[_kind] == "history"
+	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  T schliesst" if KINDS[_kind] == "history"
+		else "Klick auf eine Zeile zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar  ·  T schliesst")
 	_paint.visible = KINDS[_kind] == "markets"
 	_paint.set_pressed_no_signal(_map_by != "")
 	_paint_regions()

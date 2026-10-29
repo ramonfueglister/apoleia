@@ -308,12 +308,15 @@ static func _mesh() -> ArrayMesh:
 	var hair := Color(0.26, 0.17, 0.1)
 	var sandal := Color(0.36, 0.24, 0.15)
 	var f := FIGURE_M
-	# the person, as people_dots.gd draws the figures, walking
+	# the person, as people_dots.gd draws the figures, walking: a tunic to
+	# the knee with short sleeves (with bare legs and arms to the shoulder
+	# the first walkers read as naked from 1 km)
 	for side in [-1.0, 1.0]:
 		_box(st, Vector3(0.075 * side, 0.02, 0.02) * f, Vector3(0.05, 0.02, 0.07) * f, sandal, 0, side, 0.48 * f)
-		_box(st, Vector3(0.075 * side, 0.26, 0.0) * f, Vector3(0.05, 0.22, 0.05) * f, skin, 0, side, 0.48 * f)
-		_box(st, Vector3(0.2 * side, 0.62, 0.0) * f, Vector3(0.05, 0.16, 0.05) * f, skin, 0, -side * 0.6, 0.78 * f)
-	_box(st, Vector3(0.0, 0.62, 0.0) * f, Vector3(0.15, 0.18, 0.1) * f, Color.WHITE, 0)
+		_box(st, Vector3(0.075 * side, 0.21, 0.0) * f, Vector3(0.05, 0.17, 0.05) * f, skin, 0, side, 0.48 * f)
+		_box(st, Vector3(0.2 * side, 0.55, 0.0) * f, Vector3(0.05, 0.09, 0.05) * f, skin, 0, -side * 0.6, 0.78 * f)
+		_box(st, Vector3(0.2 * side, 0.71, 0.0) * f, Vector3(0.055, 0.07, 0.055) * f, Color.WHITE, 0, -side * 0.6, 0.78 * f)
+	_box(st, Vector3(0.0, 0.59, 0.0) * f, Vector3(0.15, 0.21, 0.1) * f, Color.WHITE, 0)
 	_box(st, Vector3(0.0, 0.9, 0.0) * f, Vector3(0.08, 0.08, 0.08) * f, skin, 0)
 	_box(st, Vector3(0.0, 0.975, -0.01) * f, Vector3(0.088, 0.025, 0.088) * f, hair, 0)
 	_box(st, Vector3(0.0, 0.9, -0.072) * f, Vector3(0.088, 0.06, 0.025) * f, hair, 0)
