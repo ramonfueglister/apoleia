@@ -211,7 +211,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
 bleiben), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v24_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v25_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -260,10 +260,12 @@ Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite ist jede Datenkachel eine Parzelle nach derselben Regel, auch
-nur auf ebenen Kacheln, in klar verschiedenen Farben ohne Khaki: Weide,
-Brache als beweidetes trockenes Gras, helle Strohstoppeln auf
-Abgeerntetem, braune Ackererde, ein Grün dunkler als die Wiese für
-wachsende Saat und Reben, Weizen für reife; Brache und Saat (und Reben)
+nur auf ebenen Kacheln: Brache und Stoppeln im warmen Stroh (Urbeks
+Weizengelb, der Takt seines Ackerlands), braune Ackererde, Weizen für
+reife Saat; wachsende Saat und Reben im Grün der Wiese, so ist das Land
+Gras mit gelben und braunen Feldern darauf und kein Tarnmuster aus
+Grüntönen und Khaki (Runde 12: trockenes Gras für Brache und ein
+dunkles Grün für Saat lasen sich als Tarnfleck). Brache und Saat (und Reben)
 liegen in Blöcken von 2 × 2 Kacheln (1 km), damit kein Schachbrett
 entsteht. So liest sich das Land um die Städte bis 30 km als Felder
 (vorher grosse Blöcke in vier blassen Tönen, die bei 22 km leer wirkten).
@@ -288,10 +290,10 @@ Ackerland: dunkle braune Erde mit grünen Reihen, zwischen denen die Erde
 sichtbar bleibt, und eine geschlossene strohgelbe Fläche. Weizen und Gerste
 wachsen von nackter Erde über lockere Sprossen zu schmalen, buckligen
 Reihen, reifen zu einer strohgelben, 0,9 m hohen Platte und werden zu
-Stoppeln; eine brachliegende Parzelle trägt nichts und liegt als
-beweidetes trockenes Gras am Boden (gelbgrün, oft mit Schafen). Unter
-bestellten Parzellen malt die Terrain Wiese, so steht jede Platte mit
-sichtbarer Kante in einem Grasrand.
+Stoppeln; eine brachliegende Parzelle ist eine 0,5 m hohe Platte aus
+trockenen Stoppeln im Weizengelb. Unter bestellten und brachen Parzellen
+malt die Terrain Wiese, so steht jede Platte mit sichtbarer Kante in
+einem Grasrand.
 Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel, Reben als
 niedrige Hecken in jeder zweiten Reihe; die Felder neben einem Hof sind
 ringsum eingezäunt, weiter draussen keines. Die Grüntöne liegen dunkler als
@@ -299,8 +301,9 @@ die Wiese daneben, wie bei Urbek. Büschelreihen laufen ost-west, damit ihre Vor
 Kamera zeigen (die Lücken schneidet der Fragment-Shader); die Reihen des
 Getreides laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen
 sich ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
-gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen und einem Fünftel
-der Brachparzellen (offenes Land, kein Hof) steht eine kleine Schafherde, vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
+gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen (offenes Land,
+kein Hof) steht eine kleine Schafherde (lange, niedrige Körper auf
+dunklen Beinen, die Längsseite zur Kamera), vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die

@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v24_%d_%s.res"
+const CACHE := "user://farmhouse_v25_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -255,9 +255,10 @@ static func _shed(p: Vector3) -> int:
 ## Woodpile against the -x end, a shrub by the front corner, the garden
 ## beds at the back, the path to the gate and the fence.
 static func _yard(p: Vector3) -> int:
-	# a stack of logs, cut ends showing, bark on top
-	if p.x >= -5.75 and p.x < -HALF_X - 0.125 and p.z >= -2.0 and p.z < 0.75 and p.y < 1.0:
-		return WOOD if p.y >= 0.75 else LOG
+	# a low stack of logs against the end wall, the cut ends showing as a
+	# checker of light and dark (a plain block reads as a crate)
+	if p.x >= -5.5 and p.x < -HALF_X - 0.125 and p.z >= -1.75 and p.z < 0.25 and p.y < 0.75:
+		return WOOD if p.y >= 0.5 else (LOG if posmod(int(floor(p.y / 0.25)) + int(floor(p.z / 0.25)), 2) == 0 else WOOD_DARK)
 	var s := Vector3(-3.5, 0.6, 4.25)
 	var q := _snap(p, 0.25)
 	var d := Vector2(q.x - s.x, q.z - s.z).length()
@@ -327,8 +328,9 @@ static func _lot(at: Vector3) -> int:
 	if at.y < 0.0:
 		return EMPTY
 	# cypresses: a slim dark spindle (a fifth as wide as tall, no taller
-	# than 1.7 eaves), widest low down and drawn in to a point
-	var p := _snap(at, 0.25)
+	# than 1.7 eaves), widest low down and drawn in to a point, in the
+	# finest blocks so the taper shows
+	var p := at
 	var cz := absf(p.z - 8.75)
 	var cx := absf(absf(p.x) - 8.75)
 	if cx < 0.625 and cz < 0.625:
