@@ -23,6 +23,7 @@
 //! the last two fields, so no bit pattern can turn into a NaN on the way to
 //! the GPU.
 
+use crate::build::Tile;
 use crate::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use crate::life::YEAR;
 use crate::people::{Born, Clock, Culture, Faction, Health, Home, Household, Intelligence, Job, People, Pid, Religion, Sex, Spouse, Stand, Travel};
@@ -59,11 +60,26 @@ const WORK_YEARS: [std::ops::Range<i64>; 2] = [15..61, 10..66];
 /// Household of a building site's house: nobody lives there yet.
 const SITE: u32 = u32::MAX;
 
-/// The key a farm built from an order is drawn with, from its building
-/// site on (`set_sites`) to the house of the family that takes it
-/// (`set_homes`), so the house stands where the site stood.
-fn site_key(fine: u32) -> u32 {
-    hash(fine ^ 0x51e5) & KEY_MASK
+/// The key a farm is drawn with when its family lives on the farm, not in
+/// its village (`set_homes`): for a farm built from an order its spot's,
+/// from the building site on (`set_sites`), so the house stands where the
+/// site stood and several farms can stand on one fine tile; else its fine
+/// tile's (heirs).
+fn site_key(spot: Option<Tile>, fine: u32) -> u32 {
+    match spot {
+        Some(t) => spot_code(t) & KEY_MASK,
+        None => hash(fine ^ 0x51e5) & KEY_MASK,
+    }
+}
+
+/// A building site's stand-in for a household id in its house key.
+fn spot_code(t: Tile) -> u32 {
+    hash(hash(t.0 as u32 ^ 0x51e5) ^ t.1 as u32)
+}
+
+/// An order's spot (world metres, row = z, column = x) in world km (x, z).
+fn spot_km(t: Tile) -> (f64, f64) {
+    (t.1 as f64 / 1000.0, t.0 as f64 / 1000.0)
 }
 
 pub struct PeopleView {
@@ -90,8 +106,9 @@ pub struct PeopleView {
     /// Village and house of each household.
     pub settle: Settle,
     /// Fine tile of the households whose farm stands elsewhere than their
-    /// village (`set_homes`, crate::grain homes_moved): they live there.
-    homes: FxHashMap<u32, u32>,
+    /// village (`set_homes`, crate::grain homes_moved), and the order's
+    /// spot for a farm built from one: they live there.
+    homes: FxHashMap<u32, (u32, Option<Tile>)>,
     query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, &'static Sex, &'static Born, Option<&'static Travel>)>>,
 }
 
@@ -140,19 +157,19 @@ impl PeopleView {
     /// The key the GPU places a household's people and house by: the
     /// tile's site key for a household living on its farm's tile.
     fn key_of(&self, household: u32) -> u32 {
-        self.homes.get(&household).map_or(household, |&fine| site_key(fine))
+        self.homes.get(&household).map_or(household, |&(fine, spot)| site_key(spot, fine))
     }
 
-    /// The building sites of farms (S113): (fine tile, share built ×
-    /// 255). Each is a house record where the farm's house will stand,
-    /// marked by a negative village code: [x, z, -village code, site key
-    /// << 8 | built]. An empty list takes them all away.
-    pub fn set_sites(&mut self, sites: &[(u32, u8)]) {
+    /// The building sites of farms (S113): (order's spot, fine tile, share
+    /// built × 255). Each is a house record where the farm's house will
+    /// stand, marked by a negative village code: [x, z, -village code,
+    /// site key << 8 | built]. An empty list takes them all away.
+    pub fn set_sites(&mut self, sites: &[(Tile, u32, u8)]) {
         let now: FxHashMap<u64, [f32; REC]> = sites
             .iter()
-            .map(|&(fine, built)| {
-                let (x, z) = self.settle.fine_centre_km(fine);
-                (house_key(SITE, fine), [x as f32, z as f32, -(1.0 + (hash(fine) % VILLAGES) as f32), (site_key(fine) << 8 | built as u32) as f32])
+            .map(|&(t, fine, built)| {
+                let (x, z) = spot_km(t);
+                (house_key(SITE, spot_code(t)), [x as f32, z as f32, -(1.0 + (hash(fine) % VILLAGES) as f32), (site_key(Some(t), fine) << 8 | built as u32) as f32])
             })
             .collect();
         self.houses.set_sites(now);
@@ -162,16 +179,25 @@ impl PeopleView {
     /// one, else its village (crate::settle).
     fn spot(&self, home: u32, household: u32, stand: u8) -> Spot {
         match self.homes.get(&household) {
-            Some(&fine) => Spot::Village { fine, village: 0 },
+            Some(&(fine, _)) => Spot::Village { fine, village: 0 },
             None => self.settle.spot(home, household, stand),
         }
     }
 
-    /// The households that live on their farm's tile instead of their
-    /// village, (household, fine tile); the next update redraws the people
-    /// and houses of those that changed.
-    pub fn set_homes(&mut self, homes: &[(u32, u32)]) {
-        let homes: FxHashMap<u32, u32> = homes.iter().copied().collect();
+    /// Where the house of a household on `fine` stands: on its order's
+    /// spot for a farm built from one, else in the tile's middle.
+    fn house_at(&self, household: u32, fine: u32) -> (f64, f64) {
+        match self.homes.get(&household) {
+            Some(&(f, Some(t))) if f == fine => spot_km(t),
+            _ => self.settle.fine_centre_km(fine),
+        }
+    }
+
+    /// The households that live on their farm instead of their village,
+    /// (household, fine tile, the order's spot for a farm built from one);
+    /// the next update redraws the people and houses of those that changed.
+    pub fn set_homes(&mut self, homes: &[(u32, u32, Option<Tile>)]) {
+        let homes: FxHashMap<u32, (u32, Option<Tile>)> = homes.iter().map(|&(h, f, t)| (h, (f, t))).collect();
         if homes == self.homes {
             return;
         }
@@ -205,7 +231,7 @@ impl PeopleView {
         match self.spot(home, household, stand) {
             Spot::City { place } => [place.x, place.z, -place.r, w(household, IN_CITY)],
             Spot::Village { fine, .. } => {
-                let (x, z) = self.settle.fine_centre_km(fine);
+                let (x, z) = self.house_at(household, fine);
                 [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, w(self.key_of(household), AT_HOME)]
             }
         }
@@ -262,7 +288,7 @@ impl PeopleView {
                 self.member_src[slot as usize] = src;
                 let key = match self.spot(home.0, household.0, stand.0) {
                     Spot::Village { fine, .. } => {
-                        let (x, z) = self.settle.fine_centre_km(fine);
+                        let (x, z) = self.house_at(household.0, fine);
                         Some((house_key(household.0, fine), [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, ((self.key_of(household.0) & KEY_MASK) << 8) as f32]))
                     }
                     Spot::City { .. } => None,
@@ -421,7 +447,7 @@ mod tests {
         let key = *v.houses.by_key.keys().min().unwrap();
         let (hh, from) = ((key >> 32) as u32, key as u32);
         let to = from + 1;
-        v.set_homes(&[(hh, to)]);
+        v.set_homes(&[(hh, to, None)]);
         assert!(!v.update(&mut p).is_empty());
         assert!(!v.houses.by_key.contains_key(&key));
         let (x, z) = v.settle.fine_centre_km(to);
@@ -429,11 +455,11 @@ mod tests {
         assert_eq!((v.houses.data[s], v.houses.data[s + 1]), (x as f32, z as f32));
         let home = (0..v.slots())
             .map(|s| &v.data[s * REC..(s + 1) * REC])
-            .filter(|r| r[2] != 0.0 && (r[3] as u32 & 3) == AT_HOME && (r[3] as u32 >> 8 & KEY_MASK) == site_key(to))
+            .filter(|r| r[2] != 0.0 && (r[3] as u32 & 3) == AT_HOME && (r[3] as u32 >> 8 & KEY_MASK) == site_key(None, to))
             .filter(|r| (r[0], r[1]) == (x as f32, z as f32))
             .count();
         assert!(home >= 1);
-        v.set_homes(&[(hh, to)]);
+        v.set_homes(&[(hh, to, None)]);
         assert!(v.update(&mut p).is_empty());
     }
 
@@ -463,10 +489,11 @@ mod tests {
         assert_eq!(PeopleView::member_of(&mut p, u32::MAX - 1), None);
     }
 
-    /// A farm's building site is a house record with a negative village
-    /// code and the share built; the family that takes the farm gets a
-    /// house with the same key on the same tile, so it stands where the
-    /// site stood. Workshops leave sites alone.
+    /// A farm's building site is a house record on the order's spot with a
+    /// negative village code and the share built; the family that takes
+    /// the farm gets a house with the same key on the same spot, so it
+    /// stands where the site stood. A second site on the same fine tile
+    /// has a key of its own. Workshops leave sites alone.
     #[test]
     fn sites_turn_into_the_farm() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
@@ -478,25 +505,29 @@ mod tests {
         let key = *v.houses.by_key.keys().min().unwrap();
         let (hh, fine) = ((key >> 32) as u32, key as u32 + 1);
         let n = v.houses.count();
-        let site = |v: &PeopleView| v.houses.by_key.get(&house_key(SITE, fine)).map(|e| v.houses.data[e.0 as usize * REC..][..REC].to_vec());
-        v.set_sites(&[(fine, 100)]);
+        let (t, beside): (Tile, Tile) = ((41_250, 1_750), (41_250, 2_250));
+        let site = |v: &PeopleView| v.houses.by_key.get(&house_key(SITE, spot_code(t))).map(|e| v.houses.data[e.0 as usize * REC..][..REC].to_vec());
+        v.set_sites(&[(t, fine, 100)]);
         let r = site(&v).expect("a site house");
+        assert_eq!((r[0], r[1]), (1.75, 41.25), "on the spot");
         assert!(r[2] < 0.0 && r[2] == -(1.0 + (hash(fine) % VILLAGES) as f32));
-        assert_eq!(r[3] as u32, site_key(fine) << 8 | 100);
+        assert_eq!(r[3] as u32, site_key(Some(t), fine) << 8 | 100);
+        assert_ne!(site_key(Some(t), fine), site_key(Some(beside), fine));
         assert_eq!((v.houses.count(), v.take_house_pages().len()), (n + 1, 1));
         v.houses.set_work([(SITE, 2, 9)]);
         assert_eq!(site(&v).unwrap()[3] as u32 & 255, 100, "no workshop on a site");
-        v.set_sites(&[(fine, 200)]);
+        v.set_sites(&[(t, fine, 200)]);
         assert_eq!(site(&v).unwrap()[3] as u32 & 255, 200);
-        v.set_sites(&[(fine, 200)]);
+        v.set_sites(&[(t, fine, 200)]);
         assert!(v.take_house_pages().len() == 1, "only the change above");
         // done: the site goes, the family moves in under the same key
         v.set_sites(&[]);
-        v.set_homes(&[(hh, fine)]);
+        v.set_homes(&[(hh, fine, Some(t))]);
         v.update(&mut p);
         assert!(site(&v).is_none());
         let h = v.houses.by_key[&house_key(hh, fine)].0 as usize * REC;
-        assert_eq!((v.houses.data[h + 2], v.houses.data[h + 3] as u32 >> 8 & KEY_MASK), (-r[2], site_key(fine)));
+        assert_eq!(&v.houses.data[h..h + 2], &r[..2]);
+        assert_eq!((v.houses.data[h + 2], v.houses.data[h + 3] as u32 >> 8 & KEY_MASK), (-r[2], site_key(Some(t), fine)));
         assert_eq!(v.houses.count(), n);
     }
 

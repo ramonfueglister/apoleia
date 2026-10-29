@@ -191,16 +191,18 @@ impl Grain {
     /// village tile the view would give them (crate::settle::home_fine):
     /// those that took a farm built from an order (S113), and some fifty
     /// in the first months who took over a farm (heirs) or changed estate.
-    /// (household, fine tile), by household; the view draws their house
-    /// and people there, by their fields.
-    pub fn homes_moved(&self) -> Vec<(u32, u32)> {
-        let mut out: Vec<(u32, u32)> = self
+    /// (household, fine tile, the order's spot for a farm built from one),
+    /// by household; the view draws their house and people there, by their
+    /// fields.
+    pub fn homes_moved(&self) -> Vec<(u32, u32, Option<Tile>)> {
+        let mut out: Vec<(u32, u32, Option<Tile>)> = self
             .hh
             .iter()
             .filter(|(_, h)| h.kind == FARM)
             .filter_map(|(&id, h)| {
                 let i = self.info.get(&id)?;
-                (self.settle.home_fine(i.home, id, i.stand) != h.fine).then_some((id, h.fine))
+                let spot = self.spots.get(&h.farm).copied().filter(|_| self.farms.get(h.farm as usize).is_some_and(|f| f.hh == id));
+                (self.settle.home_fine(i.home, id, i.stand) != h.fine).then_some((id, h.fine, spot))
             })
             .collect();
         out.sort_unstable();
@@ -241,7 +243,7 @@ mod tests {
             let mut p = People::new(&inp, 3);
             let mut g = Grain::new(&inp, &mut p);
             let mut orders = Orders::default();
-            let mut t_fine = NONE;
+            let (mut t_fine, mut spot) = (NONE, (0, 0));
             for day in 0..150 {
                 if day == 40 {
                     // the cell of the first tent household with adults, in its middle
@@ -255,6 +257,7 @@ mod tests {
                     let t = build::fine_centre((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
                     orders.apply(&Command::Place { kind: build::FARM, tiles: vec![t] }, day);
                     t_fine = g.site_place(&p, t).expect("on the grid").0;
+                    spot = t;
                 }
                 p.day();
                 g.day(&mut p);
@@ -265,9 +268,9 @@ mod tests {
             // a crew of CREW: at least FARM_DAYS / (CREW × 7) weeks
             assert!(g.stats.build_days <= FARM_DAYS + CREW * 7);
             assert_eq!(g.stats.built_farms, 1);
-            // the new farmer's house is drawn on the ordered tile
+            // the new farmer's house is drawn on the ordered spot
             let built = g.farms.iter().find(|f| f.fine == t_fine && f.hh != NONE).expect("the built farm").hh;
-            assert!(g.homes_moved().contains(&(built, t_fine)));
+            assert!(g.homes_moved().contains(&(built, t_fine, Some(spot))));
             assert!(orders.is_empty() && g.sites.is_empty());
             (p.fingerprint(), g.fingerprint())
         };

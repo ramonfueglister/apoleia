@@ -193,6 +193,9 @@ fn pairs(a: &PackedInt32Array) -> Vec<build::Tile> {
 /// Edge of a 25 km cell and of a fine tile, km.
 const CELL_KM: f32 = 25.0;
 const FINE_KM: f32 = CELL_KM / FINE as f32;
+/// A village lot, the grid build orders sit on (app/scripts/sim/people_dots.gd
+/// LOT_KM, build::Tile).
+const LOT_KM: f32 = 0.5;
 
 /// What a game starts from besides its seed (apoleia_sim::game::Start),
 /// read from below the repository root.
@@ -308,13 +311,14 @@ fn row_of(mut t: Table, id: i64) -> Option<Table> {
 }
 
 /// Each craft household's workshop onto its house record (view.rs Houses),
-/// the families whose farm is not in their village onto its tile
-/// (Grain::homes_moved: farms built from orders, heirs), and with `sites`
-/// each farm's building site as a house record where the farm will stand.
+/// the families whose farm is not in their village onto its tile, on the
+/// order's spot for a farm built from one (Grain::homes_moved: farms built
+/// from orders, heirs), and with `sites` each farm's building site as a
+/// house record on its spot, where the farm will stand.
 fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
     view.set_homes(&game.grain.homes_moved());
-    let farms: Vec<(u32, u8)> = if sites {
-        game.grain.sites().filter(|(_, s)| s.kind == build::FARM && s.need > 0).map(|(_, s)| (s.fine, (s.done * 255 / s.need).clamp(0, 255) as u8)).collect()
+    let farms: Vec<(build::Tile, u32, u8)> = if sites {
+        game.grain.sites().filter(|(_, s)| s.kind == build::FARM && s.need > 0).map(|(t, s)| (t, s.fine, (s.done * 255 / s.need).clamp(0, 255) as u8)).collect()
     } else {
         Vec::new()
     };
@@ -323,19 +327,19 @@ fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
     view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
 }
 
-/// The building sites on fine tiles in the window (world km, min x, min z,
-/// max x, max z): x and z of the tile's centre, kind (build::KIND_NAMES),
-/// share built (0 while nobody builds it), and the tile's width and depth
-/// in world km (the sim knows no smaller footprint yet).
+/// The building sites in the window (world km, min x, min z, max x, max
+/// z): x and z of the order's spot (the middle of its village lot), kind
+/// (build::KIND_NAMES), share built (0 while nobody builds it), and the
+/// lot's width and depth in world km.
 fn sites_in(game: &Game, [x0, z0, x1, z1]: [f64; 4]) -> Vec<f32> {
     let mut out = Vec::new();
-    for ((row, col), s) in game.grain.sites() {
-        let (x, z) = ((col as f32 + 0.5) * FINE_KM, (row as f32 + 0.5) * FINE_KM);
-        if (x as f64) < x0 || (x as f64) > x1 || (z as f64) < z0 || (z as f64) > z1 {
+    for ((z, x), s) in game.grain.sites() {
+        let (x, z) = (x as f64 / 1000.0, z as f64 / 1000.0);
+        if x < x0 || x > x1 || z < z0 || z > z1 {
             continue;
         }
         let built = if s.need > 0 { s.done as f32 / s.need as f32 } else { 0.0 };
-        out.extend_from_slice(&[x, z, s.kind as f32, built, FINE_KM, FINE_KM]);
+        out.extend_from_slice(&[x as f32, z as f32, s.kind as f32, built, LOT_KM, LOT_KM]);
     }
     out
 }
@@ -798,10 +802,11 @@ impl ApoleiaPeople {
         self.shared.wake.notify_one();
     }
 
-    /// The sites asked for, once: six floats each, x and z of the tile's
-    /// centre (world km), kind (0 farm, 1 field, 2 road), share built 0–1
-    /// (0 while nobody builds it), width and depth (world km, the fine
-    /// tile); None (an empty Variant) until the sim thread answered.
+    /// The sites asked for, once: six floats each, x and z of the order's
+    /// spot (world km, the middle of its village lot), kind (0 farm, 1
+    /// field, 2 road), share built 0–1 (0 while nobody builds it), width
+    /// and depth (world km, the lot); None (an empty Variant) until the sim
+    /// thread answered.
     #[func]
     fn take_sites(&mut self) -> Variant {
         match self.shared.front.lock().unwrap().sites.take() {

@@ -295,7 +295,7 @@ mod tests {
     }
 
     /// A farm built from an order is where its family lives: the view
-    /// draws their house on the ordered tile, not in a village of the
+    /// draws their house on the ordered spot, not in a village of the
     /// cell (REALTIME_GAMEPLAY.md phase 3).
     #[test]
     fn built_farm_is_home() {
@@ -320,13 +320,13 @@ mod tests {
         }
         assert!(g.orders.is_empty(), "built and taken");
         let homes = g.grain.homes_moved();
-        let &(hh, _) = homes.iter().find(|h| h.1 == fine).expect("the farm's family");
+        let &(hh, _, spot) = homes.iter().find(|h| h.1 == fine).expect("the farm's family");
+        assert_eq!(spot, Some(tile));
         let mut v = crate::view::PeopleView::new(&g.people, &inp.cities, None);
         v.set_homes(&homes);
         v.update(&mut g.people);
-        let (x, z) = v.settle.fine_centre_km(fine);
         let house = v.houses.of(hh).expect("a house");
-        assert_eq!((house[0], house[1]), (x as f32, z as f32), "the house stands on the farm's tile");
+        assert_eq!((house[0], house[1]), (tile.1 as f32 / 1000.0, tile.0 as f32 / 1000.0), "the house stands on the ordered spot");
     }
 
     #[test]
