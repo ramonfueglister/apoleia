@@ -327,7 +327,7 @@ Stoppeln; eine brachliegende Parzelle ist eine 0,8 m hohe Platte aus
 trockenen Stoppeln im Weizengelb. Unter bestellten und brachen Parzellen
 malt die Terrain Wiese, so steht jede Platte mit sichtbarer Kante in
 einem Grasrand.
-Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel, Reben als
+Gemüse und Bohnen stehen in 8 Reihen einzelner Büschel (12 lasen sich aus 3 km als Punkte, Runde 22), mindestens 8 px breit, Reben als
 niedrige Hecken in jeder zweiten Reihe; die Felder neben einem Hof sind
 ringsum eingezäunt, weiter draussen keines. Die Grüntöne liegen dunkler als
 die Wiese daneben, wie bei Urbek. Büschelreihen laufen ost-west, damit ihre Vorderseiten zur
@@ -335,9 +335,16 @@ Kamera zeigen (die Lücken schneidet der Fragment-Shader); die Reihen des
 Getreides laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen
 sich ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
 gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen (offenes Land,
-kein Hof) steht eine kleine Schafherde (lange, niedrige Körper auf
-dunklen Beinen, die Längsseite zur Kamera), vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
+kein Hof) steht eine kleine Schafherde (lange, niedrige Körper in hellem
+Wollweiss #e4dccc auf dunklen Beinen, die Längsseite zur Kamera), sechs bis
+zehn Tiere auf einem Raster von 3 × 3 Plätzen, damit keine zwei ineinander
+stehen (Runde 22). Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
+Kein Feld liegt unter Bäumen oder in der Stadt (`sim_no_field`, Runde 22):
+nicht auf Datenkacheln mit Wald oder Siedlung in der Nachbarschaft, im Süden
+unter 700 m und mit Ölbäumen zwei Kacheln weit; gepflügte Erde ist
+Urbeks #8c5c3c. Trampelpfade und Marktplätze enden am Stadtrand, statt über
+das Pflaster zu laufen. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die
 Gassen; die Terrain malt Hofparzellen als Wiese.
@@ -345,6 +352,35 @@ Gassen; die Terrain malt Hofparzellen als Wiese.
 Ein Klick auf eine Person zeigt auch die Art des Haushalts (Hof mit
 Feldgrösse, Lohn, Zelt, Händler, Oberschicht), wie viel er im letzten Monat
 gegessen hat und seinen Vorrat.
+
+## Unterwegs: Träger und Wagen (Ramon, 29.10.2026)
+
+Die Leute, die man aus der Nähe laufen sieht, gehen dorthin, wohin die
+Wirtschaft sie schickt (`scripts/sim/people_trips.gd`,
+`shaders/people_walkers.gdshader`). `ask_trips(min_x, min_z, max_x, max_z)`
+bittet den Sim-Thread zwischen zwei Tagen um alle Fahrten, deren Weg das
+Fenster berührt (`Grain::trips_in`, Simulations-Thread, etwa 4500 auf der
+ganzen Karte, 2,5–6 ms); `take_trips()` bringt sie als Packed-Arrays
+(`sim/godot/src/trips.rs`): Art (Verkauf, Einkauf, Ausfuhr, Einfuhr),
+Ladung in kg, Abreise, Ankunft und Heimkehr in Tagen und den Weg in Welt-km.
+Marktgänge folgen dem Trampelpfad Kachel für Kachel, Handelsfahrten den
+Zellmitten der Handelswege, genau dort, wo die Strassen gezeichnet sind.
+
+- Bauern gehen mit einem Esel zum Markt, mit Säcken auf dem Weg, auf dem sie
+  Korn tragen (beim Verkauf hin, beim Einkauf zurück). Händler fahren einen
+  Ochsenkarren, beladen auf der Ausfuhr hin, auf der Einfuhr zurück.
+- Jede neue Fahrt wird ein Läufer, der seinen Weg in lesbarem Tempo geht,
+  egal wie viele Tage pro Sekunde laufen: er beginnt dort, wo ihn die
+  Simulation gerade hat, tritt ein langer Weg erst im Bild auf, tritt er dort
+  ein, und geht bis ans Ende seines Wegs oder aus dem Bild. Kehrt er am selben
+  Tag heim, dreht er am Ziel um.
+- Höchstens 300 gleichzeitig; gefragt wird einmal pro Sim-Tag und wenn die
+  Kamera weiterzieht. Gezeichnet nur aus der Nähe, mit den Figuren.
+- Tuniken in sechs Wolltönen; Beine und Arme schwingen beim Gehen.
+
+Ein Klick auf eine Person zeigt jetzt auch das Geld ihres Haushalts in
+Denar (`HouseholdLook.money`, so wie es ist, auch unter null: Händler zahlen
+Aus- und Einfuhr auch mit leerer Kasse).
 
 ## Farben und Klick
 
@@ -398,7 +434,7 @@ Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
 `--people-warm=n` (n Tage vor dem ersten Bild rechnen),
-`--tables=markets|population|farms` (Panel offen auf dieser Tabelle).
+`--tables=markets|population|farms|state` (Panel offen auf dieser Tabelle).
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

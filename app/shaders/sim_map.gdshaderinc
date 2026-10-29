@@ -56,7 +56,7 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
 	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
-	vec3 ploughed = vec3(0.5, 0.37, 0.25);     // #a5774f
+	vec3 ploughed = vec3(0.31, 0.19, 0.13);    // #8c5c3c, the lit soil of the parcels up close (lighter it was a second soil, r11)
 	vec3 green = vec3(0.36, 0.555, 0.27);      // #82b85a, a fresh green above the pasture (darker it read as a ramp's shade, round 19; yellower as acid lime, round 20)
 	float h = sim_hash(strip + 3.7);
 	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
@@ -89,7 +89,7 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	vec2 cell = floor((p - world_min) / size);
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
-	if (state == 0) { return pasture; }
+	if (state == 0 || sim_no_field(world_min + (cell + 0.5) * size, land)) { return pasture; }
 	// inside the square of crops the slabs stand on meadow
 	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
 	return crops ? meadow : sim_strip_rgb(cell, size, f);
@@ -169,7 +169,10 @@ float sim_band(float d, float w, float fw_km) {
 // Footpaths, market squares and trade roads over the land colour c.
 vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 	if (!sim_map_on) { return c; }
-	if (sim_fine_n > 0) {
+	// none in the towns: their streets and squares are the terrain's (r11: a
+	// footpath ran across the Forum, a market lay by the Tiber as a decal)
+	bool town = tt_town(ivec2(floor((p - world_min) / tile_km))) > 0;
+	if (sim_fine_n > 0 && !town) {
 		vec3 w = sim_paths(p);
 		// footpaths only up close (10 km of view), at least 1.5 px
 		if (w.y > 0.0 && sim_view_km <= 10.0) {

@@ -12,7 +12,6 @@ mod grain_map;
 mod map_index;
 mod people_dots;
 mod tables;
-#[allow(dead_code)] // called by people_dots (ask_trips) on the game branch
 mod trips;
 
 use apoleia_sim::ecs::{Command, Sim, Snapshot};

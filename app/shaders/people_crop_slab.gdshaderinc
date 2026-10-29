@@ -25,14 +25,14 @@ bool crop_behind_ramp(ivec2 t) {
 }
 
 // Whether a parcel with its middle at `mid` may carry a field: open land
-// outside the towns as sim_fields, never a farmhouse's lot, flat tiles only
-// (a ramp shows the field's colour) and none at the foot of a ramp that
-// would hide part of it.
+// outside the towns as sim_fields, never a farmhouse's lot, under trees or
+// next to a town (sim_no_field), flat tiles only (a ramp shows the field's
+// colour) and none at the foot of a ramp that would hide part of it.
 bool crop_open(vec2 mid) {
 	ivec2 t = dot_tile(mid);
 	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
 	return tt_town(t) == 0 && tt_water(t) == W_LAND && (land == G_FIELD || land == G_MEADOW || land == G_DRY_GRASS)
-		&& !sim_house_lot(mid) && sim_flat(mid) && !crop_behind_ramp(t);
+		&& !sim_house_lot(mid) && sim_flat(mid) && !crop_behind_ramp(t) && !sim_no_field(mid, land);
 }
 
 // The slab of parcel `cell` (side `size` km) about the parcel's middle, km

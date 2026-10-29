@@ -27,8 +27,9 @@ extends MultiMeshInstance3D
 ## terrain: fields by season around the farms, footpaths to the markets,
 ## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
 ## from ApoleiaPeople.map_window and road_map, rebuilt once a month).
-## A click shows the household's kind and how much it ate. T opens the
-## simulation's tables (sim_tables.gd).
+## A click shows the household's kind, how much it ate and its money. T
+## opens the simulation's tables (sim_tables.gd). Up close the trips to
+## market and between markets walk the paths and roads (people_trips.gd).
 ## Keys: P shows or hides the dots (an overview, off by default), G the
 ## grain economy on the map (on by default), [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
@@ -47,9 +48,9 @@ const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
 const FIGURE_SHADOW_SHADER = preload("res://shaders/people_figure_shadows.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
-const CROP_ROWS := 12 # rows of vegetables or vines per parcel
+const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
-const FLOCK_MAX := 8 # sheep in the largest flock on a pasture parcel
+const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
@@ -61,6 +62,7 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used;
@@ -131,6 +133,7 @@ var _figure_material := ShaderMaterial.new()
 var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's feet (people_figure_shadows.gdshader)
 var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
+var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
 var _lots: MultiMeshInstance2D
@@ -259,6 +262,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	_crops.multimesh = cm
 	_crops.visible = false
 	add_child(_crops)
+	_trips = PeopleTrips.new()
+	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
+	add_child(_trips)
 	_lots_view = SubViewport.new()
 	_lots_view.name = "HouseLots"
 	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
@@ -755,6 +761,8 @@ func _show_person(p: Dictionary) -> void:
 		var fed: float = p.fed / 10.0
 		var colour := "#e05040" if fed < 80.0 else ("#e0a040" if fed < 95.0 else "#80c060")
 		lines.append("[color=%s]gegessen: %d %% des Bedarfs[/color], Vorrat %d kg" % [colour, int(fed), int(p.pantry_kg)])
+		if p.has("money"):
+			lines.append("Geld des Haushalts: %s Denar" % SimTables._int(roundi(p.money)))
 	if p.travelling > 0:
 		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
 	_info_label.text = "\n".join(lines)
@@ -808,6 +816,8 @@ func _process(delta: float) -> void:
 	var figures := view_km <= FIGURE_KM
 	var dots := shown and not figures
 	_hud.visible = visible and (figures or dots)
+	var landscape := get_parent()
+	_trips.step(delta, visible and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
 	if not visible:
 		# out of the close LOD the frame does nothing for the people: no
 		# upload, no placement pass, no draw. The sim thread keeps running and
@@ -825,7 +835,7 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material] + _house_materials:
+		for m in [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _trips.material] + _house_materials:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):

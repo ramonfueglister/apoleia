@@ -12,8 +12,8 @@
 //! taking them.
 
 use crate::grain_map::{GrainMap, MapLayers, FINE};
-use crate::tables;
-use apoleia_sim::grain::{Grain, HouseholdLook, FARM_KIND_NAMES, KIND_NAMES};
+use crate::{tables, trips};
+use apoleia_sim::grain::{Grain, HouseholdLook, TripsView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::Table;
@@ -46,19 +46,29 @@ struct Front {
     person: Option<(Person, Option<HouseholdLook>)>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
+    /// Answer to the last `ask_trips` (built between two days).
+    trips: Option<TripsView>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look
-/// up, a table to build (apoleia_sim::tables).
+/// up, a table to build (apoleia_sim::tables), a window (world km, min x,
+/// min z, max x, max z) whose trips under way to list.
 #[derive(Default)]
 struct Queue {
     days: u64,
     stop: bool,
     ask: Option<usize>,
     table: Option<String>,
+    trips: Option<[f64; 4]>,
+}
+
+impl Queue {
+    fn asked(&self) -> bool {
+        self.ask.is_some() || self.table.is_some() || self.trips.is_some()
+    }
 }
 
 #[derive(Default)]
@@ -101,27 +111,28 @@ const FINE_KM: f32 = CELL_KM / FINE as f32;
 
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
-        let (ask, table) = {
+        // questions from the game first, between two days; then a day
+        let (ask, table, trips) = {
             let mut q = shared.queue.lock().unwrap();
-            while q.days == 0 && !q.stop && q.ask.is_none() && q.table.is_none() {
+            while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
             }
             if q.stop {
                 return;
             }
-            let ask = q.ask.take();
-            let table = q.table.take();
-            if ask.is_none() && table.is_none() {
+            let asked = q.asked();
+            if !asked {
                 q.days -= 1;
             }
-            (ask, table)
+            (q.ask.take(), q.table.take(), q.trips.take())
         };
-        if let Some(key) = table {
-            let t = grain.table(&people, &key);
+        if let Some(key) = &table {
+            let t = grain.table(&people, key);
             shared.front.lock().unwrap().table = t;
-            if ask.is_none() {
-                continue;
-            }
+        }
+        if let Some([x0, z0, x1, z1]) = trips {
+            let v = grain.trips_in(&people, (x0, z0), (x1, z1));
+            shared.front.lock().unwrap().trips = Some(v);
         }
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
@@ -130,6 +141,8 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
                 (p, hh)
             });
             shared.front.lock().unwrap().person = who;
+        }
+        if ask.is_some() || table.is_some() || trips.is_some() {
             continue;
         }
         let t0 = Instant::now();
@@ -468,6 +481,7 @@ impl ApoleiaPeople {
             d.set("hh_kind", KIND_NAMES[h.kind as usize]);
             d.set("fed", h.fed as i64);
             d.set("pantry_kg", h.pantry_kg);
+            d.set("money", h.money as f64 / 1000.0); // denarii
             if let Some((kind, m2)) = h.farm {
                 d.set("farm_kind", FARM_KIND_NAMES[kind as usize]);
                 // field m² are per simulated person (PEOPLE_PER_PERSON)
@@ -511,6 +525,29 @@ impl ApoleiaPeople {
     fn take_table(&mut self) -> VarDictionary {
         match self.shared.front.lock().unwrap().table.take() {
             Some(t) => tables::to_dict(&t),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread for the trips under way whose route touches the
+    /// window (world km); the answer comes with `take_trips`, between two
+    /// days.
+    #[func]
+    fn ask_trips(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().trips = None;
+        self.shared.queue.lock().unwrap().trips = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The trips asked for, once, as trips::to_dict; empty until the sim
+    /// thread answered.
+    #[func]
+    fn take_trips(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().trips.take() {
+            Some(v) => trips::to_dict(&v),
             None => VarDictionary::new(),
         }
     }
