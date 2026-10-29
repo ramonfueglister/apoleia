@@ -237,6 +237,12 @@ impl Grain {
         self.field_lots.iter().copied()
     }
 
+    /// State land from the player's fields (S116), m²: not leased yet,
+    /// and leased by farms.
+    pub fn state_land(&self) -> (i64, i64) {
+        (self.state_free.values().map(|v| (v[0] + v[1]) as i64).sum(), self.farms.iter().map(|f| f.state).sum())
+    }
+
     /// The `tiles` index of fine tile `fine` in 25 km cell `cell`, None
     /// in a cell without land.
     fn tile_of(&self, cell: u32, fine: u32) -> Option<u32> {
