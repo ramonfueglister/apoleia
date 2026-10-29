@@ -28,6 +28,12 @@ use std::time::Instant;
 
 /// Edge of one page in texels (PAGE = SIDE²).
 const SIDE: usize = 64;
+/// Farmhouse builds (scripts/voxel/farmhouse.gd VARIANTS).
+const HOUSE_VARIANTS: u8 = 4;
+/// A house the placement pass did not place: never drawn.
+const HOUSE_UNPLACED: u8 = 254;
+/// A house newer than the last placement read back.
+const HOUSE_UNKNOWN: u8 = 255;
 
 #[derive(Default)]
 struct Front {
@@ -199,6 +205,16 @@ pub struct ApoleiaPeople {
     pages: usize,
     /// Main-thread copy of the house records.
     houses: Vec<f32>,
+    /// Build of each house (people_houses.gdshader `variant`) as the last
+    /// placement pass read back put it (`set_house_places`).
+    house_variant: Vec<u8>,
+    /// Counts the house syncs that changed a record; `house_changed` holds
+    /// the count at each house's last change and `house_forgot` the count
+    /// when all builds were last forgotten (a new house texture), so a
+    /// placement read back knows which houses it already saw.
+    house_gen: i64,
+    house_changed: Vec<i64>,
+    house_forgot: i64,
     day: i64,
     count: u32,
     day_usec: f64,
@@ -473,6 +489,99 @@ impl ApoleiaPeople {
         PackedInt32Array::from_iter(hits.into_iter().map(|h| h.1))
     }
 
+    /// Takes the house placement pass as read back from the GPU (RGBA16F,
+    /// `width` texels a row, people_dots_prep.gdshader with `houses`) and
+    /// works out each house's build as people_houses.gdshader does: by the
+    /// lot (`lot_km` from `world_min`) it stands on. `gen` is `house_gen` when
+    /// the pass ran: a house changed since keeps its build unknown until a
+    /// later pass is read. Returns how many houses changed their build.
+    #[func]
+    fn set_house_places(&mut self, place: PackedByteArray, width: i64, world_min: Vector2, lot_km: f32, gen: i64) -> i64 {
+        if gen < self.house_forgot {
+            return 0;
+        }
+        let bytes = place.as_slice();
+        let w = width.max(1) as usize;
+        let h = bytes.len() / (w * 8);
+        let n = self.houses.len() / REC;
+        self.house_variant.resize(n, HOUSE_UNKNOWN);
+        let mut changed = 0;
+        for slot in 0..n {
+            if self.house_changed.get(slot).copied().unwrap_or(0) > gen {
+                continue;
+            }
+            let rec = &self.houses[slot * REC..slot * REC + REC];
+            let (layer, in_page) = (slot / PAGE, slot % PAGE);
+            let (px, py) = (in_page % SIDE, layer * SIDE + in_page / SIDE);
+            if px >= w || py >= h {
+                continue;
+            }
+            let o = (py * w + px) * 8;
+            let half = |c: usize| f16_to_f32(u16::from_le_bytes([bytes[o + c * 2], bytes[o + c * 2 + 1]]));
+            let build = if rec[2] == 0.0 || half(3) <= 0.5 {
+                HOUSE_UNPLACED
+            } else {
+                let px_km = rec[0] + half(0) - 32.0;
+                let pz_km = rec[1] + half(1) - 32.0;
+                let lot_x = ((px_km - world_min.x) / lot_km).floor() as i32;
+                let lot_z = ((pz_km - world_min.y) / lot_km).floor() as i32;
+                let key = dot_hash((lot_x as u32).wrapping_mul(0x2545f491) ^ (lot_z as u32).wrapping_mul(0x9e3779b9));
+                ((key >> 12) % HOUSE_VARIANTS as u32) as u8
+            };
+            if self.house_variant[slot] != build {
+                self.house_variant[slot] = build;
+                changed += 1;
+            }
+        }
+        changed
+    }
+
+    /// The count of house syncs that changed a record (`set_house_places`).
+    #[func]
+    fn house_gen(&self) -> i64 {
+        self.house_gen
+    }
+
+    /// The houses within `radius` km of (x, z), nearest first, at most
+    /// `max`, cut into the levels of detail (`limits`: the most houses each
+    /// takes, 0 when it is not used) and each level into the builds, so each
+    /// build's MultiMesh draws only its own houses instead of all of them
+    /// (people_dots.gd _update_houses): `slots` the list, `blocks` per level
+    /// and build the offset and count of its run. A level with a house of
+    /// unknown build is not cut: each build draws all of it and the shader
+    /// leaves out the others; unplaced houses are left out once known.
+    #[func]
+    fn houses_split(&self, x: f32, z: f32, radius: f32, max: i64, limits: PackedInt32Array) -> VarDictionary {
+        let near = self.houses_near(x, z, radius, max);
+        let near = near.as_slice();
+        let mut slots: Vec<i32> = Vec::with_capacity(near.len());
+        let mut blocks: Vec<i32> = Vec::new();
+        let mut start = 0usize;
+        for &limit in limits.as_slice() {
+            let n = (limit.max(0) as usize).min(near.len() - start);
+            let level = &near[start..start + n];
+            start += n;
+            let build = |s: i32| self.house_variant.get(s as usize).copied().unwrap_or(HOUSE_UNKNOWN);
+            if level.iter().all(|&s| build(s) != HOUSE_UNKNOWN) {
+                for v in 0..HOUSE_VARIANTS {
+                    let off = slots.len() as i32;
+                    slots.extend(level.iter().copied().filter(|&s| build(s) == v));
+                    blocks.extend([off, slots.len() as i32 - off]);
+                }
+            } else {
+                let off = slots.len() as i32;
+                slots.extend_from_slice(level);
+                for _ in 0..HOUSE_VARIANTS {
+                    blocks.extend([off, n as i32]);
+                }
+            }
+        }
+        let mut d = VarDictionary::new();
+        d.set("slots", &PackedInt32Array::from(slots.as_slice()));
+        d.set("blocks", &PackedInt32Array::from(blocks.as_slice()));
+        d
+    }
+
     /// Asks the sim thread for the person in `slot`; the answer comes with
     /// `take_person` (between two days, so within a frame or two).
     #[func]
@@ -651,9 +760,25 @@ impl ApoleiaPeople {
             if self.houses.len() != f.houses.len() {
                 self.houses.resize(f.houses.len(), 0.0);
             }
+            if f.house_dirty.contains(&true) {
+                self.house_gen += 1;
+            }
+            self.house_changed.resize(self.houses.len() / REC, self.house_gen);
             let mut out = Vec::new();
             for pg in 0..f.house_dirty.len() {
                 if std::mem::take(&mut f.house_dirty[pg]) {
+                    // a house whose record changed may stand on another lot:
+                    // its build is known again once a placement after this
+                    // change is read back
+                    for slot in pg * PAGE..((pg + 1) * PAGE).min(self.house_changed.len()) {
+                        let r = slot * REC..slot * REC + REC;
+                        if self.houses[r.clone()] != f.houses[r] {
+                            if let Some(v) = self.house_variant.get_mut(slot) {
+                                *v = HOUSE_UNKNOWN;
+                            }
+                            self.house_changed[slot] = self.house_gen;
+                        }
+                    }
                     let r = pg * PAGE * REC..(pg + 1) * PAGE * REC;
                     self.houses[r.clone()].copy_from_slice(&f.houses[r]);
                     out.push(pg);
@@ -677,6 +802,10 @@ impl ApoleiaPeople {
             self.houses.clone_from(&f.houses);
             f.house_dirty.fill(false);
         }
+        self.house_gen += 1;
+        self.house_forgot = self.house_gen;
+        self.house_variant.clear();
+        self.house_changed.clear();
         let pages = self.houses.len() / (PAGE * REC);
         let mut images: Array<Gd<Image>> = Array::new();
         for pg in 0..pages.max(1) {
@@ -797,6 +926,16 @@ impl Drop for ApoleiaPeople {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+/// The hash of people_dots_common.gdshaderinc dot_hash.
+fn dot_hash(mut x: u32) -> u32 {
+    x ^= x >> 16;
+    x = x.wrapping_mul(0x7feb352d);
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x846ca68b);
+    x ^= x >> 16;
+    x
 }
 
 /// IEEE half to float (the placement texture is RGBA16F).

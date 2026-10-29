@@ -103,6 +103,60 @@ Runde 9 (Heim-Tiles, Farben, Klick; a928933), 60 km, Rom: ohne Punkte 26,6 ms,
 mit Punkten +0,39 ms, schwarz und nach Gruppe gefärbt gleich teuer. Sim-Tag
 0,6 ms, View 0,5 ms (Sim-Thread). Die Stadt-Tiles von Rom bleiben sichtbar.
 
+## Nah billiger (Ramon, 29.10.2026: Ruckeln)
+
+Die Mac-Tour des Terrain-Threads (Viertel-Tiles, Rom bei 3,8–7,7 km) mass
+22,0 ms Median mit allem und 8,7 ms ohne die Menschen; das 95. Perzentil 26,2
+gegen 13,4 ms. `--people-cost=pfad.json` (`scripts/sim/people_cost.gd`) misst
+am Startblick das Bild mit allem und dann ohne je einen Teil (Felder, Figuren,
+Läufer, Häuser, deren Schatten, Getreide-Ebenen im Terrain, Platzierungs-Pässe,
+alle Menschen), mit Dreiecken und Draw Calls je Pass und der Arbeit der
+Menschen auf dem Hauptthread; danach beendet sich die App.
+
+Rom 5 km in der Cloud (lavapipe, 1600×900, Bildzeiten in Sekunden, also nur
+im Verhältnis zu lesen): vorher 12,1–12,4 s mit allem, 10,0 s ohne Menschen;
+die Felder allein 1,8 s, die Häuser 0,8 s, Läufer 0,3 s, Figuren 0,1 s.
+Nachher 10,3–10,7 s; die Menschen liegen im Rauschen.
+
+- **Felder:** jede der 1600 Parzellen des Quadrats fragte in jedem ihrer
+  1920 Eckpunkte (Tiefen-, Farb- und Schattenpass) Terrain und Hof-Maske ab:
+  Stadt, Wasser, Landschafts-Schnitt, Rampen, Bäume, Gassen, Zaun am Hof.
+  Jetzt rechnet ein kleiner Pass (`people_parcels.gdshader`, 40×40 Pixel,
+  Parzelle `cell` im Pixel `cell mod 40`) jede Parzelle einmal, wenn sich
+  Quadrat, Felder, Höfe oder Relief ändern; Felder und der Boden um ihre
+  Platten (`sim_fields`) lesen ihn (`sim_parcel_baked`). Gezeichnet werden nur
+  die Parzellen im Bild (die Bildecken auf den Boden bis zum tiefsten und
+  höchsten Boden darunter, eine Parzelle Rand für die Schatten): 945 statt
+  1600 bei 5 km. Das Quadrat bleibt stehen, solange der Blick darin liegt.
+- **Platzierung:** der Pass lief bei jedem neuen Tag (10 pro Sekunde) über
+  alle 117 000 Menschen. Nah platziert er nur die gelisteten Figuren (ein
+  Quad pro Figur, `listed`), die Übersicht als Punkte wieder alle.
+- **Figuren und Häuser** werden über dem sichtbaren Boden gelistet und erst
+  neu, wenn der Blick den gelisteten Kreis verlässt.
+- **Läufer:** die GPU geht jeden Läufer seine Strecke entlang
+  (`walk_clock`); GDScript schreibt ihn nur, wenn er eine Strecke beginnt,
+  stehen bleibt oder umkehrt, statt 300 Läufer jedes Bild zu bewegen
+  (1–3,6 ms auf dem Hauptthread in der Cloud).
+- Alle Meshes der Menschen sind indiziert (ein Drittel weniger Eckpunkte),
+  die Hof-Maske wird nur bei Änderungen gezeichnet.
+- **Häuser:** jedes Haus wurde von allen vier Bauten-MultiMeshes gerechnet
+  (die Bauart hängt vom Grundstück ab, das erst der Platzierungs-Pass auf
+  der GPU kennt), drei davon versteckt. Jetzt liest `_read_house_places` den
+  Haus-Pass ohne Warten zurück (`RenderingDevice.texture_get_data_async`),
+  `ApoleiaPeople.set_house_places` rechnet daraus die Bauart jedes Hauses wie
+  der Shader, und `houses_split` teilt jede Detailstufe der Liste nach
+  Bauart: jedes MultiMesh zeichnet nur seine Häuser, ein Viertel der
+  Eckpunkte. Gelesen wird das Bild nach jedem Haus-Pass, mit dem Stand der
+  Haus-Änderungen beim Pass (`house_gen`): ein Haus, das sich seither
+  geändert hat, bleibt unbekannt bis zum nächsten. Solange ein Haus einer
+  Stufe unbekannt ist (ein, zwei Bilder nach einem neuen oder geänderten Haus),
+  zeichnen alle vier die ganze Stufe wie bisher. Ein leeres MultiMesh ist unsichtbar (es kostete
+  sonst einen Draw Call in jedem Pass). Dorf 3 km, Sim angehalten: die Häuser
+  71 000 statt 266 000 Dreiecke (10 Häuser, je Bauart 1, 5, 4 und 0).
+- Die Arbeit der Menschen auf dem Hauptthread ist in der Cloud 0,24 ms bei
+  angehaltener Sim und 3,1–3,5 ms bei 10 Tagen pro Sekunde: fast alles ist
+  das Übernehmen der neuen Tage, nicht das Zeichnen.
+
 ## Wohnorte: Familien, Dörfer und Heim-Tiles
 
 Jeder Haushalt hat in der Simulation ein festes Dorf und ein Haus-Tile
@@ -496,6 +550,7 @@ und Nadeln weg.
 
 `P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, `E` Ereignisse, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
+`--people-cost=pfad.json` (Kosten je Teil, `--people-cost-frames=n` Bilder je Phase),
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
 `--people-warm=n` (n Tage vor dem ersten Bild rechnen),
 `--tables=markets|population|farms|state|history` (Panel offen auf dieser Tabelle),
