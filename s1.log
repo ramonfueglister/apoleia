@@ -1,0 +1,945 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.custom_build, safeguards balanced)
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M3 Pro (Apple9)
+
+{"event":"grain_loaded","ms":512,"markets":1783}
+{"event":"people_loaded","ms":1743.785,"people":116805}
+ERROR: Error compiling shader CanvasShaderRD:4: Compilation failed due to an interrupted connection: XPC_ERROR_CONNECTION_INTERRUPTED. This error occurred after multiple retries.
+   at: operator() (drivers/metal/metal_objects_shared.cpp:794)
+ERROR: error creating pipeline: Compilation failed due to an interrupted connection: XPC_ERROR_CONNECTION_INTERRUPTED. This error occurred after multiple retries.
+   at: render_pipeline_create (drivers/metal/rendering_device_driver_metal.cpp:2173)
+ERROR: Condition "!pipeline.driver_id" is true. Returning: RID()
+   at: render_pipeline_create (servers/rendering/rendering_device.cpp:4960)
+ERROR: Failed to compile Metal library
+   at: _create_function (drivers/metal/rendering_device_driver_metal.cpp:1760)
+ERROR: Condition "pipeline.is_null()" is true.
+   at: _create_pipeline (servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp:506)
+ERROR: Condition "std::holds_alternative<Error>(function_or_err)" is true. Returning: PipelineID()
+   at: render_pipeline_create (drivers/metal/rendering_device_driver_metal.cpp:2155)
+ERROR: Condition "!pipeline.driver_id" is true. Returning: RID()
+   at: render_pipeline_create (servers/rendering/rendering_device.cpp:4960)
+ERROR: Condition "pipeline.is_null()" is true.
+   at: _create_pipeline (servers/rendering/renderer_rd/renderer_canvas_render_rd.cpp:1537)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"bytes":229376,"changed":28668,"event":"house_builds"}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v1-w3.png","tile_km":0.25}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v2-w3.png","tile_km":0.25}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v3-w3.png","tile_km":0.25}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"people_pick","pixel":[1085.0,123.0],"slot":-1}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v4-w3.png","tile_km":0.25}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v5-w3.png","tile_km":0.25}
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+ERROR: Parameter "pipeline" is null.
+   at: draw_list_bind_render_pipeline (servers/rendering/rendering_device.cpp:5695)
+ERROR: This render pipeline requires (0) bytes of push constant data, supplied: (96)
+   at: draw_list_set_push_constant (servers/rendering/rendering_device.cpp:5986)
+ERROR: No render pipeline was set before attempting to draw.
+   at: draw_list_draw (servers/rendering/rendering_device.cpp:6003)
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v6-w8.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v7-w22.png","tile_km":0.5}
+{"event":"snapshot","level":1,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v8-w70.png","tile_km":1.0}
+{"event":"snapshot","level":4,"path":"/Users/ramonfuglister/Coding/apoleia-gfx-shots/s1/v9-w1500.png","tile_km":8.0}
+ERROR: Attempted to free invalid ID: 0
+   at: _free_internal (servers/rendering/rendering_device.cpp:7744)
+ERROR: Attempted to free invalid ID: 0
+   at: _free_internal (servers/rendering/rendering_device.cpp:7744)
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
