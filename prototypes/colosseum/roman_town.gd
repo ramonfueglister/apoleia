@@ -1231,11 +1231,14 @@ static func temple(seed: int) -> ArrayMesh:
 ## A figure cast in metal on the townspeople's pattern (legs, tunic, face,
 ## hair), two wide and seven high, in two values of the metal; a Victory
 ## with wings rising behind the shoulders.
-static func _cast(g: Kit.Grid, x: int, y: int, z: int, drape: int, bare: int, wings: bool) -> void:
+static func _cast(g: Kit.Grid, x: int, y: int, z: int, drape: int, bare: int, wings: bool, arm := false) -> void:
 	g.box(x, y, z, x + 2, y + 2, z + 1, bare)
 	g.box(x, y + 2, z, x + 2, y + 5, z + 1, drape)
 	g.box(x, y + 5, z, x + 2, y + 6, z + 1, bare)
 	g.box(x, y + 6, z, x + 2, y + 7, z + 1, drape)
+	if arm:
+		g.box(x + 3, y + 4, z, x + 4, y + 8, z + 1, bare)
+		g.put(x + 2, y + 4, z, bare)
 	if wings:
 		g.box(x - 1, y + 4, z, x, y + 8, z + 1, bare)
 		g.box(x + 2, y + 4, z, x + 3, y + 8, z + 1, bare)
@@ -1872,8 +1875,10 @@ static func pantheon(seed: int) -> ArrayMesh:
 	var bz0 := zc + 28
 	var bz1 := zc + 50
 	g.box(bx0, y, bz0, bx1, base, bz1 + 1, Kit.TRAV)
-	g.box(bx0, base, bz0, bx1, bt, bz1, Kit.LIME)
+	g.box(bx0, base, bz0, bx1, bt, bz1, Kit.STUCCO)
 	g.box(bx0, base, bz0, bx1, c1, bz1, Kit.MARBLE)
+	for jy in range(base + 3, c1 - 2, 4):
+		g.box(bx0, jy, bz0, bx1, jy + 1, bz1, Kit.JOINT)
 	for cy: int in [c1 - 2, bt - 2]:
 		g.box(bx0 - 1, cy, bz0, bx1 + 1, cy + 2, bz1 + 1, Kit.TRIM)
 		g.box(bx0, cy - 1, bz1 - 1, bx1, cy, bz1, Kit.MARBLE_W)
@@ -1964,13 +1969,16 @@ static func _rotunda(g: Kit.Grid, xm: int, zc: int, rr: int, y: int, base: int, 
 			g.box(x, base - 1, z, x + 1, base, z + 1, Kit.TRAV)
 			if d > rr:
 				continue
-			g.box(x, base, z, x + 1, top, z + 1, Kit.LIME)
+			g.box(x, base, z, x + 1, top, z + 1, Kit.STUCCO)
 			if d < rr - 1.5:
 				continue
-			# the face: marble below the first cornice, stucco above, a dark
-			# band under every cornice
+			# the face: marble slabs below the first cornice (a joint every
+			# four), stucco a step darker above, a dark band under every
+			# cornice
 			for yy in range(base, top):
-				var c := Kit.MARBLE if yy < c0 else Kit.LIME
+				var c := Kit.STUCCO
+				if yy < c0:
+					c = Kit.JOINT if (yy - base) % 4 == 3 else Kit.MARBLE
 				for cy: int in cornices:
 					if yy == cy - (3 if cy != top else 2):
 						c = Kit.BAND
@@ -2020,14 +2028,15 @@ static func _dome(g: Kit.Grid, xm: int, zc: int, dr: int, y0: int, rise: int, se
 			elif d < oculus + 1.0:
 				g.box(x, y0 - 5, z, x + 1, y0 + rise - 1, z + 1, Kit.DEEP)
 
-# The pediment's eagle, top row first: wing tips raised, the head turned
-# left with its beak (b), the body, the tail and feet.
+# The pediment's eagle, top row first: the head turned left with its
+# beak (b), wing tips raised, the body, the tail fanned.
 const EAGLE := [
-	"#..b#...#",
+	"...b#....",
+	"#..###..#",
 	"##.###.##",
 	".#######.",
 	"..#####..",
-	"...#.#...",
+	"...###...",
 ]
 
 ## A pediment on the face z = zf over [x0, x1) from y, as high as the roof
@@ -2051,17 +2060,17 @@ static func _pediment(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, hmax: int,
 		for dy in range(-4, 5):
 			for dx in range(-4, 5):
 				if absf(Vector2(dx + 0.5, dy + 0.5).length() - 3.4) < 0.5:
-					g.put(xm + dx, y + 5 + dy, zt, Kit.GILT)
+					g.put(xm + dx, y + 4 + dy, zt, Kit.GILT)
 		for k in 3:
-			g.put(xm - 4 - k, y + 1 + k / 2, zt, Kit.GILT_D)
-			g.put(xm + 4 + k, y + 1 + k / 2, zt, Kit.GILT_D)
+			g.put(xm - 4 - k, y + 1 + (2 - k) / 2, zt, Kit.GILT_D)
+			g.put(xm + 4 + k, y + 1 + (2 - k) / 2, zt, Kit.GILT_D)
 		for row in EAGLE.size():
 			var line: String = EAGLE[row]
 			for col in line.length():
 				var ch := line[col]
 				if ch == ".":
 					continue
-				g.put(xm - 4 + col, y + 7 - row, zt, Kit.GOLD if ch == "b" else Kit.BRONZE_D)
+				g.put(xm - 4 + col, y + 8 - row, zt, Kit.DEEP if ch == "b" else Kit.BRONZE_D)
 
 ## A porch column: an unfluted granite shaft three voxels across on a white
 ## marble base (grey ones lighter on the west, darker on the east), a
@@ -2256,7 +2265,7 @@ static func _circus_face(along: int, yy: int, wall: int, s: int) -> int:
 		return Kit.TRIM
 	if s == 0:
 		if yy < attic - 2 and o < 2:
-			return Kit.TRAV_W
+			return Kit.TRAV_CW
 		return Kit.EMPTY
 	var lr := -1
 	if yy < 14:
@@ -2270,7 +2279,7 @@ static func _circus_face(along: int, yy: int, wall: int, s: int) -> int:
 		var ring := (lr == 9 and (o == 3 or o == 8)) or (lr == 10 and o >= 4 and o < 8)
 		if ring and s == 1:
 			return Kit.TRAV_L
-		return Kit.TRAV
+		return Kit.TRAV_C
 	# the attic: an arched window over every arch, recessed one
 	var wl := yy - attic - 1
 	var win := (wl >= 0 and wl < 4 and o >= 4 and o < 8) or (wl == 4 and o >= 5 and o < 7)
@@ -2278,7 +2287,7 @@ static func _circus_face(along: int, yy: int, wall: int, s: int) -> int:
 		return Kit.EMPTY if s == 1 else Kit.ARCH_D
 	if s == 1 and ((wl == 4 and (o == 4 or o == 7)) or (wl == 5 and o >= 5 and o < 7)):
 		return Kit.TRAV_L
-	return Kit.TRAV
+	return Kit.TRAV_C
 
 ## The starting gates at the west end: a building of 12 gates in a gentle
 ## curve, six either side of the processional gate, between two towers;
@@ -2291,7 +2300,7 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 	for z in range(gz0, gz1):
 		# the curve: the gates nearer the middle stand a little further back
 		var face := gx1 - roundi(pow((z - zm) / 30.0, 2.0) * 3.0)
-		g.box(gx0, y, z, face, y + 18, z + 1, Kit.TRAV)
+		g.box(gx0, y, z, face, y + 18, z + 1, Kit.TRAV_C)
 		g.put(face - 1, y + 17, z, Kit.TRIM)
 		var dz := z - zm
 		var central := absi(dz) <= 3
@@ -2304,6 +2313,9 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 			g.put(face - 3, y + 21, z, Kit.TRIM)
 		elif o == 3 or absi(dz) >= 29:
 			g.box(gx0, y + 18, z, face, y + 20, z + 1, Kit.TRIM)
+			# a herm on the pier, standing over the roofs
+			if o == 3 and absi(dz) < 29:
+				g.box(face - 3, y + 20, z, face - 2, y + 23, z + 1, Kit.MARBLE)
 		else:
 			for x in range(gx0, face):
 				var rh := 1 if o == 1 else 0
@@ -2324,16 +2336,16 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 		# the tower on the Aventine side as low as its stand, so the gates
 		# stay in view
 		var th := 44 if tz < zm else 30
-		g.box(gx0, y, tz, tx1, y + th, tz + 8, Kit.TRAV)
+		g.box(gx0, y, tz, tx1, y + th, tz + 8, Kit.TRAV_C)
 		for cy: int in ([y + 14, y + 29] if th > 40 else [y + 14]):
 			g.box(gx0 - 1, cy, tz - 1, tx1 + 1, cy + 2, tz + 9, Kit.TRIM)
 		g.box(gx0 - 1, y + th - 3, tz - 1, tx1 + 1, y + th - 2, tz + 9, Kit.TRIM)
 		g.box(gx0 - 1, y + th - 1, tz - 1, tx1 + 1, y + th, tz + 9, Kit.TRIM)
 		for px: int in [gx0, tx1 - 2]:
 			for pz: int in [tz - 1, tz + 8]:
-				g.box(px, y, pz, px + 2, y + th - 3, pz + 1, Kit.TRAV_W)
+				g.box(px, y, pz, px + 2, y + th - 3, pz + 1, Kit.TRAV_CW)
 		for pz: int in [tz, tz + 6]:
-			g.box(tx1, y, pz, tx1 + 1, y + th - 3, pz + 2, Kit.TRAV_W)
+			g.box(tx1, y, pz, tx1 + 1, y + th - 3, pz + 2, Kit.TRAV_CW)
 		for sy: int in ([y + 2, y + 17, y + 31] if th > 40 else [y + 2, y + 17]):
 			var xo := (gx0 + tx1) / 2 - 2
 			for f: int in [tz + 7, tz]:
@@ -2393,31 +2405,36 @@ static func _circus_spina(g: Kit.Grid, xa: int, xb: int, zm: int, y: int, seed: 
 			g.box(cx - 1, y + 13, zm + c.z, cx, y + 16, zm + c.z + 1, Kit.GOLD)
 	# the lap counters: seven white eggs on a bronze beam at the west, seven
 	# bronze dolphins at the east
-	var ex := xa + 8
+	var ex := xa + 6
 	g.box(ex, y + 3, zm - 1, ex + 1, y + 13, zm + 1, Kit.MARBLE)
-	g.box(ex + 16, y + 3, zm - 1, ex + 17, y + 13, zm + 1, Kit.MARBLE)
-	g.box(ex, y + 13, zm - 1, ex + 17, y + 14, zm + 1, Kit.BRONZE_D)
+	g.box(ex + 22, y + 3, zm - 1, ex + 23, y + 13, zm + 1, Kit.MARBLE)
+	g.box(ex, y + 13, zm - 1, ex + 23, y + 14, zm + 1, Kit.BRONZE_D)
 	for k in 7:
-		g.box(ex + 2 + 2 * k, y + 14, zm, ex + 3 + 2 * k, y + 16, zm + 1, Kit.TRIM)
+		var eg := ex + 2 + 3 * k
+		g.box(eg, y + 14, zm, eg + 2, y + 16, zm + 1, Kit.TRIM)
+		g.put(eg, y + 16, zm, Kit.TRIM)
 	var dx := xb - 32
 	g.box(dx, y + 3, zm - 1, dx + 1, y + 13, zm + 1, Kit.MARBLE)
 	g.box(dx + 29, y + 3, zm - 1, dx + 30, y + 13, zm + 1, Kit.MARBLE)
 	g.box(dx, y + 13, zm - 1, dx + 30, y + 14, zm + 1, Kit.BRONZE_D)
 	for k in 7:
+		# an arched dolphin diving: nose down, back up, tail raised
 		var fx := dx + 2 + 4 * k
-		g.box(fx, y + 14, zm, fx + 3, y + 15, zm + 1, Kit.BRONZE)
-		g.put(fx, y + 15, zm, Kit.BRONZE)
+		g.put(fx, y + 14, zm, Kit.BRONZE)
+		g.put(fx + 1, y + 15, zm, Kit.BRONZE)
+		g.put(fx + 1, y + 14, zm, Kit.BRONZE_D)
+		g.put(fx + 2, y + 16, zm, Kit.BRONZE)
 		g.put(fx + 2, y + 15, zm, Kit.BRONZE_D)
 	# columns with gilt Victories, wings raised (a Y), and statues between
 	# the basins
 	for sx: int in [xa + 46, xa + 72, xb - 72, xb - 46]:
 		g.box(sx, y + 3, zm - 1, sx + 2, y + 18, zm + 1, Kit.MARBLE)
 		g.box(sx - 1, y + 18, zm - 2, sx + 3, y + 19, zm + 2, Kit.TRIM)
-		_cast(g, sx, y + 19, zm, Kit.GILT_D, Kit.GOLD, true)
+		_cast(g, sx, y + 19, zm, Kit.BRONZE_D, Kit.GOLD, true)
 	for sx: int in [xa + 34, xa + 60, xb - 60, xb - 38]:
 		g.box(sx, y + 3, zm - 2, sx + 4, y + 9, zm + 2, Kit.STONE)
 		g.box(sx, y + 8, zm - 2, sx + 4, y + 9, zm + 2, Kit.TRIM)
-		_cast(g, sx + 1, y + 9, zm, Kit.GILT_D, Kit.GOLD, false)
+		_cast(g, sx + 1, y + 9, zm, Kit.BRONZE_D, Kit.GOLD, false, true)
 
 ## The imperial box on the Palatine side at x: a shrine-like box built into
 ## the stand, columns, a pediment facing the arena, a gilt roof.

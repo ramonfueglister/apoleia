@@ -40,6 +40,7 @@ enum { EMPTY,
 	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
 	ROOFB_L, DOME, BAND,
 	DOME_C, GRANITE_L, GRANITE_D, ARENA, ARENA_D, BRONZE_P,
+	STUCCO, JOINT, TRAV_C, TRAV_CW,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -117,6 +118,9 @@ const COLOURS := {
 	# shaded side of a granite shaft, the circus sand and its rake lines
 	DOME_C: ["b8933c"], GRANITE_L: ["a9a39d"], GRANITE_D: ["74706b"], ARENA: ["b08a55", "b8925a"], ARENA_D: ["a07c4a", "a8844f"],
 	BRONZE_P: ["58401f"],
+	# a step below marble: stucco, the joints between marble slabs, the
+	# circus's travertine and its pilasters
+	STUCCO: ["d0c6b8"], JOINT: ["c2b9a9"], TRAV_C: ["c5b79c", "cfc2a7"], TRAV_CW: ["b8aa8e", "c2b499"],
 }
 
 static var _side := PackedColorArray()
