@@ -332,6 +332,8 @@ struct Peak {
     harvest: bool,
     demand: i64,
     done: i64,
+    /// Sowing: the area to sow, m² (S99).
+    area: i64,
 }
 
 struct Farm {
@@ -2123,6 +2125,30 @@ impl Grain {
         area * self.crop_pct / 100
     }
 
+    /// S99 (Ramon: economic logic, sow less when the price is low): the
+    /// area a farm sows this autumn, m². First what feeds its household
+    /// with tax and reserve (as `want_m2`; a tenant also the rent), then
+    /// of the rest of its fields under grain a share that follows the
+    /// price its market pays now: all of it at the base price or more,
+    /// less in proportion below (PLACEHOLDER: linear, last price known at
+    /// sowing). An estate grows for the market: all of its fields follow
+    /// the price.
+    fn sow_plan(&self, f: usize) -> i64 {
+        let fm = &self.farms[f];
+        let full = self.cropped(fm.area);
+        let own = match (self.info.get(&fm.hh), fm.kind) {
+            (_, ESTATE) | (None, _) => 0,
+            (Some(i), kind) => {
+                let feed = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 * 10_000 / fm.net_kg_ha.max(1);
+                if kind == TENANT { feed * 100 / (100 - RENT_PCT) } else { feed }
+            }
+        };
+        let own = own.min(full);
+        let m = &self.markets[fm.market as usize];
+        let share_x1000 = (Self::buy_price(m) * 1000 / (BASE_PRICE * (100 - SPREAD_PCT) / 100)).clamp(0, 1000);
+        own + (full - own) * share_x1000 / 1000
+    }
+
     /// One day, after `People::day`.
     pub fn day(&mut self, p: &mut People) {
         let day = p.world.resource::<Clock>().day;
@@ -2590,12 +2616,12 @@ impl Grain {
                 }
             }
             let fm = &self.farms[f as usize];
-            let ha_x = if harvest { fm.sown } else { self.cropped(fm.area) };
+            let ha_x = if harvest { fm.sown } else { self.sow_plan(f as usize) };
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
             let family = self.info.get(&fm.hh).map_or(0, |i| i.hands as i64) * PEAK_DAYS * self.work_x1000(fm.hh) / 1000;
             let fm = &mut self.farms[f as usize];
-            fm.peak = Some(Peak { harvest, demand, done: family.min(demand) });
+            fm.peak = Some(Peak { harvest, demand, done: family.min(demand), area: ha_x });
             if family < demand {
                 self.markets[fm.market as usize].open.push(f);
             }
@@ -2780,7 +2806,7 @@ impl Grain {
     /// food until the next harvest plus the reserve is carried to market.
     fn peak_end(&mut self, p: &People, day: i64, f: u32) {
         let Some(pk) = self.farms[f as usize].peak.take() else { return };
-        let cropped = self.cropped(self.farms[f as usize].area);
+        let cropped = pk.area;
         let fm = &mut self.farms[f as usize];
         // S75: the hands that were missing, as wages a worker could have had.
         self.markets[fm.market as usize].work_acc += (pk.demand - pk.done).max(0) * WAGE_KG_DAY;
