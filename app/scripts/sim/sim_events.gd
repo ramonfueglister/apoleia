@@ -10,7 +10,8 @@ extends CanvasLayer
 ## packed array per field (day, kind, household, pid, other, amount, at,
 ## to) and the names of the kinds (sim/godot/src/trips.rs events_to_dict).
 ## The list is asked again once a sim day, at most once a second, for the
-## days the simulation keeps (KEEP_DAYS) in the view and around it.
+## days the simulation keeps (KEEP_DAYS) in the view and around it, at
+## least REACH_MIN_KM around (from a village there was nothing to list).
 ##
 ## Command line (after --): --no-events starts with the list hidden.
 
@@ -19,6 +20,7 @@ const KEEP_DAYS := 60 # apoleia_sim::events::KEEP_DAYS
 const LINES := 8
 const ASK_SECONDS := 1.0
 const MARGIN := 0.5 # the window asked for reaches this share of the view width beyond it
+const REACH_MIN_KM := 30.0 # and at least this far from the middle: moves are placed at the 25 km cell's centre
 const FLY_KM := 6.0 # a farmstead's width on screen; a 25 km cell gets its own
 ## by kind (sim/src/events.rs): hunger death, moved, left the map, joined
 ## relatives, theft, alms, tent moved, farm taken, heir, to the tents,
@@ -69,7 +71,7 @@ func _process(_delta: float) -> void:
 		return
 	var centre: Vector2 = landscape.target if "target" in landscape else Vector2.ZERO
 	var width: float = landscape.width if "width" in landscape else 360.0
-	var half := width * (0.5 + MARGIN)
+	var half := maxf(width * (0.5 + MARGIN), REACH_MIN_KM)
 	people.ask_events(day - KEEP_DAYS, centre.x - half, centre.y - half, centre.x + half, centre.y + half)
 	_asked = true
 	_asked_day = day

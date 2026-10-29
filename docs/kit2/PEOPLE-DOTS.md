@@ -468,7 +468,7 @@ Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
 ## Ereignisse (Taste E)
 
 Unten rechts listet `scripts/sim/sim_events.gd` die letzten Ereignisse im
-Bild und rundherum, neueste zuerst, eine Zeile pro Tag und Art mit Anzahl
+Bild und rundherum (mindestens 30 km um die Mitte, weil Umzüge in der Mitte ihrer 25-km-Zelle liegen), neueste zuerst, eine Zeile pro Tag und Art mit Anzahl
 und Menge: Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten,
 Diebstahl (kg), Almosen (kg), Zelt zieht um, Hof übernommen, Erbteil, Ins
 Zelt, Hof nach Lex Manciana, Hof verlassen (`sim/src/events.rs`, 60 Tage
