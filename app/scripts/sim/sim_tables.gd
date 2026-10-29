@@ -28,6 +28,8 @@ extends CanvasLayer
 ## column sorted by, in five classes of equal numbers of regions, with the
 ## regions' borders (ApoleiaPeople.region_map: the market of each 25 km
 ## cell; people_dots.gd paint_regions, sim_map.gdshaderinc sim_regions).
+## The colours stay when the panel closes (it covers most of the map), with
+## their legend at the bottom left, whose ✕ takes them off.
 ##
 ## Command line (after --): --tables=markets|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
@@ -88,6 +90,7 @@ var _chart: Control
 var _series := "persons" # the history's curve
 var _paint: CheckButton
 var _legend: HBoxContainer
+var _legend_box: PanelContainer
 var _map_by := "" # the markets' column the map is coloured by, "" for none
 var _painted := "" # column and table day last painted
 
@@ -114,7 +117,7 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 # ------------------------------------------------------------------ data
 
 func _process(_delta: float) -> void:
-	if not open:
+	if not open and _map_by == "":
 		return
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
@@ -123,14 +126,17 @@ func _process(_delta: float) -> void:
 		_tables[_asked] = answer
 		var was := _asked
 		_asked = -1
-		if was == _kind:
+		if was == _kind and open:
 			_refresh()
+		elif was == 0:
+			_paint_regions()
 		return
+	var kind := _kind if open else 0 # closed, only the markets the map is coloured by
 	var day: int = people.day()
-	var t := _tables[_kind]
+	var t := _tables[kind]
 	if day != _asked_day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
-		people.ask_table(KINDS[_kind])
-		_asked = _kind
+		people.ask_table(KINDS[kind])
+		_asked = kind
 		_asked_day = day
 
 ## Which monthly count a table built on `day` shows.
@@ -695,21 +701,20 @@ func _show(on: bool) -> void:
 	if on:
 		_refresh()
 	else:
-		_paint_regions() # the map's colours go with the panel
+		_place_legend()
 		if _search.has_focus():
 			_search.release_focus()
 
 # ------------------------------------------------------------------ map
 
-## Colours the regions by the markets' column `_map_by` while the panel
-## shows the markets, else clears them.
+## Colours the regions by the markets' column `_map_by`, or clears them.
 func _paint_regions() -> void:
 	var t := _tables[0]
 	var sim_view := get_parent()
 	if sim_view == null or not sim_view.has_method("paint_regions"):
 		return
-	var on: bool = open and KINDS[_kind] == "markets" and _map_by != "" and not t.is_empty() and t.data.has(_map_by) and t.data.has("id")
-	_legend.visible = on
+	var on: bool = _map_by != "" and not t.is_empty() and t.data.has(_map_by) and t.data.has("id")
+	_legend_box.visible = on
 	if not on:
 		if _painted != "":
 			sim_view.paint_regions(null, {})
@@ -884,10 +889,26 @@ func _build() -> void:
 				_fill_tree(t)
 		_paint_regions())
 	_filter_row.add_child(_paint)
+	_legend_box = PanelContainer.new()
+	_legend_box.add_theme_stylebox_override("panel", _box(Color(BACKGROUND, 0.92), Color(GOLD, 0.8), 2, 4, 8))
+	_legend_box.visible = false
+	root.add_child(_legend_box)
+	var legend_row := HBoxContainer.new()
+	_legend_box.add_child(legend_row)
 	_legend = HBoxContainer.new()
 	_legend.add_theme_constant_override("separation", 6)
-	_legend.visible = false
-	column.add_child(_legend)
+	legend_row.add_child(_legend)
+	var off := Button.new()
+	off.text = "✕"
+	off.flat = true
+	off.focus_mode = Control.FOCUS_NONE
+	off.tooltip_text = "Kartenfarben aus"
+	off.pressed.connect(func():
+		_map_by = ""
+		_paint.set_pressed_no_signal(false)
+		_paint_regions())
+	legend_row.add_child(off)
+	_legend_box.resized.connect(_place_legend)
 	_chart = Control.new()
 	_chart.custom_minimum_size = Vector2(0, CHART_PX)
 	_chart.draw.connect(_draw_chart)
@@ -914,6 +935,16 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_place_panel)
 	_place_panel()
 
+## The map's legend at the bottom left, clear of the panel when it is open.
+func _place_legend() -> void:
+	if not is_inside_tree():
+		return
+	var screen := get_viewport().get_visible_rect().size
+	var x := 12.0
+	if open and _panel.position.x + _panel.size.x + 12.0 + _legend_box.size.x < screen.x - 400.0:
+		x = _panel.position.x + _panel.size.x + 12.0 # beside the panel, left of the events
+	_legend_box.position = Vector2(x, screen.y - _legend_box.size.y - 12.0)
+
 ## Left, full height, as wide as the table's columns need (within limits).
 func _place_panel() -> void:
 	var screen := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1600, 900)
@@ -925,6 +956,7 @@ func _place_panel() -> void:
 			want += TEXT_PX if _is_text(t, key) else COLUMN_PX
 	_panel.position = Vector2(12, 12)
 	_panel.size = Vector2(clampf(want, PANEL_MIN, maxf(screen.x * PANEL_SHARE_MAX, PANEL_MIN)), screen.y - 24.0)
+	_place_legend()
 
 static func _serif() -> Font:
 	var font := SystemFont.new()

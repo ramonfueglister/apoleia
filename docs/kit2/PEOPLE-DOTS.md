@@ -463,7 +463,9 @@ Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
   Kartenebene); `people_dots.gd paint_regions` legt sie als Textur auf das
   Terrain, `sim_regions` in `sim_map.gdshaderinc` (im bestehenden Aufruf
   von `sim_ways`, kein neuer Haken im Terrain-Shader) malt sie über das
-  Land, das Meer bleibt frei. Mit dem Panel gehen auch die Farben.
+  Land, das Meer bleibt frei. Die Farben bleiben, wenn das Panel zugeht (es
+  deckt den grössten Teil der Karte), mit ihrer Legende unten links; deren ✕
+  schaltet sie ab. `--tables-map=price` färbt ohne offenes Panel.
 
 ## Ereignisse (Taste E)
 
