@@ -28,8 +28,9 @@ static func tile_template() -> ArrayMesh:
 	return mesh
 
 ## One block of a voxel prop (Urbek style): flat faces, light top, darker
-## sides and underside (the sides are mostly in shade, so not by much). `caps`: also draw the top and bottom.
-static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Color, caps := true) -> void:
+## sides and underside (the sides are mostly in shade, so not by much). `caps`: also draw the top and bottom;
+## `uv_x`: UV.x of its corners, if given.
+static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Color, caps := true, uv_x := -1.0) -> void:
 	var c := [Vector3(lo.x, lo.y, lo.z), Vector3(hi.x, lo.y, lo.z), Vector3(hi.x, lo.y, hi.z), Vector3(lo.x, lo.y, hi.z),
 		Vector3(lo.x, hi.y, lo.z), Vector3(hi.x, hi.y, lo.z), Vector3(hi.x, hi.y, hi.z), Vector3(lo.x, hi.y, hi.z)]
 	var faces := [[[4, 5, 6, 7], Vector3.UP, top], [[0, 1, 5, 4], Vector3.FORWARD, side], [[1, 2, 6, 5], Vector3.RIGHT, side],
@@ -46,7 +47,9 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 		if (b - a).cross(c[q[2]] - a).dot(n) > 0.0:
 			var t: Vector3 = b; b = d; d = t
 		for p in [a, b, c[q[2]], a, c[q[2]], d]:
-			st.set_color(face[2]); st.set_normal(n); st.add_vertex(p)
+			st.set_color(face[2]); st.set_normal(n)
+			if uv_x >= 0.0: st.set_uv(Vector2(uv_x, 0.0))
+			st.add_vertex(p)
 
 ## The terrace under a town lot (tile_props.gdshader prop kind 5), Kritik
 ## r8: up close a block the size of the quarter tile, so the lots of one level
@@ -109,12 +112,60 @@ static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color) 
 	for p in [Vector2(lo.x, lo.y), Vector2(hi.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, hi.y)]:
 		st.set_color(rgb); st.set_normal(Vector3.UP); st.set_uv(Vector2.ZERO); st.add_vertex(Vector3(p.x, 1.0, p.y))
 
-## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
-## trunk, Urbek's bright top and dark sides. `low`: the far version (two
-## blocks, for trees a few pixels tall).
-static func broadleaf(low := false) -> ArrayMesh:
+## The trees: one mesh for every kind, drawn once per tree slot. Each kind
+## is a list of blocks (Urbek's axis-aligned voxels), [lo, hi, top, side];
+## the mesh is TREE_BLOCKS unit blocks and tile_props.gdshader stretches each
+## to the slot's kind (tree_table), so a slot runs the vertex shader once, not
+## once for each kind (four multimeshes over all slots made the trees most of
+## a frame from 5 to 30 km). The first block is the trunk, without top and
+## bottom; a kind with fewer blocks leaves the rest at zero size.
+const TREE_KINDS := 4 # broadleaf, conifer, cypress, stone pine (tile_props.gdshaderinc codes 0, 1, 2, 4)
+const TREE_BLOCKS := 5
+
+## The blocks of tree kind `kind` (TREE_KINDS order); `low`: the far version
+## (fewer blocks, for trees a few pixels tall).
+static func tree_blocks(kind: int, low := false) -> Array:
+	match kind:
+		0: return _broadleaf(low)
+		1: return _conifer(low)
+		2: return _cypress(low)
+		_: return _umbrella_pine(low)
+
+## TREE_BLOCKS unit blocks (TREE_BLOCKS - 1 for the far trees): corners at 0
+## and 1, UV.x the block's number, the first with its four sides only.
+static func tree_template(blocks := TREE_BLOCKS) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in blocks:
+		_box(st, Vector3.ZERO, Vector3.ONE, Color.WHITE, Color.WHITE, k > 0, float(k))
+	st.index()
+	return st.commit()
+
+## The blocks of every kind for tile_props.gdshader: tree_lo, tree_hi,
+## tree_top, tree_side, TREE_BLOCKS entries a kind.
+static func tree_table(low := false) -> Dictionary:
+	var out := {"tree_lo": PackedVector3Array(), "tree_hi": PackedVector3Array(), "tree_top": PackedVector3Array(), "tree_side": PackedVector3Array()}
+	for kind in TREE_KINDS:
+		var blocks := tree_blocks(kind, low)
+		for k in TREE_BLOCKS:
+			var b: Array = blocks[k] if k < blocks.size() else [Vector3.ZERO, Vector3.ZERO, Color.BLACK, Color.BLACK]
+			out.tree_lo.append(b[0])
+			out.tree_hi.append(b[1])
+			out.tree_top.append(Vector3(b[2].r, b[2].g, b[2].b))
+			out.tree_side.append(Vector3(b[3].r, b[3].g, b[3].b))
+	return out
+
+## The tallest tree (units, before the slot's size).
+static func tree_height() -> float:
+	var top := 0.0
+	for kind in TREE_KINDS:
+		for b: Array in tree_blocks(kind):
+			top = maxf(top, b[1].y)
+	return top
+
+## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
+## trunk, Urbek's bright top and dark sides; far off two blocks.
+static func _broadleaf(low: bool) -> Array:
 	# Urbek crown: a light top, darker sides; a core with a belt on all four
 	# sides and a low cap, so it reads round from every side and shows no
 	# dark slit on top (the cap's sides stay close to the top tone)
@@ -122,63 +173,56 @@ static func broadleaf(low := false) -> ArrayMesh:
 	# darker than the meadow and more saturated
 	var top := Color(0.20, 0.42, 0.17)
 	var side := Color(0.13, 0.29, 0.12)
-	_box(st, Vector3(-0.06, 0, -0.06), Vector3(0.06, 0.42, 0.06), Color(0.42, 0.29, 0.18), Color(0.42, 0.29, 0.18), false)
-	_box(st, Vector3(-0.30, 0.38, -0.30), Vector3(0.30, 0.84, 0.30), top, side)
-	_box(st, Vector3(-0.20, 0.84, -0.20), Vector3(0.20, 0.98, 0.20), top, top.lerp(side, 0.35))
+	var bark := Color(0.42, 0.29, 0.18)
+	var out := [[Vector3(-0.06, 0, -0.06), Vector3(0.06, 0.42, 0.06), bark, bark],
+		[Vector3(-0.30, 0.38, -0.30), Vector3(0.30, 0.84, 0.30), top, side],
+		[Vector3(-0.20, 0.84, -0.20), Vector3(0.20, 0.98, 0.20), top, top.lerp(side, 0.35)]]
 	if not low:
-		_box(st, Vector3(-0.38, 0.46, -0.22), Vector3(0.38, 0.76, 0.22), top, side)
-		_box(st, Vector3(-0.22, 0.46, -0.38), Vector3(0.22, 0.76, 0.38), top, side)
-	st.index()
-	return st.commit()
+		out.append([Vector3(-0.38, 0.46, -0.22), Vector3(0.38, 0.76, 0.22), top, side])
+		out.append([Vector3(-0.22, 0.46, -0.38), Vector3(0.22, 0.76, 0.38), top, side])
+	return out
 
 ## Conifer (fir, spruce): stacked voxel tiers getting smaller to the tip.
-static func conifer(far := false) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+static func _conifer(far: bool) -> Array:
 	var top := Color(0.16, 0.33, 0.20)
 	var side := Color(0.11, 0.24, 0.15)
-	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.2, 0.05), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
+	var bark := Color(0.36, 0.25, 0.16)
+	var out := [[Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.2, 0.05), bark, bark]]
 	if far:
-		_box(st, Vector3(-0.28, 0.14, -0.28), Vector3(0.28, 0.55, 0.28), top, side)
-		_box(st, Vector3(-0.15, 0.55, -0.15), Vector3(0.15, 1.12, 0.15), top, side)
+		out.append([Vector3(-0.28, 0.14, -0.28), Vector3(0.28, 0.55, 0.28), top, side])
+		out.append([Vector3(-0.15, 0.55, -0.15), Vector3(0.15, 1.12, 0.15), top, side])
 	else:
-		_box(st, Vector3(-0.30, 0.14, -0.30), Vector3(0.30, 0.40, 0.30), top, side)
-		_box(st, Vector3(-0.22, 0.40, -0.22), Vector3(0.22, 0.66, 0.22), top, side)
-		_box(st, Vector3(-0.14, 0.66, -0.14), Vector3(0.14, 0.92, 0.14), top, side)
-		_box(st, Vector3(-0.06, 0.92, -0.06), Vector3(0.06, 1.14, 0.06), top, side)
-	st.index()
-	return st.commit()
+		out.append([Vector3(-0.30, 0.14, -0.30), Vector3(0.30, 0.40, 0.30), top, side])
+		out.append([Vector3(-0.22, 0.40, -0.22), Vector3(0.22, 0.66, 0.22), top, side])
+		out.append([Vector3(-0.14, 0.66, -0.14), Vector3(0.14, 0.92, 0.14), top, side])
+		out.append([Vector3(-0.06, 0.92, -0.06), Vector3(0.06, 1.14, 0.06), top, side])
+	return out
 
 ## Mediterranean cypress: a slim voxel column.
-static func cypress(low := false) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+static func _cypress(low: bool) -> Array:
 	var top := Color(0.184, 0.353, 0.173) # #2f5a2c, as the farmhouse cypresses
 	var side := Color(0.13, 0.26, 0.13)
-	_box(st, Vector3(-0.03, 0, -0.03), Vector3(0.03, 0.1, 0.03), Color(0.36, 0.25, 0.16), Color(0.36, 0.25, 0.16), false)
-	_box(st, Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side)
+	var bark := Color(0.36, 0.25, 0.16)
+	var out := [[Vector3(-0.03, 0, -0.03), Vector3(0.03, 0.1, 0.03), bark, bark],
+		[Vector3(-0.12, 0.08, -0.12), Vector3(0.12, 0.98, 0.12), top, side]]
 	if not low:
-		_box(st, Vector3(-0.07, 0.98, -0.07), Vector3(0.07, 1.16, 0.07), top, side)
-	st.index()
-	return st.commit()
+		out.append([Vector3(-0.07, 0.98, -0.07), Vector3(0.07, 1.16, 0.07), top, side])
+	return out
 
 ## Stone pine (Pinus pinea), the Roman umbrella pine: a domed voxel parasol
 ## (a narrower underside, the wide crown, a cap) on a tall trunk that forks
 ## under the crown; rounded so it does not read as a table.
-static func umbrella_pine(low := false) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+static func _umbrella_pine(low: bool) -> Array:
 	var top := Color(0.22, 0.40, 0.18)
 	var side := Color(0.15, 0.29, 0.13)
 	var bark := Color(0.45, 0.30, 0.20)
-	_box(st, Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.70, 0.05), bark, bark, false)
+	var out := [[Vector3(-0.05, 0, -0.05), Vector3(0.05, 0.70, 0.05), bark, bark]]
 	if not low:
-		_box(st, Vector3(-0.16, 0.62, -0.04), Vector3(0.16, 0.70, 0.04), bark, bark)
-	_box(st, Vector3(-0.32, 0.66, -0.30), Vector3(0.32, 0.78, 0.30), top, side)
-	_box(st, Vector3(-0.44, 0.74, -0.40), Vector3(0.44, 0.92, 0.40), top, side)
-	_box(st, Vector3(-0.28, 0.92, -0.26), Vector3(0.28, 1.02, 0.26), top, top.lerp(side, 0.35))
-	st.index()
-	return st.commit()
+		out.append([Vector3(-0.16, 0.62, -0.04), Vector3(0.16, 0.70, 0.04), bark, bark])
+	out.append([Vector3(-0.32, 0.66, -0.30), Vector3(0.32, 0.78, 0.30), top, side])
+	out.append([Vector3(-0.44, 0.74, -0.40), Vector3(0.44, 0.92, 0.40), top, side])
+	out.append([Vector3(-0.28, 0.92, -0.26), Vector3(0.28, 1.02, 0.26), top, top.lerp(side, 0.35)])
+	return out
 
 ## A flat quad on a wall (window, door), a hair in front of it. `shade`:
 ## the normal it is lit by, if not n.

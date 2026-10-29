@@ -59,7 +59,10 @@ const DIORAMA_LAENGE := 1.0 / 23.80
 const DIORAMA_KM_PER_M := 0.001 / DIORAMA_LAENGE
 const HOUSE_M := 10.0 # a house lot (voxel/roman_buildings.gd), before the diorama scale
 const TREE_M := 8.0  # tree height (tree meshes are about 1.1 units tall; Urbek: 5-8 m, a house 6-12 m)
-const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
+## Prop kinds: the trees of every kind in one MultiMesh (tile_prop_meshes.gd
+## tree_template), then the houses.
+const PROP_KINDS := ["trees", "house"]
+const HOUSE_KIND := 1
 # The houses are the Roman town's lot models (voxel/roman_buildings.gd, from
 # the Colosseum prototype: Urbek's 40 voxels to a 10 m lot), at the diorama
 # scale a lot to a quarter tile. One MultiMesh per model; each draws every
@@ -269,7 +272,7 @@ func _is_house(kind: int) -> bool:
 
 ## The lot model (LOT_KINDS) a prop kind draws, or -1 for the trees.
 func _lot_of(kind: int) -> int:
-	if kind == 3:
+	if kind == HOUSE_KIND:
 		return 0
 	return kind - PROP_KINDS.size() + 1 if kind >= PROP_KINDS.size() and kind < _plinth_kind() else -1
 
@@ -309,8 +312,8 @@ func _build_nodes() -> void:
 	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
-	_meshes_full = [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), null, PropMeshes.umbrella_pine()]
-	_meshes_low = [PropMeshes.broadleaf(true), PropMeshes.conifer(true), PropMeshes.cypress(true), null, PropMeshes.umbrella_pine(true)]
+	_meshes_full = [PropMeshes.tree_template(), null]
+	_meshes_low = [PropMeshes.tree_template(PropMeshes.TREE_BLOCKS - 1), null]
 	_meshes_detail = _meshes_full.duplicate()
 	for kind in _prop_count():
 		var lot := _lot_of(kind)
@@ -355,6 +358,7 @@ func _build_nodes() -> void:
 		add_child(node)
 		_props.append(node)
 		_prop_materials[kind].set_shader_parameter("prop_n", PROP_N)
+	_set_tree_table(_props_tier == 2)
 	_build_landmarks()
 
 ## Same as landscape.gd lonlat_to_world.
@@ -423,31 +427,12 @@ func _place_landmarks() -> void:
 		material.set_shader_parameter("landmark_levels", levels)
 		material.set_shader_parameter("landmark_count", count)
 
-## Hide the tree kinds that cannot grow anywhere in the prop patch (the shader
-## rule: conifers above 700 m or north of 50°, stone pines and cypresses below
-## 700 m south of 44.5°), so their slots cost no vertex work.
-var _culled_origin := Vector2i(-1, -1)
-func _cull_prop_kinds() -> void:
-	if prop_origin == _culled_origin or (PROP_SLOTS[level] == 0 and not sub_tiles):
-		return
-	_culled_origin = prop_origin
-	var lo := world_min + Vector2(prop_origin) * tile_km
-	var span := float(prop_n) * tile_km
-	var h_min := INF
-	var h_max := -INF
-	for j in 17:
-		for i in 17:
-			var h := height_m(lo + Vector2(i, j) / 16.0 * span)
-			h_min = minf(h_min, h)
-			h_max = maxf(h_max, h)
-	var lat_south := 41.0 - rad_to_deg((lo.y + span) / 6371.0088)
-	var lat_north := 41.0 - rad_to_deg(lo.y / 6371.0088)
-	# a margin for the shader sampling heights at tile centres, not these points
-	var conifer := h_max > 600.0 or lat_north > 49.8
-	var south := lat_south < 44.7 and h_min < 800.0
-	_props[1].visible = conifer
-	_props[2].visible = south
-	_props[4].visible = south
+## The blocks of every tree kind into the trees' material (the far ones
+## with the low-poly template).
+func _set_tree_table(low: bool) -> void:
+	var table := PropMeshes.tree_table(low)
+	for key in table:
+		_prop_materials[0].set_shader_parameter(key, table[key])
 
 ## A float viewport that redraws `material` over its full size every frame
 ## (the per-frame 2D passes for corner levels and prop slots).
@@ -539,7 +524,6 @@ func _apply_prop_count() -> void:
 		var house := _is_house(kind)
 		var n: int = house_slots if house else slots
 		node.visible = n > 0
-		_culled_origin = Vector2i(-1, -1) # _cull_prop_kinds runs again
 		if not house:
 			node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1)
 		var material := _prop_materials[kind]
@@ -550,7 +534,8 @@ func _apply_prop_count() -> void:
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 		if n > 0:
 			# trees grow to 1.25 times (tile_props.gdshader)
-			prop_height_km = maxf(prop_height_km, _meshes_detail[kind].get_aabb().end.y * size_m * DIORAMA_KM_PER_M * (1.0 if house else 1.25))
+			var top: float = _meshes_detail[kind].get_aabb().end.y if house else PropMeshes.tree_height() * 1.25
+			prop_height_km = maxf(prop_height_km, top * size_m * DIORAMA_KM_PER_M)
 	_town_key = Vector4i(-1, 0, 0, 0) # the house counts: _update_town_list
 
 ## The town tiles of the prop patch (towns-L*.i32) into town_tex, so the
@@ -700,6 +685,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 		for kind in _props.size():
 			_props[kind].multimesh.mesh = [_meshes_detail, _meshes_full, _meshes_low][tier][kind]
 			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if tier == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		_set_tree_table(tier == 2)
 		for k in _landmarks.size():
 			var which := String(LANDMARKS[k][0])
 			if which.begins_with("kit:"):
@@ -716,7 +702,6 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
 	_terrain_material.set_shader_parameter("prop_n", prop_n)
 	_update_town_list()
-	_cull_prop_kinds()
 	if sub_tiles:
 		_update_sub_window()
 

@@ -1,15 +1,16 @@
-// Trees and houses on the tile terrain. One MultiMesh per kind; every instance
-// is a fixed slot (tile of the prop patch, slot number). A small 2D pass
-// (tile_prop_prep.gdshader) decides once per frame from the tile data whether
-// each slot shows a prop and where it stands; the vertex stage only reads that,
-// so props follow the terrain at every zoom without CPU placement.
+// Trees and houses on the tile terrain. One MultiMesh for the trees of every
+// kind and one per lot model; every instance is a fixed slot (tile of the
+// prop patch, slot number). A small 2D pass (tile_prop_prep.gdshader) decides
+// once per frame from the tile data whether each slot shows a prop and where
+// it stands; the vertex stage only reads that, so props follow the terrain at
+// every zoom without CPU placement.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
 #include "res://shaders/tile_props.gdshaderinc"
 
-uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house (a Roman lot model), 4 stone pine, 5 terrace under a lot on a ramp
+uniform int prop_kind = 0;     // 0 trees (every kind), 3 house (a Roman lot model), 5 terrace under a lot on a ramp
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
 uniform int slots = 4;
@@ -24,6 +25,15 @@ uniform int town_count = -1; // how many; -1: every tile of the patch
 uniform int lot_start = 0; // a lot model's slots in town_tex
 uniform int lot_count = 0;
 uniform int town_w = 100;
+// The trees' blocks (tile_prop_meshes.gd tree_table): TREE_BLOCKS a kind, in
+// the order broadleaf, conifer, cypress, stone pine (place codes 0, 1, 2, 4).
+// The tree mesh is unit blocks, UV.x the block's number, each stretched to
+// its block of the slot's kind: one tree instance a slot draws every kind.
+const int TREE_BLOCKS = 5;
+uniform vec3 tree_lo[20];
+uniform vec3 tree_hi[20];
+uniform vec3 tree_top[20];
+uniform vec3 tree_side[20];
 
 varying vec3 tint;
 varying float road; // a paved street tile's terrace top
@@ -78,7 +88,7 @@ void vertex() {
 	// before that pass has run
 	ivec2 px = local * 3 + ivec2(slot % 3, slot / 3) + ivec2(house ? place_tree_w : 0, 0);
 	vec4 d = !listed ? vec4(0.0, 0.0, 0.0, -1.0) : place_ready ? texelFetch(place_tex, px, 0) : tt_prop_place(t, slot, slots, house);
-	bool show = d.w >= 0.0 && (house || int(floor(d.w)) == prop_kind);
+	bool show = d.w >= 0.0;
 	road = 0.0;
 	olive = 0.0;
 	tint = vec3(1.0);
@@ -96,8 +106,16 @@ void vertex() {
 		// door) to the camera (Kritik r7: turned lots showed blank side walls)
 		float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;
 		mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
-		vec3 v = VERTEX * s;
-		olive = !house && prop_kind == 0 && edge_size < OLIVE_SIZE + 0.05 ? 1.0 : 0.0;
+		vec3 m = VERTEX;
+		if (!house) {
+			int kind = int(floor(d.w));
+			int b = (kind == 4 ? 3 : kind) * TREE_BLOCKS + int(UV.x + 0.5);
+			m = mix(tree_lo[b], tree_hi[b], VERTEX);
+			// light top, darker sides and underside (tile_prop_meshes.gd _box)
+			COLOR = vec4(NORMAL.y > 0.5 ? tree_top[b] : NORMAL.y < -0.5 ? tree_side[b] * 0.6 : tree_side[b], 1.0);
+		}
+		vec3 v = m * s;
+		olive = !house && int(floor(d.w)) == 0 && edge_size < OLIVE_SIZE + 0.05 ? 1.0 : 0.0;
 		float lift = 0.0;
 		if (house && sub_tiles) {
 			// the terrace block covers the tile: level at its highest corner,

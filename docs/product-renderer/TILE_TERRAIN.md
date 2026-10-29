@@ -355,8 +355,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Kacheln. Die Eckstufen rechnet der 2D-Pass weiter für den ganzen Patch vor.
   Weit draussen ist die Stufe mindestens so grob, dass der Patch den oberen
   Bildrand überspannt (1,1 Sichtbreiten auf der geneigten Karte), darum
-  kommen die 32-km-Kacheln ab etwa 4500 km. Fünf MultiMeshes
-  für Laubbäume, Nadelbäume, Zypressen, Pinien und Häuser (100 × 100 Kacheln);
+  kommen die 32-km-Kacheln ab etwa 4500 km. Ein MultiMesh für die Bäume
+  aller Arten und eines je Hausmodell (bis 100 × 100 Kacheln);
   ändert sich beim Zoomen nur ihre Zahl, stellt `_apply_prop_count` nur die
   Zahlen um (vorher baute jede Änderung die ganze Stufe neu, mit 1 MB
   Stufenfenster und dem Viertelpass: beim Zoomen ruckelte es).
@@ -388,8 +388,15 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   70 und 700 km (Messtour 29.10.2026). Ein leerer Platz rechnet im Vertex-Shader
   nur noch, ob er etwas zeigt. Ab
   10 km Sichtbreite gibt es Low-Poly-Bäume und grobe Häuser ohne Schatten
-  (`PROP_LOW_KM`), volle Hausmodelle nur bis 5 km (`PROP_DETAIL_KM`), und
-  Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
+  (`PROP_LOW_KM`), volle Hausmodelle nur bis 5 km (`PROP_DETAIL_KM`). Die
+  Bäume aller Arten sind ein einziges Mesh aus Einheitsblöcken
+  (`tree_template`), das der Shader je Platz nach der Blocktabelle seiner Art
+  streckt und färbt (`tree_table`: Laubbaum, Nadelbaum, Zypresse, Pinie, je
+  bis fünf Blöcke, der erste der Stamm ohne Deckel): ein Platz rechnet seine
+  Eckpunkte einmal statt einmal je Art. Vorher lief jede der vier Arten als
+  eigenes MultiMesh über alle Plätze, und die Bäume waren zwischen 5 und 30 km
+  über die Hälfte eines Bildes (Messtour 29.10.: 19 ms mit, 9,4 ms ohne
+  Bäume). Ab
   1-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
   zeichnete dort nur dunkle Striche an den Stufen).
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
@@ -424,7 +431,8 @@ als gerader Schnitt durch Skandinavien). F5–F7 steuern das Wetter. Startoption
 Rom nah, die ganze Karte, Alexandria, Antiochia, die Levante, Athen, und
 schreibt Bildzeiten, die schlimmsten Bilder mit dem, was das Gelände in ihnen
 änderte, und die Pipeline-Kompilierungen; `--tour-passes=n`, Vorgabe 2;
-`--tour-hide=trees,houses,terrain` lässt das weg, um zu sehen, was es kostet).
+`--tour-hide=trees,houses,terrain,landmarks,people,shadows` lässt das weg,
+um zu sehen, was es kostet).
 
 ## Offen
 

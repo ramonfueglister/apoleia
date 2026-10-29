@@ -12,8 +12,8 @@ extends Node3D
 ## Command line (after --): --view=lon,lat,width start view,
 ## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait,
 ## --tour=result.json fly the benchmark tour and save its frame times
-## (tour_bench.gd), --tour-passes=n how often, --tour-hide=trees,houses,terrain
-## without those (what each costs).
+## (tour_bench.gd), --tour-passes=n how often, --tour-hide=trees,houses,
+## terrain,landmarks,people,shadows without those (what each costs).
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const TourBench = preload("res://scripts/tour_bench.gd")
@@ -48,6 +48,9 @@ var camera := Camera3D.new()
 var sun := DirectionalLight3D.new()
 var environment := Environment.new()
 var weather: Node3D
+var people: Node3D # the Kit 2 people (sim/people_dots.gd), null when not built
+## The sun casts shadows up to 40 km across (the tour can switch them off).
+var shadows := true
 
 ## Read by weather_system.gd: the ground point in the middle of the view.
 var target := Vector2.ZERO
@@ -115,7 +118,9 @@ func _ready() -> void:
 	# Kit 2 people as dots (Rust GDExtension); off when it is not built
 	var dots := PeopleDots.new()
 	add_child(dots)
-	if not dots.setup(terrain):
+	if dots.setup(terrain):
+		people = dots
+	else:
 		dots.queue_free()
 	if _tour != "":
 		var tour := TourBench.new()
@@ -207,8 +212,8 @@ func _update_look(distance: float) -> void:
 	# the relief there, and nothing small enough to cast a shadow is drawn
 	# (set only when it changes: each set re-notifies everything the light
 	# touches)
-	if sun.shadow_enabled != (width < 40.0):
-		sun.shadow_enabled = width < 40.0
+	if sun.shadow_enabled != (shadows and width < 40.0):
+		sun.shadow_enabled = shadows and width < 40.0
 	# Haze only towards the far edge of the drawn patch.
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
