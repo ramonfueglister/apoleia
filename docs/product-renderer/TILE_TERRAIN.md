@@ -302,8 +302,12 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   (`shore.r16f`), die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
   allein neu mit `--levels-only`, etwa 1 Minute), die der nahen aus den
   Terrain Tiles (`levels-L0.png`, `levels-L1.png`; allein neu mit
-  `--near-only`, einzeln mit `--level=0` oder `--level=1`, etwa 35 Minuten
-  und 12 GB Speicher für beide, der erste Lauf lädt 1298 Kacheln, 93 MB) und die Landschaft jeder Kachel
+  `--near-only`, einzeln mit `--level=0` oder `--level=1`, etwa 7 Minuten
+  für beide, der erste Lauf lädt 1298 Kacheln, 93 MB; die Stufenregel, eine
+  Stufe je Kachel zu allen acht Nachbarn, rechnet `unit_envelope` in zwei
+  Durchläufen über die Karte statt in einem je Reliefstufe, und das Öffnen und
+  Schließen der Stufen läuft blockweise nur bis zur höchsten Stufe des Blocks)
+  und die Landschaft jeder Kachel
   je Zoomstufe (`ground-L*.png`, `ground_classes`: Bodenbedeckung und Höhe an
   der Kachelmitte, ein wenig Rauschen in km macht aus Anteilen Flecken dieser
   Größe, einzelne Kacheln werden ihren Nachbarn angeglichen; weiter draußen
@@ -318,7 +322,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   liest das Land hell mit dunklen Wäldern wie die gemalte Karte, und
   die Grenze zum Nadelwald im Norden wandert um einige Breitengrade statt
   als Gerade durch Russland zu laufen; allein neu mit
-  `--ground-only`, etwa 35 Minuten, davon 25 für die 0,5-km-Kacheln; die
+  `--ground-only`, etwa 11 Minuten und 5 GB Speicher, davon 6 für die 0,5-km-Kacheln; die
   Höhen für Fels, Schnee und Wald kommen aus denselben Terrain Tiles wie
   die nahen Stufen). Braucht numpy, Pillow und scipy. Eingaben sind im Manifest mit Hash geführt.
 - `app/scripts/tile_terrain.gd` lädt die Daten, wählt die Zoomstufe und

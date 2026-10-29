@@ -567,6 +567,57 @@ def max3(a):
     return np.maximum.reduce(_shifted(a))
 
 
+def unit_envelope(a, lower=True):
+    """np.minimum(a, min3(a) + 1) (lower) or np.maximum(a, max3(a) - 1)
+    repeated until nothing changes: the result changes by at most one between
+    any two 8-neighbours. Two raster sweeps (down and right, then up and left)
+    give it exactly, instead of one pass over the whole map per level of
+    relief."""
+    src = np.asarray(a)
+    sign = 1.0 if lower else -1.0
+    out = np.empty_like(src)
+    idx = np.arange(src.shape[1], dtype=np.float64)
+    for back in (False, True):
+        prev = None
+        for j in range(src.shape[0] - 1, -1, -1) if back else range(src.shape[0]):
+            row = sign * (out if back else src)[j].astype(np.float64)
+            if prev is not None:
+                row = np.minimum(row, prev + 1)
+                row[1:] = np.minimum(row[1:], prev[:-1] + 1)
+                row[:-1] = np.minimum(row[:-1], prev[1:] + 1)
+            if back:
+                row = np.minimum.accumulate((row + idx)[::-1])[::-1] - idx
+            else:
+                row = np.minimum.accumulate(row - idx) + idx
+            out[j] = sign * row
+            prev = row
+    return out
+
+
+def clean_levels(level, fixed, erode, dilate, block=1024, halo=4):
+    """Every level set above the first opened and closed (erode, dilate: the
+    corner square), the fixed corners (sea, lakes) only opened; the sum of
+    the sets. In blocks, each only up to its own highest level (the halo
+    covers the reach of the four steps)."""
+    out = np.zeros(level.shape, np.uint8)
+    ny, nx = level.shape
+    for r0 in range(0, ny, block):
+        for c0 in range(0, nx, block):
+            a0, b0 = max(r0 - halo, 0), max(c0 - halo, 0)
+            lv = level[a0:min(r0 + block + halo, ny), b0:min(c0 + block + halo, nx)]
+            fx = fixed[a0:a0 + lv.shape[0], b0:b0 + lv.shape[1]]
+            acc = np.zeros(lv.shape, np.uint8)
+            for k in range(1, int(lv.max()) + 1):
+                m = (lv >= k).view(np.uint8)
+                if k > 1:
+                    opened = dilate(erode(m))
+                    m = np.where(fx, opened, erode(dilate(opened)))
+                acc += m
+            h, w = min(block, ny - r0), min(block, nx - c0)
+            out[r0:r0 + h, c0:c0 + w] = acc[r0 - a0:r0 - a0 + h, c0 - b0:c0 - b0 + w]
+    return out
+
+
 def gauss(a, sigma):
     """Gaussian blur (sigma in cells) as three box passes."""
     r = int(round(math.sqrt(sigma * sigma * 4 / 3 + 0.25) - 0.5))
@@ -635,14 +686,7 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     px = WORLD_MIN[0] + np.arange(nx + 1, dtype=np.float64) * tile_km
     pz = WORLD_MIN[1] + np.arange(ny + 1, dtype=np.float64) * tile_km
     x = far_level_x(node_bilinear(h, px[None, :], pz[:, None]))
-    low, high = x.copy(), x.copy()
-    while True:
-        low2 = np.minimum(low, min3(low) + 1)
-        high2 = np.maximum(high, max3(high) - 1)
-        if np.array_equal(low2, low) and np.array_equal(high2, high):
-            break
-        low, high = low2, high2
-    level = np.round((low + high) * 0.5)
+    level = np.round((unit_envelope(x, True) + unit_envelope(x, False)) * 0.5)
     # the four tiles around each corner (outside the map is sea, as in tt_cell)
     wp = np.pad(water, 1, constant_values=1)
     lakes = np.pad(tile_lake_levels(water, tile_km, lake_enc, shore), 1, constant_values=np.inf)
@@ -655,23 +699,11 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     fixed = sea | np.isfinite(cap)
 
     def settle(lv):
-        lv = np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap))
-        while True:
-            lv2 = np.minimum(lv, min3(lv) + 1)
-            if np.array_equal(lv2, lv):
-                return lv
-            lv = lv2
+        return unit_envelope(np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap)))
 
     level = settle(level)
     for _ in range(2):
-        cleaned = np.zeros_like(level)
-        for k in range(1, int(level.max()) + 1):
-            m = level >= k
-            if k > 1:
-                m = max3(min3(m.astype(np.uint8))).astype(bool)
-                m = (min3(max3(m.astype(np.uint8))).astype(bool) & ~fixed) | m
-            cleaned += m
-        level = settle(cleaned)
+        level = settle(clean_levels(level.astype(np.uint8), fixed, min3, max3))
     return level.astype(np.uint8)
 
 
@@ -809,16 +841,10 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
     a tile or two, Rome's, stay)."""
     ny, nx = water.shape
     x = near_level_x(gauss(heights, blur), tile_km).astype(np.float32)
-    low, high = x.copy(), x.copy()
-    while True:
-        low2 = np.minimum(low, min3(low) + 1)
-        high2 = np.maximum(high, max3(high) - 1)
-        if np.array_equal(low2, low) and np.array_equal(high2, high):
-            break
-        low, high = low2, high2
-    del x, low2, high2
-    level = np.round((low + high) * 0.5).astype(np.float32)
-    del low, high
+    level = unit_envelope(x, True)
+    level += unit_envelope(x, False)
+    del x
+    level = np.round(level * 0.5).astype(np.float32)
     wp = np.pad(water, 1, constant_values=1)
     lakes = np.pad(tile_lake_levels(water, tile_km, lake_enc, shore), 1, constant_values=np.inf)
     sea = np.zeros((ny + 1, nx + 1), bool)
@@ -833,12 +859,7 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
 
     def settle(lv):
         # in whole levels (int16): a quarter of the float work on 0.2 G corners
-        lv = np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap)).astype(np.int16)
-        while True:
-            lv2 = np.minimum(lv, min3(lv) + 1)
-            if np.array_equal(lv2, lv):
-                return lv
-            lv = lv2
+        return unit_envelope(np.where(sea, 0, np.minimum(np.maximum(lv, 1), cap)).astype(np.int16))
 
     def erode(m):
         return min3(m) if clean == 3 else np.minimum.reduce(_shifted2(m, False))
@@ -848,15 +869,7 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
 
     level = settle(np.minimum(level, 255)).astype(np.uint8)
     for _ in range(2):
-        cleaned = np.zeros(level.shape, np.uint8)
-        for k in range(1, int(level.max()) + 1):
-            m = (level >= k).view(np.uint8)
-            if k > 1:
-                opened = dilate(erode(m))
-                closed = erode(dilate(opened))
-                m = np.where(fixed, opened, closed)
-            cleaned += m
-        level = settle(cleaned).astype(np.uint8)
+        level = settle(clean_levels(level, fixed, erode, dilate)).astype(np.uint8)
     return level
 
 
@@ -882,9 +895,11 @@ def bake_near_levels(manifest, cells, height, lake_enc, shore, only=NEAR_LEVELS)
 
 
 def _hash01(i, j, seed):
-    h = (i * 374761393 + j * 668265263 + seed * 1442695041) & 0xFFFFFFFF
-    h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
-    return ((h ^ (h >> 16)) & 0xFFFFFF).astype(np.float32) / float(0x1000000)
+    # in uint32: the products wrap at 2^32 by themselves
+    h = (i.astype(np.uint32) * np.uint32(374761393) + j.astype(np.uint32) * np.uint32(668265263)
+         + np.uint32(seed * 1442695041 & 0xFFFFFFFF))
+    h = (h ^ (h >> np.uint32(13))) * np.uint32(1274126177)
+    return ((h ^ (h >> np.uint32(16))) & np.uint32(0xFFFFFF)).astype(np.float32) / float(0x1000000)
 
 
 def value_noise(x, z, seed):
@@ -1126,11 +1141,17 @@ def level_snap(mask, lv, sigma, block=2048):
             if not mk.any():
                 continue
             lvb = lv[a0:a1, b0:b1]
-            f = mk.astype(np.float32)
             res = np.zeros(mk.shape, bool)
             for k in np.unique(lvb[mk]):
-                same = (lvb == k).astype(np.float32)
-                res |= (same > 0) & (ndimage.gaussian_filter(f * same, sigma) > 0.5 * ndimage.gaussian_filter(same, sigma))
+                same = lvb == k
+                sel = mk & same
+                rows, cols = np.flatnonzero(sel.any(1)), np.flatnonzero(sel.any(0))
+                # the snap reaches pad tiles beyond the mask, its blur pad more
+                y0, y1 = max(rows[0] - 2 * pad, 0), min(rows[-1] + 2 * pad + 1, mk.shape[0])
+                x0, x1 = max(cols[0] - 2 * pad, 0), min(cols[-1] + 2 * pad + 1, mk.shape[1])
+                s = same[y0:y1, x0:x1].astype(np.float32)
+                f = mk[y0:y1, x0:x1].astype(np.float32)
+                res[y0:y1, x0:x1] |= (s > 0) & (ndimage.gaussian_filter(f * s, sigma) > 0.5 * ndimage.gaussian_filter(s, sigma))
             h, w = min(block, ny - r0), min(block, nx - c0)
             out[r0:r0 + h, c0:c0 + w] = res[r0 - a0:r0 - a0 + h, c0 - b0:c0 - b0 + w]
     return out

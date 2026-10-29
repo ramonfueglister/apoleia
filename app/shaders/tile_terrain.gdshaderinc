@@ -241,9 +241,9 @@ float tt_far_level_x(float m) {
 
 // The near levels' scale (tools/build_tile_terrain.py NEAR_STEPS_M) at 0.5 km
 // tiles, twice the metres at 1 km: 20 m levels in the lowlands, so Rome's
-// hills and gentle land show as terraces, 50 m above 120 m, 120 m above 420 m.
+// hills and gentle land show as terraces, 50 m above 120 m, 60 m above 420 m.
 const float NEAR_STEPS_M[13] = float[](0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 170.0, 220.0, 270.0, 320.0, 370.0, 420.0);
-const float NEAR_BEYOND_M = 120.0;
+const float NEAR_BEYOND_M = 60.0;
 float tt_near_level_x(float metres) {
 	float m = max(metres, 0.0) * (0.5 / tt_data_km());
 	for (int k = 1; k < 13; k++) {
