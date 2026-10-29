@@ -483,8 +483,8 @@ a1af7e4043e81953), 54 Tests grün. Getreide pro Tag im Mittel 2,3 ms (vorher 2,1
 mehr Höfe).
 
 **Auffällig:** Die Wüstenhaushalte schrumpfen von 186 auf 67 Personen. Sie hungern nicht,
-heiraten aber nicht, weil ihre Region kein freies Land hat (S65). Ob Oasen und Nomaden davon
-ausgenommen sein sollen, ist offen.
+heiraten aber nicht, weil ihre Region kein freies Land hat (S65). Ramon: so lassen, bis
+andere Nahrung (Datteln, Gärten, Herden) gebaut ist.
 
 **S93 (monatlich wandern) ist gebaut, aber nicht drin.** Im 10-Jahre-Lauf stieg die Zahl der
 Hungertoten auf 250–320 im Jahr (statt 120–150), und die Bevölkerung sank bis Jahr 10 auf
