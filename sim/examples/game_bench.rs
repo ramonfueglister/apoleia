@@ -50,6 +50,16 @@ fn main() {
         parts[1] += grain_us / 1e3;
     }
     let run_s = t1.elapsed().as_secs_f64();
+    // where the slow days fall: the ten slowest, and the mean by day of the month
+    let mut slow: Vec<(f64, usize)> = ms.iter().copied().zip(0..).collect();
+    slow.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let top: Vec<String> = slow.iter().take(10).map(|(m, d)| format!("{d} ({}.): {m:.1}", d % 30)).collect();
+    println!("slowest days (day of month): {}", top.join(", "));
+    let mut by_dom = [0.0f64; 30];
+    for (d, m) in ms.iter().enumerate() {
+        by_dom[d % 30] += m / (days as f64 / 30.0);
+    }
+    println!("mean ms by day of month: {}", by_dom.iter().map(|m| format!("{m:.1}")).collect::<Vec<_>>().join(" "));
     let (p50, p95, p99, max) = (pct(&mut ms, 0.5), pct(&mut ms, 0.95), pct(&mut ms, 0.99), pct(&mut ms, 1.0));
     println!("{days} days: {:.2} s per year; day p50 {p50:.2} ms, p95 {p95:.2}, p99 {p99:.2}, max {max:.2}", run_s / years as f64);
     println!("mean per day: people {:.2} ms, grain {:.2} ms", parts[0] / days as f64, parts[1] / days as f64);
@@ -68,6 +78,19 @@ fn main() {
         per(t.index),
         per(t.trips)
     );
+    let t = &g.grain.timing;
+    println!(
+        "grain per part, ms per day: events {:.2}, peaks {:.2}, labour {:.2}, markets {:.2}, eat {:.2}, traders {:.2}, paths {:.2}, rebuild {:.2}, census {:.2}",
+        per(t.events),
+        per(t.peaks),
+        per(t.labour),
+        per(t.markets),
+        per(t.eat),
+        per(t.traders),
+        per(t.paths),
+        per(t.rebuild),
+        per(t.census)
+    );
     for (i, s) in SPEEDS.iter().enumerate() {
         let budget = 1000.0 / s;
         let over = ms.iter().filter(|&&m| m > budget).count();
@@ -80,5 +103,7 @@ fn main() {
     let t3 = Instant::now();
     let (mut h, info) = Game::load_from(start, Path::new(&save), |_, _| {}).expect("load");
     println!("load: {:.2} s ({:.2} s per year), identical: {}", t3.elapsed().as_secs_f64(), t3.elapsed().as_secs_f64() / years as f64, info.identical);
-    assert!(info.identical && h.fingerprints() == g.fingerprints());
+    let fp = g.fingerprints();
+    assert!(info.identical && h.fingerprints() == fp);
+    println!("fingerprints: {:016x} {:016x}", fp.0, fp.1);
 }

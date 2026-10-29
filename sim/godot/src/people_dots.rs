@@ -17,7 +17,7 @@
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
 
-use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
+use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT};
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
@@ -31,7 +31,7 @@ use godot::prelude::*;
 use std::path::Path;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Edge of one page in texels (PAGE = SIDE²).
 const SIDE: usize = 64;
@@ -41,6 +41,9 @@ const HOUSE_VARIANTS: u8 = 4;
 const HOUSE_UNPLACED: u8 = 254;
 /// A house newer than the last placement read back.
 const HOUSE_UNKNOWN: u8 = 255;
+/// How often a second the view is updated at most while the sim runs
+/// behind the days asked for.
+const VIEW_HZ: f64 = 30.0;
 
 #[derive(Default)]
 struct Front {
@@ -87,6 +90,10 @@ struct Front {
     saved: Option<Result<i64, String>>,
     /// The treasury's cash after the last day, milli-denarii.
     cash: i64,
+    /// Milliseconds the sim thread spent on its days so far: the day
+    /// itself, orders and map layers, the view, handing over; and the days.
+    spent: [f64; 4],
+    spent_days: u64,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look
@@ -276,7 +283,12 @@ fn progress(game: &Game) -> Vec<i32> {
     out
 }
 
-fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
+fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
+    let map = {
+        let sh = shared.clone();
+        MapThread::start(map, move |layers| sh.front.lock().unwrap().map = layers)
+    };
+    let mut shown = Instant::now();
     loop {
         // commands and questions from the game first, between two days; then a day
         let (commands, save, check, ask, table, trips, work, events) = {
@@ -340,8 +352,10 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         }
         // the people, the grain economy (S69–S112) and the building sites
         // (S113) on the same day, as bin/grain.rs
+        let t0 = Instant::now();
         let [day_usec, grain_usec] = game.day();
         let today = game.today();
+        let t_map = Instant::now();
         // a site finished (its order is gone): its farm and fields show at
         // once, not at the next month's map; how far the sites are goes out
         // once a week (REALTIME_GAMEPLAY.md phase 3)
@@ -351,23 +365,39 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         }
         let remap = today % 30 == 0 || finished;
         if remap {
-            map.build(&game.grain, today);
+            map.draw(MapJob::take(&game.grain, today));
         }
+        // the view at most VIEW_HZ times a second while days are queued:
+        // the screen shows one state a frame, so at 100 days a second most
+        // days would never be seen (REALTIME_GAMEPLAY.md phase 8)
         let t1 = Instant::now();
-        let pages = view.update(&mut game.people);
+        let behind = shared.queue.lock().unwrap().days > 0;
+        let show = !behind || t1 - shown >= Duration::from_secs_f64(1.0 / VIEW_HZ);
+        let pages = if show {
+            shown = t1;
+            view.update(&mut game.people)
+        } else {
+            Vec::new()
+        };
         let view_usec = t1.elapsed().as_secs_f64() * 1e6;
+        let t_publish = Instant::now();
         let mut f = shared.front.lock().unwrap();
-        publish(&view, &pages, &mut f);
-        publish_houses(&mut view, &mut f);
+        if show {
+            publish(&view, &pages, &mut f);
+            publish_houses(&mut view, &mut f);
+            f.view_usec = view_usec;
+        }
+        let ms = |a: Instant, b: Instant| (b - a).as_secs_f64() * 1e3;
+        let end = Instant::now();
+        for (k, v) in [ms(t0, t_map), ms(t_map, t1), ms(t1, t_publish), ms(t_publish, end)].into_iter().enumerate() {
+            f.spent[k] += v;
+        }
+        f.spent_days += 1;
         f.day = today;
         f.count = game.people.count;
         f.cash = game.grain.treasury.cash;
         f.day_usec = day_usec;
-        f.view_usec = view_usec;
         f.grain_usec = grain_usec;
-        if remap {
-            f.map = map.layers.clone();
-        }
     }
 }
 
@@ -1250,7 +1280,8 @@ impl ApoleiaPeople {
     }
 
     /// Timings in microseconds: the last sim day and view update (sim
-    /// thread), the last `sync` (main thread) and the layers it uploaded.
+    /// thread), the last `sync` (main thread) and the layers it uploaded;
+    /// and the sim thread's mean per day in ms, by part.
     #[func]
     fn timings(&self) -> VarDictionary {
         let mut d = VarDictionary::new();
@@ -1258,6 +1289,12 @@ impl ApoleiaPeople {
         d.set("day_usec", f.day_usec);
         d.set("view_usec", f.view_usec);
         d.set("grain_usec", f.grain_usec);
+        // means over all days so far, ms (REALTIME_GAMEPLAY.md phase 8)
+        let n = f.spent_days.max(1) as f64;
+        for (k, key) in ["mean_day_ms", "mean_map_ms", "mean_view_ms", "mean_publish_ms"].iter().enumerate() {
+            d.set(*key, f.spent[k] / n);
+        }
+        d.set("days_measured", f.spent_days as i64);
         drop(f);
         d.set("sync_usec", self.upload_usec);
         d.set("sync_layers", self.uploaded_pages);

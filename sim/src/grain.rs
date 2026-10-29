@@ -3786,6 +3786,40 @@ pub struct HouseholdLook {
     pub farm: Option<(u8, i64)>,
 }
 
+/// Where the plots of `Grain::for_each_plot` lie on the fine raster, and
+/// the day of the year their growth is counted on.
+struct PlotsAt<'a> {
+    block_cell: &'a [u32],
+    cols: i32,
+    cols_f: i32,
+    now: i64,
+}
+
+impl<'a> PlotsAt<'a> {
+    fn new(g: &'a Grain, day: i64) -> Self {
+        PlotsAt { block_cell: &g.block_cell, cols: g.cols_f / FINE, cols_f: g.cols_f, now: doy(day) }
+    }
+
+    fn farm(&self, farm: &Farm, f: &mut impl FnMut(u32, u32, u32, u8)) {
+        if farm.hh == NONE || farm.area <= 0 {
+            return;
+        }
+        let len = (farm.harvest_doy - farm.sow_doy).rem_euclid(YEAR).max(1);
+        let since = (self.now - farm.sow_doy).rem_euclid(YEAR);
+        let growth = if farm.sown > 0 && since <= len { (since * 255 / len) as u8 } else { 0 };
+        for pl in &farm.plots {
+            let m2 = (pl.good + pl.poor) as i64;
+            if m2 == 0 {
+                continue;
+            }
+            let cl = self.block_cell[pl.tile as usize / 256] as i32;
+            let local = pl.tile as i32 % 256;
+            let fine = ((cl / self.cols * FINE + local / FINE) * self.cols_f + cl % self.cols * FINE + local % FINE) as u32;
+            f(fine, m2 as u32, (m2 * farm.sown / farm.area) as u32, growth);
+        }
+    }
+}
+
 /// Read-only views of the grain economy for the game (presentation, S45):
 /// nothing here changes the state or the fingerprint.
 impl Grain {
@@ -3794,23 +3828,31 @@ impl Grain {
     /// more than once). Growth runs from 0 at sowing to 255 at the start of
     /// the farm's harvest, 0 outside.
     pub fn for_each_plot(&self, day: i64, mut f: impl FnMut(u32, u32, u32, u8)) {
-        let cols = self.cols_f / FINE;
-        let now = doy(day);
-        for farm in self.farms.iter().filter(|x| x.hh != NONE && x.area > 0) {
-            let len = (farm.harvest_doy - farm.sow_doy).rem_euclid(YEAR).max(1);
-            let since = (now - farm.sow_doy).rem_euclid(YEAR);
-            let growth = if farm.sown > 0 && since <= len { (since * 255 / len) as u8 } else { 0 };
-            for pl in &farm.plots {
-                let m2 = (pl.good + pl.poor) as i64;
-                if m2 == 0 {
-                    continue;
-                }
-                let cl = self.block_cell[pl.tile as usize / 256] as i32;
-                let local = pl.tile as i32 % 256;
-                let fine = ((cl / cols * FINE + local / FINE) * self.cols_f + cl % cols * FINE + local % FINE) as u32;
-                f(fine, m2 as u32, (m2 * farm.sown / farm.area) as u32, growth);
-            }
+        let at = PlotsAt::new(self, day);
+        for farm in &self.farms {
+            at.farm(farm, &mut f);
         }
+    }
+
+    /// `for_each_plot` as lists of (fine tile, field m², sown m², growth),
+    /// one per part of the farms, built on all cores (for the map: 1.7
+    /// million plots in the first year).
+    pub fn plot_lists(&self, day: i64) -> Vec<Vec<(u32, u32, u32, u8)>> {
+        let at = PlotsAt::new(self, day);
+        let at = &at;
+        let pool = bevy_tasks::ComputeTaskPool::get();
+        let chunk = self.farms.len().div_ceil(pool.thread_num().max(1)).max(1024);
+        pool.scope(|s| {
+            for part in self.farms.chunks(chunk) {
+                s.spawn(async move {
+                    let mut v = Vec::new();
+                    for farm in part {
+                        at.farm(farm, &mut |t, m2, sown, growth| v.push((t, m2, sown, growth)));
+                    }
+                    v
+                });
+            }
+        })
     }
 
     /// Fine raster size: (rows, columns), 16 × 16 per 25 km cell.
