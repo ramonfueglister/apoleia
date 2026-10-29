@@ -53,6 +53,14 @@ var _buttons: Array[ToolButton] = []
 var _mesh := ImmediateMesh.new()
 var _drawn_at := Vector3.INF # centre and width the orders were last drawn for
 var _dirty := true
+## The sim's answer to "can this be built?" (ask_build_check): status by
+## tile (0 gets built, 1 nobody builds here, 2 fields and roads not yet,
+## 3 a farm nobody moves into today), the tiles last asked, the text.
+var _check := {}
+var _check_key: Array[Vector2i] = []
+var _asking := false
+var _label: Label
+const CHECK_COLOURS: Array[Color] = [Color(1, 1, 1, 0.45), Color(0.91, 0.52, 0.42, 0.6), Color(0.55, 0.55, 0.55, 0.55), Color(0.88, 0.63, 0.25, 0.6)]
 
 func setup(scene: Node3D, sim: RefCounted) -> void:
 	name = "BuildMenu"
@@ -91,6 +99,18 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 		b.chosen.connect(_choose.bind(kind))
 		bar.add_child(b)
 		_buttons.append(b)
+	# beside the cursor: what the tile under it would cost, or why not
+	_label = Label.new()
+	_label.add_theme_font_size_override("font_size", roundi(9 * k))
+	_label.add_theme_color_override("font_color", SimTables.INK)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(SimTables.BACKGROUND, 0.85)
+	box.set_corner_radius_all(roundi(3 * k))
+	box.set_content_margin_all(roundi(4 * k))
+	_label.add_theme_stylebox_override("normal", box)
+	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_label.visible = false
+	hud.add_child(_label)
 
 func _close() -> bool:
 	return landscape.width <= BUILD_MAX_KM
@@ -188,7 +208,7 @@ func _end_stroke(send: bool) -> void:
 			if _stroke_erase:
 				if _orders.get(t, NONE) == tool:
 					tiles.append_array([t.x, t.y])
-			elif _buildable(t):
+			elif _buildable(t) and _check.get(t, 0) != 1:
 				tiles.append_array([t.x, t.y])
 		if not tiles.is_empty():
 			_send(tool, tiles, _stroke_erase)
@@ -225,6 +245,7 @@ func _process(_delta: float) -> void:
 		if v != _version:
 			_version = v
 			_take_orders()
+	_update_check()
 	var at := Vector3(landscape.target.x, landscape.target.y, landscape.width)
 	if _drawn_at.x == INF or Vector2(at.x, at.y).distance_to(Vector2(_drawn_at.x, _drawn_at.y)) > at.z * 0.2 \
 			or absf(log(at.z / _drawn_at.z)) > 0.2:
@@ -232,6 +253,53 @@ func _process(_delta: float) -> void:
 	if _dirty:
 		_drawn_at = at
 		_draw_orders()
+
+## Asks the sim about the tiles under the cursor or the stroke whenever
+## they change (one question at a time) and shows its answer.
+func _update_check() -> void:
+	var wanted: Array[Vector2i] = []
+	if tool != NONE and _close() and not _stroke_erase:
+		if _stroke.is_empty():
+			wanted.append(_hover)
+		else:
+			wanted.append_array(_stroke)
+	_label.visible = not wanted.is_empty() and _label.text != ""
+	_label.position = get_viewport().get_mouse_position() + Vector2(18, 18) * _buttons[0].scale_k / 2.0
+	if people == null:
+		return
+	if _asking:
+		var a: Dictionary = people.take_build_check()
+		if a.is_empty():
+			return
+		_asking = false
+		_take_check(a)
+	if wanted.is_empty() or wanted == _check_key:
+		return
+	var tiles := PackedInt32Array()
+	for t in wanted:
+		tiles.append_array([t.x, t.y])
+	people.ask_build_check(tool, tiles)
+	_check_key = wanted
+	_asking = true
+
+func _take_check(a: Dictionary) -> void:
+	if tool == NONE:
+		return
+	var flat: PackedInt32Array = a.tiles
+	var states: PackedStringArray = a.states
+	_check.clear()
+	var bad := -1
+	for i in range(0, flat.size(), 3):
+		_check[Vector2i(flat[i], flat[i + 1])] = flat[i + 2]
+		if flat[i + 2] != 0 and bad < 0:
+			bad = flat[i + 2]
+	var n := flat.size() / 3
+	var what: String = NAMES[tool] if n == 1 else "%d Kacheln" % n
+	if bad < 0:
+		_label.text = "%s · %s Tage · %s Denar" % [what, SimTables._int(int(a.days)), SimTables._int(roundi(a.cost))]
+	else:
+		_label.text = states[bad] if bad < states.size() else ""
+	_dirty = true
 
 func _take_orders() -> void:
 	var d: Dictionary = people.build_orders()
@@ -264,17 +332,28 @@ func _draw_orders() -> void:
 					quads.append([t, Color(COLOURS[_orders[t]], 0.85), _progress[t]])
 		if tool != NONE:
 			for t in _stroke:
-				var ok: bool = _orders.get(t, NONE) == tool if _stroke_erase else _buildable(t)
-				var c := Color(0.1, 0.1, 0.1, 0.5) if _stroke_erase else Color(COLOURS[tool].lightened(0.35), 0.75)
-				quads.append([t, c if ok else Color(SimTables.NEGATIVE, 0.6), 1.0])
+				if _stroke_erase:
+					quads.append([t, Color(0.1, 0.1, 0.1, 0.5) if _orders.get(t, NONE) == tool else Color(SimTables.NEGATIVE, 0.6), 1.0])
+				else:
+					quads.append([t, _tile_colour(t, Color(COLOURS[tool].lightened(0.35), 0.75)), 1.0])
 			if _stroke.is_empty():
-				quads.append([_hover, Color(1, 1, 1, 0.4) if _buildable(_hover) else Color(SimTables.NEGATIVE, 0.5), 1.0])
+				quads.append([_hover, _tile_colour(_hover, Color(1, 1, 1, 0.4)), 1.0])
 	if quads.is_empty():
 		return
 	_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
 	for q in quads:
 		_patch(q[0], q[1], q[2])
 	_mesh.surface_end()
+
+## Preview colour of a tile: `ok` where it gets built, else by the sim's
+## status (red nobody builds here, grey not yet, amber nobody moves in).
+func _tile_colour(t: Vector2i, ok: Color) -> Color:
+	if not _buildable(t):
+		return CHECK_COLOURS[1]
+	var status: int = _check.get(t, 0)
+	if status <= 0 or status >= CHECK_COLOURS.size():
+		return ok
+	return CHECK_COLOURS[status]
 
 ## `share` of the patch from its west edge (a site's progress).
 func _patch(t: Vector2i, colour: Color, share := 1.0) -> void:
