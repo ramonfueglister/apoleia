@@ -553,6 +553,11 @@ Test `deterministic_fingerprint` prüft das an jedem der 200 Tage, der Lauf jede
 | Nicht gebucht | 0 | 0 |
 | Steuerkorn | 3'248 t | 32'550 t |
 
+Über 100 Jahre (`run100-s94-money.txt`, gleicher Fingerabdruck wie `run100-s93.txt`):
+Staatslohn 12'908 Mio., davon 12'749 Mio. geprägt; Geld im Umlauf im Jahr 50 4'380 Mio.,
+im Jahr 100 5'868 Mio.; mit aufgelösten Haushalten verschwunden 6'351 Mio., also die
+Hälfte des geprägten Geldes; Fracht 766 Mio.; nicht gebucht 0.
+
 Die Geldmenge wächst um gut 110 Mio. Denar im Jahr, weil der Staat jeden Monat Lohn prägt
 und nichts davon als Steuer zurückholt. Auf die Preise wirkt das nicht: Der Marktpreis
 hängt nur an Lager und Nachfrage. Das ist der Stand, auf dem Steuer in Geld und Sold aus
@@ -627,7 +632,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
 | Grundpreis | 8,75 Denar/kg | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn für alle ausser Bauern und Händlern | 25 Denar pro Arbeitstag | S76 (Staat hat unbegrenzt Geld), Preisedikt |
-| Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt; leere Kasse hat keine Folge | S76; was bei leerer Kasse geschieht, ist offen |
+| Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt | S95 (leere Kasse: nachprägen); Preise folgen der Geldmenge noch nicht |
 | Steuer | 10 % der Ernte, als Korn in die Staatskasse, dort ohne Nutzen (S94) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
 | Grundherr eines Pacht- oder Gutshofs | ein Senator oder Ritter per Zufall | S69 offen |
@@ -674,6 +679,8 @@ in Arrays nach ID statt in Hashtabellen.
   ohne die doppelt gezählten Hungertoten (S89): 0,17 % im Jahr von Jahr 10 bis 100,
   historisch 0,1–0,2 %. Mit S91–S93 jetzt 0,16 % (`run100-s93.txt`).
 - **Die Geldmenge wächst** um gut 110 Mio. Denar im Jahr (S94 Schritt 1): Staatslohn wird
-  geprägt, keine Steuer in Geld holt ihn zurück. Ohne Wirkung auf die Preise.
+  geprägt, keine Steuer in Geld holt ihn zurück. Ohne Wirkung auf die Preise. Über 100
+  Jahre verschwindet die Hälfte des geprägten Geldes mit Haushalten, die aussterben oder zu
+  Verwandten ziehen: Geld wird nicht vererbt und nicht mitgenommen (wie der Vorrat, S79).
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.
