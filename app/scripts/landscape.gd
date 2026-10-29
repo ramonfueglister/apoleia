@@ -166,15 +166,16 @@ func _setup_look() -> void:
 	# (AgX washed the map out).
 	# Islanders and Urbek shade in a clear cool blue: the fill a little bluer
 	# and weaker than the old grey #ccccf2 at 0.85, the sun a little stronger,
-	# so lit ground keeps its palette tone (within 3 %) and the shadows fall
-	# from about a third to about a quarter of it, bluish rather than grey.
-	environment.ambient_light_color = Color("b3c2f2")
-	environment.ambient_light_energy = 0.75
+	# so lit ground keeps about its palette tone and the shadows fall from
+	# about a third to about a fifth of it, bluish rather than grey (round 1
+	# at 0.75 still read pale grey).
+	environment.ambient_light_color = Color("b0bff5")
+	environment.ambient_light_energy = 0.62
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
 	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 1.0
+	environment.adjustment_saturation = 1.06
 	environment.adjustment_contrast = 1.08
 	environment.ssao_enabled = true
 	# contact shade where houses, trees and walls meet the ground; the radius
@@ -194,7 +195,7 @@ func _setup_look() -> void:
 	# right beside what casts them.
 	sun.rotation_degrees = Vector3(-40.0, -65.0, 0.0)
 	sun.light_color = Color("fff0d9")
-	sun.light_energy = 2.2
+	sun.light_energy = 2.35
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 1.0
 	# Hard shadows as in Urbek: one map over the view only (see _update_look),

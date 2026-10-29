@@ -2,7 +2,7 @@
 // darker and cooler, the middle untouched.
 shader_type canvas_item;
 
-uniform float strength = 0.22;
+uniform float strength = 0.34;
 uniform vec3 tint = vec3(0.16, 0.20, 0.32);
 
 void fragment() {
