@@ -28,12 +28,16 @@ const int CROSS_EVERY = 5;
 const int STREET_EVERY = 3;
 const float STREET_CODE = 8.0;
 
-bool tt_sub_street(ivec2 t) {
+// bit 0: a cross street (runs north-south), bit 1: a row street (east-west)
+int tt_sub_street_dir(ivec2 t) {
 	bool cross = ((t.x % CROSS_EVERY) + CROSS_EVERY) % CROSS_EVERY == 0
 		&& tt_sub_lot(t - ivec2(1, 0)) && tt_sub_lot(t + ivec2(1, 0));
 	bool row = ((t.y % STREET_EVERY) + STREET_EVERY) % STREET_EVERY == 0
 		&& tt_sub_lot(t - ivec2(0, 1)) && tt_sub_lot(t + ivec2(0, 1));
-	return cross || row;
+	return (cross ? 1 : 0) + (row ? 2 : 0);
+}
+bool tt_sub_street(ivec2 t) {
+	return tt_sub_street_dir(t) != 0;
 }
 
 // Up close olive groves stand in the open land around the towns of the warm
@@ -112,7 +116,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// houses reached into the Pantheon)
 		show = show && !tt_near_landmark(world_min + (vec2(t) + uv) * tile_km, 0.45 * tile_km / (sub_tiles ? 1.0 : float(side)));
 	} else {
-		show = show && town == 0;
+		show = show && (town == 0 || tt_sub_garden(t, town));
 		uv = vec2(0.5);
 	}
 	if (!house && show) {
@@ -129,6 +133,16 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// open land: small groves of a few trees around one spot of the data
 		// tile, as in Urbek (no single trees: they read as specks)
 		bool field = land == G_FIELD;
+		// a town's garden quarter: cypresses, stone pines and a broadleaf or
+		// two inside its hedge, clear of the landmarks
+		bool garden = town > 0;
+		if (garden) {
+			uv = (g + 0.3 + 0.4 * vec2(r1, r2)) / float(side) * 0.7 + 0.15;
+			at = world_min + (vec2(t) + uv) * tile_km;
+			wood = false;
+			open = false;
+			field = false;
+		}
 		bool grove = false;
 		bool olive = false;
 		bool ramp = false;
@@ -158,8 +172,9 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool scatter = sub_tiles && (open || field) && !olive && !grove && rs < SCATTER_TREE + SCATTER_BUSH
 			&& tt_scatter_free(at, ramp, field);
 		bool bush = scatter && rs >= SCATTER_TREE;
-		show = show && (wood || grove || olive || scatter) && (olive || scatter || !thin);
-		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.3, 0.45, r0) : mix(0.8, 1.0, r0);
+		bool planted = garden && rs < 0.6 && !tt_near_landmark(at, 0.06);
+		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
+		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.3, 0.45, r0) : planted ? mix(0.7, 0.9, r0) : mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;
@@ -168,6 +183,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool south = lat < 44.5 && h < 700.0;
 		float pine_p = south ? (wood ? 0.12 : 0.45) : 0.0;
 		int kind = olive || bush ? 0
+			: planted ? (r1 < 0.4 ? 2 : r1 < 0.65 ? 4 : 0)
 			: r0 < conifer_p ? 1
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;

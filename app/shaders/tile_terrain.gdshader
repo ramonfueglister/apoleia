@@ -368,7 +368,21 @@ void fragment() {
 			bool built = !sub_tiles || flat_top > 0.5;
 			bool yard = sub_tiles && (built || town >= 2) && tt_sub_house(tile, town);
 			bool paved = sub_tiles ? yard || (town == 3 && built) : true;
-			if (housed && (sub_tiles || town >= 2)) {
+			// the landmarks stand on open travertine squares
+			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
+			// up close a town's quarter without a lot (by the landmarks, the
+			// small squares of the core) is a garden with trees
+			// (tile_props.gdshaderinc), not an empty paved square (s2: Rome
+			// round the Colosseum a desert of paving)
+			bool garden = housed && tt_sub_garden(tile, town) && !plaza;
+			if (garden) {
+				paved = false;
+				c = tt_grass(p, ground_rgb_at(G_MEADOW, band) * vec3(0.86, 0.95, 0.82));
+				// a clipped hedge round it
+				vec2 e = min(tile_uv, 1.0 - tile_uv);
+				float aa = fwidth(e.x) + 1e-4;
+				c = mix(c, vec3(0.15, 0.3, 0.13), 1.0 - smoothstep(0.035 - aa, 0.035 + aa, min(e.x, e.y)));
+			} else if (housed && (sub_tiles || town >= 2)) {
 				c = paved ? C_PAVED : town >= 2 ? ground_rgb_at(G_MEADOW, band) : c;
 			} else if (town >= 2 && tile_km < 8.0) {
 				// (from 8 km tiles a town is one roof coloured tile: a red
@@ -378,8 +392,6 @@ void fragment() {
 			// streets between the house blocks of towns and cities (the grid of
 			// house_grid blocks per tile; half a street on each tile edge; up
 			// close the streets lie on the lots' terraces, tile_props)
-			// the landmarks stand on open travertine squares
-			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
 			// slabs on the paved quarters and the squares (travertine slabs larger)
 			if (sub_tiles && (plaza || (housed && paved))) {

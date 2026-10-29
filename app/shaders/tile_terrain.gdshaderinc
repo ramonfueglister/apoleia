@@ -506,6 +506,13 @@ bool tt_sub_lot(ivec2 t) {
 	return !tt_near_landmark(world_min + (vec2(t) + 0.5) * tile_km, 0.45 * tile_km);
 }
 
+// Up close a quarter of a town or city without a lot is a garden (lawn,
+// hedge, trees: tile_terrain.gdshader, tile_props.gdshaderinc), except on
+// the landmarks' squares.
+bool tt_sub_garden(ivec2 t, int town) {
+	return sub_tiles && town >= 2 && (tt_cell(t) & 3) == W_LAND && !tt_sub_lot(t);
+}
+
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
 vec4 tt_corners(ivec2 t) {
 	int w = tt_water(t);

@@ -314,9 +314,9 @@ unabhängig und unverändert.
 
 ## Bildstimmung (Urbek/Islanders, seit 29.10.2026)
 
-Status: `implementiert`, Runde 1. Ramon, 29.10.2026: Die Grafik soll auf das
-Niveau von Urbek und Islanders. Palette und Geländeregeln bleiben, geändert
-sind nur Licht und Nachbearbeitung (`landscape.gd`):
+Status: `implementiert`, Runden 1 bis 3. Ramon, 29.10.2026: Die Grafik soll auf das
+Niveau von Urbek und Islanders. Runde 1 änderte nur Licht und Nachbearbeitung
+(`landscape.gd`):
 
 - Schatten kühl blau statt blassgrau: Umgebungslicht #b0bff5 mit 0,62 statt
   #ccccf2 mit 0,85, Sonne 2,35 statt 2,05. Besonnter Boden bleibt etwa im Ton
@@ -325,7 +325,8 @@ sind nur Licht und Nachbearbeitung (`landscape.gd`):
 - Kontaktschatten (SSAO) mit dem Zoom: Radius 2 % der Sichtbreite (0,03 bis
   0,6 km) statt fest 0,6 km, Stärke 1,1.
 - Tilt-Shift wie ein Modellfoto: ein scharfes Band um den Fokus, Unschärfe zum
-  oberen und unteren Bildrand (`TILT_*`), voll bis 6 km Sichtbreite, weg ab 40 km.
+  oberen und unteren Bildrand (`TILT_*`), voll bis 6 km Sichtbreite, weg ab 40 km
+  (seit Runde 3 nur noch schwach).
 - Vignette unter der Benutzeroberfläche (`shaders/vignette.gdshader`).
 - Brandung an der Meeresküste bis 2-km-Kacheln (`shore_foam` in
   `tile_terrain.gdshader`): ein weisses Band am Land, eine zweite Linie läuft
@@ -333,6 +334,45 @@ sind nur Licht und Nachbearbeitung (`landscape.gd`):
 - Quadermauerwerk auf den Terrassenmauern unter den Häusern (`masonry` in
   `tile_props.gdshader`), 1 × 0,5 Diorama-Meter, blendet aus, bevor die Steine
   kleiner als einige Pixel werden.
+
+Runde 2 und 3 (Ramon, 29.10.2026: „das sieht überhaupt nicht aus danach“,
+„perspektive stimmt nicht“, „gleiche höhe der häuser“, „felder etc. alles“,
+„immer mit screenshots echt vergleichen“). Jede Runde wird neben den
+Urbek-Screenshots in `docs/kit1/references/screenshots/` gerendert und
+gemessen (Helligkeit, Kontrast, Anteil dunkler Grüntöne). Gemessen vor Runde 3:
+Urbek-Ackerland hat etwa 25 % dunkle Töne (Baumschatten, Reihen, Hecken), wir
+fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
+
+- Kamera wie Urbek (`landscape.gd`): nah schaut sie nach Nordosten die
+  Kacheldiagonale entlang (`YAW_CLOSE` 45°) und 35° nach unten
+  (`PITCH_CLOSE`); bis 700 km Sichtbreite dreht sie zurück nach Norden und
+  wird steiler. Die Sonne dreht mit.
+- Gelände nah flacher (`TileTerrain.relief_for_width`): Eine Stufe war 0,3 km
+  hoch, ein Hauslos 0,24 km breit, die Terrassenmauern also doppelt so hoch
+  wie die Häuser. Unter 16 km Sichtbreite schrumpft die Stufe bis auf 40 % bei
+  4 km. Viertel- und 0,5-km-Kacheln haben beide 0,3 km je Stufe, darum springt
+  beim Wechsel nichts. Flache Rampen bekommen nah einen schwächeren Seitenton.
+- Skyline (`_lot_weights` in `tile_terrain.gd`): Die hohen Lose (bis vier
+  Geschosse) sammeln sich in den Stadtkernen, die niedrigen in den Dörfern.
+- Grauer Steinbelag statt Creme (`C_PAVED`, `C_PLAZA`, `tt_paving`) und weiche
+  Schattenkanten.
+- Felder (`people_crops.gdshader`): Saatreihen als lange Striche mit kurzen
+  Lücken statt Punktraster, Nord-Süd oder Ost-West je Parzelle. Gepflügte
+  Felder zeigen Furchen. Etwa ein Drittel der Feldseiten bekommt einen Zaun,
+  nicht nur die beim Hof. Die Strohplatten haben eine feine Körnung.
+- Wiese (`tt_grass`): Flecken in einem tieferen, satteren Grün, dunkle
+  Grasbüschel und vereinzelte Blumen. Das Muster blendet aus, bevor es flimmern
+  würde.
+- Einzelbäume und Büsche (`tt_scatter_free` in `tile_props.gdshaderinc`) auf
+  Rampen und auf den Parzellen, die die Höfe als Weide liegen lassen, nie auf
+  Feldern oder Hoflosen. Dafür setzt `people_dots.gd` die Feld- und Losdaten
+  auch auf den Platzierungsdurchgang.
+- Städte: Ein Stadtviertel ohne Los (an den Landmarken, die kleinen Plätze im
+  Kern) ist ein Garten mit Rasen, Schnitthecke, Zypressen, Pinien und
+  Laubbäumen (`tt_sub_garden`) statt einer leeren Pflasterfläche.
+  Strassenblöcke haben eine dunkle Basaltfahrbahn zwischen Gehsteigen aus
+  Travertin mit Bordstein.
+- Tilt-Shift nur noch angedeutet, denn Urbek hat praktisch keinen.
 
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 

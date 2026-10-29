@@ -36,7 +36,7 @@ uniform vec3 tree_top[20];
 uniform vec3 tree_side[20];
 
 varying vec3 tint;
-varying float road; // a paved street tile's terrace top
+varying float road; // a street tile's terrace top: tt_sub_street_dir (1 north-south, 2 east-west, 3 both), 0 none
 varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc)
 varying vec3 wpos;  // world position (masonry on the terrace walls)
 varying float wall_dir; // a terrace wall: 1 runs along x, 2 along z, 0 none
@@ -49,7 +49,12 @@ varying float wall_dir; // a terrace wall: 1 runs along x, 2 along z, 0 none
 const float SUB_LOT_DEPTH = 0.9;
 const float SUB_LOT_NORTH = 0.01; // gap behind the lot, tile units
 const float TERRACE_STEP_M = 0.25; // a terrace on flat ground stands this high
-const vec3 ROAD_RGB = vec3(0.639, 0.596, 0.463); // as the street on the terrace top (PLINTH_ROAD)
+// A Roman street on a street block: dark basalt paving between raised
+// footways of travertine with a kerb (s2: the streets read as empty beige
+// squares; Urbek's streets are grey roads between light pavements)
+const vec3 BASALT_RGB = vec3(0.4, 0.4, 0.41);
+const vec3 FOOTWAY_RGB = vec3(0.66, 0.63, 0.56);
+const float FOOTWAY = 0.32; // from the street's middle, tile units: footways of about 1.8 m
 // an olive crown's grey green on the broadleaf's (Kritik r9: lit #8a9a64,
 // shade #5e7048 on screen)
 const vec3 OLIVE_TINT = vec3(2.0, 1.09, 1.9);
@@ -136,7 +141,7 @@ void vertex() {
 				// (tt_corners lowers the ground south of a lot)
 				v.z += VERTEX.z > 4.9 ? 0.003 * tile_km : 0.0;
 				v.y = VERTEX.y > 0.5 ? max(off, -0.5 * wall) : -wall + min(off, 0.5 * wall);
-				road = street && NORMAL.y > 0.5 ? 1.0 : 0.0;
+				road = street && NORMAL.y > 0.5 ? float(tt_sub_street_dir(t)) : 0.0;
 				uv = vec2(0.5);
 			} else {
 				float lot = 10.0 * s / tile_km; // lot width in tile units
@@ -210,10 +215,20 @@ float masonry() {
 }
 
 void fragment() {
-	vec3 c = mix(COLOR.rgb, ROAD_RGB, road);
+	vec3 c = COLOR.rgb;
 	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
 	if (wall_dir > 0.5) { c *= masonry(); }
-	else if (prop_kind == 5) { c *= tt_paving(wpos.xz, road > 0.5 ? vec2(1.2, 0.8) : vec2(1.0, 1.0)); } // the terrace top
+	else if (road > 0.5) {
+		vec2 q = fract((wpos.xz - world_min) / tile_km) - 0.5;
+		int dir = int(road + 0.5);
+		float across = dir == 1 ? abs(q.x) : dir == 2 ? abs(q.y) : min(abs(q.x), abs(q.y));
+		bool walk = across > FOOTWAY;
+		c = walk ? FOOTWAY_RGB : BASALT_RGB;
+		c *= tt_paving(wpos.xz, walk ? vec2(1.0, 1.0) : vec2(0.6, 0.45));
+		float aa = fwidth(across) * 1.5 + 1e-5;
+		c *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, aa, abs(across - FOOTWAY))); // the kerb
+	}
+	else if (prop_kind == 5) { c *= tt_paving(wpos.xz, vec2(1.0, 1.0)); } // the terrace top
 	ALBEDO = pow(c * tint, vec3(2.2)); // vertex colours are sRGB
 
 	ROUGHNESS = 1.0;
