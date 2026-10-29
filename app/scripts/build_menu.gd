@@ -66,6 +66,7 @@ var people: RefCounted # ApoleiaPeople, or null
 var tool := NONE
 var _orders := {} # lot (Vector2i) -> kind, as the sim last reported
 var _progress := {} # lot -> share of the site built (0 … 1), where work began
+var _built_roads := {} # lot -> true: finished road lots (build_orders "roads")
 var _version := -1
 var _stroke: Array[Vector2i] = [] # lots of the stroke under way
 var _stroke_erase := false
@@ -312,7 +313,8 @@ func _end_stroke(send: bool) -> void:
 				if _orders.get(l, NONE) == tool:
 					var s := spot(l)
 					tiles.append_array([s.x, s.y])
-			elif _buildable(l) and _check.get(l, 0) != 1 and _orders.get(l, NONE) != tool:
+			elif _buildable(l) and _check.get(l, 0) != 1 and _orders.get(l, NONE) != tool \
+					and not (tool == ROAD and _built_roads.has(l)):
 				var s := spot(l)
 				tiles.append_array([s.x, s.y])
 		if not tiles.is_empty():
@@ -442,6 +444,11 @@ func _take_orders() -> void:
 	_orders.clear()
 	for i in range(0, flat.size(), 3):
 		_orders[lot_at(Vector2(flat[i], flat[i + 1]) / 1000.0)] = flat[i + 2]
+	# finished road lots stay roads once their orders are gone: x, z metres
+	var built: PackedInt32Array = d.get("roads", PackedInt32Array())
+	_built_roads.clear()
+	for i in range(0, built.size(), 2):
+		_built_roads[lot_at(Vector2(built[i], built[i + 1]) / 1000.0)] = true
 	# column, row, days done, days needed per order (S113); 0, 0 no site yet
 	var done: PackedInt32Array = d.get("progress", PackedInt32Array())
 	_progress.clear()
@@ -481,7 +488,11 @@ func _draw_orders() -> void:
 		for l in fields:
 			_field(l, Color(COLOURS[FIELD], 0.5), _progress.get(l, 0.0))
 		for chain in chains:
-			_road(chain, Color(TRACK, 0.85))
+			# finished: gravel; ordered or being built: bare earth
+			var built := 0
+			for l: Vector2i in chain:
+				built += int(_built_roads.has(l))
+			_road(chain, Color(COLOURS[ROAD], 0.95) if built * 2 > chain.size() else Color(TRACK, 0.85))
 		if preview and not _stroke.is_empty():
 			match tool:
 				FIELD:
@@ -582,11 +593,12 @@ static func _chaikin(p: PackedVector2Array) -> PackedVector2Array:
 	out.append(p[p.size() - 1])
 	return out
 
-## The road orders as chains of lots between ends and crossings. Lots are
+## The roads, ordered and finished, as chains of lots between ends and
+## crossings. Lots are
 ## joined to their eight neighbours, but not across a corner two straight
 ## steps already go round (no small triangles).
 func _chains() -> Array:
-	var roads := {}
+	var roads := _built_roads.duplicate()
 	for l: Vector2i in _orders:
 		if _orders[l] == ROAD:
 			roads[l] = true
