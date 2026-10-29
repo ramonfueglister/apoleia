@@ -66,12 +66,15 @@ pub struct Site {
     pub cell: u32,
     pub need: i64,
     pub done: i64,
+    /// The order's spot (world metres, build::Tile).
+    pub spot: Tile,
 }
 
 impl Grain {
-    /// Fine tile index and 25 km cell of an absolute tile, None off the grid.
+    /// Fine tile index and 25 km cell of an order's spot, None off the grid.
     fn site_place(&self, p: &People, t: Tile) -> Option<(u32, u32)> {
-        let (fr, fc) = (t.0 - p.grid.row0 * FINE, t.1 - p.grid.col0 * FINE);
+        let (r, c) = build::fine_of(t);
+        let (fr, fc) = (r - p.grid.row0 * FINE, c - p.grid.col0 * FINE);
         if fr < 0 || fc < 0 || fr >= self.rows_f || fc >= self.cols_f {
             return None;
         }
@@ -95,7 +98,7 @@ impl Grain {
                 continue;
             }
             let need = site_need(o.kind);
-            sites.insert(t, Site { kind: o.kind, market, fine, cell, need, done: 0 });
+            sites.insert(t, Site { kind: o.kind, market, fine, cell, need, done: 0, spot: t });
         }
         // the days worked since yesterday, to the sites in tile order
         let mut pool: Vec<i64> = self.markets.iter_mut().map(|m| std::mem::take(&mut m.state_done)).collect();
@@ -132,6 +135,7 @@ impl Grain {
         }
         let i = self.info[&id];
         let f = self.new_farm(p, id, &i, s.fine) as usize;
+        self.spots.insert(f as u32, s.spot);
         // S69: a farm of the family, which pays tax for it
         self.farms[f].kind = FAMILY;
         let want = self.want_m2(id);
@@ -203,6 +207,15 @@ impl Grain {
         out
     }
 
+    /// Where the household of a farm built from an order lives: the
+    /// order's spot in world km (x, z), None for every other farm (their
+    /// houses stand in a village of the cell, crate::settle).
+    pub fn built_spot(&self, household: u32) -> Option<(f64, f64)> {
+        let f = self.hh.get(&household)?.farm;
+        let &(z, x) = self.spots.get(&f)?;
+        (self.farms.get(f as usize)?.hh == household).then_some((x as f64 / 1000.0, z as f64 / 1000.0))
+    }
+
     /// The building sites, by tile: kind, work days needed and done.
     pub fn sites(&self) -> impl Iterator<Item = (Tile, Site)> + '_ {
         self.sites.iter().map(|(&t, &s)| (t, s))
@@ -239,7 +252,7 @@ mod tests {
                         .expect("a tent household");
                     let cell = g.info[&id].home as i32;
                     let cols = g.cols_f / FINE;
-                    let t = ((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
+                    let t = build::fine_centre((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
                     orders.apply(&Command::Place { kind: build::FARM, tiles: vec![t] }, day);
                     t_fine = g.site_place(&p, t).expect("on the grid").0;
                 }
@@ -279,14 +292,14 @@ mod tests {
             .expect("a tent household");
         let cell = g.info[&id].home as i32;
         let cols = g.cols_f / FINE;
-        let t = ((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
+        let t = build::fine_centre((cell / cols + p.grid.row0) * FINE + FINE / 2, (cell % cols + p.grid.col0) * FINE + FINE / 2);
         let farm = g.site_check(&p, build::FARM, t);
         assert_eq!(farm.status, CHECK_BUILDS);
         assert_eq!(farm.market, g.cell_market[cell as usize]);
         assert_eq!((farm.need, farm.cost), (FARM_DAYS, FARM_DAYS * g.day_wage(farm.market)));
         assert!(farm.cost > 0);
         assert_eq!(g.site_check(&p, build::FIELD, t).status, CHECK_UNDECIDED);
-        let off = g.site_check(&p, build::FARM, (-1, -1));
+        let off = g.site_check(&p, build::FARM, (i32::MIN / 2, i32::MIN / 2));
         assert_eq!((off.status, off.market, off.cost), (CHECK_NO_MARKET, NONE, 0));
     }
 }

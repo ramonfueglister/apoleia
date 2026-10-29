@@ -40,8 +40,9 @@ fn main() {
     for d in 0..days {
         if d % 90 == 0 {
             let r = 400 + (d / 90) as i32;
-            g.command(&Command::Place { kind: FARM, tiles: vec![(r, 900)] });
-            g.command(&Command::Place { kind: ROAD, tiles: vec![(r, 901), (r, 902)] });
+            let at = apoleia_sim::build::fine_centre;
+            g.command(&Command::Place { kind: FARM, tiles: vec![at(r, 900)] });
+            g.command(&Command::Place { kind: ROAD, tiles: vec![at(r, 901), at(r, 902)] });
         }
         let t = Instant::now();
         let [people_us, grain_us] = g.day();

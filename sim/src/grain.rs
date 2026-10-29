@@ -756,6 +756,9 @@ pub struct Grain {
     events: Vec<crate::events::Event>,
     /// S113: the building sites of the player's orders, by tile (sites.rs).
     sites: std::collections::BTreeMap<crate::build::Tile, sites::Site>,
+    /// S113: the spot (world metres, build::Tile) of each farm built from
+    /// an order, by farm, so the view puts its house where it was ordered.
+    spots: FxHashMap<u32, crate::build::Tile>,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1172,6 +1175,7 @@ impl Grain {
             today: 0,
             events: Vec::new(),
             sites: Default::default(),
+            spots: FxHashMap::default(),
         };
         gr.build_graph(p);
         gr.gates(p);
