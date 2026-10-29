@@ -44,6 +44,14 @@ const SUB_KM := 0.25
 # a level as high as on the 0.5 km tiles (the hills keep their height when
 # the zoom changes; the quarter ramps are twice as steep)
 const SUB_LEVEL_HEIGHT := 1.2
+# Up close the steps are drawn lower: a level of 0.3 km stood above the 0.24
+# km of a house lot, so the terrace walls were twice as tall as the houses on
+# them. Below RELIEF_FLAT_TO km view width the levels shrink to RELIEF_FLAT of
+# their height at RELIEF_FLAT_FROM; the quarter and the 0.5 km tiles share 0.3
+# km a level, so the switch between them (at about 12 km) does not jump.
+const RELIEF_FLAT := 0.4
+const RELIEF_FLAT_FROM := 4.0
+const RELIEF_FLAT_TO := 16.0
 const SUB_TREE_SLOTS := 4
 const SUB_HOUSE_SLOTS := 1
 const SUB_WINDOW := 1024 # quarter tiles per side of sub_tex
@@ -115,6 +123,8 @@ var sub_tiles := false
 var tile_km := 2.0
 var m_per_level := 110.0
 var level_h := 0.6
+var _level_h_full := 0.6 # level_h before relief_for_width
+var _view_width := 25.0
 var patch_origin := Vector2i.ZERO
 var draw_n := PATCH_N # tiles per side drawn, around the middle of the patch
 var prop_origin := Vector2i.ZERO
@@ -141,6 +151,9 @@ var _town_image: Image
 const TOWN_TEX := Vector2i(256, 128)
 var _town_texture: ImageTexture
 var _town_key := Vector4i(-1, 0, 0, 0)
+## Cumulative pick weights of the lot models per town class (0 none, 1
+## village, 2 town, 3 city core): _lot_weights, from the models' heights.
+var _lot_pick: Array[PackedFloat32Array] = []
 var town_count := 0
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
 var _level_textures := {} # far levels: the whole map
@@ -164,6 +177,7 @@ var _prop_materials: Array[ShaderMaterial] = []
 var _terrain: MultiMeshInstance3D
 var _props: Array[MultiMeshInstance3D] = []
 var _landmarks: Array[MeshInstance3D] = []
+var _landmark_levels := PackedFloat32Array() # _place_landmarks
 ## What changed in this frame's update_view (level, props, tier, windows), for
 ## the tour benchmark (landscape.gd --tour); whoever reads it clears it.
 var events := PackedStringArray()
@@ -332,6 +346,7 @@ func _build_nodes() -> void:
 		var detail: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 0)
 		var full: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 1)
 		var low: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 2)
+		_lot_heights[lot] = detail.get_aabb().size.y if detail else 10.0
 		if kind < _meshes_full.size():
 			_meshes_detail[kind] = detail
 			_meshes_full[kind] = full
@@ -340,6 +355,7 @@ func _build_nodes() -> void:
 			_meshes_detail.append(detail)
 			_meshes_full.append(full)
 			_meshes_low.append(low)
+	_lot_weights()
 	var meshes := _meshes_full
 	for kind in _prop_count():
 		var lot := _lot_of(kind)
@@ -427,6 +443,7 @@ func _place_landmarks() -> void:
 		levels.append(at)
 		node.visible = near
 		node.position.y = at * level_h
+	_landmark_levels = levels
 	var count := _landmarks.size() if near else 0
 	for material in _all_materials() + [_sub_material]:
 		material.set_shader_parameter("landmark_levels", levels)
@@ -467,6 +484,22 @@ static func level_for_width(width: float) -> int:
 	var spans := int(ceil(log(width * 1.15 / PATCH_N / 0.5) / log(2.0)))
 	return clampi(maxi(wanted, spans), -1, LEVELS.size() - 1)
 
+## How much of a level's height is drawn at a view `width` km wide
+## (RELIEF_FLAT up close, all of it from RELIEF_FLAT_TO).
+static func relief_for_width(width: float) -> float:
+	var t := clampf(log(maxf(width, 0.01) / RELIEF_FLAT_FROM) / log(RELIEF_FLAT_TO / RELIEF_FLAT_FROM), 0.0, 1.0)
+	return lerpf(RELIEF_FLAT, 1.0, t * t * (3.0 - 2.0 * t))
+
+## A new step height while zooming (same level): the shaders, and the
+## landmarks on their blocks.
+func _set_level_h(h: float) -> void:
+	level_h = h
+	for material in _all_materials() + [_sub_material]:
+		material.set_shader_parameter("level_h", h)
+	if level <= 1:
+		for k in mini(_landmarks.size(), _landmark_levels.size()):
+			_landmarks[k].position.y = _landmark_levels[k] * h
+
 func _apply_level(value: int) -> void:
 	zoom = value
 	level = maxi(value, 0)
@@ -478,7 +511,8 @@ func _apply_level(value: int) -> void:
 		_level_window_key = Vector3i(-1, 0, 0)
 		_update_level_window()
 	m_per_level = relief_slope * tile_km # near levels; far ones are baked (LEVEL_STEPS_M)
-	level_h = tile_km * (SUB_LEVEL_HEIGHT if sub_tiles else LEVEL_HEIGHTS[level])
+	_level_h_full = tile_km * (SUB_LEVEL_HEIGHT if sub_tiles else LEVEL_HEIGHTS[level])
+	level_h = _level_h_full * relief_for_width(_view_width)
 	var params := {
 		"cells_tex": _cell_textures[level],
 		"cells_size": _cell_sizes[level],
@@ -540,6 +574,44 @@ func _apply_prop_count() -> void:
 			prop_height_km = maxf(prop_height_km, top * size_m * DIORAMA_KM_PER_M)
 	_town_key = Vector4i(-1, 0, 0, 0) # the house counts: _update_town_list
 
+## A skyline instead of one even roof line (Ramon 29.10.2026: every house the
+## same height): the tall lot models (up to 16 m, four storeys) gather in the
+## city cores, the low ones (6.5 to 9 m) in the villages, a town takes them
+## as they come. Weight (height / mean)^SKYLINE_POWER per class; the gardens
+## keep their even share everywhere.
+const SKYLINE_POWER := [0.0, -3.0, 0.0, 3.0]
+var _lot_heights := {}
+
+func _lot_weights() -> void:
+	var mean := 0.0
+	var houses := 0
+	for lot in LOT_KINDS.size():
+		if LOT_KINDS[lot][0] == "house":
+			mean += _lot_heights.get(lot, 10.0)
+			houses += 1
+	mean /= maxf(houses, 1)
+	_lot_pick.clear()
+	for town_class in 4:
+		var sum := 0.0
+		var cumulative := PackedFloat32Array()
+		for lot in LOT_KINDS.size():
+			var w := 1.0
+			if LOT_KINDS[lot][0] == "house":
+				w = pow(_lot_heights.get(lot, mean) / mean, SKYLINE_POWER[town_class])
+			sum += w
+			cumulative.append(sum)
+		for k in cumulative.size():
+			cumulative[k] /= sum
+		_lot_pick.append(cumulative)
+
+## The lot model of slot `slot` on quarter tile t of town class `town_class`.
+func _pick_lot(t: Vector2i, slot: int, town_class: int) -> int:
+	var r := float(absi(hash(Vector3i(t.x, t.y, slot * 7 + zoom))) % 100003) / 100003.0
+	var cumulative: PackedFloat32Array = _lot_pick[clampi(town_class, 0, 3)] if _lot_pick.size() == 4 else PackedFloat32Array()
+	if cumulative.is_empty():
+		return absi(hash(Vector3i(t.x, t.y, slot * 7 + zoom))) % LOT_KINDS.size()
+	return mini(cumulative.bsearch(r), LOT_KINDS.size() - 1)
+
 ## The town tiles of the prop patch (towns-L*.i32) into town_tex, so the
 ## house kinds draw instances for them only: a patch of 100 x 100 tiles at 1
 ## to 4 km holds a few dozen town tiles, and its 90 000 house slots ran the
@@ -579,7 +651,7 @@ func _update_town_list() -> void:
 					tiles.append(local)
 					var t := at + prop_origin
 					for slot in house_slots:
-						lots[absi(hash(Vector3i(t.x, t.y, slot * 7 + zoom))) % lots.size()].append(local * 16 + slot)
+						lots[_pick_lot(t, slot, v & 3)].append(local * 16 + slot)
 	town_count = tiles.size()
 	var data := tiles.duplicate()
 	var starts := PackedInt32Array()
@@ -649,9 +721,13 @@ func set_light_dir(dir: Vector3) -> void:
 ## `span` km across, the trees and houses `prop_span` km (at most PROP_SPAN
 ## view widths).
 func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -> void:
+	_view_width = width
 	var wanted := level_for_width(width)
 	if wanted != zoom:
 		_apply_level(wanted)
+	var h := _level_h_full * relief_for_width(width)
+	if h != level_h:
+		_set_level_h(h)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	# only the tiles around the view are drawn: each costs vertex work (and
