@@ -25,6 +25,8 @@ const uint VARIANTS = 4u;
 varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
 varying vec3 art_light; // HOUSE_LIGHT in view space
+varying float model_y; // metres above the lot's ground (a farm being built is cut off above `built_m`)
+varying float built_m; // how high a farm being built stands, metres; large on a finished house
 // towards the light on the houses, world: as high as the terrain's
 // SimCity light (tile_terrain.gdshader ART_LIGHT, so roofs and yards on top
 // match the ground round them) but from where the scene's sun stands
@@ -60,6 +62,13 @@ void vertex() {
 	vec3 nrm = NORMAL;
 	nrm.xz = turn * nrm.xz;
 	bool show = rec.z != 0.0 && place.a > 0.5;
+	// a farm being built (a record of its own, village code negated; rec.w
+	// key << 8 | built 0-255): its walls up to the share built, no roof, no
+	// trees, workshop or haystack yet, a scaffold round it (SCAFFOLD, 57)
+	bool site = rec.z < 0.0;
+	float built = float(uint(rec.w) & 255u) / 255.0;
+	model_y = VERTEX.y * 10.0; // the farmhouse mesh is in units of HOUSE_M
+	built_m = site ? max(0.25, built * (variant == 3 ? 7.0 : 5.0)) : 1.0e6;
 	tint = vec3(st.y);
 	// each farm its own plaster (cream, pink, ochre, as the town's
 	// WALLS) and shutters (green or brown), by the palette index in UV.y
@@ -97,11 +106,19 @@ void vertex() {
 	if ((cypress && (key & 96u) == 0u) || (olive && (key & 128u) == 0u) || ((index == 26 || index == 28) && (key & 256u) == 0u)) {
 		show = false;
 	}
+	bool roof = (index >= 4 && index <= 6) || (index >= 29 && index <= 36);
+	bool extra = cypress || olive || index == 26 || index == 28 || index == 18 || index == 12 || index == 13 || index >= 41;
+	if (site && (roof || extra)) {
+		show = false;
+	}
+	if (index == 57) {
+		show = show && site && built < 1.0;
+	}
 	// the workshop of the household's craft (farmhouse.gd _workshop; the
 	// record's rec.w: craft << 22 | key << 8 | busy, busy the share of the
 	// month's work the dealers took): smithy 41-46, pottery 47-50, weaving
 	// 51-56, more goods about the busier it is
-	if (index >= 41) {
+	if (index >= 41 && index <= 56) {
 		uint w = uint(rec.w);
 		uint craft = (w >> 22u) & 3u;
 		uint busy = w & 255u;
@@ -118,6 +135,7 @@ void vertex() {
 }
 
 void fragment() {
+	if (model_y > built_m) { discard; }
 	ALBEDO = pow(COLOR.rgb * tint, vec3(2.2)); // vertex colours are sRGB
 	NORMAL = normalize(normal);
 	ROUGHNESS = 1.0;

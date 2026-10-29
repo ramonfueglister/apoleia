@@ -74,7 +74,8 @@ const PALETTE := [
 	# the workshops (_workshop), each craft in colours of its own
 	Color("8c8478"), Color("ff8a2a"), Color("3d3d42"), Color("6e4a32"), Color("ad5a44"), Color("5a5a60"),
 	Color("a0563a"), Color("2e211a"), Color("c4704a"), Color("b8653f"),
-	Color("7a5232"), Color("e8dcc0"), Color("b5452f"), Color("d1a54a"), Color("4f6f9c"), Color("ebe3cf")]
+	Color("7a5232"), Color("e8dcc0"), Color("b5452f"), Color("d1a54a"), Color("4f6f9c"), Color("ebe3cf"),
+	Color("9a7a4e")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
@@ -82,7 +83,7 @@ enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW,
 	LOT_GRASS, WATER, CABBAGE, CABBAGE_DARK,
 	SMITH_STONE, SMITH_FIRE, SMITH_IRON, SMITH_WOOD, SMITH_ROOF, SMITH_TOOLS,
 	POT_KILN, POT_DARK, POT_JAR, POT_JAR_MORE,
-	WEAVE_WOOD, WEAVE_WARP, WEAVE_CLOTH, WEAVE_CLOTH_2, WEAVE_CLOTH_3, WEAVE_WOOL }
+	WEAVE_WOOD, WEAVE_WARP, WEAVE_CLOTH, WEAVE_CLOTH_2, WEAVE_CLOTH_3, WEAVE_WOOL, SCAFFOLD }
 # The workshop of a craft household (Ramon 29.10.2026: "alles sichtbar
 # grafisch"): every build carries all three outside the fence, each on a
 # spot of its own (a voxel holds one colour, so they cannot share one), and
@@ -404,6 +405,9 @@ static func _yard(p: Vector3) -> int:
 		return well
 	# vegetable beds behind the house: rows of dark round cabbages on
 	# brown soil, the soil showing between them
+	var scaffold := _scaffold(p)
+	if scaffold != EMPTY:
+		return scaffold
 	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y >= 0.0 and p.y < 0.5:
 		if p.y < 0.125:
 			return SOIL
@@ -423,6 +427,31 @@ static func _yard(p: Vector3) -> int:
 	if p.y < 0.0:
 		return EMPTY # the rest of the sunk layer is the terrain's
 	return _fence(p)
+
+## A scaffold of poles and planks half a metre round the walls of the
+## build's house, shown only while the farm is being built
+## (people_houses.gdshader); it takes only the air the rest leaves free.
+static func _scaffold(at: Vector3) -> int:
+	var half := Vector2(LONG_X, LONG_Z) if _variant == 1 else Vector2(TALL_X, TALL_Z) if _variant == 3 else Vector2(HALF_X, HALF_Z)
+	var top := 7.25 if _variant == 3 else 5.5
+	if at.y < 0.125 or at.y >= top:
+		return EMPTY
+	var p := _snap(at, 0.25)
+	var d := Vector2(absf(p.x), absf(p.z)) - half # outside the wall
+	var ring := maxf(d.x, d.y) >= 0.25 and maxf(d.x, d.y) < 0.75 and minf(d.x, d.y) < 0.75
+	if not ring:
+		return EMPTY
+	# poles at the corners and every metre and a half along the sides
+	var on_x := d.y >= 0.25 # along a long side (x varies)
+	var along := p.x if on_x else p.z
+	var pole := (absf(d.x - 0.375) < 0.25 and absf(d.y - 0.375) < 0.25) \
+		or (fposmod(along + 0.125, 1.5) < 0.25 and absf((d.y if on_x else d.x) - 0.375) < 0.25)
+	if pole and absf((d.y if on_x else d.x) - 0.375) < 0.125:
+		return SCAFFOLD
+	# planks round it every two metres
+	if fposmod(p.y, 2.0) >= 1.75:
+		return SCAFFOLD
+	return EMPTY
 
 ## A well on the forecourt in quarter-metre blocks: a low stone curb six
 ## blocks across with its corners cut and dark water inside, two posts and

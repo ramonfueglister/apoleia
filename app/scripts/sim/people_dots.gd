@@ -203,6 +203,10 @@ func setup(tile_terrain: Node3D) -> bool:
 	if not people.load(TileTerrain.data_root(), 1):
 		return false
 	print(JSON.stringify({"event": "people_loaded", "people": people.count(), "ms": (Time.get_ticks_usec() - started) / 1000.0}))
+	# farms being built as house records of their own (village code negated,
+	# rec.w the built share): people_houses.gdshader draws them half built
+	if people.has_method("show_site_houses"):
+		people.show_site_houses(true)
 	if warm > 0:
 		people.advance(warm)
 		while people.backlog() > 0 or people.day() < warm:

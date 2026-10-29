@@ -394,6 +394,13 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Händler abnehmen (`busy`), desto mehr Werkzeug, Krüge, Tücher und Wolle
   stehen herum. Die Daten stehen im Hausdatensatz (`rec.w`: craft << 22 |
   key << 8 | busy, aus PR #49). Ohne sie bleibt die Werkstatt verborgen.
+- Höfe im Bau: Ein bestellter Hof ist ein eigener Hausdatensatz mit
+  negiertem Dorfcode (`rec.z < 0`) und dem gebauten Anteil in `rec.w & 255`
+  (PR #49, eingeschaltet mit `people.show_site_houses(true)` in
+  `people_dots.gd`). `people_houses.gdshader` zeichnet das Haus bis zur
+  gebauten Höhe, ohne Dach, Bäume, Werkstatt und Heuhaufen, mit einem Gerüst
+  aus Stangen und Brettern (`_scaffold` in `farmhouse.gd`). Platziert wird er
+  wie das spätere Haus (`dot_place`), sein Los bleibt frei von Feldern.
 
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 
