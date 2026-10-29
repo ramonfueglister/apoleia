@@ -312,6 +312,28 @@ unabhängig und unverändert.
   (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
   stehen, solange die Häuser gezeichnet werden.
 
+## Bildstimmung (Urbek/Islanders, seit 29.10.2026)
+
+Status: `implementiert`, Runde 1. Ramon, 29.10.2026: Die Grafik soll auf das
+Niveau von Urbek und Islanders. Palette und Geländeregeln bleiben, geändert
+sind nur Licht und Nachbearbeitung (`landscape.gd`):
+
+- Schatten kühl blau statt blassgrau: Umgebungslicht #b0bff5 mit 0,62 statt
+  #ccccf2 mit 0,85, Sonne 2,35 statt 2,05. Besonnter Boden bleibt etwa im Ton
+  der Palette, Schatten fallen auf etwa ein Fünftel statt ein Drittel davon.
+  Sättigung 1,06.
+- Kontaktschatten (SSAO) mit dem Zoom: Radius 2 % der Sichtbreite (0,03 bis
+  0,6 km) statt fest 0,6 km, Stärke 1,1.
+- Tilt-Shift wie ein Modellfoto: ein scharfes Band um den Fokus, Unschärfe zum
+  oberen und unteren Bildrand (`TILT_*`), voll bis 6 km Sichtbreite, weg ab 40 km.
+- Vignette unter der Benutzeroberfläche (`shaders/vignette.gdshader`).
+- Brandung an der Meeresküste bis 2-km-Kacheln (`shore_foam` in
+  `tile_terrain.gdshader`): ein weisses Band am Land, eine zweite Linie läuft
+  hinaus und verblasst.
+- Quadermauerwerk auf den Terrassenmauern unter den Häusern (`masonry` in
+  `tile_props.gdshader`), 1 × 0,5 Diorama-Meter, blendet aus, bevor die Steine
+  kleiner als einige Pixel werden.
+
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 
 Ramon, 28.10.2026: „Kachel-Look konsequent bis immer“. Es gibt keine weiche
