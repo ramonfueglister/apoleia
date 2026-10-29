@@ -70,6 +70,13 @@ struct Front {
     map: MapLayers,
     /// The player's build orders, as of the last command applied.
     orders: Orders,
+    /// How far each order's building site is (S113), in the orders' tile
+    /// order: column, row, work days done, work days needed (0, 0 while
+    /// it has no site or nobody builds it).
+    progress: Vec<i32>,
+    /// Bumped whenever `orders` or `progress` go out; carried over to the
+    /// game a save starts, so the build menu never misses a change.
+    built: u64,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -202,8 +209,28 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     f.count = game.people.count;
     f.cash = game.grain.treasury.cash;
     f.map = map.layers.clone();
-    f.orders = game.orders.clone();
+    publish_orders(game, &mut f);
     (map, view)
+}
+
+/// The build orders and how far their sites are, to the front.
+fn publish_orders(game: &Game, f: &mut Front) {
+    f.orders = game.orders.clone();
+    f.progress = progress(game);
+    f.built += 1;
+}
+
+/// Column, row, work days done and needed for each order, in tile order
+/// (0, 0 without a site).
+fn progress(game: &Game) -> Vec<i32> {
+    let mut sites = game.grain.sites().peekable();
+    let mut out = Vec::with_capacity(game.orders.len() * 4);
+    for (t, _) in game.orders.iter() {
+        while sites.next_if(|(s, _)| *s < t).is_some() {}
+        let (done, need) = sites.next_if(|(s, _)| *s == t).map_or((0, 0), |(_, s)| (s.done, s.need));
+        out.extend_from_slice(&[t.1, t.0, done as i32, need as i32]);
+    }
+    out
 }
 
 fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
@@ -229,7 +256,7 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
                 changed += game.command(c);
             }
             if changed > 0 {
-                shared.front.lock().unwrap().orders = game.orders.clone();
+                publish_orders(&game, &mut shared.front.lock().unwrap());
             }
         }
         if let Some(path) = &save {
@@ -269,10 +296,11 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         let [day_usec, grain_usec] = game.day();
         let today = game.today();
         // a site finished (its order is gone): its farm and fields show at
-        // once, not at the next month's map (REALTIME_GAMEPLAY.md phase 3)
+        // once, not at the next month's map; how far the sites are goes out
+        // once a week (REALTIME_GAMEPLAY.md phase 3)
         let finished = game.orders.version != shared.front.lock().unwrap().orders.version;
-        if finished {
-            shared.front.lock().unwrap().orders = game.orders.clone();
+        if finished || (today % 7 == 0 && progress(&game) != shared.front.lock().unwrap().progress) {
+            publish_orders(&game, &mut shared.front.lock().unwrap());
         }
         let remap = today % 30 == 0 || finished;
         if remap {
@@ -405,9 +433,14 @@ impl ApoleiaPeople {
                 return false;
             }
         };
+        let built = self.shared.front.lock().unwrap().built;
         self.stop();
         let shared = Arc::new(Shared::default());
-        shared.front.lock().unwrap().loading = Some((0, replay.day()));
+        {
+            let mut f = shared.front.lock().unwrap();
+            f.loading = Some((0, replay.day()));
+            f.built = built;
+        }
         let sh = shared.clone();
         self.worker = Some(
             std::thread::Builder::new()
@@ -505,7 +538,10 @@ impl ApoleiaPeople {
     }
 
     /// The build orders: {"version": bumped on every change, "tiles":
-    /// column, row, kind for each, "names": the kinds}.
+    /// column, row, kind for each, "progress": column, row, work days done,
+    /// work days needed for each, in the same order (0, 0 while it has no
+    /// building site or nobody builds it yet; once a week), "names": the
+    /// kinds}.
     #[func]
     fn build_orders(&self) -> VarDictionary {
         let f = self.shared.front.lock().unwrap();
@@ -514,8 +550,9 @@ impl ApoleiaPeople {
             flat.extend_from_slice(&[col, row, o.kind as i32]);
         }
         let mut d = VarDictionary::new();
-        d.set("version", f.orders.version as i64);
+        d.set("version", f.built as i64);
         d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
+        d.set("progress", &PackedInt32Array::from(f.progress.as_slice()));
         d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
         d
     }
@@ -523,7 +560,7 @@ impl ApoleiaPeople {
     /// Build orders version only, to poll each frame.
     #[func]
     fn build_version(&self) -> i64 {
-        self.shared.front.lock().unwrap().orders.version as i64
+        self.shared.front.lock().unwrap().built as i64
     }
 
     /// Days queued but not yet computed.
