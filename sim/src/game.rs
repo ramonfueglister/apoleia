@@ -139,13 +139,15 @@ impl Game {
         self.orders.apply(c, today)
     }
 
-    /// Runs one day; returns what the people and the grain economy took,
-    /// in microseconds.
+    /// Runs one day: the people, the grain economy, then the building
+    /// sites, which take the orders they finish (S113). Returns what the
+    /// people and the rest took, in microseconds.
     pub fn day(&mut self) -> [f64; 2] {
         let t0 = std::time::Instant::now();
         self.people.day();
         let t1 = std::time::Instant::now();
         self.grain.day(&mut self.people);
+        self.grain.build_day(&mut self.people, &mut self.orders);
         [(t1 - t0).as_secs_f64() * 1e6, t1.elapsed().as_secs_f64() * 1e6]
     }
 
@@ -243,10 +245,16 @@ mod tests {
         let Some(inp) = inputs() else { return };
         let start = Start { inputs: &inp, clear: None, cover: None };
         let mut a = Game::new(start, 5);
+        // a farm beside the first market, so its site hires day labourers (S113)
+        let (rows_f, cols_f) = a.grain.fine_size();
+        let (row0, col0) = (a.people.grid.row0 * 16, a.people.grid.col0 * 16);
+        let fine = a.grain.markets[0].fine as i32;
+        let farm = (fine / cols_f + row0, (fine % cols_f + 1).min(cols_f - 1) + col0);
+        assert!(farm.0 - row0 < rows_f);
         for d in 0..70 {
             match d {
                 0 => {
-                    a.command(&Command::Place { kind: FARM, tiles: vec![(10, 20)] });
+                    a.command(&Command::Place { kind: FARM, tiles: vec![farm, (10, 20)] });
                 }
                 31 => {
                     a.command(&Command::Place { kind: ROAD, tiles: vec![(11, 20), (12, 20)] });
@@ -259,6 +267,7 @@ mod tests {
             }
             a.day();
         }
+        assert!(a.grain.stats.build_days > 0, "the farm's site has been worked on");
         // a command after the last day belongs to the save, too
         a.command(&Command::Place { kind: FIELD, tiles: vec![(10, 22)] });
         let bytes = a.save();
@@ -271,6 +280,7 @@ mod tests {
         assert_eq!(info, Loaded { day: 70, commands: 5, identical: true });
         assert_eq!(days, 70);
         assert_eq!(b.orders.log, a.orders.log);
+        assert_eq!((b.grain.treasury.cash, b.grain.money_held()), (a.grain.treasury.cash, a.grain.money_held()));
         assert_eq!(b.orders.iter().collect::<Vec<_>>(), a.orders.iter().collect::<Vec<_>>());
         for _ in 0..30 {
             a.day();

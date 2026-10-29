@@ -76,6 +76,13 @@ fn main() {
     let fine = apoleia_sim::grain::fine_cover(&root, cols == apoleia_sim::grain::CLEAR_COVER.join(",")).expect("landcover-fine.bin.zst");
     let mut g = Grain::with_clearing(&inp, &mut p, clear, cover.as_ref(), Some(&fine), crop);
     drop(fine);
+    // S106: pasture near the fields, grassland per farmland of each cell.
+    let grass = apoleia_sim::grain::clearable(&root, &["grass_8", "grass_16", "grass_30", "grass_steep"].map(String::from)).expect("landcover25.csv");
+    let farm = apoleia_sim::grain::clearable(&root, &["farm_8", "farm_16", "farm_30", "farm_steep"].map(String::from)).expect("landcover25.csv");
+    g.set_pasture(&p, &grass, &farm);
+    // S110 off, for comparison: the state wage for all wage and trader
+    // households.
+    g.wage_all = arg("--state-wage").is_some_and(|v| v == "all");
     let grain_ms = t0.elapsed().as_secs_f64() * 1e3;
     let (farms, kinds, tents, tent_people, ha, fs, ms) = g.summary();
     println!(
@@ -162,7 +169,7 @@ fn main() {
         let (m, t) = (g.money, g.treasury);
         let den = |x: i64| x as f64 / 1e3;
         println!(
-            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} - no payee {:.0} | unbooked {:.3} | state wages {:.0} Manciana rent {:.0} estates {:.0} tax grain t {:.0}",
+            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} | unbooked {:.3} | state wages {:.0} tax {:.0} state rent {:.0} estates {:.0} tax grain t {:.0}",
             den(g.money_held()),
             den(t.cash),
             den(m.start),
@@ -170,9 +177,9 @@ fn main() {
             den(m.endowed),
             den(m.freight),
             den(m.left_map),
-            den(m.no_payee),
             den(g.money_unbooked()),
             den(t.wages),
+            den(t.tax),
             den(t.rent),
             den(t.estates),
             t.grain_kg as f64 / 1e3
@@ -183,6 +190,40 @@ fn main() {
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
         println!("      spoiled t {:.0} | eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | tent moves (S75): {} | Manciana farms new/lost (S92): {}/{} | fed by own food (S91): {} | moved people yearly/monthly (S66/S93): {}/{} | trade tracks/roads/sea lanes (cells): {:?}", gs.spoiled_kg as f64 / 1e3, by.join(" "), gs.to_tents, gs.tent_moves, gs.manciana_new, gs.manciana_lost, gs.own_food_people / 12, s.moved_people - s.moved_monthly, s.moved_monthly, g.road_cells(&p));
+        // Craft goods (S105–S110): per good wool/iron/clothing/tools/pottery.
+        let (held, store, price) = g.goods_report();
+        let gg = gs.goods;
+        let per = |v: [i64; 5]| v.map(|x| format!("{:.0}", x as f64 / 1e3)).join("/");
+        println!(
+            "      goods (wool/iron/cloth/tools/pots): median price den {} | market stock {} | made {} | bought {} | moved {} | gate in {} out {} | home cloth {:.0} shorn kg {:.0} | months labour/weaver/smith/potter {:?} state {} | clothes short {:.0} % | hired for money days {} den {:.0} (by dealers {:.0}) | held: clothes {:.0} pots kg {:.0} tools kg {:.0} jars kg {:.0} wool kg {:.0} sheep {:.0}",
+            price.map(|x| format!("{x:.2}")).join("/"),
+            store.map(|x| format!("{x:.0}")).join("/"),
+            per(gg.made),
+            per(gg.bought),
+            per(gg.moved),
+            per(gg.out_import),
+            per(gg.out_export),
+            gg.home_cloth as f64 / 1e3,
+            gg.shorn as f64 / 1e3,
+            gg.crafts,
+            gg.state_months,
+            100.0 * gg.clothes_short as f64 / gg.clothes_need.max(1) as f64,
+            gg.serve_days,
+            gg.serve_paid as f64 / 1e3,
+            gg.dealer_paid as f64 / 1e3,
+            held[0],
+            held[1],
+            held[2],
+            held[3],
+            held[4],
+            held[5]
+        );
+        if std::env::var("GOODS_DEBUG").is_ok() {
+            println!("      money by kind (farm/tent/wage/trader/elite), dealers: {:.0?}", g.money_by_kind());
+            println!("      clothes held % of need, households, below half (farm/tent/wage/trader/elite): {:?}", g.clothes_by_kind());
+        }
+        let (kh, kp, idle_n, idle_ha) = g.kinds_report();
+        println!("      households (farm/tent/wage/trader/elite): {:?} people {:?} | farms without household: {idle_n} ({idle_ha:.0} ha), fields back to free land: {}", kh, kp, gs.farms_lapsed);
     }
     println!(
         "day_us all p50={:.0} p95={:.0} p99={:.0} max={:.0} | grain p50={:.0} mean={:.0} p95={:.0} p99={:.0} max={:.0} (day {}) | rss_mb={:.0} peak_people={}",

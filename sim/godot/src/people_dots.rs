@@ -264,11 +264,18 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         if !commands.is_empty() || save.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
-        // the people and the grain economy (S69–S112) on the same day, as bin/grain.rs
+        // the people, the grain economy (S69–S112) and the building sites
+        // (S113) on the same day, as bin/grain.rs
         let [day_usec, grain_usec] = game.day();
         let today = game.today();
-        let month = today % 30 == 0;
-        if month {
+        // a site finished (its order is gone): its farm and fields show at
+        // once, not at the next month's map (REALTIME_GAMEPLAY.md phase 3)
+        let finished = game.orders.version != shared.front.lock().unwrap().orders.version;
+        if finished {
+            shared.front.lock().unwrap().orders = game.orders.clone();
+        }
+        let remap = today % 30 == 0 || finished;
+        if remap {
             map.build(&game.grain, today);
         }
         let t1 = Instant::now();
@@ -283,7 +290,7 @@ fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shar
         f.day_usec = day_usec;
         f.view_usec = view_usec;
         f.grain_usec = grain_usec;
-        if month {
+        if remap {
             f.map = map.layers.clone();
         }
     }

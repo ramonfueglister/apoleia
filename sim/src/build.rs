@@ -12,10 +12,9 @@
 //! a cancel removes it. Orders are kept by tile, so going over them is the
 //! same on every run.
 //!
-//! Not yet built: carrying the orders out. Per S113 day labourers from the
-//! tents and from farms with time to spare build them, paid the market
-//! wage in denarii from the treasury; the building time follows from the
-//! work days. Until then an order stays a plan on the map.
+//! Carrying the orders out (S113) is Grain::build_day (grain/sites.rs):
+//! day labourers build them, paid the market wage in denarii from the
+//! treasury; a finished order is taken off (`finish`).
 
 use crate::save::{In, Out, SaveError};
 use std::collections::BTreeMap;
@@ -109,6 +108,14 @@ impl Orders {
             self.version += 1;
         }
         changed
+    }
+
+    /// Takes off the order on `t` once the sim has built it (S113). Not a
+    /// command: playing the log again builds and finishes it again.
+    pub fn finish(&mut self, t: Tile) {
+        if self.by_tile.remove(&t).is_some() {
+            self.version += 1;
+        }
     }
 
     pub fn get(&self, t: Tile) -> Option<Order> {

@@ -16,8 +16,9 @@ extends Node3D
 ## The orders live in the sim (ApoleiaPeople.order_build, apoleia_sim::build),
 ## applied between two days; this node draws what build_orders() returns
 ## whenever its version changes. Without the GDExtension it keeps them
-## itself, so the menu can be tried on the bare landscape. Carrying the
-## orders out (day labourers paid from the treasury, S113) is not built yet.
+## itself, so the menu can be tried on the bare landscape. Farms are built
+## by day labourers paid from the treasury (S113, sim/src/grain/sites.rs);
+## a finished one leaves the orders and shows as a farm.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const FINE_KM := 25.0 / 16.0 # apoleia_sim::settle::FINE_KM
