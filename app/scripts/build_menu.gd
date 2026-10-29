@@ -41,6 +41,7 @@ var terrain: Node3D
 var people: RefCounted # ApoleiaPeople, or null
 var tool := NONE
 var _orders := {} # Vector2i(col, row) -> kind, as the sim last reported
+var _progress := {} # Vector2i -> share of the site built (0 … 1), where work began
 var _version := -1
 var _stroke: Array[Vector2i] = [] # tiles of the stroke under way
 var _stroke_erase := false
@@ -238,6 +239,12 @@ func _take_orders() -> void:
 	_orders.clear()
 	for i in range(0, flat.size(), 3):
 		_orders[Vector2i(flat[i], flat[i + 1])] = flat[i + 2]
+	# column, row, days done, days needed per order (S113); 0, 0 no site yet
+	var done: PackedInt32Array = d.get("progress", PackedInt32Array())
+	_progress.clear()
+	for i in range(0, done.size(), 4):
+		if done[i + 3] > 0 and done[i + 2] > 0:
+			_progress[Vector2i(done[i], done[i + 1])] = minf(float(done[i + 2]) / done[i + 3], 1.0)
 	_dirty = true
 
 ## The orders around the view, the stroke under way and the tile under the
@@ -251,24 +258,28 @@ func _draw_orders() -> void:
 	if _close():
 		for t: Vector2i in _orders:
 			if absf((t.x + 0.5) * FINE_KM - centre.x) < reach and absf((t.y + 0.5) * FINE_KM - centre.y) < reach:
-				quads.append([t, Color(COLOURS[_orders[t]], 0.55)])
+				# planned faint; what is built so far fills it from the west
+				quads.append([t, Color(COLOURS[_orders[t]], 0.4), 1.0])
+				if _progress.has(t):
+					quads.append([t, Color(COLOURS[_orders[t]], 0.85), _progress[t]])
 		if tool != NONE:
 			for t in _stroke:
 				var ok: bool = _orders.get(t, NONE) == tool if _stroke_erase else _buildable(t)
 				var c := Color(0.1, 0.1, 0.1, 0.5) if _stroke_erase else Color(COLOURS[tool].lightened(0.35), 0.75)
-				quads.append([t, c if ok else Color(SimTables.NEGATIVE, 0.6)])
+				quads.append([t, c if ok else Color(SimTables.NEGATIVE, 0.6), 1.0])
 			if _stroke.is_empty():
-				quads.append([_hover, Color(1, 1, 1, 0.4) if _buildable(_hover) else Color(SimTables.NEGATIVE, 0.5)])
+				quads.append([_hover, Color(1, 1, 1, 0.4) if _buildable(_hover) else Color(SimTables.NEGATIVE, 0.5), 1.0])
 	if quads.is_empty():
 		return
 	_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
 	for q in quads:
-		_patch(q[0], q[1])
+		_patch(q[0], q[1], q[2])
 	_mesh.surface_end()
 
-func _patch(t: Vector2i, colour: Color) -> void:
+## `share` of the patch from its west edge (a site's progress).
+func _patch(t: Vector2i, colour: Color, share := 1.0) -> void:
 	var lo := (Vector2(t) + Vector2(INSET, INSET)) * FINE_KM
-	var step := FINE_KM * (1.0 - 2.0 * INSET) / GRID
+	var step := Vector2(share, 1.0) * FINE_KM * (1.0 - 2.0 * INSET) / GRID
 	var p := []
 	for j in GRID + 1:
 		for i in GRID + 1:

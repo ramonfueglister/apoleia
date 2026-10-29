@@ -21,6 +21,9 @@ use crate::build::{self, Orders, Tile};
 /// PLACEHOLDER: work days to build a farmstead (house, yard, stable). No
 /// source yet; a crew of four for about seven weeks.
 pub const FARM_DAYS: i64 = 200;
+/// PLACEHOLDER: most hands on one site, so a site wants at most this many
+/// days of each weekly hiring (`labour()` hires once a week per market).
+pub const CREW: i64 = 4;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Site {
@@ -70,10 +73,10 @@ impl Grain {
         let mut want = vec![0i64; self.markets.len()];
         for s in sites.values_mut() {
             let m = s.market as usize;
-            let take = (s.need - s.done).min(pool[m]).max(0);
+            let take = (s.need - s.done).min(CREW * 7).min(pool[m]).max(0);
             s.done += take;
             pool[m] -= take;
-            want[m] += s.need - s.done;
+            want[m] += (s.need - s.done).min(CREW * 7);
         }
         for (m, w) in want.into_iter().enumerate() {
             self.markets[m].state_want = w;
@@ -165,6 +168,8 @@ mod tests {
                 assert_eq!(g.money_unbooked(), 0);
             }
             assert!(g.stats.build_days >= FARM_DAYS && g.stats.build_paid > 0);
+            // a crew of CREW: at least FARM_DAYS / (CREW × 7) weeks
+            assert!(g.stats.build_days <= FARM_DAYS + CREW * 7);
             assert_eq!(g.stats.built_farms, 1);
             assert!(orders.is_empty() && g.sites.is_empty());
             (p.fingerprint(), g.fingerprint())
