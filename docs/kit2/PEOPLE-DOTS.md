@@ -184,7 +184,7 @@ sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
 rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
-Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster mit Läden,
+Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster mit Läden (auch zwei an jeder Schmalseite),
 Dach aus Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und
 Graten. Drei Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
 eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite; Langhaus
@@ -210,7 +210,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
 bleiben), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v20_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v23_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -257,14 +257,16 @@ etwa 25 ms:
 Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Block um die Mitte jeder feinen
 Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
-einer Rampe verschieden tönen, sah aus wie Glasscherben). Fern ist das
-Ackerland ein Flickenteppich aus Blöcken von 3 × 3 Datenkacheln, jeder
-ganz wachsend, reif, brach oder Weide (nach Feld- und Saatanteil seiner
-feinen Kachel, Brache seltener als in der Sim), in vier ruhigen Farben wie
-Urbeks Ferne: Wiese, frischeres Grün für wachsende Saat und Reben, Weizen
-für reife, helle Stoppeln für Brache, Stoppeln und Acker; nicht ihr
-Mittelwert, der alles in ein Oliv tauchte, und kein Tarnmuster aus jeder
-Frucht und jedem Stand; Pfade zum
+einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
+Bildbreite ist jede Datenkachel eine Parzelle nach derselben Regel, auch
+nur auf ebenen Kacheln, in fünf klar verschiedenen Farben: Weide, helle
+Stoppeln für Brache und Abgeerntetes, braune Ackererde, dunkles Grün für
+wachsende Saat und Reben, Weizen für reife; Brache und Saat (und Reben)
+liegen in Blöcken von 2 × 2 Kacheln (1 km), damit kein Schachbrett
+entsteht. So liest sich das Land um die Städte bis 30 km als Felder
+(vorher grosse Blöcke in vier blassen Tönen, die bei 22 km leer wirkten).
+Ausserhalb des Quadrats der Feldplatten tragen auch die nahen Parzellen
+diese Farben. Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an
 der Seite, der jeder Hof zugewandt ist (dort trifft sein Torweg die Gasse), Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.

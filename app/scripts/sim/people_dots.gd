@@ -229,7 +229,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	_crops = MultiMeshInstance3D.new()
 	_crops.name = "PeopleCrops"
 	_crops.material_override = _crop_material
-	_crops.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_crops.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON # slabs, fences and sheep stand in the light
 	_crops.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	var cm := MultiMesh.new()
 	cm.transform_format = MultiMesh.TRANSFORM_3D

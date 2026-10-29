@@ -31,6 +31,8 @@ const BARN_Z := Vector2(1.5, 6.0) # back and front of the barn
 const BARN_WALL := 2.75
 const WINS_HOUSE: Array[float] = [2.75] # windows from the middle of the front
 const WINS_LONG: Array[float] = [2.5, 4.75]
+const ENDS_HOUSE: Array[float] = [1.5] # windows from the middle of each end
+const ENDS_LONG: Array[float] = [1.25]
 const WALL := 4.0 # tall enough that the roof does not swallow the house from above
 const EAVES := 0.5
 const PITCH := 0.42 # roof rise per metre (about 23 degrees)
@@ -41,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v20_%d_%s.res"
+const CACHE := "user://farmhouse_v23_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -56,12 +58,20 @@ const PALETTE := [
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("5e4128"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("667f4c"), Color("52663d"),
-	Color("75695a"), Color("c99a48"), Color("cebc97"), Color("9a7232")]
+	Color("75695a"), Color("c99a48"), Color("cebc97"), Color("9a7232"),
+	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
+	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
-	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK }
+	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
+	ROOF_E, ROOF_DARK_E, ROOF_W, ROOF_DARK_W, ROOF_S, ROOF_DARK_S, ROOF_N, ROOF_DARK_N }
+# roof tiles by the way their slope faces (+x, -x, +z, -z; _tile), so
+# people_houses.gdshader can light each slope by where it faces once the
+# house is turned
 # the lit treads darker than they show: sun and tone map lift them
-const TOPS := {ROOF: Color("b45a42"), ROOF_DARK: Color("a34c3a")}
+const TOPS := {ROOF: Color("b45a42"), ROOF_DARK: Color("a34c3a"),
+	ROOF_E: Color("b45a42"), ROOF_DARK_E: Color("a34c3a"), ROOF_W: Color("b45a42"), ROOF_DARK_W: Color("a34c3a"),
+	ROOF_S: Color("b45a42"), ROOF_DARK_S: Color("a34c3a"), ROOF_N: Color("b45a42"), ROOF_DARK_N: Color("a34c3a")}
 
 ## What fills point p (metres) in the build _variant.
 static func sample(p: Vector3) -> int:
@@ -76,12 +86,22 @@ static func sample(p: Vector3) -> int:
 			c = _barn(p) if _variant == 2 else _shed(p)
 	return c if c != EMPTY else _yard(p)
 
+## A roof tile on a slope facing `dir` (0 +x, 1 -x, 2 +z, 3 -z), in one of
+## the darker rows or not.
+static func _tile(dir: int, dark: bool) -> int:
+	return ROOF_E + dir * 2 + (1 if dark else 0)
+
+## p moved to the middle of its cube of edge e: the trees and the haystack
+## keep the chunky blocks of Urbek's props at any voxel size.
+static func _snap(p: Vector3, e: float) -> Vector3:
+	return ((p / e).floor() + Vector3(0.5, 0.5, 0.5)) * e
+
 ## The walls of a house of half extents hx, hz up to WALL: plaster on a
 ## stone plinth, stone corners, a beam under the eaves, the plank door in
 ## the middle of the front and small windows high up with wooden shutters
 ## either side, at the distances `wins` from the middle of the front and
-## back and one in the middle of each end.
-static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float]) -> int:
+## back and `ends` from the middle of each end, so no wall is blank.
+static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float], ends: Array[float]) -> int:
 	var ax := absf(p.x)
 	var az := absf(p.z)
 	if p.y < 0.375:
@@ -111,17 +131,19 @@ static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float]) -> int:
 			if k < 0.5:
 				return SHUTTER
 	if win_y and ax >= hx - 0.25:
-		if az < 0.25:
-			return WINDOW
-		if az < 0.5:
-			return SHUTTER
+		for w: float in ends:
+			var k := absf(az - w)
+			if k < 0.25:
+				return WINDOW
+			if k < 0.5:
+				return SHUTTER
 	return PLASTER_LOW if p.y < 0.875 else PLASTER
 
 static func _house(p: Vector3) -> int:
 	var ax := absf(p.x)
 	var az := absf(p.z)
 	if p.y < WALL:
-		return _walls(p, HALF_X, HALF_Z, WINS_HOUSE)
+		return _walls(p, HALF_X, HALF_Z, WINS_HOUSE, ENDS_HOUSE)
 	# hipped roof over the eaves
 	var dx := HALF_X + EAVES - ax
 	var dz := HALF_Z + EAVES - az
@@ -134,7 +156,8 @@ static func _house(p: Vector3) -> int:
 	if absf(dx - dz) < 0.2 or p.y >= WALL + PITCH * (HALF_Z + EAVES) - 0.25:
 		return RIDGE
 	var along := p.z if dx < dz else p.x
-	return ROOF_DARK if posmod(int(floor(along / 0.25)), 3) == 0 else ROOF
+	var dir := (0 if p.x > 0.0 else 1) if dx < dz else (2 if p.z > 0.0 else 3)
+	return _tile(dir, posmod(int(floor(along / 0.25)), 3) == 0)
 
 ## The long house: four windows along the front, a gable roof with its
 ## ridge along the house, the end walls carried up as plaster gables under
@@ -143,7 +166,7 @@ static func _long_house(p: Vector3) -> int:
 	var ax := absf(p.x)
 	var az := absf(p.z)
 	if p.y < WALL:
-		return _walls(p, LONG_X, LONG_Z, WINS_LONG)
+		return _walls(p, LONG_X, LONG_Z, WINS_LONG, ENDS_LONG)
 	var dz := LONG_Z + EAVES - az
 	if dz < 0.0 or ax >= LONG_X + 0.125:
 		return EMPTY
@@ -154,7 +177,7 @@ static func _long_house(p: Vector3) -> int:
 		return RIDGE
 	if ax >= LONG_X - 0.25 and az < LONG_Z and p.y < top - 0.375:
 		return PLASTER
-	return ROOF_DARK if posmod(int(floor(p.x / 0.25)), 3) == 0 else ROOF
+	return _tile(2 if p.z > 0.0 else 3, posmod(int(floor(p.x / 0.25)), 3) == 0)
 
 ## The portico along the long house's front: a stone floor one step up,
 ## plastered columns under a beam and a lean-to roof of tiles.
@@ -167,7 +190,7 @@ static func _portico(p: Vector3) -> int:
 	if p.y >= roof:
 		return EMPTY
 	if p.y >= roof - 0.25:
-		return ROOF_DARK if posmod(int(floor(p.x / 0.25)), 3) == 0 else ROOF
+		return _tile(2, posmod(int(floor(p.x / 0.25)), 3) == 0)
 	if p.z < PORCH_Z - 0.5:
 		return EMPTY
 	if p.y >= roof - 0.5:
@@ -193,7 +216,7 @@ static func _barn(p: Vector3) -> int:
 			return EMPTY # under the eaves
 		if p.y >= BARN_WALL + 0.5 * 2.375 - 0.25:
 			return RIDGE
-		return ROOF_DARK if posmod(int(floor(p.z / 0.25)), 3) == 0 else ROOF
+		return _tile(0 if p.x > BARN_X else 1, posmod(int(floor(p.z / 0.25)), 3) == 0)
 	var front := p.z >= BARN_Z.y - 0.25
 	var end := front or p.z < BARN_Z.x + 0.25
 	if not end and dx < 1.75:
@@ -218,7 +241,7 @@ static func _shed(p: Vector3) -> int:
 	if p.y >= roof:
 		return EMPTY
 	if p.y >= roof - 0.25:
-		return ROOF_DARK if posmod(int(floor(p.z / 0.25)), 3) == 0 else ROOF
+		return _tile(0, posmod(int(floor(p.z / 0.25)), 3) == 0)
 	if p.x >= x1 or p.z < -2.25:
 		return WOOD if posmod(int(floor((p.x + p.z) / 0.5)), 2) == 0 else WOOD_DARK
 	if p.z >= 1.5:
@@ -236,10 +259,11 @@ static func _yard(p: Vector3) -> int:
 	if p.x >= -5.75 and p.x < -HALF_X - 0.125 and p.z >= -2.0 and p.z < 0.75 and p.y < 1.0:
 		return WOOD if p.y >= 0.75 else LOG
 	var s := Vector3(-3.5, 0.6, 4.25)
-	var d := Vector2(p.x - s.x, p.z - s.z).length()
-	if _variant == 0 and p.y < 1.25 and d < 0.75 - 0.3 * maxf(0.0, p.y - 0.6):
-		return LEAF if p.y >= 0.75 else LEAF_DARK
-	var tree := _tree(p)
+	var q := _snap(p, 0.25)
+	var d := Vector2(q.x - s.x, q.z - s.z).length()
+	if _variant == 0 and q.y < 1.25 and d < 0.75 - 0.3 * maxf(0.0, q.y - 0.6):
+		return LEAF if q.y >= 0.75 else LEAF_DARK
+	var tree := _tree(q)
 	if tree != EMPTY:
 		return tree
 	tree = _lot(p)
@@ -299,11 +323,12 @@ const OLIVE_CLUMPS: Array[Vector4] = [Vector4(-0.75, 0.25, 1.5, 2.75), Vector4(0
 ## the house front), an olive tree in one back corner and a haystack in the
 ## other. Each in colours of its own, so people_houses.gdshader can leave
 ## them out by farm.
-static func _lot(p: Vector3) -> int:
-	if p.y < 0.0:
+static func _lot(at: Vector3) -> int:
+	if at.y < 0.0:
 		return EMPTY
 	# cypresses: a slim dark spindle (a fifth as wide as tall, no taller
 	# than 1.7 eaves), widest low down and drawn in to a point
+	var p := _snap(at, 0.25)
 	var cz := absf(p.z - 8.75)
 	var cx := absf(absf(p.x) - 8.75)
 	if cx < 0.625 and cz < 0.625:
@@ -317,18 +342,22 @@ static func _lot(p: Vector3) -> int:
 	if p.y < 1.75:
 		if absf(o.x - 0.25 * floorf(p.y / 0.75)) < 0.25 and absf(o.y) < 0.25:
 			return OLIVE_TRUNK
+	# the crown in half-metre blocks
+	var c := _snap(at, 0.5)
+	var co := Vector2(c.x - 8.0, c.z + 8.0)
 	for clump: Vector4 in OLIVE_CLUMPS: # x, z, bottom, top
-		var d := Vector2(absf(o.x - clump.x), absf(o.y - clump.y))
-		var r := 1.0 if p.y < clump.w - 0.5 else 0.625
-		if p.y >= clump.z and p.y < clump.w and d.x < r and d.y < r and d.x + d.y < r * 1.5:
-			return OLIVE_DARK if p.y < clump.z + 0.5 else OLIVE
-	# a haystack: a round stack of golden hay, narrowing to a top, with a
-	# darker band where it is tied and a darker foot, so it stands apart
-	# from the wheat
-	var hd := Vector2(p.x + 8.0, p.z + 8.25).length()
-	var hr := 1.375 - maxf(0.0, p.y - 1.0) * 0.6
-	if p.y < 2.75 and hd < hr:
-		return HAY_DARK if p.y < 0.25 or (p.y >= 1.0 and p.y < 1.25) else HAY
+		var d := Vector2(absf(co.x - clump.x), absf(co.y - clump.y))
+		var r := 1.0 if c.y < clump.w - 0.5 else 0.625
+		if c.y >= clump.z and c.y < clump.w and d.x < r and d.y < r and d.x + d.y < r * 1.5:
+			return OLIVE_DARK if c.y < clump.z + 0.5 else OLIVE
+	# a haystack: a stepped dome of golden hay in half-metre blocks, six
+	# wide at the foot, with a darker band where it is tied, so it stands
+	# apart from the wheat
+	var hx := absf(c.x + 8.0)
+	var hz := absf(c.z + 8.0)
+	var hr := 1.5 if c.y < 1.0 else 1.0 if c.y < 1.5 else 0.5 if c.y < 2.0 else 0.0
+	if maxf(hx, hz) + 0.5 * minf(hx, hz) < hr:
+		return HAY_DARK if c.y >= 1.0 and c.y < 1.5 else HAY
 	return EMPTY
 
 ## The levels of detail of one build, nearest first, scaled to the unit

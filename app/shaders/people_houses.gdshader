@@ -65,8 +65,17 @@ void vertex() {
 		tint *= WALLS[key % 4u] / WALLS[0];
 	} else if (index == 20) {
 		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
-	} else if (index >= 4 && index <= 6) {
+	} else if ((index >= 4 && index <= 6) || (index >= 29 && index <= 36)) {
 		tint *= ROOFS[(key >> 9u) % 4u];
+	}
+	// each roof slope lit by the way it faces once the house is turned
+	// (farmhouse.gd _tile): turned to the sun (west) a little lighter,
+	// away from it (east) darker, so the two sides of a roof differ even
+	// where only the treads of the tile steps show
+	if (index >= 29 && index <= 36) {
+		int d = (index - 29) / 2;
+		vec2 face = turn * (d == 0 ? vec2(1.0, 0.0) : d == 1 ? vec2(-1.0, 0.0) : d == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0));
+		tint *= face.x < -0.5 ? 1.06 : face.x > 0.5 ? 0.86 : face.y > 0.5 ? 1.0 : 0.93;
 	}
 	// not every farm has the cypresses, the olive tree or the haystack
 	// on its lot (farmhouse.gd _lot)

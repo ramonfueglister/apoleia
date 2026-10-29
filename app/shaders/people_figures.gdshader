@@ -34,7 +34,7 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // close to the skin, so no one reads as naked
 const vec3 TUNICS[8] = vec3[](vec3(0.81, 0.76, 0.65), vec3(0.86, 0.83, 0.74), vec3(0.61, 0.25, 0.16),
 	vec3(0.25, 0.37, 0.56), vec3(0.43, 0.29, 0.18), vec3(0.36, 0.43, 0.23), vec3(0.33, 0.24, 0.17), vec3(0.4, 0.45, 0.52));
-const vec3 SCARVES[4] = vec3[](vec3(0.85, 0.8, 0.68), vec3(0.62, 0.25, 0.18), vec3(0.3, 0.38, 0.55), vec3(0.45, 0.33, 0.22));
+const vec3 SCARVES[4] = vec3[](vec3(0.85, 0.8, 0.68), vec3(0.62, 0.25, 0.18), vec3(0.72, 0.56, 0.3), vec3(0.45, 0.33, 0.22)); // no blue: a blue head reads as a helmet
 // part ids in UV.x (people_dots.gd FIG_*)
 const int TUNIC = 0;
 const int LEG_L = 1;
