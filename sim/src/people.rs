@@ -97,17 +97,19 @@ const MARRY_AGE_MAX_F: f64 = 35.0;
 /// S86: share of women, per 1,000, who never marry (Huebner 2019: about a
 /// quarter of adult women in the Egyptian census without sign of a
 /// marriage, the divorced included). PLACEHOLDER, set so the totals of the
-/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year).
-pub const NEVER_MARRY_PER_1000: u64 = 200;
+/// census hold (about 45 births per 1,000, growth 0.1-0.2 % a year);
+/// 200 until the S75 tents and S90 Egypt, then 0.235 % growth.
+pub const NEVER_MARRY_PER_1000: u64 = 220;
 /// S86: divorces per 10,000 marriages and year (frequent and informal in
 /// Roman Egypt, Bagnall and Frier 1994). PLACEHOLDER, set like the above.
 pub const DIVORCE_PER_10K_YEAR: u64 = 700;
 /// S89: the life table (Coale-Demeny West 3) already holds the deaths from
 /// hunger, which the simulation adds on top (S84, S88), so the table's
 /// hazard is lowered by their share of all deaths, per 1,000. PLACEHOLDER:
-/// about the share of hunger deaths in normal years of the 100-year run
-/// with spoilage (5-7 %); one value for all ages and places.
-pub const TABLE_HUNGER_PER_1000: u64 = 50;
+/// about the share of hunger deaths in years 11-100 of the 100-year run
+/// (5-7 % with spoilage; 3.4-3.7 % after S90, S75 for tents and the
+/// buy fix); one value for all ages and places.
+pub const TABLE_HUNGER_PER_1000: u64 = 35;
 /// Preferred age gap husband − wife in years (Saller: about 10).
 const PREF_GAP: f64 = 10.0;
 /// Months without a match before the search widens (S63 "mehrere Monate").
@@ -467,8 +469,9 @@ pub struct Fields {
 pub struct Econ {
     /// Permille of its need a household ate last month, by household id.
     pub fed: Vec<u16>,
-    /// Per region key: (food per head, free land, cell to move to).
-    pub region: FxHashMap<u32, (f32, bool, u32)>,
+    /// Per region key: (food in kg: stores plus free land at its yield,
+    /// people, free land, cell to move to).
+    pub region: FxHashMap<u32, (f64, u32, bool, u32)>,
     /// Below this a household is in need (S66).
     pub need_fed: u16,
 }
@@ -635,6 +638,8 @@ struct IndexRow {
     region: u32,
     flags: u8,
     stand: u8,
+    sex: u8,
+    born: i32,
 }
 
 /// The monthly lists for marriage and relations, built from a snapshot.
@@ -643,15 +648,18 @@ struct Index {
     brides: FxHashMap<(u32, u8), Vec<u32>>,
     brides_by_stand: [Vec<u32>; 4],
     by_cell: Csr,
+    /// Sex and birth day by person id of those alive at the snapshot.
+    sex_born: Vec<(u8, i32)>,
 }
 
 impl Index {
     /// Everything in person id order, as the marriage search expects.
     fn build(mut rows: Vec<IndexRow>, max_pid: u32, cells: usize) -> Index {
         radix_sort(&mut rows, max_pid, |r| r.pid);
-        let mut i = Index { grooms: vec![Vec::new(); MONTH as usize], brides: FxHashMap::default(), brides_by_stand: Default::default(), by_cell: Csr::default() };
+        let mut i = Index { grooms: vec![Vec::new(); MONTH as usize], brides: FxHashMap::default(), brides_by_stand: Default::default(), by_cell: Csr::default(), sex_born: vec![(UNKNOWN_SEX, 0); max_pid as usize] };
         let mut by_cell = Vec::with_capacity(rows.len());
         for r in &rows {
+            i.sex_born[r.pid as usize] = (r.sex, r.born);
             if r.home == NONE {
                 continue;
             }
@@ -743,6 +751,9 @@ pub struct People {
     pub iq_mate_rg: f64,
     /// Person ids by home cell, rebuilt monthly.
     by_cell: Csr,
+    /// Sex and birth day by person id from the monthly index (immutable
+    /// for a person; UNKNOWN_SEX for those born since).
+    sex_born: Vec<(u8, i32)>,
     /// (household, person) sorted, rebuilt monthly.
     households: Vec<(u32, u32)>,
     /// Single men of age by id mod 30 and households (ranges into
@@ -790,6 +801,11 @@ fn part(len: usize, slice: u32, parts: i64) -> std::ops::Range<usize> {
 }
 
 /// S86: whether this woman never marries (one draw per person).
+/// Not in `sex_born`.
+const UNKNOWN_SEX: u8 = 2;
+/// Youngest marriage age of a woman in any estate.
+const MARRY_AGE_MIN_F: f64 = 13.0;
+
 fn never_marries(seed: u64, pid: u32, per_1000: u64) -> bool {
     rnd(seed, pid, 0x6e7e, 0) % 1000 < per_1000
 }
@@ -1008,6 +1024,7 @@ impl People {
             iq_mate_gap,
             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
             by_cell: Csr::default(),
+            sex_born: Vec::new(),
             households: Vec::new(),
             grooms: Vec::new(),
             hh_slices: Vec::new(),
@@ -1134,7 +1151,7 @@ impl People {
     /// S65: without free land the family waits with the marriage.
     fn no_land(&self, home: u32) -> bool {
         match &self.econ {
-            Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.1),
+            Some(e) => !e.region.get(&self.grid.region(home)).is_some_and(|r| r.2),
             None => self.share(home, 0) <= 1.0,
         }
     }
@@ -1171,7 +1188,7 @@ impl People {
                     f |= 2;
                 }
                 let region = if f & 2 != 0 && h.0 != NONE { grid.region(h.0) } else { 0 };
-                out.push(IndexRow { pid: pid.0, home: h.0, region, flags: f, stand: st.0 });
+                out.push(IndexRow { pid: pid.0, home: h.0, region, flags: f, stand: st.0, sex: sex.0, born: b.0 });
             },
         );
         let mut rows = Vec::with_capacity(self.count as usize);
@@ -1208,6 +1225,7 @@ impl People {
         self.brides = i.brides;
         self.brides_by_stand = i.brides_by_stand;
         self.by_cell = i.by_cell;
+        self.sex_born = i.sex_born;
     }
 
     /// Snapshot of (household, person) of the living.
@@ -1523,19 +1541,20 @@ impl People {
             // The list is from the start of the month: skip who has died,
             // married or left since.
             let Some(ge) = self.alive(g) else { continue };
-            if self.world.get::<Spouse>(ge).unwrap().0 != NONE || self.world.get::<Travel>(ge).is_some() {
+            let gr = self.world.entity(ge);
+            if gr.get::<Spouse>().unwrap().0 != NONE || gr.contains::<Travel>() {
                 continue;
             }
             let (home, born, stand, culture, religion, parents, search, rel, house) = (
-                self.world.get::<Home>(ge).unwrap().0,
-                self.world.get::<Born>(ge).unwrap().0,
-                self.world.get::<Stand>(ge).unwrap().0,
-                self.world.get::<Culture>(ge).unwrap().0,
-                self.world.get::<Religion>(ge).unwrap().0,
-                *self.world.get::<Parents>(ge).unwrap(),
-                self.world.get::<Search>(ge).unwrap().0,
-                *self.world.get::<Relations>(ge).unwrap(),
-                self.world.get::<Household>(ge).unwrap().0,
+                gr.get::<Home>().unwrap().0,
+                gr.get::<Born>().unwrap().0,
+                gr.get::<Stand>().unwrap().0,
+                gr.get::<Culture>().unwrap().0,
+                gr.get::<Religion>().unwrap().0,
+                *gr.get::<Parents>().unwrap(),
+                gr.get::<Search>().unwrap().0,
+                *gr.get::<Relations>().unwrap(),
+                gr.get::<Household>().unwrap().0,
             );
             // S65: without free land the family waits.
             if self.no_land(home)
@@ -1574,34 +1593,37 @@ impl People {
             let mut best: Option<(i64, u32)> = None;
             for &c in &cands {
                 let Some(ce) = self.alive(c) else { continue };
-                let w = (
-                    self.world.get::<Sex>(ce).unwrap().0,
-                    self.world.get::<Spouse>(ce).unwrap().0,
-                    self.world.get::<Born>(ce).unwrap().0,
-                    self.world.get::<Stand>(ce).unwrap().0,
-                    *self.world.get::<Parents>(ce).unwrap(),
-                    self.world.get::<Household>(ce).unwrap().0,
-                    self.world.get::<Travel>(ce).is_some(),
-                );
-                let wa = age_y(day, w.2);
-                if w.0 != 0 || w.1 != NONE || w.6 || wa < MARRY_AGE[w.3 as usize].0 || wa >= MARRY_AGE_MAX_F || w.5 == house || never_marries(seed, c, self.never_marry_per_1000) {
+                // Cheapest and most selective tests first (most candidates
+                // are acquaintances: men, children, the married): sex and
+                // age from the monthly index, then the components.
+                let ent = self.world.entity(ce);
+                let (sex, born) = match self.sex_born.get(c as usize) {
+                    Some(&(s, b)) if s != UNKNOWN_SEX => (s, b),
+                    _ => (ent.get::<Sex>().unwrap().0, ent.get::<Born>().unwrap().0),
+                };
+                let wa = age_y(day, born);
+                if sex != 0 || !(MARRY_AGE_MIN_F..MARRY_AGE_MAX_F).contains(&wa) || ent.get::<Spouse>().unwrap().0 != NONE || ent.contains::<Travel>() {
+                    continue;
+                }
+                let w = (ent.get::<Stand>().unwrap().0, *ent.get::<Parents>().unwrap(), ent.get::<Household>().unwrap().0);
+                if wa < MARRY_AGE[w.0 as usize].0 || w.2 == house || never_marries(seed, c, self.never_marry_per_1000) {
                     continue;
                 }
                 // No siblings.
-                if (parents.0 != NONE && w.4 .0 == parents.0) || (parents.1 != NONE && w.4 .1 == parents.1) {
+                if (parents.0 != NONE && w.1 .0 == parents.0) || (parents.1 != NONE && w.1 .1 == parents.1) {
                     continue;
                 }
                 // S82: partners of similar intelligence (Horwitz et al. 2023).
-                if (g_iq - self.world.get::<Intelligence>(ce).unwrap().iq(wa)).abs() > self.iq_mate_gap {
+                if (g_iq - ent.get::<Intelligence>().unwrap().iq(wa)).abs() > self.iq_mate_gap {
                     continue;
                 }
                 // CK3-like weighting, in tenths.
                 let mut s = -(((ga - wa) - PREF_GAP).abs() * 10.0) as i64;
-                s -= 50 * (stand as i64 - w.3 as i64).abs();
-                if self.world.get::<Culture>(ce).unwrap().0 == culture {
+                s -= 50 * (stand as i64 - w.0 as i64).abs();
+                if ent.get::<Culture>().unwrap().0 == culture {
                     s += 30;
                 }
-                if self.world.get::<Religion>(ce).unwrap().0 == religion {
+                if ent.get::<Religion>().unwrap().0 == religion {
                     s += 30;
                 }
                 if let Some(k) = rel.ids[..rel.n as usize].iter().position(|&x| x == c) {
@@ -1676,6 +1698,8 @@ impl People {
         let leave_instead = |pid: u32| pressure > 0.0 && life::unit(rnd(seed, pid, 0xca9, day)) <= pressure;
         let mut rest: Vec<(u32, u32, Vec<u32>)> = Vec::new();
         let mut checked = 0usize;
+        // People already moving to a region this round (grain economy).
+        let mut arriving: FxHashMap<u32, u32> = FxHashMap::default();
         for &(i, j) in &self.hh_slices[yslice as usize] {
             let members: Vec<u32> = self.households[i as usize..j as usize]
                 .iter()
@@ -1692,8 +1716,9 @@ impl People {
             checked += 1;
             if let Some(e) = &self.econ {
                 // Grain economy: a household that ate too little looks for
-                // the region around with the most food per head (stores
-                // and free land, crate::grain); PLACEHOLDER as below.
+                // the region around with the most food per head once it is
+                // there, counting those already on their way (stores and
+                // free land, crate::grain); PLACEHOLDER as below.
                 if !self.in_need(house, home) {
                     if pressure > 0.0 {
                         rest.push((e.fed.get(house as usize).map_or(1000, |&f| f as u32), house, members));
@@ -1701,16 +1726,23 @@ impl People {
                     continue;
                 }
                 let own = self.grid.region(home);
-                let now = e.region.get(&own).map_or(0.0, |r| r.0);
-                let mut best = (now, NONE);
+                let n = members.len() as u32;
+                let per_head = |k: u32, add: u32| {
+                    e.region.get(&k).map_or(0.0, |r| r.0 / ((r.1 + arriving.get(&k).copied().unwrap_or(0) + add).max(1) as f64 * crate::grain::KG_PER_ADULT_YEAR as f64))
+                };
+                let mut best = (per_head(own, 0), NONE, NONE);
                 for k in Grid::regions_around(own) {
                     if let Some(r) = e.region.get(&k) {
-                        if k != own && r.0 > best.0 {
-                            best = (r.0, r.2);
+                        let s = per_head(k, n);
+                        if k != own && s > best.0 {
+                            best = (s, r.3, k);
                         }
                     }
                 }
                 let to = (best.1 != NONE && !leave_instead(house)).then_some(best.1);
+                if to.is_some() {
+                    *arriving.entry(best.2).or_insert(0) += n;
+                }
                 moves.push((members, to));
                 continue;
             }

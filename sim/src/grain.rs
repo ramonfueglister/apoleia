@@ -40,7 +40,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 /// Wheat per adult and year, kg (GRAIN-NUMBERS 1: proposal 200, range
 /// 175–250). Children under 10 eat half (proposal there).
-const KG_PER_ADULT_YEAR: i64 = 200;
+pub(crate) const KG_PER_ADULT_YEAR: i64 = 200;
 const CHILD_AGE: f64 = 10.0;
 /// Seed per ha, kg (Columella 2.9 via Devereaux 2025).
 const SEED_KG_HA: i64 = 130;
@@ -58,6 +58,12 @@ const RATIO_NILE_X10: i64 = 100;
 /// The Nile land: Delta to the First Cataract, as a box in degrees (west,
 /// east, south, north). PLACEHOLDER until there are provinces.
 const NILE_BOX: (f64, f64, f64, f64) = (29.0, 33.5, 24.0, 31.7);
+/// S90 (Ramon, 28.10.2026): the field land of Egypt is Butzer's cultivable
+/// land of about 150 BC (Early Hydraulic Civilization in Egypt, 1976,
+/// table 4: valley 10,000, Faiyum 1,300, Delta 16,000 km², for 4.9
+/// million people) instead of HYDE 3.3 (3,900 km² for 4.5 million), spread
+/// over the clearable land of the Nile cells, none cleared on top.
+const NILE_FIELDS_KM2: f64 = 27_300.0;
 
 /// Longitude and latitude of a 25 km cell centre (data/projection.json:
 /// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
@@ -189,8 +195,30 @@ const TRADE_MARGIN_PCT: i64 = 10;
 const ALMS_PCT: i64 = 30;
 const STEAL_PER_16: u64 = 5;
 const STEAL_KG: i64 = 40;
+/// S91 (Ramon, 29.10.2026): a desert cell, whose people live from oasis
+/// gardens and herds outside the grain economy: no field or clearable land
+/// and more than this share of its land bare (ESA land cover), per cent.
+/// PLACEHOLDER.
+const DESERT_BARE_PCT: f64 = 50.0;
+/// S92 (Ramon, 29.10.2026, Lex Manciana): the landless clear free land and
+/// hold it as tenants of the state for a third of the crop; two years
+/// without sowing and the land is lost. PLACEHOLDER: at least this much
+/// free land in the cell, m².
+const MANCIANA_MIN_M2: i64 = 10_000;
+const MANCIANA_IDLE_YEARS: u8 = 2;
 /// Hunger signal for moving (S66), permille eaten of need. PLACEHOLDER.
 const NEED_FED: u16 = 800;
+/// S75 (Ramon, 27.10.2026): the landless seek the place with the best
+/// chances. Once a month a tent household that did not eat its fill
+/// compares its market with the markets within TENT_REACH_DAYS (the market
+/// graph's travel days) by what a tent person could get there in a month:
+/// the wages paid to day labourers and the work left undone there last
+/// month, plus alms from the market store, shared among the tent people
+/// there and the newcomers. It moves when a place offers TENT_MOVE_PCT of
+/// its own or more. PLACEHOLDER: reach, threshold, the move takes no time,
+/// nearness to other tents counts only through the shared work.
+const TENT_REACH_DAYS: i64 = 5;
+const TENT_MOVE_PCT: i64 = 150;
 
 // Footpaths (Helbing et al. 1997 as in GRAIN.md). Fine raster: tile level
 // 7, 16 × 16 per 25 km cell (≈ 1.56 km real). PLACEHOLDER all: wear
@@ -274,6 +302,8 @@ struct HhState {
     /// The carrier is on the way; the trader is on the way.
     busy: bool,
     trading: bool,
+    /// S91: formed in a desert cell, lives outside the grain economy.
+    own_food: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -311,6 +341,9 @@ struct Farm {
     off_done: i64,
     /// The fine tiles its fields lie on (S73), in the order taken.
     plots: Vec<Plot>,
+    /// S92: cleared under the Lex Manciana, and years in a row unsown.
+    manciana: bool,
+    idle: u8,
 }
 
 /// Part of a fine tile in a farm's fields, m².
@@ -379,6 +412,11 @@ pub struct Market {
     /// Grain in the region (farm stores, market, pantries), kg.
     pub grain: i64,
     pub free_area: i64,
+    /// S75: day labour wages paid and work left undone (kg of wage) since
+    /// the last count, and as of the last count; people in tents.
+    work_acc: i64,
+    work_month: i64,
+    tent_people: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -431,9 +469,18 @@ pub struct GrainStats {
     pub spoiled_kg: i64,
     pub thefts: u64,
     pub farms_taken: u64,
+    /// S92: farms cleared under the Lex Manciana and lost after two
+    /// years unsown.
+    pub manciana_new: u64,
+    pub manciana_lost: u64,
+    /// S91: people of desert households fed outside the grain economy,
+    /// summed over the meals (one per household and month).
+    pub own_food_people: u64,
     pub farms_abandoned: u64,
     /// Households without workers or kin sent to the tents (S79).
     pub to_tents: u64,
+    /// S75: tent households that moved to a market with better chances.
+    pub tent_moves: u64,
     pub field_rebuilds: u64,
     /// Heirs' households given a share of the father's farm (INHERIT_EQUAL).
     pub heirs_given: u64,
@@ -473,6 +520,8 @@ pub struct Grain {
     free_m2: Vec<i64>,
     free_poor: Vec<i64>,
     net_kg_ha: Vec<i64>,
+    /// S91: desert cells (DESERT_BARE_PCT).
+    desert: Vec<bool>,
     /// The same free land per fine tile (S73): [good, clearable] m², in
     /// blocks of 256 per 25 km cell with land (`tile_base`, NONE without);
     /// `block_cell` is the cell of each block.
@@ -669,21 +718,39 @@ impl Grain {
         let mut free_poor = vec![0i64; n];
         let mut net = vec![0i64; n];
         let mut usable_m2 = vec![0i64; n];
+        let mut desert = vec![false; n];
+        let usable_km2 = |r: i32, c: i32, cell: &crate::Cell| match cover {
+            Some(m) => cell.land_km2 * m.get(&(r, c)).copied().unwrap_or(0.0),
+            None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
+        };
+        let in_nile = |r: i32, c: i32| {
+            let (lon, lat) = cell_lon_lat(r, c);
+            (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat)
+        };
+        // S90: Butzer's Egypt over the Nile cells' usable land (summed in
+        // cell order, so the share is the same on every run).
+        let nile_share = {
+            let mut keys: Vec<&(i32, i32)> = inp.cells.keys().filter(|&&(r, c)| in_nile(r, c)).collect();
+            keys.sort_unstable();
+            let sum: f64 = keys.iter().map(|&&(r, c)| usable_km2(r, c, &inp.cells[&(r, c)])).sum();
+            if sum > 0.0 { NILE_FIELDS_KM2 / sum } else { 0.0 }
+        };
         for (&(r, c), cell) in &inp.cells {
             let Some(i) = g.index(r, c) else { continue };
             let crop = cell.hyde.as_ref().map_or(0.0, |h| h.crop_km2);
             free_m2[i as usize] = (crop * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
-            let usable = match cover {
-                Some(m) => cell.land_km2 * m.get(&(r, c)).copied().unwrap_or(0.0),
-                None => cell.land_km2 * (1.0 - cell.frac_bare - cell.frac_snow - cell.frac_above_1500m).max(0.0),
-            };
+            let usable = usable_km2(r, c, cell);
             free_poor[i as usize] = ((usable - crop).max(0.0) * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64 * clear_pct / 100;
             usable_m2[i as usize] = (usable * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
             let hill = (cell.frac_above_1500m * 2.0).clamp(0.0, 1.0);
-            let (lon, lat) = cell_lon_lat(r, c);
-            let nile = (NILE_BOX.0..NILE_BOX.1).contains(&lon) && (NILE_BOX.2..NILE_BOX.3).contains(&lat);
+            let nile = in_nile(r, c);
+            if nile {
+                free_m2[i as usize] = (usable * nile_share * 1e6 / crate::people::PEOPLE_PER_PERSON) as i64;
+                free_poor[i as usize] = 0;
+            }
             let ratio = if nile { RATIO_NILE_X10 as f64 } else { RATIO_PLAIN_X10 as f64 - hill * (RATIO_PLAIN_X10 - RATIO_HILL_X10) as f64 };
             net[i as usize] = ((ratio - 10.0) * SEED_KG_HA as f64 / 10.0) as i64;
+            desert[i as usize] = free_m2[i as usize] + free_poor[i as usize] == 0 && cell.frac_bare * 100.0 > DESERT_BARE_PCT;
         }
         // Free land on fine tiles (S73). The cell's fields lie on its
         // farmland tiles (by farm_8 + farm_16 samples) up to the farmland
@@ -816,6 +883,9 @@ impl Grain {
                 reach: Vec::new(),
                 stale: false,
                 field: None,
+                work_acc: 0,
+                work_month: 0,
+                tent_people: 0,
                 dirty: true,
                 walked: FxHashMap::default(),
                 open: Vec::new(),
@@ -840,6 +910,7 @@ impl Grain {
             free_m2,
             free_poor,
             net_kg_ha: net,
+            desert,
             tiles,
             tile_base,
             block_cell,
@@ -920,6 +991,12 @@ impl Grain {
             m.demand = d * 1000;
             m.money = (d * 60).max(DONKEY.0) * BASE_PRICE;
         }
+        // S92 at the start, after the stocks (the landless counted as the
+        // market's buyers).
+        let ids = sorted_keys(&gr.info);
+        gr.manciana(p, &ids, true);
+        gr.regroup();
+        gr.sums();
         gr.export(p);
         gr
     }
@@ -1040,7 +1117,7 @@ impl Grain {
         let (info, members, scratch) = count_households(rows, n, day);
         (self.info, self.members, self.scratch) = (info, members, scratch);
         self.reconcile(p, start);
-        self.assign_free(p);
+        self.assign_free(p, start);
         self.regroup();
         self.sums();
     }
@@ -1132,7 +1209,7 @@ impl Grain {
             let mut used: FxHashMap<u32, i64> = FxHashMap::default();
             for &id in &ids {
                 let i = self.info[&id];
-                if i.stand > CITY || !matches!((i.stand, i.job), (_, BAUERN) | (RURAL, PAECHTER) | (RURAL, UNFREIE)) {
+                if i.stand > CITY || !matches!((i.stand, i.job), (_, BAUERN) | (RURAL, PAECHTER) | (RURAL, UNFREIE)) || self.desert[i.home as usize] {
                     continue;
                 }
                 let c = i.home as usize;
@@ -1179,8 +1256,12 @@ impl Grain {
             // (children stay in the household); moved households are tents.
             let kind = if kind == FARM && !start { TENT } else { kind };
             let kind = if kind == FARM && by_wage.contains_key(&id) { WAGE } else { kind };
+            // S91: a household formed in a desert cell feeds itself (oasis
+            // gardens, dates, herds); a farmer there has no fields.
+            let own_food = self.desert[i.home as usize];
+            let kind = if own_food && kind == FARM { WAGE } else { kind };
             let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
-            self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false });
+            self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false, own_food });
         }
         if start {
             self.share_land(p);
@@ -1189,11 +1270,11 @@ impl Grain {
 
     /// After a count: free farms go to landless households, and the
     /// workers are listed by market.
-    fn assign_free(&mut self, p: &mut People) {
+    fn assign_free(&mut self, p: &mut People, start: bool) {
         let ids = sorted_keys(&self.info);
         // Free farms go to landless households of the same cell first, then
         // of the region (lowest household id first). PLACEHOLDER order.
-        let mut free: Vec<u32> = (0..self.farms.len() as u32).filter(|&f| self.farms[f as usize].hh == NONE).collect();
+        let mut free: Vec<u32> = (0..self.farms.len() as u32).filter(|&f| self.farms[f as usize].hh == NONE && self.farms[f as usize].area > 0).collect();
         if !free.is_empty() {
             let mut tents: FxHashMap<u32, Vec<(u32, u32)>> = FxHashMap::default();
             for &id in &ids {
@@ -1220,6 +1301,7 @@ impl Grain {
                     h.kind = FARM;
                     h.farm = f;
                     h.fine = fine;
+                    h.own_food = false;
                     let fm = &mut self.farms[f as usize];
                     fm.hh = id;
                     fm.store += h.pantry;
@@ -1228,12 +1310,98 @@ impl Grain {
                 }
             }
         }
+        if !start {
+            self.manciana(p, &ids, false);
+        }
         // Workers offered at the market.
         self.market_hh = vec![Vec::new(); self.markets.len()];
         for &id in &ids {
             let mk = self.cell_market[self.info[&id].home as usize] as usize;
             self.market_hh[mk].push(id);
         }
+    }
+
+    /// S92 (Lex Manciana): tents with adults clear free land of their cell,
+    /// else of the cell of their region with the most free land (with a
+    /// village), and become tenants of the state. They take what they want
+    /// to till (S73): free good land first, then as much as their adults
+    /// clear in a year; the fields grow at each sowing as on every farm.
+    /// At the start the law has long been in force: those fields are sown
+    /// like the others (PLACEHOLDER, as the start stocks).
+    fn manciana(&mut self, p: &mut People, ids: &[u32], start: bool) {
+        let free = |g: &Self, c: usize| g.free_m2[c] + g.free_poor[c];
+        let ok = |g: &Self, c: usize| free(g, c) >= MANCIANA_MIN_M2 && !g.settle.villages(c as u32).is_empty();
+        let mut best: Vec<(i64, u32)> = vec![(0, NONE); self.markets.len()];
+        for c in 0..self.free_m2.len() {
+            let mk = self.cell_market[c];
+            if mk != NONE && ok(self, c) && free(self, c) > best[mk as usize].0 {
+                best[mk as usize] = (free(self, c), c as u32);
+            }
+        }
+        for &id in ids {
+            let Some(s) = self.hh.get(&id).copied() else { continue };
+            let Some(i) = self.info.get(&id).copied() else { continue };
+            if s.kind != TENT || i.adults == 0 || s.busy || s.own_food {
+                continue;
+            }
+            let mk = self.cell_market[i.home as usize];
+            let cell = if ok(self, i.home as usize) {
+                i.home
+            } else if mk != NONE && best[mk as usize].1 != NONE && ok(self, best[mk as usize].1 as usize) {
+                best[mk as usize].1
+            } else {
+                continue;
+            };
+            if cell != i.home {
+                p.relocate_household(id, &self.members[i.at as usize..(i.at + i.size as u32) as usize], cell);
+                self.info.get_mut(&id).unwrap().home = cell;
+            }
+            let i = self.info[&id];
+            let want = self.want_m2(id);
+            let fine = self.settle.home_fine(cell, id, i.stand);
+            let f = self.new_farm(p, id, &i, fine) as usize;
+            self.farms[f].kind = TENANT;
+            self.farms[f].manciana = true;
+            let good = self.take_land(f, want, false, true);
+            let clear = (want - good).min(i.adults as i64 * CLEAR_M2_ADULT_YEAR * self.work_x1000(id) / 1000).max(0);
+            self.take_land(f, clear, true, true);
+            if self.farms[f].area == 0 {
+                // Nothing to till after all: an empty farm nobody takes.
+                self.farms[f].hh = NONE;
+                continue;
+            }
+            let h = self.hh.get_mut(&id).unwrap();
+            h.kind = FARM;
+            h.farm = f as u32;
+            h.fine = fine;
+            self.farms[f].store += h.pantry;
+            h.pantry = 0;
+            if start {
+                // Sown last autumn, food to the harvest plus the reserve
+                // like every farm at the start.
+                let need_day = i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
+                let fm = &mut self.farms[f];
+                fm.sown = fm.area * self.crop_pct / 100;
+                fm.store = fm.store.max(need_day * (fm.harvest_doy + RESERVE_DAYS));
+            }
+            self.stats.manciana_new += 1;
+        }
+    }
+
+    /// S92: a Manciana farm that sowed nothing for two years loses its
+    /// land; the household goes back to the tent.
+    fn manciana_lapse(&mut self, f: usize) {
+        let area = self.farms[f].area;
+        self.give_land(f, area);
+        let id = self.farms[f].hh;
+        self.farms[f].hh = NONE;
+        let store = std::mem::take(&mut self.farms[f].store);
+        if let Some(h) = self.hh.get_mut(&id) {
+            h.kind = TENT;
+            h.farm = NONE;
+            h.pantry += store;
+        }
+        self.stats.manciana_lost += 1;
     }
 
     /// Slices for the staggered work and the farms that hire, from the
@@ -1270,8 +1438,11 @@ impl Grain {
         for m in self.markets.iter_mut() {
             m.people = 0;
             m.tents = 0;
+            m.tent_people = 0;
             m.grain = m.store;
             m.free_area = 0;
+            m.work_month = m.work_acc;
+            m.work_acc = 0;
         }
         for (&id, i) in self.info.iter() {
             let mk = self.cell_market[i.home as usize] as usize;
@@ -1279,6 +1450,9 @@ impl Grain {
             let m = &mut self.markets[mk];
             m.people += i.size as u32;
             m.tents += u32::from(s.kind == TENT);
+            if s.kind == TENT {
+                m.tent_people += i.size as u32;
+            }
             m.grain += s.pantry;
             if s.farm != NONE {
                 m.grain += self.farms[s.farm as usize].store;
@@ -1329,6 +1503,8 @@ impl Grain {
             off_need: 0,
             off_done: 0,
             plots: Vec::new(),
+            manciana: false,
+            idle: 0,
         };
         let k = self.farms.len() as u32;
         self.by_doy[harvest_doy as usize].push(k);
@@ -1383,7 +1559,7 @@ impl Grain {
                     t
                 };
                 if !self.hh.contains_key(&id) {
-                    self.hh.insert(id, HhState { kind: FARM, pantry: 0, money: 0, farm: NONE, fine, fed: 1000, busy: false, trading: false });
+                    self.hh.insert(id, HhState { kind: FARM, pantry: 0, money: 0, farm: NONE, fine, fed: 1000, busy: false, trading: false, own_food: false });
                 }
                 let h = self.hh.get_mut(&id).unwrap();
                 h.kind = FARM;
@@ -1420,6 +1596,8 @@ impl Grain {
             off_need: 0,
             off_done: 0,
             plots: Vec::new(),
+            manciana: false,
+            idle: 0,
         };
         let k = self.farms.len() as u32;
         self.by_doy[f.harvest_doy as usize].push(k);
@@ -1688,7 +1866,7 @@ impl Grain {
         match slice {
             11 => self.start_census(p, day),
             14 => self.finish_census(p),
-            15 => self.assign_free(p),
+            15 => self.assign_free(p, false),
             16 => self.regroup(),
             17 => {
                 self.sums();
@@ -1980,6 +2158,17 @@ impl Grain {
             let id = t.hh;
             self.start_carry(p, day, id, SELL);
         }
+        // A household that could not carry home what it buys for (it buys
+        // when below BUY_BELOW days of food) goes again, as a farm with
+        // more to sell does.
+        if t.kind == BUY && t.kg > 0 {
+            let id = t.hh;
+            let h = self.hh[&id];
+            let have = if h.farm != NONE { self.farms[h.farm as usize].store } else { h.pantry };
+            if have < self.need_day(id) * BUY_BELOW {
+                self.start_carry(p, day, id, BUY);
+            }
+        }
     }
 
     /// Sowing and harvest start on the farm's day: the work needed in the
@@ -2097,6 +2286,7 @@ impl Grain {
                     fm.store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2138,6 +2328,7 @@ impl Grain {
                     fm.store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2170,6 +2361,7 @@ impl Grain {
                     self.farms[farm as usize].store -= wage;
                     self.stats.hired_days += take;
                     self.stats.wage_kg += wage;
+                    self.markets[mi].work_acc += wage;
                     let w = offers[o].0;
                     let ws = self.hh.get_mut(&w).unwrap();
                     if ws.farm != NONE {
@@ -2193,6 +2385,8 @@ impl Grain {
         let Some(pk) = self.farms[f as usize].peak.take() else { return };
         let cropped = self.cropped(self.farms[f as usize].area);
         let fm = &mut self.farms[f as usize];
+        // S75: the hands that were missing, as wages a worker could have had.
+        self.markets[fm.market as usize].work_acc += (pk.demand - pk.done).max(0) * WAGE_KG_DAY;
         let frac_x1000 = if pk.demand == 0 { 1000 } else { pk.done * 1000 / pk.demand };
         if !pk.harvest {
             let worked = cropped * frac_x1000 / 1000;
@@ -2204,6 +2398,12 @@ impl Grain {
             fm.store -= seed;
             self.stats.seed_kg += seed;
             fm.sown = sown;
+            if fm.manciana {
+                fm.idle = if sown == 0 { fm.idle + 1 } else { 0 };
+                if fm.idle >= MANCIANA_IDLE_YEARS {
+                    self.manciana_lapse(f as usize);
+                }
+            }
             return;
         }
         let poor = if fm.area == 0 { 0 } else { fm.sown * fm.poor / fm.area };
@@ -2223,7 +2423,8 @@ impl Grain {
         // goes to the landlord (PLACEHOLDER: share-cropping paid on sale).
         // Tax and rent on the crop less the seed it took (PLACEHOLDER).
         let net = (crop - seed_in).max(0);
-        let tax = net * TAX_PCT / 100;
+        // S92: on Manciana land the third (RENT_PCT) to the state is all.
+        let tax = if fm.manciana { 0 } else { net * TAX_PCT / 100 };
         let rent = if fm.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
         fm.store += crop - tax;
         fm.rent_due += rent;
@@ -2290,6 +2491,18 @@ impl Grain {
         for &id in &ids {
             let Some(info) = self.info.get(&id).copied() else { continue };
             let Some(mut s) = self.hh.get(&id).copied() else { continue };
+            // S91: oasis and desert households feed themselves.
+            if s.own_food && self.desert[info.home as usize] {
+                s.fed = 1000;
+                self.hh.insert(id, s);
+                self.stats.own_food_people += info.size as u64;
+                if let Some(e) = p.econ.as_mut() {
+                    if (id as usize) < e.fed.len() {
+                        e.fed[id as usize] = 1000;
+                    }
+                }
+                continue;
+            }
             let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
             let need = need_day * MONTH;
             // Income: the state wage for workers outside farming (S76).
@@ -2339,6 +2552,9 @@ impl Grain {
                 s.pantry = have;
             }
             self.hh.insert(id, s);
+            if s.kind == TENT && s.fed < 1000 && !s.busy {
+                self.tent_move(p, id, &info, mk);
+            }
             if let Some(e) = p.econ.as_mut() {
                 if (id as usize) < e.fed.len() {
                     e.fed[id as usize] = s.fed;
@@ -2377,6 +2593,46 @@ impl Grain {
             }
         }
         self.hh_slices[slice] = ids;
+    }
+
+    /// S75: what a tent person can get in a month at market `m` with `add`
+    /// more tent people there, kg.
+    fn tent_chance(&self, m: usize, add: u32) -> i64 {
+        let mk = &self.markets[m];
+        let n = (mk.tent_people + add).max(1) as i64;
+        let alms = (KG_PER_ADULT_YEAR / 12 * ALMS_PCT / 100).min(mk.store.max(0) / n);
+        mk.work_month / n + alms
+    }
+
+    /// S75: a tent household moves to the market with the best chances
+    /// within reach, if they are clearly better than at its own.
+    fn tent_move(&mut self, p: &mut People, id: u32, info: &HhInfo, mk: u32) {
+        if mk == NONE {
+            return;
+        }
+        let n = info.size as u32;
+        let own = self.tent_chance(mk as usize, 0);
+        let mut best = (own * TENT_MOVE_PCT / 100, NONE);
+        for nb in &self.markets[mk as usize].neigh {
+            if nb.days > TENT_REACH_DAYS {
+                continue;
+            }
+            let c = self.tent_chance(nb.m as usize, n);
+            if c > best.0 {
+                best = (c, nb.m);
+            }
+        }
+        let to = best.1;
+        if to == NONE {
+            return;
+        }
+        let (cell, fine) = (self.markets[to as usize].cell, self.markets[to as usize].fine);
+        p.relocate_household(id, &self.members[info.at as usize..(info.at + info.size as u32) as usize], cell);
+        self.info.get_mut(&id).unwrap().home = cell;
+        self.hh.get_mut(&id).unwrap().fine = fine;
+        self.markets[mk as usize].tent_people = self.markets[mk as usize].tent_people.saturating_sub(n);
+        self.markets[to as usize].tent_people += n;
+        self.stats.tent_moves += 1;
     }
 
     /// A farm store in the cell (else the region) to steal from, by hash.
@@ -2533,16 +2789,15 @@ impl Grain {
         let mut region = FxHashMap::default();
         for m in &self.markets {
             let food = m.grain + m.free_area * 400 / 10_000;
-            let score = food as f64 / (m.people.max(1) as f64 * KG_PER_ADULT_YEAR as f64);
             // A cell with free land, else the market cell.
-            region.insert(m.region, (score as f32, m.free_area > 0, m.cell));
+            region.insert(m.region, (food as f64, m.people, m.free_area > 0, m.cell));
         }
         for (c, &a) in self.free_m2.iter().enumerate() {
             let a = a + self.free_poor[c];
             if a > 10_000 {
                 if let Some(e) = region.get_mut(&p.grid.region(c as u32)) {
-                    if self.free_m2[e.2 as usize] + self.free_poor[e.2 as usize] < a {
-                        e.2 = c as u32;
+                    if self.free_m2[e.3 as usize] + self.free_poor[e.3 as usize] < a {
+                        e.3 = c as u32;
                     }
                 }
             }
@@ -3409,6 +3664,33 @@ mod tests {
         assert!(g.tiles == tiles);
         // The share keeps the father's calendar.
         assert_eq!((g.farms[t].harvest_doy, g.farms[t].sow_doy), (g.farms[f].harvest_doy, g.farms[f].sow_doy));
+    }
+
+    /// S92: the start makes Manciana farms of tents, sown, without tax;
+    /// a lapsed one gives all its land back to the tiles and its household
+    /// goes back to the tent with the store.
+    #[test]
+    fn manciana_land_comes_back() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        assert!(g.stats.manciana_new > 0);
+        let f = (0..g.farms.len()).find(|&f| g.farms[f].manciana && g.farms[f].hh != NONE).unwrap();
+        assert_eq!(g.farms[f].kind, TENANT);
+        assert!(g.farms[f].sown > 0);
+        let (good, poor) = (g.free_m2.iter().sum::<i64>(), g.free_poor.iter().sum::<i64>());
+        let (area, fpoor, store, id) = (g.farms[f].area, g.farms[f].poor, g.farms[f].store, g.farms[f].hh);
+        let pantry = g.hh[&id].pantry;
+        g.manciana_lapse(f);
+        assert_eq!(g.farms[f].area, 0);
+        assert!(g.farms[f].plots.is_empty());
+        assert_eq!(g.free_m2.iter().sum::<i64>() + g.free_poor.iter().sum::<i64>(), good + poor + area);
+        assert_eq!(g.free_poor.iter().sum::<i64>(), poor + fpoor);
+        let h = g.hh[&id];
+        assert_eq!((h.kind, h.farm, h.pantry), (TENT, NONE, pantry + store));
     }
 
     #[test]
