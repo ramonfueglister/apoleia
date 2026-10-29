@@ -11,6 +11,7 @@ extends RefCounted
 const SERIES: Array[Color] = [Color("b8893a"), Color("1f9cc4"), Color("cf5f44"), Color("8f6fd0"), Color("6f9a3a")]
 const RED := Color("e8846b")
 const GRID := Color(1.0, 1.0, 1.0, 0.07)
+const BAND_REACH := 2.0
 
 ## `values` as a line over `rect`, scaled to their own range (or to
 ## lo..hi when given), with the area under it and a dot on the last.
@@ -79,9 +80,17 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 	for s in series:
 		var vals: PackedFloat64Array = s.values
 		n = maxi(n, vals.size())
-		for v in vals + PackedFloat64Array(s.get("lo", [])) + PackedFloat64Array(s.get("hi", [])):
+		for v in vals:
 			lo = minf(lo, v)
 			hi = maxf(hi, v)
+	# a band reaches at most BAND_REACH times beyond its line, so a single
+	# dear market (Rome) does not squash the median flat; it is cut there
+	var cut_lo := lo / BAND_REACH
+	var cut_hi := hi * BAND_REACH
+	for s in series:
+		for v in PackedFloat64Array(s.get("lo", [])) + PackedFloat64Array(s.get("hi", [])):
+			lo = minf(lo, maxf(v, cut_lo))
+			hi = maxf(hi, minf(v, cut_hi))
 	if n < 2:
 		ci.draw_string(font, plot.get_center() - Vector2(70, 0), "Noch zu wenige Monate", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.5))
 		return
@@ -98,9 +107,9 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		if s.has("lo") and s.has("hi"):
 			var band := PackedVector2Array()
 			for i in vals.size():
-				band.append(Vector2(x_of.call(i), y_of.call(s.hi[i])))
+				band.append(Vector2(x_of.call(i), y_of.call(clampf(s.hi[i], lo, hi))))
 			for i in range(vals.size() - 1, -1, -1):
-				band.append(Vector2(x_of.call(i), y_of.call(s.lo[i])))
+				band.append(Vector2(x_of.call(i), y_of.call(clampf(s.lo[i], lo, hi))))
 			if Geometry2D.triangulate_polygon(band).size() > 0:
 				ci.draw_colored_polygon(band, Color(c, 0.2))
 		var line := PackedVector2Array()

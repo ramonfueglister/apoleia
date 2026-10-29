@@ -541,10 +541,16 @@ func _draw_chart() -> void:
 	var scale := (100.0 if t.units[i] == "%" else 1.0) * (_factor[i] if _factor.size() > i else 1.0)
 	var lo := INF
 	var hi := -INF
-	for k in keys:
-		for v in data[k]:
-			lo = minf(lo, float(v) * scale)
-			hi = maxf(hi, float(v) * scale)
+	for v in data["price_median" if keys.size() > 1 else key]:
+		lo = minf(lo, float(v) * scale)
+		hi = maxf(hi, float(v) * scale)
+	if keys.size() > 1: # the band, cut where one dear market would squash the median
+		var cut_lo := lo / Charts.BAND_REACH
+		var cut_hi := hi * Charts.BAND_REACH
+		for k in ["price_min", "price_max"]:
+			for v in data[k]:
+				lo = minf(lo, maxf(float(v) * scale, cut_lo))
+				hi = maxf(hi, minf(float(v) * scale, cut_hi))
 	if lo >= 0.0 and lo < hi * 0.5:
 		lo = 0.0 # counts from nothing
 	if hi - lo < 1e-9:
@@ -567,9 +573,9 @@ func _draw_chart() -> void:
 	if keys.size() > 1: # the range of the prices as a band
 		var band := PackedVector2Array()
 		for r in n:
-			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_max[r]) * scale)))
+			band.append(Vector2(x_of.call(r), y_of.call(clampf(float(data.price_max[r]) * scale, lo, hi))))
 		for r in range(n - 1, -1, -1):
-			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_min[r]) * scale)))
+			band.append(Vector2(x_of.call(r), y_of.call(clampf(float(data.price_min[r]) * scale, lo, hi))))
 		if Geometry2D.triangulate_polygon(band).size() > 0:
 			_chart.draw_colored_polygon(band, Color(Charts.SERIES[0], 0.2))
 	var main := "price_median" if keys.size() > 1 else key

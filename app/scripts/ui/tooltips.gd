@@ -322,15 +322,22 @@ static func _label(text: String, colour: Color, font_size: int) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
 
+static var _bold_font: FontVariation
+static var _italic_font: FontVariation
+
 static func _bold() -> Font:
-	var f := UiStyle.serif()
-	f.font_weight = 700
-	return f
+	if _bold_font == null:
+		_bold_font = FontVariation.new()
+		_bold_font.base_font = UiStyle.serif()
+		_bold_font.variation_embolden = 0.6
+	return _bold_font
 
 static func _italic() -> Font:
-	var f := UiStyle.serif()
-	f.font_italic = true
-	return f
+	if _italic_font == null:
+		_italic_font = FontVariation.new()
+		_italic_font.base_font = UiStyle.serif()
+		_italic_font.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
+	return _italic_font
 
 static func _frame(lit: bool) -> StyleBoxFlat:
 	var b := UiStyle.frame(lit)

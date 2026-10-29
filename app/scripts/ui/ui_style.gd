@@ -29,10 +29,15 @@ const SIZE_HEAD := 17
 const SIZE_TEXT := 14
 const SIZE_SMALL := 12
 
+static var _serif: SystemFont
+
+## One font for all, made once: a font made anew for each draw_string
+## comes out as blank boxes (its glyphs are not cached by the frame).
 static func serif() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Palatino", "Palatino Linotype", "Book Antiqua", "Georgia", "Times New Roman", "serif"])
-	return font
+	if _serif == null:
+		_serif = SystemFont.new()
+		_serif.font_names = PackedStringArray(["Palatino", "Palatino Linotype", "Book Antiqua", "Georgia", "Times New Roman", "serif"])
+	return _serif
 
 static func box(bg: Color, border: Color = Color.TRANSPARENT, border_w := 0, radius := 3, margin := 0.0) -> StyleBoxFlat:
 	var b := StyleBoxFlat.new()
