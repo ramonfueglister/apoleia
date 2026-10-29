@@ -43,10 +43,9 @@ func _build_ui() -> void:
 	background.color = UiStyle.INSET
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
-	var image := Image.load_from_file(BACKGROUND_IMAGE)
-	if image != null and not image.is_empty():
+	if ResourceLoader.exists(BACKGROUND_IMAGE):
 		var still := TextureRect.new()
-		still.texture = ImageTexture.create_from_image(image)
+		still.texture = load(BACKGROUND_IMAGE)
 		still.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		still.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		still.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
