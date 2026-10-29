@@ -198,7 +198,7 @@ int tt_town(ivec2 t) {
 
 // Share of a town tile's house blocks that hold a house (by town class).
 float tt_house_share(int town) {
-	return town == 3 ? 1.0 : town == 2 ? 0.6 : town == 1 ? 0.15 : 0.0;
+	return town >= 2 ? 1.0 : town == 1 ? 0.15 : 0.0; // towns fully built (Kritik r7: no bare lawn)
 }
 
 // Quarter tiles: a quarter is one block of its data tile's 2 x 2 grid and

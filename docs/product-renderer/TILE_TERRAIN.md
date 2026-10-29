@@ -114,18 +114,21 @@ unabhängig und unverändert.
   #9aa35a, olivgrüner Wald #56683c (nicht #4f7b36, das sprang nach dem
   olivfarbenen 70-km-Bild zurück ins Grün), Fels, tiefes Meer #19588c mit
   Flachwasser #24689e; Seen wie die Flüsse im Flachwasserton. Offenes Land bekommt dort zusätzlich eine flache Farbe
-  je Höhenstufe (Hügel #849252, Gebirge #958e6c, hoher Fels warm #9a9488,
+  je Höhenstufe (Hügel #849252, Bergweide #7c8550 statt Khaki #958e6c, das den
+  Apennin zum Steinbruch machte, hoher Fels warm #9a9488,
   nicht lila; das Höhenband zählt in fernen Stufen, auch auf den nahen Kacheln), so lesen
   Hügel und Gebirge als Flächen und nicht nur über ihre Rampen; Wald auf
   Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
-  Stufe hell, und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
+  Stufe hell, nackter Fels nur auf den obersten zwei Stufen im Umkreis von
+  10 km und Schnee nur auf der obersten (`peaks_only` im Bake; vorher lagen
+  Felsflächen über dem ganzen Apennin und Schneeflecken halb am Hang), und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
   so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
   Rampen haben einen festen Ton je Seite wie in SimCity 2000, passend zur
-  Sonne aus Westsüdwest: nach Westen +12 %, nach Süden (zur Kamera) +5 %,
-  nach Osten −15 %, nach Norden −22 % (Kritik r6; vorher West +18 % und
-  die Kameraseite −12 % dunkler als die Flächen, so lasen Hänge als
-  gestreifter Rasen). Diagonale Rampen mischen beide Seiten stetig (Südwest
-  +12 %, Südost −7 %). Rampen, die von der Kamera weg zeigen (auch nach
+  Sonne aus Westsüdwest: nach Westen +12 %, nach Osten −15 %, nach Süden
+  (die Stufen, die die Kamera von vorn sieht) −10 %, nach Norden −18 %; eine
+  Eckfacette nimmt die dunklere ihrer zwei Seiten (Südwest −10 %, Südost
+  −15 %). Kritik r7: Mit den Stufen zur Kamera +5 % heller verschwanden
+  sie; mit West +18 % und sonst nichts lasen Hänge als gestreifter Rasen. Rampen, die von der Kamera weg zeigen (auch nach
   Nordost und Nordwest), sieht man nur als Kante; sie bleiben im flachen Ton
   (die diagonalen zogen bei 70 km Haarlinien durchs Land), sonst zeichnet eine lange Stufe
   einen dunklen Strich durchs Land (die „Naht“ bei 120 km). Die Töne kommen von einem festen
@@ -163,18 +166,22 @@ unabhängig und unverändert.
   Land auf. In Städten (ab Ortsklasse 2)
   laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
   Hausplätze; die Häuser lassen dafür Platz (ein Grundstück füllt 0,92 seines
-  Platzes, `LOT_SHARE`). Gepflastert ist nur, wo ein Haus
-  steht, und im Stadtkern die ebenen Plätze; Dörfer bleiben Land (vorher halb
-  gepflastert, das las als halbdurchsichtiger Stadtrand). Auf den Vierteln
-  stehen Häuser nur auf flachen Kacheln: Ein Ort am Hang steigt in Terrassen
-  an. Die Rampen dazwischen und die leeren Viertel einer Stadt sind Gärten
-  (Wiesenton, keine Straßenlinien); vorher waren sie leere graue Hänge, noch
-  früher liefen Weizenstreifen durch Rom. Auf den 0,5-km-Kacheln stehen die
-  Häuser auch auf den Rampen, dort ebenfalls auf Gärten statt auf geschertem
-  Pflaster. Orte wachsen mit ihren Einwohnern (Fläche wie bei 9000 Menschen
-  je km²); Städte ab 3000 Einwohnern bekommen einen Ring dazu, bis 0,45 km ab
-  7000 (`TOWN_EXTRA_KM`), sonst blieben dem diorama-großen Haus (ein
-  Grundstück je 0,25 km) in Tibur drei Häuser; Dörfer behalten ihre Größe. Die Häuser sind die Grundstücke der
+  Platzes, `LOT_SHARE`). Städte sind voll bebaut, ein
+  Grundstück auf jedem Viertel (Kritik r7: keine nackte Wiese in der Stadt);
+  gepflastert sind die Höfe unter den Häusern und im Stadtkern die leeren
+  ebenen Plätze, Dörfer bleiben Land. Ein Haus steht immer waagrecht auf dem
+  höchsten Boden unter ihm; auf einer Rampe füllt eine Terrasse aus
+  Travertin (#cec2a1 oben, Mauer #b8ae96, `PropMeshes.plinth`, Prop-Art 5)
+  den Raum bis zum tiefsten Boden, so steigt ein Ort am Hang in Terrassen an
+  wie Tivoli (vorher kippten die Häuser mit der Rampe und lasen bei 22 km als
+  schräge Karten, noch früher standen sie nur auf flachen Vierteln und
+  ließen leere Hänge). In Dörfern stehen die Häuser nur auf flachen
+  Vierteln. Am Fluss in einer Stadt ist das Ufer ein gepflasterter Kai
+  (vorher Weizen mitten in Rom). Orte wachsen mit ihren Einwohnern (Fläche
+  wie bei 9000 Menschen je km²); Städte ab 3000 Einwohnern bekommen einen
+  Ring dazu, bis 0,45 km ab 7000 (`TOWN_EXTRA_KM`), sonst blieben dem
+  diorama-großen Haus (ein Grundstück je 0,25 km) in Tibur drei Häuser;
+  Dörfer behalten ihre Größe. Die Häuser sind die Grundstücke der
   römischen Stadt aus dem Kolosseum-Prototyp (`voxel/roman_buildings.gd`, eine
   Kopie aus PR #45, 40 Voxel auf 10 m wie Urbek): 14 Hausvarianten (Domus mit
   Atrium, Insulae mit Läden, Werkstätten, Putz in Creme, Ocker und Kalkweiß,
@@ -186,21 +193,19 @@ unabhängig und unverändert.
   je Grundstück, `PROP_DETAIL_KM`; die 1-m-Voxel der Stufe 1 lasen bei 3 km
   als Pilze), bis 10 km Stufe 1 (einige hundert Dreiecke), ab `PROP_LOW_KM`
   Stufe 2. Die Wahrzeichen bis 10 km in voller Stufe. Ein Grundstück zeigt der
-  Kamera seine Vorderseite oder eine Flanke, nie die Rückseite, und ist nie
-  schräg gedreht. Häuser halten mit
+  Kamera immer seine Vorderseite mit der Tür (Kritik r7: gedrehte
+  Grundstücke zeigten fensterlose Seitenwände). Häuser halten mit
   ihrer ganzen Grundfläche Abstand zu den Wahrzeichen, und jedes 16.
-  Kernhaus fehlt als Hof. Auf einer Rampe reichen die Wände bis zum tiefsten
-  Boden unter dem Haus hinab, wie ein Haus am Hang auf seinem Untergeschoss
-  steht.
+  Kernhaus fehlt als Hof.
 - Rom hat seine großen Bauten, jedes auf einem Block von Stadtkacheln, auf
   dem keine Häuser stehen (`LANDMARKS` in tile_terrain.gd). Kolosseum (4 × 4
   Viertel), Forum Romanum mit dem Kapitol und seinem goldenen Jupitertempel
-  (3 × 3) und die Thermen (2 × 1) sind die Modelle der römischen Stadt
+  (3 × 3), die Thermen (2 × 1), das Pantheon (2 × 2) und der Circus Maximus
+  (4 × 2, Blöcke von 0,5 km) sind die Modelle der römischen Stadt
   (`kit:`), im selben Maßstab wie die Häuser (1:23,8 in der Fläche, Häuser
   und Bauten in echter Größe), so passen sie Voxel für Voxel zu den
-  Grundstücken. Pantheon und Circus Maximus sind noch die alten Platzhalter
-  (6-mal echt in der Fläche, 9-mal in der Höhe, `LANDMARK_KM_PER_M`,
-  `LANDMARK_RISE`), bis die Stadt sie liefert; dazu zwei Tiberbrücken. Die
+  Grundstücken; dazu zwei Tiberbrücken als einfache Formen (6-mal echt in
+  der Fläche, 9-mal in der Höhe, `LANDMARK_KM_PER_M`, `LANDMARK_RISE`). Die
   Blöcke liegen als offene Plätze in Travertin #e6dfcf ohne Straßenraster.
   Nah ist jeder Block eben, auf der mittleren Stufe seiner Ecken
   (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
@@ -228,7 +233,7 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 | Kachel je Zoomstufe | 0,25 (Viertel, `SUB_KM`) / 0,5 / 1 / 2 / 4 / 8 / 16 km echt = 10,5 m … 670 m Diorama (`LEVELS`) |
 | Höhe | nah eine Stufe = 20 / 50 / 120 m echt (Tiefland, Hügel, Gebirge; bei 1-km-Kacheln das Doppelte), weiter draußen die steigende Skala `LEVEL_STEPS_M` (150 bis 600 m je Stufe) |
 | Haus | ein römisches Grundstück von 10 × 10 m Diorama (`HOUSE_M`, 238 m Welt), eins je Viertelkachel, vier je 0,5-km-Kachel; gezeichnet bis 4-km-Kacheln |
-| Wahrzeichen Roms | Modelle der römischen Stadt im Diorama-Maßstab wie die Häuser (Kolosseum auf 4 × 4 Vierteln); Pantheon und Circus noch als Platzhalter 6-mal echt in der Fläche, 9-mal in der Höhe |
+| Wahrzeichen Roms | Modelle der römischen Stadt im Diorama-Maßstab wie die Häuser (Kolosseum 8 × 7 Grundstücke auf 4 × 4 Blöcken von 0,5 km) |
 | Baum | 8 m Diorama (`TREE_M`, Urbek: 5–8 m, so hoch wie ein zweistöckiges Haus), nur auf Stufe 0 auf den Waldkacheln (auf Stufe 1 waren sie ein Sprenkel über dem Relief); weiter draußen sind Waldkacheln dunkelgrün. Laubbäume mit runder Voxelkrone (Kern, Gürtel auf vier Seiten, flache Kappe), dunkler und satter als die Wiese wie bei Urbek gemessen (Oberseite etwa #458d33, Seiten #29521f); Zypressen #2f5a2c wie an den Höfen |
 | Nächster Zoom | 4 km echt Sichtbreite, etwa 17 Häuser nebeneinander |
 
@@ -250,9 +255,10 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   sind die Daten stärker weichgezeichnet und das Rauschen schwächer, und
   Lichtungen gibt es nur bis 2-km-Kacheln, so stehen auf der Europakarte
   ruhige große Landschaften statt Flecken; fern bleibt nur dichter Wald
-  Wald (`WOOD_MIN`: ab 1-km-Kacheln braucht ein Wald 0,65 bis 0,78
+  Wald (`WOOD_MIN`: ab 1-km-Kacheln braucht ein Wald 0,66 bis 0,92
   Waldanteil statt 0,45; die römische Bedeckung trägt Wald auf über der
-  Hälfte Italiens, fern las das als dunkle Tarnfarbe, jetzt etwa 40 %), so
+  Hälfte Italiens, fern las das als dunkle Tarnfarbe; Mittelitalien hat bei
+  70 und 120 km je 24 % Wald, bei 400 km 19 %), so
   liest das Land hell mit dunklen Wäldern wie die gemalte Karte, und
   die Grenze zum Nadelwald im Norden wandert um einige Breitengrade statt
   als Gerade durch Russland zu laufen; allein neu mit
@@ -279,9 +285,9 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 - `app/scripts/tile_prop_meshes.gd` baut die Kachelvorlage, die Voxel-Bäume
   nach Urbek (achsparallele Blöcke, helle Oberseite, dunklere Seiten, nur in
   Vierteldrehungen gedreht, also am Kachelraster ausgerichtet) und die
-  Wahrzeichen-Platzhalter (Pantheon, Circus, Brücken), die
-  `tile_landmark.gdshader` beleuchtet; Häuser, Kolosseum, Forum und Thermen
-  kommen aus `app/scripts/voxel/roman_buildings.gd`.
+  Tiberbrücken, die `tile_landmark.gdshader` beleuchtet, und die Terrassen
+  unter Häusern am Hang; Häuser und Wahrzeichen kommen aus
+  `app/scripts/voxel/roman_buildings.gd`.
   Pinien stehen nur im Süden (unter 44,5° Breite, unter 700 m), Bäume enden
   bei 1400 m.
 - `app/scripts/landscape.gd` enthält Kamera, Eingabe, Licht und Wetteranbindung.

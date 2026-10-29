@@ -9,7 +9,7 @@ render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled
 #include "res://shaders/tile_terrain.gdshaderinc"
 #include "res://shaders/tile_props.gdshaderinc"
 
-uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house (a Roman lot model), 4 stone pine
+uniform int prop_kind = 0;     // 0 broadleaf, 1 conifer, 2 cypress, 3 house (a Roman lot model), 4 stone pine, 5 terrace under a lot on a ramp
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
 uniform int slots = 4;
@@ -34,38 +34,49 @@ void vertex() {
 		int pick_k = int(tt_hash(vec2(float(INSTANCE_ID), 7.3)) * float(lot_variants));
 		id = INSTANCE_ID * lot_variants + (lot_variant + pick_k) % lot_variants;
 	}
+	bool house = prop_kind == 3 || prop_kind == 5;
 	int slot = id % slots;
 	int ti = id / slots;
 	ivec2 local = ivec2(ti % prop_n, ti / prop_n);
 	ivec2 t = prop_origin + local;
 	// placed once per frame by tile_prop_prep.gdshader; the full rule only
 	// before that pass has run
-	ivec2 px = local * 3 + ivec2(slot % 3, slot / 3) + ivec2(prop_kind == 3 ? place_tree_w : 0, 0);
-	vec4 d = place_ready ? texelFetch(place_tex, px, 0) : tt_prop_place(t, slot, slots, prop_kind == 3);
+	ivec2 px = local * 3 + ivec2(slot % 3, slot / 3) + ivec2(house ? place_tree_w : 0, 0);
+	vec4 d = place_ready ? texelFetch(place_tex, px, 0) : tt_prop_place(t, slot, slots, house);
 	float r0 = tt_hash3(vec3(vec2(t), float(slot) * 3.17));
 	float r1 = tt_hash3(vec3(vec2(t) + 11.3, float(slot) * 1.91));
 	float r2 = tt_hash3(vec3(vec2(t) - 4.7, float(slot) * 5.03));
-	bool show = d.w >= 0.0 && (prop_kind == 3 || int(floor(d.w)) == prop_kind);
-	float edge_size = prop_kind == 3 ? 1.0 : fract(d.w) * 4.0;
+	bool show = d.w >= 0.0 && (house || int(floor(d.w)) == prop_kind);
+	float edge_size = house ? 1.0 : fract(d.w) * 4.0;
 	vec2 uv = d.xy;
 	float level = d.z;
 	vec2 p = world_min + (vec2(t) + uv) * tile_km;
 	// the lots fill their slot but for a street (prop_scale); trees vary
-	float s = prop_scale * (prop_kind == 3 ? 1.0 : (0.75 + 0.5 * r0) * edge_size);
-	float a = floor(r2 * 4.0) * 1.5707963; // voxel props keep to the tile grid
-	// a lot shows its front (+z) to the camera, or turns a side to it now and
-	// then; never its back
-	if (prop_kind == 3) {
-		a = (r2 < 0.5 ? 0.0 : r2 < 0.75 ? 1.0 : 3.0) * 1.5707963;
-	}
+	float s = prop_scale * (house ? 1.0 : (0.75 + 0.5 * r0) * edge_size);
+	// voxel props keep to the tile grid; a lot shows its front (+z, with the
+	// door) to the camera (Kritik r7: turned lots showed blank side walls)
+	float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;
 	mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 	vec3 v = VERTEX * s;
-	// on a ramp the walls reach down to the lowest ground under the house, as
-	// a house on a hillside stands on its lower storey
-	if (prop_kind == 3 && VERTEX.y < 0.01) {
+	if (house) {
+		// a lot stands level at the highest ground under it; on a ramp a
+		// stone terrace (prop kind 5) fills the space down to the lowest, as
+		// the houses of a hill town stand on retaining walls (they tilted
+		// with the ramp before: slanted cards at 22 km)
 		vec4 c = tt_corners_cached(t);
-		float slope = max(abs(c.y - c.x), abs(c.z - c.w)) + max(abs(c.w - c.x), abs(c.z - c.y));
-		v.y -= slope * 0.5 * s * 10.0 / tile_km * level_h;
+		float e = 0.5 * s * 10.0 / tile_km; // half the lot in tile units
+		float hi = -1e6, lo = 1e6;
+		for (int k = 0; k < 4; k++) {
+			vec2 f = clamp(uv + vec2(k == 1 || k == 2 ? e : -e, k >= 2 ? e : -e), 0.0, 1.0);
+			float l = tt_level_in_tile(t, c, f);
+			hi = max(hi, l);
+			lo = min(lo, l);
+		}
+		level = hi;
+		if (prop_kind == 5) {
+			show = show && hi - lo > 0.01;
+			v.y = (VERTEX.y - 1.0) * (hi - lo) * level_h;
+		}
 	}
 	v.xz = rot * v.xz;
 	vec3 world = vec3(p.x, level * level_h, p.y) + v;
@@ -74,7 +85,7 @@ void vertex() {
 	// hidden slots: all vertices on one point behind the camera, no area
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
-	tint = prop_kind == 3 ? vec3(0.96 + 0.08 * r1) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
+	tint = prop_kind == 3 ? vec3(0.96 + 0.08 * r1) : prop_kind == 5 ? vec3(1.0) : vec3(0.88 + 0.22 * r1, 0.92 + 0.14 * r2, 0.9 + 0.1 * r0);
 	// the sides turned to the SimCity light of the terrain a little lighter
 	vec3 art = tt_art_light(INV_VIEW_MATRIX);
 	float facing = abs(nrm.y) < 0.5 ? dot(normalize(nrm.xz), normalize(art.xz)) : 0.0;

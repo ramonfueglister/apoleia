@@ -880,8 +880,9 @@ def _node_noise(scale_km, seed):
 # Least forest share of a tile for a wood, by tile size (km). Far out only the
 # dense woods stay forest: the Roman cover holds woods on over half of Italy,
 # which drew the far views as one dark olive camouflage; from the 1 km tiles a
-# wood needs a denser cover (Italy about 40 % wood, Europe 12 % instead of 17 %).
-WOOD_MIN = {0.5: 0.45, 1.0: 0.75, 2.0: 0.78, 4.0: 0.70, 8.0: 0.66, 16.0: 0.65}
+# wood needs a denser cover (Italy about 40 % wood, Europe 12 % instead of 17 %);
+# Kritik r7: at most a quarter of central Italy at 70 and 120 km (24 % each).
+WOOD_MIN = {0.5: 0.45, 1.0: 0.80, 2.0: 0.92, 4.0: 0.80, 8.0: 0.70, 16.0: 0.66}
 
 
 def ground_classes(water, tile_km, height, cover, band=1024):
@@ -981,18 +982,47 @@ def tidy_ground(g, passes=2):
     return g
 
 
+# Bare rock only on the top PEAK_ROCK_LEVELS levels of the land within
+# PEAK_KM, snow only on the top level (whole summit tiles): rock by height
+# alone covered the Apennines at 70 km like a quarry, and snow lay as loose
+# white patches halfway up the slopes.
+PEAK_KM = 10.0
+PEAK_ROCK_LEVELS = 2
+
+
+def peaks_only(g, level, tile_km):
+    """Rock and snow only near the top of their range (levels-L{level}.png)."""
+    path = OUT / f"levels-L{level}.png"
+    if not path.exists():
+        return g
+    Image.MAX_IMAGE_PIXELS = None  # the near levels are 0.2 G corners
+    c = np.array(Image.open(path))
+    ny, nx = g.shape
+    tl = np.maximum(np.maximum(c[:ny, :nx], c[1:ny + 1, :nx]), np.maximum(c[:ny, 1:nx + 1], c[1:ny + 1, 1:nx + 1]))
+    del c
+    top = ndimage.maximum_filter(tl, size=max(int(round(2 * PEAK_KM / tile_km)) | 1, 3))
+    low = tl.astype(np.int16) < top.astype(np.int16) - (PEAK_ROCK_LEVELS - 1)
+    below = tl < top
+    snow = g == G["snow"]
+    g = np.where((g == G["rock"]) & low, G["alpine"], g).astype(np.uint8)
+    g = np.where(snow & below, np.where(low, G["alpine"], G["rock"]), g).astype(np.uint8)
+    return g
+
+
 def bake_ground(manifest, cells, height, cover, only=None):
     only = tuple(range(LEVELS)) if only is None else only
     manifest["ground"] = [e for e in manifest.get("ground", []) if e["level"] not in only]
     for level in only:
         tile = BASE_CELL_KM * 2 ** level
         g = tidy_ground(ground_classes(cells[level], tile, height, cover), passes=2 if tile <= 2.0 else 3)
+        g = peaks_only(g, level, tile)
         packed = pack_nibbles(g)
         path = OUT / f"ground-L{level}.png"
         Image.fromarray(packed, "L").save(path, optimize=True)
         manifest["ground"].append({"level": level, "cell_km": tile, "width": g.shape[1], "height": g.shape[0],
                                    "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
-                                   "classes": GROUND, "water": NO_GROUND})
+                                   "classes": GROUND, "water": NO_GROUND,
+                                   "peaks": {"km": PEAK_KM, "rock_levels": PEAK_ROCK_LEVELS}})
         land = g[g != NO_GROUND]
         share = np.bincount(land, minlength=len(GROUND)) / max(land.size, 1)  # whole map, deserts included
         print("ground", level, g.shape, " ".join(f"{n} {v:.2f}" for n, v in zip(GROUND, share)))

@@ -2,6 +2,20 @@
 // per-frame placement pass (tile_prop_prep.gdshader) and, as a fallback, the
 // prop vertex shader. Needs tile_terrain.gdshaderinc first.
 
+// The ground level at uv (0..1) in tile t with corner levels c, on the
+// tile's own triangles (split as in tile_terrain.gdshader).
+float tt_level_in_tile(ivec2 t, vec4 c, vec2 uv) {
+	int cut = tt_coast_cut(t);
+	if (cut >= 0 ? (cut & 1) == 1 : abs(c.x - c.z) <= abs(c.y - c.w)) {
+		return uv.x >= uv.y
+			? c.x + (c.y - c.x) * uv.x + (c.z - c.y) * uv.y
+			: c.x + (c.w - c.x) * uv.y + (c.z - c.w) * uv.x;
+	}
+	return uv.x + uv.y <= 1.0
+		? c.x + (c.y - c.x) * uv.x + (c.w - c.x) * uv.y
+		: c.z + (c.w - c.z) * (1.0 - uv.x) + (c.y - c.z) * (1.0 - uv.y);
+}
+
 // One slot of tile t: xy the spot in the tile (0..1), z its level, w the code:
 // < 0 empty; trees kind + 0.25 * size (0.7..1); houses the town class.
 vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
@@ -23,9 +37,10 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		if (sub_tiles) {
 			// one house on a flat quarter (a hill town steps up in terraces;
 			// tt_sub_house decides which quarters hold one)
+			// (in towns on ramps too, on a terrace: tile_props.gdshader)
 			vec4 q = tt_corners_cached(t);
 			bool level = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) < 0.01;
-			show = show && slot == 0 && level && tt_sub_house(t, town);
+			show = show && slot == 0 && (level || town >= 2) && tt_sub_house(t, town);
 			// now and then a small paved square in the city core (the lot
 			// models bring their own gardens)
 			show = show && !(town == 3 && tt_hash(vec2(t) * 1.91 + 0.7) < 0.06);
@@ -95,15 +110,5 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		vec2 tip = vec2(float(cut == 1 || cut == 2), float(cut >= 2));
 		if (abs(uv.x - tip.x) + abs(uv.y - tip.y) < 1.1) { return vec4(0.0, 0.0, 0.0, -1.0); }
 	}
-	float level;
-	if (cut >= 0 ? (cut & 1) == 1 : abs(c.x - c.z) <= abs(c.y - c.w)) {
-		level = uv.x >= uv.y
-			? c.x + (c.y - c.x) * uv.x + (c.z - c.y) * uv.y
-			: c.x + (c.w - c.x) * uv.y + (c.z - c.w) * uv.x;
-	} else {
-		level = uv.x + uv.y <= 1.0
-			? c.x + (c.y - c.x) * uv.x + (c.w - c.x) * uv.y
-			: c.z + (c.w - c.z) * (1.0 - uv.x) + (c.y - c.z) * (1.0 - uv.y);
-	}
-	return vec4(uv, level, code);
+	return vec4(uv, tt_level_in_tile(t, c, uv), code);
 }

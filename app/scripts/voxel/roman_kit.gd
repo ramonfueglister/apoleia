@@ -36,6 +36,11 @@ enum { EMPTY,
 	ROBE_N, ROBE_O, IRON,
 	LIME, LIME_W, SOCLE_R, SOCLE_B, RUBBLE, RUBBLE_D, TUFF, TUFF_D, OLIVE, OLIVE_D, PLANE, BARK_L,
 	GILT, GILT_D, GILT_L, EAVEG, RIDGEG, COCCIO, COCCIO_D, COCCIO_L, ANTEFIX, ROPE,
+	GRANITE, GRANITE_P, HORSE, HORSE_D, HORSE_W,
+	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
+	ROOFB_L, DOME, BAND,
+	DOME_C, GRANITE_L, GRANITE_D, ARENA, ARENA_D, BRONZE_P,
+	STUCCO, JOINT, TRAV_C, TRAV_CW,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -99,6 +104,23 @@ const COLOURS := {
 	OLIVE: ["7e8c66", "93a07a"], OLIVE_D: ["66724f", "77845e"], PLANE: ["5a8a3a", "6e9e46"], BARK_L: ["b8ab8c"],
 	GILT: ["b8913c", "d9b45a"], GILT_D: ["a8822f", "c9a24a"], GILT_L: ["c49d48", "e3c06a"], EAVEG: ["7a5e2a", "d9b45a"], RIDGEG: ["9c7a34", "c49d48"],
 	COCCIO: ["c9a490", "dbb8a2"], COCCIO_D: ["b8937f", "cba792"], COCCIO_L: ["d4b09c", "e3c3ae"], ANTEFIX: ["c46a44", "d47a52"], ROPE: ["5a4632"],
+	# grey granite of Mons Claudianus and pink granite of Aswan (the
+	# Pantheon's porch), race horses: bay, black, grey
+	GRANITE: ["8e8a85", "9c9893"], GRANITE_P: ["b08a7c", "bf9a8b"], HORSE: ["7a4a2c"], HORSE_D: ["3a2c24"], HORSE_W: ["d6d0c4"],
+	# polished Aswan granite and its cut signs, weathered bronze tiles, the
+	# shade under a porch, the dark inside an arch
+	OBELISK: ["a8665a", "b4705f"], GLYPH: ["7c4538"], ROOFB: ["54402a", "5e4830"], ROOFB_D: ["43321f", "4b3923"],
+	PORCH: ["807870", "8a8279"], PORCH_D: ["6b655f", "756f68"], ARCH_D: ["4e4037"],
+	# the bronze roof's ribs, the gilt dome (risers, treads), the shadow band
+	# under a cornice
+	ROOFB_L: ["66503a", "735a3f"], DOME: ["8f6b1e", "b8933c"], BAND: ["a39d95"],
+	# the dome's cap (its steps only shaded by the light), the lit and the
+	# shaded side of a granite shaft, the circus sand and its rake lines
+	DOME_C: ["b8933c"], GRANITE_L: ["a9a39d"], GRANITE_D: ["74706b"], ARENA: ["b08a55", "b8925a"], ARENA_D: ["a07c4a", "a8844f"],
+	BRONZE_P: ["58401f"],
+	# a step below marble: stucco, the joints between marble slabs, the
+	# circus's travertine and its pilasters
+	STUCCO: ["d0c6b8"], JOINT: ["c2b9a9"], TRAV_C: ["c5b79c", "cfc2a7"], TRAV_CW: ["b8aa8e", "c2b499"],
 }
 
 static var _side := PackedColorArray()

@@ -46,6 +46,16 @@ static func _box(st: SurfaceTool, lo: Vector3, hi: Vector3, top: Color, side: Co
 		for p in [a, b, c[q[2]], a, c[q[2]], d]:
 			st.set_color(face[2]); st.set_normal(n); st.add_vertex(p)
 
+## The terrace under a town lot on a ramp (tile_props.gdshader prop kind 5):
+## a 10 m square of stone, its top level with the lot's floor at y = 1 and
+## its foot at y = 0 (the shader stretches it to the ground below), so a
+## hill town stands on retaining walls instead of tilting with the ramp.
+static func plinth() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_box(st, Vector3(-5.0, 0.0, -5.0), Vector3(5.0, 1.0, 5.0), Color("#cec2a1"), Color("#b8ae96"))
+	return st.commit()
+
 ## Deciduous tree (oak, beech): a blocky crown of stacked voxels on a short
 ## trunk, Urbek's bright top and dark sides. `low`: the far version (two
 ## blocks, for trees a few pixels tall).
