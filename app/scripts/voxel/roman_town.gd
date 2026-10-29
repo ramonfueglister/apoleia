@@ -14,16 +14,35 @@ const FLOOR := 2
 const STOREY0 := 14
 const STOREY := 12
 
-## When set, the builders keep their voxel grid in `last_grid` and return
-## no mesh (the game's roman_buildings.gd makes its own levels of detail).
-static var keep_grid := false
-static var last_grid: Kit.Grid
+# Threads running a builder through grid_of(), each with the grid it made.
+static var _kept := {}
+static var _kept_lock := Mutex.new()
+
+## The voxel grid that `build` (a call of one of the builders here) makes,
+## instead of its mesh: the game's roman_buildings.gd makes its own levels
+## of detail. Several threads may build at once.
+static func grid_of(build: Callable) -> Kit.Grid:
+	var id := OS.get_thread_caller_id()
+	_kept_lock.lock()
+	_kept[id] = null
+	_kept_lock.unlock()
+	build.call()
+	_kept_lock.lock()
+	var g: Kit.Grid = _kept[id]
+	_kept.erase(id)
+	_kept_lock.unlock()
+	return g
 
 ## The mesh of a grid whose lot corner sits at (MARGIN, 0, MARGIN): local
 ## origin at the lot's north-west corner on the ground's base.
 static func _done(g: Kit.Grid) -> ArrayMesh:
-	if keep_grid:
-		last_grid = g
+	var id := OS.get_thread_caller_id()
+	_kept_lock.lock()
+	var keep := _kept.has(id)
+	if keep:
+		_kept[id] = g
+	_kept_lock.unlock()
+	if keep:
 		return null
 	return Kit.mesh(g, Vector3(-MARGIN * V, 0.0, -MARGIN * V))
 

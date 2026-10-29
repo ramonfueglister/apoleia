@@ -202,6 +202,17 @@ class Grid:
 					if g[row + x] == from:
 						g[row + x] = c
 
+	## 1 for each row along x (index y + n.y * z) with anything in it.
+	func rows() -> PackedByteArray:
+		var out := PackedByteArray()
+		out.resize(n.y * n.z)
+		for z in n.z:
+			for y in n.y:
+				var i := n.x * (y + n.y * z)
+				if g.slice(i, i + n.x).count(0) < n.x:
+					out[y + n.y * z] = 1
+		return out
+
 	## Top solid voxel of a column, -1 if none.
 	func top(x: int, z: int) -> int:
 		for y in range(n.y - 1, -1, -1):
@@ -213,18 +224,42 @@ class Grid:
 ## never looks up). Faces of one colour merge where their corner occlusion
 ## allows it exactly. `lo` is the grid's corner in metres.
 static func mesh(g: Grid, lo: Vector3, v := V) -> ArrayMesh:
+	return mesh_from(mesh_arrays(g, lo, v))
+
+## The mesh of surface arrays from mesh_arrays().
+static func mesh_from(arrays: Array) -> ArrayMesh:
+	var m := ArrayMesh.new()
+	if arrays[Mesh.ARRAY_VERTEX].size() > 0:
+		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		m.surface_set_material(0, material())
+	return m
+
+## The surface arrays of mesh(g, lo, v). They touch no rendering server,
+## so worker threads can make them (fill the colour tables first:
+## _colours()).
+static func mesh_arrays(g: Grid, lo: Vector3, v := V) -> Array:
 	_colours()
 	var n := g.n
 	var px := n.x + 2
 	var py := n.y + 2
+	# The grid with an empty voxel all round, so neighbours need no bounds.
 	var occ := PackedByteArray()
-	occ.resize(px * py * (n.z + 2))
+	var empty_row := PackedByteArray()
+	empty_row.resize(px)
+	var empty_layer := PackedByteArray()
+	empty_layer.resize(px * py)
+	occ.append_array(empty_layer)
 	for z in n.z:
+		occ.append_array(empty_row)
 		for y in n.y:
 			var src := n.x * (y + n.y * z)
-			var dst := 1 + px * ((y + 1) + py * (z + 1))
-			for x in n.x:
-				occ[dst + x] = g.g[src + x]
+			occ.append(0)
+			occ.append_array(g.g.slice(src, src + n.x))
+			occ.append(0)
+		occ.append_array(empty_row)
+	occ.append_array(empty_layer)
+	# Rows along x with anything in them: most of a grid is air.
+	var rows := g.rows()
 	var strides: Array[int] = [1, px, px * py]
 	var dims: Array[int] = [n.x, n.y, n.z]
 	var verts := PackedVector3Array()
@@ -246,29 +281,38 @@ static func mesh(g: Grid, lo: Vector3, v := V) -> ArrayMesh:
 			var normal := Vector3.ZERO
 			normal[axis] = dir
 			var palette := _top if axis == 1 else _side
+			# Zero between slices: the merging below clears what it takes.
 			var mask := PackedInt32Array()
 			mask.resize(du * dw)
 			var da: int = dims[axis]
 			for i in da:
 				var base: int = (i + 1) * sa + su + sw
-				for b in dw:
-					var row: int = base + b * sw
+				if axis == 1:
+					# u is z, w is x: skip the empty rows of layer i
 					for a in du:
-						var c: int = row + a * su
-						var col := occ[c]
-						var key := 0
-						if col != 0 and occ[c + off] == 0:
-							var o: int = c + off
-							var um := int(occ[o - su] != 0)
-							var up := int(occ[o + su] != 0)
-							var wm := int(occ[o - sw] != 0)
-							var wp := int(occ[o + sw] != 0)
-							var k0 := 0 if um + wm == 2 else 3 - um - wm - int(occ[o - su - sw] != 0)
-							var k1 := 0 if up + wm == 2 else 3 - up - wm - int(occ[o + su - sw] != 0)
-							var k2 := 0 if up + wp == 2 else 3 - up - wp - int(occ[o + su + sw] != 0)
-							var k3 := 0 if um + wp == 2 else 3 - um - wp - int(occ[o - su + sw] != 0)
-							key = col | ((k0 | (k1 << 2) | (k2 << 4) | (k3 << 6)) << 8)
-						mask[a + b * du] = key
+						if rows[i + n.y * a] == 0:
+							continue
+						for b in dw:
+							var c: int = base + a * su + b * sw
+							if occ[c] != 0 and occ[c + off] == 0:
+								mask[a + b * du] = _face(occ, c, off, su, sw)
+				elif axis == 2:
+					# u is x, w is y: skip the empty rows of slice i
+					for b in dw:
+						if rows[b + n.y * i] == 0:
+							continue
+						var row: int = base + b * sw
+						for a in du:
+							var c: int = row + a * su
+							if occ[c] != 0 and occ[c + off] == 0:
+								mask[a + b * du] = _face(occ, c, off, su, sw)
+				else:
+					for b in dw:
+						var row: int = base + b * sw
+						for a in du:
+							var c: int = row + a * su
+							if occ[c] != 0 and occ[c + off] == 0:
+								mask[a + b * du] = _face(occ, c, off, su, sw)
 				for b in dw:
 					var a := 0
 					while a < du:
@@ -324,11 +368,21 @@ static func mesh(g: Grid, lo: Vector3, v := V) -> ArrayMesh:
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = norms
 	arrays[Mesh.ARRAY_COLOR] = cols
-	var m := ArrayMesh.new()
-	if verts.size() > 0:
-		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		m.surface_set_material(0, material())
-	return m
+	return arrays
+
+# A face's key: its colour and the occlusion at its four corners, from the
+# eight voxels round the empty voxel it faces.
+static func _face(occ: PackedByteArray, c: int, off: int, su: int, sw: int) -> int:
+	var o: int = c + off
+	var um := int(occ[o - su] != 0)
+	var up := int(occ[o + su] != 0)
+	var wm := int(occ[o - sw] != 0)
+	var wp := int(occ[o + sw] != 0)
+	var k0 := 0 if um + wm == 2 else 3 - um - wm - int(occ[o - su - sw] != 0)
+	var k1 := 0 if up + wm == 2 else 3 - up - wm - int(occ[o + su - sw] != 0)
+	var k2 := 0 if up + wp == 2 else 3 - up - wp - int(occ[o + su + sw] != 0)
+	var k3 := 0 if um + wp == 2 else 3 - um - wp - int(occ[o - su + sw] != 0)
+	return occ[c] | ((k0 | (k1 << 2) | (k2 << 4) | (k3 << 6)) << 8)
 
 static var _material: StandardMaterial3D
 
