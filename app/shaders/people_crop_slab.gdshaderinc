@@ -28,31 +28,51 @@ bool crop_behind_ramp(ivec2 t) {
 // outside the towns as sim_fields, never a farmhouse's lot, under trees or
 // next to a town (sim_no_field), flat tiles only (a ramp shows the field's
 // colour) and none at the foot of a ramp that would hide part of it.
-bool crop_open(vec2 mid) {
+int crop_land(vec2 mid) {
+	return tt_ground_at(dot_tile(mid), fract((mid - world_min) / tile_km));
+}
+// all but sim_no_field (trees, next to a town), which people_parcels.gdshader keeps apart
+bool crop_open_land(vec2 mid, int land) {
 	ivec2 t = dot_tile(mid);
-	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
 	return tt_town(t) == 0 && tt_water(t) == W_LAND && (land == G_FIELD || land == G_MEADOW || land == G_DRY_GRASS)
-		&& !sim_house_lot(mid) && sim_flat(mid) && !crop_behind_ramp(t) && !sim_no_field(mid, land);
+		&& !sim_house_lot(mid) && sim_flat(mid) && !crop_behind_ramp(t);
+}
+bool crop_open(vec2 mid) {
+	int land = crop_land(mid);
+	return crop_open_land(mid, land) && !sim_no_field(mid, land);
 }
 
-// The slab of parcel `cell` (side `size` km) about the parcel's middle, km
-// (min x, min y, max x, max y): SLAB_GAP in from the parcel lines, and
-// clear of a village lane or field track running along one of them
-// (sim_lane_between), so the lanes run between the fields, not under them.
-vec4 crop_box(vec2 cell, float size) {
-	float gap = size * SLAB_GAP;
-	float lane_gap = SIM_LANE_KM + gap * 0.5;
-	vec4 box = vec4(vec2(-0.5 * size + gap), vec2(0.5 * size - gap));
-	if (sim_lots_n == 0) { return box; }
+// The sides of parcel `cell` a lane runs along: bits 0-3 for -x, -y, +x, +y.
+int crop_lanes(vec2 cell, float size) {
+	if (sim_lots_n == 0) { return 0; }
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec2 lot = floor((mid - world_min) / sim_lot_km);
 	vec2 lo = (mid - 0.5 * size - world_min) / sim_lot_km; // the parcel's sides in lots
 	vec2 hi = (mid + 0.5 * size - world_min) / sim_lot_km;
-	if (abs(lo.x - round(lo.x)) < 0.01 && sim_lane_between(lot, vec2(-1.0, 0.0))) { box.x = -0.5 * size + lane_gap; }
-	if (abs(lo.y - round(lo.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, -1.0))) { box.y = -0.5 * size + lane_gap; }
-	if (abs(hi.x - round(hi.x)) < 0.01 && sim_lane_between(lot, vec2(1.0, 0.0))) { box.z = 0.5 * size - lane_gap; }
-	if (abs(hi.y - round(hi.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, 1.0))) { box.w = 0.5 * size - lane_gap; }
+	int lanes = 0;
+	if (abs(lo.x - round(lo.x)) < 0.01 && sim_lane_between(lot, vec2(-1.0, 0.0))) { lanes |= 1; }
+	if (abs(lo.y - round(lo.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, -1.0))) { lanes |= 2; }
+	if (abs(hi.x - round(hi.x)) < 0.01 && sim_lane_between(lot, vec2(1.0, 0.0))) { lanes |= 4; }
+	if (abs(hi.y - round(hi.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, 1.0))) { lanes |= 8; }
+	return lanes;
+}
+// The slab of parcel `cell` (side `size` km) about the parcel's middle, km
+// (min x, min y, max x, max y): SLAB_GAP in from the parcel lines, and
+// clear of a village lane or field track running along one of them
+// (sim_lane_between), so the lanes run between the fields, not under them.
+// `lanes` as crop_lanes.
+vec4 crop_box_of(int lanes, float size) {
+	float gap = size * SLAB_GAP;
+	float lane_gap = SIM_LANE_KM + gap * 0.5;
+	vec4 box = vec4(vec2(-0.5 * size + gap), vec2(0.5 * size - gap));
+	if ((lanes & 1) != 0) { box.x = -0.5 * size + lane_gap; }
+	if ((lanes & 2) != 0) { box.y = -0.5 * size + lane_gap; }
+	if ((lanes & 4) != 0) { box.z = 0.5 * size - lane_gap; }
+	if ((lanes & 8) != 0) { box.w = 0.5 * size - lane_gap; }
 	return box;
+}
+vec4 crop_box(vec2 cell, float size) {
+	return crop_box_of(crop_lanes(cell, size), size);
 }
 
 // The top of the slab under p (world km) in metres, 0 off the fields and

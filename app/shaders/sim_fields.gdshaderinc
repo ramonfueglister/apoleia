@@ -16,6 +16,11 @@ uniform vec2 sim_lot_origin;       // lot index (from world_min) of the mask's f
 uniform int sim_lots_n = 0;        // lots per side of the mask, 0 without one
 uniform float sim_lot_km = 0.5;    // people_dots_common.gdshaderinc DOT_LOT_KM
 uniform vec4 sim_crop_box;         // world km (min x, min y, max x, max y) of the square where the crops stand (people_dots.gd _update_crops)
+// The parcels of that square worked out once each (people_parcels.gdshader)
+// instead of for every vertex of their crops and every pixel of their
+// ground: parcel `cell` at texel cell mod sim_parcel_n.
+uniform sampler2D sim_parcel_tex : filter_nearest, repeat_disable;
+uniform int sim_parcel_n = 0;      // texels per side, 0 without them
 
 // View width up to which the parcels are single and the crops stand on
 // them as plants; up to 40 km the fields are whole blocks of one colour.
@@ -136,6 +141,26 @@ float sim_lane(vec2 p) {
 	if (sim_lane_between(lot, vec2(side.x, 0.0))) { best = d.x; }
 	if (sim_lane_between(lot, vec2(0.0, side.y))) { best = min(best, d.y); }
 	return best;
+}
+
+// What people_parcels.gdshader worked out for parcel `cell`, in the code
+// of its red channel (SIM_P_*), its growth (the fine texel's blue) and the
+// ground level at its middle; false outside the square it covers.
+const int SIM_P_STATE = 3;     // sim_parcel: 0 not farmed, 1 fallow, 2 sown
+const int SIM_P_OPEN = 4;      // people_crop_slab.gdshaderinc crop_open
+const int SIM_P_BY_FARM = 8;   // next to a farmhouse lot (fenced)
+const int SIM_P_NO_FIELD = 16; // sim_no_field
+const int SIM_P_LANES = 32;    // people_crop_slab.gdshaderinc crop_lanes, four bits from here
+bool sim_parcel_baked(vec2 cell, out int code, out float growth, out float level) {
+	vec2 q = cell - floor((sim_crop_box.xy - world_min) / (tt_data_km() * 0.5) + 0.5);
+	if (sim_parcel_n == 0 || any(lessThan(q, vec2(0.0))) || any(greaterThanEqual(q, vec2(float(sim_parcel_n))))) {
+		return false;
+	}
+	vec4 t = texelFetch(sim_parcel_tex, ivec2(mod(cell, float(sim_parcel_n))), 0);
+	code = int(t.r + 0.5);
+	growth = t.g;
+	level = t.b + t.a;
+	return true;
 }
 
 // The parcel `cell` (of side `size` km): 0 not farmed, 1 fallow, 2 sown;

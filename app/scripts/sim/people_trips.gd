@@ -25,7 +25,10 @@ extends MultiMeshInstance3D
 ## on until its route ends or it leaves the view. At most MAX at once; the
 ## list is asked for once a sim day and again when the view moves away.
 ## Drawn up close, with the figures (people_dots.gd FIGURE_KM), by
-## people_walkers.gdshader.
+## people_walkers.gdshader, which walks each one along the stretch of its
+## route it is on: a traveller is written to the MultiMesh only when it
+## starts a stretch, stops or turns, not every frame (Mac tour, 29.10.2026:
+## moving 300 of them each frame in GDScript took a millisecond or more).
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
@@ -71,7 +74,10 @@ var _asked_day := -1
 var _asked_at := Vector3.INF # centre x, z and view width of the last ask
 var _window := Rect2()
 var _squares := PackedVector2Array() # market squares in and around the view
-var _buffer := PackedFloat32Array()
+var _buffer := PackedFloat32Array() # the stalls first, then the travellers in the order of _walkers
+var _clock := 0.0 # seconds walked (people_walkers.gdshader walk_clock)
+var _next := INF # clock time of the next stop or turn of any traveller
+var _dirty := false # _buffer changed since it was last handed over
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
 	people = sim
@@ -100,7 +106,9 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_listed.clear()
 		_hired.clear()
 		_asked_at = Vector3.INF
+		_next = INF
 		return
+	_clock += delta
 	var half := view_km * (0.5 + MARGIN)
 	_window = Rect2(centre - Vector2(half, half), Vector2(half, half) * 2.0)
 	if _asked_work:
@@ -124,14 +132,22 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 			_asked_work = true
 			_asked_day = day
 			_asked_at = Vector3(centre.x, centre.y, view_km)
-			_squares = PackedVector2Array()
+			var squares := PackedVector2Array()
 			if view_km <= SQUARES_KM:
 				var n := int(ceil(_window.size.x / 1.5625)) + 2 # fine tiles across the window
 				for q in people.market_squares(centre.x, centre.y, n):
-					if _window.has_point(q) and _squares.size() < SQUARES_MAX:
-						_squares.append(q)
-	_walk(delta)
-	_upload()
+					if _window.has_point(q) and squares.size() < SQUARES_MAX:
+						squares.append(q)
+			if squares != _squares:
+				_squares = squares
+				_write_all() # the travellers move up or down behind the stalls
+	if _clock >= _next:
+		_events()
+	material.set_shader_parameter("walk_clock", _clock)
+	if _dirty:
+		_dirty = false
+		multimesh.buffer = _buffer
+		multimesh.visible_instance_count = _squares.size() * STALLS.size() + _walkers.size()
 
 func _take(t: Dictionary) -> void:
 	var ids: PackedInt64Array = t.id
@@ -142,7 +158,7 @@ func _take(t: Dictionary) -> void:
 			continue
 		var w := _traveller(t, i)
 		if not w.is_empty():
-			_walkers.append(w)
+			_add(w)
 	_listed = listed
 
 ## Each hire new to the list sends its worker from home to the farm and
@@ -173,7 +189,7 @@ func _take_work(h: Dictionary) -> void:
 			w.s = w.along[1] # seen at the farm, walking home
 			w.dir = -1.0
 			w.turn = false
-		_walkers.append(w)
+		_add(w)
 	_hired = hired
 
 ## Trip i of the list as a traveller, placed where the sim has it today, or
@@ -238,48 +254,110 @@ static func _at(w: Dictionary) -> Array:
 	var d: Vector2 = (points[k + 1] - points[k]) * w.dir
 	return [points[k].lerp(points[k + 1], f), d.normalized() if d.length() > 0.0 else Vector2(0.0, 1.0)]
 
-func _walk(delta: float) -> void:
-	var keep: Array[Dictionary] = []
-	for w in _walkers:
-		var length: float = w.along[w.along.size() - 1]
-		if w.get("wait", 0.0) > 0.0: # at the market or at work
-			w.wait -= delta
-			if w.wait > 0.0 or w.turn:
-				keep.append(w)
-			if w.wait <= 0.0 and w.turn:
-				w.turn = false
-				w.dir = -1.0
-			continue
-		w.s += w.dir * (CART_KMPS if w.cart else WALK_KMPS) * delta
-		if w.dir > 0.0 and w.s >= length:
-			w.s = length
-			w.wait = LINGER_S
-			keep.append(w)
-			continue
-		elif w.dir < 0.0 and w.s <= 0.0:
-			continue
-		if _window.has_point(_at(w)[0]):
-			keep.append(w)
-	_walkers = keep
+## A new traveller on the stretch of its route where it is.
+func _add(w: Dictionary) -> void:
+	_walkers.append(w)
+	_start(w, _clock)
+	_write(_walkers.size() - 1)
+	_next = minf(_next, w.until)
 
-func _upload() -> void:
-	var n := mini(_walkers.size(), MAX)
-	for k in n:
-		var w := _walkers[k]
-		var place: Array = _at(w)
-		var d: Vector2 = place[1]
-		var p: Vector2 = place[0] + Vector2(-d.y, d.x) * float(w.side) # its own lane
-		var loaded: bool = w.cargo and (w.out == (w.dir > 0.0))
-		var parts: int = (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
-		if w.has("tool"):
-			parts = w.tool
-		# turned about y so the model's front (+z) faces d
-		var o := k * STRIDE
-		_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = p.x
-		_buffer[o + 4] = 0.0; _buffer[o + 5] = 1.0; _buffer[o + 6] = 0.0; _buffer[o + 7] = 0.0
-		_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = p.y
-		_buffer[o + 12] = float(parts); _buffer[o + 13] = w.phase; _buffer[o + 14] = float(w.tint)
-		_buffer[o + 15] = STANDING if w.get("wait", 0.0) > 0.0 else WALKING
+## Sets w walking from w.s on the stretch it is on, from clock time t.
+func _start(w: Dictionary, t: float) -> void:
+	var along: PackedFloat32Array = w.along
+	var points: PackedVector2Array = w.points
+	var last := along.size() - 2
+	var k := clampi(along.bsearch(w.s, w.dir < 0.0) - 1, 0, last)
+	var a := points[k]
+	var b := points[k + 1]
+	var seg := along[k + 1] - along[k]
+	var f := clampf((w.s - along[k]) / seg, 0.0, 1.0) if seg > 0.0 else 0.0
+	var d: Vector2 = (b - a) * w.dir
+	d = d.normalized() if d.length() > 0.0 else w.get("d", Vector2(0.0, 1.0))
+	var left: float = along[k + 1] - w.s if w.dir > 0.0 else w.s - along[k]
+	var speed: float = CART_KMPS if w.cart else WALK_KMPS
+	w.k = k
+	w.d = d
+	w.at = a.lerp(b, f) + Vector2(-d.y, d.x) * float(w.side) # its own lane
+	w.velocity = d * speed
+	w.t0 = t
+	w.walk = maxf(left, 0.0) / speed
+	w.until = t + w.walk
+	w.wait = 0.0
+
+## Lets every traveller whose stretch or stay has ended go on: the next
+## stretch, a stay at the end of the way, the way home, or gone.
+func _events() -> void:
+	_next = INF
+	var i := 0
+	while i < _walkers.size():
+		var w := _walkers[i]
+		var changed := false
+		var gone := false
+		while w.until <= _clock and not gone:
+			changed = true
+			var t: float = w.until
+			if w.wait > 0.0: # the stay is over: home again, or gone
+				if w.turn:
+					w.turn = false
+					w.dir = -1.0
+					_start(w, t)
+				else:
+					gone = true
+				continue
+			var along: PackedFloat32Array = w.along
+			w.s = along[w.k + 1] if w.dir > 0.0 else along[w.k]
+			var points: PackedVector2Array = w.points
+			var here: Vector2 = points[w.k + 1] if w.dir > 0.0 else points[w.k]
+			if w.dir > 0.0 and w.k + 1 >= along.size() - 1:
+				# at the market or at work: it stays a while
+				w.at = here + Vector2(-w.d.y, w.d.x) * float(w.side)
+				w.velocity = Vector2.ZERO
+				w.t0 = t
+				w.walk = 0.0
+				w.wait = LINGER_S
+				w.until = t + LINGER_S
+			elif w.dir < 0.0 and w.k <= 0:
+				gone = true # home
+			elif not _window.has_point(here):
+				gone = true # out of view
+			else:
+				_start(w, t) # the next stretch (_start finds it from the end of this one)
+		if gone:
+			var last: Dictionary = _walkers[_walkers.size() - 1]
+			_walkers[i] = last
+			_walkers.pop_back()
+			if i < _walkers.size():
+				_write(i)
+			_dirty = true
+			continue
+		if changed:
+			_write(i)
+		_next = minf(_next, w.until)
+		i += 1
+
+## Traveller i into the buffer, behind the stalls.
+func _write(i: int) -> void:
+	var w := _walkers[i]
+	var d: Vector2 = w.d
+	var p: Vector2 = w.at
+	var v: Vector2 = w.velocity
+	var loaded: bool = w.cargo and (w.out == (w.dir > 0.0))
+	var parts: int = (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
+	if w.has("tool"):
+		parts = w.tool
+	# turned about y so the model's front (+z) faces d; the velocity and
+	# start time ride in the middle row (people_walkers.gdshader)
+	var o := (_squares.size() * STALLS.size() + i) * STRIDE
+	_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = p.x
+	_buffer[o + 4] = v.x; _buffer[o + 5] = 1.0; _buffer[o + 6] = v.y; _buffer[o + 7] = w.t0
+	_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = p.y
+	_buffer[o + 12] = float(parts); _buffer[o + 13] = w.walk; _buffer[o + 14] = float(w.tint) + w.phase * 0.999
+	_buffer[o + 15] = STANDING if w.wait > 0.0 else WALKING
+	_dirty = true
+
+## The stalls and then every traveller, when the squares changed.
+func _write_all() -> void:
+	var n := 0
 	for q in _squares:
 		for k in STALLS.size():
 			var at: Vector2 = q + STALLS[k]
@@ -290,8 +368,9 @@ func _upload() -> void:
 			_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = at.y
 			_buffer[o + 12] = float(STALL); _buffer[o + 13] = 0.0; _buffer[o + 14] = float(k); _buffer[o + 15] = STANDS
 			n += 1
-	multimesh.buffer = _buffer
-	multimesh.visible_instance_count = n
+	for i in _walkers.size():
+		_write(i)
+	_dirty = true
 
 # ------------------------------------------------------------------ mesh
 
@@ -382,6 +461,7 @@ static func _mesh() -> ArrayMesh:
 	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(0.76, 0.67, 0.48), 9)
 	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.7, 0.42, 0.28), 9)
 	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.4, 0.55, 0.24), 9)
+	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half` (m) of `part`
