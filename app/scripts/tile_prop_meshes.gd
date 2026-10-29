@@ -67,11 +67,12 @@ const PLINTH_STREET := 1.2 # street, tenths of the block
 const PLINTH_KERB := 0.2
 const PLINTH_ROW_M := 0.5 # coping and base rows
 # vertex colours, a little darker than on screen (sun and sky lift them):
-# street #c0b490, kerb #a89c7c, walls south #bab09a, west #d8d0bc, east
-# #a39a86, coping #ece6d8, base #9e947e on screen (Kritik r8)
-const PLINTH_YARD := Color("#afa484")
-const PLINTH_ROAD := Color("#a39876")
-const PLINTH_KERB_RGB := Color("#8e8466")
+# walls south #bab09a, west #d8d0bc, east #a39a86, coping #ece6d8, base
+# #9e947e on screen (Kritik r8); the tops in a warm mid grey like Urbek's
+# pavements (they were cream, street #c0b490, kerb #a89c7c)
+const PLINTH_YARD := Color("#958d7c")
+const PLINTH_ROAD := Color("#8a8473")
+const PLINTH_KERB_RGB := Color("#7a7462")
 static func plinth() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)

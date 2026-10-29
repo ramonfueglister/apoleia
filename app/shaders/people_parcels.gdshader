@@ -29,6 +29,7 @@ void fragment() {
 	int land = crop_land(mid);
 	bool no_field = sim_no_field(mid, land);
 	int code = state;
+	int joins = 0;
 	if (crop_open_land(mid, land) && !no_field) { code |= SIM_P_OPEN; }
 	if (no_field) { code |= SIM_P_NO_FIELD; }
 	if (state > 0) {
@@ -38,8 +39,21 @@ void fragment() {
 			by_farm = by_farm || (k != 4 && sim_house_lot(mid + vec2(float(k % 3 - 1), float(k / 3 - 1)) * size));
 		}
 		if (by_farm) { code |= SIM_P_BY_FARM; }
-		code |= crop_lanes(cell, size) * SIM_P_LANES;
+		int lanes = crop_lanes(cell, size);
+		code |= lanes * SIM_P_LANES;
+		// the slab runs on into the parcels of its field that lie as it does
+		// (no lane between them)
+		vec3 field = sim_strip(cell);
+		const vec2 SIDES[4] = vec2[](vec2(-1.0, 0.0), vec2(0.0, -1.0), vec2(1.0, 0.0), vec2(0.0, 1.0));
+		for (int k = 0; k < 4; k++) {
+			vec2 nb = cell + SIDES[k];
+			vec4 fn;
+			if ((lanes & (1 << k)) == 0 && (code & SIM_P_OPEN) != 0 && sim_strip(nb) == field
+					&& sim_parcel(nb, size, fn) == state && crop_open(world_min + (nb + 0.5) * size)) {
+				joins |= 1 << k;
+			}
+		}
 	}
 	float level = dot_ground_level(mid);
-	COLOR = vec4(float(code), f.b, floor(level), fract(level));
+	COLOR = vec4(float(code), f.b, floor(level) + 128.0 * float(joins), fract(level));
 }

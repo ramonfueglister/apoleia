@@ -7,11 +7,13 @@ const float SLAB_GAP = 0.04; // share of the parcel left free on each side: with
 
 // The slab's height (m) by the parcel's state, crop and growth: a sheet
 // of stubble on fallow, ripe grain a closed sheet, both with an edge as
-// thick as Urbek's (round 19: a 3 px lip at 1 km), otherwise low soil.
+// thick as Urbek's (round 19: a 3 px lip at 1 km; thinner since the fields
+// join into large ones, whose thick rims read as trays, Ramon on s3),
+// otherwise low soil.
 float crop_slab_m(int state, int kind, float g) {
-	if (state == 1) { return 0.8; }
+	if (state == 1) { return 0.5; }
 	if (kind == SIM_WHEAT || kind == SIM_BARLEY) {
-		return g <= 0.0 ? 0.15 : g >= 0.75 ? 1.2 : 0.12;
+		return g <= 0.0 ? 0.15 : g >= 0.75 ? 0.8 : 0.12;
 	}
 	return kind == SIM_VINES ? 0.2 : 0.12;
 }
@@ -61,10 +63,17 @@ int crop_lanes(vec2 cell, float size) {
 // clear of a village lane or field track running along one of them
 // (sim_lane_between), so the lanes run between the fields, not under them.
 // `lanes` as crop_lanes.
-vec4 crop_box_of(int lanes, float size) {
+// It runs on to the parcel's edge where it joins a parcel of its field
+// (`code` as sim_parcel_baked's, its SIM_P_JOIN bits).
+vec4 crop_box_of(int lanes, int code, float size) {
 	float gap = size * SLAB_GAP;
 	float lane_gap = SIM_LANE_KM + gap * 0.5;
 	vec4 box = vec4(vec2(-0.5 * size + gap), vec2(0.5 * size - gap));
+	int joins = code / SIM_P_JOIN;
+	if ((joins & 1) != 0) { box.x = -0.5 * size; }
+	if ((joins & 2) != 0) { box.y = -0.5 * size; }
+	if ((joins & 4) != 0) { box.z = 0.5 * size; }
+	if ((joins & 8) != 0) { box.w = 0.5 * size; }
 	if ((lanes & 1) != 0) { box.x = -0.5 * size + lane_gap; }
 	if ((lanes & 2) != 0) { box.y = -0.5 * size + lane_gap; }
 	if ((lanes & 4) != 0) { box.z = 0.5 * size - lane_gap; }
@@ -72,7 +81,7 @@ vec4 crop_box_of(int lanes, float size) {
 	return box;
 }
 vec4 crop_box(vec2 cell, float size) {
-	return crop_box_of(crop_lanes(cell, size), size);
+	return crop_box_of(crop_lanes(cell, size), 0, size);
 }
 
 // The top of the slab under p (world km) in metres, 0 off the fields and
