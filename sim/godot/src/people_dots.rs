@@ -85,6 +85,8 @@ struct Front {
     built: u64,
     /// Answer to the last `ask_build_check`.
     check: Option<BuildCheck>,
+    /// Answer to the last `ask_sites`: x, z, kind, progress, width, depth.
+    sites: Option<Vec<f32>>,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -120,11 +122,13 @@ struct Queue {
     check: Option<(u8, Vec<build::Tile>)>,
     /// A window (world km) whose workshops, market goods and goods moves to list.
     goods: Option<[f64; 4]>,
+    /// A window (world km) whose building sites to list.
+    sites: Option<[f64; 4]>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some()
     }
 }
 
@@ -218,6 +222,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     map.build(&game.grain, today);
     let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
     let pages = view.update(&mut game.people);
+    mark_work(game, &mut view);
     let mut f = shared.front.lock().unwrap();
     publish(&view, &pages, &mut f);
     publish_houses(&mut view, &mut f);
@@ -268,6 +273,29 @@ fn build_check(game: &Game, kind: u8, tiles: &[build::Tile]) -> BuildCheck {
     c
 }
 
+/// Each craft household's workshop onto its house record (view.rs Houses).
+fn mark_work(game: &Game, view: &mut PeopleView) {
+    let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
+    view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
+}
+
+/// The building sites on fine tiles in the window (world km, min x, min z,
+/// max x, max z): x and z of the tile's centre, kind (build::KIND_NAMES),
+/// share built (0 while nobody builds it), and the tile's width and depth
+/// in world km (the sim knows no smaller footprint yet).
+fn sites_in(game: &Game, [x0, z0, x1, z1]: [f64; 4]) -> Vec<f32> {
+    let mut out = Vec::new();
+    for ((row, col), s) in game.grain.sites() {
+        let (x, z) = ((col as f32 + 0.5) * FINE_KM, (row as f32 + 0.5) * FINE_KM);
+        if (x as f64) < x0 || (x as f64) > x1 || (z as f64) < z0 || (z as f64) > z1 {
+            continue;
+        }
+        let built = if s.need > 0 { s.done as f32 / s.need as f32 } else { 0.0 };
+        out.extend_from_slice(&[x, z, s.kind as f32, built, FINE_KM, FINE_KM]);
+    }
+    out
+}
+
 /// The build orders and how far their sites are, to the front.
 fn publish_orders(game: &Game, f: &mut Front) {
     f.orders = game.orders.clone();
@@ -296,7 +324,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
     let mut shown = Instant::now();
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, check, ask, table, trips, work, events, goods) = {
+        let (commands, save, check, ask, table, trips, work, events, goods, sites) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -308,7 +336,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -326,6 +354,10 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         if let Some((kind, tiles)) = &check {
             let c = build_check(&game, *kind, tiles);
             shared.front.lock().unwrap().check = Some(c);
+        }
+        if let Some(window) = sites {
+            let v = sites_in(&game, window);
+            shared.front.lock().unwrap().sites = Some(v);
         }
         let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
@@ -356,7 +388,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() {
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -373,6 +405,11 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             publish_orders(&game, &mut shared.front.lock().unwrap());
         }
         let remap = today % 30 == 0 || finished;
+        // the workshops at the houses (S105; the graphics put them there),
+        // once a week as the crafts sell by the week
+        if today % 7 == 0 {
+            mark_work(&game, &mut view);
+        }
         if remap {
             map.draw(MapJob::take(&game.grain, today));
         }
@@ -678,6 +715,30 @@ impl ApoleiaPeople {
         d.set("markets", c.markets as i64);
         d.set("cash", c.cash as f64 / 1000.0);
         d
+    }
+
+    /// Asks the sim thread for the building sites in the window (world km);
+    /// the answer comes with `take_sites`, also while paused.
+    #[func]
+    fn ask_sites(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().sites = None;
+        self.shared.queue.lock().unwrap().sites = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The sites asked for, once: six floats each, x and z of the tile's
+    /// centre (world km), kind (0 farm, 1 field, 2 road), share built 0–1
+    /// (0 while nobody builds it), width and depth (world km, the fine
+    /// tile); None (an empty Variant) until the sim thread answered.
+    #[func]
+    fn take_sites(&mut self) -> Variant {
+        match self.shared.front.lock().unwrap().sites.take() {
+            Some(v) => PackedFloat32Array::from(v.as_slice()).to_variant(),
+            None => Variant::nil(),
+        }
     }
 
     /// Build orders version only, to poll each frame.

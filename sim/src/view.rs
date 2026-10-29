@@ -320,6 +320,30 @@ mod tests {
         assert!(houses > 1000 && houses < p.count as usize);
         assert!(who.members >= 1 && who.age >= 0.0);
     }
+
+    /// A workshop marks its household's house (craft and how busy) next to
+    /// the key; only houses whose work changed are written again, and a
+    /// house built later gets its household's work at once.
+    #[test]
+    fn houses_carry_their_workshop() {
+        let mut h = Houses::default();
+        let rec = |hh: u32| [1.0, 2.0, 3.0, ((hh & KEY_MASK) << 8) as f32];
+        h.join(house_key(7, 100), rec(7));
+        h.join(house_key(9, 100), rec(9));
+        h.take_dirty();
+        let w = |h: &Houses, hh: u32| h.data[h.by_key[&house_key(hh, 100)].0 as usize * REC + 3] as u32;
+        h.set_work([(7, 2, 200)]);
+        assert_eq!(w(&h, 7), 2 << 22 | 7 << 8 | 200);
+        assert_eq!(w(&h, 9), 9 << 8);
+        assert_eq!(h.take_dirty().len(), 1);
+        h.set_work([(7, 2, 200)]);
+        assert!(h.take_dirty().is_empty(), "same work, nothing dirty");
+        h.set_work([(9, 3, 5)]);
+        assert_eq!((w(&h, 7), w(&h, 9)), (7 << 8, 3 << 22 | 9 << 8 | 5));
+        h.join(house_key(9, 101), rec(9));
+        assert_eq!(h.data[h.by_key[&house_key(9, 101)].0 as usize * REC + 3] as u32, 3 << 22 | 9 << 8 | 5);
+        assert!(((3u32 << 22 | KEY_MASK << 8 | 255) as f32) < (1u32 << 24) as f32, "stays a whole float");
+    }
 }
 
 /// One person as a click on their dot shows them.
@@ -355,9 +379,13 @@ fn house_key(household: u32, home: u32) -> u64 {
 
 /// One house per village household (city people live in the town tiles):
 /// a record like the household's people at home (anchor, village area,
-/// key << 8), in fixed slots and pages like the people, so a day uploads
-/// only the pages where a household appeared, moved or died out. A house
-/// counts the members whose home it is, travellers included.
+/// `craft << 22 | key << 8 | busy`), in fixed slots and pages like the
+/// people, so a day uploads only the pages where a household appeared,
+/// moved, died out or changed its work. A house counts the members whose
+/// home it is, travellers included. Craft and busy are the household's
+/// workshop as the grain economy has it (`set_work`: crate::grain
+/// CRAFT_NAMES 1–3, 0 none; share of the month's work sold, 0–255), for
+/// the graphics to put the workshop at the house.
 #[derive(Default)]
 pub struct Houses {
     pub data: Vec<f32>,
@@ -366,6 +394,8 @@ pub struct Houses {
     grew: bool,
     /// Slot and members by household and home.
     by_key: FxHashMap<u64, (u32, u32)>,
+    /// `craft << 22 | busy` by household, as of the last `set_work`.
+    work: FxHashMap<u32, u32>,
 }
 
 impl Houses {
@@ -386,11 +416,12 @@ impl Houses {
         &self.data[page * PAGE * REC..(page + 1) * PAGE * REC]
     }
 
-    fn join(&mut self, key: u64, rec: [f32; REC]) {
+    fn join(&mut self, key: u64, mut rec: [f32; REC]) {
         if let Some(e) = self.by_key.get_mut(&key) {
             e.1 += 1;
             return;
         }
+        rec[3] = (rec[3] as u32 | self.work.get(&((key >> 32) as u32)).copied().unwrap_or(0)) as f32;
         let slot = match self.free.pop() {
             Some(s) => s,
             None => {
@@ -403,6 +434,27 @@ impl Houses {
         };
         self.by_key.insert(key, (slot, 1));
         self.write(slot, rec);
+    }
+
+    /// The workshops of the households: (household, craft, busy) for each
+    /// that has one; the others have none. Rewrites only the houses whose
+    /// work changed.
+    pub fn set_work(&mut self, work: impl IntoIterator<Item = (u32, u8, u8)>) {
+        self.work = work.into_iter().filter(|w| w.1 != 0).map(|(h, craft, busy)| (h, (craft as u32 & 3) << 22 | busy as u32)).collect();
+        let changed: Vec<(u32, f32)> = self
+            .by_key
+            .iter()
+            .filter_map(|(&key, &(slot, _))| {
+                let o = slot as usize * REC + 3;
+                let w = ((self.data[o] as u32 & (KEY_MASK << 8)) | self.work.get(&((key >> 32) as u32)).copied().unwrap_or(0)) as f32;
+                (w != self.data[o]).then_some((slot, w))
+            })
+            .collect();
+        for (slot, w) in changed {
+            let mut rec: [f32; REC] = self.data[slot as usize * REC..][..REC].try_into().unwrap();
+            rec[3] = w;
+            self.write(slot, rec);
+        }
     }
 
     fn leave(&mut self, key: u64) {
