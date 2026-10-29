@@ -8,6 +8,11 @@ extends MultiMeshInstance3D
 ## out; 3 import, loaded on the way home), each with its route in world km
 ## (the footpath tile by tile, the trade road from cell to cell).
 ##
+## Hired hands (ApoleiaPeople.ask_work, the last weekly labour exchange of
+## each region) walk from their home to the farm they work on and back,
+## with a sickle at the harvest, a seed basket at the sowing and a hoe
+## through the year.
+##
 ## A trip new to the list becomes a traveller that walks its route at a
 ## pace the eye can follow, whatever the days per second (at ten days a
 ## second a walk to market lasts a tenth of a second): it starts where the
@@ -30,6 +35,10 @@ const SACKS := 2
 const CART := 4
 const OX := 8
 const LOAD := 16
+const SICKLE := 32
+const BASKET := 64
+const HOE := 128
+const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
 
 var people: RefCounted
@@ -37,7 +46,9 @@ var _able := false # an older build of the GDExtension has no trips
 var material := ShaderMaterial.new()
 var _walkers: Array[Dictionary] = []
 var _listed := {} # ids of the trips in the last list, so a trip is walked once
+var _hired := {} # worker and exchange day of the hires in the last list, likewise
 var _asked := false
+var _asked_work := false
 var _asked_day := -1
 var _asked_at := Vector3.INF # centre x, z and view width of the last ask
 var _window := Rect2()
@@ -68,22 +79,30 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 	if not visible:
 		_walkers.clear()
 		_listed.clear()
+		_hired.clear()
 		_asked_at = Vector3.INF
 		return
 	var half := view_km * (0.5 + MARGIN)
 	_window = Rect2(centre - Vector2(half, half), Vector2(half, half) * 2.0)
+	if _asked_work:
+		var hires: Dictionary = people.take_work()
+		if not hires.is_empty():
+			_asked_work = false
+			_take_work(hires)
 	if _asked:
 		var answer: Dictionary = people.take_trips()
 		if not answer.is_empty():
 			_asked = false
 			_take(answer)
-	else:
+	elif not _asked_work:
 		var day: int = people.day()
 		var moved := _asked_at.x == INF or Vector2(_asked_at.x, _asked_at.y).distance_to(centre) > view_km * 0.25 \
 			or absf(log(view_km / _asked_at.z)) > 0.3
 		if day != _asked_day or moved:
 			people.ask_trips(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
+			people.ask_work(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
 			_asked = true
+			_asked_work = true
 			_asked_day = day
 			_asked_at = Vector3(centre.x, centre.y, view_km)
 	_walk(delta)
@@ -100,6 +119,36 @@ func _take(t: Dictionary) -> void:
 		if not w.is_empty():
 			_walkers.append(w)
 	_listed = listed
+
+## Each hire new to the list sends its worker from home to the farm and
+## back, in a straight line (both are fine tiles, a few km apart at most).
+func _take_work(h: Dictionary) -> void:
+	var worker: PackedInt64Array = h.worker
+	var day: PackedInt64Array = h.day
+	var kind: PackedInt32Array = h.kind
+	var from: PackedVector2Array = h.from
+	var to: PackedVector2Array = h.to
+	var hired := {}
+	for i in worker.size():
+		var key := Vector2i(worker[i], day[i])
+		hired[key] = true
+		if _hired.has(key) or _walkers.size() >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
+			continue
+		var w := {
+			"points": PackedVector2Array([from[i], to[i]]),
+			"along": PackedFloat32Array([0.0, from[i].distance_to(to[i])]),
+			"s": 0.0, "dir": 1.0, "turn": true, "cart": false, "cargo": false, "out": false,
+			"phase": fposmod(float(worker[i]) * 0.618034, 1.0), "tint": int(worker[i] % 6),
+			"tool": TOOLS[clampi(kind[i], 0, TOOLS.size() - 1)],
+		}
+		if not _window.has_point(from[i]):
+			if not _window.has_point(to[i]):
+				continue
+			w.s = w.along[1] # seen at the farm, walking home
+			w.dir = -1.0
+			w.turn = false
+		_walkers.append(w)
+	_hired = hired
 
 ## Trip i of the list as a traveller, placed where the sim has it today, or
 ## {} when no part of its way lies in the view.
@@ -186,7 +235,9 @@ func _upload() -> void:
 		var p: Vector2 = place[0]
 		var d: Vector2 = place[1]
 		var loaded: bool = w.cargo and (w.out == (w.dir > 0.0))
-		var parts := (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
+		var parts: int = (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
+		if w.has("tool"):
+			parts = w.tool
 		# turned about y so the model's front (+z) faces d
 		var o := k * STRIDE
 		_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = p.x
@@ -200,7 +251,9 @@ func _upload() -> void:
 
 ## Everyone who travels in one mesh, in metres, the model's front +z: the
 ## person (part 0) at the origin, a donkey beside them (1) with its sacks
-## (2), or an ox (4) in front of a cart (3) with its load (5) on their right.
+## (2), or an ox (4) in front of a cart (3) with its load (5) on their right;
+## or the tool of a hired hand: a sickle in the right hand (6), a seed
+## basket in the left (7), a hoe on the shoulder (8).
 static func _mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -256,6 +309,15 @@ static func _mesh() -> ArrayMesh:
 	for side in [-1.0, 1.0]:
 		for end in [-1.0, 1.0]:
 			_box(st, o + Vector3(0.28 * side, 1.02, 0.45 * end), Vector3(0.22, 0.2, 0.3), sack, 5)
+	# the tools swing with the arm that holds them
+	var iron := Color(0.62, 0.62, 0.6)
+	_box(st, Vector3(0.2, 0.43, 0.03) * f, Vector3(0.02, 0.05, 0.02) * f, wood, 6, -0.6, 0.78 * f)
+	_box(st, Vector3(0.2, 0.37, 0.1) * f, Vector3(0.015, 0.018, 0.07) * f, iron, 6, -0.6, 0.78 * f)
+	_box(st, Vector3(0.2, 0.42, 0.16) * f, Vector3(0.015, 0.05, 0.015) * f, iron, 6, -0.6, 0.78 * f)
+	_box(st, Vector3(-0.24, 0.5, 0.06) * f, Vector3(0.08, 0.06, 0.08) * f, Color(0.66, 0.52, 0.3), 7, 0.6, 0.78 * f)
+	_box(st, Vector3(-0.24, 0.565, 0.06) * f, Vector3(0.065, 0.01, 0.065) * f, Color(0.84, 0.76, 0.52), 7, 0.6, 0.78 * f)
+	_box(st, Vector3(0.14, 0.83, -0.1) * f, Vector3(0.018, 0.018, 0.45) * f, wood, 8)
+	_box(st, Vector3(0.14, 0.77, -0.54) * f, Vector3(0.05, 0.06, 0.015) * f, iron, 8)
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half` (m) of `part`

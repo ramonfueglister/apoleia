@@ -32,6 +32,8 @@ pub struct MapLayers {
     pub cols: i32,
     pub fine: Arc<Vec<u8>>,
     pub roads: Arc<Vec<u8>>,
+    /// Market (region) of each 25 km cell, u32::MAX at sea (Grain::cell_markets).
+    pub regions: Arc<Vec<u32>>,
     /// Bumped on every rebuild.
     pub version: u64,
 }
@@ -124,6 +126,7 @@ impl GrainMap {
             }
         }
         self.layers.roads = Arc::new(roads);
+        self.layers.regions = Arc::new(g.cell_markets().to_vec());
         self.layers.version += 1;
     }
 }

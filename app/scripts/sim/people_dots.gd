@@ -62,6 +62,7 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
@@ -104,6 +105,7 @@ var _map_version := -1
 var _map_at := Vector2.INF
 var _map_tex: ImageTexture
 var _road_tex: ImageTexture
+var _region_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
 var _legend: Dictionary
 var _hud: CanvasLayer
@@ -299,9 +301,12 @@ func setup(tile_terrain: Node3D) -> bool:
 	custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	_legend = people.legend()
 	_build_hud()
-	var tables := SimTables.new() # T: markets, population and farms as tables
+	var tables := SimTables.new() # T: markets, population, farms, state and history as tables
 	tables.setup(people, get_parent())
 	add_child(tables)
+	var events := SimEvents.new() # E: what happens, at the bottom right
+	events.setup(people, get_parent())
+	add_child(events)
 	_rebuild()
 	_rebuild_houses()
 	if _bench_path != "":
@@ -552,6 +557,24 @@ func _update_map() -> void:
 		_prep_frames = 2
 	_map_version = version
 	_map_at = centre
+
+## The regions coloured by a column of the markets (sim_tables.gd), one
+## texel per 25 km cell as sim_map.gdshaderinc sim_regions reads it; null
+## clears them.
+func paint_regions(img: Image, grid: Dictionary) -> void:
+	var mat: ShaderMaterial = terrain._terrain_material
+	if img == null:
+		mat.set_shader_parameter("sim_regions_on", false)
+		return
+	if _region_tex == null or _region_tex.get_size() != Vector2(img.get_size()):
+		_region_tex = ImageTexture.create_from_image(img)
+	else:
+		_region_tex.update(img)
+	mat.set_shader_parameter("sim_region_tex", _region_tex)
+	mat.set_shader_parameter("sim_cell_origin", grid.origin)
+	mat.set_shader_parameter("sim_cell_km", grid.cell_km)
+	mat.set_shader_parameter("sim_cell_n", img.get_size())
+	mat.set_shader_parameter("sim_regions_on", true)
 
 ## The people near the view, as a slot list for the figure shader.
 func _update_figures(view_km: float, synced: bool) -> void:

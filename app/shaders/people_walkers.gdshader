@@ -3,7 +3,8 @@
 // height from the terrain under it (as people_dots_common places the
 // figures). The mesh holds every part in metres (UV.x the part): the
 // person (0), a donkey (1) and its sacks (2), a wagon (3), its ox (4) and
-// its load (5); INSTANCE_CUSTOM.r says which parts beyond the person show
+// its load (5), a hired hand's sickle (6), seed basket (7) or hoe (8);
+// INSTANCE_CUSTOM.r says which parts beyond the person show
 // (bit part - 1), .g the walk's phase, .b the tunic colour. Legs (UV2.x the
 // side, UV2.y the hip in metres) swing as they walk.
 shader_type spatial;

@@ -19,6 +19,11 @@ uniform sampler2D sim_road_tex : filter_nearest, repeat_disable;
 uniform vec2 sim_cell_origin;      // world km of the grid's corner
 uniform float sim_cell_km = 25.0;
 uniform ivec2 sim_cell_n = ivec2(0);
+// the regions coloured by a column of the markets (sim_tables.gd): RGB the
+// class colour, A bit 0 coloured, bits 1-4 a border to the north, east,
+// south and west
+uniform sampler2D sim_region_tex : filter_nearest, repeat_disable;
+uniform bool sim_regions_on = false;
 
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
@@ -167,7 +172,30 @@ float sim_band(float d, float w, float fw_km) {
 }
 
 // Footpaths, market squares and trade roads over the land colour c.
+// The map coloured by region, as EU5's map modes: one flat colour per
+// region over the land, its border a darker line of at least 1.5 px.
+vec3 sim_regions(vec2 p, vec3 c, float fw_km) {
+	vec2 g = (p - sim_cell_origin) / sim_cell_km;
+	ivec2 cell = ivec2(floor(g));
+	if (cell.x < 0 || cell.y < 0 || cell.x >= sim_cell_n.x || cell.y >= sim_cell_n.y) { return c; }
+	vec4 t = texelFetch(sim_region_tex, cell, 0);
+	int bits = sim_byte(t.a);
+	if ((bits & 1) == 0) { return c; }
+	vec3 tint = pow(t.rgb, vec3(2.2)); // sRGB texel, linear terrain colour
+	c = mix(c, tint, 0.7);
+	vec2 f = fract(g);
+	float edge = 1e9;
+	if ((bits & 2) != 0) { edge = min(edge, f.y); }
+	if ((bits & 4) != 0) { edge = min(edge, 1.0 - f.x); }
+	if ((bits & 8) != 0) { edge = min(edge, 1.0 - f.y); }
+	if ((bits & 16) != 0) { edge = min(edge, f.x); }
+	float half_w = max(fw_km * 1.5, 0.4) / sim_cell_km;
+	float aa = fw_km / sim_cell_km;
+	return mix(c, tint * 0.45, 1.0 - smoothstep(half_w - aa, half_w + aa, edge));
+}
+
 vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
+	if (sim_regions_on) { c = sim_regions(p, c, fw_km); }
 	if (!sim_map_on) { return c; }
 	// none in the towns: their streets and squares are the terrain's (r11: a
 	// footpath ran across the Forum, a market lay by the Tiber as a decal)

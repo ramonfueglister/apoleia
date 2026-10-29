@@ -377,6 +377,12 @@ Zellmitten der Handelswege, genau dort, wo die Strassen gezeichnet sind.
 - Höchstens 300 gleichzeitig; gefragt wird einmal pro Sim-Tag und wenn die
   Kamera weiterzieht. Gezeichnet nur aus der Nähe, mit den Figuren.
 - Tuniken in sechs Wolltönen; Beine und Arme schwingen beim Gehen.
+- **Erntehelfer:** `ask_work(Fenster)` liefert, wer bei der letzten
+  Wochenbörse jeder Region auf welchem Hof arbeitet (`Grain::work_in`,
+  `trips::work_to_dict`). Jede neue Anstellung schickt den Arbeiter von
+  seinem Haus geradeaus zum Hof und zurück: mit Saatkorb zur Saat, mit
+  Sichel zur Ernte, sonst mit der Hacke auf der Schulter. Höchstens die
+  Hälfte der 300 Läufer sind Helfer, der Rest bleibt den Fahrten.
 
 Ein Klick auf eine Person zeigt jetzt auch das Geld ihres Haushalts in
 Denar (`HouseholdLook.money`, so wie es ist, auch unter null: Händler zahlen
@@ -400,10 +406,10 @@ Aus- und Einfuhr auch mit leerer Kasse).
 
 ## Tabellen im Stil von EU5 (Ramon, 29.10.2026)
 
-Taste `T` (oder der Knopf links oben) öffnet links ein Panel mit vier
+Taste `T` (oder der Knopf links oben) öffnet links ein Panel mit fünf
 Tabellen: Märkte, Bevölkerung nach Region und Beruf, Höfe nach Region und
 Staat (Kasse und Geldkreislauf seit Spielstart, S94; eine Zeile ohne Ort,
-darum als Liste aus Posten und Betrag gezeigt) (`scripts/sim/sim_tables.gd`). Die Daten liefert die Simulation
+darum als Liste aus Posten und Betrag gezeigt) und Verlauf (eine Zeile pro Monat, unten) (`scripts/sim/sim_tables.gd`). Die Daten liefert die Simulation
 (`sim/src/tables.rs`, `Grain::table`; Simulations-Thread): `ask_table(kind)`
 bittet den Sim-Thread darum, zwischen zwei Tagen gebaut kommt die Tabelle mit
 `take_table()` als Spalten in Packed-Arrays, mit Spaltenköpfen und Einheiten
@@ -428,13 +434,43 @@ Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
   Linien und Balken; Zahlen mit Hochkomma (116’805), Datum im römischen
   Kalender ("Martius, Jahr 3").
 
+### Verlauf und Karte färben
+
+- **Verlauf** (fünfter Reiter, Tabelle `history`, eine Zeile pro Monat):
+  jede Reihe mit dem letzten und dem vorletzten Monat und der Veränderung;
+  ein Klick auf eine Reihe zeichnet sie oben als Kurve über die Monate,
+  Jahre an der Grundlinie. Bei den Preisen liegt die Spanne von min bis max
+  als Band um den Median.
+- **Karte färben** (bei den Märkten): färbt jede Region nach der Spalte,
+  nach der sortiert ist, in fünf Klassen mit gleich vielen Regionen, von
+  Strohgelb bis Krapprot, mit dunkler Grenze zwischen den Regionen, wie
+  EU5s Kartenmodi. Die Zuordnung Zelle → Markt liefert
+  `ApoleiaPeople.region_map()` (`Grain::cell_markets`, monatlich mit der
+  Kartenebene); `people_dots.gd paint_regions` legt sie als Textur auf das
+  Terrain, `sim_regions` in `sim_map.gdshaderinc` (im bestehenden Aufruf
+  von `sim_ways`, kein neuer Haken im Terrain-Shader) malt sie über das
+  Land, das Meer bleibt frei. Mit dem Panel gehen auch die Farben.
+
+## Ereignisse (Taste E)
+
+Unten rechts listet `scripts/sim/sim_events.gd` die letzten Ereignisse im
+Bild und rundherum, neueste zuerst, eine Zeile pro Tag und Art mit Anzahl
+und Menge: Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten,
+Diebstahl (kg), Almosen (kg), Zelt zieht um, Hof übernommen, Erbteil, Ins
+Zelt, Hof nach Lex Manciana, Hof verlassen (`sim/src/events.rs`, 60 Tage
+gehalten). `ask_events(seit, Fenster)` fragt einmal pro Sim-Tag, höchstens
+einmal pro Sekunde (`Grain::events_in`, `trips::events_to_dict`). Ein Klick
+auf eine Zeile fliegt die Kamera dorthin. Hungertod rot, Diebstahl und
+Verlust orange, Almosen gold, Höfe grün.
+
 ## Bedienung
 
-`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, `E` Ereignisse, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
 `--people-warm=n` (n Tage vor dem ersten Bild rechnen),
-`--tables=markets|population|farms|state` (Panel offen auf dieser Tabelle).
+`--tables=markets|population|farms|state|history` (Panel offen auf dieser Tabelle),
+`--tables-map=spalte` (Karte nach dieser Spalte der Märkte färben), `--no-events`.
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

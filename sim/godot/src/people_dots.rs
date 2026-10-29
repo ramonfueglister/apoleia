@@ -13,7 +13,7 @@
 
 use crate::grain_map::{GrainMap, MapLayers, FINE};
 use crate::{tables, trips};
-use apoleia_sim::grain::{Grain, HouseholdLook, TripsView, FARM_KIND_NAMES, KIND_NAMES};
+use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::Table;
@@ -48,6 +48,10 @@ struct Front {
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
     trips: Option<TripsView>,
+    /// Answer to the last `ask_work`.
+    work: Option<WorkView>,
+    /// Answer to the last `ask_events`.
+    events: Option<EventsView>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
@@ -63,11 +67,14 @@ struct Queue {
     ask: Option<usize>,
     table: Option<String>,
     trips: Option<[f64; 4]>,
+    work: Option<[f64; 4]>,
+    /// The day after which, and the window.
+    events: Option<(i64, [f64; 4])>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        self.ask.is_some() || self.table.is_some() || self.trips.is_some()
+        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
     }
 }
 
@@ -112,7 +119,7 @@ const FINE_KM: f32 = CELL_KM / FINE as f32;
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
         // questions from the game first, between two days; then a day
-        let (ask, table, trips) = {
+        let (ask, table, trips, work, events) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -124,7 +131,7 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             if !asked {
                 q.days -= 1;
             }
-            (q.ask.take(), q.table.take(), q.trips.take())
+            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
         };
         if let Some(key) = &table {
             let t = grain.table(&people, key);
@@ -134,6 +141,14 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             let v = grain.trips_in(&people, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().trips = Some(v);
         }
+        if let Some([x0, z0, x1, z1]) = work {
+            let v = grain.work_in((x0, z0), (x1, z1));
+            shared.front.lock().unwrap().work = Some(v);
+        }
+        if let Some((since, [x0, z0, x1, z1])) = events {
+            let v = grain.events_in(&people, since, (x0, z0), (x1, z1));
+            shared.front.lock().unwrap().events = Some(v);
+        }
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
             let who = who.map(|p| {
@@ -142,7 +157,7 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             });
             shared.front.lock().unwrap().person = who;
         }
-        if ask.is_some() || table.is_some() || trips.is_some() {
+        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
         let t0 = Instant::now();
@@ -550,6 +565,67 @@ impl ApoleiaPeople {
             Some(v) => trips::to_dict(&v),
             None => VarDictionary::new(),
         }
+    }
+
+    /// Asks the sim thread who works on whose farm (the last weekly labour
+    /// exchange of each region) where the worker's home or the farm lies
+    /// in the window (world km); the answer comes with `take_work`.
+    #[func]
+    fn ask_work(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().work = None;
+        self.shared.queue.lock().unwrap().work = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The hires asked for, once, as trips::work_to_dict; empty until the
+    /// sim thread answered.
+    #[func]
+    fn take_work(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().work.take() {
+            Some(v) => trips::work_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread for the events after day `since` in the window
+    /// (world km); the answer comes with `take_events`.
+    #[func]
+    fn ask_events(&mut self, since: i64, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().events = None;
+        self.shared.queue.lock().unwrap().events = Some((since, [min_x, min_z, max_x, max_z]));
+        self.shared.wake.notify_one();
+    }
+
+    /// The events asked for, once, as trips::events_to_dict; empty until
+    /// the sim thread answered.
+    #[func]
+    fn take_events(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().events.take() {
+            Some(v) => trips::events_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// The market (region) of each 25 km cell as of the last month, row by
+    /// row, -1 at sea: {"cells", "rows", "cols", "origin" world km of the
+    /// grid corner, "cell_km"}. With the `markets` table (id = market
+    /// index) the game colours the regions by any column.
+    #[func]
+    fn region_map(&self) -> VarDictionary {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let mut d = VarDictionary::new();
+        d.set("cells", &PackedInt32Array::from_iter(map.regions.iter().map(|&m| if m == u32::MAX { -1 } else { m as i32 })));
+        d.set("rows", map.rows);
+        d.set("cols", map.cols);
+        d.set("origin", Vector2::new(map.col0 as f32 * CELL_KM, map.row0 as f32 * CELL_KM));
+        d.set("cell_km", CELL_KM);
+        d
     }
 
     /// Names for the colour legend: occupations, political groups and the
