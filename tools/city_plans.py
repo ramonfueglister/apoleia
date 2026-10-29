@@ -259,14 +259,18 @@ def build(data, scale, margin=6, terrain=None, hook=None):
         return plan.cell_centre(q + i0, r + j0)
 
     # inside the walls
-    polys = [ring_polygon(plan, wall) for wall in data.get("walls", [])]
-    polys += [[plan.km(p) for p in ring] for ring in data.get("extent", [])]
+    walled_polys = [ring_polygon(plan, wall) for wall in data.get("walls", [])]
+    polys = walled_polys + [[plan.km(p) for p in ring] for ring in data.get("extent", [])]
+    walled = np.zeros((h, w), bool)
     for r in range(h):
         for q in range(w):
             x, z = centre(r, q)
-            urban[r, q] = any(inside(p, x, z) for p in polys)
+            walled[r, q] = any(inside(p, x, z) for p in walled_polys)
+            urban[r, q] = walled[r, q] or any(inside(p, x, z) for p in polys)
     if polys and not urban.any():  # a town smaller than a parcel: its parcel
         urban[at(plan.cell(data["centre"]))] = True
+    if walled_polys and not walled.any():
+        walled[at(plan.cell(data["centre"]))] = True
 
     # river (at least one parcel wide) and its island; streets cross rivers
     # on bridges, never the sea
@@ -300,12 +304,13 @@ def build(data, scale, margin=6, terrain=None, hook=None):
     # walls round the town (the parcels just outside it), gates where the
     # plan has them and wherever a main street goes through
     if data.get("walls"):
+        walled &= ~water
         ring = np.zeros((h, w), bool)
-        ring[1:, :] |= urban[:-1, :]
-        ring[:-1, :] |= urban[1:, :]
-        ring[:, 1:] |= urban[:, :-1]
-        ring[:, :-1] |= urban[:, 1:]
-        ring &= ~urban & ~water
+        ring[1:, :] |= walled[:-1, :]
+        ring[:-1, :] |= walled[1:, :]
+        ring[:, 1:] |= walled[:, :-1]
+        ring[:, :-1] |= walled[:, 1:]
+        ring &= ~walled & ~water
         kind[ring] = K["wall"]
         wall_cells = np.argwhere(ring)
         for g in data.get("gates", []):
@@ -410,6 +415,10 @@ def build(data, scale, margin=6, terrain=None, hook=None):
                     if d < 1.0 and d < best:
                         best, kd = d, a["kind"]
                 kind[r, q] = K["insula" if kd == "insulae" else kd]
+                # the open town outside a late wall, half deserted (Gaul, c. 270-370)
+                thin = data.get("thin_outside_walls", 0.0)
+                if thin and not walled[r, q] and kd in DWELLING and hash_cell(data.get("id", ""), r, q) % 1000 < thin * 1000:
+                    kind[r, q] = K["garden"]
     lanes(kind, rank, surf, links, SURFACES.index(data.get("lane_surface", "earth")))
     connect(kind, rank, surf, SURFACES.index(data.get("lane_surface", "earth")))
     relink(kind, links)

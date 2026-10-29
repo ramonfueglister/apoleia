@@ -82,8 +82,17 @@ Benachbarte Strassenparzellen verbinden sich wie Strassenkacheln in Urbek.
 
 Alles hängt nur von der Stadt-ID ab: gleicher Plan bei jedem Lauf.
 
-Bekannte Lücken: Die Mauern Galliens und Germaniens umschlossen um 301 oft nur noch den Kern
-(Esmonde Cleary, 2013); noch nicht umgesetzt. Höhen und Hänge (Theater am Hang, Akropolis) fehlen.
+**Späte Mauern in Gallien und Germanien:** Von der zweiten Hälfte des 3. Jahrhunderts bis etwa 370
+wurden die Städte dort neu ummauert, aber nur um einen kleinen Kern; die alte Stadt draussen blieb
+offen und teils verlassen ([Urban enclosures in Roman Gaul](https://en.wikipedia.org/wiki/Urban_enclosures_in_Roman_Gaul);
+Esmonde Cleary, 2013). Regel für die Provinzen Lugdunensis, Aquitania, Belgica und die beiden
+Germanien (Städte ab 5'000 Einwohnern, Kolonien, Civitas-Hauptorte): Mauer um ein Fünftel der alten
+Fläche, 6 bis 40 ha (eigene Schätzung; Tours und Paris etwa 9 ha, Bordeaux etwa 32 ha, aus dem
+Gedächtnis, nicht geprüft), die Hälfte der Häuser draussen wird Garten. Ein Kern unter 25 ha
+(Massstab 1: vier Parzellen) hat keinen Platz für eine Mauer und fällt weg; bei Massstab 1 betrifft
+die Regel darum nur neun Städte.
+
+Bekannte Lücken: Höhen und Hänge (Theater am Hang, Akropolis) fehlen.
 Capua (170'000) und S. Maria Capua Vetere sind derselbe Ort doppelt in `cities.csv`.
 
 ## Format der gebackenen Karte

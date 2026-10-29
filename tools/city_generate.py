@@ -48,6 +48,16 @@ ONE_MORE_PER_HA = {"baths": 80, "temple": 60, "public": 120, "market": 200, "the
 # placing order: what matters most first
 ORDER = ["forum", "agora", "temple_cap", "theatre", "amphitheatre", "baths", "public", "temple",
          "market", "circus", "stadium", "portico", "harbour", "fort"]
+# Late walls in Gaul and Germany: from the later 3rd century to about 370 the
+# towns there were walled anew round a small core, the rest of the old town
+# left open and partly deserted ("Urban enclosures in Roman Gaul";
+# Esmonde Cleary, 2013). Own estimate of the size: a fifth of the old area,
+# 6 to 40 ha (Tours and Paris about 9 ha, Bordeaux about 32 ha, from memory,
+# not verified); half the houses outside are given up.
+LATE_WALL_PROVINCES = ("Gallia Lugdunensis", "Gallia Aquitania", "Gallia Belgica", "Germania Superior", "Germania Inferior")
+LATE_WALL_SHARE, LATE_WALL_HA = 0.2, (6.0, 40.0)
+LATE_DESERTED = 0.5
+LATE_WALL_MIN_HA = 25.0
 # public buildings take at most this share of the parcels in the town
 MAX_PUBLIC_SHARE = 0.3
 
@@ -153,7 +163,18 @@ def plan(cid, f, scale, terrain=None):
             ring.append(offset(lon, lat, rr * math.cos(t), rr * math.sin(t)))
     data = {"id": cid, "name": f.get("ancient", cid), "year": 301, "status": "generated",
             "centre": [lon, lat], "lane_surface": sf["lane"], "terrain_rivers": True, "streets": [], "gates": []}
-    if walls:
+    late = f.get("province") in LATE_WALL_PROVINCES and (f["pop117"] >= 5000 or any("Civitas" in c or "Colonia" in c for c in f.get("civic", [])))
+    lha = min(max(LATE_WALL_SHARE * ha, LATE_WALL_HA[0]), LATE_WALL_HA[1])
+    # a core of fewer than about four parcels has no room for a wall on the
+    # parcels: then it falls away with the scale, as other details do
+    late = late and lha * scale * scale >= LATE_WALL_MIN_HA
+    if late:
+        lr = math.sqrt(lha * 1e4 / math.pi)
+        core = [offset(lon, lat, lr * math.cos(2 * math.pi * k / 10), lr * math.sin(2 * math.pi * k / 10)) for k in range(10)]
+        data["walls"] = [{"name": "Murus (late enclosure)", "ring": core + [core[0]]}]
+        data["extent"] = [ring]
+        data["thin_outside_walls"] = LATE_DESERTED
+    elif walls:
         data["walls"] = [{"name": "Murus", "ring": ring + [ring[0]]}]
     else:
         data["extent"] = [ring]
@@ -197,7 +218,7 @@ def plan(cid, f, scale, terrain=None):
             data["gates"].append({"name": "porta", "at": g})
             data["streets"].append({"name": "via", "rank": "via", "surface": sf["out"], "outside": True,
                                     "line": [g, offset(lon, lat, out_m * math.cos(t), out_m * math.sin(t))]})
-    if not walls:
+    if not walls and not late:
         data["gates"] = []
     return data
 
