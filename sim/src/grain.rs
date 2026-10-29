@@ -26,6 +26,7 @@
 
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
+use crate::tables::Table;
 use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
 use crate::groups::{BAUERN, HAENDLER, HANDWERKER, PAECHTER, TAGELOEHNER, UNFREIE};
 
@@ -67,6 +68,9 @@ const NILE_FIELDS_KM2: f64 = 27_300.0;
 
 /// Longitude and latitude of a 25 km cell centre (data/projection.json:
 /// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
+/// Width of a market's region (S70: 100 km regions), for the game's camera.
+const REGION_KM: f64 = 100.0;
+
 fn cell_lon_lat(row: i32, col: i32) -> (f64, f64) {
     const R: f64 = 6_371_008.8;
     let (x, z) = (col as f64 * 25_000.0 + 12_500.0, row as f64 * 25_000.0 + 12_500.0);
@@ -382,6 +386,9 @@ struct Field {
 }
 
 pub struct Market {
+    /// The region's largest listed place (data/gametiles/places.csv), else
+    /// "bei" the nearest one.
+    pub name: String,
     pub region: u32,
     pub cell: u32,
     pub fine: u32,
@@ -505,6 +512,46 @@ pub struct GrainTiming {
     pub census: f64,
 }
 
+/// The money cycle (S94, step 1): where money comes from and where it goes,
+/// in milli-denarii since the start. Booking only: nothing here changes
+/// what households, farms or dealers do, and it is not in the fingerprint.
+/// At every day's end: money held (households, farms, dealers) + the
+/// treasury's cash = start + minted + endowed − freight − dissolved −
+/// no_payee (`Grain::money_unbooked` is 0).
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Money {
+    /// Held by households, farms and dealers when the run starts (the
+    /// PLACEHOLDER start stocks: TRADER_MONEY, ELITE_MONEY, the dealers'
+    /// cash, the rent of last year's harvest).
+    pub start: i64,
+    /// State wages beyond the treasury's cash: S76 (the state has
+    /// unlimited money) means the state makes the rest.
+    pub minted: i64,
+    /// Start money of trader and elite households formed after the start.
+    pub endowed: i64,
+    /// Freight paid by traders (cost per kg of the route); nobody in the
+    /// simulation receives it.
+    pub freight: i64,
+    /// Money of households that died out or were joined to others.
+    pub dissolved: i64,
+    /// Payments whose receiver is gone: rent for a landlord who died or a
+    /// farm without one, a load sold for a trader who died on the way.
+    pub no_payee: i64,
+}
+
+/// The state's account (S94, step 1), since the start. In: the Manciana
+/// third (S92), sold at market with the farm's grain, in money; the tax in
+/// kind as grain. Out: the state wage (S76), from cash first, the rest
+/// minted (`Money::minted`).
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Treasury {
+    pub cash: i64,
+    pub wages: i64,
+    pub rent: i64,
+    /// Tax grain received, kg. It leaves the economy (no use yet, S76).
+    pub grain_kg: i64,
+}
+
 pub struct Grain {
     seed: u64,
     farms: Vec<Farm>,
@@ -569,6 +616,8 @@ pub struct Grain {
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
+    pub money: Money,
+    pub treasury: Treasury,
 }
 
 fn doy(day: i64) -> i64 {
@@ -831,9 +880,15 @@ impl Grain {
         // listed place (Hanson 117), else at the cell with most people.
         let mut place_pop: FxHashMap<u32, f64> = FxHashMap::default();
         let mut place_xz: FxHashMap<u32, (f64, f64)> = FxHashMap::default();
-        for c in &inp.cities {
+        // Largest listed place of each region, for the market's name.
+        let mut region_place: FxHashMap<u32, (f64, usize)> = FxHashMap::default();
+        for (ci, c) in inp.cities.iter().enumerate() {
             let (r, col) = ((c.z_m / 25_000.0).floor() as i32, (c.x_m / 25_000.0).floor() as i32);
             if let Some(i) = g.index(r, col) {
+                let e = region_place.entry(g.region(i)).or_insert((-1.0, ci));
+                if c.pop > e.0 {
+                    *e = (c.pop, ci);
+                }
                 let e = place_pop.entry(i).or_default();
                 if c.pop > *e {
                     place_xz.insert(i, (c.x_m, c.z_m));
@@ -861,7 +916,17 @@ impl Grain {
         };
         let mut markets = Vec::new();
         let mut market_of = FxHashMap::default();
+        let city_name = |ci: usize| inp.city_names.get(ci).cloned().unwrap_or_default();
         for &(k, i) in &regions {
+            // The region's largest listed place, else "bei" the nearest one.
+            let name = match region_place.get(&k) {
+                Some(&(_, ci)) => city_name(ci),
+                None => {
+                    let (x, z) = ((i as i32 % g.cols + g.col0) as f64 * 25_000.0 + 12_500.0, (i as i32 / g.cols + g.row0) as f64 * 25_000.0 + 12_500.0);
+                    let near = inp.cities.iter().enumerate().min_by(|a, b| ((a.1.x_m - x).powi(2) + (a.1.z_m - z).powi(2)).total_cmp(&((b.1.x_m - x).powi(2) + (b.1.z_m - z).powi(2))).then(a.0.cmp(&b.0)));
+                    near.map_or_else(|| format!("Region {}/{}", k >> 16, k & 0xffff), |(ci, _)| format!("bei {}", city_name(ci)))
+                }
+            };
             let fine = match place_xz.get(&i) {
                 Some(&(x, z)) => {
                     let fr = (z / 1562.5).floor() as i32 - g.row0 * FINE;
@@ -872,6 +937,7 @@ impl Grain {
             };
             market_of.insert(k, markets.len() as u32);
             markets.push(Market {
+                name,
                 region: k,
                 cell: i,
                 fine,
@@ -948,6 +1014,8 @@ impl Grain {
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
+            money: Money::default(),
+            treasury: Treasury::default(),
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
@@ -1002,6 +1070,7 @@ impl Grain {
         gr.regroup();
         gr.sums();
         gr.export(p);
+        gr.money.start = gr.money_held();
         gr
     }
 
@@ -1174,6 +1243,7 @@ impl Grain {
                     h.farm = NONE;
                     h.kind = TENT;
                 } else {
+                    self.money.dissolved += s.money;
                     self.hh.remove(&id);
                 }
             }
@@ -1265,6 +1335,9 @@ impl Grain {
             let own_food = self.desert[i.home as usize];
             let kind = if own_food && kind == FARM { WAGE } else { kind };
             let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
+            if !start {
+                self.money.endowed += money;
+            }
             self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false, own_food });
         }
         if start {
@@ -2018,10 +2091,15 @@ impl Grain {
                 owner.rent_due -= rent;
                 let to_lord = if owner.kind == ESTATE { pay } else { rent * price };
                 owner.money += pay - to_lord;
-                let lord = owner.landlord;
-                if to_lord > 0 && lord != NONE {
-                    if let Some(h) = self.hh.get_mut(&lord) {
-                        h.money += to_lord;
+                let (lord, manciana) = (owner.landlord, owner.manciana);
+                if to_lord > 0 {
+                    match self.hh.get_mut(&lord) {
+                        Some(h) => h.money += to_lord,
+                        None if manciana => {
+                            self.treasury.cash += to_lord;
+                            self.treasury.rent += to_lord;
+                        }
+                        None => self.money.no_payee += to_lord,
                     }
                 }
                 t.kg -= kg;
@@ -2055,8 +2133,9 @@ impl Grain {
                 m.store += t.kg;
                 m.money -= pay;
                 self.stats.traded_kg += t.kg;
-                if let Some(h) = self.hh.get_mut(&t.hh) {
-                    h.money += pay;
+                match self.hh.get_mut(&t.hh) {
+                    Some(h) => h.money += pay,
+                    None => self.money.no_payee += pay,
                 }
                 t.kg = 0;
                 self.share_news(t.market, t.dest, day);
@@ -2105,6 +2184,26 @@ impl Grain {
         };
         merge(&mut self.markets[a as usize].board, &bb, pb);
         merge(&mut self.markets[b as usize].board, &ba, pa);
+    }
+
+    /// The state wage (S76), from the treasury's cash, the rest minted.
+    fn state_pays(&mut self, amount: i64) {
+        let cash = amount.min(self.treasury.cash.max(0));
+        self.treasury.cash -= cash;
+        self.money.minted += amount - cash;
+        self.treasury.wages += amount;
+    }
+
+    /// Money held by households (also the money a farm household had
+    /// before its farm), farms and dealers, milli-denarii.
+    pub fn money_held(&self) -> i64 {
+        self.hh.values().map(|s| s.money).sum::<i64>() + self.farms.iter().map(|f| f.money).sum::<i64>() + self.markets.iter().map(|m| m.money).sum::<i64>()
+    }
+
+    /// Money that appeared or vanished without a booking (S94: 0).
+    pub fn money_unbooked(&self) -> i64 {
+        let m = self.money;
+        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed - m.freight - m.dissolved - m.no_payee)
     }
 
     fn money_of(&self, id: u32) -> i64 {
@@ -2437,6 +2536,7 @@ impl Grain {
         fm.store += crop - tax;
         fm.rent_due += rent;
         self.stats.tax_kg += tax;
+        self.treasury.grain_kg += tax;
         self.stats.rent_kg += rent;
         let id = fm.hh;
         if id == NONE {
@@ -2515,7 +2615,9 @@ impl Grain {
             let need = need_day * MONTH;
             // Income: the state wage for workers outside farming (S76).
             if matches!(s.kind, WAGE | TRADER) {
-                s.money += info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                let wage = info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                s.money += wage;
+                self.state_pays(wage);
             }
             let mk = self.cell_market[info.home as usize];
             // Verderb (S72): a twelfth of the year's loss.
@@ -2709,9 +2811,11 @@ impl Grain {
                 m.money += kg * price;
                 m.sold_today += kg;
                 self.pay(id, kg * (price + cost));
+                self.money.freight += kg * cost;
             } else {
                 // Freight paid on the way back, at purchase.
                 self.pay(id, WAGON.0 * cost);
+                self.money.freight += WAGON.0 * cost;
             }
             for &c in &self.markets[h].neigh[k].route.clone() {
                 *self.lanes.entry(c).or_default() += 1;
@@ -3088,6 +3192,157 @@ impl Grain {
     /// land; any level at sea is a sea lane.
     pub fn road_levels(&self) -> &[u8] {
         &self.road_level
+    }
+
+    /// Overview tables for the game (crate::tables): markets, people by
+    /// region and job of the household, farms by region. Sums over the
+    /// households of the last monthly count; rows sorted by region. Every
+    /// table has a stable `id` per row and, for the camera, the longitude
+    /// and latitude of the market and the width of its region.
+    pub fn table(&self, p: &People, key: &str) -> Option<Table> {
+        let day = p.world.resource::<crate::people::Clock>().day;
+        match key {
+            "markets" => Some(self.market_table(p, day)),
+            "population" => Some(self.population_table(p, day)),
+            "farms" => Some(self.farm_table(p, day)),
+            "state" => Some(self.state_table(day)),
+            _ => None,
+        }
+    }
+
+    /// The treasury and the money cycle since the start (S94 step 1): one
+    /// row, the state.
+    fn state_table(&self, day: i64) -> Table {
+        let (m, tr) = (self.money, self.treasury);
+        let den = |x: i64| vec![x as f64 / 1000.0];
+        let mut t = Table::new("state", "Staat", day);
+        t.id(vec![0]);
+        t.float("cash", "Staatskasse", "Denar", den(tr.cash))
+            .float("wages", "Staatslohn", "Denar", den(tr.wages))
+            .float("minted", "Neu geprägt", "Denar", den(m.minted))
+            .float("rent", "Pacht Manciana", "Denar", den(tr.rent))
+            .float("tax_grain_t", "Steuerkorn", "t", vec![tr.grain_kg as f64 / 1000.0])
+            .float("held", "Geld im Umlauf", "Denar", den(self.money_held()))
+            .float("start", "Geld am Anfang", "Denar", den(m.start))
+            .float("endowed", "Startgeld neuer Haushalte", "Denar", den(m.endowed))
+            .float("freight", "Fracht", "Denar", den(m.freight))
+            .float("dissolved", "Geld aufgelöster Haushalte", "Denar", den(m.dissolved))
+            .float("no_payee", "Ohne Empfänger", "Denar", den(m.no_payee))
+            .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
+        t
+    }
+
+    /// Market of each region key.
+    fn market_of_region(&self) -> FxHashMap<u32, usize> {
+        self.markets.iter().enumerate().map(|(m, mk)| (mk.region, m)).collect()
+    }
+
+    /// Adds region name, longitude, latitude and width (km) for the
+    /// markets `ms`, one per row.
+    fn place_columns(&self, p: &People, t: &mut Table, ms: &[usize]) {
+        let ll: Vec<(f64, f64)> = ms
+            .iter()
+            .map(|&m| {
+                let c = self.markets[m].cell as i32;
+                cell_lon_lat(c / p.grid.cols + p.grid.row0, c % p.grid.cols + p.grid.col0)
+            })
+            .collect();
+        t.text("region", "Region", ms.iter().map(|&m| self.markets[m].name.clone()).collect())
+            .hidden_float("lon", "°", ll.iter().map(|v| v.0).collect())
+            .hidden_float("lat", "°", ll.iter().map(|v| v.1).collect())
+            .hidden_float("extent_km", "km", vec![REGION_KM; ms.len()]);
+    }
+
+    fn market_table(&self, p: &People, day: i64) -> Table {
+        let mut order: Vec<usize> = (0..self.markets.len()).collect();
+        order.sort_unstable_by_key(|&m| self.markets[m].region);
+        let (mut hungry, mut counted) = (vec![0i64; self.markets.len()], vec![0i64; self.markets.len()]);
+        for (id, i) in self.info.iter() {
+            let mk = self.cell_market[i.home as usize];
+            let Some(s) = self.hh.get(id) else { continue };
+            if mk == NONE || s.own_food {
+                continue;
+            }
+            counted[mk as usize] += i.size as i64;
+            if s.fed < NEED_FED {
+                hungry[mk as usize] += i.size as i64;
+            }
+        }
+        let int = |f: &dyn Fn(&Market) -> i64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<i64>>();
+        let float = |f: &dyn Fn(&Market) -> f64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<f64>>();
+        let mut t = Table::new("markets", "Märkte", day);
+        t.id(order.iter().map(|&m| m as i64).collect());
+        self.place_columns(p, &mut t, &order);
+        t.float("price", "Preis", "Denar/kg", float(&|m| m.price as f64 / 1000.0))
+            .int("store_kg", "Lager", "kg", int(&|m| m.store))
+            .float("money", "Händlergeld", "Denar", float(&|m| m.money as f64 / 1000.0))
+            .float("sales_day", "Verkauf", "kg/Tag", float(&|m| m.demand as f64 / 1000.0))
+            .int("persons", "Menschen", "", int(&|m| m.people as i64))
+            .int("buyers", "Käufer", "", int(&|m| m.buyers as i64))
+            .int("tent_persons", "Im Zelt", "", int(&|m| m.tent_people as i64))
+            .int("grain_kg", "Getreide der Region", "kg", int(&|m| m.grain))
+            .float("free_ha", "Freies Land", "ha", float(&|m| m.free_area as f64 / 1e4))
+            .float("share_hungry", "Hungernd", "%", order.iter().map(|&m| if counted[m] > 0 { hungry[m] as f64 / counted[m] as f64 } else { 0.0 }).collect());
+        t
+    }
+
+    fn population_table(&self, p: &People, day: i64) -> Table {
+        // (region, job) -> (households, people, fed people, money in milli-denarii)
+        let mut sums: std::collections::BTreeMap<(u32, u8), (i64, i64, i64, i64)> = Default::default();
+        for (id, i) in self.info.iter() {
+            let mk = self.cell_market[i.home as usize];
+            let Some(s) = self.hh.get(id) else { continue };
+            if mk == NONE {
+                continue;
+            }
+            let e = sums.entry((self.markets[mk as usize].region, i.job)).or_default();
+            e.0 += 1;
+            e.1 += i.size as i64;
+            if s.own_food || s.fed >= NEED_FED {
+                e.2 += i.size as i64;
+            }
+            e.3 += self.money_of(*id);
+        }
+        let of = self.market_of_region();
+        let ms: Vec<usize> = sums.keys().map(|(k, _)| of[k]).collect();
+        let mut t = Table::new("population", "Bevölkerung", day);
+        t.id(sums.keys().map(|&(k, j)| (k as i64) << 4 | j as i64).collect());
+        self.place_columns(p, &mut t, &ms);
+        t.text("occupation", "Beruf", sums.keys().map(|&(_, j)| crate::groups::JOB_NAMES.get(j as usize).copied().unwrap_or("?").to_string()).collect())
+            .int("households", "Haushalte", "", sums.values().map(|v| v.0).collect())
+            .int("persons", "Menschen", "", sums.values().map(|v| v.1).collect())
+            .float("share_fed", "Satt", "%", sums.values().map(|v| if v.1 > 0 { v.2 as f64 / v.1 as f64 } else { 0.0 }).collect())
+            .float("money_mean", "Geld je Kopf", "Denar", sums.values().map(|v| v.3 as f64 / 1000.0 / v.1.max(1) as f64).collect());
+        t
+    }
+
+    fn farm_table(&self, p: &People, day: i64) -> Table {
+        // region -> (family, tenant, estate, manciana, area m², sown m², store kg, money)
+        let mut sums: std::collections::BTreeMap<u32, [i64; 8]> = Default::default();
+        for f in self.farms.iter().filter(|f| f.hh != NONE) {
+            let e = sums.entry(self.markets[f.market as usize].region).or_default();
+            e[f.kind as usize] += 1;
+            e[3] += f.manciana as i64;
+            e[4] += f.area;
+            e[5] += f.sown;
+            e[6] += f.store;
+            e[7] += f.money;
+        }
+        let of = self.market_of_region();
+        let ms: Vec<usize> = sums.keys().map(|k| of[k]).collect();
+        let col = |k: usize| sums.values().map(|v| v[k]).collect::<Vec<i64>>();
+        let mut t = Table::new("farms", "Höfe", day);
+        t.id(sums.keys().map(|&k| k as i64).collect());
+        self.place_columns(p, &mut t, &ms);
+        t.int("family", "Familienhöfe", "", col(0))
+            .int("tenant", "Pachthöfe", "", col(1))
+            .int("estate", "Güter", "", col(2))
+            .int("manciana", "davon Lex Manciana", "", col(3))
+            .float("area_ha", "Felder", "ha", sums.values().map(|v| v[4] as f64 / 1e4).collect())
+            .float("sown_ha", "Gesät", "ha", sums.values().map(|v| v[5] as f64 / 1e4).collect())
+            .int("store_kg", "Hoflager", "kg", col(6))
+            .float("money", "Geld der Höfe", "Denar", sums.values().map(|v| v[7] as f64 / 1000.0).collect());
+        t
     }
 
     /// A household's kind, food, stores and farm, if the grain economy
@@ -3643,8 +3898,11 @@ mod tests {
             for _ in 0..200 {
                 p.day();
                 g.day(&mut p);
+                // S94 step 1: every denarius is booked.
+                assert_eq!(g.money_unbooked(), 0);
             }
             assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
+            assert!(g.money.minted > 0 && g.money.freight > 0 && g.treasury.wages >= g.money.minted);
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
@@ -3707,6 +3965,41 @@ mod tests {
         assert_eq!(g.free_poor.iter().sum::<i64>(), poor + fpoor);
         let h = g.hh[&id];
         assert_eq!((h.kind, h.farm, h.pantry), (TENT, NONE, pantry + store));
+    }
+
+    /// The game's tables: every column as long as the others, shares in
+    /// 0..1, the people of all rows add up, and building them changes
+    /// nothing in the state.
+    #[test]
+    fn tables_read_only() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        let before = g.fingerprint();
+        for key in crate::tables::TABLES {
+            let t = g.table(&p, key).unwrap();
+            assert!(t.rows() > 0, "{key}");
+            assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
+            assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
+            assert!(key == "state" || t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            for c in t.columns.iter().filter(|c| c.unit == "%") {
+                let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
+                assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);
+            }
+        }
+        let persons = |key: &str| match &g.table(&p, key).unwrap().column("persons").unwrap().values {
+            crate::tables::Values::Int(v) => v.iter().sum::<i64>(),
+            _ => panic!(),
+        };
+        assert_eq!(persons("markets"), persons("population"));
+        let names = g.table(&p, "markets").unwrap();
+        let crate::tables::Values::Text(n) = &names.column("region").unwrap().values else { panic!() };
+        assert!(n.iter().any(|x| x == "Rome (Roma)"), "{:?}", &n[..5]);
+        assert!(g.table(&p, "nothing").is_none());
+        assert_eq!(g.fingerprint(), before);
     }
 
     #[test]

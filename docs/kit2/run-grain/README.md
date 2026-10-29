@@ -516,6 +516,51 @@ auf 2,9 % nachgestellt, den Anteil dieses Laufs.
 Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
 d2967522adc83ce9), 54 Tests grün. Ohne Getreidewirtschaft (`people`) ändert sich nichts.
 
+## Geldkreislauf und Staatskasse (S94 Schritt 1, nur Buchung, 10 Jahre, Seed 1)
+
+Jeder Denar, der entsteht oder verschwindet, ist jetzt gebucht (`Money` und `Treasury` in
+`grain.rs`). Das Verhalten ist unverändert: gleicher Fingerabdruck wie S93. Gesucht wurden
+alle Stellen, an denen sich Geld ändert. Fast alle sind Zahlungen von einem an einen
+anderen (Verkauf, Kauf, Pacht, Händler). Übrig bleiben diese Quellen und Senken:
+
+| Posten | Art | Herkunft im Code |
+|---|---|---|
+| Geld am Anfang | Quelle | Startgeld der Händler und Senatoren/Ritter, Bargeld der Marktleute, Pacht der letzten Ernte (Platzhalter) |
+| Staatslohn | Quelle | S76: 25 Denar pro Arbeitstag an alle ausser Bauern; zuerst aus der Kasse, der Rest ist neu geprägt |
+| Startgeld neuer Haushalte | Quelle | Händler- und Senatorenhaushalte, die nach dem Start entstehen, bekommen das Startgeld |
+| Fracht | Senke | Händler zahlen die Fracht; niemand in der Simulation bekommt sie |
+| Geld aufgelöster Haushalte | Senke | ausgestorben oder zu Verwandten gezogen (S79): das Geld verschwindet mit dem Haushalt |
+| Ohne Empfänger | Senke | Pacht für einen verstorbenen Grundherrn, Ladung eines unterwegs verstorbenen Händlers |
+
+Die Staatskasse nimmt das Manciana-Drittel (S92) in Geld ein, wenn der Hof es verkauft,
+und die Steuer als Korn (bleibt liegen, S76). Sie zahlt daraus den Staatslohn; was fehlt,
+prägt der Staat. Jeden Tag gilt: Geld bei Haushalten, Höfen und Marktleuten plus Kasse =
+Anfang + geprägt + Startgeld neuer Haushalte − Fracht − aufgelöst − ohne Empfänger. Der
+Test `deterministic_fingerprint` prüft das an jedem der 200 Tage, der Lauf jedes Jahr
+(Zeile `money den (S94)`). Die Tabelle `state` liefert die Posten fürs Spiel.
+
+| Posten, Denar | Jahr 1 | Jahr 10 (Summe seit Start) |
+|---|---|---|
+| Geld am Anfang | 84,8 Mio. | 84,8 Mio. |
+| Staatslohn | 137,7 Mio. | 1'343 Mio. |
+| davon neu geprägt | 133,7 Mio. | 1'329 Mio. |
+| Manciana-Pacht in die Kasse | 4,0 Mio. | 13,9 Mio. |
+| Startgeld neuer Haushalte | 0,1 Mio. | 23,3 Mio. |
+| Fracht | 23,1 Mio. | 122,5 Mio. |
+| Geld aufgelöster Haushalte | 0,7 Mio. | 64,4 Mio. |
+| Ohne Empfänger | 0,06 Mio. | 0,4 Mio. |
+| Geld im Umlauf am Jahresende | 194,8 Mio. | 1'250 Mio. |
+| Nicht gebucht | 0 | 0 |
+| Steuerkorn | 3'248 t | 32'550 t |
+
+Die Geldmenge wächst um gut 110 Mio. Denar im Jahr, weil der Staat jeden Monat Lohn prägt
+und nichts davon als Steuer zurückholt. Auf die Preise wirkt das nicht: Der Marktpreis
+hängt nur an Lager und Nachfrage. Das ist der Stand, auf dem Steuer in Geld und Sold aus
+der Kasse aufbauen (S94 Schritt 1, nach Ramons Entscheid).
+
+Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
+d2967522adc83ce9), 55 Tests grün.
+
 ## Tempo und Speicher (4 Cloud-Kerne, Standard mit S83, S82, S84 und Arbeit aus dem Überschuss, `run100-timing.txt`)
 
 | Grösse | Wert |
@@ -582,7 +627,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
 | Grundpreis | 8,75 Denar/kg | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn für alle ausser Bauern und Händlern | 25 Denar pro Arbeitstag | S76 (Staat hat unbegrenzt Geld), Preisedikt |
-| Steuer | 10 % der Ernte, verlässt vorerst das System | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
+| Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt; leere Kasse hat keine Folge | S76; was bei leerer Kasse geschieht, ist offen |
+| Steuer | 10 % der Ernte, als Korn in die Staatskasse, dort ohne Nutzen (S94) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
 | Grundherr eines Pacht- oder Gutshofs | ein Senator oder Ritter per Zufall | S69 offen |
 | Brache | Zweifelderwirtschaft: 50 % der Felder unter Getreide; Brache braucht keine Arbeit | GRAIN-NUMBERS 2; Pflügen der Brache nicht belegt |
@@ -627,5 +673,7 @@ in Arrays nach ID statt in Hashtabellen.
 - **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87), Verderb (S88) und
   ohne die doppelt gezählten Hungertoten (S89): 0,17 % im Jahr von Jahr 10 bis 100,
   historisch 0,1–0,2 %. Mit S91–S93 jetzt 0,16 % (`run100-s93.txt`).
+- **Die Geldmenge wächst** um gut 110 Mio. Denar im Jahr (S94 Schritt 1): Staatslohn wird
+  geprägt, keine Steuer in Geld holt ihn zurück. Ohne Wirkung auf die Preise.
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.

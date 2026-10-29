@@ -94,8 +94,9 @@ void vertex() {
 		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 24.0; fill = 0.8; }
 		else {
 			c = RIPE[kind];
-			// on half the ripe fields the ears stand in light clumps
-			if (sim_hash(cell + 6.2) < 0.5) { h = 0.3; w = 0.5; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 14.0; fill = 0.5; }
+			// the ears stand in dense light rows on the sheet (a bare sheet
+			// read as an empty tray, rounds 17 and 20)
+			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 20.0; fill = 0.7;
 		}
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }

@@ -189,16 +189,16 @@ sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
 rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
-Steinecken, Balken unter der Traufe, Brettertür, Fenster mit Läden und steinerner Sohlbank (vier an der Front, zwei an jeder Schmalseite; Runde 18 breiter und höher, vorher lasen sich die Fassaden als leere Flächen),
+Steinecken, Balken unter der Traufe, Brettertür (seit Runde 21 auch eine in jeder Schmalseite, damit keine Hauswand blind bleibt), Fenster mit Läden und steinerner Sohlbank (vier an der Front, zwei an jeder Schmalseite; Runde 18 breiter und höher, vorher lasen sich die Fassaden als leere Flächen),
 Dach aus Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und
-Graten (die Firste ein mittleres Rot; dunkel lasen sie sich als Loch, Runde 19). Vier Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
+Graten (die Firste ein helles Rot, #c4664c; dunkel lasen sie sich als Loch, Runde 19, mittel noch als Naht, Runde 20). Vier Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
 eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite, hinter dem Fenster der Schmalseite zurückgesetzt, damit er keines verdeckt; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
-vor dem Haus, durch deren offenes Tor unten das Heu und darüber das dunkle Innere zu sehen ist (bis Runde 18 eine helle Strohfläche); seit Runde 20 ein zweistöckiges Haus unter Walmdach, steinernes Gesims zwischen den Geschossen, eine Aussentreppe aus Stein an der Front hinauf zur oberen Tür mit einer dunklen Kellertür unter dem Absatz, und eine Weinpergola (vier Pfosten, ein Blätterdach mit Lücken) im Hof daneben, damit das Dorf in der Höhe wechselt. Dazu Holzstoss,
+vor dem Haus, durch deren offenes Tor unten das Heu und darüber das dunkle Innere zu sehen ist (bis Runde 18 eine helle Strohfläche); seit Runde 20 ein zweistöckiges Haus unter Walmdach, steinernes Gesims zwischen den Geschossen, eine Aussentreppe aus Stein an der Front hinauf zur oberen Tür mit einer dunklen Kellertür unter dem Absatz, und eine Weinpergola (vier Pfosten, ein Blätterdach mit Lücken) im Hof daneben, damit das Dorf in der Höhe wechselt. Dazu Holzstoss (Scheite in Reihen mit dunklen Fugen, seit Runde 21 an der Rückseite des Hofs statt vor der Tür),
 Kohlbeet (dunkle runde Köpfe in Reihen, braune Erde dazwischen), Obstbaum,
 Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
-gepflegtes Gras, sichtbar heller als die Weide draussen (Runde 18 lag es noch gleich), neben dem Weg ein
+gepflegtes Gras in einem satten Grün (#4a8c3a; Runde 18 lag es gleich wie die Weide, Runde 20 bleichte es zu Mint aus), neben dem Weg ein
 Vorplatz aus gestampfter Erde (Dreschplatz) mit einem Brunnen (niedrige
 Steinfassung, dunkles Wasser, zwei Pfosten und ein Ziegeldächlein); ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
@@ -229,7 +229,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 2 km Bildbreite, damit die Dachstufen klein
 bleiben; weiter draussen flimmern ihre Ziegelreihen als Moiré), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v33_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v34_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -282,8 +282,8 @@ einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite liegt das Ackerland in quadratischen Feldern: in jedem Hofblock (der
 feinen Kachel, deren Feldblock höchstens 55 % der Kachel deckt, damit Weide zwischen
 den Höfen bleibt: Runde 17 liefen volle Blöcke zu einer Steppdecke zusammen) bilden je 3 × 3 Parzellen von 250 m ein Feld
-in einer flachen Farbe: Urbeks Weizengelb oder das helle Gelbgrün wachsenden
-Getreides (dunkler las es sich wie der Schatten einer Rampe, Runde 19), selten gepflügtes Braun; die Brache ist
+in einer flachen Farbe: Urbeks Weizengelb oder das Grün wachsenden
+Getreides (#82b85a; dunkler las es sich wie der Schatten einer Rampe, Runde 19, gelber als Giftgrün, Runde 20), selten gepflügtes Braun; die Brache ist
 beweidetes Gras, so liegen die Felder in ruhigen Gruppen auf Grün (gut die
 Hälfte bleibt Weide) und bleiben leiser als die Stadt; nur auf ebenen
 Kacheln. Runden 12 bis 18: einzelne Parzellen, Flecken von 2 × 2 km,
@@ -291,8 +291,8 @@ Streifen, ein Saatgrün zu nah an der Wiese oder vier Töne mit Ocker lasen
 sich als Tarnmuster, Konfetti oder Strichcode.
 Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
 und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16,
-helle Garben als Nieten, Runde 18); auf der Hälfte des reifen Korns stehen
-helle Ährenbüschel in dichten Reihen. Keine Platte steht am Fuss einer Rampe
+helle Garben als Nieten, Runde 18); auf allem reifen Korn stehen
+helle Ährenbüschel in dichten Reihen (Runde 21; nackte Platten lasen sich als leere Tabletts). Keine Platte steht am Fuss einer Rampe
 direkt vor ihr (nach Süden, zur Kamera): die Rampe verdeckte einen Teil, das
 Feld sah abgeschnitten aus (Runde 18; auch die Seiten und Diagonalen zu
 prüfen leerte ganze Hänge). Gassen und Feldwege halten
@@ -362,12 +362,43 @@ gegessen hat und seinen Vorrat.
   Religion, unterwegs. Der Punkt wird gross und gelb, Esc schliesst.
   Kosten nur beim Klick, kein Aufwand pro Frame.
 
+## Tabellen im Stil von EU5 (Ramon, 29.10.2026)
+
+Taste `T` (oder der Knopf links oben) öffnet links ein Panel mit vier
+Tabellen: Märkte, Bevölkerung nach Region und Beruf, Höfe nach Region und
+Staat (Kasse und Geldkreislauf seit Spielstart, S94; eine Zeile ohne Ort,
+darum als Liste aus Posten und Betrag gezeigt) (`scripts/sim/sim_tables.gd`). Die Daten liefert die Simulation
+(`sim/src/tables.rs`, `Grain::table`; Simulations-Thread): `ask_table(kind)`
+bittet den Sim-Thread darum, zwischen zwei Tagen gebaut kommt die Tabelle mit
+`take_table()` als Spalten in Packed-Arrays, mit Spaltenköpfen und Einheiten
+(`sim/godot/src/tables.rs`). Das Panel fragt neu, sobald die nächste
+Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
+
+- Klick auf einen Spaltenkopf sortiert (nochmals: umgekehrt), Zahlen grösste
+  zuerst, Namen A bis Z.
+- Suchfeld über alle Textspalten; Textspalten mit höchstens 64 Werten
+  (Beruf) bekommen ein Auswahlmenü. Beim Tippen steht die Kamera still.
+- "nach Beruf zusammenfassen" klappt die Zeilen in Gruppen mit Summen;
+  Anteile (Einheit `%`, als Prozent mit goldenem Balken), Mittelwerte
+  (`mean` im Schlüssel) und Werte je Menge (`Denar/kg`) nach Menschen
+  gewichtet, Werte je Zeit (`kg/Tag`) summiert. Die erste Zeile ist immer
+  die Summe der gefilterten Zeilen.
+- Klick auf eine Zeile fliegt die Kamera zum Ort (`lon`, `lat`, Breite aus
+  `extent_km`), in die Mitte des freien Teils neben dem Panel.
+- Je Ebene höchstens 300 Zeilen (1783 Märkte, über 20 000 Zeilen
+  Bevölkerung), der Rest als Zahl in einer letzten Zeile; Suchen oder Filtern
+  holt jede Zeile. Gruppen bauen ihre Zeilen erst beim Aufklappen.
+- Farben des Hauptmenüs (dunkles Petrol, helle Schrift) mit Gold für Köpfe,
+  Linien und Balken; Zahlen mit Hochkomma (116’805), Datum im römischen
+  Kalender ("Martius, Jahr 3").
+
 ## Bedienung
 
-`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
-`--people-warm=n` (n Tage vor dem ersten Bild rechnen).
+`--people-warm=n` (n Tage vor dem ersten Bild rechnen),
+`--tables=markets|population|farms` (Panel offen auf dieser Tabelle).
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

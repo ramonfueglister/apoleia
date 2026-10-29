@@ -296,7 +296,7 @@ func _process(delta: float) -> void:
 	var keys := Vector2(
 		Input.get_axis("ui_left", "ui_right") + float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
 		Input.get_axis("ui_up", "ui_down") + float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W)))
-	if keys != Vector2.ZERO:
+	if keys != Vector2.ZERO and not (get_viewport().gui_get_focus_owner() is LineEdit): # typing in the tables' search
 		_pan_pixels(-keys.normalized() * 900.0 * delta)
 	var k := 1.0 - exp(-SETTLE * delta)
 	target = target.lerp(_goal_target, k)

@@ -15,6 +15,7 @@ pub mod life;
 pub mod people;
 pub mod save;
 pub mod settle;
+pub mod tables;
 pub mod view;
 
 pub const MAX_LEVEL: u8 = 7;

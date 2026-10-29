@@ -52,7 +52,7 @@ const BOUNDS_HI := Vector3(10.0, 8.25, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v33_%d_%s.res"
+const CACHE := "user://farmhouse_v34_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -63,14 +63,14 @@ static var _variant := 0 # the build sample() draws
 # the plaster cream, pink or ochre and the shutters green or brown per farm.
 const PALETTE := [
 	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("ad5a44"),
-	Color("9c4a38"), Color("96463a"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color("9c4a38"), Color("c4664c"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("5e4128"), Color("b59a6c"), Color("6e4a30"), Color("d2452f"), Color("b5a586"),
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("4d683f"), Color("34482b"),
 	Color("5a4632"), Color("c09447"), Color("cebc97"), Color("8f6a2e"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
-	Color("659f55"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
+	Color("4a8c3a"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
@@ -137,9 +137,13 @@ static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float], ends: A
 	# the shade of the eaves on the wall, baked in so it shows in any light
 	if p.y >= WALL - 0.5:
 		return PLASTER_SHADE
-	# plank door in the middle of the front, set back one block
+	# plank door in the middle of the front, set back one block, and a
+	# side door in the middle of each end (a flank turned to the camera
+	# read as a back wall without one, round 20)
 	if p.z > 0.0 and az >= hz - 0.25 and absf(p.x) < 0.625 and p.y < 2.625:
 		return EMPTY if az >= hz - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
+	if ax >= hx - 0.25 and az < 0.5 and p.y < 2.625:
+		return EMPTY if ax >= hx - 0.125 else (WOOD if int(floor(p.z / 0.25)) % 2 == 0 else WOOD_DARK)
 	var win_y := p.y >= 1.875 and p.y < 3.125
 	var sill := p.y >= 1.75 and p.y < 1.875
 	if (win_y or sill) and az >= hz - 0.25:
@@ -354,10 +358,11 @@ static func _shed(p: Vector3) -> int:
 ## beds at the back, the path to the gate, a well on the forecourt of
 ## stamped earth, the kept grass of the yard and the fence.
 static func _yard(p: Vector3) -> int:
-	# a low stack of logs against the end wall, the cut ends showing as a
-	# checker of light and dark (a plain block reads as a crate)
-	if p.x >= -5.5 and p.x < -HALF_X - 0.125 and p.z >= -1.75 and p.z < 0.25 and p.y < 0.75:
-		return WOOD if p.y >= 0.5 else (LOG if posmod(int(floor(p.y / 0.25)) + int(floor(p.z / 0.25)), 2) == 0 else WOOD_DARK)
+	# a low stack of logs against the end wall beside the side door, the
+	# cut ends showing in rows (a plain block read as a crate, a checker
+	# of ends as a glitch, round 20)
+	if p.x >= -5.5 and p.x < -HALF_X - 0.125 and p.z >= -2.75 and p.z < -0.75 and p.y < 0.75:
+		return WOOD if p.y >= 0.5 else (LOG if posmod(int(floor(p.z / 0.25)), 4) != 0 else WOOD_DARK)
 	var s := Vector3(-3.5, 0.6, 4.25)
 	var q := _snap(p, 0.25)
 	var d := Vector2(q.x - s.x, q.z - s.z).length()
