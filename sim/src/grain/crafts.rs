@@ -726,10 +726,17 @@ impl Grain {
         v
     }
 
-    /// Store (units) and price (denarii per unit) of every good at every
-    /// market, in market order (`Grain::markets`). Read only.
-    pub fn market_goods(&self) -> Vec<[(f32, f32); GOODS]> {
-        self.markets.iter().map(|m| m.goods.map(|w| (w.store as f32 / 1000.0, w.price as f32 / 1000.0))).collect()
+    /// Every market's square (world km) and the store (units) and price
+    /// (denarii per unit) of every good there, in market order
+    /// (`Grain::markets`). Read only.
+    pub fn market_goods(&self) -> Vec<((f32, f32), [(f32, f32); GOODS])> {
+        self.markets
+            .iter()
+            .map(|m| {
+                let (x, z) = self.settle.fine_centre_km(m.fine);
+                ((x as f32, z as f32), m.goods.map(|w| (w.store as f32 / 1000.0, w.price as f32 / 1000.0)))
+            })
+            .collect()
     }
 
     /// Goods the dealers carried between markets lately, where either

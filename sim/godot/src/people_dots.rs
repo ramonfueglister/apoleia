@@ -13,7 +13,7 @@
 
 use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
 use crate::{tables, trips};
-use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
+use apoleia_sim::grain::{CraftsView, EventsView, GoodsMovesView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::Table;
@@ -58,6 +58,9 @@ struct Front {
     work: Option<WorkView>,
     /// Answer to the last `ask_events`.
     events: Option<EventsView>,
+    /// Answer to the last `ask_goods`: workshops, markets' goods, goods
+    /// moves (trips::goods_to_dict).
+    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView)>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
@@ -76,11 +79,12 @@ struct Queue {
     work: Option<[f64; 4]>,
     /// The day after which, and the window.
     events: Option<(i64, [f64; 4])>,
+    goods: Option<[f64; 4]>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some()
     }
 }
 
@@ -125,7 +129,7 @@ const FINE_KM: f32 = CELL_KM / FINE as f32;
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
         // questions from the game first, between two days; then a day
-        let (ask, table, trips, work, events) = {
+        let (ask, table, trips, work, events, goods) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -137,7 +141,7 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             if !asked {
                 q.days -= 1;
             }
-            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
+            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take())
         };
         if let Some(key) = &table {
             let t = grain.table(&people, key);
@@ -155,6 +159,10 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             let v = grain.events_in(&people, since, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().events = Some(v);
         }
+        if let Some([x0, z0, x1, z1]) = goods {
+            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)));
+            shared.front.lock().unwrap().goods = Some(v);
+        }
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
             let who = who.map(|p| {
@@ -163,7 +171,7 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             });
             shared.front.lock().unwrap().person = who;
         }
-        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
+        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() {
             continue;
         }
         let t0 = Instant::now();
@@ -695,6 +703,29 @@ impl ApoleiaPeople {
     fn take_work(&mut self) -> VarDictionary {
         match self.shared.front.lock().unwrap().work.take() {
             Some(v) => trips::work_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread for the craft goods (S105–S111): the workshops
+    /// and the goods moved between markets in the window (world km), and
+    /// every market's goods; the answer comes with `take_goods`.
+    #[func]
+    fn ask_goods(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().goods = None;
+        self.shared.queue.lock().unwrap().goods = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The goods asked for, once, as trips::goods_to_dict; empty until the
+    /// sim thread answered.
+    #[func]
+    fn take_goods(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().goods.take() {
+            Some((c, m, mv)) => trips::goods_to_dict(&c, &m, &mv),
             None => VarDictionary::new(),
         }
     }
