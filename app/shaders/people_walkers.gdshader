@@ -1,14 +1,19 @@
 // Carriers and wagons on their way (people_trips.gd): one instance per
-// traveller, its transform the place (x, z, world km) and heading, the
-// height from the terrain under it (as people_dots_common places the
-// figures). The mesh holds every part in metres (UV.x the part): the
+// traveller on the stretch of its route it walks now, the height from the
+// terrain under it (as people_dots_common places the figures). The GPU
+// walks it along the stretch (people_trips.gd writes it only when it
+// reaches the stretch's end, not every frame): its transform holds, row by
+// row, [d.y, 0, d.x, start x], [velocity x, 1, velocity z, start time] and
+// [-d.x, 0, d.y, start z], d its heading (world km and walk_clock seconds).
+// The mesh holds every part in metres (UV.x the part): the
 // person (0), a donkey (1) and its sacks (2), a wagon (3), its ox (4) and
 // its load (5), a hired hand's sickle (6), seed basket (7) or hoe (8);
 // or a market stall (9); INSTANCE_CUSTOM.r says which parts beyond the
-// person show, .a whether it walks (0), stands (1) or is a stall without
-// a person (2)
-// (bit part - 1), .g the walk's phase, .b the tunic colour. Legs (UV2.x the
-// side, UV2.y the hip in metres) swing as they walk.
+// person show (bit part - 1), .g how many seconds it walks on from the
+// start before it stops, .b the tunic colour plus the walk's phase as the
+// fraction, .a whether it walks (0), stands (1) or is a stall without a
+// person (2). Legs (UV2.x the side, UV2.y the hip in metres) swing as they
+// walk.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
@@ -16,6 +21,7 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 
 uniform float km_per_m = 0.0238; // diorama scale (TileTerrain.DIORAMA_KM_PER_M)
 uniform float stride = 9.0;      // leg swings per second
+uniform float walk_clock = 0.0;  // people_trips.gd's clock, seconds
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 // undyed wool and linen, madder red, woad blue, browns, a leaf green and a
 // grey blue, as the figures wear them (people_figures.gdshader TUNICS, sRGB):
@@ -69,22 +75,25 @@ void vertex() {
 	bool show = part == 0 ? still < 1.5 : ((parts >> (part - 1)) & 1) == 1;
 	// off the water: where a route crosses a river or a lake they take the
 	// bridge or the ferry, out of sight (the first ones walked on the Tiber)
-	show = show && !walker_wet(MODEL_MATRIX[3].xz);
+	// where it is now on its stretch, and its turn about y (front +z along d)
+	vec2 velocity = vec2(MODEL_MATRIX[0].y, MODEL_MATRIX[2].y);
+	vec2 at = MODEL_MATRIX[3].xz + velocity * clamp(walk_clock - MODEL_MATRIX[3].y, 0.0, INSTANCE_CUSTOM.g);
+	mat3 turn = mat3(vec3(MODEL_MATRIX[0].x, 0.0, MODEL_MATRIX[0].z), vec3(0.0, 1.0, 0.0), vec3(MODEL_MATRIX[2].x, 0.0, MODEL_MATRIX[2].z));
+	show = show && !walker_wet(at);
 	vec3 v = VERTEX;
 	if (UV2.x != 0.0 && still < 0.5) {
 		// a leg swings about its hip, the two sides in turn
-		float swing = sin(TIME * stride + INSTANCE_CUSTOM.g * 6.2831853) * UV2.x;
+		float swing = sin(TIME * stride + fract(INSTANCE_CUSTOM.b) * 6.2831853) * UV2.x;
 		v.z += swing * max(UV2.y - v.y, 0.0) * 0.45;
 	}
 	// the parts it does not have: all on one point behind the camera, without asking the ground
 	VERTEX = vec3(0.0, 0.0, 1.0e6);
 	if (show) {
-		vec2 at = MODEL_MATRIX[3].xz;
-		vec3 world = (MODEL_MATRIX * vec4(v * km_per_m, 1.0)).xyz;
+		vec3 world = turn * (v * km_per_m) + vec3(at.x, 0.0, at.y);
 		world.y = dot_ground_level(at) * level_h + v.y * km_per_m;
 		VERTEX = (VIEW_MATRIX * vec4(world, 1.0)).xyz;
 	}
-	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(NORMAL, 0.0))).xyz);
+	NORMAL = normalize((VIEW_MATRIX * vec4(turn * NORMAL, 0.0)).xyz);
 	vec3 c = COLOR.rgb;
 	if (part == 0 && all(greaterThan(c, vec3(0.99)))) { c = TUNICS[int(INSTANCE_CUSTOM.b) % 8]; } // the white tunic
 	colour = pow(c, vec3(2.2)) * COLOR.a; // the vertex alpha: the voxel corner shading
