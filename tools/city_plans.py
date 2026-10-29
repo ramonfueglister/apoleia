@@ -633,7 +633,7 @@ def preview(g, data, path_png, px=20):
         d.ellipse([q - rad, r - rad, q + rad, r + rad], fill=(255, 255, 255), outline=(60, 50, 40))
         d.text((q, r), str(b + 1), fill=(30, 20, 10), font=small, anchor="mm")
     st = stats(g)
-    d.text((10, 8), f"Massstab {g['plan'].scale:g}x: {w} x {h} Parzellen", fill=(30, 30, 30), font=font)
+    d.text((10, 8), f"{data.get('name', '')}, Massstab {g['plan'].scale:g}x: {w} x {h} Parzellen", fill=(30, 30, 30), font=font)
     d.text((10, 32), f"in der Mauer {st['inside_walls']}: Wohnen {st['house'] + st['insula'] + st['domus']}, "
            f"Strassen {st['street'] + st['bridge']}, Bauten {st['building'] + st['plaza']}",
            fill=(60, 60, 60), font=small)
