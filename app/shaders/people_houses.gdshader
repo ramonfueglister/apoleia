@@ -24,8 +24,15 @@ const uint VARIANTS = 3u;
 
 varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
-varying vec3 art_light; // ART_LIGHT in view space
-const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
+varying vec3 art_light; // HOUSE_LIGHT in view space
+// towards the light on the houses, world: as high as the terrain's
+// SimCity light (tile_terrain.gdshader ART_LIGHT, so roofs and yards on top
+// match the ground round them) but from where the scene's sun stands
+// (west-south-west, weather_system.gd), so the west walls are the lit ones,
+// the fronts a step darker and the east walls in shade, in step with the
+// shadows the houses cast (round 18: lit from the south-west the fronts and
+// west walls came out alike and the houses looked flat)
+const vec3 HOUSE_LIGHT = vec3(-0.63, 0.72, 0.294);
 // plaster (cream, pink, ochre, warm white) and shutters of the town buildings (prototypes/colosseum/city_buildings.gd), sRGB; only their ratios to the first tint the farmhouse (farmhouse.gd PLASTER)
 const vec3 WALLS[4] = vec3[](vec3(0.922, 0.875, 0.784), vec3(0.925, 0.769, 0.659), vec3(0.851, 0.706, 0.471), vec3(0.937, 0.886, 0.784));
 const vec3 SHUTTER_GREEN = vec3(0.373, 0.498, 0.275);
@@ -94,7 +101,7 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	normal = NORMAL;
-	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
+	art_light = normalize((VIEW_MATRIX * vec4(HOUSE_LIGHT, 0.0)).xyz);
 }
 
 void fragment() {
@@ -103,9 +110,7 @@ void fragment() {
 	ROUGHNESS = 1.0;
 }
 
-// The sun's light from the terrain's fixed SimCity direction (south-west,
-// ART_LIGHT) instead of its own, so the walls turned
-// to the camera are the lit ones, as in Urbek and SimCity 2000; colour,
+// The sun's light from HOUSE_LIGHT instead of its own direction; colour,
 // strength and the shadows of other things stay the sun's. Faces turned
 // away from the real sun are not darkened by its shadow map.
 

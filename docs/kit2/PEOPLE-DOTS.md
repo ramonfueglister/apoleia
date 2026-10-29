@@ -195,14 +195,14 @@ Graten. Drei Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
 eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite, hinter dem Fenster der Schmalseite zurückgesetzt, damit er keines verdeckt; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
-vor dem Haus, durch deren offenes Tor das Heu zu sehen ist. Dazu Holzstoss,
+vor dem Haus, durch deren offenes Tor unten das Heu und darüber das dunkle Innere zu sehen ist (bis Runde 18 eine helle Strohfläche). Dazu Holzstoss,
 Kohlbeet (dunkle runde Köpfe in Reihen, braune Erde dazwischen), Obstbaum,
 Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
-gepflegtes Gras, eine Spur frischer als die Weide draussen, neben dem Weg ein
+gepflegtes Gras, sichtbar heller als die Weide draussen (Runde 18 lag es noch gleich), neben dem Weg ein
 Vorplatz aus gestampfter Erde (Dreschplatz) mit einem Brunnen (niedrige
 Steinfassung, dunkles Wasser, zwei Pfosten und ein Ziegeldächlein); ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
-hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4,75 m hohe Wände (Runde 18; vorher war das Haus von oben zu 60 % Dach)
+hoch), ein dunkler Olivenbaum (Runde 18 so hell wie die Wiese, ein Geist) und ein Heuhaufen. Putz warm creme, 4,75 m hohe Wände (Runde 18; vorher war das Haus von oben zu 60 % Dach)
 unter einem flachen Walmdach (23°), damit das Dach das Haus von oben nicht
 verschluckt; Dach tiefes, nicht grelles Terrakotta: die Trittflächen sind
 dunkler angelegt, als sie erscheinen, da Sonne und Tonemapping sie sonst
@@ -215,7 +215,12 @@ Farben haben eigene Indizes). Jede Dachfläche ist als eine Ebene nach ihrer
 Neigung beleuchtet (Tritt- und Stossflächen der Ziegelreihen bekommen die
 Normale der Dachfläche, die Stossflächen eine Stufe dunkler), so ist die
 Seite zum Licht hell, die abgewandte als Ganzes im Schatten, ohne fast
-schwarze Ziegelstreifen (Runde 16). Das Haus steht je
+schwarze Ziegelstreifen (Runde 16). Das Licht auf den Häusern steht so hoch
+wie das SimCity-Licht der Terrain (Dächer und Hof passen zum Boden), kommt
+aber aus der Richtung der Sonne (Westsüdwest): die Westwände hell, die
+Fronten eine Stufe dunkler, die Ostwände im Schatten, passend zu den
+Schatten der Häuser (Runde 18: Front und Westwand gleich hell, die Häuser
+wirkten flach). Das Haus steht je
 Parzelle anders (Front mit Tür und Weg zur Kamera auf der Hälfte der Parzellen,
 sonst eine Flanke, nie die Rückseite; gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
@@ -224,7 +229,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 2 km Bildbreite, damit die Dachstufen klein
 bleiben; weiter draussen flimmern ihre Ziegelreihen als Moiré), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v31_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v32_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -269,24 +274,31 @@ etwa 25 ms:
 
 `sim_map.gdshaderinc` zeichnet das in der Terrain: Parzellen von einer halben
 Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Block um die Mitte jeder feinen
-Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
+Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln (nach den
+Ecken, wie sie sind: gerundet galt eine Kachel unter einer Rampe über mehrere
+Kacheln als eben, Runde 18), die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
-Bildbreite liegt das Ackerland in Streifenfluren: in jedem Hofblock (der
+Bildbreite liegt das Ackerland in quadratischen Feldern: in jedem Hofblock (der
 feinen Kachel, deren Feldblock höchstens 55 % der Kachel deckt, damit Weide zwischen
-den Höfen bleibt: Runde 17 liefen volle Blöcke zu einer Steppdecke zusammen) bilden je 2 × 3 Parzellen von 250 m ein Feld,
-alle in eine Richtung, jedes Feld in einer flachen Farbe:
-Urbeks Weizengelb, das dunklere Grün wachsenden Getreides (klar unter der Wiese), goldene Stoppel, ab und zu
-ein helleres gepflügtes Braun; die meiste Brache ist beweidetes Gras, so
-liegen die Felder auf Grün und bleiben leiser als die Stadt; nur auf ebenen
-Kacheln. Runden 12 bis 16: einzelne Parzellen, Flecken von 2 × 2 km oder
-250-m-Streifen in vier gleich lauten Tönen lasen sich als Tarnmuster,
-Konfetti oder Strichcode; Runde 17: Saatgrün zu nah an der Wiese.
+den Höfen bleibt: Runde 17 liefen volle Blöcke zu einer Steppdecke zusammen) bilden je 3 × 3 Parzellen von 250 m ein Feld
+in einer flachen Farbe: Urbeks Weizengelb oder das dunklere Grün wachsenden
+Getreides (klar unter der Wiese), selten gepflügtes Braun; die Brache ist
+beweidetes Gras, so liegen die Felder in ruhigen Gruppen auf Grün (gut die
+Hälfte bleibt Weide) und bleiben leiser als die Stadt; nur auf ebenen
+Kacheln. Runden 12 bis 18: einzelne Parzellen, Flecken von 2 × 2 km,
+Streifen, ein Saatgrün zu nah an der Wiese oder vier Töne mit Ocker lasen
+sich als Tarnmuster, Konfetti oder Strichcode.
 Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
-und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16);
-auf der Hälfte der Brachen stehen helle Garben in lockeren Reihen und auf der
-Hälfte des reifen Korns helle Ährenbüschel, damit keine Platte leer wie ein
-Tablett liegt (Runde 17),
+und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16,
+helle Garben als Nieten, Runde 18); auf der Hälfte des reifen Korns stehen
+helle Ährenbüschel in dichten Reihen. Keine Platte steht am Fuss einer Rampe
+direkt vor ihr (nach Süden, zur Kamera): die Rampe verdeckte einen Teil, das
+Feld sah abgeschnitten aus (Runde 18; auch die Seiten und Diagonalen zu
+prüfen leerte ganze Hänge). Gassen und Feldwege halten
+die Platten frei (`crop_box`), und eine Dorfgasse läuft als Feldweg eine
+Hofbreite weiter zwischen die Felder, statt am Dorfrand vor einer Platte zu
+enden (Runde 17),
 und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
 (`people_crop_slab.gdshaderinc`, geteilt vom Feld- und vom
 Platzierungs-Shader).
@@ -299,7 +311,7 @@ Taste `G` schaltet das aus und an. Was gezeigt wird, hängt an der
 Sichtbreite (`sim_view_km`), nicht an der Pixelgrösse, damit kein Umschalten
 als Naht durchs Bild läuft: einzelne Parzellen, Feldplatten und Dorfgassen
 bis 8 km, ganze Feldblöcke je eine Frucht bis 40 km, Trampelpfade bis 10 km,
-Handelswege und Strassen unter 100 km, Seewege bis 150 km.
+Handelswege und Strassen unter 40 km (weiter draussen lasen sie sich als Kratzer), Seewege bis 150 km.
 
 Jede Parzelle trägt eine Frucht (`sim_crop_kind`, Hash der Parzelle; fern
 je Feldblock): Weizen 40 %, Gerste 20 %, Gemüse und Bohnen 25 %, Reben 15 %.

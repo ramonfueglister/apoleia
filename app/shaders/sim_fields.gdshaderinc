@@ -56,9 +56,11 @@ bool sim_house_lot(vec2 p) {
 
 // A flat tile under p (no ramp): the crops stand only on flat ground, the
 // ramps carry their colour (sim_map.gdshaderinc), as their rows and slabs
-// cannot fold with the ramp's triangles.
+// cannot fold with the ramp's triangles. The corners as they are, not
+// rounded: a ramp over several tiles has corners a fraction of a level
+// apart, and a slab on one cut a corner off (round 18).
 bool sim_flat(vec2 p) {
-	vec4 r = round(tt_corners_cached(ivec2(floor((p - world_min) / tile_km))));
+	vec4 r = tt_corners_cached(ivec2(floor((p - world_min) / tile_km)));
 	return max(max(r.x, r.y), max(r.z, r.w)) - min(min(r.x, r.y), min(r.z, r.w)) < 0.01;
 }
 
@@ -84,12 +86,23 @@ vec2 sim_lot_front(vec2 lot) {
 // 2 x 2 parcels), so they pass between the fields: between neighbouring
 // farmhouse lots (the streets of a village) and along the side each
 // farmhouse faces, where its path meets them; no ring round a lone farm
-// (graph paper). Distance (km) from p to the nearest lane, large without one.
+// (graph paper). A street of the village runs on along its line for one
+// more lot as a track between the fields, so it does not end blind at the
+// village's edge (round 17: a lane ran into a wheat slab). Distance (km)
+// from p to the nearest lane, large without one.
 const float SIM_LANE_KM = 0.013; // half width
+bool sim_lot_house(vec2 lot) {
+	return sim_house_lot(world_min + (lot + 0.5) * sim_lot_km);
+}
+// Whether a lane runs on the line between lot (index from world_min) and lot + dir.
 bool sim_lane_between(vec2 lot, vec2 dir) {
-	bool here = sim_house_lot(world_min + (lot + 0.5) * sim_lot_km);
-	bool there = sim_house_lot(world_min + (lot + dir + 0.5) * sim_lot_km);
-	return (here && (there || sim_lot_front(lot) == dir)) || (there && sim_lot_front(lot + dir) == -dir);
+	bool here = sim_lot_house(lot);
+	bool there = sim_lot_house(lot + dir);
+	if (here || there) {
+		return (here && (there || sim_lot_front(lot) == dir)) || (there && sim_lot_front(lot + dir) == -dir);
+	}
+	vec2 e = dir.yx; // along the line
+	return (sim_lot_house(lot + e) && sim_lot_house(lot + e + dir)) || (sim_lot_house(lot - e) && sim_lot_house(lot - e + dir));
 }
 float sim_lane(vec2 p) {
 	if (sim_lots_n == 0 || sim_view_km > SIM_CROPS_KM) { return 1e9; }

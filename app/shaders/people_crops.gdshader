@@ -47,7 +47,6 @@ const vec3 BARLEY_GREEN = vec3(0.32, 0.48, 0.18); // a little yellower than the 
 const vec3 RIPE[2] = vec3[](vec3(0.68, 0.64, 0.36), vec3(0.72, 0.68, 0.46)); // wheat, barley (Urbek's wheat #c0c672 lit)
 const vec3 FALLOW = vec3(0.62, 0.6, 0.32);       // dry stubble, Urbek's wheat #cdc373 lit: the warm yellow of the farmland
 const vec3 STUBBLE = vec3(0.62, 0.54, 0.38);
-const vec3 SHEAF = vec3(0.8, 0.72, 0.42);        // sheaves standing on the stubble, lighter than it
 const vec3 LEAVES = vec3(0.2, 0.42, 0.17);
 const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
@@ -80,17 +79,13 @@ void vertex() {
 	// clumps per row (0: closed)
 	float h = 0.0;
 	float w = 0.0;
-	bool sparse = false; // rows on every other line only
 	vec3 rc = LEAVES;
 	clumps = 0.0;
 	fill = 0.38;
 	if (state == 1) {
-		// a flat sheet as Urbek's, high enough to show its edge; on half the
-		// parcels the sheaves stand on it in sparse rows, lighter than the
-		// stubble (dark tufts read as ticks, round 16; bare sheets as empty
-		// trays, round 17)
+		// a flat sheet as Urbek's, high enough to show its edge (dark tufts
+		// on it read as ticks, round 16; light sheaves as studs, round 18)
 		c = FALLOW;
-		if (sim_hash(cell + 6.2) < 0.5) { h = 0.45; w = 0.55; rc = SHEAF; clumps = 6.0; fill = 0.3; sparse = true; }
 		kind = -1;
 	} else if (grain) {
 		if (g <= 0.0) { c = STUBBLE; }
@@ -118,7 +113,7 @@ void vertex() {
 	bool base = UV.x == -1.0;
 	bool fence = UV.x == -2.0;
 	bool row = UV.x >= 0.0;
-	if (row && (h <= 0.0 || ((kind == SIM_VINES || sparse) && int(UV.y) % 2 == 1))) { show = false; }
+	if (row && (h <= 0.0 || (kind == SIM_VINES && int(UV.y) % 2 == 1))) { show = false; }
 	// the fields next to a farmhouse lot fenced all round, none further out
 	int side = int(UV.y) / 16;
 	if (fence) {
@@ -146,7 +141,7 @@ void vertex() {
 		// north-south, away from the camera, as lumpy lines with the soil
 		// between them (east-west their stacked fronts read as blinds)
 		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
-		quarter = grain || sparse ? 1 : 0;
+		quarter = grain ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
@@ -183,6 +178,11 @@ void vertex() {
 	for (int i = 0; i < quarter; i++) {
 		off = vec2(-off.y, off.x);
 		nrm.xz = vec2(-nrm.z, nrm.x);
+	}
+	// the slab, its rows and fence fitted into the parcel's slab (clear of lanes)
+	if (!sheep) {
+		vec4 box = crop_box(cell, size);
+		off = (box.xy + box.zw) * 0.5 + off * (box.zw - box.xy) / inner;
 	}
 	vec2 p = mid + off;
 	float level = dot_ground_level(p);

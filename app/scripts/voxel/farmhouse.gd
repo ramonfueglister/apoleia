@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v31_%d_%s.res"
+const CACHE := "user://farmhouse_v32_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -57,11 +57,11 @@ const PALETTE := [
 	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("5e4128"), Color("b59a6c"), Color("6e4a30"), Color("d2452f"), Color("b5a586"),
-	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("5c7946"), Color("3d5433"),
+	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("4d683f"), Color("34482b"),
 	Color("5a4632"), Color("c09447"), Color("cebc97"), Color("8f6a2e"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
-	Color("5c8f51"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
+	Color("659f55"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
@@ -220,7 +220,9 @@ static func _barn(p: Vector3) -> int:
 	var front := p.z >= BARN_Z.y - 0.25
 	var end := front or p.z < BARN_Z.x + 0.25
 	if not end and dx < 1.75:
-		return STRAW # the hay, seen through the door
+		# the hay, seen through the door, and the dark barn over it (a
+		# barn full to the roof read as a lit panel, round 18)
+		return STRAW if p.y < 1.0 else WINDOW
 	if p.y < 0.375:
 		return PLINTH
 	if dx >= 1.75 and end:

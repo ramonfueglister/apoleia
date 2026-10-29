@@ -43,29 +43,25 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// Further out the farmland lies in fields of 2 x 3 parcels, as the Roman
-// land was laid out in strips: in each farm's block (the fine tile,
-// sim_parcel) the fields all run one way, each in one flat colour a clear
-// step from the pasture: Urbek's wheat yellow, the darker green of growing
-// grain, golden stubble, now and then ploughed brown; most fallow is
-// grazed grass, so the fields lie in clusters on green and stay quieter
-// than the town (rounds 12-17: single parcels, 2 x 2 km blotches, long
-// strips or a crop green too close to the grass read as camouflage,
-// confetti or a barcode).
-const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a field is 2 x 3 of them
+// Further out the farmland lies in square fields of 3 x 3 parcels in each
+// farm's block (the fine tile, sim_parcel), each in one flat colour a
+// clear step from the pasture: Urbek's wheat yellow or the darker green of
+// growing grain, now and then ploughed brown; the fallow is grazed grass,
+// so the fields lie in calm clusters on green and stay quieter than the
+// town (rounds 12-18: single parcels, 2 x 2 km blotches, strips, a crop
+// green too close to the grass or four tones read as camouflage, confetti
+// or a barcode).
+const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a field is 3 x 3 of them
 vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
-	bool along_x = sim_hash(farm + 9.1) < 0.5;
-	vec2 c = along_x ? cell.yx : cell; // (across, along) the fields
-	vec2 strip = farm * 13.0 + vec2(floor(c.x * 0.5), floor(c.y / 3.0) * 0.37);
+	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
-	vec3 stubble = vec3(0.6, 0.51, 0.31);      // #c4a865
 	vec3 ploughed = vec3(0.5, 0.37, 0.25);     // #a5774f
 	vec3 green = vec3(0.25, 0.445, 0.19);      // #5a9a3c
 	float h = sim_hash(strip + 3.7);
-	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.6 ? GROUND_RGB[G_MEADOW] : h < 0.88 ? stubble : ploughed; }
+	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);
-	return g < 0.1 ? ploughed : g < 0.55 ? green : wheat;
+	return g < 0.5 ? green : wheat;
 }
 
 // Fields on open land (`land`, the terrain's landscape here), on the
@@ -196,10 +192,11 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 		c = mix(c, C_BANK * 0.82, sim_band(lane, SIM_LANE_KM + fw_km, fw_km));
 		c = mix(c, C_BANK * vec3(1.02, 0.94, 0.9), sim_band(lane, SIM_LANE_KM, fw_km));
 	}
-	// trade roads up to 100 km of view: a light paved band with a darker
+	// trade roads up to 40 km of view: a light paved band with a darker
 	// edge, at least 3 px, so they read as roads and not as scratches;
-	// further out the map is calm
-	if (sim_view_km < 100.0) {
+	// further out the map is calm (rounds 17-18: at 70 km they read as
+	// scratches over the plateaus)
+	if (sim_view_km < 40.0) {
 		vec3 r = sim_roads(p);
 		if (r.y > 0.0) {
 			bool road = r.y >= 2.0;
