@@ -97,6 +97,33 @@ const SWITCH_PCT: i64 = 110;
 /// more of everything (PLACEHOLDER: up to three times the plain need).
 const RICH: [i64; 2] = [4, 20];
 
+/// Goods moves kept for the view (`goods_moves_in`), days.
+const MOVES_KEEP_DAYS: i64 = 28;
+
+/// Workshops in a box (`Grain::crafts_in`), one entry per craft
+/// household: household, craft (CRAFT_NAMES, 1–3), share of the month's
+/// work the dealers took (0–255), fine cell and place in world km.
+#[derive(Default, Clone, Debug)]
+pub struct CraftsView {
+    pub household: Vec<i64>,
+    pub craft: Vec<u8>,
+    pub util: Vec<u8>,
+    pub fine: Vec<u32>,
+    pub at: Vec<(f32, f32)>,
+}
+
+/// Goods carried between markets in the last MOVES_KEEP_DAYS days that
+/// start or end in a box (`Grain::goods_moves_in`): day, good (GOOD_KEYS),
+/// units, and the two markets' places in world km.
+#[derive(Default, Clone, Debug)]
+pub struct GoodsMovesView {
+    pub day: Vec<i64>,
+    pub good: Vec<u8>,
+    pub units: Vec<f32>,
+    pub from: Vec<(f32, f32)>,
+    pub to: Vec<(f32, f32)>,
+}
+
 /// A craft: what it makes, how much a day, from what.
 struct Craft {
     out: usize,
@@ -152,6 +179,9 @@ pub(super) struct HhGoods {
     pub home_days: i64,
     /// S111: days of work it hires for money this month, still open.
     pub serve_days: i64,
+    /// For the view only (`crafts_in`): share of this month's working days
+    /// whose goods the dealers took, × 255.
+    pub util: u8,
 }
 
 /// What a farm owns of the goods.
@@ -462,6 +492,9 @@ impl Grain {
                 m.money += net;
                 self.earn(id, -net);
                 self.stats.goods.made[c.out] += q;
+                g.util = (q * 255 / (days * c.per_day).max(1)).clamp(0, 255) as u8;
+            } else {
+                g.util = 0;
             }
         } else if state {
             self.stats.goods.state_months += 1;
@@ -533,6 +566,7 @@ impl Grain {
     /// (S108). PLACEHOLDER: the goods arrive the same day, without trips.
     pub(super) fn goods_trade(&mut self, day: i64) {
         let wd = day.rem_euclid(7) as usize;
+        self.goods_moves.retain(|m| m.0 > day - MOVES_KEEP_DAYS);
         for mi in (wd..self.markets.len()).step_by(7) {
             let out_cost = self.markets[mi].out_cost;
             for g in 0..GOODS {
@@ -587,6 +621,7 @@ impl Grain {
                 m.money -= pay + freight;
                 self.money.freight += freight;
                 self.stats.goods.moved[g] += q;
+                self.goods_moves.push((day, src as u32, mi as u32, g as u8, q));
             }
         }
     }
@@ -667,5 +702,53 @@ impl Grain {
             out[s.kind as usize] += s.money + if s.farm != NONE { self.farms[s.farm as usize].money } else { 0 };
         }
         (out.map(|x| x as f64 / 1000.0), self.markets.iter().map(|m| m.money).sum::<i64>() as f64 / 1000.0)
+    }
+}
+
+impl Grain {
+    /// Craft households (workshops) in the box (world km). Read only.
+    pub fn crafts_in(&self, min: (f64, f64), max: (f64, f64)) -> CraftsView {
+        let mut v = CraftsView::default();
+        for (&id, s) in self.hh.iter() {
+            if s.goods.craft == 0 || !matches!(s.kind, WAGE | TRADER) {
+                continue;
+            }
+            let (x, z) = self.settle.fine_centre_km(s.fine);
+            if x < min.0 || x > max.0 || z < min.1 || z > max.1 {
+                continue;
+            }
+            v.household.push(id as i64);
+            v.craft.push(s.goods.craft);
+            v.util.push(s.goods.util);
+            v.fine.push(s.fine);
+            v.at.push((x as f32, z as f32));
+        }
+        v
+    }
+
+    /// Store (units) and price (denarii per unit) of every good at every
+    /// market, in market order (`Grain::markets`). Read only.
+    pub fn market_goods(&self) -> Vec<[(f32, f32); GOODS]> {
+        self.markets.iter().map(|m| m.goods.map(|w| (w.store as f32 / 1000.0, w.price as f32 / 1000.0))).collect()
+    }
+
+    /// Goods the dealers carried between markets lately, where either
+    /// market lies in the box (world km). Read only.
+    pub fn goods_moves_in(&self, min: (f64, f64), max: (f64, f64)) -> GoodsMovesView {
+        let mut v = GoodsMovesView::default();
+        let inside = |(x, z): (f64, f64)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1;
+        for &(day, from, to, g, q) in &self.goods_moves {
+            let a = self.settle.fine_centre_km(self.markets[from as usize].fine);
+            let b = self.settle.fine_centre_km(self.markets[to as usize].fine);
+            if !inside(a) && !inside(b) {
+                continue;
+            }
+            v.day.push(day);
+            v.good.push(g);
+            v.units.push(q as f32 / 1000.0);
+            v.from.push((a.0 as f32, a.1 as f32));
+            v.to.push((b.0 as f32, b.1 as f32));
+        }
+        v
     }
 }
