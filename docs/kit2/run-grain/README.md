@@ -529,13 +529,14 @@ anderen (Verkauf, Kauf, Pacht, Händler). Übrig bleiben diese Quellen und Senke
 | Staatslohn | Quelle | S76: 25 Denar pro Arbeitstag an alle ausser Bauern; zuerst aus der Kasse, der Rest ist neu geprägt |
 | Startgeld neuer Haushalte | Quelle | Händler- und Senatorenhaushalte, die nach dem Start entstehen, bekommen das Startgeld |
 | Fracht | Senke | Händler zahlen die Fracht; niemand in der Simulation bekommt sie |
-| Geld aufgelöster Haushalte | Senke | ausgestorben oder zu Verwandten gezogen (S79): das Geld verschwindet mit dem Haushalt |
+| Mit Auswanderern fort | Senke | S97: Haushalte, die die Karte verlassen, nehmen ihr Geld mit (vor S97: jedes Geld aufgelöster Haushalte verschwand) |
 | Ohne Empfänger | Senke | Pacht für einen verstorbenen Grundherrn, Ladung eines unterwegs verstorbenen Händlers |
 
 Die Staatskasse nimmt das Manciana-Drittel (S92) in Geld ein, wenn der Hof es verkauft,
-und die Steuer als Korn (bleibt liegen, S76). Sie zahlt daraus den Staatslohn; was fehlt,
+seit S97 den erblosen Nachlass ausgestorbener Haushalte, und die Steuer als Korn (bleibt liegen, S76). Sie zahlt daraus den Staatslohn; was fehlt,
 prägt der Staat. Jeden Tag gilt: Geld bei Haushalten, Höfen und Marktleuten plus Kasse =
-Anfang + geprägt + Startgeld neuer Haushalte − Fracht − aufgelöst − ohne Empfänger. Der
+Anfang + geprägt + Startgeld neuer Haushalte − Fracht − mit Auswanderern fort − ohne Empfänger
+(vor S97: − aufgelöst). Der
 Test `deterministic_fingerprint` prüft das an jedem der 200 Tage, der Lauf jedes Jahr
 (Zeile `money den (S94)`). Die Tabelle `state` liefert die Posten fürs Spiel.
 
@@ -565,6 +566,47 @@ der Kasse aufbauen (S94 Schritt 1, nach Ramons Entscheid).
 
 Gleicher Fingerabdruck mit 1 und 4 Threads über 10 Jahre (people 78eeb63edba0467e, grain
 d2967522adc83ce9), 55 Tests grün.
+
+## Fernhändler verkaufen nur gegen Bargeld (S96, 10 Jahre, Seed 1, `run10-s96-trader-cash.txt`)
+
+Vorher bezahlten die Marktleute jede Händlerladung voll, auch aus leerer Kasse. Nach zwei
+Jahren lag das Händlergeld zusammen bei -250 Mio. Denar, ein Kredit, den niemand beschlossen
+hatte. Jetzt kaufen sie wie bei den Bauern nur, soweit ihr Bargeld reicht. Der Rest geht
+zurück an den Heimatmarkt, und was auch dort niemand kaufen kann, kommt in die
+Vorratskammer des Händlers.
+
+| Grösse, Jahr 10 | vorher | jetzt |
+|---|---|---|
+| Märkte mit negativem Händlergeld (Jahr 5) | 708 | 0 |
+| Fernhandel | 3'414 t | 3'256 t |
+| Hungertote | 97 | 125 |
+| Getreidepreis Rom | 4,37 Denar/kg | 24,17 Denar/kg |
+| Menschen | 114'480 | 114'094 |
+
+Rom bekommt weniger Einfuhr, weil seine Marktleute nicht mehr auf Pump kaufen. Gleicher
+Fingerabdruck mit 1 und 4 Threads (people e96a6d3747c2f174, grain 39efd3bb9f66f013), die
+Geldbilanz geht auf, 55 Tests grün.
+
+## Geld aufgelöster Haushalte: mitnehmen, sonst an den Staat (S97, 10 Jahre, Seed 1, `run10-s97-estates.txt`)
+
+Vorher verschwand das Geld eines Haushalts, der sich auflöste, über 100 Jahre die Hälfte
+des geprägten Geldes. Jetzt nimmt es mit, wer zu Verwandten zieht (S79, auch über eine
+Kette von Zuzügen im selben Monat), wer die Karte verlässt, nimmt es mit hinaus, und ohne
+Erben fällt es an die Staatskasse (bona vacantia). Die Kasse zahlt daraus zuerst den
+Staatslohn, es wird also weniger geprägt.
+
+| Grösse, Summe Jahr 1 bis 10 | vorher (S96) | jetzt |
+|---|---|---|
+| Verschwunden mit aufgelösten Haushalten | 64,4 Mio. Denar | 0 |
+| Erbloser Nachlass in die Kasse | 0 | 32,9 Mio. Denar |
+| Mit Auswanderern fort | 0 | 1,9 Mio. Denar |
+| Neu geprägt | 1'329 Mio. Denar | 1'292 Mio. Denar |
+| Geld im Umlauf, Jahr 10 | 1'250 Mio. Denar | 1'280 Mio. Denar |
+| Nicht gebucht | 0 | 0 |
+
+Der Rest der früheren Senke geht an Verwandte. Gleicher Fingerabdruck mit 1 und 4 Threads
+(people 1047146168fd41e0, grain dd0699dc38689749), 55 Tests grün. In der Tabelle `state` ersetzen `estates`
+(erbloser Nachlass) und `left_map` die Spalte `dissolved`.
 
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
@@ -660,7 +702,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Vorrat und Kauf | Höfe behalten Nahrung bis zur nächsten Ernte plus 60 Tage; andere kaufen unter 30 Tagen bis 60 Tage | frei gewählt |
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
 | Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
-| Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht | frei gewählt |
+| Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht; Unverkauftes in die eigene Vorratskammer (S96) | frei gewählt |
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
 | Not (S66) | weniger als 80 % gegessen | frei gewählt |
@@ -699,7 +741,7 @@ in Arrays nach ID statt in Hashtabellen.
   historisch 0,1–0,2 %. Mit S91–S93 jetzt 0,16 % (`run100-s93.txt`).
 - **Die Geldmenge wächst** um gut 110 Mio. Denar im Jahr (S94 Schritt 1): Staatslohn wird
   geprägt, keine Steuer in Geld holt ihn zurück. Ohne Wirkung auf die Preise. Über 100
-  Jahre verschwindet die Hälfte des geprägten Geldes mit Haushalten, die aussterben oder zu
-  Verwandten ziehen: Geld wird nicht vererbt und nicht mitgenommen (wie der Vorrat, S79).
+  Jahre verschwand vor S97 die Hälfte des geprägten Geldes mit aufgelösten Haushalten; seit
+  S97 geht es an Verwandte oder die Staatskasse.
 - **Mit Brache bremst das Land** (0,16 % im Jahr über 100 Jahre). Wie stark, hängt am
   rodbaren Land und an der Brache; beides sind Platzhalter.

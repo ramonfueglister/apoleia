@@ -532,7 +532,7 @@ pub struct GrainTiming {
 /// in milli-denarii since the start. Booking only: nothing here changes
 /// what households, farms or dealers do, and it is not in the fingerprint.
 /// At every day's end: money held (households, farms, dealers) + the
-/// treasury's cash = start + minted + endowed − freight − dissolved −
+/// treasury's cash = start + minted + endowed − freight − left_map −
 /// no_payee (`Grain::money_unbooked` is 0).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Money {
@@ -548,22 +548,24 @@ pub struct Money {
     /// Freight paid by traders (cost per kg of the route); nobody in the
     /// simulation receives it.
     pub freight: i64,
-    /// Money of households that died out or were joined to others.
-    pub dissolved: i64,
+    /// Money that left the map with the households that left it (S97).
+    pub left_map: i64,
     /// Payments whose receiver is gone: rent for a landlord who died or a
     /// farm without one, a load sold for a trader who died on the way.
     pub no_payee: i64,
 }
 
 /// The state's account (S94, step 1), since the start. In: the Manciana
-/// third (S92), sold at market with the farm's grain, in money; the tax in
-/// kind as grain. Out: the state wage (S76), from cash first, the rest
-/// minted (`Money::minted`).
+/// third (S92), sold at market with the farm's grain, in money; the money
+/// of households that died out without heirs (S97, bona vacantia); the tax
+/// in kind as grain. Out: the state wage (S76), from cash first, the rest
+/// minted (`Money::minted`, S95).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Treasury {
     pub cash: i64,
     pub wages: i64,
     pub rent: i64,
+    pub estates: i64,
     /// Tax grain received, kg. It leaves the economy (no use yet, S76).
     pub grain_kg: i64,
 }
@@ -1286,6 +1288,11 @@ impl Grain {
             let log = std::mem::take(&mut p.split_log);
             self.inherit_equal(&log);
         }
+        // S97: where the money of a household that is gone goes: with its
+        // people to the relative they joined (following a chain of joins),
+        // off the map with those who left, else (died out) to the treasury.
+        let joined: FxHashMap<u32, u32> = std::mem::take(&mut p.join_log).into_iter().collect();
+        let left: FxHashMap<u32, ()> = std::mem::take(&mut p.leave_log).into_iter().map(|h| (h, ())).collect();
         // Households gone or moved: free their farm.
         let ids = sorted_keys(&self.hh);
         for id in ids {
@@ -1310,8 +1317,26 @@ impl Grain {
                     h.farm = NONE;
                     h.kind = TENT;
                 } else {
-                    self.money.dissolved += s.money;
                     self.hh.remove(&id);
+                    let mut to = id;
+                    for _ in 0..8 {
+                        match joined.get(&to) {
+                            Some(&k) if !self.hh.contains_key(&k) || !self.info.contains_key(&k) => to = k,
+                            Some(&k) => {
+                                to = k;
+                                break;
+                            }
+                            None => break,
+                        }
+                    }
+                    if to != id && self.info.contains_key(&to) && self.hh.contains_key(&to) {
+                        self.hh.get_mut(&to).unwrap().money += s.money;
+                    } else if left.contains_key(&id) {
+                        self.money.left_map += s.money;
+                    } else {
+                        self.treasury.cash += s.money;
+                        self.treasury.estates += s.money;
+                    }
                 }
             }
         }
@@ -2257,18 +2282,21 @@ impl Grain {
                 }
             }
             EXPORT => {
-                // Sell the load here, tell this market the prices known at
-                // home, then go home empty.
+                // Sell the load here as far as the dealers' cash goes (as
+                // the farms, PLACEHOLDER), tell this market the prices known
+                // at home, then go home with the rest.
                 let m = &mut self.markets[mi];
-                let pay = t.kg * Self::buy_price(m);
-                m.store += t.kg;
+                let price = Self::buy_price(m);
+                let kg = t.kg.min(m.money / price.max(1)).max(0);
+                let pay = kg * price;
+                m.store += kg;
                 m.money -= pay;
-                self.stats.traded_kg += t.kg;
+                self.stats.traded_kg += kg;
                 match self.hh.get_mut(&t.hh) {
                     Some(h) => h.money += pay,
                     None => self.money.no_payee += pay,
                 }
-                t.kg = 0;
+                t.kg -= kg;
                 self.share_news(t.market, t.dest, day);
             }
             IMPORT => {
@@ -2334,7 +2362,7 @@ impl Grain {
     /// Money that appeared or vanished without a booking (S94: 0).
     pub fn money_unbooked(&self) -> i64 {
         let m = self.money;
-        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed - m.freight - m.dissolved - m.no_payee)
+        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed - m.freight - m.left_map - m.no_payee)
     }
 
     fn money_of(&self, id: u32) -> i64 {
@@ -2382,14 +2410,18 @@ impl Grain {
                     s.pantry += t.kg;
                 }
             }
-            IMPORT if t.kg > 0 => {
-                // Sell the load at home.
+            EXPORT | IMPORT if t.kg > 0 => {
+                // Sell the load at home as far as the dealers' cash goes;
+                // the rest goes into the trader's pantry (PLACEHOLDER).
                 let m = &mut self.markets[t.market as usize];
-                let pay = t.kg * Self::buy_price(m);
-                m.store += t.kg;
+                let price = Self::buy_price(m);
+                let kg = t.kg.min(m.money / price.max(1)).max(0);
+                let pay = kg * price;
+                m.store += kg;
                 m.money -= pay;
                 s.money += pay;
-                self.stats.traded_kg += t.kg;
+                s.pantry += t.kg - kg;
+                self.stats.traded_kg += kg;
             }
             _ => {}
         }
@@ -3595,7 +3627,8 @@ impl Grain {
             .float("start", "Geld am Anfang", "Denar", den(m.start))
             .float("endowed", "Startgeld neuer Haushalte", "Denar", den(m.endowed))
             .float("freight", "Fracht", "Denar", den(m.freight))
-            .float("dissolved", "Geld aufgelöster Haushalte", "Denar", den(m.dissolved))
+            .float("estates", "Erbloser Nachlass", "Denar", den(tr.estates))
+            .float("left_map", "Mit Auswanderern fort", "Denar", den(m.left_map))
             .float("no_payee", "Ohne Empfänger", "Denar", den(m.no_payee))
             .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
         t
