@@ -12,6 +12,8 @@ mod map_index;
 mod people_dots;
 #[allow(dead_code)] // called by people_dots (ask_table) on the game branch
 mod tables;
+#[allow(dead_code)] // called by people_dots (ask_trips) on the game branch
+mod trips;
 
 use apoleia_sim::ecs::{Command, Sim, Snapshot};
 use apoleia_sim::{Params, MAX_LEVEL, ROOT_SIZE_M};

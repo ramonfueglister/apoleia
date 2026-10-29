@@ -439,6 +439,11 @@ struct Trip {
     dest: u32,
     kg: i64,
     back_days: i64,
+    /// For the view only (`trips_in`): day it left (-1 once home), the fine
+    /// tile it left from and a number no other trip has.
+    left: i64,
+    from: u32,
+    serial: u64,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -587,6 +592,7 @@ pub struct Grain {
     by_doy: Vec<Vec<u32>>,
     trips: Vec<Trip>,
     free_trips: Vec<u32>,
+    trip_serial: u64,
     wheel: Vec<Vec<GEv>>,
     decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
@@ -995,6 +1001,7 @@ impl Grain {
             by_doy: vec![Vec::new(); YEAR as usize],
             trips: Vec::new(),
             free_trips: Vec::new(),
+            trip_serial: 0,
             wheel: vec![Vec::new(); 1024],
             decay: std::sync::Arc::new(decay_table()),
             crop_pct: crop_pct.clamp(1, 100),
@@ -1962,7 +1969,9 @@ impl Grain {
         self.wheel[(day as usize) % 1024].push(ev);
     }
 
-    fn new_trip(&mut self, t: Trip) -> u32 {
+    fn new_trip(&mut self, mut t: Trip) -> u32 {
+        t.serial = self.trip_serial;
+        self.trip_serial += 1;
         match self.free_trips.pop() {
             Some(k) => {
                 self.trips[k as usize] = t;
@@ -2034,7 +2043,7 @@ impl Grain {
             (load, s.farm)
         };
         let d = Self::travel_days(km, speed);
-        let t = self.new_trip(Trip { kind, pid: info.carrier, hh: id, farm, market: m, dest: m, kg, back_days: d });
+        let t = self.new_trip(Trip { kind, pid: info.carrier, hh: id, farm, market: m, dest: m, kg, back_days: d, left: day, from: s.fine, serial: 0 });
         self.hh.get_mut(&id).unwrap().busy = true;
         if kind == SELL {
             self.stats.sell_trips += 1;
@@ -2229,6 +2238,7 @@ impl Grain {
     fn home(&mut self, p: &People, day: i64, k: u32) {
         let t = self.trips[k as usize];
         self.free_trips.push(k);
+        self.trips[k as usize].left = -1;
         let Some(s) = self.hh.get_mut(&t.hh) else { return };
         if matches!(t.kind, EXPORT | IMPORT) {
             s.trading = false;
@@ -2821,7 +2831,7 @@ impl Grain {
                 *self.lanes.entry(c).or_default() += 1;
                 self.road_trips[c as usize] += 1;
             }
-            let t = self.new_trip(Trip { kind, pid: info.trader, hh: id, farm: NONE, market: h as u32, dest, kg, back_days: days });
+            let t = self.new_trip(Trip { kind, pid: info.trader, hh: id, farm: NONE, market: h as u32, dest, kg, back_days: days, left: day, from: self.markets[h].fine, serial: 0 });
             self.hh.get_mut(&id).unwrap().trading = true;
             self.stats.trade_trips += 1;
             self.push(day + days, GEv { kind: EV_ARRIVE, id: t });
@@ -3123,6 +3133,28 @@ pub const KIND_NAMES: [&str; 5] = ["Hof", "Zelt", "Lohn", "Händler", "Oberschic
 /// Farm kinds by name (`HouseholdLook::farm_kind`).
 pub const FARM_KIND_NAMES: [&str; 3] = ["Familienhof", "Pachthof", "Gut"];
 
+/// The trips under way in a box (`Grain::trips_in`), one entry per trip.
+/// kind: 0 sale at the market, 1 purchase, 2 export, 3 import. Days with
+/// fraction: out from depart to arrive, back from arrive to home; back is
+/// true when it turns home the same day. The route of trip k is
+/// points[first[k] .. first[k] + count[k]] in world km (x, z), from home
+/// to the destination.
+#[derive(Default, Clone, Debug)]
+pub struct TripsView {
+    pub day: i64,
+    pub id: Vec<i64>,
+    pub pid: Vec<i64>,
+    pub kind: Vec<i32>,
+    pub cargo_kg: Vec<i64>,
+    pub depart: Vec<f64>,
+    pub arrive: Vec<f64>,
+    pub home: Vec<f64>,
+    pub back: Vec<bool>,
+    pub first: Vec<i32>,
+    pub count: Vec<i32>,
+    pub points: Vec<(f32, f32)>,
+}
+
 /// What the game shows of a household (read only).
 #[derive(Clone, Copy, Debug)]
 pub struct HouseholdLook {
@@ -3173,6 +3205,71 @@ impl Grain {
     /// or 2 path, direction of the next step towards the market as an index
     /// into the 8 neighbours row by row, 255 at the market). None while the
     /// market's walk is out on the path worker.
+    /// The trips under way whose route touches the box (world km, as the
+    /// people view), for the game to walk the carriers along their way.
+    /// Read only. A market trip follows the market's path field tile by
+    /// tile from the farmstead (as the footpaths are drawn); off the field
+    /// it is a straight line. A trade trip runs through the centres of the
+    /// 25 km cells of its route (as the trade roads are drawn). Out from
+    /// `depart` to `arrive`, back the same way to `home`.
+    pub fn trips_in(&mut self, p: &People, min: (f64, f64), max: (f64, f64)) -> TripsView {
+        self.walks_done();
+        let day = p.world.resource::<crate::people::Clock>().day;
+        let mut v = TripsView { day, ..Default::default() };
+        let cell_km = |c: u32| {
+            let (r, col) = (c as i32 / p.grid.cols + p.grid.row0, c as i32 % p.grid.cols + p.grid.col0);
+            (col as f64 * 25.0 + 12.5, r as f64 * 25.0 + 12.5)
+        };
+        let mut pts: Vec<(f64, f64)> = Vec::new();
+        for t in self.trips.iter().filter(|t| t.left >= 0) {
+            pts.clear();
+            let m = &self.markets[t.market as usize];
+            if matches!(t.kind, SELL | BUY) {
+                pts.push(self.settle.fine_centre_km(t.from));
+                if let Some(f) = m.field.as_ref() {
+                    let (mut r, mut c) = (t.from as i32 / self.cols_f - f.r0, t.from as i32 % self.cols_f - f.c0);
+                    let mut steps = 0;
+                    while r >= 0 && c >= 0 && r < f.n && c < f.n && f.dist[(r * f.n + c) as usize] != u32::MAX && steps < f.n * f.n {
+                        let d = f.dir[(r * f.n + c) as usize];
+                        if d == 255 {
+                            break;
+                        }
+                        r += DIRS[d as usize].0;
+                        c += DIRS[d as usize].1;
+                        steps += 1;
+                        pts.push(self.settle.fine_centre_km(((f.r0 + r) * self.cols_f + f.c0 + c) as u32));
+                    }
+                }
+                let end = self.settle.fine_centre_km(m.fine);
+                if pts.last() != Some(&end) {
+                    pts.push(end);
+                }
+            } else {
+                pts.push(cell_km(m.cell));
+                match m.neigh.iter().find(|nb| nb.m == t.dest) {
+                    Some(nb) => pts.extend(nb.route.iter().map(|&c| cell_km(c))),
+                    None => pts.push(cell_km(self.markets[t.dest as usize].cell)),
+                }
+            }
+            if !pts.iter().any(|&(x, z)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1) {
+                continue;
+            }
+            let out = (t.back_days as f64).max(0.0);
+            v.id.push(t.serial as i64);
+            v.pid.push(t.pid as i64);
+            v.kind.push(t.kind as i32);
+            v.cargo_kg.push(t.kg);
+            v.depart.push(t.left as f64);
+            v.arrive.push(t.left as f64 + out);
+            v.home.push(t.left as f64 + 2.0 * out);
+            v.back.push(out == 0.0);
+            v.first.push(v.points.len() as i32);
+            v.count.push(pts.len() as i32);
+            v.points.extend(pts.iter().map(|&(x, z)| (x as f32, z as f32)));
+        }
+        v
+    }
+
     pub fn market_paths(&self, m: usize) -> Option<Vec<(u32, u8, u8)>> {
         let f = self.markets[m].field.as_ref()?;
         let mut v = Vec::with_capacity(f.worn.len());
@@ -3903,6 +4000,13 @@ mod tests {
             }
             assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
             assert!(g.money.minted > 0 && g.money.freight > 0 && g.treasury.wages >= g.money.minted);
+            // The trips view is read only and every trip has a route.
+            let before = g.fingerprint();
+            let v = g.trips_in(&p, (-1e9, -1e9), (1e9, 1e9));
+            assert!(!v.id.is_empty() && v.kind.contains(&(SELL as i32)) && v.kind.contains(&(EXPORT as i32)));
+            assert!(v.count.iter().all(|&n| n >= 2) && v.count.iter().map(|&n| n as usize).sum::<usize>() == v.points.len());
+            assert!(v.depart.iter().zip(&v.arrive).zip(&v.home).all(|((d, a), h)| d <= a && a <= h && *d <= v.day as f64 && v.day as f64 <= *h));
+            assert_eq!(g.fingerprint(), before);
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
