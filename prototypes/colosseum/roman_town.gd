@@ -2054,13 +2054,13 @@ static func _pediment(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, hmax: int,
 	if eagle:
 		# a small gilt wreath with ribbons falling outward, the bronze
 		# eagle drawn over it as a sprite: spread wings wider than its
-		# body, head turned left with a gilt beak
+		# body, head turned left with a dark beak
 		var xm := (x0 + x1) / 2
 		var zt := zf - 1
 		for dy in range(-4, 5):
 			for dx in range(-4, 5):
 				if absf(Vector2(dx + 0.5, dy + 0.5).length() - 3.4) < 0.5:
-					g.put(xm + dx, y + 4 + dy, zt, Kit.GILT)
+					g.put(xm + dx, y + 5 + dy, zt, Kit.GILT)
 		for k in 3:
 			g.put(xm - 4 - k, y + 1 + (2 - k) / 2, zt, Kit.GILT_D)
 			g.put(xm + 4 + k, y + 1 + (2 - k) / 2, zt, Kit.GILT_D)
@@ -2405,14 +2405,15 @@ static func _circus_spina(g: Kit.Grid, xa: int, xb: int, zm: int, y: int, seed: 
 			g.box(cx - 1, y + 13, zm + c.z, cx, y + 16, zm + c.z + 1, Kit.GOLD)
 	# the lap counters: seven white eggs on a bronze beam at the west, seven
 	# bronze dolphins at the east
-	var ex := xa + 6
+	var ex := xa + 4
 	g.box(ex, y + 3, zm - 1, ex + 1, y + 13, zm + 1, Kit.MARBLE)
-	g.box(ex + 22, y + 3, zm - 1, ex + 23, y + 13, zm + 1, Kit.MARBLE)
-	g.box(ex, y + 13, zm - 1, ex + 23, y + 14, zm + 1, Kit.BRONZE_D)
+	g.box(ex + 30, y + 3, zm - 1, ex + 31, y + 13, zm + 1, Kit.MARBLE)
+	g.box(ex, y + 13, zm - 1, ex + 31, y + 14, zm + 1, Kit.BRONZE_D)
 	for k in 7:
-		var eg := ex + 2 + 3 * k
-		g.box(eg, y + 14, zm, eg + 2, y + 16, zm + 1, Kit.TRIM)
-		g.put(eg, y + 16, zm, Kit.TRIM)
+		# an egg: three wide, two high, a rounded top
+		var eg := ex + 2 + 4 * k
+		g.box(eg, y + 14, zm, eg + 3, y + 16, zm + 1, Kit.TRIM)
+		g.put(eg + 1, y + 16, zm, Kit.TRIM)
 	var dx := xb - 32
 	g.box(dx, y + 3, zm - 1, dx + 1, y + 13, zm + 1, Kit.MARBLE)
 	g.box(dx + 29, y + 3, zm - 1, dx + 30, y + 13, zm + 1, Kit.MARBLE)
@@ -2431,7 +2432,7 @@ static func _circus_spina(g: Kit.Grid, xa: int, xb: int, zm: int, y: int, seed: 
 		g.box(sx, y + 3, zm - 1, sx + 2, y + 18, zm + 1, Kit.MARBLE)
 		g.box(sx - 1, y + 18, zm - 2, sx + 3, y + 19, zm + 2, Kit.TRIM)
 		_cast(g, sx, y + 19, zm, Kit.BRONZE_D, Kit.GOLD, true)
-	for sx: int in [xa + 34, xa + 60, xb - 60, xb - 38]:
+	for sx: int in [xa + 38, xa + 60, xb - 60, xb - 38]:
 		g.box(sx, y + 3, zm - 2, sx + 4, y + 9, zm + 2, Kit.STONE)
 		g.box(sx, y + 8, zm - 2, sx + 4, y + 9, zm + 2, Kit.TRIM)
 		_cast(g, sx + 1, y + 9, zm, Kit.BRONZE_D, Kit.GOLD, false, true)
