@@ -12,8 +12,15 @@
 //! S92). Until one is there the finished farm waits. Its order is taken off
 //! the map once someone lives there.
 //!
-//! Fields and roads: what a finished one does is not decided yet; their
-//! sites hire nobody until it is.
+//! A finished road lot makes its fine tile a road for carriers (their
+//! market's path field is worked out again the next morning), and a 25 km
+//! cell with roads on half its width a road for traders' wagons (the
+//! markets that reach it look for trade partners again the next day):
+//! both cost ROAD_PCT of open ground to cross (grain.rs). Roads never wear
+//! away; trails beside them come and go with traffic as before.
+//!
+//! Fields: what a finished one does is not decided yet; their sites hire
+//! nobody until it is.
 
 use super::*;
 use crate::build::{self, Orders, Tile};
@@ -25,11 +32,22 @@ pub const FARM_DAYS: i64 = 200;
 /// days of each weekly hiring (`labour()` hires once a week per market).
 pub const CREW: i64 = 4;
 
-/// Work days an order of `kind` needs; 0 for fields and roads, which
-/// nobody builds until it is decided what a finished one does.
+/// PLACEHOLDER: work days per lot (0.5 km) of road. Own estimate: a
+/// gravel road body 60–90 cm deep (Moreno Gallo 2024) and about 5 m wide
+/// is 3,000–4,500 m³ per km, at about one day per m³ some 3,000 work days
+/// per real km; shared out by the number of users like every common work
+/// (S51): 3,000 / 566.5 × 0.5 km ≈ 3 days.
+pub const ROAD_LOT_DAYS: i64 = 3;
+/// A 25 km cell counts as a road for traders' wagons once this many of its
+/// fine tiles carry a built road, half its width. PLACEHOLDER.
+const ROAD_CELL_TILES: u32 = (FINE / 2) as u32;
+
+/// Work days an order of `kind` needs; 0 for fields, which nobody builds
+/// until it is decided what a finished one does.
 fn site_need(kind: u8) -> i64 {
     match kind {
         build::FARM => FARM_DAYS,
+        build::ROAD => ROAD_LOT_DAYS,
         _ => 0,
     }
 }
@@ -38,7 +56,7 @@ fn site_need(kind: u8) -> i64 {
 pub const CHECK_BUILDS: u8 = 0;
 /// Off the map or at sea: no market, nobody builds it.
 pub const CHECK_NO_MARKET: u8 = 1;
-/// A field or a road: nobody builds it yet (`site_need`).
+/// A field: nobody builds it yet (`site_need`).
 pub const CHECK_UNDECIDED: u8 = 2;
 /// A farm that gets built, but no landless household of its region could
 /// move in today; done, it waits for one.
@@ -121,7 +139,75 @@ impl Grain {
                 orders.finish(t);
             }
         }
+        // finished roads: in use from tomorrow
+        let done: Vec<Tile> = sites.iter().filter(|(_, s)| s.kind == build::ROAD && s.done >= s.need).map(|(&t, _)| t).collect();
+        for t in done {
+            let s = sites.remove(&t).unwrap();
+            self.road_built(t, s);
+            orders.finish(t);
+        }
         self.sites = sites;
+    }
+
+    /// A road lot is done: its fine tile becomes a road the next morning
+    /// (`fields_redo`), and its 25 km cell too once half its width has one
+    /// (`renet`, the markets that reach it search the next day).
+    fn road_built(&mut self, t: Tile, s: Site) {
+        if !self.road_lots.insert(t) {
+            return;
+        }
+        let n = self.road_fine.entry(s.fine).or_default();
+        *n += 1;
+        if *n > 1 {
+            return;
+        }
+        if !self.field_todo.contains(&s.market) {
+            self.field_todo.push(s.market);
+        }
+        *self.road_cells.entry(s.cell).or_default() += 1;
+        let was = self.net.level[s.cell as usize];
+        self.renet();
+        if self.net.level[s.cell as usize] != was {
+            for (mi, m) in self.markets.iter().enumerate() {
+                if m.reach.binary_search(&s.cell).is_ok() {
+                    self.road_urgent.push(mi);
+                }
+            }
+        }
+    }
+
+    /// The neighbour search's and the path fields' inputs again, after a
+    /// trade road level changed or a road was built: a cell with roads on
+    /// half its width counts as BUILT_ROAD, whatever its traffic.
+    pub(super) fn renet(&mut self) {
+        let level: Vec<u8> = self
+            .road_level
+            .iter()
+            .enumerate()
+            .map(|(c, &l)| if self.road_cells.get(&(c as u32)).is_some_and(|&n| n >= ROAD_CELL_TILES) { BUILT_ROAD } else { l })
+            .collect();
+        let net = &*self.net;
+        self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level, roads: self.road_fine.keys().copied().collect() });
+    }
+
+    /// The path fields a road built yesterday runs through, worked out
+    /// again with it (start of the day, after the walks came back); wear
+    /// and trails stay. A market without a field yet builds it with the
+    /// road when it first needs it.
+    pub(super) fn fields_redo(&mut self, day: i64) {
+        for m in std::mem::take(&mut self.field_todo) {
+            let mk = &mut self.markets[m as usize];
+            if let Some(old) = mk.field.take() {
+                mk.field = Some(build_field(&self.net, self.cols_f, mk.region, mk.fine, Some(old), day));
+                mk.dirty = false;
+                self.stats.field_rebuilds += 1;
+            }
+        }
+    }
+
+    /// The player's finished roads, by lot (build::Tile, world metres).
+    pub fn road_lots(&self) -> impl Iterator<Item = Tile> + '_ {
+        self.road_lots.iter().copied()
     }
 
     /// A landless household of the site's region takes the finished farm;
@@ -302,7 +388,70 @@ mod tests {
         assert_eq!((farm.need, farm.cost), (FARM_DAYS, FARM_DAYS * g.day_wage(farm.market)));
         assert!(farm.cost > 0);
         assert_eq!(g.site_check(&p, build::FIELD, t).status, CHECK_UNDECIDED);
+        let road = g.site_check(&p, build::ROAD, t);
+        assert_eq!((road.status, road.need), (CHECK_BUILDS, ROAD_LOT_DAYS));
         let off = g.site_check(&p, build::FARM, (i32::MIN / 2, i32::MIN / 2));
         assert_eq!((off.status, off.market, off.cost), (CHECK_NO_MARKET, NONE, 0));
+    }
+
+    /// A road ordered from a market into its region is built by day
+    /// labourers lot by lot; the carriers' way along it then costs
+    /// ROAD_PCT of open ground, a 25 km cell with road on half its width
+    /// is a road for wagons, and the markets that reach that cell look for
+    /// trade partners again. The same orders give the same state.
+    #[test]
+    fn ordered_road_is_built_and_used() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let run = || {
+            let mut p = People::new(&inp, 3);
+            let mut g = Grain::new(&inp, &mut p);
+            let mut orders = Orders::default();
+            let (mut m, mut far, mut open_km) = (NONE, NONE, 0);
+            for day in 0..400 {
+                if day == 40 {
+                    // the market of the first tent household with adults,
+                    // a road from its square 12 fine tiles into its region
+                    let id = (0..g.markets.len())
+                        .flat_map(|m| g.market_hh[m].clone())
+                        .filter(|id| g.hh.get(id).is_some_and(|h| h.kind == TENT) && g.info.get(id).is_some_and(|i| i.adults > 0))
+                        .min()
+                        .expect("a tent household");
+                    m = g.cell_market[g.info[&id].home as usize];
+                    g.ensure_field(&p, m);
+                    let f = g.markets[m as usize].field.as_ref().unwrap();
+                    let at = g.markets[m as usize].fine as i32;
+                    let (r, c) = (at / g.cols_f, at % g.cols_f);
+                    let step = if c - f.c0 < f.n / 2 { 1 } else { -1 };
+                    far = (r * g.cols_f + c + 12 * step) as u32;
+                    open_km = (12.0 * 1.5625) as i64;
+                    assert!(g.route_km(&p, m, far) >= open_km * LEVEL_COST_PCT[2] / 100, "no road yet");
+                    let (z0, x0) = build::fine_centre(r + p.grid.row0 * FINE, c + p.grid.col0 * FINE);
+                    let lots: Vec<Tile> = (0..=37).map(|k| (z0, x0 + step * 500 * k)).collect();
+                    orders.apply(&Command::Place { kind: build::ROAD, tiles: lots }, day);
+                }
+                p.day();
+                g.day(&mut p);
+                g.build_day(&mut p, &mut orders);
+                if day > 40 && orders.is_empty() {
+                    break;
+                }
+            }
+            assert!(orders.is_empty(), "every lot built");
+            assert_eq!(g.road_lots().count(), 38);
+            assert_eq!(g.road_fine.len(), 13);
+            // one more day: the market's path field takes the road
+            p.day();
+            g.day(&mut p);
+            let km = g.route_km(&p, m, far);
+            assert!(km <= open_km * ROAD_PCT / 100 + 1, "along the road {km} km, open {open_km} km");
+            for (&cell, &n) in &g.road_cells {
+                assert_eq!(g.net.level[cell as usize] == BUILT_ROAD, n >= ROAD_CELL_TILES);
+            }
+            (p.fingerprint(), g.fingerprint())
+        };
+        assert_eq!(run(), run());
     }
 }

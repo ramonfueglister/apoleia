@@ -256,7 +256,16 @@ const FINE_STEP: i64 = 100;
 const PATH_HALF: i64 = 360;
 const WEAR_UNIT: i64 = 1000;
 const LEVELS: [(i64, i64); 2] = [(200 * WEAR_UNIT, 100 * WEAR_UNIT), (1000 * WEAR_UNIT, 500 * WEAR_UNIT)];
-const LEVEL_COST_PCT: [i64; 3] = [100, 80, 65];
+const LEVEL_COST_PCT: [i64; 4] = [100, 80, 65, ROAD_PCT];
+/// The player's roads (S70, S113): a fine tile, and a 25 km cell that a
+/// road crosses (sites.rs), cost this share of open ground to cross, for
+/// carriers in days and for traders' wagons in freight and days.
+/// PLACEHOLDER 50 %, between Bogart (2005: turnpikes cut freight by 20 %)
+/// and Ortman et al. (2024: transport costs in Roman Britain halved).
+const ROAD_PCT: i64 = 50;
+/// The level of a built road, above the trails and trade roads that
+/// traffic makes (index into LEVEL_COST_PCT).
+const BUILT_ROAD: u8 = 3;
 /// Each market's trips are walked (and its field rebuilt if a level
 /// changed) once in this many days, 1/WALK_DAYS of the markets a day.
 /// PLACEHOLDER for performance; GRAIN.md planned monthly.
@@ -759,6 +768,15 @@ pub struct Grain {
     /// S113: the spot (world metres, build::Tile) of each farm built from
     /// an order, by farm, so the view puts its house where it was ordered.
     spots: FxHashMap<u32, crate::build::Tile>,
+    /// S113: the player's finished roads by lot (sites.rs), how many of
+    /// them lie on each fine tile, how many fine tiles with a road each
+    /// 25 km cell has, and the markets whose trade partners (`roads`) or
+    /// path field (`fields_redo`) a new road changed.
+    road_lots: std::collections::BTreeSet<crate::build::Tile>,
+    road_fine: FxHashMap<u32, u32>,
+    road_cells: FxHashMap<u32, u32>,
+    road_urgent: Vec<usize>,
+    field_todo: Vec<u32>,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1156,7 +1174,7 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
-            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
+            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new(), roads: Default::default() }),
             road_worker: None,
             road_todo: Vec::new(),
             walk_worker: None,
@@ -1176,6 +1194,11 @@ impl Grain {
             events: Vec::new(),
             sites: Default::default(),
             spots: FxHashMap::default(),
+            road_lots: Default::default(),
+            road_fine: FxHashMap::default(),
+            road_cells: FxHashMap::default(),
+            road_urgent: Vec::new(),
+            field_todo: Vec::new(),
         };
         gr.build_graph(p);
         gr.gates(p);
@@ -1344,7 +1367,8 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
-        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
+        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: Vec::new(), roads: Default::default() });
+        self.renet();
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
         let net = &*self.net;
         let built: Vec<(Vec<Neigh>, Vec<u32>)> = bevy_tasks::ComputeTaskPool::get()
@@ -1397,11 +1421,14 @@ impl Grain {
                 m.stale |= changed.iter().any(|c| m.reach.binary_search(c).is_ok());
             }
             if !changed.is_empty() {
-                let net = &*self.net;
-                self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
+                self.renet();
             }
         }
-        let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
+        let mut todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
+        // S113: the markets a road built yesterday reaches search today
+        todo.append(&mut self.road_urgent);
+        todo.sort_unstable();
+        todo.dedup();
         if todo.is_empty() {
             return;
         }
@@ -2282,6 +2309,7 @@ impl Grain {
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let t0 = t();
         self.walks_done();
+        self.fields_redo(day);
         self.timing.paths += us(t0);
         let t0 = t();
         self.roads_done();
@@ -3709,6 +3737,10 @@ impl Grain {
             }
         }
         b.extend_from_slice(&self.road_level);
+        for &(r, c) in &self.road_lots {
+            b.extend_from_slice(&r.to_le_bytes());
+            b.extend_from_slice(&c.to_le_bytes());
+        }
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             let mut w: Vec<u16> = f.worn.clone();
             w.sort_unstable();
@@ -4330,7 +4362,11 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
                 let (cost, d) = match (ka, kb) {
                     (0, 2) | (2, 0) => continue,
                     (0, _) | (_, 0) => (km * SEA_COST, km * 1000 / SEA_KM_DAY),
-                    _ => (km * WAGON_COST * LEVEL_COST_PCT[level[j as usize] as usize] / 100, km * 1000 / WAGON.1),
+                    _ => {
+                        let lv = level[j as usize];
+                        let slow = if lv == BUILT_ROAD { ROAD_PCT } else { 100 };
+                        (km * WAGON_COST * LEVEL_COST_PCT[lv as usize] / 100, km * 1000 * slow / 100 / WAGON.1)
+                    }
                 };
                 let nc_ = c + cost;
                 if nc_ < best[j as usize] {
@@ -4348,9 +4384,11 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
     out
 }
 
-/// What the neighbour search reads: the 25 km grid, the market at each
-/// cell and the trade road levels. Shared with the road worker thread;
-/// replaced when the levels change.
+/// What the neighbour search and the path fields read: the 25 km grid,
+/// the market at each cell, the trade road levels (BUILT_ROAD where the
+/// player built one) and the fine tiles with a built road. Shared with the
+/// road and path worker threads; replaced when a level or a road changes
+/// (`Grain::renet`).
 struct Net {
     row0: i32,
     col0: i32,
@@ -4359,6 +4397,7 @@ struct Net {
     kind: Vec<u8>,
     at: Vec<u32>,
     level: Vec<u8>,
+    roads: rustc_hash::FxHashSet<u32>,
 }
 
 type Searched = Vec<(Vec<Neigh>, Vec<u32>)>;
@@ -4539,7 +4578,8 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
     for r in 0..n {
         for c in 0..n {
             if land[((r / FINE) * 4 + c / FINE) as usize] {
-                let pct = LEVEL_COST_PCT[level[(r * n + c) as usize] as usize];
+                let road = !grid.roads.is_empty() && grid.roads.contains(&(((r0 + r) * cols_f + c0 + c) as u32));
+                let pct = LEVEL_COST_PCT[if road { BUILT_ROAD } else { level[(r * n + c) as usize] } as usize];
                 let pj = ((r + 1) * w + c + 1) as usize;
                 ortho[pj] = (FINE_STEP * pct / 100) as u32;
                 diag[pj] = (141 * pct / 100) as u32;
