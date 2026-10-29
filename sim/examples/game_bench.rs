@@ -53,6 +53,21 @@ fn main() {
     let (p50, p95, p99, max) = (pct(&mut ms, 0.5), pct(&mut ms, 0.95), pct(&mut ms, 0.99), pct(&mut ms, 1.0));
     println!("{days} days: {:.2} s per year; day p50 {p50:.2} ms, p95 {p95:.2}, p99 {p99:.2}, max {max:.2}", run_s / years as f64);
     println!("mean per day: people {:.2} ms, grain {:.2} ms", parts[0] / days as f64, parts[1] / days as f64);
+    let t = g.people.timing;
+    let per = |us: f64| us / 1e3 / days as f64;
+    println!(
+        "people per part, ms per day: marriage {:.2}, needs {:.2}, relations {:.2}, health {:.2}, travel {:.2}, migration {:.2}, events {:.2}, pops {:.2}, index {:.2}, trips {:.2}",
+        per(t.marriage),
+        per(t.needs),
+        per(t.relations),
+        per(t.health),
+        per(t.travel),
+        per(t.migration),
+        per(t.events),
+        per(t.pops),
+        per(t.index),
+        per(t.trips)
+    );
     for (i, s) in SPEEDS.iter().enumerate() {
         let budget = 1000.0 / s;
         let over = ms.iter().filter(|&&m| m > budget).count();
