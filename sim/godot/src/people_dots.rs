@@ -11,7 +11,7 @@
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
 
-use crate::grain_map::{GrainMap, MapLayers, FINE};
+use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
 use crate::{tables, trips};
 use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
@@ -716,6 +716,26 @@ impl ApoleiaPeople {
         d.set("origin", Vector2::new((fc0 + map.col0 * FINE) as f32 * FINE_KM, (fr0 + map.row0 * FINE) as f32 * FINE_KM));
         d.set("tile_km", FINE_KM);
         d
+    }
+
+    /// Centres (world km) of the market squares among the `n` × `n` fine
+    /// tiles around (x, z), as the terrain draws them (sim_map.gdshaderinc
+    /// sim_paths), for the stalls that stand on them.
+    #[func]
+    fn market_squares(&self, x: f32, z: f32, n: i64) -> PackedVector2Array {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let n = n.clamp(1, 1024) as i32;
+        let fr0 = (z / FINE_KM).floor() as i32 - map.row0 * FINE - n / 2;
+        let fc0 = (x / FINE_KM).floor() as i32 - map.col0 * FINE - n / 2;
+        let win = map.window(fr0, fc0, n);
+        let mut out = PackedVector2Array::new();
+        for (i, px) in win.chunks_exact(4).enumerate() {
+            if px[3] & MARKET_BIT != 0 {
+                let (r, c) = (fr0 + map.row0 * FINE + i as i32 / n, fc0 + map.col0 * FINE + i as i32 % n);
+                out.push(Vector2::new((c as f32 + 0.5) * FINE_KM, (r as f32 + 0.5) * FINE_KM));
+            }
+        }
+        out
     }
 
     /// The trade roads and sea lanes, one RG8 texel per 25 km cell:

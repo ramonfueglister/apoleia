@@ -13,6 +13,11 @@ extends MultiMeshInstance3D
 ## with a sickle at the harvest, a seed basket at the sowing and a hoe
 ## through the year.
 ##
+## At the end of the way they stay a while (LINGER_S): at the market among
+## the stalls, at the farm at work. The market squares get standing stalls
+## (ApoleiaPeople.market_squares, the squares the terrain draws), STALLS
+## each, turned towards the middle (r11: the square was a flat decal).
+##
 ## A trip new to the list becomes a traveller that walks its route at a
 ## pace the eye can follow, whatever the days per second (at ten days a
 ## second a walk to market lasts a tenth of a second): it starts where the
@@ -29,6 +34,8 @@ const WALK_KMPS := 0.05 # on screen, world km a second: a body height (40 m at d
 const CART_KMPS := 0.04
 const MARGIN := 0.3 # the window asked for reaches this share of the view width beyond it
 const FIGURE_M := 1.7 # the person, as people_dots.gd FIGURE_M
+const LANE_KM := 0.09 # travellers on one route keep apart sideways within this width (a figure is 40 m at diorama scale)
+const STAGGER_KM := 0.2 # and along it, as many leave on the same day
 ## parts beyond the person (bits of INSTANCE_CUSTOM.r, people_walkers.gdshader)
 const DONKEY := 1
 const SACKS := 2
@@ -39,7 +46,18 @@ const SICKLE := 32
 const BASKET := 64
 const HOE := 128
 const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
+const STALL := 256
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
+const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
+## how an instance moves (INSTANCE_CUSTOM.a): walking, standing, a stall
+const WALKING := 0.0
+const STANDING := 1.0
+const STANDS := 2.0
+const SQUARES_MAX := 40
+## stalls round a market square (km from its middle; the square is 0.32 km)
+const STALLS: Array[Vector2] = [Vector2(-0.085, -0.07), Vector2(0.0, -0.095), Vector2(0.085, -0.07),
+	Vector2(-0.095, 0.03), Vector2(0.095, 0.03), Vector2(-0.04, 0.095), Vector2(0.05, 0.095)]
+const SQUARES_KM := 10.0 # stalls only in views up to this width, as the squares
 
 var people: RefCounted
 var _able := false # an older build of the GDExtension has no trips
@@ -52,6 +70,7 @@ var _asked_work := false
 var _asked_day := -1
 var _asked_at := Vector3.INF # centre x, z and view width of the last ask
 var _window := Rect2()
+var _squares := PackedVector2Array() # market squares in and around the view
 var _buffer := PackedFloat32Array()
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
@@ -67,10 +86,10 @@ func setup(sim: RefCounted, km_per_m: float) -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	mm.mesh = _mesh()
-	mm.instance_count = MAX
+	mm.instance_count = MAX + SQUARES_MAX * STALLS.size()
 	mm.visible_instance_count = 0
 	multimesh = mm
-	_buffer.resize(MAX * STRIDE)
+	_buffer.resize((MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
 
 ## One frame: `on` while the figures are drawn, `centre` the ground in the
 ## middle of the view (world km), `view_km` its width.
@@ -105,6 +124,12 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 			_asked_work = true
 			_asked_day = day
 			_asked_at = Vector3(centre.x, centre.y, view_km)
+			_squares = PackedVector2Array()
+			if view_km <= SQUARES_KM:
+				var n := int(ceil(_window.size.x / 1.5625)) + 2 # fine tiles across the window
+				for q in people.market_squares(centre.x, centre.y, n):
+					if _window.has_point(q) and _squares.size() < SQUARES_MAX:
+						_squares.append(q)
 	_walk(delta)
 	_upload()
 
@@ -138,7 +163,8 @@ func _take_work(h: Dictionary) -> void:
 			"points": PackedVector2Array([from[i], to[i]]),
 			"along": PackedFloat32Array([0.0, from[i].distance_to(to[i])]),
 			"s": 0.0, "dir": 1.0, "turn": true, "cart": false, "cargo": false, "out": false,
-			"phase": fposmod(float(worker[i]) * 0.618034, 1.0), "tint": int(worker[i] % 6),
+			"phase": fposmod(float(worker[i]) * 0.618034, 1.0), "tint": int(worker[i] % 8),
+			"side": (fposmod(float(worker[i]) * 0.377, 1.0) - 0.5) * LANE_KM,
 			"tool": TOOLS[clampi(kind[i], 0, TOOLS.size() - 1)],
 		}
 		if not _window.has_point(from[i]):
@@ -183,8 +209,10 @@ func _traveller(t: Dictionary, i: int) -> Dictionary:
 		"cargo": int(t.cargo_kg[i]) > 0,
 		"out": kind == 0 or kind == 2, # loaded on the way there (a sale, an export), else on the way home
 		"phase": fposmod(float(pid) * 0.618034, 1.0),
-		"tint": pid % 6,
+		"tint": pid % 8,
+		"side": (fposmod(float(pid) * 0.377, 1.0) - 0.5) * LANE_KM,
 	}
+	w.s = clampf(w.s + (fposmod(float(pid) * 0.123, 1.0) - 0.5) * STAGGER_KM, 0.0, length)
 	# a long road comes into view somewhere along it: start there
 	if not _window.has_point(_at(w)[0]):
 		var k := along.bsearch(w.s)
@@ -214,13 +242,20 @@ func _walk(delta: float) -> void:
 	var keep: Array[Dictionary] = []
 	for w in _walkers:
 		var length: float = w.along[w.along.size() - 1]
+		if w.get("wait", 0.0) > 0.0: # at the market or at work
+			w.wait -= delta
+			if w.wait > 0.0 or w.turn:
+				keep.append(w)
+			if w.wait <= 0.0 and w.turn:
+				w.turn = false
+				w.dir = -1.0
+			continue
 		w.s += w.dir * (CART_KMPS if w.cart else WALK_KMPS) * delta
 		if w.dir > 0.0 and w.s >= length:
-			if not w.turn:
-				continue
-			w.turn = false
-			w.dir = -1.0
 			w.s = length
+			w.wait = LINGER_S
+			keep.append(w)
+			continue
 		elif w.dir < 0.0 and w.s <= 0.0:
 			continue
 		if _window.has_point(_at(w)[0]):
@@ -232,8 +267,8 @@ func _upload() -> void:
 	for k in n:
 		var w := _walkers[k]
 		var place: Array = _at(w)
-		var p: Vector2 = place[0]
 		var d: Vector2 = place[1]
+		var p: Vector2 = place[0] + Vector2(-d.y, d.x) * float(w.side) # its own lane
 		var loaded: bool = w.cargo and (w.out == (w.dir > 0.0))
 		var parts: int = (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
 		if w.has("tool"):
@@ -243,7 +278,18 @@ func _upload() -> void:
 		_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = p.x
 		_buffer[o + 4] = 0.0; _buffer[o + 5] = 1.0; _buffer[o + 6] = 0.0; _buffer[o + 7] = 0.0
 		_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = p.y
-		_buffer[o + 12] = float(parts); _buffer[o + 13] = w.phase; _buffer[o + 14] = float(w.tint); _buffer[o + 15] = 0.0
+		_buffer[o + 12] = float(parts); _buffer[o + 13] = w.phase; _buffer[o + 14] = float(w.tint)
+		_buffer[o + 15] = STANDING if w.get("wait", 0.0) > 0.0 else WALKING
+	for q in _squares:
+		for k in STALLS.size():
+			var at: Vector2 = q + STALLS[k]
+			var d := -STALLS[k].normalized() # the counter towards the middle
+			var o := n * STRIDE
+			_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = at.x
+			_buffer[o + 4] = 0.0; _buffer[o + 5] = 1.0; _buffer[o + 6] = 0.0; _buffer[o + 7] = 0.0
+			_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = at.y
+			_buffer[o + 12] = float(STALL); _buffer[o + 13] = 0.0; _buffer[o + 14] = float(k); _buffer[o + 15] = STANDS
+			n += 1
 	multimesh.buffer = _buffer
 	multimesh.visible_instance_count = n
 
@@ -253,7 +299,8 @@ func _upload() -> void:
 ## person (part 0) at the origin, a donkey beside them (1) with its sacks
 ## (2), or an ox (4) in front of a cart (3) with its load (5) on their right;
 ## or the tool of a hired hand: a sickle in the right hand (6), a seed
-## basket in the left (7), a hoe on the shoulder (8).
+## basket in the left (7), a hoe on the shoulder (8); or a market stall
+## (9), standing alone, its counter to the front.
 static func _mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -318,6 +365,20 @@ static func _mesh() -> ArrayMesh:
 	_box(st, Vector3(-0.24, 0.565, 0.06) * f, Vector3(0.065, 0.01, 0.065) * f, Color(0.84, 0.76, 0.52), 7, 0.6, 0.78 * f)
 	_box(st, Vector3(0.14, 0.83, -0.1) * f, Vector3(0.018, 0.018, 0.45) * f, wood, 8)
 	_box(st, Vector3(0.14, 0.77, -0.54) * f, Vector3(0.05, 0.06, 0.015) * f, iron, 8)
+	# a stall: a counter under a striped awning on four posts, wares on it
+	# (the Forum's stalls: awning #d46048, frame #804c28)
+	var frame := Color("804c28")
+	var awning := Color("d46048")
+	var linen := Color(0.94, 0.9, 0.82)
+	_box(st, Vector3(0.0, 0.5, 0.45), Vector3(1.25, 0.5, 0.35), frame, 9)
+	for x in [-1.2, 1.2]:
+		for z in [-0.75, 0.75]:
+			_box(st, Vector3(x, 1.15, z), Vector3(0.07, 1.15, 0.07), frame.darkened(0.25), 9)
+	for k in 4:
+		_box(st, Vector3(-0.96 + k * 0.64, 2.36, 0.0), Vector3(0.32, 0.07, 1.0), awning if k % 2 == 0 else linen, 9)
+	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(0.76, 0.67, 0.48), 9)
+	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.7, 0.42, 0.28), 9)
+	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.4, 0.55, 0.24), 9)
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half` (m) of `part`

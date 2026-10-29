@@ -376,7 +376,21 @@ Zellmitten der Handelswege, genau dort, wo die Strassen gezeichnet sind.
   Tag heim, dreht er am Ziel um.
 - Höchstens 300 gleichzeitig; gefragt wird einmal pro Sim-Tag und wenn die
   Kamera weiterzieht. Gezeichnet nur aus der Nähe, mit den Figuren.
-- Tuniken in sechs Wolltönen; Beine und Arme schwingen beim Gehen.
+- Tuniken in den acht Farben der Figuren (Wolle und Leinen, Krapprot,
+  Waidblau, Brauntöne, Blattgrün; in Brauntönen allein wirkten die ersten
+  Läufer nackt); Beine und Arme schwingen beim Gehen.
+- Wer denselben Weg am selben Tag geht, geht nicht im Gänsemarsch
+  ineinander: jeder hat seine Spur quer zum Weg (bis 90 m bei Diorama-Grösse)
+  und einen Versatz längs (bis 200 m). Über Wasser (Fluss, See, Meer) sind
+  sie nicht zu sehen: sie nehmen Brücke oder Fähre (die ersten liefen über
+  den Tiber).
+- Am Ende des Wegs bleiben sie 6 s stehen, am Markt zwischen den Ständen,
+  am Hof bei der Arbeit, dann gehen sie heim.
+- **Marktstände:** auf jedem Marktplatz, den die Terrain zeichnet
+  (`ApoleiaPeople.market_squares`, Bit 6 der feinen Ebene), stehen bis 10 km
+  Sichtbreite sieben Stände mit Tresen, vier Pfosten und rot-weiss
+  gestreiftem Dach (#d46048, Rahmen #804c28, wie die Stände am Forum), Ware
+  darauf, der Tresen zur Mitte (r11: der Platz war nur ein flaches Muster).
 - **Erntehelfer:** `ask_work(Fenster)` liefert, wer bei der letzten
   Wochenbörse jeder Region auf welchem Hof arbeitet (`Grain::work_in`,
   `trips::work_to_dict`). Jede neue Anstellung schickt den Arbeiter von
