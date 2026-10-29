@@ -61,7 +61,7 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
 	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
-	vec3 ploughed = vec3(0.31, 0.19, 0.13);    // #8c5c3c, the lit soil of the parcels up close (lighter it was a second soil, r11)
+	vec3 ploughed = vec3(0.37, 0.27, 0.2);     // #8c5c3c on screen, the lit soil of the parcels up close (lighter it was a second soil, r11; 0.31, 0.19, 0.13 came out #70371d, rust holes in the lawn at 22 km)
 	vec3 green = vec3(0.36, 0.555, 0.27);      // #82b85a, a fresh green above the pasture (darker it read as a ramp's shade, round 19; yellower as acid lime, round 20)
 	float h = sim_hash(strip + 3.7);
 	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
@@ -108,13 +108,21 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (near && sim_house_lot(p)) { return pasture; } // the farmhouse's yard
 	float size = near ? data_km * 0.5 : SIM_FAR_PARCEL_KM;
 	vec2 cell = floor((p - world_min) / size);
+	// inside the square of crops the slabs stand on dirt: the strips between
+	// them read as Urbek's field tracks (r11: on meadow the fields lay on
+	// the lawn like rugs, with no track to them); the parcel as
+	// people_parcels.gdshader worked it out, not for every pixel again
+	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
+	int code;
+	float growth;
+	float level;
+	if (crops && sim_parcel_baked(cell, code, growth, level)) {
+		if ((code & SIM_P_STATE) == 0 || (code & SIM_P_NO_FIELD) != 0) { return pasture; }
+		return (code & SIM_P_OPEN) != 0 ? SIM_DIRT : meadow;
+	}
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
 	if (state == 0 || sim_no_field(world_min + (cell + 0.5) * size, land)) { return pasture; }
-	// inside the square of crops the slabs stand on dirt: the strips between
-	// them read as Urbek's field tracks (r11: on meadow the fields lay on
-	// the lawn like rugs, with no track to them)
-	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
 	if (crops) { return sim_slab_open(world_min + (cell + 0.5) * size) ? SIM_DIRT : meadow; }
 	return sim_strip_rgb(cell, size, f);
 }

@@ -1,15 +1,31 @@
 // One float pixel per person slot (or house slot): where the person stands (offset from the
 // anchor in km plus 32, height in levels, alpha 1 = placed). people_dots.gd renders
 // this only when the people or the terrain view (zoom level, relief blend,
-// corner patch) changed; the dot shader reads it.
+// corner patch) changed; the dot shader reads it. With the dots off only the
+// people drawn as figures are placed (`listed`): a unit quad per entry of
+// the figure list moved onto its slot's pixel, a thousand or two instead of
+// every person (Mac tour, 29.10.2026: the whole pass ran with each new day).
 shader_type canvas_item;
-render_mode blend_disabled, unshaded;
+render_mode blend_disabled, unshaded, skip_vertex_transform; // the listed quads have no transforms
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 #include "res://shaders/sim_fields.gdshaderinc"
 #include "res://shaders/people_crop_slab.gdshaderinc"
 
 uniform bool houses = false; // the house records (people_houses.gdshader)
+uniform bool listed = false; // drawn as the quads of the figure list, not as one rectangle
+uniform sampler2D list_tex : filter_nearest, repeat_disable; // slots of the figures (float)
+uniform int list_w = 128;
+
+void vertex() {
+	if (listed) {
+		int i = INSTANCE_ID;
+		int slot = int(texelFetch(list_tex, ivec2(i % list_w, i / list_w), 0).r);
+		int per = page_side * page_side;
+		int in_page = slot % per;
+		VERTEX += vec2(float(in_page % page_side), float((slot / per) * page_side + in_page / page_side)) + 0.5;
+	}
+}
 
 void fragment() {
 	ivec2 px = ivec2(FRAGCOORD.xy);

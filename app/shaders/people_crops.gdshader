@@ -22,8 +22,8 @@ render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled
 #include "res://shaders/sim_fields.gdshaderinc"
 #include "res://shaders/people_crop_slab.gdshaderinc"
 
-uniform vec2 crop_cell0;          // parcel index (from world_min) of the square's first parcel
-uniform int crop_n = 48;          // parcels per side of the square
+uniform vec2 crop_cell0;          // parcel index (from world_min) of the first parcel drawn
+uniform int crop_nx = 40;         // parcels drawn per row: the rectangle of the square in view
 uniform float crop_rows = 12.0;   // rows per parcel
 uniform float km_per_m = 0.0238;  // diorama scale (TileTerrain.DIORAMA_KM_PER_M)
 
@@ -59,18 +59,20 @@ const vec2 SHEEP_SPACING = vec2(2.2, 1.4); // m between the spots of a flock's t
 
 void vertex() {
 	float size = tt_data_km() * 0.5; // a quarter tile up close, half a data tile
-	vec2 cell = crop_cell0 + vec2(float(INSTANCE_ID % crop_n), float(INSTANCE_ID / crop_n));
+	vec2 cell = crop_cell0 + vec2(float(INSTANCE_ID % crop_nx), float(INSTANCE_ID / crop_nx));
 	vec2 mid = world_min + (cell + 0.5) * size;
-	vec4 f = vec4(0.0);
-	int state = sim_map_on && sim_view_km <= SIM_CROPS_KM ? sim_parcel(cell, size, f) : 0;
+	// the parcel as people_parcels.gdshader worked it out, once for all its vertices
+	int code = 0;
+	float g = 0.0;
+	float level = 0.0;
+	bool near = sim_map_on && sim_view_km <= SIM_CROPS_KM && sim_parcel_baked(cell, code, g, level);
+	int state = near ? code & SIM_P_STATE : 0;
 	// fields lie only on open land outside the towns, as sim_fields, never
 	// on a farmhouse's lot and only on flat tiles (a ramp shows their colour)
-	bool open = crop_open(mid);
-	bool near = sim_map_on && sim_view_km <= SIM_CROPS_KM;
+	bool open = (code & SIM_P_OPEN) != 0;
 	bool sheep = UV.x == -3.0;
 	bool show = sheep ? near && state == 0 && open && sim_hash(cell + 3.7) < FLOCK_SHARE
 		: state >= 1 && open;
-	float g = f.b;
 	int kind = sim_crop_kind(cell); // one crop per parcel, as the ground colour
 	bool grain = kind == SIM_WHEAT || kind == SIM_BARLEY;
 	// the slab: its height (m, people_crop_slab.gdshaderinc) and colour by crop and season
@@ -119,11 +121,7 @@ void vertex() {
 	// the fields next to a farmhouse lot fenced all round, none further out
 	int side = int(UV.y) / 16;
 	if (fence) {
-		bool by_farm = false;
-		for (int k = 0; k < 9; k++) {
-			by_farm = by_farm || (k != 4 && sim_house_lot(mid + vec2(float(k % 3 - 1), float(k / 3 - 1)) * size));
-		}
-		show = show && state == 2 && by_farm;
+		show = show && state == 2 && (code & SIM_P_BY_FARM) != 0;
 	}
 	float inner = size * (1.0 - 2.0 * SLAB_GAP);
 	vec2 off; // from the parcel's middle, km
@@ -187,11 +185,11 @@ void vertex() {
 	}
 	// the slab, its rows and fence fitted into the parcel's slab (clear of lanes)
 	if (!sheep) {
-		vec4 box = crop_box(cell, size);
+		vec4 box = crop_box_of((code / SIM_P_LANES) & 15, size);
 		off = (box.xy + box.zw) * 0.5 + off * (box.zw - box.xy) / inner;
 	}
 	vec2 p = mid + off;
-	float level = dot_ground_level(p);
+	// the parcel lies flat (crop_open), at the level of its middle
 	vec3 world = vec3(p.x, level * level_h + y * km_per_m, p.y);
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);

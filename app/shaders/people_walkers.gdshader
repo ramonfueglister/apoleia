@@ -76,10 +76,14 @@ void vertex() {
 		float swing = sin(TIME * stride + INSTANCE_CUSTOM.g * 6.2831853) * UV2.x;
 		v.z += swing * max(UV2.y - v.y, 0.0) * 0.45;
 	}
-	vec2 at = MODEL_MATRIX[3].xz;
-	vec3 world = (MODEL_MATRIX * vec4(v * km_per_m, 1.0)).xyz;
-	world.y = dot_ground_level(at) * level_h + v.y * km_per_m;
-	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
+	// the parts it does not have: all on one point behind the camera, without asking the ground
+	VERTEX = vec3(0.0, 0.0, 1.0e6);
+	if (show) {
+		vec2 at = MODEL_MATRIX[3].xz;
+		vec3 world = (MODEL_MATRIX * vec4(v * km_per_m, 1.0)).xyz;
+		world.y = dot_ground_level(at) * level_h + v.y * km_per_m;
+		VERTEX = (VIEW_MATRIX * vec4(world, 1.0)).xyz;
+	}
 	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(NORMAL, 0.0))).xyz);
 	vec3 c = COLOR.rgb;
 	if (part == 0 && all(greaterThan(c, vec3(0.99)))) { c = TUNICS[int(INSTANCE_CUSTOM.b) % 8]; } // the white tunic

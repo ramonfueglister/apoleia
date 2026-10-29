@@ -382,6 +382,7 @@ static func _mesh() -> ArrayMesh:
 	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(0.76, 0.67, 0.48), 9)
 	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.7, 0.42, 0.28), 9)
 	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.4, 0.55, 0.24), 9)
+	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half` (m) of `part`

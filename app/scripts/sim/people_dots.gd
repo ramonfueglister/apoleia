@@ -37,7 +37,9 @@ extends MultiMeshInstance3D
 ## (relative paths start at the repository root), --people-colour=n starts
 ## in colour mode n (MODES), --people-click=x,y clicks that pixel once,
 ## --people-dots starts with the dot overview on, --people-warm=n runs n
-## days before the first frame (screenshots of a later year).
+## days before the first frame (screenshots of a later year),
+## --people-cost=path.json writes what each part of the people costs a frame
+## (people_cost.gd; --people-cost-frames=n frames per phase, default 12).
 
 const SHADER = preload("res://shaders/people_dots.gdshader")
 const SHADER_ROUND = preload("res://shaders/people_dots_round.gdshader")
@@ -47,7 +49,8 @@ const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
 const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
 const FIGURE_SHADOW_SHADER = preload("res://shaders/people_figure_shadows.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
-const CROP_N := 40 # parcels per side of the square of crops around the camera
+const PARCELS_SHADER = preload("res://shaders/people_parcels.gdshader")
+const CROP_N := 40 # parcels per side of the square of crops around the ground in view
 const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
 const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
@@ -64,6 +67,7 @@ const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
+const PeopleCost = preload("res://scripts/sim/people_cost.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used;
@@ -98,6 +102,7 @@ var people: RefCounted
 var terrain: Node3D
 var days_per_second := 10.0
 var shown := false # P key: the dots as an overview (map view), off by default
+var drawn := true # false draws none of the people but keeps their work per frame (tour_bench.gd people-draw)
 var colour_mode := 0 # C key, index into MODES
 var selected := -1 # slot of the clicked person
 var map_on := true # G key: the grain economy on the terrain
@@ -118,6 +123,8 @@ var _material := ShaderMaterial.new()
 var _prep_material := ShaderMaterial.new()
 var _prep_view: SubViewport
 var _prep_rect: ColorRect
+var _prep_points: MultiMeshInstance2D # up close: a quad per listed figure (people_dots_prep.gdshader listed)
+var _prep_listed := false
 var _place_key := []
 var _prep_frames := 0
 var _houses: Array[MultiMeshInstance3D] = []
@@ -138,12 +145,23 @@ var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
+var _lots_dirty := true # the mask is drawn again only when its window or the houses changed
+var _lot0 := Vector2.INF
+var _parcel_view: SubViewport # each parcel of the crop square worked out once (people_parcels.gdshader)
+var _parcel_material := ShaderMaterial.new()
+var _parcel_frames := 0
+var _crop_box := Vector4.INF
+var _crop_cell0 := Vector2.INF
+var _ground_key := []
+var _ground := Rect2()
 var _lots: MultiMeshInstance2D
 var _lots_material := ShaderMaterial.new()
 var _list_image := Image.create_empty(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF)
 var _list_tex: ImageTexture
 var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
+var process_usec := 0 # this frame's work of the people on the main thread (people_cost.gd)
+var trips_usec := 0 # of it the walkers' (people_trips.gd step)
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
 var _shared_values := {} # what each shared uniform was last copied as
@@ -154,6 +172,8 @@ var _bench_frame := 0
 var _bench_last := 0
 var _bench := {"on": [], "off": [], "on_gpu": [], "off_gpu": [], "sync_usec": [], "sync_layers": [], "prep": [], "process_on": [], "process_off": []}
 var _bench_prep_last := 0
+var _cost_path := ""
+var _cost_frames := 12
 
 ## Starts the people sim; false when the GDExtension is not built or the
 ## inputs are missing (then the caller frees this node).
@@ -173,6 +193,8 @@ func setup(tile_terrain: Node3D) -> bool:
 			"--people-dots": shown = true
 			"--people-warm": warm = int(value)
 			"--people-click": _click_at = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
+			"--people-cost": _cost_path = value if value.is_absolute_path() else TileTerrain.data_root().path_join(value)
+			"--people-cost-frames": _cost_frames = int(value)
 	people = ClassDB.instantiate("ApoleiaPeople")
 	var started := Time.get_ticks_usec()
 	if not people.load(TileTerrain.data_root(), 1):
@@ -189,6 +211,18 @@ func setup(tile_terrain: Node3D) -> bool:
 	_prep_material.set_shader_parameter("dot_km_per_m", TileTerrain.DIORAMA_KM_PER_M) # the family in the farmyard
 	_prep_rect = ColorRect.new()
 	_prep_view = _make_prep("PeoplePlaces", _prep_rect, _prep_material)
+	_prep_points = MultiMeshInstance2D.new()
+	_prep_points.material = _prep_material
+	var pm := MultiMesh.new()
+	pm.transform_format = MultiMesh.TRANSFORM_2D
+	var unit := QuadMesh.new()
+	unit.size = Vector2.ONE
+	pm.mesh = unit
+	pm.instance_count = FIGURE_MAX
+	pm.visible_instance_count = 0
+	_prep_points.multimesh = pm
+	_prep_points.visible = false
+	_prep_view.add_child(_prep_points)
 	_house_prep_material.shader = PREP_SHADER
 	_house_prep_material.set_shader_parameter("houses", true)
 	_house_prep_rect = ColorRect.new()
@@ -212,7 +246,7 @@ func setup(tile_terrain: Node3D) -> bool:
 			mmi.custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = lods[lod]
+			mm.mesh = _indexed(lods[lod])
 			mm.instance_count = HOUSE_LOD_MAX[lod]
 			mm.visible_instance_count = 0
 			mmi.multimesh = mm
@@ -223,6 +257,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figure_material.set_shader_parameter("list_w", LIST_W)
 	_list_tex = ImageTexture.create_from_image(_list_image)
 	_figure_material.set_shader_parameter("list_tex", _list_tex)
+	_prep_material.set_shader_parameter("list_tex", _list_tex)
+	_prep_material.set_shader_parameter("list_w", LIST_W)
 	_figures = MultiMeshInstance3D.new()
 	_figures.name = "PeopleFigures"
 	_figures.material_override = _figure_material
@@ -251,7 +287,6 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figure_shadows.multimesh = sm
 	_figures.add_child(_figure_shadows) # shown with the figures
 	_crop_material.shader = CROP_SHADER
-	_crop_material.set_shader_parameter("crop_n", CROP_N)
 	_crop_material.set_shader_parameter("crop_rows", float(CROP_ROWS))
 	_crop_material.set_shader_parameter("km_per_m", TileTerrain.DIORAMA_KM_PER_M)
 	_crops = MultiMeshInstance3D.new()
@@ -263,6 +298,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	cm.transform_format = MultiMesh.TRANSFORM_3D
 	cm.mesh = _crop_mesh()
 	cm.instance_count = CROP_N * CROP_N
+	cm.visible_instance_count = 0
 	_crops.multimesh = cm
 	_crops.visible = false
 	add_child(_crops)
@@ -291,10 +327,19 @@ func setup(tile_terrain: Node3D) -> bool:
 	_lots.multimesh = lm
 	_lots_view.add_child(_lots)
 	add_child(_lots_view)
-	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material]:
+	# after the lots, whose mask it reads in the same frame (sibling viewports draw in order)
+	_parcel_material.shader = PARCELS_SHADER
+	var parcel_rect := ColorRect.new()
+	parcel_rect.size = Vector2(CROP_N, CROP_N)
+	_parcel_view = _make_prep("CropParcels", parcel_rect, _parcel_material)
+	_parcel_view.size = Vector2i(CROP_N, CROP_N)
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material]:
 		m.set_shader_parameter("sim_lot_tex", _lots_view.get_texture())
 		m.set_shader_parameter("sim_lots_n", LOTS_N)
 		m.set_shader_parameter("sim_lot_km", LOT_KM)
+		m.set_shader_parameter("sim_parcel_n", CROP_N)
+	for m: ShaderMaterial in [terrain._terrain_material, _crop_material]:
+		m.set_shader_parameter("sim_parcel_tex", _parcel_view.get_texture())
 	for u in TileTerrain.TERRAIN_SHADER.get_shader_uniform_list():
 		if not String(u.name).begins_with("sim_"): # the grain layers are the terrain's own
 			_shared_uniforms.append(StringName(u.name))
@@ -311,6 +356,10 @@ func setup(tile_terrain: Node3D) -> bool:
 	add_child(events)
 	_rebuild()
 	_rebuild_houses()
+	if _cost_path != "":
+		var cost := PeopleCost.new() # last child: hides its part after the others ran
+		cost.setup(self, _cost_path, _cost_frames)
+		add_child(cost)
 	if _bench_path != "":
 		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -404,6 +453,15 @@ func _aim_figure_shadows() -> void:
 		return
 	_figure_shadow_material.set_shader_parameter("shadow_dir", Vector2(d.x, d.z) / -d.y)
 
+## The mesh with shared corners: each shaded once, not once per triangle.
+static func _indexed(mesh: ArrayMesh) -> ArrayMesh:
+	if mesh.get_surface_count() != 1 or mesh.surface_get_array_index_len(0) > 0:
+		return mesh
+	var st := SurfaceTool.new()
+	st.create_from(mesh, 0)
+	st.index()
+	return st.commit()
+
 ## One strip for a figure's shadow: UV.x along it (0 at the feet, 1 at the
 ## far end), UV.y across (-1, 1); people_figure_shadows.gdshader lays it out.
 static func _shadow_strip_mesh() -> ArrayMesh:
@@ -414,6 +472,7 @@ static func _shadow_strip_mesh() -> ArrayMesh:
 		var c: Vector2 = corners[i]
 		st.set_uv(c)
 		st.add_vertex(Vector3(c.x, 0.0, c.y))
+	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 
 static func _figure_mesh() -> ArrayMesh:
@@ -448,6 +507,7 @@ static func _figure_mesh() -> ArrayMesh:
 	_box(st, Vector3(0.0, 0.54, -0.115), Vector3(0.17, 0.26, 0.012), Color.WHITE, FIG_CLOAK)
 	_box(st, Vector3(0.0, 0.5, 0.112), Vector3(0.12, 0.16, 0.012), Color(0.4, 0.27, 0.16), FIG_APRON)
 	_box(st, Vector3(0.0, 0.66, -0.16), Vector3(0.09, 0.1, 0.06), Color(0.6, 0.5, 0.34), FIG_BUNDLE)
+	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 
 ## An axis-aligned box around `centre` with half extents `half`. The side
@@ -510,6 +570,7 @@ static func _crop_mesh() -> ArrayMesh:
 				var shade := 1.0 if axis == 1 else 0.8
 				for k in order:
 					st.set_color(Color(1, 1, 1, shade)); st.set_uv(uv); st.set_normal(n); st.add_vertex(q[k])
+	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 
 ## The grain layers on the terrain material: the road map when a month is
@@ -519,7 +580,7 @@ func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
 	# the crops read the fine layer too, and the placement of the people for
 	# the slabs they stand on
-	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material]
+	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material]
 	for m in mats:
 		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
@@ -557,6 +618,7 @@ func _update_map() -> void:
 			m.set_shader_parameter("sim_fine_km", win.tile_km)
 			m.set_shader_parameter("sim_fine_n", MAP_N)
 		_prep_frames = 2
+		_parcel_frames = 2
 	_map_version = version
 	_map_at = centre
 
@@ -578,14 +640,15 @@ func paint_regions(img: Image, grid: Dictionary) -> void:
 	mat.set_shader_parameter("sim_cell_n", img.get_size())
 	mat.set_shader_parameter("sim_regions_on", true)
 
-## The people near the view, as a slot list for the figure shader.
+## The people in view, as a slot list for the figure shader: those in the
+## circle round the ground in view, nearest its middle first.
 func _update_figures(view_km: float, synced: bool) -> void:
-	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
-	var radius := view_km * 1.2 # the oblique view reaches further back than wide
-	var moved := Vector2(_list_at.x, _list_at.y).distance_to(centre) > view_km * 0.2
-	if not synced and not moved and absf(radius - _list_at.z) < radius * 0.2:
+	var circle := _view_circle()
+	if not synced and _still_listed(_list_at, circle):
 		return
-	_list_at = Vector3(centre.x, centre.y, radius)
+	_list_at = Vector3(circle.x, circle.y, circle.z * 1.15) # a little more, so the next small moves need no new list
+	var centre := Vector2(_list_at.x, _list_at.y)
+	var radius := _list_at.z
 	var slots: PackedInt32Array = people.near(centre.x, centre.y, radius, FIGURE_MAX)
 	var values := PackedFloat32Array()
 	values.resize(FIGURE_MAX)
@@ -595,47 +658,139 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	_list_tex.update(_list_image)
 	_figures.multimesh.visible_instance_count = slots.size()
 	_figure_shadows.multimesh.visible_instance_count = slots.size()
+	_prep_points.multimesh.visible_instance_count = slots.size()
+	_prep_frames = 2 # place the newly listed
 
-## The square of parcels whose crops stand, around the camera; only up
-## close and on the finest terrain tiles (the parcel is half a tile).
+## The square of parcels whose crops stand, round the ground in view; only
+## up close and on the finest terrain tiles (the parcel is half a tile).
+## Each parcel is worked out once (people_parcels.gdshader) when the square,
+## the fields, the lots or the relief change; the crops are drawn only on the
+## parcels in view, not on the whole square (Mac tour, 29.10.2026: the
+## square's 1600 parcels, each working itself out for every vertex, were
+## the dearest part of a frame up close).
 func _update_crops(view_km: float) -> void:
 	var tile_km: float = terrain._terrain_material.get_shader_parameter("tile_km")
 	_crops.visible = map_on and view_km <= CROP_KM and tile_km <= 0.5
 	if not _crops.visible:
-		for m: ShaderMaterial in [terrain._terrain_material, _prep_material]:
-			m.set_shader_parameter("sim_crop_box", Vector4.ZERO)
+		if _crop_box != Vector4.ZERO:
+			_crop_box = Vector4.ZERO
+			for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
+				m.set_shader_parameter("sim_crop_box", _crop_box)
+		_crop_cell0 = Vector2.INF
 		return
-	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
-	# a parcel is half a data tile: up close one quarter tile (sub_tiles)
-	var size := tile_km * (1.0 if terrain.sub_tiles else 0.5)
+	# a parcel is half a data tile: up close one quarter tile (sub_tiles);
 	# parcels and lots on the terrain's tile grid, counted from world_min
-	var from: Vector2 = centre - terrain.world_min
-	var cell0 := (from / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)
-	_crop_material.set_shader_parameter("crop_cell0", cell0)
-	# where the crops stand the ground round their slabs is meadow (sim_map.gdshaderinc)
-	var box_min: Vector2 = terrain.world_min + cell0 * size
+	var size := tile_km * (1.0 if terrain.sub_tiles else 0.5)
+	var world_min: Vector2 = terrain.world_min
+	# the parcels in view and one more round them for their shadows
+	var ground := _ground_rect()
+	var lo := ((ground.position - world_min) / size).floor() - Vector2.ONE
+	var hi := ((ground.end - world_min) / size).floor() + Vector2.ONE
+	# the square stays put while the parcels in view lie in it, so panning
+	# does not work out the parcels and place the people again at every step
+	var last := Vector2(CROP_N - 1, CROP_N - 1)
+	var cell0 := _crop_cell0
+	if cell0 == Vector2.INF or lo.x < cell0.x or lo.y < cell0.y or hi.x > cell0.x + last.x or hi.y > cell0.y + last.y:
+		cell0 = ((lo + hi) * 0.5).floor() - Vector2(CROP_N / 2, CROP_N / 2)
+	_crop_cell0 = cell0
+	lo = lo.clamp(cell0, cell0 + last)
+	hi = hi.clamp(cell0, cell0 + last)
+	var n := Vector2i(hi - lo) + Vector2i.ONE
+	_crop_material.set_shader_parameter("crop_cell0", lo)
+	_crop_material.set_shader_parameter("crop_nx", n.x)
+	_crops.multimesh.visible_instance_count = n.x * n.y
+	# where the crops stand the ground round their slabs is dirt (sim_map.gdshaderinc)
+	var box_min: Vector2 = world_min + cell0 * size
 	var box_max := box_min + Vector2(CROP_N, CROP_N) * size
 	var box := Vector4(box_min.x, box_min.y, box_max.x, box_max.y)
-	if box != terrain._terrain_material.get_shader_parameter("sim_crop_box"):
+	if box != _crop_box:
+		_crop_box = box
 		_prep_frames = 2 # the people on the slabs
-	for m: ShaderMaterial in [terrain._terrain_material, _prep_material]:
-		m.set_shader_parameter("sim_crop_box", box)
-	var lot0 := (from / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
-	_lots_material.set_shader_parameter("lot_origin", lot0)
-	_lots_material.set_shader_parameter("world_min", terrain.world_min)
-	for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material]:
-		m.set_shader_parameter("sim_lot_origin", lot0)
-	_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_parcel_frames = 2
+		for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
+			m.set_shader_parameter("sim_crop_box", box)
+		_parcel_material.set_shader_parameter("parcel_cell0", cell0)
+	# the lot mask round the square, moved only when the square nears its edge
+	var lots := Vector2(LOTS_N, LOTS_N)
+	var lot_lo := (box_min - world_min) / LOT_KM
+	var lot_hi := (box_max - world_min) / LOT_KM
+	if _lot0 == Vector2.INF or lot_lo.x < _lot0.x + 1.0 or lot_lo.y < _lot0.y + 1.0 or lot_hi.x > _lot0.x + lots.x - 1.0 or lot_hi.y > _lot0.y + lots.y - 1.0:
+		_lot0 = ((lot_lo + lot_hi) * 0.5).floor() - lots * 0.5
+		_lots_material.set_shader_parameter("lot_origin", _lot0)
+		_lots_material.set_shader_parameter("world_min", world_min)
+		for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material]:
+			m.set_shader_parameter("sim_lot_origin", _lot0)
+		_lots_dirty = true
+	if _lots_dirty:
+		_lots_dirty = false
+		_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_parcel_frames = 2
+	if _parcel_frames > 0:
+		_parcel_frames -= 1
+		_parcel_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## The ground in view (world km, x and z): the screen's corner rays down to
+## the lowest and the highest ground under them, worked out again only when
+## the camera moves.
+func _ground_rect() -> Rect2:
+	var landscape := get_parent()
+	var camera: Camera3D = landscape.camera
+	var size := get_viewport().get_visible_rect().size
+	var key := [camera.global_transform, camera.fov, size]
+	if key == _ground_key:
+		return _ground
+	_ground_key = key
+	var focus: float = landscape._focus_y
+	var target: Vector2 = landscape.target
+	var reach := camera.global_position.distance_to(Vector3(target.x, focus, target.y)) * 3.0
+	var rect := _corner_rect(camera, size, focus, focus, reach)
+	var low := focus
+	var high := focus
+	for j in 5:
+		for i in 5:
+			var y: float = terrain.ground_y(rect.position + rect.size * Vector2(i, j) * 0.25)
+			low = minf(low, y)
+			high = maxf(high, y)
+	var level: float = terrain.level_h
+	_ground = _corner_rect(camera, size, low - level, high + level, reach)
+	return _ground
+
+static func _corner_rect(camera: Camera3D, size: Vector2, low: float, high: float, reach: float) -> Rect2:
+	var a := Vector2(INF, INF)
+	var b := -a
+	for corner in [Vector2.ZERO, Vector2(size.x, 0), size, Vector2(0, size.y)]:
+		var origin := camera.project_ray_origin(corner)
+		var ray := camera.project_ray_normal(corner)
+		for y in [low, high]:
+			var t := reach
+			if ray.y < -0.001:
+				t = clampf((y - origin.y) / ray.y, 0.0, reach)
+			var p := origin + ray * t
+			a = a.min(Vector2(p.x, p.z))
+			b = b.max(Vector2(p.x, p.z))
+	return Rect2(a, b - a)
+
+## The circle round the ground in view (centre x, z and radius, km).
+func _view_circle() -> Vector3:
+	var ground := _ground_rect()
+	var c := ground.get_center()
+	return Vector3(c.x, c.y, ground.size.length() * 0.5)
+
+## Whether the list made for the circle `listed` still holds the circle
+## `need` and not much more.
+static func _still_listed(listed: Vector3, need: Vector3) -> bool:
+	var off := Vector2(listed.x, listed.y).distance_to(Vector2(need.x, need.y))
+	return listed != Vector3.INF and off + need.z <= listed.z and listed.z < need.z * 1.6
 
 ## The houses near the camera, nearest first, split over the levels of
 ## detail: the nearest in the finest one the view width allows.
 func _update_houses(view_km: float, synced: bool) -> void:
-	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
-	var radius := view_km * 1.2
-	var moved := Vector2(_house_list_at.x, _house_list_at.y).distance_to(centre) > view_km * 0.2
-	if not synced and not moved and absf(radius - _house_list_at.z) < radius * 0.2:
+	var circle := _view_circle()
+	if not synced and _still_listed(_house_list_at, circle):
 		return
-	_house_list_at = Vector3(centre.x, centre.y, radius)
+	_house_list_at = Vector3(circle.x, circle.y, circle.z * 1.15)
+	var centre := Vector2(_house_list_at.x, _house_list_at.y)
+	var radius := _house_list_at.z
 	var slots: PackedInt32Array = people.houses_near(centre.x, centre.y, radius, HOUSE_MAX)
 	var values := PackedFloat32Array()
 	values.resize(HOUSE_MAX)
@@ -643,6 +798,7 @@ func _update_houses(view_km: float, synced: bool) -> void:
 		values[i] = float(slots[i])
 	_house_list_image.set_data(LIST_W, HOUSE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_house_list_tex.update(_house_list_image)
+	_lots_dirty = true
 	var start := 0
 	var levels := HOUSE_LOD_MAX.size()
 	for lod in levels:
@@ -818,6 +974,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
 
 func _process(delta: float) -> void:
+	var start := Time.get_ticks_usec()
+	_frame(delta)
+	process_usec = Time.get_ticks_usec() - start
+
+func _frame(delta: float) -> void:
 	if people == null:
 		return
 	_day_debt += days_per_second * delta
@@ -834,7 +995,8 @@ func _process(delta: float) -> void:
 			_waiting = false
 			_show_person(p)
 	_update_map()
-	visible = TileTerrain.PROP_SLOTS[terrain.level] > 0
+	var close: bool = TileTerrain.PROP_SLOTS[terrain.level] > 0
+	visible = drawn and close
 	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
 	# realistic by default: figures at their real size up close, houses in the
 	# close LOD, no people from further up; P adds the dots as an overview
@@ -842,8 +1004,10 @@ func _process(delta: float) -> void:
 	var dots := shown and not figures
 	_hud.visible = visible and (figures or dots)
 	var landscape := get_parent()
-	_trips.step(delta, visible and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
-	if not visible:
+	var trips_start := Time.get_ticks_usec()
+	_trips.step(delta, close and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
+	trips_usec = Time.get_ticks_usec() - trips_start
+	if not close:
 		# out of the close LOD the frame does nothing for the people: no
 		# upload, no placement pass, no draw. The sim thread keeps running and
 		# its front buffer collects the changed pages until they show again.
@@ -860,7 +1024,7 @@ func _process(delta: float) -> void:
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
 	var source: ShaderMaterial = terrain._terrain_material
-	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _trips.material] + _house_materials
+	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _parcel_material, _trips.material] + _house_materials
 	if targets.size() != _shared_count:
 		_shared_values.clear() # new house materials get everything
 		_shared_count = targets.size()
@@ -879,13 +1043,26 @@ func _process(delta: float) -> void:
 		_place_key = key_now
 		_prep_frames = 2 # this frame and the next (the corner cache may lag a frame)
 		_house_prep_frames = 2
+		_parcel_frames = 2
 	if synced > 0:
 		_prep_frames = 2
 	if synced_houses > 0:
 		_house_prep_frames = 2
+	# up close only the figures are placed, so their list first
+	_figures.visible = figures
+	if figures:
+		_update_figures(view_km, synced > 0)
+		_aim_figure_shadows()
+	if figures != _prep_listed:
+		_prep_listed = figures
+		_prep_material.set_shader_parameter("listed", figures)
+		_prep_rect.visible = not figures
+		_prep_points.visible = figures
+		_prep_frames = 2
 	if _house_prep_frames > 0:
 		_house_prep_frames -= 1
 		_house_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_lots_dirty = true # the farmhouses may stand on other lots
 	if _prep_frames > 0 and (figures or dots):
 		_prep_frames -= 1
 		prep_runs += 1
@@ -895,11 +1072,7 @@ func _process(delta: float) -> void:
 	var px := clampf(3.5 - 0.5 * log(maxf(view_km, 1.0) / 30.0) / log(2.0), 1.0, 3.5)
 	_update_houses(view_km, synced_houses != 0)
 	_update_crops(view_km)
-	_figures.visible = figures
 	multimesh.visible_instance_count = -1 if dots else 0
-	if figures:
-		_update_figures(view_km, synced > 0)
-		_aim_figure_shadows()
 	_material.set_shader_parameter("dot_px", px)
 	var want_round := px >= ROUND_FROM_PX
 	if want_round != (_material.shader == SHADER_ROUND):
