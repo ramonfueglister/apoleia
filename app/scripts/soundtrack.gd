@@ -21,8 +21,30 @@ func _ready() -> void:
 	player.name = "MusicPlayer"
 	add_child(player)
 	player.finished.connect(play_next)
+	_report_tracks()
 	if not muted:
 		play_next()
+
+## Says in the log why the game stays silent: a Git checkout without
+## git-lfs holds 132-byte pointer files instead of the MP3s, and M keeps the
+## music muted across starts (user://soundtrack.cfg).
+func _report_tracks() -> void:
+	var playable := 0
+	var pointers := 0
+	for path in TRACKS:
+		var file := FileAccess.open(path, FileAccess.READ)
+		if file == null:
+			continue
+		if file.get_buffer(23).get_string_from_ascii() == "version https://git-lfs":
+			pointers += 1
+		else:
+			playable += 1
+	print(JSON.stringify({"event": "soundtrack", "tracks": playable, "lfs_pointers": pointers,
+		"muted": muted, "settings": ProjectSettings.globalize_path(settings_path)}))
+	if pointers > 0:
+		push_warning("Soundtrack: %d tracks are Git LFS pointers, not MP3s; run `git lfs install && git lfs pull`" % pointers)
+	if muted:
+		push_warning("Soundtrack: muted by a saved setting; press M to turn the music on")
 
 func play_next() -> void:
 	if not is_instance_valid(player) or muted:
