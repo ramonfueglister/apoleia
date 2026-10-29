@@ -15,6 +15,7 @@ uniform sampler2D sim_lot_tex : filter_nearest, repeat_disable; // lots with a f
 uniform vec2 sim_lot_origin;       // lot index (from world_min) of the mask's first pixel
 uniform int sim_lots_n = 0;        // lots per side of the mask, 0 without one
 uniform float sim_lot_km = 0.5;    // people_dots_common.gdshaderinc DOT_LOT_KM
+uniform vec4 sim_crop_box;         // world km (min x, min y, max x, max y) of the square where the crops stand (people_dots.gd _update_crops)
 
 // View width up to which the parcels are single and the crops stand on
 // them as plants; up to 40 km the fields are whole blocks of one colour.

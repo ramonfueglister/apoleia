@@ -34,14 +34,14 @@ const WINS_LONG: Array[float] = [2.5, 4.75]
 const WALL := 4.0 # tall enough that the roof does not swallow the house from above
 const EAVES := 0.5
 const PITCH := 0.42 # roof rise per metre (about 23 degrees)
-const LOD_VOXELS := [0.25, 0.5, 1.0]
+const LOD_VOXELS := [0.125, 0.25, 0.5, 1.0]
 const FINE := 0.125
 const BOUNDS_LO := Vector3(-10.0, -0.125, -10.0) # the voxel layer -0.125..0.125 holds the path, flush with the ground
 const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v19_%d_%s.res"
+const CACHE := "user://farmhouse_v20_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -54,12 +54,12 @@ const PALETTE := [
 	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("ad5a44"),
 	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
-	Color("8a6a46"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
+	Color("5e4128"), Color("b59a6c"), Color("7d6a48"), Color("d2452f"), Color("b5a586"),
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("667f4c"), Color("52663d"),
-	Color("75695a"), Color("dcc06c")]
+	Color("75695a"), Color("c99a48"), Color("cebc97"), Color("9a7232")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
-	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY }
+	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK }
 # the lit treads darker than they show: sun and tone map lift them
 const TOPS := {ROOF: Color("b45a42"), ROOF_DARK: Color("a34c3a")}
 
@@ -96,6 +96,9 @@ static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float]) -> int:
 		return STONE
 	if p.y >= WALL - 0.25:
 		return BEAM
+	# the shade of the eaves on the wall, baked in so it shows in any light
+	if p.y >= WALL - 0.5:
+		return PLASTER_SHADE
 	# plank door in the middle of the front, set back one block
 	if p.z > 0.0 and az >= hz - 0.25 and absf(p.x) < 0.625 and p.y < 2.375:
 		return EMPTY if az >= hz - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
@@ -319,11 +322,13 @@ static func _lot(p: Vector3) -> int:
 		var r := 1.0 if p.y < clump.w - 0.5 else 0.625
 		if p.y >= clump.z and p.y < clump.w and d.x < r and d.y < r and d.x + d.y < r * 1.5:
 			return OLIVE_DARK if p.y < clump.z + 0.5 else OLIVE
-	# a haystack: a round stack of straw, narrowing to a top
+	# a haystack: a round stack of golden hay, narrowing to a top, with a
+	# darker band where it is tied and a darker foot, so it stands apart
+	# from the wheat
 	var hd := Vector2(p.x + 8.0, p.z + 8.25).length()
 	var hr := 1.375 - maxf(0.0, p.y - 1.0) * 0.6
 	if p.y < 2.75 and hd < hr:
-		return HAY
+		return HAY_DARK if p.y < 0.25 or (p.y >= 1.0 and p.y < 1.25) else HAY
 	return EMPTY
 
 ## The levels of detail of one build, nearest first, scaled to the unit

@@ -207,8 +207,13 @@ Parzelle (vier Drehungen, gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxe
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
 Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
-Detailstufen mit 0,25, 0,5 und 1 m Voxeln, für jede Bauform gebaut beim
-ersten Start und in `user://farmhouse_v19_*.res` gespeichert. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
+Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
+nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
+bleiben), für jede Bauform gebaut beim ersten Start und in
+`user://farmhouse_v20_*.res` gespeichert. Unter der Traufe liegt ein
+eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
+dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
+lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
 nächstes zuerst, als Liste in einer Textur; drei MultiMeshes je Bauform
 zeichnen aufeinanderfolgende Stücke davon (jedes lässt die Parzellen der
 anderen Bauformen aus): die nächsten 1024 fein (bis 5 km
@@ -278,8 +283,10 @@ Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
 Ackerland: dunkle braune Erde mit grünen Reihen, zwischen denen die Erde
 sichtbar bleibt, und eine geschlossene strohgelbe Fläche. Weizen und Gerste
 wachsen von nackter Erde über lockere Sprossen zu schmalen, buckligen
-Reihen, reifen zu einer strohgelben Fläche und werden zu Stoppeln; eine
-brachliegende Parzelle ist eine niedrige Fläche aus trockenen Stoppeln.
+Reihen, reifen zu einer strohgelben, 0,9 m hohen Platte und werden zu
+Stoppeln; eine brachliegende Parzelle ist eine 0,5 m hohe Platte aus
+trockenen Stoppeln. Unter bestellten und brachen Parzellen malt die Terrain
+Wiese, so steht jede Platte mit sichtbarer Kante in einem Grasrand.
 Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel, Reben als
 niedrige Hecken in jeder zweiten Reihe; die Felder neben einem Hof sind
 ringsum eingezäunt, weiter draussen keines. Die Grüntöne liegen dunkler als

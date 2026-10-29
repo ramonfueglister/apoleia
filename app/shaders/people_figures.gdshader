@@ -28,12 +28,13 @@ varying float stripes;  // stripe half width, 0 = none
 varying vec3 art_light; // ART_LIGHT in view space
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
-// undyed wool, linen, madder red, saffron, woad blue: clothes when the
-// people are not coloured by group (sRGB); clear enough to stand out on
-// the grass and the fields (none close to the skin, so no one reads as naked)
-const vec3 TUNICS[8] = vec3[](vec3(0.92, 0.88, 0.8), vec3(0.71, 0.54, 0.35), vec3(0.71, 0.33, 0.23),
-	vec3(0.77, 0.58, 0.25), vec3(0.5, 0.56, 0.65), vec3(0.44, 0.5, 0.56), vec3(0.79, 0.71, 0.54), vec3(0.55, 0.36, 0.24));
-const vec3 SCARVES[4] = vec3[](vec3(0.88, 0.84, 0.74), vec3(0.7, 0.36, 0.28), vec3(0.42, 0.48, 0.62), vec3(0.78, 0.7, 0.5));
+// undyed wool and linen (a quarter), madder red, woad blue, browns, a
+// leaf green and a grey blue: clothes when the people are not coloured by
+// group (sRGB); clear enough to stand out on the grass and the fields, none
+// close to the skin, so no one reads as naked
+const vec3 TUNICS[8] = vec3[](vec3(0.81, 0.76, 0.65), vec3(0.86, 0.83, 0.74), vec3(0.61, 0.25, 0.16),
+	vec3(0.25, 0.37, 0.56), vec3(0.43, 0.29, 0.18), vec3(0.36, 0.43, 0.23), vec3(0.33, 0.24, 0.17), vec3(0.4, 0.45, 0.52));
+const vec3 SCARVES[4] = vec3[](vec3(0.85, 0.8, 0.68), vec3(0.62, 0.25, 0.18), vec3(0.3, 0.38, 0.55), vec3(0.45, 0.33, 0.22));
 // part ids in UV.x (people_dots.gd FIG_*)
 const int TUNIC = 0;
 const int LEG_L = 1;

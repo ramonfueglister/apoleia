@@ -61,7 +61,7 @@ void vertex() {
 	// one of the three builds per lot, drawn by its own MultiMesh
 	show = show && int((key >> 12u) % VARIANTS) == variant;
 	int index = int(UV.y + 0.5);
-	if (index == 1 || index == 2) {
+	if (index == 1 || index == 2 || index == 27) {
 		tint *= WALLS[key % 4u] / WALLS[0];
 	} else if (index == 20) {
 		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
@@ -72,7 +72,7 @@ void vertex() {
 	// on its lot (farmhouse.gd _lot)
 	bool cypress = index == 21 || index == 22;
 	bool olive = index >= 23 && index <= 25;
-	if ((cypress && (key & 96u) == 0u) || (olive && (key & 128u) == 0u) || (index == 26 && (key & 256u) == 0u)) {
+	if ((cypress && (key & 96u) == 0u) || (olive && (key & 128u) == 0u) || ((index == 26 || index == 28) && (key & 256u) == 0u)) {
 		show = false;
 	}
 	// empty slots: all vertices on one point behind the camera, no area

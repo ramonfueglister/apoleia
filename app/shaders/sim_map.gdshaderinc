@@ -47,9 +47,9 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 // half a terrain data tile (`tile_size` km the drawn tile; up close the
 // drawn tiles are quarter tiles, one parcel each), on the terrain's own grid
 // so a parcel never cuts a tile (sim_parcel). Each parcel is one flat colour.
-// Up close a sown parcel is grass round the raised field slab that stands
-// on it (people_crops.gdshader), a fallow one dry grass, so the farmland is
-// a mosaic of slabs, grass edges and fallow; the ramps between the
+// Up close a sown or fallow parcel is grass round the raised slab of crops
+// or stubble that stands on it (people_crops.gdshader), so the farmland is
+// a mosaic of slabs with grass edges; the ramps between the
 // terraces stay grass (SimCity 2000 farms only on flat ground, and a
 // parcel colour split by the ramp's two triangles reads as broken glass).
 // From SIM_CROPS_KM of view the farmland is blocks of 3 x 3 data tiles, each
@@ -73,9 +73,12 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 		vec4 f;
 		int state = sim_parcel(cell, size, f);
 		// the sim decides where the fields are: farmland it does not farm
-		// lies as pasture, fallow parcels as straw stubble; the crops stand
-		// on the sown ones (people_crops.gdshader)
-		return state == 0 ? pasture : state == 1 ? straw : meadow;
+		// lies as pasture; on the others stand the crops and the fallow
+		// stubble as raised slabs (people_crops.gdshader), with a strip of
+		// meadow round each, so their edges read as in Urbek; beyond the
+		// square of crops a fallow parcel is straw stubble on the ground
+		bool crops = all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
+		return state == 0 ? pasture : state == 1 && !crops ? straw : meadow;
 	}
 	float size = data_km * 3.0;
 	vec2 block = floor((p - world_min) / size);

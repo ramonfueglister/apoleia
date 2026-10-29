@@ -47,7 +47,7 @@ const vec3 STUBBLE = vec3(0.62, 0.54, 0.38);
 const vec3 LEAVES = vec3(0.2, 0.42, 0.17);
 const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
-const vec3 FENCE = vec3(0.54, 0.42, 0.28);     // the farmhouse fence (farmhouse.gd FENCE)
+const vec3 FENCE = vec3(0.37, 0.255, 0.157);   // the farmhouse fence (farmhouse.gd FENCE)
 const float FENCE_POSTS = 6.0;   // posts per side, about two metres apart
 const float SLAB_GAP = 0.025;     // share of the parcel left free on each side
 const vec3 WOOL = vec3(0.9, 0.87, 0.78);
@@ -85,14 +85,14 @@ void vertex() {
 	clumps = 0.0;
 	fill = 0.38;
 	if (state == 1) {
-		slab = 0.3; c = FALLOW; // no rows; high enough to show its edge
+		slab = 0.5; c = FALLOW; // no rows; high enough to show its edge
 		kind = -1;
 	} else if (grain) {
 		if (g <= 0.0) { slab = 0.15; c = STUBBLE; }
 		else if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; fill = 0.35; }
 		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 24.0; fill = 0.8; }
-		else { slab = 0.8; c = RIPE[kind]; }
+		else { slab = 0.9; c = RIPE[kind]; }
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; fill = 0.35; }

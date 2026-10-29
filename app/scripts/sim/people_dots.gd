@@ -61,8 +61,8 @@ const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used.
-const HOUSE_LOD_MAX := [1024, 4096, HOUSE_MAX]
-const HOUSE_LOD_KM := [5.0, 20.0, INF]
+const HOUSE_LOD_MAX := [256, 1024, 4096, HOUSE_MAX]
+const HOUSE_LOD_KM := [3.5, 5.0, 20.0, INF]
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 # the uniforms the placement passes depend on; the near relief (levels_*,
@@ -359,7 +359,7 @@ const FIG_BUNDLE := 16
 static func _figure_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var skin := Color(0.84, 0.64, 0.48)
+	var skin := Color(0.77, 0.55, 0.41)
 	var hair := Color(0.26, 0.17, 0.1)
 	var sandal := Color(0.36, 0.24, 0.15)
 	var wood := Color(0.42, 0.3, 0.18)
@@ -520,6 +520,7 @@ func _update_crops(view_km: float) -> void:
 	var tile_km: float = terrain._terrain_material.get_shader_parameter("tile_km")
 	_crops.visible = map_on and view_km <= CROP_KM and tile_km <= 0.5
 	if not _crops.visible:
+		terrain._terrain_material.set_shader_parameter("sim_crop_box", Vector4.ZERO)
 		return
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
 	# a parcel is half a data tile: up close one quarter tile (sub_tiles)
@@ -528,6 +529,10 @@ func _update_crops(view_km: float) -> void:
 	var from: Vector2 = centre - terrain.world_min
 	var cell0 := (from / size).floor() - Vector2(CROP_N / 2, CROP_N / 2)
 	_crop_material.set_shader_parameter("crop_cell0", cell0)
+	# where the crops stand the ground round their slabs is meadow (sim_map.gdshaderinc)
+	var box_min: Vector2 = terrain.world_min + cell0 * size
+	var box_max := box_min + Vector2(CROP_N, CROP_N) * size
+	terrain._terrain_material.set_shader_parameter("sim_crop_box", Vector4(box_min.x, box_min.y, box_max.x, box_max.y))
 	var lot0 := (from / LOT_KM).floor() - Vector2(LOTS_N / 2, LOTS_N / 2)
 	_lots_material.set_shader_parameter("lot_origin", lot0)
 	_lots_material.set_shader_parameter("world_min", terrain.world_min)
