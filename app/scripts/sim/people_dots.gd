@@ -21,8 +21,9 @@ extends MultiMeshInstance3D
 ## dots; only the people near the view are drawn (ApoleiaPeople.near).
 ## Dots of people on the road (or on a ship) are dark red.
 ## C colours the dots by occupation, political group or estate (and back to
-## black); a click on a dot shows that person and their household, Esc
-## closes it.
+## black); a click on a dot or figure, or on a traveller on its way
+## (carrier, trader, day labourer: people_trips.gd), shows that person and
+## their household, for a traveller also what they are doing; Esc closes it.
 ## The grain economy (crate::grain, run beside the people) shows on the
 ## terrain: fields by season around the farms, footpaths to the markets,
 ## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
@@ -31,7 +32,8 @@ extends MultiMeshInstance3D
 ## opens the simulation's tables (sim_tables.gd). Up close the trips to
 ## market and between markets walk the paths and roads (people_trips.gd).
 ## Keys: P shows or hides the dots (an overview, off by default), G the
-## grain economy on the map (on by default), [ and ] slow down or speed up the days.
+## grain economy on the map (on by default). How many days a second run
+## (`days_per_second`) is set by the game clock (game_clock.gd).
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
 ## (relative paths start at the repository root), --people-colour=n starts
@@ -112,6 +114,7 @@ var _map_tex: ImageTexture
 var _road_tex: ImageTexture
 var _region_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
+var _doing := "" # what the clicked traveller is doing (people_trips.gd pick), or ""
 var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
@@ -941,12 +944,30 @@ static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
 
-## The dot under `pixel`: reads the placement texture back (only on a
-## click) and lets ApoleiaPeople find the nearest dot on screen.
+## The person under `pixel`: a traveller on its way (people_trips.gd),
+## else the nearest dot or figure, for which it reads the placement
+## texture back (only on a click) and lets ApoleiaPeople find it on screen.
 func _pick(pixel: Vector2) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null or not visible:
 		return
+	# travellers walk over the people at home, so they come first
+	var traveller: Dictionary = _trips.pick(cam, pixel, terrain.ground_y, FIGURE_M * TileTerrain.DIORAMA_KM_PER_M * 0.5, PICK_PX)
+	if not traveller.is_empty():
+		selected = -1
+		for mat in [_material, _figure_material]:
+			mat.set_shader_parameter("selected_slot", -1)
+		print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "pid": traveller.pid, "household": traveller.household}))
+		_doing = traveller.what
+		if int(traveller.pid) >= 0:
+			people.ask_person_id(traveller.pid)
+		else:
+			people.ask_household_member(traveller.household)
+		_waiting = true
+		_info_label.visible = true
+		_info_label.text = "…"
+		return
+	_doing = ""
 	var vp := cam.get_camera_projection() * Projection(cam.get_camera_transform().affine_inverse())
 	var m := PackedFloat32Array()
 	for c in 4:
@@ -971,6 +992,8 @@ func _show_person(p: Dictionary) -> void:
 		return
 	var lines := PackedStringArray()
 	lines.append("[b]%s, %d Jahre[/b]  #%d" % ["Frau" if p.female else "Mann", int(p.age), p.pid])
+	if _doing != "":
+		lines.append("[color=#c9a45c]%s[/color]" % _doing)
 	lines.append("%s, %s" % [p.job, STANDS[clampi(p.stand, 0, 3)]])
 	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
 	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])
@@ -1019,8 +1042,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_G:
 				map_on = not map_on
 				_map_version = -1
-			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
-			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
+
+## A save game was loaded (game_clock.gd): a new sim thread, new people.
+## Forget the person shown and the map layers; the textures follow on the
+## next sync.
+func restarted() -> void:
+	selected = -1
+	_waiting = false
+	for m in [_material, _figure_material]:
+		m.set_shader_parameter("selected_slot", -1)
+	_info_label.visible = false
+	_map_version = -1
+	_day_debt = 0.0
 
 func _process(delta: float) -> void:
 	var start := Time.get_ticks_usec()
@@ -1028,7 +1061,7 @@ func _process(delta: float) -> void:
 	process_usec = Time.get_ticks_usec() - start
 
 func _frame(delta: float) -> void:
-	if people == null:
+	if people == null or people.is_loading():
 		return
 	_day_debt += days_per_second * delta
 	var whole := int(_day_debt)

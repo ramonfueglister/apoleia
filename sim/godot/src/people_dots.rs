@@ -7,24 +7,32 @@
 //! instanced draw that reads its dot from that texture (people_dots.gdshader),
 //! so the CPU never touches a per-dot transform.
 //!
+//! The sim thread owns one apoleia_sim::game::Game: the people, the grain
+//! economy and the build orders. Commands from the build menu and save games
+//! go through the same queue as the days and are handled between two days;
+//! loading a save plays it again on a new sim thread (docs/kit1/
+//! REALTIME_GAMEPLAY.md phase 4).
+//!
 //! The frame never waits for a day: the sim thread holds the front buffer
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
 
-use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
+use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT};
 use crate::{tables, trips};
-use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
-use apoleia_sim::people::{Clock, People};
+use apoleia_sim::build::{self, Command, Orders};
+use apoleia_sim::game::{Game, Loaded, Start};
+use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
-use apoleia_sim::tables::Table;
+use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
 use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
 use godot::prelude::*;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Edge of one page in texels (PAGE = SIDE²).
 const SIDE: usize = 64;
@@ -34,6 +42,9 @@ const HOUSE_VARIANTS: u8 = 4;
 const HOUSE_UNPLACED: u8 = 254;
 /// A house newer than the last placement read back.
 const HOUSE_UNKNOWN: u8 = 255;
+/// How often a second the view is updated at most while the sim runs
+/// behind the days asked for.
+const VIEW_HZ: f64 = 30.0;
 
 #[derive(Default)]
 struct Front {
@@ -58,29 +69,81 @@ struct Front {
     work: Option<WorkView>,
     /// Answer to the last `ask_events`.
     events: Option<EventsView>,
+    /// Answer to the last `ask_goods`: workshops, markets' goods, goods
+    /// moves (trips::goods_to_dict).
+    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView)>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
+    /// The player's build orders, as of the last command applied.
+    orders: Orders,
+    /// How far each order's building site is (S113), in the orders' tile
+    /// order: column, row, work days done, work days needed (0, 0 while
+    /// it has no site or nobody builds it).
+    progress: Vec<i32>,
+    /// Bumped whenever `orders` or `progress` go out; carried over to the
+    /// game a save starts, so the build menu never misses a change.
+    built: u64,
+    /// Answer to the last `ask_build_check`.
+    check: Option<BuildCheck>,
+    /// Answer to the last `ask_sites`: x, z, kind, progress, width, depth.
+    sites: Option<Vec<f32>>,
+    /// Answer to the last `ask_market`: the market and its row of the
+    /// markets table (None when there is no such market).
+    market: Option<(usize, Option<Table>)>,
+    /// While a save game plays again: the day reached and the day saved.
+    loading: Option<(i64, i64)>,
+    /// How the last save game played again, once.
+    loaded: Option<Loaded>,
+    /// Answer to the last `save_game`: the day saved, or what went wrong.
+    saved: Option<Result<i64, String>>,
+    /// The treasury's cash after the last day, milli-denarii.
+    cash: i64,
+    /// Milliseconds the sim thread spent on its days so far: the day
+    /// itself, orders and map layers, the view, handing over; and the days.
+    spent: [f64; 4],
+    spent_days: u64,
 }
 
-/// Work for the sim thread: days to run, stop, a slot whose person to look
-/// up, a table to build (apoleia_sim::tables), a window (world km, min x,
+/// Whom `ask_person` and its kin look up: the person in a view slot (a
+/// dot or figure clicked), a person by id (a carrier or trader on the
+/// road), or a member of a household (a day labourer on the way to work).
+#[derive(Clone, Copy)]
+enum Who {
+    Slot(usize),
+    Pid(u32),
+    Household(u32),
+}
+
+/// Work for the sim thread: days to run, stop, whose person to look up, a table to build (apoleia_sim::tables), a window (world km, min x,
 /// min z, max x, max z) whose trips under way to list.
 #[derive(Default)]
 struct Queue {
     days: u64,
     stop: bool,
-    ask: Option<usize>,
+    ask: Option<Who>,
     table: Option<String>,
     trips: Option<[f64; 4]>,
     work: Option<[f64; 4]>,
     /// The day after which, and the window.
     events: Option<(i64, [f64; 4])>,
+    /// Build menu commands (apoleia_sim::build), applied in order.
+    commands: Vec<Command>,
+    /// Where to write a save game, between two days.
+    save: Option<String>,
+    /// Orders to check before they are placed: kind and tiles.
+    check: Option<(u8, Vec<build::Tile>)>,
+    /// A window (world km) whose workshops, market goods and goods moves to list.
+    goods: Option<[f64; 4]>,
+    /// A window (world km) whose building sites to list.
+    sites: Option<[f64; 4]>,
+    /// A market whose row of the markets table to give.
+    market: Option<usize>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some()
     }
 }
 
@@ -89,6 +152,9 @@ struct Shared {
     queue: Mutex<Queue>,
     wake: Condvar,
     front: Mutex<Front>,
+    /// The farms' building sites go into the house records
+    /// (`show_site_houses`; off until the house shader draws them).
+    site_houses: AtomicBool,
 }
 
 fn publish_houses(view: &mut PeopleView, f: &mut Front) {
@@ -118,14 +184,192 @@ fn publish(view: &PeopleView, pages: &[u32], f: &mut Front) {
     }
 }
 
+/// (column, row) pairs from Godot as (row, column) tiles; an odd last
+/// number is dropped.
+fn pairs(a: &PackedInt32Array) -> Vec<build::Tile> {
+    a.as_slice().chunks_exact(2).map(|p| (p[1], p[0])).collect()
+}
+
 /// Edge of a 25 km cell and of a fine tile, km.
 const CELL_KM: f32 = 25.0;
 const FINE_KM: f32 = CELL_KM / FINE as f32;
 
-fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
+/// What a game starts from besides its seed (apoleia_sim::game::Start),
+/// read from below the repository root.
+struct Data {
+    inputs: apoleia_sim::inputs::Inputs,
+    clear: Option<Clearable>,
+    cover: Option<FineCover>,
+}
+
+impl Data {
+    fn read(root: &str) -> Result<Data, String> {
+        let inputs = apoleia_sim::inputs::load(Path::new(root), false)?;
+        // villages on the farmland of the fine tiles; without the file on
+        // hashed tiles of each cell
+        let cover = match apoleia_sim::grain::fine_cover(Path::new(root), true) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no fine land cover ({e}), villages on hashed tiles");
+                None
+            }
+        };
+        // the grain economy with the defaults of bin/grain.rs: today's
+        // farmland clearable, fields on the fine tiles
+        let cols: Vec<String> = apoleia_sim::grain::CLEAR_COVER.iter().map(|c| c.to_string()).collect();
+        let clear = match apoleia_sim::grain::clearable(Path::new(root), &cols) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no landcover25.csv ({e}), all usable land clearable");
+                None
+            }
+        };
+        Ok(Data { inputs, clear, cover })
+    }
+
+    fn start(&self) -> Start<'_> {
+        Start { inputs: &self.inputs, clear: self.clear.as_ref(), cover: self.cover.as_ref() }
+    }
+}
+
+/// The map layers and the view of a game that is about to run, published
+/// as its first day.
+fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView) {
+    let today = game.today();
+    let mut map = GrainMap::new(&game.people);
+    map.build(&game.grain, today);
+    let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
+    mark_work(game, &mut view, shared.site_houses.load(Ordering::Relaxed));
+    let pages = view.update(&mut game.people);
+    let mut f = shared.front.lock().unwrap();
+    publish(&view, &pages, &mut f);
+    publish_houses(&mut view, &mut f);
+    f.day = today;
+    f.count = game.people.count;
+    f.cash = game.grain.treasury.cash;
+    f.map = map.layers.clone();
+    publish_orders(game, &mut f);
+    (map, view)
+}
+
+/// The statuses of `take_build_check` (apoleia_sim::grain::CHECK_*).
+const CHECK_STATES: [&str; 4] = ["wird gebaut", "hier baut niemand: kein Markt, Meer oder ausserhalb der Karte", "Felder und Strassen baut noch niemand", "wird gebaut, aber in der Gegend zieht heute niemand ein"];
+
+/// What orders would come to before they are placed (`ask_build_check`).
+struct BuildCheck {
+    /// Column, row and status (apoleia_sim::grain::CHECK_*) of each tile.
+    tiles: Vec<i32>,
+    /// Work days and their cost at today's day wages, milli-denarii.
+    need: i64,
+    cost: i64,
+    /// The market of the first tile that has one, its day wage, and how
+    /// many markets the tiles lie in.
+    market: String,
+    wage: i64,
+    markets: usize,
+    /// The treasury's cash now, milli-denarii.
+    cash: i64,
+}
+
+fn build_check(game: &Game, kind: u8, tiles: &[build::Tile]) -> BuildCheck {
+    let mut c = BuildCheck { tiles: Vec::with_capacity(tiles.len() * 3), need: 0, cost: 0, market: String::new(), wage: 0, markets: 0, cash: game.grain.treasury.cash };
+    let mut seen = Vec::new();
+    for &t in tiles {
+        let s = game.grain.site_check(&game.people, kind, t);
+        c.tiles.extend_from_slice(&[t.1, t.0, s.status as i32]);
+        c.need += s.need;
+        c.cost += s.cost;
+        if s.market != apoleia_sim::people::NONE && !seen.contains(&s.market) {
+            if seen.is_empty() {
+                c.market = game.grain.markets[s.market as usize].name.clone();
+                c.wage = game.grain.day_wage(s.market);
+            }
+            seen.push(s.market);
+        }
+    }
+    c.markets = seen.len();
+    c
+}
+
+/// The row of a table whose id is `id`, as a table of one row.
+fn row_of(mut t: Table, id: i64) -> Option<Table> {
+    let i = t.columns.iter().find(|c| c.key == "id").and_then(|c| match &c.values {
+        Values::Int(v) => v.iter().position(|&x| x == id),
+        _ => None,
+    })?;
+    for c in t.columns.iter_mut() {
+        c.values = match &c.values {
+            Values::Int(v) => Values::Int(vec![v[i]]),
+            Values::Float(v) => Values::Float(vec![v[i]]),
+            Values::Text(v) => Values::Text(vec![v[i].clone()]),
+        };
+    }
+    Some(t)
+}
+
+/// Each craft household's workshop onto its house record (view.rs Houses),
+/// the families whose farm is not in their village onto its tile
+/// (Grain::homes_moved: farms built from orders, heirs), and with `sites`
+/// each farm's building site as a house record where the farm will stand.
+fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
+    view.set_homes(&game.grain.homes_moved());
+    let farms: Vec<(u32, u8)> = if sites {
+        game.grain.sites().filter(|(_, s)| s.kind == build::FARM && s.need > 0).map(|(_, s)| (s.fine, (s.done * 255 / s.need).clamp(0, 255) as u8)).collect()
+    } else {
+        Vec::new()
+    };
+    view.set_sites(&farms);
+    let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
+    view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
+}
+
+/// The building sites on fine tiles in the window (world km, min x, min z,
+/// max x, max z): x and z of the tile's centre, kind (build::KIND_NAMES),
+/// share built (0 while nobody builds it), and the tile's width and depth
+/// in world km (the sim knows no smaller footprint yet).
+fn sites_in(game: &Game, [x0, z0, x1, z1]: [f64; 4]) -> Vec<f32> {
+    let mut out = Vec::new();
+    for ((row, col), s) in game.grain.sites() {
+        let (x, z) = ((col as f32 + 0.5) * FINE_KM, (row as f32 + 0.5) * FINE_KM);
+        if (x as f64) < x0 || (x as f64) > x1 || (z as f64) < z0 || (z as f64) > z1 {
+            continue;
+        }
+        let built = if s.need > 0 { s.done as f32 / s.need as f32 } else { 0.0 };
+        out.extend_from_slice(&[x, z, s.kind as f32, built, FINE_KM, FINE_KM]);
+    }
+    out
+}
+
+/// The build orders and how far their sites are, to the front.
+fn publish_orders(game: &Game, f: &mut Front) {
+    f.orders = game.orders.clone();
+    f.progress = progress(game);
+    f.built += 1;
+}
+
+/// Column, row, work days done and needed for each order, in tile order
+/// (0, 0 without a site).
+fn progress(game: &Game) -> Vec<i32> {
+    let mut sites = game.grain.sites().peekable();
+    let mut out = Vec::with_capacity(game.orders.len() * 4);
+    for (t, _) in game.orders.iter() {
+        while sites.next_if(|(s, _)| *s < t).is_some() {}
+        let (done, need) = sites.next_if(|(s, _)| *s == t).map_or((0, 0), |(_, s)| (s.done, s.need));
+        out.extend_from_slice(&[t.1, t.0, done as i32, need as i32]);
+    }
+    out
+}
+
+fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
+    let map = {
+        let sh = shared.clone();
+        MapThread::start(map, move |layers| sh.front.lock().unwrap().map = layers)
+    };
+    let mut shown = Instant::now();
+    let mut sites_were = shared.site_houses.load(Ordering::Relaxed);
     loop {
-        // questions from the game first, between two days; then a day
-        let (ask, table, trips, work, events) = {
+        // commands and questions from the game first, between two days; then a day
+        let (commands, save, check, ask, table, trips, work, events, goods, sites, market) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -137,14 +381,40 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             if !asked {
                 q.days -= 1;
             }
-            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take())
         };
+        if !commands.is_empty() {
+            let mut changed = 0;
+            for c in &commands {
+                changed += game.command(c);
+            }
+            if changed > 0 {
+                publish_orders(&game, &mut shared.front.lock().unwrap());
+            }
+        }
+        if let Some(path) = &save {
+            let r = game.save_to(Path::new(path)).map(|()| game.today()).map_err(|e| e.to_string());
+            shared.front.lock().unwrap().saved = Some(r);
+        }
+        if let Some((kind, tiles)) = &check {
+            let c = build_check(&game, *kind, tiles);
+            shared.front.lock().unwrap().check = Some(c);
+        }
+        if let Some(window) = sites {
+            let v = sites_in(&game, window);
+            shared.front.lock().unwrap().sites = Some(v);
+        }
+        if let Some(m) = market {
+            let row = game.grain.table(&game.people, "markets").and_then(|t| row_of(t, m as i64));
+            shared.front.lock().unwrap().market = Some((m, row));
+        }
+        let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
-            let t = grain.table(&people, key);
+            let t = grain.table(people, key);
             shared.front.lock().unwrap().table = t;
         }
         if let Some([x0, z0, x1, z1]) = trips {
-            let v = grain.trips_in(&people, (x0, z0), (x1, z1));
+            let v = grain.trips_in(people, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().trips = Some(v);
         }
         if let Some([x0, z0, x1, z1]) = work {
@@ -152,46 +422,85 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             shared.front.lock().unwrap().work = Some(v);
         }
         if let Some((since, [x0, z0, x1, z1])) = events {
-            let v = grain.events_in(&people, since, (x0, z0), (x1, z1));
+            let v = grain.events_in(people, since, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().events = Some(v);
         }
-        if let Some(slot) = ask {
-            let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
+        if let Some([x0, z0, x1, z1]) = goods {
+            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)));
+            shared.front.lock().unwrap().goods = Some(v);
+        }
+        if let Some(who) = ask {
+            let pid = match who {
+                Who::Slot(slot) => view.pid_at(slot),
+                Who::Pid(pid) => Some(pid),
+                Who::Household(h) => PeopleView::member_of(people, h),
+            };
+            let who = pid.and_then(|pid| PeopleView::person(people, pid));
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
                 (p, hh)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() {
             continue;
         }
+        // the people, the grain economy (S69–S112) and the building sites
+        // (S113) on the same day, as bin/grain.rs
         let t0 = Instant::now();
-        people.day();
-        let day_usec = t0.elapsed().as_secs_f64() * 1e6;
-        // the grain economy (S69–S87) on the same day, as bin/grain.rs
-        let tg = Instant::now();
-        grain.day(&mut people);
-        let grain_usec = tg.elapsed().as_secs_f64() * 1e6;
-        let today = people.world.resource::<Clock>().day;
-        let month = today % 30 == 0;
-        if month {
-            map.build(&grain, today);
+        let [day_usec, grain_usec] = game.day();
+        let today = game.today();
+        let t_map = Instant::now();
+        // a site finished (its order is gone): its farm and fields show at
+        // once, not at the next month's map; how far the sites are goes out
+        // once a week (REALTIME_GAMEPLAY.md phase 3)
+        let finished = game.orders.version != shared.front.lock().unwrap().orders.version;
+        if finished || (today % 7 == 0 && progress(&game) != shared.front.lock().unwrap().progress) {
+            publish_orders(&game, &mut shared.front.lock().unwrap());
         }
+        let remap = today % 30 == 0 || finished;
+        // the workshops at the houses (S105; the graphics put them there),
+        // once a week as the crafts sell by the week; a farm just taken
+        // shows its family on its tile at once
+        let sites_on = shared.site_houses.load(Ordering::Relaxed);
+        if today % 7 == 0 || finished || sites_on != sites_were {
+            mark_work(&game, &mut view, sites_on);
+            sites_were = sites_on;
+        }
+        if remap {
+            map.draw(MapJob::take(&game.grain, today));
+        }
+        // the view at most VIEW_HZ times a second while days are queued:
+        // the screen shows one state a frame, so at 100 days a second most
+        // days would never be seen (REALTIME_GAMEPLAY.md phase 8)
         let t1 = Instant::now();
-        let pages = view.update(&mut people);
+        let behind = shared.queue.lock().unwrap().days > 0;
+        let show = !behind || t1 - shown >= Duration::from_secs_f64(1.0 / VIEW_HZ);
+        let pages = if show {
+            shown = t1;
+            view.update(&mut game.people)
+        } else {
+            Vec::new()
+        };
         let view_usec = t1.elapsed().as_secs_f64() * 1e6;
+        let t_publish = Instant::now();
         let mut f = shared.front.lock().unwrap();
-        publish(&view, &pages, &mut f);
-        publish_houses(&mut view, &mut f);
-        f.day += 1;
-        f.count = people.count;
-        f.day_usec = day_usec;
-        f.view_usec = view_usec;
-        f.grain_usec = grain_usec;
-        if month {
-            f.map = map.layers.clone();
+        if show {
+            publish(&view, &pages, &mut f);
+            publish_houses(&mut view, &mut f);
+            f.view_usec = view_usec;
         }
+        let ms = |a: Instant, b: Instant| (b - a).as_secs_f64() * 1e3;
+        let end = Instant::now();
+        for (k, v) in [ms(t0, t_map), ms(t_map, t1), ms(t1, t_publish), ms(t_publish, end)].into_iter().enumerate() {
+            f.spent[k] += v;
+        }
+        f.spent_days += 1;
+        f.day = today;
+        f.count = game.people.count;
+        f.cash = game.grain.treasury.cash;
+        f.day_usec = day_usec;
+        f.grain_usec = grain_usec;
     }
 }
 
@@ -221,6 +530,8 @@ pub struct ApoleiaPeople {
     view_usec: f64,
     upload_usec: f64,
     uploaded_pages: i64,
+    /// Repository root the inputs were loaded from (needed to load saves).
+    root: String,
     base: Base<RefCounted>,
 }
 
@@ -230,7 +541,8 @@ impl ApoleiaPeople {
     /// starts the sim thread. Returns false when the inputs are missing.
     #[func]
     fn load(&mut self, repo_root: GString, seed: i64) -> bool {
-        let inp = match apoleia_sim::inputs::load(Path::new(&repo_root.to_string()), false) {
+        self.root = repo_root.to_string();
+        let data = match Data::read(&self.root) {
             Ok(d) => d,
             Err(e) => {
                 godot_error!("ApoleiaPeople.load: {e}");
@@ -238,50 +550,134 @@ impl ApoleiaPeople {
             }
         };
         self.stop();
-        let mut people = People::new(&inp, seed as u64);
-        // villages on the farmland of the fine tiles; without the file on
-        // hashed tiles of each cell
-        let root = repo_root.to_string();
-        let cover = match apoleia_sim::grain::fine_cover(Path::new(&root), true) {
-            Ok(c) => Some(c),
-            Err(e) => {
-                godot_warn!("ApoleiaPeople: no fine land cover ({e}), villages on hashed tiles");
-                None
-            }
-        };
-        // the grain economy with the defaults of bin/grain.rs: today's
-        // farmland clearable, fields on the fine tiles
-        let cols: Vec<String> = apoleia_sim::grain::CLEAR_COVER.iter().map(|c| c.to_string()).collect();
-        let clear = match apoleia_sim::grain::clearable(Path::new(&root), &cols) {
-            Ok(c) => Some(c),
-            Err(e) => {
-                godot_warn!("ApoleiaPeople: no landcover25.csv ({e}), all usable land clearable");
-                None
-            }
-        };
         let tg = Instant::now();
-        let grain = Grain::with_clearing(&inp, &mut people, apoleia_sim::grain::CLEAR_PCT, clear.as_ref(), cover.as_ref(), apoleia_sim::grain::CROP_PCT);
+        let mut game = Game::new(data.start(), seed as u64);
         let grain_ms = tg.elapsed().as_secs_f64() * 1e3;
-        let mut map = GrainMap::new(&people);
-        map.build(&grain, people.world.resource::<Clock>().day);
-        let mut view = PeopleView::new(&people, &inp.cities, cover.as_ref());
-        let pages = view.update(&mut people);
         let shared = Arc::new(Shared::default());
+        let (map, view) = begin(&mut game, &data, &shared);
+        godot_print!("{{\"event\":\"grain_loaded\",\"ms\":{grain_ms:.0},\"markets\":{}}}", game.grain.markets.len());
+        let sh = shared.clone();
+        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(game, map, view, sh)).expect("people thread"));
+        self.restart(shared);
+        true
+    }
+
+    /// Writes a save game (absolute path) between two days; the answer
+    /// comes with `take_saved`. A save holds the seed and the commands
+    /// (apoleia_sim::game), a few hundred bytes.
+    #[func]
+    fn save_game(&mut self, path: GString) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().save = Some(path.to_string());
+        self.shared.wake.notify_one();
+    }
+
+    /// The answer to the last `save_game`, once: {"ok", "day" or "error"};
+    /// empty while it is not written yet.
+    #[func]
+    fn take_saved(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        match self.shared.front.lock().unwrap().saved.take() {
+            Some(Ok(day)) => {
+                d.set("ok", true);
+                d.set("day", day);
+            }
+            Some(Err(e)) => {
+                d.set("ok", false);
+                d.set("error", e.as_str());
+            }
+            None => {}
+        }
+        d
+    }
+
+    /// Replaces the running game with a save game (absolute path). The file
+    /// is checked first; a bad one leaves the game running and returns
+    /// false. Otherwise the save plays again on a new sim thread
+    /// (`loading`), then runs on from its day.
+    #[func]
+    fn load_game(&mut self, path: GString) -> bool {
+        let data = match Data::read(&self.root) {
+            Ok(d) => d,
+            Err(e) => {
+                godot_error!("ApoleiaPeople.load_game: {e}");
+                return false;
+            }
+        };
+        let replay = match std::fs::read(path.to_string()).map_err(|e| e.to_string()).and_then(|b| Game::check(data.start(), &b).map_err(|e| e.to_string())) {
+            Ok(r) => r,
+            Err(e) => {
+                godot_error!("ApoleiaPeople.load_game: {e}");
+                return false;
+            }
+        };
+        let built = self.shared.front.lock().unwrap().built;
+        self.stop();
+        let shared = Arc::new(Shared::default());
+        shared.site_houses.store(self.shared.site_houses.load(Ordering::Relaxed), Ordering::Relaxed);
         {
             let mut f = shared.front.lock().unwrap();
-            publish(&view, &pages, &mut f);
-            publish_houses(&mut view, &mut f);
-            f.count = people.count;
-            f.map = map.layers.clone();
+            f.loading = Some((0, replay.day()));
+            f.built = built;
         }
-        godot_print!("{{\"event\":\"grain_loaded\",\"ms\":{grain_ms:.0},\"markets\":{}}}", grain.markets.len());
         let sh = shared.clone();
-        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(people, grain, map, view, sh)).expect("people thread"));
-        self.shared = shared;
-        self.data.clear();
-        self.houses.clear();
-        self.pages = 0;
+        self.worker = Some(
+            std::thread::Builder::new()
+                .name("apoleia-people".into())
+                .spawn(move || {
+                    let (mut game, info) = replay.run(data.start(), |d, of| sh.front.lock().unwrap().loading = Some((d, of)));
+                    let (map, view) = begin(&mut game, &data, &sh);
+                    {
+                        let mut f = sh.front.lock().unwrap();
+                        f.loading = None;
+                        f.loaded = Some(info);
+                    }
+                    drop(data);
+                    run(game, map, view, sh)
+                })
+                .expect("people thread"),
+        );
+        self.restart(shared);
         true
+    }
+
+    /// The treasury's cash after the last day, in denarii (S94, S95).
+    #[func]
+    fn cash(&self) -> f64 {
+        self.shared.front.lock().unwrap().cash as f64 / 1000.0
+    }
+
+    /// A save game is playing again: no days, no dots until it has.
+    #[func]
+    fn is_loading(&self) -> bool {
+        self.shared.front.lock().unwrap().loading.is_some()
+    }
+
+    /// While a save game plays again: {"day", "of"}; empty otherwise.
+    #[func]
+    fn loading(&self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        if let Some((day, of)) = self.shared.front.lock().unwrap().loading {
+            d.set("day", day);
+            d.set("of", of);
+        }
+        d
+    }
+
+    /// How the last save game played again, once: {"day", "commands",
+    /// "identical" (the same world as saved; false when the sim changed
+    /// since)}; empty until it has.
+    #[func]
+    fn take_loaded(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        if let Some(l) = self.shared.front.lock().unwrap().loaded.take() {
+            d.set("day", l.day);
+            d.set("commands", l.commands as i64);
+            d.set("identical", l.identical);
+        }
+        d
     }
 
     /// Queues days for the sim thread and returns at once.
@@ -292,6 +688,177 @@ impl ApoleiaPeople {
         }
         self.shared.queue.lock().unwrap().days += days as u64;
         self.shared.wake.notify_one();
+    }
+
+    /// Orders `kind` (apoleia_sim::build: 0 farm, 1 field, 2 road) on the
+    /// fine tiles `tiles` (column, row pairs, absolute: floor(x / 1.5625),
+    /// floor(z / 1.5625) world km). Applied between two days; `build_orders`
+    /// shows it a frame or two later.
+    #[func]
+    fn order_build(&mut self, kind: i64, tiles: PackedInt32Array) {
+        if self.worker.is_none() || !(0..build::KIND_NAMES.len() as i64).contains(&kind) {
+            return;
+        }
+        let tiles = pairs(&tiles);
+        if tiles.is_empty() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Place { kind: kind as u8, tiles });
+        self.shared.wake.notify_one();
+    }
+
+    /// Takes back the orders on `tiles` (as `order_build`).
+    #[func]
+    fn cancel_build(&mut self, tiles: PackedInt32Array) {
+        let tiles = pairs(&tiles);
+        if self.worker.is_none() || tiles.is_empty() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Cancel { tiles });
+        self.shared.wake.notify_one();
+    }
+
+    /// The build orders: {"version": bumped on every change, "tiles":
+    /// column, row, kind for each, "progress": column, row, work days done,
+    /// work days needed for each, in the same order (0, 0 while it has no
+    /// building site or nobody builds it yet; once a week), "names": the
+    /// kinds}.
+    #[func]
+    fn build_orders(&self) -> VarDictionary {
+        let f = self.shared.front.lock().unwrap();
+        let mut flat = Vec::with_capacity(f.orders.len() * 3);
+        for ((row, col), o) in f.orders.iter() {
+            flat.extend_from_slice(&[col, row, o.kind as i32]);
+        }
+        let mut d = VarDictionary::new();
+        d.set("version", f.built as i64);
+        d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
+        d.set("progress", &PackedInt32Array::from(f.progress.as_slice()));
+        d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
+        d
+    }
+
+    /// Asks what orders of `kind` on `tiles` (as `order_build`) would come
+    /// to, without placing them; the answer comes with `take_build_check`,
+    /// also while paused.
+    #[func]
+    fn ask_build_check(&mut self, kind: i64, tiles: PackedInt32Array) {
+        let tiles = pairs(&tiles);
+        if self.worker.is_none() || tiles.is_empty() || !(0..build::KIND_NAMES.len() as i64).contains(&kind) {
+            return;
+        }
+        self.shared.front.lock().unwrap().check = None;
+        self.shared.queue.lock().unwrap().check = Some((kind as u8, tiles));
+        self.shared.wake.notify_one();
+    }
+
+    /// The answer to `ask_build_check`, once; empty until the sim thread
+    /// gave it. {"tiles": column, row, status for each (0 gets built, 1
+    /// nobody builds here: no market, the sea or off the map, 2 fields and
+    /// roads nobody builds yet, 3 gets built but nobody of the region could
+    /// move in today), "states": what each status means, "days": work days,
+    /// "cost": denarii at today's day wages from the treasury, "market" and
+    /// "wage": the first tile's market and its day wage in denarii,
+    /// "markets": how many markets, "cash": the treasury's denarii now}.
+    #[func]
+    fn take_build_check(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        let Some(c) = self.shared.front.lock().unwrap().check.take() else { return d };
+        d.set("tiles", &PackedInt32Array::from(c.tiles.as_slice()));
+        d.set("states", &PackedStringArray::from_iter(CHECK_STATES.iter().map(|n| GString::from(*n))));
+        d.set("days", c.need);
+        d.set("cost", c.cost as f64 / 1000.0);
+        d.set("market", c.market.as_str());
+        d.set("wage", c.wage as f64 / 1000.0);
+        d.set("markets", c.markets as i64);
+        d.set("cash", c.cash as f64 / 1000.0);
+        d
+    }
+
+    /// Puts each farm's building site (S113) into the house records, as a
+    /// house where the farm will stand: [x, z, -village code, site key <<
+    /// 8 | share built × 255] (sim/src/view.rs Houses). Off by default,
+    /// since a house shader that does not know the negative village code
+    /// would misplace them; kept across loads.
+    #[func]
+    fn show_site_houses(&mut self, on: bool) {
+        self.shared.site_houses.store(on, Ordering::Relaxed);
+        self.shared.wake.notify_one();
+    }
+
+    /// Asks the sim thread for the building sites in the window (world km);
+    /// the answer comes with `take_sites`, also while paused.
+    #[func]
+    fn ask_sites(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().sites = None;
+        self.shared.queue.lock().unwrap().sites = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The sites asked for, once: six floats each, x and z of the tile's
+    /// centre (world km), kind (0 farm, 1 field, 2 road), share built 0–1
+    /// (0 while nobody builds it), width and depth (world km, the fine
+    /// tile); None (an empty Variant) until the sim thread answered.
+    #[func]
+    fn take_sites(&mut self) -> Variant {
+        match self.shared.front.lock().unwrap().sites.take() {
+            Some(v) => PackedFloat32Array::from(v.as_slice()).to_variant(),
+            None => Variant::nil(),
+        }
+    }
+
+    /// The market whose square is on the fine tile under (x, z) world km or
+    /// next to it, -1 if none (from the map layers, at once).
+    #[func]
+    fn market_at(&self, x: f32, z: f32) -> i64 {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let (rf, cf) = map.fine_size();
+        if map.fine.len() != (rf * cf * 4) as usize {
+            return -1;
+        }
+        let (fr, fc) = ((z / FINE_KM).floor() as i32 - map.row0 * FINE, (x / FINE_KM).floor() as i32 - map.col0 * FINE);
+        for (dr, dc) in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)] {
+            let (r, c) = (fr + dr, fc + dc);
+            if r < 0 || c < 0 || r >= rf || c >= cf || map.fine[((r * cf + c) * 4 + 3) as usize] & MARKET_BIT == 0 {
+                continue;
+            }
+            let cell = ((r / FINE) * map.cols + c / FINE) as usize;
+            return map.regions.get(cell).map_or(-1, |&m| if m == u32::MAX { -1 } else { m as i64 });
+        }
+        -1
+    }
+
+    /// Asks the sim thread for one market's row of the markets table
+    /// (apoleia_sim::grain, `table("markets")`); the answer comes with
+    /// `take_market`, also while paused.
+    #[func]
+    fn ask_market(&mut self, market: i64) {
+        if self.worker.is_none() || market < 0 {
+            return;
+        }
+        self.shared.front.lock().unwrap().market = None;
+        self.shared.queue.lock().unwrap().market = Some(market as usize);
+        self.shared.wake.notify_one();
+    }
+
+    /// The market asked for, once: {"market", and when it exists the row
+    /// as tables::to_dict with one row ("name", "day", "columns", "labels",
+    /// "units", "data")}; empty until the sim thread answered.
+    #[func]
+    fn take_market(&mut self) -> VarDictionary {
+        let Some((m, row)) = self.shared.front.lock().unwrap().market.take() else { return VarDictionary::new() };
+        let mut d = row.as_ref().map_or_else(VarDictionary::new, tables::to_dict);
+        d.set("market", m as i64);
+        d
+    }
+
+    /// Build orders version only, to poll each frame.
+    #[func]
+    fn build_version(&self) -> i64 {
+        self.shared.front.lock().unwrap().built as i64
     }
 
     /// Days queued but not yet computed.
@@ -589,9 +1156,24 @@ impl ApoleiaPeople {
         if self.worker.is_none() || slot < 0 {
             return;
         }
-        self.shared.front.lock().unwrap().person = None;
-        self.shared.queue.lock().unwrap().ask = Some(slot as usize);
-        self.shared.wake.notify_one();
+        self.ask(Who::Slot(slot as usize));
+    }
+
+    /// As `ask_person`, for a person by id (the pid of a trip under way).
+    #[func]
+    fn ask_person_id(&mut self, pid: i64) {
+        if (0..u32::MAX as i64).contains(&pid) {
+            self.ask(Who::Pid(pid as u32));
+        }
+    }
+
+    /// As `ask_person`, for a member of a household (a hired worker of
+    /// `ask_work`): the one with the lowest id.
+    #[func]
+    fn ask_household_member(&mut self, household: i64) {
+        if (0..u32::MAX as i64).contains(&household) {
+            self.ask(Who::Household(household as u32));
+        }
     }
 
     /// The person asked for, once; empty until the sim thread answered.
@@ -695,6 +1277,29 @@ impl ApoleiaPeople {
     fn take_work(&mut self) -> VarDictionary {
         match self.shared.front.lock().unwrap().work.take() {
             Some(v) => trips::work_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread for the craft goods (S105–S111): the workshops
+    /// and the goods moved between markets in the window (world km), and
+    /// every market's goods; the answer comes with `take_goods`.
+    #[func]
+    fn ask_goods(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().goods = None;
+        self.shared.queue.lock().unwrap().goods = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The goods asked for, once, as trips::goods_to_dict; empty until the
+    /// sim thread answered.
+    #[func]
+    fn take_goods(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().goods.take() {
+            Some((c, m, mv)) => trips::goods_to_dict(&c, &m, &mv),
             None => VarDictionary::new(),
         }
     }
@@ -897,7 +1502,8 @@ impl ApoleiaPeople {
     }
 
     /// Timings in microseconds: the last sim day and view update (sim
-    /// thread), the last `sync` (main thread) and the layers it uploaded.
+    /// thread), the last `sync` (main thread) and the layers it uploaded;
+    /// and the sim thread's mean per day in ms, by part.
     #[func]
     fn timings(&self) -> VarDictionary {
         let mut d = VarDictionary::new();
@@ -905,6 +1511,12 @@ impl ApoleiaPeople {
         d.set("day_usec", f.day_usec);
         d.set("view_usec", f.view_usec);
         d.set("grain_usec", f.grain_usec);
+        // means over all days so far, ms (REALTIME_GAMEPLAY.md phase 8)
+        let n = f.spent_days.max(1) as f64;
+        for (k, key) in ["mean_day_ms", "mean_map_ms", "mean_view_ms", "mean_publish_ms"].iter().enumerate() {
+            d.set(*key, f.spent[k] / n);
+        }
+        d.set("days_measured", f.spent_days as i64);
         drop(f);
         d.set("sync_usec", self.upload_usec);
         d.set("sync_layers", self.uploaded_pages);
@@ -913,6 +1525,24 @@ impl ApoleiaPeople {
 }
 
 impl ApoleiaPeople {
+    fn ask(&mut self, who: Who) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().person = None;
+        self.shared.queue.lock().unwrap().ask = Some(who);
+        self.shared.wake.notify_one();
+    }
+
+    /// Takes over the shared state of a new sim thread; the main-thread
+    /// copies start empty, so the next sync builds new textures.
+    fn restart(&mut self, shared: Arc<Shared>) {
+        self.shared = shared;
+        self.data.clear();
+        self.houses.clear();
+        self.pages = 0;
+    }
+
     fn stop(&mut self) {
         if let Some(w) = self.worker.take() {
             self.shared.queue.lock().unwrap().stop = true;

@@ -29,8 +29,11 @@ extends MultiMeshInstance3D
 ## route it is on: a traveller is written to the MultiMesh only when it
 ## starts a stretch, stops or turns, not every frame (Mac tour, 29.10.2026:
 ## moving 300 of them each frame in GDScript took a millisecond or more).
+## A click on a traveller shows who it is and what they are doing (`pick`,
+## people_dots.gd).
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
+const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const MAX := 300 # travellers at once
 const WALK_KMPS := 0.05 # on screen, world km a second: a body height (40 m at diorama scale) and a quarter
@@ -49,6 +52,7 @@ const SICKLE := 32
 const BASKET := 64
 const HOE := 128
 const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
+const WORK_NAMES: Array[String] = ["bei der Aussaat", "bei der Ernte", "über das Jahr", "aus einem Überschuss"] # likewise, for a click
 const STALL := 256
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
 const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
@@ -182,6 +186,8 @@ func _take_work(h: Dictionary) -> void:
 			"phase": fposmod(float(worker[i]) * 0.618034, 1.0), "tint": int(worker[i] % 8),
 			"side": (fposmod(float(worker[i]) * 0.377, 1.0) - 0.5) * LANE_KM,
 			"tool": TOOLS[clampi(kind[i], 0, TOOLS.size() - 1)],
+			# for a click (pick): who it is and what they do
+			"worker": worker[i], "farm": h.farm_household[i], "days": h.days[i], "work": kind[i],
 		}
 		if not _window.has_point(from[i]):
 			if not _window.has_point(to[i]):
@@ -227,6 +233,8 @@ func _traveller(t: Dictionary, i: int) -> Dictionary:
 		"phase": fposmod(float(pid) * 0.618034, 1.0),
 		"tint": pid % 8,
 		"side": (fposmod(float(pid) * 0.377, 1.0) - 0.5) * LANE_KM,
+		# for a click (pick): who it is and what they do
+		"pid": pid, "kind": kind, "cargo_kg": int(t.cargo_kg[i]),
 	}
 	w.s = clampf(w.s + (fposmod(float(pid) * 0.123, 1.0) - 0.5) * STAGGER_KM, 0.0, length)
 	# a long road comes into view somewhere along it: start there
@@ -243,6 +251,49 @@ func _traveller(t: Dictionary, i: int) -> Dictionary:
 			return {}
 		w.s = along[entry]
 	return w
+
+## The traveller nearest to `pixel` on screen, within `max_px`: {"pid"
+## (a trip; -1 for a hired hand), "household" (the hired hand's; -1),
+## "what" (a line on what they are doing)}; {} if none. `ground(p)` is the
+## ground's height at p (world km), `lift` how far above it to aim.
+func pick(cam: Camera3D, pixel: Vector2, ground: Callable, lift: float, max_px: float) -> Dictionary:
+	if not visible:
+		return {}
+	var best := {}
+	var best_d := max_px * max_px
+	for w in _walkers:
+		# where people_walkers.gdshader draws it now
+		var p: Vector2 = w.at + w.velocity * clampf(_clock - float(w.t0), 0.0, float(w.walk))
+		var v := Vector3(p.x, float(ground.call(p)) + lift, p.y)
+		if cam.is_position_behind(v):
+			continue
+		var d := cam.unproject_position(v).distance_squared_to(pixel)
+		if d < best_d:
+			best_d = d
+			best = w
+	if best.is_empty():
+		return {}
+	return {"pid": best.get("pid", -1), "household": best.get("worker", -1), "what": _what(best)}
+
+
+## What a traveller is doing, as a line for the person's info.
+static func _what(w: Dictionary) -> String:
+	var there: bool = w.dir > 0.0
+	var staying: bool = w.wait > 0.0
+	if w.has("worker"):
+		var at := "auf dem Hof von Haushalt %d" % w.farm if int(w.farm) >= 0 else "auf einem Hof"
+		var doing := "arbeitet" if staying else ("geht zur Arbeit" if there else "kommt von der Arbeit")
+		return "Tagelöhner, %s: %d Tage %s %s" % [doing, int(w.days), WORK_NAMES[clampi(int(w.work), 0, 3)], at]
+	var kg := SimTables._int(int(w.cargo_kg))
+	match int(w.kind):
+		0: # a sale: the sacks on the way there
+			return ("verkauft %s kg Korn am Markt" % kg) if staying else (("bringt %s kg Korn zum Markt" % kg) if there else "kommt vom Markt heim")
+		1: # a purchase: the sacks on the way home
+			return ("kauft Korn am Markt") if staying else (("geht auf den Markt, Korn kaufen") if there else ("trägt %s kg Korn vom Markt heim" % kg))
+		2: # an export
+			return ("Händler, liefert %s kg Korn an einem fremden Markt ab" % kg) if staying else (("Händler mit Ochsenkarren, fährt %s kg Korn zu einem anderen Markt" % kg) if there else "Händler, fährt leer zurück zu seinem Markt")
+		_: # an import
+			return ("Händler, lädt Korn an einem fremden Markt") if staying else (("Händler mit Ochsenkarren, fährt Korn holen") if there else ("Händler, bringt %s kg Korn an seinen Markt" % kg))
 
 ## Where traveller w is (world km) and which way it faces.
 static func _at(w: Dictionary) -> Array:

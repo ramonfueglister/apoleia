@@ -14,11 +14,17 @@
 //! (worker's home) and to (farmstead) in world km.
 
 //!
+//! Craft goods (`goods_to_dict`), flat arrays: crafts [x, z, craft
+//! (1 weaver, 2 smith, 3 potter), util 0–255] per workshop; markets [x, z,
+//! store × 5, price × 5 (wool, iron, cloth, tools, pottery; units and
+//! denarii)] per market; moves [from x, from z, to x, to z, good, units,
+//! day] per goods move of the last 28 days. Places in world km.
+//!
 //! Events (`Grain::events_in`, `events_to_dict`): day, kind (names in
 //! names, from apoleia_sim::events::NAMES), household, pid, other, amount,
 //! at and to (world km).
 
-use apoleia_sim::grain::{EventsView, TripsView, WorkView};
+use apoleia_sim::grain::{CraftsView, EventsView, GoodsMovesView, TripsView, WorkView, GOODS};
 use godot::prelude::*;
 
 pub fn to_dict(v: &TripsView) -> VarDictionary {
@@ -65,5 +71,27 @@ pub fn events_to_dict(v: &EventsView) -> VarDictionary {
     d.set("amount", &PackedInt64Array::from(v.amount.as_slice()));
     d.set("at", &PackedVector2Array::from_iter(v.at.iter().map(|&(x, z)| Vector2::new(x, z))));
     d.set("to", &PackedVector2Array::from_iter(v.to.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d
+}
+
+pub fn goods_to_dict(c: &CraftsView, markets: &[((f32, f32), [(f32, f32); GOODS])], m: &GoodsMovesView) -> VarDictionary {
+    let mut d = VarDictionary::new();
+    let mut crafts = Vec::with_capacity(c.craft.len() * 4);
+    for k in 0..c.craft.len() {
+        crafts.extend_from_slice(&[c.at[k].0, c.at[k].1, c.craft[k] as f32, c.util[k] as f32]);
+    }
+    let mut mk = Vec::with_capacity(markets.len() * (2 + 2 * GOODS));
+    for ((x, z), goods) in markets {
+        mk.extend_from_slice(&[*x, *z]);
+        mk.extend(goods.iter().map(|g| g.0));
+        mk.extend(goods.iter().map(|g| g.1));
+    }
+    let mut moves = Vec::with_capacity(m.day.len() * 7);
+    for k in 0..m.day.len() {
+        moves.extend_from_slice(&[m.from[k].0, m.from[k].1, m.to[k].0, m.to[k].1, m.good[k] as f32, m.units[k], m.day[k] as f32]);
+    }
+    d.set("crafts", &PackedFloat32Array::from(crafts.as_slice()));
+    d.set("markets", &PackedFloat32Array::from(mk.as_slice()));
+    d.set("moves", &PackedFloat32Array::from(moves.as_slice()));
     d
 }

@@ -63,7 +63,9 @@ Details: [REGION](operations/REGION.md).
 Die ältere Victoria-3-Wirtschaftsrecherche wurde am 26.10.2026 entfernt. Für **diesen
 Kit-1-Auftrag** hat die neuere ausdrückliche Nutzerentscheidung Vorrang: zuerst
 Landschaftsgrafik und Zoom, nicht Wirtschaft, Städte oder das vollständige Spiel.
-Das langfristige Gesamtspiel bleibt der Rahmen für spätere Kits. Die allgemeinen
+Das langfristige Gesamtspiel bleibt der Rahmen für spätere Kits. Für das Echtzeit-Aufbauspiel
+(bauen, während die Simulation live läuft) gibt es Ziel, Stand der Technik 2026 und Plan in
+[REALTIME_GAMEPLAY.md](REALTIME_GAMEPLAY.md). Die allgemeinen
 Rollen- und Evidenzregeln aus `AGENTS.md` gelten weiter; dessen frühere
 Phasenbeschreibung ist keine Erlaubnis, Kit 1 um Wirtschaftscode zu erweitern.
 

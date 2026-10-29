@@ -1,8 +1,12 @@
 //! The grain economy as map layers for the terrain shader (S69–S87 made
 //! visible): what the farms, markets, footpaths and trade roads of
-//! crate::grain look like on the ground. Built on the sim thread once a
-//! month from Grain's read-only views; the main thread cuts a window of the
-//! fine layer around the camera and uploads it, plus the small road layer.
+//! crate::grain look like on the ground. Once a month (and when a building
+//! site is done) the sim thread takes what the layers show from Grain's
+//! read-only views (`MapJob::take`, a few milliseconds); the raster of
+//! eight million tiles is drawn on a thread of its own (`MapThread`), so
+//! the day after does not wait for it (REALTIME_GAMEPLAY.md phase 8). The
+//! main thread cuts a window of the fine layer around the camera and
+//! uploads it, plus the small road layer.
 //!
 //! Fine layer, one RGBA8 texel per 1.5625 km tile (16 × 16 per 25 km cell):
 //! R share of the tile under fields (of what a tile can hold), G sown share
@@ -14,6 +18,7 @@
 
 use apoleia_sim::grain::{tile_room_m2, Grain};
 use apoleia_sim::people::People;
+use std::sync::mpsc;
 use std::sync::Arc;
 
 /// Neighbour steps, row by row (as grain.rs DIRS).
@@ -38,7 +43,76 @@ pub struct MapLayers {
     pub version: u64,
 }
 
-/// Builds the layers on the sim thread.
+/// What the layers of one day are drawn from, taken on the sim thread.
+pub struct MapJob {
+    /// Each field plot: fine tile, m², m² sown, growth (Grain::for_each_plot),
+    /// in parts by farm.
+    plots: Vec<Vec<(u32, u32, u32, u8)>>,
+    /// Footpaths per market; None while its walk is away (keep the last).
+    paths: Vec<Option<Vec<(u32, u8, u8)>>>,
+    markets: Vec<u32>,
+    road_levels: Vec<u8>,
+    regions: Vec<u32>,
+}
+
+impl MapJob {
+    pub fn take(g: &Grain, day: i64) -> MapJob {
+        MapJob {
+            plots: g.plot_lists(day),
+            paths: (0..g.markets.len()).map(|m| g.market_paths(m)).collect(),
+            markets: g.markets.iter().map(|m| m.fine).collect(),
+            road_levels: g.road_levels().to_vec(),
+            regions: g.cell_markets().to_vec(),
+        }
+    }
+
+    /// A newer job, keeping the footpaths of this one where the newer has
+    /// none (the job between was dropped unseen).
+    fn then(mut self, newer: MapJob) -> MapJob {
+        for (m, p) in newer.paths.into_iter().enumerate() {
+            if p.is_some() || m >= self.paths.len() {
+                if m < self.paths.len() {
+                    self.paths[m] = p;
+                } else {
+                    self.paths.push(p);
+                }
+            }
+        }
+        MapJob { paths: self.paths, ..newer }
+    }
+}
+
+/// Draws the layers on a thread of its own and hands each set to
+/// `publish`; jobs that pile up meanwhile are folded into the newest.
+/// Ends when it is dropped.
+pub struct MapThread {
+    send: mpsc::Sender<MapJob>,
+}
+
+impl MapThread {
+    pub fn start(mut map: GrainMap, publish: impl Fn(MapLayers) + Send + 'static) -> MapThread {
+        let (send, recv) = mpsc::channel::<MapJob>();
+        std::thread::Builder::new()
+            .name("apoleia-map".into())
+            .spawn(move || {
+                while let Ok(mut job) = recv.recv() {
+                    while let Ok(newer) = recv.try_recv() {
+                        job = job.then(newer);
+                    }
+                    map.draw(job);
+                    publish(map.layers.clone());
+                }
+            })
+            .expect("map thread");
+        MapThread { send }
+    }
+
+    pub fn draw(&self, job: MapJob) {
+        let _ = self.send.send(job);
+    }
+}
+
+/// Builds the layers.
 pub struct GrainMap {
     pub layers: MapLayers,
     /// Last known footpaths per market (a market's field is away while
@@ -52,10 +126,15 @@ impl GrainMap {
         GrainMap { layers: MapLayers { row0: g.row0, col0: g.col0, rows: g.rows, cols: g.cols, ..Default::default() }, paths: Vec::new() }
     }
 
-    /// Rebuilds both layers from the grain economy of `day`.
+    /// Rebuilds both layers from the grain economy of `day`, here and now.
     pub fn build(&mut self, g: &Grain, day: i64) {
+        debug_assert_eq!(g.fine_size(), self.layers.fine_size());
+        self.draw(MapJob::take(g, day));
+    }
+
+    /// Rebuilds both layers from a job.
+    pub fn draw(&mut self, job: MapJob) {
         let (rf, cf) = self.layers.fine_size();
-        debug_assert_eq!(g.fine_size(), (rf, cf));
         let n = (rf * cf) as usize;
         // fields: shares of what a tile holds, summed straight into the
         // bytes (no buffer per tile: the raster has 8 million tiles); G
@@ -67,7 +146,7 @@ impl GrainMap {
         for (r, x) in room_of.iter_mut().enumerate() {
             *x = tile_room_m2(r as i32 + row0).max(1) as u64;
         }
-        g.for_each_plot(day, |t, m2, s, growth| {
+        for &(t, m2, s, growth) in job.plots.iter().flatten() {
             let room = room_of[(t / cfu) as usize / FINE as usize];
             let i = t as usize * 4;
             let share = |x: u32| ((x as u64 * 255 + room / 2) / room).min(255) as u8;
@@ -76,16 +155,16 @@ impl GrainMap {
             if s > 0 {
                 fine[i + 2] = growth;
             }
-        });
+        }
         for px in fine.chunks_exact_mut(4) {
             if px[0] > 0 {
                 px[1] = (px[1] as u32 * 255 / px[0] as u32).min(255) as u8;
             }
         }
         // footpaths, the last known of each market
-        self.paths.resize(g.markets.len(), Vec::new());
-        for (m, known) in self.paths.iter_mut().enumerate() {
-            if let Some(v) = g.market_paths(m) {
+        self.paths.resize(job.paths.len(), Vec::new());
+        for (known, now) in self.paths.iter_mut().zip(job.paths) {
+            if let Some(v) = now {
                 *known = v;
             }
             for &(t, level, dir) in known.iter() {
@@ -94,13 +173,13 @@ impl GrainMap {
                 *a = (*a & MARKET_BIT) | level.min(3) | step << 2;
             }
         }
-        for mk in &g.markets {
-            fine[mk.fine as usize * 4 + 3] |= MARKET_BIT;
+        for &t in &job.markets {
+            fine[t as usize * 4 + 3] |= MARKET_BIT;
         }
         self.layers.fine = Arc::new(fine);
         // trade roads and sea lanes: join neighbours that carry one too; a
         // diagonal only where no straight pair already makes the turn
-        let lv = g.road_levels();
+        let lv = &job.road_levels;
         let (rows, cols) = (self.layers.rows, self.layers.cols);
         let at = |r: i32, c: i32| -> u8 { if r < 0 || c < 0 || r >= rows || c >= cols { 0 } else { lv[(r * cols + c) as usize] } };
         let mut roads = vec![0u8; (rows * cols * 2) as usize];
@@ -126,7 +205,7 @@ impl GrainMap {
             }
         }
         self.layers.roads = Arc::new(roads);
-        self.layers.regions = Arc::new(g.cell_markets().to_vec());
+        self.layers.regions = Arc::new(job.regions);
         self.layers.version += 1;
     }
 }
