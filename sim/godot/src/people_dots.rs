@@ -23,7 +23,7 @@ use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
 use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
-use apoleia_sim::tables::Table;
+use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
 use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
@@ -87,6 +87,9 @@ struct Front {
     check: Option<BuildCheck>,
     /// Answer to the last `ask_sites`: x, z, kind, progress, width, depth.
     sites: Option<Vec<f32>>,
+    /// Answer to the last `ask_market`: the market and its row of the
+    /// markets table (None when there is no such market).
+    market: Option<(usize, Option<Table>)>,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -124,11 +127,13 @@ struct Queue {
     goods: Option<[f64; 4]>,
     /// A window (world km) whose building sites to list.
     sites: Option<[f64; 4]>,
+    /// A market whose row of the markets table to give.
+    market: Option<usize>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some()
     }
 }
 
@@ -273,6 +278,22 @@ fn build_check(game: &Game, kind: u8, tiles: &[build::Tile]) -> BuildCheck {
     c
 }
 
+/// The row of a table whose id is `id`, as a table of one row.
+fn row_of(mut t: Table, id: i64) -> Option<Table> {
+    let i = t.columns.iter().find(|c| c.key == "id").and_then(|c| match &c.values {
+        Values::Int(v) => v.iter().position(|&x| x == id),
+        _ => None,
+    })?;
+    for c in t.columns.iter_mut() {
+        c.values = match &c.values {
+            Values::Int(v) => Values::Int(vec![v[i]]),
+            Values::Float(v) => Values::Float(vec![v[i]]),
+            Values::Text(v) => Values::Text(vec![v[i].clone()]),
+        };
+    }
+    Some(t)
+}
+
 /// Each craft household's workshop onto its house record (view.rs Houses).
 fn mark_work(game: &Game, view: &mut PeopleView) {
     let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
@@ -324,7 +345,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
     let mut shown = Instant::now();
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, check, ask, table, trips, work, events, goods, sites) = {
+        let (commands, save, check, ask, table, trips, work, events, goods, sites, market) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -336,7 +357,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -358,6 +379,10 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         if let Some(window) = sites {
             let v = sites_in(&game, window);
             shared.front.lock().unwrap().sites = Some(v);
+        }
+        if let Some(m) = market {
+            let row = game.grain.table(&game.people, "markets").and_then(|t| row_of(t, m as i64));
+            shared.front.lock().unwrap().market = Some((m, row));
         }
         let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
@@ -388,7 +413,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() {
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -739,6 +764,51 @@ impl ApoleiaPeople {
             Some(v) => PackedFloat32Array::from(v.as_slice()).to_variant(),
             None => Variant::nil(),
         }
+    }
+
+    /// The market whose square is on the fine tile under (x, z) world km or
+    /// next to it, -1 if none (from the map layers, at once).
+    #[func]
+    fn market_at(&self, x: f32, z: f32) -> i64 {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let (rf, cf) = map.fine_size();
+        if map.fine.len() != (rf * cf * 4) as usize {
+            return -1;
+        }
+        let (fr, fc) = ((z / FINE_KM).floor() as i32 - map.row0 * FINE, (x / FINE_KM).floor() as i32 - map.col0 * FINE);
+        for (dr, dc) in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)] {
+            let (r, c) = (fr + dr, fc + dc);
+            if r < 0 || c < 0 || r >= rf || c >= cf || map.fine[((r * cf + c) * 4 + 3) as usize] & MARKET_BIT == 0 {
+                continue;
+            }
+            let cell = ((r / FINE) * map.cols + c / FINE) as usize;
+            return map.regions.get(cell).map_or(-1, |&m| if m == u32::MAX { -1 } else { m as i64 });
+        }
+        -1
+    }
+
+    /// Asks the sim thread for one market's row of the markets table
+    /// (apoleia_sim::grain, `table("markets")`); the answer comes with
+    /// `take_market`, also while paused.
+    #[func]
+    fn ask_market(&mut self, market: i64) {
+        if self.worker.is_none() || market < 0 {
+            return;
+        }
+        self.shared.front.lock().unwrap().market = None;
+        self.shared.queue.lock().unwrap().market = Some(market as usize);
+        self.shared.wake.notify_one();
+    }
+
+    /// The market asked for, once: {"market", and when it exists the row
+    /// as tables::to_dict with one row ("name", "day", "columns", "labels",
+    /// "units", "data")}; empty until the sim thread answered.
+    #[func]
+    fn take_market(&mut self) -> VarDictionary {
+        let Some((m, row)) = self.shared.front.lock().unwrap().market.take() else { return VarDictionary::new() };
+        let mut d = row.as_ref().map_or_else(VarDictionary::new, tables::to_dict);
+        d.set("market", m as i64);
+        d
     }
 
     /// Build orders version only, to poll each frame.

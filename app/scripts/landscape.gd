@@ -9,7 +9,8 @@ extends Node3D
 ## Up close it is Urbek's camera: tilted 30 degrees and near-orthographic.
 ## Weather keys F5-F7 belong to weather_system.gd, 1-3 (the build tools) to
 ## build_menu.gd, Space, [ ], F8 and F9 (pause, speed, save, load) to
-## sim/game_clock.gd.
+## sim/game_clock.gd; a click on a market square opens its window
+## (sim/market_window.gd).
 ##
 ## Command line (after --): --view=lon,lat,width start view,
 ## --snapshot=path.png save one frame and quit, --snapshot-frames=n frames to wait,
@@ -24,6 +25,7 @@ const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const PeopleDots = preload("res://scripts/sim/people_dots.gd")
 const BuildMenu = preload("res://scripts/build_menu.gd")
 const GameClock = preload("res://scripts/sim/game_clock.gd")
+const MarketWindow = preload("res://scripts/sim/market_window.gd")
 const EARTH_KM := 6371.0088
 const MIN_WIDTH := 1.0 # about 4 houses across (Kit 2 scale), people readable as figures
 ## The whole Kit 1 map in a 16:9 window, from Ireland to the Caspian and
@@ -128,6 +130,9 @@ func _ready() -> void:
 		var clock := GameClock.new()
 		add_child(clock)
 		clock.setup(dots)
+		var markets := MarketWindow.new()
+		add_child(markets)
+		markets.setup(self, dots.people)
 	else:
 		dots.queue_free()
 	# after the people: its clicks on the map come before theirs
