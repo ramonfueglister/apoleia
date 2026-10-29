@@ -55,6 +55,7 @@ const NAMES := ["Hof", "Feld", "Strasse"]
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
 const TRACK := Color("8a6a45") # a planned road: bare earth
+const PLOUGHED := Color("6e5236") # a finished field lot nobody leases yet: fresh furrows
 const PREVIEW := Color(1.0, 1.0, 1.0, 0.6) # a road being drawn, apart from gravel and earth
 const GOOD := Color(0.45, 0.85, 0.45, 0.55)
 const BAD := Color(0.91, 0.42, 0.35, 0.6)
@@ -69,6 +70,7 @@ var tool := NONE
 var _orders := {} # lot (Vector2i) -> kind, as the sim last reported
 var _progress := {} # lot -> share of the site built (0 … 1), where work began
 var _built_roads := {} # lot -> true: finished road lots (build_orders "roads")
+var _built_fields := {} # lot -> true: finished field lots, state land (build_orders "fields", S116)
 var _version := -1
 var _stroke: Array[Vector2i] = [] # lots of the stroke under way
 var _stroke_erase := false
@@ -87,13 +89,14 @@ var _planned: Array[MeshInstance3D] = [] # planned farms, reused
 var _planned_material := StandardMaterial3D.new()
 var _heights := {} # lot -> ground height (m), for the road search
 ## The sim's answer to "can this be built?" (ask_build_check): status by
-## lot (0 gets built, 1 nobody builds here, 2 not decided yet, 3 a farm
-## nobody moves into today), the lots last asked, the text.
+## lot (0 gets built, 1 nobody builds here, 2 not built, 3 a farm nobody
+## moves into today, 4 no free land to plough or clear), the lots last
+## asked, the text.
 var _check := {}
 var _check_key: Array[Vector2i] = []
 var _asking := false
 var _label: Label
-const CHECK_COLOURS: Array[Color] = [Color(1, 1, 1, 0.45), Color(0.91, 0.52, 0.42, 0.6), Color(0.55, 0.55, 0.55, 0.55), Color(0.88, 0.63, 0.25, 0.6)]
+const CHECK_COLOURS: Array[Color] = [Color(1, 1, 1, 0.45), Color(0.91, 0.52, 0.42, 0.6), Color(0.55, 0.55, 0.55, 0.55), Color(0.88, 0.63, 0.25, 0.6), Color(0.8, 0.45, 0.3, 0.6)]
 
 func setup(scene: Node3D, sim: RefCounted) -> void:
 	name = "BuildMenu"
@@ -315,8 +318,8 @@ func _end_stroke(send: bool) -> void:
 				if _orders.get(l, NONE) == tool:
 					var s := spot(l)
 					tiles.append_array([s.x, s.y])
-			elif _buildable(l) and _check.get(l, 0) != 1 and _orders.get(l, NONE) != tool \
-					and not (tool == ROAD and _built_roads.has(l)):
+			elif _buildable(l) and _check.get(l, 0) != 1 and _check.get(l, 0) != 4 and _orders.get(l, NONE) != tool \
+					and not (tool == ROAD and _built_roads.has(l)) and not (tool == FIELD and _built_fields.has(l)):
 				var s := spot(l)
 				tiles.append_array([s.x, s.y])
 		if not tiles.is_empty():
@@ -451,6 +454,11 @@ func _take_orders() -> void:
 	_built_roads.clear()
 	for i in range(0, built.size(), 2):
 		_built_roads[lot_at(Vector2(built[i], built[i + 1]) / 1000.0)] = true
+	# finished field lots: state land until a farm leases it, x, z metres
+	var ploughed: PackedInt32Array = d.get("fields", PackedInt32Array())
+	_built_fields.clear()
+	for i in range(0, ploughed.size(), 2):
+		_built_fields[lot_at(Vector2(ploughed[i], ploughed[i + 1]) / 1000.0)] = true
 	# column, row, days done, days needed per order (S113); 0, 0 no site yet
 	var done: PackedInt32Array = d.get("progress", PackedInt32Array())
 	_progress.clear()
@@ -474,8 +482,12 @@ func _draw_orders() -> void:
 		return absf(c.x - centre.x) < reach and absf(c.y - centre.y) < reach
 	var farms: Array[Vector2i] = []
 	var fields: Array[Vector2i] = []
+	var ploughed: Array[Vector2i] = []
 	var chains := []
 	if _close():
+		for l: Vector2i in _built_fields:
+			if near.call(l) and not _orders.has(l):
+				ploughed.append(l)
 		for l: Vector2i in _orders:
 			if near.call(l):
 				match _orders[l]:
@@ -485,8 +497,10 @@ func _draw_orders() -> void:
 			if near.call(chain[0]) or near.call(chain[-1]):
 				chains.append(chain)
 	var preview := _close() and (tool == FIELD or tool == ROAD)
-	if not fields.is_empty() or not chains.is_empty() or preview:
+	if not fields.is_empty() or not ploughed.is_empty() or not chains.is_empty() or preview:
 		_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+		for l in ploughed:
+			_field(l, Color(PLOUGHED, 0.6), 0.0)
 		for l in fields:
 			_field(l, Color(COLOURS[FIELD], 0.5), _progress.get(l, 0.0))
 		for chain in chains:
@@ -520,7 +534,7 @@ func _draw_orders() -> void:
 			_planned[i].transform = _house_transform(farms[i], _progress.get(farms[i], 0.0))
 
 ## Preview colour of a lot: `ok` where it gets built, else by the sim's
-## status (red nobody builds here, grey not decided yet, amber nobody
+## status (red nobody builds here or no free land, grey not built, amber nobody
 ## moves in).
 func _preview_colour(l: Vector2i, ok: Color) -> Color:
 	if _stroke_erase:
