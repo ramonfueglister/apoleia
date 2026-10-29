@@ -38,6 +38,7 @@ enum { EMPTY,
 	GILT, GILT_D, GILT_L, EAVEG, RIDGEG, COCCIO, COCCIO_D, COCCIO_L, ANTEFIX, ROPE,
 	GRANITE, GRANITE_P, HORSE, HORSE_D, HORSE_W,
 	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
+	ROOFB_L, DOME, BAND,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -106,8 +107,11 @@ const COLOURS := {
 	GRANITE: ["8e8a85", "9c9893"], GRANITE_P: ["b08a7c", "bf9a8b"], HORSE: ["7a4a2c"], HORSE_D: ["3a2c24"], HORSE_W: ["d6d0c4"],
 	# polished Aswan granite and its cut signs, weathered bronze tiles, the
 	# shade under a porch, the dark inside an arch
-	OBELISK: ["a8665a", "b4705f"], GLYPH: ["7c4538"], ROOFB: ["7d5f33", "8a6a3b"], ROOFB_D: ["5f4626", "6b5030"],
+	OBELISK: ["a8665a", "b4705f"], GLYPH: ["7c4538"], ROOFB: ["54402a", "5e4830"], ROOFB_D: ["43321f", "4b3923"],
 	PORCH: ["807870", "8a8279"], PORCH_D: ["6b655f", "756f68"], ARCH_D: ["4e4037"],
+	# the bronze roof's ribs, the gilt dome (risers, treads), the shadow band
+	# under a cornice
+	ROOFB_L: ["66503a", "735a3f"], DOME: ["8f6b1e", "b8933c"], BAND: ["a39d95"],
 }
 
 static var _side := PackedColorArray()
