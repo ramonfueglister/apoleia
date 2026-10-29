@@ -1,0 +1,227 @@
+{
+  "id": "carthage",
+  "name": "Carthago",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "sources": [
+    "Hurst, H. (2010). Reflections on Carthage. In C. Ando (Ed.), Roman Africa. (not verified online)",
+    "Ennabli, A. (Ed.). (1992). Pour sauver Carthage: Exploration et conservation de la cité punique, romaine et byzantine. UNESCO/INAA. (not verified online)"
+  ],
+  "note": "Unwalled in 301 (the Theodosian wall dates from 425). The colonial grid is turned about 30 degrees; here only its two main streets.",
+  "centre": [
+    10.323,
+    36.853
+  ],
+  "lane_surface": "slabs",
+  "extent": [
+    [
+      [
+        10.305,
+        36.864
+      ],
+      [
+        10.325,
+        36.868
+      ],
+      [
+        10.338,
+        36.86
+      ],
+      [
+        10.333,
+        36.842
+      ],
+      [
+        10.32,
+        36.838
+      ],
+      [
+        10.305,
+        36.844
+      ]
+    ]
+  ],
+  "streets": [
+    {
+      "name": "Decumanus maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          10.307,
+          36.8455
+        ],
+        [
+          10.323,
+          36.853
+        ],
+        [
+          10.336,
+          36.86
+        ]
+      ]
+    },
+    {
+      "name": "Cardo maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          10.314,
+          36.864
+        ],
+        [
+          10.323,
+          36.853
+        ],
+        [
+          10.33,
+          36.841
+        ]
+      ]
+    },
+    {
+      "name": "Road to Utica",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.314,
+          36.864
+        ],
+        [
+          10.305,
+          36.876
+        ],
+        [
+          10.295,
+          36.89
+        ]
+      ]
+    },
+    {
+      "name": "Road to Tunes",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.307,
+          36.8455
+        ],
+        [
+          10.29,
+          36.84
+        ],
+        [
+          10.27,
+          36.833
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Forum (Byrsa)",
+      "kind": "forum",
+      "centre": [
+        10.323,
+        36.853
+      ],
+      "size_m": [
+        220,
+        150
+      ],
+      "angle_deg": -30
+    },
+    {
+      "name": "Thermae Antoninianae",
+      "kind": "baths",
+      "centre": [
+        10.332,
+        36.859
+      ],
+      "size_m": [
+        200,
+        110
+      ],
+      "angle_deg": -30
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "centre": [
+        10.326,
+        36.8575
+      ],
+      "size_m": [
+        110,
+        90
+      ]
+    },
+    {
+      "name": "Odeum",
+      "kind": "theatre",
+      "centre": [
+        10.325,
+        36.8592
+      ],
+      "size_m": [
+        90,
+        70
+      ]
+    },
+    {
+      "name": "Amphitheatrum",
+      "kind": "amphitheatre",
+      "centre": [
+        10.308,
+        36.854
+      ],
+      "size_m": [
+        156,
+        128
+      ]
+    },
+    {
+      "name": "Circus",
+      "kind": "circus",
+      "centre": [
+        10.307,
+        36.847
+      ],
+      "size_m": [
+        516,
+        80
+      ],
+      "angle_deg": -30
+    },
+    {
+      "name": "Portus (circular harbour)",
+      "kind": "harbour",
+      "centre": [
+        10.324,
+        36.846
+      ],
+      "size_m": [
+        300,
+        300
+      ]
+    },
+    {
+      "name": "Cisterns of La Malga",
+      "kind": "warehouse",
+      "centre": [
+        10.315,
+        36.862
+      ],
+      "size_m": [
+        130,
+        100
+      ]
+    }
+  ],
+  "areas": []
+}

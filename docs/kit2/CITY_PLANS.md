@@ -21,7 +21,14 @@ bei Strassen den Rang, den Belag und die Anschlüsse nach N/O/S/W, bei Häusern 
     Säulenstrasse vor der Porta Romana), ±75 m.
   - Trier, Residenz des Constantius (Mauer, Porta Nigra, Römerbrücke, Kaiserthermen und Palastaula
     im Bau, Barbarathermen, Amphitheater, Circus), ±75 m.
-- **Generiert** (`tools/city_generate.py`): die übrigen 856 Städte aus Hansons Datenbank
+  - Alexandria (Mauer, Kanopische Strasse, Serapeum mit der Säule für Diokletian, Caesareum,
+    Kom el-Dikka, Hippodrom, Heptastadion, Brucheion seit 272 in Ruinen), ±150 m.
+  - Karthago (ohne Mauer bis 425, Byrsa-Forum, Antoninusthermen, Theater, Odeum, Amphitheater,
+    Circus, Rundhafen), ±150 m.
+  - Antiochia (Mauer, Säulenstrasse, Diokletians Palast und Hippodrom auf der Orontes-Insel), ±150 m.
+  - Aquileia (Mauer, Forum, Flusshafen am Natiso, Palast und Circus im Westen), ±150 m.
+- Nikomedia, Residenz Diokletians, ist zu schlecht bekannt für eine Rekonstruktion und bleibt generiert.
+- **Generiert** (`tools/city_generate.py`): die übrigen 852 Städte aus Hansons Datenbank
   (`data/cities/facts.json`, 853 von 860 zugeordnet; `tools/city_facts.py`).
 - **Gebacken** (`tools/city_plans.py --bake`): `artifacts/render-data/city-plans-r1/city-plans-x1.{png,json}`.
 - **Lader** (`app/scripts/city_plans.gd`): baut `city_page_tex` und `city_atlas_tex` für die Shader
