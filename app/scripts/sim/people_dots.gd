@@ -27,7 +27,8 @@ extends MultiMeshInstance3D
 ## terrain: fields by season around the farms, footpaths to the markets,
 ## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
 ## from ApoleiaPeople.map_window and road_map, rebuilt once a month).
-## A click shows the household's kind and how much it ate.
+## A click shows the household's kind and how much it ate. T opens the
+## simulation's tables (sim_tables.gd).
 ## Keys: P shows or hides the dots (an overview, off by default), G the
 ## grain economy on the map (on by default), [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
@@ -59,6 +60,7 @@ const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
 const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
+const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used;
@@ -291,6 +293,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	_legend = people.legend()
 	_build_hud()
+	var tables := SimTables.new() # T: markets, population and farms as tables
+	tables.setup(people, get_parent())
+	add_child(tables)
 	_rebuild()
 	_rebuild_houses()
 	if _bench_path != "":

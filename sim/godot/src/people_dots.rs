@@ -12,9 +12,11 @@
 //! taking them.
 
 use crate::grain_map::{GrainMap, MapLayers, FINE};
+use crate::tables;
 use apoleia_sim::grain::{Grain, HouseholdLook, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
+use apoleia_sim::tables::Table;
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
 use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
@@ -42,17 +44,21 @@ struct Front {
     /// Answer to the last `ask_person`, with the household as the grain
     /// economy sees it.
     person: Option<(Person, Option<HouseholdLook>)>,
+    /// Answer to the last `ask_table` (built between two days).
+    table: Option<Table>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
 }
 
-/// Work for the sim thread: days to run, stop, a slot whose person to look up.
+/// Work for the sim thread: days to run, stop, a slot whose person to look
+/// up, a table to build (apoleia_sim::tables).
 #[derive(Default)]
 struct Queue {
     days: u64,
     stop: bool,
     ask: Option<usize>,
+    table: Option<String>,
 }
 
 #[derive(Default)]
@@ -95,20 +101,28 @@ const FINE_KM: f32 = CELL_KM / FINE as f32;
 
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
-        let ask = {
+        let (ask, table) = {
             let mut q = shared.queue.lock().unwrap();
-            while q.days == 0 && !q.stop && q.ask.is_none() {
+            while q.days == 0 && !q.stop && q.ask.is_none() && q.table.is_none() {
                 q = shared.wake.wait(q).unwrap();
             }
             if q.stop {
                 return;
             }
             let ask = q.ask.take();
-            if ask.is_none() {
+            let table = q.table.take();
+            if ask.is_none() && table.is_none() {
                 q.days -= 1;
             }
-            ask
+            (ask, table)
         };
+        if let Some(key) = table {
+            let t = grain.table(&people, &key);
+            shared.front.lock().unwrap().table = t;
+            if ask.is_none() {
+                continue;
+            }
+        }
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
             let who = who.map(|p| {
@@ -477,6 +491,28 @@ impl ApoleiaPeople {
         d.set("spouse", p.spouse.map_or(-1, |s| s as i64));
         d.set("travelling", p.travelling.map_or(0, |leave| if leave { 2 } else { 1 }));
         d
+    }
+
+    /// Asks the sim thread for a table ("markets", "population", "farms");
+    /// the answer comes with `take_table`, between two days.
+    #[func]
+    fn ask_table(&mut self, kind: GString) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().table = None;
+        self.shared.queue.lock().unwrap().table = Some(kind.to_string());
+        self.shared.wake.notify_one();
+    }
+
+    /// The table asked for, once, as tables::to_dict; empty until the sim
+    /// thread answered.
+    #[func]
+    fn take_table(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().table.take() {
+            Some(t) => tables::to_dict(&t),
+            None => VarDictionary::new(),
+        }
     }
 
     /// Names for the colour legend: occupations, political groups and the

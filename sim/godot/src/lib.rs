@@ -11,7 +11,6 @@
 mod grain_map;
 mod map_index;
 mod people_dots;
-#[allow(dead_code)] // called by people_dots (ask_table) on the game branch
 mod tables;
 
 use apoleia_sim::ecs::{Command, Sim, Snapshot};
