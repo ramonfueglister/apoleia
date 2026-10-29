@@ -51,33 +51,35 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.439, 0.420, 0.396),  // rock
 	vec3(0.953, 0.965, 0.973)   // snow
 );
-// Far out (from 1 km tiles) the land stays Urbek green, a little calmer than
+// Far out (from 1 km tiles) the land stays Urbek green, a touch cooler than
 // up close (the painted olive strip, gauntlet refs/gemalt-weit-mittel-nah.png,
 // read as a dull military map, the Po plain and Hungary as desert): on screen
-// about meadow #79a85a, wheat land #b9bb66, forest #497e3a, light rock
-// #c4b290 on the crests, a deep sea #19588c. Open land also takes a flat tint
-// per height band, so hills and ranges read as areas and not only by their
-// ramps.
+// about meadow #70a860 (Urbek's grass, refs urbek-landschaft-03), farmland
+// a value lighter #94b862 (as yellow #bcb868 the plains and steppes still
+// read as a yellowed map, Kritik r11; with the blue of #84b474 they turned
+// mint, Kritik r14), dry grass #b0ba62, forest #407c38, light rock #c4b290
+// on the crests, a deep sea #19588c. Open land also takes a flat tint per height band, so hills
+// and ranges read as areas and not only by their ramps.
 const vec3 GROUND_FAR[11] = vec3[](
-	vec3(0.365, 0.507, 0.272),  // meadow
-	vec3(0.459, 0.516, 0.284),  // dry grass
-	vec3(0.560, 0.565, 0.310),  // field (yellow-green, not sand beige)
-	vec3(0.320, 0.465, 0.300),  // wetland
-	vec3(0.429, 0.470, 0.278),  // scrub
+	vec3(0.324, 0.506, 0.290),  // meadow
+	vec3(0.495, 0.568, 0.300),  // dry grass
+	vec3(0.420, 0.556, 0.300),  // field (farmland: a lighter, warmer meadow)
+	vec3(0.310, 0.465, 0.290),  // wetland
+	vec3(0.400, 0.470, 0.270),  // scrub
 	vec3(0.615, 0.564, 0.451),  // sand (the deserts)
 	// woods a third darker than the meadow, not half (at #475b30, L 80,
 	// against #a3a461, L 156, they out-shouted the ramps about 5:1)
 	vec3(0.250, 0.430, 0.200),  // forest
 	vec3(0.200, 0.370, 0.230),  // conifer forest
-	vec3(0.420, 0.505, 0.300),  // alpine meadow
+	vec3(0.390, 0.505, 0.290),  // alpine meadow
 	vec3(0.561, 0.519, 0.413),  // rock (the lightest land, so the crests show; it had the lowland's value)
 	vec3(0.860, 0.845, 0.810)   // snow (#e8e4dc, not cotton white)
 );
-const vec3 C_HILLS_FAR = vec3(0.335, 0.470, 0.255); // a deeper green
+const vec3 C_HILLS_FAR = vec3(0.290, 0.470, 0.270); // a deeper green
 // mountain pasture, a little greyer than the hills; bare rock only on the
 // crests (tools/build_tile_terrain.py ROCK_M): the khaki #958e6c here made
 // the Apennines a quarry
-const vec3 C_MOUNT_FAR = vec3(0.360, 0.440, 0.275);
+const vec3 C_MOUNT_FAR = vec3(0.335, 0.440, 0.275);
 const vec3 C_SEA_FAR = vec3(0.111, 0.264, 0.424);   // #19588c on screen
 const vec3 C_SHORE_FAR = vec3(0.130, 0.302, 0.506); // #24689e
 const vec3 C_SAND = vec3(0.804, 0.745, 0.510);   // beach

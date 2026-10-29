@@ -81,9 +81,23 @@ unabhängig und unverändert.
   halbe Stufe über der Fläche liegt) eine Stufe weiter an, bis zu viermal
   (`restore_peaks`, auch auf den 1-km-Kacheln), so steigt ein Massiv in
   eingerückten Stufen an wie die Berge in SimCity 2000, eine echte
-  Hochfläche bleibt flach. Danach bekommt eine Ecke auf einer Fläche, die
+  Hochfläche bleibt flach. Auf Fels (über `ROCK_M`) steigt eine Kuppe auch
+  dort, wo die echte Höhe die halbe Stufe nicht erreicht, höchstens eine
+  Stufe über die echte Höhe (`PEAK_OVER`; nur nach der echten Höhe blieben
+  die größten Felskuppen Platten von 470 × 116 px bei 1500 km, Kritik r11).
+  Danach bekommt eine Ecke auf einer Fläche, die
   der höchste Punkt ihrer 3 × 3 Ecken ist und eine halbe Stufe darüber
-  liegt, eine Stufe mehr: eine Spitze, vier Rampen zu einer Ecke.
+  liegt, eine Stufe mehr: eine Spitze, vier Rampen zu einer Ecke. Vorher und
+  nachher füllt `fill_pits` jedes Loch bis zwei Ecken breit in einer Kuppe
+  (eine Kachel eine Stufe tiefer als ringsum, von den Stufen übrig: sein
+  Rand stieg sonst als Ring um ein Loch).
+- Weit draußen (1- bis 4-km-Kacheln, wo die Häuser auf ganzen Kacheln
+  stehen) steht eine Stadt mit Häusern (Klasse 2 und mehr) auf ebenem Grund
+  (`flatten_towns`): die Ecken ihrer Fläche auf der tiefsten von ihnen, das
+  Land ringsum höchstens eine Stufe je Kachel höher, wie SimCity 2000 den
+  Boden zum Bauen einebnet. Am Hang standen die Häuser sonst auf einem
+  Sockel eine Stufe hoch, das zeichnete bei 70 km Stelzen und bei 120 km
+  Zuckerwürfel (Kritik r10 und r11). Wasserecken behalten ihre Stufe.
 - Ecken am Meer liegen auf Meereshöhe, die Küste läuft also als Rampe ins Wasser.
   Ecken an einem See liegen auf dem Seespiegel, auch das Seeufer ist eine Rampe.
   Das weichgezeichnete Relief wird an den Ufern durch die scharfe Wasserhülle
@@ -135,8 +149,10 @@ unabhängig und unverändert.
   Flachwasser #8ccbef, Flüsse und Seen #5ea8da). Ab 1-km-Kacheln (etwa ab
   30 km Sichtbreite, mit dem Wechsel der Kachelgröße) geht sie in eine
   eigene Fernpalette über, im selben satten Urbek-Grün wie nah, nur einen
-  Hauch kühler (`GROUND_FAR` im Shader: Wiese etwa #5d8145 im Shader, am
-  Bildschirm um ein Drittel heller; Wald #406e33, Nadelwald #335e3b), tiefes
+  Hauch kühler (`GROUND_FAR` im Shader; am Bildschirm Wiese #70a860 wie
+  Urbeks Gras, Felder eine Stufe heller und wärmer #98b860, Wald #407838;
+  gelbe Felder #bcb868 ließen Ebenen und Steppen wie eine vergilbte Karte
+  lesen, Kritik r11, mit Blau #84b474 wurde das Land minzig, Kritik r14), tiefes
   Meer #19588c mit Flachwasser #24689e; Seen wie die Flüsse im
   Flachwasserton. Der olive Ton der gemalten Fernsicht (Tiefland #9aa35a,
   Wald #56683c) ließ Europa wie eine vergilbte Karte aussehen; Urbek bleibt
@@ -154,11 +170,14 @@ unabhängig und unverändert.
   Felsgrat, die Pyrenäen auf der Europakarte. Schnee nur über 2500 m
   (16-km-Kacheln 2300 m), etwa 1,5 % der Alpen bei 1500 km (Kritik r9: 5,6 %
   in flachen weißen Flecken). Auf den
-  1-km-Kacheln (nur dort, `VALLEY_MAX_KM`: auf gröberen Kacheln räumte die
-  Regel die Flanken jedes Gebirges ab, Kritik r10) weicht der Wald in hügeligem Land (400 m Höhenunterschied in
-  10 km) aus den Talböden, der tiefsten Stufe ringsum und der Stufe darüber
-  (`VALLEY_LEVELS`, Kritik r9: der Wald füllte die Täler und verbarg die
-  Stufen), und wächst an den Hängen bis 1700 m;
+  Kacheln bis 2 km (`VALLEY_LEVELS` je Kachelgröße: auf gröberen Kacheln
+  räumte die Regel die Flanken jedes Gebirges ab, Kritik r10) weicht der
+  Wald in hügeligem Land (400 m Höhenunterschied in 10 km) aus den
+  Talböden, bis 1 km der tiefsten Stufe ringsum und der Stufe darüber
+  (Kritik r9: der Wald füllte die Täler und verbarg die Stufen), bei 2 km nur
+  der tiefsten (mit der Stufe darüber war der Wald bei 120 km ein dünner
+  Wurm, 15 %, ohne die Regel ein Teppich, 30 %, Kritik r11), und wächst an
+  den Hängen bis 1700 m;
   Ebenen und Hochflächen behalten ihre Wälder. Wald, Fels und Schnee sind an
   die Stufen gebunden (`level_snap`: eine Kachel nimmt sie an, wo der größere
   Teil ihrer eigenen Stufe ringsum sie trägt), so laufen sie als Bänder

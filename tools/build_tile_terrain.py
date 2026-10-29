@@ -636,16 +636,35 @@ def clean_levels(level, fixed, erode, dilate, block=1024, halo=4):
 # plain stays flat). Then a corner on a flat that is the highest point of its
 # 3 x 3 corners and stands PEAK_ABOVE levels over it gets one more: a peak,
 # four ramps up to one corner.
+# On rock (above ROCK_M) a flat top steps up even where the land is not that
+# high, by at most PEAK_OVER levels over it (with only the real height the
+# largest rock tops stayed plates of 470 x 116 px at 1500 km, Kritik r11).
+# Last, a pit in a top (a tile a level below all around it, left by the
+# steps) is filled.
 PEAK_FROM_M = 1000.0
 PEAK_ABOVE = 0.5
+PEAK_OVER = 1.0
 FLAT_MAX = 16  # corners, a top of 3 x 3 tiles
 PEAK_TOP_SHARE = 0.3
 PEAK_ROUNDS = 4
 
 
-def restore_peaks(level, x, fixed, from_x):
+def fill_pits(lv, high):
+    """Every pit up to two corners wide in `high` land raised to the level
+    around it (a per-level closing with the 3 x 3 corner square); in place."""
+    filled = 0
+    for k in range(int(lv[high].min(initial=0)) + 1, int(lv.max()) + 1):
+        m = (lv >= k).view(np.uint8)
+        pit = (min3(max3(m)) > m) & high
+        lv[pit] = k
+        filled += int(pit.sum())
+    return filled
+
+
+def restore_peaks(level, x, fixed, from_x, rock_x):
     lv = level.astype(np.int16)
     high = ~fixed & (x >= from_x)
+    filled = fill_pits(lv, high)  # a pit in a top keeps its rim from stepping up (a ring round a hole)
     raised = 0
     for _ in range(PEAK_ROUNDS):
         # corners on a flat (all eight neighbours at least as high; two such
@@ -664,11 +683,41 @@ def restore_peaks(level, x, fixed, from_x):
         rank = np.empty(idx.size, np.int64)
         rank[order] = np.arange(idx.size) - np.searchsorted(ranked, ranked)
         up = rank < np.maximum(np.round(PEAK_TOP_SHARE * size[lab_i]), 1)
-        up &= x.ravel()[idx] >= lv.ravel()[idx] + PEAK_ABOVE  # only where the land is that high
+        xi, li = x.ravel()[idx], lv.ravel()[idx]
+        up &= (xi >= li + PEAK_ABOVE) | ((xi >= rock_x) & (li + 1 <= xi + PEAK_OVER))
         lv.ravel()[idx[up]] += 1
         raised += int(up.sum())
-    peak = (min3(lv) >= lv) & high & (x >= lv + PEAK_ABOVE) & (x >= max3(x))
-    return (lv + peak).astype(level.dtype), raised, int(peak.sum())
+    lv += (min3(lv) >= lv) & high & (x >= lv + PEAK_ABOVE) & (x >= max3(x))
+    filled += fill_pits(lv, high)
+    lv = unit_envelope(lv, True)
+    return lv.astype(level.dtype), raised, filled
+
+
+# Far out (1 to 4 km tiles, where the houses stand on whole tiles) a town
+# (class 2 and up, the ones with houses) stands on a flat lot: the corners of
+# its footprint at the lowest of them, the land around at most a level a tile
+# higher, as SimCity 2000 levels the ground for building (on a ramp the
+# houses stood on a podium a level tall, which drew stilts at 70 km and
+# sugar cubes at 120 km, Kritik r10 and r11). Water corners keep their level.
+TOWN_FLAT_KM = (1.0, 2.0, 4.0)
+
+
+def flatten_towns(level, town, fixed):
+    ny, nx = town.shape
+    foot = np.zeros((ny + 1, nx + 1), bool)
+    for dj in (0, 1):
+        for di in (0, 1):
+            foot[dj:dj + ny, di:di + nx] |= town >= 2
+    foot &= ~fixed
+    lab, n = ndimage.label(foot, np.ones((3, 3), bool))
+    if n == 0:
+        return level, 0
+    low = np.concatenate(([np.inf], np.asarray(ndimage.minimum(level, lab, np.arange(1, n + 1)), np.float64)))
+    cap = unit_envelope(np.where(foot, low[lab], np.inf), True)
+    out = np.where(fixed, level, np.minimum(level, cap)).astype(level.dtype)
+    return out, int((out != level).sum())
+
+
 
 
 def gauss(a, sigma):
@@ -718,7 +767,7 @@ def tile_lake_levels(water, tile_km, lake_enc, shore):
     return level
 
 
-def corner_levels(water, tile_km, height, lake_enc, shore):
+def corner_levels(water, tile_km, height, lake_enc, shore, town=None):
     """SimCity 2000 terrain at a far zoom level: the height level of every tile
     corner ((ny + 1) x (nx + 1) for ny x nx tiles).
 
@@ -757,8 +806,12 @@ def corner_levels(water, tile_km, height, lake_enc, shore):
     level = settle(level)
     for _ in range(2):
         level = settle(clean_levels(level.astype(np.uint8), fixed, min3, max3))
-    level, raised, peaks = restore_peaks(level, x, fixed, float(far_level_x(np.float64(PEAK_FROM_M))))
-    print("tops", tile_km, "raised", raised, "peaks", peaks)
+    level, raised, filled = restore_peaks(level, x, fixed, float(far_level_x(np.float64(PEAK_FROM_M))),
+                                          float(far_level_x(np.float64(ROCK_M[tile_km]))))
+    print("tops", tile_km, "raised", raised, "pits filled", filled)
+    if town is not None and tile_km in TOWN_FLAT_KM:
+        level, flat = flatten_towns(level, town, fixed)
+        print("town lots", tile_km, flat)
     return level.astype(np.uint8)
 
 
@@ -774,9 +827,10 @@ def dem_node_heights(height, dem):
 def bake_levels(manifest, cells, height, lake_enc, shore):
     manifest["levels"] = [e for e in manifest.get("levels", []) if e["level"] < BAKED_FROM]
     relief_h = dem_node_heights(height, dem_mosaic(cells[1] != 1))
+    towns = {e["level"]: unpack_towns(e) for e in manifest["cells"]}
     for level in range(BAKED_FROM, LEVELS):
         tile = BASE_CELL_KM * 2 ** level
-        lv = corner_levels(cells[level], tile, relief_h, lake_enc, shore)
+        lv = corner_levels(cells[level], tile, relief_h, lake_enc, shore, towns.get(level))
         path = OUT / f"levels-L{level}.png"
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
@@ -888,7 +942,7 @@ def _shifted2(a, back):
     return [p[dy:dy + h, dx:dx + w] for dy in (0, 1) for dx in (0, 1)]
 
 
-def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
+def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean, town=None):
     """SimCity 2000 terrain at a near zoom level, as corner_levels() far out,
     from the terrain tile heights on the NEAR_STEPS_M scale, blurred over `blur`
     tiles; level sets are opened and closed with a `clean` x `clean` corner
@@ -927,18 +981,23 @@ def near_corner_levels(water, tile_km, heights, lake_enc, shore, blur, clean):
     for _ in range(2):
         level = settle(clean_levels(level, fixed, erode, dilate)).astype(np.uint8)
     if tile_km >= 1.0:
-        level, raised, peaks = restore_peaks(level, x, fixed, float(near_level_x(PEAK_FROM_M, tile_km)))
-        print("tops", tile_km, "raised", raised, "peaks", peaks)
+        level, raised, filled = restore_peaks(level, x, fixed, float(near_level_x(PEAK_FROM_M, tile_km)),
+                                              float(near_level_x(ROCK_M[tile_km], tile_km)))
+        print("tops", tile_km, "raised", raised, "pits filled", filled)
+    if town is not None and tile_km in TOWN_FLAT_KM:
+        level, flat = flatten_towns(level, town, fixed)
+        print("town lots", tile_km, flat)
     return level
 
 
 def bake_near_levels(manifest, cells, height, lake_enc, shore, only=NEAR_LEVELS):
     dem = dem_mosaic(cells[1] != 1)
+    town_cells = {e["level"]: e for e in manifest["cells"]}
     manifest["levels"] = [e for e in manifest.get("levels", []) if e["level"] not in only]
     for level in only:
         tile = BASE_CELL_KM * 2 ** level
         lv = near_corner_levels(cells[level], tile, near_heights(tile, height, dem), lake_enc, shore,
-                                NEAR_BLUR[level], NEAR_CLEAN[level])
+                                NEAR_BLUR[level], NEAR_CLEAN[level], unpack_towns(town_cells[level]))
         path = OUT / f"levels-L{level}.png"
         Image.fromarray(lv, "L").save(path, optimize=True)
         manifest["levels"].append({"level": level, "cell_km": tile, "width": lv.shape[1], "height": lv.shape[0],
@@ -1129,12 +1188,13 @@ def tidy_ground(g, passes=2):
 # in bands along the risers instead of blobs across them.
 ROCK_M = {0.5: 1600.0, 1.0: 1600.0, 2.0: 1500.0, 4.0: 1350.0, 8.0: 1450.0, 16.0: 1300.0, 32.0: 1200.0}
 SNOW_M = {0.5: 2600.0, 1.0: 2500.0, 2.0: 2500.0, 4.0: 2500.0, 8.0: 2500.0, 16.0: 2300.0, 32.0: 2100.0}
-VALLEY_LEVELS = 1  # levels above the valley floor that stay open in hilly land
-# only up to these tiles: on coarser ones every slope tile has a neighbour a
+# levels above the valley floor that stay open in hilly land, per tile size;
+# only up to 2 km tiles: on coarser ones every slope tile has a neighbour a
 # level lower, so the rule cleared the woods off the flanks of every range
-# (Kritik r10: Apennines 22.5 % -> 4.2 % forest at 400 km, Alps 20.5 -> 1.7 %;
-# at 2 km tiles it left 1 % forest against 5 % at 1 km, the 120 km "worm")
-VALLEY_MAX_KM = 1.0
+# (Kritik r10: Apennines 22.5 % -> 4.2 % forest at 400 km, Alps 20.5 -> 1.7 %).
+# At 2 km tiles only the floor: with one level above it the forest was a
+# thin worm (15 % at 120 km), without the rule one carpet (30 %, Kritik r11)
+VALLEY_LEVELS = {0.5: 1, 1.0: 1, 2.0: 0}
 TREELINE_M = 1700.0
 CONIFER_M = 1450.0  # beech below (the Apennine woods), spruce and larch above
 HILLY_M = 400.0  # height range within RELIEF_KM that makes land hilly
@@ -1232,7 +1292,7 @@ def compose_ground(open_g, wood, conifer, rock, snow, lv, tile_km, town=None, hi
     the woods filled the valleys and hid the steps)."""
     if hilly is not None:
         size = max(int(round(2 * RELIEF_KM / tile_km)) | 1, 3)
-        wood &= ~(hilly & (lv.astype(np.int16) - ndimage.minimum_filter(lv, size) <= VALLEY_LEVELS))
+        wood &= ~(hilly & (lv.astype(np.int16) - ndimage.minimum_filter(lv, size) <= VALLEY_LEVELS[tile_km]))
     if tile_km >= 1.0:
         wood = level_snap(wood, lv, SNAP_TILES)
     if town is not None and tile_km in TOWN_CLEARING:
@@ -1265,7 +1325,7 @@ def bake_ground(manifest, cells, height, cover, only=None):
         parts = ground_classes(cells[level], tile, height, cover, metres, relief)
         del metres, relief
         g = compose_ground(*parts, tile_low_levels(level, ny, nx), tile, towns.get(level),
-                           hilly if tile <= VALLEY_MAX_KM else None)
+                           hilly if tile in VALLEY_LEVELS else None)
         del parts
         g = tidy_ground(g, passes=2 if tile <= 2.0 else 3)
         packed = pack_nibbles(g)
@@ -1275,7 +1335,7 @@ def bake_ground(manifest, cells, height, cover, only=None):
                                    "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
                                    "classes": GROUND, "water": NO_GROUND,
                                    "relief_cover": {"rock_m": ROCK_M[tile], "snow_m": SNOW_M[tile],
-                                                    "valley_levels": VALLEY_LEVELS, "treeline_m": TREELINE_M,
+                                                    "valley_levels": VALLEY_LEVELS.get(tile), "treeline_m": TREELINE_M,
                                                     "heights": {"url": DEM_URL, "zoom": DEM_ZOOM}}})
         land = g[g != NO_GROUND]
         share = np.bincount(land, minlength=len(GROUND)) / max(land.size, 1)  # whole map, deserts included

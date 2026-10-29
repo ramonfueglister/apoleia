@@ -243,7 +243,7 @@
         "zoom": 8
       },
       "path": "levels-L1.png",
-      "sha256": "e41c786ce091cf4dcc0621a1160bb97524250482fa69aece2295b77a79f0b90b",
+      "sha256": "75dc24c35822ea8e55608bf9b15f4e6df62f3f4104bdbb52a887fcaf1a390c0c",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -274,7 +274,7 @@
         "node_squares_km": 1.9996433661534503
       },
       "path": "levels-L2.png",
-      "sha256": "a9c8c6d559a85506792f0e6a6bb476abe7399af0abb3d5939940fa911d406930",
+      "sha256": "606f28e9230f7d34420103505f2360e6165192da7ef054f2838653cff4c7e3a9",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -305,7 +305,7 @@
         "node_squares_km": 1.9996433661534503
       },
       "path": "levels-L3.png",
-      "sha256": "286ffe84ba35a9e5a5bbcc3a23e89db5b92da35e4c232c699046dc8ec680bca1",
+      "sha256": "d11bb9a7b3cb9d0187922c4f90158dbde452488be818cde21e9b77a17f65569d",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -336,7 +336,7 @@
         "node_squares_km": 1.9996433661534503
       },
       "path": "levels-L4.png",
-      "sha256": "3687ad0e8dac6a4af34a240cc422a942f303121bc7709b5e53a23dd8a7ac1e9f",
+      "sha256": "025d810aaadeee1b271519db3c1a66b927c38e97989bc105890c24912a4efcf4",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -367,7 +367,7 @@
         "node_squares_km": 1.9996433661534503
       },
       "path": "levels-L5.png",
-      "sha256": "9428dbb1fe236080bec4389fd668df565724ea78c9aaba01f76df59f6a864107",
+      "sha256": "fc7addbb4fdf55b87e42a73199b986a98221a5f6aa0966c64413035e395bc5ad",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     },
     {
@@ -398,7 +398,7 @@
         "node_squares_km": 1.9996433661534503
       },
       "path": "levels-L6.png",
-      "sha256": "211cd5b30b8975addaea28e05fa30cc8abf671acb359a37f48d340123c92b3c3",
+      "sha256": "1ec5ba4ed7eda86a4c6ddc5b66826924c138fde4b80a385fa1527d894aab436b",
       "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
     }
   ],
@@ -443,7 +443,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "ground-L1.png",
-      "sha256": "a6ae26d622d66216f5e81606d533879b72eab147b9a8b32949ad351ee3a2de30",
+      "sha256": "4444cb6ff56c1a867da04bec99873d5970806502749f83c3353657bbb03a9fb0",
       "classes": [
         "meadow",
         "dry_grass",
@@ -476,7 +476,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "ground-L2.png",
-      "sha256": "0c05bebeb8e7fb68d6d276b72415901e11bffd18b999cca71c57a62f25bf52b7",
+      "sha256": "d5df75d5d487532ff85f6e8d03faaf21053bcda77738fa16682f721fd30b8025",
       "classes": [
         "meadow",
         "dry_grass",
@@ -494,7 +494,7 @@
       "relief_cover": {
         "rock_m": 1500.0,
         "snow_m": 2500.0,
-        "valley_levels": 1,
+        "valley_levels": 0,
         "treeline_m": 1700.0,
         "heights": {
           "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
@@ -509,7 +509,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "ground-L3.png",
-      "sha256": "c5cf600e26d43d65754eb52e4ba9b3067c74f35cbcc552254a68735d0e2fd342",
+      "sha256": "bc4a6f214c68196f5f0dfbe65c8908c962053987dd37802d3a8595634c00c46c",
       "classes": [
         "meadow",
         "dry_grass",
@@ -527,7 +527,7 @@
       "relief_cover": {
         "rock_m": 1350.0,
         "snow_m": 2500.0,
-        "valley_levels": 1,
+        "valley_levels": null,
         "treeline_m": 1700.0,
         "heights": {
           "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
@@ -542,7 +542,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "ground-L4.png",
-      "sha256": "057adf656617a7f2e944712995a2d48ced876c26bb903049c0bbe769726dd0b1",
+      "sha256": "b4824a7b37573e3828d0301f919393ea3447e46a561cd6162c075580c78d8738",
       "classes": [
         "meadow",
         "dry_grass",
@@ -560,7 +560,7 @@
       "relief_cover": {
         "rock_m": 1450.0,
         "snow_m": 2500.0,
-        "valley_levels": 1,
+        "valley_levels": null,
         "treeline_m": 1700.0,
         "heights": {
           "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
@@ -575,7 +575,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "ground-L5.png",
-      "sha256": "e7c6e4991c063d05442b162684ba2754f02e6045efb7c67d6e85f73c7c73c230",
+      "sha256": "0ffd8371fbfc252f05803dd29bf6ab0e49b006176d13bade12d2c0c645d6cbbc",
       "classes": [
         "meadow",
         "dry_grass",
@@ -593,7 +593,7 @@
       "relief_cover": {
         "rock_m": 1300.0,
         "snow_m": 2300.0,
-        "valley_levels": 1,
+        "valley_levels": null,
         "treeline_m": 1700.0,
         "heights": {
           "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
@@ -608,7 +608,7 @@
       "height": 150,
       "packed_width": 162,
       "path": "ground-L6.png",
-      "sha256": "d793784e849e3daece6594ee8e29145092e8c956dd0763baf69eb94d032e90dd",
+      "sha256": "9cb86e8f8c53028bfe35100f7cbc2305e7f90deca29c8b435ca1bf1c6ea92bd9",
       "classes": [
         "meadow",
         "dry_grass",
@@ -626,7 +626,7 @@
       "relief_cover": {
         "rock_m": 1200.0,
         "snow_m": 2100.0,
-        "valley_levels": 1,
+        "valley_levels": null,
         "treeline_m": 1700.0,
         "heights": {
           "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
