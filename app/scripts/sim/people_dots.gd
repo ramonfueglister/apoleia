@@ -27,8 +27,9 @@ extends MultiMeshInstance3D
 ## terrain: fields by season around the farms, footpaths to the markets,
 ## market squares, trade roads and sea lanes (sim_map.gdshaderinc, layers
 ## from ApoleiaPeople.map_window and road_map, rebuilt once a month).
-## A click shows the household's kind and how much it ate. T opens the
-## simulation's tables (sim_tables.gd).
+## A click shows the household's kind, how much it ate and its money. T
+## opens the simulation's tables (sim_tables.gd). Up close the trips to
+## market and between markets walk the paths and roads (people_trips.gd).
 ## Keys: P shows or hides the dots (an overview, off by default), G the
 ## grain economy on the map (on by default), [ and ] slow down or speed up the days.
 ## Command line (after --): --people-days=n days per second (default 10),
@@ -47,9 +48,9 @@ const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
 const FIGURE_SHADOW_SHADER = preload("res://shaders/people_figure_shadows.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
-const CROP_ROWS := 12 # rows of vegetables or vines per parcel
+const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
-const FLOCK_MAX := 8 # sheep in the largest flock on a pasture parcel
+const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
@@ -61,6 +62,8 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const SimEvents = preload("res://scripts/sim/sim_events.gd")
+const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
 # nearest houses each may take and up to which view width (km) it is used;
@@ -102,6 +105,7 @@ var _map_version := -1
 var _map_at := Vector2.INF
 var _map_tex: ImageTexture
 var _road_tex: ImageTexture
+var _region_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
 var _legend: Dictionary
 var _hud: CanvasLayer
@@ -131,6 +135,7 @@ var _figure_material := ShaderMaterial.new()
 var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's feet (people_figure_shadows.gdshader)
 var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
+var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
 var _lots: MultiMeshInstance2D
@@ -141,6 +146,8 @@ var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
 var _texture: Texture2DArray
 var _shared_uniforms: Array[StringName] = []
+var _shared_values := {} # what each shared uniform was last copied as
+var _shared_count := 0 # materials it was copied into
 var _day_debt := 0.0
 var _bench_path := ""
 var _bench_frame := 0
@@ -259,6 +266,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	_crops.multimesh = cm
 	_crops.visible = false
 	add_child(_crops)
+	_trips = PeopleTrips.new()
+	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
+	add_child(_trips)
 	_lots_view = SubViewport.new()
 	_lots_view.name = "HouseLots"
 	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
@@ -293,9 +303,12 @@ func setup(tile_terrain: Node3D) -> bool:
 	custom_aabb = AABB(Vector3(-20000, -100, -20000), Vector3(40000, 4000, 40000))
 	_legend = people.legend()
 	_build_hud()
-	var tables := SimTables.new() # T: markets, population and farms as tables
+	var tables := SimTables.new() # T: markets, population, farms, state and history as tables
 	tables.setup(people, get_parent())
 	add_child(tables)
+	var events := SimEvents.new() # E: what happens, at the bottom right
+	events.setup(people, get_parent())
+	add_child(events)
 	_rebuild()
 	_rebuild_houses()
 	if _bench_path != "":
@@ -547,6 +560,24 @@ func _update_map() -> void:
 	_map_version = version
 	_map_at = centre
 
+## The regions coloured by a column of the markets (sim_tables.gd), one
+## texel per 25 km cell as sim_map.gdshaderinc sim_regions reads it; null
+## clears them.
+func paint_regions(img: Image, grid: Dictionary) -> void:
+	var mat: ShaderMaterial = terrain._terrain_material
+	if img == null:
+		mat.set_shader_parameter("sim_regions_on", false)
+		return
+	if _region_tex == null or _region_tex.get_size() != Vector2(img.get_size()):
+		_region_tex = ImageTexture.create_from_image(img)
+	else:
+		_region_tex.update(img)
+	mat.set_shader_parameter("sim_region_tex", _region_tex)
+	mat.set_shader_parameter("sim_cell_origin", grid.origin)
+	mat.set_shader_parameter("sim_cell_km", grid.cell_km)
+	mat.set_shader_parameter("sim_cell_n", img.get_size())
+	mat.set_shader_parameter("sim_regions_on", true)
+
 ## The people near the view, as a slot list for the figure shader.
 func _update_figures(view_km: float, synced: bool) -> void:
 	var centre: Vector2 = get_parent().target if "target" in get_parent() else Vector2.ZERO
@@ -755,6 +786,8 @@ func _show_person(p: Dictionary) -> void:
 		var fed: float = p.fed / 10.0
 		var colour := "#e05040" if fed < 80.0 else ("#e0a040" if fed < 95.0 else "#80c060")
 		lines.append("[color=%s]gegessen: %d %% des Bedarfs[/color], Vorrat %d kg" % [colour, int(fed), int(p.pantry_kg)])
+		if p.has("money"):
+			lines.append("Geld des Haushalts: %s Denar" % SimTables._int(roundi(p.money)))
 	if p.travelling > 0:
 		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
 	_info_label.text = "\n".join(lines)
@@ -808,6 +841,8 @@ func _process(delta: float) -> void:
 	var figures := view_km <= FIGURE_KM
 	var dots := shown and not figures
 	_hud.visible = visible and (figures or dots)
+	var landscape := get_parent()
+	_trips.step(delta, visible and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
 	if not visible:
 		# out of the close LOD the frame does nothing for the people: no
 		# upload, no placement pass, no draw. The sim thread keeps running and
@@ -822,10 +857,19 @@ func _process(delta: float) -> void:
 	if synced_houses < 0:
 		_rebuild_houses()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
+	# only what changed: setting a texture rebuilds a material's uniform set,
+	# for some 20 materials each frame (Mac tour, 29.10.2026)
 	var source: ShaderMaterial = terrain._terrain_material
+	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _trips.material] + _house_materials
+	if targets.size() != _shared_count:
+		_shared_values.clear() # new house materials get everything
+		_shared_count = targets.size()
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material] + _house_materials:
+		if _shared_values.has(key) and typeof(_shared_values[key]) == typeof(value) and _shared_values[key] == value:
+			continue
+		_shared_values[key] = value
+		for m in targets:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):

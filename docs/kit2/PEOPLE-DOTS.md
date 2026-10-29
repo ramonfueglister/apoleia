@@ -327,7 +327,7 @@ Stoppeln; eine brachliegende Parzelle ist eine 0,8 m hohe Platte aus
 trockenen Stoppeln im Weizengelb. Unter bestellten und brachen Parzellen
 malt die Terrain Wiese, so steht jede Platte mit sichtbarer Kante in
 einem Grasrand.
-Gemüse und Bohnen stehen in 12 Reihen einzelner Büschel, Reben als
+Gemüse und Bohnen stehen in 8 Reihen einzelner Büschel (12 lasen sich aus 3 km als Punkte, Runde 22), mindestens 8 px breit, Reben als
 niedrige Hecken in jeder zweiten Reihe; die Felder neben einem Hof sind
 ringsum eingezäunt, weiter draussen keines. Die Grüntöne liegen dunkler als
 die Wiese daneben, wie bei Urbek. Büschelreihen laufen ost-west, damit ihre Vorderseiten zur
@@ -335,9 +335,16 @@ Kamera zeigen (die Lücken schneidet der Fragment-Shader); die Reihen des
 Getreides laufen nord-süd, von der Kamera weg, als Linien (ost-west lasen
 sich ihre gestapelten Vorderseiten wie Jalousien). Nord-süd-Reihen werden
 gedreht, nie gespiegelt (Spiegeln kehrt die Flächen nach innen). Auf gut der Hälfte der Weideparzellen (offenes Land,
-kein Hof) steht eine kleine Schafherde (lange, niedrige Körper auf
-dunklen Beinen, die Längsseite zur Kamera), vier bis acht Tiere. Die Regel, welche Parzelle bestellt ist, liegt in
+kein Hof) steht eine kleine Schafherde (lange, niedrige Körper in hellem
+Wollweiss #e4dccc auf dunklen Beinen, die Längsseite zur Kamera), sechs bis
+zehn Tiere auf einem Raster von 3 × 3 Plätzen, damit keine zwei ineinander
+stehen (Runde 22). Die Regel, welche Parzelle bestellt ist, liegt in
 `sim_fields.gdshaderinc` und gilt für Bodenfarbe und Platten gleich. Eine
+Kein Feld liegt unter Bäumen oder in der Stadt (`sim_no_field`, Runde 22):
+nicht auf Datenkacheln mit Wald oder Siedlung in der Nachbarschaft, im Süden
+unter 700 m und mit Ölbäumen zwei Kacheln weit; gepflügte Erde ist
+Urbeks #8c5c3c. Trampelpfade und Marktplätze enden am Stadtrand, statt über
+das Pflaster zu laufen. Eine
 Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die
 Gassen; die Terrain malt Hofparzellen als Wiese.
@@ -345,6 +352,55 @@ Gassen; die Terrain malt Hofparzellen als Wiese.
 Ein Klick auf eine Person zeigt auch die Art des Haushalts (Hof mit
 Feldgrösse, Lohn, Zelt, Händler, Oberschicht), wie viel er im letzten Monat
 gegessen hat und seinen Vorrat.
+
+## Unterwegs: Träger und Wagen (Ramon, 29.10.2026)
+
+Die Leute, die man aus der Nähe laufen sieht, gehen dorthin, wohin die
+Wirtschaft sie schickt (`scripts/sim/people_trips.gd`,
+`shaders/people_walkers.gdshader`). `ask_trips(min_x, min_z, max_x, max_z)`
+bittet den Sim-Thread zwischen zwei Tagen um alle Fahrten, deren Weg das
+Fenster berührt (`Grain::trips_in`, Simulations-Thread, etwa 4500 auf der
+ganzen Karte, 2,5–6 ms); `take_trips()` bringt sie als Packed-Arrays
+(`sim/godot/src/trips.rs`): Art (Verkauf, Einkauf, Ausfuhr, Einfuhr),
+Ladung in kg, Abreise, Ankunft und Heimkehr in Tagen und den Weg in Welt-km.
+Marktgänge folgen dem Trampelpfad Kachel für Kachel, Handelsfahrten den
+Zellmitten der Handelswege, genau dort, wo die Strassen gezeichnet sind.
+
+- Bauern gehen mit einem Esel zum Markt, mit Säcken auf dem Weg, auf dem sie
+  Korn tragen (beim Verkauf hin, beim Einkauf zurück). Händler fahren einen
+  Ochsenkarren, beladen auf der Ausfuhr hin, auf der Einfuhr zurück.
+- Jede neue Fahrt wird ein Läufer, der seinen Weg in lesbarem Tempo geht,
+  egal wie viele Tage pro Sekunde laufen: er beginnt dort, wo ihn die
+  Simulation gerade hat, tritt ein langer Weg erst im Bild auf, tritt er dort
+  ein, und geht bis ans Ende seines Wegs oder aus dem Bild. Kehrt er am selben
+  Tag heim, dreht er am Ziel um.
+- Höchstens 300 gleichzeitig; gefragt wird einmal pro Sim-Tag und wenn die
+  Kamera weiterzieht. Gezeichnet nur aus der Nähe, mit den Figuren.
+- Tuniken in den acht Farben der Figuren (Wolle und Leinen, Krapprot,
+  Waidblau, Brauntöne, Blattgrün; in Brauntönen allein wirkten die ersten
+  Läufer nackt); Beine und Arme schwingen beim Gehen.
+- Wer denselben Weg am selben Tag geht, geht nicht im Gänsemarsch
+  ineinander: jeder hat seine Spur quer zum Weg (bis 90 m bei Diorama-Grösse)
+  und einen Versatz längs (bis 200 m). Über Wasser (Fluss, See, Meer) sind
+  sie nicht zu sehen: sie nehmen Brücke oder Fähre (die ersten liefen über
+  den Tiber).
+- Am Ende des Wegs bleiben sie 6 s stehen, am Markt zwischen den Ständen,
+  am Hof bei der Arbeit, dann gehen sie heim.
+- **Marktstände:** auf jedem Marktplatz, den die Terrain zeichnet
+  (`ApoleiaPeople.market_squares`, Bit 6 der feinen Ebene), stehen bis 10 km
+  Sichtbreite sieben Stände mit Tresen, vier Pfosten und rot-weiss
+  gestreiftem Dach (#d46048, Rahmen #804c28, wie die Stände am Forum), Ware
+  darauf, der Tresen zur Mitte (r11: der Platz war nur ein flaches Muster).
+- **Erntehelfer:** `ask_work(Fenster)` liefert, wer bei der letzten
+  Wochenbörse jeder Region auf welchem Hof arbeitet (`Grain::work_in`,
+  `trips::work_to_dict`). Jede neue Anstellung schickt den Arbeiter von
+  seinem Haus geradeaus zum Hof und zurück: mit Saatkorb zur Saat, mit
+  Sichel zur Ernte, sonst mit der Hacke auf der Schulter. Höchstens die
+  Hälfte der 300 Läufer sind Helfer, der Rest bleibt den Fahrten.
+
+Ein Klick auf eine Person zeigt jetzt auch das Geld ihres Haushalts in
+Denar (`HouseholdLook.money`, so wie es ist, auch unter null: Händler zahlen
+Aus- und Einfuhr auch mit leerer Kasse).
 
 ## Farben und Klick
 
@@ -364,10 +420,10 @@ gegessen hat und seinen Vorrat.
 
 ## Tabellen im Stil von EU5 (Ramon, 29.10.2026)
 
-Taste `T` (oder der Knopf links oben) öffnet links ein Panel mit vier
+Taste `T` (oder der Knopf links oben) öffnet links ein Panel mit fünf
 Tabellen: Märkte, Bevölkerung nach Region und Beruf, Höfe nach Region und
 Staat (Kasse und Geldkreislauf seit Spielstart, S94; eine Zeile ohne Ort,
-darum als Liste aus Posten und Betrag gezeigt) (`scripts/sim/sim_tables.gd`). Die Daten liefert die Simulation
+darum als Liste aus Posten und Betrag gezeigt) und Verlauf (eine Zeile pro Monat, unten) (`scripts/sim/sim_tables.gd`). Die Daten liefert die Simulation
 (`sim/src/tables.rs`, `Grain::table`; Simulations-Thread): `ask_table(kind)`
 bittet den Sim-Thread darum, zwischen zwei Tagen gebaut kommt die Tabelle mit
 `take_table()` als Spalten in Packed-Arrays, mit Spaltenköpfen und Einheiten
@@ -392,13 +448,45 @@ Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
   Linien und Balken; Zahlen mit Hochkomma (116’805), Datum im römischen
   Kalender ("Martius, Jahr 3").
 
+### Verlauf und Karte färben
+
+- **Verlauf** (fünfter Reiter, Tabelle `history`, eine Zeile pro Monat):
+  jede Reihe mit dem letzten und dem vorletzten Monat und der Veränderung;
+  ein Klick auf eine Reihe zeichnet sie oben als Kurve über die Monate,
+  Jahre an der Grundlinie. Bei den Preisen liegt die Spanne von min bis max
+  als Band um den Median.
+- **Karte färben** (bei den Märkten): färbt jede Region nach der Spalte,
+  nach der sortiert ist, in fünf Klassen mit gleich vielen Regionen, von
+  Strohgelb bis Krapprot, mit dunkler Grenze zwischen den Regionen, wie
+  EU5s Kartenmodi. Die Zuordnung Zelle → Markt liefert
+  `ApoleiaPeople.region_map()` (`Grain::cell_markets`, monatlich mit der
+  Kartenebene); `people_dots.gd paint_regions` legt sie als Textur auf das
+  Terrain, `sim_regions` in `sim_map.gdshaderinc` (im bestehenden Aufruf
+  von `sim_ways`, kein neuer Haken im Terrain-Shader) malt sie über das
+  Land, das Meer bleibt frei. Die Farben bleiben, wenn das Panel zugeht (es
+  deckt den grössten Teil der Karte), mit ihrer Legende unten links; deren ✕
+  schaltet sie ab. `--tables-map=price` färbt ohne offenes Panel.
+
+## Ereignisse (Taste E)
+
+Unten rechts listet `scripts/sim/sim_events.gd` die letzten Ereignisse im
+Bild und rundherum (mindestens 30 km um die Mitte, weil Umzüge in der Mitte ihrer 25-km-Zelle liegen), neueste zuerst, eine Zeile pro Tag und Art mit Anzahl
+und Menge: Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten,
+Diebstahl (kg), Almosen (kg), Zelt zieht um, Hof übernommen, Erbteil, Ins
+Zelt, Hof nach Lex Manciana, Hof verlassen (`sim/src/events.rs`, 60 Tage
+gehalten). `ask_events(seit, Fenster)` fragt einmal pro Sim-Tag, höchstens
+einmal pro Sekunde (`Grain::events_in`, `trips::events_to_dict`). Ein Klick
+auf eine Zeile fliegt die Kamera dorthin. Hungertod rot, Diebstahl und
+Verlust orange, Almosen gold, Höfe grün.
+
 ## Bedienung
 
-`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
+`P` Punkte-Übersicht an/aus, `G` Getreidewirtschaft an/aus, `C` Farbe, `T` Tabellen, `E` Ereignisse, Klick Person, `Esc` schliessen, `[` / `]` Tage pro Sekunde halbieren/verdoppeln.
 Kommandozeile: `--people-days=n` (Standard 10), `--people-bench=pfad.json`,
 `--people-colour=n` (0–3), `--people-click=x,y` (für Screenshots),
 `--people-warm=n` (n Tage vor dem ersten Bild rechnen),
-`--tables=markets|population|farms` (Panel offen auf dieser Tabelle).
+`--tables=markets|population|farms|state|history` (Panel offen auf dieser Tabelle),
+`--tables-map=spalte` (Karte nach dieser Spalte der Märkte färben), `--no-events`.
 Ohne gebaute GDExtension (`sim/godot/build.sh`) bleiben die Punkte aus.
 
 ## Recherche (Stand Oktober 2026)

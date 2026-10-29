@@ -11,9 +11,9 @@
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
 
-use crate::grain_map::{GrainMap, MapLayers, FINE};
-use crate::tables;
-use apoleia_sim::grain::{Grain, HouseholdLook, FARM_KIND_NAMES, KIND_NAMES};
+use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
+use crate::{tables, trips};
+use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::Table;
@@ -46,19 +46,36 @@ struct Front {
     person: Option<(Person, Option<HouseholdLook>)>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
+    /// Answer to the last `ask_trips` (built between two days).
+    trips: Option<TripsView>,
+    /// Answer to the last `ask_work`.
+    work: Option<WorkView>,
+    /// Answer to the last `ask_events`.
+    events: Option<EventsView>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look
-/// up, a table to build (apoleia_sim::tables).
+/// up, a table to build (apoleia_sim::tables), a window (world km, min x,
+/// min z, max x, max z) whose trips under way to list.
 #[derive(Default)]
 struct Queue {
     days: u64,
     stop: bool,
     ask: Option<usize>,
     table: Option<String>,
+    trips: Option<[f64; 4]>,
+    work: Option<[f64; 4]>,
+    /// The day after which, and the window.
+    events: Option<(i64, [f64; 4])>,
+}
+
+impl Queue {
+    fn asked(&self) -> bool {
+        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+    }
 }
 
 #[derive(Default)]
@@ -101,27 +118,36 @@ const FINE_KM: f32 = CELL_KM / FINE as f32;
 
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
-        let (ask, table) = {
+        // questions from the game first, between two days; then a day
+        let (ask, table, trips, work, events) = {
             let mut q = shared.queue.lock().unwrap();
-            while q.days == 0 && !q.stop && q.ask.is_none() && q.table.is_none() {
+            while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
             }
             if q.stop {
                 return;
             }
-            let ask = q.ask.take();
-            let table = q.table.take();
-            if ask.is_none() && table.is_none() {
+            let asked = q.asked();
+            if !asked {
                 q.days -= 1;
             }
-            (ask, table)
+            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
         };
-        if let Some(key) = table {
-            let t = grain.table(&people, &key);
+        if let Some(key) = &table {
+            let t = grain.table(&people, key);
             shared.front.lock().unwrap().table = t;
-            if ask.is_none() {
-                continue;
-            }
+        }
+        if let Some([x0, z0, x1, z1]) = trips {
+            let v = grain.trips_in(&people, (x0, z0), (x1, z1));
+            shared.front.lock().unwrap().trips = Some(v);
+        }
+        if let Some([x0, z0, x1, z1]) = work {
+            let v = grain.work_in((x0, z0), (x1, z1));
+            shared.front.lock().unwrap().work = Some(v);
+        }
+        if let Some((since, [x0, z0, x1, z1])) = events {
+            let v = grain.events_in(&people, since, (x0, z0), (x1, z1));
+            shared.front.lock().unwrap().events = Some(v);
         }
         if let Some(slot) = ask {
             let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
@@ -130,6 +156,8 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
                 (p, hh)
             });
             shared.front.lock().unwrap().person = who;
+        }
+        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
         let t0 = Instant::now();
@@ -468,6 +496,7 @@ impl ApoleiaPeople {
             d.set("hh_kind", KIND_NAMES[h.kind as usize]);
             d.set("fed", h.fed as i64);
             d.set("pantry_kg", h.pantry_kg);
+            d.set("money", h.money as f64 / 1000.0); // denarii
             if let Some((kind, m2)) = h.farm {
                 d.set("farm_kind", FARM_KIND_NAMES[kind as usize]);
                 // field m² are per simulated person (PEOPLE_PER_PERSON)
@@ -513,6 +542,90 @@ impl ApoleiaPeople {
             Some(t) => tables::to_dict(&t),
             None => VarDictionary::new(),
         }
+    }
+
+    /// Asks the sim thread for the trips under way whose route touches the
+    /// window (world km); the answer comes with `take_trips`, between two
+    /// days.
+    #[func]
+    fn ask_trips(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().trips = None;
+        self.shared.queue.lock().unwrap().trips = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The trips asked for, once, as trips::to_dict; empty until the sim
+    /// thread answered.
+    #[func]
+    fn take_trips(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().trips.take() {
+            Some(v) => trips::to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread who works on whose farm (the last weekly labour
+    /// exchange of each region) where the worker's home or the farm lies
+    /// in the window (world km); the answer comes with `take_work`.
+    #[func]
+    fn ask_work(&mut self, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().work = None;
+        self.shared.queue.lock().unwrap().work = Some([min_x, min_z, max_x, max_z]);
+        self.shared.wake.notify_one();
+    }
+
+    /// The hires asked for, once, as trips::work_to_dict; empty until the
+    /// sim thread answered.
+    #[func]
+    fn take_work(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().work.take() {
+            Some(v) => trips::work_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// Asks the sim thread for the events after day `since` in the window
+    /// (world km); the answer comes with `take_events`.
+    #[func]
+    fn ask_events(&mut self, since: i64, min_x: f64, min_z: f64, max_x: f64, max_z: f64) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.front.lock().unwrap().events = None;
+        self.shared.queue.lock().unwrap().events = Some((since, [min_x, min_z, max_x, max_z]));
+        self.shared.wake.notify_one();
+    }
+
+    /// The events asked for, once, as trips::events_to_dict; empty until
+    /// the sim thread answered.
+    #[func]
+    fn take_events(&mut self) -> VarDictionary {
+        match self.shared.front.lock().unwrap().events.take() {
+            Some(v) => trips::events_to_dict(&v),
+            None => VarDictionary::new(),
+        }
+    }
+
+    /// The market (region) of each 25 km cell as of the last month, row by
+    /// row, -1 at sea: {"cells", "rows", "cols", "origin" world km of the
+    /// grid corner, "cell_km"}. With the `markets` table (id = market
+    /// index) the game colours the regions by any column.
+    #[func]
+    fn region_map(&self) -> VarDictionary {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let mut d = VarDictionary::new();
+        d.set("cells", &PackedInt32Array::from_iter(map.regions.iter().map(|&m| if m == u32::MAX { -1 } else { m as i32 })));
+        d.set("rows", map.rows);
+        d.set("cols", map.cols);
+        d.set("origin", Vector2::new(map.col0 as f32 * CELL_KM, map.row0 as f32 * CELL_KM));
+        d.set("cell_km", CELL_KM);
+        d
     }
 
     /// Names for the colour legend: occupations, political groups and the
@@ -603,6 +716,26 @@ impl ApoleiaPeople {
         d.set("origin", Vector2::new((fc0 + map.col0 * FINE) as f32 * FINE_KM, (fr0 + map.row0 * FINE) as f32 * FINE_KM));
         d.set("tile_km", FINE_KM);
         d
+    }
+
+    /// Centres (world km) of the market squares among the `n` × `n` fine
+    /// tiles around (x, z), as the terrain draws them (sim_map.gdshaderinc
+    /// sim_paths), for the stalls that stand on them.
+    #[func]
+    fn market_squares(&self, x: f32, z: f32, n: i64) -> PackedVector2Array {
+        let map = self.shared.front.lock().unwrap().map.clone();
+        let n = n.clamp(1, 1024) as i32;
+        let fr0 = (z / FINE_KM).floor() as i32 - map.row0 * FINE - n / 2;
+        let fc0 = (x / FINE_KM).floor() as i32 - map.col0 * FINE - n / 2;
+        let win = map.window(fr0, fc0, n);
+        let mut out = PackedVector2Array::new();
+        for (i, px) in win.chunks_exact(4).enumerate() {
+            if px[3] & MARKET_BIT != 0 {
+                let (r, c) = (fr0 + map.row0 * FINE + i as i32 / n, fc0 + map.col0 * FINE + i as i32 % n);
+                out.push(Vector2::new((c as f32 + 0.5) * FINE_KM, (r as f32 + 0.5) * FINE_KM));
+            }
+        }
+        out
     }
 
     /// The trade roads and sea lanes, one RG8 texel per 25 km cell:

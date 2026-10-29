@@ -41,8 +41,8 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // them, pale straw grain.
 const vec3 SOIL = vec3(0.34, 0.24, 0.18);
 const vec3 SOIL_DRY = vec3(0.46, 0.34, 0.25);  // under the vines
-const vec3 SPROUT = vec3(0.32, 0.52, 0.22);
-const vec3 GRAIN_GREEN = vec3(0.24, 0.45, 0.17);  // Urbek's young crops #3f7d2c-#559a3e lit
+const vec3 SPROUT = vec3(0.28, 0.5, 0.2);
+const vec3 GRAIN_GREEN = vec3(0.2, 0.43, 0.15);  // Urbek's young crops #5ca040 lit, #2c6424 in shade
 const vec3 BARLEY_GREEN = vec3(0.32, 0.48, 0.18); // a little yellower than the wheat
 const vec3 RIPE[2] = vec3[](vec3(0.68, 0.64, 0.36), vec3(0.72, 0.68, 0.46)); // wheat, barley (Urbek's wheat #c0c672 lit)
 const vec3 FALLOW = vec3(0.62, 0.6, 0.32);       // dry stubble, Urbek's wheat #cdc373 lit: the warm yellow of the farmland
@@ -52,9 +52,10 @@ const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
 const vec3 FENCE = vec3(0.37, 0.255, 0.157);   // the farmhouse fence (farmhouse.gd FENCE)
 const float FENCE_POSTS = 6.0;   // posts per side, about two metres apart
-const vec3 WOOL = vec3(0.9, 0.87, 0.78);
-const vec3 SHEEP_DARK = vec3(0.27, 0.22, 0.18); // face and legs
-const float FLOCK_SHARE = 0.55;   // share of the pasture parcels with a flock
+const vec3 WOOL = vec3(0.84, 0.81, 0.74); // below the house walls (brighter it was the lightest thing in the land, r11)
+const vec3 SHEEP_DARK = vec3(0.33, 0.27, 0.22); // face and legs
+const float FLOCK_SHARE = 0.3;   // share of the pasture parcels with a flock: fewer, larger flocks (r11: confetti)
+const vec2 SHEEP_SPACING = vec2(2.2, 1.4); // m between the spots of a flock's three by three grid
 
 void vertex() {
 	float size = tt_data_km() * 0.5; // a quarter tile up close, half a data tile
@@ -90,18 +91,18 @@ void vertex() {
 	} else if (grain) {
 		if (g <= 0.0) { c = STUBBLE; }
 		else if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; fill = 0.35; }
-		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 24.0; fill = 0.8; }
+		else if (g < 0.4) { h = 0.15; w = 0.4; rc = SPROUT; clumps = 10.0; fill = 0.45; }
+		else if (g < 0.75) { h = 0.35; w = 0.55; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 12.0; fill = 0.7; }
 		else {
 			c = RIPE[kind];
 			// the ears stand in dense light rows on the sheet (a bare sheet
 			// read as an empty tray, rounds 17 and 20)
-			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 20.0; fill = 0.7;
+			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 14.0; fill = 0.7;
 		}
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
-		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; fill = 0.35; }
-		else { h = 0.45; w = 0.45; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 12.0; fill = 0.75; }
+		else if (g < 0.4) { h = 0.15; w = 0.4; rc = SPROUT; clumps = 9.0; fill = 0.45; }
+		else { h = 0.45; w = 0.55; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 9.0; fill = 0.75; }
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		c = SOIL_DRY;
@@ -146,12 +147,16 @@ void vertex() {
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
-		// four to eight of them about the flock's middle, each turned its way
+		// six to nine of them on their own spots of a loose three by three
+		// grid about the flock's middle, so none stands in another (r11),
+		// each turned its way
 		int k = int(UV.y) / 4;
 		int part = int(UV.y) % 4;
-		if (float(k) >= 4.0 + 5.0 * sim_hash(cell + 8.1)) { show = false; }
-		vec2 middle = (vec2(sim_hash(cell + 1.3), sim_hash(cell + 2.9)) - 0.5) * 0.3 * inner;
-		vec2 at = middle + (vec2(sim_hash(cell + float(k) * 1.7), sim_hash(cell + float(k) * 2.3 + 0.5)) - 0.5) * 0.4 * inner;
+		if (float(k) >= 6.0 + 4.0 * sim_hash(cell + 8.1)) { show = false; }
+		vec2 middle = (vec2(sim_hash(cell + 1.3), sim_hash(cell + 2.9)) - 0.5) * 0.5 * inner;
+		int spot = (k + int(sim_hash(cell + 6.6) * 9.0)) % 9;
+		vec2 jitter = vec2(sim_hash(cell + float(k) * 1.7), sim_hash(cell + float(k) * 2.3 + 0.5)) - 0.5;
+		vec2 at = middle + (vec2(float(spot % 3), float(spot / 3)) - 1.0 + jitter * 0.3) * SHEEP_SPACING * km_per_m;
 		// a long low body on short dark legs, the head at one end, half as
 		// tall as a person
 		vec3 half_m = part == 0 ? vec3(0.55, 0.21, 0.28) : part == 1 ? vec3(0.42, 0.15, 0.16) : vec3(0.15, 0.14, 0.12);

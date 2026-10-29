@@ -20,11 +20,23 @@ extends CanvasLayer
 ## rest is counted in a last row. A table of one row without a place (the
 ## state) is shown as a list of its values, one per line.
 ##
-## Command line (after --): --tables=markets|population|farms|state opens the panel
-## on that table.
+## The history ("Verlauf", one row per month) shows each series with its
+## last two months; the one picked is drawn as a curve over the months
+## above the list (prices with their range).
+##
+## On the markets, "Karte färben" colours each region on the map by the
+## column sorted by, in five classes of equal numbers of regions, with the
+## regions' borders (ApoleiaPeople.region_map: the market of each 25 km
+## cell; people_dots.gd paint_regions, sim_map.gdshaderinc sim_regions).
+## The colours stay when the panel closes (it covers most of the map), with
+## their legend at the bottom left, whose ✕ takes them off.
+##
+## Command line (after --): --tables=markets|population|farms|state|history
+## opens the panel on that table, --tables-map=column colours the map by
+## that column of the markets.
 
-const KINDS: Array[String] = ["markets", "population", "farms", "state"] # apoleia_sim::tables::TABLES
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat"]
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history"] # apoleia_sim::tables::TABLES
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf"]
 const MONTHS: Array[String] = ["Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
 	"Quintilis", "Sextilis", "September", "October", "November", "December"]
 const YEAR := 360 # days (sim/src/life.rs)
@@ -50,6 +62,10 @@ const ROW_MAX := 300
 const FLY_MARGIN := 1.6 # the camera frames a place this many times its extent
 const FLY_MIN_KM := 3.0
 const FLY_MAX_KM := 600.0
+const CHART_PX := 220.0
+const NOT_SERIES: Array[String] = ["day", "year"] # the history's time, not a series
+## the map's classes, few to many (pale straw to deep madder)
+const CLASS_COLOURS: Array[Color] = [Color("f1e6c2"), Color("e3bf78"), Color("d08c4e"), Color("ac5637"), Color("72302a")]
 
 var people: RefCounted
 var landscape: Node3D
@@ -70,6 +86,13 @@ var _tree: Tree
 var _note: Label
 var _unit := PackedStringArray() # per column of the table shown: unit and factor shown in
 var _factor := PackedFloat64Array()
+var _chart: Control
+var _series := "persons" # the history's curve
+var _paint: CheckButton
+var _legend: HBoxContainer
+var _legend_box: PanelContainer
+var _map_by := "" # the markets' column the map is coloured by, "" for none
+var _painted := "" # column and table day last painted
 
 ## `sim` is ApoleiaPeople, `scene` the landscape whose camera a row moves.
 func setup(sim: RefCounted, scene: Node3D) -> void:
@@ -84,6 +107,9 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 		if arg.get_slice("=", 0) == "--tables":
 			open = true
 			_kind = maxi(KINDS.find(arg.get_slice("=", 1)), 0)
+		elif arg.get_slice("=", 0) == "--tables-map":
+			_map_by = arg.get_slice("=", 1)
+			_state[0].sort = _map_by
 	_build()
 	_tabs.current_tab = _kind
 	_show(open)
@@ -91,7 +117,7 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 # ------------------------------------------------------------------ data
 
 func _process(_delta: float) -> void:
-	if not open:
+	if not open and _map_by == "":
 		return
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
@@ -100,14 +126,17 @@ func _process(_delta: float) -> void:
 		_tables[_asked] = answer
 		var was := _asked
 		_asked = -1
-		if was == _kind:
+		if was == _kind and open:
 			_refresh()
+		elif was == 0:
+			_paint_regions()
 		return
+	var kind := _kind if open else 0 # closed, only the markets the map is coloured by
 	var day: int = people.day()
-	var t := _tables[_kind]
+	var t := _tables[kind]
 	if day != _asked_day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
-		people.ask_table(KINDS[_kind])
-		_asked = _kind
+		people.ask_table(KINDS[kind])
+		_asked = kind
 		_asked_day = day
 
 ## Which monthly count a table built on `day` shows.
@@ -142,7 +171,11 @@ func _passing(t: Dictionary) -> PackedInt32Array:
 
 ## One row and no place: shown as a list of values.
 static func _is_sheet(t: Dictionary) -> bool:
-	return _row_count(t) == 1 and not t.data.has("lon")
+	return _row_count(t) == 1 and not t.data.has("lon") and not _is_history(t)
+
+## One row per month: shown as series.
+static func _is_history(t: Dictionary) -> bool:
+	return t.get("kind", "") == "history"
 
 static func _row_count(t: Dictionary) -> int:
 	var cols: PackedStringArray = t.columns
@@ -205,6 +238,10 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 
 func _refresh() -> void:
 	var t := _tables[_kind]
+	_chart.visible = KINDS[_kind] == "history"
+	_paint.visible = KINDS[_kind] == "markets"
+	_paint.set_pressed_no_signal(_map_by != "")
+	_paint_regions()
 	if t.is_empty():
 		_tree.clear()
 		_stand.text = "…"
@@ -221,9 +258,9 @@ func _fill_filters(t: Dictionary) -> void:
 			child.queue_free()
 	var state: Dictionary = _state[_kind]
 	var keys: Array[String] = []
-	if not _is_sheet(t):
+	if not _is_sheet(t) and not _is_history(t):
 		keys = _filter_keys(t)
-	_search.visible = not _is_sheet(t)
+	_search.visible = not _is_sheet(t) and not _is_history(t)
 	var at := _search.get_index() + 1
 	for key in keys:
 		var pick := OptionButton.new()
@@ -252,6 +289,9 @@ func _fill_filters(t: Dictionary) -> void:
 func _fill_tree(t: Dictionary) -> void:
 	if _is_sheet(t):
 		_fill_sheet(t)
+		return
+	if _is_history(t):
+		_fill_history(t)
 		return
 	var cols: PackedStringArray = t.columns
 	var state: Dictionary = _state[_kind]
@@ -348,6 +388,128 @@ func _fill_sheet(t: Dictionary) -> void:
 		item.set_selectable(0, false)
 		item.set_selectable(1, false)
 		_stripe(item, i)
+
+## The history as series: what, the last month, the one before and the
+## change; the series picked is the curve above.
+func _fill_history(t: Dictionary) -> void:
+	var cols: PackedStringArray = t.columns
+	var data: Dictionary = t.data
+	_prepare_units(t)
+	var n := _row_count(t)
+	_tree.set_block_signals(true)
+	_tree.clear()
+	_tree.columns = 4
+	var heads := ["Posten", _short_date(int(data.day[n - 1])) if n > 0 else "", _short_date(int(data.day[n - 2])) if n > 1 else "", "Veränderung"]
+	for i in 4:
+		_tree.set_column_title(i, heads[i])
+		_tree.set_column_title_alignment(i, HORIZONTAL_ALIGNMENT_LEFT if i == 0 else HORIZONTAL_ALIGNMENT_RIGHT)
+		_tree.set_column_expand(i, i == 0)
+		_tree.set_column_clip_content(i, i == 0)
+		_tree.set_column_custom_minimum_width(i, 0 if i == 0 else 110)
+	var root := _tree.create_item()
+	var line := 0
+	for i in cols.size():
+		if cols[i] in NOT_SERIES or _is_text(t, cols[i]):
+			continue
+		var item := _tree.create_item(root)
+		item.set_meta("series", cols[i])
+		var label: String = t.labels[i]
+		if _unit[i] != "" and _unit[i] != "%":
+			label += " (%s)" % _unit[i]
+		item.set_text(0, label)
+		if n > 0:
+			_set_number(item, 1, float(data[cols[i]][n - 1]) * _factor[i], _unit[i])
+		if n > 1:
+			var now := float(data[cols[i]][n - 1])
+			var before := float(data[cols[i]][n - 2])
+			_set_number(item, 2, before * _factor[i], _unit[i])
+			item.set_text_alignment(3, HORIZONTAL_ALIGNMENT_RIGHT)
+			if t.units[i] == "%":
+				item.set_text(3, "%+d Pkt." % roundi((now - before) * 100.0))
+			elif before != 0.0:
+				item.set_text(3, "%+d %%" % roundi((now - before) / absf(before) * 100.0))
+			item.set_custom_color(3, SECONDARY)
+		_stripe(item, line)
+		line += 1
+		if cols[i] == _series:
+			item.select(0)
+	_tree.set_block_signals(false)
+	_chart.queue_redraw()
+
+## "Mar. J3": a month in a column head.
+static func _short_date(day: int) -> String:
+	return "%s. J%d" % [MONTHS[(day % YEAR) / MONTH].left(3), day / YEAR + 1]
+
+## The series picked as a curve over the months, with the range of the
+## prices around their median.
+func _draw_chart() -> void:
+	var t := _tables[_kind]
+	var rect := Rect2(Vector2.ZERO, _chart.size)
+	_chart.draw_rect(rect, Color(0.0, 0.0, 0.0, 0.18))
+	_chart.draw_rect(rect, Color(GOLD, 0.35), false, 1.0)
+	if t.is_empty() or not _is_history(t):
+		return
+	var data: Dictionary = t.data
+	var cols := Array(t.columns)
+	var key := _series if data.has(_series) else "persons"
+	var i := cols.find(key)
+	if i < 0:
+		return
+	var keys: Array[String] = [key]
+	if key.begins_with("price_"):
+		keys = ["price_min", "price_median", "price_max"]
+	var font := _chart.get_theme_default_font()
+	var title: String = t.labels[i]
+	if _unit.size() > i and _unit[i] != "" and _unit[i] != "%":
+		title += " (%s)" % _unit[i]
+	if keys.size() > 1:
+		title = "Preis: Median, dazwischen min und max (%s)" % _unit[i]
+	_chart.draw_string(font, Vector2(12, 22), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, GOLD)
+	var n := _row_count(t)
+	if n < 2:
+		_chart.draw_string(font, Vector2(12, 48), "Noch zu wenige Monate", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, SECONDARY)
+		return
+	var scale := (100.0 if t.units[i] == "%" else 1.0) * (_factor[i] if _factor.size() > i else 1.0)
+	var lo := INF
+	var hi := -INF
+	for k in keys:
+		for v in data[k]:
+			lo = minf(lo, float(v) * scale)
+			hi = maxf(hi, float(v) * scale)
+	if lo >= 0.0 and lo < hi * 0.5:
+		lo = 0.0 # counts from nothing
+	if hi - lo < 1e-9:
+		hi = lo + 1.0
+	var plot := Rect2(70, 36, rect.size.x - 90, rect.size.y - 62)
+	var y_of := func(v: float) -> float: return plot.end.y - (v - lo) / (hi - lo) * plot.size.y
+	var x_of := func(r: int) -> float: return plot.position.x + plot.size.x * float(r) / float(n - 1)
+	for g in 5:
+		var v := lo + (hi - lo) * g / 4.0
+		var y: float = y_of.call(v)
+		_chart.draw_line(Vector2(plot.position.x, y), Vector2(plot.end.x, y), Color(1.0, 1.0, 1.0, 0.07), 1.0)
+		var tag := ("%d %%" % roundi(v)) if t.units[i] == "%" else _number(v)
+		_chart.draw_string(font, Vector2(8, y + 4), tag, HORIZONTAL_ALIGNMENT_RIGHT, 56, 11, SECONDARY)
+	var days = data.day
+	for r in n: # the years along the foot
+		if r == 0 or int(days[r]) / YEAR != int(days[r - 1]) / YEAR:
+			var x: float = x_of.call(r)
+			_chart.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(1.0, 1.0, 1.0, 0.07), 1.0)
+			_chart.draw_string(font, Vector2(x + 3, plot.end.y + 16), "Jahr %d" % (int(days[r]) / YEAR + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, SECONDARY)
+	if keys.size() > 1: # the range of the prices as a band
+		var band := PackedVector2Array()
+		for r in n:
+			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_max[r]) * scale)))
+		for r in range(n - 1, -1, -1):
+			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_min[r]) * scale)))
+		if Geometry2D.triangulate_polygon(band).size() > 0:
+			_chart.draw_colored_polygon(band, Color(GOLD, 0.16))
+	var main := "price_median" if keys.size() > 1 else key
+	var points := PackedVector2Array()
+	for r in n:
+		points.append(Vector2(x_of.call(r), y_of.call(float(data[main][r]) * scale)))
+	_chart.draw_polyline(points, GOLD, 2.0, true)
+	var last := points[n - 1]
+	_chart.draw_circle(last, 3.5, GOLD)
 
 ## Lists `rows` under `parent`, at most ROW_MAX of them.
 func _fill_rows(parent: TreeItem, t: Dictionary, rows: PackedInt32Array) -> void:
@@ -466,11 +628,18 @@ func _on_title(column: int, _button: int) -> void:
 	else:
 		state.sort = key
 		state.desc = not _is_text(t, key) # numbers largest first, names A to Z
+	if _map_by != "" and KINDS[_kind] == "markets" and not _is_text(t, key):
+		_map_by = key
+		_paint_regions()
 	_fill_tree(t)
 
 func _on_selected() -> void:
 	var item := _tree.get_selected()
 	var t := _tables[_kind]
+	if item != null and item.has_meta("series"):
+		_series = item.get_meta("series")
+		_chart.queue_redraw()
+		return
 	if item == null or t.is_empty() or not item.has_meta("rows"):
 		return
 	var rows: PackedInt32Array = item.get_meta("rows")
@@ -531,8 +700,104 @@ func _show(on: bool) -> void:
 	_open_button.visible = not on
 	if on:
 		_refresh()
-	elif _search.has_focus():
-		_search.release_focus()
+	else:
+		_place_legend()
+		if _search.has_focus():
+			_search.release_focus()
+
+# ------------------------------------------------------------------ map
+
+## Colours the regions by the markets' column `_map_by`, or clears them.
+func _paint_regions() -> void:
+	var t := _tables[0]
+	var sim_view := get_parent()
+	if sim_view == null or not sim_view.has_method("paint_regions"):
+		return
+	var on: bool = _map_by != "" and not t.is_empty() and t.data.has(_map_by) and t.data.has("id")
+	_legend_box.visible = on
+	if not on:
+		if _painted != "":
+			sim_view.paint_regions(null, {})
+			_painted = ""
+		return
+	var stamp := "%s@%d" % [_map_by, int(t.day)]
+	if stamp == _painted:
+		return
+	var grid: Dictionary = people.region_map()
+	var cells: PackedInt32Array = grid.get("cells", PackedInt32Array())
+	var rows: int = grid.get("rows", 0)
+	var cols: int = grid.get("cols", 0)
+	if cells.size() != rows * cols or rows == 0:
+		return
+	# the value of each market, and the bounds of five classes with as many
+	# regions each
+	var value := {}
+	var ids = t.data.id
+	var col = t.data[_map_by]
+	var sorted := PackedFloat64Array()
+	for r in ids.size():
+		value[int(ids[r])] = float(col[r])
+		sorted.append(float(col[r]))
+	sorted.sort()
+	var bounds := PackedFloat64Array()
+	for k in range(1, CLASS_COLOURS.size()):
+		bounds.append(sorted[mini(sorted.size() * k / CLASS_COLOURS.size(), sorted.size() - 1)])
+	var img := Image.create_empty(cols, rows, false, Image.FORMAT_RGBA8)
+	for r in rows:
+		for c in cols:
+			var m := cells[r * cols + c]
+			if m < 0 or not value.has(m):
+				continue
+			var k := bounds.bsearch(value[m], false)
+			var colour: Color = CLASS_COLOURS[k]
+			# alpha: bit 0 coloured, bits 1-4 a border to the north, east,
+			# south and west (another region or the sea)
+			var bits := 1
+			var nb := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+			for s in 4:
+				var rr: int = r + nb[s].y
+				var cc: int = c + nb[s].x
+				var other := cells[rr * cols + cc] if rr >= 0 and rr < rows and cc >= 0 and cc < cols else -1
+				if other != m:
+					bits |= 2 << s
+			colour.a8 = bits
+			img.set_pixel(c, r, colour)
+	sim_view.paint_regions(img, grid)
+	_painted = stamp
+	_fill_legend(t, bounds)
+
+## Five swatches with the bounds of their classes.
+func _fill_legend(t: Dictionary, bounds: PackedFloat64Array) -> void:
+	for child in _legend.get_children():
+		child.queue_free()
+	var i := Array(t.columns).find(_map_by)
+	var unit: String = SHORT_UNITS.get(t.units[i], t.units[i])
+	var tag := Label.new()
+	tag.text = "Karte: %s" % t.labels[i]
+	tag.add_theme_color_override("font_color", GOLD)
+	_legend.add_child(tag)
+	for k in CLASS_COLOURS.size():
+		var swatch := ColorRect.new()
+		swatch.color = CLASS_COLOURS[k]
+		swatch.custom_minimum_size = Vector2(18, 14)
+		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_legend.add_child(swatch)
+		var text := Label.new()
+		var share := unit == "%"
+		var fmt := func(v: float) -> String: return ("%d %%" % roundi(v * 100.0)) if share else _number(v)
+		if k == 0:
+			text.text = "< %s" % fmt.call(bounds[0])
+		elif k == CLASS_COLOURS.size() - 1:
+			text.text = "≥ %s" % fmt.call(bounds[k - 1])
+		else:
+			text.text = "%s–%s" % [fmt.call(bounds[k - 1]), fmt.call(bounds[k])]
+		text.add_theme_font_size_override("font_size", 12)
+		_legend.add_child(text)
+	if unit != "" and unit != "%":
+		var u := Label.new()
+		u.text = unit
+		u.add_theme_color_override("font_color", SECONDARY)
+		_legend.add_child(u)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -609,6 +874,46 @@ func _build() -> void:
 		if not _tables[_kind].is_empty():
 			_fill_tree(_tables[_kind]))
 	_filter_row.add_child(_fold)
+	_paint = CheckButton.new()
+	_paint.text = "Karte färben"
+	_paint.tooltip_text = "Färbt die Regionen nach der sortierten Spalte"
+	_paint.focus_mode = Control.FOCUS_NONE
+	_paint.toggled.connect(func(on: bool):
+		var t := _tables[0]
+		var sort: String = _state[0].sort
+		_map_by = (sort if sort != "" and not t.is_empty() and t.data.has(sort) and not _is_text(t, sort) else "price") if on else ""
+		if on and _state[0].sort != _map_by:
+			_state[0].sort = _map_by
+			_state[0].desc = true
+			if not t.is_empty():
+				_fill_tree(t)
+		_paint_regions())
+	_filter_row.add_child(_paint)
+	_legend_box = PanelContainer.new()
+	_legend_box.add_theme_stylebox_override("panel", _box(Color(BACKGROUND, 0.92), Color(GOLD, 0.8), 2, 4, 8))
+	_legend_box.visible = false
+	root.add_child(_legend_box)
+	var legend_row := HBoxContainer.new()
+	_legend_box.add_child(legend_row)
+	_legend = HBoxContainer.new()
+	_legend.add_theme_constant_override("separation", 6)
+	legend_row.add_child(_legend)
+	var off := Button.new()
+	off.text = "✕"
+	off.flat = true
+	off.focus_mode = Control.FOCUS_NONE
+	off.tooltip_text = "Kartenfarben aus"
+	off.pressed.connect(func():
+		_map_by = ""
+		_paint.set_pressed_no_signal(false)
+		_paint_regions())
+	legend_row.add_child(off)
+	_legend_box.resized.connect(_place_legend)
+	_chart = Control.new()
+	_chart.custom_minimum_size = Vector2(0, CHART_PX)
+	_chart.draw.connect(_draw_chart)
+	_chart.resized.connect(_chart.queue_redraw)
+	column.add_child(_chart)
 	_tree = Tree.new()
 	_tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tree.hide_root = true
@@ -630,17 +935,28 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_place_panel)
 	_place_panel()
 
+## The map's legend at the bottom left, clear of the panel when it is open.
+func _place_legend() -> void:
+	if not is_inside_tree():
+		return
+	var screen := get_viewport().get_visible_rect().size
+	var x := 12.0
+	if open and _panel.position.x + _panel.size.x + 12.0 + _legend_box.size.x < screen.x - 400.0:
+		x = _panel.position.x + _panel.size.x + 12.0 # beside the panel, left of the events
+	_legend_box.position = Vector2(x, screen.y - _legend_box.size.y - 12.0)
+
 ## Left, full height, as wide as the table's columns need (within limits).
 func _place_panel() -> void:
 	var screen := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1600, 900)
 	var want := PANEL_MIN
 	var t := _tables[_kind]
-	if not t.is_empty() and not _is_sheet(t):
+	if not t.is_empty() and not _is_sheet(t) and not _is_history(t):
 		want = 40.0
 		for key in t.columns:
 			want += TEXT_PX if _is_text(t, key) else COLUMN_PX
 	_panel.position = Vector2(12, 12)
 	_panel.size = Vector2(clampf(want, PANEL_MIN, maxf(screen.x * PANEL_SHARE_MAX, PANEL_MIN)), screen.y - 24.0)
+	_place_legend()
 
 static func _serif() -> Font:
 	var font := SystemFont.new()

@@ -19,6 +19,11 @@ uniform sampler2D sim_road_tex : filter_nearest, repeat_disable;
 uniform vec2 sim_cell_origin;      // world km of the grid's corner
 uniform float sim_cell_km = 25.0;
 uniform ivec2 sim_cell_n = ivec2(0);
+// the regions coloured by a column of the markets (sim_tables.gd): RGB the
+// class colour, A bit 0 coloured, bits 1-4 a border to the north, east,
+// south and west
+uniform sampler2D sim_region_tex : filter_nearest, repeat_disable;
+uniform bool sim_regions_on = false;
 
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
@@ -56,7 +61,7 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
 	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
-	vec3 ploughed = vec3(0.5, 0.37, 0.25);     // #a5774f
+	vec3 ploughed = vec3(0.31, 0.19, 0.13);    // #8c5c3c, the lit soil of the parcels up close (lighter it was a second soil, r11)
 	vec3 green = vec3(0.36, 0.555, 0.27);      // #82b85a, a fresh green above the pasture (darker it read as a ramp's shade, round 19; yellower as acid lime, round 20)
 	float h = sim_hash(strip + 3.7);
 	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
@@ -89,7 +94,7 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	vec2 cell = floor((p - world_min) / size);
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
-	if (state == 0) { return pasture; }
+	if (state == 0 || sim_no_field(world_min + (cell + 0.5) * size, land)) { return pasture; }
 	// inside the square of crops the slabs stand on meadow
 	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
 	return crops ? meadow : sim_strip_rgb(cell, size, f);
@@ -167,9 +172,35 @@ float sim_band(float d, float w, float fw_km) {
 }
 
 // Footpaths, market squares and trade roads over the land colour c.
+// The map coloured by region, as EU5's map modes: one flat colour per
+// region over the land, its border a darker line of at least 1.5 px.
+vec3 sim_regions(vec2 p, vec3 c, float fw_km) {
+	vec2 g = (p - sim_cell_origin) / sim_cell_km;
+	ivec2 cell = ivec2(floor(g));
+	if (cell.x < 0 || cell.y < 0 || cell.x >= sim_cell_n.x || cell.y >= sim_cell_n.y) { return c; }
+	vec4 t = texelFetch(sim_region_tex, cell, 0);
+	int bits = sim_byte(t.a);
+	if ((bits & 1) == 0) { return c; }
+	vec3 tint = pow(t.rgb, vec3(2.2)); // sRGB texel, linear terrain colour
+	c = mix(c, tint, 0.7);
+	vec2 f = fract(g);
+	float edge = 1e9;
+	if ((bits & 2) != 0) { edge = min(edge, f.y); }
+	if ((bits & 4) != 0) { edge = min(edge, 1.0 - f.x); }
+	if ((bits & 8) != 0) { edge = min(edge, 1.0 - f.y); }
+	if ((bits & 16) != 0) { edge = min(edge, f.x); }
+	float half_w = max(fw_km * 1.5, 0.4) / sim_cell_km;
+	float aa = fw_km / sim_cell_km;
+	return mix(c, tint * 0.45, 1.0 - smoothstep(half_w - aa, half_w + aa, edge));
+}
+
 vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
+	if (sim_regions_on) { c = sim_regions(p, c, fw_km); }
 	if (!sim_map_on) { return c; }
-	if (sim_fine_n > 0) {
+	// none in the towns: their streets and squares are the terrain's (r11: a
+	// footpath ran across the Forum, a market lay by the Tiber as a decal)
+	bool town = tt_town(ivec2(floor((p - world_min) / tile_km))) > 0;
+	if (sim_fine_n > 0 && !town) {
 		vec3 w = sim_paths(p);
 		// footpaths only up close (10 km of view), at least 1.5 px
 		if (w.y > 0.0 && sim_view_km <= 10.0) {

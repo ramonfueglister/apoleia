@@ -12,6 +12,7 @@ mod grain_map;
 mod map_index;
 mod people_dots;
 mod tables;
+mod trips;
 
 use apoleia_sim::ecs::{Command, Sim, Snapshot};
 use apoleia_sim::{Params, MAX_LEVEL, ROOT_SIZE_M};

@@ -44,6 +44,27 @@ int sim_crop_kind(vec2 cell) {
 	return pick < 0.4 ? SIM_WHEAT : pick < 0.6 ? SIM_BARLEY : pick < 0.85 ? SIM_BEANS : SIM_VINES;
 }
 
+// Ground the terrain gives to trees or a town, where no field lies (r11:
+// slabs under olive rows and groves, fields inside Rome at 22 km): the data
+// tile of a grove (tile_props.gdshaderinc tt_prop_place: open land, fewer
+// on field land), up close an olive grove (tt_olive_grove: flat open land
+// in the warm lowlands within two data tiles of a town) and the data tiles
+// next to a town. Keep in step with tile_props.gdshaderinc. `land` is the
+// terrain's landscape at p.
+bool sim_no_field(vec2 p, int land) {
+	ivec2 dt = ivec2(floor((p - world_min) / tt_data_km()));
+	if (tt_hash(vec2(dt) * 0.613 + 7.1) < (land == G_FIELD ? 0.03 : 0.07)) { return true; }
+	bool olive = sub_tiles && land != G_FIELD && tt_hash(vec2(dt) * 0.71 + 3.3) < 0.5
+		&& tt_latitude(p) < 44.5 && tt_height_m(p, height_lod) < 700.0;
+	int ring = olive ? 2 : 1;
+	for (int j = -ring; j <= ring; j++) {
+		for (int i = -ring; i <= ring; i++) {
+			if ((tt_data_cell(dt + ivec2(i, j)) >> 2) >= 2) { return true; }
+		}
+	}
+	return false;
+}
+
 // Whether a farmhouse stands on the lot under p (world km); its house,
 // garden and yard are kept free of fields. The mask is kept only while the
 // crops stand.
