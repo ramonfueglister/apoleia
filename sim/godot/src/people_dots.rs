@@ -81,6 +81,9 @@ struct Front {
     /// order: column, row, work days done, work days needed (0, 0 while
     /// it has no site or nobody builds it).
     progress: Vec<i32>,
+    /// The finished roads (S113), x and z of each lot in world metres; their
+    /// orders are gone, so the map draws them from here.
+    roads: Vec<i32>,
     /// Bumped whenever `orders` or `progress` go out; carried over to the
     /// game a save starts, so the build menu never misses a change.
     built: u64,
@@ -348,6 +351,7 @@ fn sites_in(game: &Game, [x0, z0, x1, z1]: [f64; 4]) -> Vec<f32> {
 fn publish_orders(game: &Game, f: &mut Front) {
     f.orders = game.orders.clone();
     f.progress = progress(game);
+    f.roads = game.grain.road_lots().flat_map(|(z, x)| [x, z]).collect();
     f.built += 1;
 }
 
@@ -725,8 +729,9 @@ impl ApoleiaPeople {
     /// The build orders: {"version": bumped on every change, "tiles":
     /// column, row, kind for each, "progress": column, row, work days done,
     /// work days needed for each, in the same order (0, 0 while it has no
-    /// building site or nobody builds it yet; once a week), "names": the
-    /// kinds}.
+    /// building site or nobody builds it yet; once a week), "roads": x, z
+    /// of each finished road lot (world metres; built roads stay after
+    /// their orders are gone), "names": the kinds}.
     #[func]
     fn build_orders(&self) -> VarDictionary {
         let f = self.shared.front.lock().unwrap();
@@ -738,6 +743,7 @@ impl ApoleiaPeople {
         d.set("version", f.built as i64);
         d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
         d.set("progress", &PackedInt32Array::from(f.progress.as_slice()));
+        d.set("roads", &PackedInt32Array::from(f.roads.as_slice()));
         d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
         d
     }
