@@ -40,7 +40,7 @@ enum { EMPTY,
 	OBELISK, GLYPH, ROOFB, ROOFB_D, PORCH, PORCH_D, ARCH_D,
 	ROOFB_L, DOME, BAND,
 	DOME_C, GRANITE_L, GRANITE_D, ARENA, ARENA_D, BRONZE_P,
-	STUCCO, JOINT, TRAV_C, TRAV_CW,
+	STUCCO, JOINT, TRAV_C, TRAV_CW, GILT_W,
 }
 
 ## Side colour, and the top colour where it differs (sRGB). Caesar III's
@@ -121,6 +121,8 @@ const COLOURS := {
 	# a step below marble: stucco, the joints between marble slabs, the
 	# circus's travertine and its pilasters
 	STUCCO: ["d0c6b8"], JOINT: ["c2b9a9"], TRAV_C: ["c5b79c", "cfc2a7"], TRAV_CW: ["b8aa8e", "c2b499"],
+	# gilt bronze roof tiles, toned so a sunlit roof stays below white marble
+	GILT_W: ["7d6020", "9a7a2e"],
 }
 
 static var _side := PackedColorArray()
