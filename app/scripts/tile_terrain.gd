@@ -127,6 +127,15 @@ var _relief: PackedFloat32Array
 var _cell_images: Array[Image] = []
 var _cell_sizes: Array[Vector2i] = []
 var _cell_textures: Array[ImageTexture] = []
+# town tiles per level, (j * width + i) * 4 + town class, sorted (towns-L*.i32)
+var _town_lists := {}
+# the prop patch's town tiles (local index), then each lot model's slots on
+# them (local index * 16 + slot), _update_town_list
+var _town_image: Image
+const TOWN_TEX := Vector2i(256, 128)
+var _town_texture: ImageTexture
+var _town_key := Vector4i(-1, 0, 0, 0)
+var town_count := 0
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
 var _level_textures := {} # far levels: the whole map
 var _near_levels := {}    # zoom levels on the near scale (levels-L0/L1, too big for one texture)
@@ -193,6 +202,8 @@ func load_data() -> bool:
 		_cell_images.append(image)
 		_cell_sizes.append(Vector2i(int(entry.width), int(entry.height)))
 		_cell_textures.append(ImageTexture.create_from_image(image))
+		if entry.has("towns"):
+			_town_lists[int(entry.level)] = FileAccess.get_file_as_bytes(dir.path_join(entry.towns.path)).to_int32_array()
 	for entry in manifest.get("levels", []):
 		var image := Image.load_from_file(dir.path_join(entry.path))
 		image.convert(Image.FORMAT_R8)
@@ -280,6 +291,8 @@ func _build_nodes() -> void:
 	# one float pixel per prop slot: 3 x 3 per tile, trees left, houses right
 	_place_view = _prep_view("TilePropSlots", Vector2i(PROP_N * 6, PROP_N * 3), _place_material)
 	_place_material.set_shader_parameter("tree_w", PROP_N * 3)
+	_town_image = Image.create(TOWN_TEX.x, TOWN_TEX.y, false, Image.FORMAT_RF)
+	_town_texture = ImageTexture.create_from_image(_town_image)
 	var huge := AABB(Vector3(-20000, -100, -20000), Vector3(40000, 2000, 40000))
 	_terrain = MultiMeshInstance3D.new()
 	_terrain.name = "TileTerrain"
@@ -332,6 +345,8 @@ func _build_nodes() -> void:
 		_prop_materials[kind].set_shader_parameter("place_tex", _place_view.get_texture())
 		_prop_materials[kind].set_shader_parameter("place_tree_w", PROP_N * 3)
 		_prop_materials[kind].set_shader_parameter("place_ready", true)
+		_prop_materials[kind].set_shader_parameter("town_tex", _town_texture)
+		_prop_materials[kind].set_shader_parameter("town_w", TOWN_TEX.x)
 		node.custom_aabb = huge
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(node)
@@ -521,14 +536,78 @@ func _apply_prop_count() -> void:
 		var n: int = house_slots if house else slots
 		node.visible = n > 0
 		_culled_origin = Vector2i(-1, -1) # _cull_prop_kinds runs again
-		# (prop_n is 4 more than a multiple of 8, so its square divides by 16)
-		node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1) / (LOT_KINDS.size() if _lot_of(kind) >= 0 else 1)
+		if not house:
+			node.multimesh.visible_instance_count = prop_n * prop_n * maxi(n, 1)
 		var material := _prop_materials[kind]
 		material.set_shader_parameter("slots", maxi(n, 1))
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
 		# lot models are in metres, the tree meshes about 1.1 units tall
 		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
+	_town_key = Vector4i(-1, 0, 0, 0) # the house counts: _update_town_list
+
+## The town tiles of the prop patch (towns-L*.i32) into town_tex, so the
+## house kinds draw instances for them only: a patch of 100 x 100 tiles at 1
+## to 4 km holds a few dozen town tiles, and its 90 000 house slots ran the
+## vertex shader of the lot models for nothing (18 fps from 70 to 700 km on
+## an M3 Pro). Up close every quarter of a town tile; further out the tiles
+## of town class 2 and up (tt_prop_place). Each slot's lot model comes from
+## its place in the world, so a house keeps its model when the patch moves.
+func _update_town_list() -> void:
+	var house_slots: int = SUB_HOUSE_SLOTS if sub_tiles else HOUSE_SLOTS[level]
+	var key := Vector4i(prop_origin.x, prop_origin.y, prop_n, zoom)
+	if key == _town_key or house_slots == 0:
+		return
+	_town_key = key
+	var list: PackedInt32Array = _town_lists.get(level, PackedInt32Array())
+	var size: Vector2i = _cell_sizes[level]
+	var q := 2 if sub_tiles else 1 # quarter tiles per data tile side
+	var min_class := 1 if sub_tiles else 2
+	var lo := Vector2i(floori(prop_origin.x / float(q)), floori(prop_origin.y / float(q))).max(Vector2i.ZERO)
+	var hi := Vector2i(floori((prop_origin.x + prop_n - 1) / float(q)), floori((prop_origin.y + prop_n - 1) / float(q))).min(size - Vector2i.ONE)
+	var tiles := PackedFloat32Array()
+	var lots: Array[PackedFloat32Array] = []
+	lots.resize(LOT_KINDS.size())
+	var room := TOWN_TEX.x * TOWN_TEX.y / (house_slots + 1)
+	for j in range(lo.y, hi.y + 1):
+		var k := list.bsearch((j * size.x + lo.x) * 4)
+		var end := list.bsearch((j * size.x + hi.x + 1) * 4)
+		while k < end and tiles.size() < room:
+			var v := list[k]
+			k += 1
+			if (v & 3) < min_class:
+				continue
+			var i := (v >> 2) - j * size.x
+			for part in q * q:
+				var at := Vector2i(i * q + part % q, j * q + part / q) - prop_origin
+				if at.x >= 0 and at.y >= 0 and at.x < prop_n and at.y < prop_n:
+					var local := at.y * prop_n + at.x
+					tiles.append(local)
+					var t := at + prop_origin
+					for slot in house_slots:
+						lots[absi(hash(Vector3i(t.x, t.y, slot * 7 + zoom))) % lots.size()].append(local * 16 + slot)
+	town_count = tiles.size()
+	var data := tiles.duplicate()
+	var starts := PackedInt32Array()
+	for lot in lots:
+		starts.append(data.size())
+		data.append_array(lot)
+	data.resize(TOWN_TEX.x * TOWN_TEX.y)
+	_town_image.set_data(TOWN_TEX.x, TOWN_TEX.y, false, Image.FORMAT_RF, data.to_byte_array())
+	_town_texture.update(_town_image)
+	for kind in _props.size():
+		if not _is_house(kind):
+			continue
+		var lot := _lot_of(kind)
+		var material := _prop_materials[kind]
+		material.set_shader_parameter("town_count", town_count)
+		if lot >= 0:
+			material.set_shader_parameter("lot_start", starts[lot])
+			material.set_shader_parameter("lot_count", lots[lot].size())
+			_props[kind].multimesh.visible_instance_count = mini(lots[lot].size(), _props[kind].multimesh.instance_count)
+		else:
+			_props[kind].multimesh.visible_instance_count = town_count * house_slots
+	events.append("towns")
 
 ## Cut the near level window around the patch (snapped, so it moves on only
 ## every quarter window). True when it changed.
@@ -570,10 +649,9 @@ func _update_sub_window() -> void:
 func set_light_dir(dir: Vector3) -> void:
 	_terrain_material.set_shader_parameter("light_dir", dir.normalized())
 
-## Move the patches: `focus` is the ground point the camera looks at, `centre`
-## the middle of the visible ground (further back in oblique views), `span`
-## the ground (km) the drawn tiles must cover around it.
-func update_view(focus: Vector2, centre: Vector2, width: float, span := INF) -> void:
+## Move the patches around `centre`, the middle of the visible ground;
+## `span` is the ground (km) the drawn tiles must cover around it.
+func update_view(centre: Vector2, width: float, span := INF) -> void:
 	var wanted := level_for_width(width)
 	if wanted != zoom:
 		_apply_level(wanted)
@@ -595,8 +673,9 @@ func update_view(focus: Vector2, centre: Vector2, width: float, span := INF) -> 
 	var corner_origin := patch_origin - Vector2i.ONE
 	for material in _all_materials():
 		material.set_shader_parameter("corner_origin", corner_origin)
-	# props only around the visible ground: every slot costs vertex work
-	var wanted_n := clampi(int(ceil(PROP_SPAN * width / tile_km / 8.0)) * 8 + 4, 12, PROP_N)
+	# props only around the visible ground (the drawn span, at most
+	# PROP_SPAN view widths): every slot costs vertex work
+	var wanted_n := clampi(int(ceil(minf(PROP_SPAN * width, span) / tile_km / 8.0)) * 8 + 4, 12, PROP_N)
 	if wanted_n != prop_n:
 		prop_n = wanted_n
 		_apply_prop_count()
@@ -614,7 +693,7 @@ func update_view(focus: Vector2, centre: Vector2, width: float, span := INF) -> 
 			var which := String(LANDMARKS[k][0])
 			if which.begins_with("kit:"):
 				_landmarks[k].mesh = RomanBuildings.landmark_mesh(which.trim_prefix("kit:"), 0 if tier < 2 else 1)
-	var f := ((focus.lerp(centre, 0.35) - world_min) / tile_km).floor()
+	var f := ((centre - world_min) / tile_km).floor()
 	prop_origin = Vector2i(int(f.x) - prop_n / 2, int(f.y) - prop_n / 2)
 	for material in _prop_materials:
 		material.set_shader_parameter("prop_origin", prop_origin)
@@ -625,6 +704,7 @@ func update_view(focus: Vector2, centre: Vector2, width: float, span := INF) -> 
 	# beyond the prop patch towns are roof coloured tiles again
 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
 	_terrain_material.set_shader_parameter("prop_n", prop_n)
+	_update_town_list()
 	_cull_prop_kinds()
 	if sub_tiles:
 		_update_sub_window()

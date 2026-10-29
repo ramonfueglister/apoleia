@@ -23,7 +23,13 @@
       "packed_width": 10323,
       "path": "cells-L0.png",
       "sha256": "e5567d7c8f9e7bea920582617e907baf7139367d788038ad8747ba387057e4de",
-      "river_max_scalerank": 10
+      "river_max_scalerank": 10,
+      "towns": {
+        "path": "towns-L0.i32",
+        "count": 11255,
+        "sha256": "e41aaae8f38c54f04ee82ead13dee2bf70a1ff45a01dd8e97a8431bd09b5028e",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 1,
@@ -33,7 +39,13 @@
       "packed_width": 5162,
       "path": "cells-L1.png",
       "sha256": "dd68f31d3367d3fe6e77dab974d65a79c2b4bae5b53828d1af8ae02333e07311",
-      "river_max_scalerank": 10
+      "river_max_scalerank": 10,
+      "towns": {
+        "path": "towns-L1.i32",
+        "count": 2728,
+        "sha256": "a1d70b0dd11f2b813c8132d0c4d6bb520a2429ec3a16fb9246b708c8f5cd7e00",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 2,
@@ -43,7 +55,13 @@
       "packed_width": 2581,
       "path": "cells-L2.png",
       "sha256": "393e9dc253907dea7310d5dc486504bd0ccaaf6dc495bc71cb06f06bc5b33692",
-      "river_max_scalerank": 8
+      "river_max_scalerank": 8,
+      "towns": {
+        "path": "towns-L2.i32",
+        "count": 942,
+        "sha256": "2123972d25da006d57b3c786bf0422ad4b01ca2f4a4d1e94b0b426de335f2915",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 3,
@@ -53,7 +71,13 @@
       "packed_width": 1291,
       "path": "cells-L3.png",
       "sha256": "44358771bb3ef6d5b9078d4c2716f92fc9dc4dde58778f914183ed1fec77f887",
-      "river_max_scalerank": 7
+      "river_max_scalerank": 7,
+      "towns": {
+        "path": "towns-L3.i32",
+        "count": 187,
+        "sha256": "b5689232b64efa77af3426460e5ae0b9859f6902c665e2090babc290f50385af",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 4,
@@ -63,7 +87,13 @@
       "packed_width": 646,
       "path": "cells-L4.png",
       "sha256": "e62a9b4ff4941ce8c052ad7d064f8834f338689a49fa74e981b30be4e519fbdf",
-      "river_max_scalerank": 6
+      "river_max_scalerank": 6,
+      "towns": {
+        "path": "towns-L4.i32",
+        "count": 43,
+        "sha256": "7cedfbad216515bc26f0e35b626676d2a077a637db5265badb42642f8e7237f5",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 5,
@@ -73,7 +103,13 @@
       "packed_width": 323,
       "path": "cells-L5.png",
       "sha256": "19bb96cd36940a9d061f42262e8a845ba4363f5aab9e4d9dc84d77b31c84fa5c",
-      "river_max_scalerank": 5
+      "river_max_scalerank": 5,
+      "towns": {
+        "path": "towns-L5.i32",
+        "count": 7,
+        "sha256": "34eecfa2ddc7a5c97ff432498294d8326e7f0913f5ee81b0836d4626de5b0474",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     },
     {
       "level": 6,
@@ -83,7 +119,13 @@
       "packed_width": 162,
       "path": "cells-L6.png",
       "sha256": "732d9104ffa22dba09e1f2d4bc377f12c7482752c57854607422b5b40957de8f",
-      "river_max_scalerank": 4
+      "river_max_scalerank": 4,
+      "towns": {
+        "path": "towns-L6.i32",
+        "count": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
     }
   ],
   "inputs": {

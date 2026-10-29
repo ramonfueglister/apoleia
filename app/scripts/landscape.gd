@@ -243,7 +243,7 @@ func _place_camera() -> void:
 	camera.fov = fov_for_width(width)
 	camera.global_transform = Transform3D(basis, Vector3(target.x, _focus_y, target.y) + basis.z * distance)
 	var centre := _footprint_centre(distance)
-	terrain.update_view(target, centre, width, _drawn_span())
+	terrain.update_view(centre, width, _drawn_span())
 	_update_look(distance)
 
 ## Ground (km) the drawn terrain must cover around the middle of the view:

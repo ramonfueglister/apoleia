@@ -1310,11 +1310,33 @@ def towns_only():
         path = OUT / e["path"]
         Image.fromarray(pack_nibbles(water | (town << 2)), "L").save(path, optimize=True)
         e["sha256"] = sha(path)
+        write_town_list(e, town)
         print("towns", e["level"], int((town > 0).sum()))
     manifest["inputs"]["places"] = {"path": "data/gametiles/places.csv", "sha256": sha(ROOT / "data/gametiles/places.csv")}
     manifest["town_extra_km"] = TOWN_EXTRA_KM
     manifest["town_min_km"] = TOWN_MIN_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
+def write_town_list(entry, town):
+    """towns-L*.i32: the town tiles of a level as a sorted list, so the app
+    draws houses only there (a prop patch of 100 x 100 tiles at 4 km held
+    about 20 town tiles: its 90 000 house slots were nearly all empty)."""
+    idx = np.flatnonzero(town)
+    path = OUT / entry["path"].replace("cells-", "towns-").replace(".png", ".i32")
+    (idx.astype(np.int64) * 4 + town.ravel()[idx]).astype("<i4").tofile(path)
+    entry["towns"] = {"path": path.name, "count": int(idx.size), "sha256": sha(path),
+                      "rule": "int32 (j * width + i) * 4 + town class, sorted"}
+
+
+def town_lists():
+    """Rebuild only towns-L*.i32 from cells-L*.png."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    for e in manifest["cells"]:
+        write_town_list(e, unpack_towns(e))
+        print("town list", e["level"], e["towns"]["count"])
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
 
@@ -1422,6 +1444,7 @@ def bake_cells(manifest, height, land, lakes, rivers):
         manifest["cells"].append({"level": level, "cell_km": cell, "width": nx, "height": ny,
                                   "packed_width": packed.shape[1], "path": path.name, "sha256": sha(path),
                                   "river_max_scalerank": RIVER_RANK[level]})
+        write_town_list(manifest["cells"][-1], town)
         print("level", level, cell, nx, ny, "land", is_land.mean().round(3), "river", int(river.sum()))
     return water_by_level, land_frac, lake_frac, lake_cells
 
@@ -1535,6 +1558,8 @@ if __name__ == "__main__":
         ground_only()
     elif "--towns-only" in sys.argv:
         towns_only()
+    elif "--town-lists" in sys.argv:
+        town_lists()
     elif "--cells-only" in sys.argv:
         cells_only()
     else:

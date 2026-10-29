@@ -370,7 +370,16 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   Art und Größe jedes Baum- und Hausplatzes. Gelände und Props lesen nur noch
   einen Texel. Auf den Vierteln kommt `tile_sub_prep.gdshader` dazu, nur wenn
   sein Fenster weiterrückt.
-- Leistung: Der Prop-Patch ist nur so groß wie die Sicht (`PROP_SPAN`), ab
+- Leistung: Der Prop-Patch ist nur so groß wie die gezeichnete Fläche (höchstens
+  `PROP_SPAN` Sichtbreiten) und liegt in ihrer Mitte. Die Hausmodelle laufen nur
+  über die Stadtkacheln des Patches: `towns-L*.i32` aus dem Bake listet die
+  Stadtkacheln jeder Stufe (nach Zeile sortiert, `(j · breite + i) · 4 + Klasse`),
+  `_update_town_list` sucht bei jedem Schritt des Patches die darin liegenden
+  heraus und legt sie in `town_tex`. Vorher lief jedes der 16 Hausmodelle und die
+  Terrasse über alle 100 × 100 Kacheln mit neun Plätzen, also 90 000 Häuser für
+  ein paar Dutzend Stadtkacheln: auf einem M3 Pro 18 Bilder pro Sekunde zwischen
+  70 und 700 km (Messtour 29.10.2026). Ein leerer Platz rechnet im Vertex-Shader
+  nur noch, ob er etwas zeigt. Ab
   10 km Sichtbreite gibt es Low-Poly-Bäume und grobe Häuser ohne Schatten
   (`PROP_LOW_KM`), volle Hausmodelle nur bis 5 km (`PROP_DETAIL_KM`), und
   Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
