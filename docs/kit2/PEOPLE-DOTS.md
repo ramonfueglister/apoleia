@@ -215,8 +215,8 @@ Farben haben eigene Indizes). Jede Dachfläche ist als eine Ebene nach ihrer
 Neigung beleuchtet (Tritt- und Stossflächen der Ziegelreihen bekommen die
 Normale der Dachfläche, die Stossflächen eine Stufe dunkler), so ist die
 Seite zum Licht hell, die abgewandte als Ganzes im Schatten, ohne fast
-schwarze Ziegelstreifen (Runde 16). Das Haus wird je
-Parzelle (Front mit Tür und Weg zur Kamera auf der Hälfte der Parzellen,
+schwarze Ziegelstreifen (Runde 16). Das Haus steht je
+Parzelle anders (Front mit Tür und Weg zur Kamera auf der Hälfte der Parzellen,
 sonst eine Flanke, nie die Rückseite; gespiegelt, Grösse ±10 %). Der Mesher (`scripts/voxel/voxel_mesh.gd`) ist allgemein: Modell als
 Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
