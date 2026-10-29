@@ -22,7 +22,7 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "cells-L0.png",
-      "sha256": "c23e17d1ec50997959f23f0f54731de7597ad38aed453424a5a2d3c6c988541d",
+      "sha256": "b3ac912b63dfb8715fe5121731038762304b6b6e1b6a4661b7dda62a75725103",
       "river_max_scalerank": 10
     },
     {
@@ -32,7 +32,7 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "cells-L1.png",
-      "sha256": "a665936f68809bc563d892cb16ecead1b5135d76c97782bd3880a1ca7f1ca849",
+      "sha256": "9a99e2569a277b38f71e40e0c5396df81fe7e5d43fd9dcc2023a62ee50a8b6e1",
       "river_max_scalerank": 10
     },
     {
@@ -42,7 +42,7 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "f444b283b0eae2c38aff8008476a1f933dc3a3df4ef83324690414090965908a",
+      "sha256": "163acbc757f07a14543873f61ebad3b40f42f45ff85699de5055849aa9bb932e",
       "river_max_scalerank": 8
     },
     {
@@ -52,7 +52,7 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "147d406d86a6352d718b7727dff2309aecc23f1af73ccf31ada12c36adaab4a0",
+      "sha256": "f0dbbeae38d1d5506b21635f48e74db7992ec3736528b099cd12326b94ba2a65",
       "river_max_scalerank": 7
     },
     {
@@ -62,7 +62,7 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "287797d5b03f67fc8491f939eb0d3f586dc1a745cb85860b11c24dc37ea0176d",
+      "sha256": "921fcf322ddba37a75171dfda996cf7e91dffb641fe3aa1d53fe04e33474a44e",
       "river_max_scalerank": 6
     },
     {
@@ -72,7 +72,7 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "e6e6df832aaf64f638a8ec98ba065fa2b035b8632635d5798ed324d04a8177ba",
+      "sha256": "7c4e4ebff103c2da50330213efef9cab7e4bf607fe48720bd9d9c3a1bcca5059",
       "river_max_scalerank": 5
     }
   ],
@@ -463,5 +463,6 @@
     "path": "../fixed-source-v2-mountain-r7/height.rg8",
     "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
-  }
+  },
+  "town_extra_km": 0.45
 }

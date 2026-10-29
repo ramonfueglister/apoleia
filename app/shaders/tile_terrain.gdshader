@@ -302,13 +302,17 @@ void fragment() {
 			ivec2 pl = tile - prop_origin;
 			bool housed = town_props && pl.x >= 0 && pl.y >= 0 && pl.x < prop_n && pl.y < prop_n;
 			// up close only the flat quarters are built on (tile_props: one
-			// house each); villages pave just the yard under their houses,
-			// towns and cities their ramps too, as stairs a little darker than
-			// the squares (no field or meadow strips inside a town)
+			// house each) and paved: the yard under a house, and in a city core
+			// its squares; the ramps between the terraces and the empty
+			// quarters of a town are gardens (paved, they were empty grey
+			// slopes, and fields ran through the towns before that)
 			bool built = !sub_tiles || flat_top > 0.5;
 			bool yard = sub_tiles && built && tt_sub_house(tile, town);
-			if (housed) {
-				c = town >= 2 ? C_PAVED * (built ? 1.0 : 0.92) : yard ? C_PAVED : c;
+			// (on the 0.5 km tiles the houses stand on the ramps too, on
+			// gardens: paved ramps were sheared grey parallelograms)
+			bool paved = sub_tiles ? yard || (town == 3 && built) : flat_top > 0.5;
+			if (housed && (sub_tiles || town >= 2)) {
+				c = paved ? C_PAVED : town >= 2 ? ground_rgb_at(G_MEADOW, band) : c;
 			} else if (town >= 2 && tile_km < 8.0) {
 				// (from 8 km tiles a town is one roof coloured tile: a red
 				// marker on the map, so they go there)
@@ -319,7 +323,7 @@ void fragment() {
 			// the landmarks stand on open travertine squares
 			bool plaza = housed && landmark_count > 0 && tt_in_landmark(p);
 			if (plaza) { c = C_PLAZA; }
-			if (housed && town >= 2 && built && !plaza) {
+			if (housed && town >= 2 && built && paved && !plaza) {
 				vec2 g = tile_uv * float(house_grid);
 				vec2 e = abs(g - round(g)) / float(house_grid);
 				float d = min(e.x, e.y);
@@ -342,12 +346,12 @@ void fragment() {
 			c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 		}
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
-		// gradient: lit from the left, so slopes turned left are light (+18 %
-		// up close, +15 % far out, so forest slopes keep a lit side), those
-		// turned right dark (-20 %), and the steps facing the camera or
-		// away from it a little darker than the flat terraces (-12 %), so a
-		// stack of terraces reads as treads and risers. Diagonal slopes take
-		// both (south-west +8 %, south-east -19 %). The light itself sees every
+		// gradient, matched to the west-south-west sun: slopes turned west
+		// light (+12 %), south (to the camera) a little lighter (+5 %), east
+		// dark (-15 %), north darker (-22 %); slopes turned away fade to the
+		// flat tone as they turn edge on. Diagonal slopes take both (south-west +12 %,
+		// south-east -7 %). Before, the camera side was darker than the flats
+		// and the west side +18 %: hillsides read as striped lawns. The light itself sees every
 		// top as flat (NORMAL below), so this is the only shading: lambert on
 		// top of it washed sun-side ramps out like glass and made single
 		// shade-side steps black walls.
@@ -361,11 +365,12 @@ void fragment() {
 		float fb = dot(dir, cam_back);
 		// continuous in the direction, so the tone never flips between two
 		// sides from pixel to pixel
-		float lit = mix(0.18, 0.15, far_share());
 		// slopes turned away from the camera are seen edge on: they fade to
 		// the flat tone, else a long step draws a dark crack across the land
-		float away = clamp(1.0 + min(fb, 0.0), 0.0, 1.0);
-		float tone = 1.0 - ((fr < 0.0 ? lit : 0.20) * fr + 0.12 * fb * fb) * away;
+		// (gone by north-east and north-west: diagonal steps facing away drew
+		// hairlines across the 70 km view)
+		float away = clamp(1.0 + 2.0 * min(fb, 0.0), 0.0, 1.0);
+		float tone = 1.0 + (-(fr < 0.0 ? 0.12 : 0.15) * fr + (fb > 0.0 ? 0.05 : 0.22) * fb) * away;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;

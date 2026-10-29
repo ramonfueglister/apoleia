@@ -120,14 +120,14 @@ unabhängig und unverändert.
   Hügeln und Bergen ist dort dunkler (Nadelwaldton), Fels ab der dritten
   Stufe hell, und die Schneelinie sinkt weit draußen um 180 m je Zoomstufe,
   so tragen die Alpen, Pyrenäen und Karpaten auf der Europakarte Schneekappen.
-  Rampen haben einen festen Ton je Seite wie in SimCity 2000: nach links
-  gewandt +18 % (ab 1-km-Kacheln +15 %: mit +18 % lasen helle Rampen dort als
-  Glasstreifen, mit +10 % verloren Waldhänge ihre Lichtseite), nach rechts
-  −20 %, zur Kamera −12 %, so lesen gestapelte
-  Terrassen als Tritt und Stufe (Kritik r4: Tivoli hatte „keine
-  Schattenseite“). Diagonale Rampen mischen beide Seiten stetig (Südwest
-  +8 %, Südost −19 %). Rampen, die von der Kamera weg zeigen, sieht man nur
-  als Kante; sie bleiben im flachen Ton, sonst zeichnet eine lange Stufe
+  Rampen haben einen festen Ton je Seite wie in SimCity 2000, passend zur
+  Sonne aus Westsüdwest: nach Westen +12 %, nach Süden (zur Kamera) +5 %,
+  nach Osten −15 %, nach Norden −22 % (Kritik r6; vorher West +18 % und
+  die Kameraseite −12 % dunkler als die Flächen, so lasen Hänge als
+  gestreifter Rasen). Diagonale Rampen mischen beide Seiten stetig (Südwest
+  +12 %, Südost −7 %). Rampen, die von der Kamera weg zeigen (auch nach
+  Nordost und Nordwest), sieht man nur als Kante; sie bleiben im flachen Ton
+  (die diagonalen zogen bei 70 km Haarlinien durchs Land), sonst zeichnet eine lange Stufe
   einen dunklen Strich durchs Land (die „Naht“ bei 120 km). Die Töne kommen von einem festen
   SimCity-Licht von links und hinter der Kamera (`tt_art_light`, aus der
   Kameralage), nicht von der Sonne des Wetters: So sind die der Kamera
@@ -163,21 +163,29 @@ unabhängig und unverändert.
   Land auf. In Städten (ab Ortsklasse 2)
   laufen graue Basaltstraßen zwischen den Häuserblöcken, auf dem Raster der
   Hausplätze; die Häuser lassen dafür Platz (ein Grundstück füllt 0,92 seines
-  Platzes, `LOT_SHARE`). Städte sind gepflastert,
-  Dörfer nicht (vorher halb gepflastert, das las als halbdurchsichtiger
-  Stadtrand); auf den Vierteln pflastert ein Dorf nur den Hof unter seinen
-  Häusern. Auf den Vierteln stehen Häuser nur auf flachen Kacheln: Ein Ort am
-  Hang steigt in Terrassen an. Im Dorf bleiben die Rampen Land, in Städten
-  sind sie gepflastert wie Treppen, etwas dunkler als die Plätze (vorher
-  liefen Weizenstreifen durch Rom). Die Häuser sind die Grundstücke der
+  Platzes, `LOT_SHARE`). Gepflastert ist nur, wo ein Haus
+  steht, und im Stadtkern die ebenen Plätze; Dörfer bleiben Land (vorher halb
+  gepflastert, das las als halbdurchsichtiger Stadtrand). Auf den Vierteln
+  stehen Häuser nur auf flachen Kacheln: Ein Ort am Hang steigt in Terrassen
+  an. Die Rampen dazwischen und die leeren Viertel einer Stadt sind Gärten
+  (Wiesenton, keine Straßenlinien); vorher waren sie leere graue Hänge, noch
+  früher liefen Weizenstreifen durch Rom. Auf den 0,5-km-Kacheln stehen die
+  Häuser auch auf den Rampen, dort ebenfalls auf Gärten statt auf geschertem
+  Pflaster. Orte wachsen mit ihren Einwohnern (Fläche wie bei 9000 Menschen
+  je km²); Städte ab 3000 Einwohnern bekommen einen Ring dazu, bis 0,45 km ab
+  7000 (`TOWN_EXTRA_KM`), sonst blieben dem diorama-großen Haus (ein
+  Grundstück je 0,25 km) in Tibur drei Häuser; Dörfer behalten ihre Größe. Die Häuser sind die Grundstücke der
   römischen Stadt aus dem Kolosseum-Prototyp (`voxel/roman_buildings.gd`, eine
   Kopie aus PR #45, 40 Voxel auf 10 m wie Urbek): 14 Hausvarianten (Domus mit
   Atrium, Insulae mit Läden, Werkstätten, Putz in Creme, Ocker und Kalkweiß,
   Terrakottadächer mit Dachgärten) und zwei Gärten, ein Grundstück je
   Viertelkachel (`LOT_KINDS`). Jedes Modell ist eine eigene MultiMesh und
   zeichnet jeden 16. Hausplatz, in jedem Block von 16 Plätzen einen anderen,
-  so kosten alle Modelle zusammen so viel wie vorher ein Haus. Nah die feine
-  Stufe der Modelle, ab `PROP_LOW_KM` die grobe. Ein Grundstück zeigt der
+  so kosten alle Modelle zusammen so viel wie vorher ein Haus. Bis 5 km
+  Sichtbreite die vollen Modelle (Stufe 0, 0,25-m-Voxel, etwa 5000 Dreiecke
+  je Grundstück, `PROP_DETAIL_KM`; die 1-m-Voxel der Stufe 1 lasen bei 3 km
+  als Pilze), bis 10 km Stufe 1 (einige hundert Dreiecke), ab `PROP_LOW_KM`
+  Stufe 2. Die Wahrzeichen bis 10 km in voller Stufe. Ein Grundstück zeigt der
   Kamera seine Vorderseite oder eine Flanke, nie die Rückseite, und ist nie
   schräg gedreht. Häuser halten mit
   ihrer ganzen Grundfläche Abstand zu den Wahrzeichen, und jedes 16.
@@ -228,7 +236,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
 
 - `tools/build_tile_terrain.py` backt `artifacts/render-data/tile-terrain-r1/`
   (etwa 6 Minuten): Bewuchs, Meeresabstand und Seespiegel (2-km-Knoten), Wasser-
-  und Ortsklassen je Zoomstufe (`cells-L*.png`, Flüsse bereinigt), Höhe und
+  und Ortsklassen je Zoomstufe (`cells-L*.png`, Flüsse bereinigt; die Orte
+  allein neu mit `--towns-only`, etwa 20 Sekunden), Höhe und
   begrenztes Relief (`height.r16f`, `relief.r16f`), die Wasserhülle
   (`shore.r16f`), die Eckstufen der fernen Zoomstufen (`levels-L*.png`;
   allein neu mit `--levels-only`, etwa 1 Minute), die der nahen aus den
@@ -262,7 +271,8 @@ echte Kilometer, ein Diorama-Meter sind also 0,0238 Welteinheiten.
   einen Texel. Auf den Vierteln kommt `tile_sub_prep.gdshader` dazu, nur wenn
   sein Fenster weiterrückt.
 - Leistung: Der Prop-Patch ist nur so groß wie die Sicht (`PROP_SPAN`), ab
-  10 km Sichtbreite gibt es Low-Poly-Bäume ohne Schatten (`PROP_LOW_KM`), und
+  10 km Sichtbreite gibt es Low-Poly-Bäume und grobe Häuser ohne Schatten
+  (`PROP_LOW_KM`), volle Hausmodelle nur bis 5 km (`PROP_DETAIL_KM`), und
   Baumarten, die im Ausschnitt nicht wachsen können, werden ausgeblendet. Ab
   1-km-Kacheln werfen die Kacheln keine Schatten mehr (die grobe Schattenkarte
   zeichnete dort nur dunkle Striche an den Stufen).

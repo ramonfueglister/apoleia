@@ -29,6 +29,7 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
     python3 tools/build_tile_terrain.py --levels-only   # only the far levels-L*.png, from the outputs above
     python3 tools/build_tile_terrain.py --near-only     # only levels-L0/L1.png (--level=N for one)
     python3 tools/build_tile_terrain.py --ground-only   # only ground-L*.png
+    python3 tools/build_tile_terrain.py --towns-only    # only the settlements in cells-L*.png
 """
 
 from __future__ import annotations
@@ -332,6 +333,9 @@ def block_mean(a, f):
     return p.reshape(H // f, f, W // f, f).mean((1, 3))
 
 
+TOWN_EXTRA_KM = 0.45
+
+
 def settlements(cell_km, n_x, n_y):
     """0..3 density per cell from the 117 AD population (places.csv)."""
     out = np.zeros((n_y, n_x), np.float32)
@@ -340,7 +344,11 @@ def settlements(cell_km, n_x, n_y):
             continue
         pop = float(row["p117"])
         px, pz = lonlat_to_world(float(row["lon"]), float(row["lat"]))
-        r_km = 0.6 * math.sqrt(pop / 10000)
+        # the area of a place grows with its people; towns from 3000 to 7000
+        # people up get a ring of up to TOWN_EXTRA_KM, else the diorama-sized
+        # houses (a lot per 0.25 km) left a town of 7000 (Tibur) three houses;
+        # villages keep their size
+        r_km = 0.6 * math.sqrt(pop / 10000) + TOWN_EXTRA_KM * min(max((pop - 3000) / 4000, 0.0), 1.0)
         ci = (float(px) - WORLD_MIN[0]) / cell_km
         cj = (float(pz) - WORLD_MIN[1]) / cell_km
         rc = max(r_km / cell_km, 0.0)
@@ -1009,6 +1017,22 @@ def ground_only():
     print("done")
 
 
+def towns_only():
+    """Rebuild only the settlement bits of cells-L*.png (the water stays)."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    for e in manifest["cells"]:
+        water = unpack_cells(e)
+        town = settlements(e["cell_km"], e["width"], e["height"]) * (water == 0)
+        path = OUT / e["path"]
+        Image.fromarray(pack_nibbles(water | (town << 2)), "L").save(path, optimize=True)
+        e["sha256"] = sha(path)
+        print("towns", e["level"], int((town > 0).sum()))
+    manifest["inputs"]["places"] = {"path": "data/gametiles/places.csv", "sha256": sha(ROOT / "data/gametiles/places.csv")}
+    manifest["town_extra_km"] = TOWN_EXTRA_KM
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
 def unpack_cells(entry):
     packed = np.array(Image.open(OUT / entry["path"]).convert("L"))
     a = np.zeros((packed.shape[0], packed.shape[1] * 2), np.uint8)
@@ -1185,5 +1209,7 @@ if __name__ == "__main__":
         near_only()
     elif "--ground-only" in sys.argv:
         ground_only()
+    elif "--towns-only" in sys.argv:
+        towns_only()
     else:
         main()

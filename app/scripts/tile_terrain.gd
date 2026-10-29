@@ -31,6 +31,7 @@ const PATCH_N := 320 # tiles per side of the terrain patch
 const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
 const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
+const PROP_DETAIL_KM := 5.0 # up to this view width: the lots and landmarks in full detail
 const PROP_SLOTS := [9, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
 const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0] # house blocks per town tile and level
 # Closest zoom (zoom -1): quarter tiles of the 0.5 km data tiles, one house
@@ -62,8 +63,10 @@ const PROP_KINDS := ["broadleaf", "conifer", "cypress", "house", "pine"]
 # the Colosseum prototype: Urbek's 40 voxels to a 10 m lot), at the diorama
 # scale a lot to a quarter tile. One MultiMesh per model; each draws every
 # LOT_KINDS.size()-th house slot (tile_props.gdshader lot_variant), so the
-# models together cost what one house mesh did. Up close level 1 (a few
-# hundred triangles a lot), from PROP_LOW_KM level 2.
+# models together cost what one house mesh did. Up to PROP_DETAIL_KM the full
+# models (level 0, 0.25 m voxels, about 5000 triangles a lot: the 1 m voxels
+# of level 1 read as mushrooms at 3 km), then level 1 (a few hundred
+# triangles), from PROP_LOW_KM level 2.
 const LOT_KINDS := [
 	["house", 0], ["house", 2], ["house", 4], ["house", 6], ["house", 8], ["house", 10], ["house", 12],
 	["house", 14], ["house", 16], ["house", 18], ["house", 20], ["house", 22], ["house", 24], ["house", 26],
@@ -110,7 +113,8 @@ var level_h := 0.6
 var patch_origin := Vector2i.ZERO
 var prop_origin := Vector2i.ZERO
 var prop_n := PROP_N
-var _props_low := false
+var _props_tier := 1 # 0 full detail, 1 light, 2 low (PROP_DETAIL_KM, PROP_LOW_KM)
+var _meshes_detail: Array = []
 var _meshes_full: Array = []
 var _meshes_low: Array = []
 
@@ -276,16 +280,20 @@ func _build_nodes() -> void:
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
 	_meshes_full = [PropMeshes.broadleaf(), PropMeshes.conifer(), PropMeshes.cypress(), null, PropMeshes.umbrella_pine()]
 	_meshes_low = [PropMeshes.broadleaf(true), PropMeshes.conifer(true), PropMeshes.cypress(true), null, PropMeshes.umbrella_pine(true)]
+	_meshes_detail = _meshes_full.duplicate()
 	for kind in _prop_count():
 		var lot := _lot_of(kind)
 		if lot < 0:
 			continue
+		var detail: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 0)
 		var full: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 1)
 		var low: ArrayMesh = RomanBuildings.lot_mesh(LOT_KINDS[lot][0], LOT_KINDS[lot][1], 2)
 		if kind < _meshes_full.size():
+			_meshes_detail[kind] = detail
 			_meshes_full[kind] = full
 			_meshes_low[kind] = low
 		else:
+			_meshes_detail.append(detail)
 			_meshes_full.append(full)
 			_meshes_low.append(low)
 	var meshes := _meshes_full
@@ -329,7 +337,7 @@ func _build_landmarks() -> void:
 		var km_per_m := DIORAMA_KM_PER_M if kit else LANDMARK_KM_PER_M
 		var node := MeshInstance3D.new()
 		node.name = "Landmark" + which.capitalize()
-		node.mesh = RomanBuildings.landmark_mesh(which, 1) if kit else PropMeshes.landmark(which)
+		node.mesh = RomanBuildings.landmark_mesh(which, 0 if _props_tier < 2 else 1) if kit else PropMeshes.landmark(which)
 		node.material_override = material
 		node.scale = Vector3(1.0, 1.0 if kit else LANDMARK_RISE, 1.0) * km_per_m
 		var centre := (lo + hi) * 0.5
@@ -546,13 +554,18 @@ func update_view(focus: Vector2, centre: Vector2, width: float) -> void:
 	if wanted_n != prop_n:
 		prop_n = wanted_n
 		_apply_level(zoom)
-	# far out the trees are a few pixels tall: low-poly and no shadows
-	var low := width > PROP_LOW_KM
-	if low != _props_low:
-		_props_low = low
+	# far out the trees are a few pixels tall: low-poly and no shadows; up
+	# close the lots and landmarks in full detail
+	var tier := 2 if width > PROP_LOW_KM else 0 if width <= PROP_DETAIL_KM else 1
+	if tier != _props_tier:
+		_props_tier = tier
 		for kind in _props.size():
-			_props[kind].multimesh.mesh = (_meshes_low if low else _meshes_full)[kind]
-			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if low else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			_props[kind].multimesh.mesh = [_meshes_detail, _meshes_full, _meshes_low][tier][kind]
+			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if tier == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		for k in _landmarks.size():
+			var which := String(LANDMARKS[k][0])
+			if which.begins_with("kit:"):
+				_landmarks[k].mesh = RomanBuildings.landmark_mesh(which.trim_prefix("kit:"), 0 if tier < 2 else 1)
 	var f := ((focus.lerp(centre, 0.35) - world_min) / tile_km).floor()
 	prop_origin = Vector2i(int(f.x) - prop_n / 2, int(f.y) - prop_n / 2)
 	for material in _prop_materials:
