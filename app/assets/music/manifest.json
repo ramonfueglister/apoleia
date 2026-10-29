@@ -1,0 +1,119 @@
+{
+  "reference_version": "soundtrack-v1-2026-10-26",
+  "status": "implementiert",
+  "provider": "sunoapi.org",
+  "model_requested": "V6",
+  "credits_before": 7584,
+  "credits_after": 7560,
+  "credits_consumed_observed": 24,
+  "tracks": [
+    {
+      "file": "cartographers-dawn-1.mp3",
+      "title": "The Cartographers Dawn",
+      "variant": 1,
+      "kind": "instrumental",
+      "provider_audio_id": "f63af6f1-a9d6-4f62-9f2d-e0164d8da443",
+      "task_id": "9d486fdb2dce1018269ed4c32bf5e7fa",
+      "provider_duration_seconds": 179.44,
+      "bytes": 4238956,
+      "sha256": "76388c88fc3000338addb8bbc0ebb70aaa47904682a4e7cf13bdfe0a98b79f4f",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "179.472000"
+        }
+      },
+      "full_decode_passed": true
+    },
+    {
+      "file": "cartographers-dawn-2.mp3",
+      "title": "The Cartographers Dawn",
+      "variant": 2,
+      "kind": "instrumental",
+      "provider_audio_id": "5ad5e344-af0c-4e6a-b39c-7432c74cba7d",
+      "task_id": "9d486fdb2dce1018269ed4c32bf5e7fa",
+      "provider_duration_seconds": 179.4,
+      "bytes": 4225612,
+      "sha256": "2e0f5f61a1de9890392436a1f884d07afac705f3f81af7134770a7e00de79793",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "179.424000"
+        }
+      },
+      "full_decode_passed": true
+    },
+    {
+      "file": "mare-et-terra-1.mp3",
+      "title": "Mare et Terra",
+      "variant": 1,
+      "kind": "vocal",
+      "provider_audio_id": "0a684df2-346a-4d24-a63f-d279c555c8f2",
+      "task_id": "f525f4d0b186e76ed76909cf0ce9ebcf",
+      "provider_duration_seconds": 179.96,
+      "bytes": 4155173,
+      "sha256": "49c7aa443322d1e04defd805d14cdaa200b553d5c80596a4b18455dc249b4150",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.000000"
+        }
+      },
+      "full_decode_passed": true
+    },
+    {
+      "file": "mare-et-terra-2.mp3",
+      "title": "Mare et Terra",
+      "variant": 2,
+      "kind": "vocal",
+      "provider_audio_id": "e5323207-b39e-450e-a387-92fd80134edc",
+      "task_id": "f525f4d0b186e76ed76909cf0ce9ebcf",
+      "provider_duration_seconds": 179.96,
+      "bytes": 4160285,
+      "sha256": "da307290268d4522a3f2f49c2f7e7c1bdd159ea6baaebdd508ee559fb721f79a",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "180.000000"
+        }
+      },
+      "full_decode_passed": true
+    }
+  ],
+  "verification_limits": [
+    "Technical decoding verified; subjective listening and audible singing quality not yet confirmed.",
+    "No iPad runtime or existing packaged app validation."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "bundle": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/macos-candidates/source-v2-v19-compact-cloud-v16-r1/Roma Aeterna Candidate 0.19.2.app",
+  "backup": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/runtime/soundtrack/bundle-backup",
+  "changed_world_paths": [
+    "app/landscape.tscn",
+    "app/scripts/soundtrack.gd",
+    "app/assets/music/cartographers-dawn-2.mp3",
+    "app/assets/music/cartographers-dawn-1.mp3",
+    "app/assets/music/manifest.json",
+    "app/assets/music/mare-et-terra-1.mp3",
+    "app/assets/music/mare-et-terra-2.mp3"
+  ],
+  "unsigned": true,
+  "verify_bundle": {
+    "status": "filesystem-verified",
+    "files": 9590,
+    "rendering_tested": false
+  },
+  "render_payloads_changed": false
+}

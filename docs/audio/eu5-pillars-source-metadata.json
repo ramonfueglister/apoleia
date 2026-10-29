@@ -1,0 +1,29 @@
+{
+  "reference_version": "eu5-correspondences-v2-2026-10-26",
+  "status": "erforscht",
+  "retrieved_on": "2026-10-26",
+  "source_url": "https://www.youtube.com/watch?v=NQSs664jH88",
+  "official_shortlink": "https://pdxint.at/AcrossThePillarsOST",
+  "retrieval_method": "Public HTTPS watch-page HTML, extracted ytInitialPlayerResponse.videoDetails and microformat. No audio or video media downloaded.",
+  "title": "Europa Universalis V: Across the Pillars | Official Game Soundtrack",
+  "channel_name": "Europa Universalis",
+  "channel_id": "UCkCYWd98PgOWZuDRfVXPB7w",
+  "video_id": "NQSs664jH88",
+  "duration_seconds": 1782,
+  "publish_date": "2026-10-24T02:19:25-07:00",
+  "upload_date": "2026-10-24T02:19:25-07:00",
+  "description_sha256": "5c7f70288ecc32d874471f0a6a579c5e7d5d31195b88928a73df550702a69ce8",
+  "track_chapter_lines": [
+    "00:00 - Ay Triste Que Vengo",
+    "02:40 - Con amores la mi madre",
+    "04:47 - Falai minha amor",
+    "06:40 - Recercada II sobre l’Espagna",
+    "08:40 - Recercada I sopra i tenori italiani",
+    "10:06 - Conde Claros",
+    "11:50 - Berma Lalla",
+    "18:20 - Boulila",
+    "24:23 - Soyo Soyo"
+  ],
+  "track_count": 9,
+  "description_summary_own_words": "The official channel names Ensemble Altamar and Asmaa Hamzaoui and states nine Castilian and Moroccan tracks, released that day to streaming platforms."
+}

@@ -1,0 +1,24 @@
+{
+  "reference_version": "soundtrack-v1-2026-10-26",
+  "instrumental": {
+    "customMode": true,
+    "instrumental": true,
+    "model": "V6",
+    "title": "The Cartographers Dawn",
+    "duration": 180,
+    "style": "Original instrumental historical grand strategy soundtrack. Noble Renaissance and early Baroque orchestral chamber music for a Mediterranean empire and a living world map. Measured 88 BPM, D dorian, warm violas and cellos, interwoven lute and harpsichord ostinatos, recorder and oboe countermelodies, restrained French horns, light frame drum and timpani. Evoke patient statecraft, flourishing trade, distant voyages and quiet imperial grandeur. Develop a memorable original theme through an intimate opening, flowing contrapuntal middle, broad noble crest, and gentle resolved coda. Natural concert hall acoustics, detailed acoustic timbres, elegant dynamics, unobtrusive long-session strategy-game background music. No quotation or imitation of any existing melody.",
+    "negativeTags": "vocals, choir, lyrics, speech, synthesizers, electronic drums, rock guitar, EDM, trailer braams, abrupt cuts, bombastic battle percussion",
+    "callBackUrl": "https://soundtrack.invalid/callback"
+  },
+  "vocal": {
+    "customMode": true,
+    "instrumental": false,
+    "model": "V6",
+    "title": "Mare et Terra",
+    "duration": 180,
+    "style": "Original historical grand strategy soundtrack, Renaissance polyphonic mixed chamber choir singing clear Latin, warm lower male voices answered by luminous female voices. Restrained early Baroque acoustic orchestra with viols, lute, oboe, soft brass and sparse timpani. Mediterranean empire, seafaring and patient statecraft. Noble, contemplative and uplifting, 84 BPM, modal harmony, flowing counterpoint. Quiet instrumental introduction, intimate sung verse, broad choral refrain, reflective instrumental interlude, final hopeful refrain and resolved coda. Natural cathedral reverb without muddy words, no modern pop beat. Compose entirely original melodies.",
+    "lyrics": "[Instrumental introduction]\n\n[Verse 1]\nSuper undas lumen it,\nTerra vocem reddidit.\nManus arva coluit,\nVentus vela sustulit.\n\n[Chorus]\nMare et terra, lux et via,\nCrescat nostra concordia.\nPer labores, per auroram,\nSpem portamus in futuram.\n\n[Verse 2]\nFlumen pontes invenit,\nPax in agris floruit.\nAurum transit, panis manet,\nVox humana noctem sanat.\n\n[Instrumental interlude]\n\n[Final chorus]\nMare et terra, lux et via,\nCrescat nostra concordia.\nSub stellis navigamus,\nNovum diem salutamus.\n\n[Soft coda]\nNovum diem salutamus.",
+    "negativeTags": "EDM, electronic drums, electric guitar, rap, pop belting, trailer braams, modern slang",
+    "callBackUrl": "https://soundtrack.invalid/callback"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "reference_version": "soundtrack-v1-2026-10-26",
+  "status": "validiert",
+  "scope": "Technical audio decoding, source playback/input regression, local bundle inventory and startup only",
+  "full_mp3_decode": "PASS: all four files, ffmpeg -v error -i <file> -f null -",
+  "source_regression": {
+    "command": "godot --headless --path app --script res://scripts/soundtrack_regression.gd",
+    "result": "PASS, exit 0, no leaked instances",
+    "coverage": [
+      "Headless avoids audio allocation",
+      "Four complete MP3 streams decode and begin playback",
+      "Playlist order and cyclic wrap",
+      "M mute/unmute and N next",
+      "Ignore key echo/release",
+      "Mute preference saved to isolated temporary settings file",
+      "Muted launch unmutes to first track"
+    ]
+  },
+  "independent_source_review": "PASS: /root/audio_review; full decode, hashes/bytes, credential-pattern scan, resource closure, parser and regression",
+  "bundle_inventory": "PASS: package_macos.verify_bundle, 9590 files",
+  "bundle_headless_start": {
+    "result": "PASS, exit 0, no errors",
+    "log": "artifacts/runtime/soundtrack/bundle-headless-corrected.log"
+  },
+  "bundle_native_start": {
+    "result": "runtime_started with Metal, no script errors, then deliberately terminated",
+    "limitation": "Launcher engine flags after -- are user args, so headless check was rerun directly with bundled binary"
+  },
+  "open": [
+    "Subjective listening, audible vocal quality and intelligibility",
+    "iPad runtime",
+    "Full render/performance acceptance"
+  ],
+  "independent_bundle_review": "PASS: /root/audio_review, seven changed runtime files match source, runtime inventory hashes, full 9590-file inventory, unsigned/signature consistency"
+}
