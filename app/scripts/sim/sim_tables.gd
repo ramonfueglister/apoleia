@@ -37,7 +37,7 @@ extends CanvasLayer
 ## The colours stay when the panel closes (it covers most of the map), with
 ## their legend at the bottom left, whose ✕ takes them off.
 ##
-## Command line (after --): --tables=markets|population|farms|state|history
+## Command line (after --): --tables=overview|markets|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
 ## that column of the markets.
 
@@ -45,9 +45,14 @@ const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
-const KINDS: Array[String] = ["markets", "population", "farms", "state", "history"] # apoleia_sim::tables::TABLES
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf"]
-const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe"] # under a tooltip's title
+const SimOverview = preload("res://scripts/sim/sim_overview.gd")
+## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
+## from four of them; its tab comes first (TAB_ORDER)
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview"]
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht"]
+const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", ""] # under a tooltip's title
+const TAB_ORDER: Array[int] = [5, 0, 1, 2, 3, 4]
+const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state"]
 const SPARK_MONTHS := 24
 const SPARK_PX := 92.0
 const MONTHS: Array[String] = ["Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
@@ -84,8 +89,9 @@ var _kind := 0
 var _tables: Array[Dictionary] = []
 var _state: Array[Dictionary] = [] # per table: sort, desc, filters, search, folded, open groups, selected id
 var _asked := -1 # the table asked for, until take_table answers
-var _asked_day := -1
+var _asked_on := PackedInt64Array() # per table: the day it was last asked for
 var _win # ui_window.gd (untyped: its own members)
+var _overview # sim_overview.gd
 var _months := {} # market id -> PackedFloat64Array of its price, one per monthly count
 var _months_day := -1 # the table day last added to _months
 var _open_button: Button
@@ -112,7 +118,9 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	landscape = scene
 	name = "SimTables"
 	layer = 2 # over the people's labels
+	_kind = KINDS.find("overview") # EU5 opens on the summary
 	for kind in KINDS:
+		_asked_on.append(-1)
 		_tables.append({})
 		_state.append({"sort": "", "desc": true, "filters": {}, "search": "", "folded": false, "open": {}, "selected": -1})
 	for arg in OS.get_cmdline_user_args():
@@ -124,14 +132,12 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 			_state[0].sort = _map_by
 	_build()
 	_terms()
-	_tabs.current_tab = _kind
+	_tabs.current_tab = TAB_ORDER.find(_kind)
 	_show(open)
 
 # ------------------------------------------------------------------ data
 
 func _process(_delta: float) -> void:
-	if not open and _map_by == "":
-		return
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
 		if answer.is_empty():
@@ -141,18 +147,29 @@ func _process(_delta: float) -> void:
 		if KINDS[was] == "markets":
 			_remember_months(answer)
 		_asked = -1
-		if was == _kind and open:
+		if open and (was == _kind or KINDS[_kind] == "overview" and KINDS[was] in OVERVIEW_KINDS):
 			_refresh()
 		elif was == 0:
 			_paint_regions()
 		return
-	var kind := _kind if open else 0 # closed, only the markets the map is coloured by
+	# the table shown (the overview's four), then the markets every month
+	# for their curves and the map, open or not
+	var kinds: Array[int] = [0]
+	if open and KINDS[_kind] == "overview":
+		kinds = []
+		for k in OVERVIEW_KINDS:
+			kinds.append(KINDS.find(k))
+		kinds.append(0)
+	elif open:
+		kinds = [_kind, 0]
 	var day: int = people.day()
-	var t := _tables[kind]
-	if day != _asked_day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
-		people.ask_table(KINDS[kind])
-		_asked = kind
-		_asked_day = day
+	for kind in kinds:
+		var t := _tables[kind]
+		if _asked_on[kind] != day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
+			people.ask_table(KINDS[kind])
+			_asked = kind
+			_asked_on[kind] = day
+			return
 
 ## Which monthly count a table built on `day` shows.
 static func _count_of(day: int) -> int:
@@ -267,10 +284,24 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 # ------------------------------------------------------------------ view
 
 func _refresh() -> void:
+	var overview := KINDS[_kind] == "overview"
+	_overview.visible = overview
+	_filter_row.visible = not overview
+	_tree.visible = not overview
+	_note.visible = not overview
+	if overview:
+		_chart.visible = false
+		var shown := {}
+		for k in OVERVIEW_KINDS:
+			shown[k] = _tables[KINDS.find(k)]
+		_overview.show_tables(shown)
+		var h: Dictionary = shown.history
+		_stand.text = ("Stand %s" % _date(int(h.day))) if not h.is_empty() else "…"
+		return
 	var t := _tables[_kind]
 	_chart.visible = KINDS[_kind] == "history"
-	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  T schliesst" if KINDS[_kind] == "history"
-		else "Klick auf eine Zeile zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar  ·  T schliesst")
+	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  auf ihr verweilen zeigt den Verlauf" if KINDS[_kind] == "history"
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar")
 	_paint.visible = KINDS[_kind] == "markets"
 	_paint.set_pressed_no_signal(_map_by != "")
 	_paint_regions()
@@ -844,7 +875,7 @@ func _fly(t: Dictionary, rows: PackedInt32Array) -> void:
 	print(JSON.stringify({"event": "tables_fly", "kind": KINDS[_kind], "rows": rows.size(), "width_km": w}))
 
 func _on_tab(index: int) -> void:
-	_kind = index
+	_kind = TAB_ORDER[index]
 	_refresh()
 
 func _show(on: bool) -> void:
@@ -991,8 +1022,8 @@ func _build() -> void:
 	_stand.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL + 1)
 	_stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_tabs = TabBar.new()
-	for t in TITLES:
-		_tabs.add_tab(t)
+	for k in TAB_ORDER:
+		_tabs.add_tab(TITLES[k])
 	_tabs.focus_mode = Control.FOCUS_NONE
 	_tabs.tab_changed.connect(_on_tab)
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1073,6 +1104,9 @@ func _build() -> void:
 	_tree.item_selected.connect(_on_selected)
 	_tree.item_collapsed.connect(_on_collapsed)
 	Tooltips.attach(_tree, _row_tip)
+	_overview = SimOverview.new(_date)
+	_overview.visible = false
+	column.add_child(_overview)
 	column.add_child(_tree)
 	_note = Label.new()
 	_note.text = "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar"
