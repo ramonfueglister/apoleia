@@ -1,5 +1,5 @@
 //! Tables for the game's overview panels (EU5-style lists of markets,
-//! people and farms). Read only, like `view` (S45): building a table changes
+//! people and farms, and the state's account). Read only, like `view` (S45): building a table changes
 //! neither the state nor the fingerprint. A table is a list of columns of
 //! equal length, each with a name and a unit, so the game can sort and
 //! filter without knowing the simulation.
@@ -95,4 +95,4 @@ impl Table {
 }
 
 /// The tables the game can ask for, by key.
-pub const TABLES: [&str; 3] = ["markets", "population", "farms"];
+pub const TABLES: [&str; 4] = ["markets", "population", "farms", "state"];
