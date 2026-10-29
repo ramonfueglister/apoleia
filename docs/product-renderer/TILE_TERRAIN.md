@@ -163,7 +163,9 @@ unabhängig und unverändert.
   Hügeln und Bergen ist dort dunkler (Nadelwaldton). Fern zeichnet die
   Bodenbedeckung das Relief (Kritik r8): nackter Fels (#a89c78 wie die
   gemalten Grate) auf den Kämmen der hohen Massive und Schnee (#e8e4dc statt
-  Watteweiß) nur auf den Gipfeln, nach der echten mittleren Höhe der Kachel
+  Watteweiß, auch nah: im Watteweiß kappte die Tonkurve die Stufen, eine
+  Stirnseite lag 2 % unter der Fläche und der Schatten fiel lila, Kritik r15
+  am Mont Blanc bei 8 km) nur auf den Gipfeln, nach der echten mittleren Höhe der Kachel
   aus den Terrain Tiles (`tile_metres`, `ROCK_M` und `SNOW_M` je
   Kachelgröße, etwas höher im trockenen Süden): etwa 11 % Fels im
   70-km-Bild der Abruzzen, 4 % bei 120 km, die Alpen bei 1500 km ein

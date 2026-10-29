@@ -49,7 +49,10 @@ const vec3 GROUND_RGB[11] = vec3[](
 	vec3(0.173, 0.302, 0.224),  // conifer forest
 	vec3(0.396, 0.561, 0.322),  // alpine meadow
 	vec3(0.439, 0.420, 0.396),  // rock
-	vec3(0.953, 0.965, 0.973)   // snow
+	// snow as far out (#e8e4dc): at the cotton white #f3f6f8 the tone map
+	// clipped it, a riser stood 2 % below the flat (Kritik r15, Mont Blanc
+	// at 8 km a blank sheet) and the shade fell lavender under the blue sky
+	vec3(0.860, 0.845, 0.810)   // snow
 );
 // Far out (from 1 km tiles) the land stays Urbek green, a touch cooler than
 // up close (the painted olive strip, gauntlet refs/gemalt-weit-mittel-nah.png,
