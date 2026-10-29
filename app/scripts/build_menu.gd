@@ -17,12 +17,13 @@ extends Node3D
 ## applied between two days; this node draws what build_orders() returns
 ## whenever its version changes. Without the GDExtension it keeps them
 ## itself, so the menu can be tried on the bare landscape. Carrying the
-## orders out (day labourers paid from the treasury, S102) is not built yet.
+## orders out (day labourers paid from the treasury, S113) is not built yet.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const FINE_KM := 25.0 / 16.0 # apoleia_sim::settle::FINE_KM
 const BUILD_MAX_KM := 80.0 # view width up to which the tools work (a tile about 25 px across)
 const CLICK_PX := 4.0
+const BUTTON_PX := 76.0 # tool button edge in points (44 was too small, Ramon 29.10.2026)
 const LIFT := 0.02 # km above the ground; drawn without depth test anyway
 const GRID := 4 # quads per tile side, so an order follows the terraces
 const INSET := 0.06 # of a tile left free around an order
@@ -74,11 +75,15 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	hud.layer = 3
 	add_child(hud)
 	var bar := VBoxContainer.new()
-	bar.add_theme_constant_override("separation", 6)
-	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, 12)
+	# BUTTON_PX points; on a Retina screen a pixel is half a point
+	var k := BUTTON_PX / ToolButton.SIZE.x * DisplayServer.screen_get_scale(DisplayServer.window_get_current_screen())
+	bar.add_theme_constant_override("separation", roundi(8 * k))
+	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, roundi(14 * k))
 	hud.add_child(bar)
 	for kind in NAMES.size():
 		var b := ToolButton.new()
+		b.scale_k = k
+		b.custom_minimum_size = ToolButton.SIZE * k
 		b.kind = kind
 		b.tooltip_text = "%s  (%d)" % [NAMES[kind], kind + 1]
 		b.chosen.connect(_choose.bind(kind))
@@ -280,11 +285,12 @@ func _patch(t: Vector2i, colour: Color) -> void:
 
 ## A square button with a drawn sign: a house, furrows, a road.
 class ToolButton extends Control:
-	const SIZE := Vector2(44, 44)
+	const SIZE := Vector2(44, 44) # drawing units, scaled by scale_k
 	signal chosen
 	var kind := 0
 	var active := false
 	var enabled := true
+	var scale_k := 1.0
 
 	func _init() -> void:
 		custom_minimum_size = SIZE
@@ -302,6 +308,7 @@ class ToolButton extends Control:
 		box.border_color = edge
 		box.set_border_width_all(2 if active else 1)
 		box.set_corner_radius_all(4)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(scale_k, scale_k))
 		draw_style_box(box, Rect2(Vector2.ZERO, SIZE))
 		var ink := (SimTables.GOLD if active else SimTables.INK) * Color(1, 1, 1, 1.0 if enabled else 0.35)
 		var c := SIZE * 0.5
