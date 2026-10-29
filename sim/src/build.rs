@@ -17,6 +17,7 @@
 //! wage in denarii from the treasury; the building time follows from the
 //! work days. Until then an order stays a plan on the map.
 
+use crate::save::{In, Out, SaveError};
 use std::collections::BTreeMap;
 
 pub const FARM: u8 = 0;
@@ -39,6 +40,35 @@ pub struct Order {
 pub enum Command {
     Place { kind: u8, tiles: Vec<Tile> },
     Cancel { tiles: Vec<Tile> },
+}
+
+impl Command {
+    /// Appends the command to a save (crate::game): tag (0 place, 1
+    /// cancel), kind, tile count, then rows and columns.
+    pub(crate) fn write(&self, o: &mut Out) {
+        let (tag, kind, tiles) = match self {
+            Command::Place { kind, tiles } => (0, *kind, tiles),
+            Command::Cancel { tiles } => (1, 0, tiles),
+        };
+        o.u8(tag);
+        o.u8(kind);
+        o.u64(tiles.len() as u64);
+        for &(r, c) in tiles {
+            o.i32(r);
+            o.i32(c);
+        }
+    }
+
+    pub(crate) fn read(r: &mut In) -> Result<Command, SaveError> {
+        let (tag, kind) = (r.u8()?, r.u8()?);
+        let n = r.count(8)?;
+        let tiles = r.col(n, |r| Ok((r.i32()?, r.i32()?)))?;
+        match tag {
+            0 if (kind as usize) < KIND_NAMES.len() => Ok(Command::Place { kind, tiles }),
+            1 => Ok(Command::Cancel { tiles }),
+            _ => Err(SaveError::Corrupt("unknown build command")),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -131,6 +161,22 @@ mod tests {
         }
         assert_eq!(a.iter().collect::<Vec<_>>(), b.iter().collect::<Vec<_>>());
         assert_eq!(a.log, b.log);
+    }
+
+    #[test]
+    fn commands_read_back() {
+        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
+        let mut o = Out(Vec::new());
+        cmds.iter().for_each(|c| c.write(&mut o));
+        let mut r = In { b: &o.0 };
+        for c in &cmds {
+            assert_eq!(&Command::read(&mut r).unwrap(), c);
+        }
+        assert!(r.b.is_empty());
+        // an unknown kind or a cut-off command is an error, not a panic
+        assert!(Command::read(&mut In { b: &[0, 9, 0, 0, 0, 0, 0, 0, 0, 0] }).is_err());
+        assert!(Command::read(&mut In { b: &o.0[..o.0.len() - 3] }).is_ok());
+        assert!(Command::read(&mut In { b: &o.0[..5] }).is_err());
     }
 
     #[test]

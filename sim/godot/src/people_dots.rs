@@ -7,6 +7,12 @@
 //! instanced draw that reads its dot from that texture (people_dots.gdshader),
 //! so the CPU never touches a per-dot transform.
 //!
+//! The sim thread owns one apoleia_sim::game::Game: the people, the grain
+//! economy and the build orders. Commands from the build menu and save games
+//! go through the same queue as the days and are handled between two days;
+//! loading a save plays it again on a new sim thread (docs/kit1/
+//! REALTIME_GAMEPLAY.md phase 4).
+//!
 //! The frame never waits for a day: the sim thread holds the front buffer
 //! only for the copy of the changed pages, and the main thread only for
 //! taking them.
@@ -14,8 +20,8 @@
 use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
-use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
-use apoleia_sim::people::{Clock, People};
+use apoleia_sim::game::{Game, Loaded, Start};
+use apoleia_sim::grain::{Clearable, EventsView, FineCover, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::Table;
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -64,6 +70,14 @@ struct Front {
     map: MapLayers,
     /// The player's build orders, as of the last command applied.
     orders: Orders,
+    /// While a save game plays again: the day reached and the day saved.
+    loading: Option<(i64, i64)>,
+    /// How the last save game played again, once.
+    loaded: Option<Loaded>,
+    /// Answer to the last `save_game`: the day saved, or what went wrong.
+    saved: Option<Result<i64, String>>,
+    /// The treasury's cash after the last day, milli-denarii.
+    cash: i64,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look
@@ -81,11 +95,13 @@ struct Queue {
     events: Option<(i64, [f64; 4])>,
     /// Build menu commands (apoleia_sim::build), applied in order.
     commands: Vec<Command>,
+    /// Where to write a save game, between two days.
+    save: Option<String>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
     }
 }
 
@@ -133,11 +149,67 @@ fn pairs(a: &PackedInt32Array) -> Vec<build::Tile> {
 const CELL_KM: f32 = 25.0;
 const FINE_KM: f32 = CELL_KM / FINE as f32;
 
-fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
-    let mut orders = Orders::default();
+/// What a game starts from besides its seed (apoleia_sim::game::Start),
+/// read from below the repository root.
+struct Data {
+    inputs: apoleia_sim::inputs::Inputs,
+    clear: Option<Clearable>,
+    cover: Option<FineCover>,
+}
+
+impl Data {
+    fn read(root: &str) -> Result<Data, String> {
+        let inputs = apoleia_sim::inputs::load(Path::new(root), false)?;
+        // villages on the farmland of the fine tiles; without the file on
+        // hashed tiles of each cell
+        let cover = match apoleia_sim::grain::fine_cover(Path::new(root), true) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no fine land cover ({e}), villages on hashed tiles");
+                None
+            }
+        };
+        // the grain economy with the defaults of bin/grain.rs: today's
+        // farmland clearable, fields on the fine tiles
+        let cols: Vec<String> = apoleia_sim::grain::CLEAR_COVER.iter().map(|c| c.to_string()).collect();
+        let clear = match apoleia_sim::grain::clearable(Path::new(root), &cols) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no landcover25.csv ({e}), all usable land clearable");
+                None
+            }
+        };
+        Ok(Data { inputs, clear, cover })
+    }
+
+    fn start(&self) -> Start<'_> {
+        Start { inputs: &self.inputs, clear: self.clear.as_ref(), cover: self.cover.as_ref() }
+    }
+}
+
+/// The map layers and the view of a game that is about to run, published
+/// as its first day.
+fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView) {
+    let today = game.today();
+    let mut map = GrainMap::new(&game.people);
+    map.build(&game.grain, today);
+    let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
+    let pages = view.update(&mut game.people);
+    let mut f = shared.front.lock().unwrap();
+    publish(&view, &pages, &mut f);
+    publish_houses(&mut view, &mut f);
+    f.day = today;
+    f.count = game.people.count;
+    f.cash = game.grain.treasury.cash;
+    f.map = map.layers.clone();
+    f.orders = game.orders.clone();
+    (map, view)
+}
+
+fn run(mut game: Game, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, ask, table, trips, work, events) = {
+        let (commands, save, ask, table, trips, work, events) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -149,24 +221,28 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
         };
         if !commands.is_empty() {
-            let today = people.world.resource::<Clock>().day;
             let mut changed = 0;
             for c in &commands {
-                changed += orders.apply(c, today);
+                changed += game.command(c);
             }
             if changed > 0 {
-                shared.front.lock().unwrap().orders = orders.clone();
+                shared.front.lock().unwrap().orders = game.orders.clone();
             }
         }
+        if let Some(path) = &save {
+            let r = game.save_to(Path::new(path)).map(|()| game.today()).map_err(|e| e.to_string());
+            shared.front.lock().unwrap().saved = Some(r);
+        }
+        let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
-            let t = grain.table(&people, key);
+            let t = grain.table(people, key);
             shared.front.lock().unwrap().table = t;
         }
         if let Some([x0, z0, x1, z1]) = trips {
-            let v = grain.trips_in(&people, (x0, z0), (x1, z1));
+            let v = grain.trips_in(people, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().trips = Some(v);
         }
         if let Some([x0, z0, x1, z1]) = work {
@@ -174,40 +250,36 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             shared.front.lock().unwrap().work = Some(v);
         }
         if let Some((since, [x0, z0, x1, z1])) = events {
-            let v = grain.events_in(&people, since, (x0, z0), (x1, z1));
+            let v = grain.events_in(people, since, (x0, z0), (x1, z1));
             shared.front.lock().unwrap().events = Some(v);
         }
         if let Some(slot) = ask {
-            let who = view.pid_at(slot).and_then(|pid| PeopleView::person(&mut people, pid));
+            let who = view.pid_at(slot).and_then(|pid| PeopleView::person(people, pid));
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
                 (p, hh)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if !commands.is_empty() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
+        if !commands.is_empty() || save.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
-        let t0 = Instant::now();
-        people.day();
-        let day_usec = t0.elapsed().as_secs_f64() * 1e6;
-        // the grain economy (S69–S87) on the same day, as bin/grain.rs
-        let tg = Instant::now();
-        grain.day(&mut people);
-        let grain_usec = tg.elapsed().as_secs_f64() * 1e6;
-        let today = people.world.resource::<Clock>().day;
+        // the people and the grain economy (S69–S102) on the same day, as bin/grain.rs
+        let [day_usec, grain_usec] = game.day();
+        let today = game.today();
         let month = today % 30 == 0;
         if month {
-            map.build(&grain, today);
+            map.build(&game.grain, today);
         }
         let t1 = Instant::now();
-        let pages = view.update(&mut people);
+        let pages = view.update(&mut game.people);
         let view_usec = t1.elapsed().as_secs_f64() * 1e6;
         let mut f = shared.front.lock().unwrap();
         publish(&view, &pages, &mut f);
         publish_houses(&mut view, &mut f);
-        f.day += 1;
-        f.count = people.count;
+        f.day = today;
+        f.count = game.people.count;
+        f.cash = game.grain.treasury.cash;
         f.day_usec = day_usec;
         f.view_usec = view_usec;
         f.grain_usec = grain_usec;
@@ -243,6 +315,8 @@ pub struct ApoleiaPeople {
     view_usec: f64,
     upload_usec: f64,
     uploaded_pages: i64,
+    /// Repository root the inputs were loaded from (needed to load saves).
+    root: String,
     base: Base<RefCounted>,
 }
 
@@ -252,7 +326,8 @@ impl ApoleiaPeople {
     /// starts the sim thread. Returns false when the inputs are missing.
     #[func]
     fn load(&mut self, repo_root: GString, seed: i64) -> bool {
-        let inp = match apoleia_sim::inputs::load(Path::new(&repo_root.to_string()), false) {
+        self.root = repo_root.to_string();
+        let data = match Data::read(&self.root) {
             Ok(d) => d,
             Err(e) => {
                 godot_error!("ApoleiaPeople.load: {e}");
@@ -260,50 +335,128 @@ impl ApoleiaPeople {
             }
         };
         self.stop();
-        let mut people = People::new(&inp, seed as u64);
-        // villages on the farmland of the fine tiles; without the file on
-        // hashed tiles of each cell
-        let root = repo_root.to_string();
-        let cover = match apoleia_sim::grain::fine_cover(Path::new(&root), true) {
-            Ok(c) => Some(c),
-            Err(e) => {
-                godot_warn!("ApoleiaPeople: no fine land cover ({e}), villages on hashed tiles");
-                None
-            }
-        };
-        // the grain economy with the defaults of bin/grain.rs: today's
-        // farmland clearable, fields on the fine tiles
-        let cols: Vec<String> = apoleia_sim::grain::CLEAR_COVER.iter().map(|c| c.to_string()).collect();
-        let clear = match apoleia_sim::grain::clearable(Path::new(&root), &cols) {
-            Ok(c) => Some(c),
-            Err(e) => {
-                godot_warn!("ApoleiaPeople: no landcover25.csv ({e}), all usable land clearable");
-                None
-            }
-        };
         let tg = Instant::now();
-        let grain = Grain::with_clearing(&inp, &mut people, apoleia_sim::grain::CLEAR_PCT, clear.as_ref(), cover.as_ref(), apoleia_sim::grain::CROP_PCT);
+        let mut game = Game::new(data.start(), seed as u64);
         let grain_ms = tg.elapsed().as_secs_f64() * 1e3;
-        let mut map = GrainMap::new(&people);
-        map.build(&grain, people.world.resource::<Clock>().day);
-        let mut view = PeopleView::new(&people, &inp.cities, cover.as_ref());
-        let pages = view.update(&mut people);
         let shared = Arc::new(Shared::default());
-        {
-            let mut f = shared.front.lock().unwrap();
-            publish(&view, &pages, &mut f);
-            publish_houses(&mut view, &mut f);
-            f.count = people.count;
-            f.map = map.layers.clone();
-        }
-        godot_print!("{{\"event\":\"grain_loaded\",\"ms\":{grain_ms:.0},\"markets\":{}}}", grain.markets.len());
+        let (map, view) = begin(&mut game, &data, &shared);
+        godot_print!("{{\"event\":\"grain_loaded\",\"ms\":{grain_ms:.0},\"markets\":{}}}", game.grain.markets.len());
         let sh = shared.clone();
-        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(people, grain, map, view, sh)).expect("people thread"));
-        self.shared = shared;
-        self.data.clear();
-        self.houses.clear();
-        self.pages = 0;
+        self.worker = Some(std::thread::Builder::new().name("apoleia-people".into()).spawn(move || run(game, map, view, sh)).expect("people thread"));
+        self.restart(shared);
         true
+    }
+
+    /// Writes a save game (absolute path) between two days; the answer
+    /// comes with `take_saved`. A save holds the seed and the commands
+    /// (apoleia_sim::game), a few hundred bytes.
+    #[func]
+    fn save_game(&mut self, path: GString) {
+        if self.worker.is_none() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().save = Some(path.to_string());
+        self.shared.wake.notify_one();
+    }
+
+    /// The answer to the last `save_game`, once: {"ok", "day" or "error"};
+    /// empty while it is not written yet.
+    #[func]
+    fn take_saved(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        match self.shared.front.lock().unwrap().saved.take() {
+            Some(Ok(day)) => {
+                d.set("ok", true);
+                d.set("day", day);
+            }
+            Some(Err(e)) => {
+                d.set("ok", false);
+                d.set("error", e.as_str());
+            }
+            None => {}
+        }
+        d
+    }
+
+    /// Replaces the running game with a save game (absolute path). The file
+    /// is checked first; a bad one leaves the game running and returns
+    /// false. Otherwise the save plays again on a new sim thread
+    /// (`loading`), then runs on from its day.
+    #[func]
+    fn load_game(&mut self, path: GString) -> bool {
+        let data = match Data::read(&self.root) {
+            Ok(d) => d,
+            Err(e) => {
+                godot_error!("ApoleiaPeople.load_game: {e}");
+                return false;
+            }
+        };
+        let replay = match std::fs::read(path.to_string()).map_err(|e| e.to_string()).and_then(|b| Game::check(data.start(), &b).map_err(|e| e.to_string())) {
+            Ok(r) => r,
+            Err(e) => {
+                godot_error!("ApoleiaPeople.load_game: {e}");
+                return false;
+            }
+        };
+        self.stop();
+        let shared = Arc::new(Shared::default());
+        shared.front.lock().unwrap().loading = Some((0, replay.day()));
+        let sh = shared.clone();
+        self.worker = Some(
+            std::thread::Builder::new()
+                .name("apoleia-people".into())
+                .spawn(move || {
+                    let (mut game, info) = replay.run(data.start(), |d, of| sh.front.lock().unwrap().loading = Some((d, of)));
+                    let (map, view) = begin(&mut game, &data, &sh);
+                    {
+                        let mut f = sh.front.lock().unwrap();
+                        f.loading = None;
+                        f.loaded = Some(info);
+                    }
+                    drop(data);
+                    run(game, map, view, sh)
+                })
+                .expect("people thread"),
+        );
+        self.restart(shared);
+        true
+    }
+
+    /// The treasury's cash after the last day, in denarii (S94, S95).
+    #[func]
+    fn cash(&self) -> f64 {
+        self.shared.front.lock().unwrap().cash as f64 / 1000.0
+    }
+
+    /// A save game is playing again: no days, no dots until it has.
+    #[func]
+    fn is_loading(&self) -> bool {
+        self.shared.front.lock().unwrap().loading.is_some()
+    }
+
+    /// While a save game plays again: {"day", "of"}; empty otherwise.
+    #[func]
+    fn loading(&self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        if let Some((day, of)) = self.shared.front.lock().unwrap().loading {
+            d.set("day", day);
+            d.set("of", of);
+        }
+        d
+    }
+
+    /// How the last save game played again, once: {"day", "commands",
+    /// "identical" (the same world as saved; false when the sim changed
+    /// since)}; empty until it has.
+    #[func]
+    fn take_loaded(&mut self) -> VarDictionary {
+        let mut d = VarDictionary::new();
+        if let Some(l) = self.shared.front.lock().unwrap().loaded.take() {
+            d.set("day", l.day);
+            d.set("commands", l.commands as i64);
+            d.set("identical", l.identical);
+        }
+        d
     }
 
     /// Queues days for the sim thread and returns at once.
@@ -985,6 +1138,15 @@ impl ApoleiaPeople {
 }
 
 impl ApoleiaPeople {
+    /// Takes over the shared state of a new sim thread; the main-thread
+    /// copies start empty, so the next sync builds new textures.
+    fn restart(&mut self, shared: Arc<Shared>) {
+        self.shared = shared;
+        self.data.clear();
+        self.houses.clear();
+        self.pages = 0;
+    }
+
     fn stop(&mut self) {
         if let Some(w) = self.worker.take() {
             self.shared.queue.lock().unwrap().stop = true;

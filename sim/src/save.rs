@@ -82,29 +82,29 @@ impl From<std::io::Error> for SaveError {
 
 // ---- Encoding ---------------------------------------------------------------
 
-struct Out(Vec<u8>);
+pub(crate) struct Out(pub(crate) Vec<u8>);
 
 impl Out {
-    fn u8(&mut self, v: u8) {
+    pub(crate) fn u8(&mut self, v: u8) {
         self.0.push(v);
     }
-    fn u16(&mut self, v: u16) {
+    pub(crate) fn u16(&mut self, v: u16) {
         self.0.extend_from_slice(&v.to_le_bytes());
     }
-    fn u32(&mut self, v: u32) {
+    pub(crate) fn u32(&mut self, v: u32) {
         self.0.extend_from_slice(&v.to_le_bytes());
     }
-    fn i32(&mut self, v: i32) {
+    pub(crate) fn i32(&mut self, v: i32) {
         self.0.extend_from_slice(&v.to_le_bytes());
     }
-    fn u64(&mut self, v: u64) {
+    pub(crate) fn u64(&mut self, v: u64) {
         self.0.extend_from_slice(&v.to_le_bytes());
     }
-    fn i64(&mut self, v: i64) {
+    pub(crate) fn i64(&mut self, v: i64) {
         self.0.extend_from_slice(&v.to_le_bytes());
     }
     /// A section: tag, then its body with the length in front.
-    fn section(&mut self, tag: &[u8; 4], body: impl FnOnce(&mut Out)) {
+    pub(crate) fn section(&mut self, tag: &[u8; 4], body: impl FnOnce(&mut Out)) {
         self.0.extend_from_slice(tag);
         let at = self.0.len();
         self.u64(0);
@@ -113,7 +113,7 @@ impl Out {
         self.0[at..at + 8].copy_from_slice(&len.to_le_bytes());
     }
     /// Keys as three columns (level, row, col).
-    fn keys<'a>(&mut self, keys: impl ExactSizeIterator<Item = &'a Key> + Clone) {
+    pub(crate) fn keys<'a>(&mut self, keys: impl ExactSizeIterator<Item = &'a Key> + Clone) {
         self.u64(keys.len() as u64);
         keys.clone().for_each(|k| self.u8(k.level));
         keys.clone().for_each(|k| self.i32(k.row));
@@ -121,12 +121,12 @@ impl Out {
     }
 }
 
-struct In<'a> {
-    b: &'a [u8],
+pub(crate) struct In<'a> {
+    pub(crate) b: &'a [u8],
 }
 
 impl<'a> In<'a> {
-    fn take(&mut self, n: usize) -> Result<&'a [u8], SaveError> {
+    pub(crate) fn take(&mut self, n: usize) -> Result<&'a [u8], SaveError> {
         if self.b.len() < n {
             return Err(SaveError::Corrupt("truncated"));
         }
@@ -134,39 +134,39 @@ impl<'a> In<'a> {
         self.b = rest;
         Ok(head)
     }
-    fn arr<const N: usize>(&mut self) -> Result<[u8; N], SaveError> {
+    pub(crate) fn arr<const N: usize>(&mut self) -> Result<[u8; N], SaveError> {
         Ok(self.take(N)?.try_into().unwrap())
     }
-    fn u8(&mut self) -> Result<u8, SaveError> {
+    pub(crate) fn u8(&mut self) -> Result<u8, SaveError> {
         Ok(self.arr::<1>()?[0])
     }
-    fn u16(&mut self) -> Result<u16, SaveError> {
+    pub(crate) fn u16(&mut self) -> Result<u16, SaveError> {
         Ok(u16::from_le_bytes(self.arr()?))
     }
-    fn u32(&mut self) -> Result<u32, SaveError> {
+    pub(crate) fn u32(&mut self) -> Result<u32, SaveError> {
         Ok(u32::from_le_bytes(self.arr()?))
     }
-    fn i32(&mut self) -> Result<i32, SaveError> {
+    pub(crate) fn i32(&mut self) -> Result<i32, SaveError> {
         Ok(i32::from_le_bytes(self.arr()?))
     }
-    fn u64(&mut self) -> Result<u64, SaveError> {
+    pub(crate) fn u64(&mut self) -> Result<u64, SaveError> {
         Ok(u64::from_le_bytes(self.arr()?))
     }
-    fn i64(&mut self) -> Result<i64, SaveError> {
+    pub(crate) fn i64(&mut self) -> Result<i64, SaveError> {
         Ok(i64::from_le_bytes(self.arr()?))
     }
     /// A count that must fit the remaining bytes at `min` bytes per item.
-    fn count(&mut self, min: usize) -> Result<usize, SaveError> {
+    pub(crate) fn count(&mut self, min: usize) -> Result<usize, SaveError> {
         let n = self.u64()?;
         if n > (self.b.len() / min.max(1)) as u64 {
             return Err(SaveError::Corrupt("count larger than the data"));
         }
         Ok(n as usize)
     }
-    fn col<T>(&mut self, n: usize, f: impl Fn(&mut Self) -> Result<T, SaveError>) -> Result<Vec<T>, SaveError> {
+    pub(crate) fn col<T>(&mut self, n: usize, f: impl Fn(&mut Self) -> Result<T, SaveError>) -> Result<Vec<T>, SaveError> {
         (0..n).map(|_| f(self)).collect()
     }
-    fn keys(&mut self) -> Result<Vec<Key>, SaveError> {
+    pub(crate) fn keys(&mut self) -> Result<Vec<Key>, SaveError> {
         let n = self.count(9)?;
         let level = self.col(n, |r| r.u8())?;
         let row = self.col(n, |r| r.i32())?;
@@ -189,6 +189,23 @@ fn command(code: u8) -> Result<Command, SaveError> {
         0 => Ok(Command::AdvanceMonth),
         _ => Err(SaveError::Corrupt("unknown command")),
     }
+}
+
+/// Writes `bytes` crash-safely: temporary file, flush to disk, rename over
+/// the target, flush the directory (Pillai et al., 2014).
+pub(crate) fn write_file(path: &Path, bytes: &[u8]) -> Result<(), SaveError> {
+    let tmp = path.with_extension("tmp");
+    {
+        let mut f = fs::File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.sync_all()?;
+    }
+    fs::rename(&tmp, path)?;
+    #[cfg(unix)]
+    if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+        fs::File::open(dir)?.sync_all()?;
+    }
+    Ok(())
 }
 
 // ---- Save -------------------------------------------------------------------
@@ -264,22 +281,9 @@ impl Sim {
         file
     }
 
-    /// Writes the save crash-safely: temporary file, flush to disk, rename
-    /// over the target, flush the directory (Pillai et al., 2014).
+    /// Writes the save crash-safely (`write_file`).
     pub fn save_to(&mut self, path: &Path) -> Result<(), SaveError> {
-        let bytes = self.save();
-        let tmp = path.with_extension("tmp");
-        {
-            let mut f = fs::File::create(&tmp)?;
-            f.write_all(&bytes)?;
-            f.sync_all()?;
-        }
-        fs::rename(&tmp, path)?;
-        #[cfg(unix)]
-        if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
-            fs::File::open(dir)?.sync_all()?;
-        }
-        Ok(())
+        write_file(path, &self.save())
     }
 
     // ---- Load ---------------------------------------------------------------

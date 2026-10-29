@@ -31,7 +31,8 @@ extends MultiMeshInstance3D
 ## opens the simulation's tables (sim_tables.gd). Up close the trips to
 ## market and between markets walk the paths and roads (people_trips.gd).
 ## Keys: P shows or hides the dots (an overview, off by default), G the
-## grain economy on the map (on by default), [ and ] slow down or speed up the days.
+## grain economy on the map (on by default). How many days a second run
+## (`days_per_second`) is set by the game clock (game_clock.gd).
 ## Command line (after --): --people-days=n days per second (default 10),
 ## --people-bench=path.json writes frame timings with dots on and off
 ## (relative paths start at the repository root), --people-colour=n starts
@@ -1014,8 +1015,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_G:
 				map_on = not map_on
 				_map_version = -1
-			KEY_BRACKETLEFT: days_per_second = maxf(days_per_second * 0.5, 0.0)
-			KEY_BRACKETRIGHT: days_per_second = maxf(days_per_second * 2.0, 1.0)
+
+## A save game was loaded (game_clock.gd): a new sim thread, new people.
+## Forget the person shown and the map layers; the textures follow on the
+## next sync.
+func restarted() -> void:
+	selected = -1
+	_waiting = false
+	for m in [_material, _figure_material]:
+		m.set_shader_parameter("selected_slot", -1)
+	_info_label.visible = false
+	_map_version = -1
+	_day_debt = 0.0
 
 func _process(delta: float) -> void:
 	var start := Time.get_ticks_usec()
@@ -1023,7 +1034,7 @@ func _process(delta: float) -> void:
 	process_usec = Time.get_ticks_usec() - start
 
 func _frame(delta: float) -> void:
-	if people == null:
+	if people == null or people.is_loading():
 		return
 	_day_debt += days_per_second * delta
 	var whole := int(_day_debt)

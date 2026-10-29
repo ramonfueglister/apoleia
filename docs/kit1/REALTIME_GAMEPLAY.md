@@ -1,8 +1,9 @@
 # Echtzeit-Gameplay wie Cities Skylines — Ziel, Stand der Technik 2026 und Plan
 
-**Stand:** 29.10.2026 · **Status:** Ziel `bestätigt` (Ramon, 29.10.2026), Plan `vorgeschlagen`,
-Umsetzung `offen`. Gehört zu den Wünschen für spätere Kits ([decisions.md](decisions.md));
-gebaut wird es in der Simulation (Kit 2, `sim/`) und im Client (`app/`), nicht in Kit 1.
+**Stand:** 29.10.2026 · **Status:** Ziel `bestätigt` (Ramon, 29.10.2026), Plan `bestätigt`
+(„implementiere vollständig“), Umsetzung `teilweise` (siehe [Umsetzungsstand](#umsetzungsstand)).
+Gehört zu den Wünschen für spätere Kits ([decisions.md](decisions.md)); gebaut wird es in der
+Simulation (Kit 2, `sim/`) und im Client (`app/`), nicht in Kit 1.
 
 ## Ziel
 
@@ -12,18 +13,21 @@ Simulationstiefe, ökonomischer Korrektheit, Determinismus und Leistung soll Apo
 besser sein als Cities: Skylines II. Dabei gilt Ramons Grundsatz: alles emergent, keine
 Preis- oder Lohnformel von oben ([Kit 2 decisions.md](../kit2/decisions.md), S94–S100).
 
-## Stand heute (29.10.2026)
+## Ausgangslage (29.10.2026, vor der Umsetzung)
 
-- **Die Sim tickt schon live.** `ApoleiaPeople` (`sim/godot/src/people_dots.rs`) rechnet
+- **Die Sim tickte schon live.** `ApoleiaPeople` (`sim/godot/src/people_dots.rs`) rechnet
   Menschen und Getreidewirtschaft Tag für Tag auf einem eigenen Thread; das Bild wartet
-  nie. Standard 10 Tage pro Sekunde, `[` und `]` ändern das Tempo.
+  nie. Standard 10 Tage pro Sekunde, `[` und `]` halbierten oder verdoppelten das Tempo,
+  eine Pause gab es nicht.
 - **Leistung:** ganzer Tag mit 100'000 Menschen und Getreide Median 3,7 ms, 99 % 9 ms
-  (Cloud, [run-grain](../kit2/run-grain/README.md)). Mac-Messung (B08) offen.
-- **Befehle:** Der Thread „Minimalistisches Baumenü“ (Branch `claude/project-thread-cznew7`)
-  baut gerade den Befehlsweg: `Queue.commands` → `apoleia_sim::build::Orders` mit Protokoll
-  (Sim-Tag, Befehl). Die Aufträge wirken noch nicht auf die Wirtschaft.
-- **Getrennte Monats-Sim:** `ApoleiaSim` (Bevölkerung pro Tile, Pause, F5/F9) läuft daneben
-  mit eigener Uhr. Sie ist seit S50 durch einzelne Menschen fachlich ersetzt.
+  ([run-grain](../kit2/run-grain/README.md)); auf der 4-Kern-Cloud-Maschine dieses Threads
+  7,9 ms und 17 ms (`sim/examples/game_bench.rs`). Mac-Messung (B08) offen.
+- **Befehle:** Der Thread „Minimalistisches Baumenü“ (PR #47) baute den Befehlsweg:
+  `Queue.commands` → `apoleia_sim::build::Orders` mit Protokoll (Sim-Tag, Befehl).
+- **Monats-Sim:** `ApoleiaSim` (Bevölkerung pro Tile, Pause, F5/F9) ist seit S50 durch
+  einzelne Menschen fachlich ersetzt. Korrektur zur ersten Fassung dieses Plans: Sie läuft
+  im Spiel **nicht** mit; `population_map_mode.gd` wird von `landscape.gd` nicht geladen.
+  Im Spiel gibt es also schon nur eine Sim und eine Uhr.
 - **Kulisse:** Stadt und Kolosseum (`app/scripts/voxel/`) sind fest gebaut, nicht aus der Sim.
 
 ## Stand der Technik 2026
@@ -97,7 +101,7 @@ zugegeben hat oder bewusst vereinfacht:
 | # | Was | Grösse | Hängt ab von | Abnahme |
 |---|---|---|---|---|
 | 1 | **Befehlsweg** (läuft im Baumenü-Thread) | mittel | – | Hof per Klick gesetzt, wird gebaut und bezogen; gleiches Protokoll = gleicher Fingerabdruck mit 1 und 4 Threads |
-| 2 | **Zeitsteuerung:** echte Pause, Stufen 1–4 = 2 / 10 / 30 / 100 Tage pro Sekunde (Vorschlag), Uhr mit Datum und Tempo; Bauen auch in der Pause | klein | – | Pause ohne Ruckeln; Stufe 3 hält auf dem Mac 60 Bilder/s, sonst zeigt die Uhr, dass die Sim nicht nachkommt |
+| 2 | **Zeitsteuerung:** echte Pause, Stufen 1–4 = 2 / 10 / 30 / 100 Tage pro Sekunde, Uhr mit Datum und Tempo; Bauen auch in der Pause | klein | – | Pause ohne Ruckeln; Stufe 3 hält auf dem Mac 60 Bilder/s, sonst zeigt die Uhr, dass die Sim nicht nachkommt |
 | 3 | **Sofortige Rückmeldung:** Vorschau beim Platzieren (Sim beantwortet „geht das hier?“), nur betroffene Kacheln der Feld- und Strassenschicht neu statt alle 30 Tage, Baustelle mit Fortschritt; Bewegung zwischen zwei Tagen interpoliert | mittel | 1 | Klick bis sichtbare Baustelle ≤ 1 Sim-Tag |
 | 4 | **Speicherstand der Tages-Sim** mit Befehlsprotokoll, nach dem Muster von `sim/src/save.rs` | gross | 1 | Laden und weiterlaufen ist bitgleich zu einem Lauf ohne Speichern |
 | 5 | **Eine Sim, eine Uhr:** `ApoleiaSim` rechnet nicht mehr, die Bevölkerungskarte wird aus den Menschen gezählt | mittel | 2, 4 | ein Sim-Thread; Karte stimmt mit der Personenzahl |
@@ -110,16 +114,30 @@ Nach Phase 3 ist es zum ersten Mal spielbar: bauen, zusehen, wie Tagelöhner den
 eine Familie einzieht, Tempo regeln. Phasen 4 und 5 machen es stabil, 6 und 7 machen es zum Spiel.
 Phase 2 und 9 können sofort parallel laufen.
 
+## Umsetzungsstand
+
+| # | Stand | Was gebaut ist, Nachweis |
+|---|---|---|
+| 1 | `implementiert` (PR #47) | Befehle über die Queue, angewendet zwischen zwei Tagen, mit Sim-Tag protokolliert. Ausführung durch Tagelöhner (S102) baut der Baumenü-Thread. |
+| 2 | `implementiert` | `app/scripts/sim/game_clock.gd`: Leiste oben Mitte mit Pause, Tempo 1–4 (2, 10, 30, 100 Tage/s), Datum, Menschen, Staatskasse; Leertaste, `[` `]`. Fällt die Sim unter 80 % des Tempos, sagt die Leiste, wie viele Tage/s sie schafft. In Godot 4.7.2 (headless) mit simulierten Tasten geprüft: Pause hält den Tag an, Tempo 4 setzt 100 Tage/s. |
+| 3 | `offen` | Wartet auf S102: Erst wenn Aufträge Felder und Strassen erzeugen, gibt es Kacheln neu zu zeichnen. Die Aufträge selbst erscheinen schon im nächsten Bild (PR #47). |
+| 4 | `implementiert` (Wiederabspielen) | `sim/src/game.rs`: Spielstand = Seed, Hash der Eingaben, Tag, Befehlsprotokoll, Fingerabdrücke (wenige hundert Byte). Laden spielt die Tage mit den Befehlen erneut ab, wie Factorio-Replays. F8 speichert, F9 lädt (`user://quicksave.apgame`); ein falscher Spielstand wird geprüft und abgelehnt, bevor das laufende Spiel stoppt. Tests `game::tests` (speichern, laden, 30 Tage weiter = gleicher Fingerabdruck; kaputte und fremde Spielstände abgelehnt) und in Godot: Tag 450 gespeichert, geladen in 9,1 s, Fingerabdruck gleich. **Grenze:** Laden dauert 3,1 s pro Spieljahr plus 3,5 s Start (4 Kerne). Ein Speicherstand des ganzen Zustands folgt, sobald die Handwerkswaren des Wirtschafts-Threads (PR #48) in `grain.rs` sind; vorher würde er an jeder Struktur mit dessen Arbeit kollidieren. |
+| 5 | `erledigt` | Im Spiel läuft nur die Tages-Sim (siehe Ausgangslage). Eine Bevölkerungskarte aus den Menschen statt aus `ApoleiaSim` ist nicht gebaut. |
+| 6 | `teilweise` | Staatskasse in der Leiste (bei leerer Kasse „Kasse leer“, der Staat prägt nach S95). Fenster „wer kauft, wer verkauft, warum“ und Warnungen folgen nach den Wirtschafts-Fixes. |
+| 7 | `offen` | Mit dem Grafik-Thread. |
+| 8 | `teilweise` | `sim/examples/game_bench.rs` misst einen Tag gegen das Budget jeder Tempostufe und die Ladezeit. Cloud, 4 Kerne, 2 Jahre: Tag p50 7,9 ms, p95 12,6, p99 17,1, max 27,7. Tempo 1–3 halten (Budget 500, 100, 33 ms), Tempo 4 (10 ms) nicht: im Spiel 62–72 Tage/s. Mac-Messung offen. |
+| 9 | `implementiert` (S94, Wirtschafts-Thread) | `Grain::money_unbooked()` muss jeden Tag 0 sein; der Test `deterministic_fingerprint` prüft es. |
+
 ## Wie die laufenden Arbeiten dazu passen
 
-- **Baumenü** (Höfe, Felder, Strassen): ist Phase 1 und der Spieler-Teil von Phase 3.
+- **Baumenü** (Höfe, Felder, Strassen): ist Phase 1 und der Spieler-Teil von Phase 3. Die
+  Ausführung (S102) kommt in `Game::day` direkt nach `grain.day`.
 - **Wirtschafts-Fixes** (Geldkreislauf, Handwerker verkaufen Waren): Voraussetzung für Phase 6
-  und Grundlage für Punkt 1 unter „besser als CS2“.
+  und den vollen Speicherstand (Phase 4) und Grundlage für Punkt 1 unter „besser als CS2“.
 - **Grafik auf Urbek/Islanders-Niveau:** unabhängig bis Phase 7.
 
 ## Offene Punkte
 
-- Tempostufen: Werte oben sind ein Vorschlag.
 - Abreissen: Wer bekommt das Land zurück, und was passiert mit den Bewohnern? Braucht einen
   eigenen Entscheid, bevor es ins Baumenü kommt.
 - Referenz-Mac und Zielwerte für Phase 8 festlegen.
