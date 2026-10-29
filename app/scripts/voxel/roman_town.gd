@@ -1228,16 +1228,25 @@ static func temple(seed: int) -> ArrayMesh:
 		_person(g, m + 14 + Kit.rnd(k, 8, 0, seed) % 52, FLOOR, m + 66 + Kit.rnd(k, 9, 0, seed) % 10, seed + k)
 	return _done(g)
 
+## A figure cast in metal on the townspeople's pattern (legs, tunic, face,
+## hair), two wide and seven high, in two values of the metal; a Victory
+## with wings rising behind the shoulders.
+static func _cast(g: Kit.Grid, x: int, y: int, z: int, drape: int, bare: int, wings: bool) -> void:
+	g.box(x, y, z, x + 2, y + 2, z + 1, bare)
+	g.box(x, y + 2, z, x + 2, y + 5, z + 1, drape)
+	g.box(x, y + 5, z, x + 2, y + 6, z + 1, bare)
+	g.box(x, y + 6, z, x + 2, y + 7, z + 1, drape)
+	if wings:
+		g.box(x - 1, y + 4, z, x, y + 8, z + 1, bare)
+		g.box(x + 2, y + 4, z, x + 3, y + 8, z + 1, bare)
+		g.put(x - 2, y + 7, z, bare)
+		g.put(x + 3, y + 7, z, bare)
+
 ## A statue on a pedestal: stone block, bronze figure.
 static func _statue(g: Kit.Grid, x: int, y: int, z: int, seed: int) -> void:
 	g.box(x, y, z, x + 4, y + 6, z + 4, Kit.STONE)
 	g.box(x, y + 5, z, x + 4, y + 6, z + 4, Kit.TRIM)
-	# a figure three wide and one deep, its head centred over a neck
-	# notch, one arm raised from the shoulder
-	g.box(x, y + 6, z + 2, x + 3, y + 11, z + 3, Kit.BRONZE)
-	g.box(x + 1, y + 11, z + 2, x + 2, y + 13, z + 3, Kit.BRONZE)
-	var ax := x + (3 if seed % 2 == 0 else -1)
-	g.box(ax, y + 10, z + 2, ax + 1, y + 14, z + 3, Kit.BRONZE)
+	_cast(g, x + 1, y + 6, z + 2, Kit.BRONZE_D, Kit.BRONZE, false)
 
 ## A temple centred on xm, `half` voxels either side, from z0 to its
 ## front: a podium `rise` high with steps up the front between two walls,
@@ -2011,6 +2020,16 @@ static func _dome(g: Kit.Grid, xm: int, zc: int, dr: int, y0: int, rise: int, se
 			elif d < oculus + 1.0:
 				g.box(x, y0 - 5, z, x + 1, y0 + rise - 1, z + 1, Kit.DEEP)
 
+# The pediment's eagle, top row first: wing tips raised, the head turned
+# left with its beak (b), the body, the tail and feet.
+const EAGLE := [
+	"#..b#...#",
+	"##.###.##",
+	".#######.",
+	"..#####..",
+	"...#.#...",
+]
+
 ## A pediment on the face z = zf over [x0, x1) from y, as high as the roof
 ## behind it (hmax): raking cornices, a recessed tympanum and, on the
 ## porch's, the bronze eagle in a wreath.
@@ -2024,30 +2043,30 @@ static func _pediment(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, hmax: int,
 		g.box(x, y + h - 1, zf - 1, x + 1, y + h + 1, zf + 1, Kit.TRIM)
 	g.box(x0, y, zf - 1, x1, y + 1, zf + 1, Kit.TRIM)
 	if eagle:
-		# a gilt bronze wreath, the bronze eagle in front of it: wings in a
-		# V, their tips three above the shoulders, head to the left, the
-		# tail a fan; ribbons hang from the wreath
+		# a small gilt wreath with ribbons falling outward, the bronze
+		# eagle drawn over it as a sprite: spread wings wider than its
+		# body, head turned left with a gilt beak
 		var xm := (x0 + x1) / 2
-		var ey := y + 5
 		var zt := zf - 1
-		for dy in range(-6, 7):
-			for dx in range(-6, 7):
-				if absf(Vector2(dx + 0.5, dy - 1.5).length() - 4.5) < 0.55:
-					g.put(xm + dx, ey + dy, zt, Kit.GILT)
-		g.box(xm - 1, ey, zt, xm + 1, ey + 3, zt + 1, Kit.BRONZE_D)
-		g.put(xm - 2, ey + 3, zt, Kit.BRONZE_D)
-		for k in 4:
-			g.box(xm - 2 - k, ey + 1 + k, zt, xm - 1 - k, ey + 3 + k, zt + 1, Kit.BRONZE_D)
-			g.box(xm + 1 + k, ey + 1 + k, zt, xm + 2 + k, ey + 3 + k, zt + 1, Kit.BRONZE_D)
-		g.box(xm - 2, ey - 1, zt, xm + 1, ey, zt + 1, Kit.BRONZE_D)
-		g.box(xm - 3, ey - 2, zt, xm + 2, ey - 1, zt + 1, Kit.BRONZE_D)
-		for k in 4:
-			g.put(xm - 3 - k, ey - 3 - k / 2, zt, Kit.GILT_D)
-			g.put(xm + 2 + k, ey - 3 - k / 2, zt, Kit.GILT_D)
+		for dy in range(-4, 5):
+			for dx in range(-4, 5):
+				if absf(Vector2(dx + 0.5, dy + 0.5).length() - 3.4) < 0.5:
+					g.put(xm + dx, y + 5 + dy, zt, Kit.GILT)
+		for k in 3:
+			g.put(xm - 4 - k, y + 1 + k / 2, zt, Kit.GILT_D)
+			g.put(xm + 4 + k, y + 1 + k / 2, zt, Kit.GILT_D)
+		for row in EAGLE.size():
+			var line: String = EAGLE[row]
+			for col in line.length():
+				var ch := line[col]
+				if ch == ".":
+					continue
+				g.put(xm - 4 + col, y + 7 - row, zt, Kit.GOLD if ch == "b" else Kit.BRONZE_D)
 
 ## A porch column: an unfluted granite shaft three voxels across on a white
 ## marble base (grey ones lighter on the west, darker on the east), a
-## Corinthian capital of white marble five across.
+## Corinthian capital of white marble: a dark necking, a bell five across,
+## a shadow gap and an abacus with its corners standing out.
 static func _porch_column(g: Kit.Grid, x: int, y: int, z: int, top: int, shaft: int) -> void:
 	g.box(x, y, z, x + 3, top, z + 3, shaft)
 	if shaft == Kit.GRANITE:
@@ -2058,9 +2077,13 @@ static func _porch_column(g: Kit.Grid, x: int, y: int, z: int, top: int, shaft: 
 		g.box(x, top - 4, z, x + 3, top - 3, z + 3, Kit.GRANITE_D)
 	g.box(x - 1, y, z - 1, x + 4, y + 1, z + 4, Kit.TRIM)
 	g.box(x, y + 1, z, x + 3, y + 2, z + 3, Kit.MARBLE)
-	g.box(x - 1, top - 3, z - 1, x + 4, top - 1, z + 4, Kit.MARBLE)
-	g.box(x, top - 3, z - 1, x + 3, top - 2, z + 4, Kit.MARBLE_W)
+	# the capital flares: a bell five across, a shadow gap, the abacus
+	# with its corners standing out
+	g.box(x - 1, top - 3, z - 1, x + 4, top - 2, z + 4, Kit.MARBLE)
+	g.box(x, top - 2, z, x + 3, top - 1, z + 3, Kit.MARBLE_W)
 	g.box(x - 1, top - 1, z - 1, x + 4, top, z + 4, Kit.TRIM)
+	for c: Vector2i in [Vector2i(x - 2, z - 2), Vector2i(x + 4, z - 2), Vector2i(x - 2, z + 4), Vector2i(x + 4, z + 4)]:
+		g.put(c.x, top - 1, c.y, Kit.TRIM)
 
 ## Bronze letters on the frieze face z = zf, centred on xm: a letter a
 ## voxel, a dot between words, read as a line of bronze.
@@ -2270,11 +2293,22 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 		var face := gx1 - roundi(pow((z - zm) / 30.0, 2.0) * 3.0)
 		g.box(gx0, y, z, face, y + 18, z + 1, Kit.TRAV)
 		g.put(face - 1, y + 17, z, Kit.TRIM)
-		g.box(gx0, y + 18, z, face - 4, y + 22, z + 1, Kit.TRAV)
-		g.put(face - 5, y + 21, z, Kit.TRIM)
 		var dz := z - zm
 		var central := absi(dz) <= 3
 		var o := posmod(absi(dz) - 4, 4) if not central else 0
+		# the roofs, seen from above: a terracotta roof over every gate
+		# between white piers, the processional bay standing higher
+		if central:
+			g.box(gx0, y + 18, z, face - 2, y + 22, z + 1, Kit.TRAV)
+			g.box(gx0, y + 22, z, face - 2, y + 23, z + 1, Kit.TILE)
+			g.put(face - 3, y + 21, z, Kit.TRIM)
+		elif o == 3 or absi(dz) >= 29:
+			g.box(gx0, y + 18, z, face, y + 20, z + 1, Kit.TRIM)
+		else:
+			for x in range(gx0, face):
+				var rh := 1 if o == 1 else 0
+				g.box(x, y + 18, z, x + 1, y + 19 + rh, z + 1, Kit.TRAV)
+				g.put(x, y + 18 + rh, z, Kit.RIDGE if o == 1 else Kit.TILE)
 		var opening := central or o < 3
 		if opening and absi(dz) < 29:
 			var top := 13 if central else 10
@@ -2287,17 +2321,20 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 	# opening between corner pilasters, cornices, a low attic, a tiled roof
 	for tz: int in [gz0 - 6, gz1 - 2]:
 		var tx1 := gx1 + 2
-		g.box(gx0, y, tz, tx1, y + 44, tz + 8, Kit.TRAV)
-		for cy: int in [y + 14, y + 29]:
+		# the tower on the Aventine side as low as its stand, so the gates
+		# stay in view
+		var th := 44 if tz < zm else 30
+		g.box(gx0, y, tz, tx1, y + th, tz + 8, Kit.TRAV)
+		for cy: int in ([y + 14, y + 29] if th > 40 else [y + 14]):
 			g.box(gx0 - 1, cy, tz - 1, tx1 + 1, cy + 2, tz + 9, Kit.TRIM)
-		g.box(gx0 - 1, y + 41, tz - 1, tx1 + 1, y + 42, tz + 9, Kit.TRIM)
-		g.box(gx0 - 1, y + 43, tz - 1, tx1 + 1, y + 44, tz + 9, Kit.TRIM)
+		g.box(gx0 - 1, y + th - 3, tz - 1, tx1 + 1, y + th - 2, tz + 9, Kit.TRIM)
+		g.box(gx0 - 1, y + th - 1, tz - 1, tx1 + 1, y + th, tz + 9, Kit.TRIM)
 		for px: int in [gx0, tx1 - 2]:
 			for pz: int in [tz - 1, tz + 8]:
-				g.box(px, y, pz, px + 2, y + 41, pz + 1, Kit.TRAV_W)
+				g.box(px, y, pz, px + 2, y + th - 3, pz + 1, Kit.TRAV_W)
 		for pz: int in [tz, tz + 6]:
-			g.box(tx1, y, pz, tx1 + 1, y + 41, pz + 2, Kit.TRAV_W)
-		for sy: int in [y + 2, y + 17, y + 31]:
+			g.box(tx1, y, pz, tx1 + 1, y + th - 3, pz + 2, Kit.TRAV_W)
+		for sy: int in ([y + 2, y + 17, y + 31] if th > 40 else [y + 2, y + 17]):
 			var xo := (gx0 + tx1) / 2 - 2
 			for f: int in [tz + 7, tz]:
 				g.box(xo, sy, f, xo + 4, sy + 7, f + 1, Kit.ARCH_D)
@@ -2307,7 +2344,7 @@ static func _circus_gates(g: Kit.Grid, m: int, zm: int, y: int, seed: int) -> vo
 				g.box(xo, sy + 8, f, xo + 4, sy + 9, f + 1, Kit.TRAV_L)
 			g.box(tx1 - 1, sy, tz + 2, tx1, sy + 7, tz + 6, Kit.ARCH_D)
 			g.box(tx1 - 1, sy + 7, tz + 3, tx1, sy + 8, tz + 5, Kit.ARCH_D)
-		_roof(g, Rect2i(gx0 - 1, tz - 1, tx1 - gx0 + 2, 10), [], [Rect2i(gx0, tz, tx1 - gx0, 8)], y + 44, "hip", TILES, Kit.TRAV, seed)
+		_roof(g, Rect2i(gx0 - 1, tz - 1, tx1 - gx0 + 2, 10), [], [Rect2i(gx0, tz, tx1 - gx0, 8)], y + th, "hip", TILES, Kit.TRAV, seed)
 	# the magistrates' box over the processional gate
 	g.box(gx1 - 7, y + 22, zm - 6, gx1 - 3, y + 23, zm + 7, Kit.MARBLE)
 	g.box(gx1 - 4, y + 23, zm - 6, gx1 - 3, y + 25, zm + 7, Kit.TRIM)
@@ -2376,13 +2413,11 @@ static func _circus_spina(g: Kit.Grid, xa: int, xb: int, zm: int, y: int, seed: 
 	for sx: int in [xa + 46, xa + 72, xb - 72, xb - 46]:
 		g.box(sx, y + 3, zm - 1, sx + 2, y + 18, zm + 1, Kit.MARBLE)
 		g.box(sx - 1, y + 18, zm - 2, sx + 3, y + 19, zm + 2, Kit.TRIM)
-		g.box(sx - 1, y + 19, zm, sx + 2, y + 23, zm + 1, Kit.GILT)
-		g.box(sx, y + 23, zm, sx + 1, y + 25, zm + 1, Kit.GOLD)
-		for k in 2:
-			g.put(sx - 2 - k, y + 23 + k, zm, Kit.GOLD)
-			g.put(sx + 2 + k, y + 23 + k, zm, Kit.GOLD)
+		_cast(g, sx, y + 19, zm, Kit.GILT_D, Kit.GOLD, true)
 	for sx: int in [xa + 34, xa + 60, xb - 60, xb - 38]:
-		_statue(g, sx, y + 3, zm - 2, sx)
+		g.box(sx, y + 3, zm - 2, sx + 4, y + 9, zm + 2, Kit.STONE)
+		g.box(sx, y + 8, zm - 2, sx + 4, y + 9, zm + 2, Kit.TRIM)
+		_cast(g, sx + 1, y + 9, zm, Kit.GILT_D, Kit.GOLD, false)
 
 ## The imperial box on the Palatine side at x: a shrine-like box built into
 ## the stand, columns, a pediment facing the arena, a gilt roof.

@@ -18,7 +18,7 @@ const Town := preload("res://scripts/voxel/roman_town.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
 
 const LOD_FACTORS := [1, 4, 10]
-const CACHE_DIR := "user://roman_buildings_v5"
+const CACHE_DIR := "user://roman_buildings_v6"
 
 ## Lot archetypes: number of variants and footprint in 10 m lots.
 const ARCHETYPES := {
