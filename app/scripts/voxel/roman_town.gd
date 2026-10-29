@@ -1232,11 +1232,12 @@ static func temple(seed: int) -> ArrayMesh:
 static func _statue(g: Kit.Grid, x: int, y: int, z: int, seed: int) -> void:
 	g.box(x, y, z, x + 4, y + 6, z + 4, Kit.STONE)
 	g.box(x, y + 5, z, x + 4, y + 6, z + 4, Kit.TRIM)
-	# a figure two wide and one deep, a head, one arm raised
-	g.box(x + 1, y + 6, z + 2, x + 3, y + 12, z + 3, Kit.BRONZE)
-	g.box(x + 1 + seed % 2, y + 12, z + 2, x + 2 + seed % 2, y + 14, z + 3, Kit.BRONZE)
-	var ax := x + (3 if seed % 2 == 0 else 0)
-	g.box(ax, y + 10, z + 2, ax + 1, y + 13, z + 3, Kit.BRONZE)
+	# a figure three wide and one deep, its head centred over a neck
+	# notch, one arm raised from the shoulder
+	g.box(x, y + 6, z + 2, x + 3, y + 11, z + 3, Kit.BRONZE)
+	g.box(x + 1, y + 11, z + 2, x + 2, y + 13, z + 3, Kit.BRONZE)
+	var ax := x + (3 if seed % 2 == 0 else -1)
+	g.box(ax, y + 10, z + 2, ax + 1, y + 14, z + 3, Kit.BRONZE)
 
 ## A temple centred on xm, `half` voxels either side, from z0 to its
 ## front: a podium `rise` high with steps up the front between two walls,
@@ -1873,16 +1874,21 @@ static func pantheon(seed: int) -> ArrayMesh:
 	_pediment(g, bx0 - 1, bx1 + 1, bt, bz1, h2, false)
 	# the shade inside the porch: the wall behind the columns
 	g.box(xm - 24, base, bz1 - 1, xm + 24, base + 20, bz1, Kit.PORCH)
-	# the bronze doors in a bronze frame, and the niches of Augustus and
-	# Agrippa
-	g.box(xm - 6, base, bz1 - 1, xm + 6, base + 18, bz1, Kit.BRONZE_D)
-	g.box(xm - 5, base, bz1 - 1, xm - 1, base + 17, bz1 + 1, Kit.BRONZE_D)
-	g.box(xm + 1, base, bz1 - 1, xm + 5, base + 17, bz1 + 1, Kit.BRONZE_D)
-	for k in 4:
-		g.box(xm - 5, base + 3 + k * 4, bz1, xm + 5, base + 4 + k * 4, bz1 + 1, Kit.BRONZE)
-	g.box(xm - 7, base + 18, bz1, xm + 7, base + 20, bz1 + 1, Kit.BRONZE)
-	g.box(xm - 7, base, bz1, xm - 6, base + 18, bz1 + 1, Kit.BRONZE)
-	g.box(xm + 6, base, bz1, xm + 7, base + 18, bz1 + 1, Kit.BRONZE)
+	# the bronze doors: two leaves with two sunk panels each, a grille of
+	# bars over them, jambs and lintel at the door's height; the niches of
+	# Augustus and Agrippa
+	var dh := 12
+	g.box(xm - 6, base, bz1 - 1, xm + 6, base + dh + 4, bz1, Kit.DEEP)
+	for lx: int in [xm - 6, xm]:
+		g.box(lx, base, bz1 - 1, lx + 6, base + dh, bz1, Kit.BRONZE_D)
+		for py: int in [base + 1, base + 7]:
+			g.box(lx + 1, py, bz1 - 1, lx + 5, py + 4, bz1, Kit.BRONZE_P)
+	for gx in range(xm - 6, xm + 6, 2):
+		g.box(gx, base + dh, bz1 - 1, gx + 1, base + dh + 4, bz1, Kit.BRONZE)
+	g.box(xm - 6, base + dh, bz1 - 1, xm + 6, base + dh + 1, bz1, Kit.BRONZE)
+	g.box(xm - 7, base + dh + 4, bz1 - 1, xm + 7, base + dh + 6, bz1 + 1, Kit.BRONZE)
+	g.box(xm - 7, base, bz1 - 1, xm - 6, base + dh + 4, bz1 + 1, Kit.BRONZE)
+	g.box(xm + 6, base, bz1 - 1, xm + 7, base + dh + 4, bz1 + 1, Kit.BRONZE)
 	for nx: int in [bx0 + 5, bx1 - 11]:
 		g.box(nx, base + 2, bz1 - 3, nx + 6, base + 16, bz1, Kit.EMPTY)
 		g.box(nx, base + 2, bz1 - 4, nx + 6, base + 16, bz1 - 3, Kit.MARBLE_W)
@@ -2018,21 +2024,26 @@ static func _pediment(g: Kit.Grid, x0: int, x1: int, y: int, zf: int, hmax: int,
 		g.box(x, y + h - 1, zf - 1, x + 1, y + h + 1, zf + 1, Kit.TRIM)
 	g.box(x0, y, zf - 1, x1, y + 1, zf + 1, Kit.TRIM)
 	if eagle:
-		# the bronze eagle, wings spread and rising, head to the left, over
-		# the gilt ribbons of a wreath
+		# a gilt bronze wreath, the bronze eagle in front of it: wings in a
+		# V, their tips three above the shoulders, head to the left, the
+		# tail a fan; ribbons hang from the wreath
 		var xm := (x0 + x1) / 2
 		var ey := y + 5
 		var zt := zf - 1
-		g.box(xm - 1, ey, zt, xm + 1, ey + 4, zt + 1, Kit.BRONZE_D)
-		g.put(xm - 2, ey + 4, zt, Kit.BRONZE_D)
-		g.box(xm - 1, ey - 1, zt, xm + 1, ey, zt + 1, Kit.BRONZE_D)
+		for dy in range(-6, 7):
+			for dx in range(-6, 7):
+				if absf(Vector2(dx + 0.5, dy - 1.5).length() - 4.5) < 0.55:
+					g.put(xm + dx, ey + dy, zt, Kit.GILT)
+		g.box(xm - 1, ey, zt, xm + 1, ey + 3, zt + 1, Kit.BRONZE_D)
+		g.put(xm - 2, ey + 3, zt, Kit.BRONZE_D)
 		for k in 4:
-			var wy := ey + 1 + k / 2
-			g.box(xm - 2 - k, wy, zt, xm - 1 - k, wy + 2, zt + 1, Kit.BRONZE_D)
-			g.box(xm + 1 + k, wy, zt, xm + 2 + k, wy + 2, zt + 1, Kit.BRONZE_D)
-		for side: int in [-1, 1]:
-			for k in 5:
-				g.put(xm + side * (6 + k), ey - 4 - k / 3, zt, Kit.GILT_D)
+			g.box(xm - 2 - k, ey + 1 + k, zt, xm - 1 - k, ey + 3 + k, zt + 1, Kit.BRONZE_D)
+			g.box(xm + 1 + k, ey + 1 + k, zt, xm + 2 + k, ey + 3 + k, zt + 1, Kit.BRONZE_D)
+		g.box(xm - 2, ey - 1, zt, xm + 1, ey, zt + 1, Kit.BRONZE_D)
+		g.box(xm - 3, ey - 2, zt, xm + 2, ey - 1, zt + 1, Kit.BRONZE_D)
+		for k in 4:
+			g.put(xm - 3 - k, ey - 3 - k / 2, zt, Kit.GILT_D)
+			g.put(xm + 2 + k, ey - 3 - k / 2, zt, Kit.GILT_D)
 
 ## A porch column: an unfluted granite shaft three voxels across on a white
 ## marble base (grey ones lighter on the west, darker on the east), a
@@ -2098,6 +2109,8 @@ static func circus(seed: int) -> ArrayMesh:
 	# little darker; everything in the arena stands on it
 	for z in range(z0 + CIRCUS_STAND, z1 - CIRCUS_STAND):
 		for x in range(x0, x1):
+			if x >= cx and Vector2(x - cx + 0.5, z - zm + 0.5).length() > ro:
+				continue
 			var c := Kit.ARENA
 			var lane := absi(z - zm)
 			if (lane == 12 or lane == 20) and Kit.chance(x / 3, z, 2, seed, 70):
@@ -2185,7 +2198,17 @@ static func _circus_stand(g: Kit.Grid, x: int, z: int, s: int, along: int, wall:
 	if posmod(along, 40) < 2:
 		g.put(x, y + h - 1, z, Kit.STEP)
 		return
-	if not front and seated:
+	if not seated:
+		# where the round end's treads step, the crowd is painted on: the
+		# treads in faces with a tick of hair, the risers in the runs'
+		# colours
+		var r2 := Kit.rnd((along + t * 3) / 6, t, 6, seed)
+		if front:
+			g.put(x, y + h - 1, z, CIRCUS_CROWD[r2 % CIRCUS_CROWD.size()])
+		else:
+			g.put(x, y + h - 1, z, Kit.HAIR if posmod(along, 3) == 0 else Kit.SKIN)
+		return
+	if not front:
 		# shoulder to shoulder, a run of four to eight in one colour
 		var r := Kit.rnd((along + t * 3) / 6, t, 6, seed)
 		var c: int = CIRCUS_CROWD[r % CIRCUS_CROWD.size()]
@@ -2353,10 +2376,11 @@ static func _circus_spina(g: Kit.Grid, xa: int, xb: int, zm: int, y: int, seed: 
 	for sx: int in [xa + 46, xa + 72, xb - 72, xb - 46]:
 		g.box(sx, y + 3, zm - 1, sx + 2, y + 18, zm + 1, Kit.MARBLE)
 		g.box(sx - 1, y + 18, zm - 2, sx + 3, y + 19, zm + 2, Kit.TRIM)
-		g.box(sx, y + 19, zm, sx + 2, y + 23, zm + 1, Kit.GILT)
-		g.box(sx, y + 23, zm, sx + 1, y + 24, zm + 1, Kit.GOLD)
-		g.box(sx - 1, y + 22, zm, sx, y + 25, zm + 1, Kit.GOLD)
-		g.box(sx + 2, y + 22, zm, sx + 3, y + 25, zm + 1, Kit.GOLD)
+		g.box(sx - 1, y + 19, zm, sx + 2, y + 23, zm + 1, Kit.GILT)
+		g.box(sx, y + 23, zm, sx + 1, y + 25, zm + 1, Kit.GOLD)
+		for k in 2:
+			g.put(sx - 2 - k, y + 23 + k, zm, Kit.GOLD)
+			g.put(sx + 2 + k, y + 23 + k, zm, Kit.GOLD)
 	for sx: int in [xa + 34, xa + 60, xb - 60, xb - 38]:
 		_statue(g, sx, y + 3, zm - 2, sx)
 
@@ -2393,25 +2417,23 @@ static func _titus_arch(g: Kit.Grid, x1: int, zm: int, y: int) -> void:
 	for p: Vector2i in [Vector2i(zm - 4, zm + 4), Vector2i(zm - 12, zm - 7), Vector2i(zm + 7, zm + 12)]:
 		var top := 22 if p.x == zm - 4 else 14
 		g.box(ax0, y, p.x, x1, y + top, p.y, Kit.EMPTY)
+		g.box(ax0, y - 1, p.x, x1, y, p.y, Kit.TRAV_D)
 	for pz: int in [zm - 15, zm + 14]:
 		g.box(ax0 + 1, y, pz, x1 - 1, y + 26, pz + 1, Kit.MARBLE_W)
 	g.box(ax0 + 2, y + 28, zm + 14, x1 - 2, y + 32, zm + 15, Kit.MARBLE_W)
-	# the bronze quadriga on the attic, facing out over the square: four
-	# horses' necks with gaps, the car, the emperor
-	g.box(ax0 + 1, y + 34, zm - 4, x1 - 1, y + 36, zm + 5, Kit.STONE)
-	for k in 4:
-		var hx := ax0 + 1 + k * 2
-		g.box(hx, y + 36, zm + 1, hx + 1, y + 39, zm + 4, Kit.BRONZE)
-		g.box(hx, y + 39, zm + 3, hx + 1, y + 41, zm + 4, Kit.BRONZE)
-	g.box(ax0 + 3, y + 36, zm - 2, ax0 + 6, y + 38, zm, Kit.BRONZE_D)
-	g.box(ax0 + 4, y + 38, zm - 1, ax0 + 5, y + 41, zm, Kit.BRONZE)
+	# the bronze quadriga on the attic, driving west into the circus, seen
+	# in profile
+	g.box(ax0 - 1, y + 34, zm - 5, x1 + 1, y + 35, zm + 5, Kit.STONE)
+	_quadriga(g, ax0 - 1, y + 34, zm, -1, Kit.BRONZE, 0, true)
 
 ## A quadriga racing along x (dir 1 east, -1 west), the noses of its
 ## horses at x: four horses abreast at the gallop, every second a voxel
 ## back, the light car on two wheels, the charioteer in his faction's
 ## colour with a leather cap and the reins, a little dust behind.
-static func _quadriga(g: Kit.Grid, x: int, y: int, z: int, dir: int, colour: int, seed: int) -> void:
+static func _quadriga(g: Kit.Grid, x: int, y: int, z: int, dir: int, colour: int, seed: int, bronze := false) -> void:
 	var horses := [Kit.HORSE, Kit.HORSE_D, Kit.HORSE, Kit.HORSE_W]
+	if bronze:
+		horses = [Kit.BRONZE, Kit.BRONZE_D, Kit.BRONZE, Kit.BRONZE_D]
 	for k in 4:
 		var hz := z - 4 + k * 2
 		var hc: int = horses[(k + seed) % 4]
@@ -2427,13 +2449,17 @@ static func _quadriga(g: Kit.Grid, x: int, y: int, z: int, dir: int, colour: int
 		_along(g, x, dir, u0 - 2, u0 - 1, y + 8, y + 9, hz, hz + 1, Kit.HAIR)
 		_along(g, x, dir, u0 - 8, u0 - 7, y + 4, y + 6, hz, hz + 1, Kit.HAIR)
 	# the car and its wheels, the charioteer leaning forward, the reins
-	_along(g, x, dir, -12, -9, y + 1, y + 4, z - 2, z + 2, Kit.WOOD)
-	_along(g, x, dir, -12, -10, y + 1, y + 4, z - 3, z - 2, Kit.WOOD_D)
-	_along(g, x, dir, -12, -10, y + 1, y + 4, z + 2, z + 3, Kit.WOOD_D)
+	var car := Kit.BRONZE_D if bronze else Kit.WOOD
+	var wheel := Kit.BRONZE_D if bronze else Kit.WOOD_D
+	_along(g, x, dir, -12, -9, y + 1, y + 4, z - 2, z + 2, car)
+	_along(g, x, dir, -12, -10, y + 1, y + 4, z - 3, z - 2, wheel)
+	_along(g, x, dir, -12, -10, y + 1, y + 4, z + 2, z + 3, wheel)
 	_along(g, x, dir, -12, -10, y + 4, y + 8, z - 1, z + 1, colour)
-	_along(g, x, dir, -11, -9, y + 8, y + 9, z - 1, z + 1, Kit.SKIN)
-	_along(g, x, dir, -11, -9, y + 9, y + 10, z - 1, z + 1, Kit.HELMET)
-	_along(g, x, dir, -9, -7, y + 6, y + 7, z, z + 1, Kit.ROPE)
+	_along(g, x, dir, -11, -9, y + 8, y + 9, z - 1, z + 1, Kit.BRONZE if bronze else Kit.SKIN)
+	_along(g, x, dir, -11, -9, y + 9, y + 10, z - 1, z + 1, Kit.BRONZE if bronze else Kit.HELMET)
+	_along(g, x, dir, -9, -7, y + 6, y + 7, z, z + 1, Kit.BRONZE_D if bronze else Kit.ROPE)
+	if bronze:
+		return
 	for k in 6:
 		var u := -14 - k * 2
 		g.put(x + dir * u, y + Kit.rnd(k, 1, 0, seed) % 2, z - 2 + Kit.rnd(k, 2, 0, seed) % 5, Kit.SMOKE_L)
