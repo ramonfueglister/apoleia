@@ -218,8 +218,8 @@ Funktion, nur sichtbare Flächen, gleichfarbige Flächen zusammengefasst, wo die
 eingebackene Eckschattierung (Voxel-AO) es erlaubt, keine Unterseiten, jede
 Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Drei
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
-nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
-bleiben), für jede Bauform gebaut beim ersten Start und in
+nächsten 256 Häuser bis 2 km Bildbreite, damit die Dachstufen klein
+bleiben; weiter draussen flimmern ihre Ziegelreihen als Moiré), für jede Bauform gebaut beim ersten Start und in
 `user://farmhouse_v29_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
@@ -268,17 +268,18 @@ Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Bl
 Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
-Bildbreite sind die Parzellen weiter 250 m gross, je zwei nebeneinander
-(quer oder längs nach Block) ein langes Feld, ab 15 km je 2 × 2 ein Feld,
-nach derselben Regel und nur auf ebenen Kacheln, in drei Tönen mit klaren
-Helligkeitsstufen: Gras der Weide, Urbeks Weizengelb und das Braun eines
-gepflügten Felds. Beweidete Brache und wachsende Saat sind Gras (so bleibt
-mindestens die Hälfte grün), gepflügte Brache und frische Saat braun,
-Getreide gelb, sobald es reift; jedes Feld etwas vor oder hinter der
-Jahreszeit. Runde 14: acht nahe Töne lagen mit dem Relief in einem
-Helligkeitsband und lasen sich als Tarnmuster, ebenso Runde 13 (Blöcke von
-2 × 2 km in Stroh und Grün) und Runde 12 (trockenes Gras für alle Brache).
-Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten,
+Bildbreite liegt das Ackerland in Streifenfluren: in jedem Hofblock (der
+feinen Kachel) bilden die 250-m-Parzellen Streifen, alle in eine Richtung,
+jeder Streifen ein Feld in einer von vier flachen Farben mit klaren
+Helligkeitsstufen: Urbeks Weizengelb, das Grün wachsenden Getreides, helle
+Stoppel und gepflügtes Braun; Brache als Stoppel oder gepflügt, Saat je
+Streifen etwas vor oder hinter der Jahreszeit; nur auf ebenen Kacheln.
+So liest sich das Land um die Dörfer bis 40 km als Feldflur, weder als
+Tarnmuster noch als Konfetti (Runden 12 bis 15: einzelne Parzellen oder
+Flecken von 2 × 2 km in zufälligen Tönen).
+Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
+und tragen niedrige Büschel in Reihen (Stoppel auf Brache, goldene Ähren auf
+reifem Getreide),
 und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
 (`people_crop_slab.gdshaderinc`, geteilt vom Feld- und vom
 Platzierungs-Shader).

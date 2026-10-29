@@ -43,28 +43,28 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// The flat colour of parcel `cell` from afar or outside the square of
-// crops: three tones a clear step of brightness apart, so the farmland
-// reads as fields round the villages and not as camouflage (rounds 13 and
-// 14: five and eight close tones lay in one value band with the relief):
-// the grass of the pasture, Urbek's wheat yellow and the brown of a
-// ploughed field. Grazed fallow and growing crops are grass, so at least
-// half the land stays green; ploughed fallow and fresh sowing are brown;
-// grain is yellow once it turns.
-const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close
-const float SIM_BLOCK_KM = 15.0;      // view width from which a field is 2 x 2 parcels
-vec3 sim_parcel_rgb(int state, vec2 cell, vec4 f, vec3 pasture) {
-	if (state == 0) { return pasture; }
-	vec3 grass = GROUND_RGB[G_MEADOW];         // #76b066 on screen
-	vec3 wheat = GROUND_RGB[G_FIELD] * 1.04;   // #d6cb7a
-	vec3 ploughed = vec3(0.5, 0.39, 0.27);     // #a07c55
-	float h = sim_hash(cell + 3.7);
-	if (state == 1) { return h < 0.4 ? ploughed : grass; }
+// Further out the farmland lies in strip fields, as the Roman land was
+// laid out: in each farm's block (the fine tile, sim_parcel) the parcels
+// form strips one parcel wide, all running one way, each strip one field
+// in one of four flat colours a clear step apart: Urbek's wheat yellow,
+// the green of growing grain, pale stubble and ploughed brown. Fallow
+// strips are stubble or ploughed, sown ones a little ahead or behind the
+// season. So the farmland reads as fields round the villages, neither as
+// camouflage nor as confetti (rounds 12-15: single parcels or 2 x 2 km
+// blotches in random tones).
+const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close: the strips' width
+vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
+	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
+	bool along_x = sim_hash(farm + 9.1) < 0.5;
+	vec2 strip = farm * 13.0 + vec2(along_x ? cell.y : cell.x, along_x ? 0.5 : 0.25);
+	vec3 wheat = GROUND_RGB[G_FIELD];          // #cdc373 on screen
+	vec3 stubble = vec3(0.6, 0.5, 0.29);       // #c2a45e
+	vec3 ploughed = vec3(0.45, 0.33, 0.23);    // #9a6b45
+	vec3 green = vec3(0.28, 0.44, 0.2);        // #5f9a3e
+	float h = sim_hash(strip + 3.7);
+	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.5 ? stubble : ploughed; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);
-	int kind = sim_crop_kind(cell);
-	if (g < 0.2) { return ploughed; }
-	if (kind == SIM_VINES || kind == SIM_BEANS) { return grass; }
-	return g < 0.6 ? grass : wheat;
+	return g < 0.15 ? ploughed : g < 0.6 ? green : wheat;
 }
 
 // Fields on open land (`land`, the terrain's landscape here), on the
@@ -76,9 +76,9 @@ vec3 sim_parcel_rgb(int state, vec2 cell, vec4 f, vec3 pasture) {
 // quarter tile of the drawn terrain, and a sown or fallow one is grass
 // round the raised slab of crops or stubble that stands on it
 // (people_crops.gdshader), so the farmland is a mosaic of slabs with grass
-// edges. Further out a field is two parcels of SIM_FAR_PARCEL_KM (from
-// SIM_BLOCK_KM four) in the colours of sim_parcel_rgb, so the farmland
-// still reads as fields round the towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
+// edges. Further out the parcels of SIM_FAR_PARCEL_KM lie in the strip
+// fields of sim_strip_rgb, so the farmland still reads as fields round the
+// towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
@@ -90,19 +90,12 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (near && sim_house_lot(p)) { return pasture; } // the farmhouse's yard
 	float size = near ? data_km * 0.5 : SIM_FAR_PARCEL_KM;
 	vec2 cell = floor((p - world_min) / size);
-	if (!near) {
-		// from afar two parcels make one field, side by side across or
-		// along by the block, so the quilt is of long fields and not of
-		// single squares; from SIM_BLOCK_KM all four of the block
-		vec2 block = floor(cell * 0.5);
-		cell = sim_view_km >= SIM_BLOCK_KM ? block * 2.0
-			: sim_hash(block + 9.1) < 0.5 ? vec2(block.x * 2.0, cell.y) : vec2(cell.x, block.y * 2.0);
-	}
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
+	if (state == 0) { return pasture; }
 	// inside the square of crops the slabs stand on meadow
 	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
-	return crops && state != 0 ? meadow : sim_parcel_rgb(state, cell, f, pasture);
+	return crops ? meadow : sim_strip_rgb(cell, size, f);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and

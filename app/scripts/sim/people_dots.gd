@@ -61,9 +61,10 @@ const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
-# nearest houses each may take and up to which view width (km) it is used.
+# nearest houses each may take and up to which view width (km) it is used;
+# the finest only to 2 km, beyond it its rows of roof tiles shimmer (moiré).
 const HOUSE_LOD_MAX := [256, 1024, 4096, HOUSE_MAX]
-const HOUSE_LOD_KM := [3.5, 5.0, 20.0, INF]
+const HOUSE_LOD_KM := [2.0, 5.0, 20.0, INF]
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
 # terrain uniforms that move the dots; the placement pass reruns when they change
 # the uniforms the placement passes depend on; the near relief (levels_*,

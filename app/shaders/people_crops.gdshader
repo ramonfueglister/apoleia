@@ -83,14 +83,16 @@ void vertex() {
 	clumps = 0.0;
 	fill = 0.38;
 	if (state == 1) {
-		c = FALLOW; // no rows; high enough to show its edge
+		// high enough to show its edge, with low tufts of stubble in rows
+		c = FALLOW;
+		h = 0.15; w = 0.35; rc = FALLOW * vec3(0.9, 0.88, 0.8); clumps = 20.0; fill = 0.45;
 		kind = -1;
 	} else if (grain) {
 		if (g <= 0.0) { c = STUBBLE; }
 		else if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 16.0; fill = 0.35; }
 		else if (g < 0.75) { h = 0.35; w = 0.4; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 24.0; fill = 0.8; }
-		else { c = RIPE[kind]; }
+		else { c = RIPE[kind]; h = 0.3; w = 0.45; rc = RIPE[kind] * vec3(1.05, 1.0, 0.85); clumps = 24.0; fill = 0.5; } // ears in tufts, more golden than the sheet
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { }
 		else if (g < 0.4) { h = 0.15; w = 0.3; rc = SPROUT; clumps = 12.0; fill = 0.35; }
@@ -135,7 +137,7 @@ void vertex() {
 		// north-south, away from the camera, as lumpy lines with the soil
 		// between them (east-west their stacked fronts read as blinds)
 		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
-		quarter = grain ? 1 : 0;
+		quarter = grain || state == 1 ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
