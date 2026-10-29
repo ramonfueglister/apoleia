@@ -512,6 +512,46 @@ pub struct GrainTiming {
     pub census: f64,
 }
 
+/// The money cycle (S94, step 1): where money comes from and where it goes,
+/// in milli-denarii since the start. Booking only: nothing here changes
+/// what households, farms or dealers do, and it is not in the fingerprint.
+/// At every day's end: money held (households, farms, dealers) + the
+/// treasury's cash = start + minted + endowed − freight − dissolved −
+/// no_payee (`Grain::money_unbooked` is 0).
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Money {
+    /// Held by households, farms and dealers when the run starts (the
+    /// PLACEHOLDER start stocks: TRADER_MONEY, ELITE_MONEY, the dealers'
+    /// cash, the rent of last year's harvest).
+    pub start: i64,
+    /// State wages beyond the treasury's cash: S76 (the state has
+    /// unlimited money) means the state makes the rest.
+    pub minted: i64,
+    /// Start money of trader and elite households formed after the start.
+    pub endowed: i64,
+    /// Freight paid by traders (cost per kg of the route); nobody in the
+    /// simulation receives it.
+    pub freight: i64,
+    /// Money of households that died out or were joined to others.
+    pub dissolved: i64,
+    /// Payments whose receiver is gone: rent for a landlord who died or a
+    /// farm without one, a load sold for a trader who died on the way.
+    pub no_payee: i64,
+}
+
+/// The state's account (S94, step 1), since the start. In: the Manciana
+/// third (S92), sold at market with the farm's grain, in money; the tax in
+/// kind as grain. Out: the state wage (S76), from cash first, the rest
+/// minted (`Money::minted`).
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Treasury {
+    pub cash: i64,
+    pub wages: i64,
+    pub rent: i64,
+    /// Tax grain received, kg. It leaves the economy (no use yet, S76).
+    pub grain_kg: i64,
+}
+
 pub struct Grain {
     seed: u64,
     farms: Vec<Farm>,
@@ -576,6 +616,8 @@ pub struct Grain {
     cols_f: i32,
     pub stats: GrainStats,
     pub timing: GrainTiming,
+    pub money: Money,
+    pub treasury: Treasury,
 }
 
 fn doy(day: i64) -> i64 {
@@ -972,6 +1014,8 @@ impl Grain {
             cols_f,
             stats: GrainStats::default(),
             timing: GrainTiming::default(),
+            money: Money::default(),
+            treasury: Treasury::default(),
         };
         gr.build_graph(p);
         gr.census(p, 0, true);
@@ -1026,6 +1070,7 @@ impl Grain {
         gr.regroup();
         gr.sums();
         gr.export(p);
+        gr.money.start = gr.money_held();
         gr
     }
 
@@ -1198,6 +1243,7 @@ impl Grain {
                     h.farm = NONE;
                     h.kind = TENT;
                 } else {
+                    self.money.dissolved += s.money;
                     self.hh.remove(&id);
                 }
             }
@@ -1289,6 +1335,9 @@ impl Grain {
             let own_food = self.desert[i.home as usize];
             let kind = if own_food && kind == FARM { WAGE } else { kind };
             let farm = if kind == FARM { self.new_farm(p, id, &i, fine) } else { NONE };
+            if !start {
+                self.money.endowed += money;
+            }
             self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false, own_food });
         }
         if start {
@@ -2042,10 +2091,15 @@ impl Grain {
                 owner.rent_due -= rent;
                 let to_lord = if owner.kind == ESTATE { pay } else { rent * price };
                 owner.money += pay - to_lord;
-                let lord = owner.landlord;
-                if to_lord > 0 && lord != NONE {
-                    if let Some(h) = self.hh.get_mut(&lord) {
-                        h.money += to_lord;
+                let (lord, manciana) = (owner.landlord, owner.manciana);
+                if to_lord > 0 {
+                    match self.hh.get_mut(&lord) {
+                        Some(h) => h.money += to_lord,
+                        None if manciana => {
+                            self.treasury.cash += to_lord;
+                            self.treasury.rent += to_lord;
+                        }
+                        None => self.money.no_payee += to_lord,
                     }
                 }
                 t.kg -= kg;
@@ -2079,8 +2133,9 @@ impl Grain {
                 m.store += t.kg;
                 m.money -= pay;
                 self.stats.traded_kg += t.kg;
-                if let Some(h) = self.hh.get_mut(&t.hh) {
-                    h.money += pay;
+                match self.hh.get_mut(&t.hh) {
+                    Some(h) => h.money += pay,
+                    None => self.money.no_payee += pay,
                 }
                 t.kg = 0;
                 self.share_news(t.market, t.dest, day);
@@ -2129,6 +2184,26 @@ impl Grain {
         };
         merge(&mut self.markets[a as usize].board, &bb, pb);
         merge(&mut self.markets[b as usize].board, &ba, pa);
+    }
+
+    /// The state wage (S76), from the treasury's cash, the rest minted.
+    fn state_pays(&mut self, amount: i64) {
+        let cash = amount.min(self.treasury.cash.max(0));
+        self.treasury.cash -= cash;
+        self.money.minted += amount - cash;
+        self.treasury.wages += amount;
+    }
+
+    /// Money held by households (also the money a farm household had
+    /// before its farm), farms and dealers, milli-denarii.
+    pub fn money_held(&self) -> i64 {
+        self.hh.values().map(|s| s.money).sum::<i64>() + self.farms.iter().map(|f| f.money).sum::<i64>() + self.markets.iter().map(|m| m.money).sum::<i64>()
+    }
+
+    /// Money that appeared or vanished without a booking (S94: 0).
+    pub fn money_unbooked(&self) -> i64 {
+        let m = self.money;
+        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed - m.freight - m.dissolved - m.no_payee)
     }
 
     fn money_of(&self, id: u32) -> i64 {
@@ -2461,6 +2536,7 @@ impl Grain {
         fm.store += crop - tax;
         fm.rent_due += rent;
         self.stats.tax_kg += tax;
+        self.treasury.grain_kg += tax;
         self.stats.rent_kg += rent;
         let id = fm.hh;
         if id == NONE {
@@ -2539,7 +2615,9 @@ impl Grain {
             let need = need_day * MONTH;
             // Income: the state wage for workers outside farming (S76).
             if matches!(s.kind, WAGE | TRADER) {
-                s.money += info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                let wage = info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                s.money += wage;
+                self.state_pays(wage);
             }
             let mk = self.cell_market[info.home as usize];
             // Verderb (S72): a twelfth of the year's loss.
@@ -2733,9 +2811,11 @@ impl Grain {
                 m.money += kg * price;
                 m.sold_today += kg;
                 self.pay(id, kg * (price + cost));
+                self.money.freight += kg * cost;
             } else {
                 // Freight paid on the way back, at purchase.
                 self.pay(id, WAGON.0 * cost);
+                self.money.freight += WAGON.0 * cost;
             }
             for &c in &self.markets[h].neigh[k].route.clone() {
                 *self.lanes.entry(c).or_default() += 1;
@@ -3125,8 +3205,31 @@ impl Grain {
             "markets" => Some(self.market_table(p, day)),
             "population" => Some(self.population_table(p, day)),
             "farms" => Some(self.farm_table(p, day)),
+            "state" => Some(self.state_table(day)),
             _ => None,
         }
+    }
+
+    /// The treasury and the money cycle since the start (S94 step 1): one
+    /// row, the state.
+    fn state_table(&self, day: i64) -> Table {
+        let (m, tr) = (self.money, self.treasury);
+        let den = |x: i64| vec![x as f64 / 1000.0];
+        let mut t = Table::new("state", "Staat", day);
+        t.id(vec![0]);
+        t.float("cash", "Staatskasse", "Denar", den(tr.cash))
+            .float("wages", "Staatslohn", "Denar", den(tr.wages))
+            .float("minted", "Neu geprägt", "Denar", den(m.minted))
+            .float("rent", "Pacht Manciana", "Denar", den(tr.rent))
+            .float("tax_grain_t", "Steuerkorn", "t", vec![tr.grain_kg as f64 / 1000.0])
+            .float("held", "Geld im Umlauf", "Denar", den(self.money_held()))
+            .float("start", "Geld am Anfang", "Denar", den(m.start))
+            .float("endowed", "Startgeld neuer Haushalte", "Denar", den(m.endowed))
+            .float("freight", "Fracht", "Denar", den(m.freight))
+            .float("dissolved", "Geld aufgelöster Haushalte", "Denar", den(m.dissolved))
+            .float("no_payee", "Ohne Empfänger", "Denar", den(m.no_payee))
+            .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
+        t
     }
 
     /// Market of each region key.
@@ -3795,8 +3898,11 @@ mod tests {
             for _ in 0..200 {
                 p.day();
                 g.day(&mut p);
+                // S94 step 1: every denarius is booked.
+                assert_eq!(g.money_unbooked(), 0);
             }
             assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
+            assert!(g.money.minted > 0 && g.money.freight > 0 && g.treasury.wages >= g.money.minted);
             (p.fingerprint(), g.fingerprint())
         };
         assert_eq!(run(), run());
@@ -3877,7 +3983,8 @@ mod tests {
             let t = g.table(&p, key).unwrap();
             assert!(t.rows() > 0, "{key}");
             assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
-            assert!(t.column("id").is_some_and(|c| c.hidden) && t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
+            assert!(key == "state" || t.column("lon").is_some_and(|c| c.hidden), "{key}");
             for c in t.columns.iter().filter(|c| c.unit == "%") {
                 let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
                 assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);
