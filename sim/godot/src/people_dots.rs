@@ -200,6 +200,9 @@ struct Data {
     inputs: apoleia_sim::inputs::Inputs,
     clear: Option<Clearable>,
     cover: Option<FineCover>,
+    /// Dwellings of the city plans (docs/kit2/CITY_PLANS.md); without them
+    /// city people stand anywhere in their city's disk.
+    city_homes: Option<apoleia_sim::settle::CityHomes>,
 }
 
 impl Data {
@@ -224,7 +227,14 @@ impl Data {
                 None
             }
         };
-        Ok(Data { inputs, clear, cover })
+        let city_homes = match apoleia_sim::settle::CityHomes::read(&Path::new(root).join("artifacts/render-data/city-plans-r1/city-homes-x1.bin")) {
+            Ok(h) => Some(h),
+            Err(e) => {
+                godot_warn!("ApoleiaPeople: no city homes ({e}), city people anywhere in their city");
+                None
+            }
+        };
+        Ok(Data { inputs, clear, cover, city_homes })
     }
 
     fn start(&self) -> Start<'_> {
@@ -239,6 +249,9 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     let mut map = GrainMap::new(&game.people);
     map.build(&game.grain, today);
     let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
+    if let Some(h) = &data.city_homes {
+        view.set_city_homes(h.clone());
+    }
     mark_work(game, &mut view, shared.site_houses.load(Ordering::Relaxed));
     let pages = view.update(&mut game.people);
     let mut f = shared.front.lock().unwrap();

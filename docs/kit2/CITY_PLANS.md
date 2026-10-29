@@ -34,6 +34,13 @@ bei Strassen den Rang, den Belag und die Anschlüsse nach N/O/S/W, bei Häusern 
 - **Lader** (`app/scripts/city_plans.gd`): baut `city_page_tex` und `city_atlas_tex` für die Shader
   und beantwortet Abfragen je Parzelle (Klick, Simulation).
 
+- **Stadthaushalte** wohnen auf den Wohnparzellen ihres Plans: `city-homes-x1.bin` (je Stadt die
+  Parzellenmitten und wie viele Haushalte jede aufnimmt, nach Stockwerken) liest
+  `settle::CityHomes`; die Personenansicht (`view.rs`) stellt jeden Stadthaushalt per Hash auf eine
+  Wohnparzelle. Reine Darstellung: `home_fine` für Höfe und Getreide bleibt unverändert, der
+  Fingerabdruck nach einem Jahr ist vorher und nachher gleich (people=1b319a5c412a339a,
+  grain=29676e616c579942).
+
 Aufteilung: dieser Teil liefert Pläne und Format; Aussehen (Materialien, Strassenstücke, Modelle,
 Shader) liegt beim Grafik-Thread; gebaute Strassen beim Bau-Thread mit denselben Belägen.
 

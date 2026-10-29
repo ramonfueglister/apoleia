@@ -27,7 +27,7 @@ use crate::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use crate::life::YEAR;
 use crate::people::{Born, Clock, Culture, Faction, Health, Home, Household, Intelligence, Job, People, Pid, Religion, Sex, Spouse, Stand, Travel};
 use crate::grain::FineCover;
-use crate::settle::{CoverOf, Settle, Spot};
+use crate::settle::{CityHomes, CoverOf, Settle, Spot};
 use crate::City;
 use bevy_ecs::prelude::*;
 use rustc_hash::FxHashMap;
@@ -43,6 +43,9 @@ pub const IN_CITY: u32 = 1;
 pub const TRAVELLING: u32 = 2;
 pub const LEAVING: u32 = 3;
 const CELL_KM: f32 = 25.0;
+/// Radius round a dwelling parcel's centre that its household stands in (km;
+/// a parcel is 0.25 km, tools/city_plans.py).
+const CITY_HOME_KM: f32 = 0.1;
 /// Village seeds per cell are 0..VILLAGES-1; the area code is seed + 1.
 pub const VILLAGES: u32 = 4096;
 /// Area code of people on the road (anywhere in their current cell).
@@ -92,6 +95,9 @@ pub struct PeopleView {
     /// Fine tile of the households whose farm stands elsewhere than their
     /// village (`set_homes`, crate::grain homes_moved): they live there.
     homes: FxHashMap<u32, u32>,
+    /// Dwelling parcels of the city plans (`set_city_homes`): city people
+    /// stand on theirs instead of anywhere in the city disk.
+    city_homes: Option<CityHomes>,
     query: Option<QueryState<(&'static Pid, &'static Home, &'static Household, &'static Stand, &'static Job, &'static Sex, &'static Born, Option<&'static Travel>)>>,
 }
 
@@ -124,6 +130,7 @@ impl PeopleView {
             houses: Houses::default(),
             settle: Settle::new(&p.grid, &p.pop, cities, cover.map(|_| &lookup as CoverOf), 1),
             homes: FxHashMap::default(),
+            city_homes: None,
             query: None,
         }
     }
@@ -190,6 +197,15 @@ impl PeopleView {
         }
     }
 
+    /// The dwellings of the city plans (settle::CityHomes); the next update
+    /// moves every city household onto its dwelling.
+    pub fn set_city_homes(&mut self, homes: CityHomes) {
+        self.city_homes = Some(homes);
+        for slot in 0..self.member_src.len() {
+            self.inputs[slot] = [NONE; 3];
+        }
+    }
+
     fn cell_centre(&self, p: &People, cell: u32) -> (f32, f32) {
         let (r, c) = (p.grid.row0 + cell as i32 / p.grid.cols, p.grid.col0 + cell as i32 % p.grid.cols);
         ((c as f32 + 0.5) * CELL_KM, (r as f32 + 0.5) * CELL_KM)
@@ -203,7 +219,11 @@ impl PeopleView {
             return [x, z, ROAD, w(pid, if t.leave { LEAVING } else { TRAVELLING })];
         }
         match self.spot(home, household, stand) {
-            Spot::City { place } => [place.x, place.z, -place.r, w(household, IN_CITY)],
+            Spot::City { place } => match self.city_homes.as_ref().and_then(|c| c.pick(place.city, household)) {
+                // on its dwelling parcel (0.25 km), clear of the street round it
+                Some((x, z)) => [x, z, -CITY_HOME_KM, w(household, IN_CITY)],
+                None => [place.x, place.z, -place.r, w(household, IN_CITY)],
+            },
             Spot::Village { fine, .. } => {
                 let (x, z) = self.settle.fine_centre_km(fine);
                 [x as f32, z as f32, 1.0 + (hash(fine) % VILLAGES) as f32, w(self.key_of(household), AT_HOME)]

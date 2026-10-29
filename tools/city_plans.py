@@ -785,6 +785,21 @@ def encode(cid, g, pop):
     return rgb
 
 
+def write_homes(homes, path):
+    """city-homes-x*.bin, little-endian, the cities in the order of
+    sim/inputs/cities.csv: u32 count, then per city u32 n and n times
+    (f32 x_km, f32 z_km, f32 households it takes)."""
+    import csv
+    import struct
+    ids = [r["id"] for r in csv.DictReader(open(ROOT / "sim" / "inputs" / "cities.csv"))]
+    parts = [struct.pack("<I", len(ids))]
+    for cid in ids:
+        hs = homes.get(cid, [])
+        parts.append(struct.pack("<I", len(hs)))
+        parts += [struct.pack("<fff", x, z, n) for x, z, n in hs]
+    path.write_bytes(b"".join(parts))
+
+
 def hash_cell(cid, r, q):
     import zlib
     return zlib.crc32(f"{cid}:{r}:{q}".encode())
@@ -803,6 +818,7 @@ def bake(scale, out, only=None):
         order = [c for c in order if c in only]
     pages = {}
     table = {}
+    homes = {}
     for cid in order:
         f = facts[cid]
         if cid in hand:
@@ -813,6 +829,11 @@ def bake(scale, out, only=None):
         rgb = encode(cid, g, f["pop117"])
         h, w = g["kind"].shape
         i0, j0 = g["i0"], g["j0"]
+        # the dwellings, for the households of the city (sim/src/settle.rs
+        # CityHomes): parcel centre in world km and how many households it
+        # takes (its storeys)
+        homes[cid] = [(WORLD_MIN[0] + (i0 + q + 0.5) * PARCEL_KM, WORLD_MIN[1] + (j0 + r + 0.5) * PARCEL_KM, int(rgb[r, q, 2] & 63) or 1)
+                      for r, q in zip(*np.nonzero(np.isin(g["kind"], [K[k] for k in DWELLING])))]
         for r in range(h):
             for q in range(w):
                 code = rgb[r, q, 0]
@@ -864,6 +885,7 @@ def bake(scale, out, only=None):
         "models": MODELS, "cities": table,
     }
     (out / f"{name}.json").write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")))
+    write_homes(homes, out / f"city-homes-x{scale:g}.bin")
     print(len(table), "cities,", len(keys), "pages")
 
 
