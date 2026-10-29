@@ -40,7 +40,8 @@ const FIELD_GRID := 2 # quads per lot side, so a field follows the terraces
 const FIELD_MAX_SIDE := 24 # lots per side of one field rectangle (12 km)
 const FIELD_INSET := 0.04 # of a lot left free round a field (the lane)
 const ROAD_KM := 0.1 # width of a road: a cart track of about 4 m at the diorama scale
-const ROAD_STEP_KM := 0.05 # draping: a road sample at least this often
+const ROAD_STEP_KM := 0.025 # draping: a road sample at least this often
+const ROAD_LIFT := 0.02 # km: the band lies on the highest of its middle and edges, this much above
 ## Road search: a step costs its length times 1 + (grade / ROAD_GRADE)²,
 ## so a road keeps to about this grade where it can (Roman roads: up to
 ## 8–10 %); it looks at most this many lots beyond A and B.
@@ -54,6 +55,7 @@ const NAMES := ["Hof", "Feld", "Strasse"]
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
 const TRACK := Color("8a6a45") # a planned road: bare earth
+const PREVIEW := Color(1.0, 1.0, 1.0, 0.6) # a road being drawn, apart from gravel and earth
 const GOOD := Color(0.45, 0.85, 0.45, 0.55)
 const BAD := Color(0.91, 0.42, 0.35, 0.6)
 const NONE := -1
@@ -368,7 +370,7 @@ func _process(_delta: float) -> void:
 ## The farmhouse under the cursor while the Hof tool is out: green where
 ## it gets built, red where not, amber where nobody would move in today.
 func _place_ghost() -> void:
-	var show := tool == FARM and _close() and not _stroke_erase and _orders.get(_hover, NONE) != FARM
+	var show: bool = tool == FARM and _close() and not _stroke_erase and _orders.get(_hover, NONE) != FARM
 	_ghost.visible = show
 	if not show:
 		return
@@ -502,7 +504,10 @@ func _draw_orders() -> void:
 					var ok := true
 					for l in _stroke:
 						ok = ok and _buildable(l) and _check.get(l, 0) != 1
-					_road(_stroke, Color(0.1, 0.1, 0.1, 0.6) if _stroke_erase else (Color(COLOURS[ROAD].lightened(0.3), 0.9) if ok else BAD))
+					if _stroke.size() < 2:
+						_field(_stroke[0], _preview_colour(_stroke[0], Color(1, 1, 1, 0.35)), 0.0)
+					else:
+						_road(_stroke, Color(0.1, 0.1, 0.1, 0.6) if _stroke_erase else (PREVIEW if ok else BAD))
 		elif preview:
 			_field(_hover, _preview_colour(_hover, Color(1, 1, 1, 0.35)), 0.0)
 		_mesh.surface_end()
@@ -577,8 +582,11 @@ func _road(lots: Array, colour: Color) -> void:
 	for i in line.size():
 		var dir := (line[mini(i + 1, line.size() - 1)] - line[maxi(i - 1, 0)]).normalized()
 		var side := Vector2(-dir.y, dir.x) * half
-		var l := _on_ground(line[i] + side)
-		var r := _on_ground(line[i] - side)
+		# level across, on the highest of middle and edges, so it is not
+		# buried on a slope or a terrace edge
+		var y: float = maxf(maxf(terrain.ground_y(line[i]), terrain.ground_y(line[i] + side)), terrain.ground_y(line[i] - side)) + ROAD_LIFT
+		var l := Vector3(line[i].x + side.x, y, line[i].y + side.y)
+		var r := Vector3(line[i].x - side.x, y, line[i].y - side.y)
 		if i > 0:
 			for v in [prev_l, prev_r, r, prev_l, r, l]:
 				_mesh.surface_add_vertex(v)
