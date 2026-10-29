@@ -97,12 +97,13 @@ func _setup_look() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("1d5a8c")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	# A cool sky fill under a warm sun: shade is about two thirds as light as
-	# the lit ground and slightly blue (meadow #73af60 in the sun, about
-	# #458048 in shade); the filmic curve keeps the lit colours where the
-	# terrain palette expects them (AgX washed the map out).
+	# A cool sky fill under a warm sun, a third of the light on open ground:
+	# shade about half as light as the lit ground and slightly blue, as in
+	# Urbek (meadow #73af60 in the sun, about #346b3e in shade); the filmic
+	# curve keeps the lit colours where the terrain palette expects them
+	# (AgX washed the map out).
 	environment.ambient_light_color = Color("c4cff0")
-	environment.ambient_light_energy = 0.95
+	environment.ambient_light_energy = 0.85
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
@@ -119,14 +120,15 @@ func _setup_look() -> void:
 	environment.fog_light_color = Color("a9c6d3")
 	environment.fog_density = 1.0
 	environment.fog_depth_curve = 1.4
-	# Warm sun from the front left of the north-up view (south-west, 45
-	# degrees up), as in Urbek: the faces the camera sees are lit, shadows
-	# fall back and right.
-	sun.rotation_degrees = Vector3(-45.0, -45.0, 0.0)
-	sun.light_color = Color("ffeccb")
-	sun.light_energy = 1.8
+	# Warm sun from the left of the north-up view, a little to the front
+	# (west-south-west, 40 degrees up): the faces the camera sees are lit,
+	# slopes and roofs turned east fall into shade, shadows reach out to the
+	# right beside what casts them.
+	sun.rotation_degrees = Vector3(-40.0, -65.0, 0.0)
+	sun.light_color = Color("fff0d9")
+	sun.light_energy = 2.05
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.85
+	sun.shadow_opacity = 1.0
 	# Hard shadows as in Urbek: one map over the view only (see _update_look),
 	# no blur and no dithered soft filter, so every house, tree and figure
 	# casts a crisp shadow from its foot.
