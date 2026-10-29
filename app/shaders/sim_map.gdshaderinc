@@ -81,6 +81,22 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 // edges. Further out the parcels of SIM_FAR_PARCEL_KM lie in the strip
 // fields of sim_strip_rgb, so the farmland still reads as fields round the
 // towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
+const vec3 SIM_DIRT = vec3(0.3, 0.28, 0.225); // #888068 on screen: Urbek's field tracks (r11 Fix 5)
+
+// Whether the parcel with its middle at `mid` carries a slab up close, as
+// people_crop_slab.gdshaderinc crop_open (which needs the people's
+// helpers): open land outside the towns, no farmhouse lot, flat, not at
+// the foot of a ramp, not under trees.
+bool sim_slab_open(vec2 mid) {
+	ivec2 t = ivec2(floor((mid - world_min) / tile_km));
+	if (tt_town(t) != 0 || tt_water(t) != W_LAND) { return false; }
+	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
+	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return false; }
+	vec4 front = tt_corners_cached(t + ivec2(0, 1));
+	if (max(max(front.x, front.y), max(front.z, front.w)) > tt_corners_cached(t).x + 0.01) { return false; }
+	return !sim_house_lot(mid) && sim_flat(mid) && !sim_no_field(mid, land);
+}
+
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
@@ -95,9 +111,12 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
 	if (state == 0 || sim_no_field(world_min + (cell + 0.5) * size, land)) { return pasture; }
-	// inside the square of crops the slabs stand on meadow
+	// inside the square of crops the slabs stand on dirt: the strips between
+	// them read as Urbek's field tracks (r11: on meadow the fields lay on
+	// the lawn like rugs, with no track to them)
 	bool crops = near && all(greaterThanEqual(p, sim_crop_box.xy)) && all(lessThan(p, sim_crop_box.zw));
-	return crops ? meadow : sim_strip_rgb(cell, size, f);
+	if (crops) { return sim_slab_open(world_min + (cell + 0.5) * size) ? SIM_DIRT : meadow; }
+	return sim_strip_rgb(cell, size, f);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and

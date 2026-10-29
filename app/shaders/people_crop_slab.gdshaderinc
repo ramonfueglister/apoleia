@@ -3,7 +3,7 @@
 // at work in a field stands on its slab and not waist-deep in it. Needs
 // people_dots_common.gdshaderinc and sim_fields.gdshaderinc before it.
 
-const float SLAB_GAP = 0.025; // share of the parcel left free on each side
+const float SLAB_GAP = 0.04; // share of the parcel left free on each side: with the neighbour's, a track of about 12 px at 3 km (r11)
 
 // The slab's height (m) by the parcel's state, crop and growth: a sheet
 // of stubble on fallow, ripe grain a closed sheet, both with an edge as

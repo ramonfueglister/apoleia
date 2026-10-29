@@ -23,6 +23,42 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 const vec3 TUNICS[8] = vec3[](vec3(0.81, 0.76, 0.65), vec3(0.86, 0.83, 0.74), vec3(0.61, 0.25, 0.16),
 	vec3(0.25, 0.37, 0.56), vec3(0.43, 0.29, 0.18), vec3(0.36, 0.43, 0.23), vec3(0.33, 0.24, 0.17), vec3(0.4, 0.45, 0.52));
 
+// Whether p lies in water: the sea, a lake, or the band a river draws
+// through its data tile with its bank (tile_terrain.gdshader fragment);
+// the rest of a river tile is land (r11 walkers: hiding them on the whole
+// tile also hid the stalls of a market on the Tiber's bank).
+bool walker_wet(vec2 p) {
+	float dk = tt_data_km();
+	ivec2 dt = ivec2(floor((p - world_min) / dk));
+	int w = tt_data_cell(dt) & 3;
+	if (w == W_LAND) { return false; }
+	if (w != W_RIVER) { return true; }
+	const ivec2 SIDE4[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
+	const vec2 MID[4] = vec2[](vec2(0.0, -0.5), vec2(0.5, 0.0), vec2(0.0, 0.5), vec2(-0.5, 0.0));
+	int m = 0;
+	for (int k = 0; k < 4; k++) {
+		if ((tt_data_cell(dt + SIDE4[k]) & 3) != W_LAND) { m |= 1 << k; }
+	}
+	vec2 q = (p - world_min) / dk - vec2(dt) - 0.5;
+	float half_w = clamp(0.075 / dk, 0.06, 0.22) + 0.03; // and the bank
+	float d = 10.0;
+	if (m == 3 || m == 6 || m == 12 || m == 9) {
+		int a = m == 9 ? 3 : (m == 3 ? 0 : m == 6 ? 1 : 2);
+		vec2 p0 = MID[a];
+		vec2 e = MID[(a + 1) % 4] - p0;
+		d = length(q - p0 - e * clamp(dot(q - p0, e) / dot(e, e), 0.0, 1.0));
+	} else {
+		d = length(q);
+		for (int k = 0; k < 4; k++) {
+			if ((m & (1 << k)) != 0) {
+				vec2 e = MID[k];
+				d = min(d, length(q - e * clamp(dot(q, e) / dot(e, e), 0.0, 1.0)));
+			}
+		}
+	}
+	return d < half_w;
+}
+
 varying vec3 colour;
 varying vec3 art_light; // ART_LIGHT in view space
 
@@ -33,7 +69,7 @@ void vertex() {
 	bool show = part == 0 ? still < 1.5 : ((parts >> (part - 1)) & 1) == 1;
 	// off the water: where a route crosses a river or a lake they take the
 	// bridge or the ferry, out of sight (the first ones walked on the Tiber)
-	show = show && tt_water(dot_tile(MODEL_MATRIX[3].xz)) == W_LAND;
+	show = show && !walker_wet(MODEL_MATRIX[3].xz);
 	vec3 v = VERTEX;
 	if (UV2.x != 0.0 && still < 0.5) {
 		// a leg swings about its hip, the two sides in turn

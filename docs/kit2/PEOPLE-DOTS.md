@@ -289,6 +289,10 @@ Hälfte bleibt Weide) und bleiben leiser als die Stadt; nur auf ebenen
 Kacheln. Runden 12 bis 18: einzelne Parzellen, Flecken von 2 × 2 km,
 Streifen, ein Saatgrün zu nah an der Wiese oder vier Töne mit Ocker lasen
 sich als Tarnmuster, Konfetti oder Strichcode.
+Zwischen den Feldplatten liegt Erde in Urbeks Feldweg-Farbe #888068 statt
+Wiese, und die Platten stehen 4 % statt 2,5 % vom Parzellenrand weg: so
+laufen etwa 12 px breite Feldwege zwischen den Feldern (r11: auf Wiese lagen
+die Felder wie Teppiche ohne Weg dazu).
 Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
 und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16,
 helle Garben als Nieten, Runde 18); auf allem reifen Korn stehen
@@ -381,9 +385,10 @@ Zellmitten der Handelswege, genau dort, wo die Strassen gezeichnet sind.
   Läufer nackt); Beine und Arme schwingen beim Gehen.
 - Wer denselben Weg am selben Tag geht, geht nicht im Gänsemarsch
   ineinander: jeder hat seine Spur quer zum Weg (bis 90 m bei Diorama-Grösse)
-  und einen Versatz längs (bis 200 m). Über Wasser (Fluss, See, Meer) sind
-  sie nicht zu sehen: sie nehmen Brücke oder Fähre (die ersten liefen über
-  den Tiber).
+  und einen Versatz längs (bis 200 m). Über Wasser (Meer, See, das Band
+  eines Flusses mit seinem Ufer) sind sie nicht zu sehen: sie nehmen Brücke
+  oder Fähre (die ersten liefen über den Tiber; die ganze Flusskachel
+  auszublenden versteckte auch die Stände eines Markts am Ufer).
 - Am Ende des Wegs bleiben sie 6 s stehen, am Markt zwischen den Ständen,
   am Hof bei der Arbeit, dann gehen sie heim.
 - **Marktstände:** auf jedem Marktplatz, den die Terrain zeichnet
@@ -478,6 +483,14 @@ gehalten). `ask_events(seit, Fenster)` fragt einmal pro Sim-Tag, höchstens
 einmal pro Sekunde (`Grain::events_in`, `trips::events_to_dict`). Ein Klick
 auf eine Zeile fliegt die Kamera dorthin. Hungertod rot, Diebstahl und
 Verlust orange, Almosen gold, Höfe grün.
+
+Die Ereignisse der letzten 15 Tage stehen auch als Nadeln auf der Karte:
+eine Scheibe in der Farbe der Art auf einem kurzen Stiel, mehrere einer Art
+nah beieinander (ein Vierzehntel der Sichtbreite) als eine Nadel mit ihrer
+Zahl. Zeigen nennt sie, ein Klick fliegt hin. Hof-Ereignisse (Diebstahl,
+Hof übernommen, Erbteil, Lex Manciana, Hof verlassen, Zelt zieht um) stehen
+am Hofplatz, die übrigen in der Mitte ihrer 25-km-Zelle. Mit `E` gehen Liste
+und Nadeln weg.
 
 ## Bedienung
 
