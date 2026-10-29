@@ -751,8 +751,9 @@ pub struct People {
     splits: Vec<(u32, u32)>,
     /// INHERIT_EQUAL (default), INHERIT_NOW or INHERIT_ONE (S83).
     pub inherit: u8,
-    /// With the grain economy and INHERIT_EQUAL: (old household, new
-    /// household of a son) for each split since crate::grain took them.
+    /// With the grain economy: (old household, new household of a son)
+    /// for each split since crate::grain took them (S83 equal shares, and
+    /// the heir of a landlord).
     pub split_log: Vec<(u32, u32)>,
     /// For the view only (crate::events): hunger deaths and moves.
     pub events: Vec<crate::events::Event>,
@@ -1567,8 +1568,28 @@ impl People {
                 all
             }
         };
-        let mut cands: Vec<u32> = Vec::new();
-        for g in grooms {
+        // Each groom's choice against the state at the start of the day, on
+        // all threads. Marrying only takes brides out (a wife is never a
+        // candidate) and changes nothing else a choice reads, so a choice
+        // whose bride is still free when the groom's turn comes is the one
+        // the serial search would make; only the others are searched again.
+        let pool = bevy_tasks::ComputeTaskPool::get();
+        let chunk = grooms.len().div_ceil(pool.thread_num().max(1)).max(64);
+        let this = &*self;
+        let picks: Vec<Option<u32>> = pool
+            .scope(|s| {
+                for part in grooms.chunks(chunk) {
+                    s.spawn(async move {
+                        let mut cands = Vec::new();
+                        part.iter().map(|&g| this.pick_bride(g, day, seed, &mut cands)).collect::<Vec<_>>()
+                    });
+                }
+            })
+            .into_iter()
+            .flatten()
+            .collect();
+        let mut cands = Vec::new();
+        for (g, pick) in grooms.into_iter().zip(picks) {
             // The list is from the start of the month: skip who has died,
             // married or left since.
             let Some(ge) = self.alive(g) else { continue };
@@ -1576,103 +1597,119 @@ impl People {
             if gr.get::<Spouse>().unwrap().0 != NONE || gr.contains::<Travel>() {
                 continue;
             }
-            let (home, born, stand, culture, religion, parents, search, rel, house) = (
-                gr.get::<Home>().unwrap().0,
-                gr.get::<Born>().unwrap().0,
-                gr.get::<Stand>().unwrap().0,
-                gr.get::<Culture>().unwrap().0,
-                gr.get::<Religion>().unwrap().0,
-                *gr.get::<Parents>().unwrap(),
-                gr.get::<Search>().unwrap().0,
-                *gr.get::<Relations>().unwrap(),
-                gr.get::<Household>().unwrap().0,
-            );
             // S65: without free land the family waits.
-            if self.no_land(home)
+            if self.no_land(gr.get::<Home>().unwrap().0)
                 && rnd(seed, g, 0x1a2d, day) % 16 >= NO_LAND_MARRY_PER_16
             {
                 self.stats.waited_for_land += 1;
                 continue;
             }
-            cands.clear();
-            // Acquaintances of the groom and his father.
-            cands.extend_from_slice(&rel.ids[..rel.n as usize]);
-            if let Some(fe) = self.alive(parents.0) {
-                let fr = self.world.get::<Relations>(fe).unwrap();
-                cands.extend_from_slice(&fr.ids[..fr.n as usize]);
-            }
-            let region = self.grid.region(home);
-            if stand >= EQUES {
-                // Elite: empire-wide among their own estate, then one below.
-                cands.extend_from_slice(&self.brides_by_stand[stand as usize]);
-                if search >= WIDEN_MONTHS {
-                    cands.extend_from_slice(&self.brides_by_stand[stand as usize - 1]);
-                }
-            } else {
-                let around = Grid::regions_around(region);
-                let n = if search >= WIDEN_MONTHS { 9 } else { 1 };
-                for &r in &around[..n] {
-                    if let Some(v) = self.brides.get(&(r, stand)) {
-                        cands.extend_from_slice(v);
-                    }
-                }
-            }
-            cands.sort_unstable();
-            cands.dedup();
-            let ga = age_y(day, born);
-            let g_iq = self.world.get::<Intelligence>(ge).unwrap().iq(ga);
-            let mut best: Option<(i64, u32)> = None;
-            for &c in &cands {
-                let Some(ce) = self.alive(c) else { continue };
-                // Cheapest and most selective tests first (most candidates
-                // are acquaintances: men, children, the married): sex and
-                // age from the monthly index, then the components.
-                let ent = self.world.entity(ce);
-                let (sex, born) = match self.sex_born.get(c as usize) {
-                    Some(&(s, b)) if s != UNKNOWN_SEX => (s, b),
-                    _ => (ent.get::<Sex>().unwrap().0, ent.get::<Born>().unwrap().0),
-                };
-                let wa = age_y(day, born);
-                if sex != 0 || !(MARRY_AGE_MIN_F..MARRY_AGE_MAX_F).contains(&wa) || ent.get::<Spouse>().unwrap().0 != NONE || ent.contains::<Travel>() {
-                    continue;
-                }
-                let w = (ent.get::<Stand>().unwrap().0, *ent.get::<Parents>().unwrap(), ent.get::<Household>().unwrap().0);
-                if wa < MARRY_AGE[w.0 as usize].0 || w.2 == house || never_marries(seed, c, self.never_marry_per_1000) {
-                    continue;
-                }
-                // No siblings.
-                if (parents.0 != NONE && w.1 .0 == parents.0) || (parents.1 != NONE && w.1 .1 == parents.1) {
-                    continue;
-                }
-                // S82: partners of similar intelligence (Horwitz et al. 2023).
-                if (g_iq - ent.get::<Intelligence>().unwrap().iq(wa)).abs() > self.iq_mate_gap {
-                    continue;
-                }
-                // CK3-like weighting, in tenths.
-                let mut s = -(((ga - wa) - PREF_GAP).abs() * 10.0) as i64;
-                s -= 50 * (stand as i64 - w.0 as i64).abs();
-                if ent.get::<Culture>().unwrap().0 == culture {
-                    s += 30;
-                }
-                if ent.get::<Religion>().unwrap().0 == religion {
-                    s += 30;
-                }
-                if let Some(k) = rel.ids[..rel.n as usize].iter().position(|&x| x == c) {
-                    s += rel.opinion[k] as i64 / 2;
-                }
-                s += (rnd(seed, g ^ c, 0x5c0e, day) % 20) as i64;
-                if best.is_none_or(|b| s > b.0) {
-                    best = Some((s, c));
-                }
-            }
+            let best = match pick {
+                Some(b) if self.world.get::<Spouse>(self.ent[b as usize]).unwrap().0 == NONE => Some(b),
+                Some(_) => self.pick_bride(g, day, seed, &mut cands),
+                None => None,
+            };
             match best {
-                Some((_, b)) => self.marry(g, b, day),
+                Some(b) => self.marry(g, b, day),
                 None => {
                     let mut s = self.world.get_mut::<Search>(ge).unwrap();
                     s.0 = s.0.saturating_add(1);
                 }
             }
         }
+    }
+
+    /// The bride a single groom would choose today, None if he cannot
+    /// marry or finds nobody (S63, S82). Reads only; `cands` is scratch.
+    fn pick_bride(&self, g: u32, day: i64, seed: u64, cands: &mut Vec<u32>) -> Option<u32> {
+        let ge = self.alive(g)?;
+        let gr = self.world.entity(ge);
+        if gr.get::<Spouse>().unwrap().0 != NONE || gr.contains::<Travel>() {
+            return None;
+        }
+        let (home, born, stand, culture, religion, parents, search, rel, house) = (
+            gr.get::<Home>().unwrap().0,
+            gr.get::<Born>().unwrap().0,
+            gr.get::<Stand>().unwrap().0,
+            gr.get::<Culture>().unwrap().0,
+            gr.get::<Religion>().unwrap().0,
+            *gr.get::<Parents>().unwrap(),
+            gr.get::<Search>().unwrap().0,
+            *gr.get::<Relations>().unwrap(),
+            gr.get::<Household>().unwrap().0,
+        );
+        cands.clear();
+        // Acquaintances of the groom and his father.
+        cands.extend_from_slice(&rel.ids[..rel.n as usize]);
+        if let Some(fe) = self.alive(parents.0) {
+            let fr = self.world.get::<Relations>(fe).unwrap();
+            cands.extend_from_slice(&fr.ids[..fr.n as usize]);
+        }
+        let region = self.grid.region(home);
+        if stand >= EQUES {
+            // Elite: empire-wide among their own estate, then one below.
+            cands.extend_from_slice(&self.brides_by_stand[stand as usize]);
+            if search >= WIDEN_MONTHS {
+                cands.extend_from_slice(&self.brides_by_stand[stand as usize - 1]);
+            }
+        } else {
+            let around = Grid::regions_around(region);
+            let n = if search >= WIDEN_MONTHS { 9 } else { 1 };
+            for &r in &around[..n] {
+                if let Some(v) = self.brides.get(&(r, stand)) {
+                    cands.extend_from_slice(v);
+                }
+            }
+        }
+        cands.sort_unstable();
+        cands.dedup();
+        let ga = age_y(day, born);
+        let g_iq = self.world.get::<Intelligence>(ge).unwrap().iq(ga);
+        let mut best: Option<(i64, u32)> = None;
+        for &c in cands.iter() {
+            let Some(ce) = self.alive(c) else { continue };
+            // Cheapest and most selective tests first (most candidates
+            // are acquaintances: men, children, the married): sex and
+            // age from the monthly index, then the components.
+            let ent = self.world.entity(ce);
+            let (sex, born) = match self.sex_born.get(c as usize) {
+                Some(&(s, b)) if s != UNKNOWN_SEX => (s, b),
+                _ => (ent.get::<Sex>().unwrap().0, ent.get::<Born>().unwrap().0),
+            };
+            let wa = age_y(day, born);
+            if sex != 0 || !(MARRY_AGE_MIN_F..MARRY_AGE_MAX_F).contains(&wa) || ent.get::<Spouse>().unwrap().0 != NONE || ent.contains::<Travel>() {
+                continue;
+            }
+            let w = (ent.get::<Stand>().unwrap().0, *ent.get::<Parents>().unwrap(), ent.get::<Household>().unwrap().0);
+            if wa < MARRY_AGE[w.0 as usize].0 || w.2 == house || never_marries(seed, c, self.never_marry_per_1000) {
+                continue;
+            }
+            // No siblings.
+            if (parents.0 != NONE && w.1 .0 == parents.0) || (parents.1 != NONE && w.1 .1 == parents.1) {
+                continue;
+            }
+            // S82: partners of similar intelligence (Horwitz et al. 2023).
+            if (g_iq - ent.get::<Intelligence>().unwrap().iq(wa)).abs() > self.iq_mate_gap {
+                continue;
+            }
+            // CK3-like weighting, in tenths.
+            let mut s = -(((ga - wa) - PREF_GAP).abs() * 10.0) as i64;
+            s -= 50 * (stand as i64 - w.0 as i64).abs();
+            if ent.get::<Culture>().unwrap().0 == culture {
+                s += 30;
+            }
+            if ent.get::<Religion>().unwrap().0 == religion {
+                s += 30;
+            }
+            if let Some(k) = rel.ids[..rel.n as usize].iter().position(|&x| x == c) {
+                s += rel.opinion[k] as i64 / 2;
+            }
+            s += (rnd(seed, g ^ c, 0x5c0e, day) % 20) as i64;
+            if best.is_none_or(|b| s > b.0) {
+                best = Some((s, c));
+            }
+        }
+        best.map(|b| b.1)
     }
 
     /// The bride moves into the groom's household (S63).
@@ -1997,7 +2034,7 @@ impl People {
                 }
                 self.stats.split_households += 1;
                 self.stats.split_people += group.len() as u64;
-                if self.inherit == INHERIT_EQUAL && self.econ.is_some() {
+                if self.econ.is_some() {
                     self.split_log.push((house, son));
                 }
                 taken.extend(group);

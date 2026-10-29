@@ -101,6 +101,11 @@ menschlich veränderten Geländeformen ist noch nicht beauftragt.
 - Möglichst keine schwebenden Symbole über der Stadt. Gebäudearten sollen am
   Aussehen erkennbar sein; Details per Anklicken oder zuschaltbarer Kartenansicht.
 - Politische Grenzen/Gebietsfarben, Tag/Nacht und Jahreszeitenwechsel später.
+- **Echtzeit-Aufbau wie Cities Skylines** (Ramon, 29.10.2026): Der Spieler baut Höfe,
+  Felder und Strassen, während die Simulation live weiterläuft, und sieht die Folgen sofort.
+  Anspruch ist der Stand der Technik 2026, in Simulationstiefe, ökonomischer Korrektheit,
+  Determinismus und Leistung besser als Cities: Skylines II. Ziel, Recherche und Plan:
+  [REALTIME_GAMEPLAY.md](REALTIME_GAMEPLAY.md). Umsetzung in Kit 2 und im Client, nicht in Kit 1.
 
 Rom mit **100 sichtbaren Wohnblockmodellen** und **800.000 Einwohnern** ist eine
 grafische Arbeitsannahme bzw. historische Modellannahme aus dem Gespräch, keine
