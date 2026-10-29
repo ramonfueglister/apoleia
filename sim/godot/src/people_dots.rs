@@ -13,6 +13,7 @@
 
 use crate::grain_map::{GrainMap, MapLayers, FINE, MARKET_BIT};
 use crate::{tables, trips};
+use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::grain::{EventsView, Grain, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, KIND_NAMES};
 use apoleia_sim::people::{Clock, People};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
@@ -61,6 +62,8 @@ struct Front {
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
+    /// The player's build orders, as of the last command applied.
+    orders: Orders,
 }
 
 /// Work for the sim thread: days to run, stop, a slot whose person to look
@@ -76,11 +79,13 @@ struct Queue {
     work: Option<[f64; 4]>,
     /// The day after which, and the window.
     events: Option<(i64, [f64; 4])>,
+    /// Build menu commands (apoleia_sim::build), applied in order.
+    commands: Vec<Command>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
+        !self.commands.is_empty() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some()
     }
 }
 
@@ -118,14 +123,21 @@ fn publish(view: &PeopleView, pages: &[u32], f: &mut Front) {
     }
 }
 
+/// (column, row) pairs from Godot as (row, column) tiles; an odd last
+/// number is dropped.
+fn pairs(a: &PackedInt32Array) -> Vec<build::Tile> {
+    a.as_slice().chunks_exact(2).map(|p| (p[1], p[0])).collect()
+}
+
 /// Edge of a 25 km cell and of a fine tile, km.
 const CELL_KM: f32 = 25.0;
 const FINE_KM: f32 = CELL_KM / FINE as f32;
 
 fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: PeopleView, shared: Arc<Shared>) {
+    let mut orders = Orders::default();
     loop {
-        // questions from the game first, between two days; then a day
-        let (ask, table, trips, work, events) = {
+        // commands and questions from the game first, between two days; then a day
+        let (commands, ask, table, trips, work, events) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -137,8 +149,18 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             if !asked {
                 q.days -= 1;
             }
-            (q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
+            (std::mem::take(&mut q.commands), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take())
         };
+        if !commands.is_empty() {
+            let today = people.world.resource::<Clock>().day;
+            let mut changed = 0;
+            for c in &commands {
+                changed += orders.apply(c, today);
+            }
+            if changed > 0 {
+                shared.front.lock().unwrap().orders = orders.clone();
+            }
+        }
         if let Some(key) = &table {
             let t = grain.table(&people, key);
             shared.front.lock().unwrap().table = t;
@@ -163,7 +185,7 @@ fn run(mut people: People, mut grain: Grain, mut map: GrainMap, mut view: People
             });
             shared.front.lock().unwrap().person = who;
         }
-        if ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
+        if !commands.is_empty() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() {
             continue;
         }
         let t0 = Instant::now();
@@ -292,6 +314,56 @@ impl ApoleiaPeople {
         }
         self.shared.queue.lock().unwrap().days += days as u64;
         self.shared.wake.notify_one();
+    }
+
+    /// Orders `kind` (apoleia_sim::build: 0 farm, 1 field, 2 road) on the
+    /// fine tiles `tiles` (column, row pairs, absolute: floor(x / 1.5625),
+    /// floor(z / 1.5625) world km). Applied between two days; `build_orders`
+    /// shows it a frame or two later.
+    #[func]
+    fn order_build(&mut self, kind: i64, tiles: PackedInt32Array) {
+        if self.worker.is_none() || !(0..build::KIND_NAMES.len() as i64).contains(&kind) {
+            return;
+        }
+        let tiles = pairs(&tiles);
+        if tiles.is_empty() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Place { kind: kind as u8, tiles });
+        self.shared.wake.notify_one();
+    }
+
+    /// Takes back the orders on `tiles` (as `order_build`).
+    #[func]
+    fn cancel_build(&mut self, tiles: PackedInt32Array) {
+        let tiles = pairs(&tiles);
+        if self.worker.is_none() || tiles.is_empty() {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Cancel { tiles });
+        self.shared.wake.notify_one();
+    }
+
+    /// The build orders: {"version": bumped on every change, "tiles":
+    /// column, row, kind for each, "names": the kinds}.
+    #[func]
+    fn build_orders(&self) -> VarDictionary {
+        let f = self.shared.front.lock().unwrap();
+        let mut flat = Vec::with_capacity(f.orders.len() * 3);
+        for ((row, col), o) in f.orders.iter() {
+            flat.extend_from_slice(&[col, row, o.kind as i32]);
+        }
+        let mut d = VarDictionary::new();
+        d.set("version", f.orders.version as i64);
+        d.set("tiles", &PackedInt32Array::from(flat.as_slice()));
+        d.set("names", &PackedStringArray::from_iter(build::KIND_NAMES.iter().map(|n| GString::from(*n))));
+        d
+    }
+
+    /// Build orders version only, to poll each frame.
+    #[func]
+    fn build_version(&self) -> i64 {
+        self.shared.front.lock().unwrap().orders.version as i64
     }
 
     /// Days queued but not yet computed.
