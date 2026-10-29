@@ -190,6 +190,9 @@ const TARGET_DAYS: i64 = 90;
 const PRICE_MIN_PCT: i64 = 25;
 const PRICE_MAX_PCT: i64 = 800;
 const SPREAD_PCT: i64 = 10;
+/// S100 (Ramon: market economy): the dealers buy from the farms only up to
+/// this many days of their sales in store (PLACEHOLDER).
+const DEALER_MAX_DAYS: i64 = 180;
 /// Traders: at most 32 markets known (GRAIN.md), go when the margin per
 /// kg after freight is above this share of the price. PLACEHOLDER.
 const KNOWN: usize = 32;
@@ -2379,12 +2382,14 @@ impl Grain {
         let mi = t.dest as usize;
         match t.kind {
             SELL => {
-                // The market's dealers buy as far as their cash goes; the
+                // The market's dealers buy as far as their cash goes and up
+                // to DEALER_MAX_DAYS of their sales in store (S100); the
                 // rest goes home again (PLACEHOLDER: a market is a body of
                 // dealers with cash, not the state).
                 let m = &mut self.markets[mi];
                 let price = Self::buy_price(m);
-                let kg = if alive { t.kg.min(m.money / price.max(1)).max(0) } else { 0 };
+                let room = (m.demand / 1000 * DEALER_MAX_DAYS - m.store).max(0);
+                let kg = if alive { t.kg.min(m.money / price.max(1)).min(room).max(0) } else { 0 };
                 let pay = kg * price;
                 m.store += kg;
                 m.money -= pay;

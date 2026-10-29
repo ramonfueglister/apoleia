@@ -628,6 +628,40 @@ eigenen Markt, soweit dessen Bargeld reicht, und Fernhändler fahren je 388 kg. 
 Überschuss von rund 14'000 t im Jahr kommt so nicht zum Tor. Gleicher Fingerabdruck mit
 1 und 4 Threads (people b977f0990b749f21, grain 3e4d918d99a43cad), Geldbilanz geht auf.
 
+## Säen nach Preis und Lagergrenze der Marktleute (S99, S100, 10 Jahre, Seed 1, `run10-s100-market.txt`; vorher: `run10-s98-outside.txt`)
+
+Höfe säen zuerst den eigenen Bedarf plus ein Viertel Reserve, den Rest ihrer Felder nach
+dem Preis, zu dem der Markt ihnen abkauft (S99). Die Marktleute kaufen nur, bis ihr
+Lager 180 Tage Absatz deckt (S100). Jahr 10, vorher → nachher:
+
+| Grösse | S98 | S99 + S100 |
+|---|---|---|
+| Ernte | 46'307 t | 31'414 t |
+| Median-Preis | 2,22 Denar/kg (Minimum) | 3,95 Denar/kg |
+| Menschen in Märkten am Mindestpreis | 98'426 | 16'962 |
+| Hoflager | 182'484 t | 103'172 t |
+| Marktlager | 10'065 t | 3'251 t |
+| Verdorben im Jahr | 5'924 t | 3'195 t |
+| Ausfuhr / Einfuhr nach draussen | 215 / 13 t | 94 / 7 t |
+| Hungertote | 106 | 175 |
+| Wachstum | 0,09 % | 0,02 % |
+
+Der Preis löst sich vom Minimum. Die Hoflager wachsen aber weiter, rund 5'000 t im Jahr
+statt 14'000 t, weil jeder Hof seine Reserve jedes Jahr neu sät, auch wenn sein Speicher
+schon für Jahre reicht. Mehr Hungertote: Die Höfe säen weniger und stellen weniger
+Taglöhner ein (7,1 statt 7,6 Mio. Taglohntage), und wer in Korn bezahlt wird, hat weniger
+(Vermutung aus den Zahlen, nicht einzeln nachgewiesen). Gleicher Fingerabdruck mit 1 und
+4 Threads (people e449122c9fd055ef, grain b08e0d2faa6e749a), Geldbilanz geht auf.
+
+100 Jahre (`run100-s100-market.txt`; vorher `run100-s94-money.txt`): Der späte Einbruch
+bleibt, mit mehr Hungertoten. Jahr 100: 115'625 statt 131'781 Menschen, Hungertote 879 statt
+645, Wachstum −0,29 statt −0,36 %, Median-Preis 8,65 statt 6,27 Denar/kg. Ab Jahr 75 fallen
+Ernte (27'248 → 25'270 t) und Taglohntage (6,2 → 4,8 Mio.), die Höfe von 19'172 (Jahr 10)
+auf 14'464, und 20,9 % der Höfe sind zu klein für ihren Haushalt. Die Ursache ist nicht
+nachgewiesen; Kandidat ist die Teilung durch gleiches Erbe. Auffällig ausserdem: 526 Mio.
+Denar „no payee“ in 100 Jahren (Jahr 10: 798), Geld ohne Empfänger, das aus dem Kreislauf
+fällt; noch nicht untersucht.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -723,6 +757,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Esel pro Hof | jeder Familien- und Pachthof hat einen | GRAIN-NUMBERS-Vorschlag |
 | Markt | Preis läuft 1/30 pro Tag auf Grundpreis × 90 Tage / Lagerreichweite (0,25–8-fach), Spanne ±10 %, Händlerbargeld zum Start für 60 Tage | frei gewählt, EU5-ähnlich |
 | Märkte ausserhalb (S98) | Preis draussen = Grundpreis ± 10 %, 500 km hinter dem Rand; pro Woche ein Viertel des Lagers hinaus oder eine Woche Verkauf herein | frei gewählt |
+| Säen nach Preis (S99) | eigener Bedarf plus 25 % Reserve immer, der Rest voll ab 90 % des Grundpreises im Ankauf, darunter anteilig | frei gewählt |
+| Lagergrenze der Marktleute (S100) | kaufen nur bis 180 Tage Absatz im Lager | frei gewählt |
 | Händler | Marge über 10 %, Last 388 kg, Startgeld 5'000 Denar, Leerfahrt halbe Fracht; Unverkauftes in die eigene Vorratskammer (S96) | frei gewählt |
 | Nachrichten | Preise anderer Märkte kommen mit der Reisezeit verspätet an | frei gewählt |
 | Landlose | Almosen 30 % des Bedarfs vom Markt, Diebstahl mit 5/16 pro Monat (40 kg); zuerst eingestellt | S69 offen |
