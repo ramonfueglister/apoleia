@@ -137,6 +137,9 @@ var _house_prep_view: SubViewport
 var _house_prep_rect: ColorRect
 var _house_texture: Texture2DArray
 var _house_prep_frames := 0
+var _house_read_gen := -1 # people.house_gen() when the house placement last ran, read back the next frame
+var _house_reads := 0
+var _house_limits := PackedInt32Array() # houses each level of detail took in the list
 var _figures: MultiMeshInstance3D
 var _figure_material := ShaderMaterial.new()
 var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's feet (people_figure_shadows.gdshader)
@@ -785,13 +788,34 @@ static func _still_listed(listed: Vector3, need: Vector3) -> bool:
 ## The houses near the camera, nearest first, split over the levels of
 ## detail: the nearest in the finest one the view width allows.
 func _update_houses(view_km: float, synced: bool) -> void:
+	var levels := HOUSE_LOD_MAX.size()
+	var limits := PackedInt32Array()
+	for lod in levels:
+		limits.append(HOUSE_LOD_MAX[lod] if view_km <= HOUSE_LOD_KM[lod] else 0)
 	var circle := _view_circle()
-	if not synced and _still_listed(_house_list_at, circle):
+	if not synced and limits == _house_limits and _still_listed(_house_list_at, circle):
 		return
+	_house_limits = limits
 	_house_list_at = Vector3(circle.x, circle.y, circle.z * 1.15)
 	var centre := Vector2(_house_list_at.x, _house_list_at.y)
 	var radius := _house_list_at.z
-	var slots: PackedInt32Array = people.houses_near(centre.x, centre.y, radius, HOUSE_MAX)
+	# each build's MultiMesh gets the run of its own houses in each level,
+	# once their builds are known (people.set_house_places); else every
+	# build draws the whole level and its shader leaves out the others
+	var slots: PackedInt32Array
+	var blocks := PackedInt32Array()
+	if people.has_method("houses_split"):
+		var split: Dictionary = people.houses_split(centre.x, centre.y, radius, HOUSE_MAX, limits)
+		slots = split.slots
+		blocks = split.blocks
+	else:
+		slots = people.houses_near(centre.x, centre.y, radius, HOUSE_MAX)
+		var start := 0
+		for lod in levels:
+			var n := mini(slots.size() - start, limits[lod])
+			for variant in Farmhouse.VARIANTS:
+				blocks.append_array([start, n])
+			start += n
 	var values := PackedFloat32Array()
 	values.resize(HOUSE_MAX)
 	for i in slots.size():
@@ -799,18 +823,38 @@ func _update_houses(view_km: float, synced: bool) -> void:
 	_house_list_image.set_data(LIST_W, HOUSE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_house_list_tex.update(_house_list_image)
 	_lots_dirty = true
-	var start := 0
-	var levels := HOUSE_LOD_MAX.size()
 	for lod in levels:
-		var n := 0
-		if view_km <= HOUSE_LOD_KM[lod]:
-			n = mini(slots.size() - start, HOUSE_LOD_MAX[lod])
 		for variant in Farmhouse.VARIANTS:
 			var i := variant * levels + lod
-			_house_materials[i].set_shader_parameter("list_offset", start)
-			_houses[i].multimesh.visible_instance_count = n
-		start += n
+			var b := (lod * Farmhouse.VARIANTS + variant) * 2
+			_house_materials[i].set_shader_parameter("list_offset", blocks[b])
+			_houses[i].multimesh.visible_instance_count = blocks[b + 1]
+			_houses[i].visible = blocks[b + 1] > 0 # an empty one still costs a draw in each pass
 	_lots.multimesh.visible_instance_count = slots.size()
+
+## Reads the house placement pass back from the GPU without waiting for it
+## (RenderingDevice.texture_get_data_async), so each house's build is known
+## on the CPU (people.set_house_places) and each build's MultiMesh draws
+## only its own houses (a quarter of the vertices).
+func _read_house_places(gen: int) -> void:
+	var rd := RenderingServer.get_rendering_device()
+	if rd == null:
+		return
+	var rid := RenderingServer.texture_get_rd_texture(_house_prep_view.get_texture().get_rid())
+	if rid.is_valid():
+		rd.texture_get_data_async(rid, 0, _on_house_places.bind(gen))
+
+## `gen` is people.house_gen() when the pass ran: houses changed since stay
+## unknown until a later pass is read.
+func _on_house_places(data: PackedByteArray, gen: int) -> void:
+	if people == null:
+		return
+	var changed: int = people.set_house_places(data, _house_prep_view.size.x, terrain.world_min, LOT_KM, gen)
+	if changed > 0:
+		_house_list_at = Vector3.INF # cut the list by the builds now known
+	if _house_reads == 0:
+		print(JSON.stringify({"event": "house_builds", "bytes": data.size(), "changed": changed}))
+	_house_reads += 1
 
 ## DOTS_PER_INSTANCE triangles around the unit circle, z = dot number; the
 ## shader scales each to pixels and cuts the round dot out of it.
@@ -1059,10 +1103,17 @@ func _frame(delta: float) -> void:
 		_prep_rect.visible = not figures
 		_prep_points.visible = figures
 		_prep_frames = 2
+	# the house placement of the last frame back to the CPU, before this
+	# frame's pass draws over it
+	if _house_read_gen >= 0:
+		_read_house_places(_house_read_gen)
+		_house_read_gen = -1
 	if _house_prep_frames > 0:
 		_house_prep_frames -= 1
 		_house_prep_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 		_lots_dirty = true # the farmhouses may stand on other lots
+		if people.has_method("house_gen"):
+			_house_read_gen = people.house_gen()
 	if _prep_frames > 0 and (figures or dots):
 		_prep_frames -= 1
 		prep_runs += 1

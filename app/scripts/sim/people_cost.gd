@@ -110,7 +110,7 @@ func _finish_phase() -> void:
 		n.cast_shadow = _shadows[n]
 	_shadows.clear()
 	for h: MultiMeshInstance3D in _dots._houses:
-		h.visible = true
+		h.visible = h.multimesh.visible_instance_count != 0
 	_dots.terrain._terrain_material.set_shader_parameter("sim_map_on", _dots.map_on)
 
 ## The instances and mesh sizes of each part, as drawn in the last frame.
