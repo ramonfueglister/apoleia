@@ -157,7 +157,12 @@ sind kleiner (Geschlecht und Kind stehen im Datensatz, der Schlüssel hat dafür
 14 statt 16 Bit). Kleider in Woll-, Leinen-, Krapp- und Waidfarben oder nach
 Farbmodus. Reisende gehen mit schwingenden Beinen und Armen, die anderen
 wiegen leicht und drehen sich ab und zu. Die Figuren werfen Schatten wie die
-Bäume. Gezeichnet werden nur die Personen nahe
+Bäume; da die Schattenkarte für so schmale Körper zu grob ist, legt
+`people_figure_shadows.gdshader` zusätzlich unter jede Figur einen flachen
+Schattenstreifen von den Füssen weg von der Sonne (Richtung und Länge aus der
+Sonne der Szene), der den Boden darunter multiplikativ so dunkel macht wie
+ein Hausschatten (Runde 13: Figurenschatten nur 6 % dunkler als das Gras,
+die Leute wirkten aufgeklebt). Gezeichnet werden nur die Personen nahe
 der Ansicht: `ApoleiaPeople.near` liefert ihre Slots (Rust, ein Durchlauf über
 die Anker, nur wenn sich die Ansicht deutlich bewegt oder ein Tag kam), höchstens
 16 384, als Liste in einer kleinen Textur; das MultiMesh zeichnet genau so viele.
@@ -191,7 +196,10 @@ eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
 vor dem Haus, durch deren offenes Tor das Heu zu sehen ist. Dazu Holzstoss,
-Gemüsebeet, Obstbaum, Zaun und ein Weg durchs Tor bis zur Gasse; ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
+Gemüsebeet, Obstbaum, Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
+gepflegtes Gras, eine Spur frischer als die Weide draussen, neben dem Weg ein
+Vorplatz aus gestampfter Erde (Dreschplatz) mit einem Brunnen (niedrige
+Steinfassung, dunkles Wasser, zwei Pfosten und ein Ziegeldächlein); ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
 hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4 m hohe Wände
 unter einem flachen Walmdach (23°), damit das Dach das Haus von oben nicht
@@ -211,7 +219,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
 bleiben), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v25_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v27_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -259,16 +267,16 @@ Datenkachel (250 m, aus der Nähe genau eine Viertelkachel des Geländes) als Bl
 Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
-Bildbreite ist jede Datenkachel eine Parzelle nach derselben Regel, auch
-nur auf ebenen Kacheln: Brache und Stoppeln im warmen Stroh (Urbeks
-Weizengelb, der Takt seines Ackerlands), braune Ackererde, Weizen für
-reife Saat; wachsende Saat und Reben im Grün der Wiese, so ist das Land
-Gras mit gelben und braunen Feldern darauf und kein Tarnmuster aus
-Grüntönen und Khaki (Runde 12: trockenes Gras für Brache und ein
-dunkles Grün für Saat lasen sich als Tarnfleck). Brache und Saat (und Reben)
-liegen in Blöcken von 2 × 2 Kacheln (1 km), damit kein Schachbrett
-entsteht. So liest sich das Land um die Städte bis 30 km als Felder
-(vorher grosse Blöcke in vier blassen Tönen, die bei 22 km leer wirkten).
+Bildbreite sind die Parzellen weiter 250 m gross, je zwei nebeneinander
+(quer oder längs nach Block) ein langes Feld, nach derselben Regel und nur
+auf ebenen Kacheln, in wenigen nahen Tönen: Brache halb Stoppeln (gedämpftes
+Stroh), halb beweidetes junges Grün; Saat je Feld etwas vor oder hinter der
+Jahreszeit: frisch gepflügte Erde, junges Grün, das Oliv wachsenden Getreides,
+von Bohnen und Reben, Urbeks Weizengelb erst reif. So ist das Land um die
+Dörfer bis 40 km ein feines Flickwerk wie in der gemalten Mittelansicht und
+keine grossen Flecken (Runde 13: Blöcke von 2 × 2 km in Stroh und Grün
+lasen sich als Tarnmuster; Runde 12: trockenes Gras für alle Brache und ein
+dunkles Grün für Saat ebenso).
 Ausserhalb des Quadrats der Feldplatten tragen auch die nahen Parzellen
 diese Farben. Pfade zum
 Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an

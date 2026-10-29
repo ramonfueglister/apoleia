@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v25_%d_%s.res"
+const CACHE := "user://farmhouse_v27_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -60,11 +60,13 @@ const PALETTE := [
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("728f4a"), Color("56703a"),
 	Color("6b5a48"), Color("c99a48"), Color("cebc97"), Color("9a7232"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
-	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38")]
+	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
+	Color("5c8f51"), Color("33505e")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
-	ROOF_E, ROOF_DARK_E, ROOF_W, ROOF_DARK_W, ROOF_S, ROOF_DARK_S, ROOF_N, ROOF_DARK_N }
+	ROOF_E, ROOF_DARK_E, ROOF_W, ROOF_DARK_W, ROOF_S, ROOF_DARK_S, ROOF_N, ROOF_DARK_N,
+	LOT_GRASS, WATER }
 # roof tiles by the way their slope faces (+x, -x, +z, -z; _tile), so
 # people_houses.gdshader can light each slope by where it faces once the
 # house is turned
@@ -253,7 +255,8 @@ static func _shed(p: Vector3) -> int:
 	return EMPTY
 
 ## Woodpile against the -x end, a shrub by the front corner, the garden
-## beds at the back, the path to the gate and the fence.
+## beds at the back, the path to the gate, a well on the forecourt of
+## stamped earth, the kept grass of the yard and the fence.
 static func _yard(p: Vector3) -> int:
 	# a low stack of logs against the end wall, the cut ends showing as a
 	# checker of light and dark (a plain block reads as a crate)
@@ -273,17 +276,49 @@ static func _yard(p: Vector3) -> int:
 	# earth path from the door through the gate to the lane, flush with the ground
 	if p.y < 0.125 and absf(p.x) < 0.625 and p.z >= HALF_Z and p.z < PATH_END:
 		return EARTH
-	if p.y < 0.0:
-		return EMPTY # the rest of the sunk layer is the terrain's
+	var well := _well(p)
+	if well != EMPTY:
+		return well
 	# vegetable beds behind the house: small bushy plants in rows on dark soil
-	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y < 0.625:
+	if p.z >= -5.75 and p.z < -4.0 and absf(p.x) < 3.5 and p.y >= 0.0 and p.y < 0.625:
 		if p.y < 0.125:
 			return SOIL
 		var plant := posmod(int(floor(p.x / 0.5)), 2) == 0 and posmod(int(floor((p.z + 5.75) / 0.5)), 2) == 0
 		if not plant:
 			return EMPTY
 		return LEAF if p.y >= 0.375 else LEAF_DARK
+	# inside the fence the yard is kept grass, a shade fresher than the
+	# pasture round it, and stamped earth on the forecourt beside the path
+	# (the threshing floor), flush with the ground like the path
+	if p.y < 0.125 and p.x > FENCE_LO.x and p.x < FENCE_HI.x and p.z > FENCE_LO.y and p.z < FENCE_HI.y:
+		var forecourt := p.x >= 1.0 and p.x < 6.5 and p.z >= HALF_Z + 0.25 and p.z < 6.0
+		return EARTH if forecourt else LOT_GRASS
+	if p.y < 0.0:
+		return EMPTY # the rest of the sunk layer is the terrain's
 	return _fence(p)
+
+## A well on the forecourt in quarter-metre blocks: a low stone curb six
+## blocks across with its corners cut and dark water inside, two posts and
+## a little gable roof of tiles over it, so it reads as a well and not as
+## a block of stone.
+static func _well(p: Vector3) -> int:
+	if p.y < 0.0 or p.x < 4.5 or p.x >= 6.0 or p.z < 4.25 or p.z >= 5.75:
+		return EMPTY
+	var bx := int(floor((p.x - 4.5) / 0.25))
+	var bz := int(floor((p.z - 4.25) / 0.25))
+	var by := int(floor(p.y / 0.25))
+	var end := bx == 0 or bx == 5
+	if by == 7:
+		return RIDGE if bz == 2 or bz == 3 else EMPTY
+	if by == 6:
+		return _tile(3 if bz < 3 else 2, bz == 0 or bz == 5) if bz >= 1 and bz <= 4 else EMPTY
+	if by >= 2:
+		return WOOD_DARK if end and (bz == 2 or bz == 3) else EMPTY # the posts
+	if end and (bz == 0 or bz == 5):
+		return EMPTY
+	if bx >= 2 and bx <= 3 and bz >= 2 and bz <= 3:
+		return WATER if by == 0 else EMPTY
+	return PLINTH
 
 ## A fruit tree in the back corner of the yard: a trunk and a round crown
 ## of blocks, darker underneath, with red fruit on its outside.

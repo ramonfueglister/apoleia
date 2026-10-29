@@ -43,6 +43,7 @@ const ROUND_FROM_PX := 1.75 # below this the dots stay triangles (no discard)
 const PREP_SHADER = preload("res://shaders/people_dots_prep.gdshader")
 const HOUSE_SHADER = preload("res://shaders/people_houses.gdshader")
 const FIGURE_SHADER = preload("res://shaders/people_figures.gdshader")
+const FIGURE_SHADOW_SHADER = preload("res://shaders/people_figure_shadows.gdshader")
 const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the camera
 const CROP_ROWS := 12 # rows of vegetables or vines per parcel
@@ -124,6 +125,8 @@ var _house_texture: Texture2DArray
 var _house_prep_frames := 0
 var _figures: MultiMeshInstance3D
 var _figure_material := ShaderMaterial.new()
+var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's feet (people_figure_shadows.gdshader)
+var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
@@ -222,6 +225,21 @@ func setup(tile_terrain: Node3D) -> bool:
 	fm.visible_instance_count = 0
 	_figures.multimesh = fm
 	add_child(_figures)
+	_figure_shadow_material.shader = FIGURE_SHADOW_SHADER
+	for key in ["figure_scale", "list_w", "list_tex"]:
+		_figure_shadow_material.set_shader_parameter(key, _figure_material.get_shader_parameter(key))
+	_figure_shadows = MultiMeshInstance3D.new()
+	_figure_shadows.name = "PeopleFigureShadows"
+	_figure_shadows.material_override = _figure_shadow_material
+	_figure_shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_figure_shadows.custom_aabb = _figures.custom_aabb
+	var sm := MultiMesh.new()
+	sm.transform_format = MultiMesh.TRANSFORM_3D
+	sm.mesh = _shadow_strip_mesh()
+	sm.instance_count = FIGURE_MAX
+	sm.visible_instance_count = 0
+	_figure_shadows.multimesh = sm
+	_figures.add_child(_figure_shadows) # shown with the figures
 	_crop_material.shader = CROP_SHADER
 	_crop_material.set_shader_parameter("crop_n", CROP_N)
 	_crop_material.set_shader_parameter("crop_rows", float(CROP_ROWS))
@@ -319,9 +337,10 @@ func _rebuild() -> void:
 		m.set_shader_parameter("people_tex", _texture)
 		m.set_shader_parameter("page_side", side)
 	_material.set_shader_parameter("place_tex", _prep_view.get_texture())
-	_figure_material.set_shader_parameter("people_tex", _texture)
-	_figure_material.set_shader_parameter("page_side", side)
-	_figure_material.set_shader_parameter("place_tex", _prep_view.get_texture())
+	for m in [_figure_material, _figure_shadow_material]:
+		m.set_shader_parameter("people_tex", _texture)
+		m.set_shader_parameter("page_side", side)
+		m.set_shader_parameter("place_tex", _prep_view.get_texture())
 	_list_at = Vector3.INF
 	_prep_frames = 2
 	var mm := MultiMesh.new()
@@ -355,6 +374,28 @@ const FIG_SWORD := 13
 const FIG_CLOAK := 14
 const FIG_APRON := 15
 const FIG_BUNDLE := 16
+
+## The figures' shadows fall the way the scene's sun throws them.
+func _aim_figure_shadows() -> void:
+	var sun = get_parent().get("sun")
+	if not sun is DirectionalLight3D:
+		return
+	var d: Vector3 = -(sun as DirectionalLight3D).global_transform.basis.z # the way the light travels
+	if d.y > -0.05:
+		return
+	_figure_shadow_material.set_shader_parameter("shadow_dir", Vector2(d.x, d.z) / -d.y)
+
+## One strip for a figure's shadow: UV.x along it (0 at the feet, 1 at the
+## far end), UV.y across (-1, 1); people_figure_shadows.gdshader lays it out.
+static func _shadow_strip_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var corners := [Vector2(0, -1), Vector2(1, -1), Vector2(1, 1), Vector2(0, 1)]
+	for i in [0, 1, 2, 0, 2, 3]:
+		var c: Vector2 = corners[i]
+		st.set_uv(c)
+		st.add_vertex(Vector3(c.x, 0.0, c.y))
+	return st.commit()
 
 static func _figure_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
@@ -513,6 +554,7 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	_list_image.set_data(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_list_tex.update(_list_image)
 	_figures.multimesh.visible_instance_count = slots.size()
+	_figure_shadows.multimesh.visible_instance_count = slots.size()
 
 ## The square of parcels whose crops stand, around the camera; only up
 ## close and on the finest terrain tiles (the parcel is half a tile).
@@ -769,7 +811,7 @@ func _process(delta: float) -> void:
 	var source: ShaderMaterial = terrain._terrain_material
 	for key in _shared_uniforms:
 		var value = source.get_shader_parameter(key)
-		for m in [_material, _prep_material, _house_prep_material, _figure_material, _crop_material] + _house_materials:
+		for m in [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material] + _house_materials:
 			m.set_shader_parameter(key, value)
 	# floats rounded, so the camera settling by a hair does not rerun the pass
 	var key_now := PLACE_KEYS.map(func(k):
@@ -799,6 +841,7 @@ func _process(delta: float) -> void:
 	multimesh.visible_instance_count = -1 if dots else 0
 	if figures:
 		_update_figures(view_km, synced > 0)
+		_aim_figure_shadows()
 	_material.set_shader_parameter("dot_px", px)
 	var want_round := px >= ROUND_FROM_PX
 	if want_round != (_material.shader == SHADER_ROUND):

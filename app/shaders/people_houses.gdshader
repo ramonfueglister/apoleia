@@ -67,6 +67,8 @@ void vertex() {
 		tint *= (key & 16u) != 0u ? vec3(1.0) : SHUTTER_BROWN / SHUTTER_GREEN;
 	} else if ((index >= 4 && index <= 6) || (index >= 29 && index <= 36)) {
 		tint *= ROOFS[(key >> 9u) % 4u];
+	} else if (index == 37) {
+		tint = vec3(1.0); // the yard's grass alike on every farm
 	}
 	// each roof slope lit by the way it faces once the house is turned
 	// (farmhouse.gd _tile): turned to the sun (west) a little lighter,
