@@ -29,6 +29,7 @@ use godot::classes::image::Format;
 use godot::classes::{Image, Texture2DArray};
 use godot::prelude::*;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -142,6 +143,9 @@ struct Shared {
     queue: Mutex<Queue>,
     wake: Condvar,
     front: Mutex<Front>,
+    /// The farms' building sites go into the house records
+    /// (`show_site_houses`; off until the house shader draws them).
+    site_houses: AtomicBool,
 }
 
 fn publish_houses(view: &mut PeopleView, f: &mut Front) {
@@ -226,7 +230,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     let mut map = GrainMap::new(&game.people);
     map.build(&game.grain, today);
     let mut view = PeopleView::new(&game.people, &data.inputs.cities, data.cover.as_ref());
-    mark_work(game, &mut view);
+    mark_work(game, &mut view, shared.site_houses.load(Ordering::Relaxed));
     let pages = view.update(&mut game.people);
     let mut f = shared.front.lock().unwrap();
     publish(&view, &pages, &mut f);
@@ -295,10 +299,17 @@ fn row_of(mut t: Table, id: i64) -> Option<Table> {
 }
 
 /// Each craft household's workshop onto its house record (view.rs Houses),
-/// and the families whose farm is not in their village onto its tile
-/// (Grain::homes_moved: farms built from orders, heirs).
-fn mark_work(game: &Game, view: &mut PeopleView) {
+/// the families whose farm is not in their village onto its tile
+/// (Grain::homes_moved: farms built from orders, heirs), and with `sites`
+/// each farm's building site as a house record where the farm will stand.
+fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
     view.set_homes(&game.grain.homes_moved());
+    let farms: Vec<(u32, u8)> = if sites {
+        game.grain.sites().filter(|(_, s)| s.kind == build::FARM && s.need > 0).map(|(_, s)| (s.fine, (s.done * 255 / s.need).clamp(0, 255) as u8)).collect()
+    } else {
+        Vec::new()
+    };
+    view.set_sites(&farms);
     let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
     view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
 }
@@ -346,6 +357,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         MapThread::start(map, move |layers| sh.front.lock().unwrap().map = layers)
     };
     let mut shown = Instant::now();
+    let mut sites_were = shared.site_houses.load(Ordering::Relaxed);
     loop {
         // commands and questions from the game first, between two days; then a day
         let (commands, save, check, ask, table, trips, work, events, goods, sites, market) = {
@@ -436,8 +448,10 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         // the workshops at the houses (S105; the graphics put them there),
         // once a week as the crafts sell by the week; a farm just taken
         // shows its family on its tile at once
-        if today % 7 == 0 || finished {
-            mark_work(&game, &mut view);
+        let sites_on = shared.site_houses.load(Ordering::Relaxed);
+        if today % 7 == 0 || finished || sites_on != sites_were {
+            mark_work(&game, &mut view, sites_on);
+            sites_were = sites_on;
         }
         if remap {
             map.draw(MapJob::take(&game.grain, today));
@@ -588,6 +602,7 @@ impl ApoleiaPeople {
         let built = self.shared.front.lock().unwrap().built;
         self.stop();
         let shared = Arc::new(Shared::default());
+        shared.site_houses.store(self.shared.site_houses.load(Ordering::Relaxed), Ordering::Relaxed);
         {
             let mut f = shared.front.lock().unwrap();
             f.loading = Some((0, replay.day()));
@@ -744,6 +759,17 @@ impl ApoleiaPeople {
         d.set("markets", c.markets as i64);
         d.set("cash", c.cash as f64 / 1000.0);
         d
+    }
+
+    /// Puts each farm's building site (S113) into the house records, as a
+    /// house where the farm will stand: [x, z, -village code, site key <<
+    /// 8 | share built × 255] (sim/src/view.rs Houses). Off by default,
+    /// since a house shader that does not know the negative village code
+    /// would misplace them; kept across loads.
+    #[func]
+    fn show_site_houses(&mut self, on: bool) {
+        self.shared.site_houses.store(on, Ordering::Relaxed);
+        self.shared.wake.notify_one();
     }
 
     /// Asks the sim thread for the building sites in the window (world km);

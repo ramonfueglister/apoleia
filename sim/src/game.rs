@@ -321,9 +321,8 @@ mod tests {
         v.set_homes(&homes);
         v.update(&mut g.people);
         let (x, z) = v.settle.fine_centre_km(fine);
-        let houses = &v.houses;
-        let at = (0..houses.slots()).map(|s| &houses.data[s * 4..s * 4 + 4]).find(|r| r[2] != 0.0 && (r[0], r[1]) == (x as f32, z as f32) && (r[3] as u32 >> 8 & 0x3fff) == hh & 0x3fff);
-        assert!(at.is_some(), "the house stands on the farm's tile");
+        let house = v.houses.of(hh).expect("a house");
+        assert_eq!((house[0], house[1]), (x as f32, z as f32), "the house stands on the farm's tile");
     }
 
     #[test]
