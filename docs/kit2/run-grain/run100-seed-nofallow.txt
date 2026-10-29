@@ -1,0 +1,208 @@
+clearable land: farm_8,farm_16
+fields under grain each year: 100 % (fallow 0 %)
+people=116805 markets=1783 farms=22321 (family 12215 tenant 7493 estate 2613) tents=2815 (11070 people) fields_ha=92874 farm_store_t=7091 market_t=2681 | spawn people 1994 ms, grain 124 ms, rss_mb=173
+year  people growth%  births deaths hunger left  farms tents/ppl  harvest_t lost_t sow_short_ha hired_d  sold_t bought_t trade_trips traded_t  alms_t stolen_t  eaten%  price min/med/max  rome  trails paths  hungry  ms_day
+   1  114983  -1.56    3070   4542    399   373  19576  5801/11968     53926    855          628   221163    3900     2393       24173     6705     143        2    92.7  2.22/ 8.83/69.97 22.43   2169   108   17465   4.93
+      eaten by kind (farm/tent/wage/trader/elite): 94% 58% 94% 98% 97% | to tents without workers or kin (S79): 5244
+   2  115032   0.04    7562   6486   1067  1098  18162  6733/16510     53541    819          807   277597    5364     2659       23287     8424     290        3    85.8  2.22/ 5.65/69.97 10.52   8588   540   15956   5.33
+      eaten by kind (farm/tent/wage/trader/elite): 87% 48% 97% 99% 100% | to tents without workers or kin (S79): 422
+   3  113329  -1.48    6692   6375    940  1995  17600  6580/15719     54231    998          972   317676    4752     2630       21047     7678     340        2    87.6  2.22/ 3.62/69.97  7.28  11903   916   13159   5.28
+      eaten by kind (farm/tent/wage/trader/elite): 91% 46% 98% 99% 100% | to tents without workers or kin (S79): 436
+   4  111777  -1.37    6590   6241    760  1922  17268  6165/13992     54934   1145         1128   350952    4417     2627       18862     7078     279        2    89.8  2.22/ 2.70/69.97  6.71  13686  1169   10031   4.81
+      eaten by kind (farm/tent/wage/trader/elite): 93% 49% 98% 99% 100% | to tents without workers or kin (S79): 393
+   5  111065  -0.64    6602   6010    571  1265  16980  5847/12864     55157   1436         1010   376531    3570     2605       13373     5028     234        2    91.5  2.22/ 2.26/69.97  4.39  14313  1294    8481   5.23
+      eaten by kind (farm/tent/wage/trader/elite): 94% 52% 98% 99% 100% | to tents without workers or kin (S79): 360
+   6  110180  -0.80    6483   6090    522  1296  16790  5442/11415     55596   1605         1250   400092    2738     2595        6557     2383     197        1    92.8  2.22/ 2.22/69.97  3.00  14777  1337    6765   5.17
+      eaten by kind (farm/tent/wage/trader/elite): 95% 54% 98% 99% 99% | to tents without workers or kin (S79): 325
+   7  109547  -0.57    6362   6024    457   934  16642  5019/10107     55698   1739         1280   414140    2748     2573        5985     2163     157        1    94.0  2.22/ 2.22/69.97  4.54  15204  1396    5575   4.80
+      eaten by kind (farm/tent/wage/trader/elite): 96% 59% 98% 99% 100% | to tents without workers or kin (S79): 331
+   8  109087  -0.42    6188   5821    375   843  16500  4653/ 9122     55675   1979         1373   420521    2893     2561        7253     2691     128        1    94.8  2.22/ 2.22/69.97  4.17  15462  1417    4613   4.47
+      eaten by kind (farm/tent/wage/trader/elite): 97% 62% 98% 99% 99% | to tents without workers or kin (S79): 318
+   9  109337   0.23    6289   5454    305   581  16366  4298/ 8306     55831   2088         1451   428240    2958     2567        7661     2860     112        1    95.4  2.22/ 2.22/69.97  4.39  15736  1427    4244   4.87
+      eaten by kind (farm/tent/wage/trader/elite): 97% 64% 98% 99% 99% | to tents without workers or kin (S79): 292
+  10  109147  -0.17    6031   5691    341   538  16231  3893/ 7507     55792   2126         1499   430648    2830     2581        6004     2218      99        1    95.6  2.22/ 2.22/69.97  3.87  16039  1427    3858   4.71
+      eaten by kind (farm/tent/wage/trader/elite): 97% 67% 98% 99% 100% | to tents without workers or kin (S79): 260
+  11  109247   0.09    6119   5541    271   466  16111  3545/ 6927     55654   2527         1868   432602    2865     2541        7131     2641      88        1    96.0  2.22/ 2.22/69.97  4.47  16248  1438    3651   4.90
+      eaten by kind (farm/tent/wage/trader/elite): 97% 68% 98% 99% 100% | to tents without workers or kin (S79): 256
+  12  109431   0.17    6020   5484    299   361  16030  3122/ 6288     55580   2225         1803   413176    2548     2565        5132     1882      79        1    96.2  2.22/ 2.22/69.97  4.30  16389  1452    3415   4.65
+      eaten by kind (farm/tent/wage/trader/elite): 97% 66% 98% 98% 100% | to tents without workers or kin (S79): 212
+  13  109654   0.20    6045   5483    269   336  15969  2713/ 5619     55992   2356         1941   394974    3195     2589        8279     3079      71        0    96.5  2.22/ 2.22/69.97  4.67  16483  1466    3076   4.94
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 98% 98% 100% | to tents without workers or kin (S79): 210
+  14  109947   0.27    6067   5456    245   313  15872  2315/ 5033     56355   2288         1968   383660    2992     2607        7070     2662      63        0    96.7  2.22/ 2.22/69.97  4.84  16602  1482    3074   4.89
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 98% 98% 99% | to tents without workers or kin (S79): 209
+  15  110296   0.32    6006   5354    248   324  15784  1945/ 4595     56637   2450         2080   373021    2680     2625        5887     2187      58        0    96.9  2.22/ 2.22/69.97  4.11  16771  1487    2711   4.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 98% 98% 99% | to tents without workers or kin (S79): 182
+  16  110305   0.01    5798   5376    218   401  15524  1830/ 4236     56952   2310         1883   366725    2932     2618        6983     2592      57        0    97.0  2.22/ 2.22/69.97  5.01  16897  1496    2621   4.41
+      eaten by kind (farm/tent/wage/trader/elite): 98% 68% 97% 98% 100% | to tents without workers or kin (S79): 176
+  17  110284  -0.02    5593   5272    222   353  15329  1736/ 4133     57124   2364         1874   360429    3128     2622        8186     3094      49        0    97.1  2.22/ 2.22/69.97  4.78  16963  1504    2631   4.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 71% 97% 97% 100% | to tents without workers or kin (S79): 157
+  18  110699   0.38    5876   5174    213   273  15146  1639/ 3857     57405   2318         1849   355761    3206     2612        8082     3008      46        0    97.2  2.22/ 2.22/69.97  4.64  17073  1501    2426   4.51
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 97% 98% 100% | to tents without workers or kin (S79): 148
+  19  110867   0.15    5828   5359    251   315  14927  1571/ 3789     57883   2350         1816   355945    2860     2611        6372     2380      42        0    97.2  2.22/ 2.22/69.97  5.01  17032  1497    2368   4.51
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 100% | to tents without workers or kin (S79): 162
+  20  110909   0.04    5677   5313    222   322  14760  1476/ 3660     58139   2409         1859   349923    2921     2586        6743     2528      40        0    97.3  2.22/ 2.22/69.97  4.18  17035  1499    2205   4.66
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 97% 99% | to tents without workers or kin (S79): 151
+  21  111191   0.25    5676   5202    202   177  14612  1409/ 3471     58459   2342         1841   343889    2827     2606        6816     2530      38        0    97.4  2.22/ 2.22/69.97  4.73  17090  1495    2122   4.24
+      eaten by kind (farm/tent/wage/trader/elite): 98% 75% 97% 98% 100% | to tents without workers or kin (S79): 121
+  22  111518   0.29    5694   5212    213   159  14437  1366/ 3438     58734   2391         1889   342910    3039     2614        7414     2782      36        0    97.5  2.22/ 2.22/69.97  4.25  17115  1496    2196   4.54
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 97% 100% | to tents without workers or kin (S79): 129
+  23  111636   0.11    5671   5271    206   282  14266  1317/ 3286     58855   2472         2019   338862    3011     2615        7499     2813      35        0    97.5  2.22/ 2.22/69.97  4.57  17112  1502    2109   4.56
+      eaten by kind (farm/tent/wage/trader/elite): 98% 75% 97% 98% 99% | to tents without workers or kin (S79): 119
+  24  112143   0.45    5854   5189    194   152  14111  1249/ 3130     59006   2461         2121   339915    2941     2625        6988     2599      32        0    97.6  2.22/ 2.22/69.97  4.84  17127  1501    2087   4.91
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 100% | to tents without workers or kin (S79): 107
+  25  112553   0.37    6039   5391    199   245  13916  1196/ 2996     59172   2517         2002   337558    3045     2635        7693     2882      29        0    97.6  2.22/ 2.22/69.97  3.19  17119  1504    2084   4.87
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 100% | to tents without workers or kin (S79): 95
+  26  113040   0.43    6027   5277    197   291  13745  1132/ 2849     59345   2531         2017   335046    2907     2631        7183     2655      25        0    97.6  2.22/ 2.22/69.97  4.67  17109  1507    1897   4.96
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 97% 98% 100% | to tents without workers or kin (S79): 86
+  27  113779   0.65    6304   5368    185   167  13589  1069/ 2726     59618   2562         2036   332767    3291     2644        8500     3222      25        0    97.7  2.22/ 2.22/69.97  3.59  17138  1513    1813   4.59
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 100% | to tents without workers or kin (S79): 84
+  28  114421   0.56    6218   5375    194   198  13448   996/ 2562     59868   2539         2035   328972    3176     2654        7797     2956      25        0    97.8  2.22/ 2.22/69.97  3.27  17182  1499    1757   4.71
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 98% 100% | to tents without workers or kin (S79): 73
+  29  115008   0.51    6242   5499    195   157  13325   898/ 2288     59977   2666         2083   324406    2901     2652        7324     2762      21        0    97.9  2.22/ 2.22/69.97  3.82  17178  1489    1568   4.64
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 98% 100% | to tents without workers or kin (S79): 49
+  30  115688   0.59    6328   5508    175   141  13194   832/ 2208     60224   2734         2171   323078    2912     2654        6721     2492      20        0    97.9  2.22/ 2.22/69.97  5.00  17110  1491    1667   5.15
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 97% 98% 100% | to tents without workers or kin (S79): 53
+  31  116510   0.71    6497   5499    164   208  13041   779/ 2074     60394   2749         2266   323650    2985     2684        7800     2933      20        0    98.0  2.22/ 2.22/69.97  4.86  17091  1486    1463   5.02
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 98% 99% | to tents without workers or kin (S79): 66
+  32  117229   0.62    6570   5641    194   179  12897   735/ 2019     60501   2848         2307   324722    2963     2678        7386     2773      21        0    98.0  2.22/ 2.22/69.97  4.93  17122  1453    1506   4.67
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 97% 98% 100% | to tents without workers or kin (S79): 46
+  33  118120   0.76    6626   5595    179   142  12742   662/ 1904     60716   2834         2379   332302    2989     2696        8032     2991      19        0    98.1  2.22/ 2.22/69.97  4.04  17040  1447    1565   4.51
+      eaten by kind (farm/tent/wage/trader/elite): 99% 79% 97% 98% 100% | to tents without workers or kin (S79): 41
+  34  118863   0.63    6684   5774    146   175  12613   610/ 1782     60793   2900         2534   332419    2948     2704        7350     2769      16        0    98.1  2.22/ 2.22/69.97  4.75  17029  1443    1535   4.79
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 97% 98% 100% | to tents without workers or kin (S79): 45
+  35  119805   0.79    6791   5713    202   148  12496   568/ 1697     60883   2986         2549   328691    3023     2718        7680     2907      15        0    98.0  2.22/ 2.22/69.97  4.61  16981  1437    1446   4.55
+      eaten by kind (farm/tent/wage/trader/elite): 98% 81% 97% 98% 100% | to tents without workers or kin (S79): 40
+  36  120816   0.84    6976   5774    178   172  12374   531/ 1596     61216   2889         2586   329924    2959     2735        7344     2756      14        0    98.0  2.22/ 2.22/69.97  5.38  17005  1426    1538   4.84
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 97% 98% 100% | to tents without workers or kin (S79): 34
+  37  121706   0.74    6819   5759    210   178  12266   476/ 1436     61361   3016         2664   330330    3135     2740        8090     3074      11        0    98.1  2.22/ 2.22/69.97  5.09  17028  1420    1550   5.01
+      eaten by kind (farm/tent/wage/trader/elite): 98% 85% 97% 98% 98% | to tents without workers or kin (S79): 33
+  38  122684   0.80    6997   5823    191   196  12131   457/ 1400     61761   2887         2728   329457    3177     2737        7626     2859      10        0    98.1  2.22/ 2.22/69.97  4.80  16993  1409    1430   4.96
+      eaten by kind (farm/tent/wage/trader/elite): 98% 86% 96% 98% 98% | to tents without workers or kin (S79): 36
+  39  123726   0.85    6997   5832    182   120  12025   414/ 1313     61992   2885         2646   329057    3117     2743        6894     2609      11        0    98.1  2.22/ 2.22/69.97  5.28  17002  1405    1475   4.62
+      eaten by kind (farm/tent/wage/trader/elite): 99% 83% 96% 98% 98% | to tents without workers or kin (S79): 23
+  40  124600   0.71    7038   5872    177   290  11902   391/ 1247     62287   2832         2644   330858    3100     2751        6470     2440      10        0    98.1  2.22/ 2.22/69.97  5.29  17009  1402    1433   4.91
+      eaten by kind (farm/tent/wage/trader/elite): 98% 86% 96% 98% 99% | to tents without workers or kin (S79): 33
+  41  125442   0.68    7016   5951    206   225  11783   355/ 1175     62464   2883         2817   322648    3170     2754        6585     2498      12        0    98.1  2.22/ 2.22/69.97  5.61  17027  1399    1398   5.31
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 96% 98% 100% | to tents without workers or kin (S79): 21
+  42  126438   0.79    7057   5943    192   123  11675   340/ 1150     62718   2850         2748   320633    3112     2784        6660     2494      11        0    98.1  2.22/ 2.22/69.97  5.30  17011  1406    1310   5.46
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 96% 98% 100% | to tents without workers or kin (S79): 28
+  43  127435   0.79    7120   6012    177   105  11577   307/ 1109     62977   2847         2786   318604    3094     2800        6766     2575      11        0    98.0  2.22/ 2.22/69.97  5.55  16955  1404    1439   5.39
+      eaten by kind (farm/tent/wage/trader/elite): 98% 81% 96% 98% 100% | to tents without workers or kin (S79): 22
+  44  128163   0.57    7025   6098    185   208  11483   281/ 1098     63187   2849         2814   319835    3003     2821        6757     2547      11        0    98.0  2.22/ 2.22/69.97  4.66  16919  1409    1157   5.33
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 96% 98% 100% | to tents without workers or kin (S79): 11
+  45  129116   0.74    7078   5960    204   162  11383   268/ 1074     63381   2829         2645   317415    3049     2789        6721     2519      12        0    97.8  2.22/ 2.22/69.97  5.33  16840  1393    1389   5.10
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 95% 97% 99% | to tents without workers or kin (S79): 14
+  46  130219   0.85    7219   5989    191   122  11305   235/  991     63776   2720         2646   316423    3124     2825        7173     2689      11        0    97.9  2.22/ 2.22/69.97  5.72  16783  1390    1355   4.92
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 96% 97% 100% | to tents without workers or kin (S79): 12
+  47  131279   0.81    7331   6075    192   195  11218   230/  955     64097   2631         2617   316496    3322     2837        7366     2775      10        0    97.9  2.22/ 2.22/69.97  5.83  16771  1385    1562   5.28
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 96% 97% 98% | to tents without workers or kin (S79): 19
+  48  132073   0.60    7088   6164    201   130  11128   223/ 1051     64411   2610         2568   309346    3275     2851        6869     2609      12        0    97.8  2.22/ 2.22/69.97  5.49  16772  1373    1550   5.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 96% 97% 97% | to tents without workers or kin (S79): 17
+  49  132988   0.69    7177   6057    214   206  11039   215/ 1047     64686   2624         2586   306227    3353     2874        7516     2839      17        0    97.8  2.22/ 2.22/69.97  5.53  16750  1362    1557   5.31
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 96% 97% 97% | to tents without workers or kin (S79): 10
+  50  134057   0.80    7397   6144    184   185  10960   205/  961     64910   2620         2496   310986    3356     2891        7231     2729      15        0    97.9  2.22/ 2.22/69.97  5.53  16689  1357    1465   4.80
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 100% | to tents without workers or kin (S79): 10
+  51  134748   0.52    7041   6166    207   184  10889   195/  952     65270   2592         2540   309497    3236     2903        6806     2592      13        0    97.9  2.22/ 2.22/69.97  5.57  16625  1363    1432   5.29
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 97% 99% | to tents without workers or kin (S79): 7
+  52  135980   0.91    7438   6102    220   104  10810   189/  938     65617   2478         2399   306759    3271     2891        7077     2674      13        0    97.9  2.22/ 2.22/69.97  6.97  16599  1347    1578   5.39
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 99% | to tents without workers or kin (S79): 9
+  53  137152   0.86    7485   6225    211    93  10736   182/  942     65887   2564         2328   307307    3401     2922        7581     2886      15        0    97.8  2.22/ 2.22/69.97  7.80  16632  1347    1578   5.44
+      eaten by kind (farm/tent/wage/trader/elite): 98% 71% 97% 96% 99% | to tents without workers or kin (S79): 13
+  54  138026   0.64    7338   6318    213   150  10659   170/  924     66203   2528         2418   310341    3362     2946        7414     2802      15        0    97.9  2.22/ 2.22/69.97  7.14  16622  1354    1365   5.36
+      eaten by kind (farm/tent/wage/trader/elite): 98% 71% 98% 97% 99% | to tents without workers or kin (S79): 16
+  55  138991   0.70    7578   6449    210   155  10588   153/  869     66406   2525         2452   308986    3336     2942        7370     2778      14        0    97.9  2.22/ 2.22/69.97 12.14  16509  1354    1557   5.47
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 96% 98% | to tents without workers or kin (S79): 11
+  56  140140   0.83    7520   6266    229   105  10522   156/  859     66683   2491         2501   304938    3354     2978        7545     2848      14        0    97.9  2.22/ 2.22/69.97  6.30  16460  1344    1421   5.67
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 99% | to tents without workers or kin (S79): 18
+  57  141118   0.70    7659   6414    204   268  10467   148/  826     66891   2511         2451   303713    3347     2979        7391     2780      14        0    97.9  2.22/ 2.22/69.97  9.00  16350  1340    1561   5.64
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 97% 97% 99% | to tents without workers or kin (S79): 11
+  58  142226   0.79    7729   6451    202   171  10392   148/  804     67109   2515         2505   304241    3333     2994        7289     2685      13        0    97.8  2.22/ 2.22/69.97 10.52  16302  1341    1694   5.94
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 97% 97% 99% | to tents without workers or kin (S79): 8
+  59  143305   0.76    7832   6621    232   133  10334   141/  840     67405   2532         2430   306326    3314     3011        7124     2670      13        0    97.8  2.22/ 2.22/69.97 10.63  16243  1346    1605   5.94
+      eaten by kind (farm/tent/wage/trader/elite): 98% 73% 97% 97% 100% | to tents without workers or kin (S79): 7
+  60  144325   0.71    7879   6705    234   162  10262   141/  818     67637   2506         2428   301530    3412     3043        7101     2640      11        0    97.9  2.22/ 2.22/69.97 10.10  16156  1360    1509   5.57
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 97% 97% 99% | to tents without workers or kin (S79): 17
+  61  145319   0.69    7852   6586    221   266  10202   127/  733     67975   2421         2438   299346    3447     3058        7270     2683      11        0    97.8  2.22/ 2.22/69.97 10.23  16119  1336    1603   5.81
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 99% | to tents without workers or kin (S79): 3
+  62  146265   0.65    7949   6776    238   228  10139   126/  762     68301   2350         2365   306250    3466     3034        7057     2622       9        0    97.8  2.22/ 2.22/69.97 14.80  16067  1337    1480   5.93
+      eaten by kind (farm/tent/wage/trader/elite): 98% 79% 97% 97% 99% | to tents without workers or kin (S79): 2
+  63  147470   0.82    8144   6775    249   167  10090   112/  681     68560   2318         2444   303222    3447     3062        7043     2617       7        0    97.8  2.22/ 2.22/69.97 16.29  16092  1327    1432   6.63
+      eaten by kind (farm/tent/wage/trader/elite): 98% 80% 97% 97% 98% | to tents without workers or kin (S79): 8
+  64  148616   0.78    8211   6903    255   195  10005   114/  691     68780   2262         2404   303012    3418     3084        7048     2595       8        0    97.9  2.22/ 2.22/69.97 17.47  16031  1327    1412   5.79
+      eaten by kind (farm/tent/wage/trader/elite): 98% 82% 97% 97% 98% | to tents without workers or kin (S79): 5
+  65  149726   0.75    8174   6899    250   133   9935   110/  711     68964   2298         2423   301591    3485     3081        7065     2599       9        0    97.8  2.22/ 2.22/69.97 14.72  15964  1323    1543   6.45
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 97% 97% 97% | to tents without workers or kin (S79): 5
+  66  150916   0.79    8304   6807    252   307   9867   109/  698     69235   2265         2381   297315    3445     3127        7140     2642       9        0    97.9  2.22/ 2.22/69.97 16.40  15905  1319    1256   6.08
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 97% 99% | to tents without workers or kin (S79): 4
+  67  152008   0.72    8414   7021    213   313   9804   100/  609     69364   2356         2307   300783    3485     3106        7358     2731       9        0    97.9  2.22/ 2.22/69.97 18.25  15873  1317    1573   5.74
+      eaten by kind (farm/tent/wage/trader/elite): 98% 78% 97% 97% 99% | to tents without workers or kin (S79): 6
+  68  153089   0.71    8410   7142    257   174   9736   103/  704     69492   2381         2397   297318    3477     3112        7315     2696      10        0    97.9  2.22/ 2.22/69.97 15.64  15846  1306    1598   5.74
+      eaten by kind (farm/tent/wage/trader/elite): 98% 76% 97% 97% 99% | to tents without workers or kin (S79): 4
+  69  154439   0.88    8518   7031    236   144   9689    99/  716     69779   2246         2373   300754    3461     3124        7199     2644      11        0    97.9  2.22/ 2.22/69.97 22.32  15790  1303    1557   5.93
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 97% 97% 99% | to tents without workers or kin (S79): 3
+  70  155609   0.76    8574   7210    215   200   9634    96/  659     70029   2317         2399   302815    3506     3133        7152     2644      12        0    97.9  2.22/ 2.22/69.97 22.72  15780  1298    1672   6.08
+      eaten by kind (farm/tent/wage/trader/elite): 98% 75% 97% 97% 99% | to tents without workers or kin (S79): 6
+  71  156719   0.71    8587   7249    262   219   9572    98/  676     70197   2331         2419   303448    3494     3130        6951     2540       9        0    97.8  2.22/ 2.22/69.97 26.63  15700  1293    1458   6.19
+      eaten by kind (farm/tent/wage/trader/elite): 98% 77% 96% 97% 99% | to tents without workers or kin (S79): 8
+  72  157888   0.75    8673   7333    253   173   9524    96/  681     70243   2377         2467   299994    3473     3142        6802     2508      10        0    97.8  2.22/ 2.22/69.97 45.82  15620  1284    1957   6.13
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 97% 97% 99% | to tents without workers or kin (S79): 3
+  73  158942   0.67    8598   7294    276   250   9479    83/  562     70427   2369         2511   298434    3529     3155        6743     2489      12        0    97.7  2.22/ 2.22/69.97 15.18  15579  1276    1800   6.49
+      eaten by kind (farm/tent/wage/trader/elite): 98% 63% 96% 97% 99% | to tents without workers or kin (S79): 4
+  74  160185   0.78    8667   7294    269   131   9426    86/  625     70745   2257         2361   299941    3487     3126        6418     2353       9        0    97.7  2.22/ 2.22/69.97 26.76  15466  1273    1689   5.96
+      eaten by kind (farm/tent/wage/trader/elite): 98% 68% 96% 97% 99% | to tents without workers or kin (S79): 2
+  75  161333   0.72    8843   7439    278   256   9383    81/  541     70955   2242         2352   295771    3575     3141        6580     2402      11        0    97.7  2.22/ 2.22/69.97 46.63  15471  1281    1658   6.17
+      eaten by kind (farm/tent/wage/trader/elite): 98% 65% 96% 97% 99% | to tents without workers or kin (S79): 5
+  76  162364   0.64    8791   7561    272   209   9342    77/  542     71177   2224         2284   296071    3557     3164        6222     2296       8        0    97.7  2.22/ 2.22/69.97 21.12  15474  1268    1636   6.67
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 96% 97% 99% | to tents without workers or kin (S79): 1
+  77  163571   0.74    8947   7497    278   264   9298    70/  492     71454   2112         2390   295377    3660     3161        6406     2342       8        0    97.8  2.22/ 2.22/69.97 25.44  15497  1269    1613   6.66
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 96% 97% 99% | to tents without workers or kin (S79): 8
+  78  164843   0.78    9069   7656    267   116   9265    70/  491     71569   2169         2359   295132    3631     3190        6326     2303       7        0    97.8  2.22/ 2.22/69.97 30.52  15543  1271    1351   6.39
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 97% 97% 99% | to tents without workers or kin (S79): 3
+  79  166148   0.79    9086   7689    299    86   9229    64/  474     71871   2103         2264   293711    3693     3167        6414     2336       8        0    97.7  2.22/ 2.22/69.97 32.82  15529  1265    1598   6.86
+      eaten by kind (farm/tent/wage/trader/elite): 98% 72% 96% 96% 100% | to tents without workers or kin (S79): 3
+  80  167177   0.62    9071   7850    285   219   9196    60/  433     72038   2213         2293   293035    3682     3198        6298     2260       8        0    97.6  2.22/ 2.22/69.97 60.21  15492  1264    1733   6.66
+      eaten by kind (farm/tent/wage/trader/elite): 98% 71% 95% 96% 99% | to tents without workers or kin (S79): 1
+  81  168387   0.72    9204   7872    307    96   9160    61/  495     72257   2143         2197   291880    3736     3191        6164     2234       7        0    97.6  2.22/ 2.22/69.97 59.34  15484  1256    1846   6.52
+      eaten by kind (farm/tent/wage/trader/elite): 98% 74% 96% 96% 98% | to tents without workers or kin (S79): 2
+  82  169421   0.61    9110   7870    315   208   9128    65/  492     72511   2118         2195   288762    3750     3209        6164     2230       8        0    97.5  2.22/ 2.22/69.97 34.55  15490  1237    1824   6.42
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 96% 96% 98% | to tents without workers or kin (S79): 8
+  83  170679   0.74    9156   7692    286   208   9090    64/  467     72869   2007         2054   288515    3785     3263        6207     2267       8        0    97.7  2.22/ 2.22/69.97 30.30  15476  1233    1635   6.70
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 96% 97% 97% | to tents without workers or kin (S79): 6
+  84  171964   0.75    9288   7873    303   139   9057    53/  427     72999   2146         2147   290206    3753     3276        6032     2204       7        0    97.8  2.22/ 2.22/69.97 54.68  15474  1233    1533   6.62
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 97% 97% 97% | to tents without workers or kin (S79): 0
+  85  173049   0.63    9359   7964    306   301   9007    57/  533     73137   2126         2122   287892    3721     3280        5964     2166       8        0    97.7  2.22/ 2.22/69.97 37.65  15392  1228    1774   6.64
+      eaten by kind (farm/tent/wage/trader/elite): 98% 69% 96% 97% 97% | to tents without workers or kin (S79): 3
+  86  174445   0.81    9624   8002    293   225   8975    53/  426     73341   2140         2007   292118    3744     3285        5896     2117       7        0    97.7  2.22/ 2.22/69.97 35.77  15348  1229    1730   6.32
+      eaten by kind (farm/tent/wage/trader/elite): 98% 70% 97% 96% 96% | to tents without workers or kin (S79): 4
+  87  175791   0.77    9588   8008    297   235   8938    51/  387     73664   2094         2019   285141    3768     3293        5912     2126       6        0    97.6  2.22/ 2.22/69.97 51.07  15352  1227    1973   6.15
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 96% 96% 95% | to tents without workers or kin (S79): 5
+  88  177167   0.78    9722   8187    330   159   8901    59/  518     73896   2022         1878   287650    3800     3320        5881     2154       7        0    97.5  2.22/ 2.22/69.97 41.40  15349  1231    2157   5.82
+      eaten by kind (farm/tent/wage/trader/elite): 98% 71% 96% 96% 98% | to tents without workers or kin (S79): 5
+  89  178202   0.58    9669   8193    313   442   8869    50/  464     74020   2113         1995   280674    3782     3321        5714     2061      12        0    97.5  2.22/ 2.22/69.97 38.90  15314  1239    2130   6.12
+      eaten by kind (farm/tent/wage/trader/elite): 98% 62% 96% 96% 96% | to tents without workers or kin (S79): 3
+  90  179524   0.74    9785   8224    291   265   8827    46/  427     74311   2053         1991   279080    3812     3350        5757     2097       8        0    97.5  2.22/ 2.22/69.97 26.36  15309  1233    1778   6.19
+      eaten by kind (farm/tent/wage/trader/elite): 98% 68% 96% 97% 99% | to tents without workers or kin (S79): 7
+  91  180701   0.66    9792   8247    323   363   8792    41/  353     74605   1967         1880   276975    3793     3340        5710     2108       9        0    97.6  2.22/ 2.22/69.97 30.92  15271  1232    1972   6.30
+      eaten by kind (farm/tent/wage/trader/elite): 98% 65% 96% 97% 97% | to tents without workers or kin (S79): 5
+  92  181745   0.58    9808   8314    302   427   8742    41/  349     74836   1925         1874   276640    3769     3322        5827     2126       6        0    97.5  2.22/ 2.22/69.97 35.57  15218  1230    1969   6.23
+      eaten by kind (farm/tent/wage/trader/elite): 98% 67% 95% 97% 96% | to tents without workers or kin (S79): 4
+  93  182400   0.36    9986   8378    341   979   8684    37/  334     74944   1911         1850   276703    3747     3303        5876     2130       8        0    97.6  2.22/ 2.22/69.97 30.91  15223  1229    1835   6.46
+      eaten by kind (farm/tent/wage/trader/elite): 98% 66% 95% 98% 95% | to tents without workers or kin (S79): 2
+  94  183005   0.33    9974   8411    313  1015   8612    42/  388     74577   1999         1874   271324    3802     3308        5803     2122       7        0    97.7  2.22/ 2.22/69.97 47.33  15248  1204    1737   6.48
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 96% 98% 98% | to tents without workers or kin (S79): 7
+  95  183488   0.26   10092   8594    343   940   8546    39/  389     74602   1899         1810   271149    3836     3306        5920     2171       8        0    97.7  2.22/ 2.22/69.97 25.25  15200  1190    1839   5.95
+      eaten by kind (farm/tent/wage/trader/elite): 98% 59% 96% 98% 95% | to tents without workers or kin (S79): 3
+  96  183527   0.02    9918   8614    322  1333   8466    41/  391     74436   1904         1973   265614    3817     3309        5840     2162      10        0    97.6  2.22/ 2.22/69.97 14.91  15090  1175    1942   6.12
+      eaten by kind (farm/tent/wage/trader/elite): 98% 60% 96% 97% 91% | to tents without workers or kin (S79): 7
+  97  183375  -0.08   10060   8556    304  1617   8375    40/  442     74082   1865         1887   267892    3820     3299        5766     2137       9        0    97.7  2.22/ 2.22/69.97 28.96  15061  1171    1750   6.28
+      eaten by kind (farm/tent/wage/trader/elite): 98% 60% 97% 98% 96% | to tents without workers or kin (S79): 2
+  98  183685   0.17    9943   8353    281  1266   8300    34/  365     73902   1834         1903   266308    3764     3310        5525     2051      10        0    97.8  2.22/ 2.22/69.97 26.60  14952  1159    1663   6.75
+      eaten by kind (farm/tent/wage/trader/elite): 98% 61% 97% 98% 99% | to tents without workers or kin (S79): 3
+  99  184114   0.23   10247   8559    298  1275   8218    39/  459     73681   1772         1851   265097    3757     3288        5584     2071       9        0    97.7  2.22/ 2.22/69.97 11.90  14895  1154    1625   7.06
+      eaten by kind (farm/tent/wage/trader/elite): 98% 56% 97% 98% 99% | to tents without workers or kin (S79): 4
+ 100  184435   0.17   10167   8622    355  1256   8146    36/  546     73482   1735         1740   261891    3737     3290        5588     2090       9        0    97.7  2.22/ 2.22/69.97 16.88  14785  1135    1746   6.54
+      eaten by kind (farm/tent/wage/trader/elite): 98% 57% 97% 98% 100% | to tents without workers or kin (S79): 3
+day_us all p50=5259 p95=8260 p99=10431 max=39075 | grain p50=1170 mean=1361 p95=2471 p99=3598 max=21075 (day 13364) | rss_mb=375 peak_people=184694
+grain per day us: events=211 peaks=14 labour=170 markets=186 eat=246 traders=45 paths=311 (rebuild 43, first builds in total 247 ms) | per month us: census=5288
+busiest trade cells (trips, cell): [(39133, 14286), (38236, 18557), (38228, 18174), (34402, 14095), (30379, 22793), (30342, 22785), (29957, 18366), (27497, 14478), (25229, 17981), (25229, 17788)]
+fingerprint people=a0b67f31f5d0a0cf grain=c452eba201ad10fa

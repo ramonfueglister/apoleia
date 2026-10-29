@@ -27,7 +27,7 @@ Details: [REGION](operations/REGION.md).
 | K03 | **Zoomgebundene Kamera:** flache 2D-Fernkarte → kontinuierlicher räumlicher Übergang → isometrische Diorama-Nahansicht. Keine freie Drehung/Neigung und keine manuelle Ansichtsumschaltung. |
 | K04 | **Stufenloser Zoom** von Gesamtübersicht bis Nahansicht für mehrere spätere Häuser mit ihrer Umgebung. Keine sichtbaren Wechsel zwischen Welt-, Regions- und Stadtmodi. EU5/Victoria 3 dienen als Referenz für das Weltkarten- und Zoomgefühl. |
 | K05 | Alle Ansichten entstehen aus **einer gemeinsamen geografischen Grundlage**. Küsten, Flüsse, Gebirge und räumliche Beziehungen dürfen nicht pro Zoomstufe neu erfunden werden. |
-| K06 | **Tatsächlich verkleinerte, aus realen Geodaten abgeleitete Modellwelt.** Dokumentierte gemeinsame Skalierung und maßstabsabhängige Detailreduktion, keine frei erfundene Geografie, willkürliche Distanzverkürzung oder Geländeüberhöhung. Geografische Formen/Proportionen innerhalb offengelegter Projektions- und Fehlergrenzen erhalten. |
+| K06 | **Tatsächlich verkleinerte, aus realen Geodaten abgeleitete Modellwelt im SimCity-2000-Stil.** Längen werden gemeinsam skaliert, Details maßstabsabhängig reduziert, keine frei erfundene Geografie und keine willkürliche Distanzverkürzung. **Geändert 27.10.2026 (Ramon: „halt dich an sc2000 ändere kit“):** Höhen sind mit einem festen, weltweit gleichen Faktor von **3,75** überhöht (zuerst 7,5; am selben Tag halbiert, damit das Relief wie im SimCity-2000-Vorbild aus wenigen, langen Terrassen besteht), und das Relief folgt der SimCity-2000-Regel: Kachelecken liegen höchstens eine Höhenstufe auseinander, im Land gibt es nur flache Kacheln und Rampen und keine Klippen. Eine Stufe ist 0,6 Kachelbreiten hoch. Umsetzung: `tools/build_tile_terrain.py` (`HEIGHT_EXAGGERATION`, `sc2k_relief`), [TILE_TERRAIN](../product-renderer/TILE_TERRAIN.md). |
 | K07 | **Heutige Geodaten als Basis.** Datensätze und Versionen sind noch nicht gewählt. Historische Korrekturen werden später ergänzt; heutige Daten sind keine historisch validierte 180er-Landschaft. |
 | K08 | **Einheitliche stilisierte, natürliche Landschaftsgrafik** gemäß der Nutzer-Primärreferenz im [STYLE_GUIDE](references/STYLE_GUIDE.md): lesbare facettierte Geländeformen, natürliche Übergänge und detailreiche, übersichtliche Waldgruppen. Nicht fotorealistisch, nicht übermäßig low-poly, voxelartig oder würfelig-klotzig. Frühere Urbek-Bilder bleiben nachrangige Formkontexte, keine Terrain-Hauptvorgabe. |
 | K09 | **Zurückhaltende, nicht zu bunte natürliche Palette** wie die Nutzer-Primärreferenz: gemäßigte Grünflächen, tiefes Blau und helleres Flachwasser sowie helle graubeige Felsgebirge. Die Primärreferenz bestimmt Palette, Materialwirkung und Detaildichte; sie begründet weder ein Polygonbudget noch eine Leistungszusage. |
@@ -188,9 +188,10 @@ Kleine stilisierte Bäume können reale Landcoververteilung repräsentieren; sie
 keine behaupteten Messpunkte jedes einzelnen Baums. Datenlücken offen führen,
 keine frei erfundene Topografie oder rekonstruierte 180er-Vegetation ergänzen.
 
-K03/K06 ersetzen die frühere durchgehend feste Isometrie sowie freie Überhöhung
-und ungleichmäßige Verkürzung der Zwischenräume. Ein skalierter Modellraum
-verwendet zunächst gleiche Längen-/Höhenskalierung; die erlaubte Abflachung des
+K03/K06 ersetzen die frühere durchgehend feste Isometrie sowie ortsabhängige
+Überhöhung und ungleichmäßige Verkürzung der Zwischenräume. Ein skalierter Modellraum
+verwendet eine gemeinsame Längenskalierung und seit 27.10.2026 einen festen
+Höhenfaktor von 3,75 (SimCity-2000-Stil, K06); die erlaubte Abflachung des
 Reliefs für die Fernkarte ist eine separat dokumentierte Rendertransformation.
 Eine flache Erdprojektion kann nicht überall Form, Fläche und Länge gleichzeitig
 erhalten. Ihre Verzerrung wird gemessen, nicht mit globaler Fehlerfreiheit beworben.

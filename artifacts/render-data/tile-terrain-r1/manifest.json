@@ -1,0 +1,666 @@
+{
+  "revision": "tile-terrain-r1",
+  "status": "implementiert",
+  "node_grid": {
+    "width": 5163,
+    "height": 2392,
+    "world_min": [
+      -5286.959516530886,
+      -2223.9016046706583
+    ],
+    "world_size": [
+      10322.15905608411,
+      4781.388450041915
+    ],
+    "rule": "node i at world_min + i * world_size / (width - 1)"
+  },
+  "cells": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20645,
+      "height": 9563,
+      "packed_width": 10323,
+      "path": "cells-L0.png",
+      "sha256": "e5567d7c8f9e7bea920582617e907baf7139367d788038ad8747ba387057e4de",
+      "river_max_scalerank": 10,
+      "towns": {
+        "path": "towns-L0.i32",
+        "count": 11255,
+        "sha256": "e41aaae8f38c54f04ee82ead13dee2bf70a1ff45a01dd8e97a8431bd09b5028e",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10323,
+      "height": 4782,
+      "packed_width": 5162,
+      "path": "cells-L1.png",
+      "sha256": "dd68f31d3367d3fe6e77dab974d65a79c2b4bae5b53828d1af8ae02333e07311",
+      "river_max_scalerank": 10,
+      "towns": {
+        "path": "towns-L1.i32",
+        "count": 2728,
+        "sha256": "a1d70b0dd11f2b813c8132d0c4d6bb520a2429ec3a16fb9246b708c8f5cd7e00",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5162,
+      "height": 2391,
+      "packed_width": 2581,
+      "path": "cells-L2.png",
+      "sha256": "393e9dc253907dea7310d5dc486504bd0ccaaf6dc495bc71cb06f06bc5b33692",
+      "river_max_scalerank": 8,
+      "towns": {
+        "path": "towns-L2.i32",
+        "count": 942,
+        "sha256": "2123972d25da006d57b3c786bf0422ad4b01ca2f4a4d1e94b0b426de335f2915",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2581,
+      "height": 1196,
+      "packed_width": 1291,
+      "path": "cells-L3.png",
+      "sha256": "44358771bb3ef6d5b9078d4c2716f92fc9dc4dde58778f914183ed1fec77f887",
+      "river_max_scalerank": 7,
+      "towns": {
+        "path": "towns-L3.i32",
+        "count": 187,
+        "sha256": "b5689232b64efa77af3426460e5ae0b9859f6902c665e2090babc290f50385af",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1291,
+      "height": 598,
+      "packed_width": 646,
+      "path": "cells-L4.png",
+      "sha256": "e62a9b4ff4941ce8c052ad7d064f8834f338689a49fa74e981b30be4e519fbdf",
+      "river_max_scalerank": 6,
+      "towns": {
+        "path": "towns-L4.i32",
+        "count": 43,
+        "sha256": "7cedfbad216515bc26f0e35b626676d2a077a637db5265badb42642f8e7237f5",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 646,
+      "height": 299,
+      "packed_width": 323,
+      "path": "cells-L5.png",
+      "sha256": "19bb96cd36940a9d061f42262e8a845ba4363f5aab9e4d9dc84d77b31c84fa5c",
+      "river_max_scalerank": 5,
+      "towns": {
+        "path": "towns-L5.i32",
+        "count": 7,
+        "sha256": "34eecfa2ddc7a5c97ff432498294d8326e7f0913f5ee81b0836d4626de5b0474",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 323,
+      "height": 150,
+      "packed_width": 162,
+      "path": "cells-L6.png",
+      "sha256": "732d9104ffa22dba09e1f2d4bc377f12c7482752c57854607422b5b40957de8f",
+      "river_max_scalerank": 4,
+      "towns": {
+        "path": "towns-L6.i32",
+        "count": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "rule": "int32 (j * width + i) * 4 + town class, sorted"
+      }
+    }
+  ],
+  "inputs": {
+    "land": {
+      "path": "data/derived/land.geojson",
+      "sha256": "8fdd515e4d0a932a4480ad33620c4b3ebaa17cd91441b4b6888f9e365546be2c"
+    },
+    "lakes": {
+      "path": "data/derived/lakes.geojson",
+      "sha256": "a00a2d1c0a51329c7d232cec02c2133f64d5be8a9864a5a3a2e6e1d3350e25f2"
+    },
+    "rivers": {
+      "path": "data/derived/rivers.geojson",
+      "sha256": "3bf55e1c649ef020a5d0473d7925ea52c3d4168f3303bbee818dfc5ee7f570e2"
+    },
+    "lakes_supplement": {
+      "path": "artifacts/render-data/lakes-europe-supplement-r1/lakes.geojson",
+      "sha256": "6fb073f4c65035d75775a49f3bd333d8d3b5b6c7587c35757ccfb80ebfd7fc7e"
+    },
+    "rivers_supplement": {
+      "path": "artifacts/render-data/rivers-europe-supplement-r1/rivers.geojson",
+      "sha256": "490e9c98749727a0a106feeeaa741923809e89c1089fa470cc394dc9e0e3dcc1"
+    },
+    "landcover": {
+      "path": "artifacts/render-data/landcover-node-2km/classes.u8",
+      "sha256": "da2fcd2792c2ed2488df2b9da243b82ba118535c7937836608f4a7f0d482612e"
+    },
+    "places": {
+      "path": "data/gametiles/places.csv",
+      "sha256": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036"
+    }
+  },
+  "relief_half": {
+    "path": "relief.r16f",
+    "sha256": "e1939018af09daa6859ef9cead45fad40f7418bf363795b2a85034e6f71353d6",
+    "format": "float16 LE, metres",
+    "slope_m_per_km": 160.0,
+    "mountain_slope_m_per_km": 160.0,
+    "mountain_from_to_m": [
+      500.0,
+      1300.0
+    ],
+    "height_exaggeration": 3.75
+  },
+  "shore_half": {
+    "path": "shore.r16f",
+    "sha256": "f61b900c6760738e9c6cc5195da0c42e9373cf95648e89a6f4f70f192ea017e6",
+    "format": "float16 LE, metres",
+    "rule": "highest land next to the water: sea 0 m, lakes at their level, rising slope_m_per_km"
+  },
+  "height_half": {
+    "path": "height.r16f",
+    "sha256": "5adc1acb3953562f320e1d44c45eea41a4dfd464e4a4f5241278462c565c1dd1",
+    "format": "float16 LE, metres"
+  },
+  "levels": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20646,
+      "height": 9564,
+      "scale": "near",
+      "level_steps_m": [
+        0.0,
+        20.0,
+        40.0,
+        60.0,
+        80.0,
+        100.0,
+        120.0,
+        170.0,
+        220.0,
+        270.0,
+        320.0,
+        370.0,
+        420.0
+      ],
+      "beyond_m": 60.0,
+      "blur_tiles": 1.0,
+      "clean_corners": 3,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8
+      },
+      "path": "levels-L0.png",
+      "sha256": "89bd82bd291c86a453aef6c434e792c3c0eaff807c3323ab1e232d367112380e",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10324,
+      "height": 4783,
+      "scale": "near",
+      "level_steps_m": [
+        0.0,
+        40.0,
+        80.0,
+        120.0,
+        160.0,
+        200.0,
+        240.0,
+        340.0,
+        440.0,
+        540.0,
+        640.0,
+        740.0,
+        840.0
+      ],
+      "beyond_m": 240.0,
+      "blur_tiles": 1.2,
+      "clean_corners": 3,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8
+      },
+      "path": "levels-L1.png",
+      "sha256": "75dc24c35822ea8e55608bf9b15f4e6df62f3f4104bdbb52a887fcaf1a390c0c",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5163,
+      "height": 2392,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L2.png",
+      "sha256": "606f28e9230f7d34420103505f2360e6165192da7ef054f2838653cff4c7e3a9",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2582,
+      "height": 1197,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L3.png",
+      "sha256": "d11bb9a7b3cb9d0187922c4f90158dbde452488be818cde21e9b77a17f65569d",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1292,
+      "height": 599,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L4.png",
+      "sha256": "025d810aaadeee1b271519db3c1a66b927c38e97989bc105890c24912a4efcf4",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 647,
+      "height": 300,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L5.png",
+      "sha256": "fc7addbb4fdf55b87e42a73199b986a98221a5f6aa0966c64413035e395bc5ad",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 324,
+      "height": 151,
+      "level_steps_m": [
+        100.0,
+        250.0,
+        450.0,
+        700.0,
+        1000.0,
+        1300.0,
+        1600.0,
+        1900.0,
+        2200.0,
+        2500.0,
+        2900.0,
+        3400.0
+      ],
+      "blur_tiles": 1.0,
+      "peak_share": 0.5,
+      "beyond_m": 600.0,
+      "heights": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        "zoom": 8,
+        "node_squares_km": 1.9996433661534503
+      },
+      "path": "levels-L6.png",
+      "sha256": "1ec5ba4ed7eda86a4c6ddc5b66826924c138fde4b80a385fa1527d894aab436b",
+      "rule": "corner (i, j) at world_min + (i, j) * cell_km; one level per tile between all eight neighbours, sea corners 0, land >= 1"
+    }
+  ],
+  "ground": [
+    {
+      "level": 0,
+      "cell_km": 0.5,
+      "width": 20645,
+      "height": 9563,
+      "packed_width": 10323,
+      "path": "ground-L0.png",
+      "sha256": "3a02f48ef654ac540fc2c2c24ef9e25e3dd4b77d65e82e353b2b8db78a6c0933",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 2000.0,
+        "snow_m": 2600.0,
+        "valley_levels": 1,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 1,
+      "cell_km": 1.0,
+      "width": 10323,
+      "height": 4782,
+      "packed_width": 5162,
+      "path": "ground-L1.png",
+      "sha256": "4444cb6ff56c1a867da04bec99873d5970806502749f83c3353657bbb03a9fb0",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1600.0,
+        "snow_m": 2500.0,
+        "valley_levels": 1,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 2,
+      "cell_km": 2.0,
+      "width": 5162,
+      "height": 2391,
+      "packed_width": 2581,
+      "path": "ground-L2.png",
+      "sha256": "d5df75d5d487532ff85f6e8d03faaf21053bcda77738fa16682f721fd30b8025",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1500.0,
+        "snow_m": 2500.0,
+        "valley_levels": 0,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 3,
+      "cell_km": 4.0,
+      "width": 2581,
+      "height": 1196,
+      "packed_width": 1291,
+      "path": "ground-L3.png",
+      "sha256": "bc4a6f214c68196f5f0dfbe65c8908c962053987dd37802d3a8595634c00c46c",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1350.0,
+        "snow_m": 2500.0,
+        "valley_levels": null,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 4,
+      "cell_km": 8.0,
+      "width": 1291,
+      "height": 598,
+      "packed_width": 646,
+      "path": "ground-L4.png",
+      "sha256": "b4824a7b37573e3828d0301f919393ea3447e46a561cd6162c075580c78d8738",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1450.0,
+        "snow_m": 2500.0,
+        "valley_levels": null,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 5,
+      "cell_km": 16.0,
+      "width": 646,
+      "height": 299,
+      "packed_width": 323,
+      "path": "ground-L5.png",
+      "sha256": "0ffd8371fbfc252f05803dd29bf6ab0e49b006176d13bade12d2c0c645d6cbbc",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1300.0,
+        "snow_m": 2300.0,
+        "valley_levels": null,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    },
+    {
+      "level": 6,
+      "cell_km": 32.0,
+      "width": 323,
+      "height": 150,
+      "packed_width": 162,
+      "path": "ground-L6.png",
+      "sha256": "9cb86e8f8c53028bfe35100f7cbc2305e7f90deca29c8b435ca1bf1c6ea92bd9",
+      "classes": [
+        "meadow",
+        "dry_grass",
+        "field",
+        "wetland",
+        "scrub",
+        "sand",
+        "forest",
+        "conifer",
+        "alpine",
+        "rock",
+        "snow"
+      ],
+      "water": 15,
+      "relief_cover": {
+        "rock_m": 1200.0,
+        "snow_m": 2100.0,
+        "valley_levels": null,
+        "treeline_m": 1700.0,
+        "heights": {
+          "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          "zoom": 8
+        }
+      }
+    }
+  ],
+  "cover": {
+    "path": "cover.png",
+    "sha256": "3c3a893f67f8b5fdc65f81d8743a5324a4b8f56470e89ed3c06f4381cd600cc3",
+    "channels": [
+      "forest",
+      "dry = bare + 0.6 shrub",
+      "crop",
+      "wetland"
+    ]
+  },
+  "aux": {
+    "path": "aux.png",
+    "sha256": "9a667c18e9cefa434d99502fcf7ce19d982b96900799aca92cb8a47562f31064",
+    "channels": [
+      "sea distance in node steps (2 km), capped 255",
+      "lake level hi",
+      "lake level lo (uint16 m + 1000; 0 = no lake)",
+      "unused"
+    ]
+  },
+  "height": {
+    "path": "../fixed-source-v2-mountain-r7/height.rg8",
+    "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
+    "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
+  },
+  "town_extra_km": 0.45,
+  "town_min_km": 0.8,
+  "town_on_river_km": 4.0
+}

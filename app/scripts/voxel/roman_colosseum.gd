@@ -1,0 +1,349 @@
+extends RefCounted
+## The Colosseum in Urbek's craft on the town's 0.25 m voxels (urbek_kit.gd):
+## 74 x 61 m, 21 m to the rim. The oval is a staircase of straight bays,
+## 3 m each (Urbek draws curves as runs of flat panels): an arch 8 voxels
+## wide with a stepped round head and a light archivolt, a pier with an
+## engaged column, base and capital, a frieze and a cornice two voxels proud
+## on every storey. Three arcades, upper arches with parapets; a closed attic
+## with pilasters, windows and bronze shields in turn, corbels and masts with
+## red flags. Inside: a portico round the top walkway, the cavea in treads of
+## 4 x 2 voxels with low walls and entrances, a marble podium with a red
+## band, and the sand. Rows 0 and 1 are left to the ground it stands on
+## (plaza lots), as in every town lot.
+
+const Kit := preload("res://scripts/voxel/roman_kit.gd")
+const V := 0.25
+const A := 37.0
+const B := 30.5
+const P := 12                  # bay: pier 4 (column in the middle), arch 8
+const GROUND := 2
+const BASE := GROUND + 2       # two plinth steps
+const ROWS := 22               # an arcade storey, 5.5 m
+const ARCADE_TOP := BASE + ROWS * 3
+const ATTIC := 16
+const WALL := ARCADE_TOP + ATTIC
+const MAST := 10
+const SHELL := 10              # outer wall; arches open 8 deep onto the corridor
+const RIM := 8                 # walkway under the portico
+const ARENA_A := 18.5
+const ARENA_B := 12.0
+const SEAT_TOP := WALL - 8
+const PODIUM := SEAT_TOP - 34
+const FLOOR := PODIUM - 6
+const PAVING := 4              # grid margin round the plinth, voxels
+const HEAD := [2, 3, 4, 4, 4, 4, 3, 2]
+const CACHE := "user://roman_colosseum_v1.res"
+const AISLES := 40
+# Citizens came in togas and light tunics; darker wool and dyed cloth
+# among them.
+const CROWD := [Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.ROBE_W, Kit.LINEN, Kit.LINEN, Kit.ROBE_W, Kit.LINEN,
+	Kit.ROBE_W, Kit.LINEN, Kit.ROBE_N, Kit.ROBE_N, Kit.ROBE_N, Kit.ROBE_R, Kit.ROBE_R, Kit.ROBE_R,
+	Kit.ROBE_O, Kit.ROBE_O, Kit.ROBE_B, Kit.ROBE_B]
+
+# --- plan -----------------------------------------------------------------
+
+static func _band(i: int) -> int:
+	return floori((i + P / 2) / float(P))
+
+static func _band_sub(i: int) -> int:
+	return posmod(i + P / 2, P)
+
+## Facade position (voxels from the centre) of the run of bays `band` on an
+## ellipse with half-axes `along` (the run's axis) and `across`.
+static func _run_face(band: int, along: float, across: float) -> int:
+	var b := minf(absf(band) * P, along - 1.0)
+	return roundi(across * sqrt(maxf(0.0, 1.0 - (b / along) ** 2)))
+
+## The stepped plan: [depth from the facade, column in the bay, bay id].
+## Where the oval runs flatter than SLOPE the bays are runs facing south or
+## north, else east or west. The game camera never turns and looks north,
+## so the south-facing runs, which show their arches, reach far round.
+const SLOPE := 1.6
+
+static func _plan(ix: int, iz: int) -> Vector3i:
+	var av := A / V
+	var bv := B / V
+	var x45 := av * av * SLOPE / sqrt(bv * bv + av * av * SLOPE * SLOPE)
+	var z45 := bv * bv / sqrt(av * av * SLOPE * SLOPE + bv * bv)
+	var qx := ix if ix >= 0 else -ix - 1
+	var qz := iz if iz >= 0 else -iz - 1
+	var bxn := _band(ix)
+	var bzn := _band(iz)
+	var zfam := absi(bxn) * P <= x45
+	var xfam := absi(bzn) * P <= z45
+	var dz := _run_face(bxn, av, bv) - 1 - qz
+	var dx := _run_face(bzn, bv, av) - 1 - qx
+	var use_z := true
+	var d := 0
+	if zfam and xfam:
+		use_z = dz <= dx
+		d = mini(dz, dx)
+	elif zfam:
+		d = dz
+	elif xfam:
+		use_z = false
+		d = dx
+	else:
+		var xe := int(x45 / P + 1) * P
+		var ze := int(z45 / P + 1) * P
+		d = mini(xe - 1 - qx, ze - 1 - qz)
+	if use_z:
+		return Vector3i(d, _band_sub(ix), bxn + (1000 if iz < 0 else 0))
+	return Vector3i(d, _band_sub(iz), bzn + 2000 + (1000 if ix < 0 else 0))
+
+# --- facade ---------------------------------------------------------------
+
+## Is (o, lr) inside an arch: o 0..7 across the opening, lr the row in the
+## storey; rows 1 to 14 straight, then the stepped round head.
+static func _open(o: int, lr: int) -> bool:
+	return o >= 0 and o <= 7 and lr >= 1 and lr <= 14 + HEAD[o]
+
+## The light ring round an arch head.
+static func _ring(o: int, lr: int) -> bool:
+	if lr < 12 or _open(o, lr):
+		return false
+	return _open(o - 1, lr) or _open(o + 1, lr) or _open(o, lr - 1)
+
+## Ashlar: blocks three voxels long and two high, staggered, a few of them
+## weathered darker.
+static func _ashlar(s: int, b: int, r: int) -> int:
+	var course := r / 2
+	var block := (s + b * P + (course % 2) * 2) / 3
+	return Kit.TRAV_W if Kit.rnd(block, course, b, 41) % 100 < 12 else Kit.TRAV
+
+static func _shell(d: int, s: int, b: int, r: int) -> int:
+	if r < GROUND:
+		return Kit.EMPTY
+	if r < BASE:
+		return Kit.TRAV_D
+	if r < ARCADE_TOP:
+		var lr := (r - BASE) % ROWS
+		var storey := (r - BASE) / ROWS
+		var o := s - 2
+		if _open(o, lr):
+			if storey > 0 and lr <= 3 and d == 1:
+				return Kit.TRAV_L
+			# a statue in every other upper arch, just behind the parapet:
+			# a plinth, the robe flaring at the hem, the body as wide as the
+			# shoulders, a head; three poses, every eighth one gilt
+			# (Platner and Ashby: a statue in every arch of the second and
+			# third arcades)
+			if storey > 0 and (d == 2 or d == 3) and o >= 2 and o <= 5 and not (storey == 2 and posmod(b, 8) == 4):
+				var c := Kit.GOLD if posmod(b, 8) == 0 else Kit.STATUE
+				var pose := posmod(b / 2, 3)
+				if lr <= 2:
+					return Kit.TRAV_L
+				if lr <= 4:
+					return c
+				if lr <= 8 and d == 2:
+					return c
+				if lr <= 10 and d == 2 and (o == 3 or o == 4):
+					return c
+				if pose == 1 and d == 2 and o == 5 and lr <= 11:
+					return c
+				if pose == 2 and d == 3 and o == 2 and lr <= 12:
+					return Kit.WOOD_D
+			# a banner in one upper arch of eight
+			if storey == 2 and posmod(b, 8) == 4 and d == 1 and o >= 2 and o <= 5 and lr >= 6:
+				return Kit.GOLD if lr == 15 else Kit.CLOTH_R
+			# people in the passages of the ground floor
+			if storey == 0 and posmod(b, 3) == 1 and d == 4 and (o == 3 or o == 4) and lr <= 7:
+				if lr <= 2:
+					return Kit.SKIN
+				if lr <= 5:
+					return CROWD[posmod(b * 7 + o, CROWD.size())]
+				return Kit.SKIN if lr == 6 else Kit.HAIR
+			if d < SHELL - 2:
+				return Kit.EMPTY
+			# the corridor wall in the half light, a smaller arch in it
+			# leading on into the dark
+			if o >= 2 and o <= 5 and lr <= 9 + (2 if o == 3 or o == 4 else 0):
+				return Kit.DEEP
+			return Kit.ARCADE
+		if lr == 0 and o >= 0 and o <= 7 and d < SHELL - 2:
+			return Kit.PAVE
+		if d == 0 and _ring(o, lr):
+			return Kit.TRAV_L
+		if lr == 21:
+			return Kit.TRAV_L
+		if lr == 20:
+			# the gate numbers over the ground floor arches, in red
+			if storey == 0 and d == 0 and o >= 1 and o <= 6 and posmod(o + b, 2) == 0:
+				return Kit.LETTER
+			return Kit.TRAV
+		return _ashlar(s, b, r)
+	var ar := r - ARCADE_TOP
+	if posmod(b, 2) == 0 and s >= 4 and s <= 7 and ar >= 5 and ar <= 9:
+		return Kit.EMPTY if d == 0 else (Kit.VAULT if d == 1 else Kit.TRAV)
+	if ar >= 14 or ar == 0:
+		return Kit.TRAV_L
+	return _ashlar(s, b, r)
+
+static func _outside(d: int, s: int, b: int, r: int, x: int, z: int) -> int:
+	if r < GROUND:
+		return Kit.EMPTY
+	if r < BASE:
+		return Kit.TRAV_D if d >= -2 - (BASE - 1 - r) else Kit.EMPTY
+	if d < -2:
+		return Kit.EMPTY
+	var col := s == P - 1 or s == 0
+	var wide := s >= P - 2 or s <= 1
+	if r < ARCADE_TOP:
+		var lr := (r - BASE) % ROWS
+		if lr == 21:
+			return Kit.TRAV_L
+		if d == -2:
+			return Kit.EMPTY
+		if lr == 20:
+			return Kit.TRAV
+		if wide and (lr == 1 or lr == 18):
+			return Kit.TRAV_L
+		if col and lr == 17:
+			return Kit.TRAV_L
+		if col and lr >= 1 and lr <= 19:
+			return Kit.TRAV
+		return Kit.EMPTY
+	if r < WALL:
+		var ar := r - ARCADE_TOP
+		if ar == 15:
+			return Kit.TRAV_L
+		if d == -2:
+			return Kit.EMPTY
+		if ar == 14 or ar == 0:
+			return Kit.TRAV_L
+		if ar == 12 and s == 0:
+			return Kit.TRAV_L
+		if col and ar <= 13:
+			return Kit.TRAV
+		if posmod(b, 2) == 1 and s >= 5 and s <= 6 and ar >= 6 and ar <= 8:
+			return Kit.BRONZE
+		return Kit.EMPTY
+	return Kit.EMPTY
+
+## A mast on the attic of every second bay, a red flag on it.
+static func _mast(d: int, s: int, b: int, mr: int) -> int:
+	if d != 1 or posmod(b, 2) == 1 or mr >= MAST:
+		return Kit.EMPTY
+	if s == 0:
+		return Kit.WOOD_D
+	if (s == 1 or s == 2) and mr >= MAST - 4 and mr < MAST - 1:
+		return Kit.FLAG
+	return Kit.EMPTY
+
+# --- inside ---------------------------------------------------------------
+
+## e: depth from the oval in voxels, arena: e at the arena's edge.
+static func _cavea(e: int, s: int, b: int, r: int, arena: int, x: int, z: int, t: float) -> int:
+	if r < GROUND:
+		return Kit.EMPTY
+	if e >= arena:
+		if r < FLOOR:
+			return Kit.TRAV_D
+		if r == FLOOR:
+			return Kit.SAND_D if Kit.chance((x + (z / 6 % 2) * 3) / 6, 0, z / 6, 5, 14) else Kit.SAND
+		return Kit.EMPTY
+	if e >= arena - 2:
+		if r < PODIUM:
+			return Kit.PODIUM
+		return Kit.REDWASH if r == PODIUM else Kit.EMPTY
+	var first := SHELL + RIM
+	if e < first:
+		if r < SEAT_TOP - 1:
+			return Kit.TRAV_D
+		if r == SEAT_TOP - 1:
+			return Kit.PAVE
+		if r == WALL - 1 and e < SHELL + RIM / 2:
+			return Kit.TILE
+		if r == WALL - 2 and e >= SHELL + RIM / 2:
+			return Kit.TILE
+		if e == first - 1 and posmod(b * P + s, 5) < 2 and r < WALL - 1:
+			return Kit.TRAV_L
+		return Kit.EMPTY
+	var j := e - first
+	var step := j / 4
+	var top := maxi(SEAT_TOP - 2 - 2 * step, PODIUM + 1)
+	# radial stairways; spectators in groups on some treads
+	var round := t * AISLES / TAU
+	var aisle := fposmod(round, 1.0) < 0.07
+	# three bands: marble by the arena, stone, timber at the top
+	var band := 0 if step < 5 else (1 if step < 10 else 2)
+	var seat: int = [Kit.SEAT_WOOD, Kit.SEAT_MID, Kit.SEAT_HI][band]
+	if r < top - 2:
+		return Kit.TRAV_D
+	if r < top:
+		return Kit.TRAV_L if aisle else seat
+	# spectators fill whole sectors of a band, shoulder to shoulder
+	if not aisle and j % 4 >= 1 and j % 4 <= 2 and r <= top + 1:
+		if Kit.rnd(floori(round), band, 0, 3) % 100 < 45 and Kit.rnd(x / 2, z / 2, 1, 4) % 100 >= 15:
+			var tunic: int = CROWD[Kit.rnd(x / 2, z / 2, 0, 4) % CROWD.size()]
+			if r == top + 1:
+				return Kit.SKIN if (x + z) % 2 == 0 else tunic
+			return tunic
+	# low walls splitting the cavea into three bands, entrances in them
+	if j % 4 == 3 and (step == 5 or step == 10) and r < top + 3:
+		if posmod(b, 4) == 0 and s >= 3 and s <= 8:
+			return Kit.EMPTY
+		return Kit.PODIUM
+	return Kit.EMPTY
+
+# --- build ----------------------------------------------------------------
+
+static func grid() -> Kit.Grid:
+	var nx := ceili(2.0 * A / V) + 2 * (PAVING + 2)
+	var nz := ceili(2.0 * B / V) + 2 * (PAVING + 2)
+	var g := Kit.Grid.new(Vector3i(nx, WALL + MAST + 1, nz))
+	var lo := Vector3(-nx * V * 0.5, 0.0, -nz * V * 0.5)
+	for z in nz:
+		for x in nx:
+			var ix := x - nx / 2
+			var iz := z - nz / 2
+			var plan := _plan(ix, iz)
+			var d := plan.x
+			if d < -PAVING:
+				continue
+			var p := lo + Vector3(x + 0.5, 0, z + 0.5) * V
+			var t := atan2(p.z / B, p.x / A)
+			var e := floori((1.0 - Vector2(p.x / A, p.z / B).length()) * Vector2(A * cos(t), B * sin(t)).length() / V)
+			var ta := atan2(p.z / ARENA_B, p.x / ARENA_A)
+			var ea := Vector2(p.x / ARENA_A, p.z / ARENA_B).length()
+			var arena := e + floori((ea - 1.0) * Vector2(ARENA_A * cos(ta), ARENA_B * sin(ta)).length() / V) + 1
+			var row := x + nx * g.n.y * z
+			for r in g.n.y:
+				var c := Kit.EMPTY
+				if d >= SHELL and r == WALL + 1 and e < SHELL + 34 and absf(t) < 0.45:
+					# the awning (velarium) over the eastern seats, in plain linen strips
+					c = Kit.LINEN if floori(t * 30.0 + 100.0) % 2 == 0 else Kit.SACK
+				elif d < 0:
+					c = _outside(d, plan.y, plan.z, r, x, z)
+				elif d < SHELL:
+					c = _shell(d, plan.y, plan.z, r) if r < WALL else _mast(d, plan.y, plan.z, r - WALL)
+				else:
+					c = _cavea(e, plan.y, plan.z, r, arena, x, z, t)
+				if c != Kit.EMPTY:
+					g.g[row + nx * r] = c
+	# fighters in pairs on the sand
+	var k := 0
+	for p: Vector2i in [Vector2i(-26, -8), Vector2i(-19, -8), Vector2i(8, 6), Vector2i(15, 6), Vector2i(-8, 18), Vector2i(-1, 18), Vector2i(22, -16), Vector2i(29, -16)]:
+		_gladiator(g, nx / 2 + p.x, FLOOR + 1, nz / 2 + p.y, 1 if k % 2 == 0 else -1, k)
+		k += 1
+	return g
+
+## A gladiator on the sand: helmet, red loincloth, a shield on his arm.
+static func _gladiator(g: Kit.Grid, x: int, y: int, z: int, face: int, seed: int) -> void:
+	g.box(x, y, z, x + 2, y + 2, z + 1, Kit.SKIN)
+	g.box(x, y + 2, z, x + 2, y + 3, z + 1, Kit.SHIELD if seed % 2 == 0 else Kit.ROBE_W)
+	g.box(x, y + 3, z, x + 2, y + 5, z + 1, Kit.SKIN)
+	g.box(x, y + 5, z, x + 2, y + 7, z + 1, Kit.HELMET)
+	g.box(x + (2 if face > 0 else -1), y + 2, z, x + (3 if face > 0 else 0), y + 6, z + 2, Kit.SHIELD if seed % 2 == 1 else Kit.BRONZE)
+
+## The full-detail mesh, centred on the arena, base at y = 0; cached.
+static func mesh() -> ArrayMesh:
+	if ResourceLoader.exists(CACHE):
+		var cached: ArrayMesh = load(CACHE)
+		if cached:
+			cached.surface_set_material(0, Kit.material())
+			return cached
+	var g := grid()
+	var m := Kit.mesh(g, Vector3(-g.n.x * V * 0.5, 0.0, -g.n.z * V * 0.5))
+	ResourceSaver.save(m, CACHE)
+	return m

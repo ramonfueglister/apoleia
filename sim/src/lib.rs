@@ -6,9 +6,18 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+pub mod body;
 pub mod ecs;
+pub mod events;
+pub mod grain;
+pub mod groups;
 pub mod inputs;
+pub mod life;
+pub mod people;
 pub mod save;
+pub mod settle;
+pub mod tables;
+pub mod view;
 
 pub const MAX_LEVEL: u8 = 7;
 pub const ROOT_SIZE_M: f64 = 200_000.0;

@@ -10,11 +10,12 @@ sind Auswahlgrundlagen, keine vorgeschriebene Engine oder Bibliothek.
    Erfassungsdatum, CRS/Höhendatum und bekannte oder ausdrücklich unbekannte
    Genauigkeit. Rohdateien unverändert aufbewahren.
 2. **Modellraum:** eine tatsächlich verkleinerte Welt mit weniger repräsentierten
-   Kleindetails. Eine dokumentierte gemeinsame Längenskalierung kleiner als eins
-   gilt auch für Höhen. Geometrievereinfachung folgt aus Quelldaten,
+   Kleindetails. Eine dokumentierte gemeinsame Längenskalierung kleiner als eins;
+   Höhen sind seit 27.10.2026 zusätzlich mit einem festen, weltweit gleichen Faktor
+   (7,5, SimCity-2000-Stil, K06) überhöht. Geometrievereinfachung folgt aus Quelldaten,
    Generalisierungsbudgets und Schutzregeln; eine extreme Low-Poly-Optik ist keine
    Vorgabe der aktuellen Nutzer-Primärreferenz.
-   Terrain wird nicht frei überhöht oder zwischen Orten beliebig zusammengeschoben.
+   Terrain wird nicht ortsabhängig überhöht oder zwischen Orten beliebig zusammengeschoben.
    Spätere kleinere Modellbevölkerungen/-städte sind damit nicht numerisch bestimmt.
 3. **Renderraum:** dieselbe Modellgeografie wird zoomgebunden von flacher Karte
    zur räumlichen isometrischen Nahansicht dargestellt. Kamera/Projektion und
@@ -30,7 +31,7 @@ bleibt geodätische Referenz, nicht das bereits verzerrte Ergebnis seiner selbst
 
 `templates/geodata_policy.json` ausfüllen, hashen und versionieren:
 
-- Skalenfaktor, gleiche Höhen-/Längenskalierung; Modell-/Rendertransformationen,
+- Skalenfaktor, Höhenfaktor (K06); Modell-/Rendertransformationen,
   Projektionsdefinition und echte Quelldatenqualitätsbewertung als Artefakte.
 - Generalisierungsniveaus mit IDs, Gültigkeitsgebiet und Stichprobenplan. Alle
   produzierten Niveaus im abgeleiteten Inventar führen, nicht nur erfolgreiche

@@ -1,0 +1,48 @@
+{
+  "reference_version": "soundtrack-eu5-correspondences-v1-2026-10-26",
+  "status": "validiert",
+  "scope": "Track coverage and technical audio integrity only",
+  "unique_audio_files": 60,
+  "full_decode": "PASS for every correspondence with local ffmpeg",
+  "manifest": "app/assets/music/eu5-correspondences.json",
+  "playlist_tracks": 64,
+  "open": [
+    "Subjective listening and audible vocal intelligibility",
+    "iPad playback"
+  ],
+  "source_playback_regression": "PASS: 64 streams, playback/order/wrap, M/N, key echo/release, isolated saved mute, exact Mare2 bytes at startup and first unmute",
+  "independent_review": "PASS: /root/audio_review independently verified catalog linkage, unique assets/hashes/task/audio IDs, all 60 full MP3 decodes (47 earlier then 13 remaining), resource closure, secret scan, 64-track playback regression and complete bundle inventory",
+  "bundle": {
+    "inventory": {
+      "status": "filesystem-verified",
+      "files": 9652,
+      "rendering_tested": false
+    },
+    "source_assets_identical": true,
+    "unsigned": true,
+    "renderer_changed": false,
+    "headless_start": "PASS, exit 0, runtime_started without errors",
+    "smoke_log": "artifacts/runtime/soundtrack-eu5/final-bundle-smoke.log"
+  },
+  "paid_submission_safety": "PASS: 2 mocked no-network tests; uncertain submission not retried and completed resume does not submit",
+  "correspondences": 60,
+  "vocal_requests": 24,
+  "instrumental_requests": 36,
+  "startup_track": "app/assets/music/mare-et-terra-2.mp3",
+  "duration_seconds": 10767.048,
+  "duration_with_legacy_seconds": 11485.944000000001,
+  "credits_before": 7560.0,
+  "credits_after": 6840.0,
+  "credits_consumed_observed": 720.0,
+  "accepted_attempts": 61,
+  "successful_attempts": 60,
+  "failed_attempts": 1,
+  "retry": {
+    "source_id": "eu5-pillars-01",
+    "provider_status": "SENSITIVE_WORD_ERROR",
+    "confirmed_audio_count": 0,
+    "action": "New independently written Spanish lyrics, explicit targeted replacement, successful",
+    "interpretation": "Automated provider status is not evidence of actual copied lyrics; no transaction history endpoint was used. Net observed credits are consistent with a refunded or uncharged failed attempt."
+  },
+  "finder_opened": "/Users/ramonfuglister/Coding/vic3-clone/app/assets/music/eu5"
+}

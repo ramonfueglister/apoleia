@@ -65,10 +65,11 @@ Renderabbildung abgeleitet. Kleinere Details dürfen kontrolliert entfallen; die
 Welt wird nicht mit jedem Zoom neu erzeugt. Quellen-/Modell-/Bildraum samt
 Einheiten und Transformationen sind getrennt nachzuweisen.
 
-**Kein Eins-zu-eins-Maßstab und keine beliebige Verzerrung:** Modelllängen und
-Modellhöhen werden nachvollziehbar gemeinsam skaliert. Frei erfundene Berge,
-verschobene Küsten, ortsabhängig zusammengeschobene Zwischenräume und freie
-Höhenüberhöhung sind nicht autorisiert. Die Abflachung zur Fernkarte verändert
+**Kein Eins-zu-eins-Maßstab und keine beliebige Verzerrung:** Modelllängen werden
+nachvollziehbar gemeinsam skaliert. Frei erfundene Berge, verschobene Küsten und
+ortsabhängig zusammengeschobene Zwischenräume sind nicht autorisiert. Höhen sind
+seit 27.10.2026 mit einem festen, weltweit gleichen Faktor (7,5) im SimCity-2000-Stil
+überhöht, siehe K06 in [decisions.md](decisions.md). Die Abflachung zur Fernkarte verändert
 nur die gebundene Darstellung, nicht den kanonischen Modellraum. Projektions-
 verzerrung und Generalisierungsfehler müssen getrennt beurteilt werden. Die
 Arbeitswerte in [decisions.md](decisions.md) sind keine starren Maßstabsgrenzen.

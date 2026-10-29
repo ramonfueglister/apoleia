@@ -1,0 +1,28 @@
+{
+  "reference_version": "mare2-start-2026-10-26",
+  "status": "validiert",
+  "scope": "Startup ordering, exact MP3 bytes and muted-first-unmute regression; bundle file integrity",
+  "startup_track": "app/assets/music/mare-et-terra-2.mp3",
+  "source_regression": "PASS",
+  "finalizer_preserves_preference": true,
+  "bundle": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/macos-candidates/source-v2-v19-compact-cloud-v16-r1/Roma Aeterna Candidate 0.19.2.app",
+  "backup": "/Users/ramonfuglister/Coding/vic3-clone/artifacts/runtime/soundtrack-eu5/mare2-start-backup",
+  "changed_world_paths": [
+    "app/scripts/soundtrack.gd",
+    "app/scripts/soundtrack_playlist.gd"
+  ],
+  "bundle_inventory": {
+    "status": "filesystem-verified",
+    "files": 9591,
+    "rendering_tested": false
+  },
+  "independent_review": "PASS: /root/audio_review ran exact-byte startup/unmute regression, checked finalizer retention, source/bundle script identity, and verified complete 9591-file inventory",
+  "bundle_headless_start": "PASS, exit 0, runtime_started without errors",
+  "headless_audio_note": "Headless intentionally avoids playback; exact startup and unmute audio bytes are verified by isolated playback regression.",
+  "final_64_track_playlist_regression": "PASS, exact Mare et Terra variant 2 bytes at startup and first unmute",
+  "final_bundle_inventory": {
+    "status": "filesystem-verified",
+    "files": 9652,
+    "rendering_tested": false
+  }
+}

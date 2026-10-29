@@ -3,6 +3,6 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 mkdir -p "$ROOT_DIR/artifacts/runtime"
-# Current renderer-binding.json selects prepared SourceV2/clipmap data.
+# The tile terrain reads artifacts/render-data/tile-terrain-r1 (in Git).
 # Data preparation is an explicit offline step, never part of app startup.
 exec "${GODOT_BIN:-godot}" --path "$ROOT_DIR/app" --log-file "$ROOT_DIR/artifacts/runtime/godot.log" "$@"
