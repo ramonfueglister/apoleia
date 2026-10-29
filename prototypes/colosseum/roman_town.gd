@@ -217,7 +217,9 @@ const TILES_LICHEN := [Kit.TILE5, Kit.TILE5_D, Kit.TILE5_L, Kit.EAVE5, Kit.RIDGE
 const TILES_LEAD := [Kit.LEAD, Kit.LEAD_D, Kit.LEAD_L, Kit.EAVEL, Kit.RIDGEL]
 # Roof colours a town shows, by share: fresh terracotta half, then dark,
 # sun-bleached, old and lichened tiles.
-const TILES_GILT := [Kit.GILT, Kit.GILT_D, Kit.GILT_L, Kit.EAVEG, Kit.RIDGEG]
+# gilt bronze tiles (the Capitol), toned so the sunlit roof stays below the
+# white marble in brightness
+const TILES_GILT := [Kit.GILT_W, Kit.GILT_W, Kit.GILT_W, Kit.EAVEG, Kit.RIDGEG]
 const TILES_COCCIO := [Kit.COCCIO, Kit.COCCIO_D, Kit.COCCIO_L, Kit.COCCIO_D, Kit.COCCIO_D]
 # weathered bronze tiles (the Pantheon's porch)
 const TILES_BRONZE := [Kit.ROOFB, Kit.ROOFB, Kit.ROOFB_L, Kit.ROOFB_D, Kit.ROOFB_D]
@@ -596,6 +598,22 @@ static func _house(g: Kit.Grid, x0: int, z0: int, x1: int, z1: int, o: Dictionar
 			_window_row(g, x0, x1, base + 9 - size.y, zf, nw, size.x, size.y, {"shutter": shutter, "flowers": true}, wall, seed + k)
 			if o.get("string", false):
 				g.box(x0, base - 1, zf + 1, x1, base, zf + 2, Kit.TRIM)
+	# side walls: shuttered windows painted into the wall face (nothing
+	# stands proud, so a neighbour's wall can close against it), so a house
+	# standing free shows no blind wall at its corners
+	var depth := z1 - z0
+	var nside := maxi(1, (depth - 8) / 14)
+	var side_shutter := shutter if shutter != Kit.EMPTY else Kit.WOOD_D
+	for side: int in [x0, x1 - 1]:
+		for k in storeys:
+			var wy := y + 6 if k == 0 else y + g0 + STOREY * (k - 1) + 4
+			for i in nside:
+				var wz := z0 + 4 + (i + 1) * (depth - 8) / (nside + 1) - 1
+				g.box(side, wy, wz, side + 1, wy + 5, wz + 3, Kit.DARK)
+				g.box(side, wy + 1, wz + 1, side + 1, wy + 4, wz + 2, Kit.GLASS)
+				g.box(side, wy - 1, wz - 1, side + 1, wy, wz + 4, Kit.TRIM)
+				g.box(side, wy, wz - 1, side + 1, wy + 5, wz, side_shutter)
+				g.box(side, wy, wz + 3, side + 1, wy + 5, wz + 4, side_shutter)
 	# cornice: a light band, beam ends over it, then the eaves
 	g.box(x0, top - 2, zf + 1, x1, top - 1, zf + 2, Kit.TRIM)
 	g.box(x0, top - 2, z0 - 1, x1, top - 1, z0, Kit.TRIM)
