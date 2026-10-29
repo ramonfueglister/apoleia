@@ -219,7 +219,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 3,5 km Bildbreite, damit die Dachstufen klein
 bleiben), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v27_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v28_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,

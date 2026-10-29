@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v27_%d_%s.res"
+const CACHE := "user://farmhouse_v28_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -302,7 +302,7 @@ static func _yard(p: Vector3) -> int:
 ## a little gable roof of tiles over it, so it reads as a well and not as
 ## a block of stone.
 static func _well(p: Vector3) -> int:
-	if p.y < 0.0 or p.x < 4.5 or p.x >= 6.0 or p.z < 4.25 or p.z >= 5.75:
+	if p.y < 0.0 or p.y >= 2.0 or p.x < 4.5 or p.x >= 6.0 or p.z < 4.25 or p.z >= 5.75:
 		return EMPTY
 	var bx := int(floor((p.x - 4.5) / 0.25))
 	var bz := int(floor((p.z - 4.25) / 0.25))
