@@ -807,6 +807,8 @@ Was auffällt:
   Nachfrage, die auf den Preis reagiert (Schritt 3 des Vorschlags: Konsum mit Puffer-Ersparnis,
   mehr Korn für Menschen und Tiere, wenn es billig ist). Ausserdem ist der Preis draussen der
   einzige feste Preis in Denar; Eisen aus dem Reich (Bergbau) fehlt.
+- **Entscheid:** Ramon, 29.10.2026, Karte „Wie gehen wir den fallenden Getreidepreis an?“,
+  Option „Jetzt mergen, Konsum danach“.
 - Tempo: Getreide pro Tag 5,4 statt 4,3 ms im Median (Märkte, Arbeitsbörse, Speicher). Beide
   Läufe liefen teils gleichzeitig auf derselben Maschine. Gleicher Fingerabdruck mit 1 und 4
   Threads; 70 Tests grün.
