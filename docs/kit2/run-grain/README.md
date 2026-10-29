@@ -705,6 +705,54 @@ zusätzlich die Zeile „households“ (nur gelesen, gleicher Fingerabdruck wie
 `run100-s100-market.txt`). Tempo gleich (5 Jahre mit beiden Ständen auf derselben Maschine:
 Getreide pro Tag Mittel 3,9 / 3,8 ms). 55 Tests grün.
 
+## Handwerkswaren, Staatslohn nur für Staatsdiener, Reiche stellen ein (S105–S111, 100 Jahre, Seed 1, `run100-s105-crafts.txt`; Vergleich mit Staatslohn für alle: `run100-s105-crafts-wage-all.txt`; vorher: `run100-s102-fixes.txt`)
+
+Ramon (29.10.2026): „Kleidung, Werkzeug, Keramik“, „okay finde ich gut dein vorschlag“ und
+Karte „Reiche stellen Leute ein“. Wolle, Eisen, Kleidung, Werkzeug und Keramik haben auf
+jedem Markt Lager und Preis (S105). Höfe scheren Schafe (S106), Lohn- und Händlerhaushalte
+wählen jeden Monat Weber, Schmied, Töpfer oder Taglohn nach Erlös, Haushalte machen Kleidung
+selbst, wenn das billiger ist (S107). Werkzeug macht Höfe schneller (S108), Fässer schützen
+das Korn (S109). Staatslohn nur noch für Soldaten, Offiziere und Beamte (S110). Wer mehr
+Geld hat als Vorrat und Ersparnis, stellt Leute ein (S111). Die Zeile „goods“ im Lauf
+zeigt Preise, Lager und Mengen pro Ware.
+
+| Grösse | vorher | jetzt | Vergleich: Staatslohn für alle |
+|---|---|---|---|
+| Menschen im Jahr 100 | 124'388 | 109'276 | 125'043 |
+| Wachstum, Mittel Jahr 11–100 | 0,10 % | 0,00 % | 0,11 % |
+| Hungertote Jahr 1–10 / 11–100 | 2'620 / 23'003 | 6'712 / 29'066 | 2'746 / 18'127 |
+| Neu geprägt, 100 Jahre | 9'307 Mio. Denar | 3 Mio. Denar | 9'503 Mio. Denar |
+| Staatslohn / Steuer, 100 Jahre | 12'800 / 789 Mio. | 204 / 161 Mio. | 12'983 / 1'106 Mio. |
+| Geld gehalten im Jahr 100 (ohne Kasse) | 8'767 Mio. Denar | 119 Mio. Denar | 8'314 Mio. Denar |
+| Median-Preis Korn im Jahr 100 | 4,62 Denar/kg | 2,90 Denar/kg | 4,41 Denar/kg |
+| Median-Preis Kleidung / Werkzeug im Jahr 100 | – | 449 / 274 Denar | 1'469 / 227 Denar |
+| Kleidung unter dem Bedarf im Jahr 100 | – | 72 % | 36 % |
+| Monate im Jahr 100: Taglohn / Weber / Schmied / Töpfer | – | 28'741 / 6'467 / 525 / 638 | 39'041 / 18'460 / 625 / 1'103 |
+| Für Geld eingestellte Tage im Jahr 100 (davon von Marktleuten bezahlt) | – | 614'083 (1,6 Mio. Denar von 6,2) | 8,4 Mio. |
+| Nicht gebucht | 0 | 0 | 0 |
+
+Was auffällt:
+
+- **Der Staat prägt fast nichts mehr.** Steuer und Pacht an den Staat übersteigen den Lohn
+  der Staatsdiener; die Kasse sammelt 222 Mio. Denar an und gibt sie nicht aus.
+- **Der Übergang kostet.** In den ersten fünf Jahren sinkt die Bevölkerung um 4 %, weil
+  über 20'000 Menschen den Staatslohn verlieren und erst Arbeit finden müssen. Danach bleibt
+  sie gleich, mit etwas mehr Hungertoten als vorher.
+- **Mit wenig Geld bleiben die Preise niedrig, mit geprägtem Geld steigen sie.** Ohne
+  Staatslohn liegt Korn fast überall am unteren Rand des Preisbands (25 % des Grundpreises).
+  Mit Staatslohn für alle steigt Kleidung auf 1'469 Denar und Wolle auf 583 Denar/kg, ohne
+  Preisregel: Das neue Geld trifft auf dieselben Waren (S95).
+- **Die Reichen geben ihr Geld aus.** Die Oberschicht hält im Jahr 100 noch 2,6 Mio. Denar;
+  ohne das Einstellen waren es nach einem Jahr 68 Mio. Die Höfe halten jetzt am meisten (39 Mio.).
+- **Kleidung fehlt.** Höfe ohne Schafe und ohne Geld können weder kaufen noch selber machen.
+  Fehlende Kleidung wirkt noch nicht auf die Gesundheit.
+- **Eisen ist im Binnenland teuer** (Median 139 Denar/kg), weil es nur über die Tormärkte
+  kommt und die Marktleute es von Markt zu Markt weitergeben. Deshalb gibt es wenige
+  Schmiede, und das Werkzeug der Höfe nimmt ab.
+- Tempo: Getreide pro Tag 5,3 ms im Mittel. Beide Läufe liefen gleichzeitig auf derselben
+  Maschine, deshalb ist das nicht direkt mit den 4,0 ms von vorher vergleichbar. Gleicher
+  Fingerabdruck mit 1 und 4 Threads; 55 Tests grün.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -789,7 +837,14 @@ in Arrays nach ID statt in Hashtabellen.
 | Wer arbeitet | übers Jahr Erwachsene 15–60 | frei gewählt |
 | Taglohn | 3 kg Getreide | Preisedikt VII.1a, 25 Denar mit Kost |
 | Grundpreis | 8,75 Denar/kg | Preisedikt, modius castrensis 1,5–2 modii italici |
-| Staatslohn für alle ausser Bauern und Händlern | 25 Denar pro Arbeitstag | S76 (Staat hat unbegrenzt Geld), Preisedikt |
+| Staatslohn nur für Soldaten, Offiziere, Beamte (S110) | 25 Denar pro Arbeitstag für alle Erwachsenen des Haushalts | S76, Preisedikt |
+| Waren (S105) | Grundpreise Eisen 20, Werkzeug 60 Denar/kg; Marktleute holen jede Woche beim günstigsten Nachbarn, Ware kommt am selben Tag an | frei gewählt; Wolle, Kleidung, Keramik nach Edikt |
+| Schafe (S106) | 1 pro ha Weide, Weide = Grasland/Ackerland der Zelle mal Feldfläche, höchstens 5 pro Kopf, 1 kg Wolle, Schur Tag 135 | Treacher, Sierra Mágina; Rest frei |
+| Handwerk (S107) | Weber 1 Stück in 30 Tagen aus 1 kg Wolle, Schmied 1,5 kg aus 1,25 kg Eisen, Töpfer 15 kg pro Tag; Wechsel ab 10 % mehr Erlös; Start mit 60 Tagen Staatslohn als Geld | Spinnzeit nach Tools and Textiles, Töpferlohn Edikt VII.29; Rest frei |
+| Kleidung (S107) | 1,5 Stück pro Kopf im Jahr, Kind halb; Ziel 1 Stück pro Kopf, bis dreifach für Reiche; selbst gemacht bis zur Hälfte der Arbeitstage | Cato 59; Rest frei |
+| Werkzeug (S108) | 2 kg pro ha unter Getreide, 10 % Verschleiss im Jahr, ohne Werkzeug 70 % Arbeit | frei gewählt |
+| Keramik (S109) | 5 kg Geschirr pro Haushalt, 100 % Verschleiss; Fässer 1 kg Ton für 3 kg Getreide, 4 % Verschleiss; ohne Fass 12 % Verderb | Peña 2007 (Lebensdauer dolium); Rest frei |
+| Leute einstellen (S111) | Ersparnis 60 Tage Essen plus ein Jahr Taglohn der Erwachsenen, davon 2 % im Monat für Arbeit zum Geldwert des Taglohns; Marktleute über 180 Tagen Getreide und 90 Tagen Waren | frei gewählt |
 | Staatslohn aus der Kasse (S94) | zuerst aus dem Bargeld der Kasse, der Rest neu geprägt | S95 (leere Kasse: nachprägen); Preise folgen der Geldmenge noch nicht |
 | Steuer | 10 % der Ernte, als Korn mit dem Getreide des Hofs verkauft, das Geld in die Staatskasse (S104) | S70 offen; sizilischer Zehnt. **Hinweis:** Italien zahlte bis Diokletian keine Grundsteuer. |
 | Pacht | ein Drittel der Ernte, bei Verkauf an den Grundherrn | S69 offen |
@@ -841,8 +896,9 @@ in Arrays nach ID statt in Hashtabellen.
 - **Wachstum** mit Heirat nach Zensus (S86), Lohn statt Hof (S87), Verderb (S88) und
   ohne die doppelt gezählten Hungertoten (S89): 0,17 % im Jahr von Jahr 10 bis 100,
   historisch 0,1–0,2 %. Mit S91–S93 jetzt 0,16 % (`run100-s93.txt`).
-- **Die Geldmenge wächst** um rund 95 Mio. Denar im Jahr (S94 Schritt 1): Staatslohn wird
-  geprägt, die Steuer in Geld (S104) holt nur etwa 6 % zurück. Ohne Wirkung auf die
+- **Die Geldmenge wuchs** bis S110 um rund 95 Mio. Denar im Jahr (S94 Schritt 1): Staatslohn wurde
+  geprägt, die Steuer in Geld (S104) holte nur etwa 6 % zurück. Seit S110 prägt der Staat
+  fast nichts mehr, und seine Kasse wächst. Ohne Wirkung auf die
   Preise; eine Preisregel gibt es nach S95 nicht. Über 100
   Jahre verschwand vor S97 die Hälfte des geprägten Geldes mit aufgelösten Haushalten; seit
   S97 geht es an Verwandte oder die Staatskasse.
