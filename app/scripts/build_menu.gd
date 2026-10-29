@@ -30,7 +30,8 @@ const FARM := 0
 const FIELD := 1
 const ROAD := 2
 const NAMES := ["Hof", "Feld", "Strasse"]
-const COLOURS: Array[Color] = [Color("c9a45c"), Color("9cc47e"), Color("b9b2a3")]
+## roof terracotta, ripe grain, stone: each stands off the green ground
+const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
 const NONE := -1
 
 var landscape: Node3D
@@ -62,6 +63,7 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.vertex_color_use_as_albedo = true
+	m.vertex_color_is_srgb = true
 	m.no_depth_test = true
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	m.render_priority = 10
@@ -237,7 +239,7 @@ func _take_orders() -> void:
 func _draw_orders() -> void:
 	_dirty = false
 	_mesh.clear_surfaces()
-	var reach := landscape.width * 1.2
+	var reach: float = landscape.width * 1.2
 	var centre: Vector2 = landscape.target
 	var quads := []
 	if _close():
@@ -246,7 +248,7 @@ func _draw_orders() -> void:
 				quads.append([t, Color(COLOURS[_orders[t]], 0.55)])
 		if tool != NONE:
 			for t in _stroke:
-				var ok := _orders.get(t, NONE) == tool if _stroke_erase else _buildable(t)
+				var ok: bool = _orders.get(t, NONE) == tool if _stroke_erase else _buildable(t)
 				var c := Color(0.1, 0.1, 0.1, 0.5) if _stroke_erase else Color(COLOURS[tool].lightened(0.35), 0.75)
 				quads.append([t, c if ok else Color(SimTables.NEGATIVE, 0.6)])
 			if _stroke.is_empty():
