@@ -29,11 +29,11 @@ const COLUMNS: Array[float] = [-4.0, -1.25, 1.25, 4.0]
 const BARN_X := -4.5 # middle of the barn wing, its walls 2 m either side
 const BARN_Z := Vector2(1.5, 6.0) # back and front of the barn
 const BARN_WALL := 2.75
-const WINS_HOUSE: Array[float] = [2.75] # windows from the middle of the front
-const WINS_LONG: Array[float] = [2.5, 4.75]
+const WINS_HOUSE: Array[float] = [1.625, 3.25] # windows from the middle of the front: four and the door
+const WINS_LONG: Array[float] = [2.5, 4.5]
 const ENDS_HOUSE: Array[float] = [1.5] # windows from the middle of each end
 const ENDS_LONG: Array[float] = [1.25]
-const WALL := 4.0 # tall enough that the roof does not swallow the house from above
+const WALL := 4.75 # tall enough that the roof does not swallow the house from above (round 17: 4 m read as 60 % roof)
 const EAVES := 0.5
 const PITCH := 0.42 # roof rise per metre (about 23 degrees)
 const LOD_VOXELS := [0.125, 0.25, 0.5, 1.0]
@@ -43,7 +43,7 @@ const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v29_%d_%s.res"
+const CACHE := "user://farmhouse_v31_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -100,9 +100,10 @@ static func _snap(p: Vector3, e: float) -> Vector3:
 
 ## The walls of a house of half extents hx, hz up to WALL: plaster on a
 ## stone plinth, stone corners, a beam under the eaves, the plank door in
-## the middle of the front and small windows high up with wooden shutters
-## either side, at the distances `wins` from the middle of the front and
-## back and `ends` from the middle of each end, so no wall is blank.
+## the middle of the front and windows with wooden shutters either side
+## and a stone sill, at the distances `wins` from the middle of the front
+## and back and `ends` from the middle of each end, so no wall is blank
+## (round 17: small windows left the facades blank planes).
 static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float], ends: Array[float]) -> int:
 	var ax := absf(p.x)
 	var az := absf(p.z)
@@ -122,23 +123,20 @@ static func _walls(p: Vector3, hx: float, hz: float, wins: Array[float], ends: A
 	if p.y >= WALL - 0.5:
 		return PLASTER_SHADE
 	# plank door in the middle of the front, set back one block
-	if p.z > 0.0 and az >= hz - 0.25 and absf(p.x) < 0.625 and p.y < 2.375:
+	if p.z > 0.0 and az >= hz - 0.25 and absf(p.x) < 0.625 and p.y < 2.625:
 		return EMPTY if az >= hz - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
-	var win_y := p.y >= 1.875 and p.y < 2.75
-	if win_y and az >= hz - 0.25:
+	var win_y := p.y >= 1.875 and p.y < 3.125
+	var sill := p.y >= 1.75 and p.y < 1.875
+	if (win_y or sill) and az >= hz - 0.25:
 		for w: float in wins:
 			var k := absf(ax - w)
-			if k < 0.25:
-				return WINDOW
-			if k < 0.5:
-				return SHUTTER
-	if win_y and ax >= hx - 0.25:
+			if k < 0.625:
+				return STONE if sill else (WINDOW if k < 0.375 else SHUTTER)
+	if (win_y or sill) and ax >= hx - 0.25:
 		for w: float in ends:
 			var k := absf(az - w)
-			if k < 0.25:
-				return WINDOW
-			if k < 0.5:
-				return SHUTTER
+			if k < 0.625:
+				return STONE if sill else (WINDOW if k < 0.375 else SHUTTER)
 	return PLASTER_LOW if p.y < 0.875 else PLASTER
 
 static func _house(p: Vector3) -> int:
@@ -237,20 +235,20 @@ static func _barn(p: Vector3) -> int:
 static func _shed(p: Vector3) -> int:
 	var x0 := HALF_X
 	var x1 := 7.0
-	if p.x < x0 or p.x >= x1 + 0.25 or p.z < -2.5 or p.z >= 1.75:
+	if p.x < x0 or p.x >= x1 + 0.25 or p.z < -3.25 or p.z >= 0.75:
 		return EMPTY
-	var roof := 2.75 - 0.3 * (p.x - x0)
+	var roof := 3.375 - 0.3 * (p.x - x0) # high enough at the wall to hide the end window behind it
 	if p.y >= roof:
 		return EMPTY
 	if p.y >= roof - 0.25:
 		return _tile(0, posmod(int(floor(p.z / 0.25)), 3) == 0)
-	if p.x >= x1 or p.z < -2.25:
+	if p.x >= x1 or p.z < -3.0:
 		return WOOD if posmod(int(floor((p.x + p.z) / 0.5)), 2) == 0 else WOOD_DARK
-	if p.z >= 1.5:
+	if p.z >= 0.5:
 		# open front, with posts at the corners
 		return WOOD_DARK if p.x >= x1 - 0.25 else EMPTY
 	# hay inside
-	if p.y < 1.25 and p.x < 6.25 and p.z > -1.5:
+	if p.y < 1.25 and p.x < 6.25 and p.z > -2.25:
 		return STRAW
 	return EMPTY
 

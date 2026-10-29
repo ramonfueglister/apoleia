@@ -43,23 +43,25 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// Further out the farmland lies in strip fields, as the Roman land was
-// laid out: in each farm's block (the fine tile, sim_parcel) the parcels
-// form strips two parcels wide, all running one way, each strip one field
-// in one flat colour: Urbek's wheat yellow, the green of growing grain,
-// golden stubble, now and then a lighter ploughed brown; most fallow is
-// grazed grass, so the fields lie on green and stay quieter than the town
-// (rounds 12-16: single parcels, 2 x 2 km blotches or 250 m strips in four
-// equally loud tones read as camouflage, confetti or a barcode).
-const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a strip is two wide
+// Further out the farmland lies in fields of 2 x 3 parcels, as the Roman
+// land was laid out in strips: in each farm's block (the fine tile,
+// sim_parcel) the fields all run one way, each in one flat colour a clear
+// step from the pasture: Urbek's wheat yellow, the darker green of growing
+// grain, golden stubble, now and then ploughed brown; most fallow is
+// grazed grass, so the fields lie in clusters on green and stay quieter
+// than the town (rounds 12-17: single parcels, 2 x 2 km blotches, long
+// strips or a crop green too close to the grass read as camouflage,
+// confetti or a barcode).
+const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a field is 2 x 3 of them
 vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
 	bool along_x = sim_hash(farm + 9.1) < 0.5;
-	vec2 strip = farm * 13.0 + vec2(floor((along_x ? cell.y : cell.x) * 0.5), along_x ? 0.5 : 0.25);
-	vec3 wheat = GROUND_RGB[G_FIELD];          // #cdc373 on screen
-	vec3 stubble = vec3(0.6, 0.51, 0.3);       // #c4a860
-	vec3 ploughed = vec3(0.53, 0.41, 0.28);    // #b08a60
-	vec3 green = vec3(0.3, 0.49, 0.22);        // #6aa548
+	vec2 c = along_x ? cell.yx : cell; // (across, along) the fields
+	vec2 strip = farm * 13.0 + vec2(floor(c.x * 0.5), floor(c.y / 3.0) * 0.37);
+	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
+	vec3 stubble = vec3(0.6, 0.51, 0.31);      // #c4a865
+	vec3 ploughed = vec3(0.5, 0.37, 0.25);     // #a5774f
+	vec3 green = vec3(0.25, 0.445, 0.19);      // #5a9a3c
 	float h = sim_hash(strip + 3.7);
 	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.6 ? GROUND_RGB[G_MEADOW] : h < 0.88 ? stubble : ploughed; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);

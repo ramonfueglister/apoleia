@@ -106,15 +106,18 @@ float sim_lane(vec2 p) {
 
 // The parcel `cell` (of side `size` km): 0 not farmed, 1 fallow, 2 sown;
 // `f` is its fine texel. Each fine tile farms one block around its middle,
-// as large as its field share (a rounded square, with a little jitter for a
-// ragged edge), so the farmland reads as calm blocks around the villages.
+// as large as its field share but never more than SIM_BLOCK_MAX of it (a
+// rounded square, with a little jitter for a ragged edge), so the farmland
+// reads as calm blocks around the villages with pasture between them
+// (round 17: blocks that filled their tiles ran together into one quilt).
+const float SIM_BLOCK_MAX = 0.55;
 int sim_parcel(vec2 cell, float size, out vec4 f) {
 	vec2 q = (world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km;
 	f = sim_fine_at(ivec2(floor(q)));
 	if (f.r <= 0.0) { return 0; }
 	vec2 d = abs(fract(q) - 0.5) * 2.0;
 	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
-	if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= f.r) { return 0; }
+	if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= min(f.r, SIM_BLOCK_MAX)) { return 0; }
 	if (sim_hash(cell + 17.3) >= f.g) { return 1; }
 	return 2;
 }

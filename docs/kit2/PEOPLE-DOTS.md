@@ -189,10 +189,10 @@ sind nur noch eine Übersicht mit Taste `P` (aus beim Start, `--people-dots`).
 Jeder Dorf-Haushalt hat ein Haus auf seinem Hausplatz: ein Bauernhaus (casa
 rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
-Steinecken, Balken unter der Traufe, Brettertür, kleine Fenster mit Läden (auch zwei an jeder Schmalseite),
+Steinecken, Balken unter der Traufe, Brettertür, Fenster mit Läden und steinerner Sohlbank (vier an der Front, zwei an jeder Schmalseite; Runde 18 breiter und höher, vorher lasen sich die Fassaden als leere Flächen),
 Dach aus Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und
 Graten. Drei Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
-eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite; Langhaus
+eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite, hinter dem Fenster der Schmalseite zurückgesetzt, damit er keines verdeckt; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
 vor dem Haus, durch deren offenes Tor das Heu zu sehen ist. Dazu Holzstoss,
@@ -202,7 +202,7 @@ gepflegtes Gras, eine Spur frischer als die Weide draussen, neben dem Weg ein
 Vorplatz aus gestampfter Erde (Dreschplatz) mit einem Brunnen (niedrige
 Steinfassung, dunkles Wasser, zwei Pfosten und ein Ziegeldächlein); ausserhalb des Zauns auf der 21-m-Hofparzelle zwei
 schlanke dunkle Zypressen in den vorderen Ecken (ein Sechstel so breit wie
-hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4 m hohe Wände
+hoch), ein Olivenbaum und ein Heuhaufen. Putz warm creme, 4,75 m hohe Wände (Runde 18; vorher war das Haus von oben zu 60 % Dach)
 unter einem flachen Walmdach (23°), damit das Dach das Haus von oben nicht
 verschluckt; Dach tiefes, nicht grelles Terrakotta: die Trittflächen sind
 dunkler angelegt, als sie erscheinen, da Sonne und Tonemapping sie sonst
@@ -224,7 +224,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 2 km Bildbreite, damit die Dachstufen klein
 bleiben; weiter draussen flimmern ihre Ziegelreihen als Moiré), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v29_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v31_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -273,16 +273,20 @@ Kachel, so gross wie ihr Feldanteil; nur auf ebenen Kacheln, die Rampen
 bleiben Wiese (wie in SimCity 2000; eine Feldfarbe, die die zwei Dreiecke
 einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite liegt das Ackerland in Streifenfluren: in jedem Hofblock (der
-feinen Kachel) bilden die 250-m-Parzellen Streifen von zwei Parzellen Breite,
-alle in eine Richtung, jeder Streifen ein Feld in einer flachen Farbe:
-Urbeks Weizengelb, das Grün wachsenden Getreides, goldene Stoppel, ab und zu
+feinen Kachel, deren Feldblock höchstens 55 % der Kachel deckt, damit Weide zwischen
+den Höfen bleibt: Runde 17 liefen volle Blöcke zu einer Steppdecke zusammen) bilden je 2 × 3 Parzellen von 250 m ein Feld,
+alle in eine Richtung, jedes Feld in einer flachen Farbe:
+Urbeks Weizengelb, das dunklere Grün wachsenden Getreides (klar unter der Wiese), goldene Stoppel, ab und zu
 ein helleres gepflügtes Braun; die meiste Brache ist beweidetes Gras, so
 liegen die Felder auf Grün und bleiben leiser als die Stadt; nur auf ebenen
 Kacheln. Runden 12 bis 16: einzelne Parzellen, Flecken von 2 × 2 km oder
 250-m-Streifen in vier gleich lauten Tönen lasen sich als Tarnmuster,
-Konfetti oder Strichcode.
+Konfetti oder Strichcode; Runde 17: Saatgrün zu nah an der Wiese.
 Die Feldplatten bekommen einen hellen Rand von 1-2 px wie Urbeks Platten
-und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16),
+und bleiben flach (Büschel darauf lasen sich als dunkle Striche, Runde 16);
+auf der Hälfte der Brachen stehen helle Garben in lockeren Reihen und auf der
+Hälfte des reifen Korns helle Ährenbüschel, damit keine Platte leer wie ein
+Tablett liegt (Runde 17),
 und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
 (`people_crop_slab.gdshaderinc`, geteilt vom Feld- und vom
 Platzierungs-Shader).
