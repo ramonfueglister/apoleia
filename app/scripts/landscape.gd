@@ -133,6 +133,11 @@ func _setup_look() -> void:
 	# no blur and no dithered soft filter, so every house, tree and figure
 	# casts a crisp shadow from its foot.
 	sun.shadow_blur = 0.0
+	# A strong normal offset keeps slopes free of acne stripes in a map that
+	# spans the whole deep view of the far-off camera; the depth bias stays
+	# low, so small things keep their shadows.
+	sun.shadow_bias = 0.1
+	sun.shadow_normal_bias = 8.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_fade_start = 0.98
 	RenderingServer.directional_shadow_atlas_set_size(4096, true)
