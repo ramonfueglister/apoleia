@@ -15,6 +15,7 @@ const float DOT_VILLAGE_KM = 0.8;       // houses of a village within this radiu
 const float DOT_LOT_KM = 0.5;           // village houses on a grid of lots: a 15 m farmhouse (scripts/voxel/farmhouse.gd) with a lane round it, 2 x 2 field parcels
 const float DOT_FAMILY_KM = 0.035;      // members of a household around its house
 const float DOT_ROAD = 8192.0;          // sim/src/view.rs ROAD
+const float DOT_AT_LOT = 12288.0;       // a farm the player placed (build_menu.gd): its house on the lot under rec.xy, not a village spot
 
 uint dot_hash(uint x) {
 	x ^= x >> 16u;
@@ -177,6 +178,12 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 	if (code < 0.0) {
 		// city: the household's house in the city disk
 		p = dot_land(rec.xy, rec.z, key);
+	} else if (code >= DOT_AT_LOT) {
+		// a farm the player placed: exactly on the lot chosen (rec.xy any
+		// point on it), so it stands where the build menu showed its ghost
+		// (scripts/voxel/farmhouse_ghost.gd); its family round it as in a village
+		p = dot_lot(rec.xy);
+		village = true;
 	} else if (code >= DOT_ROAD) {
 		// on the road: anywhere on land in the current cell
 		p = dot_land(rec.xy, DOT_CELL_HALF_KM, key);

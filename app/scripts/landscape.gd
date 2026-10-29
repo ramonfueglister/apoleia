@@ -26,6 +26,7 @@ const TileTerrain = preload("res://scripts/tile_terrain.gd")
 const TourBench = preload("res://scripts/tour_bench.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const PeopleDots = preload("res://scripts/sim/people_dots.gd")
+const LoadingScreen = preload("res://scripts/loading_screen.gd")
 const BuildMenu = preload("res://scripts/build_menu.gd")
 const GameClock = preload("res://scripts/sim/game_clock.gd")
 const MarketWindow = preload("res://scripts/sim/market_window.gd")
@@ -128,11 +129,21 @@ func _ready() -> void:
 					var q := v.split(",")
 					_views.append(Vector3(float(q[0]), float(q[1]), float(q[2])))
 				start = _views[0]
+	# loaded in steps behind a loading screen, drawn between them (before,
+	# the window stayed grey for most of a minute); the map takes no input
+	# and does not move until all is there
+	set_process(false)
+	set_process_unhandled_input(false)
+	var automated := _snapshot_path != "" or _bench_frames > 0 or _tour != ""
+	var loading := LoadingScreen.new(["terrain", "look", "people", "build", "draw"] as Array[String])
+	add_child(loading)
+	await loading.step("terrain", "Gelände und Küsten werden geladen …")
 	terrain = TileTerrain.new()
 	add_child(terrain)
-	if not terrain.load_data():
+	if not await terrain.load_data(loading.part):
 		get_tree().quit(1)
 		return
+	await loading.step("look", "Licht, Kamera und Wetter …")
 	_setup_look()
 	camera.fov = fov_for_width(start.z)
 	camera.near = 0.05
@@ -149,6 +160,7 @@ func _ready() -> void:
 	add_child(weather)
 	weather.configure(self, camera, sun, environment, Callable(self, "get_displayed_height_range"))
 	# Kit 2 people as dots (Rust GDExtension); off when it is not built
+	await loading.step("people", "Menschen, Höfe und Märkte …")
 	var dots := PeopleDots.new()
 	add_child(dots)
 	var clock: Node = null
@@ -163,6 +175,7 @@ func _ready() -> void:
 	else:
 		dots.queue_free()
 	# after the people: its clicks on the map come before theirs
+	await loading.step("build", "Baumenü …")
 	var build := BuildMenu.new()
 	add_child(build)
 	build.setup(self, people.people if people != null else null)
@@ -179,6 +192,9 @@ func _ready() -> void:
 		tour.hide = _tour_hide
 		tour.warmup = _snapshot_frames
 		add_child(tour)
+	set_process(true)
+	set_process_unhandled_input(true)
+	await loading.finish("Die Landschaft wird gezeichnet …", automated)
 
 static func lonlat_to_world(lon: float, lat: float) -> Vector2:
 	return Vector2(EARTH_KM * cos(deg_to_rad(41.0)) * deg_to_rad(lon - 19.0), -EARTH_KM * deg_to_rad(lat - 41.0))
