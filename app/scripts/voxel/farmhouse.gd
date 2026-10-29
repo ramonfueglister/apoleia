@@ -2,12 +2,13 @@ extends RefCounted
 ## A Roman farmhouse (casa rustica) as a voxel model in the Urbek style of
 ## the colosseum prototype: plastered walls on a stone plinth with stone
 ## corners, a beam under the eaves, a plank door and small dark windows
-## with shutters, under terracotta tiles with darker rows and ridges. Three
+## with shutters, under terracotta tiles with darker rows and ridges. Four
 ## builds (VARIANTS), so a village is not one house repeated: a hipped-roof
 ## house with a lean-to shed with hay on one end; a long house under a
-## gable roof with a portico of plastered columns along its front; and the
+## gable roof with a portico of plastered columns along its front; the
 ## hipped-roof house with a plank barn as a wing in front, its open door
-## showing the hay inside. Around each a woodpile, a vegetable garden and a
+## showing the hay inside; and a two-storey house with an outside stone
+## stair to its upper floor and a vine pergola over the yard. Around each a woodpile, a vegetable garden and a
 ## fruit tree at the back, an earth path to the gate and a wooden
 ## fence round the yard (it fits a 15 m yard when turned); outside the fence,
 ## on the rest of the 21 m lot, two cypresses at the front corners, an olive
@@ -18,7 +19,7 @@ extends RefCounted
 
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 
-const VARIANTS := 3 # people_houses.gdshader picks one per lot
+const VARIANTS := 4 # people_houses.gdshader picks one per lot
 const HALF_X := 4.5
 const HALF_Z := 3.25
 const LONG_X := 5.75 # the long house
@@ -29,6 +30,14 @@ const COLUMNS: Array[float] = [-4.0, -1.25, 1.25, 4.0]
 const BARN_X := -4.5 # middle of the barn wing, its walls 2 m either side
 const BARN_Z := Vector2(1.5, 6.0) # back and front of the barn
 const BARN_WALL := 2.75
+const TALL_X := 3.75 # the two-storey house
+const TALL_Z := 3.0
+const TALL_WALL := 6.5
+const UPPER := 3.5 # its upper floor
+const STAIR_X := Vector2(1.0, 5.5) # its outside stair along the front: the landing's inner end, the foot
+const TALL_WINS: Array[float] = [-2.25, 2.25] # windows on the back
+const TALL_FRONT_DOWN: Array[float] = [-2.25] # on the front beside the door, below and above
+const TALL_FRONT_UP: Array[float] = [-0.5, -2.5]
 const WINS_HOUSE: Array[float] = [1.625, 3.25] # windows from the middle of the front: four and the door
 const WINS_LONG: Array[float] = [2.5, 4.5]
 const ENDS_HOUSE: Array[float] = [1.5] # windows from the middle of each end
@@ -39,11 +48,11 @@ const PITCH := 0.42 # roof rise per metre (about 23 degrees)
 const LOD_VOXELS := [0.125, 0.25, 0.5, 1.0]
 const FINE := 0.125
 const BOUNDS_LO := Vector3(-10.0, -0.125, -10.0) # the voxel layer -0.125..0.125 holds the path, flush with the ground
-const BOUNDS_HI := Vector3(10.0, 6.75, 11.0)
+const BOUNDS_HI := Vector3(10.0, 8.25, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v32_%d_%s.res"
+const CACHE := "user://farmhouse_v33_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -54,7 +63,7 @@ static var _variant := 0 # the build sample() draws
 # the plaster cream, pink or ochre and the shutters green or brown per farm.
 const PALETTE := [
 	Color(0, 0, 0), Color("f0dbb0"), Color("dcc59a"), Color("d6ccb4"), Color("ad5a44"),
-	Color("9c4a38"), Color("7e3a2e"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
+	Color("9c4a38"), Color("96463a"), Color("7a5232"), Color("3b2b20"), Color("d9bf6a"),
 	Color("5e3f28"), Color("6e4a32"), Color("5f9a3e"), Color("44772f"), Color("c49a64"),
 	Color("5e4128"), Color("b59a6c"), Color("6e4a30"), Color("d2452f"), Color("b5a586"),
 	Color("5f7f46"), Color("24482c"), Color("31603a"), Color("4d683f"), Color("34482b"),
@@ -82,6 +91,12 @@ static func sample(p: Vector3) -> int:
 		c = _long_house(p)
 		if c == EMPTY:
 			c = _portico(p)
+	elif _variant == 3:
+		c = _tall_house(p)
+		if c == EMPTY:
+			c = _stair(p)
+		if c == EMPTY:
+			c = _pergola(p)
 	else:
 		c = _house(p)
 		if c == EMPTY:
@@ -144,20 +159,101 @@ static func _house(p: Vector3) -> int:
 	var az := absf(p.z)
 	if p.y < WALL:
 		return _walls(p, HALF_X, HALF_Z, WINS_HOUSE, ENDS_HOUSE)
-	# hipped roof over the eaves
-	var dx := HALF_X + EAVES - ax
-	var dz := HALF_Z + EAVES - az
+	return _hip_roof(p, HALF_X, HALF_Z, WALL)
+
+## A hipped roof over the eaves of a house of half extents hx > hz with
+## its walls up to `base`: hips and ridge darker, tile rows (imbrices)
+## running down each slope.
+static func _hip_roof(p: Vector3, hx: float, hz: float, base: float) -> int:
+	var ax := absf(p.x)
+	var az := absf(p.z)
+	var dx := hx + EAVES - ax
+	var dz := hz + EAVES - az
 	if dx < 0.0 or dz < 0.0:
 		return EMPTY
-	var top := WALL + PITCH * minf(dx, dz)
+	var top := base + PITCH * minf(dx, dz)
 	if p.y >= top:
 		return EMPTY
-	# hips and ridge darker, tile rows (imbrices) running down each slope
-	if absf(dx - dz) < 0.2 or p.y >= WALL + PITCH * (HALF_Z + EAVES) - 0.25:
+	if absf(dx - dz) < 0.2 or p.y >= base + PITCH * (hz + EAVES) - 0.25:
 		return RIDGE
 	var along := p.z if dx < dz else p.x
 	var dir := (0 if p.x > 0.0 else 1) if dx < dz else (2 if p.z > 0.0 else 3)
 	return _tile(dir, posmod(int(floor(along / 0.25)), 3) == 0)
+
+## The two-storey house: on a stone plinth, the ground floor with the door
+## and a window, a stone string course, the upper floor with its own door
+## off the landing of the outside stair and two windows, under a hipped
+## roof; seen from above it stands taller than its neighbours.
+static func _tall_house(p: Vector3) -> int:
+	if p.y >= TALL_WALL:
+		return _hip_roof(p, TALL_X, TALL_Z, TALL_WALL)
+	var ax := absf(p.x)
+	var az := absf(p.z)
+	if p.y < 0.375:
+		return PLINTH if ax < TALL_X + 0.125 and az < TALL_Z + 0.125 else EMPTY
+	if ax >= TALL_X or az >= TALL_Z:
+		return EMPTY
+	if ax < TALL_X - 0.25 and az < TALL_Z - 0.25:
+		return PLASTER
+	if ax >= TALL_X - 0.5 and az >= TALL_Z - 0.5:
+		return STONE
+	if p.y >= TALL_WALL - 0.25:
+		return BEAM
+	if p.y >= TALL_WALL - 0.5:
+		return PLASTER_SHADE
+	if p.y >= UPPER - 0.25 and p.y < UPPER:
+		return STONE # the string course between the floors
+	var upper := p.y >= UPPER
+	var front := p.z > 0.0 and az >= TALL_Z - 0.25
+	# plank doors set back one block: below in the middle, above off the landing
+	var door := (absf(p.x - 1.5) < 0.5 and p.y < UPPER + 2.25) if upper else (absf(p.x) < 0.625 and p.y < 2.625)
+	if front and door:
+		return EMPTY if az >= TALL_Z - 0.125 else (WOOD if int(floor(p.x / 0.25)) % 2 == 0 else WOOD_DARK)
+	var lo := UPPER + 0.75 if upper else 1.875
+	if p.y >= lo - 0.125 and p.y < lo + 1.25:
+		var sill := p.y < lo
+		var wins: Array[float] = TALL_WINS
+		if front:
+			wins = TALL_FRONT_UP if upper else TALL_FRONT_DOWN
+		var k := 1.0e6
+		if az >= TALL_Z - 0.25:
+			for w: float in wins:
+				k = minf(k, absf(p.x - w))
+		if ax >= TALL_X - 0.25:
+			k = minf(k, az) # one window in the middle of each end
+		if k < 0.625:
+			return STONE if sill else (WINDOW if k < 0.375 else SHUTTER)
+	return PLASTER_LOW if p.y < 0.875 else PLASTER
+
+## The two-storey house's outside stair: a solid flight of stone steps
+## along the front from beyond the +x corner up to a landing at the upper
+## door, the treads a lighter stone, a dark cellar door under the landing.
+static func _stair(p: Vector3) -> int:
+	if p.y < 0.0 or p.z < TALL_Z or p.z >= TALL_Z + 1.0 or p.x < STAIR_X.x or p.x >= STAIR_X.y:
+		return EMPTY
+	var top := UPPER if p.x < 2.0 else UPPER - 0.25 * (floorf((p.x - 2.0) / 0.25) + 1.0)
+	if p.y >= top:
+		return EMPTY
+	if p.x < 2.0 and p.z >= TALL_Z + 0.75 and absf(p.x - 1.5) < 0.375 and p.y < 1.75:
+		return WINDOW
+	return STONE if p.y >= top - 0.125 else PLINTH
+
+## A vine pergola on the -x side of the yard in front: four dark posts and
+## two beams carrying a roof of vine leaves with gaps, so the yard shows
+## through in patches.
+static func _pergola(p: Vector3) -> int:
+	if p.y < 0.0 or p.y >= 3.0 or p.x < -6.5 or p.x >= -3.75 or p.z < 3.25 or p.z >= 6.0:
+		return EMPTY
+	var post_x := absf(p.x + 6.25) < 0.125 or absf(p.x + 4.0) < 0.125
+	var post_z := absf(p.z - 3.5) < 0.125 or absf(p.z - 5.75) < 0.125
+	if p.y < 2.5:
+		return WOOD_DARK if post_x and post_z else EMPTY
+	if p.y < 2.75:
+		return WOOD_DARK if post_z else EMPTY
+	var v := Vector3i((p / 0.5).floor())
+	if posmod(v.x * 3 + v.z * 5, 7) < 2:
+		return EMPTY
+	return LEAF if posmod(v.x + v.z * 2, 5) != 0 else LEAF_DARK
 
 ## The long house: four windows along the front, a gable roof with its
 ## ridge along the house, the end walls carried up as plaster gables under

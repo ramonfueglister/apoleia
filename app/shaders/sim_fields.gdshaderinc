@@ -90,7 +90,7 @@ vec2 sim_lot_front(vec2 lot) {
 // more lot as a track between the fields, so it does not end blind at the
 // village's edge (round 17: a lane ran into a wheat slab). Distance (km)
 // from p to the nearest lane, large without one.
-const float SIM_LANE_KM = 0.013; // half width
+const float SIM_LANE_KM = 0.017; // half width (round 19: 0.013 read as a thin line at 3 km)
 bool sim_lot_house(vec2 lot) {
 	return sim_house_lot(world_min + (lot + 0.5) * sim_lot_km);
 }

@@ -12,7 +12,7 @@ extends MultiMeshInstance3D
 ## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
 ## Every village household also gets a house at its house spot, from the
 ## house table of the view (sim/src/view.rs Houses): a voxel farmhouse in the
-## Urbek style in one of three builds (scripts/voxel/farmhouse.gd), the nearest houses
+## Urbek style in one of four builds (scripts/voxel/farmhouse.gd), the nearest houses
 ## (ApoleiaPeople.houses_near) in up to three levels of detail by distance and
 ## view width (people_houses.gdshader), with their own placement pass; city
 ## people live in the town tiles.

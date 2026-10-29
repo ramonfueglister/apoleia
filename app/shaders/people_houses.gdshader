@@ -4,7 +4,7 @@
 // first (ApoleiaPeople.houses_near) into `list_tex`; three MultiMeshes with the
 // voxel farmhouse in three levels of detail (scripts/voxel/farmhouse.gd) draw
 // consecutive runs of that list from `list_offset`, once for each of the
-// farmhouse's three builds (`variant`), each lot showing one of them. The
+// farmhouse's four builds (`variant`), each lot showing one of them. The
 // record comes from the house texture array (ApoleiaPeople.sync_houses, only
 // changed pages), the spot from the house placement pass
 // (people_dots_prep.gdshader with `houses`), which runs only when houses or
@@ -20,7 +20,7 @@ uniform sampler2D list_tex : filter_nearest, repeat_disable; // house slots to d
 uniform int list_w = 128;
 uniform int list_offset = 0; // this level of detail's first entry in the list
 uniform int variant = 0; // the farmhouse build this MultiMesh draws (farmhouse.gd VARIANTS)
-const uint VARIANTS = 3u;
+const uint VARIANTS = 4u;
 
 varying vec3 tint;
 varying vec3 normal; // the face's own normal, also on mirrored (back-facing) faces
@@ -66,7 +66,7 @@ void vertex() {
 	// (scripts/voxel/farmhouse.gd); the vertex colour keeps its corner shading
 	ivec2 lot = ivec2(floor((p - world_min) / DOT_LOT_KM));
 	uint key = dot_hash(uint(lot.x) * 0x2545f491u ^ uint(lot.y) * 0x9e3779b9u);
-	// one of the three builds per lot, drawn by its own MultiMesh
+	// one of the four builds per lot, drawn by its own MultiMesh
 	show = show && int((key >> 12u) % VARIANTS) == variant;
 	int index = int(UV.y + 0.5);
 	if (index == 1 || index == 2 || index == 27) {

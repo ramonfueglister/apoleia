@@ -45,7 +45,7 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 
 // Further out the farmland lies in square fields of 3 x 3 parcels in each
 // farm's block (the fine tile, sim_parcel), each in one flat colour a
-// clear step from the pasture: Urbek's wheat yellow or the darker green of
+// clear step from the pasture: Urbek's wheat yellow or the yellow green of
 // growing grain, now and then ploughed brown; the fallow is grazed grass,
 // so the fields lie in calm clusters on green and stay quieter than the
 // town (rounds 12-18: single parcels, 2 x 2 km blotches, strips, a crop
@@ -57,7 +57,7 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
 	vec3 ploughed = vec3(0.5, 0.37, 0.25);     // #a5774f
-	vec3 green = vec3(0.25, 0.445, 0.19);      // #5a9a3c
+	vec3 green = vec3(0.4, 0.56, 0.21);        // #8cbf4a, a yellow green above the pasture (darker it read as the shade of a ramp, round 19)
 	float h = sim_hash(strip + 3.7);
 	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);

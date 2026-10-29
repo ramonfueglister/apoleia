@@ -191,11 +191,11 @@ rustica) im Voxel-Stil von Urbek wie das Kolosseum-Prototyp
 (`scripts/voxel/farmhouse.gd`): verputzte Mauern auf Steinsockel mit
 Steinecken, Balken unter der Traufe, Brettertür, Fenster mit Läden und steinerner Sohlbank (vier an der Front, zwei an jeder Schmalseite; Runde 18 breiter und höher, vorher lasen sich die Fassaden als leere Flächen),
 Dach aus Terrakotta mit dunkleren Ziegelreihen, helleren Trittflächen und
-Graten. Drei Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
+Graten (die Firste ein mittleres Rot; dunkel lasen sie sich als Loch, Runde 19). Vier Bauformen, damit ein Dorf nicht ein Haus in Wiederholung ist,
 eine je Parzelle: Walmdachhaus mit Schuppen voll Heu an der Seite, hinter dem Fenster der Schmalseite zurückgesetzt, damit er keines verdeckt; Langhaus
 unter Satteldach mit verputzten Giebeln, vier Fenstern und einem Säulengang
 (Porticus) über die Front; Walmdachhaus mit einer Bretterscheune als Flügel
-vor dem Haus, durch deren offenes Tor unten das Heu und darüber das dunkle Innere zu sehen ist (bis Runde 18 eine helle Strohfläche). Dazu Holzstoss,
+vor dem Haus, durch deren offenes Tor unten das Heu und darüber das dunkle Innere zu sehen ist (bis Runde 18 eine helle Strohfläche); seit Runde 20 ein zweistöckiges Haus unter Walmdach, steinernes Gesims zwischen den Geschossen, eine Aussentreppe aus Stein an der Front hinauf zur oberen Tür mit einer dunklen Kellertür unter dem Absatz, und eine Weinpergola (vier Pfosten, ein Blätterdach mit Lücken) im Hof daneben, damit das Dorf in der Höhe wechselt. Dazu Holzstoss,
 Kohlbeet (dunkle runde Köpfe in Reihen, braune Erde dazwischen), Obstbaum,
 Zaun und ein Weg durchs Tor bis zur Gasse; im Zaun
 gepflegtes Gras, sichtbar heller als die Weide draussen (Runde 18 lag es noch gleich), neben dem Weg ein
@@ -229,7 +229,7 @@ Fläche um 1,2 cm in ihrer Ebene vergrössert gegen Pixelrisse an T-Stössen. Dr
 Detailstufen mit 0,125, 0,25, 0,5 und 1 m Voxeln (die feinste für die
 nächsten 256 Häuser bis 2 km Bildbreite, damit die Dachstufen klein
 bleiben; weiter draussen flimmern ihre Ziegelreihen als Moiré), für jede Bauform gebaut beim ersten Start und in
-`user://farmhouse_v32_*.res` gespeichert. Unter der Traufe liegt ein
+`user://farmhouse_v33_*.res` gespeichert. Unter der Traufe liegt ein
 eingebackenes Schattenband auf dem Putz, der Heuhaufen ist golden mit
 dunklerem Band und Fuss, der Zaun dunkelbraun, damit beide sich vom Weizen
 lösen. `ApoleiaPeople.houses_near` liefert die Häuser nahe der Ansicht,
@@ -282,8 +282,8 @@ einer Rampe verschieden tönen, sah aus wie Glasscherben). Ab 8 km
 Bildbreite liegt das Ackerland in quadratischen Feldern: in jedem Hofblock (der
 feinen Kachel, deren Feldblock höchstens 55 % der Kachel deckt, damit Weide zwischen
 den Höfen bleibt: Runde 17 liefen volle Blöcke zu einer Steppdecke zusammen) bilden je 3 × 3 Parzellen von 250 m ein Feld
-in einer flachen Farbe: Urbeks Weizengelb oder das dunklere Grün wachsenden
-Getreides (klar unter der Wiese), selten gepflügtes Braun; die Brache ist
+in einer flachen Farbe: Urbeks Weizengelb oder das helle Gelbgrün wachsenden
+Getreides (dunkler las es sich wie der Schatten einer Rampe, Runde 19), selten gepflügtes Braun; die Brache ist
 beweidetes Gras, so liegen die Felder in ruhigen Gruppen auf Grün (gut die
 Hälfte bleibt Weide) und bleiben leiser als die Stadt; nur auf ebenen
 Kacheln. Runden 12 bis 18: einzelne Parzellen, Flecken von 2 × 2 km,
@@ -304,7 +304,7 @@ und wer in einem Feld arbeitet, steht auf der Platte statt hüfttief darin
 Platzierungs-Shader).
 Ausserhalb des Quadrats der Feldplatten tragen auch die nahen Parzellen
 diese Farben. Pfade zum
-Markt, Marktplatz mit Ständen, Dorfgassen zwischen benachbarten Höfen und an
+Markt, Marktplatz mit Ständen, Dorfgassen (34 m breit) zwischen benachbarten Höfen und an
 der Seite, der jeder Hof zugewandt ist (dort trifft sein Torweg die Gasse), Handelswege
 und Strassen als helles Pflaster mit dunklerem Rand, Seewege gestrichelt.
 Taste `G` schaltet das aus und an. Was gezeigt wird, hängt an der
@@ -322,8 +322,8 @@ Grasränder und Gassen dazwischen laufen. Zwei Bilder wie in Urbeks
 Ackerland: dunkle braune Erde mit grünen Reihen, zwischen denen die Erde
 sichtbar bleibt, und eine geschlossene strohgelbe Fläche. Weizen und Gerste
 wachsen von nackter Erde über lockere Sprossen zu schmalen, buckligen
-Reihen, reifen zu einer strohgelben, 0,9 m hohen Platte und werden zu
-Stoppeln; eine brachliegende Parzelle ist eine 0,5 m hohe Platte aus
+Reihen, reifen zu einer strohgelben, 1,2 m hohen Platte und werden zu
+Stoppeln; eine brachliegende Parzelle ist eine 0,8 m hohe Platte aus
 trockenen Stoppeln im Weizengelb. Unter bestellten und brachen Parzellen
 malt die Terrain Wiese, so steht jede Platte mit sichtbarer Kante in
 einem Grasrand.

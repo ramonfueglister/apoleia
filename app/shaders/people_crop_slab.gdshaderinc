@@ -6,11 +6,12 @@
 const float SLAB_GAP = 0.025; // share of the parcel left free on each side
 
 // The slab's height (m) by the parcel's state, crop and growth: a sheet
-// of stubble on fallow, ripe grain a closed sheet, otherwise low soil.
+// of stubble on fallow, ripe grain a closed sheet, both with an edge as
+// thick as Urbek's (round 19: a 3 px lip at 1 km), otherwise low soil.
 float crop_slab_m(int state, int kind, float g) {
-	if (state == 1) { return 0.5; }
+	if (state == 1) { return 0.8; }
 	if (kind == SIM_WHEAT || kind == SIM_BARLEY) {
-		return g <= 0.0 ? 0.15 : g >= 0.75 ? 0.9 : 0.12;
+		return g <= 0.0 ? 0.15 : g >= 0.75 ? 1.2 : 0.12;
 	}
 	return kind == SIM_VINES ? 0.2 : 0.12;
 }
