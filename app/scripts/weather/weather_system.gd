@@ -37,6 +37,11 @@ const TIME_LOOK := {
 	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.76, 0.54), 1.35, Color(0.80, 0.88, 1.08), 1.35, Color(1.03, 0.90, 0.82)],
 }
 const WIND_SPEED := 3.0
+# The sun splits into a main and a cloud sun only from this view width (km):
+# up close it stays one hard light with the shadow map to itself.
+const SPLIT_KM := 40.0
+# Share of the sunlight the clouds block (dry, and in full rain).
+const CLOUD_SHARE := Vector2(0.15, 0.35)
 const NOISE_PERIOD := 1100.0
 const FINE_CELL := 50.0
 const COARSE_CELL := 160.0
@@ -231,23 +236,31 @@ func _build_cloud_sun() -> void:
 	_sun_caster_mask = _sun.shadow_caster_mask
 	_cloud_sun = DirectionalLight3D.new()
 	_cloud_sun.shadow_enabled = true
-	_cloud_sun.shadow_caster_mask = _sun_caster_mask | CloudMeshes.CLOUD_SHADOW_LAYER
+	# the cloud sun is blocked by the clouds alone; everything else keeps the
+	# main sun's one hard shadow
+	_cloud_sun.shadow_caster_mask = CloudMeshes.CLOUD_SHADOW_LAYER
 	_cloud_sun.visible = false
 	_sun.get_parent().add_child(_cloud_sun)
 
-## Splits the sun: the main light ignores cloud proxies, the cloud sun (share
-## `strength`) is blocked by them, so a cloud shadow removes only that share.
+## Splits the sun in wide views: the main light ignores cloud proxies, the
+## cloud sun (share `strength`) is blocked by them, so a cloud shadow removes
+## only that share. Below SPLIT_KM the sun stays whole and the clouds cast no
+## shadow: a second shadowed light would halve the shadow map and double the
+## houses' shadows.
 func _split_sun(strength: float) -> void:
-	var energy := _sun.light_energy
 	_sun.shadow_caster_mask = _sun_caster_mask & ~CloudMeshes.CLOUD_SHADOW_LAYER
+	if _ground_width < SPLIT_KM:
+		_cloud_sun.visible = false
+		return
+	var energy := _sun.light_energy
 	_sun.light_energy = energy * (1.0 - strength)
 	_cloud_sun.visible = true
 	_cloud_sun.global_transform = _sun.global_transform
 	_cloud_sun.light_energy = energy * strength
 	for property in ["light_color", "light_angular_distance", "shadow_bias", "shadow_normal_bias", "shadow_opacity", "directional_shadow_mode", "directional_shadow_max_distance", "directional_shadow_blend_splits", "directional_shadow_split_1", "directional_shadow_split_2", "directional_shadow_split_3", "light_specular"]:
 		_cloud_sun.set(property, _sun.get(property))
-	# Soft, blurred cloud shadows; tree shadows keep the main sun's settings.
-	_cloud_sun.shadow_blur = 3.0
+	# crisp cloud shadows, like the sun's own
+	_cloud_sun.shadow_blur = _sun.shadow_blur
 
 func _build_lightning() -> void:
 	_bolt = MeshInstance3D.new()
@@ -511,7 +524,7 @@ func _apply_look() -> void:
 	_written_fog = _fog_base * (1.0 + w.y * 0.3)
 	_environment.fog_density = _written_fog
 	_environment.adjustment_saturation = _base.saturation * (1.0 - 0.18 * w.y - 0.2 * state_rain)
-	_split_sun(clampf(0.8 + 0.15 * w.z, 0.0, 0.95))
+	_split_sun(lerpf(CLOUD_SHARE.x, CLOUD_SHARE.y, clampf(w.z, 0.0, 1.0)))
 
 func _restore_look() -> void:
 	if _base.is_empty(): return
