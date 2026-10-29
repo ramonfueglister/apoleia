@@ -385,6 +385,15 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Strassenblöcke haben eine dunkle Basaltfahrbahn zwischen Gehsteigen aus
   Travertin mit Bordstein.
 - Tilt-Shift nur noch angedeutet, denn Urbek hat praktisch keinen.
+- Werkstätten (Ramon: „alles sichtbar grafisch“): Ein Dorfhaus eines
+  Handwerkerhaushalts zeigt seine Werkstatt ausserhalb des Zauns
+  (`_workshop` in `scripts/voxel/farmhouse.gd`, `people_houses.gdshader`).
+  Der Schmied hat einen Unterstand mit Esse, glühender Kohle, Kamin, Amboss
+  und Werkzeugbank, der Töpfer einen Brennofen und Krüge, der Weber einen
+  Webstuhl, eine Wäscheleine mit Tüchern und Wollballen. Je mehr Ware die
+  Händler abnehmen (`busy`), desto mehr Werkzeug, Krüge, Tücher und Wolle
+  stehen herum. Die Daten stehen im Hausdatensatz (`rec.w`: craft << 22 |
+  key << 8 | busy, aus PR #49). Ohne sie bleibt die Werkstatt verborgen.
 
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 

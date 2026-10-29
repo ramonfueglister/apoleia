@@ -97,6 +97,19 @@ void vertex() {
 	if ((cypress && (key & 96u) == 0u) || (olive && (key & 128u) == 0u) || ((index == 26 || index == 28) && (key & 256u) == 0u)) {
 		show = false;
 	}
+	// the workshop of the household's craft (farmhouse.gd _workshop; the
+	// record's rec.w: craft << 22 | key << 8 | busy, busy the share of the
+	// month's work the dealers took): smithy 41-46, pottery 47-50, weaving
+	// 51-56, more goods about the busier it is
+	if (index >= 41) {
+		uint w = uint(rec.w);
+		uint craft = (w >> 22u) & 3u;
+		uint busy = w & 255u;
+		uint need = index <= 46 ? 2u : index <= 50 ? 3u : 1u;
+		bool more = index == 46 ? busy > 128u : index == 50 ? busy > 100u : index == 54 ? busy > 85u
+			: index == 55 ? busy > 170u : index == 56 ? busy > 50u : true;
+		show = show && craft == need && more;
+	}
 	// empty slots: all vertices on one point behind the camera, no area
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);

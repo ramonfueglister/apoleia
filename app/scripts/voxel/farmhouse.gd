@@ -52,7 +52,7 @@ const BOUNDS_HI := Vector3(10.0, 8.25, 11.0)
 const PATH_END := 11.0 # the path runs on through the gate to the village lane round the lot (people_dots_common.gdshaderinc DOT_LOT_KM)
 const FENCE_LO := Vector2(-7.125, -6.375) # x, z of the fence line, on voxel middles
 const FENCE_HI := Vector2(7.375, 6.375)
-const CACHE := "user://farmhouse_v34_%d_%s.res"
+const CACHE := "user://farmhouse_v35_%d_%s.res"
 static var _variant := 0 # the build sample() draws
 
 # Palette (sRGB): plaster, stone, terracotta and wood after Caesar III with
@@ -70,12 +70,31 @@ const PALETTE := [
 	Color("5a4632"), Color("c09447"), Color("cebc97"), Color("8f6a2e"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
 	Color("ad5a44"), Color("9c4a38"), Color("ad5a44"), Color("9c4a38"),
-	Color("4a8c3a"), Color("33505e"), Color("3e792e"), Color("2f5f24")]
+	Color("4a8c3a"), Color("33505e"), Color("3e792e"), Color("2f5f24"),
+	# the workshops (_workshop), each craft in colours of its own
+	Color("8c8478"), Color("ff8a2a"), Color("3d3d42"), Color("6e4a32"), Color("ad5a44"), Color("5a5a60"),
+	Color("a0563a"), Color("2e211a"), Color("c4704a"), Color("b8653f"),
+	Color("7a5232"), Color("e8dcc0"), Color("b5452f"), Color("d1a54a"), Color("4f6f9c"), Color("ebe3cf")]
 enum { EMPTY, PLASTER, PLASTER_LOW, STONE, ROOF, ROOF_DARK, RIDGE, WOOD, WINDOW, STRAW,
 	WOOD_DARK, BEAM, LEAF, LEAF_DARK, LOG, FENCE, EARTH, SOIL, FRUIT, PLINTH, SHUTTER,
 	CYPRESS_DARK, CYPRESS, OLIVE, OLIVE_DARK, OLIVE_TRUNK, HAY, PLASTER_SHADE, HAY_DARK,
 	ROOF_E, ROOF_DARK_E, ROOF_W, ROOF_DARK_W, ROOF_S, ROOF_DARK_S, ROOF_N, ROOF_DARK_N,
-	LOT_GRASS, WATER, CABBAGE, CABBAGE_DARK }
+	LOT_GRASS, WATER, CABBAGE, CABBAGE_DARK,
+	SMITH_STONE, SMITH_FIRE, SMITH_IRON, SMITH_WOOD, SMITH_ROOF, SMITH_TOOLS,
+	POT_KILN, POT_DARK, POT_JAR, POT_JAR_MORE,
+	WEAVE_WOOD, WEAVE_WARP, WEAVE_CLOTH, WEAVE_CLOTH_2, WEAVE_CLOTH_3, WEAVE_WOOL }
+# The workshop of a craft household (Ramon 29.10.2026: "alles sichtbar
+# grafisch"): every build carries all three outside the fence, each on a
+# spot of its own (a voxel holds one colour, so they cannot share one), and
+# people_houses.gdshader shows the one of the household's craft (smith,
+# potter, weaver; the house record's rec.w) and more of its goods the
+# busier it is (SMITH_TOOLS, POT_JAR_MORE, WEAVE_CLOTH_2 and _3,
+# WEAVE_WOOL). Each is drawn on the spot WORKSHOP_LO..HI (x, z) and moved
+# by its offset: the smithy front right, the pottery front left, the
+# weaving in the middle behind the house.
+const WORKSHOP_LO := Vector2(2.5, 7.25)
+const WORKSHOP_HI := Vector2(6.5, 10.25)
+const WORKSHOP_AT: Array[Vector2] = [Vector2(0.0, 0.0), Vector2(-9.0, 0.0), Vector2(-4.5, -17.25)]
 # roof tiles by the way their slope faces (+x, -x, +z, -z; _tile), so
 # people_houses.gdshader can light each slope by where it faces once the
 # house is turned
@@ -371,6 +390,9 @@ static func _yard(p: Vector3) -> int:
 	var tree := _tree(q)
 	if tree != EMPTY:
 		return tree
+	tree = _workshop(p)
+	if tree != EMPTY:
+		return tree
 	tree = _lot(p)
 	if tree != EMPTY:
 		return tree
@@ -457,6 +479,95 @@ static func _fence(p: Vector3) -> int:
 	var post := posmod(int(floor(along / 0.25)), 8) == 4
 	var rail := p.y >= 0.375 and p.y < 0.625
 	return FENCE if post or rail else EMPTY
+
+## The three workshops on one spot (WORKSHOP_LO..HI, x and z), in quarter
+## metre blocks: a smithy under a lean-to roof (stone hearth with glowing
+## coals and a chimney, an anvil on a stump, a bench of finished tools), a
+## potter's domed kiln with its dark mouth and rows of jars, and a weaver's
+## upright loom with red cloth on it, a line of cloths hung to dry and
+## bales of wool.
+static func _workshop(at: Vector3) -> int:
+	if at.y < 0.0 or at.y >= 3.25:
+		return EMPTY
+	for k in WORKSHOP_AT.size():
+		var p := _snap(at, 0.25) - Vector3(WORKSHOP_AT[k].x, 0.0, WORKSHOP_AT[k].y)
+		if p.x < WORKSHOP_LO.x or p.x >= WORKSHOP_HI.x or p.z < WORKSHOP_LO.y or p.z >= WORKSHOP_HI.y:
+			continue
+		return _smithy(p) if k == 0 else _pottery(p) if k == 1 else _weavery(p)
+	return EMPTY
+
+static func _inside(p: Vector3, lo: Vector3, hi: Vector3) -> bool:
+	return p.x >= lo.x and p.x < hi.x and p.y >= lo.y and p.y < hi.y and p.z >= lo.z and p.z < hi.z
+
+static func _smithy(p: Vector3) -> int:
+	# the lean-to: four posts and a tiled roof stepping down away from the house
+	var roof := 2.75 - 0.25 * floorf((p.z - 7.25) / 1.0)
+	for post: Vector2 in [Vector2(2.75, 7.5), Vector2(6.0, 7.5), Vector2(2.75, 9.75), Vector2(6.0, 9.75)]:
+		if absf(p.x - post.x - 0.125) < 0.125 and absf(p.z - post.y - 0.125) < 0.125 and p.y < roof:
+			return SMITH_WOOD
+	if p.x >= 2.5 and p.x < 6.5 and p.y >= roof and p.y < roof + 0.25 and not (p.x >= 3.5 and p.x < 4.0 and p.z >= 9.25):
+		return SMITH_ROOF
+	# hearth with its coals, the chimney through the roof
+	if _inside(p, Vector3(3.0, 0.0, 9.0), Vector3(4.5, 1.0, 10.0)):
+		return SMITH_STONE
+	if _inside(p, Vector3(3.25, 1.0, 9.25), Vector3(3.5, 1.25, 9.75)) or _inside(p, Vector3(4.0, 1.0, 9.25), Vector3(4.25, 1.25, 9.75)):
+		return SMITH_FIRE
+	if _inside(p, Vector3(3.5, 1.0, 9.25), Vector3(4.0, 3.25, 9.75)):
+		return SMITH_STONE
+	# the anvil on a stump
+	if _inside(p, Vector3(4.75, 0.0, 8.0), Vector3(5.25, 0.5, 8.5)):
+		return SMITH_WOOD
+	if _inside(p, Vector3(4.5, 0.5, 8.0), Vector3(5.5, 0.75, 8.5)):
+		return SMITH_IRON
+	# a bench of finished tools by the right post
+	if _inside(p, Vector3(5.25, 0.0, 8.75), Vector3(6.0, 0.5, 9.5)):
+		return SMITH_WOOD
+	if _inside(p, Vector3(5.25, 0.5, 8.75), Vector3(6.0, 0.75, 9.5)) and posmod(int(floor(p.z / 0.25)), 2) == 0:
+		return SMITH_TOOLS
+	return EMPTY
+
+static func _pottery(p: Vector3) -> int:
+	# the kiln: a stepped dome of brick, its mouth to the front
+	var d := Vector2(absf(p.x - 3.75), absf(p.z - 8.75))
+	var r := 1.25 if p.y < 0.75 else 1.0 if p.y < 1.25 else 0.75 if p.y < 1.75 else 0.5 if p.y < 2.0 else 0.0
+	if d.x < r and d.y < r and d.x + d.y < r * 1.5:
+		if p.z >= 9.5 and d.x < 0.375 and p.y < 0.75:
+			return POT_DARK
+		return POT_KILN
+	# jars in rows on the ground, a lighter rim on top
+	if p.x >= 5.25 and p.x < 6.25 and p.z >= 7.5 and p.z < 10.0 and p.y < 0.75:
+		var jx := fposmod(p.x - 5.25, 0.5)
+		var jz := fposmod(p.z - 7.5, 0.5)
+		if jx < 0.25 and jz < 0.25:
+			var row := int(floor((p.z - 7.5) / 0.5))
+			var k := POT_JAR if row < 2 else POT_JAR_MORE
+			return k if p.y < 0.5 else (k if row % 2 == 0 else EMPTY)
+	return EMPTY
+
+static func _weavery(p: Vector3) -> int:
+	# the loom: two uprights, a beam, the warp above and the cloth below
+	if (absf(p.x - 2.875) < 0.125 or absf(p.x - 4.875) < 0.125) and p.z >= 9.25 and p.z < 9.5 and p.y < 2.25:
+		return WEAVE_WOOD
+	if p.x >= 2.75 and p.x < 5.0 and p.z >= 9.25 and p.z < 9.5 and p.y >= 2.0 and p.y < 2.25:
+		return WEAVE_WOOD
+	if p.x >= 3.0 and p.x < 4.75 and p.z >= 9.25 and p.z < 9.5 and p.y >= 0.5 and p.y < 2.0:
+		return WEAVE_CLOTH if p.y < 1.25 else (WEAVE_WARP if posmod(int(floor(p.x / 0.25)), 2) == 0 else EMPTY)
+	# the drying line between two posts, three cloths hung on it
+	if (absf(p.x - 2.625) < 0.125 or absf(p.x - 6.125) < 0.125) and absf(p.z - 7.875) < 0.125 and p.y < 1.75:
+		return WEAVE_WOOD
+	if p.x >= 2.5 and p.x < 6.25 and absf(p.z - 7.875) < 0.125 and p.y >= 1.5 and p.y < 1.75:
+		return WEAVE_WOOD
+	if absf(p.z - 7.875) < 0.125 and p.y >= 0.5 and p.y < 1.5:
+		if p.x >= 2.875 and p.x < 3.625:
+			return WEAVE_CLOTH
+		if p.x >= 3.875 and p.x < 4.625:
+			return WEAVE_CLOTH_2
+		if p.x >= 4.875 and p.x < 5.625:
+			return WEAVE_CLOTH_3
+	# bales of wool
+	if p.x >= 5.25 and p.x < 6.25 and p.z >= 8.5 and p.z < 9.75 and p.y < (0.75 if p.z < 9.25 else 0.5):
+		return WEAVE_WOOL
+	return EMPTY
 
 const OLIVE_CLUMPS: Array[Vector4] = [Vector4(-0.75, 0.25, 1.5, 2.75), Vector4(0.75, -0.25, 1.75, 3.25), Vector4(0.25, 0.75, 2.0, 3.5)]
 
