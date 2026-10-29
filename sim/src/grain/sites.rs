@@ -2,7 +2,7 @@
 //! becomes a building site of its market (region). The state hires day
 //! labourers for its sites in `labour()`, after the farms and the
 //! households that hire for money (S111), and pays the market's day wage
-//! in denarii (WAGE_KG_DAY × buy price) from the treasury (`state_pays`).
+//! in denarii (S114) from the treasury (`state_pays`).
 //! `build_day` hands the days worked to the sites in tile order and tells
 //! each market how many days its sites still want.
 //!
@@ -180,7 +180,7 @@ impl Grain {
     /// A day of work at a market today, in milli-denarii: what the state
     /// pays its day labourers there (S72, S113).
     pub fn day_wage(&self, market: u32) -> i64 {
-        WAGE_KG_DAY * Self::buy_price(&self.markets[market as usize])
+        self.markets[market as usize].wage
     }
 
     /// Farm households whose farm stands on another fine tile than the

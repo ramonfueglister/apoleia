@@ -2,7 +2,7 @@
 //! proposal „Handwerk: Kleidung, Werkzeug, Keramik“ approved with its four
 //! recommendations). Wool, iron, clothing, tools and pottery each have a
 //! store, a price and the regional market's dealers, built like grain:
-//! the price follows the days of sales in store (S95, no price rule), the
+//! the price is the dealers' quote from their stock (S112, `pricing`), the
 //! dealers buy up to DEALER_MAX_DAYS of sales as far as their cash goes
 //! (S100), and the cash is the same as for grain (`Market::money`).
 //!
@@ -33,7 +33,8 @@ pub const GOOD_KEYS: [&str; GOODS] = ["wool", "iron", "cloth", "tools", "pottery
 pub const GOOD_NAMES: [&str; GOODS] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik"];
 pub const GOOD_UNITS: [&str; GOODS] = ["kg", "kg", "Stück", "kg", "kg"];
 
-/// Price per unit with TARGET_DAYS of sales in store, milli-denarii: wool
+/// Price per unit on the first day and beyond the map (S98, S112),
+/// milli-denarii: wool
 /// 25 den./lb (Edict XXV.5, ≈ 76 den./kg); a plain tunic 800 den. (30
 /// days of spinning and weaving at 25 den. plus wool; Edict XXVI.75–77:
 /// 500–800); iron 20 den./kg and tools 60 den./kg PLACEHOLDER (no iron
@@ -75,7 +76,7 @@ pub(super) const SPOIL_OPEN_PCT_YEAR: i64 = 12;
 const SHEEP_PER_HA_X10: i64 = 10;
 const SHEEP_PER_PERSON: i64 = 5;
 const WOOL_KG_SHEEP: i64 = 1;
-const SHEAR_DOY: i64 = 135;
+pub(super) const SHEAR_DOY: i64 = 135;
 /// Iron per kg of tools, milli-kg, and tools a smith makes a day, milli-kg
 /// (PLACEHOLDER); pottery a potter makes a day, milli-kg (75 den. a day,
 /// Edict VII.29, at the base price).
@@ -98,7 +99,7 @@ const SWITCH_PCT: i64 = 110;
 const RICH: [i64; 2] = [4, 20];
 
 /// Goods moves kept for the view (`goods_moves_in`), days.
-const MOVES_KEEP_DAYS: i64 = 28;
+pub(super) const MOVES_KEEP_DAYS: i64 = 28;
 
 /// Workshops in a box (`Grain::crafts_in`), one entry per craft
 /// household: household, craft (CRAFT_NAMES, 1–3), share of the month's
@@ -151,10 +152,17 @@ pub struct Ware {
     /// Asked for today and not in store: the dealers count it with their
     /// sales, so a good nobody can buy is not a good nobody wants.
     pub(super) missed_today: i64,
+    /// S112: the usual price, milli-denarii × 1000, and what was offered
+    /// to the dealers today and not taken.
+    pub(super) norm: i64,
+    pub(super) turned_today: i64,
+    /// Missed and turned away per day, smoothed (view only).
+    pub(super) missed_avg: i64,
+    pub(super) turned_avg: i64,
 }
 
 pub(super) fn wares() -> [Ware; GOODS] {
-    std::array::from_fn(|g| Ware { store: 0, price: GOOD_BASE[g], demand: 0, sold_today: 0, missed_today: 0 })
+    std::array::from_fn(|g| Ware { store: 0, price: GOOD_BASE[g], demand: 0, sold_today: 0, missed_today: 0, norm: GOOD_BASE[g] * 1000, turned_today: 0, missed_avg: 0, turned_avg: 0 })
 }
 
 fn gsell(w: &Ware) -> i64 {
@@ -324,18 +332,21 @@ impl Grain {
         }
     }
 
-    /// The goods' prices, as grain's (`prices`).
+    /// The goods' prices, as grain's (`prices`, S112): wool comes once a
+    /// year and is carried like grain (interest only), the others are made
+    /// or brought all year and have no carrying path.
     pub(super) fn goods_prices(&mut self) {
+        let wool = pricing::season(doy(self.today) - SHEAR_DOY, pricing::INTEREST_PCT_YEAR);
         for m in self.markets.iter_mut() {
             for (g, w) in m.goods.iter_mut().enumerate() {
                 w.demand += ((w.sold_today + w.missed_today) * 1000 - w.demand) / MONTH;
+                w.missed_avg += (w.missed_today * 1000 - w.missed_avg) / MONTH;
+                w.turned_avg += (w.turned_today * 1000 - w.turned_avg) / MONTH;
                 w.sold_today = 0;
                 w.missed_today = 0;
-                let per_day = (w.demand / 1000).max(1);
-                let days = w.store / per_day;
-                let base = GOOD_BASE[g];
-                let target = (base * TARGET_DAYS / days.max(1)).clamp(base * PRICE_MIN_PCT / 100, base * PRICE_MAX_PCT / 100);
-                w.price += (target - w.price) / PRICE_STEP;
+                w.turned_today = 0;
+                let season = if g == WOOL { wool } else { 1000 };
+                pricing::quote(&mut w.price, &mut w.norm, w.store, w.demand / 1000, season);
             }
         }
     }
@@ -348,6 +359,7 @@ impl Grain {
         let q = want.min(room(&m.goods[g])).min(m.money.max(0) * 1000 / price.max(1)).max(0);
         let pay = q * price / 1000;
         m.goods[g].store += q;
+        m.goods[g].turned_today += want - q;
         m.money -= pay;
         (q, pay)
     }
@@ -395,8 +407,8 @@ impl Grain {
         g.home_days = 0;
         g.pots -= g.pots * POTS_WEAR_PCT / 1200;
         let (grain_buy, grain_sell) = (Self::buy_price(&self.markets[mk]), Self::sell_price(&self.markets[mk]));
-        // A day of work is worth what day labour pays (S72: WAGE_KG_DAY).
-        let day_value = WAGE_KG_DAY * grain_buy;
+        // A day of work is worth what day labour pays (S114: the wage).
+        let day_value = self.markets[mk].wage;
         let need_day = need_w * KG_PER_ADULT_YEAR / 10 / YEAR;
         let reserve = need_day * RESERVE_DAYS * grain_sell;
         let f = s.farm;
@@ -479,10 +491,12 @@ impl Grain {
             self.stats.goods.crafts[g.craft as usize] += 1;
             if g.craft > 0 {
                 let c = &CRAFTS[g.craft as usize - 1];
-                let (_, q, _) = self.craft_take(mk, c, days);
+                let (_, q, free) = self.craft_take(mk, c, days);
                 let m = &mut self.markets[mk];
                 let mut net = -(q * gbuy(&m.goods[c.out]) / 1000);
                 m.goods[c.out].store += q;
+                // S112: work the dealers had no room or cash for.
+                m.goods[c.out].turned_today += days * c.per_day - free;
                 if let Some((gi, per)) = c.input {
                     let units = q * per / 1000;
                     net += units * gsell(&m.goods[gi]) / 1000;
@@ -568,9 +582,10 @@ impl Grain {
         let wd = day.rem_euclid(7) as usize;
         self.goods_moves.retain(|m| m.0 > day - MOVES_KEEP_DAYS);
         for mi in (wd..self.markets.len()).step_by(7) {
-            let out_cost = self.markets[mi].out_cost;
+            let gate = self.markets[mi].out_cost > 0;
+            let out_cost = self.freight(self.markets[mi].out_cost, mi);
             for g in 0..GOODS {
-                if out_cost > 0 {
+                if gate {
                     let m = &mut self.markets[mi];
                     let w = &mut m.goods[g];
                     let out_buy = GOOD_BASE[g] * (100 - SPREAD_PCT) / 100 - out_cost;
@@ -599,9 +614,10 @@ impl Grain {
                     if o.store <= 0 {
                         continue;
                     }
-                    let margin = mid - gsell(o) - nb.cost;
+                    let cost = self.freight(nb.cost, mi);
+                    let margin = mid - gsell(o) - cost;
                     if margin > 0 && best.is_none_or(|b| margin > b.0) {
-                        best = Some((margin, nb.m as usize, nb.cost));
+                        best = Some((margin, nb.m as usize, cost));
                     }
                 }
                 let Some((_, src, cost)) = best else { continue };
@@ -753,6 +769,26 @@ impl Grain {
             v.day.push(day);
             v.good.push(g);
             v.units.push(q as f32 / 1000.0);
+            v.from.push((a.0 as f32, a.1 as f32));
+            v.to.push((b.0 as f32, b.1 as f32));
+        }
+        v
+    }
+
+    /// Grain the dealers fetched between markets lately (S114), as
+    /// `goods_moves_in` with `good` u8::MAX and `units` in kg. Read only.
+    pub fn grain_moves_in(&self, min: (f64, f64), max: (f64, f64)) -> GoodsMovesView {
+        let mut v = GoodsMovesView::default();
+        let inside = |(x, z): (f64, f64)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1;
+        for &(day, from, to, kg) in &self.grain_moves {
+            let a = self.settle.fine_centre_km(self.markets[from as usize].fine);
+            let b = self.settle.fine_centre_km(self.markets[to as usize].fine);
+            if !inside(a) && !inside(b) {
+                continue;
+            }
+            v.day.push(day);
+            v.good.push(u8::MAX);
+            v.units.push(kg as f32);
             v.from.push((a.0 as f32, a.1 as f32));
             v.to.push((b.0 as f32, b.1 as f32));
         }
