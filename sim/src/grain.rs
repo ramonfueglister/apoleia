@@ -26,6 +26,7 @@
 
 use crate::inputs::Inputs;
 use crate::life::{self, YEAR};
+use crate::tables::Table;
 use crate::people::{Born, Clock, Econ, Household, Home, Job, Pid, People, Sex, Stand, Travel, CITY, NONE, RURAL};
 use crate::groups::{BAUERN, HAENDLER, HANDWERKER, PAECHTER, TAGELOEHNER, UNFREIE};
 
@@ -67,6 +68,9 @@ const NILE_FIELDS_KM2: f64 = 27_300.0;
 
 /// Longitude and latitude of a 25 km cell centre (data/projection.json:
 /// eqc, lat_ts = lat_0 = 41, lon_0 = 19, R = 6,371,008.8 m).
+/// Width of a market's region (S70: 100 km regions), for the game's camera.
+const REGION_KM: f64 = 100.0;
+
 fn cell_lon_lat(row: i32, col: i32) -> (f64, f64) {
     const R: f64 = 6_371_008.8;
     let (x, z) = (col as f64 * 25_000.0 + 12_500.0, row as f64 * 25_000.0 + 12_500.0);
@@ -382,6 +386,9 @@ struct Field {
 }
 
 pub struct Market {
+    /// The region's largest listed place (data/gametiles/places.csv), else
+    /// "bei" the nearest one.
+    pub name: String,
     pub region: u32,
     pub cell: u32,
     pub fine: u32,
@@ -831,9 +838,15 @@ impl Grain {
         // listed place (Hanson 117), else at the cell with most people.
         let mut place_pop: FxHashMap<u32, f64> = FxHashMap::default();
         let mut place_xz: FxHashMap<u32, (f64, f64)> = FxHashMap::default();
-        for c in &inp.cities {
+        // Largest listed place of each region, for the market's name.
+        let mut region_place: FxHashMap<u32, (f64, usize)> = FxHashMap::default();
+        for (ci, c) in inp.cities.iter().enumerate() {
             let (r, col) = ((c.z_m / 25_000.0).floor() as i32, (c.x_m / 25_000.0).floor() as i32);
             if let Some(i) = g.index(r, col) {
+                let e = region_place.entry(g.region(i)).or_insert((-1.0, ci));
+                if c.pop > e.0 {
+                    *e = (c.pop, ci);
+                }
                 let e = place_pop.entry(i).or_default();
                 if c.pop > *e {
                     place_xz.insert(i, (c.x_m, c.z_m));
@@ -861,7 +874,17 @@ impl Grain {
         };
         let mut markets = Vec::new();
         let mut market_of = FxHashMap::default();
+        let city_name = |ci: usize| inp.city_names.get(ci).cloned().unwrap_or_default();
         for &(k, i) in &regions {
+            // The region's largest listed place, else "bei" the nearest one.
+            let name = match region_place.get(&k) {
+                Some(&(_, ci)) => city_name(ci),
+                None => {
+                    let (x, z) = ((i as i32 % g.cols + g.col0) as f64 * 25_000.0 + 12_500.0, (i as i32 / g.cols + g.row0) as f64 * 25_000.0 + 12_500.0);
+                    let near = inp.cities.iter().enumerate().min_by(|a, b| ((a.1.x_m - x).powi(2) + (a.1.z_m - z).powi(2)).total_cmp(&((b.1.x_m - x).powi(2) + (b.1.z_m - z).powi(2))).then(a.0.cmp(&b.0)));
+                    near.map_or_else(|| format!("Region {}/{}", k >> 16, k & 0xffff), |(ci, _)| format!("bei {}", city_name(ci)))
+                }
+            };
             let fine = match place_xz.get(&i) {
                 Some(&(x, z)) => {
                     let fr = (z / 1562.5).floor() as i32 - g.row0 * FINE;
@@ -872,6 +895,7 @@ impl Grain {
             };
             market_of.insert(k, markets.len() as u32);
             markets.push(Market {
+                name,
                 region: k,
                 cell: i,
                 fine,
@@ -3090,6 +3114,134 @@ impl Grain {
         &self.road_level
     }
 
+    /// Overview tables for the game (crate::tables): markets, people by
+    /// region and job of the household, farms by region. Sums over the
+    /// households of the last monthly count; rows sorted by region. Every
+    /// table has a stable `id` per row and, for the camera, the longitude
+    /// and latitude of the market and the width of its region.
+    pub fn table(&self, p: &People, key: &str) -> Option<Table> {
+        let day = p.world.resource::<crate::people::Clock>().day;
+        match key {
+            "markets" => Some(self.market_table(p, day)),
+            "population" => Some(self.population_table(p, day)),
+            "farms" => Some(self.farm_table(p, day)),
+            _ => None,
+        }
+    }
+
+    /// Market of each region key.
+    fn market_of_region(&self) -> FxHashMap<u32, usize> {
+        self.markets.iter().enumerate().map(|(m, mk)| (mk.region, m)).collect()
+    }
+
+    /// Adds region name, longitude, latitude and width (km) for the
+    /// markets `ms`, one per row.
+    fn place_columns(&self, p: &People, t: &mut Table, ms: &[usize]) {
+        let ll: Vec<(f64, f64)> = ms
+            .iter()
+            .map(|&m| {
+                let c = self.markets[m].cell as i32;
+                cell_lon_lat(c / p.grid.cols + p.grid.row0, c % p.grid.cols + p.grid.col0)
+            })
+            .collect();
+        t.text("region", "Region", ms.iter().map(|&m| self.markets[m].name.clone()).collect())
+            .hidden_float("lon", "°", ll.iter().map(|v| v.0).collect())
+            .hidden_float("lat", "°", ll.iter().map(|v| v.1).collect())
+            .hidden_float("extent_km", "km", vec![REGION_KM; ms.len()]);
+    }
+
+    fn market_table(&self, p: &People, day: i64) -> Table {
+        let mut order: Vec<usize> = (0..self.markets.len()).collect();
+        order.sort_unstable_by_key(|&m| self.markets[m].region);
+        let (mut hungry, mut counted) = (vec![0i64; self.markets.len()], vec![0i64; self.markets.len()]);
+        for (id, i) in self.info.iter() {
+            let mk = self.cell_market[i.home as usize];
+            let Some(s) = self.hh.get(id) else { continue };
+            if mk == NONE || s.own_food {
+                continue;
+            }
+            counted[mk as usize] += i.size as i64;
+            if s.fed < NEED_FED {
+                hungry[mk as usize] += i.size as i64;
+            }
+        }
+        let int = |f: &dyn Fn(&Market) -> i64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<i64>>();
+        let float = |f: &dyn Fn(&Market) -> f64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<f64>>();
+        let mut t = Table::new("markets", "Märkte", day);
+        t.id(order.iter().map(|&m| m as i64).collect());
+        self.place_columns(p, &mut t, &order);
+        t.float("price", "Preis", "Denar/kg", float(&|m| m.price as f64 / 1000.0))
+            .int("store_kg", "Lager", "kg", int(&|m| m.store))
+            .float("money", "Händlergeld", "Denar", float(&|m| m.money as f64 / 1000.0))
+            .float("sales_day", "Verkauf", "kg/Tag", float(&|m| m.demand as f64 / 1000.0))
+            .int("persons", "Menschen", "", int(&|m| m.people as i64))
+            .int("buyers", "Käufer", "", int(&|m| m.buyers as i64))
+            .int("tent_persons", "Im Zelt", "", int(&|m| m.tent_people as i64))
+            .int("grain_kg", "Getreide der Region", "kg", int(&|m| m.grain))
+            .float("free_ha", "Freies Land", "ha", float(&|m| m.free_area as f64 / 1e4))
+            .float("share_hungry", "Hungernd", "%", order.iter().map(|&m| if counted[m] > 0 { hungry[m] as f64 / counted[m] as f64 } else { 0.0 }).collect());
+        t
+    }
+
+    fn population_table(&self, p: &People, day: i64) -> Table {
+        // (region, job) -> (households, people, fed people, money in milli-denarii)
+        let mut sums: std::collections::BTreeMap<(u32, u8), (i64, i64, i64, i64)> = Default::default();
+        for (id, i) in self.info.iter() {
+            let mk = self.cell_market[i.home as usize];
+            let Some(s) = self.hh.get(id) else { continue };
+            if mk == NONE {
+                continue;
+            }
+            let e = sums.entry((self.markets[mk as usize].region, i.job)).or_default();
+            e.0 += 1;
+            e.1 += i.size as i64;
+            if s.own_food || s.fed >= NEED_FED {
+                e.2 += i.size as i64;
+            }
+            e.3 += self.money_of(*id);
+        }
+        let of = self.market_of_region();
+        let ms: Vec<usize> = sums.keys().map(|(k, _)| of[k]).collect();
+        let mut t = Table::new("population", "Bevölkerung", day);
+        t.id(sums.keys().map(|&(k, j)| (k as i64) << 4 | j as i64).collect());
+        self.place_columns(p, &mut t, &ms);
+        t.text("occupation", "Beruf", sums.keys().map(|&(_, j)| crate::groups::JOB_NAMES.get(j as usize).copied().unwrap_or("?").to_string()).collect())
+            .int("households", "Haushalte", "", sums.values().map(|v| v.0).collect())
+            .int("persons", "Menschen", "", sums.values().map(|v| v.1).collect())
+            .float("share_fed", "Satt", "%", sums.values().map(|v| if v.1 > 0 { v.2 as f64 / v.1 as f64 } else { 0.0 }).collect())
+            .float("money_mean", "Geld je Kopf", "Denar", sums.values().map(|v| v.3 as f64 / 1000.0 / v.1.max(1) as f64).collect());
+        t
+    }
+
+    fn farm_table(&self, p: &People, day: i64) -> Table {
+        // region -> (family, tenant, estate, manciana, area m², sown m², store kg, money)
+        let mut sums: std::collections::BTreeMap<u32, [i64; 8]> = Default::default();
+        for f in self.farms.iter().filter(|f| f.hh != NONE) {
+            let e = sums.entry(self.markets[f.market as usize].region).or_default();
+            e[f.kind as usize] += 1;
+            e[3] += f.manciana as i64;
+            e[4] += f.area;
+            e[5] += f.sown;
+            e[6] += f.store;
+            e[7] += f.money;
+        }
+        let of = self.market_of_region();
+        let ms: Vec<usize> = sums.keys().map(|k| of[k]).collect();
+        let col = |k: usize| sums.values().map(|v| v[k]).collect::<Vec<i64>>();
+        let mut t = Table::new("farms", "Höfe", day);
+        t.id(sums.keys().map(|&k| k as i64).collect());
+        self.place_columns(p, &mut t, &ms);
+        t.int("family", "Familienhöfe", "", col(0))
+            .int("tenant", "Pachthöfe", "", col(1))
+            .int("estate", "Güter", "", col(2))
+            .int("manciana", "davon Lex Manciana", "", col(3))
+            .float("area_ha", "Felder", "ha", sums.values().map(|v| v[4] as f64 / 1e4).collect())
+            .float("sown_ha", "Gesät", "ha", sums.values().map(|v| v[5] as f64 / 1e4).collect())
+            .int("store_kg", "Hoflager", "kg", col(6))
+            .float("money", "Geld der Höfe", "Denar", sums.values().map(|v| v[7] as f64 / 1000.0).collect());
+        t
+    }
+
     /// A household's kind, food, stores and farm, if the grain economy
     /// knows it (it counts the households once a month).
     pub fn household(&self, hh: u32) -> Option<HouseholdLook> {
@@ -3707,6 +3859,40 @@ mod tests {
         assert_eq!(g.free_poor.iter().sum::<i64>(), poor + fpoor);
         let h = g.hh[&id];
         assert_eq!((h.kind, h.farm, h.pantry), (TENT, NONE, pantry + store));
+    }
+
+    /// The game's tables: every column as long as the others, shares in
+    /// 0..1, the people of all rows add up, and building them changes
+    /// nothing in the state.
+    #[test]
+    fn tables_read_only() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        let before = g.fingerprint();
+        for key in crate::tables::TABLES {
+            let t = g.table(&p, key).unwrap();
+            assert!(t.rows() > 0, "{key}");
+            assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
+            assert!(t.column("id").is_some_and(|c| c.hidden) && t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            for c in t.columns.iter().filter(|c| c.unit == "%") {
+                let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
+                assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);
+            }
+        }
+        let persons = |key: &str| match &g.table(&p, key).unwrap().column("persons").unwrap().values {
+            crate::tables::Values::Int(v) => v.iter().sum::<i64>(),
+            _ => panic!(),
+        };
+        assert_eq!(persons("markets"), persons("population"));
+        let names = g.table(&p, "markets").unwrap();
+        let crate::tables::Values::Text(n) = &names.column("region").unwrap().values else { panic!() };
+        assert!(n.iter().any(|x| x == "Rome (Roma)"), "{:?}", &n[..5]);
+        assert!(g.table(&p, "nothing").is_none());
+        assert_eq!(g.fingerprint(), before);
     }
 
     #[test]
