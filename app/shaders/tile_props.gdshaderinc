@@ -174,7 +174,12 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool bush = scatter && rs >= SCATTER_TREE;
 		bool planted = garden && rs < 0.6 && !tt_near_landmark(at, 0.06);
 		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
-		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.3, 0.45, r0) : planted ? mix(0.7, 0.9, r0) : mix(0.8, 1.0, r0);
+		// a lone tree smaller than in a wood, about as tall as a one-storey
+		// house, as Urbek's (Ramon on s3: Urbek's trees are much smaller
+		// against its fields and houses); kept in the middle of its quarter,
+		// clear of the fields round it
+		if (scatter) { uv = 0.5 + (uv - 0.5) * 0.4; }
+		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.25, 0.35, r0) : scatter ? mix(0.65, 0.78, r0) : planted ? mix(0.65, 0.8, r0) : mix(0.8, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;

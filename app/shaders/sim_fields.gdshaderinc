@@ -37,15 +37,35 @@ vec4 sim_fine_at(ivec2 t) {
 	return texelFetch(sim_fine_tex, t, 0);
 }
 
+// Up close the parcels lie in fields of three to six by two or three, as
+// Urbek's long fields (Ramon 29.10.2026 on s3: "die felder sehn extrem
+// müllig aus", a chessboard of single parcels): east-west or north-south by
+// block of 6 x 6 parcels, the rows of a block in bands of two or three,
+// each band cut at its own length and offset. The parcels of a field share
+// their crop and whether they lie fallow, and their slabs join into one
+// (people_parcels.gdshader). xy the field's id, z its axis (0 long along x,
+// 1 along y).
+vec3 sim_strip(vec2 cell) {
+	vec2 block = floor(cell / 6.0);
+	float axis = sim_hash(block + 41.3) < 0.5 ? 0.0 : 1.0;
+	vec2 c = axis < 0.5 ? cell : cell.yx;
+	float wide = 2.0 + floor(sim_hash(block + 3.9) * 2.0);
+	float band = floor((c.y + floor(sim_hash(block + 8.3) * wide)) / wide);
+	float len = 3.0 + floor(sim_hash(vec2(band, 7.7) + axis) * 4.0);
+	float off = floor(sim_hash(vec2(band, 13.1) + axis) * len);
+	return vec3(floor((c.x + off) / len), band, axis);
+}
+
 // The crop of a sown parcel, so the farmland is a patchwork: 0 wheat,
 // 1 barley (both in unbroken rows, ripe a closed sheet), 2 vegetables and
-// beans in rows of clumps, 3 vines.
+// beans in rows of clumps, 3 vines. One crop a field.
 const int SIM_WHEAT = 0;
 const int SIM_BARLEY = 1;
 const int SIM_BEANS = 2;
 const int SIM_VINES = 3;
 int sim_crop_kind(vec2 cell) {
-	float pick = sim_hash(cell + 5.1);
+	vec3 strip = sim_strip(cell);
+	float pick = sim_hash(strip.xy * 1.37 + strip.z * 19.1 + 5.1);
 	return pick < 0.4 ? SIM_WHEAT : pick < 0.6 ? SIM_BARLEY : pick < 0.85 ? SIM_BEANS : SIM_VINES;
 }
 
@@ -121,12 +141,28 @@ vec2 sim_lot_front(vec2 lot) {
 // more lot as a track between the fields, so it does not end blind at the
 // village's edge (round 17: a lane ran into a wheat slab). Distance (km)
 // from p to the nearest lane, large without one.
-const float SIM_LANE_KM = 0.017; // half width (round 19: 0.013 read as a thin line at 3 km)
+const float SIM_LANE_KM = 0.024; // half width (round 19: 0.013 read as a thin line at 3 km; s3: Urbek's farm tracks are wide)
 bool sim_lot_house(vec2 lot) {
 	return sim_house_lot(world_min + (lot + 0.5) * sim_lot_km);
 }
+// Field tracks: through the farmland a track runs on every SIM_TRACK_EVERY-th
+// lot line, a stretch now and then left out, as the net of farm tracks
+// between Urbek's fields (s3: 13 % of Urbek's farmland picture are tracks,
+// ours had none). Only where the fine tile under the stretch is farmed.
+const float SIM_TRACK_EVERY = 3.0;
+bool sim_track_between(vec2 lot, vec2 dir) {
+	vec2 e = dir.yx; // along the line
+	float line = dot(lot + max(dir, vec2(0.0)), abs(dir)); // the line's index across it
+	if (mod(line, SIM_TRACK_EVERY) != 0.0) { return false; }
+	float along = dot(lot, abs(e));
+	if (sim_hash(vec2(line, along) * 0.73 + abs(dir.x) * 5.3) > 0.8) { return false; }
+	vec2 mid = world_min + (lot + max(dir, vec2(0.0)) * abs(dir) + abs(e) * 0.5) * sim_lot_km;
+	vec2 q = (mid - sim_fine_origin) / sim_fine_km;
+	return sim_fine_at(ivec2(floor(q))).r > 0.0 && tt_town(ivec2(floor((mid - world_min) / tile_km))) == 0;
+}
 // Whether a lane runs on the line between lot (index from world_min) and lot + dir.
 bool sim_lane_between(vec2 lot, vec2 dir) {
+	if (sim_track_between(lot, dir)) { return true; }
 	bool here = sim_lot_house(lot);
 	bool there = sim_lot_house(lot + dir);
 	if (here || there) {
@@ -156,15 +192,21 @@ const int SIM_P_OPEN = 4;      // people_crop_slab.gdshaderinc crop_open
 const int SIM_P_BY_FARM = 8;   // next to a farmhouse lot (fenced)
 const int SIM_P_NO_FIELD = 16; // sim_no_field
 const int SIM_P_LANES = 32;    // people_crop_slab.gdshaderinc crop_lanes, four bits from here
+// The sides (bits -x, -y, +x, +y, as SIM_P_LANES) where the slab runs on
+// into a parcel of its field (sim_strip): baked into the B channel above
+// the ground level (B = whole levels + 128 x sides, below 2048 and so exact
+// in a half float), read back into the code from this bit.
+const int SIM_P_JOIN = 2048;
 bool sim_parcel_baked(vec2 cell, out int code, out float growth, out float level) {
 	vec2 q = cell - floor((sim_crop_box.xy - world_min) / (tt_data_km() * 0.5) + 0.5);
 	if (sim_parcel_n == 0 || any(lessThan(q, vec2(0.0))) || any(greaterThanEqual(q, vec2(float(sim_parcel_n))))) {
 		return false;
 	}
 	vec4 t = texelFetch(sim_parcel_tex, ivec2(mod(cell, float(sim_parcel_n))), 0);
-	code = int(t.r + 0.5);
+	float sides = floor((t.b + 0.5) / 128.0);
+	code = int(t.r + 0.5) + int(sides) * SIM_P_JOIN;
 	growth = t.g;
-	level = t.b + t.a;
+	level = t.b - sides * 128.0 + t.a;
 	return true;
 }
 
@@ -182,6 +224,7 @@ int sim_parcel(vec2 cell, float size, out vec4 f) {
 	vec2 d = abs(fract(q) - 0.5) * 2.0;
 	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
 	if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= min(f.r, SIM_BLOCK_MAX)) { return 0; }
-	if (sim_hash(cell + 17.3) >= f.g) { return 1; }
+	vec3 strip = sim_strip(cell); // a strip lies fallow or sown as a whole
+	if (sim_hash(strip.xy * 0.91 + strip.z * 7.3 + 17.3) >= f.g) { return 1; }
 	return 2;
 }

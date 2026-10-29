@@ -410,7 +410,7 @@ void fragment() {
 		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
 		// up close the grass in patches, tufts and flowers (not the field tracks)
 		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
-		if (sub_tiles && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
+		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
 		// city wall along the edge of the core
 		if (town == 3 && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));

@@ -170,10 +170,17 @@ vec3 tt_grass(vec2 p, vec3 c) {
 	vec2 q = mod(p / 0.0238, 4096.0);
 	vec2 w = max(fwidth(q), vec2(1e-5));
 	float px = max(w.x, w.y); // metres a pixel
-	// patches about 6 m across: down to a deeper, more saturated green
-	float blot = tt_noise(q / 6.0) * 0.7 + tt_noise(q / 2.3 + 31.7) * 0.3;
-	float deep = smoothstep(0.35, 0.75, blot) * (1.0 - smoothstep(0.15, 0.3, px));
-	c *= mix(vec3(1.0), vec3(0.72, 0.86, 0.66), deep);
+	// up close a deeper, richer green than the palette's, as Urbek's lawns
+	// (s3 measured: our main green #58a340 against Urbek's #3c7a32 and
+	// #315d2a), back to the palette by about 25 km of view
+	c *= mix(vec3(0.76, 0.88, 0.74), vec3(1.0), smoothstep(0.3, 0.6, px));
+	// patches about 6 m across in a deeper, more saturated green, cut on
+	// the voxel grid with hard edges as everything else (soft blotches read
+	// as a texture under the clean voxels, s3)
+	vec2 vox = floor(q) + 0.5;
+	float blot = tt_noise(vox / 6.0) * 0.7 + tt_noise(vox / 2.3 + 31.7) * 0.3;
+	float deep = step(0.56, blot) * (1.0 - smoothstep(0.15, 0.3, px));
+	c *= mix(vec3(1.0), vec3(0.84, 0.93, 0.8), deep);
 	float fine = 1.0 - smoothstep(0.08, 0.2, px);
 	if (fine <= 0.0) { return c; }
 	// tufts: a square of 0.4 m in some cells of 0.7 m, more in the patches
@@ -183,7 +190,7 @@ vec3 tt_grass(vec2 p, vec3 c) {
 	vec2 at = vec2(tt_hash(cell + 3.1), tt_hash(cell - 5.3)) * 0.4;
 	vec2 in_cell = fract(cq) - at;
 	bool inside = all(greaterThanEqual(in_cell, vec2(0.0))) && all(lessThan(in_cell, vec2(0.57)));
-	if (inside && r < 0.08 + 0.1 * deep) {
+	if (inside && r < 0.05 + 0.06 * deep) {
 		c = mix(c, c * vec3(0.6, 0.7, 0.55), fine);
 	} else if (inside && r > 0.996) {
 		// a flower: white, yellow or pink

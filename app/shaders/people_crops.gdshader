@@ -35,6 +35,8 @@ varying vec3 art_light; // ART_LIGHT in view space
 varying vec2 slab_uv;   // place on the slab's top (-0.5..0.5), for its lit rim
 varying float slab_top; // 1 on a slab's top face
 varying float grains;   // how strongly a slab's top is speckled (straw more than soil)
+varying vec2 ground;    // world km on the slab (the speckle runs on across a field's parcels)
+varying flat int joined; // the slab's sides (bits -x, -y, +x, +y) that run on into its field (no lit lip there)
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 // Colours (sRGB) after Urbek's farmland (gauntlet refs/urbek-landschaft-02):
@@ -75,7 +77,9 @@ void vertex() {
 	bool sheep = UV.x == -3.0;
 	bool show = sheep ? near && state == 0 && open && sim_hash(cell + 3.7) < FLOCK_SHARE
 		: state >= 1 && open;
-	int kind = sim_crop_kind(cell); // one crop per parcel, as the ground colour
+	int kind = sim_crop_kind(cell); // one crop per field (sim_strip), as the ground colour
+	vec3 field = sim_strip(cell);
+	bool along_y = field.z > 0.5;
 	bool grain = kind == SIM_WHEAT || kind == SIM_BARLEY;
 	// the slab: its height (m, people_crop_slab.gdshaderinc) and colour by crop and season
 	float slab = crop_slab_m(state, kind, g);
@@ -127,7 +131,12 @@ void vertex() {
 	// fence along a side now and then, as Urbek's farmland
 	int side = int(UV.y) / 16;
 	if (fence) {
-		show = show && state == 2 && ((code & SIM_P_BY_FARM) != 0 || sim_hash(cell * 1.31 + float(side) * 7.7) < 0.35);
+		// only round a field's outside (the fence sides are -y, +y, +x,
+		// -x; the join bits -x, -y, +x, +y), and there now and then: a fence
+		// on every parcel read as clutter (Ramon on s3)
+		int bit = side == 0 ? 2 : side == 1 ? 8 : side == 2 ? 4 : 1;
+		bool outside = ((code / SIM_P_JOIN) & bit) == 0;
+		show = show && state == 2 && outside && ((code & SIM_P_BY_FARM) != 0 || sim_hash(field.xy * 1.31 + field.z * 3.3 + float(side) * 7.7) < 0.3);
 	}
 	float inner = size * (1.0 - 2.0 * SLAB_GAP);
 	vec2 off; // from the parcel's middle, km
@@ -137,16 +146,18 @@ void vertex() {
 	slab_uv = VERTEX.xz;
 	slab_top = base && NORMAL.y > 0.5 ? 1.0 : 0.0;
 	grains = state == 1 || (grain && g >= 0.75) ? 0.14 : 0.08;
+	joined = code / SIM_P_JOIN;
 	if (base) {
 		off = VERTEX.xz * inner;
 		y = VERTEX.y * slab;
 	} else if (row) {
 		float step = inner / crop_rows;
 		off = vec2(VERTEX.x * inner * 0.97, (UV.x - 0.5) * inner + VERTEX.z * w * step);
-		// clumps in staggered rows, north-south or east-west by the parcel
-		// (the camera looks along the diagonal, so both read alike)
+		// clumps in staggered rows along the strip, so they run on from
+		// parcel to parcel (the camera looks along the diagonal, so either
+		// way reads alike)
 		along = VERTEX.x * 0.97 + 0.5 + (int(UV.y) % 2 == 1 ? 0.5 / max(clumps, 1.0) : 0.0);
-		quarter = sim_hash(cell + 9.7) < 0.5 ? 1 : 0;
+		quarter = along_y ? 1 : 0;
 		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
@@ -190,10 +201,11 @@ void vertex() {
 	}
 	// the slab, its rows and fence fitted into the parcel's slab (clear of lanes)
 	if (!sheep) {
-		vec4 box = crop_box_of((code / SIM_P_LANES) & 15, size);
+		vec4 box = crop_box_of((code / SIM_P_LANES) & 15, code, size);
 		off = (box.xy + box.zw) * 0.5 + off * (box.zw - box.xy) / inner;
 	}
 	vec2 p = mid + off;
+	ground = p;
 	// the parcel lies flat (crop_open), at the level of its middle
 	vec3 world = vec3(p.x, level * level_h + y * km_per_m, p.y);
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
@@ -212,11 +224,14 @@ void fragment() {
 	if (slab_top > 0.5) {
 		vec2 e = 0.5 - abs(slab_uv);
 		vec2 px = fwidth(slab_uv) * 1.5;
-		if (e.x < px.x || e.y < px.y) { ALBEDO *= 1.25; }
+		// only round the field, not where its parcels join
+		bool lip_x = e.x < px.x && (joined & (slab_uv.x < 0.0 ? 1 : 4)) == 0;
+		bool lip_y = e.y < px.y && (joined & (slab_uv.y < 0.0 ? 2 : 8)) == 0;
+		if (lip_x || lip_y) { ALBEDO *= 1.25; }
 		// a fine speckle of voxels on the top, as the grain of Urbek's
 		// straw plates (a flat tone read as a plastic tray), gone before it
 		// would shimmer
-		vec2 g = slab_uv * 40.0;
+		vec2 g = mod(ground / (km_per_m * 0.25), 4096.0); // voxels of a quarter metre
 		float n = fract(sin(dot(floor(g), vec2(12.9898, 78.233))) * 43758.5453);
 		ALBEDO *= 1.0 + (n - 0.5) * grains * (1.0 - smoothstep(0.25, 0.5, length(fwidth(g))));
 	}
