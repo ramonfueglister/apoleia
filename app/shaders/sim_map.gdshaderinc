@@ -82,6 +82,7 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
 // fields of sim_strip_rgb, so the farmland still reads as fields round the
 // towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
 const vec3 SIM_DIRT = vec3(0.3, 0.28, 0.225); // #888068 on screen: Urbek's field tracks (r11 Fix 5)
+const vec3 SIM_TRACK_RGB = vec3(0.42, 0.37, 0.29); // the lanes and farm tracks
 
 // Whether the parcel with its middle at `mid` carries a slab up close, as
 // people_crop_slab.gdshaderinc crop_open (which needs the people's
@@ -246,11 +247,13 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 			c = mix(c, m, sim_band(w.z, sq, fw_km));
 		}
 	}
-	// the village lanes round the farmhouse lots, earth with a darker edge
+	// the village lanes round the farmhouse lots and the farm tracks, brown
+	// earth with a darker edge as Urbek's (#8a7e64 on screen; the sandy
+	// C_BANK read as yellow strips, s4)
 	float lane = sim_lane(p);
 	if (lane < SIM_LANE_KM + fw_km) {
-		c = mix(c, C_BANK * 0.82, sim_band(lane, SIM_LANE_KM + fw_km, fw_km));
-		c = mix(c, C_BANK * vec3(1.02, 0.94, 0.9), sim_band(lane, SIM_LANE_KM, fw_km));
+		c = mix(c, SIM_TRACK_RGB * 0.8, sim_band(lane, SIM_LANE_KM + fw_km, fw_km));
+		c = mix(c, SIM_TRACK_RGB, sim_band(lane, SIM_LANE_KM, fw_km));
 	}
 	// trade roads up to 40 km of view: a light paved band with a darker
 	// edge, at least 3 px, so they read as roads and not as scratches;

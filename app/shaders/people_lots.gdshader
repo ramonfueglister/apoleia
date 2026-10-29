@@ -25,7 +25,7 @@ void vertex() {
 	vec4 place = texelFetch(place_tex, px, 0);
 	vec2 p = rec.xy + place.xy - 32.0;
 	vec2 lot = floor((p - world_min) / lot_km) - lot_origin;
-	bool show = rec.z > 0.0 && place.a > 0.5;
+	bool show = rec.z != 0.0 && place.a > 0.5; // a farm being built (negative) keeps its lot too
 	VERTEX = show ? lot + 0.5 + VERTEX : vec2(-1.0e6);
 }
 

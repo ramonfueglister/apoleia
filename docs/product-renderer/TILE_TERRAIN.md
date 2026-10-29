@@ -312,6 +312,96 @@ unabhängig und unverändert.
   (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
   stehen, solange die Häuser gezeichnet werden.
 
+## Bildstimmung (Urbek/Islanders, seit 29.10.2026)
+
+Status: `implementiert`, Runden 1 bis 5. Ramon, 29.10.2026: Die Grafik soll auf das
+Niveau von Urbek und Islanders. Runde 1 änderte nur Licht und Nachbearbeitung
+(`landscape.gd`):
+
+- Schatten kühl blau statt blassgrau: Umgebungslicht #b0bff5 mit 0,62 statt
+  #ccccf2 mit 0,85, Sonne 2,35 statt 2,05. Besonnter Boden bleibt etwa im Ton
+  der Palette, Schatten fallen auf etwa ein Fünftel statt ein Drittel davon.
+  Sättigung 1,06.
+- Kontaktschatten (SSAO) mit dem Zoom: Radius 2 % der Sichtbreite (0,03 bis
+  0,6 km) statt fest 0,6 km, Stärke 1,1.
+- Tilt-Shift wie ein Modellfoto: ein scharfes Band um den Fokus, Unschärfe zum
+  oberen und unteren Bildrand (`TILT_*`), voll bis 6 km Sichtbreite, weg ab 40 km
+  (seit Runde 3 nur noch schwach).
+- Vignette unter der Benutzeroberfläche (`shaders/vignette.gdshader`).
+- Brandung an der Meeresküste bis 2-km-Kacheln (`shore_foam` in
+  `tile_terrain.gdshader`): ein weisses Band am Land, eine zweite Linie läuft
+  hinaus und verblasst.
+- Quadermauerwerk auf den Terrassenmauern unter den Häusern (`masonry` in
+  `tile_props.gdshader`), 1 × 0,5 Diorama-Meter, blendet aus, bevor die Steine
+  kleiner als einige Pixel werden.
+
+Runde 2 und 3 (Ramon, 29.10.2026: „das sieht überhaupt nicht aus danach“,
+„perspektive stimmt nicht“, „gleiche höhe der häuser“, „felder etc. alles“,
+„immer mit screenshots echt vergleichen“). Jede Runde wird neben den
+Urbek-Screenshots in `docs/kit1/references/screenshots/` gerendert und
+gemessen (Helligkeit, Kontrast, Anteil dunkler Grüntöne). Gemessen vor Runde 3:
+Urbek-Ackerland hat etwa 25 % dunkle Töne (Baumschatten, Reihen, Hecken), wir
+fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
+
+- Kamera wie Urbek (`landscape.gd`): nah schaut sie nach Nordosten die
+  Kacheldiagonale entlang (`YAW_CLOSE` 45°) und 35° nach unten
+  (`PITCH_CLOSE`); bis 700 km Sichtbreite dreht sie zurück nach Norden und
+  wird steiler. Die Sonne dreht mit.
+- Gelände nah flacher (`TileTerrain.relief_for_width`): Eine Stufe war 0,3 km
+  hoch, ein Hauslos 0,24 km breit, die Terrassenmauern also doppelt so hoch
+  wie die Häuser. Unter 16 km Sichtbreite schrumpft die Stufe bis auf 40 % bei
+  4 km. Viertel- und 0,5-km-Kacheln haben beide 0,3 km je Stufe, darum springt
+  beim Wechsel nichts. Flache Rampen bekommen nah einen schwächeren Seitenton.
+- Skyline (`_lot_weights` in `tile_terrain.gd`): Die hohen Lose (bis vier
+  Geschosse) sammeln sich in den Stadtkernen, die niedrigen in den Dörfern.
+- Grauer Steinbelag statt Creme (`C_PAVED`, `C_PLAZA`, `tt_paving`) und weiche
+  Schattenkanten.
+- Felder (`sim_strip`, `people_parcels.gdshader`, `people_crops.gdshader`):
+  Die Parzellen wachsen zu Äckern von 3–5 × 1–2 Parzellen zusammen, Ramon zu
+  Runde 3: „die felder sehn extrem müllig aus“. Ein Acker hat eine Frucht und
+  ist ganz gesät oder ganz brach. Seine Platten laufen ohne Fuge durch; die
+  Seiten, an denen sie das tun, liegen im B-Kanal der Parzellentextur. Die
+  Reihen laufen längs des Ackers als kräftige Striche mit Höhe. Gepflügte
+  Felder zeigen Furchen. Zäune stehen nur am Rand eines Ackers, und dort nur
+  manchmal; beim Hof immer. Die Strohplatten sind dünner und haben eine
+  feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
+  winzig.
+- Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
+  Loslinie (alle 1,5 km) ein brauner Feldweg, mit Lücken. Die Äcker halten
+  Abstand wie bei den Dorfwegen.
+- Wiese (`tt_grass`): nah ein dunkleres, nicht satteres Grün mit dunklen
+  Grasbüscheln und vereinzelten Blumen. Flecken wirkten weich wie eine Textur
+  (Runde 3) und kantig wie Tarnmuster (Runde 4). Das Muster blendet aus,
+  bevor es flimmern würde.
+- Einzelbäume (`tt_scatter_free` in `tile_props.gdshaderinc`) auf Rampen und
+  auf den Parzellen, die die Höfe als Weide liegen lassen, nie auf Feldern
+  oder Hoflosen. Sie sind etwa so hoch wie ein eingeschossiges Haus und alle
+  Bäume fast gleich gross wie bei Urbek. Kleine Büsche lasen sich als
+  Setzlinge. Dafür setzt `people_dots.gd` die Feld- und Losdaten
+  auch auf den Platzierungsdurchgang.
+- Städte: Ein Stadtviertel ohne Los (an den Landmarken, die kleinen Plätze im
+  Kern) ist ein Garten mit Rasen, Schnitthecke, Zypressen, Pinien und
+  Laubbäumen (`tt_sub_garden`) statt einer leeren Pflasterfläche.
+  Strassenblöcke haben eine dunkle Basaltfahrbahn zwischen Gehsteigen aus
+  Travertin mit Bordstein.
+- Tilt-Shift nur noch angedeutet, denn Urbek hat praktisch keinen.
+- Werkstätten (Ramon: „alles sichtbar grafisch“): Ein Dorfhaus eines
+  Handwerkerhaushalts zeigt seine Werkstatt ausserhalb des Zauns
+  (`_workshop` in `scripts/voxel/farmhouse.gd`, `people_houses.gdshader`).
+  Der Schmied hat einen Unterstand mit Esse, glühender Kohle, Kamin, Amboss
+  und Werkzeugbank, der Töpfer einen Brennofen und Krüge, der Weber einen
+  Webstuhl, eine Wäscheleine mit Tüchern und Wollballen. Je mehr Ware die
+  Händler abnehmen (`busy`), desto mehr Werkzeug, Krüge, Tücher und Wolle
+  stehen herum. Die Daten stehen im Hausdatensatz (`rec.w`: craft << 22 |
+  key << 8 | busy, aus PR #49). Ohne sie bleibt die Werkstatt verborgen.
+- Höfe im Bau: Ein bestellter Hof ist ein eigener Hausdatensatz mit
+  negiertem Dorfcode (`rec.z < 0`) und dem gebauten Anteil in `rec.w & 255`
+  (PR #49, eingeschaltet mit `people.show_site_houses(true)` in
+  `people_dots.gd`). `people_houses.gdshader` zeichnet das Haus bis zur
+  gebauten Höhe, ohne Dach, Bäume, Werkstatt und Heuhaufen, mit einem Gerüst
+  aus Stangen und Brettern (`_scaffold` in `farmhouse.gd`). Platziert wird er
+  wie das spätere Haus (`dot_place`), sein Los bleibt frei von Feldern.
+
 ## Fernsicht (Kacheln bis zur ganzen Karte)
 
 Ramon, 28.10.2026: „Kachel-Look konsequent bis immer“. Es gibt keine weiche

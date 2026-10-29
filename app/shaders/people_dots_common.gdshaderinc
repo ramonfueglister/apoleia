@@ -171,15 +171,18 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 	uint key = (uint(rec.w) >> 8u) & 0x3fffu;
 	vec2 p;
 	bool village = false;
-	if (rec.z < 0.0) {
+	// a house record with a negative village code is a farm being built
+	// (people_houses.gdshader): it stands where its house will
+	float code = house ? abs(rec.z) : rec.z;
+	if (code < 0.0) {
 		// city: the household's house in the city disk
 		p = dot_land(rec.xy, rec.z, key);
-	} else if (rec.z >= DOT_ROAD) {
+	} else if (code >= DOT_ROAD) {
 		// on the road: anywhere on land in the current cell
 		p = dot_land(rec.xy, DOT_CELL_HALF_KM, key);
 	} else {
 		// the household's village tile (the sim picks it), then its house
-		uint vkey = dot_hash((uint(rec.z) - 1u) * 0x2545f491u);
+		uint vkey = dot_hash((uint(code) - 1u) * 0x2545f491u);
 		vec2 v = dot_village(rec.xy, DOT_FINE_HALF_KM, vkey);
 		p = dot_land(v, -DOT_VILLAGE_KM, key);
 		// on its lot, so houses stand side by side in rows instead of

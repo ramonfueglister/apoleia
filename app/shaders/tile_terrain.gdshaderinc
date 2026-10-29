@@ -142,6 +142,59 @@ vec3 tt_art_light(mat4 inv_view) {
 	return normalize(vec3(h.x, 0.72, h.y));
 }
 
+// Stone paving up close, as Urbek's paved squares and pavements: slabs of
+// `size` diorama metres (1 diorama metre = 0.0238 km) in staggered rows,
+// dark joints and a slight tone per slab; a factor for the colour. It fades
+// out before the slabs shrink to a few pixels, so farther out the paving is
+// one calm tone again. p in world km.
+float tt_paving(vec2 p, vec2 size) {
+	vec2 q = p / (0.0238 * size);
+	float row = floor(q.y);
+	q.x += 0.5 * mod(row, 2.0);
+	vec2 w = max(fwidth(q), vec2(1e-5));
+	float fade = 1.0 - smoothstep(0.1, 0.25, max(w.x, w.y));
+	if (fade <= 0.0) { return 1.0; }
+	vec2 e = (0.5 - abs(fract(q) - 0.5)) / w; // pixels to the nearest joint
+	float joint = 1.0 - smoothstep(0.4, 1.2, min(e.x, e.y));
+	float slab = tt_hash(floor(q) + 0.37) - 0.5;
+	return 1.0 + fade * (0.09 * slab - 0.14 * joint);
+}
+
+// Urbek's grass up close: one deeper green than our palette's with dark
+// tufts of a voxel or two and now and then a flower (Ramon 29.10.2026: our
+// meadow one flat light green, a third of the picture). No patches: soft
+// blotches read as a texture under the clean voxels (s3), voxel blotches
+// as camouflage (s4). The grass colour c at p (world km) with them; gone
+// before it would shimmer. Cells in diorama metres (0.0238 km), wrapped so
+// the hash keeps its precision far from the origin.
+vec3 tt_grass(vec2 p, vec3 c) {
+	vec2 q = mod(p / 0.0238, 4096.0);
+	vec2 w = max(fwidth(q), vec2(1e-5));
+	float px = max(w.x, w.y); // metres a pixel
+	// darker, not more saturated (s3: our #58a340 against Urbek's #3c7a32;
+	// s4 too saturated, 0.57-0.61 against 0.47), back to the palette by
+	// about 25 km of view
+	c *= mix(vec3(0.8, 0.85, 0.8), vec3(1.0), smoothstep(0.3, 0.6, px));
+	float fine = 1.0 - smoothstep(0.08, 0.2, px);
+	if (fine <= 0.0) { return c; }
+	// tufts: a square of 0.4 m in some cells of 0.7 m
+	vec2 cq = q / 0.7;
+	vec2 cell = floor(cq);
+	float r = tt_hash(cell + 0.73);
+	vec2 at = vec2(tt_hash(cell + 3.1), tt_hash(cell - 5.3)) * 0.4;
+	vec2 in_cell = fract(cq) - at;
+	bool inside = all(greaterThanEqual(in_cell, vec2(0.0))) && all(lessThan(in_cell, vec2(0.57)));
+	if (inside && r < 0.05) {
+		c = mix(c, c * vec3(0.6, 0.7, 0.55), fine);
+	} else if (inside && r > 0.996) {
+		// a flower: white, yellow or pink
+		float k = tt_hash(cell + 9.9);
+		vec3 bloom = k < 0.4 ? vec3(0.86, 0.85, 0.8) : k < 0.75 ? vec3(0.9, 0.78, 0.3) : vec3(0.86, 0.55, 0.66);
+		c = mix(c, bloom, fine);
+	}
+	return c;
+}
+
 int tt_ground(ivec2 t) {
 	if (sub_tiles) {
 		vec4 v;
@@ -452,6 +505,13 @@ bool tt_sub_lot(ivec2 t) {
 	}
 	// the whole house off the landmark blocks
 	return !tt_near_landmark(world_min + (vec2(t) + 0.5) * tile_km, 0.45 * tile_km);
+}
+
+// Up close a quarter of a town or city without a lot is a garden (lawn,
+// hedge, trees: tile_terrain.gdshader, tile_props.gdshaderinc), except on
+// the landmarks' squares.
+bool tt_sub_garden(ivec2 t, int town) {
+	return sub_tiles && town >= 2 && (tt_cell(t) & 3) == W_LAND && !tt_sub_lot(t);
 }
 
 // Levels of the four corners (c00, c10, c11, c01) of tile t.

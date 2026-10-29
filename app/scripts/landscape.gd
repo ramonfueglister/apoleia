@@ -5,8 +5,10 @@ extends Node3D
 ## Controls: mouse wheel / pinch zoom (in towards the cursor, out around the
 ## middle; fully out the whole Kit 1 map is in view), drag (left or middle
 ## mouse, two-finger pan) moves the map, WASD or arrow keys pan, +/- zoom.
-## The view always looks north and never turns (turning made the map swim).
-## Up close it is Urbek's camera: tilted 30 degrees and near-orthographic.
+## Up close it is Urbek's camera: turned 45 degrees to look north-east
+## along the tile diagonal, tilted 35 degrees and near-orthographic, so every
+## house shows two sides and its roof. Zooming out it turns back to north up
+## (between YAW_FROM and YAW_TO) and looks down ever more steeply.
 ## Weather keys F5-F7 belong to weather_system.gd, 1-3 (the build tools) to
 ## build_menu.gd, Space, [ ], F8 and F9 (pause, speed, save, load) to
 ## sim/game_clock.gd; a click on a market square opens its window
@@ -41,6 +43,16 @@ const MAP_TO := 3000.0
 ## off Africa, Egypt and the Levant.
 const MAP := Rect2(-11.0, 21.0, 57.0, 37.0)
 const PITCH_TO := 4400.0 # view width (km) from where the view looks down steepest
+## Up close the view looks north-east along the tile diagonal as in Urbek and
+## Islanders (a view straight north showed every house as a flat front, Ramon
+## 29.10.2026); from YAW_FROM it turns back towards north up, reached at
+## YAW_TO, so the map of the empire stays north up.
+const YAW_CLOSE := 45.0
+const YAW_FROM := 40.0
+const YAW_TO := 700.0
+## Tilt up close: Urbek's square tiles show as diamonds about 0.58 as tall as
+## wide, a view about 35 degrees down (measured on its Steam screenshots).
+const PITCH_CLOSE := 35.0
 ## Field of view: near-orthographic up close like Urbek (vertical walls stay
 ## parallel), wider over the world map.
 const FOV_CLOSE := 9.0
@@ -49,11 +61,23 @@ const FOV_FROM := 12.0 # view width (km) where the view starts to open up
 const FOV_TO := 300.0
 const ZOOM_STEP := 1.18
 const SETTLE := 14.0
+## Tilt-shift blur: full up to TILT_FULL km view width, gone from TILT_TO.
+## Only a hint at the edges: Urbek has next to none, and stronger it
+## smeared the top and bottom of the picture (s2 against Urbek).
+const TILT_AMOUNT := 0.03
+const TILT_FULL := 6.0
+const TILT_TO := 40.0
+## Share of the depth from the focus to the top / bottom edge of the
+## picture that stays sharp.
+const TILT_SHARP := 0.55
 
 var terrain: Node3D
 var camera := Camera3D.new()
 var sun := DirectionalLight3D.new()
 var environment := Environment.new()
+## Miniature look up close (tilt-shift, as in Islanders and Urbek): the
+## middle band of the picture sharp, the top and bottom edges softly blurred.
+var lens := CameraAttributesPractical.new()
 var weather: Node3D
 var people: Node3D # the Kit 2 people (sim/people_dots.gd), null when not built
 ## The sun casts shadows up to 40 km across (the tour can switch them off).
@@ -156,6 +180,10 @@ static func lonlat_to_world(lon: float, lat: float) -> Vector2:
 func _setup_look() -> void:
 	var world := WorldEnvironment.new()
 	world.environment = environment
+	world.camera_attributes = lens
+	lens.auto_exposure_enabled = false
+	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH, false)
+	RenderingServer.camera_attributes_set_dof_blur_bokeh_shape(RenderingServer.DOF_BOKEH_CIRCLE)
 	add_child(world)
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("1d5a8c")
@@ -166,17 +194,24 @@ func _setup_look() -> void:
 	# rather than teal (meadow #73af60 in the sun); the filmic
 	# curve keeps the lit colours where the terrain palette expects them
 	# (AgX washed the map out).
-	environment.ambient_light_color = Color("ccccf2")
-	environment.ambient_light_energy = 0.85
+	# Islanders and Urbek shade in a clear cool blue: the fill a little bluer
+	# and weaker than the old grey #ccccf2 at 0.85, the sun a little stronger,
+	# so lit ground keeps about its palette tone and the shadows fall from
+	# about a third to about a fifth of it, bluish rather than grey (round 1
+	# at 0.75 still read pale grey).
+	environment.ambient_light_color = Color("bcc5ea")
+	environment.ambient_light_energy = 0.62
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
 	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 1.0
+	environment.adjustment_saturation = 1.06
 	environment.adjustment_contrast = 1.08
 	environment.ssao_enabled = true
+	# contact shade where houses, trees and walls meet the ground; the radius
+	# follows the zoom (_update_look), a fixed 0.6 km was wider than a block
 	environment.ssao_radius = 0.6
-	environment.ssao_intensity = 0.6
+	environment.ssao_intensity = 1.1
 	environment.ssao_power = 1.4
 	environment.ssao_light_affect = 0.1
 	environment.fog_enabled = true
@@ -184,19 +219,19 @@ func _setup_look() -> void:
 	environment.fog_light_color = Color("a9c6d3")
 	environment.fog_density = 1.0
 	environment.fog_depth_curve = 1.4
-	# Warm sun from the left of the north-up view, a little to the front
-	# (west-south-west, 40 degrees up): the faces the camera sees are lit,
-	# slopes and roofs turned east fall into shade, shadows reach out to the
-	# right beside what casts them.
-	sun.rotation_degrees = Vector3(-40.0, -65.0, 0.0)
+	# Warm sun from the left of the close view, a little to the front: turned
+	# with the camera (YAW_CLOSE), so from the west-north-west, 40 degrees
+	# up. The faces the camera sees are lit, slopes and roofs turned away fall
+	# into shade, shadows reach out to the right beside what casts them.
+	sun.rotation_degrees = Vector3(-40.0, -65.0 - YAW_CLOSE, 0.0)
 	sun.light_color = Color("fff0d9")
-	sun.light_energy = 2.05
+	sun.light_energy = 2.35
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 1.0
-	# Hard shadows as in Urbek: one map over the view only (see _update_look),
-	# no blur and no dithered soft filter, so every house, tree and figure
-	# casts a crisp shadow from its foot.
-	sun.shadow_blur = 0.0
+	# One map over the view only (see _update_look). Urbek's shadows have a
+	# soft edge a few pixels wide (its Steam screenshots, the trees on the
+	# lawns), not the crisp edge of before: a light PCF blur.
+	sun.shadow_blur = 1.5
 	# A strong normal offset keeps slopes and ramps free of acne ripples in
 	# a map that spans the whole deep view of the far-off camera (counted in
 	# texels of the 8192 map: about 3.5 % of a 1 km view); the depth bias
@@ -206,8 +241,23 @@ func _setup_look() -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_fade_start = 0.98
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)
-	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
 	add_child(sun)
+	_add_vignette()
+
+## A soft darkening towards the corners of the picture, drawn under the HUD,
+## as in Islanders: it holds the eye on the middle of the miniature.
+func _add_vignette() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -1
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/vignette.gdshader")
+	rect.material = mat
+	layer.add_child(rect)
+	add_child(layer)
 
 func _update_look(distance: float) -> void:
 	terrain.set_light_dir(sun.global_transform.basis.z)
@@ -235,6 +285,28 @@ func _update_look(distance: float) -> void:
 	var patch_reach: float = terrain.tile_km * TileTerrain.PATCH_N * 0.5
 	environment.fog_depth_begin = distance + patch_reach * 0.35
 	environment.fog_depth_end = distance + patch_reach * 0.95
+	environment.ssao_radius = clampf(width * 0.02, 0.03, 0.6)
+	_update_tilt_shift(distance, pitch)
+
+## Depth along the view of the ground at the top and bottom edges of the
+## picture (on the focus plane); the blur grows from a sharp band around the
+## focus towards both edges, like a tilt-shift photo of a model.
+func _update_tilt_shift(distance: float, pitch: float) -> void:
+	var amount := TILT_AMOUNT * (1.0 - _zoom_share(width, TILT_FULL, TILT_TO))
+	var on := amount > 0.002
+	if lens.dof_blur_far_enabled != on:
+		lens.dof_blur_far_enabled = on
+		lens.dof_blur_near_enabled = on
+	if not on:
+		return
+	var f := deg_to_rad(camera.fov) * 0.5
+	var top := distance * sin(pitch) * cos(f) / sin(maxf(pitch - f, 0.05))
+	var bottom := distance * sin(pitch) * cos(f) / sin(pitch + f)
+	lens.dof_blur_amount = amount
+	lens.dof_blur_far_distance = distance + (top - distance) * TILT_SHARP
+	lens.dof_blur_far_transition = (top - distance) * (1.0 - TILT_SHARP)
+	lens.dof_blur_near_distance = distance - (distance - bottom) * TILT_SHARP
+	lens.dof_blur_near_transition = (distance - bottom) * (1.0 - TILT_SHARP)
 
 # ---------------------------------------------------------------- camera
 
@@ -247,9 +319,14 @@ func fov_for_width(w: float) -> float:
 	return lerpf(FOV_CLOSE, FOV_FAR, _zoom_share(w, FOV_FROM, FOV_TO))
 
 func pitch_for_width(w: float) -> float:
-	# 30 degrees up close (SimCity 2000), nearly top-down on the world map.
+	# PITCH_CLOSE up close (Urbek), nearly top-down on the world map.
 	var t := clampf((log(w) - log(40.0)) / (log(PITCH_TO) - log(40.0)), 0.0, 1.0)
-	return lerpf(30.0, 72.0, t * t * (3.0 - 2.0 * t))
+	return lerpf(PITCH_CLOSE, 72.0, t * t * (3.0 - 2.0 * t))
+
+## Degrees the view is turned from north towards east (YAW_CLOSE up close,
+## 0 on the map).
+func yaw_for_width(w: float) -> float:
+	return YAW_CLOSE * (1.0 - _zoom_share(w, YAW_FROM, YAW_TO))
 
 ## 0 up close, 1 on the world map (log width between MAP_FROM and MAP_TO).
 func map_share(w: float) -> float:
@@ -262,7 +339,7 @@ func _distance() -> float:
 	return width / (2.0 * tan(deg_to_rad(fov_for_width(width)) * 0.5) * maxf(aspect, 0.1))
 
 func _view_basis() -> Basis:
-	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), 0.0, 0.0))
+	return Basis.from_euler(Vector3(deg_to_rad(-pitch_for_width(width)), deg_to_rad(-yaw_for_width(width)), 0.0))
 
 func _place_camera() -> void:
 	var basis := _view_basis()

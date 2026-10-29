@@ -2,6 +2,9 @@
 // per-frame placement pass (tile_prop_prep.gdshader) and, as a fallback, the
 // prop vertex shader. Needs tile_terrain.gdshaderinc first.
 
+// the farms' fields and lots (set on the placement pass by people_dots.gd)
+#include "res://shaders/sim_fields.gdshaderinc"
+
 // The ground level at uv (0..1) in tile t with corner levels c, on the
 // tile's own triangles (split as in tile_terrain.gdshader).
 float tt_level_in_tile(ivec2 t, vec4 c, vec2 uv) {
@@ -25,12 +28,16 @@ const int CROSS_EVERY = 5;
 const int STREET_EVERY = 3;
 const float STREET_CODE = 8.0;
 
-bool tt_sub_street(ivec2 t) {
+// bit 0: a cross street (runs north-south), bit 1: a row street (east-west)
+int tt_sub_street_dir(ivec2 t) {
 	bool cross = ((t.x % CROSS_EVERY) + CROSS_EVERY) % CROSS_EVERY == 0
 		&& tt_sub_lot(t - ivec2(1, 0)) && tt_sub_lot(t + ivec2(1, 0));
 	bool row = ((t.y % STREET_EVERY) + STREET_EVERY) % STREET_EVERY == 0
 		&& tt_sub_lot(t - ivec2(0, 1)) && tt_sub_lot(t + ivec2(0, 1));
-	return cross || row;
+	return (cross ? 1 : 0) + (row ? 2 : 0);
+}
+bool tt_sub_street(ivec2 t) {
+	return tt_sub_street_dir(t) != 0;
 }
 
 // Up close olive groves stand in the open land around the towns of the warm
@@ -49,6 +56,23 @@ bool tt_olive_grove(ivec2 dt, bool ramp) {
 		}
 	}
 	return false;
+}
+
+// Up close single trees and bushes stand about the open land, as in Urbek
+// (Ramon 29.10.2026: whole hillsides and pastures of bare lawn): on the
+// ramps, where no field ever lies, and on the parcels the farms leave as
+// pasture (sim_parcel), never on a sown or fallow parcel or a farmhouse's
+// lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs.
+const float SCATTER_TREE = 0.09; // share of the slots with a tree
+const float SCATTER_BUSH = 0.0; // and with a bush (s4: little trees read as saplings, sizes all over the place)
+bool tt_scatter_free(vec2 at, bool ramp, bool field) {
+	if (!sim_map_on || sim_fine_n == 0) { return !field; }
+	if (sim_house_lot(at)) { return false; }
+	if (ramp) { return true; }
+	if (sim_view_km > SIM_CROPS_KM) { return false; }
+	float size = tt_data_km() * 0.5;
+	vec4 f;
+	return sim_parcel(floor((at - world_min) / size), size, f) == 0;
 }
 
 // One slot of tile t: xy the spot in the tile (0..1), z its level, w the code:
@@ -92,7 +116,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// houses reached into the Pantheon)
 		show = show && !tt_near_landmark(world_min + (vec2(t) + uv) * tile_km, 0.45 * tile_km / (sub_tiles ? 1.0 : float(side)));
 	} else {
-		show = show && town == 0;
+		show = show && (town == 0 || tt_sub_garden(t, town));
 		uv = vec2(0.5);
 	}
 	if (!house && show) {
@@ -109,12 +133,25 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// open land: small groves of a few trees around one spot of the data
 		// tile, as in Urbek (no single trees: they read as specks)
 		bool field = land == G_FIELD;
+		// a town's garden quarter: cypresses, stone pines and a broadleaf or
+		// two inside its hedge, clear of the landmarks
+		bool garden = town > 0;
+		if (garden) {
+			uv = (g + 0.3 + 0.4 * vec2(r1, r2)) / float(side) * 0.7 + 0.15;
+			at = world_min + (vec2(t) + uv) * tile_km;
+			wood = false;
+			open = false;
+			field = false;
+		}
 		bool grove = false;
 		bool olive = false;
+		bool ramp = false;
+		if (sub_tiles) {
+			vec4 q = tt_corners_cached(t);
+			ramp = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) > 0.01;
+		}
 		if (open && sub_tiles) {
 			ivec2 dt = sub_tiles ? t >> ivec2(1) : t;
-			vec4 q = tt_corners_cached(t);
-			bool ramp = max(max(q.x, q.y), max(q.z, q.w)) - min(min(q.x, q.y), min(q.z, q.w)) > 0.01;
 			vec2 here = world_min + (vec2(t) + 0.5) * tile_km;
 			olive = tt_latitude(here) < 44.5 && tt_height_m(here, height_lod) < 700.0 && tt_olive_grove(dt, ramp);
 		}
@@ -131,8 +168,18 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// up close a wood keeps the density of the 0.5 km tiles (about 2 of
 		// the 4 slots of a quarter), so the ground shows between the crowns
 		bool thin = sub_tiles && tt_hash3(vec3(vec2(t) * 0.37, float(slot) + 0.5)) > 0.6;
-		show = show && (wood || grove || olive) && (olive || !thin);
-		edge_size = olive ? OLIVE_SIZE : mix(0.8, 1.0, r0);
+		float rs = tt_hash3(vec3(vec2(t) * 0.91, float(slot) + 4.4));
+		bool scatter = sub_tiles && (open || field) && !olive && !grove && rs < SCATTER_TREE + SCATTER_BUSH
+			&& tt_scatter_free(at, ramp, field);
+		bool bush = scatter && rs >= SCATTER_TREE;
+		bool planted = garden && rs < 0.6 && !tt_near_landmark(at, 0.06);
+		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
+		// a lone tree smaller than in a wood, about as tall as a one-storey
+		// house, as Urbek's (Ramon on s3: Urbek's trees are much smaller
+		// against its fields and houses); kept in the middle of its quarter,
+		// clear of the fields round it
+		if (scatter) { uv = 0.5 + (uv - 0.5) * 0.4; }
+		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.25, 0.35, r0) : scatter ? 0.75 : planted ? 0.75 : mix(0.85, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;
@@ -140,7 +187,8 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// stone pines and cypresses in the warm lowlands, more of them in open land
 		bool south = lat < 44.5 && h < 700.0;
 		float pine_p = south ? (wood ? 0.12 : 0.45) : 0.0;
-		int kind = olive ? 0
+		int kind = olive || bush ? 0
+			: planted ? (r1 < 0.4 ? 2 : r1 < 0.65 ? 4 : 0)
 			: r0 < conifer_p ? 1
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;
