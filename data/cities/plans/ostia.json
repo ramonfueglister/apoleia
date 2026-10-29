@@ -1,0 +1,330 @@
+{
+  "id": "ostia",
+  "name": "Ostia",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-75 m; to be checked against the sources listed.",
+  "sources": [
+    "Pavolini, C. (2006). Ostia (Guide archeologiche Laterza). Laterza. (not verified online)",
+    "Stöger, J. J. (2011). Rethinking Ostia: A spatial enquiry into the urban society of Rome's imperial port-town. Leiden University Press. (not verified online)"
+  ],
+  "centre": [
+    12.2919,
+    41.7556
+  ],
+  "lane_surface": "basalt",
+  "walls": [
+    {
+      "name": "Sullan wall",
+      "built": "c. 63 BC",
+      "ring": [
+        [
+          12.2965,
+          41.7592
+        ],
+        [
+          12.2978,
+          41.7531
+        ],
+        [
+          12.2935,
+          41.751
+        ],
+        [
+          12.2925,
+          41.7515
+        ],
+        [
+          12.286,
+          41.7535
+        ],
+        [
+          12.2836,
+          41.7578
+        ],
+        [
+          12.285,
+          41.76
+        ]
+      ],
+      "closed_by": "river"
+    }
+  ],
+  "gates": [
+    {
+      "name": "Porta Romana",
+      "at": [
+        12.2978,
+        41.7531
+      ],
+      "road": "Via Ostiensis"
+    },
+    {
+      "name": "Porta Laurentina",
+      "at": [
+        12.2925,
+        41.7515
+      ]
+    },
+    {
+      "name": "Porta Marina",
+      "at": [
+        12.2836,
+        41.7578
+      ]
+    }
+  ],
+  "rivers": [
+    {
+      "name": "Tiberis",
+      "width_m": 100,
+      "line": [
+        [
+          12.306,
+          41.762
+        ],
+        [
+          12.299,
+          41.76
+        ],
+        [
+          12.292,
+          41.7598
+        ],
+        [
+          12.286,
+          41.7605
+        ],
+        [
+          12.279,
+          41.763
+        ]
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Decumanus Maximus",
+      "rank": "via",
+      "surface": "basalt",
+      "line": [
+        [
+          12.2978,
+          41.7531
+        ],
+        [
+          12.2919,
+          41.7552
+        ],
+        [
+          12.2836,
+          41.7578
+        ]
+      ]
+    },
+    {
+      "name": "Cardo Maximus",
+      "rank": "via",
+      "surface": "basalt",
+      "line": [
+        [
+          12.2915,
+          41.7592
+        ],
+        [
+          12.2919,
+          41.7556
+        ],
+        [
+          12.2925,
+          41.7515
+        ]
+      ]
+    },
+    {
+      "name": "Via della Foce",
+      "rank": "vicus",
+      "surface": "basalt",
+      "line": [
+        [
+          12.2905,
+          41.7558
+        ],
+        [
+          12.286,
+          41.759
+        ]
+      ]
+    },
+    {
+      "name": "Via Ostiensis",
+      "rank": "via",
+      "surface": "basalt",
+      "outside": true,
+      "line": [
+        [
+          12.2978,
+          41.7531
+        ],
+        [
+          12.306,
+          41.75
+        ],
+        [
+          12.317,
+          41.748
+        ]
+      ]
+    },
+    {
+      "name": "Via Laurentina",
+      "rank": "vicus",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          12.2925,
+          41.7515
+        ],
+        [
+          12.294,
+          41.745
+        ],
+        [
+          12.296,
+          41.738
+        ]
+      ]
+    },
+    {
+      "name": "Via Severiana",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          12.2836,
+          41.7578
+        ],
+        [
+          12.276,
+          41.754
+        ],
+        [
+          12.27,
+          41.748
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Forum",
+      "kind": "forum",
+      "centre": [
+        12.2921,
+        41.7553
+      ],
+      "size_m": [
+        130,
+        50
+      ],
+      "angle_deg": -70
+    },
+    {
+      "name": "Capitolium",
+      "kind": "temple",
+      "centre": [
+        12.2918,
+        41.7561
+      ],
+      "size_m": [
+        35,
+        20
+      ]
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "centre": [
+        12.2947,
+        41.7565
+      ],
+      "size_m": [
+        90,
+        75
+      ]
+    },
+    {
+      "name": "Piazzale delle Corporazioni",
+      "kind": "portico",
+      "centre": [
+        12.2948,
+        41.7573
+      ],
+      "size_m": [
+        110,
+        80
+      ]
+    },
+    {
+      "name": "Thermae Neptuni",
+      "kind": "baths",
+      "centre": [
+        12.2958,
+        41.7555
+      ],
+      "size_m": [
+        70,
+        60
+      ]
+    },
+    {
+      "name": "Thermae Fori",
+      "kind": "baths",
+      "centre": [
+        12.2925,
+        41.7546
+      ],
+      "size_m": [
+        80,
+        60
+      ]
+    },
+    {
+      "name": "Horrea",
+      "kind": "warehouse",
+      "centre": [
+        12.2905,
+        41.757
+      ],
+      "size_m": [
+        100,
+        80
+      ]
+    },
+    {
+      "name": "Campus Magnae Matris",
+      "kind": "temple",
+      "centre": [
+        12.2935,
+        41.752
+      ],
+      "size_m": [
+        100,
+        80
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "name": "Insulae of the Decumanus",
+      "kind": "insulae",
+      "centre": [
+        12.29,
+        41.756
+      ],
+      "radius_m": 300
+    }
+  ]
+}

@@ -12,10 +12,16 @@ Insula, Domus, öffentlicher Bau, Platz, Garten, Strasse, Mauer, Tor, Brücke, G
 bei Strassen den Rang, den Belag und die Anschlüsse nach N/O/S/W, bei Häusern die Stockwerke, bei
 öffentlichen Bauten das Modell und die Seite der Front.
 
-- **Rekonstruiert** (`data/cities/plans/<id>.json`): Rom, Stand 301 (Aurelianische Mauer, 15 Tore,
-  Tiber mit Insel und 7 Brücken, 38 Strassen, 34 Bauten, 10 Quartiere). Lage aus modernen
-  Entsprechungen geschätzt, ±50 m, zu prüfen an Carandini (2017) und Coarelli (2014).
-- **Generiert** (`tools/city_generate.py`): die übrigen 859 Städte aus Hansons Datenbank
+- **Rekonstruiert** (`data/cities/plans/<id>.json`), Lage aus modernen Entsprechungen geschätzt,
+  zu prüfen an den in jeder Datei genannten Quellen:
+  - Rom, Stand 301 (Aurelianische Mauer, 15 Tore, Tiber mit Insel und 7 Brücken, 38 Strassen,
+    34 Bauten, 10 Quartiere), ±50 m.
+  - Ostia (sullanische Mauer, Decumanus und Cardo, Forum, Capitolium, Theater, Thermen, Horrea), ±75 m.
+  - Mailand, Residenz Maximians (maximianische Mauer, sechs Tore, Palast, Circus, Herkulesthermen,
+    Säulenstrasse vor der Porta Romana), ±75 m.
+  - Trier, Residenz des Constantius (Mauer, Porta Nigra, Römerbrücke, Kaiserthermen und Palastaula
+    im Bau, Barbarathermen, Amphitheater, Circus), ±75 m.
+- **Generiert** (`tools/city_generate.py`): die übrigen 856 Städte aus Hansons Datenbank
   (`data/cities/facts.json`, 853 von 860 zugeordnet; `tools/city_facts.py`).
 - **Gebacken** (`tools/city_plans.py --bake`): `artifacts/render-data/city-plans-r1/city-plans-x1.{png,json}`.
 - **Lader** (`app/scripts/city_plans.gd`): baut `city_page_tex` und `city_atlas_tex` für die Shader

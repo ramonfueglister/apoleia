@@ -466,7 +466,8 @@ def lanes(kind, rank, surf, links, surface):
 
 ROAD = ("street", "plaza", "gate", "bridge")
 # what a joining lane may cut through, and at what cost
-CUT_COST = {"house": 1, "insula": 1, "domus": 1, "garden": 2, "park": 2, "none": 8, "tombs": 8}
+# (never across open land, water or buildings; through a wall only as a new gate)
+CUT_COST = {"house": 1, "insula": 1, "domus": 1, "garden": 2, "park": 2, "tombs": 4, "wall": 12}
 
 
 def components(road):
@@ -491,7 +492,8 @@ def components(road):
 
 def connect(kind, rank, surf, surface):
     """Joins every piece of the street network to the rest with the
-    cheapest lane (Dijkstra through houses and gardens), so that one can
+    cheapest lane (Dijkstra through houses and gardens, through a wall as a new
+    gate, never across open land), so that one can
     walk from any street to any other, as the walkers will."""
     import heapq
     h, w = kind.shape
@@ -537,7 +539,9 @@ def connect(kind, rank, surf, surface):
             continue
         c = prev.get(goal)
         while c is not None and comp[c] != src:
-            if not road[c]:
+            if kind[c] == K["wall"]:
+                kind[c] = K["gate"]
+            elif not road[c]:
                 kind[c] = K["street"]
                 rank[c] = RANKS.index("angiportus")
                 surf[c] = surface
