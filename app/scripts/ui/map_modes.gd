@@ -3,8 +3,11 @@ extends Control
 ## leather at the foot of the screen, the mode shown lit in gold, its name
 ## at the left. Each mode colours the regions of the markets by one column
 ## of the markets table (sim_tables.gd, «Karte färben»), whose legend
-## then sits above the strip; the landscape shows the map without colour. It only shows and tells: chosen(column)
-## goes to the game clock (sim/game_clock.gd), which colours the map.
+## then sits above the strip; the landscape shows the map without colour;
+## «Handel» greys the map and draws what the dealers carried between the
+## markets (sim/people_flows.gd, legend ui/trade_legend.gd). It only shows
+## and tells: chosen(column) goes to the game clock (sim/game_clock.gd),
+## which colours the map.
 
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const NoticeList = preload("res://scripts/ui/notice_list.gd")
@@ -23,6 +26,7 @@ const MODES := [
 	["free_ha", "field", "Freies Land"],
 	["money", "two-coins", "Geld der Händler"],
 	["gini", "scales", "Arm und Reich"],
+	["trade", "amphora", "Handel"], # not a column: what the dealers carried (sim/people_flows.gd)
 ]
 
 signal chosen(column: String)
