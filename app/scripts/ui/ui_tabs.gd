@@ -10,6 +10,8 @@ const RISE := 6.0 # the chosen tab stands this much higher
 
 signal tab_changed(index: int)
 
+var _titles: Array[String] = []
+
 var current_tab := 0:
 	set(i):
 		if i == current_tab or i < 0 or i >= get_child_count():
@@ -23,9 +25,11 @@ func _init() -> void:
 	add_theme_constant_override("separation", 4)
 	custom_minimum_size = Vector2(0, HEIGHT)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	resized.connect(_share_width)
 
 func add_tab(title: String) -> void:
 	var i := get_child_count()
+	_titles.append(title)
 	var tab := Button.new()
 	tab.focus_mode = Control.FOCUS_NONE
 	tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -33,13 +37,37 @@ func add_tab(title: String) -> void:
 	tab.clip_text = true
 	for state in ["normal", "hover", "pressed", "focus"]:
 		tab.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	tab.draw.connect(func(): _draw_tab(tab, title, i == current_tab, tab.is_hovered()))
+	tab.draw.connect(func(): _draw_tab(tab, title, i == current_tab, tab.is_hovered(), _font_size()))
 	tab.mouse_entered.connect(tab.queue_redraw)
 	tab.mouse_exited.connect(tab.queue_redraw)
 	tab.pressed.connect(func(): current_tab = i)
 	add_child(tab)
 
-static func _draw_tab(tab: Button, title: String, on: bool, hover: bool) -> void:
+## Boards of equal width while every name fits at the text size; with many
+## tabs in a narrow window each board gets the width of its name instead.
+func _share_width() -> void:
+	var f := UiStyle.bold()
+	var gaps := get_theme_constant("separation") * maxi(0, _titles.size() - 1)
+	var equal := (size.x - gaps) / maxf(1.0, _titles.size())
+	var fits := _titles.all(func(t): return f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x <= equal - 10.0)
+	for k in get_child_count():
+		(get_child(k) as Control).size_flags_stretch_ratio = 1.0 if fits else f.get_string_size(_titles[k], HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x + 16.0
+
+## One size for all tabs: the largest at which the longest title fits its
+## board, so many tabs in a narrow window shrink their names, not clip them.
+func _font_size() -> int:
+	var f := UiStyle.bold()
+	for font_size in range(UiStyle.SIZE_HEAD + 2, UiStyle.SIZE_SMALL - 1, -1):
+		var fits := true
+		for k in get_child_count():
+			var w := (get_child(k) as Control).size.x
+			if f.get_string_size(_titles[k], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > w - 10.0:
+				fits = false
+		if fits:
+			return font_size
+	return UiStyle.SIZE_SMALL
+
+static func _draw_tab(tab: Button, title: String, on: bool, hover: bool, font_size: int) -> void:
 	var r := Rect2(Vector2(0, 0 if on else RISE), tab.size - Vector2(0, 0 if on else RISE))
 	var wood := UiStyle.TAB_WOOD_ON if on else (UiStyle.TAB_WOOD_HOVER if hover else UiStyle.TAB_WOOD)
 	tab.draw_rect(r, UiStyle.EDGE)
@@ -59,7 +87,6 @@ static func _draw_tab(tab: Button, title: String, on: bool, hover: bool) -> void
 		tab.draw_polyline(curl, Color(1, 1, 1, 0.08), 1.0, true)
 		tab.draw_circle(Vector2(inner.position.x + 5.0, inner.position.y + 9.0), 4.0, Color(0, 0, 0, 0.5))
 	var f := UiStyle.bold()
-	var font_size := UiStyle.SIZE_HEAD + 2
 	var y := r.position.y + r.size.y * 0.5 + font_size * 0.35
 	UiStyle.text_at(tab, Vector2(r.position.x, y), title, Color.WHITE if hover and not on else UiStyle.TEXT,
 		font_size, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, f)

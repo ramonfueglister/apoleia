@@ -49,10 +49,10 @@ const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 ## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
 ## from four of them; its tab comes first (TAB_ORDER)
-const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods"]
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht", "Schichten", "Waren"]
-const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", "", "Schicht", "Ware"] # under a tooltip's title
-const TAB_ORDER: Array[int] = [5, 0, 7, 6, 1, 2, 3, 4]
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht", "Schichten", "Waren", "Draussen"]
+const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", "", "Schicht", "Ware", "Markt draussen"] # under a tooltip's title
+const TAB_ORDER: Array[int] = [5, 0, 8, 7, 6, 1, 2, 3, 4]
 const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state", "classes", "goods"]
 const SPARK_MONTHS := 24
 const SPARK_PX := 92.0
