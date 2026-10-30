@@ -1087,6 +1087,9 @@ Was auffällt:
   Menschen an Hunger, und die Speicher wachsen weiter (113 kt im Jahr 40). Das ist eine Änderung an
   S112 und braucht Ramons Entscheid.
 - Gleicher Fingerabdruck mit 1 und 4 Threads (5 Jahre); 75 Tests grün, 1 ausgelassen.
+- Entscheid: Ramon (30.10.2026), Karte „Wie machen wir mit PR #67 und dem restlichen Preisfall
+  weiter?“, Option „Mergen, dann Lager am Jahresabsatz“: S123 und S124 kommen so auf main, als
+  Nächstes folgt der Vorschlag zum Lager am Jahresabsatz.
 
 ### Quellen zu S123, S124 (APA 7)
 
