@@ -26,14 +26,15 @@ uniform int lot_start = 0; // a lot model's slots in town_tex
 uniform int lot_count = 0;
 uniform int town_w = 100;
 // The trees' blocks (tile_prop_meshes.gd tree_table): TREE_BLOCKS a kind, in
-// the order broadleaf, conifer, cypress, stone pine (place codes 0, 1, 2, 4).
+// the order broadleaf, conifer, cypress, stone pine, shrub (place codes 0, 1,
+// 2, 4, 5).
 // The tree mesh is unit blocks, UV.x the block's number, each stretched to
 // its block of the slot's kind: one tree instance a slot draws every kind.
 const int TREE_BLOCKS = 5;
-uniform vec3 tree_lo[20];
-uniform vec3 tree_hi[20];
-uniform vec3 tree_top[20];
-uniform vec3 tree_side[20];
+uniform vec3 tree_lo[25];
+uniform vec3 tree_hi[25];
+uniform vec3 tree_top[25];
+uniform vec3 tree_side[25];
 
 varying vec3 tint;
 varying float road; // a street tile's terrace top: tt_sub_street_dir (1 north-south, 2 east-west, 3 both), 0 none
@@ -50,6 +51,7 @@ varying float plan_top; // the top of a city plan's terrace (cp_surface)
 const float SUB_LOT_DEPTH = 0.9;
 const float SUB_LOT_NORTH = 0.01; // gap behind the lot, tile units
 const float TERRACE_STEP_M = 0.25; // a terrace on flat ground stands this high
+const float PLAN_STRETCH = 1.5; // an arena over two parcels, drawn longer (oval about 1.5 : 1)
 // A Roman street on a street block: dark basalt paving between raised
 // footways of travertine with a kerb (s2: the streets read as empty beige
 // squares; Urbek's streets are grey roads between light pavements)
@@ -71,17 +73,20 @@ void vertex() {
 	int slot;
 	int ti;
 	int turns = 0; // eighth turns of a lot (a plan's lots face their street, its diagonal walls run to the corner)
+	int block = 0; // a plan building over several parcels (tile_terrain.gd PLAN_BLOCK_*)
 	if (house && town_count >= 0) {
 		// the house instances run over the town tiles of the patch only
 		// (tile_terrain.gd _update_town_list): the terraces over all their
-		// slots, a lot model over the slots it holds (tile * 128 + turns * 16
-		// + slot, turns in eighths: quarter turns, plus four for a diagonal)
+		// slots, a lot model over the slots it holds (tile * 512 + block * 128
+		// + turns * 16 + slot, turns in eighths: quarter turns, plus four for
+		// a diagonal)
 		int e = lot_variant >= 0 ? lot_start + id : id / slots;
 		listed = lot_variant >= 0 ? id < lot_count : e < town_count;
 		int v = listed ? int(texelFetch(town_tex, ivec2(e % town_w, e / town_w), 0).r + 0.5) : 0;
-		ti = lot_variant >= 0 ? v / 128 : v;
+		ti = lot_variant >= 0 ? v / 512 : v;
 		slot = lot_variant >= 0 ? v % 16 : id % slots;
 		turns = lot_variant >= 0 ? (v / 16) % 8 : 0;
+		block = lot_variant >= 0 ? (v / 128) % 4 : 0;
 	} else {
 		// a lot model draws one house slot in every block of lot_variants
 		// slots, a different one in each block, so all models together fill
@@ -125,7 +130,7 @@ void vertex() {
 		vec3 m = VERTEX;
 		if (!house) {
 			int kind = int(floor(d.w));
-			int b = (kind == 4 ? 3 : kind) * TREE_BLOCKS + int(UV.x + 0.5);
+			int b = (kind >= 4 ? kind - 1 : kind) * TREE_BLOCKS + int(UV.x + 0.5);
 			m = mix(tree_lo[b], tree_hi[b], VERTEX);
 			// light top, darker sides and underside (tile_prop_meshes.gd _box)
 			COLOR = vec4(NORMAL.y > 0.5 ? tree_top[b] : NORMAL.y < -0.5 ? tree_side[b] * 0.6 : tree_side[b], 1.0);
@@ -193,6 +198,12 @@ void vertex() {
 			}
 		}
 		v.xz = rot * v.xz;
+		if (block > 0) {
+			// one model over its building's parcels from the north-west one: an
+			// arena drawn longer over two, a hall twice the size over four
+			v *= block == 3 ? vec3(2.0) : block == 1 ? vec3(PLAN_STRETCH, 1.0, 1.0) : vec3(1.0, 1.0, PLAN_STRETCH);
+			p += vec2(block == 2 ? 0.0 : 0.5, block == 1 ? 0.0 : 0.5) * CP_PARCEL_KM;
+		}
 		vec3 world = vec3(p.x, level * level_h + lift, p.y) + v;
 		vec3 nrm = NORMAL;
 		nrm.xz = rot * nrm.xz;

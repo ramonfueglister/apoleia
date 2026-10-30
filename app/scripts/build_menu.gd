@@ -26,9 +26,12 @@ extends Node3D
 ## labourers paid from the treasury (S113): the view shows a farm being
 ## built as its house inside a scaffold on the order's lot, a finished one
 ## as a farm. Roads are smoothed through the lot middles and drawn by
-## road_view.gd; the farmhouse under the cursor is farmhouse_ghost.gd.
+## road_view.gd; the farmhouse under the cursor is farmhouse_ghost.gd. A
+## finished field the terrain and the crops draw as a field, and they keep
+## clear of the roads (people_dots.gd set_built, _built_bits).
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const RoadView = preload("res://scripts/road_view.gd")
 const FarmhouseGhost = preload("res://scripts/voxel/farmhouse_ghost.gd")
 const LOT_KM := 0.5 # people_dots.gd LOT_KM, people_dots_common.gdshaderinc DOT_LOT_KM
@@ -49,9 +52,9 @@ const FARM := 0
 const FIELD := 1
 const ROAD := 2
 const NAMES := ["Hof", "Feld", "Strasse"]
+const ICONS := ["house", "plow", "horizon-road"] # assets/ui/icons
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
-const PLOUGHED := Color("6e5236") # a finished field lot nobody leases yet: fresh furrows
 const BAD := Color(0.91, 0.42, 0.35, 0.6)
 const NONE := -1
 const DIRS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -122,6 +125,9 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	var k := BUTTON_PX / ToolButton.SIZE.x * DisplayServer.screen_get_scale(DisplayServer.window_get_current_screen())
 	bar.add_theme_constant_override("separation", roundi(8 * k))
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, roundi(14 * k))
+	bar.theme = Vic3.theme() # the tooltips
+	# the medallions on a strip of leather, as the map modes at the foot (ui/map_modes.gd)
+	bar.draw.connect(func(): Vic3.draw_strip(bar, Rect2(Vector2.ZERO, bar.size).grow(5.0 * k)))
 	hud.add_child(bar)
 	for kind in NAMES.size():
 		var b := ToolButton.new()
@@ -432,6 +438,8 @@ func _take_orders() -> void:
 	_built_fields.clear()
 	for i in range(0, ploughed.size(), 2):
 		_built_fields[lot_at(Vector2(ploughed[i], ploughed[i + 1]) / 1000.0)] = true
+	if landscape.people != null:
+		landscape.people.set_built(_built_bits())
 	# column, row, days done, days needed per order (S113); 0, 0 no site yet
 	var done: PackedInt32Array = d.get("progress", PackedInt32Array())
 	_progress.clear()
@@ -444,7 +452,8 @@ func _take_orders() -> void:
 
 ## The orders around the view and the stroke under way: fields as lots
 ## draped over the ground, roads handed to road_view.gd (farms being built
-## the view shows itself, as scaffolds).
+## the view shows itself, as scaffolds; finished fields the terrain and the
+## crops, sim_fields.gdshaderinc sim_built).
 func _draw_orders() -> void:
 	_dirty = false
 	_mesh.clear_surfaces()
@@ -454,12 +463,8 @@ func _draw_orders() -> void:
 		var c := lot_centre(l)
 		return absf(c.x - centre.x) < reach and absf(c.y - centre.y) < reach
 	var fields: Array[Vector2i] = []
-	var ploughed: Array[Vector2i] = []
 	var chains := []
 	if _close():
-		for l: Vector2i in _built_fields:
-			if near.call(l) and not _orders.has(l):
-				ploughed.append(l)
 		for l: Vector2i in _orders:
 			if near.call(l):
 				if _orders[l] == FIELD:
@@ -471,10 +476,8 @@ func _draw_orders() -> void:
 	# the road being drawn, else the lot under the cursor
 	var road_preview := preview and tool == ROAD and _stroke.size() >= 2
 	var lots_preview := preview and not road_preview
-	if not fields.is_empty() or not ploughed.is_empty() or lots_preview:
+	if not fields.is_empty() or lots_preview:
 		_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-		for l in ploughed:
-			_field(l, Color(PLOUGHED, 0.6), 0.0)
 		for l in fields:
 			_field(l, Color(COLOURS[FIELD], 0.5), _progress.get(l, 0.0))
 		if lots_preview and tool == FIELD and not _stroke.is_empty():
@@ -562,11 +565,10 @@ static func _chaikin(p: PackedVector2Array) -> PackedVector2Array:
 	out.append(p[p.size() - 1])
 	return out
 
-## The roads, ordered and finished, as chains of lots between ends and
-## crossings. Lots are
-## joined to their eight neighbours, but not across a corner two straight
-## steps already go round (no small triangles).
-func _chains() -> Array:
+## The road lots, ordered and finished, each with the lots it is joined
+## to: its eight neighbours, but not across a corner two straight steps
+## already go round (no small triangles).
+func _road_links() -> Dictionary:
 	var roads := _built_roads.duplicate()
 	for l: Vector2i in _orders:
 		if _orders[l] == ROAD:
@@ -582,6 +584,57 @@ func _chains() -> Array:
 				continue
 			ns.append(m)
 		links[l] = ns
+	return links
+
+## What the player built, by lot (Vector2i -> int), for the terrain, the
+## crops and the trees (sim_fields.gdshaderinc sim_built): bit 0 a finished
+## field; then five bits for each of the lot's four parcels (from 1 + 5 k,
+## k = x + 2 y of its quarter): a road crosses it, a road runs along its
+## side -x, -y, +x, +y. The roads run through the lot middles, the corners
+## of their parcels: a straight step runs between two parcels, a diagonal
+## one across a parcel and past the corners of the parcels beside it, and
+## the smoothing (_smooth) cuts across the parcel inside a right-angled
+## bend (about 90 m in from the lot middle, the road 95 m wide).
+func _built_bits() -> Dictionary:
+	var bits := {}
+	for l: Vector2i in _built_fields:
+		bits[l] = 1
+	var links := _road_links()
+	for l: Vector2i in links:
+		var dirs := {}
+		for m: Vector2i in links[l]:
+			dirs[m - l] = true
+		for d: Vector2i in dirs:
+			if d.x == 0 or d.y == 0:
+				var e := Vector2i(absi(d.y), absi(d.x)) # across the step
+				_mark(bits, l, d + e, -e)
+				_mark(bits, l, d - e, e)
+			else:
+				_mark(bits, l, d, Vector2i.ZERO)
+				_mark(bits, l, Vector2i(d.x, -d.y), Vector2i(0, d.y))
+				_mark(bits, l, Vector2i(-d.x, d.y), Vector2i(d.x, 0))
+				_mark(bits, l + Vector2i(d.x, 0), Vector2i(-d.x, d.y), Vector2i(-d.x, 0))
+				_mark(bits, l + Vector2i(0, d.y), Vector2i(d.x, -d.y), Vector2i(0, -d.y))
+		# a bend, not a crossing (the chains end at a crossing, unsmoothed)
+		for sx in [-1, 1]:
+			for sy in [-1, 1]:
+				if dirs.size() == 2 and dirs.has(Vector2i(sx, 0)) and dirs.has(Vector2i(0, sy)):
+					_mark(bits, l, Vector2i(sx, sy), Vector2i.ZERO)
+	return bits
+
+## Marks on the parcel in `quarter` (x and y -1 or 1) of lot `l` the road
+## along its side `side` (a unit step), or with ZERO the road across it.
+static func _mark(bits: Dictionary, l: Vector2i, quarter: Vector2i, side: Vector2i) -> void:
+	var k := (1 if quarter.x > 0 else 0) + (2 if quarter.y > 0 else 0)
+	var bit := 0
+	if side != Vector2i.ZERO:
+		bit = 1 + (2 if side.x + side.y > 0 else 0) + (1 if side.y != 0 else 0)
+	bits[l] = bits.get(l, 0) | (1 << (1 + 5 * k + bit))
+
+## The roads, ordered and finished, as chains of lots between ends and
+## crossings (_road_links).
+func _chains() -> Array:
+	var links := _road_links()
 	var out := []
 	var used := {} # edges walked, both ways
 	for start: Vector2i in links:
@@ -682,6 +735,7 @@ class ToolButton extends Control:
 	var active := false
 	var enabled := true
 	var scale_k := 1.0
+	var _icon: Texture2D
 
 	func _init() -> void:
 		custom_minimum_size = SIZE
@@ -690,32 +744,14 @@ class ToolButton extends Control:
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
 
+	## A Victoria 3 medallion with the tool's icon: lit while chosen or under
+	## the mouse, dimmed when the view is too far out to build.
 	func _draw() -> void:
 		var hover := get_global_rect().has_point(get_global_mouse_position())
-		var back := SimTables.SELECTED if active or (hover and enabled) else SimTables.HEAD
-		var edge := SimTables.GOLD if active else Color(SimTables.GOLD, 0.8 if hover and enabled else 0.45)
-		var box := StyleBoxFlat.new()
-		box.bg_color = Color(back, 0.92)
-		box.border_color = edge
-		box.set_border_width_all(2 if active else 1)
-		box.set_corner_radius_all(4)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2(scale_k, scale_k))
-		draw_style_box(box, Rect2(Vector2.ZERO, SIZE))
-		var ink := (SimTables.GOLD if active else SimTables.INK) * Color(1, 1, 1, 1.0 if enabled else 0.35)
-		var c := SIZE * 0.5
-		match kind:
-			0: # Hof: walls and a roof
-				draw_rect(Rect2(c + Vector2(-9, -2), Vector2(18, 12)), ink, false, 2.0)
-				draw_polyline(PackedVector2Array([c + Vector2(-12, -1), c + Vector2(0, -12), c + Vector2(12, -1)]), ink, 2.0)
-				draw_rect(Rect2(c + Vector2(-2, 4), Vector2(4, 6)), ink)
-			1: # Feld: furrows in a plot
-				draw_rect(Rect2(c - Vector2(12, 12), Vector2(24, 24)), ink, false, 2.0)
-				for k in 3:
-					var y := -6.0 + k * 6.0
-					draw_line(c + Vector2(-8, y), c + Vector2(8, y), ink, 2.0)
-			2: # Strasse: a road winding off into the distance
-				draw_polyline(PackedVector2Array([c + Vector2(-9, 13), c + Vector2(-4, 4), c + Vector2(-6, -4), c + Vector2(-2, -12)]), ink, 2.0)
-				draw_polyline(PackedVector2Array([c + Vector2(9, 13), c + Vector2(4, 4), c + Vector2(2, -4), c + Vector2(2, -12)]), ink, 2.0)
+		if _icon == null:
+			_icon = Vic3.icon(ICONS[kind])
+		Vic3.draw_medallion(self, size * 0.5, minf(size.x, size.y) * 0.5 - 2.0 * scale_k, _icon,
+			enabled and (active or hover), false, not enabled)
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

@@ -1,104 +1,88 @@
 extends RefCounted
-## The look of every window, tooltip and panel, measured from EU5's
-## interface (reference shots in docs/kit1/references/eu5-ui/README.md):
-## a window stands in a frame of dark carved wood, its title bar is bronze
-## with a lattice and gold edges, the title a large cream serif, round dark
-## buttons in a bronze ring at both ends. Inside lies a deep navy field;
-## tabs are slate boards, the chosen one opens into the field. Tables are
-## warm grey bars on the navy, charts a brown board with a square grid in a
-## brown frame. Tooltips have a brown head with a gold rule, a dark slate
-## body and sunken boxes of alternating rows. Game concepts in light blue,
-## gains in green, losses in red, numbers right aligned. One place for it,
-## so the loading screen, the menus and the windows read as one game.
+## The look of every game window, tooltip and panel, the same as the
+## menus' (vic3_style.gd, after Victoria 3): a window is grained slate in a
+## gold rim and a black ring, its title stands in small caps with large gold
+## initials on a band of wine-red leather, round medallions at both ends.
+## Tabs are olive boards, the chosen one lit with a gold edge. Tables are
+## dark green rows, charts a dark board. Tooltips are dark wine with a
+## leather head. Game concepts in orange, gains in green, losses in red,
+## numbers right aligned. The fonts are the menus' (EB Garamond, IM FELL
+## English SC). One place for it, so the loading screen, the menus and the
+## windows read as one game.
+
+const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 
 ## the frame
-const WOOD := Color("2a221a")       # carved frame around a window
-const WOOD_CARVE := Color("4a3c2c") # the carving on it
-const BAR := Color("4c3a1c")        # bronze title bar
-const BAR_LATTICE := Color("6b532b")
-const GOLD := Color("a8854a")       # gold edges and rules
-const GOLD_LIT := Color("e2c27c")   # an edge that is active (hover, locked tooltip)
-const EDGE := Color("0b0d10")       # the black line around everything
+const BAR := Color("3c1b20")        # the title band, wine-red leather
+const GOLD := Color("b7aa7b")       # gold edges and rules
+const GOLD_DIM := Color("7d7152")   # a quiet rim (an unchosen tab, a button)
+const GOLD_LIT := Color("f0d590")   # an edge that is active (hover, locked tooltip)
+const EDGE := Color("0d0b0b")       # the black line around everything
 ## the field inside
-const PANEL := Color("111922")      # window body, navy
-const INSET := Color("0c1218")      # sunken boxes in the field
-const TAB := Color("252a31")        # slate tab boards (TabBar)
-const TAB_ON := Color("1a232e")
-const TAB_WOOD := Color("2c231a")   # EU5's wooden tab boards (ui_tabs.gd)
-const TAB_WOOD_HOVER := Color("382c21")
-const TAB_WOOD_ON := Color("45372a")
-const ROW := Color("39352c")        # a table row, warm grey
-const ROW_DARK := Color("312d26")
-const ROW_HEAD := Color("212428")
-const STAT := Color("3a3026")       # stat strip cells, two shades
-const STAT_B := Color("4a3f33")
-const STAT_FRAME := Color("5b3b2b") # the strip's reddish brown edge
-const CHART := Color("2d2319")      # chart board
-const CHART_GRID := Color("1f1810") # its grid, darker than the board
-const CHART_FRAME := Color("604735")
+const PANEL := Color("2c2d30")      # window body, navy
+const INSET := Color("222326")      # sunken boxes in the field
+const TAB := Color("2c3428")        # olive tab boards (TabBar, ui_tabs.gd)
+const TAB_ON := Color("3d4a30")
+const TAB_HOVER := Color("343f28")
+const ROW := Color("202c29")        # a table row, warm grey
+const ROW_DARK := Color("1c2724")
+const ROW_HEAD := Color("1a1f1e")
+const STAT := Color("26302b")       # stat strip cells, two shades
+const STAT_B := Color("2f3a33")
+const STAT_FRAME := Color("5a4c36") # the strip's reddish brown edge
+const CHART := Color("232528")      # chart board
+const CHART_GRID := Color("1a1b1e") # its grid, darker than the board
+const CHART_FRAME := Color("4a4538")
 const CHART_EDGE := Color("8f8573") # the thin pale line around a chart
-const BUTTON_TOP := Color("1d5272") # EU5's blue buttons
-const BUTTON_BOTTOM := Color("12324a")
+const BUTTON_TOP := Color("3d4a30") # an olive button under the mouse
+const BUTTON_BOTTOM := Color("2c3428")
 ## tooltips
-const TIP_HEAD := Color("2e251c")
-const TIP_BODY := Color("1d2222")
-const TIP_ROW := Color("191f22")
-const TIP_ROW_B := Color("1e2528")
-const TIP_LINE := Color("3a3b36")
-const TIP_CHART_HEAD := Color("17262a")
-const TIP_CHART := Color("151716")
-const TIP_FOOT := Color("473c30")
-const TIP_FRAME := Color("4c4638")
+const TIP_HEAD := Color("3c1b20")
+const TIP_BODY := Color("2e2527")
+const TIP_ROW := Color("272022")
+const TIP_ROW_B := Color("2c2426")
+const TIP_LINE := Color("4a3a38")
+const TIP_CHART_HEAD := Color("2a2224")
+const TIP_CHART := Color("1f1a1b")
+const TIP_FOOT := Color("3c2e2a")
+const TIP_FRAME := Color("5a4a3c")
 ## older names, kept for the code that uses them
 const HEADER := BAR
 const FRAME := GOLD
 const FRAME_LIT := GOLD_LIT
-const SELECTED := Color("2c3e52")
+const SELECTED := Color("343f28")
 const HOVER := Color(1.0, 1.0, 1.0, 0.06)
 const STRIPE := Color(1.0, 1.0, 1.0, 0.035)
 ## text
-const TEXT := Color("efead8")       # cream
-const DIM := Color("a09889")
-const TITLE := Color("efead8")
-const VALUE := Color("f9e0a5")      # a stat's value, pale gold
-const NAME := Color("f0d38e")       # places, people, goods
-const CONCEPT := Color("7cc6e2")    # terms with a tooltip of their own
-const KIND := Color("a3c1c8")       # a tooltip's kind, below its title
+const TEXT := Color("e9e2cc")       # cream
+const DIM := Color("a59a80")
+const TITLE := Color("f1e6c8")
+const VALUE := Color("f0d590")      # a stat's value, pale gold
+const NAME := Color("f0d590")       # places, people, goods
+const CONCEPT := Color("e8a060")    # terms with a tooltip of their own
+const KIND := Color("c9b896")       # a tooltip's kind, below its title
 const GAIN := Color("59d368")
 const LOSS := Color("e26066")
 const SHADOW := Color(0, 0, 0, 0.75)
 const SIZE_TITLE := 28
-const SIZE_HEAD := 18
-const SIZE_TEXT := 15
-const SIZE_SMALL := 13
+const SIZE_HEAD := 19
+const SIZE_TEXT := 17
+const SIZE_SMALL := 15
 
-static var _serif: SystemFont
-static var _bold: FontVariation
-static var _italic: FontVariation
-
-## One font for all, made once: a font made anew for each draw_string
-## comes out as blank boxes (its glyphs are not cached by the frame).
-## EU5 sets its text in a book serif with a firm stroke.
+## The menus' fonts, made once in vic3_style.gd (a font made anew for each
+## draw_string comes out as blank boxes): EB Garamond for text, IM FELL
+## English SC for titles; the system serif stands in for missing glyphs.
 static func serif() -> Font:
-	if _serif == null:
-		_serif = SystemFont.new()
-		_serif.font_names = PackedStringArray(["Palatino", "Palatino Linotype", "Book Antiqua", "Georgia", "Times New Roman", "serif"])
-		_serif.font_weight = 500
-	return _serif
+	return Vic3Style.serif()
 
 static func bold() -> Font:
-	if _bold == null:
-		_bold = FontVariation.new()
-		_bold.base_font = serif()
-		_bold.variation_embolden = 0.5
-	return _bold
+	return Vic3Style.bold()
 
 static func italic() -> Font:
-	if _italic == null:
-		_italic = FontVariation.new()
-		_italic.base_font = serif()
-		_italic.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
-	return _italic
+	return Vic3Style.italic()
+
+static func title_font() -> Font:
+	return Vic3Style.title_font()
 
 static func box(bg: Color, border: Color = Color.TRANSPARENT, border_w := 0, radius := 3, margin := 0.0) -> StyleBoxFlat:
 	var b := StyleBoxFlat.new()
@@ -118,7 +102,7 @@ static func frame(lit := false) -> StyleBoxFlat:
 	b.shadow_offset = Vector2(0, 5)
 	return b
 
-## A sunken box in the field, in a thin brown frame (EU5's stat boxes).
+## A sunken box in the field, in a thin frame.
 static func inset(margin := 8.0) -> StyleBoxFlat:
 	return box(INSET, CHART_FRAME, 1, 0, margin)
 
@@ -131,7 +115,7 @@ static func board(margin := 8.0, shade := STAT) -> StyleBoxFlat:
 static func signed_colour(v: float) -> Color:
 	return GAIN if v > 0.0 else (LOSS if v < 0.0 else TEXT)
 
-## A label in EU5's manner: serif, with a dark shadow under it.
+## A label: serif, with a dark shadow under it.
 static func label(text: String, colour := TEXT, font_size := SIZE_TEXT, font: Font = null) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -145,7 +129,7 @@ static func label(text: String, colour := TEXT, font_size := SIZE_TEXT, font: Fo
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
 
-## Text drawn onto a canvas with EU5's shadow under it.
+## Text drawn onto a canvas with a dark shadow under it.
 static func text_at(ci: CanvasItem, at: Vector2, text: String, colour := TEXT, font_size := SIZE_SMALL,
 		align := HORIZONTAL_ALIGNMENT_LEFT, width := -1.0, font: Font = null) -> void:
 	var f := font if font != null else serif()
@@ -154,109 +138,59 @@ static func text_at(ci: CanvasItem, at: Vector2, text: String, colour := TEXT, f
 
 # ------------------------------------------------------------------ drawn parts
 
-## EU5's title bar: bronze with a lattice of fine diagonals and a small
-## four-leaved mark in each diamond, a gold edge above and below, darker
-## towards both ends.
+## A window's title band, as the menus': wine-red leather lit from above,
+## a gold line and a dark one at its foot.
 static func draw_bar(ci: CanvasItem, r: Rect2) -> void:
-	ci.draw_rect(r, BAR)
-	var step := 30.0
-	var slope := Vector2(step / r.size.y, 1.0) # across one diamond from top to foot
-	var c := -step
-	while c < r.size.x + step:
-		_cut_line(ci, r, Vector2(r.position.x + c, r.position.y), slope)
-		_cut_line(ci, r, Vector2(r.position.x + c + step, r.position.y), Vector2(-slope.x, 1.0))
-		var mid := Vector2(r.position.x + c + step * 0.5, r.position.y + r.size.y * 0.5)
-		if mid.x > r.position.x + 6.0 and mid.x < r.end.x - 6.0:
-			for d in [Vector2(0, -4), Vector2(4, 0), Vector2(0, 4), Vector2(-4, 0)]:
-				ci.draw_circle(mid + d, 2.4, BAR_LATTICE)
-			ci.draw_circle(mid, 1.6, Color("75603a"))
-		c += step
-	for k in 6: # shade towards the ends
-		var w := r.size.x * 0.035
-		var a := 0.07 * (6 - k)
-		ci.draw_rect(Rect2(r.position.x + k * w, r.position.y, w, r.size.y), Color(0, 0, 0, a))
-		ci.draw_rect(Rect2(r.end.x - (k + 1) * w, r.position.y, w, r.size.y), Color(0, 0, 0, a))
-	ci.draw_rect(Rect2(r.position.x, r.position.y + r.size.y * 0.5, r.size.x, r.size.y * 0.5), Color(0, 0, 0, 0.12))
-	ci.draw_rect(Rect2(r.position, Vector2(r.size.x, 4)), Color(0, 0, 0, 0.35))
-	ci.draw_line(r.position + Vector2(0, 1), Vector2(r.end.x, r.position.y + 1), Color(GOLD, 0.6), 1.0)
-	ci.draw_line(r.position + Vector2(0, 5), Vector2(r.end.x, r.position.y + 5), Color(GOLD, 0.8), 1.0)
-	ci.draw_line(Vector2(r.position.x, r.end.y - 2), Vector2(r.end.x, r.end.y - 2), GOLD, 2.0)
-	ci.draw_line(Vector2(r.position.x, r.end.y), Vector2(r.end.x, r.end.y), EDGE, 1.0)
+	Vic3Style.draw_band(ci, r)
 
-static func _cut_line(ci: CanvasItem, r: Rect2, from: Vector2, dir: Vector2) -> void:
-	# from lies on the top edge, dir.y is 1; walk to the foot, cut at the sides
-	var a := from
-	var b := from + dir * r.size.y
-	if a.x < r.position.x:
-		a = a + dir * (r.position.x - a.x) / dir.x
-	if a.x > r.end.x:
-		a = a + dir * (r.end.x - a.x) / dir.x
-	if b.x < r.position.x:
-		b = b - dir * (b.x - r.position.x) / dir.x
-	if b.x > r.end.x:
-		b = b - dir * (b.x - r.end.x) / dir.x
-	if a.y < b.y:
-		ci.draw_line(a, b, Color(0, 0, 0, 0.25), 3.0, true)
-		ci.draw_line(a, b, BAR_LATTICE, 1.5, true)
+## A window, as the menus': its shadow, a black and a dark ring, the gold
+## rim, the grained slate, gold corners at the foot.
+static func draw_window(ci: CanvasItem, r: Rect2) -> void:
+	Vic3Style.draw_panel(ci, r)
 
-## EU5's window frame: dark wood with a carved strip of stacked leaves
-## (chevrons) down the sides, a black line outside, a fine gold one inside.
-static func draw_wood(ci: CanvasItem, r: Rect2, inner: Rect2) -> void:
-	ci.draw_rect(r, WOOD)
-	var side := inner.position.x - r.position.x
-	if side >= 8.0:
-		var d := side * 0.32
-		var y := inner.position.y + 4.0
-		while y < inner.end.y - 4.0:
-			for x in [r.position.x + side * 0.5, r.end.x - side * 0.5]:
-				var leaf := PackedVector2Array([Vector2(x - d, y), Vector2(x, y + d), Vector2(x + d, y)])
-				ci.draw_polyline(leaf, Color(0, 0, 0, 0.5), 3.0, true)
-				ci.draw_polyline(leaf, WOOD_CARVE, 1.5, true)
-			y += d * 1.6
-		for x in [r.position.x + 2.0, r.end.x - 3.0, inner.position.x - 3.0, inner.end.x + 2.0]:
-			ci.draw_line(Vector2(x, inner.position.y), Vector2(x, inner.end.y), Color(0, 0, 0, 0.35), 1.0)
-	ci.draw_rect(r, EDGE, false, 1.0)
-	ci.draw_rect(inner.grow(1.0), EDGE, false, 2.0)
-	ci.draw_rect(inner.grow(2.0), Color(GOLD, 0.45), false, 1.0)
-
-## EU5's round button: a navy disc lit from above in a bronze ring with a
-## black edge. `glyph` is "close", "fold", "back" or a letter.
+## A round button as the menus' medallions: a gold ring round a dark boss
+## lit from above, green, red for "close". `glyph` is "close", "fold",
+## "back" or a letter.
 static func draw_round(ci: CanvasItem, centre: Vector2, radius: float, glyph: String, hover := false, down := false) -> void:
+	if hover:
+		for i in 3:
+			ci.draw_circle(centre, radius + 0.5 + i * 1.5, Color(1.0, 0.84, 0.56, 0.08 - i * 0.02))
 	ci.draw_circle(centre, radius, EDGE)
 	ci.draw_circle(centre, radius - 1.0, GOLD_LIT if hover else GOLD)
-	ci.draw_circle(centre, radius - 3.5, EDGE)
-	var disc := Color("2a3a4e") if hover else Color("1d2836")
+	var inner := radius - maxf(3.0, radius * 0.14)
+	var red := glyph == "close"
+	var dark := Color("1c0c0f") if red else Color("121a16")
+	var light := Color("7a3440") if red else Color("56685d")
 	if down:
-		disc = Color("141c26")
-	ci.draw_circle(centre, radius - 4.5, disc)
-	ci.draw_circle(centre - Vector2(0, radius * 0.18), radius - 7.0, Color(1, 1, 1, 0.05))
-	var ink := Color("f3ecd9") if hover else Color("ddd4bf")
-	var s := radius * 0.38
+		light = light.darkened(0.35)
+	ci.draw_circle(centre, inner, dark)
+	ci.draw_circle(centre + Vector2(0, -inner * 0.22), inner * 0.78, dark.lerp(light, 0.45))
+	ci.draw_circle(centre + Vector2(0, -inner * 0.35), inner * 0.5, dark.lerp(light, 0.8))
+	ci.draw_arc(centre, inner - 1.0, PI * 1.1, PI * 1.9, 24, Color(1, 1, 1, 0.18), 1.5, true)
+	var ink := Color("fff1c8") if hover else Color("e6d7a8")
+	var s := inner * 0.42
+	var w := maxf(2.0, inner * 0.16)
 	match glyph:
 		"close":
 			for d in [Vector2(1, 1), Vector2(1, -1)]:
-				ci.draw_line(centre - d * s, centre + d * s, EDGE, 5.0, true)
-			for d in [Vector2(1, 1), Vector2(1, -1)]:
-				ci.draw_line(centre - d * s, centre + d * s, ink, 3.0, true)
+				ci.draw_line(centre - d * s, centre + d * s, ink, w, true)
 		"fold":
-			ci.draw_rect(Rect2(centre - Vector2(s + 1.0, 3.0), Vector2(2.0 * s + 2.0, 6.0)), EDGE)
-			ci.draw_rect(Rect2(centre - Vector2(s, 2.0), Vector2(2.0 * s, 4.0)), ink)
+			ci.draw_rect(Rect2(centre - Vector2(s, w * 0.5), Vector2(2.0 * s, w)), ink)
 		"back":
 			var tip := centre - Vector2(s, 0)
-			ci.draw_polyline(PackedVector2Array([centre + Vector2(0, -s), tip, centre + Vector2(0, s)]), ink, 3.0, true)
-			ci.draw_line(tip, centre + Vector2(s, 0), ink, 3.0, true)
+			ci.draw_polyline(PackedVector2Array([centre + Vector2(0, -s), tip, centre + Vector2(0, s)]), ink, w, true)
+			ci.draw_line(tip, centre + Vector2(s, 0), ink, w, true)
 		_:
-			var f := bold()
-			ci.draw_string(f, centre + Vector2(-radius, radius * 0.3), glyph, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, int(radius * 0.9), ink)
+			ci.draw_string(bold(), centre + Vector2(-radius, radius * 0.3), glyph, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, int(radius * 0.9), ink)
 
-## EU5's blue button: a black line, a bronze one, the blue lit at its top.
-static func _button(bg: Color, edge: Color) -> StyleBoxFlat:
-	var b := box(bg, edge, 2, 4, 8)
-	b.border_width_top = 2
-	b.expand_margin_left = 1
-	b.expand_margin_right = 1
-	b.shadow_color = Color(0, 0, 0, 0.6)
-	b.shadow_size = 2
+## A button as the menus': an olive board in a gold edge, a little lighter
+## at its top, a glow round it under the mouse.
+static func _button(bg: Color, edge: Color, glow := 0) -> StyleBoxFlat:
+	var b := box(bg, edge, 1, 3, 8)
+	b.content_margin_left = 12
+	b.content_margin_right = 12
+	b.shadow_color = Color(GOLD_LIT, 0.25) if glow > 0 else Color(0, 0, 0, 0.35)
+	b.shadow_size = glow if glow > 0 else 2
 	return b
 
 ## Every control inside a window, in this look.
@@ -268,12 +202,12 @@ static func theme() -> Theme:
 	th.set_color("font_shadow_color", "Label", SHADOW)
 	th.set_constant("shadow_offset_x", "Label", 1)
 	th.set_constant("shadow_offset_y", "Label", 1)
-	# buttons as EU5's: deep blue in a bronze frame, lit on hover
+	# buttons as the menus': olive boards in a gold edge, lit on hover
 	for type in ["Button", "OptionButton"]:
-		th.set_stylebox("normal", type, _button(BUTTON_BOTTOM, GOLD))
-		th.set_stylebox("hover", type, _button(BUTTON_TOP, GOLD_LIT))
-		th.set_stylebox("pressed", type, _button(Color("0d2638"), GOLD_LIT))
-		th.set_stylebox("disabled", type, box(Color("1b2028"), Color(GOLD, 0.4), 1, 4, 7))
+		th.set_stylebox("normal", type, _button(BUTTON_BOTTOM, GOLD_DIM))
+		th.set_stylebox("hover", type, _button(BUTTON_TOP, GOLD_LIT, 5))
+		th.set_stylebox("pressed", type, _button(TAB_HOVER, GOLD_LIT))
+		th.set_stylebox("disabled", type, _button(Color(BUTTON_BOTTOM, 0.5), Color(GOLD_DIM, 0.4)))
 		th.set_stylebox("focus", type, StyleBoxEmpty.new())
 		th.set_color("font_color", type, TEXT)
 		th.set_color("font_hover_color", type, Color.WHITE)
@@ -285,9 +219,9 @@ static func theme() -> Theme:
 	th.set_color("font_hover_color", "CheckButton", Color.WHITE)
 	th.set_color("font_pressed_color", "CheckButton", NAME)
 	th.set_stylebox("focus", "CheckButton", StyleBoxEmpty.new())
-	# the search field: a dark pill in a bronze ring
-	th.set_stylebox("normal", "LineEdit", box(Color("0a0e19"), GOLD, 1, 16, 8))
-	th.set_stylebox("focus", "LineEdit", box(Color("0a0e19"), GOLD_LIT, 1, 16, 8))
+	# the search field: dark in a quiet gold line
+	th.set_stylebox("normal", "LineEdit", box(Color("1a1c1d"), GOLD_DIM, 1, 3, 8))
+	th.set_stylebox("focus", "LineEdit", box(Color("1a1c1d"), GOLD_LIT, 1, 3, 8))
 	th.set_color("font_color", "LineEdit", TEXT)
 	th.set_color("font_placeholder_color", "LineEdit", DIM)
 	th.set_color("caret_color", "LineEdit", NAME)
@@ -295,45 +229,40 @@ static func theme() -> Theme:
 	th.set_stylebox("hover", "PopupMenu", box(SELECTED, Color.TRANSPARENT, 0, 2, 4))
 	th.set_color("font_color", "PopupMenu", TEXT)
 	th.set_color("font_hover_color", "PopupMenu", Color.WHITE)
-	# tabs as EU5's: slate boards with black gaps, the chosen one darker,
-	# rounded at its top, open into the field below
-	var tab := box(TAB, EDGE, 2, 2, 0)
-	tab.content_margin_left = 30
-	tab.content_margin_right = 30
-	tab.content_margin_top = 9
-	tab.content_margin_bottom = 9
+	# tabs as the menus' buttons: olive boards, the chosen one lighter in gold
+	var tab := box(TAB, GOLD_DIM, 1, 2, 0)
+	tab.content_margin_left = 24
+	tab.content_margin_right = 24
+	tab.content_margin_top = 8
+	tab.content_margin_bottom = 8
 	var tab_on := tab.duplicate()
 	tab_on.bg_color = TAB_ON
-	tab_on.border_color = Color(GOLD, 0.55)
-	tab_on.border_width_left = 1
-	tab_on.border_width_right = 1
-	tab_on.border_width_top = 2
-	tab_on.border_width_bottom = 0
-	tab_on.corner_radius_top_left = 14
-	tab_on.corner_radius_top_right = 3
+	tab_on.border_color = GOLD
 	var tab_hover := tab.duplicate()
-	tab_hover.bg_color = Color("303741")
+	tab_hover.bg_color = TAB_HOVER
+	tab_hover.border_color = GOLD_LIT
 	th.set_stylebox("tab_selected", "TabBar", tab_on)
 	th.set_stylebox("tab_unselected", "TabBar", tab)
 	th.set_stylebox("tab_hovered", "TabBar", tab_hover)
 	th.set_stylebox("tab_focus", "TabBar", StyleBoxEmpty.new())
-	th.set_color("font_selected_color", "TabBar", Color.WHITE)
+	th.set_color("font_selected_color", "TabBar", NAME)
 	th.set_color("font_unselected_color", "TabBar", TEXT)
 	th.set_color("font_hovered_color", "TabBar", Color.WHITE)
 	th.set_color("font_outline_color", "TabBar", Color(0, 0, 0, 0.8))
-	th.set_constant("outline_size", "TabBar", 3)
-	th.set_font_size("font_size", "TabBar", SIZE_HEAD)
+	th.set_constant("outline_size", "TabBar", 2)
+	th.set_font_size("font_size", "TabBar", SIZE_TEXT + 1)
 	th.set_font("font", "TabBar", bold())
-	th.set_constant("h_separation", "TabBar", 0)
-	# tables: warm grey rows on the navy, a dark head
-	th.set_stylebox("panel", "Tree", box(PANEL, Color(EDGE, 0.9), 1, 0, 2))
+	th.set_constant("h_separation", "TabBar", 2)
+	# tables: dark green rows on the slate under a leather head, as the menus' lists
+	th.set_stylebox("panel", "Tree", box(Color("1d2422"), GOLD_DIM, 1, 2, 2))
 	th.set_stylebox("focus", "Tree", StyleBoxEmpty.new())
-	var head := box(ROW_HEAD, EDGE, 0, 0, 6)
-	head.border_width_bottom = 2
+	var head := box(BAR, EDGE, 0, 0, 6)
+	head.border_width_bottom = 1
+	head.border_color = GOLD_DIM
 	th.set_stylebox("title_button_normal", "Tree", head)
 	th.set_stylebox("title_button_pressed", "Tree", head)
 	var head_hover := head.duplicate()
-	head_hover.bg_color = Color("2c3036")
+	head_hover.bg_color = Color("4e242b")
 	th.set_stylebox("title_button_hover", "Tree", head_hover)
 	th.set_color("title_button_color", "Tree", NAME)
 	th.set_color("font_color", "Tree", TEXT)
@@ -352,9 +281,9 @@ static func theme() -> Theme:
 	th.set_constant("v_separation", "Tree", 10)
 	th.set_constant("inner_item_margin_left", "Tree", 8)
 	th.set_constant("inner_item_margin_right", "Tree", 8)
-	# scroll bars: a thin dark groove with a bronze grip, as EU5's
+	# scroll bars: a thin dark groove with a gold grip, as the menus'
 	for bar in ["VScrollBar", "HScrollBar"]:
-		th.set_stylebox("grabber", bar, box(Color("8c7448"), EDGE, 1, 4, 3))
+		th.set_stylebox("grabber", bar, box(GOLD_DIM, EDGE, 1, 4, 3))
 		th.set_stylebox("grabber_highlight", bar, box(GOLD_LIT, EDGE, 1, 4, 3))
 		th.set_stylebox("grabber_pressed", bar, box(GOLD_LIT, EDGE, 1, 4, 3))
 		th.set_stylebox("scroll", bar, box(Color(0, 0, 0, 0.45), Color.TRANSPARENT, 0, 4, 3))

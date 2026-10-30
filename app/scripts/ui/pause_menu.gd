@@ -80,23 +80,23 @@ func show_menu() -> void:
 	open = true
 	get_tree().paused = true
 	_root.visible = true
-	_main = MenuPanel.new("Pause", 340.0)
+	_main = MenuPanel.new("Pause", 380.0)
 	_main.closed.connect(hide_menu)
 	if people != null:
 		_main.set_subtitle(SimTables._date(people.day()))
 	var b := _main.body
-	_resume = MenuPanel.button("Weiterspielen", hide_menu)
+	_resume = MenuPanel.button("Weiterspielen", hide_menu, false, "play-button")
 	b.add_child(_resume)
-	MenuPanel.gap(b, 6)
+	MenuPanel.gap(b, 2)
 	var can := clock != null
-	for entry in [["Spiel speichern", _show_saves.bind(true)], ["Spiel laden", _show_saves.bind(false)]]:
-		var e := MenuPanel.button(entry[0], entry[1])
+	for entry in [["Spiel speichern", _show_saves.bind(true), "save"], ["Spiel laden", _show_saves.bind(false), "open-book"]]:
+		var e := MenuPanel.button(entry[0], entry[1], false, entry[2])
 		e.disabled = not can
 		b.add_child(e)
-	b.add_child(MenuPanel.button("Einstellungen", _show_settings))
-	MenuPanel.gap(b, 6)
-	b.add_child(MenuPanel.button("Zum Hauptmenü", _confirm.bind("Zum Hauptmenü?", "Zum Hauptmenü", _to_main_menu), true))
-	b.add_child(MenuPanel.button("Spiel beenden", _confirm.bind("Spiel beenden?", "Beenden", get_tree().quit), true))
+	b.add_child(MenuPanel.button("Einstellungen", _show_settings, false, "cog"))
+	MenuPanel.gap(b, 18)
+	b.add_child(MenuPanel.button("Zum Hauptmenü", _confirm.bind("Zum Hauptmenü?", "Zum Hauptmenü", _to_main_menu), true, "eagle-emblem"))
+	b.add_child(MenuPanel.button("Spiel beenden", _confirm.bind("Spiel beenden?", "Beenden", get_tree().quit), true, "exit-door"))
 	_show(_main)
 	_resume.grab_focus.call_deferred()
 

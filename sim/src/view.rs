@@ -276,6 +276,12 @@ impl PeopleView {
         self.pid_of.get(slot).copied().filter(|&p| p != NONE)
     }
 
+    /// Each living person's slot and household, for what the graphics show
+    /// of them (read only).
+    pub fn slot_households(&self) -> impl Iterator<Item = (usize, u32)> + '_ {
+        self.member_src.iter().enumerate().filter(|&(slot, src)| self.pid_of[slot] != NONE && src[1] != NONE).map(|(slot, src)| (slot, src[1]))
+    }
+
     /// Brings the records to the people's current state. Returns the pages
     /// that changed since the last call (all pages after a resize).
     pub fn update(&mut self, p: &mut People) -> Vec<u32> {
@@ -399,30 +405,23 @@ impl PeopleView {
     /// from the world (a pass over all people, only on request).
     pub fn person(p: &mut People, pid: u32) -> Option<Person> {
         let day = p.world.resource::<Clock>().day;
-        let mut q = p.world.query::<(&Pid, &Born, &Sex, &Household, &Home, &Job, &Stand, &Health, &Faction, &Culture, &Religion, Option<&Intelligence>, Option<&Spouse>, Option<&Travel>)>();
-        let (_, born, sex, hh, home, job, stand, health, faction, culture, religion, iq, spouse, travel) = q.iter(&p.world).find(|t| t.0 .0 == pid)?;
-        let age = (day - born.0 as i64) as f64 / YEAR as f64;
-        let mut out = Person {
-            pid,
-            age,
-            female: sex.0 == 0,
-            household: hh.0,
-            members: 0,
-            home: home.0,
-            job: JOB_NAMES.get(job.0 as usize).copied().unwrap_or("?"),
-            group: JOB_GROUP.get(job.0 as usize).and_then(|&g| POLITICAL_NAMES.get(g as usize)).copied().unwrap_or("?"),
-            factions: (0..8).filter(|b| faction.0 >> b & 1 == 1).filter_map(|b| POLITICAL_NAMES.get(b)).copied().collect(),
-            stand: stand.0,
-            health: health.0,
-            culture: culture.0,
-            religion: religion.0,
-            iq: iq.map(|i| i.iq(age)),
-            spouse: spouse.map(|s| s.0).filter(|&s| s != NONE),
-            travelling: travel.map(|t| t.leave),
-        };
-        let house = hh.0;
+        let mut q = p.world.query::<PersonQuery>();
+        let mut out = person_of(day, q.iter(&p.world).find(|t| t.0 .0 == pid)?);
+        let house = out.household;
         out.members = q.iter(&p.world).filter(|t| t.3 .0 == house).count() as u32;
         Some(out)
+    }
+
+    /// Everyone of household `house`, by person id (one pass over all
+    /// people, only on request): the person window's family.
+    pub fn household(p: &mut People, house: u32) -> Vec<Person> {
+        let day = p.world.resource::<Clock>().day;
+        let mut q = p.world.query::<PersonQuery>();
+        let mut out: Vec<Person> = q.iter(&p.world).filter(|t| t.3 .0 == house).map(|t| person_of(day, t)).collect();
+        let n = out.len() as u32;
+        out.iter_mut().for_each(|x| x.members = n);
+        out.sort_by_key(|x| x.pid);
+        out
     }
 
     /// Houses that changed since the last call (all after a resize).
@@ -615,6 +614,32 @@ pub struct Person {
     pub travelling: Option<bool>,
 }
 
+type PersonQuery = (&'static Pid, &'static Born, &'static Sex, &'static Household, &'static Home, &'static Job, &'static Stand, &'static Health, &'static Faction, &'static Culture, &'static Religion, Option<&'static Intelligence>, Option<&'static Spouse>, Option<&'static Travel>);
+
+/// A person from their components (`members` left at 0).
+fn person_of(day: i64, t: (&Pid, &Born, &Sex, &Household, &Home, &Job, &Stand, &Health, &Faction, &Culture, &Religion, Option<&Intelligence>, Option<&Spouse>, Option<&Travel>)) -> Person {
+    let (pid, born, sex, hh, home, job, stand, health, faction, culture, religion, iq, spouse, travel) = t;
+    let age = (day - born.0 as i64) as f64 / YEAR as f64;
+    Person {
+        pid: pid.0,
+        age,
+        female: sex.0 == 0,
+        household: hh.0,
+        members: 0,
+        home: home.0,
+        job: JOB_NAMES.get(job.0 as usize).copied().unwrap_or("?"),
+        group: JOB_GROUP.get(job.0 as usize).and_then(|&g| POLITICAL_NAMES.get(g as usize)).copied().unwrap_or("?"),
+        factions: (0..8).filter(|b| faction.0 >> b & 1 == 1).filter_map(|b| POLITICAL_NAMES.get(b)).copied().collect(),
+        stand: stand.0,
+        health: health.0,
+        culture: culture.0,
+        religion: religion.0,
+        iq: iq.map(|i| i.iq(age)),
+        spouse: spouse.map(|s| s.0).filter(|&s| s != NONE),
+        travelling: travel.map(|t| t.leave),
+    }
+}
+
 const NO_HOUSE: u64 = u64::MAX;
 
 fn house_key(household: u32, fine: u32) -> u64 {
@@ -704,6 +729,12 @@ impl Houses {
             rec[3] = w;
             self.write(slot, rec);
         }
+    }
+
+    /// Each village household's house slot and the household (the building
+    /// sites left out), for what the graphics show at the houses.
+    pub fn households(&self) -> impl Iterator<Item = (u32, u32)> + '_ {
+        self.by_key.iter().filter(|(&key, _)| (key >> 32) as u32 != SITE).map(|(&key, &(slot, _))| (slot, (key >> 32) as u32))
     }
 
     /// The record of a household's house, if it has one.

@@ -20,6 +20,8 @@ uniform sampler2D list_tex : filter_nearest, repeat_disable; // house slots to d
 uniform int list_w = 128;
 uniform int list_offset = 0; // this level of detail's first entry in the list
 uniform int variant = 0; // the farmhouse build this MultiMesh draws (farmhouse.gd VARIANTS)
+uniform sampler2D look_tex : filter_nearest, repeat_disable; // what the house has (people_house_life.gd)
+uniform bool has_looks = false;
 const uint VARIANTS = 4u;
 
 varying vec3 tint;
@@ -62,6 +64,10 @@ void vertex() {
 	vec3 nrm = NORMAL;
 	nrm.xz = turn * nrm.xz;
 	bool show = rec.z != 0.0 && place.a > 0.5;
+	// a tent household lives in its tent (people_house_life.gdshader), not in a farmhouse
+	if (has_looks && (int(texelFetch(look_tex, px, 0).g * 255.0 + 0.5) & 2) != 0) {
+		show = false;
+	}
 	// a farm being built (a record of its own, village code negated; rec.w
 	// key << 8 | built 0-255): its walls up to the share built, no roof, no
 	// trees, workshop or haystack yet, a scaffold round it (SCAFFOLD, 57)

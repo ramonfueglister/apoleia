@@ -403,9 +403,24 @@ nicht auf Datenkacheln mit Wald oder Siedlung in der Nachbarschaft, im Süden
 unter 700 m und mit Ölbäumen zwei Kacheln weit; gepflügte Erde ist
 Urbeks #8c5c3c. Trampelpfade und Marktplätze enden am Stadtrand, statt über
 das Pflaster zu laufen. Eine
-Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
+Maske von 128 × 128 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die
 Gassen; die Terrain malt Hofparzellen als Wiese.
+
+Was der Spieler gebaut hat, steht in derselben Maske (R, G, B; Bauernhaus im
+Alpha): `build_menu.gd _built_bits` gibt `people_dots.gd set_built` je Los
+ein Bit für ein fertiges Feld und je Parzelle fünf Bits für die Strassen
+(quert die Parzelle, läuft an Seite −x, −y, +x, +y entlang). Ein gebautes
+Feld ist ganz bestellt, als Platten mit Saat oder Stoppeln wie die übrigen
+Felder, auch auf Land, das sonst keins trägt (30.10.2026: die
+durchscheinenden Flächen sahen aus wie Zonen); gesät ist es nach dem
+Saatanteil seiner Feinkachel, wo dort niemand bestellt, liegt es als Brache.
+Die Sim meldet der Ansicht nicht, welches Feld verpachtet ist. Eine Parzelle,
+die eine Strasse quert oder die die Glättung in einer rechtwinkligen Kurve
+schneidet, bleibt Wiese; an einer Strasse entlang hält die Platte die
+Strassenbreite frei (`SIM_ROAD_HALF_KM`), und auf gebauten Feldern und
+Strassen stehen keine Bäume. Weiter draussen (bis 40 km Sicht) färbt die
+Terrain gebaute Felder wie die übrigen.
 
 Ein Klick auf eine Person zeigt auch die Art des Haushalts (Hof mit
 Feldgrösse, Lohn, Zelt, Händler, Oberschicht), wie viel er im letzten Monat
@@ -476,6 +491,15 @@ Aus- und Einfuhr auch mit leerer Kasse).
   politische Gruppen, Haushalt mit Grösse, Ehe, Gewicht und BMI (S84), IQ, Kultur,
   Religion, unterwegs. Der Punkt wird gross und gelb, Esc schliesst.
   Kosten nur beim Klick, kein Aufwand pro Frame.
+- **Personenfenster (Ramon, 30.10.2026, "a-c"):** `scripts/sim/person_window.gd`
+  zeigt die Person unter dem Medaillon ihrer Schicht und Karten wie die
+  Statistik: Haushalt (alle Mitglieder, `PeopleView::household`, ein Durchlauf),
+  Essen (gegessen vom Bedarf, Vorrat und wie lange er reicht, Bedarf im Monat,
+  Kornpreis am Markt), Arbeit (Hof oder Erwerb, Tage bei anderen und
+  eingestellte Tage der letzten Wochenbörse, Taglohn, Verdienst im Monat),
+  Geld (des Haushalts, bei Bauern mit dem Hof, je Kopf, Rang je Kopf unter
+  allen Menschen der Karte und des Marktes, Kleidung) und die Person selbst.
+  Die Werte kommen aus `Grain::household` (`HouseholdLook`, grain/tables.rs).
 
 ## Tabellen im Stil von EU5 (Ramon, 29.10.2026)
 
@@ -488,6 +512,20 @@ bittet den Sim-Thread darum, zwischen zwei Tagen gebaut kommt die Tabelle mit
 `take_table()` als Spalten in Packed-Arrays, mit Spaltenköpfen und Einheiten
 (`sim/godot/src/tables.rs`). Das Panel fragt neu, sobald die nächste
 Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
+
+Das Marktfenster (`scripts/sim/market_window.gd`, Klick auf einen Marktplatz)
+zeigt in "Übersicht" die Karten der Statistik für diesen einen Markt
+(`sim_overview.gd` im Marktmodus): Kornpreis gegen den Median aller Märkte,
+warum dieser Preis, Hungernd, Lager und Verkauf, Reallohn, wer hier lebt,
+Geld nach Schicht, Gini, Warenpreise. `take_market()` bringt dazu `history`
+(`Grain::market_history_table`: jeder Markt jeden Monat, `MarketMonth`; die
+letzten zehn Jahre Monat für Monat, davor je Jahr das Mittel, damit 1'800
+Märkte über ein Jahrhundert bei etwa 20 MB bleiben) und `classes`
+(`Grain::market_classes_table`). "Alle Zahlen" zeigt wie bisher die Zeile der
+Markttabelle. Der Verlauf hat neu den Gini des Geldes je Kopf (gesamt und je
+Schicht) und die Lorenzkurve (versteckte Spalten `lorenz_10` bis
+`lorenz_90`); die Übersicht zeigt daraus "Wer hat das Geld" und
+"Ungleichheit nach Schicht", die Markttabelle eine Spalte `gini`.
 
 - Klick auf einen Spaltenkopf sortiert (nochmals: umgekehrt), Zahlen grösste
   zuerst, Namen A bis Z.

@@ -59,7 +59,9 @@ const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three b
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
-const LOTS_N := 64 # lots per side of the house-lot mask around the camera
+const LOTS_N := 128 # lots per side of the lot mask around the camera (64 km: what the player built shows to FIELDS_KM)
+const FIELDS_KM := 40.0 # view width up to which the terrain draws the fields (sim_fields.gdshaderinc SIM_FIELDS_KM)
+const BUILT_COPY := "shader_type canvas_item;\nrender_mode unshaded, blend_disabled;\nvoid fragment() { COLOR = texture(TEXTURE, UV); }\n"
 const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
@@ -67,10 +69,11 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
-const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
+const HouseLife = preload("res://scripts/sim/people_house_life.gd")
 const PeopleCost = preload("res://scripts/sim/people_cost.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
@@ -98,7 +101,6 @@ const GROUP_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.
 	Color(0.04, 0.04, 0.04), Color(1.0, 0.15, 0.15), Color(0.97, 0.97, 0.97), Color(0.35, 0.45, 0.65)]
 const STAND_COLOURS := [Color(0.04, 0.04, 0.04), Color(1.0, 0.5, 0.1), Color(0.2, 0.4, 0.95), Color(0.75, 0.15, 0.85)]
 const MAP_N := 256 # fine tiles (1.5625 km) in the grain window around the camera
-const KIND_NOTES := {"Zelt": "lebt im Zelt (landlos)", "Lohn": "lebt von Lohnarbeit", "Händler": "Händlerhaushalt", "Oberschicht": "Oberschicht", "Hof": "Hof"}
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -120,8 +122,7 @@ var _doing := "" # what the clicked traveller is doing (people_trips.gd pick), o
 var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
-var _info_label: RichTextLabel
-var _person_win # ui_window.gd
+var _person # person_window.gd
 var _press_at := Vector2.INF
 var _click_at := Vector2.INF # --people-click, for screenshots
 var _frames := 0
@@ -152,9 +153,17 @@ var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's f
 var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
+var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
+var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
+var _person_looks_tex: ImageTexture
+var _person_looks_version := -1
 var _crop_material := ShaderMaterial.new()
-var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
-var _lots_dirty := true # the mask is drawn again only when its window or the houses changed
+var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
+var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
+var _built_bits := {} # lot -> what the player built there (build_menu.gd _built_bits)
+var _built_dirty := false
+var _built_image := Image.create_empty(LOTS_N, LOTS_N, false, Image.FORMAT_RGBA8)
+var _built_tex := ImageTexture.create_from_image(_built_image)
 var _lot0 := Vector2.INF
 var _parcel_view: SubViewport # each parcel of the crop square worked out once (people_parcels.gdshader)
 var _parcel_material := ShaderMaterial.new()
@@ -318,6 +327,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	_trips = PeopleTrips.new()
 	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
 	add_child(_trips)
+	_life = HouseLife.new()
+	_life.setup(TileTerrain.DIORAMA_KM_PER_M, _house_list_tex, LIST_W) # the house mesh's metres
+	add_child(_life)
 	_lots_view = SubViewport.new()
 	_lots_view.name = "HouseLots"
 	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
@@ -328,6 +340,16 @@ func setup(tile_terrain: Node3D) -> bool:
 	_lots_material.set_shader_parameter("list_tex", _house_list_tex)
 	_lots_material.set_shader_parameter("list_w", LIST_W)
 	_lots_material.set_shader_parameter("lot_km", LOT_KM)
+	# what the player built, copied into the mask as it is, under the houses
+	var built := Sprite2D.new()
+	built.centered = false
+	built.texture = _built_tex
+	built.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var copy := ShaderMaterial.new()
+	copy.shader = Shader.new()
+	copy.shader.code = BUILT_COPY
+	built.material = copy
+	_lots_view.add_child(built)
 	_lots = MultiMeshInstance2D.new()
 	_lots.material = _lots_material
 	var lm := MultiMesh.new()
@@ -368,6 +390,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	var events := SimEvents.new() # E: what happens, at the bottom right
 	events.setup(people, get_parent())
 	add_child(events)
+	events.answered.connect(_trips.take_events) # the newest events as scenes on the way
+	events.person_chosen.connect(_show_household) # a person named in an event window
 	_rebuild()
 	_rebuild_houses()
 	if _cost_path != "":
@@ -400,10 +424,10 @@ func _rebuild_houses() -> void:
 	var size := Vector2i(side, side * _house_texture.get_layers())
 	_house_prep_view.size = size
 	_house_prep_rect.size = Vector2(size)
-	for m in _house_materials + [_house_prep_material, _lots_material]:
+	for m in _house_materials + [_house_prep_material, _lots_material, _life.material]:
 		m.set_shader_parameter("people_tex", _house_texture)
 		m.set_shader_parameter("page_side", side)
-	for m in _house_materials + [_lots_material]:
+	for m in _house_materials + [_lots_material, _life.material]:
 		m.set_shader_parameter("place_tex", _house_prep_view.get_texture())
 	_house_prep_frames = 2
 	_house_list_at = Vector3.INF
@@ -691,6 +715,11 @@ func _update_crops(view_km: float) -> void:
 			for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
 				m.set_shader_parameter("sim_crop_box", _crop_box)
 		_crop_cell0 = Vector2.INF
+		# the fields the player built still lie on the terrain further out
+		var landscape := get_parent()
+		if map_on and view_km <= FIELDS_KM and "target" in landscape:
+			var reach := Vector2.ONE * view_km * 0.6
+			_place_lot_mask(landscape.target - reach, landscape.target + reach)
 		return
 	# a parcel is half a data tile: up close one quarter tile (sub_tiles);
 	# parcels and lots on the terrain's tile grid, counted from world_min
@@ -724,24 +753,58 @@ func _update_crops(view_km: float) -> void:
 		for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
 			m.set_shader_parameter("sim_crop_box", box)
 		_parcel_material.set_shader_parameter("parcel_cell0", cell0)
-	# the lot mask round the square, moved only when the square nears its edge
+	_place_lot_mask(box_min, box_max)
+	if _parcel_frames > 0:
+		_parcel_frames -= 1
+		_parcel_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## The lot mask (people_lots.gdshader, the houses; _draw_built, what the
+## player built) round the world rectangle lo..hi (km), moved only when the
+## rectangle nears its edge, drawn again when it moved or changed.
+func _place_lot_mask(lo: Vector2, hi: Vector2) -> void:
+	var world_min: Vector2 = terrain.world_min
 	var lots := Vector2(LOTS_N, LOTS_N)
-	var lot_lo := (box_min - world_min) / LOT_KM
-	var lot_hi := (box_max - world_min) / LOT_KM
+	var lot_lo := (lo - world_min) / LOT_KM
+	var lot_hi := (hi - world_min) / LOT_KM
 	if _lot0 == Vector2.INF or lot_lo.x < _lot0.x + 1.0 or lot_lo.y < _lot0.y + 1.0 or lot_hi.x > _lot0.x + lots.x - 1.0 or lot_hi.y > _lot0.y + lots.y - 1.0:
 		_lot0 = ((lot_lo + lot_hi) * 0.5).floor() - lots * 0.5
 		_lots_material.set_shader_parameter("lot_origin", _lot0)
 		_lots_material.set_shader_parameter("world_min", world_min)
 		for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material, terrain._place_material]:
 			m.set_shader_parameter("sim_lot_origin", _lot0)
+		_built_dirty = true
+	if _built_dirty:
+		_built_dirty = false
+		_draw_built()
 		_lots_dirty = true
 	if _lots_dirty:
 		_lots_dirty = false
 		_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 		_parcel_frames = 2
-	if _parcel_frames > 0:
-		_parcel_frames -= 1
-		_parcel_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## What the player built (build_menu.gd _built_bits: lot -> bits), for the
+## fields, the crops and the trees (sim_fields.gdshaderinc sim_built).
+func set_built(bits: Dictionary) -> void:
+	_built_bits = bits
+	_built_dirty = true
+
+## The lots of the mask's window with what the player built there, in R, G
+## and B (alpha 0: no farmhouse).
+func _draw_built() -> void:
+	var bytes := PackedByteArray()
+	bytes.resize(LOTS_N * LOTS_N * 4)
+	var o := Vector2i(_lot0)
+	for l: Vector2i in _built_bits:
+		var p := l - o
+		if p.x < 0 or p.y < 0 or p.x >= LOTS_N or p.y >= LOTS_N:
+			continue
+		var v: int = _built_bits[l]
+		var i := (p.y * LOTS_N + p.x) * 4
+		bytes[i] = v & 255
+		bytes[i + 1] = (v >> 8) & 255
+		bytes[i + 2] = (v >> 16) & 255
+	_built_image.set_data(LOTS_N, LOTS_N, false, Image.FORMAT_RGBA8, bytes)
+	_built_tex.update(_built_image)
 
 ## The ground in view (world km, x and z): the screen's corner rays down to
 ## the lowest and the highest ground under them, worked out again only when
@@ -842,6 +905,7 @@ func _update_houses(view_km: float, synced: bool) -> void:
 			_houses[i].multimesh.visible_instance_count = blocks[b + 1]
 			_houses[i].visible = blocks[b + 1] > 0 # an empty one still costs a draw in each pass
 	_lots.multimesh.visible_instance_count = slots.size()
+	_life.show_houses(slots.size(), view_km)
 
 ## Reads the house placement pass back from the GPU without waiting for it
 ## (RenderingDevice.texture_get_data_async), so each house's build is known
@@ -890,17 +954,10 @@ func _build_hud() -> void:
 	_hud.add_child(root)
 	_legend_label = _hud_label(root)
 	_legend_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
+	_legend_label.offset_top += 56 # below the top bar (ui/top_bar.gd)
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	# the person clicked, in a window (ui/ui_window.gd) at the bottom left
-	_person_win = UiWindow.make("person", "Person", Rect2(112, -12, 340, 330), Engine.get_main_loop() as SceneTree)
-	_person_win.visible = false
-	_info_label = _hud_label(_person_win.body)
-	_info_label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	_info_label.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
-	_info_label.add_theme_font_size_override("bold_font_size", UiStyle.SIZE_TEXT)
-	_info_label.add_theme_font_override("normal_font", UiStyle.serif())
-	_info_label.add_theme_color_override("default_color", UiStyle.TEXT)
-	_info_label.visible = true
+	# the person clicked, in a window (person_window.gd) at the bottom left
+	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -949,10 +1006,49 @@ func _apply_colours() -> void:
 	_legend_label.text = text
 	_legend_label.visible = colour_mode != 0
 
+## Each person's household as the sim has it (fed, its farm at the harvest
+## or sowing), anew when the sim rebuilt it once a sim week or the people
+## texture grew: the figures draw the hungry thin and send the grown-ups of
+## a farm at work out on its fields (people_figures.gdshader).
+func _sync_person_looks() -> void:
+	if not people.has_method("people_looks") or _texture == null:
+		return
+	var version: int = people.house_looks_version()
+	var side: int = people.page_side()
+	var h := side * maxi(_texture.get_layers(), 1)
+	if version == _person_looks_version and _person_looks != null and _person_looks.get_height() == h:
+		return
+	_person_looks_version = version
+	var bytes: PackedByteArray = people.people_looks()
+	bytes.resize(side * h * 2) # people newer than the looks: nothing yet
+	if _person_looks == null or _person_looks.get_height() != h:
+		_person_looks = Image.create_from_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex = ImageTexture.create_from_image(_person_looks)
+		for m in [_figure_material, _figure_shadow_material]:
+			m.set_shader_parameter("person_look_tex", _person_looks_tex)
+			m.set_shader_parameter("has_person_looks", true)
+	else:
+		_person_looks.set_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex.update(_person_looks)
+
 ## Palette entries as linear colour, as source_color uniforms arrive.
 static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
+
+## Opens the person's window for a person by id, else a member of a
+## household (an event window's people, sim_events.gd).
+func _show_household(pid: int, household: int) -> void:
+	_doing = ""
+	if pid >= 0:
+		people.ask_person_id(pid)
+	elif household >= 0:
+		people.ask_household_member(household)
+	else:
+		return
+	_waiting = true
+	_show_info(true)
+	_person.wait()
 
 ## The person under `pixel`: a traveller on its way (people_trips.gd),
 ## else the nearest dot or figure, for which it reads the placement
@@ -969,13 +1065,18 @@ func _pick(pixel: Vector2) -> void:
 			mat.set_shader_parameter("selected_slot", -1)
 		print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "pid": traveller.pid, "household": traveller.household}))
 		_doing = traveller.what
+		_show_info(true)
+		if int(traveller.pid) < 0 and int(traveller.household) < 0:
+			# a scene with nobody to look up (a funeral): only what happens
+			_waiting = false
+			_person.note("[color=#c9a45c]%s[/color]" % _doing)
+			return
 		if int(traveller.pid) >= 0:
 			people.ask_person_id(traveller.pid)
 		else:
 			people.ask_household_member(traveller.household)
 		_waiting = true
-		_show_info(true)
-		_info_label.text = "…"
+		_person.wait()
 		return
 	_doing = ""
 	var vp := cam.get_camera_projection() * Projection(cam.get_camera_transform().affine_inverse())
@@ -994,50 +1095,19 @@ func _pick(pixel: Vector2) -> void:
 	_show_info(_waiting)
 	if _waiting:
 		people.ask_person(selected)
-		_info_label.text = "…"
+		_person.wait()
 
 ## Opens or closes the person's window.
 func _show_info(on: bool) -> void:
 	if on:
-		_person_win.open()
-	elif _person_win.visible:
-		_person_win.close()
+		_person.open()
+	else:
+		_person.close()
 
 func _show_person(p: Dictionary) -> void:
-	if p.is_empty():
-		_info_label.text = "[i]nicht mehr da[/i]"
-		return
-	var lines := PackedStringArray()
-	lines.append("[b]%s, %d Jahre[/b]  #%d" % ["Frau" if p.female else "Mann", int(p.age), p.pid])
-	if _doing != "":
-		lines.append("[color=#c9a45c]%s[/color]" % _doing)
-	lines.append("%s, %s" % [p.job, STANDS[clampi(p.stand, 0, 3)]])
-	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
-	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])
-	lines.append("verheiratet" if p.spouse >= 0 else ("Kind" if p.age < 14.0 else "ledig oder verwitwet"))
-	# Health is body weight in per mille of normal weight (S84, 1000 = BMI 21)
-	var health := "Gewicht %d %% (BMI %.1f)" % [int(p.health / 10.0), 21.0 * p.health / 1000.0]
-	if p.iq >= 0.0:
-		health += ", IQ %d" % roundi(p.iq)
-	lines.append(health)
-	lines.append("Kultur %d, Religion %d" % [p.culture, p.religion])
-	if p.has("hh_kind"):
-		# the household as the grain economy sees it (counted once a month)
-		var kind: String = p.hh_kind
-		var farm := ""
-		if p.has("farm_kind"):
-			farm = "%s, %.2f ha Feld" % [p.farm_kind, p.farm_ha]
-		lines.append(farm if kind == "Hof" and farm != "" else KIND_NOTES.get(kind, kind))
-		var fed: float = p.fed / 10.0
-		var colour := "#e05040" if fed < 80.0 else ("#e0a040" if fed < 95.0 else "#80c060")
-		lines.append("[color=%s]gegessen: %d %% des Bedarfs[/color], Vorrat %d kg" % [colour, int(fed), int(p.pantry_kg)])
-		if p.has("money"):
-			lines.append("Geld des Haushalts: %s Denar" % SimTables._int(roundi(p.money)))
-	if p.travelling > 0:
-		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
-	_person_win.set_title("%s, %d Jahre" % ["Frau" if p.female else "Mann", int(p.age)])
-	_info_label.text = "\n".join(lines)
-	print(JSON.stringify({"event": "people_person", "pid": p.pid}))
+	_person.show_person(p, _doing)
+	if not p.is_empty():
+		print(JSON.stringify({"event": "people_person", "pid": p.pid}))
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -1051,7 +1121,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				colour_mode = (colour_mode + 1) % MODES.size()
 				_apply_colours()
 			KEY_ESCAPE:
-				if selected >= 0 or _person_win.visible: # the next Esc is the menu's
+				if selected >= 0 or _person.is_open(): # the next Esc is the menu's
 					get_viewport().set_input_as_handled()
 				selected = -1
 				_waiting = false
@@ -1122,11 +1192,17 @@ func _frame(delta: float) -> void:
 	var synced_houses: int = people.sync_houses(_house_texture)
 	if synced_houses < 0:
 		_rebuild_houses()
+	var looks: Texture2D = _life.sync(people, people.page_side(), _house_texture.get_layers())
+	if looks != null:
+		for m in _house_materials: # a tent household's house is its tent
+			m.set_shader_parameter("look_tex", looks)
+			m.set_shader_parameter("has_looks", true)
+	_sync_person_looks()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
 	var source: ShaderMaterial = terrain._terrain_material
-	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _parcel_material, _trips.material] + _house_materials
+	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _parcel_material, _trips.material, _life.material] + _house_materials
 	if targets.size() != _shared_count:
 		_shared_values.clear() # new house materials get everything
 		_shared_count = targets.size()
