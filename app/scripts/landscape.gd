@@ -237,9 +237,14 @@ func _setup_look() -> void:
 	# and weaker than the old grey #ccccf2 at 0.85, the sun a little stronger,
 	# so lit ground keeps about its palette tone and the shadows fall from
 	# about a third to about a fifth of it, bluish rather than grey (round 1
-	# at 0.75 still read pale grey).
-	environment.ambient_light_color = Color("bcc5ea")
-	environment.ambient_light_energy = 0.62
+	# at 0.75 still read pale grey). At 0.62 the faces turned from the sun
+	# still read almost as light as the lit ones: Rome's plan city measured
+	# 4-8 % dark against Urbek's 16 % (V < 0.35), a spread of 0.20 against
+	# 0.23. At 0.42 and a little bluer it measures 15 % and 0.23, with
+	# brightness (0.60 to 0.61) and saturation (0.33 to 0.32) as Urbek's;
+	# the sun a touch stronger keeps the lit side where it was.
+	environment.ambient_light_color = Color("b4c0ee")
+	environment.ambient_light_energy = 0.42
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.0
 	environment.tonemap_white = 4.0
@@ -264,7 +269,7 @@ func _setup_look() -> void:
 	# into shade, shadows reach out to the right beside what casts them.
 	sun.rotation_degrees = Vector3(-40.0, -65.0 - YAW_CLOSE, 0.0)
 	sun.light_color = Color("fff0d9")
-	sun.light_energy = 2.35
+	sun.light_energy = 2.45
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 1.0
 	# One map over the view only (see _update_look). Urbek's shadows have a

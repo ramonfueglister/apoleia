@@ -27,7 +27,7 @@ void fragment() {
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
 	int land = crop_land(mid);
-	bool no_field = sim_no_field(mid, land);
+	bool no_field = (sim_built(mid) & SIM_B_FIELD) == 0 && sim_no_field(mid, land); // a field the player built lies anywhere
 	int code = state;
 	int joins = 0;
 	if (crop_open_land(mid, land) && !no_field) { code |= SIM_P_OPEN; }
