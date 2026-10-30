@@ -584,6 +584,10 @@ pub struct GrainStats {
     pub stolen_kg: i64,
     /// Lost in store (S72 Verderb).
     pub spoiled_kg: i64,
+    /// S118: grain fed to pigs, kg; S119: rations from the state granaries
+    /// to the state's servants, kg.
+    pub feed_kg: i64,
+    pub rations_kg: i64,
     pub thefts: u64,
     pub farms_taken: u64,
     /// S92: farms cleared under the Lex Manciana and lost after two
@@ -669,6 +673,10 @@ pub struct Treasury {
     pub tax: i64,
     /// Tax grain delivered at harvest, kg (S115).
     pub grain_kg: i64,
+    /// S119: grain given as rations to the state's servants, kg, and its
+    /// worth at the dealers' buying price, kept back from their wage.
+    pub rations_kg: i64,
+    pub rations_worth: i64,
 }
 
 /// The flows the history sums per month: births, deaths, hunger deaths,
@@ -3145,6 +3153,8 @@ impl Grain {
                 }
                 let hs = self.hh.get_mut(&h).unwrap();
                 hs.goods.serve_days = if want > 0 { hs.goods.serve_days - took } else { 0 };
+                // Spent on goods: not less earned (S117).
+                hs.goods.held -= took * wage;
                 if hs.goods.serve_days > 0 {
                     still.push(h);
                 }
@@ -3494,15 +3504,31 @@ impl Grain {
             }
             let need_day = info.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR;
             let need = need_day * MONTH;
+            let mk = self.cell_market[info.home as usize];
             // Income: the state wage, since S110 only for soldiers,
             // officers and officials (S76); craft households live from
-            // their sales (S107), traders from trade.
+            // their sales (S107), traders from trade. S119 (Ramon,
+            // 29.10.2026, option „Alles, mit Staatskorn“): the state's
+            // servants get the month's food as rations from the state
+            // granary of their market, as the annona militaris under
+            // Diocletian (Jones, 1964), worth the dealers' buying price,
+            // and the rest of the wage in denarii.
             if (s.kind == WAGE && crafts::state_job(info.job)) || (self.wage_all && matches!(s.kind, WAGE | TRADER)) {
-                let wage = info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                let mut wage = info.adults as i64 * STATE_WAGE * WORK_DAYS_YEAR / 12;
+                if s.kind == WAGE && crafts::state_job(info.job) {
+                    let m = &mut self.markets[mk as usize];
+                    let price = Self::buy_price(m).max(1);
+                    let ration = need.min(m.horreum).min(wage / price).max(0);
+                    m.horreum -= ration;
+                    s.pantry += ration;
+                    wage -= ration * price;
+                    self.stats.rations_kg += ration;
+                    self.treasury.rations_kg += ration;
+                    self.treasury.rations_worth += ration * price;
+                }
                 s.money += wage;
                 self.state_pays(wage);
             }
-            let mk = self.cell_market[info.home as usize];
             // Verderb (S72): a twelfth of the year's loss.
             if s.farm != NONE {
                 // Beyond its jars a farm's grain spoils faster (S109).
