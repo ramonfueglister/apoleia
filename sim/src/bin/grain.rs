@@ -192,6 +192,14 @@ fn main() {
             print!("{}", g.debug());
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
+        // S121: the markets beyond the map.
+        let outer: Vec<String> = g
+            .outer
+            .iter()
+            .zip(gs.outer)
+            .map(|(o, x)| format!("{} {} ppl price {:.2} store/held t {:.0}/{:.0} harvest t {:.0} eaten {:.0} % from/to us t {:.0}/{:.0}", o.name, o.people, o.price as f64 / 1e3, o.store as f64 / 1e3, o.held as f64 / 1e3, x[0] as f64 / 1e3, 100.0 * x[1] as f64 / x[2].max(1) as f64, x[4] as f64 / 1e3, x[3] as f64 / 1e3))
+            .collect();
+        println!("      beyond the map (S121): {}", outer.join(" | "));
         println!("      spoiled t {:.0} | eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | tent moves (S75): {} | Manciana farms new/lost (S92): {}/{} | fed by own food (S91): {} | moved people yearly/monthly (S66/S93): {}/{} | trade tracks/roads/sea lanes (cells): {:?}", gs.spoiled_kg as f64 / 1e3, by.join(" "), gs.to_tents, gs.tent_moves, gs.manciana_new, gs.manciana_lost, gs.own_food_people / 12, s.moved_people - s.moved_monthly, s.moved_monthly, g.road_cells(&p));
         // Craft goods (S105–S110, S118): per good wool/iron/clothing/tools/pottery/pork.
         let (held, store, price) = g.goods_report();
