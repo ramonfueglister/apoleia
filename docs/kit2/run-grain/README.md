@@ -943,6 +943,8 @@ Was auffällt:
 - **Der Hunger kommt vom Einkommen.** Der Reallohn der ärmsten zehn Prozent liegt bei
   0,8–1,4 kg Korn pro Tag, eine Familie braucht etwa 2,5 kg. Jede Woche bleiben mehr
   Arbeitstage liegen, als gesucht werden. Ein höherer Kornpreis trifft genau diese Haushalte.
+- **Entscheid:** Ramon, 30.10.2026, Karte „Was machen wir mit dem Überschuss-Handel (PR #61)?“,
+  Option „Jetzt mergen“.
 - Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 70 Tests grün.
 
 ### Quellen zu S120 (APA 7)
