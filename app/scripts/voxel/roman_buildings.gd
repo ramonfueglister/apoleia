@@ -40,6 +40,8 @@ const ARCHETYPES := {
 	"plan_amphitheatre": [1, Vector2i(1, 1)], "plan_baths": [1, Vector2i(1, 1)],
 	"plan_basilica": [3, Vector2i(1, 1)], "plan_horrea": [1, Vector2i(1, 1)],
 	"plan_circus": [2, Vector2i(1, 1)], "plan_forum": [2, Vector2i(1, 1)],
+	"street_row": [City.ROW_VARIANTS, Vector2i(1, 1)], "street_corner_w": [City.CORNER_VARIANTS, Vector2i(1, 1)],
+	"street_corner_e": [City.CORNER_VARIANTS, Vector2i(1, 1)], "street_court": [City.COURT_VARIANTS, Vector2i(1, 1)],
 }
 ## Landmarks and their footprints in lots.
 const LANDMARKS := {"colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(3, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(8, 3)}
@@ -315,6 +317,10 @@ static func _lot_grid(kind: String, variant: int) -> Kit.Grid:
 		"plan_horrea": build = func() -> void: City.horrea(variant)
 		"plan_circus": build = func() -> void: City.circus(variant)
 		"plan_forum": build = func() -> void: City.forum(variant)
+		"street_row": build = func() -> void: City.street_row(variant)
+		"street_corner_w": build = func() -> void: City.street_corner_w(variant)
+		"street_corner_e": build = func() -> void: City.street_corner_e(variant)
+		"street_court": build = func() -> void: City.street_court(variant)
 		_: return null
 	return _without_ground(Town.grid_of(build), Town.FLOOR)
 

@@ -361,3 +361,96 @@ static func forum(seed: int) -> ArrayMesh:
 	for k in 5:
 		Town._person(g, M + 3 + Kit.rnd(k, 3, 0, seed) % 34, FLOOR, M + 14 + Kit.rnd(k, 4, 0, seed) % 22, seed + k)
 	return Town._done(g)
+
+# --- houses along the streets ----------------------------------------------
+
+## A street parcel holds its street and the houses along it (Ramon,
+## 2026-10-30: drawn as pavement alone, half of Rome was grey). The
+## carriageway runs in a band of 16 voxels round the parcel's middle
+## (city_plan.gdshaderinc CP_HALF); in the eight cells round that band,
+## out to the parcel's edge, stand houses facing the street. A piece is one
+## cell: a row house on the north side facing south (`street_row`), a
+## corner house in the north-west or north-east corner facing south
+## (`street_corner_w`, `street_corner_e`), a walled court in the north-west
+## corner (`street_court`); tile_terrain.gd _plan_street turns each into
+## place. Variants come in three bands (ROW_BANDS, CORNER_BANDS): houses
+## as tall as a big town's (two to four storeys), a small town's (two at
+## most), and one-storey shops under a roof falling to the street for the
+## street's near side as the camera sees it (the houses there would hide
+## the street: a wall hides as much ground behind it as it is high).
+const ROW_OUT := 4 # the parcel's edge, C - 43.5 / 2 (tile_terrain.gd LOT_SHARE)
+const ROW_IN := C - 8 # where the street's band begins
+const NEAR_DEPTH := 9 # the shops on the near side
+const ROW_BANDS := [0, 3, 5, 8] # tall 0..2, small 3..4, shops 5..7
+const CORNER_BANDS := [0, 2, 4, 6]
+const ROW_VARIANTS := 8
+const CORNER_VARIANTS := 6
+const COURT_VARIANTS := 2
+
+static func street_row(variant: int) -> ArrayMesh:
+	var g := Town._grid(1, 1, 72)
+	_street_house(g, ROW_IN, C + 8, variant * 7 + 3, _band(ROW_BANDS, variant))
+	return Town._done(g)
+
+static func street_corner_w(variant: int) -> ArrayMesh:
+	var g := Town._grid(1, 1, 72)
+	_street_house(g, ROW_OUT, ROW_IN, variant * 11 + 5, _band(CORNER_BANDS, variant))
+	return Town._done(g)
+
+static func street_corner_e(variant: int) -> ArrayMesh:
+	var g := Town._grid(1, 1, 72)
+	_street_house(g, C + 8, 2 * C - ROW_OUT, variant * 13 + 9, _band(CORNER_BANDS, variant))
+	return Town._done(g)
+
+## A walled court in the corner between two rows: a yard with its tree,
+## bed or pergola (roman_town.gd _yard).
+static func street_court(variant: int) -> ArrayMesh:
+	var g := Town._grid(1, 1, 64)
+	Town._yard(g, ROW_OUT, ROW_OUT, ROW_IN, ROW_IN, variant * 5 + 2)
+	return Town._done(g)
+
+## The band of variant v: 0 tall, 1 small, 2 shops.
+static func _band(bands: Array, v: int) -> int:
+	return 2 if v >= bands[2] else 1 if v >= bands[1] else 0
+
+## A house over [x0, x1) in the parcel's northern cells, its front on the
+## street's band: a shop below where it is wide enough, no wing into the
+## yard (the cell ends at the parcel's edge). Or the shops (band 2).
+static func _street_house(g: Kit.Grid, x0: int, x1: int, seed: int, band: int) -> void:
+	if band == 2:
+		_shops(g, x0, x1, seed)
+		return
+	var o := Town._street_front(Town._options(seed, maxi(x1 - x0, 16)), false, band == 1)
+	if band == 0:
+		o["storeys"] = maxi(o["storeys"], 2)
+	o["wing"] = false
+	o["tower"] = false
+	Town._house(g, x0, ROW_OUT, x1, ROW_IN, o)
+
+## One-storey shops (tabernae) over [x0, x1), NEAR_DEPTH deep, under a tile
+## roof falling to the street: eaves at three metres, so the camera sees
+## the street over them.
+static func _shops(g: Kit.Grid, x0: int, x1: int, seed: int) -> void:
+	var z0 := ROW_OUT
+	var z1 := ROW_OUT + NEAR_DEPTH
+	var wall: int = Town.WALLS[seed % Town.WALLS.size()]
+	var roof: Array = Town.ROOFS[seed % Town.ROOFS.size()]
+	var eave := FLOOR + 12
+	g.box(x0, FLOOR, z0, x1, eave, z1, wall)
+	g.box(x0, FLOOR, z1 - 1, x1, FLOOR + 3, z1 + 1, Kit.STONE)
+	var w := x1 - x0
+	var o := {"goods": seed % 4, "awning": []} # a sign, no awning: it would hide the street
+	if w >= 16:
+		Town._shop(g, x0 + 1, FLOOR + 2, z1 - 1, w / 2 - 2, wall, o, seed)
+		o["goods"] = (seed + 1) % 4
+		Town._shop(g, x0 + w / 2 + 1, FLOOR + 2, z1 - 1, w / 2 - 2, wall, o, seed + 1)
+	else:
+		Town._shop(g, x0 + 2, FLOOR + 2, z1 - 1, w - 4, wall, o, seed)
+	# the roof: from the eaves over the street up to the back wall
+	for z in range(z0 - 1, z1 + 1):
+		var hh := (z1 - z) / 3
+		for x in range(x0 - 1, x1 + 1):
+			g.put(x, eave + hh, z, Kit.EAVE if z == z1 else Town._field(x, z, hh + 1, roof, seed, "x"))
+		if hh > 0 and z >= z0:
+			g.box(x0, eave, z, x0 + 1, eave + hh, z + 1, wall)
+			g.box(x1 - 1, eave, z, x1, eave + hh, z + 1, wall)

@@ -8,7 +8,8 @@
 // their terraces, turned as tile_terrain.gd _plan_lot says; streets as
 // pieces joined to their neighbours like Urbek's road tiles, in their
 // surface (basalt, limestone slabs, gravel, earth) and as wide as their
-// rank; squares paved in travertine. Outside the plans the old town rule
+// rank, lined by houses where the town goes on beside them
+// (tile_terrain.gd _plan_street); squares paved in travertine. Outside the plans the old town rule
 // stands; the plan's open land suppresses it (the cells carry town 0 there).
 
 uniform sampler2D city_page_tex : filter_nearest, repeat_disable;  // per page of parcels: atlas slot + 1 (R low, G high)
@@ -89,8 +90,9 @@ const vec3 CP_TRAVERTINE = vec3(0.64, 0.62, 0.58); // tile_terrain.gdshader C_PL
 const vec3 CP_YARD = vec3(0.53, 0.505, 0.455);     // tile_terrain.gdshader C_PAVED
 const vec3 CP_MEADOW = vec3(0.325, 0.525, 0.298);  // tile_terrain.gdshader GROUND_RGB meadow
 // Half the carriageway's width by rank (none, via, vicus, lane), parcel units
-// (a parcel is a 10 m lot): a via about 5 m between footways of 2.5 m.
-const float CP_HALF[4] = float[](0.2, 0.25, 0.2, 0.14);
+// (a parcel is a 10 m lot): a via about 2.5 m in a band of 3.7 m between the
+// houses of the street (voxel/roman_city.gd ROW_IN), the rest footway.
+const float CP_HALF[4] = float[](0.1, 0.12, 0.09, 0.06);
 
 // Basalt polygons up close: irregular stones of about 0.8 diorama metres
 // (cells of a jittered grid, the nearest centre wins), dark joints between.

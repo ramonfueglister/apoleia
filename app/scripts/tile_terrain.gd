@@ -15,6 +15,7 @@ const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 const CityPlans = preload("res://scripts/city_plans.gd")
+const RomanCity = preload("res://scripts/voxel/roman_city.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
 # Kit 1 map (32 km tiles: about 150 across it). Up close a height level is relief_slope (m/km, from the bake) times
@@ -111,6 +112,11 @@ const LOT_KINDS := [
 	["plan_theatre", 0], ["plan_amphitheatre", 0], ["plan_baths", 0], ["plan_basilica", 0],
 	["plan_basilica", 1], ["plan_basilica", 2], ["plan_horrea", 0], ["plan_circus", 0], ["plan_circus", 1],
 	["plan_forum", 0], ["plan_forum", 1],
+	# the houses along the plans' streets (_plan_street)
+	["street_row", 0], ["street_row", 1], ["street_row", 2], ["street_row", 3], ["street_row", 4], ["street_row", 5], ["street_row", 6], ["street_row", 7],
+	["street_corner_w", 0], ["street_corner_w", 1], ["street_corner_w", 2], ["street_corner_w", 3], ["street_corner_w", 4], ["street_corner_w", 5],
+	["street_corner_e", 0], ["street_corner_e", 1], ["street_corner_e", 2], ["street_corner_e", 3], ["street_corner_e", 4], ["street_corner_e", 5],
+	["street_court", 0], ["street_court", 1],
 ]
 const TOWN_LOTS := 16 # the first LOT_KINDS: the old town rule's (_pick_lot)
 const PLAN_LOT_CAP := 2048 # instances of a plan lot model (a patch of Rome holds a few hundred lots)
@@ -132,6 +138,9 @@ const PLAN_LOW_M := 9.0
 # landmarks larger than their parcels); before the plans they stood on
 # blocks of 0.5 km tiles at three times the city.
 const LANDMARK_PLAN_REACH := 1.5
+# Plan kinds beside a street that its houses stand against (houses, public
+# buildings, gardens, streets); not squares, walls, tombs or open land.
+const PLAN_STREET_TOWN := [1, 2, 3, 4, 6, 7]
 const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
 # Rome's great buildings on blocks of city tiles, drawn while the houses are
 # (the two nearest levels). The Colosseum, the Forum (with the Capitolium),
@@ -846,7 +855,8 @@ func _plan_lots_of(i: int, j: int, v: int) -> Array:
 	var key := Vector2i(i, j)
 	if not _plan_lots.has(key):
 		var kind := v & 255
-		_plan_lots[key] = _plan_wall(key, absi(hash(key))) if kind == 8 else [_plan_lot(key, v)] if kind != 7 and kind != 10 else []
+		_plan_lots[key] = _plan_wall(key, absi(hash(key))) if kind == 8 else _plan_street(key, (v >> 8) & 255) if kind == 7 \
+			else [] if kind == 10 else [_plan_lot(key, v)]
 	return _plan_lots[key]
 
 func _plan_lot(key: Vector2i, v: int) -> Vector2i:
@@ -922,6 +932,49 @@ func _plan_wall(key: Vector2i, h: int) -> Array:
 	var straight := dirs.size() == 2 and absi(dirs[0] - dirs[1]) == 4
 	if not straight or h % 3 == 0:
 		out.append(Vector2i(_lot_index("plan_wall", 2), 0))
+	return out
+
+## A street parcel's houses (voxel/roman_city.gd street_*): a row house on
+## each side the street does not run out at, where the town goes on beyond
+## it; a corner house beside an arm where the town goes on behind it; a
+## court in a corner between two rows. Nothing along a road out through the
+## fields or the tombs, nor before a square or a wall. Houses that turn
+## their backs to the camera (facing north or east) are one-storey shops,
+## so the street stays in view; the others are as tall as the town's.
+func _plan_street(key: Vector2i, street: int) -> Array:
+	var links := street >> 4
+	var out := []
+	if links == 0:
+		return out
+	var urban: Array[bool] = []
+	var tall := false
+	for d in 4:
+		var v := plans.texel(key + _side(d))
+		urban.append(v.x in PLAN_STREET_TOWN)
+		tall = tall or (v.x >= 1 and v.x <= 3 and (v.z & 63) >= 3)
+	var pick := func(kind: String, bands: Array, front: int, k: int) -> int:
+		var band := 2 if front < 2 else 0 if tall else 1
+		var h := absi(hash(Vector3i(key.x, key.y, k)))
+		return _lot_index(kind, bands[band] + h % (bands[band + 1] - bands[band]))
+	for s in 4:
+		if links & (1 << s) == 0 and urban[s]:
+			# the row stands north facing south: turned to side s
+			out.append(Vector2i(pick.call("street_row", RomanCity.ROW_BANDS, (s + 2) % 4, s), s))
+	for c in 4:
+		# corner c between sides a and b; its house faces arm a (then its
+		# front is c + 3) or arm b (front c + 2), whichever the camera sees
+		var a := c
+		var b := (c + 1) % 4
+		var arm_a := links & (1 << a) != 0
+		var arm_b := links & (1 << b) != 0
+		var by_a := arm_a and urban[b]
+		var by_b := arm_b and urban[a]
+		if by_a and (not by_b or (c + 3) % 4 >= 2):
+			out.append(Vector2i(pick.call("street_corner_w", RomanCity.CORNER_BANDS, (c + 3) % 4, 4 + c), b))
+		elif by_b:
+			out.append(Vector2i(pick.call("street_corner_e", RomanCity.CORNER_BANDS, (c + 2) % 4, 4 + c), c))
+		elif not arm_a and not arm_b and urban[a] and urban[b]:
+			out.append(Vector2i(_lot_index("street_court", absi(hash(key)) % RomanCity.COURT_VARIANTS), b))
 	return out
 
 func _plan_kind(parcel: Vector2i) -> int:

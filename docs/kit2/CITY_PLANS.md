@@ -1,6 +1,6 @@
 # Kit 2 — Stadtpläne
 
-**Stand:** 29.10.2026 · **Status:** `implementiert` (Daten, Werkzeug, Lader), `offen` (Darstellung im Spiel, Massstabsentscheid).
+**Stand:** 30.10.2026 · **Status:** `implementiert` (Daten, Werkzeug, Lader, Darstellung im Spiel), `offen` (Test auf dem Mac, Bauten über mehrere Parzellen).
 Plandokument mit Herleitung: Claude Doc „Echte antike Städte: Plan“ (https://claude.ai/artifact/UF6d4LMncaFN6ntKhLrSqq).
 
 ## Was es ist
@@ -108,6 +108,43 @@ die Regel darum nur neun Städte.
 
 Bekannte Lücken: Höhen und Hänge (Theater am Hang, Akropolis) fehlen.
 Capua (170'000) und S. Maria Capua Vetere sind derselbe Ort doppelt in `cities.csv`.
+
+## Darstellung im Spiel
+
+Nah (Viertelkacheln und 0,5-km-Kacheln, bis etwa 30 km Sichtbreite) folgt jede Parzelle mit Plan
+ihrem Plan; weiter draussen bleiben die Stadtkacheln des Bakes. Die Shader lesen den Atlas direkt
+(`app/shaders/city_plan.gdshaderinc`), die Grundstücke wählt `tile_terrain.gd` (`_plan_lots_of`) und
+legt sie in die Stadtliste, gedreht in Vierteln zur Front.
+
+- **Strassen** als Stücke von der Parzellenmitte zu jeder angeschlossenen Seite, wie Strassenkacheln
+  in Urbek; Fahrbahn je Belag (Basaltpolygone, Kalksteinplatten mit Randstein, Kies und Erde mit
+  Fahrspuren und Grasrand), Breite nach Rang (`CP_HALF`, eine via etwa 2,5 m Diorama).
+- **Häuserzeilen an der Strasse** (Ramon, Karte vom 30.10.2026): Eine Strassenparzelle von 250 m steht
+  für die Hauptstrasse samt den Häusern daneben; nur als Pflaster gezeichnet war halb Rom grau. In den
+  acht Feldern um das Strassenband stehen Häuser mit der Front zur Strasse (`voxel/roman_city.gd`
+  `street_row`, `street_corner_w`, `street_corner_e`, Höfe `street_court`), wo die Stadt auf der
+  Seite weitergeht (Nachbar Haus, Bau, Garten oder Strasse), nicht an Landstrassen, Gräbern, Plätzen
+  oder Mauern. Auf der Kameraseite der Strasse (Front nach Norden oder Osten) stehen einstöckige
+  Läden unter einem Pultdach: Eine Wand verdeckt so viel Boden hinter sich, wie sie hoch ist, und
+  zwei hohe Häuserzeilen verdeckten die Strasse ganz. Gegenüber stehen Häuser so hoch wie die Stadt
+  (zwei bis vier Geschosse, wenn ein Nachbarhaus drei hat, sonst höchstens zwei).
+- **Häuser, Insulae, Domus** als Hauslos mit der Höhe ihrer Stockwerke (`PLAN_STOREY_M`), zur Strasse
+  gedreht; mit Front nach Norden oder Osten höchstens zwei Geschosse.
+- **Plätze** in Travertin, mit Portikus an der Rückseite, wenn der Platz dort nicht weitergeht.
+- **Mauern** in Stücken: ein Arm zu jedem Nachbarn auf der Mauer, gerade oder diagonal zur Ecke (die
+  Pläne treppen oft diagonal), ein Turm wo sie abbiegt oder endet und ab und zu auf geraden Stücken.
+  **Tore** als Torbogen mit zwei Türmen, längs ihrer Strasse gedreht.
+- **Öffentliche Bauten** auf einer Parzelle: Tempel, Theater, Amphitheater, Thermen, Basilika,
+  Horrea, Circus, Forum (`voxel/roman_city.gd`). Bauten über mehrere Parzellen wiederholen das Modell
+  je Parzelle (offen).
+- **Gräber** an den Strassen vor der Stadt, die Strasse an ihrer Seite.
+- **Wahrzeichen Roms** (Kolosseum, Forum, Thermen, Pantheon, Circus) stehen als Kit-Modelle auf ihrem
+  Bau im Plan, verkleinert auf höchstens das 1,5-fache seiner längeren Seite (`LANDMARK_PLAN_REACH`;
+  das Kolosseum auf 0,75 km). Die zwei Tiberbrücken der alten Regel entfallen, die Brücken des Plans
+  sind Strassen.
+
+Geprüft in der Cloud mit einer Vorschau aus den echten Voxelmodellen auf den echten Plänen (Rom,
+Nîmes, Timgad, ohne Licht und Gelände). Im Spiel noch nicht gesehen.
 
 ## Format der gebackenen Karte
 
