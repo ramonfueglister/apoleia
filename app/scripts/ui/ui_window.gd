@@ -15,8 +15,9 @@ extends Control
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const WINDOW_LAYER := 10 # over the game clock and market (4) and the build menu (3)
-const BAR_PX := 44.0
-const ROUND_PX := 28.0
+const BAR_PX := 52.0
+const ROUND_PX := 36.0
+const SIDE_PX := 9 # the wood at the sides and foot
 const GRIP_PX := 16.0
 const KEEP_PX := 48.0 # this much of a window stays on screen
 const STORE := "user://ui_windows.cfg"
@@ -32,6 +33,7 @@ var bar_extra: HBoxContainer
 var folded := false
 var _title: Label
 var _frame: PanelContainer
+var _field: PanelContainer
 var _grip: Control
 var _drag := Vector2.INF # mouse minus position while dragging the bar
 var _size_from := Vector2.INF # mouse minus size while dragging the grip
@@ -67,58 +69,64 @@ func _build(title: String) -> void:
 	name = "Window_" + key
 	theme = UiStyle.theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# the frame: dark carved wood, drawn by the window itself (see _draw),
+	# the title bar across its top, the navy field inside
 	_frame = PanelContainer.new()
-	_frame.add_theme_stylebox_override("panel", UiStyle.frame())
+	_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_frame.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(_frame)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	_frame.add_child(column)
-	# the title bar: warm brown, the title in the middle as EU5 sets it,
-	# round buttons at the right
-	var bar := PanelContainer.new()
-	var bar_box := UiStyle.box(UiStyle.HEADER, UiStyle.FRAME, 0, 4, 0)
-	bar_box.border_width_bottom = 1
-	bar_box.corner_radius_bottom_left = 0
-	bar_box.corner_radius_bottom_right = 0
-	bar_box.content_margin_left = 6
-	bar_box.content_margin_right = 6
-	bar.add_theme_stylebox_override("panel", bar_box)
+	# the title bar: bronze lattice, the title large in the middle as EU5
+	# sets it, round buttons at both ends
+	var bar := Control.new()
 	bar.custom_minimum_size = Vector2(0, BAR_PX)
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	bar.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	bar.gui_input.connect(_on_bar_input)
+	bar.draw.connect(func(): UiStyle.draw_bar(bar, Rect2(Vector2.ZERO, bar.size)))
 	column.add_child(bar)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 8
+	row.offset_right = -8
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(row)
 	bar_extra = HBoxContainer.new() # left of the title, like EU5's back and settings
 	bar_extra.add_theme_constant_override("separation", 6)
 	bar_extra.custom_minimum_size = Vector2(2 * ROUND_PX + 6, 0)
+	bar_extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(bar_extra)
-	_title = Label.new()
-	_title.text = title
-	_title.add_theme_font_override("font", UiStyle.serif())
-	_title.add_theme_font_size_override("font_size", UiStyle.SIZE_TITLE)
-	_title.add_theme_color_override("font_color", UiStyle.TITLE)
-	_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_title.add_theme_constant_override("shadow_offset_y", 1)
+	_title = UiStyle.label(title, UiStyle.TITLE, UiStyle.SIZE_TITLE)
+	_title.add_theme_constant_override("shadow_offset_y", 2)
+	_title.add_theme_constant_override("shadow_outline_size", 4)
+	_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title.size_flags_vertical = Control.SIZE_FILL
 	_title.clip_text = true
-	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(_title)
-	for b in [["–", "Einklappen", toggle_fold], ["✕", "Schliessen  (Esc)", close]]:
-		row.add_child(round_button(b[0], b[1], b[2]))
+	for b in [["fold", "Einklappen", toggle_fold], ["close", "Schliessen  (Esc)", close]]:
+		var button := round_button(b[0], b[1], b[2])
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(button)
 	var pad := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 12)
+	for side in ["left", "right"]:
+		pad.add_theme_constant_override("margin_" + side, SIDE_PX)
+	pad.add_theme_constant_override("margin_top", 0)
+	pad.add_theme_constant_override("margin_bottom", SIDE_PX + 2)
 	pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(pad)
+	_field = PanelContainer.new()
+	_field.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, Color.TRANSPARENT, 0, 0, 12))
+	pad.add_child(_field)
 	body = VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
-	pad.add_child(body)
+	_field.add_child(body)
 	_grip = Control.new()
 	_grip.custom_minimum_size = Vector2(GRIP_PX, GRIP_PX)
 	_grip.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE)
@@ -128,24 +136,42 @@ func _build(title: String) -> void:
 	_grip.draw.connect(func():
 		for k in 3: # three short strokes in the corner
 			var o := 4.0 + k * 4.0
-			_grip.draw_line(Vector2(GRIP_PX - 2.0, o), Vector2(o, GRIP_PX - 2.0), Color(UiStyle.FRAME_LIT, 0.6), 1.0))
+			_grip.draw_line(Vector2(GRIP_PX - 2.0, o), Vector2(o, GRIP_PX - 2.0), Color(UiStyle.GOLD, 0.8), 1.0))
 	add_child(_grip)
 	gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed:
 			raise())
+	resized.connect(queue_redraw)
 
-## A round button in a bronze ring, as EU5's close and back buttons.
-static func round_button(text: String, tip: String, action: Callable) -> Button:
+## The wood around the field and its shadow; the bar draws itself.
+func _draw() -> void:
+	var r := Rect2(Vector2.ZERO, size)
+	var shadow := UiStyle.box(Color(0, 0, 0, 0.0), Color.TRANSPARENT, 0, 2, 0)
+	shadow.shadow_color = Color(0, 0, 0, 0.55)
+	shadow.shadow_size = 14
+	shadow.shadow_offset = Vector2(0, 6)
+	draw_style_box(shadow, r)
+	if folded:
+		return
+	var inner := Rect2(SIDE_PX, BAR_PX, size.x - 2.0 * SIDE_PX, size.y - BAR_PX - SIDE_PX - 2.0)
+	UiStyle.draw_wood(self, r, inner)
+
+## A round button in a bronze ring, as EU5's close and back buttons;
+## `glyph` is "close", "fold", "back" or a letter.
+static func round_button(glyph: String, tip: String, action: Callable) -> Button:
 	var button := Button.new()
-	button.text = text
 	button.tooltip_text = tip
 	button.focus_mode = Control.FOCUS_NONE
 	button.custom_minimum_size = Vector2(ROUND_PX, ROUND_PX)
-	button.add_theme_font_size_override("font_size", 15)
-	var r := int(ROUND_PX / 2.0)
-	button.add_theme_stylebox_override("normal", UiStyle.box(Color("141a21"), UiStyle.FRAME, 2, r, 0))
-	button.add_theme_stylebox_override("hover", UiStyle.box(UiStyle.SELECTED, UiStyle.FRAME_LIT, 2, r, 0))
-	button.add_theme_stylebox_override("pressed", UiStyle.box(UiStyle.SELECTED, UiStyle.FRAME_LIT, 2, r, 0))
+	for state in ["normal", "hover", "pressed", "focus"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	button.draw.connect(func():
+		var hover := button.is_hovered()
+		UiStyle.draw_round(button, button.size / 2.0, minf(button.size.x, button.size.y) / 2.0, glyph, hover, button.is_pressed()))
+	button.mouse_entered.connect(button.queue_redraw)
+	button.mouse_exited.connect(button.queue_redraw)
+	button.button_down.connect(button.queue_redraw)
+	button.button_up.connect(button.queue_redraw)
 	button.pressed.connect(action)
 	return button
 
@@ -173,6 +199,7 @@ func toggle_fold() -> void:
 		size = _open_size
 	_frame.get_child(0).get_child(1).visible = not folded
 	_grip.visible = not folded
+	queue_redraw()
 	_save()
 
 func _on_bar_input(e: InputEvent) -> void:

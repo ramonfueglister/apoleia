@@ -146,9 +146,9 @@ pub struct MarketLook {
 }
 
 /// Market table columns per good (static keys, GOOD_KEYS order).
-const PRICE_COLS: [(&str, &str); GOODS] = [("price_wool", "Preis Wolle"), ("price_iron", "Preis Eisen"), ("price_cloth", "Preis Kleidung"), ("price_tools", "Preis Werkzeug"), ("price_pottery", "Preis Keramik")];
-const STORE_COLS: [(&str, &str); GOODS] = [("store_wool", "Lager Wolle"), ("store_iron", "Lager Eisen"), ("store_cloth", "Lager Kleidung"), ("store_tools", "Lager Werkzeug"), ("store_pottery", "Lager Keramik")];
-const WHY_COLS: [(&str, &str); GOODS] = [("why_wool", "Warum Preis Wolle"), ("why_iron", "Warum Preis Eisen"), ("why_cloth", "Warum Preis Kleidung"), ("why_tools", "Warum Preis Werkzeug"), ("why_pottery", "Warum Preis Keramik")];
+const PRICE_COLS: [(&str, &str); GOODS] = [("price_wool", "Preis Wolle"), ("price_iron", "Preis Eisen"), ("price_cloth", "Preis Kleidung"), ("price_tools", "Preis Werkzeug"), ("price_pottery", "Preis Keramik"), ("price_pork", "Preis Schweinefleisch")];
+const STORE_COLS: [(&str, &str); GOODS] = [("store_wool", "Lager Wolle"), ("store_iron", "Lager Eisen"), ("store_cloth", "Lager Kleidung"), ("store_tools", "Lager Werkzeug"), ("store_pottery", "Lager Keramik"), ("store_pork", "Lager Schweinefleisch")];
+const WHY_COLS: [(&str, &str); GOODS] = [("why_wool", "Warum Preis Wolle"), ("why_iron", "Warum Preis Eisen"), ("why_cloth", "Warum Preis Kleidung"), ("why_tools", "Warum Preis Werkzeug"), ("why_pottery", "Warum Preis Keramik"), ("why_pork", "Warum Preis Schweinefleisch")];
 
 /// The S112 columns of the markets table, rows in `order`: the grain
 /// price's reasons, then price and store of each good.
@@ -161,6 +161,9 @@ pub(super) fn market_columns(g: &Grain, t: &mut Table, order: &[usize]) {
         .float("missed_day", "Käufer ohne Ware", "kg/Tag", col(0, &|l| l.missed_day))
         .float("turned_day", "Verkäufer abgewiesen", "kg/Tag", col(0, &|l| l.turned_day))
         .text("why", "Warum Preis Getreide", looks.iter().map(|l| l.goods.first().map_or(String::new(), |g| g.why.clone())).collect());
+    // S115, S119: the state's and the landlords' granaries at the market.
+    t.float("granary_state", "Staatsspeicher", "t", order.iter().map(|&m| g.markets[m].horreum as f64 / 1e3).collect())
+        .float("granary_lords", "Speicher der Grundherren", "t", order.iter().map(|&m| g.markets[m].lords.iter().map(|l| l.1).sum::<i64>() as f64 / 1e3).collect());
     for k in 0..GOODS {
         t.float(PRICE_COLS[k].0, PRICE_COLS[k].1, "Denar", col(k + 1, &|l| l.price));
         t.float(STORE_COLS[k].0, STORE_COLS[k].1, GOOD_UNITS[k], col(k + 1, &|l| l.store));

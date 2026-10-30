@@ -39,9 +39,13 @@ func _init(date_fn: Callable) -> void:
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 12)
 	add_child(column)
+	# the figures as EU5's stat strip: cells of two browns in one frame
+	var strip := PanelContainer.new()
+	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.CHART_FRAME, 2, 0, 0))
+	column.add_child(strip)
 	_tiles = HBoxContainer.new()
-	_tiles.add_theme_constant_override("separation", 8)
-	column.add_child(_tiles)
+	_tiles.add_theme_constant_override("separation", 0)
+	strip.add_child(_tiles)
 	_grid = GridContainer.new()
 	_grid.columns = 2
 	_grid.add_theme_constant_override("h_separation", 12)
@@ -142,15 +146,21 @@ func _fill_tiles(d: Dictionary) -> void:
 
 func _tile(key: String) -> PanelContainer:
 	var tile := PanelContainer.new()
-	tile.add_theme_stylebox_override("panel", UiStyle.inset(8))
+	var cell := UiStyle.board(0, UiStyle.STAT if _tiles.get_child_count() % 2 == 0 else UiStyle.STAT_B)
+	cell.set_border_width_all(0)
+	cell.content_margin_left = 12
+	cell.content_margin_right = 10
+	cell.content_margin_top = 6
+	cell.content_margin_bottom = 4
+	tile.add_theme_stylebox_override("panel", cell)
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.mouse_filter = Control.MOUSE_FILTER_PASS
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tile.add_child(box)
-	box.add_child(_label("", UiStyle.CONCEPT, UiStyle.SIZE_SMALL + 1))
-	var value := _label("…", UiStyle.TITLE, UiStyle.SIZE_TITLE)
+	box.add_child(_label("", UiStyle.CONCEPT, UiStyle.SIZE_TEXT))
+	var value := _label("…", UiStyle.VALUE, UiStyle.SIZE_HEAD + 4)
 	box.add_child(value)
 	box.add_child(_label("", UiStyle.TEXT, UiStyle.SIZE_SMALL))
 	var spark := Control.new()
@@ -166,17 +176,29 @@ func _tile(key: String) -> PanelContainer:
 # ------------------------------------------------------------------ cards
 
 func _card(title: String) -> VBoxContainer:
+	# a card as EU5's boxes: a dark field in a brown frame, its title on a
+	# dark band with a gold rule under it
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiStyle.inset(8))
+	card.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.INSET, UiStyle.CHART_FRAME, 2, 0, 0))
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.custom_minimum_size = Vector2(CARD_MIN, 0)
 	_grid.add_child(card)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	card.add_child(column)
+	var head := _label(title, UiStyle.TEXT, UiStyle.SIZE_HEAD)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var band := UiStyle.box(UiStyle.TIP_CHART_HEAD, UiStyle.GOLD, 0, 0, 5)
+	band.border_width_bottom = 1
+	head.add_theme_stylebox_override("normal", band)
+	column.add_child(head)
+	var pad := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 8)
+	column.add_child(pad)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	card.add_child(box)
-	var head := _label(title, UiStyle.TEXT, UiStyle.SIZE_TEXT + 1)
-	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(head)
+	pad.add_child(box)
 	return box
 
 func _line_card(key: String, title: String, unit: String) -> void:
@@ -228,7 +250,7 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 		for s in series:
 			legend.add_child(_swatch(s.colour, s.name))
 		if series.size() == 1:
-			legend.add_child(_swatch(Color(series[0].colour, 0.35), "billigster bis teuerster Markt"))
+			legend.add_child(_swatch(Color(series[0].colour, 0.35), "Spanne der Märkte, höchstens doppelter Median"))
 	entry.control.queue_redraw()
 
 ## The month under the mouse: each series' value, the price's range.
@@ -262,7 +284,7 @@ func _ring_card(key: String, title: String) -> void:
 	ring.mouse_filter = Control.MOUSE_FILTER_PASS
 	row.add_child(ring)
 	var legend := VBoxContainer.new()
-	legend.add_theme_constant_override("separation", 2)
+	legend.add_theme_constant_override("separation", 3)
 	legend.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	legend.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(legend)
@@ -275,9 +297,8 @@ func _ring_card(key: String, title: String) -> void:
 		var total := 0.0
 		for v in entry.values:
 			total += v
-		var font := UiStyle.serif()
-		ring.draw_string(font, c + Vector2(-DONUT_R, 2), Charts.label(total), HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.SIZE_HEAD, UiStyle.TITLE)
-		ring.draw_string(font, c + Vector2(-DONUT_R, 20), entry.unit, HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.SIZE_SMALL, UiStyle.DIM))
+		UiStyle.text_at(ring, c + Vector2(-DONUT_R, 2), Charts.label(total), UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.bold())
+		UiStyle.text_at(ring, c + Vector2(-DONUT_R, 20), entry.unit, UiStyle.KIND, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.italic()))
 	ring.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
 			var i := Charts.slice_at(ring.size * 0.5, DONUT_R, DONUT_W, entry.values, e.position)
@@ -319,14 +340,22 @@ func _set_ring(key: String, sums: Dictionary, unit: String) -> void:
 	var legend: VBoxContainer = entry.legend
 	for c in legend.get_children():
 		c.queue_free()
-	for i in shown.size():
+	for i in shown.size(): # EU5's list beside a ring: a bar each, a pennant in its colour
+		var back := PanelContainer.new()
+		var bar := UiStyle.box(UiStyle.ROW if i % 2 == 0 else UiStyle.ROW_DARK, Color.TRANSPARENT, 0, 0, 0)
+		bar.content_margin_left = 6
+		bar.content_margin_right = 8
+		bar.content_margin_top = 3
+		bar.content_margin_bottom = 3
+		back.add_theme_stylebox_override("panel", bar)
 		var line := HBoxContainer.new()
+		back.add_child(line)
 		line.add_child(_swatch(colours[i], shown[i]))
 		var share := _label("%.1f %%" % (values[i] / total * 100.0) if total > 0.0 else "", UiStyle.TEXT, UiStyle.SIZE_TEXT)
 		share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		share.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(share)
-		legend.add_child(line)
+		legend.add_child(back)
 	entry.control.queue_redraw()
 
 func _ring_tip(key: String, title: String) -> Dictionary:
@@ -354,33 +383,36 @@ func _bar_card(title: String) -> void:
 		var value_w := 80.0
 		var mid := label_w + (_bars.size.x - label_w - value_w) * 0.5
 		var half := (_bars.size.x - label_w - value_w) * 0.5 - 4.0
-		_bars.draw_line(Vector2(mid, 0), Vector2(mid, _bars.size.y), Color(UiStyle.DIM, 0.6), 1.0)
+		_bars.draw_line(Vector2(mid, 0), Vector2(mid, _bars.size.y), Color(UiStyle.GOLD, 0.6), 1.0)
 		for k in _bar_rows.size():
 			var y := 4.0 + k * 26.0
 			var v: float = _bar_rows[k][1]
 			var w := absf(v) / top * half
 			var colour := UiStyle.GAIN if v >= 0.0 else UiStyle.LOSS
 			var rect := Rect2(mid, y + 4.0, w, 14.0) if v >= 0.0 else Rect2(mid - w, y + 4.0, w, 14.0)
+			_bars.draw_rect(Rect2(0, y, _bars.size.x, 22.0), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
 			_bars.draw_rect(rect, Color(colour, 0.85))
-			_bars.draw_string(font, Vector2(0, y + 16.0), _bar_rows[k][0], HORIZONTAL_ALIGNMENT_LEFT, label_w - 8.0, UiStyle.SIZE_TEXT, UiStyle.TEXT)
-			_bars.draw_string(font, Vector2(_bars.size.x - value_w, y + 16.0), ("+" if v > 0.0 else ("−" if v < 0.0 else "")) + Charts.label(absf(v)),
-				HORIZONTAL_ALIGNMENT_RIGHT, value_w, UiStyle.SIZE_TEXT, colour))
+			_bars.draw_rect(rect, UiStyle.EDGE, false, 1.0)
+			UiStyle.text_at(_bars, Vector2(6, y + 16.0), _bar_rows[k][0], UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, label_w - 8.0, font)
+			UiStyle.text_at(_bars, Vector2(_bars.size.x - value_w - 6.0, y + 16.0), ("+" if v > 0.0 else ("−" if v < 0.0 else "")) + Charts.label(absf(v)),
+				colour, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, value_w, font))
 
 func _swatch(colour: Color, text: String) -> HBoxContainer:
 	var line := HBoxContainer.new()
 	line.add_theme_constant_override("separation", 6)
-	var dot := ColorRect.new()
-	dot.color = colour
-	dot.custom_minimum_size = Vector2(10, 10)
-	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(dot)
+	var flag := Control.new() # EU5's little pennant
+	flag.custom_minimum_size = Vector2(10, 15)
+	flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flag.draw.connect(func():
+		var shape := PackedVector2Array([Vector2(0, 0), Vector2(10, 0), Vector2(10, 15), Vector2(5, 11), Vector2(0, 15)])
+		flag.draw_colored_polygon(shape, colour)
+		flag.draw_rect(Rect2(0, 0, 10, 3), Color(1, 1, 1, 0.25))
+		shape.append(shape[0])
+		flag.draw_polyline(shape, UiStyle.EDGE, 1.0, true))
+	line.add_child(flag)
 	line.add_child(_label(text, UiStyle.TEXT, UiStyle.SIZE_TEXT))
 	return line
 
 static func _label(text: String, colour: Color, font_size: int) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_font_size_override("font_size", font_size)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
+	return UiStyle.label(text, colour, font_size)

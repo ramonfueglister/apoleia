@@ -7,7 +7,7 @@
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
 //!              [--inherit equal|now|one]
 
-use apoleia_sim::grain::Grain;
+use apoleia_sim::grain::{Grain, GOODS};
 use apoleia_sim::people::People;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -193,12 +193,12 @@ fn main() {
             println!("  field rebuilds {} sell trips {} buy trips {} seed t {:.0} unsown for want of seed ha {:.0}", gs.field_rebuilds, gs.sell_trips, gs.buy_trips, gs.seed_kg as f64 / 1e3, gs.seed_short_m2 as f64 / 1e4);
         }
         println!("      spoiled t {:.0} | eaten by kind (farm/tent/wage/trader/elite): {} | to tents without workers or kin (S79): {} | tent moves (S75): {} | Manciana farms new/lost (S92): {}/{} | fed by own food (S91): {} | moved people yearly/monthly (S66/S93): {}/{} | trade tracks/roads/sea lanes (cells): {:?}", gs.spoiled_kg as f64 / 1e3, by.join(" "), gs.to_tents, gs.tent_moves, gs.manciana_new, gs.manciana_lost, gs.own_food_people / 12, s.moved_people - s.moved_monthly, s.moved_monthly, g.road_cells(&p));
-        // Craft goods (S105–S110): per good wool/iron/clothing/tools/pottery.
+        // Craft goods (S105–S110, S118): per good wool/iron/clothing/tools/pottery/pork.
         let (held, store, price) = g.goods_report();
         let gg = gs.goods;
-        let per = |v: [i64; 5]| v.map(|x| format!("{:.0}", x as f64 / 1e3)).join("/");
+        let per = |v: [i64; GOODS]| v.map(|x| format!("{:.0}", x as f64 / 1e3)).join("/");
         println!(
-            "      goods (wool/iron/cloth/tools/pots): median price den {} | market stock {} | made {} | bought {} | moved {} | gate in {} out {} | home cloth {:.0} shorn kg {:.0} | months labour/weaver/smith/potter {:?} state {} | clothes short {:.0} % | hired for money days {} den {:.0} (by dealers {:.0}) | held: clothes {:.0} pots kg {:.0} tools kg {:.0} jars kg {:.0} wool kg {:.0} sheep {:.0}",
+            "      goods (wool/iron/cloth/tools/pots/pork): median price den {} | market stock {} | made {} | bought {} | moved {} | gate in {} out {} | home cloth {:.0} shorn kg {:.0} | months labour/weaver/smith/potter {:?} state {} | clothes short {:.0} % | hired for money days {} den {:.0} (by dealers {:.0}) | held: clothes {:.0} pots kg {:.0} tools kg {:.0} jars kg {:.0} wool kg {:.0} sheep {:.0} pigs a year {:.0} | spend den {:.0} | grain fed to pigs t {:.0} | rations to state servants t {:.0}",
             price.map(|x| format!("{x:.2}")).join("/"),
             store.map(|x| format!("{x:.0}")).join("/"),
             per(gg.made),
@@ -219,7 +219,11 @@ fn main() {
             held[2],
             held[3],
             held[4],
-            held[5]
+            held[5],
+            held[6],
+            gg.budget as f64 / 1e3,
+            gs.feed_kg as f64 / 1e3,
+            gs.rations_kg as f64 / 1e3
         );
         if std::env::var("GOODS_DEBUG").is_ok() {
             println!("      money by kind (farm/tent/wage/trader/elite), dealers: {:.0?}", g.money_by_kind());
