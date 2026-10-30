@@ -23,6 +23,7 @@ extends CanvasLayer
 ## Command line (after --): --no-events starts with the list hidden.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const NoticeList = preload("res://scripts/ui/notice_list.gd")
 const KEEP_DAYS := 60 # apoleia_sim::events::KEEP_DAYS
 const LINES := 8
 const ASK_SECONDS := 1.0
@@ -35,6 +36,9 @@ const FLY_KM := 6.0 # a farmstead's width on screen; a 25 km cell gets its own
 const KIND_COLOURS: Array[Color] = [SimTables.NEGATIVE, SimTables.SECONDARY, SimTables.SECONDARY, SimTables.SECONDARY,
 	Color("e0a060"), SimTables.GOLD, SimTables.SECONDARY, Color("9cc47e"), Color("9cc47e"), Color("e0a060"),
 	Color("9cc47e"), Color("e0a060")]
+## each kind's icon in res://assets/ui/icons/, in the order above
+const KIND_ICONS: Array[String] = ["death-skull", "walking-boot", "exit-door", "family-house", "robber-hand", "bread",
+	"camping-tent", "barn", "family-tree", "camping-tent", "scroll-quill", "exit-door"]
 const PIN_DAYS := 15
 const PINS_MAX := 40
 const PIN_GRID := 14.0 # pins closer than the view width over this merge
@@ -50,7 +54,7 @@ var _asked_day := -1
 var _asked_msec := -100000
 var _asked_at := Vector3.INF # centre and view width of the last ask
 var _entries: Array[Dictionary] = []
-var _panel: PanelContainer
+var _panel: NoticeList
 var _list: VBoxContainer
 var _stand: Label
 var _open_button: Button
@@ -187,28 +191,16 @@ func _place_pins() -> void:
 		node.position = tip - Vector2(Pin.SIZE.x * 0.5, Pin.SIZE.y)
 
 func _fill() -> void:
-	for child in _list.get_children():
-		child.free()
 	_place.call_deferred() # as tall as the new lines
 	if _entries.is_empty():
-		var quiet := Label.new()
-		quiet.text = "Hier ist in den letzten %d Tagen nichts geschehen." % KEEP_DAYS
-		quiet.add_theme_color_override("font_color", SimTables.SECONDARY)
-		quiet.add_theme_font_size_override("font_size", 13)
-		_list.add_child(quiet)
+		_panel.show_quiet("Hier ist in den letzten %d Tagen nichts geschehen." % KEEP_DAYS)
 		return
+	var rows := []
 	for g in _entries:
-		var line := Button.new()
-		line.flat = true
-		line.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		line.focus_mode = Control.FOCUS_NONE
-		line.text = "%s   %s" % [_day(g.day), _text(g)]
-		line.add_theme_font_size_override("font_size", 13)
-		var colour: Color = KIND_COLOURS[g.kind] if g.kind < KIND_COLOURS.size() else SimTables.INK
-		line.add_theme_color_override("font_color", colour)
-		line.add_theme_color_override("font_hover_color", Color.WHITE)
-		line.pressed.connect(_fly.bind(g))
-		_list.add_child(line)
+		rows.append({"day": _day(g.day), "text": _text(g), "entry": g,
+			"colour": KIND_COLOURS[g.kind] if g.kind < KIND_COLOURS.size() else SimTables.INK,
+			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else ""})
+	_panel.show_rows(rows)
 
 ## "Hungertod ×3", "Diebstahl ×2, 140 kg", "Umzug ×4, 19 Menschen".
 static func _text(g: Dictionary) -> String:
@@ -253,41 +245,15 @@ func _build() -> void:
 	_pins_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_pins_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_pins_root)
-	_open_button = Button.new()
-	_open_button.text = "Ereignisse  (E)"
-	_open_button.focus_mode = Control.FOCUS_NONE
+	_open_button = NoticeList.open_button()
 	_open_button.pressed.connect(func(): _show(true))
 	root.add_child(_open_button)
-	_panel = PanelContainer.new()
-	_panel.add_theme_stylebox_override("panel", SimTables._box(Color(SimTables.BACKGROUND, 0.92), Color(SimTables.GOLD, 0.8), 2, 4, 10))
+	_panel = NoticeList.new()
+	_panel.chosen.connect(_fly)
+	_panel.closing.connect(func(): _show(false))
 	root.add_child(_panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 2)
-	_panel.add_child(column)
-	var head := HBoxContainer.new()
-	column.add_child(head)
-	var title := Label.new()
-	title.text = "Ereignisse"
-	title.add_theme_font_override("font", SimTables._serif())
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", SimTables.GOLD)
-	head.add_child(title)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(gap)
-	_stand = Label.new()
-	_stand.add_theme_color_override("font_color", SimTables.SECONDARY)
-	_stand.add_theme_font_size_override("font_size", 12)
-	head.add_child(_stand)
-	var close := Button.new()
-	close.text = "✕"
-	close.flat = true
-	close.focus_mode = Control.FOCUS_NONE
-	close.pressed.connect(func(): _show(false))
-	head.add_child(close)
-	_list = VBoxContainer.new()
-	_list.add_theme_constant_override("separation", 0)
-	column.add_child(_list)
+	_stand = _panel.stand
+	_list = _panel.list
 	_fill()
 
 func _ready() -> void:
@@ -299,8 +265,8 @@ func _place() -> void:
 	if not is_inside_tree():
 		return
 	var screen := get_viewport().get_visible_rect().size
-	_panel.size = Vector2(380, 0)
-	_panel.position = screen - _panel.get_combined_minimum_size().max(Vector2(380, 0)) - Vector2(12, 12)
+	_panel.size = Vector2(NoticeList.WIDTH, 0)
+	_panel.position = screen - _panel.get_combined_minimum_size() - Vector2(18, 18) # room for the rim
 	_open_button.position = screen - _open_button.get_combined_minimum_size() - Vector2(12, 12)
 
 ## A pin on the map: a disc in the colour of its kind on a short stem, with
