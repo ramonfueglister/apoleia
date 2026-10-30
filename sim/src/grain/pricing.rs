@@ -55,6 +55,13 @@
 //!   bid falls with each unit taken in). The same holds for dealers who
 //!   send their surplus to another market (S120).
 //!
+//! S125 (Ramon, 30.10.2026): for grain the dealers count their stock in
+//! days of a year's sales, not of the last month's (`Grain::sales_span`).
+//! After the harvest the farms eat their own grain and the month's sales
+//! drop, so a normal dip in the year looked like a glut and pushed the
+//! usual price down every year; the storage model counts availability
+//! against a year's demand (Gouel & Legrand, 2025).
+//!
 //! Prices are milli-denarii per unit; `norm` is milli-denarii × 1000.
 
 use super::*;
@@ -119,13 +126,19 @@ pub(crate) fn quote(price: &mut i64, norm: &mut i64, store: i64, per_day: i64, s
     *price = (*price + step).max(1);
 }
 
+/// S123: the storage floor for an expected price `expect` (both as
+/// `norm`): less a year's interest and spoilage.
+pub(crate) fn floor_of(expect: i64) -> i64 {
+    expect / 100 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR)
+}
+
 /// S123, after `quote`, for grain: with `on`, the storage floor holds the
 /// usual price and the quote at the expected price less a year's interest
 /// and spoilage (`expect`, like `norm` milli-denarii × 1000); then the
 /// expectation moves towards today's price without its season.
 pub(crate) fn floor(price: &mut i64, norm: &mut i64, expect: &mut i64, season: i64, on: bool) {
     if on {
-        let low = *expect / 100 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR);
+        let low = floor_of(*expect);
         *norm = (*norm).max(low);
         *price = (*price).max(low / 1000 * season / 1000);
     }
@@ -362,8 +375,8 @@ impl Grain {
         }).map_or(0, |x| x.0);
         let at_floor = ms.iter().filter(|m| self.storage_floor && m.norm <= m.expect / 100 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR)).count();
         format!(
-            "      prices (S112): planned/stock p10 {:.2} p50 {:.2} p90 {:.2} | at dealer cap {}/{} | dealer stock t {} sales t/d {:.1} | granaries state/lords t {}/{} | farms hold t {} retry {} | usual price p50 {:.2} by sales {:.2} | expected by sales {:.2} at floor {}\n",
-            q(0.1), q(0.5), q(0.9), capped, ms.len(), store / 1000, sales as f64 / 1000.0, horrea / 1000, lords / 1000, held / 1000, retry, norm[norm.len() / 2] as f64 / 1000.0, by_sales as f64 / 1000.0, expect_by_sales as f64 / 1000.0, at_floor
+            "      prices (S112): planned/stock p10 {:.2} p50 {:.2} p90 {:.2} | at dealer cap {}/{} | dealer stock t {} sales t/d {:.1} | granaries state/lords t {}/{} carry-over sold t {} | farms hold t {} retry {} | usual price p50 {:.2} by sales {:.2} | expected by sales {:.2} at floor {}\n",
+            q(0.1), q(0.5), q(0.9), capped, ms.len(), store / 1000, sales as f64 / 1000.0, horrea / 1000, lords / 1000, self.stats.carry_sold_kg / 1000, held / 1000, retry, norm[norm.len() / 2] as f64 / 1000.0, by_sales as f64 / 1000.0, expect_by_sales as f64 / 1000.0, at_floor
         ) + &self.city_debug(&ms)
     }
 
@@ -434,6 +447,23 @@ mod tests {
         }
         let at_limit = ((n1 / 1000) as f64 * ((TARGET_DAYS + SOFT_DAYS) as f64 / (DEALER_MAX_DAYS + SOFT_DAYS) as f64).sqrt()) as i64;
         assert!(n == n1 && (p - at_limit).abs() < 100, "{p} {n} {at_limit}");
+    }
+
+    #[test]
+    fn a_seasonal_dip_moves_no_usual_price_over_a_year() {
+        // S125: after the harvest the farms eat their own grain and the
+        // sales drop for three months; the stock stays at about 115 days
+        // of the year's sales. Smoothed over a month the dip looks like a
+        // glut and the usual price falls; over a year it does not.
+        for (span, falls) in [(MONTH, true), (YEAR, false)] {
+            let (mut p, mut n, mut d) = (8_750, 8_750_000, 80_000);
+            for day in 0..2 * YEAR {
+                let sold = if day % YEAR < 90 { 10 } else { 100 };
+                d += (sold * 1000 - d) / span;
+                quote(&mut p, &mut n, 9_000, d / 1000, 1000);
+            }
+            assert_eq!(n < 8_750_000, falls, "{span} {n}");
+        }
     }
 
     #[test]

@@ -1103,6 +1103,72 @@ Was auffällt:
 - Roberts, M. J., & Schlenker, W. (2013). Identifying supply and demand elasticities of agricultural commodities: Implications for the US ethanol mandate. *American Economic Review, 103*(6), 2265–2295. https://doi.org/10.1257/aer.103.6.2265
 - Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
 
+## Lager am Jahresabsatz und Speicher-Übertrag (S125, S126, 100 Jahre, Seed 1, `run100-s125-s126.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s123-s124.txt`)
+
+Ramon (30.10.2026), Karte „Was soll ich für Speicher und Jahresabsatz bauen?“, Option „Jahresabsatz
+und Speicher-Übertrag“. Vorschläge: https://claude.ai/artifact/5kRZ2PkMXgx9rYhKf7VsgE
+(Jahresabsatz) und https://claude.ai/artifact/XQbRSppNrZaXz6HzuGUk25 (Speicher). Die Marktleute messen
+ihr Lager am Absatz eines Jahres statt eines Monats (S125). Was in den Speichern von Staat und Herren
+über einem Jahresabsatz ihres Markts liegt, verkaufen die Verwalter bis hinunter zum Lagerboden
+(S126). Jede Hälfte allein gemessen (`--sales-month`, `--no-carry-sale`; je 1 Thread). Der Lauf mit
+beiden ausgeschaltet gibt denselben Fingerabdruck wie main, der Lauf „nur S125“ denselben wie die
+Sonde A im Vorschlag. Neu im Lauf: „carry-over sold t“ in der Preiszeile. Grafiken:
+https://claude.ai/artifact/1LQYuTH5ugLE9tsGkKF5NK
+
+| Grösse | main (S123, S124) | nur Jahresabsatz (S125) | nur Speicher-Übertrag (S126) | beide |
+|---|---|---|---|---|
+| Menschen im Jahr 10 / 40 / 100 | 108'178 / 110'787 / 123'079 | 106'881 / 110'157 / 123'304 | 108'747 / 111'674 / 124'214 | 107'899 / 110'855 / 124'520 |
+| Wachstum, Mittel Jahr 11–100 | +0,14 % | +0,16 % | +0,15 % | +0,16 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 8'073 / 1'825 / 11'841 | 9'679 / 1'767 / 13'216 | 7'516 / 1'775 / 11'500 | 8'395 / 1'543 / 10'615 |
+| Verlassen die Karte, 100 Jahre | 4'010 | 2'892 | 3'894 | 3'395 |
+| Ernte im Jahr 10 / 100 | 37'370 / 34'612 t | 37'452 / 37'723 t | 38'196 / 31'435 t | 38'212 / 32'888 t |
+| Preis Korn nach Absatz, Jahr 10 / 40 / 100 | 5,91 / 2,77 / 1,05 Denar/kg | 8,75 / 6,24 / 4,48 | 4,93 / 1,14 / 0,52 | 6,54 / 1,58 / 0,48 |
+| Median-Preis Korn / Rom im Jahr 100 | 1,15 / 4,55 Denar/kg | 4,53 / 14,82 | 0,63 / 3,97 | 1,05 / 7,81 |
+| Taglohn p50, Jahr 1 / 40 / 100 | 13,19 / 9,75 / 4,70 Denar | 13,51 / 16,16 / 10,31 | 13,10 / 9,36 / 5,41 | 13,19 / 11,48 / 6,96 |
+| Reallohn p10 / p50, Jahr 100 | 1,2 / 2,7 kg | 1,2 / 2,4 kg | 1,3 / 3,2 kg | 1,2 / 3,0 kg |
+| Staats- und Herrenspeicher im Jahr 100 | 73'677 / 24'947 t | 109'299 / 36'086 t | 44'190 / 13'583 t | 56'511 / 19'628 t |
+| Übertrag verkauft, Jahr 40 / 100 | – | – | 1'423 / 734 t | 1'274 / 902 t |
+| Verdorben im Jahr 100, Anteil der Ernte | 19 % | 25 % | 16 % | 19 % |
+| Steuer, 100 Jahre / Staatskasse im Jahr 100 | 153 / 217 Mio. Denar | 114 / 154 | 131 / 159 | 119 / 166 |
+| Nicht gebucht | 0 | 0 | 0 | 0 |
+| Tag gesamt, Mittel (1 Thread, 4 Läufe gleichzeitig) | 19,8 ms | 19,7 ms | 20,3 ms | 19,8 ms |
+
+Was auffällt:
+
+- **Der Speicher-Übertrag ist der Hebel.** Mit S126 verkaufen die Speicher jedes Jahr 500–1'400 t,
+  die sonst liegen blieben. Im Jahr 100 leben 1'100–1'400 Menschen mehr als auf main, ab Jahr 31
+  sterben 3–10 % weniger an Hunger, und die Speicher halten 58–76 kt statt 99 kt. Weniger verdirbt.
+- **Der Jahresabsatz hält den Preis, allein kostet er Menschen.** Mit S125 allein bleibt der Preis
+  18 Jahre beim Startpreis und liegt im Jahr 100 bei 4,48 Denar/kg. Dafür horten die Speicher 145 kt,
+  ein Viertel der Ernte verdirbt, und es sterben mehr an Hunger (Jahre 1–10 +20 %, ab Jahr 31 +12 %).
+- **Zusammen leben die meisten, und ab Jahr 31 hungern die wenigsten.** 124'520 Menschen im Jahr 100,
+  10'615 Hungertote in den Jahren 31–100. In den Jahren 1–10 sterben mit beiden 879 mehr als mit S126
+  allein: Der Jahresabsatz hält den Preis in den ersten zwei Jahren beim Startpreis.
+- **Der Preis fällt, bis die Höfe weniger säen, und hält dann.** Mit beiden sinkt er bis etwa Jahr 80
+  auf 0,43–0,49 Denar/kg und bleibt dort. Die Ernte sinkt von 38 auf 33 kt. Der Lohn fällt weniger als
+  der Preis, der Reallohn in der Mitte steigt auf 3,0 kg. Das ist der Überschuss, den die Karte erntet:
+  Die Nachfrage nach Korn ist in kg, nicht in Denar, und die Felder tragen nur Getreide (S72).
+- **Rom bleibt teurer.** Mit beiden kostet Korn in Rom im Jahr 100 7,81 Denar/kg, über siebenmal so
+  viel wie im Median. Warum, ist noch nicht untersucht.
+- **Geprüft und verworfen (Sonden mit S125, nicht eingebaut).** Steuer in Geld über die Rationen
+  hinaus (adaeratio) änderte wenig: Die Höfe haben bei der Ernte meist zu wenig Bargeld. Saat nur
+  für den Teil, der nicht noch unverkauft auf Lager liegt, schadete: 110'301 Menschen im Jahr 100,
+  18'949 Hungertote in den Jahren 31–100.
+- Gleicher Fingerabdruck mit 1 und 3 Threads (5 Jahre); 77 Tests grün, 1 ausgelassen.
+
+### Quellen zu S125, S126 (APA 7)
+
+- Assenza, T., Delli Gatti, D., & Grazzini, J. (2015). Emergent dynamics of a macroeconomic agent based model with capital and credit. *Journal of Economic Dynamics and Control, 50*, 5–28.
+- Blinder, A. S., & Maccini, L. J. (1991). Taking stock: A critical assessment of recent research on inventories. *Journal of Economic Perspectives, 5*(1), 73–96. https://doi.org/10.1257/jep.5.1.73
+- Bobenrieth, E. S. A., Wright, B. D., & Zeng, D. (2013). Stocks-to-use ratios and prices as indicators of vulnerability to spikes in global cereal markets. *Agricultural Economics, 44*(1), 43–52. https://doi.org/10.1111/agec.12049
+- Burke, M., Bergquist, L. F., & Miguel, E. (2019). Sell low and buy high: Arbitrage and local price effects in Kenyan markets. *The Quarterly Journal of Economics, 134*(2), 785–842. https://doi.org/10.1093/qje/qjy034
+- Deaton, A., & Laroque, G. (1992). On the behaviour of commodity prices. *The Review of Economic Studies, 59*(1), 1–23. https://doi.org/10.2307/2297923
+- Gouel, C., & Legrand, N. (2025). The role of storage in commodity markets: Indirect inference based on grain data. *Quantitative Economics, 16*(2), 705–747. https://doi.org/10.3982/QE2329
+- Kryvtsov, O., & Midrigan, V. (2013). Inventories, markups, and real rigidities in menu cost models. *The Review of Economic Studies, 80*(1), 249–276.
+- Miranda, M. J., & Helmberger, P. G. (1988). The effects of commodity price stabilization programs. *The American Economic Review, 78*(1), 46–58.
+- Treadgold, W. (2014). Paying the army in the Theodosian period. In I. Jacobs (Hrsg.), *Production and prosperity in the Theodosian period*. Peeters.
+- Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1233,6 +1299,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Märkte draussen (S121) | eine normale Ernte ernährt genau die Menschen draussen (mit dem Verderb des halben Jahres); kein Wetter; sie säen nicht mehr für den Markt, wenn das Korn teuer ist; Nachfrage linear, Elastizität −0,065, zwischen halbem und anderthalbfachem Bedarf; Marktleute draussen ohne Geldgrenze; Waren weiter zum festen Preis (S98) | HYDE 3.3 für die Menschen; Roberts & Schlenker 2013 für die Elastizität; Rest frei gewählt |
 | Lagerboden (S123) | Erwartung aus dem Preis der letzten drei Jahre, ohne Jahreszeit; Boden = Erwartung minus Zins und Verderb eines Jahres (16 %); nur Getreide | Nerlove 1958 für die Form; Gedächtnis frei gewählt; Zins wie S112 |
 | Saat nach Preis (S124) | mindestens die Hälfte des Eigenbedarfs; Markt verlässlich, wenn Käufer an höchstens 5 % der Tage nichts fanden; der Weg zum Markt kostet nichts | frei gewählt |
+| Lager am Jahresabsatz (S125) | Absatz über ein Jahr geglättet (vorher 30 Tage) | frei gewählt nach dem Lagermodell, das in Jahren rechnet (Gouel & Legrand 2025) |
+| Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
 
 ## Nicht gebaut
 

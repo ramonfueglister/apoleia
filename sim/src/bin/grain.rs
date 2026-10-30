@@ -6,6 +6,7 @@
 //! Usage: grain [--years N] [--seed S] [--threads N] [--root DIR]
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
 //!              [--inherit equal|now|one] [--no-floor] [--no-sow-price]
+//!              [--sales-month] [--no-carry-sale]
 
 use apoleia_sim::grain::{Grain, GOODS};
 use apoleia_sim::people::People;
@@ -79,7 +80,9 @@ fn main() {
     // sowing by price.
     g.storage_floor = !args.iter().any(|a| a == "--no-floor");
     g.sow_by_price = !args.iter().any(|a| a == "--no-sow-price");
-    println!("storage floor (S123): {}, own sowing by price (S124): {}", g.storage_floor, g.sow_by_price);
+    g.sales_year = !args.iter().any(|a| a == "--sales-month");
+    g.carry_sale = !args.iter().any(|a| a == "--no-carry-sale");
+    println!("storage floor (S123): {}, own sowing by price (S124): {}, sales over a year (S125): {}, granaries sell carry-over (S126): {}", g.storage_floor, g.sow_by_price, g.sales_year, g.carry_sale);
     drop(fine);
     // S106: pasture near the fields, grassland per farmland of each cell.
     let grass = apoleia_sim::grain::clearable(&root, &["grass_8", "grass_16", "grass_30", "grass_steep"].map(String::from)).expect("landcover25.csv");
