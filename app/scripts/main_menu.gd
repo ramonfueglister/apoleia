@@ -1,21 +1,22 @@
 extends Control
-## Apoleia's main menu, the start scene: a still of Rome under a dark veil,
-## at the left a slate column in a bronze edge with the name and four
-## entries (the EU5 look of ui/ui_style.gd). Nothing of the landscape is
+## Apoleia's main menu, the start scene, in the Victoria 3 look of
+## ui/vic3_style.gd: a soft still of Rome, at the left a framed slate card
+## with the laurel, the name and the entries, at the right our own
+## buildings as a small scene. Nothing of the landscape is
 ## loaded before «Neues Spiel» or a save game is chosen; that comes behind
 ## the landscape's own loading screen. Captures and benchmarks
 ## (AUTOMATION_FLAGS) go straight into the landscape.
 
-const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const MenuPanel = preload("res://scripts/ui/menu_panel.gd")
 const SaveList = preload("res://scripts/ui/save_list.gd")
 const SaveGames = preload("res://scripts/ui/save_games.gd")
 const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const GAME_SCENE = "res://landscape.tscn"
-const BACKGROUND_IMAGE = "res://assets/menu/rom.jpg"
+const BACKGROUND_IMAGE = "res://assets/menu/rom_weich.jpg"
 const AUTOMATION_FLAGS = ["--tour", "--snapshot", "--fixture", "--capture-dir", "--telemetry-dir", "--probe-anchor", "--diagnose-input", "--bench", "--views"]
-const COLUMN_PX := 420.0
-const WOOD_PX := 12.0
+const COLUMN_LEFT := 96.0
+const COLUMN_PX := 400.0
 
 var game_scene_path := GAME_SCENE
 var start_button: Button
@@ -39,9 +40,9 @@ func _ready() -> void:
 	$Soundtrack.set_process_unhandled_key_input(false)
 
 func _build_ui() -> void:
-	theme = UiStyle.theme()
+	theme = Vic3.theme()
 	var background := ColorRect.new()
-	background.color = UiStyle.INSET
+	background.color = Color("1a1718")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 	if ResourceLoader.exists(BACKGROUND_IMAGE):
@@ -49,75 +50,87 @@ func _build_ui() -> void:
 		still.texture = load(BACKGROUND_IMAGE)
 		still.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		still.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		still.modulate = Color(0.46, 0.41, 0.37)
 		still.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		add_child(still)
-	var veil := ColorRect.new()
-	veil.color = Color(0.04, 0.055, 0.075, 0.55)
+	var veil := TextureRect.new() # dark at the left behind the column, light to the right
+	var fade := Gradient.new()
+	fade.offsets = PackedFloat32Array([0.0, 0.4, 0.7, 1.0])
+	fade.colors = PackedColorArray([Color(0.06, 0.045, 0.05, 0.9), Color(0.06, 0.045, 0.05, 0.5), Color(0.06, 0.045, 0.05, 0.2), Color(0.06, 0.045, 0.05, 0.6)])
+	var fade_tex := GradientTexture2D.new()
+	fade_tex.gradient = fade
+	veil.texture = fade_tex
+	veil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	veil.stretch_mode = TextureRect.STRETCH_SCALE
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(veil)
+	var diorama := Diorama.new()
+	diorama.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	diorama.offset_left = COLUMN_LEFT + COLUMN_PX + 40.0
+	add_child(diorama)
 	_stage = Control.new()
 	_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_stage.offset_left = COLUMN_PX
+	_stage.offset_left = COLUMN_LEFT + COLUMN_PX
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
-	# the column
-	# a navy field with EU5's carved wood along its right edge
+	# the column: a framed slate card, as Victoria 3's main menu
 	var column := PanelContainer.new()
-	var field := UiStyle.box(Color(UiStyle.PANEL, 0.96), Color.TRANSPARENT, 0, 0, 0)
-	field.shadow_color = Color(0, 0, 0, 0.5)
-	field.shadow_size = 18
-	field.content_margin_left = 72
-	field.content_margin_right = 56 + WOOD_PX
-	field.content_margin_top = 96
-	field.content_margin_bottom = 40
-	column.add_theme_stylebox_override("panel", field)
-	column.draw.connect(func():
-		var strip := Rect2(column.size.x - WOOD_PX, 0, WOOD_PX, column.size.y)
-		column.draw_rect(strip, UiStyle.WOOD)
-		var y := 8.0
-		while y < column.size.y: # the carving: small diamonds down the strip
-			var c := Vector2(strip.get_center().x, y)
-			var d := WOOD_PX * 0.3
-			column.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -d), c + Vector2(d, 0), c + Vector2(0, d), c + Vector2(-d, 0)]), UiStyle.WOOD_CARVE)
-			y += WOOD_PX * 0.9
-		column.draw_line(Vector2(strip.position.x - 1, 0), Vector2(strip.position.x - 1, column.size.y), Color(UiStyle.GOLD, 0.7), 1.0)
-		column.draw_line(Vector2(strip.end.x - 0.5, 0), Vector2(strip.end.x - 0.5, column.size.y), UiStyle.EDGE, 1.0))
+	column.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	column.draw.connect(func(): Vic3.draw_panel(column, Rect2(Vector2.ZERO, column.size)))
 	column.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	column.offset_right = COLUMN_PX
+	column.offset_left = COLUMN_LEFT
+	column.offset_right = COLUMN_LEFT + COLUMN_PX
+	column.offset_top = 64
+	column.offset_bottom = -64
 	add_child(column)
+	var pad := MarginContainer.new()
+	for side in ["left", "right"]:
+		pad.add_theme_constant_override("margin_" + side, 32)
+	pad.add_theme_constant_override("margin_top", 22)
+	pad.add_theme_constant_override("margin_bottom", 24)
+	column.add_child(pad)
 	var items := VBoxContainer.new()
-	items.add_theme_constant_override("separation", 6)
-	column.add_child(items)
-	var title := UiStyle.label("APOLEIA", UiStyle.TITLE, 56)
-	title.add_theme_constant_override("shadow_offset_y", 2)
-	title.add_theme_constant_override("shadow_outline_size", 4)
-	var wide := FontVariation.new()
-	wide.base_font = UiStyle.serif()
-	wide.spacing_glyph = 10
-	title.add_theme_font_override("font", wide)
+	items.add_theme_constant_override("separation", 10)
+	pad.add_child(items)
+	var laurel := TextureRect.new()
+	laurel.texture = Vic3.icon("laurel-crown")
+	laurel.modulate = Vic3.GOLD
+	laurel.custom_minimum_size = Vector2(64, 64)
+	laurel.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	laurel.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	items.add_child(laurel)
+	var title := Vic3.title_label("Apoleia", 58)
+	title.add_theme_color_override("default_color", Color("e6cdbd"))
 	items.add_child(title)
-	items.add_child(Ornament.new())
-	var sub := UiStyle.label("Imperium Romanum · Ianuarius, Jahr 1", UiStyle.KIND, 15, UiStyle.italic())
+	var sub := Vic3.label("Imperium Romanum · Ianuarius, Jahr 1", Vic3.GOLD, Vic3.SIZE_SMALL + 1, Vic3.italic())
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	items.add_child(sub)
-	MenuPanel.gap(items, 64)
-	start_button = _item("Neues Spiel", items, _start_game)
-	load_button = _item("Spiel laden", items, _show_load)
-	settings_button = _item("Einstellungen", items, _show_settings)
-	MenuPanel.gap(items, 18)
-	quit_button = _item("Spiel beenden", items, _quit_game)
-	quit_button.add_theme_color_override("font_color", UiStyle.DIM)
+	MenuPanel.gap(items, 28)
+	var single := Vic3.label("Einzelspiel", Vic3.DIM, Vic3.SIZE_SMALL + 1, Vic3.italic())
+	items.add_child(single)
+	start_button = _item("Neues Spiel", "scroll-unfurled", items, _start_game, true)
+	load_button = _item("Spiel laden", "open-book", items, _show_load)
+	MenuPanel.gap(items, 22)
+	settings_button = _item("Einstellungen", "cog", items, _show_settings)
 	var rest := Control.new()
 	rest.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	items.add_child(rest)
-	var version := Label.new()
-	version.text = "Prototyp · Kit 1"
-	version.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
-	version.add_theme_color_override("font_color", UiStyle.DIM)
+	quit_button = Vic3.button("Spiel beenden", "exit-door", true)
+	quit_button.pressed.connect(_quit_game)
+	items.add_child(quit_button)
+	var round_row := HBoxContainer.new()
+	round_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	round_row.add_theme_constant_override("separation", 22)
+	items.add_child(round_row)
+	var music := Vic3.Medallion.new("musical-notes", "Musik ein/aus  (M)", 46.0)
+	music.pressed.connect(func(): $Soundtrack.toggle_mute())
+	round_row.add_child(music)
+	var version := Vic3.label("Prototyp · Kit 2", Vic3.DIM, Vic3.SIZE_SMALL)
+	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	items.add_child(version)
 
-func _item(text: String, parent: Control, action: Callable) -> Button:
-	var b := MenuItem.new()
-	b.text = text
+func _item(text: String, icon_name: String, parent: Control, action: Callable, first := false) -> Button:
+	var b := Vic3.button(text, icon_name, false, first)
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b
@@ -186,47 +199,44 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		start_button.grab_focus()
 		get_viewport().set_input_as_handled()
 
-## An entry of the column: cream serif text, a small bronze diamond before
-## it that fills with gold under the mouse or the keyboard focus.
-class MenuItem extends Button:
+## Our own buildings, rendered once from the game's voxel models
+## (assets/menu/diorama), standing as a small scene right of the column in
+## place of Victoria 3's painted key art. Positions are fractions of the
+## space, so it fits any window.
+class Diorama extends Control:
+	const PIECES := [
+		["colosseum", Vector2(0.52, 0.42), 0.40],
+		["temple", Vector2(0.18, 0.60), 0.23],
+		["insula", Vector2(0.86, 0.52), 0.18],
+		["domus", Vector2(0.60, 0.80), 0.22],
+		["farm", Vector2(0.22, 0.86), 0.16],
+	]
+	var _tex := {}
+
 	func _init() -> void:
-		alignment = HORIZONTAL_ALIGNMENT_LEFT
-		custom_minimum_size.y = 48
-		add_theme_font_size_override("font_size", 22)
-		add_theme_color_override("font_color", UiStyle.TEXT)
-		for state in ["font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
-			add_theme_color_override(state, UiStyle.NAME)
-		add_theme_color_override("font_disabled_color", UiStyle.DIM)
-		add_theme_color_override("font_shadow_color", UiStyle.SHADOW)
-		add_theme_constant_override("shadow_offset_x", 1)
-		add_theme_constant_override("shadow_offset_y", 1)
-		for state in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
-			var style := StyleBoxEmpty.new()
-			style.content_margin_left = 26
-			add_theme_stylebox_override(state, style)
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
-		focus_entered.connect(queue_redraw)
-		focus_exited.connect(queue_redraw)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for p in PIECES:
+			var path := "res://assets/menu/diorama/%s.png" % p[0]
+			if ResourceLoader.exists(path):
+				_tex[p[0]] = load(path)
+		resized.connect(queue_redraw)
 
 	func _draw() -> void:
-		var lit := is_hovered() or has_focus()
-		var c := Vector2(8, size.y * 0.5)
-		var r := 4.5
-		var gem := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0)])
-		if lit and not disabled:
-			draw_colored_polygon(gem, UiStyle.FRAME_LIT)
-		gem.append(gem[0])
-		draw_polyline(gem, UiStyle.FRAME_LIT if lit else UiStyle.FRAME, 1.0, true)
-
-## The rule under the name: a bronze line, a gold diamond, a bronze line.
-class Ornament extends Control:
-	func _init() -> void:
-		custom_minimum_size = Vector2(130, 14)
-
-	func _draw() -> void:
-		var y := size.y * 0.5
-		draw_line(Vector2(0, y), Vector2(56, y), UiStyle.FRAME, 1.0)
-		draw_line(Vector2(74, y), Vector2(130, y), UiStyle.FRAME, 1.0)
-		var c := Vector2(65, y)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -4), c + Vector2(4, 0), c + Vector2(0, 4), c + Vector2(-4, 0)]), UiStyle.FRAME_LIT)
+		# a soft warm light on the ground under the scene
+		var c := Vector2(size.x * 0.52, size.y * 0.66)
+		for i in 10:
+			var k := 1.0 - i / 10.0
+			draw_set_transform(c, 0.0, Vector2(1.0, 0.45))
+			draw_circle(Vector2.ZERO, size.x * 0.48 * k, Color(0.55, 0.48, 0.34, 0.035))
+		draw_set_transform(Vector2.ZERO)
+		for p in PIECES:
+			var tex: Texture2D = _tex.get(p[0])
+			if tex == null:
+				continue
+			var w: float = size.x * p[2]
+			var h := w * tex.get_height() / tex.get_width()
+			var at: Vector2 = Vector2(size.x * p[1].x, size.y * p[1].y)
+			draw_set_transform(at + Vector2(0, h * 0.42), 0.0, Vector2(1.0, 0.28))
+			draw_circle(Vector2.ZERO, w * 0.45, Color(0, 0, 0, 0.35))
+			draw_set_transform(Vector2.ZERO)
+			draw_texture_rect(tex, Rect2(at - Vector2(w, h) * 0.5, Vector2(w, h)), false)
