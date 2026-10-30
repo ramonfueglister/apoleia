@@ -558,6 +558,8 @@ pub struct GrainStats {
     pub plan_m2: i64,
     /// S114: grain the dealers fetched from other markets, kg.
     pub arbitrage_kg: i64,
+    /// S120: grain the dealers sent to other markets, kg.
+    pub pushed_kg: i64,
     /// Debug: into the dealers' stores from farms, gate, other markets,
     /// traders, granaries, kg.
     pub inflow: [i64; 5],
@@ -1440,6 +1442,48 @@ impl Grain {
             self.money.freight += kg * cost;
             self.stats.arbitrage_kg += kg;
             self.grain_moves.push((day, src as u32, mi as u32, kg));
+        }
+        // S120: dealers holding more than they plan to (TARGET_DAYS of
+        // sales) send up to a quarter of their store to the known market
+        // whose dealers pay most over their own price after freight, as
+        // far as those dealers buy (up to DEALER_MAX_DAYS of their sales,
+        // S100) and their cash goes. The freight is paid by the sender.
+        for mi in (wd..self.markets.len()).step_by(7) {
+            let here = &self.markets[mi];
+            let excess = (here.store - here.demand / 1000 * TARGET_DAYS).min(here.store / 4);
+            if excess <= 0 {
+                continue;
+            }
+            let mut best: Option<(i64, usize, i64)> = None;
+            for nb in &here.neigh {
+                let o = &self.markets[nb.m as usize];
+                if o.store >= o.demand / 1000 * DEALER_MAX_DAYS {
+                    continue;
+                }
+                let cost = self.freight(nb.cost, mi);
+                let margin = Self::buy_price(o) - cost - here.price;
+                if margin > 0 && best.is_none_or(|b| margin > b.0) {
+                    best = Some((margin, nb.m as usize, cost));
+                }
+            }
+            let Some((_, dst, cost)) = best else { continue };
+            let o = &self.markets[dst];
+            let price = Self::buy_price(o);
+            let kg = excess.min(o.demand / 1000 * DEALER_MAX_DAYS - o.store).min(o.money.max(0) / price.max(1)).max(0);
+            if kg == 0 {
+                continue;
+            }
+            let s = &mut self.markets[mi];
+            s.store -= kg;
+            s.sold_today += kg;
+            s.money += kg * (price - cost);
+            let d = &mut self.markets[dst];
+            d.store += kg;
+            d.money -= kg * price;
+            self.stats.inflow[2] += kg;
+            self.money.freight += kg * cost;
+            self.stats.pushed_kg += kg;
+            self.grain_moves.push((day, mi as u32, dst as u32, kg));
         }
     }
 
