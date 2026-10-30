@@ -380,7 +380,12 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Seiten, an denen sie das tun, liegen im B-Kanal der Parzellentextur. Die
   Reihen laufen längs des Ackers als kräftige Striche mit Höhe. Gepflügte
   Felder zeigen Furchen. Zäune stehen nur am Rand eines Ackers, und dort nur
-  manchmal; beim Hof immer. Die Strohplatten sind dünner und haben eine
+  manchmal; beim Hof immer. Seit Runde F (30.10.2026) trägt ein weiteres
+  Viertel der Ackerränder eine geschnittene Hecke aus Blöcken von etwa 2 m,
+  jeder etwas höher oder tiefer als der nächste (Varro, rust. 1,14, nennt
+  Hecke, Holzzaun, Graben und Mauer als römische Feldgrenzen). Die Dorfwege
+  und Feldwege haben einen Rand aus hellerem Gras, ein Drittel so breit wie
+  der Weg, wie die Strassen bei Urbek. Die Strohplatten sind dünner und haben eine
   feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
   winzig.
 - Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
