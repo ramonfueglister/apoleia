@@ -12,7 +12,7 @@ const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SERIES: Array[Color] = [Color("b8893a"), Color("1f9cc4"), Color("cf5f44"), Color("8f6fd0"), Color("6f9a3a")]
 const RED := Color("e8846b")
 const GRID := Color(1.0, 1.0, 1.0, 0.07)
-const CELL := 34.0 # the side of a square of EU5's chart grid
+const CELL := 28.0 # the side of a square of EU5's chart grid
 const BAND_REACH := 2.0
 
 ## `values` as a line over `rect`, scaled to their own range (or to
@@ -61,10 +61,12 @@ static func share(ci: CanvasItem, rect: Rect2, v: float, colour: Color) -> void:
 	bar.size.x *= clampf(v, 0.0, 1.0)
 	ci.draw_rect(bar, colour)
 
-## EU5's chart board: dark brown, a grid of squares a shade lighter, in a
-## brown frame with a black line outside.
+## EU5's chart board: dark brown, a grid of squares in darker lines, a
+## shadow falling in from the left, in a thin pale line and a black one.
 static func board(ci: CanvasItem, rect: Rect2) -> void:
 	ci.draw_rect(rect, UiStyle.CHART)
+	for k in 8:
+		ci.draw_rect(Rect2(rect.position.x + k * 4.0, rect.position.y, 4.0, rect.size.y), Color(0, 0, 0, 0.05 * (8 - k)))
 	var cols := maxi(1, roundi(rect.size.x / CELL))
 	var rows := maxi(1, roundi(rect.size.y / CELL))
 	for k in range(1, cols):
@@ -73,7 +75,7 @@ static func board(ci: CanvasItem, rect: Rect2) -> void:
 	for k in range(1, rows):
 		var y := rect.position.y + rect.size.y * k / rows
 		ci.draw_line(Vector2(rect.position.x, y), Vector2(rect.end.x, y), UiStyle.CHART_GRID, 1.0)
-	ci.draw_rect(rect.grow(-1.0), UiStyle.CHART_FRAME, false, 2.0)
+	ci.draw_rect(rect.grow(-1.5), UiStyle.CHART_EDGE, false, 1.0)
 	ci.draw_rect(rect, UiStyle.EDGE, false, 1.0)
 
 ## EU5's economy graph: the brown board with its grid of squares, the
@@ -133,12 +135,11 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		var line := PackedVector2Array()
 		for i in vals.size():
 			line.append(Vector2(x_of.call(i), y_of.call(vals[i])))
-		ci.draw_polyline(line, Color(0, 0, 0, 0.45), 4.5, true)
-		ci.draw_polyline(line, c, 2.5, true)
-		ci.draw_circle(line[line.size() - 1], 3.5, c)
+		ci.draw_polyline(line, Color(0, 0, 0, 0.4), 5.0, true)
+		ci.draw_polyline(line, c, 3.0, true)
 	var f := font if font != null else UiStyle.serif()
-	UiStyle.text_at(ci, plot.position + Vector2(10, 22), label(hi, unit), UiStyle.TEXT, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
-	UiStyle.text_at(ci, Vector2(plot.position.x + 10, plot.end.y - 6), label(lo, unit), UiStyle.TEXT, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+	UiStyle.text_at(ci, plot.position + Vector2(10, 24), label(hi, unit), UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+	UiStyle.text_at(ci, Vector2(plot.position.x + 10, plot.end.y - 6), label(lo, unit), UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
 	if from != "":
 		var it := UiStyle.italic()
 		UiStyle.text_at(ci, Vector2(rect.position.x + 10, rect.end.y - 8), from, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, it)

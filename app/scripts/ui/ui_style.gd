@@ -13,25 +13,30 @@ extends RefCounted
 
 ## the frame
 const WOOD := Color("2a221a")       # carved frame around a window
-const WOOD_CARVE := Color("3a2f23") # the carving on it
+const WOOD_CARVE := Color("4a3c2c") # the carving on it
 const BAR := Color("4c3a1c")        # bronze title bar
-const BAR_LATTICE := Color("5d4826")
+const BAR_LATTICE := Color("6b532b")
 const GOLD := Color("a8854a")       # gold edges and rules
 const GOLD_LIT := Color("e2c27c")   # an edge that is active (hover, locked tooltip)
 const EDGE := Color("0b0d10")       # the black line around everything
 ## the field inside
 const PANEL := Color("111922")      # window body, navy
 const INSET := Color("0c1218")      # sunken boxes in the field
-const TAB := Color("252a31")        # slate tab boards
-const TAB_ON := Color("1a232e")     # the chosen tab, opening into the field
+const TAB := Color("252a31")        # slate tab boards (TabBar)
+const TAB_ON := Color("1a232e")
+const TAB_WOOD := Color("2c231a")   # EU5's wooden tab boards (ui_tabs.gd)
+const TAB_WOOD_HOVER := Color("382c21")
+const TAB_WOOD_ON := Color("45372a")
 const ROW := Color("39352c")        # a table row, warm grey
 const ROW_DARK := Color("312d26")
 const ROW_HEAD := Color("212428")
-const STAT := Color("3a3126")       # stat strip cells, two shades
-const STAT_B := Color("453a2d")
-const CHART := Color("2a2017")      # chart board
-const CHART_GRID := Color("3b2e20")
+const STAT := Color("3a3026")       # stat strip cells, two shades
+const STAT_B := Color("4a3f33")
+const STAT_FRAME := Color("5b3b2b") # the strip's reddish brown edge
+const CHART := Color("2d2319")      # chart board
+const CHART_GRID := Color("1f1810") # its grid, darker than the board
 const CHART_FRAME := Color("604735")
+const CHART_EDGE := Color("8f8573") # the thin pale line around a chart
 const BUTTON_TOP := Color("1d5272") # EU5's blue buttons
 const BUTTON_BOTTOM := Color("12324a")
 ## tooltips
@@ -85,7 +90,7 @@ static func bold() -> Font:
 	if _bold == null:
 		_bold = FontVariation.new()
 		_bold.base_font = serif()
-		_bold.variation_embolden = 0.7
+		_bold.variation_embolden = 0.5
 	return _bold
 
 static func italic() -> Font:
@@ -149,16 +154,22 @@ static func text_at(ci: CanvasItem, at: Vector2, text: String, colour := TEXT, f
 
 # ------------------------------------------------------------------ drawn parts
 
-## EU5's title bar: bronze with a lattice of fine diagonals, a gold edge
-## above and below, darker towards both ends.
+## EU5's title bar: bronze with a lattice of fine diagonals and a small
+## four-leaved mark in each diamond, a gold edge above and below, darker
+## towards both ends.
 static func draw_bar(ci: CanvasItem, r: Rect2) -> void:
 	ci.draw_rect(r, BAR)
-	var step := 16.0
-	var c := -r.size.y
-	while c < r.size.x:
-		# a "\" and a "/" through the bar, cut to it
-		_cut_line(ci, r, Vector2(r.position.x + c, r.position.y), Vector2(1, 1))
-		_cut_line(ci, r, Vector2(r.position.x + c + r.size.y, r.position.y), Vector2(-1, 1))
+	var step := 30.0
+	var slope := Vector2(step / r.size.y, 1.0) # across one diamond from top to foot
+	var c := -step
+	while c < r.size.x + step:
+		_cut_line(ci, r, Vector2(r.position.x + c, r.position.y), slope)
+		_cut_line(ci, r, Vector2(r.position.x + c + step, r.position.y), Vector2(-slope.x, 1.0))
+		var mid := Vector2(r.position.x + c + step * 0.5, r.position.y + r.size.y * 0.5)
+		if mid.x > r.position.x + 6.0 and mid.x < r.end.x - 6.0:
+			for d in [Vector2(0, -4), Vector2(4, 0), Vector2(0, 4), Vector2(-4, 0)]:
+				ci.draw_circle(mid + d, 2.4, BAR_LATTICE)
+			ci.draw_circle(mid, 1.6, Color("75603a"))
 		c += step
 	for k in 6: # shade towards the ends
 		var w := r.size.x * 0.035
@@ -166,12 +177,14 @@ static func draw_bar(ci: CanvasItem, r: Rect2) -> void:
 		ci.draw_rect(Rect2(r.position.x + k * w, r.position.y, w, r.size.y), Color(0, 0, 0, a))
 		ci.draw_rect(Rect2(r.end.x - (k + 1) * w, r.position.y, w, r.size.y), Color(0, 0, 0, a))
 	ci.draw_rect(Rect2(r.position.x, r.position.y + r.size.y * 0.5, r.size.x, r.size.y * 0.5), Color(0, 0, 0, 0.12))
-	ci.draw_line(r.position + Vector2(0, 1), Vector2(r.end.x, r.position.y + 1), GOLD, 2.0)
+	ci.draw_rect(Rect2(r.position, Vector2(r.size.x, 4)), Color(0, 0, 0, 0.35))
+	ci.draw_line(r.position + Vector2(0, 1), Vector2(r.end.x, r.position.y + 1), Color(GOLD, 0.6), 1.0)
+	ci.draw_line(r.position + Vector2(0, 5), Vector2(r.end.x, r.position.y + 5), Color(GOLD, 0.8), 1.0)
 	ci.draw_line(Vector2(r.position.x, r.end.y - 2), Vector2(r.end.x, r.end.y - 2), GOLD, 2.0)
 	ci.draw_line(Vector2(r.position.x, r.end.y), Vector2(r.end.x, r.end.y), EDGE, 1.0)
 
 static func _cut_line(ci: CanvasItem, r: Rect2, from: Vector2, dir: Vector2) -> void:
-	# from lies on the top edge; walk to the bottom edge, cut at the sides
+	# from lies on the top edge, dir.y is 1; walk to the foot, cut at the sides
 	var a := from
 	var b := from + dir * r.size.y
 	if a.x < r.position.x:
@@ -183,22 +196,28 @@ static func _cut_line(ci: CanvasItem, r: Rect2, from: Vector2, dir: Vector2) -> 
 	if b.x > r.end.x:
 		b = b - dir * (b.x - r.end.x) / dir.x
 	if a.y < b.y:
-		ci.draw_line(a, b, BAR_LATTICE, 1.0)
+		ci.draw_line(a, b, Color(0, 0, 0, 0.25), 3.0, true)
+		ci.draw_line(a, b, BAR_LATTICE, 1.5, true)
 
-## EU5's window frame: dark wood with a carved strip of small diamonds
-## along the sides, a black line outside, a gold one inside.
+## EU5's window frame: dark wood with a carved strip of stacked leaves
+## (chevrons) down the sides, a black line outside, a fine gold one inside.
 static func draw_wood(ci: CanvasItem, r: Rect2, inner: Rect2) -> void:
 	ci.draw_rect(r, WOOD)
 	var side := inner.position.x - r.position.x
-	if side >= 6.0:
-		var y := inner.position.y + 6.0
-		while y < inner.end.y - 6.0:
+	if side >= 8.0:
+		var d := side * 0.32
+		var y := inner.position.y + 4.0
+		while y < inner.end.y - 4.0:
 			for x in [r.position.x + side * 0.5, r.end.x - side * 0.5]:
-				var d := side * 0.3
-				ci.draw_colored_polygon(PackedVector2Array([Vector2(x, y - d), Vector2(x + d, y), Vector2(x, y + d), Vector2(x - d, y)]), WOOD_CARVE)
-			y += side * 0.9
+				var leaf := PackedVector2Array([Vector2(x - d, y), Vector2(x, y + d), Vector2(x + d, y)])
+				ci.draw_polyline(leaf, Color(0, 0, 0, 0.5), 3.0, true)
+				ci.draw_polyline(leaf, WOOD_CARVE, 1.5, true)
+			y += d * 1.6
+		for x in [r.position.x + 2.0, r.end.x - 3.0, inner.position.x - 3.0, inner.end.x + 2.0]:
+			ci.draw_line(Vector2(x, inner.position.y), Vector2(x, inner.end.y), Color(0, 0, 0, 0.35), 1.0)
 	ci.draw_rect(r, EDGE, false, 1.0)
-	ci.draw_rect(inner.grow(1.0), Color(GOLD, 0.7), false, 1.0)
+	ci.draw_rect(inner.grow(1.0), EDGE, false, 2.0)
+	ci.draw_rect(inner.grow(2.0), Color(GOLD, 0.45), false, 1.0)
 
 ## EU5's round button: a navy disc lit from above in a bronze ring with a
 ## black edge. `glyph` is "close", "fold", "back" or a letter.
@@ -230,6 +249,16 @@ static func draw_round(ci: CanvasItem, centre: Vector2, radius: float, glyph: St
 			var f := bold()
 			ci.draw_string(f, centre + Vector2(-radius, radius * 0.3), glyph, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, int(radius * 0.9), ink)
 
+## EU5's blue button: a black line, a bronze one, the blue lit at its top.
+static func _button(bg: Color, edge: Color) -> StyleBoxFlat:
+	var b := box(bg, edge, 2, 4, 8)
+	b.border_width_top = 2
+	b.expand_margin_left = 1
+	b.expand_margin_right = 1
+	b.shadow_color = Color(0, 0, 0, 0.6)
+	b.shadow_size = 2
+	return b
+
 ## Every control inside a window, in this look.
 static func theme() -> Theme:
 	var th := Theme.new()
@@ -239,11 +268,11 @@ static func theme() -> Theme:
 	th.set_color("font_shadow_color", "Label", SHADOW)
 	th.set_constant("shadow_offset_x", "Label", 1)
 	th.set_constant("shadow_offset_y", "Label", 1)
-	# buttons as EU5's: a slate board in a bronze frame, lit on hover
+	# buttons as EU5's: deep blue in a bronze frame, lit on hover
 	for type in ["Button", "OptionButton"]:
-		th.set_stylebox("normal", type, box(Color("26303c"), GOLD, 1, 4, 7))
-		th.set_stylebox("hover", type, box(Color("334255"), GOLD_LIT, 1, 4, 7))
-		th.set_stylebox("pressed", type, box(BUTTON_BOTTOM, GOLD_LIT, 1, 4, 7))
+		th.set_stylebox("normal", type, _button(BUTTON_BOTTOM, GOLD))
+		th.set_stylebox("hover", type, _button(BUTTON_TOP, GOLD_LIT))
+		th.set_stylebox("pressed", type, _button(Color("0d2638"), GOLD_LIT))
 		th.set_stylebox("disabled", type, box(Color("1b2028"), Color(GOLD, 0.4), 1, 4, 7))
 		th.set_stylebox("focus", type, StyleBoxEmpty.new())
 		th.set_color("font_color", type, TEXT)

@@ -234,18 +234,18 @@ func _row(r: Array, i: int) -> Control:
 	var stripe := UiStyle.box(UiStyle.TIP_ROW if i % 2 == 0 else UiStyle.TIP_ROW_B, Color.TRANSPARENT, 0, 0, 0)
 	stripe.content_margin_left = 8
 	stripe.content_margin_right = 8
-	stripe.content_margin_top = 4
-	stripe.content_margin_bottom = 4
+	stripe.content_margin_top = 3
+	stripe.content_margin_bottom = 3
 	back.add_theme_stylebox_override("panel", stripe)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	back.add_child(line)
-	var a := UiStyle.label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	var a := UiStyle.label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_SMALL + 1)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(a)
 	var v := str(r[1])
 	var colour: Color = r[2] if r.size() > 2 else (UiStyle.GAIN if v.begins_with("+") else (UiStyle.LOSS if v.begins_with("−") or v.begins_with("-") else UiStyle.TEXT))
-	var b := UiStyle.label(v, colour, UiStyle.SIZE_TEXT)
+	var b := UiStyle.label(v, colour, UiStyle.SIZE_SMALL + 1)
 	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(b)
 	return back
@@ -345,7 +345,7 @@ func _text(bbcode: String, e: Dictionary) -> RichTextLabel:
 	t.add_theme_constant_override("shadow_offset_x", 1)
 	t.add_theme_constant_override("shadow_offset_y", 1)
 	t.add_theme_font_override("normal_font", UiStyle.serif())
-	t.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
+	t.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_SMALL + 1)
 	var c := func(colour: Color) -> String: return "[color=#%s]" % colour.to_html(false)
 	t.text = (bbcode.replace("[url=", c.call(UiStyle.CONCEPT) + "[url=").replace("[/url]", "[/url][/color]")
 		.replace("[n]", c.call(UiStyle.NAME)).replace("[/n]", "[/color]")

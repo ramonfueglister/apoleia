@@ -16,8 +16,8 @@ const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const CARD_MIN := 320.0
 const CHART_PX := 190.0
-const DONUT_R := 74.0
-const DONUT_W := 20.0
+const DONUT_R := 62.0
+const DONUT_W := 17.0
 const OTHER := Color("6d7479") # the rest of a ring
 const RING_MAX := 5 # slices before "Andere"
 
@@ -33,7 +33,7 @@ var _bar_rows: Array = [] # [label, value]
 
 func _init(date_fn: Callable) -> void:
 	date = date_fn
-	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER # its width never widens the window
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -41,7 +41,7 @@ func _init(date_fn: Callable) -> void:
 	add_child(column)
 	# the figures as EU5's stat strip: cells of two browns in one frame
 	var strip := PanelContainer.new()
-	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.CHART_FRAME, 2, 0, 0))
+	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.STAT_FRAME, 3, 0, 0))
 	column.add_child(strip)
 	_tiles = HBoxContainer.new()
 	_tiles.add_theme_constant_override("separation", 0)
@@ -163,6 +163,9 @@ func _tile(key: String) -> PanelContainer:
 	var value := _label("…", UiStyle.VALUE, UiStyle.SIZE_HEAD + 4)
 	box.add_child(value)
 	box.add_child(_label("", UiStyle.TEXT, UiStyle.SIZE_SMALL))
+	for l in box.get_children(): # long names clip, the strip keeps the window's width
+		(l as Label).clip_text = true
+		(l as Label).text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var spark := Control.new()
 	spark.custom_minimum_size = Vector2(0, 28)
 	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -179,7 +182,7 @@ func _card(title: String) -> VBoxContainer:
 	# a card as EU5's boxes: a dark field in a brown frame, its title on a
 	# dark band with a gold rule under it
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.INSET, UiStyle.CHART_FRAME, 2, 0, 0))
+	card.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.INSET, UiStyle.STAT_FRAME, 2, 0, 0))
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.custom_minimum_size = Vector2(CARD_MIN, 0)
 	_grid.add_child(card)

@@ -43,6 +43,7 @@ extends CanvasLayer
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
@@ -96,7 +97,7 @@ var _months_day := -1 # the table day last added to _months
 var _spark_at := -1 # the tree column of the curves, -1 for none
 var _stale := false # a new table came while the mouse was on the shown one
 var _open_button: Button
-var _tabs: TabBar
+var _tabs: UiTabs
 var _stand: Label
 var _search: LineEdit
 var _filter_row: HBoxContainer
@@ -292,7 +293,8 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 func _refresh() -> void:
 	var overview := KINDS[_kind] == "overview"
 	_overview.visible = overview
-	_filter_row.visible = not overview
+	for c in _filter_row.get_children(): # the overview keeps only the date
+		c.visible = c == _stand or not overview
 	_tree.visible = not overview
 	_note.visible = not overview
 	if overview:
@@ -1045,17 +1047,15 @@ func _build() -> void:
 	head.add_theme_constant_override("separation", 12)
 	column.add_child(head)
 	_stand = Label.new()
-	_stand.add_theme_color_override("font_color", UiStyle.DIM)
+	_stand.add_theme_color_override("font_color", UiStyle.KIND)
+	_stand.add_theme_font_override("font", UiStyle.italic())
 	_stand.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL + 1)
 	_stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_tabs = TabBar.new()
+	_tabs = UiTabs.new()
 	for k in TAB_ORDER:
 		_tabs.add_tab(TITLES[k])
-	_tabs.focus_mode = Control.FOCUS_NONE
 	_tabs.tab_changed.connect(_on_tab)
-	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_tabs)
-	head.add_child(_stand)
 	_filter_row = HBoxContainer.new()
 	_filter_row.add_theme_constant_override("separation", 8)
 	column.add_child(_filter_row)
@@ -1071,6 +1071,7 @@ func _build() -> void:
 	var fill := Control.new()
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_filter_row.add_child(fill)
+	_filter_row.add_child(_stand) # the date of the figures, right of the search
 	_fold = CheckButton.new()
 	_fold.focus_mode = Control.FOCUS_NONE
 	_fold.toggled.connect(func(on: bool):
