@@ -73,6 +73,7 @@ const UiWindow = preload("res://scripts/ui/ui_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
+const HouseLife = preload("res://scripts/sim/people_house_life.gd")
 const PeopleCost = preload("res://scripts/sim/people_cost.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
@@ -154,6 +155,7 @@ var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's f
 var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
+var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
 var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
@@ -324,6 +326,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	_trips = PeopleTrips.new()
 	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
 	add_child(_trips)
+	_life = HouseLife.new()
+	_life.setup(TileTerrain.DIORAMA_KM_PER_M, _house_list_tex, LIST_W) # the house mesh's metres
+	add_child(_life)
 	_lots_view = SubViewport.new()
 	_lots_view.name = "HouseLots"
 	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
@@ -418,10 +423,10 @@ func _rebuild_houses() -> void:
 	var size := Vector2i(side, side * _house_texture.get_layers())
 	_house_prep_view.size = size
 	_house_prep_rect.size = Vector2(size)
-	for m in _house_materials + [_house_prep_material, _lots_material]:
+	for m in _house_materials + [_house_prep_material, _lots_material, _life.material]:
 		m.set_shader_parameter("people_tex", _house_texture)
 		m.set_shader_parameter("page_side", side)
-	for m in _house_materials + [_lots_material]:
+	for m in _house_materials + [_lots_material, _life.material]:
 		m.set_shader_parameter("place_tex", _house_prep_view.get_texture())
 	_house_prep_frames = 2
 	_house_list_at = Vector3.INF
@@ -899,6 +904,7 @@ func _update_houses(view_km: float, synced: bool) -> void:
 			_houses[i].multimesh.visible_instance_count = blocks[b + 1]
 			_houses[i].visible = blocks[b + 1] > 0 # an empty one still costs a draw in each pass
 	_lots.multimesh.visible_instance_count = slots.size()
+	_life.show_houses(slots.size(), view_km)
 
 ## Reads the house placement pass back from the GPU without waiting for it
 ## (RenderingDevice.texture_get_data_async), so each house's build is known
@@ -1198,11 +1204,16 @@ func _frame(delta: float) -> void:
 	var synced_houses: int = people.sync_houses(_house_texture)
 	if synced_houses < 0:
 		_rebuild_houses()
+	var looks: Texture2D = _life.sync(people, people.page_side(), _house_texture.get_layers())
+	if looks != null:
+		for m in _house_materials: # a tent household's house is its tent
+			m.set_shader_parameter("look_tex", looks)
+			m.set_shader_parameter("has_looks", true)
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
 	var source: ShaderMaterial = terrain._terrain_material
-	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _parcel_material, _trips.material] + _house_materials
+	var targets: Array = [_material, _prep_material, _house_prep_material, _figure_material, _figure_shadow_material, _crop_material, _parcel_material, _trips.material, _life.material] + _house_materials
 	if targets.size() != _shared_count:
 		_shared_values.clear() # new house materials get everything
 		_shared_count = targets.size()

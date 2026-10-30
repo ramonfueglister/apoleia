@@ -4256,6 +4256,15 @@ pub struct EventsView {
     pub to: Vec<(f32, f32)>,
 }
 
+/// Flags of `Grain::house_look`: food to cook (pantry, or a farm's store),
+/// lives in a tent, its farm is in its harvest or its sowing and still wants
+/// hands, it has a farm.
+pub const HOUSE_COOKS: u8 = 1;
+pub const HOUSE_TENT: u8 = 2;
+pub const HOUSE_HARVEST: u8 = 4;
+pub const HOUSE_SOWING: u8 = 8;
+pub const HOUSE_FARM: u8 = 16;
+
 /// What the game shows of a household (read only).
 #[derive(Clone, Copy, Debug)]
 pub struct HouseholdLook {
@@ -4721,6 +4730,34 @@ impl Grain {
 
     /// A household's kind, food, stores and farm, if the grain economy
     /// knows it (it counts the households once a month).
+    /// What the graphics show at a household's house (read only, Ramon
+    /// 30.10.2026 "Wuselfaktor": only what the sim has): the share of its
+    /// need it ate at the last meal count (‰ / 4); HOUSE_* flags; its farm's
+    /// sheep and the pigs it fattens a year (pork a year / PIG_KG), at most
+    /// 255 each.
+    pub fn house_look(&self, hh: u32) -> [u8; 4] {
+        let Some(s) = self.hh.get(&hh) else { return [0; 4] };
+        let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh);
+        let mut flags = 0;
+        if s.pantry > 0 || farm.is_some_and(|f| f.store > 0) {
+            flags |= HOUSE_COOKS;
+        }
+        if s.kind == TENT {
+            flags |= HOUSE_TENT;
+        }
+        if let Some(f) = farm {
+            flags |= HOUSE_FARM;
+            if let Some(p) = &f.peak {
+                if p.done < p.demand {
+                    flags |= if p.harvest { HOUSE_HARVEST } else { HOUSE_SOWING };
+                }
+            }
+        }
+        let sheep = farm.map_or(0, |f| f.goods.sheep.clamp(0, 255)) as u8;
+        let pigs = farm.map_or(0, |f| (f.goods.pork_year / 1000 / crafts::PIG_KG).clamp(0, 255)) as u8;
+        [(s.fed / 4).min(255) as u8, flags, sheep, pigs]
+    }
+
     pub fn household(&self, hh: u32) -> Option<HouseholdLook> {
         let s = self.hh.get(&hh)?;
         let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh).map(|f| (f.kind, f.area));
