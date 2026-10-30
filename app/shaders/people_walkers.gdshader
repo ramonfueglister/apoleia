@@ -11,11 +11,12 @@
 // or a market stall (9); or, in the scenes of events, a handcart (10), a
 // bundle on the back (11), a bier with its second bearer (12), an axe (13)
 // or a bowl (14), a ship (15: shown instead of cart, ox and carter where
-// a cart is on the sea or a lake) and craft goods on a cart (16-20);
-// INSTANCE_CUSTOM.r says which parts beyond the
+// a cart is on the sea or a lake), craft goods on a cart (16-20) and the
+// wares on a stall's counter (21, dyed by the stall's good, .b, heaped by
+// .g); INSTANCE_CUSTOM.r says which parts beyond the
 // person show (bit part - 1), .g how many seconds it walks on from the
-// start before it stops, .b the tunic colour plus the walk's phase as the
-// fraction, .a whether it walks (0), stands (1) or is a stall without a
+// start before it stops (a stall: how full its counter is), .b the tunic
+// colour plus the walk's phase as the fraction (a stall: its good), .a whether it walks (0), stands (1) or is a stall without a
 // person (2). Legs (UV2.x the side, UV2.y the hip in metres) swing as they
 // walk.
 shader_type spatial;
@@ -30,6 +31,10 @@ const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, wo
 // undyed wool and linen, madder red, woad blue, browns, a leaf green and a
 // grey blue, as the figures wear them (people_figures.gdshader TUNICS, sRGB):
 // none close to the skin (the first walkers in browns read as naked)
+// the wares of a stall by its good (people_trips.gd GOOD_NAMES, then
+// grain): wool, iron, cloth, tools, ceramics, pork, grain (sRGB)
+const vec3 WARES[7] = vec3[](vec3(0.9, 0.87, 0.78), vec3(0.42, 0.42, 0.46), vec3(0.62, 0.22, 0.18),
+	vec3(0.5, 0.37, 0.24), vec3(0.74, 0.4, 0.24), vec3(0.8, 0.46, 0.42), vec3(0.86, 0.72, 0.38));
 const vec3 TUNICS[8] = vec3[](vec3(0.81, 0.76, 0.65), vec3(0.86, 0.83, 0.74), vec3(0.61, 0.25, 0.16),
 	vec3(0.25, 0.37, 0.56), vec3(0.43, 0.29, 0.18), vec3(0.36, 0.43, 0.23), vec3(0.33, 0.24, 0.17), vec3(0.4, 0.45, 0.52));
 
@@ -94,6 +99,9 @@ void vertex() {
 	bool ship = ((parts >> 2) & 1) == 1 && wet && walker_sea(at); // a cart (part 3) at sea
 	show = part == 15 ? ship : show && !wet;
 	vec3 v = VERTEX;
+	if (part == 21) {
+		v.y = 1.0 + (v.y - 1.0) * INSTANCE_CUSTOM.g * 1.6; // heaped on the counter (its top at 1 m)
+	}
 	if (UV2.x != 0.0 && still < 0.5) {
 		// a leg swings about its hip, the two sides in turn
 		float swing = sin(TIME * stride + fract(INSTANCE_CUSTOM.b) * 6.2831853) * UV2.x;
@@ -109,6 +117,7 @@ void vertex() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(turn * NORMAL, 0.0)).xyz);
 	vec3 c = COLOR.rgb;
 	if (part == 0 && all(greaterThan(c, vec3(0.99)))) { c = TUNICS[int(INSTANCE_CUSTOM.b) % 8]; } // the white tunic
+	if (part == 21) { c *= WARES[int(INSTANCE_CUSTOM.b + 0.5) % 7]; }
 	colour = pow(c, vec3(2.2)) * COLOR.a; // the vertex alpha: the voxel corner shading
 	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }

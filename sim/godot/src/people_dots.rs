@@ -62,6 +62,10 @@ struct Front {
     /// once a week, and how often it was rebuilt.
     house_looks: Vec<u8>,
     house_looks_version: i64,
+    /// What shows of each person, 2 bytes by person slot (the people
+    /// texture's order): their household's share of its need eaten (‰ / 4)
+    /// and its HOUSE_* flags with PERSON_KNOWN, rebuilt with `house_looks`.
+    people_looks: Vec<u8>,
     /// Answer to the last `ask_person`, with the household as the grain
     /// economy sees it and its people.
     person: Option<(Person, Option<HouseholdLook>, Vec<Person>)>,
@@ -74,8 +78,8 @@ struct Front {
     /// Answer to the last `ask_events`.
     events: Option<EventsView>,
     /// Answer to the last `ask_goods`: workshops, markets' goods, goods
-    /// moves (trips::goods_to_dict).
-    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView)>,
+    /// moves, markets' grain (trips::goods_to_dict).
+    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView, Vec<[f32; 3]>)>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
@@ -357,11 +361,23 @@ fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
 fn publish_house_looks(game: &Game, view: &PeopleView, f: &mut Front) {
     let mut looks = vec![0u8; view.houses.slots() * 4];
     for (slot, hh) in view.houses.households() {
-        looks[slot as usize * 4..][..4].copy_from_slice(&game.grain.house_look(hh));
+        looks[slot as usize * 4..][..4].copy_from_slice(&game.grain.house_look(hh).unwrap_or_default());
     }
     f.house_looks = looks;
+    let mut people = vec![0u8; view.slots() * 2];
+    for (slot, hh) in view.slot_households() {
+        if let Some(look) = game.grain.house_look(hh) {
+            people[slot * 2] = look[0];
+            people[slot * 2 + 1] = look[1] | PERSON_KNOWN;
+        }
+    }
+    f.people_looks = people;
     f.house_looks_version += 1;
 }
+
+/// Flag in `people_looks`: the grain economy knows the person's household
+/// (a newborn's slot or a household it has not counted yet shows nothing).
+const PERSON_KNOWN: u8 = 128;
 
 /// The building sites in the window (world km, min x, min z, max x, max
 /// z): x and z of the order's spot (the middle of its village lot), kind
@@ -470,7 +486,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             shared.front.lock().unwrap().events = Some(v);
         }
         if let Some([x0, z0, x1, z1]) = goods {
-            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)));
+            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)), grain.market_grain());
             shared.front.lock().unwrap().goods = Some(v);
         }
         if let Some(who) = ask {
@@ -1387,7 +1403,7 @@ impl ApoleiaPeople {
     #[func]
     fn take_goods(&mut self) -> VarDictionary {
         match self.shared.front.lock().unwrap().goods.take() {
-            Some((c, m, mv)) => trips::goods_to_dict(&c, &m, &mv),
+            Some((c, m, mv, g)) => trips::goods_to_dict(&c, &m, &mv, &g),
             None => VarDictionary::new(),
         }
     }
@@ -1522,6 +1538,15 @@ impl ApoleiaPeople {
     #[func]
     fn house_looks(&self) -> PackedByteArray {
         PackedByteArray::from(self.shared.front.lock().unwrap().house_looks.as_slice())
+    }
+
+    /// What shows of each person, 2 bytes by person slot (the people
+    /// texture's order, rebuilt with `house_looks`): their household's
+    /// share of its need eaten (‰ / 4) and its flags as in `house_looks`,
+    /// with 128 when the grain economy knows the household.
+    #[func]
+    fn people_looks(&self) -> PackedByteArray {
+        PackedByteArray::from(self.shared.front.lock().unwrap().people_looks.as_slice())
     }
 
     /// Houses standing (one per village household).

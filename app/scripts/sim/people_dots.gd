@@ -154,6 +154,9 @@ var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
+var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
+var _person_looks_tex: ImageTexture
+var _person_looks_version := -1
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
 var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
@@ -1003,6 +1006,31 @@ func _apply_colours() -> void:
 	_legend_label.text = text
 	_legend_label.visible = colour_mode != 0
 
+## Each person's household as the sim has it (fed, its farm at the harvest
+## or sowing), anew when the sim rebuilt it once a sim week or the people
+## texture grew: the figures draw the hungry thin and send the grown-ups of
+## a farm at work out on its fields (people_figures.gdshader).
+func _sync_person_looks() -> void:
+	if not people.has_method("people_looks") or _texture == null:
+		return
+	var version: int = people.house_looks_version()
+	var side: int = people.page_side()
+	var h := side * maxi(_texture.get_layers(), 1)
+	if version == _person_looks_version and _person_looks != null and _person_looks.get_height() == h:
+		return
+	_person_looks_version = version
+	var bytes: PackedByteArray = people.people_looks()
+	bytes.resize(side * h * 2) # people newer than the looks: nothing yet
+	if _person_looks == null or _person_looks.get_height() != h:
+		_person_looks = Image.create_from_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex = ImageTexture.create_from_image(_person_looks)
+		for m in [_figure_material, _figure_shadow_material]:
+			m.set_shader_parameter("person_look_tex", _person_looks_tex)
+			m.set_shader_parameter("has_person_looks", true)
+	else:
+		_person_looks.set_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex.update(_person_looks)
+
 ## Palette entries as linear colour, as source_color uniforms arrive.
 static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
@@ -1169,6 +1197,7 @@ func _frame(delta: float) -> void:
 		for m in _house_materials: # a tent household's house is its tent
 			m.set_shader_parameter("look_tex", looks)
 			m.set_shader_parameter("has_looks", true)
+	_sync_person_looks()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
