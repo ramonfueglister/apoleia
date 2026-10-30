@@ -628,7 +628,8 @@ func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
 	# the crops read the fine layer too, and the placement of the people for
 	# the slabs they stand on
-	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material, terrain._place_material]
+	# (the house places too: the houses keep off the ways, people_dots_common.gdshaderinc dot_lot_way_free)
+	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material, terrain._place_material, _house_prep_material]
 	for m in mats:
 		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
@@ -672,6 +673,7 @@ func _update_map() -> void:
 			m.set_shader_parameter("sim_fine_km", win.tile_km)
 			m.set_shader_parameter("sim_fine_n", MAP_N)
 		_prep_frames = 2
+		_house_prep_frames = 2
 		_parcel_frames = 2
 	_map_version = version
 	_map_at = centre

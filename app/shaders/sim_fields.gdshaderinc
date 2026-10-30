@@ -185,9 +185,10 @@ vec2 sim_lot_front(vec2 lot) {
 // with two ends in a tile bends from the middle of the one edge over the
 // tile's middle to the other (a quadratic curve, so the ways join smoothly
 // from tile to tile); where it ends or forks, each end runs straight to
-// the middle. Each farmhouse of a tile with a way walks to that middle from
-// its gate (sim_lot_front): the faintest way, as the house's own walks
-// wear it. Half width per level, km (sim_ways keeps it ~1.5 px at least).
+// the middle. Each farmhouse of a tile with a way walks to that way from
+// its gate (sim_lot_front) along the lanes round the lots (sim_lane): the
+// faintest way, as the house's own walks wear it. Half width per level, km
+// (sim_ways keeps it ~1.5 px at least).
 uniform sampler2D sim_way_tex : filter_nearest, repeat_disable;
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
@@ -220,9 +221,12 @@ float sim_segment_to(vec2 p, vec2 a, vec2 b) {
 	return length(p - a - e * clamp(dot(p - a, e) / max(dot(e, e), 1e-9), 0.0, 1.0));
 }
 
-// How far p (world km) lies outside the nearest way, km (negative inside
-// it), and that way's level; 1e9 and 0 without one near.
-vec2 sim_way(vec2 p) {
+// How far p (world km) lies outside the nearest way of the worn network,
+// km (negative inside it), and that way's level; 1e9 and 0 without one
+// near. Without the farmhouses' own lanes (sim_way), so the houses can keep
+// off the network (people_dots_common.gdshaderinc dot_lot_way_free) and the
+// crops and trees too (people_parcels.gdshader, tile_props.gdshaderinc).
+vec2 sim_way_main(vec2 p) {
 	if (sim_fine_n == 0) { return vec2(1e9, 0.0); }
 	vec2 q = (p - sim_fine_origin) / sim_fine_km;
 	ivec2 t = ivec2(floor(q));
@@ -249,16 +253,61 @@ vec2 sim_way(vec2 p) {
 		float e = d * sim_fine_km - SIM_WAY_KM[min(w.y, 7)];
 		if (e < best) { best = e; level = float(min(w.y, 7)); }
 	}
-	// the farmhouses of the tile under p walk to its middle from their gates
-	if (sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM && sim_way_at(t).y > 0) {
-		vec2 mid = sim_fine_origin + (vec2(t) + 0.5) * sim_fine_km;
-		vec2 lo = floor((sim_fine_origin + vec2(t) * sim_fine_km - world_min) / sim_lot_km);
+	return vec2(best, level);
+}
+
+// Whether a worn way runs across the parcel of side `size` (km) with its
+// middle at `mid`: its edge nearer the middle than 0.6 parcel, so a corner
+// cut counts too. Such a parcel carries no crop, flock or paddock
+// (people_parcels.gdshader, people_crop_slab.gdshaderinc crop_slab_under).
+bool sim_way_parcel(vec2 mid, float size) {
+	return sim_way_main(mid).x < size * 0.6;
+}
+
+// Where the way of window tile t passes its middle (tile units): the
+// middle itself, or the middle of its curve where it has two ends.
+vec2 sim_way_hub(ivec2 t, int links) {
+	vec2 mid = vec2(t) + 0.5;
+	if (bitCount(links) != 2) { return mid; }
+	vec2 a = mid + vec2(SIM_DIRS[findLSB(links)]) * 0.5;
+	vec2 c = mid + vec2(SIM_DIRS[findMSB(links)]) * 0.5;
+	return 0.25 * (a + c) + 0.5 * mid;
+}
+
+// How far p lies from a farmhouse's lane (km): from its gate along the
+// lanes round the lots (the lot lines, where no farmhouse stands) to the
+// lot corner nearest the hub of its tile's way, then into the hub. Straight
+// to the hub it ran over the neighbours' houses (Ramon, 30.10.2026: „ob
+// Strassen Gebäude etc. durchschneiden“).
+float sim_lane(vec2 p, vec2 gate, vec2 front, vec2 hub) {
+	vec2 corner = world_min + round((hub - world_min) / sim_lot_km) * sim_lot_km;
+	vec2 bend = front.y != 0.0 ? vec2(corner.x, gate.y) : vec2(gate.x, corner.y);
+	return min(min(sim_segment_to(p, gate, bend), sim_segment_to(p, bend, corner)), sim_segment_to(p, corner, hub));
+}
+
+// How far p (world km) lies outside the nearest way, km (negative inside
+// it), and that way's level: the worn network (sim_way_main) and, up close,
+// the lane of each farmhouse of the tile under p to that network.
+vec2 sim_way(vec2 p) {
+	vec2 w = sim_way_main(p);
+	float best = w.x;
+	float level = w.y;
+	if (sim_fine_n == 0) { return w; }
+	ivec2 t = ivec2(floor((p - sim_fine_origin) / sim_fine_km));
+	ivec2 here = sim_way_at(t);
+	// the farmhouses whose lots lie in the tile (up to 4 x 4 of them)
+	if (sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM && here.y > 0 && here.x != 0) {
+		vec2 hub = sim_fine_origin + sim_way_hub(t, here.x) * sim_fine_km;
+		vec2 lo_km = sim_fine_origin + vec2(t) * sim_fine_km;
+		vec2 lo = floor((lo_km - world_min) / sim_lot_km);
 		for (int k = 0; k < 16; k++) {
 			vec2 lot = lo + vec2(float(k % 4), float(k / 4));
 			vec2 at = world_min + (lot + 0.5) * sim_lot_km;
-			if (!sim_house_lot(at)) { continue; }
-			vec2 gate = at + sim_lot_front(lot) * sim_lot_km * 0.5;
-			float e = sim_segment_to(p, gate, mid) - SIM_WAY_KM[1];
+			bool house = sim_house_lot(at); // the fetch first, not behind the || (Metal, sim_lot_mask)
+			vec2 in_tile = (at - lo_km) / sim_fine_km;
+			if (!house || any(lessThan(in_tile, vec2(0.0))) || any(greaterThanEqual(in_tile, vec2(1.0)))) { continue; }
+			vec2 front = sim_lot_front(lot);
+			float e = sim_lane(p, at + front * sim_lot_km * 0.5, front, hub) - SIM_WAY_KM[1];
 			if (e < best) { best = e; level = 1.0; }
 		}
 	}
