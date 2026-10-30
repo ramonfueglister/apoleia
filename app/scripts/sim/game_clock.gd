@@ -14,6 +14,7 @@ extends CanvasLayer
 ## (apoleia_sim::game); loading plays them again, so it takes a while.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const SaveGames = preload("res://scripts/ui/save_games.gd")
 const SPEEDS: Array[float] = [2.0, 10.0, 30.0, 100.0] # days a second
 const SAVE_PATH := "user://quicksave.apgame"
 const BEHIND := 0.8 # below this share of the speed set the bar warns
@@ -32,6 +33,7 @@ var _rate := 0.0 # days a second, measured
 var _rate_day := -1
 var _rate_clock := 0.0
 var _saving := false
+var _save_path := SAVE_PATH
 var _loading := false
 
 ## Takes over the speed people_dots.gd started with (--people-days) as the
@@ -123,20 +125,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_: return
 	get_viewport().set_input_as_handled()
 
-func save_game() -> void:
+## The quick save, or another file (the menus' save games, ui/save_games.gd).
+func save_game(path := SAVE_PATH) -> void:
 	if _saving or _loading:
 		return
-	people.save_game(ProjectSettings.globalize_path(SAVE_PATH))
+	_save_path = path
+	people.save_game(ProjectSettings.globalize_path(path))
 	_saving = true
 
 ## Plays the quick save again; the game runs on paused once it has.
-func load_game() -> void:
+func load_game(path := SAVE_PATH) -> void:
 	if _loading:
 		return
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(path):
 		_tell("Kein Spielstand (F8 speichert)")
 		return
-	if not people.load_game(ProjectSettings.globalize_path(SAVE_PATH)):
+	if not people.load_game(ProjectSettings.globalize_path(path)):
 		_tell("Spielstand passt nicht zu dieser Welt")
 		return
 	_loading = true
@@ -152,6 +156,8 @@ func _process(delta: float) -> void:
 		var s: Dictionary = people.take_saved()
 		if not s.is_empty():
 			_saving = false
+			if s.ok:
+				SaveGames.remember(_save_path, "", int(s.day))
 			_tell("Gespeichert: %s" % _day_text(int(s.day)) if s.ok else "Speichern ging nicht: %s" % s.error)
 	if _loading:
 		var l: Dictionary = people.take_loaded()

@@ -1,190 +1,159 @@
 extends Control
-## Apoleia's lightweight entry screen; no landscape data is loaded before Start.
+## Apoleia's main menu, the start scene: a still of Rome under a dark veil,
+## at the left a slate column in a bronze edge with the name and four
+## entries (the EU5 look of ui/ui_style.gd). Nothing of the landscape is
+## loaded before «Neues Spiel» or a save game is chosen; that comes behind
+## the landscape's own loading screen. Captures and benchmarks
+## (AUTOMATION_FLAGS) go straight into the landscape.
 
+const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const MenuPanel = preload("res://scripts/ui/menu_panel.gd")
+const SaveList = preload("res://scripts/ui/save_list.gd")
+const SaveGames = preload("res://scripts/ui/save_games.gd")
+const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const GAME_SCENE = "res://landscape.tscn"
-const SETTINGS_PATH = "user://display.cfg"
-const BACKGROUND = Color("13232b")
-const INK = Color("edf0e8")
-const SECONDARY = Color("aab9bc")
-const AUTOMATION_FLAGS = ["--tour", "--snapshot", "--fixture", "--capture-dir", "--telemetry-dir", "--probe-anchor", "--diagnose-input"]
+const BACKGROUND_IMAGE = "res://assets/menu/rom.jpg"
+const AUTOMATION_FLAGS = ["--tour", "--snapshot", "--fixture", "--capture-dir", "--telemetry-dir", "--probe-anchor", "--diagnose-input", "--bench", "--views"]
+const COLUMN_PX := 420.0
+const WOOD_PX := 12.0
 
-var settings_path := SETTINGS_PATH
 var game_scene_path := GAME_SCENE
-var home: VBoxContainer
-var settings_page: VBoxContainer
 var start_button: Button
 var load_button: Button
 var settings_button: Button
 var quit_button: Button
-var music_toggle: CheckButton
-var fullscreen_toggle: CheckButton
-var status: Label
-var back_button: Button
+var _stage: Control # the room right of the column, where the windows open
+var _open: MenuPanel
 var starting := false
 
 func _ready() -> void:
-	# Existing capture and measurement commands retain their direct landscape entry.
 	for flag in AUTOMATION_FLAGS:
-		if flag in OS.get_cmdline_user_args():
-			_start_game()
-			return
-	var display_from_cli := false
-	for argument in OS.get_cmdline_args():
-		if argument in ["--windowed", "-w", "--fullscreen", "-f", "--resolution"] or argument.begins_with("--resolution="):
-			display_from_cli = true
-			break
-	var config := ConfigFile.new()
-	if not display_from_cli and config.load(settings_path) == OK and config.has_section_key("display", "fullscreen") and DisplayServer.get_name() != "headless":
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(config.get_value("display", "fullscreen", false)) else DisplayServer.WINDOW_MODE_WINDOWED)
+		for argument in OS.get_cmdline_user_args():
+			if argument == flag or argument.begins_with(flag + "="):
+				_start_game()
+				return
+	GameSettings.apply_saved()
 	_build_ui()
-	resized.connect(_resize_columns)
-	_resize_columns()
 	start_button.grab_focus()
 	# Keep settings focus/navigation free of the landscape's music shortcuts.
 	$Soundtrack.set_process_unhandled_key_input(false)
 
 func _build_ui() -> void:
+	theme = UiStyle.theme()
 	var background := ColorRect.new()
-	background.color = BACKGROUND
+	background.color = UiStyle.INSET
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "top", "right", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 32)
-	add_child(margin)
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	margin.add_child(scroll)
-	var center := CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.add_child(center)
-	var pages := VBoxContainer.new()
-	center.add_child(pages)
-	home = _column(pages)
-	var title := _label("Apoleia", 52, INK)
-	home.add_child(title)
-	_spacer(home, 28)
-	start_button = _button("Spiel starten", home, _start_game)
-	load_button = _button("Spielstand laden", home, Callable())
-	load_button.disabled = true
-	settings_button = _button("Einstellungen", home, _show_settings)
-	quit_button = _button("Beenden", home, _quit_game)
-	settings_page = _column(pages)
-	settings_page.hide()
-	settings_page.add_child(_label("Einstellungen", 30, INK))
-	_spacer(settings_page, 28)
-	music_toggle = _toggle("Musik", settings_page)
-	var music_config := ConfigFile.new()
-	var muted := false
-	if music_config.load($Soundtrack.settings_path) == OK:
-		muted = bool(music_config.get_value("music", "muted", false))
-	if not is_instance_valid($Soundtrack.player):
-		$Soundtrack.muted = muted
-	music_toggle.set_pressed_no_signal(not muted)
-	music_toggle.toggled.connect(_set_music_enabled)
-	fullscreen_toggle = _toggle("Vollbild", settings_page)
-	fullscreen_toggle.set_pressed_no_signal(DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN])
-	fullscreen_toggle.toggled.connect(_set_fullscreen)
-	fullscreen_toggle.visible = not OS.has_feature("mobile")
-	status = _label("", 14, SECONDARY)
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	settings_page.add_child(status)
-	_spacer(settings_page, 20)
-	back_button = _button("Zurück", settings_page, _show_home)
+	if ResourceLoader.exists(BACKGROUND_IMAGE):
+		var still := TextureRect.new()
+		still.texture = load(BACKGROUND_IMAGE)
+		still.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		still.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		still.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(still)
+	var veil := ColorRect.new()
+	veil.color = Color(0.04, 0.055, 0.075, 0.55)
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(veil)
+	_stage = Control.new()
+	_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_stage.offset_left = COLUMN_PX
+	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_stage)
+	# the column
+	# a navy field with EU5's carved wood along its right edge
+	var column := PanelContainer.new()
+	var field := UiStyle.box(Color(UiStyle.PANEL, 0.96), Color.TRANSPARENT, 0, 0, 0)
+	field.shadow_color = Color(0, 0, 0, 0.5)
+	field.shadow_size = 18
+	field.content_margin_left = 72
+	field.content_margin_right = 56 + WOOD_PX
+	field.content_margin_top = 96
+	field.content_margin_bottom = 40
+	column.add_theme_stylebox_override("panel", field)
+	column.draw.connect(func():
+		var strip := Rect2(column.size.x - WOOD_PX, 0, WOOD_PX, column.size.y)
+		column.draw_rect(strip, UiStyle.WOOD)
+		var y := 8.0
+		while y < column.size.y: # the carving: small diamonds down the strip
+			var c := Vector2(strip.get_center().x, y)
+			var d := WOOD_PX * 0.3
+			column.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -d), c + Vector2(d, 0), c + Vector2(0, d), c + Vector2(-d, 0)]), UiStyle.WOOD_CARVE)
+			y += WOOD_PX * 0.9
+		column.draw_line(Vector2(strip.position.x - 1, 0), Vector2(strip.position.x - 1, column.size.y), Color(UiStyle.GOLD, 0.7), 1.0)
+		column.draw_line(Vector2(strip.end.x - 0.5, 0), Vector2(strip.end.x - 0.5, column.size.y), UiStyle.EDGE, 1.0))
+	column.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	column.offset_right = COLUMN_PX
+	add_child(column)
+	var items := VBoxContainer.new()
+	items.add_theme_constant_override("separation", 6)
+	column.add_child(items)
+	var title := UiStyle.label("APOLEIA", UiStyle.TITLE, 56)
+	title.add_theme_constant_override("shadow_offset_y", 2)
+	title.add_theme_constant_override("shadow_outline_size", 4)
+	var wide := FontVariation.new()
+	wide.base_font = UiStyle.serif()
+	wide.spacing_glyph = 10
+	title.add_theme_font_override("font", wide)
+	items.add_child(title)
+	items.add_child(Ornament.new())
+	var sub := UiStyle.label("Imperium Romanum · Ianuarius, Jahr 1", UiStyle.KIND, 15, UiStyle.italic())
+	items.add_child(sub)
+	MenuPanel.gap(items, 64)
+	start_button = _item("Neues Spiel", items, _start_game)
+	load_button = _item("Spiel laden", items, _show_load)
+	settings_button = _item("Einstellungen", items, _show_settings)
+	MenuPanel.gap(items, 18)
+	quit_button = _item("Spiel beenden", items, _quit_game)
+	quit_button.add_theme_color_override("font_color", UiStyle.DIM)
+	var rest := Control.new()
+	rest.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	items.add_child(rest)
+	var version := Label.new()
+	version.text = "Prototyp · Kit 1"
+	version.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
+	version.add_theme_color_override("font_color", UiStyle.DIM)
+	items.add_child(version)
 
-func _column(parent: Control) -> VBoxContainer:
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 4)
-	parent.add_child(column)
-	return column
+func _item(text: String, parent: Control, action: Callable) -> Button:
+	var b := MenuItem.new()
+	b.text = text
+	b.pressed.connect(action)
+	parent.add_child(b)
+	return b
 
-func _label(text: String, font_size: int, color: Color) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
-	return label
+## Opens one window right of the column (save games or settings), closing
+## the one open before.
+func _show(panel: MenuPanel, focus: Control) -> void:
+	_close()
+	_open = panel
+	panel.closed.connect(_close)
+	_stage.add_child(panel)
+	focus.grab_focus.call_deferred()
 
-func _spacer(parent: Control, height: float) -> void:
-	var spacer := Control.new()
-	spacer.custom_minimum_size.y = height
-	parent.add_child(spacer)
+func _close() -> void:
+	if is_instance_valid(_open):
+		_open.queue_free()
+	_open = null
 
-func _style_controls(control: Control) -> void:
-	control.custom_minimum_size.y = 52
-	control.add_theme_font_size_override("font_size", 20)
-	for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
-		control.add_theme_color_override(state, INK)
-	control.add_theme_color_override("font_disabled_color", SECONDARY)
-	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(INK, 0.07) if state in ["hover", "pressed"] else Color.TRANSPARENT
-		if state == "focus":
-			style.border_width_bottom = 2
-			style.border_color = INK
-		style.content_margin_left = 0
-		style.content_margin_right = 0
-		control.add_theme_stylebox_override(state, style)
-
-func _button(text: String, parent: Control, action: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_style_controls(button)
-	if action.is_valid():
-		button.pressed.connect(action)
-	parent.add_child(button)
-	return button
-
-func _toggle(text: String, parent: Control) -> CheckButton:
-	var toggle := CheckButton.new()
-	toggle.text = text
-	_style_controls(toggle)
-	parent.add_child(toggle)
-	return toggle
-
-func _resize_columns() -> void:
-	var width := minf(360.0, maxf(0.0, size.x - 64.0))
-	for column in [home, settings_page]:
-		column.custom_minimum_size.x = width
+func _show_load() -> void:
+	var panel := MenuPanel.new("Spiel laden", 640.0)
+	var list := SaveList.new(false)
+	list.load_chosen.connect(_load_game)
+	panel.body.add_child(list)
+	_show(panel, list.first_focus())
 
 func _show_settings() -> void:
-	home.hide()
-	settings_page.show()
-	music_toggle.grab_focus()
+	var panel := MenuPanel.new("Einstellungen", 520.0)
+	var settings := GameSettings.new($Soundtrack)
+	panel.body.add_child(settings)
+	MenuPanel.gap(panel.body, 8)
+	panel.body.add_child(MenuPanel.button("Fertig", _close))
+	_show(panel, settings.first_focus())
 
-func _show_home() -> void:
-	settings_page.hide()
-	home.show()
-	settings_button.grab_focus()
-
-func _set_music_enabled(enabled: bool) -> void:
-	var music = $Soundtrack
-	# Headless/--mute-music launches intentionally have no AudioStreamPlayer.
-	var config := ConfigFile.new()
-	config.set_value("music", "muted", not enabled)
-	if config.save(music.settings_path) != OK:
-		music_toggle.set_pressed_no_signal(not music.muted)
-		status.text = "Musikeinstellung konnte nicht gespeichert werden. Bitte erneut versuchen."
-		return
-	status.text = ""
-	if music.muted != not enabled and is_instance_valid(music.player):
-		music.toggle_mute()
-	else:
-		music.muted = not enabled
-
-func _set_fullscreen(enabled: bool) -> void:
-	var config := ConfigFile.new()
-	config.set_value("display", "fullscreen", enabled)
-	if config.save(settings_path) != OK:
-		fullscreen_toggle.set_pressed_no_signal(DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN])
-		status.text = "Anzeigeeinstellung konnte nicht gespeichert werden. Bitte erneut versuchen."
-		return
-	status.text = ""
-	if DisplayServer.get_name() != "headless":
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED)
+func _load_game(path: String) -> void:
+	SaveGames.pending = path
+	_start_game()
 
 func _start_game() -> void:
 	if starting:
@@ -201,6 +170,7 @@ func _start_scene() -> void:
 	var error := get_tree().change_scene_to_file(game_scene_path)
 	if error != OK:
 		starting = false
+		SaveGames.pending = ""
 		if is_instance_valid(start_button):
 			start_button.disabled = false
 			start_button.text = "Start fehlgeschlagen – erneut versuchen"
@@ -211,6 +181,52 @@ func _quit_game() -> void:
 	get_tree().quit()
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and is_instance_valid(settings_page) and settings_page.visible:
-		_show_home()
+	if event.is_action_pressed("ui_cancel") and is_instance_valid(_open):
+		_close()
+		start_button.grab_focus()
 		get_viewport().set_input_as_handled()
+
+## An entry of the column: cream serif text, a small bronze diamond before
+## it that fills with gold under the mouse or the keyboard focus.
+class MenuItem extends Button:
+	func _init() -> void:
+		alignment = HORIZONTAL_ALIGNMENT_LEFT
+		custom_minimum_size.y = 48
+		add_theme_font_size_override("font_size", 22)
+		add_theme_color_override("font_color", UiStyle.TEXT)
+		for state in ["font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
+			add_theme_color_override(state, UiStyle.NAME)
+		add_theme_color_override("font_disabled_color", UiStyle.DIM)
+		add_theme_color_override("font_shadow_color", UiStyle.SHADOW)
+		add_theme_constant_override("shadow_offset_x", 1)
+		add_theme_constant_override("shadow_offset_y", 1)
+		for state in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
+			var style := StyleBoxEmpty.new()
+			style.content_margin_left = 26
+			add_theme_stylebox_override(state, style)
+		mouse_entered.connect(queue_redraw)
+		mouse_exited.connect(queue_redraw)
+		focus_entered.connect(queue_redraw)
+		focus_exited.connect(queue_redraw)
+
+	func _draw() -> void:
+		var lit := is_hovered() or has_focus()
+		var c := Vector2(8, size.y * 0.5)
+		var r := 4.5
+		var gem := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0)])
+		if lit and not disabled:
+			draw_colored_polygon(gem, UiStyle.FRAME_LIT)
+		gem.append(gem[0])
+		draw_polyline(gem, UiStyle.FRAME_LIT if lit else UiStyle.FRAME, 1.0, true)
+
+## The rule under the name: a bronze line, a gold diamond, a bronze line.
+class Ornament extends Control:
+	func _init() -> void:
+		custom_minimum_size = Vector2(130, 14)
+
+	func _draw() -> void:
+		var y := size.y * 0.5
+		draw_line(Vector2(0, y), Vector2(56, y), UiStyle.FRAME, 1.0)
+		draw_line(Vector2(74, y), Vector2(130, y), UiStyle.FRAME, 1.0)
+		var c := Vector2(65, y)
+		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -4), c + Vector2(4, 0), c + Vector2(0, 4), c + Vector2(-4, 0)]), UiStyle.FRAME_LIT)
