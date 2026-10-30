@@ -23,15 +23,16 @@
 
 use super::*;
 
-pub const GOODS: usize = 5;
+pub const GOODS: usize = 6;
 pub const WOOL: usize = 0;
 pub const IRON: usize = 1;
 pub const CLOTH: usize = 2;
 pub const TOOLS: usize = 3;
 pub const POTS: usize = 4;
-pub const GOOD_KEYS: [&str; GOODS] = ["wool", "iron", "cloth", "tools", "pottery"];
-pub const GOOD_NAMES: [&str; GOODS] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik"];
-pub const GOOD_UNITS: [&str; GOODS] = ["kg", "kg", "Stück", "kg", "kg"];
+pub const PORK: usize = 5;
+pub const GOOD_KEYS: [&str; GOODS] = ["wool", "iron", "cloth", "tools", "pottery", "pork"];
+pub const GOOD_NAMES: [&str; GOODS] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik", "Schweinefleisch"];
+pub const GOOD_UNITS: [&str; GOODS] = ["kg", "kg", "Stück", "kg", "kg", "kg"];
 
 /// Price per unit on the first day and beyond the map (S98, S112),
 /// milli-denarii: wool
@@ -41,8 +42,9 @@ pub const GOOD_UNITS: [&str; GOODS] = ["kg", "kg", "Stück", "kg", "kg"];
 /// price in the Edict as translated; tools set so a smith earns about the
 /// Edict's 50 den. a day, VII.11); pottery 5 den./kg (Edict XV.78–80 and
 /// XV.77: 2 den. for a 2-sextarii jug up to 1,000 den. for a dolium, by
-/// guessed weights).
-pub(crate) const GOOD_BASE: [i64; GOODS] = [76_000, 20_000, 800_000, 60_000, 5_000];
+/// guessed weights); pork 12 den. an Italian pound of 327 g (Edict IV.1a,
+/// meat chapter), about 36.7 den./kg.
+pub(crate) const GOOD_BASE: [i64; GOODS] = [76_000, 20_000, 800_000, 60_000, 5_000, 36_700];
 
 /// Clothing worn out per adult a year, milli-garments: a tunic every year
 /// and a cloak every other year (Cato, De agri cultura 59); a child half.
@@ -86,17 +88,86 @@ const POTS_DAY: i64 = 15_000;
 /// Share of its adults' working days a household can give to home work
 /// in a month, per cent (PLACEHOLDER).
 const HOME_PCT: i64 = 50;
-/// S111: a household keeps this many days of its adults' day wages as
-/// savings beyond its food reserve, and of the money beyond it spends this
-/// share a month on hired work for money (servants, builders; PLACEHOLDER).
-const SAVE_DAYS: i64 = 365;
+/// S111: the dealers spend this share a month of their cash beyond what
+/// buys their most in store on hired work (servants, builders;
+/// PLACEHOLDER). Households spend by the consumption function (S117).
 pub(super) const SERVE_PCT_MONTH: i64 = 2;
 /// A craft household changes its work only for this much more income, per
 /// cent (PLACEHOLDER: the cost of changing).
 const SWITCH_PCT: i64 = 110;
-/// Households twice / five times as rich as their clothing's worth keep
-/// more of everything (PLACEHOLDER: up to three times the plain need).
-const RICH: [i64; 2] = [4, 20];
+/// S117 (Ramon, 29.10.2026, card „Was soll ich für Schritt 3 Konsum
+/// bauen?“, option „Alles, mit Staatskorn“): what a household spends in a
+/// month, per mille of its usual monthly earnings, by the money it holds
+/// in eighths of those earnings (0 to 32 months). It is the buffer-stock
+/// consumption function (Carroll, 1997), solved once by the endogenous
+/// grid method (Carroll, 2006) for monthly earnings with relative risk
+/// aversion 2, patience 0.85 a year, permanent shocks of 10 % a year,
+/// transitory shocks of 30 % a month and a month without earnings 1 time
+/// in 200, no interest on cash and no growth (PLACEHOLDER all; Carroll
+/// used 2, 0.96, 10 %, 10 % and 0.5 % a year). The patience is chosen so
+/// that a gift of three months' earnings is half spent within the year,
+/// as Norwegian lottery winners did (Fagereng et al., 2021: about one
+/// half); the buffer kept is about two months' earnings. Beyond the table
+/// the function rises by its limiting slope, 1 - 0.85^(1/24) a month.
+const CONSUME: [i64; 257] = [
+    0, 116, 231, 345, 456, 562, 659, 740, 801, 847, 882, 911, 934, 954, 972, 987,
+    1000, 1013, 1024, 1034, 1044, 1053, 1061, 1069, 1077, 1084, 1091, 1098, 1104, 1110, 1116, 1122,
+    1128, 1133, 1139, 1144, 1149, 1154, 1159, 1164, 1169, 1173, 1178, 1182, 1186, 1191, 1195, 1199,
+    1203, 1207, 1211, 1215, 1219, 1223, 1227, 1231, 1234, 1238, 1242, 1245, 1249, 1252, 1256, 1259,
+    1263, 1266, 1269, 1273, 1276, 1279, 1283, 1286, 1289, 1292, 1295, 1298, 1302, 1305, 1308, 1311,
+    1314, 1317, 1320, 1323, 1326, 1329, 1331, 1334, 1337, 1340, 1343, 1346, 1349, 1351, 1354, 1357,
+    1360, 1362, 1365, 1368, 1371, 1373, 1376, 1379, 1381, 1384, 1386, 1389, 1392, 1394, 1397, 1399,
+    1402, 1404, 1407, 1410, 1412, 1415, 1417, 1420, 1422, 1424, 1427, 1429, 1432, 1434, 1437, 1439,
+    1442, 1444, 1446, 1449, 1451, 1453, 1456, 1458, 1460, 1463, 1465, 1467, 1470, 1472, 1474, 1477,
+    1479, 1481, 1484, 1486, 1488, 1490, 1493, 1495, 1497, 1499, 1501, 1504, 1506, 1508, 1510, 1512,
+    1515, 1517, 1519, 1521, 1523, 1526, 1528, 1530, 1532, 1534, 1536, 1538, 1540, 1543, 1545, 1547,
+    1549, 1551, 1553, 1555, 1557, 1559, 1561, 1564, 1566, 1568, 1570, 1572, 1574, 1576, 1578, 1580,
+    1582, 1584, 1586, 1588, 1590, 1592, 1594, 1596, 1598, 1600, 1602, 1604, 1606, 1608, 1610, 1612,
+    1614, 1616, 1618, 1620, 1622, 1624, 1626, 1628, 1630, 1632, 1633, 1635, 1637, 1639, 1641, 1643,
+    1645, 1647, 1649, 1651, 1653, 1655, 1656, 1658, 1660, 1662, 1664, 1666, 1668, 1670, 1672, 1673,
+    1675, 1677, 1679, 1681, 1683, 1685, 1686, 1688, 1690, 1692, 1694, 1696, 1698, 1699, 1701, 1703,
+    1705,
+];
+const CONSUME_SLOPE_PPM: i64 = 6_749;
+/// S117: of the budget left after the plain need, the shares for pork,
+/// more clothing and hired work (servants, builders), per cent
+/// (PLACEHOLDER: fixed shares of spending, so each is bought in proportion
+/// to budget over price; shares that move with income as in Comin et al.,
+/// 2021, need values for ancient households). At most CLOTH_MAX_X times
+/// the plain clothing and PORK_KG_YEAR of pork per adult equivalent.
+const BETTER_PCT: [i64; 3] = [50, 20, 30];
+const CLOTH_MAX_X: i64 = 3;
+const PORK_KG_YEAR: i64 = 20;
+/// S118: pigs on the farms. Grain fed per kg of pork (PLACEHOLDER: no
+/// ancient ratio found; sows and piglets got barley or parched wheat, the
+/// other pigs grazed or ate acorns and chaff, Bartnik 2023), pork a farm
+/// can fatten at most per member a year, kg, and pork per pig, kg (for
+/// the count of pigs only; PLACEHOLDER both).
+const FEED_KG: i64 = 5;
+const PORK_FARM_KG_YEAR: i64 = 60;
+const PIG_KG: i64 = 60;
+/// S117: months over which a household smooths what it earns into its
+/// usual earnings: permanent income as a weighted mean of past income
+/// (Friedman, 1957), the earnings the buffer-stock rule is set against
+/// (Carroll, 1997). A year so that a harvest's sale counts for the year
+/// (frei gewählt; Friedman's estimate weights the past more).
+const EARN_MONTHS: i64 = 12;
+
+/// S117: what a household holding `money` spends this month, with usual
+/// monthly earnings `income` (both milli-denarii).
+pub(super) fn consume(money: i64, income: i64) -> i64 {
+    let income = income.max(1) as i128;
+    // Money in thousandths of an eighth of the earnings.
+    let x = money.max(0) as i128 * 8000 / income;
+    let last = (CONSUME.len() - 1) as i128;
+    let per_mille = if x >= last * 1000 {
+        CONSUME[last as usize] as i128 + CONSUME_SLOPE_PPM as i128 * (x - last * 1000) / 8000 / 1000
+    } else {
+        let (k, frac) = ((x / 1000) as usize, x % 1000);
+        CONSUME[k] as i128 + (CONSUME[k + 1] - CONSUME[k]) as i128 * frac / 1000
+    };
+    (per_mille * income / 1000) as i64
+}
 
 /// Goods moves kept for the view (`goods_moves_in`), days.
 pub(super) const MOVES_KEEP_DAYS: i64 = 28;
@@ -190,6 +261,10 @@ pub(super) struct HhGoods {
     /// For the view only (`crafts_in`): share of this month's working days
     /// whose goods the dealers took, × 255.
     pub util: u8,
+    /// S117: what it earned a month, smoothed over EARN_MONTHS (0 before
+    /// its first month), and the money it held after last month's goods.
+    pub earned: i64,
+    pub held: i64,
 }
 
 /// What a farm owns of the goods.
@@ -199,6 +274,8 @@ pub(super) struct FarmGoods {
     pub jars: i64,
     pub wool: i64,
     pub sheep: i64,
+    /// S118: pork fattened a year, smoothed, milli-kg.
+    pub pork_year: i64,
 }
 
 /// S110: the state wage goes only to soldiers, officers and officials.
@@ -244,6 +321,9 @@ pub struct GoodsStats {
     pub serve_paid: i64,
     /// Of it, paid by the markets' dealers.
     pub dealer_paid: i64,
+    /// S117: what households set out to spend on goods and hired work after
+    /// their food (the consumption function's budget), milli-denarii.
+    pub budget: i64,
 }
 
 impl Grain {
@@ -398,7 +478,9 @@ impl Grain {
     }
 
     /// The month of a household's goods, after its meal (`eat`): wear,
-    /// shearing and wool for sale, craft work, purchases and home work.
+    /// shearing and wool for sale, pigs, craft work, then what it spends
+    /// (S117): the plain need first, then pork, more clothing and hired
+    /// work.
     pub(super) fn goods_month(&mut self, id: u32, info: &HhInfo, mk: usize, day: i64) {
         let Some(s) = self.hh.get(&id).copied() else { return };
         let mut g = s.goods;
@@ -410,11 +492,9 @@ impl Grain {
         // A day of work is worth what day labour pays (S114: the wage).
         let day_value = self.markets[mk].wage;
         let need_day = need_w * KG_PER_ADULT_YEAR / 10 / YEAR;
-        let reserve = need_day * RESERVE_DAYS * grain_sell;
         let f = s.farm;
         if f != NONE {
             let fu = f as usize;
-            let tools_need = self.tools_need(fu);
             let fm = &mut self.farms[fu];
             fm.goods.tools -= fm.goods.tools * TOOLS_WEAR_PCT / 1200;
             fm.goods.jars -= fm.goods.jars * JAR_WEAR_PCT / 1200;
@@ -436,29 +516,29 @@ impl Grain {
                 self.earn(id, pay);
                 self.stats.goods.made[WOOL] += q;
             }
-            let mut budget = self.money_of(id) - reserve;
-            // Tools while they pay for themselves: a kg keeps 1/TOOLS_KG_HA
-            // ha at full work, (1000 - TOOL_MIN) per mille of DAYS_PER_HA.
-            let short = tools_need - self.farms[fu].goods.tools;
-            let price = gsell(&self.markets[mk].goods[TOOLS]);
-            if short > 0 && price * TOOLS_WEAR_PCT * TOOLS_KG_HA * 10 < (1000 - TOOL_MIN) * DAYS_PER_HA * day_value {
-                let (q, cost) = self.dealer_give(mk, TOOLS, short, budget);
-                self.farms[fu].goods.tools += q;
-                self.pay(id, cost);
-                budget -= cost;
-                self.stats.goods.bought[TOOLS] += q;
+            // S118: the pigs eat grain beyond the family's food to the next
+            // harvest, the reserve and the seed, while a kg of pork brings
+            // the dealers' buying price for more than the grain it takes.
+            // Grain held in store is worth the usual buying price the farm
+            // waits for (S112: storage), so the pigs get it only when pork
+            // beats that, not just the low price of the day.
+            let fm = &self.farms[fu];
+            let keep = need_day * (doy_until(day, fm.harvest_doy) + RESERVE_DAYS) + self.cropped(fm.area) * SEED_KG_HA / 10_000;
+            let spare = (fm.store - fm.to_sell - keep).max(0);
+            let held = grain_buy.max(self.usual_price(&self.markets[mk]) * (100 - SPREAD_PCT) / 100);
+            let mut pork = 0;
+            if gbuy(&self.markets[mk].goods[PORK]) > FEED_KG * held && spare >= FEED_KG {
+                let cap = info.size as i64 * PORK_FARM_KG_YEAR * 1000 / 12;
+                let (q, pay) = self.dealer_take(mk, PORK, cap.min(spare / FEED_KG * 1000));
+                let fed = q * FEED_KG / 1000;
+                self.farms[fu].store -= fed;
+                self.stats.feed_kg += fed;
+                self.earn(id, pay);
+                self.stats.goods.made[PORK] += q;
+                pork = q;
             }
-            // Jars for the store with a fifth to spare, while the grain
-            // they save is worth their wear.
-            let want = self.farms[fu].store.max(0) * 1200 / JAR_GRAIN_KG;
-            let short = want - self.farms[fu].goods.jars;
-            let price = gsell(&self.markets[mk].goods[POTS]);
-            if short > 0 && price * JAR_WEAR_PCT < JAR_GRAIN_KG * grain_buy * (SPOIL_OPEN_PCT_YEAR - SPOIL_PCT_YEAR) {
-                let (q, cost) = self.dealer_give(mk, POTS, short, budget);
-                self.farms[fu].goods.jars += q;
-                self.pay(id, cost);
-                self.stats.goods.bought[POTS] += q;
-            }
+            let fg = &mut self.farms[fu].goods;
+            fg.pork_year += (pork * 12 - fg.pork_year) / 12;
         }
         // S107: a household outside the state's service and without land
         // works at the craft that brings most this month, or as a day
@@ -513,63 +593,125 @@ impl Grain {
         } else if state {
             self.stats.goods.state_months += 1;
         }
-        let budget = self.money_of(id) - reserve;
-        // Richer households keep more (RICH).
-        let plain = need_w * 100;
-        let worth = plain * gsell(&self.markets[mk].goods[CLOTH]) / 1000;
-        let rich = 1 + RICH.iter().filter(|&&k| budget > k * worth).count() as i64;
-        let mut budget = budget;
-        self.stats.goods.clothes_short += (plain - g.clothes).max(0);
-        self.stats.goods.clothes_need += plain;
-        let mut short = (plain * rich - g.clothes).max(0);
-        if short > 0 {
-            // Make or buy (S107): the household's days and wool against
-            // the dealers' price.
-            let can_make = matches!(s.kind, FARM | TENT) || (free_worker(&s, info) && g.craft == 0);
-            let cap = info.adults as i64 * WORK_DAYS_YEAR / 12 * HOME_PCT / 100 * 1000 / CLOTH_DAYS;
-            let own_wool = if f != NONE { self.farms[f as usize].goods.wool } else { 0 };
-            let wool_cost = if own_wool > 0 { gbuy(&self.markets[mk].goods[WOOL]) } else { gsell(&self.markets[mk].goods[WOOL]) };
-            if can_make && CLOTH_DAYS * day_value + wool_cost < gsell(&self.markets[mk].goods[CLOTH]) {
-                let own = own_wool.min(short).min(cap);
-                if f != NONE {
-                    self.farms[f as usize].goods.wool -= own;
-                }
-                let (bought, cost) = self.dealer_give(mk, WOOL, short.min(cap) - own, budget);
+        // S117: what it spends this month, from the money it holds against
+        // its usual monthly earnings (EARN_MONTHS): what came in since last
+        // month, food bought counted back in; in its first month the state
+        // wage for the state's servants, else its adults' working days at
+        // the usual day wage. Food bought this month was paid before and
+        // counts in; a trader's
+        // trading money (TRADER_MONEY) is not for spending (PLACEHOLDER).
+        // Food comes first: goods never take the money for the food it
+        // lacks to RESERVE_DAYS.
+        let food = if f == NONE { need_day * MONTH * grain_sell } else { 0 };
+        let now = self.money_of(id);
+        if g.earned == 0 {
+            let wage = if state && s.kind == WAGE { STATE_WAGE } else { self.markets[mk].wage_year };
+            g.earned = (info.adults as i64).max(1) * WORK_DAYS_YEAR / 12 * wage.max(1);
+        } else {
+            g.earned += (now - g.held + food - g.earned) / EARN_MONTHS;
+        }
+        let income = g.earned.max(1);
+        let have = if f == NONE { self.hh.get(&id).map_or(0, |h| h.pantry) } else { self.farms[f as usize].store };
+        let food_money = (need_day * RESERVE_DAYS - have).max(0) * grain_sell;
+        let money = now - if s.kind == TRADER { TRADER_MONEY } else { 0 };
+        let mut budget = (consume(money.max(0) + food, income) - food).min(money - food_money).max(0);
+        self.stats.goods.budget += budget;
+        if f != NONE {
+            let fu = f as usize;
+            // Tools while they pay for themselves: a kg keeps 1/TOOLS_KG_HA
+            // ha at full work, (1000 - TOOL_MIN) per mille of DAYS_PER_HA.
+            let short = self.tools_need(fu) - self.farms[fu].goods.tools;
+            let price = gsell(&self.markets[mk].goods[TOOLS]);
+            if short > 0 && price * TOOLS_WEAR_PCT * TOOLS_KG_HA * 10 < (1000 - TOOL_MIN) * DAYS_PER_HA * day_value {
+                let (q, cost) = self.dealer_give(mk, TOOLS, short, budget);
+                self.farms[fu].goods.tools += q;
                 self.pay(id, cost);
                 budget -= cost;
-                self.stats.goods.bought[WOOL] += bought;
-                let made = own + bought;
-                g.clothes += made;
-                g.home_days += made * CLOTH_DAYS / 1000;
-                self.stats.goods.home_cloth += made;
-                short -= made;
+                self.stats.goods.bought[TOOLS] += q;
             }
-            if short > 0 {
-                let (q, cost) = self.dealer_give(mk, CLOTH, short, budget);
-                g.clothes += q;
+            // Jars for the store with a fifth to spare, while the grain
+            // they save is worth their wear.
+            let want = self.farms[fu].store.max(0) * 1200 / JAR_GRAIN_KG;
+            let short = want - self.farms[fu].goods.jars;
+            let price = gsell(&self.markets[mk].goods[POTS]);
+            if short > 0 && price * JAR_WEAR_PCT < JAR_GRAIN_KG * grain_buy * (SPOIL_OPEN_PCT_YEAR - SPOIL_PCT_YEAR) {
+                let (q, cost) = self.dealer_give(mk, POTS, short, budget);
+                self.farms[fu].goods.jars += q;
                 self.pay(id, cost);
                 budget -= cost;
-                self.stats.goods.bought[CLOTH] += q;
+                self.stats.goods.bought[POTS] += q;
             }
         }
-        let short = (POTS_KG_HH * 1000 * rich - g.pots).max(0);
+        // The plain need: a garment per adult equivalent, the cookware.
+        let plain = need_w * 100;
+        self.stats.goods.clothes_short += (plain - g.clothes).max(0);
+        self.stats.goods.clothes_need += plain;
+        let short = (plain - g.clothes).max(0);
+        budget -= self.clothe(id, &s, info, mk, &mut g, short, budget, day_value);
+        let short = (POTS_KG_HH * 1000 - g.pots).max(0);
         if short > 0 {
             let (q, cost) = self.dealer_give(mk, POTS, short, budget);
             g.pots += q;
             self.pay(id, cost);
+            budget -= cost;
             self.stats.goods.bought[POTS] += q;
         }
-        // S111: money beyond the savings hires work.
-        let save = SAVE_DAYS * day_value * (info.adults as i64).max(1);
-        let spare = self.money_of(id) - reserve - save;
-        let days = if spare > 0 { spare * SERVE_PCT_MONTH / 100 / day_value.max(1) } else { 0 };
+        // The rest by fixed shares: pork, more clothing, hired work.
+        let better = budget.max(0);
+        let (q, cost) = self.dealer_give(mk, PORK, need_w * PORK_KG_YEAR * 100 / 12, better * BETTER_PCT[0] / 100);
+        self.pay(id, cost);
+        self.stats.goods.bought[PORK] += q;
+        let extra = (plain * CLOTH_MAX_X - g.clothes).max(0);
+        self.clothe(id, &s, info, mk, &mut g, extra, better * BETTER_PCT[1] / 100, day_value);
+        let days = better * BETTER_PCT[2] / 100 / day_value.max(1);
         if days > 0 && g.serve_days == 0 {
             self.markets[mk].servers.push(id);
         }
         g.serve_days = days;
+        g.held = self.money_of(id);
         if let Some(s) = self.hh.get_mut(&id) {
             s.goods = g;
         }
+    }
+
+    /// Clothing for a household short of `short` milli-garments, out of
+    /// `budget`: made at home or bought (S107), the household's days and
+    /// wool against the dealers' price. Returns what it paid.
+    #[allow(clippy::too_many_arguments)]
+    fn clothe(&mut self, id: u32, s: &HhState, info: &HhInfo, mk: usize, g: &mut HhGoods, short: i64, budget: i64, day_value: i64) -> i64 {
+        let (mut short, mut budget, mut paid) = (short, budget, 0);
+        if short <= 0 {
+            return 0;
+        }
+        let f = s.farm;
+        let can_make = matches!(s.kind, FARM | TENT) || (free_worker(s, info) && g.craft == 0);
+        let cap = info.adults as i64 * WORK_DAYS_YEAR / 12 * HOME_PCT / 100 * 1000 / CLOTH_DAYS - g.home_days * 1000 / CLOTH_DAYS;
+        let own_wool = if f != NONE { self.farms[f as usize].goods.wool } else { 0 };
+        let wool_cost = if own_wool > 0 { gbuy(&self.markets[mk].goods[WOOL]) } else { gsell(&self.markets[mk].goods[WOOL]) };
+        if can_make && cap > 0 && CLOTH_DAYS * day_value + wool_cost < gsell(&self.markets[mk].goods[CLOTH]) {
+            let own = own_wool.min(short).min(cap);
+            if f != NONE {
+                self.farms[f as usize].goods.wool -= own;
+            }
+            let (bought, cost) = self.dealer_give(mk, WOOL, short.min(cap) - own, budget);
+            self.pay(id, cost);
+            budget -= cost;
+            paid += cost;
+            self.stats.goods.bought[WOOL] += bought;
+            let made = own + bought;
+            g.clothes += made;
+            g.home_days += made * CLOTH_DAYS / 1000;
+            self.stats.goods.home_cloth += made;
+            short -= made;
+        }
+        if short > 0 {
+            let (q, cost) = self.dealer_give(mk, CLOTH, short, budget);
+            g.clothes += q;
+            self.pay(id, cost);
+            paid += cost;
+            self.stats.goods.bought[CLOTH] += q;
+        }
+        paid
     }
 
     /// Once a week per market (1/7 a day): the dealers carry each good
@@ -643,10 +785,10 @@ impl Grain {
     }
 
     /// Goods held, for the yearly line: households' clothing and cookware,
-    /// farms' tools, jars, wool and sheep, and the markets' stores by good
-    /// (all in units).
-    pub fn goods_report(&self) -> ([f64; 6], [f64; GOODS], [f64; GOODS]) {
-        let mut held = [0i64; 6];
+    /// farms' tools, jars, wool, sheep and pigs fattened a year (S118), and
+    /// the markets' stores by good (all in units).
+    pub fn goods_report(&self) -> ([f64; 7], [f64; GOODS], [f64; GOODS]) {
+        let mut held = [0i64; 7];
         for s in self.hh.values() {
             held[0] += s.goods.clothes;
             held[1] += s.goods.pots;
@@ -656,6 +798,7 @@ impl Grain {
             held[3] += f.goods.jars;
             held[4] += f.goods.wool;
             held[5] += f.goods.sheep * 1000;
+            held[6] += f.goods.pork_year / PIG_KG;
         }
         let mut store = [0i64; GOODS];
         let mut prices: [Vec<(i64, i64)>; GOODS] = Default::default();
