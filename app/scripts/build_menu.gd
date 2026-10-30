@@ -10,9 +10,9 @@ extends Node3D
 ##   2  Feld: drag a rectangle of field lots, like a zone in Cities
 ##      Skylines (one lot holds little field, a farm tills some 160);
 ##      starting on a field takes the fields in the rectangle away
-##   3  Strasse: drag from A to B; the road takes the easiest way between
-##      (gentle slopes, round hills, never through water); a click on a
-##      road takes that stretch back
+##   3  Strasse (put away for now, TOOLS): drag from A to B; the road takes
+##      the easiest way between (gentle slopes, round hills, never through
+##      water); a click on a road takes that stretch back
 ##   Esc or a right click puts the tool away; a click on a farm of yours
 ##   takes it back. Middle and right drag still move the map.
 ##
@@ -52,6 +52,10 @@ const FARM := 0
 const FIELD := 1
 const ROAD := 2
 const NAMES := ["Hof", "Feld", "Strasse"]
+## The tools on the strip. The road is put away for now (S127, Ramon
+## 30.10.2026: the ways come from people walking them, "noch keine
+## Steinstrassen"); roads ordered before are still built and drawn.
+const TOOLS := [FARM, FIELD]
 const ICONS := ["house", "plow", "horizon-road"] # assets/ui/icons
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
@@ -129,7 +133,7 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	# the medallions on a strip of leather, as the map modes at the foot (ui/map_modes.gd)
 	bar.draw.connect(func(): Vic3.draw_strip(bar, Rect2(Vector2.ZERO, bar.size).grow(5.0 * k)))
 	hud.add_child(bar)
-	for kind in NAMES.size():
+	for kind in TOOLS:
 		var b := ToolButton.new()
 		b.scale_k = k
 		b.custom_minimum_size = ToolButton.SIZE * k
@@ -236,8 +240,8 @@ static func _dist(a: Vector2i, b: Vector2i) -> float:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_1, KEY_2, KEY_3:
-				_choose(event.keycode - KEY_1)
+			KEY_1, KEY_2:
+				_choose(TOOLS[event.keycode - KEY_1])
 				get_viewport().set_input_as_handled()
 			KEY_ESCAPE:
 				if tool != NONE:
