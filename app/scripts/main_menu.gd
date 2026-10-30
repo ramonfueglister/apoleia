@@ -15,6 +15,7 @@ const GAME_SCENE = "res://landscape.tscn"
 const BACKGROUND_IMAGE = "res://assets/menu/rom.jpg"
 const AUTOMATION_FLAGS = ["--tour", "--snapshot", "--fixture", "--capture-dir", "--telemetry-dir", "--probe-anchor", "--diagnose-input", "--bench", "--views"]
 const COLUMN_PX := 420.0
+const WOOD_PX := 12.0
 
 var game_scene_path := GAME_SCENE
 var start_button: Button
@@ -60,40 +61,43 @@ func _build_ui() -> void:
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
 	# the column
+	# a navy field with EU5's carved wood along its right edge
 	var column := PanelContainer.new()
-	var edge := UiStyle.box(Color(UiStyle.PANEL, 0.94), UiStyle.FRAME, 0, 0, 0)
-	edge.border_width_right = 1
-	edge.shadow_color = Color(0, 0, 0, 0.45)
-	edge.shadow_size = 18
-	edge.content_margin_left = 72
-	edge.content_margin_right = 56
-	edge.content_margin_top = 96
-	edge.content_margin_bottom = 40
-	column.add_theme_stylebox_override("panel", edge)
+	var field := UiStyle.box(Color(UiStyle.PANEL, 0.96), Color.TRANSPARENT, 0, 0, 0)
+	field.shadow_color = Color(0, 0, 0, 0.5)
+	field.shadow_size = 18
+	field.content_margin_left = 72
+	field.content_margin_right = 56 + WOOD_PX
+	field.content_margin_top = 96
+	field.content_margin_bottom = 40
+	column.add_theme_stylebox_override("panel", field)
+	column.draw.connect(func():
+		var strip := Rect2(column.size.x - WOOD_PX, 0, WOOD_PX, column.size.y)
+		column.draw_rect(strip, UiStyle.WOOD)
+		var y := 8.0
+		while y < column.size.y: # the carving: small diamonds down the strip
+			var c := Vector2(strip.get_center().x, y)
+			var d := WOOD_PX * 0.3
+			column.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -d), c + Vector2(d, 0), c + Vector2(0, d), c + Vector2(-d, 0)]), UiStyle.WOOD_CARVE)
+			y += WOOD_PX * 0.9
+		column.draw_line(Vector2(strip.position.x - 1, 0), Vector2(strip.position.x - 1, column.size.y), Color(UiStyle.GOLD, 0.7), 1.0)
+		column.draw_line(Vector2(strip.end.x - 0.5, 0), Vector2(strip.end.x - 0.5, column.size.y), UiStyle.EDGE, 1.0))
 	column.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	column.offset_right = COLUMN_PX
 	add_child(column)
 	var items := VBoxContainer.new()
 	items.add_theme_constant_override("separation", 6)
 	column.add_child(items)
-	var title := Label.new()
-	title.text = "APOLEIA"
+	var title := UiStyle.label("APOLEIA", UiStyle.TITLE, 56)
+	title.add_theme_constant_override("shadow_offset_y", 2)
+	title.add_theme_constant_override("shadow_outline_size", 4)
 	var wide := FontVariation.new()
 	wide.base_font = UiStyle.serif()
 	wide.spacing_glyph = 10
 	title.add_theme_font_override("font", wide)
-	title.add_theme_font_size_override("font_size", 56)
-	title.add_theme_color_override("font_color", UiStyle.TITLE)
 	items.add_child(title)
 	items.add_child(Ornament.new())
-	var sub := Label.new()
-	sub.text = "Imperium Romanum · Ianuarius, Jahr 1"
-	var italic := SystemFont.new()
-	italic.font_names = UiStyle.serif().font_names
-	italic.font_italic = true
-	sub.add_theme_font_override("font", italic)
-	sub.add_theme_font_size_override("font_size", 15)
-	sub.add_theme_color_override("font_color", UiStyle.DIM)
+	var sub := UiStyle.label("Imperium Romanum · Ianuarius, Jahr 1", UiStyle.KIND, 15, UiStyle.italic())
 	items.add_child(sub)
 	MenuPanel.gap(items, 64)
 	start_button = _item("Neues Spiel", items, _start_game)
@@ -193,6 +197,9 @@ class MenuItem extends Button:
 		for state in ["font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
 			add_theme_color_override(state, UiStyle.NAME)
 		add_theme_color_override("font_disabled_color", UiStyle.DIM)
+		add_theme_color_override("font_shadow_color", UiStyle.SHADOW)
+		add_theme_constant_override("shadow_offset_x", 1)
+		add_theme_constant_override("shadow_offset_y", 1)
 		for state in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
 			var style := StyleBoxEmpty.new()
 			style.content_margin_left = 26

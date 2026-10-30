@@ -37,6 +37,7 @@ var _root: Control
 var _panel: MenuPanel # the window shown now
 var _main: MenuPanel # the pause menu itself, kept while a page is open
 var _saves: SaveList
+var _resume: Button
 var _saving := {} # {path, name} while the sim writes a save
 var _year := -1 # the game year last seen, for the autosave
 
@@ -84,8 +85,8 @@ func show_menu() -> void:
 	if people != null:
 		_main.set_subtitle(SimTables._date(people.day()))
 	var b := _main.body
-	var resume := MenuPanel.button("Weiterspielen", hide_menu)
-	b.add_child(resume)
+	_resume = MenuPanel.button("Weiterspielen", hide_menu)
+	b.add_child(_resume)
 	MenuPanel.gap(b, 6)
 	var can := clock != null
 	for entry in [["Spiel speichern", _show_saves.bind(true)], ["Spiel laden", _show_saves.bind(false)]]:
@@ -97,7 +98,7 @@ func show_menu() -> void:
 	b.add_child(MenuPanel.button("Zum Hauptmenü", _confirm.bind("Zum Hauptmenü?", "Zum Hauptmenü", _to_main_menu), true))
 	b.add_child(MenuPanel.button("Spiel beenden", _confirm.bind("Spiel beenden?", "Beenden", get_tree().quit), true))
 	_show(_main)
-	resume.grab_focus.call_deferred()
+	_resume.grab_focus.call_deferred()
 
 func hide_menu() -> void:
 	if not open:
@@ -125,7 +126,7 @@ func _show(panel: MenuPanel) -> void:
 func _back() -> void:
 	_saves = null
 	_show(_main)
-	_main.body.get_child(0).grab_focus.call_deferred()
+	_resume.grab_focus.call_deferred()
 
 func _page(title: String, width: float) -> MenuPanel:
 	var panel := MenuPanel.new(title, width)
