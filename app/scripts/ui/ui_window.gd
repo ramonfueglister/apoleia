@@ -1,6 +1,8 @@
 extends Control
-## A window in the manner of EU5: a title bar to drag it by, a grip at the
-## bottom right to size it, – to fold it to its bar and ✕ to close it. All
+## A window in the look of the menus (after Victoria 3): grained slate in a
+## gold rim, the title in small caps on a band of leather to drag it by, a
+## grip at the bottom right to size it, round medallions – to fold it to its
+## band and ✕ to close it. All
 ## windows share one CanvasLayer (WINDOW_LAYER) above the rest of the HUD
 ## (game clock, build menu, events), so none of them covers a window; the
 ## one clicked last lies on top. Each remembers where it stood and how big
@@ -11,13 +13,15 @@ extends Control
 ##   double click the bar   fold or unfold
 ##
 ## The content goes into `body` (a VBoxContainer that fills the window);
-## `bar_extra` takes controls left of the title (EU5 puts back and settings there).
+## `bar_extra` takes controls left of the title (back and settings go there).
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const WINDOW_LAYER := 10 # over the game clock and market (4) and the build menu (3)
-const BAR_PX := 52.0
-const ROUND_PX := 36.0
-const SIDE_PX := 16 # the wood at the sides and foot
+const BAR_PX := 56.0
+const ROUND_PX := 38.0
+const SIDE_PX := 8 # the slate between the rim and the field
+const TITLE_PX := 26
 const GRIP_PX := 16.0
 const KEEP_PX := 48.0 # this much of a window stays on screen
 const STORE := "user://ui_windows.cfg"
@@ -31,7 +35,7 @@ var min_size := Vector2(320, 200)
 var body: VBoxContainer
 var bar_extra: HBoxContainer
 var folded := false
-var _title: Label
+var _title: RichTextLabel
 var _frame: PanelContainer
 var _field: PanelContainer
 var _grip: Control
@@ -69,8 +73,8 @@ func _build(title: String) -> void:
 	name = "Window_" + key
 	theme = UiStyle.theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# the frame: dark carved wood, drawn by the window itself (see _draw),
-	# the title bar across its top, the navy field inside
+	# the slate in its rim, drawn by the window itself (see _draw), the
+	# leather band across its top, the field inside
 	_frame = PanelContainer.new()
 	_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -79,8 +83,8 @@ func _build(title: String) -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	_frame.add_child(column)
-	# the title bar: bronze lattice, the title large in the middle as EU5
-	# sets it, round buttons at both ends
+	# the band: leather, the title in the middle in small caps with large
+	# gold initials, round medallions at both ends
 	var bar := Control.new()
 	bar.custom_minimum_size = Vector2(0, BAR_PX)
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -95,20 +99,15 @@ func _build(title: String) -> void:
 	row.offset_right = -8
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(row)
-	bar_extra = HBoxContainer.new() # left of the title, like EU5's back and settings
+	bar_extra = HBoxContainer.new() # left of the title: back and settings
 	bar_extra.add_theme_constant_override("separation", 6)
 	bar_extra.custom_minimum_size = Vector2(2 * ROUND_PX + 6, 0)
 	bar_extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(bar_extra)
-	_title = UiStyle.label(title, UiStyle.TITLE, UiStyle.SIZE_TITLE + 2, UiStyle.bold())
-	_title.add_theme_constant_override("shadow_offset_y", 2)
-	_title.add_theme_constant_override("shadow_outline_size", 4)
-	_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
-	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_title = Vic3Style.title_label(title, TITLE_PX)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.size_flags_vertical = Control.SIZE_FILL
-	_title.clip_text = true
+	_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_title.clip_contents = true
 	row.add_child(_title)
 	for b in [["fold", "Einklappen", toggle_fold], ["close", "Schliessen  (Esc)", close]]:
 		var button := round_button(b[0], b[1], b[2])
@@ -121,8 +120,8 @@ func _build(title: String) -> void:
 	pad.add_theme_constant_override("margin_bottom", SIDE_PX + 2)
 	pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(pad)
-	_field = PanelContainer.new()
-	_field.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, Color.TRANSPARENT, 0, 0, 12))
+	_field = PanelContainer.new() # the slate shows through
+	_field.add_theme_stylebox_override("panel", UiStyle.box(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0, 10))
 	pad.add_child(_field)
 	# what is wider than the window scrolls sideways instead of widening it
 	var scroll := ScrollContainer.new()
@@ -150,21 +149,12 @@ func _build(title: String) -> void:
 			raise())
 	resized.connect(queue_redraw)
 
-## The wood around the field and its shadow; the bar draws itself.
+## The slate in its rims and its shadow; the band draws itself.
 func _draw() -> void:
-	var r := Rect2(Vector2.ZERO, size)
-	var shadow := UiStyle.box(Color(0, 0, 0, 0.0), Color.TRANSPARENT, 0, 2, 0)
-	shadow.shadow_color = Color(0, 0, 0, 0.55)
-	shadow.shadow_size = 14
-	shadow.shadow_offset = Vector2(0, 6)
-	draw_style_box(shadow, r)
-	if folded:
-		return
-	var inner := Rect2(SIDE_PX, BAR_PX, size.x - 2.0 * SIDE_PX, size.y - BAR_PX - SIDE_PX - 2.0)
-	UiStyle.draw_wood(self, r, inner)
+	UiStyle.draw_window(self, Rect2(Vector2.ZERO, size))
 
-## A round button in a bronze ring, as EU5's close and back buttons;
-## `glyph` is "close", "fold", "back" or a letter.
+## A round medallion as the menus' close and back buttons; `glyph` is
+## "close", "fold", "back" or a letter.
 static func round_button(glyph: String, tip: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.tooltip_text = tip
@@ -183,7 +173,7 @@ static func round_button(glyph: String, tip: String, action: Callable) -> Button
 	return button
 
 func set_title(text: String) -> void:
-	_title.text = text
+	_title.text = Vic3Style.caps(text, TITLE_PX)
 
 func open() -> void:
 	visible = true

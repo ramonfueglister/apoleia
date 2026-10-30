@@ -1,12 +1,11 @@
 extends HBoxContainer
-## Tabs as EU5 sets them under a window's title: boards of dark wood of
-## equal width across the whole window, black gaps between them, the
-## chosen one lighter and taller with its top rolled like a scroll. Takes
-## the place of a TabBar: add_tab(), current_tab, tab_changed.
+## Tabs under a window's title as the menus' buttons (after Victoria 3):
+## olive boards of equal width across the whole window in a quiet gold
+## edge, lit from above, the chosen one lighter in a gold edge with its name
+## in gold. Takes the place of a TabBar: add_tab(), current_tab, tab_changed.
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
-const HEIGHT := 46.0
-const RISE := 6.0 # the chosen tab stands this much higher
+const HEIGHT := 40.0
 
 signal tab_changed(index: int)
 
@@ -68,25 +67,19 @@ func _font_size() -> int:
 	return UiStyle.SIZE_SMALL
 
 static func _draw_tab(tab: Button, title: String, on: bool, hover: bool, font_size: int) -> void:
-	var r := Rect2(Vector2(0, 0 if on else RISE), tab.size - Vector2(0, 0 if on else RISE))
-	var wood := UiStyle.TAB_WOOD_ON if on else (UiStyle.TAB_WOOD_HOVER if hover else UiStyle.TAB_WOOD)
+	var r := Rect2(Vector2.ZERO, tab.size)
+	var board := UiStyle.TAB_ON if on else (UiStyle.TAB_HOVER if hover else UiStyle.TAB)
 	tab.draw_rect(r, UiStyle.EDGE)
-	var inner := r.grow(-2.0)
-	tab.draw_rect(inner, wood)
-	for k in 5: # a faint grain along the board
-		var y := inner.position.y + inner.size.y * (0.18 + 0.17 * k)
-		tab.draw_line(Vector2(inner.position.x + 6.0, y), Vector2(inner.end.x - 6.0, y + (k % 2) * 2.0), Color(0, 0, 0, 0.08), 1.0)
-	tab.draw_rect(Rect2(inner.position, Vector2(inner.size.x, 2)), Color(1, 1, 1, 0.07))
-	if on:
-		# the rolled top: a darker curl over the left of the board
-		var curl := PackedVector2Array()
-		for k in 17:
-			var t := k / 16.0
-			curl.append(Vector2(inner.position.x + t * inner.size.x, inner.position.y + 9.0 - 7.0 * sin(t * PI * 0.5) + 2.0 * t))
-		tab.draw_polyline(curl, Color(0, 0, 0, 0.55), 3.0, true)
-		tab.draw_polyline(curl, Color(1, 1, 1, 0.08), 1.0, true)
-		tab.draw_circle(Vector2(inner.position.x + 5.0, inner.position.y + 9.0), 4.0, Color(0, 0, 0, 0.5))
+	var inner := r.grow(-1.0)
+	tab.draw_rect(inner, board)
+	var top := Color(1.0, 0.92, 0.85, 0.07 if on else 0.04) # light from above
+	var foot := Color(0, 0, 0, 0.22)
+	tab.draw_polygon(PackedVector2Array([inner.position, Vector2(inner.end.x, inner.position.y), inner.end, Vector2(inner.position.x, inner.end.y)]),
+		PackedColorArray([top, top, foot, foot]))
+	tab.draw_rect(inner, UiStyle.GOLD if on else (UiStyle.GOLD_LIT if hover else UiStyle.GOLD_DIM), false, 1.0)
+	if on: # a gold line along its foot, as the chosen button in the menus
+		tab.draw_line(Vector2(inner.position.x + 6.0, inner.end.y - 2.0), Vector2(inner.end.x - 6.0, inner.end.y - 2.0), UiStyle.GOLD_LIT, 2.0)
 	var f := UiStyle.bold()
 	var y := r.position.y + r.size.y * 0.5 + font_size * 0.35
-	UiStyle.text_at(tab, Vector2(r.position.x, y), title, Color.WHITE if hover and not on else UiStyle.TEXT,
+	UiStyle.text_at(tab, Vector2(r.position.x, y), title, UiStyle.NAME if on else (Color.WHITE if hover else UiStyle.TEXT),
 		font_size, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, f)
