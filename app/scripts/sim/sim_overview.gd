@@ -1,6 +1,6 @@
 extends ScrollContainer
 ## The statistics' first tab, "Übersicht": the state of the realm at a
-## glance, as EU5's economy panel opens. Five figures with their change
+## glance, as a grand strategy economy panel opens. Five figures with their change
 ## since the month before and a small curve, the months the charts show,
 ## then sections of cards: people, food and grain, work and money, goods,
 ## the state. Each card opens with what its numbers say (Knaflic: the
@@ -8,7 +8,7 @@ extends ScrollContainer
 ## says what it shows. The line charts share one month under the mouse,
 ## and mark what happened (built, famine, price shocks). Shares are sorted
 ## bars, what each class ate small multiples on one scale. Every line, bar,
-## row and good has an EU5 tooltip.
+## row and good has a tooltip.
 ##
 ## sim_tables.gd hands it the tables (history, population, farms, state,
 ## classes, goods) with show_tables(); it only draws them.
@@ -18,6 +18,7 @@ const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const CARD_MIN := 320.0
+const SECTION_PX := 21 # a section's heading, small caps
 const CHART_PX := 170.0
 const OTHER := Color("6d7479") # the medal of "Andere", the rest
 const BARS_MAX := 6 # rows of a share card before "Andere"
@@ -84,14 +85,14 @@ func _init(date_fn: Callable) -> void:
 	_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_column.add_theme_constant_override("separation", 10)
 	add_child(_column)
-	# the figures as EU5's stat strip: cells of two browns in one frame
+	# the figures as a stat strip: cells of two greens in one gold line
 	var strip := PanelContainer.new()
-	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.STAT_FRAME, 3, 0, 0))
+	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.GOLD_DIM, 1, 2, 0))
 	_column.add_child(strip)
 	_tiles = HBoxContainer.new()
 	_tiles.add_theme_constant_override("separation", 0)
 	strip.add_child(_tiles)
-	# the months the charts show, as EU5's time buttons
+	# the months the charts show, as time buttons
 	_spans = HBoxContainer.new()
 	_spans.add_theme_constant_override("separation", 6)
 	_spans.alignment = BoxContainer.ALIGNMENT_END
@@ -219,7 +220,7 @@ func show_tables(tables: Dictionary) -> void:
 
 # ------------------------------------------------------------------ figures
 
-## The figures as EU5's stat strip: the name in blue, the value, the
+## The figures as a stat strip: the name in the concepts' colour, the value, the
 ## change since the month before, a small curve.
 func _fill_tiles(d: Dictionary) -> void:
 	var specs := [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
@@ -300,18 +301,19 @@ func _tile(key: String) -> PanelContainer:
 
 # ------------------------------------------------------------------ sections and cards
 
-## A heading as EU5 sets one over a group: the name in gold between two
-## gold rules ending in a small diamond. The cards after it go in its grid.
+## A heading over a group, as the menus' rules: the name in gold small
+## caps between two gold rules ending in a small diamond. The cards after
+## it go in its grid.
 func _section(title: String) -> void:
 	var head := Control.new()
 	head.custom_minimum_size = Vector2(0, 30)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.draw.connect(func():
-		var f := UiStyle.bold()
-		var w := f.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_HEAD).x
+		var f := UiStyle.title_font()
+		var w := f.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, SECTION_PX).x
 		var mid := head.size.x * 0.5
 		var y := head.size.y * 0.5 + 1.0
-		UiStyle.text_at(head, Vector2(0, y + UiStyle.SIZE_HEAD * 0.35), title, UiStyle.GOLD_LIT, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_CENTER, head.size.x, f)
+		UiStyle.text_at(head, Vector2(0, y + SECTION_PX * 0.35), title, UiStyle.GOLD_LIT, SECTION_PX, HORIZONTAL_ALIGNMENT_CENTER, head.size.x, f)
 		for side: float in [-1.0, 1.0]:
 			var inner := mid + side * (w * 0.5 + 14.0)
 			var outer := mid + side * (head.size.x * 0.5 - 4.0)
@@ -328,12 +330,12 @@ func _section(title: String) -> void:
 	_column.add_child(_grid)
 	_grids.append(_grid)
 
-## A card as EU5's boxes: a dark field in a brown frame, its title on a
-## dark band with a gold rule under it. The title's tooltip says what the
-## card shows (`about`).
+## A card as the columns of the menus' (Vic3) windows: no frame, its title
+## in small caps on a slim band of leather with a gold line under it, the
+## rest on the slate. The title's tooltip says what the card shows (`about`).
 func _card(key: String, title: String, about: String) -> VBoxContainer:
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.INSET, UiStyle.STAT_FRAME, 2, 0, 0))
+	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.custom_minimum_size = Vector2(CARD_MIN, 0)
 	_grid.add_child(card)
@@ -341,11 +343,14 @@ func _card(key: String, title: String, about: String) -> VBoxContainer:
 	column.add_theme_constant_override("separation", 0)
 	card.add_child(column)
 	var head := _label(title, UiStyle.TEXT, UiStyle.SIZE_HEAD)
+	head.add_theme_font_override("font", UiStyle.title_font())
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.clip_text = true
 	head.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	var band := UiStyle.box(UiStyle.TIP_CHART_HEAD, UiStyle.GOLD, 0, 0, 4)
+	var band := UiStyle.box(UiStyle.BAR, UiStyle.GOLD_DIM, 0, 2, 3)
 	band.border_width_bottom = 1
+	band.corner_radius_bottom_left = 0
+	band.corner_radius_bottom_right = 0
 	head.add_theme_stylebox_override("normal", band)
 	head.mouse_filter = Control.MOUSE_FILTER_PASS
 	Tooltips.attach(head, func(_at: Vector2) -> Dictionary: return {"id": "card:" + title, "title": title, "kind": "Diagramm", "text": about})
@@ -825,9 +830,9 @@ func _icon(name: String) -> Texture2D:
 
 # ------------------------------------------------------------------ goods
 
-## The goods as small charts side by side, as EU5's market goods: the
+## The goods as small charts side by side, as a market's goods: the
 ## name, the median price and its change, the price over the chosen months.
-## Over a good, EU5's tooltip with its price since the start.
+## Over a good, a tooltip with its price since the start.
 func _goods_card() -> void:
 	var box := _card("goods", "Warenpreise", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum.")
 	_goods = GridContainer.new()
@@ -889,7 +894,7 @@ func _set_goods(goods: Dictionary, h: Dictionary) -> void:
 
 func _good_tile(r: int) -> PanelContainer:
 	var tile := PanelContainer.new()
-	var back := UiStyle.box(UiStyle.ROW if r % 2 == 0 else UiStyle.ROW_DARK, UiStyle.EDGE, 1, 0, 0)
+	var back := UiStyle.box(UiStyle.ROW if r % 2 == 0 else UiStyle.ROW_DARK, Color(UiStyle.GOLD_DIM, 0.6), 1, 2, 0)
 	back.content_margin_left = 8
 	back.content_margin_right = 8
 	back.content_margin_top = 4
