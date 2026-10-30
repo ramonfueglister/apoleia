@@ -55,6 +55,7 @@ const PARCELS_SHADER = preload("res://shaders/people_parcels.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the ground in view
 const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
+const HEDGE_BLOCKS := 5 # blocks per side of a hedged field, about two metres each (people_crops.gdshader)
 const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
@@ -574,9 +575,10 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
 ## A parcel's field: the slab (UV.x = -1), CROP_ROWS rows (UV.x their
-## place across the parcel, UV.y their number) and the fence (UV.x = -2,
-## UV.y side * 16 + post, 15 the rail) and a flock for the pasture (UV.x =
-## -3, UV.y sheep * 4 + body, legs or head), each a unit box (x, z
+## place across the parcel, UV.y their number), the fence (UV.x = -2,
+## UV.y side * 16 + post, 15 the rail), the hedge (UV.x = -4, UV.y side *
+## 16 + block) and a flock for the pasture (UV.x = -3, UV.y sheep * 4 +
+## body, legs or head), each a unit box (x, z
 ## -0.5..0.5, y 0..1, no bottom); people_crops.gdshader sizes and places
 ## them by crop and season. Flat faces: the sides a step darker in the vertex alpha.
 static func _crop_mesh() -> ArrayMesh:
@@ -588,6 +590,8 @@ static func _crop_mesh() -> ArrayMesh:
 	for side in 4:
 		for k: int in range(FENCE_POSTS) + [15]:
 			parts.append(Vector2(-2.0, side * 16 + k))
+		for k in HEDGE_BLOCKS:
+			parts.append(Vector2(-4.0, side * 16 + k))
 	for k in FLOCK_MAX:
 		for part in 3:
 			parts.append(Vector2(-3.0, k * 4 + part))
