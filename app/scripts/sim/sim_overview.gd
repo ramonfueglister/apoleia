@@ -16,23 +16,25 @@ extends ScrollContainer
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
+const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const CARD_MIN := 320.0
 const CHART_PX := 170.0
 const OTHER := Color("6d7479") # the medal of "Andere", the rest
 const BARS_MAX := 6 # rows of a share card before "Andere"
 const BAR_ROW := 26.0
 const BAR_PX := 8.0 # a bar's height in its trough, as the menu's (Vic3)
-const MEDAL_R := 9.0
-const NAME_X := 28.0 # a row's name, right of its medal
+const MEDAL_R := 10.5
+const NAME_X := 31.0 # a row's name, right of its medal
 const SHARE_PX := 56.0 # a row's share at the right
 const FED_ROW := 34.0
 const FED_NAME_PX := 108.0
-## The medals' icons, white, tinted when drawn; the menu thread adds them.
-const ICON_DIR := "res://assets/ui/icons/"
+## The medals' icons in assets/ui/icons (Vic3Style.icon), white, tinted
+## when drawn; a name without one shows its first letter.
 const ICONS := {
-	"Hofleute": "family-house", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
-	"Bauern": "wheat", "Pächter": "wheat", "Handwerker": "anvil", "Adel": "roman-toga",
-	"Familienhof": "family-house", "Pachthof": "wheat", "Gut": "barn",
+	"Hofleute": "family-house", "Im Zelt": "camping-tent", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
+	"Bauern": "wheat", "Pächter": "field", "Tagelöhner": "walking-boot", "Handwerker": "anvil", "Adel": "laurel-crown",
+	"Geistliche": "greek-temple", "Gelehrte": "open-book", "Beamte": "scroll-quill", "Offiziere": "eagle-emblem",
+	"Unternehmer": "scales", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn",
 }
 ## The goods table's rows in apoleia_sim::grain::GOOD_KEYS order; the
 ## history has each one's price as good_<key>.
@@ -803,7 +805,7 @@ func _bar(ci: CanvasItem, trough: Rect2, start: float, end: float, colour: Color
 		PackedColorArray([dark, light, light, dark]))
 
 ## A row's round medal in a gold rim, as the menu's (Vic3) lists: its icon
-## from ICON_DIR once there, else its first letter; on the colour the
+## when it has one, else its first letter; on the colour the
 ## entity keeps in every chart, or dark.
 func _medal(ci: CanvasItem, at: Vector2, name: String, colour: Color) -> void:
 	ci.draw_circle(at, MEDAL_R + 1.0, UiStyle.EDGE)
@@ -811,15 +813,14 @@ func _medal(ci: CanvasItem, at: Vector2, name: String, colour: Color) -> void:
 	ci.draw_circle(at, MEDAL_R - 1.5, colour.darkened(0.3) if colour.a > 0.0 else UiStyle.INSET)
 	var icon := _icon(name)
 	if icon != null:
-		var side := (MEDAL_R - 3.0) * 2.0
+		var side := (MEDAL_R - 2.5) * 2.0
 		ci.draw_texture_rect(icon, Rect2(at - Vector2(side, side) * 0.5, Vector2(side, side)), false, UiStyle.TEXT)
 	else:
 		UiStyle.text_at(ci, at + Vector2(-MEDAL_R, 4.0), name.left(1), UiStyle.TEXT, UiStyle.SIZE_SMALL - 1, HORIZONTAL_ALIGNMENT_CENTER, MEDAL_R * 2.0, UiStyle.bold())
 
 func _icon(name: String) -> Texture2D:
 	if not _icons.has(name):
-		var path := ICON_DIR + "%s.svg" % ICONS.get(name, "")
-		_icons[name] = load(path) if ICONS.has(name) and ResourceLoader.exists(path) else null
+		_icons[name] = Vic3Style.icon(ICONS[name]) if ICONS.has(name) else null
 	return _icons[name]
 
 # ------------------------------------------------------------------ goods
