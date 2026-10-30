@@ -106,6 +106,29 @@ was die Simulation schon rechnet (nichts Neues in der Simulation).
   `take_person` (statt zehn einzelner Werte), damit auch andere Fenster ein
   Gesicht bauen können, mit dem, was sie wissen.
 
+## Gesichter überall (Runde 8, 30.10.2026)
+
+Der dritte Punkt von „gerne alles“.
+
+- **Ein Speicher für alle Gesichter** (`app/scripts/ui/portrait_cache.gd`):
+  eine kleine 3D-Welt rendert ein Gesicht pro Bild und behält es als Textur
+  mit Mipmaps, die letzten 64. Das Personenfenster, die Haushaltsliste, die
+  Ereignisfenster und die Hinweise zeichnen alle daraus
+  (`portrait_view.gd` nur noch als Bogen mit Goldrand um die Textur). Der
+  Schlüssel ist die Person mit allem, was ihr Gesicht ändert: Alter in
+  Jahren, Trauer nach Wochen, Gewicht, Hunger, Kleidung und Rang in Stufen.
+- **Haushaltsliste**: jedes Mitglied mit seinem Gesicht; ein Klick öffnet
+  die Person (`member_chosen`). `take_person` gibt dafür jedem Mitglied seine
+  Gene und Herkunft mit.
+- **Ereignisfenster**: die Beteiligten bekommen das Gesicht ihres Haushalts
+  über ihrem Namen (das Mitglied, das der Link öffnet); ein Klick darauf
+  öffnet es. Neu: `ApoleiaPeople.ask_faces(households)` und `take_faces()`.
+- **Hinweise**: eine Zeile für genau ein Ereignis eines Haushalts, den es
+  danach noch gibt (Umzug, zu Verwandten, Diebstahl, Almosen, Zelt zieht um,
+  Hof übernommen, Erbteil, ins Zelt, Lex Manciana), zeigt im Medaillon das
+  Gesicht statt des Zeichens. Zeilen für mehrere Ereignisse, Hungertod und
+  verlassene Höfe behalten das Zeichen.
+
 ## Was aus der Simulation kommt
 
 | Im Gesicht | Aus der Simulation | Regel |
@@ -171,6 +194,8 @@ und in der Werkstatt nebeneinander.
 - Namen, Dynastien, Eigenschaften (CK3) gibt es noch nicht.
 - Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken und
   Altersflecken.
+- Die Gesichter der Hinweise sind klein (30 Pixel); ob sie dort helfen, muss
+  sich im Spiel zeigen.
 
 ## Literatur
 

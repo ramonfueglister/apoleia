@@ -19,11 +19,16 @@ const BADGE_R := 14.0 # the class medal on the portrait's corner
 const BAR_ROW := 30.0
 const BAR_PX := 8.0
 const FAMILY_MAX := 8 # members listed before "und N weitere"
+const FAMILY_ROW := 52.0 # a member's row, tall enough for the face
+const FAMILY_FACE := 0.36 # the face's scale in it (portrait_view.gd at 40 x 50)
 ## The household kinds (KIND_NAMES in apoleia_sim::grain) as the
 ## statistics name the classes.
 const CLASSES := {"Hof": "Hofleute", "Zelt": "Im Zelt", "Lohn": "Lohnarbeit", "Händler": "Händler", "Oberschicht": "Oberschicht"}
 const STANDS := ["Landvolk", "Stadtvolk", "Ritter", "Senatoren"]
 const CRAFT_NOTES := {"Taglohn": "Taglohn", "Weber": "Weberei", "Schmied": "Schmiede", "Töpfer": "Töpferei"}
+
+## A member of the household was clicked (people_dots.gd opens them).
+signal member_chosen(pid: int)
 
 var _win # ui_window.gd
 var _column: VBoxContainer
@@ -267,7 +272,7 @@ func _family(p: Dictionary) -> void:
 	var fam: Array = p.get("family", [])
 	if fam.is_empty():
 		return
-	var box := _card("Haushalt", "Die Menschen, die mit dieser Person einen Haushalt bilden: sie essen aus einem Vorrat und teilen ihr Geld.")
+	var box := _card("Haushalt", "Die Menschen, die mit dieser Person einen Haushalt bilden: sie essen aus einem Vorrat und teilen ihr Geld. Ein Klick auf jemanden öffnet diese Person.")
 	var order := fam.duplicate()
 	order.sort_custom(func(a, b):
 		if int(a.pid) == int(p.pid) or int(b.pid) == int(p.pid):
@@ -282,20 +287,43 @@ func _family(p: Dictionary) -> void:
 		elif int(m.pid) == int(p.spouse):
 			rel = "Ehefrau" if m.female else "Ehemann"
 		var row := Control.new()
-		row.custom_minimum_size = Vector2(0, 26)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.custom_minimum_size = Vector2(0, FAMILY_ROW)
 		var me := int(m.pid) == int(p.pid)
 		var job: String = m.job
 		var age := int(m.age)
 		var away: bool = m.get("travelling", false)
+		# each member's face at the left; a click on another opens them
+		var face := PortraitView.new()
+		face.scale = Vector2(FAMILY_FACE, FAMILY_FACE)
+		face.rim = 2.5
+		face.position = Vector2(8, 1)
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.visible = face.show_person(m)
+		row.add_child(face)
+		var x := 8.0 + PortraitView.SIZE.x * FAMILY_FACE + 8.0 if face.visible else 10.0
+		if me:
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			var pid := int(m.pid)
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+			row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			row.mouse_entered.connect(row.queue_redraw)
+			row.mouse_exited.connect(row.queue_redraw)
+			row.gui_input.connect(func(e: InputEvent):
+				if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+					member_chosen.emit(pid))
 		row.draw.connect(func():
 			var font := UiStyle.serif()
-			row.draw_rect(Rect2(0, 0, row.size.x, 24), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+			var lit := not me and Rect2(Vector2.ZERO, row.size).has_point(row.get_local_mouse_position())
+			row.draw_rect(Rect2(0, 0, row.size.x, FAMILY_ROW - 2.0), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+			if lit:
+				row.draw_rect(Rect2(0.5, 0.5, row.size.x - 1.0, FAMILY_ROW - 3.0), UiStyle.GOLD, false, 1.0)
 			if me:
-				row.draw_rect(Rect2(0, 0, 3, 24), UiStyle.GOLD)
-			UiStyle.text_at(row, Vector2(10, 18), "%s, %d" % [who, age], UiStyle.VALUE if me else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, 120.0, font)
-			UiStyle.text_at(row, Vector2(130, 18), job + ("  (unterwegs)" if away else ""), UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - 240.0, font)
-			UiStyle.text_at(row, Vector2(row.size.x - 110.0, 18), rel, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 104.0, UiStyle.italic()))
+				row.draw_rect(Rect2(0, 0, 3, FAMILY_ROW - 2.0), UiStyle.GOLD)
+			var y := FAMILY_ROW * 0.5 + 5.0
+			UiStyle.text_at(row, Vector2(x, y), "%s, %d" % [who, age], UiStyle.VALUE if me else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, 112.0, font)
+			UiStyle.text_at(row, Vector2(x + 116.0, y), job + ("  (unterwegs)" if away else ""), UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - x - 226.0, font)
+			UiStyle.text_at(row, Vector2(row.size.x - 110.0, y), rel, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 104.0, UiStyle.italic()))
 		box.add_child(row)
 	if order.size() > FAMILY_MAX:
 		box.add_child(UiStyle.label("und %d weitere" % (order.size() - FAMILY_MAX), UiStyle.DIM, UiStyle.SIZE_SMALL))

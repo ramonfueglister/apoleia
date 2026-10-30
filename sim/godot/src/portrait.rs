@@ -10,6 +10,7 @@ use apoleia_portrait::{build, Head, Life, NG};
 use apoleia_sim::dna::{self, ORIGINS};
 use apoleia_sim::events::{DEATH, HUNGER_DEATH, KEEP_DAYS};
 use apoleia_sim::people::People;
+use apoleia_sim::grain::HouseholdLook;
 use apoleia_sim::view::Person;
 use godot::classes::base_material_3d::{CullMode, Flags};
 use godot::classes::mesh::{ArrayType, PrimitiveType};
@@ -259,6 +260,31 @@ impl ApoleiaPortrait {
         d.set("look", st.key);
         d
     }
+}
+
+/// What ApoleiaPortrait.build takes of a person, as take_person has it:
+/// the person, their household's food, clothing, rank and market, and
+/// their face (for the household lists, event windows and notices).
+pub fn face_dict(p: &Person, hh: Option<&HouseholdLook>, face: &Face) -> VarDictionary {
+    let mut d = VarDictionary::new();
+    d.set("pid", p.pid as i64);
+    d.set("household", p.household as i64);
+    d.set("age", p.age);
+    d.set("female", p.female);
+    d.set("job", p.job);
+    d.set("stand", p.stand as i64);
+    d.set("health", p.health as i64);
+    if let Some(h) = hh {
+        d.set("fed", h.fed as i64);
+        d.set("clothes_pct", h.clothes_pct);
+        d.set("rank_all", h.rank_all);
+        d.set("rank_market", h.rank_market);
+        if let Some((m, _)) = &h.market {
+            d.set("market", *m as i64);
+        }
+    }
+    face.put(&mut d);
+    d
 }
 
 /// What take_person tells of a person for the portrait, read on the sim
