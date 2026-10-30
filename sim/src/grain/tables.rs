@@ -46,6 +46,8 @@ pub struct HistoryExtra {
     pub need_by: [i64; 5],
     /// Each good's median price over the markets (by people), denarii.
     pub goods_price: [f64; GOODS],
+    /// What the player had built by then: farms, road lots, field lots.
+    pub built: (i64, i64, i64),
 }
 
 impl Grain {
@@ -87,16 +89,21 @@ impl Grain {
             eaten_by: self.stats.eaten_by,
             need_by: self.stats.need_by,
             goods_price,
+            built: (self.stats.built_farms, self.road_lots.len() as i64, self.field_lots.len() as i64),
         }
     }
 
     /// The history's columns from `HistoryExtra` by good and by class: each
-    /// good's price, and the grain each class ate of its need that month.
+    /// good's price, what the player had built (the statistics mark the
+    /// months they grew), and the grain each class ate of its need that month.
     pub(super) fn history_by_good_and_class(&self, t: &mut Table) {
         let rows = &self.history.rows;
         for g in 0..GOODS {
             t.float(GOOD_PRICE_KEYS[g], GOOD_PRICE_NAMES[g], "Denar", rows.iter().map(|r| r.extra.goods_price[g]).collect());
         }
+        t.int("farms_built", "Gebaute Höfe", "", rows.iter().map(|r| r.extra.built.0).collect())
+            .int("roads_built", "Gebaute Strassenstücke", "", rows.iter().map(|r| r.extra.built.1).collect())
+            .int("fields_built", "Angelegte Feldstücke", "", rows.iter().map(|r| r.extra.built.2).collect());
         for k in 0..5 {
             let fed = (0..rows.len())
                 .map(|i| {

@@ -121,9 +121,10 @@ static func x_span(rect: Rect2) -> Vector2:
 ## lo and hi (a band around the line, the price's range), dashed (a level
 ## to reach), muted (context, drawn grey) and hidden (left out, the scale
 ## too); all share one scale. `hover` >= 0 marks that month with a line,
-## dots and each series' value beside its dot.
+## dots and each series' value beside its dot. `marks` are months where
+## something happened: a gold diamond over a faint line.
 static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, unit := "",
-		from := "", to := "", hover := -1) -> void:
+		from := "", to := "", hover := -1, marks := PackedInt32Array()) -> void:
 	board(ci, rect, false)
 	var plot := Rect2(rect.position + Vector2(0, 4), rect.size - Vector2(0, 24 if from != "" else 8))
 	var n := 0
@@ -172,6 +173,12 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		ci.draw_line(Vector2(rect.position.x + 2.0, y), Vector2(span.y, y), UiStyle.CHART_GRID, 1.0)
 		var text := label(grid[k], unit if k == grid.size() - 1 else "")
 		UiStyle.text_at(ci, Vector2(rect.position.x + 8.0, y - 3.0), text, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+	for i in marks:
+		if i >= 0 and i < n:
+			var x: float = x_of.call(i)
+			ci.draw_line(Vector2(x, top - 4.0), Vector2(x, bottom), Color(UiStyle.GOLD, 0.3), 1.0)
+			var tip := Vector2(x, top - 9.0)
+			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(0, -4.5), tip + Vector2(4.5, 0), tip + Vector2(0, 4.5), tip + Vector2(-4.5, 0)]), UiStyle.GOLD_LIT)
 	# context first, then the lines that carry the story over them
 	var order := series.duplicate()
 	order.sort_custom(func(a, b): return a.get("muted", false) and not b.get("muted", false))
@@ -224,9 +231,9 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		# tooltip with the month's details follows after the dwell
 		var left := x > (span.x + span.y) * 0.5
 		var taken: Array[float] = []
-		var marks := series.filter(func(s): return hover < s.values.size())
-		marks.sort_custom(func(a, b): return a.values[hover] > b.values[hover]) # top down, labels in the lines' order
-		for s in marks:
+		var dots := series.filter(func(s): return hover < s.values.size())
+		dots.sort_custom(func(a, b): return a.values[hover] > b.values[hover]) # top down, labels in the lines' order
+		for s in dots:
 			var at := Vector2(x, y_of.call(s.values[hover]))
 			var c: Color = MUTED if s.get("muted", false) else s.colour
 			ci.draw_circle(at, 5.0, UiStyle.CHART)
