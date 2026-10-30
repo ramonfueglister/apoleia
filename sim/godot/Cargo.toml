@@ -10,5 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 apoleia-sim = { path = ".." }
+apoleia-portrait = { path = "../portrait" }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
 rustc-hash = "2"
 godot = { version = "0.5.5", features = ["api-4-7"] }

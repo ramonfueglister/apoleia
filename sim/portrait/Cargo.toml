@@ -1,0 +1,9 @@
+[package]
+name = "apoleia-portrait"
+version = "0.1.0"
+edition = "2021"
+description = "CK3-like portraits of the simulated people: head and shoulders from the genes (docs/kit2/PORTRAITS.md)"
+publish = false
+
+[dependencies]
+zstd = "0.13"

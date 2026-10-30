@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub mod body;
 pub mod build;
+pub mod dna;
 pub mod ecs;
 pub mod events;
 pub mod game;
