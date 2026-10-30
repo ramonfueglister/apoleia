@@ -62,6 +62,9 @@ const FARM_TAKEN := 7
 const MANCIANA := 10
 const FARM_LEFT := 11
 const WINDOW_KINDS: Array[int] = [THEFT, FARM_TAKEN, MANCIANA, FARM_LEFT]
+## births, weddings and deaths of old age or illness: daily all over, so
+## only scenes on the map (people_trips.gd), not lines or pins
+const FAMILY_FROM := 12
 const WINDOW_DAYS := 2
 const WINDOW_GAP_S := 30.0
 
@@ -152,6 +155,8 @@ func _group(e: Dictionary) -> void:
 	var by := {}
 	var order: Array[Vector2i] = []
 	for i in range(days.size() - 1, -1, -1):
+		if kinds[i] >= FAMILY_FROM:
+			continue
 		var key := Vector2i(days[i], kinds[i])
 		if not by.has(key):
 			if order.size() >= LINES:
@@ -190,6 +195,8 @@ func _make_pins() -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - PIN_DAYS:
 			break
+		if kinds[i] >= FAMILY_FROM:
+			continue
 		var cell := (at[i] / grid).floor()
 		var key := Vector3i(int(cell.x), int(cell.y), kinds[i])
 		if not by.has(key):

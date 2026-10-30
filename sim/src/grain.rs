@@ -4465,7 +4465,15 @@ impl Grain {
         all.sort_by_key(|e| e.day);
         let mut v = EventsView::default();
         for e in all {
-            let at = if e.fine != NONE { self.settle.fine_centre_km(e.fine) } else { cell_km(e.cell) };
+            // births, weddings and deaths at the household's house tile, as
+            // the grain economy knows it; else not shown (a household that
+            // died out, one outside the grain economy)
+            let family = matches!(e.kind, crate::events::BIRTH | crate::events::WEDDING | crate::events::DEATH);
+            let fine = if family { self.hh.get(&e.household).map_or(NONE, |s| s.fine) } else { e.fine };
+            if family && fine == NONE {
+                continue;
+            }
+            let at = if fine != NONE { self.settle.fine_centre_km(fine) } else { cell_km(e.cell) };
             let to = if e.to != NONE { cell_km(e.to) } else { at };
             if !inside(at) && !inside(to) {
                 continue;

@@ -52,7 +52,11 @@ extends MultiMeshInstance3D
 ## the cell, not the house); a family takes over a free farm, an heir moves
 ## onto his share, a farm cleared under the Lex Manciana gets its clearer
 ## with an axe, and a family that moved away leaves its farm with its cart
-## (a farm whose household died out stays empty).
+## (a farm whose household died out stays empty). Births, weddings and
+## deaths (the sim's read-only log of them, at the household's village
+## tile): neighbours call at the house of a newborn, the bride walks with
+## her people from where she lived to her husband's house, and a funeral
+## leaves the house of the dead for the graves.
 ## Scenes are made for events of the last SCENE_DAYS only, each once, at
 ## most SCENES_MAX walkers beside the trips; a click names the event.
 ##
@@ -138,6 +142,9 @@ const EV_HEIR := 8
 const EV_TO_TENT := 9
 const EV_MANCIANA := 10
 const EV_FARM_LEFT := 11
+const EV_BIRTH := 12
+const EV_WEDDING := 13
+const EV_DEATH := 14
 
 var people: RefCounted
 var _able := false # an older build of the GDExtension has no trips
@@ -395,6 +402,23 @@ func _scene(e: Dictionary, i: int) -> void:
 			var from := at + _away(hh, Vector2.ZERO) * OUT_KM
 			_group(PackedVector2Array([from, at]), 2, AXE, AXE, 10.0, false, 1.0,
 				"rodet Land nach der Lex Manciana für einen eigenen Hof", who)
+		EV_BIRTH:
+			# neighbours call at the house (the event's place: the house's
+			# village tile) and go home again
+			var from := at + _away(hh + 7, Vector2.ZERO) * 0.35
+			_group(PackedVector2Array([from, at]), 2, BUNDLE, 0, 6.0, true, 0.9,
+				"Nachbarinnen besuchen eine Familie: ein Kind ist geboren", who)
+		EV_WEDDING:
+			# the bride with her people from where she lived to the groom's house
+			var other: int = e.other[i]
+			var from := at + _away(hh, to - at) * 0.6
+			_group(PackedVector2Array([from, at]), 4, BUNDLE, 0, 4.0, false, 0.8,
+				"Hochzeitszug: die Braut zieht ins Haus ihres Mannes", {"household": hh, "pid": other}, 2)
+		EV_DEATH:
+			# a funeral from the house to the graves outside the village
+			var graves := at + _away(hh, Vector2.ZERO) * 0.9
+			_group(PackedVector2Array([at, graves]), 4, BIER, 0, 5.0, false, 0.55,
+				"Trauerzug: ein Mensch von %d Jahren ist gestorben" % amount, {"household": -1, "pid": -1}, 6)
 		EV_FARM_LEFT:
 			if not _moved.has(hh):
 				return # died out: nobody leaves

@@ -23,8 +23,16 @@ pub const TO_TENT: u8 = 9;
 /// A landless household cleared a farm under the Lex Manciana (S92).
 pub const MANCIANA: u8 = 10;
 pub const FARM_LEFT: u8 = 11;
+/// A child was born (`pid` the child, `other` the mother).
+pub const BIRTH: u8 = 12;
+/// A wedding (`pid` the groom, `other` the bride, `to` the cell she came
+/// from; she joins his household).
+pub const WEDDING: u8 = 13;
+/// A death of old age, illness or in childbirth (`amount` the age in years;
+/// hunger deaths are HUNGER_DEATH).
+pub const DEATH: u8 = 14;
 
-pub const NAMES: [&str; 12] = [
+pub const NAMES: [&str; 15] = [
     "Hungertod",
     "Umzug",
     "Verlässt die Karte",
@@ -37,6 +45,9 @@ pub const NAMES: [&str; 12] = [
     "Ins Zelt",
     "Hof nach Lex Manciana",
     "Hof verlassen",
+    "Geburt",
+    "Hochzeit",
+    "Todesfall",
 ];
 
 /// Days an event is kept.
