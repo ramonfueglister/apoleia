@@ -40,6 +40,7 @@ varying float road; // a street tile's terrace top: tt_sub_street_dir (1 north-s
 varying float olive; // an olive tree (a small broadleaf, tile_props.gdshaderinc)
 varying vec3 wpos;  // world position (masonry on the terrace walls)
 varying float wall_dir; // a terrace wall: 1 runs along x, 2 along z, 0 none
+varying float plan_top; // the top of a city plan's terrace (cp_surface)
 
 // Up close (quarter tiles) every lot stands on a terrace block of the whole
 // tile with a street along its south side (Kritik r8: lots butted front to
@@ -69,15 +70,18 @@ void vertex() {
 	bool listed = true;
 	int slot;
 	int ti;
+	int turns = 0; // quarter turns of a lot (a plan's lots face their street)
 	if (house && town_count >= 0) {
 		// the house instances run over the town tiles of the patch only
 		// (tile_terrain.gd _update_town_list): the terraces over all their
-		// slots, a lot model over the slots it holds
+		// slots, a lot model over the slots it holds (tile * 64 + turns * 16
+		// + slot)
 		int e = lot_variant >= 0 ? lot_start + id : id / slots;
 		listed = lot_variant >= 0 ? id < lot_count : e < town_count;
 		int v = listed ? int(texelFetch(town_tex, ivec2(e % town_w, e / town_w), 0).r + 0.5) : 0;
-		ti = lot_variant >= 0 ? v / 16 : v;
+		ti = lot_variant >= 0 ? v / 64 : v;
 		slot = lot_variant >= 0 ? v % 16 : id % slots;
+		turns = lot_variant >= 0 ? (v / 16) % 4 : 0;
 	} else {
 		// a lot model draws one house slot in every block of lot_variants
 		// slots, a different one in each block, so all models together fill
@@ -98,6 +102,7 @@ void vertex() {
 	bool show = d.w >= 0.0;
 	road = 0.0;
 	olive = 0.0;
+	plan_top = 0.0;
 	tint = vec3(1.0);
 	if (show) {
 		float r0 = tt_hash3(vec3(vec2(t), float(slot) * 3.17));
@@ -112,8 +117,10 @@ void vertex() {
 		// jumped from saplings to giants, s4)
 		float s = prop_scale * (house ? 1.0 : (0.9 + 0.2 * r0) * edge_size);
 		// voxel props keep to the tile grid; a lot shows its front (+z, with the
-		// door) to the camera (Kritik r7: turned lots showed blank side walls)
-		float a = house ? 0.0 : floor(r2 * 4.0) * 1.5707963;
+		// door) to the camera (Kritik r7: turned lots showed blank side walls),
+		// a plan's lot to its street
+		float a = house ? float(turns) * 1.5707963 : floor(r2 * 4.0) * 1.5707963;
+		int plan = d.w >= CP_CODE ? int(d.w - CP_CODE + 0.5) : CP_NONE;
 		mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 		vec3 m = VERTEX;
 		if (!house) {
@@ -132,10 +139,12 @@ void vertex() {
 			vec4 c = tt_corners_cached(t);
 			float hi = max(max(c.x, c.y), max(c.z, c.w));
 			float lo = min(min(c.x, c.y), min(c.z, c.w));
-			bool street = d.w >= STREET_CODE;
+			bool street = d.w >= STREET_CODE && plan == CP_NONE;
 			lift = TERRACE_STEP_M * s;
 			level = hi;
 			if (prop_kind == 5) {
+				show = show && (plan == CP_NONE || cp_on_terrace(plan));
+				plan_top = plan != CP_NONE && NORMAL.y > 0.5 ? 1.0 : 0.0;
 				float wall = (hi - lo) * level_h + lift;
 				float off = UV.x * s; // the coping and base rows keep their height
 				v = vec3(VERTEX.x * tile_km * 0.1, 0.0, VERTEX.z * tile_km * 0.1);
@@ -145,6 +154,9 @@ void vertex() {
 				v.y = VERTEX.y > 0.5 ? max(off, -0.5 * wall) : -wall + min(off, 0.5 * wall);
 				road = street && NORMAL.y > 0.5 ? float(tt_sub_street_dir(t)) : 0.0;
 				uv = vec2(0.5);
+			} else if (plan != CP_NONE) {
+				// a plan's lot fills its parcel; the streets are parcels of their own
+				show = show && cp_has_lot(plan);
 			} else {
 				float lot = 10.0 * s / tile_km; // lot width in tile units
 				show = show && !street;
@@ -173,8 +185,11 @@ void vertex() {
 			}
 			level = hi;
 			if (prop_kind == 5) {
-				show = show && hi - lo > 0.01;
+				show = show && hi - lo > 0.01 && (plan == CP_NONE || cp_on_terrace(plan));
+				plan_top = plan != CP_NONE && NORMAL.y > 0.5 ? 1.0 : 0.0;
 				v.y = (VERTEX.y - 1.0) * (hi - lo) * level_h;
+			} else if (plan != CP_NONE) {
+				show = show && cp_has_lot(plan);
 			}
 		}
 		v.xz = rot * v.xz;
@@ -220,6 +235,10 @@ void fragment() {
 	vec3 c = COLOR.rgb;
 	c *= olive > 0.5 && c.g > c.r ? OLIVE_TINT : vec3(1.0); // the crown, not the trunk
 	if (wall_dir > 0.5) { c *= masonry(); }
+	else if (plan_top > 0.5) {
+		// a city plan's terrace: its street piece, square or yard
+		c = cp_surface(cp_texel(cp_parcel(wpos.xz)), cp_local(wpos.xz), wpos.xz, CP_MEADOW);
+	}
 	else if (road > 0.5) {
 		vec2 q = fract((wpos.xz - world_min) / tile_km) - 0.5;
 		int dir = int(road + 0.5);

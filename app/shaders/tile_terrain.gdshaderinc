@@ -195,6 +195,8 @@ vec3 tt_grass(vec2 p, vec3 c) {
 	return c;
 }
 
+#include "res://shaders/city_plan.gdshaderinc"
+
 int tt_ground(ivec2 t) {
 	if (sub_tiles) {
 		vec4 v;
@@ -492,6 +494,12 @@ float tt_cut_level(ivec2 t, int a) {
 // street block: tile_props.gdshader). The corners are the data corners
 // (tt_land_corner), not tt_corners, which lowers the tiles south of the lots.
 bool tt_sub_lot(ivec2 t) {
+	// a city plan's parcel: built up, a street or a gate (not the tombs
+	// outside, nor its open land)
+	int plan = cp_kind(t);
+	if (plan != CP_NONE) {
+		return cp_on_terrace(plan) && !tt_near_landmark(world_min + (vec2(t) + 0.5) * tile_km, 0.45 * tile_km);
+	}
 	int cell = tt_cell(t);
 	int town = cell >> 2;
 	if ((cell & 3) != W_LAND || town == 0 || !tt_sub_house(t, town)) { return false; }

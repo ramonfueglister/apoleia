@@ -29,7 +29,10 @@ var _lot := Vector2.INF # centre of the lot shown
 func setup(terrain_node: Node3D) -> void:
 	terrain = terrain_node
 	for variant in Farmhouse.VARIANTS:
-		_meshes.append(Farmhouse.lods(TileTerrain.HOUSE_M, variant)[1]) # the 0.25 m level: fine enough up close
+		# the 0.25 m level only, fine enough up close: without the people
+		# (people_dots.gd builds and caches all levels) the others would cost
+		# seconds on a fresh install
+		_meshes.append(Farmhouse.lod(TileTerrain.HOUSE_M, variant, 1))
 	_material.shader = GHOST_SHADER
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

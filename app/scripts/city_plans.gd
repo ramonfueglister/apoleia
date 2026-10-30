@@ -34,10 +34,26 @@ var page_tex: ImageTexture
 var atlas_tex: ImageTexture
 var _pages: Image
 var _atlas: Image
+## The parcels that hold something (not open land or water), page by page
+## (Vector2i of the page): PackedInt32Array of triples i, j, texel (R | G << 8
+## | B << 16). scan() fills it.
+var built := {}
+## The 0.5 km tiles (two parcels a side) a plan covers: Vector2i -> 3 where
+## one of its parcels is built up (houses, buildings, squares, gardens, the
+## wall), else 0. scan() fills it.
+var data_towns := {}
 
 ## Loads the plans baked at `scale` (1 = the diorama scale); false when
 ## they are missing (then every town keeps the old rule).
 func load_plans(root: String, scale := 1.0, world_size := Vector2(10322.15905608411, 4781.388450041915)) -> bool:
+	if not read(root, scale, world_size):
+		return false
+	make_textures()
+	return true
+
+## load_plans without the textures, so it may run on a worker thread;
+## make_textures() on the main thread after it.
+func read(root: String, scale := 1.0, world_size := Vector2(10322.15905608411, 4781.388450041915)) -> bool:
 	var dir := root.path_join(DIR)
 	var text := FileAccess.get_file_as_string(dir.path_join("city-plans-x%s.json" % str(scale).trim_suffix(".0")))
 	if text == "":
@@ -61,11 +77,53 @@ func load_plans(root: String, scale := 1.0, world_size := Vector2(10322.15905608
 		bytes[(j * page_size.x + i) * 2] = v & 255
 		bytes[(j * page_size.x + i) * 2 + 1] = v >> 8
 	_pages = Image.create_from_data(page_size.x, page_size.y, false, Image.FORMAT_RG8, bytes)
-	page_tex = ImageTexture.create_from_image(_pages)
 	_atlas = Image.load_from_file(dir.path_join(info.atlas))
 	_atlas.convert(Image.FORMAT_RGB8)
-	atlas_tex = ImageTexture.create_from_image(_atlas)
 	return true
+
+func make_textures() -> void:
+	page_tex = ImageTexture.create_from_image(_pages)
+	atlas_tex = ImageTexture.create_from_image(_atlas)
+
+## Fills `built` and `data_towns` from the atlas, city by city.
+func scan() -> void:
+	var data := _atlas.get_data()
+	var width := _atlas.get_width()
+	var slots := {}
+	for entry: Array in info.page_slots:
+		slots[Vector2i(int(entry[0]), int(entry[1]))] = int(entry[2])
+	var seen := {}
+	for id: String in info.cities:
+		var city: Dictionary = info.cities[id]
+		var o := Vector2i(int(city.origin[0]), int(city.origin[1]))
+		var n := Vector2i(int(city.size[0]), int(city.size[1]))
+		for j in range(o.y, o.y + n.y):
+			var i := o.x
+			while i < o.x + n.x:
+				var page := Vector2i(i / page_parcels, j / page_parcels)
+				var end := mini(o.x + n.x, (page.x + 1) * page_parcels)
+				var slot: int = slots.get(page, -1)
+				if slot >= 0:
+					var row := ((slot / atlas_slots) * page_parcels + j % page_parcels) * width + (slot % atlas_slots) * page_parcels - page.x * page_parcels
+					for x in range(i, end):
+						var k := (row + x) * 3
+						var r := data[k]
+						if r == 0:
+							continue
+						var tile := Vector2i(x >> 1, j >> 1)
+						var town: int = data_towns.get(tile, 0)
+						var up := r <= 6 or r == 8 or r == 9 # built up: a town tile
+						data_towns[tile] = 3 if up else town
+						if r >= 12:
+							continue # open land, water
+						var key := Vector2i(x, j)
+						if seen.has(key):
+							continue # cities overlap: one entry
+						seen[key] = true
+						var list: PackedInt32Array = built.get(page, PackedInt32Array())
+						list.append_array([x, j, r | (data[k + 1] << 8) | (data[k + 2] << 16)])
+						built[page] = list
+				i = end
 
 ## The parcel under a world point (km).
 func parcel_at(x_km: float, z_km: float) -> Vector2i:
