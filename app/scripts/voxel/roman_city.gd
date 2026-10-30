@@ -8,12 +8,14 @@ extends RefCounted
 ## +z (south, towards the camera).
 ##
 ## The city wall is drawn in pieces (`wall(variant)`): 0 an arm from the
-## parcel's middle east to its edge, 1 an arm south-east to its corner (the
-## plans' walls step diagonally as often as straight), 2 a tower.
-## tile_terrain.gd sets one turned arm for each neighbour on the wall and a
-## tower where it turns or ends; arms run three voxels past the lot, so
-## those of neighbouring parcels meet across the street between the lots
-## (tile_terrain.gd LOT_SHARE).
+## parcel's middle east to its edge, 1 a longer arm east that tile_terrain.gd
+## turns an eighth to run to the parcel's corner (the plans' walls step
+## diagonally as often as straight; drawn diagonally in voxels they were a
+## staircase that read as a fence of white bars), 2 a tower. tile_terrain.gd
+## sets one turned arm for each neighbour on the wall and a tower where it
+## turns or ends; arms run three voxels past the lot, so those of
+## neighbouring parcels meet across the street between the lots
+## (tile_terrain.gd LOT_SHARE), the diagonal ones two voxels past the corner.
 
 const Kit := preload("res://scripts/voxel/roman_kit.gd")
 const Town := preload("res://scripts/voxel/roman_town.gd")
@@ -26,28 +28,33 @@ const WALL_VARIANTS := 3
 const WALL_HALF := 5 # half the wall's thickness (2.5 m)
 const WALL_TOP := FLOOR + 28 # the walk on top, 7 m
 const REACH := 3 # voxels past the lot edge
+const DIAG_END := 33 # the diagonal arm: to the parcel's corner (21.75 voxels times the root of two) and two on
+const DIAG_C := DIAG_END + WALL_HALF + 1 # the middle of its larger grid
 
 ## A piece of the city wall: ashlar courses, a walk with a parapet and
 ## merlons on both faces; or a tower with a tiled roof.
 static func wall(variant: int) -> ArrayMesh:
+	if variant == 1:
+		# a grid centred on the arm's start like a lot's, large enough for it
+		var d := Kit.Grid.new(Vector3i(2 * DIAG_C, 64, 2 * DIAG_C))
+		_wall_run(d, Vector2(1.0, 0.0), float(DIAG_END), DIAG_C)
+		return Town._done(d)
 	var g := Town._grid(1, 1, 64)
 	if variant == 2:
 		_tower(g, C, C, 8, FLOOR + 42, variant)
 	else:
-		var end := float(LOT / 2 + REACH)
-		_wall_run(g, Vector2(1.0, 0.0) if variant == 0 else Vector2(1.0, 1.0), end)
+		_wall_run(g, Vector2(1.0, 0.0), float(LOT / 2 + REACH))
 	return Town._done(g)
 
-## The wall from the lot's middle along `dir` (east, or south-east to the
-## corner) for `end` voxels across x; the middle is covered round, so arms
-## join at any angle.
-static func _wall_run(g: Kit.Grid, dir: Vector2, end: float) -> void:
+## The wall from the grid's middle `c` along `dir` for `end` voxels across x;
+## the middle is covered round, so arms join at any angle.
+static func _wall_run(g: Kit.Grid, dir: Vector2, end: float, c := C) -> void:
 	var u := dir.normalized()
 	var length := end * dir.length()
 	var half := float(WALL_HALF)
-	for z in range(M - REACH, M + LOT + REACH):
-		for x in range(M - REACH, M + LOT + REACH):
-			var p := Vector2(x + 0.5 - C, z + 0.5 - C)
+	for z in g.n.z:
+		for x in g.n.x:
+			var p := Vector2(x + 0.5 - c, z + 0.5 - c)
 			var along := p.dot(u)
 			var across := absf(p.x * u.y - p.y * u.x)
 			var inside := across < half and along > -half and along < length

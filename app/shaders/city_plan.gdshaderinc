@@ -63,10 +63,11 @@ bool cp_on_terrace(int k) {
 	return k >= CP_HOUSE && k <= CP_BRIDGE;
 }
 
-// Holds a lot model (tile_terrain.gd _plan_lot); streets and bridges only
-// their terrace.
+// Holds lot models (tile_terrain.gd _plan_lots_of): a street its houses
+// (_plan_street, none along a road through the fields); bridges only their
+// terrace.
 bool cp_has_lot(int k) {
-	return (k >= CP_HOUSE && k <= CP_GARDEN) || k == CP_WALL || k == CP_GATE || k == CP_TOMBS;
+	return (k >= CP_HOUSE && k <= CP_STREET) || k == CP_WALL || k == CP_GATE || k == CP_TOMBS;
 }
 
 // The town class a plan parcel gives its cell: built up 3, a road or the

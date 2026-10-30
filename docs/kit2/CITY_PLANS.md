@@ -124,7 +124,8 @@ legt sie in die Stadtliste, gedreht in Vierteln zur Front.
   acht Feldern um das Strassenband stehen Häuser mit der Front zur Strasse (`voxel/roman_city.gd`
   `street_row`, `street_corner_w`, `street_corner_e`, Höfe `street_court`), wo die Stadt auf der
   Seite weitergeht (Nachbar Haus, Bau, Garten oder Strasse), nicht an Landstrassen, Gräbern, Plätzen
-  oder Mauern. Auf der Kameraseite der Strasse (Front nach Norden oder Osten) stehen einstöckige
+  oder Mauern, und nicht neben dem Arm, der zu einem Tor führt (dort öffnet sich die Strasse vor dem
+  Tor). Auf der Kameraseite der Strasse (Front nach Norden oder Osten) stehen einstöckige
   Läden unter einem Pultdach: Eine Wand verdeckt so viel Boden hinter sich, wie sie hoch ist, und
   zwei hohe Häuserzeilen verdeckten die Strasse ganz. Gegenüber stehen Häuser so hoch wie die Stadt
   (zwei bis vier Geschosse, wenn ein Nachbarhaus drei hat, sonst höchstens zwei).
@@ -132,19 +133,24 @@ legt sie in die Stadtliste, gedreht in Vierteln zur Front.
   gedreht; mit Front nach Norden oder Osten höchstens zwei Geschosse.
 - **Plätze** in Travertin, mit Portikus an der Rückseite, wenn der Platz dort nicht weitergeht.
 - **Mauern** in Stücken: ein Arm zu jedem Nachbarn auf der Mauer, gerade oder diagonal zur Ecke (die
-  Pläne treppen oft diagonal), ein Turm wo sie abbiegt oder endet und ab und zu auf geraden Stücken.
+  Pläne treppen oft diagonal; der diagonale Arm ist ein gerades Stück, um 45° gedreht, denn als
+  Voxeltreppe sah er wie ein Gitterzaun aus), ein Turm wo sie abbiegt oder endet und ab und zu auf
+  geraden Stücken.
   **Tore** als Torbogen mit zwei Türmen, längs ihrer Strasse gedreht.
 - **Öffentliche Bauten** auf einer Parzelle: Tempel, Theater, Amphitheater, Thermen, Basilika,
   Horrea, Circus, Forum (`voxel/roman_city.gd`). Bauten über mehrere Parzellen wiederholen das Modell
   je Parzelle (offen).
 - **Gräber** an den Strassen vor der Stadt, die Strasse an ihrer Seite.
 - **Wahrzeichen Roms** (Kolosseum, Forum, Thermen, Pantheon, Circus) stehen als Kit-Modelle auf ihrem
-  Bau im Plan, verkleinert auf höchstens das 1,5-fache seiner längeren Seite (`LANDMARK_PLAN_REACH`;
-  das Kolosseum auf 0,75 km). Die zwei Tiberbrücken der alten Regel entfallen, die Brücken des Plans
-  sind Strassen.
+  Bau im Plan, verkleinert, bis sie in seine Parzellen passen (`LANDMARK_PLAN_REACH`; das Kolosseum
+  auf 0,5 km, der Plan zeichnet es schon 2,6-mal so gross wie echt). Beim 1,5-fachen räumten sie die
+  Nachbarbauten weg (Tempel der Venus und Roma, Ludus Magnus, Templum Pacis; Mac-Lauf 1). Die zwei
+  Tiberbrücken der alten Regel entfallen, die Brücken des Plans sind Strassen.
 
 Geprüft in der Cloud mit einer Vorschau aus den echten Voxelmodellen auf den echten Plänen (Rom,
-Nîmes, Timgad, ohne Licht und Gelände). Im Spiel noch nicht gesehen.
+Nîmes, Timgad, ohne Licht und Gelände) und im Spiel auf dem Mac (Lauf 1, 30.10.2026: keine Shader-
+oder Skriptfehler; die Häuserzeilen fehlten noch, weil der Shader Strassenparzellen ohne Grundstück
+liess).
 
 ## Format der gebackenen Karte
 

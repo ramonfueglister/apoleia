@@ -70,18 +70,18 @@ void vertex() {
 	bool listed = true;
 	int slot;
 	int ti;
-	int turns = 0; // quarter turns of a lot (a plan's lots face their street)
+	int turns = 0; // eighth turns of a lot (a plan's lots face their street, its diagonal walls run to the corner)
 	if (house && town_count >= 0) {
 		// the house instances run over the town tiles of the patch only
 		// (tile_terrain.gd _update_town_list): the terraces over all their
-		// slots, a lot model over the slots it holds (tile * 64 + turns * 16
-		// + slot)
+		// slots, a lot model over the slots it holds (tile * 128 + turns * 16
+		// + slot, turns in eighths: quarter turns, plus four for a diagonal)
 		int e = lot_variant >= 0 ? lot_start + id : id / slots;
 		listed = lot_variant >= 0 ? id < lot_count : e < town_count;
 		int v = listed ? int(texelFetch(town_tex, ivec2(e % town_w, e / town_w), 0).r + 0.5) : 0;
-		ti = lot_variant >= 0 ? v / 64 : v;
+		ti = lot_variant >= 0 ? v / 128 : v;
 		slot = lot_variant >= 0 ? v % 16 : id % slots;
-		turns = lot_variant >= 0 ? (v / 16) % 4 : 0;
+		turns = lot_variant >= 0 ? (v / 16) % 8 : 0;
 	} else {
 		// a lot model draws one house slot in every block of lot_variants
 		// slots, a different one in each block, so all models together fill
@@ -119,7 +119,7 @@ void vertex() {
 		// voxel props keep to the tile grid; a lot shows its front (+z, with the
 		// door) to the camera (Kritik r7: turned lots showed blank side walls),
 		// a plan's lot to its street
-		float a = house ? float(turns) * 1.5707963 : floor(r2 * 4.0) * 1.5707963;
+		float a = house ? float(turns % 4) * 1.5707963 + float(turns / 4) * 0.7853982 : floor(r2 * 4.0) * 1.5707963;
 		int plan = d.w >= CP_CODE ? int(d.w - CP_CODE + 0.5) : CP_NONE;
 		mat2 rot = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a)));
 		vec3 m = VERTEX;
