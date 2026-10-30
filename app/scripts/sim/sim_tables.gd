@@ -100,7 +100,7 @@ var _open_button: Button
 var _tabs: UiTabs
 var _stand: Label
 var _search: LineEdit
-var _filter_row: HBoxContainer
+var _filter_row: HFlowContainer # wraps when the window is narrow
 var _fold: CheckButton
 var _tree: Tree
 var _note: Label
@@ -345,6 +345,11 @@ func _fill_filters(t: Dictionary) -> void:
 			state.filters[key] = "" if index == 0 else values[index - 1]
 			_fill_tree(_tables[_kind]))
 		pick.focus_mode = Control.FOCUS_NONE
+		# as wide as its name, not its longest value, so the row fits the window
+		pick.fit_to_longest_item = false
+		pick.clip_text = true
+		pick.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		pick.custom_minimum_size = Vector2(120, 0)
 		_filter_row.add_child(pick)
 		_filter_row.move_child(pick, at)
 		at += 1
@@ -1056,8 +1061,9 @@ func _build() -> void:
 		_tabs.add_tab(TITLES[k])
 	_tabs.tab_changed.connect(_on_tab)
 	head.add_child(_tabs)
-	_filter_row = HBoxContainer.new()
-	_filter_row.add_theme_constant_override("separation", 8)
+	_filter_row = HFlowContainer.new()
+	_filter_row.add_theme_constant_override("h_separation", 8)
+	_filter_row.add_theme_constant_override("v_separation", 6)
 	column.add_child(_filter_row)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Suchen …"

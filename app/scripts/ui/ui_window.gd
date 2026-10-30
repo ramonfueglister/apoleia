@@ -124,9 +124,16 @@ func _build(title: String) -> void:
 	_field = PanelContainer.new()
 	_field.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, Color.TRANSPARENT, 0, 0, 12))
 	pad.add_child(_field)
+	# what is wider than the window scrolls sideways instead of widening it
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_field.add_child(scroll)
 	body = VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
-	_field.add_child(body)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
 	_grip = Control.new()
 	_grip.custom_minimum_size = Vector2(GRIP_PX, GRIP_PX)
 	_grip.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE)
