@@ -12,8 +12,10 @@ const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
+const PortraitView = preload("res://scripts/ui/portrait_view.gd")
 const WIDTH := 430.0
 const MEDAL_R := 27.0
+const BADGE_R := 14.0 # the class medal on the portrait's corner
 const BAR_ROW := 30.0
 const BAR_PX := 8.0
 const FAMILY_MAX := 8 # members listed before "und N weitere"
@@ -26,6 +28,8 @@ const CRAFT_NOTES := {"Taglohn": "Taglohn", "Weber": "Weberei", "Schmied": "Schm
 var _win # ui_window.gd
 var _column: VBoxContainer
 var _head: Control
+var _portrait # portrait_view.gd, kept across people
+var _badge: Control # the class medal over the portrait's corner
 var _note: RichTextLabel
 var _cards: VBoxContainer
 var _class := ""
@@ -47,6 +51,20 @@ func _init(tree: SceneTree) -> void:
 	_head.custom_minimum_size = Vector2(0, MEDAL_R * 2.0 + 10.0)
 	_head.mouse_filter = Control.MOUSE_FILTER_PASS
 	_column.add_child(_head)
+	_portrait = PortraitView.new()
+	_portrait.visible = false
+	_head.add_child(_portrait)
+	Tooltips.attach(_portrait, func(_at: Vector2) -> Dictionary:
+		return {"id": "person-portrait", "title": "Gesicht", "kind": "Person", "text": "Das Gesicht wächst aus 34 Erbanlagen, je eine von Vater und Mutter. Das Gewicht zeigt, wie gut die Person isst, die Haut, wie viel sie draussen arbeitet; Kleidung und Kopfbedeckung folgen dem Beruf und dem Stand."})
+	_badge = Control.new()
+	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.size = Vector2(BADGE_R, BADGE_R) * 2.0 + Vector2(6.0, 6.0)
+	_badge.position = PortraitView.SIZE - _badge.size + Vector2(6.0, 4.0)
+	_badge.visible = false
+	_badge.draw.connect(func():
+		if _class != "":
+			_medal(_badge, _badge.size * 0.5, BADGE_R, _class, _colour(_class)))
+	_head.add_child(_badge)
 	_note = RichTextLabel.new()
 	_note.bbcode_enabled = true
 	_note.fit_content = true
@@ -86,7 +104,8 @@ func _clear() -> void:
 	for c in _cards.get_children():
 		c.queue_free()
 	for c in _head.get_children():
-		c.queue_free()
+		if c != _portrait and c != _badge:
+			c.queue_free()
 	for c in _head.draw.get_connections():
 		_head.draw.disconnect(c.callable)
 
@@ -123,10 +142,19 @@ func _fill_head(p: Dictionary) -> void:
 		place = _class
 	if p.has("market_name"):
 		place += ("  ·  " if place != "" else "") + "Markt " + str(p.market_name)
+	# the face when the person has genes (portrait_view.gd), else the class medal alone
+	var face: bool = _portrait.show_person(p)
+	_portrait.visible = face
+	_badge.visible = face
+	_badge.queue_redraw()
+	_head.custom_minimum_size.y = PortraitView.SIZE.y + 4.0 if face else MEDAL_R * 2.0 + 10.0
 	_head.draw.connect(func():
 		var at := Vector2(MEDAL_R + 4.0, _head.size.y * 0.5)
-		_medal(_head, at, MEDAL_R, _class, _colour(_class))
 		var x := at.x + MEDAL_R + 14.0
+		if face:
+			x = PortraitView.SIZE.x + 14.0
+		else:
+			_medal(_head, at, MEDAL_R, _class, _colour(_class))
 		var w := _head.size.x - x
 		UiStyle.text_at(_head, Vector2(x, at.y - 6.0), sub, UiStyle.VALUE, UiStyle.SIZE_HEAD + 1, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.title_font())
 		UiStyle.text_at(_head, Vector2(x, at.y + 18.0), place, UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.serif()))

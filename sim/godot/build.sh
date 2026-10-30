@@ -26,7 +26,7 @@ trap 'rmdir "$lock"' EXIT INT TERM
 here=$(pwd -P)
 marker="$CARGO_TARGET_DIR/.last-checkout"
 if [ "$(cat "$marker" 2>/dev/null)" != "$here" ]; then
-    cargo clean --release -p apoleia-sim -p apoleia-godot
+    cargo clean --release -p apoleia-sim -p apoleia-portrait -p apoleia-godot
 fi
 cargo build --release -p apoleia-godot
 echo "$here" > "$marker"

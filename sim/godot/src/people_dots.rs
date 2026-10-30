@@ -20,6 +20,7 @@
 use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT};
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
+use apoleia_sim::dna::{self, Dna};
 use apoleia_sim::game::{Game, Loaded, Start};
 use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
@@ -63,8 +64,9 @@ struct Front {
     house_looks: Vec<u8>,
     house_looks_version: i64,
     /// Answer to the last `ask_person`, with the household as the grain
-    /// economy sees it and its people.
-    person: Option<(Person, Option<HouseholdLook>, Vec<Person>)>,
+    /// economy sees it, its people, and the person's genes and origin
+    /// (crate::portrait).
+    person: Option<(Person, Option<HouseholdLook>, Vec<Person>, Option<(Dna, u8)>)>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
@@ -483,7 +485,11 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
                 let family = PeopleView::household(people, p.household);
-                (p, hh, family)
+                let genes = people.dna(p.pid).map(|g| {
+                    let (lon, lat) = dna::lon_lat_of(&people.grid, p.home);
+                    (g, dna::origin(lon, lat))
+                });
+                (p, hh, family, genes)
             });
             shared.front.lock().unwrap().person = who;
         }
@@ -1239,7 +1245,7 @@ impl ApoleiaPeople {
     #[func]
     fn take_person(&mut self) -> VarDictionary {
         let mut d = VarDictionary::new();
-        let Some((p, hh, family)) = self.shared.front.lock().unwrap().person.take() else {
+        let Some((p, hh, family, genes)) = self.shared.front.lock().unwrap().person.take() else {
             return d;
         };
         if let Some(h) = hh {
@@ -1298,6 +1304,7 @@ impl ApoleiaPeople {
         d.set("iq", p.iq.unwrap_or(-1.0));
         d.set("spouse", p.spouse.map_or(-1, |s| s as i64));
         d.set("travelling", p.travelling.map_or(0, |leave| if leave { 2 } else { 1 }));
+        crate::portrait::put_genes(&mut d, genes);
         d
     }
 

@@ -11,6 +11,7 @@
 mod grain_map;
 mod map_index;
 mod people_dots;
+mod portrait;
 mod tables;
 mod trips;
 
