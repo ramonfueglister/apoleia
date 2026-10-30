@@ -424,7 +424,15 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Trockenmauer (maceria) ringsum und einem Block als Tor; die Schafe weiden
   drinnen und draussen wie bisher. Die Strohplatten sind dünner und haben eine
   feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
-  winzig.
+  winzig. Runde J (30.10.2026): Jenseits der Feldfrüchte (8 bis 40 km)
+  liegen dieselben Äcker flach im Gelände (`sim_far_field`): die Brache als
+  Strohfläche, ein gesäter Acker mit seiner Frucht und Reife in den Farben
+  der Platten von nah, drei Reihen je Parzelle längs des Ackers, solange sie
+  mindestens 2–4 Pixel auseinander liegen (darunter die Mischfarbe), und ein
+  Grasrand von `SLAB_GAP` je Seite, mindestens ein halbes Pixel. Vorher nahm
+  ein Quadrat aus 3 × 3 Parzellen eine eigene flache Farbe, die Brache war
+  Wiese: Beim Herauszoomen über 8 km mischten sich die Felder neu, und
+  Nachbarn flossen zu Flecken zusammen.
 - Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
   Loslinie (alle 1,5 km) ein brauner Feldweg, mit Lücken. Die Äcker halten
   Abstand wie bei den Dorfwegen.
