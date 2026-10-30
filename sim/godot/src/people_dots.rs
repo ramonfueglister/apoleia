@@ -58,6 +58,10 @@ struct Front {
     houses: Vec<f32>,
     house_dirty: Vec<bool>,
     house_count: u32,
+    /// What shows at each house (Grain::house_look, 4 bytes by house slot),
+    /// once a week, and how often it was rebuilt.
+    house_looks: Vec<u8>,
+    house_looks_version: i64,
     /// Answer to the last `ask_person`, with the household as the grain
     /// economy sees it and its people.
     person: Option<(Person, Option<HouseholdLook>, Vec<Person>)>,
@@ -267,6 +271,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     let mut f = shared.front.lock().unwrap();
     publish(&view, &pages, &mut f);
     publish_houses(&mut view, &mut f);
+    publish_house_looks(game, &view, &mut f);
     f.day = today;
     f.count = game.people.count;
     f.cash = game.grain.treasury.cash;
@@ -345,6 +350,17 @@ fn mark_work(game: &Game, view: &mut PeopleView, sites: bool) {
     view.set_sites(&farms);
     let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
     view.houses.set_work(c.household.iter().zip(&c.craft).zip(&c.util).map(|((&h, &craft), &busy)| (h as u32, craft, busy)));
+}
+
+/// What shows at each house (Grain::house_look) by house slot: smoke where
+/// they cook, a tent, the farm's harvest, sheep and pigs (people_house_life.gd).
+fn publish_house_looks(game: &Game, view: &PeopleView, f: &mut Front) {
+    let mut looks = vec![0u8; view.houses.slots() * 4];
+    for (slot, hh) in view.houses.households() {
+        looks[slot as usize * 4..][..4].copy_from_slice(&game.grain.house_look(hh));
+    }
+    f.house_looks = looks;
+    f.house_looks_version += 1;
 }
 
 /// The building sites in the window (world km, min x, min z, max x, max
@@ -495,6 +511,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         if today % 7 == 0 || finished || sites_on != sites_were {
             mark_work(&game, &mut view, sites_on);
             sites_were = sites_on;
+            publish_house_looks(&game, &view, &mut shared.front.lock().unwrap());
         }
         if remap {
             map.draw(MapJob::take(&game.grain, today));
@@ -1490,6 +1507,21 @@ impl ApoleiaPeople {
         let mut tex = Texture2DArray::new_gd();
         tex.create_from_images(&images);
         Some(tex)
+    }
+
+    /// How often what shows at the houses was rebuilt (once a week).
+    #[func]
+    fn house_looks_version(&self) -> i64 {
+        self.shared.front.lock().unwrap().house_looks_version
+    }
+
+    /// What shows at each house, 4 bytes by house slot (the house texture's
+    /// order): share of its need eaten (‰ / 4), flags (apoleia_sim::grain
+    /// HOUSE_COOKS 1, HOUSE_TENT 2, HOUSE_HARVEST 4, HOUSE_SOWING 8,
+    /// HOUSE_FARM 16), sheep, pigs.
+    #[func]
+    fn house_looks(&self) -> PackedByteArray {
+        PackedByteArray::from(self.shared.front.lock().unwrap().house_looks.as_slice())
     }
 
     /// Houses standing (one per village household).

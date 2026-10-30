@@ -145,7 +145,7 @@ const PORK_KG_YEAR: i64 = 20;
 /// the count of pigs only; PLACEHOLDER both).
 const FEED_KG: i64 = 5;
 const PORK_FARM_KG_YEAR: i64 = 60;
-const PIG_KG: i64 = 60;
+pub(super) const PIG_KG: i64 = 60;
 /// S117: months over which a household smooths what it earns into its
 /// usual earnings: permanent income as a weighted mean of past income
 /// (Friedman, 1957), the earnings the buffer-stock rule is set against
