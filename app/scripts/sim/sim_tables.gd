@@ -90,11 +90,14 @@ const EMPTY_COLOUR := Color("6a665c") # a region without people
 ## numbers would mislead: fixed bounds (most markets have no one hungry, so
 ## equal classes all start at 0), or people per 10’000 km² of the region,
 ## about one market's (a large region has more people without being denser).
+## `min_persons` greys the regions with fewer people: the Gini of one or two
+## people is 0 or 0.5 whatever they own.
 const MAP_RULES := {
 	"share_hungry": {"bounds": [0.0001, 0.05, 0.2, 0.5], "labels": ["0 %", "bis 5 %", "5–20 %", "20–50 %", "ab 50 %"]},
 	"persons": {"per_km2": 10000.0, "name": "Menschen je 10’000 km²"},
 	"tent_persons": {"per_km2": 10000.0, "name": "Im Zelt je 10’000 km²"},
 	"price": {"name": "Kornpreis"},
+	"gini": {"bounds": [0.5, 0.7, 0.8, 0.9], "labels": ["unter 0.5", "0.5–0.7", "0.7–0.8", "0.8–0.9", "ab 0.9"], "min_persons": 10},
 }
 
 var people: RefCounted
@@ -1022,7 +1025,7 @@ func _paint_regions() -> void:
 	var persons = t.data.get("persons", [])
 	var sorted := PackedFloat64Array()
 	for r in ids.size():
-		if r < persons.size() and float(persons[r]) <= 0.0:
+		if r < persons.size() and float(persons[r]) < maxf(rule.get("min_persons", 0), 0.5):
 			continue
 		var m := int(ids[r])
 		var v := float(col[r])
@@ -1095,7 +1098,7 @@ func _fill_legend(t: Dictionary, bounds: PackedFloat64Array, rule: Dictionary) -
 		_legend.add_child(swatch)
 		var text := Label.new()
 		if k == CLASS_COLOURS.size():
-			text.text = "ohne Menschen"
+			text.text = ("unter %d Menschen" % rule.min_persons) if rule.has("min_persons") else "ohne Menschen"
 		elif rule.has("labels"):
 			text.text = rule.labels[k]
 		elif k == 0:

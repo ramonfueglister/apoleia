@@ -22,6 +22,7 @@ const MODES := [
 	["store_kg", "granary", "Korn auf dem Markt"],
 	["free_ha", "field", "Freies Land"],
 	["money", "two-coins", "Geld der Händler"],
+	["gini", "scales", "Arm und Reich"],
 ]
 
 signal chosen(column: String)
@@ -72,31 +73,7 @@ func _ready() -> void:
 
 ## The leather strip, rounded at its ends, in a gold rim.
 func _draw() -> void:
-	var r := Rect2(Vector2.ZERO, size)
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0, 0, 0, 0)
-	box.shadow_color = Color(0, 0, 0, 0.5)
-	box.shadow_size = 12
-	box.shadow_offset = Vector2(0, 4)
-	box.set_corner_radius_all(int(size.y * 0.5))
-	draw_style_box(box, r)
-	var plain := StyleBoxFlat.new()
-	plain.bg_color = Vic3.BAND
-	plain.set_corner_radius_all(int(size.y * 0.5))
-	plain.border_color = Vic3.GOLD
-	plain.set_border_width_all(2)
-	plain.anti_aliasing = true
-	draw_style_box(plain, r)
-	var inner := r.grow(-3.0)
-	if Vic3.leather() != null:
-		draw_texture_rect(Vic3.leather(), Rect2(inner.position + Vector2(inner.size.y * 0.5, 0), inner.size - Vector2(inner.size.y, 0)), true, Color(1, 1, 1, 0.9))
-	var ring := StyleBoxFlat.new()
-	ring.bg_color = Color(0, 0, 0, 0)
-	ring.border_color = Vic3.RING
-	ring.set_border_width_all(1)
-	ring.set_corner_radius_all(int(size.y * 0.5) + 2)
-	ring.anti_aliasing = true
-	draw_style_box(ring, r.grow(2.0))
+	Vic3.draw_strip(self, Rect2(Vector2.ZERO, size))
 
 ## Lights the mode of `column` ("" the landscape) and names it.
 func show_mode(column: String) -> void:

@@ -31,6 +31,7 @@ extends Node3D
 ## clear of the roads (people_dots.gd set_built, _built_bits).
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const RoadView = preload("res://scripts/road_view.gd")
 const FarmhouseGhost = preload("res://scripts/voxel/farmhouse_ghost.gd")
 const LOT_KM := 0.5 # people_dots.gd LOT_KM, people_dots_common.gdshaderinc DOT_LOT_KM
@@ -51,6 +52,7 @@ const FARM := 0
 const FIELD := 1
 const ROAD := 2
 const NAMES := ["Hof", "Feld", "Strasse"]
+const ICONS := ["house", "plow", "horizon-road"] # assets/ui/icons
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
 const BAD := Color(0.91, 0.42, 0.35, 0.6)
@@ -123,6 +125,9 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	var k := BUTTON_PX / ToolButton.SIZE.x * DisplayServer.screen_get_scale(DisplayServer.window_get_current_screen())
 	bar.add_theme_constant_override("separation", roundi(8 * k))
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, roundi(14 * k))
+	bar.theme = Vic3.theme() # the tooltips
+	# the medallions on a strip of leather, as the map modes at the foot (ui/map_modes.gd)
+	bar.draw.connect(func(): Vic3.draw_strip(bar, Rect2(Vector2.ZERO, bar.size).grow(5.0 * k)))
 	hud.add_child(bar)
 	for kind in NAMES.size():
 		var b := ToolButton.new()
@@ -730,6 +735,7 @@ class ToolButton extends Control:
 	var active := false
 	var enabled := true
 	var scale_k := 1.0
+	var _icon: Texture2D
 
 	func _init() -> void:
 		custom_minimum_size = SIZE
@@ -738,32 +744,14 @@ class ToolButton extends Control:
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
 
+	## A Victoria 3 medallion with the tool's icon: lit while chosen or under
+	## the mouse, dimmed when the view is too far out to build.
 	func _draw() -> void:
 		var hover := get_global_rect().has_point(get_global_mouse_position())
-		var back := SimTables.SELECTED if active or (hover and enabled) else SimTables.HEAD
-		var edge := SimTables.GOLD if active else Color(SimTables.GOLD, 0.8 if hover and enabled else 0.45)
-		var box := StyleBoxFlat.new()
-		box.bg_color = Color(back, 0.92)
-		box.border_color = edge
-		box.set_border_width_all(2 if active else 1)
-		box.set_corner_radius_all(4)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2(scale_k, scale_k))
-		draw_style_box(box, Rect2(Vector2.ZERO, SIZE))
-		var ink := (SimTables.GOLD if active else SimTables.INK) * Color(1, 1, 1, 1.0 if enabled else 0.35)
-		var c := SIZE * 0.5
-		match kind:
-			0: # Hof: walls and a roof
-				draw_rect(Rect2(c + Vector2(-9, -2), Vector2(18, 12)), ink, false, 2.0)
-				draw_polyline(PackedVector2Array([c + Vector2(-12, -1), c + Vector2(0, -12), c + Vector2(12, -1)]), ink, 2.0)
-				draw_rect(Rect2(c + Vector2(-2, 4), Vector2(4, 6)), ink)
-			1: # Feld: furrows in a plot
-				draw_rect(Rect2(c - Vector2(12, 12), Vector2(24, 24)), ink, false, 2.0)
-				for k in 3:
-					var y := -6.0 + k * 6.0
-					draw_line(c + Vector2(-8, y), c + Vector2(8, y), ink, 2.0)
-			2: # Strasse: a road winding off into the distance
-				draw_polyline(PackedVector2Array([c + Vector2(-9, 13), c + Vector2(-4, 4), c + Vector2(-6, -4), c + Vector2(-2, -12)]), ink, 2.0)
-				draw_polyline(PackedVector2Array([c + Vector2(9, 13), c + Vector2(4, 4), c + Vector2(2, -4), c + Vector2(2, -12)]), ink, 2.0)
+		if _icon == null:
+			_icon = Vic3.icon(ICONS[kind])
+		Vic3.draw_medallion(self, size * 0.5, minf(size.x, size.y) * 0.5 - 2.0 * scale_k, _icon,
+			enabled and (active or hover), false, not enabled)
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

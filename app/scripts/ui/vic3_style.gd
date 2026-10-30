@@ -139,6 +139,64 @@ static func draw_band(ci: CanvasItem, r: Rect2) -> void:
 	ci.draw_line(Vector2(r.position.x, r.end.y - 1), Vector2(r.end.x, r.end.y - 1), GOLD, 2.0)
 	ci.draw_line(Vector2(r.position.x, r.end.y + 1), Vector2(r.end.x, r.end.y + 1), RING, 1.0)
 
+## A strip of leather rounded at its ends, in a gold rim, with a shadow:
+## the bars of map modes and of the build tools.
+static func draw_strip(ci: CanvasItem, r: Rect2) -> void:
+	var radius := int(minf(r.size.x, r.size.y) * 0.5)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0)
+	box.shadow_color = Color(0, 0, 0, 0.5)
+	box.shadow_size = 12
+	box.shadow_offset = Vector2(0, 4)
+	box.set_corner_radius_all(radius)
+	ci.draw_style_box(box, r)
+	var plain := StyleBoxFlat.new()
+	plain.bg_color = BAND
+	plain.set_corner_radius_all(radius)
+	plain.border_color = GOLD
+	plain.set_border_width_all(2)
+	plain.anti_aliasing = true
+	ci.draw_style_box(plain, r)
+	if leather() != null: # the grain between the rounded ends
+		var inner := r.grow(-3.0)
+		var end := minf(inner.size.x, inner.size.y) * 0.5
+		var long := inner.grow_individual(-end, 0, -end, 0) if inner.size.x >= inner.size.y else inner.grow_individual(0, -end, 0, -end)
+		ci.draw_texture_rect(leather(), long, true, Color(1, 1, 1, 0.9))
+	var ring := StyleBoxFlat.new()
+	ring.bg_color = Color(0, 0, 0, 0)
+	ring.border_color = RING
+	ring.set_border_width_all(1)
+	ring.set_corner_radius_all(radius + 2)
+	ring.anti_aliasing = true
+	ci.draw_style_box(ring, r.grow(2.0))
+
+## A medallion of radius `r` at `c`: a gold ring round a dark boss with
+## `tex` in it, lit (glow, bright gold) or dimmed (switched off); `red` for
+## closing; without a texture a cross.
+static func draw_medallion(ci: CanvasItem, c: Vector2, r: float, tex: Texture2D, lit: bool, red := false, dim := false) -> void:
+	if lit:
+		for i in 4:
+			ci.draw_circle(c, r + 2.0 + i * 1.5, Color(1.0, 0.84, 0.56, 0.10 - i * 0.02))
+	ci.draw_circle(c, r + 1.5, RING)
+	ci.draw_circle(c, r, GOLD_LIT if lit else (GOLD_DIM if dim else GOLD))
+	var inner := r - maxf(2.5, r * 0.12)
+	var dark := Color("1c0c0f") if red else Color("121a16")
+	var light := Color("7a3440") if red else Color("56685d")
+	ci.draw_circle(c, inner, dark)
+	ci.draw_circle(c + Vector2(0, -inner * 0.22), inner * 0.78, dark.lerp(light, 0.2 if dim else 0.45))
+	ci.draw_circle(c + Vector2(0, -inner * 0.35), inner * 0.5, dark.lerp(light, 0.35 if dim else 0.8))
+	ci.draw_arc(c, inner - 1.0, PI * 1.1, PI * 1.9, 24, Color(1, 1, 1, 0.18), 1.5, true)
+	var ink := Color("fff1c8") if lit else Color("e6d7a8")
+	if dim:
+		ink.a = 0.35
+	if tex != null:
+		var s := inner * 1.15
+		ci.draw_texture_rect(tex, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, ink)
+	else: # no icon: the cross that closes
+		var d := inner * 0.42
+		ci.draw_line(c + Vector2(-d, -d), c + Vector2(d, d), ink, maxf(2.0, inner * 0.16), true)
+		ci.draw_line(c + Vector2(d, -d), c + Vector2(-d, d), ink, maxf(2.0, inner * 0.16), true)
+
 ## A thin rule with a gold diamond in its middle.
 static func draw_rule(ci: CanvasItem, from: Vector2, to: Vector2) -> void:
 	var c := (from + to) * 0.5
@@ -324,26 +382,5 @@ class Medallion extends Button:
 		mouse_exited.connect(queue_redraw)
 
 	func _draw() -> void:
-		var lit := is_hovered() or on
-		var c := size * 0.5
-		var r := minf(size.x, size.y) * 0.5 - 2.0
-		if lit:
-			for i in 4:
-				draw_circle(c, r + 2.0 + i * 1.5, Color(1.0, 0.84, 0.56, 0.10 - i * 0.02))
-		draw_circle(c, r + 1.5, Color("1b1718"))
-		draw_circle(c, r, Color("f0d590") if lit else Color("b7aa7b"))
-		var inner := r - maxf(2.5, r * 0.12)
-		var dark := Color("1c0c0f") if _red else Color("121a16")
-		var light := Color("7a3440") if _red else Color("56685d")
-		draw_circle(c, inner, dark)
-		draw_circle(c + Vector2(0, -inner * 0.22), inner * 0.78, dark.lerp(light, 0.45))
-		draw_circle(c + Vector2(0, -inner * 0.35), inner * 0.5, dark.lerp(light, 0.8))
-		draw_arc(c, inner - 1.0, PI * 1.1, PI * 1.9, 24, Color(1, 1, 1, 0.18), 1.5, true)
-		var ink := Color("fff1c8") if lit else Color("e6d7a8")
-		if _icon != null:
-			var s := inner * 1.15
-			draw_texture_rect(_icon, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, ink)
-		else: # no icon: the cross that closes
-			var d := inner * 0.42
-			draw_line(c + Vector2(-d, -d), c + Vector2(d, d), ink, maxf(2.0, inner * 0.16), true)
-			draw_line(c + Vector2(d, -d), c + Vector2(-d, d), ink, maxf(2.0, inner * 0.16), true)
+		var style: GDScript = load("res://scripts/ui/vic3_style.gd")
+		style.draw_medallion(self, size * 0.5, minf(size.x, size.y) * 0.5 - 2.0, _icon, is_hovered() or on, _red)
