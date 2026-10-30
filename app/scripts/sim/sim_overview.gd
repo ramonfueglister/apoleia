@@ -30,6 +30,9 @@ var _lines := {} # chart key -> {control, series: Array, unit, days}
 var _rings := {} # ring key -> {control, names, values, colours, unit, legend}
 var _lists := {} # list key -> VBoxContainer
 var _bars: Control
+## Months shown in the line charts: 12, 120 or 0 for all.
+var _span := 0
+var _spans: HBoxContainer
 var _bar_rows: Array = [] # [label, value]
 
 func _init(date_fn: Callable) -> void:
@@ -47,6 +50,25 @@ func _init(date_fn: Callable) -> void:
 	_tiles = HBoxContainer.new()
 	_tiles.add_theme_constant_override("separation", 0)
 	strip.add_child(_tiles)
+	# the months the charts show, as EU5's time buttons
+	_spans = HBoxContainer.new()
+	_spans.add_theme_constant_override("separation", 6)
+	_spans.alignment = BoxContainer.ALIGNMENT_END
+	column.add_child(_spans)
+	_spans.add_child(_label("Zeitraum", UiStyle.DIM, UiStyle.SIZE_TEXT))
+	for span in [[12, "1 Jahr"], [120, "10 Jahre"], [0, "Alles"]]:
+		var b := Button.new()
+		b.text = span[1]
+		b.toggle_mode = true
+		b.button_pressed = span[0] == _span
+		b.custom_minimum_size = Vector2(92, 0)
+		b.pressed.connect(func():
+			_span = span[0]
+			for other in _spans.get_children():
+				if other is Button:
+					other.button_pressed = other == b
+			show_tables(_tables))
+		_spans.add_child(b)
 	_grid = GridContainer.new()
 	_grid.columns = 2
 	_grid.add_theme_constant_override("h_separation", 12)
@@ -85,7 +107,8 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("hunger", h, [{"key": "hunger_deaths", "name": "Hungertote", "colour": Charts.RED}])
 		_set_line("cash", h, [{"key": "cash", "name": "Staatskasse", "colour": Charts.SERIES[3]}])
 		_set_line("real", h, [{"key": "real_p50", "name": "Median der Märkte", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
-			"band": "Ärmstes bis reichstes Zehntel der Märkte"}])
+			"band": "Ärmstes bis reichstes Zehntel der Märkte"},
+			{"key": "need_wage", "name": "Nötig, damit die Familie satt wird", "colour": Charts.RED, "dashed": true}])
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
 			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
@@ -146,7 +169,7 @@ func show_tables(tables: Dictionary) -> void:
 ## change since the month before, a small curve.
 func _fill_tiles(d: Dictionary) -> void:
 	var specs := [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
-		["eaten", "Gegessen vom Bedarf", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
+		["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
 		["cash", "Staatskasse", " D", 1.0, false]]
 	if _tiles.get_child_count() == 0:
 		for s in specs:
@@ -168,7 +191,7 @@ func _fill_tiles(d: Dictionary) -> void:
 		if n > 1 and vals[n - 2] != 0.0:
 			var pct := (vals[n - 1] - vals[n - 2]) / absf(vals[n - 2]) * 100.0
 			var good := pct < 0.0 if s[4] else pct > 0.0 # a falling price is good
-			change.text = "%s %.1f %% zum Vormonat" % ["▲" if pct > 0.0 else "▼", absf(pct)]
+			change.text = "%s %.1f %%" % ["▲" if pct > 0.0 else "▼", absf(pct)] # to the month before, as the tooltip says
 			change.add_theme_color_override("font_color", UiStyle.TEXT if absf(pct) < 0.05 else (UiStyle.GAIN if good else UiStyle.LOSS))
 		else:
 			change.text = ""
@@ -176,7 +199,8 @@ func _fill_tiles(d: Dictionary) -> void:
 		spark.set_meta("values", vals.slice(maxi(0, n - 24)))
 		spark.queue_redraw()
 		tile.set_meta("tip", {"id": "tile:" + s[0], "title": s[1], "kind": "Übersicht",
-			"rows": [["Diesen Monat", box.get_child(1).text], ["Vormonat", (Charts.label(vals[n - 2]) + s[2]) if n > 1 else "–"]],
+			"rows": [["Diesen Monat", box.get_child(1).text], ["Vormonat", (Charts.label(vals[n - 2]) + s[2]) if n > 1 else "–"],
+				["Änderung zum Vormonat", change.text if change.text != "" else "–"]],
 			"spark": vals, "spark_title": "Alle Monate seit Beginn", "spark_unit": s[2].strip_edges(),
 			"spark_from": date.call(int(d.day[0])) if n > 0 else "", "spark_to": date.call(int(d.day[n - 1])) if n > 0 else "",
 			"colour": Charts.SERIES[k % Charts.SERIES.size()]})
@@ -250,7 +274,7 @@ func _line_card(key: String, title: String, unit: String) -> void:
 	var legend := HFlowContainer.new()
 	legend.add_theme_constant_override("h_separation", 14)
 	box.add_child(legend)
-	var entry := {"control": chart, "series": [], "unit": unit, "days": PackedInt64Array(), "hover": -1, "legend": legend}
+	var entry := {"control": chart, "series": [], "unit": unit, "days": PackedInt64Array(), "hover": -1, "legend": legend, "hidden": {}}
 	_lines[key] = entry
 	chart.draw.connect(func():
 		var days: PackedInt64Array = entry.days
@@ -281,24 +305,52 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 			var out := PackedFloat64Array()
 			for v in d[key]:
 				out.append(float(v) * scale)
-			return out
-		var one := {"name": s.name, "colour": s.colour, "values": scaled.call(s.key)}
+			return out.slice(_first(out.size()))
+		var one := {"name": s.name, "colour": s.colour, "values": scaled.call(s.key),
+			"dashed": s.get("dashed", false), "hidden": entry.hidden.has(s.name)}
 		if s.has("lo") and d.has(s.lo) and d.has(s.hi):
 			one.lo = scaled.call(s.lo)
 			one.hi = scaled.call(s.hi)
 			one.band = s.get("band", "Spanne der Märkte, höchstens doppelter Median")
 		series.append(one)
 	entry.series = series
-	entry.days = PackedInt64Array(Array(d.day))
+	var days := PackedInt64Array(Array(d.day))
+	entry.days = days.slice(_first(days.size()))
 	var legend: HFlowContainer = entry.legend
 	for c in legend.get_children():
 		c.queue_free()
 	if series.size() > 1 or series.size() == 1 and series[0].has("lo"):
 		for s in series:
-			legend.add_child(_swatch(s.colour, s.name))
-		if series.size() == 1:
-			legend.add_child(_swatch(Color(series[0].colour, 0.35), series[0].band))
+			var sw := _swatch(s.colour, s.name)
+			if series.size() > 1: # a click hides or shows the line, as EU5's legends
+				_toggle(sw, entry, s.name)
+			legend.add_child(sw)
+		for one in series:
+			if one.has("lo"):
+				legend.add_child(_swatch(Color(one.colour, 0.35), one.band))
 	entry.control.queue_redraw()
+
+## The first row the chosen span shows of n months.
+func _first(n: int) -> int:
+	return 0 if _span <= 0 else maxi(0, n - _span)
+
+## A legend entry that hides and shows its series on a click.
+func _toggle(sw: HBoxContainer, entry: Dictionary, name: String) -> void:
+	sw.mouse_filter = Control.MOUSE_FILTER_STOP
+	sw.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	sw.tooltip_text = "Klick: Linie aus- oder einblenden"
+	sw.modulate.a = 0.4 if entry.hidden.has(name) else 1.0
+	sw.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			if entry.hidden.has(name):
+				entry.hidden.erase(name)
+			else:
+				entry.hidden[name] = true
+			sw.modulate.a = 0.4 if entry.hidden.has(name) else 1.0
+			for one in entry.series:
+				if one.name == name:
+					one.hidden = entry.hidden.has(name)
+			entry.control.queue_redraw())
 
 ## The month under the mouse: each series' value, the price's range.
 func _line_tip(key: String, title: String) -> Dictionary:
@@ -309,11 +361,15 @@ func _line_tip(key: String, title: String) -> Dictionary:
 	var unit: String = entry.unit
 	var rows := []
 	for s in entry.series:
-		if m < s.values.size():
+		if m < s.values.size() and not s.hidden:
 			rows.append([s.name, Charts.label(s.values[m], unit), s.colour if s.colour == Charts.RED else UiStyle.TEXT])
 			if s.has("lo"):
 				rows.append(["Billigster Markt", Charts.label(s.lo[m], unit)])
 				rows.append(["Teuerster Markt", Charts.label(s.hi[m], unit)])
+	if key == "real" and entry.series.size() > 1 and m < entry.series[1].values.size():
+		var gap: float = entry.series[0].values[m] - entry.series[1].values[m]
+		rows.append(["Median über dem Nötigen" if gap >= 0.0 else "Median fehlt zum Nötigen", Charts.label(absf(gap), unit),
+			UiStyle.GAIN if gap >= 0.0 else UiStyle.LOSS])
 	if m > 0:
 		var before: float = entry.series[0].values[m - 1]
 		var now: float = entry.series[0].values[m]

@@ -4564,6 +4564,7 @@ impl Grain {
             .float("real_p10", "Reallohn ärmstes Zehntel", "kg", float(&|r| r.extra.real_wage.0))
             .float("real_p50", "Reallohn Median", "kg", float(&|r| r.extra.real_wage.1))
             .float("real_p90", "Reallohn reichstes Zehntel", "kg", float(&|r| r.extra.real_wage.2))
+            .float("need_wage", "Bedarf je Lohnarbeiter und Arbeitstag", "kg", float(&|r| r.extra.need_wage))
             .int("vacant", "Offene Arbeitstage", "Tage", int(&|r| r.extra.vacant))
             .int("idle", "Liegen gebliebene Arbeitstage", "Tage", int(&|r| r.extra.idle))
             .float("horrea_t", "Staatsspeicher", "t", float(&|r| r.extra.horrea_kg as f64 / 1000.0))

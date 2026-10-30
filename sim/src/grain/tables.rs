@@ -17,6 +17,10 @@ pub struct HistoryExtra {
     /// market's price) p10 / p50 / p90, kg.
     pub wage: f64,
     pub real_wage: (f64, f64, f64),
+    /// What a wage earner must earn per work day to feed their share of
+    /// the household: its grain need over its adults' work days (median of
+    /// the wage households), kg. The line the real wage must reach.
+    pub need_wage: f64,
     /// Last week's work days asked for and not found, offered and not taken.
     pub vacant: i64,
     pub idle: i64,
@@ -44,6 +48,15 @@ impl Grain {
         wage.sort_unstable();
         let mut real: Vec<i64> = ms.iter().map(|m| m.wage * 1000 / m.price.max(1)).collect();
         real.sort_unstable();
+        let mut need: Vec<i64> = self
+            .hh
+            .iter()
+            .filter(|(_, s)| s.kind == WAGE)
+            .filter_map(|(id, _)| self.info.get(id))
+            .filter(|i| i.adults > 0)
+            .map(|i| i.need_w as i64 * KG_PER_ADULT_YEAR * 100 / (i.adults as i64 * WORK_DAYS_YEAR))
+            .collect();
+        need.sort_unstable();
         let clothes = self.clothes_by_kind();
         let held: f64 = clothes.iter().map(|c| c.0 * c.1 as f64).sum();
         let homes: usize = clothes.iter().map(|c| c.1).sum();
@@ -52,6 +65,7 @@ impl Grain {
         HistoryExtra {
             wage: at(&wage, 0.5),
             real_wage: (at(&real, 0.1), at(&real, 0.5), at(&real, 0.9)),
+            need_wage: at(&need, 0.5),
             vacant: ms.iter().map(|m| m.vacant_week).sum(),
             idle: ms.iter().map(|m| m.idle_week).sum(),
             horrea_kg: self.markets.iter().map(|m| m.horreum).sum(),

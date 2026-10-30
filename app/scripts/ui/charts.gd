@@ -82,8 +82,9 @@ static func board(ci: CanvasItem, rect: Rect2) -> void:
 ## highest value at the top left and the lowest at the bottom left, the
 ## first and last date in italics in the corners below. `series` holds
 ## {values, colour} and may hold lo and hi (a band around the line, the
-## price's range); all share one scale. `hover` >= 0 marks that month with
-## a line and dots.
+## price's range), dashed (a level to reach, drawn as a dashed line) and
+## hidden (left out, the scale too); all share one scale. `hover` >= 0
+## marks that month with a line, dots and each series' value beside its dot.
 static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, unit := "",
 		from := "", to := "", hover := -1) -> void:
 	board(ci, rect)
@@ -91,6 +92,7 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 	var n := 0
 	var lo := INF
 	var hi := -INF
+	series = series.filter(func(s): return not s.get("hidden", false))
 	for s in series:
 		var vals: PackedFloat64Array = s.values
 		n = maxi(n, vals.size())
@@ -135,6 +137,11 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		var line := PackedVector2Array()
 		for i in vals.size():
 			line.append(Vector2(x_of.call(i), y_of.call(vals[i])))
+		if s.get("dashed", false):
+			for dash in _dashes(line, 10.0, 6.0):
+				ci.draw_polyline(dash, Color(0, 0, 0, 0.5), 5.0, true)
+				ci.draw_polyline(dash, c, 2.5, true)
+			continue
 		ci.draw_polyline(line, Color(0, 0, 0, 0.4), 5.0, true)
 		ci.draw_polyline(line, c, 3.0, true)
 	var f := font if font != null else UiStyle.serif()
@@ -147,10 +154,59 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 	if hover >= 0 and hover < n:
 		var x: float = x_of.call(hover)
 		ci.draw_dashed_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(UiStyle.TEXT, 0.55), 1.0, 4.0)
-		for s in series:
-			if hover < s.values.size():
-				ci.draw_circle(Vector2(x, y_of.call(s.values[hover])), 5.0, UiStyle.EDGE)
-				ci.draw_circle(Vector2(x, y_of.call(s.values[hover])), 3.5, s.colour)
+		# each value beside its dot at once, on the side with room; the
+		# tooltip with the month's details follows after the dwell
+		var left := x > plot.get_center().x
+		var taken: Array[float] = []
+		var marks := series.filter(func(s): return hover < s.values.size())
+		marks.sort_custom(func(a, b): return a.values[hover] > b.values[hover]) # top down, labels in the lines' order
+		for s in marks:
+			var at := Vector2(x, y_of.call(s.values[hover]))
+			ci.draw_circle(at, 5.0, UiStyle.EDGE)
+			ci.draw_circle(at, 3.5, s.colour)
+			var y := at.y + 5.0
+			for t in taken: # don't print over a value above
+				if absf(y - t) < 17.0:
+					y = t + 17.0
+			taken.append(y)
+			var text := label(s.values[hover], unit)
+			var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x + 10.0
+			var box := Rect2(at.x - w - 8.0 if left else at.x + 8.0, y - 14.0, w, 18.0)
+			ci.draw_rect(box, Color(UiStyle.TIP_BODY, 0.92))
+			ci.draw_rect(box, s.colour, false, 1.0)
+			UiStyle.text_at(ci, box.position + Vector2(5, 14), text, UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+
+## The dashes along a polyline, `on` px drawn and `off` px left out, the
+## pattern running on over the corners (months are only a few px apart).
+static func _dashes(line: PackedVector2Array, on: float, off: float) -> Array[PackedVector2Array]:
+	var out: Array[PackedVector2Array] = []
+	var dash := PackedVector2Array()
+	var left := on # px left of the current dash or gap
+	var drawing := true
+	for i in line.size() - 1:
+		var a := line[i]
+		var b := line[i + 1]
+		var length := a.distance_to(b)
+		var done := 0.0
+		if drawing and dash.is_empty():
+			dash.append(a)
+		while length - done > left:
+			done += left
+			var p := a.lerp(b, done / length)
+			if drawing:
+				dash.append(p)
+				out.append(dash)
+				dash = PackedVector2Array()
+			else:
+				dash.append(p)
+			drawing = not drawing
+			left = on if drawing else off
+		left -= length - done
+		if drawing:
+			dash.append(b)
+	if dash.size() > 1:
+		out.append(dash)
+	return out
 
 ## The month under `local_x` of a line chart drawn into `rect` over n months.
 static func month_at(rect: Rect2, n: int, local_x: float) -> int:
@@ -214,5 +270,5 @@ static func label(v: float, unit := "") -> String:
 	elif a >= 1.0:
 		text = "%.1f" % v
 	else:
-		text = "%.2f" % v if a >= 0.01 or a == 0.0 else "%.3f" % v
+		text = "0" if a == 0.0 else ("%.2f" % v if a >= 0.01 else "%.3f" % v)
 	return text if unit == "" else "%s %s" % [text, unit]
