@@ -887,6 +887,8 @@ Was auffällt:
   Überschuss dorthin bringt, wo er mehr wert ist (räumliches Gleichgewicht: Samuelson, 1952;
   Takayama & Judge, 1971), dazu Eisen aus dem Reich und Missernten (S101), damit Lagern sich
   lohnt.
+- **Entscheid:** Ramon, 30.10.2026, Karte „Wie machen wir nach Schritt 3 weiter?“, Option
+  „Mergen, dann Überschuss-Handel“.
 - Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 70 Tests grün.
 
 ### Quellen zu S117, S118, S119 (APA 7)
