@@ -59,7 +59,9 @@ const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three b
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
 const LOT_KM := 0.5 # a village lot (people_dots_common.gdshaderinc DOT_LOT_KM)
-const LOTS_N := 64 # lots per side of the house-lot mask around the camera
+const LOTS_N := 128 # lots per side of the lot mask around the camera (64 km: what the player built shows to FIELDS_KM)
+const FIELDS_KM := 40.0 # view width up to which the terrain draws the fields (sim_fields.gdshaderinc SIM_FIELDS_KM)
+const BUILT_COPY := "shader_type canvas_item;\nrender_mode unshaded, blend_disabled;\nvoid fragment() { COLOR = texture(TEXTURE, UV); }\n"
 const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
@@ -153,8 +155,12 @@ var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _crop_material := ShaderMaterial.new()
-var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free
-var _lots_dirty := true # the mask is drawn again only when its window or the houses changed
+var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
+var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
+var _built_bits := {} # lot -> what the player built there (build_menu.gd _built_bits)
+var _built_dirty := false
+var _built_image := Image.create_empty(LOTS_N, LOTS_N, false, Image.FORMAT_RGBA8)
+var _built_tex := ImageTexture.create_from_image(_built_image)
 var _lot0 := Vector2.INF
 var _parcel_view: SubViewport # each parcel of the crop square worked out once (people_parcels.gdshader)
 var _parcel_material := ShaderMaterial.new()
@@ -328,6 +334,16 @@ func setup(tile_terrain: Node3D) -> bool:
 	_lots_material.set_shader_parameter("list_tex", _house_list_tex)
 	_lots_material.set_shader_parameter("list_w", LIST_W)
 	_lots_material.set_shader_parameter("lot_km", LOT_KM)
+	# what the player built, copied into the mask as it is, under the houses
+	var built := Sprite2D.new()
+	built.centered = false
+	built.texture = _built_tex
+	built.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var copy := ShaderMaterial.new()
+	copy.shader = Shader.new()
+	copy.shader.code = BUILT_COPY
+	built.material = copy
+	_lots_view.add_child(built)
 	_lots = MultiMeshInstance2D.new()
 	_lots.material = _lots_material
 	var lm := MultiMesh.new()
@@ -691,6 +707,11 @@ func _update_crops(view_km: float) -> void:
 			for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
 				m.set_shader_parameter("sim_crop_box", _crop_box)
 		_crop_cell0 = Vector2.INF
+		# the fields the player built still lie on the terrain further out
+		var landscape := get_parent()
+		if map_on and view_km <= FIELDS_KM and "target" in landscape:
+			var reach := Vector2.ONE * view_km * 0.6
+			_place_lot_mask(landscape.target - reach, landscape.target + reach)
 		return
 	# a parcel is half a data tile: up close one quarter tile (sub_tiles);
 	# parcels and lots on the terrain's tile grid, counted from world_min
@@ -724,24 +745,58 @@ func _update_crops(view_km: float) -> void:
 		for m: ShaderMaterial in [terrain._terrain_material, _prep_material, _crop_material]:
 			m.set_shader_parameter("sim_crop_box", box)
 		_parcel_material.set_shader_parameter("parcel_cell0", cell0)
-	# the lot mask round the square, moved only when the square nears its edge
+	_place_lot_mask(box_min, box_max)
+	if _parcel_frames > 0:
+		_parcel_frames -= 1
+		_parcel_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## The lot mask (people_lots.gdshader, the houses; _draw_built, what the
+## player built) round the world rectangle lo..hi (km), moved only when the
+## rectangle nears its edge, drawn again when it moved or changed.
+func _place_lot_mask(lo: Vector2, hi: Vector2) -> void:
+	var world_min: Vector2 = terrain.world_min
 	var lots := Vector2(LOTS_N, LOTS_N)
-	var lot_lo := (box_min - world_min) / LOT_KM
-	var lot_hi := (box_max - world_min) / LOT_KM
+	var lot_lo := (lo - world_min) / LOT_KM
+	var lot_hi := (hi - world_min) / LOT_KM
 	if _lot0 == Vector2.INF or lot_lo.x < _lot0.x + 1.0 or lot_lo.y < _lot0.y + 1.0 or lot_hi.x > _lot0.x + lots.x - 1.0 or lot_hi.y > _lot0.y + lots.y - 1.0:
 		_lot0 = ((lot_lo + lot_hi) * 0.5).floor() - lots * 0.5
 		_lots_material.set_shader_parameter("lot_origin", _lot0)
 		_lots_material.set_shader_parameter("world_min", world_min)
 		for m: ShaderMaterial in [terrain._terrain_material, _crop_material, _prep_material, _parcel_material, terrain._place_material]:
 			m.set_shader_parameter("sim_lot_origin", _lot0)
+		_built_dirty = true
+	if _built_dirty:
+		_built_dirty = false
+		_draw_built()
 		_lots_dirty = true
 	if _lots_dirty:
 		_lots_dirty = false
 		_lots_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 		_parcel_frames = 2
-	if _parcel_frames > 0:
-		_parcel_frames -= 1
-		_parcel_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## What the player built (build_menu.gd _built_bits: lot -> bits), for the
+## fields, the crops and the trees (sim_fields.gdshaderinc sim_built).
+func set_built(bits: Dictionary) -> void:
+	_built_bits = bits
+	_built_dirty = true
+
+## The lots of the mask's window with what the player built there, in R, G
+## and B (alpha 0: no farmhouse).
+func _draw_built() -> void:
+	var bytes := PackedByteArray()
+	bytes.resize(LOTS_N * LOTS_N * 4)
+	var o := Vector2i(_lot0)
+	for l: Vector2i in _built_bits:
+		var p := l - o
+		if p.x < 0 or p.y < 0 or p.x >= LOTS_N or p.y >= LOTS_N:
+			continue
+		var v: int = _built_bits[l]
+		var i := (p.y * LOTS_N + p.x) * 4
+		bytes[i] = v & 255
+		bytes[i + 1] = (v >> 8) & 255
+		bytes[i + 2] = (v >> 16) & 255
+	_built_image.set_data(LOTS_N, LOTS_N, false, Image.FORMAT_RGBA8, bytes)
+	_built_tex.update(_built_image)
 
 ## The ground in view (world km, x and z): the screen's corner rays down to
 ## the lowest and the highest ground under them, worked out again only when

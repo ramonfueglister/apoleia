@@ -57,14 +57,16 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 // green too close to the grass or four tones read as camouflage, confetti
 // or a barcode).
 const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a field is 3 x 3 of them
-vec3 sim_strip_rgb(vec2 cell, float size, vec4 f) {
+vec3 sim_strip_rgb(vec2 cell, float size, vec4 f, bool built) {
 	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
 	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
 	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
 	vec3 ploughed = vec3(0.37, 0.27, 0.2);     // #8c5c3c on screen, the lit soil of the parcels up close (lighter it was a second soil, r11; 0.31, 0.19, 0.13 came out #70371d, rust holes in the lawn at 22 km)
 	vec3 green = vec3(0.36, 0.555, 0.27);      // #82b85a, a fresh green above the pasture (darker it read as a ramp's shade, round 19; yellower as acid lime, round 20)
 	float h = sim_hash(strip + 3.7);
-	if (sim_hash(strip + 17.3) >= f.g) { return h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
+	// a field the player built lies as stubble where it is not sown, as up
+	// close (people_crops.gdshader FALLOW), not as grass
+	if (sim_hash(strip + 17.3) >= f.g) { return built ? wheat : h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
 	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);
 	return g < 0.5 ? green : wheat;
 }
@@ -87,20 +89,22 @@ const vec3 SIM_TRACK_RGB = vec3(0.42, 0.37, 0.29); // the lanes and farm tracks
 // Whether the parcel with its middle at `mid` carries a slab up close, as
 // people_crop_slab.gdshaderinc crop_open (which needs the people's
 // helpers): open land outside the towns, no farmhouse lot, flat, not at
-// the foot of a ramp, not under trees.
+// the foot of a ramp, not under trees; a field the player built on any land.
 bool sim_slab_open(vec2 mid) {
 	ivec2 t = ivec2(floor((mid - world_min) / tile_km));
+	bool built = (sim_built(mid) & SIM_B_FIELD) != 0;
 	if (tt_town(t) != 0 || tt_water(t) != W_LAND) { return false; }
 	int land = tt_ground_at(t, fract((mid - world_min) / tile_km));
-	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return false; }
+	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS && !built) { return false; }
 	vec4 front = tt_corners_cached(t + ivec2(0, 1));
 	if (max(max(front.x, front.y), max(front.z, front.w)) > tt_corners_cached(t).x + 0.01) { return false; }
-	return !sim_house_lot(mid) && sim_flat(mid) && !sim_no_field(mid, land);
+	return !sim_house_lot(mid) && sim_flat(mid) && (built || !sim_no_field(mid, land));
 }
 
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
-	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS) { return c; }
+	bool built = (sim_built(p) & SIM_B_FIELD) != 0; // a field the player built, on any land
+	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS && !built) { return c; }
 	vec3 meadow = GROUND_RGB[G_MEADOW];
 	vec3 pasture = land == G_FIELD ? meadow : c; // farmland the sim does not farm
 	if (!sim_flat(p)) { return pasture; }
@@ -123,9 +127,9 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	}
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
-	if (state == 0 || sim_no_field(world_min + (cell + 0.5) * size, land)) { return pasture; }
+	if (state == 0 || (!built && sim_no_field(world_min + (cell + 0.5) * size, land))) { return pasture; }
 	if (crops) { return sim_slab_open(world_min + (cell + 0.5) * size) ? SIM_DIRT : meadow; }
-	return sim_strip_rgb(cell, size, f);
+	return sim_strip_rgb(cell, size, f, built);
 }
 
 // Distance to the footpaths on and through the fine tile under p (km) and

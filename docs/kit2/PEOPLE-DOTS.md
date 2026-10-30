@@ -403,9 +403,24 @@ nicht auf Datenkacheln mit Wald oder Siedlung in der Nachbarschaft, im Süden
 unter 700 m und mit Ölbäumen zwei Kacheln weit; gepflügte Erde ist
 Urbeks #8c5c3c. Trampelpfade und Marktplätze enden am Stadtrand, statt über
 das Pflaster zu laufen. Eine
-Maske von 64 × 64 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
+Maske von 128 × 128 Hofparzellen (`people_lots.gdshader`, ein Pixel pro
 Hofparzelle mit Bauernhaus) hält Haus, Garten und Hof frei und legt die
 Gassen; die Terrain malt Hofparzellen als Wiese.
+
+Was der Spieler gebaut hat, steht in derselben Maske (R, G, B; Bauernhaus im
+Alpha): `build_menu.gd _built_bits` gibt `people_dots.gd set_built` je Los
+ein Bit für ein fertiges Feld und je Parzelle fünf Bits für die Strassen
+(quert die Parzelle, läuft an Seite −x, −y, +x, +y entlang). Ein gebautes
+Feld ist ganz bestellt, als Platten mit Saat oder Stoppeln wie die übrigen
+Felder, auch auf Land, das sonst keins trägt (30.10.2026: die
+durchscheinenden Flächen sahen aus wie Zonen); gesät ist es nach dem
+Saatanteil seiner Feinkachel, wo dort niemand bestellt, liegt es als Brache.
+Die Sim meldet der Ansicht nicht, welches Feld verpachtet ist. Eine Parzelle,
+die eine Strasse quert oder die die Glättung in einer rechtwinkligen Kurve
+schneidet, bleibt Wiese; an einer Strasse entlang hält die Platte die
+Strassenbreite frei (`SIM_ROAD_HALF_KM`), und auf gebauten Feldern und
+Strassen stehen keine Bäume. Weiter draussen (bis 40 km Sicht) färbt die
+Terrain gebaute Felder wie die übrigen.
 
 Ein Klick auf eine Person zeigt auch die Art des Haushalts (Hof mit
 Feldgrösse, Lohn, Zelt, Händler, Oberschicht), wie viel er im letzten Monat
