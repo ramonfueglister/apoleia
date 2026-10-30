@@ -3,21 +3,23 @@
   "name": "Carthago",
   "year": 301,
   "status": "reconstructed",
-  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "accuracy": "Checked on 2026-10-30 against Pleiades and Wikipedia coordinates: Byrsa, the Antonine baths, the theatre, the amphitheatre, the circus, the circular harbour and the La Malga cisterns were 60-770 m off and now sit within 10 m; the odeon is estimated from the theatre. The grid orientation and the two main streets are not checked, about +-150 m.",
   "sources": [
     "Hurst, H. (2010). Reflections on Carthage. In C. Ando (Ed.), Roman Africa. (not verified online)",
-    "Ennabli, A. (Ed.). (1992). Pour sauver Carthage: Exploration et conservation de la cité punique, romaine et byzantine. UNESCO/INAA. (not verified online)"
+    "Ennabli, A. (Ed.). (1992). Pour sauver Carthage: Exploration et conservation de la cité punique, romaine et byzantine. UNESCO/INAA. (not verified online)",
+    "Pleiades. (2026). Byrsa; Baths of Antoninus at Carthage; Roman theater at Carthage; Roman circus of Carthage [Gazetteer entries]. Retrieved October 30, 2026, from https://pleiades.stoa.org/places/314921",
+    "Wikipedia contributors. (2026). Carthage amphitheatre; Carthage Punic Ports; Cisterns of La Malga [Coordinates]. In Wikipedia. Retrieved October 30, 2026, from https://en.wikipedia.org/"
   ],
   "note": "Unwalled in 301 (the Theodosian wall dates from 425). The colonial grid is turned about 30 degrees; here only its two main streets.",
   "centre": [
-    10.323,
-    36.853
+    10.3235,
+    36.8526
   ],
   "lane_surface": "slabs",
   "extent": [
     [
       [
-        10.305,
+        10.311,
         36.864
       ],
       [
@@ -37,8 +39,8 @@
         36.838
       ],
       [
-        10.305,
-        36.844
+        10.311,
+        36.846
       ]
     ]
   ],
@@ -49,12 +51,12 @@
       "surface": "slabs",
       "line": [
         [
-          10.307,
-          36.8455
+          10.3125,
+          36.8475
         ],
         [
-          10.323,
-          36.853
+          10.3235,
+          36.8526
         ],
         [
           10.336,
@@ -72,8 +74,8 @@
           36.864
         ],
         [
-          10.323,
-          36.853
+          10.3235,
+          36.8526
         ],
         [
           10.33,
@@ -108,8 +110,8 @@
       "outside": true,
       "line": [
         [
-          10.307,
-          36.8455
+          10.3125,
+          36.8475
         ],
         [
           10.29,
@@ -127,8 +129,8 @@
       "name": "Forum (Byrsa)",
       "kind": "forum",
       "centre": [
-        10.323,
-        36.853
+        10.3235,
+        36.8526
       ],
       "size_m": [
         220,
@@ -140,8 +142,8 @@
       "name": "Thermae Antoninianae",
       "kind": "baths",
       "centre": [
-        10.332,
-        36.859
+        10.334,
+        36.8548
       ],
       "size_m": [
         200,
@@ -153,8 +155,8 @@
       "name": "Theatrum",
       "kind": "theatre",
       "centre": [
-        10.326,
-        36.8575
+        10.3295,
+        36.8578
       ],
       "size_m": [
         110,
@@ -165,20 +167,21 @@
       "name": "Odeum",
       "kind": "theatre",
       "centre": [
-        10.325,
+        10.329,
         36.8592
       ],
       "size_m": [
         90,
         70
-      ]
+      ],
+      "note": "On Odeon hill just north of the theatre; position estimated from the theatre"
     },
     {
       "name": "Amphitheatrum",
       "kind": "amphitheatre",
       "centre": [
-        10.308,
-        36.854
+        10.3151,
+        36.8561
       ],
       "size_m": [
         156,
@@ -189,8 +192,8 @@
       "name": "Circus",
       "kind": "circus",
       "centre": [
-        10.307,
-        36.847
+        10.3144,
+        36.8506
       ],
       "size_m": [
         516,
@@ -202,8 +205,8 @@
       "name": "Portus (circular harbour)",
       "kind": "harbour",
       "centre": [
-        10.324,
-        36.846
+        10.3255,
+        36.8456
       ],
       "size_m": [
         300,
@@ -214,8 +217,8 @@
       "name": "Cisterns of La Malga",
       "kind": "warehouse",
       "centre": [
-        10.315,
-        36.862
+        10.3189,
+        36.8593
       ],
       "size_m": [
         130,

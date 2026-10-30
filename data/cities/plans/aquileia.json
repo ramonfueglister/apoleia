@@ -3,15 +3,17 @@
   "name": "Aquileia",
   "year": 301,
   "status": "reconstructed",
-  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "accuracy": "Checked on 2026-10-30 against Vici.org: the forum and the amphitheatre were 400-500 m off; the town (cardo on the modern Via Giulia Augusta, walls, river port, river) moved with them. Circus, palace, port and theatre (location debated) are estimated, about +-200 m.",
   "sources": [
     "Bertacchi, L. (2003). Nuova pianta archeologica di Aquileia. Edizioni del Confine. (not verified online)",
-    "Ghedini, F., Bueno, M., & Novello, M. (Eds.). (2009). Moenibus et portu celeberrima: Aquileia, storia di una città. Istituto Poligrafico dello Stato. (not verified online)"
+    "Ghedini, F., Bueno, M., & Novello, M. (Eds.). (2009). Moenibus et portu celeberrima: Aquileia, storia di una città. Istituto Poligrafico dello Stato. (not verified online)",
+    "Vici.org. (2026). Forum Aquileia; Amphitheatre Aquileia [Archaeological atlas entries]. Retrieved October 30, 2026, from https://vici.org/vici/13911/",
+    "Università di Udine. (n.d.). Le Grandi Terme di Aquileia [Fact sheet]. Retrieved October 30, 2026, from https://qui.uniud.it/documents/419/Le_Grandi_Terme_di_Aquileia_scheda_quiuniud.pdf"
   ],
   "note": "A tetrarchic residence with palace and circus in the west; river port on the Natiso.",
   "centre": [
-    13.368,
-    45.77
+    13.366,
+    45.772
   ],
   "lane_surface": "gravel",
   "walls": [
@@ -19,20 +21,20 @@
       "name": "Mura",
       "ring": [
         [
-          13.36,
-          45.777
+          13.3595,
+          45.78
         ],
         [
-          13.375,
-          45.777
+          13.3728,
+          45.78
         ],
         [
-          13.3765,
-          45.763
+          13.3728,
+          45.764
         ],
         [
-          13.359,
-          45.763
+          13.3595,
+          45.764
         ]
       ]
     }
@@ -41,22 +43,22 @@
     {
       "name": "Porta north",
       "at": [
-        13.368,
-        45.777
+        13.366,
+        45.78
       ]
     },
     {
       "name": "Porta south",
       "at": [
-        13.368,
-        45.763
+        13.366,
+        45.764
       ]
     },
     {
       "name": "Porta west",
       "at": [
         13.3595,
-        45.77
+        45.7725
       ]
     }
   ],
@@ -66,20 +68,24 @@
       "width_m": 50,
       "line": [
         [
-          13.379,
-          45.785
+          13.3755,
+          45.79
         ],
         [
-          13.3775,
-          45.775
+          13.374,
+          45.78
         ],
         [
-          13.377,
-          45.765
+          13.3738,
+          45.77
         ],
         [
-          13.376,
-          45.755
+          13.3732,
+          45.76
+        ],
+        [
+          13.372,
+          45.75
         ]
       ]
     }
@@ -91,12 +97,12 @@
       "surface": "slabs",
       "line": [
         [
-          13.368,
-          45.777
+          13.366,
+          45.78
         ],
         [
-          13.368,
-          45.763
+          13.366,
+          45.764
         ]
       ]
     },
@@ -107,11 +113,11 @@
       "line": [
         [
           13.3595,
-          45.77
+          45.7725
         ],
         [
-          13.3765,
-          45.77
+          13.3728,
+          45.7725
         ]
       ]
     },
@@ -122,12 +128,12 @@
       "outside": true,
       "line": [
         [
-          13.368,
-          45.777
+          13.366,
+          45.78
         ],
         [
-          13.366,
-          45.788
+          13.365,
+          45.79
         ],
         [
           13.363,
@@ -142,11 +148,11 @@
       "outside": true,
       "line": [
         [
-          13.368,
-          45.763
+          13.366,
+          45.764
         ],
         [
-          13.37,
+          13.369,
           45.752
         ],
         [
@@ -163,15 +169,15 @@
       "line": [
         [
           13.3595,
-          45.77
+          45.7725
         ],
         [
           13.348,
-          45.771
+          45.7725
         ],
         [
           13.335,
-          45.772
+          45.773
         ]
       ]
     }
@@ -181,8 +187,8 @@
       "name": "Forum",
       "kind": "forum",
       "centre": [
-        13.3683,
-        45.7703
+        13.366,
+        45.7736
       ],
       "size_m": [
         140,
@@ -194,46 +200,49 @@
       "name": "Portus fluvialis",
       "kind": "harbour",
       "centre": [
-        13.3762,
-        45.77
+        13.372,
+        45.7725
       ],
       "size_m": [
         350,
         50
       ],
-      "angle_deg": 90
+      "angle_deg": 90,
+      "note": "Quays on the Natiso east of the forum (modern Via Sacra); position estimated"
     },
     {
       "name": "Palatium",
       "kind": "palace",
       "centre": [
-        13.3615,
-        45.769
+        13.3632,
+        45.7702
       ],
       "size_m": [
         150,
         120
-      ]
+      ],
+      "note": "Beside the circus; position estimated"
     },
     {
       "name": "Circus",
       "kind": "circus",
       "centre": [
-        13.36,
-        45.772
+        13.3605,
+        45.771
       ],
       "size_m": [
         440,
         90
       ],
-      "angle_deg": 90
+      "angle_deg": 90,
+      "note": "Along the western wall; position estimated"
     },
     {
       "name": "Amphitheatrum",
       "kind": "amphitheatre",
       "centre": [
-        13.3605,
-        45.765
+        13.3656,
+        45.7677
       ],
       "size_m": [
         140,
@@ -244,13 +253,14 @@
       "name": "Theatrum",
       "kind": "theatre",
       "centre": [
-        13.365,
-        45.7735
+        13.3612,
+        45.766
       ],
       "size_m": [
         90,
         75
-      ]
+      ],
+      "note": "South-western quarter, beyond the later Great Baths; location debated"
     }
   ],
   "areas": []

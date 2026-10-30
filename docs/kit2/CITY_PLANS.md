@@ -1,6 +1,6 @@
 # Kit 2 — Stadtpläne
 
-**Stand:** 30.10.2026 · **Status:** `implementiert` (Daten, Werkzeug, Lader, Darstellung im Spiel), `offen` (Test auf dem Mac, Bauten über mehrere Parzellen).
+**Stand:** 30.10.2026 · **Status:** `implementiert` (Daten, Werkzeug, Lader, Darstellung im Spiel), `offen` (Test auf dem Mac, Bauten über mehrere Parzellen, Massstabsentscheid).
 Plandokument mit Herleitung: Claude Doc „Echte antike Städte: Plan“ (https://claude.ai/artifact/UF6d4LMncaFN6ntKhLrSqq).
 
 ## Was es ist
@@ -12,8 +12,8 @@ Insula, Domus, öffentlicher Bau, Platz, Garten, Strasse, Mauer, Tor, Brücke, G
 bei Strassen den Rang, den Belag und die Anschlüsse nach N/O/S/W, bei Häusern die Stockwerke, bei
 öffentlichen Bauten das Modell und die Seite der Front.
 
-- **Rekonstruiert** (`data/cities/plans/<id>.json`), Lage aus modernen Entsprechungen geschätzt,
-  zu prüfen an den in jeder Datei genannten Quellen:
+- **Rekonstruiert** (`data/cities/plans/<id>.json`), Lage aus modernen Entsprechungen geschätzt
+  und an vermessenen Punkten geprüft (siehe „Prüfung der Lagen“):
   - Rom, Stand 301 (Aurelianische Mauer, 15 Tore, Tiber mit Insel und 7 Brücken, 38 Strassen,
     34 Bauten, 10 Quartiere), ±50 m.
   - Ostia (sullanische Mauer, Decumanus und Cardo, Forum, Capitolium, Theater, Thermen, Horrea), ±75 m.
@@ -43,6 +43,61 @@ bei Strassen den Rang, den Belag und die Anschlüsse nach N/O/S/W, bei Häusern 
 
 Aufteilung: dieser Teil liefert Pläne und Format; Aussehen (Materialien, Strassenstücke, Modelle,
 Shader) liegt beim Grafik-Thread; gebaute Strassen beim Bau-Thread mit denselben Belägen.
+
+## Prüfung der Lagen (30.10.2026)
+
+Die Lagen der erhaltenen oder ausgegrabenen Bauten und Tore der acht rekonstruierten Städte sind an
+vermessenen Koordinaten geprüft (Wikipedia, Pleiades, Vici.org, die Tafel an der Porta Romana in
+Ostia). Abstand des Mittelpunkts im Plan zur Quelle, vor und nach der Korrektur:
+
+| Stadt | Bau oder Tor | vorher | jetzt | Quelle |
+|---|---|---:|---:|---|
+| Rom | Amphitheatrum Flavium | 11 m | 11 m | Wikipedia |
+| Rom | Pantheon | 8 m | 8 m | Wikipedia |
+| Rom | Thermae Diocletiani | 0 m | 0 m | Wikipedia |
+| Rom | Thermae Antoninianae | 67 m | 6 m | Wikipedia |
+| Rom | Circus Maximus | 54 m | 0 m | Wikipedia |
+| Rom | Mausoleum Hadriani | 0 m | 0 m | Wikipedia |
+| Rom | Mausoleum Augusti | 35 m | 35 m | Wikipedia |
+| Rom | Theatrum Marcelli | 45 m | 45 m | Wikipedia |
+| Rom | Mons Testaceus | 42 m | 42 m | Wikipedia |
+| Rom | Castra Praetoria | 193 m | 0 m | Wikipedia |
+| Rom | Porta Praenestina | 16 m | 16 m | Wikipedia |
+| Rom | Porta Appia | 69 m | 69 m | Wikipedia |
+| Rom | Porta Flaminia | 55 m | 55 m | Wikipedia |
+| Rom | Porta Ostiensis | 38 m | 38 m | Wikipedia |
+| Rom | Amphitheatrum Castrense | 58 m | 58 m | Wikipedia |
+| Rom | Theatrum Pompeii | 78 m | 0 m | Wikipedia |
+| Rom | Porta Tiburtina | 116 m | 2 m | Wikipedia |
+| Trier | Porta Nigra | 13 m | 13 m | Wikipedia |
+| Trier | Kaiserthermen | 141 m | 4 m | Wikipedia |
+| Trier | Barbarathermen | 58 m | 2 m | Wikipedia |
+| Trier | Amphitheatrum | 93 m | 4 m | Wikipedia |
+| Trier | Aula Palatina | 7 m | 7 m | Wikipedia |
+| Trier | Bridge gate | 40 m | 40 m | Wikipedia |
+| Mailand | Forum | 100 m | 37 m | Wikipedia: Kirche San Sepolcro |
+| Mailand | Horrea | 707 m | geschätzt | Wikipedia: Adresse via dei Bossi 4 |
+| Karthago | Forum (Byrsa) | 63 m | 2 m | Pleiades |
+| Karthago | Thermae Antoninianae | 499 m | 3 m | Pleiades |
+| Karthago | Theatrum | 316 m | 6 m | Pleiades |
+| Karthago | Amphitheatrum | 673 m | 2 m | Wikipedia |
+| Karthago | Circus | 773 m | 5 m | Pleiades |
+| Karthago | Portus (circular harbour) | 139 m | 6 m | Wikipedia |
+| Karthago | Cisterns of La Malga | 463 m | 4 m | Wikipedia |
+| Aquileia | Forum | 406 m | 3 m | Vici.org |
+| Aquileia | Amphitheatrum | 500 m | 4 m | Vici.org |
+| Ostia | Theatrum | 257 m | 10 m | Tafel vor Ort (HMDB) |
+| Ostia | Porta Romana | 508 m | 0 m | Tafel vor Ort (HMDB) |
+| Alexandria | Serapeum | 87 m | 6 m | Pleiades |
+| Alexandria | Kom el-Dikka (theatre and baths) | 216 m | 4 m | Wikipedia |
+
+- Rom und Trier passten schon (meist unter 60 m). Karthago, Aquileia, Ostia und Mailand lagen
+  stellenweise 300 bis 770 m daneben und sind neu gezeichnet; bei Aquileia und Ostia sind Mauer,
+  Tore, Hauptstrassen und Fluss mit den Bauten mitgewandert.
+- Weiterhin geschätzt: alle Strassen ausser den auf modernen Strassen erhaltenen, die Bauten ohne
+  Eintrag oben, die Ausrichtung des Rasters in Karthago, Antiochia ganz (keine vermessenen Punkte
+  gefunden). Die Bücher in den Quellenlisten sind weiterhin nicht online geprüft.
+- Bei 0,25 km je Parzelle verschiebt ein Fehler unter 125 m einen Bau höchstens um eine Parzelle.
 
 ## Massstab
 

@@ -3,14 +3,17 @@
   "name": "Ostia",
   "year": 301,
   "status": "reconstructed",
-  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-75 m; to be checked against the sources listed.",
+  "accuracy": "Checked on 2026-10-30 against the site's marker at the Porta Romana and Vici.org points: the old plan had the Porta Romana 500 m and the theatre 260 m off. Gates, walls (about 70 ha with the river, as published), decumanus and the monuments redrawn from those points; Porta Marina and Porta Laurentina estimated, about +-75 m.",
   "sources": [
     "Pavolini, C. (2006). Ostia (Guide archeologiche Laterza). Laterza. (not verified online)",
-    "Stöger, J. J. (2011). Rethinking Ostia: A spatial enquiry into the urban society of Rome's imperial port-town. Leiden University Press. (not verified online)"
+    "Stöger, J. J. (2011). Rethinking Ostia: A spatial enquiry into the urban society of Rome's imperial port-town. Leiden University Press. (not verified online)",
+    "Historical Marker Database. (2026). Mura Repubblicane - Porta Romana; The Theatre of Ostia [Markers]. Retrieved October 30, 2026, from https://www.hmdb.org/m.asp?m=281083",
+    "Vici.org. (2026). Theatre Ostia; Temple of Ceres; Thermopolium; Caupona di Alexander [Archaeological atlas entries]. Retrieved October 30, 2026, from https://vici.org/vici/4249/",
+    "Ostia Antica. (n.d.). City walls. Retrieved October 30, 2026, from https://ostia-antica.org/dict/topics/walls/walls.htm"
   ],
   "centre": [
-    12.2919,
-    41.7556
+    12.2896,
+    41.755
   ],
   "lane_surface": "basalt",
   "walls": [
@@ -19,32 +22,40 @@
       "built": "c. 63 BC",
       "ring": [
         [
-          12.2965,
-          41.7592
+          12.2955,
+          41.759
         ],
         [
-          12.2978,
-          41.7531
+          12.2957,
+          41.7574
         ],
         [
-          12.2935,
-          41.751
+          12.295,
+          41.754
         ],
         [
-          12.2925,
+          12.293,
           41.7515
         ],
         [
-          12.286,
-          41.7535
+          12.2915,
+          41.752
         ],
         [
-          12.2836,
-          41.7578
+          12.288,
+          41.751
         ],
         [
-          12.285,
-          41.76
+          12.2862,
+          41.7516
+        ],
+        [
+          12.284,
+          41.757
+        ],
+        [
+          12.2825,
+          41.759
         ]
       ],
       "closed_by": "river"
@@ -54,23 +65,23 @@
     {
       "name": "Porta Romana",
       "at": [
-        12.2978,
-        41.7531
+        12.2957,
+        41.7574
       ],
       "road": "Via Ostiensis"
     },
     {
       "name": "Porta Laurentina",
       "at": [
-        12.2925,
-        41.7515
+        12.2915,
+        41.752
       ]
     },
     {
       "name": "Porta Marina",
       "at": [
-        12.2836,
-        41.7578
+        12.2862,
+        41.7516
       ]
     }
   ],
@@ -81,23 +92,23 @@
       "line": [
         [
           12.306,
-          41.762
+          41.7615
         ],
         [
-          12.299,
-          41.76
+          12.2985,
+          41.7595
         ],
         [
           12.292,
-          41.7598
+          41.7588
         ],
         [
           12.286,
-          41.7605
+          41.7592
         ],
         [
           12.279,
-          41.763
+          41.761
         ]
       ]
     }
@@ -109,16 +120,20 @@
       "surface": "basalt",
       "line": [
         [
-          12.2978,
-          41.7531
+          12.2957,
+          41.7574
         ],
         [
-          12.2919,
-          41.7552
+          12.2917,
+          41.7553
         ],
         [
-          12.2836,
-          41.7578
+          12.2893,
+          41.7549
+        ],
+        [
+          12.2862,
+          41.7516
         ]
       ]
     },
@@ -128,16 +143,16 @@
       "surface": "basalt",
       "line": [
         [
+          12.2898,
+          41.7582
+        ],
+        [
+          12.2896,
+          41.7549
+        ],
+        [
           12.2915,
-          41.7592
-        ],
-        [
-          12.2919,
-          41.7556
-        ],
-        [
-          12.2925,
-          41.7515
+          41.752
         ]
       ]
     },
@@ -147,12 +162,12 @@
       "surface": "basalt",
       "line": [
         [
-          12.2905,
-          41.7558
+          12.2885,
+          41.7551
         ],
         [
-          12.286,
-          41.759
+          12.2845,
+          41.7578
         ]
       ]
     },
@@ -163,16 +178,16 @@
       "outside": true,
       "line": [
         [
-          12.2978,
-          41.7531
+          12.2957,
+          41.7574
         ],
         [
-          12.306,
-          41.75
+          12.303,
+          41.7585
         ],
         [
-          12.317,
-          41.748
+          12.315,
+          41.76
         ]
       ]
     },
@@ -183,15 +198,15 @@
       "outside": true,
       "line": [
         [
-          12.2925,
-          41.7515
+          12.2915,
+          41.752
         ],
         [
-          12.294,
-          41.745
+          12.293,
+          41.746
         ],
         [
-          12.296,
+          12.295,
           41.738
         ]
       ]
@@ -203,16 +218,16 @@
       "outside": true,
       "line": [
         [
-          12.2836,
-          41.7578
+          12.2862,
+          41.7516
+        ],
+        [
+          12.282,
+          41.748
         ],
         [
           12.276,
-          41.754
-        ],
-        [
-          12.27,
-          41.748
+          41.742
         ]
       ]
     }
@@ -222,8 +237,8 @@
       "name": "Forum",
       "kind": "forum",
       "centre": [
-        12.2921,
-        41.7553
+        12.2896,
+        41.7547
       ],
       "size_m": [
         130,
@@ -235,8 +250,8 @@
       "name": "Capitolium",
       "kind": "temple",
       "centre": [
-        12.2918,
-        41.7561
+        12.2893,
+        41.7554
       ],
       "size_m": [
         35,
@@ -247,8 +262,8 @@
       "name": "Theatrum",
       "kind": "theatre",
       "centre": [
-        12.2947,
-        41.7565
+        12.2916,
+        41.756
       ],
       "size_m": [
         90,
@@ -259,8 +274,8 @@
       "name": "Piazzale delle Corporazioni",
       "kind": "portico",
       "centre": [
-        12.2948,
-        41.7573
+        12.2911,
+        41.7566
       ],
       "size_m": [
         110,
@@ -271,8 +286,8 @@
       "name": "Thermae Neptuni",
       "kind": "baths",
       "centre": [
-        12.2958,
-        41.7555
+        12.2928,
+        41.7562
       ],
       "size_m": [
         70,
@@ -283,8 +298,8 @@
       "name": "Thermae Fori",
       "kind": "baths",
       "centre": [
-        12.2925,
-        41.7546
+        12.2902,
+        41.7541
       ],
       "size_m": [
         80,
@@ -295,8 +310,8 @@
       "name": "Horrea",
       "kind": "warehouse",
       "centre": [
-        12.2905,
-        41.757
+        12.29,
+        41.7568
       ],
       "size_m": [
         100,
@@ -307,8 +322,8 @@
       "name": "Campus Magnae Matris",
       "kind": "temple",
       "centre": [
-        12.2935,
-        41.752
+        12.2918,
+        41.7526
       ],
       "size_m": [
         100,
@@ -321,8 +336,8 @@
       "name": "Insulae of the Decumanus",
       "kind": "insulae",
       "centre": [
-        12.29,
-        41.756
+        12.2895,
+        41.7555
       ],
       "radius_m": 300
     }

@@ -3,10 +3,12 @@
   "name": "Alexandria",
   "year": 301,
   "status": "reconstructed",
-  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "accuracy": "Checked on 2026-10-30: the Serapeum (Pleiades) and Kom el-Dikka (Wikipedia) were 90-220 m off and now sit within 10 m. Everything else rests on the ancient descriptions and is uncertain, about +-300 m.",
   "sources": [
     "McKenzie, J. (2007). The architecture of Alexandria and Egypt, c. 300 BC to AD 700. Yale University Press. (not verified online)",
-    "Haas, C. (1997). Alexandria in late antiquity: Topography and social conflict. Johns Hopkins University Press. (not verified online)"
+    "Haas, C. (1997). Alexandria in late antiquity: Topography and social conflict. Johns Hopkins University Press. (not verified online)",
+    "Pleiades. (2026). Serapeum of Alexandria [Gazetteer entry]. Retrieved October 30, 2026, from https://pleiades.stoa.org/places/182618516",
+    "Wikipedia contributors. (2026). Kom El Deka [Coordinates]. In Wikipedia. Retrieved October 30, 2026, from https://en.wikipedia.org/wiki/Kom_El_Deka"
   ],
   "note": "The royal quarter (Brucheion) lay largely in ruins after 272; Diocletian besieged the city in 297-298, the column at the Serapeum was raised for him c. 298-302.",
   "centre": [
@@ -190,8 +192,8 @@
       "name": "Serapeum",
       "kind": "temple",
       "centre": [
-        29.8963,
-        31.1825
+        29.8969,
+        31.1819
       ],
       "size_m": [
         180,
@@ -215,8 +217,8 @@
       "name": "Kom el-Dikka (theatre and baths)",
       "kind": "theatre",
       "centre": [
-        29.9045,
-        31.195
+        29.9056,
+        31.1967
       ],
       "size_m": [
         120,
