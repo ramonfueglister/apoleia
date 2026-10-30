@@ -146,13 +146,25 @@ pub enum Jewel {
 }
 
 /// The life lived, as it shows in the face: food 0..1 (0.55 as needed),
-/// share of work outdoors 0..1, scars, illness 0..1.
+/// share of work outdoors 0..1, scars, illness 0..1; mourning 0..1 (a death
+/// in the household, fading), wealth 0..1 (the share of people around who
+/// have less), clothes worn out 0..1 (the share of the clothing needed that
+/// the household lacks).
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Life {
     pub food: f32,
     pub sun: f32,
     pub scars: u32,
     pub ill: f32,
+    pub mourn: f32,
+    pub wealth: f32,
+    pub worn: f32,
+}
+
+impl Default for Life {
+    fn default() -> Life {
+        Life { food: 0.55, sun: 0.4, scars: 0, ill: 0.0, mourn: 0.0, wealth: 0.5, worn: 0.0 }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -221,6 +233,16 @@ impl Look {
             return b;
         }
         let r = Rng::new(self.seed ^ 0x9e37_79b9).next();
+        // a man in mourning does not shave
+        let b = self.usual_beard(r);
+        if self.life.mourn > 0.25 && b == Shaven {
+            return Stubble;
+        }
+        b
+    }
+
+    fn usual_beard(&self, r: f32) -> Beard {
+        use Beard::*;
         if self.age < 20.0 {
             return [Shaven, Stubble, Stubble, Short][(r * 4.0) as usize];
         }
@@ -269,8 +291,9 @@ impl Look {
         if let Some(j) = self.jewel {
             return j;
         }
-        // girls wear the lunula until 13 (build.rs), no other jewellery
-        if !self.female || self.age < 13.0 {
+        // girls wear the lunula until 13 (build.rs), no other jewellery;
+        // a woman in mourning lays hers aside
+        if !self.female || self.age < 13.0 || self.life.mourn > 0.25 {
             return Jewel::None;
         }
         let r = Rng::new(self.seed ^ 0x3c6e_f372).next();
@@ -302,6 +325,10 @@ impl Look {
         }
         if self.age < 13.0 {
             return Hair::Bun;
+        }
+        // in mourning under the veil, which the clothes' colour darkens
+        if self.life.mourn > 0.25 {
+            return Hair::Veil;
         }
         let r = Rng::new(self.seed ^ 0x85eb_ca6b).next();
         use Hair::*;
@@ -378,7 +405,7 @@ pub fn default_life(stand: usize, age: f32, seed: u32) -> Life {
     };
     let scars = if age > 16.0 && r.next() < scar_p { 1 + (r.next() * 2.0) as u32 } else { 0 };
     let ill = if r.next() < 0.08 { 0.4 + 0.4 * r.next() } else { 0.0 };
-    Life { food, sun, scars, ill }
+    Life { food, sun, scars, ill, ..Life::default() }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

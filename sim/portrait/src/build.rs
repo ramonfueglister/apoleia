@@ -135,12 +135,22 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
         add(&format!("cheek/{sd}-cheek-volume-incr"), kid * 0.3);
         add(&format!("eyes/{sd}-eye-height2-incr"), kid * 0.4);
     }
-    // age: thinner lips, the head a little lowered
+    // age: thinner lips, the head a little lowered; ears and nose keep
+    // growing, the tip of the nose sinks (Heathcote, 1995; Sforza et al.,
+    // 2011; the weights eyeballed)
     let old = c01((yrs - 50.0) / 30.0);
     if old > 0.0 {
         add("mouth/mouth-upperlip-volume-decr", old * 0.5);
         add("mouth/mouth-lowerlip-volume-decr", old * 0.3);
         add("head/head-age-incr", old * 0.6);
+    }
+    let older = c01((yrs - 40.0) / 45.0);
+    if older > 0.0 {
+        for sd in ["l", "r"] {
+            add(&format!("ears/{sd}-ear-scale-incr"), older * 0.5);
+        }
+        add("nose/nose-scale-vert-incr", older * 0.3);
+        add("nose/nose-point-down", older * 0.4);
     }
     let mood: &[(&str, f32)] = match p.mood {
         Mood::Content => &[("mouth/mouth-angles-up", 0.9), ("eyebrows/eyebrows-angle-up", 0.25), ("cheek/l-cheek-trans-up", 0.4), ("cheek/r-cheek-trans-up", 0.4)],
@@ -163,9 +173,10 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
         add("forehead/forehead-temple-decr", hung * 1.4);
         add("neck/neck-scale-horiz-decr", hung * 0.5);
     }
-    if l.ill > 0.0 {
+    // illness and mourning (sleepless, weeping) give eye bags
+    if l.ill + l.mourn > 0.0 {
         for sd in ["l", "r"] {
-            add(&format!("eyes/{sd}-eye-bag-incr"), l.ill * 0.7);
+            add(&format!("eyes/{sd}-eye-bag-incr"), l.ill * 0.7 + l.mourn * 0.5);
         }
     }
     // arms down from the A pose, softly weighted around the shoulder joint
@@ -553,6 +564,29 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
     let usk = p.u(SKIN);
     // skin: the sun tans (more on light skin), hunger makes it sallow, illness pale
     let skin = cmix(cmix(cmix(p.skin(), hex("#9a6440"), 0.24 * lf.sun * (1.0 - 0.6 * usk)), hex("#c8bc9c"), 0.2 * hung), hex("#ddd6ca"), 0.28 * lf.ill);
+    // what the clothes tell, at the facet's place `c` (base): the dye by the
+    // wealth around (undyed wool for the poorest, deeper colour for the
+    // better off), fading and patches where the household lacks clothing,
+    // dark cloth in mourning (the toga pulla). PLACEHOLDER strengths.
+    let patch = hex(st.tunic[(p.seed as usize + 1) % st.tunic.len()]);
+    let dress = |col: Rgb, c: V3| -> Rgb {
+        let mut k = col;
+        if lf.wealth < 0.35 {
+            k = cmix(k, hex("#b3a589"), (0.35 - lf.wealth) / 0.35 * 0.55);
+        } else if lf.wealth > 0.7 {
+            let g = (k[0] + k[1] + k[2]) / 3.0;
+            let t = (lf.wealth - 0.7) / 0.3 * 0.35;
+            k = [c01(k[0] + (k[0] - g) * t), c01(k[1] + (k[1] - g) * t), c01(k[2] + (k[2] - g) * t)];
+        }
+        if lf.worn > 0.0 {
+            k = cmix(k, hex("#9c9484"), lf.worn * 0.35);
+            let cell = |v: f32| ((v / 0.38).floor() + 64.0) as u32;
+            if hash(cell(c[0]), cell(c[1]), cell(c[2]) + 7) < (lf.worn - 0.25).max(0.0) * 0.2 {
+                k = cmul(cmix(k, patch, 0.8), 0.8);
+            }
+        }
+        cmix(k, hex("#2f2b28"), 0.65 * lf.mourn)
+    };
     // wrinkles as darker facets along the usual lines; age counts, the sun deepens them
     const WR: [[f32; 5]; 8] = [
         [0.19, 6.93, 0.27, 6.62, 32.0],
@@ -583,6 +617,25 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             k = k.max(w * c01(1.0 - seg_d(ax, c[1], x0, y0, x1, y1) / 0.032));
         }
         k
+    };
+    // age spots on forehead, temples and cheeks after 50, more after years
+    // in the sun: (x, y, radius) on the face (PLACEHOLDER, eyeballed)
+    let spots: Vec<(f32, f32, f32)> = {
+        let mut r = Rng::new(p.seed ^ 0x5be0_cd19);
+        let n = (c01((p.age - 50.0) / 30.0) * (0.4 + 0.9 * lf.sun) * 8.0).round() as usize;
+        (0..n)
+            .map(|_| {
+                let (zone, sg) = (r.next(), if r.next() < 0.5 { -1.0 } else { 1.0 });
+                let (x, y) = if zone < 0.45 {
+                    (r.next() * 0.5, 7.62 + r.next() * 0.3)
+                } else if zone < 0.7 {
+                    (0.5 + r.next() * 0.18, 7.3 + r.next() * 0.35)
+                } else {
+                    (0.33 + r.next() * 0.3, 6.92 + r.next() * 0.25)
+                };
+                (sg * x, y, 0.05 + 0.04 * r.next())
+            })
+            .collect()
     };
     let scars = p.scars();
     let scar_c = if usk < 0.45 { cmix(skin, hex("#c06a62"), 0.62) } else { cmix(skin, hex("#efcdb8"), 0.7) };
@@ -660,8 +713,11 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             if lf.sun > 0.3 {
                 col = cmul(col, 1.0 + (hh - 0.5) * 0.12 * lf.sun);
             }
-            if c[2] > 1.05 && ey < -0.04 && ey > -0.16 && ex.abs() < 0.16 && (lf.ill > 0.0 || hung > 0.0) {
-                col = cmix(col, hex("#6e4a52"), 0.18 * lf.ill + 0.12 * hung);
+            if c[2] > 1.05 && ey < -0.04 && ey > -0.16 && ex.abs() < 0.16 && (lf.ill > 0.0 || hung > 0.0 || lf.mourn > 0.0) {
+                col = cmix(col, hex("#6e4a52"), 0.18 * lf.ill + 0.12 * hung + 0.14 * lf.mourn);
+            }
+            if c[2] > 0.6 && spots.iter().any(|&(x, y, r)| (c[0] - x).hypot(c[1] - y) < r) && Ctx::mask3(&h.nose, a, b, cc) < 0.2 {
+                col = cmix(col, hex("#6e4428"), 0.42 + 0.12 * hh);
             }
             col
         };
@@ -1446,7 +1502,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         if veil {
             // the palla drawn over the head: open around the face, falling
             // in folds onto the shoulders
-            let vcol = hex(st.palla.unwrap_or(["#e9e2d2", "#c8b68c", "#8396ad", "#a4664f", "#6f7d5c"][(p.seed % 5) as usize]));
+            let vcol = dress(hex(st.palla.unwrap_or(["#e9e2d2", "#c8b68c", "#8396ad", "#a4664f", "#6f7d5c"][(p.seed % 5) as usize])), [0.0, 7.5, 0.0]);
             const VE: [[f32; 2]; 7] = [[44.0, 0.0], [30.0, 36.0], [12.0, 60.0], [-8.0, 74.0], [-35.0, 86.0], [-60.0, 94.0], [-80.0, 98.0]];
             let th_e = |e: f32| {
                 if e >= 44.0 {
@@ -1540,7 +1596,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 if st.stripe > 0.0 && !fem && !st.toga && c[2] > 0.3 && c[1] < 5.35 && (c[0].abs() - 0.4).abs() < st.stripe {
                     return cmul(hex("#5e1a44"), 0.92 + 0.1 * hh);
                 }
-                cmul(tc, 0.88 + 0.14 * hh)
+                cmul(dress(tc, c), 0.88 + 0.14 * hh)
             },
             Some((&nb, &|_| off)),
         );
@@ -1561,7 +1617,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         };
         let mut s = Surface::new(mat(0.95));
         let off = 0.16 + 0.03 * wt;
-        x.facets(&mut s, body_full, &|c, _, _, _| in_toga(c), &mut |_, a, b, c| cmul(hex("#efe9dc"), 0.84 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        x.facets(&mut s, body_full, &|c, _, _, _| in_toga(c), &mut |c, a, b, cc| cmul(dress(hex("#efe9dc"), c), 0.84 + 0.2 * hash(a, b, cc)), Some((&nb, &|_| off)));
         out.push(s);
     }
     let cloak = match (st.chlamys, st.palla) {
@@ -1579,7 +1635,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         let mut s = Surface::new(mat(0.9));
         let off = 0.14 + 0.03 * wt;
         let cc = hex(cloak);
-        x.facets(&mut s, body_full, &|c, _, _, _| open(c), &mut |_, a, b, c| cmul(cc, 0.85 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        x.facets(&mut s, body_full, &|c, _, _, _| open(c), &mut |c, a, b, c3| cmul(dress(cc, c), 0.85 + 0.2 * hash(a, b, c3)), Some((&nb, &|_| off)));
         out.push(s);
         if !fem {
             let mut g = Surface::new(Mat { rough: 0.32, metal: 0.85, double: false });

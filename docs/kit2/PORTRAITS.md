@@ -74,6 +74,38 @@ Erwachsene aus.
   MakeHuman (391 statt 369 Ziele, 1,1 MB). Die Werkstatt im Browser hat das
   alles noch nicht.
 
+## Trauer, Geld, Kleidung und Alter (Runde 8, 30.10.2026)
+
+Der zweite Punkt von „gerne alles“: mehr vom Leben im Gesicht, alles aus dem,
+was die Simulation schon rechnet (nichts Neues in der Simulation).
+
+- **Trauer**: stirbt jemand im Haushalt (Todesfall oder Hungertod in den
+  Ereignissen der Simulation, `events::DEATH`, `events::HUNGER_DEATH`), trauern
+  die anderen: trauriger Blick, Tränensäcke und gerötete Lider, dunkle
+  Kleidung (*vestis pulla*), Frauen unter dem Schleier und ohne Schmuck,
+  Männer unrasiert (Stoppeln statt glatt). 20 Tage voll, dann schwächer bis
+  zum 60. Tag, so weit die Simulation ihre Ereignisse behält
+  (`events::KEEP_DAYS`). Im Personenfenster steht „In Trauer: Todesfall im
+  Haushalt vor N Tagen“. PLACEHOLDER: in Rom trauerte eine Witwe zehn Monate
+  (Plutarch, *Numa* 12; Toynbee, 1971), länger als die Ereignisse
+  zurückreichen. Wer beim Tod des Vaters einen eigenen Haushalt bekommt
+  (Erbteilung, S83), trauert nicht mit, weil der Tod beim alten Haushalt steht.
+- **Geld**: der Rang des Haushalts nach Geld je Kopf am Markt (sonst auf der
+  Karte) färbt die Kleidung: die ärmsten 35 % tragen ausgebleichtes, graues
+  Tuch, die reichsten 30 % kräftigere Farben. PLACEHOLDER (Augenmass).
+- **Abgetragene Kleidung**: so weit dem Haushalt Kleidung fehlt
+  (`clothes_pct` unter 100 %), ist das Tuch verblichen und geflickt (Flicken
+  aus einem anderen Tuch des Standes). Viele Bauernhöfe haben in den ersten
+  Jahren 0 % (sie bekamen beim Start keine Kleidung und weben selbst), sie
+  sehen deshalb geflickt aus.
+- **Alter**: Ohren und Nase wachsen ab 40 weiter, die Nasenspitze sinkt
+  (Heathcote, 1995; Sforza et al., 2009, 2011); ab 50 Altersflecken auf Stirn,
+  Schläfen und Wangen, mehr nach Jahren an der Sonne. PLACEHOLDER: die Stärken
+  nach Augenmass.
+- `ApoleiaPortrait.build` nimmt jetzt das ganze Wörterbuch von
+  `take_person` (statt zehn einzelner Werte), damit auch andere Fenster ein
+  Gesicht bauen können, mit dem, was sie wissen.
+
 ## Was aus der Simulation kommt
 
 | Im Gesicht | Aus der Simulation | Regel |
@@ -85,6 +117,9 @@ Erwachsene aus.
 | Bräune, Falten durch Sonne | Beruf | Anteil draussen je Beruf (PLACEHOLDER) |
 | Kleidung, Hut, Schmuck, Bartmode | Stand und Beruf | siehe unten |
 | Bartmode häufiger voll | Herkunft Graecia, Syria, Aegyptus | wie Werkstatt |
+| Trauer (Blick, Lider, dunkle Kleidung, Schleier, Stoppeln) | Tod im Haushalt in den letzten 60 Tagen | voll 20 Tage, aus bei 60 |
+| Farbe der Kleidung | Rang nach Geld je Kopf (`rank_market`, sonst `rank_all`) | blass unter 35 %, kräftig über 70 % |
+| Verblichen und geflickt | Kleidung des Haushalts (`clothes_pct`) | fehlender Anteil |
 
 Stand und Beruf auf die sieben Bilder der Werkstatt (PLACEHOLDER): Senatoren →
 Senator, Ritter → Dekurio (schmaler Purpurstreifen), Unfreie → Sklave, Bauern
@@ -134,6 +169,8 @@ und in der Werkstatt nebeneinander.
   Rust, die Werkstatt dann nachziehen (oder später die Werkstatt aus Rust über
   WebAssembly bauen).
 - Namen, Dynastien, Eigenschaften (CK3) gibt es noch nicht.
+- Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken und
+  Altersflecken.
 
 ## Literatur
 
@@ -143,10 +180,23 @@ Zitate aus dem Gedächtnis, nicht online geprüft.
   & Sachser, N. (2009). Baby schema in infant faces induces cuteness
   perception and motivation for caretaking in adults. *Ethology, 115*(3),
   257–263. https://doi.org/10.1111/j.1439-0310.2008.01603.x
+- Heathcote, J. A. (1995). Why do old men have big ears? *BMJ, 311*(7021),
+  1668. https://doi.org/10.1136/bmj.311.7021.1668
 - Juvenal. (2004). *Juvenal and Persius* (S. M. Braund, Ed. & Trans.; Loeb
   Classical Library 91). Harvard University Press.
 - Lorenz, K. (1943). Die angeborenen Formen möglicher Erfahrung.
   *Zeitschrift für Tierpsychologie, 5*(2), 235–409.
   https://doi.org/10.1111/j.1439-0310.1943.tb00655.x
+- Plutarch. (1914). *Lives, Volume I: Theseus and Romulus. Lycurgus and
+  Numa. Solon and Publicola* (B. Perrin, Trans.; Loeb Classical Library 46).
+  Harvard University Press.
+- Sforza, C., Grandi, G., Binelli, M., Tommasi, D. G., Rosati, R., &
+  Ferrario, V. F. (2009). Age- and sex-related changes in the normal human
+  ear. *Forensic Science International, 187*(1–3), 110.e1–110.e7.
+- Sforza, C., Grandi, G., De Menezes, M., Tartaglia, G. M., & Ferrario, V. F.
+  (2011). Age- and sex-related changes in the normal human external nose.
+  *Forensic Science International, 204*(1–3), 205.e1–205.e9.
 - Soranus. (1956). *Soranus' gynecology* (O. Temkin, Trans.). Johns Hopkins
   University Press. (Original work published ca. 100 CE)
+- Toynbee, J. M. C. (1971). *Death and burial in the Roman world*. Thames
+  and Hudson.

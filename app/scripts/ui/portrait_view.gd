@@ -93,7 +93,7 @@ func show_person(p: Dictionary) -> bool:
 		var bytes := FileAccess.get_file_as_bytes(HEAD_FILE)
 		if bytes.is_empty() or not _builder.load(bytes):
 			return false
-	var d: Dictionary = _builder.build(p.dna, bool(p.female), float(p.age), int(p.stand), str(p.job), int(p.health), int(p.get("fed", 1000)), int(p.pid), str(p.get("origin", "")), LOD)
+	var d: Dictionary = _builder.build(p, LOD)
 	if d.is_empty():
 		return false
 	_mesh.mesh = d.mesh

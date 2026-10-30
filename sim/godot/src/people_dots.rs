@@ -20,7 +20,6 @@
 use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT};
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
-use apoleia_sim::dna::{self, Dna};
 use apoleia_sim::game::{Game, Loaded, Start};
 use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
@@ -68,9 +67,9 @@ struct Front {
     /// and its HOUSE_* flags with PERSON_KNOWN, rebuilt with `house_looks`.
     people_looks: Vec<u8>,
     /// Answer to the last `ask_person`, with the household as the grain
-    /// economy sees it, its people, and the person's genes and origin
-    /// (crate::portrait).
-    person: Option<(Person, Option<HouseholdLook>, Vec<Person>, Option<(Dna, u8)>)>,
+    /// economy sees it, its people, and what the portrait needs
+    /// (crate::portrait::Face).
+    person: Option<(Person, Option<HouseholdLook>, Vec<Person>, crate::portrait::Face)>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
@@ -470,6 +469,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let (history, classes) = (game.grain.market_history_table(m, day), game.grain.market_classes_table(m, day));
             shared.front.lock().unwrap().market = Some((m, row, history, classes));
         }
+        let today = game.today();
         let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
             let t = grain.table(people, key);
@@ -501,11 +501,8 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
                 let family = PeopleView::household(people, p.household);
-                let genes = people.dna(p.pid).map(|g| {
-                    let (lon, lat) = dna::lon_lat_of(&people.grid, p.home);
-                    (g, dna::origin(lon, lat))
-                });
-                (p, hh, family, genes)
+                let face = crate::portrait::Face::of(people, &p, today);
+                (p, hh, family, face)
             });
             shared.front.lock().unwrap().person = who;
         }
@@ -1261,7 +1258,7 @@ impl ApoleiaPeople {
     #[func]
     fn take_person(&mut self) -> VarDictionary {
         let mut d = VarDictionary::new();
-        let Some((p, hh, family, genes)) = self.shared.front.lock().unwrap().person.take() else {
+        let Some((p, hh, family, face)) = self.shared.front.lock().unwrap().person.take() else {
             return d;
         };
         if let Some(h) = hh {
@@ -1320,7 +1317,7 @@ impl ApoleiaPeople {
         d.set("iq", p.iq.unwrap_or(-1.0));
         d.set("spouse", p.spouse.map_or(-1, |s| s as i64));
         d.set("travelling", p.travelling.map_or(0, |leave| if leave { 2 } else { 1 }));
-        crate::portrait::put_genes(&mut d, genes);
+        face.put(&mut d);
         d
     }
 

@@ -123,6 +123,11 @@ func show_person(p: Dictionary, doing := "") -> void:
 		lines.append("[color=#%s]%s[/color]" % [UiStyle.GOLD_LIT.to_html(false), doing])
 	if int(p.travelling) > 0:
 		lines.append("[color=#%s]%s[/color]" % [UiStyle.LOSS.to_html(false), "wandert aus" if int(p.travelling) == 2 else "unterwegs"])
+	# a death in the household in the last 60 days (the face mourns too)
+	if p.has("loss_days"):
+		var ago := int(p.loss_days)
+		var when := "heute" if ago == 0 else ("vor 1 Tag" if ago == 1 else "vor %d Tagen" % ago)
+		lines.append("[color=#%s]In Trauer: %s im Haushalt %s[/color]" % [UiStyle.DIM.to_html(false), "Hungertod" if bool(p.get("loss_hunger", false)) else "Todesfall", when])
 	_note.text = "\n".join(lines)
 	_head.visible = true
 	_fill_head(p)
