@@ -8,8 +8,8 @@
 shader_type canvas_item;
 render_mode blend_disabled, unshaded, skip_vertex_transform; // the listed quads have no transforms
 
+#define DOT_WAYS // the houses keep off the ways (dot_lot_way_free); brings sim_fields.gdshaderinc
 #include "res://shaders/people_dots_common.gdshaderinc"
-#include "res://shaders/sim_fields.gdshaderinc"
 #include "res://shaders/people_crop_slab.gdshaderinc"
 
 uniform bool houses = false; // the house records (people_houses.gdshader)

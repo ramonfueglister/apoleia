@@ -91,7 +91,7 @@ float crop_slab_under(vec2 p) {
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
-	if (state == 0 || !crop_open(mid)) { return 0.0; }
+	if (state == 0 || !crop_open(mid) || sim_way_parcel(mid, size)) { return 0.0; }
 	vec4 box = crop_box(cell, size);
 	vec2 o = p - mid;
 	if (any(lessThan(o, box.xy)) || any(greaterThanEqual(o, box.zw))) { return 0.0; }
