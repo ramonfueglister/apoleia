@@ -953,6 +953,73 @@ Was auffällt:
 - Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
 - Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
 
+## Märkte draussen und Saatgut (S121, S122, 100 Jahre, Seed 1, `run100-s121-s122.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s120.txt`)
+
+Ramon (30.10.2026): „ja und draussen märkte müssen auch angebot und nachfrage folgen natürlich“,
+dann Karte „Wie bauen wir Märkte draussen und den Hunger-Fix?“, Option „Märkte draussen plus
+Saatgut“, zum Befund https://claude.ai/artifact/DvWYeGWVBj2fR2XTCuYvXC. Vier Märkte jenseits der
+Karte mit Ernte, Lager und Nachfrage nach HYDE (S121) statt des festen Preises für jede Menge
+(S98); Höfe behalten das Saatgut und kaufen ihr Essen vor der Saat (S122). Jede Hälfte allein
+gemessen (je ein Lauf mit nur S122 und mit nur S121, 1 Thread). Neu im Lauf: die Zeile
+„beyond the map (S121)“ mit Preis, Lager, Ernte und Handel jedes Markts draussen. Grafiken:
+https://claude.ai/artifact/1LQYuTH5ugLE9tsGkKF5NK
+
+| Grösse | main (S120) | nur S122 | nur S121 | beide |
+|---|---|---|---|---|
+| Menschen im Jahr 10 / 30 / 100 | 106'788 / 98'482 / 73'659 | 108'210 / 105'385 / 104'913 | 109'250 / 104'856 / 77'600 | 109'527 / 109'680 / 115'843 |
+| Wachstum, Mittel Jahr 11–100 | −0,41 % | −0,03 % | −0,38 % | +0,06 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 8'844 / 9'049 / 45'819 | 7'834 / 4'953 / 22'731 | 7'027 / 5'842 / 50'688 | 6'814 / 2'944 / 21'514 |
+| Verlassen die Karte, 100 Jahre | 25'128 | 16'636 | 22'219 | 14'609 |
+| Ernte im Jahr 10 / 100 | 33'996 / 16'187 t | 34'664 / 24'433 t | 31'104 / 14'669 t | 29'218 / 23'799 t |
+| Üblicher Preis Korn, nach Absatz gewichtet, Jahr 10 / 100 | 1,28 / 1,63 Denar/kg | 1,12 / 1,79 | 0,19 / 0,31 | 0,10 / 0,15 |
+| Median-Preis Korn / Rom im Jahr 100 | 1,14 / 4,59 Denar/kg | 0,48 / 4,10 | 0,28 / 3,10 | 0,12 / 2,13 |
+| Korn hinaus / herein über die Tormärkte, 100 Jahre | 169'751 / 0 t | 323'382 / 3 t | 3'692 / 628 t | 5'474 / 1'241 t |
+| Reallohn p10 / p50, Jahr 100 | 1,3 / 3,8 kg | 1,7 / 4,4 kg | 1,5 / 6,2 kg | 1,5 / 7,8 kg |
+| Steuer, 100 Jahre / Staatskasse im Jahr 100 | 384 / 448 Mio. Denar | 565 / 610 | 58 / 19 | 59 / 54 |
+| Staats- und Herrenspeicher im Jahr 100 | 10'529 / 2'313 t | 5'381 / 1'022 t | 14'552 / 3'283 t | 16'882 / 3'616 t |
+| Liegen gebliebene / offene Arbeitstage pro Woche, Jahr 100 | 46'772 / 21'019 | 74'803 / 25'467 | 44'657 / 23'156 | 78'450 / 26'177 |
+| Nicht gebucht | 0 | 0 | 0 | 0 |
+| Tag gesamt, Mittel (1 Thread, 4 Läufe gleichzeitig) | 20,0 ms | 22,2 ms | 20,9 ms | 22,9 ms |
+
+Märkte draussen im Lauf „beide“, Jahr 100:
+
+| Markt | Menschen (Massstab) | Preis | Lager Händler / Bauern | Kommende Ernte | Von uns gekauft / an uns verkauft im Jahr |
+|---|---|---|---|---|---|
+| Jenseits des Zagros | 6'158 | 5,49 Denar/kg | 436 / 640 t | 1'101 t | 73 / 0 t |
+| Nubien und Arabien | 1'286 | 0,13 | 56 / 41 t | 231 t | 4 / 8 t |
+| Skandinavien und Nordrussland | 710 | 0,07 | 31 / 42 t | 127 t | 0 / 4 t |
+| Atlantikküste | 71 | 0,20 | 3 / 3 t | 12 t | 2 / 0 t |
+
+Was auffällt:
+
+- **Das Saatgut ist der grosse Hebel.** S122 allein bringt im Jahr 100 31'000 Menschen mehr und
+  halbiert die Hungertote der Jahre 31–100. Mit beiden wächst die Bevölkerung leicht
+  (115'843 im Jahr 100), der Reallohn in der Mitte verdoppelt sich.
+- **Kaum noch Korn verlässt die Karte.** Die Märkte draussen essen, was sie ernten, und kaufen
+  nur, wenn es nach Fracht billiger ist als ihr eigenes Korn: 5'474 t in 100 Jahren statt
+  169'751 t. Ihre Preise folgen den Tormärkten, mit denen sie handeln; jenseits des Zagros bleibt
+  das Korn teuer, weil 500 km über Land viel kosten.
+- **Aber der Getreidepreis fällt auf 0,10–0,15 Denar pro kg.** Die Karte erntet mehr, als ihre
+  Menschen essen: Jeder Hof sät seinen Bedarf mit einem Viertel Reserve, Steuer und Pacht
+  kommen als Korn in die Speicher. Bisher kaufte draussen jemand jede Menge zum festen Preis
+  (S98), das hielt den Preis. Jetzt bleibt ein Drittel der Felder ungesät, weil sich Korn für
+  den Markt nicht lohnt (S99), und doch bleibt Überschuss.
+- **Die Staatskasse leidet.** Die Steuer kommt als Korn und bringt beim tiefen Preis nur
+  59 statt 384 Mio. Denar in 100 Jahren; die Kasse wächst trotzdem leicht (54 Mio. im Jahr 100).
+- **S121 allein hilft wenig.** Ohne S122 sterben in den Jahren 31–100 mehr Menschen als auf main:
+  Wer sein Saatgut verkauft, hungert auch bei billigem Korn.
+- Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 73 + 2 Tests grün, auch im Debug-Build
+  (dafür prüft bevy_ecs dort nicht mehr die Länge der Teilstücke, siehe `sim/Cargo.toml`).
+
+### Quellen zu S121, S122 (APA 7)
+
+- Klein Goldewijk, K. (2024). *HYDE 3.3: History database of the global environment* [Data set]. Utrecht University. https://doi.org/10.24416/UU01-94FNH0
+- Makki, S. S., Tweeten, L. G., & Miranda, M. J. (2001). Storage–trade interactions under uncertainty: Implications for food security. *Journal of Policy Modeling, 23*(2), 127–140. https://doi.org/10.1016/S0161-8938(00)00059-9
+- Roberts, M. J., & Schlenker, W. (2013). Identifying supply and demand elasticities of agricultural commodities: Implications for the US ethanol mandate. *American Economic Review, 103*(6), 2265–2295. https://doi.org/10.1257/aer.103.6.2265
+- Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
+- Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
+- Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1036,7 +1103,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Arbeit in Aussaat / Ernte | 25 % / 30 % der 70 Tage pro ha, je in 40 Tagen; in den Spitzen arbeiten alle von 10–65 | GRAIN-NUMBERS: „Verteilung offen“ |
 | Wer arbeitet | übers Jahr Erwachsene 15–60 | frei gewählt |
 | Taglohn (S114) | am ersten Tag 3 kg Getreide zum Startpreis, in Denar; bewegt sich jede Woche um den Anteil offener gegen liegen gebliebene Tage, höchstens 1/20; niemand arbeitet unter dem Essen seines Haushalts bei 290 Arbeitstagen; Höfe planen mit dem Lohn, über 52 Wochen geglättet | Preisedikt VII.1a, 25 Denar mit Kost; Mortensen & Pissarides 1994, Lewis 1954; Zahlen frei |
-| Startpreis (S112: kein Grundpreis mehr) | 8,75 Denar/kg am ersten Tag und draussen (S98) | Preisedikt, modius castrensis 1,5–2 modii italici |
+| Startpreis (S112: kein Grundpreis mehr) | 8,75 Denar/kg am ersten Tag, auch draussen (S121) | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn nur für Soldaten, Offiziere, Beamte (S110) | 25 Denar pro Arbeitstag für alle Erwachsenen des Haushalts | S76, Preisedikt |
 | Waren (S105) | Grundpreise Eisen 20, Werkzeug 60 Denar/kg; Marktleute holen jede Woche beim günstigsten Nachbarn, Ware kommt am selben Tag an | frei gewählt; Wolle, Kleidung, Keramik nach Edikt |
 | Schafe (S106) | 1 pro ha Weide, Weide = Grasland/Ackerland der Zelle mal Feldfläche, höchstens 5 pro Kopf, 1 kg Wolle, Schur Tag 135 | Treacher, Sierra Mágina; Rest frei |
@@ -1080,6 +1147,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
+| Märkte draussen (S121) | eine normale Ernte ernährt genau die Menschen draussen (mit dem Verderb des halben Jahres); kein Wetter; sie säen nicht mehr für den Markt, wenn das Korn teuer ist; Nachfrage linear, Elastizität −0,065, zwischen halbem und anderthalbfachem Bedarf; Marktleute draussen ohne Geldgrenze; Waren weiter zum festen Preis (S98) | HYDE 3.3 für die Menschen; Roberts & Schlenker 2013 für die Elastizität; Rest frei gewählt |
 
 ## Nicht gebaut
 

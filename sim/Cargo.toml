@@ -19,6 +19,14 @@ members = [".", "godot"]
 [profile.release]
 debug = false
 
+# bevy_ecs 0.20.0 checks each chunk of `contiguous_par_iter` against the whole
+# table (`debug_assert_eq!(slice.len(), entities.len())` for `&T`,
+# query/fetch.rs:2054), so a debug build panics as soon as a table is split
+# into several batches (a full world with more than one thread). The slice
+# itself is right; release builds skip the check. Off until upstream fixes it.
+[profile.dev.package.bevy_ecs]
+debug-assertions = false
+
 [dev-dependencies]
 bevy_ecs = { version = "0.20", features = ["multi_threaded", "debug"] }
 proptest = "1"
