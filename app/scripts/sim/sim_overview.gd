@@ -26,7 +26,10 @@ const GOOD_KEYS: Array[String] = ["wool", "iron", "cloth", "tools", "pottery", "
 ## The classes in the order of the history's fed_<key> (grain/tables.rs).
 const FED_KEYS: Array[String] = ["court", "tent", "wage", "trader", "elite"]
 const FED_NAMES: Array[String] = ["Hofleute", "Im Zelt", "Lohnarbeit", "Händler", "Oberschicht"]
-const FED_COLOURS: Array[Color] = [Color("b8893a"), Color("e8846b"), Color("1f9cc4"), Color("8f6fd0"), Color("6f9a3a")] # those in tents in RED
+## A class keeps its colour in every chart (the ring of money, what it ate):
+## the series colours in this order pass the colour-blind checks on the board.
+const FED_COLOURS: Array[Color] = [Color("b8893a"), Color("1f9cc4"), Color("cf5f44"), Color("8f6fd0"), Color("6f9a3a")]
+const TREND := Color("a09889") # a figure's small curve, its current value in gold
 ## What the state's bars are, for their tooltips.
 const BAR_ABOUT := {
 	"tax": "Steuern in Denar, die der Staat seit Beginn eingenommen hat.",
@@ -72,6 +75,9 @@ func _init(date_fn: Callable) -> void:
 	_spans.add_theme_constant_override("separation", 6)
 	_spans.alignment = BoxContainer.ALIGNMENT_END
 	_column.add_child(_spans)
+	var note := _label("Änderungen zum Vormonat", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_spans.add_child(note)
 	_spans.add_child(_label("Zeitraum", UiStyle.DIM, UiStyle.SIZE_TEXT))
 	for span in [[12, "1 Jahr"], [120, "10 Jahre"], [0, "Alles"]]:
 		var b := Button.new()
@@ -133,7 +139,7 @@ func show_tables(tables: Dictionary) -> void:
 			{"key": "need_wage", "name": "Nötig zum Sattwerden", "colour": Charts.RED, "dashed": true}])
 		var fed := []
 		for k in FED_KEYS.size():
-			fed.append({"key": "fed_" + FED_KEYS[k], "name": FED_NAMES[k], "colour": FED_COLOURS[k], "scale": 100.0})
+			fed.append({"key": "fed_" + FED_KEYS[k], "name": FED_NAMES[k], "colour": FED_COLOURS[k], "scale": 100.0, "mute_above": 99.0})
 		_set_line("fed", h, fed)
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
@@ -171,7 +177,10 @@ func show_tables(tables: Dictionary) -> void:
 		var sums := {}
 		for r in classes.data.kind.size():
 			sums[classes.data.kind[r]] = float(classes.data.money[r])
-		_set_ring("money", sums, "Denar")
+		var fixed := {}
+		for k in FED_NAMES.size():
+			fixed[FED_NAMES[k]] = FED_COLOURS[k]
+		_set_ring("money", sums, "Denar", fixed)
 	var goods: Dictionary = tables.get("goods", {})
 	if not goods.is_empty() and goods.data.has("price"):
 		_set_goods(goods, h.get("data", {}))
@@ -221,7 +230,7 @@ func _fill_tiles(d: Dictionary) -> void:
 				["Vor einem Jahr", (Charts.label(vals[n - 13]) + s[2]) if n > 12 else "–"]],
 			"spark": vals, "spark_title": "Alle Monate seit Beginn", "spark_unit": s[2].strip_edges(),
 			"spark_from": date.call(int(d.day[0])) if n > 0 else "", "spark_to": date.call(int(d.day[n - 1])) if n > 0 else "",
-			"colour": Charts.SERIES[k % Charts.SERIES.size()]})
+			"colour": Charts.SERIES[0]})
 
 ## "▲ 3.4 %" from month `before` to the last, and its colour: a gain is
 ## green, unless `falling_good` (a price).
@@ -259,9 +268,9 @@ func _tile(key: String) -> PanelContainer:
 	var spark := Control.new()
 	spark.custom_minimum_size = Vector2(0, 28)
 	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var colour: Color = Charts.RED if key == "eaten" else Charts.SERIES[_tiles.get_child_count() % Charts.SERIES.size()]
-	spark.draw.connect(func():
-		Charts.spark(spark, Rect2(Vector2(0, 4), spark.size - Vector2(4, 6)), spark.get_meta("values", PackedFloat64Array()), colour))
+	spark.draw.connect(func(): # one quiet trend for all, as the figures' colours mean nothing
+		Charts.spark(spark, Rect2(Vector2(0, 4), spark.size - Vector2(6, 8)), spark.get_meta("values", PackedFloat64Array()), TREND,
+			PackedFloat64Array(), PackedFloat64Array(), NAN, NAN, UiStyle.GOLD_LIT))
 	box.add_child(spark)
 	Tooltips.attach(tile, func(_at: Vector2) -> Dictionary: return tile.get_meta("tip", {}))
 	return tile
@@ -372,6 +381,11 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 			return out.slice(_first(out.size()))
 		var one := {"name": s.name, "colour": s.colour, "values": scaled.call(s.key),
 			"dashed": s.get("dashed", false), "hidden": entry.hidden.has(s.name)}
+		if s.has("mute_above"): # emphasis: only the lines that tell the story keep their colour
+			var low := INF
+			for v in one.values:
+				low = minf(low, v)
+			one.muted = low >= s.mute_above
 		if s.has("lo") and d.has(s.lo) and d.has(s.hi):
 			one.lo = scaled.call(s.lo)
 			one.hi = scaled.call(s.hi)
@@ -385,7 +399,7 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 		c.queue_free()
 	if series.size() > 1 or series.size() == 1 and series[0].has("lo"):
 		for s in series:
-			var sw := _swatch(s.colour, s.name)
+			var sw := _swatch(Charts.MUTED if s.get("muted", false) else s.colour, s.name)
 			if series.size() > 1: # a click hides or shows the line, as EU5's legends
 				_toggle(sw, entry, s.name)
 			legend.add_child(sw)
@@ -478,20 +492,33 @@ func _ring_card(key: String, title: String, about: String) -> void:
 		ring.queue_redraw())
 	Tooltips.attach(ring, func(_at: Vector2) -> Dictionary: return _ring_tip(key, entry.hover))
 
-## A ring's slices, largest first, the smallest folded into "Andere".
-func _set_ring(key: String, sums: Dictionary, unit: String) -> void:
+## A ring's slices, largest first, the smallest folded into "Andere". A
+## slice's colour follows what it is, not its rank (`fixed` name -> colour,
+## else the slot it got when it first showed), so a reordering repaints
+## nothing.
+func _set_ring(key: String, sums: Dictionary, unit: String, fixed := {}) -> void:
 	var entry: Dictionary = _rings[key]
+	var slots: Dictionary = entry.get_or_add("slots", {})
 	var names := sums.keys()
 	names.sort_custom(func(a, b): return sums[a] > sums[b])
 	var shown := PackedStringArray()
 	var values := PackedFloat64Array()
 	var colours := []
 	var rest := 0.0
+	var top: Array = names.slice(0, RING_MAX)
+	for name in slots.keys(): # a name out of the top frees its slot
+		if not name in top:
+			slots.erase(name)
 	for i in names.size():
 		if i < RING_MAX:
+			if not slots.has(names[i]):
+				var free := 0
+				while free in slots.values():
+					free += 1
+				slots[names[i]] = free
 			shown.append(names[i])
 			values.append(sums[names[i]])
-			colours.append(Charts.SERIES[i])
+			colours.append(fixed.get(names[i], Charts.SERIES[slots[names[i]] % Charts.SERIES.size()]))
 		else:
 			rest += sums[names[i]]
 	if rest > 0.0:
@@ -580,7 +607,7 @@ func _set_goods(goods: Dictionary, h: Dictionary) -> void:
 		(box.get_child(0).get_child(1) as Label).text = "%s D je %s" % [Charts.label(price), unit]
 		var moved := box.get_child(1) as Label
 		moved.text = change[0] + ("  zum Vormonat" if change[0] != "" else "")
-		moved.add_theme_color_override("font_color", change[1])
+		moved.add_theme_color_override("font_color", UiStyle.DIM) # dearer is good for the maker, bad for the buyer
 		var spark: Control = box.get_child(2)
 		spark.set_meta("values", all.slice(_first(all.size())))
 		spark.queue_redraw()
@@ -604,7 +631,7 @@ func _set_goods(goods: Dictionary, h: Dictionary) -> void:
 			tip.spark_unit = "D"
 			tip.spark_from = date.call(int(h.day[0]))
 			tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
-			tip.colour = Charts.SERIES[r % Charts.SERIES.size()]
+			tip.colour = Charts.SERIES[0]
 		else:
 			tip.more = tip.get("more", "") + " Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
 		tile.set_meta("tip", tip)
@@ -636,9 +663,9 @@ func _good_tile(r: int) -> PanelContainer:
 	var spark := Control.new()
 	spark.custom_minimum_size = Vector2(0, 40)
 	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var colour: Color = Charts.SERIES[r % Charts.SERIES.size()]
-	spark.draw.connect(func():
-		Charts.board(spark, Rect2(Vector2.ZERO, spark.size))
+	spark.draw.connect(func(): # small multiples in one hue: the name says which good
+		var colour: Color = Charts.SERIES[0]
+		Charts.board(spark, Rect2(Vector2.ZERO, spark.size), false)
 		Charts.spark(spark, Rect2(Vector2(4, 4), spark.size - Vector2(10, 8)), spark.get_meta("values", PackedFloat64Array()), colour))
 	box.add_child(spark)
 	Tooltips.attach(tile, func(_at: Vector2) -> Dictionary: return tile.get_meta("tip", {}))

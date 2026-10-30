@@ -798,7 +798,7 @@ func _history_spark(d: Dictionary, kind: String, id: int) -> void:
 	d.spark_unit = "D" if kind == "goods" else "%"
 	d.spark_from = _date(int(h.data.day[0]))
 	d.spark_to = _date(int(h.data.day[h.data.day.size() - 1]))
-	d.colour = Charts.SERIES[id % Charts.SERIES.size()] if kind == "goods" else SimOverview.FED_COLOURS[id]
+	d.colour = Charts.SERIES[0] if kind == "goods" else SimOverview.FED_COLOURS[id]
 
 ## A series of the history: its whole course, prices with their range.
 func _series_tip(t: Dictionary, key: String) -> Dictionary:
