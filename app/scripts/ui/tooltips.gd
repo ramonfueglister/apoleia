@@ -16,9 +16,10 @@ extends CanvasLayer
 ##   text   BBCode (see _text): [url=term]word[/url] a term of the glossary
 ##   rows   [[label, value], …] in a striped box, "+…" green, "−…" red
 ##          (a third entry overrides the value's colour)
-##   spark  PackedFloat64Array drawn in the locked part, EU5's "recent
-##          price" box: spark_title, spark_lo/spark_hi a band around it,
-##          spark_from/spark_to the first and last month, spark_unit, colour
+##   spark  PackedFloat64Array drawn below the rows at once, as EU5's
+##          "recent price" box: spark_title, spark_lo/spark_hi a band around
+##          it, spark_from/spark_to the first and last month, spark_unit,
+##          colour, spark_ref a dashed level to compare with
 ##   more   BBCode shown only once locked
 ##   hints  [[key, what it does], …] at the foot ("Klick", "fliegt hin")
 ## and a term of the glossary with Tooltips.term(name, func() -> Dictionary).
@@ -46,6 +47,15 @@ static func attach(control: Control, provider: Callable) -> void:
 
 static func term(name: String, provider: Callable) -> void:
 	_terms[name] = provider
+	_ensure(Engine.get_main_loop() as SceneTree) # so the layer is there to clear them
+
+## The terms' lambdas belong to other scripts: drop them while those still
+## live. The layer hangs on the root and goes in SceneTree.finalize, before
+## Godot frees the scripts; a lambda freed after its script crashes the quit
+## (Godot #102569: "recursive_mutex lock failed" on macOS, exit 134).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and self == _shared:
+		_terms.clear()
 
 static func _ensure(tree: SceneTree) -> void:
 	if is_instance_valid(_shared) or tree == null:
@@ -188,15 +198,16 @@ func _open(d: Dictionary, _depth: int, mouse: Vector2) -> void:
 		var inner: VBoxContainer = box.get_child(0)
 		for i in rows.size():
 			inner.add_child(_row(rows[i], i))
-	# the locked part: the curve and what more there is
+	# the curve at once, as EU5 shows a good's recent price
+	if d.has("spark") and d.spark.size() > 1:
+		main.add_child(_chart(d))
+	# the locked part: what more there is
 	var more := VBoxContainer.new()
 	more.visible = false
 	more.add_theme_constant_override("separation", 8)
 	more.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main.add_child(more)
 	e.more = more
-	if d.has("spark") and d.spark.size() > 1:
-		more.add_child(_chart(d))
 	if d.get("more", "") != "":
 		var box := _inset(8)
 		box.get_child(0).add_child(_text(d.more, e))
@@ -234,18 +245,18 @@ func _row(r: Array, i: int) -> Control:
 	var stripe := UiStyle.box(UiStyle.TIP_ROW if i % 2 == 0 else UiStyle.TIP_ROW_B, Color.TRANSPARENT, 0, 0, 0)
 	stripe.content_margin_left = 8
 	stripe.content_margin_right = 8
-	stripe.content_margin_top = 4
-	stripe.content_margin_bottom = 4
+	stripe.content_margin_top = 3
+	stripe.content_margin_bottom = 3
 	back.add_theme_stylebox_override("panel", stripe)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	back.add_child(line)
-	var a := UiStyle.label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	var a := UiStyle.label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_SMALL + 1)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(a)
 	var v := str(r[1])
 	var colour: Color = r[2] if r.size() > 2 else (UiStyle.GAIN if v.begins_with("+") else (UiStyle.LOSS if v.begins_with("−") or v.begins_with("-") else UiStyle.TEXT))
-	var b := UiStyle.label(v, colour, UiStyle.SIZE_TEXT)
+	var b := UiStyle.label(v, colour, UiStyle.SIZE_SMALL + 1)
 	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(b)
 	return back
@@ -272,9 +283,10 @@ func _chart(d: Dictionary) -> Control:
 	var values: PackedFloat64Array = d.spark
 	var lo := PackedFloat64Array(d.get("spark_lo", PackedFloat64Array()))
 	var hi := PackedFloat64Array(d.get("spark_hi", PackedFloat64Array()))
+	var ref := PackedFloat64Array(d.get("spark_ref", PackedFloat64Array()))
 	var top := -INF
 	var bottom := INF
-	for v in values + lo + hi:
+	for v in values + lo + hi + ref:
 		top = maxf(top, v)
 		bottom = minf(bottom, v)
 	var unit: String = d.get("spark_unit", "")
@@ -283,7 +295,14 @@ func _chart(d: Dictionary) -> Control:
 	chart.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chart.draw.connect(func():
 		var r := Rect2(Vector2.ZERO, chart.size)
-		Charts.spark(chart, Rect2(r.position + Vector2(52, 10), r.size - Vector2(60, 20)), values, d.get("colour", Charts.SERIES[0]), lo, hi)
+		var plot := Rect2(r.position + Vector2(52, 10), r.size - Vector2(60, 20))
+		Charts.spark(chart, plot, values, d.get("colour", Charts.SERIES[0]), lo, hi, top, bottom)
+		if ref.size() == values.size():
+			var line := PackedVector2Array()
+			for i in ref.size():
+				line.append(Vector2(plot.position.x + plot.size.x * i / (ref.size() - 1), plot.end.y - 1.0 - (ref[i] - bottom) / maxf(top - bottom, 1e-9) * (plot.size.y - 2.0)))
+			for dash in Charts.dashes(line, 8.0, 5.0):
+				chart.draw_polyline(dash, Charts.RED, 1.5, true)
 		UiStyle.text_at(chart, Vector2(8, 20), _short(top) + unit, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.bold())
 		UiStyle.text_at(chart, Vector2(8, r.size.y - 8), _short(bottom) + unit, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.bold()))
 	inner.add_child(chart)
@@ -345,7 +364,7 @@ func _text(bbcode: String, e: Dictionary) -> RichTextLabel:
 	t.add_theme_constant_override("shadow_offset_x", 1)
 	t.add_theme_constant_override("shadow_offset_y", 1)
 	t.add_theme_font_override("normal_font", UiStyle.serif())
-	t.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
+	t.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_SMALL + 1)
 	var c := func(colour: Color) -> String: return "[color=#%s]" % colour.to_html(false)
 	t.text = (bbcode.replace("[url=", c.call(UiStyle.CONCEPT) + "[url=").replace("[/url]", "[/url][/color]")
 		.replace("[n]", c.call(UiStyle.NAME)).replace("[/n]", "[/color]")

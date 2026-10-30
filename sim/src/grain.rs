@@ -40,6 +40,8 @@ mod crafts;
 mod outside;
 mod pricing;
 mod sites;
+mod tables;
+pub use tables::HistoryExtra;
 pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
@@ -120,6 +122,13 @@ const WORK_DAYS_YEAR: i64 = 290;
 /// work that fall into sowing and harvest, and the length of each window.
 /// The rest is spread over the year and done by the family.
 const SOW_SHARE_PCT: i64 = 25;
+/// S99: the own need is sown with a quarter more as reserve, per mille of
+/// the need. S124: at least OWN_MIN where buying is cheaper (PLACEHOLDER:
+/// half, frei gewählt), and only where buyers found grain on all but
+/// SHORT_PCT of the days of the last year (PLACEHOLDER, frei gewählt).
+const OWN_FULL: i64 = 1250;
+const OWN_MIN: i64 = 500;
+const SHORT_PCT: i64 = 5;
 const HARVEST_SHARE_PCT: i64 = 30;
 const PEAK_DAYS: i64 = 40;
 const OFF_SHARE_PCT: i64 = 100 - SOW_SHARE_PCT - HARVEST_SHARE_PCT;
@@ -459,6 +468,11 @@ pub struct Market {
     /// of harvest (the carrying path starts there).
     norm: i64,
     harvest_doy: i64,
+    /// S123: the expected price, as `norm` (`pricing::floor`).
+    expect: i64,
+    /// S124: days on which buyers found no grain, per mille × 1000,
+    /// smoothed over a year.
+    short: i64,
     /// Smoothed sales per day, kg × 1000, with what buyers asked for and
     /// found no grain for (`missed_today`).
     demand: i64,
@@ -572,6 +586,11 @@ pub struct GrainStats {
     /// when they pay), m².
     pub plan_full_m2: i64,
     pub plan_m2: i64,
+    /// S124: farms that planned their own need, the sum of the shares of
+    /// it they sow (per mille) and farms that sow less than OWN_FULL.
+    pub own_farms: i64,
+    pub own_share_sum: i64,
+    pub own_cut_farms: i64,
     /// S114: grain the dealers fetched from other markets, kg.
     pub arbitrage_kg: i64,
     /// S120: grain the dealers sent to other markets, kg.
@@ -726,6 +745,8 @@ pub struct HistoryRow {
     pub farms: usize,
     pub farm_store_kg: i64,
     pub market_store_kg: i64,
+    /// Wages, granaries, clothing and more (grain/tables.rs).
+    pub extra: HistoryExtra,
 }
 
 /// For the view only: the counters as of the end of the last day, the
@@ -781,6 +802,10 @@ pub struct Grain {
     decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
     crop_pct: i64,
+    /// S123 storage floor and S124 own sowing by price (on by default;
+    /// off to measure without them).
+    pub storage_floor: bool,
+    pub sow_by_price: bool,
     /// Reused buffer for the monthly count.
     scratch: Vec<Row>,
     /// Person ids grouped by household, from the last count.
@@ -1178,6 +1203,8 @@ impl Grain {
                 last_week: BASE_PRICE,
                 norm: BASE_PRICE * 1000,
                 harvest_doy,
+                expect: BASE_PRICE * 1000,
+                short: 0,
                 demand: 0,
                 sold_today: 0,
                 missed_today: 0,
@@ -1252,6 +1279,8 @@ impl Grain {
             wheel: vec![Vec::new(); 1024],
             decay: std::sync::Arc::new(decay_table()),
             crop_pct: crop_pct.clamp(1, 100),
+            storage_floor: true,
+            sow_by_price: true,
             scratch: Vec::new(),
             members: Vec::new(),
             census_job: None,
@@ -1396,29 +1425,32 @@ impl Grain {
         // sales) send up to a quarter of their store to the known market
         // whose dealers pay most over their own price after freight, as
         // far as those dealers buy (up to DEALER_MAX_DAYS of their sales,
-        // S100) and their cash goes. The freight is paid by the sender.
+        // S100; with the storage floor, S123, until their quote falls to
+        // the sender's price and freight) and their cash goes. The freight
+        // is paid by the sender.
         for mi in (wd..self.markets.len()).step_by(7) {
             let here = &self.markets[mi];
             let excess = (here.store - here.demand / 1000 * TARGET_DAYS).min(here.store / 4);
             if excess <= 0 {
                 continue;
             }
-            let mut best: Option<(i64, usize, i64)> = None;
+            let mut best: Option<(i64, usize, i64, i64)> = None;
             for nb in &here.neigh {
                 let o = &self.markets[nb.m as usize];
-                if o.store >= o.demand / 1000 * DEALER_MAX_DAYS {
+                let cost = self.freight(nb.cost, mi);
+                let room = self.dealer_room(o, (here.price + cost) * 100 / (100 - SPREAD_PCT));
+                if room <= 0 {
                     continue;
                 }
-                let cost = self.freight(nb.cost, mi);
                 let margin = Self::buy_price(o) - cost - here.price;
                 if margin > 0 && best.is_none_or(|b| margin > b.0) {
-                    best = Some((margin, nb.m as usize, cost));
+                    best = Some((margin, nb.m as usize, cost, room));
                 }
             }
-            let Some((_, dst, cost)) = best else { continue };
+            let Some((_, dst, cost, room)) = best else { continue };
             let o = &self.markets[dst];
             let price = Self::buy_price(o);
-            let kg = excess.min(o.demand / 1000 * DEALER_MAX_DAYS - o.store).min(o.money.max(0) / price.max(1)).max(0);
+            let kg = excess.min(room).min(o.money.max(0) / price.max(1)).max(0);
             if kg == 0 {
                 continue;
             }
@@ -2390,7 +2422,20 @@ impl Grain {
     /// tax and rent, so the area sown for the market follows the price
     /// against the wage. An estate grows for the market: all of its fields
     /// follow that test.
-    fn sow_plan(&self, f: usize) -> i64 {
+    ///
+    /// S124 (Ramon, 30.10.2026, card „Lagerboden und Saat nach Preis“): the
+    /// own need too. A kg of own grain costs the days it needs at what they
+    /// would earn as day labour, per kg the farm keeps; a kg bought costs
+    /// the dealers' selling price at the expected price (S123, `expect`).
+    /// Where buying is cheaper and the market had grain on nearly every day
+    /// of the last year, the farm sows less: first the reserve, then part
+    /// of its need, in proportion to the price against its cost, at least
+    /// OWN_MIN; the days left go to day labour. Farmers secure their food
+    /// themselves the less, the better their market works (Fafchamps,
+    /// 1992); what they grow still depends on their household (LaFave &
+    /// Thomas, 2016). Returns the area, m², and the share of the own need
+    /// sown, per mille (0 for an estate).
+    fn sow_plan(&self, f: usize) -> (i64, i64) {
         let fm = &self.farms[f];
         let full = self.cropped(fm.area);
         // Grain in the store beyond food to the next harvest, the reserve
@@ -2402,22 +2447,32 @@ impl Grain {
         let kept_pct = 100 - if fm.manciana || fm.kind == TENANT { RENT_PCT } else { 0 } - if fm.manciana { 0 } else { TAX_PCT };
         // S116: leased state fields keep 100 - RENT_PCT.
         let kept_pct = if fm.area == 0 { kept_pct } else { (kept_pct * (fm.area - fm.state) + (100 - RENT_PCT) * fm.state) / fm.area };
-        let own = match (self.info.get(&fm.hh), fm.kind) {
-            (_, ESTATE) | (None, _) => 0,
+        let m = &self.markets[fm.market as usize];
+        let net = if fm.area > 0 { ((fm.area - fm.poor) * fm.net_kg_ha + fm.poor * NET_POOR) / fm.area } else { fm.net_kg_ha };
+        let cost_ha = DAYS_PER_HA * m.wage_year / 1000 * m.hire_x1000 / 1000;
+        let share = if !self.sow_by_price {
+            OWN_FULL
+        } else {
+            // Milli-denarii a kg kept: the days of a hectare at the wage
+            // they would find, over the hectare's crop the farm keeps.
+            let cost_kg = DAYS_PER_HA * m.wage_year * m.hire_x1000 / 1000 * 100 / (net * kept_pct).max(1);
+            let buy_kg = m.expect / 1000 * (100 + SPREAD_PCT) / 100;
+            let reliable = m.demand > 0 && m.store > 0 && m.short < SHORT_PCT * 10_000;
+            if reliable && buy_kg < cost_kg { (OWN_FULL * buy_kg / cost_kg.max(1)).max(OWN_MIN) } else { OWN_FULL }
+        };
+        let (own, share) = match (self.info.get(&fm.hh), fm.kind) {
+            (_, ESTATE) | (None, _) => (0, 0),
             (Some(i), _) => {
-                let kg = (i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 - carry).max(0);
-                kg * 10_000 / fm.net_kg_ha.max(1) * 100 / kept_pct
+                let kg = (i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * share / 1000 - carry).max(0);
+                (kg * 10_000 / fm.net_kg_ha.max(1) * 100 / kept_pct, share)
             }
         };
         let own = own.min(full);
-        let m = &self.markets[fm.market as usize];
         // The usual buying price just after the harvest.
         let season = pricing::season(0, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
         let bid = m.norm / 1000 * season / 1000 * (100 - SPREAD_PCT) / 100;
-        let net = if fm.area > 0 { ((fm.area - fm.poor) * fm.net_kg_ha + fm.poor * NET_POOR) / fm.area } else { fm.net_kg_ha };
         let revenue_ha = net * bid / 1000 * kept_pct / 100;
-        let cost_ha = DAYS_PER_HA * m.wage_year / 1000 * m.hire_x1000 / 1000;
-        if revenue_ha >= cost_ha { full } else { own }
+        (if revenue_ha >= cost_ha { full } else { own }, share)
     }
 
     /// One day, after `People::day`.
@@ -2534,6 +2589,7 @@ impl Grain {
             farms,
             farm_store_kg: (farm_t * 1e3) as i64,
             market_store_kg: (market_t * 1e3) as i64,
+            extra: self.history_extra(),
         };
         self.history.rows.push(r);
     }
@@ -2671,10 +2727,12 @@ impl Grain {
                 // The market's dealers buy as far as their cash goes and up
                 // to DEALER_MAX_DAYS of their sales in store (S100); the
                 // rest goes home again (PLACEHOLDER: a market is a body of
-                // dealers with cash, not the state).
+                // dealers with cash, not the state). With the storage floor
+                // (S123) only as far as their quote stays at the price the
+                // farm holds out for.
+                let room = self.dealer_room(&self.markets[mi], self.hold_price(&self.markets[mi]));
                 let m = &mut self.markets[mi];
                 let price = Self::buy_price(m);
-                let room = (m.demand / 1000 * DEALER_MAX_DAYS - m.store).max(0);
                 let kg = if alive { t.kg.min(m.money / price.max(1)).min(room).max(0) } else { 0 };
                 let pay = kg * price;
                 m.store += kg;
@@ -2939,10 +2997,15 @@ impl Grain {
                 }
             }
             let fm = &self.farms[f as usize];
-            let ha_x = if harvest { fm.sown } else { self.sow_plan(f as usize) };
+            let (ha_x, own) = if harvest { (fm.sown, 0) } else { self.sow_plan(f as usize) };
             if !harvest {
                 self.stats.plan_full_m2 += self.cropped(fm.area);
                 self.stats.plan_m2 += ha_x;
+                if own > 0 {
+                    self.stats.own_farms += 1;
+                    self.stats.own_share_sum += own;
+                    self.stats.own_cut_farms += (own < OWN_FULL) as i64;
+                }
             }
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
@@ -3400,10 +3463,10 @@ impl Grain {
             let m = &self.markets[mi];
             let total = m.horreum + m.lords.iter().map(|l| l.1).sum::<i64>();
             let price = Self::buy_price(m);
-            if total <= 0 || price * 100 < self.usual_price(m) * (100 - SPREAD_PCT) {
+            if total <= 0 || price * 100 < self.hold_price(m) * (100 - SPREAD_PCT) {
                 continue;
             }
-            let room = (m.demand / 1000 * DEALER_MAX_DAYS - m.store).max(0);
+            let room = self.dealer_room(m, self.hold_price(m));
             let take = room.min(m.money.max(0) / price.max(1)).min(total);
             if take <= 0 {
                 continue;
@@ -3443,7 +3506,7 @@ impl Grain {
     /// stored by its producers).
     fn plan_sale(&mut self, f: usize, keep: i64) {
         let m = &self.markets[self.farms[f].market as usize];
-        let holds = Self::buy_price(m) < self.usual_price(m) * (100 - SPREAD_PCT) / 100;
+        let holds = Self::buy_price(m) < self.hold_price(m) * (100 - SPREAD_PCT) / 100;
         let fm = &mut self.farms[f];
         let surplus = (fm.store - keep).max(0);
         fm.to_sell = if holds { 0 } else { surplus };
@@ -3482,7 +3545,9 @@ impl Grain {
     fn prices(&mut self) {
         let carry = pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR;
         let today = doy(self.today);
+        let on = self.storage_floor;
         for m in self.markets.iter_mut() {
+            m.short += ((m.missed_today > 0) as i64 * 1_000_000 - m.short) / YEAR;
             m.demand += ((m.sold_today + m.missed_today) * 1000 - m.demand) / MONTH;
             m.missed_avg += (m.missed_today * 1000 - m.missed_avg) / MONTH;
             m.turned_avg += (m.turned_today * 1000 - m.turned_avg) / MONTH;
@@ -3491,6 +3556,7 @@ impl Grain {
             m.turned_today = 0;
             let season = pricing::season(today - m.harvest_doy, carry);
             pricing::quote(&mut m.price, &mut m.norm, m.store, m.demand / 1000, season);
+            pricing::floor(&mut m.price, &mut m.norm, &mut m.expect, season, on);
         }
         self.outer_day();
         self.goods_prices();
@@ -3500,6 +3566,27 @@ impl Grain {
     fn usual_price(&self, m: &Market) -> i64 {
         let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
         m.norm / 1000 * season / 1000
+    }
+
+    /// The price at this time of year below which farms and granaries hold
+    /// their grain, milli-denarii: the expected price with the storage
+    /// floor (S123), else the usual price (S112).
+    fn hold_price(&self, m: &Market) -> i64 {
+        if !self.storage_floor {
+            return self.usual_price(m);
+        }
+        let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
+        m.expect / 1000 * season / 1000
+    }
+
+    /// Grain the dealers at `m` take from a seller who wants `price` (mid
+    /// price, milli-denarii), kg: up to their limit (S100), with the
+    /// storage floor only until their quote falls to that price (S123).
+    fn dealer_room(&self, m: &Market, price: i64) -> i64 {
+        let per_day = m.demand / 1000;
+        let limit = per_day * DEALER_MAX_DAYS;
+        let at = if self.storage_floor { pricing::stock_for(self.usual_price(m), price, per_day).min(limit) } else { limit };
+        (at - m.store).max(0)
     }
 
     /// Each household eats once a month (1/30 of them per day) from its
@@ -4066,7 +4153,7 @@ impl Grain {
             }
         }
         for m in &self.markets {
-            for x in [m.store, m.money, m.price, m.norm, m.demand, m.hire_x1000, m.wage, m.wage_year, m.horreum, m.lords.iter().map(|l| l.1).sum()] {
+            for x in [m.store, m.money, m.price, m.norm, m.expect, m.short, m.demand, m.hire_x1000, m.wage, m.wage_year, m.horreum, m.lords.iter().map(|l| l.1).sum()] {
                 b.extend_from_slice(&x.to_le_bytes());
             }
             for w in &m.goods {
@@ -4428,6 +4515,8 @@ impl Grain {
             "farms" => Some(self.farm_table(p, day)),
             "state" => Some(self.state_table(day)),
             "history" => Some(self.history_table(day)),
+            "classes" => Some(self.class_table(day)),
+            "goods" => Some(self.goods_table(day)),
             "outside" => Some(self.outside_table(day)),
             _ => None,
         }
@@ -4442,6 +4531,10 @@ impl Grain {
         let flow = |k: usize| int(&|r| r.flows[k]);
         let tonnes = |k: usize| float(&|r| r.flows[k] as f64 / 1000.0);
         let den = |f: &dyn Fn(&HistoryRow) -> i64| float(&|r| f(r) as f64 / 1000.0);
+        // a count since the start as the month's flow, tonnes
+        let since = |f: &dyn Fn(&HistoryRow) -> i64| -> Vec<f64> {
+            (0..rows.len()).map(|i| (f(&rows[i]) - if i > 0 { f(&rows[i - 1]) } else { 0 }).max(0) as f64 / 1000.0).collect()
+        };
         let mut t = Table::new("history", "Verlauf", day);
         t.id((0..rows.len() as i64).collect());
         t.int("day", "Tag", "", int(&|r| r.day))
@@ -4469,7 +4562,21 @@ impl Grain {
             .int("tent_persons", "Im Zelt", "", int(&|r| r.tent_people as i64))
             .int("farms", "Höfe", "", int(&|r| r.farms as i64))
             .float("farm_store_t", "Hoflager", "t", float(&|r| r.farm_store_kg as f64 / 1000.0))
-            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0));
+            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0))
+            .float("wage", "Taglohn Median", "Denar", float(&|r| r.extra.wage))
+            .float("real_p10", "Reallohn ärmstes Zehntel", "kg", float(&|r| r.extra.real_wage.0))
+            .float("real_p50", "Reallohn Median", "kg", float(&|r| r.extra.real_wage.1))
+            .float("real_p90", "Reallohn reichstes Zehntel", "kg", float(&|r| r.extra.real_wage.2))
+            .float("need_wage", "Bedarf je Lohnarbeiter und Arbeitstag", "kg", float(&|r| r.extra.need_wage))
+            .int("vacant", "Offene Arbeitstage", "Tage", int(&|r| r.extra.vacant))
+            .int("idle", "Liegen gebliebene Arbeitstage", "Tage", int(&|r| r.extra.idle))
+            .float("horrea_t", "Staatsspeicher", "t", float(&|r| r.extra.horrea_kg as f64 / 1000.0))
+            .float("lords_t", "Speicher der Grundherren", "t", float(&|r| r.extra.lords_kg as f64 / 1000.0))
+            .float("clothes", "Kleidung vom Bedarf", "%", float(&|r| r.extra.clothes / 100.0))
+            .float("elite_money", "Geld der Oberschicht", "%", float(&|r| r.extra.elite_money))
+            .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
+            .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg));
+        self.history_by_good_and_class(&mut t);
         t
     }
 
@@ -5278,7 +5385,7 @@ mod tests {
             assert!(t.rows() > 0 || key == "history", "{key}");
             assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
             assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
-            assert!(matches!(key, "state" | "history") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            assert!(matches!(key, "state" | "history" | "classes" | "goods") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
             for c in t.columns.iter().filter(|c| c.unit == "%") {
                 let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
                 assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);

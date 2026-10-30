@@ -38,6 +38,23 @@
 //!   limit, so farms hold their grain instead of being turned away.
 //! - The price moves 1/PRICE_STEP of the way to the quote each day.
 //!
+//! S123, storage floor (Ramon, 30.10.2026, card „Lagerboden und Saat nach
+//! Preis“ on the proposal https://claude.ai/artifact/9WAqjJvXyaj9H8HRpzxQZN):
+//! - Each grain market expects the price it has seen over the last years,
+//!   without the season (adaptive expectation, Nerlove, 1958; the storage
+//!   model takes rational expectations, too costly for 1,400 markets).
+//! - Whoever stores sells no lower than what holding is worth. Grain sold
+//!   within a year at the expected price loses at most a year's interest
+//!   and spoilage, so the dealers' usual price and their quote stay above
+//!   the expected price less that (Williams & Wright, 1991; Deaton &
+//!   Laroque, 1992; Gouel & Legrand, 2025). Under a lasting glut the
+//!   expectation and with it the floor sink, slowly.
+//! - Farms and granaries sell only at the expected price of the season,
+//!   and only as much as the dealers take before their quote, moved by
+//!   the stock, falls under it (`stock_for`; Ho & Stoll, 1981: a dealer's
+//!   bid falls with each unit taken in). The same holds for dealers who
+//!   send their surplus to another market (S120).
+//!
 //! Prices are milli-denarii per unit; `norm` is milli-denarii × 1000.
 
 use super::*;
@@ -53,6 +70,11 @@ const SOFT_DAYS: i64 = 7;
 /// Below this many days of sales in store the usual price rises (the
 /// band's lower end; the upper end is the dealers' limit, frei gewählt).
 const LOW_DAYS: i64 = TARGET_DAYS / 3;
+
+/// S123: the expectation follows the price over this many days
+/// (PLACEHOLDER: three years, frei gewählt; Nerlove, 1958, estimates the
+/// weight of the last price per year).
+const EXPECT_DAYS: i64 = 3 * YEAR;
 
 /// Price at `days_since` the last supply (harvest, shearing) relative to
 /// the year's mean, per mille: the carrying path, `carry_pct` a year.
@@ -97,6 +119,33 @@ pub(crate) fn quote(price: &mut i64, norm: &mut i64, store: i64, per_day: i64, s
     *price = (*price + step).max(1);
 }
 
+/// S123, after `quote`, for grain: with `on`, the storage floor holds the
+/// usual price and the quote at the expected price less a year's interest
+/// and spoilage (`expect`, like `norm` milli-denarii × 1000); then the
+/// expectation moves towards today's price without its season.
+pub(crate) fn floor(price: &mut i64, norm: &mut i64, expect: &mut i64, season: i64, on: bool) {
+    if on {
+        let low = *expect / 100 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR);
+        *norm = (*norm).max(low);
+        *price = (*price).max(low / 1000 * season / 1000);
+    }
+    let seen = *price as i128 * 1_000_000 / season.max(1) as i128;
+    *expect += ((seen - *expect as i128) / EXPECT_DAYS as i128) as i64;
+}
+
+/// S123: the stock, kg, at which the dealers' quote falls to `price` when
+/// their usual price at this time of year is `usual` (both milli-denarii),
+/// moved by the stock as in `quote`, at most the dealers' limit: what they
+/// take from a seller who wants `price` (Ho & Stoll, 1981).
+pub(crate) fn stock_for(usual: i64, price: i64, per_day: i64) -> i64 {
+    if per_day <= 0 {
+        return 0;
+    }
+    let r = usual.max(0) as i128 * 1000 / price.max(1) as i128;
+    let days_x1000 = ((TARGET_DAYS + SOFT_DAYS) as i128 * r * r / 1000 - SOFT_DAYS as i128 * 1000).clamp(0, DEALER_MAX_DAYS as i128 * 1000);
+    (days_x1000 * per_day as i128 / 1000) as i64
+}
+
 /// Planned stock over stock and the usual price for a view, from the same
 /// numbers as `quote`: (ratio, usual price in milli-denarii).
 pub(crate) fn reasons(norm: i64, store: i64, per_day: i64) -> (f64, i64) {
@@ -118,6 +167,10 @@ pub struct GoodLook {
     pub buy: f64,
     pub sell: f64,
     pub usual: f64,
+    /// S123, grain: the expected price at this time of year and the floor
+    /// the dealers do not sell below (0 without the storage floor).
+    pub expected: f64,
+    pub floor: f64,
     /// Where the season is on the carrying path, per cent of the year's
     /// mean (100 for goods made all year).
     pub season_pct: f64,
@@ -156,6 +209,8 @@ pub(super) fn market_columns(g: &Grain, t: &mut Table, order: &[usize]) {
     let looks: Vec<MarketLook> = order.iter().map(|&m| g.market_look(m).unwrap_or_default()).collect();
     let col = |k: usize, f: &dyn Fn(&GoodLook) -> f64| looks.iter().map(|l| l.goods.get(k).map_or(0.0, f)).collect::<Vec<f64>>();
     t.float("usual_price", "Üblicher Preis", "Denar/kg", col(0, &|l| l.usual))
+        .float("expected_price", "Erwarteter Preis", "Denar/kg", col(0, &|l| l.expected))
+        .float("floor_price", "Lagerboden", "Denar/kg", col(0, &|l| l.floor))
         .float("stock_days", "Lager", "Tage", col(0, &|l| l.stock_days))
         .float("season", "Jahreszeit", "× Jahresmittel", col(0, &|l| l.season_pct / 100.0))
         .float("missed_day", "Käufer ohne Ware", "kg/Tag", col(0, &|l| l.missed_day))
@@ -197,6 +252,9 @@ fn why(l: &GoodLook, seasonal: Option<&str>) -> String {
             out.push(format!("{since}: frische Ware, {:.0} % unter dem Jahresmittel.", -d));
         }
     }
+    if l.floor > 0.0 && l.price <= l.floor * 1.01 {
+        out.push(format!("Lagerboden: Unter {:.2} Denar halten die Händler ihr Korn lieber (erwartet {:.2}, abzüglich Zins und Verderb eines Jahres).", l.floor, l.expected));
+    }
     if l.missed_day >= 0.5 && l.missed_day >= l.turned_day {
         out.push(format!("Käufer fanden {:.0} {} am Tag nicht.", l.missed_day, l.unit));
     } else if l.turned_day >= 0.5 {
@@ -222,6 +280,8 @@ impl Grain {
             buy: Self::buy_price(mk) as f64 / 1e3,
             sell: Self::sell_price(mk) as f64 / 1e3,
             usual: (mk.norm as f64 / 1e6) * season_g as f64 / 1e3,
+            expected: (mk.expect as f64 / 1e6) * season_g as f64 / 1e3,
+            floor: if self.storage_floor { (mk.expect as f64 / 1e6) * season_g as f64 / 1e3 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR) as f64 / 100.0 } else { 0.0 },
             season_pct: season_g as f64 / 10.0,
             store: mk.store as f64,
             sales_day: mk.demand as f64 / 1e3,
@@ -245,6 +305,8 @@ impl Grain {
                 buy: w.price as f64 * (100 - SPREAD_PCT) as f64 / 1e5,
                 sell: w.price as f64 * (100 + SPREAD_PCT) as f64 / 1e5,
                 usual: (w.norm as f64 / 1e6) * s as f64 / 1e3,
+                expected: 0.0,
+                floor: 0.0,
                 season_pct: s as f64 / 10.0,
                 store: w.store as f64 / 1e3,
                 sales_day: w.demand as f64 / 1e6,
@@ -289,9 +351,19 @@ impl Grain {
             acc += x.1;
             acc > half
         }).map_or(0, |x| x.0);
+        // S123: the expected price where the grain is bought, and markets
+        // whose dealers hold at the storage floor.
+        let mut by: Vec<(i64, i64)> = ms.iter().map(|m| (m.expect / 1000, m.demand / 1000)).collect();
+        by.sort_unstable();
+        let mut acc = 0;
+        let expect_by_sales = by.iter().find(|x| {
+            acc += x.1;
+            acc > half
+        }).map_or(0, |x| x.0);
+        let at_floor = ms.iter().filter(|m| self.storage_floor && m.norm <= m.expect / 100 * (100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR)).count();
         format!(
-            "      prices (S112): planned/stock p10 {:.2} p50 {:.2} p90 {:.2} | at dealer cap {}/{} | dealer stock t {} sales t/d {:.1} | granaries state/lords t {}/{} | farms hold t {} retry {} | usual price p50 {:.2} by sales {:.2}\n",
-            q(0.1), q(0.5), q(0.9), capped, ms.len(), store / 1000, sales as f64 / 1000.0, horrea / 1000, lords / 1000, held / 1000, retry, norm[norm.len() / 2] as f64 / 1000.0, by_sales as f64 / 1000.0
+            "      prices (S112): planned/stock p10 {:.2} p50 {:.2} p90 {:.2} | at dealer cap {}/{} | dealer stock t {} sales t/d {:.1} | granaries state/lords t {}/{} | farms hold t {} retry {} | usual price p50 {:.2} by sales {:.2} | expected by sales {:.2} at floor {}\n",
+            q(0.1), q(0.5), q(0.9), capped, ms.len(), store / 1000, sales as f64 / 1000.0, horrea / 1000, lords / 1000, held / 1000, retry, norm[norm.len() / 2] as f64 / 1000.0, by_sales as f64 / 1000.0, expect_by_sales as f64 / 1000.0, at_floor
         ) + &self.city_debug(&ms)
     }
 
@@ -307,8 +379,8 @@ impl Grain {
             turn += m.turned_avg / 1000;
         }
         let mut s = format!(
-            "      in t farm/gate/fetch/trader/granary {:?} | fetched/sent by dealers t {:.0}/{:.0} | out/in beyond the map t {:.0}/{:.0} | sown/full {:.0} % | wage den p50 {:.2} | real wage kg p10 {:.2} p50 {:.2} p90 {:.2} | vacant/idle days a week {}/{} | missed/turned t/d {:.1}/{:.1}\n",
-            self.stats.inflow.map(|x| x / 1000), self.stats.arbitrage_kg as f64 / 1e3, self.stats.pushed_kg as f64 / 1e3, self.stats.out_export_kg as f64 / 1e3, self.stats.out_import_kg as f64 / 1e3, self.stats.plan_m2 as f64 * 100.0 / self.stats.plan_full_m2.max(1) as f64, wage[wage.len() / 2] as f64 / 1e3, real[real.len() / 10] as f64 / 1e3, real[real.len() / 2] as f64 / 1e3, real[real.len() * 9 / 10] as f64 / 1e3, vac, idle, miss as f64 / 1e3, turn as f64 / 1e3
+            "      in t farm/gate/fetch/trader/granary {:?} | fetched/sent by dealers t {:.0}/{:.0} | out/in beyond the map t {:.0}/{:.0} | sown/full {:.0} % own need sown {:.0} % cut {}/{} | wage den p50 {:.2} | real wage kg p10 {:.2} p50 {:.2} p90 {:.2} | vacant/idle days a week {}/{} | missed/turned t/d {:.1}/{:.1}\n",
+            self.stats.inflow.map(|x| x / 1000), self.stats.arbitrage_kg as f64 / 1e3, self.stats.pushed_kg as f64 / 1e3, self.stats.out_export_kg as f64 / 1e3, self.stats.out_import_kg as f64 / 1e3, self.stats.plan_m2 as f64 * 100.0 / self.stats.plan_full_m2.max(1) as f64, self.stats.own_share_sum as f64 / 10.0 / self.stats.own_farms.max(1) as f64, self.stats.own_cut_farms, self.stats.own_farms, wage[wage.len() / 2] as f64 / 1e3, real[real.len() / 10] as f64 / 1e3, real[real.len() / 2] as f64 / 1e3, real[real.len() * 9 / 10] as f64 / 1e3, vac, idle, miss as f64 / 1e3, turn as f64 / 1e3
         );
         let mut big: Vec<&&Market> = ms.iter().collect();
         big.sort_by_key(|m| std::cmp::Reverse(m.people));
@@ -362,5 +434,42 @@ mod tests {
         }
         let at_limit = ((n1 / 1000) as f64 * ((TARGET_DAYS + SOFT_DAYS) as f64 / (DEALER_MAX_DAYS + SOFT_DAYS) as f64).sqrt()) as i64;
         assert!(n == n1 && (p - at_limit).abs() < 100, "{p} {n} {at_limit}");
+    }
+
+    #[test]
+    fn floor_holds_a_glut() {
+        let carry = 100 - INTEREST_PCT_YEAR - SPOIL_PCT_YEAR;
+        // A store far above plan for a year: without the floor the usual
+        // price falls by more than half.
+        let (mut p, mut n, mut e) = (8_750, 8_750_000, 8_750_000);
+        for _ in 0..YEAR {
+            quote(&mut p, &mut n, 40_000, 100, 1000);
+            floor(&mut p, &mut n, &mut e, 1000, false);
+        }
+        assert!(n < 8_750_000 / 2, "{n}");
+        // With it the dealers hold at the expected price less a year's
+        // carrying, and the expectation sinks only slowly.
+        let (mut p, mut n, mut e) = (8_750, 8_750_000, 8_750_000);
+        for _ in 0..YEAR {
+            quote(&mut p, &mut n, 40_000, 100, 1000);
+            floor(&mut p, &mut n, &mut e, 1000, true);
+            assert!(n >= e / 100 * carry && p >= e / 100 * carry / 1000, "{p} {n} {e}");
+        }
+        assert!(e > 8_750_000 * 9 / 10 && p < 8_750 * 9 / 10, "{p} {n} {e}");
+        // The floor follows the season.
+        let (mut p2, mut n2, mut e2) = (p, n, e);
+        floor(&mut p2, &mut n2, &mut e2, 1080, true);
+        assert!(p2 >= e / 100 * carry / 1000 * 1080 / 1000, "{p2}");
+    }
+
+    #[test]
+    fn dealers_take_until_the_price() {
+        let u = 8_750;
+        assert_eq!(stock_for(u, u, 100), TARGET_DAYS * 100);
+        // Twice the usual price: (90 + 7) / 4 - 7 days.
+        assert_eq!(stock_for(u, 2 * u, 100), 1725);
+        // Half of it: the dealers' limit.
+        assert_eq!(stock_for(u, u / 2, 100), DEALER_MAX_DAYS * 100);
+        assert_eq!(stock_for(u, u, 0), 0);
     }
 }
