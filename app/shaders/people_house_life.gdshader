@@ -54,8 +54,8 @@ void vertex() {
 	if (part <= 2) {
 		// a puff rises from the chimney, drifts with the wind, grows and is gone
 		float t = fract(TIME * 0.22 + float(part) / 3.0 + seed);
-		float size = sin(t * PI) * (0.8 + t * 1.6);
-		v = v * size + CHIMNEY + vec3(t * 2.5, t * 9.0, t * 0.8);
+		float size = sin(t * PI) * (0.35 + t * 0.7); // small: the house is drawn larger than life, a puff is not
+		v = v * size + CHIMNEY + vec3(t * 1.5, t * 5.0, t * 0.5);
 		show = show && (flags & COOKS) != 0 && !tent;
 	} else if (part <= 10) {
 		int k = part - 3;
