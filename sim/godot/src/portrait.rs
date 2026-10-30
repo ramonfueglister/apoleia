@@ -5,6 +5,7 @@
 //! app/scripts/ui/portrait_view.gd lights and frames it.
 
 use apoleia_portrait::look::{Look, Mood, BAUER, DECURIO, HAENDLER, HANDWERKER, SENATOR, SKLAVE, STANDS};
+use apoleia_portrait::geo::srgb;
 use apoleia_portrait::{build, Head, Life, NG};
 use apoleia_sim::dna::{self, ORIGINS};
 use godot::classes::base_material_3d::{CullMode, Flags};
@@ -107,9 +108,14 @@ pub fn look_of(genes: &[u8], female: bool, age: f32, stand: u8, job: &str, weigh
     }
 }
 
+/// The colours go to Godot in sRGB with SRGB_VERTEX_COLOR set: linear
+/// vertex colours come out darker and redder in the Compatibility renderer
+/// (it does not convert them, Forward+ does), and sRGB keeps the dark tones
+/// apart in the eight bits per channel Godot stores.
 fn material(m: apoleia_portrait::Mat) -> Gd<StandardMaterial3D> {
     let mut s = StandardMaterial3D::new_gd();
     s.set_flag(Flags::ALBEDO_FROM_VERTEX_COLOR, true);
+    s.set_flag(Flags::SRGB_VERTEX_COLOR, true);
     s.set_roughness(m.rough);
     s.set_metallic(m.metal);
     if m.double {
@@ -179,7 +185,7 @@ impl ApoleiaPortrait {
                 let nn = Vector3::new(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]).normalized_or_zero();
                 for k in [0, 2, 1] {
                     let q = s.pos[t + k];
-                    let col = s.col[t + k];
+                    let col = srgb(s.col[t + k]);
                     verts.push(Vector3::new(q[0], q[1], q[2]));
                     norms.push(nn);
                     cols.push(Color::from_rgb(col[0], col[1], col[2]));

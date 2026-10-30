@@ -48,8 +48,12 @@ func _init() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.75
+	# the Werkstatt's ACES (three.js r128: exposure 0.92 / 0.6, no white
+	# point) in Godot's (exposure x 1.8, divided by the white point's value;
+	# that value is 1 at a white of 14.26)
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 0.92
+	env.tonemap_exposure = 0.92 / 0.6 / 1.8
+	env.tonemap_white = 14.26
 	var world := WorldEnvironment.new()
 	world.environment = env
 	_vp.add_child(world)

@@ -137,13 +137,16 @@ func show_person(p: Dictionary, doing := "") -> void:
 
 func _fill_head(p: Dictionary) -> void:
 	var sub := "%s, %s" % [p.job, STANDS[clampi(int(p.stand), 0, 3)]]
-	var place := ""
+	var places := PackedStringArray()
 	if _class != "":
-		place = _class
+		places.append(_class)
 	if p.has("market_name"):
-		place += ("  ·  " if place != "" else "") + "Markt " + str(p.market_name)
-	# the face when the person has genes (portrait_view.gd), else the class medal alone
+		places.append("Markt " + str(p.market_name))
+	# the face when the person has genes (portrait_view.gd), else the class
+	# medal alone; beside the face the class and the market get a line each
 	var face: bool = _portrait.show_person(p)
+	if not face:
+		places = PackedStringArray(["  ·  ".join(places)])
 	_portrait.visible = face
 	_badge.visible = face
 	_badge.queue_redraw()
@@ -157,7 +160,8 @@ func _fill_head(p: Dictionary) -> void:
 			_medal(_head, at, MEDAL_R, _class, _colour(_class))
 		var w := _head.size.x - x
 		UiStyle.text_at(_head, Vector2(x, at.y - 6.0), sub, UiStyle.VALUE, UiStyle.SIZE_HEAD + 1, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.title_font())
-		UiStyle.text_at(_head, Vector2(x, at.y + 18.0), place, UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.serif()))
+		for k in places.size():
+			UiStyle.text_at(_head, Vector2(x, at.y + 18.0 + 20.0 * k), places[k], UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.serif()))
 	_head.queue_redraw()
 	Tooltips.attach(_head, func(_at: Vector2) -> Dictionary:
 		if _class == "":

@@ -1,7 +1,8 @@
 # Portraits der Menschen (Kit 2)
 
-Status: **implementiert** (Rust geprüft, Godot-Fenster noch nicht auf dem Mac
-getestet), 30.10.2026.
+Status: **implementiert** (Rust geprüft, Godot-Fenster in der Cloud mit
+Forward+ und Compatibility gerendert, noch nicht auf dem Mac gespielt),
+30.10.2026.
 
 Ramon, 29./30.10.2026: „könntest du einen minimalistischen ck3 style
 charakterportrait generator machen mit mir“, „die bestmögliche poly grafik
@@ -81,10 +82,24 @@ eine Person von aussen setzen und fremde Dreiecke zeichnen kann, zeigt beide
 nebeneinander: am 30.10.2026 gleich, mit derselben Zahl Dreiecke (ausser dem
 Lorbeerkranz, den die Werkstatt mit 26 statt 25 Blättern zählt).
 
+## Licht in Godot
+
+Am 30.10.2026 mit Godot 4.7.2 in der Cloud geprüft (Forward+ über Mesas
+Software-Vulkan, dazu Compatibility über OpenGL): dieselben Dreiecke in Godot
+und in der Werkstatt nebeneinander.
+
+- Die Vertexfarben gehen in sRGB nach Godot, mit `SRGB_VERTEX_COLOR`. Lineare
+  Farben ohne die Fahne zeichnet Forward+ richtig, Compatibility aber viel zu
+  dunkel und rot, weil es sie wie sRGB behandelt.
+- Tonemapping: Godots ACES ist dieselbe Kurve wie die von three.js r128, aber
+  mit Belichtung × 1,8 statt ÷ 0,6 und geteilt durch den Wert des Weisspunkts.
+  `portrait_view.gd` setzt darum die Belichtung auf 0,92 / 0,6 / 1,8 und den
+  Weisspunkt auf 14,26 (dort ist sein Wert 1). Damit decken sich Forward+ und
+  Werkstatt; Compatibility bleibt etwas satter.
+
 ## Offen
 
-- Test im Spiel auf dem Mac: Licht, Tonemapping (Godots ACES gegen three.js),
-  Schatten im kleinen Fenster.
+- Im Spiel auf dem Mac ansehen (Metal statt Vulkan).
 - Werkstatt und Rust-Code sind zwei Kopien; Änderungen am Aussehen zuerst in
   Rust, die Werkstatt dann nachziehen (oder später die Werkstatt aus Rust über
   WebAssembly bauen).

@@ -98,6 +98,12 @@ pub fn linear(c: Rgb) -> Rgb {
     [f(c[0]), f(c[1]), f(c[2])]
 }
 
+/// The inverse of `linear`: linear light back to sRGB.
+pub fn srgb(c: Rgb) -> Rgb {
+    let f = |c: f32| if c < 0.003_130_8 { c * 12.92 } else { 1.055 * c.max(0.0).powf(1.0 / 2.4) - 0.055 };
+    [f(c[0]), f(c[1]), f(c[2])]
+}
+
 /// How a part reflects light.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Mat {
