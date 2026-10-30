@@ -1,6 +1,6 @@
 extends Node3D
 ## Weather states, moving weather cells, faceted clouds with real sun shadows,
-## rain veils, lightning and time of day. The existing look is never replaced:
+## rain veils, lightning, time of day and night. The existing look is never replaced:
 ## its values are read once after LandscapeLook.configure_environment and only
 ## modulated per frame. With weather off every touched value returns to that base.
 ## World units are model kilometres; weather time can run faster than real time.
@@ -36,6 +36,10 @@ const TIME_LOOK := {
 	"morning": [Vector3(-19.0, 72.0, 0.0), Color(1.0, 0.84, 0.66), 1.35, Color(0.82, 0.90, 1.08), 1.4, Color(1.0, 0.94, 0.90)],
 	"evening": [Vector3(-16.0, -100.0, 0.0), Color(1.0, 0.76, 0.54), 1.35, Color(0.80, 0.88, 1.08), 1.35, Color(1.03, 0.90, 0.82)],
 }
+# The night (game_clock.gd at the slow speeds, by `night`): moonlight high
+# from the south, blue and dim, the shade deep blue; dark enough to read as
+# night, light enough that the map stays readable, as most builders do.
+const NIGHT_LOOK := [Vector3(-55.0, 160.0, 0.0), Color(0.55, 0.66, 1.0), 0.14, Color(0.50, 0.60, 0.95), 0.40, Color(0.42, 0.47, 0.60)]
 const WIND_SPEED := 3.0
 # The sun splits into a main and a cloud sun only from this view width (km):
 # up close it stays one hard light with the shadow map to itself.
@@ -54,6 +58,7 @@ var enabled := true
 var auto_weather := true
 var state := "fair"
 var time_of_day := 0.5
+var night := 0.0 # 0 day, 1 night (game_clock.gd: the hour at the slow speeds)
 var day_cycle_seconds := 0.0
 var time_scale := 1.0
 var weather_time := 0.0
@@ -498,7 +503,12 @@ func _time_look() -> Array:
 	var to: Array = noon if time_of_day < 0.5 else TIME_LOOK.evening
 	var t := time_of_day * 2.0 if time_of_day < 0.5 else (time_of_day - 0.5) * 2.0
 	var q := Quaternion.from_euler(_euler(from[0])).slerp(Quaternion.from_euler(_euler(to[0])), t)
-	return [q, from[1].lerp(to[1], t), lerpf(from[2], to[2], t), from[3].lerp(to[3], t), lerpf(from[4], to[4], t), from[5].lerp(to[5], t)]
+	var look := [q, from[1].lerp(to[1], t), lerpf(from[2], to[2], t), from[3].lerp(to[3], t), lerpf(from[4], to[4], t), from[5].lerp(to[5], t)]
+	if night <= 0.0:
+		return look
+	var n := clampf(night, 0.0, 1.0)
+	return [q.slerp(Quaternion.from_euler(_euler(NIGHT_LOOK[0])), n), look[1].lerp(NIGHT_LOOK[1], n), lerpf(look[2], NIGHT_LOOK[2], n),
+		look[3].lerp(NIGHT_LOOK[3], n), lerpf(look[4], NIGHT_LOOK[4], n), look[5].lerp(NIGHT_LOOK[5], n)]
 
 func _euler(degrees: Vector3) -> Vector3:
 	return Vector3(deg_to_rad(degrees.x), deg_to_rad(degrees.y), deg_to_rad(degrees.z))
