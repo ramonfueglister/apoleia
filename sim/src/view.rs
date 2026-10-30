@@ -725,6 +725,12 @@ impl Houses {
         }
     }
 
+    /// Each village household's house slot and the household (the building
+    /// sites left out), for what the graphics show at the houses.
+    pub fn households(&self) -> impl Iterator<Item = (u32, u32)> + '_ {
+        self.by_key.iter().filter(|(&key, _)| (key >> 32) as u32 != SITE).map(|(&key, &(slot, _))| (slot, (key >> 32) as u32))
+    }
+
     /// The record of a household's house, if it has one.
     pub fn of(&self, household: u32) -> Option<&[f32]> {
         let (_, &(slot, _)) = self.by_key.iter().find(|(&k, _)| (k >> 32) as u32 == household)?;
