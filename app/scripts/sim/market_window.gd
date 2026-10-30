@@ -2,14 +2,16 @@ extends CanvasLayer
 ## A market's window (docs/kit1/REALTIME_GAMEPLAY.md phase 6): a click on a
 ## market square up close opens it at the right edge, as Cities: Skylines
 ## opens a building's info, in a window (ui/ui_window.gd) that can be
-## moved, sized and folded. Two tabs: "Übersicht", the statistics' cards
-## for this one market (sim_overview.gd in its market mode: its figures,
-## grain price, hunger, store and sales, real wage, who lives there, rich
-## and poor, its goods, each over the months), and "Alle Zahlen", the
-## market's row of the markets table (apoleia_sim::grain, the same numbers
-## as the T table), one line per column, so every column the economy adds
-## there, the reasons for a price included, shows here too. While open it
-## follows the sim once a week.
+## moved, sized and folded. Three tabs, as the statistics' views:
+## "Überblick", this market's figures, why its grain costs what it costs,
+## what its numbers say (the Lage, a click on a line opens its chart) and
+## who lives there with their money; "Diagramme", its charts over the
+## months (grain price, hunger, store and sales, real wage, people, rich
+## and poor, each good's price), two to a row (both sim_overview.gd pages);
+## and "Alle Zahlen", the market's row of the markets table
+## (apoleia_sim::grain, the same numbers as the T table), one line per
+## column, so every column the economy adds there, the reasons for a price
+## included, shows here too. While open it follows the sim once a week.
 ##
 ##   click on a market square   open its window
 ##   Esc or ×                   close it
@@ -35,7 +37,9 @@ var _press_at := Vector2.INF
 var _waiting := false
 var _asked_day := -1
 var _win # ui_window.gd
-var _overview # sim_overview.gd, market mode
+var _overview # sim_overview.gd, page "market"
+var _charts # sim_overview.gd, page "market_charts"
+var _spans: HBoxContainer # the months the charts show, over them
 var _numbers: ScrollContainer
 var _when: Label
 var _rows: GridContainer
@@ -53,11 +57,19 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 		if market >= 0:
 			close_window())
 	var tabs := UiTabs.new()
-	tabs.add_tab("Übersicht")
-	tabs.add_tab("Alle Zahlen")
+	for title in ["Überblick", "Diagramme", "Alle Zahlen"]:
+		tabs.add_tab(title)
 	_win.body.add_child(tabs)
-	_overview = SimOverview.new(SimTables._date, true)
+	_overview = SimOverview.new(SimTables._date, "market")
+	_overview.go.connect(func(_page: String): tabs.current_tab = 1)
 	_win.body.add_child(_overview)
+	_spans = SimOverview.span_buttons(func(months: int): _charts.set_span(months))
+	_spans.alignment = BoxContainer.ALIGNMENT_END
+	_spans.visible = false
+	_win.body.add_child(_spans)
+	_charts = SimOverview.new(SimTables._date, "market_charts")
+	_charts.visible = false
+	_win.body.add_child(_charts)
 	_numbers = ScrollContainer.new()
 	_numbers.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_numbers.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -65,7 +77,9 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_win.body.add_child(_numbers)
 	tabs.tab_changed.connect(func(i: int):
 		_overview.visible = i == 0
-		_numbers.visible = i == 1)
+		_spans.visible = i == 1
+		_charts.visible = i == 1
+		_numbers.visible = i == 2)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -146,6 +160,7 @@ func _show(d: Dictionary) -> void:
 	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
 	_when.text = "Stand %d. %s" % [int(d.day) % SimTables.MONTH + 1, SimTables._date(int(d.day))]
 	_overview.show_market(d)
+	_charts.show_market(d)
 	var columns: PackedStringArray = d.columns
 	for i in columns.size():
 		var key := columns[i]

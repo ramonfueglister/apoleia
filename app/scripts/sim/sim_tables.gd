@@ -3,7 +3,12 @@ extends CanvasLayer
 ## region and occupation, farms by region and the state's accounts, in a
 ## window (ui/ui_window.gd) that can be moved, sized and folded and lies
 ## above the rest of the HUD. T (or the red seal in the top bar) opens and
-## closes it. Every row has an EU5 tooltip (ui/tooltips.gd): staying on it
+## closes it. As Victoria 3's statistics it is split by topic (VIEWS): the
+## window's tabs are the topics (Übersicht, Menschen, Korn, Geld, Waren,
+## Höfe, Staat), the row under them each topic's views: a page of cards
+## (sim_overview.gd: the overview with its Lage, the classes side by side,
+## a topic's charts) or a table. The months the charts show are chosen
+## right of the views; a click on a line of the Lage opens its charts. Every row has an EU5 tooltip (ui/tooltips.gd): staying on it
 ## locks it and shows the row's last months; its blue terms explain
 ## themselves. The markets show each market's price over the last
 ## SPARK_MONTHS months as a small curve, gathered from the monthly tables
@@ -42,7 +47,7 @@ extends CanvasLayer
 ## takes them off.
 ##
 ## Command line (after --): --tables=overview|markets|goods|classes|population|farms|state|history
-## opens the panel on that table, --tables-map=column colours the map by
+## (or a page of VIEWS, as grain_charts) opens the panel on that view, --tables-map=column colours the map by
 ## that column of the markets.
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
@@ -51,12 +56,23 @@ const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
-## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
-## from four of them; its tab comes first (TAB_ORDER)
+## apoleia_sim::tables::TABLES, then "overview": a page of sim_overview.gd
+## (VIEWS), drawn from OVERVIEW_KINDS
 const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
 const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht", "Schichten", "Waren", "Draussen"]
 const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", "", "Schicht", "Ware", "Markt draussen"] # under a tooltip's title
-const TAB_ORDER: Array[int] = [5, 0, 8, 7, 6, 1, 2, 3, 4]
+## The window's tabs and the views of each: [topic, [[view, page of
+## sim_overview.gd or a table of KINDS], …]].
+const VIEWS := [
+	["Übersicht", [["Überblick", "overview"], ["Verlauf", "history"]]],
+	["Menschen", [["Schichten", "people"], ["Diagramme", "people_charts"], ["Liste", "population"]]],
+	["Korn", [["Diagramme", "grain_charts"], ["Märkte", "markets"], ["Draussen", "outside"]]],
+	["Geld", [["Diagramme", "money_charts"], ["Schichten", "classes"]]],
+	["Waren", [["Diagramme", "goods_charts"], ["Liste", "goods"]]],
+	["Höfe", [["Diagramme", "farms_charts"], ["Liste", "farms"]]],
+	["Staat", [["Diagramme", "state_charts"], ["Liste", "state"]]],
+]
+const VIEW_PX := 112.0 # a view's board
 const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state", "classes", "goods"]
 const SPARK_MONTHS := 24
 const SPARK_PX := 92.0
@@ -75,7 +91,7 @@ const HEAD := Color("1b3440")
 const SELECTED := Color("2e5260")
 const SECONDARY := UiStyle.DIM
 const NEGATIVE := UiStyle.LOSS # in the red, as EU5 shows it
-const PANEL_MIN := 560.0
+const PANEL_MIN := 620.0
 const FILTER_MAX := 64 # a text column with more values gets no dropdown
 const ROW_MAX := 300
 const FLY_MARGIN := 1.6 # the camera frames a place this many times its extent
@@ -109,7 +125,12 @@ var _state: Array[Dictionary] = [] # per table: sort, desc, filters, search, fol
 var _asked := -1 # the table asked for, until take_table answers
 var _asked_on := PackedInt64Array() # per table: the day it was last asked for
 var _win # ui_window.gd (untyped: its own members)
-var _overview # sim_overview.gd
+var _pages := {} # page -> its sim_overview.gd, made when first shown
+var _page := "overview" # the page shown while _kind is "overview"
+var _topic := 0
+var _views: Array[UiTabs] = [] # per topic its row of views, one shown
+var _span := 0 # months the charts show, 0 for all
+var _spans: HBoxContainer
 var _months := {} # market id -> PackedFloat64Array of its price, one per monthly count
 var _months_day := -1 # the table day last added to _months
 var _spark_at := -1 # the tree column of the curves, -1 for none
@@ -145,6 +166,7 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	name = "SimTables"
 	layer = 2 # over the people's labels
 	_kind = KINDS.find("overview") # EU5 opens on the summary
+	var start := "overview"
 	for kind in KINDS:
 		_asked_on.append(-1)
 		_tables.append({})
@@ -152,13 +174,13 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.get_slice("=", 0) == "--tables":
 			open = true
-			_kind = maxi(KINDS.find(arg.get_slice("=", 1)), 0)
+			start = arg.get_slice("=", 1)
 		elif arg.get_slice("=", 0) == "--tables-map":
 			_map_by = arg.get_slice("=", 1)
 			_state[0].sort = _map_by
 	_build()
 	_terms()
-	_tabs.current_tab = TAB_ORDER.find(_kind)
+	_go_to(start)
 	_show(open)
 
 # ------------------------------------------------------------------ data
@@ -320,9 +342,11 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 
 func _refresh() -> void:
 	var overview := KINDS[_kind] == "overview"
-	_overview.visible = overview
-	for c in _filter_row.get_children(): # the overview keeps only the date
-		c.visible = c == _stand or not overview
+	var page = _page_node(_page) if overview else null
+	for p in _pages.values():
+		p.visible = p == page
+	_filter_row.visible = not overview # a page has no search, dropdowns or map
+	_spans.visible = overview and _page.ends_with("charts")
 	_tree.visible = not overview
 	_note.visible = not overview
 	if overview:
@@ -330,7 +354,7 @@ func _refresh() -> void:
 		var shown := {}
 		for k in OVERVIEW_KINDS:
 			shown[k] = _tables[KINDS.find(k)]
-		_overview.show_tables(shown)
+		page.show_tables(shown)
 		var h: Dictionary = shown.history
 		_stand.text = ("Stand %s" % _date(int(h.day))) if not h.is_empty() else "…"
 		return
@@ -959,9 +983,53 @@ func _fly(t: Dictionary, rows: PackedInt32Array) -> void:
 	landscape._goal_width = w
 	print(JSON.stringify({"event": "tables_fly", "kind": KINDS[_kind], "rows": rows.size(), "width_km": w}))
 
+## A topic: its row of views, the one last chosen in it.
 func _on_tab(index: int) -> void:
-	_kind = TAB_ORDER[index]
-	_refresh()
+	_topic = index
+	for k in _views.size():
+		_views[k].visible = k == index
+	_on_view(_views[index].current_tab)
+
+## A view of the topic shown: a page of cards or a table.
+func _on_view(index: int) -> void:
+	var to: String = VIEWS[_topic][1][index][1]
+	if to in KINDS and to != "overview":
+		_kind = KINDS.find(to)
+	else:
+		_kind = KINDS.find("overview")
+		_page = to
+	if open:
+		_refresh()
+
+## The view showing `to` (a page, or a table of KINDS), as a click on a line
+## of the Lage asks.
+func _go_to(to: String) -> void:
+	for t in VIEWS.size():
+		for v in VIEWS[t][1].size():
+			if VIEWS[t][1][v][1] == to:
+				_views[t].set_block_signals(true)
+				_views[t].current_tab = v
+				_views[t].set_block_signals(false)
+				_tabs.set_block_signals(true)
+				_tabs.current_tab = t
+				_tabs.set_block_signals(false)
+				_on_tab(t)
+				return
+	if to != "overview":
+		_go_to("overview")
+
+## Page `name` of sim_overview.gd, made the first time it is shown, above
+## the tables.
+func _page_node(name: String) -> SimOverview:
+	if not _pages.has(name):
+		var page := SimOverview.new(_date, name)
+		page.visible = false
+		page.set_span(_span)
+		page.go.connect(_go_to)
+		_tree.add_sibling(page)
+		_tree.get_parent().move_child(page, _tree.get_index())
+		_pages[name] = page
+	return _pages[name]
 
 func _show(on: bool) -> void:
 	open = on
@@ -1142,10 +1210,28 @@ func _build() -> void:
 	_stand.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL + 1)
 	_stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_tabs = UiTabs.new()
-	for k in TAB_ORDER:
-		_tabs.add_tab(TITLES[k])
+	for topic in VIEWS:
+		_tabs.add_tab(topic[0])
 	_tabs.tab_changed.connect(_on_tab)
 	head.add_child(_tabs)
+	# under the topics: its views at the left, the months and the date at the right
+	var views := HBoxContainer.new()
+	views.add_theme_constant_override("separation", 12)
+	column.add_child(views)
+	for topic in VIEWS:
+		var row := UiTabs.new(32.0, VIEW_PX)
+		for view in topic[1]:
+			row.add_tab(view[0])
+		row.tab_changed.connect(_on_view)
+		row.visible = false
+		views.add_child(row)
+		_views.append(row)
+	_spans = SimOverview.span_buttons(func(months: int):
+		_span = months
+		for p in _pages.values():
+			p.set_span(months), _span)
+	_spans.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	views.add_child(_spans)
 	_filter_row = HFlowContainer.new()
 	_filter_row.add_theme_constant_override("h_separation", 8)
 	_filter_row.add_theme_constant_override("v_separation", 6)
@@ -1162,7 +1248,12 @@ func _build() -> void:
 	var fill := Control.new()
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_filter_row.add_child(fill)
-	_filter_row.add_child(_stand) # the date of the figures, right of the search
+	_stand.size_flags_horizontal = Control.SIZE_EXPAND_FILL # the date of the figures, right of the views, cut short when narrow
+	_stand.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_stand.clip_text = true
+	_stand.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	views.add_child(_stand)
+	views.move_child(_stand, _views.size()) # before the months
 	_fold = CheckButton.new()
 	_fold.focus_mode = Control.FOCUS_NONE
 	_fold.toggled.connect(func(on: bool):
@@ -1224,9 +1315,6 @@ func _build() -> void:
 	_tree.item_selected.connect(_on_selected)
 	_tree.item_collapsed.connect(_on_collapsed)
 	Tooltips.attach(_tree, _row_tip)
-	_overview = SimOverview.new(_date)
-	_overview.visible = false
-	column.add_child(_overview)
 	column.add_child(_tree)
 	_note = Label.new()
 	_note.text = "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar"
