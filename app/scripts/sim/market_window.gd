@@ -2,10 +2,14 @@ extends CanvasLayer
 ## A market's window (docs/kit1/REALTIME_GAMEPLAY.md phase 6): a click on a
 ## market square up close opens it at the right edge, as Cities: Skylines
 ## opens a building's info, in a window (ui/ui_window.gd) that can be
-## moved, sized and folded. It shows the market's row of the markets table
-## (apoleia_sim::grain, the same numbers as the T table), one line per
-## column, so every column the economy adds there, the reasons for a price
-## included, shows here too. While open it follows the sim once a week.
+## moved, sized and folded. Two tabs: "Übersicht", the statistics' cards
+## for this one market (sim_overview.gd in its market mode: its figures,
+## grain price, hunger, store and sales, real wage, who lives there, rich
+## and poor, its goods, each over the months), and "Alle Zahlen", the
+## market's row of the markets table (apoleia_sim::grain, the same numbers
+## as the T table), one line per column, so every column the economy adds
+## there, the reasons for a price included, shows here too. While open it
+## follows the sim once a week.
 ##
 ##   click on a market square   open its window
 ##   Esc or ×                   close it
@@ -14,13 +18,15 @@ extends CanvasLayer
 ## this node, so it sees them first).
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const CLICK_PX := 4.0
 const MARKET_MAX_KM := 80.0 # view width up to which a click opens a market (build_menu.gd BUILD_MAX_KM)
 const REFRESH_DAYS := 7
-const PANEL_PX := 340.0
-const LABEL_PX := 170.0
+const PANEL_PX := 560.0
+const LABEL_PX := 230.0
 
 var landscape: Node3D
 var people: RefCounted # ApoleiaPeople
@@ -29,6 +35,8 @@ var _press_at := Vector2.INF
 var _waiting := false
 var _asked_day := -1
 var _win # ui_window.gd
+var _overview # sim_overview.gd, market mode
+var _numbers: ScrollContainer
 var _when: Label
 var _rows: GridContainer
 var _notes: VBoxContainer
@@ -39,22 +47,30 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	landscape = scene
 	people = sim
 	# at the right edge, below the game clock; moved and sized as the player likes
-	_win = UiWindow.make("market", "Markt", Rect2(-12, 64, PANEL_PX + 24.0, 600), Engine.get_main_loop() as SceneTree)
+	_win = UiWindow.make("market", "Markt", Rect2(-12, 64, PANEL_PX + 24.0, 780), Engine.get_main_loop() as SceneTree)
 	_win.visible = false
 	_win.closed.connect(func():
 		if market >= 0:
 			close_window())
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_win.body.add_child(scroll)
+	var tabs := UiTabs.new()
+	tabs.add_tab("Übersicht")
+	tabs.add_tab("Alle Zahlen")
+	_win.body.add_child(tabs)
+	_overview = SimOverview.new(SimTables._date, true)
+	_win.body.add_child(_overview)
+	_numbers = ScrollContainer.new()
+	_numbers.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_numbers.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_numbers.visible = false
+	_win.body.add_child(_numbers)
+	tabs.tab_changed.connect(func(i: int):
+		_overview.visible = i == 0
+		_numbers.visible = i == 1)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(box)
-	_when = Label.new()
-	_when.add_theme_color_override("font_color", UiStyle.DIM)
-	_when.add_theme_font_size_override("font_size", 12)
+	_numbers.add_child(box)
+	_when = UiStyle.label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
 	box.add_child(_when)
 	_rows = GridContainer.new()
 	_rows.columns = 2
@@ -62,6 +78,7 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_rows.add_theme_constant_override("v_separation", 3)
 	box.add_child(_rows)
 	_notes = VBoxContainer.new()
+	_notes.add_theme_constant_override("separation", 6)
 	box.add_child(_notes)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -128,6 +145,7 @@ func _show(d: Dictionary) -> void:
 	var data: Dictionary = d.data
 	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
 	_when.text = "Stand %d. %s" % [int(d.day) % SimTables.MONTH + 1, SimTables._date(int(d.day))]
+	_overview.show_market(d)
 	var columns: PackedStringArray = d.columns
 	for i in columns.size():
 		var key := columns[i]
@@ -138,7 +156,7 @@ func _show(d: Dictionary) -> void:
 		if v is String:
 			var note := _label("%s: %s" % [d.labels[i], v], UiStyle.TEXT)
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			note.custom_minimum_size = Vector2(PANEL_PX - 40.0, 0)
+			note.custom_minimum_size = Vector2(PANEL_PX - 60.0, 0)
 			_notes.add_child(note)
 			label.queue_free()
 			continue
@@ -150,11 +168,7 @@ func _show(d: Dictionary) -> void:
 		_rows.add_child(value)
 
 static func _label(text: String, colour: Color) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_font_size_override("font_size", 14)
-	return l
+	return UiStyle.label(text, colour, UiStyle.SIZE_TEXT)
 
 static func _value(v: float, unit: String) -> String:
 	if unit == "%":

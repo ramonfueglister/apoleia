@@ -69,7 +69,7 @@ const LIST_W := 128 # width of the slot list texture
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
-const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
@@ -100,7 +100,6 @@ const GROUP_COLOURS := [Color(0.55, 0.2, 0.75), Color(0.95, 0.75, 0.1), Color(0.
 	Color(0.04, 0.04, 0.04), Color(1.0, 0.15, 0.15), Color(0.97, 0.97, 0.97), Color(0.35, 0.45, 0.65)]
 const STAND_COLOURS := [Color(0.04, 0.04, 0.04), Color(1.0, 0.5, 0.1), Color(0.2, 0.4, 0.95), Color(0.75, 0.15, 0.85)]
 const MAP_N := 256 # fine tiles (1.5625 km) in the grain window around the camera
-const KIND_NOTES := {"Zelt": "lebt im Zelt (landlos)", "Lohn": "lebt von Lohnarbeit", "Händler": "Händlerhaushalt", "Oberschicht": "Oberschicht", "Hof": "Hof"}
 const BENCH_WARMUP := 90
 const BENCH_FRAMES := 240
 
@@ -122,8 +121,7 @@ var _doing := "" # what the clicked traveller is doing (people_trips.gd pick), o
 var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
-var _info_label: RichTextLabel
-var _person_win # ui_window.gd
+var _person # person_window.gd
 var _press_at := Vector2.INF
 var _click_at := Vector2.INF # --people-click, for screenshots
 var _frames := 0
@@ -948,16 +946,8 @@ func _build_hud() -> void:
 	_legend_label = _hud_label(root)
 	_legend_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	# the person clicked, in a window (ui/ui_window.gd) at the bottom left
-	_person_win = UiWindow.make("person", "Person", Rect2(112, -12, 340, 330), Engine.get_main_loop() as SceneTree)
-	_person_win.visible = false
-	_info_label = _hud_label(_person_win.body)
-	_info_label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	_info_label.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
-	_info_label.add_theme_font_size_override("bold_font_size", UiStyle.SIZE_TEXT)
-	_info_label.add_theme_font_override("normal_font", UiStyle.serif())
-	_info_label.add_theme_color_override("default_color", UiStyle.TEXT)
-	_info_label.visible = true
+	# the person clicked, in a window (person_window.gd) at the bottom left
+	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -1044,14 +1034,14 @@ func _pick(pixel: Vector2) -> void:
 		if int(traveller.pid) < 0 and int(traveller.household) < 0:
 			# a scene with nobody to look up (a funeral): only what happens
 			_waiting = false
-			_info_label.text = "[color=#c9a45c]%s[/color]" % _doing
+			_person.note("[color=#c9a45c]%s[/color]" % _doing)
 			return
 		if int(traveller.pid) >= 0:
 			people.ask_person_id(traveller.pid)
 		else:
 			people.ask_household_member(traveller.household)
 		_waiting = true
-		_info_label.text = "…"
+		_person.wait()
 		return
 	_doing = ""
 	var vp := cam.get_camera_projection() * Projection(cam.get_camera_transform().affine_inverse())
@@ -1070,50 +1060,19 @@ func _pick(pixel: Vector2) -> void:
 	_show_info(_waiting)
 	if _waiting:
 		people.ask_person(selected)
-		_info_label.text = "…"
+		_person.wait()
 
 ## Opens or closes the person's window.
 func _show_info(on: bool) -> void:
 	if on:
-		_person_win.open()
-	elif _person_win.visible:
-		_person_win.close()
+		_person.open()
+	else:
+		_person.close()
 
 func _show_person(p: Dictionary) -> void:
-	if p.is_empty():
-		_info_label.text = "[i]nicht mehr da[/i]"
-		return
-	var lines := PackedStringArray()
-	lines.append("[b]%s, %d Jahre[/b]  #%d" % ["Frau" if p.female else "Mann", int(p.age), p.pid])
-	if _doing != "":
-		lines.append("[color=#c9a45c]%s[/color]" % _doing)
-	lines.append("%s, %s" % [p.job, STANDS[clampi(p.stand, 0, 3)]])
-	lines.append("Gruppe: %s" % (", ".join(p.factions) if p.factions.size() > 0 else p.group))
-	lines.append("Haushalt %d: %d Personen" % [p.household, p.members])
-	lines.append("verheiratet" if p.spouse >= 0 else ("Kind" if p.age < 14.0 else "ledig oder verwitwet"))
-	# Health is body weight in per mille of normal weight (S84, 1000 = BMI 21)
-	var health := "Gewicht %d %% (BMI %.1f)" % [int(p.health / 10.0), 21.0 * p.health / 1000.0]
-	if p.iq >= 0.0:
-		health += ", IQ %d" % roundi(p.iq)
-	lines.append(health)
-	lines.append("Kultur %d, Religion %d" % [p.culture, p.religion])
-	if p.has("hh_kind"):
-		# the household as the grain economy sees it (counted once a month)
-		var kind: String = p.hh_kind
-		var farm := ""
-		if p.has("farm_kind"):
-			farm = "%s, %.2f ha Feld" % [p.farm_kind, p.farm_ha]
-		lines.append(farm if kind == "Hof" and farm != "" else KIND_NOTES.get(kind, kind))
-		var fed: float = p.fed / 10.0
-		var colour := "#e05040" if fed < 80.0 else ("#e0a040" if fed < 95.0 else "#80c060")
-		lines.append("[color=%s]gegessen: %d %% des Bedarfs[/color], Vorrat %d kg" % [colour, int(fed), int(p.pantry_kg)])
-		if p.has("money"):
-			lines.append("Geld des Haushalts: %s Denar" % SimTables._int(roundi(p.money)))
-	if p.travelling > 0:
-		lines.append("[color=#e05040]%s[/color]" % ("wandert aus" if p.travelling == 2 else "unterwegs"))
-	_person_win.set_title("%s, %d Jahre" % ["Frau" if p.female else "Mann", int(p.age)])
-	_info_label.text = "\n".join(lines)
-	print(JSON.stringify({"event": "people_person", "pid": p.pid}))
+	_person.show_person(p, _doing)
+	if not p.is_empty():
+		print(JSON.stringify({"event": "people_person", "pid": p.pid}))
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -1127,7 +1086,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				colour_mode = (colour_mode + 1) % MODES.size()
 				_apply_colours()
 			KEY_ESCAPE:
-				if selected >= 0 or _person_win.visible: # the next Esc is the menu's
+				if selected >= 0 or _person.is_open(): # the next Esc is the menu's
 					get_viewport().set_input_as_handled()
 				selected = -1
 				_waiting = false

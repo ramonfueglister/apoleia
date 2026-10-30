@@ -11,7 +11,10 @@ extends ScrollContainer
 ## row and good has a tooltip.
 ##
 ## sim_tables.gd hands it the tables (history, population, farms, state,
-## classes, goods) with show_tables(); it only draws them.
+## classes, goods) with show_tables(); it only draws them. Made with
+## `market` true it is a market window's overview instead (market_window.gd):
+## the same cards for one market, from its history, who lives there and its
+## row of the markets table (show_market()).
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
@@ -35,7 +38,7 @@ const ICONS := {
 	"Hofleute": "family-house", "Im Zelt": "camping-tent", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
 	"Bauern": "wheat", "Pächter": "field", "Tagelöhner": "walking-boot", "Handwerker": "anvil", "Adel": "laurel-crown",
 	"Geistliche": "greek-temple", "Gelehrte": "open-book", "Beamte": "scroll-quill", "Offiziere": "eagle-emblem",
-	"Unternehmer": "scales", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn",
+	"Unternehmer": "scales", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn", "Alle": "scales",
 }
 ## The goods table's rows in apoleia_sim::grain::GOOD_KEYS order; the
 ## history has each one's price as good_<key>.
@@ -73,12 +76,22 @@ var _findings := {} # card key -> the label with what its numbers say
 var _events := {} # day -> what happened that month (history), see _find_events
 ## How the classes are named as a sentence's subject, and whether as many.
 const FED_SUBJECTS: Array[String] = ["Die Hofleute", "Die Menschen im Zelt", "Die Lohnarbeiter", "Die Händler", "Die Oberschicht"]
+const FED_DATIVES: Array[String] = ["den Hofleuten", "den Menschen im Zelt", "den Lohnarbeitern", "den Händlern", "der Oberschicht"]
 ## Months shown in the line charts: 12, 120 or 0 for all.
 var _span := 0
 var _spans: HBoxContainer
+var _market := false # one market's overview (show_market) instead of the realm's
+var _tile_specs: Array = [] # the figures: [key, name, unit, scale, falling good]
+var _lorenz: Control
+var _lorenz_now := PackedFloat64Array() # the curve's points at 0, 10 … 100 % of the people
+var _lorenz_then := PackedFloat64Array()
+var _lorenz_when := ""
+var _lorenz_hover := -1
+var _reasons: Label
 
-func _init(date_fn: Callable) -> void:
+func _init(date_fn: Callable, market := false) -> void:
 	date = date_fn
+	_market = market
 	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER # its width never widens the window
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_column = VBoxContainer.new()
@@ -112,13 +125,26 @@ func _init(date_fn: Callable) -> void:
 			for other in _spans.get_children():
 				if other is Button:
 					other.button_pressed = other == b
-			show_tables(_tables))
+			if _market:
+				show_market(_tables)
+			else:
+				show_tables(_tables))
 		_spans.add_child(b)
 	resized.connect(func():
 		for g in _grids:
 			g.columns = maxi(1, int(size.x / (CARD_MIN + 12.0))) if size.x > 0.0 else 2
 		if _goods != null:
 			_goods.columns = 3 if size.x > 700.0 else 2)
+	if _market:
+		_market_cards()
+	else:
+		_realm_cards()
+
+## The realm's cards (the statistics' first tab).
+func _realm_cards() -> void:
+	_tile_specs = [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
+		["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
+		["cash", "Staatskasse", " D", 1.0, false]]
 	_section("Menschen")
 	_line_card("persons", "Menschen", "", "Alle Menschen auf der Karte, jeder einzeln simuliert.")
 	_shares_card("jobs", "Menschen nach Beruf", "Die Menschen nach dem Beruf ihres Haushalts.")
@@ -135,12 +161,32 @@ func _init(date_fn: Callable) -> void:
 	_line_card("real", "Reallohn", "kg", "Der Taglohn eines Marktes in Korn zu dessen Preis: so viel kann ein Tag Arbeit kaufen. Gestrichelt: so viel muss ein Lohnarbeiter je Arbeitstag verdienen, damit sein Teil der Familie satt wird (Bedarf der Familie durch ihre Erwachsenen und 290 Arbeitstage im Jahr, nach Columella).")
 	_line_card("work", "Arbeitstage in der Woche", "Tage", "Arbeitstage der letzten Woche, die jemand gesucht und niemanden gefunden hat, und die jemand angeboten hat, ohne eingestellt zu werden.")
 	_shares_card("money", "Geld nach Schicht", "Alles Geld der Haushalte nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
+	_lorenz_card()
+	_rows_card("gini_rows", "Ungleichheit nach Schicht", "Der Gini des Geldes je Kopf: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Oben über alle Menschen, darunter innerhalb jeder Schicht. Alle Zeilen haben dieselbe Skala. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte.")
 	_shares_card("farms", "Höfe nach Art", "Familienhof: die Familie bebaut ihr eigenes Land. Pachthof: sie bebaut gepachtetes Land. Gut: ein Grundherr lässt sein Land bebauen.")
 	_section("Waren")
 	_goods_card()
 	_section("Staat")
 	_line_card("cash", "Staatskasse", "D", "Denar in der Staatskasse am Ende jedes Monats.")
 	_bar_card("Geld des Staates seit Beginn", "Was der Staat seit Beginn eingenommen und ausgegeben hat, und was heute in der Kasse liegt.")
+
+## One market's cards (market_window.gd): its grain, work and money, who
+## lives there, its goods.
+func _market_cards() -> void:
+	_tile_specs = [["price", "Kornpreis", " D/kg", 1.0, true], ["share_hungry", "Hungernd", " %", 100.0, true],
+		["real_wage", "Reallohn", " kg", 1.0, false], ["persons", "Menschen", "", 1.0, false], ["gini", "Gini", "", 1.0, true]]
+	_section("Korn")
+	_line_card("m_price", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel.")
+	_reasons_card()
+	_line_card("m_hungry", "Hungernd", "%", "Anteil der Menschen der Region, die ihr Korn kaufen und im Monat nicht satt wurden.")
+	_line_card("m_store", "Lager und Verkauf", "t", "Korn im Lager der Händler dieses Marktes am Monatsende, und Korn, das sie im Monat verkauft haben.")
+	_section("Arbeit und Geld")
+	_line_card("m_real", "Reallohn", "kg", "Der Taglohn hier in Korn zum Preis hier: so viel kann ein Tag Arbeit an diesem Markt kaufen.")
+	_shares_card("m_people", "Wer hier lebt", "Die Menschen der Region nach der Schicht ihres Haushalts.")
+	_shares_card("m_money", "Geld nach Schicht", "Alles Geld der Haushalte der Region nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
+	_line_card("m_gini", "Arm und Reich", "", "Der Gini des Geldes je Kopf in der Region: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Grau: über alle Menschen der Karte. Gezählt wird nur Bargeld.")
+	_section("Waren")
+	_goods_card("Der Preis jeder Ware an diesem Markt, darunter sein Verlauf im gewählten Zeitraum. Über einer Ware steht, warum sie kostet, was sie kostet.")
 
 ## The tables by kind ("history", "population", "farms", "state",
 ## "classes", "goods"), each as take_table() gave it.
@@ -160,7 +206,9 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("real", h, [{"key": "real_p50", "name": "Median der Märkte", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
 			"band": "Ärmstes bis reichstes Zehntel"},
 			{"key": "need_wage", "name": "Nötig zum Sattwerden", "colour": Charts.RED, "dashed": true}])
-		_set_fed(d)
+		_set_rows("fed", d)
+		_set_rows("gini_rows", d)
+		_set_lorenz(d)
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
 			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
@@ -223,9 +271,7 @@ func show_tables(tables: Dictionary) -> void:
 ## The figures as a stat strip: the name in the concepts' colour, the value, the
 ## change since the month before, a small curve.
 func _fill_tiles(d: Dictionary) -> void:
-	var specs := [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
-		["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
-		["cash", "Staatskasse", " D", 1.0, false]]
+	var specs := _tile_specs
 	if _tiles.get_child_count() == 0:
 		for s in specs:
 			_tiles.add_child(_tile(s[0]))
@@ -397,7 +443,7 @@ func _line_card(key: String, title: String, unit: String, about: String) -> void
 	Tooltips.attach(chart, func(_at: Vector2) -> Dictionary: return _line_tip(key, title))
 
 ## A line chart's series from the history: [{key, name, colour, lo?, hi?,
-## band?, dashed?, scale?}].
+## band?, dashed?, scale?, muted?}].
 func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 	var entry: Dictionary = _lines[key]
 	var d: Dictionary = h.data
@@ -412,7 +458,7 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 				out.append(float(v) * scale)
 			return out.slice(_first(out.size()))
 		var one := {"name": s.name, "colour": s.colour, "values": scaled.call(s.key),
-			"dashed": s.get("dashed", false), "hidden": entry.hidden.has(s.name)}
+			"dashed": s.get("dashed", false), "hidden": entry.hidden.has(s.name), "muted": s.get("muted", false)}
 		if s.has("mute_above"): # emphasis: only the lines that tell the story keep their colour
 			var low := INF
 			for v in one.values:
@@ -426,6 +472,8 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 	entry.series = series
 	var days := PackedInt64Array(Array(d.day))
 	entry.days = days.slice(_first(days.size()))
+	if d.has("yearly"):
+		entry.yearly = Array(d.yearly).slice(_first(days.size()))
 	var marks := PackedInt32Array()
 	for i in entry.days.size():
 		if _events.has(int(entry.days[i])):
@@ -505,6 +553,8 @@ func _line_tip(key: String, title: String) -> Dictionary:
 	var happened: Array = _events.get(int(entry.days[m]), [])
 	if not happened.is_empty():
 		tip.text = "[n]In diesem Monat:[/n] " + "; ".join(happened) + "."
+	if entry.has("yearly") and m < entry.yearly.size() and entry.yearly[m]:
+		tip.text = "Vor den letzten zehn Jahren behält der Markt jedes Jahr als sein Mittel: dieser Wert gilt für das ganze Jahr."
 	return tip
 
 # ------------------------------------------------------------------ shares and the classes' food
@@ -633,11 +683,12 @@ func _shares_tip(key: String, i: int) -> Dictionary:
 			rows.append(["Je Kopf, gemessen am Schnitt", "%s×" % _pct(share / (entry.ref[i] * 100.0))])
 	return {"id": "share:%s:%d" % [key, i], "title": entry.names[i], "kind": entry.title, "rows": rows}
 
-## What each class ate as small multiples: a row each with the class, its
-## curve on one scale for all rows, and the share now (or in the month
-## under the mouse). Red is what was missing to eat one's fill.
-func _fed_card() -> void:
-	var box := _card("fed", "Gegessen nach Schicht", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala.")
+## Small multiples by class, a row each with the class, its curve on one
+## scale for all rows, and its value now (or in the month under the mouse):
+## "fed" what each class ate (red is what was missing to eat one's fill),
+## "gini_rows" how unequal its money is, the Gini over all people on top.
+func _rows_card(key: String, title: String, about: String) -> void:
+	var box := _card(key, title, about)
 	var rows := Control.new()
 	rows.custom_minimum_size = Vector2(0, FED_ROW * FED_KEYS.size())
 	rows.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -647,16 +698,17 @@ func _fed_card() -> void:
 	foot.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
 	box.add_child(foot)
 	# a line chart for _hover_all: the month under the mouse is shared
-	var entry := {"control": rows, "series": [], "days": PackedInt64Array(), "hover": -1, "row": -1, "lo": 90.0, "foot": foot}
-	_lines["fed"] = entry
-	rows.draw.connect(func(): _draw_fed(rows, entry))
+	var entry := {"control": rows, "series": [], "days": PackedInt64Array(), "hover": -1, "row": -1, "lo": 90.0, "hi": 100.0,
+		"foot": foot, "kind": key, "title": title}
+	_lines[key] = entry
+	rows.draw.connect(func(): _draw_rows(rows, entry))
 	rows.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
 			var row := int(e.position.y / FED_ROW)
 			if row != entry.row:
 				entry.row = row
 				rows.queue_redraw()
-			var plot := _fed_plot(rows, 0)
+			var plot := _row_plot(rows, 0)
 			var n: int = entry.days.size()
 			var m := -1
 			if n > 1 and e.position.x >= plot.position.x - 4.0 and e.position.x <= plot.end.x + 4.0:
@@ -667,60 +719,81 @@ func _fed_card() -> void:
 		entry.row = -1
 		rows.queue_redraw()
 		_hover_all(-1))
-	Tooltips.attach(rows, func(at: Vector2) -> Dictionary: return _fed_tip(int(at.y / FED_ROW)))
+	Tooltips.attach(rows, func(at: Vector2) -> Dictionary: return _rows_tip(key, int(at.y / FED_ROW)))
 
-func _set_fed(d: Dictionary) -> void:
-	var entry: Dictionary = _lines["fed"]
+func _fed_card() -> void:
+	_rows_card("fed", "Gegessen nach Schicht", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala.")
+
+## The rows of card `key` from the history: fed_<class> in per cent, or
+## the Gini over all (gini) and gini_<class>.
+func _set_rows(key: String, d: Dictionary) -> void:
+	var entry: Dictionary = _lines[key]
+	var fed := key == "fed"
 	var series := []
 	var lo := 100.0
+	var hi := 0.0
+	var specs := [] if fed else [["gini", "Alle", OTHER]]
 	for k in FED_KEYS.size():
-		var all := _col(d, "fed_" + FED_KEYS[k], 100.0)
+		specs.append([("fed_" if fed else "gini_") + FED_KEYS[k], FED_NAMES[k], FED_COLOURS[k]])
+	for spec in specs:
+		var all := _col(d, spec[0], 100.0 if fed else 1.0)
 		if all.is_empty():
 			continue
 		var values := all.slice(_first(all.size()))
 		lo = minf(lo, _lowest(values))
-		series.append({"k": k, "values": values, "all": all})
+		hi = maxf(hi, _highest(values))
+		series.append({"name": spec[1], "colour": spec[2], "values": values, "all": all})
 	entry.series = series
-	entry.lo = clampf(floorf((lo - 5.0) / 10.0) * 10.0, 0.0, 90.0) # room below the lowest
+	if fed:
+		entry.lo = clampf(floorf((lo - 5.0) / 10.0) * 10.0, 0.0, 90.0) # room below the lowest
+		entry.hi = 100.0
+	else: # a tenth of room below the lowest, so the rows' differences show
+		entry.lo = clampf(floorf((lo - 0.05) * 10.0) / 10.0, 0.0, 0.9)
+		entry.hi = clampf(ceilf(hi * 10.0) / 10.0, entry.lo + 0.1, 1.0)
 	var days := PackedInt64Array(Array(d.day))
 	entry.days = days.slice(_first(days.size()))
 	var foot: Label = entry.foot
-	foot.text = "Alle Zeilen von %d bis 100 %%. Gestrichelt: satt. Rot: was zum Sattwerden fehlte." % int(entry.lo)
+	if fed:
+		foot.text = "Alle Zeilen von %d bis 100 %%. Gestrichelt: satt. Rot: was zum Sattwerden fehlte." % int(entry.lo)
+	else:
+		foot.text = "Alle Zeilen von %s bis %s. Je höher, desto ungleicher." % [Charts.label(entry.lo), Charts.label(entry.hi)]
 	entry.control.custom_minimum_size.y = FED_ROW * maxi(1, series.size())
 	entry.control.queue_redraw()
 
-## Row k's plot: right of the medal and name, left of the share.
-func _fed_plot(ci: Control, k: int) -> Rect2:
+## Row k's plot: right of the medal and name, left of the value.
+func _row_plot(ci: Control, k: int) -> Rect2:
 	var x0 := NAME_X + FED_NAME_PX
 	return Rect2(x0, k * FED_ROW + 4.0, ci.size.x - x0 - SHARE_PX - 10.0, FED_ROW - 10.0)
 
-func _draw_fed(ci: Control, entry: Dictionary) -> void:
+func _draw_rows(ci: Control, entry: Dictionary) -> void:
 	var font := UiStyle.serif()
+	var fed: bool = entry.kind == "fed"
 	var lo: float = entry.lo
+	var hi: float = entry.hi
 	for row in entry.series.size():
 		var s: Dictionary = entry.series[row]
-		var k: int = s.k
 		var y: float = row * FED_ROW
 		var mid := y + (FED_ROW - 2.0) * 0.5
 		ci.draw_rect(Rect2(0, y, ci.size.x, FED_ROW - 2.0), UiStyle.ROW if row % 2 == 0 else UiStyle.ROW_DARK)
 		if row == entry.row:
 			ci.draw_rect(Rect2(0, y, ci.size.x, FED_ROW - 2.0), UiStyle.HOVER)
-		_medal(ci, Vector2(MEDAL_R + 5.0, mid), FED_NAMES[k], FED_COLOURS[k])
-		UiStyle.text_at(ci, Vector2(NAME_X, mid + 5.0), FED_NAMES[k], UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, FED_NAME_PX - 6.0, font)
-		var plot := _fed_plot(ci, row)
+		_medal(ci, Vector2(MEDAL_R + 5.0, mid), s.name, s.colour)
+		UiStyle.text_at(ci, Vector2(NAME_X, mid + 5.0), s.name, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, FED_NAME_PX - 6.0, font)
+		var plot := _row_plot(ci, row)
 		ci.draw_rect(plot.grow(1.0), UiStyle.EDGE)
 		ci.draw_rect(plot, UiStyle.CHART)
 		var vals: PackedFloat64Array = s.values
 		var n := vals.size()
-		var y_of := func(v: float) -> float: return plot.end.y - 1.0 - (clampf(v, lo, 100.0) - lo) / (100.0 - lo) * (plot.size.y - 2.0)
+		var y_of := func(v: float) -> float: return plot.end.y - 1.0 - (clampf(v, lo, hi) - lo) / (hi - lo) * (plot.size.y - 2.0)
 		var x_of := func(i: int) -> float: return plot.position.x + plot.size.x * float(i) / float(maxi(1, n - 1))
 		var full: float = y_of.call(100.0)
-		for part in Charts.dashes(PackedVector2Array([Vector2(plot.position.x, full), Vector2(plot.end.x, full)]), 4.0, 3.0):
-			ci.draw_polyline(part, UiStyle.DIM, 1.0)
+		if fed:
+			for part in Charts.dashes(PackedVector2Array([Vector2(plot.position.x, full), Vector2(plot.end.x, full)]), 4.0, 3.0):
+				ci.draw_polyline(part, UiStyle.DIM, 1.0)
 		if n >= 2:
 			# the gap to 100 %, a polygon per run of hungry months
 			var i := 0
-			while i < n:
+			while fed and i < n:
 				if vals[i] >= 99.999:
 					i += 1
 					continue
@@ -746,36 +819,38 @@ func _draw_fed(ci: Control, entry: Dictionary) -> void:
 			ci.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(UiStyle.TEXT, 0.45), 1.0)
 			ci.draw_circle(Vector2(x, y_of.call(vals[m])), 2.5, UiStyle.VALUE)
 		if n > 0:
-			UiStyle.text_at(ci, Vector2(ci.size.x - SHARE_PX - 6.0, mid + 5.0), "%d %%" % floori(vals[m]),
-				UiStyle.LOSS if vals[m] < 99.0 else UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, SHARE_PX, font)
+			var text := ("%d %%" % floori(vals[m])) if fed else "%.2f" % vals[m]
+			UiStyle.text_at(ci, Vector2(ci.size.x - SHARE_PX - 6.0, mid + 5.0), text,
+				UiStyle.LOSS if fed and vals[m] < 99.0 else UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, SHARE_PX, font)
 
-## A class's row: the month under the mouse (or the last), its lowest
-## month, how many it counts, and its whole curve since the start.
-func _fed_tip(row: int) -> Dictionary:
-	var entry: Dictionary = _lines["fed"]
+## A row: the month under the mouse (or the last), its lowest (fed) or
+## highest (Gini) month, how many it counts, and its whole curve since the start.
+func _rows_tip(key: String, row: int) -> Dictionary:
+	var entry: Dictionary = _lines[key]
 	if row < 0 or row >= entry.series.size():
 		return {}
+	var fed := key == "fed"
 	var s: Dictionary = entry.series[row]
-	var k: int = s.k
 	var vals: PackedFloat64Array = s.values
 	var n := vals.size()
 	if n == 0:
 		return {}
 	var m: int = entry.hover if entry.hover >= 0 and entry.hover < n else n - 1
-	var low := 0
+	var worst := 0
 	for i in n:
-		if vals[i] < vals[low]:
-			low = i
-	var rows := [["Gegessen vom Bedarf", "%d %%" % floori(vals[m]), UiStyle.LOSS if vals[m] < 99.0 else UiStyle.TEXT]]
+		if (vals[i] < vals[worst]) if fed else (vals[i] > vals[worst]):
+			worst = i
+	var show := func(v: float) -> String: return ("%d %%" % floori(v)) if fed else "%.2f" % v
+	var rows := [["Gegessen vom Bedarf" if fed else "Gini des Geldes", show.call(vals[m]), UiStyle.LOSS if fed and vals[m] < 99.0 else UiStyle.TEXT]]
 	if m > 0:
-		rows.append(["Vormonat", "%d %%" % floori(vals[m - 1])])
-	rows.append(["Tiefster Monat", "%d %%, %s" % [floori(vals[low]), date.call(int(entry.days[low]))]])
+		rows.append(["Vormonat", show.call(vals[m - 1])])
+	rows.append(["Tiefster Monat" if fed else "Ungleichster Monat", "%s, %s" % [show.call(vals[worst]), date.call(int(entry.days[worst]))]])
 	var classes: Dictionary = _tables.get("classes", {})
 	if not classes.is_empty() and classes.data.has("persons"):
-		var r := Array(classes.data.kind).find(FED_NAMES[k])
+		var r := Array(classes.data.kind).find(s.name)
 		if r >= 0:
 			rows.append(["Menschen heute", _num(float(classes.data.persons[r]))])
-	var tip := {"id": "fed:%d:%d" % [k, m], "title": FED_NAMES[k], "kind": date.call(int(entry.days[m])), "rows": rows}
+	var tip := {"id": "%s:%s:%d" % [key, s.name, m], "title": s.name, "kind": date.call(int(entry.days[m])), "rows": rows}
 	var happened: Array = _events.get(int(entry.days[m]), [])
 	if not happened.is_empty():
 		tip.text = "[n]In diesem Monat:[/n] " + "; ".join(happened) + "."
@@ -783,12 +858,13 @@ func _fed_tip(row: int) -> Dictionary:
 	if all.size() > 1:
 		var h: Dictionary = _tables.get("history", {}).get("data", {})
 		tip.spark = all
-		tip.spark_title = "Gegessen seit Beginn"
-		tip.spark_unit = "%"
-		var full := PackedFloat64Array()
-		full.resize(all.size())
-		full.fill(100.0)
-		tip.spark_ref = full # satt
+		tip.spark_title = "Gegessen seit Beginn" if fed else "Gini seit Beginn"
+		tip.spark_unit = "%" if fed else ""
+		if fed:
+			var full := PackedFloat64Array()
+			full.resize(all.size())
+			full.fill(100.0)
+			tip.spark_ref = full # satt
 		tip.colour = Charts.SERIES[0]
 		if h.has("day"):
 			tip.spark_from = date.call(int(h.day[0]))
@@ -833,8 +909,8 @@ func _icon(name: String) -> Texture2D:
 ## The goods as small charts side by side, as a market's goods: the
 ## name, the median price and its change, the price over the chosen months.
 ## Over a good, a tooltip with its price since the start.
-func _goods_card() -> void:
-	var box := _card("goods", "Warenpreise", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum.")
+func _goods_card(about := "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum.") -> void:
+	var box := _card("goods", "Warenpreise", about)
 	_goods = GridContainer.new()
 	_goods.columns = 3
 	_goods.add_theme_constant_override("h_separation", 6)
@@ -879,6 +955,8 @@ func _set_goods(goods: Dictionary, h: Dictionary) -> void:
 				since.append("[n]%s %s[/n] %s" % [Charts.label(float(goods.data[col[0]][r])), unit, col[1]])
 		var tip := {"id": "good:%d" % r, "title": goods.data.good[r], "kind": "Ware", "rows": rows,
 			"text": "Der [url=price]Preis[/url] ist der Median der Märkte, gewichtet nach ihren Menschen."}
+		if goods.data.has("why"): # one market's: why it costs what it costs there
+			tip.text = goods.data.why[r]
 		if not since.is_empty():
 			tip.more = "Seit Beginn: " + ", ".join(since) + "."
 		if all.size() > 1:
@@ -964,6 +1042,291 @@ func _bar_card(title: String, about: String) -> void:
 		return {"id": "bar:%d" % k, "title": _bar_rows[k][0], "kind": "Geld des Staates", "text": BAR_ABOUT.get(_bar_rows[k][2], ""),
 			"rows": [["Denar", ("+" if v > 0.0 else ("−" if v < 0.0 else "")) + Charts.label(absf(v))]]})
 
+# ------------------------------------------------------------------ rich and poor
+
+## Who holds the money, as a Lorenz curve: the people from the poorest to
+## the richest along, their share of all money up. The straight diagonal
+## would be everyone equal; the further the curve sags below it, the more
+## unequal. Grey: the curve at the start of the chosen months.
+func _lorenz_card() -> void:
+	var box := _card("lorenz", "Wer hat das Geld", "Die Lorenzkurve des Geldes je Kopf: nach rechts die Menschen vom ärmsten zum reichsten, nach oben ihr Anteil an allem Geld. Auf der Diagonale hätten alle gleich viel. Die Fläche zwischen Diagonale und Kurve ist der Gini. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte.")
+	_lorenz = Control.new()
+	_lorenz.custom_minimum_size = Vector2(0, CHART_PX + 20.0)
+	_lorenz.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_lorenz)
+	var legend := HFlowContainer.new()
+	legend.add_theme_constant_override("h_separation", 12)
+	box.add_child(legend)
+	legend.add_child(_swatch(Charts.SERIES[0], "Heute"))
+	legend.add_child(_swatch(Charts.MUTED, "Zu Beginn des Zeitraums"))
+	legend.add_child(_swatch(UiStyle.DIM, "Alle gleich"))
+	_lorenz.draw.connect(_draw_lorenz)
+	_lorenz.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var plot := _lorenz_plot()
+			var q := clampi(roundi((e.position.x - plot.position.x) / plot.size.x * 10.0), 0, 10)
+			q = q if q > 0 and q < 10 else -1
+			if q != _lorenz_hover:
+				_lorenz_hover = q
+				_lorenz.queue_redraw())
+	_lorenz.mouse_exited.connect(func():
+		_lorenz_hover = -1
+		_lorenz.queue_redraw())
+	Tooltips.attach(_lorenz, func(_at: Vector2) -> Dictionary: return _lorenz_tip())
+
+## The curve's 11 points (0, 10 … 100 % of the people) of history row i.
+static func _lorenz_at(d: Dictionary, i: int) -> PackedFloat64Array:
+	var out := PackedFloat64Array([0.0])
+	for q in range(1, 10):
+		var col: Array = d.get("lorenz_%d0" % q, [])
+		if i < 0 or i >= col.size():
+			return PackedFloat64Array()
+		out.append(float(col[i]))
+	out.append(1.0)
+	return out
+
+func _set_lorenz(d: Dictionary) -> void:
+	var n: int = d.get("day", []).size()
+	_lorenz_now = _lorenz_at(d, n - 1)
+	var first := _first(n)
+	_lorenz_then = _lorenz_at(d, first) if first < n - 1 else PackedFloat64Array()
+	_lorenz_when = date.call(int(d.day[first])) if n > 0 else ""
+	_lorenz.queue_redraw()
+
+## The plot, square, left in the card; the axes' names at its sides.
+func _lorenz_plot() -> Rect2:
+	var side := minf(_lorenz.size.y - 26.0, _lorenz.size.x - 140.0)
+	return Rect2(Vector2(44.0, 6.0), Vector2(side, side))
+
+func _draw_lorenz() -> void:
+	var r := _lorenz_plot()
+	var font := UiStyle.serif()
+	Charts.board(_lorenz, Rect2(Vector2.ZERO, _lorenz.size), false)
+	var at := func(p: float, m: float) -> Vector2: return Vector2(r.position.x + p * r.size.x, r.end.y - m * r.size.y)
+	for k in range(0, 5):
+		var v := k * 0.25
+		_lorenz.draw_line(at.call(0.0, v), at.call(1.0, v), UiStyle.CHART_GRID, 1.0)
+		_lorenz.draw_line(at.call(v, 0.0), at.call(v, 1.0), UiStyle.CHART_GRID, 1.0)
+		UiStyle.text_at(_lorenz, at.call(0.0, v) + Vector2(-40.0, 5.0), "%d %%" % roundi(v * 100.0), UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 34.0, font)
+	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "die Ärmsten", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
+	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "die Reichsten", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, r.size.x, UiStyle.italic())
+	for part in Charts.dashes(PackedVector2Array([at.call(0.0, 0.0), at.call(1.0, 1.0)]), 6.0, 4.0):
+		_lorenz.draw_polyline(part, UiStyle.DIM, 1.0, true)
+	var curve := func(pts: PackedFloat64Array) -> PackedVector2Array:
+		var out := PackedVector2Array()
+		for q in pts.size():
+			out.append(at.call(q / 10.0, pts[q]))
+		return out
+	if _lorenz_now.size() == 11:
+		# the gap to everyone equal, the Gini's area, faintly
+		var area: PackedVector2Array = curve.call(_lorenz_now)
+		area.reverse()
+		area.append(at.call(0.0, 0.0))
+		if Geometry2D.triangulate_polygon(area).size() > 0:
+			_lorenz.draw_colored_polygon(area, Color(Charts.SERIES[0], 0.14))
+	if _lorenz_then.size() == 11:
+		_lorenz.draw_polyline(curve.call(_lorenz_then), Charts.MUTED, 1.5, true)
+	if _lorenz_now.size() == 11:
+		var line: PackedVector2Array = curve.call(_lorenz_now)
+		_lorenz.draw_polyline(line, Color(0, 0, 0, 0.4), 4.5, true)
+		_lorenz.draw_polyline(line, Charts.SERIES[0], 2.5, true)
+		if _lorenz_hover > 0:
+			var p := line[_lorenz_hover]
+			_lorenz.draw_line(Vector2(p.x, r.position.y), Vector2(p.x, r.end.y), Color(UiStyle.TEXT, 0.35), 1.0)
+			_lorenz.draw_circle(p, 5.0, UiStyle.CHART)
+			_lorenz.draw_circle(p, 3.5, Charts.SERIES[0])
+		# beside the plot, the two numbers that say it
+		var x := r.end.x + 14.0
+		var w := _lorenz.size.x - x - 6.0
+		var poor := _lorenz_now[5]
+		var rich := 1.0 - _lorenz_now[9]
+		var line_at := r.position.y + 18.0
+		for item in [["%s %%" % _pct(rich * 100.0), "des Geldes hat das reichste Zehntel"], ["%s %%" % _pct(poor * 100.0), "hat die ärmere Hälfte"]]:
+			UiStyle.text_at(_lorenz, Vector2(x, line_at), item[0], UiStyle.VALUE, UiStyle.SIZE_HEAD + 4, HORIZONTAL_ALIGNMENT_LEFT, w, font)
+			var y := line_at + 6.0
+			for part in _wrap(item[1], w, UiStyle.SIZE_SMALL):
+				y += 17.0
+				UiStyle.text_at(_lorenz, Vector2(x, y), part, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, w, font)
+			line_at = y + 30.0
+
+## `text` broken into lines of at most `width` px.
+static func _wrap(text: String, width: float, font_size: int) -> PackedStringArray:
+	var f := UiStyle.serif()
+	var lines := PackedStringArray()
+	var now := ""
+	for word in text.split(" "):
+		var next := word if now == "" else now + " " + word
+		if now != "" and f.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > width:
+			lines.append(now)
+			now = word
+		else:
+			now = next
+	if now != "":
+		lines.append(now)
+	return lines
+
+func _lorenz_tip() -> Dictionary:
+	if _lorenz_now.size() != 11:
+		return {}
+	var q := _lorenz_hover
+	if q <= 0:
+		return {"id": "lorenz", "title": "Wer hat das Geld", "kind": "Lorenzkurve",
+			"rows": [["Reichstes Zehntel", "%s %% des Geldes" % _pct((1.0 - _lorenz_now[9]) * 100.0)],
+				["Ärmere Hälfte", "%s %% des Geldes" % _pct(_lorenz_now[5] * 100.0)]]}
+	var rows := [["Die ärmsten %d %%" % (q * 10), "%s %% des Geldes" % _pct(_lorenz_now[q] * 100.0)],
+		["Die reichsten %d %%" % (100 - q * 10), "%s %% des Geldes" % _pct((1.0 - _lorenz_now[q]) * 100.0)]]
+	if _lorenz_then.size() == 11:
+		rows.append(["Die ärmsten %d %%, %s" % [q * 10, _lorenz_when], "%s %%" % _pct(_lorenz_then[q] * 100.0), Charts.MUTED])
+	return {"id": "lorenz:%d" % q, "title": "Die ärmsten %d %% der Menschen" % (q * 10), "kind": "Lorenzkurve", "rows": rows}
+
+# ------------------------------------------------------------------ one market
+
+## The market window's numbers (market_window.gd): take_market()'s answer,
+## the market's row of the markets table with its "history" and "classes".
+func show_market(d: Dictionary) -> void:
+	_tables = d
+	var h: Dictionary = _monthly(d.get("history", {}))
+	if not h.is_empty():
+		var hd: Dictionary = h.data
+		_events = _find_events(hd)
+		_set_line("m_price", h, [{"key": "price", "name": "Hier", "colour": Charts.SERIES[0]},
+			{"key": "price_all", "name": "Median aller Märkte", "colour": Charts.SERIES[0], "muted": true}])
+		_set_line("m_hungry", h, [{"key": "share_hungry", "name": "Hungernd", "colour": Charts.RED, "scale": 100.0}])
+		_set_line("m_store", h, [{"key": "store_t", "name": "Lager", "colour": Charts.SERIES[0]},
+			{"key": "sold_t", "name": "Verkauft im Monat", "colour": Charts.SERIES[1]}])
+		_set_line("m_real", h, [{"key": "real_wage", "name": "Reallohn", "colour": Charts.SERIES[4]}])
+		_set_line("m_gini", h, [{"key": "gini", "name": "Hier", "colour": Charts.SERIES[3]},
+			{"key": "gini_all", "name": "Alle Menschen der Karte", "colour": Charts.SERIES[3], "muted": true}])
+		_fill_tiles(hd)
+	var classes: Dictionary = d.get("classes", {})
+	if not classes.is_empty() and classes.data.has("persons"):
+		var people := {}
+		var money := {}
+		var fixed := {}
+		for r in classes.data.kind.size():
+			var name: String = classes.data.kind[r]
+			if float(classes.data.persons[r]) <= 0.0:
+				continue
+			people[name] = float(classes.data.persons[r])
+			money[name] = float(classes.data.money[r])
+			fixed[name] = FED_COLOURS[FED_NAMES.find(name)] if FED_NAMES.has(name) else OTHER
+		_set_shares("m_people", people, "Menschen", fixed)
+		_set_shares("m_money", money, "Denar", fixed, people, "Menschen")
+	if d.has("data"):
+		_reasons.text = str(d.data.get("why", [""])[0])
+		_reasons.visible = _reasons.text != ""
+		_set_goods(_market_goods(d), h.get("data", {}))
+	_find_market(h.get("data", {}), d)
+
+## The market's history with each year before the last ten (kept as the
+## year's mean, grain/tables.rs) spread over its twelve months, so the
+## charts' months stay months; "yearly" marks the spread months.
+static func _monthly(h: Dictionary) -> Dictionary:
+	if h.is_empty() or not h.data.has("day"):
+		return h
+	var d: Dictionary = h.data
+	var days: Array = d.day
+	var n := days.size()
+	var out := {}
+	for key in d:
+		out[key] = []
+	out.yearly = []
+	for i in n:
+		# the first entry is a year too when the next one is a year later
+		var gap: int = (int(days[i]) - int(days[i - 1])) if i > 0 else ((int(days[1]) - int(days[0])) if n > 1 else 30)
+		var repeat := maxi(1, roundi(gap / 30.0))
+		for k in repeat:
+			for key in d:
+				out[key].append(int(days[i]) - (repeat - 1 - k) * 30 if key == "day" else d[key][i])
+			out.yearly.append(repeat > 1)
+	var copy := h.duplicate()
+	copy.data = out
+	return copy
+
+## A goods table (as the realm's) from the market's row: each good's price
+## and store, and why it costs what it costs.
+func _market_goods(d: Dictionary) -> Dictionary:
+	var data: Dictionary = d.data
+	var cols := Array(d.columns)
+	var out := {"good": [], "unit": [], "price": [], "store": [], "why": []}
+	for key in GOOD_KEYS:
+		var at := cols.find("price_" + key)
+		if at < 0:
+			continue
+		out.good.append(String(d.labels[at]).trim_prefix("Preis "))
+		var store := cols.find("store_" + key)
+		out.unit.append(d.units[store] if store >= 0 else "")
+		out.price.append(float(data["price_" + key][0]))
+		out.store.append(float(data["store_" + key][0]) if store >= 0 else 0.0)
+		out.why.append(str(data.get("why_" + key, [""])[0]))
+	return {"data": out}
+
+## Why the grain costs what it costs here (the markets table's reasons).
+func _reasons_card() -> void:
+	var box := _card("m_why", "Warum dieser Preis", "Was die Händler dieses Marktes zu ihrem Kornpreis bewegt: ihr Lager gegen ihren Plan, die Jahreszeit, der Lagerboden, Käufer ohne Ware.")
+	_reasons = _label("", UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	_reasons.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_reasons.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	box.add_child(_reasons)
+
+## The market cards' findings, as _find_all the realm's.
+func _find_market(d: Dictionary, row: Dictionary) -> void:
+	var says := {}
+	var n: int = d.get("day", []).size()
+	if n > 0:
+		var price := _col(d, "price")
+		var all := _col(d, "price_all")
+		if price.size() == n:
+			says.m_price = "Korn kostet hier %s D/kg, %s." % [_num(price[n - 1]), _against_year(price, "teurer", "billiger")]
+			if all.size() == n and all[n - 1] > 0.0:
+				var vs := price[n - 1] / all[n - 1] - 1.0
+				says.m_price += (" Das ist etwa der Median aller Märkte." if absf(vs) < 0.05 else
+					" Das ist %s %% %s als der Median aller Märkte." % [_pct(absf(vs) * 100.0), "teurer" if vs > 0.0 else "billiger"])
+		var hungry := _col(d, "share_hungry", 100.0)
+		if hungry.size() == n:
+			var months := 0
+			for v in hungry.slice(maxi(0, n - 12)):
+				months += 1 if v >= 1.0 else 0
+			says.m_hungry = ("Diesen Monat wurden %s %% der Käufer nicht satt." % _pct(hungry[n - 1])) if hungry[n - 1] >= 0.5 else "Diesen Monat wurden alle Käufer satt."
+			if months > 0:
+				says.m_hungry += " In %d der letzten 12 Monate hungerte mindestens jeder Hundertste." % months
+		var store := _col(d, "store_t")
+		var sold := _col(d, "sold_t")
+		if store.size() == n and sold.size() == n:
+			var month := _year_sum(sold) / float(mini(12, n))
+			if month <= 0.0:
+				says.m_store = "Hier wird kaum Korn verkauft."
+			elif store[n - 1] < month * 0.5:
+				says.m_store = "Das Lager ist so gut wie leer: es reicht nicht für einen halben Monat Verkauf."
+			else:
+				var months := roundi(store[n - 1] / month)
+				says.m_store = "Das Lager reicht für etwa %s Verkauf." % ("einen Monat" if months == 1 else "%d Monate" % months)
+		var real := _col(d, "real_wage")
+		if real.size() == n:
+			says.m_real = "Ein Taglohn kauft hier %s kg Korn, %s." % [_num(real[n - 1]), _against_year(real, "mehr", "weniger")]
+		var gini := _col(d, "gini")
+		var gini_all := _col(d, "gini_all")
+		if gini.size() == n and gini_all.size() == n:
+			says.m_gini = "Gini %.2f, %s als über die ganze Karte (%.2f)." % [gini[n - 1], "gleicher verteilt" if gini[n - 1] < gini_all[n - 1] else "ungleicher verteilt", gini_all[n - 1]]
+	for key in ["m_people", "m_money"]:
+		var bars: Dictionary = _shares[key]
+		if bars.total > 0.0 and bars.names.size() > 0:
+			says[key] = ("Die meisten hier sind %s: %d %% der Menschen." if key == "m_people" else "%s halten %d %% des Geldes.") % [bars.names[0], roundi(bars.values[0] / bars.total * 100.0)]
+	var goods: Dictionary = _market_goods(row) if row.has("data") else {}
+	if not goods.is_empty() and n > 1:
+		var moved := -1.0
+		for r in goods.data.good.size():
+			var price := _col(d, "good_" + GOOD_KEYS[r])
+			if price.size() == n and price[_year_back(n)] > 0.0:
+				var change := absf(price[n - 1] / price[_year_back(n)] - 1.0)
+				if change > moved:
+					moved = change
+					says.goods = "Am stärksten verändert: %s, %s." % [goods.data.good[r], _against_year(price, "teurer", "billiger")]
+	for key in _findings:
+		var label: Label = _findings[key]
+		label.text = says.get(key, "")
+		label.visible = label.text != ""
+
 # ------------------------------------------------------------------ what happened, what it says
 
 ## What happened in which month, from the history: what the player built
@@ -998,9 +1361,10 @@ func _find_events(d: Dictionary) -> Dictionary:
 			if now and not famine:
 				note.call(i, "Hungersnot: %s Hungertote" % Charts.label(dead))
 			famine = now
-		if d.has("price_median"):
-			var p0 := float(d.price_median[i - 1])
-			var change := (float(d.price_median[i]) - p0) / p0 if p0 > 0.0 else 0.0
+		var price_key := "price_median" if d.has("price_median") else "price" # the realm's or one market's
+		if d.has(price_key) and not (d.has("yearly") and d.yearly[i]):
+			var p0 := float(d[price_key][i - 1])
+			var change := (float(d[price_key][i]) - p0) / p0 if p0 > 0.0 else 0.0
 			var now := absf(change) >= 0.25
 			if now and not shock:
 				note.call(i, ("Teuerung: Korn %s %% teurer" if change > 0.0 else "Preissturz: Korn %s %% billiger") % _pct(absf(change) * 100.0))
@@ -1108,6 +1472,23 @@ func _find_all(d: Dictionary) -> void:
 			if people > 0.0:
 				says.money += ", ist aber nur %s %% der Menschen" % _pct(float(classes.data.persons[top]) / people * 100.0)
 			says.money += "."
+	if _lorenz_now.size() == 11:
+		says.lorenz = "Das reichste Zehntel hat %s %% des Geldes, die ärmere Hälfte %s %%." % [_pct((1.0 - _lorenz_now[9]) * 100.0), _pct(_lorenz_now[5] * 100.0)]
+	var rows: Dictionary = _lines.get("gini_rows", {})
+	if not rows.is_empty() and rows.series.size() > 2:
+		var most := {}
+		var least := {}
+		for one in rows.series.slice(1):
+			var vals: PackedFloat64Array = one.values
+			if vals.is_empty() or vals[vals.size() - 1] <= 0.0:
+				continue
+			if most.is_empty() or vals[vals.size() - 1] > most.v:
+				most = {"name": one.name, "v": vals[vals.size() - 1]}
+			if least.is_empty() or vals[vals.size() - 1] < least.v:
+				least = {"name": one.name, "v": vals[vals.size() - 1]}
+		if not most.is_empty() and most.name != least.name:
+			says.gini_rows = "Am ungleichsten ist das Geld bei %s verteilt (%.2f), am gleichsten bei %s (%.2f)." % [
+				FED_DATIVES[FED_NAMES.find(most.name)], most.v, FED_DATIVES[FED_NAMES.find(least.name)], least.v]
 	var goods: Dictionary = _tables.get("goods", {})
 	if not goods.is_empty() and n > 1:
 		var moved := -1.0
