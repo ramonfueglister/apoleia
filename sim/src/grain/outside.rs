@@ -15,7 +15,11 @@
 //!   what the dealers pay, up to the dealers' limit (S100);
 //! - its people eat every day, a little less when grain is dear and a
 //!   little more when it is cheap;
-//! - its dealers quote from their stock and sales (`pricing::quote`);
+//! - its dealers quote from their stock and sales (`pricing::quote`), and
+//!   with the storage floor (S123, `pricing::floor`) its farmers sell at
+//!   the expected price instead of the usual one, and the dealers on both
+//!   sides of a gate take what is sent only until their quote falls to the
+//!   sender's price and freight (`pricing::stock_for`);
 //! - the gate markets on the map (S98: a way over the edge) trade with it
 //!   as with a neighbour, both ways: fetch (S114) and send (S120), with the
 //!   freight of OUT_KM by wagon or by the sea route.
@@ -94,6 +98,8 @@ pub struct Outer {
     pub store: i64,
     pub price: i64,
     norm: i64,
+    /// S123: the expected price, as `norm`.
+    expect: i64,
     /// Smoothed sales per day, kg × 1000, with what was asked for and not
     /// there (as `Market::demand`).
     pub demand: i64,
@@ -225,6 +231,7 @@ impl Grain {
                     store: need_day * TARGET_DAYS,
                     price: BASE_PRICE,
                     norm: BASE_PRICE * 1000,
+                    expect: BASE_PRICE * 1000,
                     demand: need_day * 1000,
                     sold_today: 0,
                     missed_today: 0,
@@ -238,6 +245,7 @@ impl Grain {
     pub(super) fn outer_day(&mut self) {
         let today = doy(self.today);
         let carry = pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR;
+        let on = self.storage_floor;
         for (k, o) in self.outer.iter_mut().enumerate() {
             let st = &mut self.stats.outer[k];
             if today == o.harvest_doy {
@@ -261,12 +269,20 @@ impl Grain {
             let usual = (o.norm / 1000 * season / 1000).max(1);
             // The farmers sell their food to the next harvest and the
             // reserve when the dealers pay the usual price of the season
-            // (S112), as far as the dealers plan stock (TARGET_DAYS); what
-            // they hold beyond it for any price, up to the dealers' limit
-            // (S100). At most a week of sales a day.
+            // (S112), as far as the dealers plan stock (TARGET_DAYS); with
+            // the storage floor (S123) the expected price, as far as the
+            // dealers' quote stays there. What they hold beyond it for any
+            // price, up to the dealers' limit (S100). At most a week of
+            // sales a day.
             let keep = o.need_day * (doy_until(self.today, o.harvest_doy) + RESERVE_DAYS);
             let per_day = o.demand / 1000;
-            let at_usual = if o.price >= usual { (per_day * TARGET_DAYS - o.store).min(o.held) } else { 0 };
+            let (hold, plan) = if on {
+                let hold = (o.expect / 1000 * season / 1000).max(1);
+                (hold, pricing::stock_for(usual, hold, per_day))
+            } else {
+                (usual, per_day * TARGET_DAYS)
+            };
+            let at_usual = if o.price >= hold { (plan - o.store).min(o.held) } else { 0 };
             let beyond = (o.held - keep).min(per_day * DEALER_MAX_DAYS - o.store);
             let kg = at_usual.max(beyond).min(per_day * 7).max(0);
             o.held -= kg;
@@ -275,6 +291,7 @@ impl Grain {
             // people buy their need moved by the price against the usual
             // price (linear, elasticity DEMAND_ELAST_X1000).
             pricing::quote(&mut o.price, &mut o.norm, o.store, o.demand / 1000, season);
+            pricing::floor(&mut o.price, &mut o.norm, &mut o.expect, season, on);
             let usual = (o.norm / 1000 * season / 1000).max(1);
             let want = (o.need_day * (1000 - DEMAND_ELAST_X1000 * (o.price - usual) / usual) / 1000).clamp(o.need_day / 2, o.need_day * 3 / 2);
             let sold = want.min(o.store).max(0);
@@ -323,7 +340,7 @@ impl Grain {
                 let excess = (g.store - g.demand / 1000 * TARGET_DAYS).min(g.store / 4);
                 let price = Self::buy_price_of(o.price);
                 if excess > 0 && price - cost - g.price > 0 {
-                    let kg = excess.min(o.demand / 1000 * DEALER_MAX_DAYS - o.store).max(0);
+                    let kg = excess.min(self.outer_room(k, (g.price + cost) * 100 / (100 - SPREAD_PCT))).max(0);
                     self.sell_out(mi, k, kg, price, cost);
                 }
                 // The gate's dealers fetch from them (S114).
@@ -340,11 +357,26 @@ impl Grain {
                 let excess = (o.store - o.demand / 1000 * TARGET_DAYS).min(o.store / 4);
                 let price = Self::buy_price(g);
                 if excess > 0 && price - cost - o.price > 0 {
-                    let kg = excess.min(g.demand / 1000 * DEALER_MAX_DAYS - g.store).min(g.money.max(0) / price.max(1)).max(0);
+                    let kg = excess.min(self.dealer_room(g, (o.price + cost) * 100 / (100 - SPREAD_PCT))).min(g.money.max(0) / price.max(1)).max(0);
                     self.buy_in(mi, k, kg, price, 0);
                 }
             }
         }
+    }
+
+    /// What the dealers of market `k` beyond the map take from a sender who
+    /// wants `price` (mid price), kg, as `Grain::dealer_room`.
+    fn outer_room(&self, k: usize, price: i64) -> i64 {
+        let o = &self.outer[k];
+        let per_day = o.demand / 1000;
+        let limit = per_day * DEALER_MAX_DAYS;
+        let at = if self.storage_floor {
+            let season = pricing::season(doy(self.today) - o.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
+            pricing::stock_for(o.norm / 1000 * season / 1000, price, per_day).min(limit)
+        } else {
+            limit
+        };
+        (at - o.store).max(0)
     }
 
     /// `kg` from gate `mi` to market `k` beyond the map at `price` a kg,
