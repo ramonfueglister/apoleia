@@ -4723,8 +4723,8 @@ impl Grain {
     /// need it ate at the last meal count (‰ / 4); HOUSE_* flags; its farm's
     /// sheep and the pigs it fattens a year (pork a year / PIG_KG), at most
     /// 255 each.
-    pub fn house_look(&self, hh: u32) -> [u8; 4] {
-        let Some(s) = self.hh.get(&hh) else { return [0; 4] };
+    pub fn house_look(&self, hh: u32) -> Option<[u8; 4]> {
+        let s = self.hh.get(&hh)?;
         let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh);
         let mut flags = 0;
         if s.pantry > 0 || farm.is_some_and(|f| f.store > 0) {
@@ -4743,7 +4743,15 @@ impl Grain {
         }
         let sheep = farm.map_or(0, |f| f.goods.sheep.clamp(0, 255)) as u8;
         let pigs = farm.map_or(0, |f| (f.goods.pork_year / 1000 / crafts::PIG_KG).clamp(0, 255)) as u8;
-        [(s.fed / 4).min(255) as u8, flags, sheep, pigs]
+        Some([(s.fed / 4).min(255) as u8, flags, sheep, pigs])
+    }
+
+    /// Each market's grain for the graphics (read only, Ramon 30.10.2026
+    /// "Wuselfaktor"), in market order: its store, its sales a day with
+    /// what buyers asked for and found no grain for (smoothed over a
+    /// month), and that no grain part alone, kg.
+    pub fn market_grain(&self) -> Vec<[f32; 3]> {
+        self.markets.iter().map(|m| [m.store as f32, m.demand as f32 / 1000.0, m.missed_avg as f32 / 1000.0]).collect()
     }
 }
 

@@ -17,6 +17,10 @@ extends MultiMeshInstance3D
 ## the stalls, at the farm at work. The market squares get standing stalls
 ## (ApoleiaPeople.market_squares, the squares the terrain draws), STALLS
 ## each, turned towards the middle (r11: the square was a flat decal).
+## Each stall sells one good, the craft goods and grain (GOOD_NAMES, then
+## grain), its counter heaped by what the market has of it and bare when it
+## has none; buyers stand at the stalls, one for each CROWD_KG of grain the
+## market sells a day (ApoleiaPeople.ask_goods "markets" and "grain").
 ##
 ## A trip new to the list becomes a traveller that walks its route at a
 ## pace the eye can follow, whatever the days per second (at ten days a
@@ -86,6 +90,7 @@ const HOE := 128
 const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
 const WORK_NAMES: Array[String] = ["bei der Aussaat", "bei der Ernte", "über das Jahr", "aus einem Überschuss"] # likewise, for a click
 const STALL := 256
+const WARES := 1048576 # the wares on a stall's counter (part 21)
 const HANDCART := 512 # pulled behind the person, with the household's bundles
 const BUNDLE := 1024 # a bundle or sack on the back
 const BIER := 2048 # a bier on the shoulders, the dead under a shroud, a second bearer behind
@@ -111,6 +116,11 @@ const SCENES_MAX := 80 # walkers of event scenes at once, beyond MAX
 const GOODS_MAX := 40 # carts of craft goods at once, beyond MAX
 const SITES_MAX := 24 # day labourers at building sites at once, beyond MAX
 const SITE_HANDS := 4
+const CROWDS_MAX := 120 # buyers at the stalls at once, all squares
+const CROWD_MAX := 12 # of them at one market
+const CROWD_KG := 20.0 # a buyer at the stalls for each this many kg of grain the market sells a day
+const MARKET_KM := 0.5 # a market (its fine tile's middle) and its square at most this far apart
+const MARKET_STRIDE := 14 # floats per market in "markets": x, z, the stores of the goods, their prices
 const GOODS_REACH_KM := 30.0 # goods moves are asked for this far around the view: markets lie 25 km apart and more
 const SCENE_DAYS := 2 # events this many days old or newer become scenes; older ones were over before the view came
 const GAP_KM := 0.035 # between the members of a group along their way (a figure is 40 m at diorama scale)
@@ -154,6 +164,9 @@ var _site_done := {} # work days done by building site (its lot in world metres)
 var _sites_day := -1
 var _moved := {} # households of the answer's moves (take_events)
 var _square_of := {} # market square (or INF) by 25 km cell of an event, for the scenes
+var _market := {} # by square in view: {"stores": the craft goods' stores, "grain": store kg, sales a day kg, of them not found kg}
+var _crowd: Array[Dictionary] = [] # the buyers at the stalls: {"at", "what"}
+var _fixed := 0 # stalls and buyers at the head of the buffer, before the travellers
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
 	people = sim
@@ -168,10 +181,10 @@ func setup(sim: RefCounted, km_per_m: float) -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	mm.mesh = _mesh()
-	mm.instance_count = MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size()
+	mm.instance_count = MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size() + CROWDS_MAX
 	mm.visible_instance_count = 0
 	multimesh = mm
-	_buffer.resize((MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
+	_buffer.resize((MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size() + CROWDS_MAX) * STRIDE)
 
 ## One frame: `on` while the figures are drawn, `centre` the ground in the
 ## middle of the view (world km), `view_km` its width.
@@ -240,7 +253,7 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 	if _dirty:
 		_dirty = false
 		multimesh.buffer = _buffer
-		multimesh.visible_instance_count = _squares.size() * STALLS.size() + _walkers.size()
+		multimesh.visible_instance_count = _fixed + _walkers.size()
 
 func _take(t: Dictionary) -> void:
 	var ids: PackedInt64Array = t.id
@@ -438,6 +451,7 @@ func _add_extra(w: Dictionary, pool: String) -> void:
 ## z, to x, z, good, units, day): each of the last SCENE_DAYS new to the list
 ## leaves its market as a cart, the newest first.
 func _take_goods(g: Dictionary) -> void:
+	_take_markets(g)
 	var moves: PackedFloat32Array = g.get("moves", PackedFloat32Array())
 	var today: int = people.day()
 	var seen := {}
@@ -465,6 +479,38 @@ func _take_goods(g: Dictionary) -> void:
 			SimTables._int(int(round(units))) + (" kg" if good == 5 else " Stück"), GOOD_NAMES[good]]
 		_add_extra(w, "goods")
 	_goods_seen = seen
+
+## The markets of the squares in view from the goods answer (trips.rs
+## goods_to_dict "markets" and "grain", in market order); the stalls and
+## buyers anew when it changed.
+func _take_markets(g: Dictionary) -> void:
+	var mk: PackedFloat32Array = g.get("markets", PackedFloat32Array())
+	var grain: PackedFloat32Array = g.get("grain", PackedFloat32Array())
+	var market := {}
+	for q in _squares:
+		for i in mini(mk.size() / MARKET_STRIDE, grain.size() / 3):
+			var o := i * MARKET_STRIDE
+			if Vector2(mk[o], mk[o + 1]).distance_to(q) <= MARKET_KM:
+				market[q] = {"stores": mk.slice(o + 2, o + 2 + GOOD_NAMES.size()), "grain": grain.slice(i * 3, i * 3 + 3)}
+				break
+	if market != _market:
+		_market = market
+		_write_all()
+
+## How full stall k of a market's square is heaped, 0 when the market has
+## none of its good: the craft goods by their store (one piece a little,
+## 10'000 heaped), grain by the days its store lasts at the market's sales
+## (90 days heaped).
+func _stall_fill(m: Dictionary, k: int) -> float:
+	if m.is_empty():
+		return 0.0
+	if k < GOOD_NAMES.size():
+		var units: float = m.stores[k]
+		return 0.0 if units < 1.0 else clampf(0.3 + 0.7 * log(units) / log(10000.0), 0.3, 1.0)
+	var grain: PackedFloat32Array = m.grain
+	if grain[0] < 1.0:
+		return 0.0
+	return clampf(0.3 + 0.7 * grain[0] / maxf(grain[1], 1.0) / 90.0, 0.3, 1.0)
 
 ## The building sites in view (build_orders "progress": x, z in world
 ## metres, work days done, needed): those where work went on since the last
@@ -604,6 +650,15 @@ func pick(cam: Camera3D, pixel: Vector2, ground: Callable, lift: float, max_px: 
 		return {}
 	var best := {}
 	var best_d := max_px * max_px
+	for c in _crowd:
+		var at: Vector2 = c.at
+		var cv := Vector3(at.x, float(ground.call(at)) + lift, at.y)
+		if cam.is_position_behind(cv):
+			continue
+		var cd := cam.unproject_position(cv).distance_squared_to(pixel)
+		if cd < best_d:
+			best_d = cd
+			best = c
 	for w in _walkers:
 		# where people_walkers.gdshader draws it now
 		var p: Vector2 = w.at + w.velocity * clampf(_clock - float(w.t0), 0.0, float(w.walk))
@@ -616,6 +671,8 @@ func pick(cam: Camera3D, pixel: Vector2, ground: Callable, lift: float, max_px: 
 			best = w
 	if best.is_empty():
 		return {}
+	if best.has("crowd"):
+		return {"pid": -1, "household": -1, "what": best.what}
 	return {"pid": best.get("pid", -1), "household": best.get("worker", best.get("household", -1)), "what": _what(best)}
 
 
@@ -757,7 +814,7 @@ func _write(i: int) -> void:
 		parts = w.parts if w.dir > 0.0 else w.parts_home
 	# turned about y so the model's front (+z) faces d; the velocity and
 	# start time ride in the middle row (people_walkers.gdshader)
-	var o := (_squares.size() * STALLS.size() + i) * STRIDE
+	var o := (_fixed + i) * STRIDE
 	_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = p.x
 	_buffer[o + 4] = v.x; _buffer[o + 5] = 1.0; _buffer[o + 6] = v.y; _buffer[o + 7] = w.t0
 	_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = p.y
@@ -765,22 +822,51 @@ func _write(i: int) -> void:
 	_buffer[o + 15] = STANDING if w.wait > 0.0 else WALKING
 	_dirty = true
 
-## The stalls and then every traveller, when the squares changed.
+## The stalls, their buyers and then every traveller, when the squares or
+## their markets changed.
 func _write_all() -> void:
 	var n := 0
 	for q in _squares:
+		var m: Dictionary = _market.get(q, {})
 		for k in STALLS.size():
 			var at: Vector2 = q + STALLS[k]
 			var d := -STALLS[k].normalized() # the counter towards the middle
-			var o := n * STRIDE
-			_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = at.x
-			_buffer[o + 4] = 0.0; _buffer[o + 5] = 1.0; _buffer[o + 6] = 0.0; _buffer[o + 7] = 0.0
-			_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = at.y
-			_buffer[o + 12] = float(STALL); _buffer[o + 13] = 0.0; _buffer[o + 14] = float(k); _buffer[o + 15] = STANDS
+			var fill := _stall_fill(m, k)
+			_put(n, at, d, STALL | (WARES if fill > 0.0 else 0), fill, float(k), STANDS)
 			n += 1
+	_crowd.clear()
+	for q in _squares:
+		var m: Dictionary = _market.get(q, {})
+		if m.is_empty():
+			continue
+		var grain: PackedFloat32Array = m.grain
+		var buyers := mini(int(round(grain[1] / CROWD_KG)), CROWD_MAX)
+		var what := "Käufer am Markt: hier gehen täglich %s kg Korn weg" % SimTables._int(int(round(grain[1])))
+		if grain[2] >= 1.0:
+			what += ", für %s kg davon fanden die Käufer kein Korn" % SimTables._int(int(round(grain[2])))
+		for k in buyers:
+			if _crowd.size() >= CROWDS_MAX:
+				break
+			var stall: Vector2 = STALLS[(k * 3 + int(abs(q.x) * 7.0)) % STALLS.size()]
+			var seed := float(k) * 0.618034 + q.x
+			var side := (fposmod(seed, 1.0) - 0.5) * 0.05
+			var at: Vector2 = q + stall * 0.72 + stall.normalized().orthogonal() * side # before the counter
+			_put(n, at, stall.normalized(), 0, 0.0, float(k % 8) + fposmod(seed * 3.0, 1.0) * 0.999, STANDING)
+			_crowd.append({"at": at, "what": what, "crowd": true})
+			n += 1
+	_fixed = n
 	for i in _walkers.size():
 		_write(i)
 	_dirty = true
+
+## An instance that stays where it is into the buffer at n: at `at` facing
+## `d`, with `parts`, `fill` (a stall's wares) and the tint.
+func _put(n: int, at: Vector2, d: Vector2, parts: int, fill: float, tint: float, still: float) -> void:
+	var o := n * STRIDE
+	_buffer[o] = d.y; _buffer[o + 1] = 0.0; _buffer[o + 2] = d.x; _buffer[o + 3] = at.x
+	_buffer[o + 4] = 0.0; _buffer[o + 5] = 1.0; _buffer[o + 6] = 0.0; _buffer[o + 7] = 0.0
+	_buffer[o + 8] = -d.x; _buffer[o + 9] = 0.0; _buffer[o + 10] = d.y; _buffer[o + 11] = at.y
+	_buffer[o + 12] = float(parts); _buffer[o + 13] = fill; _buffer[o + 14] = tint; _buffer[o + 15] = still
 
 # ------------------------------------------------------------------ mesh
 
@@ -870,9 +956,11 @@ static func _mesh() -> ArrayMesh:
 			_box(st, Vector3(x, 1.15, z), Vector3(0.07, 1.15, 0.07), frame.darkened(0.25), 9)
 	for k in 4:
 		_box(st, Vector3(-0.96 + k * 0.64, 2.36, 0.0), Vector3(0.32, 0.07, 1.0), awning if k % 2 == 0 else linen, 9)
-	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(0.76, 0.67, 0.48), 9)
-	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.7, 0.42, 0.28), 9)
-	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.4, 0.55, 0.24), 9)
+	# its wares (21), white: people_walkers.gdshader dyes them by the good
+	# and heaps them by the store
+	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(1.0, 1.0, 1.0), 21)
+	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.86, 0.86, 0.86), 21)
+	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.93, 0.93, 0.93), 21)
 	# the scenes of events: a handcart pulled behind the person by two shafts,
 	# the household's bundles on it (10); a bundle on the back (11); a bier
 	# on the shoulders with the dead under a linen shroud and a second
