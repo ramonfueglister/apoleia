@@ -31,7 +31,7 @@ const LOCK_S := 1.0
 const GRACE_S := 0.25
 const WIDTH := 320.0
 const OFFSET := Vector2(18, 22)
-const SPARK := Vector2(WIDTH - 24.0, 46.0)
+const SPARK := Vector2(WIDTH, 120.0)
 
 static var _shared: CanvasLayer
 static var _terms := {}
@@ -129,51 +129,63 @@ func _open(d: Dictionary, _depth: int, mouse: Vector2) -> void:
 	panel.add_theme_stylebox_override("panel", _frame(false))
 	add_child(panel)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
+	column.add_theme_constant_override("separation", 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(column)
-	# the head: title, below it the kind of thing in blue italics, the ring
+	# the head as EU5's: a brown band, the title bold, below it the kind
+	# of thing in blue italics, a gold rule under it; the ring at the right
+	var head_back := PanelContainer.new()
+	head_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var head_box := UiStyle.box(UiStyle.TIP_HEAD, UiStyle.GOLD, 0, 0, 0)
+	head_box.border_width_bottom = 2
+	head_box.content_margin_left = 12
+	head_box.content_margin_right = 10
+	head_box.content_margin_top = 6
+	head_box.content_margin_bottom = 7
+	head_back.add_theme_stylebox_override("panel", head_box)
+	column.add_child(head_back)
 	var head := HBoxContainer.new()
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(head)
+	head_back.add_child(head)
 	var titles := VBoxContainer.new()
-	titles.add_theme_constant_override("separation", 0)
+	titles.add_theme_constant_override("separation", -2)
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	titles.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(titles)
-	var title := _label(d.get("title", ""), UiStyle.TITLE, UiStyle.SIZE_HEAD)
-	title.add_theme_font_override("font", _bold())
-	titles.add_child(title)
+	titles.add_child(UiStyle.label(d.get("title", ""), Color("f8f1e6"), UiStyle.SIZE_HEAD, UiStyle.bold()))
 	if d.get("kind", "") != "":
-		var kind := _label(d.kind, UiStyle.CONCEPT, UiStyle.SIZE_SMALL + 1)
-		kind.add_theme_font_override("font", _italic())
-		titles.add_child(kind)
+		titles.add_child(UiStyle.label(d.kind, UiStyle.KIND, UiStyle.SIZE_SMALL + 1, UiStyle.italic()))
 	var ring := Control.new()
-	ring.custom_minimum_size = Vector2(16, 16)
+	ring.custom_minimum_size = Vector2(18, 18)
 	ring.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ring.draw.connect(func():
 		var f: float = ring.get_meta("f", 0.0)
-		var c := Vector2(8, 8)
-		ring.draw_arc(c, 6.0, 0.0, TAU, 32, Color(UiStyle.FRAME, 0.6), 2.0, true)
+		var c := Vector2(9, 9)
+		ring.draw_arc(c, 6.5, 0.0, TAU, 32, Color(0, 0, 0, 0.6), 4.0, true)
+		ring.draw_arc(c, 6.5, 0.0, TAU, 32, Color(UiStyle.GOLD, 0.45), 2.0, true)
 		if f > 0.0:
-			ring.draw_arc(c, 6.0, -PI / 2.0, -PI / 2.0 + TAU * f, 32, UiStyle.FRAME_LIT, 2.0, true))
+			ring.draw_arc(c, 6.5, -PI / 2.0, -PI / 2.0 + TAU * f, 32, UiStyle.GOLD_LIT, 2.0, true))
 	head.add_child(ring)
-	var rule := ColorRect.new()
-	rule.color = Color(UiStyle.FRAME, 0.5)
-	rule.custom_minimum_size = Vector2(0, 1)
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(rule)
 	var e := {"panel": panel, "ring": ring, "id": d.get("id", d.get("title", "")), "locked": false,
 		"opened": Time.get_ticks_msec() / 1000.0, "away": -1.0, "term": "", "texts": [], "more": null}
-	# the body: a sentence, then the rows in a sunken box, striped
+	var main := VBoxContainer.new()
+	main.add_theme_constant_override("separation", 8)
+	main.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pad := MarginContainer.new()
+	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 9)
+	pad.add_child(main)
+	column.add_child(pad)
+	# the body: a sentence, then the rows in a sunken box of alternating bars
+	if d.get("text", "") != "":
+		main.add_child(_text(d.text, e))
 	var rows: Array = d.get("rows", [])
-	if d.get("text", "") != "" or not rows.is_empty():
+	if not rows.is_empty():
 		var box := _inset()
-		column.add_child(box)
+		main.add_child(box)
 		var inner: VBoxContainer = box.get_child(0)
-		if d.get("text", "") != "":
-			inner.add_child(_text(d.text, e))
 		for i in rows.size():
 			inner.add_child(_row(rows[i], i))
 	# the locked part: the curve and what more there is
@@ -181,56 +193,81 @@ func _open(d: Dictionary, _depth: int, mouse: Vector2) -> void:
 	more.visible = false
 	more.add_theme_constant_override("separation", 8)
 	more.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(more)
+	main.add_child(more)
 	e.more = more
 	if d.has("spark") and d.spark.size() > 1:
 		more.add_child(_chart(d))
 	if d.get("more", "") != "":
-		var box := _inset()
+		var box := _inset(8)
 		box.get_child(0).add_child(_text(d.more, e))
 		more.add_child(box)
-	for hint in d.get("hints", []): # [what to press, what it does]
-		var line := HBoxContainer.new()
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var key := _label(hint[0], UiStyle.NAME, UiStyle.SIZE_SMALL)
-		key.add_theme_stylebox_override("normal", UiStyle.box(UiStyle.HEADER, UiStyle.FRAME, 1, 3, 3))
-		line.add_child(key)
-		line.add_child(_label(hint[1], UiStyle.DIM, UiStyle.SIZE_SMALL))
-		column.add_child(line)
+	var hints: Array = d.get("hints", [])
+	if not hints.is_empty(): # [what to press, what it does], EU5's foot line
+		var foot := HFlowContainer.new()
+		foot.add_theme_constant_override("h_separation", 14)
+		foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for hint in hints:
+			var line := HBoxContainer.new()
+			line.add_theme_constant_override("separation", 5)
+			line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			# the key as EU5's gold keycap with dark letters
+			var key := UiStyle.label(hint[0], Color("2a2014"), UiStyle.SIZE_SMALL, UiStyle.bold())
+			key.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.25))
+			var cap := UiStyle.box(Color("c9aa6a"), Color("6b5530"), 1, 3, 0)
+			cap.content_margin_left = 6
+			cap.content_margin_right = 6
+			cap.border_width_bottom = 3
+			key.add_theme_stylebox_override("normal", cap)
+			line.add_child(key)
+			line.add_child(UiStyle.label(hint[1], UiStyle.DIM, UiStyle.SIZE_SMALL, UiStyle.italic()))
+			foot.add_child(line)
+		main.add_child(foot)
 	_stack.append(e)
 	panel.reset_size()
 	_place(panel, mouse)
 
-## A row of a breakdown: name left, value right; "+" values green, "−" red.
+## A row of a breakdown: name left, value right, on bars of two shades;
+## "+" values green, "−" red.
 func _row(r: Array, i: int) -> Control:
 	var back := PanelContainer.new()
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var stripe := UiStyle.box(UiStyle.STRIPE if i % 2 == 0 else Color.TRANSPARENT, Color.TRANSPARENT, 0, 0, 0)
-	stripe.content_margin_left = 6
-	stripe.content_margin_right = 6
-	stripe.content_margin_top = 2
-	stripe.content_margin_bottom = 2
+	var stripe := UiStyle.box(UiStyle.TIP_ROW if i % 2 == 0 else UiStyle.TIP_ROW_B, Color.TRANSPARENT, 0, 0, 0)
+	stripe.content_margin_left = 8
+	stripe.content_margin_right = 8
+	stripe.content_margin_top = 4
+	stripe.content_margin_bottom = 4
 	back.add_theme_stylebox_override("panel", stripe)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	back.add_child(line)
-	var a := _label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	var a := UiStyle.label(str(r[0]), UiStyle.TEXT, UiStyle.SIZE_TEXT)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(a)
 	var v := str(r[1])
 	var colour: Color = r[2] if r.size() > 2 else (UiStyle.GAIN if v.begins_with("+") else (UiStyle.LOSS if v.begins_with("−") or v.begins_with("-") else UiStyle.TEXT))
-	var b := _label(v, colour, UiStyle.SIZE_TEXT)
+	var b := UiStyle.label(v, colour, UiStyle.SIZE_TEXT)
 	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(b)
 	return back
 
-## "Letzte Monate" as EU5's "Recent Market Price": the highest and lowest
-## value at the left, the first and last month at the foot.
+## "Letzte Monate" as EU5's "Recent Market Price": a teal head with the
+## title in the middle, a black board with the highest and lowest value at
+## the left, a brown foot with the first and last month in italics.
 func _chart(d: Dictionary) -> Control:
-	var box := _inset()
-	var inner: VBoxContainer = box.get_child(0)
-	var head := _label(d.get("spark_title", "Verlauf"), UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	var box := PanelContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.TIP_CHART, UiStyle.TIP_LINE, 1, 0, 0))
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 0)
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.custom_minimum_size = Vector2(WIDTH, 0)
+	box.add_child(inner)
+	var head := UiStyle.label(d.get("spark_title", "Verlauf"), UiStyle.TEXT, UiStyle.SIZE_TEXT)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var head_box := UiStyle.box(UiStyle.TIP_CHART_HEAD, Color.TRANSPARENT, 0, 0, 4)
+	head_box.border_width_bottom = 1
+	head_box.border_color = UiStyle.TIP_LINE
+	head.add_theme_stylebox_override("normal", head_box)
 	inner.add_child(head)
 	var values: PackedFloat64Array = d.spark
 	var lo := PackedFloat64Array(d.get("spark_lo", PackedFloat64Array()))
@@ -246,26 +283,27 @@ func _chart(d: Dictionary) -> Control:
 	chart.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chart.draw.connect(func():
 		var r := Rect2(Vector2.ZERO, chart.size)
-		chart.draw_rect(r, Color(0, 0, 0, 0.25))
-		for k in 5: # a faint grid
-			var y := r.size.y * k / 4.0
-			chart.draw_line(Vector2(0, y), Vector2(r.size.x, y), Charts.GRID, 1.0)
-		Charts.spark(chart, r.grow(-4.0), values, d.get("colour", Charts.SERIES[0]), lo, hi)
-		var font := UiStyle.serif()
-		chart.draw_string(font, Vector2(6, 16), _short(top) + unit, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL, UiStyle.TEXT)
-		chart.draw_string(font, Vector2(6, r.size.y - 6), _short(bottom) + unit, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL, UiStyle.TEXT))
+		Charts.spark(chart, Rect2(r.position + Vector2(52, 10), r.size - Vector2(60, 20)), values, d.get("colour", Charts.SERIES[0]), lo, hi)
+		UiStyle.text_at(chart, Vector2(8, 20), _short(top) + unit, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.bold())
+		UiStyle.text_at(chart, Vector2(8, r.size.y - 8), _short(bottom) + unit, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.bold()))
 	inner.add_child(chart)
 	if d.has("spark_from"):
+		var foot_back := PanelContainer.new()
+		foot_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var foot_box := UiStyle.box(UiStyle.TIP_FOOT, Color.TRANSPARENT, 0, 0, 0)
+		foot_box.content_margin_left = 8
+		foot_box.content_margin_right = 8
+		foot_box.content_margin_top = 3
+		foot_box.content_margin_bottom = 3
+		foot_back.add_theme_stylebox_override("panel", foot_box)
 		var foot := HBoxContainer.new()
 		foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var from := _label(d.spark_from, UiStyle.DIM, UiStyle.SIZE_SMALL)
-		from.add_theme_font_override("font", _italic())
+		foot_back.add_child(foot)
+		var from := UiStyle.label(d.spark_from, UiStyle.TEXT, UiStyle.SIZE_SMALL, UiStyle.italic())
 		from.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		foot.add_child(from)
-		var to := _label(d.get("spark_to", ""), UiStyle.DIM, UiStyle.SIZE_SMALL)
-		to.add_theme_font_override("font", _italic())
-		foot.add_child(to)
-		inner.add_child(foot)
+		foot.add_child(UiStyle.label(d.get("spark_to", ""), UiStyle.TEXT, UiStyle.SIZE_SMALL, UiStyle.italic()))
+		inner.add_child(foot_back)
 	return box
 
 static func _short(v: float) -> String:
@@ -278,12 +316,13 @@ static func _short(v: float) -> String:
 		return "%d " % roundi(v)
 	return ("%.2f " % v) if a >= 0.1 else ("%.3f " % v)
 
-func _inset() -> PanelContainer:
+## A sunken box in a thin line, as EU5 sets its rows in a tooltip.
+func _inset(margin := 0) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_stylebox_override("panel", UiStyle.inset(6))
+	box.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.TIP_ROW, UiStyle.TIP_LINE, 1, 0, margin))
 	var inner := VBoxContainer.new()
-	inner.add_theme_constant_override("separation", 2)
+	inner.add_theme_constant_override("separation", 0)
 	inner.custom_minimum_size = Vector2(WIDTH, 0)
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(inner)
@@ -302,6 +341,9 @@ func _text(bbcode: String, e: Dictionary) -> RichTextLabel:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.meta_underlined = false
 	t.add_theme_color_override("default_color", UiStyle.TEXT)
+	t.add_theme_color_override("font_shadow_color", UiStyle.SHADOW)
+	t.add_theme_constant_override("shadow_offset_x", 1)
+	t.add_theme_constant_override("shadow_offset_y", 1)
 	t.add_theme_font_override("normal_font", UiStyle.serif())
 	t.add_theme_font_size_override("normal_font_size", UiStyle.SIZE_TEXT)
 	var c := func(colour: Color) -> String: return "[color=#%s]" % colour.to_html(false)
@@ -314,35 +356,17 @@ func _text(bbcode: String, e: Dictionary) -> RichTextLabel:
 	e.texts.append(t)
 	return t
 
-static func _label(text: String, colour: Color, font_size: int) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_font_size_override("font_size", font_size)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
-
-static var _bold_font: FontVariation
-static var _italic_font: FontVariation
-
-static func _bold() -> Font:
-	if _bold_font == null:
-		_bold_font = FontVariation.new()
-		_bold_font.base_font = UiStyle.serif()
-		_bold_font.variation_embolden = 0.6
-	return _bold_font
-
-static func _italic() -> Font:
-	if _italic_font == null:
-		_italic_font = FontVariation.new()
-		_italic_font.base_font = UiStyle.serif()
-		_italic_font.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
-	return _italic_font
-
+## EU5's tooltip: dark slate in a thin bronze-grey line and a black one,
+## gold once locked.
 static func _frame(lit: bool) -> StyleBoxFlat:
-	var b := UiStyle.frame(lit)
-	b.bg_color = Color("141b22", 0.98)
-	b.set_content_margin_all(12)
+	var b := UiStyle.box(Color(UiStyle.TIP_BODY, 0.98), UiStyle.GOLD_LIT if lit else UiStyle.TIP_FRAME, 2 if lit else 1, 1, 0)
+	b.expand_margin_left = 1
+	b.expand_margin_right = 1
+	b.expand_margin_top = 1
+	b.expand_margin_bottom = 1
+	b.shadow_color = Color(0, 0, 0, 0.6)
+	b.shadow_size = 10
+	b.shadow_offset = Vector2(0, 4)
 	return b
 
 func _lock(e: Dictionary) -> void:

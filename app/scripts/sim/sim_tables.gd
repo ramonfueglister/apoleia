@@ -62,15 +62,14 @@ const MONTH := 30
 const COUNTED := 17 # the grain economy's monthly count is done by this day of the month
 const PER_TIME: Array[String] = ["Tag", "Monat", "Jahr"] # "kg/Tag" adds up, "Denar/kg" does not
 const SHORT_UNITS := {"Denar": "D", "Denar/kg": "D/kg"} # the heads stay narrow
-## the main menu's colours (main_menu.gd), with EU5's gold for heads and lines
+## the HUD's older colours (game clock, events, build menu read them)
 const BACKGROUND := Color("13232b")
 const INK := Color("edf0e8")
-const SECONDARY := Color("aab9bc")
 const GOLD := Color("c9a45c")
 const HEAD := Color("1b3440")
 const SELECTED := Color("2e5260")
-const ROW_ODD := Color(1.0, 1.0, 1.0, 0.035)
-const NEGATIVE := Color("e8846b") # in the red, as EU5 shows it
+const SECONDARY := UiStyle.DIM
+const NEGATIVE := UiStyle.LOSS # in the red, as EU5 shows it
 const PANEL_MIN := 560.0
 const FILTER_MAX := 64 # a text column with more values gets no dropdown
 const ROW_MAX := 300
@@ -525,8 +524,7 @@ static func _short_date(day: int) -> String:
 func _draw_chart() -> void:
 	var t := _tables[_kind]
 	var rect := Rect2(Vector2.ZERO, _chart.size)
-	_chart.draw_rect(rect, UiStyle.INSET)
-	_chart.draw_rect(rect, Color(UiStyle.FRAME, 0.35), false, 1.0)
+	Charts.board(_chart, rect)
 	if t.is_empty() or not _is_history(t):
 		return
 	var data: Dictionary = t.data
@@ -544,10 +542,10 @@ func _draw_chart() -> void:
 		title += " (%s)" % _unit[i]
 	if keys.size() > 1:
 		title = "Preis: Median, dazwischen min und max (%s)" % _unit[i]
-	_chart.draw_string(font, Vector2(12, 22), title, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_HEAD, UiStyle.TITLE)
+	UiStyle.text_at(_chart, Vector2(12, 24), title, UiStyle.TITLE, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_LEFT, -1, font)
 	var n := _row_count(t)
 	if n < 2:
-		_chart.draw_string(font, Vector2(12, 48), "Noch zu wenige Monate", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiStyle.DIM)
+		UiStyle.text_at(_chart, Vector2(12, 50), "Noch zu wenige Monate", UiStyle.DIM, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
 		return
 	var scale := (100.0 if t.units[i] == "%" else 1.0) * (_factor[i] if _factor.size() > i else 1.0)
 	var lo := INF
@@ -574,15 +572,13 @@ func _draw_chart() -> void:
 	for g in 5:
 		var v := lo + (hi - lo) * g / 4.0
 		var y: float = y_of.call(v)
-		_chart.draw_line(Vector2(plot.position.x, y), Vector2(plot.end.x, y), Charts.GRID, 1.0)
 		var tag := ("%d %%" % roundi(v)) if t.units[i] == "%" else _number(v)
-		_chart.draw_string(font, Vector2(8, y + 4), tag, HORIZONTAL_ALIGNMENT_RIGHT, 56, 11, UiStyle.DIM)
+		UiStyle.text_at(_chart, Vector2(8, y + 5), tag, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 56, font)
 	var days = data.day
 	for r in n: # the years along the foot
 		if r == 0 or int(days[r]) / YEAR != int(days[r - 1]) / YEAR:
 			var x: float = x_of.call(r)
-			_chart.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Charts.GRID, 1.0)
-			_chart.draw_string(font, Vector2(x + 3, plot.end.y + 16), "Jahr %d" % (int(days[r]) / YEAR + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UiStyle.DIM)
+			UiStyle.text_at(_chart, Vector2(x + 3, plot.end.y + 18), "Jahr %d" % (int(days[r]) / YEAR + 1), UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
 	if keys.size() > 1: # the range of the prices as a band
 		var band := PackedVector2Array()
 		for r in n:
@@ -595,7 +591,8 @@ func _draw_chart() -> void:
 	var points := PackedVector2Array()
 	for r in n:
 		points.append(Vector2(x_of.call(r), y_of.call(float(data[main][r]) * scale)))
-	_chart.draw_polyline(points, Charts.SERIES[0], 2.0, true)
+	_chart.draw_polyline(points, Color(0, 0, 0, 0.45), 4.5, true)
+	_chart.draw_polyline(points, Charts.SERIES[0], 2.5, true)
 	var last := points[n - 1]
 	_chart.draw_circle(last, 3.5, Charts.SERIES[0])
 
@@ -669,9 +666,9 @@ func _set_number(item: TreeItem, i: int, v: float, unit: String) -> void:
 			item.set_custom_color(i, NEGATIVE)
 
 func _stripe(item: TreeItem, line: int) -> void:
-	if line % 2 == 1:
-		for i in _tree.columns:
-			item.set_custom_bg_color(i, ROW_ODD)
+	# EU5's lists: warm grey bars on the navy, every other a shade darker
+	for i in _tree.columns:
+		item.set_custom_bg_color(i, UiStyle.ROW if line % 2 == 0 else UiStyle.ROW_DARK)
 
 ## A share's bar along the foot of its cell, under the per cent: red for
 ## what is bad (the hungry), bronze for the rest.
