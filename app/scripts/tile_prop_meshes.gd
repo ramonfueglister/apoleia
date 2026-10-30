@@ -27,6 +27,27 @@ static func tile_template() -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
+## The steps of the shore on one side of a sea tile (tile_coast_steps.gdshader):
+## `cells` columns of two blocks (the headland, the ledge), each a top, a
+## front and two side walls. VERTEX = (column, block, face * 4 + corner).
+static func coast_steps_template(cells: int) -> ArrayMesh:
+	var verts := PackedVector3Array()
+	var index := PackedInt32Array()
+	for col in cells:
+		for block in 2:
+			for face in 4:
+				var base := verts.size()
+				for corner in 4:
+					verts.append(Vector3(col, block, face * 4 + corner))
+				index.append_array([base, base + 1, base + 2, base, base + 2, base + 3])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = index
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
 ## One block of a voxel prop (Urbek style): flat faces, light top, darker
 ## sides and underside (the sides are mostly in shade, so not by much). `caps`: also draw the top and bottom;
 ## `uv_x`: UV.x of its corners, if given.

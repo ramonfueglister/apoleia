@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
+#include "res://shaders/coast_steps.gdshaderinc"
 
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
 // The slope and wall tones take the SimCity 2000 light of tt_art_light, not
@@ -24,7 +25,8 @@ varying flat int water;
 varying flat float coast;
 varying flat float flat_top;
 varying flat float body_level;
-varying flat int shore_sides; // land tile: bit k = sea across side k, bit 4 + k = sea at corner k only (sea tile: land_sides)
+varying flat int shore_sides; // land tile: bit k = sea across side k, bit 4 + k = sea at corner k only (sea tile: land_sides);
+                              // from bit 16 the steps of the shore round its data tile (cs_steps)
 varying flat int cut_tip;     // coast cut: corner at the tip of the wet half, or -1
 // Metal allows 31 varying components in all (Godot uses some itself), so
 // small flags share an int
@@ -255,6 +257,10 @@ void vertex() {
 			if (open && tt_water(tile + SIDE[a] + SIDE[k]) == W_SEA) { shore_sides |= 16 << k; }
 		}
 	}
+	// up close the steps of the shore round the data tile
+	if (part == 0 && tile_km <= 0.5 && (shore_sides & 15) != 0) {
+		shore_sides |= cs_steps(sub_tiles ? tile >> ivec2(1) : tile) << 16;
+	}
 	VERTEX = (VIEW_MATRIX * vec4(world_pos, 1.0)).xyz;
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 }
@@ -299,15 +305,45 @@ float side_distance(int mask) {
 	return side_distance_at(mask, tile_uv);
 }
 
+// The data tile under this tile, and `uv` (this tile's units) on it.
+ivec2 data_tile() {
+	return sub_tiles ? tile >> ivec2(1) : tile;
+}
+
+vec2 data_uv(vec2 uv) {
+	return sub_tiles ? (vec2(tile & ivec2(1)) + uv) * 0.5 : uv;
+}
+
+// The sides (bits 0-3) and corners (4-7) of a sea tile whose shore has
+// steps in front, so the water measures from their front instead: all of a
+// quarter tile in a coast cut's stair.
+int stepped_sides() {
+	int steps = shore_sides >> 16;
+	if ((steps & 4096) != 0) { return 255; }
+	int m = 0;
+	for (int k = 0; k < 4; k++) {
+		if (((steps >> (3 * k)) & 7) != 0) { m |= 1 << k; }
+	}
+	return m;
+}
+
+// Tile units from the front of those steps at `uv`, or 10.
+float steps_front(vec2 uv) {
+	return cs_steps_front(data_tile(), shore_sides >> 16, data_uv(uv)) * (sub_tiles ? 2.0 : 1.0);
+}
+
+// The wet half of a coast cut with a stair of steps on its diagonal.
+bool cut_stair() {
+	return ((shore_sides >> 16) & 4096) != 0;
+}
+
 // Up close the coast comes in voxel steps, as Urbek's: the beach, the sand
 // at the foot of the shore and the shallows are cells of about COAST_CELL_KM
 // (1.3 diorama metres), each all sand (or all shallow water) or none, by its
 // centre's distance from the shore against a width that wanders along the
 // coast, so the waterline has coves of wide sand and bare headlands
-// (COAST_BAY_KM across). From 2 km tiles the plain bands of before (a cell
-// would be a pixel).
-const float COAST_CELL_KM = 0.031;
-const float COAST_BAY_KM = 0.15;
+// (COAST_BAY_KM across, coast_steps.gdshaderinc). From 2 km tiles the plain
+// bands of before (a cell would be a pixel).
 
 // Centre (tile units) of the cell around this pixel, or the pixel far out.
 vec2 coast_cell() {
@@ -325,22 +361,23 @@ float coast_wander(vec2 cell, vec2 p) {
 // Surf along the coast up close, as in Islanders: a white band where the
 // sea meets the land and a thin second line that drifts out from it and
 // fades. Distance in tiles from the nearest land side or corner (on a coast
-// cut, from the diagonal), less `reach`, the sand it breaks on; gone from 2
-// km tiles, where it would be a hairline.
+// cut, from the diagonal; in front of steps, from their front), less
+// `reach`, the sand it breaks on; gone from 2 km tiles, where it would be a
+// hairline.
 const vec3 C_FOAM = vec3(0.900, 0.955, 1.000);
 vec3 shore_foam(vec3 c, vec2 p, float reach) {
 	if (tile_km >= 2.0) { return c; }
 	float d = 10.0;
 	if (wet_tri == 1 && cut_tip >= 0) {
 		vec2 tip = vec2(CORNER[cut_tip]);
-		d = -(abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
+		d = cut_stair() ? steps_front(tile_uv) : -(abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
 	} else if (coast >= 1.0) {
 		int mask = 0;
 		for (int k = 0; k < 4; k++) {
 			if (tt_water(tile + SIDE[k]) == W_LAND) { mask |= 1 << k; }
 			if (tt_water(tile + SIDE[k] + SIDE[(k + 1) % 4]) == W_LAND) { mask |= 16 << ((k + 1) % 4); }
 		}
-		d = side_distance(mask);
+		d = min(side_distance(mask & ~stepped_sides()), steps_front(tile_uv));
 	}
 	d -= reach;
 	if (d > 1.0) { return c; }
@@ -371,7 +408,8 @@ void fragment() {
 		// land. Up close the shallows are a band in voxel steps, wide off the
 		// coves and narrow off the headlands (the wet half of a coast cut is
 		// all shallow, it lies within the band), and in the coves sand lies
-		// at the foot of the shore, the surf breaking on it.
+		// at the foot of the shore, the surf breaking on it; where the shore
+		// comes down in steps (coast_steps.gdshaderinc), at their foot.
 		float far = far_share();
 		rough = 0.55;
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
@@ -384,10 +422,12 @@ void fragment() {
 				float wander = coast_wander(cell, p);
 				if (wet_tri == 1) {
 					vec2 tip = vec2(CORNER[cut_tip]);
-					shore_d = -(abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
+					shore_d = cut_stair() ? steps_front(cell) : -(abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
 				} else {
-					shallow = side_distance_at(shore_sides & 255, cell) < mix(0.3, 0.95, wander);
-					shore_d = side_distance_at((shore_sides >> 8) & 255, cell);
+					int stepped = stepped_sides();
+					float front = steps_front(cell);
+					shallow = min(side_distance_at(shore_sides & 255 & ~stepped, cell), front) < mix(0.3, 0.95, wander);
+					shore_d = min(side_distance_at((shore_sides >> 8) & 255 & ~stepped, cell), front);
 				}
 				foot = shore_d < 1.5 ? max(0.0, wander * 0.45 - 0.12) : 0.0;
 				float n = round(tile_km / COAST_CELL_KM);
@@ -493,7 +533,8 @@ void fragment() {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 		}
 		// beach: sand along the sea, on the diagonal of a coast cut; up close
-		// in voxel steps, its width wandering from a seam to a cove
+		// in voxel steps, its width wandering from a seam to a cove, and none
+		// where a rock headland of the steps of the shore stands in front
 		bool shore_cut = cut_tip >= 0 && shore_lake == 0;
 		if (body_level <= 2.0 && town == 0 && ((shore_sides & 255) != 0 || shore_cut)) {
 			vec2 cell = coast_cell();
@@ -503,7 +544,10 @@ void fragment() {
 				d = (abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
 			}
 			if (tile_km <= 1.0) {
-				c = d < mix(0.1, 0.5, coast_wander(cell, p)) ? mix(c, C_SAND, 0.85) : c;
+				float width = mix(0.1, 0.5, coast_wander(cell, p));
+				int steps = shore_sides >> 16;
+				bool rock = steps != 0 && (steps & 4096) == 0 && cs_headland(data_tile(), steps, data_uv(cell), sub_tiles ? width * 0.5 : width);
+				c = d < width && !rock ? mix(c, C_SAND, 0.85) : c;
 			} else {
 				float aa = fwidth(d) + 1e-4;
 				c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
