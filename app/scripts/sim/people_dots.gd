@@ -9,7 +9,7 @@ extends MultiMeshInstance3D
 ## on the CPU (people_dots.gdshader), two texel fetches per dot.
 ##
 ## The dots belong to the close LOD: they show only at the zoom levels where
-## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
+## the terrain is close (TileTerrain.CLOSE_LEVEL: the quarter and 0.5 km tiles).
 ## Every village household also gets a house at its house spot, from the
 ## house table of the view (sim/src/view.rs Houses): a voxel farmhouse in the
 ## Urbek style in one of four builds (scripts/voxel/farmhouse.gd), the nearest houses
@@ -1183,7 +1183,7 @@ func _frame(delta: float) -> void:
 			_waiting = false
 			_show_person(p)
 	_update_map()
-	var close: bool = TileTerrain.PROP_SLOTS[terrain.level] > 0
+	var close: bool = terrain.level <= TileTerrain.CLOSE_LEVEL
 	visible = drawn and close
 	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
 	# realistic by default: figures at their real size up close, houses in the
