@@ -74,7 +74,7 @@ pub fn events_to_dict(v: &EventsView) -> VarDictionary {
     d
 }
 
-pub fn goods_to_dict(c: &CraftsView, markets: &[((f32, f32), [(f32, f32); GOODS])], m: &GoodsMovesView, grain: &[[f32; 3]]) -> VarDictionary {
+pub fn goods_to_dict(c: &CraftsView, markets: &[((f32, f32), [(f32, f32); GOODS])], m: &GoodsMovesView, grain: &[[f32; 3]], grain_moves: &GoodsMovesView) -> VarDictionary {
     let mut d = VarDictionary::new();
     let mut crafts = Vec::with_capacity(c.craft.len() * 4);
     for k in 0..c.craft.len() {
@@ -86,14 +86,19 @@ pub fn goods_to_dict(c: &CraftsView, markets: &[((f32, f32), [(f32, f32); GOODS]
         mk.extend(goods.iter().map(|g| g.0));
         mk.extend(goods.iter().map(|g| g.1));
     }
-    let mut moves = Vec::with_capacity(m.day.len() * 7);
-    for k in 0..m.day.len() {
-        moves.extend_from_slice(&[m.from[k].0, m.from[k].1, m.to[k].0, m.to[k].1, m.good[k] as f32, m.units[k], m.day[k] as f32]);
-    }
+    let flat = |m: &GoodsMovesView| {
+        let mut moves = Vec::with_capacity(m.day.len() * 7);
+        for k in 0..m.day.len() {
+            moves.extend_from_slice(&[m.from[k].0, m.from[k].1, m.to[k].0, m.to[k].1, m.good[k] as f32, m.units[k], m.day[k] as f32]);
+        }
+        moves
+    };
+    let moves = flat(m);
     d.set("crafts", &PackedFloat32Array::from(crafts.as_slice()));
     d.set("markets", &PackedFloat32Array::from(mk.as_slice()));
     d.set("moves", &PackedFloat32Array::from(moves.as_slice()));
     let grain: Vec<f32> = grain.iter().flatten().copied().collect();
     d.set("grain", &PackedFloat32Array::from(grain.as_slice()));
+    d.set("grain_moves", &PackedFloat32Array::from(flat(grain_moves).as_slice()));
     d
 }
