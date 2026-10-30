@@ -274,6 +274,9 @@ pub fn face_dict(p: &Person, hh: Option<&HouseholdLook>, face: &Face) -> VarDict
     d.set("job", p.job);
     d.set("stand", p.stand as i64);
     d.set("health", p.health as i64);
+    if !p.name.is_empty() {
+        d.set("name", p.name.as_str());
+    }
     if let Some(h) = hh {
         d.set("fed", h.fed as i64);
         d.set("clothes_pct", h.clothes_pct);

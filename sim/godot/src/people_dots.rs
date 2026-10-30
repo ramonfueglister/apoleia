@@ -1364,6 +1364,24 @@ impl ApoleiaPeople {
         d.set("iq", p.iq.unwrap_or(-1.0));
         d.set("spouse", p.spouse.map_or(-1, |s| s as i64));
         d.set("travelling", p.travelling.map_or(0, |leave| if leave { 2 } else { 1 }));
+        // the name (apoleia_sim::names): in full, each part with what it is
+        // and where it comes from, and the line
+        if let Some(sh) = &p.shown {
+            d.set("name", sh.full.as_str());
+            let mut parts = VarArray::new();
+            for part in &sh.parts {
+                let mut m = VarDictionary::new();
+                m.set("text", part.text.as_str());
+                m.set("role", part.role);
+                m.set("about", part.about.as_str());
+                parts.push(&m.to_variant());
+            }
+            d.set("name_parts", &parts);
+            d.set("line", sh.line.as_str());
+            d.set("line_origin", sh.origin);
+            d.set("line_members", p.line_members as i64);
+            d.set("line_since", sh.since as i64);
+        }
         face.put(&mut d);
         d
     }

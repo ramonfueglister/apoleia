@@ -13,14 +13,15 @@ extends "res://scripts/ui/menu_panel.gd"
 ##       "image": texture,                    # null: no picture
 ##       "text": "BBCode",
 ##       "figures": [{"label": "Verhungert", "value": "38 Menschen"}],
-##       "people": [{"pid": 41, "household": 7, "label": "Gaius Valerius"}],
+##       "people": [{"pid": 41, "household": 7, "label": "Haushalt 7", "role": "Dieb"}],
 ##       "at": Vector2(km_x, km_y),           # a «Hinfliegen» button
 ##       "options": [{"text": "Verstanden", "icon": "play-button", "action": callable}],
 ##   })
 ##
 ## The window emits fly_to(at) and person(pid, household); the caller
 ## moves the camera or opens the person. Any answer closes it, as does Esc.
-## The people get their faces once the caller has them (show_faces).
+## The people get their faces once the caller has them (show_faces), and
+## a household's link then the name of the one shown, with its role.
 
 const LAYER := 12 # over the windows (10), under tooltips (20) and the pause menu (30)
 const WIDTH := 600.0
@@ -36,6 +37,7 @@ signal person(pid: int, household: int)
 static var _layer: CanvasLayer
 
 var _faces := {} # household -> the holder of its face, hidden until shown
+var _links := {} # household -> {button, role}: named once its face is known
 
 ## Opens the window for `d` (fields above) and returns it.
 static func open(tree: SceneTree, d: Dictionary) -> Control:
@@ -176,6 +178,12 @@ func show_faces(faces: Dictionary) -> void:
 		if faces.has(h):
 			var holder: Control = _faces[h]
 			holder.visible = holder.get_child(0).show_person(faces[h])
+			# the household by the name of the one shown, its role kept
+			var face: Dictionary = faces[h]
+			if face.has("name") and _links.has(h):
+				var link: Dictionary = _links[h]
+				var role: String = link.role
+				link.button.text = "Haushalt %s %s%s" % ["der" if face.get("female", false) else "des", face.name, " (%s)" % role if role != "" else ""]
 
 ## The people the event is about, each a link that opens them, over it
 ## their face once it is known (show_faces), which opens them too.
@@ -203,9 +211,10 @@ func _people(people: Array) -> Control:
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(face)
 		column.add_child(holder)
+		var b := LinkButton.new()
 		if household >= 0:
 			_faces[household] = holder
-		var b := LinkButton.new()
+			_links[household] = {"button": b, "role": p.get("role", "")}
 		b.text = p.get("label", "")
 		b.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
 		b.add_theme_color_override("font_color", Vic3.CONCEPT)

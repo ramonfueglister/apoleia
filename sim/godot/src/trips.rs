@@ -71,6 +71,8 @@ pub fn events_to_dict(v: &EventsView) -> VarDictionary {
     d.set("amount", &PackedInt64Array::from(v.amount.as_slice()));
     d.set("at", &PackedVector2Array::from_iter(v.at.iter().map(|&(x, z)| Vector2::new(x, z))));
     d.set("to", &PackedVector2Array::from_iter(v.to.iter().map(|&(x, z)| Vector2::new(x, z))));
+    d.set("name", &PackedStringArray::from_iter(v.name.iter().map(GString::from)));
+    d.set("other_name", &PackedStringArray::from_iter(v.other_name.iter().map(GString::from)));
     d
 }
 

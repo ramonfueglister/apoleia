@@ -35,6 +35,8 @@ extends CanvasLayer
 ## of their household (ApoleiaPeople.ask_faces, a member as the window's
 ## links open), and so does a line for one event of a household that lives
 ## on (FACE_KINDS); the faces are kept by household, the last FACES_KEEP.
+## With the face comes that member's name (docs/kit2/NAMES.md), which then
+## names the household on the window's link and the line.
 ##
 ## Command line (after --): --no-events starts with the list hidden,
 ## --no-event-windows opens no event windows.
@@ -293,10 +295,16 @@ func _fill() -> void:
 		return
 	var rows := []
 	for g in _entries:
-		rows.append({"day": _day(g.day), "text": _text(g), "entry": g,
+		# one event of a household that lives on: its face, and the name of
+		# the one shown
+		var face: Dictionary = _faces.get(g.household, {}) if g.n == 1 and g.kind in FACE_KINDS else {}
+		var text := _text(g)
+		if face.has("name"):
+			text += ": " + str(face.name)
+		rows.append({"day": _day(g.day), "text": text, "entry": g,
 			"colour": KIND_COLOURS[g.kind] if g.kind < KIND_COLOURS.size() else SimTables.INK,
 			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else "",
-			"face": _faces.get(g.household, {}) if g.n == 1 and g.kind in FACE_KINDS else {}})
+			"face": face})
 	_panel.show_rows(rows)
 
 ## "Hungertod ×3", "Diebstahl ×2, 140 kg", "Umzug ×4, 19 Menschen".
@@ -362,8 +370,9 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.text = "Ein Haushalt aus dem Zelt fand nicht genug zu essen und stahl in der Not Korn aus dem Speicher eines Hofs."
 			d.figures = [{"label": "Gestohlen", "value": "%s kg Korn" % SimTables._int(amount)}]
 			d.people[0].label = "Haushalt %d (Dieb)" % hh
+			d.people[0].role = "Dieb"
 			if other >= 0:
-				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other})
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other, "role": "bestohlen"})
 		FARM_TAKEN:
 			d.title = "Ein freier Hof ist wieder bewirtschaftet"
 			d.text = "Ein Haushalt ohne eigenes Land hat einen freien Hof übernommen und lebt jetzt von dessen Ernte."
