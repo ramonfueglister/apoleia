@@ -37,7 +37,7 @@ extends CanvasLayer
 ## The colours stay when the panel closes (it covers most of the map), with
 ## their legend at the bottom left, whose ✕ takes them off.
 ##
-## Command line (after --): --tables=overview|markets|population|farms|state|history
+## Command line (after --): --tables=overview|markets|goods|classes|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
 ## that column of the markets.
 
@@ -49,11 +49,11 @@ const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 ## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
 ## from four of them; its tab comes first (TAB_ORDER)
-const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview"]
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht"]
-const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", ""] # under a tooltip's title
-const TAB_ORDER: Array[int] = [5, 0, 1, 2, 3, 4]
-const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state"]
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods"]
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht", "Schichten", "Waren"]
+const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", "", "Schicht", "Ware"] # under a tooltip's title
+const TAB_ORDER: Array[int] = [5, 0, 7, 6, 1, 2, 3, 4]
+const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state", "classes", "goods"]
 const SPARK_MONTHS := 24
 const SPARK_PX := 92.0
 const MONTHS: Array[String] = ["Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
@@ -241,6 +241,8 @@ static func _is_text(t: Dictionary, key: String) -> bool:
 ## The text columns that get a dropdown; rows fold by the first of them.
 func _filter_keys(t: Dictionary) -> Array[String]:
 	var keys: Array[String] = []
+	if _row_count(t) <= 12: # a short table needs no dropdowns
+		return keys
 	for key in t.columns:
 		if _is_text(t, key) and _values(t, key).size() <= FILTER_MAX:
 			keys.append(key)
@@ -309,7 +311,8 @@ func _refresh() -> void:
 	var t := _tables[_kind]
 	_chart.visible = KINDS[_kind] == "history"
 	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  auf ihr verweilen zeigt den Verlauf" if KINDS[_kind] == "history"
-		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar")
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar" if t.get("data", {}).has("lon")
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Spaltenkopf sortiert  ·  D = Denar")
 	_paint.visible = KINDS[_kind] == "markets"
 	_paint.set_pressed_no_signal(_map_by != "")
 	_paint_regions()

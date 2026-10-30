@@ -28,6 +28,7 @@ var _grid: GridContainer
 var _tiles: HBoxContainer
 var _lines := {} # chart key -> {control, series: Array, unit, days}
 var _rings := {} # ring key -> {control, names, values, colours, unit, legend}
+var _lists := {} # list key -> VBoxContainer
 var _bars: Control
 var _bar_rows: Array = [] # [label, value]
 
@@ -61,6 +62,14 @@ func _init(date_fn: Callable) -> void:
 	_line_card("hunger", "Hungertote im Monat", "")
 	_line_card("cash", "Staatskasse", "D")
 	_bar_card("Geld des Staates seit Beginn")
+	_line_card("real", "Reallohn: Taglohn in Korn", "kg")
+	_ring_card("money", "Geld nach Schicht")
+	_line_card("granaries", "Getreide in Speichern", "t")
+	_list_card("goods", "Warenpreise")
+	_line_card("life", "Geburten und Todesfälle im Monat", "")
+	_line_card("work", "Arbeitstage in der Woche", "Tage")
+	_line_card("clothes", "Kleidung vom Bedarf", "%")
+	_line_card("flows", "Korn ausser Handel im Monat", "t")
 
 ## The tables by kind ("history", "population", "farms", "state"), each
 ## as take_table() gave it.
@@ -75,6 +84,20 @@ func show_tables(tables: Dictionary) -> void:
 			{"key": "sold_t", "name": "Verkauft", "colour": Charts.SERIES[1]}])
 		_set_line("hunger", h, [{"key": "hunger_deaths", "name": "Hungertote", "colour": Charts.RED}])
 		_set_line("cash", h, [{"key": "cash", "name": "Staatskasse", "colour": Charts.SERIES[3]}])
+		_set_line("real", h, [{"key": "real_p50", "name": "Median der Märkte", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
+			"band": "Ärmstes bis reichstes Zehntel der Märkte"}])
+		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
+			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
+			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
+		_set_line("life", h, [{"key": "births", "name": "Geburten", "colour": Charts.SERIES[1]},
+			{"key": "deaths", "name": "Todesfälle", "colour": Charts.SERIES[2]}])
+		_set_line("work", h, [{"key": "vacant", "name": "Gesucht, niemand gefunden", "colour": Charts.SERIES[1]},
+			{"key": "idle", "name": "Angeboten, niemand eingestellt", "colour": Charts.SERIES[2]}])
+		_set_line("clothes", h, [{"key": "clothes", "name": "Alle Haushalte", "colour": Charts.SERIES[3], "scale": 100.0}])
+		_set_line("flows", h, [{"key": "spoiled_t", "name": "Verdorben", "colour": Charts.SERIES[2]},
+			{"key": "export_t", "name": "Ausfuhr", "colour": Charts.SERIES[3]},
+			{"key": "traded_t", "name": "Fernhandel", "colour": Charts.SERIES[1]},
+			{"key": "alms_t", "name": "Almosen", "colour": Charts.SERIES[4]}])
 		_fill_tiles(d)
 	var pop: Dictionary = tables.get("population", {})
 	if not pop.is_empty() and pop.data.has("occupation"):
@@ -94,6 +117,19 @@ func show_tables(tables: Dictionary) -> void:
 					total += float(v)
 				sums[label] = total
 		_set_ring("farms", sums, "Höfe")
+	var classes: Dictionary = tables.get("classes", {})
+	if not classes.is_empty() and classes.data.has("money"):
+		var sums := {}
+		for r in classes.data.kind.size():
+			sums[classes.data.kind[r]] = float(classes.data.money[r])
+		_set_ring("money", sums, "Denar")
+	var goods: Dictionary = tables.get("goods", {})
+	if not goods.is_empty() and goods.data.has("price"):
+		var rows := []
+		for r in goods.data.good.size():
+			rows.append([goods.data.good[r], "%s D je %s" % [Charts.label(float(goods.data.price[r])), goods.data.unit[r]],
+				"Lager %s" % Charts.label(float(goods.data.store[r]))])
+		_set_list("goods", rows)
 	var state: Dictionary = tables.get("state", {})
 	if not state.is_empty():
 		_bar_rows = []
@@ -110,7 +146,8 @@ func show_tables(tables: Dictionary) -> void:
 ## change since the month before, a small curve.
 func _fill_tiles(d: Dictionary) -> void:
 	var specs := [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
-		["eaten", "Gegessen vom Bedarf", " %", 100.0, false], ["cash", "Staatskasse", " D", 1.0, false]]
+		["eaten", "Gegessen vom Bedarf", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
+		["cash", "Staatskasse", " D", 1.0, false]]
 	if _tiles.get_child_count() == 0:
 		for s in specs:
 			_tiles.add_child(_tile(s[0]))
@@ -239,10 +276,17 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 	for s in specs:
 		if not d.has(s.key):
 			continue
-		var one := {"name": s.name, "colour": s.colour, "values": PackedFloat64Array(Array(d[s.key]))}
+		var scale: float = s.get("scale", 1.0) # shares as per cent
+		var scaled := func(key: String) -> PackedFloat64Array:
+			var out := PackedFloat64Array()
+			for v in d[key]:
+				out.append(float(v) * scale)
+			return out
+		var one := {"name": s.name, "colour": s.colour, "values": scaled.call(s.key)}
 		if s.has("lo") and d.has(s.lo) and d.has(s.hi):
-			one.lo = PackedFloat64Array(Array(d[s.lo]))
-			one.hi = PackedFloat64Array(Array(d[s.hi]))
+			one.lo = scaled.call(s.lo)
+			one.hi = scaled.call(s.hi)
+			one.band = s.get("band", "Spanne der Märkte, höchstens doppelter Median")
 		series.append(one)
 	entry.series = series
 	entry.days = PackedInt64Array(Array(d.day))
@@ -253,7 +297,7 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 		for s in series:
 			legend.add_child(_swatch(s.colour, s.name))
 		if series.size() == 1:
-			legend.add_child(_swatch(Color(series[0].colour, 0.35), "Spanne der Märkte, höchstens doppelter Median"))
+			legend.add_child(_swatch(Color(series[0].colour, 0.35), series[0].band))
 	entry.control.queue_redraw()
 
 ## The month under the mouse: each series' value, the price's range.
@@ -371,6 +415,39 @@ func _ring_tip(key: String, title: String) -> Dictionary:
 		total += v
 	return {"id": "ring:%s:%d" % [key, i], "title": entry.names[i], "kind": title,
 		"rows": [[entry.unit, Charts.label(entry.values[i])], ["Anteil", "%.1f %%" % (entry.values[i] / total * 100.0)]]}
+
+## A card of rows as EU5's lists: a name, a value, a note, on bars of two
+## shades.
+func _list_card(key: String, title: String) -> void:
+	var box := _card(title)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 3)
+	box.add_child(list)
+	_lists[key] = list
+
+func _set_list(key: String, rows: Array) -> void:
+	var list: VBoxContainer = _lists[key]
+	for c in list.get_children():
+		c.queue_free()
+	for i in rows.size():
+		var back := PanelContainer.new()
+		var bar := UiStyle.box(UiStyle.ROW if i % 2 == 0 else UiStyle.ROW_DARK, Color.TRANSPARENT, 0, 0, 0)
+		bar.content_margin_left = 8
+		bar.content_margin_right = 8
+		bar.content_margin_top = 4
+		bar.content_margin_bottom = 4
+		back.add_theme_stylebox_override("panel", bar)
+		var line := HBoxContainer.new()
+		back.add_child(line)
+		var name := _label(rows[i][0], UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(name)
+		line.add_child(_label(rows[i][1], UiStyle.VALUE, UiStyle.SIZE_TEXT))
+		var note := _label(rows[i][2], UiStyle.DIM, UiStyle.SIZE_SMALL)
+		note.custom_minimum_size = Vector2(96, 0)
+		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		line.add_child(note)
+		list.add_child(back)
 
 func _bar_card(title: String) -> void:
 	var box := _card(title)

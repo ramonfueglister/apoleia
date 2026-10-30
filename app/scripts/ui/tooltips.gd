@@ -46,6 +46,15 @@ static func attach(control: Control, provider: Callable) -> void:
 
 static func term(name: String, provider: Callable) -> void:
 	_terms[name] = provider
+	_ensure(Engine.get_main_loop() as SceneTree) # so the layer is there to clear them
+
+## The terms' lambdas belong to other scripts: drop them while those still
+## live. The layer hangs on the root and goes in SceneTree.finalize, before
+## Godot frees the scripts; a lambda freed after its script crashes the quit
+## (Godot #102569: "recursive_mutex lock failed" on macOS, exit 134).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and self == _shared:
+		_terms.clear()
 
 static func _ensure(tree: SceneTree) -> void:
 	if is_instance_valid(_shared) or tree == null:
