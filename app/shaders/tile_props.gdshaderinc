@@ -30,6 +30,7 @@ const float STREET_CODE = 8.0;
 
 // bit 0: a cross street (runs north-south), bit 1: a row street (east-west)
 int tt_sub_street_dir(ivec2 t) {
+	if (cp_kind(t) != CP_NONE) { return 0; } // a plan draws its own streets (cp_street)
 	bool cross = ((t.x % CROSS_EVERY) + CROSS_EVERY) % CROSS_EVERY == 0
 		&& tt_sub_lot(t - ivec2(1, 0)) && tt_sub_lot(t + ivec2(1, 0));
 	bool row = ((t.y % STREET_EVERY) + STREET_EVERY) % STREET_EVERY == 0
@@ -77,12 +78,21 @@ bool tt_scatter_free(vec2 at, bool ramp, bool field) {
 
 // One slot of tile t: xy the spot in the tile (0..1), z its level, w the code:
 // < 0 empty; trees kind + 0.25 * size (0.7..1); houses the town class (plus
-// STREET_CODE on a street block up close).
+// STREET_CODE on a street block up close), or on a city plan's parcel
+// CP_CODE + its kind.
 vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 	float code = -1.0;
 	int cell = tt_cell(t);
 	int water = cell & 3;
 	int town = cell >> 2;
+	// the city plan's parcel of this slot: up close the quarter itself, on
+	// the 0.5 km tiles the slot's quarter of a tile any of whose quarters
+	// has a plan (tile_terrain.gd lists their lots)
+	int plan = CP_NONE;
+	bool planned = house && cp_planned_tile(t);
+	if (planned) {
+		plan = sub_tiles ? cp_kind(t) : slots == 4 ? cp_kind(t * 2 + ivec2(slot % 2, slot / 2)) : CP_LAND;
+	}
 	vec2 centre = tt_tile_center(t);
 	float r0 = tt_hash3(vec3(vec2(t), float(slot) * 3.17));
 	float r1 = tt_hash3(vec3(vec2(t) + 11.3, float(slot) * 1.91));
@@ -96,7 +106,12 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// house blocks on the street grid of the town tile (house_grid^2 = slots)
 		int side = int(ceil(sqrt(float(slots))));
 		float share = tt_house_share(town);
-		if (sub_tiles) {
+		if (planned) {
+			// a plan's lot or its terrace; the tombs outside stand on the land
+			show = show && slot < 4 && (cp_on_terrace(plan) || cp_has_lot(plan));
+			show = show && (!sub_tiles || slot == 0);
+			uv = sub_tiles ? vec2(0.5) : (vec2(float(slot % 2), float(slot / 2)) + 0.5) * 0.5;
+		} else if (sub_tiles) {
 			// one house on a flat quarter (a hill town steps up in terraces;
 			// tt_sub_house decides which quarters hold one)
 			// (in towns on ramps too, on a terrace: tile_props.gdshader)
@@ -117,6 +132,8 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		show = show && !tt_near_landmark(world_min + (vec2(t) + uv) * tile_km, 0.45 * tile_km / (sub_tiles ? 1.0 : float(side)));
 	} else {
 		show = show && (town == 0 || tt_sub_garden(t, town));
+		// no trees on a plan's streets, lots or tombs (its gardens bring theirs)
+		show = show && !(sub_tiles && cp_kind(t) != CP_NONE && cp_kind(t) != CP_LAND);
 		uv = vec2(0.5);
 	}
 	if (!house && show) {
@@ -195,7 +212,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		code = float(kind) + 0.25 * edge_size;
 	}
 	vec4 c = show ? tt_corners_cached(t) : vec4(0.0);
-	if (house) { code = float(town) + (sub_tiles && show && tt_sub_street(t) ? STREET_CODE : 0.0); }
+	if (house) { code = planned ? CP_CODE + float(plan) : float(town) + (sub_tiles && show && tt_sub_street(t) ? STREET_CODE : 0.0); }
 	if (!show) { return vec4(0.0, 0.0, 0.0, -1.0); }
 	// on the tile's own triangles (split as in tile_terrain.gdshader), so
 	// trees stand on steep two-level tiles too instead of leaving bare holes

@@ -1,0 +1,332 @@
+{
+  "id": "trier",
+  "name": "Augusta Treverorum",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Checked on 2026-10-30 against surveyed coordinates (Wikipedia) of the Porta Nigra, the Roman bridge, the Aula Palatina, both baths and the amphitheatre: all within 40 m after correcting the imperial baths (141 m off) and the amphitheatre (93 m). Forum, circus and horrea estimated, about +-100 m.",
+  "sources": [
+    "Kuhnen, H.-P. (Ed.). (2001). Das römische Trier (Führer zu archäologischen Denkmälern in Deutschland 40). Theiss. (not verified online)",
+    "Esmonde Cleary, S. (2013). The Roman West, AD 200-500: An archaeological study. Cambridge University Press. (not verified online)",
+    "Wikipedia contributors. (2026). Porta Nigra; Trier Imperial Baths; Barbara Baths; Trier Amphitheater; Aula Palatina; Roman Bridge (Trier) [Coordinates]. In Wikipedia. Retrieved October 30, 2026, from https://en.wikipedia.org/"
+  ],
+  "note": "Residence of Constantius I from 293; the imperial baths and the palace hall (Aula Palatina) are being built around 301.",
+  "centre": [
+    6.639,
+    49.7525
+  ],
+  "lane_surface": "gravel",
+  "walls": [
+    {
+      "name": "Stadtmauer",
+      "built": "c. 170-180",
+      "ring": [
+        [
+          6.63,
+          49.7575
+        ],
+        [
+          6.6439,
+          49.7596
+        ],
+        [
+          6.652,
+          49.759
+        ],
+        [
+          6.6525,
+          49.748
+        ],
+        [
+          6.645,
+          49.74
+        ],
+        [
+          6.635,
+          49.74
+        ],
+        [
+          6.623,
+          49.7432
+        ]
+      ],
+      "closed_by": "river"
+    }
+  ],
+  "gates": [
+    {
+      "name": "Porta Nigra",
+      "at": [
+        6.6439,
+        49.7596
+      ]
+    },
+    {
+      "name": "Porta Media (south)",
+      "at": [
+        6.635,
+        49.74
+      ]
+    },
+    {
+      "name": "Amphitheatre gate",
+      "at": [
+        6.6523,
+        49.7485
+      ]
+    },
+    {
+      "name": "Bridge gate",
+      "at": [
+        6.6262,
+        49.7522
+      ]
+    }
+  ],
+  "rivers": [
+    {
+      "name": "Mosella",
+      "width_m": 120,
+      "line": [
+        [
+          6.615,
+          49.738
+        ],
+        [
+          6.6205,
+          49.745
+        ],
+        [
+          6.625,
+          49.752
+        ],
+        [
+          6.629,
+          49.758
+        ],
+        [
+          6.634,
+          49.766
+        ]
+      ]
+    }
+  ],
+  "bridges": [
+    {
+      "name": "Römerbrücke",
+      "line": [
+        [
+          6.6262,
+          49.7522
+        ],
+        [
+          6.6236,
+          49.7526
+        ]
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Decumanus maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          6.6262,
+          49.7522
+        ],
+        [
+          6.6355,
+          49.7533
+        ],
+        [
+          6.644,
+          49.751
+        ],
+        [
+          6.6523,
+          49.7485
+        ]
+      ]
+    },
+    {
+      "name": "Cardo maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          6.6439,
+          49.7596
+        ],
+        [
+          6.642,
+          49.753
+        ],
+        [
+          6.635,
+          49.74
+        ]
+      ]
+    },
+    {
+      "name": "Bridge road west",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          6.6236,
+          49.7526
+        ],
+        [
+          6.615,
+          49.754
+        ],
+        [
+          6.605,
+          49.756
+        ]
+      ]
+    },
+    {
+      "name": "Road to Mainz and Cologne",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          6.6439,
+          49.7596
+        ],
+        [
+          6.648,
+          49.768
+        ],
+        [
+          6.652,
+          49.778
+        ]
+      ]
+    },
+    {
+      "name": "Road to Metz",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          6.635,
+          49.74
+        ],
+        [
+          6.632,
+          49.73
+        ],
+        [
+          6.628,
+          49.72
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Forum",
+      "kind": "forum",
+      "centre": [
+        6.6355,
+        49.7537
+      ],
+      "size_m": [
+        280,
+        140
+      ]
+    },
+    {
+      "name": "Kaiserthermen",
+      "kind": "baths",
+      "centre": [
+        6.6423,
+        49.7497
+      ],
+      "size_m": [
+        260,
+        145
+      ],
+      "under_construction": "c. 293-316"
+    },
+    {
+      "name": "Barbarathermen",
+      "kind": "baths",
+      "centre": [
+        6.6303,
+        49.75
+      ],
+      "size_m": [
+        240,
+        170
+      ]
+    },
+    {
+      "name": "Aula Palatina",
+      "kind": "palace",
+      "centre": [
+        6.6434,
+        49.7533
+      ],
+      "size_m": [
+        200,
+        150
+      ],
+      "under_construction": "c. 305-311"
+    },
+    {
+      "name": "Amphitheatrum",
+      "kind": "amphitheatre",
+      "centre": [
+        6.6491,
+        49.7481
+      ],
+      "size_m": [
+        120,
+        90
+      ]
+    },
+    {
+      "name": "Circus",
+      "kind": "circus",
+      "centre": [
+        6.651,
+        49.753
+      ],
+      "size_m": [
+        440,
+        100
+      ],
+      "angle_deg": 90
+    },
+    {
+      "name": "Horrea",
+      "kind": "warehouse",
+      "centre": [
+        6.629,
+        49.757
+      ],
+      "size_m": [
+        120,
+        70
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "name": "Altbachtal temple district",
+      "kind": "garden",
+      "centre": [
+        6.647,
+        49.745
+      ],
+      "radius_m": 150
+    }
+  ]
+}
