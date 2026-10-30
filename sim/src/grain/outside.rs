@@ -100,8 +100,8 @@ pub struct Outer {
     norm: i64,
     /// S123: the expected price, as `norm`.
     expect: i64,
-    /// Smoothed sales per day, kg × 1000, with what was asked for and not
-    /// there (as `Market::demand`).
+    /// Sales per day, kg × 1000, with what was asked for and not there,
+    /// smoothed as `Market::demand` (S125).
     pub demand: i64,
     sold_today: i64,
     missed_today: i64,
@@ -246,6 +246,7 @@ impl Grain {
         let today = doy(self.today);
         let carry = pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR;
         let on = self.storage_floor;
+        let span = self.sales_span();
         for (k, o) in self.outer.iter_mut().enumerate() {
             let st = &mut self.stats.outer[k];
             if today == o.harvest_doy {
@@ -262,7 +263,7 @@ impl Grain {
             }
             // Yesterday's sales, here and to the gates, with what was asked
             // for and not there (as `Market::demand`).
-            o.demand += ((o.sold_today + o.missed_today) * 1000 - o.demand) / MONTH;
+            o.demand += ((o.sold_today + o.missed_today) * 1000 - o.demand) / span;
             o.sold_today = 0;
             o.missed_today = 0;
             let season = pricing::season(today - o.harvest_doy, carry);
