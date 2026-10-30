@@ -2,7 +2,7 @@ extends CanvasLayer
 ## The simulation in tables, in the manner of EU5: markets, population by
 ## region and occupation, farms by region and the state's accounts, in a
 ## window (ui/ui_window.gd) that can be moved, sized and folded and lies
-## above the rest of the HUD. T (or the button at the top left) opens and
+## above the rest of the HUD. T (or the red seal in the top bar) opens and
 ## closes it. Every row has an EU5 tooltip (ui/tooltips.gd): staying on it
 ## locks it and shows the row's last months; its blue terms explain
 ## themselves. The markets show each market's price over the last
@@ -30,12 +30,16 @@ extends CanvasLayer
 ## last two months; the one picked is drawn as a curve over the months
 ## above the list (prices with their range).
 ##
-## On the markets, "Karte färben" colours each region on the map by the
-## column sorted by, in five classes of equal numbers of regions, with the
-## regions' borders (ApoleiaPeople.region_map: the market of each 25 km
-## cell; people_dots.gd paint_regions, sim_map.gdshaderinc sim_regions).
+## On the markets, "Karte färben" (or a map mode of the bar at the foot,
+## ui/map_modes.gd, through colour_map) colours each region on the map by
+## the column sorted by, in five classes (MAP_RULES: fixed bounds, people
+## per area, or else equal numbers of the regions with people), regions
+## without people grey, with a border where the class changes
+## (ApoleiaPeople.region_map: the market of each 25 km cell;
+## people_dots.gd paint_regions, sim_map.gdshaderinc sim_regions).
 ## The colours stay when the panel closes (it covers most of the map), with
-## their legend at the bottom left, whose ✕ takes them off.
+## their legend on the bar of map modes (or at the bottom left), whose ✕
+## takes them off.
 ##
 ## Command line (after --): --tables=overview|markets|goods|classes|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
@@ -81,6 +85,17 @@ const CHART_PX := 220.0
 const NOT_SERIES: Array[String] = ["day", "year"] # the history's time, not a series
 ## the map's classes, few to many (pale straw to deep madder)
 const CLASS_COLOURS: Array[Color] = [Color("f1e6c2"), Color("e3bf78"), Color("d08c4e"), Color("ac5637"), Color("72302a")]
+const EMPTY_COLOUR := Color("6a665c") # a region without people
+## How a column of the markets colours the map, where five classes of equal
+## numbers would mislead: fixed bounds (most markets have no one hungry, so
+## equal classes all start at 0), or people per 10’000 km² of the region,
+## about one market's (a large region has more people without being denser).
+const MAP_RULES := {
+	"share_hungry": {"bounds": [0.0001, 0.05, 0.2, 0.5], "labels": ["0 %", "bis 5 %", "5–20 %", "20–50 %", "ab 50 %"]},
+	"persons": {"per_km2": 10000.0, "name": "Menschen je 10’000 km²"},
+	"tent_persons": {"per_km2": 10000.0, "name": "Im Zelt je 10’000 km²"},
+	"price": {"name": "Kornpreis"},
+}
 
 var people: RefCounted
 var landscape: Node3D
@@ -96,7 +111,6 @@ var _months := {} # market id -> PackedFloat64Array of its price, one per monthl
 var _months_day := -1 # the table day last added to _months
 var _spark_at := -1 # the tree column of the curves, -1 for none
 var _stale := false # a new table came while the mouse was on the shown one
-var _open_button: Button
 var _tabs: UiTabs
 var _stand: Label
 var _search: LineEdit
@@ -111,6 +125,13 @@ var _series := "persons" # the history's curve
 var _paint: CheckButton
 var _legend: HBoxContainer
 var _legend_box: PanelContainer
+## The bar of map modes at the foot (ui/map_modes.gd, set by the game
+## clock): the legend then sits on it, from its left end.
+var legend_over: Control:
+	set(bar):
+		legend_over = bar
+		bar.item_rect_changed.connect(_place_legend)
+		_place_legend()
 var _map_by := "" # the markets' column the map is coloured by, "" for none
 var _painted := "" # column and table day last painted
 
@@ -945,7 +966,6 @@ func _show(on: bool) -> void:
 		_win.open()
 	elif _win.visible:
 		_win.close()
-	_open_button.visible = not on
 	if on:
 		_refresh()
 	else:
@@ -954,6 +974,17 @@ func _show(on: bool) -> void:
 			_search.release_focus()
 
 # ------------------------------------------------------------------ map
+
+## Colours the map by the markets' column `column` ("" clears it), as a
+## map mode of the bar at the foot does (ui/map_modes.gd).
+func colour_map(column: String) -> void:
+	_map_by = column
+	_paint.set_pressed_no_signal(column != "")
+	_paint_regions()
+
+## The column the map is coloured by, "" for none.
+func map_column() -> String:
+	return _map_by
 
 ## Colours the regions by the markets' column `_map_by`, or clears them.
 func _paint_regions() -> void:
@@ -977,63 +1008,97 @@ func _paint_regions() -> void:
 	var cols: int = grid.get("cols", 0)
 	if cells.size() != rows * cols or rows == 0:
 		return
-	# the value of each market, and the bounds of five classes with as many
-	# regions each
+	var rule: Dictionary = MAP_RULES.get(_map_by, {})
+	var area := {} # market -> km² of its cells
+	if rule.has("per_km2"):
+		var cell_km2: float = pow(float(grid.get("cell_km", 25.0)), 2.0)
+		for m in cells:
+			if m >= 0:
+				area[m] = area.get(m, 0.0) + cell_km2
+	# the value of each market with people; the others stay grey
 	var value := {}
 	var ids = t.data.id
 	var col = t.data[_map_by]
+	var persons = t.data.get("persons", [])
 	var sorted := PackedFloat64Array()
 	for r in ids.size():
-		value[int(ids[r])] = float(col[r])
-		sorted.append(float(col[r]))
+		if r < persons.size() and float(persons[r]) <= 0.0:
+			continue
+		var m := int(ids[r])
+		var v := float(col[r])
+		if rule.has("per_km2"):
+			v = v / maxf(area.get(m, 0.0), 1.0) * float(rule.per_km2)
+		value[m] = v
+		sorted.append(v)
+	if sorted.is_empty():
+		return
 	sorted.sort()
 	var bounds := PackedFloat64Array()
-	for k in range(1, CLASS_COLOURS.size()):
-		bounds.append(sorted[mini(sorted.size() * k / CLASS_COLOURS.size(), sorted.size() - 1)])
+	if rule.has("bounds"):
+		bounds = PackedFloat64Array(rule.bounds)
+	else: # five classes of as many regions each
+		for k in range(1, CLASS_COLOURS.size()):
+			bounds.append(sorted[mini(sorted.size() * k / CLASS_COLOURS.size(), sorted.size() - 1)])
+	var class_of := {} # market -> class, -1 grey
+	for m in value:
+		class_of[m] = bounds.bsearch(value[m], false)
 	var img := Image.create_empty(cols, rows, false, Image.FORMAT_RGBA8)
 	for r in rows:
 		for c in cols:
 			var m := cells[r * cols + c]
-			if m < 0 or not value.has(m):
+			if m < 0:
 				continue
-			var k := bounds.bsearch(value[m], false)
-			var colour: Color = CLASS_COLOURS[k]
+			var k: int = class_of.get(m, -1)
+			var colour: Color = CLASS_COLOURS[k] if k >= 0 else EMPTY_COLOUR
 			# alpha: bit 0 coloured, bits 1-4 a border to the north, east,
-			# south and west (another region or the sea)
+			# south and west (another class or the sea)
 			var bits := 1
 			var nb := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 			for s in 4:
 				var rr: int = r + nb[s].y
 				var cc: int = c + nb[s].x
 				var other := cells[rr * cols + cc] if rr >= 0 and rr < rows and cc >= 0 and cc < cols else -1
-				if other != m:
+				if other < 0 or class_of.get(other, -1) != k:
 					bits |= 2 << s
 			colour.a8 = bits
 			img.set_pixel(c, r, colour)
 	sim_view.paint_regions(img, grid)
 	_painted = stamp
-	_fill_legend(t, bounds)
+	_fill_legend(t, bounds, rule)
 
-## Five swatches with the bounds of their classes.
-func _fill_legend(t: Dictionary, bounds: PackedFloat64Array) -> void:
+## Five swatches with the bounds of their classes, and grey for the
+## regions without people.
+func _fill_legend(t: Dictionary, bounds: PackedFloat64Array, rule: Dictionary) -> void:
 	for child in _legend.get_children():
-		child.queue_free()
+		child.free()
+	_legend_box.reset_size.call_deferred() # shrinks to a shorter legend
 	var i := Array(t.columns).find(_map_by)
-	var unit: String = SHORT_UNITS.get(t.units[i], t.units[i])
+	var unit: String = "" if rule.has("per_km2") else SHORT_UNITS.get(t.units[i], t.units[i])
 	var tag := Label.new()
-	tag.text = "Karte: %s" % t.labels[i]
+	tag.text = rule.get("name", t.labels[i])
+	if legend_over == null: # else the bar of map modes below names the map
+		tag.text = "Karte: " + tag.text
 	tag.add_theme_color_override("font_color", UiStyle.NAME)
 	_legend.add_child(tag)
-	for k in CLASS_COLOURS.size():
+	if unit != "" and unit != "%":
+		var u := Label.new()
+		u.text = "in %s" % unit
+		u.add_theme_color_override("font_color", SECONDARY)
+		_legend.add_child(u)
+	var share := unit == "%"
+	var fmt := func(v: float) -> String: return ("%d %%" % roundi(v * 100.0)) if share else _number(v)
+	for k in CLASS_COLOURS.size() + 1:
 		var swatch := ColorRect.new()
-		swatch.color = CLASS_COLOURS[k]
+		swatch.color = CLASS_COLOURS[k] if k < CLASS_COLOURS.size() else EMPTY_COLOUR
 		swatch.custom_minimum_size = Vector2(18, 14)
 		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_legend.add_child(swatch)
 		var text := Label.new()
-		var share := unit == "%"
-		var fmt := func(v: float) -> String: return ("%d %%" % roundi(v * 100.0)) if share else _number(v)
-		if k == 0:
+		if k == CLASS_COLOURS.size():
+			text.text = "ohne Menschen"
+		elif rule.has("labels"):
+			text.text = rule.labels[k]
+		elif k == 0:
 			text.text = "< %s" % fmt.call(bounds[0])
 		elif k == CLASS_COLOURS.size() - 1:
 			text.text = "≥ %s" % fmt.call(bounds[k - 1])
@@ -1041,11 +1106,6 @@ func _fill_legend(t: Dictionary, bounds: PackedFloat64Array) -> void:
 			text.text = "%s–%s" % [fmt.call(bounds[k - 1]), fmt.call(bounds[k])]
 		text.add_theme_font_size_override("font_size", 12)
 		_legend.add_child(text)
-	if unit != "" and unit != "%":
-		var u := Label.new()
-		u.text = unit
-		u.add_theme_color_override("font_color", SECONDARY)
-		_legend.add_child(u)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -1063,12 +1123,6 @@ func _build() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = _theme()
 	add_child(root)
-	_open_button = Button.new()
-	_open_button.text = "Statistik  (T)"
-	_open_button.focus_mode = Control.FOCUS_NONE
-	_open_button.position = Vector2(12, 12)
-	_open_button.pressed.connect(func(): _show(true))
-	root.add_child(_open_button)
 	# right of the build bar, below the game clock
 	_win = UiWindow.make("tables", "Statistik", Rect2(112, 64, 820, 680), Engine.get_main_loop() as SceneTree)
 	_win.min_size = Vector2(PANEL_MIN, 320)
@@ -1181,11 +1235,17 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_place_legend)
 	_place_legend()
 
-## The map's legend at the bottom left, clear of the window when it is open.
+## The map's legend on the bar of map modes, or else at the bottom left,
+## clear of the window when it is open.
 func _place_legend() -> void:
 	if not is_inside_tree():
 		return
 	var screen := get_viewport().get_visible_rect().size
+	if legend_over != null and legend_over.visible:
+		var bar := legend_over.get_rect()
+		var from := minf(bar.position.x, bar.end.x - _legend_box.size.x) # no further right than the bar
+		_legend_box.position = Vector2(maxf(from, 12.0), bar.position.y - _legend_box.size.y - 8.0)
+		return
 	var x := 12.0
 	if open and _win.position.x < 12.0 + _legend_box.size.x and _win.position.x + _win.size.x + 12.0 + _legend_box.size.x < screen.x - 400.0:
 		x = _win.position.x + _win.size.x + 12.0 # beside the window, left of the events
