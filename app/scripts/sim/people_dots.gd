@@ -75,6 +75,7 @@ const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HouseLife = preload("res://scripts/sim/people_house_life.gd")
+const PeopleFlows = preload("res://scripts/sim/people_flows.gd")
 const PeopleCost = preload("res://scripts/sim/people_cost.gd")
 const HOUSE_MAX := 16384 # most houses drawn at once (nearest first)
 # Levels of detail of the farmhouse (Farmhouse.LOD_VOXELS): how many of the
@@ -154,6 +155,7 @@ var _figure_shadows: MultiMeshInstance3D # a strip of shade from each figure's f
 var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
+var _flows: MeshInstance3D # from further up: what went between the markets (people_flows.gd)
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
 var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
 var _person_looks_tex: ImageTexture
@@ -331,6 +333,9 @@ func setup(tile_terrain: Node3D) -> bool:
 	_life = HouseLife.new()
 	_life.setup(TileTerrain.DIORAMA_KM_PER_M, _house_list_tex, LIST_W) # the house mesh's metres
 	add_child(_life)
+	_flows = PeopleFlows.new()
+	_flows.setup(people, terrain)
+	get_parent().add_child.call_deferred(_flows) # beside the people: drawn where they are not
 	_lots_view = SubViewport.new()
 	_lots_view.name = "HouseLots"
 	_lots_view.size = Vector2i(LOTS_N, LOTS_N)
@@ -1183,6 +1188,7 @@ func _frame(delta: float) -> void:
 	var trips_start := Time.get_ticks_usec()
 	_trips.step(delta, close and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
 	trips_usec = Time.get_ticks_usec() - trips_start
+	_flows.step(drawn and not figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
 	if not close:
 		# out of the close LOD the frame does nothing for the people: no
 		# upload, no placement pass, no draw. The sim thread keeps running and

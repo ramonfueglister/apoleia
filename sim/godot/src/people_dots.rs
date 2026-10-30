@@ -80,8 +80,8 @@ struct Front {
     /// Answer to the last `ask_events`.
     events: Option<EventsView>,
     /// Answer to the last `ask_goods`: workshops, markets' goods, goods
-    /// moves, markets' grain (trips::goods_to_dict).
-    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView, Vec<[f32; 3]>)>,
+    /// moves, markets' grain, grain moves (trips::goods_to_dict).
+    goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView, Vec<[f32; 3]>, GoodsMovesView)>,
     grain_usec: f64,
     /// The grain economy's map layers as of the last month.
     map: MapLayers,
@@ -488,7 +488,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             shared.front.lock().unwrap().events = Some(v);
         }
         if let Some([x0, z0, x1, z1]) = goods {
-            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)), grain.market_grain());
+            let v = (grain.crafts_in((x0, z0), (x1, z1)), grain.market_goods(), grain.goods_moves_in((x0, z0), (x1, z1)), grain.market_grain(), grain.grain_moves_in((x0, z0), (x1, z1)));
             shared.front.lock().unwrap().goods = Some(v);
         }
         if let Some(who) = ask {
@@ -1410,7 +1410,7 @@ impl ApoleiaPeople {
     #[func]
     fn take_goods(&mut self) -> VarDictionary {
         match self.shared.front.lock().unwrap().goods.take() {
-            Some((c, m, mv, g)) => trips::goods_to_dict(&c, &m, &mv, &g),
+            Some((c, m, mv, g, gm)) => trips::goods_to_dict(&c, &m, &mv, &g, &gm),
             None => VarDictionary::new(),
         }
     }
