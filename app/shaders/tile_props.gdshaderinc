@@ -204,6 +204,10 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
 		// none on a field or a road the player built (state land is cleared, S116)
 		show = show && (garden || !sim_built_clear(at, SIM_ROAD_HALF_KM + 0.03));
+		// nor on a worn way (S127): the trees step back from it (Ramon,
+		// 30.10.2026: „ob Strassen Gebäude etc. durchschneiden“), as far as
+		// the widest ways are drawn (sim_map.gdshaderinc SIM_WAY_SHOW_KM)
+		if (show && !garden && sim_map_on && sim_view_km <= 40.0) { show = sim_way_main(at).x > 0.012; }
 		// a lone tree smaller than in a wood, about as tall as a one-storey
 		// house, as Urbek's (Ramon on s3: Urbek's trees are much smaller
 		// against its fields and houses)

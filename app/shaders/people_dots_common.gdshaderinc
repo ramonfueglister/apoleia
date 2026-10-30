@@ -4,6 +4,11 @@
 // (people_dots.gdshaderinc) then only reads that texture.
 
 #include "res://shaders/tile_terrain.gdshaderinc"
+// the ways people wear (sim_way_main), for the houses' lots (dot_lot_ok);
+// only the house placement asks for them (people_dots_prep.gdshader)
+#ifdef DOT_WAYS
+#include "res://shaders/sim_fields.gdshaderinc"
+#endif
 
 uniform sampler2DArray people_tex : filter_nearest, repeat_disable;
 uniform int page_side = 64;
@@ -144,16 +149,33 @@ vec2 dot_lot(vec2 p) {
 }
 
 // A lot a farmhouse can stand on, by `need`: 0 land (or by a river); 1 also
-// open level ground, no ramp and no wood (the lot a whole tile, or 2 x 2
-// quarter tiles up close, tile_terrain.gdshaderinc sub_tiles, all flat at
-// one level); 2 also no ground rising just south of it, which would hide
-// the house from the camera (it always looks north). On the coarser levels
+// no worn way through it (dot_lot_way_free), open level ground, no ramp
+// and no wood (the lot a whole tile, or 2 x 2 quarter tiles up close,
+// tile_terrain.gdshaderinc sub_tiles, all flat at one level); 2 also no
+// ground rising just south of it, which would hide the house from the
+// camera (it always looks north). On the coarser levels
 // further out every lot on land counts.
 // the lots round a lot: the eight next to it, then the sixteen beyond
 const ivec2 DOT_RING[24] = ivec2[](ivec2(1, 0), ivec2(1, 1), ivec2(0, 1), ivec2(-1, 1), ivec2(-1, 0), ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
 	ivec2(2, 0), ivec2(2, 1), ivec2(2, 2), ivec2(1, 2), ivec2(0, 2), ivec2(-1, 2), ivec2(-2, 2), ivec2(-2, 1),
 	ivec2(-2, 0), ivec2(-2, -1), ivec2(-2, -2), ivec2(-1, -2), ivec2(0, -2), ivec2(1, -2), ivec2(2, -2), ivec2(2, -1));
+// Whether no way of the worn network runs through the lot (centre `lot`):
+// a farmhouse keeps off it, so the ways pass between the houses instead of
+// through them (Ramon, 30.10.2026: „ob Strassen Gebäude etc. durchschneiden“).
+// Clear of its house: the way's edge further than 0.6 lot from the middle,
+// past the corners of the 15 m house in its 21 m lot (farmhouse.gd); with
+// 0.4 a way still cut one house corner in six (model count on 20 years of
+// ways, 30.10.2026).
+bool dot_lot_way_free(vec2 lot) {
+#ifdef DOT_WAYS
+	return sim_way_main(lot).x > DOT_LOT_KM * 0.6;
+#else
+	return true;
+#endif
+}
+
 bool dot_lot_ok(vec2 lot, int need) {
+	if (need >= 1 && !dot_lot_way_free(lot)) { return false; }
 	bool coarse = tile_km > DOT_LOT_KM * 1.01;
 	int n = coarse ? 1 : int(round(DOT_LOT_KM / tile_km));
 	float lo = 1e9;
