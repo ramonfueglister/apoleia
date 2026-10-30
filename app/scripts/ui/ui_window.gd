@@ -17,7 +17,7 @@ const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const WINDOW_LAYER := 10 # over the game clock and market (4) and the build menu (3)
 const BAR_PX := 52.0
 const ROUND_PX := 36.0
-const SIDE_PX := 9 # the wood at the sides and foot
+const SIDE_PX := 16 # the wood at the sides and foot
 const GRIP_PX := 16.0
 const KEEP_PX := 48.0 # this much of a window stays on screen
 const STORE := "user://ui_windows.cfg"
@@ -100,7 +100,7 @@ func _build(title: String) -> void:
 	bar_extra.custom_minimum_size = Vector2(2 * ROUND_PX + 6, 0)
 	bar_extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(bar_extra)
-	_title = UiStyle.label(title, UiStyle.TITLE, UiStyle.SIZE_TITLE)
+	_title = UiStyle.label(title, UiStyle.TITLE, UiStyle.SIZE_TITLE + 2, UiStyle.bold())
 	_title.add_theme_constant_override("shadow_offset_y", 2)
 	_title.add_theme_constant_override("shadow_outline_size", 4)
 	_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
@@ -124,9 +124,16 @@ func _build(title: String) -> void:
 	_field = PanelContainer.new()
 	_field.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, Color.TRANSPARENT, 0, 0, 12))
 	pad.add_child(_field)
+	# what is wider than the window scrolls sideways instead of widening it
+	var scroll := ScrollContainer.new()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_field.add_child(scroll)
 	body = VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
-	_field.add_child(body)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
 	_grip = Control.new()
 	_grip.custom_minimum_size = Vector2(GRIP_PX, GRIP_PX)
 	_grip.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE)

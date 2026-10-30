@@ -953,6 +953,156 @@ Was auffällt:
 - Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
 - Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
 
+## Märkte draussen und Saatgut (S121, S122, 100 Jahre, Seed 1, `run100-s121-s122.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s120.txt`)
+
+Ramon (30.10.2026): „ja und draussen märkte müssen auch angebot und nachfrage folgen natürlich“,
+dann Karte „Wie bauen wir Märkte draussen und den Hunger-Fix?“, Option „Märkte draussen plus
+Saatgut“, zum Befund https://claude.ai/artifact/DvWYeGWVBj2fR2XTCuYvXC. Vier Märkte jenseits der
+Karte mit Ernte, Lager und Nachfrage nach HYDE (S121) statt des festen Preises für jede Menge
+(S98); Höfe behalten das Saatgut und kaufen ihr Essen vor der Saat (S122). Jede Hälfte allein
+gemessen (je ein Lauf mit nur S122 und mit nur S121, 1 Thread). Neu im Lauf: die Zeile
+„beyond the map (S121)“ mit Preis, Lager, Ernte und Handel jedes Markts draussen. Grafiken:
+https://claude.ai/artifact/1LQYuTH5ugLE9tsGkKF5NK
+
+| Grösse | main (S120) | nur S122 | nur S121 | beide |
+|---|---|---|---|---|
+| Menschen im Jahr 10 / 30 / 100 | 106'788 / 98'482 / 73'659 | 108'210 / 105'385 / 104'913 | 109'250 / 104'856 / 77'600 | 109'527 / 109'680 / 115'843 |
+| Wachstum, Mittel Jahr 11–100 | −0,41 % | −0,03 % | −0,38 % | +0,06 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 8'844 / 9'049 / 45'819 | 7'834 / 4'953 / 22'731 | 7'027 / 5'842 / 50'688 | 6'814 / 2'944 / 21'514 |
+| Verlassen die Karte, 100 Jahre | 25'128 | 16'636 | 22'219 | 14'609 |
+| Ernte im Jahr 10 / 100 | 33'996 / 16'187 t | 34'664 / 24'433 t | 31'104 / 14'669 t | 29'218 / 23'799 t |
+| Üblicher Preis Korn, nach Absatz gewichtet, Jahr 10 / 100 | 1,28 / 1,63 Denar/kg | 1,12 / 1,79 | 0,19 / 0,31 | 0,10 / 0,15 |
+| Median-Preis Korn / Rom im Jahr 100 | 1,14 / 4,59 Denar/kg | 0,48 / 4,10 | 0,28 / 3,10 | 0,12 / 2,13 |
+| Korn hinaus / herein über die Tormärkte, 100 Jahre | 169'751 / 0 t | 323'382 / 3 t | 3'692 / 628 t | 5'474 / 1'241 t |
+| Reallohn p10 / p50, Jahr 100 | 1,3 / 3,8 kg | 1,7 / 4,4 kg | 1,5 / 6,2 kg | 1,5 / 7,8 kg |
+| Steuer, 100 Jahre / Staatskasse im Jahr 100 | 384 / 448 Mio. Denar | 565 / 610 | 58 / 19 | 59 / 54 |
+| Staats- und Herrenspeicher im Jahr 100 | 10'529 / 2'313 t | 5'381 / 1'022 t | 14'552 / 3'283 t | 16'882 / 3'616 t |
+| Liegen gebliebene / offene Arbeitstage pro Woche, Jahr 100 | 46'772 / 21'019 | 74'803 / 25'467 | 44'657 / 23'156 | 78'450 / 26'177 |
+| Nicht gebucht | 0 | 0 | 0 | 0 |
+| Tag gesamt, Mittel (1 Thread, 4 Läufe gleichzeitig) | 20,0 ms | 22,2 ms | 20,9 ms | 22,9 ms |
+
+Märkte draussen im Lauf „beide“, Jahr 100:
+
+| Markt | Menschen (Massstab) | Preis | Lager Händler / Bauern | Kommende Ernte | Von uns gekauft / an uns verkauft im Jahr |
+|---|---|---|---|---|---|
+| Jenseits des Zagros | 6'158 | 5,49 Denar/kg | 436 / 640 t | 1'101 t | 73 / 0 t |
+| Nubien und Arabien | 1'286 | 0,13 | 56 / 41 t | 231 t | 4 / 8 t |
+| Skandinavien und Nordrussland | 710 | 0,07 | 31 / 42 t | 127 t | 0 / 4 t |
+| Atlantikküste | 71 | 0,20 | 3 / 3 t | 12 t | 2 / 0 t |
+
+Was auffällt:
+
+- **Das Saatgut ist der grosse Hebel.** S122 allein bringt im Jahr 100 31'000 Menschen mehr und
+  halbiert die Hungertote der Jahre 31–100. Mit beiden wächst die Bevölkerung leicht
+  (115'843 im Jahr 100), der Reallohn in der Mitte verdoppelt sich.
+- **Kaum noch Korn verlässt die Karte.** Die Märkte draussen essen, was sie ernten, und kaufen
+  nur, wenn es nach Fracht billiger ist als ihr eigenes Korn: 5'474 t in 100 Jahren statt
+  169'751 t. Ihre Preise folgen den Tormärkten, mit denen sie handeln; jenseits des Zagros bleibt
+  das Korn teuer, weil 500 km über Land viel kosten.
+- **Aber der Getreidepreis fällt auf 0,10–0,15 Denar pro kg.** Die Karte erntet mehr, als ihre
+  Menschen essen: Jeder Hof sät seinen Bedarf mit einem Viertel Reserve, Steuer und Pacht
+  kommen als Korn in die Speicher. Bisher kaufte draussen jemand jede Menge zum festen Preis
+  (S98), das hielt den Preis. Jetzt bleibt ein Drittel der Felder ungesät, weil sich Korn für
+  den Markt nicht lohnt (S99), und doch bleibt Überschuss.
+- **Die Staatskasse leidet.** Die Steuer kommt als Korn und bringt beim tiefen Preis nur
+  59 statt 384 Mio. Denar in 100 Jahren; die Kasse wächst trotzdem leicht (54 Mio. im Jahr 100).
+- **S121 allein hilft wenig.** Ohne S122 sterben in den Jahren 31–100 mehr Menschen als auf main:
+  Wer sein Saatgut verkauft, hungert auch bei billigem Korn.
+- **Entscheid:** Ramon, 30.10.2026, Karte „Wie machen wir mit PR #64 und dem Preisfall weiter?“,
+  Option „Mergen, dann Preisfall angehen“.
+- Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 73 + 2 Tests grün, auch im Debug-Build
+  (dafür prüft bevy_ecs dort nicht mehr die Länge der Teilstücke, siehe `sim/Cargo.toml`).
+
+### Quellen zu S121, S122 (APA 7)
+
+- Klein Goldewijk, K. (2024). *HYDE 3.3: History database of the global environment* [Data set]. Utrecht University. https://doi.org/10.24416/UU01-94FNH0
+- Makki, S. S., Tweeten, L. G., & Miranda, M. J. (2001). Storage–trade interactions under uncertainty: Implications for food security. *Journal of Policy Modeling, 23*(2), 127–140. https://doi.org/10.1016/S0161-8938(00)00059-9
+- Roberts, M. J., & Schlenker, W. (2013). Identifying supply and demand elasticities of agricultural commodities: Implications for the US ethanol mandate. *American Economic Review, 103*(6), 2265–2295. https://doi.org/10.1257/aer.103.6.2265
+- Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
+- Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
+- Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
+
+## Lagerboden und Saat nach Preis (S123, S124, 100 Jahre, Seed 1, `run100-s123-s124.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s121-s122.txt`)
+
+Ramon (30.10.2026), Karte „Wie gehen wir den Preisfall beim Korn an?“, Option „Lagerboden und
+Saat nach Preis“, zum Vorschlag https://claude.ai/artifact/9WAqjJvXyaj9H8HRpzxQZN. Wer Korn lagert,
+verkauft nur zum erwarteten Preis und nur so viel, wie die Marktleute dazu nehmen; deren Preis fällt
+nicht unter die Erwartung abzüglich Zins und Verderb eines Jahres (S123). Höfe säen weniger für den
+Eigenbedarf, wenn Kaufen billiger ist als die eigenen Arbeitstage und der Markt verlässlich Korn hat
+(S124). Jede Hälfte allein gemessen (`--no-floor`, `--no-sow-price`; je 1 Thread). Der Lauf mit
+beiden ausgeschaltet gibt dieselben Zahlen wie main. Neu im Lauf: „expected by sales“ und „at
+floor“ in der Preiszeile, „own need sown … cut …“ in der Lohnzeile. Grafiken:
+https://claude.ai/artifact/1LQYuTH5ugLE9tsGkKF5NK
+
+| Grösse | main (S121, S122) | nur Boden (S123) | nur Saat (S124) | beide |
+|---|---|---|---|---|
+| Menschen im Jahr 10 / 40 / 100 | 109'527 / 109'789 / 115'843 | 108'266 / 111'514 / 122'080 | 109'476 / 105'051 / 98'072 | 108'178 / 110'787 / 123'079 |
+| Wachstum, Mittel Jahr 11–100 | +0,06 % | +0,13 % | −0,12 % | +0,14 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 6'814 / 2'944 / 21'514 | 7'978 / 1'880 / 12'445 | 6'806 / 5'251 / 28'194 | 8'073 / 1'825 / 11'841 |
+| Verlassen die Karte, 100 Jahre | 14'609 | 4'114 | 19'017 | 4'010 |
+| Ernte im Jahr 10 / 100 | 29'218 / 23'799 t | 37'663 / 34'682 t | 28'727 / 19'825 t | 37'370 / 34'612 t |
+| Preis Korn nach Absatz, Jahr 1 / 10 / 40 / 100 | 6,8 / 0,10 / 0,09 / 0,15 Denar/kg | 8,44 / 6,0 / 2,73 / 0,91 | 6,8 / 0,09 / 0,13 / 0,15 | 8,44 / 5,91 / 2,77 / 1,05 |
+| Median-Preis Korn / Rom im Jahr 100 | 0,12 / 2,13 Denar/kg | 1,04 / 4,21 | 0,16 / 3,21 | 1,15 / 4,55 |
+| Taglohn p50, Jahr 1 / 40 / 100 | 11,56 / 6,38 / 2,50 Denar | 13,19 / 9,77 / 4,88 | 11,56 / 5,73 / 2,11 | 13,19 / 9,75 / 4,70 |
+| Reallohn p10 / p50, Jahr 100 | 1,5 / 7,8 kg | 1,2 / 2,8 kg | 1,5 / 5,8 kg | 1,2 / 2,7 kg |
+| Höfe, die weniger Eigenbedarf säen, Jahr 40 / 100 | – | – | 3'789 / 2'062 | 1'136 / 795 |
+| Staats- und Herrenspeicher im Jahr 100 | 16'882 / 3'616 t | 74'956 / 27'562 t | 13'980 / 2'393 t | 73'677 / 24'947 t |
+| Steuer, 100 Jahre / Staatskasse im Jahr 100 | 59 / 54 Mio. Denar | 140 / 204 | 71 / 60 | 153 / 217 |
+| Korn hinaus / herein über die Tormärkte, 100 Jahre | 5'474 / 1'241 t | 3'946 / 1'256 t | 4'934 / 1'529 t | 4'526 / 1'921 t |
+| Liegen gebliebene / offene Arbeitstage pro Woche, Jahr 100 | 78'450 / 26'177 | 50'738 / 65'898 | 60'120 / 28'361 | 54'316 / 62'301 |
+| Nicht gebucht | 0 | 0 | 0 | 0 |
+| Tag gesamt, Mittel (1 Thread, 4 Läufe gleichzeitig) | 22,4 ms | 22,4 ms | 21,1 ms | 22,4 ms |
+
+Was auffällt:
+
+- **Der Boden ist der grosse Hebel.** Mit S123 fällt der Preis nicht mehr in zehn Jahren auf
+  ein Zehntel Denar, sondern langsam: 5,9 im Jahr 10, 2,8 im Jahr 40, 1,05 im Jahr 100. Im Jahr 100
+  leben 6'000–7'000 Menschen mehr, die Hungertote ab Jahr 31 sinken um 42–45 %, und viel weniger
+  Menschen verlassen die Karte. Den Boden selbst (Erwartung minus 16 %) erreichen kaum Märkte
+  (höchstens 15); es wirkt vor allem, dass Höfe und Speicher nicht mehr unter dem erwarteten Preis
+  und nicht über das Planlager hinaus verkaufen.
+- **Lohn und Preis sinken zusammen.** Der Taglohn fällt mit dem Preis von 13,2 auf 4,7 Denar; der
+  Reallohn in der Mitte bleibt bei 2,7–3,3 kg Korn am Tag statt auf 7,8 kg zu steigen. Das
+  Preisniveau in Denar hat keinen Anker: Die Nachfrage nach Korn ist in kg, nicht in Denar.
+- **Die Speicher horten.** Staat und Herren halten im Jahr 100 rund 100 kt, drei Jahresernten. Sie
+  verkaufen nicht unter dem erwarteten Preis, und der Staat braucht sein Korn kaum (S119). Erst der
+  Verderb von 4 % im Jahr gleicht ab etwa Jahr 60 den Zufluss aus Steuer und Pacht aus. Dafür bringt
+  die Steuer 153 statt 59 Mio. Denar.
+- **Am Anfang hungern die Ärmsten mehr.** In den Jahren 1–10 sterben 8'073 statt 6'814 Menschen
+  an Hunger: Der Preis bleibt beim Startpreis nach dem Edikt, und Lohnhaushalte können ihn nicht
+  zahlen (Reallohn p10 0,76 kg). Auf main hielt das billige Korn sie am Leben.
+- **Saat nach Preis hilft nur mit Boden.** Zusammen säen 800–2'000 von rund 17'000 Höfen weniger,
+  und es bringt 1'000 Menschen und 600 Hungertote weniger als der Boden allein. Allein schadet S124:
+  Beim zusammengebrochenen Preis wirkt Kaufen billig, bis 3'800 Höfe verlassen sich auf Märkte,
+  die dann nicht liefern (Käufer finden 1–2,5 t am Tag nichts), und im Jahr 100 leben 98'072
+  Menschen.
+- **Die Fläche antwortet wie in der Literatur.** Im Lauf „beide“ antwortet die gesäte Fläche auf den
+  Kornpreis gegen den Lohn mit 0,09 (Jahre 1–40) und 0,22 (Jahre 1–10); Roberts & Schlenker (2013)
+  messen 0,08–0,13, Haile u. a. (2016) 0,05–0,40.
+- **Warum der Preis noch sinkt (Messsonde, nicht eingebaut, 40 Jahre, beide an).** Die Marktleute
+  messen ihr Lager am Absatz des letzten Monats. Nach der Ernte essen die Höfe ihr eigenes Korn, der
+  Absatz bricht ein, das Lager reicht plötzlich weit über 180 Tage, und der übliche Preis sinkt;
+  steigen kann er erst unter 30 Tagen. Gemessen am Absatz eines Jahres hält der Preis: 6,8 Denar/kg im
+  Jahr 40 bei einer Erwartung von 6,6, Taglohn 16 Denar. Dafür sterben im Jahr 2 6'211 statt 5'019
+  Menschen an Hunger, und die Speicher wachsen weiter (113 kt im Jahr 40). Das ist eine Änderung an
+  S112 und braucht Ramons Entscheid.
+- Gleicher Fingerabdruck mit 1 und 4 Threads (5 Jahre); 75 Tests grün, 1 ausgelassen.
+- Entscheid: Ramon (30.10.2026), Karte „Wie machen wir mit PR #67 und dem restlichen Preisfall
+  weiter?“, Option „Mergen, dann Lager am Jahresabsatz“: S123 und S124 kommen so auf main, als
+  Nächstes folgt der Vorschlag zum Lager am Jahresabsatz.
+
+### Quellen zu S123, S124 (APA 7)
+
+- Deaton, A., & Laroque, G. (1992). On the behaviour of commodity prices. *The Review of Economic Studies, 59*(1), 1–23. https://doi.org/10.2307/2297923
+- Fafchamps, M. (1992). Cash crop production, food price volatility, and rural market integration in the Third World. *American Journal of Agricultural Economics, 74*(1), 90–99. https://doi.org/10.2307/1242993
+- Gouel, C., & Legrand, N. (2025). The role of storage in commodity markets: Indirect inference based on grain data. *Quantitative Economics, 16*(2), 705–747. https://doi.org/10.3982/QE2329
+- Haile, M. G., Kalkuhl, M., & von Braun, J. (2016). Worldwide acreage and yield response to international price change and volatility: A dynamic panel data analysis for wheat, rice, corn, and soybeans. *American Journal of Agricultural Economics, 98*(1), 172–190. https://doi.org/10.1093/ajae/aav013
+- Ho, T., & Stoll, H. R. (1981). Optimal dealer pricing under transactions and return uncertainty. *Journal of Financial Economics, 9*(1), 47–73. https://doi.org/10.1016/0304-405X(81)90020-9
+- LaFave, D., & Thomas, D. (2016). Farms, families, and markets: New evidence on completeness of markets in agricultural settings. *Econometrica, 84*(5), 1917–1960. https://doi.org/10.3982/ECTA12987
+- Nerlove, M. (1958). Adaptive expectations and cobweb phenomena. *The Quarterly Journal of Economics, 72*(2), 227–240.
+- Roberts, M. J., & Schlenker, W. (2013). Identifying supply and demand elasticities of agricultural commodities: Implications for the US ethanol mandate. *American Economic Review, 103*(6), 2265–2295. https://doi.org/10.1257/aer.103.6.2265
+- Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1036,7 +1186,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Arbeit in Aussaat / Ernte | 25 % / 30 % der 70 Tage pro ha, je in 40 Tagen; in den Spitzen arbeiten alle von 10–65 | GRAIN-NUMBERS: „Verteilung offen“ |
 | Wer arbeitet | übers Jahr Erwachsene 15–60 | frei gewählt |
 | Taglohn (S114) | am ersten Tag 3 kg Getreide zum Startpreis, in Denar; bewegt sich jede Woche um den Anteil offener gegen liegen gebliebene Tage, höchstens 1/20; niemand arbeitet unter dem Essen seines Haushalts bei 290 Arbeitstagen; Höfe planen mit dem Lohn, über 52 Wochen geglättet | Preisedikt VII.1a, 25 Denar mit Kost; Mortensen & Pissarides 1994, Lewis 1954; Zahlen frei |
-| Startpreis (S112: kein Grundpreis mehr) | 8,75 Denar/kg am ersten Tag und draussen (S98) | Preisedikt, modius castrensis 1,5–2 modii italici |
+| Startpreis (S112: kein Grundpreis mehr) | 8,75 Denar/kg am ersten Tag, auch draussen (S121) | Preisedikt, modius castrensis 1,5–2 modii italici |
 | Staatslohn nur für Soldaten, Offiziere, Beamte (S110) | 25 Denar pro Arbeitstag für alle Erwachsenen des Haushalts | S76, Preisedikt |
 | Waren (S105) | Grundpreise Eisen 20, Werkzeug 60 Denar/kg; Marktleute holen jede Woche beim günstigsten Nachbarn, Ware kommt am selben Tag an | frei gewählt; Wolle, Kleidung, Keramik nach Edikt |
 | Schafe (S106) | 1 pro ha Weide, Weide = Grasland/Ackerland der Zelle mal Feldfläche, höchstens 5 pro Kopf, 1 kg Wolle, Schur Tag 135 | Treacher, Sierra Mágina; Rest frei |
@@ -1080,6 +1230,9 @@ in Arrays nach ID statt in Hashtabellen.
 | Arbeit aus dem Überschuss | bringt nichts hervor (Gräben, Bauten, Gärten, Rodung fehlen); Reihenfolge der Höfe nach Haushalt | S84, Erdkamp 2005 |
 | Freie Zeit in den Zelten | 80 % der Woche | frei gewählt |
 | Erntetag | Mitte Juni bei Rom, 2 Tage später pro 100 km Nord, ± 7 Tage pro Hof; Aussaat Ende Oktober | frei gewählt |
+| Märkte draussen (S121) | eine normale Ernte ernährt genau die Menschen draussen (mit dem Verderb des halben Jahres); kein Wetter; sie säen nicht mehr für den Markt, wenn das Korn teuer ist; Nachfrage linear, Elastizität −0,065, zwischen halbem und anderthalbfachem Bedarf; Marktleute draussen ohne Geldgrenze; Waren weiter zum festen Preis (S98) | HYDE 3.3 für die Menschen; Roberts & Schlenker 2013 für die Elastizität; Rest frei gewählt |
+| Lagerboden (S123) | Erwartung aus dem Preis der letzten drei Jahre, ohne Jahreszeit; Boden = Erwartung minus Zins und Verderb eines Jahres (16 %); nur Getreide | Nerlove 1958 für die Form; Gedächtnis frei gewählt; Zins wie S112 |
+| Saat nach Preis (S124) | mindestens die Hälfte des Eigenbedarfs; Markt verlässlich, wenn Käufer an höchstens 5 % der Tage nichts fanden; der Weg zum Markt kostet nichts | frei gewählt |
 
 ## Nicht gebaut
 

@@ -225,7 +225,8 @@ void vertex() {
 	shore_sides = 0;
 	int wall_sides = 0;
 	int river_sides = 0;
-	bool core = water == W_LAND && (cell >> 2) == 3;
+	// (a city plan draws its own wall: city_plan.gdshaderinc)
+	bool core = water == W_LAND && (cell >> 2) == 3 && !cp_planned_tile(tile);
 	for (int k = 0; k < 4; k++) {
 		if (water != W_SEA && (nc[k] & 3) == W_SEA) { shore_sides |= 1 << k; }
 		if (core && ((nc[k] & 3) != W_LAND || (nc[k] >> 2) < 2)) { wall_sides |= 1 << k; }
@@ -336,6 +337,10 @@ void fragment() {
 		rough = 0.55;
 	} else if (part == 0) {
 		int town = tt_town(tile);
+		// up close a city plan's parcel: its town class (open land and water 0)
+		ivec3 plan = tile_km < 0.75 ? cp_texel(cp_parcel(p)) : ivec3(0);
+		bool planned = plan.r != CP_NONE;
+		if (planned) { town = cp_town(plan.r); }
 		// one flat colour per tile; where two landscapes meet, the half towards
 		// the corner of the other one takes its colour (cut at the diagonal)
 		// in far levels whatever the scale of the tile's own levels
@@ -353,7 +358,11 @@ void fragment() {
 				max(tt_town(tile + ivec2(0, 1)), tt_town(tile - ivec2(0, 1)))) >= 2) {
 			c = C_PAVED;
 		}
-		if (town > 0) {
+		if (planned && town > 0) {
+			// its street piece, square or yard (tile_props draws the same on
+			// the terraces)
+			c = cp_surface(plan, cp_local(p), p, ground_rgb_at(G_MEADOW, band));
+		} else if (town > 0) {
 			// the houses stand on paved ground (villages on half paved ground up
 			// close, on their land farther out); beyond the houses towns are
 			// whole roof coloured tiles and villages vanish into the land
@@ -412,7 +421,7 @@ void fragment() {
 		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
 		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
 		// city wall along the edge of the core
-		if (town == 3 && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
+		if (town == 3 && !planned && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 		}
 		// beach: a strip of sand along the sea, on the diagonal of a coast cut

@@ -1,0 +1,262 @@
+{
+  "id": "antakya",
+  "name": "Antiochia",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Not checked: the ancient city lies under modern Antakya and the shifted Orontes; no surveyed coordinates for its monuments were found online on 2026-10-30. About +-300 m.",
+  "sources": [
+    "Downey, G. (1961). A history of Antioch in Syria from Seleucus to the Arab conquest. Princeton University Press. (not verified online)",
+    "De Giorgi, A. U. (2016). Ancient Antioch: From the Seleucid era to the Islamic conquest. Cambridge University Press. (not verified online)"
+  ],
+  "note": "Diocletian built a palace and enlarged the hippodrome on the Orontes island; the colonnaded street runs the length of the city.",
+  "centre": [
+    36.162,
+    36.203
+  ],
+  "lane_surface": "slabs",
+  "walls": [
+    {
+      "name": "Wall of Tiberius",
+      "ring": [
+        [
+          36.15,
+          36.188
+        ],
+        [
+          36.17,
+          36.188
+        ],
+        [
+          36.18,
+          36.205
+        ],
+        [
+          36.178,
+          36.22
+        ],
+        [
+          36.165,
+          36.223
+        ],
+        [
+          36.153,
+          36.212
+        ]
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "Gate of Daphne",
+      "at": [
+        36.153,
+        36.189
+      ]
+    },
+    {
+      "name": "Gate to Beroea",
+      "at": [
+        36.172,
+        36.221
+      ]
+    }
+  ],
+  "rivers": [
+    {
+      "name": "Orontes",
+      "width_m": 90,
+      "line": [
+        [
+          36.142,
+          36.182
+        ],
+        [
+          36.149,
+          36.196
+        ],
+        [
+          36.152,
+          36.21
+        ],
+        [
+          36.156,
+          36.223
+        ],
+        [
+          36.162,
+          36.235
+        ]
+      ],
+      "islands": [
+        {
+          "name": "Island",
+          "centre": [
+            36.158,
+            36.215
+          ],
+          "size_m": [
+            800,
+            500
+          ]
+        }
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Colonnaded street (Herod and Tiberius)",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          36.153,
+          36.189
+        ],
+        [
+          36.162,
+          36.203
+        ],
+        [
+          36.172,
+          36.221
+        ]
+      ],
+      "note": "colonnaded, about 3 km"
+    },
+    {
+      "name": "Street to the island bridge",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          36.162,
+          36.203
+        ],
+        [
+          36.156,
+          36.208
+        ],
+        [
+          36.153,
+          36.211
+        ]
+      ]
+    },
+    {
+      "name": "Road to Daphne",
+      "rank": "via",
+      "surface": "slabs",
+      "outside": true,
+      "line": [
+        [
+          36.153,
+          36.189
+        ],
+        [
+          36.145,
+          36.178
+        ],
+        [
+          36.14,
+          36.165
+        ]
+      ]
+    },
+    {
+      "name": "Road to Beroea",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          36.172,
+          36.221
+        ],
+        [
+          36.18,
+          36.232
+        ],
+        [
+          36.188,
+          36.245
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Palatium (Diocletian)",
+      "kind": "palace",
+      "centre": [
+        36.1585,
+        36.2165
+      ],
+      "size_m": [
+        300,
+        250
+      ]
+    },
+    {
+      "name": "Hippodromus",
+      "kind": "circus",
+      "centre": [
+        36.156,
+        36.213
+      ],
+      "size_m": [
+        490,
+        80
+      ],
+      "angle_deg": 70
+    },
+    {
+      "name": "Forum (Valens, later) / Agora",
+      "kind": "agora",
+      "centre": [
+        36.164,
+        36.205
+      ],
+      "size_m": [
+        150,
+        110
+      ]
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "centre": [
+        36.17,
+        36.201
+      ],
+      "size_m": [
+        110,
+        95
+      ]
+    },
+    {
+      "name": "Thermae",
+      "kind": "baths",
+      "centre": [
+        36.16,
+        36.2
+      ],
+      "size_m": [
+        110,
+        80
+      ]
+    },
+    {
+      "name": "Amphitheatrum",
+      "kind": "amphitheatre",
+      "centre": [
+        36.169,
+        36.196
+      ],
+      "size_m": [
+        100,
+        80
+      ]
+    }
+  ],
+  "areas": []
+}

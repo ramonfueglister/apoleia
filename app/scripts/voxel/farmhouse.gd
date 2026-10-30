@@ -646,12 +646,18 @@ static func _lot(at: Vector3) -> int:
 ## house. Built once and kept in user://.
 static func lods(unit_m: float, variant: int) -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
-	for v: float in LOD_VOXELS:
-		var path := CACHE % [variant, str(v)]
-		var mesh: ArrayMesh = load(path) if ResourceLoader.exists(path) else null
-		if mesh == null:
-			_variant = variant
-			mesh = VoxelMesh.build(sample, BOUNDS_LO, BOUNDS_HI, v, FINE, PALETTE, 1.0 / unit_m, TOPS)
-			ResourceSaver.save(mesh, path)
-		out.append(mesh)
+	for level in LOD_VOXELS.size():
+		out.append(lod(unit_m, variant, level))
 	return out
+
+## One level of detail of one build (LOD_VOXELS), built once and kept in
+## user:// like lods().
+static func lod(unit_m: float, variant: int, level: int) -> ArrayMesh:
+	var v: float = LOD_VOXELS[level]
+	var path := CACHE % [variant, str(v)]
+	var mesh: ArrayMesh = load(path) if ResourceLoader.exists(path) else null
+	if mesh == null:
+		_variant = variant
+		mesh = VoxelMesh.build(sample, BOUNDS_LO, BOUNDS_HI, v, FINE, PALETTE, 1.0 / unit_m, TOPS)
+		ResourceSaver.save(mesh, path)
+	return mesh

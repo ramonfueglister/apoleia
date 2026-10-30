@@ -37,8 +37,12 @@ use std::collections::BinaryHeap;
 use xxhash_rust::xxh3::xxh3_64;
 
 mod crafts;
+mod outside;
 mod pricing;
 mod sites;
+mod tables;
+pub use tables::HistoryExtra;
+pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
@@ -118,6 +122,13 @@ const WORK_DAYS_YEAR: i64 = 290;
 /// work that fall into sowing and harvest, and the length of each window.
 /// The rest is spread over the year and done by the family.
 const SOW_SHARE_PCT: i64 = 25;
+/// S99: the own need is sown with a quarter more as reserve, per mille of
+/// the need. S124: at least OWN_MIN where buying is cheaper (PLACEHOLDER:
+/// half, frei gewählt), and only where buyers found grain on all but
+/// SHORT_PCT of the days of the last year (PLACEHOLDER, frei gewählt).
+const OWN_FULL: i64 = 1250;
+const OWN_MIN: i64 = 500;
+const SHORT_PCT: i64 = 5;
 const HARVEST_SHARE_PCT: i64 = 30;
 const PEAK_DAYS: i64 = 40;
 const OFF_SHARE_PCT: i64 = 100 - SOW_SHARE_PCT - HARVEST_SHARE_PCT;
@@ -189,14 +200,12 @@ const SEA_KM_DAY: i64 = 100;
 const WAGON_COST: i64 = 35;
 const SEA_COST: i64 = 1;
 /// Markets beyond the map (S98, Ramon: sell as much as possible, also to
-/// markets outside the game). The map is the Empire's extent; past its
-/// edge lie Germania, Parthia, Arabia, the Sahara and the Atlantic coasts.
-/// PLACEHOLDER: they buy and sell grain at the base price ± SPREAD, OUT_KM
-/// beyond the edge, by sea from the sea cells at the edge, by wagon from
-/// regions that reach the edge by land; each week a gate market sells
-/// them up to a quarter of its store, or buys from them up to a week of
-/// its sales, as far as its dealers' cash goes.
-const OUT_PRICE: i64 = BASE_PRICE;
+/// markets outside the game). The map is a rectangle around the Empire;
+/// past its edges lie Persia, Nubia and Arabia, Scandinavia and the
+/// Atlantic coast.
+/// S121: each is a market of its own with harvest, stock and demand
+/// (`outside`), OUT_KM beyond the edge, by sea from the sea cells at that
+/// edge or by wagon from regions that reach it by land.
 const OUT_KM: i64 = 500;
 /// Market (S112, `pricing`): the price moves 1/PRICE_STEP of the way to
 /// the dealers' quote each day; the quote is the usual price on the
@@ -459,6 +468,11 @@ pub struct Market {
     /// of harvest (the carrying path starts there).
     norm: i64,
     harvest_doy: i64,
+    /// S123: the expected price, as `norm` (`pricing::floor`).
+    expect: i64,
+    /// S124: days on which buyers found no grain, per mille × 1000,
+    /// smoothed over a year.
+    short: i64,
     /// Smoothed sales per day, kg × 1000, with what buyers asked for and
     /// found no grain for (`missed_today`).
     demand: i64,
@@ -484,8 +498,10 @@ pub struct Market {
     /// than their family can work over the year.
     open: Vec<u32>,
     hirers: Vec<u32>,
-    /// S98: freight per kg to the markets beyond the map (0: no gate).
+    /// S98: freight per kg to the markets beyond the map (0: no gate),
+    /// the cheapest of `outs`, by market beyond the map (S121, 0: no way).
     pub out_cost: i64,
+    pub outs: [i64; outside::SIDES],
     /// For the view only (`work_in`): the day of this week's labour
     /// exchange and who worked where: (worker household, farm, days, kind).
     work_day: i64,
@@ -570,6 +586,11 @@ pub struct GrainStats {
     /// when they pay), m².
     pub plan_full_m2: i64,
     pub plan_m2: i64,
+    /// S124: farms that planned their own need, the sum of the shares of
+    /// it they sow (per mille) and farms that sow less than OWN_FULL.
+    pub own_farms: i64,
+    pub own_share_sum: i64,
+    pub own_cut_farms: i64,
     /// S114: grain the dealers fetched from other markets, kg.
     pub arbitrage_kg: i64,
     /// S120: grain the dealers sent to other markets, kg.
@@ -599,6 +620,9 @@ pub struct GrainStats {
     /// S98: grain sold to / bought from the markets beyond the map.
     pub out_export_kg: i64,
     pub out_import_kg: i64,
+    /// S121: per market beyond the map, kg: harvest, eaten, wanted, sold
+    /// to the gates, bought from them (`outside::HARVEST`…).
+    pub outer: [[i64; 5]; outside::SIDES],
     pub trade_profit: i64,
     pub alms_kg: i64,
     pub stolen_kg: i64,
@@ -721,6 +745,8 @@ pub struct HistoryRow {
     pub farms: usize,
     pub farm_store_kg: i64,
     pub market_store_kg: i64,
+    /// Wages, granaries, clothing and more (grain/tables.rs).
+    pub extra: HistoryExtra,
 }
 
 /// For the view only: the counters as of the end of the last day, the
@@ -738,6 +764,8 @@ pub struct Grain {
     seed: u64,
     farms: Vec<Farm>,
     pub markets: Vec<Market>,
+    /// S121: the markets beyond the map, by side (`outside::SIDES`).
+    pub outer: Vec<Outer>,
     /// Market of each 25 km cell (NONE at sea).
     cell_market: Vec<u32>,
     hh: IdMap<HhState>,
@@ -774,6 +802,10 @@ pub struct Grain {
     decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
     crop_pct: i64,
+    /// S123 storage floor and S124 own sowing by price (on by default;
+    /// off to measure without them).
+    pub storage_floor: bool,
+    pub sow_by_price: bool,
     /// Reused buffer for the monthly count.
     scratch: Vec<Row>,
     /// Person ids grouped by household, from the last count.
@@ -1171,6 +1203,8 @@ impl Grain {
                 last_week: BASE_PRICE,
                 norm: BASE_PRICE * 1000,
                 harvest_doy,
+                expect: BASE_PRICE * 1000,
+                short: 0,
                 demand: 0,
                 sold_today: 0,
                 missed_today: 0,
@@ -1191,6 +1225,7 @@ impl Grain {
                 open: Vec::new(),
                 hirers: Vec::new(),
                 out_cost: 0,
+                outs: [0; outside::SIDES],
                 work_day: 0,
                 work: Vec::new(),
                 people: 0,
@@ -1216,6 +1251,7 @@ impl Grain {
             seed,
             farms: Vec::new(),
             markets,
+            outer: Vec::new(),
             hh: IdMap::default(),
             info: IdMap::default(),
             hh_slices: vec![Vec::new(); MONTH as usize],
@@ -1243,6 +1279,8 @@ impl Grain {
             wheel: vec![Vec::new(); 1024],
             decay: std::sync::Arc::new(decay_table()),
             crop_pct: crop_pct.clamp(1, 100),
+            storage_floor: true,
+            sow_by_price: true,
             scratch: Vec::new(),
             members: Vec::new(),
             census_job: None,
@@ -1332,111 +1370,9 @@ impl Grain {
         gr.sums();
         gr.export(p);
         gr.goods_start();
+        gr.outer_start();
         gr.money.start = gr.money_held();
         gr
-    }
-
-    /// S98: freight to the markets beyond the map for each market: by sea
-    /// from its port (the cheapest way over sea cells to a sea cell at the
-    /// map's edge, then OUT_KM), or by wagon OUT_KM from a region that has
-    /// a land cell at the edge; the cheaper of the two.
-    fn gates(&mut self, p: &People) {
-        let (rows, cols) = (p.grid.rows, p.grid.cols);
-        let n = (rows * cols) as usize;
-        let kind = &p.grid.kind;
-        let edge = |i: usize| {
-            let (r, c) = (i as i32 / cols, i as i32 % cols);
-            r == 0 || c == 0 || r == rows - 1 || c == cols - 1
-        };
-        // Sea km × 1000 from each sea cell to the edge (Dijkstra, 8 ways).
-        let mut dist = vec![i64::MAX; n];
-        let mut open = BinaryHeap::new();
-        for i in 0..n {
-            if kind[i] == 0 && edge(i) {
-                dist[i] = 0;
-                open.push(Reverse((0i64, i as u32)));
-            }
-        }
-        while let Some(Reverse((d, i))) = open.pop() {
-            if d > dist[i as usize] {
-                continue;
-            }
-            let (r, c) = (i as i32 / cols, i as i32 % cols);
-            for (dr, dc) in DIRS {
-                let (rr, cc) = (r + dr, c + dc);
-                if rr < 0 || cc < 0 || rr >= rows || cc >= cols {
-                    continue;
-                }
-                let j = (rr * cols + cc) as usize;
-                if kind[j] != 0 {
-                    continue;
-                }
-                let nd = d + if dr != 0 && dc != 0 { 35_355 } else { 25_000 };
-                if nd < dist[j] {
-                    dist[j] = nd;
-                    open.push(Reverse((nd, j as u32)));
-                }
-            }
-        }
-        let mut cost = vec![i64::MAX; self.markets.len()];
-        for (i, &m) in self.cell_market.iter().enumerate() {
-            if m != NONE && edge(i) {
-                cost[m as usize] = cost[m as usize].min(OUT_KM * WAGON_COST);
-            }
-        }
-        for (k, mk) in self.markets.iter().enumerate() {
-            let c = mk.cell as usize;
-            if kind[c] != 1 {
-                continue;
-            }
-            let (r, col) = (c as i32 / cols, c as i32 % cols);
-            for (dr, dc) in DIRS {
-                let (rr, cc) = (r + dr, col + dc);
-                if rr < 0 || cc < 0 || rr >= rows || cc >= cols {
-                    continue;
-                }
-                let d = dist[(rr * cols + cc) as usize];
-                if d != i64::MAX {
-                    cost[k] = cost[k].min((d / 1000 + 25 + OUT_KM) * SEA_COST);
-                }
-            }
-        }
-        for (mk, c) in self.markets.iter_mut().zip(cost) {
-            mk.out_cost = if c == i64::MAX { 0 } else { c.max(1) };
-        }
-    }
-
-    /// S98: each gate market trades with the markets beyond the map on its
-    /// day of the week: it sells them grain when their price less freight
-    /// beats its own selling price, and buys from them when their price
-    /// plus freight is below its own buying price.
-    fn outside(&mut self, day: i64) {
-        let wd = day.rem_euclid(7) as usize;
-        for mi in (wd..self.markets.len()).step_by(7) {
-            if self.markets[mi].out_cost == 0 {
-                continue;
-            }
-            let out_cost = self.freight(self.markets[mi].out_cost, mi);
-            let m = &mut self.markets[mi];
-            let out_buy = OUT_PRICE * (100 - SPREAD_PCT) / 100 - out_cost;
-            let out_sell = OUT_PRICE * (100 + SPREAD_PCT) / 100 + out_cost;
-            if out_buy > Self::sell_price(m) {
-                let kg = (m.store / 4).max(0);
-                m.store -= kg;
-                // S114: sales like any other, so neighbours fetch grain for it.
-                m.sold_today += kg;
-                m.money += kg * out_buy;
-                self.money.exports += kg * out_buy;
-                self.stats.out_export_kg += kg;
-            } else if out_sell < Self::buy_price(m) {
-                let kg = (m.demand / 1000 * 7).min(m.money / out_sell.max(1)).max(0);
-                m.store += kg;
-                self.stats.inflow[1] += kg;
-                m.money -= kg * out_sell;
-                self.money.imports += kg * out_sell;
-                self.stats.out_import_kg += kg;
-            }
-        }
     }
 
     /// S114 (spatial arbitrage: Samuelson, 1952; Takayama & Judge, 1971):
@@ -1489,29 +1425,32 @@ impl Grain {
         // sales) send up to a quarter of their store to the known market
         // whose dealers pay most over their own price after freight, as
         // far as those dealers buy (up to DEALER_MAX_DAYS of their sales,
-        // S100) and their cash goes. The freight is paid by the sender.
+        // S100; with the storage floor, S123, until their quote falls to
+        // the sender's price and freight) and their cash goes. The freight
+        // is paid by the sender.
         for mi in (wd..self.markets.len()).step_by(7) {
             let here = &self.markets[mi];
             let excess = (here.store - here.demand / 1000 * TARGET_DAYS).min(here.store / 4);
             if excess <= 0 {
                 continue;
             }
-            let mut best: Option<(i64, usize, i64)> = None;
+            let mut best: Option<(i64, usize, i64, i64)> = None;
             for nb in &here.neigh {
                 let o = &self.markets[nb.m as usize];
-                if o.store >= o.demand / 1000 * DEALER_MAX_DAYS {
+                let cost = self.freight(nb.cost, mi);
+                let room = self.dealer_room(o, (here.price + cost) * 100 / (100 - SPREAD_PCT));
+                if room <= 0 {
                     continue;
                 }
-                let cost = self.freight(nb.cost, mi);
                 let margin = Self::buy_price(o) - cost - here.price;
                 if margin > 0 && best.is_none_or(|b| margin > b.0) {
-                    best = Some((margin, nb.m as usize, cost));
+                    best = Some((margin, nb.m as usize, cost, room));
                 }
             }
-            let Some((_, dst, cost)) = best else { continue };
+            let Some((_, dst, cost, room)) = best else { continue };
             let o = &self.markets[dst];
             let price = Self::buy_price(o);
-            let kg = excess.min(o.demand / 1000 * DEALER_MAX_DAYS - o.store).min(o.money.max(0) / price.max(1)).max(0);
+            let kg = excess.min(room).min(o.money.max(0) / price.max(1)).max(0);
             if kg == 0 {
                 continue;
             }
@@ -1637,6 +1576,28 @@ impl Grain {
 
     fn need_day(&self, id: u32) -> i64 {
         self.info.get(&id).map_or(0, |i| i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / YEAR)
+    }
+
+    /// S122: the seed a farm still sows before its next harvest (the
+    /// sowing comes first or is under way), kg; it is not food.
+    fn seed_due(&self, f: usize, day: i64) -> i64 {
+        let fm = &self.farms[f];
+        let sowing = matches!(fm.peak, Some(pk) if !pk.harvest);
+        if sowing || doy_until(day, fm.sow_doy) < doy_until(day, fm.harvest_doy) {
+            self.cropped(fm.area) * SEED_KG_HA / 10_000
+        } else {
+            0
+        }
+    }
+
+    /// A household's food in store: the farm's store less the seed still
+    /// to sow (S122), else the pantry.
+    fn food_of(&self, id: u32, day: i64) -> i64 {
+        match self.hh.get(&id) {
+            Some(s) if s.farm != NONE => self.farms[s.farm as usize].store - self.seed_due(s.farm as usize, day),
+            Some(s) => s.pantry,
+            None => 0,
+        }
     }
 
     /// Snapshot of the living at home (one pass over the tables, in table
@@ -2461,7 +2422,20 @@ impl Grain {
     /// tax and rent, so the area sown for the market follows the price
     /// against the wage. An estate grows for the market: all of its fields
     /// follow that test.
-    fn sow_plan(&self, f: usize) -> i64 {
+    ///
+    /// S124 (Ramon, 30.10.2026, card „Lagerboden und Saat nach Preis“): the
+    /// own need too. A kg of own grain costs the days it needs at what they
+    /// would earn as day labour, per kg the farm keeps; a kg bought costs
+    /// the dealers' selling price at the expected price (S123, `expect`).
+    /// Where buying is cheaper and the market had grain on nearly every day
+    /// of the last year, the farm sows less: first the reserve, then part
+    /// of its need, in proportion to the price against its cost, at least
+    /// OWN_MIN; the days left go to day labour. Farmers secure their food
+    /// themselves the less, the better their market works (Fafchamps,
+    /// 1992); what they grow still depends on their household (LaFave &
+    /// Thomas, 2016). Returns the area, m², and the share of the own need
+    /// sown, per mille (0 for an estate).
+    fn sow_plan(&self, f: usize) -> (i64, i64) {
         let fm = &self.farms[f];
         let full = self.cropped(fm.area);
         // Grain in the store beyond food to the next harvest, the reserve
@@ -2473,22 +2447,32 @@ impl Grain {
         let kept_pct = 100 - if fm.manciana || fm.kind == TENANT { RENT_PCT } else { 0 } - if fm.manciana { 0 } else { TAX_PCT };
         // S116: leased state fields keep 100 - RENT_PCT.
         let kept_pct = if fm.area == 0 { kept_pct } else { (kept_pct * (fm.area - fm.state) + (100 - RENT_PCT) * fm.state) / fm.area };
-        let own = match (self.info.get(&fm.hh), fm.kind) {
-            (_, ESTATE) | (None, _) => 0,
+        let m = &self.markets[fm.market as usize];
+        let net = if fm.area > 0 { ((fm.area - fm.poor) * fm.net_kg_ha + fm.poor * NET_POOR) / fm.area } else { fm.net_kg_ha };
+        let cost_ha = DAYS_PER_HA * m.wage_year / 1000 * m.hire_x1000 / 1000;
+        let share = if !self.sow_by_price {
+            OWN_FULL
+        } else {
+            // Milli-denarii a kg kept: the days of a hectare at the wage
+            // they would find, over the hectare's crop the farm keeps.
+            let cost_kg = DAYS_PER_HA * m.wage_year * m.hire_x1000 / 1000 * 100 / (net * kept_pct).max(1);
+            let buy_kg = m.expect / 1000 * (100 + SPREAD_PCT) / 100;
+            let reliable = m.demand > 0 && m.store > 0 && m.short < SHORT_PCT * 10_000;
+            if reliable && buy_kg < cost_kg { (OWN_FULL * buy_kg / cost_kg.max(1)).max(OWN_MIN) } else { OWN_FULL }
+        };
+        let (own, share) = match (self.info.get(&fm.hh), fm.kind) {
+            (_, ESTATE) | (None, _) => (0, 0),
             (Some(i), _) => {
-                let kg = (i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * 125 / 100 - carry).max(0);
-                kg * 10_000 / fm.net_kg_ha.max(1) * 100 / kept_pct
+                let kg = (i.need_w as i64 * KG_PER_ADULT_YEAR / 10 * share / 1000 - carry).max(0);
+                (kg * 10_000 / fm.net_kg_ha.max(1) * 100 / kept_pct, share)
             }
         };
         let own = own.min(full);
-        let m = &self.markets[fm.market as usize];
         // The usual buying price just after the harvest.
         let season = pricing::season(0, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
         let bid = m.norm / 1000 * season / 1000 * (100 - SPREAD_PCT) / 100;
-        let net = if fm.area > 0 { ((fm.area - fm.poor) * fm.net_kg_ha + fm.poor * NET_POOR) / fm.area } else { fm.net_kg_ha };
         let revenue_ha = net * bid / 1000 * kept_pct / 100;
-        let cost_ha = DAYS_PER_HA * m.wage_year / 1000 * m.hire_x1000 / 1000;
-        if revenue_ha >= cost_ha { full } else { own }
+        (if revenue_ha >= cost_ha { full } else { own }, share)
     }
 
     /// One day, after `People::day`.
@@ -2605,6 +2589,7 @@ impl Grain {
             farms,
             farm_store_kg: (farm_t * 1e3) as i64,
             market_store_kg: (market_t * 1e3) as i64,
+            extra: self.history_extra(),
         };
         self.history.rows.push(r);
     }
@@ -2688,7 +2673,7 @@ impl Grain {
         } else {
             if self.markets[m as usize].store <= 0 {
                 // S112: asked for and not there; the dealers count it.
-                let have = if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry };
+                let have = self.food_of(id, day);
                 let price = Self::sell_price(&self.markets[m as usize]);
                 let want = (self.need_day(id) * BUY_UP_TO - have).max(0).min(self.money_of(id).max(0) / price.max(1));
                 self.markets[m as usize].missed_today += want;
@@ -2742,10 +2727,12 @@ impl Grain {
                 // The market's dealers buy as far as their cash goes and up
                 // to DEALER_MAX_DAYS of their sales in store (S100); the
                 // rest goes home again (PLACEHOLDER: a market is a body of
-                // dealers with cash, not the state).
+                // dealers with cash, not the state). With the storage floor
+                // (S123) only as far as their quote stays at the price the
+                // farm holds out for.
+                let room = self.dealer_room(&self.markets[mi], self.hold_price(&self.markets[mi]));
                 let m = &mut self.markets[mi];
                 let price = Self::buy_price(m);
-                let room = (m.demand / 1000 * DEALER_MAX_DAYS - m.store).max(0);
                 let kg = if alive { t.kg.min(m.money / price.max(1)).min(room).max(0) } else { 0 };
                 let pay = kg * price;
                 m.store += kg;
@@ -2769,7 +2756,7 @@ impl Grain {
             BUY => {
                 let want = {
                     let need = self.need_day(t.hh);
-                    let have = self.hh.get(&t.hh).map_or(0, |s| if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry });
+                    let have = self.food_of(t.hh, day);
                     (need * BUY_UP_TO - have).max(0).min(t.kg)
                 };
                 let money = self.money_of(t.hh);
@@ -2963,9 +2950,7 @@ impl Grain {
         // more to sell does.
         if t.kind == BUY && t.kg > 0 {
             let id = t.hh;
-            let h = self.hh[&id];
-            let have = if h.farm != NONE { self.farms[h.farm as usize].store } else { h.pantry };
-            if have < self.need_day(id) * BUY_BELOW {
+            if self.food_of(id, day) < self.need_day(id) * BUY_BELOW {
                 self.start_carry(p, day, id, BUY);
             }
         }
@@ -3012,10 +2997,15 @@ impl Grain {
                 }
             }
             let fm = &self.farms[f as usize];
-            let ha_x = if harvest { fm.sown } else { self.sow_plan(f as usize) };
+            let (ha_x, own) = if harvest { (fm.sown, 0) } else { self.sow_plan(f as usize) };
             if !harvest {
                 self.stats.plan_full_m2 += self.cropped(fm.area);
                 self.stats.plan_m2 += ha_x;
+                if own > 0 {
+                    self.stats.own_farms += 1;
+                    self.stats.own_share_sum += own;
+                    self.stats.own_cut_farms += (own < OWN_FULL) as i64;
+                }
             }
             let share = if harvest { HARVEST_SHARE_PCT } else { SOW_SHARE_PCT };
             let demand = ha_x * DAYS_PER_HA * share / 100 / 10_000;
@@ -3473,10 +3463,10 @@ impl Grain {
             let m = &self.markets[mi];
             let total = m.horreum + m.lords.iter().map(|l| l.1).sum::<i64>();
             let price = Self::buy_price(m);
-            if total <= 0 || price * 100 < self.usual_price(m) * (100 - SPREAD_PCT) {
+            if total <= 0 || price * 100 < self.hold_price(m) * (100 - SPREAD_PCT) {
                 continue;
             }
-            let room = (m.demand / 1000 * DEALER_MAX_DAYS - m.store).max(0);
+            let room = self.dealer_room(m, self.hold_price(m));
             let take = room.min(m.money.max(0) / price.max(1)).min(total);
             if take <= 0 {
                 continue;
@@ -3516,7 +3506,7 @@ impl Grain {
     /// stored by its producers).
     fn plan_sale(&mut self, f: usize, keep: i64) {
         let m = &self.markets[self.farms[f].market as usize];
-        let holds = Self::buy_price(m) < self.usual_price(m) * (100 - SPREAD_PCT) / 100;
+        let holds = Self::buy_price(m) < self.hold_price(m) * (100 - SPREAD_PCT) / 100;
         let fm = &mut self.farms[f];
         let surplus = (fm.store - keep).max(0);
         fm.to_sell = if holds { 0 } else { surplus };
@@ -3555,23 +3545,9 @@ impl Grain {
     fn prices(&mut self) {
         let carry = pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR;
         let today = doy(self.today);
-        // S114 (export parity, Takayama & Judge, 1971): at a gate (S98) the
-        // dealers value grain at least at what the markets beyond the map
-        // pay, less the freight there; once a week per market. Inland
-        // markets follow through the dealers' arbitrage (`grain_trade`).
-        let wd = self.today.rem_euclid(7) as usize;
-        for mi in (wd..self.markets.len()).step_by(7) {
-            if self.markets[mi].out_cost == 0 {
-                continue;
-            }
-            let out_buy = OUT_PRICE * (100 - SPREAD_PCT) / 100 - self.freight(self.markets[mi].out_cost, mi);
-            let m = &mut self.markets[mi];
-            let season = pricing::season(today - m.harvest_doy, carry);
-            // As a mid price: the dealers sell at it plus the spread.
-            let floor = out_buy * 100 / (100 + SPREAD_PCT);
-            m.norm = m.norm.max((floor as i128 * 1_000_000 / season.max(1) as i128) as i64);
-        }
+        let on = self.storage_floor;
         for m in self.markets.iter_mut() {
+            m.short += ((m.missed_today > 0) as i64 * 1_000_000 - m.short) / YEAR;
             m.demand += ((m.sold_today + m.missed_today) * 1000 - m.demand) / MONTH;
             m.missed_avg += (m.missed_today * 1000 - m.missed_avg) / MONTH;
             m.turned_avg += (m.turned_today * 1000 - m.turned_avg) / MONTH;
@@ -3580,7 +3556,9 @@ impl Grain {
             m.turned_today = 0;
             let season = pricing::season(today - m.harvest_doy, carry);
             pricing::quote(&mut m.price, &mut m.norm, m.store, m.demand / 1000, season);
+            pricing::floor(&mut m.price, &mut m.norm, &mut m.expect, season, on);
         }
+        self.outer_day();
         self.goods_prices();
     }
 
@@ -3588,6 +3566,27 @@ impl Grain {
     fn usual_price(&self, m: &Market) -> i64 {
         let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
         m.norm / 1000 * season / 1000
+    }
+
+    /// The price at this time of year below which farms and granaries hold
+    /// their grain, milli-denarii: the expected price with the storage
+    /// floor (S123), else the usual price (S112).
+    fn hold_price(&self, m: &Market) -> i64 {
+        if !self.storage_floor {
+            return self.usual_price(m);
+        }
+        let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
+        m.expect / 1000 * season / 1000
+    }
+
+    /// Grain the dealers at `m` take from a seller who wants `price` (mid
+    /// price, milli-denarii), kg: up to their limit (S100), with the
+    /// storage floor only until their quote falls to that price (S123).
+    fn dealer_room(&self, m: &Market, price: i64) -> i64 {
+        let per_day = m.demand / 1000;
+        let limit = per_day * DEALER_MAX_DAYS;
+        let at = if self.storage_floor { pricing::stock_for(self.usual_price(m), price, per_day).min(limit) } else { limit };
+        (at - m.store).max(0)
     }
 
     /// Each household eats once a month (1/30 of them per day) from its
@@ -3698,15 +3697,18 @@ impl Grain {
             if s.farm != NONE && self.farms[s.farm as usize].retry && !s.busy {
                 let fi = s.farm as usize;
                 self.farms[fi].retry = false;
-                let keep = need_day * (doy_until(day, self.farms[fi].harvest_doy) + RESERVE_DAYS);
+                // S122: and the seed still to sow before that harvest.
+                let keep = need_day * (doy_until(day, self.farms[fi].harvest_doy) + RESERVE_DAYS) + self.seed_due(fi, day);
                 self.plan_sale(fi, keep);
                 if self.farms[fi].to_sell > 0 {
                     self.start_carry(p, day, id, SELL);
                 }
             }
-            // Buy when the store runs low.
+            // Buy when the food runs low (S122: a farm's seed for the
+            // coming sowing is not food, so it buys before it sows).
             let money = self.money_of(id);
-            if have < need_day * BUY_BELOW && money > 0 && !s.busy {
+            let food = if s.farm != NONE { have - self.seed_due(s.farm as usize, day) } else { have };
+            if food < need_day * BUY_BELOW && money > 0 && !s.busy {
                 let m = &self.markets[mk as usize];
                 if m.cell == info.home && s.farm == NONE {
                     // On the spot.
@@ -4151,7 +4153,7 @@ impl Grain {
             }
         }
         for m in &self.markets {
-            for x in [m.store, m.money, m.price, m.norm, m.demand, m.hire_x1000, m.wage, m.wage_year, m.horreum, m.lords.iter().map(|l| l.1).sum()] {
+            for x in [m.store, m.money, m.price, m.norm, m.expect, m.short, m.demand, m.hire_x1000, m.wage, m.wage_year, m.horreum, m.lords.iter().map(|l| l.1).sum()] {
                 b.extend_from_slice(&x.to_le_bytes());
             }
             for w in &m.goods {
@@ -4164,6 +4166,11 @@ impl Grain {
             let s = self.hh[&id];
             let g = s.goods;
             for x in [id as i64, s.kind as i64, s.pantry, s.money, s.farm as i64, s.fed as i64, g.clothes, g.pots, g.craft as i64, g.home_days] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+        for o in &self.outer {
+            for x in [o.held, o.store, o.price, o.demand] {
                 b.extend_from_slice(&x.to_le_bytes());
             }
         }
@@ -4508,6 +4515,9 @@ impl Grain {
             "farms" => Some(self.farm_table(p, day)),
             "state" => Some(self.state_table(day)),
             "history" => Some(self.history_table(day)),
+            "classes" => Some(self.class_table(day)),
+            "goods" => Some(self.goods_table(day)),
+            "outside" => Some(self.outside_table(day)),
             _ => None,
         }
     }
@@ -4521,6 +4531,10 @@ impl Grain {
         let flow = |k: usize| int(&|r| r.flows[k]);
         let tonnes = |k: usize| float(&|r| r.flows[k] as f64 / 1000.0);
         let den = |f: &dyn Fn(&HistoryRow) -> i64| float(&|r| f(r) as f64 / 1000.0);
+        // a count since the start as the month's flow, tonnes
+        let since = |f: &dyn Fn(&HistoryRow) -> i64| -> Vec<f64> {
+            (0..rows.len()).map(|i| (f(&rows[i]) - if i > 0 { f(&rows[i - 1]) } else { 0 }).max(0) as f64 / 1000.0).collect()
+        };
         let mut t = Table::new("history", "Verlauf", day);
         t.id((0..rows.len() as i64).collect());
         t.int("day", "Tag", "", int(&|r| r.day))
@@ -4548,7 +4562,21 @@ impl Grain {
             .int("tent_persons", "Im Zelt", "", int(&|r| r.tent_people as i64))
             .int("farms", "Höfe", "", int(&|r| r.farms as i64))
             .float("farm_store_t", "Hoflager", "t", float(&|r| r.farm_store_kg as f64 / 1000.0))
-            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0));
+            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0))
+            .float("wage", "Taglohn Median", "Denar", float(&|r| r.extra.wage))
+            .float("real_p10", "Reallohn ärmstes Zehntel", "kg", float(&|r| r.extra.real_wage.0))
+            .float("real_p50", "Reallohn Median", "kg", float(&|r| r.extra.real_wage.1))
+            .float("real_p90", "Reallohn reichstes Zehntel", "kg", float(&|r| r.extra.real_wage.2))
+            .float("need_wage", "Bedarf je Lohnarbeiter und Arbeitstag", "kg", float(&|r| r.extra.need_wage))
+            .int("vacant", "Offene Arbeitstage", "Tage", int(&|r| r.extra.vacant))
+            .int("idle", "Liegen gebliebene Arbeitstage", "Tage", int(&|r| r.extra.idle))
+            .float("horrea_t", "Staatsspeicher", "t", float(&|r| r.extra.horrea_kg as f64 / 1000.0))
+            .float("lords_t", "Speicher der Grundherren", "t", float(&|r| r.extra.lords_kg as f64 / 1000.0))
+            .float("clothes", "Kleidung vom Bedarf", "%", float(&|r| r.extra.clothes / 100.0))
+            .float("elite_money", "Geld der Oberschicht", "%", float(&|r| r.extra.elite_money))
+            .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
+            .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg));
+        self.history_by_good_and_class(&mut t);
         t
     }
 
@@ -5357,7 +5385,7 @@ mod tests {
             assert!(t.rows() > 0 || key == "history", "{key}");
             assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
             assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
-            assert!(matches!(key, "state" | "history") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            assert!(matches!(key, "state" | "history" | "classes" | "goods") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
             for c in t.columns.iter().filter(|c| c.unit == "%") {
                 let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
                 assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);

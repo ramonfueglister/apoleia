@@ -14,6 +14,8 @@ const SUB_PREP_SHADER = preload("res://shaders/tile_sub_prep.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
+const CityPlans = preload("res://scripts/city_plans.gd")
+const RomanCity = preload("res://scripts/voxel/roman_city.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
 # Kit 1 map (32 km tiles: about 150 across it). Up close a height level is relief_slope (m/km, from the bake) times
@@ -103,7 +105,45 @@ const LOT_KINDS := [
 	["house", 0], ["house", 2], ["house", 4], ["house", 6], ["house", 8], ["house", 10], ["house", 12],
 	["house", 14], ["house", 16], ["house", 18], ["house", 20], ["house", 22], ["house", 24], ["house", 26],
 	["garden", 0], ["garden", 2],
+	# the city plans' lots (_plan_lot): squares and a market, tombs, the
+	# wall's pieces and gates, the public buildings (voxel/roman_city.gd)
+	["plaza", 0], ["plaza", 4], ["plaza", 5], ["plaza", 7], ["tombs", 0], ["tombs", 3],
+	["plan_wall", 0], ["plan_wall", 1], ["plan_wall", 2], ["plan_gate", 0], ["plan_gate", 1], ["plan_temple", 0], ["plan_temple", 1],
+	["plan_theatre", 0], ["plan_amphitheatre", 0], ["plan_baths", 0], ["plan_basilica", 0],
+	["plan_basilica", 1], ["plan_basilica", 2], ["plan_horrea", 0], ["plan_circus", 0], ["plan_circus", 1],
+	["plan_forum", 0], ["plan_forum", 1],
+	# the houses along the plans' streets (_plan_street)
+	["street_row", 0], ["street_row", 1], ["street_row", 2], ["street_row", 3], ["street_row", 4], ["street_row", 5], ["street_row", 6], ["street_row", 7],
+	["street_corner_w", 0], ["street_corner_w", 1], ["street_corner_w", 2], ["street_corner_w", 3], ["street_corner_w", 4], ["street_corner_w", 5],
+	["street_corner_e", 0], ["street_corner_e", 1], ["street_corner_e", 2], ["street_corner_e", 3], ["street_corner_e", 4], ["street_corner_e", 5],
+	["street_court", 0], ["street_court", 1],
 ]
+const TOWN_LOTS := 16 # the first LOT_KINDS: the old town rule's (_pick_lot)
+const PLAN_LOT_CAP := 2048 # instances of a plan lot model (a patch of Rome holds a few hundred lots)
+# A plan's public building (city_plans.gd info.models) -> its lot archetype
+const PLAN_MODEL_LOTS := {
+	"amphitheatre": "plan_amphitheatre", "forum": "plan_forum", "baths": "plan_baths",
+	"temple": "plan_temple", "circus": "plan_circus", "theatre": "plan_theatre", "public": "plan_basilica",
+	"market": "plaza", "palace": "plan_basilica", "fort": "plan_basilica", "warehouse": "plan_horrea",
+	"harbour": "plan_horrea", "tomb": "tombs", "stadium": "plan_circus", "portico": "plan_forum",
+	"agora": "plan_forum", "spoil": "garden",
+}
+# Height of a house by its storeys in the plan (metres, the lot models'
+# own: 6.5 to 16 m); one facing north or east, its street behind it as the
+# camera sees it, keeps to two storeys so the street stays in view.
+const PLAN_STOREY_M := [6.5, 6.5, 9.0, 12.0, 14.5, 16.0]
+const PLAN_LOW_M := 9.0
+# Rome's landmarks stand on their buildings in the plan, fitted into its
+# parcels (the plan already draws them up to 2.5 times their real size:
+# docs/kit2/CITY_PLANS.md). At 1.5 times the block they cleared the temples,
+# fora and the Ludus round them off the plan (Mac r1); filling it they touched
+# the houses beside it (Mac r2), so a strip of the block stays free round
+# them. Before the plans they stood on blocks of 0.5 km tiles at three times
+# the city.
+const LANDMARK_PLAN_REACH := 0.9
+# Plan kinds beside a street that its houses stand against (houses, public
+# buildings, gardens, streets); not squares, walls, tombs or open land.
+const PLAN_STREET_TOWN := [1, 2, 3, 4, 6, 7]
 const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
 # Rome's great buildings on blocks of city tiles, drawn while the houses are
 # (the two nearest levels). The Colosseum, the Forum (with the Capitolium),
@@ -198,6 +238,10 @@ var _terrain: MultiMeshInstance3D
 var _props: Array[MultiMeshInstance3D] = []
 var _landmarks: Array[MeshInstance3D] = []
 var _landmark_levels := PackedFloat32Array() # _place_landmarks
+var _landmark_names: Array[String] = [] # LANDMARKS mesh of each in _landmarks
+var plans: CityPlans # the city plans (docs/kit2/CITY_PLANS.md), null without them
+var _plan_lots := {} # parcel -> _plan_lots_of
+var _plan_house_lots := {} # metres -> house lots nearest that height (_lot_weights)
 ## What changed in this frame's update_view (level, props, tier, windows), for
 ## the tour benchmark (landscape.gd --tour); whoever reads it clears it.
 var events := PackedStringArray()
@@ -228,6 +272,14 @@ func load_data(progress := Callable()) -> bool:
 		func() -> Variant: return _png(dir.path_join(manifest.cover.path), -1, true),
 		func() -> Variant: return _png(dir.path_join(manifest.aux.path), -1, false),
 	]
+	var plan_job := jobs.size()
+	var plan_size := world_size
+	jobs.append(func() -> Variant:
+		var p := CityPlans.new()
+		if not p.read(data_root(), 1.0, plan_size):
+			return null
+		p.scan()
+		return p)
 	var lists := ["cells", "levels", "ground"]
 	for list in lists:
 		for entry in manifest.get(list, []):
@@ -254,15 +306,23 @@ func load_data(progress := Callable()) -> bool:
 	var shore_texture: ImageTexture = ImageTexture.create_from_image(done[2]) if done[2] != null else null
 	var cover: Image = done[3]
 	var aux: Image = done[4]
-	var next := 5
+	plans = done[plan_job]
+	if plans != null:
+		plans.make_textures()
+	var next := plan_job + 1
 	for entry in manifest.cells:
 		var image: Image = done[next]
 		next += 1
+		var town_list := PackedInt32Array()
+		if entry.has("towns"):
+			town_list = FileAccess.get_file_as_bytes(dir.path_join(entry.towns.path)).to_int32_array()
+		if plans != null and int(entry.level) == 0:
+			town_list = _apply_plans(image, int(entry.width), town_list)
 		_cell_images.append(image)
 		_cell_sizes.append(Vector2i(int(entry.width), int(entry.height)))
 		_cell_textures.append(ImageTexture.create_from_image(image))
 		if entry.has("towns"):
-			_town_lists[int(entry.level)] = FileAccess.get_file_as_bytes(dir.path_join(entry.towns.path)).to_int32_array()
+			_town_lists[int(entry.level)] = town_list
 	for entry in manifest.get("levels", []):
 		var image: Image = done[next]
 		next += 1
@@ -300,8 +360,11 @@ func load_data(progress := Callable()) -> bool:
 		material.shader = PROPS_SHADER
 		material.set_shader_parameter("prop_kind", 3 if _lot_of(kind) >= 0 else 5 if kind == _plinth_kind() else kind)
 		material.set_shader_parameter("lot_variant", _lot_of(kind))
-		material.set_shader_parameter("lot_variants", LOT_KINDS.size())
+		material.set_shader_parameter("lot_variants", TOWN_LOTS)
 		_prop_materials.append(material)
+	if plans != null:
+		shared.merge(plans.uniforms())
+		shared["city_plans_on"] = true
 	for material in _all_materials():
 		for key in shared:
 			material.set_shader_parameter(key, shared[key])
@@ -403,7 +466,9 @@ func _build_nodes() -> void:
 		var pm := MultiMesh.new()
 		pm.transform_format = MultiMesh.TRANSFORM_3D
 		pm.mesh = meshes[kind]
-		pm.instance_count = PROP_N * PROP_N * 9 / (LOT_KINDS.size() if lot >= 0 else 1)
+		pm.instance_count = PLAN_LOT_CAP if lot >= TOWN_LOTS else PROP_N * PROP_N * 9 / (TOWN_LOTS if lot >= 0 else 1)
+		if lot >= TOWN_LOTS:
+			pm.visible_instance_count = 0 # only from the town list
 		node.multimesh = pm
 		node.material_override = _prop_materials[kind]
 		_prop_materials[kind].set_shader_parameter("corner_tex", _corner_view.get_texture())
@@ -429,6 +494,7 @@ func _build_landmarks() -> void:
 	var material := ShaderMaterial.new()
 	material.shader = LANDMARK_SHADER
 	var rects := PackedVector4Array()
+	var placed := _plan_landmarks()
 	for entry in LANDMARKS:
 		var size := Vector2(entry[2])
 		var first := ((_lonlat_world(entry[1]) - world_min) / LANDMARK_TILE_KM - size * 0.5).round()
@@ -436,23 +502,35 @@ func _build_landmarks() -> void:
 		var hi := lo + size * LANDMARK_TILE_KM
 		var kit := String(entry[0]).begins_with("kit:")
 		var which := String(entry[0]).trim_prefix("kit:")
+		if plans != null and not kit:
+			continue # the plan's bridges are streets on their terraces
 		var km_per_m := DIORAMA_KM_PER_M if kit else LANDMARK_KM_PER_M
 		var node := MeshInstance3D.new()
 		node.name = "Landmark" + which.capitalize()
 		node.mesh = RomanBuildings.landmark_mesh(which, 0 if _props_tier < 2 else 1) if kit else PropMeshes.landmark(which)
 		if kit:
 			RomanBuildings.landmark_mesh(which, 1) # loaded now, not on the first zoom past PROP_LOW_KM
+		var reach := node.mesh.get_aabb()
+		var free: float = entry[3]
+		if placed.has(which):
+			# on its building in the plan, shrunk to fit it; its neighbours
+			# in the plan stay
+			var block: Rect2 = placed[which]
+			lo = block.position
+			hi = block.end
+			var fit := minf(block.size.x / (reach.size.x * km_per_m), block.size.y / (reach.size.z * km_per_m))
+			km_per_m *= minf(1.0, LANDMARK_PLAN_REACH * fit)
+			free = 0.0
 		node.material_override = material
 		node.scale = Vector3(1.0, 1.0 if kit else LANDMARK_RISE, 1.0) * km_per_m
 		var centre := (lo + hi) * 0.5
 		node.position = Vector3(centre.x, 0.0, centre.y)
 		add_child(node)
 		_landmarks.append(node)
+		_landmark_names.append(String(entry[0]))
 		# no houses on the block, nor where the building reaches past it
-		var reach := node.mesh.get_aabb()
 		var a := centre + Vector2(reach.position.x, reach.position.z) * km_per_m
 		var b := centre + Vector2(reach.end.x, reach.end.z) * km_per_m
-		var free: float = entry[3]
 		rects.append(Vector4(minf(lo.x, a.x - free), minf(lo.y, a.y - free), maxf(hi.x, b.x + free), maxf(hi.y, b.y + free)))
 	_landmark_rects = rects
 	for target in _all_materials() + [_sub_material]:
@@ -634,7 +712,7 @@ func _lot_weights() -> void:
 		var sum := 0.0
 		var cumulative := PackedFloat32Array()
 		for lot in LOT_KINDS.size():
-			var w := 1.0
+			var w := 1.0 if lot < TOWN_LOTS else 0.0
 			if LOT_KINDS[lot][0] == "house":
 				w = pow(_lot_heights.get(lot, mean) / mean, SKYLINE_POWER[town_class])
 			sum += w
@@ -642,6 +720,12 @@ func _lot_weights() -> void:
 		for k in cumulative.size():
 			cumulative[k] /= sum
 		_lot_pick.append(cumulative)
+	# the plan's houses: for each height the three house lots nearest it
+	_plan_house_lots.clear()
+	for m: float in PLAN_STOREY_M + [PLAN_LOW_M]:
+		var near: Array = range(TOWN_LOTS).filter(func(lot: int) -> bool: return LOT_KINDS[lot][0] == "house")
+		near.sort_custom(func(x: int, y: int) -> bool: return absf(_lot_heights.get(x, 10.0) - m) < absf(_lot_heights.get(y, 10.0) - m))
+		_plan_house_lots[m] = near.slice(0, 3)
 
 ## The lot model of slot `slot` on quarter tile t of town class `town_class`.
 func _pick_lot(t: Vector2i, slot: int, town_class: int) -> int:
@@ -690,7 +774,9 @@ func _update_town_list() -> void:
 					tiles.append(local)
 					var t := at + prop_origin
 					for slot in house_slots:
-						lots[_pick_lot(t, slot, v & 3)].append(local * 16 + slot)
+						lots[_pick_lot(t, slot, v & 3)].append(local * 128 + slot)
+	if plans != null and (sub_tiles or level == 0):
+		_list_plan_lots(tiles, lots, room)
 	town_count = tiles.size()
 	var data := tiles.duplicate()
 	var starts := PackedInt32Array()
@@ -713,6 +799,217 @@ func _update_town_list() -> void:
 		else:
 			_props[kind].multimesh.visible_instance_count = town_count * house_slots
 	events.append("towns")
+
+# ------------------------------------------------------------ city plans
+
+## The city plans on the 0.5 km data: the town class of every tile a plan
+## covers into its cell (built up 3, else 0: the plan's open land is
+## country) and those tiles out of the old town list (`towns`, sorted tile
+## * 4 + class); returns the new list. The plan's lots come from
+## _list_plan_lots.
+func _apply_plans(image: Image, width: int, towns: PackedInt32Array) -> PackedInt32Array:
+	for tile: Vector2i in plans.data_towns:
+		var x := tile.x >> 1
+		var b := roundi(image.get_pixel(x, tile.y).r * 255.0)
+		var shift := 4 * (tile.x & 1)
+		var cell := (b >> shift) & 15
+		var town: int = plans.data_towns[tile]
+		if cell >> 2 == town:
+			continue
+		b = (b & ~(15 << shift)) | (((cell & 3) | (town << 2)) << shift)
+		image.set_pixel(x, tile.y, Color(b / 255.0, 0.0, 0.0))
+	var kept := PackedInt32Array()
+	for v in towns:
+		var t := v >> 2
+		if not plans.data_towns.has(Vector2i(t % width, t / width)):
+			kept.append(v)
+	return kept
+
+## The plan's parcels in the prop patch into the town list: each tile once
+## in `tiles` (its terrace), each lot as tile * 128 + turns * 16 + slot in
+## `lots` of its model.
+func _list_plan_lots(tiles: PackedFloat32Array, lots: Array[PackedFloat32Array], room: int) -> void:
+	var q := 1 if sub_tiles else 2 # parcels a tile side
+	var lo := prop_origin * q
+	var hi := (prop_origin + Vector2i(prop_n, prop_n)) * q
+	var pp: int = plans.page_parcels
+	var listed := {}
+	for pj in range(floori(lo.y / float(pp)), floori((hi.y - 1) / float(pp)) + 1):
+		for pi in range(floori(lo.x / float(pp)), floori((hi.x - 1) / float(pp)) + 1):
+			var list: PackedInt32Array = plans.built.get(Vector2i(pi, pj), PackedInt32Array())
+			for k in range(0, list.size(), 3):
+				var i := list[k]
+				var j := list[k + 1]
+				if i < lo.x or j < lo.y or i >= hi.x or j >= hi.y:
+					continue
+				var at := Vector2i(i / q, j / q) - prop_origin
+				var local := at.y * prop_n + at.x
+				if not listed.has(local):
+					if tiles.size() >= room:
+						return
+					listed[local] = true
+					tiles.append(local)
+				for lot: Vector2i in _plan_lots_of(i, j, list[k + 2]):
+					lots[lot.x].append(local * 128 + lot.y * 16 + (0 if sub_tiles else (i & 1) + 2 * (j & 1)))
+
+## The lot models of plan parcel (i, j) with texel v (R | G << 8 | B << 16),
+## each as Vector2i(LOT_KINDS index, turns that face it to its street): one,
+## or a wall's or a street's pieces, or none for bridges (their terraces).
+## Turns 0..3 bring a model's side d to d + turns (0 N, 1 E, 2 S, 3 W);
+## four more turn it an eighth further (tile_props.gdshader).
+func _plan_lots_of(i: int, j: int, v: int) -> Array:
+	var key := Vector2i(i, j)
+	if not _plan_lots.has(key):
+		var kind := v & 255
+		_plan_lots[key] = _plan_wall(key, absi(hash(key))) if kind == 8 else _plan_street(key, (v >> 8) & 255) if kind == 7 \
+			else [] if kind == 10 else [_plan_lot(key, v)]
+	return _plan_lots[key]
+
+func _plan_lot(key: Vector2i, v: int) -> Vector2i:
+	var kind := v & 255
+	var street := (v >> 8) & 255
+	var b := v >> 16
+	var front := b >> 6
+	var h := absi(hash(key))
+	var facing := posmod(front - 2, 4) # a model's front is its south side
+	var out := Vector2i(-1, 0)
+	match kind:
+		1, 2, 3:
+			var m: float = PLAN_STOREY_M[clampi(b & 63, 0, PLAN_STOREY_M.size() - 1)]
+			if front <= 1:
+				m = minf(m, PLAN_LOW_M)
+			var near: Array = _plan_house_lots.get(m, [0])
+			out = Vector2i(near[h % near.size()], facing)
+		4:
+			out = _plan_building(key, b & 63, facing, h)
+		5:
+			# a square: its portico at the back unless the square goes on there
+			var behind := _plan_kind(key - _side(front))
+			out = Vector2i(_lot_index("plaza", [0, 4, 5][h % 3]) if behind == 5 else _lot_index("plan_forum", h % 2), facing)
+		6:
+			out = Vector2i(_lot_index("garden", [0, 2][h % 2]), facing)
+		9:
+			# the street through it north and south, or turned
+			out = Vector2i(_lot_index("plan_gate", h % 2), 0 if (street >> 4) & 5 != 0 else 1)
+		11:
+			out = Vector2i(_lot_index("tombs", [0, 3][h % 2]), posmod(front - 1, 4)) # their road is east
+	return out
+
+func _plan_building(key: Vector2i, model: int, facing: int, h: int) -> Vector2i:
+	var models: Array = plans.info.get("models", [])
+	var name: String = models[model] if model < models.size() else "public"
+	var archetype: String = PLAN_MODEL_LOTS.get(name, "plan_basilica")
+	if name == "market":
+		return Vector2i(_lot_index("plaza", 7), facing)
+	if archetype == "plan_circus":
+		# the track along the building's length
+		var along_x := _plan_kind(key + Vector2i(1, 0)) == 4 or _plan_kind(key - Vector2i(1, 0)) == 4
+		return Vector2i(_lot_index(archetype, h % 2), 0 if along_x else 1)
+	var variants: int = RomanBuildings.ARCHETYPES[archetype][0]
+	var lot := _lot_index(archetype, h % variants)
+	if lot < 0:
+		lot = _lot_index(archetype, 0)
+	if archetype == "tombs":
+		return Vector2i(lot, posmod(facing + 1, 4))
+	return Vector2i(lot, facing)
+
+## A wall parcel's pieces (voxel/roman_city.gd wall): an arm to each
+## neighbour on the wall or at a gate, straight or (where the wall steps
+## diagonally) to the corner, and a tower where it turns or ends, now and
+## then on a straight run.
+func _plan_wall(key: Vector2i, h: int) -> Array:
+	var on := func(d: Vector2i) -> bool:
+		var k := _plan_kind(key + d)
+		return k == 8 or k == 9
+	var out := []
+	var dirs: Array[int] = [] # the arms, 0..7 from north clockwise
+	var sides := 0
+	for d in 4:
+		if on.call(_side(d)):
+			sides |= 1 << d
+			dirs.append(2 * d)
+			out.append(Vector2i(_lot_index("plan_wall", 0), posmod(d - 1, 4))) # the arm runs east
+	for c in 4:
+		# the corner between sides c and c + 1, unless the wall goes round it
+		var e := (c + 1) % 4
+		if sides & ((1 << c) | (1 << e)) == 0 and on.call(_side(c) + _side(e)):
+			dirs.append(2 * c + 1)
+			# the long arm east, turned an eighth further to the south-east
+			# (a voxel staircase read as a fence of white bars, Mac r1)
+			out.append(Vector2i(_lot_index("plan_wall", 1), posmod(c - 1, 4) + 4))
+	var straight := dirs.size() == 2 and absi(dirs[0] - dirs[1]) == 4
+	if not straight or h % 3 == 0:
+		out.append(Vector2i(_lot_index("plan_wall", 2), 0))
+	return out
+
+## A street parcel's houses (voxel/roman_city.gd street_*): a row house on
+## each side the street does not run out at, where the town goes on beyond
+## it; a corner house beside an arm where the town goes on behind it; a
+## court in a corner between two rows. Nothing along a road out through the
+## fields or the tombs, nor before a square or a wall, nor beside an arm
+## that runs on to a gate. Houses that turn
+## their backs to the camera (facing north or east) are one-storey shops,
+## so the street stays in view; the others are as tall as the town's.
+func _plan_street(key: Vector2i, street: int) -> Array:
+	var links := street >> 4
+	var out := []
+	if links == 0:
+		return out
+	var urban: Array[bool] = []
+	var to_gate: Array[bool] = [] # the arm runs on to a gate or the wall
+	var tall := false
+	for d in 4:
+		var v := plans.texel(key + _side(d))
+		urban.append(v.x in PLAN_STREET_TOWN)
+		to_gate.append(v.x == 8 or v.x == 9)
+		tall = tall or (v.x >= 1 and v.x <= 3 and (v.z & 63) >= 3)
+	var pick := func(kind: String, bands: Array, front: int, k: int) -> int:
+		var band := 2 if front < 2 else 0 if tall else 1
+		var h := absi(hash(Vector3i(key.x, key.y, k)))
+		return _lot_index(kind, bands[band] + h % (bands[band + 1] - bands[band]))
+	for s in 4:
+		if links & (1 << s) == 0 and urban[s]:
+			# the row stands north facing south: turned to side s
+			out.append(Vector2i(pick.call("street_row", RomanCity.ROW_BANDS, (s + 2) % 4, s), s))
+	for c in 4:
+		# corner c between sides a and b; its house faces arm a (then its
+		# front is c + 3) or arm b (front c + 2), whichever the camera sees
+		var a := c
+		var b := (c + 1) % 4
+		var arm_a := links & (1 << a) != 0
+		var arm_b := links & (1 << b) != 0
+		# (none at an arm to a gate: the street opens before it, Mac r1)
+		var by_a := arm_a and urban[b] and not to_gate[a]
+		var by_b := arm_b and urban[a] and not to_gate[b]
+		if by_a and (not by_b or (c + 3) % 4 >= 2):
+			out.append(Vector2i(pick.call("street_corner_w", RomanCity.CORNER_BANDS, (c + 3) % 4, 4 + c), b))
+		elif by_b:
+			out.append(Vector2i(pick.call("street_corner_e", RomanCity.CORNER_BANDS, (c + 2) % 4, 4 + c), c))
+		elif not arm_a and not arm_b and urban[a] and urban[b]:
+			out.append(Vector2i(_lot_index("street_court", absi(hash(key)) % RomanCity.COURT_VARIANTS), b))
+	return out
+
+func _plan_kind(parcel: Vector2i) -> int:
+	return plans.texel(parcel).x
+
+static func _side(d: int) -> Vector2i:
+	return [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)][d]
+
+static func _lot_index(kind: String, variant: int) -> int:
+	return LOT_KINDS.find([kind, variant])
+
+## The plan's buildings that have a landmark model (Rome's), as world
+## rectangles by the model's name.
+func _plan_landmarks() -> Dictionary:
+	var out := {}
+	if plans == null:
+		return out
+	for id: String in plans.info.cities:
+		for building: Dictionary in plans.info.cities[id].get("buildings", []):
+			if building.has("landmark") and id == "rome":
+				var r: Array = building.parcels
+				out[building.landmark] = Rect2(world_min + Vector2(r[0], r[1]) * plans.parcel_km, Vector2(r[2], r[3]) * plans.parcel_km)
+	return out
 
 ## Cut the near level window around the patch (snapped, so it moves on only
 ## every quarter window). True when it changed.
@@ -804,7 +1101,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 			_props[kind].cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if tier == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		_set_tree_table(tier == 2)
 		for k in _landmarks.size():
-			var which := String(LANDMARKS[k][0])
+			var which := _landmark_names[k]
 			if which.begins_with("kit:"):
 				_landmarks[k].mesh = RomanBuildings.landmark_mesh(which.trim_prefix("kit:"), 0 if tier < 2 else 1)
 	var f := ((centre - world_min) / tile_km).floor()

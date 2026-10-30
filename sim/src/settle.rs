@@ -16,7 +16,10 @@
 //!
 //! City people (estate CITY) live in a disk around one of the listed places
 //! of their cell (cities.csv), with the radius the tile terrain gives its
-//! town tiles; their house tile is a hashed spot in that disk.
+//! town tiles; their house tile is a hashed spot in that disk. Where the
+//! city plans are baked (docs/kit2/CITY_PLANS.md, `CityHomes`), the people
+//! view puts them on a dwelling parcel of their city's plan instead; the
+//! house tile for grain (`home_fine`) stays the disk's.
 
 use crate::people::{Grid, CITY};
 use crate::City;
@@ -35,6 +38,7 @@ const SALT_VILLAGE: u64 = 0x5e77_1e00_0000_0001;
 const SALT_SITE: u64 = 0x5e77_1e00_0000_0002;
 const SALT_HOUSE: u64 = 0x5e77_1e00_0000_0003;
 const SALT_PLACE: u64 = 0x5e77_1e00_0000_0004;
+const SALT_DWELLING: u64 = 0x5e77_1e00_0000_0005;
 
 /// Land cover of the fine tiles of one 25 km cell by absolute (row, col),
 /// laid out as grain.rs `FineCover::get` gives it (landcover-fine): 256
@@ -48,6 +52,8 @@ pub struct Place {
     pub x: f32,
     pub z: f32,
     pub r: f32,
+    /// Index of the place in cities.csv.
+    pub city: u32,
     upto: u32,
 }
 
@@ -142,11 +148,11 @@ impl Settle {
             }
             villages.push(chosen);
         }
-        let mut by_cell: FxHashMap<u32, Vec<(f32, f32, f64)>> = FxHashMap::default();
-        for c in cities {
+        let mut by_cell: FxHashMap<u32, Vec<(f32, f32, f64, u32)>> = FxHashMap::default();
+        for (k, c) in cities.iter().enumerate() {
             let (r, col) = ((c.z_m / 25_000.0).floor() as i32, (c.x_m / 25_000.0).floor() as i32);
             if let Some(i) = grid.index(r, col) {
-                by_cell.entry(i).or_default().push(((c.x_m / 1000.0) as f32, (c.z_m / 1000.0) as f32, c.pop));
+                by_cell.entry(i).or_default().push(((c.x_m / 1000.0) as f32, (c.z_m / 1000.0) as f32, c.pop, k as u32));
             }
         }
         let places = by_cell
@@ -156,9 +162,9 @@ impl Settle {
                 let mut acc = 0.0;
                 let v = list
                     .iter()
-                    .map(|&(x, z, pop)| {
+                    .map(|&(x, z, pop, city)| {
                         acc += pop;
-                        Place { x, z, r: city_radius_km(pop), upto: ((acc / total) * 65535.0).round() as u32 }
+                        Place { x, z, r: city_radius_km(pop), city, upto: ((acc / total) * 65535.0).round() as u32 }
                     })
                     .collect();
                 (cell, v)
@@ -234,6 +240,53 @@ impl Settle {
     }
 }
 
+/// The dwelling parcels of each city's plan (tools/city_plans.py --bake,
+/// city-homes-x*.bin): parcel centres in world km, each with how many
+/// households it takes (the storeys of its house), for the people view.
+#[derive(Clone, Debug, Default)]
+pub struct CityHomes {
+    /// Per city of cities.csv: (x km, z km, households taken so far).
+    cities: Vec<Vec<(f32, f32, f32)>>,
+}
+
+impl CityHomes {
+    /// Reads city-homes-x*.bin: little-endian u32 count, then per city u32
+    /// n and n times (f32 x km, f32 z km, f32 households).
+    pub fn read(path: &std::path::Path) -> std::io::Result<CityHomes> {
+        let b = std::fs::read(path)?;
+        let bad = || std::io::Error::new(std::io::ErrorKind::InvalidData, "city homes: truncated");
+        let u32_at = |o: usize| b.get(o..o + 4).map(|s| u32::from_le_bytes(s.try_into().unwrap())).ok_or_else(bad);
+        let f32_at = |o: usize| b.get(o..o + 4).map(|s| f32::from_le_bytes(s.try_into().unwrap())).ok_or_else(bad);
+        let n = u32_at(0)? as usize;
+        let mut o = 4;
+        let mut cities = Vec::with_capacity(n);
+        for _ in 0..n {
+            let m = u32_at(o)? as usize;
+            o += 4;
+            let mut acc = 0.0;
+            let mut list = Vec::with_capacity(m);
+            for _ in 0..m {
+                acc += f32_at(o + 8)?.max(1.0);
+                list.push((f32_at(o)?, f32_at(o + 4)?, acc));
+                o += 12;
+            }
+            cities.push(list);
+        }
+        Ok(CityHomes { cities })
+    }
+
+    /// The dwelling a household of `city` lives on, by a hash of the
+    /// household weighted by what each dwelling takes; None where the city
+    /// has no plan with dwellings.
+    pub fn pick(&self, city: u32, household: u32) -> Option<(f32, f32)> {
+        let list = self.cities.get(city as usize).filter(|l| !l.is_empty())?;
+        let total = list[list.len() - 1].2;
+        let u = (h(0, SALT_DWELLING, household as u64, city as u64) >> 11) as f64 / (1u64 << 53) as f64 * total as f64;
+        let k = list.partition_point(|e| (e.2 as f64) <= u).min(list.len() - 1);
+        Some((list[k].0, list[k].1))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,5 +338,27 @@ mod tests {
         // building and asking for homes does not touch the sim
         let _ = Settle::new(&b.grid, &b.pop, &inp.cities, None, 1);
         assert_eq!(a.fingerprint(), b.fingerprint());
+    }
+
+    #[test]
+    fn city_households_live_on_dwellings_of_their_plan() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let inp = crate::inputs::load(&root, false).expect("inputs");
+        let homes = CityHomes::read(&root.join("artifacts/render-data/city-plans-r1/city-homes-x1.bin")).expect("city homes");
+        assert_eq!(homes.cities.len(), inp.cities.len());
+        // Rome: the biggest city
+        let rome = (0..inp.cities.len()).max_by(|&a, &b| inp.cities[a].pop.total_cmp(&inp.cities[b].pop)).unwrap() as u32;
+        let (cx, cz) = ((inp.cities[rome as usize].x_m / 1000.0) as f32, (inp.cities[rome as usize].z_m / 1000.0) as f32);
+        let mut seen = rustc_hash::FxHashSet::default();
+        for hh in 0..2000u32 {
+            let (x, z) = homes.pick(rome, hh).expect("rome has dwellings");
+            assert_eq!(homes.pick(rome, hh), Some((x, z)));
+            // inside the plan of Rome, a few km round its centre
+            assert!((x - cx).abs() < 6.0 && (z - cz).abs() < 6.0, "{x} {z}");
+            seen.insert((x.to_bits(), z.to_bits()));
+        }
+        // spread over many of its dwellings
+        assert!(seen.len() > 40, "{}", seen.len());
+        assert_eq!(homes.pick(u32::MAX, 1), None);
     }
 }
