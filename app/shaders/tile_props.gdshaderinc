@@ -191,6 +191,8 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool bush = scatter && rs >= SCATTER_TREE;
 		bool planted = garden && rs < 0.6 && !tt_near_landmark(at, 0.06);
 		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
+		// none on a field or a road the player built (state land is cleared, S116)
+		show = show && (garden || !sim_built_clear(at, SIM_ROAD_HALF_KM + 0.03));
 		// a lone tree smaller than in a wood, about as tall as a one-storey
 		// house, as Urbek's (Ramon on s3: Urbek's trees are much smaller
 		// against its fields and houses); kept in the middle of its quarter,

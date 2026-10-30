@@ -204,7 +204,7 @@ void vertex() {
 	}
 	// the slab, its rows and fence fitted into the parcel's slab (clear of lanes)
 	if (!sheep) {
-		vec4 box = crop_box_of((code / SIM_P_LANES) & 15, code, size);
+		vec4 box = crop_box_of((code / SIM_P_LANES) & 31, code, size);
 		off = (box.xy + box.zw) * 0.5 + off * (box.zw - box.xy) / inner;
 	}
 	vec2 p = mid + off;
