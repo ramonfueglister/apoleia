@@ -11,6 +11,7 @@ const PROPS_SHADER = preload("res://shaders/tile_props.gdshader")
 const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const SUB_PREP_SHADER = preload("res://shaders/tile_sub_prep.gdshader")
+const COAST_STEPS_SHADER = preload("res://shaders/tile_coast_steps.gdshader")
 const PropMeshes = preload("res://scripts/tile_prop_meshes.gd")
 const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
@@ -58,6 +59,12 @@ const SUB_TREE_SLOTS := 4
 const SUB_HOUSE_SLOTS := 1
 const SUB_WINDOW := 1024 # quarter tiles per side of sub_tex
 const NO_WINDOW := Vector2i(-1048576, 0)
+# Steps of the shore up close (coast_steps.gdshaderinc): columns per data
+# tile side (CS_CELLS), the data tiles scanned at once, and the most sides
+# drawn (a 100 x 100 window round Venice holds about 520)
+const COAST_CELLS := 16
+const COAST_BLOCK := 32
+const COAST_MAX := 2048
 # Far out (2 and 4 km tiles) the houses grow with the tiles, as buildings do
 # when SimCity 2000 zooms out: towns stay a mosaic of roofs instead of
 # coloured squares. Beyond that towns are roof coloured tiles.
@@ -242,6 +249,10 @@ var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
 var _corner_view: SubViewport
 var _place_material: ShaderMaterial # 2D pass: where each tree and house slot stands
+var _coast_material: ShaderMaterial # the steps of the shore
+var _coast: MultiMeshInstance3D
+var _coast_blocks := {} # COAST_BLOCK square of data tiles -> its open shore sides (_coast_block)
+var _coast_key := Vector4i(0, 0, 0, -9) # the data tiles listed (_update_coast_list)
 var _place_view: SubViewport
 var _prop_materials: Array[ShaderMaterial] = []
 var _terrain: MultiMeshInstance3D
@@ -365,6 +376,8 @@ func load_data(progress := Callable()) -> bool:
 	_place_material.shader = PROP_PREP_SHADER
 	_sub_material = ShaderMaterial.new()
 	_sub_material.shader = SUB_PREP_SHADER
+	_coast_material = ShaderMaterial.new()
+	_coast_material.shader = COAST_STEPS_SHADER
 	for kind in _prop_count():
 		var material := ShaderMaterial.new()
 		material.shader = PROPS_SHADER
@@ -403,7 +416,7 @@ func _lot_of(kind: int) -> int:
 	return kind - PROP_KINDS.size() + 1 if kind >= PROP_KINDS.size() and kind < _plinth_kind() else -1
 
 func _all_materials() -> Array[ShaderMaterial]:
-	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material]
+	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material, _coast_material]
 	list.append_array(_prop_materials)
 	return list
 
@@ -443,6 +456,21 @@ func _build_nodes() -> void:
 	_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_terrain)
 	_terrain_material.set_shader_parameter("patch_n", PATCH_N)
+	# the steps of the shore: one instance per listed side (_update_coast_list),
+	# no shadows, as the tiles
+	_coast = MultiMeshInstance3D.new()
+	_coast.name = "CoastSteps"
+	var cm := MultiMesh.new()
+	cm.transform_format = MultiMesh.TRANSFORM_3D
+	cm.use_custom_data = true
+	cm.mesh = PropMeshes.coast_steps_template(COAST_CELLS)
+	cm.instance_count = COAST_MAX
+	cm.visible_instance_count = 0
+	_coast.multimesh = cm
+	_coast.material_override = _coast_material
+	_coast.custom_aabb = huge
+	_coast.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_coast)
 	_meshes_full = [PropMeshes.tree_template(), null]
 	_meshes_low = [PropMeshes.tree_template(PropMeshes.TREE_BLOCKS - 1), null]
 	_meshes_detail = _meshes_full.duplicate()
@@ -809,6 +837,126 @@ func _update_town_list() -> void:
 		else:
 			_props[kind].multimesh.visible_instance_count = town_count * house_slots
 	events.append("towns")
+
+# ------------------------------------------------------- steps of the shore
+
+## Up close (0.5 km and quarter tiles) the sides of the sea tiles in front of
+## open land and the coast cuts under the prop patch, one instance each, for
+## the steps of the shore (coast_steps.gdshaderinc); the shaders get the
+## same window, so the tiles lay their sand and surf where the steps stand.
+## Further out none.
+func _update_coast_list() -> void:
+	var q := 2 if sub_tiles else 1 # quarter tiles per data tile side
+	var lo := Vector2i(floori(prop_origin.x / float(q)), floori(prop_origin.y / float(q)))
+	var hi := Vector2i(floori((prop_origin.x + prop_n - 1) / float(q)), floori((prop_origin.y + prop_n - 1) / float(q)))
+	if zoom > 0:
+		hi = lo - Vector2i.ONE
+	var key := Vector4i(lo.x, lo.y, hi.x, hi.y)
+	if key == _coast_key:
+		return
+	_coast_key = key
+	for material in [_terrain_material, _coast_material]:
+		material.set_shader_parameter("steps_lo", lo)
+		material.set_shader_parameter("steps_hi", hi)
+	var sides := PackedInt32Array()
+	if zoom <= 0:
+		for bj in range(lo.y / COAST_BLOCK, hi.y / COAST_BLOCK + 1):
+			for bi in range(lo.x / COAST_BLOCK, hi.x / COAST_BLOCK + 1):
+				var block := _coast_block(Vector2i(bi, bj))
+				for k in range(0, block.size(), 3):
+					if block[k] >= lo.x and block[k] <= hi.x and block[k + 1] >= lo.y and block[k + 1] <= hi.y:
+						sides.append_array(block.slice(k, k + 3))
+	var count := mini(sides.size() / 3, COAST_MAX)
+	# per instance a transform (unused: the shader places the blocks) and
+	# the custom data: data tile x, y, side (4 + tip on a cut)
+	var buffer := PackedFloat32Array()
+	buffer.resize(COAST_MAX * 16)
+	for k in count:
+		var o := k * 16
+		buffer[o] = 1.0
+		buffer[o + 5] = 1.0
+		buffer[o + 10] = 1.0
+		buffer[o + 12] = sides[k * 3]
+		buffer[o + 13] = sides[k * 3 + 1]
+		buffer[o + 14] = sides[k * 3 + 2]
+	_coast.multimesh.buffer = buffer
+	_coast.multimesh.visible_instance_count = count
+	events.append("coast %d" % count)
+
+## The open shore sides of a COAST_BLOCK square of data tiles (block b), as
+## (x, y, side) of the sea tile: the sea tiles with open land across that
+## side (cs_open); and its coast cuts towards the sea as (x, y, 4 + the
+## corner of the wet half) (cs_cut_tip). Scanned once and kept.
+func _coast_block(b: Vector2i) -> PackedInt32Array:
+	if _coast_blocks.has(b):
+		return _coast_blocks[b]
+	var image: Image = _cell_images[0]
+	# the block and three tiles round it on whole bytes (two cells a byte)
+	var rect := Rect2i(b.x * COAST_BLOCK / 2 - 2, b.y * COAST_BLOCK - 3, COAST_BLOCK / 2 + 4, COAST_BLOCK + 6)
+	rect = rect.intersection(Rect2i(Vector2i.ZERO, image.get_size()))
+	var bytes := image.get_region(rect).get_data() if rect.has_area() else PackedByteArray()
+	var cells := PackedByteArray()
+	var w := (COAST_BLOCK + 8) # unpacked, from x0
+	var h := COAST_BLOCK + 6
+	var x0 := b.x * COAST_BLOCK - 4
+	var y0 := b.y * COAST_BLOCK - 3
+	cells.resize(w * h)
+	cells.fill(1) # beyond the map: sea
+	for j in rect.size.y:
+		for i in rect.size.x:
+			var v := bytes[j * rect.size.x + i]
+			var at := (rect.position.y + j - y0) * w + (rect.position.x + i) * 2 - x0
+			cells[at] = v & 15
+			cells[at + 1] = v >> 4
+	var sides := PackedInt32Array()
+	for j in COAST_BLOCK:
+		for i in COAST_BLOCK:
+			var at := (j + 3) * w + i + 4
+			if (cells[at] & 3) != 1:
+				var tip := _coast_cut_tip(cells, at, w)
+				if tip >= 0:
+					sides.append_array([x0 + i + 4, y0 + j + 3, 4 + tip])
+				continue
+			for k in 4:
+				if _coast_open(cells, at + _coast_step(k, w), w):
+					sides.append_array([x0 + i + 4, y0 + j + 3, k])
+	_coast_blocks[b] = sides
+	return sides
+
+## Offset of the neighbour across side k (N, E, S, W) in a row of `w` cells.
+static func _coast_step(k: int, w: int) -> int:
+	return [-w, 1, w, -1][k]
+
+## cs_open (coast_steps.gdshaderinc) on the unpacked cells: land, not a town,
+## not a coast cut, not a lone tile in the sea.
+static func _coast_open(cells: PackedByteArray, at: int, w: int) -> bool:
+	var cell := cells[at]
+	if (cell & 3) != 0 or cell >= 8:
+		return false
+	var nb := PackedInt32Array([cells[at - w] & 3, cells[at + 1] & 3, cells[at + w] & 3, cells[at - 1] & 3])
+	if nb[0] == 1 and nb[1] == 1 and nb[2] == 1 and nb[3] == 1:
+		return false
+	for k in 4:
+		var a := nb[k]
+		var wet := (a == 1 or a == 2) and nb[(k + 1) & 3] == a
+		var rest_dry := nb[(k + 2) & 3] != a and nb[(k + 3) & 3] != a
+		if wet and rest_dry and (cells[at + _coast_step(k, w) + _coast_step((k + 1) & 3, w)] & 3) == a:
+			return false
+	return true
+
+## cs_cut_tip (coast_steps.gdshaderinc) on the unpacked cells: the corner of
+## the wet half of a coast cut towards the sea of open land, or -1.
+static func _coast_cut_tip(cells: PackedByteArray, at: int, w: int) -> int:
+	var cell := cells[at]
+	if (cell & 3) != 0 or cell >= 8:
+		return -1
+	var nb := PackedInt32Array([cells[at - w] & 3, cells[at + 1] & 3, cells[at + w] & 3, cells[at - 1] & 3])
+	for k in 4:
+		var wet := nb[k] == 1 and nb[(k + 1) & 3] == 1
+		var rest_dry := nb[(k + 2) & 3] != 1 and nb[(k + 3) & 3] != 1
+		if wet and rest_dry and (cells[at + _coast_step(k, w) + _coast_step((k + 1) & 3, w)] & 3) == 1:
+			return (k + 1) & 3
+	return -1
 
 # ------------------------------------------------------------ city plans
 
@@ -1200,6 +1348,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
 	_terrain_material.set_shader_parameter("prop_n", prop_n)
 	_update_town_list()
+	_update_coast_list()
 	if sub_tiles:
 		_update_sub_window()
 
