@@ -385,6 +385,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	events.setup(people, get_parent())
 	add_child(events)
 	events.answered.connect(_trips.take_events) # the newest events as scenes on the way
+	events.person_chosen.connect(_show_household) # a person named in an event window
 	_rebuild()
 	_rebuild_houses()
 	if _cost_path != "":
@@ -1009,6 +1010,20 @@ func _apply_colours() -> void:
 static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
+
+## Opens the person's window for a person by id, else a member of a
+## household (an event window's people, sim_events.gd).
+func _show_household(pid: int, household: int) -> void:
+	_doing = ""
+	if pid >= 0:
+		people.ask_person_id(pid)
+	elif household >= 0:
+		people.ask_household_member(household)
+	else:
+		return
+	_waiting = true
+	_show_info(true)
+	_info_label.text = "…"
 
 ## The person under `pixel`: a traveller on its way (people_trips.gd),
 ## else the nearest dot or figure, for which it reads the placement
