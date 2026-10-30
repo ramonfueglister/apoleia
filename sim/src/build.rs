@@ -1,6 +1,8 @@
 //! The player's build orders (S69, S70, S73, S74): farms, fields and roads
-//! ordered on fine tiles (1.5625 km, settle::FINE_KM) from the build menu
-//! (app/scripts/build_menu.gd). The game hands commands to the sim thread,
+//! ordered on village lots (0.5 km, the lots the view puts farmhouses on)
+//! from the build menu (app/scripts/build_menu.gd), each at the middle of
+//! its lot in world metres; the sim works on the fine tile (1.5625 km,
+//! settle::FINE_KM) the spot lies on. The game hands commands to the sim thread,
 //! which applies them between two days, so an order is part of the
 //! simulated state and never changes a day half done.
 //!
@@ -24,9 +26,23 @@ pub const FIELD: u8 = 1;
 pub const ROAD: u8 = 2;
 pub const KIND_NAMES: [&str; 3] = ["Hof", "Feld", "Strasse"];
 
-/// A fine tile in absolute rows and columns (row = floor(z / FINE_KM),
-/// column = floor(x / FINE_KM), world km).
+/// An order's spot: world metres, row = z, column = x (the middle of a
+/// village lot as the build menu lays them out; Ramon 29.10.2026: build
+/// like Anno, on the lots, not on 1.5 km tiles).
 pub type Tile = (i32, i32);
+
+/// Twice a fine tile's edge in metres (1562.5 m, settle::FINE_KM).
+const FINE_M2: i64 = 3125;
+
+/// The absolute fine tile (row, column) a spot lies on.
+pub fn fine_of(t: Tile) -> (i32, i32) {
+    ((t.0 as i64 * 2).div_euclid(FINE_M2) as i32, (t.1 as i64 * 2).div_euclid(FINE_M2) as i32)
+}
+
+/// The middle of an absolute fine tile as a spot (rounded down to the metre).
+pub fn fine_centre(row: i32, col: i32) -> Tile {
+    (((row as i64 * 2 + 1) * FINE_M2 / 4) as i32, ((col as i64 * 2 + 1) * FINE_M2 / 4) as i32)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Order {
@@ -184,6 +200,15 @@ mod tests {
         assert!(Command::read(&mut In { b: &[0, 9, 0, 0, 0, 0, 0, 0, 0, 0] }).is_err());
         assert!(Command::read(&mut In { b: &o.0[..o.0.len() - 3] }).is_ok());
         assert!(Command::read(&mut In { b: &o.0[..5] }).is_err());
+    }
+
+    #[test]
+    fn spots_lie_on_their_fine_tile() {
+        for (r, c) in [(0, 0), (-1, 5), (-1423, 3302), (7, -9)] {
+            assert_eq!(fine_of(fine_centre(r, c)), (r, c));
+        }
+        assert_eq!(fine_of((1562, 1563)), (0, 1));
+        assert_eq!(fine_of((-1, -1563)), (-1, -2));
     }
 
     #[test]
