@@ -307,8 +307,8 @@ impl Grain {
             turn += m.turned_avg / 1000;
         }
         let mut s = format!(
-            "      in t farm/gate/fetch/trader/granary {:?} | fetched by dealers t {:.0} | sown/full {:.0} % | wage den p50 {:.2} | real wage kg p10 {:.2} p50 {:.2} p90 {:.2} | vacant/idle days a week {}/{} | missed/turned t/d {:.1}/{:.1}\n",
-            self.stats.inflow.map(|x| x / 1000), self.stats.arbitrage_kg as f64 / 1e3, self.stats.plan_m2 as f64 * 100.0 / self.stats.plan_full_m2.max(1) as f64, wage[wage.len() / 2] as f64 / 1e3, real[real.len() / 10] as f64 / 1e3, real[real.len() / 2] as f64 / 1e3, real[real.len() * 9 / 10] as f64 / 1e3, vac, idle, miss as f64 / 1e3, turn as f64 / 1e3
+            "      in t farm/gate/fetch/trader/granary {:?} | fetched/sent by dealers t {:.0}/{:.0} | out/in beyond the map t {:.0}/{:.0} | sown/full {:.0} % | wage den p50 {:.2} | real wage kg p10 {:.2} p50 {:.2} p90 {:.2} | vacant/idle days a week {}/{} | missed/turned t/d {:.1}/{:.1}\n",
+            self.stats.inflow.map(|x| x / 1000), self.stats.arbitrage_kg as f64 / 1e3, self.stats.pushed_kg as f64 / 1e3, self.stats.out_export_kg as f64 / 1e3, self.stats.out_import_kg as f64 / 1e3, self.stats.plan_m2 as f64 * 100.0 / self.stats.plan_full_m2.max(1) as f64, wage[wage.len() / 2] as f64 / 1e3, real[real.len() / 10] as f64 / 1e3, real[real.len() / 2] as f64 / 1e3, real[real.len() * 9 / 10] as f64 / 1e3, vac, idle, miss as f64 / 1e3, turn as f64 / 1e3
         );
         let mut big: Vec<&&Market> = ms.iter().collect();
         big.sort_by_key(|m| std::cmp::Reverse(m.people));
