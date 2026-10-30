@@ -20,6 +20,10 @@ extends CanvasLayer
 ## days the simulation keeps (KEEP_DAYS) in the view and around it, at
 ## least REACH_MIN_KM around (from a village there was nothing to list).
 ##
+## The list is asked for while it is hidden too: every answer goes out with
+## `answered`, and people_trips.gd plays the newest events as scenes on the
+## map (a family moving with its handcart, a thief, a funeral).
+##
 ## Command line (after --): --no-events starts with the list hidden.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
@@ -45,6 +49,9 @@ const PIN_GRID := 14.0 # pins closer than the view width over this merge
 const THEFT := 4
 const ALMS := 5
 const MOVED := 1
+
+## Every answer of the sim thread, also while the list is hidden.
+signal answered(events: Dictionary)
 
 var people: RefCounted
 var landscape: Node3D
@@ -75,17 +82,18 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	_show(open)
 
 func _process(_delta: float) -> void:
-	if not open or people == null:
+	if people == null:
 		return
 	if _asked:
 		var answer: Dictionary = people.take_events()
 		if not answer.is_empty():
 			_asked = false
 			_last = answer
-			_group(answer)
-			_fill()
-			_make_pins()
-	_place_pins()
+			if open:
+				_refresh()
+			answered.emit(answer)
+	if open:
+		_place_pins()
 	if _asked:
 		return
 	var day: int = people.day()
@@ -101,6 +109,14 @@ func _process(_delta: float) -> void:
 	_asked = true
 	_asked_day = day
 	_asked_msec = Time.get_ticks_msec()
+
+## The list and the pins from the last answer.
+func _refresh() -> void:
+	if _last.is_empty():
+		return
+	_group(_last)
+	_fill()
+	_make_pins()
 
 ## One entry per day and kind, newest first, at most LINES.
 func _group(e: Dictionary) -> void:
@@ -230,6 +246,8 @@ func _show(on: bool) -> void:
 	_panel.visible = on
 	_pins_root.visible = on
 	_open_button.visible = not on
+	if on:
+		_refresh() # the answers that came while it was hidden
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
