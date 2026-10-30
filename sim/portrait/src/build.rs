@@ -1,0 +1,1792 @@
+//! The portrait's geometry (the Werkstatt's `morph` and `build`, ported):
+//! the MakeHuman head morphed by the genes, age, mood and life; skin with
+//! lips, brows, stubble, wrinkles and scars; eyes; men's hair as strands
+//! with a growth direction; beards as sculpted masses in a cylinder grid
+//! around the head axis; women's hair as wavy strand bands from the middle
+//! parting to a bun, braid or veil; clothing as shells over the body;
+//! headwear and jewellery by stand.
+
+use crate::caster::Caster;
+use crate::geo::*;
+use crate::head::{Head, DELTA_SCALE};
+use crate::look::*;
+use std::f32::consts::PI;
+
+const D2R: f32 = PI / 180.0;
+
+/// Levels of detail of the body: about 1400, 3000, 6000 and 11160
+/// triangles.
+pub const LODS: usize = 4;
+
+pub struct Portrait {
+    /// One per material.
+    pub surfaces: Vec<Surface>,
+    /// Frame: the top of the head (or hat), the chin, and the head's centre
+    /// in x and z.
+    pub top: f32,
+    pub chin: f32,
+    pub cx: f32,
+    pub cz: f32,
+    pub tris: usize,
+    /// Morph targets in use.
+    pub targets: usize,
+}
+
+/// JavaScript's Math.round.
+fn jround(x: f32) -> f32 {
+    (x + 0.5).floor()
+}
+
+fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
+    let mut pp = h.base.clone();
+    let mut used = 0;
+    let mut add = |name: &str, w: f32| {
+        if w <= 1e-3 {
+            return;
+        }
+        let Some(t) = h.targets.get(name) else { return };
+        used += 1;
+        let k = w * DELTA_SCALE;
+        for (j, &i) in t.ids.iter().enumerate() {
+            let d = t.d[j];
+            let v = &mut pp[i as usize];
+            v[0] += d[0] as f32 * k;
+            v[1] += d[1] as f32 * k;
+            v[2] += d[2] as f32 * k;
+        }
+    };
+    // macro targets: sex × age × base type, sex × age × muscle × weight
+    let yrs = p.age;
+    let a = if yrs < 11.0 {
+        (yrs - 1.0) / 10.0 * 0.1875
+    } else if yrs < 25.0 {
+        0.1875 + (yrs - 11.0) / 14.0 * 0.3125
+    } else {
+        (0.5 + (yrs - 25.0) / 65.0 * 0.5).min(1.0)
+    };
+    let age_w: Vec<(&str, f32)> = if a < 0.1875 {
+        vec![("child", 1.0)]
+    } else if a < 0.5 {
+        vec![("child", 1.0 - (a - 0.1875) / 0.3125), ("young", (a - 0.1875) / 0.3125)]
+    } else {
+        vec![("young", 1.0 - (a - 0.5) * 2.0), ("old", (a - 0.5) * 2.0)]
+    };
+    let tri = |v: f32| -> Vec<(&str, f32)> {
+        if v < 0.5 {
+            vec![("min", 1.0 - 2.0 * v), ("average", 2.0 * v)]
+        } else {
+            vec![("average", 1.0 - (v - 0.5) * 2.0), ("max", (v - 0.5) * 2.0)]
+        }
+    };
+    let (mu, wt) = (tri(p.phen(MUSCLE)), tri(p.phen(WEIGHT)));
+    let (ea, eb, ec) = (p.g(TYP_A), p.g(TYP_B), p.g(TYP_C));
+    let es = ea + eb + ec + 1e-3;
+    let eth = [("african", ea / es), ("asian", eb / es), ("caucasian", ec / es)];
+    let gen = if p.female { "female" } else { "male" };
+    for &(ag, aw) in &age_w {
+        for &(e, ew) in &eth {
+            add(&format!("macrodetails/{e}-{gen}-{ag}"), aw * ew);
+        }
+        for &(m, mw) in &mu {
+            for &(w, ww) in &wt {
+                add(&format!("macrodetails/universal-{gen}-{ag}-{m}muscle-{w}weight"), aw * mw * ww);
+            }
+        }
+    }
+    // face
+    for (k, &(names, lo, hi)) in FACE.iter().enumerate() {
+        let x = (p.g(k) - 128.0) / 127.0;
+        if names.is_empty() {
+            if x < 0.0 {
+                add("head/head-oval", -x * 0.8);
+            } else {
+                add("head/head-square", x * 0.8);
+            }
+            continue;
+        }
+        let list: Vec<String> = if names.len() == 1 && names[0].contains('#') {
+            vec![names[0].replace('#', "l"), names[0].replace('#', "r")]
+        } else {
+            names.iter().map(|s| s.to_string()).collect()
+        };
+        for n in list {
+            if x < 0.0 {
+                add(&format!("{n}-{lo}"), -x);
+            } else {
+                add(&format!("{n}-{hi}"), x);
+            }
+        }
+    }
+    // age: thinner lips, the head a little lowered
+    let old = c01((yrs - 50.0) / 30.0);
+    if old > 0.0 {
+        add("mouth/mouth-upperlip-volume-decr", old * 0.5);
+        add("mouth/mouth-lowerlip-volume-decr", old * 0.3);
+        add("head/head-age-incr", old * 0.6);
+    }
+    let mood: &[(&str, f32)] = match p.mood {
+        Mood::Content => &[("mouth/mouth-angles-up", 0.9), ("eyebrows/eyebrows-angle-up", 0.25), ("cheek/l-cheek-trans-up", 0.4), ("cheek/r-cheek-trans-up", 0.4)],
+        Mood::Grim => &[("eyebrows/eyebrows-trans-down", 0.5), ("eyebrows/eyebrows-angle-down", 0.8), ("mouth/mouth-angles-down", 0.4), ("mouth/mouth-scale-vert-decr", 0.4)],
+        Mood::Sad => &[("eyebrows/eyebrows-angle-up", 0.9), ("mouth/mouth-angles-down", 0.8), ("mouth/mouth-lowerlip-ext-up", 0.3)],
+        Mood::Neutral => &[],
+    };
+    for &(n, w) in mood {
+        add(n, w * 1.7);
+    }
+    // life: hunger hollows cheeks and temples, illness gives eye bags
+    let l = p.life;
+    let hung = c01((0.42 - l.food) / 0.42);
+    if hung > 0.0 {
+        for sd in ["l", "r"] {
+            add(&format!("cheek/{sd}-cheek-volume-decr"), hung * 2.2);
+            add(&format!("cheek/{sd}-cheek-bones-incr"), hung * 1.1);
+            add(&format!("eyes/{sd}-eye-bag-incr"), hung * 0.6);
+        }
+        add("forehead/forehead-temple-decr", hung * 1.4);
+        add("neck/neck-scale-horiz-decr", hung * 0.5);
+    }
+    if l.ill > 0.0 {
+        for sd in ["l", "r"] {
+            add(&format!("eyes/{sd}-eye-bag-incr"), l.ill * 0.7);
+        }
+    }
+    // arms down from the A pose, softly weighted around the shoulder joint
+    for sg in [1.0f32, -1.0] {
+        let (mut px, mut py, mut n) = (0f32, 0f32, 0);
+        for i in 0..h.n {
+            let (bx, by) = (h.base[i][0] * sg, h.base[i][1]);
+            if bx > 1.58 && bx < 1.78 && by > 4.95 && by < 5.55 {
+                px += pp[i][0];
+                py += pp[i][1];
+                n += 1;
+            }
+        }
+        if n == 0 {
+            continue;
+        }
+        px /= n as f32;
+        py /= n as f32;
+        let ang = -sg * 0.66;
+        for i in 0..h.n {
+            let bx = h.base[i][0] * sg;
+            if bx < 1.3 {
+                continue;
+            }
+            let t = c01((bx - 1.3) / 0.5);
+            let w = t * t * (3.0 - 2.0 * t);
+            let (cs, sn) = ((ang * w).cos(), (ang * w).sin());
+            let (dx, dy) = (pp[i][0] - px, pp[i][1] - py);
+            pp[i][0] = px + dx * cs - dy * sn;
+            pp[i][1] = py + dx * sn + dy * cs;
+        }
+    }
+    (pp, used)
+}
+
+/// Area-weighted vertex normals over the triangles `idx`.
+fn vnormals(p: &[V3], idx: &[u32]) -> Vec<V3> {
+    let mut n = vec![[0f32; 3]; p.len()];
+    for f in idx.chunks_exact(3) {
+        let (a, b, c) = (f[0] as usize, f[1] as usize, f[2] as usize);
+        let x = cross(sub(p[b], p[a]), sub(p[c], p[a]));
+        for i in [a, b, c] {
+            n[i] = add(n[i], x);
+        }
+    }
+    n.iter().map(|&v| if len(v) > 0.0 { norm(v) } else { v }).collect()
+}
+
+/// A point on the morphed skin, with its normal and where it sits on the
+/// base mesh.
+struct Spot {
+    p: V3,
+    n: V3,
+    b: V3,
+}
+
+/// Everything the parts share while one portrait is built.
+struct Ctx<'a> {
+    h: &'a Head,
+    pp: Vec<V3>,
+    rng: Rng,
+}
+
+impl<'a> Ctx<'a> {
+    fn base_c(&self, a: u32, b: u32, c: u32) -> V3 {
+        let bs = &self.h.base;
+        mul(add(add(bs[a as usize], bs[b as usize]), bs[c as usize]), 1.0 / 3.0)
+    }
+
+    fn mask3(m: &[f32], a: u32, b: u32, c: u32) -> f32 {
+        (m[a as usize] + m[b as usize] + m[c as usize]) / 3.0
+    }
+
+    /// One facet per triangle of `idx` that passes `filter` (on the base
+    /// centroid), coloured by `color`, each vertex moved `off` along `nor`.
+    fn facets(&self, out: &mut Surface, idx: &[u32], filter: &dyn Fn(V3, u32, u32, u32) -> bool, color: &mut dyn FnMut(V3, u32, u32, u32) -> Rgb, off: Option<(&[V3], &dyn Fn(u32) -> f32)>) {
+        for f in idx.chunks_exact(3) {
+            let (a, b, c) = (f[0], f[1], f[2]);
+            let cb = self.base_c(a, b, c);
+            if !filter(cb, a, b, c) {
+                continue;
+            }
+            let col = linear(color(cb, a, b, c));
+            for v in [a, b, c] {
+                let mut q = self.pp[v as usize];
+                if let Some((nor, o)) = off {
+                    let d = o(v);
+                    if d != 0.0 {
+                        q = madd(q, nor[v as usize], d);
+                    }
+                }
+                out.pos.push(q);
+                out.col.push(col);
+            }
+        }
+    }
+
+    /// Random points on the morphed skin of the triangles passing `filter`,
+    /// `density` per unit of area.
+    fn sample(&mut self, filter: &dyn Fn(V3, u32, u32, u32) -> bool, density: f32) -> Vec<Spot> {
+        let mut out = Vec::new();
+        let body = self.h.body_full();
+        for f in body.chunks_exact(3) {
+            let (a, b, c) = (f[0], f[1], f[2]);
+            let cb = self.base_c(a, b, c);
+            if !filter(cb, a, b, c) {
+                continue;
+            }
+            let (pa, pb, pc) = (self.pp[a as usize], self.pp[b as usize], self.pp[c as usize]);
+            let n = cross(sub(pb, pa), sub(pc, pa));
+            let area = len(n) / 2.0;
+            let n = norm(n);
+            let k = density * area;
+            let cnt = k.floor() as usize + if self.rng.next() < k.fract() { 1 } else { 0 };
+            for _ in 0..cnt {
+                let (mut u, mut v) = (self.rng.next(), self.rng.next());
+                if u + v > 1.0 {
+                    u = 1.0 - u;
+                    v = 1.0 - v;
+                }
+                let w = 1.0 - u - v;
+                let bs = &self.h.base;
+                out.push(Spot {
+                    p: madd(madd(mul(pa, w), pb, u), pc, v),
+                    n,
+                    b: madd(madd(mul(bs[a as usize], w), bs[b as usize], u), bs[c as usize], v),
+                });
+            }
+        }
+        out
+    }
+}
+
+/// A tapered, bent triangular prism rooted on the skin at `r` (normal `n`),
+/// growing along `dir`.
+#[allow(clippy::too_many_arguments)]
+fn strand(out: &mut Surface, r: V3, n: V3, dir: V3, ln: f32, w: f32, h: f32, col: Rgb, arch: f32, tip_shade: f32) {
+    let mut d = madd(dir, n, -dot(dir, n));
+    if dot(d, d) < 1e-6 {
+        d = [0.0, -1.0, 0.0];
+    }
+    let d = norm(d);
+    let sd = norm(cross(n, d));
+    let root = madd(r, n, -0.012);
+    let mid = madd(madd(root, d, ln * 0.55), n, ln * arch);
+    let d2 = norm(madd(d, n, -arch * 0.9 - 0.18));
+    let tip = madd(madd(mid, d2, ln * 0.5), n, -ln * arch * 0.15);
+    let ring = |c: V3, ww: f32, hh: f32| [madd(c, sd, ww), madd(c, sd, -ww), madd(madd(c, n, hh), sd, ww * 0.15)];
+    let (r0, r1) = (ring(root, w, h), ring(mid, w * 0.62, h * 0.7));
+    let (c0, c1, c2) = (cmul(col, 0.8), col, cmul(col, tip_shade));
+    for i in 0..3 {
+        let j = (i + 1) % 3;
+        out.put(r0[i], c0);
+        out.put(r0[j], c0);
+        out.put(r1[j], c1);
+        out.put(r0[i], c0);
+        out.put(r1[j], c1);
+        out.put(r1[i], c1);
+        out.put(r1[i], c1);
+        out.put(r1[j], c1);
+        out.put(tip, c2);
+    }
+}
+
+/// A sculpted mass (beard, moustache) in the cylinder grid around the head
+/// axis: columns from `f0` to `f1` degrees, rows from `top` to `bot`.
+struct Sculpt<'a> {
+    f0: f32,
+    f1: f32,
+    rows: usize,
+    bands: usize,
+    blen: f32,
+    tuft_h: f32,
+    conv: f32,
+    slant: f32,
+    taper: f32,
+    depth: f32,
+    ridge: f32,
+    wave: f32,
+    wave_f: f32,
+    chest_t: f32,
+    col: &'a dyn Fn(f32) -> Rgb,
+    cw: &'a [usize],
+    pinch: f32,
+    drift: f32,
+    jit: f32,
+    top: &'a dyn Fn(f32) -> f32,
+    bot: &'a dyn Fn(f32, f32, f32) -> f32,
+    thick: &'a dyn Fn(f32, f32, f32) -> f32,
+}
+
+/// The skin's radius around the beard axis, by angle and height.
+struct Raster {
+    rs: Vec<f32>,
+    f0: f32,
+    fs: f32,
+    nf: usize,
+    ya: f32,
+    ys: f32,
+    ny: usize,
+}
+
+impl Raster {
+    fn at(&self, f: f32, y: f32) -> f32 {
+        let fi = c01((f - self.f0) / self.fs / (self.nf - 1) as f32) * (self.nf - 1) as f32;
+        let yj = c01((y - self.ya) / self.ys / (self.ny - 1) as f32) * (self.ny - 1) as f32;
+        let i = (fi.floor() as usize).min(self.nf - 2);
+        let j = (yj.floor() as usize).min(self.ny - 2);
+        let (u, w) = (fi - i as f32, yj - j as f32);
+        let r = |i: usize, j: usize| self.rs[i * self.ny + j];
+        (r(i, j) * (1.0 - u) + r(i + 1, j) * u) * (1.0 - w) + (r(i, j + 1) * (1.0 - u) + r(i + 1, j + 1) * u) * w
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sculpt(out: &mut Surface, rng: &mut Rng, o: &Sculpt, rs: &Raster, zc: f32, cols: f32, hs: f32, ym60: f32) {
+    let nc = 3.max(jround((o.f1 - o.f0) / cols) as i32 | 1) as usize;
+    let nr = o.rows;
+    struct Cl {
+        s: usize,
+        w: usize,
+        r: f32,
+        d: f32,
+    }
+    // tufts: 2–4 columns make one lock; its edges are grooves, the middle a
+    // ridge that ends in a point at the bottom
+    let mut cl: Vec<Cl> = Vec::new();
+    let mut s0 = 0;
+    while s0 < nc - 1 {
+        let mut w = o.cw[((rng.next() * o.cw.len() as f32) as usize).min(o.cw.len() - 1)];
+        if s0 + w > nc - 1 {
+            w = nc - 1 - s0;
+        }
+        let r = rng.next();
+        let d = rng.next() - 0.5;
+        cl.push(Cl { s: s0, w, r, d });
+        s0 += w;
+    }
+    let cl_of = |ci: usize| cl.iter().find(|c| ci >= c.s && ci <= c.s + c.w).unwrap_or(cl.last().unwrap());
+    let f_at = |ci: f32| o.f0 + (o.f1 - o.f0) * ci / (nc - 1) as f32;
+    let sgn = |x: f32| if x > 0.0 { 1.0 } else if x < 0.0 { -1.0 } else { 0.0 };
+    let (mut fr, mut bk, mut po, mut nrm) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    for ci in 0..nc {
+        let f = f_at(ci as f32);
+        let a = f.abs();
+        let sg = sgn(f);
+        let c = cl_of(ci);
+        let pos = 2.0 * (ci as f32 - c.s as f32) / c.w as f32 - 1.0;
+        let ap = pos.abs();
+        let fc0 = f_at(c.s as f32 + c.w as f32 / 2.0);
+        let yt = (o.top)(a);
+        let yb = (o.bot)(a, ap, c.r).min(yt - 0.04 * hs);
+        let prof = 1.0 - 1.7 * ap * ap;
+        let (mut fc, mut bc, mut nr_) = (Vec::new(), Vec::new(), Vec::new());
+        let (mut rr, mut yp) = (-9f32, yt);
+        for ri in 0..=nr {
+            let v = ri as f32 / nr as f32;
+            let y = yt + (yb - yt) * v;
+            let cv = 1.0 - o.conv * sm(0.3, 1.0, v);
+            let mut fv = f * cv + sg * o.slant * v;
+            if ap < 0.99 {
+                fv = lerp(fv, fc0 * cv + sgn(fc0) * o.slant * v, o.pinch * sm(0.55, 1.0, v));
+            }
+            fv += c.d * o.drift * sm(0.25, 1.0, v);
+            let s = rs.at(fv, y);
+            let mut rf = s + (o.thick)(a, v, yt - y) * hs;
+            if y < ym60 {
+                rf = rf.max(s + o.chest_t);
+            }
+            if ri > 0 {
+                rf = rf.max(rr - o.taper * (yp - y));
+            }
+            rr = rf;
+            yp = y;
+            let r_f = rf + (o.ridge * (0.6 + 0.7 * c.r) * prof + o.wave * (v * o.wave_f + c.s as f32 * 1.9).sin()) * sm(0.0, 0.3, v) + (rng.next() - 0.5) * o.jit;
+            let dep = o.depth * (1.0 - 0.8 * sm(0.7, 1.0, v)) + 0.008;
+            let r_b = (r_f - 0.008).min((s - 0.014).max(r_f - dep));
+            let (sn, cs) = ((fv * D2R).sin(), (fv * D2R).cos());
+            fc.push([r_f * sn, y, zc + r_f * cs]);
+            bc.push([r_b * sn, y, zc + r_b * cs]);
+            nr_.push([sn, 0.0, cs]);
+        }
+        fr.push(fc);
+        bk.push(bc);
+        po.push(ap);
+        nrm.push(nr_);
+    }
+    for ci in 0..nc - 1 {
+        let lit = 0.7 + 0.32 * (1.0 - (po[ci] + po[ci + 1]) / 2.0);
+        for ri in 0..nr {
+            let v = (ri as f32 + 0.5) / nr as f32;
+            let yy = (fr[ci][ri][1] + fr[ci + 1][ri + 1][1]) / 2.0;
+            let base = cmul((o.col)(yy), lit * (0.8 + 0.2 * sm(0.0, 0.35, v)) * (0.92 + 0.14 * rng.next()));
+            out.tri(fr[ci][ri], fr[ci + 1][ri], fr[ci + 1][ri + 1], base);
+            out.tri(fr[ci][ri], fr[ci + 1][ri + 1], fr[ci][ri + 1], cmul(base, 0.97));
+            let dk = cmul(base, 0.5);
+            out.tri(bk[ci][ri], bk[ci + 1][ri + 1], bk[ci + 1][ri], dk);
+            out.tri(bk[ci][ri], bk[ci][ri + 1], bk[ci + 1][ri + 1], dk);
+        }
+    }
+    for ci in 0..nc - 1 {
+        for ri in [0, nr] {
+            let dk = cmul((o.col)(fr[ci][ri][1]), if ri > 0 { 0.68 } else { 0.62 });
+            out.tri(fr[ci][ri], bk[ci][ri], bk[ci + 1][ri], dk);
+            out.tri(fr[ci][ri], bk[ci + 1][ri], fr[ci + 1][ri], dk);
+        }
+    }
+    for ci in [0, nc - 1] {
+        for ri in 0..nr {
+            let dk = cmul((o.col)(fr[ci][ri][1]), 0.72);
+            out.tri(fr[ci][ri], bk[ci][ri], bk[ci][ri + 1], dk);
+            out.tri(fr[ci][ri], bk[ci][ri + 1], fr[ci][ri + 1], dk);
+        }
+    }
+    // shingle tufts: per lock and layer a flat point with a middle ridge,
+    // staggered like roof tiles
+    let up = |q: V3, n: V3, h: f32| [q[0] + n[0] * h, q[1], q[2] + n[2] * h];
+    if o.bands > 0 {
+        for (k, c) in cl.iter().enumerate() {
+            let cc = c.s + jround(c.w as f32 / 2.0) as usize;
+            for b in 0..o.bands {
+                let v0 = (b as f32 + (k % 2) as f32 * 0.5 + 0.15 * (c.r - 0.5)) / o.bands as f32;
+                if v0 > 0.92 {
+                    continue;
+                }
+                let r0 = jround(v0 * nr as f32).max(0.0) as usize;
+                let r1 = (nr as f32).min((r0 as f32 + 1.0).max(jround((v0 + o.blen / o.bands as f32) * nr as f32))) as usize;
+                let rm = (r0 + r1) >> 1;
+                let h = o.tuft_h * (0.7 + 0.6 * rng.next()) * if r0 > 0 { 1.0 } else { 0.5 };
+                let l = up(fr[c.s][r0], nrm[c.s][r0], 0.004);
+                let rr = up(fr[c.s + c.w][r0], nrm[c.s + c.w][r0], 0.004);
+                let m = up(fr[cc][rm], nrm[cc][rm], h);
+                let tp = up(fr[cc][r1], nrm[cc][r1], h * 0.35);
+                let col = cmul((o.col)(m[1]), 0.98 + 0.16 * rng.next());
+                out.tri(l, m, tp, col);
+                out.tri(m, rr, tp, cmul(col, 0.94));
+                out.tri(l, rr, m, cmul(col, 0.6));
+            }
+        }
+    }
+}
+
+/// Ellipse-free polyhedron put down at `c`, radius `r`, rotated by `m`,
+/// scaled per axis by `s`.
+fn solid(out: &mut Surface, shape: &(Vec<V3>, Vec<[usize; 3]>), c: V3, s: V3, m: &[V3; 3], col: Rgb) {
+    let (v, f) = shape;
+    let w: Vec<V3> = v.iter().map(|q| add(c, rot(m, [q[0] * s[0], q[1] * s[1], q[2] * s[2]]))).collect();
+    for t in f {
+        out.tri(w[t[0]], w[t[1]], w[t[2]], col);
+    }
+}
+
+/// A small octahedron (jewel, pearl, chain link).
+fn gem(out: &mut Surface, c: V3, r: f32, col: Rgb) {
+    let v = [[r, 0.0, 0.0], [-r, 0.0, 0.0], [0.0, r, 0.0], [0.0, -r, 0.0], [0.0, 0.0, r], [0.0, 0.0, -r]].map(|o| add(c, o));
+    for [a, b, d] in [[0, 2, 4], [2, 1, 4], [1, 3, 4], [3, 0, 4], [2, 0, 5], [1, 2, 5], [3, 1, 5], [0, 3, 5]] {
+        out.tri(v[a], v[b], v[d], col);
+    }
+}
+
+/// Builds the portrait of `p` at level of detail `lod` (0..LODS).
+pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
+    let lod = lod.min(LODS - 1);
+    let (pp, targets) = morph(h, p);
+    let mut x = Ctx { h, pp, rng: Rng::new(p.seed ^ 0x5bd1_e995) };
+    let body_full = h.body_full();
+    let mut uniq = Vec::new();
+    {
+        let mut seen = vec![false; h.n];
+        for &v in body_full {
+            if !seen[v as usize] {
+                seen[v as usize] = true;
+                uniq.push(v);
+            }
+        }
+    }
+    let fem = p.female;
+    let st = p.st();
+    let lf = p.life;
+    let hung = c01((0.42 - lf.food) / 0.42);
+    let hair = p.hair_colour();
+    let usk = p.u(SKIN);
+    // skin: the sun tans (more on light skin), hunger makes it sallow, illness pale
+    let skin = cmix(cmix(cmix(p.skin(), hex("#9a6440"), 0.24 * lf.sun * (1.0 - 0.6 * usk)), hex("#c8bc9c"), 0.2 * hung), hex("#ddd6ca"), 0.28 * lf.ill);
+    // wrinkles as darker facets along the usual lines; age counts, the sun deepens them
+    const WR: [[f32; 5]; 8] = [
+        [0.19, 6.93, 0.27, 6.62, 32.0],
+        [0.5, 7.38, 0.63, 7.43, 28.0],
+        [0.5, 7.34, 0.63, 7.29, 30.0],
+        [0.5, 7.36, 0.64, 7.36, 34.0],
+        [0.0, 7.78, 0.36, 7.79, 30.0],
+        [0.0, 7.86, 0.3, 7.87, 40.0],
+        [0.22, 7.26, 0.45, 7.23, 42.0],
+        [0.27, 6.6, 0.25, 6.42, 55.0],
+    ];
+    let seg_d = |px: f32, py: f32, x0: f32, y0: f32, x1: f32, y1: f32| {
+        let (dx, dy) = (x1 - x0, y1 - y0);
+        let t = c01(((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy));
+        (px - x0 - dx * t).hypot(py - y0 - dy * t)
+    };
+    let wrinkle = |c: V3| {
+        if c[2] < 0.9 {
+            return 0.0;
+        }
+        let ax = c[0].abs();
+        let mut k = 0f32;
+        for [x0, y0, x1, y1, a0] in WR {
+            let w = c01((p.age - a0) / 30.0) * (0.55 + 0.8 * lf.sun);
+            if w <= 0.0 {
+                continue;
+            }
+            k = k.max(w * c01(1.0 - seg_d(ax, c[1], x0, y0, x1, y1) / 0.032));
+        }
+        k
+    };
+    let scars = p.scars();
+    let scar_c = if usk < 0.45 { cmix(skin, hex("#c06a62"), 0.62) } else { cmix(skin, hex("#efcdb8"), 0.7) };
+    let nb = vnormals(&x.pp, body_full);
+    let curl = p.u(CURL);
+    let bald = if fem { 0.0 } else { c01((p.age - 22.0) / 38.0) * p.u(BALD) * 1.7 };
+    let beard = p.beard_style();
+    let cov = p.u(BEARD_G);
+    let lip_c = cmix(skin, hex(if fem { "#9a3238" } else { "#8a3a36" }), if fem { 0.55 } else { 0.3 });
+    let brow_c = cmix(skin, hair, if fem { 0.4 } else { 0.55 });
+    let stub_c = cmix(skin, cmix(hex("#33271f"), hair, 0.3), (if p.age < 20.0 { 0.22 } else { 0.4 }) + 0.22 * cov);
+    let in_brow = |c: V3| {
+        let ax = c[0].abs();
+        if !(0.1..=0.6).contains(&ax) || c[2] < 1.0 {
+            return false;
+        }
+        let yc = 7.565 + 0.035 * ((ax - 0.1) / 0.5 * PI).sin() - 0.02 * (ax - 0.1);
+        (c[1] - yc).abs() < if fem { 0.035 } else { 0.055 }
+    };
+    let in_beard = |c: V3, a: u32, b: u32, cc: u32| {
+        if c[1] < 6.08 || (c[1] < 6.3 && c[2] < 0.75) || c[2] < 0.2 {
+            return false;
+        }
+        let ax = c[0].abs();
+        if Ctx::mask3(&h.lip, a, b, cc) > 0.3 || Ctx::mask3(&h.nose, a, b, cc) > 0.2 {
+            return false;
+        }
+        let top = (if ax < 0.3 {
+            6.79
+        } else if ax < 0.55 {
+            6.8 - (ax - 0.3) * 0.3
+        } else {
+            6.76 + (ax - 0.55) * 1.3
+        }) + if ax > 0.3 { (cov - 0.5) * 0.18 } else { 0.0 };
+        if ax > 0.82 {
+            return false;
+        }
+        c[1] < top && (c[2] > 0.5 || c[1] < 6.5)
+    };
+    let mut out: Vec<Surface> = Vec::new();
+
+    // skin
+    {
+        let mut s = Surface::new(mat(0.62));
+        let mut color = |c: V3, a: u32, b: u32, cc: u32| -> Rgb {
+            let hh = hash(a, b, cc);
+            let mut col = cmul(skin, 0.95 + 0.08 * hh);
+            if Ctx::mask3(&h.lip, a, b, cc) > 0.42 {
+                return cmul(lip_c, 0.95 + 0.08 * hh);
+            }
+            if in_brow(c) {
+                return cmul(brow_c, 0.9 + 0.15 * hh);
+            }
+            if beard != Beard::Shaven && in_beard(c, a, b, cc) {
+                return cmul(cmix(skin, stub_c, 0.55 + 0.45 * hh), 0.94 + 0.08 * hash(cc, a, b));
+            }
+            let cm = Ctx::mask3(&h.cheek, a, b, cc);
+            if cm > 0.35 {
+                col = cmix(col, hex("#c06a58"), (if fem { 0.2 } else { 0.1 }) * cm);
+            }
+            let (ex, ey) = (c[0].abs() - 0.31, c[1] - 7.36);
+            if c[2] > 1.1 && ey > -0.02 && (ex * 0.8).hypot(ey) < 0.15 {
+                col = cmul(col, if fem { 0.8 } else { 0.9 });
+            }
+            if Ctx::mask3(&h.ear, a, b, cc) > 0.3 {
+                col = cmix(col, hex("#c06a58"), 0.08);
+            }
+            if c[1] > 6.0 && c[1] < 6.15 && c[2] > 0.4 {
+                col = cmul(col, 0.94);
+            }
+            let wk = wrinkle(c);
+            if wk > 0.0 {
+                col = cmul(col, 1.0 - 0.26 * wk);
+            }
+            if lf.sun > 0.3 {
+                col = cmul(col, 1.0 + (hh - 0.5) * 0.12 * lf.sun);
+            }
+            if c[2] > 1.05 && ey < -0.04 && ey > -0.16 && ex.abs() < 0.16 && (lf.ill > 0.0 || hung > 0.0) {
+                col = cmix(col, hex("#6e4a52"), 0.18 * lf.ill + 0.12 * hung);
+            }
+            col
+        };
+        x.facets(&mut s, &h.parts["body"][lod], &|_, _, _, _| true, &mut color, None);
+        out.push(s);
+    }
+
+    let mut strands = Surface::new(mat2(0.78));
+    // the head morph moves and scales the head: fit base -> morph per axis,
+    // so that the thresholds of the base mesh fit
+    let fit: Vec<[f32; 2]> = (0..3)
+        .map(|k| {
+            let (mut n, mut b, mut m, mut bb, mut bm) = (0f64, 0f64, 0f64, 0f64, 0f64);
+            for &v in &uniq {
+                let bs = h.base[v as usize];
+                if bs[1] < 6.0 || bs[0].abs() > 1.0 {
+                    continue;
+                }
+                let (xx, yy) = (bs[k] as f64, x.pp[v as usize][k] as f64);
+                n += 1.0;
+                b += xx;
+                m += yy;
+                bb += xx * xx;
+                bm += xx * yy;
+            }
+            let sl = (n * bm - b * m) / (n * bb - b * b);
+            [sl as f32, ((m - sl * b) / n) as f32]
+        })
+        .collect();
+    let hs = fit[1][0];
+    let ym = |y: f32| fit[1][0] * y + fit[1][1];
+    // the head's centre in morph space; rays from here hit skull, ears and nape
+    let hc = [fit[0][1], ym(7.7), fit[2][0] * 0.45 + fit[2][1]];
+    let pp_snapshot = x.pp.clone();
+    let cast_h = Caster::new(hc, &pp_snapshot, body_full);
+
+    // --- beard: a sculpted mass in the cylinder grid around the head axis ---
+    let grey_start = 22.0 + (1.0 - p.u(GREY)) * 32.0;
+    let beard_grey = c01((p.age - grey_start) / 25.0);
+    if beard != Beard::Shaven && beard != Beard::Stubble {
+        // a little lighter than the hair, greys first at the chin
+        let b_col = |by: f32| cmix(cmul(hair, 1.12), hex("#d6d1c9"), beard_grey * 0.6 * c01((ym(6.8) - by) / (0.6 * hs)));
+        let zc = fit[2][0] * 0.35 + fit[2][1];
+        let (f0, fs, nf, ya, ys, ny) = (-120f32, 1.5f32, 161usize, ym(5.3), 0.02 * hs, 131usize);
+        let mut rsv = vec![-1f32; nf * ny];
+        let (mut pf, mut py, mut pr) = (vec![0f32; h.n], vec![0f32; h.n], vec![0f32; h.n]);
+        for &v in &uniq {
+            let q = x.pp[v as usize];
+            let (xx, zz) = (q[0], q[2] - zc);
+            pf[v as usize] = xx.atan2(zz) / D2R;
+            py[v as usize] = q[1];
+            pr[v as usize] = xx.hypot(zz);
+        }
+        for f in body_full.chunks_exact(3) {
+            let (a, b, c) = (f[0] as usize, f[1] as usize, f[2] as usize);
+            if pf[a].abs().max(pf[b].abs()).max(pf[c].abs()) > 135.0 {
+                continue;
+            }
+            let (fl, fh) = (pf[a].min(pf[b]).min(pf[c]), pf[a].max(pf[b]).max(pf[c]));
+            let (yl, yh) = (py[a].min(py[b]).min(py[c]), py[a].max(py[b]).max(py[c]));
+            if yh < ya || yl > ya + ys * (ny - 1) as f32 {
+                continue;
+            }
+            let i0 = ((fl - f0) / fs).ceil().max(0.0) as usize;
+            let i1 = ((fh - f0) / fs).floor().min((nf - 1) as f32);
+            let j0 = ((yl - ya) / ys).ceil().max(0.0) as usize;
+            let j1 = ((yh - ya) / ys).floor().min((ny - 1) as f32);
+            if i1 < 0.0 || j1 < 0.0 {
+                continue;
+            }
+            let (i1, j1) = (i1 as usize, j1 as usize);
+            let (x1, y1, x2, y2, x3, y3) = (pf[a], py[a], pf[b], py[b], pf[c], py[c]);
+            let den = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+            if den.abs() < 1e-9 {
+                continue;
+            }
+            for i in i0..=i1 {
+                for j in j0..=j1 {
+                    let (xx, yy) = (f0 + i as f32 * fs, ya + j as f32 * ys);
+                    let l1 = ((y2 - y3) * (xx - x3) + (x3 - x2) * (yy - y3)) / den;
+                    let l2 = ((y3 - y1) * (xx - x3) + (x1 - x3) * (yy - y3)) / den;
+                    let l3 = 1.0 - l1 - l2;
+                    if l1 < -1e-4 || l2 < -1e-4 || l3 < -1e-4 {
+                        continue;
+                    }
+                    let r = l1 * pr[a] + l2 * pr[b] + l3 * pr[c];
+                    if r > rsv[i * ny + j] {
+                        rsv[i * ny + j] = r;
+                    }
+                }
+            }
+        }
+        for i in 0..nf {
+            let mut last = -1f32;
+            for j in (0..ny).rev() {
+                if rsv[i * ny + j] < 0.0 {
+                    rsv[i * ny + j] = last;
+                } else {
+                    last = rsv[i * ny + j];
+                }
+            }
+            last = -1.0;
+            for j in 0..ny {
+                if rsv[i * ny + j] < 0.0 {
+                    rsv[i * ny + j] = last;
+                } else {
+                    last = rsv[i * ny + j];
+                }
+            }
+        }
+        let rs = Raster { rs: rsv, f0, fs, nf, ya, ys, ny };
+        // the jaw line: the skin's steepest recession towards the neck, sought
+        // near the base mesh's mean jaw line
+        const JM: [[f32; 2]; 6] = [[0.0, 6.14], [11.0, 6.15], [25.0, 6.25], [44.0, 6.6], [71.0, 6.8], [95.0, 6.9]];
+        let jm = |a: f32| {
+            for k in 1..JM.len() {
+                if a <= JM[k][0] {
+                    return lerp(JM[k - 1][1], JM[k][1], (a - JM[k - 1][0]) / (JM[k][0] - JM[k - 1][0]));
+                }
+            }
+            6.9
+        };
+        let jaw_raw = |f: f32| {
+            let m = jm(f.abs());
+            let (mut best, mut bd) = (ym(m), -1f32);
+            let mut y = ym(m - 0.22);
+            while y < ym(m + 0.15) {
+                let d = rs.at(f, y + ys) - rs.at(f, y - ys);
+                if d > bd {
+                    bd = d;
+                    best = y;
+                }
+                y += ys / 2.0;
+            }
+            best
+        };
+        let jw: Vec<f32> = (0..=90).map(|k| jaw_raw(k as f32) * 0.5 + jaw_raw(-(k as f32)) * 0.5).collect();
+        let yj = |a: f32| {
+            let k = (jround(a) as i32).min(90);
+            let (mut s, mut n) = (0f32, 0);
+            for d in -3..=3 {
+                let q = k + d;
+                if !(0..=90).contains(&q) {
+                    continue;
+                }
+                s += jw[q as usize];
+                n += 1;
+            }
+            s / n as f32
+        };
+        // mouth, nose, ear from the masks of the morphed skin
+        let (mut mc, mut y_lo, mut y_up, mut y_cor, mut fe) = (6f32, 99f32, -99f32, ym(6.62), 90f32);
+        for &v in &uniq {
+            let v = v as usize;
+            let af = pf[v].abs();
+            if h.lip[v] > 0.42 {
+                if af > mc {
+                    mc = af;
+                    y_cor = py[v];
+                }
+                if af < 6.0 {
+                    y_lo = y_lo.min(py[v]);
+                    y_up = y_up.max(py[v]);
+                }
+            }
+            if h.ear[v] > 0.6 && py[v] > ym(6.9) && py[v] < ym(7.5) && pr[v] > 0.55 * hs {
+                fe = fe.min(af);
+            }
+        }
+        if y_lo > 90.0 {
+            y_lo = ym(6.5);
+            y_up = ym(6.74);
+        }
+        let f_max = 55f32.max(72f32.min(fe - 6.0));
+        let y_side = ym(7.6);
+        let cols = [8.0, 6.0, 4.6, 4.0][lod];
+        let mut bm = Surface::new(mat2(0.82));
+        // the bottom edge: round, pointed, straight or forked
+        let shape_of = |k: usize| -> fn(f32) -> f32 {
+            match k {
+                0 => |u| (1.0 - u * u).max(0.0).sqrt(),
+                1 => |u| (1.0 - u).max(0.0).powf(1.3),
+                2 => |u| 1.0 - sm(0.45, 0.95, u),
+                _ => |u| (1.0 - u * u).max(0.0).sqrt() * (1.0 - 0.28 * (-u * u * 60.0).exp()),
+            }
+        };
+        let len_f = 0.8 + 0.45 * x.rng.next();
+        // (the Werkstatt draws both picks, whichever style is used)
+        let pick_voll = [0, 0, 1, 2, 3][((x.rng.next() * 5.0) as usize).min(4)];
+        let pick_phil = [1, 0, 3, 1][((x.rng.next() * 4.0) as usize).min(3)];
+        struct B0 {
+            t: f32,
+            tc: f32,
+            drop: f32,
+            taper: f32,
+            depth: f32,
+            ridge: f32,
+            tuft: f32,
+            wave: f32,
+            conv: f32,
+            shape: usize,
+            chest: f32,
+            cw: &'static [usize],
+            pinch: f32,
+            drift: f32,
+            jit: f32,
+            bands: usize,
+            blen: f32,
+            tuft_h: f32,
+        }
+        let b0 = match beard {
+            Beard::Short => B0 { t: 0.038, tc: 0.03, drop: 0.06, taper: 1.4, depth: 0.08, ridge: 0.008, tuft: 0.035, wave: 0.003, conv: 0.0, shape: 0, chest: 0.1, cw: &[2, 3], pinch: 0.3, drift: 0.5, jit: 0.008, bands: 2, blen: 1.1, tuft_h: 0.012 },
+            Beard::Full => B0 { t: 0.075, tc: 0.2, drop: 0.45, taper: 0.38, depth: 0.5, ridge: 0.03, tuft: 0.12, wave: 0.012, conv: 0.12, shape: pick_voll, chest: 0.13, cw: &[2, 3, 3], pinch: 0.6, drift: 2.5, jit: 0.014, bands: 3, blen: 1.25, tuft_h: 0.035 },
+            Beard::Philosopher => B0 { t: 0.08, tc: 0.24, drop: 1.0, taper: 0.2, depth: 0.55, ridge: 0.032, tuft: 0.16, wave: 0.015, conv: 0.22, shape: pick_phil, chest: 0.15, cw: &[2, 3, 3], pinch: 0.6, drift: 3.0, jit: 0.016, bands: 4, blen: 1.25, tuft_h: 0.04 },
+            _ => B0 { t: 0.04, tc: 0.14, drop: 0.45, taper: 0.45, depth: 0.35, ridge: 0.02, tuft: 0.08, wave: 0.008, conv: 0.4, shape: 1, chest: 0.12, cw: &[2, 3], pinch: 0.5, drift: 1.5, jit: 0.012, bands: 2, blen: 1.2, tuft_h: 0.03 },
+        };
+        let shape = shape_of(b0.shape);
+        let chest_t = if st.toga { b0.chest.max(0.22) } else { b0.chest };
+        let chin = beard == Beard::Chin;
+        let f_r = if chin { mc + 4.0 + 3.0 * cov } else { f_max };
+        let cheek_ex = 1.7 - 1.0 * cov;
+        let y_c0 = y_cor + 0.02 * hs;
+        let top = |a: f32| {
+            if a <= mc * 0.6 {
+                return y_lo - 0.02 * hs;
+            }
+            if a <= mc + 4.0 {
+                return lerp(y_lo - 0.02 * hs, y_c0, sm(mc * 0.6, mc + 4.0, a));
+            }
+            if chin {
+                return y_c0;
+            }
+            y_c0 + (y_side - y_c0) * c01((a - mc - 4.0) / (f_max - mc - 4.0)).powf(cheek_ex)
+        };
+        let bot = |a: f32, ap: f32, rnd: f32| {
+            let sh = shape(c01(a / f_r));
+            yj(a) - hs * (b0.drop * len_f * sh + ((1.0 - ap).max(0.0).powf(0.8) - 0.15) * b0.tuft * (0.5 + 0.9 * rnd) * (1.0 - 0.4 * curl) * (0.4 + 0.6 * sh))
+        };
+        let thick = |a: f32, v: f32, dy: f32| {
+            (b0.t * (0.8 + 0.4 * cov) * (1.0 - 0.55 * sm(0.72, 1.0, a / f_r)) + b0.tc * len_f * (1.0 - c01(a / f_r)).powf(1.2) * sm(0.05, 0.5, v)) * sm(0.0, 0.07, dy) + 0.004
+        };
+        sculpt(
+            &mut bm,
+            &mut x.rng,
+            &Sculpt {
+                f0: -f_r,
+                f1: f_r,
+                rows: jround(6.0 + 8.0 * b0.drop * len_f) as usize,
+                bands: b0.bands,
+                blen: b0.blen,
+                tuft_h: b0.tuft_h * (1.0 + 0.8 * curl),
+                conv: b0.conv,
+                slant: 0.0,
+                taper: b0.taper,
+                depth: b0.depth,
+                ridge: b0.ridge * (1.0 + 0.6 * curl),
+                wave: b0.wave + 0.035 * curl * if beard == Beard::Short { 0.2 } else { 1.0 },
+                wave_f: 6.0 + 10.0 * curl,
+                chest_t,
+                col: &b_col,
+                cw: b0.cw,
+                pinch: b0.pinch,
+                drift: b0.drift * (1.0 + curl),
+                jit: b0.jit,
+                top: &top,
+                bot: &bot,
+                thick: &thick,
+            },
+            &rs,
+            zc,
+            cols,
+            hs,
+            ym(6.0),
+        );
+        // moustache
+        struct M0 {
+            ext: f32,
+            t: f32,
+            over: f32,
+            droop: f32,
+            tuft: f32,
+            slant: f32,
+            ridge: f32,
+        }
+        let chin_moustache = x.rng.next() < 0.6;
+        let m0 = match beard {
+            Beard::Short => Some(M0 { ext: 1.0, t: 0.024, over: 0.0, droop: 0.03, tuft: 0.012, slant: 5.0, ridge: 0.004 }),
+            Beard::Full => Some(M0 { ext: 4.0, t: 0.042, over: 0.05, droop: 0.1, tuft: 0.03, slant: 8.0, ridge: 0.009 }),
+            Beard::Philosopher => Some(M0 { ext: 6.0, t: 0.05, over: 0.08, droop: 0.2, tuft: 0.04, slant: 10.0, ridge: 0.011 }),
+            _ if chin_moustache => Some(M0 { ext: 0.0, t: 0.022, over: 0.0, droop: 0.04, tuft: 0.012, slant: 5.0, ridge: 0.004 }),
+            _ => None,
+        };
+        if let Some(m0) = m0 {
+            let f_m = mc + m0.ext;
+            let m_top = y_up + 0.11 * hs;
+            let mcol = b_col(ym(6.8));
+            sculpt(
+                &mut bm,
+                &mut x.rng,
+                &Sculpt {
+                    f0: -f_m,
+                    f1: f_m,
+                    rows: 4,
+                    bands: 1,
+                    blen: 1.0,
+                    tuft_h: m0.t * 0.4,
+                    conv: 0.0,
+                    slant: m0.slant,
+                    taper: 0.7,
+                    depth: 0.07,
+                    ridge: m0.ridge,
+                    wave: 0.004 * curl,
+                    wave_f: 5.0,
+                    chest_t: 0.0,
+                    col: &|_| mcol,
+                    cw: &[2],
+                    pinch: 0.4,
+                    drift: 0.6,
+                    jit: 0.005,
+                    top: &|a| m_top - 0.07 * hs * (a / f_m).powf(1.5),
+                    bot: &|a, ap, rnd| y_up - hs * (m0.over + m0.droop * (a / f_m).powi(2) + ((1.0 - ap).max(0.0).powf(0.8) - 0.15) * m0.tuft * (0.5 + 0.9 * rnd)),
+                    thick: &|a, _v, dy| m0.t * (1.0 - 0.5 * (a / f_m).powi(2)) * sm(0.0, 0.03, dy) + 0.006,
+                },
+                &rs,
+                zc,
+                cols,
+                hs,
+                ym(6.0),
+            );
+        }
+        out.push(bm);
+    }
+    // stubble: many tiny dark facets just above the skin, grainy rather than tinted
+    if beard == Beard::Stubble || (beard != Beard::Shaven && !fem) {
+        let density = if beard == Beard::Stubble { (700.0 + 900.0 * cov) * if p.age < 20.0 { 0.5 } else { 1.0 } } else { 260.0 };
+        let dots = x.sample(&|c, a, b, cc| in_beard(c, a, b, cc), density);
+        let mut sd = Surface::new(mat2(0.9));
+        let dc = cmix(hex("#2b211b"), hair, 0.35);
+        for d in &dots {
+            let n = d.n;
+            let mut t1 = cross([1.0, 0.0, 0.0], n);
+            if dot(t1, t1) < 1e-4 {
+                t1 = [0.0, 1.0, 0.0];
+            }
+            let t1 = norm(t1);
+            let t2 = cross(n, t1);
+            let s0 = (0.009 + 0.008 * x.rng.next()) * hs;
+            let o = madd(d.p, n, 0.003);
+            let a0 = x.rng.next() * 6.28;
+            let cc = cmul(dc, 0.8 + 0.4 * x.rng.next());
+            let l = linear(cc);
+            for k in 0..3 {
+                let a = a0 + k as f32 * 2.094;
+                sd.pos.push(madd(madd(o, t1, a.cos() * s0), t2, a.sin() * s0));
+                sd.col.push(l);
+            }
+        }
+        out.push(sd);
+    }
+    // scars: narrow, slightly raised ribbons on the morphed skin (each point
+    // found by triangle in the base mesh's front view)
+    if !scars.is_empty() {
+        let front: Vec<usize> = (0..body_full.len()).step_by(3).filter(|&f| (0..3).map(|q| h.base[body_full[f + q] as usize][2]).sum::<f32>() > 2.1).collect();
+        let surf = |xx: f32, yy: f32| -> Option<(V3, V3)> {
+            for &f in &front {
+                let (a, b, c) = (body_full[f] as usize, body_full[f + 1] as usize, body_full[f + 2] as usize);
+                let (x1, y1, x2, y2, x3, y3) = (h.base[a][0], h.base[a][1], h.base[b][0], h.base[b][1], h.base[c][0], h.base[c][1]);
+                let den = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+                if den.abs() < 1e-9 {
+                    continue;
+                }
+                let l1 = ((y2 - y3) * (xx - x3) + (x3 - x2) * (yy - y3)) / den;
+                let l2 = ((y3 - y1) * (xx - x3) + (x1 - x3) * (yy - y3)) / den;
+                let l3 = 1.0 - l1 - l2;
+                if l1 < 0.0 || l2 < 0.0 || l3 < 0.0 {
+                    continue;
+                }
+                let (pa, pb, pc) = (x.pp[a], x.pp[b], x.pp[c]);
+                let q = add(add(mul(pa, l1), mul(pb, l2)), mul(pc, l3));
+                let mut n = norm(cross(sub(pb, pa), sub(pc, pa)));
+                if n[2] < 0.0 {
+                    n = mul(n, -1.0);
+                }
+                return Some((q, n));
+            }
+            None
+        };
+        let mut ss = Surface::new(mat2(0.5));
+        for sc in &scars {
+            let mut pts = Vec::new();
+            for k in 0..=6 {
+                let t = k as f32 / 6.0;
+                if let Some((q, n)) = surf(lerp(sc.x0, sc.x1, t) + 0.006 * (k as f32 * 2.3).sin(), lerp(sc.y0, sc.y1, t)) {
+                    pts.push((q, n, (0.024 - 0.014 * (t - 0.5).abs() * 2.0) * hs));
+                }
+            }
+            for k in 0..pts.len().saturating_sub(1) {
+                let ((qa, na, wa), (qb, nb2, wb)) = (pts[k], pts[k + 1]);
+                let dir = norm(sub(qb, qa));
+                let sa = mul(norm(cross(na, dir)), wa);
+                let sb = mul(norm(cross(nb2, dir)), wb);
+                let (oa, ob) = (madd(qa, na, 0.005), madd(qb, nb2, 0.005));
+                let (a1, a2, b1, b2) = (add(oa, sa), sub(oa, sa), add(ob, sb), sub(ob, sb));
+                let ridge = mix(madd(qa, na, 0.011), madd(qb, nb2, 0.011), 0.5);
+                let (lit, dim) = (cmul(scar_c, 1.06), cmul(scar_c, 0.92));
+                ss.put(a1, scar_c);
+                ss.put(b1, scar_c);
+                ss.put(ridge, lit);
+                ss.put(a2, dim);
+                ss.put(ridge, lit);
+                ss.put(b2, dim);
+                ss.put(a1, scar_c);
+                ss.put(ridge, scar_c);
+                ss.put(a2, scar_c);
+                ss.put(b1, scar_c);
+                ss.put(b2, scar_c);
+                ss.put(ridge, scar_c);
+            }
+        }
+        out.push(ss);
+    }
+    // eyes
+    {
+        let mut se = Surface::new(mat(0.18));
+        let iris = p.eye_colour();
+        for k in ["leye", "reye"] {
+            let idx = &h.parts[k][0];
+            let mut c = [0f32; 3];
+            for &v in idx {
+                c = add(c, x.pp[v as usize]);
+            }
+            c = mul(c, 1.0 / idx.len() as f32);
+            let mut seen = vec![false; h.n];
+            for &v in idx {
+                if !seen[v as usize] {
+                    seen[v as usize] = true;
+                    x.pp[v as usize][2] += 0.012;
+                }
+            }
+            let pp = &x.pp;
+            let mut color = |_: V3, a: u32, b: u32, cc: u32| {
+                let m = mul(add(add(pp[a as usize], pp[b as usize]), pp[cc as usize]), 1.0 / 3.0);
+                let q = sub(m, c);
+                let d = q[2] / len(q);
+                if d > 0.985 {
+                    hex("#0d0806")
+                } else if d > 0.875 {
+                    cmul(iris, if d > 0.95 { 0.85 } else { 1.15 })
+                } else {
+                    hex("#f4efe7")
+                }
+            };
+            x.facets(&mut se, idx, &|_, _, _, _| true, &mut color, None);
+        }
+        out.push(se);
+    }
+    // men's hair: an under-layer plus strands with a growth direction
+    let theta = |c: V3| (c[0].atan2(c[2] - 0.45)).abs() / PI;
+    let hairline = |c: V3| {
+        let t = theta(c);
+        let f = if fem { 7.96 } else if bald > 0.25 { 8.02 } else { 7.95 };
+        let sd = if fem { 7.05 } else { 7.52 };
+        let bk = if fem { 6.55 } else { 6.85 };
+        if t < 0.5 {
+            lerp(f, sd, t / 0.5)
+        } else {
+            lerp(sd, bk, (t - 0.5) / 0.5)
+        }
+    };
+    let hair_filter = |c: V3, a: u32, b: u32, cc: u32| {
+        let t = theta(c);
+        if c[1] < 6.4 || c[0].abs() > 1.0 || c[1] < hairline(c) {
+            return false;
+        }
+        if !fem && Ctx::mask3(&h.ear, a, b, cc) > 0.25 {
+            return false;
+        }
+        if bald > 0.25 && t < 0.3 && c[1] < 8.02 + 0.5 * (bald - 0.25) {
+            return false;
+        }
+        if bald > 0.4 && t < 0.8 && c[1] > 8.5 - (bald - 0.4) * 0.9 {
+            return false;
+        }
+        true
+    };
+    let kid = p.age < 13.0;
+    if bald < 1.3 && !fem {
+        let mut su = Surface::new(mat(0.9));
+        let off = 0.04 + 0.03 * curl;
+        x.facets(&mut su, &h.parts["body"][lod.min(2)], &hair_filter, &mut |_, a, b, c| cmul(hair, 0.74 + 0.1 * hash(a, b, c)), Some((&nb, &|_| off)));
+        out.push(su);
+        let roots = x.sample(&hair_filter, if curl > 0.55 { 40.0 } else { 30.0 });
+        for s in &roots {
+            let [bx, _, bz] = s.b;
+            let sg = if bx > 0.0 { 1.0 } else if bx < 0.0 { -1.0 } else { 1.0 };
+            // Roman short cut: combed from the crown forward into the forehead
+            let (cx, cz) = (bx, bz - 0.05);
+            let hl = cx.hypot(cz);
+            let hl = if hl > 0.0 { hl } else { 1.0 };
+            let mut dir = [cx / hl * 0.7, -0.55, cz / hl * 0.7];
+            if bz > 0.55 {
+                dir = [sg * 0.12 + bx * 0.2, -0.35, 1.0];
+            }
+            let ln = (0.32 + 0.1 * x.rng.next()) * if kid { 0.9 } else { 1.0 } * (1.0 - 0.35 * curl);
+            let (w, hh, arch) = (0.15 + 0.03 * curl, 0.03 + 0.02 * curl, 0.03 + 0.3 * curl);
+            let col = cmul(hair, 0.88 + 0.18 * x.rng.next());
+            strand(&mut strands, s.p, s.n, dir, ln, w, hh, col, arch, 1.18);
+        }
+        if curl > 0.72 {
+            let mut sc = Surface::new(mat(0.85));
+            let ico = icosahedron();
+            let r = 0.045 + 0.04 * curl;
+            let col = cmul(hair, 0.9);
+            for s in roots.iter().step_by(3) {
+                let m = euler(x.rng.next() * 3.0, x.rng.next() * 3.0, 0.0);
+                solid(&mut sc, &ico, madd(s.p, s.n, 0.05 + 0.04 * curl), [r; 3], &m, col);
+            }
+            out.push(sc);
+        }
+    }
+    // brows: two rows of short strands along the brow arch, up at the inner
+    // end, down at the outer
+    {
+        let front: Vec<usize> = (0..body_full.len())
+            .step_by(3)
+            .filter(|&f| {
+                let c = x.base_c(body_full[f], body_full[f + 1], body_full[f + 2]);
+                c[2] >= 0.95 && c[1] >= 7.4 && c[1] <= 7.75
+            })
+            .collect();
+        let bc = cmul(cmix(hair, hex("#2a1d14"), if p.u(HAIR_L) > 0.6 { 0.35 } else { 0.15 }), 0.9);
+        let brow_at = |xx: f32, yy: f32| {
+            let mut best = front[0];
+            let mut bd = f32::MAX;
+            for &f in &front {
+                let c = x.base_c(body_full[f], body_full[f + 1], body_full[f + 2]);
+                let d = (c[0] - xx).powi(2) + (c[1] - yy).powi(2);
+                if d < bd {
+                    bd = d;
+                    best = f;
+                }
+            }
+            let (pa, pb, pc) = (x.pp[body_full[best] as usize], x.pp[body_full[best + 1] as usize], x.pp[body_full[best + 2] as usize]);
+            (mul(add(add(pa, pb), pc), 1.0 / 3.0), norm(cross(sub(pb, pa), sub(pc, pa))))
+        };
+        let (thick, ns) = (if fem { 0.75 } else { 1.1 }, if fem { 6 } else { 7 });
+        let mut todo = Vec::new();
+        for sg in [-1f32, 1.0] {
+            for row in 0..2 {
+                for k in 0..ns {
+                    let t = (k as f32 + row as f32 * 0.45) / ns as f32;
+                    if fem && t > 0.97 {
+                        continue;
+                    }
+                    if scars.iter().any(|s| s.bx.is_some_and(|bx| (sg * (0.12 + 0.44 * t) - bx).abs() < 0.035)) {
+                        continue;
+                    }
+                    let ax = 0.12 + 0.44 * t;
+                    let y = 7.565 + 0.035 * (t * PI).sin() - 0.02 * (ax - 0.1) + (row as f32 - 0.5) * 0.022 * thick;
+                    let (sp, sn) = brow_at(sg * ax, y);
+                    let up = if t < 0.35 { 0.55 - t } else if t > 0.7 { -0.35 } else { 0.05 };
+                    todo.push((sp, sn, [sg, up, 0.0], t));
+                }
+            }
+        }
+        for (sp, sn, dir, t) in todo {
+            let ln = (0.12 + 0.03 * x.rng.next()) * if t < 0.2 { 0.85 } else { 1.0 };
+            let col = cmul(bc, 0.85 + 0.25 * x.rng.next());
+            strand(&mut strands, sp, sn, dir, ln, 0.04 * thick * (1.0 - 0.45 * t), 0.018 * thick, col, 0.03, 1.05);
+        }
+    }
+    out.push(strands);
+
+    // --- women's hair c. 300: middle parting, wavy strand bands over the
+    // ears to the nape; on top a braid, a bun or a veil ---
+    if fem {
+        let hst = p.hair_style();
+        let dd = |t: f32, e: f32| [(e * D2R).cos() * (t * D2R).sin(), (e * D2R).sin(), (e * D2R).cos() * (t * D2R).cos()];
+        let ang = |a: V3, b: V3| dot(a, b).clamp(-1.0, 1.0).acos();
+        let mut last_r = 0.95 * hs;
+        let mut rr = |d: V3, far: bool| {
+            let r = cast_h.cast(d, far);
+            if r > 0.0 {
+                last_r = r;
+                r
+            } else {
+                last_r
+            }
+        };
+        let at = |d: V3, r: f32| madd(hc, d, r);
+        let mut hm = Surface::new(mat2(0.8));
+        let veil = hst == Hair::Veil;
+        let ek = if hst == Hair::Braid { -40.0 } else { -30.0 };
+        let kk = norm(dd(180.0, ek));
+        // Catmull-Rom through control directions, spaced by arc length
+        let path = |cp: &[V3], t: f32| -> V3 {
+            let ls: Vec<f32> = cp.windows(2).map(|w| ang(w[0], w[1])).collect();
+            let tot: f32 = ls.iter().sum();
+            let mut xx = t * tot;
+            let mut i = 0;
+            while i < ls.len() - 1 && xx > ls[i] {
+                xx -= ls[i];
+                i += 1;
+            }
+            let u = if ls[i] > 0.0 { (xx / ls[i]).min(1.0) } else { 0.0 };
+            let p0 = if i > 0 { cp[i - 1] } else { mix(cp[0], cp[1], -1.0) };
+            let (p1, p2) = (cp[i], cp[i + 1]);
+            let p3 = if i + 2 < cp.len() { cp[i + 2] } else { mix(cp[i + 1], cp[i], -1.0) };
+            let f = |k: usize| 0.5 * (2.0 * p1[k] + (-p0[k] + p2[k]) * u + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * u * u + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * u * u * u);
+            norm([f(0), f(1), f(2)])
+        };
+        let waves = (3.0 + jround(3.0 * curl)) * if kid { 0.6 } else { 1.0 };
+        let w_a = (0.02 + 0.016 * curl) * hs;
+        let ns = [5, 7, 9, 11][lod];
+        let nt = ([10, 13, 16, 19][lod] as f32).max(jround(waves * [2.0, 3.0, 4.0, 4.0][lod] * 2.0 + 3.0)) as usize;
+        let cap_t = |s: f32, t: f32| {
+            (0.035 + (if veil { 0.03 } else { 0.12 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.45 * s) + 0.015 * (1.0 - s).powi(4) * sm(0.02, 0.12, t)) * hs
+        };
+        for sg in [1f32, -1.0] {
+            let (mut g, mut sk) = (Vec::new(), Vec::new());
+            for i in 0..=ns {
+                let s = i as f32 / ns as f32;
+                let gm = (16.0 + 92.0 * s.powf(1.25)) * D2R;
+                let p0 = norm([sg * 0.016 * (1.0 - s), gm.sin(), gm.cos()]);
+                let t_ = norm(mix(dd(sg * 58.0, -14.0), dd(sg * 179.0, 34.0), s));
+                let e_ = norm(mix(dd(sg * 98.0, -38.0), dd(sg * 182.0, -4.0), s));
+                let ridge = if i % 2 == 1 { 1.0 } else { -0.7 };
+                let (mut col, mut skr) = (Vec::new(), Vec::new());
+                for j in 0..=nt {
+                    let t = j as f32 / nt as f32;
+                    let d = path(&[p0, t_, e_, kk], t);
+                    let r = rr(d, false);
+                    let w = (t * PI * 2.0 * waves + (i % 2) as f32 * 0.5).sin() * w_a * sm(0.05, 0.2, t) * (1.0 - sm(0.75, 1.0, t));
+                    col.push(at(d, r + cap_t(s, t) + ridge * 0.016 * hs * sm(0.0, 0.15, t) + w));
+                    skr.push(at(d, r - 0.006 * hs));
+                }
+                g.push(col);
+                sk.push(skr);
+            }
+            for i in 0..ns {
+                for j in 0..nt {
+                    let t = (j as f32 + 0.5) / nt as f32;
+                    let crest = 0.5 + 0.5 * (t * PI * 2.0 * waves + 0.9).sin();
+                    let c = cmul(hair, (if i % 2 == 1 { 1.0 } else { 0.8 }) * (0.88 + 0.14 * crest) * (0.96 + 0.06 * x.rng.next()));
+                    if sg > 0.0 {
+                        hm.quad(g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1], c);
+                    } else {
+                        hm.quad(g[i][j], g[i][j + 1], g[i + 1][j + 1], g[i + 1][j], c);
+                    }
+                }
+            }
+            // close the edges: the forehead's (first strand) and the parting
+            for j in 0..nt {
+                hm.quad(g[0][j], g[0][j + 1], sk[0][j + 1], sk[0][j], cmul(hair, 0.62));
+            }
+            for i in 0..ns {
+                hm.quad(g[i][0], g[i + 1][0], sk[i + 1][0], sk[i][0], cmul(hair, 0.55));
+            }
+            // nape: from the hairline behind the ear up to the bun
+            let (nu, nv) = ([3, 4, 5, 6][lod], [4, 5, 6, 7][lod]);
+            let (mut l2, mut s2) = (Vec::new(), Vec::new());
+            for i in 0..=nu {
+                let u = i as f32 / nu as f32;
+                let h0 = norm(mix(dd(sg * 98.0, -40.0), dd(sg * 181.0, -64.0), u));
+                let (mut col, mut skr) = (Vec::new(), Vec::new());
+                for j in 0..=nv {
+                    let t = j as f32 / nv as f32;
+                    let d = norm(mix(h0, kk, t));
+                    let r = rr(d, false);
+                    col.push(at(d, r + (0.03 + 0.05 * (PI * t).sin()) * hs + if i % 2 == 1 { 0.008 * hs } else { 0.0 }));
+                    skr.push(at(d, r - 0.006 * hs));
+                }
+                l2.push(col);
+                s2.push(skr);
+            }
+            for i in 0..nu {
+                for j in 0..nv {
+                    let c = cmul(hair, (if i % 2 == 1 { 0.95 } else { 0.8 }) * (0.94 + 0.08 * x.rng.next()));
+                    if sg > 0.0 {
+                        hm.quad(l2[i][j], l2[i + 1][j], l2[i + 1][j + 1], l2[i][j + 1], c);
+                    } else {
+                        hm.quad(l2[i][j], l2[i][j + 1], l2[i + 1][j + 1], l2[i + 1][j], c);
+                    }
+                }
+            }
+            for i in 0..nu {
+                hm.quad(l2[i][0], l2[i + 1][0], s2[i + 1][0], s2[i][0], cmul(hair, 0.6));
+            }
+        }
+        let nk = kk;
+        let ak = [1.0, 0.0, 0.0];
+        let bk = norm(cross(nk, ak));
+        let q = at(kk, rr(kk, false) + 0.02 * hs);
+        // a tube along a centre line, pentagonal, light and dark as if plaited
+        let tube = |hm: &mut Surface, pts: &[V3], rad: &dyn Fn(f32) -> f32, col_f: &dyn Fn(usize) -> Rgb| {
+            const SIDES: usize = 5;
+            let mut prev: Option<Vec<V3>> = None;
+            for k in 0..pts.len() {
+                let (c, nx, pv) = (pts[k], pts[(k + 1).min(pts.len() - 1)], pts[k.saturating_sub(1)]);
+                let tg = norm(sub(nx, pv));
+                let u = norm(cross(tg, nk));
+                let v = norm(cross(tg, u));
+                let r = rad(k as f32 / (pts.len() - 1) as f32);
+                let ring: Vec<V3> = (0..SIDES)
+                    .map(|q| {
+                        let a = q as f32 / SIDES as f32 * PI * 2.0;
+                        madd(c, add(mul(u, a.cos()), mul(v, a.sin())), r)
+                    })
+                    .collect();
+                if let Some(pr) = &prev {
+                    let cc = col_f(k);
+                    for q in 0..SIDES {
+                        let q2 = (q + 1) % SIDES;
+                        hm.quad(pr[q], pr[q2], ring[q2], ring[q], cmul(cc, if q % 2 == 1 { 0.9 } else { 1.0 }));
+                    }
+                } else {
+                    for q in 1..SIDES - 1 {
+                        hm.tri(ring[0], ring[q], ring[q + 1], cmul(col_f(0), 0.7));
+                    }
+                }
+                prev = Some(ring);
+            }
+            let pr = prev.unwrap();
+            for q in 1..SIDES - 1 {
+                hm.tri(pr[0], pr[q + 1], pr[q], cmul(col_f(pts.len() - 1), 0.7));
+            }
+        };
+        if hst == Hair::Bun || hst == Hair::Veil {
+            // nape bun: two turns of a plait, narrowing outwards
+            let segs = [14, 18, 22, 24][lod];
+            let sz = if kid { 0.7 } else { 1.0 };
+            let pts: Vec<V3> = (0..=segs)
+                .map(|k| {
+                    let f = k as f32 / segs as f32;
+                    let a = f * 2.0 * PI * 2.0;
+                    let rad = lerp(0.25, 0.07, f) * hs * sz;
+                    let hh = lerp(0.07, 0.2, f) * hs * sz;
+                    madd(madd(q, nk, hh), add(mul(ak, a.cos()), mul(bk, a.sin())), rad)
+                })
+                .collect();
+            if !veil {
+                tube(&mut hm, &pts, &|f| (0.1 - 0.035 * f) * hs * sz, &|k| cmul(hair, if k % 2 == 1 { 0.8 } else { 0.98 }));
+            }
+        }
+        if hst == Hair::Braid {
+            // braid from the nape over the back of the head up to the crown,
+            // a herringbone of staggered leaves
+            let nb = [5, 6, 7, 8][lod];
+            let (e0, e1) = (ek + 6.0, 84.0);
+            for k in 0..nb {
+                for side in [-1f32, 1.0] {
+                    let f = (k as f32 + if side > 0.0 { 0.5 } else { 0.0 }) / nb as f32;
+                    let e = lerp(e0, e1, f);
+                    let d = dd(180.0, e);
+                    let r = rr(d, false) + (0.075 + 0.03 * (PI * f).sin()) * hs;
+                    let c = at(d, r);
+                    let up = norm([0.0, (e * D2R).cos(), (e * D2R).sin()]);
+                    let wv = (1.0 - 0.35 * f) * hs;
+                    let ax = norm(add(mul([1.0, 0.0, 0.0], -side * 0.55), up));
+                    let la = norm(cross(ax, d));
+                    let cc = [c[0] + side * 0.09 * wv, c[1], c[2]];
+                    let (l, w, hh) = (0.16 * wv, 0.085 * wv, 0.07 * wv);
+                    let (pa, pb, pc, pd) = (madd(cc, ax, l), madd(cc, ax, -l), madd(cc, la, w), madd(cc, la, -w));
+                    let (pt, pu) = (madd(cc, d, hh), madd(cc, d, -hh * 0.6));
+                    let col = cmul(hair, if side > 0.0 { 0.95 } else { 0.85 });
+                    hm.tri(pa, pc, pt, col);
+                    hm.tri(pc, pb, pt, cmul(col, 0.9));
+                    hm.tri(pb, pd, pt, cmul(col, 0.85));
+                    hm.tri(pd, pa, pt, cmul(col, 0.95));
+                    let dim = cmul(col, 0.6);
+                    hm.tri(pa, pu, pc, dim);
+                    hm.tri(pc, pu, pb, dim);
+                    hm.tri(pb, pu, pd, dim);
+                    hm.tri(pd, pu, pa, dim);
+                }
+            }
+        }
+        out.push(hm);
+        if veil {
+            // the palla drawn over the head: open around the face, falling
+            // in folds onto the shoulders
+            let vcol = hex(st.palla.unwrap_or(["#e9e2d2", "#c8b68c", "#8396ad", "#a4664f", "#6f7d5c"][(p.seed % 5) as usize]));
+            const VE: [[f32; 2]; 7] = [[44.0, 0.0], [30.0, 36.0], [12.0, 60.0], [-8.0, 74.0], [-35.0, 86.0], [-60.0, 94.0], [-80.0, 98.0]];
+            let th_e = |e: f32| {
+                if e >= 44.0 {
+                    return 0.0;
+                }
+                for k in 1..VE.len() {
+                    if e >= VE[k][0] {
+                        return lerp(VE[k][1], VE[k - 1][1], (e - VE[k][0]) / (VE[k - 1][0] - VE[k][0]));
+                    }
+                }
+                98.0
+            };
+            let (nr, nc) = ([10, 12, 15, 17][lod], [16, 20, 26, 30][lod]);
+            let nf = 5.0 + (p.seed % 3) as f32;
+            let ph = x.rng.next() * 6.0;
+            let e_at = |r: usize| lerp(86.0, -64.0, (r as f32 / nr as f32).powf(0.85));
+            let mut gv: Vec<Vec<V3>> = Vec::new();
+            let mut prev_r: Option<Vec<f32>> = None;
+            for r in 0..=nr {
+                let e = e_at(r);
+                let th0 = th_e(e);
+                let (mut row, mut rads) = (Vec::new(), Vec::new());
+                for c in 0..=nc {
+                    let cc = -1.0 + 2.0 * c as f32 / nc as f32;
+                    let d = dd(180.0 + cc * (180.0 - th0), e);
+                    let mut rad = rr(d, e < -20.0) + (0.15 + 0.12 * (-(ang(d, kk) / 0.5).powi(2)).exp()) * hs;
+                    if let Some(pr) = &prev_r {
+                        if e < -5.0 {
+                            let de = (e_at(r - 1) - e) * PI / 180.0;
+                            let fall = pr[c] * (e_at(r - 1) * D2R).cos() / (e * D2R).cos() * 0.985;
+                            rad = fall.max(rad.min(fall + 0.4 * hs * de));
+                        }
+                    }
+                    rads.push(rad);
+                    let fold = (cc * nf * PI + ph).sin() * 0.035 * hs * sm(40.0, -50.0, e);
+                    row.push(at(d, rad + fold));
+                }
+                gv.push(row);
+                prev_r = Some(rads);
+            }
+            let mut vm = Surface::new(mat2(0.95));
+            for r in 0..nr {
+                for c in 0..nc {
+                    let cc = -1.0 + 2.0 * (c as f32 + 0.5) / nc as f32;
+                    let shade = 0.86 + 0.14 * (cc * nf * PI + ph + 0.6).sin();
+                    let col = cmul(vcol, shade * (0.95 + 0.06 * x.rng.next()));
+                    vm.tri(gv[r][c], gv[r][c + 1], gv[r + 1][c + 1], col);
+                    vm.tri(gv[r][c], gv[r + 1][c + 1], gv[r + 1][c], cmul(col, 0.97));
+                }
+            }
+            out.push(vm);
+        }
+    }
+
+    // clothing: a tunic over the tights helper's place, toga and cloak as
+    // further shells
+    let tc = hex(st.tunic[(p.seed as usize) % st.tunic.len()]);
+    let neck_ok = |c: V3| {
+        let front = c[2] > 0.25;
+        if c[1] > 6.3 {
+            return false;
+        }
+        let t = theta(c);
+        c[1] < lerp(if fem { 5.6 } else { 5.5 }, 5.9, c01(t * 1.6)) - 0.12 * c01(1.0 - c[0].abs() / 0.6) * if front { 1.0 } else { 0.0 }
+    };
+    let wt = p.phen(WEIGHT);
+    {
+        let mut s = Surface::new(mat(0.95));
+        let off = 0.06 + 0.03 * wt;
+        x.facets(
+            &mut s,
+            body_full,
+            &|c, _, _, _| neck_ok(c),
+            &mut |c, a, b, cc| {
+                let hh = hash(a, b, cc);
+                if st.stripe > 0.0 && !fem && !st.toga && c[2] > 0.3 && c[1] < 5.35 && (c[0].abs() - 0.4).abs() < st.stripe {
+                    return cmul(hex("#5e1a44"), 0.92 + 0.1 * hh);
+                }
+                cmul(tc, 0.88 + 0.14 * hh)
+            },
+            Some((&nb, &|_| off)),
+        );
+        out.push(s);
+    }
+    if st.toga && !fem {
+        let in_toga = |c: V3| {
+            let [xx, yy, zz] = c;
+            if !neck_ok(c) {
+                return false;
+            }
+            if xx > 0.7 && yy > 4.7 {
+                return true;
+            }
+            let t = ((xx - 1.25) * -1.95 + (yy - 5.5) * -1.8) / (1.95 * 1.95 + 1.8 * 1.8);
+            let (px, py) = (1.25 - 1.95 * t, 5.5 - 1.8 * t);
+            zz > -0.3 && (xx - px).hypot(yy - py) < 0.42
+        };
+        let mut s = Surface::new(mat(0.95));
+        let off = 0.16 + 0.03 * wt;
+        x.facets(&mut s, body_full, &|c, _, _, _| in_toga(c), &mut |_, a, b, c| cmul(hex("#efe9dc"), 0.84 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        out.push(s);
+    }
+    let cloak = match (st.chlamys, st.palla) {
+        (Some(c), _) if !fem => Some(c),
+        (_, Some(c)) if fem => Some(c),
+        _ => None,
+    };
+    if let Some(cloak) = cloak {
+        let open = |c: V3| {
+            if !neck_ok(c) {
+                return false;
+            }
+            !(c[2] > 0.2 && c[0] > (if fem { -0.85 } else { -1.0 }) && c[0] < if fem { 0.85 } else { 0.75 })
+        };
+        let mut s = Surface::new(mat(0.9));
+        let off = 0.14 + 0.03 * wt;
+        let cc = hex(cloak);
+        x.facets(&mut s, body_full, &|c, _, _, _| open(c), &mut |_, a, b, c| cmul(cc, 0.85 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        out.push(s);
+        if !fem {
+            let mut g = Surface::new(Mat { rough: 0.32, metal: 0.85, double: false });
+            let at = madd(x.pp[h.fibula], nb[h.fibula], 0.2);
+            solid(&mut g, &icosahedron(), at, [0.11; 3], &euler(0.0, 0.0, 0.0), hex("#d8b04c"));
+            out.push(g);
+        }
+    }
+
+    // --- headwear and jewellery by stand ---
+    let hw = p.hat_style();
+    let jw = p.jewel_style();
+    let mut hat_top = -1e9f32;
+    {
+        let dd = |t: f32, e: f32| [(e * D2R).cos() * (t * D2R).sin(), (e * D2R).sin(), (e * D2R).cos() * (t * D2R).cos()];
+        let at2 = |d: V3, r: f32| madd(hc, d, r);
+        let rh = |d: V3| {
+            let r = cast_h.cast(d, false);
+            if r > 0.0 {
+                r
+            } else {
+                0.9 * hs
+            }
+        };
+        let hair_off = (if fem {
+            0.16
+        } else if bald > 0.9 {
+            0.03
+        } else {
+            0.085 + 0.04 * curl
+        }) * hs;
+        let (mut a0, mut g0, mut w0) = (Surface::new(mat2(0.95)), Surface::new(Mat { rough: 0.35, metal: 0.8, double: false }), Surface::new(mat(0.3)));
+        // hat band: on the forehead in front, lower on the back of the head
+        let band = |nn: usize, lift: f32, off: f32| -> Vec<V3> {
+            (0..nn)
+                .map(|k| {
+                    let th = k as f32 / nn as f32 * 360.0;
+                    let e = lerp(26.0, 6.0, (1.0 - (th * D2R).cos()) / 2.0) + lift;
+                    let d = dd(th, e);
+                    at2(d, rh(d) + off)
+                })
+                .collect()
+        };
+        let cen = |ring: &[V3]| mul(ring.iter().fold([0.0; 3], |s, &q| add(s, q)), 1.0 / ring.len() as f32);
+        let up = |ring: &[V3], hh: f32, sc: f32, back: f32| -> Vec<V3> {
+            let c = cen(ring);
+            ring.iter().map(|q| [c[0] + (q[0] - c[0]) * sc, q[1] + hh, c[2] + (q[2] - c[2]) * sc - back * hh]).collect()
+        };
+        let loft = |s: &mut Surface, a: &[V3], b: &[V3], col: Rgb| {
+            for k in 0..a.len() {
+                let k2 = (k + 1) % a.len();
+                let c = cmul(col, 0.9 + 0.12 * ((k * 5) % 3) as f32 / 2.0);
+                s.tri(a[k], a[k2], b[k2], c);
+                s.tri(a[k], b[k2], b[k], cmul(c, 0.96));
+            }
+        };
+        let fan = |s: &mut Surface, ring: &[V3], apex: V3, col: Rgb| {
+            for k in 0..ring.len() {
+                s.tri(ring[k], ring[(k + 1) % ring.len()], apex, cmul(col, 0.93 + 0.1 * (k % 2) as f32));
+            }
+        };
+        let felt = hex(["#5f5446", "#6e5f4a", "#4d4b45", "#7a6a52"][(p.seed % 4) as usize]);
+        match hw {
+            Hat::Cap => {
+                // Pannonian felt cap: a low cylinder with a flat top, as the Tetrarchs wear in Venice
+                let b0 = band(16, 0.0, hair_off);
+                let b1 = up(&b0, 0.27 * hs, 0.96, 0.15);
+                loft(&mut a0, &b0, &b1, felt);
+                let c = cen(&b1);
+                fan(&mut a0, &b1, [c[0], c[1] + 0.025 * hs, c[2]], cmul(felt, 1.08));
+                loft(&mut a0, &band(16, -1.5, hair_off + 0.012 * hs), &band(16, 2.5, hair_off + 0.012 * hs), cmul(felt, 0.8));
+            }
+            Hat::Pileus => {
+                let b0 = band(12, 0.0, hair_off);
+                let b1 = up(&b0, 0.2 * hs, 0.74, 0.3);
+                let c = cen(&b1);
+                let col = cmix(felt, hex("#a08a68"), 0.5);
+                loft(&mut a0, &b0, &b1, col);
+                fan(&mut a0, &b1, [c[0], c[1] + 0.24 * hs, c[2] - 0.12 * hs], col);
+            }
+            Hat::Petasos => {
+                // straw sun hat: a flat dome, a wide brim
+                let straw = hex("#c4a35e");
+                let b0 = band(18, 0.0, hair_off);
+                let b1 = up(&b0, 0.13 * hs, 0.9, 0.1);
+                let b2 = up(&b0, 0.21 * hs, 0.55, 0.1);
+                let c = cen(&b2);
+                loft(&mut a0, &b0, &b1, straw);
+                loft(&mut a0, &b1, &b2, cmul(straw, 1.05));
+                fan(&mut a0, &b2, [c[0], c[1] + 0.04 * hs, c[2]], cmul(straw, 1.1));
+                let c0 = cen(&b0);
+                let brim: Vec<V3> = b0
+                    .iter()
+                    .enumerate()
+                    .map(|(k, q)| {
+                        let (dx, dz) = (q[0] - c0[0], q[2] - c0[2]);
+                        let l = dx.hypot(dz);
+                        let l = if l > 0.0 { l } else { 1.0 };
+                        let w = (0.36 + 0.03 * (k as f32 * 1.7).sin()) * hs;
+                        [q[0] + dx / l * w, q[1] - 0.06 * hs, q[2] + dz / l * w]
+                    })
+                    .collect();
+                loft(&mut a0, &b0, &brim, cmul(straw, 0.95));
+            }
+            Hat::Diadem => {
+                // jewelled diadem: a gold band, pearls on top, a stone over the forehead
+                let b0 = band(28, 1.0, hair_off + 0.012 * hs);
+                let b1 = band(28, 5.0, hair_off + 0.018 * hs);
+                loft(&mut g0, &b0, &b1, hex("#d8b04c"));
+                for (k, q) in b1.iter().enumerate() {
+                    if k % 2 == 0 {
+                        gem(&mut w0, [q[0], q[1] + 0.02 * hs, q[2]], 0.026 * hs, hex("#f2ece0"));
+                    }
+                }
+                let fq = b1[0];
+                gem(&mut g0, [fq[0], fq[1] + 0.03 * hs, fq[2] + 0.02 * hs], 0.05 * hs, hex("#7a1a2a"));
+            }
+            Hat::Wreath => {
+                let (mut sx, mut sz, mut n, mut y, mut rx, mut rz) = (0f32, 0f32, 0, 0f32, 0f32, 0f32);
+                for &v in body_full {
+                    let b = h.base[v as usize];
+                    if b[1] > 7.95 && b[1] < 8.1 && b[0].abs() < 1.0 {
+                        let q = x.pp[v as usize];
+                        sx += q[0];
+                        sz += q[2];
+                        y += q[1];
+                        n += 1;
+                    }
+                }
+                let n = n.max(1) as f32;
+                sx /= n;
+                sz /= n;
+                y /= n;
+                for &v in body_full {
+                    let b = h.base[v as usize];
+                    if b[1] > 7.95 && b[1] < 8.1 && b[0].abs() < 1.0 {
+                        let q = x.pp[v as usize];
+                        rx = rx.max((q[0] - sx).abs());
+                        rz = rz.max((q[2] - sz).abs());
+                    }
+                }
+                let mut leaves = Surface::new(Mat { rough: 0.4, metal: 0.6, double: false });
+                let oct = octahedron();
+                let group = euler(-0.18, 0.0, 0.0);
+                let gpos = [sx, y + 0.05, sz];
+                let col = hex("#c9a640");
+                for k in 0..26 {
+                    let a = k as f32 / 26.0 * PI * 2.0;
+                    if a.sin().abs() < 0.12 && a.cos() > 0.0 {
+                        continue;
+                    }
+                    let lpos = [a.sin() * (rx + 0.08), 0.04 * a.cos(), a.cos() * (rz + 0.08)];
+                    let lr = euler(0.0, a + 0.6, 0.0);
+                    let w: Vec<V3> = oct.0.iter().map(|q| add(gpos, rot(&group, add(lpos, rot(&lr, [q[0] * 0.06, q[1] * 0.035, q[2] * 0.16]))))).collect();
+                    for t in &oct.1 {
+                        leaves.tri(w[t[0]], w[t[1]], w[t[2]], col);
+                    }
+                }
+                out.push(leaves);
+                hat_top = hat_top.max(ym(8.3));
+            }
+            Hat::None => {}
+        }
+        // earrings at the lowest point of the earlobe, a chain around the base of the neck
+        if jw != Jewel::None {
+            let gold = hex("#d8b04c");
+            let pearl = hex("#f2ece0");
+            for sg in [1f32, -1.0] {
+                let (mut lo, mut ly) = (usize::MAX, 1e9f32);
+                for &v in &uniq {
+                    let v = v as usize;
+                    let q = x.pp[v];
+                    let s = if q[0] > 0.0 { 1.0 } else if q[0] < 0.0 { -1.0 } else { 0.0 };
+                    if h.ear[v] > 0.5 && s == sg && q[1] < ly && h.base[v][1] > 6.8 {
+                        ly = q[1];
+                        lo = v;
+                    }
+                }
+                if lo == usize::MAX {
+                    continue;
+                }
+                let q = [x.pp[lo][0] + sg * 0.015 * hs, x.pp[lo][1] - 0.035 * hs, x.pp[lo][2]];
+                gem(&mut g0, q, 0.028 * hs, gold);
+                gem(&mut g0, [q[0], q[1] - 0.075 * hs, q[2]], 0.042 * hs, gold);
+                if jw == Jewel::Pearls {
+                    gem(&mut w0, [q[0], q[1] - 0.15 * hs, q[2]], 0.04 * hs, pearl);
+                }
+            }
+            if jw == Jewel::Chain || jw == Jewel::Pearls {
+                let nc = [fit[0][1], ym(6.12), fit[2][0] * 0.25 + fit[2][1]];
+                let cn = Caster::new(nc, &pp_snapshot, body_full);
+                let step = if jw == Jewel::Pearls { 6 } else { 5 };
+                let mut th = -96;
+                while th <= 96 {
+                    let thf = th as f32;
+                    let e = -10.0 - 16.0 * (thf * D2R).cos().powi(2);
+                    let d = dd(thf, e);
+                    let r = cn.cast(d, false);
+                    if r >= 0.0 {
+                        let q = madd(nc, d, r + 0.03 * hs);
+                        if jw == Jewel::Pearls {
+                            gem(&mut w0, q, 0.032 * hs, pearl);
+                        } else {
+                            gem(&mut g0, q, 0.022 * hs, gold);
+                        }
+                    }
+                    th += step;
+                }
+                if jw == Jewel::Chain {
+                    let d = dd(0.0, -26.0);
+                    let r = cn.cast(d, false);
+                    if r > 0.0 {
+                        let q = madd(nc, d, r + 0.05 * hs);
+                        gem(&mut g0, [q[0], q[1] - 0.06 * hs, q[2]], 0.05 * hs, hex("#2e6a5a"));
+                    }
+                }
+            }
+        }
+        for v in a0.pos.iter().chain(&g0.pos) {
+            hat_top = hat_top.max(v[1]);
+        }
+        out.extend([a0, g0, w0]);
+    }
+    // the frame from the head's size
+    let (mut y0, mut y1, mut hx, mut hz, mut hn) = (1e9f32, -1e9f32, 0f32, 0f32, 0);
+    for &v in body_full {
+        let b = h.base[v as usize];
+        if b[1] > 6.1 && b[0].abs() < 0.95 {
+            let q = x.pp[v as usize];
+            y0 = y0.min(q[1]);
+            y1 = y1.max(q[1]);
+            hx += q[0];
+            hz += q[2];
+            hn += 1;
+        }
+    }
+    // one surface per material
+    let mut merged: Vec<Surface> = Vec::new();
+    for s in out.into_iter().filter(|s| !s.pos.is_empty()) {
+        if let Some(m) = merged.iter_mut().find(|m| m.mat == s.mat) {
+            m.pos.extend(s.pos);
+            m.col.extend(s.col);
+        } else {
+            merged.push(s);
+        }
+    }
+    let tris = merged.iter().map(|s| s.tris()).sum();
+    Portrait { surfaces: merged, top: (y1 + 0.12).max(hat_top + 0.06), chin: y0, cx: hx / hn.max(1) as f32, cz: hz / hn.max(1) as f32, tris, targets }
+}

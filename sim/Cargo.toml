@@ -14,7 +14,7 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 zstd = { version = "0.13", features = ["zstdmt"] }
 
 [workspace]
-members = [".", "godot"]
+members = [".", "godot", "portrait"]
 
 [profile.release]
 debug = false

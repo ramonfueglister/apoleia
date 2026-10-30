@@ -20,6 +20,7 @@
 //! result does not depend on thread count or iteration order.
 
 use crate::body;
+use crate::dna::{self, Dna};
 use crate::groups::{self, Groups};
 use crate::inputs::Inputs;
 use crate::life::{self, Calendar, Ev, BIRTH, DEATH, YEAR};
@@ -128,6 +129,9 @@ const BIRTH_GAP: f64 = 1.25;
 const PREGNANCY: f64 = 0.75;
 /// Death of the mother per birth (pre-modern order of magnitude).
 const MATERNAL_DEATH_PER_10K: u64 = 100;
+/// First salt of the random draws for the genes (crate::dna), one per
+/// allele (founders) or gene (children); far from every other salt here.
+const DNA_SALT: u32 = 0x0d1a_0000;
 
 /// Neighbour offsets; index d and 7 − d are opposite directions.
 const DIRS: [(i32, i32); 8] = [
@@ -273,6 +277,11 @@ impl Grid {
     }
     fn rc(&self, i: u32) -> (i32, i32) {
         (i as i32 / self.cols, i as i32 % self.cols)
+    }
+    /// Absolute row and column of a cell (as in cells25.csv).
+    pub fn row_col(&self, i: u32) -> (i32, i32) {
+        let (r, c) = self.rc(i);
+        (r + self.row0, c + self.col0)
     }
     /// Cost in km-days ×100 of a step between neighbouring cells.
     fn step(&self, a: u32, b: u32, diag: bool) -> Option<i32> {
@@ -953,9 +962,11 @@ impl People {
                 }
                 let (sex, b) = born[pid as usize];
                 let job = groups::start_job(s.stand, r(3));
+                let (lon, lat) = dna::lon_lat_of(&grid, s.home);
+                let looks = dna::founder(dna::origin(lon, lat), |k| r(DNA_SALT + k));
                 (
                     (Pid(pid), Born(b), Sex(sex), Household(mates[hh]), Home(s.home), Job(job)),
-                    (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel, Intelligence::from(life::normal(life::unit(r(5))), life::normal(life::unit(r(6))))),
+                    (Traits(r(4) as u32), Health(1000), Stand(s.stand), Needs([30000; NEEDS]), rel, Intelligence::from(life::normal(life::unit(r(5))), life::normal(life::unit(r(6)))), looks),
                     (
                         Culture((s.home % 192 / 16) as u16),
                         Religion((s.home / 192 / 40) as u16),
@@ -1184,6 +1195,11 @@ impl People {
     /// The entity of a living person.
     pub fn alive_entity(&self, pid: u32) -> Option<Entity> {
         self.alive(pid)
+    }
+
+    /// The genes of a living person (crate::dna).
+    pub fn dna(&self, pid: u32) -> Option<Dna> {
+        self.alive(pid).and_then(|e| self.world.get::<Dna>(e).copied())
     }
 
     fn alive(&self, pid: u32) -> Option<Entity> {
@@ -1466,6 +1482,7 @@ impl People {
         let sex = (r(3) & 1) as u8;
         let gene = life::child_gene_rg(self.world.get::<Intelligence>(fe).unwrap().gene(), self.world.get::<Intelligence>(me).unwrap().gene(), life::normal(life::unit(r(5))), self.iq_mate_rg);
         let mind = Intelligence::from(gene, life::normal(life::unit(r(6))));
+        let looks = dna::child(self.world.get::<Dna>(fe).unwrap(), self.world.get::<Dna>(me).unwrap(), |k| r(DNA_SALT + k));
         let mut rel = Relations { n: 2, ids: [0; MAX_REL], opinion: [0; MAX_REL] };
         rel.ids[0] = mother;
         rel.ids[1] = father;
@@ -1475,7 +1492,7 @@ impl People {
             // PLACEHOLDER (open): a child takes the father's occupation and
             // political groups, as it takes his estate.
             (Pid(pid), Born(day as i32), Sex(sex), Household(m_house), Home(m_home), f.4),
-            (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel, mind),
+            (Traits(traits), Health(1000), f.0, Needs([30000; NEEDS]), rel, mind, looks),
             (f.1, f.2, f.3, Spouse(NONE), Parents(father, mother), Sched::default(), Search(0)),
         ));
         let leaving = travel.is_some();
@@ -2420,10 +2437,10 @@ impl People {
     /// Hash of every person's state in id order.
     pub fn fingerprint(&mut self) -> u64 {
         let mut rows: Vec<(u32, [u64; 7])> = Vec::with_capacity(self.count as usize);
-        let mut q = self.world.query::<(&Pid, &Home, &Job, &Health, &Needs, &Relations, &Spouse, &Born, Option<&Travel>, &Intelligence)>();
-        for (pid, home, job, health, needs, rel, sp, born, t, mind) in q.iter(&self.world) {
+        let mut q = self.world.query::<(&Pid, &Home, &Job, &Health, &Needs, &Relations, &Spouse, &Born, Option<&Travel>, &Intelligence, &Dna)>();
+        for (pid, home, job, health, needs, rel, sp, born, t, mind, looks) in q.iter(&self.world) {
             let n = needs.0;
-            let mut h = 0u64;
+            let mut h = looks.hash();
             for k in 0..rel.n as usize {
                 h = h.rotate_left(5) ^ ((rel.ids[k] as u64) << 8 | rel.opinion[k] as u8 as u64);
             }
