@@ -1008,6 +1008,8 @@ Was auffällt:
   59 statt 384 Mio. Denar in 100 Jahren; die Kasse wächst trotzdem leicht (54 Mio. im Jahr 100).
 - **S121 allein hilft wenig.** Ohne S122 sterben in den Jahren 31–100 mehr Menschen als auf main:
   Wer sein Saatgut verkauft, hungert auch bei billigem Korn.
+- **Entscheid:** Ramon, 30.10.2026, Karte „Wie machen wir mit PR #64 und dem Preisfall weiter?“,
+  Option „Mergen, dann Preisfall angehen“.
 - Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 73 + 2 Tests grün, auch im Debug-Build
   (dafür prüft bevy_ecs dort nicht mehr die Länge der Teilstücke, siehe `sim/Cargo.toml`).
 
