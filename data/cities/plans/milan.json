@@ -3,10 +3,12 @@
   "name": "Mediolanum",
   "year": 301,
   "status": "reconstructed",
-  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-75 m; to be checked against the sources listed.",
+  "accuracy": "Checked on 2026-10-30 against the locations given for each monument (Italian Wikipedia: modern streets and the churches built on them): the horrea moved 700 m to via dei Bossi, forum, palace, circus, theatre and amphitheatre moved 50-180 m. Positions are street-level estimates, about +-100 m; gates and the wall line not checked.",
   "sources": [
     "Sena Chiesa, G. (Ed.). (1990). Milano capitale dell'impero romano 286-402 d.C. Silvana. (not verified online)",
-    "Krautheimer, R. (1983). Three Christian capitals: Topography and politics. University of California Press. (not verified online)"
+    "Krautheimer, R. (1983). Three Christian capitals: Topography and politics. University of California Press. (not verified online)",
+    "Wikipedia contributors. (2026). Horrea di Milano; Circo romano di Milano; Teatro romano di Milano; Palazzo imperiale di Milano; Terme Erculee; Foro romano di Milano. In Wikipedia. Retrieved October 30, 2026, from https://it.wikipedia.org/",
+    "Wikipedia contributors. (2026). San Maurizio al Monastero Maggiore; Basilica of San Lorenzo, Milan; Piazza Cordusio [Coordinates]. In Wikipedia. Retrieved October 30, 2026, from https://en.wikipedia.org/"
   ],
   "note": "Residence of Maximian from 286; he enlarged the walls to the east and built the circus, palace and baths.",
   "centre": [
@@ -277,8 +279,8 @@
       "name": "Forum",
       "kind": "forum",
       "centre": [
-        9.1865,
-        45.4632
+        9.1856,
+        45.463
       ],
       "size_m": [
         160,
@@ -289,8 +291,8 @@
       "name": "Palatium",
       "kind": "palace",
       "centre": [
-        9.181,
-        45.462
+        9.1818,
+        45.4628
       ],
       "size_m": [
         220,
@@ -301,7 +303,7 @@
       "name": "Circus",
       "kind": "circus",
       "centre": [
-        9.1785,
+        9.179,
         45.4632
       ],
       "size_m": [
@@ -314,8 +316,8 @@
       "name": "Theatrum",
       "kind": "theatre",
       "centre": [
-        9.1825,
-        45.465
+        9.183,
+        45.4655
       ],
       "size_m": [
         95,
@@ -338,8 +340,8 @@
       "name": "Amphitheatrum",
       "kind": "amphitheatre",
       "centre": [
-        9.1765,
-        45.4575
+        9.1782,
+        45.4563
       ],
       "size_m": [
         155,
@@ -350,13 +352,14 @@
       "name": "Horrea",
       "kind": "warehouse",
       "centre": [
-        9.1775,
-        45.4665
+        9.1865,
+        45.4672
       ],
       "size_m": [
-        100,
-        60
-      ]
+        68,
+        18
+      ],
+      "note": "Horreum at via dei Bossi 4 near via Broletto, probably Maximian; 18 x 68 m"
     }
   ],
   "areas": []
