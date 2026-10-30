@@ -91,19 +91,62 @@ bool sim_no_field(vec2 p, int land) {
 	return false;
 }
 
-// Whether a farmhouse stands on the lot under p (world km); its house,
-// garden and yard are kept free of fields. The mask is kept only while the
-// crops stand. Branch free: always one fetch (clamped), masked after. With
-// the fetch behind early returns, its dozen inlined copies in the terrain's
-// fragment stage (sim_lane, sim_fields) crashed Apple's Metal compiler
-// (MTLCompilerService, LLVM fatal error; Godot: XPC_ERROR_CONNECTION_INTERRUPTED)
-// and the terrain pipeline was never built.
-bool sim_house_lot(vec2 p) {
+// The lot mask's texel under p (world km), zero outside the mask: A a
+// farmhouse on the lot (people_lots.gdshader), R, G, B what the player
+// built there (sim_built). people_dots.gd keeps it round the view up to
+// SIM_FIELDS_KM. Branch free: always one fetch (clamped), masked after.
+// With the fetch behind early returns, its dozen inlined copies in the
+// terrain's fragment stage (sim_lane, sim_fields) crashed Apple's Metal
+// compiler (MTLCompilerService, LLVM fatal error; Godot:
+// XPC_ERROR_CONNECTION_INTERRUPTED) and the terrain pipeline was never built.
+vec4 sim_lot_mask(vec2 p) {
 	vec2 lot = floor((p - world_min) / sim_lot_km) - sim_lot_origin;
-	bool inside = sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM
+	bool inside = sim_lots_n > 0 && sim_view_km <= SIM_FIELDS_KM
 		&& all(greaterThanEqual(lot, vec2(0.0))) && all(lessThan(lot, vec2(float(sim_lots_n))));
-	float a = texelFetch(sim_lot_tex, clamp(ivec2(lot), ivec2(0), ivec2(max(sim_lots_n - 1, 0))), 0).a;
-	return inside && a > 0.5;
+	vec4 m = texelFetch(sim_lot_tex, clamp(ivec2(lot), ivec2(0), ivec2(max(sim_lots_n - 1, 0))), 0);
+	return inside ? m : vec4(0.0);
+}
+
+// Whether a farmhouse stands on the lot under p (world km); its house,
+// garden and yard are kept free of fields. The houses are in the mask only
+// while the crops stand.
+bool sim_house_lot(vec2 p) {
+	vec4 m = sim_lot_mask(p); // first, not behind the && (Metal, above)
+	return sim_view_km <= SIM_CROPS_KM && m.a > 0.5;
+}
+
+// What the player built on the parcel under p (world km), from the lot
+// mask (build_menu.gd _built_bits): SIM_B_FIELD a finished field on its
+// lot (state land, S116), farmed whatever the farms' blocks round the fine
+// tiles' middles (sim_parcel), so it reads as a field and not as a zone
+// laid over the ground; SIM_B_ROAD a road the player built crosses the
+// parcel, which then carries no field; from SIM_B_SIDES four bits -x, -y,
+// +x, +y: a road runs along that side, and the slab keeps its width free
+// (people_crop_slab.gdshaderinc crop_box_of). Each lot holds a field bit
+// and five bits for each of its four parcels (the quarter x + 2 y).
+const int SIM_B_FIELD = 1;
+const int SIM_B_ROAD = 2;
+const int SIM_B_SIDES = 4;
+const float SIM_ROAD_HALF_KM = 0.048; // road_view.gd ROAD_KM / 2: four diorama metres
+int sim_built(vec2 p) {
+	vec4 m = sim_lot_mask(p);
+	int v = int(m.r * 255.0 + 0.5) | (int(m.g * 255.0 + 0.5) << 8) | (int(m.b * 255.0 + 0.5) << 16);
+	vec2 q = fract((p - world_min) / sim_lot_km);
+	int k = (q.x < 0.5 ? 0 : 1) + (q.y < 0.5 ? 0 : 2);
+	return (v & 1) | (((v >> (1 + 5 * k)) & 31) << 1);
+}
+
+// Whether nothing grows at p (world km) as the player built there: a field
+// lot, a parcel a road crosses, or within `reach` km of a road along a
+// parcel's side (the trees, tile_props.gdshaderinc).
+bool sim_built_clear(vec2 p, float reach) {
+	int b = sim_built(p);
+	float size = sim_lot_km * 0.5;
+	vec2 at = fract((p - world_min) / size) * size;
+	int sides = b / SIM_B_SIDES;
+	bool by_road = ((sides & 1) != 0 && at.x < reach) || ((sides & 2) != 0 && at.y < reach)
+		|| ((sides & 4) != 0 && size - at.x < reach) || ((sides & 8) != 0 && size - at.y < reach);
+	return (b & (SIM_B_FIELD | SIM_B_ROAD)) != 0 || by_road;
 }
 
 // A flat tile under p (no ramp): the crops stand only on flat ground, the
@@ -192,7 +235,7 @@ const int SIM_P_STATE = 3;     // sim_parcel: 0 not farmed, 1 fallow, 2 sown
 const int SIM_P_OPEN = 4;      // people_crop_slab.gdshaderinc crop_open
 const int SIM_P_BY_FARM = 8;   // next to a farmhouse lot (fenced)
 const int SIM_P_NO_FIELD = 16; // sim_no_field
-const int SIM_P_LANES = 32;    // people_crop_slab.gdshaderinc crop_lanes, four bits from here
+const int SIM_P_LANES = 32;    // people_crop_slab.gdshaderinc crop_lanes, five bits from here
 // The sides (bits -x, -y, +x, +y, as SIM_P_LANES) where the slab runs on
 // into a parcel of its field (sim_strip): baked into the B channel above
 // the ground level (B = whole levels + 128 x sides, below 2048 and so exact
@@ -217,14 +260,22 @@ bool sim_parcel_baked(vec2 cell, out int code, out float growth, out float level
 // rounded square, with a little jitter for a ragged edge), so the farmland
 // reads as calm blocks around the villages with pasture between them
 // (round 17: blocks that filled their tiles ran together into one quilt).
+// A field lot the player built is farmed all over, sown as its fine tile
+// (fallow where nobody farms there); a parcel one of the player's roads
+// crosses is not (sim_built).
 const float SIM_BLOCK_MAX = 0.55;
 int sim_parcel(vec2 cell, float size, out vec4 f) {
-	vec2 q = (world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km;
+	vec2 mid = world_min + (cell + 0.5) * size;
+	int built = sim_built(mid);
+	vec2 q = (mid - sim_fine_origin) / sim_fine_km;
 	f = sim_fine_at(ivec2(floor(q)));
-	if (f.r <= 0.0) { return 0; }
-	vec2 d = abs(fract(q) - 0.5) * 2.0;
-	float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
-	if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= min(f.r, SIM_BLOCK_MAX)) { return 0; }
+	if ((built & SIM_B_ROAD) != 0) { return 0; }
+	if ((built & SIM_B_FIELD) == 0) {
+		if (f.r <= 0.0) { return 0; }
+		vec2 d = abs(fract(q) - 0.5) * 2.0;
+		float r = mix(max(d.x, d.y), length(d) * 0.7071, 0.5);
+		if (r * r + 0.12 * (sim_hash(cell) - 0.5) >= min(f.r, SIM_BLOCK_MAX)) { return 0; }
+	}
 	vec3 strip = sim_strip(cell); // a strip lies fallow or sown as a whole
 	if (sim_hash(strip.xy * 0.91 + strip.z * 7.3 + 17.3) >= f.g) { return 1; }
 	return 2;
