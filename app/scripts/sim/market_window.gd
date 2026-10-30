@@ -1,7 +1,8 @@
 extends CanvasLayer
 ## A market's window (docs/kit1/REALTIME_GAMEPLAY.md phase 6): a click on a
 ## market square up close opens it at the right edge, as Cities: Skylines
-## opens a building's info. It shows the market's row of the markets table
+## opens a building's info, in a window (ui/ui_window.gd) that can be
+## moved, sized and folded. It shows the market's row of the markets table
 ## (apoleia_sim::grain, the same numbers as the T table), one line per
 ## column, so every column the economy adds there, the reasons for a price
 ## included, shows here too. While open it follows the sim once a week.
@@ -13,6 +14,8 @@ extends CanvasLayer
 ## this node, so it sees them first).
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
+const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const CLICK_PX := 4.0
 const MARKET_MAX_KM := 80.0 # view width up to which a click opens a market (build_menu.gd BUILD_MAX_KM)
 const REFRESH_DAYS := 7
@@ -25,8 +28,7 @@ var market := -1
 var _press_at := Vector2.INF
 var _waiting := false
 var _asked_day := -1
-var _panel: PanelContainer
-var _title: Label
+var _win # ui_window.gd
 var _when: Label
 var _rows: GridContainer
 var _notes: VBoxContainer
@@ -36,34 +38,22 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	layer = 4
 	landscape = scene
 	people = sim
-	_panel = PanelContainer.new()
-	_panel.theme = SimTables._theme()
-	_panel.add_theme_stylebox_override("panel", SimTables._box(Color(SimTables.BACKGROUND, 0.94), Color(SimTables.GOLD, 0.6), 1, 4, 12))
-	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
-	_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_panel.offset_top = 64.0 # below the game clock
-	_panel.custom_minimum_size = Vector2(PANEL_PX, 0)
-	_panel.visible = false
-	add_child(_panel)
+	# at the right edge, below the game clock; moved and sized as the player likes
+	_win = UiWindow.make("market", "Markt", Rect2(-12, 64, PANEL_PX + 24.0, 600), Engine.get_main_loop() as SceneTree)
+	_win.visible = false
+	_win.closed.connect(func():
+		if market >= 0:
+			close_window())
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_win.body.add_child(scroll)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	_panel.add_child(box)
-	var head := HBoxContainer.new()
-	box.add_child(head)
-	_title = Label.new()
-	_title.add_theme_font_override("font", SimTables._serif())
-	_title.add_theme_font_size_override("font_size", 20)
-	_title.add_theme_color_override("font_color", SimTables.GOLD)
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	head.add_child(_title)
-	var close := Button.new()
-	close.text = "×"
-	close.tooltip_text = "Schliessen  (Esc)"
-	close.pressed.connect(close_window)
-	head.add_child(close)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
 	_when = Label.new()
-	_when.add_theme_color_override("font_color", SimTables.SECONDARY)
+	_when.add_theme_color_override("font_color", UiStyle.DIM)
 	_when.add_theme_font_size_override("font_size", 12)
 	box.add_child(_when)
 	_rows = GridContainer.new()
@@ -75,7 +65,7 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	box.add_child(_notes)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and _panel.visible:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and _win.visible:
 		close_window()
 		get_viewport().set_input_as_handled()
 		return
@@ -95,16 +85,17 @@ func _unhandled_input(event: InputEvent) -> void:
 func open(m: int) -> void:
 	market = m
 	_ask()
-	if not _panel.visible:
-		_title.text = "…"
+	if not _win.visible:
+		_win.set_title("…")
 		_when.text = ""
 		_clear()
-	_panel.visible = true
+	_win.open()
 
 func close_window() -> void:
 	market = -1
 	_waiting = false
-	_panel.visible = false
+	if _win.visible:
+		_win.close()
 
 func _ask() -> void:
 	people.ask_market(market)
@@ -132,10 +123,10 @@ func _clear() -> void:
 func _show(d: Dictionary) -> void:
 	_clear()
 	if not d.has("data"):
-		_title.text = "Kein Markt"
+		_win.set_title("Kein Markt")
 		return
 	var data: Dictionary = d.data
-	_title.text = "Markt %s" % (data.region[0] if data.has("region") else str(market))
+	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
 	_when.text = "Stand %d. %s" % [int(d.day) % SimTables.MONTH + 1, SimTables._date(int(d.day))]
 	var columns: PackedStringArray = d.columns
 	for i in columns.size():
@@ -143,17 +134,17 @@ func _show(d: Dictionary) -> void:
 		if key == "region":
 			continue
 		var v = data[key][0]
-		var label := _label(d.labels[i], SimTables.SECONDARY)
+		var label := _label(d.labels[i], UiStyle.DIM)
 		if v is String:
-			var note := _label("%s: %s" % [d.labels[i], v], SimTables.INK)
+			var note := _label("%s: %s" % [d.labels[i], v], UiStyle.TEXT)
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			note.custom_minimum_size = Vector2(PANEL_PX - 24.0, 0)
+			note.custom_minimum_size = Vector2(PANEL_PX - 40.0, 0)
 			_notes.add_child(note)
 			label.queue_free()
 			continue
 		label.custom_minimum_size = Vector2(LABEL_PX, 0)
 		_rows.add_child(label)
-		var value := _label(_value(float(v), d.units[i]), SimTables.NEGATIVE if float(v) < 0.0 else SimTables.INK)
+		var value := _label(_value(float(v), d.units[i]), UiStyle.LOSS if float(v) < 0.0 else UiStyle.TEXT)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_rows.add_child(value)
