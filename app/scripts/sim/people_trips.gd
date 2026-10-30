@@ -47,9 +47,22 @@ extends MultiMeshInstance3D
 ## dead on a bier, towards the graves outside the town (the event knows only
 ## the cell, not the house); a family takes over a free farm, an heir moves
 ## onto his share, a farm cleared under the Lex Manciana gets its clearer
-## with an axe, and a family that gives up its farm leaves it with its cart.
+## with an axe, and a family that moved away leaves its farm with its cart
+## (a farm whose household died out stays empty).
 ## Scenes are made for events of the last SCENE_DAYS only, each once, at
 ## most SCENES_MAX walkers beside the trips; a click names the event.
+##
+## Craft goods the dealers moved between two markets (ApoleiaPeople.ask_goods,
+## sim/src/grain/crafts.rs goods_moves_in) leave the market they came from
+## on the day of the move as an ox cart with bales of wool, iron, cloth,
+## tools, pots or pork barrels, on the straight way towards the market they
+## went to (the sim moves them at once and keeps no route), at most
+## GOODS_MAX at once. Where a cart's way runs over the sea or a lake, it
+## sails: people_walkers.gdshader draws a ship instead of cart, ox and
+## carter (grain traders on the sea lanes too). Building sites of the
+## player's orders (ApoleiaPeople.build_orders) get as many day labourers,
+## at most SITE_HANDS each, as work days were done there since the last
+## sim day.
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
@@ -78,6 +91,11 @@ const BUNDLE := 1024 # a bundle or sack on the back
 const BIER := 2048 # a bier on the shoulders, the dead under a shroud, a second bearer behind
 const AXE := 4096 # on the shoulder
 const BOWL := 8192 # in the left hand
+const SHIP := 16384 # never set: the shader shows the ship for a cart at sea
+## a cart's load of craft goods by good (GOOD_KEYS wool, iron, cloth, tools,
+## pottery, pork): fleeces, iron bars, cloth bales, tools as iron, amphorae, barrels
+const GOOD_LOADS: Array[int] = [32768, 65536, 131072, 65536, 262144, 524288]
+const GOOD_NAMES: Array[String] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik", "Schweinefleisch"]
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
 const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
 ## how an instance moves (INSTANCE_CUSTOM.a): walking, standing, a stall
@@ -90,6 +108,10 @@ const STALLS: Array[Vector2] = [Vector2(-0.085, -0.07), Vector2(0.0, -0.095), Ve
 	Vector2(-0.095, 0.03), Vector2(0.095, 0.03), Vector2(-0.04, 0.095), Vector2(0.05, 0.095)]
 const SQUARES_KM := 10.0 # stalls only in views up to this width, as the squares
 const SCENES_MAX := 80 # walkers of event scenes at once, beyond MAX
+const GOODS_MAX := 40 # carts of craft goods at once, beyond MAX
+const SITES_MAX := 24 # day labourers at building sites at once, beyond MAX
+const SITE_HANDS := 4
+const GOODS_REACH_KM := 30.0 # goods moves are asked for this far around the view: markets lie 25 km apart and more
 const SCENE_DAYS := 2 # events this many days old or newer become scenes; older ones were over before the view came
 const GAP_KM := 0.035 # between the members of a group along their way (a figure is 40 m at diorama scale)
 const SQUARE_REACH_KM := 20.0 # the market square of a cell event: the nearest one this close to the cell's middle
@@ -124,7 +146,13 @@ var _clock := 0.0 # seconds walked (people_walkers.gdshader walk_clock)
 var _next := INF # clock time of the next stop or turn of any traveller
 var _dirty := false # _buffer changed since it was last handed over
 var _scene_seen := {} # the events of the last SCENE_DAYS already played, so each plays once
-var _scenes := 0 # walkers of scenes among _walkers
+var _scenes := 0 # walkers of scenes, goods carts and site hands among _walkers (beyond MAX)
+var _pool_n := {"scene": 0, "goods": 0, "site": 0} # of them by kind
+var _asked_goods := false
+var _goods_seen := {} # goods moves already on their way, so each leaves once
+var _site_done := {} # work days done by building site (its lot in world metres) at the last look
+var _sites_day := -1
+var _moved := {} # households of the answer's moves (take_events)
 var _square_of := {} # market square (or INF) by 25 km cell of an event, for the scenes
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
@@ -140,10 +168,10 @@ func setup(sim: RefCounted, km_per_m: float) -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	mm.mesh = _mesh()
-	mm.instance_count = MAX + SCENES_MAX + SQUARES_MAX * STALLS.size()
+	mm.instance_count = MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size()
 	mm.visible_instance_count = 0
 	multimesh = mm
-	_buffer.resize((MAX + SCENES_MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
+	_buffer.resize((MAX + SCENES_MAX + GOODS_MAX + SITES_MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
 
 ## One frame: `on` while the figures are drawn, `centre` the ground in the
 ## middle of the view (world km), `view_km` its width.
@@ -154,7 +182,10 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_listed.clear()
 		_hired.clear()
 		_scene_seen.clear()
+		_goods_seen.clear()
 		_scenes = 0
+		for k in _pool_n:
+			_pool_n[k] = 0
 		_asked_at = Vector3.INF
 		_next = INF
 		return
@@ -166,6 +197,11 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		if not hires.is_empty():
 			_asked_work = false
 			_take_work(hires)
+	if _asked_goods:
+		var goods: Dictionary = people.take_goods()
+		if not goods.is_empty():
+			_asked_goods = false
+			_take_goods(goods)
 	if _asked:
 		var answer: Dictionary = people.take_trips()
 		if not answer.is_empty():
@@ -178,6 +214,13 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		if day != _asked_day or moved:
 			people.ask_trips(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
 			people.ask_work(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
+			if people.has_method("ask_goods") and not _asked_goods:
+				var reach := maxf(half, GOODS_REACH_KM)
+				people.ask_goods(centre.x - reach, centre.y - reach, centre.x + reach, centre.y + reach)
+				_asked_goods = true
+			if day != _sites_day:
+				_sites_day = day
+				_take_sites()
 			_asked = true
 			_asked_work = true
 			_asked_day = day
@@ -264,8 +307,12 @@ func take_events(e: Dictionary) -> void:
 		if not _scene_seen.has(key):
 			fresh.append(i)
 	_scene_seen = seen
+	_moved.clear() # households that moved away: a farm they left is left with the cart
+	for i in days.size(): # the move may come some days before the farm is seen empty
+		if kinds[i] == EV_MOVED or kinds[i] == EV_JOINED or kinds[i] == 2: # 2: left the map
+			_moved[households[i]] = true
 	for i in fresh:
-		if _scenes > SCENES_MAX - 4: # a scene has up to four walkers
+		if _pool_n.scene > SCENES_MAX - 4: # a scene has up to four walkers
 			break
 		_scene(e, i)
 
@@ -336,6 +383,8 @@ func _scene(e: Dictionary, i: int) -> void:
 			_group(PackedVector2Array([from, at]), 2, AXE, AXE, 10.0, false, 1.0,
 				"rodet Land nach der Lex Manciana für einen eigenen Hof", who)
 		EV_FARM_LEFT:
+			if not _moved.has(hh):
+				return # died out: nobody leaves
 			var off := at + _away(hh, Vector2.ZERO) * OUT_KM * 2.0
 			_group(PackedVector2Array([at, off]), 3, HANDCART, BUNDLE, 0.0, false, 1.0, "gibt den Hof auf und zieht weg", who)
 
@@ -376,8 +425,77 @@ func _scene_walker(way: PackedVector2Array, ahead: float, parts: int, parts_home
 	}
 
 func _add_scene(w: Dictionary) -> void:
+	_add_extra(w, "scene")
+
+## A walker beyond the trips: an event's scene, a goods cart, a site hand.
+func _add_extra(w: Dictionary, pool: String) -> void:
+	w.pool = pool
 	_scenes += 1
+	_pool_n[pool] += 1
 	_add(w)
+
+## The goods moves of the answer (trips.rs goods_to_dict "moves": from x,
+## z, to x, z, good, units, day): each of the last SCENE_DAYS new to the list
+## leaves its market as a cart, the newest first.
+func _take_goods(g: Dictionary) -> void:
+	var moves: PackedFloat32Array = g.get("moves", PackedFloat32Array())
+	var today: int = people.day()
+	var seen := {}
+	for k in range(moves.size() / 7 - 1, -1, -1):
+		var o := k * 7
+		var day := int(moves[o + 6])
+		if day < today - SCENE_DAYS:
+			continue
+		var from := Vector2(moves[o], moves[o + 1])
+		var to := Vector2(moves[o + 2], moves[o + 3])
+		var good := clampi(int(moves[o + 4]), 0, GOOD_LOADS.size() - 1)
+		var key := "%d:%d:%d:%d:%d:%d" % [day, int(from.x * 100.0), int(from.y * 100.0), int(to.x * 100.0), int(to.y * 100.0), good]
+		seen[key] = true
+		if _goods_seen.has(key) or _pool_n.goods >= GOODS_MAX:
+			continue
+		var way := _clip(from, to)
+		if way.is_empty():
+			continue
+		var w := _scene_walker(way, 0.0, CART | OX | GOOD_LOADS[good], CART | OX, 0.0, false, 1.0, {"household": -1, "pid": -1})
+		if w.is_empty():
+			continue
+		w.cart = true
+		var units: float = moves[o + 5]
+		w.what = "Händler mit Ochsenkarren, bringt %s %s an einen anderen Markt" % [
+			SimTables._int(int(round(units))) + (" kg" if good == 5 else " Stück"), GOOD_NAMES[good]]
+		_add_extra(w, "goods")
+	_goods_seen = seen
+
+## The building sites in view (build_orders "progress": x, z in world
+## metres, work days done, needed): those where work went on since the last
+## look get a day labourer for each work day, at most SITE_HANDS, who walk
+## up from a few hundred metres off, work a while and walk away again.
+func _take_sites() -> void:
+	if not people.has_method("build_orders"):
+		return
+	var d: Dictionary = people.build_orders()
+	var done: PackedInt32Array = d.get("progress", PackedInt32Array())
+	var now := {}
+	for i in range(0, done.size() - 3, 4):
+		var lot := Vector2i(done[i], done[i + 1])
+		now[lot] = done[i + 2]
+		var more: int = done[i + 2] - int(_site_done.get(lot, done[i + 2]))
+		var at := Vector2(lot) / 1000.0
+		if more <= 0 or not _window.has_point(at):
+			continue
+		for k in mini(more, SITE_HANDS):
+			if _pool_n.site >= SITES_MAX:
+				break
+			var seed := lot.x * 31 + lot.y * 17 + k * 7 + done[i + 2]
+			var from := at + _away(seed, Vector2.ZERO) * 0.25
+			var tool := AXE if k % 2 == 0 else HOE
+			var w := _scene_walker(PackedVector2Array([from, at + _away(seed + 3, Vector2.ZERO) * 0.04]), 0.0, tool, tool, LINGER_S, true, 1.0,
+				{"household": -1, "pid": -1}, k)
+			if w.is_empty():
+				continue
+			w.what = "Tagelöhner am Bau: %d von %d Arbeitstagen geleistet" % [done[i + 2], done[i + 3]]
+			_add_extra(w, "site")
+	_site_done = now
 
 ## The market square nearest the middle of the 25 km cell that `at` lies
 ## in, within SQUARE_REACH_KM; Vector2(INF, INF) if none.
@@ -610,8 +728,9 @@ func _events() -> void:
 			else:
 				_start(w, t) # the next stretch (_start finds it from the end of this one)
 		if gone:
-			if w.has("what"):
+			if w.has("pool"):
 				_scenes -= 1
+				_pool_n[w.pool] -= 1
 			var last: Dictionary = _walkers[_walkers.size() - 1]
 			_walkers[i] = last
 			_walkers.pop_back()
@@ -671,7 +790,8 @@ func _write_all() -> void:
 ## or the tool of a hired hand: a sickle in the right hand (6), a seed
 ## basket in the left (7), a hoe on the shoulder (8); or a market stall
 ## (9), standing alone, its counter to the front; or what the people of an
-## event's scene carry (10-14, see the end).
+## event's scene carry (10-14), a ship (15) and the loads of craft goods on
+## a cart (16-20), see the end.
 static func _mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -786,6 +906,28 @@ static func _mesh() -> ArrayMesh:
 	_box(st, Vector3(0.14, 0.83, -0.05) * f, Vector3(0.018, 0.018, 0.36) * f, wood, 13)
 	_box(st, Vector3(0.14, 0.86, -0.4) * f, Vector3(0.015, 0.07, 0.045) * f, iron, 13)
 	_box(st, Vector3(-0.24, 0.5, 0.08) * f, Vector3(0.065, 0.025, 0.065) * f, Color(0.66, 0.4, 0.26), 14, 0.6, 0.78 * f)
+	# a merchant ship for a cart at sea (15), its bow +z: a dark hull with a
+	# raised stern, a mast and a square linen sail across the wind
+	var hull := Color(0.36, 0.25, 0.16)
+	_box(st, Vector3(0.0, 0.5, 0.0), Vector3(1.3, 0.5, 4.2), hull, 15)
+	_box(st, Vector3(0.0, 0.75, 4.6), Vector3(0.8, 0.35, 0.5), hull, 15)
+	_box(st, Vector3(0.0, 1.3, -3.8), Vector3(1.1, 0.5, 0.6), hull.darkened(0.2), 15)
+	_box(st, Vector3(0.0, 1.02, 0.0), Vector3(1.15, 0.03, 3.9), wood, 15)
+	_box(st, Vector3(0.0, 4.5, 0.6), Vector3(0.12, 3.5, 0.12), dark, 15)
+	_box(st, Vector3(0.0, 5.6, 0.75), Vector3(2.6, 2.0, 0.05), linen, 15)
+	_box(st, Vector3(0.0, 7.65, 0.75), Vector3(2.8, 0.08, 0.08), dark, 15)
+	for side in [-1.0, 1.0]:
+		_box(st, Vector3(0.0, 1.35, -0.6 + 1.6 * side), Vector3(0.7, 0.3, 0.6), sack, 15)
+	# loads of craft goods on the cart (16-20), where the sacks lie (5)
+	o = Vector3(1.0, 0.0, -1.7)
+	for side in [-1.0, 1.0]:
+		for end in [-1.0, 1.0]:
+			_box(st, o + Vector3(0.28 * side, 1.0, 0.45 * end), Vector3(0.24, 0.18, 0.3), Color(0.93, 0.9, 0.82), 16) # fleeces
+			_box(st, o + Vector3(0.25 * side, 0.86, 0.45 * end), Vector3(0.2, 0.05, 0.4), Color(0.42, 0.42, 0.44), 17) # iron bars
+			_box(st, o + Vector3(0.28 * side, 0.98, 0.45 * end), Vector3(0.22, 0.16, 0.32), awning if side * end > 0.0 else Color(0.36, 0.45, 0.62), 18) # cloth bales
+			_box(st, o + Vector3(0.28 * side, 1.1, 0.42 * end), Vector3(0.13, 0.3, 0.13), Color(0.72, 0.4, 0.24), 19) # amphorae
+			_box(st, o + Vector3(0.28 * side, 1.0, 0.45 * end), Vector3(0.2, 0.22, 0.2), Color(0.45, 0.31, 0.19), 20) # barrels
+	_box(st, o + Vector3(0.0, 0.92, 0.0), Vector3(0.45, 0.04, 0.8), Color(0.55, 0.55, 0.56), 17)
 	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 

@@ -24,10 +24,19 @@ extends CanvasLayer
 ## `answered`, and people_trips.gd plays the newest events as scenes on the
 ## map (a family moving with its handcart, a thief, a funeral).
 ##
-## Command line (after --): --no-events starts with the list hidden.
+## Rare events in view (theft, a farm taken, cleared under the Lex Manciana
+## or given up; WINDOW_KINDS) open an event window in the Victoria 3 look
+## (ui/event_window.gd) while the list is shown: only events of the last
+## WINDOW_DAYS, each once, at most one window at a time and one every
+## WINDOW_GAP_S seconds, so a fast game is not buried in windows. Its
+## people open the person's window (person_chosen, people_dots.gd).
+##
+## Command line (after --): --no-events starts with the list hidden,
+## --no-event-windows opens no event windows.
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const NoticeList = preload("res://scripts/ui/notice_list.gd")
+const EventWindow = preload("res://scripts/ui/event_window.gd")
 const KEEP_DAYS := 60 # apoleia_sim::events::KEEP_DAYS
 const LINES := 8
 const ASK_SECONDS := 1.0
@@ -49,9 +58,17 @@ const PIN_GRID := 14.0 # pins closer than the view width over this merge
 const THEFT := 4
 const ALMS := 5
 const MOVED := 1
+const FARM_TAKEN := 7
+const MANCIANA := 10
+const FARM_LEFT := 11
+const WINDOW_KINDS: Array[int] = [THEFT, FARM_TAKEN, MANCIANA, FARM_LEFT]
+const WINDOW_DAYS := 2
+const WINDOW_GAP_S := 30.0
 
 ## Every answer of the sim thread, also while the list is hidden.
 signal answered(events: Dictionary)
+## A person named in an event window was chosen.
+signal person_chosen(pid: int, household: int)
 
 var people: RefCounted
 var landscape: Node3D
@@ -69,6 +86,10 @@ var _last := {} # the last answer, for the pins
 var _pins: Array[Dictionary] = [] # at (world km) and the pin
 var _pins_root: Control
 var _pins_width := 0.0 # view width the pins were merged for
+var _windows := true
+var _window: Control # the event window open now, if any
+var _window_msec := -1000000
+var _window_seen := {} # rare events of the last WINDOW_DAYS already shown or passed over
 
 ## `sim` is ApoleiaPeople, `scene` the landscape whose camera a line moves.
 func setup(sim: RefCounted, scene: Node3D) -> void:
@@ -78,6 +99,8 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	layer = 2
 	if "--no-events" in OS.get_cmdline_user_args():
 		open = false
+	if "--no-event-windows" in OS.get_cmdline_user_args():
+		_windows = false
 	_build()
 	_show(open)
 
@@ -91,6 +114,7 @@ func _process(_delta: float) -> void:
 			_last = answer
 			if open:
 				_refresh()
+				_window_for(answer)
 			answered.emit(answer)
 	if open:
 		_place_pins()
@@ -232,6 +256,71 @@ static func _text(g: Dictionary) -> String:
 ## "12. Mar.": the day of the month.
 static func _day(day: int) -> String:
 	return "%d. %s." % [day % SimTables.MONTH + 1, SimTables.MONTHS[(day % SimTables.YEAR) / SimTables.MONTH].left(3)]
+
+## An event window for the newest rare event in view not yet shown, if no
+## window is open and the last one is WINDOW_GAP_S old. The others of the
+## same answer are passed over: they stay in the list.
+func _window_for(e: Dictionary) -> void:
+	if not _windows or not e.has("day"):
+		return
+	var days: PackedInt64Array = e.day
+	var kinds: PackedInt32Array = e.kind
+	var at: PackedVector2Array = e.at
+	var today: int = people.day()
+	var centre: Vector2 = landscape.target if "target" in landscape else Vector2.ZERO
+	var width: float = landscape.width if "width" in landscape else 360.0
+	var view := Rect2(centre - Vector2(width, width) * 0.5, Vector2(width, width))
+	var free := not is_instance_valid(_window) and Time.get_ticks_msec() - _window_msec >= WINDOW_GAP_S * 1000.0
+	var seen := {}
+	for i in range(days.size() - 1, -1, -1):
+		if days[i] < today - WINDOW_DAYS:
+			break
+		if not kinds[i] in WINDOW_KINDS or not view.has_point(at[i]):
+			continue
+		var key := "%d:%d:%d" % [days[i], kinds[i], e.household[i]]
+		seen[key] = true
+		if _window_seen.has(key) or not free:
+			continue
+		free = false
+		_open_window(e, i)
+	_window_seen = seen
+
+## The window for event i: what the sim knows of it, the households as links.
+func _open_window(e: Dictionary, i: int) -> void:
+	var kind: int = e.kind[i]
+	var day: int = e.day[i]
+	var hh: int = e.household[i]
+	var other: int = e.other[i]
+	var amount: int = e.amount[i]
+	var d := {
+		"kind": e.names[kind] if kind < e.names.size() else "Ereignis",
+		"icon": KIND_ICONS[kind] if kind < KIND_ICONS.size() else "",
+		"date": "%s, %s" % [_day(day), SimTables._date(day)],
+		"at": e.at[i],
+		"people": [{"pid": -1, "household": hh, "label": "Haushalt %d" % hh}],
+	}
+	match kind:
+		THEFT:
+			d.title = "Diebstahl auf einem Hof"
+			d.text = "Ein Haushalt aus dem Zelt fand nicht genug zu essen und stahl in der Not Korn aus dem Speicher eines Hofs."
+			d.figures = [{"label": "Gestohlen", "value": "%s kg Korn" % SimTables._int(amount)}]
+			d.people[0].label = "Haushalt %d (Dieb)" % hh
+			if other >= 0:
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other})
+		FARM_TAKEN:
+			d.title = "Ein freier Hof ist wieder bewirtschaftet"
+			d.text = "Ein Haushalt ohne eigenes Land hat einen freien Hof übernommen und lebt jetzt von dessen Ernte."
+		MANCIANA:
+			d.title = "Neuland nach der Lex Manciana"
+			d.text = "Ein landloser Haushalt aus dem Zelt rodet freies Land. Nach der Lex Manciana darf er es bebauen; ein Drittel der Ernte geht an den Staat, und wer zwei Jahre nichts sät, verliert das Land wieder."
+		FARM_LEFT:
+			d.title = "Ein Hof steht leer"
+			d.text = "Der Haushalt dieses Hofs ist weggezogen oder ausgestorben. Übernimmt ihn nach zwei Aussaaten niemand, fallen seine Felder an das freie Land zurück."
+			d.erase("people") # the household may be gone
+	_window = EventWindow.open(get_tree(), d)
+	_window_msec = Time.get_ticks_msec()
+	_window.fly_to.connect(func(p: Vector2): _fly({"lo": p, "hi": p}))
+	_window.person.connect(func(pid: int, household: int): person_chosen.emit(pid, household))
 
 func _fly(g: Dictionary) -> void:
 	if landscape == null or not "_goal_target" in landscape:
