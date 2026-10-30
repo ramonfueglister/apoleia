@@ -310,7 +310,15 @@ unabhängig und unverändert.
   Blöcke liegen als offene Plätze in Travertin #e6dfcf ohne Straßenraster.
   Nah ist jeder Block eben, auf der mittleren Stufe seiner Ecken
   (`landmark_levels`, der Shader setzt die Ecken im Block darauf). Sie
-  stehen, solange die Häuser gezeichnet werden.
+  stehen, solange die Häuser gezeichnet werden. Mit den Stadtplänen stehen die
+  fünf Bauten auf ihrem Bau im Plan, verkleinert, bis sie in seine Parzellen
+  passen (`LANDMARK_PLAN_REACH`), und die Brücken entfallen.
+- Die 860 Städte mit Stadtplan (docs/kit2/CITY_PLANS.md, `city_plan.gdshaderinc`,
+  `_plan_lots_of`) folgen nah (Viertel- und 0,5-km-Kacheln) ihrem Plan statt der
+  Ortsregel: Strassen nach Belag und Rang mit Häuserzeilen, Häuser nach
+  Stockwerken zur Strasse gedreht, Plätze, Gärten, Mauern mit Toren und Türmen,
+  Gräber und die öffentlichen Bauten als Modelle auf einer Parzelle
+  (`voxel/roman_city.gd`).
 
 ## Bildstimmung (Urbek/Islanders, seit 29.10.2026)
 
@@ -579,4 +587,4 @@ um zu sehen, was es kostet; `people-draw` zeichnet die Menschen nicht,
 
 - macOS-Paketierung des Tile-Geländes.
 - Leistungsmessung auf dem Mac nach dem Umbau (vorher 142 ms bei 25 km Sichtbreite).
-- Straßen außerhalb der Städte, Stadtmauer als echte Geometrie.
+- Straßen außerhalb der Städte (die Stadtmauern zeichnen jetzt die Stadtpläne).
