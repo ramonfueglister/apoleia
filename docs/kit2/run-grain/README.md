@@ -904,6 +904,53 @@ Was auffällt:
 - Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic, and administrative survey*. Blackwell.
 - Persson, K. G. (1999). *Grain markets in Europe, 1500–1900: Integration and deregulation*. Cambridge University Press.
 
+## Überschuss-Handel (S120, 100 Jahre, Seed 1, `run100-s120.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: `run100-s117-s119.txt`)
+
+Ramon (30.10.2026), Karte „Wie machen wir nach Schritt 3 weiter?“, Option „Mergen, dann
+Überschuss-Handel“. Marktleute mit mehr als ihrem geplanten Lager schicken Korn zum bekannten
+Markt, der nach Fracht am meisten zahlt (S120). Neu im Lauf: „fetched/sent by dealers“ und
+„out/in beyond the map“ (Korn, das die Karte über die Tormärkte verlässt oder hereinkommt).
+
+| Grösse | main (Band) | S117–S119 | jetzt |
+|---|---|---|---|
+| Menschen im Jahr 10 / 30 / 100 | 109'535 / 107'911 / 109'276 | 109'643 / 106'081 / 84'343 | 106'788 / 98'482 / 73'659 |
+| Wachstum, Mittel Jahr 11–100 | 0,00 % | −0,29 % | −0,41 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 6'712 / 5'579 / 23'487 | 6'815 / 6'351 / 49'097 | 8'844 / 9'049 / 45'819 |
+| Verlassen die Karte, 100 Jahre | 8'700 | 18'284 | 25'128 |
+| Ernte im Jahr 10 / 100 | 23'623 / 23'838 t | 31'450 / 18'050 t | 33'996 / 16'187 t |
+| Üblicher Preis Korn, nach Absatz gewichtet, Jahr 10 / 30 / 100 | – | 0,34 / 0,26 / 0,37 Denar/kg | 1,28 / 1,10 / 1,63 Denar/kg |
+| Median-Preis Korn im Jahr 100 | 2,90 Denar/kg | 0,46 Denar/kg | 1,14 Denar/kg |
+| Korn zu anderen Märkten geschickt, Jahr 10 / 100 (höchstens) | – | – | 22'223 / 5'179 t (28'295 t) |
+| Korn hinaus über die Tormärkte, Jahr 10 / 100, 100 Jahre | – | – | 6'390 / 1'406 t, 169'751 t |
+| Reallohn p10 / p50, Jahr 100 | – | 1,2 / 4,9 kg | 1,3 / 3,8 kg |
+| Liegen gebliebene / offene Arbeitstage pro Woche, Jahr 100 | – | 44'491 / 38'713 | 46'772 / 21'019 |
+| Staats- und Herrenspeicher im Jahr 100 | – | 26'798 / 7'224 t | 10'529 / 2'313 t |
+| Nicht gebucht | 0 | 0 | 0 |
+| Getreide pro Tag, Median | 4,3 ms | 5,5 ms | 5,2 ms |
+
+Was auffällt:
+
+- **Der Preis hält besser.** Nach Absatz gewichtet bleibt der übliche Preis bei 1,1–1,6 statt
+  0,3 Denar/kg. In den ersten zehn Jahren wandern bis 28'000 t im Jahr von vollen zu teureren
+  Märkten; die Speicher verkaufen mehr (Steuer 384 statt 134 Mio. Denar in 100 Jahren).
+- **Aber es sterben mehr Menschen.** Im Jahr 100 leben 73'659 statt 84'343. In den Jahren
+  1–30 gibt es 17'900 statt 13'200 Hungertote, und mehr Menschen verlassen die Karte; danach
+  fehlen die Geburten.
+- **Viel Korn verlässt die Karte.** Über die Tormärkte gehen in den Jahren 5–11 jedes Jahr
+  3'000–6'400 t hinaus, bis zu einem Fünftel der Ernte, in 100 Jahren 170'000 t. Die Märkte
+  draussen kaufen zum festen Preis jede Menge (S98, frei gewählt); so wird das Korn dorthin
+  verkauft, wo es Geld bringt, während Arme drinnen es sich nicht leisten können.
+- **Der Hunger kommt vom Einkommen.** Der Reallohn der ärmsten zehn Prozent liegt bei
+  0,8–1,4 kg Korn pro Tag, eine Familie braucht etwa 2,5 kg. Jede Woche bleiben mehr
+  Arbeitstage liegen, als gesucht werden. Ein höherer Kornpreis trifft genau diese Haushalte.
+- Gleicher Fingerabdruck mit 1 und 4 Threads (2 Jahre); 70 Tests grün.
+
+### Quellen zu S120 (APA 7)
+
+- Kessler, D., & Temin, P. (2007). The organization of the grain trade in the early Roman Empire. *The Economic History Review, 60*(2), 313–332.
+- Samuelson, P. A. (1952). Spatial price equilibrium and linear programming. *The American Economic Review, 42*(3), 283–303.
+- Takayama, T., & Judge, G. G. (1971). *Spatial and temporal price and allocation models*. North-Holland.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
