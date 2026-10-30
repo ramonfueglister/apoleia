@@ -44,6 +44,36 @@ Gene in die Simulation, Portrait im Personenfenster.
   der Hintergrund nach Stand, die Medaille der Schicht auf der Ecke. Ohne Gene
   (oder ohne Erweiterung) bleibt die Medaille wie bisher.
 
+## Kinder (Runde 8, 30.10.2026)
+
+Ramon, 30.10.2026: auf der Karte „nächste Runde“ alle vier Punkte („gerne
+alles“), zuerst echte Kindergesichter. Vorher sahen Kinder wie kleine
+Erwachsene aus.
+
+- **Form**: MakeHumans Baby (ein Jahr) und Kind (elf Jahre) gemischt, das Baby
+  höchstens zu zwei Dritteln (mehr gibt dem Gesicht eine Schnauze und faltet
+  die Arme in die Brust). Dazu das Kindchenschema (Lorenz, 1943; Glocker et
+  al., 2009) als Verschiebung der Gesichtsgene (`look::KID`): runder Kopf, hohe
+  Stirn, kleines Kinn, kleine Nase und kleiner Mund, volle Wangen, grosse und
+  offene Augen, kurzer Hals; die eigenen Gene zeigen sich gedämpft. Beides
+  wächst sich aus bis 15 (Mädchen) oder 17 (Knaben), `Look::grown`.
+  PLACEHOLDER: die Stärken sind nach Augenmass gesetzt.
+- **Gesicht**: feinere und hellere Brauen, Iris und Pupille füllen mehr vom
+  Auge, ein leichtes Lächeln statt der Schmollmund der Vorlage.
+- **Haar**: unter drei Jahren kurzes, feines Haar, auch bei Mädchen.
+- **Wickelbänder**: im ersten Jahr ist das Kind bis zum Hals in Leinenbänder
+  gewickelt (*fasciae*; Soranus, *Gynaecology* 2.14–15).
+- **Bulla und Lunula**: freie Kinder ab anderthalb Jahren tragen ein Amulett
+  an einer Schnur, Knaben die runde Bulla bis 16 (bis zur Männertoga),
+  Mädchen die mondförmige Lunula bis 13; Gold im Dekurionen- und
+  Senatorenstand, Bronze bei Handwerkern und Händlern, Leder bei den Armen
+  („nodus tantum et signum de paupere loro“, Juvenal, *Satiren* 5.165).
+  Kinder von Unfreien tragen keines. Mädchen unter 13 tragen sonst keinen
+  Schmuck.
+- `app/assets/portrait/head.bin.zst` enthält dafür die Baby-Ziele von
+  MakeHuman (391 statt 369 Ziele, 1,1 MB). Die Werkstatt im Browser hat das
+  alles noch nicht.
+
 ## Was aus der Simulation kommt
 
 | Im Gesicht | Aus der Simulation | Regel |
@@ -71,8 +101,8 @@ keine Verletzungen), keine Krankheit (die Simulation kennt keine).
 `app/assets/portrait/head.bin.zst` (1,0 MB) entsteht mit
 `tools/portrait/build_head.js` aus dem MakeHuman-Grundmodell und seinen
 Morph-Zielen (CC0, `app/assets/portrait/LICENSE.md`). Es ist dasselbe wie die
-Datei der Werkstatt: 7'001 Punkte, Körper in vier Stufen (1'400, 3'000, 6'000,
-11'160 Dreiecke), 369 Morph-Ziele.
+Datei der Werkstatt, dazu seit Runde 8 die Baby-Ziele: 7'001 Punkte, Körper
+in vier Stufen (1'400, 3'000, 6'000, 11'160 Dreiecke), 391 Morph-Ziele.
 
 ## Mit der Werkstatt vergleichen
 
@@ -104,3 +134,19 @@ und in der Werkstatt nebeneinander.
   Rust, die Werkstatt dann nachziehen (oder später die Werkstatt aus Rust über
   WebAssembly bauen).
 - Namen, Dynastien, Eigenschaften (CK3) gibt es noch nicht.
+
+## Literatur
+
+Zitate aus dem Gedächtnis, nicht online geprüft.
+
+- Glocker, M. L., Langleben, D. D., Ruparel, K., Loughead, J. W., Gur, R. C.,
+  & Sachser, N. (2009). Baby schema in infant faces induces cuteness
+  perception and motivation for caretaking in adults. *Ethology, 115*(3),
+  257–263. https://doi.org/10.1111/j.1439-0310.2008.01603.x
+- Juvenal. (2004). *Juvenal and Persius* (S. M. Braund, Ed. & Trans.; Loeb
+  Classical Library 91). Harvard University Press.
+- Lorenz, K. (1943). Die angeborenen Formen möglicher Erfahrung.
+  *Zeitschrift für Tierpsychologie, 5*(2), 235–409.
+  https://doi.org/10.1111/j.1439-0310.1943.tb00655.x
+- Soranus. (1956). *Soranus' gynecology* (O. Temkin, Trans.). Johns Hopkins
+  University Press. (Original work published ca. 100 CE)

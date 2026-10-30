@@ -104,12 +104,13 @@ func show_person(p: Dictionary) -> bool:
 	return true
 
 ## The Werkstatt's framing: the head from the chin to above the crown (or
-## hat) fills about half the height, the eyes a little above the middle.
+## hat) fills about half the height (`fill`, more for a small child), the
+## eyes a little above the middle.
 func _frame(d: Dictionary) -> void:
 	var cx: float = d.cx
 	var cz: float = d.cz
 	var h := maxf(0.8, float(d.top) - float(d.chin))
-	var hv := h / 0.53
+	var hv := h / float(d.get("fill", 0.53))
 	var cy: float = float(d.top) - 0.36 * hv
 	var dist := (hv * 0.5) / tan(deg_to_rad(11.0))
 	_pivot.position = Vector3(cx, 0.0, cz)

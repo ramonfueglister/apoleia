@@ -3,7 +3,7 @@
 //! hair, headwear and jewellery that follow from them (the Werkstatt's
 //! rules; PLACEHOLDER where they are unsourced).
 
-use crate::geo::{c01, chain, cmix, hex, Rgb, Rng};
+use crate::geo::{c01, chain, cmix, hex, sm, Rgb, Rng};
 
 pub const NG: usize = 34;
 /// The genes in byte order, as apoleia_sim::dna::GENES.
@@ -52,6 +52,16 @@ pub const FACE: [(&[&str], &str, &str); FACE_GENES] = [
     (&["mouth/mouth-scale-horiz"], "decr", "incr"),
     (&["mouth/mouth-upperlip-volume", "mouth/mouth-lowerlip-volume"], "decr", "incr"),
     (&["neck/neck-scale-horiz"], "decr", "incr"),
+];
+
+/// The child's face in the face genes' terms (-1 low .. 1 high): a round
+/// head with a high forehead, a small chin, jaw, nose and mouth, full
+/// cheeks, large eyes and a short neck (the "Kindchenschema", Lorenz 1943;
+/// Glocker et al., 2009), on top of MakeHuman's baby and child shapes. A
+/// child shows it fully and its own genes damped; both fade as it grows up
+/// (`Look::grown`). PLACEHOLDER (eyeballed).
+pub const KID: [f32; FACE_GENES] = [
+    0.07, -0.09, -0.2, 0.25, -0.16, -0.18, -0.23, -0.23, -0.29, -0.14, -0.36, 0.23, 0.41, 0.0, 0.05, 0.0, 0.0, 0.0, -0.14, 0.0, -0.16,
 ];
 
 /// How a stand dresses and lives (the Werkstatt's seven).
@@ -179,6 +189,17 @@ impl Look {
         &STANDS[self.stand.min(STANDS.len() - 1)]
     }
 
+    /// How far grown up: 0 for a baby, 1 from 15 (girls) or 17 (boys).
+    pub fn grown(&self) -> f32 {
+        sm(1.0, if self.female { 15.0 } else { 17.0 }, self.age)
+    }
+
+    /// A face gene as it shows (-1 .. 1), the child's face mixed in.
+    pub fn face(&self, i: usize) -> f32 {
+        let g = self.grown();
+        (self.g(i) - 128.0) / 127.0 * (0.35 + 0.65 * g) + KID[i] * (1.0 - g)
+    }
+
     /// The gene as it shows: muscles grow with work, weight with food.
     pub fn phen(&self, i: usize) -> f32 {
         let mut v = self.u(i);
@@ -248,7 +269,8 @@ impl Look {
         if let Some(j) = self.jewel {
             return j;
         }
-        if !self.female || self.age < 10.0 {
+        // girls wear the lunula until 13 (build.rs), no other jewellery
+        if !self.female || self.age < 13.0 {
             return Jewel::None;
         }
         let r = Rng::new(self.seed ^ 0x3c6e_f372).next();

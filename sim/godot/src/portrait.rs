@@ -156,7 +156,7 @@ impl ApoleiaPortrait {
 
     /// The portrait of a person as take_person describes them ("dna",
     /// "female", "age", "stand", "job", "health", "fed", "pid", "origin"):
-    /// {"mesh": ArrayMesh, "top", "chin", "cx", "cz" (the frame), "tris",
+    /// {"mesh": ArrayMesh, "top", "chin", "cx", "cz", "fill" (the frame), "tris",
     /// "bg": [inner, outer] background colours of the look's stand,
     /// "look": the stand's name}; empty without genes or head. `lod` 0..3.
     #[func]
@@ -206,6 +206,7 @@ impl ApoleiaPortrait {
         d.set("chin", p.chin);
         d.set("cx", p.cx);
         d.set("cz", p.cz);
+        d.set("fill", p.fill);
         d.set("tris", p.tris as i64);
         let bg: VarArray = st
             .bg
