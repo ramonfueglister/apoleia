@@ -221,7 +221,22 @@ unabhängig und unverändert.
   Buchten mit breitem Sand und kahle Landspitzen, und die Brandung bricht am
   Sand. Kein Sand am Fuss von Küstenschnitten, Flussmündungen und
   Stadtkaien; das Flachwasser ist ein gestuftes Band statt der ganzen
-  Kachel. Flüsse und Seen sind
+  Kachel. Nah (0,5-km- und Viertelkacheln) kommt seit Runde H (30.10.2026)
+  auch die Böschung selbst in Stufen (`coast_steps.gdshaderinc`,
+  `tile_coast_steps.gdshader`): Vor offenem Land (kein Ort, kein Schnitt,
+  keine Einzelkachel) stehen auf der Seekachel Voxelklötze in 16 Spalten je
+  Kachelseite. Wo die Küste wenig wandert, ragt eine Felsnase auf Landhöhe
+  bis drei Zellen hinaus; davor liegt überall ein Sandabsatz auf halber Höhe
+  zum Wasser, ein bis drei Zellen tief, am tiefsten in den Buchten. Auf
+  einem Küstenschnitt füllt eine Treppe die halben Zellen der Diagonale, so
+  wird die 45-Grad-Küste zur Voxeltreppe, mit Felsnasen und Absatz davor; sie
+  läuft über die Kachelgrenzen weiter. Wo ein Uferstück endet, laufen die
+  Stufen in einer 45-Grad-Treppe aus. `TileTerrain._update_coast_list` legt
+  die Seiten und Schnitte im Requisitenfenster als Instanzen an (dieselben
+  Regeln auf der CPU, in Blöcken von 32 Kacheln gelesen und behalten); die
+  Kacheln legen Fusssand, Brandung und Flachwasser vor die Stufenfront und
+  keinen Sandsaum hinter eine Felsnase. Weiter draussen keine Stufen.
+  Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
   Land auf Uferhöhe, wie der Küstenschnitt umgekehrt (`tt_lake_corner_cut`):
