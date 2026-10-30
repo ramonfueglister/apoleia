@@ -473,8 +473,9 @@ pub struct Market {
     /// S124: days on which buyers found no grain, per mille × 1000,
     /// smoothed over a year.
     short: i64,
-    /// Smoothed sales per day, kg × 1000, with what buyers asked for and
-    /// found no grain for (`missed_today`).
+    /// Sales per day, kg × 1000, with what buyers asked for and found no
+    /// grain for (`missed_today`), smoothed over a year (S125; over a
+    /// month before).
     demand: i64,
     sold_today: i64,
     missed_today: i64,
@@ -632,6 +633,8 @@ pub struct GrainStats {
     /// to the state's servants, kg.
     pub feed_kg: i64,
     pub rations_kg: i64,
+    /// S126: carry-over the granaries sold below the expected price, kg.
+    pub carry_sold_kg: i64,
     pub thefts: u64,
     pub farms_taken: u64,
     /// S92: farms cleared under the Lex Manciana and lost after two
@@ -808,10 +811,13 @@ pub struct Grain {
     decay: std::sync::Arc<Vec<i64>>,
     /// Share of the fields under grain, per cent (`CROP_PCT`).
     crop_pct: i64,
-    /// S123 storage floor and S124 own sowing by price (on by default;
+    /// S123 storage floor, S124 own sowing by price, S125 sales over a
+    /// year and S126 granaries selling their carry-over (on by default;
     /// off to measure without them).
     pub storage_floor: bool,
     pub sow_by_price: bool,
+    pub sales_year: bool,
+    pub carry_sale: bool,
     /// Reused buffer for the monthly count.
     scratch: Vec<Row>,
     /// Person ids grouped by household, from the last count.
@@ -1287,6 +1293,8 @@ impl Grain {
             crop_pct: crop_pct.clamp(1, 100),
             storage_floor: true,
             sow_by_price: true,
+            sales_year: true,
+            carry_sale: true,
             scratch: Vec::new(),
             members: Vec::new(),
             census_job: None,
@@ -3471,16 +3479,22 @@ impl Grain {
     /// the farms do: only when the dealers pay at least the usual buying
     /// price of the season (they are storers: Erdkamp, 2005; Rickman,
     /// 1971), as far as the dealers' room and cash go, shared by stock.
+    /// S126: what lies there beyond a year of the market's sales will not
+    /// sell before the next harvest at the expected price; it is
+    /// carry-over, worth only the storage floor, and the stewards sell
+    /// it down to there (Williams & Wright, 1991; Deaton & Laroque, 1992).
     fn granaries(&mut self, day: i64) {
         let wd = day.rem_euclid(7) as usize;
         for mi in (wd..self.markets.len()).step_by(7) {
             let m = &self.markets[mi];
             let total = m.horreum + m.lords.iter().map(|l| l.1).sum::<i64>();
             let price = Self::buy_price(m);
-            if total <= 0 || price * 100 < self.hold_price(m) * (100 - SPREAD_PCT) {
+            let carry = self.carry_sale && total > m.demand / 1000 * YEAR;
+            let hold = if carry { self.floor_price(m) } else { self.hold_price(m) };
+            if total <= 0 || price * 100 < hold * (100 - SPREAD_PCT) {
                 continue;
             }
-            let room = self.dealer_room(m, self.hold_price(m));
+            let room = self.dealer_room(m, hold);
             let take = room.min(m.money.max(0) / price.max(1)).min(total);
             if take <= 0 {
                 continue;
@@ -3500,6 +3514,9 @@ impl Grain {
             got += state;
             m.store += got;
             self.stats.inflow[4] += got;
+            if carry {
+                self.stats.carry_sold_kg += got;
+            }
             m.money -= got * price;
             self.stats.sold_kg += got;
             self.treasury.cash += state * price;
@@ -3560,9 +3577,10 @@ impl Grain {
         let carry = pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR;
         let today = doy(self.today);
         let on = self.storage_floor;
+        let span = self.sales_span();
         for m in self.markets.iter_mut() {
             m.short += ((m.missed_today > 0) as i64 * 1_000_000 - m.short) / YEAR;
-            m.demand += ((m.sold_today + m.missed_today) * 1000 - m.demand) / MONTH;
+            m.demand += ((m.sold_today + m.missed_today) * 1000 - m.demand) / span;
             m.missed_avg += (m.missed_today * 1000 - m.missed_avg) / MONTH;
             m.turned_avg += (m.turned_today * 1000 - m.turned_avg) / MONTH;
             m.sold_today = 0;
@@ -3574,6 +3592,13 @@ impl Grain {
         }
         self.outer_day();
         self.goods_prices();
+    }
+
+    /// Days over which the dealers smooth their sales: a year (S125,
+    /// stock against yearly sales as in the storage model; Gouel &
+    /// Legrand, 2025), or a month as before.
+    pub(super) fn sales_span(&self) -> i64 {
+        if self.sales_year { YEAR } else { MONTH }
     }
 
     /// The usual price at this time of year at a market, milli-denarii.
@@ -3591,6 +3616,14 @@ impl Grain {
         }
         let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
         m.expect / 1000 * season / 1000
+    }
+
+    /// S126: the storage floor at this time of year at a market (the
+    /// expected price less a year's interest and spoilage, S123),
+    /// milli-denarii.
+    fn floor_price(&self, m: &Market) -> i64 {
+        let season = pricing::season(doy(self.today) - m.harvest_doy, pricing::INTEREST_PCT_YEAR + SPOIL_PCT_YEAR);
+        pricing::floor_of(m.expect) / 1000 * season / 1000
     }
 
     /// Grain the dealers at `m` take from a seller who wants `price` (mid
@@ -4465,7 +4498,15 @@ impl Grain {
         all.sort_by_key(|e| e.day);
         let mut v = EventsView::default();
         for e in all {
-            let at = if e.fine != NONE { self.settle.fine_centre_km(e.fine) } else { cell_km(e.cell) };
+            // births, weddings and deaths at the household's house tile, as
+            // the grain economy knows it; else not shown (a household that
+            // died out, one outside the grain economy)
+            let family = matches!(e.kind, crate::events::BIRTH | crate::events::WEDDING | crate::events::DEATH);
+            let fine = if family { self.hh.get(&e.household).map_or(NONE, |s| s.fine) } else { e.fine };
+            if family && fine == NONE {
+                continue;
+            }
+            let at = if fine != NONE { self.settle.fine_centre_km(fine) } else { cell_km(e.cell) };
             let to = if e.to != NONE { cell_km(e.to) } else { at };
             if !inside(at) && !inside(to) {
                 continue;
@@ -4723,8 +4764,8 @@ impl Grain {
     /// need it ate at the last meal count (‰ / 4); HOUSE_* flags; its farm's
     /// sheep and the pigs it fattens a year (pork a year / PIG_KG), at most
     /// 255 each.
-    pub fn house_look(&self, hh: u32) -> [u8; 4] {
-        let Some(s) = self.hh.get(&hh) else { return [0; 4] };
+    pub fn house_look(&self, hh: u32) -> Option<[u8; 4]> {
+        let s = self.hh.get(&hh)?;
         let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh);
         let mut flags = 0;
         if s.pantry > 0 || farm.is_some_and(|f| f.store > 0) {
@@ -4743,7 +4784,15 @@ impl Grain {
         }
         let sheep = farm.map_or(0, |f| f.goods.sheep.clamp(0, 255)) as u8;
         let pigs = farm.map_or(0, |f| (f.goods.pork_year / 1000 / crafts::PIG_KG).clamp(0, 255)) as u8;
-        [(s.fed / 4).min(255) as u8, flags, sheep, pigs]
+        Some([(s.fed / 4).min(255) as u8, flags, sheep, pigs])
+    }
+
+    /// Each market's grain for the graphics (read only, Ramon 30.10.2026
+    /// "Wuselfaktor"), in market order: its store, its sales a day with
+    /// what buyers asked for and found no grain for (smoothed over a
+    /// month), and that no grain part alone, kg.
+    pub fn market_grain(&self) -> Vec<[f32; 3]> {
+        self.markets.iter().map(|m| [m.store as f32, m.demand as f32 / 1000.0, m.missed_avg as f32 / 1000.0]).collect()
     }
 }
 

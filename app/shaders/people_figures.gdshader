@@ -8,6 +8,10 @@
 // craftsmen, a bundle for traders and labourers, bare feet for the unfree.
 // In the colour modes the tunic takes the group colour as the dots do.
 // People on the road walk, children at home run about their house.
+// What the sim has of their household (dot_person_look): a household that
+// ate less than it needs is drawn thin, and while its farm's harvest or
+// sowing wants hands its grown-ups stand out on their fields, bent over
+// the work (Ramon, 30.10.2026: "Wuselfaktor", "alles aus der Simulation").
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
@@ -100,6 +104,9 @@ void vertex() {
 	uint job = (w >> 4u) & 15u;
 	bool female = ((w >> 22u) & 1u) == 1u;
 	bool child = ((w >> 23u) & 1u) == 1u;
+	vec2 look = dot_person_look(px);
+	bool field = look.y > 0.5 && !child && kind == 0u;
+	float thin = mix(0.6, 1.0, smoothstep(0.5, 0.95, look.x)); // ate under 95 % of the need: thinner, at half of it a skeleton
 	vec2 r = dot_rand2(uint(slot), 31u);
 	vec2 r2 = dot_rand2(uint(slot), 37u);
 	int part = int(UV.x + 0.5);
@@ -140,6 +147,15 @@ void vertex() {
 	if (part == LEG_R || part == SANDAL_R) v = swing(v, 0.47, -leg);
 	if (part == ARM_L || part == SHIELD) v = swing(v, 0.79, -arm * (shield ? 0.25 : 1.0));
 	if (part == ARM_R || part == POLE || part == HOE || part == SPEAR) v = swing(v, 0.79, arm * held);
+	if (part <= ARM_R) {
+		v.xz *= thin;
+	}
+	if (field) {
+		// bent over the sickle or the seed, up and down
+		float bend = 0.55 + 0.25 * sin(TIME * 2.4 + r.y * 6.2831853);
+		bool legs = part == LEG_L || part == LEG_R || part == SANDAL_L || part == SANDAL_R;
+		if (!legs && (part != TUNIC || v.y > 0.47)) v = swing(v, 0.47, bend);
+	}
 	// people standing about turn now and then; walkers face their way
 	float a = r.x * 6.2831853 + (walking ? 0.0 : floor(TIME * 0.05 + r2.x * 8.0) * 2.1);
 	float s = figure_scale * (child ? 0.62 : (female ? 0.94 : 1.0) * (0.94 + 0.1 * r2.y)) * (slot == selected_slot ? 1.4 : 1.0);
@@ -156,7 +172,12 @@ void vertex() {
 	v *= s;
 	v.xz = rot * v.xz;
 	float lift = walking ? abs(sin(phase)) * 0.025 * s : 0.0;
-	vec3 world = vec3(p.x, place.z * level_h + lift, p.y) + v;
+	float level = place.z;
+	if (field) {
+		p += dot_field_offset((w >> 8u) & 0x3fffu, uint(slot));
+		level = dot_ground_level(p);
+	}
+	vec3 world = vec3(p.x, level * level_h + lift, p.y) + v;
 	vec3 nrm = NORMAL;
 	nrm.xz = rot * nrm.xz;
 	bool show = rec.z != 0.0 && place.a > 0.5;

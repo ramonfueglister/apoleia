@@ -1437,9 +1437,10 @@ impl People {
             self.splits.push((pid, self.world.get::<Household>(e).unwrap().0));
         }
         let a = age_y(day, born);
-        if cause == 2 {
+        if cause == 2 || !leaving {
             let household = self.world.get::<Household>(e).unwrap().0;
-            self.events.push(crate::events::Event { day, kind: crate::events::HUNGER_DEATH, household, pid, cell: home, to: NONE, fine: NONE, other: NONE, amount: 0 });
+            let kind = if cause == 2 { crate::events::HUNGER_DEATH } else { crate::events::DEATH };
+            self.events.push(crate::events::Event { day, kind, household, pid, cell: home, to: NONE, fine: NONE, other: NONE, amount: if cause == 2 { 0 } else { a as i64 } });
         }
         self.stats.deaths[cause] += 1;
         self.stats.age_at_death_sum += a;
@@ -1501,6 +1502,7 @@ impl People {
         let e = ec.id();
         if !leaving {
             self.add_pop(m_home, 1);
+            self.events.push(crate::events::Event { day, kind: crate::events::BIRTH, household: m_house, pid, cell: m_home, to: NONE, fine: NONE, other: mother, amount: 0 });
         }
         self.ent.push(e);
         self.traits.push(traits);
@@ -1753,6 +1755,9 @@ impl People {
             (s.birth, s.fed)
         };
         self.stats.marriages += 1;
+        if day > 0 {
+            self.events.push(crate::events::Event { day, kind: crate::events::WEDDING, household: house, pid: g, cell: home, to: old, fine: NONE, other: b, amount: 0 });
+        }
         self.stats.marry_age_f += age_y(day, born);
         self.stats.marry_age_m += age_y(day, gborn);
         let (gi, bi) = (*self.world.get::<Intelligence>(ge).unwrap(), *self.world.get::<Intelligence>(be).unwrap());

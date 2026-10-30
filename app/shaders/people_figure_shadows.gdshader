@@ -35,6 +35,12 @@ void vertex() {
 	bool playing = child && kind == 0u && r2.x < 0.7;
 	float s = figure_scale * (child ? 0.62 : (female ? 0.94 : 1.0) * (0.94 + 0.1 * r2.y));
 	vec2 p = rec.xy + place.xy - 32.0;
+	float level = place.z;
+	vec2 look = dot_person_look(px);
+	if (look.y > 0.5 && !child && kind == 0u) { // out on the fields (people_figures.gdshader)
+		p += dot_field_offset((w >> 8u) & 0x3fffu, uint(slot));
+		level = dot_ground_level(p);
+	}
 	if (playing) {
 		float way = r.y < 0.5 ? 1.0 : -1.0;
 		float turn = r.x * 6.2831853 + TIME * (0.6 + 0.4 * r2.y) * way;
@@ -47,7 +53,7 @@ void vertex() {
 	float t = UV.x;
 	float half_w = mix(0.17, 0.09, t);
 	vec2 ground = p + s * (along * mix(-0.08, 0.95, t) + across * UV.y * half_w);
-	vec3 world = vec3(ground.x, place.z * level_h + 0.02 * s, ground.y);
+	vec3 world = vec3(ground.x, level * level_h + 0.02 * s, ground.y);
 	bool show = rec.z != 0.0 && place.a > 0.5;
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 }

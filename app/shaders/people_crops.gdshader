@@ -7,14 +7,16 @@
 // sparse sprouts to narrow lumpy green rows, ripen to a straw sheet and
 // are cut to stubble; a fallow parcel lies as a sheet of dry stubble.
 // Beans stand in rows of darker clumps, vines in low hedges on every other
-// row; the fields next to a farmhouse are fenced. One instance per parcel of a square around the
+// row; the fields next to a farmhouse are fenced, the others now and then
+// fenced or hedged along a side; part of the pastures are paddocks, hedged
+// or walled round. One instance per parcel of a square around the
 // camera (people_dots.gd _update_crops); the parcel's state, crop and
 // growth come from the same fine layer and rule as the field colours
 // (sim_fields.gdshaderinc). The crop mesh (people_dots.gd _crop_mesh) holds
 // unit boxes (x, z in -0.5..0.5, y 0..1): the slab (UV.x -1), the rows
-// (UV.x the row's place across the parcel) and the fence (UV.x -2). The
-// pasture parcels near the camera (not farmed, open land) carry a small
-// flock of sheep instead (UV.x -3).
+// (UV.x the row's place across the parcel), the fence (UV.x -2) and the
+// hedge (UV.x -4). The pasture parcels near the camera (not farmed, open
+// land) carry a small flock of sheep instead (UV.x -3).
 shader_type spatial;
 render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled;
 
@@ -56,6 +58,23 @@ const vec3 VINE = vec3(0.24, 0.44, 0.18);
 const vec3 VINE_BARE = vec3(0.42, 0.3, 0.2);
 const vec3 FENCE = vec3(0.37, 0.255, 0.157);   // the farmhouse fence (farmhouse.gd FENCE)
 const float FENCE_POSTS = 6.0;   // posts per side, about two metres apart
+// Field edges: Varro (rust. 1.14) names the Roman enclosures as the living
+// hedge, the wooden fence, the ditch with its bank and the built wall. A
+// field's outside side is fenced at FENCE_SHARE (and always next to a
+// farmhouse), hedged at HEDGE_SHARE, open otherwise: Urbek fences nearly every
+// field, but a fence on every parcel read as clutter (Ramon on s3).
+const float FENCE_SHARE = 0.3;
+const float HEDGE_SHARE = 0.25;
+const float HEDGE_BLOCKS = 5.0;  // blocks per side (people_dots.gd HEDGE_BLOCKS)
+const vec3 HEDGE = vec3(0.16, 0.33, 0.14); // clipped box and thorn, darker than the crops' leaves
+// Paddocks (round G): the open pastures were the largest flat green left
+// against Urbek (rounds E and F). A block of 2 x 2 pasture parcels is at
+// PADDOCK_SHARE hedged or walled round (Varro's living hedge or the built
+// dry-stone wall, maceria), with one block of it left out as the gate; the
+// sheep graze in and out of them as before.
+const float PADDOCK_SHARE = 0.45;
+const float PADDOCK_WALLS = 0.5;  // share of the paddocks walled, not hedged
+const vec3 WALL_STONE = vec3(0.6, 0.56, 0.49); // grey limestone, below the house walls
 const vec3 WOOL = vec3(0.84, 0.81, 0.74); // below the house walls (brighter it was the lightest thing in the land, r11)
 const vec3 SHEEP_DARK = vec3(0.33, 0.27, 0.22); // face and legs
 const float FLOCK_SHARE = 0.3;   // share of the pasture parcels with a flock: fewer, larger flocks (r11: confetti)
@@ -127,18 +146,43 @@ void vertex() {
 	}
 	bool base = UV.x == -1.0;
 	bool fence = UV.x == -2.0;
+	bool hedge = UV.x == -4.0;
 	bool row = UV.x >= 0.0;
 	if (row && (h <= 0.0 || (kind == SIM_VINES && int(UV.y) % 2 == 1))) { show = false; }
 	// the fields next to a farmhouse lot fenced all round, further out a
-	// fence along a side now and then, as Urbek's farmland
+	// fence or a hedge along a side now and then, as Urbek's farmland
 	int side = int(UV.y) / 16;
-	if (fence) {
-		// only round a field's outside (the fence sides are -y, +y, +x,
-		// -x; the join bits -x, -y, +x, +y), and there now and then: a fence
-		// on every parcel read as clutter (Ramon on s3)
+	vec2 block2 = floor(cell / 2.0); // the paddock's block
+	bool walled = false;
+	if (hedge && near && state == 0 && open) {
+		// a paddock: all four parcels of its block pasture, its ring the
+		// sides of each parcel on the block's edge (the sides are -y, +y,
+		// +x, -x), less the gate
+		bool paddock = sim_hash(block2 * 1.73 + 0.37) < PADDOCK_SHARE;
+		for (int i = 0; i < 4; i++) {
+			int c2;
+			float g2;
+			float l2;
+			paddock = paddock && sim_parcel_baked(block2 * 2.0 + vec2(float(i % 2), float(i / 2)), c2, g2, l2)
+				&& (c2 & SIM_P_STATE) == 0 && (c2 & SIM_P_OPEN) != 0;
+		}
+		vec2 odd = mod(cell, 2.0);
+		bool rim = side == 0 ? odd.y < 0.5 : side == 1 ? odd.y > 0.5 : side == 2 ? odd.x > 0.5 : odd.x < 0.5;
+		int gate = int(sim_hash(block2 * 4.13 + 1.9) * 4.0);
+		bool gap = side == gate && abs((side < 2 ? odd.x : odd.y) - step(0.5, sim_hash(block2 * 6.7 + 2.3))) < 0.5
+			&& int(UV.y) % 16 == 2;
+		show = paddock && rim && !gap;
+		walled = sim_hash(block2 * 2.91 + 5.1) < PADDOCK_WALLS;
+	} else if (fence || hedge) {
+		// only round a field's outside (the join bits -x, -y, +x, +y), by
+		// one draw per side of the field, so a side is fenced or hedged
+		// along all its parcels
 		int bit = side == 0 ? 2 : side == 1 ? 8 : side == 2 ? 4 : 1;
 		bool outside = ((code / SIM_P_JOIN) & bit) == 0;
-		show = show && state == 2 && outside && ((code & SIM_P_BY_FARM) != 0 || sim_hash(field.xy * 1.31 + field.z * 3.3 + float(side) * 7.7) < 0.3);
+		bool by_farm = (code & SIM_P_BY_FARM) != 0;
+		float r = sim_hash(field.xy * 1.31 + field.z * 3.3 + float(side) * 7.7);
+		show = show && outside && (fence ? state == 2 && (by_farm || r < FENCE_SHARE)
+			: !by_farm && r >= FENCE_SHARE && r < FENCE_SHARE + HEDGE_SHARE);
 	}
 	float inner = size * (1.0 - 2.0 * SLAB_GAP);
 	vec2 off; // from the parcel's middle, km
@@ -186,6 +230,22 @@ void vertex() {
 		mid = at + mid; // the sheep's place; the quarter turn below is about its own middle
 		y = v.y / km_per_m;
 		c = part == 0 ? WOOL : SHEEP_DARK;
+	} else if (hedge) {
+		// a clipped hedge on the field's edge: blocks of about two metres,
+		// each a little higher or deeper than the next, so it reads as
+		// voxels and not as a wall; a paddock's dry-stone wall lower and
+		// thinner, its stones in lighter and darker greys
+		int n = int(UV.y) % 16;
+		float block = inner / HEDGE_BLOCKS;
+		float r1 = sim_hash(cell * 2.17 + float(UV.y) * 0.61);
+		float r2 = sim_hash(cell * 3.31 + float(UV.y) * 0.37);
+		float depth = (walled ? 0.45 + 0.1 * r1 : 0.55 + 0.25 * r1) * km_per_m;
+		vec2 a = vec2((float(n) + 0.5) * block - 0.5 * inner + VERTEX.x * block * 1.02, VERTEX.z * depth);
+		float edge = (side % 2 == 0 ? -0.5 : 0.5) * inner;
+		off = vec2(a.x, edge + a.y);
+		quarter = side >= 2 ? 1 : 0;
+		y = VERTEX.y * (walled ? 0.7 + 0.2 * r2 : 0.85 + 0.35 * r2);
+		c = walled ? WALL_STONE * (0.88 + 0.24 * r1) : HEDGE * (0.92 + 0.16 * r1);
 	} else {
 		// posts (UV.y % 16 their number) and one rail (15) on a side
 		int n = int(UV.y) % 16;
@@ -214,7 +274,7 @@ void vertex() {
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 	// flat faces: tops in the colour, sides a step darker (vertex alpha)
-	colour = pow(base || sheep ? c : fence ? FENCE : rc, vec3(2.2)) * COLOR.a;
+	colour = pow(base || sheep || hedge ? c : fence ? FENCE : rc, vec3(2.2)) * COLOR.a;
 	art_light = normalize((VIEW_MATRIX * vec4(ART_LIGHT, 0.0)).xyz);
 }
 

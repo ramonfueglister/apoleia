@@ -276,6 +276,12 @@ impl PeopleView {
         self.pid_of.get(slot).copied().filter(|&p| p != NONE)
     }
 
+    /// Each living person's slot and household, for what the graphics show
+    /// of them (read only).
+    pub fn slot_households(&self) -> impl Iterator<Item = (usize, u32)> + '_ {
+        self.member_src.iter().enumerate().filter(|&(slot, src)| self.pid_of[slot] != NONE && src[1] != NONE).map(|(slot, src)| (slot, src[1]))
+    }
+
     /// Brings the records to the people's current state. Returns the pages
     /// that changed since the last call (all pages after a resize).
     pub fn update(&mut self, p: &mut People) -> Vec<u32> {

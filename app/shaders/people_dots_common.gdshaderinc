@@ -58,6 +58,39 @@ vec4 dot_record(ivec2 px) {
 	return texelFetch(people_tex, ivec3(px.x, px.y % page_side, px.y / page_side), 0);
 }
 
+// What the sim has of each person's household (ApoleiaPeople.people_looks,
+// once a sim week, people_dots.gd): r its share of its need eaten (‰ / 4),
+// g its flags (apoleia_sim::grain HOUSE_*, 128 when the sim knows it), by
+// the same pixel as the record.
+uniform sampler2D person_look_tex : filter_nearest, repeat_disable;
+uniform bool has_person_looks = false;
+const int DOT_LOOK_HARVEST = 4;
+const int DOT_LOOK_SOWING = 8;
+const int DOT_LOOK_KNOWN = 128;
+
+// x the share of its need the person's household ate (1 when not known),
+// y 1 while its farm's harvest or sowing still wants hands.
+vec2 dot_person_look(ivec2 px) {
+	if (!has_person_looks) {
+		return vec2(1.0, 0.0);
+	}
+	ivec2 l = ivec2(texelFetch(person_look_tex, px, 0).rg * 255.0 + 0.5);
+	if ((l.y & DOT_LOOK_KNOWN) == 0) {
+		return vec2(1.0, 0.0);
+	}
+	return vec2(min(float(l.x) * 0.004, 1.0), (l.y & (DOT_LOOK_HARVEST | DOT_LOOK_SOWING)) != 0 ? 1.0 : 0.0);
+}
+
+// Where a member of a household at work on its fields stands, from where
+// it stands at home: out on the lot's field parcels (DOT_LOT_KM), the same
+// side of the house for the whole household (its key), side by side.
+vec2 dot_field_offset(uint key, uint slot) {
+	vec2 h = dot_rand2(key, 41u);
+	vec2 m = dot_rand2(slot, 43u);
+	float a = h.x * 6.2831853 + (m.x - 0.5) * 0.7;
+	return vec2(cos(a), sin(a)) * (0.15 + 0.07 * m.y);
+}
+
 // First spot on land among up to 16 hashed tries in an area around `c`:
 // a square of half-width `r` (r > 0) or a disk of radius -r, eight tries in
 // the area, then eight in twice the area.

@@ -55,6 +55,7 @@ const PARCELS_SHADER = preload("res://shaders/people_parcels.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the ground in view
 const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
+const HEDGE_BLOCKS := 5 # blocks per side of a hedged field, about two metres each (people_crops.gdshader)
 const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
 const CROP_KM := 8.0 # view width up to which crops stand (sim_fields.gdshaderinc SIM_CROPS_KM)
 const LOTS_SHADER = preload("res://shaders/people_lots.gdshader")
@@ -154,6 +155,9 @@ var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
+var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
+var _person_looks_tex: ImageTexture
+var _person_looks_version := -1
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
 var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
@@ -571,9 +575,10 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
 ## A parcel's field: the slab (UV.x = -1), CROP_ROWS rows (UV.x their
-## place across the parcel, UV.y their number) and the fence (UV.x = -2,
-## UV.y side * 16 + post, 15 the rail) and a flock for the pasture (UV.x =
-## -3, UV.y sheep * 4 + body, legs or head), each a unit box (x, z
+## place across the parcel, UV.y their number), the fence (UV.x = -2,
+## UV.y side * 16 + post, 15 the rail), the hedge (UV.x = -4, UV.y side *
+## 16 + block) and a flock for the pasture (UV.x = -3, UV.y sheep * 4 +
+## body, legs or head), each a unit box (x, z
 ## -0.5..0.5, y 0..1, no bottom); people_crops.gdshader sizes and places
 ## them by crop and season. Flat faces: the sides a step darker in the vertex alpha.
 static func _crop_mesh() -> ArrayMesh:
@@ -585,6 +590,8 @@ static func _crop_mesh() -> ArrayMesh:
 	for side in 4:
 		for k: int in range(FENCE_POSTS) + [15]:
 			parts.append(Vector2(-2.0, side * 16 + k))
+		for k in HEDGE_BLOCKS:
+			parts.append(Vector2(-4.0, side * 16 + k))
 	for k in FLOCK_MAX:
 		for part in 3:
 			parts.append(Vector2(-3.0, k * 4 + part))
@@ -1003,6 +1010,31 @@ func _apply_colours() -> void:
 	_legend_label.text = text
 	_legend_label.visible = colour_mode != 0
 
+## Each person's household as the sim has it (fed, its farm at the harvest
+## or sowing), anew when the sim rebuilt it once a sim week or the people
+## texture grew: the figures draw the hungry thin and send the grown-ups of
+## a farm at work out on its fields (people_figures.gdshader).
+func _sync_person_looks() -> void:
+	if not people.has_method("people_looks") or _texture == null:
+		return
+	var version: int = people.house_looks_version()
+	var side: int = people.page_side()
+	var h := side * maxi(_texture.get_layers(), 1)
+	if version == _person_looks_version and _person_looks != null and _person_looks.get_height() == h:
+		return
+	_person_looks_version = version
+	var bytes: PackedByteArray = people.people_looks()
+	bytes.resize(side * h * 2) # people newer than the looks: nothing yet
+	if _person_looks == null or _person_looks.get_height() != h:
+		_person_looks = Image.create_from_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex = ImageTexture.create_from_image(_person_looks)
+		for m in [_figure_material, _figure_shadow_material]:
+			m.set_shader_parameter("person_look_tex", _person_looks_tex)
+			m.set_shader_parameter("has_person_looks", true)
+	else:
+		_person_looks.set_data(side, h, false, Image.FORMAT_RG8, bytes)
+		_person_looks_tex.update(_person_looks)
+
 ## Palette entries as linear colour, as source_color uniforms arrive.
 static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
@@ -1169,6 +1201,7 @@ func _frame(delta: float) -> void:
 		for m in _house_materials: # a tent household's house is its tent
 			m.set_shader_parameter("look_tex", looks)
 			m.set_shader_parameter("has_looks", true)
+	_sync_person_looks()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
