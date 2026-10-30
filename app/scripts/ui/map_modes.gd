@@ -22,6 +22,7 @@ const MODES := [
 	["store_kg", "granary", "Korn auf dem Markt"],
 	["free_ha", "field", "Freies Land"],
 	["money", "two-coins", "Geld der Händler"],
+	["gini", "scales", "Arm und Reich"],
 ]
 
 signal chosen(column: String)
