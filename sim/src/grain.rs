@@ -40,7 +40,7 @@ mod crafts;
 mod pricing;
 mod sites;
 pub use pricing::{GoodLook, MarketLook};
-pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
+pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
 
@@ -266,7 +266,16 @@ const FINE_STEP: i64 = 100;
 const PATH_HALF: i64 = 360;
 const WEAR_UNIT: i64 = 1000;
 const LEVELS: [(i64, i64); 2] = [(200 * WEAR_UNIT, 100 * WEAR_UNIT), (1000 * WEAR_UNIT, 500 * WEAR_UNIT)];
-const LEVEL_COST_PCT: [i64; 3] = [100, 80, 65];
+const LEVEL_COST_PCT: [i64; 4] = [100, 80, 65, ROAD_PCT];
+/// The player's roads (S70, S113): a fine tile, and a 25 km cell that a
+/// road crosses (sites.rs), cost this share of open ground to cross, for
+/// carriers in days and for traders' wagons in freight and days.
+/// PLACEHOLDER 50 %, between Bogart (2005: turnpikes cut freight by 20 %)
+/// and Ortman et al. (2024: transport costs in Roman Britain halved).
+const ROAD_PCT: i64 = 50;
+/// The level of a built road, above the trails and trade roads that
+/// traffic makes (index into LEVEL_COST_PCT).
+const BUILT_ROAD: u8 = 3;
 /// Each market's trips are walked (and its field rebuilt if a level
 /// changed) once in this many days, 1/WALK_DAYS of the markets a day.
 /// PLACEHOLDER for performance; GRAIN.md planned monthly.
@@ -388,6 +397,11 @@ struct Farm {
     off_done: i64,
     /// The fine tiles its fields lie on (S73), in the order taken.
     plots: Vec<Plot>,
+    /// Fields on state land built from the player's orders (S116,
+    /// sites.rs), leased for RENT_PCT of their crop: area (in `area` too,
+    /// its cleared part in `poor`) and where they lie.
+    state: i64,
+    state_plots: Vec<Plot>,
     /// S92: cleared under the Lex Manciana, and years in a row unsown.
     manciana: bool,
     idle: u8,
@@ -565,6 +579,10 @@ pub struct GrainStats {
     pub inflow: [i64; 5],
     pub tax_kg: i64,
     pub rent_kg: i64,
+    /// S116: rent in grain from the leased state fields, and the state
+    /// fields built (m²).
+    pub state_rent_kg: i64,
+    pub state_fields_m2: i64,
     pub hired_days: i64,
     pub wage_kg: i64,
     pub eaten_kg: i64,
@@ -806,6 +824,22 @@ pub struct Grain {
     events: Vec<crate::events::Event>,
     /// S113: the building sites of the player's orders, by tile (sites.rs).
     sites: std::collections::BTreeMap<crate::build::Tile, sites::Site>,
+    /// S113: the spot (world metres, build::Tile) of each farm built from
+    /// an order, by farm, so the view puts its house where it was ordered.
+    spots: FxHashMap<u32, crate::build::Tile>,
+    /// S113: the player's finished roads by lot (sites.rs), how many of
+    /// them lie on each fine tile, how many fine tiles with a road each
+    /// 25 km cell has, and the markets whose trade partners (`roads`) or
+    /// path field (`fields_redo`) a new road changed.
+    road_lots: std::collections::BTreeSet<crate::build::Tile>,
+    road_fine: FxHashMap<u32, u32>,
+    road_cells: FxHashMap<u32, u32>,
+    road_urgent: Vec<usize>,
+    field_todo: Vec<u32>,
+    /// S116: the player's finished fields by lot, and the state land on
+    /// each tile (`tiles` index) nobody leases yet: [good, cleared] m².
+    field_lots: std::collections::BTreeSet<crate::build::Tile>,
+    state_free: FxHashMap<u32, [u32; 2]>,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1217,7 +1251,7 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
-            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new() }),
+            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new(), roads: Default::default() }),
             road_worker: None,
             road_todo: Vec::new(),
             walk_worker: None,
@@ -1237,6 +1271,14 @@ impl Grain {
             today: 0,
             events: Vec::new(),
             sites: Default::default(),
+            spots: FxHashMap::default(),
+            road_lots: Default::default(),
+            road_fine: FxHashMap::default(),
+            road_cells: FxHashMap::default(),
+            road_urgent: Vec::new(),
+            field_todo: Vec::new(),
+            field_lots: Default::default(),
+            state_free: FxHashMap::default(),
         };
         gr.build_graph(p);
         gr.gates(p);
@@ -1502,7 +1544,8 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
-        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: self.road_level.clone() });
+        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: Vec::new(), roads: Default::default() });
+        self.renet();
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
         let net = &*self.net;
         let built: Vec<(Vec<Neigh>, Vec<u32>)> = bevy_tasks::ComputeTaskPool::get()
@@ -1555,11 +1598,14 @@ impl Grain {
                 m.stale |= changed.iter().any(|c| m.reach.binary_search(c).is_ok());
             }
             if !changed.is_empty() {
-                let net = &*self.net;
-                self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level: self.road_level.clone() });
+                self.renet();
             }
         }
-        let todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
+        let mut todo: Vec<usize> = (doy(day) as usize..self.markets.len()).step_by(YEAR as usize).filter(|&mi| self.markets[mi].stale).collect();
+        // S113: the markets a road built yesterday reaches search today
+        todo.append(&mut self.road_urgent);
+        todo.sort_unstable();
+        todo.dedup();
         if todo.is_empty() {
             return;
         }
@@ -1928,6 +1974,7 @@ impl Grain {
             self.farms[f].kind = TENANT;
             self.farms[f].manciana = true;
             let good = self.take_land(f, want, false, true);
+            let good = good + self.take_state(f, want - good);
             let clear = (want - good).min(i.adults as i64 * CLEAR_M2_ADULT_YEAR * self.work_x1000(id) / 1000).max(0);
             self.take_land(f, clear, true, true);
             if self.farms[f].area == 0 {
@@ -2075,6 +2122,8 @@ impl Grain {
             off_need: 0,
             off_done: 0,
             plots: Vec::new(),
+            state: 0,
+            state_plots: Vec::new(),
             manciana: false,
             idle: 0,
             goods: FarmGoods::default(),
@@ -2169,6 +2218,8 @@ impl Grain {
             off_need: 0,
             off_done: 0,
             plots: Vec::new(),
+            state: 0,
+            state_plots: Vec::new(),
             manciana: false,
             idle: 0,
             goods: FarmGoods::default(),
@@ -2318,6 +2369,8 @@ impl Grain {
     /// Gives `n` m² of farm `f`'s fields back to their tiles: cleared land
     /// first, the plots taken last first.
     fn give_land(&mut self, f: usize, n: i64) {
+        // The leased state fields first (S116): they cost rent.
+        let n = n - self.give_state(f, n);
         let mut plots = std::mem::take(&mut self.farms[f].plots);
         let mut left = n;
         for poor in [true, false] {
@@ -2418,6 +2471,8 @@ impl Grain {
         let carry = (fm.store - self.need_day(fm.hh) * (doy_until(self.today, fm.harvest_doy) + RESERVE_DAYS) - full * SEED_KG_HA / 10_000).max(0) * (100 - SPOIL_PCT_YEAR) / 100;
         // Share of the crop the farm keeps after rent and tax.
         let kept_pct = 100 - if fm.manciana || fm.kind == TENANT { RENT_PCT } else { 0 } - if fm.manciana { 0 } else { TAX_PCT };
+        // S116: leased state fields keep 100 - RENT_PCT.
+        let kept_pct = if fm.area == 0 { kept_pct } else { (kept_pct * (fm.area - fm.state) + (100 - RENT_PCT) * fm.state) / fm.area };
         let own = match (self.info.get(&fm.hh), fm.kind) {
             (_, ESTATE) | (None, _) => 0,
             (Some(i), _) => {
@@ -2445,6 +2500,7 @@ impl Grain {
         let us = |t0: std::time::Instant| t0.elapsed().as_secs_f64() * 1e6;
         let t0 = t();
         self.walks_done();
+        self.fields_redo(day);
         self.timing.paths += us(t0);
         let t0 = t();
         self.roads_done();
@@ -2945,6 +3001,9 @@ impl Grain {
                     // Free good land on the nearest tiles first, then
                     // clearing (S73), as much as the adults clear in a year.
                     self.take_land(f, want - area, false, false);
+                    // then the state's fields on lease (S116)
+                    let area = self.farms[f].area;
+                    self.take_state(f, want - area);
                     let adults = self.info.get(&hh).map_or(0, |i| i.adults as i64);
                     let clear = (want - self.farms[f].area).min(adults * CLEAR_M2_ADULT_YEAR * self.work_x1000(hh) / 1000).max(0);
                     self.take_land(f, clear, true, false);
@@ -3345,12 +3404,19 @@ impl Grain {
         // or a lord gone without heirs). Tax and rent on the crop less the
         // seed it took (PLACEHOLDER).
         let net = (crop - seed_in).max(0);
+        // S116: the crop of the leased state fields pays RENT_PCT to the
+        // state and nothing else; the rest as before.
+        let lease = if fm.area == 0 { 0 } else { net * fm.state / fm.area };
+        let state_rent = lease * RENT_PCT / 100;
+        let net = net - lease;
         // S92: on Manciana land the third (RENT_PCT) to the state is all.
         let tax = if fm.manciana { 0 } else { net * TAX_PCT / 100 };
         let rent = if fm.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
-        fm.store += crop - tax - rent;
+        fm.store += crop - tax - rent - state_rent;
         let (mk, lord, id) = (fm.market as usize, fm.landlord, fm.hh);
         self.deliver(mk, lord, tax, rent);
+        self.deliver(mk, NONE, 0, state_rent);
+        self.stats.state_rent_kg += state_rent;
         self.stats.tax_kg += tax;
         self.treasury.grain_kg += tax;
         self.stats.rent_kg += rent;
@@ -4075,7 +4141,7 @@ impl Grain {
         self.walks_done();
         let mut b: Vec<u8> = Vec::new();
         for f in &self.farms {
-            for x in [f.hh as i64, f.area, f.sown, f.store, f.money, f.to_sell] {
+            for x in [f.hh as i64, f.area, f.sown, f.store, f.money, f.to_sell, f.state] {
                 b.extend_from_slice(&x.to_le_bytes());
             }
         }
@@ -4102,6 +4168,17 @@ impl Grain {
             }
         }
         b.extend_from_slice(&self.road_level);
+        for &(r, c) in self.road_lots.iter().chain(&self.field_lots) {
+            b.extend_from_slice(&r.to_le_bytes());
+            b.extend_from_slice(&c.to_le_bytes());
+        }
+        let mut lease: Vec<u32> = self.state_free.keys().copied().collect();
+        lease.sort_unstable();
+        for t in lease {
+            for x in [t, self.state_free[&t][0], self.state_free[&t][1]] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             let mut w: Vec<u16> = f.worn.clone();
             w.sort_unstable();
@@ -4207,7 +4284,7 @@ impl<'a> PlotsAt<'a> {
         let len = (farm.harvest_doy - farm.sow_doy).rem_euclid(YEAR).max(1);
         let since = (self.now - farm.sow_doy).rem_euclid(YEAR);
         let growth = if farm.sown > 0 && since <= len { (since * 255 / len) as u8 } else { 0 };
-        for pl in &farm.plots {
+        for pl in farm.plots.iter().chain(&farm.state_plots) {
             let m2 = (pl.good + pl.poor) as i64;
             if m2 == 0 {
                 continue;
@@ -4584,8 +4661,8 @@ impl Grain {
     }
 
     fn farm_table(&self, p: &People, day: i64) -> Table {
-        // region -> (family, tenant, estate, manciana, area m², sown m², store kg, money)
-        let mut sums: std::collections::BTreeMap<u32, [i64; 8]> = Default::default();
+        // region -> (family, tenant, estate, manciana, area m², sown m², store kg, money, leased state land m²)
+        let mut sums: std::collections::BTreeMap<u32, [i64; 9]> = Default::default();
         for f in self.farms.iter().filter(|f| f.hh != NONE) {
             let e = sums.entry(self.markets[f.market as usize].region).or_default();
             e[f.kind as usize] += 1;
@@ -4594,6 +4671,7 @@ impl Grain {
             e[5] += f.sown;
             e[6] += f.store;
             e[7] += f.money;
+            e[8] += f.state;
         }
         let of = self.market_of_region();
         let ms: Vec<usize> = sums.keys().map(|k| of[k]).collect();
@@ -4607,6 +4685,7 @@ impl Grain {
             .int("manciana", "davon Lex Manciana", "", col(3))
             .float("area_ha", "Felder", "ha", sums.values().map(|v| v[4] as f64 / 1e4).collect())
             .float("sown_ha", "Gesät", "ha", sums.values().map(|v| v[5] as f64 / 1e4).collect())
+            .float("state_ha", "davon Staatsland gepachtet", "ha", sums.values().map(|v| v[8] as f64 / 1e4).collect())
             .int("store_kg", "Hoflager", "kg", col(6))
             .float("money", "Geld der Höfe", "Denar", sums.values().map(|v| v[7] as f64 / 1000.0).collect());
         t
@@ -4724,7 +4803,11 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
                 let (cost, d) = match (ka, kb) {
                     (0, 2) | (2, 0) => continue,
                     (0, _) | (_, 0) => (km * SEA_COST, km * 1000 / SEA_KM_DAY),
-                    _ => (km * WAGON_COST * LEVEL_COST_PCT[level[j as usize] as usize] / 100, km * 1000 / WAGON.1),
+                    _ => {
+                        let lv = level[j as usize];
+                        let slow = if lv == BUILT_ROAD { ROAD_PCT } else { 100 };
+                        (km * WAGON_COST * LEVEL_COST_PCT[lv as usize] / 100, km * 1000 * slow / 100 / WAGON.1)
+                    }
                 };
                 let nc_ = c + cost;
                 if nc_ < best[j as usize] {
@@ -4742,9 +4825,11 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
     out
 }
 
-/// What the neighbour search reads: the 25 km grid, the market at each
-/// cell and the trade road levels. Shared with the road worker thread;
-/// replaced when the levels change.
+/// What the neighbour search and the path fields read: the 25 km grid,
+/// the market at each cell, the trade road levels (BUILT_ROAD where the
+/// player built one) and the fine tiles with a built road. Shared with the
+/// road and path worker threads; replaced when a level or a road changes
+/// (`Grain::renet`).
 struct Net {
     row0: i32,
     col0: i32,
@@ -4753,6 +4838,7 @@ struct Net {
     kind: Vec<u8>,
     at: Vec<u32>,
     level: Vec<u8>,
+    roads: rustc_hash::FxHashSet<u32>,
 }
 
 type Searched = Vec<(Vec<Neigh>, Vec<u32>)>;
@@ -4933,7 +5019,8 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
     for r in 0..n {
         for c in 0..n {
             if land[((r / FINE) * 4 + c / FINE) as usize] {
-                let pct = LEVEL_COST_PCT[level[(r * n + c) as usize] as usize];
+                let road = !grid.roads.is_empty() && grid.roads.contains(&(((r0 + r) * cols_f + c0 + c) as u32));
+                let pct = LEVEL_COST_PCT[if road { BUILT_ROAD } else { level[(r * n + c) as usize] } as usize];
                 let pj = ((r + 1) * w + c + 1) as usize;
                 ortho[pj] = (FINE_STEP * pct / 100) as u32;
                 diag[pj] = (141 * pct / 100) as u32;
