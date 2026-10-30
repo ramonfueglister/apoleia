@@ -3,7 +3,8 @@ extends CanvasLayer
 ## the bar along the top (ui/top_bar.gd, as Victoria 3's): pause, four
 ## speeds and the date at the right, the number of people, the treasury's
 ## cash and the grain markets' figures at the left, the red seal opens the
-## statistics. It only sets how many days a second the people
+## statistics; the map modes at the foot (ui/map_modes.gd) colour the
+## markets' regions. It only sets how many days a second the people
 ## (people_dots.gd, ApoleiaPeople) run; the sim thread computes them and the
 ## frame never waits for a day.
 ##
@@ -18,6 +19,7 @@ extends CanvasLayer
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const SaveGames = preload("res://scripts/ui/save_games.gd")
 const TopBar = preload("res://scripts/ui/top_bar.gd")
+const MapModes = preload("res://scripts/ui/map_modes.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const SPEEDS: Array[float] = [2.0, 10.0, 30.0, 100.0] # days a second
 const SAVE_PATH := "user://quicksave.apgame"
@@ -30,6 +32,7 @@ var people: RefCounted # ApoleiaPeople
 var paused := false
 var speed := 1 # index into SPEEDS
 var _bar: TopBar
+var _modes: MapModes
 var _tables: Node # sim_tables.gd, for the seal and the markets' figures
 var _markets_day := -1 # the markets' monthly count last shown
 var _note: Label
@@ -63,6 +66,12 @@ func setup(people_dots: Node) -> void:
 	for c in dots.get_children():
 		if c.get_script() == SimTables:
 			_tables = c
+	_modes = MapModes.new()
+	_modes.chosen.connect(_colour_map)
+	_modes.visible = _tables != null and _tables.has_method("colour_map")
+	add_child(_modes)
+	if _modes.visible:
+		_tables.legend_over = _modes
 	_note = _label(14, Vic3.GOLD_LIT)
 	_note.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, TopBar.HEIGHT + 12)
 	_note.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -155,6 +164,8 @@ func _process(delta: float) -> void:
 		_note.text = ""
 	_measure(delta)
 	_show_date()
+	if _tables != null and _tables.has_method("map_column"):
+		_modes.show_mode(_tables.map_column()) # «Karte färben» in the statistics colours it too
 
 ## Days a second the sim actually made over the last RATE_SECONDS.
 func _measure(delta: float) -> void:
@@ -227,6 +238,14 @@ func _show_markets() -> void:
 		"Der Kornpreis, den die Menschen zahlen: der Median der Märkte, gewichtet nach ihren Menschen.")
 	_bar.set_figure("store", "granary", "%s t" % _amount(int(store / 1000.0)), "Korn auf den Märkten", Vic3.TEXT,
 		"Korn in den Lagern der Händler auf allen Märkten.")
+
+## A map mode: the markets' regions coloured by `column` ("" none), as
+## «Karte färben» in the statistics does.
+func _colour_map(column: String) -> void:
+	if _tables == null or not _tables.has_method("colour_map"):
+		return
+	_tables.colour_map(column)
+	_modes.show_mode(column)
 
 ## The red seal: the statistics open or close, as with T.
 func _toggle_tables() -> void:
