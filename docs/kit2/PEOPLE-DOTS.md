@@ -491,6 +491,15 @@ Aus- und Einfuhr auch mit leerer Kasse).
   politische Gruppen, Haushalt mit Grösse, Ehe, Gewicht und BMI (S84), IQ, Kultur,
   Religion, unterwegs. Der Punkt wird gross und gelb, Esc schliesst.
   Kosten nur beim Klick, kein Aufwand pro Frame.
+- **Personenfenster (Ramon, 30.10.2026, "a-c"):** `scripts/sim/person_window.gd`
+  zeigt die Person unter dem Medaillon ihrer Schicht und Karten wie die
+  Statistik: Haushalt (alle Mitglieder, `PeopleView::household`, ein Durchlauf),
+  Essen (gegessen vom Bedarf, Vorrat und wie lange er reicht, Bedarf im Monat,
+  Kornpreis am Markt), Arbeit (Hof oder Erwerb, Tage bei anderen und
+  eingestellte Tage der letzten Wochenbörse, Taglohn, Verdienst im Monat),
+  Geld (des Haushalts, bei Bauern mit dem Hof, je Kopf, Rang je Kopf unter
+  allen Menschen der Karte und des Marktes, Kleidung) und die Person selbst.
+  Die Werte kommen aus `Grain::household` (`HouseholdLook`, grain/tables.rs).
 
 ## Tabellen im Stil von EU5 (Ramon, 29.10.2026)
 
@@ -503,6 +512,20 @@ bittet den Sim-Thread darum, zwischen zwei Tagen gebaut kommt die Tabelle mit
 `take_table()` als Spalten in Packed-Arrays, mit Spaltenköpfen und Einheiten
 (`sim/godot/src/tables.rs`). Das Panel fragt neu, sobald die nächste
 Monatszählung fertig ist (Tag 17 eines Monats), sonst nie.
+
+Das Marktfenster (`scripts/sim/market_window.gd`, Klick auf einen Marktplatz)
+zeigt in "Übersicht" die Karten der Statistik für diesen einen Markt
+(`sim_overview.gd` im Marktmodus): Kornpreis gegen den Median aller Märkte,
+warum dieser Preis, Hungernd, Lager und Verkauf, Reallohn, wer hier lebt,
+Geld nach Schicht, Gini, Warenpreise. `take_market()` bringt dazu `history`
+(`Grain::market_history_table`: jeder Markt jeden Monat, `MarketMonth`; die
+letzten zehn Jahre Monat für Monat, davor je Jahr das Mittel, damit 1'800
+Märkte über ein Jahrhundert bei etwa 20 MB bleiben) und `classes`
+(`Grain::market_classes_table`). "Alle Zahlen" zeigt wie bisher die Zeile der
+Markttabelle. Der Verlauf hat neu den Gini des Geldes je Kopf (gesamt und je
+Schicht) und die Lorenzkurve (versteckte Spalten `lorenz_10` bis
+`lorenz_90`); die Übersicht zeigt daraus "Wer hat das Geld" und
+"Ungleichheit nach Schicht", die Markttabelle eine Spalte `gini`.
 
 - Klick auf einen Spaltenkopf sortiert (nochmals: umgekehrt), Zahlen grösste
   zuerst, Namen A bis Z.
