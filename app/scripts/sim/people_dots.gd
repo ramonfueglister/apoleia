@@ -890,6 +890,7 @@ func _build_hud() -> void:
 	_hud.add_child(root)
 	_legend_label = _hud_label(root)
 	_legend_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
+	_legend_label.offset_top += 56 # below the top bar (ui/top_bar.gd)
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	# the person clicked, in a window (ui/ui_window.gd) at the bottom left
 	_person_win = UiWindow.make("person", "Person", Rect2(112, -12, 340, 330), Engine.get_main_loop() as SceneTree)

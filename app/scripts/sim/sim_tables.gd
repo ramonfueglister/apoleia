@@ -2,7 +2,7 @@ extends CanvasLayer
 ## The simulation in tables, in the manner of EU5: markets, population by
 ## region and occupation, farms by region and the state's accounts, in a
 ## window (ui/ui_window.gd) that can be moved, sized and folded and lies
-## above the rest of the HUD. T (or the button at the top left) opens and
+## above the rest of the HUD. T (or the red seal in the top bar) opens and
 ## closes it. Every row has an EU5 tooltip (ui/tooltips.gd): staying on it
 ## locks it and shows the row's last months; its blue terms explain
 ## themselves. The markets show each market's price over the last
@@ -96,7 +96,6 @@ var _months := {} # market id -> PackedFloat64Array of its price, one per monthl
 var _months_day := -1 # the table day last added to _months
 var _spark_at := -1 # the tree column of the curves, -1 for none
 var _stale := false # a new table came while the mouse was on the shown one
-var _open_button: Button
 var _tabs: UiTabs
 var _stand: Label
 var _search: LineEdit
@@ -945,7 +944,6 @@ func _show(on: bool) -> void:
 		_win.open()
 	elif _win.visible:
 		_win.close()
-	_open_button.visible = not on
 	if on:
 		_refresh()
 	else:
@@ -1063,12 +1061,6 @@ func _build() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = _theme()
 	add_child(root)
-	_open_button = Button.new()
-	_open_button.text = "Statistik  (T)"
-	_open_button.focus_mode = Control.FOCUS_NONE
-	_open_button.position = Vector2(12, 12)
-	_open_button.pressed.connect(func(): _show(true))
-	root.add_child(_open_button)
 	# right of the build bar, below the game clock
 	_win = UiWindow.make("tables", "Statistik", Rect2(112, 64, 820, 680), Engine.get_main_loop() as SceneTree)
 	_win.min_size = Vector2(PANEL_MIN, 320)
