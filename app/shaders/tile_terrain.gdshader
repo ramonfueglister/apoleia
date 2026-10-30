@@ -24,7 +24,7 @@ varying flat int water;
 varying flat float coast;
 varying flat float flat_top;
 varying flat float body_level;
-varying flat int shore_sides; // land tile: bit k = sea across side k, bit 4 + k = sea at corner k only
+varying flat int shore_sides; // land tile: bit k = sea across side k, bit 4 + k = sea at corner k only (sea tile: land_sides)
 varying flat int cut_tip;     // coast cut: corner at the tip of the wet half, or -1
 // Metal allows 31 varying components in all (Godot uses some itself), so
 // small flags share an int
@@ -196,23 +196,36 @@ void vertex() {
 	world_pos = vec3(world_min.x + cpos.x * tile_km, level * level_h, world_min.y + cpos.y * tile_km);
 	// coast flags: land next to the sea gets a beach, sea next to land a lagoon tint
 	coast = 0.0;
+	// sea tile: bit k = land across side k, bit 4 + k = land at corner k only;
+	// bits 8 + k and 12 + k: that land is open country dry up to the edge (not
+	// the wet half of a coast cut, a river mouth or a town's quay), so sand
+	// can lie at its foot
+	int land_sides = 0;
 	bool lake_near = water == W_LAKE;
 	for (int k = 0; k < 4; k++) {
 		int n1 = nc[k] & 3;
 		lake_near = lake_near || n1 == W_LAKE;
 		int n2 = tt_water(tile + SIDE[k] * 2);
 		if (water == W_SEA) {
-			if (n1 != W_SEA && !lone_land(tile + SIDE[k])) { coast = 1.0; }
+			if (n1 != W_SEA && !lone_land(tile + SIDE[k])) { land_sides |= 1 << k; }
 		} else {
 			if (n1 == W_SEA) { coast = 1.0; }
 			else if (n2 == W_SEA) { coast = max(coast, 0.45); }
 		}
 	}
-	if (water == W_SEA && coast < 1.0) {
+	if (water == W_SEA) {
 		for (int k = 0; k < 4; k++) {
-			ivec2 d = tile + SIDE[k] + SIDE[(k + 1) & 3];
-			if (tt_water(d) != W_SEA && !lone_land(d)) { coast = 1.0; }
+			int a = (k + 3) & 3; // the sides at corner k: k - 1 and k
+			ivec2 d = tile + SIDE[a] + SIDE[k];
+			if ((land_sides & ((1 << a) | (1 << k))) == 0 && tt_water(d) != W_SEA && !lone_land(d)) { land_sides |= 16 << k; }
 		}
+		for (int k = 0; k < 4; k++) {
+			if ((land_sides & (1 << k)) != 0 && nc[k] < 8 && (nc[k] & 3) == W_LAND && tt_coast_cut(tile + SIDE[k]) < 0) { land_sides |= 256 << k; }
+			ivec2 d = tile + SIDE[(k + 3) & 3] + SIDE[k];
+			int dc = (land_sides & (16 << k)) != 0 ? tt_cell(d) : W_SEA;
+			if (dc < 8 && (dc & 3) == W_LAND && tt_coast_cut(d) < 0) { land_sides |= 4096 << k; }
+		}
+		coast = land_sides != 0 ? 1.0 : 0.0;
 	}
 	shore_lake = lake_near ? 1 : 0;
 	int ground = lake_cut >= 0 ? tt_ground(tile + SIDE[(lake_cut + 1) & 3]) : tt_ground(tile);
@@ -222,7 +235,7 @@ void vertex() {
 		ground_tip = tt_ground_cut(tile, ground, ground_alt);
 	}
 	ground_bits = ground | (ground_alt << 4) | ((ground_tip + 1) << 8);
-	shore_sides = 0;
+	shore_sides = water == W_SEA ? land_sides : 0; // the shallows of a sea tile measure from the land
 	int wall_sides = 0;
 	int river_sides = 0;
 	// (a city plan draws its own wall: city_plan.gdshaderinc)
@@ -268,26 +281,54 @@ vec3 ground_rgb(int g) {
 // the grain economy from the sim on this palette (fields, paths, roads)
 #include "res://shaders/sim_map.gdshaderinc"
 
-// Distance (in tile units) from the tile edge on the sides set in `mask`
-// (bits 0..3), or from the corners set in bits 4..7.
-float side_distance(int mask) {
+// Distance (in tile units) of `uv` from the tile edge on the sides set in
+// `mask` (bits 0..3), or from the corners set in bits 4..7.
+float side_distance_at(int mask, vec2 uv) {
 	float d = 10.0;
-	if ((mask & 1) != 0) { d = min(d, tile_uv.y); }
-	if ((mask & 2) != 0) { d = min(d, 1.0 - tile_uv.x); }
-	if ((mask & 4) != 0) { d = min(d, 1.0 - tile_uv.y); }
-	if ((mask & 8) != 0) { d = min(d, tile_uv.x); }
+	if ((mask & 1) != 0) { d = min(d, uv.y); }
+	if ((mask & 2) != 0) { d = min(d, 1.0 - uv.x); }
+	if ((mask & 4) != 0) { d = min(d, 1.0 - uv.y); }
+	if ((mask & 8) != 0) { d = min(d, uv.x); }
 	for (int k = 0; k < 4; k++) {
-		if ((mask & (16 << k)) != 0) { d = min(d, length(tile_uv - vec2(CORNER[k]))); }
+		if ((mask & (16 << k)) != 0) { d = min(d, length(uv - vec2(CORNER[k]))); }
 	}
 	return d;
+}
+
+float side_distance(int mask) {
+	return side_distance_at(mask, tile_uv);
+}
+
+// Up close the coast comes in voxel steps, as Urbek's: the beach, the sand
+// at the foot of the shore and the shallows are cells of about COAST_CELL_KM
+// (1.3 diorama metres), each all sand (or all shallow water) or none, by its
+// centre's distance from the shore against a width that wanders along the
+// coast, so the waterline has coves of wide sand and bare headlands
+// (COAST_BAY_KM across). From 2 km tiles the plain bands of before (a cell
+// would be a pixel).
+const float COAST_CELL_KM = 0.031;
+const float COAST_BAY_KM = 0.15;
+
+// Centre (tile units) of the cell around this pixel, or the pixel far out.
+vec2 coast_cell() {
+	if (tile_km > 1.0) { return tile_uv; }
+	float n = round(tile_km / COAST_CELL_KM);
+	return (floor(tile_uv * n) + 0.5) / n;
+}
+
+// 0..1 along the coast, the same over a cell (`cell` from coast_cell, `p` the
+// pixel's world position)
+float coast_wander(vec2 cell, vec2 p) {
+	return tt_noise((p + (cell - tile_uv) * tile_km) / COAST_BAY_KM);
 }
 
 // Surf along the coast up close, as in Islanders: a white band where the
 // sea meets the land and a thin second line that drifts out from it and
 // fades. Distance in tiles from the nearest land side or corner (on a coast
-// cut, from the diagonal); gone from 2 km tiles, where it would be a hairline.
+// cut, from the diagonal), less `reach`, the sand it breaks on; gone from 2
+// km tiles, where it would be a hairline.
 const vec3 C_FOAM = vec3(0.900, 0.955, 1.000);
-vec3 shore_foam(vec3 c, vec2 p) {
+vec3 shore_foam(vec3 c, vec2 p, float reach) {
 	if (tile_km >= 2.0) { return c; }
 	float d = 10.0;
 	if (wet_tri == 1 && cut_tip >= 0) {
@@ -301,6 +342,7 @@ vec3 shore_foam(vec3 c, vec2 p) {
 		}
 		d = side_distance(mask);
 	}
+	d -= reach;
 	if (d > 1.0) { return c; }
 	float aa = fwidth(d) + 1e-4;
 	float t = TIME + tt_hash(vec2(tile)) * 0.6; // neighbouring tiles a little out of step
@@ -325,16 +367,42 @@ void fragment() {
 	vec3 c;
 	float rough = 1.0;
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
-		// one flat colour per water tile, a lighter one where it touches the land
+		// one flat colour per water tile, a lighter one where it touches the
+		// land. Up close the shallows are a band in voxel steps, wide off the
+		// coves and narrow off the headlands (the wet half of a coast cut is
+		// all shallow, it lies within the band), and in the coves sand lies
+		// at the foot of the shore, the surf breaking on it.
 		float far = far_share();
+		rough = 0.55;
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
-			c = coast >= 1.0 || wet_tri == 1 ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
+			bool shallow = wet_tri == 1 || coast >= 1.0;
+			float shore_d = 10.0; // tile units from dry land at the cell's centre
+			float foot = 0.0;     // the sand's width there
+			float reach = 0.0;    // where it ends (on the cell edges)
+			if (shallow && tile_km <= 1.0) {
+				vec2 cell = coast_cell();
+				float wander = coast_wander(cell, p);
+				if (wet_tri == 1) {
+					vec2 tip = vec2(CORNER[cut_tip]);
+					shore_d = -(abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
+				} else {
+					shallow = side_distance_at(shore_sides & 255, cell) < mix(0.3, 0.95, wander);
+					shore_d = side_distance_at((shore_sides >> 8) & 255, cell);
+				}
+				foot = shore_d < 1.5 ? max(0.0, wander * 0.45 - 0.12) : 0.0;
+				float n = round(tile_km / COAST_CELL_KM);
+				reach = max(0.0, ceil(foot * n - 0.5)) / n;
+			}
+			c = shallow ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
 			c = sim_lanes(p, c, length(fwidth(p)));
-			c = shore_foam(c, p);
+			c = shore_foam(c, p, reach);
+			if (shore_d < foot) {
+				c = C_SAND;
+				rough = 1.0;
+			}
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
 		}
-		rough = 0.55;
 	} else if (part == 0) {
 		int town = tt_town(tile);
 		// up close a city plan's parcel: its town class (open land and water 0)
@@ -424,15 +492,22 @@ void fragment() {
 		if (town == 3 && !planned && wall_sides != 0 && (!sub_tiles || flat_top > 0.5)) {
 			c = mix(c, C_WALL * 0.82, 1.0 - smoothstep(0.05, 0.08, side_distance(wall_sides)));
 		}
-		// beach: a strip of sand along the sea, on the diagonal of a coast cut
-		if (body_level <= 2.0 && town == 0) {
-			float d = side_distance(shore_sides & 255);
-			if (cut_tip >= 0 && shore_lake == 0) {
+		// beach: sand along the sea, on the diagonal of a coast cut; up close
+		// in voxel steps, its width wandering from a seam to a cove
+		bool shore_cut = cut_tip >= 0 && shore_lake == 0;
+		if (body_level <= 2.0 && town == 0 && ((shore_sides & 255) != 0 || shore_cut)) {
+			vec2 cell = coast_cell();
+			float d = side_distance_at(shore_sides & 255, cell);
+			if (shore_cut) {
 				vec2 tip = vec2(CORNER[cut_tip]);
-				d = (abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
+				d = (abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
 			}
-			float aa = fwidth(d) + 1e-4;
-			c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
+			if (tile_km <= 1.0) {
+				c = d < mix(0.1, 0.5, coast_wander(cell, p)) ? mix(c, C_SAND, 0.85) : c;
+			} else {
+				float aa = fwidth(d) + 1e-4;
+				c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
+			}
 		}
 		// footpaths, markets and trade roads from the grain economy
 		c = sim_ways(p, c, length(fwidth(p)));

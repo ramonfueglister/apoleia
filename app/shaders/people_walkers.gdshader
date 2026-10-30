@@ -10,7 +10,9 @@
 // its load (5), a hired hand's sickle (6), seed basket (7) or hoe (8);
 // or a market stall (9); or, in the scenes of events, a handcart (10), a
 // bundle on the back (11), a bier with its second bearer (12), an axe (13)
-// or a bowl (14); INSTANCE_CUSTOM.r says which parts beyond the
+// or a bowl (14), a ship (15: shown instead of cart, ox and carter where
+// a cart is on the sea or a lake) and craft goods on a cart (16-20);
+// INSTANCE_CUSTOM.r says which parts beyond the
 // person show (bit part - 1), .g how many seconds it walks on from the
 // start before it stops, .b the tunic colour plus the walk's phase as the
 // fraction, .a whether it walks (0), stands (1) or is a stall without a
@@ -67,6 +69,13 @@ bool walker_wet(vec2 p) {
 	return d < half_w;
 }
 
+// Whether p lies on the sea or a lake, where a cart goes by ship (on a
+// river it takes the bridge or the ferry out of sight, as everyone).
+bool walker_sea(vec2 p) {
+	int w = tt_data_cell(ivec2(floor((p - world_min) / tt_data_km()))) & 3;
+	return w != W_LAND && w != W_RIVER;
+}
+
 varying vec3 colour;
 varying vec3 art_light; // ART_LIGHT in view space
 
@@ -81,7 +90,9 @@ void vertex() {
 	vec2 velocity = vec2(MODEL_MATRIX[0].y, MODEL_MATRIX[2].y);
 	vec2 at = MODEL_MATRIX[3].xz + velocity * clamp(walk_clock - MODEL_MATRIX[3].y, 0.0, INSTANCE_CUSTOM.g);
 	mat3 turn = mat3(vec3(MODEL_MATRIX[0].x, 0.0, MODEL_MATRIX[0].z), vec3(0.0, 1.0, 0.0), vec3(MODEL_MATRIX[2].x, 0.0, MODEL_MATRIX[2].z));
-	show = show && !walker_wet(at);
+	bool wet = walker_wet(at);
+	bool ship = ((parts >> 2) & 1) == 1 && wet && walker_sea(at); // a cart (part 3) at sea
+	show = part == 15 ? ship : show && !wet;
 	vec3 v = VERTEX;
 	if (UV2.x != 0.0 && still < 0.5) {
 		// a leg swings about its hip, the two sides in turn

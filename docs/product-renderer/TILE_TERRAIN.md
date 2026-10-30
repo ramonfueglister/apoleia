@@ -212,7 +212,16 @@ unabhängig und unverändert.
   dunkler. Am Meer ein Sandsaum an
   den Wasserseiten und auf der Schnittdiagonale. Meer: je Kachel eine Farbe,
   ein tiefes Blau, heller, wo die Kachel Land berührt (nicht um Inseln aus
-  einer Kachel, sonst liegt ein heller Kasten um einen Punkt Land); Flüsse und Seen sind
+  einer Kachel, sonst liegt ein heller Kasten um einen Punkt Land). Bis
+  1-km-Kacheln kommt die Küste in Voxelstufen wie bei Urbek (Runde E,
+  30.10.2026): Sandsaum, Sand am Fuss der Böschung und Flachwasser sind
+  Zellen von 31 m (1,3 Diorama-Meter), jede ganz oder gar nicht, nach dem
+  Abstand ihrer Mitte vom Ufer gegen eine Breite, die der Küste entlang
+  wandert (`coast_wander`, Buchten von etwa 150 m). So hat die Wasserlinie
+  Buchten mit breitem Sand und kahle Landspitzen, und die Brandung bricht am
+  Sand. Kein Sand am Fuss von Küstenschnitten, Flussmündungen und
+  Stadtkaien; das Flachwasser ist ein gestuftes Band statt der ganzen
+  Kachel. Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
   Land auf Uferhöhe, wie der Küstenschnitt umgekehrt (`tt_lake_corner_cut`):
