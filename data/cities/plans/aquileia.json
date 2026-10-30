@@ -1,0 +1,257 @@
+{
+  "id": "aquileia",
+  "name": "Aquileia",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "sources": [
+    "Bertacchi, L. (2003). Nuova pianta archeologica di Aquileia. Edizioni del Confine. (not verified online)",
+    "Ghedini, F., Bueno, M., & Novello, M. (Eds.). (2009). Moenibus et portu celeberrima: Aquileia, storia di una città. Istituto Poligrafico dello Stato. (not verified online)"
+  ],
+  "note": "A tetrarchic residence with palace and circus in the west; river port on the Natiso.",
+  "centre": [
+    13.368,
+    45.77
+  ],
+  "lane_surface": "gravel",
+  "walls": [
+    {
+      "name": "Mura",
+      "ring": [
+        [
+          13.36,
+          45.777
+        ],
+        [
+          13.375,
+          45.777
+        ],
+        [
+          13.3765,
+          45.763
+        ],
+        [
+          13.359,
+          45.763
+        ]
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "Porta north",
+      "at": [
+        13.368,
+        45.777
+      ]
+    },
+    {
+      "name": "Porta south",
+      "at": [
+        13.368,
+        45.763
+      ]
+    },
+    {
+      "name": "Porta west",
+      "at": [
+        13.3595,
+        45.77
+      ]
+    }
+  ],
+  "rivers": [
+    {
+      "name": "Natiso",
+      "width_m": 50,
+      "line": [
+        [
+          13.379,
+          45.785
+        ],
+        [
+          13.3775,
+          45.775
+        ],
+        [
+          13.377,
+          45.765
+        ],
+        [
+          13.376,
+          45.755
+        ]
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Cardo maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          13.368,
+          45.777
+        ],
+        [
+          13.368,
+          45.763
+        ]
+      ]
+    },
+    {
+      "name": "Decumanus maximus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          13.3595,
+          45.77
+        ],
+        [
+          13.3765,
+          45.77
+        ]
+      ]
+    },
+    {
+      "name": "Via Postumia / Annia (north)",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          13.368,
+          45.777
+        ],
+        [
+          13.366,
+          45.788
+        ],
+        [
+          13.363,
+          45.8
+        ]
+      ]
+    },
+    {
+      "name": "Road to Grado (south)",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          13.368,
+          45.763
+        ],
+        [
+          13.37,
+          45.752
+        ],
+        [
+          13.372,
+          45.74
+        ]
+      ]
+    },
+    {
+      "name": "Via Gemina (west)",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          13.3595,
+          45.77
+        ],
+        [
+          13.348,
+          45.771
+        ],
+        [
+          13.335,
+          45.772
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Forum",
+      "kind": "forum",
+      "centre": [
+        13.3683,
+        45.7703
+      ],
+      "size_m": [
+        140,
+        60
+      ],
+      "angle_deg": 90
+    },
+    {
+      "name": "Portus fluvialis",
+      "kind": "harbour",
+      "centre": [
+        13.3762,
+        45.77
+      ],
+      "size_m": [
+        350,
+        50
+      ],
+      "angle_deg": 90
+    },
+    {
+      "name": "Palatium",
+      "kind": "palace",
+      "centre": [
+        13.3615,
+        45.769
+      ],
+      "size_m": [
+        150,
+        120
+      ]
+    },
+    {
+      "name": "Circus",
+      "kind": "circus",
+      "centre": [
+        13.36,
+        45.772
+      ],
+      "size_m": [
+        440,
+        90
+      ],
+      "angle_deg": 90
+    },
+    {
+      "name": "Amphitheatrum",
+      "kind": "amphitheatre",
+      "centre": [
+        13.3605,
+        45.765
+      ],
+      "size_m": [
+        140,
+        110
+      ]
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "centre": [
+        13.365,
+        45.7735
+      ],
+      "size_m": [
+        90,
+        75
+      ]
+    }
+  ],
+  "areas": []
+}

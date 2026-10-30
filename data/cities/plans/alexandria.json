@@ -1,0 +1,299 @@
+{
+  "id": "alexandria",
+  "name": "Alexandria",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-150 m; to be checked against the sources listed.",
+  "sources": [
+    "McKenzie, J. (2007). The architecture of Alexandria and Egypt, c. 300 BC to AD 700. Yale University Press. (not verified online)",
+    "Haas, C. (1997). Alexandria in late antiquity: Topography and social conflict. Johns Hopkins University Press. (not verified online)"
+  ],
+  "note": "The royal quarter (Brucheion) lay largely in ruins after 272; Diocletian besieged the city in 297-298, the column at the Serapeum was raised for him c. 298-302.",
+  "centre": [
+    29.9045,
+    31.196
+  ],
+  "lane_surface": "slabs",
+  "walls": [
+    {
+      "name": "Ptolemaic and Roman wall",
+      "ring": [
+        [
+          29.88,
+          31.201
+        ],
+        [
+          29.895,
+          31.2045
+        ],
+        [
+          29.92,
+          31.212
+        ],
+        [
+          29.933,
+          31.21
+        ],
+        [
+          29.933,
+          31.198
+        ],
+        [
+          29.91,
+          31.184
+        ],
+        [
+          29.885,
+          31.18
+        ],
+        [
+          29.876,
+          31.187
+        ]
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "Gate of the Sun",
+      "at": [
+        29.933,
+        31.204
+      ]
+    },
+    {
+      "name": "Gate of the Moon",
+      "at": [
+        29.8775,
+        31.188
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Canopic Way",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          29.8775,
+          31.188
+        ],
+        [
+          29.9045,
+          31.1965
+        ],
+        [
+          29.933,
+          31.204
+        ]
+      ],
+      "note": "colonnaded, about 30 m wide"
+    },
+    {
+      "name": "Street of the Soma",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          29.9,
+          31.205
+        ],
+        [
+          29.902,
+          31.1965
+        ],
+        [
+          29.905,
+          31.186
+        ]
+      ]
+    },
+    {
+      "name": "Street to the Heptastadion",
+      "rank": "vicus",
+      "surface": "slabs",
+      "line": [
+        [
+          29.893,
+          31.199
+        ],
+        [
+          29.893,
+          31.193
+        ]
+      ]
+    },
+    {
+      "name": "Heptastadion",
+      "rank": "via",
+      "surface": "slabs",
+      "outside": true,
+      "line": [
+        [
+          29.893,
+          31.199
+        ],
+        [
+          29.888,
+          31.203
+        ],
+        [
+          29.882,
+          31.206
+        ]
+      ]
+    },
+    {
+      "name": "Road to Canopus",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          29.933,
+          31.204
+        ],
+        [
+          29.95,
+          31.21
+        ],
+        [
+          29.97,
+          31.217
+        ]
+      ]
+    },
+    {
+      "name": "Road to the Necropolis",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          29.8775,
+          31.188
+        ],
+        [
+          29.865,
+          31.184
+        ],
+        [
+          29.852,
+          31.18
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Serapeum",
+      "kind": "temple",
+      "centre": [
+        29.8963,
+        31.1825
+      ],
+      "size_m": [
+        180,
+        90
+      ],
+      "landmark": true
+    },
+    {
+      "name": "Caesareum",
+      "kind": "temple",
+      "centre": [
+        29.905,
+        31.201
+      ],
+      "size_m": [
+        150,
+        110
+      ]
+    },
+    {
+      "name": "Kom el-Dikka (theatre and baths)",
+      "kind": "theatre",
+      "centre": [
+        29.9045,
+        31.195
+      ],
+      "size_m": [
+        120,
+        90
+      ]
+    },
+    {
+      "name": "Gymnasium",
+      "kind": "public",
+      "centre": [
+        29.908,
+        31.1975
+      ],
+      "size_m": [
+        200,
+        100
+      ]
+    },
+    {
+      "name": "Hippodrome",
+      "kind": "circus",
+      "centre": [
+        29.888,
+        31.178
+      ],
+      "size_m": [
+        500,
+        90
+      ],
+      "angle_deg": -20
+    },
+    {
+      "name": "Emporium",
+      "kind": "harbour",
+      "centre": [
+        29.899,
+        31.2045
+      ],
+      "size_m": [
+        300,
+        80
+      ],
+      "angle_deg": 20
+    },
+    {
+      "name": "Pharos",
+      "kind": "tomb",
+      "centre": [
+        29.8855,
+        31.214
+      ],
+      "size_m": [
+        60,
+        60
+      ],
+      "landmark": true,
+      "note": "lighthouse; tomb model as placeholder"
+    }
+  ],
+  "areas": [
+    {
+      "name": "Brucheion (ruined since 272)",
+      "kind": "garden",
+      "centre": [
+        29.92,
+        31.206
+      ],
+      "radius_m": 500
+    },
+    {
+      "name": "Rhakotis",
+      "kind": "insulae",
+      "centre": [
+        29.893,
+        31.188
+      ],
+      "radius_m": 500
+    }
+  ]
+}

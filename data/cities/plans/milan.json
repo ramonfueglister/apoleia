@@ -1,0 +1,363 @@
+{
+  "id": "milan",
+  "name": "Mediolanum",
+  "year": 301,
+  "status": "reconstructed",
+  "accuracy": "Positions read off modern equivalents and published site plans from memory, about +-75 m; to be checked against the sources listed.",
+  "sources": [
+    "Sena Chiesa, G. (Ed.). (1990). Milano capitale dell'impero romano 286-402 d.C. Silvana. (not verified online)",
+    "Krautheimer, R. (1983). Three Christian capitals: Topography and politics. University of California Press. (not verified online)"
+  ],
+  "note": "Residence of Maximian from 286; he enlarged the walls to the east and built the circus, palace and baths.",
+  "centre": [
+    9.1875,
+    45.4635
+  ],
+  "lane_surface": "gravel",
+  "walls": [
+    {
+      "name": "Mura massimianee",
+      "built": "c. 290",
+      "ring": [
+        [
+          9.185,
+          45.4705
+        ],
+        [
+          9.193,
+          45.47
+        ],
+        [
+          9.2,
+          45.4655
+        ],
+        [
+          9.199,
+          45.46
+        ],
+        [
+          9.195,
+          45.458
+        ],
+        [
+          9.182,
+          45.457
+        ],
+        [
+          9.1765,
+          45.46
+        ],
+        [
+          9.176,
+          45.465
+        ],
+        [
+          9.179,
+          45.469
+        ]
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "Porta Comacina",
+      "at": [
+        9.185,
+        45.4705
+      ]
+    },
+    {
+      "name": "Porta Nova",
+      "at": [
+        9.193,
+        45.47
+      ]
+    },
+    {
+      "name": "Porta Argentea",
+      "at": [
+        9.2,
+        45.4655
+      ]
+    },
+    {
+      "name": "Porta Romana",
+      "at": [
+        9.195,
+        45.458
+      ]
+    },
+    {
+      "name": "Porta Ticinensis",
+      "at": [
+        9.182,
+        45.457
+      ]
+    },
+    {
+      "name": "Porta Vercellina",
+      "at": [
+        9.176,
+        45.465
+      ]
+    }
+  ],
+  "streets": [
+    {
+      "name": "Decumanus",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          9.176,
+          45.465
+        ],
+        [
+          9.1865,
+          45.4632
+        ],
+        [
+          9.2,
+          45.4655
+        ]
+      ]
+    },
+    {
+      "name": "Cardo",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          9.185,
+          45.4705
+        ],
+        [
+          9.1865,
+          45.4632
+        ],
+        [
+          9.182,
+          45.457
+        ]
+      ]
+    },
+    {
+      "name": "Via to Porta Romana",
+      "rank": "via",
+      "surface": "slabs",
+      "line": [
+        [
+          9.1865,
+          45.4632
+        ],
+        [
+          9.195,
+          45.458
+        ]
+      ]
+    },
+    {
+      "name": "Via to Porta Nova",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          9.1865,
+          45.4632
+        ],
+        [
+          9.193,
+          45.47
+        ]
+      ]
+    },
+    {
+      "name": "Via porticata (Corso di Porta Romana)",
+      "rank": "via",
+      "surface": "slabs",
+      "outside": true,
+      "line": [
+        [
+          9.195,
+          45.458
+        ],
+        [
+          9.1985,
+          45.454
+        ],
+        [
+          9.203,
+          45.449
+        ]
+      ]
+    },
+    {
+      "name": "Road to Ticinum",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          9.182,
+          45.457
+        ],
+        [
+          9.179,
+          45.45
+        ],
+        [
+          9.176,
+          45.442
+        ]
+      ]
+    },
+    {
+      "name": "Road to Novaria",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          9.176,
+          45.465
+        ],
+        [
+          9.168,
+          45.467
+        ],
+        [
+          9.158,
+          45.47
+        ]
+      ]
+    },
+    {
+      "name": "Road to Comum",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          9.185,
+          45.4705
+        ],
+        [
+          9.183,
+          45.478
+        ],
+        [
+          9.181,
+          45.486
+        ]
+      ]
+    },
+    {
+      "name": "Road to Bergomum",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          9.2,
+          45.4655
+        ],
+        [
+          9.208,
+          45.469
+        ],
+        [
+          9.218,
+          45.472
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Forum",
+      "kind": "forum",
+      "centre": [
+        9.1865,
+        45.4632
+      ],
+      "size_m": [
+        160,
+        60
+      ]
+    },
+    {
+      "name": "Palatium",
+      "kind": "palace",
+      "centre": [
+        9.181,
+        45.462
+      ],
+      "size_m": [
+        220,
+        160
+      ]
+    },
+    {
+      "name": "Circus",
+      "kind": "circus",
+      "centre": [
+        9.1785,
+        45.4632
+      ],
+      "size_m": [
+        470,
+        85
+      ],
+      "angle_deg": 90
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "centre": [
+        9.1825,
+        45.465
+      ],
+      "size_m": [
+        95,
+        80
+      ]
+    },
+    {
+      "name": "Thermae Herculeae",
+      "kind": "baths",
+      "centre": [
+        9.1965,
+        45.466
+      ],
+      "size_m": [
+        150,
+        110
+      ]
+    },
+    {
+      "name": "Amphitheatrum",
+      "kind": "amphitheatre",
+      "centre": [
+        9.1765,
+        45.4575
+      ],
+      "size_m": [
+        155,
+        125
+      ]
+    },
+    {
+      "name": "Horrea",
+      "kind": "warehouse",
+      "centre": [
+        9.1775,
+        45.4665
+      ],
+      "size_m": [
+        100,
+        60
+      ]
+    }
+  ],
+  "areas": []
+}
