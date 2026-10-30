@@ -37,22 +37,23 @@ extends CanvasLayer
 ## The colours stay when the panel closes (it covers most of the map), with
 ## their legend at the bottom left, whose ✕ takes them off.
 ##
-## Command line (after --): --tables=overview|markets|population|farms|state|history
+## Command line (after --): --tables=overview|markets|goods|classes|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
 ## that column of the markets.
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 ## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
 ## from four of them; its tab comes first (TAB_ORDER)
-const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview"]
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht"]
-const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", ""] # under a tooltip's title
-const TAB_ORDER: Array[int] = [5, 0, 1, 2, 3, 4]
-const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state"]
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht", "Schichten", "Waren", "Draussen"]
+const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", "", "Schicht", "Ware", "Markt draussen"] # under a tooltip's title
+const TAB_ORDER: Array[int] = [5, 0, 8, 7, 6, 1, 2, 3, 4]
+const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state", "classes", "goods"]
 const SPARK_MONTHS := 24
 const SPARK_PX := 92.0
 const MONTHS: Array[String] = ["Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
@@ -96,10 +97,10 @@ var _months_day := -1 # the table day last added to _months
 var _spark_at := -1 # the tree column of the curves, -1 for none
 var _stale := false # a new table came while the mouse was on the shown one
 var _open_button: Button
-var _tabs: TabBar
+var _tabs: UiTabs
 var _stand: Label
 var _search: LineEdit
-var _filter_row: HBoxContainer
+var _filter_row: HFlowContainer # wraps when the window is narrow
 var _fold: CheckButton
 var _tree: Tree
 var _note: Label
@@ -168,6 +169,8 @@ func _process(_delta: float) -> void:
 		kinds.append(0)
 	elif open:
 		kinds = [_kind, 0]
+		if KINDS[_kind] in ["goods", "classes"]: # their rows' tooltips draw from the history
+			kinds.append(KINDS.find("history"))
 	var day: int = people.day()
 	for kind in kinds:
 		var t := _tables[kind]
@@ -240,6 +243,8 @@ static func _is_text(t: Dictionary, key: String) -> bool:
 ## The text columns that get a dropdown; rows fold by the first of them.
 func _filter_keys(t: Dictionary) -> Array[String]:
 	var keys: Array[String] = []
+	if _row_count(t) <= 12: # a short table needs no dropdowns
+		return keys
 	for key in t.columns:
 		if _is_text(t, key) and _values(t, key).size() <= FILTER_MAX:
 			keys.append(key)
@@ -292,7 +297,8 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 func _refresh() -> void:
 	var overview := KINDS[_kind] == "overview"
 	_overview.visible = overview
-	_filter_row.visible = not overview
+	for c in _filter_row.get_children(): # the overview keeps only the date
+		c.visible = c == _stand or not overview
 	_tree.visible = not overview
 	_note.visible = not overview
 	if overview:
@@ -307,7 +313,8 @@ func _refresh() -> void:
 	var t := _tables[_kind]
 	_chart.visible = KINDS[_kind] == "history"
 	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  auf ihr verweilen zeigt den Verlauf" if KINDS[_kind] == "history"
-		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar")
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar" if t.get("data", {}).has("lon")
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Spaltenkopf sortiert  ·  D = Denar")
 	_paint.visible = KINDS[_kind] == "markets"
 	_paint.set_pressed_no_signal(_map_by != "")
 	_paint_regions()
@@ -343,6 +350,11 @@ func _fill_filters(t: Dictionary) -> void:
 			state.filters[key] = "" if index == 0 else values[index - 1]
 			_fill_tree(_tables[_kind]))
 		pick.focus_mode = Control.FOCUS_NONE
+		# as wide as its name, not its longest value, so the row fits the window
+		pick.fit_to_longest_item = false
+		pick.clip_text = true
+		pick.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		pick.custom_minimum_size = Vector2(120, 0)
 		_filter_row.add_child(pick)
 		_filter_row.move_child(pick, at)
 		at += 1
@@ -761,9 +773,32 @@ func _row_tip(at: Vector2) -> Dictionary:
 			d.spark_to = _date(int(t.day))
 		else:
 			d.more = "Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
+	if KINDS[_kind] in ["goods", "classes"] and rows.size() == 1:
+		_history_spark(d, KINDS[_kind], int(t.data.id[rows[0]]))
 	if t.data.has("lon"):
 		d.hints.append(["Klick", "fliegt zum Ort"])
 	return d
+
+## A good's price, or what a class ate of its need, over all months from
+## the history (good_<key>, fed_<key> in apoleia_sim grain/tables.rs).
+func _history_spark(d: Dictionary, kind: String, id: int) -> void:
+	var h := _tables[KINDS.find("history")]
+	var keys: Array[String] = SimOverview.GOOD_KEYS if kind == "goods" else SimOverview.FED_KEYS
+	if h.is_empty() or id < 0 or id >= keys.size():
+		return
+	var key := ("good_" if kind == "goods" else "fed_") + keys[id]
+	if not h.data.has(key) or h.data[key].size() < 2:
+		d.more = "Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
+		return
+	var s := PackedFloat64Array()
+	for v in h.data[key]:
+		s.append(float(v) * (1.0 if kind == "goods" else 100.0))
+	d.spark = s
+	d.spark_title = "Preis seit Beginn" if kind == "goods" else "Gegessen vom Bedarf, je Monat"
+	d.spark_unit = "D" if kind == "goods" else "%"
+	d.spark_from = _date(int(h.data.day[0]))
+	d.spark_to = _date(int(h.data.day[h.data.day.size() - 1]))
+	d.colour = Charts.SERIES[0] if kind == "goods" else SimOverview.FED_COLOURS[id]
 
 ## A series of the history: its whole course, prices with their range.
 func _series_tip(t: Dictionary, key: String) -> Dictionary:
@@ -1045,19 +1080,18 @@ func _build() -> void:
 	head.add_theme_constant_override("separation", 12)
 	column.add_child(head)
 	_stand = Label.new()
-	_stand.add_theme_color_override("font_color", UiStyle.DIM)
+	_stand.add_theme_color_override("font_color", UiStyle.KIND)
+	_stand.add_theme_font_override("font", UiStyle.italic())
 	_stand.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL + 1)
 	_stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_tabs = TabBar.new()
+	_tabs = UiTabs.new()
 	for k in TAB_ORDER:
 		_tabs.add_tab(TITLES[k])
-	_tabs.focus_mode = Control.FOCUS_NONE
 	_tabs.tab_changed.connect(_on_tab)
-	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_tabs)
-	head.add_child(_stand)
-	_filter_row = HBoxContainer.new()
-	_filter_row.add_theme_constant_override("separation", 8)
+	_filter_row = HFlowContainer.new()
+	_filter_row.add_theme_constant_override("h_separation", 8)
+	_filter_row.add_theme_constant_override("v_separation", 6)
 	column.add_child(_filter_row)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Suchen …"
@@ -1071,6 +1105,7 @@ func _build() -> void:
 	var fill := Control.new()
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_filter_row.add_child(fill)
+	_filter_row.add_child(_stand) # the date of the figures, right of the search
 	_fold = CheckButton.new()
 	_fold.focus_mode = Control.FOCUS_NONE
 	_fold.toggled.connect(func(on: bool):

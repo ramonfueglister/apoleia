@@ -40,6 +40,8 @@ mod crafts;
 mod outside;
 mod pricing;
 mod sites;
+mod tables;
+pub use tables::HistoryExtra;
 pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
@@ -726,6 +728,8 @@ pub struct HistoryRow {
     pub farms: usize,
     pub farm_store_kg: i64,
     pub market_store_kg: i64,
+    /// Wages, granaries, clothing and more (grain/tables.rs).
+    pub extra: HistoryExtra,
 }
 
 /// For the view only: the counters as of the end of the last day, the
@@ -2534,6 +2538,7 @@ impl Grain {
             farms,
             farm_store_kg: (farm_t * 1e3) as i64,
             market_store_kg: (market_t * 1e3) as i64,
+            extra: self.history_extra(),
         };
         self.history.rows.push(r);
     }
@@ -4428,6 +4433,8 @@ impl Grain {
             "farms" => Some(self.farm_table(p, day)),
             "state" => Some(self.state_table(day)),
             "history" => Some(self.history_table(day)),
+            "classes" => Some(self.class_table(day)),
+            "goods" => Some(self.goods_table(day)),
             "outside" => Some(self.outside_table(day)),
             _ => None,
         }
@@ -4442,6 +4449,10 @@ impl Grain {
         let flow = |k: usize| int(&|r| r.flows[k]);
         let tonnes = |k: usize| float(&|r| r.flows[k] as f64 / 1000.0);
         let den = |f: &dyn Fn(&HistoryRow) -> i64| float(&|r| f(r) as f64 / 1000.0);
+        // a count since the start as the month's flow, tonnes
+        let since = |f: &dyn Fn(&HistoryRow) -> i64| -> Vec<f64> {
+            (0..rows.len()).map(|i| (f(&rows[i]) - if i > 0 { f(&rows[i - 1]) } else { 0 }).max(0) as f64 / 1000.0).collect()
+        };
         let mut t = Table::new("history", "Verlauf", day);
         t.id((0..rows.len() as i64).collect());
         t.int("day", "Tag", "", int(&|r| r.day))
@@ -4469,7 +4480,21 @@ impl Grain {
             .int("tent_persons", "Im Zelt", "", int(&|r| r.tent_people as i64))
             .int("farms", "Höfe", "", int(&|r| r.farms as i64))
             .float("farm_store_t", "Hoflager", "t", float(&|r| r.farm_store_kg as f64 / 1000.0))
-            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0));
+            .float("market_store_t", "Marktlager", "t", float(&|r| r.market_store_kg as f64 / 1000.0))
+            .float("wage", "Taglohn Median", "Denar", float(&|r| r.extra.wage))
+            .float("real_p10", "Reallohn ärmstes Zehntel", "kg", float(&|r| r.extra.real_wage.0))
+            .float("real_p50", "Reallohn Median", "kg", float(&|r| r.extra.real_wage.1))
+            .float("real_p90", "Reallohn reichstes Zehntel", "kg", float(&|r| r.extra.real_wage.2))
+            .float("need_wage", "Bedarf je Lohnarbeiter und Arbeitstag", "kg", float(&|r| r.extra.need_wage))
+            .int("vacant", "Offene Arbeitstage", "Tage", int(&|r| r.extra.vacant))
+            .int("idle", "Liegen gebliebene Arbeitstage", "Tage", int(&|r| r.extra.idle))
+            .float("horrea_t", "Staatsspeicher", "t", float(&|r| r.extra.horrea_kg as f64 / 1000.0))
+            .float("lords_t", "Speicher der Grundherren", "t", float(&|r| r.extra.lords_kg as f64 / 1000.0))
+            .float("clothes", "Kleidung vom Bedarf", "%", float(&|r| r.extra.clothes / 100.0))
+            .float("elite_money", "Geld der Oberschicht", "%", float(&|r| r.extra.elite_money))
+            .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
+            .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg));
+        self.history_by_good_and_class(&mut t);
         t
     }
 
@@ -5278,7 +5303,7 @@ mod tests {
             assert!(t.rows() > 0 || key == "history", "{key}");
             assert!(t.columns.iter().all(|c| c.values.len() == t.rows()), "{key}");
             assert!(t.column("id").is_some_and(|c| c.hidden), "{key}");
-            assert!(matches!(key, "state" | "history") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
+            assert!(matches!(key, "state" | "history" | "classes" | "goods") || t.column("lon").is_some_and(|c| c.hidden), "{key}");
             for c in t.columns.iter().filter(|c| c.unit == "%") {
                 let crate::tables::Values::Float(v) = &c.values else { panic!("{}", c.key) };
                 assert!(v.iter().all(|x| (0.0..=1.0).contains(x)), "{key} {}", c.key);
