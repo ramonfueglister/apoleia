@@ -15,6 +15,9 @@ const GOOD_PRICE_KEYS: [&str; GOODS] = ["good_wool", "good_iron", "good_cloth", 
 const GOOD_PRICE_NAMES: [&str; GOODS] = ["Preis Wolle", "Preis Eisen", "Preis Kleidung", "Preis Werkzeug", "Preis Keramik", "Preis Schweinefleisch"];
 const FED_KEYS: [&str; 5] = ["fed_court", "fed_tent", "fed_wage", "fed_trader", "fed_elite"];
 const FED_NAMES: [&str; 5] = ["Gegessen: Hofleute", "Gegessen: Im Zelt", "Gegessen: Lohnarbeit", "Gegessen: Händler", "Gegessen: Oberschicht"];
+const GINI_KEYS: [&str; 5] = ["gini_court", "gini_tent", "gini_wage", "gini_trader", "gini_elite"];
+const GINI_NAMES: [&str; 5] = ["Gini: Hofleute", "Gini: Im Zelt", "Gini: Lohnarbeit", "Gini: Händler", "Gini: Oberschicht"];
+const LORENZ_KEYS: [&str; 9] = ["lorenz_10", "lorenz_20", "lorenz_30", "lorenz_40", "lorenz_50", "lorenz_60", "lorenz_70", "lorenz_80", "lorenz_90"];
 
 /// The month's levels that are not flows of `History`, for the history
 /// table. Wages are over the markets with people, by market.
@@ -48,11 +51,229 @@ pub struct HistoryExtra {
     pub goods_price: [f64; GOODS],
     /// What the player had built by then: farms, road lots, field lots.
     pub built: (i64, i64, i64),
+    /// Arm und Reich (Ramon, 30.10.2026): the Gini of money per head over
+    /// all people, within each household kind, and the Lorenz curve: the
+    /// share of all money the poorest 10 %, 20 % … 90 % of the people hold.
+    pub gini: f64,
+    pub gini_by: [f64; 5],
+    pub lorenz: [f64; 9],
+}
+
+/// One market's month in the history (Ramon, 30.10.2026, "Verlauf je
+/// Markt"), f32 so a century of all markets stays small.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MarketMonth {
+    /// Grain price, denarii per kg; share of the people who buy their
+    /// food that went hungry; grain in the dealers' store, t; grain sold
+    /// in the month, t; day wage and dealers' cash, denarii.
+    pub price: f32,
+    pub hungry: f32,
+    pub store_t: f32,
+    pub sold_t: f32,
+    pub wage: f32,
+    pub money: f32,
+    /// People of the region, of them in tents.
+    pub people: u32,
+    pub tents: u32,
+    /// Gini of money per head over the region's people.
+    pub gini: f32,
+    /// Each good's price, denarii (GOOD_KEYS order).
+    pub goods: [f32; GOODS],
+}
+
+/// Months each market keeps one by one (ten years); the years before
+/// are kept as their mean, so a century of 1,800 markets stays near 20 MB.
+const MARKET_MONTHS: usize = 120;
+
+impl MarketMonth {
+    /// The mean of some months.
+    fn mean(v: &[MarketMonth]) -> MarketMonth {
+        let n = v.len().max(1) as f32;
+        let sum = |f: &dyn Fn(&MarketMonth) -> f32| v.iter().map(f).sum::<f32>() / n;
+        MarketMonth {
+            price: sum(&|x| x.price),
+            hungry: sum(&|x| x.hungry),
+            store_t: sum(&|x| x.store_t),
+            sold_t: sum(&|x| x.sold_t),
+            wage: sum(&|x| x.wage),
+            money: sum(&|x| x.money),
+            people: sum(&|x| x.people as f32).round() as u32,
+            tents: sum(&|x| x.tents as f32).round() as u32,
+            gini: sum(&|x| x.gini),
+            goods: std::array::from_fn(|g| sum(&|x| x.goods[g])),
+        }
+    }
+}
+
+impl History {
+    /// Keeps the markets' month of `day`; once more than ten years are kept
+    /// month by month, the oldest twelve months become one entry, their
+    /// mean, on the last one's day.
+    pub(super) fn keep_markets(&mut self, day: i64, months: Vec<MarketMonth>) {
+        self.markets.push((day, months));
+        let at = self.market_years;
+        if self.markets.len() - at < MARKET_MONTHS + 12 {
+            return;
+        }
+        let year: Vec<(i64, Vec<MarketMonth>)> = self.markets.drain(at..at + 12).collect();
+        let n = year.iter().map(|y| y.1.len()).max().unwrap_or(0);
+        let mean = (0..n).map(|k| MarketMonth::mean(&year.iter().filter_map(|y| y.1.get(k).copied()).collect::<Vec<_>>())).collect();
+        self.markets.insert(at, (year[11].0, mean));
+        self.market_years += 1;
+    }
+}
+
+/// How money and food are spread over the people, from one pass over the
+/// households: Gini and Lorenz curve over all, Gini by household kind and
+/// by market, the hungry share of each market's buyers.
+pub(super) struct Spread {
+    gini: f64,
+    gini_by: [f64; 5],
+    lorenz: [f64; 9],
+    pub(super) market_gini: Vec<f64>,
+    pub(super) hungry: Vec<f64>,
+}
+
+/// Gini and the Lorenz curve at 10 % … 90 % of the people of money per
+/// head; `v` holds (money per head, people) of each household. Debts count
+/// as nothing. No money at all: everyone equal.
+fn gini_lorenz(v: &mut [(i64, i64)]) -> (f64, [f64; 9]) {
+    v.sort_unstable();
+    let people: i64 = v.iter().map(|x| x.1).sum();
+    let money: f64 = v.iter().map(|x| x.0.max(0) as f64 * x.1 as f64).sum();
+    let mut lorenz = std::array::from_fn(|q| (q + 1) as f64 / 10.0);
+    if people == 0 || money <= 0.0 {
+        return (0.0, lorenz);
+    }
+    let (mut p_acc, mut m_acc, mut area, mut q) = (0i64, 0.0, 0.0, 0usize);
+    for &(x, n) in v.iter() {
+        let (p0, m0) = (p_acc as f64 / people as f64, m_acc / money);
+        p_acc += n;
+        m_acc += x.max(0) as f64 * n as f64;
+        let (p1, m1) = (p_acc as f64 / people as f64, m_acc / money);
+        area += (p1 - p0) * (m0 + m1);
+        while q < 9 && p1 >= (q + 1) as f64 / 10.0 {
+            lorenz[q] = m0 + (m1 - m0) * ((q + 1) as f64 / 10.0 - p0) / (p1 - p0).max(1e-12);
+            q += 1;
+        }
+    }
+    ((1.0 - area).clamp(0.0, 1.0), lorenz)
+}
+
+/// What the game shows of a household (read only), for the person window.
+#[derive(Clone, Debug)]
+pub struct HouseholdLook {
+    /// Index into KIND_NAMES.
+    pub kind: u8,
+    /// Share of its need the household ate at the last meal count, ‰.
+    pub fed: u16,
+    pub pantry_kg: i64,
+    /// Money, milli-denarii (farmers: with their farm's); per head.
+    pub money: i64,
+    pub money_head: i64,
+    /// Its farm: kind (FARM_KIND_NAMES) and field area in m², if it has one.
+    pub farm: Option<(u8, i64)>,
+    /// Its market (index, name), the grain price and the day wage there,
+    /// milli-denarii.
+    pub market: Option<(u32, String)>,
+    pub grain_price: i64,
+    pub wage: i64,
+    /// People and adults; grain they need a month, kg.
+    pub size: u16,
+    pub adults: u16,
+    pub need_month_kg: i64,
+    /// Person ids of the household, from the last count.
+    pub members: Vec<u32>,
+    /// Its work (CRAFT_NAMES) and what it earned a month, milli-denarii
+    /// (craft households, smoothed).
+    pub craft: u8,
+    pub earned: i64,
+    /// At the last weekly labour exchange: days it worked on others'
+    /// farms, days its farm hired.
+    pub worked_days: i64,
+    pub hired_days: i64,
+    /// Clothing held of the plain need, per cent.
+    pub clothes_pct: i64,
+    /// Share of the people with less money per head, on the map and in
+    /// its market (0..1).
+    pub rank_all: f64,
+    pub rank_market: f64,
 }
 
 impl Grain {
-    /// The month's levels for `track`.
-    pub(super) fn history_extra(&self) -> HistoryExtra {
+    /// Money per head (milli-denarii) and people of each counted household
+    /// with its market (NONE if none) and kind; farmers with their farm's money.
+    fn money_heads(&self) -> Vec<(i64, i64, u32, u8)> {
+        self.info
+            .iter()
+            .filter_map(|(id, i)| {
+                let s = self.hh.get(id)?;
+                let money = s.money + if s.farm != NONE { self.farms[s.farm as usize].money } else { 0 };
+                (i.size > 0).then(|| (money / i.size as i64, i.size as i64, self.cell_market[i.home as usize], s.kind))
+            })
+            .collect()
+    }
+
+    /// How money and food are spread (`Spread`).
+    pub(super) fn spread(&self) -> Spread {
+        let n = self.markets.len();
+        let heads = self.money_heads();
+        let mut all: Vec<(i64, i64)> = heads.iter().map(|h| (h.0, h.1)).collect();
+        let (gini, lorenz) = gini_lorenz(&mut all);
+        let mut by: [Vec<(i64, i64)>; 5] = Default::default();
+        let mut at: Vec<Vec<(i64, i64)>> = vec![Vec::new(); n];
+        for &(x, size, mk, kind) in &heads {
+            by[kind as usize].push((x, size));
+            if mk != NONE {
+                at[mk as usize].push((x, size));
+            }
+        }
+        let (mut hungry, mut counted) = (vec![0i64; n], vec![0i64; n]);
+        for (id, i) in self.info.iter() {
+            let mk = self.cell_market[i.home as usize];
+            let Some(s) = self.hh.get(id) else { continue };
+            if mk == NONE || s.own_food {
+                continue;
+            }
+            counted[mk as usize] += i.size as i64;
+            if s.fed < NEED_FED {
+                hungry[mk as usize] += i.size as i64;
+            }
+        }
+        Spread {
+            gini,
+            gini_by: std::array::from_fn(|k| gini_lorenz(&mut by[k]).0),
+            lorenz,
+            market_gini: at.iter_mut().map(|v| gini_lorenz(v).0).collect(),
+            hungry: (0..n).map(|m| if counted[m] > 0 { hungry[m] as f64 / counted[m] as f64 } else { 0.0 }).collect(),
+        }
+    }
+
+    /// The month's levels for `track`, and each market's month (`sold` is
+    /// the grain each market sold in the month, kg).
+    pub(super) fn history_extra(&self, sold: &[i64]) -> (HistoryExtra, Vec<MarketMonth>) {
+        let spread = self.spread();
+        let months = self
+            .markets
+            .iter()
+            .enumerate()
+            .map(|(k, m)| MarketMonth {
+                price: m.price as f32 / 1e3,
+                hungry: spread.hungry[k] as f32,
+                store_t: m.store as f32 / 1e3,
+                sold_t: sold.get(k).copied().unwrap_or(0) as f32 / 1e3,
+                wage: m.wage as f32 / 1e3,
+                money: m.money as f32 / 1e3,
+                people: m.people,
+                tents: m.tent_people,
+                gini: spread.market_gini[k] as f32,
+                goods: std::array::from_fn(|g| m.goods[g].price as f32 / 1e3),
+            })
+            .collect();
+        (self.history_levels(&spread), months)
+    }
+
+    fn history_levels(&self, spread: &Spread) -> HistoryExtra {
         let ms: Vec<&Market> = self.markets.iter().filter(|m| m.people > 0).collect();
         let at = |v: &[i64], q: f64| if v.is_empty() { 0.0 } else { v[((v.len() - 1) as f64 * q) as usize] as f64 / 1e3 };
         let mut wage: Vec<i64> = ms.iter().map(|m| m.wage).collect();
@@ -90,6 +311,9 @@ impl Grain {
             need_by: self.stats.need_by,
             goods_price,
             built: (self.stats.built_farms, self.road_lots.len() as i64, self.field_lots.len() as i64),
+            gini: spread.gini,
+            gini_by: spread.gini_by,
+            lorenz: spread.lorenz,
         }
     }
 
@@ -114,6 +338,144 @@ impl Grain {
                 .collect();
             t.float(FED_KEYS[k], FED_NAMES[k], "%", fed);
         }
+        t.float("gini", "Gini des Geldes", "", rows.iter().map(|r| r.extra.gini).collect());
+        for k in 0..5 {
+            t.float(GINI_KEYS[k], GINI_NAMES[k], "", rows.iter().map(|r| r.extra.gini_by[k]).collect());
+        }
+        // the Lorenz curve of each month, for the statistics only
+        for q in 0..9 {
+            t.hidden_float(LORENZ_KEYS[q], "%", rows.iter().map(|r| r.extra.lorenz[q]).collect());
+        }
+    }
+
+    /// One market's history (`MarketMonth`), one row per month (before
+    /// the last ten years one per year, the year's mean): what the market
+    /// window draws, with the median price and the Gini of all markets
+    /// beside. None if there is no such market.
+    pub fn market_history_table(&self, m: usize, day: i64) -> Option<Table> {
+        self.markets.get(m)?;
+        let h = &self.history;
+        let months: Vec<MarketMonth> = h.markets.iter().map(|v| v.1.get(m).copied().unwrap_or_default()).collect();
+        let col = |f: &dyn Fn(&MarketMonth) -> f32| months.iter().map(|x| f(x) as f64).collect::<Vec<f64>>();
+        // the realm's months up to each entry's day, as their mean
+        let (mut price_all, mut gini_all, mut r, mut prev) = (Vec::new(), Vec::new(), 0, i64::MIN);
+        for &(d, _) in &h.markets {
+            let (mut p, mut g, mut n) = (0.0, 0.0, 0.0);
+            while r < h.rows.len() && h.rows[r].day <= d {
+                if h.rows[r].day > prev {
+                    p += h.rows[r].price.1;
+                    g += h.rows[r].extra.gini;
+                    n += 1.0;
+                }
+                r += 1;
+            }
+            price_all.push(if n > 0.0 { p / n } else { 0.0 });
+            gini_all.push(if n > 0.0 { g / n } else { 0.0 });
+            prev = d;
+        }
+        let mut t = Table::new("market_history", "Verlauf des Marktes", day);
+        t.id((0..months.len() as i64).collect());
+        t.int("day", "Tag", "", h.markets.iter().map(|v| v.0).collect())
+            .float("price", "Kornpreis", "Denar/kg", col(&|x| x.price))
+            .float("price_all", "Kornpreis Median aller Märkte", "Denar/kg", price_all)
+            .float("share_hungry", "Hungernd", "%", col(&|x| x.hungry))
+            .float("store_t", "Marktlager", "t", col(&|x| x.store_t))
+            .float("sold_t", "Verkauft im Monat", "t", col(&|x| x.sold_t))
+            .float("wage", "Taglohn", "Denar", col(&|x| x.wage))
+            .float("real_wage", "Reallohn", "kg", col(&|x| if x.price > 0.0 { x.wage / x.price } else { 0.0 }))
+            .float("money", "Händlergeld", "Denar", col(&|x| x.money))
+            .int("persons", "Menschen", "", months.iter().map(|x| x.people as i64).collect())
+            .int("tent_persons", "Im Zelt", "", months.iter().map(|x| x.tents as i64).collect())
+            .float("gini", "Gini des Geldes", "", col(&|x| x.gini))
+            .float("gini_all", "Gini des Geldes aller Märkte", "", gini_all);
+        for g in 0..GOODS {
+            t.float(GOOD_PRICE_KEYS[g], GOOD_PRICE_NAMES[g], "Denar", col(&|x| x.goods[g]));
+        }
+        Some(t)
+    }
+
+    /// Who lives at market `m`: one row per household kind with
+    /// households, people, money and money per head, and the share of its
+    /// people who buy their food and went hungry. None if no such market.
+    pub fn market_classes_table(&self, m: usize, day: i64) -> Option<Table> {
+        self.markets.get(m)?;
+        let (mut hh, mut ppl, mut money, mut hungry, mut buyers) = ([0i64; 5], [0i64; 5], [0i64; 5], [0i64; 5], [0i64; 5]);
+        for (id, i) in self.info.iter() {
+            let Some(s) = self.hh.get(id) else { continue };
+            if self.cell_market[i.home as usize] != m as u32 {
+                continue;
+            }
+            let k = s.kind as usize;
+            hh[k] += 1;
+            ppl[k] += i.size as i64;
+            money[k] += s.money + if s.farm != NONE { self.farms[s.farm as usize].money } else { 0 };
+            if !s.own_food {
+                buyers[k] += i.size as i64;
+                hungry[k] += if s.fed < NEED_FED { i.size as i64 } else { 0 };
+            }
+        }
+        let mut t = Table::new("market_classes", "Wer am Markt lebt", day);
+        t.id((0..5).collect());
+        t.text("kind", "Schicht", CLASS_NAMES.iter().map(|s| s.to_string()).collect())
+            .int("households", "Haushalte", "", hh.to_vec())
+            .int("persons", "Menschen", "", ppl.to_vec())
+            .float("money", "Geld", "Denar", money.iter().map(|&x| x as f64 / 1e3).collect())
+            .float("money_head", "Geld je Kopf", "Denar", (0..5).map(|k| money[k] as f64 / 1e3 / ppl[k].max(1) as f64).collect())
+            .float("share_hungry", "Hungernd", "%", (0..5).map(|k| if buyers[k] > 0 { hungry[k] as f64 / buyers[k] as f64 } else { 0.0 }).collect());
+        Some(t)
+    }
+
+    /// A household as the person window shows it, if the grain economy
+    /// knows it (it counts the households once a month).
+    pub fn household(&self, hh: u32) -> Option<HouseholdLook> {
+        let s = self.hh.get(&hh)?;
+        let i = self.info.get(&hh);
+        let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh);
+        let money = s.money + farm.map_or(0, |f| f.money);
+        let size = i.map_or(1, |i| i.size.max(1));
+        let head = money / size as i64;
+        let mk = i.map_or(NONE, |i| self.cell_market[i.home as usize]);
+        // where its money per head stands among all people and its market's
+        let (mut below, mut all, mut below_m, mut all_m) = (0.0, 0.0, 0.0, 0.0);
+        for (x, n, at, _) in self.money_heads() {
+            let w = if x < head { n as f64 } else if x == head { n as f64 / 2.0 } else { 0.0 };
+            below += w;
+            all += n as f64;
+            if at == mk {
+                below_m += w;
+                all_m += n as f64;
+            }
+        }
+        let (mut worked, mut hired) = (0, 0);
+        if mk != NONE {
+            for &(w, f, days, _) in &self.markets[mk as usize].work {
+                worked += if w == hh { days } else { 0 };
+                hired += if s.farm != NONE && f == s.farm { days } else { 0 };
+            }
+        }
+        let members = i.map_or(Vec::new(), |i| self.members.get(i.at as usize..i.at as usize + i.size as usize).map_or(Vec::new(), |v| v.to_vec()));
+        Some(HouseholdLook {
+            kind: s.kind,
+            fed: s.fed,
+            pantry_kg: s.pantry,
+            money,
+            money_head: head,
+            farm: farm.map(|f| (f.kind, f.area)),
+            market: (mk != NONE).then(|| (mk, self.markets[mk as usize].name.clone())),
+            grain_price: if mk != NONE { self.markets[mk as usize].price } else { 0 },
+            wage: if mk != NONE { self.markets[mk as usize].wage } else { 0 },
+            size,
+            adults: i.map_or(0, |i| i.adults),
+            need_month_kg: i.map_or(0, |i| i.need_w as i64 * KG_PER_ADULT_YEAR / 10 / 12),
+            members,
+            craft: s.goods.craft,
+            earned: s.goods.earned,
+            worked_days: worked,
+            hired_days: hired,
+            clothes_pct: i.map_or(0, |i| s.goods.clothes * 100 / (i.need_w as i64 * 100).max(1)),
+            rank_all: if all > 0.0 { below / all } else { 0.0 },
+            rank_market: if all_m > 0.0 { below_m / all_m } else { 0.0 },
+        })
     }
 
     /// Rich and poor: one row per household kind with households, people,
@@ -168,5 +530,41 @@ impl Grain {
             .float("imported", "Von ausserhalb seit Start", "", units(g.out_import))
             .float("exported", "Nach ausserhalb seit Start", "", units(g.out_export));
         t
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{gini_lorenz, History, MarketMonth, MARKET_MONTHS};
+
+    /// Ten years month by month, the years before as their mean on their
+    /// last month's day.
+    #[test]
+    fn markets_thin_to_years() {
+        let mut h = History::default();
+        let month = |i: i64| vec![MarketMonth { price: i as f32, people: 10, ..Default::default() }; 3];
+        for i in 0..(MARKET_MONTHS as i64 + 30) {
+            h.keep_markets(i * 30, month(i));
+        }
+        assert_eq!(h.market_years, 2);
+        assert_eq!(h.markets.len(), 2 + MARKET_MONTHS + 6);
+        assert_eq!(h.markets[0].0, 11 * 30);
+        assert!((h.markets[0].1[2].price - 5.5).abs() < 1e-6 && h.markets[1].1[0].price == 17.5 && h.markets[0].1[0].people == 10);
+        assert_eq!(h.markets[2].0, 24 * 30);
+        assert!(h.markets.windows(2).all(|w| w[0].0 < w[1].0));
+    }
+
+    /// Everyone equal: Gini 0 and the Lorenz curve on the diagonal; one
+    /// household with all the money among ten of the same size: 0.9.
+    #[test]
+    fn gini_and_lorenz() {
+        let (g, l) = gini_lorenz(&mut vec![(5, 2); 10]);
+        assert!(g.abs() < 1e-9 && l.iter().enumerate().all(|(q, x)| (x - (q + 1) as f64 / 10.0).abs() < 1e-9));
+        let mut v = vec![(0, 1); 9];
+        v.push((1000, 1));
+        let (g, l) = gini_lorenz(&mut v);
+        assert!((g - 0.9).abs() < 1e-9, "{g}");
+        assert!(l.iter().all(|&x| x.abs() < 1e-9));
+        assert_eq!(gini_lorenz(&mut []).0, 0.0);
     }
 }

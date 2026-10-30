@@ -302,8 +302,10 @@ static func button(text: String, icon_name := "", wine := false, first := false)
 	return b
 
 ## A round button: a gold ring round a dark boss with an icon, lit under
-## the mouse. `red` for closing; without an icon it shows a cross.
+## the mouse or while `on` (the mode chosen). `red` for closing; without an
+## icon it shows a cross.
 class Medallion extends Button:
+	var on := false
 	var _red := false
 	var _icon: Texture2D
 
@@ -322,7 +324,7 @@ class Medallion extends Button:
 		mouse_exited.connect(queue_redraw)
 
 	func _draw() -> void:
-		var lit := is_hovered()
+		var lit := is_hovered() or on
 		var c := size * 0.5
 		var r := minf(size.x, size.y) * 0.5 - 2.0
 		if lit:

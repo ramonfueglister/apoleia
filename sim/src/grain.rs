@@ -41,7 +41,7 @@ mod outside;
 mod pricing;
 mod sites;
 mod tables;
-pub use tables::HistoryExtra;
+pub use tables::{HistoryExtra, HouseholdLook, MarketMonth};
 pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
@@ -758,6 +758,12 @@ struct History {
     last: [i64; 13],
     month: [i64; 13],
     rows: Vec<HistoryRow>,
+    /// Each market's months by day, the last ten years month by month and
+    /// the years before as their mean (grain/tables.rs); of them the
+    /// years; the grain each market sold so far this month, kg.
+    markets: Vec<(i64, Vec<MarketMonth>)>,
+    market_years: usize,
+    sold: Vec<i64>,
 }
 
 pub struct Grain {
@@ -2571,11 +2577,17 @@ impl Grain {
             h.month[k] += if now[k] < h.last[k] { now[k] } else { now[k] - h.last[k] };
         }
         h.last = now;
+        // today's sales (prices() starts each day from nothing)
+        h.sold.resize(self.markets.len(), 0);
+        for (k, m) in self.markets.iter().enumerate() {
+            h.sold[k] += m.sold_today;
+        }
         if !row {
             return;
         }
         crate::events::prune(&mut self.events, day);
         let (farms, _, _, tent_people, _, farm_t, market_t) = self.summary();
+        let (extra, months) = self.history_extra(&self.history.sold);
         let r = HistoryRow {
             day,
             people: p.count,
@@ -2589,9 +2601,11 @@ impl Grain {
             farms,
             farm_store_kg: (farm_t * 1e3) as i64,
             market_store_kg: (market_t * 1e3) as i64,
-            extra: self.history_extra(),
+            extra,
         };
         self.history.rows.push(r);
+        self.history.keep_markets(day, months);
+        self.history.sold.iter_mut().for_each(|x| *x = 0);
     }
 
     /// One row per month since the start (`track`).
@@ -4265,20 +4279,6 @@ pub const HOUSE_HARVEST: u8 = 4;
 pub const HOUSE_SOWING: u8 = 8;
 pub const HOUSE_FARM: u8 = 16;
 
-/// What the game shows of a household (read only).
-#[derive(Clone, Copy, Debug)]
-pub struct HouseholdLook {
-    /// Index into KIND_NAMES.
-    pub kind: u8,
-    /// Share of its need the household ate at the last meal count, ‰.
-    pub fed: u16,
-    pub pantry_kg: i64,
-    /// Money, milli-denarii.
-    pub money: i64,
-    /// Its farm: kind (FARM_KIND_NAMES) and field area in m², if it has one.
-    pub farm: Option<(u8, i64)>,
-}
-
 /// Where the plots of `Grain::for_each_plot` lie on the fine raster, and
 /// the day of the year their growth is counted on.
 struct PlotsAt<'a> {
@@ -4636,18 +4636,7 @@ impl Grain {
     fn market_table(&self, p: &People, day: i64) -> Table {
         let mut order: Vec<usize> = (0..self.markets.len()).collect();
         order.sort_unstable_by_key(|&m| self.markets[m].region);
-        let (mut hungry, mut counted) = (vec![0i64; self.markets.len()], vec![0i64; self.markets.len()]);
-        for (id, i) in self.info.iter() {
-            let mk = self.cell_market[i.home as usize];
-            let Some(s) = self.hh.get(id) else { continue };
-            if mk == NONE || s.own_food {
-                continue;
-            }
-            counted[mk as usize] += i.size as i64;
-            if s.fed < NEED_FED {
-                hungry[mk as usize] += i.size as i64;
-            }
-        }
+        let spread = self.spread();
         let int = |f: &dyn Fn(&Market) -> i64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<i64>>();
         let float = |f: &dyn Fn(&Market) -> f64| order.iter().map(|&m| f(&self.markets[m])).collect::<Vec<f64>>();
         let mut t = Table::new("markets", "Märkte", day);
@@ -4662,7 +4651,8 @@ impl Grain {
             .int("tent_persons", "Im Zelt", "", int(&|m| m.tent_people as i64))
             .int("grain_kg", "Getreide der Region", "kg", int(&|m| m.grain))
             .float("free_ha", "Freies Land", "ha", float(&|m| m.free_area as f64 / 1e4))
-            .float("share_hungry", "Hungernd", "%", order.iter().map(|&m| if counted[m] > 0 { hungry[m] as f64 / counted[m] as f64 } else { 0.0 }).collect());
+            .float("share_hungry", "Hungernd", "%", order.iter().map(|&m| spread.hungry[m]).collect())
+            .float("gini", "Gini des Geldes", "", order.iter().map(|&m| spread.market_gini[m]).collect());
         pricing::market_columns(self, &mut t, &order);
         t
     }
@@ -4728,8 +4718,6 @@ impl Grain {
         t
     }
 
-    /// A household's kind, food, stores and farm, if the grain economy
-    /// knows it (it counts the households once a month).
     /// What the graphics show at a household's house (read only, Ramon
     /// 30.10.2026 "Wuselfaktor": only what the sim has): the share of its
     /// need it ate at the last meal count (‰ / 4); HOUSE_* flags; its farm's
@@ -4756,12 +4744,6 @@ impl Grain {
         let sheep = farm.map_or(0, |f| f.goods.sheep.clamp(0, 255)) as u8;
         let pigs = farm.map_or(0, |f| (f.goods.pork_year / 1000 / crafts::PIG_KG).clamp(0, 255)) as u8;
         [(s.fed / 4).min(255) as u8, flags, sheep, pigs]
-    }
-
-    pub fn household(&self, hh: u32) -> Option<HouseholdLook> {
-        let s = self.hh.get(&hh)?;
-        let farm = (s.farm != NONE).then(|| self.farms.get(s.farm as usize)).flatten().filter(|f| f.hh == hh).map(|f| (f.kind, f.area));
-        Some(HouseholdLook { kind: s.kind, fed: s.fed, pantry_kg: s.pantry, money: s.money, farm })
     }
 }
 
@@ -5329,6 +5311,27 @@ mod tests {
             assert!(h.len() >= 6);
             assert_eq!(h.iter().map(|r| r.flows[0]).sum::<i64>() + g.history.month[0], p.stats.births as i64);
             assert_eq!(h.iter().map(|r| r.flows[5]).sum::<i64>() + g.history.month[5], g.stats.harvest_kg);
+            // Each month has every market's month; the market windows'
+            // tables and the person window's household are read only.
+            let months = h.len();
+            assert!(h.iter().all(|r| (0.0..=1.0).contains(&r.extra.gini) && r.extra.lorenz.windows(2).all(|w| w[0] <= w[1] + 1e-9)));
+            let before = g.fingerprint();
+            assert_eq!(g.history.markets.len(), months);
+            assert!(g.history.markets.iter().all(|v| v.1.len() == g.markets.len()));
+            assert!(g.history.markets.iter().flat_map(|v| &v.1).any(|x| x.sold_t > 0.0));
+            for m in [0, g.markets.len() / 2, g.markets.len() - 1] {
+                let t = g.market_history_table(m, 200).unwrap();
+                assert_eq!(t.rows(), months);
+                assert!(t.columns.iter().all(|c| c.values.len() == t.rows()));
+                let c = g.market_classes_table(m, 200).unwrap();
+                assert!(c.rows() == 5 && c.columns.iter().all(|c| c.values.len() == 5));
+            }
+            assert!(g.market_history_table(g.markets.len(), 200).is_none());
+            let id = g.hh.ids[g.hh.ids.len() / 2];
+            let look = g.household(id).unwrap();
+            assert_eq!(look.members.len(), look.size as usize);
+            assert!((0.0..=1.0).contains(&look.rank_all) && (0.0..=1.0).contains(&look.rank_market));
+            assert_eq!(g.fingerprint(), before);
             // The trips view is read only and every trip has a route.
             let before = g.fingerprint();
             let v = g.trips_in(&p, (-1e9, -1e9), (1e9, 1e9));

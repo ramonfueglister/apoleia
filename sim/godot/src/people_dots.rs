@@ -21,7 +21,7 @@ use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT}
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
-use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, FARM_KIND_NAMES, GOODS, KIND_NAMES};
+use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -63,8 +63,8 @@ struct Front {
     house_looks: Vec<u8>,
     house_looks_version: i64,
     /// Answer to the last `ask_person`, with the household as the grain
-    /// economy sees it.
-    person: Option<(Person, Option<HouseholdLook>)>,
+    /// economy sees it and its people.
+    person: Option<(Person, Option<HouseholdLook>, Vec<Person>)>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
@@ -98,9 +98,10 @@ struct Front {
     check: Option<BuildCheck>,
     /// Answer to the last `ask_sites`: x, z, kind, progress, width, depth.
     sites: Option<Vec<f32>>,
-    /// Answer to the last `ask_market`: the market and its row of the
-    /// markets table (None when there is no such market).
-    market: Option<(usize, Option<Table>)>,
+    /// Answer to the last `ask_market`: the market, its row of the
+    /// markets table, its history and who lives there (None when there is
+    /// no such market).
+    market: Option<(usize, Option<Table>, Option<Table>, Option<Table>)>,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -447,7 +448,9 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         }
         if let Some(m) = market {
             let row = game.grain.table(&game.people, "markets").and_then(|t| row_of(t, m as i64));
-            shared.front.lock().unwrap().market = Some((m, row));
+            let day = game.today();
+            let (history, classes) = (game.grain.market_history_table(m, day), game.grain.market_classes_table(m, day));
+            shared.front.lock().unwrap().market = Some((m, row, history, classes));
         }
         let Game { people, grain, .. } = &mut game;
         if let Some(key) = &table {
@@ -479,7 +482,8 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let who = pid.and_then(|pid| PeopleView::person(people, pid));
             let who = who.map(|p| {
                 let hh = grain.household(p.household);
-                (p, hh)
+                let family = PeopleView::household(people, p.household);
+                (p, hh, family)
             });
             shared.front.lock().unwrap().person = who;
         }
@@ -893,12 +897,20 @@ impl ApoleiaPeople {
 
     /// The market asked for, once: {"market", and when it exists the row
     /// as tables::to_dict with one row ("name", "day", "columns", "labels",
-    /// "units", "data")}; empty until the sim thread answered.
+    /// "units", "data"), its "history" (one row per month) and "classes"
+    /// (who lives there, by household kind), each as tables::to_dict};
+    /// empty until the sim thread answered.
     #[func]
     fn take_market(&mut self) -> VarDictionary {
-        let Some((m, row)) = self.shared.front.lock().unwrap().market.take() else { return VarDictionary::new() };
+        let Some((m, row, history, classes)) = self.shared.front.lock().unwrap().market.take() else { return VarDictionary::new() };
         let mut d = row.as_ref().map_or_else(VarDictionary::new, tables::to_dict);
         d.set("market", m as i64);
+        if let Some(t) = &history {
+            d.set("history", &tables::to_dict(t));
+        }
+        if let Some(t) = &classes {
+            d.set("classes", &tables::to_dict(t));
+        }
         d
     }
 
@@ -1227,7 +1239,7 @@ impl ApoleiaPeople {
     #[func]
     fn take_person(&mut self) -> VarDictionary {
         let mut d = VarDictionary::new();
-        let Some((p, hh)) = self.shared.front.lock().unwrap().person.take() else {
+        let Some((p, hh, family)) = self.shared.front.lock().unwrap().person.take() else {
             return d;
         };
         if let Some(h) = hh {
@@ -1235,12 +1247,41 @@ impl ApoleiaPeople {
             d.set("fed", h.fed as i64);
             d.set("pantry_kg", h.pantry_kg);
             d.set("money", h.money as f64 / 1000.0); // denarii
+            d.set("money_head", h.money_head as f64 / 1000.0);
             if let Some((kind, m2)) = h.farm {
                 d.set("farm_kind", FARM_KIND_NAMES[kind as usize]);
                 // field m² are per simulated person (PEOPLE_PER_PERSON)
                 d.set("farm_ha", m2 as f64 / 1e4);
             }
+            if let Some((m, name)) = &h.market {
+                d.set("market", *m as i64);
+                d.set("market_name", name.as_str());
+            }
+            d.set("grain_price", h.grain_price as f64 / 1000.0); // denarii per kg
+            d.set("wage", h.wage as f64 / 1000.0);
+            d.set("adults", h.adults as i64);
+            d.set("need_month_kg", h.need_month_kg);
+            d.set("craft", CRAFT_NAMES[(h.craft as usize).min(CRAFT_NAMES.len() - 1)]);
+            d.set("earned", h.earned as f64 / 1000.0);
+            d.set("worked_days", h.worked_days);
+            d.set("hired_days", h.hired_days);
+            d.set("clothes_pct", h.clothes_pct);
+            d.set("rank_all", h.rank_all);
+            d.set("rank_market", h.rank_market);
         }
+        // the household's people: id, age, woman, job, spouse
+        let mut fam = VarArray::new();
+        for f in &family {
+            let mut m = VarDictionary::new();
+            m.set("pid", f.pid as i64);
+            m.set("age", f.age);
+            m.set("female", f.female);
+            m.set("job", f.job);
+            m.set("spouse", f.spouse.map_or(-1, |s| s as i64));
+            m.set("travelling", f.travelling.is_some());
+            fam.push(&m.to_variant());
+        }
+        d.set("family", &fam);
         d.set("pid", p.pid as i64);
         d.set("age", p.age);
         d.set("female", p.female);

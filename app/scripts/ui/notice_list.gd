@@ -84,6 +84,7 @@ func show_quiet(text: String) -> void:
 	_clear()
 	var quiet := Vic3.label(text, Vic3.DIM, Vic3.SIZE_SMALL + 1, Vic3.italic())
 	quiet.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quiet.custom_minimum_size.x = WIDTH - 20.0 # wraps at its width at once, not a letter a line until laid out
 	list.add_child(quiet)
 
 func _clear() -> void:
