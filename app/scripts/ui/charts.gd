@@ -15,10 +15,11 @@ const GRID := Color(1.0, 1.0, 1.0, 0.07)
 const CELL := 28.0 # the side of a square of EU5's chart grid
 const BAND_REACH := 2.0
 
-## `values` as a line over `rect`, scaled to their own range (or to
-## lo..hi when given), with the area under it and a dot on the last.
+## `values` as a line over `rect`, scaled to their own range and the
+## band's (or to bottom..top when given), with the area under it and a dot
+## on the last.
 static func spark(ci: CanvasItem, rect: Rect2, values: PackedFloat64Array, colour: Color,
-		band_lo := PackedFloat64Array(), band_hi := PackedFloat64Array()) -> void:
+		band_lo := PackedFloat64Array(), band_hi := PackedFloat64Array(), top := NAN, bottom := NAN) -> void:
 	var n := values.size()
 	if n < 2:
 		if n == 1:
@@ -29,6 +30,9 @@ static func spark(ci: CanvasItem, rect: Rect2, values: PackedFloat64Array, colou
 	for v in values + band_lo + band_hi:
 		lo = minf(lo, v)
 		hi = maxf(hi, v)
+	if not is_nan(top):
+		lo = bottom
+		hi = top
 	if hi - lo < 1e-12:
 		lo -= 1.0
 		hi += 1.0
@@ -88,7 +92,7 @@ static func board(ci: CanvasItem, rect: Rect2) -> void:
 static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, unit := "",
 		from := "", to := "", hover := -1) -> void:
 	board(ci, rect)
-	var plot := Rect2(rect.position + Vector2(0, 4), rect.size - Vector2(0, 30 if from != "" else 8))
+	var plot := Rect2(rect.position + Vector2(0, 4), rect.size - Vector2(0, 24 if from != "" else 8))
 	var n := 0
 	var lo := INF
 	var hi := -INF
@@ -138,19 +142,19 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		for i in vals.size():
 			line.append(Vector2(x_of.call(i), y_of.call(vals[i])))
 		if s.get("dashed", false):
-			for dash in _dashes(line, 10.0, 6.0):
+			for dash in dashes(line, 10.0, 6.0):
 				ci.draw_polyline(dash, Color(0, 0, 0, 0.5), 5.0, true)
 				ci.draw_polyline(dash, c, 2.5, true)
 			continue
 		ci.draw_polyline(line, Color(0, 0, 0, 0.4), 5.0, true)
 		ci.draw_polyline(line, c, 3.0, true)
 	var f := font if font != null else UiStyle.serif()
-	UiStyle.text_at(ci, plot.position + Vector2(10, 24), label(hi, unit), UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
-	UiStyle.text_at(ci, Vector2(plot.position.x + 10, plot.end.y - 6), label(lo, unit), UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+	UiStyle.text_at(ci, plot.position + Vector2(8, 19), label(hi, unit), UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+	UiStyle.text_at(ci, Vector2(plot.position.x + 8, plot.end.y - 5), label(lo, unit), UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
 	if from != "":
 		var it := UiStyle.italic()
-		UiStyle.text_at(ci, Vector2(rect.position.x + 10, rect.end.y - 8), from, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, it)
-		UiStyle.text_at(ci, Vector2(rect.position.x, rect.end.y - 8), to, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, rect.size.x - 10, it)
+		UiStyle.text_at(ci, Vector2(rect.position.x + 8, rect.end.y - 7), from, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, it)
+		UiStyle.text_at(ci, Vector2(rect.position.x, rect.end.y - 7), to, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, rect.size.x - 8, it)
 	if hover >= 0 and hover < n:
 		var x: float = x_of.call(hover)
 		ci.draw_dashed_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(UiStyle.TEXT, 0.55), 1.0, 4.0)
@@ -178,7 +182,7 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 
 ## The dashes along a polyline, `on` px drawn and `off` px left out, the
 ## pattern running on over the corners (months are only a few px apart).
-static func _dashes(line: PackedVector2Array, on: float, off: float) -> Array[PackedVector2Array]:
+static func dashes(line: PackedVector2Array, on: float, off: float) -> Array[PackedVector2Array]:
 	var out: Array[PackedVector2Array] = []
 	var dash := PackedVector2Array()
 	var left := on # px left of the current dash or gap

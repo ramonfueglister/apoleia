@@ -9,6 +9,13 @@ use super::*;
 /// The household kinds of `HhState::kind` (KIND_NAMES) as the statistics name them.
 const CLASS_NAMES: [&str; 5] = ["Hofleute", "Im Zelt", "Lohnarbeit", "Händler", "Oberschicht"];
 
+/// The history's columns of each good's price and of each class's grain
+/// eaten (keys are 'static for `Table`), in GOOD_KEYS and CLASS_NAMES order.
+const GOOD_PRICE_KEYS: [&str; GOODS] = ["good_wool", "good_iron", "good_cloth", "good_tools", "good_pottery", "good_pork"];
+const GOOD_PRICE_NAMES: [&str; GOODS] = ["Preis Wolle", "Preis Eisen", "Preis Kleidung", "Preis Werkzeug", "Preis Keramik", "Preis Schweinefleisch"];
+const FED_KEYS: [&str; 5] = ["fed_court", "fed_tent", "fed_wage", "fed_trader", "fed_elite"];
+const FED_NAMES: [&str; 5] = ["Gegessen: Hofleute", "Gegessen: Im Zelt", "Gegessen: Lohnarbeit", "Gegessen: Händler", "Gegessen: Oberschicht"];
+
 /// The month's levels that are not flows of `History`, for the history
 /// table. Wages are over the markets with people, by market.
 #[derive(Clone, Copy, Debug, Default)]
@@ -37,6 +44,8 @@ pub struct HistoryExtra {
     /// Since the start, by household kind: grain eaten and needed, kg.
     pub eaten_by: [i64; 5],
     pub need_by: [i64; 5],
+    /// Each good's median price over the markets (by people), denarii.
+    pub goods_price: [f64; GOODS],
 }
 
 impl Grain {
@@ -62,6 +71,7 @@ impl Grain {
         let homes: usize = clothes.iter().map(|c| c.1).sum();
         let (money, _) = self.money_by_kind();
         let all: f64 = money.iter().sum();
+        let (_, _, goods_price) = self.goods_report();
         HistoryExtra {
             wage: at(&wage, 0.5),
             real_wage: (at(&real, 0.1), at(&real, 0.5), at(&real, 0.9)),
@@ -76,6 +86,26 @@ impl Grain {
             export_kg: self.stats.out_export_kg,
             eaten_by: self.stats.eaten_by,
             need_by: self.stats.need_by,
+            goods_price,
+        }
+    }
+
+    /// The history's columns from `HistoryExtra` by good and by class: each
+    /// good's price, and the grain each class ate of its need that month.
+    pub(super) fn history_by_good_and_class(&self, t: &mut Table) {
+        let rows = &self.history.rows;
+        for g in 0..GOODS {
+            t.float(GOOD_PRICE_KEYS[g], GOOD_PRICE_NAMES[g], "Denar", rows.iter().map(|r| r.extra.goods_price[g]).collect());
+        }
+        for k in 0..5 {
+            let fed = (0..rows.len())
+                .map(|i| {
+                    let (e, n) = (rows[i].extra.eaten_by[k], rows[i].extra.need_by[k]);
+                    let (e0, n0) = if i > 0 { (rows[i - 1].extra.eaten_by[k], rows[i - 1].extra.need_by[k]) } else { (0, 0) };
+                    if n > n0 { ((e - e0) as f64 / (n - n0) as f64).clamp(0.0, 1.0) } else { 1.0 }
+                })
+                .collect();
+            t.float(FED_KEYS[k], FED_NAMES[k], "%", fed);
         }
     }
 

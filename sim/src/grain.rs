@@ -4494,6 +4494,7 @@ impl Grain {
             .float("elite_money", "Geld der Oberschicht", "%", float(&|r| r.extra.elite_money))
             .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
             .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg));
+        self.history_by_good_and_class(&mut t);
         t
     }
 

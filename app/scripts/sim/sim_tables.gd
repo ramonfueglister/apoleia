@@ -169,6 +169,8 @@ func _process(_delta: float) -> void:
 		kinds.append(0)
 	elif open:
 		kinds = [_kind, 0]
+		if KINDS[_kind] in ["goods", "classes"]: # their rows' tooltips draw from the history
+			kinds.append(KINDS.find("history"))
 	var day: int = people.day()
 	for kind in kinds:
 		var t := _tables[kind]
@@ -771,9 +773,32 @@ func _row_tip(at: Vector2) -> Dictionary:
 			d.spark_to = _date(int(t.day))
 		else:
 			d.more = "Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
+	if KINDS[_kind] in ["goods", "classes"] and rows.size() == 1:
+		_history_spark(d, KINDS[_kind], int(t.data.id[rows[0]]))
 	if t.data.has("lon"):
 		d.hints.append(["Klick", "fliegt zum Ort"])
 	return d
+
+## A good's price, or what a class ate of its need, over all months from
+## the history (good_<key>, fed_<key> in apoleia_sim grain/tables.rs).
+func _history_spark(d: Dictionary, kind: String, id: int) -> void:
+	var h := _tables[KINDS.find("history")]
+	var keys: Array[String] = SimOverview.GOOD_KEYS if kind == "goods" else SimOverview.FED_KEYS
+	if h.is_empty() or id < 0 or id >= keys.size():
+		return
+	var key := ("good_" if kind == "goods" else "fed_") + keys[id]
+	if not h.data.has(key) or h.data[key].size() < 2:
+		d.more = "Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
+		return
+	var s := PackedFloat64Array()
+	for v in h.data[key]:
+		s.append(float(v) * (1.0 if kind == "goods" else 100.0))
+	d.spark = s
+	d.spark_title = "Preis seit Beginn" if kind == "goods" else "Gegessen vom Bedarf, je Monat"
+	d.spark_unit = "D" if kind == "goods" else "%"
+	d.spark_from = _date(int(h.data.day[0]))
+	d.spark_to = _date(int(h.data.day[h.data.day.size() - 1]))
+	d.colour = Charts.SERIES[id % Charts.SERIES.size()] if kind == "goods" else SimOverview.FED_COLOURS[id]
 
 ## A series of the history: its whole course, prices with their range.
 func _series_tip(t: Dictionary, key: String) -> Dictionary:
