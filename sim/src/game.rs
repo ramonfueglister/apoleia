@@ -245,12 +245,15 @@ mod tests {
         let Some(inp) = inputs() else { return };
         let start = Start { inputs: &inp, clear: None, cover: None };
         let mut a = Game::new(start, 5);
-        // a farm beside the first market, so its site hires day labourers (S113)
-        let (rows_f, cols_f) = a.grain.fine_size();
+        // a farm beside the first market with day labourers and a tenant,
+        // so its site hires (S113)
+        let (_, cols_f) = a.grain.fine_size();
         let (row0, col0) = (a.people.grid.row0 * 16, a.people.grid.col0 * 16);
-        let fine = a.grain.markets[0].fine as i32;
-        let farm = (fine / cols_f + row0, (fine % cols_f + 1).min(cols_f - 1) + col0);
-        assert!(farm.0 - row0 < rows_f);
+        let farm = (0..a.grain.markets.len())
+            .map(|m| a.grain.markets[m].fine as i32)
+            .map(|f| crate::build::fine_centre(f / cols_f + row0, f % cols_f + 1 + col0))
+            .find(|&t| a.grain.site_check(&a.people, FARM, t).status == crate::grain::CHECK_BUILDS)
+            .expect("a market with a tenant");
         for d in 0..70 {
             match d {
                 0 => {
@@ -292,7 +295,7 @@ mod tests {
     }
 
     /// A farm built from an order is where its family lives: the view
-    /// draws their house on the ordered tile, not in a village of the
+    /// draws their house on the ordered spot, not in a village of the
     /// cell (REALTIME_GAMEPLAY.md phase 3).
     #[test]
     fn built_farm_is_home() {
@@ -304,9 +307,10 @@ mod tests {
         let tile = (0..g.grain.markets.len())
             .map(|m| g.grain.markets[m].fine as i32)
             .map(|f| (f / cols_f + row0, f % cols_f + 1 + col0))
-            .find(|&t| g.grain.site_check(&g.people, FARM, t).status == crate::grain::CHECK_BUILDS)
+            .find(|&t| g.grain.site_check(&g.people, FARM, crate::build::fine_centre(t.0, t.1)).status == crate::grain::CHECK_BUILDS)
             .expect("a market with a tenant");
         let fine = ((tile.0 - row0) * cols_f + tile.1 - col0) as u32;
+        let tile = crate::build::fine_centre(tile.0, tile.1);
         g.command(&Command::Place { kind: FARM, tiles: vec![tile] });
         for _ in 0..200 {
             g.day();
@@ -316,13 +320,13 @@ mod tests {
         }
         assert!(g.orders.is_empty(), "built and taken");
         let homes = g.grain.homes_moved();
-        let &(hh, _) = homes.iter().find(|h| h.1 == fine).expect("the farm's family");
+        let &(hh, _, spot) = homes.iter().find(|h| h.1 == fine).expect("the farm's family");
+        assert_eq!(spot, Some(tile));
         let mut v = crate::view::PeopleView::new(&g.people, &inp.cities, None);
         v.set_homes(&homes);
         v.update(&mut g.people);
-        let (x, z) = v.settle.fine_centre_km(fine);
         let house = v.houses.of(hh).expect("a house");
-        assert_eq!((house[0], house[1]), (x as f32, z as f32), "the house stands on the farm's tile");
+        assert_eq!((house[0], house[1]), (tile.1 as f32 / 1000.0, tile.0 as f32 / 1000.0), "the house stands on the ordered spot");
     }
 
     #[test]

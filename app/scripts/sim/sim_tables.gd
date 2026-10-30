@@ -1,7 +1,13 @@
 extends CanvasLayer
 ## The simulation in tables, in the manner of EU5: markets, population by
 ## region and occupation, farms by region and the state's accounts, in a
-## panel on the left that leaves the diorama free. T (or the button at the top left) opens and closes it.
+## window (ui/ui_window.gd) that can be moved, sized and folded and lies
+## above the rest of the HUD. T (or the button at the top left) opens and
+## closes it. Every row has an EU5 tooltip (ui/tooltips.gd): staying on it
+## locks it and shows the row's last months; its blue terms explain
+## themselves. The markets show each market's price over the last
+## SPARK_MONTHS months as a small curve, gathered from the monthly tables
+## since the game started (the bridge has no history per market yet).
 ##
 ## ApoleiaPeople builds a table between two days (sim/src/tables.rs,
 ## sim/godot/src/tables.rs): ask_table(kind) asks the sim thread, and
@@ -31,12 +37,24 @@ extends CanvasLayer
 ## The colours stay when the panel closes (it covers most of the map), with
 ## their legend at the bottom left, whose ✕ takes them off.
 ##
-## Command line (after --): --tables=markets|population|farms|state|history
+## Command line (after --): --tables=overview|markets|population|farms|state|history
 ## opens the panel on that table, --tables-map=column colours the map by
 ## that column of the markets.
 
-const KINDS: Array[String] = ["markets", "population", "farms", "state", "history"] # apoleia_sim::tables::TABLES
-const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf"]
+const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const UiWindow = preload("res://scripts/ui/ui_window.gd")
+const Tooltips = preload("res://scripts/ui/tooltips.gd")
+const Charts = preload("res://scripts/ui/charts.gd")
+const SimOverview = preload("res://scripts/sim/sim_overview.gd")
+## apoleia_sim::tables::TABLES, then the overview (sim_overview.gd), drawn
+## from four of them; its tab comes first (TAB_ORDER)
+const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview"]
+const TITLES: Array[String] = ["Märkte", "Bevölkerung", "Höfe", "Staat", "Verlauf", "Übersicht"]
+const ROW_KINDS: Array[String] = ["Markt", "Berufsgruppe", "Region", "Staat", "Reihe", ""] # under a tooltip's title
+const TAB_ORDER: Array[int] = [5, 0, 1, 2, 3, 4]
+const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state"]
+const SPARK_MONTHS := 24
+const SPARK_PX := 92.0
 const MONTHS: Array[String] = ["Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
 	"Quintilis", "Sextilis", "September", "October", "November", "December"]
 const YEAR := 360 # days (sim/src/life.rs)
@@ -44,19 +62,15 @@ const MONTH := 30
 const COUNTED := 17 # the grain economy's monthly count is done by this day of the month
 const PER_TIME: Array[String] = ["Tag", "Monat", "Jahr"] # "kg/Tag" adds up, "Denar/kg" does not
 const SHORT_UNITS := {"Denar": "D", "Denar/kg": "D/kg"} # the heads stay narrow
-## the main menu's colours (main_menu.gd), with EU5's gold for heads and lines
+## the HUD's older colours (game clock, events, build menu read them)
 const BACKGROUND := Color("13232b")
 const INK := Color("edf0e8")
-const SECONDARY := Color("aab9bc")
 const GOLD := Color("c9a45c")
 const HEAD := Color("1b3440")
 const SELECTED := Color("2e5260")
-const ROW_ODD := Color(1.0, 1.0, 1.0, 0.035)
-const NEGATIVE := Color("e8846b") # in the red, as EU5 shows it
-const COLUMN_PX := 96.0 # panel width per number column
-const TEXT_PX := 190.0 # and per text column
+const SECONDARY := UiStyle.DIM
+const NEGATIVE := UiStyle.LOSS # in the red, as EU5 shows it
 const PANEL_MIN := 560.0
-const PANEL_SHARE_MAX := 0.75 # of the window width
 const FILTER_MAX := 64 # a text column with more values gets no dropdown
 const ROW_MAX := 300
 const FLY_MARGIN := 1.6 # the camera frames a place this many times its extent
@@ -74,8 +88,13 @@ var _kind := 0
 var _tables: Array[Dictionary] = []
 var _state: Array[Dictionary] = [] # per table: sort, desc, filters, search, folded, open groups, selected id
 var _asked := -1 # the table asked for, until take_table answers
-var _asked_day := -1
-var _panel: PanelContainer
+var _asked_on := PackedInt64Array() # per table: the day it was last asked for
+var _win # ui_window.gd (untyped: its own members)
+var _overview # sim_overview.gd
+var _months := {} # market id -> PackedFloat64Array of its price, one per monthly count
+var _months_day := -1 # the table day last added to _months
+var _spark_at := -1 # the tree column of the curves, -1 for none
+var _stale := false # a new table came while the mouse was on the shown one
 var _open_button: Button
 var _tabs: TabBar
 var _stand: Label
@@ -100,7 +119,9 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	landscape = scene
 	name = "SimTables"
 	layer = 2 # over the people's labels
+	_kind = KINDS.find("overview") # EU5 opens on the summary
 	for kind in KINDS:
+		_asked_on.append(-1)
 		_tables.append({})
 		_state.append({"sort": "", "desc": true, "filters": {}, "search": "", "folded": false, "open": {}, "selected": -1})
 	for arg in OS.get_cmdline_user_args():
@@ -111,37 +132,69 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 			_map_by = arg.get_slice("=", 1)
 			_state[0].sort = _map_by
 	_build()
-	_tabs.current_tab = _kind
+	_terms()
+	_tabs.current_tab = TAB_ORDER.find(_kind)
 	_show(open)
 
 # ------------------------------------------------------------------ data
 
 func _process(_delta: float) -> void:
-	if not open and _map_by == "":
-		return
+	# a new month waits while the mouse is on the table, so the row under it
+	# (and its tooltip) stays where it is, as in EU5
+	if _stale and not (_tree.visible and _tree.get_global_rect().has_point(_tree.get_global_mouse_position())):
+		_stale = false
+		_refresh()
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
 		if answer.is_empty():
 			return
 		_tables[_asked] = answer
 		var was := _asked
+		if KINDS[was] == "markets":
+			_remember_months(answer)
 		_asked = -1
-		if was == _kind and open:
-			_refresh()
+		if open and (was == _kind or KINDS[_kind] == "overview" and KINDS[was] in OVERVIEW_KINDS):
+			_stale = true
 		elif was == 0:
 			_paint_regions()
 		return
-	var kind := _kind if open else 0 # closed, only the markets the map is coloured by
+	# the table shown (the overview's four), then the markets every month
+	# for their curves and the map, open or not
+	var kinds: Array[int] = [0]
+	if open and KINDS[_kind] == "overview":
+		kinds = []
+		for k in OVERVIEW_KINDS:
+			kinds.append(KINDS.find(k))
+		kinds.append(0)
+	elif open:
+		kinds = [_kind, 0]
 	var day: int = people.day()
-	var t := _tables[kind]
-	if day != _asked_day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
-		people.ask_table(KINDS[kind])
-		_asked = kind
-		_asked_day = day
+	for kind in kinds:
+		var t := _tables[kind]
+		if _asked_on[kind] != day and (t.is_empty() or _count_of(day) != _count_of(int(t.day))):
+			people.ask_table(KINDS[kind])
+			_asked = kind
+			_asked_on[kind] = day
+			return
 
 ## Which monthly count a table built on `day` shows.
 static func _count_of(day: int) -> int:
 	return day / MONTH - (0 if day % MONTH >= COUNTED else 1)
+
+## Each market's price of this monthly count, after the ones before.
+func _remember_months(t: Dictionary) -> void:
+	if int(t.day) == _months_day or not t.data.has("id") or not t.data.has("price"):
+		return
+	_months_day = int(t.day)
+	var ids = t.data.id
+	var price = t.data.price
+	for r in ids.size():
+		var m := int(ids[r])
+		var s: PackedFloat64Array = _months.get(m, PackedFloat64Array())
+		s.append(float(price[r]))
+		if s.size() > SPARK_MONTHS:
+			s = s.slice(s.size() - SPARK_MONTHS)
+		_months[m] = s
 
 ## The rows that pass the search and the dropdowns, in table order.
 func _passing(t: Dictionary) -> PackedInt32Array:
@@ -237,10 +290,24 @@ func _sorted(t: Dictionary, rows: PackedInt32Array) -> PackedInt32Array:
 # ------------------------------------------------------------------ view
 
 func _refresh() -> void:
+	var overview := KINDS[_kind] == "overview"
+	_overview.visible = overview
+	_filter_row.visible = not overview
+	_tree.visible = not overview
+	_note.visible = not overview
+	if overview:
+		_chart.visible = false
+		var shown := {}
+		for k in OVERVIEW_KINDS:
+			shown[k] = _tables[KINDS.find(k)]
+		_overview.show_tables(shown)
+		var h: Dictionary = shown.history
+		_stand.text = ("Stand %s" % _date(int(h.day))) if not h.is_empty() else "…"
+		return
 	var t := _tables[_kind]
 	_chart.visible = KINDS[_kind] == "history"
-	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  T schliesst" if KINDS[_kind] == "history"
-		else "Klick auf eine Zeile zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar  ·  T schliesst")
+	_note.text = ("Klick auf eine Reihe zeichnet ihre Kurve  ·  auf ihr verweilen zeigt den Verlauf" if KINDS[_kind] == "history"
+		else "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar")
 	_paint.visible = KINDS[_kind] == "markets"
 	_paint.set_pressed_no_signal(_map_by != "")
 	_paint_regions()
@@ -289,6 +356,7 @@ func _fill_filters(t: Dictionary) -> void:
 	_place_panel()
 
 func _fill_tree(t: Dictionary) -> void:
+	_spark_at = -1
 	if _is_sheet(t):
 		_fill_sheet(t)
 		return
@@ -302,13 +370,21 @@ func _fill_tree(t: Dictionary) -> void:
 	var at := scroll.value if scroll != null else 0.0
 	_tree.set_block_signals(true) # selecting the chosen row again must not fly
 	_tree.clear()
-	_tree.columns = cols.size()
-	for i in cols.size():
-		var number := not _is_text(t, cols[i])
-		var title: String = t.labels[i]
-		if _unit[i] != "" and _unit[i] != "%":
-			title += " (%s)" % _unit[i]
-		if cols[i] == state.sort:
+	_spark_at = Array(cols).find("price") + 1 if _has_spark(t) else -1
+	_tree.columns = cols.size() + (1 if _spark_at >= 0 else 0)
+	if _spark_at >= 0: # the price's last months, right after the price
+		_tree.set_column_title(_spark_at, "%d Monate" % SPARK_MONTHS)
+		_tree.set_column_title_alignment(_spark_at, HORIZONTAL_ALIGNMENT_CENTER)
+		_tree.set_column_expand(_spark_at, false)
+		_tree.set_column_clip_content(_spark_at, true)
+		_tree.set_column_custom_minimum_width(_spark_at, int(SPARK_PX + 16.0))
+	for d in cols.size():
+		var i := _tc(d)
+		var number := not _is_text(t, cols[d])
+		var title: String = t.labels[d]
+		if _unit[d] != "" and _unit[d] != "%":
+			title += " (%s)" % _unit[d]
+		if cols[d] == state.sort:
 			title += "  ▼" if state.desc else "  ▲"
 		_tree.set_column_title(i, title)
 		_tree.set_column_title_alignment(i, HORIZONTAL_ALIGNMENT_RIGHT if number else HORIZONTAL_ALIGNMENT_LEFT)
@@ -323,10 +399,11 @@ func _fill_tree(t: Dictionary) -> void:
 	_fill_combined(total, t, rows, {cols[0]: "Alle (%s)" % _int(rows.size())})
 	var font := _tree.get_theme_font("font")
 	var font_size := _tree.get_theme_font_size("font_size")
-	for i in cols.size():
+	for d in cols.size():
+		var i := _tc(d)
 		if total.get_custom_color(i) != NEGATIVE:
-			total.set_custom_color(i, GOLD)
-		if not _is_text(t, cols[i]): # the sum is often the widest number
+			total.set_custom_color(i, UiStyle.NAME)
+		if not _is_text(t, cols[d]): # the sum is often the widest number
 			_tree.set_column_custom_minimum_width(i, ceili(font.get_string_size(total.get_text(i), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + 20)
 	if fold_key == "":
 		_fill_rows(root, t, _sorted(t, rows))
@@ -447,8 +524,7 @@ static func _short_date(day: int) -> String:
 func _draw_chart() -> void:
 	var t := _tables[_kind]
 	var rect := Rect2(Vector2.ZERO, _chart.size)
-	_chart.draw_rect(rect, Color(0.0, 0.0, 0.0, 0.18))
-	_chart.draw_rect(rect, Color(GOLD, 0.35), false, 1.0)
+	Charts.board(_chart, rect)
 	if t.is_empty() or not _is_history(t):
 		return
 	var data: Dictionary = t.data
@@ -466,18 +542,26 @@ func _draw_chart() -> void:
 		title += " (%s)" % _unit[i]
 	if keys.size() > 1:
 		title = "Preis: Median, dazwischen min und max (%s)" % _unit[i]
-	_chart.draw_string(font, Vector2(12, 22), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, GOLD)
+	UiStyle.text_at(_chart, Vector2(12, 24), title, UiStyle.TITLE, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_LEFT, -1, font)
 	var n := _row_count(t)
 	if n < 2:
-		_chart.draw_string(font, Vector2(12, 48), "Noch zu wenige Monate", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, SECONDARY)
+		UiStyle.text_at(_chart, Vector2(12, 50), "Noch zu wenige Monate", UiStyle.DIM, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
 		return
 	var scale := (100.0 if t.units[i] == "%" else 1.0) * (_factor[i] if _factor.size() > i else 1.0)
 	var lo := INF
 	var hi := -INF
-	for k in keys:
-		for v in data[k]:
-			lo = minf(lo, float(v) * scale)
-			hi = maxf(hi, float(v) * scale)
+	for v in data["price_median" if keys.size() > 1 else key]:
+		lo = minf(lo, float(v) * scale)
+		hi = maxf(hi, float(v) * scale)
+	var band_lo := PackedFloat64Array()
+	var band_hi := PackedFloat64Array()
+	if keys.size() > 1: # the band, at most BAND_REACH times the month's median
+		for r in n:
+			var m := float(data.price_median[r]) * scale
+			band_lo.append(maxf(float(data.price_min[r]) * scale, m / Charts.BAND_REACH))
+			band_hi.append(minf(float(data.price_max[r]) * scale, m * Charts.BAND_REACH))
+			lo = minf(lo, band_lo[r])
+			hi = maxf(hi, band_hi[r])
 	if lo >= 0.0 and lo < hi * 0.5:
 		lo = 0.0 # counts from nothing
 	if hi - lo < 1e-9:
@@ -488,30 +572,29 @@ func _draw_chart() -> void:
 	for g in 5:
 		var v := lo + (hi - lo) * g / 4.0
 		var y: float = y_of.call(v)
-		_chart.draw_line(Vector2(plot.position.x, y), Vector2(plot.end.x, y), Color(1.0, 1.0, 1.0, 0.07), 1.0)
 		var tag := ("%d %%" % roundi(v)) if t.units[i] == "%" else _number(v)
-		_chart.draw_string(font, Vector2(8, y + 4), tag, HORIZONTAL_ALIGNMENT_RIGHT, 56, 11, SECONDARY)
+		UiStyle.text_at(_chart, Vector2(8, y + 5), tag, UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 56, font)
 	var days = data.day
 	for r in n: # the years along the foot
 		if r == 0 or int(days[r]) / YEAR != int(days[r - 1]) / YEAR:
 			var x: float = x_of.call(r)
-			_chart.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(1.0, 1.0, 1.0, 0.07), 1.0)
-			_chart.draw_string(font, Vector2(x + 3, plot.end.y + 16), "Jahr %d" % (int(days[r]) / YEAR + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, SECONDARY)
+			UiStyle.text_at(_chart, Vector2(x + 3, plot.end.y + 18), "Jahr %d" % (int(days[r]) / YEAR + 1), UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
 	if keys.size() > 1: # the range of the prices as a band
 		var band := PackedVector2Array()
 		for r in n:
-			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_max[r]) * scale)))
+			band.append(Vector2(x_of.call(r), y_of.call(band_hi[r])))
 		for r in range(n - 1, -1, -1):
-			band.append(Vector2(x_of.call(r), y_of.call(float(data.price_min[r]) * scale)))
+			band.append(Vector2(x_of.call(r), y_of.call(band_lo[r])))
 		if Geometry2D.triangulate_polygon(band).size() > 0:
-			_chart.draw_colored_polygon(band, Color(GOLD, 0.16))
+			_chart.draw_colored_polygon(band, Color(Charts.SERIES[0], 0.2))
 	var main := "price_median" if keys.size() > 1 else key
 	var points := PackedVector2Array()
 	for r in n:
 		points.append(Vector2(x_of.call(r), y_of.call(float(data[main][r]) * scale)))
-	_chart.draw_polyline(points, GOLD, 2.0, true)
+	_chart.draw_polyline(points, Color(0, 0, 0, 0.45), 4.5, true)
+	_chart.draw_polyline(points, Charts.SERIES[0], 2.5, true)
 	var last := points[n - 1]
-	_chart.draw_circle(last, 3.5, GOLD)
+	_chart.draw_circle(last, 3.5, Charts.SERIES[0])
 
 ## Lists `rows` under `parent`, at most ROW_MAX of them.
 func _fill_rows(parent: TreeItem, t: Dictionary, rows: PackedInt32Array) -> void:
@@ -523,9 +606,13 @@ func _fill_rows(parent: TreeItem, t: Dictionary, rows: PackedInt32Array) -> void
 		item.set_meta("rows", PackedInt32Array([r]))
 		for i in cols.size():
 			if _is_text(t, cols[i]):
-				item.set_text(i, t.data[cols[i]][r])
+				item.set_text(_tc(i), t.data[cols[i]][r])
 			else:
-				_set_number(item, i, float(t.data[cols[i]][r]) * _factor[i], _unit[i])
+				_set_number(item, _tc(i), float(t.data[cols[i]][r]) * _factor[i], _unit[i])
+		if _spark_at >= 0:
+			item.set_cell_mode(_spark_at, TreeItem.CELL_MODE_CUSTOM)
+			item.set_metadata(_spark_at, int(t.data.id[r]))
+			item.set_custom_draw_callback(_spark_at, _draw_spark)
 		if parent == _tree.get_root():
 			_stripe(item, n)
 		if t.data.has("id") and int(t.data.id[r]) == chosen:
@@ -544,9 +631,9 @@ func _fill_combined(item: TreeItem, t: Dictionary, rows: PackedInt32Array, names
 	item.set_meta("rows", rows)
 	for i in cols.size():
 		if _is_text(t, cols[i]):
-			item.set_text(i, names.get(cols[i], ""))
+			item.set_text(_tc(i), names.get(cols[i], ""))
 		else:
-			_set_number(item, i, _combine(t, i, rows) * _factor[i], _unit[i])
+			_set_number(item, _tc(i), _combine(t, i, rows) * _factor[i], _unit[i])
 
 ## The unit each column is shown in: kg as t where the numbers run large,
 ## Denar as D.
@@ -579,17 +666,35 @@ func _set_number(item: TreeItem, i: int, v: float, unit: String) -> void:
 			item.set_custom_color(i, NEGATIVE)
 
 func _stripe(item: TreeItem, line: int) -> void:
-	if line % 2 == 1:
-		for i in _tree.columns:
-			item.set_custom_bg_color(i, ROW_ODD)
+	# EU5's lists: warm grey bars on the navy, every other a shade darker
+	for i in _tree.columns:
+		item.set_custom_bg_color(i, UiStyle.ROW if line % 2 == 0 else UiStyle.ROW_DARK)
 
-## A share's bar along the foot of its cell, under the per cent.
+## A share's bar along the foot of its cell, under the per cent: red for
+## what is bad (the hungry), bronze for the rest.
 func _draw_share(item: TreeItem, rect: Rect2, column: int) -> void:
-	var v := clampf(float(item.get_metadata(column)), 0.0, 1.0)
-	var bar := Rect2(rect.position.x + 8.0, rect.end.y - 5.0, rect.size.x - 14.0, 3.0)
-	_tree.draw_rect(bar, Color(1.0, 1.0, 1.0, 0.08))
-	bar.size.x *= v
-	_tree.draw_rect(bar, Color(GOLD, 0.8))
+	var t := _tables[_kind]
+	var d := _dc(column)
+	var key: String = t.columns[d] if not t.is_empty() and d >= 0 and d < t.columns.size() else ""
+	var colour := Charts.RED if "hungry" in key else UiStyle.FRAME_LIT
+	Charts.share(_tree, Rect2(rect.position.x + 8.0, rect.position.y, rect.size.x - 14.0, rect.size.y - 1.0), float(item.get_metadata(column)), colour)
+
+## The tree column of the table's column d, and back (-1: the curves).
+func _tc(d: int) -> int:
+	return d + 1 if _spark_at >= 0 and d >= _spark_at else d
+
+func _dc(c: int) -> int:
+	if _spark_at < 0 or c < _spark_at:
+		return c
+	return -1 if c == _spark_at else c - 1
+
+## The markets get their price's last months as a curve.
+static func _has_spark(t: Dictionary) -> bool:
+	return t.get("kind", "") == "markets" and t.data.has("id")
+
+func _draw_spark(item: TreeItem, rect: Rect2) -> void:
+	var s: PackedFloat64Array = _months.get(int(item.get_metadata(_spark_at)), PackedFloat64Array())
+	Charts.spark(_tree, Rect2(rect.position + Vector2(8, 6), rect.size - Vector2(16, 12)), s, Charts.SERIES[0])
 
 func _scroll_bar() -> VScrollBar:
 	for child in _tree.get_children(true):
@@ -617,12 +722,114 @@ static func _int(n: int) -> String:
 static func _date(day: int) -> String:
 	return "%s, Jahr %d" % [MONTHS[(day % YEAR) / MONTH], day / YEAR + 1]
 
+# ------------------------------------------------------------------ tooltips
+
+## The row under the mouse as an EU5 tooltip: every number of the row,
+## and once locked the market's price over its last months.
+func _row_tip(at: Vector2) -> Dictionary:
+	var t := _tables[_kind]
+	var item := _tree.get_item_at_position(at)
+	if t.is_empty() or item == null:
+		return {}
+	var cols: PackedStringArray = t.columns
+	if item.has_meta("series"):
+		return _series_tip(t, item.get_meta("series"))
+	if not item.has_meta("rows") or _is_sheet(t):
+		return {}
+	var rows: PackedInt32Array = item.get_meta("rows")
+	var d := {"id": "%d:%s" % [_kind, item.get_text(0)], "title": item.get_text(0).strip_edges(),
+		"kind": ROW_KINDS[_kind] if rows.size() == 1 else "%s, %s zusammen" % [TITLES[_kind], _int(rows.size())],
+		"rows": [], "hints": []}
+	for i in cols.size():
+		if _is_text(t, cols[i]) or i == 0:
+			continue
+		var label: String = t.labels[i]
+		if _unit[i] != "" and _unit[i] != "%":
+			label += " (%s)" % _unit[i]
+		var colour := Charts.RED if "hungry" in cols[i] and _combine(t, i, rows) > 0.05 else UiStyle.TEXT
+		d.rows.append([label, item.get_text(_tc(i)), colour])
+	if KINDS[_kind] == "markets" and rows.size() == 1 and t.data.has("id"):
+		var m := int(t.data.id[rows[0]])
+		d.text = "Die Händler verkaufen Korn zum [url=price]Preis[/url] von [n]%s D/kg[/n]; ihr [url=store]Lager[/url] reicht für %s." % [
+			_number(float(t.data.price[rows[0]])), _days_of_store(t, rows[0])]
+		var s: PackedFloat64Array = _months.get(m, PackedFloat64Array())
+		if s.size() > 1:
+			d.spark = s
+			d.spark_title = "Preis der letzten Monate"
+			d.spark_unit = "D"
+			d.spark_from = "vor %d Monaten" % (s.size() - 1)
+			d.spark_to = _date(int(t.day))
+		else:
+			d.more = "Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
+	if t.data.has("lon"):
+		d.hints.append(["Klick", "fliegt zum Ort"])
+	return d
+
+## A series of the history: its whole course, prices with their range.
+func _series_tip(t: Dictionary, key: String) -> Dictionary:
+	var i := Array(t.columns).find(key)
+	if i < 0:
+		return {}
+	var data: Dictionary = t.data
+	var n := _row_count(t)
+	var scale := (100.0 if t.units[i] == "%" else 1.0) * _factor[i]
+	var s := PackedFloat64Array()
+	for r in n:
+		s.append(float(data[key][r]) * scale)
+	var d := {"id": "series:" + key, "title": t.labels[i], "kind": "Verlauf", "spark": s,
+		"spark_title": "Alle Monate seit Beginn", "spark_unit": "" if t.units[i] == "%" else " " + _unit[i],
+		"colour": Charts.RED if "hunger" in key else Charts.SERIES[0], "rows": []}
+	if key.begins_with("price_"):
+		var lo := PackedFloat64Array()
+		var hi := PackedFloat64Array()
+		var mid := PackedFloat64Array()
+		for r in n:
+			lo.append(float(data.price_min[r]))
+			hi.append(float(data.price_max[r]))
+			mid.append(float(data.price_median[r]))
+		d.spark = mid
+		d.spark_lo = lo
+		d.spark_hi = hi
+		d.title = "Kornpreis"
+		d.text = "Der Median der Märkte, im Band zwischen dem billigsten und dem teuersten [url=price]Preis[/url]."
+	if n > 0:
+		d.spark_from = _date(int(data.day[0]))
+		d.spark_to = _date(int(data.day[n - 1]))
+	if n > 1:
+		d.rows.append([_short_date(int(data.day[n - 1])), _number(float(data[key][n - 1]) * scale)])
+		d.rows.append([_short_date(int(data.day[n - 2])), _number(float(data[key][n - 2]) * scale)])
+	d.hints = [["Klick", "zeichnet die Kurve oben"]]
+	return d
+
+## How long a market's store lasts at its sales, in days or months.
+static func _days_of_store(t: Dictionary, r: int) -> String:
+	if not t.data.has("store_kg") or not t.data.has("sales_day"):
+		return "?"
+	var sales := float(t.data.sales_day[r]) # kg a day
+	var store := float(t.data.store_kg[r])
+	if sales <= 0.0:
+		return "lange"
+	var days := store / sales
+	return ("%d Tage" % roundi(days)) if days < 60.0 else ("%d Monate" % roundi(days / MONTH))
+
+## The terms the tooltips explain in blue.
+func _terms() -> void:
+	Tooltips.term("price", func() -> Dictionary: return {"title": "Kornpreis", "kind": "Markt",
+		"text": "Jeder Markt hat seinen eigenen Preis. Er steigt, wenn das [url=store]Lager[/url] der Händler für weniger Tage reicht, und sinkt, wenn es wächst. Gezahlt wird in [url=denar]Denar[/url]."})
+	Tooltips.term("store", func() -> Dictionary: return {"title": "Lager", "kind": "Markt",
+		"text": "Korn, das die Händler eines Marktes halten. Sie kaufen es den Höfen ab und verkaufen es an die Haushalte und andere Märkte."})
+	Tooltips.term("denar", func() -> Dictionary: return {"title": "Denar", "kind": "Geld",
+		"text": "Die Münze des Spiels, wie im Höchstpreisedikt Diokletians von 301 n. Chr. Die Staatskasse prägt sie und zahlt damit Soldaten, Beamte und Bauarbeiten."})
+
 # ------------------------------------------------------------------ input
 
 func _on_title(column: int, _button: int) -> void:
 	var t := _tables[_kind]
 	if t.is_empty():
 		return
+	column = _dc(column)
+	if column < 0 or column >= t.columns.size():
+		return # the curves do not sort
 	var key: String = t.columns[column]
 	var state: Dictionary = _state[_kind]
 	if state.sort == key:
@@ -684,21 +891,25 @@ func _fly(t: Dictionary, rows: PackedInt32Array) -> void:
 		if data.has("extent_km"):
 			reach = maxf(reach, float(data.extent_km[r]))
 	var screen := maxf(get_viewport().get_visible_rect().size.x, 1.0)
-	var free := maxf(screen - _panel.size.x, screen * 0.25)
+	var covered: float = _win.size.x if open and _win.position.x < screen * 0.5 else 0.0 # a window at the left
+	var free := maxf(screen - covered, screen * 0.25)
 	var w := clampf(maxf(maxf(hi.x - lo.x, hi.y - lo.y), reach) * FLY_MARGIN * screen / free, FLY_MIN_KM, FLY_MAX_KM)
 	var centre := (lo + hi) * 0.5
-	centre.x -= w * (_panel.size.x * 0.5) / screen
+	centre.x -= w * (covered * 0.5) / screen
 	landscape._goal_target = centre
 	landscape._goal_width = w
 	print(JSON.stringify({"event": "tables_fly", "kind": KINDS[_kind], "rows": rows.size(), "width_km": w}))
 
 func _on_tab(index: int) -> void:
-	_kind = index
+	_kind = TAB_ORDER[index]
 	_refresh()
 
 func _show(on: bool) -> void:
 	open = on
-	_panel.visible = on
+	if on:
+		_win.open()
+	elif _win.visible:
+		_win.close()
 	_open_button.visible = not on
 	if on:
 		_refresh()
@@ -776,7 +987,7 @@ func _fill_legend(t: Dictionary, bounds: PackedFloat64Array) -> void:
 	var unit: String = SHORT_UNITS.get(t.units[i], t.units[i])
 	var tag := Label.new()
 	tag.text = "Karte: %s" % t.labels[i]
-	tag.add_theme_color_override("font_color", GOLD)
+	tag.add_theme_color_override("font_color", UiStyle.NAME)
 	_legend.add_child(tag)
 	for k in CLASS_COLOURS.size():
 		var swatch := ColorRect.new()
@@ -807,6 +1018,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_show(not open)
 		elif event.keycode == KEY_ESCAPE and open:
 			_show(false)
+			get_viewport().set_input_as_handled() # the next Esc is the menu's
 
 # ------------------------------------------------------------------ build
 
@@ -817,43 +1029,33 @@ func _build() -> void:
 	root.theme = _theme()
 	add_child(root)
 	_open_button = Button.new()
-	_open_button.text = "Tabellen  (T)"
+	_open_button.text = "Statistik  (T)"
 	_open_button.focus_mode = Control.FOCUS_NONE
 	_open_button.position = Vector2(12, 12)
 	_open_button.pressed.connect(func(): _show(true))
 	root.add_child(_open_button)
-	_panel = PanelContainer.new()
-	_panel.add_theme_stylebox_override("panel", _box(Color(BACKGROUND, 0.95), Color(GOLD, 0.8), 2, 4, 14))
-	root.add_child(_panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	_panel.add_child(column)
+	# right of the build bar, below the game clock
+	_win = UiWindow.make("tables", "Statistik", Rect2(112, 64, 820, 680), Engine.get_main_loop() as SceneTree)
+	_win.min_size = Vector2(PANEL_MIN, 320)
+	_win.closed.connect(func():
+		if open:
+			_show(false))
+	var column: VBoxContainer = _win.body
 	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
 	column.add_child(head)
-	var title := Label.new()
-	title.text = "Tabellen"
-	title.add_theme_font_override("font", _serif())
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", GOLD)
-	head.add_child(title)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(gap)
 	_stand = Label.new()
-	_stand.add_theme_color_override("font_color", SECONDARY)
-	head.add_child(_stand)
-	var close := Button.new()
-	close.text = "✕"
-	close.flat = true
-	close.focus_mode = Control.FOCUS_NONE
-	close.pressed.connect(func(): _show(false))
-	head.add_child(close)
+	_stand.add_theme_color_override("font_color", UiStyle.DIM)
+	_stand.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL + 1)
+	_stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_tabs = TabBar.new()
-	for t in TITLES:
-		_tabs.add_tab(t)
+	for k in TAB_ORDER:
+		_tabs.add_tab(TITLES[k])
 	_tabs.focus_mode = Control.FOCUS_NONE
 	_tabs.tab_changed.connect(_on_tab)
-	column.add_child(_tabs)
+	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_tabs)
+	head.add_child(_stand)
 	_filter_row = HBoxContainer.new()
 	_filter_row.add_theme_constant_override("separation", 8)
 	column.add_child(_filter_row)
@@ -892,7 +1094,9 @@ func _build() -> void:
 		_paint_regions())
 	_filter_row.add_child(_paint)
 	_legend_box = PanelContainer.new()
-	_legend_box.add_theme_stylebox_override("panel", _box(Color(BACKGROUND, 0.92), Color(GOLD, 0.8), 2, 4, 8))
+	var legend_frame := UiStyle.frame()
+	legend_frame.set_content_margin_all(8)
+	_legend_box.add_theme_stylebox_override("panel", legend_frame)
 	_legend_box.visible = false
 	root.add_child(_legend_box)
 	var legend_row := HBoxContainer.new()
@@ -922,42 +1126,38 @@ func _build() -> void:
 	_tree.column_titles_visible = true
 	_tree.select_mode = Tree.SELECT_ROW
 	_tree.allow_search = false # letters stay with the camera keys and T
+	_tree.auto_tooltip = false # the rows have EU5 tooltips (ui/tooltips.gd)
 	_tree.focus_mode = Control.FOCUS_NONE
 	_tree.column_title_clicked.connect(_on_title)
 	_tree.item_selected.connect(_on_selected)
 	_tree.item_collapsed.connect(_on_collapsed)
+	Tooltips.attach(_tree, _row_tip)
+	_overview = SimOverview.new(_date)
+	_overview.visible = false
+	column.add_child(_overview)
 	column.add_child(_tree)
 	_note = Label.new()
-	_note.text = "Klick auf eine Zeile zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar  ·  T schliesst"
+	_note.text = "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar"
 	_note.add_theme_color_override("font_color", SECONDARY)
 	_note.add_theme_font_size_override("font_size", 12)
 	column.add_child(_note)
 
 func _ready() -> void:
-	get_viewport().size_changed.connect(_place_panel)
-	_place_panel()
+	get_viewport().size_changed.connect(_place_legend)
+	_place_legend()
 
-## The map's legend at the bottom left, clear of the panel when it is open.
+## The map's legend at the bottom left, clear of the window when it is open.
 func _place_legend() -> void:
 	if not is_inside_tree():
 		return
 	var screen := get_viewport().get_visible_rect().size
 	var x := 12.0
-	if open and _panel.position.x + _panel.size.x + 12.0 + _legend_box.size.x < screen.x - 400.0:
-		x = _panel.position.x + _panel.size.x + 12.0 # beside the panel, left of the events
+	if open and _win.position.x < 12.0 + _legend_box.size.x and _win.position.x + _win.size.x + 12.0 + _legend_box.size.x < screen.x - 400.0:
+		x = _win.position.x + _win.size.x + 12.0 # beside the window, left of the events
 	_legend_box.position = Vector2(x, screen.y - _legend_box.size.y - 12.0)
 
-## Left, full height, as wide as the table's columns need (within limits).
+## The window keeps the size its player gave it; only the legend moves.
 func _place_panel() -> void:
-	var screen := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1600, 900)
-	var want := PANEL_MIN
-	var t := _tables[_kind]
-	if not t.is_empty() and not _is_sheet(t) and not _is_history(t):
-		want = 40.0
-		for key in t.columns:
-			want += TEXT_PX if _is_text(t, key) else COLUMN_PX
-	_panel.position = Vector2(12, 12)
-	_panel.size = Vector2(clampf(want, PANEL_MIN, maxf(screen.x * PANEL_SHARE_MAX, PANEL_MIN)), screen.y - 24.0)
 	_place_legend()
 
 static func _serif() -> Font:
@@ -974,66 +1174,6 @@ static func _box(bg: Color, border: Color, border_w: int, radius: int, margin: f
 	box.set_content_margin_all(margin)
 	return box
 
-## Dark teal and gold for every control in the panel.
+## EU5's look (ui/ui_style.gd) for every control in the window.
 static func _theme() -> Theme:
-	var th := Theme.new()
-	th.default_font_size = 14
-	th.set_color("font_color", "Label", INK)
-	for type in ["Button", "OptionButton"]:
-		th.set_stylebox("normal", type, _box(HEAD, Color(GOLD, 0.45), 1, 3, 6))
-		th.set_stylebox("hover", type, _box(SELECTED, Color(GOLD, 0.8), 1, 3, 6))
-		th.set_stylebox("pressed", type, _box(SELECTED, GOLD, 1, 3, 6))
-		th.set_stylebox("focus", type, StyleBoxEmpty.new())
-		th.set_color("font_color", type, INK)
-		th.set_color("font_hover_color", type, Color.WHITE)
-		th.set_color("font_pressed_color", type, GOLD)
-	th.set_color("font_color", "CheckButton", INK)
-	th.set_color("font_hover_color", "CheckButton", Color.WHITE)
-	th.set_color("font_pressed_color", "CheckButton", GOLD)
-	th.set_stylebox("focus", "CheckButton", StyleBoxEmpty.new())
-	th.set_stylebox("normal", "LineEdit", _box(Color(0.0, 0.0, 0.0, 0.25), Color(GOLD, 0.45), 1, 3, 6))
-	th.set_stylebox("focus", "LineEdit", _box(Color.TRANSPARENT, GOLD, 1, 3, 6))
-	th.set_color("font_color", "LineEdit", INK)
-	th.set_color("font_placeholder_color", "LineEdit", Color(SECONDARY, 0.7))
-	th.set_color("caret_color", "LineEdit", GOLD)
-	th.set_stylebox("panel", "PopupMenu", _box(BACKGROUND, Color(GOLD, 0.8), 1, 3, 6))
-	th.set_stylebox("hover", "PopupMenu", _box(SELECTED, Color.TRANSPARENT, 0, 2, 4))
-	th.set_color("font_color", "PopupMenu", INK)
-	th.set_color("font_hover_color", "PopupMenu", Color.WHITE)
-	var tab_on := _box(SELECTED, GOLD, 0, 3, 8)
-	tab_on.border_width_bottom = 2
-	th.set_stylebox("tab_selected", "TabBar", tab_on)
-	th.set_stylebox("tab_unselected", "TabBar", _box(Color.TRANSPARENT, Color.TRANSPARENT, 0, 3, 8))
-	th.set_stylebox("tab_hovered", "TabBar", _box(HEAD, Color.TRANSPARENT, 0, 3, 8))
-	th.set_color("font_selected_color", "TabBar", GOLD)
-	th.set_color("font_unselected_color", "TabBar", SECONDARY)
-	th.set_color("font_hovered_color", "TabBar", INK)
-	th.set_font_size("font_size", "TabBar", 16)
-	th.set_stylebox("panel", "Tree", _box(Color(0.0, 0.0, 0.0, 0.18), Color(GOLD, 0.35), 1, 2, 2))
-	th.set_stylebox("focus", "Tree", StyleBoxEmpty.new())
-	var title := _box(HEAD, GOLD, 0, 0, 6)
-	title.border_width_bottom = 1
-	th.set_stylebox("title_button_normal", "Tree", title)
-	th.set_stylebox("title_button_pressed", "Tree", title)
-	var title_hover := title.duplicate()
-	title_hover.bg_color = SELECTED
-	th.set_stylebox("title_button_hover", "Tree", title_hover)
-	th.set_color("title_button_color", "Tree", GOLD)
-	th.set_color("font_color", "Tree", INK)
-	th.set_font_size("font_size", "Tree", 13)
-	th.set_font_size("title_button_font_size", "Tree", 13)
-	th.set_color("font_selected_color", "Tree", Color.WHITE)
-	th.set_stylebox("selected", "Tree", _box(SELECTED, Color.TRANSPARENT, 0, 0, 0))
-	th.set_stylebox("selected_focus", "Tree", _box(SELECTED, Color.TRANSPARENT, 0, 0, 0))
-	th.set_stylebox("hovered", "Tree", _box(Color(1.0, 1.0, 1.0, 0.06), Color.TRANSPARENT, 0, 0, 0))
-	th.set_stylebox("cursor", "Tree", StyleBoxEmpty.new())
-	th.set_stylebox("cursor_unfocused", "Tree", StyleBoxEmpty.new())
-	th.set_constant("draw_guides", "Tree", 0)
-	th.set_constant("draw_relationship_lines", "Tree", 0)
-	th.set_constant("v_separation", "Tree", 6)
-	th.set_constant("inner_item_margin_left", "Tree", 6)
-	th.set_constant("inner_item_margin_right", "Tree", 8)
-	th.set_stylebox("grabber", "VScrollBar", _box(Color(GOLD, 0.5), Color.TRANSPARENT, 0, 3, 3))
-	th.set_stylebox("grabber_highlight", "VScrollBar", _box(GOLD, Color.TRANSPARENT, 0, 3, 3))
-	th.set_stylebox("scroll", "VScrollBar", _box(Color(0.0, 0.0, 0.0, 0.25), Color.TRANSPARENT, 0, 3, 3))
-	return th
+	return UiStyle.theme()
