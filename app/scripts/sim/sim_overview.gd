@@ -6,8 +6,9 @@ extends ScrollContainer
 ## the state. Each card opens with what its numbers say (Knaflic: the
 ## finding, not only the topic), computed from them; its title's tooltip
 ## says what it shows. The line charts share one month under the mouse,
-## and mark what happened (built, famine, price shocks). Every line, ring
-## slice, bar and good has an EU5 tooltip.
+## and mark what happened (built, famine, price shocks). Shares are sorted
+## bars, what each class ate small multiples on one scale. Every line, bar,
+## row and good has an EU5 tooltip.
 ##
 ## sim_tables.gd hands it the tables (history, population, farms, state,
 ## classes, goods) with show_tables(); it only draws them.
@@ -17,11 +18,22 @@ const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const CARD_MIN := 320.0
 const CHART_PX := 170.0
-const DONUT_R := 58.0
-const DONUT_W := 16.0
-const OTHER := Color("6d7479") # the rest of a ring
-const RING_MAX := 5 # slices before "Andere"
+const OTHER := Color("6d7479") # the medal of "Andere", the rest
+const BARS_MAX := 6 # rows of a share card before "Andere"
 const BAR_ROW := 26.0
+const BAR_PX := 8.0 # a bar's height in its trough, as the menu's (Vic3)
+const MEDAL_R := 9.0
+const NAME_X := 28.0 # a row's name, right of its medal
+const SHARE_PX := 56.0 # a row's share at the right
+const FED_ROW := 34.0
+const FED_NAME_PX := 108.0
+## The medals' icons, white, tinted when drawn; the menu thread adds them.
+const ICON_DIR := "res://assets/ui/icons/"
+const ICONS := {
+	"Hofleute": "family-house", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
+	"Bauern": "wheat", "Pächter": "wheat", "Handwerker": "anvil", "Adel": "roman-toga",
+	"Familienhof": "family-house", "Pachthof": "wheat", "Gut": "barn",
+}
 ## The goods table's rows in apoleia_sim::grain::GOOD_KEYS order; the
 ## history has each one's price as good_<key>.
 const GOOD_KEYS: Array[String] = ["wool", "iron", "cloth", "tools", "pottery", "pork"]
@@ -49,7 +61,8 @@ var _grids: Array[GridContainer] = []
 var _grid: GridContainer # the section the next card goes into
 var _tiles: HBoxContainer
 var _lines := {} # chart key -> {control, series: Array, unit, days, hover, legend, hidden}
-var _rings := {} # ring key -> {control, names, values, colours, unit, legend, title, hover}
+var _shares := {} # card key -> {control, names, values, colours, ref, ref_name, total, unit, title, hover, foot}
+var _icons := {} # name -> its medal's icon, or null
 var _goods: GridContainer
 var _bars: Control
 var _bar_rows: Array = [] # [label, value, key]
@@ -105,12 +118,12 @@ func _init(date_fn: Callable) -> void:
 			_goods.columns = 3 if size.x > 700.0 else 2)
 	_section("Menschen")
 	_line_card("persons", "Menschen", "", "Alle Menschen auf der Karte, jeder einzeln simuliert.")
-	_ring_card("jobs", "Menschen nach Beruf", "Die Menschen nach dem Beruf ihres Haushalts.")
+	_shares_card("jobs", "Menschen nach Beruf", "Die Menschen nach dem Beruf ihres Haushalts.")
 	_line_card("life", "Geburten und Todesfälle", "", "Geburten und Todesfälle im Monat. Die ersten Kinder kommen erst nach etwa neun Monaten zur Welt.")
 	_line_card("hunger", "Hungertote", "", "Menschen, die im Monat an Hunger sterben.")
 	_section("Essen und Korn")
 	_line_card("price", "Kornpreis", "D/kg", "Jeder Markt hat seinen eigenen Kornpreis. Die Linie ist der Median der Märkte, das Band reicht vom billigsten zum teuersten Markt, höchstens bis zum doppelten Median, damit ein teurer Markt wie Rom die Linie nicht flach drückt.")
-	_line_card("fed", "Gegessen nach Schicht", "%", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt.")
+	_fed_card()
 	_line_card("harvest", "Ernte und Verkauf", "t", "Korn, das die Höfe im Monat ernten, und Korn, das die Märkte im Monat verkaufen.")
 	_line_card("granaries", "Getreide in Speichern", "t", "Korn in den Speichern des Staates (Steuerkorn), der Grundherren (Pachtkorn) und der Händler auf den Märkten.")
 	_line_card("flows", "Korn ausser Handel", "t", "Korn im Monat, das verdirbt, über den Kartenrand verkauft wird, zwischen fernen Märkten gehandelt oder als Almosen verteilt wird.")
@@ -118,8 +131,8 @@ func _init(date_fn: Callable) -> void:
 	_section("Arbeit und Geld")
 	_line_card("real", "Reallohn", "kg", "Der Taglohn eines Marktes in Korn zu dessen Preis: so viel kann ein Tag Arbeit kaufen. Gestrichelt: so viel muss ein Lohnarbeiter je Arbeitstag verdienen, damit sein Teil der Familie satt wird (Bedarf der Familie durch ihre Erwachsenen und 290 Arbeitstage im Jahr, nach Columella).")
 	_line_card("work", "Arbeitstage in der Woche", "Tage", "Arbeitstage der letzten Woche, die jemand gesucht und niemanden gefunden hat, und die jemand angeboten hat, ohne eingestellt zu werden.")
-	_ring_card("money", "Geld nach Schicht", "Alles Geld der Haushalte nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
-	_ring_card("farms", "Höfe nach Art", "Familienhof: die Familie bebaut ihr eigenes Land. Pachthof: sie bebaut gepachtetes Land. Gut: ein Grundherr lässt sein Land bebauen.")
+	_shares_card("money", "Geld nach Schicht", "Alles Geld der Haushalte nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
+	_shares_card("farms", "Höfe nach Art", "Familienhof: die Familie bebaut ihr eigenes Land. Pachthof: sie bebaut gepachtetes Land. Gut: ein Grundherr lässt sein Land bebauen.")
 	_section("Waren")
 	_goods_card()
 	_section("Staat")
@@ -144,10 +157,7 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("real", h, [{"key": "real_p50", "name": "Median der Märkte", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
 			"band": "Ärmstes bis reichstes Zehntel"},
 			{"key": "need_wage", "name": "Nötig zum Sattwerden", "colour": Charts.RED, "dashed": true}])
-		var fed := []
-		for k in FED_KEYS.size():
-			fed.append({"key": "fed_" + FED_KEYS[k], "name": FED_NAMES[k], "colour": FED_COLOURS[k], "scale": 100.0, "mute_above": 99.0})
-		_set_line("fed", h, fed)
+		_set_fed(d)
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
 			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
@@ -167,7 +177,7 @@ func show_tables(tables: Dictionary) -> void:
 		for r in pop.data.persons.size():
 			var job: String = pop.data.occupation[r]
 			sums[job] = sums.get(job, 0.0) + float(pop.data.persons[r])
-		_set_ring("jobs", sums, "Menschen")
+		_set_shares("jobs", sums, "Menschen")
 	var farms: Dictionary = tables.get("farms", {})
 	if not farms.is_empty():
 		var sums := {}
@@ -178,16 +188,19 @@ func show_tables(tables: Dictionary) -> void:
 				for v in farms.data[key]:
 					total += float(v)
 				sums[label] = total
-		_set_ring("farms", sums, "Höfe")
+		_set_shares("farms", sums, "Höfe")
 	var classes: Dictionary = tables.get("classes", {})
 	if not classes.is_empty() and classes.data.has("money"):
 		var sums := {}
+		var people := {}
 		for r in classes.data.kind.size():
 			sums[classes.data.kind[r]] = float(classes.data.money[r])
+			if classes.data.has("persons"):
+				people[classes.data.kind[r]] = float(classes.data.persons[r])
 		var fixed := {}
 		for k in FED_NAMES.size():
 			fixed[FED_NAMES[k]] = FED_COLOURS[k]
-		_set_ring("money", sums, "Denar", fixed)
+		_set_shares("money", sums, "Denar", fixed, people, "Menschen")
 	var goods: Dictionary = tables.get("goods", {})
 	if not goods.is_empty() and goods.data.has("price"):
 		_set_goods(goods, h.get("data", {}))
@@ -487,121 +500,327 @@ func _line_tip(key: String, title: String) -> Dictionary:
 		tip.text = "[n]In diesem Monat:[/n] " + "; ".join(happened) + "."
 	return tip
 
-func _ring_card(key: String, title: String, about: String) -> void:
+# ------------------------------------------------------------------ shares and the classes' food
+
+## Shares of a whole as sorted bars, as the menu's (Vic3) lists: a medal,
+## the name, the bar in its trough, the share. The largest on top, the
+## smallest folded into "Andere" at the foot. `ref` (set by _set_shares)
+## marks a second share per row as a tick: on the money card, the people.
+func _shares_card(key: String, title: String, about: String) -> void:
 	var box := _card(key, title, about)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	box.add_child(row)
-	var ring := Control.new()
-	ring.custom_minimum_size = Vector2(DONUT_R * 2.0 + 8.0, DONUT_R * 2.0 + 8.0)
-	ring.mouse_filter = Control.MOUSE_FILTER_PASS
-	row.add_child(ring)
-	var legend := VBoxContainer.new()
-	legend.add_theme_constant_override("separation", 2)
-	legend.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	legend.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(legend)
-	var entry := {"control": ring, "names": PackedStringArray(), "values": PackedFloat64Array(), "colours": [],
-		"unit": "", "legend": legend, "hover": -1, "title": title}
-	_rings[key] = entry
-	ring.draw.connect(func():
-		var c := ring.size * 0.5
-		Charts.donut(ring, c, DONUT_R, DONUT_W, entry.values, entry.colours, entry.hover)
-		var total := 0.0
-		for v in entry.values:
-			total += v
-		UiStyle.text_at(ring, c + Vector2(-DONUT_R, 2), Charts.label(total), UiStyle.VALUE, UiStyle.SIZE_HEAD, HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.bold())
-		UiStyle.text_at(ring, c + Vector2(-DONUT_R, 19), entry.unit, UiStyle.KIND, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_CENTER, DONUT_R * 2.0, UiStyle.italic()))
-	ring.gui_input.connect(func(e: InputEvent):
+	var rows := Control.new()
+	rows.mouse_filter = Control.MOUSE_FILTER_PASS # the wheel still scrolls
+	box.add_child(rows)
+	var foot := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foot.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	box.add_child(foot)
+	var entry := {"control": rows, "names": PackedStringArray(), "values": PackedFloat64Array(), "colours": [],
+		"ref": PackedFloat64Array(), "ref_name": "", "total": 0.0, "unit": "", "title": title, "hover": -1, "foot": foot}
+	_shares[key] = entry
+	rows.draw.connect(func(): _draw_shares(rows, entry))
+	rows.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
-			var i := Charts.slice_at(ring.size * 0.5, DONUT_R, DONUT_W, entry.values, e.position)
+			var i := int(e.position.y / BAR_ROW)
+			if i >= entry.names.size():
+				i = -1
 			if i != entry.hover:
 				entry.hover = i
-				ring.queue_redraw())
-	ring.mouse_exited.connect(func():
+				rows.queue_redraw())
+	rows.mouse_exited.connect(func():
 		entry.hover = -1
-		ring.queue_redraw())
-	Tooltips.attach(ring, func(_at: Vector2) -> Dictionary: return _ring_tip(key, entry.hover))
+		rows.queue_redraw())
+	Tooltips.attach(rows, func(at: Vector2) -> Dictionary: return _shares_tip(key, int(at.y / BAR_ROW)))
 
-## A ring's slices, largest first, the smallest folded into "Andere". A
-## slice's colour follows what it is, not its rank (`fixed` name -> colour,
-## else the slot it got when it first showed), so a reordering repaints
-## nothing.
-func _set_ring(key: String, sums: Dictionary, unit: String, fixed := {}) -> void:
-	var entry: Dictionary = _rings[key]
-	var slots: Dictionary = entry.get_or_add("slots", {})
+## `sums` name -> amount; `colours` name -> the colour a name keeps in
+## every chart (the classes), the others get a plain medal; `ref` name ->
+## a second amount drawn as a tick, named `ref_name`.
+func _set_shares(key: String, sums: Dictionary, unit: String, colours := {}, ref := {}, ref_name := "") -> void:
+	var entry: Dictionary = _shares[key]
 	var names := sums.keys()
 	names.sort_custom(func(a, b): return sums[a] > sums[b])
+	var ref_total := 0.0
+	for name in ref:
+		ref_total += float(ref[name])
 	var shown := PackedStringArray()
 	var values := PackedFloat64Array()
-	var colours := []
+	var refs := PackedFloat64Array()
+	var hues := []
 	var rest := 0.0
-	var top: Array = names.slice(0, RING_MAX)
-	for name in slots.keys(): # a name out of the top frees its slot
-		if not name in top:
-			slots.erase(name)
+	var rest_ref := 0.0
+	var total := 0.0
 	for i in names.size():
-		if i < RING_MAX:
-			if not slots.has(names[i]):
-				var free := 0
-				while free in slots.values():
-					free += 1
-				slots[names[i]] = free
+		var v := float(sums[names[i]])
+		total += v
+		var r := float(ref.get(names[i], 0.0)) / ref_total if ref_total > 0.0 else 0.0
+		if i < BARS_MAX or names.size() == BARS_MAX + 1:
 			shown.append(names[i])
-			values.append(sums[names[i]])
-			colours.append(fixed.get(names[i], Charts.SERIES[slots[names[i]] % Charts.SERIES.size()]))
+			values.append(v)
+			refs.append(r)
+			hues.append(colours.get(names[i], Color.TRANSPARENT))
 		else:
-			rest += sums[names[i]]
+			rest += v
+			rest_ref += r
 	if rest > 0.0:
 		shown.append("Andere")
 		values.append(rest)
-		colours.append(OTHER)
+		refs.append(rest_ref)
+		hues.append(OTHER)
 	entry.names = shown
 	entry.values = values
-	entry.colours = colours
+	entry.colours = hues
+	entry.ref = refs if ref_total > 0.0 else PackedFloat64Array()
+	entry.ref_name = ref_name
+	entry.total = total
 	entry.unit = unit
-	var total := 0.0
-	for v in values:
-		total += v
-	var legend: VBoxContainer = entry.legend
-	for c in legend.get_children():
-		c.queue_free()
-	for i in shown.size(): # EU5's list beside a ring: a bar each, a pennant in its colour
-		var back := PanelContainer.new()
-		var bar := UiStyle.box(UiStyle.ROW if i % 2 == 0 else UiStyle.ROW_DARK, Color.TRANSPARENT, 0, 0, 0)
-		bar.content_margin_left = 6
-		bar.content_margin_right = 8
-		bar.content_margin_top = 2
-		bar.content_margin_bottom = 2
-		back.add_theme_stylebox_override("panel", bar)
-		back.mouse_filter = Control.MOUSE_FILTER_PASS
-		Tooltips.attach(back, func(_at: Vector2) -> Dictionary: return _ring_tip(key, i))
-		back.mouse_entered.connect(func():
-			entry.hover = i
-			entry.control.queue_redraw())
-		back.mouse_exited.connect(func():
-			entry.hover = -1
-			entry.control.queue_redraw())
-		var line := HBoxContainer.new()
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		back.add_child(line)
-		line.add_child(_swatch(colours[i], shown[i]))
-		var share := _label("%.1f %%" % (values[i] / total * 100.0) if total > 0.0 else "", UiStyle.TEXT, UiStyle.SIZE_SMALL + 1)
-		share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		share.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		line.add_child(share)
-		legend.add_child(back)
+	var rows: Control = entry.control
+	rows.custom_minimum_size.y = BAR_ROW * shown.size()
+	var foot: Label = entry.foot
+	foot.text = "Zusammen %s %s." % [_num(total), unit]
+	if ref_total > 0.0:
+		foot.text += " Der weisse Strich: Anteil an den %s." % ref_name
+	rows.queue_redraw()
+
+func _draw_shares(ci: Control, entry: Dictionary) -> void:
+	var n: int = entry.names.size()
+	var total: float = entry.total
+	if n == 0 or total <= 0.0:
+		return
+	var font := UiStyle.serif()
+	var top := 0.0 # the longest bar or tick fills the trough
+	var name_w := 0.0
+	for i in n:
+		top = maxf(top, entry.values[i] / total)
+		if i < entry.ref.size():
+			top = maxf(top, entry.ref[i])
+		name_w = maxf(name_w, font.get_string_size(entry.names[i], HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x)
+	var x0 := NAME_X + minf(name_w, 140.0) + 10.0
+	var x1 := ci.size.x - SHARE_PX - 8.0
+	for i in n:
+		var y := i * BAR_ROW
+		var mid := y + (BAR_ROW - 2.0) * 0.5
+		ci.draw_rect(Rect2(0, y, ci.size.x, BAR_ROW - 2.0), UiStyle.ROW if i % 2 == 0 else UiStyle.ROW_DARK)
+		if i == entry.hover:
+			ci.draw_rect(Rect2(0, y, ci.size.x, BAR_ROW - 2.0), UiStyle.HOVER)
+		_medal(ci, Vector2(MEDAL_R + 5.0, mid), entry.names[i], entry.colours[i])
+		UiStyle.text_at(ci, Vector2(NAME_X, mid + 5.0), entry.names[i], UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, x0 - NAME_X - 6.0, font)
+		var share: float = entry.values[i] / total
+		var trough := Rect2(x0, mid - BAR_PX * 0.5 - 2.0, x1 - x0, BAR_PX + 4.0)
+		var inner := trough.size.x - 4.0
+		_bar(ci, trough, x0 + 2.0, x0 + 2.0 + inner * share / top, UiStyle.GOLD)
+		if i < entry.ref.size() and entry.ref[i] > 0.0:
+			var x: float = x0 + 2.0 + inner * entry.ref[i] / top
+			ci.draw_line(Vector2(x, trough.position.y - 3.0), Vector2(x, trough.end.y + 3.0), UiStyle.EDGE, 4.0)
+			ci.draw_line(Vector2(x, trough.position.y - 2.0), Vector2(x, trough.end.y + 2.0), UiStyle.TEXT, 2.0)
+		UiStyle.text_at(ci, Vector2(x1 + 4.0, mid + 5.0), _pct(share * 100.0) + " %", UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, SHARE_PX, font)
+
+func _shares_tip(key: String, i: int) -> Dictionary:
+	var entry: Dictionary = _shares[key]
+	if i < 0 or i >= entry.names.size() or entry.total <= 0.0:
+		return {}
+	var share: float = entry.values[i] / entry.total * 100.0
+	var rows := [[entry.unit, _num(entry.values[i])], ["Anteil", _pct(share) + " %"]]
+	if i < entry.ref.size():
+		rows.append(["Anteil an den " + entry.ref_name, _pct(entry.ref[i] * 100.0) + " %"])
+		if entry.ref[i] > 0.0:
+			rows.append(["Je Kopf, gemessen am Schnitt", "%s×" % _pct(share / (entry.ref[i] * 100.0))])
+	return {"id": "share:%s:%d" % [key, i], "title": entry.names[i], "kind": entry.title, "rows": rows}
+
+## What each class ate as small multiples: a row each with the class, its
+## curve on one scale for all rows, and the share now (or in the month
+## under the mouse). Red is what was missing to eat one's fill.
+func _fed_card() -> void:
+	var box := _card("fed", "Gegessen nach Schicht", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala.")
+	var rows := Control.new()
+	rows.custom_minimum_size = Vector2(0, FED_ROW * FED_KEYS.size())
+	rows.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(rows)
+	var foot := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foot.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	box.add_child(foot)
+	# a line chart for _hover_all: the month under the mouse is shared
+	var entry := {"control": rows, "series": [], "days": PackedInt64Array(), "hover": -1, "row": -1, "lo": 90.0, "foot": foot}
+	_lines["fed"] = entry
+	rows.draw.connect(func(): _draw_fed(rows, entry))
+	rows.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var row := int(e.position.y / FED_ROW)
+			if row != entry.row:
+				entry.row = row
+				rows.queue_redraw()
+			var plot := _fed_plot(rows, 0)
+			var n: int = entry.days.size()
+			var m := -1
+			if n > 1 and e.position.x >= plot.position.x - 4.0 and e.position.x <= plot.end.x + 4.0:
+				m = clampi(roundi((e.position.x - plot.position.x) / plot.size.x * (n - 1)), 0, n - 1)
+			if m != entry.hover:
+				_hover_all(m))
+	rows.mouse_exited.connect(func():
+		entry.row = -1
+		rows.queue_redraw()
+		_hover_all(-1))
+	Tooltips.attach(rows, func(at: Vector2) -> Dictionary: return _fed_tip(int(at.y / FED_ROW)))
+
+func _set_fed(d: Dictionary) -> void:
+	var entry: Dictionary = _lines["fed"]
+	var series := []
+	var lo := 100.0
+	for k in FED_KEYS.size():
+		var all := _col(d, "fed_" + FED_KEYS[k], 100.0)
+		if all.is_empty():
+			continue
+		var values := all.slice(_first(all.size()))
+		lo = minf(lo, _lowest(values))
+		series.append({"k": k, "values": values, "all": all})
+	entry.series = series
+	entry.lo = clampf(floorf((lo - 5.0) / 10.0) * 10.0, 0.0, 90.0) # room below the lowest
+	var days := PackedInt64Array(Array(d.day))
+	entry.days = days.slice(_first(days.size()))
+	var foot: Label = entry.foot
+	foot.text = "Alle Zeilen von %d bis 100 %%. Gestrichelt: satt. Rot: was zum Sattwerden fehlte." % int(entry.lo)
+	entry.control.custom_minimum_size.y = FED_ROW * maxi(1, series.size())
 	entry.control.queue_redraw()
 
-func _ring_tip(key: String, i: int) -> Dictionary:
-	var entry: Dictionary = _rings[key]
-	if i < 0 or i >= entry.names.size():
+## Row k's plot: right of the medal and name, left of the share.
+func _fed_plot(ci: Control, k: int) -> Rect2:
+	var x0 := NAME_X + FED_NAME_PX
+	return Rect2(x0, k * FED_ROW + 4.0, ci.size.x - x0 - SHARE_PX - 10.0, FED_ROW - 10.0)
+
+func _draw_fed(ci: Control, entry: Dictionary) -> void:
+	var font := UiStyle.serif()
+	var lo: float = entry.lo
+	for row in entry.series.size():
+		var s: Dictionary = entry.series[row]
+		var k: int = s.k
+		var y: float = row * FED_ROW
+		var mid := y + (FED_ROW - 2.0) * 0.5
+		ci.draw_rect(Rect2(0, y, ci.size.x, FED_ROW - 2.0), UiStyle.ROW if row % 2 == 0 else UiStyle.ROW_DARK)
+		if row == entry.row:
+			ci.draw_rect(Rect2(0, y, ci.size.x, FED_ROW - 2.0), UiStyle.HOVER)
+		_medal(ci, Vector2(MEDAL_R + 5.0, mid), FED_NAMES[k], FED_COLOURS[k])
+		UiStyle.text_at(ci, Vector2(NAME_X, mid + 5.0), FED_NAMES[k], UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, FED_NAME_PX - 6.0, font)
+		var plot := _fed_plot(ci, row)
+		ci.draw_rect(plot.grow(1.0), UiStyle.EDGE)
+		ci.draw_rect(plot, UiStyle.CHART)
+		var vals: PackedFloat64Array = s.values
+		var n := vals.size()
+		var y_of := func(v: float) -> float: return plot.end.y - 1.0 - (clampf(v, lo, 100.0) - lo) / (100.0 - lo) * (plot.size.y - 2.0)
+		var x_of := func(i: int) -> float: return plot.position.x + plot.size.x * float(i) / float(maxi(1, n - 1))
+		var full: float = y_of.call(100.0)
+		for part in Charts.dashes(PackedVector2Array([Vector2(plot.position.x, full), Vector2(plot.end.x, full)]), 4.0, 3.0):
+			ci.draw_polyline(part, UiStyle.DIM, 1.0)
+		if n >= 2:
+			# the gap to 100 %, a polygon per run of hungry months
+			var i := 0
+			while i < n:
+				if vals[i] >= 99.999:
+					i += 1
+					continue
+				var gap := PackedVector2Array([Vector2(x_of.call(maxi(0, i - 1)), full)])
+				if i == 0:
+					gap.append(Vector2(x_of.call(0), full))
+				while i < n and vals[i] < 99.999:
+					gap.append(Vector2(x_of.call(i), y_of.call(vals[i])))
+					i += 1
+				gap.append(Vector2(x_of.call(mini(i, n - 1)), full))
+				if gap[0] == gap[1]:
+					gap.remove_at(0)
+				if gap.size() >= 3 and Geometry2D.triangulate_polygon(gap).size() > 0:
+					ci.draw_colored_polygon(gap, Color(Charts.RED, 0.3))
+			var line := PackedVector2Array()
+			for j in n:
+				line.append(Vector2(x_of.call(j), y_of.call(vals[j])))
+			ci.draw_polyline(line, Charts.SERIES[0], 1.5, true)
+		var hovered: bool = entry.hover >= 0 and entry.hover < n
+		var m: int = entry.hover if hovered else n - 1
+		if hovered and n >= 2:
+			var x: float = x_of.call(m)
+			ci.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(UiStyle.TEXT, 0.45), 1.0)
+			ci.draw_circle(Vector2(x, y_of.call(vals[m])), 2.5, UiStyle.VALUE)
+		if n > 0:
+			UiStyle.text_at(ci, Vector2(ci.size.x - SHARE_PX - 6.0, mid + 5.0), "%d %%" % floori(vals[m]),
+				UiStyle.LOSS if vals[m] < 99.0 else UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, SHARE_PX, font)
+
+## A class's row: the month under the mouse (or the last), its lowest
+## month, how many it counts, and its whole curve since the start.
+func _fed_tip(row: int) -> Dictionary:
+	var entry: Dictionary = _lines["fed"]
+	if row < 0 or row >= entry.series.size():
 		return {}
-	var total := 0.0
-	for v in entry.values:
-		total += v
-	return {"id": "ring:%s:%d" % [key, i], "title": entry.names[i], "kind": entry.title,
-		"rows": [[entry.unit, Charts.label(entry.values[i])], ["Anteil", "%.1f %%" % (entry.values[i] / total * 100.0)]]}
+	var s: Dictionary = entry.series[row]
+	var k: int = s.k
+	var vals: PackedFloat64Array = s.values
+	var n := vals.size()
+	if n == 0:
+		return {}
+	var m: int = entry.hover if entry.hover >= 0 and entry.hover < n else n - 1
+	var low := 0
+	for i in n:
+		if vals[i] < vals[low]:
+			low = i
+	var rows := [["Gegessen vom Bedarf", "%d %%" % floori(vals[m]), UiStyle.LOSS if vals[m] < 99.0 else UiStyle.TEXT]]
+	if m > 0:
+		rows.append(["Vormonat", "%d %%" % floori(vals[m - 1])])
+	rows.append(["Tiefster Monat", "%d %%, %s" % [floori(vals[low]), date.call(int(entry.days[low]))]])
+	var classes: Dictionary = _tables.get("classes", {})
+	if not classes.is_empty() and classes.data.has("persons"):
+		var r := Array(classes.data.kind).find(FED_NAMES[k])
+		if r >= 0:
+			rows.append(["Menschen heute", _num(float(classes.data.persons[r]))])
+	var tip := {"id": "fed:%d:%d" % [k, m], "title": FED_NAMES[k], "kind": date.call(int(entry.days[m])), "rows": rows}
+	var happened: Array = _events.get(int(entry.days[m]), [])
+	if not happened.is_empty():
+		tip.text = "[n]In diesem Monat:[/n] " + "; ".join(happened) + "."
+	var all: PackedFloat64Array = s.all
+	if all.size() > 1:
+		var h: Dictionary = _tables.get("history", {}).get("data", {})
+		tip.spark = all
+		tip.spark_title = "Gegessen seit Beginn"
+		tip.spark_unit = "%"
+		var full := PackedFloat64Array()
+		full.resize(all.size())
+		full.fill(100.0)
+		tip.spark_ref = full # satt
+		tip.colour = Charts.SERIES[0]
+		if h.has("day"):
+			tip.spark_from = date.call(int(h.day[0]))
+			tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
+	return tip
+
+## A bar as the menu's (Vic3) bars: a dark trough with a thin edge, the bar
+## BAR_PX high inside it, dark where it starts and light where it ends.
+func _bar(ci: CanvasItem, trough: Rect2, start: float, end: float, colour: Color) -> void:
+	ci.draw_rect(trough, UiStyle.CHART_GRID)
+	ci.draw_rect(trough, UiStyle.EDGE, false, 1.0)
+	if absf(end - start) < 0.5:
+		return
+	var a := Vector2(start, trough.position.y + (trough.size.y - BAR_PX) * 0.5)
+	var b := Vector2(end, a.y)
+	var dark := colour.darkened(0.45)
+	var light := colour.lightened(0.2)
+	ci.draw_polygon(PackedVector2Array([a, b, b + Vector2(0, BAR_PX), a + Vector2(0, BAR_PX)]),
+		PackedColorArray([dark, light, light, dark]))
+
+## A row's round medal in a gold rim, as the menu's (Vic3) lists: its icon
+## from ICON_DIR once there, else its first letter; on the colour the
+## entity keeps in every chart, or dark.
+func _medal(ci: CanvasItem, at: Vector2, name: String, colour: Color) -> void:
+	ci.draw_circle(at, MEDAL_R + 1.0, UiStyle.EDGE)
+	ci.draw_circle(at, MEDAL_R, UiStyle.GOLD)
+	ci.draw_circle(at, MEDAL_R - 1.5, colour.darkened(0.3) if colour.a > 0.0 else UiStyle.INSET)
+	var icon := _icon(name)
+	if icon != null:
+		var side := (MEDAL_R - 3.0) * 2.0
+		ci.draw_texture_rect(icon, Rect2(at - Vector2(side, side) * 0.5, Vector2(side, side)), false, UiStyle.TEXT)
+	else:
+		UiStyle.text_at(ci, at + Vector2(-MEDAL_R, 4.0), name.left(1), UiStyle.TEXT, UiStyle.SIZE_SMALL - 1, HORIZONTAL_ALIGNMENT_CENTER, MEDAL_R * 2.0, UiStyle.bold())
+
+func _icon(name: String) -> Texture2D:
+	if not _icons.has(name):
+		var path := ICON_DIR + "%s.svg" % ICONS.get(name, "")
+		_icons[name] = load(path) if ICONS.has(name) and ResourceLoader.exists(path) else null
+	return _icons[name]
 
 # ------------------------------------------------------------------ goods
 
@@ -717,18 +936,17 @@ func _bar_card(title: String, about: String) -> void:
 			top = maxf(top, absf(r[1]))
 		var label_w := 150.0
 		var value_w := 80.0
-		var mid := label_w + (_bars.size.x - label_w - value_w) * 0.5
-		var half := (_bars.size.x - label_w - value_w) * 0.5 - 4.0
-		_bars.draw_line(Vector2(mid, 0), Vector2(mid, _bars.size.y), Color(UiStyle.GOLD, 0.6), 1.0)
+		var x1 := _bars.size.x - value_w - 8.0
+		var mid := (label_w + x1) * 0.5
+		var half := (x1 - label_w) * 0.5 - 2.0
 		for k in _bar_rows.size():
 			var y := 4.0 + k * BAR_ROW
 			var v: float = _bar_rows[k][1]
-			var w := absf(v) / top * half
 			var colour := UiStyle.GAIN if v >= 0.0 else UiStyle.LOSS
-			var rect := Rect2(mid, y + 4.0, w, 14.0) if v >= 0.0 else Rect2(mid - w, y + 4.0, w, 14.0)
 			_bars.draw_rect(Rect2(0, y, _bars.size.x, BAR_ROW - 4.0), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
-			_bars.draw_rect(rect, Color(colour, 0.85))
-			_bars.draw_rect(rect, UiStyle.EDGE, false, 1.0)
+			var trough := Rect2(label_w, y + (BAR_ROW - 4.0 - BAR_PX) * 0.5 - 2.0, x1 - label_w, BAR_PX + 4.0)
+			_bar(_bars, trough, mid, mid + signf(v) * absf(v) / top * half, colour) # from nothing in the middle
+			_bars.draw_line(Vector2(mid, trough.position.y - 3.0), Vector2(mid, trough.end.y + 3.0), UiStyle.GOLD, 1.0)
 			UiStyle.text_at(_bars, Vector2(6, y + 16.0), _bar_rows[k][0], UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, label_w - 8.0, font)
 			UiStyle.text_at(_bars, Vector2(_bars.size.x - value_w - 6.0, y + 16.0), ("+" if v > 0.0 else ("−" if v < 0.0 else "")) + Charts.label(absf(v)),
 				colour, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, value_w, font))
@@ -866,13 +1084,10 @@ func _find_all(d: Dictionary) -> void:
 		if cash.size() == n:
 			says.cash = "In der Kasse liegen %s Denar, %s." % [_num(cash[n - 1]), _against_year(cash, "mehr", "weniger")]
 	for key in ["jobs", "farms"]:
-		var ring: Dictionary = _rings[key]
-		var total := 0.0
-		for v in ring.values:
-			total += v
-		if total > 0.0 and ring.names.size() > 0:
-			var share := roundi(ring.values[0] / total * 100.0)
-			says[key] = ("Die meisten arbeiten als %s: %d %% der Menschen." if key == "jobs" else "Am häufigsten: %s, %d %% der Höfe.") % [ring.names[0], share]
+		var bars: Dictionary = _shares[key]
+		if bars.total > 0.0 and bars.names.size() > 0:
+			var share := roundi(bars.values[0] / bars.total * 100.0)
+			says[key] = ("Die meisten arbeiten als %s: %d %% der Menschen." if key == "jobs" else "Am häufigsten: %s, %d %% der Höfe.") % [bars.names[0], share]
 	var classes: Dictionary = _tables.get("classes", {})
 	if not classes.is_empty() and classes.data.has("money"):
 		var top := Array(classes.data.kind).find(FED_NAMES[4])
