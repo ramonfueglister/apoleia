@@ -891,17 +891,19 @@ static func _tree(g: Kit.Grid, x: int, y: int, z: int, r: int, seed: int) -> voi
 		var lc := c + Vector3i(d.x * r * 3 / 4, d.y * r / 2, d.z * r * 3 / 4) + j
 		g.box(lc.x - s, lc.y - s, lc.z - s, lc.x + s, lc.y + s, lc.z + s, cols[(k + seed) % 4])
 	if seed % 12 == 7:
-		# an almond in blossom, pale, in clusters over the outer leaves
+		# an almond in blossom, pale, in a few large clusters on the upper
+		# leaves (single voxels over the whole crown read as white noise on
+		# the courts' trees, Mac r2)
 		var bloom: int = Kit.BLOSSOM_W
 		var e := 2 * r + 4
-		for yy in range(c.y - e, c.y + e):
+		for yy in range(c.y, c.y + e):
 			for zz in range(c.z - e, c.z + e):
 				for xx in range(c.x - e, c.x + e):
 					var v := g.at(xx, yy, zz)
 					if v != Kit.LEAF and v != Kit.LEAF_D and v != Kit.LEAF_L and v != Kit.PLANE:
 						continue
 					var outer := g.at(xx, yy + 1, zz) == Kit.EMPTY or g.at(xx, yy, zz + 1) == Kit.EMPTY or g.at(xx - 1, yy, zz) == Kit.EMPTY
-					if outer and Kit.rnd(xx / 2, yy / 2, zz / 2, seed) % 100 < 42:
+					if outer and Kit.rnd(xx / 4, yy / 4, zz / 4, seed) % 100 < 30:
 						g.put(xx, yy, zz, bloom)
 
 ## A cypress: a narrow column of dark green, `h` voxels high, tapering.

@@ -1,8 +1,10 @@
 // The village lots that carry a house, as a small mask around the camera
 // (one pixel per lot of DOT_LOT_KM, people_dots_common.gdshaderinc), so the
 // crops (people_crops.gdshader) leave the farmhouses, their gardens and
-// yards free. One instance per entry of the house list (people_houses
-// .gdshader), a unit quad moved onto its lot's pixel.
+// yards free: alpha 1 (sim_fields.gdshaderinc sim_house_lot), drawn over
+// what the player built (R, G, B, people_dots.gd _built_rect). One
+// instance per entry of the house list (people_houses .gdshader), a unit
+// quad moved onto its lot's pixel.
 shader_type canvas_item;
 render_mode unshaded, blend_disabled, skip_vertex_transform; // the instances have no transforms
 
@@ -30,5 +32,5 @@ void vertex() {
 }
 
 void fragment() {
-	COLOR = vec4(1.0);
+	COLOR = vec4(0.0, 0.0, 0.0, 1.0);
 }
