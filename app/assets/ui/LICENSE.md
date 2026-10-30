@@ -7,5 +7,5 @@
   (`fonts/OFL-im-fell.txt`), from npm `@fontsource/im-fell-english-sc` 5.3.0.
 - `fonts/eb-garamond*.woff2`: EB Garamond by Georg Duffner and Octavio Pardo, SIL Open Font License 1.1
   (`fonts/OFL-eb-garamond.txt`), from npm `@fontsource/eb-garamond` 5.3.0.
-- `leder.png`, `schiefer.png`: own, tileable noise.
+- `leder.png`, `schiefer.png`, `leiste.png`: own, tileable noise.
 - `../menu/diorama/*.png`: own voxel buildings, rendered with Godot.
