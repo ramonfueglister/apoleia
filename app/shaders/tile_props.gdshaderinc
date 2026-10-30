@@ -63,9 +63,13 @@ bool tt_olive_grove(ivec2 dt, bool ramp) {
 // (Ramon 29.10.2026: whole hillsides and pastures of bare lawn): on the
 // ramps, where no field ever lies, and on the parcels the farms leave as
 // pasture (sim_parcel), never on a sown or fallow parcel or a farmhouse's
-// lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs.
-const float SCATTER_TREE = 0.09; // share of the slots with a tree
-const float SCATTER_BUSH = 0.0; // and with a bush (s4: little trees read as saplings, sizes all over the place)
+// lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs. As
+// densely as on Urbek's lawns (s5 measured: with 0.09 of the slots a fifth
+// of the farmland views was bare lawn, 15-17 % flat green against Urbek's
+// 1.5 %; Urbek's grass is as flat as ours, its trees and bushes are three
+// to four times as many).
+const float SCATTER_TREE = 0.3; // share of the slots with a tree
+const float SCATTER_BUSH = 0.25; // and with a shrub (tile_prop_meshes.gd _shrub; s4: small trees as bushes read as saplings)
 bool tt_scatter_free(vec2 at, bool ramp, bool field) {
 	if (!sim_map_on || sim_fine_n == 0) { return !field; }
 	if (sim_house_lot(at)) { return false; }
@@ -189,16 +193,21 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool scatter = sub_tiles && (open || field) && !olive && !grove && rs < SCATTER_TREE + SCATTER_BUSH
 			&& tt_scatter_free(at, ramp, field);
 		bool bush = scatter && rs >= SCATTER_TREE;
+		// on the four points of a 2 x 2 grid in its quarter, a little
+		// jittered: the crowns (up to 4.6 m on a 10 m parcel) clear of each
+		// other and of the fields round the parcel
+		if (scatter) {
+			uv = (g + 0.5) / float(side) + (vec2(r1, r2) - 0.5) * 0.06;
+			at = world_min + (vec2(t) + uv) * tile_km;
+		}
 		bool planted = garden && rs < 0.6 && !tt_near_landmark(at, 0.06);
 		show = show && (wood || grove || olive || scatter || planted) && (olive || scatter || planted || !thin);
 		// none on a field or a road the player built (state land is cleared, S116)
 		show = show && (garden || !sim_built_clear(at, SIM_ROAD_HALF_KM + 0.03));
 		// a lone tree smaller than in a wood, about as tall as a one-storey
 		// house, as Urbek's (Ramon on s3: Urbek's trees are much smaller
-		// against its fields and houses); kept in the middle of its quarter,
-		// clear of the fields round it
-		if (scatter) { uv = 0.5 + (uv - 0.5) * 0.4; }
-		edge_size = olive ? OLIVE_SIZE : bush ? mix(0.25, 0.35, r0) : scatter ? 0.75 : planted ? 0.75 : mix(0.85, 1.0, r0);
+		// against its fields and houses)
+		edge_size = olive ? OLIVE_SIZE : bush ? 1.0 : scatter ? 0.75 : planted ? 0.75 : mix(0.85, 1.0, r0);
 		float h = tt_height_m(at, height_lod);
 		float lat = tt_latitude(at);
 		show = show && h < 1400.0;
@@ -206,7 +215,7 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		// stone pines and cypresses in the warm lowlands, more of them in open land
 		bool south = lat < 44.5 && h < 700.0;
 		float pine_p = south ? (wood ? 0.12 : 0.45) : 0.0;
-		int kind = olive || bush ? 0
+		int kind = bush ? 5 : olive ? 0
 			: planted ? (r1 < 0.4 ? 2 : r1 < 0.65 ? 4 : 0)
 			: r0 < conifer_p ? 1
 			: (south && r0 < conifer_p + pine_p) ? 4

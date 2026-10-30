@@ -26,14 +26,15 @@ uniform int lot_start = 0; // a lot model's slots in town_tex
 uniform int lot_count = 0;
 uniform int town_w = 100;
 // The trees' blocks (tile_prop_meshes.gd tree_table): TREE_BLOCKS a kind, in
-// the order broadleaf, conifer, cypress, stone pine (place codes 0, 1, 2, 4).
+// the order broadleaf, conifer, cypress, stone pine, shrub (place codes 0, 1,
+// 2, 4, 5).
 // The tree mesh is unit blocks, UV.x the block's number, each stretched to
 // its block of the slot's kind: one tree instance a slot draws every kind.
 const int TREE_BLOCKS = 5;
-uniform vec3 tree_lo[20];
-uniform vec3 tree_hi[20];
-uniform vec3 tree_top[20];
-uniform vec3 tree_side[20];
+uniform vec3 tree_lo[25];
+uniform vec3 tree_hi[25];
+uniform vec3 tree_top[25];
+uniform vec3 tree_side[25];
 
 varying vec3 tint;
 varying float road; // a street tile's terrace top: tt_sub_street_dir (1 north-south, 2 east-west, 3 both), 0 none
@@ -129,7 +130,7 @@ void vertex() {
 		vec3 m = VERTEX;
 		if (!house) {
 			int kind = int(floor(d.w));
-			int b = (kind == 4 ? 3 : kind) * TREE_BLOCKS + int(UV.x + 0.5);
+			int b = (kind >= 4 ? kind - 1 : kind) * TREE_BLOCKS + int(UV.x + 0.5);
 			m = mix(tree_lo[b], tree_hi[b], VERTEX);
 			// light top, darker sides and underside (tile_prop_meshes.gd _box)
 			COLOR = vec4(NORMAL.y > 0.5 ? tree_top[b] : NORMAL.y < -0.5 ? tree_side[b] * 0.6 : tree_side[b], 1.0);

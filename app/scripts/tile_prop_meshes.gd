@@ -120,7 +120,7 @@ static func _plinth_quad(st: SurfaceTool, lo: Vector2, hi: Vector2, rgb: Color) 
 ## once for each kind (four multimeshes over all slots made the trees most of
 ## a frame from 5 to 30 km). The first block is the trunk, without top and
 ## bottom; a kind with fewer blocks leaves the rest at zero size.
-const TREE_KINDS := 4 # broadleaf, conifer, cypress, stone pine (tile_props.gdshaderinc codes 0, 1, 2, 4)
+const TREE_KINDS := 5 # broadleaf, conifer, cypress, stone pine, shrub (tile_props.gdshaderinc codes 0, 1, 2, 4, 5)
 const TREE_BLOCKS := 5
 
 ## The blocks of tree kind `kind` (TREE_KINDS order); `low`: the far version
@@ -130,7 +130,8 @@ static func tree_blocks(kind: int, low := false) -> Array:
 		0: return _broadleaf(low)
 		1: return _conifer(low)
 		2: return _cypress(low)
-		_: return _umbrella_pine(low)
+		3: return _umbrella_pine(low)
+		_: return _shrub(low)
 
 ## TREE_BLOCKS unit blocks (TREE_BLOCKS - 1 for the far trees): corners at 0
 ## and 1, UV.x the block's number, the first with its four sides only.
@@ -223,6 +224,19 @@ static func _umbrella_pine(low: bool) -> Array:
 	out.append([Vector3(-0.32, 0.66, -0.30), Vector3(0.32, 0.78, 0.30), top, side])
 	out.append([Vector3(-0.44, 0.74, -0.40), Vector3(0.44, 0.92, 0.40), top, side])
 	out.append([Vector3(-0.28, 0.92, -0.26), Vector3(0.28, 1.02, 0.26), top, top.lerp(side, 0.35)])
+	return out
+
+## A shrub on the pasture, as the round bushes between Urbek's trees: a low
+## mound of voxels, no trunk, a lighter green than the crowns (about 1.2 m
+## tall and 1.9 m wide at a slot's size 1).
+static func _shrub(low: bool) -> Array:
+	var top := Color(0.27, 0.46, 0.21)
+	var side := Color(0.17, 0.32, 0.14)
+	var out := [[Vector3(-0.10, 0, -0.10), Vector3(0.10, 0.03, 0.10), side, side],
+		[Vector3(-0.13, 0.02, -0.11), Vector3(0.13, 0.13, 0.11), top, side]]
+	if not low:
+		out.append([Vector3(-0.09, 0.02, -0.14), Vector3(0.09, 0.12, 0.14), top, side])
+		out.append([Vector3(-0.08, 0.13, -0.07), Vector3(0.07, 0.17, 0.08), top, top.lerp(side, 0.35)])
 	return out
 
 ## A flat quad on a wall (window, door), a hair in front of it. `shade`:
