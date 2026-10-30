@@ -8,7 +8,9 @@
 // The mesh holds every part in metres (UV.x the part): the
 // person (0), a donkey (1) and its sacks (2), a wagon (3), its ox (4) and
 // its load (5), a hired hand's sickle (6), seed basket (7) or hoe (8);
-// or a market stall (9); INSTANCE_CUSTOM.r says which parts beyond the
+// or a market stall (9); or, in the scenes of events, a handcart (10), a
+// bundle on the back (11), a bier with its second bearer (12), an axe (13)
+// or a bowl (14); INSTANCE_CUSTOM.r says which parts beyond the
 // person show (bit part - 1), .g how many seconds it walks on from the
 // start before it stops, .b the tunic colour plus the walk's phase as the
 // fraction, .a whether it walks (0), stands (1) or is a stall without a

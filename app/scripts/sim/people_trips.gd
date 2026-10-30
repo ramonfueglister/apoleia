@@ -31,6 +31,25 @@ extends MultiMeshInstance3D
 ## moving 300 of them each frame in GDScript took a millisecond or more).
 ## A click on a traveller shows who it is and what they are doing (`pick`,
 ## people_dots.gd).
+##
+## The newest events of the simulation (sim/src/events.rs, handed over by
+## sim_events.gd `answered`) become scenes on the way (Ramon, 30.10.2026:
+## "Wuselfaktor", "alles aus der Simulation"): only what happened, where
+## the sim has it. A household that moves or joins relatives pulls a
+## handcart from the 25 km cell it left towards the one it goes to (the
+## event knows only the cells, so the way runs from middle to middle); a
+## household that goes to the tents, or a tent household that moves to
+## another market, carries its bundles to the market square (where the
+## tents are: the household's fine tile is the market's); alms are fetched
+## with a bowl at the market square; a thief walks from the market square
+## to the farm robbed (its farmstead is known) and back with a sack; a
+## hunger death leaves the market square nearest its cell as a funeral, the
+## dead on a bier, towards the graves outside the town (the event knows only
+## the cell, not the house); a family takes over a free farm, an heir moves
+## onto his share, a farm cleared under the Lex Manciana gets its clearer
+## with an axe, and a family that gives up its farm leaves it with its cart.
+## Scenes are made for events of the last SCENE_DAYS only, each once, at
+## most SCENES_MAX walkers beside the trips; a click names the event.
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
@@ -54,6 +73,11 @@ const HOE := 128
 const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
 const WORK_NAMES: Array[String] = ["bei der Aussaat", "bei der Ernte", "über das Jahr", "aus einem Überschuss"] # likewise, for a click
 const STALL := 256
+const HANDCART := 512 # pulled behind the person, with the household's bundles
+const BUNDLE := 1024 # a bundle or sack on the back
+const BIER := 2048 # a bier on the shoulders, the dead under a shroud, a second bearer behind
+const AXE := 4096 # on the shoulder
+const BOWL := 8192 # in the left hand
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
 const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
 ## how an instance moves (INSTANCE_CUSTOM.a): walking, standing, a stall
@@ -65,6 +89,23 @@ const SQUARES_MAX := 40
 const STALLS: Array[Vector2] = [Vector2(-0.085, -0.07), Vector2(0.0, -0.095), Vector2(0.085, -0.07),
 	Vector2(-0.095, 0.03), Vector2(0.095, 0.03), Vector2(-0.04, 0.095), Vector2(0.05, 0.095)]
 const SQUARES_KM := 10.0 # stalls only in views up to this width, as the squares
+const SCENES_MAX := 80 # walkers of event scenes at once, beyond MAX
+const SCENE_DAYS := 2 # events this many days old or newer become scenes; older ones were over before the view came
+const GAP_KM := 0.035 # between the members of a group along their way (a figure is 40 m at diorama scale)
+const SQUARE_REACH_KM := 20.0 # the market square of a cell event: the nearest one this close to the cell's middle
+const OUT_KM := 1.2 # how far from the farm or square a scene's way starts when nothing else says where
+## event kinds (sim/src/events.rs)
+const EV_HUNGER := 0
+const EV_MOVED := 1
+const EV_JOINED := 3
+const EV_THEFT := 4
+const EV_ALMS := 5
+const EV_TENT_MOVED := 6
+const EV_FARM_TAKEN := 7
+const EV_HEIR := 8
+const EV_TO_TENT := 9
+const EV_MANCIANA := 10
+const EV_FARM_LEFT := 11
 
 var people: RefCounted
 var _able := false # an older build of the GDExtension has no trips
@@ -82,6 +123,9 @@ var _buffer := PackedFloat32Array() # the stalls first, then the travellers in t
 var _clock := 0.0 # seconds walked (people_walkers.gdshader walk_clock)
 var _next := INF # clock time of the next stop or turn of any traveller
 var _dirty := false # _buffer changed since it was last handed over
+var _scene_seen := {} # the events of the last SCENE_DAYS already played, so each plays once
+var _scenes := 0 # walkers of scenes among _walkers
+var _square_of := {} # market square (or INF) by 25 km cell of an event, for the scenes
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
 	people = sim
@@ -96,10 +140,10 @@ func setup(sim: RefCounted, km_per_m: float) -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	mm.mesh = _mesh()
-	mm.instance_count = MAX + SQUARES_MAX * STALLS.size()
+	mm.instance_count = MAX + SCENES_MAX + SQUARES_MAX * STALLS.size()
 	mm.visible_instance_count = 0
 	multimesh = mm
-	_buffer.resize((MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
+	_buffer.resize((MAX + SCENES_MAX + SQUARES_MAX * STALLS.size()) * STRIDE)
 
 ## One frame: `on` while the figures are drawn, `centre` the ground in the
 ## middle of the view (world km), `view_km` its width.
@@ -109,6 +153,8 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_walkers.clear()
 		_listed.clear()
 		_hired.clear()
+		_scene_seen.clear()
+		_scenes = 0
 		_asked_at = Vector3.INF
 		_next = INF
 		return
@@ -158,7 +204,7 @@ func _take(t: Dictionary) -> void:
 	var listed := {}
 	for i in ids.size():
 		listed[ids[i]] = true
-		if _listed.has(ids[i]) or _walkers.size() >= MAX:
+		if _listed.has(ids[i]) or _walkers.size() - _scenes >= MAX:
 			continue
 		var w := _traveller(t, i)
 		if not w.is_empty():
@@ -177,7 +223,7 @@ func _take_work(h: Dictionary) -> void:
 	for i in worker.size():
 		var key := Vector2i(worker[i], day[i])
 		hired[key] = true
-		if _hired.has(key) or _walkers.size() >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
+		if _hired.has(key) or _walkers.size() - _scenes >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
 			continue
 		var w := {
 			"points": PackedVector2Array([from[i], to[i]]),
@@ -197,6 +243,185 @@ func _take_work(h: Dictionary) -> void:
 			w.turn = false
 		_add(w)
 	_hired = hired
+
+## The events of an answer (sim_events.gd `answered`, newest last): each of
+## the last SCENE_DAYS not yet played becomes its scene, the newest first.
+func take_events(e: Dictionary) -> void:
+	if not visible or e.is_empty() or not e.has("day"):
+		return
+	var days: PackedInt64Array = e.day
+	var kinds: PackedInt32Array = e.kind
+	var households: PackedInt64Array = e.household
+	var pids: PackedInt64Array = e.pid
+	var today: int = people.day()
+	var seen := {}
+	var fresh: Array[int] = []
+	for i in range(days.size() - 1, -1, -1):
+		if days[i] < today - SCENE_DAYS:
+			break
+		var key := "%d:%d:%d:%d" % [days[i], kinds[i], households[i], pids[i]]
+		seen[key] = true
+		if not _scene_seen.has(key):
+			fresh.append(i)
+	_scene_seen = seen
+	for i in fresh:
+		if _scenes > SCENES_MAX - 4: # a scene has up to four walkers
+			break
+		_scene(e, i)
+
+## The scene of event i (see the head of this file), when its way lies in
+## the view.
+func _scene(e: Dictionary, i: int) -> void:
+	var kind: int = e.kind[i]
+	var at: Vector2 = e.at[i]
+	var to: Vector2 = e.to[i]
+	var hh: int = e.household[i]
+	var pid: int = e.pid[i]
+	var amount: int = e.amount[i]
+	var who := {"household": hh, "pid": pid}
+	match kind:
+		EV_MOVED, EV_JOINED:
+			# from the cell left towards the cell moved to: only the stretch in view
+			var way := _clip(at, to)
+			if way.is_empty():
+				return
+			var n := clampi(amount, 1, 4)
+			var what := "zieht mit %d Menschen in eine andere Gegend" % amount if kind == EV_MOVED \
+				else "zieht mit %d Menschen zu Verwandten" % amount
+			_group(way, n, HANDCART, BUNDLE, 0.0, false, 1.0, what, who)
+		EV_TENT_MOVED, EV_TO_TENT:
+			# to the tents at the market square: the new market's (its fine
+			# tile is the event's place) or the one of the cell
+			var square := at if kind == EV_TENT_MOVED else _square_near(at)
+			if square.x == INF:
+				return
+			var from := square + _away(hh, at - square) * OUT_KM
+			var what := "Zeltfamilie zieht an einen Markt mit mehr Arbeit und Almosen" if kind == EV_TENT_MOVED \
+				else "ohne Arbeitskraft, zieht ins Zelt am Markt"
+			_group(PackedVector2Array([from, square]), 2, BUNDLE, BUNDLE, 3.0, false, 0.9, what, who)
+		EV_ALMS:
+			var square := _square_near(at)
+			if square.x == INF:
+				return
+			var from := square + _away(hh, at - square) * 0.3
+			var w := _scene_walker(PackedVector2Array([from, square]), 0.0, BOWL, BOWL | BUNDLE, 5.0, true, 0.8, who)
+			if not w.is_empty():
+				w.what = "Zeltbewohner, holt Almosen am Markt"
+				w.what_home = "Zeltbewohner, trägt %s kg Korn Almosen heim" % SimTables._int(amount)
+				_add_scene(w)
+		EV_THEFT:
+			# from the tents at the market square (if near) to the farm robbed and back
+			var square := _square_near(at)
+			var from := square if square.x != INF and square.distance_to(at) <= 6.0 else at + _away(hh, Vector2.ZERO) * OUT_KM
+			var w := _scene_walker(PackedVector2Array([from, at]), 0.0, 0, BUNDLE, 2.5, true, 1.3, who)
+			if not w.is_empty():
+				w.what = "Dieb aus dem Zelt, schleicht zu einem Hof"
+				w.what_home = "Dieb, trägt %s kg gestohlenes Korn davon" % SimTables._int(amount)
+				_add_scene(w)
+		EV_HUNGER:
+			# a funeral from the market square of the cell to the graves
+			# outside the town; the dead person's house is not known
+			var square := _square_near(at)
+			if square.x == INF:
+				return
+			var graves := square + _away(hh, at - square) * 0.9
+			_group(PackedVector2Array([square, graves]), 4, BIER, 0, 5.0, false, 0.55,
+				"Trauerzug: ein Mensch aus dieser Gegend ist verhungert", {"household": -1, "pid": -1}, 6)
+		EV_FARM_TAKEN, EV_HEIR:
+			var from := at + _away(hh, Vector2.ZERO) * OUT_KM
+			var what := "Familie übernimmt einen freien Hof" if kind == EV_FARM_TAKEN else "Sohn zieht auf seinen Erbteil vom Hof des Vaters"
+			_group(PackedVector2Array([from, at]), 3 if kind == EV_FARM_TAKEN else 2, HANDCART, BUNDLE, 3.0, false, 1.0, what, who)
+		EV_MANCIANA:
+			var from := at + _away(hh, Vector2.ZERO) * OUT_KM
+			_group(PackedVector2Array([from, at]), 2, AXE, AXE, 10.0, false, 1.0,
+				"rodet Land nach der Lex Manciana für einen eigenen Hof", who)
+		EV_FARM_LEFT:
+			var off := at + _away(hh, Vector2.ZERO) * OUT_KM * 2.0
+			_group(PackedVector2Array([at, off]), 3, HANDCART, BUNDLE, 0.0, false, 1.0, "gibt den Hof auf und zieht weg", who)
+
+## A group of n on `way`, one behind the other: the first with `lead`, the
+## others with `rest`; at the end each stays `stay` seconds (0: gone there).
+## `tint` dresses all alike (a funeral in dark), -1 by household.
+func _group(way: PackedVector2Array, n: int, lead: int, rest: int, stay: float, back: bool, pace: float, what: String, who: Dictionary, tint := -1) -> void:
+	var length := way[0].distance_to(way[way.size() - 1])
+	for k in n:
+		var behind := minf(float(n - 1 - k) * GAP_KM, length * 0.5) # the first walks ahead
+		var parts := lead if k == 0 else rest
+		var w := _scene_walker(way, behind, parts, parts, stay, back, pace, who, k)
+		if w.is_empty():
+			return
+		w.what = what
+		if tint >= 0:
+			w.tint = tint
+		_add_scene(w)
+
+## A scene's walker on `way` (world km), `ahead` km along it.
+func _scene_walker(way: PackedVector2Array, ahead: float, parts: int, parts_home: int, stay: float, back: bool, pace: float, who: Dictionary, member := 0) -> Dictionary:
+	var along := PackedFloat32Array([0.0])
+	for k in range(1, way.size()):
+		along.append(along[k - 1] + way[k].distance_to(way[k - 1]))
+	var length := along[along.size() - 1]
+	var inside := _window.grow(0.01) # a clipped way ends on the window's edge
+	if length < 0.05 or not (inside.has_point(way[0]) or inside.has_point(way[way.size() - 1])):
+		return {}
+	var hh: int = who.household
+	var seed := float(hh if hh >= 0 else int(way[0].x * 1000.0)) + member * 7.0
+	return {
+		"points": way, "along": along, "s": clampf(ahead, 0.0, length), "dir": 1.0, "turn": back,
+		"cart": false, "cargo": false, "out": false,
+		"phase": fposmod(seed * 0.618034, 1.0), "tint": int(absf(seed)) % 8,
+		"side": (fposmod(seed * 0.377, 1.0) - 0.5) * LANE_KM * 0.4, # a group keeps together
+		"parts": parts, "parts_home": parts_home, "stay": stay, "pace": pace,
+		"household": hh if member == 0 else -1, "pid": int(who.pid) if member == 0 else -1,
+	}
+
+func _add_scene(w: Dictionary) -> void:
+	_scenes += 1
+	_add(w)
+
+## The market square nearest the middle of the 25 km cell that `at` lies
+## in, within SQUARE_REACH_KM; Vector2(INF, INF) if none.
+func _square_near(at: Vector2) -> Vector2:
+	var cell := Vector2i((at / 25.0).floor())
+	if _square_of.has(cell):
+		return _square_of[cell]
+	var middle := (Vector2(cell) + Vector2(0.5, 0.5)) * 25.0
+	var best := Vector2(INF, INF)
+	var n := int(ceil(SQUARE_REACH_KM * 2.0 / 1.5625)) + 2 # fine tiles across
+	for q in people.market_squares(middle.x, middle.y, n):
+		if q.distance_to(middle) <= SQUARE_REACH_KM and (best.x == INF or q.distance_to(middle) < best.distance_to(middle)):
+			best = q
+	_square_of[cell] = best
+	return best
+
+## A way out of a farm or square: towards `hint` when it has a length (where
+## the household came from), else a direction of its own by the household.
+static func _away(hh: int, hint: Vector2) -> Vector2:
+	if hint.length() > 0.2:
+		return hint.normalized()
+	var a := fposmod(float(hh) * 0.618034, 1.0) * TAU
+	return Vector2(cos(a), sin(a))
+
+## The stretch of the straight way a to b inside the view window, from where
+## it comes in to where it leaves (or ends); empty if it misses the window.
+func _clip(a: Vector2, b: Vector2) -> PackedVector2Array:
+	var d := b - a
+	var t0 := 0.0
+	var t1 := 1.0
+	var lo := _window.position
+	var hi := _window.end
+	for axis in 2:
+		if absf(d[axis]) < 1e-6:
+			if a[axis] < lo[axis] or a[axis] > hi[axis]:
+				return PackedVector2Array()
+			continue
+		var u := (lo[axis] - a[axis]) / d[axis]
+		var v := (hi[axis] - a[axis]) / d[axis]
+		t0 = maxf(t0, minf(u, v))
+		t1 = minf(t1, maxf(u, v))
+	if t1 - t0 <= 0.0:
+		return PackedVector2Array()
+	return PackedVector2Array([a + d * t0, a + d * t1])
 
 ## Trip i of the list as a traveller, placed where the sim has it today, or
 ## {} when no part of its way lies in the view.
@@ -273,13 +498,15 @@ func pick(cam: Camera3D, pixel: Vector2, ground: Callable, lift: float, max_px: 
 			best = w
 	if best.is_empty():
 		return {}
-	return {"pid": best.get("pid", -1), "household": best.get("worker", -1), "what": _what(best)}
+	return {"pid": best.get("pid", -1), "household": best.get("worker", best.get("household", -1)), "what": _what(best)}
 
 
 ## What a traveller is doing, as a line for the person's info.
 static func _what(w: Dictionary) -> String:
 	var there: bool = w.dir > 0.0
 	var staying: bool = w.wait > 0.0
+	if w.has("what"): # a scene: its event
+		return w.what if there or not w.has("what_home") else w.what_home
 	if w.has("worker"):
 		var at := "auf dem Hof von Haushalt %d" % w.farm if int(w.farm) >= 0 else "auf einem Hof"
 		var doing := "arbeitet" if staying else ("geht zur Arbeit" if there else "kommt von der Arbeit")
@@ -325,7 +552,7 @@ func _start(w: Dictionary, t: float) -> void:
 	var d: Vector2 = (b - a) * w.dir
 	d = d.normalized() if d.length() > 0.0 else w.get("d", Vector2(0.0, 1.0))
 	var left: float = along[k + 1] - w.s if w.dir > 0.0 else w.s - along[k]
-	var speed: float = CART_KMPS if w.cart else WALK_KMPS
+	var speed: float = (CART_KMPS if w.cart else WALK_KMPS) * float(w.get("pace", 1.0))
 	w.k = k
 	w.d = d
 	w.at = a.lerp(b, f) + Vector2(-d.y, d.x) * float(w.side) # its own lane
@@ -361,12 +588,21 @@ func _events() -> void:
 			var here: Vector2 = points[w.k + 1] if w.dir > 0.0 else points[w.k]
 			if w.dir > 0.0 and w.k + 1 >= along.size() - 1:
 				# at the market or at work: it stays a while
+				var stay: float = w.get("stay", LINGER_S)
+				if stay <= 0.0: # a scene that ends here: gone, or at once home again
+					if w.turn:
+						w.turn = false
+						w.dir = -1.0
+						_start(w, t)
+					else:
+						gone = true
+					continue
 				w.at = here + Vector2(-w.d.y, w.d.x) * float(w.side)
 				w.velocity = Vector2.ZERO
 				w.t0 = t
 				w.walk = 0.0
-				w.wait = LINGER_S
-				w.until = t + LINGER_S
+				w.wait = stay
+				w.until = t + stay
 			elif w.dir < 0.0 and w.k <= 0:
 				gone = true # home
 			elif not _window.has_point(here):
@@ -374,6 +610,8 @@ func _events() -> void:
 			else:
 				_start(w, t) # the next stretch (_start finds it from the end of this one)
 		if gone:
+			if w.has("what"):
+				_scenes -= 1
 			var last: Dictionary = _walkers[_walkers.size() - 1]
 			_walkers[i] = last
 			_walkers.pop_back()
@@ -396,6 +634,8 @@ func _write(i: int) -> void:
 	var parts: int = (CART | OX | (LOAD if loaded else 0)) if w.cart else (DONKEY | (SACKS if loaded else 0))
 	if w.has("tool"):
 		parts = w.tool
+	elif w.has("parts"): # a scene: what it carries there and on the way back
+		parts = w.parts if w.dir > 0.0 else w.parts_home
 	# turned about y so the model's front (+z) faces d; the velocity and
 	# start time ride in the middle row (people_walkers.gdshader)
 	var o := (_squares.size() * STALLS.size() + i) * STRIDE
@@ -430,7 +670,8 @@ func _write_all() -> void:
 ## (2), or an ox (4) in front of a cart (3) with its load (5) on their right;
 ## or the tool of a hired hand: a sickle in the right hand (6), a seed
 ## basket in the left (7), a hoe on the shoulder (8); or a market stall
-## (9), standing alone, its counter to the front.
+## (9), standing alone, its counter to the front; or what the people of an
+## event's scene carry (10-14, see the end).
 static func _mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -512,6 +753,39 @@ static func _mesh() -> ArrayMesh:
 	_box(st, Vector3(-0.7, 1.12, 0.45), Vector3(0.24, 0.12, 0.22), Color(0.76, 0.67, 0.48), 9)
 	_box(st, Vector3(0.0, 1.14, 0.45), Vector3(0.14, 0.14, 0.14), Color(0.7, 0.42, 0.28), 9)
 	_box(st, Vector3(0.65, 1.08, 0.45), Vector3(0.3, 0.08, 0.22), Color(0.4, 0.55, 0.24), 9)
+	# the scenes of events: a handcart pulled behind the person by two shafts,
+	# the household's bundles on it (10); a bundle on the back (11); a bier
+	# on the shoulders with the dead under a linen shroud and a second
+	# bearer behind (12); an axe on the shoulder (13); a bowl in the left
+	# hand (14)
+	o = Vector3(0.0, 0.0, -1.35)
+	_box(st, o + Vector3(0.0, 0.62, 0.0), Vector3(0.42, 0.04, 0.5), wood, 10)
+	for side in [-1.0, 1.0]:
+		_box(st, o + Vector3(0.42 * side, 0.74, 0.0), Vector3(0.03, 0.1, 0.5), dark, 10)
+		_box(st, o + Vector3(0.5 * side, 0.36, 0.0), Vector3(0.04, 0.34, 0.34), dark, 10)
+		_box(st, Vector3(0.26 * side, 0.72, -0.5), Vector3(0.025, 0.025, 0.42), wood, 10)
+	_box(st, o + Vector3(-0.15, 0.82, 0.18), Vector3(0.2, 0.16, 0.22), linen, 10)
+	_box(st, o + Vector3(0.18, 0.8, -0.15), Vector3(0.18, 0.14, 0.2), sack, 10)
+	_box(st, o + Vector3(0.05, 0.98, 0.02), Vector3(0.14, 0.08, 0.16), Color(0.55, 0.32, 0.2), 10)
+	_box(st, Vector3(0.0, 0.66, -0.15) * f, Vector3(0.11, 0.14, 0.07) * f, sack, 11)
+	_box(st, Vector3(0.0, 0.81, -0.15) * f, Vector3(0.04, 0.02, 0.04) * f, sack.darkened(0.3), 11)
+	var shroud := Color(0.9, 0.87, 0.8)
+	for side in [-1.0, 1.0]:
+		_box(st, Vector3(0.2 * side, 0.83 * f, -1.25), Vector3(0.025, 0.025, 1.25), wood, 12)
+	_box(st, Vector3(0.0, 0.83 * f, -1.25), Vector3(0.22, 0.03, 0.9), wood, 12)
+	_box(st, Vector3(0.0, 0.83 * f + 0.1, -1.25), Vector3(0.17, 0.08, 0.8), shroud, 12)
+	var mourning := Color(0.3, 0.24, 0.2)
+	var b := Vector3(0.0, 0.0, -2.5)
+	for side in [-1.0, 1.0]:
+		_box(st, b + Vector3(0.075 * side, 0.02, 0.02) * f, Vector3(0.05, 0.02, 0.07) * f, sandal, 12, side, 0.48 * f)
+		_box(st, b + Vector3(0.075 * side, 0.21, 0.0) * f, Vector3(0.05, 0.17, 0.05) * f, skin, 12, side, 0.48 * f)
+		_box(st, b + Vector3(0.2 * side, 0.68, 0.06) * f, Vector3(0.05, 0.14, 0.05) * f, skin, 12)
+	_box(st, b + Vector3(0.0, 0.59, 0.0) * f, Vector3(0.15, 0.21, 0.1) * f, mourning, 12)
+	_box(st, b + Vector3(0.0, 0.9, 0.0) * f, Vector3(0.08, 0.08, 0.08) * f, skin, 12)
+	_box(st, b + Vector3(0.0, 0.975, -0.01) * f, Vector3(0.088, 0.025, 0.088) * f, hair, 12)
+	_box(st, Vector3(0.14, 0.83, -0.05) * f, Vector3(0.018, 0.018, 0.36) * f, wood, 13)
+	_box(st, Vector3(0.14, 0.86, -0.4) * f, Vector3(0.015, 0.07, 0.045) * f, iron, 13)
+	_box(st, Vector3(-0.24, 0.5, 0.08) * f, Vector3(0.065, 0.025, 0.065) * f, Color(0.66, 0.4, 0.26), 14, 0.6, 0.78 * f)
 	st.index() # each corner shaded once, not once per triangle
 	return st.commit()
 

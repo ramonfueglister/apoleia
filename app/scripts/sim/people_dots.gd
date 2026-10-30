@@ -384,6 +384,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	var events := SimEvents.new() # E: what happens, at the bottom right
 	events.setup(people, get_parent())
 	add_child(events)
+	events.answered.connect(_trips.take_events) # the newest events as scenes on the way
 	_rebuild()
 	_rebuild_houses()
 	if _cost_path != "":
@@ -1024,12 +1025,17 @@ func _pick(pixel: Vector2) -> void:
 			mat.set_shader_parameter("selected_slot", -1)
 		print(JSON.stringify({"event": "people_pick", "pixel": [pixel.x, pixel.y], "pid": traveller.pid, "household": traveller.household}))
 		_doing = traveller.what
+		_show_info(true)
+		if int(traveller.pid) < 0 and int(traveller.household) < 0:
+			# a scene with nobody to look up (a funeral): only what happens
+			_waiting = false
+			_info_label.text = "[color=#c9a45c]%s[/color]" % _doing
+			return
 		if int(traveller.pid) >= 0:
 			people.ask_person_id(traveller.pid)
 		else:
 			people.ask_household_member(traveller.household)
 		_waiting = true
-		_show_info(true)
 		_info_label.text = "…"
 		return
 	_doing = ""
