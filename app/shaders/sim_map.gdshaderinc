@@ -1,5 +1,5 @@
 // The grain economy on the terrain (sim/godot/src/grain_map.rs): fields by
-// season around the farms, footpaths worn towards the markets, market
+// season around the farms, the ways people wear walking (S127), market
 // squares, trade roads and sea lanes. people_dots.gd fills the layers once a
 // month: a window of fine tiles (1.5625 km) around the camera and the road
 // layer of 25 km cells over the whole map.
@@ -8,10 +8,11 @@
 // this after its palette): one flat colour per parcel, crisp edges, no
 // noise, furrows or fades, colours from the terrain palette.
 //
-// Fine texel (sim_fields.gdshaderinc): A footpath level (bits 0-1), its next
-// step towards the market + 1 (bits 2-5) and market tile (bit 6).
+// Fine texel (sim_fields.gdshaderinc): A way level (bits 0-1 and 7), its
+// next step towards the market + 1 (bits 2-5) and market tile (bit 6).
 // Road texel: R level (1 track, 2 road; at sea a lane), G the neighbours it
-// joins (bit k = SIM_DIRS[k]).
+// joins (bit k = SIM_DIRS[k]); drawn only at sea (sim_lanes): on land the
+// wagons wear the fine layer's ways (S127).
 
 #include "res://shaders/sim_fields.gdshaderinc"
 
@@ -25,12 +26,6 @@ uniform ivec2 sim_cell_n = ivec2(0);
 uniform sampler2D sim_region_tex : filter_nearest, repeat_disable;
 uniform bool sim_regions_on = false;
 
-// (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
-const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
-const float SIM_ROAD_KM = 0.12;  // a paved road at diorama scale (as the houses)
-const float SIM_TRACK_KM = 0.07;
-const float SIM_PATH_KM = 0.03;  // a worn path
-const float SIM_TRAIL_KM = 0.018;
 
 
 int sim_byte(float v) {
@@ -84,7 +79,11 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f, bool built) {
 // fields of sim_strip_rgb, so the farmland still reads as fields round the
 // towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
 const vec3 SIM_DIRT = vec3(0.3, 0.28, 0.225); // #888068 on screen: Urbek's field tracks (r11 Fix 5)
-const vec3 SIM_TRACK_RGB = vec3(0.42, 0.37, 0.29); // the lanes and farm tracks
+const vec3 SIM_TRACK_RGB = vec3(0.42, 0.37, 0.29); // the ways people wear (sim_ways)
+// per way level: up to which view width it is drawn (the faint ones up
+// close only) and how much of the bare earth shows
+const float SIM_WAY_SHOW_KM[8] = float[](0.0, 6.0, 10.0, 16.0, 25.0, 40.0, 40.0, 40.0);
+const float SIM_WAY_ALPHA[8] = float[](0.0, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0, 1.0);
 const vec3 SIM_VERGE_RGB = vec3(0.55, 0.7, 0.45); // the grass along them, paler than the meadow
 const float SIM_VERGE_KM = 0.016;                  // its width, a third of the lane's as Urbek's
 
@@ -134,34 +133,20 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	return sim_strip_rgb(cell, size, f, built);
 }
 
-// Distance to the footpaths on and through the fine tile under p (km) and
-// their level; markets: distance to the square.
-vec3 sim_paths(vec2 p) {
+// Distance from p to the market square on or next to the fine tile under
+// p (km), large without one.
+float sim_market_sq(vec2 p) {
 	vec2 q = (p - sim_fine_origin) / sim_fine_km;
 	ivec2 t = ivec2(floor(q));
-	float best = 1e9;
-	float level = 0.0;
 	float market = 1e9;
 	for (int k = -1; k < 8; k++) {
 		ivec2 n = k < 0 ? t : t + SIM_DIRS[k];
-		int a = sim_byte(sim_fine_at(n).a);
-		if ((a & 64) != 0) {
+		if ((sim_byte(sim_fine_at(n).a) & 64) != 0) {
 			vec2 d = abs(q - (vec2(n) + 0.5)) * sim_fine_km;
 			market = min(market, max(d.x, d.y));
 		}
-		int lv = a & 3;
-		int step = (a >> 2) & 15;
-		if (lv == 0 || step == 0) { continue; }
-		ivec2 to = n + SIM_DIRS[step - 1];
-		// only the paths that touch this tile
-		if (k >= 0 && to != t) { continue; }
-		float d = sim_segment(q, vec2(n) + 0.5, vec2(to) + 0.5) * sim_fine_km;
-		if (d < best) {
-			best = d;
-			level = float(lv);
-		}
 	}
-	return vec3(best, level, market);
+	return market;
 }
 
 // Distance to the trade roads (or sea lanes) near p, km, the level and
@@ -235,46 +220,31 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 	// footpath ran across the Forum, a market lay by the Tiber as a decal)
 	bool town = tt_town(ivec2(floor((p - world_min) / tile_km))) > 0;
 	if (sim_fine_n > 0 && !town) {
-		vec3 w = sim_paths(p);
-		// footpaths only up close (10 km of view), at least 1.5 px
-		if (w.y > 0.0 && sim_view_km <= 10.0) {
-			float half_w = max(w.y >= 2.0 ? SIM_PATH_KM : SIM_TRAIL_KM, fw_km * 1.5) * 0.5;
-			c = mix(c, C_PAVED * 0.96, sim_band(w.x, half_w, fw_km));
+		// the ways people wear walking (S127, sim_way): a faint track of
+		// trodden grass after the first walks, then ever wider bare earth
+		// with a paler verge, as Urbek's farm tracks (#8a7e64 by a verge
+		// #66ac5c); up close only for the faint ones, the wide ones further
+		vec2 w = sim_way(p);
+		int lv = int(w.y);
+		if (lv > 0 && sim_view_km <= SIM_WAY_SHOW_KM[lv]) {
+			float lift = max(fw_km * 0.7 - SIM_WAY_KM[lv], 0.0); // at least ~1.5 px wide
+			float d = w.x - lift;
+			if (lv >= 4) {
+				c = mix(c, mix(c, SIM_VERGE_RGB, 0.6), sim_band(d, SIM_VERGE_KM, fw_km));
+			}
+			c = mix(c, SIM_TRACK_RGB, SIM_WAY_ALPHA[lv] * sim_band(d, 0.0, fw_km));
 		}
 		// a paved square; further out than the standing stalls show
 		// (people_trips.gd SQUARES_KM) rows of stalls under red and white
 		// awnings painted on it
+		float msq = sim_market_sq(p);
 		float sq = 0.16;
-		if (w.z < sq + fw_km) {
+		if (msq < sq + fw_km) {
 			vec2 g = fract(p / 0.05);
 			vec2 id = floor(p / 0.05);
-			bool stall = sim_view_km > 10.0 && abs(g.x - 0.5) < 0.3 && abs(g.y - 0.5) < 0.22 && w.z < sq - 0.03 && sim_hash(id) > 0.45;
+			bool stall = sim_view_km > 10.0 && abs(g.x - 0.5) < 0.3 && abs(g.y - 0.5) < 0.22 && msq < sq - 0.03 && sim_hash(id) > 0.45;
 			vec3 m = stall ? (sim_hash(id + 5.0) < 0.5 ? C_ROOF : C_WALL) : C_PAVED;
-			c = mix(c, m, sim_band(w.z, sq, fw_km));
-		}
-	}
-	// the village lanes round the farmhouse lots and the farm tracks, brown
-	// earth with a darker edge as Urbek's (#8a7e64 on screen; the sandy
-	// C_BANK read as yellow strips, s4), along a verge of paler grass as
-	// Urbek's roads (#66ac5c by its lawn's #36862d, round F)
-	float lane = sim_lane(p);
-	if (lane < SIM_LANE_KM + SIM_VERGE_KM + fw_km) {
-		c = mix(c, mix(c, SIM_VERGE_RGB, 0.6), sim_band(lane, SIM_LANE_KM + SIM_VERGE_KM, fw_km));
-		c = mix(c, SIM_TRACK_RGB * 0.8, sim_band(lane, SIM_LANE_KM + fw_km, fw_km));
-		c = mix(c, SIM_TRACK_RGB, sim_band(lane, SIM_LANE_KM, fw_km));
-	}
-	// trade roads up to 40 km of view: a light paved band with a darker
-	// edge, at least 3 px, so they read as roads and not as scratches;
-	// further out the map is calm (rounds 17-18: at 70 km they read as
-	// scratches over the plateaus)
-	if (sim_view_km < 40.0) {
-		vec3 r = sim_roads(p);
-		if (r.y > 0.0) {
-			bool road = r.y >= 2.0;
-			float half_w = max(road ? SIM_ROAD_KM : SIM_TRACK_KM, fw_km * 3.0) * 0.5;
-			vec3 top = road ? mix(C_PAVED, vec3(1.0), 0.15) : C_PAVED;
-			c = mix(c, C_BANK * 0.75, sim_band(r.x, half_w + fw_km, fw_km));
-			c = mix(c, top, sim_band(r.x, half_w, fw_km));
+			c = mix(c, m, sim_band(msq, sq, fw_km));
 		}
 	}
 	return c;

@@ -553,7 +553,7 @@ void fragment() {
 				c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 			}
 		}
-		// footpaths, markets and trade roads from the grain economy
+		// the ways people wear and the markets of the grain economy
 		c = sim_ways(p, c, length(fwidth(p)));
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient, matched to the west-south-west sun: slopes turned west

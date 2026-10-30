@@ -26,11 +26,17 @@ void fragment() {
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
+	// a parcel a worn way runs across (S127, sim_way_parcel) carries
+	// nothing: no crop, no flock and no paddock's hedge or wall across the
+	// way (Ramon, 30.10.2026: „ob Strassen Gebäude etc. durchschneiden“);
+	// its fields' fences and hedges then run along the way
+	bool way = sim_way_parcel(mid, size);
+	if (way) { state = 0; }
 	int land = crop_land(mid);
 	bool no_field = (sim_built(mid) & SIM_B_FIELD) == 0 && sim_no_field(mid, land); // a field the player built lies anywhere
 	int code = state;
 	int joins = 0;
-	if (crop_open_land(mid, land) && !no_field) { code |= SIM_P_OPEN; }
+	if (crop_open_land(mid, land) && !no_field && !way) { code |= SIM_P_OPEN; }
 	if (no_field) { code |= SIM_P_NO_FIELD; }
 	if (state > 0) {
 		// the fields next to a farmhouse lot are fenced all round
@@ -49,7 +55,8 @@ void fragment() {
 			vec2 nb = cell + SIDES[k];
 			vec4 fn;
 			if ((lanes & (1 << k)) == 0 && (code & SIM_P_OPEN) != 0 && sim_strip(nb) == field
-					&& sim_parcel(nb, size, fn) == state && crop_open(world_min + (nb + 0.5) * size)) {
+					&& sim_parcel(nb, size, fn) == state && crop_open(world_min + (nb + 0.5) * size)
+					&& !sim_way_parcel(world_min + (nb + 0.5) * size, size)) {
 				joins |= 1 << k;
 			}
 		}

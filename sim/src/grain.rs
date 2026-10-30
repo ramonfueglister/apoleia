@@ -41,6 +41,7 @@ mod outside;
 mod pricing;
 mod sites;
 mod tables;
+mod ways;
 pub use tables::{HistoryExtra, HouseholdLook, MarketMonth};
 pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
@@ -226,7 +227,7 @@ const KNOWN: usize = 32;
 /// 1/10000: half-life 2 years); a cell becomes a trade track, then a trade
 /// road above the first number and falls back below the second (trips per
 /// year). On land the wagon freight into the cell falls to
-/// LEVEL_COST_PCT; sea lanes are counted but cost the same (ORBIS sea
+/// TRADE_COST_PCT; sea lanes are counted but cost the same (ORBIS sea
 /// cost is already low). PLACEHOLDER: all numbers frei gewählt.
 const ROAD_KEEP: i64 = 7071;
 const ROAD_LEVELS: [(i64, i64); 2] = [(100, 50), (400, 200)];
@@ -274,16 +275,44 @@ const FINE: i32 = 16;
 const FINE_STEP: i64 = 100;
 const PATH_HALF: i64 = 360;
 const WEAR_UNIT: i64 = 1000;
-const LEVELS: [(i64, i64); 2] = [(200 * WEAR_UNIT, 100 * WEAR_UNIT), (1000 * WEAR_UNIT, 500 * WEAR_UNIT)];
-const LEVEL_COST_PCT: [i64; 4] = [100, 80, 65, ROAD_PCT];
+/// S127 (Ramon, 30.10.2026: „jede Strasse entsteht emergent durch das
+/// Durchlaufen von Leuten. Nach einem Durchgang leicht sichtbarer Weg,
+/// später immer breiter“): a way is seen after one walk over it (a trip
+/// there and back wears 2 × WEAR_UNIT) and widens in seven steps, each some
+/// four to five times the walks of the last; it falls back a step below
+/// half its threshold, so a way nobody walks grows over within two years.
+/// Thresholds in walks of wear (× WEAR_UNIT), up and down. PLACEHOLDER:
+/// the steps frei gewählt.
+const LEVELS: [(i64, i64); 7] = [
+    (WEAR_UNIT, WEAR_UNIT / 2),
+    (10 * WEAR_UNIT, 5 * WEAR_UNIT),
+    (50 * WEAR_UNIT, 25 * WEAR_UNIT),
+    (250 * WEAR_UNIT, 125 * WEAR_UNIT),
+    (1_000 * WEAR_UNIT, 500 * WEAR_UNIT),
+    (4_000 * WEAR_UNIT, 2_000 * WEAR_UNIT),
+    (15_000 * WEAR_UNIT, 7_500 * WEAR_UNIT),
+];
+/// Share of the time over open ground a walk across a tile takes at each
+/// way level (0 none … 7): a worn way is quicker, so walks bundle onto it
+/// (Helbing et al., 1997). From open grass and light brush (terrain
+/// coefficient 1.0–1.2) to a dirt road (1.1 against 1.2 for rough ground;
+/// Soule & Goldman, 1972); the widest way as the old wide path (65 %).
+/// PLACEHOLDER: the steps between.
+const PATH_COST_PCT: [i64; 8] = [100, 96, 92, 87, 82, 76, 70, 65];
+/// The trade road levels of the 25 km grid (0 none, 1 track, 2 road,
+/// BUILT_ROAD) for the wagons' freight (S71).
+const TRADE_COST_PCT: [i64; 4] = [100, 80, 65, ROAD_PCT];
+/// S127: walking cost of a fine tile, `FineCover::ways`: this is flat open
+/// ground (tools/sim_ways.py SCALE).
+const WALK_ONE: i64 = 64;
 /// The player's roads (S70, S113): a fine tile, and a 25 km cell that a
 /// road crosses (sites.rs), cost this share of open ground to cross, for
 /// carriers in days and for traders' wagons in freight and days.
 /// PLACEHOLDER 50 %, between Bogart (2005: turnpikes cut freight by 20 %)
 /// and Ortman et al. (2024: transport costs in Roman Britain halved).
 const ROAD_PCT: i64 = 50;
-/// The level of a built road, above the trails and trade roads that
-/// traffic makes (index into LEVEL_COST_PCT).
+/// The level of a built road, above the trade roads that traffic makes
+/// (index into TRADE_COST_PCT).
 const BUILT_ROAD: u8 = 3;
 /// Each market's trips are walked (and its field rebuilt if a level
 /// changed) once in this many days, 1/WALK_DAYS of the markets a day.
@@ -432,6 +461,9 @@ struct Neigh {
     cost: i64,
     days: i64,
     route: Vec<u32>,
+    /// S127: the fine tiles the wagons cross on land (`fine_route`),
+    /// worked out on the first trip.
+    fine: Option<Vec<u32>>,
 }
 
 /// Path field of a market over its region: distance (fine steps × 100,
@@ -446,6 +478,10 @@ struct Field {
     /// wear was last brought up to date and the day the field was built.
     level: Vec<u8>,
     wear: Vec<u32>,
+    /// S127: the neighbours each worn cell's way leads to (bit k =
+    /// DIRS[k]), as walked since its wear came up; cleared with the wear
+    /// (a way to a cell grown over is not shown, `market_paths`).
+    link: Vec<u8>,
     worn: Vec<u16>,
     walked: i64,
     built: i64,
@@ -495,6 +531,10 @@ pub struct Market {
     dirty: bool,
     /// Trips per origin fine cell since the last walk.
     walked: FxHashMap<u32, i64>,
+    /// S127: traders' wagons per fine cell of the region they crossed since
+    /// the last walk (they wear the cell, not the way to the market), and
+    /// the neighbours they came from and went on to (bits as Field::link).
+    passed: FxHashMap<u32, (i64, u8)>,
     /// Farms in a peak that still need hands, and farms with more fields
     /// than their family can work over the year.
     open: Vec<u32>,
@@ -800,6 +840,11 @@ pub struct Grain {
     /// Fine offsets within a cell's reach, nearest first: (dr, dc, d²).
     offsets: Vec<(i32, i32, i32)>,
     rows_f: i32,
+    /// S127: walking cost per fine tile (rows_f × cols_f, `FineCover::ways`);
+    /// empty without the input: every land tile as open ground.
+    walk_cost: std::sync::Arc<Vec<u8>>,
+    /// S127: market of each region key, for the wagons' wear (`wagon_wear`).
+    region_market: FxHashMap<u32, u32>,
     /// Home spots: villages on the most farmland, listed places.
     settle: crate::settle::Settle,
     /// Farms by day of year of their sowing and harvest start.
@@ -928,6 +973,10 @@ pub struct FineCover {
     data: Vec<u8>,
     cells: FxHashMap<(i32, i32), usize>,
     pub farmland: bool,
+    /// S127: walking cost per fine tile (sim/inputs/ways-fine.bin.zst,
+    /// tools/sim_ways.py), if the file is there: per 25 km cell 256
+    /// bytes, factor against flat open ground × WALK_ONE, 0 not walked.
+    ways: Option<(Vec<u8>, FxHashMap<(i32, i32), usize>)>,
 }
 
 impl FineCover {
@@ -936,6 +985,13 @@ impl FineCover {
     /// row-major (tile row * 16 + tile col; fine index fr * cols_f + fc).
     pub fn get(&self, key: (i32, i32)) -> Option<&[u8]> {
         self.cells.get(&key).map(|&o| &self.data[o + 8..o + 8 + 3 * 256])
+    }
+
+    /// S127: the walking cost of a 25 km cell's 256 fine tiles (see
+    /// `ways`), row-major as `get`.
+    pub fn ways(&self, key: (i32, i32)) -> Option<&[u8]> {
+        let (data, cells) = self.ways.as_ref()?;
+        cells.get(&key).map(|&o| &data[o + 8..o + 8 + 256])
     }
 }
 
@@ -981,7 +1037,40 @@ pub fn fine_cover(root: &std::path::Path, farmland: bool) -> Result<FineCover, S
         let key = (i32::from_le_bytes(r[0..4].try_into().unwrap()), i32::from_le_bytes(r[4..8].try_into().unwrap()));
         cells.insert(key, k * REC);
     }
-    Ok(FineCover { data: b, cells, farmland })
+    let ways = match std::fs::read(root.join("sim/inputs/ways-fine.bin.zst")) {
+        Ok(raw) => {
+            let w = zstd::decode_all(&raw[..]).map_err(|e| format!("ways-fine.bin.zst: {e}"))?;
+            const WREC: usize = 8 + 256;
+            if w.len() % WREC != 0 {
+                return Err(format!("ways-fine.bin.zst: {} bytes", w.len()));
+            }
+            let mut wc = FxHashMap::default();
+            for (k, r) in w.chunks_exact(WREC).enumerate() {
+                wc.insert((i32::from_le_bytes(r[0..4].try_into().unwrap()), i32::from_le_bytes(r[4..8].try_into().unwrap())), k * WREC);
+            }
+            Some((w, wc))
+        }
+        Err(_) => None,
+    };
+    Ok(FineCover { data: b, cells, farmland, ways })
+}
+
+/// S127: the walking cost of every fine tile of the grid (rows_f × cols_f,
+/// `FineCover::ways`); empty without the input.
+fn walk_costs(g: &crate::people::Grid, fine: Option<&FineCover>) -> Vec<u8> {
+    let Some(fc) = fine.filter(|f| f.ways.is_some()) else { return Vec::new() };
+    let cols_f = g.cols * FINE;
+    let mut out = vec![0u8; (g.rows * FINE * cols_f) as usize];
+    for r in 0..g.rows {
+        for c in 0..g.cols {
+            let Some(w) = fc.ways((g.row0 + r, g.col0 + c)) else { continue };
+            for (k, &b) in w.iter().enumerate() {
+                let (fr, fcol) = (r * FINE + k as i32 / FINE, c * FINE + k as i32 % FINE);
+                out[(fr * cols_f + fcol) as usize] = b;
+            }
+        }
+    }
+    out
 }
 
 /// Splits `total` by `w` (all 1 if `w` sums to 0), whole m²: shares
@@ -1234,6 +1323,7 @@ impl Grain {
                 buyers: 0,
                 dirty: true,
                 walked: FxHashMap::default(),
+                passed: FxHashMap::default(),
                 open: Vec::new(),
                 hirers: Vec::new(),
                 out_cost: 0,
@@ -1278,6 +1368,8 @@ impl Grain {
             block_cell,
             offsets,
             rows_f,
+            walk_cost: std::sync::Arc::new(walk_costs(g, fine)),
+            region_market: FxHashMap::default(),
             settle: {
                 // Seed 1 as in the people view (view.rs), so both show the
                 // same spots.
@@ -1303,7 +1395,7 @@ impl Grain {
             road_rate: vec![0; n],
             road_level: vec![0; n],
             market_at: Vec::new(),
-            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new(), roads: Default::default() }),
+            net: std::sync::Arc::new(Net { row0: 0, col0: 0, rows: 0, cols: 0, kind: Vec::new(), at: Vec::new(), level: Vec::new(), roads: Default::default(), walk: Default::default() }),
             road_worker: None,
             road_todo: Vec::new(),
             walk_worker: None,
@@ -1497,7 +1589,7 @@ impl Grain {
             at[m.cell as usize] = k as u32;
         }
         self.market_at = at;
-        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: Vec::new(), roads: Default::default() });
+        self.net = std::sync::Arc::new(Net { row0: p.grid.row0, col0: p.grid.col0, rows: p.grid.rows, cols: p.grid.cols, kind: p.grid.kind.clone(), at: self.market_at.clone(), level: Vec::new(), roads: Default::default(), walk: self.walk_cost.clone() });
         self.renet();
         let cells: Vec<u32> = self.markets.iter().map(|m| m.cell).collect();
         let net = &*self.net;
@@ -3908,6 +4000,7 @@ impl Grain {
                 *self.lanes.entry(c).or_default() += 1;
                 self.road_trips[c as usize] += 1;
             }
+            self.wagon_wear(h, k);
             let t = self.new_trip(Trip { kind, pid: info.trader, hh: id, farm: NONE, market: h as u32, dest, kg, back_days: days, left: day, from: self.markets[h].fine, serial: 0 });
             self.hh.get_mut(&id).unwrap().trading = true;
             self.stats.trade_trips += 1;
@@ -3928,12 +4021,19 @@ impl Grain {
         let mut jobs: Vec<Walk> = Vec::new();
         for mi in (q..self.markets.len()).step_by(WALK_DAYS as usize) {
             let m = &mut self.markets[mi];
-            if m.walked.is_empty() && !m.dirty {
+            if m.walked.is_empty() && m.passed.is_empty() && !m.dirty {
                 continue;
             }
             let mut origins: Vec<(u32, i64)> = m.walked.drain().collect();
             origins.sort_unstable();
-            jobs.push(Walk { m: mi as u32, region: m.region, fine: m.fine, origins, field: m.field.take(), dirty: m.dirty, first_us: 0.0, rebuild_us: 0.0, rebuilt: false });
+            let mut passed: Vec<(u32, (i64, u8))> = m.passed.drain().collect();
+            passed.sort_unstable();
+            // S127: its wagons look for their ways again after the walk, so
+            // they keep to the ways worn since (wagon_wear)
+            for n in m.neigh.iter_mut() {
+                n.fine = None;
+            }
+            jobs.push(Walk { m: mi as u32, region: m.region, fine: m.fine, origins, passed, field: m.field.take(), dirty: m.dirty, first_us: 0.0, rebuild_us: 0.0, rebuilt: false });
         }
         if jobs.is_empty() {
             return;
@@ -4072,7 +4172,6 @@ impl Grain {
         self.markets[self.cell_market[cell as usize] as usize].price as f64 / 1000.0
     }
 
-    /// Fine cells by path level (trail, path), as of the last walk.
     /// Trade tracks and roads on land, lanes at sea (cells, S71).
     pub fn road_cells(&self, p: &People) -> (usize, usize, usize) {
         let (mut a, mut b, mut sea) = (0, 0, 0);
@@ -4087,15 +4186,17 @@ impl Grain {
         (a, b, sea)
     }
 
+    /// Fine cells with a way as of the last walk: levels 1–2 (a trodden
+    /// track) and 3–7 (a path and wider, S127).
     pub fn path_cells(&mut self) -> (usize, usize) {
         self.walks_done();
         let (mut a, mut b) = (0, 0);
         for f in self.markets.iter().filter_map(|m| m.field.as_ref()) {
             for &i in &f.worn {
                 match f.level[i as usize] {
-                    1 => a += 1,
-                    2 => b += 1,
-                    _ => {}
+                    0 => {}
+                    1..=2 => a += 1,
+                    _ => b += 1,
                 }
             }
         }
@@ -4390,10 +4491,10 @@ impl Grain {
         (self.rows_f, self.cols_f)
     }
 
-    /// Footpaths of a market as of its last walk: (fine tile, level 1 trail
-    /// or 2 path, direction of the next step towards the market as an index
-    /// into the 8 neighbours row by row, 255 at the market). None while the
-    /// market's walk is out on the path worker.
+    /// Footpaths of a market as of its last walk: (fine tile, way level 1
+    /// … 7, the neighbours its way leads to as bits of the 8 neighbours row
+    /// by row; S127). None while the market's walk is out on the path
+    /// worker.
     /// The trips under way whose route touches the box (world km, as the
     /// people view), for the game to walk the carriers along their way.
     /// Read only. A market trip follows the market's path field tile by
@@ -4539,7 +4640,17 @@ impl Grain {
                 continue;
             }
             let (r, c) = (f.r0 + i as i32 / f.n, f.c0 + i as i32 % f.n);
-            v.push(((r * self.cols_f + c) as u32, level, f.dir[i as usize]));
+            // only the links to cells with a way (in this field; at its
+            // edge the next field's cell is not looked at)
+            let (lr, lc) = (i as i32 / f.n, i as i32 % f.n);
+            let mut links = f.link[i as usize];
+            for (k, &(dr, dc)) in DIRS.iter().enumerate() {
+                let (nr, nc) = (lr + dr, lc + dc);
+                if nr >= 0 && nc >= 0 && nr < f.n && nc < f.n && f.level[(nr * f.n + nc) as usize] == 0 {
+                    links &= !(1 << k);
+                }
+            }
+            v.push(((r * self.cols_f + c) as u32, level, links));
         }
         v.sort_unstable();
         Some(v)
@@ -4885,7 +4996,7 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
                 j = par[j as usize];
             }
             route.reverse();
-            out.push(Neigh { m: at[i as usize], cost: c, days: ((days[i as usize] + 999) / 1000).max(1), route });
+            out.push(Neigh { m: at[i as usize], cost: c, days: ((days[i as usize] + 999) / 1000).max(1), route, fine: None });
             if out.len() >= KNOWN {
                 break;
             }
@@ -4909,7 +5020,7 @@ fn search(net: &Net, src: u32, best: &mut [i64], days: &mut [i64], par: &mut [u3
                     _ => {
                         let lv = level[j as usize];
                         let slow = if lv == BUILT_ROAD { ROAD_PCT } else { 100 };
-                        (km * WAGON_COST * LEVEL_COST_PCT[lv as usize] / 100, km * 1000 * slow / 100 / WAGON.1)
+                        (km * WAGON_COST * TRADE_COST_PCT[lv as usize] / 100, km * 1000 * slow / 100 / WAGON.1)
                     }
                 };
                 let nc_ = c + cost;
@@ -4942,6 +5053,8 @@ struct Net {
     at: Vec<u32>,
     level: Vec<u8>,
     roads: rustc_hash::FxHashSet<u32>,
+    /// S127: walking cost per fine tile (`Grain::walk_cost`).
+    walk: std::sync::Arc<Vec<u8>>,
 }
 
 type Searched = Vec<(Vec<Neigh>, Vec<u32>)>;
@@ -5005,6 +5118,7 @@ struct Walk {
     region: u32,
     fine: u32,
     origins: Vec<(u32, i64)>,
+    passed: Vec<(u32, (i64, u8))>,
     field: Option<Field>,
     dirty: bool,
     first_us: f64,
@@ -5036,6 +5150,8 @@ fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
         acc[i] += k;
     }
     let mut cells: Vec<(u32, i64)> = Vec::new();
+    // S127: the ways walked now, by the neighbours they join
+    let mut link = vec![0u8; (f.n * f.n) as usize];
     for &i in f.order.iter().rev() {
         let k = acc[i as usize];
         if k == 0 {
@@ -5049,6 +5165,16 @@ fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
         let (dr, dc) = DIRS[d as usize];
         let j = ((i as i32 / f.n + dr) * f.n + i as i32 % f.n + dc) as usize;
         acc[j] += k;
+        link[i as usize] |= 1 << d;
+        link[j] |= 1 << (7 - d);
+    }
+    // S127: the wagons that crossed the region wear the cells they crossed
+    for &(o, (k, joins)) in &w.passed {
+        let (r, c) = ((o as i32 / cols_f) - f.r0, (o as i32 % cols_f) - f.c0);
+        if r >= 0 && c >= 0 && r < f.n && c < f.n {
+            cells.push(((r * f.n + c) as u32, k));
+            link[(r * f.n + c) as usize] |= joins;
+        }
     }
     cells.sort_unstable();
     let mut changed = w.dirty;
@@ -5063,8 +5189,9 @@ fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
             f.worn.push(i as u16);
         }
         f.wear[i as usize] = (f.wear[i as usize] as i64 + 2 * k * WEAR_UNIT).min(u32::MAX as i64) as u32;
+        f.link[i as usize] |= link[i as usize];
     }
-    let (wear, level) = (&f.wear, &mut f.level);
+    let (wear, level, link) = (&f.wear, &mut f.level, &mut f.link);
     f.worn.retain(|&i| {
         let w = wear[i as usize] as i64;
         let old = level[i as usize];
@@ -5078,6 +5205,9 @@ fn walk(grid: &Net, cols_f: i32, tab: &[i64], w: &mut Walk, day: i64) {
         if lv != old {
             level[i as usize] = lv;
             changed = true;
+        }
+        if w == 0 {
+            link[i as usize] = 0;
         }
         w > 0
     });
@@ -5102,12 +5232,12 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
     let mut dir = vec![255u8; size];
     let (mr, mc) = ((fine as i32 / cols_f) - r0, (fine as i32 % cols_f) - c0);
     // Wear and levels stay with the market's field across rebuilds.
-    let (level, wear, worn, walked) = match old {
-        Some(old) => (old.level, old.wear, old.worn, old.walked),
-        None => (vec![0u8; size], vec![0u32; size], Vec::new(), day),
+    let (level, wear, link, worn, walked) = match old {
+        Some(old) => (old.level, old.wear, old.link, old.worn, old.walked),
+        None => (vec![0u8; size], vec![0u32; size], vec![0u8; size], Vec::new(), day),
     };
     if mr < 0 || mc < 0 || mr >= n || mc >= n {
-        return Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order: Vec::new() };
+        return Field { r0, c0, n, dist, dir, level, wear, link, worn, walked, built: day, order: Vec::new() };
     }
     // Passable: the field covers 4 × 4 coarse cells; sea is blocked.
     let mut land = [false; 16];
@@ -5122,30 +5252,37 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
     for r in 0..n {
         for c in 0..n {
             if land[((r / FINE) * 4 + c / FINE) as usize] {
-                let road = !grid.roads.is_empty() && grid.roads.contains(&(((r0 + r) * cols_f + c0 + c) as u32));
-                let pct = LEVEL_COST_PCT[if road { BUILT_ROAD } else { level[(r * n + c) as usize] } as usize];
+                let t = ((r0 + r) * cols_f + c0 + c) as u32;
+                let road = !grid.roads.is_empty() && grid.roads.contains(&t);
+                // S127: the land's cost to walk; a tile without land is not walked
+                let ground = grid.walk.get(t as usize).map_or(WALK_ONE, |&b| b as i64);
+                if ground == 0 {
+                    continue;
+                }
+                let pct = if road { ROAD_PCT } else { PATH_COST_PCT[level[(r * n + c) as usize] as usize] } * ground / WALK_ONE;
                 let pj = ((r + 1) * w + c + 1) as usize;
-                ortho[pj] = (FINE_STEP * pct / 100) as u32;
-                diag[pj] = (141 * pct / 100) as u32;
+                ortho[pj] = (FINE_STEP * pct / 100).max(1) as u32;
+                diag[pj] = (141 * pct / 100).max(1) as u32;
             }
         }
     }
     let off = DIRS.map(|(dr, dc)| (dr * w + dc) as isize);
     let mut pd = vec![u32::MAX; (w * w) as usize];
     let mut pdir = vec![255u8; (w * w) as usize];
-    // Dial's bucket queue (integer step costs below 256).
-    let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); 256];
+    // Dial's bucket queue (integer step costs below 1024: 141 × 4 at most).
+    const B: u32 = 1024;
+    let mut buckets: Vec<Vec<u32>> = vec![Vec::new(); B as usize];
     let start = ((mr + 1) * w + mc + 1) as u32;
     pd[start as usize] = 0;
     buckets[0].push(start);
     let (mut g, mut pending) = (0u32, 1usize);
     let mut settled: Vec<u32> = Vec::new();
     while pending > 0 {
-        if buckets[(g & 255) as usize].is_empty() {
+        if buckets[(g % B) as usize].is_empty() {
             g += 1;
             continue;
         }
-        let mut b = std::mem::take(&mut buckets[(g & 255) as usize]);
+        let mut b = std::mem::take(&mut buckets[(g % B) as usize]);
         for &i in &b {
             pending -= 1;
             if pd[i as usize] != g {
@@ -5162,14 +5299,14 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
                 if ng < pd[j] {
                     pd[j] = ng;
                     pdir[j] = (7 - d) as u8;
-                    buckets[(ng & 255) as usize].push(j as u32);
+                    buckets[(ng % B) as usize].push(j as u32);
                     pending += 1;
                 }
             }
         }
         b.clear();
-        if buckets[(g & 255) as usize].is_empty() {
-            buckets[(g & 255) as usize] = b;
+        if buckets[(g % B) as usize].is_empty() {
+            buckets[(g % B) as usize] = b;
         }
         g += 1;
     }
@@ -5181,7 +5318,7 @@ fn build_field(grid: &Net, cols_f: i32, key: u32, fine: u32, old: Option<Field>,
         }
     }
     let order = settled.iter().map(|&pj| ((pj as i32 / w - 1) * n + pj as i32 % w - 1) as u16).collect();
-    Field { r0, c0, n, dist, dir, level, wear, worn, walked, built: day, order }
+    Field { r0, c0, n, dist, dir, level, wear, link, worn, walked, built: day, order }
 }
 
 /// Groups a snapshot by household (counting sort, no comparison sort) and

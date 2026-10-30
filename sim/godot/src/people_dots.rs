@@ -1631,8 +1631,9 @@ impl ApoleiaPeople {
     }
 
     /// The fine grain layer (crate::grain_map) for `n` × `n` tiles of
-    /// 1.5625 km around (x, z) world km: {"image": RGBA8 Image, "origin":
-    /// world km of its first texel's corner, "tile_km"}.
+    /// 1.5625 km around (x, z) world km: {"image": RGBA8 Image, "ways": the
+    /// way layer's RG8 Image, "origin": world km of its first texel's
+    /// corner, "tile_km"}.
     #[func]
     fn map_window(&self, x: f32, z: f32, n: i64) -> VarDictionary {
         let map = self.shared.front.lock().unwrap().map.clone();
@@ -1643,6 +1644,11 @@ impl ApoleiaPeople {
         let mut d = VarDictionary::new();
         if let Some(img) = Image::create_from_data(n, n, false, Format::RGBA8, &bytes) {
             d.set("image", &img);
+        }
+        // S127: the ways people wear, the way layer's same window
+        let ways = PackedByteArray::from(map.ways_window(fr0, fc0, n));
+        if let Some(img) = Image::create_from_data(n, n, false, Format::RG8, &ways) {
+            d.set("ways", &img);
         }
         d.set("origin", Vector2::new((fc0 + map.col0 * FINE) as f32 * FINE_KM, (fr0 + map.row0 * FINE) as f32 * FINE_KM));
         d.set("tile_km", FINE_KM);

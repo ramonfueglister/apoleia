@@ -117,6 +117,7 @@ var map_on := true # G key: the grain economy on the terrain
 var _map_version := -1
 var _map_at := Vector2.INF
 var _map_tex: ImageTexture
+var _way_tex: ImageTexture # the ways people wear (S127), the same window
 var _road_tex: ImageTexture
 var _region_tex: ImageTexture
 var _waiting := false # asked the sim thread for the selected person
@@ -627,7 +628,8 @@ func _update_map() -> void:
 	var mat: ShaderMaterial = terrain._terrain_material
 	# the crops read the fine layer too, and the placement of the people for
 	# the slabs they stand on
-	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material, terrain._place_material]
+	# (the house places too: the houses keep off the ways, people_dots_common.gdshaderinc dot_lot_way_free)
+	var mats: Array[ShaderMaterial] = [mat, _crop_material, _prep_material, _parcel_material, terrain._place_material, _house_prep_material]
 	for m in mats:
 		m.set_shader_parameter("sim_map_on", map_on)
 	if not map_on:
@@ -659,12 +661,19 @@ func _update_map() -> void:
 			_map_tex = ImageTexture.create_from_image(win.image)
 		else:
 			_map_tex.update(win.image)
+		if win.has("ways"):
+			if _way_tex == null:
+				_way_tex = ImageTexture.create_from_image(win.ways)
+			else:
+				_way_tex.update(win.ways)
 		for m in mats:
 			m.set_shader_parameter("sim_fine_tex", _map_tex)
+			m.set_shader_parameter("sim_way_tex", _way_tex)
 			m.set_shader_parameter("sim_fine_origin", win.origin)
 			m.set_shader_parameter("sim_fine_km", win.tile_km)
 			m.set_shader_parameter("sim_fine_n", MAP_N)
 		_prep_frames = 2
+		_house_prep_frames = 2
 		_parcel_frames = 2
 	_map_version = version
 	_map_at = centre
