@@ -16,7 +16,7 @@
 //!
 //! Craft goods (`goods_to_dict`), flat arrays: crafts [x, z, craft
 //! (1 weaver, 2 smith, 3 potter), util 0–255] per workshop; markets [x, z,
-//! store × 5, price × 5 (wool, iron, cloth, tools, pottery; units and
+//! store × 6, price × 6 (wool, iron, cloth, tools, pottery, pork; units and
 //! denarii)] per market; moves [from x, from z, to x, to z, good, units,
 //! day] per goods move of the last 28 days. Places in world km.
 //!
