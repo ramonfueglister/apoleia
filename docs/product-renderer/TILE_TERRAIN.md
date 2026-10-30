@@ -385,7 +385,10 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   jeder etwas höher oder tiefer als der nächste (Varro, rust. 1,14, nennt
   Hecke, Holzzaun, Graben und Mauer als römische Feldgrenzen). Die Dorfwege
   und Feldwege haben einen Rand aus hellerem Gras, ein Drittel so breit wie
-  der Weg, wie die Strassen bei Urbek. Die Strohplatten sind dünner und haben eine
+  der Weg, wie die Strassen bei Urbek. Runde G: Ein Block aus 2 × 2
+  Weideparzellen ist zu 45 % eine Koppel, halb mit Hecke, halb mit
+  Trockenmauer (maceria) ringsum und einem Block als Tor; die Schafe weiden
+  drinnen und draussen wie bisher. Die Strohplatten sind dünner und haben eine
   feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
   winzig.
 - Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
