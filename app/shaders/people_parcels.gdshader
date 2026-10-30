@@ -26,6 +26,11 @@ void fragment() {
 	vec2 mid = world_min + (cell + 0.5) * size;
 	vec4 f;
 	int state = sim_parcel(cell, size, f);
+	// a worn path and wider (S127) runs over grass, not under the crop
+	if (state > 0) {
+		vec2 way = sim_way(mid);
+		if (way.y >= 2.0 && way.x < size * 0.35) { state = 0; }
+	}
 	int land = crop_land(mid);
 	bool no_field = (sim_built(mid) & SIM_B_FIELD) == 0 && sim_no_field(mid, land); // a field the player built lies anywhere
 	int code = state;

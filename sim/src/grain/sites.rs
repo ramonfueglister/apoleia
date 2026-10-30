@@ -209,7 +209,7 @@ impl Grain {
             .map(|(c, &l)| if self.road_cells.get(&(c as u32)).is_some_and(|&n| n >= ROAD_CELL_TILES) { BUILT_ROAD } else { l })
             .collect();
         let net = &*self.net;
-        self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level, roads: self.road_fine.keys().copied().collect() });
+        self.net = std::sync::Arc::new(Net { row0: net.row0, col0: net.col0, rows: net.rows, cols: net.cols, kind: net.kind.clone(), at: net.at.clone(), level, roads: self.road_fine.keys().copied().collect(), walk: net.walk.clone() });
     }
 
     /// The path fields a road built yesterday runs through, worked out
@@ -656,7 +656,7 @@ mod tests {
                     let step = if c - f.c0 < f.n / 2 { 1 } else { -1 };
                     far = (r * g.cols_f + c + 12 * step) as u32;
                     open_km = (12.0 * 1.5625) as i64;
-                    assert!(g.route_km(&p, m, far) >= open_km * LEVEL_COST_PCT[2] / 100, "no road yet");
+                    assert!(g.route_km(&p, m, far) >= open_km * PATH_COST_PCT[7] / 100, "no road yet");
                     let (z0, x0) = build::fine_centre(r + p.grid.row0 * FINE, c + p.grid.col0 * FINE);
                     let lots: Vec<Tile> = (0..=37).map(|k| (z0, x0 + step * 500 * k)).collect();
                     orders.apply(&Command::Place { kind: build::ROAD, tiles: lots }, day);

@@ -46,33 +46,25 @@ bool crop_open(vec2 mid) {
 	return crop_open_land(mid, land) && ((sim_built(mid) & SIM_B_FIELD) != 0 || !sim_no_field(mid, land));
 }
 
-// The sides of parcel `cell` a lane runs along: bits 0-3 for -x, -y, +x,
-// +y; bit 4 when a road the player built is among them (sim_built).
+// The sides of parcel `cell` a road the player built runs along
+// (sim_built): bits 0-3 for -x, -y, +x, +y and bit 4. The ways people
+// wear do not run along the parcel lines (S127): a parcel a way crosses
+// carries no field (people_parcels.gdshader).
 int crop_lanes(vec2 cell, float size) {
 	if (sim_lots_n == 0) { return 0; }
 	vec2 mid = world_min + (cell + 0.5) * size;
 	int roads = sim_built(mid) / SIM_B_SIDES;
-	vec2 lot = floor((mid - world_min) / sim_lot_km);
-	vec2 lo = (mid - 0.5 * size - world_min) / sim_lot_km; // the parcel's sides in lots
-	vec2 hi = (mid + 0.5 * size - world_min) / sim_lot_km;
-	int lanes = 0;
-	if (abs(lo.x - round(lo.x)) < 0.01 && sim_lane_between(lot, vec2(-1.0, 0.0))) { lanes |= 1; }
-	if (abs(lo.y - round(lo.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, -1.0))) { lanes |= 2; }
-	if (abs(hi.x - round(hi.x)) < 0.01 && sim_lane_between(lot, vec2(1.0, 0.0))) { lanes |= 4; }
-	if (abs(hi.y - round(hi.y)) < 0.01 && sim_lane_between(lot, vec2(0.0, 1.0))) { lanes |= 8; }
-	return roads != 0 ? lanes | roads | 16 : lanes;
+	return roads != 0 ? roads | 16 : 0;
 }
 // The slab of parcel `cell` (side `size` km) about the parcel's middle, km
 // (min x, min y, max x, max y): SLAB_GAP in from the parcel lines, and
-// clear of a village lane or field track running along one of them
-// (sim_lane_between), so the lanes run between the fields, not under them;
 // clear of a road the player built by its width (30.10.2026: the slabs
 // stood on the roads). `lanes` as crop_lanes.
 // It runs on to the parcel's edge where it joins a parcel of its field
 // (`code` as sim_parcel_baked's, its SIM_P_JOIN bits).
 vec4 crop_box_of(int lanes, int code, float size) {
 	float gap = size * SLAB_GAP;
-	float lane_gap = ((lanes & 16) != 0 ? SIM_ROAD_HALF_KM : SIM_LANE_KM) + gap * 0.5;
+	float lane_gap = SIM_ROAD_HALF_KM + gap * 0.5;
 	vec4 box = vec4(vec2(-0.5 * size + gap), vec2(0.5 * size - gap));
 	int joins = code / SIM_P_JOIN;
 	if ((joins & 1) != 0) { box.x = -0.5 * size; }

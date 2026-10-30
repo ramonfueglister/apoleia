@@ -10,11 +10,13 @@
 //!
 //! Fine layer, one RGBA8 texel per 1.5625 km tile (16 × 16 per 25 km cell):
 //! R share of the tile under fields (of what a tile can hold), G sown share
-//! of those fields, B growth of the crop (0 bare … 255 ripe), A footpath
-//! level (bits 0–1), direction of its next step towards the market + 1
-//! (bits 2–5, 0 = none) and market tile (bit 6).
+//! of those fields, B growth of the crop (0 bare … 255 ripe), A market
+//! tile (bit 6).
+//! Way layer (S127), one RG8 texel per fine tile: R the neighbours its way
+//! leads to (bit k = DIRS[k]), G the way's level 0 … 7.
 //! Road layer, one RG8 texel per 25 km cell: R trade road level (1 track,
-//! 2 road; at sea a sea lane), G the neighbours it joins (bit k = DIRS[k]).
+//! 2 road; at sea a sea lane, the only part drawn, S127), G the neighbours
+//! it joins (bit k = DIRS[k]).
 
 use apoleia_sim::grain::{tile_room_m2, Grain};
 use apoleia_sim::people::People;
@@ -36,6 +38,7 @@ pub struct MapLayers {
     pub rows: i32,
     pub cols: i32,
     pub fine: Arc<Vec<u8>>,
+    pub ways: Arc<Vec<u8>>,
     pub roads: Arc<Vec<u8>>,
     /// Market (region) of each 25 km cell, u32::MAX at sea (Grain::cell_markets).
     pub regions: Arc<Vec<u32>>,
@@ -115,8 +118,8 @@ impl MapThread {
 /// Builds the layers.
 pub struct GrainMap {
     pub layers: MapLayers,
-    /// Last known footpaths per market (a market's field is away while
-    /// the path worker walks it).
+    /// Last known ways per market: (fine tile, level, links; a market's
+    /// field is away while the path worker walks it).
     paths: Vec<Vec<(u32, u8, u8)>>,
 }
 
@@ -161,24 +164,27 @@ impl GrainMap {
                 px[1] = (px[1] as u32 * 255 / px[0] as u32).min(255) as u8;
             }
         }
-        // footpaths, the last known of each market
+        // the ways people wear, the last known of each market
+        let mut ways = vec![0u8; n * 2];
         self.paths.resize(job.paths.len(), Vec::new());
         for (known, now) in self.paths.iter_mut().zip(job.paths) {
             if let Some(v) = now {
                 *known = v;
             }
-            for &(t, level, dir) in known.iter() {
-                let a = &mut fine[t as usize * 4 + 3];
-                let step = if dir == 255 { 0 } else { dir + 1 };
-                *a = (*a & MARKET_BIT) | level.min(3) | step << 2;
+            for &(t, level, links) in known.iter() {
+                ways[t as usize * 2] = links;
+                ways[t as usize * 2 + 1] = level.min(7);
             }
         }
+        self.layers.ways = Arc::new(ways);
         for &t in &job.markets {
             fine[t as usize * 4 + 3] |= MARKET_BIT;
         }
         self.layers.fine = Arc::new(fine);
         // trade roads and sea lanes: join neighbours that carry one too; a
-        // diagonal only where no straight pair already makes the turn
+        // diagonal only where no straight pair already makes the turn (the
+        // terrain draws them only at sea: on land the wagons wear the fine
+        // layer's ways, S127)
         let lv = &job.road_levels;
         let (rows, cols) = (self.layers.rows, self.layers.cols);
         let at = |r: i32, c: i32| -> u8 { if r < 0 || c < 0 || r >= rows || c >= cols { 0 } else { lv[(r * cols + c) as usize] } };
@@ -218,9 +224,17 @@ impl MapLayers {
     /// The fine layer of `n` × `n` tiles from tile (fr0, fc0) (raster rows
     /// and columns, may reach past the edges: zero there), RGBA8 bytes.
     pub fn window(&self, fr0: i32, fc0: i32, n: i32) -> Vec<u8> {
-        let (rf, cf) = self.fine_size();
-        let mut out = vec![0u8; (n * n * 4) as usize];
-        if self.fine.is_empty() {
+        Self::cut(&self.fine, 4, self.fine_size(), fr0, fc0, n)
+    }
+
+    /// The way layer's `n` × `n` tiles from (fr0, fc0), as `window`.
+    pub fn ways_window(&self, fr0: i32, fc0: i32, n: i32) -> Vec<u8> {
+        Self::cut(&self.ways, 2, self.fine_size(), fr0, fc0, n)
+    }
+
+    fn cut(layer: &[u8], bytes: i32, (rf, cf): (i32, i32), fr0: i32, fc0: i32, n: i32) -> Vec<u8> {
+        let mut out = vec![0u8; (n * n * bytes) as usize];
+        if layer.is_empty() {
             return out;
         }
         for y in 0..n {
@@ -232,9 +246,9 @@ impl MapLayers {
             if c0 >= c1 {
                 continue;
             }
-            let src = ((fr * cf + c0) * 4) as usize..((fr * cf + c1) * 4) as usize;
-            let dst = ((y * n + c0 - fc0) * 4) as usize;
-            out[dst..dst + src.len()].copy_from_slice(&self.fine[src]);
+            let src = ((fr * cf + c0) * bytes) as usize..((fr * cf + c1) * bytes) as usize;
+            let dst = ((y * n + c0 - fc0) * bytes) as usize;
+            out[dst..dst + src.len()].copy_from_slice(&layer[src]);
         }
         out
     }
