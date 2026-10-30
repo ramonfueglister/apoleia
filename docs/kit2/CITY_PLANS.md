@@ -197,9 +197,10 @@ legt sie in die Stadtliste, gedreht in Vierteln zur Front.
   je Parzelle (offen).
 - **Gräber** an den Strassen vor der Stadt, die Strasse an ihrer Seite.
 - **Wahrzeichen Roms** (Kolosseum, Forum, Thermen, Pantheon, Circus) stehen als Kit-Modelle auf ihrem
-  Bau im Plan, verkleinert, bis sie in seine Parzellen passen (`LANDMARK_PLAN_REACH`; das Kolosseum
-  auf 0,5 km, der Plan zeichnet es schon 2,6-mal so gross wie echt). Beim 1,5-fachen räumten sie die
-  Nachbarbauten weg (Tempel der Venus und Roma, Ludus Magnus, Templum Pacis; Mac-Lauf 1). Die zwei
+  Bau im Plan, verkleinert auf 90 % seiner Parzellen (`LANDMARK_PLAN_REACH`; das Kolosseum auf
+  0,45 km, der Plan zeichnet es schon 2,6-mal so gross wie echt). Beim 1,5-fachen räumten sie die
+  Nachbarbauten weg (Tempel der Venus und Roma, Ludus Magnus, Templum Pacis; Mac-Lauf 1), beim
+  1-fachen stiessen sie an die Häuser daneben (Mac-Lauf 2). Die zwei
   Tiberbrücken der alten Regel entfallen, die Brücken des Plans sind Strassen.
 
 Geprüft in der Cloud mit einer Vorschau aus den echten Voxelmodellen auf den echten Plänen (Rom,

@@ -136,9 +136,11 @@ const PLAN_LOW_M := 9.0
 # Rome's landmarks stand on their buildings in the plan, fitted into its
 # parcels (the plan already draws them up to 2.5 times their real size:
 # docs/kit2/CITY_PLANS.md). At 1.5 times the block they cleared the temples,
-# fora and the Ludus round them off the plan (Mac r1); before the plans they
-# stood on blocks of 0.5 km tiles at three times the city.
-const LANDMARK_PLAN_REACH := 1.0
+# fora and the Ludus round them off the plan (Mac r1); filling it they touched
+# the houses beside it (Mac r2), so a strip of the block stays free round
+# them. Before the plans they stood on blocks of 0.5 km tiles at three times
+# the city.
+const LANDMARK_PLAN_REACH := 0.9
 # Plan kinds beside a street that its houses stand against (houses, public
 # buildings, gardens, streets); not squares, walls, tombs or open land.
 const PLAN_STREET_TOWN := [1, 2, 3, 4, 6, 7]
