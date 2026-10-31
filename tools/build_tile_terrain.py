@@ -8,7 +8,8 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
 
   cover.png        RGBA8 at the 2 km nodes: forest, dry (bare + shrub), crop, wetland
   aux.png          RGBA8 at the 2 km nodes: sea distance (2 km steps), lake level
-                   (uint16 metres + 1000 in G/B), A unused
+                   (uint16 metres + 1000 in G/B), A the signed distance to the lake
+                   shores (lake_shore_distance, drawn as a line from the 2 km tiles out)
   cells-L{n}.png   per zoom level n (cell = 0.5 km * 2^n): two cells per byte,
                    each nibble = water class (bits 0-1: 0 land, 1 sea, 2 lake,
                    3 river) | settlement density (bits 2-3: 0 none .. 3 core)
@@ -35,6 +36,7 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
     python3 tools/build_tile_terrain.py --towns-only    # only the settlements in cells-L*.png
     python3 tools/build_tile_terrain.py --cells-only    # only cells-L*.png (water, rivers, towns)
     python3 tools/build_tile_terrain.py --rivers-only   # only rivers.png (the far map's river lines)
+    python3 tools/build_tile_terrain.py --lakes-only    # only aux.png A (the far map's lake shores)
 """
 
 from __future__ import annotations
@@ -580,6 +582,77 @@ def chamfer(src, limit):
             break
         d = e
     return d
+
+
+# The lake shores as lines (round P, tile_terrain.gdshader): from the 2 km
+# tiles out the lakes were whole tiles, squares and staircases on the map of
+# Europe (Ramon's landscape reference has round shores). aux.png A keeps at
+# every node the signed distance to the shore of the lake polygons, which the
+# shader interpolates between the nodes; a lake narrower than a node step
+# may thin out between two nodes.
+LAKE_SD_STEP = 0.125  # km per step of aux A, 128 the shore, inside below: -16 .. +15.9 km
+LAKE_SD_RES = 0.25    # km, the polygon raster the distance is measured on
+LAKE_SD_BLOCK = 512.0  # km, measured block by block (plus the range around)
+
+
+def lake_shore_distance(lakes):
+    """aux.png A: 128 + signed distance (km, inside negative) / LAKE_SD_STEP
+    from every node to the nearest lake shore, 255 far from any lake."""
+    rings = [(ring, exterior, ring[:, 0].min(), ring[:, 0].max(), ring[:, 1].min(), ring[:, 1].max())
+             for _, geoms in lakes for ring, exterior in geoms]
+    pad = 128 * LAKE_SD_STEP + 4.0
+    dx = WORLD_SIZE[0] / (GRID_W - 1)
+    dz = WORLD_SIZE[1] / (GRID_H - 1)
+    code = np.full((GRID_H, GRID_W), 255, np.uint8)
+    n = int(round((LAKE_SD_BLOCK + 2 * pad) / LAKE_SD_RES))
+    for z0 in np.arange(WORLD_MIN[1], WORLD_MIN[1] + WORLD_SIZE[1], LAKE_SD_BLOCK):
+        for x0 in np.arange(WORLD_MIN[0], WORLD_MIN[0] + WORLD_SIZE[0], LAKE_SD_BLOCK):
+            wx0, wz0 = x0 - pad, z0 - pad
+            sel = [r for r in rings if r[3] >= wx0 and r[2] <= wx0 + n * LAKE_SD_RES
+                   and r[5] >= wz0 and r[4] <= wz0 + n * LAKE_SD_RES]
+            if not sel:
+                continue
+            img = Image.new("L", (n, n), 0)
+            dr = ImageDraw.Draw(img)
+            for ring, exterior, *_ in sel:
+                dr.polygon(list(zip(((ring[:, 0] - wx0) / LAKE_SD_RES).tolist(),
+                                    ((ring[:, 1] - wz0) / LAKE_SD_RES).tolist())), fill=1 if exterior else 0)
+            m = np.asarray(img, bool)
+            if not m.any():
+                continue
+            # the shore lies between the cells: half a cell off each side's distance
+            sd = np.where(m, LAKE_SD_RES * 0.5 - ndimage.distance_transform_edt(m) * LAKE_SD_RES,
+                          ndimage.distance_transform_edt(~m) * LAKE_SD_RES - LAKE_SD_RES * 0.5)
+            i0 = int(np.ceil((x0 - WORLD_MIN[0]) / dx))
+            i1 = min(GRID_W, int(np.ceil((x0 + LAKE_SD_BLOCK - WORLD_MIN[0]) / dx)))
+            j0 = int(np.ceil((z0 - WORLD_MIN[1]) / dz))
+            j1 = min(GRID_H, int(np.ceil((z0 + LAKE_SD_BLOCK - WORLD_MIN[1]) / dz)))
+            if i1 <= i0 or j1 <= j0:
+                continue
+            fx = (WORLD_MIN[0] + np.arange(i0, i1) * dx - wx0) / LAKE_SD_RES - 0.5
+            fz = (WORLD_MIN[1] + np.arange(j0, j1) * dz - wz0) / LAKE_SD_RES - 0.5
+            v = ndimage.map_coordinates(sd, np.meshgrid(fz, fx, indexing="ij"), order=1, mode="nearest")
+            code[j0:j1, i0:i1] = np.clip(np.round(128 + v / LAKE_SD_STEP), 0, 255).astype(np.uint8)
+    return code
+
+
+def lakes_only():
+    """Rebuild only aux.png A (the lake shores) from the lake layers."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    lakes = load_features(ROOT / "data/derived/lakes.geojson") + load_features(RD / "lakes-europe-supplement-r1/lakes.geojson")
+    aux = np.array(Image.open(OUT / "aux.png").convert("RGBA"))
+    aux[..., 3] = lake_shore_distance(lakes)
+    Image.fromarray(aux, "RGBA").save(OUT / "aux.png", optimize=True)
+    manifest["aux"] = aux_manifest()
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
+def aux_manifest():
+    return {"path": "aux.png", "sha256": sha(OUT / "aux.png"),
+            "channels": ["sea distance in node steps (2 km), capped 255", "lake level hi",
+                         "lake level lo (uint16 m + 1000; 0 = no lake)",
+                         "lake shore distance: 128 + km / %g, inside negative, 255 far" % LAKE_SD_STEP]}
 
 
 def lake_levels(lake, height):
@@ -1720,6 +1793,8 @@ def main():
     aux[..., 0] = np.clip(np.round(sea_dist), 0, 255)
     aux[..., 1] = lake_enc >> 8
     aux[..., 2] = lake_enc & 255
+    print("lake shores")
+    aux[..., 3] = lake_shore_distance(lakes)
     Image.fromarray(aux, "RGBA").save(OUT / "aux.png", optimize=True)
 
     height.astype("<f2").tofile(OUT / "height.r16f")
@@ -1750,8 +1825,7 @@ def main():
 
     manifest["cover"] = {"path": "cover.png", "sha256": sha(OUT / "cover.png"),
                          "channels": ["forest", "dry = bare + 0.6 shrub", "crop", "wetland"]}
-    manifest["aux"] = {"path": "aux.png", "sha256": sha(OUT / "aux.png"),
-                       "channels": ["sea distance in node steps (2 km), capped 255", "lake level hi", "lake level lo (uint16 m + 1000; 0 = no lake)", "unused"]}
+    manifest["aux"] = aux_manifest()
     manifest["height"] = {"path": "../fixed-source-v2-mountain-r7/height.rg8",
                           "sha256": sha(RD / "fixed-source-v2-mountain-r7/height.rg8"),
                           "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"}
@@ -1780,5 +1854,7 @@ if __name__ == "__main__":
         cells_only()
     elif "--rivers-only" in sys.argv:
         rivers_only()
+    elif "--lakes-only" in sys.argv:
+        lakes_only()
     else:
         main()

@@ -651,12 +651,12 @@
   },
   "aux": {
     "path": "aux.png",
-    "sha256": "9a667c18e9cefa434d99502fcf7ce19d982b96900799aca92cb8a47562f31064",
+    "sha256": "74e948e636bb38380acf70ece2aab42b4b49326399724c959e31979674aa0959",
     "channels": [
       "sea distance in node steps (2 km), capped 255",
       "lake level hi",
       "lake level lo (uint16 m + 1000; 0 = no lake)",
-      "unused"
+      "lake shore distance: 128 + km / 0.125, inside negative, 255 far"
     ]
   },
   "height": {

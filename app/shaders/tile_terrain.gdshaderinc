@@ -7,7 +7,7 @@
 uniform sampler2D height_tex : filter_linear_mipmap, repeat_disable; // metres, 2 km nodes
 uniform sampler2D relief_tex : filter_linear_mipmap, repeat_disable; // slope-limited metres (shape)
 uniform sampler2D cover_tex : filter_linear_mipmap, repeat_disable;  // forest, dry, crop, wetland
-uniform sampler2D aux_tex : filter_nearest, repeat_disable;          // sea distance, lake level hi/lo
+uniform sampler2D aux_tex : filter_nearest, repeat_disable;          // sea distance, lake level hi/lo, lake shore distance
 uniform sampler2D shore_tex : filter_linear, repeat_disable;          // highest land next to the water (metres)
 uniform bool shore_ready = false;
 uniform sampler2D cells_tex : filter_nearest, repeat_disable;        // two cells per byte
@@ -537,7 +537,11 @@ vec4 tt_corners(ivec2 t) {
 		return vec4(tile_km >= CONTOUR_KM ? 0.0 : -tt_water_drop());
 	}
 	if (w == W_LAKE) {
-		return vec4(tt_lake_level(t) - tt_water_drop());
+		// from CONTOUR_KM at the level of its shore, as the sea: the lake's
+		// shore line (round P) lays land on the lake tiles and the lake on
+		// the low land around, and a lake sunk by water_drop left earth banks
+		// along the tiles' edges between the two
+		return vec4(tt_lake_level(t) - (tile_km >= CONTOUR_KM ? 0.0 : tt_water_drop()));
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),
@@ -580,6 +584,21 @@ float tt_sea_distance(vec2 p) {
 	float c = texelFetch(aux_tex, i + ivec2(0, 1), 0).r;
 	float d = texelFetch(aux_tex, i + ivec2(1, 1), 0).r;
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 * 2.0;
+}
+
+// Distance to the nearest lake shore in km, inside the lake negative
+// (bilinear over the 2 km nodes: aux A, tools/build_tile_terrain.py
+// lake_shore_distance)
+const float LAKE_SD_STEP = 0.125;
+float tt_lake_distance(vec2 p) {
+	vec2 g = (p - world_min) / world_size * (grid_size - 1.0);
+	ivec2 i = ivec2(floor(g));
+	vec2 f = fract(g);
+	float a = texelFetch(aux_tex, i, 0).a;
+	float b = texelFetch(aux_tex, i + ivec2(1, 0), 0).a;
+	float c = texelFetch(aux_tex, i + ivec2(0, 1), 0).a;
+	float d = texelFetch(aux_tex, i + ivec2(1, 1), 0).a;
+	return (mix(mix(a, b, f.x), mix(c, d, f.x), f.y) * 255.0 - 128.0) * LAKE_SD_STEP;
 }
 
 float tt_latitude(vec2 p) {

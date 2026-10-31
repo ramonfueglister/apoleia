@@ -153,8 +153,9 @@ void vertex() {
 	for (int k = 0; k < 4; k++) { nc[k] = tt_cell(tile + SIDE[k]); }
 	vec4 own = tt_corners_cached(tile);
 	// a lake tile at a corner of its lake is land on that half, at the level
-	// of the shore around it (tt_lake_corner_cut)
-	int lake_cut = !sub_tiles && water == W_LAKE ? tt_lake_corner_cut(tile, nc) : -1;
+	// of the shore around it (tt_lake_corner_cut); not where the lake's shore
+	// line draws the shore (round P)
+	int lake_cut = !sub_tiles && water == W_LAKE && tile_km < CONTOUR_KM ? tt_lake_corner_cut(tile, nc) : -1;
 	if (lake_cut >= 0) {
 		water = W_LAND;
 		own = vec4(tt_lake_level(tile));
@@ -253,7 +254,8 @@ void vertex() {
 	int ground = lake_cut >= 0 ? tt_ground(tile + SIDE[(lake_cut + 1) & 3]) : tt_ground(tile);
 	int ground_alt = ground;
 	int ground_tip = -1;
-	if (water != W_SEA && water != W_LAKE && part == 0 && cut < 0) {
+	// (on the map the landscapes' borders are drawn soft: contour_land_soft)
+	if (water != W_SEA && water != W_LAKE && part == 0 && cut < 0 && tile_km < CONTOUR_KM) {
 		ground_tip = tt_ground_cut(tile, ground, ground_alt);
 	}
 	ground_bits = ground | (ground_alt << 4) | ((ground_tip + 1) << 8);
@@ -572,6 +574,74 @@ vec3 contour_mountain(vec2 p, int g, vec3 c, float band) {
 	return mix(c, ground_rgb_at(G_SNOW, band), smoothstep(SNOW_H - aa, SNOW_H + aa, h));
 }
 
+// The landscape's far colour on the map (CONTOUR_KM on): open land and
+// woods turn into the hills' and mountains' tones with the height of the
+// point itself (`band`: its level less one), not in one step per tile as
+// ground_rgb_at's bands, which laid the hills out in tile blocks (round P)
+vec3 contour_ground_tone(int g, float band) {
+	g = clamp(g, 0, 10);
+	vec3 far = GROUND_FAR[g];
+	bool open = g == G_MEADOW || g == G_DRY_GRASS || g == G_FIELD || g == G_WETLAND || g == G_SCRUB || g == G_ALPINE;
+	if (open) {
+		vec3 hills = mix(far, C_HILLS_FAR, mix(0.5, 0.8, smoothstep(1.5, 2.5, band)));
+		far = mix(far, hills, smoothstep(0.5, 1.5, band));
+		far = mix(far, mix(GROUND_FAR[g], C_MOUNT_FAR, 0.75), smoothstep(2.5, 3.5, band));
+	}
+	if (g == G_FOREST || g == G_CONIFER) { far = mix(far, GROUND_FAR[G_CONIFER] * 0.85, 0.6 * smoothstep(1.5, 2.5, band)); }
+	return far;
+}
+
+// The landscape at p on the map (CONTOUR_KM on), from the four tiles around
+// it: each weighs by its bilinear share at p, p wandering a little by noise
+// (in tiles, so alike at every level), the water tiles nothing; the
+// heaviest landscape wins and blends into the next one over about a pixel.
+// So the landscapes' borders run round and frayed through the tiles, as in
+// Ramon's landscape reference, not along the tiles' edges and diagonals
+// (the 8 km mosaic, round P). `g`: the winner; with only water around the
+// nearest land tile's (contour_land_rgb). `px_km`: a pixel (km).
+vec3 contour_land_soft(vec2 p, float band, float px_km, out int g) {
+	vec2 q = (p - world_min) / tile_km - 0.5;
+	q += (vec2(tt_noise(q * 0.9), tt_noise(q * 0.9 + 17.3)) - 0.5) * 0.7
+		+ (vec2(tt_noise(q * 2.3 + 5.1), tt_noise(q * 2.3 - 8.7)) - 0.5) * 0.3;
+	ivec2 i = ivec2(floor(q));
+	vec2 f = fract(q);
+	int gs[4] = int[](tt_ground(i), tt_ground(i + ivec2(1, 0)), tt_ground(i + ivec2(0, 1)), tt_ground(i + ivec2(1, 1)));
+	float ws[4] = float[]((1.0 - f.x) * (1.0 - f.y), f.x * (1.0 - f.y), (1.0 - f.x) * f.y, f.x * f.y);
+	float best = -1.0;
+	float second = 0.0;
+	g = G_NONE;
+	int g2 = G_NONE;
+	for (int k = 0; k < 4; k++) {
+		if (gs[k] == G_NONE) { continue; }
+		float s = 0.0;
+		for (int m = 0; m < 4; m++) { s += gs[m] == gs[k] ? ws[m] : 0.0; }
+		if (s > best) {
+			if (gs[k] != g) {
+				second = max(best, 0.0);
+				g2 = g;
+			}
+			best = s;
+			g = gs[k];
+		} else if (gs[k] != g && s > second) {
+			second = s;
+			g2 = gs[k];
+		}
+	}
+	if (g == G_NONE) {
+		g = G_MEADOW;
+		return contour_land_rgb(p);
+	}
+	vec3 c = contour_ground_tone(g, band);
+	if (g2 != G_NONE) {
+		// the weights change by about a tile's share per tile: the blend's
+		// width from the pixel's size, not from derivatives (the caller's
+		// branches by tile)
+		float aa = 1.5 * px_km / tile_km + 1e-4;
+		c = mix(contour_ground_tone(g2, band), c, smoothstep(-aa, aa, best - second));
+	}
+	return c;
+}
+
 void fragment() {
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
@@ -587,10 +657,25 @@ void fragment() {
 	// branches by tile
 	bool contour = tile_km >= CONTOUR_KM;
 	float sd = 10.0;
-	if (contour) { sd = tt_sea_distance(p); }
+	float ld = 10.0; // and the lakes' shore line (round P)
+	if (contour) {
+		sd = tt_sea_distance(p);
+		ld = tt_lake_distance(p);
+	}
 	float sd_aa = max(fwidth(sd) * 0.75, 1e-4);
+	float ld_aa = max(fwidth(ld) * 0.75, 1e-4);
 	float px_km = length(fwidth(p));
 	bool sea_px = water == W_SEA; // drawn as sea (sim_muted)
+	// the landscape on the map (round P), worked out here once for the land
+	// tiles and the land the coast and lake lines lay over the water tiles
+	// (one inlined copy of its lookups), only where land is drawn
+	float soft_band = max(world_pos.y / level_h - 1.0, 0.0);
+	vec3 soft_land = vec3(0.0);
+	if (contour && part == 0 && (water != W_SEA || sd < CONTOUR_SD + sd_aa) && (water != W_LAKE || ld > -ld_aa)) {
+		int g;
+		soft_land = contour_land_soft(p, soft_band, px_km, g);
+		soft_land = contour_mountain(p, g, soft_land, soft_band);
+	}
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
 		// one flat colour per water tile, a lighter one where it touches the
 		// land. Up close the shallows are a soft seam that fades into the sea,
@@ -637,13 +722,21 @@ void fragment() {
 			// the land the coast line lays over the sea tile, with its sand
 			float dry = 1.0 - smoothstep(CONTOUR_SD - sd_aa, CONTOUR_SD + sd_aa, sd);
 			if (contour && dry > 0.0) {
-				vec3 land = contour_river(p, sim_ways(p, contour_land_rgb(p), px_km), px_km);
+				vec3 land = contour_river(p, sim_ways(p, soft_land, px_km), px_km);
 				c = mix(contour_shore(land, sd, sd_aa, px_km, 1.0), c, 1.0 - dry);
 				rough = dry > 0.5 ? 1.0 : rough;
 				sea_px = dry <= 0.5;
 			}
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
+			// by the lake's shore line the land runs on over the lake tile
+			// (flat, at the level of the shore), as on the land tiles
+			float dry = smoothstep(-ld_aa, ld_aa, ld);
+			if (contour && dry > 0.0) {
+				vec3 land = sim_ways(p, soft_land, px_km) * contour_relief(p, art);
+				c = mix(c, contour_river(p, land, px_km), dry);
+				rough = dry > 0.5 ? 1.0 : rough;
+			}
 		}
 	} else if (part == 0) {
 		int town = tt_town(tile);
@@ -652,17 +745,24 @@ void fragment() {
 		bool planned = plan.r != CP_NONE;
 		if (planned) { town = cp_town(plan.r); }
 		// one flat colour per tile; where two landscapes meet, the half towards
-		// the corner of the other one takes its colour (cut at the diagonal)
-		// in far levels whatever the scale of the tile's own levels
+		// the corner of the other one takes its colour (cut at the diagonal),
+		// in far levels whatever the scale of the tile's own levels; on the
+		// map (CONTOUR_KM) soft borders instead
 		float band = max((near_scale ? tt_far_level_x(tt_level_metres(body_level)) : body_level) - 1.0, 0.0);
-		c = ground_rgb_at(ground, band);
-		if (ground_tip >= 0) {
-			vec2 tip = vec2(CORNER[ground_tip]);
-			float d = (abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
-			float aa = fwidth(d) * 0.75 + 1e-4;
-			c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
+		if (contour) {
+			// on the map the landscapes with soft borders and the hills'
+			// tones by the height of the point (round P, above)
+			band = soft_band;
+			c = soft_land;
+		} else {
+			c = ground_rgb_at(ground, band);
+			if (ground_tip >= 0) {
+				vec2 tip = vec2(CORNER[ground_tip]);
+				float d = (abs(tile_uv.x - tip.x) + abs(tile_uv.y - tip.y) - 1.0) * 0.7071;
+				float aa = fwidth(d) * 0.75 + 1e-4;
+				c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
+			}
 		}
-		if (contour && water != W_LAKE) { c = contour_mountain(p, ground, c, band); }
 		// inside a town the river banks are paved quays (they were wheat
 		// strips through Rome)
 		if (water == W_RIVER && tile_km < 2.0 && max(max(tt_town(tile + ivec2(1, 0)), tt_town(tile - ivec2(1, 0))),
@@ -887,6 +987,13 @@ void fragment() {
 		// hills: a lake of blue on a slope)
 		if (contour && water != W_LAKE) {
 			c = contour_river(p, c, px_km); // the rivers by their lines (round N), not the tile bands above
+			// the lakes by their shore line (round P), as the sea by the
+			// coast line below: on the tile's low part only, the corners at
+			// a lake sitting at its level (never a lake up a slope)
+			float lake_low = 1.0 - smoothstep(0.35, 0.55, world_pos.y / level_h - body_level);
+			float lake = (1.0 - smoothstep(-ld_aa, ld_aa, ld)) * lake_low;
+			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), lake);
+			rough = lake > 0.5 ? 0.55 : rough;
 			float low = 1.0 - smoothstep(0.35, 0.55, world_pos.y / level_h);
 			c = contour_shore(c, sd, sd_aa, px_km, low);
 			sea_px = sd > CONTOUR_SD && low > 0.5;
