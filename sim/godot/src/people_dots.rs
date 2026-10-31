@@ -21,7 +21,7 @@ use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT}
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
-use apoleia_sim::grain::{spend_choices, Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, LawRow, SpendRow, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES, LAWS, LAW_LEVELS, LEVEL_NAMES, SPEND_LAWS};
+use apoleia_sim::grain::{debt_choices, spend_choices, Clearable, CraftsView, CreditorRow, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, LawRow, SpendRow, TripsView, WorkView, CRAFT_NAMES, DEBT_LAWS, FARM_KIND_NAMES, GOODS, KIND_NAMES, LAWS, LAW_LEVELS, LEVEL_NAMES, RENTE_END, SPEND_LAWS};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -140,6 +140,14 @@ struct Front {
     laws: Vec<LawRow>,
     /// S133: the spending laws after the last day.
     spend: Vec<SpendRow>,
+    /// S134: the debt law, the debt, its interest a year, the rate of the
+    /// last bond (basis points) and the creditors (most held first, the
+    /// first CREDITORS_SHOWN) after the last day.
+    debt: Vec<SpendRow>,
+    debt_total: i64,
+    interest_year: i64,
+    debt_rate: i64,
+    creditors: Vec<CreditorRow>,
     /// Milliseconds the sim thread spent on its days so far: the day
     /// itself, orders and map layers, the view, handing over; and the days.
     spent: [f64; 4],
@@ -316,9 +324,23 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     f.cash = game.grain.treasury.cash;
     f.laws = game.grain.law_rows();
     f.spend = game.grain.spend_rows();
+    publish_debt(game, &mut f);
     f.map = map.layers.clone();
     publish_orders(game, &mut f);
     (map, view)
+}
+
+/// S134: creditors handed to the game, most held first.
+const CREDITORS_SHOWN: usize = 100;
+
+/// S134: the debt law and the debt as of the last day.
+fn publish_debt(game: &Game, f: &mut Front) {
+    f.debt = game.grain.debt_rows();
+    f.debt_total = game.grain.debt_total();
+    f.interest_year = game.grain.interest_year();
+    f.debt_rate = game.grain.treasury.debt_rate;
+    f.creditors = game.grain.creditors();
+    f.creditors.truncate(CREDITORS_SHOWN);
 }
 
 /// The statuses of `take_build_check` (apoleia_sim::grain::CHECK_*).
@@ -665,6 +687,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         f.cash = game.grain.treasury.cash;
         f.laws = game.grain.law_rows();
         f.spend = game.grain.spend_rows();
+        publish_debt(&game, &mut f);
         f.day_usec = day_usec;
         f.grain_usec = grain_usec;
     }
@@ -885,6 +908,72 @@ impl ApoleiaPeople {
                 d
             })
             .collect()
+    }
+
+    /// S134: sets part `law` of the debt law (0 Schuldengrenze, 1
+    /// Laufzeit neuer Anleihen, 2 Wenn die Kasse nicht reicht, 3
+    /// Zinsgesetz) to `choice` (the names in `debt_law`). A command like
+    /// `set_spend`.
+    #[func]
+    fn set_debt(&mut self, law: i64, choice: i64) {
+        if self.worker.is_none() || !(0..DEBT_LAWS as i64).contains(&law) || !(0..debt_choices(law as usize).len() as i64).contains(&choice) {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Debt { law: law as u8, choice: choice as u8 });
+        self.shared.wake.notify_one();
+    }
+
+    /// S134: orders a Zwangsanleihe: the richest households lend `share`
+    /// per cent (1 to 100) of their spare money at `rate` per cent (0 to
+    /// 100), at the next monthly turn and within the Schuldengrenze.
+    #[func]
+    fn forced_loan(&mut self, share: i64, rate: i64) {
+        if self.worker.is_none() || !(1..=100).contains(&share) || !(0..=100).contains(&rate) {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::ForcedLoan { share: share as u8, rate: rate as u8 });
+        self.shared.wake.notify_one();
+    }
+
+    /// S134: the debt after the last day: "laws" (as `spend_law`: law,
+    /// name, choice, choices), "debt" and "interest_year" (denarii),
+    /// "rate" (the last bond's, per cent) and "creditors" (most held
+    /// first, the first 100: "household", "amount" denarii, "rate" per
+    /// cent, "bonds").
+    #[func]
+    fn debt_law(&self) -> VarDictionary {
+        let f = self.shared.front.lock().unwrap();
+        let mut d = VarDictionary::new();
+        let laws: Array<VarDictionary> = f
+            .debt
+            .iter()
+            .map(|r| {
+                let mut x = VarDictionary::new();
+                x.set("law", r.law as i64);
+                x.set("name", r.name);
+                x.set("choice", r.choice as i64);
+                x.set("choices", &PackedStringArray::from_iter(r.choices.iter().map(|n| GString::from(*n))));
+                x
+            })
+            .collect();
+        d.set("laws", &laws);
+        d.set("debt", f.debt_total as f64 / 1000.0);
+        d.set("interest_year", f.interest_year as f64 / 1000.0);
+        d.set("rate", f.debt_rate as f64 / 100.0);
+        let creditors: Array<VarDictionary> = f
+            .creditors
+            .iter()
+            .map(|c| {
+                let mut x = VarDictionary::new();
+                x.set("household", c.household as i64);
+                x.set("amount", c.amount as f64 / 1000.0);
+                x.set("rate", c.rate as f64 / 100.0);
+                x.set("bonds", c.bonds as i64);
+                x
+            })
+            .collect();
+        d.set("creditors", &creditors);
+        d
     }
 
     /// A save game is playing again: no days, no dots until it has.
@@ -1625,6 +1714,21 @@ impl ApoleiaPeople {
             d.set("clothes_pct", h.clothes_pct);
             d.set("rank_all", h.rank_all);
             d.set("rank_market", h.rank_market);
+            // S134: the state's bonds it holds: face (denarii), rate (per
+            // cent), the day issued, the day due (-1 for a Rente), whether
+            // a Zwangsanleihe made it; what it remembers losing (denarii)
+            let mut bonds = VarArray::new();
+            for b in &h.bonds {
+                let mut x = VarDictionary::new();
+                x.set("amount", b.amount as f64 / 1000.0);
+                x.set("rate", b.rate as f64 / 100.0);
+                x.set("start", b.start);
+                x.set("end", if b.end == RENTE_END { -1 } else { b.end });
+                x.set("forced", b.forced);
+                bonds.push(&x.to_variant());
+            }
+            d.set("bonds", &bonds);
+            d.set("loss_memory", h.loss_memory as f64 / 1000.0);
         }
         // the household's people: id, age, woman, job, spouse, and what
         // their faces need

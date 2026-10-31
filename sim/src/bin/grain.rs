@@ -8,6 +8,9 @@
 //!              [--inherit equal|now|one] [--no-floor] [--no-sow-price]
 //!              [--sales-month] [--no-carry-sale]
 //!              [--no-freight-wage] [--no-paving] [--stock 0-3] [--relief 0-2]
+//!              [--debt-limit 0-3] [--debt-term 0-3] [--debt-short 0-2]
+//!              [--usury 0-3]
+//!              [--forced-loan YEAR,SHARE%,RATE%]
 
 use apoleia_sim::grain::{Grain, GOODS};
 use apoleia_sim::people::People;
@@ -107,6 +110,19 @@ fn main() {
             g.set_spend(k as u8, v.parse().unwrap());
         }
     }
+    // S134: the debt law, by choice number (debt.rs), and a Zwangsanleihe
+    // in a year (share and rate, per cent).
+    for (k, key) in ["--debt-limit", "--debt-term", "--debt-short", "--usury"].iter().enumerate() {
+        if let Some(v) = arg(key) {
+            g.set_debt(k as u8, v.parse().unwrap());
+        }
+    }
+    let forced: Option<(i64, u8, u8)> = arg("--forced-loan").map(|v| {
+        let x: Vec<i64> = v.split(',').map(|n| n.parse().unwrap()).collect();
+        (x[0], x[1] as u8, x[2] as u8)
+    });
+    let debt: Vec<String> = g.debt_rows().iter().map(|r| format!("{} {}", r.name, r.choices[r.choice as usize])).collect();
+    println!("debt law (S134): {}; Zwangsanleihe {:?}", debt.join(", "), forced);
     let spend: Vec<String> = g.spend_rows().iter().map(|r| format!("{} {}", r.name, r.choices[r.choice as usize])).collect();
     println!("spending laws (S133): {}; paving: {}", spend.join(", "), g.paving);
     println!("freight as carriers' wages (S132): {}", g.freight_wage);
@@ -147,6 +163,11 @@ fn main() {
         p.stats = Default::default();
         g.stats = Default::default();
         let mut ysum = 0.0;
+        if let Some((fy, share, rate)) = forced {
+            if fy == y {
+                g.forced_loan(share, rate);
+            }
+        }
         for _ in 0..360 {
             let t = Instant::now();
             p.day();
@@ -245,6 +266,28 @@ fn main() {
             gs.dole_kg as f64 / 1e3,
             t.dole_kg as f64 / 1e3,
             gs.relief_days
+        );
+        let cr = g.creditors();
+        let top: i64 = cr.iter().take(10).map(|c| c.amount).sum();
+        println!(
+            "      debt (S134): debt den {:.0} | revenue last year {:.0} interest a year {:.0} | rate last bond {:.2} % | creditors {} (top 10 hold {:.0} %) | issued {:.0} (forced {:.0}) in {} turns, repaid {:.0} (bought back {:.0}), interest {:.0} (minted {:.0}), lost {:.0}, rescheduled {:.0}, Heimfall {:.0}, lapsed {:.0}",
+            den(g.debt_total()),
+            den(g.revenue_year().unwrap_or(0)),
+            den(g.interest_year()),
+            t.debt_rate as f64 / 100.0,
+            cr.len(),
+            100.0 * top as f64 / g.debt_total().max(1) as f64,
+            den(t.debt_issued),
+            den(t.debt_forced),
+            t.bond_issues,
+            den(t.debt_repaid),
+            den(t.debt_bought),
+            den(t.interest),
+            den(t.interest_minted),
+            den(t.debt_lost),
+            den(t.debt_rescheduled),
+            den(t.debt_escheated),
+            den(t.debt_lapsed)
         );
         print!("{}", g.tax_report());
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();

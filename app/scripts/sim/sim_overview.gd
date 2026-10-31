@@ -20,6 +20,8 @@ extends ScrollContainer
 ## months the charts show; a click on a line of the Lage emits go(page).
 
 signal go(page: String)
+## A creditor in the list was chosen (S134): its household's window.
+signal household_chosen(household: int)
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
@@ -108,11 +110,46 @@ const BUDGET_IN := [
 const BUDGET_OUT := [
 	["wages_d", Color("8f6fd0"), "Lohn für Soldaten, Beamte und die Bauarbeiter der Bauaufträge."],
 	["public_works_d", Color("1f9cc4"), "Lohn für öffentliche Arbeit, bezahlt aus dem Geld über der Reserve der Kasse."],
+	["interest_d", Color("c9a227"), "Zinsen an die Gläubiger der Staatsschuld, einmal im Jahr, und bei einer Tilgung oder einem Rückkauf der Zins bis zu diesem Tag."],
 ]
 const BUDGET_ROW := 34.0 # a line of the budget: its name and value, under them its bar
 const BUDGET_HEAD := 30.0
 const YEAR_DAYS := 360
-const TAX_CARDS: Array[String] = ["arrears", "arrears_households", "seized", "auctions"]
+const TAX_CARDS: Array[String] = ["arrears", "arrears_households", "seized", "auctions", "debt", "debt_flow", "debt_rate"]
+## S134: creditors in the list, and their faces' size.
+const CREDITORS_SHOWN := 10
+const CREDITOR_FACE_PX := 34.0
+## S134: the Zwangsanleihe's buttons: share of the richest households'
+## spare money, per cent, at FORCED_RATE per cent (PLACEHOLDER: shares;
+## the rate of Venice's Monte Vecchio, 1262).
+const FORCED_SHARES: Array[int] = [10, 25, 50]
+const FORCED_RATE := 5
+## S133, S134: what each choice of the spending and debt laws does, by
+## card, law and choice.
+const CHOICE_ABOUT := {
+	"spend_laws:0:0": "Die Staatsspeicher kaufen kein Korn zu; sie halten, was Zehnt und Pacht bringen.",
+	"spend_laws:0:1": "Die Staatsspeicher kaufen mit dem Geld über der Reserve der Kasse Korn bei den Händlern, bis zu einem Monat des Absatzes ihres Marktes, aber nur, solange sich das Lagern lohnt, wie bei jedem privaten Lager.",
+	"spend_laws:0:2": "Wie «bis 1 Monat», bis zu drei Monaten des Absatzes.",
+	"spend_laws:0:3": "Wie «bis 1 Monat», bis zu einem Jahr des Absatzes.",
+	"spend_laws:1:0": "Der Staat hilft nicht; wer hungert, bettelt am Markt um Almosen.",
+	"spend_laws:1:1": "Die öffentliche Arbeit stellt zuerst Haushalte ein, denen das Geld für einen Monat Essen fehlt.",
+	"spend_laws:1:2": "Wer beim Essen zu wenig hat und es nicht bezahlen kann, bekommt den Rest seines Monatsbedarfs aus dem Staatsspeicher seines Marktes, so weit dieser reicht.",
+	"debt_laws:0:0": "Der Staat leiht nicht. Fehlt Geld für den Lohn, prägt er neues.",
+	"debt_laws:0:1": "Der Staat darf höchstens so viel schulden, wie er im letzten Jahr eingenommen hat. Er leiht erst, wenn die Kasse unter die Hälfte ihrer Reserve fällt.",
+	"debt_laws:0:2": "Der Staat darf höchstens so viel schulden, wie er in drei Jahren einnimmt.",
+	"debt_laws:0:3": "Keine Grenze: Nur die Gläubiger bremsen, wenn ihnen das Risiko zu gross wird. Dann bieten sie teuer oder gar nicht.",
+	"debt_laws:1:0": "Neue Anleihen sind Renten: Der Staat zahlt nur Zins, ohne Laufzeit, und kauft sie zum Nennwert zurück, wenn die Kasse mehr hat als ihre Reserve.",
+	"debt_laws:1:1": "Neue Anleihen laufen fünf Jahre; dann zahlt der Staat sie zurück. Kurze Laufzeit ist oft billiger, zwingt aber, bald wieder zu leihen.",
+	"debt_laws:1:2": "Neue Anleihen laufen zehn Jahre; dann zahlt der Staat sie zurück.",
+	"debt_laws:1:3": "Neue Anleihen laufen dreissig Jahre; dann zahlt der Staat sie zurück.",
+	"debt_laws:2:0": "Reicht die Kasse für Zins und Tilgung nicht, prägt der Staat das Fehlende neu. Die Gläubiger verlieren nichts.",
+	"debt_laws:2:1": "Reicht die Kasse nicht, zahlt sie jedem Gläubiger denselben Anteil; der Rest ist verloren. Die Gläubiger merken es sich und verlangen künftig mehr Zins.",
+	"debt_laws:2:2": "Reicht die Kasse nicht, zahlt sie jedem Gläubiger denselben Anteil; der Rest wird zu einer neuen Rente mit tieferem Zins. Kleinerer Verlust, kleinerer Schaden am Ruf.",
+	"debt_laws:3:0": "Kein Höchstzins für private Kredite, sobald es sie gibt. Den Staat bindet das Zinsgesetz nicht.",
+	"debt_laws:3:1": "Höchstzins 12 % im Jahr für private Kredite, wie in Rom, sobald es sie gibt. Den Staat bindet er nicht.",
+	"debt_laws:3:2": "Höchstzins 5 % im Jahr für private Kredite, wie im Reich ab 1654, sobald es sie gibt. Den Staat bindet er nicht.",
+	"debt_laws:3:3": "Zinsverbot: Der Staat darf nur Renten verkaufen, gleich was die Laufzeit sagt, denn der Rentenkauf galt als Kauf, nicht als Darlehen.",
+}
 const YEARS_PX := 210.0 # the budget's years, a bar each
 ## A figure's tooltip: what it is, where that needs saying.
 const TILE_ABOUT := {
@@ -173,6 +210,12 @@ const CARDS := {
 	"arrears_households": ["line", "Haushalte im Rückstand", "", "Haushalte, die dem Staat am Monatsende Steuern schulden."],
 	"seized": ["line", "Pfändungen", "D", "Geld und Korn, das der Staat im Monat für Rückstände pfändet, das Korn zum Ankaufspreis; und Rückstand, den er als uneinbringlich abschreibt, wenn nach zwei Jahren nichts mehr zu holen ist."],
 	"auctions": ["line", "Zwangsversteigerungen", "Höfe", "Eigene Höfe, die im Monat für zwei Jahre Steuerrückstand versteigert werden: die Familie bleibt als Pächter des Käufers. Bietet niemand, fällt der Hof an den Staat (Domäne)."],
+	"spend_laws": ["choices", "Ausgabengesetze", "", "Wofür der Staat Geld und Korn ausgibt, ausser Lohn und öffentlicher Arbeit: ob seine Speicher Korn zukaufen und wie er Bedürftigen hilft. Eine Wahl gilt ab dem nächsten Tag."],
+	"debt_laws": ["choices", "Schuldgesetz", "", "Ob und wie viel der Staat leihen darf, wie lange neue Anleihen laufen, was geschieht, wenn die Kasse Zins oder Tilgung nicht zahlen kann, und das Zinsgesetz. Den Zins setzt niemand: Er entsteht aus den Geboten der Gläubiger. Darunter die Zwangsanleihe als einmaliger Erlass."],
+	"creditors": ["creditors", "Gläubiger", "", "Die Haushalte, die dem Staat am meisten geliehen haben, mit dem mittleren Zins ihrer Anleihen. Ein Klick öffnet den Haushalt."],
+	"debt": ["line", "Staatsschuld", "D", "Was der Staat seinen Gläubigern am Monatsende schuldet, zum Nennwert der Anleihen. Erlaubt das Schuldgesetz keine Schuld, bleibt sie bei null."],
+	"debt_flow": ["line", "Anleihen und Zinsen", "D", "Neue Anleihen im Monat, Zinsen, Tilgung und Rückkauf, und was Gläubiger in einem Staatsbankrott verloren haben. Der Staat leiht erst, wenn die Kasse unter die Hälfte ihrer Reserve fällt."],
+	"debt_rate": ["line", "Zins der Staatsschuld", "%", "Der Zins der letzten Anleihe: das Gebot des teuersten Gläubigers, den der Staat noch nehmen musste. Jeder Gläubiger verlangt, was er sonst verdienen würde, dazu einen Aufschlag für das Risiko, das er sieht, und für die Laufzeit."],
 	"public_days": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat als öffentliche Arbeit bezahlt, zum Taglohn des Marktes. Im ersten Jahr noch keine: dann kennt die Kasse ihre Reserve noch nicht."],
 	"m_price": ["line", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel."],
 	"goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum."],
@@ -197,14 +240,14 @@ const PAGES := {
 	"money_charts": ["real", "wage", "work", "money", "lorenz", "gini_rows"],
 	"goods_charts": ["goods", "clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
 	"farms_charts": ["farms", "land", "farm_count", "farm_store"],
-	"budget_charts": ["tiles", "budget", "laws", "budget_years", "arrears", "arrears_households", "seized", "auctions"],
+	"budget_charts": ["tiles", "budget", "laws", "spend_laws", "debt_laws", "budget_years", "arrears", "arrears_households", "seized", "auctions", "debt", "debt_flow", "debt_rate", "creditors"],
 	"state_charts": ["cash", "state", "income", "spending", "public_days", "held", "tax_grain"],
 	"market": ["tiles", "m_why", "lage", "m_people", "m_money", "m_goods"],
 	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5", "m_public"],
 }
 ## The cards across the page, as Victoria 3 gives its main graph the width:
 ## each topic's leading chart and the one that sums it up.
-const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "budget", "laws", "budget_years", "m_price",
+const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "budget", "laws", "spend_laws", "debt_laws", "budget_years", "m_price",
 	"m_persons", "m_goods"]
 ## The findings in the Lage's order: the topics as their pages; "goods"
 ## is the good that moved most.
@@ -281,6 +324,18 @@ var _laws := [] # tax_law(): per law {law, name, level, levels, rate, unit, dena
 var _law_buttons := [] # per law its six buttons
 var _law_notes := [] # per law the line under its buttons
 var _law_wanted := {} # law row -> the level the player chose, until the sim has it
+var set_spend: Callable # (law, choice): S133, handed by sim_tables.gd
+var set_debt: Callable # (law, choice): S134, handed by sim_tables.gd
+var forced_loan: Callable # (share, rate): S134, handed by sim_tables.gd
+var face_of: Callable # (household) -> Texture2D or null: its face from sim_tables.gd's list faces, asked for if missing
+var _choice_boxes := {} # card key -> its rows of laws
+var _choice_buttons := {} # card key -> per law its buttons
+var _choice_laws := {} # card key -> the laws as last shown: {law, name, choice, choices}
+var _choice_wanted := {} # "card:law row" -> the choice the player made, until the sim has it
+var _forced_buttons := []
+var _forced_note: Label
+var _creditors_box: VBoxContainer
+var _creditors_note: Label
 
 func _init(date_fn: Callable, page_name := "overview") -> void:
 	date = date_fn
@@ -340,6 +395,10 @@ func _add(key: String) -> void:
 			_budget_card()
 		"laws":
 			_laws_card()
+		"choices":
+			_choices_card(key)
+		"creditors":
+			_creditors_card()
 		"years":
 			_years_card()
 		"goods":
@@ -452,10 +511,19 @@ func show_tables(tables: Dictionary) -> void:
 			{"key": "written_off_d", "name": "Abgeschrieben", "colour": Charts.SERIES[3]}])
 		_set_line("auctions", h, [{"key": "auctions", "name": "Versteigert", "colour": Charts.SERIES[0]},
 			{"key": "domains", "name": "An den Staat", "colour": Charts.SERIES[3]}])
+		_set_line("debt", h, [{"key": "debt", "name": "Staatsschuld", "colour": Charts.SERIES[3]}])
+		_set_line("debt_flow", h, [{"key": "debt_issued_d", "name": "Neue Anleihen", "colour": Charts.SERIES[0]},
+			{"key": "interest_d", "name": "Zinsen", "colour": Charts.SERIES[3]},
+			{"key": "debt_repaid_d", "name": "Getilgt und zurückgekauft", "colour": Charts.SERIES[1]},
+			{"key": "debt_lost_d", "name": "Im Staatsbankrott verloren", "colour": Charts.RED}])
+		_set_line("debt_rate", h, [{"key": "debt_rate", "name": "Zins der letzten Anleihe", "colour": Charts.SERIES[3]}])
 		if page == "budget_charts":
 			_set_budget(h)
 			_set_years(h)
 			_set_laws(tables.get("laws", []), d)
+			_set_choices("spend_laws", tables.get("spend", []))
+			_set_choices("debt_laws", tables.get("debt", {}).get("laws", []))
+			_set_creditors(tables.get("debt", {}))
 			_fill_tiles(_with_year_sums(d))
 		else:
 			_fill_tiles(d)
@@ -1629,6 +1697,12 @@ func _set_budget(h: Dictionary) -> void:
 	if d.has("written_off_d"):
 		_budget_extra.append(["Uneinbringlich abgeschrieben", Charts.label(_year_sum(_col(d, "written_off_d"))) + " D",
 			"Steuerrückstand, den der Staat nach zwei Jahren abschreibt, weil nichts mehr zu holen ist."])
+	if d.has("debt_issued_d") and d.has("debt_repaid_d"):
+		var issued := _year_sum(_col(d, "debt_issued_d"))
+		var repaid := _year_sum(_col(d, "debt_repaid_d"))
+		if issued > 0.0 or repaid > 0.0:
+			_budget_extra.append(["Anleihen", "%s D geliehen, %s D getilgt" % [Charts.label(issued), Charts.label(repaid)],
+				"Geld, das der Staat im letzten Jahr bei seinen Gläubigern geliehen und ihnen zurückgezahlt hat. Geliehenes Geld ist keine Einnahme und Tilgung keine Ausgabe, darum steht beides nicht in der Summe; die Zinsen stehen bei den Ausgaben."])
 	var rows := maxi(_budget_sides[0].size(), _budget_sides[1].size())
 	_budget.custom_minimum_size.y = BUDGET_HEAD + rows * BUDGET_ROW + 10.0 + LINE_PX + _budget_extra.size() * LINE_PX
 	_budget.queue_redraw()
@@ -1832,6 +1906,184 @@ func _pick_law(k: int, level: int) -> void:
 		_law_wanted[k] = level
 	var d: Dictionary = _tables.get("history", {}).get("data", {})
 	_set_laws(_laws, d)
+
+## S133, S134: the spending laws and the debt law as rows of buttons, one
+## per choice, the choice in force lit (as the tax laws); under the debt
+## law the Zwangsanleihe.
+func _choices_card(key: String) -> void:
+	var box := _card(key)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 6)
+	box.add_child(rows)
+	_choice_boxes[key] = rows
+	_choice_buttons[key] = []
+	var foot := _foot()
+	if key == "debt_laws":
+		box.add_child(_forced_row())
+		foot.text = "Eine Wahl gilt ab dem nächsten Monat; laufende Anleihen behalten Zins und Laufzeit."
+	else:
+		foot.text = "Eine Wahl gilt ab dem nächsten Tag."
+	box.add_child(foot)
+
+func _set_choices(key: String, laws: Array) -> void:
+	if not _choice_boxes.has(key):
+		return
+	var rows: VBoxContainer = _choice_boxes[key]
+	rows.get_parent().get_parent().visible = not laws.is_empty() # a sim without these laws
+	if laws.size() != _choice_buttons[key].size():
+		for c in rows.get_children():
+			c.queue_free()
+		_choice_buttons[key] = []
+		for k in laws.size():
+			_choice_row(key, k, laws[k])
+	_choice_laws[key] = laws
+	var setter: Callable = set_spend if key == "spend_laws" else set_debt
+	for k in laws.size():
+		var wanted := "%s:%d" % [key, k]
+		if _choice_wanted.get(wanted, -1) == int(laws[k].choice):
+			_choice_wanted.erase(wanted)
+		var lit: int = _choice_wanted.get(wanted, int(laws[k].choice))
+		var buttons: Array = _choice_buttons[key][k]
+		for c in buttons.size():
+			buttons[c].set_pressed_no_signal(c == lit)
+			buttons[c].disabled = not setter.is_valid()
+	if key == "debt_laws":
+		for b in _forced_buttons:
+			b.disabled = not forced_loan.is_valid()
+
+func _choice_row(key: String, k: int, law: Dictionary) -> void:
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 4)
+	_choice_boxes[key].add_child(line)
+	var name := _label(str(law.name), UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+	name.custom_minimum_size = Vector2(130, 0)
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.add_child(name)
+	var buttons := []
+	var choices: PackedStringArray = law.choices
+	for c in choices.size():
+		var b := Button.new()
+		b.text = choices[c]
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(70, 30)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.clip_text = true
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
+		b.pressed.connect(_pick_choice.bind(key, k, c))
+		var about: String = CHOICE_ABOUT.get("%s:%d:%d" % [key, int(law.law), c], "")
+		Tooltips.attach(b, func(_at: Vector2) -> Dictionary:
+			var now: Dictionary = _choice_laws[key][k]
+			return {"id": "choice:%s:%d:%d" % [key, k, c], "title": "%s: %s" % [law.name, choices[c]], "kind": "Gesetz",
+				"text": about + ("\n\nDas gilt jetzt." if c == int(now.choice) else "\n\nEin Klick setzt es.")})
+		line.add_child(b)
+		buttons.append(b)
+	_choice_buttons[key].append(buttons)
+
+func _pick_choice(key: String, k: int, c: int) -> void:
+	var setter: Callable = set_spend if key == "spend_laws" else set_debt
+	var laws: Array = _choice_laws.get(key, [])
+	if not setter.is_valid() or k >= laws.size():
+		return
+	setter.call(int(laws[k].law), c)
+	var wanted := "%s:%d" % [key, k]
+	if c == int(laws[k].choice):
+		_choice_wanted.erase(wanted)
+	else:
+		_choice_wanted[wanted] = c
+	_set_choices(key, laws)
+
+## The Zwangsanleihe: a button per share of the spare money; a click
+## orders it once, raised at the next monthly turn.
+func _forced_row() -> Control:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 4)
+	row.add_child(line)
+	var name := _label("Zwangsanleihe", UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+	name.custom_minimum_size = Vector2(130, 0)
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(name)
+	for share in FORCED_SHARES:
+		var b := Button.new()
+		b.text = "%d %% des Bargelds" % share
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(70, 30)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.clip_text = true
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
+		b.pressed.connect(_order_forced.bind(share))
+		var text := "Die reichsten Haushalte, deren Geld über einem Jahr Essen mindestens zehn Jahreslöhne erreicht, müssen dem Staat %d %% davon leihen, zu %d %% Zins, im Rahmen der Schuldengrenze. Was dieser Zins unter dem liegt, was sie sonst verlangt hätten, merken sie sich als Verlust." % [share, FORCED_RATE]
+		Tooltips.attach(b, func(_at: Vector2) -> Dictionary:
+			return {"id": "forced:%d" % share, "title": "Zwangsanleihe ausschreiben", "kind": "Erlass", "text": text})
+		line.add_child(b)
+		_forced_buttons.append(b)
+	_forced_note = _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	_forced_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var pad := MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 134)
+	pad.add_child(_forced_note)
+	row.add_child(pad)
+	return row
+
+func _order_forced(share: int) -> void:
+	if not forced_loan.is_valid():
+		return
+	forced_loan.call(share, FORCED_RATE)
+	_forced_note.text = "Ausgeschrieben: %d %% des Bargelds zu %d %%, erhoben im nächsten Monat." % [share, FORCED_RATE]
+
+## S134: the largest creditors, a face and a link each.
+func _creditors_card() -> void:
+	var box := _card("creditors")
+	_creditors_note = _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	_creditors_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_creditors_note)
+	_creditors_box = VBoxContainer.new()
+	_creditors_box.add_theme_constant_override("separation", 2)
+	box.add_child(_creditors_box)
+
+func _set_creditors(debt: Dictionary) -> void:
+	if _creditors_box == null:
+		return
+	_creditors_box.get_parent().get_parent().visible = not debt.is_empty() # a sim without the debt
+	var list: Array = debt.get("creditors", [])
+	if list.is_empty():
+		_creditors_note.text = "Der Staat schuldet niemandem etwas."
+	else:
+		_creditors_note.text = "Staatsschuld %s D, Zinsen %s D im Jahr, letzte Anleihe zu %s %%." % [Charts.label(float(debt.get("debt", 0.0))),
+			Charts.label(float(debt.get("interest_year", 0.0))), _num(float(debt.get("rate", 0.0)))]
+	for c in _creditors_box.get_children():
+		c.queue_free()
+	for i in mini(list.size(), CREDITORS_SHOWN):
+		var cr: Dictionary = list[i]
+		var household: int = int(cr.household)
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 6)
+		var face := TextureRect.new()
+		face.custom_minimum_size = Vector2(CREDITOR_FACE_PX, CREDITOR_FACE_PX)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		if face_of.is_valid():
+			var tex = face_of.call(household)
+			if tex is Texture2D:
+				face.texture = tex
+		line.add_child(face)
+		var link := Button.new()
+		link.text = "Haushalt %d" % household
+		link.flat = true
+		link.focus_mode = Control.FOCUS_NONE
+		link.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		link.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
+		link.pressed.connect(func(): household_chosen.emit(household))
+		line.add_child(link)
+		line.add_child(_label("%s D" % Charts.label(float(cr.amount)), UiStyle.TEXT, UiStyle.SIZE_SMALL))
+		line.add_child(_label("%s %%" % _num(float(cr.rate)), UiStyle.DIM, UiStyle.SIZE_SMALL))
+		_creditors_box.add_child(line)
 
 ## The budget's years: a bar each, the income stacked up from the middle
 ## line, the spending down, in the items' colours.

@@ -67,6 +67,10 @@ const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
+
+## A household chosen on a page (S134: a creditor): its window, as an
+## event's person (people_dots.gd).
+signal person_chosen(pid: int, household: int)
 const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const PortraitCache = preload("res://scripts/ui/portrait_cache.gd")
@@ -222,6 +226,7 @@ var _prose: Array[bool] = [] # per column of the table shown: sentences, cut sho
 var _faces := {} # household -> its face (Texture2D), true while it is made, false: none
 var _face_order: Array[int] = [] # households with a face, the last shown last
 var _face_rows := {} # household -> the rows of the list showing it
+var _page_faces := PackedInt64Array() # households a page wants a face for (S134: the creditors)
 var _faces_asked := PackedInt64Array() # asked of the sim, not answered yet
 var _faces_look := false # the rows in view changed: look which want a face
 var _no_face: ImageTexture # an empty face, so that the names stand where they will
@@ -453,6 +458,10 @@ func _refresh() -> void:
 			shown[k] = _tables[KINDS.find(k)]
 		if people != null and people.has_method("tax_law"):
 			shown.laws = people.tax_law()
+		if people != null and people.has_method("spend_law"): # S133
+			shown.spend = people.spend_law()
+		if people != null and people.has_method("debt_law"): # S134
+			shown.debt = people.debt_law()
 		page.show_tables(shown)
 		var h: Dictionary = shown.history
 		_stand.text = ("Stand %s" % _date(int(h.day))) if not h.is_empty() else "…"
@@ -1227,6 +1236,17 @@ func _faces_step() -> void:
 			if not made:
 				_faces[h] = false
 		_faces_asked = PackedInt64Array()
+	# S134: the faces a page asked for (the creditors), before the list's
+	if not _page_faces.is_empty() and open:
+		var page_want := PackedInt64Array()
+		for h in _page_faces:
+			if not _faces.has(h) and page_want.size() < FACE_ASK:
+				page_want.append(h)
+		_page_faces = PackedInt64Array()
+		if not page_want.is_empty():
+			people.ask_list_faces(page_want)
+			_faces_asked = page_want
+			return
 	if not _faces_look or not open or not _tree.visible:
 		return
 	_faces_look = false
@@ -1267,6 +1287,19 @@ func _got_face(household: int, face: Dictionary) -> void:
 	for item in _face_rows.get(household, []):
 		if is_instance_valid(item):
 			_set_face(item, small)
+
+## S134: household `household`'s face for a page (its head, as the list
+## shows it), null until it is there; asked for at the next step.
+func _page_face(household: int) -> Texture2D:
+	var face = _faces.get(household, null)
+	if face is Texture2D:
+		var head := AtlasTexture.new()
+		head.atlas = face
+		head.region = FACE_HEAD
+		return head
+	if face == null and not _page_faces.has(household):
+		_page_faces.append(household)
+	return null
 
 ## The rows of the list in view, top to bottom.
 func _rows_in_view() -> Array[TreeItem]:
@@ -1881,6 +1914,13 @@ func _page_node(name: String) -> SimOverview:
 		page.visible = false
 		if people != null and people.has_method("set_tax"): # the laws' buttons (S131)
 			page.set_tax = func(law: int, level: int) -> void: people.set_tax(law, level)
+		if people != null and people.has_method("set_spend"): # S133
+			page.set_spend = func(law: int, choice: int) -> void: people.set_spend(law, choice)
+		if people != null and people.has_method("set_debt"): # S134
+			page.set_debt = func(law: int, choice: int) -> void: people.set_debt(law, choice)
+			page.forced_loan = func(share: int, rate: int) -> void: people.forced_loan(share, rate)
+		page.face_of = _page_face
+		page.household_chosen.connect(func(household: int): person_chosen.emit(-1, household))
 		page.set_span(_span)
 		page.go.connect(_go_to)
 		_lists.add_sibling(page) # in the window's column, not in the lists (hidden on a page)

@@ -38,8 +38,17 @@ pub const DEATH: u8 = 14;
 pub const SEIZURE: u8 = 15;
 pub const AUCTION: u8 = 16;
 pub const DOMAIN: u8 = 17;
+/// S134: a household lent to the state, by a bond (`amount` denarii,
+/// `other` the rate in basis points) or by a Zwangsanleihe (the same); it
+/// lost what fell due in a Staatsbankrott (`amount` denarii); an
+/// Umschuldung turned what fell due into a new Rente (`amount` denarii,
+/// `other` its rate in basis points).
+pub const BOND: u8 = 18;
+pub const FORCED_LOAN: u8 = 19;
+pub const DEBT_DEFAULT: u8 = 20;
+pub const DEBT_RESCHEDULE: u8 = 21;
 
-pub const NAMES: [&str; 18] = [
+pub const NAMES: [&str; 22] = [
     "Hungertod",
     "Umzug",
     "Verlässt die Karte",
@@ -58,6 +67,10 @@ pub const NAMES: [&str; 18] = [
     "Pfändung",
     "Zwangsversteigerung",
     "Hof fällt an die Domäne",
+    "Anleihe gezeichnet",
+    "Zwangsanleihe",
+    "Staatsbankrott",
+    "Umschuldung",
 ];
 
 /// Days an event is kept.

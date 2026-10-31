@@ -218,6 +218,10 @@ pub struct HouseholdLook {
     /// its market (0..1).
     pub rank_all: f64,
     pub rank_market: f64,
+    /// S134: the state's bonds it holds, and what it remembers losing
+    /// to the state (milli-denarii, faded to today).
+    pub bonds: Vec<Bond>,
+    pub loss_memory: i64,
 }
 
 impl Grain {
@@ -509,6 +513,8 @@ impl Grain {
             clothes_pct: i.map_or(0, |i| s.goods.clothes * 100 / (i.need_w as i64 * 100).max(1)),
             rank_all: if all > 0.0 { below / all } else { 0.0 },
             rank_market: if all_m > 0.0 { below_m / all_m } else { 0.0 },
+            bonds: self.bonds_of(hh),
+            loss_memory: self.loss_memory(hh),
         })
     }
 

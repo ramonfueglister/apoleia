@@ -440,6 +440,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	add_child(events)
 	events.answered.connect(_trips.take_events) # the newest events as scenes on the way
 	events.person_chosen.connect(_show_household) # a person named in an event window
+	tables.person_chosen.connect(_show_household) # S134: a creditor in the budget view
 	_rebuild()
 	_rebuild_houses()
 	if _cost_path != "":
