@@ -7,6 +7,7 @@
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
 //!              [--inherit equal|now|one] [--no-floor] [--no-sow-price]
 //!              [--sales-month] [--no-carry-sale]
+//!              [--no-freight-wage]
 
 use apoleia_sim::grain::{Grain, GOODS};
 use apoleia_sim::people::People;
@@ -96,6 +97,9 @@ fn main() {
     g.seizure = !args.iter().any(|a| a == "--no-seizure");
     g.auction = !args.iter().any(|a| a == "--no-auction");
     g.lord_farm_money = !args.iter().any(|a| a == "--lord-money-old");
+    // S132: the freight pays carriers at the start market (Fuhrlohn).
+    g.freight_wage = !args.iter().any(|a| a == "--no-freight-wage");
+    println!("freight as carriers' wages (S132): {}", g.freight_wage);
     let laws: Vec<String> = g.law_rows().iter().map(|l| format!("{} {} ({} {})", l.name, apoleia_sim::grain::LEVEL_NAMES[l.level as usize], l.rate, l.unit)).collect();
     println!("tax laws (S131): {}; Pfändung: {}, Zwangsversteigerung: {}, rent of lords with a farm to the farm: {}", laws.join(", "), g.seizure, g.auction, g.lord_farm_money);
     drop(fine);
@@ -210,6 +214,15 @@ fn main() {
             t.public_days,
             den(gs.public_paid),
             gs.public_days
+        );
+        println!(
+            "      money loop (S132): exports {:.0} imports {:.0} | freight to carriers {:.0}, waiting {:.0}, carriers den {:.0} days {} this year",
+            den(m.exports),
+            den(m.imports),
+            den(m.carried),
+            den(g.freight_due()),
+            den(gs.carry_paid),
+            gs.carry_days
         );
         print!("{}", g.tax_report());
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();

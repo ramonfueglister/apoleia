@@ -784,7 +784,7 @@ impl Grain {
                 let m = &mut self.markets[mi];
                 m.goods[g].store += q;
                 m.money -= pay + freight;
-                self.money.freight += freight;
+                self.freight_paid(src, freight);
                 self.stats.goods.moved[g] += q;
                 self.goods_moves.push((day, src as u32, mi as u32, g as u8, q));
             }
