@@ -1,0 +1,26 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.custom_build, safeguards balanced)
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M3 Pro (Apple9)
+
+{"event":"load_step","ms":1235.0,"step":"terrain"}
+{"event":"load_step","ms":26.0,"step":"look"}
+{"event":"grain_loaded","ms":1321,"markets":1783}
+{"event":"people_loaded","ms":1742.987,"people":116805}
+{"event":"load_step","ms":2021.0,"step":"people"}
+{"event":"load_step","ms":71.0,"step":"build"}
+{"bytes":229376,"changed":28652,"event":"house_builds"}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v1-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v2-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v3-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v4-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v5-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v6-w8.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v7-w22.png","tile_km":0.5}
+{"event":"snapshot","level":1,"path":"shots/rIJ/v8-w70.png","tile_km":1.0}
+{"event":"snapshot","level":4,"path":"shots/rIJ/v9-w1500.png","tile_km":8.0}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v10-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v11-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rIJ/v12-w12.png","tile_km":0.25}
+{"event":"snapshot","level":1,"path":"shots/rIJ/v13-w34.png","tile_km":1.0}
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
