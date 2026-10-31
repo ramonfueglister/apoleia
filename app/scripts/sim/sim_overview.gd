@@ -1,44 +1,76 @@
 extends ScrollContainer
-## The statistics' first tab, "Übersicht": the state of the realm at a
-## glance, as a grand strategy economy panel opens. Five figures with their change
-## since the month before and a small curve, the months the charts show,
-## then sections of cards: people, food and grain, work and money, goods,
-## the state. Each card opens with what its numbers say (Knaflic: the
-## finding, not only the topic), computed from them; its title's tooltip
-## says what it shows. The line charts share one month under the mouse,
-## and mark what happened (built, famine, price shocks). Shares are sorted
-## bars, what each class ate small multiples on one scale. Every line, bar,
-## row and good has a tooltip.
+## A page of the statistics' cards, after Victoria 3's statistics and EU5's
+## economy panel: every card the same size and built the same, its name
+## over its figure (a chart of one measure, or of two or three that belong
+## together), at the axis only the top and bottom value, under it the first
+## and last month; two cards to a row, so their figures start and end on
+## one line. What a card's numbers say now (Knaflic: the finding, computed
+## from them) is in its name's tooltip, and all findings stand as one list,
+## the "Lage", on an overview, each line a link to its card's page. The
+## line charts share one month under the mouse and mark what happened
+## (built, famine, price shocks). Every line, bar, row and good has a
+## tooltip.
 ##
+## A page is one of PAGES: the realm's overview (its figures and the
+## Lage), the classes side by side, or the charts of one topic (the views
+## of sim_tables.gd); a market's overview or charts (market_window.gd).
 ## sim_tables.gd hands it the tables (history, population, farms, state,
-## classes, goods) with show_tables(); it only draws them. Made with
-## `market` true it is a market window's overview instead (market_window.gd):
-## the same cards for one market, from its history, who lives there and its
-## row of the markets table (show_market()).
+## classes, goods) with show_tables(), market_window.gd take_market()'s
+## answer with show_market(); it only draws them. set_span() picks the
+## months the charts show; a click on a line of the Lage emits go(page).
+
+signal go(page: String)
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
-const CARD_MIN := 320.0
-const SECTION_PX := 21 # a section's heading, small caps
-const CHART_PX := 170.0
+const CARD_MIN := 240.0 # two side by side even in a market's window
+const GAP := 10 # between cards, across and down
+const PAD := 8 # inside a card
+const PLOT_PX := 168.0 # a card's figure: a chart, rows, bars or a curve
+const LINE_PX := 22.0 # the legend's line under it, kept when empty
+const CARD_BACK := Color("303134") # a card's board, a shade over the window's
+const CARD_EDGE := Color(1.0, 1.0, 1.0, 0.07) # its rim, barely there
 const OTHER := Color("6d7479") # the medal of "Andere", the rest
 const BARS_MAX := 6 # rows of a share card before "Andere"
-const BAR_ROW := 26.0
+const BAR_ROW := 24.0 # BARS_MAX rows and "Andere" fill PLOT_PX
 const BAR_PX := 8.0 # a bar's height in its trough, as the menu's (Vic3)
 const MEDAL_R := 10.5
 const NAME_X := 31.0 # a row's name, right of its medal
 const SHARE_PX := 56.0 # a row's share at the right
-const FED_ROW := 34.0
+const FED_ROW := 28.0 # six rows (the Gini's) fill PLOT_PX
 const FED_NAME_PX := 108.0
+const LAGE_NAME_PX := 210.0 # a line of the Lage: its card's name, then what it says
+const CLASS_GAP := 8.0 # between two classes' columns
+const CLASS_PX := 482.0 # a class's column, as Victoria 3's population
+const CLASS_LINE := 26.0 # a line in a section of the column
+const CLASS_FACE := Rect2(6, 92, 0, 100) # the class's picture, the width the column's
+const CLASS_FACE_R := 36.0 # its medal, in the stead of a face
+## What a class's column shows, top down: [CLASS_ROWS key, top, height,
+## how]. "big" a figure under the name, "note" a line under it, "state"
+## the line under the picture, "head" a section's head, "line" a line of a
+## section with its icon (or none) and name.
+const CLASS_PARTS := [
+	["persons", 30.0, 34.0, "big"],
+	["share", 64.0, 22.0, "note"],
+	["eaten", 194.0, 26.0, "state"],
+	["money_head", 222.0, 36.0, "money"],
+	["money_share", 266.0, 28.0, "head", "des Geldes"],
+	["households", 296.0, CLASS_LINE, "line", "family-house", "Haushalte"],
+	["gini", 324.0, CLASS_LINE, "line", "scales", "Gini"],
+	["", 358.0, 28.0, "head", "Bedarf"],
+	["eaten", 388.0, CLASS_LINE, "line", "wheat", "Korn"],
+	["clothes", 416.0, CLASS_LINE, "line", "roman-toga", "Kleidung"],
+	["ragged", 444.0, CLASS_LINE, "line", "", "Zerlumpt"],
+]
 ## The medals' icons in assets/ui/icons (Vic3Style.icon), white, tinted
 ## when drawn; a name without one shows its first letter.
 const ICONS := {
 	"Hofleute": "family-house", "Im Zelt": "camping-tent", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
 	"Bauern": "wheat", "Pächter": "field", "Tagelöhner": "walking-boot", "Handwerker": "anvil", "Adel": "laurel-crown",
 	"Geistliche": "greek-temple", "Gelehrte": "open-book", "Beamte": "scroll-quill", "Offiziere": "eagle-emblem",
-	"Unternehmer": "scales", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn", "Alle": "scales",
+	"Unternehmer": "scales", "Soldaten": "centurion-helmet", "Unfreie": "manacles", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn", "Alle": "scales",
 }
 ## The goods table's rows in apoleia_sim::grain::GOOD_KEYS order; the
 ## history has each one's price as good_<key>.
@@ -54,173 +86,300 @@ const TREND := Color("a09889") # a figure's small curve, its current value in go
 const BAR_ABOUT := {
 	"tax": "Steuern in Denar, die der Staat seit Beginn eingenommen hat.",
 	"rent": "Pacht in Denar, die Höfe auf Staatsland seit Beginn gezahlt haben.",
+	"estates": "Geld von Toten ohne Erben, das seit Beginn an den Staat gefallen ist.",
 	"wages": "Löhne, die der Staat seit Beginn seinen Dienern gezahlt hat: Soldaten, Beamten, Bauarbeitern.",
+	"public_works": "Lohn, den der Staat seit Beginn für öffentliche Arbeit gezahlt hat: aus dem Geld, das über seiner Reserve lag.",
 	"minted": "Denare, die der Staat seit Beginn neu geprägt hat.",
 	"cash": "Was heute in der Staatskasse liegt.",
 }
 
-## sim_tables.gd's day format: date(day) "Martius, Jahr 3"
-var date: Callable
-var _tables := {}
-var _column: VBoxContainer
-var _grids: Array[GridContainer] = []
-var _grid: GridContainer # the section the next card goes into
-var _tiles: HBoxContainer
-var _lines := {} # chart key -> {control, series: Array, unit, days, hover, legend, hidden}
-var _shares := {} # card key -> {control, names, values, colours, ref, ref_name, total, unit, title, hover, foot}
-var _icons := {} # name -> its medal's icon, or null
-var _goods: GridContainer
-var _bars: Control
-var _bar_rows: Array = [] # [label, value, key]
-var _findings := {} # card key -> the label with what its numbers say
-var _events := {} # day -> what happened that month (history), see _find_events
+## The goods' names before the goods table names them (GOOD_KEYS order).
+const GOOD_NAMES: Array[String] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik", "Schweinefleisch"]
+## Every card: [kind, name, unit, what it shows (its name's tooltip)]. kind:
+## line (a chart over the months), shares (sorted bars of a whole), rows
+## (small multiples by class), lorenz, bars (the state's money), text, and
+## the wide ones: tiles (the figures), lage (the findings), classes. The
+## goods' cards ("good0" … and a market's "m_good0" …) are made by _spec.
+const CARDS := {
+	"tiles": ["tiles", "", "", ""],
+	"lage": ["lage", "Lage", "", "Was die Zahlen gerade sagen, ein Satz je Diagramm, nach Themen. Ein Klick auf eine Zeile öffnet ihr Diagramm."],
+	"classes": ["classes", "Die Schichten", "", "Jede Schicht mit ihren Menschen und Haushalten, was sie gegessen hat, ihrem Geld je Kopf, wie ungleich es verteilt ist (Gini) und ihrer Kleidung."],
+	"persons": ["line", "Menschen", "", "Alle Menschen auf der Karte, jeder einzeln simuliert."],
+	"life": ["line", "Geburten und Todesfälle", "", "Geburten und Todesfälle im Monat. Die ersten Kinder kommen erst nach etwa neun Monaten zur Welt."],
+	"hunger": ["line", "Hungertote", "", "Menschen, die im Monat an Hunger sterben."],
+	"moves": ["line", "Umzüge", "", "Menschen, die im Monat umziehen, und Menschen, die im Monat die Karte verlassen."],
+	"tents": ["line", "Im Zelt", "", "Menschen, die ohne Haus im Zelt leben."],
+	"jobs": ["shares", "Menschen nach Beruf", "", "Die Menschen nach dem Beruf ihres Haushalts."],
+	"price": ["line", "Kornpreis", "D/kg", "Jeder Markt hat seinen eigenen Kornpreis. Die Linie ist der Median der Märkte, das Band reicht vom billigsten zum teuersten Markt, höchstens bis zum doppelten Median, damit ein teurer Markt wie Rom die Linie nicht flach drückt."],
+	"fed": ["rows", "Gegessen nach Schicht", "", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala; rot ist, was zum Sattwerden fehlte."],
+	"harvest": ["line", "Ernte und Verkauf", "t", "Korn, das die Höfe im Monat ernten, und Korn, das die Märkte im Monat verkaufen."],
+	"granaries": ["line", "Getreide in Speichern", "t", "Korn in den Speichern des Staates (Steuerkorn), der Grundherren (Pachtkorn) und der Händler auf den Märkten."],
+	"flows": ["line", "Korn ausser Handel", "t", "Korn im Monat, das verdirbt, über den Kartenrand verkauft wird, zwischen fernen Märkten gehandelt oder als Almosen verteilt wird."],
+	"spoiled": ["line", "Verdorbenes Korn", "t", "Korn, das im Monat in Speichern und Lagern verdirbt."],
+	"export": ["line", "Korn über den Kartenrand", "t", "Korn, das Händler im Monat über den Kartenrand verkaufen."],
+	"traded": ["line", "Fernhandel mit Korn", "t", "Korn, das im Monat zwischen fernen Märkten der Karte gehandelt wird."],
+	"alms": ["line", "Almosen", "t", "Korn, das im Monat als Almosen an Hungernde verteilt wird."],
+	"clothes": ["line", "Kleidung vom Bedarf", "%", "Kleidung, die die Haushalte besitzen, gemessen an dem, was sie brauchen."],
+	"real": ["line", "Reallohn", "kg", "Der Taglohn eines Marktes in Korn zu dessen Preis: so viel kann ein Tag Arbeit kaufen. Gestrichelt der Bedarf: so viel muss ein Lohnarbeiter je Arbeitstag verdienen, damit sein Teil der Familie satt wird (Bedarf der Familie durch ihre Erwachsenen und 290 Arbeitstage im Jahr, nach Columella). Das Band reicht vom ärmsten bis zum reichsten Zehntel der Märkte."],
+	"wage": ["line", "Taglohn", "D", "Der Taglohn in Denar, der Median der Märkte."],
+	"work": ["line", "Arbeitstage in der Woche", "Tage", "Arbeitstage der letzten Woche, die jemand gesucht und niemanden gefunden hat, und die jemand angeboten hat, ohne eingestellt zu werden."],
+	"money": ["shares", "Geld nach Schicht", "", "Alles Geld der Haushalte nach Schicht, bei Bauern mit dem Geld ihres Hofs. Der weisse Strich: ihr Anteil an den Menschen."],
+	"lorenz": ["lorenz", "Wer hat das Geld", "", "Die Lorenzkurve des Geldes je Kopf: nach rechts die Menschen vom ärmsten zum reichsten, nach oben ihr Anteil an allem Geld. Auf der Diagonale hätten alle gleich viel. Die Fläche zwischen Diagonale und Kurve ist der Gini. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte."],
+	"gini_rows": ["rows", "Ungleichheit nach Schicht", "", "Der Gini des Geldes je Kopf: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Oben über alle Menschen, darunter innerhalb jeder Schicht. Alle Zeilen haben dieselbe Skala. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte."],
+	"farms": ["shares", "Höfe nach Art", "", "Familienhof: die Familie bebaut ihr eigenes Land. Pachthof: sie bebaut gepachtetes Land. Gut: ein Grundherr lässt sein Land bebauen."],
+	"land": ["shares", "Felder der Höfe", "", "Die Felder aller Höfe: was gesät ist und was brach liegt."],
+	"farm_count": ["line", "Höfe", "", "Alle Höfe auf der Karte am Monatsende."],
+	"farm_store": ["line", "Hoflager", "t", "Korn in den Lagern der Höfe am Monatsende."],
+	"cash": ["line", "Staatskasse", "D", "Denar in der Staatskasse am Ende jedes Monats. Die Kasse behält eine Reserve: den Staatslohn eines Jahres und was die offenen Bauaufträge noch kosten. Was darüber liegt, zahlt sie als öffentliche Arbeit aus."],
+	"state": ["bars", "Geld des Staates seit Beginn", "", "Was der Staat seit Beginn eingenommen und ausgegeben hat, und was heute in der Kasse liegt."],
+	"held": ["line", "Geld im Umlauf", "D", "Alle Denar ausserhalb der Staatskasse am Monatsende, und was der Staat seit Beginn neu geprägt hat."],
+	"tax_grain": ["line", "Steuerkorn", "t", "Korn, das der Staat seit Beginn als Steuer eingezogen hat."],
+	"income": ["line", "Einnahmen im Monat", "D", "Denar, die der Staat im Monat einnimmt: Steuer, Pacht von Höfen auf Staatsland und das Geld von Toten ohne Erben."],
+	"spending": ["line", "Ausgaben im Monat", "D", "Denar, die der Staat im Monat ausgibt: Staatslohn für Soldaten, Beamte und Bauarbeiter, und Lohn für öffentliche Arbeit aus dem Geld über seiner Reserve."],
+	"public_days": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat als öffentliche Arbeit bezahlt, zum Taglohn des Marktes. Im ersten Jahr noch keine: dann kennt die Kasse ihre Reserve noch nicht."],
+	"m_price": ["line", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel."],
+	"goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum."],
+	"m_goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware an diesem Markt, darunter sein Verlauf im gewählten Zeitraum. Über einer Ware steht, warum sie kostet, was sie kostet."],
+	"m_why": ["text", "Warum dieser Preis", "", "Was die Händler dieses Marktes zu ihrem Kornpreis bewegt: ihr Lager gegen ihren Plan, die Jahreszeit, der Lagerboden, Käufer ohne Ware."],
+	"m_hungry": ["line", "Hungernd", "%", "Anteil der Menschen der Region, die ihr Korn kaufen und im Monat nicht satt wurden."],
+	"m_store": ["line", "Lager und Verkauf", "t", "Korn im Lager der Händler dieses Marktes am Monatsende, und Korn, das sie im Monat verkauft haben."],
+	"m_real": ["line", "Reallohn", "kg", "Der Taglohn hier in Korn zum Preis hier: so viel kann ein Tag Arbeit an diesem Markt kaufen."],
+	"m_people": ["shares", "Wer hier lebt", "", "Die Menschen der Region nach der Schicht ihres Haushalts."],
+	"m_money": ["shares", "Geld nach Schicht", "", "Alles Geld der Haushalte der Region nach Schicht, bei Bauern mit dem Geld ihres Hofs. Der weisse Strich: ihr Anteil an den Menschen."],
+	"m_persons": ["line", "Menschen", "", "Die Menschen der Region am Monatsende, und wie viele davon im Zelt leben."],
+	"m_public": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat an diesem Markt als öffentliche Arbeit bezahlt hat, zum Taglohn hier."],
+	"m_gini": ["line", "Arm und Reich", "", "Der Gini des Geldes je Kopf in der Region: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Grau: über alle Menschen der Karte. Gezählt wird nur Bargeld."],
+}
+## The cards each page shows, in reading order: the wide ones (tiles,
+## lage, classes, text) across the page, the others two to a row.
+const PAGES := {
+	"overview": ["tiles", "lage"],
+	"people": ["classes"],
+	"people_charts": ["persons", "life", "hunger", "moves", "tents", "jobs"],
+	"grain_charts": ["price", "fed", "harvest", "granaries", "flows", "spoiled", "export", "traded", "alms"],
+	"money_charts": ["real", "wage", "work", "money", "lorenz", "gini_rows"],
+	"goods_charts": ["goods", "clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
+	"farms_charts": ["farms", "land", "farm_count", "farm_store"],
+	"state_charts": ["cash", "state", "income", "spending", "public_days", "held", "tax_grain"],
+	"market": ["tiles", "m_why", "lage", "m_people", "m_money", "m_goods"],
+	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5", "m_public"],
+}
+## The cards across the page, as Victoria 3 gives its main graph the width:
+## each topic's leading chart and the one that sums it up.
+const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "m_price",
+	"m_persons", "m_goods"]
+## The findings in the Lage's order: the topics as their pages; "goods"
+## is the good that moved most.
+const LAGE_REALM: Array[String] = ["persons", "life", "hunger", "moves", "tents", "jobs", "price", "fed", "harvest", "granaries",
+	"spoiled", "export", "traded", "alms", "real", "wage", "work", "money", "lorenz", "gini_rows", "goods", "clothes", "farms", "land",
+	"farm_count", "farm_store", "cash", "state", "income", "spending", "public_days", "held", "tax_grain"]
+const LAGE_MARKET: Array[String] = ["m_price", "m_hungry", "m_store", "m_real", "m_public", "m_persons", "m_gini", "m_people", "m_money", "goods"]
+## A topic's name over its lines in the Lage, by the page of its charts.
+const TOPICS := {"people_charts": "Menschen", "grain_charts": "Korn", "money_charts": "Geld", "goods_charts": "Waren",
+	"farms_charts": "Höfe", "state_charts": "Staat"}
+## The classes' table, a line per measure: [key, name, what it is].
+const CLASS_ROWS := [
+	["persons", "Menschen", "Die Menschen der Schicht."],
+	["share", "Anteil an allen", "Ihr Anteil an allen Menschen."],
+	["households", "Haushalte", "Die Haushalte der Schicht."],
+	["eaten", "Gegessen vom Bedarf", "Wie viel ihres Kornbedarfs die Schicht im letzten Monat gegessen hat. 100 % heisst satt."],
+	["money_head", "Geld je Kopf", "Das Geld der Schicht in Denar durch ihre Menschen, bei Bauern mit dem Geld ihres Hofs."],
+	["money_share", "Anteil am Geld", "Ihr Anteil an allem Geld der Haushalte."],
+	["gini", "Gini des Geldes", "Wie ungleich das Geld je Kopf in der Schicht verteilt ist: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles."],
+	["clothes", "Kleidung vom Bedarf", "Kleidung, die die Haushalte der Schicht besitzen, gemessen an dem, was sie brauchen."],
+	["ragged", "Unter halber Kleidung", "Haushalte, die weniger als die Hälfte der Kleidung haben, die sie brauchen."],
+]
 ## How the classes are named as a sentence's subject, and whether as many.
 const FED_SUBJECTS: Array[String] = ["Die Hofleute", "Die Menschen im Zelt", "Die Lohnarbeiter", "Die Händler", "Die Oberschicht"]
 const FED_DATIVES: Array[String] = ["den Hofleuten", "den Menschen im Zelt", "den Lohnarbeitern", "den Händlern", "der Oberschicht"]
+
+## sim_tables.gd's day format: date(day) "Martius, Jahr 3"
+var date: Callable
+var page := "overview" # one of PAGES
+var _tables := {}
+var _column: VBoxContainer
+var _grid: GridContainer # the row the next card goes into
+var _tiles: HBoxContainer
+var _heads := {} # card key -> its name's label
+var _lines := {} # chart key -> {control, series: Array, unit, days, hover, legend, hidden}
+var _shares := {} # card key -> {control, names, values, colours, ref, ref_name, total, unit, title, hover, foot}
+var _icons := {} # name -> its medal's icon, or null
+var _bars: Control
+var _bar_rows: Array = [] # [label, value, key]
+var _says := {} # card key -> what its numbers say now, see _find_all
+var _good_tips := {} # good card key -> its name's tooltip
+var _goods: GridContainer # the goods' tiles, each its price and its course
+var _lage: VBoxContainer
+var _classes: HBoxContainer
+var _events := {} # day -> what happened that month (history), see _find_events
 ## Months shown in the line charts: 12, 120 or 0 for all.
 var _span := 0
-var _spans: HBoxContainer
-var _market := false # one market's overview (show_market) instead of the realm's
-var _tile_specs: Array = [] # the figures: [key, name, unit, scale, falling good]
+var _market := false # one market's page (show_market) instead of the realm's
+var _tile_specs: Array = [] # the figures: [key, name, unit, scale, falling good, neutral (no colour for its change)]
 var _lorenz: Control
 var _lorenz_now := PackedFloat64Array() # the curve's points at 0, 10 … 100 % of the people
 var _lorenz_then := PackedFloat64Array()
 var _lorenz_when := ""
 var _lorenz_hover := -1
 var _reasons: Label
+var _sums := {} # card key -> name -> amount: the shares, kept for the findings of pages without their card
+var _class_table: Control
+var _class_names := PackedStringArray()
+var _class_cells := [] # per line of CLASS_ROWS: per class [text, colour]
+var _class_hover := Vector2i(-1, -1) # column, part of CLASS_PARTS
 
-func _init(date_fn: Callable, market := false) -> void:
+func _init(date_fn: Callable, page_name := "overview") -> void:
 	date = date_fn
-	_market = market
+	page = page_name
+	_market = page.begins_with("market")
 	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER # its width never widens the window
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_column = VBoxContainer.new()
 	_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_column.add_theme_constant_override("separation", 10)
+	_column.add_theme_constant_override("separation", GAP)
 	add_child(_column)
-	# the figures as a stat strip: cells of two greens in one gold line
-	var strip := PanelContainer.new()
-	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.GOLD_DIM, 1, 2, 0))
-	_column.add_child(strip)
-	_tiles = HBoxContainer.new()
-	_tiles.add_theme_constant_override("separation", 0)
-	strip.add_child(_tiles)
-	# the months the charts show, as time buttons
-	_spans = HBoxContainer.new()
-	_spans.add_theme_constant_override("separation", 6)
-	_spans.alignment = BoxContainer.ALIGNMENT_END
-	_column.add_child(_spans)
-	var note := _label("Änderungen zum Vormonat", UiStyle.DIM, UiStyle.SIZE_SMALL)
-	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_spans.add_child(note)
-	_spans.add_child(_label("Zeitraum", UiStyle.DIM, UiStyle.SIZE_TEXT))
+	resized.connect(func(): # two cards to a row while both keep CARD_MIN
+		for c in _column.get_children():
+			if c is GridContainer:
+				c.columns = 2 if size.x <= 0.0 or size.x >= CARD_MIN * 2.0 + GAP + 12.0 else 1)
+	if _market:
+		_tile_specs = [["price", "Kornpreis", " D/kg", 1.0, true], ["share_hungry", "Hungernd", " %", 100.0, true],
+			["real_wage", "Reallohn", " kg", 1.0, false], ["persons", "Menschen", "", 1.0, false], ["gini", "Gini", "", 1.0, true]]
+	else:
+		_tile_specs = [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
+			["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
+			["cash", "Staatskasse", " D", 1.0, false, true]]
+	for key in PAGES[page]:
+		_add(key)
+
+## Card `key`: [kind, name, unit, about], the goods' made from their keys.
+static func _spec(key: String) -> Array:
+	if CARDS.has(key):
+		return CARDS[key]
+	var r := int(key.right(1))
+	return ["line", GOOD_NAMES[r], "D", "Der Preis von %s an diesem Markt am Monatsende." % GOOD_NAMES[r] if key.begins_with("m_")
+		else "Der Preis von %s: der Median der Märkte, gewichtet nach ihren Menschen." % GOOD_NAMES[r]]
+
+func _add(key: String) -> void:
+	match _spec(key)[0]:
+		"tiles":
+			_tiles_strip()
+		"lage":
+			_lage_card()
+		"classes":
+			_classes_card()
+		"text":
+			_reasons_card()
+		"shares":
+			_shares_card(key)
+		"rows":
+			_rows_card(key)
+		"lorenz":
+			_lorenz_card()
+		"bars":
+			_bar_card()
+		"goods":
+			_goods_card(key)
+		_:
+			_line_card(key)
+
+## The page that shows card `key` with its chart (the Lage's links).
+static func page_of(key: String, market := false) -> String:
+	if key == "goods":
+		return "market_charts" if market else "goods_charts"
+	for p in PAGES:
+		if p.ends_with("charts") and p.begins_with("market") == market and key in PAGES[p]:
+			return p
+	return ""
+
+## The months the charts show: 12, 120 or 0 for all.
+func set_span(months: int) -> void:
+	if months == _span:
+		return
+	_span = months
+	if _tables.is_empty():
+		return
+	if _market:
+		show_market(_tables)
+	else:
+		show_tables(_tables)
+
+## The time buttons for set_span: "1 Jahr", "10 Jahre", "Alles", the one
+## chosen lit; `picked` gets the months.
+static func span_buttons(picked: Callable, now := 0) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
 	for span in [[12, "1 Jahr"], [120, "10 Jahre"], [0, "Alles"]]:
 		var b := Button.new()
 		b.text = span[1]
 		b.toggle_mode = true
-		b.button_pressed = span[0] == _span
-		b.custom_minimum_size = Vector2(92, 0)
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_pressed = span[0] == now
+		b.custom_minimum_size = Vector2(64, 30)
+		b.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
 		b.pressed.connect(func():
-			_span = span[0]
-			for other in _spans.get_children():
-				if other is Button:
-					other.button_pressed = other == b
-			if _market:
-				show_market(_tables)
-			else:
-				show_tables(_tables))
-		_spans.add_child(b)
-	resized.connect(func():
-		for g in _grids:
-			g.columns = maxi(1, int(size.x / (CARD_MIN + 12.0))) if size.x > 0.0 else 2
-		if _goods != null:
-			_goods.columns = 3 if size.x > 700.0 else 2)
-	if _market:
-		_market_cards()
-	else:
-		_realm_cards()
-
-## The realm's cards (the statistics' first tab).
-func _realm_cards() -> void:
-	_tile_specs = [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
-		["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
-		["cash", "Staatskasse", " D", 1.0, false]]
-	_section("Menschen")
-	_line_card("persons", "Menschen", "", "Alle Menschen auf der Karte, jeder einzeln simuliert.")
-	_shares_card("jobs", "Menschen nach Beruf", "Die Menschen nach dem Beruf ihres Haushalts.")
-	_line_card("life", "Geburten und Todesfälle", "", "Geburten und Todesfälle im Monat. Die ersten Kinder kommen erst nach etwa neun Monaten zur Welt.")
-	_line_card("hunger", "Hungertote", "", "Menschen, die im Monat an Hunger sterben.")
-	_section("Essen und Korn")
-	_line_card("price", "Kornpreis", "D/kg", "Jeder Markt hat seinen eigenen Kornpreis. Die Linie ist der Median der Märkte, das Band reicht vom billigsten zum teuersten Markt, höchstens bis zum doppelten Median, damit ein teurer Markt wie Rom die Linie nicht flach drückt.")
-	_fed_card()
-	_line_card("harvest", "Ernte und Verkauf", "t", "Korn, das die Höfe im Monat ernten, und Korn, das die Märkte im Monat verkaufen.")
-	_line_card("granaries", "Getreide in Speichern", "t", "Korn in den Speichern des Staates (Steuerkorn), der Grundherren (Pachtkorn) und der Händler auf den Märkten.")
-	_line_card("flows", "Korn ausser Handel", "t", "Korn im Monat, das verdirbt, über den Kartenrand verkauft wird, zwischen fernen Märkten gehandelt oder als Almosen verteilt wird.")
-	_line_card("clothes", "Kleidung vom Bedarf", "%", "Kleidung, die die Haushalte besitzen, gemessen an dem, was sie brauchen.")
-	_section("Arbeit und Geld")
-	_line_card("real", "Reallohn", "kg", "Der Taglohn eines Marktes in Korn zu dessen Preis: so viel kann ein Tag Arbeit kaufen. Gestrichelt: so viel muss ein Lohnarbeiter je Arbeitstag verdienen, damit sein Teil der Familie satt wird (Bedarf der Familie durch ihre Erwachsenen und 290 Arbeitstage im Jahr, nach Columella).")
-	_line_card("work", "Arbeitstage in der Woche", "Tage", "Arbeitstage der letzten Woche, die jemand gesucht und niemanden gefunden hat, und die jemand angeboten hat, ohne eingestellt zu werden.")
-	_shares_card("money", "Geld nach Schicht", "Alles Geld der Haushalte nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
-	_lorenz_card()
-	_rows_card("gini_rows", "Ungleichheit nach Schicht", "Der Gini des Geldes je Kopf: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Oben über alle Menschen, darunter innerhalb jeder Schicht. Alle Zeilen haben dieselbe Skala. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte.")
-	_shares_card("farms", "Höfe nach Art", "Familienhof: die Familie bebaut ihr eigenes Land. Pachthof: sie bebaut gepachtetes Land. Gut: ein Grundherr lässt sein Land bebauen.")
-	_section("Waren")
-	_goods_card()
-	_section("Staat")
-	_line_card("cash", "Staatskasse", "D", "Denar in der Staatskasse am Ende jedes Monats.")
-	_bar_card("Geld des Staates seit Beginn", "Was der Staat seit Beginn eingenommen und ausgegeben hat, und was heute in der Kasse liegt.")
-
-## One market's cards (market_window.gd): its grain, work and money, who
-## lives there, its goods.
-func _market_cards() -> void:
-	_tile_specs = [["price", "Kornpreis", " D/kg", 1.0, true], ["share_hungry", "Hungernd", " %", 100.0, true],
-		["real_wage", "Reallohn", " kg", 1.0, false], ["persons", "Menschen", "", 1.0, false], ["gini", "Gini", "", 1.0, true]]
-	_section("Korn")
-	_line_card("m_price", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel.")
-	_reasons_card()
-	_line_card("m_hungry", "Hungernd", "%", "Anteil der Menschen der Region, die ihr Korn kaufen und im Monat nicht satt wurden.")
-	_line_card("m_store", "Lager und Verkauf", "t", "Korn im Lager der Händler dieses Marktes am Monatsende, und Korn, das sie im Monat verkauft haben.")
-	_section("Arbeit und Geld")
-	_line_card("m_real", "Reallohn", "kg", "Der Taglohn hier in Korn zum Preis hier: so viel kann ein Tag Arbeit an diesem Markt kaufen.")
-	_shares_card("m_people", "Wer hier lebt", "Die Menschen der Region nach der Schicht ihres Haushalts.")
-	_shares_card("m_money", "Geld nach Schicht", "Alles Geld der Haushalte der Region nach Schicht, bei Bauern mit dem Geld ihres Hofs.")
-	_line_card("m_gini", "Arm und Reich", "", "Der Gini des Geldes je Kopf in der Region: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Grau: über alle Menschen der Karte. Gezählt wird nur Bargeld.")
-	_section("Waren")
-	_goods_card("Der Preis jeder Ware an diesem Markt, darunter sein Verlauf im gewählten Zeitraum. Über einer Ware steht, warum sie kostet, was sie kostet.")
+			for other in row.get_children():
+				other.button_pressed = other == b
+			picked.call(span[0]))
+		row.add_child(b)
+	return row
 
 ## The tables by kind ("history", "population", "farms", "state",
-## "classes", "goods"), each as take_table() gave it.
+## "classes", "goods"), each as take_table() gave it. Every page gets all
+## of them: its cards take what they show, the Lage the findings of all.
 func show_tables(tables: Dictionary) -> void:
 	_tables = tables
 	var h: Dictionary = tables.get("history", {})
-	if not h.is_empty():
-		var d: Dictionary = h.data
+	var d: Dictionary = h.get("data", {})
+	if not d.is_empty():
 		_events = _find_events(d)
-		_set_line("price", h, [{"key": "price_median", "name": "Median", "colour": Charts.SERIES[0], "lo": "price_min", "hi": "price_max",
-			"band": "Billigster bis teuerster Markt"}])
 		_set_line("persons", h, [{"key": "persons", "name": "Menschen", "colour": Charts.SERIES[1]}])
+		_set_line("life", h, [{"key": "births", "name": "Geburten", "colour": Charts.SERIES[1]},
+			{"key": "deaths", "name": "Todesfälle", "colour": Charts.SERIES[2]}])
+		_set_line("hunger", h, [{"key": "hunger_deaths", "name": "Hungertote", "colour": Charts.RED}])
+		_set_line("moves", h, [{"key": "moved", "name": "Umgezogen", "colour": Charts.SERIES[1]},
+			{"key": "left", "name": "Verlassen die Karte", "colour": Charts.SERIES[2]}])
+		_set_line("tents", h, [{"key": "tent_persons", "name": "Im Zelt", "colour": Charts.SERIES[1]}])
+		_set_line("price", h, [{"key": "price_median", "name": "Median", "colour": Charts.SERIES[0], "lo": "price_min", "hi": "price_max",
+			"band": "Spanne"}])
+		_set_rows("fed", d)
 		_set_line("harvest", h, [{"key": "harvest_t", "name": "Ernte", "colour": Charts.SERIES[0]},
 			{"key": "sold_t", "name": "Verkauft", "colour": Charts.SERIES[1]}])
-		_set_line("hunger", h, [{"key": "hunger_deaths", "name": "Hungertote", "colour": Charts.RED}])
-		_set_line("cash", h, [{"key": "cash", "name": "Staatskasse", "colour": Charts.SERIES[3]}])
-		_set_line("real", h, [{"key": "real_p50", "name": "Median der Märkte", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
-			"band": "Ärmstes bis reichstes Zehntel"},
-			{"key": "need_wage", "name": "Nötig zum Sattwerden", "colour": Charts.RED, "dashed": true}])
-		_set_rows("fed", d)
-		_set_rows("gini_rows", d)
-		_set_lorenz(d)
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
 			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
-		_set_line("life", h, [{"key": "births", "name": "Geburten", "colour": Charts.SERIES[1]},
-			{"key": "deaths", "name": "Todesfälle", "colour": Charts.SERIES[2]}])
-		_set_line("work", h, [{"key": "vacant", "name": "Gesucht", "colour": Charts.SERIES[1]},
-			{"key": "idle", "name": "Liegen geblieben", "colour": Charts.SERIES[2]}])
-		_set_line("clothes", h, [{"key": "clothes", "name": "Alle Haushalte", "colour": Charts.SERIES[3], "scale": 100.0}])
 		_set_line("flows", h, [{"key": "spoiled_t", "name": "Verdorben", "colour": Charts.SERIES[2]},
 			{"key": "export_t", "name": "Ausfuhr", "colour": Charts.SERIES[3]},
 			{"key": "traded_t", "name": "Fernhandel", "colour": Charts.SERIES[1]},
 			{"key": "alms_t", "name": "Almosen", "colour": Charts.SERIES[4]}])
+		_set_line("spoiled", h, [{"key": "spoiled_t", "name": "Verdorben", "colour": Charts.SERIES[2]}])
+		_set_line("export", h, [{"key": "export_t", "name": "Ausfuhr", "colour": Charts.SERIES[3]}])
+		_set_line("traded", h, [{"key": "traded_t", "name": "Fernhandel", "colour": Charts.SERIES[1]}])
+		_set_line("alms", h, [{"key": "alms_t", "name": "Almosen", "colour": Charts.SERIES[4]}])
+		_set_line("real", h, [{"key": "real_p50", "name": "Median", "colour": Charts.SERIES[4], "lo": "real_p10", "hi": "real_p90",
+			"band": "Spanne"},
+			{"key": "need_wage", "name": "Bedarf", "colour": Charts.RED, "dashed": true}])
+		_set_line("wage", h, [{"key": "wage", "name": "Taglohn", "colour": Charts.SERIES[0]}])
+		_set_line("work", h, [{"key": "vacant", "name": "Gesucht", "colour": Charts.SERIES[1]},
+			{"key": "idle", "name": "Liegen geblieben", "colour": Charts.SERIES[2]}])
+		_set_rows("gini_rows", d)
+		if _lorenz != null:
+			_set_lorenz(d)
+		_set_line("clothes", h, [{"key": "clothes", "name": "Alle Haushalte", "colour": Charts.SERIES[3], "scale": 100.0}])
+		for r in GOOD_KEYS.size():
+			_set_line("good%d" % r, h, [{"key": "good_" + GOOD_KEYS[r], "name": GOOD_NAMES[r], "colour": Charts.SERIES[0]}])
+		_set_line("farm_count", h, [{"key": "farms", "name": "Höfe", "colour": Charts.SERIES[0]}])
+		_set_line("farm_store", h, [{"key": "farm_store_t", "name": "Hoflager", "colour": Charts.SERIES[0]}])
+		_set_line("cash", h, [{"key": "cash", "name": "Staatskasse", "colour": Charts.SERIES[3]}])
+		_set_line("held", h, [{"key": "money_held", "name": "Im Umlauf", "colour": Charts.SERIES[0]},
+			{"key": "minted", "name": "Geprägt seit Beginn", "colour": Charts.SERIES[3]}])
+		_set_line("tax_grain", h, [{"key": "tax_grain_t", "name": "Steuerkorn", "colour": Charts.SERIES[0]}])
+		_set_line("income", h, [{"key": "tax_d", "name": "Steuer", "colour": Charts.SERIES[0]},
+			{"key": "rent_d", "name": "Pacht", "colour": Charts.SERIES[2]},
+			{"key": "estates_d", "name": "Erbloser Nachlass", "colour": Charts.SERIES[4]}])
+		_set_line("spending", h, [{"key": "wages_d", "name": "Staatslohn", "colour": Charts.SERIES[3]},
+			{"key": "public_works_d", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
+		_set_line("public_days", h, [{"key": "public_days", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
 		_fill_tiles(d)
 	var pop: Dictionary = tables.get("population", {})
 	if not pop.is_empty() and pop.data.has("occupation"):
@@ -234,12 +393,14 @@ func show_tables(tables: Dictionary) -> void:
 		var sums := {}
 		for key in ["family", "tenant", "estate"]:
 			if farms.data.has(key):
-				var label: String = farms.labels[Array(farms.columns).find(key)]
-				var total := 0.0
-				for v in farms.data[key]:
-					total += float(v)
-				sums[label] = total
+				sums[farms.labels[Array(farms.columns).find(key)]] = _total(farms.data[key])
 		_set_shares("farms", sums, "Höfe")
+		if farms.data.has("area_ha") and farms.data.has("sown_ha"):
+			var sown := _total(farms.data.sown_ha)
+			_set_shares("land", {"Gesät": sown, "Brach": maxf(0.0, _total(farms.data.area_ha) - sown)}, "ha",
+				{"Gesät": Charts.SERIES[0], "Brach": OTHER})
+			if farms.data.has("state_ha") and _shares.has("land"):
+				_shares.land.foot.text += " Davon Staatsland gepachtet: %s ha." % _num(_total(farms.data.state_ha))
 	var classes: Dictionary = tables.get("classes", {})
 	if not classes.is_empty() and classes.data.has("money"):
 		var sums := {}
@@ -252,25 +413,45 @@ func show_tables(tables: Dictionary) -> void:
 		for k in FED_NAMES.size():
 			fixed[FED_NAMES[k]] = FED_COLOURS[k]
 		_set_shares("money", sums, "Denar", fixed, people, "Menschen")
+		_set_classes(classes, d)
 	var goods: Dictionary = tables.get("goods", {})
 	if not goods.is_empty() and goods.data.has("price"):
-		_set_goods(goods, h.get("data", {}))
+		_set_goods(goods, d)
 	var state: Dictionary = tables.get("state", {})
 	if not state.is_empty():
 		_bar_rows = []
-		for item in [["tax", 1.0], ["rent", 1.0], ["wages", -1.0], ["minted", 1.0], ["cash", 1.0]]:
+		for item in [["tax", 1.0], ["rent", 1.0], ["estates", 1.0], ["wages", -1.0], ["public_works", -1.0], ["minted", 1.0], ["cash", 1.0]]:
 			var i := Array(state.columns).find(item[0])
 			if i >= 0:
 				_bar_rows.append([state.labels[i], float(state.data[item[0]][0]) * item[1], item[0]])
-		_bars.custom_minimum_size.y = BAR_ROW * _bar_rows.size() + 8.0
-		_bars.queue_redraw()
-	_find_all(h.get("data", {}))
+		if _bars != null:
+			_bars.custom_minimum_size.y = maxf(PLOT_PX, 4.0 + _bar_rows.size() * BAR_ROW)
+			_bars.queue_redraw()
+	_find_all(d)
+
+static func _total(col) -> float:
+	var sum := 0.0
+	for v in col:
+		sum += float(v)
+	return sum
 
 # ------------------------------------------------------------------ figures
 
+## The figures as a stat strip across the page: cells of two greens in one
+## gold line, as the menus' (Vic3) strips.
+func _tiles_strip() -> void:
+	var strip := PanelContainer.new()
+	strip.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.STAT, UiStyle.GOLD_DIM, 1, 2, 0))
+	_column.add_child(strip)
+	_tiles = HBoxContainer.new()
+	_tiles.add_theme_constant_override("separation", 0)
+	strip.add_child(_tiles)
+	_grid = null
 ## The figures as a stat strip: the name in the concepts' colour, the value, the
 ## change since the month before, a small curve.
 func _fill_tiles(d: Dictionary) -> void:
+	if _tiles == null: # a page without the figures
+		return
 	var specs := _tile_specs
 	if _tiles.get_child_count() == 0:
 		for s in specs:
@@ -288,7 +469,7 @@ func _fill_tiles(d: Dictionary) -> void:
 		var box: VBoxContainer = tile.get_child(0)
 		(box.get_child(0) as Label).text = s[1]
 		(box.get_child(1) as Label).text = (Charts.label(vals[n - 1]) + s[2]) if n > 0 else "…"
-		var moved := _change(vals, n - 2, s[4])
+		var moved := _change(vals, n - 2, s[4], s.size() > 5 and s[5])
 		var change := box.get_child(2) as Label
 		change.text = moved[0]
 		change.add_theme_color_override("font_color", moved[1])
@@ -300,11 +481,13 @@ func _fill_tiles(d: Dictionary) -> void:
 				["Vor einem Jahr", (Charts.label(vals[n - 13]) + s[2]) if n > 12 else "–"]],
 			"spark": vals, "spark_title": "Alle Monate seit Beginn", "spark_unit": s[2].strip_edges(),
 			"spark_from": date.call(int(d.day[0])) if n > 0 else "", "spark_to": date.call(int(d.day[n - 1])) if n > 0 else "",
-			"colour": Charts.SERIES[0]})
+			"colour": Charts.SERIES[0],
+			"text": "Die Kasse behält eine Reserve und zahlt, was darüber liegt, als öffentliche Arbeit aus. Steigt oder fällt sie, ist das weder gut noch schlecht." if s.size() > 5 and s[5] else ""})
 
 ## "▲ 3.4 %" from month `before` to the last, and its colour: a gain is
-## green, unless `falling_good` (a price).
-static func _change(vals: PackedFloat64Array, before: int, falling_good: bool) -> Array:
+## green, unless `falling_good` (a price); `neutral` (the treasury, which
+## spends what lies above its reserve) is neither good nor bad.
+static func _change(vals: PackedFloat64Array, before: int, falling_good: bool, neutral := false) -> Array:
 	var n := vals.size()
 	if before < 0 or before >= n - 1 or vals[before] == 0.0:
 		return ["", UiStyle.TEXT]
@@ -312,7 +495,7 @@ static func _change(vals: PackedFloat64Array, before: int, falling_good: bool) -
 	if absf(pct) < 0.05:
 		return ["± 0 %", UiStyle.DIM]
 	var good := pct < 0.0 if falling_good else pct > 0.0
-	return ["%s %.1f %%" % ["▲" if pct > 0.0 else "▼", absf(pct)], UiStyle.GAIN if good else UiStyle.LOSS]
+	return ["%s %.1f %%" % ["▲" if pct > 0.0 else "▼", absf(pct)], UiStyle.TEXT if neutral else (UiStyle.GAIN if good else UiStyle.LOSS)]
 
 func _tile(key: String) -> PanelContainer:
 	var tile := PanelContainer.new()
@@ -345,106 +528,92 @@ func _tile(key: String) -> PanelContainer:
 	Tooltips.attach(tile, func(_at: Vector2) -> Dictionary: return tile.get_meta("tip", {}))
 	return tile
 
-# ------------------------------------------------------------------ sections and cards
+# ------------------------------------------------------------------ cards
 
-## A heading over a group, as the menus' rules: the name in gold small
-## caps between two gold rules ending in a small diamond. The cards after
-## it go in its grid.
-func _section(title: String) -> void:
-	var head := Control.new()
-	head.custom_minimum_size = Vector2(0, 30)
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.draw.connect(func():
-		var f := UiStyle.title_font()
-		var w := f.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, SECTION_PX).x
-		var mid := head.size.x * 0.5
-		var y := head.size.y * 0.5 + 1.0
-		UiStyle.text_at(head, Vector2(0, y + SECTION_PX * 0.35), title, UiStyle.GOLD_LIT, SECTION_PX, HORIZONTAL_ALIGNMENT_CENTER, head.size.x, f)
-		for side: float in [-1.0, 1.0]:
-			var inner := mid + side * (w * 0.5 + 14.0)
-			var outer := mid + side * (head.size.x * 0.5 - 4.0)
-			head.draw_line(Vector2(inner, y + 1.0), Vector2(outer, y + 1.0), UiStyle.EDGE, 1.0)
-			head.draw_line(Vector2(inner, y), Vector2(outer, y), Color(UiStyle.GOLD, 0.7), 1.0)
-			var diamond := PackedVector2Array([Vector2(inner, y - 4.0), Vector2(inner + 4.0, y), Vector2(inner, y + 4.0), Vector2(inner - 4.0, y)])
-			head.draw_colored_polygon(diamond, UiStyle.GOLD))
-	_column.add_child(head)
+func _add_grid() -> void:
 	_grid = GridContainer.new()
 	_grid.columns = 2
-	_grid.add_theme_constant_override("h_separation", 12)
-	_grid.add_theme_constant_override("v_separation", 12)
+	_grid.add_theme_constant_override("h_separation", GAP)
+	_grid.add_theme_constant_override("v_separation", GAP)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_column.add_child(_grid)
-	_grids.append(_grid)
 
-## A card as the columns of the menus' (Vic3) windows: no frame, its title
-## in small caps on a slim band of leather with a gold line under it, the
-## rest on the slate. The title's tooltip says what the card shows (`about`).
-func _card(key: String, title: String, about: String) -> VBoxContainer:
+## A card as Victoria 3's statistics: a board a shade lighter than the
+## window, its name centred on top, under it its figure. Every card is
+## built so (name LINE_PX, figure PLOT_PX, legend or foot LINE_PX), so two
+## side by side are equally tall and their figures start and end on one
+## line. The name's tooltip says what the numbers say now and what the card
+## shows. `wide` cards (the Lage, the classes, a text) span the page.
+func _card(key: String, wide := false) -> VBoxContainer:
+	wide = wide or key in WIDE
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	card.add_theme_stylebox_override("panel", UiStyle.box(CARD_BACK, CARD_EDGE, 1, 3, PAD))
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.custom_minimum_size = Vector2(CARD_MIN, 0)
-	_grid.add_child(card)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	card.add_child(column)
-	var head := _label(title, UiStyle.TEXT, UiStyle.SIZE_HEAD)
+	if wide:
+		_column.add_child(card)
+		_grid = null # the next cards start a row under it
+	else:
+		card.custom_minimum_size = Vector2(CARD_MIN, 0)
+		if _grid == null:
+			_add_grid()
+		_grid.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	card.add_child(box)
+	var head := _label(_spec(key)[1], UiStyle.TITLE, UiStyle.SIZE_TEXT)
 	head.add_theme_font_override("font", UiStyle.title_font())
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.custom_minimum_size = Vector2(0, LINE_PX)
 	head.clip_text = true
 	head.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	var band := UiStyle.box(UiStyle.BAR, UiStyle.GOLD_DIM, 0, 2, 3)
-	band.border_width_bottom = 1
-	band.corner_radius_bottom_left = 0
-	band.corner_radius_bottom_right = 0
-	head.add_theme_stylebox_override("normal", band)
 	head.mouse_filter = Control.MOUSE_FILTER_PASS
-	Tooltips.attach(head, func(_at: Vector2) -> Dictionary: return {"id": "card:" + title, "title": title, "kind": "Diagramm", "text": about})
-	column.add_child(head)
-	var pad := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 8)
-	column.add_child(pad)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 5)
-	pad.add_child(box)
-	var finding := _label("", UiStyle.TEXT, UiStyle.SIZE_SMALL + 1)
-	finding.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	finding.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
-	finding.visible = false
-	box.add_child(finding)
-	_findings[key] = finding
+	Tooltips.attach(head, func(_at: Vector2) -> Dictionary: return _card_tip(key))
+	box.add_child(head)
+	_heads[key] = head
 	return box
 
-func _line_card(key: String, title: String, unit: String, about: String) -> void:
-	var box := _card(key, title, about)
+## A card's name: what its numbers say now (the finding), then what it shows.
+func _card_tip(key: String) -> Dictionary:
+	var title: String = _heads[key].text
+	var tip: Dictionary = _good_tips.get(key, {}).duplicate()
+	if tip.is_empty():
+		tip = {"id": "card:" + key, "title": title, "kind": "Diagramm", "text": _spec(key)[3]}
+	if _says.has(key):
+		tip.text = "[n]%s[/n]\n%s" % [_says[key], tip.get("text", "")]
+	return tip
+
+func _line_card(key: String) -> void:
+	var box := _card(key)
 	var chart := Control.new()
-	chart.custom_minimum_size = Vector2(0, CHART_PX)
+	chart.custom_minimum_size = Vector2(0, PLOT_PX)
 	chart.mouse_filter = Control.MOUSE_FILTER_PASS # the wheel still scrolls
 	box.add_child(chart)
 	var legend := HFlowContainer.new()
 	legend.add_theme_constant_override("h_separation", 12)
 	legend.add_theme_constant_override("v_separation", 0)
+	legend.custom_minimum_size = Vector2(0, LINE_PX)
 	box.add_child(legend)
-	var entry := {"control": chart, "series": [], "unit": unit, "days": PackedInt64Array(), "hover": -1, "legend": legend, "hidden": {},
-		"marks": PackedInt32Array()}
+	var entry := {"control": chart, "series": [], "unit": _spec(key)[2], "days": PackedInt64Array(), "hover": -1, "legend": legend,
+		"hidden": {}, "marks": PackedInt32Array()}
 	_lines[key] = entry
 	chart.draw.connect(func():
 		var days: PackedInt64Array = entry.days
 		var from: String = date.call(int(days[0])) if days.size() > 0 else ""
 		var to: String = date.call(int(days[days.size() - 1])) if days.size() > 0 else ""
-		Charts.line_chart(chart, Rect2(Vector2.ZERO, chart.size), entry.series, UiStyle.serif(), unit, from, to, entry.hover, entry.marks))
+		Charts.line_chart(chart, Rect2(Vector2.ZERO, chart.size), entry.series, UiStyle.serif(), entry.unit, from, to, entry.hover, entry.marks))
 	chart.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
-			var m: int = Charts.month_at(Rect2(Vector2.ZERO, chart.size), entry.days.size(), e.position.x)
+			var m: int = Charts.month_at(Rect2(Vector2.ZERO, chart.size), entry.days.size(), e.position.x, chart)
 			if m != entry.hover:
 				_hover_all(m))
 	chart.mouse_exited.connect(func(): _hover_all(-1))
-	Tooltips.attach(chart, func(_at: Vector2) -> Dictionary: return _line_tip(key, title))
+	Tooltips.attach(chart, func(_at: Vector2) -> Dictionary: return _line_tip(key))
 
 ## A line chart's series from the history: [{key, name, colour, lo?, hi?,
 ## band?, dashed?, scale?, muted?}].
 func _set_line(key: String, h: Dictionary, specs: Array) -> void:
+	if not _lines.has(key): # a card this page does not show
+		return
 	var entry: Dictionary = _lines[key]
 	var d: Dictionary = h.data
 	var series := []
@@ -527,7 +696,8 @@ func _toggle(sw: HBoxContainer, entry: Dictionary, name: String) -> void:
 			entry.control.queue_redraw())
 
 ## The month under the mouse: each series' value, the band's ends.
-func _line_tip(key: String, title: String) -> Dictionary:
+func _line_tip(key: String) -> Dictionary:
+	var title: String = _heads[key].text
 	var entry: Dictionary = _lines[key]
 	var m: int = entry.hover
 	if m < 0 or entry.series.is_empty():
@@ -557,23 +727,22 @@ func _line_tip(key: String, title: String) -> Dictionary:
 		tip.text = "Vor den letzten zehn Jahren behält der Markt jedes Jahr als sein Mittel: dieser Wert gilt für das ganze Jahr."
 	return tip
 
-# ------------------------------------------------------------------ shares and the classes' food
+# ------------------------------------------------------------------ shares and the classes' rows
 
 ## Shares of a whole as sorted bars, as the menu's (Vic3) lists: a medal,
 ## the name, the bar in its trough, the share. The largest on top, the
 ## smallest folded into "Andere" at the foot. `ref` (set by _set_shares)
 ## marks a second share per row as a tick: on the money card, the people.
-func _shares_card(key: String, title: String, about: String) -> void:
-	var box := _card(key, title, about)
+func _shares_card(key: String) -> void:
+	var box := _card(key)
 	var rows := Control.new()
+	rows.custom_minimum_size = Vector2(0, PLOT_PX)
 	rows.mouse_filter = Control.MOUSE_FILTER_PASS # the wheel still scrolls
 	box.add_child(rows)
-	var foot := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
-	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	foot.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	var foot := _foot()
 	box.add_child(foot)
 	var entry := {"control": rows, "names": PackedStringArray(), "values": PackedFloat64Array(), "colours": [],
-		"ref": PackedFloat64Array(), "ref_name": "", "total": 0.0, "unit": "", "title": title, "hover": -1, "foot": foot}
+		"ref": PackedFloat64Array(), "ref_name": "", "total": 0.0, "unit": "", "title": _spec(key)[1], "hover": -1, "foot": foot}
 	_shares[key] = entry
 	rows.draw.connect(func(): _draw_shares(rows, entry))
 	rows.gui_input.connect(func(e: InputEvent):
@@ -593,6 +762,9 @@ func _shares_card(key: String, title: String, about: String) -> void:
 ## every chart (the classes), the others get a plain medal; `ref` name ->
 ## a second amount drawn as a tick, named `ref_name`.
 func _set_shares(key: String, sums: Dictionary, unit: String, colours := {}, ref := {}, ref_name := "") -> void:
+	_sums[key] = sums
+	if not _shares.has(key):
+		return
 	var entry: Dictionary = _shares[key]
 	var names := sums.keys()
 	names.sort_custom(func(a, b): return sums[a] > sums[b])
@@ -631,7 +803,7 @@ func _set_shares(key: String, sums: Dictionary, unit: String, colours := {}, ref
 	entry.total = total
 	entry.unit = unit
 	var rows: Control = entry.control
-	rows.custom_minimum_size.y = BAR_ROW * shown.size()
+	rows.custom_minimum_size.y = maxf(PLOT_PX, BAR_ROW * shown.size())
 	var foot: Label = entry.foot
 	foot.text = "Zusammen %s %s." % [_num(total), unit]
 	if ref_total > 0.0:
@@ -687,19 +859,17 @@ func _shares_tip(key: String, i: int) -> Dictionary:
 ## scale for all rows, and its value now (or in the month under the mouse):
 ## "fed" what each class ate (red is what was missing to eat one's fill),
 ## "gini_rows" how unequal its money is, the Gini over all people on top.
-func _rows_card(key: String, title: String, about: String) -> void:
-	var box := _card(key, title, about)
+func _rows_card(key: String) -> void:
+	var box := _card(key)
 	var rows := Control.new()
-	rows.custom_minimum_size = Vector2(0, FED_ROW * FED_KEYS.size())
+	rows.custom_minimum_size = Vector2(0, PLOT_PX)
 	rows.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(rows)
-	var foot := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
-	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	foot.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	var foot := _foot()
 	box.add_child(foot)
 	# a line chart for _hover_all: the month under the mouse is shared
 	var entry := {"control": rows, "series": [], "days": PackedInt64Array(), "hover": -1, "row": -1, "lo": 90.0, "hi": 100.0,
-		"foot": foot, "kind": key, "title": title}
+		"foot": foot, "kind": key, "title": _spec(key)[1]}
 	_lines[key] = entry
 	rows.draw.connect(func(): _draw_rows(rows, entry))
 	rows.gui_input.connect(func(e: InputEvent):
@@ -721,12 +891,11 @@ func _rows_card(key: String, title: String, about: String) -> void:
 		_hover_all(-1))
 	Tooltips.attach(rows, func(at: Vector2) -> Dictionary: return _rows_tip(key, int(at.y / FED_ROW)))
 
-func _fed_card() -> void:
-	_rows_card("fed", "Gegessen nach Schicht", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala.")
-
 ## The rows of card `key` from the history: fed_<class> in per cent, or
 ## the Gini over all (gini) and gini_<class>.
 func _set_rows(key: String, d: Dictionary) -> void:
+	if not _lines.has(key):
+		return
 	var entry: Dictionary = _lines[key]
 	var fed := key == "fed"
 	var series := []
@@ -754,10 +923,10 @@ func _set_rows(key: String, d: Dictionary) -> void:
 	entry.days = days.slice(_first(days.size()))
 	var foot: Label = entry.foot
 	if fed:
-		foot.text = "Alle Zeilen von %d bis 100 %%. Gestrichelt: satt. Rot: was zum Sattwerden fehlte." % int(entry.lo)
+		foot.text = "Alle Zeilen von %d bis 100 %%, rot fehlt zum Sattwerden." % int(entry.lo)
 	else:
 		foot.text = "Alle Zeilen von %s bis %s. Je höher, desto ungleicher." % [Charts.label(entry.lo), Charts.label(entry.hi)]
-	entry.control.custom_minimum_size.y = FED_ROW * maxi(1, series.size())
+	entry.control.custom_minimum_size.y = maxf(PLOT_PX, FED_ROW * series.size())
 	entry.control.queue_redraw()
 
 ## Row k's plot: right of the medal and name, left of the value.
@@ -888,16 +1057,17 @@ func _bar(ci: CanvasItem, trough: Rect2, start: float, end: float, colour: Color
 ## A row's round medal in a gold rim, as the menu's (Vic3) lists: its icon
 ## when it has one, else its first letter; on the colour the
 ## entity keeps in every chart, or dark.
-func _medal(ci: CanvasItem, at: Vector2, name: String, colour: Color) -> void:
-	ci.draw_circle(at, MEDAL_R + 1.0, UiStyle.EDGE)
-	ci.draw_circle(at, MEDAL_R, UiStyle.GOLD)
-	ci.draw_circle(at, MEDAL_R - 1.5, colour.darkened(0.3) if colour.a > 0.0 else UiStyle.INSET)
+func _medal(ci: CanvasItem, at: Vector2, name: String, colour: Color, radius := MEDAL_R) -> void:
+	var rim := radius / MEDAL_R
+	ci.draw_circle(at, radius + rim, UiStyle.EDGE)
+	ci.draw_circle(at, radius, UiStyle.GOLD)
+	ci.draw_circle(at, radius - 1.5 * rim, colour.darkened(0.3) if colour.a > 0.0 else UiStyle.INSET)
 	var icon := _icon(name)
 	if icon != null:
-		var side := (MEDAL_R - 2.5) * 2.0
+		var side := (radius - 2.5 * rim) * 2.0 * (0.82 if radius > MEDAL_R else 1.0)
 		ci.draw_texture_rect(icon, Rect2(at - Vector2(side, side) * 0.5, Vector2(side, side)), false, UiStyle.TEXT)
 	else:
-		UiStyle.text_at(ci, at + Vector2(-MEDAL_R, 4.0), name.left(1), UiStyle.TEXT, UiStyle.SIZE_SMALL - 1, HORIZONTAL_ALIGNMENT_CENTER, MEDAL_R * 2.0, UiStyle.bold())
+		UiStyle.text_at(ci, at + Vector2(-radius, 4.0 * rim), name.left(1), UiStyle.TEXT, roundi((UiStyle.SIZE_SMALL - 1) * rim), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, UiStyle.bold())
 
 func _icon(name: String) -> Texture2D:
 	if not _icons.has(name):
@@ -906,69 +1076,15 @@ func _icon(name: String) -> Texture2D:
 
 # ------------------------------------------------------------------ goods
 
-## The goods as small charts side by side, as a market's goods: the
-## name, the median price and its change, the price over the chosen months.
-## Over a good, a tooltip with its price since the start.
-func _goods_card(about := "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum.") -> void:
-	var box := _card("goods", "Warenpreise", about)
+## All goods at a glance across the page, three to a row: each its name,
+## price, change against the month before and its course.
+func _goods_card(key: String) -> void:
+	var box := _card(key, true)
 	_goods = GridContainer.new()
 	_goods.columns = 3
 	_goods.add_theme_constant_override("h_separation", 6)
 	_goods.add_theme_constant_override("v_separation", 6)
 	box.add_child(_goods)
-	# the card fills the section's width: the grid holds just this one
-	_grids.erase(_grid)
-	_grid.columns = 1
-
-func _set_goods(goods: Dictionary, h: Dictionary) -> void:
-	var n: int = goods.data.good.size()
-	while _goods.get_child_count() < n:
-		_goods.add_child(_good_tile(_goods.get_child_count()))
-	for r in n:
-		var tile: PanelContainer = _goods.get_child(r)
-		var key := "good_" + GOOD_KEYS[r] if r < GOOD_KEYS.size() else ""
-		var all := PackedFloat64Array()
-		if h.has(key):
-			for v in h[key]:
-				all.append(float(v))
-		var unit: String = goods.data.unit[r]
-		var price := float(goods.data.price[r])
-		var change := _change(all, all.size() - 2, true)
-		var box: VBoxContainer = tile.get_child(0)
-		(box.get_child(0).get_child(0) as Label).text = goods.data.good[r]
-		(box.get_child(0).get_child(1) as Label).text = "%s D je %s" % [Charts.label(price), unit]
-		var moved := box.get_child(1) as Label
-		moved.text = change[0] + ("  zum Vormonat" if change[0] != "" else "")
-		moved.add_theme_color_override("font_color", UiStyle.DIM) # dearer is good for the maker, bad for the buyer
-		var spark: Control = box.get_child(2)
-		spark.set_meta("values", all.slice(_first(all.size())))
-		spark.queue_redraw()
-		var rows := [["Preis", "%s D je %s" % [Charts.label(price), unit]],
-			["Vormonat", Charts.label(all[all.size() - 2]) + " D" if all.size() > 1 else "–"],
-			["Vor einem Jahr", Charts.label(all[all.size() - 13]) + " D" if all.size() > 12 else "–"],
-			["Marktlager", "%s %s" % [Charts.label(float(goods.data.store[r])), unit]]]
-		# the flows since the start once the tooltip is locked, so it opens short
-		var since := []
-		for col in [["made", "hergestellt"], ["bought", "gekauft"], ["moved", "zwischen Märkten gehandelt"],
-				["imported", "von ausserhalb gekauft"], ["exported", "nach ausserhalb verkauft"]]:
-			if goods.data.has(col[0]):
-				since.append("[n]%s %s[/n] %s" % [Charts.label(float(goods.data[col[0]][r])), unit, col[1]])
-		var tip := {"id": "good:%d" % r, "title": goods.data.good[r], "kind": "Ware", "rows": rows,
-			"text": "Der [url=price]Preis[/url] ist der Median der Märkte, gewichtet nach ihren Menschen."}
-		if goods.data.has("why"): # one market's: why it costs what it costs there
-			tip.text = goods.data.why[r]
-		if not since.is_empty():
-			tip.more = "Seit Beginn: " + ", ".join(since) + "."
-		if all.size() > 1:
-			tip.spark = all
-			tip.spark_title = "Preis seit Beginn"
-			tip.spark_unit = "D"
-			tip.spark_from = date.call(int(h.day[0]))
-			tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
-			tip.colour = Charts.SERIES[0]
-		else:
-			tip.more = tip.get("more", "") + " Der Verlauf füllt sich mit jedem Monat, den das Spiel läuft."
-		tile.set_meta("tip", tip)
 
 func _good_tile(r: int) -> PanelContainer:
 	var tile := PanelContainer.new()
@@ -998,21 +1114,356 @@ func _good_tile(r: int) -> PanelContainer:
 	spark.custom_minimum_size = Vector2(0, 40)
 	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	spark.draw.connect(func(): # small multiples in one hue: the name says which good
-		var colour: Color = Charts.SERIES[0]
 		Charts.board(spark, Rect2(Vector2.ZERO, spark.size), false)
-		Charts.spark(spark, Rect2(Vector2(4, 4), spark.size - Vector2(10, 8)), spark.get_meta("values", PackedFloat64Array()), colour))
+		Charts.spark(spark, Rect2(Vector2(4, 4), spark.size - Vector2(10, 8)), spark.get_meta("values", PackedFloat64Array()), Charts.SERIES[0]))
 	box.add_child(spark)
 	Tooltips.attach(tile, func(_at: Vector2) -> Dictionary: return tile.get_meta("tip", {}))
 	return tile
 
+## The goods' tiles from the goods table and the history, each with the
+## tooltip of its chart's name and its price since the start.
+func _fill_good_tiles(goods: Dictionary, h: Dictionary) -> void:
+	if _goods == null:
+		return
+	var n: int = mini(goods.data.good.size(), GOOD_KEYS.size())
+	while _goods.get_child_count() < n:
+		_goods.add_child(_good_tile(_goods.get_child_count()))
+	for r in n:
+		var tile: PanelContainer = _goods.get_child(r)
+		var all := _col(h, "good_" + GOOD_KEYS[r])
+		var change := _change(all, all.size() - 2, true)
+		var box: VBoxContainer = tile.get_child(0)
+		(box.get_child(0).get_child(0) as Label).text = goods.data.good[r]
+		(box.get_child(0).get_child(1) as Label).text = "%s D je %s" % [Charts.label(float(goods.data.price[r])), goods.data.unit[r]]
+		var moved := box.get_child(1) as Label
+		moved.text = change[0] + ("  zum Vormonat" if change[0] != "" else "")
+		moved.add_theme_color_override("font_color", UiStyle.DIM) # dearer is good for the maker, bad for the buyer
+		var spark: Control = box.get_child(2)
+		spark.set_meta("values", all.slice(_first(all.size())))
+		spark.queue_redraw()
+		var tip: Dictionary = _good_tips.get(("m_good%d" if _market else "good%d") % r, {}).duplicate()
+		if all.size() > 1:
+			tip.spark = all
+			tip.spark_title = "Preis seit Beginn"
+			tip.spark_unit = "D"
+			tip.spark_from = date.call(int(h.day[0]))
+			tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
+			tip.colour = Charts.SERIES[0]
+		tile.set_meta("tip", tip)
+
+## Each good's card (a line chart of its price): its name and unit from the
+## goods table, and its name's tooltip with its price, store and flows
+## since the start (one market's: why it costs what it costs there).
+func _set_goods(goods: Dictionary, h: Dictionary) -> void:
+	for r in mini(goods.data.good.size(), GOOD_KEYS.size()):
+		var key := ("m_good%d" if _market else "good%d") % r
+		var all := _col(h, "good_" + GOOD_KEYS[r])
+		var unit: String = goods.data.unit[r]
+		var price := float(goods.data.price[r])
+		var rows := [["Preis", "%s D je %s" % [Charts.label(price), unit]],
+			["Vormonat", Charts.label(all[all.size() - 2]) + " D" if all.size() > 1 else "–"],
+			["Vor einem Jahr", Charts.label(all[all.size() - 13]) + " D" if all.size() > 12 else "–"],
+			["Marktlager", "%s %s" % [Charts.label(float(goods.data.store[r])), unit]]]
+		# the flows since the start once the tooltip is locked, so it opens short
+		var since := []
+		for col in [["made", "hergestellt"], ["bought", "gekauft"], ["moved", "zwischen Märkten gehandelt"],
+				["imported", "von ausserhalb gekauft"], ["exported", "nach ausserhalb verkauft"]]:
+			if goods.data.has(col[0]):
+				since.append("[n]%s %s[/n] %s" % [Charts.label(float(goods.data[col[0]][r])), unit, col[1]])
+		var tip := {"id": "good:%d" % r, "title": goods.data.good[r], "kind": "Ware", "rows": rows, "text": _spec(key)[3]}
+		if goods.data.has("why") and str(goods.data.why[r]) != "":
+			tip.text += " " + str(goods.data.why[r])
+		if not since.is_empty():
+			tip.more = "Seit Beginn: " + ", ".join(since) + "."
+		_good_tips[key] = tip
+		if _heads.has(key):
+			_heads[key].text = goods.data.good[r]
+		if _lines.has(key):
+			_lines[key].unit = "D/" + unit
+			_lines[key].control.queue_redraw()
+	_fill_good_tiles(goods, h)
+
+# ------------------------------------------------------------------ the Lage
+
+func _lage_card() -> void:
+	var box := _card("lage", true)
+	_lage = VBoxContainer.new()
+	_lage.add_theme_constant_override("separation", 0)
+	box.add_child(_lage)
+
+## The findings as one list by topic, a line each: its card's name, what it
+## says. A click on a line opens its card's page.
+func _set_lage() -> void:
+	if _lage == null:
+		return
+	for c in _lage.get_children():
+		c.queue_free()
+	var topic := ""
+	var k := 0
+	for key in (LAGE_MARKET if _market else LAGE_REALM):
+		if not _says.has(key):
+			continue
+		var to := page_of(key, _market)
+		if not _market and TOPICS.get(to, "") != topic:
+			topic = TOPICS.get(to, "")
+			var name := _label(topic, UiStyle.GOLD, UiStyle.SIZE_SMALL)
+			name.add_theme_font_override("font", UiStyle.title_font())
+			name.custom_minimum_size = Vector2(0, LINE_PX + (6.0 if k > 0 else 0.0))
+			name.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+			_lage.add_child(name)
+		_lage.add_child(_lage_line(key, to, k))
+		k += 1
+
+func _lage_line(key: String, to: String, k: int) -> PanelContainer:
+	var row := PanelContainer.new()
+	var back := UiStyle.box(UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK, Color.TRANSPARENT, 0, 0, 0)
+	back.content_margin_left = 8
+	back.content_margin_right = 8
+	back.content_margin_top = 2
+	back.content_margin_bottom = 2
+	row.add_theme_stylebox_override("panel", back)
+	row.mouse_filter = Control.MOUSE_FILTER_PASS # the wheel still scrolls
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(line)
+	var title: String = _heads[key].text if _heads.has(key) else _spec(key)[1]
+	var name := _label(title, UiStyle.CONCEPT if to != "" else UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	name.custom_minimum_size = Vector2(LAGE_NAME_PX * (0.75 if _market else 1.0), 0) # a market's window is narrower
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(name)
+	var says := _label(_says[key], UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	says.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	says.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	says.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(says)
+	var tip := {"id": "lage:" + key, "title": title, "kind": TOPICS.get(to, "Lage"), "text": _spec(key)[3]}
+	if to != "":
+		tip.hints = [["Klick", "Diagramm öffnen"]]
+		var lit := back.duplicate()
+		lit.bg_color = UiStyle.SELECTED
+		row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		row.mouse_entered.connect(func(): row.add_theme_stylebox_override("panel", lit))
+		row.mouse_exited.connect(func(): row.add_theme_stylebox_override("panel", back))
+		row.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				go.emit(to))
+	Tooltips.attach(row, func(_at: Vector2) -> Dictionary: return tip)
+	return row
+
+# ------------------------------------------------------------------ the classes side by side
+
+## The classes side by side as Victoria 3's population: a framed column
+## per class, its medal and name on top, its people as a big figure, its
+## medal large where Victoria 3 has a face, whether it is fed, its money a
+## head, then sections of lines (CLASS_PARTS), in the colours of the table
+## before them. What a class did not eat shows red.
+func _classes_card() -> void:
+	var box := _card("classes", true)
+	_class_table = Control.new()
+	_class_table.custom_minimum_size = Vector2(0, CLASS_PX)
+	_class_table.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_class_table)
+	_class_table.draw.connect(_draw_classes)
+	for spec in CLASS_PARTS: # loaded before the first draw, which shows a texture loaded in it as a blank square
+		if spec.size() > 4 and spec[3] == "line" and spec[4] != "":
+			_icons["file:" + spec[4]] = Vic3Style.icon(spec[4])
+	_class_table.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var at := _class_at(e.position)
+			if at != _class_hover:
+				_class_hover = at
+				_class_table.queue_redraw())
+	_class_table.mouse_exited.connect(func():
+		_class_hover = Vector2i(-1, -1)
+		_class_table.queue_redraw())
+	Tooltips.attach(_class_table, func(at: Vector2) -> Dictionary: return _class_tip(_class_at(at)))
+
+## The class (column) and the part of its column (CLASS_PARTS) at `p`; -1
+## between the columns and outside the parts.
+func _class_at(p: Vector2) -> Vector2i:
+	var n := _class_names.size()
+	if n == 0:
+		return Vector2i(-1, -1)
+	var w := _class_width(n)
+	var r := mini(int(p.x / (w + CLASS_GAP)), n - 1)
+	if p.x - r * (w + CLASS_GAP) > w:
+		return Vector2i(-1, -1)
+	for k in CLASS_PARTS.size():
+		if p.y >= CLASS_PARTS[k][1] and p.y < CLASS_PARTS[k][1] + CLASS_PARTS[k][2]:
+			return Vector2i(r, k)
+	return Vector2i(r, -1)
+
+func _class_width(n: int) -> float:
+	return (_class_table.size.x - CLASS_GAP * (n - 1)) / n
+
+## The cells from the classes table, the Gini of each class from the history.
+func _set_classes(classes: Dictionary, d: Dictionary) -> void:
+	if _class_table == null:
+		return
+	var data: Dictionary = classes.data
+	var n: int = data.kind.size()
+	_class_names = PackedStringArray(Array(data.kind))
+	var people := _total(data.get("persons", []))
+	var money := _total(data.money)
+	_class_cells = []
+	for spec in CLASS_ROWS:
+		var line := []
+		for r in n:
+			var text := "–"
+			var colour := UiStyle.VALUE
+			var key: String = spec[0]
+			if key == "share" and people > 0.0:
+				text = _pct(float(data.persons[r]) / people * 100.0) + " %"
+			elif key == "money_share" and money > 0.0:
+				text = _pct(float(data.money[r]) / money * 100.0) + " %"
+			elif key == "gini":
+				var g := _col(d, "gini_" + FED_KEYS[FED_NAMES.find(data.kind[r])]) if FED_NAMES.has(data.kind[r]) else PackedFloat64Array()
+				text = "%.2f" % g[g.size() - 1] if g.size() > 0 else "–"
+			elif not data.has(key):
+				pass
+			elif key == "eaten":
+				text = "%d %%" % floori(float(data.eaten[r]) * 100.0)
+				colour = UiStyle.LOSS if float(data.eaten[r]) < 0.99 else UiStyle.VALUE
+			elif key == "clothes":
+				text = "%d %%" % roundi(float(data.clothes[r]) * 100.0)
+			elif key == "money_head":
+				text = _num(float(data.money_head[r]))
+			else:
+				text = _num(float(data[key][r]))
+			line.append([text, colour])
+		_class_cells.append(line)
+	_class_table.queue_redraw()
+
+## A cell of the classes: [text, colour] of `key` (CLASS_ROWS) for class `r`.
+func _class_cell(key: String, r: int) -> Array:
+	for line in CLASS_ROWS.size():
+		if CLASS_ROWS[line][0] == key and line < _class_cells.size() and r < _class_cells[line].size():
+			return _class_cells[line][r]
+	return ["–", UiStyle.VALUE]
+
+func _draw_classes() -> void:
+	var ci := _class_table
+	var n := _class_names.size()
+	if n == 0:
+		return
+	var font := UiStyle.serif()
+	var bold := UiStyle.bold()
+	var w := _class_width(n)
+	for r in n:
+		var x := r * (w + CLASS_GAP)
+		var name := _class_names[r]
+		var k := FED_NAMES.find(name)
+		var colour: Color = FED_COLOURS[k] if k >= 0 else OTHER
+		ci.draw_rect(Rect2(x, 0, w, CLASS_PX), UiStyle.INSET)
+		# the head: medal and name in one line, centred
+		var name_w := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x
+		var left := x + maxf(6.0, (w - MEDAL_R * 2.0 - 6.0 - name_w) * 0.5)
+		_medal(ci, Vector2(left + MEDAL_R, 16.0), name, colour)
+		UiStyle.text_at(ci, Vector2(left + MEDAL_R * 2.0 + 6.0, 22.0), name, UiStyle.TEXT, UiStyle.SIZE_TEXT,
+			HORIZONTAL_ALIGNMENT_LEFT, x + w - left - MEDAL_R * 2.0 - 10.0, font)
+		# the picture: its medal large
+		var face := Rect2(x + CLASS_FACE.position.x, CLASS_FACE.position.y, w - CLASS_FACE.position.x * 2.0, CLASS_FACE.size.y)
+		_medal(ci, face.get_center(), name, colour, CLASS_FACE_R)
+		for part in CLASS_PARTS.size():
+			_draw_class_part(ci, part, r, Rect2(x, CLASS_PARTS[part][1], w, CLASS_PARTS[part][2]), font, bold)
+		ci.draw_rect(Rect2(x, 0, w, CLASS_PX), CARD_EDGE, false, 1.0)
+
+## One part of a class's column (CLASS_PARTS[part]) in `at`.
+func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, font: Font, bold: Font) -> void:
+	var spec: Array = CLASS_PARTS[part]
+	var cell := _class_cell(spec[0], r) if spec[0] != "" else ["", UiStyle.VALUE]
+	var lit := _class_hover == Vector2i(r, part)
+	var base := at.position.y + at.size.y * 0.5 + 6.0 # a line's baseline, its text centred
+	match spec[3]:
+		"big":
+			UiStyle.text_at(ci, Vector2(at.position.x, at.end.y - 4.0), cell[0], UiStyle.VALUE, UiStyle.SIZE_HEAD + 6,
+				HORIZONTAL_ALIGNMENT_CENTER, at.size.x, bold)
+		"note":
+			UiStyle.text_at(ci, Vector2(at.position.x, base), cell[0] + " der Menschen", UiStyle.DIM, UiStyle.SIZE_SMALL,
+				HORIZONTAL_ALIGNMENT_CENTER, at.size.x, font)
+		"state":
+			var short: bool = cell[1] == UiStyle.LOSS
+			UiStyle.text_at(ci, Vector2(at.position.x, base), "Hungert" if short else "Satt", UiStyle.LOSS if short else UiStyle.TEXT,
+				UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_CENTER, at.size.x, font)
+		"money":
+			ci.draw_line(Vector2(at.position.x + 10.0, at.position.y), Vector2(at.end.x - 10.0, at.position.y), CARD_EDGE, 1.0)
+			var figure: String = cell[0] + " D"
+			var rest := " je Kopf"
+			var fw := bold.get_string_size(figure, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_HEAD + 2).x
+			var rw := font.get_string_size(rest, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x
+			var from := at.position.x + maxf(4.0, (at.size.x - fw - rw) * 0.5)
+			UiStyle.text_at(ci, Vector2(from, base + 2.0), figure, UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, bold)
+			UiStyle.text_at(ci, Vector2(from + fw, base + 2.0), rest, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
+				maxf(0.0, at.end.x - from - fw - 4.0), font)
+		"head": # a band with a chevron, its figure and its name
+			var band := at.grow_individual(-4.0, 0.0, -4.0, 0.0)
+			ci.draw_rect(band, UiStyle.ROW_HEAD)
+			var c := Vector2(band.position.x + 12.0, band.get_center().y)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-4, -2), c + Vector2(0, 2), c + Vector2(4, -2)]), UiStyle.GOLD, 1.5, true)
+			var figure: String = cell[0] + " " if spec[0] != "" else ""
+			var fw := font.get_string_size(figure, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x
+			UiStyle.text_at(ci, Vector2(band.position.x + 22.0, base), figure, UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font)
+			UiStyle.text_at(ci, Vector2(band.position.x + 22.0 + fw, base), spec[4], UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
+				maxf(0.0, band.end.x - band.position.x - 26.0 - fw), font)
+		"line": # a tile as Victoria 3's needs: icon, name, figure at the right
+			var tile := Rect2(at.position.x + 4.0, at.position.y + 1.0, at.size.x - 8.0, at.size.y - 2.0)
+			ci.draw_rect(tile, UiStyle.ROW)
+			var name_x := tile.position.x + 6.0
+			var icon: Texture2D = _icons.get("file:" + spec[4])
+			if icon != null:
+				ci.draw_texture_rect(icon, Rect2(tile.position.x + 4.0, tile.position.y + 4.0, 16.0, 16.0), false, UiStyle.DIM)
+				name_x += 20.0
+			var fw := font.get_string_size(cell[0], HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL).x
+			UiStyle.text_at(ci, Vector2(name_x, base - 1.0), spec[5], UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT,
+				maxf(0.0, tile.end.x - name_x - fw - 10.0), font)
+			UiStyle.text_at(ci, Vector2(tile.position.x, base - 1.0), cell[0], cell[1], UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT,
+				tile.size.x - 6.0, font)
+	if lit:
+		ci.draw_rect(at.grow_individual(-4.0, 0.0, -4.0, 0.0), UiStyle.HOVER)
+
+## A class: all its measures and what it ate since the start; the part
+## under the mouse says what it is.
+func _class_tip(at: Vector2i) -> Dictionary:
+	if at.x < 0:
+		return {}
+	var name := _class_names[at.x]
+	var rows := []
+	for line in mini(CLASS_ROWS.size(), _class_cells.size()):
+		var cell: Array = _class_cells[line][at.x]
+		var text: String = cell[0] + (" D" if CLASS_ROWS[line][0] == "money_head" else "")
+		rows.append([CLASS_ROWS[line][1], text, cell[1] if cell[1] == UiStyle.LOSS else UiStyle.TEXT])
+	var tip := {"id": "class:%d:%d" % [at.x, at.y], "title": name, "kind": "Schicht", "rows": rows}
+	var key: String = CLASS_PARTS[at.y][0] if at.y >= 0 else ""
+	for spec in CLASS_ROWS:
+		if spec[0] == key:
+			tip.text = "[n]%s:[/n] %s" % [spec[1], spec[2]]
+	var k := FED_NAMES.find(name)
+	var h: Dictionary = _tables.get("history", {}).get("data", {})
+	var fed := _col(h, "fed_" + FED_KEYS[k], 100.0) if k >= 0 else PackedFloat64Array()
+	if fed.size() > 1:
+		tip.spark = fed
+		tip.spark_title = "Gegessen seit Beginn"
+		tip.spark_unit = "%"
+		tip.colour = FED_COLOURS[k]
+		tip.spark_from = date.call(int(h.day[0]))
+		tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
+	return tip
+
 # ------------------------------------------------------------------ the state's money
 
-func _bar_card(title: String, about: String) -> void:
-	var box := _card("state", title, about)
+func _bar_card() -> void:
+	var box := _card("state")
 	_bars = Control.new()
-	_bars.custom_minimum_size = Vector2(0, 140)
+	_bars.custom_minimum_size = Vector2(0, PLOT_PX)
 	_bars.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(_bars)
+	var foot := _foot()
+	foot.text = "Denar seit Beginn; was ausgegeben wurde, nach links."
+	box.add_child(foot)
 	_bars.draw.connect(func():
 		var font := UiStyle.serif()
 		var top := 1.0
@@ -1049,16 +1500,17 @@ func _bar_card(title: String, about: String) -> void:
 ## would be everyone equal; the further the curve sags below it, the more
 ## unequal. Grey: the curve at the start of the chosen months.
 func _lorenz_card() -> void:
-	var box := _card("lorenz", "Wer hat das Geld", "Die Lorenzkurve des Geldes je Kopf: nach rechts die Menschen vom ärmsten zum reichsten, nach oben ihr Anteil an allem Geld. Auf der Diagonale hätten alle gleich viel. Die Fläche zwischen Diagonale und Kurve ist der Gini. Gezählt wird nur Bargeld (Denar), nicht Land, Vieh oder Vorräte.")
+	var box := _card("lorenz")
 	_lorenz = Control.new()
-	_lorenz.custom_minimum_size = Vector2(0, CHART_PX + 20.0)
+	_lorenz.custom_minimum_size = Vector2(0, PLOT_PX)
 	_lorenz.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(_lorenz)
 	var legend := HFlowContainer.new()
 	legend.add_theme_constant_override("h_separation", 12)
+	legend.custom_minimum_size = Vector2(0, LINE_PX)
 	box.add_child(legend)
 	legend.add_child(_swatch(Charts.SERIES[0], "Heute"))
-	legend.add_child(_swatch(Charts.MUTED, "Zu Beginn des Zeitraums"))
+	legend.add_child(_swatch(Charts.MUTED, "Zu Beginn"))
 	legend.add_child(_swatch(UiStyle.DIM, "Alle gleich"))
 	_lorenz.draw.connect(_draw_lorenz)
 	_lorenz.gui_input.connect(func(e: InputEvent):
@@ -1095,8 +1547,8 @@ func _set_lorenz(d: Dictionary) -> void:
 
 ## The plot, square, left in the card; the axes' names at its sides.
 func _lorenz_plot() -> Rect2:
-	var side := minf(_lorenz.size.y - 26.0, _lorenz.size.x - 140.0)
-	return Rect2(Vector2(44.0, 6.0), Vector2(side, side))
+	var side := minf(_lorenz.size.y - 38.0, _lorenz.size.x - 140.0)
+	return Rect2(Vector2(44.0, 12.0), Vector2(side, side))
 
 func _draw_lorenz() -> void:
 	var r := _lorenz_plot()
@@ -1108,8 +1560,8 @@ func _draw_lorenz() -> void:
 		_lorenz.draw_line(at.call(0.0, v), at.call(1.0, v), UiStyle.CHART_GRID, 1.0)
 		_lorenz.draw_line(at.call(v, 0.0), at.call(v, 1.0), UiStyle.CHART_GRID, 1.0)
 		UiStyle.text_at(_lorenz, at.call(0.0, v) + Vector2(-40.0, 5.0), "%d %%" % roundi(v * 100.0), UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 34.0, font)
-	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "die Ärmsten", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
-	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "die Reichsten", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, r.size.x, UiStyle.italic())
+	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "arm", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.italic())
+	UiStyle.text_at(_lorenz, Vector2(r.position.x, r.end.y + 17.0), "reich", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, r.size.x, UiStyle.italic())
 	for part in Charts.dashes(PackedVector2Array([at.call(0.0, 0.0), at.call(1.0, 1.0)]), 6.0, 4.0):
 		_lorenz.draw_polyline(part, UiStyle.DIM, 1.0, true)
 	var curve := func(pts: PackedFloat64Array) -> PackedVector2Array:
@@ -1186,8 +1638,8 @@ func _lorenz_tip() -> Dictionary:
 func show_market(d: Dictionary) -> void:
 	_tables = d
 	var h: Dictionary = _monthly(d.get("history", {}))
-	if not h.is_empty():
-		var hd: Dictionary = h.data
+	var hd: Dictionary = h.get("data", {})
+	if not hd.is_empty():
 		_events = _find_events(hd)
 		_set_line("m_price", h, [{"key": "price", "name": "Hier", "colour": Charts.SERIES[0]},
 			{"key": "price_all", "name": "Median aller Märkte", "colour": Charts.SERIES[0], "muted": true}])
@@ -1195,8 +1647,13 @@ func show_market(d: Dictionary) -> void:
 		_set_line("m_store", h, [{"key": "store_t", "name": "Lager", "colour": Charts.SERIES[0]},
 			{"key": "sold_t", "name": "Verkauft im Monat", "colour": Charts.SERIES[1]}])
 		_set_line("m_real", h, [{"key": "real_wage", "name": "Reallohn", "colour": Charts.SERIES[4]}])
+		_set_line("m_persons", h, [{"key": "persons", "name": "Menschen", "colour": Charts.SERIES[1]},
+			{"key": "tent_persons", "name": "Im Zelt", "colour": Charts.SERIES[2]}])
 		_set_line("m_gini", h, [{"key": "gini", "name": "Hier", "colour": Charts.SERIES[3]},
 			{"key": "gini_all", "name": "Alle Menschen der Karte", "colour": Charts.SERIES[3], "muted": true}])
+		for r in GOOD_KEYS.size():
+			_set_line("m_good%d" % r, h, [{"key": "good_" + GOOD_KEYS[r], "name": GOOD_NAMES[r], "colour": Charts.SERIES[0]}])
+		_set_line("m_public", h, [{"key": "public_days", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
 		_fill_tiles(hd)
 	var classes: Dictionary = d.get("classes", {})
 	if not classes.is_empty() and classes.data.has("persons"):
@@ -1213,10 +1670,10 @@ func show_market(d: Dictionary) -> void:
 		_set_shares("m_people", people, "Menschen", fixed)
 		_set_shares("m_money", money, "Denar", fixed, people, "Menschen")
 	if d.has("data"):
-		_reasons.text = str(d.data.get("why", [""])[0])
-		_reasons.visible = _reasons.text != ""
-		_set_goods(_market_goods(d), h.get("data", {}))
-	_find_market(h.get("data", {}), d)
+		if _reasons != null:
+			_reasons.text = str(d.data.get("why", [""])[0])
+		_set_goods(_market_goods(d), hd)
+	_find_market(hd, d)
 
 ## The market's history with each year before the last ten (kept as the
 ## year's mean, grain/tables.rs) spread over its twelve months, so the
@@ -1261,12 +1718,14 @@ func _market_goods(d: Dictionary) -> Dictionary:
 		out.why.append(str(data.get("why_" + key, [""])[0]))
 	return {"data": out}
 
-## Why the grain costs what it costs here (the markets table's reasons).
+## Why the grain costs what it costs here (the markets table's reasons),
+## across the page.
 func _reasons_card() -> void:
-	var box := _card("m_why", "Warum dieser Preis", "Was die Händler dieses Marktes zu ihrem Kornpreis bewegt: ihr Lager gegen ihren Plan, die Jahreszeit, der Lagerboden, Käufer ohne Ware.")
+	var box := _card("m_why", true)
 	_reasons = _label("", UiStyle.TEXT, UiStyle.SIZE_TEXT)
 	_reasons.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_reasons.custom_minimum_size = Vector2(CARD_MIN - 40.0, 0)
+	_reasons.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_reasons.custom_minimum_size = Vector2(0, LINE_PX * 2)
 	box.add_child(_reasons)
 
 ## The market cards' findings, as _find_all the realm's.
@@ -1304,14 +1763,28 @@ func _find_market(d: Dictionary, row: Dictionary) -> void:
 		var real := _col(d, "real_wage")
 		if real.size() == n:
 			says.m_real = "Ein Taglohn kauft hier %s kg Korn, %s." % [_num(real[n - 1]), _against_year(real, "mehr", "weniger")]
+		var persons := _col(d, "persons")
+		var tents := _col(d, "tent_persons")
+		if persons.size() == n:
+			says.m_persons = "In der Region leben %s Menschen, %s." % [_num(persons[n - 1]), _against_year(persons, "mehr", "weniger")]
+			if tents.size() == n and tents[n - 1] >= 0.5:
+				says.m_persons += " %s davon im Zelt." % _num(tents[n - 1])
+		var days := _col(d, "public_days")
+		var paid := _col(d, "public_wage")
+		if days.size() == n:
+			says.m_public = ("Im letzten Jahr bezahlte der Staat hier keine öffentliche Arbeit." if _year_sum(days) <= 0.0
+				else "Im letzten Jahr bezahlte der Staat hier %s Tage öffentliche Arbeit%s." % [_num(_year_sum(days)),
+					(" für %s Denar" % _num(_year_sum(paid))) if paid.size() == n else ""])
 		var gini := _col(d, "gini")
 		var gini_all := _col(d, "gini_all")
 		if gini.size() == n and gini_all.size() == n:
 			says.m_gini = "Gini %.2f, %s als über die ganze Karte (%.2f)." % [gini[n - 1], "gleicher verteilt" if gini[n - 1] < gini_all[n - 1] else "ungleicher verteilt", gini_all[n - 1]]
-	for key in ["m_people", "m_money"]:
-		var bars: Dictionary = _shares[key]
-		if bars.total > 0.0 and bars.names.size() > 0:
-			says[key] = ("Die meisten hier sind %s: %d %% der Menschen." if key == "m_people" else "%s halten %d %% des Geldes.") % [bars.names[0], roundi(bars.values[0] / bars.total * 100.0)]
+	var people := _top(_sums.get("m_people", {}))
+	if not people.is_empty():
+		says.m_people = "Die meisten hier sind %s: %d %% der Menschen." % [people[0], roundi(people[1] * 100.0)]
+	var money := _top(_sums.get("m_money", {}))
+	if not money.is_empty():
+		says.m_money = "%s halten %d %% des Geldes." % [money[0], roundi(money[1] * 100.0)]
 	var goods: Dictionary = _market_goods(row) if row.has("data") else {}
 	if not goods.is_empty() and n > 1:
 		var moved := -1.0
@@ -1322,10 +1795,13 @@ func _find_market(d: Dictionary, row: Dictionary) -> void:
 				if change > moved:
 					moved = change
 					says.goods = "Am stärksten verändert: %s, %s." % [goods.data.good[r], _against_year(price, "teurer", "billiger")]
-	for key in _findings:
-		var label: Label = _findings[key]
-		label.text = says.get(key, "")
-		label.visible = label.text != ""
+					says.m_goods = says.goods
+	for r in GOOD_KEYS.size():
+		var price := _col(d, "good_" + GOOD_KEYS[r])
+		if price.size() == n and n > 0:
+			says["m_good%d" % r] = "%s kostet hier %s D, %s." % [GOOD_NAMES[r], _num(price[n - 1]), _against_year(price, "mehr", "weniger")]
+	_says = says
+	_set_lage()
 
 # ------------------------------------------------------------------ what happened, what it says
 
@@ -1372,7 +1848,9 @@ func _find_events(d: Dictionary) -> Dictionary:
 	return out
 
 ## Each card's finding: one sentence on what its numbers say now, against
-## a year before (or the start, while the game is younger).
+## a year before (or the start, while the game is younger), computed from
+## the tables, so a page has the findings of all cards (its Lage) and not
+## only of its own.
 func _find_all(d: Dictionary) -> void:
 	var says := {}
 	var n: int = d.get("day", []).size()
@@ -1386,6 +1864,13 @@ func _find_all(d: Dictionary) -> void:
 			"es werden mehr geboren, als sterben" if born > died else "es sterben mehr, als geboren werden"]
 		var starved := _year_sum(_col(d, "hunger_deaths"))
 		says.hunger = ("%s ist niemand verhungert." % period) if starved < 0.5 else ("%s sind %s Menschen verhungert." % [period, _num(starved)])
+		if d.has("moved"):
+			var left := _year_sum(_col(d, "left"))
+			says.moves = "%s sind %s Menschen umgezogen" % [period, _num(_year_sum(_col(d, "moved")))]
+			says.moves += (" und %s haben die Karte verlassen." % _num(left)) if left >= 0.5 else "; niemand hat die Karte verlassen."
+		var tents := _col(d, "tent_persons")
+		if tents.size() == n:
+			says.tents = "%s Menschen leben im Zelt, %s." % [_num(tents[n - 1]), _against_year(tents, "mehr", "weniger")]
 		var price := _col(d, "price_median")
 		if price.size() == n:
 			says.price = "Korn kostet im Median %s D/kg, %s." % [_num(price[n - 1]), _against_year(price, "teurer", "billiger")]
@@ -1422,11 +1907,15 @@ func _find_all(d: Dictionary) -> void:
 				stored[i] += more[i]
 		if stored.size() == n:
 			says.granaries = "In den Speichern liegen %s t Korn, %s." % [_num(stored[n - 1]), _against_year(stored, "mehr", "weniger")]
-		var spoiled := _year_sum(_col(d, "spoiled_t"))
-		says.flows = "%s sind %s t Korn verdorben." % [period, _num(spoiled)]
+		says.spoiled = "%s sind %s t Korn verdorben." % [period, _num(_year_sum(_col(d, "spoiled_t")))]
+		says.flows = says.spoiled
+		if _year_sum(_col(d, "export_t")) > 0.0:
+			says.flows += " %s t gingen über den Kartenrand." % _num(_year_sum(_col(d, "export_t")))
 		var out := _year_sum(_col(d, "export_t"))
-		if out > 0.0:
-			says.flows += " %s t gingen über den Kartenrand." % _num(out)
+		says.export = ("%s gingen %s t Korn über den Kartenrand." % [period, _num(out)]) if out >= 0.5 else ("%s ging kaum Korn über den Kartenrand." % period)
+		says.traded = "%s wurden %s t Korn zwischen fernen Märkten gehandelt." % [period, _num(_year_sum(_col(d, "traded_t")))]
+		var given := _year_sum(_col(d, "alms_t"))
+		says.alms = ("%s wurden %s t Korn als Almosen verteilt." % [period, _num(given)]) if given >= 0.05 else ("%s wurden kaum Almosen verteilt." % period)
 		var clothes := _col(d, "clothes", 100.0)
 		if clothes.size() == n:
 			says.clothes = "Die Haushalte haben %d %% der Kleidung, die sie brauchen." % roundi(clothes[n - 1])
@@ -1441,6 +1930,9 @@ func _find_all(d: Dictionary) -> void:
 				says.real = "Am Median bringt ein Taglohn %s kg Korn, nötig wären %s kg." % [w[1], w[2]]
 			else:
 				says.real = "Ein Taglohn reicht überall: selbst im ärmsten Zehntel der Märkte bringt er %s kg, nötig sind %s kg." % [w[0], w[2]]
+		var wage := _col(d, "wage")
+		if wage.size() == n:
+			says.wage = "Ein Taglohn bringt im Median %s Denar, %s." % [_num(wage[n - 1]), _against_year(wage, "mehr", "weniger")]
 		var vacant := _col(d, "vacant")
 		var idle := _col(d, "idle")
 		if vacant.size() == n and idle.size() == n:
@@ -1450,45 +1942,81 @@ func _find_all(d: Dictionary) -> void:
 				says.work = "Arbeiter fehlen: %s Arbeitstage wurden vergeblich gesucht, %s blieben liegen." % [_num(vacant[n - 1]), _num(idle[n - 1])]
 			else:
 				says.work = "Gesuchte und angebotene Arbeit halten sich die Waage."
+		var lorenz := _lorenz_at(d, n - 1)
+		if lorenz.size() == 11:
+			says.lorenz = "Das reichste Zehntel hat %s %% des Geldes, die ärmere Hälfte %s %%." % [_pct((1.0 - lorenz[9]) * 100.0), _pct(lorenz[5] * 100.0)]
+		var most := -1
+		var least := -1
+		var gini := PackedFloat64Array()
+		for k in FED_KEYS.size():
+			var g := _col(d, "gini_" + FED_KEYS[k])
+			gini.append(g[n - 1] if g.size() == n else 0.0)
+			if gini[k] > 0.0:
+				most = k if most < 0 or gini[k] > gini[most] else most
+				least = k if least < 0 or gini[k] < gini[least] else least
+		if most >= 0 and most != least:
+			says.gini_rows = "Am ungleichsten ist das Geld bei %s verteilt (%.2f), am gleichsten bei %s (%.2f)." % [
+				FED_DATIVES[most], gini[most], FED_DATIVES[least], gini[least]]
+		var farms := _col(d, "farms")
+		if farms.size() == n:
+			says.farm_count = "%s Höfe, %s." % [_num(farms[n - 1]), _against_year(farms, "mehr", "weniger")]
+		var farm_store := _col(d, "farm_store_t")
+		if farm_store.size() == n:
+			says.farm_store = "In den Hoflagern liegen %s t Korn, %s." % [_num(farm_store[n - 1]), _against_year(farm_store, "mehr", "weniger")]
 		var cash := _col(d, "cash")
 		if cash.size() == n:
 			says.cash = "In der Kasse liegen %s Denar, %s." % [_num(cash[n - 1]), _against_year(cash, "mehr", "weniger")]
-	for key in ["jobs", "farms"]:
-		var bars: Dictionary = _shares[key]
-		if bars.total > 0.0 and bars.names.size() > 0:
-			var share := roundi(bars.values[0] / bars.total * 100.0)
-			says[key] = ("Die meisten arbeiten als %s: %d %% der Menschen." if key == "jobs" else "Am häufigsten: %s, %d %% der Höfe.") % [bars.names[0], share]
+		var held := _col(d, "money_held")
+		if held.size() == n:
+			says.held = "Im Umlauf sind %s Denar, %s." % [_num(held[n - 1]), _against_year(held, "mehr", "weniger")]
+		var tax_d := _year_sum(_col(d, "tax_d"))
+		var rent_d := _year_sum(_col(d, "rent_d"))
+		var estates_d := _year_sum(_col(d, "estates_d"))
+		var income := tax_d + rent_d + estates_d
+		if d.has("tax_d") and income > 0.0:
+			says.income = "Im %s nahm der Staat %s Denar ein: %d %% Steuer, %d %% Pacht, %d %% Nachlass." % [
+				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(income), roundi(tax_d / income * 100.0),
+				roundi(rent_d / income * 100.0), roundi(estates_d / income * 100.0)]
+		var wages_d := _year_sum(_col(d, "wages_d"))
+		var works_d := _year_sum(_col(d, "public_works_d"))
+		if d.has("wages_d") and wages_d + works_d > 0.0:
+			says.spending = "Im %s gab der Staat %s Denar aus, %d %% davon für öffentliche Arbeit." % [
+				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(wages_d + works_d), roundi(works_d / (wages_d + works_d) * 100.0)]
+		var days := _col(d, "public_days")
+		if days.size() == n:
+			if _year_sum(days) <= 0.0:
+				says.public_days = ("Im letzten Jahr bezahlte der Staat keine öffentliche Arbeit: die Kasse lag nicht über ihrer Reserve." if n > 12
+					else "Im ersten Jahr bezahlt der Staat noch keine öffentliche Arbeit: die Kasse kennt ihre Reserve erst nach einem Jahr.")
+			else:
+				says.public_days = "Diesen Monat bezahlte der Staat %s Tage öffentliche Arbeit, im letzten Jahr %s Tage." % [_num(days[n - 1]), _num(_year_sum(days))]
+		var taxed := _col(d, "tax_grain_t")
+		if taxed.size() == n:
+			says.tax_grain = "Seit Beginn hat der Staat %s t Korn als Steuer eingezogen" % _num(taxed[n - 1])
+			says.tax_grain += (", %s t davon im letzten Jahr." % _num(taxed[n - 1] - taxed[_year_back(n)])) if n > 12 else "."
+		for r in GOOD_KEYS.size():
+			var good := _col(d, "good_" + GOOD_KEYS[r])
+			if good.size() == n:
+				says["good%d" % r] = "%s kostet im Median %s D, %s." % [GOOD_NAMES[r], _num(good[n - 1]), _against_year(good, "mehr", "weniger")]
+	var jobs := _top(_sums.get("jobs", {}))
+	if not jobs.is_empty():
+		says.jobs = "Die meisten arbeiten als %s: %d %% der Menschen." % [jobs[0], roundi(jobs[1] * 100.0)]
+	var kinds := _top(_sums.get("farms", {}))
+	if not kinds.is_empty():
+		says.farms = "Am häufigsten: %s, %d %% der Höfe." % [kinds[0], roundi(kinds[1] * 100.0)]
+	var land: Dictionary = _sums.get("land", {})
+	if land.get("Gesät", 0.0) + land.get("Brach", 0.0) > 0.0:
+		var sown: float = land["Gesät"] / (land["Gesät"] + land["Brach"]) * 100.0
+		says.land = "%d %% der Felder sind gesät, %d %% liegen brach." % [roundi(sown), 100 - roundi(sown)]
 	var classes: Dictionary = _tables.get("classes", {})
 	if not classes.is_empty() and classes.data.has("money"):
 		var top := Array(classes.data.kind).find(FED_NAMES[4])
-		var money := 0.0
-		var people := 0.0
-		for r in classes.data.kind.size():
-			money += float(classes.data.money[r])
-			if classes.data.has("persons"):
-				people += float(classes.data.persons[r])
+		var money := _total(classes.data.money)
+		var people := _total(classes.data.get("persons", []))
 		if top >= 0 and money > 0.0:
 			says.money = "Die Oberschicht hält %d %% des Geldes" % roundi(float(classes.data.money[top]) / money * 100.0)
 			if people > 0.0:
 				says.money += ", ist aber nur %s %% der Menschen" % _pct(float(classes.data.persons[top]) / people * 100.0)
 			says.money += "."
-	if _lorenz_now.size() == 11:
-		says.lorenz = "Das reichste Zehntel hat %s %% des Geldes, die ärmere Hälfte %s %%." % [_pct((1.0 - _lorenz_now[9]) * 100.0), _pct(_lorenz_now[5] * 100.0)]
-	var rows: Dictionary = _lines.get("gini_rows", {})
-	if not rows.is_empty() and rows.series.size() > 2:
-		var most := {}
-		var least := {}
-		for one in rows.series.slice(1):
-			var vals: PackedFloat64Array = one.values
-			if vals.is_empty() or vals[vals.size() - 1] <= 0.0:
-				continue
-			if most.is_empty() or vals[vals.size() - 1] > most.v:
-				most = {"name": one.name, "v": vals[vals.size() - 1]}
-			if least.is_empty() or vals[vals.size() - 1] < least.v:
-				least = {"name": one.name, "v": vals[vals.size() - 1]}
-		if not most.is_empty() and most.name != least.name:
-			says.gini_rows = "Am ungleichsten ist das Geld bei %s verteilt (%.2f), am gleichsten bei %s (%.2f)." % [
-				FED_DATIVES[FED_NAMES.find(most.name)], most.v, FED_DATIVES[FED_NAMES.find(least.name)], least.v]
 	var goods: Dictionary = _tables.get("goods", {})
 	if not goods.is_empty() and n > 1:
 		var moved := -1.0
@@ -1502,16 +2030,24 @@ func _find_all(d: Dictionary) -> void:
 	var paid := 0.0
 	var got := 0.0
 	for r in _bar_rows:
-		if r[2] == "wages":
-			paid = -float(r[1])
-		elif r[2] in ["tax", "rent"]:
+		if r[2] in ["wages", "public_works"]:
+			paid -= float(r[1])
+		elif r[2] in ["tax", "rent", "estates"]:
 			got += float(r[1])
 	if paid > 0.0:
-		says.state = "Steuern und Pacht decken %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
-	for key in _findings:
-		var label: Label = _findings[key]
-		label.text = says.get(key, "")
-		label.visible = label.text != ""
+		says.state = "Steuern, Pacht und Nachlässe decken %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
+	_says = says
+	_set_lage()
+
+## The largest of `sums` (name -> amount) and its share of all: [name, share], or [].
+static func _top(sums: Dictionary) -> Array:
+	var total := 0.0
+	var best := ""
+	for name in sums:
+		total += float(sums[name])
+		if best == "" or float(sums[name]) > float(sums[best]):
+			best = name
+	return [best, float(sums[best]) / total] if total > 0.0 else []
 
 ## A history column as floats, times `scale`.
 static func _col(d: Dictionary, key: String, scale := 1.0) -> PackedFloat64Array:
@@ -1585,10 +2121,19 @@ func _swatch(colour: Color, text: String) -> HBoxContainer:
 		shape.append(shape[0])
 		flag.draw_polyline(shape, UiStyle.EDGE, 1.0, true))
 	line.add_child(flag)
-	var label := _label(text, UiStyle.TEXT, UiStyle.SIZE_SMALL + 1)
+	var label := _label(text, UiStyle.TEXT, UiStyle.SIZE_SMALL)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	line.add_child(label)
 	return line
+
+## A card's foot under its figure: one quiet line, cut short with an
+## ellipsis, so every card in a row ends on the same line.
+static func _foot() -> Label:
+	var foot := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	foot.clip_text = true
+	foot.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	foot.custom_minimum_size = Vector2(0, LINE_PX)
+	return foot
 
 static func _label(text: String, colour: Color, font_size: int) -> Label:
 	return UiStyle.label(text, colour, font_size)

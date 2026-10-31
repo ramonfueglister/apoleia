@@ -11,12 +11,17 @@ extends Control
 ##   drag the title bar     move
 ##   drag the grip          size
 ##   double click the bar   fold or unfold
+##   ← at the left          back to what it showed before (remember)
+##   right click the bar    the menu of what it shows (context)
 ##
 ## The content goes into `body` (a VBoxContainer that fills the window);
 ## `bar_extra` takes controls left of the title (back and settings go there).
+## As Victoria 3's, the band can carry a line under the title
+## (set_subtitle), with a round → that leads to what it names.
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const WINDOW_LAYER := 10 # over the game clock and market (4) and the build menu (3)
 const BAR_PX := 56.0
 const ROUND_PX := 38.0
@@ -24,6 +29,9 @@ const SIDE_PX := 8 # the slate between the rim and the field
 const TITLE_PX := 26
 const GRIP_PX := 16.0
 const KEEP_PX := 48.0 # this much of a window stays on screen
+const LINK_PX := 22.0 # the round → after the subtitle
+const SUB_PX := 18.0 # the band grows by this with a subtitle
+const BACK_MAX := 24 # steps the back button remembers
 const STORE := "user://ui_windows.cfg"
 
 signal closed
@@ -35,7 +43,17 @@ var min_size := Vector2(320, 200)
 var body: VBoxContainer
 var bar_extra: HBoxContainer
 var folded := false
+## func() -> Dictionary: the right-click menu of what the window shows
+## (ui/context_menu.gd, {title, kind, entries}), {} for none
+var context := Callable()
+var _bar: Control
 var _title: RichTextLabel
+var _subtitle: Label
+var _link: Button
+var _link_action := Callable()
+var _back: Button
+var _history: Array[Callable] = [] # each shows again what the window showed before
+var _going_back := false
 var _frame: PanelContainer
 var _field: PanelContainer
 var _grip: Control
@@ -86,6 +104,7 @@ func _build(title: String) -> void:
 	# the band: leather, the title in the middle in small caps with large
 	# gold initials, round medallions at both ends
 	var bar := Control.new()
+	_bar = bar
 	bar.custom_minimum_size = Vector2(0, BAR_PX)
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	bar.mouse_default_cursor_shape = Control.CURSOR_MOVE
@@ -104,11 +123,36 @@ func _build(title: String) -> void:
 	bar_extra.custom_minimum_size = Vector2(2 * ROUND_PX + 6, 0)
 	bar_extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(bar_extra)
+	_back = round_button("back", "Zurück", go_back)
+	_back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_back.visible = false
+	bar_extra.add_child(_back)
+	var heads := VBoxContainer.new() # the title, under it the subtitle
+	heads.add_theme_constant_override("separation", -4)
+	heads.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heads.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	heads.alignment = BoxContainer.ALIGNMENT_CENTER
+	heads.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(heads)
 	_title = Vic3Style.title_label(title, TITLE_PX)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_title.clip_contents = true
-	row.add_child(_title)
+	heads.add_child(_title)
+	var sub_row := HBoxContainer.new()
+	sub_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	sub_row.add_theme_constant_override("separation", 6)
+	sub_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sub_row.visible = false
+	heads.add_child(sub_row)
+	_subtitle = UiStyle.label("", UiStyle.TEXT, UiStyle.SIZE_TEXT)
+	_subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sub_row.add_child(_subtitle)
+	_link = round_button("forward", "", func():
+		if _link_action.is_valid():
+			_link_action.call())
+	_link.custom_minimum_size = Vector2(LINK_PX, LINK_PX)
+	_link.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sub_row.add_child(_link)
 	for b in [["fold", "Einklappen", toggle_fold], ["close", "Schliessen  (Esc)", close]]:
 		var button := round_button(b[0], b[1], b[2])
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -175,12 +219,48 @@ static func round_button(glyph: String, tip: String, action: Callable) -> Button
 func set_title(text: String) -> void:
 	_title.text = Vic3Style.caps(text, TITLE_PX)
 
+## The line under the title ("" hides it), as Victoria 3's "Company in
+## Great Britain →": `link`, when given, is the round → after it, `tip`
+## its tooltip.
+func set_subtitle(text: String, link := Callable(), tip := "") -> void:
+	_subtitle.text = text
+	_subtitle.get_parent().visible = text != ""
+	_bar.custom_minimum_size.y = BAR_PX + (SUB_PX if text != "" else 0.0)
+	_link_action = link
+	_link.visible = link.is_valid()
+	_link.tooltip_text = tip
+
+## Before the window shows something else: `show_again` brings back what
+## it shows now, for the back button. Going back remembers nothing.
+func remember(show_again: Callable) -> void:
+	if _going_back:
+		return
+	_history.append(show_again)
+	if _history.size() > BACK_MAX:
+		_history.pop_front()
+	_back.visible = true
+
+func go_back() -> void:
+	if _history.is_empty():
+		return
+	var show_again: Callable = _history.pop_back()
+	_back.visible = not _history.is_empty()
+	_going_back = true
+	show_again.call()
+	_going_back = false
+
+## Forgets the steps back (the window shows something new from elsewhere).
+func forget() -> void:
+	_history.clear()
+	_back.visible = false
+
 func open() -> void:
 	visible = true
 	raise()
 
 func close() -> void:
 	visible = false
+	forget()
 	closed.emit()
 
 func raise() -> void:
@@ -191,7 +271,7 @@ func toggle_fold() -> void:
 	folded = not folded
 	if folded:
 		_open_size = size
-		size = Vector2(size.x, BAR_PX + 2.0)
+		size = Vector2(size.x, _bar.custom_minimum_size.y + 2.0)
 	else:
 		size = _open_size
 	_frame.get_child(0).get_child(1).visible = not folded
@@ -200,7 +280,11 @@ func toggle_fold() -> void:
 	_save()
 
 func _on_bar_input(e: InputEvent) -> void:
-	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_RIGHT:
+		if not e.pressed and context.is_valid():
+			ContextMenu.open(self, context.call())
+		accept_event()
+	elif e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 		if e.double_click:
 			toggle_fold()
 		elif e.pressed:

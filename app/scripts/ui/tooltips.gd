@@ -82,7 +82,7 @@ func _process(_delta: float) -> void:
 		if hovered != "" and _terms.has(hovered):
 			want = _terms[hovered].call()
 			want["id"] = "term:" + hovered
-	else:
+	elif get_tree().get_node_count_in_group("context_menu") == 0: # none under an open menu
 		var c := vp.gui_get_hovered_control()
 		while c != null and not c.has_meta("tooltip"):
 			c = c.get_parent() as Control
@@ -118,6 +118,12 @@ func _process(_delta: float) -> void:
 			e.ring.queue_redraw()
 			if f >= 1.0:
 				_lock(e)
+
+## Closes every open tooltip (a menu opens over them, ui/context_menu.gd).
+static func close_all() -> void:
+	if is_instance_valid(_shared):
+		_shared._close(0)
+		_shared._pending = {}
 
 func _in_tooltip(c: Control) -> bool:
 	for e in _stack:

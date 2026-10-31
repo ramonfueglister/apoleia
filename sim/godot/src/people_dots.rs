@@ -21,7 +21,7 @@ use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT}
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
-use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
+use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -73,6 +73,9 @@ struct Front {
     /// Answer to the last `ask_faces`: by household, a member as
     /// `ask_household_member` finds them, with what their face needs.
     faces: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>,
+    /// Answer to the last `ask_list_faces`, as `faces` (a slot of its own:
+    /// the statistics and the events ask at the same time).
+    list_faces: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
@@ -110,6 +113,11 @@ struct Front {
     /// markets table, its history and who lives there (None when there is
     /// no such market).
     market: Option<(usize, Option<Table>, Option<Table>, Option<Table>)>,
+    /// Answer to the last `ask_farm`: the farm, how it stands (None when
+    /// nobody works it), its household's people, a person of its
+    /// landlord's household, and a person of each household that worked
+    /// there at the last labour exchange with its days and kind of work.
+    farm: Option<(usize, Option<FarmLook>, Vec<Person>, Option<Person>, Vec<(Person, i64, u8)>)>,
     /// While a save game plays again: the day reached and the day saved.
     loading: Option<(i64, i64)>,
     /// How the last save game played again, once.
@@ -158,13 +166,17 @@ struct Queue {
     sites: Option<[f64; 4]>,
     /// A market whose row of the markets table to give.
     market: Option<usize>,
+    /// A farm (index into the grain economy's farms) to look up.
+    farm: Option<usize>,
     /// Households whose faces to give (`ask_faces`).
     faces: Option<Vec<u32>>,
+    /// Households whose faces the statistics' lists want (`ask_list_faces`).
+    list_faces: Option<Vec<u32>>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.faces.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.farm.is_some() || self.faces.is_some() || self.list_faces.is_some()
     }
 }
 
@@ -433,7 +445,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
     let mut sites_were = shared.site_houses.load(Ordering::Relaxed);
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, faces) = {
+        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, farm, faces, list_faces) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -445,7 +457,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.faces.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.farm.take(), q.faces.take(), q.list_faces.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -473,6 +485,20 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             let day = game.today();
             let (history, classes) = (game.grain.market_history_table(m, day), game.grain.market_classes_table(m, day));
             shared.front.lock().unwrap().market = Some((m, row, history, classes));
+        }
+        if let Some(f) = farm {
+            let look = game.grain.farm_look(f);
+            let people = &mut game.people;
+            let one_of = |people: &mut apoleia_sim::people::People, hh: u32| PeopleView::member_of(people, hh).and_then(|pid| PeopleView::person(people, pid));
+            let (family, lord, workers) = match &look {
+                Some(l) => (
+                    PeopleView::household(people, l.hh),
+                    (l.landlord != apoleia_sim::people::NONE).then(|| one_of(people, l.landlord)).flatten(),
+                    l.workers.iter().filter_map(|&(w, days, kind)| one_of(people, w).map(|p| (p, days, kind))).collect(),
+                ),
+                None => (Vec::new(), None, Vec::new()),
+            };
+            shared.front.lock().unwrap().farm = Some((f, look, family, lord, workers));
         }
         let today = game.today();
         let Game { people, grain, .. } = &mut game;
@@ -514,18 +540,23 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if let Some(households) = &faces {
-            let v = households
+        let mut faces_of = |households: &Vec<u32>| -> Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)> {
+            households
                 .iter()
                 .filter_map(|&h| {
                     let p = PeopleView::member_of(people, h).and_then(|pid| PeopleView::person(people, pid))?;
                     let face = crate::portrait::Face::of(people, &p, today);
                     Some((h, p, grain.household(h), face))
                 })
-                .collect();
-            shared.front.lock().unwrap().faces = Some(v);
+                .collect()
+        };
+        if let Some(households) = &faces {
+            shared.front.lock().unwrap().faces = Some(faces_of(households));
         }
-        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || faces.is_some() {
+        if let Some(households) = &list_faces {
+            shared.front.lock().unwrap().list_faces = Some(faces_of(households));
+        }
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || farm.is_some() || faces.is_some() || list_faces.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -952,6 +983,100 @@ impl ApoleiaPeople {
         d
     }
 
+    /// Asks the sim thread for a farm (apoleia_sim::grain::Grain::farm_look,
+    /// the "farm" of `take_person`); the answer comes with `take_farm`,
+    /// also while paused.
+    #[func]
+    fn ask_farm(&mut self, farm: i64) {
+        if self.worker.is_none() || farm < 0 {
+            return;
+        }
+        self.shared.front.lock().unwrap().farm = None;
+        self.shared.queue.lock().unwrap().farm = Some(farm as usize);
+        self.shared.wake.notify_one();
+    }
+
+    /// The farm asked for, once: {"farm", and while someone works it
+    /// "kind" (FARM_KIND_NAMES), "market", "market_name", "at" (the
+    /// farmhouse, world km), "reach_km" (how far its fields lie from it),
+    /// "area_ha", "poor_ha" (of it cleared land), "sown_ha", "state_ha"
+    /// (state land leased), "plots" (fine tiles), "net_kg_ha", "store_kg",
+    /// "money" and "to_sell_kg", "harvest_doy", "sow_doy", "off_need" and
+    /// "off_done" (days of work outside the peaks since the harvest),
+    /// "manciana", "idle" (years unsown), "tools_kg", "tools_share" (of the
+    /// family's work they allow), "jars", "wool_kg", "sheep",
+    /// "pork_kg_year", "household" and "family" (its people: pid, age,
+    /// female, job), "landlord" (a person of the landlord's household, with
+    /// "household") and "workers" (a person of each household that worked
+    /// there at the last weekly labour exchange, with "household", "days"
+    /// and "work": Saat, Ernte, Feldarbeit, Zusatzarbeit)}; empty until the
+    /// sim thread answered.
+    #[func]
+    fn take_farm(&mut self) -> VarDictionary {
+        let Some((f, look, family, lord, workers)) = self.shared.front.lock().unwrap().farm.take() else { return VarDictionary::new() };
+        let mut d = VarDictionary::new();
+        d.set("farm", f as i64);
+        let Some(l) = look else { return d };
+        let brief = |p: &Person| {
+            let mut m = VarDictionary::new();
+            m.set("pid", p.pid as i64);
+            m.set("age", p.age);
+            m.set("female", p.female);
+            m.set("job", p.job);
+            m.set("household", p.household as i64);
+            if !p.name.is_empty() {
+                m.set("name", p.name.as_str());
+            }
+            m
+        };
+        d.set("kind", FARM_KIND_NAMES[l.kind as usize]);
+        d.set("market", l.market.0 as i64);
+        d.set("market_name", l.market.1.as_str());
+        d.set("at", Vector2::new(l.at_km.0 as f32, l.at_km.1 as f32));
+        d.set("reach_km", l.reach_km);
+        // field m² as take_person's farm_ha
+        d.set("area_ha", l.area as f64 / 1e4);
+        d.set("poor_ha", l.poor as f64 / 1e4);
+        d.set("sown_ha", l.sown as f64 / 1e4);
+        d.set("state_ha", l.state as f64 / 1e4);
+        d.set("plots", l.plots as i64);
+        d.set("net_kg_ha", l.net_kg_ha);
+        d.set("store_kg", l.store);
+        d.set("money", l.money as f64 / 1000.0); // denarii
+        d.set("to_sell_kg", l.to_sell);
+        d.set("harvest_doy", l.harvest_doy);
+        d.set("sow_doy", l.sow_doy);
+        d.set("off_need", l.off_need);
+        d.set("off_done", l.off_done);
+        d.set("manciana", l.manciana);
+        d.set("idle", l.idle as i64);
+        d.set("tools_kg", l.tools_kg);
+        d.set("tools_share", l.tools_share);
+        d.set("jars", l.jars);
+        d.set("wool_kg", l.wool_kg);
+        d.set("sheep", l.sheep);
+        d.set("pork_kg_year", l.pork_kg_year);
+        d.set("household", l.hh as i64);
+        let mut fam = VarArray::new();
+        for p in &family {
+            fam.push(&brief(p).to_variant());
+        }
+        d.set("family", &fam);
+        if let Some(p) = &lord {
+            d.set("landlord", &brief(p));
+        }
+        const WORK_NAMES: [&str; 4] = ["Saat", "Ernte", "Feldarbeit", "Zusatzarbeit"];
+        let mut ws = VarArray::new();
+        for (p, days, kind) in &workers {
+            let mut m = brief(p);
+            m.set("days", *days);
+            m.set("work", WORK_NAMES.get(*kind as usize).copied().unwrap_or(""));
+            ws.push(&m.to_variant());
+        }
+        d.set("workers", &ws);
+        d
+    }
+
     /// Build orders version only, to poll each frame.
     #[func]
     fn build_version(&self) -> i64 {
@@ -1304,8 +1429,33 @@ impl ApoleiaPeople {
     /// without anyone left out; empty until the sim thread answered.
     #[func]
     fn take_faces(&mut self) -> VarDictionary {
+        let v = self.shared.front.lock().unwrap().faces.take();
+        Self::faces_dict(v)
+    }
+
+    /// As `ask_faces`, for the statistics' lists (a face for each row of
+    /// the population, ui sim_tables.gd), answered by `take_list_faces`.
+    #[func]
+    fn ask_list_faces(&mut self, households: PackedInt64Array) {
+        if self.worker.is_none() {
+            return;
+        }
+        let v: Vec<u32> = households.as_slice().iter().filter(|&&h| (0..u32::MAX as i64).contains(&h)).map(|&h| h as u32).collect();
+        self.shared.front.lock().unwrap().list_faces = None;
+        self.shared.queue.lock().unwrap().list_faces = Some(v);
+        self.shared.wake.notify_one();
+    }
+
+    /// The faces `ask_list_faces` asked for, once, as `take_faces` gives them.
+    #[func]
+    fn take_list_faces(&mut self) -> VarDictionary {
+        let v = self.shared.front.lock().unwrap().list_faces.take();
+        Self::faces_dict(v)
+    }
+
+    fn faces_dict(v: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>) -> VarDictionary {
         let mut d = VarDictionary::new();
-        if let Some(v) = self.shared.front.lock().unwrap().faces.take() {
+        if let Some(v) = v {
             let mut faces = VarDictionary::new();
             for (h, p, hh, face) in &v {
                 faces.set(*h as i64, &crate::portrait::face_dict(p, hh.as_ref(), face));
@@ -1329,6 +1479,9 @@ impl ApoleiaPeople {
             d.set("pantry_kg", h.pantry_kg);
             d.set("money", h.money as f64 / 1000.0); // denarii
             d.set("money_head", h.money_head as f64 / 1000.0);
+            if let Some(f) = h.farm_id {
+                d.set("farm", f as i64); // ask_farm
+            }
             if let Some((kind, m2)) = h.farm {
                 d.set("farm_kind", FARM_KIND_NAMES[kind as usize]);
                 // field m² are per simulated person (PEOPLE_PER_PERSON)
