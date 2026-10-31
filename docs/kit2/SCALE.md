@@ -95,3 +95,15 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
 - Tile-Raster, IDs, Teilen und Zusammenlegen (S10–S15) bleiben als Gliederung für
   Märkte, Provinzen und Kartenmodi.
 - Rust-Kern, Befehle, Festkomma und Snapshots (S40–S48) bleiben; Menschen sind Entities.
+
+## Zoom (Bauplan B, Ramon 31.10.2026)
+
+Nah ein strenges Diorama, fern eine Karte mit Zeichen. Bericht mit Herleitung:
+Artifact «Grössen über die Zoomstufen».
+
+| Was | Regel |
+|---|---|
+| Relief nah (Viertel-, 0,5- und 1-km-Kacheln) | fest 7,5-fach je erstem Stufenschritt des Bakes, bei jeder Sichtbreite (`NEAR_EXAGGERATION`) |
+| Stadtfläche | auf jeder Zoomstufe die echte Fläche aus dem Stadtplan (`area_ha`, mindestens 4 ha), nicht mehr eine Scheibe nach Einwohnern |
+| Häuser | wachsen nie; bis zu den 1-km-Kacheln in Diorama-Grösse, ab den 2-km-Kacheln nur noch Dachfarbe der Stadtfläche |
+

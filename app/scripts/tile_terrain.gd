@@ -43,7 +43,7 @@ const PROP_DETAIL_KM := 5.0 # up to this view width: the lots and landmarks in f
 const PROP_SLOTS := [9, 9, 0, 0, 0, 0, 0]
 const TREE_FAR_GROW := 1.8
 const CLOSE_LEVEL := 0 # the last level of the close LOD: people, crops, lots (people_dots.gd)
-const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0, 0] # house blocks per town tile and level
+const HOUSE_SLOTS := [4, 9, 0, 0, 0, 0, 0] # house blocks per town tile and level (none from the 2 km tiles: Bauplan B)
 # Closest zoom (zoom -1): quarter tiles of the 0.5 km data tiles, one house
 # (diorama size) per tile as in Urbek. Their cells and landscapes are their
 # data tile's, their corners those of the data tiles and, between them, the
@@ -71,10 +71,11 @@ const NO_WINDOW := Vector2i(-1048576, 0)
 const COAST_CELLS := 16
 const COAST_BLOCK := 32
 const COAST_MAX := 2048
-# Far out (2 and 4 km tiles) the houses grow with the tiles, as buildings do
-# when SimCity 2000 zooms out: towns stay a mosaic of roofs instead of
-# coloured squares. Beyond that towns are roof coloured tiles.
-const HOUSE_GROW_FROM_KM := 1.0
+# Houses keep their diorama size on every zoom level (Ramon 31.10.2026,
+# Bauplan B step 3). They stand up to the 1 km tiles (a house is about 8 px
+# at a 60 km view); from the 2 km tiles a town is its roof coloured tiles
+# at its real area (tools/build_tile_terrain.py settlements). Before, the
+# houses grew with the 2 and 4 km tiles as in SimCity 2000 (2.5 and 5 times).
 # Kit 2 scale (docs/kit2/SCALE.md): lengths 1:23.8 against the real world, but
 # houses and trees keep their real size. World units are real km, so a diorama
 # metre is DIORAMA_KM_PER_M world units.
@@ -714,7 +715,7 @@ func _apply_prop_count() -> void:
 		material.set_shader_parameter("slots", maxi(n, 1))
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
 		# lot models are in metres, the tree meshes about 1.1 units tall
-		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1 * (TREE_FAR_GROW if tile_km >= 1.0 else 1.0)
+		var size_m := LOT_SHARE if house else TREE_M / 1.1 * (TREE_FAR_GROW if tile_km >= 1.0 else 1.0)
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 		if n > 0:
 			# trees grow to 1.25 times (tile_props.gdshader)
@@ -782,7 +783,9 @@ func _update_town_list() -> void:
 	var list: PackedInt32Array = _town_lists.get(level, PackedInt32Array())
 	var size: Vector2i = _cell_sizes[level]
 	var q := 2 if sub_tiles else 1 # quarter tiles per data tile side
-	var min_class := 1 if sub_tiles else 2
+	# up close every quarter of a town; on the 1 km tiles a small town (class
+	# 1, a third of a tile or less at its real area) still gets its house
+	var min_class := 1 if sub_tiles or level == 1 else 2
 	var lo := Vector2i(floori(prop_origin.x / float(q)), floori(prop_origin.y / float(q))).max(Vector2i.ZERO)
 	var hi := Vector2i(floori((prop_origin.x + prop_n - 1) / float(q)), floori((prop_origin.y + prop_n - 1) / float(q))).min(size - Vector2i.ONE)
 	var tiles := PackedFloat32Array()
