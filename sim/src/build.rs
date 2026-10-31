@@ -63,12 +63,15 @@ pub enum Command {
     /// S131: tax law `law` (crate::grain::LAW_NAMES) to `level`
     /// (crate::grain::LEVEL_NAMES).
     Law { law: u8, level: u8 },
+    /// S133: spending law `law` (crate::grain::SPEND_LAW_NAMES) to
+    /// `choice` (crate::grain::spend_choices).
+    Spend { law: u8, choice: u8 },
 }
 
 impl Command {
     /// Appends the command to a save (crate::game): tag (0 place, 1
     /// cancel), kind, tile count, then rows and columns; a law: tag 2,
-    /// law, level.
+    /// law, level; a spending law (S133): tag 3, law, choice.
     pub(crate) fn write(&self, o: &mut Out) {
         let (tag, kind, tiles) = match self {
             Command::Place { kind, tiles } => (0, *kind, tiles),
@@ -77,6 +80,12 @@ impl Command {
                 o.u8(2);
                 o.u8(*law);
                 o.u8(*level);
+                return;
+            }
+            Command::Spend { law, choice } => {
+                o.u8(3);
+                o.u8(*law);
+                o.u8(*choice);
                 return;
             }
         };
@@ -94,6 +103,10 @@ impl Command {
         if tag == 2 {
             let level = r.u8()?;
             return if (kind as usize) < crate::grain::LAWS && (level as usize) < crate::grain::LAW_LEVELS { Ok(Command::Law { law: kind, level }) } else { Err(SaveError::Corrupt("unknown law")) };
+        }
+        if tag == 3 {
+            let choice = r.u8()?;
+            return if (kind as usize) < crate::grain::SPEND_LAWS && (choice as usize) < crate::grain::spend_choices(kind as usize).len() { Ok(Command::Spend { law: kind, choice }) } else { Err(SaveError::Corrupt("unknown spending law")) };
         }
         let n = r.count(8)?;
         let tiles = r.col(n, |r| Ok((r.i32()?, r.i32()?)))?;
@@ -139,7 +152,7 @@ impl Orders {
                 }
             }
             // logged only; the game sets the law (`Game::command`)
-            Command::Law { .. } => {}
+            Command::Law { .. } | Command::Spend { .. } => {}
         }
         if changed > 0 {
             self.version += 1;
@@ -209,7 +222,7 @@ mod tests {
 
     #[test]
     fn commands_read_back() {
-        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Law { law: 1, level: 5 }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
+        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Law { law: 1, level: 5 }, Command::Spend { law: 1, choice: 2 }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
         let mut o = Out(Vec::new());
         cmds.iter().for_each(|c| c.write(&mut o));
         let mut r = In { b: &o.0 };
@@ -226,6 +239,8 @@ mod tests {
         assert!(Command::read(&mut In { b: &[2, 0, 6] }).is_err());
         assert!(Command::read(&mut In { b: &[2, 0] }).is_err());
         assert_eq!(Command::read(&mut In { b: &[2, 2, 0] }).unwrap(), Command::Law { law: 2, level: 0 });
+        assert_eq!(Command::read(&mut In { b: &[3, 0, 3] }).unwrap(), Command::Spend { law: 0, choice: 3 });
+        assert!(Command::read(&mut In { b: &[3, 1, 3] }).is_err());
     }
 
     #[test]

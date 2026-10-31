@@ -136,8 +136,10 @@ impl Game {
     /// changed (a law changes none, S131).
     pub fn command(&mut self, c: &Command) -> usize {
         let today = self.today();
-        if let Command::Law { law, level } = *c {
-            self.grain.set_law(law, level);
+        match *c {
+            Command::Law { law, level } => self.grain.set_law(law, level),
+            Command::Spend { law, choice } => self.grain.set_spend(law, choice),
+            _ => {}
         }
         self.orders.apply(c, today)
     }

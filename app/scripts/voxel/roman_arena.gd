@@ -1,20 +1,31 @@
 extends RefCounted
-## Rome's amphitheatre at the diorama scale (Ramon 31.10.2026: «wir sind ein
-## Diorama, alles muss geschrumpft sein», and the Colosseum must still stand
-## above the houses). Its ground is sized for the people who use it in the
-## simulation (docs/kit2/SCALE.md S51): the Colosseum seated about 50'000
-## of Rome's 920'000, so in the sim's Rome of 1'626 SEATS = 50'000 / 566.5
-## sit in it. Built in the Colosseum's form and in true human proportions
-## on the town's 0.25 m voxels (roman_kit.gd): an oval 24 x 17.5 m of
-## travertine with three arcades of 4 m storeys and an attic, 15 m high
-## (a two-storey house is 9 m), arches 1.5 m wide, the corridor behind
-## them, inner arches onto the seats, a marble podium, treads 0.5 m deep
-## and high, the sand, gates at both ends, the editor's box on the north
-## side, masts with pennants on the attic. SEATS spectators as tall as the
-## figures in the street fill the lowest treads, the rest stay empty. A
-## 0.6 x 0.44 km block of the city plan (tools/city_plans.py USER_SIZED_M,
-## keep in step). Models face +z (south, to the camera). A twin in Python
-## for previews without Godot: /mnt/project-files/groessen/arena-vorschau.
+## Rome's amphitheatre at the diorama scale. Ramon 31.10.2026: Rome as a
+## diorama, «das riesige Rom in einer Mini-Variante, die begreifbar ist»,
+## and «das Kolosseum muss auch in der Spielwelt massstäblich grösser sein
+## als das Haus». So the city's landmarks are compressed selectively, as
+## model railways and tourist maps do (docs/kit2/SCALE.md, the landmark
+## rule): houses, people, doors and seats stay true size, a landmark keeps
+## its own shape, and against a house (a 10 m lot, the tallest house 16 m)
+## its footprint grows with the cube root of its real area and its height
+## with the cube root above 16 m:
+##   area = 100 m² × (real area / 100 m²)^(1/3)
+##   height = 16 m × (real height / 16 m)^(1/3)
+## The Colosseum (188 × 156 m, 48 m) is so 30.7 × 25.4 m and 23 m high,
+## above every house, as are the circus, the theatre and the baths
+## (roman_landmarks.gd) by the same rule, in their real order. Built in the
+## Colosseum's form on the town's 0.25 m voxels (roman_kit.gd): an oval of
+## travertine with three arcades of 5.5 m storeys and an attic 6 m high,
+## arches 1.5 m wide, the corridor behind them, inner arches onto the
+## seats, a marble podium 2 m high, treads 0.5 m deep and high, the sand
+## (13.5 × 7.8 m, the real arena's share of the oval), gates at both ends,
+## the editor's box on the north side, masts with pennants on the attic.
+## SEATS spectators as tall as the figures in the street fill the lowest
+## treads: the people the simulation sends (the Colosseum seated about
+## 50'000 of Rome's 920'000, so in the sim's Rome of 1'626 there are
+## 50'000 / 566.5, S51); the rest of the treads stay empty. A 4 × 3 parcel
+## block of the city plan (tools/city_plans.py USER_SIZED_M, keep in step).
+## Models face +z (south, to the camera). A twin in Python for previews
+## without Godot: /mnt/project-files/groessen/ein-massstab/vorschau-code.
 
 const Kit := preload("res://scripts/voxel/roman_kit.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
@@ -24,24 +35,24 @@ const SEATS := 88 # 50'000 / 566.5 (SCALE.md)
 const BOX_SEATS := 4 # in the editor's box
 const SEAT_W := 0.45 # a place on a tread (the Colosseum's were about 0.4 m)
 # metres
-const OUT_A := 12.0 # the outer wall's half axes
-const OUT_B := 8.75
-const ARENA_A := 6.5 # the sand's
-const ARENA_B := 3.75
-const SHELL := 1.5 # outer wall and corridor
+const OUT_A := 15.35 # the outer wall's half axes (30.7 x 25.4 m)
+const OUT_B := 12.7
+const ARENA_A := 6.75 # the sand's (83 x 48 m of 188 x 156 at the real one)
+const ARENA_B := 3.9
+const SHELL := 2.0 # outer wall and corridor
 const PODIUM_W := 0.5
 const TREAD := 0.5
-const GATE_HALF := 0.75
+const GATE_HALF := 1.25
 # voxels
-const BAYS := 26 # round the oval, 2.5 m each: pier 4 with a column, arch 6
-const ROWS := 16 # a storey, 4 m
+const BAYS := 26 # round the oval, 3.4 m each: a pier 4 tenths wide with its column, the arch 6
+const ROWS := 22 # a storey, 5.5 m
 const BASE := 2
 const STOREYS := 3
 const ARCADE_TOP := BASE + ROWS * STOREYS
-const ATTIC := 10
-const WALL := ARCADE_TOP + ATTIC # 15 m
+const ATTIC := 24
+const WALL := ARCADE_TOP + ATTIC # 23 m
 const MAST := 4
-const PODIUM_TOP := 6 # 1.5 m
+const PODIUM_TOP := 8 # 2 m
 const PAD := 2
 const HEIGHT := WALL + MAST + 2
 const HEAD := [1, 2, 2, 2, 2, 1] # the arch's stepped round head
@@ -74,7 +85,7 @@ static func _ring(px: float, pz: float, a: float, b: float) -> Vector2:
 	return Vector2((u.length() - 1.0) * Vector2(a * cos(t), b * sin(t)).length(), t)
 
 static func _open(o: int, lr: int) -> bool:
-	return o >= 2 and o <= 7 and lr >= 1 and lr <= 9 + int(HEAD[o - 2])
+	return o >= 2 and o <= 7 and lr >= 1 and lr <= ROWS - 7 + int(HEAD[o - 2])
 
 ## The outer wall at row r: o the column in the bay (0..9), b the bay,
 ## layer 0 the face, 1 behind it.

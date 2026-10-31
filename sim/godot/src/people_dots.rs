@@ -21,7 +21,7 @@ use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT}
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
-use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, LawRow, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES, LAWS, LAW_LEVELS, LEVEL_NAMES};
+use apoleia_sim::grain::{spend_choices, Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, LawRow, SpendRow, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES, LAWS, LAW_LEVELS, LEVEL_NAMES, SPEND_LAWS};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -138,6 +138,8 @@ struct Front {
     cash: i64,
     /// S131: the tax laws after the last day.
     laws: Vec<LawRow>,
+    /// S133: the spending laws after the last day.
+    spend: Vec<SpendRow>,
     /// Milliseconds the sim thread spent on its days so far: the day
     /// itself, orders and map layers, the view, handing over; and the days.
     spent: [f64; 4],
@@ -313,6 +315,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     f.count = game.people.count;
     f.cash = game.grain.treasury.cash;
     f.laws = game.grain.law_rows();
+    f.spend = game.grain.spend_rows();
     f.map = map.layers.clone();
     publish_orders(game, &mut f);
     (map, view)
@@ -661,6 +664,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         f.count = game.people.count;
         f.cash = game.grain.treasury.cash;
         f.laws = game.grain.law_rows();
+        f.spend = game.grain.spend_rows();
         f.day_usec = day_usec;
         f.grain_usec = grain_usec;
     }
@@ -846,6 +850,38 @@ impl ApoleiaPeople {
                 d.set("unit", l.unit);
                 d.set("denar", l.denar as f64 / 1000.0);
                 d.set("rates", &PackedInt64Array::from(l.rates.as_slice()));
+                d
+            })
+            .collect()
+    }
+
+    /// S133: sets spending law `law` (0 Vorratshaltung, 1 Armenpflege) to
+    /// `choice` (Vorratshaltung 0 keine, 1 bis 1 Monat, 2 bis 3 Monate,
+    /// 3 bis 1 Jahr; Armenpflege 0 keine, 1 Notstandsarbeit, 2 Spende an
+    /// Bedürftige). A command like `set_tax`; `spend_law` shows it a frame
+    /// or two later.
+    #[func]
+    fn set_spend(&mut self, law: i64, choice: i64) {
+        if self.worker.is_none() || !(0..SPEND_LAWS as i64).contains(&law) || !(0..spend_choices(law as usize).len() as i64).contains(&choice) {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Spend { law: law as u8, choice: choice as u8 });
+        self.shared.wake.notify_one();
+    }
+
+    /// S133: the spending laws after the last day, one Dictionary each:
+    /// "law" (0, 1), "name" (Vorratshaltung, Armenpflege), "choice" and
+    /// "choices" (the names of the law's choices).
+    #[func]
+    fn spend_law(&self) -> Array<VarDictionary> {
+        let rows = self.shared.front.lock().unwrap().spend.clone();
+        rows.iter()
+            .map(|r| {
+                let mut d = VarDictionary::new();
+                d.set("law", r.law as i64);
+                d.set("name", r.name);
+                d.set("choice", r.choice as i64);
+                d.set("choices", &PackedStringArray::from_iter(r.choices.iter().map(|n| GString::from(*n))));
                 d
             })
             .collect()

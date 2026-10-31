@@ -480,9 +480,10 @@ impl Grain {
         }
         let (mut worked, mut hired) = (0, 0);
         if mk != NONE {
-            for &(w, f, days, _) in &self.markets[mk as usize].work {
+            for &(w, f, days, kind) in &self.markets[mk as usize].work {
                 worked += if w == hh { days } else { 0 };
-                hired += if s.farm != NONE && f == s.farm { days } else { 0 };
+                // S133: public works carry the tile they pave, not a farm
+                hired += if s.farm != NONE && f == s.farm && kind != WORK_STATE { days } else { 0 };
             }
         }
         let members = i.map_or(Vec::new(), |i| self.members.get(i.at as usize..i.at as usize + i.size as usize).map_or(Vec::new(), |v| v.to_vec()));
@@ -719,7 +720,7 @@ impl Grain {
         let reach_km = reach_km + crate::settle::FINE_KM * 0.5;
         let members = self.info.get(&fm.hh).map_or(Vec::new(), |i| self.members.get(i.at as usize..i.at as usize + i.size as usize).map_or(Vec::new(), |v| v.to_vec()));
         let mk = fm.market as usize;
-        let workers = self.markets.get(mk).map_or(Vec::new(), |m| m.work.iter().filter(|w| w.1 as usize == f && w.1 != NONE).map(|&(w, _, days, kind)| (w, days, kind)).collect());
+        let workers = self.markets.get(mk).map_or(Vec::new(), |m| m.work.iter().filter(|w| w.1 as usize == f && w.1 != NONE && w.3 != WORK_STATE).map(|&(w, _, days, kind)| (w, days, kind)).collect());
         Some(FarmLook {
             kind: fm.kind,
             hh: fm.hh,
