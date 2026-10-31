@@ -50,17 +50,17 @@ const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0, 0] # house blocks per town tile and leve
 # higher one (tt_sub_corner), so the data ramps turn into terraces: a flat
 # quarter on the upper step and a quarter ramp below it.
 const SUB_KM := 0.25
-# a level as high as on the 0.5 km tiles (the hills keep their height when
-# the zoom changes; the quarter ramps are twice as steep)
-const SUB_LEVEL_HEIGHT := 1.2
-# Up close the steps are drawn lower: a level of 0.3 km stood above the 0.24
-# km of a house lot, so the terrace walls were twice as tall as the houses on
-# them. Below RELIEF_FLAT_TO km view width the levels shrink to RELIEF_FLAT of
-# their height at RELIEF_FLAT_FROM; the quarter and the 0.5 km tiles share 0.3
-# km a level, so the switch between them (at about 12 km) does not jump.
-const RELIEF_FLAT := 0.4
-const RELIEF_FLAT_FROM := 4.0
-const RELIEF_FLAT_TO := 16.0
+# Near (quarter, 0.5 and 1 km tiles) the relief has one fixed exaggeration
+# at every zoom: a level is NEAR_EXAGGERATION times its first step in metres
+# (the bake's level_steps_m: 20 m on the 0.5 km tiles, 40 m on the 1 km
+# tiles), so the lowlands and Rome's hills stand 7.5 times their height
+# (docs/kit2/SCALE.md, K06) whatever the view width (Ramon 31.10.2026,
+# Bauplan B step 1). Before, the levels were 0.6 of a tile, shrunk to 0.4 of
+# that below 4 km (RELIEF_FLAT): 6 to 15 times by zoom. Steps above 120 m
+# are 50 m (100 m at 1 km tiles), so the mountains stand about 3 times. The
+# quarter tiles share the 0.5 km tiles' levels and so their height (their
+# ramps are twice as steep). A level is now 0.15 km on a 0.24 km house lot.
+const NEAR_EXAGGERATION := 7.5
 const SUB_TREE_SLOTS := 4
 const SUB_HOUSE_SLOTS := 1
 const SUB_WINDOW := 1024 # quarter tiles per side of sub_tex
@@ -205,8 +205,6 @@ var sub_tiles := false
 var tile_km := 2.0
 var m_per_level := 110.0
 var level_h := 0.6
-var _level_h_full := 0.6 # level_h before relief_for_width
-var _view_width := 25.0
 var patch_origin := Vector2i.ZERO
 var draw_n := PATCH_N # tiles per side drawn, around the middle of the patch
 var prop_origin := Vector2i.ZERO
@@ -241,6 +239,7 @@ var town_count := 0
 var _level_images := {}   # zoom level -> baked corner levels (Image, R8)
 var _level_textures := {} # far levels: the whole map
 var _near_levels := {}    # zoom levels on the near scale (levels-L0/L1, too big for one texture)
+var _near_step_m := {}    # near zoom level -> its first level step (m), for NEAR_EXAGGERATION
 # near levels: a LEVEL_WINDOW square of corners around the patch, cut from the
 # image when the patch moves on
 const LEVEL_WINDOW := 1024
@@ -357,6 +356,8 @@ func load_data(progress := Callable()) -> bool:
 		_level_images[key] = image
 		if entry.get("scale", "far") == "near":
 			_near_levels[key] = true
+			var steps: Array = entry.get("level_steps_m", [0.0, 20.0 * float(entry.cell_km) / 0.5])
+			_near_step_m[key] = float(steps[1]) - float(steps[0])
 		else:
 			_level_textures[key] = ImageTexture.create_from_image(image)
 	for entry in manifest.get("ground", []):
@@ -645,22 +646,6 @@ static func level_for_width(width: float) -> int:
 	var spans := int(ceil(log(width * 1.15 / PATCH_N / 0.5) / log(2.0)))
 	return clampi(maxi(wanted, spans), -1, LEVELS.size() - 1)
 
-## How much of a level's height is drawn at a view `width` km wide
-## (RELIEF_FLAT up close, all of it from RELIEF_FLAT_TO).
-static func relief_for_width(width: float) -> float:
-	var t := clampf(log(maxf(width, 0.01) / RELIEF_FLAT_FROM) / log(RELIEF_FLAT_TO / RELIEF_FLAT_FROM), 0.0, 1.0)
-	return lerpf(RELIEF_FLAT, 1.0, t * t * (3.0 - 2.0 * t))
-
-## A new step height while zooming (same level): the shaders, and the
-## landmarks on their blocks.
-func _set_level_h(h: float) -> void:
-	level_h = h
-	for material in _all_materials() + [_sub_material]:
-		material.set_shader_parameter("level_h", h)
-	if level <= 1:
-		for k in mini(_landmarks.size(), _landmark_levels.size()):
-			_landmarks[k].position.y = _landmark_levels[k] * h
-
 func _apply_level(value: int) -> void:
 	zoom = value
 	level = maxi(value, 0)
@@ -672,8 +657,10 @@ func _apply_level(value: int) -> void:
 		_level_window_key = Vector3i(-1, 0, 0)
 		_update_level_window()
 	m_per_level = relief_slope * tile_km # near levels; far ones are baked (LEVEL_STEPS_M)
-	_level_h_full = tile_km * (SUB_LEVEL_HEIGHT if sub_tiles else LEVEL_HEIGHTS[level])
-	level_h = _level_h_full * relief_for_width(_view_width)
+	if near_scale:
+		level_h = NEAR_EXAGGERATION * float(_near_step_m[level]) * 0.001
+	else:
+		level_h = tile_km * LEVEL_HEIGHTS[level]
 	var params := {
 		"cells_tex": _cell_textures[level],
 		"cells_size": _cell_sizes[level],
@@ -1300,13 +1287,9 @@ func set_light_dir(dir: Vector3) -> void:
 ## `span` km across, the trees and houses `prop_span` km (at most PROP_SPAN
 ## view widths).
 func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -> void:
-	_view_width = width
 	var wanted := level_for_width(width)
 	if wanted != zoom:
 		_apply_level(wanted)
-	var h := _level_h_full * relief_for_width(width)
-	if h != level_h:
-		_set_level_h(h)
 	var c := ((centre - world_min) / tile_km).floor()
 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
 	# only the tiles around the view are drawn: each costs vertex work (and

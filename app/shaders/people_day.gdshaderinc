@@ -13,19 +13,22 @@
 // the sowing presses the meal is brought out and eaten sitting in the
 // field, and where there is nothing to cook they sit and rest instead; the
 // hearth burns for the meals (day_fire, the smoke of
-// people_house_life.gdshader); a traveller sleeps by the way. Nothing here
-// goes back to the sim.
+// people_house_life.gdshader); the grown-ups of a household with a
+// workshop (dot_craft) work at it through the day; whom the sim sends to
+// the market, to trade or to hired or public work walks there as a carrier
+// of people_trips.gd and is gone from home meanwhile (dot_person_away); a
+// traveller sleeps by the way. Nothing here goes back to the sim.
 //
 // The day is built of blocks (Bausteine), each with who (a test on the
 // person), where (its spot by the house, its household's field, in the
 // house out of sight), when (from and to, counted from sunrise and sunset,
 // so a block holds in every epoch and at every latitude; a later block may
 // count from a clock instead) and how it looks (standing, at work, lying).
-// A later step adds its blocks here (the meals, the market, the workshop,
-// a feast) and the figures follow: people_figures.gdshader and
-// people_figure_shadows.gdshader read only day_now. At the fast speeds
-// (day_hour < 0) there is no hour, and the figures stand as the sim day has
-// them: out on the fields through the harvest and the sowing, else at home.
+// A later step adds its blocks here (a feast, a walk to town) and the
+// figures follow: people_figures.gdshader and people_figure_shadows.gdshader
+// read only day_now. At the fast speeds (day_hour < 0) there is no hour,
+// and the figures stand as the sim day has them: out on the fields through
+// the harvest and the sowing, at the workshop, else at home.
 //
 // Needs people_dots_common.gdshaderinc.
 
@@ -45,8 +48,9 @@ struct DayNow {
 	bool moved;   // away from that spot: on the ground there, not at the spot's height
 	bool walking;
 	vec2 way;     // direction of the walk (world x, z)
-	bool inside;  // in the house, out of sight
+	bool inside;  // out of sight: in the house, or away walking as a carrier
 	int pose;     // DAY_STAND, DAY_WORK, DAY_LIE, DAY_SIT
+	bool faces;   // at work at the workshop: turned to the house frame's +z (dot_house_turn)
 };
 
 // The midday meal (prandium) of household `key`, start and end (hours):
@@ -82,10 +86,17 @@ float day_leg(float h, float s, float e, float walk) {
 	return h < e ? clamp((h - s) / walk, 0.0, 1.0) : 1.0 - clamp((h - e) / walk, 0.0, 1.0);
 }
 
+// How a grown-up of a household with workshop `craft` looks at work: the
+// weaver stands at the loom, the smith bends over the anvil, the potter sits
+// by the kiln and the jars.
+int day_craft_pose(int craft) {
+	return craft == 2 ? DAY_WORK : craft == 3 ? DAY_SIT : DAY_STAND;
+}
+
 // Person `slot` of household `key` at hour `h` (< 0: no hour). kind, job,
 // female, child: its record (people_dots.gd); look: dot_person_look; flags:
-// dot_person_flags.
-DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags) {
+// dot_person_flags; away: dot_person_away.
+DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away) {
 	DayNow d;
 	d.offset = vec2(0.0);
 	d.moved = false;
@@ -93,14 +104,19 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 	d.way = vec2(0.0, 1.0);
 	d.inside = false;
 	d.pose = DAY_STAND;
+	d.faces = false;
 	bool busy = look.y > 0.5; // the farm's harvest or sowing wants hands
 	bool farmer = kind == 0u && !child && (busy || ((flags & DOT_LOOK_FARM) != 0 && (!female || job == DAY_UNFREE)));
+	int craft = kind == 0u && !child ? dot_craft(flags) : 0; // at its workshop (dot_place)
 	vec2 field = dot_field_offset(key, slot);
 	if (h < 0.0) {
 		if (farmer && busy) {
 			d.offset = field;
 			d.moved = true;
 			d.pose = DAY_WORK;
+		} else if (craft > 0) {
+			d.faces = true;
+			d.pose = day_craft_pose(craft);
 		}
 		return d;
 	}
@@ -112,6 +128,13 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 		if (h < sun.x - 0.5 + 0.5 * r.x || h >= sun.y + 1.0 + r.y) {
 			d.pose = DAY_LIE;
 		}
+		return d;
+	}
+	// Baustein «Unterwegs»: whom people_trips.gd walks to the market, to
+	// trade or to work elsewhere is gone from home from the hour it leaves
+	// till the hour it is back, whatever else the day would have
+	if (h >= away.x && h < away.y) {
+		d.inside = true;
 		return d;
 	}
 	// Baustein «Schlaf»: at home or in a city, in the house from dusk till
@@ -138,6 +161,9 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 		vec2 r2 = dot_rand2(slot, 62u);
 		float walk = length(field) / DAY_WALK_KMH;
 		float go = max(busy ? sun.x - 0.25 + 0.5 * r2.x : sun.x + 0.25 + 0.75 * r2.x, wake + 0.1);
+		if (away.y > away.x) {
+			go = max(go, away.y + 0.1); // out to the field once back from the market
+		}
 		float back = max(busy ? sun.y - 0.25 - 0.5 * r2.y : sun.y - 0.5 - 0.75 * r2.y, go + walk);
 		float noon_go = meal.x - walk - 0.15 * r2.x;
 		float noon_back = meal.y + 0.15 * r2.y;
@@ -162,6 +188,16 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 			return d;
 		}
 	}
+	// Baustein «Handwerk»: at the workshop from after breakfast till before
+	// sunset, the meal at noon as the household's
+	if (craft > 0 && !at_meal) {
+		vec2 r3 = dot_rand2(slot, 63u);
+		if (h >= max(sun.x + 0.25 + 0.5 * r3.x, wake + 0.5) && h < sun.y - 0.5 - 0.75 * r3.y) {
+			d.faces = true;
+			d.pose = day_craft_pose(craft);
+			return d;
+		}
+	}
 	if (at_meal) {
 		if (cooks) {
 			d.inside = true;
@@ -173,6 +209,6 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 }
 
 // The same at the clock's hour.
-DayNow day_now(uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags) {
-	return day_at(day_hour, slot, key, kind, job, female, child, look, flags);
+DayNow day_now(uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away) {
+	return day_at(day_hour, slot, key, kind, job, female, child, look, flags, away);
 }

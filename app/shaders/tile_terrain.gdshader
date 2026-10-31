@@ -716,8 +716,8 @@ void fragment() {
 		float t = abs(fr) - abs(fb);
 		float corner = min(side, front);
 		float shade = t > 0.0 ? mix(corner, side, smoothstep(0.1, 0.4, t)) : mix(corner, front, smoothstep(0.1, 0.4, -t));
-		// up close a gentle ramp a gentler tone (the steps are drawn lower
-		// there, TileTerrain.relief_for_width): a whole hillside in one hard
+		// up close a gentle ramp a gentler tone (a step is 0.15 km on a 0.25 km
+		// quarter, TileTerrain.NEAR_EXAGGERATION): a whole hillside in one hard
 		// facet read as folded paper (s2)
 		float steep = sub_tiles ? mix(0.4, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
 		// far out (from the 0.5 km tiles) every ramp is a whole tile one
