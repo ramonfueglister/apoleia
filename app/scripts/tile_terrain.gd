@@ -76,6 +76,7 @@ const NO_WINDOW := Vector2i(-1048576, 0)
 const COAST_CELLS := 16
 const COAST_BLOCK := 32
 const COAST_MAX := 2048
+const COAST_USEC := 3000 # time a frame may spend scanning new shore blocks (_coast_block)
 # Houses keep their diorama size on every zoom level (Ramon 31.10.2026,
 # Bauplan B step 3). They stand up to the 1 km tiles (a house is about 8 px
 # at a 60 km view); from the 2 km tiles a town is its roof coloured tiles
@@ -886,22 +887,33 @@ func _update_coast_list() -> void:
 	var lo := Vector2i(floori(prop_origin.x / float(q)), floori(prop_origin.y / float(q)))
 	var hi := Vector2i(floori((prop_origin.x + prop_n - 1) / float(q)), floori((prop_origin.y + prop_n - 1) / float(q)))
 	if zoom > 0:
-		hi = lo - Vector2i.ONE
+		# none further out: one empty window for all of it, so a pan does
+		# not upload the empty list anew at every tile (Mac tour 31.10.2026)
+		lo = Vector2i.ZERO
+		hi = -Vector2i.ONE
 	var key := Vector4i(lo.x, lo.y, hi.x, hi.y)
 	if key == _coast_key:
 		return
+	var sides := PackedInt32Array()
+	if zoom <= 0:
+		# blocks seen for the first time are scanned on a time budget (the
+		# first look at a new stretch of coast took 19 ms, Mac tour
+		# 31.10.2026); the rest follow next frame, the old steps stand till
+		# then
+		var start := Time.get_ticks_usec()
+		for bj in range(lo.y / COAST_BLOCK, hi.y / COAST_BLOCK + 1):
+			for bi in range(lo.x / COAST_BLOCK, hi.x / COAST_BLOCK + 1):
+				var b := Vector2i(bi, bj)
+				if not _coast_blocks.has(b) and Time.get_ticks_usec() - start > COAST_USEC:
+					return
+				var block := _coast_block(b)
+				for k in range(0, block.size(), 3):
+					if block[k] >= lo.x and block[k] <= hi.x and block[k + 1] >= lo.y and block[k + 1] <= hi.y:
+						sides.append_array(block.slice(k, k + 3))
 	_coast_key = key
 	for material in [_terrain_material, _coast_material]:
 		material.set_shader_parameter("steps_lo", lo)
 		material.set_shader_parameter("steps_hi", hi)
-	var sides := PackedInt32Array()
-	if zoom <= 0:
-		for bj in range(lo.y / COAST_BLOCK, hi.y / COAST_BLOCK + 1):
-			for bi in range(lo.x / COAST_BLOCK, hi.x / COAST_BLOCK + 1):
-				var block := _coast_block(Vector2i(bi, bj))
-				for k in range(0, block.size(), 3):
-					if block[k] >= lo.x and block[k] <= hi.x and block[k + 1] >= lo.y and block[k + 1] <= hi.y:
-						sides.append_array(block.slice(k, k + 3))
 	var count := mini(sides.size() / 3, COAST_MAX)
 	# per instance a transform (unused: the shader places the blocks) and
 	# the custom data: data tile x, y, side (4 + tip on a cut)
@@ -946,24 +958,27 @@ func _coast_block(b: Vector2i) -> PackedInt32Array:
 			cells[at] = v & 15
 			cells[at + 1] = v >> 4
 	var sides := PackedInt32Array()
+	var steps := PackedInt32Array([-w, 1, w, -1]) # the neighbour across side N, E, S, W
 	for j in COAST_BLOCK:
 		for i in COAST_BLOCK:
 			var at := (j + 3) * w + i + 4
-			if (cells[at] & 3) != 1:
-				var tip := _coast_cut_tip(cells, at, w)
-				if tip >= 0:
-					sides.append_array([x0 + i + 4, y0 + j + 3, 4 + tip])
+			var cell := cells[at]
+			if (cell & 3) != 1:
+				if (cell & 3) == 0 and cell < 8: # open land: a coast cut?
+					var tip := _coast_cut_tip(cells, at, w)
+					if tip >= 0:
+						sides.append(x0 + i + 4)
+						sides.append(y0 + j + 3)
+						sides.append(4 + tip)
 				continue
 			for k in 4:
-				var n := at + _coast_step(k, w)
-				if _coast_shore(cells, n, w, cells[n] >= 8):
-					sides.append_array([x0 + i + 4, y0 + j + 3, k])
+				var n := at + steps[k]
+				if (cells[n] & 3) == 0 and _coast_shore(cells, n, w, cells[n] >= 8):
+					sides.append(x0 + i + 4)
+					sides.append(y0 + j + 3)
+					sides.append(k)
 	_coast_blocks[b] = sides
 	return sides
-
-## Offset of the neighbour across side k (N, E, S, W) in a row of `w` cells.
-static func _coast_step(k: int, w: int) -> int:
-	return [-w, 1, w, -1][k]
 
 ## cs_shore (coast_steps.gdshaderinc) on the unpacked cells: land, a town
 ## or not as `town` says, not a coast cut (towns never are), not a lone tile
@@ -972,18 +987,26 @@ static func _coast_shore(cells: PackedByteArray, at: int, w: int, town: bool) ->
 	var cell := cells[at]
 	if (cell & 3) != 0 or (cell >= 8) != town:
 		return false
-	var nb := PackedInt32Array([cells[at - w] & 3, cells[at + 1] & 3, cells[at + w] & 3, cells[at - 1] & 3])
-	if nb[0] == 1 and nb[1] == 1 and nb[2] == 1 and nb[3] == 1:
+	var n0 := cells[at - w] & 3 # N, E, S, W
+	var n1 := cells[at + 1] & 3
+	var n2 := cells[at + w] & 3
+	var n3 := cells[at - 1] & 3
+	if n0 == 1 and n1 == 1 and n2 == 1 and n3 == 1:
 		return false
 	if town:
 		return true
-	for k in 4:
-		var a := nb[k]
-		var wet := (a == 1 or a == 2) and nb[(k + 1) & 3] == a
-		var rest_dry := nb[(k + 2) & 3] != a and nb[(k + 3) & 3] != a
-		if wet and rest_dry and (cells[at + _coast_step(k, w) + _coast_step((k + 1) & 3, w)] & 3) == a:
-			return false
-	return true
+	# a corner of two wet sides (sea or lake, the same) with the diagonal
+	# wet too and the other two dry: a coast cut, no step
+	return not (_coast_wet_corner(n0, n1, n2, n3, cells[at - w + 1] & 3)
+			or _coast_wet_corner(n1, n2, n3, n0, cells[at + w + 1] & 3)
+			or _coast_wet_corner(n2, n3, n0, n1, cells[at + w - 1] & 3)
+			or _coast_wet_corner(n3, n0, n1, n2, cells[at - w - 1] & 3))
+
+## The corner between sides a and b (clockwise) wet: a and b the same water
+## (sea 1 or lake 2), the diagonal between them too, the other sides c and d
+## not that water.
+static func _coast_wet_corner(a: int, b: int, c: int, d: int, diagonal: int) -> bool:
+	return (a == 1 or a == 2) and b == a and c != a and d != a and diagonal == a
 
 ## cs_cut_tip (coast_steps.gdshaderinc) on the unpacked cells: the corner of
 ## the wet half of a coast cut towards the sea of open land, or -1.
@@ -991,12 +1014,20 @@ static func _coast_cut_tip(cells: PackedByteArray, at: int, w: int) -> int:
 	var cell := cells[at]
 	if (cell & 3) != 0 or cell >= 8:
 		return -1
-	var nb := PackedInt32Array([cells[at - w] & 3, cells[at + 1] & 3, cells[at + w] & 3, cells[at - 1] & 3])
-	for k in 4:
-		var wet := nb[k] == 1 and nb[(k + 1) & 3] == 1
-		var rest_dry := nb[(k + 2) & 3] != 1 and nb[(k + 3) & 3] != 1
-		if wet and rest_dry and (cells[at + _coast_step(k, w) + _coast_step((k + 1) & 3, w)] & 3) == 1:
-			return (k + 1) & 3
+	var n0 := cells[at - w] & 3 # N, E, S, W
+	var n1 := cells[at + 1] & 3
+	var n2 := cells[at + w] & 3
+	var n3 := cells[at - 1] & 3
+	if n0 != 1 and n1 != 1 and n2 != 1 and n3 != 1:
+		return -1 # no sea beside it
+	if n0 == 1 and _coast_wet_corner(n0, n1, n2, n3, cells[at - w + 1] & 3):
+		return 1
+	if n1 == 1 and _coast_wet_corner(n1, n2, n3, n0, cells[at + w + 1] & 3):
+		return 2
+	if n2 == 1 and _coast_wet_corner(n2, n3, n0, n1, cells[at + w - 1] & 3):
+		return 3
+	if n3 == 1 and _coast_wet_corner(n3, n0, n1, n2, cells[at - w - 1] & 3):
+		return 0
 	return -1
 
 # ------------------------------------------------------------ city plans

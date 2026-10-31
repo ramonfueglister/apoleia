@@ -156,6 +156,7 @@ const SCENE_DAYS := 2 # events this many days old or newer become scenes; older 
 const GAP_KM := 0.035 # between the members of a group along their way (a figure is 40 m at diorama scale)
 const SQUARE_REACH_KM := 20.0 # the market square of a cell event: the nearest one this close to the cell's middle
 const TAKE_USEC := 3000 # time a frame may spend on new travellers' ways
+const EXTRA_USEC := 2000 # likewise on new hired hands' ways, and again on goods carts' (one search each; up to 40 ms at once, Mac tour 31.10.2026)
 const ROUTE_MIN_KM := 0.6 # a straight scene way longer than this is looked for on the worn network
 const OUT_KM := 1.2 # how far from the farm or square a scene's way starts when nothing else says where
 ## event kinds (sim/src/events.rs)
@@ -214,6 +215,14 @@ var route := WalkRoute.new()
 var _taking := {} # the trips answer still being taken (_take_some)
 var _taking_i := 0 # its next trip
 var _taking_old := {} # the ids listed before it, already walking
+var _working := {} # the hires answer still being taken (_take_work_some)
+var _working_new := PackedInt32Array() # its hires new to the list, to walk
+var _working_keys: Array[Vector3i] = [] # their keys in _hired, likewise
+var _working_i := 0 # the next of them
+var _goods_moves := PackedFloat32Array() # the goods answer's moves still being taken (_take_goods_some)
+var _goods_new := PackedInt32Array() # its moves new to the list, to leave
+var _goods_keys: Array[String] = [] # their keys in _goods_seen, likewise
+var _goods_i := 0 # the next of them
 ## At «Alltag»: by the slot of a person who walks as a carrier, trader or
 ## hired hand today, the hours it is away and what it does (`_away_of`);
 ## people_dots.gd draws its figure at home from it, bumped `away_version`.
@@ -251,8 +260,10 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_taking = {}
 		_taking_old = {}
 		_hired.clear()
+		_working_drop()
 		_scene_seen.clear()
 		_goods_seen.clear()
+		_goods_drop()
 		_scenes = 0
 		for k in _pool_n:
 			_pool_n[k] = 0
@@ -277,12 +288,14 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		if not goods.is_empty():
 			_asked_goods = false
 			_take_goods(goods)
+	_take_work_some()
+	_take_goods_some()
 	_take_some()
 	if not _asked_slots.is_empty():
 		var slots: Dictionary = people.take_slots()
 		if not slots.is_empty():
 			_take_slots(slots)
-	elif _slots_due and not _asked and not _asked_work and _taking.is_empty():
+	elif _slots_due and not _asked and not _asked_work and _taking.is_empty() and _working.is_empty():
 		_ask_slots()
 	if _day_s > 0.0 and int(people.day()) != _away_day and not away.is_empty():
 		_away_build() # the hours of those still out from yesterday
@@ -401,23 +414,58 @@ func _take_some() -> void:
 
 ## Each hire new to the list sends its worker from home to the farm and
 ## back, in a straight line (both are fine tiles, a few km apart at most);
-## at «Alltag» every day of the hire anew, morning and evening.
+## at «Alltag» every day of the hire anew, morning and evening. Their ways
+## are laid by _take_work_some, as many as EXTRA_USEC allows a frame.
 func _take_work(h: Dictionary) -> void:
 	_slots_due = true
+	# the hires of the last answer not yet walked are not in the list: this
+	# answer walks them if it still has them
+	for k in range(_working_i, _working_keys.size()):
+		_hired.erase(_working_keys[k])
 	var today: int = people.day() if _day_s > 0.0 else -1
 	var worker: PackedInt64Array = h.worker
 	var day: PackedInt64Array = h.day
-	var kind: PackedInt32Array = h.kind
 	var from: PackedVector2Array = h.from
 	var to: PackedVector2Array = h.to
 	var hired := {}
+	var fresh := PackedInt32Array()
+	var keys: Array[Vector3i] = []
 	for i in worker.size():
 		var key := Vector3i(worker[i], day[i], today)
 		if today >= 0 and today >= day[i] + int(h.days[i]):
 			continue # the hire's days are done
 		hired[key] = true
-		if _hired.has(key) or _walkers.size() - _scenes >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
+		if _hired.has(key) or from[i].distance_to(to[i]) < 0.05:
 			continue
+		fresh.append(i)
+		keys.append(key)
+	_hired = hired
+	_working = h
+	_working_new = fresh
+	_working_keys = keys
+	_working_i = 0
+
+## The new hires of the last answer as walkers, as many as EXTRA_USEC
+## allows this frame; the rest in the next frames.
+func _take_work_some() -> void:
+	if _working.is_empty():
+		return
+	var h := _working
+	var worker: PackedInt64Array = h.worker
+	var kind: PackedInt32Array = h.kind
+	var from: PackedVector2Array = h.from
+	var to: PackedVector2Array = h.to
+	var t0 := Time.get_ticks_usec()
+	while _working_i < _working_new.size():
+		if Time.get_ticks_usec() - t0 > EXTRA_USEC:
+			return
+		var i := _working_new[_working_i]
+		_working_i += 1
+		if _walkers.size() - _scenes >= MAX / 2: # half stays for the trips
+			continue
+		var at_home := _window.has_point(from[i])
+		if not at_home and not _window.has_point(to[i]):
+			continue # neither end in view
 		var points := route.between(from[i], to[i]) # on the ways, not over the houses
 		var w := {
 			"points": points,
@@ -429,14 +477,18 @@ func _take_work(h: Dictionary) -> void:
 			# for a click (pick): who it is and what they do
 			"worker": worker[i], "farm": h.farm_household[i], "days": h.days[i], "work": kind[i],
 		}
-		if not _window.has_point(from[i]):
-			if not _window.has_point(to[i]):
-				continue
+		if not at_home:
 			w.s = w.along[w.along.size() - 1] # seen at the farm, walking home
 			w.dir = -1.0
 			w.turn = false
 		_add(w)
-	_hired = hired
+	_working_drop()
+
+func _working_drop() -> void:
+	_working = {}
+	_working_new = PackedInt32Array()
+	_working_keys = []
+	_working_i = 0
 
 ## The events of an answer (sim_events.gd `answered`, newest last): each of
 ## the last SCENE_DAYS not yet played becomes its scene, the newest first.
@@ -622,24 +674,54 @@ func _add_extra(w: Dictionary, pool: String) -> void:
 
 ## The goods moves of the answer (trips.rs goods_to_dict "moves": from x,
 ## z, to x, z, good, units, day): each of the last SCENE_DAYS new to the list
-## leaves its market as a cart, the newest first.
+## leaves its market as a cart, the newest first. Their ways are laid by
+## _take_goods_some, as many as EXTRA_USEC allows a frame.
 func _take_goods(g: Dictionary) -> void:
 	_take_markets(g)
+	# the moves of the last answer not yet on their way are not in the list:
+	# this answer sends them if it still has them
+	for k in range(_goods_i, _goods_keys.size()):
+		_goods_seen.erase(_goods_keys[k])
 	var moves: PackedFloat32Array = g.get("moves", PackedFloat32Array())
 	var today: int = people.day()
 	var seen := {}
+	var fresh := PackedInt32Array()
+	var keys: Array[String] = []
 	for k in range(moves.size() / 7 - 1, -1, -1):
 		var o := k * 7
 		var day := int(moves[o + 6])
 		if day < today - SCENE_DAYS:
 			continue
+		var key := "%d:%d:%d:%d:%d:%d" % [day, int(moves[o] * 100.0), int(moves[o + 1] * 100.0), int(moves[o + 2] * 100.0), int(moves[o + 3] * 100.0),
+			clampi(int(moves[o + 4]), 0, GOOD_LOADS.size() - 1)]
+		seen[key] = true
+		if _goods_seen.has(key):
+			continue
+		fresh.append(o)
+		keys.append(key)
+	_goods_seen = seen
+	_goods_moves = moves
+	_goods_new = fresh
+	_goods_keys = keys
+	_goods_i = 0
+
+## The new goods moves of the last answer as carts, as many as EXTRA_USEC
+## allows this frame; the rest in the next frames.
+func _take_goods_some() -> void:
+	if _goods_i >= _goods_new.size():
+		return
+	var moves := _goods_moves
+	var t0 := Time.get_ticks_usec()
+	while _goods_i < _goods_new.size():
+		if Time.get_ticks_usec() - t0 > EXTRA_USEC:
+			return
+		var o := _goods_new[_goods_i]
+		_goods_i += 1
+		if _pool_n.goods >= GOODS_MAX:
+			continue
 		var from := Vector2(moves[o], moves[o + 1])
 		var to := Vector2(moves[o + 2], moves[o + 3])
 		var good := clampi(int(moves[o + 4]), 0, GOOD_LOADS.size() - 1)
-		var key := "%d:%d:%d:%d:%d:%d" % [day, int(from.x * 100.0), int(from.y * 100.0), int(to.x * 100.0), int(to.y * 100.0), good]
-		seen[key] = true
-		if _goods_seen.has(key) or _pool_n.goods >= GOODS_MAX:
-			continue
 		var way := _clip(from, to)
 		if way.is_empty():
 			continue
@@ -651,7 +733,13 @@ func _take_goods(g: Dictionary) -> void:
 		w.what = "Händler mit Ochsenkarren, bringt %s %s an einen anderen Markt" % [
 			SimTables._int(int(round(units))) + (" kg" if good == 5 else " Stück"), GOOD_NAMES[good]]
 		_add_extra(w, "goods")
-	_goods_seen = seen
+	_goods_drop()
+
+func _goods_drop() -> void:
+	_goods_moves = PackedFloat32Array()
+	_goods_new = PackedInt32Array()
+	_goods_keys = []
+	_goods_i = 0
 
 ## The markets of the squares in view from the goods answer (trips.rs
 ## goods_to_dict "markets" and "grain", in market order); the stalls and
