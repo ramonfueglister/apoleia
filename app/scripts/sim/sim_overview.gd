@@ -30,9 +30,8 @@ const GAP := 10 # between cards, across and down
 const PAD := 8 # inside a card
 const PLOT_PX := 168.0 # a card's figure: a chart, rows, bars or a curve
 const LINE_PX := 22.0 # the legend's line under it, kept when empty
-const CARD_BACK := Color("36332d") # a card's board, warm as Victoria 3's chart frames
-const CARD_EDGE := UiStyle.CHART_FRAME # its rim, as Victoria 3's chart frames
-const SHOW_ENDS := false # each line's last value at its end; Victoria 3 shows none
+const CARD_BACK := Color("303134") # a card's board, a shade over the window's
+const CARD_EDGE := Color(1.0, 1.0, 1.0, 0.07) # its rim, barely there
 const OTHER := Color("6d7479") # the medal of "Andere", the rest
 const BARS_MAX := 6 # rows of a share card before "Andere"
 const BAR_ROW := 24.0 # BARS_MAX rows and "Andere" fill PLOT_PX
@@ -51,7 +50,7 @@ const CLASS_FACE_R := 36.0 # its medal, in the stead of a face
 ## What a class's column shows, top down: [CLASS_ROWS key, top, height,
 ## how]. "big" a figure under the name, "note" a line under it, "state"
 ## the line under the picture, "head" a section's head, "line" a line of a
-## section with its icon (or none) and name, "fill" such a line with a bar.
+## section with its icon (or none) and name.
 const CLASS_PARTS := [
 	["persons", 30.0, 34.0, "big"],
 	["share", 64.0, 22.0, "note"],
@@ -61,8 +60,8 @@ const CLASS_PARTS := [
 	["households", 296.0, CLASS_LINE, "line", "family-house", "Haushalte"],
 	["gini", 324.0, CLASS_LINE, "line", "scales", "Gini"],
 	["", 358.0, 28.0, "head", "Bedarf"],
-	["eaten", 388.0, CLASS_LINE, "fill", "wheat", "Korn"],
-	["clothes", 416.0, CLASS_LINE, "fill", "roman-toga", "Kleidung"],
+	["eaten", 388.0, CLASS_LINE, "line", "wheat", "Korn"],
+	["clothes", 416.0, CLASS_LINE, "line", "roman-toga", "Kleidung"],
 	["ragged", 444.0, CLASS_LINE, "line", "", "Zerlumpt"],
 ]
 ## The medals' icons in assets/ui/icons (Vic3Style.icon), white, tinted
@@ -217,7 +216,6 @@ var _sums := {} # card key -> name -> amount: the shares, kept for the findings 
 var _class_table: Control
 var _class_names := PackedStringArray()
 var _class_cells := [] # per line of CLASS_ROWS: per class [text, colour]
-var _class_data := {} # the classes table's columns, for the bars
 var _class_hover := Vector2i(-1, -1) # column, part of CLASS_PARTS
 
 func _init(date_fn: Callable, page_name := "overview") -> void:
@@ -537,7 +535,8 @@ func _card(key: String, wide := false) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	card.add_child(box)
-	var head := _label(_spec(key)[1], UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+	var head := _label(_spec(key)[1], UiStyle.TITLE, UiStyle.SIZE_TEXT)
+	head.add_theme_font_override("font", UiStyle.title_font())
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.custom_minimum_size = Vector2(0, LINE_PX)
 	head.clip_text = true
@@ -576,7 +575,7 @@ func _line_card(key: String) -> void:
 		var days: PackedInt64Array = entry.days
 		var from: String = date.call(int(days[0])) if days.size() > 0 else ""
 		var to: String = date.call(int(days[days.size() - 1])) if days.size() > 0 else ""
-		Charts.line_chart(chart, Rect2(Vector2.ZERO, chart.size), entry.series, UiStyle.serif(), entry.unit, from, to, entry.hover, PackedInt32Array(), SHOW_ENDS))
+		Charts.line_chart(chart, Rect2(Vector2.ZERO, chart.size), entry.series, UiStyle.serif(), entry.unit, from, to, entry.hover, entry.marks))
 	chart.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
 			var m: int = Charts.month_at(Rect2(Vector2.ZERO, chart.size), entry.days.size(), e.position.x, chart)
@@ -614,8 +613,6 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 			one.hi = scaled.call(s.hi)
 			one.band = s.get("band", "Spanne")
 		series.append(one)
-	if series.size() == 1 and series[0].colour != Charts.RED: # a chart's only measure in Victoria 3's white
-		series[0].colour = Charts.LINE
 	entry.series = series
 	var days := PackedInt64Array(Array(d.day))
 	entry.days = days.slice(_first(days.size()))
@@ -1161,8 +1158,8 @@ func _lage_line(key: String, to: String, k: int) -> PanelContainer:
 ## The classes side by side as Victoria 3's population: a framed column
 ## per class, its medal and name on top, its people as a big figure, its
 ## medal large where Victoria 3 has a face, whether it is fed, its money a
-## head, then sections of lines (CLASS_PARTS). What a class did not eat
-## shows red.
+## head, then sections of lines (CLASS_PARTS), in the colours of the table
+## before them. What a class did not eat shows red.
 func _classes_card() -> void:
 	var box := _card("classes", true)
 	_class_table = Control.new()
@@ -1171,7 +1168,7 @@ func _classes_card() -> void:
 	box.add_child(_class_table)
 	_class_table.draw.connect(_draw_classes)
 	for spec in CLASS_PARTS: # loaded before the first draw, which shows a texture loaded in it as a blank square
-		if spec.size() > 4 and spec[3] in ["line", "fill"] and spec[4] != "":
+		if spec.size() > 4 and spec[3] == "line" and spec[4] != "":
 			_icons["file:" + spec[4]] = Vic3Style.icon(spec[4])
 	_class_table.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseMotion:
@@ -1209,7 +1206,6 @@ func _set_classes(classes: Dictionary, d: Dictionary) -> void:
 	var data: Dictionary = classes.data
 	var n: int = data.kind.size()
 	_class_names = PackedStringArray(Array(data.kind))
-	_class_data = data
 	var people := _total(data.get("persons", []))
 	var money := _total(data.money)
 	_class_cells = []
@@ -1217,7 +1213,7 @@ func _set_classes(classes: Dictionary, d: Dictionary) -> void:
 		var line := []
 		for r in n:
 			var text := "–"
-			var colour := UiStyle.TEXT
+			var colour := UiStyle.VALUE
 			var key: String = spec[0]
 			if key == "share" and people > 0.0:
 				text = _pct(float(data.persons[r]) / people * 100.0) + " %"
@@ -1230,7 +1226,7 @@ func _set_classes(classes: Dictionary, d: Dictionary) -> void:
 				pass
 			elif key == "eaten":
 				text = "%d %%" % floori(float(data.eaten[r]) * 100.0)
-				colour = UiStyle.LOSS if float(data.eaten[r]) < 0.99 else UiStyle.TEXT
+				colour = UiStyle.LOSS if float(data.eaten[r]) < 0.99 else UiStyle.VALUE
 			elif key == "clothes":
 				text = "%d %%" % roundi(float(data.clothes[r]) * 100.0)
 			elif key == "money_head":
@@ -1246,7 +1242,7 @@ func _class_cell(key: String, r: int) -> Array:
 	for line in CLASS_ROWS.size():
 		if CLASS_ROWS[line][0] == key and line < _class_cells.size() and r < _class_cells[line].size():
 			return _class_cells[line][r]
-	return ["–", UiStyle.TEXT]
+	return ["–", UiStyle.VALUE]
 
 func _draw_classes() -> void:
 	var ci := _class_table
@@ -1266,27 +1262,24 @@ func _draw_classes() -> void:
 		var name_w := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x
 		var left := x + maxf(6.0, (w - MEDAL_R * 2.0 - 6.0 - name_w) * 0.5)
 		_medal(ci, Vector2(left + MEDAL_R, 16.0), name, colour)
-		UiStyle.text_at(ci, Vector2(left + MEDAL_R * 2.0 + 6.0, 22.0), name, UiStyle.CONCEPT, UiStyle.SIZE_TEXT,
+		UiStyle.text_at(ci, Vector2(left + MEDAL_R * 2.0 + 6.0, 22.0), name, UiStyle.TEXT, UiStyle.SIZE_TEXT,
 			HORIZONTAL_ALIGNMENT_LEFT, x + w - left - MEDAL_R * 2.0 - 10.0, font)
-		# the picture: the class's colour fading into the board, its medal large
+		# the picture: its medal large
 		var face := Rect2(x + CLASS_FACE.position.x, CLASS_FACE.position.y, w - CLASS_FACE.position.x * 2.0, CLASS_FACE.size.y)
-		var top := colour.darkened(0.55)
-		ci.draw_polygon(PackedVector2Array([face.position, Vector2(face.end.x, face.position.y), face.end, Vector2(face.position.x, face.end.y)]),
-			PackedColorArray([top, top, UiStyle.INSET, UiStyle.INSET]))
 		_medal(ci, face.get_center(), name, colour, CLASS_FACE_R)
 		for part in CLASS_PARTS.size():
-			_draw_class_part(ci, part, r, Rect2(x, CLASS_PARTS[part][1], w, CLASS_PARTS[part][2]), colour, font, bold)
-		ci.draw_rect(Rect2(x, 0, w, CLASS_PX), UiStyle.CHART_FRAME, false, 1.0)
+			_draw_class_part(ci, part, r, Rect2(x, CLASS_PARTS[part][1], w, CLASS_PARTS[part][2]), font, bold)
+		ci.draw_rect(Rect2(x, 0, w, CLASS_PX), CARD_EDGE, false, 1.0)
 
 ## One part of a class's column (CLASS_PARTS[part]) in `at`.
-func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, colour: Color, font: Font, bold: Font) -> void:
+func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, font: Font, bold: Font) -> void:
 	var spec: Array = CLASS_PARTS[part]
-	var cell := _class_cell(spec[0], r) if spec[0] != "" else ["", UiStyle.TEXT]
+	var cell := _class_cell(spec[0], r) if spec[0] != "" else ["", UiStyle.VALUE]
 	var lit := _class_hover == Vector2i(r, part)
 	var base := at.position.y + at.size.y * 0.5 + 6.0 # a line's baseline, its text centred
 	match spec[3]:
 		"big":
-			UiStyle.text_at(ci, Vector2(at.position.x, at.end.y - 4.0), cell[0], UiStyle.TEXT, UiStyle.SIZE_HEAD + 6,
+			UiStyle.text_at(ci, Vector2(at.position.x, at.end.y - 4.0), cell[0], UiStyle.VALUE, UiStyle.SIZE_HEAD + 6,
 				HORIZONTAL_ALIGNMENT_CENTER, at.size.x, bold)
 		"note":
 			UiStyle.text_at(ci, Vector2(at.position.x, base), cell[0] + " der Menschen", UiStyle.DIM, UiStyle.SIZE_SMALL,
@@ -1296,7 +1289,7 @@ func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, colour: Colo
 			UiStyle.text_at(ci, Vector2(at.position.x, base), "Hungert" if short else "Satt", UiStyle.LOSS if short else UiStyle.TEXT,
 				UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_CENTER, at.size.x, font)
 		"money":
-			ci.draw_line(Vector2(at.position.x + 10.0, at.position.y), Vector2(at.end.x - 10.0, at.position.y), UiStyle.CHART_FRAME, 1.0)
+			ci.draw_line(Vector2(at.position.x + 10.0, at.position.y), Vector2(at.end.x - 10.0, at.position.y), CARD_EDGE, 1.0)
 			var figure: String = cell[0] + " D"
 			var rest := " je Kopf"
 			var fw := bold.get_string_size(figure, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_HEAD + 2).x
@@ -1305,18 +1298,17 @@ func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, colour: Colo
 			UiStyle.text_at(ci, Vector2(from, base + 2.0), figure, UiStyle.VALUE, UiStyle.SIZE_HEAD + 2, HORIZONTAL_ALIGNMENT_LEFT, -1, bold)
 			UiStyle.text_at(ci, Vector2(from + fw, base + 2.0), rest, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
 				maxf(0.0, at.end.x - from - fw - 4.0), font)
-		"head": # a band with a chevron, its figure bright and its name dim
+		"head": # a band with a chevron, its figure and its name
 			var band := at.grow_individual(-4.0, 0.0, -4.0, 0.0)
 			ci.draw_rect(band, UiStyle.ROW_HEAD)
-			ci.draw_line(Vector2(band.position.x, band.end.y), Vector2(band.end.x, band.end.y), UiStyle.CHART_FRAME, 1.0)
 			var c := Vector2(band.position.x + 12.0, band.get_center().y)
 			ci.draw_polyline(PackedVector2Array([c + Vector2(-4, -2), c + Vector2(0, 2), c + Vector2(4, -2)]), UiStyle.GOLD, 1.5, true)
 			var figure: String = cell[0] + " " if spec[0] != "" else ""
 			var fw := font.get_string_size(figure, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_TEXT).x
-			UiStyle.text_at(ci, Vector2(band.position.x + 22.0, base), figure, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font)
-			UiStyle.text_at(ci, Vector2(band.position.x + 22.0 + fw, base), spec[4], UiStyle.DIM, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
+			UiStyle.text_at(ci, Vector2(band.position.x + 22.0, base), figure, UiStyle.VALUE, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font)
+			UiStyle.text_at(ci, Vector2(band.position.x + 22.0 + fw, base), spec[4], UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
 				maxf(0.0, band.end.x - band.position.x - 26.0 - fw), font)
-		"line", "fill": # a tile as Victoria 3's needs: icon, name, figure at the right
+		"line": # a tile as Victoria 3's needs: icon, name, figure at the right
 			var tile := Rect2(at.position.x + 4.0, at.position.y + 1.0, at.size.x - 8.0, at.size.y - 2.0)
 			ci.draw_rect(tile, UiStyle.ROW)
 			var name_x := tile.position.x + 6.0
@@ -1325,15 +1317,10 @@ func _draw_class_part(ci: CanvasItem, part: int, r: int, at: Rect2, colour: Colo
 				ci.draw_texture_rect(icon, Rect2(tile.position.x + 4.0, tile.position.y + 4.0, 16.0, 16.0), false, UiStyle.DIM)
 				name_x += 20.0
 			var fw := font.get_string_size(cell[0], HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL).x
-			UiStyle.text_at(ci, Vector2(name_x, base - 1.0), spec[5], UiStyle.CONCEPT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT,
+			UiStyle.text_at(ci, Vector2(name_x, base - 1.0), spec[5], UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT,
 				maxf(0.0, tile.end.x - name_x - fw - 10.0), font)
 			UiStyle.text_at(ci, Vector2(tile.position.x, base - 1.0), cell[0], cell[1], UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT,
 				tile.size.x - 6.0, font)
-			if spec[3] == "fill" and _class_data.has(spec[0]) and r < _class_data[spec[0]].size():
-				var share := clampf(float(_class_data[spec[0]][r]), 0.0, 1.0)
-				var trough := Rect2(tile.position.x + 1.0, tile.end.y - 4.0, tile.size.x - 2.0, 3.0)
-				ci.draw_rect(trough, UiStyle.CHART_GRID)
-				ci.draw_rect(Rect2(trough.position, Vector2(trough.size.x * share, trough.size.y)), UiStyle.LOSS if cell[1] == UiStyle.LOSS else colour)
 	if lit:
 		ci.draw_rect(at.grow_individual(-4.0, 0.0, -4.0, 0.0), UiStyle.HOVER)
 
