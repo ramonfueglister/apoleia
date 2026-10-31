@@ -40,6 +40,7 @@ mod crafts;
 mod outside;
 mod pricing;
 mod sites;
+mod spend;
 mod tables;
 mod taxes;
 mod ways;
@@ -49,6 +50,7 @@ pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
+pub use spend::{spend_choices, SpendRow, DEFAULT_SPEND, SPEND_LAWS, SPEND_LAW_NAMES};
 pub use taxes::{LawRow, DEFAULT_LAW, LAWS, LAW_LEVELS, LAW_NAMES, LEVEL_NAMES};
 
 // ---------------------------------------------------------------------
@@ -318,6 +320,9 @@ const ROAD_PCT: i64 = 50;
 /// The level of a built road, above the trade roads that traffic makes
 /// (index into TRADE_COST_PCT).
 const BUILT_ROAD: u8 = 3;
+/// S133: work days to pave a fine tile: a way across it is about three
+/// lots of 0.5 km (sites::ROAD_LOT_DAYS each). PLACEHOLDER.
+const PAVE_DAYS: i64 = 3 * sites::ROAD_LOT_DAYS;
 /// Each market's trips are walked (and its field rebuilt if a level
 /// changed) once in this many days, 1/WALK_DAYS of the markets a day.
 /// PLACEHOLDER for performance; GRAIN.md planned monthly.
@@ -345,7 +350,9 @@ pub const WORK_SOW: u8 = 0;
 pub const WORK_HARVEST: u8 = 1;
 pub const WORK_OFF: u8 = 2;
 pub const WORK_SURPLUS: u8 = 3;
-/// S129: public works for the state, at the market place (no farm).
+/// S129: public works for the state, at the market place (no farm); S133:
+/// at the fine tile it paves (the `work` entry carries the tile, not a
+/// farm).
 pub const WORK_STATE: u8 = 4;
 const SELL: u8 = 0;
 const BUY: u8 = 1;
@@ -550,7 +557,8 @@ pub struct Market {
     pub out_cost: i64,
     pub outs: [i64; outside::SIDES],
     /// For the view only (`work_in`): the day of this week's labour
-    /// exchange and who worked where: (worker household, farm, days, kind).
+    /// exchange and who worked where: (worker household, farm, days, kind);
+    /// for WORK_STATE the fine tile paved instead of the farm (S133).
     work_day: i64,
     work: Vec<(u32, u32, i64, u8)>,
     pub people: u32,
@@ -596,6 +604,9 @@ pub struct Market {
     /// S132: freight paid for loads that start here, not yet paid out as
     /// carriers' wages (milli-denarii; `freight_wage`).
     freight_due: i64,
+    /// S133: the fine tile the market's public works pave now and the
+    /// days worked on it (NONE: none chosen yet).
+    pave: (u32, i64),
     /// S131: the usual net yield of a hectare of the region's farms, kg
     /// (as of the last count; the Grundsteuer's base); Grundsteuer and
     /// Kopfsteuer paid here and the Zehnt delivered here since the last
@@ -644,6 +655,12 @@ pub struct GrainStats {
     /// S132: carriers hired with the freight, days and denarii (milli).
     pub carry_days: i64,
     pub carry_paid: i64,
+    /// S133: fine tiles the public works paved; grain bought for the
+    /// Vorratshaltung and given as Spende, kg; days of Notstandsarbeit.
+    pub paved: i64,
+    pub stock_kg: i64,
+    pub dole_kg: i64,
+    pub relief_days: i64,
     pub harvest_kg: i64,
     pub harvest_lost_kg: i64,
     pub sow_short_m2: i64,
@@ -816,6 +833,16 @@ pub struct Treasury {
     pub auction_m2: i64,
     pub domains: i64,
     pub written_off: i64,
+    /// S133: grain bought for the Vorratshaltung, denarii and kg; grain
+    /// given as Spende an Bedürftige, kg and its worth at the dealers'
+    /// buying price; days of public works by the needy first
+    /// (Notstandsarbeit); fine tiles paved by the public works.
+    pub stock_paid: i64,
+    pub stock_kg: i64,
+    pub dole_kg: i64,
+    pub dole_worth: i64,
+    pub relief_days: i64,
+    pub paved: i64,
 }
 
 /// The flows the history sums per month: births, deaths, hunger deaths,
@@ -924,6 +951,8 @@ pub struct Grain {
     /// default; off to measure without them), and for the view the median
     /// hectare value and day wage (`taxes::tax_view_update`).
     pub law: [u8; LAWS],
+    /// S133: the spending laws' choices (spend.rs).
+    pub spend: [u8; SPEND_LAWS],
     arrears: taxes::ArrearsMap,
     pub seizure: bool,
     pub auction: bool,
@@ -934,6 +963,9 @@ pub struct Grain {
     /// S132: the freight goes to the start market's carriers as wages
     /// (Fuhrlohn; off: it is gone, as before S132).
     pub freight_wage: bool,
+    /// S133: the public works pave the ways people walk most (off: the
+    /// work makes nothing, as S129 before).
+    pub paving: bool,
     /// S129: the state wages of the last full year (`Treasury::wages`), and
     /// the day and the wages paid by then that it is counted from.
     works_reserve: Option<i64>,
@@ -1004,6 +1036,10 @@ pub struct Grain {
     /// each tile (`tiles` index) nobody leases yet: [good, cleared] m².
     field_lots: std::collections::BTreeSet<crate::build::Tile>,
     state_free: FxHashMap<u32, [u32; 2]>,
+    /// S133: fine tiles paved by the public works, and whether the road
+    /// net must be redone after today's labour exchange.
+    paved: std::collections::BTreeSet<u32>,
+    renet_due: bool,
 }
 
 fn doy(day: i64) -> i64 {
@@ -1422,6 +1458,7 @@ impl Grain {
                 public_days: 0,
                 public_paid: 0,
                 freight_due: 0,
+                pave: (NONE, 0),
                 yield_ha: 0,
                 tax_paid: 0,
                 tithe_kg: 0,
@@ -1471,12 +1508,14 @@ impl Grain {
             state_spend: true,
             food_plan: true,
             law: DEFAULT_LAW,
+            spend: DEFAULT_SPEND,
             arrears: Default::default(),
             seizure: true,
             auction: true,
             tax_view: (0, 0),
             lord_farm_money: true,
             freight_wage: true,
+            paving: true,
             works_reserve: None,
             works_mark: None,
             scratch: Vec::new(),
@@ -1515,6 +1554,8 @@ impl Grain {
             field_todo: Vec::new(),
             field_lots: Default::default(),
             state_free: FxHashMap::default(),
+            paved: std::collections::BTreeSet::new(),
+            renet_due: false,
         };
         gr.build_graph(p);
         gr.gates(p);
@@ -3584,18 +3625,47 @@ impl Grain {
                 let excess = (self.treasury.cash - reserve).max(0);
                 let share = excess as i128 * self.markets[mi].people as i128 / people_all as i128 / 52;
                 let mut want = (share / wage as i128) as i64;
+                let mut hired: Vec<(u32, i64)> = Vec::new();
+                // S133 Notstandsarbeit: those without the money for a
+                // month's food first
+                if self.spend[spend::RELIEF] == spend::RELIEF_WORK {
+                    for k in o..offers.len() {
+                        if want == 0 {
+                            break;
+                        }
+                        if offers[k].1 == 0 || !self.needy(offers[k].0, food) {
+                            continue;
+                        }
+                        let take = want.min(offers[k].1);
+                        offers[k].1 -= take;
+                        want -= take;
+                        self.public_works(mi, offers[k].0, take, wage);
+                        self.treasury.relief_days += take;
+                        self.stats.relief_days += take;
+                        hired.push((offers[k].0, take));
+                    }
+                    while o < offers.len() && offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
                 while want > 0 && o < offers.len() {
                     let take = want.min(offers[o].1);
                     offers[o].1 -= take;
                     want -= take;
                     let w = offers[o].0;
                     self.public_works(mi, w, take, wage);
-                    self.markets[mi].work.push((w, NONE, take, WORK_STATE));
+                    hired.push((w, take));
                     if offers[o].1 == 0 {
                         o += 1;
                     }
                 }
                 vacant += want;
+                // S133: the days pave the ways the people walk most; the
+                // workers stand at the tile they pave (else at the market)
+                for (w, take) in hired {
+                    let at = if self.paving { self.pave(mi, take) } else { NONE };
+                    self.markets[mi].work.push((w, at, take, WORK_STATE));
+                }
             }
             // The market's dealers too: of the cash beyond what buys their
             // most in store (DEALER_MAX_DAYS of grain, TARGET_DAYS of each
@@ -3669,6 +3739,105 @@ impl Grain {
             m.wage = (wage + wage * (vacant - left) / ((vacant + left + 1) * WAGE_ADJUST)).max(1);
             m.wage_year += (m.wage - m.wage_year) / 52;
         }
+        if std::mem::take(&mut self.renet_due) {
+            self.renet_paved();
+        }
+    }
+
+    /// S133: `days` of public works of market `mi` on its paving: the
+    /// tile it paves now, then the next; returns the tile the work starts
+    /// on (NONE without one: no way in the region without a road, or the
+    /// market's path field is out being walked).
+    fn pave(&mut self, mi: usize, mut days: i64) -> u32 {
+        let mut first = NONE;
+        while days > 0 {
+            let (mut at, mut done) = self.markets[mi].pave;
+            if at == NONE || self.road_fine.contains_key(&at) {
+                at = self.pave_next(mi);
+                done = 0;
+                if at == NONE {
+                    self.markets[mi].pave = (NONE, 0);
+                    break;
+                }
+            }
+            if first == NONE {
+                first = at;
+            }
+            let take = days.min(PAVE_DAYS - done);
+            done += take;
+            days -= take;
+            if done >= PAVE_DAYS {
+                self.paved_tile(mi, at);
+                self.markets[mi].pave = (NONE, 0);
+            } else {
+                self.markets[mi].pave = (at, done);
+            }
+        }
+        first
+    }
+
+    /// S133: the most worn fine tile of market `mi`'s region without a road
+    /// (on a tie the lower tile), NONE without one.
+    fn pave_next(&self, mi: usize) -> u32 {
+        let Some(f) = self.markets[mi].field.as_ref() else { return NONE };
+        let per_row = self.cols_f / FINE;
+        let mut best = (0u32, NONE);
+        for &i in &f.worn {
+            let i = i as usize;
+            if f.level[i] == 0 {
+                continue;
+            }
+            let (r, c) = (f.r0 + i as i32 / f.n, f.c0 + i as i32 % f.n);
+            let g = (r * self.cols_f + c) as u32;
+            let cell = ((r / FINE) * per_row + c / FINE) as usize;
+            if self.cell_market.get(cell) != Some(&(mi as u32)) || self.road_fine.contains_key(&g) {
+                continue;
+            }
+            let w = f.wear[i];
+            if w > best.0 || (w == best.0 && g < best.1) {
+                best = (w, g);
+            }
+        }
+        best.1
+    }
+
+    /// S133: a tile paved: a road for carriers from the next morning (the
+    /// market's path field is worked out again, `fields_redo`), and its
+    /// 25 km cell one for wagons once half its width has a road (`renet`
+    /// after the day's labour exchange), as a road the player built (S113).
+    fn paved_tile(&mut self, mi: usize, g: u32) {
+        self.paved.insert(g);
+        *self.road_fine.entry(g).or_default() += 1;
+        if !self.field_todo.contains(&(mi as u32)) {
+            self.field_todo.push(mi as u32);
+        }
+        let per_row = self.cols_f / FINE;
+        let (r, c) = (g as i32 / self.cols_f, g as i32 % self.cols_f);
+        *self.road_cells.entry(((r / FINE) * per_row + c / FINE) as u32).or_default() += 1;
+        self.renet_due = true;
+        self.stats.paved += 1;
+        self.treasury.paved += 1;
+    }
+
+    /// S133: the road net again after the day's paving; the markets that
+    /// reach a 25 km cell that became a road for wagons search the next day.
+    fn renet_paved(&mut self) {
+        let before = self.net.level.clone();
+        self.renet();
+        let changed: Vec<u32> = (0..before.len()).filter(|&c| before[c] != self.net.level[c]).map(|c| c as u32).collect();
+        if changed.is_empty() {
+            return;
+        }
+        for (mi, m) in self.markets.iter().enumerate() {
+            if changed.iter().any(|c| m.reach.binary_search(c).is_ok()) {
+                self.road_urgent.push(mi);
+            }
+        }
+    }
+
+    /// S133: the fine tiles paved by the public works.
+    pub fn paved_tiles(&self) -> impl Iterator<Item = u32> + '_ {
+        self.paved.iter().copied()
     }
 
     /// End of sowing or harvest. Sowing: the area sown follows the work
@@ -3846,6 +4015,13 @@ impl Grain {
                 self.to_lord(lord, pay);
             }
         }
+        // S133: Vorratshaltung, after the week's sale
+        if self.spend[spend::STOCK] > 0 {
+            let reserve = self.works_reserve(day);
+            for mi in (wd..self.markets.len()).step_by(7) {
+                self.stockpile(mi, reserve);
+            }
+        }
     }
 
     /// What a farm takes to market (S112): the grain beyond `keep` only
@@ -4018,6 +4194,8 @@ impl Grain {
                 self.stats.spoiled_kg += lost;
             }
             let mut have = if s.farm != NONE { self.farms[s.farm as usize].store } else { s.pantry };
+            // S133 Spende an Bedürftige: from the state granary first
+            have += self.dole(&s, mk, need - have);
             // The landless beg at the market, then steal (S69).
             if s.kind == TENT && have < need {
                 let m = &mut self.markets[mk as usize];
@@ -4815,7 +4993,9 @@ impl Grain {
         for m in &self.markets {
             for &(w, f, days, kind) in &m.work {
                 let Some(ws) = self.hh.get(&w) else { continue };
+                // S133: public works stand at the tile they pave
                 let (owner, at) = match self.farms.get(f as usize) {
+                    _ if kind == WORK_STATE => (NONE, if f != NONE { f } else { m.fine }),
                     Some(fm) => (fm.hh, fm.fine),
                     None => (NONE, m.fine),
                 };
@@ -5000,6 +5180,13 @@ impl Grain {
             .int("public_days", "Öffentliche Arbeit im Monat", "Tage", (0..rows.len()).map(|i| rows[i].extra.state.public_days - if i > 0 { rows[i - 1].extra.state.public_days } else { 0 }).collect());
         // S131: the tax law's month
         let count = |f: &dyn Fn(&HistoryRow) -> i64| -> Vec<i64> { (0..rows.len()).map(|i| f(&rows[i]) - if i > 0 { f(&rows[i - 1]) } else { 0 }).collect() };
+        // S133: the spending laws' month and the ways paved
+        t.float("stock_d", "Ankauf für den Vorrat im Monat", "Denar", since(&|r| r.extra.state.stock_paid))
+            .float("stock_t", "Ankauf für den Vorrat im Monat", "t", since(&|r| r.extra.state.stock_kg))
+            .float("dole_t", "Spende an Bedürftige im Monat", "t", since(&|r| r.extra.state.dole_kg))
+            .float("dole_d", "Spende an Bedürftige im Monat zum Ankaufspreis", "Denar", since(&|r| r.extra.state.dole_worth))
+            .int("relief_days", "Notstandsarbeit im Monat", "Tage", count(&|r| r.extra.state.relief_days))
+            .int("paved", "Befestigte Wegstücke im Monat", "", count(&|r| r.extra.state.paved));
         let auction_m2 = since(&|r| r.extra.state.auction_m2);
         let land_price: Vec<f64> = since(&|r| r.extra.state.auction_paid).iter().zip(&auction_m2).map(|(&d, &m2)| if m2 > 0.0 { d / m2 * 10.0 } else { 0.0 }).collect();
         t.float("tithe_t", "Zehnt im Monat", "t", since(&|r| r.extra.state.grain_kg))
@@ -5974,6 +6161,71 @@ mod tests {
         }
     }
 
+    /// S133: the spending laws: the state granary buys while holding pays,
+    /// with cash beyond the reserve; the needy get grain from it (Spende)
+    /// or are hired first for the public works (Notstandsarbeit); every
+    /// denarius is booked.
+    #[test]
+    fn spending_laws() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        for _ in 0..40 {
+            p.day();
+            g.day(&mut p);
+        }
+        g.treasury.cash += 1_000_000_000;
+        g.money.start += 1_000_000_000;
+        // Vorratshaltung: off buys nothing; on, a cheap market's granary
+        // buys from its dealers up to the law's days of sales
+        let mi = (0..g.markets.len()).max_by_key(|&m| g.markets[m].demand).unwrap();
+        g.markets[mi].store = g.markets[mi].demand / 1000 * 400;
+        g.markets[mi].horreum = 0;
+        let price = g.markets[mi].price;
+        g.markets[mi].price = 1;
+        g.stockpile(mi, Some(0));
+        assert_eq!(g.markets[mi].horreum, 0);
+        g.set_spend(spend::STOCK as u8, 2);
+        let (cash, store) = (g.treasury.cash, g.markets[mi].store);
+        g.stockpile(mi, Some(0));
+        let kg = g.markets[mi].horreum;
+        assert!(kg > 0 && kg <= g.markets[mi].demand / 1000 * 7);
+        assert_eq!(store - g.markets[mi].store, kg);
+        assert_eq!(cash - g.treasury.cash, g.treasury.stock_paid);
+        assert_eq!(g.treasury.stock_kg, kg);
+        g.stockpile(mi, Some(g.treasury.cash));
+        assert_eq!(g.markets[mi].horreum, kg, "nothing beyond the reserve");
+        assert_eq!(g.money_unbooked(), 0);
+        g.markets[mi].price = price;
+        // Spende: a household short of food without money gets it from
+        // the granary, one with money does not
+        let id = *sorted_keys(&g.info).iter().find(|&&id| g.need_day(id) > 0 && g.hh.get(&id).is_some_and(|s| s.farm == NONE && s.money < 1000 && s.pantry == 0)).unwrap();
+        let mk = g.cell_market[g.info[&id].home as usize];
+        g.markets[mk as usize].horreum += 1000;
+        let s = g.hh[&id];
+        assert_eq!(g.dole(&s, mk, 100), 0);
+        g.set_spend(spend::RELIEF as u8, spend::RELIEF_DOLE);
+        let food = Grain::sell_price(&g.markets[mk as usize]);
+        assert!(g.needy(id, food));
+        let before = g.markets[mk as usize].horreum;
+        assert_eq!(g.dole(&s, mk, 100), 100);
+        assert_eq!(before - g.markets[mk as usize].horreum, 100);
+        let rich = HhState { money: 1_000_000_000, ..s };
+        assert_eq!(g.dole(&rich, mk, 100), 0);
+        // Notstandsarbeit: a week of public works hires the needy first
+        g.set_spend(spend::RELIEF as u8, spend::RELIEF_WORK);
+        g.works_reserve = Some(0);
+        for _ in 0..7 {
+            p.day();
+            g.day(&mut p);
+            assert_eq!(g.money_unbooked(), 0);
+        }
+        assert!(g.treasury.relief_days > 0 && g.treasury.relief_days <= g.treasury.public_days);
+    }
+
     #[test]
     fn public_works_from_surplus() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
@@ -6012,7 +6264,14 @@ mod tests {
         let places: Vec<(f32, f32)> = g.markets.iter().map(|m| g.settle.fine_centre_km(m.fine)).map(|(x, z)| (x as f32, z as f32)).collect();
         let public: Vec<usize> = (0..w.kind.len()).filter(|&i| w.kind[i] == WORK_STATE as i32).collect();
         assert!(!public.is_empty());
-        assert!(public.iter().all(|&i| w.farm_household[i] == -1 && places.contains(&w.to[i])));
+        // S133: at the tile they pave (paved now or still being paved), else
+        // at the market place
+        let tiles: Vec<(f32, f32)> = g.paved_tiles().chain(g.markets.iter().map(|m| m.pave.0).filter(|&t| t != NONE)).map(|t| g.settle.fine_centre_km(t)).map(|(x, z)| (x as f32, z as f32)).collect();
+        assert!(public.iter().all(|&i| w.farm_household[i] == -1 && (places.contains(&w.to[i]) || tiles.contains(&w.to[i]))));
+        assert!(public.iter().any(|&i| tiles.contains(&w.to[i])));
+        // a paved tile is a road for carriers, in the net from today
+        assert!(g.stats.paved > 0 && g.paved_tiles().count() as i64 == g.stats.paved);
+        assert!(g.paved_tiles().all(|t| g.road_fine.contains_key(&t) && g.net.roads.contains(&t)));
     }
 
     /// S131: taxes in money come due, the arrears bring the Pfändung after
