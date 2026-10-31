@@ -291,3 +291,7 @@ Literatur (APA 7; online geöffnet am 31.10.2026, ausser wo «nicht geprüft» s
 - Stevens, S. S. (1957). On the psychophysical law. *Psychological Review, 64*(3), 153–181. (nicht geprüft)
 - Töpfer, F., & Pillewizer, W. (1966). The principles of selection. *The Cartographic Journal, 3*(1), 10–16. (nicht geprüft)
 - Verducci, J. (2010, Februar). Structures: Selective compression. *Garden Railways*. https://www.trains.com/wp-content/uploads/2020/10/selective_compression.pdf
+
+## Verona-Referenz, 31.10.2026 (Codex, nach PR #138)
+
+Sechs lokale Referenzmodelle nach S136 umgesetzt. [Umfang, Quellen und Grenzen](../kit2/VERONA.md), [Prüfung](verona/validation.md). Nur Verona geändert; noch keine globale Umstellung. Der Wohnkern bleibt frei, öffentliche Blöcke weichen auf dem generierten Plan aus. Historische Lagebeziehungen nicht validiert; Therme und unbekannte Höhen als Annahmen markiert. Sitzplätze leer bis zur Anbindung echter Simulationsbesuche. Noch nicht von Ramon abgenommen.

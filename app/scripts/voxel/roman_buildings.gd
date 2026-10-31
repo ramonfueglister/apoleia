@@ -25,6 +25,7 @@ const Town := preload("res://scripts/voxel/roman_town.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
 const Arena := preload("res://scripts/voxel/roman_arena.gd")
 const Landmarks := preload("res://scripts/voxel/roman_landmarks.gd")
+const Verona := preload("res://scripts/voxel/verona_landmarks.gd")
 const City := preload("res://scripts/voxel/roman_city.gd")
 
 const LOD_FACTORS := [1, 4, 10]
@@ -49,7 +50,7 @@ const ARCHETYPES := {
 ## theatre and the baths are Rome's at the diorama scale by the landmark rule
 ## (roman_arena.gd, roman_landmarks.gd, SCALE.md); the forum and the
 ## Pantheon are the town's older models; the Colosseum stays for the menu.
-const LANDMARKS := {"arena": Vector2i(4, 3), "colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(4, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(7, 2), "theatre": Vector2i(2, 3)}
+const LANDMARKS := {"arena": Vector2i(4, 3), "colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(4, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(7, 2), "theatre": Vector2i(2, 3), "verona_arena": Vector2i(3, 3), "verona_theatre": Vector2i(3, 2), "verona_capitolium": Vector2i(2, 2), "verona_forum": Vector2i(2, 4), "verona_basilica": Vector2i(2, 3), "verona_baths": Vector2i(3, 2)}
 ## The landmarks built by the rule's scripts.
 const DIORAMA := ["arena", "circus", "theatre", "baths"]
 
@@ -104,6 +105,7 @@ static var _meshes := {}
 static var _code_town := ""
 static var _code_colosseum := ""
 static var _code_arena := ""
+static var _code_verona := ""
 static var _mesher := ""
 
 static func _mesh(model: String, lod: int) -> ArrayMesh:
@@ -136,6 +138,8 @@ static func _path(name: String) -> String:
 	return "%s/%s.res" % [CACHE_DIR, name]
 
 static func _code(model: String) -> String:
+	if model.begins_with("verona_"):
+		return _code_verona
 	if model in DIORAMA:
 		return _code_arena
 	return _code_colosseum if model == "colosseum" else _code_town
@@ -177,6 +181,7 @@ static func _open() -> void:
 	_code_town = (_source(Town) + _source(City) + kit + own).md5_text()
 	_code_colosseum = (_source(Colosseum) + kit + own).md5_text()
 	_code_arena = (_source(Arena) + _source(Landmarks) + _source(Colosseum) + kit + own).md5_text()
+	_code_verona = (_source(Verona) + _source(Arena) + _source(Colosseum) + kit + own).md5_text()
 	# The mesher and the coarse levels: their code (from the line that
 	# starts them to the end) and the constants they use.
 	var mesher := kit.substr(maxi(kit.find("\nstatic func mesh_arrays("), 0)) + own.substr(maxi(own.find("\nstatic func _coarse("), 0))
@@ -336,6 +341,8 @@ static func _lot_grid(kind: String, variant: int) -> Kit.Grid:
 	return _without_ground(Town.grid_of(build), Town.FLOOR)
 
 static func _landmark_grid(name: String) -> Kit.Grid:
+	if name.begins_with("verona_"):
+		return _without_ground(Verona.grid(name.trim_prefix("verona_")), Verona.GROUND)
 	var build: Callable
 	match name:
 		"arena": return _without_ground(Arena.grid(), Arena.GROUND)

@@ -1,0 +1,614 @@
+{
+  "id": "verona",
+  "name": "Verona",
+  "year": 301,
+  "status": "reference",
+  "centre": [
+    10.99,
+    45.4404
+  ],
+  "lane_surface": "earth",
+  "terrain_rivers": true,
+  "streets": [
+    {
+      "name": "cardo maximus",
+      "rank": "via",
+      "surface": "gravel",
+      "line": [
+        [
+          10.99,
+          45.443642545684476
+        ],
+        [
+          10.99,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "via",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.99,
+          45.443642545684476
+        ],
+        [
+          10.99,
+          45.45754862645458
+        ]
+      ]
+    },
+    {
+      "name": "via",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.99,
+          45.43715745431552
+        ],
+        [
+          10.99,
+          45.42325137354541
+        ]
+      ]
+    },
+    {
+      "name": "decumanus maximus",
+      "rank": "via",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.4404
+        ],
+        [
+          10.99429641516346,
+          45.4404
+        ]
+      ]
+    },
+    {
+      "name": "via",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.985703584836541,
+          45.4404
+        ],
+        [
+          10.967277847129585,
+          45.4404
+        ]
+      ]
+    },
+    {
+      "name": "via",
+      "rank": "via",
+      "surface": "gravel",
+      "outside": true,
+      "line": [
+        [
+          10.99429641516346,
+          45.4404
+        ],
+        [
+          11.012722152870415,
+          45.4404
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.98576978035673,
+          45.443642545684476
+        ],
+        [
+          10.98576978035673,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.44359258729122
+        ],
+        [
+          10.99429641516346,
+          45.44359258729122
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.986615824285385,
+          45.443642545684476
+        ],
+        [
+          10.986615824285385,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.44295406983297
+        ],
+        [
+          10.99429641516346,
+          45.44295406983297
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.987461868214039,
+          45.443642545684476
+        ],
+        [
+          10.987461868214039,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.44231555237473
+        ],
+        [
+          10.99429641516346,
+          45.44231555237473
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.988307912142693,
+          45.443642545684476
+        ],
+        [
+          10.988307912142693,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.44167703491649
+        ],
+        [
+          10.99429641516346,
+          45.44167703491649
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.989153956071346,
+          45.443642545684476
+        ],
+        [
+          10.989153956071346,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.44103851745824
+        ],
+        [
+          10.99429641516346,
+          45.44103851745824
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.990846043928654,
+          45.443642545684476
+        ],
+        [
+          10.990846043928654,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.439761482541755
+        ],
+        [
+          10.99429641516346,
+          45.439761482541755
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.991692087857308,
+          45.443642545684476
+        ],
+        [
+          10.991692087857308,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.439122965083506
+        ],
+        [
+          10.99429641516346,
+          45.439122965083506
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.992538131785961,
+          45.443642545684476
+        ],
+        [
+          10.992538131785961,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.438484447625264
+        ],
+        [
+          10.99429641516346,
+          45.438484447625264
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.993384175714615,
+          45.443642545684476
+        ],
+        [
+          10.993384175714615,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.43784593016702
+        ],
+        [
+          10.99429641516346,
+          45.43784593016702
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.99423021964327,
+          45.443642545684476
+        ],
+        [
+          10.99423021964327,
+          45.43715745431552
+        ]
+      ]
+    },
+    {
+      "name": "vicus",
+      "rank": "vicus",
+      "surface": "gravel",
+      "line": [
+        [
+          10.985703584836541,
+          45.43720741270877
+        ],
+        [
+          10.99429641516346,
+          45.43720741270877
+        ]
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "porta (cardo)",
+      "at": [
+        10.99,
+        45.443642545684476
+      ]
+    },
+    {
+      "name": "porta (cardo)",
+      "at": [
+        10.99,
+        45.43715745431552
+      ]
+    },
+    {
+      "name": "porta (decumanus)",
+      "at": [
+        10.985703584836541,
+        45.4404
+      ]
+    },
+    {
+      "name": "porta (decumanus)",
+      "at": [
+        10.99429641516346,
+        45.4404
+      ]
+    }
+  ],
+  "walls": [
+    {
+      "name": "Murus",
+      "ring": [
+        [
+          10.99429641516346,
+          45.4404
+        ],
+        [
+          10.994184510763729,
+          45.438045857991675
+        ],
+        [
+          10.993827670761725,
+          45.43751122020618
+        ],
+        [
+          10.993119268749217,
+          45.43724190963807
+        ],
+        [
+          10.990000016934273,
+          45.43715745431552
+        ],
+        [
+          10.986880731250784,
+          45.43724190963807
+        ],
+        [
+          10.986172329238276,
+          45.43751122020618
+        ],
+        [
+          10.985815489236272,
+          45.438045857991675
+        ],
+        [
+          10.985703584836541,
+          45.44039998389763
+        ],
+        [
+          10.985815489236272,
+          45.44275414200832
+        ],
+        [
+          10.986172329238276,
+          45.44328877979381
+        ],
+        [
+          10.986880731250784,
+          45.443558090361925
+        ],
+        [
+          10.989999975576554,
+          45.443642545684476
+        ],
+        [
+          10.993119268749217,
+          45.443558090361925
+        ],
+        [
+          10.993827670761725,
+          45.44328877979381
+        ],
+        [
+          10.994184510763729,
+          45.44275414200832
+        ],
+        [
+          10.99429641516346,
+          45.4404
+        ]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Arena",
+      "kind": "amphitheatre",
+      "model": "verona_arena",
+      "centre": [
+        10.9944,
+        45.4389
+      ],
+      "size_m": [
+        152.4,
+        123.2
+      ],
+      "height_m": 31,
+      "evidence": "ArcheoVeneto 73: plan and reconstructed height; three arcaded orders."
+    },
+    {
+      "name": "Theatrum",
+      "kind": "theatre",
+      "model": "verona_theatre",
+      "centre": [
+        11.0017,
+        45.4476
+      ],
+      "size_m": [
+        109,
+        71
+      ],
+      "height_m": 24,
+      "evidence": "ArcheoVeneto 69: cavea diameter 109 m; depth 71 m from structural study. Height 24 m is a modelling assumption, excluding the hill and upper terraces."
+    },
+    {
+      "name": "Capitolium",
+      "kind": "temple",
+      "model": "verona_capitolium",
+      "centre": [
+        10.997,
+        45.4439
+      ],
+      "size_m": [
+        35,
+        42.2
+      ],
+      "height_m": 18,
+      "evidence": "ArcheoVeneto 74: podium c.35 x 42 m; three cellae, 18 pronaos columns. Height 18 m assumed."
+    },
+    {
+      "name": "Forum",
+      "kind": "forum",
+      "model": "verona_forum",
+      "centre": [
+        10.9977,
+        45.4432
+      ],
+      "size_m": [
+        56.5,
+        168
+      ],
+      "height_m": 4,
+      "evidence": "Cavalieri Manasse 1997: dimensions. Portico height 4 m assumed."
+    },
+    {
+      "name": "Basilica",
+      "kind": "public",
+      "model": "verona_basilica",
+      "centre": [
+        10.9964,
+        45.4425
+      ],
+      "size_m": [
+        27.5,
+        78
+      ],
+      "height_m": 20,
+      "evidence": "Cavalieri Manasse 1997: block dimensions; reconstructed building envelope used as approximation. Height 20 m assumed."
+    },
+    {
+      "name": "Thermae (typological)",
+      "kind": "baths",
+      "model": "verona_baths",
+      "centre": [
+        10.9944,
+        45.441
+      ],
+      "size_m": [
+        70,
+        55
+      ],
+      "height_m": 16,
+      "evidence": "Hanson2016_1065: Baths attested. Position, extent and height are typological assumptions, not a measured Verona bath complex."
+    }
+  ],
+  "sources": [
+    "https://archeoveneto.beniculturali.unipd.it/stampe/stampa_scheda_estesa.php?recid=73",
+    "https://archeoveneto.beniculturali.unipd.it/stampe/stampa_scheda_estesa.php?recid=69",
+    "https://archeoveneto.beniculturali.unipd.it/stampe/stampa_scheda_estesa.php?recid=74",
+    "https://www.treccani.it/enciclopedia/verona_(Enciclopedia-dell%27-Arte-Antica)/",
+    "data/cities/facts.json: Hanson2016_1065"
+  ],
+  "accuracy": "Reference landmarks on the existing generated residential plan, not a surveyed reconstruction. Streets and walls retain the previous generated scheme. Landmark anchors approximate surviving locations; public blocks move up to six parcels to keep the residential core and avoid water. Baths are typological. See docs/kit2/VERONA.md.",
+  "landmark_preserve_housing": true
+}
