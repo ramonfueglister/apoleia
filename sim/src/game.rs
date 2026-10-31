@@ -139,6 +139,8 @@ impl Game {
         match *c {
             Command::Law { law, level } => self.grain.set_law(law, level),
             Command::Spend { law, choice } => self.grain.set_spend(law, choice),
+            Command::Debt { law, choice } => self.grain.set_debt(law, choice),
+            Command::ForcedLoan { share, rate } => self.grain.forced_loan(share, rate),
             _ => {}
         }
         self.orders.apply(c, today)

@@ -37,6 +37,7 @@ use std::collections::BinaryHeap;
 use xxhash_rust::xxh3::xxh3_64;
 
 mod crafts;
+mod debt;
 mod outside;
 mod pricing;
 mod sites;
@@ -50,6 +51,7 @@ pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
+pub use debt::{debt_choices, Bond, CreditorRow, BANKRUPTCY, DEBT_LAWS, DEBT_LAW_NAMES, DEFAULT_DEBT, MINT, RENTE_END, RESCHEDULE};
 pub use spend::{spend_choices, SpendRow, DEFAULT_SPEND, SPEND_LAWS, SPEND_LAW_NAMES};
 pub use taxes::{LawRow, DEFAULT_LAW, LAWS, LAW_LEVELS, LAW_NAMES, LEVEL_NAMES};
 
@@ -843,6 +845,28 @@ pub struct Treasury {
     pub dole_worth: i64,
     pub relief_days: i64,
     pub paved: i64,
+    /// S134: the Staatsschuld (debt.rs): bonds issued (of them by
+    /// Zwangsanleihe), repaid at their end or bought back (of it bought
+    /// back), interest paid (of it minted); claims lost in a
+    /// Staatsbankrott, turned into new Renten by an Umschuldung, gone
+    /// with an estate to the state (Heimfall), lapsed with those who left
+    /// the map; the bonds issued (monthly turns that took bids). Levels
+    /// as of the last monthly turn: the debt (face of all bonds), the
+    /// rate of the last bond, basis points, and the creditors.
+    pub debt_issued: i64,
+    pub debt_forced: i64,
+    pub debt_repaid: i64,
+    pub debt_bought: i64,
+    pub interest: i64,
+    pub interest_minted: i64,
+    pub debt_lost: i64,
+    pub debt_rescheduled: i64,
+    pub debt_escheated: i64,
+    pub debt_lapsed: i64,
+    pub bond_issues: i64,
+    pub debt: i64,
+    pub debt_rate: i64,
+    pub creditors: i64,
 }
 
 /// The flows the history sums per month: births, deaths, hunger deaths,
@@ -953,6 +977,10 @@ pub struct Grain {
     pub law: [u8; LAWS],
     /// S133: the spending laws' choices (spend.rs).
     pub spend: [u8; SPEND_LAWS],
+    /// S134: the debt law's choices, the bonds and the creditors' memory
+    /// (debt.rs).
+    pub debt: [u8; DEBT_LAWS],
+    debt_book: debt::DebtBook,
     arrears: taxes::ArrearsMap,
     pub seizure: bool,
     pub auction: bool,
@@ -1509,6 +1537,8 @@ impl Grain {
             food_plan: true,
             law: DEFAULT_LAW,
             spend: DEFAULT_SPEND,
+            debt: DEFAULT_DEBT,
+            debt_book: debt::DebtBook::default(),
             arrears: Default::default(),
             seizure: true,
             auction: true,
@@ -1945,6 +1975,8 @@ impl Grain {
                         self.treasury.cash += s.money;
                         self.treasury.estates += s.money;
                     }
+                    // S134: its bonds go the same way
+                    self.debt_gone(id, if heir { to } else { NONE }, left.contains_key(&id));
                     // The lordship of a landlord who is gone: to the
                     // relative his people joined, else to the first son
                     // who split off (following sons who are gone too),
@@ -2072,6 +2104,9 @@ impl Grain {
         }
         if start {
             self.share_land(p);
+        } else {
+            // S134: the creditors' memory follows sons and heads
+            self.debt_count(p, &log);
         }
     }
 
@@ -2792,6 +2827,7 @@ impl Grain {
                 self.sums();
                 self.export(p);
             }
+            debt::DEBT_SLICE => self.debt_month(day),
             _ => {}
         }
         self.track(p, day, slice == 17);
@@ -4763,6 +4799,8 @@ impl Grain {
                 b.push(f.level[i as usize]);
             }
         }
+        // S134: nothing while there is no debt and no memory
+        self.debt_bytes(&mut b);
         xxh3_64(&b)
     }
 }
@@ -5187,6 +5225,16 @@ impl Grain {
             .float("dole_d", "Spende an Bedürftige im Monat zum Ankaufspreis", "Denar", since(&|r| r.extra.state.dole_worth))
             .int("relief_days", "Notstandsarbeit im Monat", "Tage", count(&|r| r.extra.state.relief_days))
             .int("paved", "Befestigte Wegstücke im Monat", "", count(&|r| r.extra.state.paved));
+        // S134: the Staatsschuld's month
+        t.float("debt", "Staatsschuld", "Denar", den(&|r| r.extra.state.debt))
+            .float("debt_rate", "Zins der letzten Anleihe", "%", float(&|r| r.extra.state.debt_rate as f64 / 100.0))
+            .int("creditors", "Gläubiger", "", int(&|r| r.extra.state.creditors))
+            .float("debt_issued_d", "Neue Anleihen im Monat", "Denar", since(&|r| r.extra.state.debt_issued))
+            .float("debt_forced_d", "Davon Zwangsanleihe", "Denar", since(&|r| r.extra.state.debt_forced))
+            .float("interest_d", "Zinsen im Monat", "Denar", since(&|r| r.extra.state.interest))
+            .float("debt_repaid_d", "Getilgt und zurückgekauft im Monat", "Denar", since(&|r| r.extra.state.debt_repaid))
+            .float("debt_lost_d", "Im Staatsbankrott verloren im Monat", "Denar", since(&|r| r.extra.state.debt_lost))
+            .float("debt_rescheduled_d", "Umgeschuldet im Monat", "Denar", since(&|r| r.extra.state.debt_rescheduled));
         let auction_m2 = since(&|r| r.extra.state.auction_m2);
         let land_price: Vec<f64> = since(&|r| r.extra.state.auction_paid).iter().zip(&auction_m2).map(|(&d, &m2)| if m2 > 0.0 { d / m2 * 10.0 } else { 0.0 }).collect();
         t.float("tithe_t", "Zehnt im Monat", "t", since(&|r| r.extra.state.grain_kg))
@@ -5249,6 +5297,28 @@ impl Grain {
             .float("written_off", "Uneinbringlich abgeschrieben", "Denar", den(tr.written_off))
             .float("arrears", "Steuerrückstand", "Denar", den(arrears))
             .int("arrears_households", "Haushalte im Steuerrückstand", "", vec![owing]);
+        // S134: the debt law and the Staatsschuld since the start
+        let debt = self.debt_rows();
+        let text = |k: usize| vec![debt[k].choices[debt[k].choice as usize].to_string()];
+        t.text("debt_limit", "Schuldengrenze", text(debt::LIMIT))
+            .text("debt_term", "Laufzeit neuer Anleihen", text(debt::TERM))
+            .text("debt_shortfall", "Wenn die Kasse nicht reicht", text(debt::SHORTFALL))
+            .text("usury", "Zinsgesetz", text(debt::USURY))
+            .float("debt", "Staatsschuld", "Denar", den(self.debt_total()))
+            .float("interest_year", "Zinsen im Jahr", "Denar", den(self.interest_year()))
+            .float("revenue_year", "Einnahmen im letzten Jahr", "Denar", den(self.revenue_year().unwrap_or(0)))
+            .float("debt_rate", "Zins der letzten Anleihe", "%", vec![tr.debt_rate as f64 / 100.0])
+            .int("creditors", "Gläubiger", "", vec![self.creditors().len() as i64])
+            .float("debt_issued", "Anleihen ausgegeben", "Denar", den(tr.debt_issued))
+            .float("debt_forced", "Davon Zwangsanleihe", "Denar", den(tr.debt_forced))
+            .float("debt_repaid", "Getilgt und zurückgekauft", "Denar", den(tr.debt_repaid))
+            .float("debt_bought", "Davon Renten zurückgekauft", "Denar", den(tr.debt_bought))
+            .float("interest", "Zinsen", "Denar", den(tr.interest))
+            .float("interest_minted", "Davon neu geprägt", "Denar", den(tr.interest_minted))
+            .float("debt_lost", "Im Staatsbankrott verloren", "Denar", den(tr.debt_lost))
+            .float("debt_rescheduled", "Umgeschuldet", "Denar", den(tr.debt_rescheduled))
+            .float("debt_escheated", "Mit dem Heimfall erloschen", "Denar", den(tr.debt_escheated))
+            .float("debt_lapsed", "Mit Auswanderern verfallen", "Denar", den(tr.debt_lapsed));
         t
     }
 

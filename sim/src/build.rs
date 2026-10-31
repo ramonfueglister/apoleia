@@ -66,12 +66,19 @@ pub enum Command {
     /// S133: spending law `law` (crate::grain::SPEND_LAW_NAMES) to
     /// `choice` (crate::grain::spend_choices).
     Spend { law: u8, choice: u8 },
+    /// S134: part `law` of the debt law (crate::grain::DEBT_LAW_NAMES) to
+    /// `choice` (crate::grain::debt_choices).
+    Debt { law: u8, choice: u8 },
+    /// S134: a Zwangsanleihe of `share` per cent of the richest
+    /// households' spare money at `rate` per cent (crate::grain).
+    ForcedLoan { share: u8, rate: u8 },
 }
 
 impl Command {
     /// Appends the command to a save (crate::game): tag (0 place, 1
     /// cancel), kind, tile count, then rows and columns; a law: tag 2,
-    /// law, level; a spending law (S133): tag 3, law, choice.
+    /// law, level; a spending law (S133): tag 3, law, choice; the debt
+    /// law (S134): tag 4, law, choice; a Zwangsanleihe: tag 5, share, rate.
     pub(crate) fn write(&self, o: &mut Out) {
         let (tag, kind, tiles) = match self {
             Command::Place { kind, tiles } => (0, *kind, tiles),
@@ -86,6 +93,18 @@ impl Command {
                 o.u8(3);
                 o.u8(*law);
                 o.u8(*choice);
+                return;
+            }
+            Command::Debt { law, choice } => {
+                o.u8(4);
+                o.u8(*law);
+                o.u8(*choice);
+                return;
+            }
+            Command::ForcedLoan { share, rate } => {
+                o.u8(5);
+                o.u8(*share);
+                o.u8(*rate);
                 return;
             }
         };
@@ -107,6 +126,14 @@ impl Command {
         if tag == 3 {
             let choice = r.u8()?;
             return if (kind as usize) < crate::grain::SPEND_LAWS && (choice as usize) < crate::grain::spend_choices(kind as usize).len() { Ok(Command::Spend { law: kind, choice }) } else { Err(SaveError::Corrupt("unknown spending law")) };
+        }
+        if tag == 4 {
+            let choice = r.u8()?;
+            return if (kind as usize) < crate::grain::DEBT_LAWS && (choice as usize) < crate::grain::debt_choices(kind as usize).len() { Ok(Command::Debt { law: kind, choice }) } else { Err(SaveError::Corrupt("unknown debt law")) };
+        }
+        if tag == 5 {
+            let rate = r.u8()?;
+            return if (1..=100).contains(&kind) && rate <= 100 { Ok(Command::ForcedLoan { share: kind, rate }) } else { Err(SaveError::Corrupt("bad Zwangsanleihe")) };
         }
         let n = r.count(8)?;
         let tiles = r.col(n, |r| Ok((r.i32()?, r.i32()?)))?;
@@ -152,7 +179,7 @@ impl Orders {
                 }
             }
             // logged only; the game sets the law (`Game::command`)
-            Command::Law { .. } | Command::Spend { .. } => {}
+            Command::Law { .. } | Command::Spend { .. } | Command::Debt { .. } | Command::ForcedLoan { .. } => {}
         }
         if changed > 0 {
             self.version += 1;
@@ -222,7 +249,7 @@ mod tests {
 
     #[test]
     fn commands_read_back() {
-        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Law { law: 1, level: 5 }, Command::Spend { law: 1, choice: 2 }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
+        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Law { law: 1, level: 5 }, Command::Spend { law: 1, choice: 2 }, Command::Debt { law: 3, choice: 0 }, Command::ForcedLoan { share: 25, rate: 5 }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
         let mut o = Out(Vec::new());
         cmds.iter().for_each(|c| c.write(&mut o));
         let mut r = In { b: &o.0 };
@@ -240,6 +267,11 @@ mod tests {
         assert!(Command::read(&mut In { b: &[2, 0] }).is_err());
         assert_eq!(Command::read(&mut In { b: &[2, 2, 0] }).unwrap(), Command::Law { law: 2, level: 0 });
         assert_eq!(Command::read(&mut In { b: &[3, 0, 3] }).unwrap(), Command::Spend { law: 0, choice: 3 });
+        assert_eq!(Command::read(&mut In { b: &[4, 2, 1] }).unwrap(), Command::Debt { law: 2, choice: 1 });
+        assert!(Command::read(&mut In { b: &[4, 4, 0] }).is_err());
+        assert!(Command::read(&mut In { b: &[4, 2, 3] }).is_err());
+        assert_eq!(Command::read(&mut In { b: &[5, 50, 5] }).unwrap(), Command::ForcedLoan { share: 50, rate: 5 });
+        assert!(Command::read(&mut In { b: &[5, 0, 5] }).is_err());
         assert!(Command::read(&mut In { b: &[3, 1, 3] }).is_err());
     }
 

@@ -61,15 +61,18 @@ const FLY_KM := 6.0 # a farmstead's width on screen; a 25 km cell gets its own
 ## by kind (sim/src/events.rs): hunger death, moved, left the map, joined
 ## relatives, theft, alms, tent moved, farm taken, heir, to the tents,
 ## Lex Manciana, farm left; births, weddings, deaths (scenes only); S131
-## Pfändung, Zwangsversteigerung, farm to the Domäne
+## Pfändung, Zwangsversteigerung, farm to the Domäne; S134 bond,
+## Zwangsanleihe, Staatsbankrott, Umschuldung
 const KIND_COLOURS: Array[Color] = [SimTables.NEGATIVE, SimTables.SECONDARY, SimTables.SECONDARY, SimTables.SECONDARY,
 	Color("e0a060"), SimTables.GOLD, SimTables.SECONDARY, Color("9cc47e"), Color("9cc47e"), Color("e0a060"),
 	Color("9cc47e"), Color("e0a060"), SimTables.SECONDARY, SimTables.SECONDARY, SimTables.SECONDARY,
-	Color("e0a060"), Color("e0a060"), SimTables.GOLD]
+	Color("e0a060"), Color("e0a060"), SimTables.GOLD,
+	SimTables.GOLD, Color("e0a060"), SimTables.NEGATIVE, Color("e0a060")]
 ## each kind's icon in res://assets/ui/icons/, in the order above
 const KIND_ICONS: Array[String] = ["death-skull", "walking-boot", "exit-door", "family-house", "robber-hand", "bread",
 	"camping-tent", "barn", "family-tree", "camping-tent", "scroll-quill", "exit-door", "", "", "",
-	"two-coins", "scales", "scroll-unfurled"]
+	"two-coins", "scales", "scroll-unfurled",
+	"scroll-quill", "eagle-emblem", "two-coins", "backward-time"]
 const PIN_DAYS := 15
 const PINS_MAX := 40
 const PIN_GRID := 14.0 # pins closer than the view width over this merge
@@ -93,11 +96,17 @@ const FAMILY_TO := 15
 const SEIZURE := 15
 const AUCTION := 16
 const DOMAIN := 17
+## S134: the Staatsschuld's bond, Zwangsanleihe, Staatsbankrott and
+## Umschuldung (`other` a rate in basis points, not a household)
+const BOND := 18
+const FORCED_LOAN := 19
+const DEBT_DEFAULT := 20
+const DEBT_RESCHEDULE := 21
 const WINDOW_DAYS := 2
 const WINDOW_GAP_S := 30.0
 ## moved, joined relatives, theft, alms, tent moved, farm taken, heir, to
 ## the tents, Lex Manciana: the household is still there to show
-const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17]
+const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 18, 19, 20, 21]
 const FACES_KEEP := 200
 
 ## Every answer of the sim thread, also while the list is hidden.
@@ -495,6 +504,22 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.title = "Ein Hof fällt an die Domäne"
 			d.text = "Der Steuerrückstand dieses Hofs ist zwei Jahre alt, und bei der Zwangsversteigerung hat niemand genug geboten. Der Hof fällt an den Staat; die Familie bleibt als Pächterin des Staates, der Rückstand wird abgeschrieben."
 			d.figures = [{"label": "Abgeschrieben", "value": "%s Denar" % SimTables._int(amount)}]
+		BOND:
+			d.title = "Ein Haushalt leiht dem Staat"
+			d.text = "Der Staatskasse fehlte Geld, und der Staat hat eine Anleihe ausgegeben. Dieser Haushalt hat geboten und gehört zu den günstigsten Gläubigern; er erhält jedes Jahr Zins, bei einer Laufzeit am Ende sein Geld zurück."
+			d.figures = [{"label": "Geliehen", "value": "%s Denar" % SimTables._int(amount)}, {"label": "Zins", "value": "%.1f %% im Jahr" % (other / 100.0)}]
+		FORCED_LOAN:
+			d.title = "Zwangsanleihe"
+			d.text = "Nach dem Erlass muss dieser Haushalt, einer der reichsten, dem Staat einen Teil seines Geldes leihen, zum Zins aus dem Erlass. Was dieser Zins unter dem liegt, was er sonst verlangt hätte, merkt er sich als Verlust."
+			d.figures = [{"label": "Geliehen", "value": "%s Denar" % SimTables._int(amount)}, {"label": "Zins", "value": "%.1f %% im Jahr" % (other / 100.0)}]
+		DEBT_DEFAULT:
+			d.title = "Staatsbankrott: ein Gläubiger verliert"
+			d.text = "Die Staatskasse konnte Zins oder Tilgung nicht voll zahlen. Nach dem Gesetz zahlt sie jedem Gläubiger denselben Anteil; der Rest ist verloren. Dieser Haushalt merkt sich den Verlust und verlangt künftig mehr Zins."
+			d.figures = [{"label": "Verloren", "value": "%s Denar" % SimTables._int(amount)}]
+		DEBT_RESCHEDULE:
+			d.title = "Umschuldung"
+			d.text = "Die Staatskasse konnte Zins oder Tilgung nicht voll zahlen. Nach dem Gesetz wird der Rest zu einer neuen Rente ohne Laufzeit mit tieferem Zins. Dieser Haushalt merkt sich den Verlust."
+			d.figures = [{"label": "Umgeschuldet", "value": "%s Denar" % SimTables._int(amount)}, {"label": "Neuer Zins", "value": "%.1f %% im Jahr" % (other / 100.0)}]
 	_window = EventWindow.open(get_tree(), d)
 	_window_msec = Time.get_ticks_msec()
 	var households := []

@@ -1424,6 +1424,81 @@ Was auffällt:
 - Laurence, R. (1999). *The roads of Roman Italy: Mobility and cultural change*. Routledge. (nicht selbst nachgelesen)
 - Miranda, M. J., & Helmberger, P. G. (1988). The effects of commodity price stabilization programs. *The American Economic Review, 78*(1), 46–58. (nicht selbst nachgelesen)
 
+## Staatsschuld (S134, 100 Jahre, Seeds 1 und 2, mit und ohne Startgeld; vorher: S133, PR #121)
+
+Ramon (31.10.2026, Planungs-Thread „Regierungseinflüsse nach Vic3-Vorbild“): Karten B1 bis B4, „Nach den
+Ausgabengesetzen“ und „12 % für alle, Höchstzins nur privat“; Plan https://claude.ai/artifact/3iFcWf8MZ51uC2YyTt539v,
+„5 Bauumfang“. Regeln in S134. Zu Beginn erlaubt das Gesetz keine Schuld, das Spiel läuft wie vorher
+(gleicher Fingerabdruck, 5 Jahre). Neu im Lauf: Zeile „debt (S134)“ (Schuld, Jahreseinnahme, Zinsen im Jahr,
+Zins der letzten Anleihe, Gläubiger und Anteil der zehn grössten, Summen seit Beginn). Läufe mit
+`--debt-limit 1–3` (eine / drei Jahreseinnahmen / ohne Grenze), `--debt-short 1` (Staatsbankrott), `--debt-short 2`
+(Umschuldung), `--debt-term 2` (10 Jahre), `--forced-loan 20,25,5` (Zwangsanleihe im Jahr 20: 25 % zu 5 %).
+„Ohne Startgeld“ ist die Sonde des Geldkreislaufs (`--inherit-money --divorce-money`,
+`/mnt/project-files/sim-probes/geldkreislauf/`), weil die Schuld auch ohne diese Quelle tragen muss (Plan, Punkt 9).
+Beträge in Mio. Denar.
+
+**Mit Startgeld leiht der Staat nie.** Bei jeder Schuldengrenze und beiden Seeds sind die Läufe gleich wie
+ohne Schuld (Seed 1: 129'309 Menschen im Jahr 100, 9'163 / 8'733 Hungertote; Seed 2: 129'048, 8'591 / 7'693):
+Das Startgeld fliesst über den Heimfall in die Kasse, und sie fällt nie unter die halbe Reserve. Ohne
+Startgeld leiht nur Seed 1; in Seed 2 reicht die Kasse auch so (Geldschöpfung 0, alle Läufe gleich wie ohne
+Schuld: 128'140 Menschen, 8'955 / 9'512 Hungertote). Die Tabelle zeigt darum Seed 1 ohne Startgeld.
+
+| Lauf (Seed 1, ohne Startgeld) | Menschen J. 100 | Hungertote J. 1–30 / 31–100 | erste Schuld J. / Jahre mit Schuld | Schuld Spitze / J. 100 | Zins der letzten Anleihe | Zinsen je Jahreseinnahme J. 100 | Gläubiger J. 100 (zehn grösste) | ausgegeben | Zinsen gezahlt (davon geprägt) | verloren / umgeschuldet | Heimfall |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| keine Schuld (Standard) | 129'858 | 9'567 / 8'934 | – | – | – | – | – | – | 42,11 geprägt ohne Schuld (S95) | – | – |
+| bis eine Jahreseinnahme | 127'974 | 9'490 / 9'490 | 4 / 51 | 3,15 / 2,79 | 14,4 % | 16 % | 483 (32 %) | 5,87 | 17,08 (5,80) | 0,00 / 0,00 | 0,78 |
+| bis drei Jahreseinnahmen | 126'325 | 9'575 / 8'885 | 4 / 49 | 7,74 / 7,52 | 17,9 % | 50 % | 625 (21 %) | 13,52 | 40,35 (24,49) | 0,00 / 0,00 | 1,54 |
+| ohne Grenze | 126'552 | 9'575 / 8'614 | 4 / 49 | 15,92 / 15,89 | 22,7 % | 124 % | 1'045 (15 %) | 23,19 | 78,23 (52,43) | 0,00 / 0,00 | 2,24 |
+| drei, Laufzeit 10 Jahre | 129'300 | 9'622 / 10'058 | 4 / 55 | 8,81 / 8,81 | 17,8 % | 53 % | 137 (62 %) | 35,52 | 49,30 (16,98) | 0,00 / 0,00 | 1,89 |
+| drei, Staatsbankrott | 125'638 | 9'575 / 9'238 | 4 / 49 | 8,88 / 8,04 | 28,5 % | 86 % | 803 (15 %) | 14,18 | 13,34 (0,00) | 38,46 / 0,00 | 1,68 |
+| drei, Umschuldung | 125'175 | 9'575 / 8'249 | 4 / 44 | 61,85 / 61,85 | 17,7 % | 284 % | 592 (17 %) | 10,70 | 8,81 (0,00) | 0,00 / 59,49 | 3,86 |
+| drei, Zwangsanleihe J. 20 | 126'578 | 9'599 / 9'136 | 4 / 52 | 9,16 / 8,89 | 18,0 % | 58 % | 782 (33 %) | 23,07 (Zwang 8,45) | 46,94 (26,31) | 0,00 / 0,00 | 1,69 |
+
+Was auffällt:
+
+- **Ohne Startgeld leiht der Staat schon im Jahr 4**, zahlt bis etwa Jahr 40 alles zurück (Rückkauf über der
+  ganzen Reserve) und leiht ab etwa Jahr 60 wieder, bis die Grenze erreicht ist. Die Gläubiger sind am Anfang
+  wenige Reiche (Jahr 4: rund 100 Gläubiger, die zehn grössten halten 92 %), später Hunderte (15–33 % bei den
+  zehn grössten).
+- **Der Zins steigt mit der Schuld, ohne dass ihn jemand setzt.** Die erste Anleihe kostet 14,4–15,1 %
+  (12 % Bodenzins und Aufschläge). Im Jahr 100 sind es 14,4 % bei einer Jahreseinnahme, 17,9 % bei drei und
+  22,7 % ohne Grenze, weil die Zinsen dann 16 %, 50 % und 124 % der Jahreseinnahme ausmachen. Ohne Grenze
+  bieten die Gläubiger ab dem Punkt, an dem die Zinsen die Einnahme erreichen, nichts mehr; die Grenze
+  entsteht von selbst bei rund 16 Mio. Denar, gut sechs Jahreseinnahmen.
+- **Schulden ersetzen das Prägen nicht, sie kosten Zinsen.** Ohne Schuld prägt die Kasse in 100 Jahren
+  42 Mio. Denar (S95). Mit Schuld prägt sie weniger für Löcher, aber die Zinsen (17–78 Mio.) übersteigen
+  rasch die Einnahme, und bei Geldschöpfung wird ein Teil davon geprägt (6–52 Mio.). Ohne Grenze wird
+  insgesamt mehr geprägt als ohne Schuld (65 Mio.). Die Zinsen fliessen an die Haushalte mit Geld.
+- **Staatsbankrott:** Die Schuld bleibt bei rund 8 Mio., aber die Kasse zahlt die Zinsen nur zum Teil;
+  38 Mio. gehen verloren, die Gläubiger merken es sich, und die letzte Anleihe kostet 28,5 % statt 17,9 %.
+- **Umschuldung wird zur Schuldenspirale.** Jedes Jahr, in dem die Kasse die Zinsen nicht zahlen kann, wird
+  der Rest zu einer neuen Rente; die Schuld wächst so bis Jahr 100 auf 62 Mio. Denar, das 33-Fache der
+  Jahreseinnahme und weit über der Grenze von drei Jahreseinnahmen, weil die Grenze nur neue Anleihen
+  begrenzt. Ob das so bleiben soll (historisch: Ägypten und das Osmanische Reich in den 1870er Jahren) oder
+  ob umgeschuldete Zinsen auf die Grenze zählen, ist eine offene Frage an Ramon.
+- **Laufzeit 10 Jahre:** Der Staat muss alle zehn Jahre neu leihen (35,5 Mio. ausgegeben statt 13,5); nur
+  137 Gläubiger, die zehn grössten halten 62 %, weil bei jeder Erneuerung die Reichsten mit dem meisten
+  freien Geld zeichnen.
+- **Zwangsanleihe im Jahr 20** (25 % zu 5 %): bringt 8,45 Mio. ein, als die Kasse sie nicht braucht; die
+  Kasse kauft die Renten darum innert eines Jahres zurück. Bei den Gezwungenen bleibt der Verlust in der
+  Erinnerung (der Zins lag mindestens 8 Punkte unter ihrem eigenen).
+- **Hungertote und Menschen** ändern sich kaum: Hungertote ab Jahr 31 zwischen −8 % und +13 %, so gross wie
+  die Streuung zwischen den Seeds; im Jahr 100 leben 0,4–3,6 % weniger Menschen.
+- Gleicher Fingerabdruck wie vorher mit „keine Schuld“ (5 Jahre, Seed 1); nicht gebucht bleibt 0 in allen
+  Läufen. 97 Tests grün, 1 ausgelassen (neu: `memory_fades_by_half_lives`, `interest_is_by_the_day`,
+  `bonds_keep_the_books`). Godot-Crate kompiliert. Die Oberfläche ist blind gebaut, auf dem Mac nicht getestet.
+- PLATZHALTER: siehe S134 in `decisions.md`.
+
+### Quellen zu S134 (APA 7)
+
+- Cruces, J. J., & Trebesch, C. (2013). Sovereign defaults: The price of haircuts. *American Economic Journal: Macroeconomics, 5*(3), 85–117. (nur die Zusammenfassung gelesen)
+- Drelichman, M., & Voth, H.-J. (2007). *The sustainable debts of Philip II: Revenues, expenditures and primary surplus in Habsburg Spain, 1560–1598* [Unveröffentlichter Entwurf]. https://www.economics.uci.edu/files/docs/colloqpapers/s07/Drelichman.pdf
+- Global Financial Data. (o. J.). *Birds, boats and bonds in Venice: The first AAA government issue*. https://globalfinancialdata.com/birds-boats-and-bonds-in-venice-the-first-aaa-government-issue
+- Malmendier, U., & Nagel, S. (2011). Depression babies: Do macroeconomic experiences affect risk taking? *The Quarterly Journal of Economics, 126*(1), 373–416. (nicht selbst nachgelesen)
+- Meyer, J., Reinhart, C. M., & Trebesch, C. (2022). Sovereign bonds since Waterloo. *The Quarterly Journal of Economics, 137*(3), 1615–1680. https://doi.org/10.1093/qje/qjac007 (nur die Zusammenfassung gelesen)
+- North, D. C., & Weingast, B. R. (1989). Constitutions and commitment: The evolution of institutions governing public choice in seventeenth-century England. *The Journal of Economic History, 49*(4), 803–832. (nicht selbst nachgelesen)
+- Stasavage, D. (2011). *States of credit: Size, power, and the development of European polities*. Princeton University Press.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
