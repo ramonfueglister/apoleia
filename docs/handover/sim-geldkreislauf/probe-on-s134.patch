@@ -1,0 +1,345 @@
+diff --git a/sim/src/bin/grain.rs b/sim/src/bin/grain.rs
+index 3ed9d95..107db1e 100644
+--- a/sim/src/bin/grain.rs
++++ b/sim/src/bin/grain.rs
+@@ -7,6 +7,7 @@
+ //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
+ //!              [--inherit equal|now|one] [--no-floor] [--no-sow-price]
+ //!              [--sales-month] [--no-carry-sale]
++//!              [--inherit-money] [--divorce-money]
+ //!              [--no-freight-wage] [--no-paving] [--stock 0-3] [--relief 0-2]
+ //!              [--debt-limit 0-3] [--debt-term 0-3] [--debt-short 0-2]
+ //!              [--usury 0-3]
+@@ -100,7 +101,10 @@ fn main() {
+     g.seizure = !args.iter().any(|a| a == "--no-seizure");
+     g.auction = !args.iter().any(|a| a == "--no-auction");
+     g.lord_farm_money = !args.iter().any(|a| a == "--lord-money-old");
+-    // S132: the freight pays carriers at the start market (Fuhrlohn).
++    // S132: the freight pays carriers at the start market (Fuhrlohn);
++    // probe, off: sons take their share of the father's money instead of
++    // start money.
++    g.inherit_money = args.iter().any(|a| a == "--inherit-money");
+     g.freight_wage = !args.iter().any(|a| a == "--no-freight-wage");
+     // S133: the public works pave the ways walked most.
+     g.paving = !args.iter().any(|a| a == "--no-paving");
+@@ -125,7 +129,8 @@ fn main() {
+     println!("debt law (S134): {}; Zwangsanleihe {:?}", debt.join(", "), forced);
+     let spend: Vec<String> = g.spend_rows().iter().map(|r| format!("{} {}", r.name, r.choices[r.choice as usize])).collect();
+     println!("spending laws (S133): {}; paving: {}", spend.join(", "), g.paving);
+-    println!("freight as carriers' wages (S132): {}", g.freight_wage);
++    g.divorce_money = args.iter().any(|a| a == "--divorce-money");
++    println!("money loop (S132): freight as carriers' wages {}, inherit money (probe) {}, divorced wives take a share (probe) {}", g.freight_wage, g.inherit_money, g.divorce_money);
+     let laws: Vec<String> = g.law_rows().iter().map(|l| format!("{} {} ({} {})", l.name, apoleia_sim::grain::LEVEL_NAMES[l.level as usize], l.rate, l.unit)).collect();
+     println!("tax laws (S131): {}; Pfändung: {}, Zwangsversteigerung: {}, rent of lords with a farm to the farm: {}", laws.join(", "), g.seizure, g.auction, g.lord_farm_money);
+     drop(fine);
+@@ -247,9 +252,11 @@ fn main() {
+             gs.public_days
+         );
+         println!(
+-            "      money loop (S132): exports {:.0} imports {:.0} | freight to carriers {:.0}, waiting {:.0}, carriers den {:.0} days {} this year",
++            "      money loop (S132): exports {:.0} imports {:.0} | inherited {:.0} divorce {:.0} | freight to carriers {:.0}, waiting {:.0}, carriers den {:.0} days {} this year",
+             den(m.exports),
+             den(m.imports),
++            den(m.inherited),
++            den(m.divorce),
+             den(m.carried),
+             den(g.freight_due()),
+             den(gs.carry_paid),
+diff --git a/sim/src/grain.rs b/sim/src/grain.rs
+index 2bb7857..b11fb73 100644
+--- a/sim/src/grain.rs
++++ b/sim/src/grain.rs
+@@ -782,8 +782,13 @@ pub struct Money {
+     /// simulation receives it (S132 `freight_wage` off).
+     pub freight: i64,
+     /// S132: freight paid into the start market's carriers' wages
+-    /// (`freight_wage`; only moves money).
++    /// (`freight_wage`), and money the sons took as their share of their
++    /// father's (`inherit_money`); both only move money.
+     pub carried: i64,
++    pub inherited: i64,
++    /// S132 (probe, `divorce_money`): money divorced wives took from their
++    /// husband's household (only moves money).
++    pub divorce: i64,
+     /// Money that left the map with the households that left it (S97).
+     pub left_map: i64,
+     /// S98: paid by the markets beyond the map for grain (a source) and
+@@ -988,6 +993,12 @@ pub struct Grain {
+     /// S131: rent money of a lord with a farm goes to the farm's money
+     /// (`to_lord`; off as before S131).
+     pub lord_farm_money: bool,
++    /// S132 (probe, off): sons founding their household take their equal
++    /// share of their father's money instead of start money from nothing.
++    pub inherit_money: bool,
++    /// S132 (probe, off): a divorced wife takes her share of the money of
++    /// her husband's household, as one of its adults.
++    pub divorce_money: bool,
+     /// S132: the freight goes to the start market's carriers as wages
+     /// (Fuhrlohn; off: it is gone, as before S132).
+     pub freight_wage: bool,
+@@ -1544,6 +1555,8 @@ impl Grain {
+             auction: true,
+             tax_view: (0, 0),
+             lord_farm_money: true,
++            inherit_money: false,
++            divorce_money: false,
+             freight_wage: true,
+             paving: true,
+             works_reserve: None,
+@@ -1915,6 +1928,13 @@ impl Grain {
+     /// region (S69: a free farm is taken automatically).
+     fn reconcile(&mut self, p: &mut People, start: bool) {
+         let log = std::mem::take(&mut p.split_log);
++        // S132 (probe, `inherit_money`): each son who founds his household
++        // takes an equal share of his father's money (the father's
++        // household keeps one if it goes on); the shares are paid once the
++        // sons' households exist, below.
++        let shares = if !start && self.inherit_money { self.money_shares(&log) } else { Vec::new() };
++        let wives = std::mem::take(&mut p.divorce_log);
++        let parted = if !start && self.divorce_money { self.divorce_shares(&wives) } else { Vec::new() };
+         if !start && p.inherit == crate::people::INHERIT_EQUAL {
+             self.inherit_equal(&log);
+         }
+@@ -2083,6 +2103,7 @@ impl Grain {
+             // place (settle.rs, the same spots the people view shows).
+             let fine = self.settle.home_fine(i.home, id, i.stand);
+             let money = match kind {
++                _ if !start && self.inherit_money => 0,
+                 ELITE => ELITE_MONEY,
+                 TRADER => TRADER_MONEY,
+                 _ => 0,
+@@ -2102,6 +2123,27 @@ impl Grain {
+             }
+             self.hh.insert(id, HhState { kind, pantry: 0, money, farm, fine, fed: 1000, busy: false, trading: false, own_food, goods: HhGoods::default() });
+         }
++        for (to, amount, from) in parted {
++            self.money.divorce += amount;
++            let to = if self.hh.contains_key(&to) { to } else { from };
++            if self.hh.contains_key(&to) {
++                self.earn(to, amount);
++            } else {
++                self.treasury.cash += amount;
++                self.treasury.estates += amount;
++            }
++        }
++        for (son, amount, old) in shares {
++            self.money.inherited += amount;
++            if self.hh.contains_key(&son) {
++                self.earn(son, amount);
++            } else if self.hh.contains_key(&old) {
++                self.earn(old, amount);
++            } else {
++                self.treasury.cash += amount;
++                self.treasury.estates += amount;
++            }
++        }
+         if start {
+             self.share_land(p);
+         } else {
+@@ -2110,6 +2152,63 @@ impl Grain {
+         }
+     }
+ 
++    /// S132 (probe): what divorced wives take from the money of their
++    /// husband's household (the household's and its farm's): one share as
++    /// one of its adults, taken from it now: (her household, share, his).
++    fn divorce_shares(&mut self, wives: &[(u32, u32)]) -> Vec<(u32, i64, u32)> {
++        let mut out = Vec::new();
++        for &(from, to) in wives {
++            let Some(s) = self.hh.get(&from).copied() else { continue };
++            let farm = if s.farm != NONE && self.farms[s.farm as usize].hh == from { s.farm } else { NONE };
++            let farm_money = if farm != NONE { self.farms[farm as usize].money.max(0) } else { 0 };
++            let adults = self.info.get(&from).map_or(0, |i| i.adults as i64);
++            let share = (s.money.max(0) + farm_money) / (adults + 1);
++            if share <= 0 {
++                continue;
++            }
++            let from_hh = share.min(s.money.max(0));
++            self.hh.get_mut(&from).unwrap().money -= from_hh;
++            if farm != NONE {
++                self.farms[farm as usize].money -= share - from_hh;
++            }
++            out.push((to, share, from));
++        }
++        out
++    }
++
++    /// S132 (probe): the sons' equal shares of their father's money (the
++    /// household's and its farm's), taken from it now: (son, share,
++    /// father's household). Splits are listed by the father's household.
++    fn money_shares(&mut self, log: &[(u32, u32)]) -> Vec<(u32, i64, u32)> {
++        let mut out = Vec::new();
++        let mut k = 0;
++        while k < log.len() {
++            let old = log[k].0;
++            let n_log = log[k..].iter().take_while(|e| e.0 == old).count();
++            let sons: Vec<u32> = log[k..k + n_log].iter().map(|e| e.1).filter(|id| *id != old && self.info.contains_key(id)).collect();
++            k += n_log;
++            let Some(s) = self.hh.get(&old).copied() else { continue };
++            let farm = if s.farm != NONE && self.farms[s.farm as usize].hh == old { s.farm } else { NONE };
++            let farm_money = if farm != NONE { self.farms[farm as usize].money.max(0) } else { 0 };
++            let total = s.money.max(0) + farm_money;
++            if sons.is_empty() || total <= 0 {
++                continue;
++            }
++            let n = sons.len() as i64 + self.info.contains_key(&old) as i64;
++            let share = total / n;
++            let take = share * sons.len() as i64;
++            let from_hh = take.min(s.money.max(0));
++            self.hh.get_mut(&old).unwrap().money -= from_hh;
++            if farm != NONE {
++                self.farms[farm as usize].money -= take - from_hh;
++            }
++            for son in sons {
++                out.push((son, share, old));
++            }
++        }
++        out
++    }
++
+     /// After a count: free farms go to landless households, and the
+     /// workers are listed by market.
+     fn assign_free(&mut self, p: &mut People, start: bool) {
+@@ -5272,6 +5371,8 @@ impl Grain {
+             .float("freight", "Fracht", "Denar", den(m.freight))
+             .float("carried", "Fuhrlohn", "Denar", den(m.carried))
+             .float("freight_due", "Fuhrlohn offen", "Denar", den(self.freight_due()))
++            .float("inherited", "Erbteil", "Denar", den(m.inherited))
++            .float("divorce", "Bei Scheidung mitgenommen", "Denar", den(m.divorce))
+             .float("estates", "Erbloser Nachlass", "Denar", den(tr.estates))
+             .float("public_works", "Öffentliche Arbeit", "Denar", den(tr.public_works))
+             .int("public_days", "Öffentliche Arbeit", "Tage", vec![tr.public_days])
+@@ -6204,31 +6305,42 @@ mod tests {
+     /// pays public works from cash (nothing minted, every denarius
+     /// booked), shown at the market place without a farm; open build
+     /// orders raise the reserve by what they still cost.
+-    /// S132: the freight is paid out to carriers at the day wage (all of
+-    /// it but what waits for next week's hands); off, it is gone as before.
++    /// S132 (probe): with both switches, the freight goes to carriers and
++    /// the sons' money comes from their fathers; nothing appears from
++    /// nothing and every denarius is booked.
+     #[test]
+-    fn freight_pays_carriers() {
++    fn money_loop_probe_books_everything() {
+         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+         let Ok(inp) = crate::inputs::load(&root, false) else {
+             return;
+         };
+-        for wage in [true, false] {
+-            let mut p = People::new(&inp, 3);
+-            let mut g = Grain::new(&inp, &mut p);
+-            g.freight_wage = wage;
+-            for _ in 0..120 {
+-                p.day();
+-                g.day(&mut p);
+-                assert_eq!(g.money_unbooked(), 0);
+-                assert_eq!(g.stats.carry_paid + g.freight_due(), g.money.carried);
+-            }
+-            if wage {
+-                assert_eq!(g.money.freight, 0);
+-                assert!(g.stats.carry_days > 0 && g.freight_due() >= 0 && g.freight_due() * 4 < g.money.carried);
+-            } else {
+-                assert!(g.money.freight > 0 && g.money.carried == 0 && g.stats.carry_days == 0);
+-            }
++        let mut p = People::new(&inp, 3);
++        let mut g = Grain::new(&inp, &mut p);
++        g.inherit_money = true;
++        g.divorce_money = true;
++        g.freight_wage = true;
++        for _ in 0..200 {
++            p.day();
++            g.day(&mut p);
++            assert_eq!(g.money_unbooked(), 0);
+         }
++        assert_eq!(g.money.freight, 0);
++        assert_eq!(g.money.endowed, 0);
++        assert!(g.money.carried > 0 && g.stats.carry_paid > 0 && g.stats.carry_days > 0);
++        assert!(g.freight_due() >= 0 && g.freight_due() < g.money.carried);
++        assert!(g.money.divorce > 0);
++        // Sons founding households only come once the people born in the
++        // run have married (the start population has no parents): the
++        // shares of a split made by hand.
++        let ids = sorted_keys(&g.info);
++        let old = *ids.iter().find(|&&id| g.hh.get(&id).is_some_and(|s| s.farm == NONE && s.money > 1000)).unwrap();
++        let son = *ids.iter().find(|&&id| id != old && g.hh.contains_key(&id)).unwrap();
++        let (before, son_before) = (g.money_of(old), g.money_of(son));
++        let shares = g.money_shares(&[(old, son)]);
++        assert_eq!(shares, vec![(son, before / 2, old)]);
++        assert_eq!(g.money_of(old), before - before / 2);
++        g.earn(son, before / 2);
++        assert_eq!(g.money_of(son), son_before + before / 2);
+     }
+ 
+     /// S133: the spending laws: the state granary buys while holding pays,
+diff --git a/sim/src/grain/taxes.rs b/sim/src/grain/taxes.rs
+index 4f4e60f..4adc124 100644
+--- a/sim/src/grain/taxes.rs
++++ b/sim/src/grain/taxes.rs
+@@ -46,8 +46,8 @@
+ //! Domäne and the family becomes the state's tenant. A household without a
+ //! family farm of its own (tenants, estates, the landless) loses only what
+ //! the Pfändung takes; what is left after two years is written off as
+-//! uncollectable. The steps of the three taxes are decided (D3 and the
+-//! Kopfsteuer card); the other values are PLACEHOLDERS.
++//! uncollectable. The steps of the Zehnt and the Grundsteuer are decided
++//! (D3); the Kopfsteuer's steps and the other values are PLACEHOLDERS.
+ 
+ use super::*;
+ use std::collections::BTreeMap;
+@@ -70,12 +70,8 @@ pub const TITHE_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
+ /// for want of a checked historical rate.
+ pub const LAND_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
+ /// Per level: the Kopfsteuer per adult and year in days of the usual day
+-/// wage. Decided (Ramon 31.10.2026): «sehr niedrig» about England's poll
+-/// tax of 1377 (4 d a head over 14, an unskilled labourer's wage about
+-/// 3 d a day), «mittel» that of 1380/81 (a mean of 12 d, the spark of the
+-/// Peasants' Revolt; Wikipedia, 2026), «sehr hoch» about Russia's soul
+-/// tax of 1724–1887, an order of magnitude only.
+-pub const HEAD_DAYS: [i64; LAW_LEVELS] = [0, 1, 2, 4, 6, 9];
++/// wage (PLACEHOLDER).
++pub const HEAD_DAYS: [i64; LAW_LEVELS] = [0, 2, 5, 10, 15, 20];
+ /// The law at the start: the Zehnt at 10 %, no tax in money (as before S131).
+ pub const DEFAULT_LAW: [u8; LAWS] = [2, 0, 0];
+ pub const UNITS: [&str; LAWS] = ["% der Ernte", "% des üblichen Hektarertrags", "Taglöhne je Erwachsenen und Jahr"];
+diff --git a/sim/src/people.rs b/sim/src/people.rs
+index 5f27e38..260e5fd 100644
+--- a/sim/src/people.rs
++++ b/sim/src/people.rs
+@@ -770,6 +770,10 @@ pub struct People {
+     /// each household that joined a relative, and the households that left
+     /// the map, since crate::grain took them.
+     pub join_log: Vec<(u32, u32)>,
++    /// With the grain economy (S132 probe): (husband's household, the
++    /// household the divorced wife goes to) for each divorce since the
++    /// last count.
++    pub divorce_log: Vec<(u32, u32)>,
+     pub leave_log: Vec<u32>,
+     /// S86: NEVER_MARRY_PER_1000 and DIVORCE_PER_10K_YEAR unless set.
+     pub never_marry_per_1000: u64,
+@@ -1058,6 +1062,7 @@ impl People {
+             split_log: Vec::new(),
+             events: Vec::new(),
+             join_log: Vec::new(),
++            divorce_log: Vec::new(),
+             leave_log: Vec::new(),
+             iq_mate_gap,
+             iq_mate_rg: if iq_mate_gap.is_finite() { life::IQ_MATE_RG } else { 0.0 },
+@@ -2122,6 +2127,7 @@ impl People {
+                 (self.world.get::<Home>(fe).unwrap().0, self.world.get::<Household>(fe).unwrap().0, self.world.get::<Stand>(fe).unwrap().0)
+             });
+             let old = self.world.get::<Home>(we).unwrap().0;
++            let from = self.world.get::<Household>(we).unwrap().0;
+             self.world.get_mut::<Spouse>(we).unwrap().0 = NONE;
+             // Her next birth is void.
+             self.world.get_mut::<Sched>(we).unwrap().birth += 1;
+@@ -2144,6 +2150,10 @@ impl People {
+                     }
+                 }
+             }
++            let to = self.world.get::<Household>(we).unwrap().0;
++            if self.econ.is_some() && to != from {
++                self.divorce_log.push((from, to));
++            }
+             self.stats.divorces += 1;
+         }
+     }

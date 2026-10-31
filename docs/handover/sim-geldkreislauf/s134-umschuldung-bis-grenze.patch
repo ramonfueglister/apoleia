@@ -1,0 +1,57 @@
+diff --git a/sim/src/grain/debt.rs b/sim/src/grain/debt.rs
+index 5cabd24..43c7a0e 100644
+--- a/sim/src/grain/debt.rs
++++ b/sim/src/grain/debt.rs
+@@ -439,9 +439,19 @@ impl Grain {
+         let cash = self.treasury.cash.max(0);
+         let law = self.debt[SHORTFALL];
+         let full = cash >= owed || law == MINT;
++        // Umschuldung only up to the Schuldengrenze (Ramon, card 31.10.2026):
++        // what would push the debt beyond it is lost as in a Staatsbankrott.
++        // Faces paid off now leave room for their rest.
++        let mut lost = 0;
++        let mut renewed = 0;
+         if !full {
+-            let lost = owed - cash;
+-            let kept = if law == RESCHEDULE { lost * RESCHEDULE_PCT / 100 } else { 0 };
++            lost = owed - cash;
++            if law == RESCHEDULE {
++                let faces: i64 = due.iter().map(|d| d.3).sum();
++                let room = self.debt_room().unwrap_or(0).saturating_add(faces);
++                renewed = lost.min(room).max(0);
++            }
++            let kept = renewed * RESCHEDULE_PCT / 100;
+             self.debt_book.last_default = Some((day, (lost - kept) * 1000 / owed.max(1)));
+         }
+         let mut gone: Vec<(u32, usize)> = Vec::new();
+@@ -457,16 +467,21 @@ impl Grain {
+             self.treasury.interest += paid_int;
+             self.treasury.debt_repaid += paid - paid_int;
+             let short = all - paid;
++            let again = if renewed > 0 { (short as i128 * renewed as i128 / lost.max(1) as i128) as i64 } else { 0 };
++            let short = if again > 0 {
++                let old = self.debt_book.bonds[&id][k].rate;
++                let rate = old * RESCHEDULE_PCT / 100;
++                self.add_bond(id, Bond { amount: again, rate, start: day, end: RENTE_END, paid: day, forced: false });
++                self.treasury.debt_rescheduled += again;
++                // the loss: the rate cut on what was not paid
++                self.remember(id, again * (100 - RESCHEDULE_PCT) / 100);
++                self.bond_event(crate::events::DEBT_RESCHEDULE, id, again, rate);
++                short - again
++            } else {
++                short
++            };
+             if short > 0 {
+-                if law == RESCHEDULE {
+-                    let old = self.debt_book.bonds[&id][k].rate;
+-                    let rate = old * RESCHEDULE_PCT / 100;
+-                    self.add_bond(id, Bond { amount: short, rate, start: day, end: RENTE_END, paid: day, forced: false });
+-                    self.treasury.debt_rescheduled += short;
+-                    // the loss: the rate cut on what was not paid
+-                    self.remember(id, short * (100 - RESCHEDULE_PCT) / 100);
+-                    self.bond_event(crate::events::DEBT_RESCHEDULE, id, short, rate);
+-                } else {
++                {
+                     self.treasury.debt_lost += short;
+                     self.remember(id, short);
+                     self.bond_event(crate::events::DEBT_DEFAULT, id, short, 0);

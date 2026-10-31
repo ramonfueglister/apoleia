@@ -96,18 +96,18 @@ Jedes Jahr schreibt eine Tabellenzeile mit Jahr, Menschen, …, Hungertoten (Spa
 - GDScript mit gdtoolkit prüfen: `pip install gdtoolkit==4.*`, dann `gdparse datei.gd`. Godot selbst lässt sich in der Cloud nicht laden.
 
 **Ohne Startgeld** (Sonde Erbteil und Scheidungsgeld): Das Patch
-`/mnt/project-files/sim-probes/geldkreislauf/probe-on-s134.patch` passt auf main `5b8167d`. Es fügt
+`docs/handover/sim-geldkreislauf/probe-on-s134.patch` passt auf main `5b8167d`. Es fügt
 `--inherit-money --divorce-money` hinzu.
 
 Alle Läufe von S134 mit Auswertung (`tab2.py`) liegen in `/mnt/project-files/sim-probes/geldkreislauf/runs-s134/`.
-Der Befund der Sonde steht in `/mnt/project-files/sim-probes/geldkreislauf/BEFUND.md`.
+Der Befund der Sonde steht in `docs/handover/sim-geldkreislauf/BEFUND.md`.
 
 ## Offene Punkte (nach Wichtigkeit)
 
 1. **Umschuldungs-Spirale (S134).**
    - **Befund:** Mit dem Gesetz «Umschuldung» wird jeder unbezahlte Zins jedes Jahr zu einer neuen Rente. Im Lauf ohne Startgeld, Seed 1, stieg die Schuld so bis Jahr 100 auf 62 Mio. Denar, das 33-Fache der Jahreseinnahme. Die Schuldengrenze begrenzt nur neue Anleihen.
    - **Vorschlag:** Umschulden nur bis zur Grenze; der Rest fällt wie beim Staatsbankrott aus. Die Karte dazu wurde zurückgezogen, weil die Threads geschlossen wurden; **Ramon hat noch nicht entschieden.**
-   - **Bereit:** Das Patch `/mnt/project-files/sim-probes/geldkreislauf/s134-umschuldung-bis-grenze.patch` passt auf main. Die Tests in `debt.rs` sind damit grün; ein 100-Jahr-Lauf damit fehlt noch.
+   - **Bereit:** Das Patch `docs/handover/sim-geldkreislauf/s134-umschuldung-bis-grenze.patch` passt auf main. Die Tests in `debt.rs` sind damit grün; ein 100-Jahr-Lauf damit fehlt noch.
 2. **Missernten (S101, wiederbelebt).**
    - **Vorschlag:** echtes Wetter aus OWDA und PHYDA, Hagel und Schädlinge je Hof, Nil nach dem Nilometer. Doc: https://claude.ai/artifact/RaX42TN33ymdDhj7fBj1aL
    - **Karte:** Ramons Karte zu den Missernten ist offen. Die Empfehlung war, sie nach der Staatsschuld zu bauen, und die ist jetzt gemergt.

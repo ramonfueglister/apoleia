@@ -89,7 +89,7 @@ Zoll, Verbrauchsteuer, Einkommensteuer, Umsatzsteuer, Vermögensabgabe (als einm
 ## 4 Staatsausgaben (R3): gebaut als S133 (PR #121, gemergt)
 
 ### Befund vorweg (Simulations-Thread, 12:25)
-Die Kasse lebte heimlich vom Heimfall: 222–277 Mio. Denar in 100 Jahren, vor allem von neuen Haushalten mit 1 Mio. Denar Startgeld aus dem Nichts, die ohne Erben sterben (geschiedene Senatorenfrauen). Ohne diese Quelle ist die Kasse ab etwa Jahr 5 leer, der Staat schöpft Geld, und es gibt 22–40 % mehr Hungertote (`/mnt/project-files/sim-probes/geldkreislauf/BEFUND.md`). Ramon wählte «Fuhrlohn jetzt, Erbteil weiter prüfen». **Der Erbteil ist noch offen** (Simulations-Thread). Alle Ausgaben müssen auf Dauer aus Steuern bezahlt werden.
+Die Kasse lebte heimlich vom Heimfall: 222–277 Mio. Denar in 100 Jahren, vor allem von neuen Haushalten mit 1 Mio. Denar Startgeld aus dem Nichts, die ohne Erben sterben (geschiedene Senatorenfrauen). Ohne diese Quelle ist die Kasse ab etwa Jahr 5 leer, der Staat schöpft Geld, und es gibt 22–40 % mehr Hungertote (`docs/handover/sim-geldkreislauf/BEFUND.md`). Ramon wählte «Fuhrlohn jetzt, Erbteil weiter prüfen». **Der Erbteil ist noch offen** (Simulations-Thread). Alle Ausgaben müssen auf Dauer aus Steuern bezahlt werden.
 
 ### Entscheide
 | Nr. | Zeit | Entscheid |
