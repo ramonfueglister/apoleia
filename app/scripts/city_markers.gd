@@ -12,6 +12,14 @@ extends Node3D
 ## keep their marker (min_people), so Italy does not turn into a carpet of
 ## them. Names are the ancient ones of the database (117 AD); later epochs
 ## will need their own (the naming plan).
+##
+## Names give way to each other as on a printed map (Ramon 31.10.2026:
+## "städte regionsnamen überdecken sich gegenseitig"): on every camera move
+## the names are placed largest town first, and a name whose box on screen
+## would touch one already placed stays hidden (greedy label placement by
+## rank, Imhof 1975; Christensen, Marks & Shieber 1995). Names fade in and
+## out instead of popping. The database's province notes in brackets, as in
+## "Apamea (Syria) (1)", are left off the sign.
 
 const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
@@ -28,6 +36,8 @@ const NAME_FROM := 20000.0 # people from which a town shows its name
 const ALL_KM := 300.0
 const PEOPLE_AT_ALL := 1000.0
 const PEOPLE_PER_KM := 25.0
+const LABEL_GAP_PX := 6.0 # free room kept around each name on screen
+const FADE_S := 0.25 # seconds a name takes to fade in or out
 ## where the houses of a cluster stand (lot sides, x and z from its middle),
 ## the first n for n houses; the temple and the gate take the slots after
 const SPOTS: Array[Vector2] = [Vector2(0.0, 0.0), Vector2(1.05, 0.15), Vector2(-0.9, 0.55), Vector2(0.35, -1.0),
@@ -39,6 +49,9 @@ var terrain: Node3D
 var _towns: Array[Dictionary] = [] # pos (world km), people, kind, name; largest first
 var _sets: Dictionary = {} # kind -> {node: MultiMeshInstance3D, towns: Array[int]}
 var _labels: Array[Label3D] = []
+var _label_px: Array[Vector2] = [] # each name's box in font pixels (with its outline)
+var _label_want: PackedFloat32Array = [] # 1 where the name is placed, 0 where it gives way
+var _label_alpha: PackedFloat32Array = []
 var _level := -99
 var _shown := -1.0
 
@@ -89,7 +102,7 @@ func setup(tile_terrain: Node3D, root: String) -> bool:
 		if t.people < NAME_FROM:
 			break
 		var label := Label3D.new()
-		label.text = t.name
+		label.text = _sign_name(t.name)
 		label.font = font
 		label.font_size = 40 if t.people >= 100000.0 else 30
 		label.pixel_size = 0.0005
@@ -102,8 +115,25 @@ func setup(tile_terrain: Node3D, root: String) -> bool:
 		label.visible = false
 		add_child(label)
 		_labels.append(label)
+		_label_px.append(font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size)
+			+ Vector2.ONE * label.outline_size)
+	_label_want.resize(_labels.size())
+	_label_alpha.resize(_labels.size())
+	_label_want.fill(0.0)
+	_label_alpha.fill(0.0)
+	set_process(false)
 	visible = false
 	return true
+
+## A town's name as its sign shows it: without the database's notes in
+## brackets ("Vindobriga (Gallia Aquitania) (1)" -> "Vindobriga"), with a
+## capital first letter.
+static func _sign_name(raw: String) -> String:
+	var cut := raw.find(" (")
+	if cut > 0:
+		raw = raw.substr(0, cut)
+	raw = raw.strip_edges()
+	return raw.left(1).to_upper() + raw.substr(1)
 
 static func _world(lon: float, lat: float) -> Vector2:
 	return Vector2(6371.0088 * cos(deg_to_rad(41.0)) * deg_to_rad(lon - 19.0), -6371.0088 * deg_to_rad(lat - 41.0))
@@ -149,6 +179,7 @@ func update_view(width: float, pixels: float) -> void:
 		return
 	var km_per_m := width / maxf(pixels, 1.0) * MARKER_PX / LOT_M
 	if level == _level and is_equal_approx(km_per_m, _shown):
+		_place_labels(min_people(width)) # panned or turned: names move on screen
 		return
 	var regrounded := level != _level
 	_level = level
@@ -170,6 +201,50 @@ func update_view(width: float, pixels: float) -> void:
 		mm.visible_instance_count = shown
 	for k in _labels.size():
 		var t: Dictionary = _towns[k]
+		_labels[k].position = Vector3(t.pos.x, t.y + km_per_m * LOT_M * 1.6, t.pos.y + km_per_m * LOT_M * 1.8)
+	_place_labels(least)
+
+## Decides which names show: largest town first, each name only where its
+## box on screen keeps LABEL_GAP_PX from every name already placed. Called on
+## every camera move (update_view); the fading runs in _process.
+func _place_labels(least: float) -> void:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return
+	var screen := get_viewport().get_visible_rect()
+	# a fixed_size Label3D in a perspective view is as large on screen as a
+	# label of pixel_size world units at 1 unit before the camera
+	var px_per_font_px := screen.size.y / (2.0 * tan(deg_to_rad(camera.fov) * 0.5))
+	var placed: Array[Rect2] = []
+	for k in _labels.size():
 		var label := _labels[k]
-		label.visible = t.people >= least
-		label.position = Vector3(t.pos.x, t.y + km_per_m * LOT_M * 1.6, t.pos.y + km_per_m * LOT_M * 1.8)
+		var want := 0.0
+		if _towns[k].people >= least and not camera.is_position_behind(label.global_position):
+			var size := _label_px[k] * label.pixel_size * px_per_font_px
+			var box := Rect2(camera.unproject_position(label.global_position) - size * 0.5, size)
+			if screen.intersects(box):
+				var padded := box.grow(LABEL_GAP_PX)
+				want = 1.0
+				for other in placed:
+					if padded.intersects(other):
+						want = 0.0
+						break
+				if want > 0.0:
+					placed.append(box)
+		_label_want[k] = want
+	set_process(true)
+
+## Fades each name toward shown or hidden; stops once all have arrived.
+func _process(delta: float) -> void:
+	var step := delta / FADE_S
+	var moving := false
+	for k in _labels.size():
+		var a := move_toward(_label_alpha[k], _label_want[k], step)
+		_label_alpha[k] = a
+		moving = moving or a != _label_want[k]
+		var label := _labels[k]
+		label.visible = a > 0.0
+		label.modulate.a = a
+		label.outline_modulate.a = a
+	if not moving:
+		set_process(false)
