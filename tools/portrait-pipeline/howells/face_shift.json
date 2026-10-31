@@ -1,0 +1,117 @@
+{
+ "source": "Howells craniometric data; Germania NORSE+BERG, Aegyptus EGYPT; others PLACEHOLDER by latitude",
+ "z": {
+  "ZYB": {
+   "Italia": 0.288,
+   "Gallia": 0.662,
+   "Germania": 0.609,
+   "Graecia": -0.086,
+   "Syria": -0.366,
+   "Aegyptus": -0.834,
+   "Africa": -0.273
+  },
+  "NPH": {
+   "Italia": -0.041,
+   "Gallia": -0.075,
+   "Germania": 0.033,
+   "Graecia": -0.007,
+   "Syria": 0.018,
+   "Aegyptus": 0.061,
+   "Africa": 0.01
+  },
+  "NLB": {
+   "Italia": 0.086,
+   "Gallia": 0.187,
+   "Germania": 0.115,
+   "Graecia": -0.015,
+   "Syria": -0.091,
+   "Aegyptus": -0.217,
+   "Africa": -0.065
+  },
+  "NLH": {
+   "Italia": -0.039,
+   "Gallia": -0.072,
+   "Germania": 0.027,
+   "Graecia": -0.006,
+   "Syria": 0.019,
+   "Aegyptus": 0.06,
+   "Africa": 0.011
+  },
+  "OBH": {
+   "Italia": 0.019,
+   "Gallia": 0.06,
+   "Germania": 0.137,
+   "Graecia": -0.021,
+   "Syria": -0.051,
+   "Aegyptus": -0.102,
+   "Africa": -0.041
+  },
+  "DKB": {
+   "Italia": 0.175,
+   "Gallia": 0.382,
+   "Germania": 0.238,
+   "Graecia": -0.031,
+   "Syria": -0.186,
+   "Aegyptus": -0.444,
+   "Africa": -0.134
+  }
+ },
+ "shift": {
+  "Italia": {
+   "noseL": -1,
+   "eyeS": 0,
+   "eyeD": 4,
+   "headW": 7,
+   "headH": -1,
+   "noseW": 3
+  },
+  "Gallia": {
+   "noseL": -2,
+   "eyeS": 1,
+   "eyeD": 9,
+   "headW": 17,
+   "headH": -1,
+   "noseW": 2
+  },
+  "Germania": {
+   "noseL": 1,
+   "eyeS": 3,
+   "eyeD": 6,
+   "headW": 15,
+   "headH": 2,
+   "noseW": 2
+  },
+  "Graecia": {
+   "noseL": 0,
+   "eyeS": -1,
+   "eyeD": -1,
+   "headW": -2,
+   "headH": 0,
+   "noseW": 6
+  },
+  "Syria": {
+   "noseL": 0,
+   "eyeS": -1,
+   "eyeD": -4,
+   "headW": -10,
+   "headH": 2,
+   "noseW": 9
+  },
+  "Aegyptus": {
+   "noseL": 1,
+   "eyeS": -2,
+   "eyeD": -11,
+   "headW": -21,
+   "headH": 1,
+   "noseW": -2
+  },
+  "Africa": {
+   "noseL": 0,
+   "eyeS": -1,
+   "eyeD": -3,
+   "headW": -6,
+   "headH": -3,
+   "noseW": -21
+  }
+ }
+}
