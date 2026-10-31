@@ -4,14 +4,18 @@ extends PanelContainer
 ## leather with the title, the game date and a red medallion that folds
 ## it away. Each notice is a dark green row: a small medallion with the
 ## icon of its kind in the kind's colour (or the face of the household it
-## is about), the day, the text, lit gold under the mouse. It only shows rows; what they are and what a click
-## does is up to its owner (sim/sim_events.gd).
+## is about), the day, the text, lit gold under the mouse; its star at the
+## right asks to pin it in the outliner (ui/outliner.gd). The cog in the
+## band opens the settings at «Meldungen» (ui/pause_menu.gd show_settings).
+## It only shows rows; what they are and what a click does is up to its
+## owner (sim/sim_events.gd).
 
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const WIDTH := 400.0
 const BAND_PX := 40.0
 
 signal chosen(entry: Dictionary)
+signal pin_asked(entry: Dictionary)
 signal closing
 
 var stand: Label # the game date, at the right of the band
@@ -19,6 +23,7 @@ var list: VBoxContainer
 var _bar: Control
 
 func _init() -> void:
+	add_to_group("notice_list") # the outliner above keeps clear of it
 	theme = Vic3.theme()
 	custom_minimum_size.x = WIDTH
 	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -49,6 +54,11 @@ func _init() -> void:
 	stand = Vic3.label("", Vic3.DIM, Vic3.SIZE_SMALL, Vic3.italic())
 	stand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(stand)
+	# which kinds open a window, stay a line or pause: the settings' page «Meldungen»
+	var cog := Vic3.Medallion.new("cog", "Meldungen einstellen", 28.0)
+	cog.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cog.pressed.connect(func(): get_tree().call_group("pause_menu", "show_settings", 1))
+	head.add_child(cog)
 	var close := Vic3.Medallion.new("", "Ausblenden  (E)", 28.0, true)
 	close.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	close.pressed.connect(func(): closing.emit())
@@ -78,7 +88,7 @@ func show_rows(rows: Array) -> void:
 		var row := Row.new(r.get("day", ""), r.get("text", ""), r.get("colour", Vic3.TEXT), r.get("icon", ""), i % 2 == 1)
 		row.show_face(r.get("face", {}))
 		var entry: Dictionary = r.get("entry", {})
-		row.pressed.connect(func(): chosen.emit(entry))
+		row.pressed.connect(func(): pin_asked.emit(entry) if row.on_star() else chosen.emit(entry))
 		list.add_child(row)
 
 ## No rows: one quiet line instead.
@@ -104,11 +114,13 @@ static func open_button() -> Button:
 ## One notice: a dark green row, the kind's medallion, the day and the text.
 class Row extends Button:
 	const V = preload("res://scripts/ui/vic3_style.gd")
+	const STAR_W := 30.0
 	const PortraitCache = preload("res://scripts/ui/portrait_cache.gd")
 	## the round cut of a portrait (portrait_cache.gd SIZE) around the head
 	const FACE_UV := Vector2(0.5, 0.4)
 	const FACE_R := 0.3
 	var _colour: Color
+	var _press_x := -1.0
 	var _icon: Texture2D
 	var _face: Texture2D
 	var _face_bg := Color("2b2e1f")
@@ -126,7 +138,7 @@ class Row extends Button:
 		custom_minimum_size.y = 36.0
 		focus_mode = Control.FOCUS_NONE
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		tooltip_text = "Hinfliegen"
+		tooltip_text = "Hinfliegen  ·  Stern: im Outliner anheften"
 		for state in ["normal", "hover", "pressed", "focus", "disabled", "hover_pressed"]:
 			add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		mouse_entered.connect(queue_redraw)
@@ -176,5 +188,20 @@ class Row extends Button:
 		var italic := V.italic()
 		draw_string(italic, Vector2(x, base), _day, HORIZONTAL_ALIGNMENT_LEFT, 64.0, V.SIZE_SMALL, V.DIM)
 		x += 66.0
-		draw_string(V.serif(), Vector2(x, base), _text, HORIZONTAL_ALIGNMENT_LEFT, size.x - x - 8.0, V.SIZE_TEXT - 1,
+		draw_string(V.serif(), Vector2(x, base), _text, HORIZONTAL_ALIGNMENT_LEFT, size.x - x - STAR_W, V.SIZE_TEXT - 1,
 			Color.WHITE if lit else V.TEXT)
+		if lit: # the star that pins it in the outliner
+			var sc := Vector2(size.x - STAR_W * 0.5, size.y * 0.5)
+			var pts := PackedVector2Array()
+			for k in 11:
+				var a := -PI * 0.5 + k * PI / 5.0
+				pts.append(sc + Vector2(cos(a), sin(a)) * (8.0 if k % 2 == 0 else 3.6))
+			draw_polyline(pts, V.GOLD_LIT, 1.5, true)
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			_press_x = event.position.x
+
+	## The last click fell on the star.
+	func on_star() -> bool:
+		return _press_x > size.x - STAR_W
