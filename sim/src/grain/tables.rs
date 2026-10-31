@@ -660,13 +660,50 @@ impl Grain {
             }
             0.0
         };
+        // the nearest field of each farm (near_field: the walk to the field)
+        let mut near: Vec<f64> = self
+            .farms
+            .iter()
+            .filter_map(|fm| {
+                let ((x, z), _) = self.near_field(fm.hh)?;
+                let (hx, hz) = self.settle.fine_centre_km(fm.fine);
+                Some((x - hx).hypot(z - hz))
+            })
+            .collect();
+        near.sort_by(|a, b| a.total_cmp(b));
+        let near_q = |q: f64| near.get(((near.len() as f64 - 1.0) * q).round() as usize).copied().unwrap_or(0.0);
         format!(
-            "fields by distance from the farmstead (fine tiles, share of the area): {} | median {:.2} km, p90 {:.2} km (world) | farms {farms}, with fields 7+ tiles away {edge} ({:.1} %)\n",
+            "fields by distance from the farmstead (fine tiles, share of the area): {} | median {:.2} km, p90 {:.2} km (world) | farms {farms}, with fields 7+ tiles away {edge} ({:.1} %) | nearest field of a farm: on its own tile {:.0} %, median {:.2} km, p75 {:.2} km, p90 {:.2} km\n",
             shares.join(", "),
             quantile(0.5),
             quantile(0.9),
-            100.0 * edge as f64 / farms.max(1) as f64
+            100.0 * edge as f64 / farms.max(1) as f64,
+            100.0 * near.iter().filter(|&&d| d < 0.5).count() as f64 / near.len().max(1) as f64,
+            near_q(0.5),
+            near_q(0.75),
+            near_q(0.9)
         )
+    }
+
+    /// Where the household `hh` goes to work its fields (Bauplan B step 4,
+    /// Ramon 31.10.2026 «Felder bleiben, Weg schneller»): the centre of the
+    /// fine tile with its farm's own or leased fields nearest the farmhouse
+    /// tile (world km; on a tie the bigger piece of field, then the lower
+    /// tile) and the m² of that piece. None without a farm it works or fields. The
+    /// parcels inside the tile are the view's (sim_fields.gdshaderinc).
+    pub fn near_field(&self, hh: u32) -> Option<((f64, f64), u32)> {
+        let s = self.hh.get(&hh)?;
+        let fm = self.farms.get(s.farm as usize).filter(|fm| s.farm != NONE && fm.hh == hh)?;
+        let (r0, c0) = (fm.fine as i32 / self.cols_f, fm.fine as i32 % self.cols_f);
+        let mut best: Option<(i32, std::cmp::Reverse<u32>, u32)> = None;
+        PlotsAt::new(self, 0).farm(fm, &mut |fine, m2, _, _| {
+            let (r, c) = (fine as i32 / self.cols_f, fine as i32 % self.cols_f);
+            let key = ((r - r0).pow(2) + (c - c0).pow(2), std::cmp::Reverse(m2), fine);
+            if best.is_none_or(|b| key < b) {
+                best = Some(key);
+            }
+        });
+        best.map(|(_, std::cmp::Reverse(m2), fine)| (self.settle.fine_centre_km(fine), m2))
     }
 
     /// The farm `f` (an index into the farms, as `HouseholdLook::farm_id`),

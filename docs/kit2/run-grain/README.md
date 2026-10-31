@@ -1258,6 +1258,8 @@ liefen zu viert gleichzeitig mit je 1 Thread. Neu im Lauf: Zeile „taxes (S131)
 „gepfändet“ ist Geld und Korn zum Ankaufspreis (das Korn wird erst beim Verkauf aus dem Staatsspeicher
 zu Geld); beides 100 Jahre, Denar.
 
+**Stufen seit D3** (Ramon, 31.10.2026 09:56: „Oberste Stufe = historisch“): Zehnt und Grundsteuer 0 / 5 / 10 / 12 / 15 / 20 %. Die Läufe unten liefen noch mit den Platzhaltern davor (0 / 5 / 10 / 15 / 20 / 30 %): „mittel“ war 15 statt 12 %, „sehr hoch“ 30 statt 20 %. Ein Fünftel ist der höchste belegte Zehnt (osmanischer Zehnt, je nach Frucht ein Zehntel bis ein Fünftel; Wikipedia, 2026); „Zehnt hoch“ heute (15 %) entspricht dem Lauf „mittel“ unten, „Grundsteuer hoch“ dem Lauf „Grundsteuer mittel“.
+
 | Lauf | Menschen J. 100 | Hungertote J. 31–100 | Höfe J. 100 | Preis J. 100 (Denar/kg) | gesät J. 100 | Geldsteuer bezahlt | gepfändet (Korn) | Versteigert / Domäne | abgeschrieben |
 |---|---|---|---|---|---|---|---|---|---|
 | Seed 1: Zehnt niedrig (10 %), wie heute | 129'969 | 7'792 | 17'616 | 0,84 | 81 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
@@ -1318,6 +1320,7 @@ Was auffällt:
 - Gesetz über die Zwangsversteigerung und die Zwangsverwaltung (ZVG) vom 24. März 1897, § 85a (Deutschland). https://www.gesetze-im-internet.de/zvg/__85a.html
 - Hopkins, K. (1980). Taxes and trade in the Roman Empire (200 B.C.–A.D. 400). *The Journal of Roman Studies, 70*, 101–125. https://doi.org/10.2307/299558
 - Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic and administrative survey*. Blackwell.
+- Wikipedia. (2026). *Ashar*. Abgerufen am 31. Oktober 2026, von https://en.wikipedia.org/wiki/Ashar
 
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
@@ -1332,6 +1335,7 @@ Personen-Thread zeichnet (`sim/godot/src/tables.rs`, `trips.rs`).
 | Ereignisse | `Grain::events_in(since, box)` | Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten, Diebstahl, Almosen, Zelt zieht um, Hof übernommen, Erbteil, Ins Zelt, Hof nach Lex Manciana, Hof verlassen; 60 Tage zurück (`crate::events`) |
 | Preise auf der Karte | `Grain::cell_markets()` | Region jeder 25-km-Zelle, mit der Tabelle `markets` einzufärben |
 | Haushalt | `Grain::household(id)` | Art, satt, Vorrat, Geld, Hof |
+| Nächstes Feld | `Grain::near_field(hh)`, Godot `house_fields()` je Hausplatz, `people_fields()` je Personenplatz | Mitte der Feinkachel mit eigenem oder gepachtetem Feld des Hofs, die der Hofkachel am nächsten liegt (Welt-m je Hausplatz, −1 ohne Feld); für den Weg Haus → Feld (Bauplan B Schritt 4, Ramon 31.10.2026 „Felder bleiben, Weg schneller“; Sonde `/mnt/project-files/sim-probes/naehere-felder/BEFUND.md`: nähere Felder lassen die Menschen verhungern, weil Felder 23,8-fach vergrössert sind) |
 
 Der Verlauf summiert die Zähler Tag für Tag und stimmt auch dann genau, wenn der Lauf sie
 jährlich zurücksetzt (geprüft über drei Jahre: Geburten und Ernte gleich). Alles ist nur
@@ -1453,7 +1457,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
 | Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
 | Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
-| Steuergesetz (S131) | Stufen Zehnt 0/5/10/15/20/30 %, Grundsteuer 0/5/10/15/20/30 % des üblichen Hektarertrags zum üblichen Ankaufspreis, Kopfsteuer 0/2/5/10/15/20 Taglöhne je Erwachsenen; Kopfsteuer ohne Hof am 1. Januar; Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Entscheid D3 des Plans offen; Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
+| Steuergesetz (S131) | Kopfsteuer 0/2/5/10/15/20 Taglöhne je Erwachsenen (Zehnt und Grundsteuer 0/5/10/12/15/20 % sind entschieden, D3); Kopfsteuer ohne Hof am 1. Januar; Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Stufen der Kopfsteuer noch offen (Vorschlag des Planungs-Threads 0/1/2/4/6/9 nach England 1377/1381 und Russland); Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
 
 ## Nicht gebaut
 

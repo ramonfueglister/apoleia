@@ -46,7 +46,8 @@
 //! Domäne and the family becomes the state's tenant. A household without a
 //! family farm of its own (tenants, estates, the landless) loses only what
 //! the Pfändung takes; what is left after two years is written off as
-//! uncollectable. Values are PLACEHOLDERS (decision D3 of the plan).
+//! uncollectable. The steps of the Zehnt and the Grundsteuer are decided
+//! (D3); the Kopfsteuer's steps and the other values are PLACEHOLDERS.
 
 use super::*;
 use std::collections::BTreeMap;
@@ -58,12 +59,16 @@ pub const HEAD: usize = 2;
 pub const LAW_NAMES: [&str; LAWS] = ["Zehnt", "Grundsteuer", "Kopfsteuer"];
 pub const LAW_LEVELS: usize = 6;
 pub const LEVEL_NAMES: [&str; LAW_LEVELS] = ["keine", "sehr niedrig", "niedrig", "mittel", "hoch", "sehr hoch"];
-/// Per level: the Zehnt's share of the net crop, per cent (PLACEHOLDER;
-/// the plan's range 5–30 %, the default 10 % as before S131).
-pub const TITHE_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 15, 20, 30];
+/// Per level: the Zehnt's share of the net crop, per cent. Decided (D3,
+/// Ramon 31.10.2026): the top level is the highest share on record, a
+/// fifth (the Ottoman öşür, a tenth by name, one tenth to one fifth by
+/// crop in the Mosul code of the 1540s, abolished in Turkey in 1925;
+/// Wikipedia, 2026); «niedrig» stays 10 % as before S131.
+pub const TITHE_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
 /// Per level: the Grundsteuer's share of the usual net crop value of a
-/// hectare a year, per cent (PLACEHOLDER).
-pub const LAND_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 15, 20, 30];
+/// hectare a year, per cent. Decided (D3): the same steps as the Zehnt,
+/// for want of a checked historical rate.
+pub const LAND_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
 /// Per level: the Kopfsteuer per adult and year in days of the usual day
 /// wage (PLACEHOLDER).
 pub const HEAD_DAYS: [i64; LAW_LEVELS] = [0, 2, 5, 10, 15, 20];

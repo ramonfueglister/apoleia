@@ -5936,6 +5936,32 @@ mod tests {
     /// a year and the Zwangsversteigerung after two (to the highest bidder,
     /// or to the state as a Domäne without one); every denarius is booked.
     #[test]
+    fn near_field_is_the_nearest_plot() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let g = Grain::new(&inp, &mut p);
+        let at = PlotsAt::new(&g, 0);
+        let mut checked = 0;
+        for fm in g.farms.iter().filter(|fm| fm.hh != NONE && fm.area > 0).take(500) {
+            let ((x, z), m2) = g.near_field(fm.hh).expect("a farm with fields has a nearest one");
+            assert!(m2 > 0);
+            let home = g.settle.fine_centre_km(fm.fine);
+            let d = (x - home.0).hypot(z - home.1);
+            at.farm(fm, &mut |fine, _, _, _| {
+                let (px, pz) = g.settle.fine_centre_km(fine);
+                assert!(d <= (px - home.0).hypot(pz - home.1) + 1e-9);
+            });
+            checked += 1;
+        }
+        assert!(checked > 100);
+        let landless = g.hh.iter().find(|(_, s)| s.farm == NONE).map(|(&id, _)| id).unwrap();
+        assert_eq!(g.near_field(landless), None);
+    }
+
+    #[test]
     fn taxes_arrears_seizure_auction() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let Ok(inp) = crate::inputs::load(&root, false) else {
