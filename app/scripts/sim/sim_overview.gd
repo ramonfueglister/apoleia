@@ -169,7 +169,7 @@ const CARDS := {
 	"budget": ["budget", "Haushalt im letzten Jahr", "D", "Was der Staat in den letzten zwölf Monaten eingenommen und ausgegeben hat, Posten für Posten, und darunter, was nicht in diese Summen gehört. Die Steuern sind einmal im Jahr fällig, darum zählt das ganze Jahr und nicht ein Monat."],
 	"laws": ["laws", "Steuergesetz", "", "Für jede Steuer eine von sechs Stufen. Eine neue Stufe gilt ab der nächsten Fälligkeit: der Zehnt bei der Ernte, die Grundsteuer nach der Ernte, die Kopfsteuer der Höfe nach der Ernte und aller anderen am ersten Tag des Jahres. Wer nicht zahlen kann, kommt in den Steuerrückstand."],
 	"budget_years": ["years", "Haushalt nach Jahren", "D", "Jedes Jahr ein Balken: nach oben die Einnahmen nach Posten, nach unten die Ausgaben. Das laufende Jahr ist noch nicht voll."],
-	"arrears": ["line", "Steuerrückstand", "D", "Grund- und Kopfsteuer, die Haushalte dem Staat am Monatsende schulden. Ist der Rückstand bei der nächsten Fälligkeit ein Jahr alt, pfändet der Staat Geld und Korn, ausser dem Essen bis zur nächsten Ernte und dem Saatgut; nach zwei Jahren wird ein eigener Hof versteigert."],
+	"arrears": ["line", "Steuerrückstand", "D", "Grund- und Kopfsteuer, die Haushalte dem Staat am Monatsende schulden. Ist der Rückstand ein Jahr alt, pfändet der Staat bald nach der nächsten Ernte Geld und Korn, ausser dem Essen bis zur nächsten Ernte und dem Saatgut; nach zwei Jahren wird ein eigener Hof versteigert. Die Steuern eines Guts zahlt sein Grundherr."],
 	"arrears_households": ["line", "Haushalte im Rückstand", "", "Haushalte, die dem Staat am Monatsende Steuern schulden."],
 	"seized": ["line", "Pfändungen", "D", "Geld und Korn, das der Staat im Monat für Rückstände pfändet, das Korn zum Ankaufspreis; und Rückstand, den er als uneinbringlich abschreibt, wenn nach zwei Jahren nichts mehr zu holen ist."],
 	"auctions": ["line", "Zwangsversteigerungen", "Höfe", "Eigene Höfe, die im Monat für zwei Jahre Steuerrückstand versteigert werden: die Familie bleibt als Pächter des Käufers. Bietet niemand, fällt der Hof an den Staat (Domäne)."],
@@ -1803,8 +1803,13 @@ func _law_row(k: int, law: Dictionary) -> void:
 		b.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
 		b.pressed.connect(_pick_law.bind(k, lv))
 		Tooltips.attach(b, func(_at: Vector2) -> Dictionary:
-			return {"id": "law:%d:%d" % [k, lv], "title": "%s: %s" % [law.name, levels[lv]], "kind": "Steuerstufe",
-				"text": "Ein Klick setzt die Stufe; sie gilt ab der nächsten Fälligkeit." if lv != int(_laws[k].level) else "Diese Stufe gilt jetzt."})
+			var now: Dictionary = _laws[k]
+			var tip := {"id": "law:%d:%d" % [k, lv], "title": "%s: %s" % [law.name, levels[lv]], "kind": "Steuerstufe",
+				"text": "Ein Klick setzt die Stufe; sie gilt ab der nächsten Fälligkeit." if lv != int(now.level) else "Diese Stufe gilt jetzt."}
+			var rates: Array = Array(now.get("rates", []))
+			if lv < rates.size(): # what the level is, in the law's unit
+				tip["rows"] = [["Satz", ("%s %s" % [_num(float(rates[lv])), now.unit]) if int(rates[lv]) > 0 else "keine Steuer"]]
+			return tip)
 		line.add_child(b)
 		buttons.append(b)
 	_law_buttons.append(buttons)
