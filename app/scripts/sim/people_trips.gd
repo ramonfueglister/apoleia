@@ -71,8 +71,21 @@ extends MultiMeshInstance3D
 ## player's orders (ApoleiaPeople.build_orders) get as many day labourers,
 ## at most SITE_HANDS each, as work days were done there since the last
 ## sim day.
+##
+## At the slow speed «Alltag» (game_clock.gd, Ramon 30.10.2026: "wie
+## RimWorld") the travellers keep the hours of the day instead
+## (`set_day_time`, day_clock.gd): they walk at their real pace (WALK_KMH on
+## foot, CART_KMH with an ox cart), so a way takes as long on the clock as
+## it really does and looks like a time-lapse up close; they leave at their
+## hour (to market at first light, the hired hands so as to be at work by
+## sunrise, traders and goods carts in the morning, scenes through the day)
+## and wait unseen until then; they stay at the market MARKET_H, at work
+## until shortly before sunset, elsewhere STAY_H; and they stand while the
+## game is paused. Who would have left earlier today, before the view came,
+## is on the way already, where the clock has them.
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
+const DayClock = preload("res://scripts/sim/day_clock.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const MAX := 300 # travellers at once
@@ -107,6 +120,9 @@ const GOOD_LOADS: Array[int] = [32768, 65536, 131072, 65536, 262144, 524288]
 const GOOD_NAMES: Array[String] = ["Wolle", "Eisen", "Kleidung", "Werkzeug", "Keramik", "Schweinefleisch"]
 const STRIDE := 16 # floats per instance in the MultiMesh buffer: a 3 x 4 transform, then the custom data
 const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
+const MARKET_H := 2.5 # at «Alltag»: hours at the market
+const STAY_H := 1.0 # at «Alltag»: hours of a stay of LINGER_S elsewhere (traders, scenes)
+const WORK_END_H := 0.5 # at «Alltag»: the hands stop work this long before sunset
 ## how an instance moves (INSTANCE_CUSTOM.a): walking, standing, a stall
 const WALKING := 0.0
 const STANDING := 1.0
@@ -174,6 +190,12 @@ var _square_of := {} # market square (or INF) by 25 km cell of an event, for the
 var _market := {} # by square in view: {"stores": the craft goods' stores, "grain": store kg, sales a day kg, of them not found kg}
 var _crowd: Array[Dictionary] = [] # the buyers at the stalls: {"at", "what"}
 var _fixed := 0 # stalls and buyers at the head of the buffer, before the travellers
+var _day_s := 0.0 # at «Alltag» the real seconds a day lasts, else 0 (a pace for the eye)
+var _hour := 12.0 # the hour now (day_clock.gd), at «Alltag»
+var _sun := Vector2(6.0, 18.0) # sunrise and sunset today
+var _hour_s := 0.0 # real seconds an hour of daylight lasts at «Alltag»
+var _frozen := false # the game is paused at «Alltag»: the travellers stand
+var _pending: Array = [] # [clock time, traveller] of those who leave later today
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
 	people = sim
@@ -206,10 +228,14 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_scenes = 0
 		for k in _pool_n:
 			_pool_n[k] = 0
+		_pending.clear()
 		_asked_at = Vector3.INF
 		_next = INF
 		return
-	_clock += delta
+	if not _frozen:
+		_clock += delta
+	if not _pending.is_empty():
+		_release(false)
 	var half := view_km * (0.5 + MARGIN)
 	_window = Rect2(centre - Vector2(half, half), Vector2(half, half) * 2.0)
 	if _asked_work:
@@ -262,6 +288,37 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		multimesh.buffer = _buffer
 		multimesh.visible_instance_count = _fixed + _walkers.size()
 
+## The hour from the game clock (people_dots.gd set_day_time): `day_s`
+## the real seconds a day lasts at «Alltag», 0 at the other speeds, where
+## everyone waiting leaves at once and walks at a pace for the eye again.
+func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void:
+	_frozen = frozen and day_s > 0.0
+	if day_s <= 0.0:
+		if _day_s > 0.0:
+			_day_s = 0.0
+			_hour_s = 0.0
+			_release(true)
+		return
+	_hour = hour
+	_sun = sun
+	_day_s = day_s
+	_hour_s = DayClock.hour_seconds(day_s, sun)
+
+## Lets those who wait leave whose hour has come (all with `all`).
+func _release(all: bool) -> void:
+	var i := 0
+	while i < _pending.size():
+		var p: Array = _pending[i]
+		if not all and float(p[0]) > _clock:
+			i += 1
+			continue
+		_pending[i] = _pending[_pending.size() - 1]
+		_pending.pop_back()
+		var w: Dictionary = p[1]
+		if not w.has("pool") and _walkers.size() - _scenes >= MAX:
+			continue
+		_begin(w, _clock if all else float(p[0]))
+
 func _take(t: Dictionary) -> void:
 	var ids: PackedInt64Array = t.id
 	var listed := {}
@@ -275,8 +332,10 @@ func _take(t: Dictionary) -> void:
 	_listed = listed
 
 ## Each hire new to the list sends its worker from home to the farm and
-## back, in a straight line (both are fine tiles, a few km apart at most).
+## back, in a straight line (both are fine tiles, a few km apart at most);
+## at «Alltag» every day of the hire anew, morning and evening.
 func _take_work(h: Dictionary) -> void:
+	var today: int = people.day() if _day_s > 0.0 else -1
 	var worker: PackedInt64Array = h.worker
 	var day: PackedInt64Array = h.day
 	var kind: PackedInt32Array = h.kind
@@ -284,7 +343,9 @@ func _take_work(h: Dictionary) -> void:
 	var to: PackedVector2Array = h.to
 	var hired := {}
 	for i in worker.size():
-		var key := Vector2i(worker[i], day[i])
+		var key := Vector3i(worker[i], day[i], today)
+		if today >= 0 and today >= day[i] + int(h.days[i]):
+			continue # the hire's days are done
 		hired[key] = true
 		if _hired.has(key) or _walkers.size() - _scenes >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
 			continue
@@ -469,6 +530,7 @@ func _scene_walker(way: PackedVector2Array, ahead: float, parts: int, parts_home
 		"points": way, "along": along, "s": clampf(ahead, 0.0, length), "dir": 1.0, "turn": back,
 		"cart": false, "cargo": false, "out": false,
 		"phase": fposmod(seed * 0.618034, 1.0), "tint": int(absf(seed)) % 8,
+		"group": fposmod((seed - member * 7.0) * 0.618034, 1.0), # a group leaves together (at «Alltag»)
 		"side": (fposmod(seed * 0.377, 1.0) - 0.5) * LANE_KM * 0.4, # a group keeps together
 		"parts": parts, "parts_home": parts_home, "stay": stay, "pace": pace,
 		"household": hh if member == 0 else -1, "pid": int(who.pid) if member == 0 else -1,
@@ -661,6 +723,7 @@ func _traveller(t: Dictionary, i: int) -> Dictionary:
 		"side": (fposmod(float(pid) * 0.377, 1.0) - 0.5) * LANE_KM,
 		# for a click (pick): who it is and what they do
 		"pid": pid, "kind": kind, "cargo_kg": int(t.cargo_kg[i]),
+		"under_way": depart < day, # left on an earlier day: no hour to wait for
 	}
 	w.s = clampf(w.s + (fposmod(float(pid) * 0.123, 1.0) - 0.5) * STAGGER_KM, 0.0, length)
 	# a long road comes into view somewhere along it: start there
@@ -744,12 +807,64 @@ static func _at(w: Dictionary) -> Array:
 	var d: Vector2 = (points[k + 1] - points[k]) * w.dir
 	return [points[k].lerp(points[k + 1], f), d.normalized() if d.length() > 0.0 else Vector2(0.0, 1.0)]
 
-## A new traveller on the stretch of its route where it is.
+## A new traveller on the stretch of its route where it is: at once, or
+## at «Alltag» at its hour, waiting unseen till then; one whose hour is
+## gone today starts from then, so that it is where the clock has it (the
+## next _events walks it on to now).
 func _add(w: Dictionary) -> void:
+	if _day_s <= 0.0 or w.get("under_way", false):
+		_begin(w, _clock)
+		return
+	var t := _clock + (DayClock.share(_leave_hour(w), _sun) - DayClock.share(_hour, _sun)) * _day_s
+	if t > _clock:
+		_pending.append([t, w])
+	else:
+		_begin(w, t)
+
+func _begin(w: Dictionary, t: float) -> void:
 	_walkers.append(w)
-	_start(w, _clock)
+	_start(w, t)
 	_write(_walkers.size() - 1)
 	_next = minf(_next, w.until)
+	_dirty = true
+
+## The hour a traveller leaves at «Alltag», spread by its own share
+## (phase, or a scene group's): farm folk to market at first light, hired
+## hands so as to be at work by sunrise (and home again at dusk when the
+## view finds them at the farm), traders a little later, a building site's
+## hands at sunrise, goods carts through the morning, scenes by day.
+func _leave_hour(w: Dictionary) -> float:
+	var r: float = w.get("group", w.phase)
+	var along: PackedFloat32Array = w.along
+	if w.has("worker"):
+		if w.dir < 0.0:
+			return _sun.y - WORK_END_H + r * 0.3
+		return _sun.x - minf(along[along.size() - 1] / DayClock.WALK_KMH, 1.5) - r * 0.3
+	match w.get("pool", ""):
+		"site":
+			return _sun.x + r * 0.5
+		"goods":
+			return _sun.x + r * 3.0
+		"scene":
+			return _sun.x + 1.0 + r * maxf(_sun.y - _sun.x - 4.0, 1.0)
+	return _sun.x + r * (3.0 if w.cart else 2.0)
+
+## The hour at clock time t (at «Alltag»).
+func _hour_at(t: float) -> float:
+	return DayClock.hour(clampf(DayClock.share(_hour, _sun) + (t - _clock) / _day_s, 0.0, 0.999), _sun)
+
+## How long a traveller stays at the end of its way from clock time t: at
+## «Alltag» in hours of the day, else w.stay (LINGER_S) seconds.
+func _stay(w: Dictionary, t: float) -> float:
+	var stay: float = w.get("stay", LINGER_S)
+	if _day_s <= 0.0 or stay <= 0.0:
+		return stay
+	if w.has("worker") or w.get("pool", "") == "site": # at work until shortly before sunset
+		var end := DayClock.share(_sun.y - WORK_END_H, _sun)
+		return maxf((end - DayClock.share(_hour_at(t), _sun)) * _day_s, 0.5 * _hour_s)
+	if int(w.get("kind", -1)) in [0, 1]:
+		return MARKET_H * _hour_s
+	return stay / LINGER_S * STAY_H * _hour_s
 
 ## Sets w walking from w.s on the stretch it is on, from clock time t.
 func _start(w: Dictionary, t: float) -> void:
@@ -765,6 +880,8 @@ func _start(w: Dictionary, t: float) -> void:
 	d = d.normalized() if d.length() > 0.0 else w.get("d", Vector2(0.0, 1.0))
 	var left: float = along[k + 1] - w.s if w.dir > 0.0 else w.s - along[k]
 	var speed: float = (CART_KMPS if w.cart else WALK_KMPS) * float(w.get("pace", 1.0))
+	if _hour_s > 0.0: # at «Alltag» the real pace, in km an hour of the clock
+		speed = (DayClock.CART_KMH if w.cart else DayClock.WALK_KMH) / _hour_s * float(w.get("pace", 1.0))
 	w.k = k
 	w.d = d
 	w.at = a.lerp(b, f) + Vector2(-d.y, d.x) * float(w.side) # its own lane
@@ -800,7 +917,7 @@ func _events() -> void:
 			var here: Vector2 = points[w.k + 1] if w.dir > 0.0 else points[w.k]
 			if w.dir > 0.0 and w.k + 1 >= along.size() - 1:
 				# at the market or at work: it stays a while
-				var stay: float = w.get("stay", LINGER_S)
+				var stay := _stay(w, t)
 				if stay <= 0.0: # a scene that ends here: gone, or at once home again
 					if w.turn:
 						w.turn = false

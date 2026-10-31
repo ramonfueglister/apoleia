@@ -9,7 +9,7 @@ extends MultiMeshInstance3D
 ## on the CPU (people_dots.gdshader), two texel fetches per dot.
 ##
 ## The dots belong to the close LOD: they show only at the zoom levels where
-## the terrain draws trees and houses (TileTerrain.PROP_SLOTS > 0).
+## the terrain is close (TileTerrain.CLOSE_LEVEL: the quarter and 0.5 km tiles).
 ## Every village household also gets a house at its house spot, from the
 ## house table of the view (sim/src/view.rs Houses): a voxel farmhouse in the
 ## Urbek style in one of four builds (scripts/voxel/farmhouse.gd), the nearest houses
@@ -157,6 +157,7 @@ var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _flows: MeshInstance3D # from further up: what went between the markets (people_flows.gd)
+var _weather_was := -1 # the clouds before the map was muted (1 on, 0 off), -1 not muted
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
 var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
 var _person_looks_tex: ImageTexture
@@ -189,6 +190,10 @@ var _shared_uniforms: Array[StringName] = []
 var _shared_values := {} # what each shared uniform was last copied as
 var _shared_count := 0 # materials it was copied into
 var _day_debt := 0.0
+## The sim day and the share of the real time to the next one the clock has
+## run (day_clock.gd: the hour at the slow speeds); never runs back while
+## the next day is being computed.
+var clock_day := 0.0
 var _bench_path := ""
 var _bench_frame := 0
 var _bench_last := 0
@@ -696,6 +701,24 @@ func paint_regions(img: Image, grid: Dictionary) -> void:
 	mat.set_shader_parameter("sim_cell_n", img.get_size())
 	mat.set_shader_parameter("sim_regions_on", true)
 
+## The map greyed under a view of lines (ui/map_modes.gd «Handel»), the
+## clouds away over it and back as they were after it.
+func mute_map(on: bool) -> void:
+	terrain._terrain_material.set_shader_parameter("sim_mute", 1.0 if on else 0.0)
+	var weather: Node = get_parent().get("weather")
+	if weather == null or not weather.has_method("set_enabled"):
+		return
+	if on and _weather_was < 0:
+		_weather_was = 1 if weather.enabled else 0
+		weather.set_enabled(false)
+	elif not on and _weather_was >= 0:
+		weather.set_enabled(_weather_was == 1)
+		_weather_was = -1
+
+## What went between the markets (the map mode «Handel» draws it).
+func flows() -> MeshInstance3D:
+	return _flows
+
 ## The people in view, as a slot list for the figure shader: those in the
 ## circle round the ground in view, nearest its middle first.
 func _update_figures(view_km: float, synced: bool) -> void:
@@ -1152,6 +1175,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				map_on = not map_on
 				_map_version = -1
 
+## The hour from the game clock at the slow speeds (day_clock.gd), -1 at
+## the fast ones: the travellers walk at their real pace when a day lasts
+## `day_s` real seconds (0: at a pace for the eye), stand while `frozen`
+## (the game paused), and the houses light their lamps.
+func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void:
+	if _trips != null:
+		_trips.set_day_time(hour, sun, day_s, frozen)
+	if _life != null:
+		_life.set_lamps(hour, sun)
+
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
 ## next sync.
@@ -1163,6 +1196,7 @@ func restarted() -> void:
 	_show_info(false)
 	_map_version = -1
 	_day_debt = 0.0
+	clock_day = 0.0
 
 func _process(delta: float) -> void:
 	var start := Time.get_ticks_usec()
@@ -1177,6 +1211,7 @@ func _frame(delta: float) -> void:
 	if whole > 0 and people.backlog() < 4:
 		people.advance(whole)
 	_day_debt -= whole
+	clock_day = maxf(clock_day, float(people.day()) + minf(_day_debt, 0.999))
 	_frames += 1
 	if _frames == 20 and _click_at != Vector2.INF:
 		_pick(_click_at)
@@ -1186,7 +1221,7 @@ func _frame(delta: float) -> void:
 			_waiting = false
 			_show_person(p)
 	_update_map()
-	var close: bool = TileTerrain.PROP_SLOTS[terrain.level] > 0
+	var close: bool = terrain.level <= TileTerrain.CLOSE_LEVEL
 	visible = drawn and close
 	var view_km: float = get_parent().width if "width" in get_parent() else 360.0
 	# realistic by default: figures at their real size up close, houses in the

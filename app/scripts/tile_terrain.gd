@@ -36,7 +36,13 @@ const PROP_N := 100 # most tiles per side of the tree and house patch
 const PROP_SPAN := 1.7 # prop patch side in view widths (the trees beyond are specks)
 const PROP_LOW_KM := 10.0 # from this view width: low-poly props without shadows
 const PROP_DETAIL_KM := 5.0 # up to this view width: the lots and landmarks in full detail
-const PROP_SLOTS := [9, 0, 0, 0, 0, 0, 0] # tree slots per tile and level (at 1 km tiles trees were a speckle over the relief)
+# tree slots per tile and level: on the 1 km tiles (35 to 90 km views) the
+# woods stay single trees, grown TREE_FAR_GROW times so they read as trees
+# and not a speckle over the relief (Ramon 30.10.2026, round c: Urbek's
+# furthest shot keeps its woods as small trees densely packed)
+const PROP_SLOTS := [9, 9, 0, 0, 0, 0, 0]
+const TREE_FAR_GROW := 1.8
+const CLOSE_LEVEL := 0 # the last level of the close LOD: people, crops, lots (people_dots.gd)
 const HOUSE_SLOTS := [4, 9, 9, 9, 0, 0, 0] # house blocks per town tile and level
 # Closest zoom (zoom -1): quarter tiles of the 0.5 km data tiles, one house
 # (diorama size) per tile as in Urbek. Their cells and landscapes are their
@@ -721,7 +727,7 @@ func _apply_prop_count() -> void:
 		material.set_shader_parameter("slots", maxi(n, 1))
 		_place_material.set_shader_parameter("house_slots" if house else "tree_slots", n)
 		# lot models are in metres, the tree meshes about 1.1 units tall
-		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1
+		var size_m := LOT_SHARE * maxf(1.0, tile_km / HOUSE_GROW_FROM_KM) if house else TREE_M / 1.1 * (TREE_FAR_GROW if tile_km >= 1.0 else 1.0)
 		material.set_shader_parameter("prop_scale", size_m * DIORAMA_KM_PER_M)
 		if n > 0:
 			# trees grow to 1.25 times (tile_props.gdshader)
@@ -883,10 +889,11 @@ func _update_coast_list() -> void:
 	_coast.multimesh.visible_instance_count = count
 	events.append("coast %d" % count)
 
-## The open shore sides of a COAST_BLOCK square of data tiles (block b), as
-## (x, y, side) of the sea tile: the sea tiles with open land across that
-## side (cs_open); and its coast cuts towards the sea as (x, y, 4 + the
-## corner of the wet half) (cs_cut_tip). Scanned once and kept.
+## The shore sides with steps of a COAST_BLOCK square of data tiles (block
+## b), as (x, y, side) of the sea tile: the sea tiles with open land or a
+## town (its quay) across that side (cs_shore); and its coast cuts towards
+## the sea as (x, y, 4 + the corner of the wet half) (cs_cut_tip). Scanned
+## once and kept.
 func _coast_block(b: Vector2i) -> PackedInt32Array:
 	if _coast_blocks.has(b):
 		return _coast_blocks[b]
@@ -918,7 +925,8 @@ func _coast_block(b: Vector2i) -> PackedInt32Array:
 					sides.append_array([x0 + i + 4, y0 + j + 3, 4 + tip])
 				continue
 			for k in 4:
-				if _coast_open(cells, at + _coast_step(k, w), w):
+				var n := at + _coast_step(k, w)
+				if _coast_shore(cells, n, w, cells[n] >= 8):
 					sides.append_array([x0 + i + 4, y0 + j + 3, k])
 	_coast_blocks[b] = sides
 	return sides
@@ -927,15 +935,18 @@ func _coast_block(b: Vector2i) -> PackedInt32Array:
 static func _coast_step(k: int, w: int) -> int:
 	return [-w, 1, w, -1][k]
 
-## cs_open (coast_steps.gdshaderinc) on the unpacked cells: land, not a town,
-## not a coast cut, not a lone tile in the sea.
-static func _coast_open(cells: PackedByteArray, at: int, w: int) -> bool:
+## cs_shore (coast_steps.gdshaderinc) on the unpacked cells: land, a town
+## or not as `town` says, not a coast cut (towns never are), not a lone tile
+## in the sea.
+static func _coast_shore(cells: PackedByteArray, at: int, w: int, town: bool) -> bool:
 	var cell := cells[at]
-	if (cell & 3) != 0 or cell >= 8:
+	if (cell & 3) != 0 or (cell >= 8) != town:
 		return false
 	var nb := PackedInt32Array([cells[at - w] & 3, cells[at + 1] & 3, cells[at + w] & 3, cells[at - 1] & 3])
 	if nb[0] == 1 and nb[1] == 1 and nb[2] == 1 and nb[3] == 1:
 		return false
+	if town:
+		return true
 	for k in 4:
 		var a := nb[k]
 		var wet := (a == 1 or a == 2) and nb[(k + 1) & 3] == a
