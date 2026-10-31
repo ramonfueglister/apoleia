@@ -23,13 +23,17 @@ const RomanCity = preload("res://scripts/voxel/roman_city.gd")
 # the tile size, so a ramp rises one level per tile at most, as in SimCity
 # 2000; the far levels read their corner levels from the bake (levels-L*.png,
 # with their own metres per level, so ranges keep several steps on the world
-# map). A level is LEVEL_HEIGHT of the tile on screen, the SimCity 2000 ratio
-# (12 px per level on a 32 x 16 px tile); far out a step grows taller
-# (LEVEL_HEIGHTS), so the stacked plateaus of the ranges still stand out when a
-# tile is a few pixels wide.
+# map). Near (up to the 1 km tiles) a level is NEAR_EXAGGERATION times its
+# first step. Far (2 km tiles and up) a level is FAR_LEVEL_KM high on every
+# tile size (Ramon 31.10.2026, Bauplan B step 2): before, it was 0.6 to 1.5
+# tile widths (LEVEL_HEIGHTS, the SimCity 2000 ratio of 12 px per level on a
+# 32 x 16 px tile, growing far out), so the same range stood 2.4 to 320
+# times its height by zoom (on the 32 km tiles a level was 48 km). Now the
+# Alps (3000 m, about 10 levels) stand about 6 km on every far level, as
+# tall as on the 1 km tiles before them (21 levels of 0.3 km), and the
+# mountains read by their shading (graphics round N) rather than by steps.
 const LEVELS := [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0]
-const LEVEL_HEIGHT := 0.6
-const LEVEL_HEIGHTS := [0.6, 0.6, 0.6, 0.9, 1.2, 1.5, 1.5]
+const FAR_LEVEL_KM := 0.6
 const PATCH_N := 320 # tiles per side of the terrain patch (most drawn, and the corner cache)
 const DRAW_MIN := 32 # fewest tiles per side drawn
 const PROP_N := 100 # most tiles per side of the tree and house patch
@@ -661,7 +665,7 @@ func _apply_level(value: int) -> void:
 	if near_scale:
 		level_h = NEAR_EXAGGERATION * float(_near_step_m[level]) * 0.001
 	else:
-		level_h = tile_km * LEVEL_HEIGHTS[level]
+		level_h = FAR_LEVEL_KM
 	var params := {
 		"cells_tex": _cell_textures[level],
 		"cells_size": _cell_sizes[level],
