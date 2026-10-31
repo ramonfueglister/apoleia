@@ -193,6 +193,18 @@ uniform sampler2D sim_way_tex : filter_nearest, repeat_disable;
 // (row, col) steps as grain.rs DIRS, here as (x = col, y = row)
 const ivec2 SIM_DIRS[8] = ivec2[](ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 0), ivec2(1, 0), ivec2(-1, 1), ivec2(0, 1), ivec2(1, 1));
 const float SIM_WAY_KM[8] = float[](0.0, 0.006, 0.009, 0.013, 0.018, 0.024, 0.032, 0.042);
+// A tile the public works paved (S133) has bit 3 of its level byte set; the
+// level (wear) is the low three bits. A paved way is gravel with a brown
+// edge (sim_map.gdshaderinc sim_ways), as wide as its wear, at least as a
+// level 3 way, so a paved way no one walks any more still shows.
+const int SIM_WAY_PAVED = 8;
+const float SIM_PAVED_MIN_KM = 0.013;
+
+// Half width of a way of `code` (level, paved bit), km.
+float sim_way_half(int code) {
+	float worn = SIM_WAY_KM[code & 7];
+	return (code & SIM_WAY_PAVED) != 0 ? max(worn, SIM_PAVED_MIN_KM) : worn;
+}
 
 // Links and level of window tile t, zero outside the window.
 ivec2 sim_way_at(ivec2 t) {
@@ -222,8 +234,8 @@ float sim_segment_to(vec2 p, vec2 a, vec2 b) {
 }
 
 // How far p (world km) lies outside the nearest way of the worn network,
-// km (negative inside it), and that way's level; 1e9 and 0 without one
-// near. Without the farmhouses' own lanes (sim_way), so the houses can keep
+// km (negative inside it), and that way's code (level, paved bit); 1e9 and
+// 0 without one near. Without the farmhouses' own lanes (sim_way), so the houses can keep
 // off the network (people_dots_common.gdshaderinc dot_lot_way_free) and the
 // crops and trees too (people_parcels.gdshader, tile_props.gdshaderinc).
 vec2 sim_way_main(vec2 p) {
@@ -237,7 +249,7 @@ vec2 sim_way_main(vec2 p) {
 	for (int k = 0; k < 9; k++) {
 		ivec2 c = t + ivec2(k % 3 - 1, k / 3 - 1);
 		ivec2 w = sim_way_at(c);
-		if (w.y == 0 || w.x == 0) { continue; }
+		if (w.x == 0 || (w.y & (SIM_WAY_PAVED | 7)) == 0) { continue; }
 		vec2 mid = vec2(c) + 0.5;
 		int ends = bitCount(w.x);
 		float d = 1e9;
@@ -250,8 +262,9 @@ vec2 sim_way_main(vec2 p) {
 				if ((w.x & (1 << j)) != 0) { d = min(d, sim_segment_to(q, mid, mid + vec2(SIM_DIRS[j]) * 0.5)); }
 			}
 		}
-		float e = d * sim_fine_km - SIM_WAY_KM[min(w.y, 7)];
-		if (e < best) { best = e; level = float(min(w.y, 7)); }
+		int code = w.y & (SIM_WAY_PAVED | 7);
+		float e = d * sim_fine_km - sim_way_half(code);
+		if (e < best) { best = e; level = float(code); }
 	}
 	return vec2(best, level);
 }
@@ -286,7 +299,7 @@ float sim_lane(vec2 p, vec2 gate, vec2 front, vec2 hub) {
 }
 
 // How far p (world km) lies outside the nearest way, km (negative inside
-// it), and that way's level: the worn network (sim_way_main) and, up close,
+// it), and that way's code: the worn network (sim_way_main) and, up close,
 // the lane of each farmhouse of the tile under p to that network.
 vec2 sim_way(vec2 p) {
 	vec2 w = sim_way_main(p);
@@ -296,7 +309,7 @@ vec2 sim_way(vec2 p) {
 	ivec2 t = ivec2(floor((p - sim_fine_origin) / sim_fine_km));
 	ivec2 here = sim_way_at(t);
 	// the farmhouses whose lots lie in the tile (up to 4 x 4 of them)
-	if (sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM && here.y > 0 && here.x != 0) {
+	if (sim_lots_n > 0 && sim_view_km <= SIM_CROPS_KM && (here.y & (SIM_WAY_PAVED | 7)) > 0 && here.x != 0) {
 		vec2 hub = sim_fine_origin + sim_way_hub(t, here.x) * sim_fine_km;
 		vec2 lo_km = sim_fine_origin + vec2(t) * sim_fine_km;
 		vec2 lo = floor((lo_km - world_min) / sim_lot_km);
