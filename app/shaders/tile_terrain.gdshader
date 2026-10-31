@@ -538,7 +538,8 @@ void fragment() {
 		}
 		// the farms' fields from the grain economy, up close
 		int land = tt_ground_at(tile, tile_uv);
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
+		float fw_km = length(fwidth(p));
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km, fw_km); }
 		// up close the grass in patches, tufts and flowers (not the field tracks)
 		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
 		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
@@ -583,7 +584,7 @@ void fragment() {
 			}
 		}
 		// the ways people wear and the markets of the grain economy
-		c = sim_ways(p, c, length(fwidth(p)));
+		c = sim_ways(p, c, fw_km);
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient, matched to the west-south-west sun: slopes turned west
 		// light, east dark, south (the risers the camera sees head on) and
