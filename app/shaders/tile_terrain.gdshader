@@ -41,6 +41,10 @@ varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut ha
 // water keeps.
 varying float shadow_share;
 const float WATER_SHADOW = 0.35;
+// The share of the slope tones kept far out, on the sun side and on the
+// shade sides (fragment(), round L)
+const float FAR_SUN_TONE = 0.3;
+const float FAR_SHADE_TONE = 0.6;
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
 // measured from Urbek screenshots (urbek-landschaft-*.jpg): fresh light
@@ -647,7 +651,15 @@ void fragment() {
 		// there, TileTerrain.relief_for_width): a whole hillside in one hard
 		// facet read as folded paper (s2)
 		float steep = sub_tiles ? mix(0.4, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
-		float tone = 1.0 + shade * away * steep;
+		// far out (from the 0.5 km tiles) every ramp is a whole tile one
+		// level high, so each facet is as steep as the next and the tones
+		// above lay the hills out as large pale and dark triangles, the sun
+		// side +22 % like glass (Ramon, round L). Urbek has hardly a slope
+		// and the landscape reference turns its hillsides only a little
+		// lighter or darker: the sun side keeps a third of its tone, the
+		// shade sides two thirds, so the steps still read as darker bands
+		float far = sub_tiles ? 1.0 : (shade > 0.0 ? FAR_SUN_TONE : FAR_SHADE_TONE);
+		float tone = 1.0 + shade * away * steep * far;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
