@@ -9,6 +9,7 @@ shader_type spatial;
 render_mode skip_vertex_transform, unshaded, blend_mul, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 #include "res://shaders/people_dots_common.gdshaderinc"
+#include "res://shaders/people_day.gdshaderinc"
 
 uniform sampler2D place_tex : filter_nearest, repeat_disable; // people_dots_prep output
 uniform sampler2D list_tex : filter_nearest, repeat_disable;  // slots to draw (float)
@@ -28,6 +29,7 @@ void vertex() {
 	vec4 place = texelFetch(place_tex, px, 0);
 	uint w = uint(rec.w);
 	uint kind = w & 3u;
+	uint job = (w >> 4u) & 15u;
 	bool female = ((w >> 22u) & 1u) == 1u;
 	bool child = ((w >> 23u) & 1u) == 1u;
 	vec2 r = dot_rand2(uint(slot), 31u);
@@ -36,9 +38,11 @@ void vertex() {
 	float s = figure_scale * (child ? 0.62 : (female ? 0.94 : 1.0) * (0.94 + 0.1 * r2.y));
 	vec2 p = rec.xy + place.xy - 32.0;
 	float level = place.z;
-	vec2 look = dot_person_look(px);
-	if (look.y > 0.5 && !child && kind == 0u) { // out on the fields (people_figures.gdshader)
-		p += dot_field_offset((w >> 8u) & 0x3fffu, uint(slot));
+	// where the person is at this hour (people_day.gdshaderinc); a figure
+	// in the house or lying down throws no strip
+	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, dot_person_look(px), dot_person_flags(px));
+	if (day.moved) {
+		p += day.offset;
 		level = dot_ground_level(p);
 	}
 	if (playing) {
@@ -54,7 +58,7 @@ void vertex() {
 	float half_w = mix(0.17, 0.09, t);
 	vec2 ground = p + s * (along * mix(-0.08, 0.95, t) + across * UV.y * half_w);
 	vec3 world = vec3(ground.x, level * level_h + 0.02 * s, ground.y);
-	bool show = rec.z != 0.0 && place.a > 0.5;
+	bool show = rec.z != 0.0 && place.a > 0.5 && !day.inside && day.pose != DAY_LIE;
 	VERTEX = show ? (VIEW_MATRIX * vec4(world, 1.0)).xyz : vec3(0.0, 0.0, 1.0e6);
 }
 

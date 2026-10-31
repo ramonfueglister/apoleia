@@ -1178,12 +1178,16 @@ func _unhandled_input(event: InputEvent) -> void:
 ## The hour from the game clock at the slow speeds (day_clock.gd), -1 at
 ## the fast ones: the travellers walk at their real pace when a day lasts
 ## `day_s` real seconds (0: at a pace for the eye), stand while `frozen`
-## (the game paused), and the houses light their lamps.
+## (the game paused), the houses light their lamps and the figures keep
+## their day (people_day.gdshaderinc).
 func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void:
 	if _trips != null:
 		_trips.set_day_time(hour, sun, day_s, frozen)
 	if _life != null:
 		_life.set_lamps(hour, sun)
+	for m in [_figure_material, _figure_shadow_material]:
+		m.set_shader_parameter("day_hour", hour)
+		m.set_shader_parameter("day_sun", sun)
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
