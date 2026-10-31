@@ -173,12 +173,15 @@ const LANDMARK_PLAN_REACH := 0.9
 const PLAN_STREET_TOWN := [1, 2, 3, 4, 6, 7]
 const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
 # Rome's great buildings on blocks of city tiles, drawn while the houses are
-# (the two nearest levels). The Colosseum, the Forum (with the Capitolium),
-# the baths, the Pantheon and the Circus Maximus are the Roman town's models
-# ("kit:", voxel/roman_buildings.gd) at the houses' diorama scale, so their
-# voxels match the lots: the Colosseum is eight lots long, about 1.8 km. That
-# is three times the real city, so the blocks keep the order of the real one
-# but not its distances: the Forum west of the Colosseum, the baths on the
+# (the two nearest levels). The arena (Rome's amphitheatre sized for its
+# users in the sim, voxel/roman_arena.gd, SCALE.md rule A), the Forum (with
+# the Capitolium), the baths, the Pantheon and the Circus Maximus are the
+# Roman town's models ("kit:", voxel/roman_buildings.gd) at the houses'
+# diorama scale, so their voxels match the lots: the arena is 25 x 18 m,
+# about 0.6 km; the city plan gives it the parcels it needs, so it is not
+# shrunk to its block. The others were drawn before rule A and are shrunk
+# to theirs. Without the plans the blocks keep the order of the real city
+# but not its distances: the Forum west of the arena, the baths on the
 # hill north of it, the Circus Maximus to the south, the Pantheon in the
 # Campus Martius by the river. Other shapes (the bridges, tile_prop_meshes.gd)
 # stand at LANDMARK_KM_PER_M (6 times their real size) and a half higher
@@ -190,7 +193,7 @@ const LANDMARK_TILE_KM := 0.5
 const LANDMARKS := [
 	# mesh, block centre (lon, lat), block size in tiles, free ground around
 	# the building (km)
-	["kit:colosseum", Vector2(12.5065, 41.8894), Vector2i(4, 4), 0.05],
+	["kit:arena", Vector2(12.5065, 41.8894), Vector2i(2, 1), 0.05],
 	["kit:forum", Vector2(12.4854, 41.8917), Vector2i(3, 3), 0.05],
 	["kit:baths", Vector2(12.5065, 41.9010), Vector2i(2, 1), 0.05],
 	["kit:pantheon", Vector2(12.4810, 41.9060), Vector2i(2, 2), 0.05],

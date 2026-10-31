@@ -23,6 +23,7 @@ extends RefCounted
 const Kit := preload("res://scripts/voxel/roman_kit.gd")
 const Town := preload("res://scripts/voxel/roman_town.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
+const Arena := preload("res://scripts/voxel/roman_arena.gd")
 const City := preload("res://scripts/voxel/roman_city.gd")
 
 const LOD_FACTORS := [1, 4, 10]
@@ -43,8 +44,9 @@ const ARCHETYPES := {
 	"street_row": [City.ROW_VARIANTS, Vector2i(1, 1)], "street_corner_w": [City.CORNER_VARIANTS, Vector2i(1, 1)],
 	"street_corner_e": [City.CORNER_VARIANTS, Vector2i(1, 1)], "street_court": [City.COURT_VARIANTS, Vector2i(1, 1)],
 }
-## Landmarks and their footprints in lots.
-const LANDMARKS := {"colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(3, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(8, 3)}
+## Landmarks and their footprints in lots. The arena is Rome's amphitheatre
+## at the diorama scale (roman_arena.gd); the Colosseum stays for the menu.
+const LANDMARKS := {"arena": Vector2i(3, 2), "colosseum": Vector2i(8, 7), "forum": Vector2i(5, 5), "baths": Vector2i(3, 2), "pantheon": Vector2i(3, 3), "circus": Vector2i(8, 3)}
 
 # Voxels too small to keep at the light levels: people and their clothes.
 const SMALL := [Kit.SKIN, Kit.HAIR, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE_N, Kit.ROBE_O, Kit.HELMET, Kit.SHIELD]
@@ -53,8 +55,8 @@ const SMALL := [Kit.SKIN, Kit.HAIR, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_B, Kit.ROBE
 static func lot_mesh(kind: String, variant: int, lod := 0) -> ArrayMesh:
 	return _mesh("%s_%d" % [kind, variant], lod)
 
-## The mesh of landmark `name` ("colosseum", "forum", "baths", "pantheon",
-## "circus") at level `lod`.
+## The mesh of landmark `name` ("arena", "colosseum", "forum", "baths",
+## "pantheon", "circus") at level `lod`.
 static func landmark_mesh(name: String, lod := 0) -> ArrayMesh:
 	return _mesh(name, lod)
 
@@ -96,6 +98,7 @@ static var _meshes := {}
 # mesher.
 static var _code_town := ""
 static var _code_colosseum := ""
+static var _code_arena := ""
 static var _mesher := ""
 
 static func _mesh(model: String, lod: int) -> ArrayMesh:
@@ -128,6 +131,8 @@ static func _path(name: String) -> String:
 	return "%s/%s.res" % [CACHE_DIR, name]
 
 static func _code(model: String) -> String:
+	if model == "arena":
+		return _code_arena
 	return _code_colosseum if model == "colosseum" else _code_town
 
 ## The levels a model gets built with: all for lots, the two the terrain
@@ -166,6 +171,7 @@ static func _open() -> void:
 	var own := _source(load("res://scripts/voxel/roman_buildings.gd"))
 	_code_town = (_source(Town) + _source(City) + kit + own).md5_text()
 	_code_colosseum = (_source(Colosseum) + kit + own).md5_text()
+	_code_arena = (_source(Arena) + _source(Colosseum) + kit + own).md5_text()
 	# The mesher and the coarse levels: their code (from the line that
 	# starts them to the end) and the constants they use.
 	var mesher := kit.substr(maxi(kit.find("\nstatic func mesh_arrays("), 0)) + own.substr(maxi(own.find("\nstatic func _coarse("), 0))
@@ -327,6 +333,7 @@ static func _lot_grid(kind: String, variant: int) -> Kit.Grid:
 static func _landmark_grid(name: String) -> Kit.Grid:
 	var build: Callable
 	match name:
+		"arena": return _without_ground(Arena.grid(), Arena.GROUND)
 		"colosseum": return _without_ground(Colosseum.grid(), Colosseum.GROUND)
 		"forum": build = func() -> void: Town.forum(0)
 		"baths": build = func() -> void: Town.baths(0)
