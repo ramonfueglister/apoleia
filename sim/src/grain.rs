@@ -341,6 +341,8 @@ pub const WORK_SOW: u8 = 0;
 pub const WORK_HARVEST: u8 = 1;
 pub const WORK_OFF: u8 = 2;
 pub const WORK_SURPLUS: u8 = 3;
+/// S129: public works for the state, at the market place (no farm).
+pub const WORK_STATE: u8 = 4;
 const SELL: u8 = 0;
 const BUY: u8 = 1;
 const EXPORT: u8 = 2;
@@ -583,6 +585,10 @@ pub struct Market {
     /// the days hired for them since `build_day` last took them.
     state_want: i64,
     state_done: i64,
+    /// S129: public works hired here since the last monthly row, days and
+    /// denarii (milli).
+    public_days: i64,
+    public_paid: i64,
 }
 
 #[derive(Clone, Copy)]
@@ -617,6 +623,10 @@ pub struct GrainStats {
     pub build_days: i64,
     pub build_paid: i64,
     pub built_farms: i64,
+    /// S129: public works the state hired from its surplus, days and
+    /// denarii (milli).
+    pub public_days: i64,
+    pub public_paid: i64,
     pub harvest_kg: i64,
     pub harvest_lost_kg: i64,
     pub sow_short_m2: i64,
@@ -749,7 +759,8 @@ pub struct Money {
 /// to the state granaries and sold from there (S115; `tax` counts both);
 /// the money of households that died out without heirs (S97, bona
 /// vacantia) and the rent money of lords gone (`rent`). Out: the state
-/// wage (S76), from cash first, the rest minted (`Money::minted`, S95).
+/// wage (S76), from cash first, the rest minted (`Money::minted`, S95);
+/// S129: public works from the cash beyond a reserve, never minted.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Treasury {
     pub cash: i64,
@@ -764,6 +775,10 @@ pub struct Treasury {
     /// worth at the dealers' buying price, kept back from their wage.
     pub rations_kg: i64,
     pub rations_worth: i64,
+    /// S129: public works paid from the surplus, from cash only (never
+    /// minted, not in `wages`), and their days.
+    pub public_works: i64,
+    pub public_days: i64,
 }
 
 /// The flows the history sums per month: births, deaths, hunger deaths,
@@ -863,6 +878,14 @@ pub struct Grain {
     pub sow_by_price: bool,
     pub sales_year: bool,
     pub carry_sale: bool,
+    /// S129 the treasury spends its surplus on public works and S130 the
+    /// farms' food plan (on by default; off to measure without them).
+    pub state_spend: bool,
+    pub food_plan: bool,
+    /// S129: the state wages of the last full year (`Treasury::wages`), and
+    /// the day and the wages paid by then that it is counted from.
+    works_reserve: Option<i64>,
+    works_mark: Option<(i64, i64)>,
     /// Reused buffer for the monthly count.
     scratch: Vec<Row>,
     /// Person ids grouped by household, from the last count.
@@ -1344,6 +1367,8 @@ impl Grain {
                 idle_week: 0,
                 servers: Vec::new(),
                 state_want: 0,
+                public_days: 0,
+                public_paid: 0,
                 state_done: 0,
             });
         }
@@ -1387,6 +1412,10 @@ impl Grain {
             sow_by_price: true,
             sales_year: true,
             carry_sale: true,
+            state_spend: true,
+            food_plan: true,
+            works_reserve: None,
+            works_mark: None,
             scratch: Vec::new(),
             members: Vec::new(),
             census_job: None,
@@ -2706,6 +2735,10 @@ impl Grain {
         self.history.rows.push(r);
         self.history.keep_markets(day, months);
         self.history.sold.iter_mut().for_each(|x| *x = 0);
+        for m in self.markets.iter_mut() {
+            m.public_days = 0;
+            m.public_paid = 0;
+        }
     }
 
     /// One row per month since the start (`track`).
@@ -2976,6 +3009,45 @@ impl Grain {
         self.treasury.wages += amount;
     }
 
+    /// S129: the cash the treasury keeps before it spends on public works,
+    /// None in the first year and when it does not: the state wages of
+    /// the last full year (soldiers, servants and building sites, counted
+    /// once a year) and what the open build orders still cost at their
+    /// market's wage today, so the player's orders are paid first.
+    fn works_reserve(&mut self, day: i64) -> Option<i64> {
+        if !self.state_spend {
+            return None;
+        }
+        match self.works_mark {
+            None => self.works_mark = Some((day, self.treasury.wages)),
+            Some((d, w)) if day - d >= YEAR => {
+                self.works_reserve = Some(self.treasury.wages - w);
+                self.works_mark = Some((day, self.treasury.wages));
+            }
+            _ => {}
+        }
+        let year = self.works_reserve?;
+        let orders: i64 = self.sites.values().map(|s| (s.need - s.done).max(0) * self.markets[s.market as usize].wage).sum();
+        Some(year + orders)
+    }
+
+    /// S129: `days` of public works by household `w` at market `mi`, paid
+    /// at `wage` from the treasury's cash (only what is beyond the reserve
+    /// is spent, so it never mints).
+    fn public_works(&mut self, mi: usize, w: u32, days: i64, wage: i64) {
+        let pay = (days * wage).min(self.treasury.cash.max(0));
+        self.treasury.cash -= pay;
+        self.treasury.public_works += pay;
+        self.treasury.public_days += days;
+        self.earn(w, pay);
+        self.stats.hired_days += days;
+        self.stats.public_days += days;
+        self.stats.public_paid += pay;
+        let m = &mut self.markets[mi];
+        m.public_days += days;
+        m.public_paid += pay;
+    }
+
     /// Money held by households (also the money a farm household had
     /// before its farm), farms and dealers, milli-denarii.
     pub fn money_held(&self) -> i64 {
@@ -3151,6 +3223,8 @@ impl Grain {
     /// left unfilled against the days left idle.
     fn labour(&mut self, day: i64) {
         let wd = day.rem_euclid(7) as usize;
+        let reserve = self.works_reserve(day);
+        let people_all = self.markets.iter().map(|m| m.people as i64).sum::<i64>().max(1);
         for mi in (wd..self.markets.len()).step_by(7) {
             let wage = self.markets[mi].wage.max(1);
             let bid = Self::buy_price(&self.markets[mi]).max(1);
@@ -3386,6 +3460,28 @@ impl Grain {
                 }
             }
             vacant += want;
+            // S129: the treasury's cash beyond its reserve goes to public
+            // works at the same wage, a 52nd of it a week, shared by the
+            // markets' people (PLACEHOLDER: pace and share; the work makes
+            // nothing yet). Money spent, not hoarded, keeps the coin going
+            // round (Duncan-Jones, 1994; Hopkins, 1980).
+            if let Some(reserve) = reserve {
+                let excess = (self.treasury.cash - reserve).max(0);
+                let share = excess as i128 * self.markets[mi].people as i128 / people_all as i128 / 52;
+                let mut want = (share / wage as i128) as i64;
+                while want > 0 && o < offers.len() {
+                    let take = want.min(offers[o].1);
+                    offers[o].1 -= take;
+                    want -= take;
+                    let w = offers[o].0;
+                    self.public_works(mi, w, take, wage);
+                    self.markets[mi].work.push((w, NONE, take, WORK_STATE));
+                    if offers[o].1 == 0 {
+                        o += 1;
+                    }
+                }
+                vacant += want;
+            }
             // The market's dealers too: of the cash beyond what buys their
             // most in store (DEALER_MAX_DAYS of grain, TARGET_DAYS of each
             // good), the same share a month (a quarter a week).
@@ -4564,20 +4660,25 @@ impl Grain {
     /// region (S72, S84), where the worker's home or the farm lies in the
     /// box (world km). Read only. One entry per hire: the worker's
     /// household and home, the farm's household and farmstead, the days of
-    /// work bought that week from `day` on, and the kind (WORK_*).
+    /// work bought that week from `day` on, and the kind (WORK_*). Public
+    /// works (WORK_STATE, S129) have no farm: household -1, at the market
+    /// place.
     pub fn work_in(&self, min: (f64, f64), max: (f64, f64)) -> WorkView {
         let mut v = WorkView::default();
         let inside = |(x, z): (f64, f64)| x >= min.0 && x <= max.0 && z >= min.1 && z <= max.1;
         for m in &self.markets {
             for &(w, f, days, kind) in &m.work {
                 let Some(ws) = self.hh.get(&w) else { continue };
-                let fm = &self.farms[f as usize];
-                let (a, b) = (self.settle.fine_centre_km(ws.fine), self.settle.fine_centre_km(fm.fine));
+                let (owner, at) = match self.farms.get(f as usize) {
+                    Some(fm) => (fm.hh, fm.fine),
+                    None => (NONE, m.fine),
+                };
+                let (a, b) = (self.settle.fine_centre_km(ws.fine), self.settle.fine_centre_km(at));
                 if !inside(a) && !inside(b) {
                     continue;
                 }
                 v.worker.push(w as i64);
-                v.farm_household.push(if fm.hh == NONE { -1 } else { fm.hh as i64 });
+                v.farm_household.push(if owner == NONE { -1 } else { owner as i64 });
                 v.day.push(m.work_day);
                 v.days.push(days);
                 v.kind.push(kind as i32);
@@ -4743,7 +4844,14 @@ impl Grain {
             .float("clothes", "Kleidung vom Bedarf", "%", float(&|r| r.extra.clothes / 100.0))
             .float("elite_money", "Geld der Oberschicht", "%", float(&|r| r.extra.elite_money))
             .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
-            .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg));
+            .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg))
+            // the treasury's month: in and out (S94, S129), denarii
+            .float("tax_d", "Steuer im Monat", "Denar", since(&|r| r.extra.state.tax))
+            .float("rent_d", "Pacht an den Staat im Monat", "Denar", since(&|r| r.extra.state.rent))
+            .float("estates_d", "Erbloser Nachlass im Monat", "Denar", since(&|r| r.extra.state.estates))
+            .float("wages_d", "Staatslohn im Monat", "Denar", since(&|r| r.extra.state.wages))
+            .float("public_works_d", "Öffentliche Arbeit im Monat", "Denar", since(&|r| r.extra.state.public_works))
+            .int("public_days", "Öffentliche Arbeit im Monat", "Tage", (0..rows.len()).map(|i| rows[i].extra.state.public_days - if i > 0 { rows[i - 1].extra.state.public_days } else { 0 }).collect());
         self.history_by_good_and_class(&mut t);
         t
     }
@@ -4766,6 +4874,8 @@ impl Grain {
             .float("endowed", "Startgeld neuer Haushalte", "Denar", den(m.endowed))
             .float("freight", "Fracht", "Denar", den(m.freight))
             .float("estates", "Erbloser Nachlass", "Denar", den(tr.estates))
+            .float("public_works", "Öffentliche Arbeit", "Denar", den(tr.public_works))
+            .int("public_days", "Öffentliche Arbeit", "Tage", vec![tr.public_days])
             .float("left_map", "Mit Auswanderern fort", "Denar", den(m.left_map))
             .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
         t
@@ -4812,6 +4922,12 @@ impl Grain {
             .float("free_ha", "Freies Land", "ha", float(&|m| m.free_area as f64 / 1e4))
             .float("share_hungry", "Hungernd", "%", order.iter().map(|&m| spread.hungry[m]).collect())
             .float("gini", "Gini des Geldes", "", order.iter().map(|&m| spread.market_gini[m]).collect());
+        // S129: public works in the last counted month
+        let last = |f: &dyn Fn(&tables::MarketMonth) -> f32| -> Vec<f64> {
+            order.iter().map(|&m| self.history.markets.last().and_then(|l| l.1.get(m)).map_or(0.0, |x| f(x) as f64)).collect()
+        };
+        t.float("public_days", "Öffentliche Arbeit im Monat", "Tage", last(&|x| x.public_days))
+            .float("public_wage", "Lohn für öffentliche Arbeit im Monat", "Denar", last(&|x| x.public_wage));
         pricing::market_columns(self, &mut t, &order);
         t
     }
@@ -5637,6 +5753,51 @@ mod tests {
         assert!(n.iter().any(|x| x == "Rome (Roma)"), "{:?}", &n[..5]);
         assert!(g.table(&p, "nothing").is_none());
         assert_eq!(g.fingerprint(), before);
+    }
+
+    /// S129: once the treasury holds more than its reserve, the surplus
+    /// pays public works from cash (nothing minted, every denarius
+    /// booked), shown at the market place without a farm; open build
+    /// orders raise the reserve by what they still cost.
+    #[test]
+    fn public_works_from_surplus() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        for _ in 0..40 {
+            p.day();
+            g.day(&mut p);
+        }
+        // nothing in the first year: the reserve is not known yet
+        assert_eq!(g.treasury.public_days, 0);
+        let day = p.world.resource::<crate::people::Clock>().day;
+        g.works_reserve = Some(0);
+        let base = g.works_reserve(day).unwrap();
+        let t: crate::build::Tile = (0, 0);
+        g.sites.insert(t, sites::Site { kind: crate::build::FARM, market: 0, fine: 0, cell: 0, need: 100, done: 30, spot: t });
+        assert_eq!(g.works_reserve(day).unwrap() - base, 70 * g.markets[0].wage);
+        g.sites.clear();
+        // a full treasury, booked as if it had been there from the start
+        g.treasury.cash += 1_000_000_000;
+        g.money.start += 1_000_000_000;
+        let (minted, wages) = (g.money.minted, g.treasury.wages);
+        for _ in 0..7 {
+            p.day();
+            g.day(&mut p);
+            assert_eq!(g.money_unbooked(), 0);
+        }
+        assert!(g.treasury.public_days > 0 && g.treasury.public_works > 0);
+        assert_eq!(g.treasury.public_works, g.stats.public_paid);
+        assert_eq!(g.money.minted, minted);
+        assert!(g.treasury.wages >= wages);
+        let w = g.work_in((-1e9, -1e9), (1e9, 1e9));
+        let places: Vec<(f32, f32)> = g.markets.iter().map(|m| g.settle.fine_centre_km(m.fine)).map(|(x, z)| (x as f32, z as f32)).collect();
+        let public: Vec<usize> = (0..w.kind.len()).filter(|&i| w.kind[i] == WORK_STATE as i32).collect();
+        assert!(!public.is_empty());
+        assert!(public.iter().all(|&i| w.farm_household[i] == -1 && places.contains(&w.to[i])));
     }
 
     #[test]

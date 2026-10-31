@@ -82,7 +82,10 @@ fn main() {
     g.sow_by_price = !args.iter().any(|a| a == "--no-sow-price");
     g.sales_year = !args.iter().any(|a| a == "--sales-month");
     g.carry_sale = !args.iter().any(|a| a == "--no-carry-sale");
+    g.state_spend = !args.iter().any(|a| a == "--no-state-spend");
+    g.food_plan = !args.iter().any(|a| a == "--no-food-plan");
     println!("storage floor (S123): {}, own sowing by price (S124): {}, sales over a year (S125): {}, granaries sell carry-over (S126): {}", g.storage_floor, g.sow_by_price, g.sales_year, g.carry_sale);
+    println!("treasury spends its surplus (S129): {}, farms' food plan (S130): {}", g.state_spend, g.food_plan);
     drop(fine);
     // S106: pasture near the fields, grassland per farmland of each cell.
     let grass = apoleia_sim::grain::clearable(&root, &["grass_8", "grass_16", "grass_30", "grass_steep"].map(String::from)).expect("landcover25.csv");
@@ -177,7 +180,7 @@ fn main() {
         let (m, t) = (g.money, g.treasury);
         let den = |x: i64| x as f64 / 1e3;
         println!(
-            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} | unbooked {:.3} | state wages {:.0} tax {:.0} state rent {:.0} estates {:.0} tax grain t {:.0}",
+            "      money den (S94): held {:.0} treasury {:.0} | start {:.0} + minted {:.0} + endowed {:.0} - freight {:.0} - left map {:.0} | unbooked {:.3} | state wages {:.0} tax {:.0} state rent {:.0} estates {:.0} tax grain t {:.0} | public works (S129) den {:.0} days {} (this year den {:.0} days {})",
             den(g.money_held()),
             den(t.cash),
             den(m.start),
@@ -190,7 +193,11 @@ fn main() {
             den(t.tax),
             den(t.rent),
             den(t.estates),
-            t.grain_kg as f64 / 1e3
+            t.grain_kg as f64 / 1e3,
+            den(t.public_works),
+            t.public_days,
+            den(gs.public_paid),
+            gs.public_days
         );
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
         if std::env::var("PRICE_DEBUG").is_ok() {

@@ -1224,6 +1224,18 @@ impl ApoleiaPeople {
         best.0
     }
 
+    /// The record of person `slot` as the people texture has it (x, z,
+    /// code, w; sim/src/view.rs), for the day the person's window shows
+    /// (day_plan.gd); empty for a slot out of range.
+    #[func]
+    fn record(&self, slot: i64) -> PackedFloat32Array {
+        let i = (slot.max(0) as usize) * REC;
+        if slot < 0 || i + REC > self.data.len() {
+            return PackedFloat32Array::new();
+        }
+        PackedFloat32Array::from(&self.data[i..i + REC])
+    }
+
     /// Slots of the people whose dot can lie within `radius` km of (x, z)
     /// (world km), at most `max`, nearest anchors first: the people drawn
     /// as figures up close. Anchors are the records' centres; the margin

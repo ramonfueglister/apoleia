@@ -57,6 +57,9 @@ pub struct HistoryExtra {
     pub gini: f64,
     pub gini_by: [f64; 5],
     pub lorenz: [f64; 9],
+    /// The treasury's account since the start (S94; S129 public works),
+    /// whose month the history shows.
+    pub state: Treasury,
 }
 
 /// One market's month in the history (Ramon, 30.10.2026, "Verlauf je
@@ -79,6 +82,9 @@ pub struct MarketMonth {
     pub gini: f32,
     /// Each good's price, denarii (GOOD_KEYS order).
     pub goods: [f32; GOODS],
+    /// S129: public works hired here in the month, days and denarii paid.
+    pub public_days: f32,
+    pub public_wage: f32,
 }
 
 /// Months each market keeps one by one (ten years); the years before
@@ -101,6 +107,8 @@ impl MarketMonth {
             tents: sum(&|x| x.tents as f32).round() as u32,
             gini: sum(&|x| x.gini),
             goods: std::array::from_fn(|g| sum(&|x| x.goods[g])),
+            public_days: sum(&|x| x.public_days),
+            public_wage: sum(&|x| x.public_wage),
         }
     }
 }
@@ -270,6 +278,8 @@ impl Grain {
                 tents: m.tent_people,
                 gini: spread.market_gini[k] as f32,
                 goods: std::array::from_fn(|g| m.goods[g].price as f32 / 1e3),
+                public_days: m.public_days as f32,
+                public_wage: m.public_paid as f32 / 1e3,
             })
             .collect();
         (self.history_levels(&spread), months)
@@ -316,6 +326,7 @@ impl Grain {
             gini: spread.gini,
             gini_by: spread.gini_by,
             lorenz: spread.lorenz,
+            state: self.treasury,
         }
     }
 
@@ -389,7 +400,9 @@ impl Grain {
             .int("persons", "Menschen", "", months.iter().map(|x| x.people as i64).collect())
             .int("tent_persons", "Im Zelt", "", months.iter().map(|x| x.tents as i64).collect())
             .float("gini", "Gini des Geldes", "", col(&|x| x.gini))
-            .float("gini_all", "Gini des Geldes aller Märkte", "", gini_all);
+            .float("gini_all", "Gini des Geldes aller Märkte", "", gini_all)
+            .float("public_days", "Öffentliche Arbeit", "Tage", col(&|x| x.public_days))
+            .float("public_wage", "Lohn für öffentliche Arbeit", "Denar", col(&|x| x.public_wage));
         for g in 0..GOODS {
             t.float(GOOD_PRICE_KEYS[g], GOOD_PRICE_NAMES[g], "Denar", col(&|x| x.goods[g]));
         }

@@ -1169,6 +1169,80 @@ Was auffällt:
 - Treadgold, W. (2014). Paying the army in the Theodosian period. In I. Jacobs (Hrsg.), *Production and prosperity in the Theodosian period*. Peeters.
 - Williams, J. C., & Wright, B. D. (1991). *Storage and commodity markets*. Cambridge University Press.
 
+## Kasse gibt Überschuss aus, Jahresplan der Höfe (S129, S130, 100 Jahre, Seeds 1 und 2, `run100-s129-s130.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1`; vorher: main mit S127)
+
+Ramon (31.10.2026): „gerne“ zur Karte „Soll ich Kasse und Jahresplan jetzt als S128 und S129 bauen?“,
+Option „Beide bauen“ (die Namen haben inzwischen S128, darum S129 und S130). Vorschlag mit allen
+Sonden: https://claude.ai/artifact/AEAe6gsk7cHjNNEo7i6TzQ. Die Staatskasse behält den Staatslohn des
+letzten Jahres und die Restkosten offener Bauaufträge und zahlt, was darüber liegt, als öffentliche
+Arbeit zum Taglohn aus, ein 52stel pro Woche, nach den Menschen der Märkte (S129). Höfe halten das
+Geld für ihr Korn bis zur nächsten Ernte und für die Saat zurück, bevor sie Waren kaufen (S130).
+Mit `--no-state-spend --no-food-plan` gleicher Fingerabdruck wie main (8 Jahre). Neu im Lauf:
+„public works (S129)“ in der Geldzeile. Die vier Läufe liefen gleichzeitig mit je 1 Thread; die
+Lauf-Datei ist Seed 1, danach mit 4 Threads und dem eingemischten main neu gerechnet (gleicher
+Fingerabdruck).
+
+| Grösse | main, Seed 1 | S129 + S130, Seed 1 | main, Seed 2 | S129 + S130, Seed 2 |
+|---|---|---|---|---|
+| Menschen im Jahr 10 / 40 / 100 | 107'966 / 112'119 / 127'073 | 108'222 / 111'830 / 129'908 | 108'015 / 111'944 / 126'609 | 108'815 / 113'008 / 132'885 |
+| Wachstum, Mittel Jahr 11–100 | +0,18 % | +0,20 % | +0,18 % | +0,22 % |
+| Hungertote Jahr 1–10 / 11–30 / 31–100 | 8'373 / 1'442 / 11'620 | 8'148 / 1'456 / 7'449 | 8'254 / 1'397 / 10'081 | 7'548 / 1'571 / 6'651 |
+| Verlassen die Karte, 100 Jahre | 3'632 | 3'037 | 3'098 | 2'939 |
+| Ernte im Jahr 10 / 100 | 38'329 / 32'591 t | 37'377 / 31'448 t | 38'315 / 33'165 t | 36'682 / 30'114 t |
+| Gesät von der möglichen Fläche, Jahr 100 | 85 % | 79 % | 87 % | 75 % |
+| Preis Korn nach Absatz, Jahr 10 / 40 / 100 | 6,54 / 1,55 / 0,45 Denar/kg | 6,59 / 1,52 / 0,89 | 6,52 / 1,52 / 0,32 | 6,67 / 1,53 / 1,10 |
+| Preis nach Absatz, Jahre 61–100 tiefster / höchster | 0,40 / 0,69 | 0,72 / 0,89 | 0,31 / 0,65 | 0,82 / 1,10 |
+| Median-Preis Korn / Rom im Jahr 100 | 0,13 / 2,71 Denar/kg | 0,12 / 6,66 | 0,08 / 2,27 | 0,15 / 4,86 |
+| Taglohn p50, Jahr 1 / 40 / 100 | 13,37 / 11,46 / 6,59 Denar | 13,27 / 10,25 / 4,61 | 12,91 / 12,02 / 6,59 | 12,97 / 10,15 / 4,61 |
+| Reallohn p10 / p50, Jahr 100 | 1,2 / 3,1 kg | 1,7 / 3,9 kg | 1,2 / 3,0 kg | 1,9 / 3,9 kg |
+| Staats- und Herrenspeicher im Jahr 100 | 56'565 / 18'373 t | 28'890 / 8'262 t | 65'937 / 16'916 t | 19'301 / 4'514 t |
+| Verdorben im Jahr 100, Anteil der Ernte | 19 % | 11 % | 20 % | 8 % |
+| Kleidung fehlt im Jahr 100 / Preis Kleid | 64 % / 440 Denar | 55 % / 571 | 65 % / 338 | 52 % / 604 |
+| Staatskasse im Jahr 100 | 161 Mio. Denar | 7,5 Mio. | 182 Mio. | 9,1 Mio. |
+| Steuer / Staatslohn, 100 Jahre | 115 / 222 Mio. Denar | 196 / 198 | 97 / 153 | 263 / 131 |
+| Öffentliche Arbeit, 100 Jahre (im Jahr 100) | – | 264 Mio. Denar, 58,6 Mio. Tage (4,6 Mio., 1,41 Mio. Tage) | – | 461 Mio., 90,6 Mio. Tage (6,8 Mio., 1,72 Mio. Tage) |
+| Geld im Umlauf im Jahr 100 (davon Höfe / Marktleute) | 230 (89 / 74) Mio. Denar | 354 (169 / 80) | 190 (70 / 57) | 411 (187 / 101) |
+| Neu geprägt / nicht gebucht | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| Tag gesamt, Mittel (1 Thread, 4 Läufe gleichzeitig) | 16,0 ms | 16,4 ms | 16,1 ms | 16,7 ms |
+
+Was auffällt:
+
+- **Weniger Hunger, mit beiden Seeds.** Ab Jahr 31 sterben 36 % (Seed 1) und 34 % (Seed 2) weniger an
+  Hunger, in den Jahren 1–10 schon 3 % und 9 % weniger, weil der Jahresplan von Anfang an wirkt (die
+  Kasse gibt erst ab dem zweiten Jahr aus). Im Jahr 100 leben 2,2 % und 5,0 % mehr Menschen.
+- **Der Kornpreis bekommt einen Boden, ohne Preisregel.** Mit der öffentlichen Arbeit finden mehr
+  angebotene Tage Arbeit, ein eigener Tag auf dem Feld kostet mehr, und die Höfe säen 79 % und 75 %
+  statt 85 % und 87 % ihrer möglichen Fläche (S124). Es liegt und verdirbt weniger (Speicher von Staat
+  und Herren 24–37 statt 75–83 kt, Verderb 8–11 % statt 19–20 % der Ernte), und der Preis nach Absatz hält in den Jahren 61–100
+  zwischen 0,72 und 1,10 Denar/kg statt auf 0,31–0,45 zu fallen.
+- **Die Kasse bleibt bei ihrer Reserve.** Statt 161–182 Mio. liegen im Jahr 100 7,5–9,1 Mio. in der
+  Kasse; geprägt wird nichts. Das Geld wandert zu den Höfen (169–187 statt 70–89 Mio.), die es als
+  Jahresvorrat für Korn halten. Die Steuer bringt mehr, weil das Steuerkorn teurer verkauft wird.
+- **Weniger fehlende Kleidung, teurere Kleider.** Es fehlen 52–55 % statt 64–65 % der Kleidung; ein Kleid
+  kostet im Jahr 100 571–604 statt 338–440 Denar.
+- **Taglohn tiefer, Reallohn höher.** Der Taglohn in der Mitte liegt im Jahr 100 bei 4,61 statt
+  6,59 Denar, der Reallohn in der Mitte bei 3,9 statt 3,0–3,1 kg, im ärmsten Zehntel bei 1,7–1,9 statt
+  1,2 kg.
+- **Rom wird teurer.** Korn kostet in Rom im Jahr 100 4,86–6,66 statt 2,27–2,71 Denar/kg; noch nicht
+  untersucht (wie bei S125, S126).
+- **Anders als die Sonde.** In der Sonde zählte die öffentliche Arbeit zum Staatslohn und damit zur
+  Reserve des nächsten Jahres. Gebaut ist sie getrennt gebucht (die Statistik zeigt Sold und
+  öffentliche Arbeit einzeln), die Reserve ist kleiner, und die Kasse gibt mehr aus: Seed 1 hat
+  129'908 statt 132'250 Menschen, 7'449 statt 7'341 Hungertote ab Jahr 31 und einen Preis von 0,89
+  statt 1,11 Denar/kg im Jahr 100.
+- Gleicher Fingerabdruck mit 1 und 3 Threads (5 Jahre); 90 Tests grün, 1 ausgelassen (neu:
+  `public_works_from_surplus`).
+
+### Quellen zu S129, S130 (APA 7)
+
+- Carroll, C. D. (1997). Buffer-stock saving and the life cycle/permanent income hypothesis. *The Quarterly Journal of Economics, 112*(1), 1–55. https://doi.org/10.1162/003355397555109
+- Cato. (1934). *On agriculture* (W. D. Hooper & H. B. Ash, Übers.). Harvard University Press. (Original um 160 v. Chr.; Kap. 136 zum Erntelohn als Anteil am Korn)
+- Comin, D., Lashkari, D., & Mestieri, M. (2021). Structural change with long-run income and price effects. *Econometrica, 89*(1), 311–374. https://doi.org/10.3982/ECTA16317
+- Duncan-Jones, R. (1994). *Money and government in the Roman Empire*. Cambridge University Press.
+- Erdkamp, P. (2005). *The grain market in the Roman Empire: A social, political and economic study*. Cambridge University Press.
+- Foellmi, R., & Zweimüller, J. (2006). Income distribution and demand-induced innovations. *The Review of Economic Studies, 73*(4), 941–960.
+- Hopkins, K. (1980). Taxes and trade in the Roman Empire (200 B.C.–A.D. 400). *The Journal of Roman Studies, 70*, 101–125. https://doi.org/10.2307/299558
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1301,6 +1375,8 @@ in Arrays nach ID statt in Hashtabellen.
 | Saat nach Preis (S124) | mindestens die Hälfte des Eigenbedarfs; Markt verlässlich, wenn Käufer an höchstens 5 % der Tage nichts fanden; der Weg zum Markt kostet nichts | frei gewählt |
 | Lager am Jahresabsatz (S125) | Absatz über ein Jahr geglättet (vorher 30 Tage) | frei gewählt nach dem Lagermodell, das in Jahren rechnet (Gouel & Legrand 2025) |
 | Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
+| Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
+| Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
 
 ## Nicht gebaut
 

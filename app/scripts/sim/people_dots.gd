@@ -71,6 +71,8 @@ const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const PersonWindow = preload("res://scripts/sim/person_window.gd")
+const DayClock = preload("res://scripts/sim/day_clock.gd")
+const DayPlan = preload("res://scripts/sim/day_plan.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
@@ -164,6 +166,9 @@ var _flows: MeshInstance3D # from further up: what went between the markets (peo
 var _weather_was := -1 # the clouds before the map was muted (1 on, 0 off), -1 not muted
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
 var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
+var _today_slot := -1 # the slot of the person asked for, whose day the window shows (day_plan.gd), -1 when asked by id
+var _day_hour := -1.0 # the clock's hour at the slow speeds, -1 at the fast ones (set_day_time)
+var _day_sun := Vector2(6.0, 18.0)
 var _person_looks_tex: ImageTexture
 var _person_looks_version := -1
 var _crop_material := ShaderMaterial.new()
@@ -1093,6 +1098,7 @@ func open_person(pid: int) -> void:
 ## household (an event window's people, sim_events.gd).
 func _show_household(pid: int, household: int) -> void:
 	_doing = ""
+	_today_slot = -1
 	if pid >= 0:
 		people.ask_person_id(pid)
 	elif household >= 0:
@@ -1124,6 +1130,7 @@ func _pick(pixel: Vector2) -> void:
 			_waiting = false
 			_person.note("[color=#c9a45c]%s[/color]" % _doing)
 			return
+		_today_slot = -1
 		if int(traveller.pid) >= 0:
 			people.ask_person_id(traveller.pid)
 		else:
@@ -1148,6 +1155,7 @@ func _pick(pixel: Vector2) -> void:
 	_show_info(_waiting)
 	if _waiting:
 		people.ask_person(selected)
+		_today_slot = selected
 		_person.wait()
 
 ## Opens or closes the person's window.
@@ -1189,6 +1197,11 @@ func _show_person(p: Dictionary) -> void:
 				entries.push_front({"text": "Markt %s öffnen" % market_name, "icon": "open-book",
 					"action": func(): get_tree().call_group("market_window", "open", m)})
 			return {"title": who, "kind": "Person", "entries": entries}
+	if _today_slot >= 0 and not p.is_empty():
+		var today := _today_of(_today_slot)
+		if not today.is_empty():
+			p.today = today
+			p.today_hour = _day_hour
 	_person.show_person(p, _doing)
 	if not p.is_empty():
 		print(JSON.stringify({"event": "people_person", "pid": p.pid}))
@@ -1231,6 +1244,36 @@ func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void
 	for m in [_figure_material, _figure_shadow_material]:
 		m.set_shader_parameter("day_hour", hour)
 		m.set_shader_parameter("day_sun", sun)
+	_day_hour = hour
+	if hour >= 0.0:
+		_day_sun = sun
+	if _person != null and _person.is_open():
+		_person.today_now(hour)
+
+## The day of the person in `slot` as its figure lives it (day_plan.gd),
+## from its record (ApoleiaPeople.record) and its household's flags; [] for
+## an empty slot or an extension built before `record`.
+func _today_of(slot: int) -> Array:
+	if slot < 0 or not people.has_method("record"):
+		return []
+	var rec: PackedFloat32Array = people.record(slot)
+	if rec.size() < 4 or rec[2] == 0.0:
+		return []
+	var w := int(rec[3])
+	var side: int = people.page_side()
+	var per := side * side
+	var layer := slot / per
+	var x := (slot % per) % side
+	var y := (slot % per) / side
+	var flags := 0
+	if _person_looks != null and layer * side + y < _person_looks.get_height():
+		var g := int(_person_looks.get_pixel(x, layer * side + y).g * 255.0 + 0.5)
+		flags = g if g & 128 else 0
+	var sun := _day_sun
+	if _day_hour < 0.0:
+		var land := get_parent()
+		sun = DayClock.daylight(int(people.day()), DayClock.latitude(land.target) if "target" in land else 41.9)
+	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun)
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the

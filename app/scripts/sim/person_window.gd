@@ -14,6 +14,8 @@ const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const PortraitView = preload("res://scripts/ui/portrait_view.gd")
+const DayClock = preload("res://scripts/sim/day_clock.gd")
+const DayPlan = preload("res://scripts/sim/day_plan.gd")
 const WIDTH := 430.0
 const MEDAL_R := 27.0
 const BADGE_R := 14.0 # the class medal on the portrait's corner
@@ -41,6 +43,9 @@ var _note: RichTextLabel
 var _cards: VBoxContainer
 var _class := ""
 var _icons := {}
+var _today_blocks: Array = [] # the «Heute» card's blocks (day_plan.gd) and their rows
+var _today_rows: Array = []
+var _today_at := -1 # the block lit
 
 func _init(tree: SceneTree) -> void:
 	# at the bottom left, beside the build menu; moved and sized as the player likes
@@ -138,6 +143,8 @@ func show_person(p: Dictionary, doing := "") -> void:
 	_note.text = "\n".join(lines)
 	_head.visible = true
 	_fill_head(p)
+	if p.has("today"):
+		_today(p)
 	_name(p)
 	_family(p)
 	if p.has("hh_kind"):
@@ -469,3 +476,49 @@ func _medal(ci: CanvasItem, at: Vector2, r: float, name: String, colour: Color) 
 	if icon != null:
 		var side := (r - 5.0) * 2.0
 		ci.draw_texture_rect(icon, Rect2(at - Vector2(side, side) * 0.5, Vector2(side, side)), false, UiStyle.TEXT)
+
+# ------------------------------------------------------------------ today
+
+## The person's day (day_plan.gd, set by people_dots.gd when the person was
+## picked on the map): a row per block, the one running lit.
+func _today(p: Dictionary) -> void:
+	var box := _card("Heute", "Der Tag dieser Person, wie ihre Figur ihn bei «Alltag» und «Woche» lebt. Er folgt aus dem, was die Sim über sie und ihren Haushalt weiss: ob er einen Hof hat, ob Ernte oder Aussaat Hände braucht, ob er zu kochen hat. Die Zeiten richten sich nach Sonnenauf- und -untergang dieses Tages; die Wege dauern so lange, wie man zu Fuss braucht.")
+	_today_blocks = p.today
+	_today_rows.clear()
+	var last := _today_blocks.size() - 1
+	for i in _today_blocks.size():
+		var b: Dictionary = _today_blocks[i]
+		var from := float(b.from)
+		var to := float(b.to)
+		var span := "%s – %s" % [DayClock.clock_text(from), DayClock.clock_text(to)]
+		var text := str(b.text)
+		if i == 0:
+			span = "bis %s" % DayClock.clock_text(to)
+		elif i == last:
+			span = "ab %s" % DayClock.clock_text(from)
+		elif to - from < 0.1:
+			span = DayClock.clock_text(from)
+			text += " (%d min)" % maxi(roundi((to - from) * 60.0), 1)
+		_row(box, span, text)
+		var row := box.get_child(box.get_child_count() - 1)
+		row.set_meta("span", span)
+		_today_rows.append(row)
+	_today_at = -2
+	today_now(float(p.get("today_hour", -1.0)))
+
+## Lights the block running at hour `h` (people_dots.gd, while the clock
+## shows the hour), none at the fast speeds (h < 0).
+func today_now(h: float) -> void:
+	var at := DayPlan.now(_today_blocks, h) if h >= 0.0 else -1
+	if at == _today_at:
+		return
+	_today_at = at
+	for i in _today_rows.size():
+		var row = _today_rows[i]
+		if not is_instance_valid(row):
+			continue
+		var lit := i == at
+		var left := row.get_child(0) as Label
+		left.text = ("jetzt · " if lit else "") + str(row.get_meta("span"))
+		left.add_theme_color_override("font_color", UiStyle.GOLD_LIT if lit else UiStyle.DIM)
+		(row.get_child(1) as Label).add_theme_color_override("font_color", UiStyle.GOLD_LIT if lit else UiStyle.TEXT)
