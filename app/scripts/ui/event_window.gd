@@ -13,23 +13,31 @@ extends "res://scripts/ui/menu_panel.gd"
 ##       "image": texture,                    # null: no picture
 ##       "text": "BBCode",
 ##       "figures": [{"label": "Verhungert", "value": "38 Menschen"}],
-##       "people": [{"pid": 41, "household": 7, "label": "Gaius Valerius"}],
+##       "people": [{"pid": 41, "household": 7, "label": "Haushalt 7", "role": "Dieb"}],
 ##       "at": Vector2(km_x, km_y),           # a «Hinfliegen» button
 ##       "options": [{"text": "Verstanden", "icon": "play-button", "action": callable}],
 ##   })
 ##
 ## The window emits fly_to(at) and person(pid, household); the caller
 ## moves the camera or opens the person. Any answer closes it, as does Esc.
+## The people get their faces once the caller has them (show_faces), and
+## a household's link then the name of the one shown, with its role.
 
 const LAYER := 12 # over the windows (10), under tooltips (20) and the pause menu (30)
 const WIDTH := 600.0
 const IMAGE_PX := 290.0
 const SEAL_PX := 64.0
+const FACE := 0.5 # the people's faces, portrait_view.gd at 56 x 70
+
+const PortraitView = preload("res://scripts/ui/portrait_view.gd")
 
 signal fly_to(at: Vector2)
 signal person(pid: int, household: int)
 
 static var _layer: CanvasLayer
+
+var _faces := {} # household -> the holder of its face, hidden until shown
+var _links := {} # household -> {button, role}: named once its face is known
 
 ## Opens the window for `d` (fields above) and returns it.
 static func open(tree: SceneTree, d: Dictionary) -> Control:
@@ -163,21 +171,57 @@ func _figures(figures: Array) -> Control:
 		rows.add_child(row)
 	return rows
 
-## The people the event is about, each a link that opens them.
+## The faces of the people by household, as ApoleiaPeople.take_faces
+## gives them; a household without one keeps its link alone.
+func show_faces(faces: Dictionary) -> void:
+	for h in _faces:
+		if faces.has(h):
+			var holder: Control = _faces[h]
+			holder.visible = holder.get_child(0).show_person(faces[h])
+			# the household by the name of the one shown, its role kept
+			var face: Dictionary = faces[h]
+			if face.has("name") and _links.has(h):
+				var link: Dictionary = _links[h]
+				var role: String = link.role
+				link.button.text = "Haushalt %s %s%s" % ["der" if face.get("female", false) else "des", face.name, " (%s)" % role if role != "" else ""]
+
+## The people the event is about, each a link that opens them, over it
+## their face once it is known (show_faces), which opens them too.
 func _people(people: Array) -> Control:
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 14)
 	flow.add_child(Vic3.label("Beteiligt:", Vic3.DIM, Vic3.SIZE_TEXT, Vic3.italic()))
 	for p in people:
+		var pid: int = p.get("pid", -1)
+		var household: int = p.get("household", -1)
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 2)
+		flow.add_child(column)
+		var holder := Control.new()
+		holder.custom_minimum_size = PortraitView.SIZE * FACE
+		holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		holder.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		holder.visible = false
+		holder.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+				person.emit(pid, household))
+		var face := PortraitView.new()
+		face.scale = Vector2(FACE, FACE)
+		face.rim = 1.6
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(face)
+		column.add_child(holder)
 		var b := LinkButton.new()
+		if household >= 0:
+			_faces[household] = holder
+			_links[household] = {"button": b, "role": p.get("role", "")}
 		b.text = p.get("label", "")
 		b.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
 		b.add_theme_color_override("font_color", Vic3.CONCEPT)
 		b.add_theme_color_override("font_hover_color", Vic3.GOLD_LIT)
 		b.add_theme_font_override("font", Vic3.serif())
 		b.add_theme_font_size_override("font_size", Vic3.SIZE_TEXT)
-		var pid: int = p.get("pid", -1)
-		var household: int = p.get("household", -1)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		b.pressed.connect(func(): person.emit(pid, household))
-		flow.add_child(b)
+		column.add_child(b)
 	return flow

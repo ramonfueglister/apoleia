@@ -41,6 +41,17 @@ varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut ha
 // water keeps.
 varying float shadow_share;
 const float WATER_SHADOW = 0.35;
+// The share of the slope tones kept far out, on the sun side and on the
+// shade sides (fragment(), round L)
+const float FAR_SUN_TONE = 0.3;
+const float FAR_SHADE_TONE = 0.6;
+// From the 2 km tiles the coast is a line through the 2 km sea distance
+// (tt_sea_distance: 0 on a land node, 2 km on the sea nodes beside it), at
+// CONTOUR_SD, instead of the tiles' edges (round M: on the map of Europe
+// the coasts were staircases of 8 km tiles; Ramon's landscape reference
+// draws them smooth)
+const float CONTOUR_KM = 2.0;
+const float CONTOUR_SD = 1.0;
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
 // measured from Urbek screenshots (urbek-landschaft-*.jpg): fresh light
@@ -160,7 +171,9 @@ void vertex() {
 	// closer in level, so a single raised or lowered corner makes one flat and
 	// one sloped triangle instead of a folded pair. A coast cut forces the
 	// diagonal and lowers the half at its tip to the water.
-	int cut = lake_cut >= 0 ? lake_cut : tt_coast_cut_nb(tile, cell, nc);
+	// (no coast cuts where the coast line draws the coast: its diagonal edge
+	// would stand beside the line)
+	int cut = lake_cut >= 0 ? lake_cut : tile_km >= CONTOUR_KM ? -1 : tt_coast_cut_nb(tile, cell, nc);
 	cut_tip = cut;
 	int split = cut >= 0 ? (cut + 1) & 3 : (abs(own.x - own.z) <= abs(own.y - own.w) ? 0 : 1);
 	float cut_level = lake_cut >= 0 ? own.x - tt_water_drop() : cut >= 0 ? tt_cut_level(tile, cut) : 0.0;
@@ -408,6 +421,50 @@ vec3 shore_foam(vec3 c, vec2 p, float reach) {
 	return mix(c, C_FOAM, surf * 0.7 * fade);
 }
 
+// The sea by the coast line (CONTOUR_KM on): the shallows' blue at the line,
+// fading into the deep blue over a tile (`sd`: tt_sea_distance, km)
+vec3 contour_sea_rgb(float sd) {
+	float far = far_share();
+	float seam = 1.0 - smoothstep(CONTOUR_SD, CONTOUR_SD + tile_km, sd);
+	return mix(mix(C_SEA, C_SEA_FAR, far), mix(C_SHORE, C_SHORE_FAR, far), seam);
+}
+
+// The land the coast line lays over a sea tile: the landscape of the
+// nearest land tile, at the foot of its ramp (band 0, no tone), so it runs
+// on into that tile without an edge
+vec3 contour_land_rgb(vec2 p) {
+	vec2 q = (p - world_min) / tile_km;
+	ivec2 t = ivec2(floor(q));
+	float best = 1e9;
+	int g = G_MEADOW;
+	for (int dz = -1; dz <= 1; dz++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			ivec2 n = t + ivec2(dx, dz);
+			int w = tt_water(n);
+			vec2 uv = clamp(q - vec2(n), 0.0, 1.0);
+			float d = length(q - vec2(n) - uv);
+			if (w != W_SEA && w != W_LAKE && d < best) {
+				best = d;
+				g = tt_ground_at(n, uv);
+			}
+		}
+	}
+	return ground_rgb_at(g, 0.0);
+}
+
+// The coast by the line over colour `c`: a sand seam on the land side, about a
+// pixel wide (thinner on the map, else islets of a node or two read as
+// beige specks, as the one-tile islands did), and the sea beyond the line;
+// `aa`: its antialiasing (km), `low` (0..1) where the line may lay the sea
+// (see the land tiles)
+vec3 contour_shore(vec3 c, float sd, float aa, float px_km, float low) {
+	float w = clamp(px_km, 0.25, 0.5);
+	float sand = smoothstep(CONTOUR_SD - w - aa, CONTOUR_SD - w + aa, sd);
+	float wet = smoothstep(CONTOUR_SD - aa, CONTOUR_SD + aa, sd);
+	c = mix(c, C_SAND, sand * 0.85 * low);
+	return mix(c, contour_sea_rgb(sd), wet * low);
+}
+
 void fragment() {
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
@@ -419,6 +476,14 @@ void fragment() {
 	vec3 art = tt_art_light(INV_VIEW_MATRIX);
 	vec3 c;
 	float rough = 1.0;
+	// the coast line (CONTOUR_KM), its derivatives taken here, outside the
+	// branches by tile
+	bool contour = tile_km >= CONTOUR_KM;
+	float sd = 10.0;
+	if (contour) { sd = tt_sea_distance(p); }
+	float sd_aa = max(fwidth(sd) * 0.75, 1e-4);
+	float px_km = length(fwidth(p));
+	bool sea_px = water == W_SEA; // drawn as sea (sim_muted)
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
 		// one flat colour per water tile, a lighter one where it touches the
 		// land. Up close the shallows are a soft seam that fades into the sea,
@@ -455,11 +520,20 @@ void fragment() {
 				reach = max(0.0, ceil(foot * n - 0.5)) / n;
 			}
 			c = mix(mix(C_SEA, C_SEA_FAR, far), mix(C_SHORE, C_SHORE_FAR, far), seam);
+			if (contour) { c = contour_sea_rgb(sd); }
 			c = sim_lanes(p, c, length(fwidth(p)));
 			c = shore_foam(c, p, reach);
 			if (shore_d < foot) {
 				c = C_SAND;
 				rough = 1.0;
+			}
+			// the land the coast line lays over the sea tile, with its sand
+			float dry = 1.0 - smoothstep(CONTOUR_SD - sd_aa, CONTOUR_SD + sd_aa, sd);
+			if (contour && dry > 0.0) {
+				vec3 land = sim_ways(p, contour_land_rgb(p), px_km);
+				c = mix(contour_shore(land, sd, sd_aa, px_km, 1.0), c, 1.0 - dry);
+				rough = dry > 0.5 ? 1.0 : rough;
+				sea_px = dry <= 0.5;
 			}
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
@@ -594,7 +668,7 @@ void fragment() {
 				float sand = 0.4 * (1.0 - smoothstep(width - 0.025 - aa, width - 0.025 + aa, d))
 					+ 0.45 * (1.0 - smoothstep(width + 0.025 - aa, width + 0.025 + aa, d));
 				c = !rock ? mix(c, C_SAND, sand) : c;
-			} else {
+			} else if (!contour) { // (by the coast line its own seam, below)
 				float aa = fwidth(d) + 1e-4;
 				c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 			}
@@ -647,7 +721,19 @@ void fragment() {
 		// there, TileTerrain.relief_for_width): a whole hillside in one hard
 		// facet read as folded paper (s2)
 		float steep = sub_tiles ? mix(0.4, 1.0, smoothstep(0.25, 0.7, length(slope))) : 1.0;
-		float tone = 1.0 + shade * away * steep;
+		// far out (from the 0.5 km tiles) every ramp is a whole tile one
+		// level high, so each facet is as steep as the next and the tones
+		// above lay the hills out as large pale and dark triangles, the sun
+		// side +22 % like glass (Ramon, round L). Urbek has hardly a slope
+		// and the landscape reference turns its hillsides only a little
+		// lighter or darker: the sun side keeps a third of its tone, the
+		// shade sides two thirds, so the steps still read as darker bands
+		float far = sub_tiles ? 1.0 : (shade > 0.0 ? FAR_SUN_TONE : FAR_SHADE_TONE);
+		// a coastal ramp (0 at the sea, land from 1) fades to the flat tone
+		// at its foot, where the land the coast line lays over the sea tile
+		// goes on untoned
+		float foot = contour ? smoothstep(0.0, 0.6, world_pos.y / level_h) : 1.0;
+		float tone = 1.0 + shade * away * steep * far * foot;
 		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		if (water == W_RIVER) {
 			// a band from the tile centre to each side with water beyond it;
@@ -685,6 +771,15 @@ void fragment() {
 			c = mix(c, C_BANK, bank);
 			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
 		}
+		// the coast line on the land tiles: their corners at the sea sit at
+		// 0 and the land at 1 or higher, so a coastal tile is a ramp up from
+		// the sea; the line lays the sea on its low half only (never on the
+		// hills: a lake of blue on a slope)
+		if (contour && water != W_LAKE) {
+			float low = 1.0 - smoothstep(0.35, 0.55, world_pos.y / level_h);
+			c = contour_shore(c, sd, sd_aa, px_km, low);
+			sea_px = sd > CONTOUR_SD && low > 0.5;
+		}
 	} else {
 		// walls: one darker earth tone (sand at the coast, stone where a town
 		// stands over its quay, rock up high), no texture
@@ -698,7 +793,7 @@ void fragment() {
 		float f = dot(wn, normalize(art.xz));
 		c = base * mix(0.70, 1.0, smoothstep(-0.8, 0.8, f));
 	}
-	c = sim_muted(c, water == W_SEA);
+	c = sim_muted(c, sea_px);
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
 	shadow_share = rough < 1.0 ? WATER_SHADOW : 1.0; // the water's tops (not its sand)

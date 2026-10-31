@@ -73,6 +73,7 @@ const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HouseLife = preload("res://scripts/sim/people_house_life.gd")
 const PeopleFlows = preload("res://scripts/sim/people_flows.gd")
@@ -999,6 +1000,7 @@ func _build_hud() -> void:
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	# the person clicked, in a window (person_window.gd) at the bottom left
 	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
+	_person.member_chosen.connect(func(pid: int): _show_household(pid, -1))
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -1156,7 +1158,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_at = event.position
 		elif _press_at.distance_to(event.position) <= CLICK_PX:
 			_pick(event.position)
-	if event is InputEventKey and event.pressed and not event.echo:
+	if event is InputEventKey and Keys.pressed(event, "apoleia_people"):
+		shown = not shown
+	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_C:
 				colour_mode = (colour_mode + 1) % MODES.size()
@@ -1169,7 +1173,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				for m in [_material, _figure_material]:
 					m.set_shader_parameter("selected_slot", -1)
 				_show_info(false)
-			KEY_P: shown = not shown
 			KEY_G:
 				map_on = not map_on
 				_map_version = -1
@@ -1177,12 +1180,16 @@ func _unhandled_input(event: InputEvent) -> void:
 ## The hour from the game clock at the slow speeds (day_clock.gd), -1 at
 ## the fast ones: the travellers walk at their real pace when a day lasts
 ## `day_s` real seconds (0: at a pace for the eye), stand while `frozen`
-## (the game paused), and the houses light their lamps.
+## (the game paused), the houses light their lamps and the figures keep
+## their day (people_day.gdshaderinc).
 func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void:
 	if _trips != null:
 		_trips.set_day_time(hour, sun, day_s, frozen)
 	if _life != null:
 		_life.set_lamps(hour, sun)
+	for m in [_figure_material, _figure_shadow_material]:
+		m.set_shader_parameter("day_hour", hour)
+		m.set_shader_parameter("day_sun", sun)
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the

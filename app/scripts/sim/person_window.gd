@@ -1,11 +1,12 @@
 extends RefCounted
 ## The window of the person clicked (people_dots.gd), in the menus' look
 ## (Victoria 3): the person under a medal of their household's class, then
-## cards as the statistics' (sim_overview.gd): the household's people, food,
-## work and money, and the person themself. Money and food are the grain
-## economy's as of its last monthly count (apoleia_sim::grain::HouseholdLook,
-## people_dots.rs take_person); where the money stands is its rank among
-## all people of the map and of its market, by money per head.
+## cards as the statistics' (sim_overview.gd): the name and its parts, the
+## household's people, food, work and money, and the person themself. Money
+## and food are the grain economy's as of its last monthly count
+## (apoleia_sim::grain::HouseholdLook, people_dots.rs take_person); where
+## the money stands is its rank among all people of the map and of its
+## market, by money per head.
 
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
@@ -19,11 +20,17 @@ const BADGE_R := 14.0 # the class medal on the portrait's corner
 const BAR_ROW := 30.0
 const BAR_PX := 8.0
 const FAMILY_MAX := 8 # members listed before "und N weitere"
+const FAMILY_ROW := 52.0 # a member's row, tall enough for the face
+const FAMILY_FACE := 0.36 # the face's scale in it (portrait_view.gd at 40 x 50)
+const TITLE_CHARS := 24 # a longer name pushes the title bar's buttons out
 ## The household kinds (KIND_NAMES in apoleia_sim::grain) as the
 ## statistics name the classes.
 const CLASSES := {"Hof": "Hofleute", "Zelt": "Im Zelt", "Lohn": "Lohnarbeit", "Händler": "Händler", "Oberschicht": "Oberschicht"}
 const STANDS := ["Landvolk", "Stadtvolk", "Ritter", "Senatoren"]
 const CRAFT_NOTES := {"Taglohn": "Taglohn", "Weber": "Weberei", "Schmied": "Schmiede", "Töpfer": "Töpferei"}
+
+## A member of the household was clicked (people_dots.gd opens them).
+signal member_chosen(pid: int)
 
 var _win # ui_window.gd
 var _column: VBoxContainer
@@ -116,16 +123,22 @@ func show_person(p: Dictionary, doing := "") -> void:
 	if p.is_empty():
 		note("[i]nicht mehr da[/i]")
 		return
-	_win.set_title("%s, %d Jahre" % [_who(p.female, float(p.age)), int(p.age)])
+	_win.set_title(_title(p) if p.has("name") else "%s, %d Jahre" % [_who(p.female, float(p.age)), int(p.age)])
 	_class = CLASSES.get(p.get("hh_kind", ""), "")
 	var lines := PackedStringArray()
 	if doing != "":
 		lines.append("[color=#%s]%s[/color]" % [UiStyle.GOLD_LIT.to_html(false), doing])
 	if int(p.travelling) > 0:
 		lines.append("[color=#%s]%s[/color]" % [UiStyle.LOSS.to_html(false), "wandert aus" if int(p.travelling) == 2 else "unterwegs"])
+	# a death in the household in the last 60 days (the face mourns too)
+	if p.has("loss_days"):
+		var ago := int(p.loss_days)
+		var when := "heute" if ago == 0 else ("vor 1 Tag" if ago == 1 else "vor %d Tagen" % ago)
+		lines.append("[color=#%s]In Trauer: %s im Haushalt %s[/color]" % [UiStyle.DIM.to_html(false), "Hungertod" if bool(p.get("loss_hunger", false)) else "Todesfall", when])
 	_note.text = "\n".join(lines)
 	_head.visible = true
 	_fill_head(p)
+	_name(p)
 	_family(p)
 	if p.has("hh_kind"):
 		_food(p)
@@ -136,7 +149,9 @@ func show_person(p: Dictionary, doing := "") -> void:
 # ------------------------------------------------------------------ the head
 
 func _fill_head(p: Dictionary) -> void:
+	# job and estate, and who the person is when the title bar shows the name
 	var sub := "%s, %s" % [p.job, STANDS[clampi(int(p.stand), 0, 3)]]
+	var who := "%s, %d Jahre" % [_who(p.female, float(p.age)), int(p.age)] if p.has("name") else ""
 	var places := PackedStringArray()
 	if _class != "":
 		places.append(_class)
@@ -159,7 +174,10 @@ func _fill_head(p: Dictionary) -> void:
 		else:
 			_medal(_head, at, MEDAL_R, _class, _colour(_class))
 		var w := _head.size.x - x
-		UiStyle.text_at(_head, Vector2(x, at.y - 6.0), sub, UiStyle.VALUE, UiStyle.SIZE_HEAD + 1, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.title_font())
+		var y := at.y - 6.0 if who == "" else at.y - 22.0
+		UiStyle.text_at(_head, Vector2(x, y), sub, UiStyle.VALUE, UiStyle.SIZE_HEAD + 1, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.title_font())
+		if who != "":
+			UiStyle.text_at(_head, Vector2(x, at.y - 2.0), who, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.serif())
 		for k in places.size():
 			UiStyle.text_at(_head, Vector2(x, at.y + 18.0 + 20.0 * k), places[k], UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, UiStyle.serif()))
 	_head.queue_redraw()
@@ -167,6 +185,23 @@ func _fill_head(p: Dictionary) -> void:
 		if _class == "":
 			return {}
 		return {"id": "person-class:" + _class, "title": _class, "kind": "Schicht", "text": _class_about(_class)})
+
+## The name for the title bar, which does not shrink: in full if short,
+## else without the father's name, else the given name alone (the name
+## card has every part).
+static func _title(p: Dictionary) -> String:
+	var name := str(p.name)
+	if name.length() <= TITLE_CHARS:
+		return name
+	var parts := PackedStringArray()
+	var given := name
+	for part in p.get("name_parts", []):
+		if part.role != "Vatersname":
+			parts.append(str(part.text))
+		if part.role == "Rufname":
+			given = str(part.text)
+	var short := " ".join(parts)
+	return short if short.length() <= TITLE_CHARS else given
 
 static func _who(woman: bool, age: float) -> String:
 	if age < 14.0:
@@ -257,12 +292,26 @@ func _bar_row(box: VBoxContainer, name: String, share: float, value: String, col
 		Tooltips.attach(row, func(_at: Vector2) -> Dictionary: return {"id": "person-bar:" + name, "title": name, "kind": "Person", "text": about})
 	box.add_child(row)
 
+## The name in its parts, each with what it is and where it comes from
+## (apoleia_sim::names), and the line it belongs to.
+func _name(p: Dictionary) -> void:
+	var parts: Array = p.get("name_parts", [])
+	if parts.is_empty():
+		return
+	var box := _card("Name", "Wie diese Person heisst und woher jeder Teil des Namens kommt. Die Eltern wählen den Rufnamen: nach Verwandten, nach dem, was in der Nachbarschaft gerade oft gegeben wird, oder nach der Mode ihrer Kultur; seltene Namen kommen eher in Mode, sehr häufige aus der Mode.")
+	for part in parts:
+		_row(box, str(part.text), str(part.role), UiStyle.DIM, str(part.about))
+	if p.has("line"):
+		var n := int(p.line_members)
+		_row(box, "Linie der %s" % p.line, "%d %s" % [n, "lebt" if n == 1 else "leben"], UiStyle.DIM,
+			"Alle, die den Familiennamen über ihre Väter von derselben Familie bei Spielbeginn tragen (Herkunft %s). Die Linie geht über die Söhne weiter; ohne Söhne erlischt sie." % p.line_origin)
+
 ## The household's people, the one shown first lit; spouse and children named.
 func _family(p: Dictionary) -> void:
 	var fam: Array = p.get("family", [])
 	if fam.is_empty():
 		return
-	var box := _card("Haushalt", "Die Menschen, die mit dieser Person einen Haushalt bilden: sie essen aus einem Vorrat und teilen ihr Geld.")
+	var box := _card("Haushalt", "Die Menschen, die mit dieser Person einen Haushalt bilden: sie essen aus einem Vorrat und teilen ihr Geld. Ein Klick auf jemanden öffnet diese Person.")
 	var order := fam.duplicate()
 	order.sort_custom(func(a, b):
 		if int(a.pid) == int(p.pid) or int(b.pid) == int(p.pid):
@@ -277,20 +326,51 @@ func _family(p: Dictionary) -> void:
 		elif int(m.pid) == int(p.spouse):
 			rel = "Ehefrau" if m.female else "Ehemann"
 		var row := Control.new()
-		row.custom_minimum_size = Vector2(0, 26)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.custom_minimum_size = Vector2(0, FAMILY_ROW)
 		var me := int(m.pid) == int(p.pid)
 		var job: String = m.job
 		var age := int(m.age)
 		var away: bool = m.get("travelling", false)
+		# each member's face at the left; a click on another opens them
+		var face := PortraitView.new()
+		face.scale = Vector2(FAMILY_FACE, FAMILY_FACE)
+		face.rim = 2.5
+		face.position = Vector2(8, 1)
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.visible = face.show_person(m)
+		row.add_child(face)
+		var x := 8.0 + PortraitView.SIZE.x * FAMILY_FACE + 8.0 if face.visible else 10.0
+		if me:
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			var pid := int(m.pid)
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+			row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			row.mouse_entered.connect(row.queue_redraw)
+			row.mouse_exited.connect(row.queue_redraw)
+			row.gui_input.connect(func(e: InputEvent):
+				if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+					member_chosen.emit(pid))
 		row.draw.connect(func():
 			var font := UiStyle.serif()
-			row.draw_rect(Rect2(0, 0, row.size.x, 24), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+			var lit := not me and Rect2(Vector2.ZERO, row.size).has_point(row.get_local_mouse_position())
+			row.draw_rect(Rect2(0, 0, row.size.x, FAMILY_ROW - 2.0), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+			if lit:
+				row.draw_rect(Rect2(0.5, 0.5, row.size.x - 1.0, FAMILY_ROW - 3.0), UiStyle.GOLD, false, 1.0)
 			if me:
-				row.draw_rect(Rect2(0, 0, 3, 24), UiStyle.GOLD)
-			UiStyle.text_at(row, Vector2(10, 18), "%s, %d" % [who, age], UiStyle.VALUE if me else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, 120.0, font)
-			UiStyle.text_at(row, Vector2(130, 18), job + ("  (unterwegs)" if away else ""), UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - 240.0, font)
-			UiStyle.text_at(row, Vector2(row.size.x - 110.0, 18), rel, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 104.0, UiStyle.italic()))
+				row.draw_rect(Rect2(0, 0, 3, FAMILY_ROW - 2.0), UiStyle.GOLD)
+			# the name over who they are and their work
+			var y := FAMILY_ROW * 0.5 + 5.0
+			var name := str(m.get("name", ""))
+			var line := "%s, %d" % [who, age]
+			var sub := job + ("  (unterwegs)" if away else "")
+			if name != "":
+				sub = "%s, %s" % [line, sub]
+				line = name
+			var w := row.size.x - x - 6.0
+			UiStyle.text_at(row, Vector2(x, y - 8.0), line, UiStyle.VALUE if me else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w, font)
+			UiStyle.text_at(row, Vector2(x, y + 10.0), sub, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, w - 110.0, font)
+			UiStyle.text_at(row, Vector2(row.size.x - 110.0, y + 10.0), rel, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 104.0, UiStyle.italic()))
 		box.add_child(row)
 	if order.size() > FAMILY_MAX:
 		box.add_child(UiStyle.label("und %d weitere" % (order.size() - FAMILY_MAX), UiStyle.DIM, UiStyle.SIZE_SMALL))

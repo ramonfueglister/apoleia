@@ -8,8 +8,10 @@ extends MultiMeshInstance3D
 ## farm's sheep (up to eight) round the yard and the pigs it fattens in a
 ## pen. At the slow speeds (game_clock.gd) a house that cooks lights its
 ## lamp at dusk, behind the two front windows, and puts it out an hour to
-## three later, and again before sunrise (`set_lamps`); what the house
-## burns is not counted, it is the household that has food to cook.
+## three later, and again before sunrise (`set_lamps`), and its smoke rises
+## only while the hearth burns for a meal (people_day.gdshaderinc); what
+## the house burns is not counted, it is the household that has food to
+## cook.
 ## ApoleiaPeople.house_looks gives 4 bytes per house slot, once a
 ## sim week (sim/godot/src/people_dots.rs publish_house_looks,
 ## Grain::house_look); people_dots.gd uploads them as `look_tex` and lets
@@ -29,6 +31,7 @@ var _size := Vector2i.ZERO
 var _listed := 0
 var _view_km := INF
 var _lamps := Vector2(-1.0, -1.0) # hours since sunset and to sunrise in the shader, -1 by day
+var _fire := Vector3(-1.0, 0.0, 0.0) # the hour and the sun in the shader (day_fire), -1 at the fast speeds
 
 func setup(km_per_m: float, list_tex: Texture2D, list_w: int) -> void:
 	name = "PeopleHouseLife"
@@ -78,8 +81,9 @@ func show_houses(listed: int, view_km: float) -> void:
 	multimesh.visible_instance_count = mini(listed, LIFE_MAX) if view_km <= LIFE_KM and _version >= 0 else 0
 	visible = multimesh.visible_instance_count > 0
 
-## The lamps by the hour (day_clock.gd; `hour` < 0 at the fast speeds
-## puts them out): hours since sunset and hours to sunrise, -1 by day.
+## The lamps and the hearths by the hour (day_clock.gd; `hour` < 0 at the
+## fast speeds puts the lamps out and lets the smoke rise all day): hours
+## since sunset and hours to sunrise, -1 by day, and the hour itself.
 func set_lamps(hour: float, sun: Vector2) -> void:
 	var lamps := Vector2(-1.0, -1.0)
 	if hour >= sun.y:
@@ -91,6 +95,11 @@ func set_lamps(hour: float, sun: Vector2) -> void:
 		_lamps = lamps
 		material.set_shader_parameter("since_sunset", lamps.x)
 		material.set_shader_parameter("to_sunrise", lamps.y)
+	var fire := Vector3(roundf(hour * 100.0) / 100.0 if hour >= 0.0 else -1.0, sun.x, sun.y)
+	if fire != _fire:
+		_fire = fire
+		material.set_shader_parameter("day_hour", fire.x)
+		material.set_shader_parameter("day_sun", sun)
 
 ## The parts in metres about the house's middle, its front +z (UV.x the
 ## part, people_house_life.gdshader): three smoke puffs at the origin (the

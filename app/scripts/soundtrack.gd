@@ -4,6 +4,7 @@ extends Node
 const TRACKS = preload("res://scripts/soundtrack_playlist.gd").TRACKS
 var settings_path := "user://soundtrack.cfg"
 const MUSIC_VOLUME_DB = -17.0
+const Keys = preload("res://scripts/ui/keys.gd")
 var player: AudioStreamPlayer
 var track_index := -1
 var muted := false
@@ -64,9 +65,9 @@ func toggle_mute() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not is_instance_valid(player) or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	if event.keycode == KEY_M:
+	if Keys.pressed(event, "apoleia_music"):
 		toggle_mute()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_N:
+	elif Keys.pressed(event, "apoleia_next_song"):
 		play_next()
 		get_viewport().set_input_as_handled()

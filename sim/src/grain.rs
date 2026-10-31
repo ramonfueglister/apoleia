@@ -4498,6 +4498,10 @@ pub struct EventsView {
     pub amount: Vec<i64>,
     pub at: Vec<(f32, f32)>,
     pub to: Vec<(f32, f32)>,
+    /// The person's full name (crate::names), and the other's when the
+    /// other is a person (the mother of a birth, the bride); else empty.
+    pub name: Vec<String>,
+    pub other_name: Vec<String>,
 }
 
 /// Flags of `Grain::house_look`: food to cook (pantry, or a farm's store),
@@ -4721,6 +4725,9 @@ impl Grain {
             v.amount.push(e.amount);
             v.at.push((at.0 as f32, at.1 as f32));
             v.to.push((to.0 as f32, to.1 as f32));
+            v.name.push(if e.pid == NONE { String::new() } else { p.names.full(e.pid) });
+            let other_person = matches!(e.kind, crate::events::BIRTH | crate::events::WEDDING);
+            v.other_name.push(if other_person && e.other != NONE { p.names.full(e.other) } else { String::new() });
         }
         v
     }

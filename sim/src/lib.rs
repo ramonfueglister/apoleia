@@ -16,6 +16,7 @@ pub mod grain;
 pub mod groups;
 pub mod inputs;
 pub mod life;
+pub mod names;
 pub mod people;
 pub mod save;
 pub mod settle;

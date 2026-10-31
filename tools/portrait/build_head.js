@@ -13,8 +13,8 @@
 // (head, neck, shoulders), the body in four levels of detail (meshoptimizer,
 // borders locked), the clothing helper ("tights") in two, the eyes; the
 // targets of the face groups and the macro targets (sex × age × base type,
-// sex × age × muscle × weight) without the baby ones, deltas rounded to
-// 1/3000.
+// sex × age × muscle × weight) from baby to old, deltas rounded to 1/3000
+// (the largest, a baby's, still fits an i16).
 //
 // File layout, little endian: "APOLHEAD" | version u32 | vertex count u32 |
 // positions f32 × 3 | part count u32 | per part: name (u8 length + UTF-8),
@@ -79,8 +79,8 @@ const Y0 = 3.4, XM = 2.85, SCALE = 3000;
       else files.push(`${gr.group}/${m.target}`);
     }
   }
-  for (const eth of ['african', 'asian', 'caucasian']) for (const gen of ['male', 'female']) for (const age of ['child', 'young', 'old']) files.push(`macrodetails/${eth}-${gen}-${age}`);
-  for (const gen of ['male', 'female']) for (const age of ['child', 'young', 'old']) for (const mu of ['minmuscle', 'averagemuscle', 'maxmuscle']) for (const w of ['minweight', 'averageweight', 'maxweight']) files.push(`macrodetails/universal-${gen}-${age}-${mu}-${w}`);
+  for (const eth of ['african', 'asian', 'caucasian']) for (const gen of ['male', 'female']) for (const age of ['baby', 'child', 'young', 'old']) files.push(`macrodetails/${eth}-${gen}-${age}`);
+  for (const gen of ['male', 'female']) for (const age of ['baby', 'child', 'young', 'old']) for (const mu of ['minmuscle', 'averagemuscle', 'maxmuscle']) for (const w of ['minweight', 'averageweight', 'maxweight']) files.push(`macrodetails/universal-${gen}-${age}-${mu}-${w}`);
   const targets = [];
   for (const t of [...new Set(files)].sort()) {
     const file = path.join(data, 'targets', t + '.target');
@@ -97,6 +97,7 @@ const Y0 = 3.4, XM = 2.85, SCALE = 3000;
       ids.push(remap.get(i));
       d.push(Math.round(x * SCALE), Math.round(y * SCALE), Math.round(z * SCALE));
     }
+    if (d.some(v => Math.abs(v) > 32767)) throw new Error(`${t}: a delta does not fit an i16`);
     if (ids.length) targets.push({ t, ids, d });
   }
   u32(targets.length);

@@ -24,12 +24,25 @@ extends CanvasLayer
 ## `answered`, and people_trips.gd plays the newest events as scenes on the
 ## map (a family moving with its handcart, a thief, a funeral).
 ##
-## Rare events in view (theft, a farm taken, cleared under the Lex Manciana
-## or given up; WINDOW_KINDS) open an event window in the Victoria 3 look
+## How each kind is told the player sets in the settings (Ramon,
+## 31.10.2026, as Victoria 3's messages; ui/notice_settings.gd): as a
+## window, only as a line and a pin, or not at all, and whether the game
+## pauses. By default the rare ones (theft, a farm taken, cleared under the
+## Lex Manciana or given up) open an event window in the Victoria 3 look
 ## (ui/event_window.gd) while the list is shown: only events of the last
 ## WINDOW_DAYS, each once, at most one window at a time and one every
 ## WINDOW_GAP_S seconds, so a fast game is not buried in windows. Its
-## people open the person's window (person_chosen, people_dots.gd).
+## people open the person's window (person_chosen, people_dots.gd). A kind
+## set to pause asks the game clock to stop (pause_asked) when one of the
+## last WINDOW_DAYS happens in view, each once. A line's star pins it in
+## the outliner (ui/outliner.gd).
+##
+## Faces (docs/kit2/PORTRAITS.md): an event window's people get the face
+## of their household (ApoleiaPeople.ask_faces, a member as the window's
+## links open), and so does a line for one event of a household that lives
+## on (FACE_KINDS); the faces are kept by household, the last FACES_KEEP.
+## With the face comes that member's name (docs/kit2/NAMES.md), which then
+## names the household on the window's link and the line.
 ##
 ## Command line (after --): --no-events starts with the list hidden,
 ## --no-event-windows opens no event windows.
@@ -37,6 +50,8 @@ extends CanvasLayer
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const NoticeList = preload("res://scripts/ui/notice_list.gd")
 const EventWindow = preload("res://scripts/ui/event_window.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
+const NoticeSettings = preload("res://scripts/ui/notice_settings.gd")
 const KEEP_DAYS := 60 # apoleia_sim::events::KEEP_DAYS
 const LINES := 8
 const ASK_SECONDS := 1.0
@@ -57,21 +72,32 @@ const PINS_MAX := 40
 const PIN_GRID := 14.0 # pins closer than the view width over this merge
 const THEFT := 4
 const ALMS := 5
+const HUNGER_DEATH := 0
 const MOVED := 1
+const LEFT_MAP := 2
+const JOINED := 3
+const TENT_MOVED := 6
+const HEIR := 8
+const TO_TENT := 9
 const FARM_TAKEN := 7
 const MANCIANA := 10
 const FARM_LEFT := 11
-const WINDOW_KINDS: Array[int] = [THEFT, FARM_TAKEN, MANCIANA, FARM_LEFT]
 ## births, weddings and deaths of old age or illness: daily all over, so
 ## only scenes on the map (people_trips.gd), not lines or pins
 const FAMILY_FROM := 12
 const WINDOW_DAYS := 2
 const WINDOW_GAP_S := 30.0
+## moved, joined relatives, theft, alms, tent moved, farm taken, heir, to
+## the tents, Lex Manciana: the household is still there to show
+const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10]
+const FACES_KEEP := 200
 
 ## Every answer of the sim thread, also while the list is hidden.
 signal answered(events: Dictionary)
 ## A person named in an event window was chosen.
 signal person_chosen(pid: int, household: int)
+## An event of a kind set to pause happened in view (sim/game_clock.gd stops).
+signal pause_asked(text: String)
 
 var people: RefCounted
 var landscape: Node3D
@@ -93,6 +119,11 @@ var _windows := true
 var _window: Control # the event window open now, if any
 var _window_msec := -1000000
 var _window_seen := {} # rare events of the last WINDOW_DAYS already shown or passed over
+var _pause_seen := {} # events of the last WINDOW_DAYS that paused or would have
+var _faces := {} # household -> its face as take_faces gives it, {} when it has none
+var _faces_order: Array[int] = []
+var _faces_wanted: Array[int] = [] # not asked yet
+var _faces_asked: Array[int] = [] # asked, the answer not there yet
 
 ## `sim` is ApoleiaPeople, `scene` the landscape whose camera a line moves.
 func setup(sim: RefCounted, scene: Node3D) -> void:
@@ -118,12 +149,20 @@ func _process(_delta: float) -> void:
 			if open:
 				_refresh()
 				_window_for(answer)
+			_pause_for(answer)
 			answered.emit(answer)
+	if not _faces_asked.is_empty():
+		var faces: Dictionary = people.take_faces()
+		if not faces.is_empty():
+			_got_faces(faces.faces)
 	if open:
 		_place_pins()
 	if _asked:
 		return
 	var day: int = people.day()
+	if day < _asked_day: # a save game was loaded: its households are others
+		_faces.clear()
+		_faces_order.clear()
 	var centre: Vector2 = landscape.target if "target" in landscape else Vector2.ZERO
 	var width: float = landscape.width if "width" in landscape else 360.0
 	var moved := _asked_at.x == INF or Vector2(_asked_at.x, _asked_at.y).distance_to(centre) > width * 0.3 \
@@ -145,7 +184,32 @@ func _refresh() -> void:
 	_fill()
 	_make_pins()
 
-## One entry per day and kind, newest first, at most LINES.
+## Asks for the faces of `households` not known yet, once the last answer
+## is there.
+func _want_faces(households: Array) -> void:
+	for h in households:
+		if h >= 0 and not _faces.has(h) and not h in _faces_wanted and not h in _faces_asked:
+			_faces_wanted.append(h)
+	if _faces_asked.is_empty() and not _faces_wanted.is_empty():
+		people.ask_faces(PackedInt64Array(_faces_wanted))
+		_faces_asked = _faces_wanted
+		_faces_wanted = []
+
+func _got_faces(faces: Dictionary) -> void:
+	for h in _faces_asked:
+		_faces[h] = faces.get(h, {})
+		_faces_order.append(h)
+	while _faces_order.size() > FACES_KEEP:
+		_faces.erase(_faces_order.pop_front())
+	_faces_asked = []
+	if open:
+		_fill()
+	if is_instance_valid(_window):
+		_window.show_faces(_faces)
+	_want_faces([])
+
+## One entry per day and kind, newest first, at most LINES; a line for
+## one event of FACE_KINDS wants its household's face.
 func _group(e: Dictionary) -> void:
 	var days: PackedInt64Array = e.day
 	var kinds: PackedInt32Array = e.kind
@@ -155,14 +219,14 @@ func _group(e: Dictionary) -> void:
 	var by := {}
 	var order: Array[Vector2i] = []
 	for i in range(days.size() - 1, -1, -1):
-		if kinds[i] >= FAMILY_FROM:
+		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
 			continue
 		var key := Vector2i(days[i], kinds[i])
 		if not by.has(key):
 			if order.size() >= LINES:
 				continue
 			by[key] = {"day": int(days[i]), "kind": kinds[i], "name": names[kinds[i]] if kinds[i] < names.size() else "?",
-				"n": 0, "amount": 0, "lo": at[i], "hi": at[i]}
+				"n": 0, "amount": 0, "lo": at[i], "hi": at[i], "household": int(e.household[i])}
 			order.append(key)
 		var g: Dictionary = by[key]
 		g.n += 1
@@ -170,8 +234,12 @@ func _group(e: Dictionary) -> void:
 		g.lo = (g.lo as Vector2).min(at[i])
 		g.hi = (g.hi as Vector2).max(at[i])
 	_entries.clear()
+	var faces := []
 	for key in order:
 		_entries.append(by[key])
+		if by[key].n == 1 and by[key].kind in FACE_KINDS:
+			faces.append(by[key].household)
+	_want_faces(faces)
 	_stand.text = SimTables._date(int(people.day()))
 
 ## Pins for the events of the last PIN_DAYS: one per kind and patch of the
@@ -195,7 +263,7 @@ func _make_pins() -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - PIN_DAYS:
 			break
-		if kinds[i] >= FAMILY_FROM:
+		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
 			continue
 		var cell := (at[i] / grid).floor()
 		var key := Vector3i(int(cell.x), int(cell.y), kinds[i])
@@ -244,10 +312,23 @@ func _fill() -> void:
 		return
 	var rows := []
 	for g in _entries:
-		rows.append({"day": _day(g.day), "text": _text(g), "entry": g,
+		# one event of a household that lives on: its face, and the name of
+		# the one shown
+		var face: Dictionary = _faces.get(g.household, {}) if g.n == 1 and g.kind in FACE_KINDS else {}
+		var text := _text(g)
+		if face.has("name"):
+			text += ": " + str(face.name)
+		rows.append({"day": _day(g.day), "text": text, "entry": g,
 			"colour": KIND_COLOURS[g.kind] if g.kind < KIND_COLOURS.size() else SimTables.INK,
-			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else ""})
+			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else "",
+			"face": face})
 	_panel.show_rows(rows)
+
+## A line pinned in the outliner (ui/outliner.gd): its text and day, and
+## where it happened.
+func _pin(g: Dictionary) -> void:
+	var at: Vector2 = ((g.lo as Vector2) + (g.hi as Vector2)) * 0.5
+	get_tree().call_group("outliner", "pin", "event", hash([g.day, g.kind, at]), "%s, %s" % [_text(g), _day(g.day)], at)
 
 ## "Hungertod ×3", "Diebstahl ×2, 140 kg", "Umzug ×4, 19 Menschen".
 static func _text(g: Dictionary) -> String:
@@ -264,9 +345,10 @@ static func _text(g: Dictionary) -> String:
 static func _day(day: int) -> String:
 	return "%d. %s." % [day % SimTables.MONTH + 1, SimTables.MONTHS[(day % SimTables.YEAR) / SimTables.MONTH].left(3)]
 
-## An event window for the newest rare event in view not yet shown, if no
-## window is open and the last one is WINDOW_GAP_S old. The others of the
-## same answer are passed over: they stay in the list.
+## An event window for the newest event in view of a kind told as a window
+## (ui/notice_settings.gd) not yet shown, if no window is open and the last
+## one is WINDOW_GAP_S old. The others of the same answer are passed over:
+## they stay in the list.
 func _window_for(e: Dictionary) -> void:
 	if not _windows or not e.has("day"):
 		return
@@ -282,7 +364,7 @@ func _window_for(e: Dictionary) -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - WINDOW_DAYS:
 			break
-		if not kinds[i] in WINDOW_KINDS or not view.has_point(at[i]):
+		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) != NoticeSettings.WINDOW or not view.has_point(at[i]):
 			continue
 		var key := "%d:%d:%d" % [days[i], kinds[i], e.household[i]]
 		seen[key] = true
@@ -291,6 +373,35 @@ func _window_for(e: Dictionary) -> void:
 		free = false
 		_open_window(e, i)
 	_window_seen = seen
+
+## Asks the clock to pause for the newest event in view of a kind set to
+## pause that it has not paused for yet; the others of the answer count as
+## seen, so one pause covers them.
+func _pause_for(e: Dictionary) -> void:
+	if not e.has("day"):
+		return
+	var days: PackedInt64Array = e.day
+	var kinds: PackedInt32Array = e.kind
+	var at: PackedVector2Array = e.at
+	var today: int = people.day()
+	var centre: Vector2 = landscape.target if "target" in landscape else Vector2.ZERO
+	var width: float = landscape.width if "width" in landscape else 360.0
+	var view := Rect2(centre - Vector2(width, width) * 0.5, Vector2(width, width))
+	var seen := {}
+	var newest := -1
+	for i in range(days.size() - 1, -1, -1):
+		if days[i] < today - WINDOW_DAYS:
+			break
+		if kinds[i] >= FAMILY_FROM or not NoticeSettings.pauses(kinds[i]) or not view.has_point(at[i]):
+			continue
+		var key := "%d:%d:%d" % [days[i], kinds[i], e.household[i]]
+		seen[key] = true
+		if newest < 0 and not _pause_seen.has(key):
+			newest = i
+	_pause_seen = seen
+	if newest >= 0:
+		var k: int = kinds[newest]
+		pause_asked.emit("%s, %s" % [e.names[k] if k < e.names.size() else "Ereignis", _day(int(days[newest]))])
 
 ## The window for event i: what the sim knows of it, the households as links.
 func _open_window(e: Dictionary, i: int) -> void:
@@ -307,13 +418,45 @@ func _open_window(e: Dictionary, i: int) -> void:
 		"people": [{"pid": -1, "household": hh, "label": "Haushalt %d" % hh}],
 	}
 	match kind:
+		HUNGER_DEATH:
+			d.title = "Ein Mensch ist verhungert"
+			d.text = "In diesem Haushalt ist ein Mensch verhungert: der Haushalt hatte zu lange nicht genug zu essen."
+		MOVED:
+			d.title = "Ein Haushalt zieht weiter"
+			d.text = "Ein Haushalt verlässt seine Gegend und zieht dorthin, wo er sich ein besseres Auskommen erhofft."
+			if amount > 0:
+				d.figures = [{"label": "Menschen", "value": SimTables._int(amount)}]
+		LEFT_MAP:
+			d.title = "Ein Haushalt verlässt die Karte"
+			d.text = "Ein Haushalt zieht über den Rand der Karte fort und ist aus dem Spiel."
+		JOINED:
+			d.title = "Ein Haushalt zieht zu Verwandten"
+			d.text = "In diesem Haushalt ist niemand mehr im arbeitsfähigen Alter. Er zieht zu Verwandten und lebt fortan bei ihnen."
+		ALMS:
+			d.title = "Almosen für einen Haushalt in Not"
+			d.text = "Ein Haushalt, der nicht genug zu essen hatte, hat Almosen erhalten."
+			d.figures = [{"label": "Erhalten", "value": "%s kg Korn" % SimTables._int(amount)}]
+		TENT_MOVED:
+			d.title = "Ein Zelt zieht um"
+			d.text = "Ein Haushalt aus dem Zelt zieht zu einem Markt, wo es mehr Arbeit und Almosen gibt."
+		HEIR:
+			d.title = "Ein Erbteil wird übergeben"
+			d.text = "Ein Sohn hat seinen Anteil am Hof des Vaters erhalten und bewirtschaftet ihn jetzt mit seinem eigenen Haushalt."
+			d.people[0].label = "Haushalt %d (Erbe)" % hh
+			d.people[0].role = "Erbe"
+			if other >= 0:
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (Vater)" % other, "role": "Vater"})
+		TO_TENT:
+			d.title = "Ein Haushalt muss ins Zelt"
+			d.text = "In diesem Haushalt arbeitet niemand mehr. Er hat sein Zuhause verlassen und lebt jetzt im Zelt am Markt."
 		THEFT:
 			d.title = "Diebstahl auf einem Hof"
 			d.text = "Ein Haushalt aus dem Zelt fand nicht genug zu essen und stahl in der Not Korn aus dem Speicher eines Hofs."
 			d.figures = [{"label": "Gestohlen", "value": "%s kg Korn" % SimTables._int(amount)}]
 			d.people[0].label = "Haushalt %d (Dieb)" % hh
+			d.people[0].role = "Dieb"
 			if other >= 0:
-				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other})
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other, "role": "bestohlen"})
 		FARM_TAKEN:
 			d.title = "Ein freier Hof ist wieder bewirtschaftet"
 			d.text = "Ein Haushalt ohne eigenes Land hat einen freien Hof übernommen und lebt jetzt von dessen Ernte."
@@ -326,6 +469,11 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.erase("people") # the household may be gone
 	_window = EventWindow.open(get_tree(), d)
 	_window_msec = Time.get_ticks_msec()
+	var households := []
+	for p in d.get("people", []):
+		households.append(int(p.household))
+	_window.show_faces(_faces)
+	_want_faces(households)
 	_window.fly_to.connect(func(p: Vector2): _fly({"lo": p, "hi": p}))
 	_window.person.connect(func(pid: int, household: int): person_chosen.emit(pid, household))
 
@@ -346,7 +494,7 @@ func _show(on: bool) -> void:
 		_refresh() # the answers that came while it was hidden
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
+	if event is InputEventKey and Keys.pressed(event, "apoleia_events"):
 		_show(not open)
 
 func _build() -> void:
@@ -364,6 +512,7 @@ func _build() -> void:
 	root.add_child(_open_button)
 	_panel = NoticeList.new()
 	_panel.chosen.connect(_fly)
+	_panel.pin_asked.connect(_pin)
 	_panel.closing.connect(func(): _show(false))
 	root.add_child(_panel)
 	_stand = _panel.stand

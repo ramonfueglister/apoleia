@@ -157,7 +157,7 @@ func _show_load() -> void:
 	_show(panel, list.first_focus())
 
 func _show_settings() -> void:
-	var panel := MenuPanel.new("Einstellungen", 520.0)
+	var panel := MenuPanel.new("Einstellungen", 640.0)
 	var settings := GameSettings.new($Soundtrack)
 	panel.body.add_child(settings)
 	MenuPanel.gap(panel.body, 8)
