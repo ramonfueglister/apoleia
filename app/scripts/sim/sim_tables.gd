@@ -993,6 +993,9 @@ func _on_tab(index: int) -> void:
 ## A view of the topic shown: a page of cards or a table.
 func _on_view(index: int) -> void:
 	var to: String = VIEWS[_topic][1][index][1]
+	var was: String = _page if KINDS[_kind] == "overview" else KINDS[_kind]
+	if open and to != was: # the window's ← goes back to it
+		_win.remember(_go_to.bind(was))
 	if to in KINDS and to != "overview":
 		_kind = KINDS.find(to)
 	else:
@@ -1188,7 +1191,9 @@ func _fill_legend(t: Dictionary, bounds: PackedFloat64Array, rule: Dictionary) -
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_T:
+		# T, or the key the player gave it (ui/keys.gd, the action apoleia_tables)
+		var mapped := InputMap.has_action("apoleia_tables")
+		if (mapped and event.is_action_pressed("apoleia_tables", false, true)) or (not mapped and event.keycode == KEY_T):
 			_show(not open)
 		elif event.keycode == KEY_ESCAPE and open:
 			_show(false)

@@ -126,6 +126,8 @@ var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
 var _person # person_window.gd
+var _shown_pid := -1 # the person in its window, for the window's back button
+var _back_pending := false # the back button asked for the person shown before
 var _press_at := Vector2.INF
 var _click_at := Vector2.INF # --people-click, for screenshots
 var _frames := 0
@@ -999,6 +1001,7 @@ func _build_hud() -> void:
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	# the person clicked, in a window (person_window.gd) at the bottom left
 	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
+	_person._win.closed.connect(func(): _shown_pid = -1)
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -1145,7 +1148,25 @@ func _show_info(on: bool) -> void:
 	else:
 		_person.close()
 
+## The person in its window. The one shown before stays one step back
+## (the window's ←); the line under the title names their market, its →
+## opens the market's window.
 func _show_person(p: Dictionary) -> void:
+	var win = _person._win
+	if p.is_empty():
+		win.set_subtitle("")
+	else:
+		var pid := int(p.pid)
+		if _shown_pid >= 0 and pid != _shown_pid and not _back_pending:
+			var before := _shown_pid
+			win.remember(func():
+				_back_pending = true
+				_show_household(before, -1))
+		_back_pending = false
+		_shown_pid = pid
+		var m := int(p.get("market", -1))
+		win.set_subtitle("Am Markt %s" % p.market_name if m >= 0 else "",
+			func(): get_tree().call_group("market_window", "open", m), "Den Markt öffnen")
 	_person.show_person(p, _doing)
 	if not p.is_empty():
 		print(JSON.stringify({"event": "people_person", "pid": p.pid}))

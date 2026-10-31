@@ -14,7 +14,12 @@ extends CanvasLayer
 ## included, shows here too. While open it follows the sim once a week.
 ##
 ##   click on a market square   open its window
+##   ← in its band              the market shown before
+##   → under its title          the camera onto the market
 ##   Esc or ×                   close it
+##
+## In the group "market_window": call_group("market_window", "open", m)
+## opens a market from anywhere (the outliner, a right-click menu).
 ##
 ## Clicks while a build tool is out belong to the build menu (added after
 ## this node, so it sees them first).
@@ -47,6 +52,7 @@ var _notes: VBoxContainer
 
 func setup(scene: Node3D, sim: RefCounted) -> void:
 	name = "MarketWindow"
+	add_to_group("market_window")
 	layer = 4
 	landscape = scene
 	people = sim
@@ -114,6 +120,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func open(m: int) -> void:
+	if _win.visible and market >= 0 and m != market:
+		var before := market
+		_win.remember(func(): open(before))
 	market = m
 	_ask()
 	if not _win.visible:
@@ -121,6 +130,14 @@ func open(m: int) -> void:
 		_when.text = ""
 		_clear()
 	_win.open()
+
+## The camera onto the market's region, framed by its extent.
+func _fly_to(data: Dictionary) -> void:
+	if landscape == null or not "_goal_target" in landscape:
+		return
+	landscape._goal_target = landscape.lonlat_to_world(float(data.lon[0]), float(data.lat[0]))
+	var reach := float(data.extent_km[0]) if data.has("extent_km") else 0.0
+	landscape._goal_width = clampf(reach * SimTables.FLY_MARGIN, SimTables.FLY_MIN_KM, MARKET_MAX_KM)
 
 func close_window() -> void:
 	market = -1
@@ -158,6 +175,9 @@ func _show(d: Dictionary) -> void:
 		return
 	var data: Dictionary = d.data
 	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
+	var persons := int(data.persons[0]) if data.has("persons") else 0
+	_win.set_subtitle("Kornmarkt einer Region mit %s Menschen" % SimOverview._num(persons) if data.has("persons") else "Kornmarkt",
+		_fly_to.bind(data) if data.has("lon") and data.has("lat") else Callable(), "Auf der Karte zeigen")
 	_when.text = "Stand %d. %s" % [int(d.day) % SimTables.MONTH + 1, SimTables._date(int(d.day))]
 	_overview.show_market(d)
 	_charts.show_market(d)
