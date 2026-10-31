@@ -285,6 +285,11 @@ unabhängig und unverändert.
   der Meerkachel ohne Kante anschliesst. Küstenschnitte (die nasse
   Halbkachel) gibt es dort keine mehr. Skizze:
   `/mnt/project-files/grafik/runde-m-kuesten-skizze.jpg`.
+  Dort liegt auch das Meer auf 0, der Höhe der Küstenecken (`tt_corners`,
+  `CONTOUR_KM` in `tile_terrain.gdshaderinc`): Um `water_drop` abgesenkt
+  stand es eine Uferwand tiefer als das Land, und diese Wände an den
+  Kachelkanten liefen auf dem Mac als kurze beige Striche neben der glatten
+  Linie, im Land oder draussen auf dem Wasser (Mac-Check K + L + M).
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte

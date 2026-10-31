@@ -523,10 +523,18 @@ bool tt_sub_garden(ivec2 t, int town) {
 }
 
 // Levels of the four corners (c00, c10, c11, c01) of tile t.
+// From the 2 km tiles the coast is a line through the 2 km sea distance
+// (tile_terrain.gdshader, round M), not the tiles' edge
+const float CONTOUR_KM = 2.0;
+
 vec4 tt_corners(ivec2 t) {
 	int w = tt_water(t);
 	if (w == W_SEA) {
-		return vec4(-tt_water_drop());
+		// there the sea lies at the level of the coast's corners (0): sunk by
+		// water_drop it stood a bank lower than the land, and those banks
+		// along the tiles' edges ran as beige dashes beside the coast line,
+		// inland or out on the water (Mac check K + L + M)
+		return vec4(tile_km >= CONTOUR_KM ? 0.0 : -tt_water_drop());
 	}
 	if (w == W_LAKE) {
 		return vec4(tt_lake_level(t) - tt_water_drop());
