@@ -6,7 +6,7 @@
 //!
 //! A law changes only rules and money flows of real households: who pays
 //! is set here, who bears the tax (Zahllast against Traglast) is left to
-//! the economy (Kleven et al., 2016; Besley & Persson, 2014). Each tax has
+//! the economy (Fullerton & Metcalf, 2002; Besley & Persson, 2014). Each tax has
 //! six levels, as Victoria 3's tax levels; the player changes a level with
 //! a command (`build::Command::Law`) that takes effect from the next due
 //! date. The terms are the ones that carry from Rome to 1900 (Ramon,
