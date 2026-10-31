@@ -1335,6 +1335,7 @@ Personen-Thread zeichnet (`sim/godot/src/tables.rs`, `trips.rs`).
 | Ereignisse | `Grain::events_in(since, box)` | Hungertod, Umzug, Verlässt die Karte, Zieht zu Verwandten, Diebstahl, Almosen, Zelt zieht um, Hof übernommen, Erbteil, Ins Zelt, Hof nach Lex Manciana, Hof verlassen; 60 Tage zurück (`crate::events`) |
 | Preise auf der Karte | `Grain::cell_markets()` | Region jeder 25-km-Zelle, mit der Tabelle `markets` einzufärben |
 | Haushalt | `Grain::household(id)` | Art, satt, Vorrat, Geld, Hof |
+| Nächstes Feld | `Grain::near_field(hh)`, Godot `house_fields()` | Mitte der Feinkachel mit eigenem oder gepachtetem Feld des Hofs, die der Hofkachel am nächsten liegt (Welt-m je Hausplatz, −1 ohne Feld); für den Weg Haus → Feld (Bauplan B Schritt 4, Ramon 31.10.2026 „Felder bleiben, Weg schneller“; Sonde `/mnt/project-files/sim-probes/naehere-felder/BEFUND.md`: nähere Felder lassen die Menschen verhungern, weil Felder 23,8-fach vergrössert sind) |
 
 Der Verlauf summiert die Zähler Tag für Tag und stimmt auch dann genau, wenn der Lauf sie
 jährlich zurücksetzt (geprüft über drei Jahre: Geburten und Ernte gleich). Alles ist nur
