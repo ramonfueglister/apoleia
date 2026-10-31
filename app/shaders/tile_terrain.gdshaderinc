@@ -35,6 +35,30 @@ uniform bool sub_tiles = false;
 uniform sampler2D sub_tex : filter_nearest, repeat_disable; // r cell, g landscape, b level of corner c00
 uniform ivec2 sub_origin;      // first quarter tile in sub_tex
 
+// Rivers and lakes of the 0.5 and 1 km tiles by their real lines (round Q):
+// app/scripts/water_lines.gd draws them into a picture of the drawn patch,
+// R river water, G lake water, B the river's bank. Then a lake tile lies at
+// its lake's level with no corner cut, and the land tiles around it carry
+// no lake coast cut: the lake's outline draws the shore.
+uniform bool water_lines = false;
+uniform sampler2D water_win : filter_linear, repeat_disable, hint_default_black;
+uniform vec4 water_win_rect = vec4(0.0, 0.0, 1.0, 1.0); // min x, min z, width, depth (world km)
+
+// The picture at p as drawn (0 beyond it).
+vec3 tt_water_lines_raw(vec2 p) {
+	vec2 uv = (p - water_win_rect.xy) / water_win_rect.zw;
+	float inside = uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0 ? 1.0 : 0.0;
+	return textureLod(water_win, uv, 0.0).rgb * inside;
+}
+
+// And sharp along its outlines (the picture's pixels can be larger than the
+// screen's): call outside branches that differ within a tile.
+vec3 tt_water_lines(vec2 p) {
+	vec3 v = tt_water_lines_raw(p);
+	vec3 aa = max(fwidth(v) * 0.75, vec3(0.04));
+	return smoothstep(0.5 - aa, 0.5 + aa, v);
+}
+
 // Size of the tiles the data (cells, landscapes, levels) belongs to.
 float tt_data_km() {
 	return sub_tiles ? tile_km * 2.0 : tile_km;
@@ -447,7 +471,8 @@ int tt_coast_cut_nb(ivec2 t, int cell, int nb[4]) {
 	for (int k = 0; k < 4; k++) {
 		int a = nb[k] & 3;
 		int b = nb[(k + 1) & 3] & 3;
-		bool wet = (a == W_SEA || a == W_LAKE) && b == a;
+		// (none at a lake whose outline draws the shore: water_lines)
+		bool wet = (a == W_SEA || (a == W_LAKE && !water_lines)) && b == a;
 		bool rest_dry = (nb[(k + 2) & 3] & 3) != a && (nb[(k + 3) & 3] & 3) != a;
 		if (wet && rest_dry && tt_water(t + S[k] + S[(k + 1) & 3]) == a) {
 			return (k + 1) & 3;
@@ -540,8 +565,9 @@ vec4 tt_corners(ivec2 t) {
 		// from CONTOUR_KM at the level of its shore, as the sea: the lake's
 		// shore line (round P) lays land on the lake tiles and the lake on
 		// the low land around, and a lake sunk by water_drop left earth banks
-		// along the tiles' edges between the two
-		return vec4(tt_lake_level(t) - (tile_km >= CONTOUR_KM ? 0.0 : tt_water_drop()));
+		// along the tiles' edges between the two; so too where its outline
+		// draws it on the 0.5 and 1 km tiles (round Q)
+		return vec4(tt_lake_level(t) - (tile_km >= CONTOUR_KM || water_lines ? 0.0 : tt_water_drop()));
 	}
 	vec4 l = vec4(
 		tt_land_corner(t),

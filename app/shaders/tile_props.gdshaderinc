@@ -122,6 +122,13 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 	// houses also on a river tile where the bake put a town there (from 4 km
 	// tiles: tools/build_tile_terrain.py TOWN_ON_RIVER_KM)
 	bool show = water == W_LAND || (house && water == W_RIVER && town > 0);
+	// where the rivers are drawn by their lines (round Q) the trees stand on
+	// a river tile too, off its line (below), but not by a town's quays,
+	// which keep the river on its tiles
+	bool lines = water_lines && !planned && town < 2;
+	if (lines && !house && water == W_RIVER && town == 0) {
+		show = max(max(tt_town(t + ivec2(1, 0)), tt_town(t - ivec2(1, 0))), max(tt_town(t + ivec2(0, 1)), tt_town(t - ivec2(0, 1)))) < 2;
+	}
 	float edge_size = 1.0;
 	vec2 uv;
 	if (house) {
@@ -247,6 +254,11 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 			: (south && r0 < conifer_p + pine_p) ? 4
 			: (south && r0 < conifer_p + pine_p + 0.1) ? 2 : 0;
 		code = float(kind) + 0.25 * edge_size;
+	}
+	// nothing in a river or a lake drawn by its line, nor on the river's bank
+	if (show && lines) {
+		vec3 wl = tt_water_lines_raw(world_min + (vec2(t) + uv) * tile_km);
+		show = max(max(wl.r, wl.b), wl.g) < 0.15;
 	}
 	vec4 c = show ? tt_corners_cached(t) : vec4(0.0);
 	if (house) { code = planned ? CP_CODE + float(plan) : float(town) + (sub_tiles && show && tt_sub_street(t) ? STREET_CODE : 0.0); }

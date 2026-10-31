@@ -154,8 +154,8 @@ void vertex() {
 	vec4 own = tt_corners_cached(tile);
 	// a lake tile at a corner of its lake is land on that half, at the level
 	// of the shore around it (tt_lake_corner_cut); not where the lake's shore
-	// line draws the shore (round P)
-	int lake_cut = !sub_tiles && water == W_LAKE && tile_km < CONTOUR_KM ? tt_lake_corner_cut(tile, nc) : -1;
+	// line (round P) or its outline (round Q) draws the shore
+	int lake_cut = !sub_tiles && !water_lines && water == W_LAKE && tile_km < CONTOUR_KM ? tt_lake_corner_cut(tile, nc) : -1;
 	if (lake_cut >= 0) {
 		water = W_LAND;
 		own = vec4(tt_lake_level(tile));
@@ -665,6 +665,9 @@ void fragment() {
 	float sd_aa = max(fwidth(sd) * 0.75, 1e-4);
 	float ld_aa = max(fwidth(ld) * 0.75, 1e-4);
 	float px_km = length(fwidth(p));
+	// the rivers and lakes by their lines on the 0.5 and 1 km tiles (round Q)
+	vec3 wl = vec3(0.0);
+	if (water_lines && part == 0) { wl = tt_water_lines(p); }
 	bool sea_px = water == W_SEA; // drawn as sea (sim_muted)
 	// the landscape on the map (round P), worked out here once for the land
 	// tiles and the land the coast and lake lines lay over the water tiles
@@ -729,6 +732,14 @@ void fragment() {
 			}
 		} else {
 			c = mix(C_INLAND, C_SHORE_FAR, far); // lakes like the rivers, not deep sea holes
+			// by the lake's outline the land runs on over the lake tile (round
+			// Q), flat at the level of the shore, the landscape of the land
+			// nearest; and the rivers that flow in
+			if (water_lines) {
+				float wet = max(wl.g, wl.r);
+				c = mix(contour_land_rgb(p), c, wet);
+				rough = wet > 0.5 ? 0.55 : 1.0;
+			}
 			// by the lake's shore line the land runs on over the lake tile
 			// (flat, at the level of the shore), as on the land tiles
 			float dry = smoothstep(-ld_aa, ld_aa, ld);
@@ -765,10 +776,16 @@ void fragment() {
 		}
 		// inside a town the river banks are paved quays (they were wheat
 		// strips through Rome)
-		if (water == W_RIVER && tile_km < 2.0 && max(max(tt_town(tile + ivec2(1, 0)), tt_town(tile - ivec2(1, 0))),
-				max(tt_town(tile + ivec2(0, 1)), tt_town(tile - ivec2(0, 1)))) >= 2) {
+		bool quay = water == W_RIVER && tile_km < 2.0 && max(max(tt_town(tile + ivec2(1, 0)), tt_town(tile - ivec2(1, 0))),
+				max(tt_town(tile + ivec2(0, 1)), tt_town(tile - ivec2(0, 1)))) >= 2;
+		if (quay) {
 			c = C_PAVED;
 		}
+		// the river by its line (round Q), except where a town's houses,
+		// quays and bridges stand on its tiles (towns, a city plan's parcels
+		// but its open land, its own water among them)
+		bool plan_built = planned && plan.r != CP_LAND;
+		bool by_line = water_lines && town < 2 && !plan_built && !quay;
 		if (planned && town > 0) {
 			// its street piece, square or yard (tile_props draws the same on
 			// the terraces)
@@ -945,7 +962,7 @@ void fragment() {
 		float ramp = flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
 		// from the 2 km tiles the node facets instead of the tiles' level ramps (round N)
 		c *= contour ? contour_relief(p, art) : ramp;
-		if (water == W_RIVER && !(contour && river_ready)) {
+		if (water == W_RIVER && !(contour && river_ready) && !by_line) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
 			float half_w = clamp(0.075 / tt_data_km(), 0.06, 0.22);
@@ -980,6 +997,25 @@ void fragment() {
 			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
 			c = mix(c, C_BANK, bank);
 			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
+		}
+		if (water_lines) {
+			// the river with its bank, and a lake by its outline on the low part
+			// of a tile that touches the lake's tiles (their corners at its
+			// level: never a lake up a slope); a town by the lake keeps its
+			// tiles, as by the river
+			float lake = 0.0;
+			if (wl.g > 0.0 && town < 2 && !plan_built) {
+				bool touch = false;
+				for (int k = 0; k < 8; k++) {
+					ivec2 o = k < 4 ? SIDE[k] : SIDE[k - 4] + SIDE[(k - 3) & 3];
+					touch = touch || tt_water(tile + o) == W_LAKE;
+				}
+				lake = touch ? wl.g * (1.0 - smoothstep(0.35, 0.55, world_pos.y / level_h - body_level)) : 0.0;
+			}
+			float river = by_line ? wl.r : 0.0;
+			c = mix(c, C_BANK, by_line ? wl.b * (1.0 - lake) : 0.0);
+			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), max(river, lake));
+			rough = max(river, lake) > 0.5 ? 0.55 : rough;
 		}
 		// the coast line on the land tiles: their corners at the sea sit at
 		// 0 and the land at 1 or higher, so a coastal tile is a ramp up from
