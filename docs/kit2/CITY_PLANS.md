@@ -111,12 +111,15 @@ Wahrzeichen, die grösser gezeichnet werden).
 stehen am echten Ort, werden aber bis 2,5-fach vergrössert, höchstens auf 500 m (zwei Parzellen).
 Eigene Designentscheidung, damit sie lesbar bleiben; offen ausgewiesen.
 
-**Regel A (Ramon 31.10.2026, «alles muss geschrumpft sein»):** Gemeinschaftsbauten werden nach ihren
-Nutzern in der Simulation bemessen (SCALE.md S51) und in Menschenproportionen gebaut. Ein solcher Bau
-bekommt so viele Parzellen, wie sein Modell im Diorama-Massstab braucht (`USER_SIZED_M`). Bisher gilt
-das für Roms Arena: 88 Zuschauer, in der Bauform des Kolosseums mit drei Bogenreihen 15 m hoch, 25 × 18,5 m,
-3 × 2 Parzellen (`app/scripts/voxel/roman_arena.gd`).
-Die übrigen Wahrzeichen folgen; bis dahin gilt für sie die Vergrösserung oben.
+**Wahrzeichenregel (S136, Ramon 31.10.2026, ersetzt Regel A):** Wahrzeichen werden gegen das Haus
+selektiv verdichtet (SCALE.md „Wahrzeichenregel“): Fläche und Höhe mit der Kubikwurzel, Form, Sitze
+und Menschen echt. Ein solcher Bau bekommt so viele Parzellen, wie sein Modell im Diorama-Massstab
+braucht (`USER_SIZED_M`, nur in Rom, wo das Spiel diese Modelle zeichnet): Kolosseum 4 × 3, Thermen
+des Caracalla 4 × 2, Marcellustheater 3 × 4, Circus Maximus 8 × 2 (`app/scripts/voxel/roman_arena.gd`,
+`roman_landmarks.gd`). Sie werden zuerst gesetzt und rücken bis 6 Parzellen (`USER_SIZED_REACH`) vom
+echten Ort, wenn dort Wasser, Mauer oder ein anderes dieser Wahrzeichen ist; Bauten, deren Platz sie
+nehmen, weichen bis 4 Parzellen aus statt 2. Roms Wohnparzellen sinken von 87 auf 66.
+Forum, Pantheon und die übrigen Wahrzeichen folgen; bis dahin gilt für sie die Vergrösserung oben.
 
 ## Strassen
 
@@ -203,9 +206,9 @@ legt sie in die Stadtliste, gedreht in Vierteln zur Front.
   Horrea, Circus, Forum (`voxel/roman_city.gd`). Bauten über mehrere Parzellen wiederholen das Modell
   je Parzelle (offen).
 - **Gräber** an den Strassen vor der Stadt, die Strasse an ihrer Seite.
-- **Wahrzeichen Roms** (Kolosseum, Forum, Thermen, Pantheon, Circus) stehen als Kit-Modelle auf ihrem
-  Bau im Plan, verkleinert auf 90 % seiner Parzellen (`LANDMARK_PLAN_REACH`; das Kolosseum auf
-  0,45 km, der Plan zeichnet es schon 2,6-mal so gross wie echt). Beim 1,5-fachen räumten sie die
+- **Wahrzeichen Roms** (Kolosseum, Forum, Thermen, Pantheon, Circus, Marcellustheater) stehen als
+  Kit-Modelle auf ihrem Bau im Plan, höchstens 90 % seiner Parzellen gross (`LANDMARK_PLAN_REACH`);
+  die vier nach der Wahrzeichenregel haben Parzellen genug und stehen unverkleinert. Beim 1,5-fachen räumten sie die
   Nachbarbauten weg (Tempel der Venus und Roma, Ludus Magnus, Templum Pacis; Mac-Lauf 1), beim
   1-fachen stiessen sie an die Häuser daneben (Mac-Lauf 2). Die zwei
   Tiberbrücken der alten Regel entfallen, die Brücken des Plans sind Strassen.
@@ -228,8 +231,8 @@ Bei Überlappung gewinnt die grössere Stadt.
 | B | Häuser: Bits 0–5 Stockwerke (Insula 4–5, Haus 2, in Städten ab 100'000 2–3, Domus 1–2; eigene Regel); Bauten und Plätze: Bits 0–5 Modell (`models`); Bits 6–7 Seite der Front (0 N, 1 O, 2 S, 3 W), zur nächsten Strasse |
 
 Je Stadt nennt die JSON Namen, Status, Rechteck und die Bauten mit ihrem Parzellenrechteck; die
-fünf Bauten mit eigenem Landmarkenmodell in `tile_terrain.gd` (Kolosseum, Forum, Thermen, Pantheon,
-Circus) tragen `landmark`, damit nichts doppelt gezeichnet wird.
+sechs Bauten mit eigenem Landmarkenmodell in `tile_terrain.gd` (Kolosseum, Forum, Thermen, Pantheon,
+Circus, Marcellustheater) tragen `landmark`, damit nichts doppelt gezeichnet wird.
 
 ## Werkzeuge
 
