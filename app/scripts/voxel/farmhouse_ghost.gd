@@ -62,7 +62,7 @@ func show_at(p: Vector2, ok: bool) -> void:
 
 func _process(_delta: float) -> void:
 	if visible:
-		_place() # the terraces flatten and rise with the zoom (tile_terrain.gd relief_for_width)
+		_place() # the ground under the lot changes with the zoom level (tile_terrain.gd)
 
 func _place() -> void:
 	var y: float = terrain.ground_y(_lot)
