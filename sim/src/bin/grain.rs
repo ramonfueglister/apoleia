@@ -7,7 +7,7 @@
 //!              [--clear-pct P] [--clear-cover COL,COL,…|usable] [--crop-pct P]
 //!              [--inherit equal|now|one] [--no-floor] [--no-sow-price]
 //!              [--sales-month] [--no-carry-sale]
-//!              [--no-freight-wage]
+//!              [--no-freight-wage] [--no-paving] [--stock 0-3] [--relief 0-2]
 
 use apoleia_sim::grain::{Grain, GOODS};
 use apoleia_sim::people::People;
@@ -99,6 +99,16 @@ fn main() {
     g.lord_farm_money = !args.iter().any(|a| a == "--lord-money-old");
     // S132: the freight pays carriers at the start market (Fuhrlohn).
     g.freight_wage = !args.iter().any(|a| a == "--no-freight-wage");
+    // S133: the public works pave the ways walked most.
+    g.paving = !args.iter().any(|a| a == "--no-paving");
+    // S133: the spending laws, by choice number (spend.rs).
+    for (k, key) in ["--stock", "--relief"].iter().enumerate() {
+        if let Some(v) = arg(key) {
+            g.set_spend(k as u8, v.parse().unwrap());
+        }
+    }
+    let spend: Vec<String> = g.spend_rows().iter().map(|r| format!("{} {}", r.name, r.choices[r.choice as usize])).collect();
+    println!("spending laws (S133): {}; paving: {}", spend.join(", "), g.paving);
     println!("freight as carriers' wages (S132): {}", g.freight_wage);
     let laws: Vec<String> = g.law_rows().iter().map(|l| format!("{} {} ({} {})", l.name, apoleia_sim::grain::LEVEL_NAMES[l.level as usize], l.rate, l.unit)).collect();
     println!("tax laws (S131): {}; Pfändung: {}, Zwangsversteigerung: {}, rent of lords with a farm to the farm: {}", laws.join(", "), g.seizure, g.auction, g.lord_farm_money);
@@ -223,6 +233,18 @@ fn main() {
             den(g.freight_due()),
             den(gs.carry_paid),
             gs.carry_days
+        );
+        println!(
+            "      spending (S133): paved this year {} tiles, {} in all | stock bought t {:.0} this year, {:.0} in all for den {:.0}, granaries t {:.0} | dole t {:.0} this year, {:.0} in all | relief days {} this year",
+            gs.paved,
+            g.paved_tiles().count(),
+            gs.stock_kg as f64 / 1e3,
+            t.stock_kg as f64 / 1e3,
+            den(t.stock_paid),
+            g.markets.iter().map(|m| m.horreum).sum::<i64>() as f64 / 1e3,
+            gs.dole_kg as f64 / 1e3,
+            t.dole_kg as f64 / 1e3,
+            gs.relief_days
         );
         print!("{}", g.tax_report());
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();

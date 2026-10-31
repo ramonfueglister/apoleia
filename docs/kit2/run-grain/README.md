@@ -1368,6 +1368,62 @@ Was auffällt:
 
 - Erdkamp, P. (2005). *The grain market in the Roman Empire: A social, political and economic study*. Cambridge University Press. https://doi.org/10.1017/CBO9780511482748 (für das Fuhrwesen als Nebenarbeit der Bauern nicht selbst nachgelesen)
 
+## Staatsausgaben: Wege, Vorratshaltung, Armenpflege (S133, 100 Jahre, Seeds 1 und 2; vorher: main mit S132)
+
+Ramon (31.10.2026, Planungs-Thread „Regierungseinflüsse nach Vic3-Vorbild“): Karte A1, die öffentliche
+Arbeit (S129) befestigt die meistbegangenen Wege; Karte A2, Vorratshaltung und Armenpflege als Gesetze mit
+Wahl; Plan https://claude.ai/artifact/5gxoCKStw7cF3PVYMAiZMA. Regeln in S133. Befestigen ist neu Standard
+(`--no-paving` wie vorher), beide Gesetze beginnen bei „keine“ (`--stock 0–3`, `--relief 0–2`). Neu im
+Lauf: Zeile „spending (S133)“ (befestigte Kacheln, Ankauf für den Vorrat, Staatsspeicher, Spende,
+Notstandsarbeit). Hungertote der Jahre 31–100, Kornpreis nach Absatz im Mittel der Jahre 31–100, Einfuhr
+über die Kartengrenze in 100 Jahren.
+
+| Lauf | Menschen J. 100 | Hungertote J. 1–30 / 31–100 | Kornpreis J. 31–100 | Einfuhr | befestigt J. 25 / 100 (Feinkacheln) | Notstandsarbeit | Spende | Staatsspeicher J. 50 / 100 |
+|---|---|---|---|---|---|---|---|---|
+| Seed 1: vorher (main mit S132) | 128'104 | 9'370 / 7'732 | 1,14 | 51,1 Mio. | – | – | – | – |
+| Seed 1: Wege (neuer Standard) | 129'309 | 9'163 / 8'733 | 1,33 | 28,2 Mio. | 115'010 / 155'029 | – | – | nicht gezählt |
+| Seed 1: Wege + Notstandsarbeit | 128'991 | 9'355 / 7'846 | 1,16 | 30,1 Mio. | 113'664 / 153'589 | 378'401 Tage | – | 42,7 / 16,2 kt |
+| Seed 1: Wege + Spende | 141'616 | 4'164 / 3'224 | 1,25 | 33,3 Mio. | 109'873 / 155'684 | – | 11'876 t | 43,1 / 19,8 kt |
+| Seed 2: vorher (main mit S132) | 133'118 | 8'858 / 7'033 | 1,16 | 52,5 Mio. | – | – | – | – |
+| Seed 2: Wege (neuer Standard) | 129'048 | 8'591 / 7'693 | 1,26 | 40,3 Mio. | 136'337 / 170'308 | – | – | nicht gezählt |
+| Seed 2: Wege + Notstandsarbeit | 131'003 | 8'727 / 7'079 | 1,30 | 33,7 Mio. | 136'543 / 173'433 | 555'016 Tage | – | 39,6 / 8,9 kt |
+| Seed 2: Wege + Spende | 142'150 | 4'007 / 3'540 | 1,35 | 35,4 Mio. | 138'059 / 178'413 | – | 10'780 t | 39,9 / 14,0 kt |
+| Seed 1: Vorratshaltung bis 1 / 3 / 12 Monate (15 Jahre, abgebrochen) | | | | | | | 0 t gekauft | 36,5 kt im Jahr 15, bei allen Stufen gleich |
+
+Was auffällt:
+
+- **Fast jeder begangene Weg wird befestigt.** Bis Jahr 25 sind es 115'000–136'000 Feinkacheln (≈ 1,56 km
+  echt), bis Jahr 100 155'000–170'000. Danach findet die öffentliche Arbeit kaum noch unbefestigte Wege und
+  steht wie bei S129 am Markt. Wie schnell das geht, hängt am Platzhalter von 9 Arbeitstagen je Kachel.
+- **Mit den Wegen allein mehr Hungertote.** Ab Jahr 31 sterben 13 % (Seed 1) und 9 % (Seed 2) mehr an
+  Hunger. Das ist so gross wie die Streuung zwischen den Seeds, zeigt aber in beiden in dieselbe Richtung.
+  Dazu kommt weniger Korn über die Kartengrenze (Einfuhr 28–40 statt 51–52 Mio. Denar), und der Kornpreis
+  steigt (1,26–1,33 statt 1,14–1,16 Denar/kg). Warum, ist noch nicht untersucht. Der Tag dauert rund 9 %
+  länger, weil nach jeder befestigten Kachel das Pfadfeld des Markts neu entsteht.
+- **Notstandsarbeit** bringt die Hungertoten auf den Stand vor den Wegen zurück (−10 % und −8 % gegenüber
+  den Wegen allein). Im Jahr gehen 3'800–5'500 Tage öffentliche Arbeit zuerst an Bedürftige.
+- **Die Spende an Bedürftige wirkt am stärksten.** Ab Jahr 31 sterben 63 % und 54 % weniger an Hunger,
+  in den Jahren 1–30 schon gut die Hälfte weniger, und im Jahr 100 leben 9,5 % und 10 % mehr Menschen.
+  Gespendet werden rund 110 t Korn im Jahr aus den Staatsspeichern, die aus dem Zehnt ohnehin um 40 kt
+  halten. Der Kornpreis steigt wenig.
+- **Die Vorratshaltung kauft nie.** In 15 Jahren (Seed 1) kauft sie bei keiner Stufe ein Kilo, auch mit
+  Zehnt 0; die 100-Jahr-Läufe habe ich darum abgebrochen. Zwei Gründe: Die Staatsspeicher halten aus Zehnt
+  und Staatspacht schon 36–43 kt, fast zwei Jahre Essen für alle Menschen der Karte (200 kg je Erwachsenen
+  im Jahr), weit mehr als der Jahresabsatz der Märkte (0–21 kg am Tag je Markt, weil die Höfe ihr eigenes
+  Korn essen). Und der Kauf lohnt nie: Der Verkaufspreis der Marktleute liegt 3–8 % über dem Preis, bei dem
+  Halten sich nach Abzug der Spanne lohnt, weil Höfe und Speicher schon bis dorthin lagern (S123). Ein
+  Staat mit derselben Regel wie private Lager ändert nichts (Miranda & Helmberger, 1988). Ob die Regel so
+  bleibt, entscheidet Ramon.
+- Mit `--no-paving` und beiden Gesetzen auf „keine“ gleicher Fingerabdruck wie main (3 Jahre, Seed 1).
+  94 Tests grün, 1 ausgelassen (neu: `spending_laws`; `public_works_from_surplus` prüft, dass die Arbeiter an
+  befestigten Kacheln stehen und diese Strassen sind).
+
+### Quellen zu S133 (APA 7)
+
+- Besley, T., & Coate, S. (1992). Workfare versus welfare: Incentive arguments for work requirements in poverty-alleviation programs. *The American Economic Review, 82*(1), 249–261. (nicht selbst nachgelesen)
+- Laurence, R. (1999). *The roads of Roman Italy: Mobility and cultural change*. Routledge. (nicht selbst nachgelesen)
+- Miranda, M. J., & Helmberger, P. G. (1988). The effects of commodity price stabilization programs. *The American Economic Review, 78*(1), 46–58. (nicht selbst nachgelesen)
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1382,6 +1438,7 @@ Personen-Thread zeichnet (`sim/godot/src/tables.rs`, `trips.rs`).
 | Preise auf der Karte | `Grain::cell_markets()` | Region jeder 25-km-Zelle, mit der Tabelle `markets` einzufärben |
 | Haushalt | `Grain::household(id)` | Art, satt, Vorrat, Geld, Hof |
 | Nächstes Feld | `Grain::near_field(hh)`, Godot `house_fields()` je Hausplatz, `people_fields()` je Personenplatz | Mitte der Feinkachel mit eigenem oder gepachtetem Feld des Hofs, die der Hofkachel am nächsten liegt (Welt-m je Hausplatz, −1 ohne Feld); für den Weg Haus → Feld (Bauplan B Schritt 4, Ramon 31.10.2026 „Felder bleiben, Weg schneller“; Sonde `/mnt/project-files/sim-probes/naehere-felder/BEFUND.md`: nähere Felder lassen die Menschen verhungern, weil Felder 23,8-fach vergrössert sind) |
+| Staatsausgaben (S133) | `Grain::spend_rows()`, Godot `spend_law()` und `set_spend(law, choice)`; `Grain::paved_tiles()` | die Gesetze Vorratshaltung und Armenpflege mit ihrer Wahl (jede Änderung ein `Command::Spend`); die befestigten Feinkacheln, auf der Wegebene der Karte vorerst als Stufe 7 (G = 7), später mit eigenem Bit (mit dem Grafik-Thread abgesprochen) |
 
 Der Verlauf summiert die Zähler Tag für Tag und stimmt auch dann genau, wenn der Lauf sie
 jährlich zurücksetzt (geprüft über drei Jahre: Geburten und Ernte gleich). Alles ist nur
@@ -1501,10 +1558,11 @@ in Arrays nach ID statt in Hashtabellen.
 | Saat nach Preis (S124) | mindestens die Hälfte des Eigenbedarfs; Markt verlässlich, wenn Käufer an höchstens 5 % der Tage nichts fanden; der Weg zum Markt kostet nichts | frei gewählt |
 | Lager am Jahresabsatz (S125) | Absatz über ein Jahr geglättet (vorher 30 Tage) | frei gewählt nach dem Lagermodell, das in Jahren rechnet (Gouel & Legrand 2025) |
 | Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
-| Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
+| Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; seit S133 befestigt die Arbeit Wege | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
 | Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
 | Steuergesetz (S131) | Kopfsteuer ohne Hof am 1. Januar (Stufen entschieden: Zehnt und Grundsteuer 0/5/10/12/15/20 %, D3; Kopfsteuer 0/1/2/4/6/9 Taglöhne); Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
 | Fuhrlohn (S132) | ein Fuhrmannstag je Taglohn Fracht; der Lohn geht am Startmarkt der Ladung aus, nach den Ernte- und Hofarbeiten und vor den Diensten (S111); Fuhrleute nicht in der Arbeitsliste der Leute | frei gewählt; Fuhrwesen als Arbeit der Landlosen nach Erdkamp 2005 |
+| Staatsausgaben (S133) | 9 Arbeitstage je befestigte Feinkachel (≈ 1,56 km), die meistbegangene zuerst; Vorratshaltung kauft höchstens 7 Tage Absatz je Woche; bedürftig heisst: Korn und Geld reichen nicht für 30 Tage Essen; die Spende gibt den Rest des Monats, so weit der Staatsspeicher des Markts reicht | frei gewählt; 9 Tage × 566,5 (Massstab der Menschen) ≈ 5'100 echte Arbeitstage je Kachel, etwa 3'300 je km (eigene Schätzung ohne Quelle) |
 
 ## Nicht gebaut
 
