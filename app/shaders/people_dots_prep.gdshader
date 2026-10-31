@@ -31,11 +31,24 @@ void fragment() {
 	ivec2 px = ivec2(FRAGCOORD.xy);
 	vec4 rec = dot_record(px);
 	uint slot = uint((px.y / page_side) * page_side * page_side + (px.y % page_side) * page_side + px.x);
-	vec3 place = dot_place(rec, slot, houses);
+	vec2 lot_at;
+	vec3 place = dot_place_at(rec, slot, houses, lot_at);
 	// up close a person in a field stands on its slab (people_crop_slab.gdshaderinc)
 	if (!houses && rec.z != 0.0) {
 		place.z += crop_slab_under(rec.xy + place.xy) * dot_km_per_m / level_h;
 	}
 	// offsets +32 km, so the float target only ever holds positive values
-	COLOR = rec.z != 0.0 ? vec4(place + vec3(32.0, 32.0, 0.0), 1.0) : vec4(0.0);
+	// alpha: 1 placed; 2 + k with the lot of the person's farmhouse the k-th
+	// (row by row) of the 3 x 3 round the lot under its spot, for its way
+	// out along the lanes (people_field_route.gdshaderinc)
+	float placed = 1.0;
+	if (lot_at.x < 1e8) {
+		// the spot as the figures read it back from this half float target
+		vec2 spot = rec.xy + unpackHalf2x16(packHalf2x16(place.xy + 32.0)) - 32.0;
+		ivec2 d = ivec2(round((lot_at - dot_lot(spot)) / DOT_LOT_KM));
+		if (abs(d.x) <= 1 && abs(d.y) <= 1) {
+			placed = 2.0 + float((d.y + 1) * 3 + d.x + 1);
+		}
+	}
+	COLOR = rec.z != 0.0 ? vec4(place + vec3(32.0, 32.0, 0.0), placed) : vec4(0.0);
 }

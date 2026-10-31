@@ -46,6 +46,7 @@ var _n := 0 # tiles per side of the window
 var _origin := Vector2.ZERO # world km of the window's corner
 var _tile_km := 1.5625
 var fails := 0 # street searches that found no way (for the tests)
+var _field_cache := {} # Vector4i(home tile, field tile) -> the way on the network between them
 var _streets_cache := {} # Vector4i(from, to) -> the street search's corners
 var _city_cache := {} # parcel -> its kind, filled as asked
 ## where the streets are looked for (people_trips.gd: the window around the
@@ -66,6 +67,7 @@ func set_ways(img: Image, origin: Vector2, tile_km: float) -> void:
 		return
 	_n = img.get_width()
 	_ways = img.get_data()
+	_field_cache.clear()
 	_origin = origin
 	_tile_km = tile_km
 
@@ -213,6 +215,85 @@ func _between_ways(a: Vector2, b: Vector2) -> PackedVector2Array:
 	if tb != tile_of(b):
 		_push(pts, b)
 	return pts
+
+# ------------------------------------------------------------------ fields
+
+## The way of a farm household from its village to its field (Ramon,
+## 31.10.2026: „über das Wegnetz, wie Marktgänger“): from the hub of the
+## village tile (`home`, the record's anchor, world km) on the worn
+## network to the hub of the field's tile, then along the lot lines (the
+## lanes between the lots, where no farmhouse stands) to the lot corner
+## nearest the field (`field`, world km); without a way between the two
+## tiles only that lot corner. The figure's own part from its spot to its
+## lot's corner and the last step into the field are the shader's
+## (people_field_route.gdshaderinc), which knows the house. At most `cap`
+## points, world km.
+func field_route(home: Vector2, field: Vector2, lot_min: Vector2, lot_km: float, cap: int) -> PackedVector2Array:
+	var key := Vector4i(tile_of(home).x, tile_of(home).y, tile_of(field).x, tile_of(field).y)
+	var main: PackedVector2Array
+	if _field_cache.has(key):
+		main = _field_cache[key]
+	else:
+		main = PackedVector2Array()
+		var ta := _snap(tile_of(home))
+		var tb := _snap(tile_of(field))
+		if _n > 0 and ta.x != -9999 and tb.x != -9999 and ta != tb:
+			var tiles := _search(ta, tb)
+			if not tiles.is_empty():
+				main = through_towns(_along(tiles))
+		if _field_cache.size() > 20000:
+			_field_cache.clear()
+		_field_cache[key] = main
+	var pts := main.duplicate()
+	var corner := lot_min + ((field - lot_min) / lot_km).round() * lot_km
+	if not pts.is_empty():
+		# off the network into the lanes: to the lot corner nearest the hub,
+		# then along a lot line and another to the field's corner
+		var last := pts[pts.size() - 1]
+		var c := lot_min + ((last - lot_min) / lot_km).round() * lot_km
+		_push(pts, c)
+		_push(pts, Vector2(corner.x, c.y))
+	_push(pts, corner)
+	return simplify(pts, 0.015, cap)
+
+## `pts` without the points that lie within `tol` km of the line between
+## their neighbours kept (Douglas-Peucker), at most `cap` (then every so
+## many kept).
+static func simplify(pts: PackedVector2Array, tol: float, cap: int) -> PackedVector2Array:
+	if pts.size() <= 2:
+		return pts
+	var keep := PackedByteArray()
+	keep.resize(pts.size())
+	keep[0] = 1
+	keep[pts.size() - 1] = 1
+	var stack: Array[Vector2i] = [Vector2i(0, pts.size() - 1)]
+	while not stack.is_empty():
+		var r: Vector2i = stack.pop_back()
+		var a := pts[r.x]
+		var b := pts[r.y]
+		var best := -1
+		var best_d := tol
+		for i in range(r.x + 1, r.y):
+			var e := b - a
+			var t := clampf((pts[i] - a).dot(e) / maxf(e.length_squared(), 1e-12), 0.0, 1.0)
+			var d := pts[i].distance_to(a + e * t)
+			if d > best_d:
+				best_d = d
+				best = i
+		if best >= 0:
+			keep[best] = 1
+			stack.append(Vector2i(r.x, best))
+			stack.append(Vector2i(best, r.y))
+	var out := PackedVector2Array()
+	for i in pts.size():
+		if keep[i] == 1:
+			out.append(pts[i])
+	if out.size() > cap:
+		var thin := PackedVector2Array()
+		for k in cap:
+			thin.append(out[int(round(float(k) * (out.size() - 1) / (cap - 1)))])
+		out = thin
+	return out
 
 ## Tile t when a way is drawn there, else the nearest such tile within
 ## SNAP_RINGS; x = -9999 if none.

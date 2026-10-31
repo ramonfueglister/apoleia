@@ -300,8 +300,11 @@ mat2 dot_house_turn(vec2 p, out vec2 size_tint) {
 // Where the person in `slot` stands: (offset x, offset z) in km from the
 // record's anchor and the height in levels. Records: sim/src/view.rs. A house
 // record (`house`) stands on the household's house spot itself, without the
-// family spread around it.
-vec3 dot_place(vec4 rec, uint slot, bool house) {
+// family spread around it. In `lot_at` the middle of the lot of a
+// person's farmhouse (world km), (1e9, 1e9) where it has none (a city, the
+// road) and for a house record.
+vec3 dot_place_at(vec4 rec, uint slot, bool house, out vec2 lot_at) {
+	lot_at = vec2(1e9);
 	uint key = (uint(rec.w) >> 8u) & 0x3fffu;
 	vec2 p;
 	bool village = false;
@@ -360,6 +363,7 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 		if (village) {
 			vec2 h2 = dot_rand2(slot, 98u);
 			vec2 st;
+			lot_at = p;
 			mat2 turn = dot_house_turn(p, st);
 			float m_km = dot_km_per_m * st.x;
 			vec2 local; // metres in the farmhouse's frame, front towards +z
@@ -389,4 +393,9 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 	}
 	// the dot stands on the ground as the terrain draws it
 	return vec3(p - rec.xy, dot_ground_level(p));
+}
+
+vec3 dot_place(vec4 rec, uint slot, bool house) {
+	vec2 lot_at;
+	return dot_place_at(rec, slot, house, lot_at);
 }

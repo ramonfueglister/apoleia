@@ -10,6 +10,7 @@ render_mode skip_vertex_transform, unshaded, blend_mul, depth_draw_never, cull_d
 
 #include "res://shaders/people_dots_common.gdshaderinc"
 #include "res://shaders/people_day.gdshaderinc"
+#include "res://shaders/people_field_route.gdshaderinc"
 
 uniform sampler2D place_tex : filter_nearest, repeat_disable; // people_dots_prep output
 uniform sampler2D list_tex : filter_nearest, repeat_disable;  // slots to draw (float)
@@ -42,7 +43,24 @@ void vertex() {
 	// in the house or lying down throws no strip, one sitting a short one
 	uint key = (w >> 8u) & 0x3fffu;
 	vec3 way = dot_field_way(key, uint(slot), px, p);
+	// over the worn ways and the lanes to the field, not through the houses
+	// (people_field_route.gdshaderinc): the walk as long as that way
+	vec2 field_home = p;
+	float field_km = field_route_km(id, field_home, place.a, field_home + way.xy);
+	if (field_km > 0.0) {
+		way = field_route_pace(way, field_km);
+	}
 	DayNow day = day_now(uint(slot), key, kind, job, female, child, dot_person_look(px), dot_person_flags(px), dot_person_away(px), way);
+	if (field_km > 0.0 && day.moved) {
+		float u = dot(day.offset, way.xy) / max(dot(way.xy, way.xy), 1e-12);
+		vec2 dir;
+		vec2 at = field_route_at(id, field_home, place.a, field_home + way.xy, field_km, u, dir);
+		bool going = dot(day.way, way.xy) >= 0.0;
+		day.offset = at - field_home;
+		if (day.walking) {
+			day.way = going ? dir : -dir;
+		}
+	}
 	if (day.pose == DAY_SIT) {
 		s *= 0.6;
 		playing = false;
