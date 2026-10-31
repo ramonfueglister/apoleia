@@ -1258,7 +1258,9 @@ liefen zu viert gleichzeitig mit je 1 Thread. Neu im Lauf: Zeile „taxes (S131)
 „gepfändet“ ist Geld und Korn zum Ankaufspreis (das Korn wird erst beim Verkauf aus dem Staatsspeicher
 zu Geld); beides 100 Jahre, Denar.
 
-**Stufen seit D3** (Ramon, 31.10.2026 09:56: „Oberste Stufe = historisch“): Zehnt und Grundsteuer 0 / 5 / 10 / 12 / 15 / 20 %. Die Läufe unten liefen noch mit den Platzhaltern davor (0 / 5 / 10 / 15 / 20 / 30 %): „mittel“ war 15 statt 12 %, „sehr hoch“ 30 statt 20 %. Ein Fünftel ist der höchste belegte Zehnt (osmanischer Zehnt, je nach Frucht ein Zehntel bis ein Fünftel; Wikipedia, 2026); „Zehnt hoch“ heute (15 %) entspricht dem Lauf „mittel“ unten, „Grundsteuer hoch“ dem Lauf „Grundsteuer mittel“.
+**Stufen seit D3** (Ramon, 31.10.2026 09:56: „Oberste Stufe = historisch“): Zehnt und Grundsteuer 0 / 5 / 10 / 12 / 15 / 20 %. Die Läufe unten liefen noch mit den Platzhaltern davor (0 / 5 / 10 / 15 / 20 / 30 %): „mittel“ war 15 statt 12 %, „sehr hoch“ 30 statt 20 %. Ein Fünftel ist der höchste belegte Zehnt (osmanischer Zehnt, je nach Frucht ein Zehntel bis ein Fünftel; Wikipedia, 2026a); „Zehnt hoch“ heute (15 %) entspricht dem Lauf „mittel“ unten, „Grundsteuer hoch“ dem Lauf „Grundsteuer mittel“.
+
+**Kopfsteuer seit dem Entscheid** (Ramon, 31.10.2026 10:49): 0 / 1 / 2 / 4 / 6 / 9 Taglöhne je Erwachsenen und Jahr statt 0 / 2 / 5 / 10 / 15 / 20; „sehr niedrig“ nach England 1377, „mittel“ nach England 1380/81, „sehr hoch“ nach Russland 1724–1887 (Grössenordnung). Die Läufe unten liefen mit den Platzhaltern: „Kopfsteuer sehr niedrig“ (2) entspricht heute „niedrig“, „Kopfsteuer mittel“ (10) liegt über „sehr hoch“.
 
 | Lauf | Menschen J. 100 | Hungertote J. 31–100 | Höfe J. 100 | Preis J. 100 (Denar/kg) | gesät J. 100 | Geldsteuer bezahlt | gepfändet (Korn) | Versteigert / Domäne | abgeschrieben |
 |---|---|---|---|---|---|---|---|---|---|
@@ -1320,7 +1322,9 @@ Was auffällt:
 - Gesetz über die Zwangsversteigerung und die Zwangsverwaltung (ZVG) vom 24. März 1897, § 85a (Deutschland). https://www.gesetze-im-internet.de/zvg/__85a.html
 - Hopkins, K. (1980). Taxes and trade in the Roman Empire (200 B.C.–A.D. 400). *The Journal of Roman Studies, 70*, 101–125. https://doi.org/10.2307/299558
 - Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic and administrative survey*. Blackwell.
-- Wikipedia. (2026). *Ashar*. Abgerufen am 31. Oktober 2026, von https://en.wikipedia.org/wiki/Ashar
+- Wikipedia. (2026a). *Ashar*. Abgerufen am 31. Oktober 2026, von https://en.wikipedia.org/wiki/Ashar
+- Wikipedia. (2026b). *Poll taxes of 1376–1381*. Abgerufen am 31. Oktober 2026, von https://en.wikipedia.org/wiki/Poll_taxes_of_1376%E2%80%931381
+- Russische Kopfsteuer 1724–1887: nach dem Planungs-Thread (Plan Abschnitt 4c, https://claude.ai/artifact/12Sa2gxdKcWjYqJdMoSr8F) aus Sovcombank Journal (o. J.), *Подушная подать*, und Statmuseum (o. J.), *Peter’s reforms and population statistics*; nicht selbst geprüft.
 
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
@@ -1457,7 +1461,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
 | Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
 | Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
-| Steuergesetz (S131) | Kopfsteuer 0/2/5/10/15/20 Taglöhne je Erwachsenen (Zehnt und Grundsteuer 0/5/10/12/15/20 % sind entschieden, D3); Kopfsteuer ohne Hof am 1. Januar; Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Stufen der Kopfsteuer noch offen (Vorschlag des Planungs-Threads 0/1/2/4/6/9 nach England 1377/1381 und Russland); Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
+| Steuergesetz (S131) | Kopfsteuer ohne Hof am 1. Januar (Stufen entschieden: Zehnt und Grundsteuer 0/5/10/12/15/20 %, D3; Kopfsteuer 0/1/2/4/6/9 Taglöhne); Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
 
 ## Nicht gebaut
 

@@ -46,8 +46,8 @@
 //! Domäne and the family becomes the state's tenant. A household without a
 //! family farm of its own (tenants, estates, the landless) loses only what
 //! the Pfändung takes; what is left after two years is written off as
-//! uncollectable. The steps of the Zehnt and the Grundsteuer are decided
-//! (D3); the Kopfsteuer's steps and the other values are PLACEHOLDERS.
+//! uncollectable. The steps of the three taxes are decided (D3 and the
+//! Kopfsteuer card); the other values are PLACEHOLDERS.
 
 use super::*;
 use std::collections::BTreeMap;
@@ -70,8 +70,12 @@ pub const TITHE_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
 /// for want of a checked historical rate.
 pub const LAND_PCT: [i64; LAW_LEVELS] = [0, 5, 10, 12, 15, 20];
 /// Per level: the Kopfsteuer per adult and year in days of the usual day
-/// wage (PLACEHOLDER).
-pub const HEAD_DAYS: [i64; LAW_LEVELS] = [0, 2, 5, 10, 15, 20];
+/// wage. Decided (Ramon 31.10.2026): «sehr niedrig» about England's poll
+/// tax of 1377 (4 d a head over 14, an unskilled labourer's wage about
+/// 3 d a day), «mittel» that of 1380/81 (a mean of 12 d, the spark of the
+/// Peasants' Revolt; Wikipedia, 2026), «sehr hoch» about Russia's soul
+/// tax of 1724–1887, an order of magnitude only.
+pub const HEAD_DAYS: [i64; LAW_LEVELS] = [0, 1, 2, 4, 6, 9];
 /// The law at the start: the Zehnt at 10 %, no tax in money (as before S131).
 pub const DEFAULT_LAW: [u8; LAWS] = [2, 0, 0];
 pub const UNITS: [&str; LAWS] = ["% der Ernte", "% des üblichen Hektarertrags", "Taglöhne je Erwachsenen und Jahr"];
