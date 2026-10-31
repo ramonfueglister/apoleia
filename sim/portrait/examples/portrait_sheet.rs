@@ -3,7 +3,7 @@
 //! bald, written as JSON (label, frame and triangles per portrait) for a
 //! quick look without the game.
 //!
-//!   cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json [hats|hair|men]
+//!   cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json [hats|hair|men|kids]
 
 use apoleia_portrait::look::{default_life, Beard, Hair, Hat, Look, Mood, BALD, CURL, NG};
 use apoleia_portrait::{build, Head};
@@ -58,6 +58,14 @@ fn main() {
                     let mut p = person(true, age, [2, 4, 1][j], 701 + 19 * (k * 3 + j) as u32);
                     p.hair = Some(hair);
                     looks.push((format!("{hair:?} {age}"), p));
+                }
+            }
+        }
+        "kids" => {
+            for (k, age) in [0.5, 1.5, 3.0, 5.0, 8.0, 11.0, 14.0].into_iter().enumerate() {
+                for female in [false, true] {
+                    let p = person(female, age, [1, 2, 4, 1, 5, 2, 3][k], 1201 + 29 * k as u32 + female as u32);
+                    looks.push((format!("{} {age}", if female { "girl" } else { "boy" }), p));
                 }
             }
         }

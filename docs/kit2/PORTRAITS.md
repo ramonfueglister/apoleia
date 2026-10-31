@@ -192,8 +192,38 @@ ab:
 
 Schnellvorschau ohne Spiel:
 `cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json hats`
-(auch `hair` und `men`) schreibt Hüte und Frisuren als Dreiecke für ein
-Kontaktblatt.
+(auch `hair`, `men` und `kids`) schreibt Hüte und Frisuren als Dreiecke für
+ein Kontaktblatt.
+
+## Haare als geformte Masse (31.10.2026)
+
+Ramon wählte am selben Morgen „Geformte Masse wie die Bärte“: Haar als
+Volumen mit Dicke und geschnittenen Strähnen statt einzelner Stäbe. Seither
+weicht Rust auch hier von der Werkstatt ab.
+
+- **Männer und Knaben** (`cap_hair` in `sim/portrait/src/build.rs`): eine
+  Haarkappe von 96 Spalten und 12 Ringen, die vom Wirbel am Hinterkopf zur
+  Haarlinie läuft. Die Spalten sind zu Strähnen von drei bis sechs Spalten
+  gebündelt; jede Strähne endet an der Stirn in einer Spitze, hat einen
+  Grat in der Mitte und ein eigenes Licht. Die Haarlinie folgt einer Tabelle
+  über den Winkel um den Kopf: Stirn, Geheimratsecken, Schläfe, Koteletten
+  vor dem Ohr, Bogen über dem Ohr, Nacken. Sie wird aus dem gemessenen Ohr
+  jedes Kopfes gesetzt.
+- **Glatze und Locken** kommen aus den Genen `BALD` und `CURL`: die
+  Geheimratsecken weichen zurück, ab etwa der Hälfte öffnet sich die Platte
+  oben, bis ein Kranz bleibt; Haarinseln werden entfernt. Leichte Locken
+  wellen die Strähnen, starke Locken werden zu einer dichten Masse aus kleinen
+  Knoten. Kinder haben dünneres Haar.
+- **Frauen:** Mittelscheitel, Strähnen in Bändern mit Grat und Licht, mehr
+  Volumen über den Ohren, Wellen nach hinten; der Zopf liegt als
+  Flechtenkamm sichtbar auf dem Scheitel. Die spätrömische „Helmfrisur“ ist
+  absichtlich kappenförmig, wirkt aber noch zu glatt (offen).
+- **Kopfhaut finden:** Der nächste Treffer eines Strahls vom Kopfmittelpunkt
+  liegt oft innen (Augenhöhlen), darum lagen Schläfenhaare unter der Haut.
+  `outer_skin` nimmt den äussersten Treffer, ausser er liegt weiter als
+  1,2 Kopfgrössen draussen (Schulter).
+
+Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.png`.
 
 ## Licht in Godot
 
@@ -216,9 +246,12 @@ und in der Werkstatt nebeneinander.
 - Werkstatt und Rust-Code sind zwei Kopien; Änderungen am Aussehen zuerst in
   Rust, die Werkstatt dann nachziehen (oder später die Werkstatt aus Rust über
   WebAssembly bauen).
-- Namen, Dynastien, Eigenschaften (CK3) gibt es noch nicht.
-- Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken und
-  Altersflecken.
+- Namen um 300 gibt es (NAMES.md); Dynastien und Eigenschaften (CK3) noch
+  nicht.
+- Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken,
+  Altersflecken, die neuen Hüte und die geformten Haare.
+- Frauenhaar: noch zu glatt und kappenförmig; der Knoten im Nacken ist von
+  vorne nicht zu sehen.
 - Die Gesichter der Hinweise sind klein (30 Pixel); ob sie dort helfen, muss
   sich im Spiel zeigen.
 
