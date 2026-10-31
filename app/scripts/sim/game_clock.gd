@@ -28,6 +28,13 @@ extends CanvasLayer
 ## hours as a clock does instead of the Roman way (day_clock.gd RECKONINGS),
 ## --map-mode=<column|trade> starts in a map mode (for renders).
 ##
+## At the left edge the round buttons (ui/main_buttons.gd) open the
+## statistics at their topics, the notices and the outliner; the outliner
+## at the right (ui/outliner.gd) holds what the player pinned. A kind of
+## event set to pause in the settings (ui/notice_settings.gd) pauses the
+## game when sim_events.gd says one happened in view. The keys are the
+## player's (ui/keys.gd).
+##
 ## When the sim falls behind the speed set, the bar says how many days a
 ## second it manages. A save holds the seed and the build commands
 ## (apoleia_sim::game); loading plays them again, so it takes a while.
@@ -39,6 +46,10 @@ const MapModes = preload("res://scripts/ui/map_modes.gd")
 const TradeLegend = preload("res://scripts/ui/trade_legend.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const DayClock = preload("res://scripts/sim/day_clock.gd")
+const SimEvents = preload("res://scripts/sim/sim_events.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
+const Outliner = preload("res://scripts/ui/outliner.gd")
+const MainButtons = preload("res://scripts/ui/main_buttons.gd")
 const FAST_SPEEDS: Array[float] = [2.0, 10.0, 30.0, 100.0] # days a second, after the two slow ones
 const DAY_MINUTES := 4.0 # «Alltag»: a day in real minutes (Ramon, 30.10.2026)
 const WEEK_DAY_S := 10.0 # «Woche»: a day in real seconds
@@ -64,6 +75,9 @@ var _bar: TopBar
 var _modes: MapModes
 var _tables: Node # sim_tables.gd, for the seal and the markets' figures
 var _trade: TradeLegend
+var _events: Node # sim_events.gd, the notices
+var _outliner: Outliner
+var _buttons: MainButtons
 var _flows: Node # people_flows.gd
 var _trading := false # the map mode «Handel» is on
 var _markets_day := -1 # the markets' monthly count last shown
@@ -109,9 +123,22 @@ func setup(people_dots: Node) -> void:
 	_bar.set_speed_tip("Tempo  ([ ])\n%s: ein Tag dauert %s\n%s: ein Tag dauert %d Sekunden\ndann 2, 10, 30 und 100 Tage pro Sekunde" % [
 		SLOW_NAMES[0], ("%d Minuten" % int(day_minutes)) if is_equal_approx(day_minutes, roundf(day_minutes)) else ("%.1f Minuten" % day_minutes),
 		SLOW_NAMES[1], int(WEEK_DAY_S)])
+	Keys.setup()
 	for c in dots.get_children():
 		if c.get_script() == SimTables:
 			_tables = c
+		elif c.get_script() == SimEvents:
+			_events = c
+	if _events != null and _events.has_signal("pause_asked"):
+		_events.pause_asked.connect(_pause_for)
+	_outliner = Outliner.new()
+	_outliner.dots = dots
+	_outliner.tables = _tables
+	_outliner.landscape = land
+	add_child(_outliner)
+	_buttons = MainButtons.new()
+	_buttons.chosen.connect(_main_button)
+	add_child(_buttons)
 	_modes = MapModes.new()
 	_modes.chosen.connect(_colour_map)
 	_modes.visible = _tables != null and _tables.has_method("colour_map")
@@ -161,13 +188,20 @@ func _apply() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	match event.keycode:
-		KEY_SPACE: _choose(0)
-		KEY_BRACKETLEFT: _choose(maxi(speed, 1))
-		KEY_BRACKETRIGHT: _choose(mini(speed + 2, speeds.size()))
-		KEY_F8: save_game()
-		KEY_F9: load_game()
-		_: return
+	if Keys.pressed(event, "apoleia_pause"):
+		_choose(0)
+	elif Keys.pressed(event, "apoleia_slower"):
+		_choose(maxi(speed, 1))
+	elif Keys.pressed(event, "apoleia_faster"):
+		_choose(mini(speed + 2, speeds.size()))
+	elif Keys.pressed(event, "apoleia_quicksave"):
+		save_game()
+	elif Keys.pressed(event, "apoleia_quickload"):
+		load_game()
+	elif Keys.pressed(event, "apoleia_outliner") and _outliner != null:
+		_outliner.toggle()
+	else:
+		return
 	get_viewport().set_input_as_handled()
 
 ## The quick save, or another file (the menus' save games, ui/save_games.gd).
@@ -221,6 +255,7 @@ func _process(delta: float) -> void:
 	_measure(delta)
 	_daytime()
 	_show_date()
+	_light_buttons()
 	if _tables != null and _tables.has_method("map_column"):
 		var column: String = _tables.map_column()
 		if _trading and column != "":
@@ -339,6 +374,58 @@ func _colour_map(column: String) -> void:
 	_trade.visible = _trading
 	_tables.colour_map("" if _trading else column)
 	_modes.show_mode("trade" if _trading else column)
+
+## A round button at the left: the statistics at a topic (or closed, when
+## that topic is shown), the notices, the outliner.
+func _main_button(key: String) -> void:
+	match key:
+		"events":
+			if _events != null:
+				_events._show(not _events.open)
+		"outliner":
+			_outliner.toggle()
+		_:
+			if _tables == null:
+				return
+			if _tables.open and _topic_shown() == _topic_of(key):
+				_tables._show(false)
+			elif _tables.has_method("open_at"):
+				_tables.open_at(key)
+			else:
+				_tables._show(true)
+
+## The buttons whose windows are open lit.
+func _light_buttons() -> void:
+	var lit := []
+	if _tables != null and _tables.open:
+		var topic := _topic_shown()
+		for b in MainButtons.BUTTONS:
+			if b[4] == 0 and _topic_of(b[0]) == topic:
+				lit.append(b[0])
+	if _events != null and _events.open:
+		lit.append("events")
+	if _outliner.visible:
+		lit.append("outliner")
+	_buttons.light(lit)
+
+## The statistics' topic a button opens: the buttons of the first group
+## follow the topics of sim_tables.gd VIEWS in order.
+static func _topic_of(key: String) -> int:
+	for i in MainButtons.BUTTONS.size():
+		if MainButtons.BUTTONS[i][0] == key:
+			return i if MainButtons.BUTTONS[i][4] == 0 else -1
+	return -1
+
+## The topic the statistics show (0 where they have no topics yet).
+func _topic_shown() -> int:
+	return int(_tables._topic) if "_topic" in _tables else 0
+
+## A kind of event set to pause happened in view (sim_events.gd).
+func _pause_for(text: String) -> void:
+	if not paused and not _loading:
+		paused = true
+		_apply()
+	_tell("Pause: %s" % text)
 
 ## The red seal: the statistics open or close, as with T.
 func _toggle_tables() -> void:
