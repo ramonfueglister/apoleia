@@ -225,6 +225,61 @@ weicht Rust auch hier von der Werkstatt ab.
 
 Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.png`.
 
+## Echte Porträts (31.10.2026)
+
+Ramon wollte Porträts auf CK3/EU5-Niveau, mit Blender und dem Stand der
+Forschung (31.10.2026), und hat am selben Tag entschieden: «Ins Spiel
+bringen, mit Schalter» (S135). Unter Einstellungen › Allgemein schaltet
+**Echte Porträts** zwischen dem einfachen und dem echten Look um; der
+Schalter ist aus, bis man ihn einschaltet (`user://display.cfg`,
+`[portraits] real`). Danach werden die Gesichter neu gezeichnet, sobald ein
+Fenster sie wieder zeigt.
+
+Was der echte Look anders macht (sim/portrait/src/real.rs schaltet alles
+zusammen; einzeln weiter über die Umgebungsvariablen der Testbilder):
+
+- **Haar** als Karten aus Blender (Strähnen → Karten, gemalte Kopfhaut
+  darunter, Normalen): acht Frisuren nach Genen, Alter, Geschlecht und Stand
+  (crop01, roman01, curly01, receding01, bald01, sidepart01 für später,
+  bun01 und braid01 für Frauen). Unter einem Hut bleibt das einfache Haar.
+- **Bärte** aus Blender (Stoppeln, kurz, voll, Philosophenbart, Kinnbart).
+- **Kleider** in Blender drapiert: Tunika mit aufgenähten Flicken, Toga,
+  Palla und Schleier.
+- **Haut**: weich statt facettiert, Schatten in Augenhöhlen und Falten,
+  Röte an Nase, Wangen und Ohren (bei alten Männern stärker), Poren als
+  Normalen, matte Lippen, blassere Narben.
+- **Augen**: Augapfel mit Iris (4 × 4 Augenfarben), Schatten unter dem Lid;
+  Brauen und Wimpern als MakeHuman-Karten (CC0).
+- **Gesichtsformen**: die 21 Gesichtsgene als Faktoren eines Gesichtsraums
+  (Blanz & Vetter, 1999; Claes et al., 2018), je Gen mehrere Formen; um
+  1,6 überzeichnet, damit man sie in Porträtgrösse erkennt (Rhodes et al.,
+  1987; Ramon 31.10.); Ausreisser weich gedämpft (Gene: c·tanh(x/c), c 0,35;
+  Summen je Form: weich bei 1; Ramon: «etwas zurücknehmen, aber nur etwas»).
+  Gemessen gegen Farkas-Normen (examples/face_measure.rs).
+
+Für beide Looks gilt neu: Die Gründer bekommen je Herkunft verschobene
+Gesichtsgene aus Schädelmassen (Howells, 1973, 1989, 1995; `FACE_SHIFT` in
+sim/src/dna.rs, nur Aussehen): Aegyptus schmaleres Gesicht, Gallia und
+Germania breiteres, Nase und Augenabstand leicht. Echte Daten gibt es für
+Germania (NORSE, BERG) und Aegyptus (EGYPT), die übrigen fünf sind nach
+Breitengrad dazwischen geschätzt (PLATZHALTER; die Nasenbreite folgt dem
+Klima, Zaidi et al., 2017). Trauer kippt die Braue nicht mehr bis
+unter den Augenwinkel, das zufriedene Lächeln ist sanfter (kein Grinsen).
+
+**Dateien**: app/assets/portrait/real/ (123 Dateien, 17 MB; WebP, höchstens
+1024 px; grosse Textdateien zstd-gepackt; `.gdignore`, Godot importiert sie
+nicht). Gebaut mit der Realismus-Pipeline (Blender 5.2, Skripte unter
+/mnt/project-files/portraits/realismus-pipeline/). Das Spiel liest sie direkt
+aus dem Projektordner: der echte Look geht nur beim Start aus den Quellen,
+nicht in einem Export.
+
+**Tempo** (Cloud, Software-Vulkan): Bilder und Daten werden einmal geladen
+und behalten, Materialien geteilt (früher kompilierte Godot für jedes Gesicht
+die Shader neu). Ein einfaches Gesicht braucht so 19 ms statt 49 ms, ein
+echtes etwa 45 ms (höchstens 70 ms); das erste Gesicht einer neuen Frisur
+oder eines neuen Kleides bis 0,4 s, weil die Bilder geladen werden.
+`APOLEIA_TIME=1` druckt die Zeiten je Gesicht.
+
 ## Licht in Godot
 
 Am 30.10.2026 mit Godot 4.7.2 in der Cloud geprüft (Forward+ über Mesas
@@ -242,7 +297,12 @@ und in der Werkstatt nebeneinander.
 
 ## Offen
 
-- Im Spiel auf dem Mac ansehen (Metal statt Vulkan).
+- Im Spiel auf dem Mac ansehen (Metal statt Vulkan), auch die echten
+  Porträts (neue Materialien: Anisotropie, Hautstreuung, Alpha-Vorpass).
+- Echte Porträts: nur ein Frauenknoten und ein Zopf; Alter (Falten, graues
+  Haar) noch wie im einfachen Look; weisse Toga auf weisser Tunika; die
+  Tunika schaut an der Palla hervor; ein echtes Gesicht braucht ~45 ms, also
+  besser in einem eigenen Faden bauen.
 - Werkstatt und Rust-Code sind zwei Kopien; Änderungen am Aussehen zuerst in
   Rust, die Werkstatt dann nachziehen (oder später die Werkstatt aus Rust über
   WebAssembly bauen).
@@ -259,12 +319,33 @@ und in der Werkstatt nebeneinander.
 
 Zitate aus dem Gedächtnis, nicht online geprüft.
 
+- Blanz, V., & Vetter, T. (1999). A morphable model for the synthesis of 3D
+  faces. In *Proceedings of the 26th Annual Conference on Computer Graphics
+  and Interactive Techniques (SIGGRAPH '99)* (pp. 187–194). ACM.
+  https://doi.org/10.1145/311535.311556
+- Claes, P., Roosenboom, J., White, J. D., Swigut, T., Sero, D., Li, J.,
+  Lee, M. K., Zaidi, A., Mattern, B. C., Liebowitz, C., Pearson, L.,
+  González, T., Leslie, E. J., Carlson, J. C., Orlova, E., Suetens, P.,
+  Vandermeulen, D., Feingold, E., Marazita, M. L., … Weinberg, S. M. (2018).
+  Genome-wide mapping of global-to-local genetic effects on human facial
+  shape. *Nature Genetics, 50*(3), 414–423.
+  https://doi.org/10.1038/s41588-018-0057-4
+- Farkas, L. G. (Ed.). (1994). *Anthropometry of the head and face* (2nd
+  ed.). Raven Press.
 - Glocker, M. L., Langleben, D. D., Ruparel, K., Loughead, J. W., Gur, R. C.,
   & Sachser, N. (2009). Baby schema in infant faces induces cuteness
   perception and motivation for caretaking in adults. *Ethology, 115*(3),
   257–263. https://doi.org/10.1111/j.1439-0310.2008.01603.x
 - Heathcote, J. A. (1995). Why do old men have big ears? *BMJ, 311*(7021),
   1668. https://doi.org/10.1136/bmj.311.7021.1668
+- Howells, W. W. (1973). *Cranial variation in man: A study by multivariate
+  analysis of patterns of difference among recent human populations*
+  (Papers of the Peabody Museum, Vol. 67). Harvard University.
+- Howells, W. W. (1989). *Skull shapes and the map* (Papers of the Peabody
+  Museum, Vol. 79). Harvard University.
+- Howells, W. W. (1995). *Who's who in skulls: Ethnic identification of
+  crania from measurements* (Papers of the Peabody Museum, Vol. 82). Harvard
+  University.
 - Juvenal. (2004). *Juvenal and Persius* (S. M. Braund, Ed. & Trans.; Loeb
   Classical Library 91). Harvard University Press.
 - Lorenz, K. (1943). Die angeborenen Formen möglicher Erfahrung.
@@ -273,6 +354,10 @@ Zitate aus dem Gedächtnis, nicht online geprüft.
 - Plutarch. (1914). *Lives, Volume I: Theseus and Romulus. Lycurgus and
   Numa. Solon and Publicola* (B. Perrin, Trans.; Loeb Classical Library 46).
   Harvard University Press.
+- Rhodes, G., Brennan, S., & Carey, S. (1987). Identification and ratings
+  of caricatures: Implications for mental representations of faces.
+  *Cognitive Psychology, 19*(4), 473–497.
+  https://doi.org/10.1016/0010-0285(87)90016-8
 - Sforza, C., Grandi, G., Binelli, M., Tommasi, D. G., Rosati, R., &
   Ferrario, V. F. (2009). Age- and sex-related changes in the normal human
   ear. *Forensic Science International, 187*(1–3), 110.e1–110.e7.
@@ -283,3 +368,7 @@ Zitate aus dem Gedächtnis, nicht online geprüft.
   University Press. (Original work published ca. 100 CE)
 - Toynbee, J. M. C. (1971). *Death and burial in the Roman world*. Thames
   and Hudson.
+- Zaidi, A. A., Mattern, B. C., Claes, P., McEvoy, B., Hughes, C., &
+  Shriver, M. D. (2017). Investigating the case of human nose shape and
+  climate adaptation. *PLOS Genetics, 13*(3), e1006616.
+  https://doi.org/10.1371/journal.pgen.1006616

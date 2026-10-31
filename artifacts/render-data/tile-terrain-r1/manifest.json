@@ -686,5 +686,14 @@
       "direction there, angle mod pi in 256 steps",
       "scalerank (low 4 bits) + 16 * (8 + 7 * bend / bend_max), bend = 1 / radius in node steps, to the left of the stored direction positive; 0 = no river within reach_nodes"
     ]
+  },
+  "water_lines": {
+    "path": "water-lines.bin",
+    "sha256": "1bc62be38826f665ef31fc926b24b163ba7a84e5a82846b29c886c7852747c17",
+    "lake": 100,
+    "island": 101,
+    "step_km": 0.1,
+    "tolerance_km": 0.01,
+    "format": "b'WLN1', uint32 lines; per line int32 kind (river scalerank, lake, island), int32 n, float32 min x, min z, max x, max z, n x float32 x, z (world km); little endian"
   }
 }

@@ -12,12 +12,20 @@ extends Node
 ##
 ##   PortraitCache.of(tree).face(person, callable)  # callable(face) once,
 ##   # face = {"texture": Texture2D, "bg": [inner, outer]}; false: no face
+##
+## Two looks (settings «Echte Porträts», ui/game_settings.gd): the simple
+## one, and the real one with skin, eyes, hair, beards and clothes from the
+## realism pipeline (files in REAL_DIR, apoleia_portrait::real). The files
+## are read straight from the project folder, so the real look needs the
+## game started from its sources (as now), not an exported build.
 
 const HEAD_FILE := "res://assets/portrait/head.bin.zst"
 const SIZE := Vector2i(224, 280) # portrait_view.gd's 112 x 140, twice for clean edges
 const TURN := -0.35 # turned a little to the left, as in the Werkstatt
 const LOD := 1 # about 3000 triangles of skin: plenty at this size
 const KEEP := 64
+const REAL_DIR := "res://assets/portrait/real"
+const STORE := "user://display.cfg" # [portraits] real, as game_settings.gd keeps it
 
 var _builder # ApoleiaPortrait, while the extension is there
 var _vp: SubViewport
@@ -71,11 +79,30 @@ func face(p: Dictionary, done: Callable) -> bool:
 	_queue.append(job)
 	return true
 
+## Whether the real look is chosen (off until switched on).
+static func real_on() -> bool:
+	var config := ConfigFile.new()
+	return config.load(STORE) == OK and bool(config.get_value("portraits", "real", false))
+
+## Switches the real look on or off: the faces kept are dropped and drawn
+## anew when they are next asked for.
+func set_real(on: bool) -> void:
+	if _builder != null:
+		_tell_look(on)
+	_faces.clear()
+	_order.clear()
+
+func _tell_look(on: bool) -> void:
+	# (an extension built before the real look has no set_real)
+	if _builder.has_method("set_real"):
+		_builder.set_real(ProjectSettings.globalize_path(REAL_DIR) if on and DirAccess.dir_exists_absolute(REAL_DIR) else "")
+
 func _ready_to_build() -> bool:
 	if not ClassDB.class_exists("ApoleiaPortrait"):
 		return false
 	if _builder == null:
 		_builder = ClassDB.instantiate("ApoleiaPortrait")
+		_tell_look(real_on())
 	if not _builder.is_loaded():
 		var bytes := FileAccess.get_file_as_bytes(HEAD_FILE)
 		if bytes.is_empty() or not _builder.load(bytes):

@@ -17,6 +17,7 @@ const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 const CityPlans = preload("res://scripts/city_plans.gd")
 const RomanCity = preload("res://scripts/voxel/roman_city.gd")
+const WaterLines = preload("res://scripts/water_lines.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
 # Kit 1 map (32 km tiles: about 150 across it). Up close a height level is relief_slope (m/km, from the bake) times
@@ -226,6 +227,7 @@ var _meshes_full: Array = []
 var _meshes_low: Array = []
 
 var relief_slope := 80.0
+var _water_lines: WaterLines # null with older data
 var _heights: PackedFloat32Array
 var _relief: PackedFloat32Array
 var _cell_images: Array[Image] = []
@@ -307,6 +309,8 @@ func load_data(progress := Callable()) -> bool:
 		func() -> Variant: return _png(dir.path_join(manifest.aux.path), -1, false),
 		# the far map's river lines (round N); older data without them keeps the tile bands
 		func() -> Variant: return _png(dir.path_join(manifest.river_field.path), -1, false) if manifest.has("river_field") else null,
+		# the rivers and lakes of the 0.5 and 1 km tiles by their lines (round Q); older data keeps the tile bands
+		func() -> Variant: return _water_lines_from(dir.path_join(manifest.water_lines.path)) if manifest.has("water_lines") else null,
 	]
 	var plan_job := jobs.size()
 	var plan_size := world_size
@@ -343,6 +347,7 @@ func load_data(progress := Callable()) -> bool:
 	var cover: Image = done[3]
 	var aux: Image = done[4]
 	var rivers: Image = done[5]
+	var water: WaterLines = done[6]
 	plans = done[plan_job]
 	if plans != null:
 		plans.make_textures()
@@ -414,8 +419,21 @@ func load_data(progress := Callable()) -> bool:
 	for key in shared:
 		_sub_material.set_shader_parameter(key, shared[key])
 	_build_nodes()
+	if water != null:
+		_water_lines = water
+		add_child(water)
+		for material in _all_materials():
+			material.set_shader_parameter("water_win", water.get_texture())
 	_apply_level(zoom)
 	return true
+
+## The water lines (water_lines.gd) read from `path`, or null.
+static func _water_lines_from(path: String) -> WaterLines:
+	var lines := WaterLines.new()
+	if lines.read(path):
+		return lines
+	lines.free()
+	return null
 
 ## Prop kinds: PROP_KINDS, with the house replaced by the first lot model,
 ## the other lot models after them and last the terraces under lots on ramps.
@@ -675,6 +693,8 @@ func _apply_level(value: int) -> void:
 	else:
 		level_h = FAR_LEVEL_KM
 	var params := {
+		# the rivers and lakes by their lines on the 0.5 and 1 km tiles (round Q)
+		"water_lines": _water_lines != null and not sub_tiles and level <= 1,
 		"cells_tex": _cell_textures[level],
 		"cells_size": _cell_sizes[level],
 		"tile_km": tile_km,
@@ -695,6 +715,7 @@ func _apply_level(value: int) -> void:
 	# the quarter tile pass works on the data tiles
 	params.tile_km = LEVELS[level]
 	params.sub_tiles = false
+	params.water_lines = false
 	for key in params:
 		_sub_material.set_shader_parameter(key, params[key])
 	_sub_origin = NO_WINDOW # redrawn by the next update_view
@@ -1320,6 +1341,13 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 		for material in _all_materials() + [_sub_material]:
 			material.set_shader_parameter("levels_origin", Vector2i(_level_window_key.y, _level_window_key.z))
 		_sub_origin = NO_WINDOW # the quarter data comes from the new window
+	# the picture of the rivers and lakes over the drawn tiles
+	if _water_lines != null and not sub_tiles and level <= 1:
+		var first := Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2)
+		if _water_lines.cover(Rect2(world_min + Vector2(first) * tile_km, Vector2(draw_n, draw_n) * tile_km)):
+			var r: Rect2 = _water_lines.rect
+			for material in _all_materials():
+				material.set_shader_parameter("water_win_rect", Vector4(r.position.x, r.position.y, r.size.x, r.size.y))
 	var corner_origin := patch_origin - Vector2i.ONE
 	for material in _all_materials():
 		material.set_shader_parameter("corner_origin", corner_origin)
