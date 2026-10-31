@@ -54,6 +54,58 @@ pub const FACE: [(&[&str], &str, &str); FACE_GENES] = [
     (&["neck/neck-scale-horiz"], "decr", "incr"),
 ];
 
+/// The real look (crate::real, or APOLEIA_FACE_MODULES alone): each face gene as a factor of a
+/// small face space that moves a whole region together, its own target
+/// first, then the shapes that go with it (a morphable model, Blanz & Vetter,
+/// 1999; facial traits in linked modules, Claes et al., 2018; neither
+/// verified online). Per load: target ("#" both sides, "" = oval/square),
+/// low and high suffix, weight per unit of the gene. Weights fitted so that
+/// the widths and heights spread as in Farkas's norms (PLACEHOLDER).
+pub const FACE_MOD: [&[(&str, &str, &str, f32)]; FACE_GENES] = [
+    // headW: the whole face wider or narrower, cheekbones and jaw with it
+    &[("head/head-scale-horiz", "decr", "incr", 1.0), ("cheek/#-cheek-bones", "decr", "incr", 0.3), ("chin/chin-width", "decr", "incr", 0.25)],
+    // headH: a long or short face, the chin follows
+    &[("head/head-scale-vert", "decr", "incr", 1.0), ("chin/chin-height", "decr", "incr", 0.3)],
+    // headF: oval (soft jaw angle) .. square (marked angle, wide jaw)
+    &[("", "", "", 1.0), ("chin/chin-bones", "decr", "incr", 0.7), ("head/head-diamond", "", "", -0.25)],
+    // fore: high forehead .. low; a strong brow ridge with deep-set eyes, sloping
+    &[("forehead/forehead-scale-vert", "decr", "incr", 1.0), ("forehead/forehead-nubian", "decr", "incr", -0.9), ("eyebrows/eyebrows-trans", "backward", "forward", -0.6), ("eyes/#-eye-push1", "in", "out", 0.5), ("forehead/forehead-trans", "backward", "forward", 0.4)],
+    // jaw: narrow (diamond) .. wide lower face, the jaw angle with it
+    &[("head/head-triangular", "", "", 1.3), ("head/head-diamond", "", "", -2.9), ("chin/chin-width", "decr", "incr", 1.2), ("chin/chin-bones", "decr", "incr", 1.0), ("neck/neck-scale-horiz", "decr", "incr", 0.3)],
+    // chin: receding .. jutting chin, the lower jaw with it, a cleft on a strong chin
+    &[("chin/chin-prominent", "decr", "incr", 1.2), ("chin/chin-prognathism", "decr", "incr", 0.6), ("chin/chin-cleft", "decr", "incr", 0.5)],
+    // chinH: short .. long chin, the jaw lower
+    &[("chin/chin-height", "decr", "incr", 0.9), ("chin/chin-jaw-drop", "decr", "incr", 0.5)],
+    // cheek: flat .. high cheekbones, hollow beneath them
+    &[("cheek/#-cheek-bones", "decr", "incr", 1.3), ("cheek/#-cheek-inner", "decr", "incr", 0.6), ("cheek/#-cheek-volume", "decr", "incr", -0.5), ("forehead/forehead-temple", "decr", "incr", -0.3)],
+    // noseL: short .. long nose, a longer one deeper and with a lower base
+    &[("nose/nose-scale-vert", "decr", "incr", 2.0), ("nose/nose-scale-depth", "decr", "incr", 0.8), ("nose/nose-base", "up", "down", 1.0)],
+    // noseW: narrow .. broad nose: wings, nostrils and tip
+    &[("nose/nose-scale-horiz", "decr", "incr", 1.6), ("nose/nose-flaring", "decr", "incr", 0.7), ("nose/nose-nostrils-width", "decr", "incr", 0.6), ("nose/nose-point-width", "decr", "incr", 0.5), ("nose/nose-width2", "decr", "incr", 0.5)],
+    // hump: concave .. straight Greek .. humped, the bridge with it
+    &[("nose/nose-hump", "decr", "incr", 1.4), ("nose/nose-curve", "concave", "convex", 0.8), ("nose/nose-greek", "decr", "incr", 0.6), ("nose/nose-width1", "decr", "incr", 0.4)],
+    // tip: drooping .. upturned tip, nostrils and septum follow
+    &[("nose/nose-point", "down", "up", 1.3), ("nose/nose-septumangle", "decr", "incr", 0.6), ("nose/nose-nostrils-angle", "down", "up", 0.5), ("nose/nose-volume", "decr", "incr", -0.4)],
+    // eyeS: small .. large eyes, more open
+    &[("eyes/#-eye-scale", "decr", "incr", 1.0), ("eyes/#-eye-height2", "decr", "incr", 0.5)],
+    // eyeD: close .. wide set eyes, an inner fold on wide set ones
+    &[("eyes/#-eye-trans", "in", "out", 1.4), ("eyes/#-eye-epicanthus", "in", "out", 0.4)],
+    // brow: low brows with hooded lids .. high brows, open lids
+    &[("eyebrows/eyebrows-trans", "down", "up", 1.2), ("eyes/#-eye-eyefold", "down", "up", 0.8), ("eyes/#-eye-bag-height", "decr", "incr", -0.3)],
+    // browA: brows and eye corners slanting down .. up
+    &[("eyebrows/eyebrows-angle", "down", "up", 1.2), ("eyes/#-eye-corner1", "down", "up", 0.6), ("eyes/#-eye-corner2", "down", "up", 0.4)],
+    // ear: small .. large ears
+    &[("ears/#-ear-scale", "decr", "incr", 1.2)],
+    // earF: flat .. sticking out
+    &[("ears/#-ear-flap", "decr", "incr", 1.3)],
+    // mouthW: narrow .. wide mouth, the bow of the upper lip with it
+    &[("mouth/mouth-scale-horiz", "decr", "incr", 1.1), ("mouth/mouth-cupidsbow-width", "decr", "incr", 0.4)],
+    // lips: thin .. full lips, a marked bow and philtrum on full ones
+    &[("mouth/mouth-upperlip-volume", "decr", "incr", 1.2), ("mouth/mouth-lowerlip-volume", "decr", "incr", 1.2), ("mouth/mouth-cupidsbow", "decr", "incr", 0.6), ("mouth/mouth-philtrum-volume", "decr", "incr", 0.4)],
+    // neck: thin .. thick neck, the back of the head deeper
+    &[("neck/neck-scale-horiz", "decr", "incr", 1.0), ("head/head-back-scale-depth", "decr", "incr", 0.5)],
+];
+
 /// The child's face in the face genes' terms (-1 low .. 1 high): a round
 /// head with a high forehead, a small chin, jaw, nose and mouth, full
 /// cheeks, large eyes and a short neck (the "Kindchenschema", Lorenz 1943;
