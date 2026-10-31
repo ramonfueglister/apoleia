@@ -136,12 +136,42 @@ vec2 dot_person_away(ivec2 px) {
 
 // Where a member of a household at work on its fields stands, from where
 // it stands at home: out on the lot's field parcels (DOT_LOT_KM), the same
-// side of the house for the whole household (its key), side by side.
+// side of the house for the whole household (its key), side by side. Only
+// for a household whose field the sim does not tell (dot_field_way).
 vec2 dot_field_offset(uint key, uint slot) {
 	vec2 h = dot_rand2(key, 41u);
 	vec2 m = dot_rand2(slot, 43u);
 	float a = h.x * 6.2831853 + (m.x - 0.5) * 0.7;
 	return vec2(cos(a), sin(a)) * (0.15 + 0.07 * m.y);
+}
+
+// Where each person's household works its fields (Bauplan B step 4, Ramon
+// 31.10.2026): x and z in world metres by the same pixel as the record
+// (ApoleiaPeople.people_fields, sim Grain::near_field: the middle of the
+// farm's fine tile with its own or leased fields nearest the farmhouse),
+// -1, -1 without one.
+uniform sampler2D person_field_tex : filter_nearest, repeat_disable;
+uniform bool has_person_fields = false;
+const float DOT_FIELD_KMH = 4.5; // on foot (day_clock.gd WALK_KMH)
+const float DOT_FIELD_SPREAD_KM = 0.12; // a household side by side in its field tile
+
+// The way of the person in `slot` to its household's field from its spot
+// at `home` (world km): xy the field's offset from home (km), z the pace
+// (world km an hour). Fields are drawn at the diorama scale like the
+// houses (SCALE.md), so the walk to the own field goes at the diorama pace
+// (DOT_FIELD_KMH / dot_km_per_m): the 8 world km of a typical farm are
+// about 350 m a figure walks in some five minutes. Without a field from
+// the sim the old spot beside the house at the real pace.
+vec3 dot_field_way(uint key, uint slot, ivec2 px, vec2 home) {
+	if (has_person_fields) {
+		vec2 f = texelFetch(person_field_tex, px, 0).rg;
+		if (f.x != -1.0 || f.y != -1.0) {
+			vec2 m = dot_rand2(slot, 43u) - 0.5;
+			vec2 spot = f * 0.001 + m * 2.0 * DOT_FIELD_SPREAD_KM;
+			return vec3(spot - home, DOT_FIELD_KMH / dot_km_per_m);
+		}
+	}
+	return vec3(dot_field_offset(key, slot), DOT_FIELD_KMH);
 }
 
 // First spot on land among up to 16 hashed tries in an area around `c`:

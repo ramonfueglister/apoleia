@@ -35,7 +35,6 @@
 uniform float day_hour = -1.0;          // hour of the day (0-24), -1 at the fast speeds
 uniform vec2 day_sun = vec2(6.0, 18.0); // sunrise and sunset (hours), DayClock.daylight
 
-const float DAY_WALK_KMH = 4.5; // on foot (day_clock.gd WALK_KMH)
 const uint DAY_UNFREE = 12u;     // the job of the unfree (sim groups.rs)
 // how a figure looks
 const int DAY_STAND = 0;
@@ -95,8 +94,8 @@ int day_craft_pose(int craft) {
 
 // Person `slot` of household `key` at hour `h` (< 0: no hour). kind, job,
 // female, child: its record (people_dots.gd); look: dot_person_look; flags:
-// dot_person_flags; away: dot_person_away.
-DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away) {
+// dot_person_flags; away: dot_person_away; way: dot_field_way.
+DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away, vec3 way) {
 	DayNow d;
 	d.offset = vec2(0.0);
 	d.moved = false;
@@ -108,7 +107,7 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 	bool busy = look.y > 0.5; // the farm's harvest or sowing wants hands
 	bool farmer = kind == 0u && !child && (busy || ((flags & DOT_LOOK_FARM) != 0 && (!female || job == DAY_UNFREE)));
 	int craft = kind == 0u && !child ? dot_craft(flags) : 0; // at its workshop (dot_place)
-	vec2 field = dot_field_offset(key, slot);
+	vec2 field = way.xy; // to the household's field (dot_field_way)
 	if (h < 0.0) {
 		if (farmer && busy) {
 			d.offset = field;
@@ -155,11 +154,11 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 	bool at_meal = known && h >= meal.x && h < meal.y;
 	// Baustein «Feld»: out after sunrise (at first light while the harvest
 	// or the sowing presses), at work until before sunset, home at noon to
-	// eat unless the meal is brought out or there is none, the ways as long
-	// as they really take
+	// eat unless the meal is brought out or there is none; out to the
+	// household's own field at the diorama pace (dot_field_way)
 	if (farmer) {
 		vec2 r2 = dot_rand2(slot, 62u);
-		float walk = length(field) / DAY_WALK_KMH;
+		float walk = max(length(field) / way.z, 1.0 / 60.0); // a minute at least
 		float go = max(busy ? sun.x - 0.25 + 0.5 * r2.x : sun.x + 0.25 + 0.75 * r2.x, wake + 0.1);
 		if (away.y > away.x) {
 			go = max(go, away.y + 0.1); // out to the field once back from the market
@@ -209,6 +208,6 @@ DayNow day_at(float h, uint slot, uint key, uint kind, uint job, bool female, bo
 }
 
 // The same at the clock's hour.
-DayNow day_now(uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away) {
-	return day_at(day_hour, slot, key, kind, job, female, child, look, flags, away);
+DayNow day_now(uint slot, uint key, uint kind, uint job, bool female, bool child, vec2 look, int flags, vec2 away, vec3 way) {
+	return day_at(day_hour, slot, key, kind, job, female, child, look, flags, away, way);
 }

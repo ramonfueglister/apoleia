@@ -8,7 +8,10 @@ extends RefCounted
 ## minute and cut where what the person does changes. Where it walks today
 ## as a carrier, trader or hired hand comes from people_trips.gd (`away`).
 
-const WALK_KMH := 4.5 # people_day.gdshaderinc DAY_WALK_KMH
+const WALK_KMH := 4.5 # people_dots_common.gdshaderinc DOT_FIELD_KMH
+## the walk to the own field at the diorama pace (dot_field_way): fields are
+## drawn at the diorama scale like the houses (Bauplan B step 4)
+const FIELD_KMH := WALK_KMH / 0.0238 # TileTerrain.DIORAMA_KM_PER_M
 const UNFREE := 12 # the job of the unfree (sim groups.rs)
 const LOOK_COOKS := 1 # the household flags (people_dots_common.gdshaderinc DOT_LOOK_*)
 const LOOK_HARVEST := 4
@@ -50,8 +53,8 @@ static func _rand2(key: int, k: int) -> Vector2:
 	var b := _hash(a ^ 0x5bd1e995)
 	return Vector2(float(a & 0xffff), float(b & 0xffff)) / 65535.0
 
-## How far the household's field lies from the person's spot (km,
-## dot_field_offset).
+## How far the old spot beside the house lies from the person's spot (km,
+## dot_field_offset), for a household whose field the sim does not tell.
 static func field_km(key: int, slot: int) -> float:
 	return 0.15 + 0.07 * _rand2(slot, 43).y
 
@@ -68,8 +71,10 @@ static func _leg(h: float, s: float, e: float, walk: float) -> float:
 
 ## What person `slot` of household `key` does at hour `h` (day_at): kind,
 ## job, female, child from its record, flags the household's (0 not known),
-## away where it walks today (people_trips.gd `away`, {} if nowhere).
-static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}) -> String:
+## away where it walks today (people_trips.gd `away`, {} if nowhere),
+## walk_h the hours to its household's field (dot_field_way), < 0 for the
+## old spot beside the house.
+static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}, walk_h := -1.0) -> String:
 	var busy := (flags & (LOOK_HARVEST | LOOK_SOWING)) != 0
 	var farmer := kind == 0 and not child and (busy or ((flags & LOOK_FARM) != 0 and (not female or job == UNFREE)))
 	var craft := (flags >> LOOK_CRAFT_SHIFT) & 3 if kind == 0 and not child else 0
@@ -88,7 +93,7 @@ static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool,
 	var at_meal := known and h >= m.x and h < m.y
 	if farmer:
 		var r2 := _rand2(slot, 62)
-		var walk := field_km(key, slot) / WALK_KMH
+		var walk := walk_h if walk_h > 0.0 else field_km(key, slot) / WALK_KMH
 		var go := maxf(sun.x - 0.25 + 0.5 * r2.x if busy else sun.x + 0.25 + 0.75 * r2.x, wake + 0.1)
 		if not away.is_empty() and _away_hour(away.back) > _away_hour(away.leave):
 			go = maxf(go, _away_hour(away.back) + 0.1) # out to the field once back from the market
@@ -124,12 +129,12 @@ static func _away_hour(h: float) -> float:
 ## The person's day as blocks [{from, to, what, text}], hours 0-24, cut
 ## where what it does changes; the night's two ends are the first and the
 ## last block.
-static func day(slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}) -> Array:
+static func day(slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}, walk_h := -1.0) -> Array:
 	var out: Array = []
 	var last := ""
 	for i in STEPS:
 		var h := (float(i) + 0.5) * 24.0 / float(STEPS)
-		var what := at(h, slot, key, kind, job, female, child, flags, sun, away)
+		var what := at(h, slot, key, kind, job, female, child, flags, sun, away, walk_h)
 		if what != last:
 			if not out.is_empty():
 				out[-1].to = float(i) * 24.0 / float(STEPS)

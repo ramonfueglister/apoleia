@@ -171,6 +171,10 @@ var _day_hour := -1.0 # the clock's hour at the slow speeds, -1 at the fast ones
 var _day_sun := Vector2(6.0, 18.0)
 var _person_looks_tex: ImageTexture
 var _person_looks_version := -1
+var _person_fields: PackedFloat32Array # where each person's household works its fields (ApoleiaPeople.people_fields), world m
+var _person_fields_img: Image
+var _person_fields_tex: ImageTexture
+var _person_fields_version := -1
 var _away: Image # who is away from home today and when (people_trips.gd away), for the figures
 var _away_tex: ImageTexture
 var _away_version := -1
@@ -1094,6 +1098,37 @@ func _sync_person_looks() -> void:
 		_person_looks_tex.update(_person_looks)
 	_prep_frames = 2 # a household took up or left a workshop
 
+## Where each person's household works its fields (Bauplan B step 4),
+## as the RGF texture of people_dots_common dot_field_way, anew with the
+## household looks: the farmers walk out to that field at the diorama pace
+## (people_day.gdshaderinc «Feld»). Without `people_fields` (an extension
+## built before it) they keep the old spot beside the house.
+func _sync_person_fields() -> void:
+	if not people.has_method("people_fields") or _texture == null:
+		return
+	var version: int = people.house_looks_version()
+	var side: int = people.page_side()
+	var h := side * maxi(_texture.get_layers(), 1)
+	if version == _person_fields_version and _person_fields_img != null and _person_fields_img.get_height() == h:
+		return
+	_person_fields_version = version
+	_person_fields = people.people_fields()
+	var floats := _person_fields.slice(0, side * h * 2)
+	var tail := PackedFloat32Array()
+	tail.resize(side * h * 2 - floats.size())
+	tail.fill(-1.0) # people newer than the list: no field yet
+	floats.append_array(tail)
+	var bytes := floats.to_byte_array()
+	if _person_fields_img == null or _person_fields_img.get_height() != h:
+		_person_fields_img = Image.create_from_data(side, h, false, Image.FORMAT_RGF, bytes)
+		_person_fields_tex = ImageTexture.create_from_image(_person_fields_img)
+		for m in [_figure_material, _figure_shadow_material]:
+			m.set_shader_parameter("person_field_tex", _person_fields_tex)
+			m.set_shader_parameter("has_person_fields", true)
+	else:
+		_person_fields_img.set_data(side, h, false, Image.FORMAT_RGF, bytes)
+		_person_fields_tex.update(_person_fields_img)
+
 ## Who is away from home today and from when till when (people_trips.gd
 ## `away`, at «Alltag»), as the RGBA8 texture of people_dots_common
 ## dot_person_away, anew when the list changed: the figure at home is gone
@@ -1320,7 +1355,13 @@ func _today_of(slot: int) -> Array:
 	if _day_hour < 0.0:
 		var land := get_parent()
 		sun = DayClock.daylight(int(people.day()), DayClock.latitude(land.target) if "target" in land else 41.9)
-	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun, _trips.away.get(slot, {}))
+	# the walk to its field (dot_field_way): from the record's anchor, as
+	# the house spot itself is placed on the GPU (a village tile off at most)
+	var walk_h := -1.0
+	if slot * 2 + 1 < _person_fields.size() and (_person_fields[slot * 2] != -1.0 or _person_fields[slot * 2 + 1] != -1.0):
+		var field := Vector2(_person_fields[slot * 2], _person_fields[slot * 2 + 1]) * 0.001
+		walk_h = maxf(field.distance_to(Vector2(rec[0], rec[1])) / DayPlan.FIELD_KMH, 1.0 / 60.0)
+	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun, _trips.away.get(slot, {}), walk_h)
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
@@ -1390,6 +1431,7 @@ func _frame(delta: float) -> void:
 			m.set_shader_parameter("look_tex", looks)
 			m.set_shader_parameter("has_looks", true)
 	_sync_person_looks()
+	_sync_person_fields()
 	_sync_away()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
