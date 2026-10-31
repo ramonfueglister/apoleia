@@ -25,9 +25,13 @@ extends CanvasLayer
 ##
 ## A right click on a row opens its menu (ui/context_menu.gd): a market's
 ## window (for a region's row, its market's), the place on the map, the
-## outliner. A click on a column head sorts by it (again: the other way round), the
-## search field and the dropdowns of the text columns filter, and
-## "zusammenfassen" folds the rows by the first dropdown's column, with sums,
+## outliner. A click on a column head sorts by it (again: the other way
+## round), the search field and, as Victoria 3's large lists, the column of
+## filters at the left (a box per text column that folds, any of its values
+## ticked) narrow the rows; above the large lists (TREEMAPS) tiles show
+## their people by occupation and region, sized by their share, and a click
+## on a tile filters by it. "zusammenfassen" folds the rows by the first
+## filter's column, with sums,
 ## and shares, means ("mean" in the key) and per-unit values ("Denar/kg")
 ## weighted by persons. At most ROW_MAX rows are listed per level, the
 ## rest is counted in a last row. A table of one row without a place (the
@@ -59,6 +63,7 @@ const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const ContextMenu = preload("res://scripts/ui/context_menu.gd")
+const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
 ## apoleia_sim::tables::TABLES, then "overview": a page of sim_overview.gd
 ## (VIEWS), drawn from OVERVIEW_KINDS
 const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
@@ -95,7 +100,17 @@ const SELECTED := Color("2e5260")
 const SECONDARY := UiStyle.DIM
 const NEGATIVE := UiStyle.LOSS # in the red, as EU5 shows it
 const PANEL_MIN := 620.0
-const FILTER_MAX := 64 # a text column with more values gets no dropdown
+const FILTER_MAX := 64 # a text column with more values gets no filter box
+const SIDE_PX := 210.0 # the column of filters
+const MAP_PX := 116.0 # the tiles above a large list
+const MAP_TILES := 9 # tiles before the rest is one "Andere"
+## The large lists' tiles: [text column, column weighing a row, what the
+## weight is].
+const TREEMAPS := {
+	"population": [["occupation", "persons", "Menschen"], ["region", "persons", "Menschen"]],
+	"markets": [["region", "persons", "Menschen"]],
+	"farms": [["region", "area_ha", "ha Feld"]],
+}
 const ROW_MAX := 300
 const FLY_MARGIN := 1.6 # the camera frames a place this many times its extent
 const FLY_MIN_KM := 3.0
@@ -144,6 +159,12 @@ var _search: LineEdit
 var _filter_row: HFlowContainer # wraps when the window is narrow
 var _fold: CheckButton
 var _tree: Tree
+var _lists: HBoxContainer # the filters at the left, tiles and rows at the right
+var _side: ScrollContainer
+var _side_box: VBoxContainer
+var _side_on := true # the column of filters shown
+var _side_button: Button
+var _maps: HBoxContainer
 var _note: Label
 var _unit := PackedStringArray() # per column of the table shown: unit and factor shown in
 var _factor := PackedFloat64Array()
@@ -173,7 +194,7 @@ func setup(sim: RefCounted, scene: Node3D) -> void:
 	for kind in KINDS:
 		_asked_on.append(-1)
 		_tables.append({})
-		_state.append({"sort": "", "desc": true, "filters": {}, "search": "", "folded": false, "open": {}, "selected": -1})
+		_state.append({"sort": "", "desc": true, "filters": {}, "closed": {}, "search": "", "folded": false, "open": {}, "selected": -1})
 	for arg in OS.get_cmdline_user_args():
 		if arg.get_slice("=", 0) == "--tables":
 			open = true
@@ -248,8 +269,10 @@ func _remember_months(t: Dictionary) -> void:
 			s = s.slice(s.size() - SPARK_MONTHS)
 		_months[m] = s
 
-## The rows that pass the search and the dropdowns, in table order.
-func _passing(t: Dictionary) -> PackedInt32Array:
+## The rows that pass the search and the filters (a column's filter passes
+## any of the values ticked; none ticked passes all), in table order;
+## `skip` leaves one column's filter out (its tiles show all its values).
+func _passing(t: Dictionary, skip := "") -> PackedInt32Array:
 	var data: Dictionary = t.data
 	var state: Dictionary = _state[_kind]
 	var search: String = state.search.strip_edges().to_lower()
@@ -261,7 +284,8 @@ func _passing(t: Dictionary) -> PackedInt32Array:
 	for r in _row_count(t):
 		var ok := true
 		for key in state.filters:
-			if state.filters[key] != "" and data[key][r] != state.filters[key]:
+			var ticked: Dictionary = state.filters[key]
+			if key != skip and not ticked.is_empty() and not ticked.has(data[key][r]):
 				ok = false
 				break
 		if ok and search != "":
@@ -289,7 +313,7 @@ static func _row_count(t: Dictionary) -> int:
 static func _is_text(t: Dictionary, key: String) -> bool:
 	return t.data[key] is PackedStringArray
 
-## The text columns that get a dropdown; rows fold by the first of them.
+## The text columns that get a filter box; rows fold by the first of them.
 func _filter_keys(t: Dictionary) -> Array[String]:
 	var keys: Array[String] = []
 	if _row_count(t) <= 12: # a short table needs no dropdowns
@@ -348,8 +372,9 @@ func _refresh() -> void:
 	var page = _page_node(_page) if overview else null
 	for p in _pages.values():
 		p.visible = p == page
-	_filter_row.visible = not overview # a page has no search, dropdowns or map
+	_filter_row.visible = not overview # a page has no search, filters or map
 	_spans.visible = overview and _page.ends_with("charts")
+	_lists.visible = not overview
 	_tree.visible = not overview
 	_note.visible = not overview
 	if overview:
@@ -371,6 +396,8 @@ func _refresh() -> void:
 	_paint_regions()
 	if t.is_empty():
 		_tree.clear()
+		_side.visible = false
+		_maps.visible = false
 		_stand.text = "…"
 		return
 	_stand.text = "Stand %s" % _date(int(t.day))
@@ -380,35 +407,14 @@ func _refresh() -> void:
 	_fill_tree(t)
 
 func _fill_filters(t: Dictionary) -> void:
-	for child in _filter_row.get_children():
-		if child is OptionButton:
-			child.queue_free()
 	var state: Dictionary = _state[_kind]
 	var keys: Array[String] = []
 	if not _is_sheet(t) and not _is_history(t):
 		keys = _filter_keys(t)
 	_search.visible = not _is_sheet(t) and not _is_history(t)
-	var at := _search.get_index() + 1
-	for key in keys:
-		var pick := OptionButton.new()
-		pick.add_item("%s: alle" % t.labels[Array(t.columns).find(key)])
-		var values := _values(t, key)
-		for v in values:
-			pick.add_item(v)
-			if v == state.filters.get(key, ""):
-				pick.select(pick.item_count - 1)
-		pick.item_selected.connect(func(index: int):
-			state.filters[key] = "" if index == 0 else values[index - 1]
-			_fill_tree(_tables[_kind]))
-		pick.focus_mode = Control.FOCUS_NONE
-		# as wide as its name, not its longest value, so the row fits the window
-		pick.fit_to_longest_item = false
-		pick.clip_text = true
-		pick.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		pick.custom_minimum_size = Vector2(120, 0)
-		_filter_row.add_child(pick)
-		_filter_row.move_child(pick, at)
-		at += 1
+	_side_button.visible = keys.size() > 0
+	_side.visible = keys.size() > 0 and _side_on
+	_fill_side(t, keys)
 	_fold.visible = keys.size() > 0
 	if _fold.visible:
 		_fold.text = "nach %s zusammenfassen" % t.labels[Array(t.columns).find(keys[0])]
@@ -418,8 +424,292 @@ func _fill_filters(t: Dictionary) -> void:
 	_search.set_block_signals(false)
 	_place_panel()
 
+## The column of filters, as Victoria 3's: a box per text column that
+## folds, its values with a tick each.
+func _fill_side(t: Dictionary, keys: Array[String]) -> void:
+	var state: Dictionary = _state[_kind]
+	var scroll := _side.get_v_scroll_bar().value
+	for child in _side_box.get_children():
+		child.queue_free()
+	if keys.is_empty():
+		return
+	var head := HBoxContainer.new()
+	var title := UiStyle.label("Filter", UiStyle.TEXT, UiStyle.SIZE_HEAD)
+	title.add_theme_font_override("font", UiStyle.title_font())
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var any := false
+	for key in keys:
+		any = any or not state.filters.get(key, {}).is_empty()
+	if any:
+		var reset := Button.new()
+		reset.text = "alle"
+		reset.flat = true
+		reset.focus_mode = Control.FOCUS_NONE
+		reset.tooltip_text = "Alle Filter zurücksetzen"
+		reset.pressed.connect(func():
+			state.filters = {}
+			_refilter())
+		head.add_child(reset)
+	_side_box.add_child(head)
+	for key in keys:
+		var label: String = t.labels[Array(t.columns).find(key)]
+		var ticked: Dictionary = state.filters.get(key, {})
+		var closed: bool = state.closed.get(key, false)
+		var fold := Button.new()
+		fold.flat = true
+		fold.focus_mode = Control.FOCUS_NONE
+		fold.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		fold.text = "%s %s%s" % ["▸" if closed else "▾", label, "" if ticked.is_empty() else "  (%d)" % ticked.size()]
+		fold.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		fold.add_theme_color_override("font_color", UiStyle.NAME if not ticked.is_empty() else UiStyle.TEXT)
+		fold.pressed.connect(func():
+			state.closed[key] = not closed
+			_fill_side(t, keys))
+		_side_box.add_child(fold)
+		if closed:
+			continue
+		var values := _values(t, key)
+		for k in values.size():
+			_side_box.add_child(_tick_row(key, values[k], ticked.has(values[k]), k))
+	(func(): _side.get_v_scroll_bar().value = scroll).call_deferred()
+
+## A value with its tick: a click ticks it or takes the tick off.
+func _tick_row(key: String, value: String, on: bool, k: int) -> Control:
+	var row := Control.new()
+	row.custom_minimum_size = Vector2(0, 24)
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+	row.tooltip_text = value
+	row.draw.connect(func():
+		var lit := Rect2(Vector2.ZERO, row.size).has_point(row.get_local_mouse_position())
+		row.draw_rect(Rect2(0, 0, row.size.x, 23), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+		if lit:
+			row.draw_rect(Rect2(0, 0, row.size.x, 23), UiStyle.HOVER)
+		var box := Rect2(8, 5, 13, 13)
+		row.draw_rect(box, UiStyle.INSET)
+		row.draw_rect(box, UiStyle.GOLD_LIT if lit else UiStyle.GOLD_DIM, false, 1.0)
+		if on:
+			row.draw_polyline(PackedVector2Array([Vector2(10.5, 11.5), Vector2(13.5, 15), Vector2(19, 7.5)]), UiStyle.GOLD_LIT, 2.0, true)
+		UiStyle.text_at(row, Vector2(28, 17), value, UiStyle.NAME if on else UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - 32.0, UiStyle.serif()))
+	row.mouse_entered.connect(row.queue_redraw)
+	row.mouse_exited.connect(row.queue_redraw)
+	row.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+			_tick(key, value))
+	return row
+
+## Ticks `value` of column `key`, or takes its tick off.
+func _tick(key: String, value: String) -> void:
+	var state: Dictionary = _state[_kind]
+	var ticked: Dictionary = state.filters.get(key, {})
+	if ticked.has(value):
+		ticked.erase(value)
+	else:
+		ticked[value] = true
+	state.filters[key] = ticked
+	_refilter()
+
+## The rows, the tiles and the filters after a filter changed.
+func _refilter() -> void:
+	var t := _tables[_kind]
+	if t.is_empty():
+		return
+	_fill_side(t, _filter_keys(t))
+	_fill_tree(t)
+
+# ------------------------------------------------------------------ tiles
+
+## The large list's tiles (TREEMAPS): per text column its values sized by
+## their share of the rows that pass the other filters, the largest
+## MAP_TILES, the rest as one; of a column with too many values for a
+## filter box (the regions) only the largest, with the share they hold.
+func _fill_maps(t: Dictionary) -> void:
+	for child in _maps.get_children():
+		child.queue_free()
+	var specs: Array = TREEMAPS.get(KINDS[_kind], [])
+	_maps.visible = not specs.is_empty() and _row_count(t) > 12
+	if not _maps.visible:
+		return
+	var state: Dictionary = _state[_kind]
+	for spec in specs:
+		var key: String = spec[0]
+		if not t.data.has(key) or not t.data.has(spec[1]):
+			continue
+		var weights := {}
+		var col = t.data[key]
+		var by = t.data[spec[1]]
+		for r in _passing(t, key):
+			weights[col[r]] = weights.get(col[r], 0.0) + float(by[r])
+		var names := weights.keys()
+		names.sort_custom(func(a, b): return weights[a] > weights[b])
+		var items: Array = []
+		var total := 0.0
+		for n in names:
+			total += weights[n]
+		var rest := 0.0
+		for k in names.size():
+			if k < MAP_TILES or names.size() == MAP_TILES + 1:
+				items.append([names[k], weights[names[k]]])
+			else:
+				rest += weights[names[k]]
+		var label: String = t.labels[Array(t.columns).find(key)]
+		var title := label
+		var many := _values(t, key).size() > FILTER_MAX
+		if many and rest > 0.0: # five hundred regions: the largest only
+			title = "Die %d grössten: %s %% der %s" % [items.size(), SimOverview._pct((total - rest) / total * 100.0), spec[2]]
+		elif rest > 0.0:
+			items.append(["Andere", rest])
+		var map := Control.new()
+		map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		map.size_flags_stretch_ratio = 1.0 if many else 1.4
+		map.mouse_filter = Control.MOUSE_FILTER_STOP
+		var ticked: Dictionary = state.filters.get(key, {})
+		var chosen := ticked.duplicate()
+		if key == "region" and state.search != "":
+			chosen[state.search] = true
+		var icons := {}
+		for it in items:
+			if SimOverview.ICONS.has(it[0]):
+				icons[it[0]] = Vic3Style.icon(SimOverview.ICONS[it[0]]) # loaded before the first draw (GLES3)
+		map.set_meta("items", items)
+		map.draw.connect(_draw_map.bind(map, title, items, total, chosen, icons))
+		map.resized.connect(map.queue_redraw)
+		map.mouse_exited.connect(map.queue_redraw)
+		map.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseMotion:
+				map.queue_redraw()
+			elif e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+				var at := _tile_at(map, items, e.position)
+				if at >= 0 and items[at][0] != "Andere":
+					_pick_tile(t, key, items[at][0]))
+		Tooltips.attach(map, func(at: Vector2) -> Dictionary:
+			var i := _tile_at(map, items, at)
+			if i < 0:
+				return {}
+			var share: float = items[i][1] / total if total > 0.0 else 0.0
+			var d := {"id": "tile:%s:%s" % [key, items[i][0]], "title": items[i][0], "kind": label,
+				"rows": [[spec[2], _number(items[i][1])], ["Anteil", "%s %%" % SimOverview._pct(share * 100.0)]]}
+			if items[i][0] == "Andere":
+				d.text = "Alle übrigen zusammen."
+			else:
+				d.hints = [["Klick", "filtert danach"]]
+			return d)
+		_maps.add_child(map)
+
+## A click on a tile: a column with a filter box ticks the value, the
+## regions (too many for a box) go into the search.
+func _pick_tile(t: Dictionary, key: String, value: String) -> void:
+	if key in _filter_keys(t):
+		_tick(key, value)
+		return
+	var state: Dictionary = _state[_kind]
+	state.search = "" if state.search == value else value
+	_search.set_block_signals(true)
+	_search.text = state.search
+	_search.set_block_signals(false)
+	_fill_tree(t)
+
+## The tiles' rectangles in the map's board, under its title.
+func _tile_rects(map: Control, items: Array) -> Array[Rect2]:
+	var weights: Array = []
+	for it in items:
+		weights.append(it[1])
+	return _squarify(weights, Rect2(0, 22, map.size.x, map.size.y - 22))
+
+func _tile_at(map: Control, items: Array, at: Vector2) -> int:
+	var rects := _tile_rects(map, items)
+	for i in rects.size():
+		if rects[i].has_point(at):
+			return i
+	return -1
+
+## The tiles as the stat strip's cells, the slate between them; the one
+## under the mouse lit, the ones filtered by in gold.
+func _draw_map(map: Control, title: String, items: Array, total: float, chosen: Dictionary, icons: Dictionary) -> void:
+	UiStyle.text_at(map, Vector2(2, 15), title, UiStyle.KIND, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, map.size.x, UiStyle.italic())
+	var rects := _tile_rects(map, items)
+	var mouse := map.get_local_mouse_position()
+	var inside := Rect2(Vector2.ZERO, map.size).has_point(mouse)
+	var font := UiStyle.serif()
+	for i in rects.size():
+		var r := rects[i].grow(-1.0)
+		if r.size.x < 2.0 or r.size.y < 2.0:
+			continue
+		var name: String = items[i][0]
+		var on := chosen.has(name)
+		var lit := inside and r.has_point(mouse)
+		map.draw_rect(r, UiStyle.SELECTED if on else (UiStyle.STAT if i % 2 == 0 else UiStyle.STAT_B))
+		if lit:
+			map.draw_rect(r, UiStyle.HOVER)
+		map.draw_rect(r, UiStyle.GOLD_LIT if on or lit else UiStyle.STAT_FRAME, false, 1.0)
+		var x := r.position.x + 6.0
+		var icon: Texture2D = icons.get(name, null)
+		if icon != null and r.size.x >= 46.0 and r.size.y >= 26.0:
+			var side := minf(18.0, r.size.y - 8.0)
+			map.draw_texture_rect(icon, Rect2(Vector2(x, r.position.y + 5.0), Vector2(side, side)), false, UiStyle.GOLD)
+			x += side + 5.0
+		var room := r.end.x - x - 4.0
+		if room >= 24.0 and r.size.y >= 20.0:
+			UiStyle.text_at(map, Vector2(x, r.position.y + 17.0), name, UiStyle.NAME if on else UiStyle.TEXT, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, room, font)
+		if r.size.x >= 40.0 and r.size.y >= 38.0:
+			var share: float = items[i][1] / total if total > 0.0 else 0.0
+			UiStyle.text_at(map, Vector2(r.position.x + 6.0, r.position.y + 35.0), "%s %%" % SimOverview._pct(share * 100.0), UiStyle.VALUE, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 10.0, font)
+
+## Lays areas proportional to `weights` (largest first) out in `r` as
+## nearly square tiles: the squarified treemap of Bruls, Huizing and van
+## Wijk (2000), row by row along the shorter side.
+static func _squarify(weights: Array, r: Rect2) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	var total := 0.0
+	for w in weights:
+		total += float(w)
+	if total <= 0.0 or r.size.x <= 0.0 or r.size.y <= 0.0:
+		for w in weights:
+			out.append(Rect2())
+		return out
+	var areas: Array = weights.map(func(w): return float(w) * r.size.x * r.size.y / total)
+	var rest := r
+	var i := 0
+	while i < areas.size():
+		var short := minf(rest.size.x, rest.size.y)
+		var row: Array = [areas[i]]
+		var j := i + 1
+		while j < areas.size() and _worst(row + [areas[j]], short) <= _worst(row, short):
+			row.append(areas[j])
+			j += 1
+		var sum := 0.0
+		for a in row:
+			sum += a
+		var thick := sum / short if short > 0.0 else 0.0
+		var along := 0.0
+		var wide := rest.size.x >= rest.size.y # the row stands as a column at the left
+		for a in row:
+			var length: float = a / thick if thick > 0.0 else 0.0
+			out.append(Rect2(rest.position + (Vector2(0, along) if wide else Vector2(along, 0)), Vector2(thick, length) if wide else Vector2(length, thick)))
+			along += length
+		if wide:
+			rest = Rect2(rest.position + Vector2(thick, 0), rest.size - Vector2(thick, 0))
+		else:
+			rest = Rect2(rest.position + Vector2(0, thick), rest.size - Vector2(0, thick))
+		i = j
+	return out
+
+## How far from square the worst tile of a row along `short` is.
+static func _worst(row: Array, short: float) -> float:
+	var sum := 0.0
+	var hi := 0.0
+	var lo := INF
+	for a in row:
+		sum += a
+		hi = maxf(hi, a)
+		lo = minf(lo, a)
+	if sum <= 0.0 or lo <= 0.0:
+		return INF
+	return maxf(short * short * hi / (sum * sum), sum * sum / (short * short * lo))
+
 func _fill_tree(t: Dictionary) -> void:
 	_spark_at = -1
+	_maps.visible = false
 	if _is_sheet(t):
 		_fill_sheet(t)
 		return
@@ -457,6 +747,7 @@ func _fill_tree(t: Dictionary) -> void:
 	var root := _tree.create_item()
 	var rows := _passing(t)
 	var keys := _filter_keys(t)
+	_fill_maps(t)
 	var fold_key := keys[0] if state.folded and keys.size() > 0 else ""
 	var total := _tree.create_item(root)
 	_fill_combined(total, t, rows, {cols[0]: "Alle (%s)" % _int(rows.size())})
@@ -1331,6 +1622,16 @@ func _build() -> void:
 				_fill_tree(t)
 		_paint_regions())
 	_filter_row.add_child(_paint)
+	_side_button = Button.new()
+	_side_button.text = "Filter"
+	_side_button.toggle_mode = true
+	_side_button.button_pressed = _side_on
+	_side_button.focus_mode = Control.FOCUS_NONE
+	_side_button.tooltip_text = "Zeigt oder verbirgt die Filter links"
+	_side_button.toggled.connect(func(on: bool):
+		_side_on = on
+		_side.visible = on and _side_button.visible)
+	_filter_row.add_child(_side_button)
 	_legend_box = PanelContainer.new()
 	var legend_frame := UiStyle.frame()
 	legend_frame.set_content_margin_all(8)
@@ -1371,7 +1672,30 @@ func _build() -> void:
 	_tree.item_collapsed.connect(_on_collapsed)
 	_tree.gui_input.connect(_on_tree_input)
 	Tooltips.attach(_tree, _row_tip)
-	column.add_child(_tree)
+	# a large list as Victoria 3's: the filters at the left, the tiles over the rows
+	_lists = HBoxContainer.new()
+	_lists.add_theme_constant_override("separation", 8)
+	_lists.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_lists)
+	_side = ScrollContainer.new()
+	_side.custom_minimum_size = Vector2(SIDE_PX, 0)
+	_side.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_lists.add_child(_side)
+	_side_box = VBoxContainer.new()
+	_side_box.add_theme_constant_override("separation", 0)
+	_side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_side.add_child(_side_box)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 8)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_lists.add_child(right)
+	_maps = HBoxContainer.new()
+	_maps.add_theme_constant_override("separation", 8)
+	_maps.custom_minimum_size = Vector2(0, MAP_PX)
+	_maps.visible = false
+	right.add_child(_maps)
+	_tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(_tree)
 	_note = Label.new()
 	_note.text = "Auf einer Zeile verweilen zeigt mehr  ·  Klick zeigt den Ort  ·  Spaltenkopf sortiert  ·  D = Denar"
 	_note.add_theme_color_override("font_color", SECONDARY)
