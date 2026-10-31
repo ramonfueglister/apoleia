@@ -27,6 +27,9 @@ pub struct Portrait {
     pub chin: f32,
     pub cx: f32,
     pub cz: f32,
+    /// Share of the picture's height the head fills: 0.53, more for a
+    /// small child, whose short body would otherwise end inside the picture.
+    pub fill: f32,
     pub tris: usize,
     /// Morph targets in use.
     pub targets: usize,
@@ -65,7 +68,11 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
         (0.5 + (yrs - 25.0) / 65.0 * 0.5).min(1.0)
     };
     let age_w: Vec<(&str, f32)> = if a < 0.1875 {
-        vec![("child", 1.0)]
+        // MakeHuman's baby at one year, its child at eleven; the baby at
+        // most two thirds, more puts a snout on the face and folds the arms
+        // into the chest
+        let baby = c01(1.0 - a / 0.1875) * 0.65;
+        vec![("baby", baby), ("child", 1.0 - baby)]
     } else if a < 0.5 {
         vec![("child", 1.0 - (a - 0.1875) / 0.3125), ("young", (a - 0.1875) / 0.3125)]
     } else {
@@ -95,7 +102,7 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
     }
     // face
     for (k, &(names, lo, hi)) in FACE.iter().enumerate() {
-        let x = (p.g(k) - 128.0) / 127.0;
+        let x = p.face(k);
         if names.is_empty() {
             if x < 0.0 {
                 add("head/head-oval", -x * 0.8);
@@ -117,12 +124,33 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
             }
         }
     }
-    // age: thinner lips, the head a little lowered
+    // children: a young, round head, full cheeks, open eyes
+    let kid = 1.0 - p.grown();
+    add("head/head-age-decr", kid * 0.8);
+    add("head/head-round", kid * 0.4);
+    add("eyebrows/eyebrows-trans-up", kid * 0.3);
+    add("mouth/mouth-angles-up", kid * 0.5);
+    add("mouth/mouth-lowerlip-volume-decr", kid * 0.3);
+    for sd in ["l", "r"] {
+        add(&format!("cheek/{sd}-cheek-volume-incr"), kid * 0.3);
+        add(&format!("eyes/{sd}-eye-height2-incr"), kid * 0.4);
+    }
+    // age: thinner lips, the head a little lowered; ears and nose keep
+    // growing, the tip of the nose sinks (Heathcote, 1995; Sforza et al.,
+    // 2011; the weights eyeballed)
     let old = c01((yrs - 50.0) / 30.0);
     if old > 0.0 {
         add("mouth/mouth-upperlip-volume-decr", old * 0.5);
         add("mouth/mouth-lowerlip-volume-decr", old * 0.3);
         add("head/head-age-incr", old * 0.6);
+    }
+    let older = c01((yrs - 40.0) / 45.0);
+    if older > 0.0 {
+        for sd in ["l", "r"] {
+            add(&format!("ears/{sd}-ear-scale-incr"), older * 0.5);
+        }
+        add("nose/nose-scale-vert-incr", older * 0.3);
+        add("nose/nose-point-down", older * 0.4);
     }
     let mood: &[(&str, f32)] = match p.mood {
         Mood::Content => &[("mouth/mouth-angles-up", 0.9), ("eyebrows/eyebrows-angle-up", 0.25), ("cheek/l-cheek-trans-up", 0.4), ("cheek/r-cheek-trans-up", 0.4)],
@@ -145,9 +173,10 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
         add("forehead/forehead-temple-decr", hung * 1.4);
         add("neck/neck-scale-horiz-decr", hung * 0.5);
     }
-    if l.ill > 0.0 {
+    // illness and mourning (sleepless, weeping) give eye bags
+    if l.ill + l.mourn > 0.0 {
         for sd in ["l", "r"] {
-            add(&format!("eyes/{sd}-eye-bag-incr"), l.ill * 0.7);
+            add(&format!("eyes/{sd}-eye-bag-incr"), l.ill * 0.7 + l.mourn * 0.5);
         }
     }
     // arms down from the A pose, softly weighted around the shoulder joint
@@ -196,12 +225,10 @@ fn vnormals(p: &[V3], idx: &[u32]) -> Vec<V3> {
     n.iter().map(|&v| if len(v) > 0.0 { norm(v) } else { v }).collect()
 }
 
-/// A point on the morphed skin, with its normal and where it sits on the
-/// base mesh.
+/// A point on the morphed skin, with its normal.
 struct Spot {
     p: V3,
     n: V3,
-    b: V3,
 }
 
 /// Everything the parts share while one portrait is built.
@@ -269,12 +296,7 @@ impl<'a> Ctx<'a> {
                     v = 1.0 - v;
                 }
                 let w = 1.0 - u - v;
-                let bs = &self.h.base;
-                out.push(Spot {
-                    p: madd(madd(mul(pa, w), pb, u), pc, v),
-                    n,
-                    b: madd(madd(mul(bs[a as usize], w), bs[b as usize], u), bs[c as usize], v),
-                });
+                out.push(Spot { p: madd(madd(mul(pa, w), pb, u), pc, v), n });
             }
         }
         out
@@ -490,6 +512,181 @@ fn sculpt(out: &mut Surface, rng: &mut Rng, o: &Sculpt, rs: &Raster, zc: f32, co
     }
 }
 
+/// The skin seen from the head's centre along `d`: the farthest hit, since
+/// the nearest can lie inside the head (the eye sockets), unless the
+/// farthest is already the shoulder (more than 1.2 head sizes out); -1 when
+/// nothing is hit.
+fn outer_skin(cast: &Caster, d: V3, hs: f32) -> f32 {
+    let (near, far) = (cast.cast(d, false), cast.cast(d, true));
+    if far > 1.2 * hs {
+        near
+    } else {
+        far
+    }
+}
+
+/// Short hair as a sculpted cap, like the beard (Ramon, 31.10.2026: strands
+/// read as noise at portrait size): a shell with real thickness over the
+/// skull, cut into locks combed from the crown forward and down, each a
+/// ridge with grooves at its edges, pinched to a point at the hairline, as
+/// the comma-shaped locks of Tetrarchic and Constantinian portraits. Wavy
+/// hair waves along the lock, curly hair is a thicker shell under curls.
+/// `bald` (0..1.7) takes the front back and then the crown; `hidden` drops
+/// what a hat covers.
+#[allow(clippy::too_many_arguments)]
+fn cap_hair(out: &mut Surface, rng: &mut Rng, cast: &Caster, hc: V3, hs: f32, hair: Rgb, curl: f32, bald: f32, age: f32, ear: (f32, f32, f32), hidden: &dyn Fn(V3) -> bool) {
+    let dd = |th: f32, el: f32| [(el * D2R).cos() * (th * D2R).sin(), (el * D2R).sin(), (el * D2R).cos() * (th * D2R).cos()];
+    let skin = |d: V3| {
+        let r = outer_skin(cast, d, hs);
+        if r > 0.0 {
+            r
+        } else {
+            0.9 * hs
+        }
+    };
+    let slerp = |a: V3, b: V3, t: f32| {
+        let c = dot(a, b).clamp(-1.0, 1.0);
+        let w = c.acos();
+        if w < 1e-4 {
+            return a;
+        }
+        let s = w.sin();
+        norm(add(mul(a, ((1.0 - t) * w).sin() / s), mul(b, (t * w).sin() / s)))
+    };
+    // the hairline's height (degrees above the head's centre) by the angle
+    // from the front; it recedes at the temples first, then in front
+    let rec = c01((bald - 0.25) / 0.9);
+    // (temple corners, sideburns in front of the ear, over the ear, nape)
+    let (e0, e1, et) = ear;
+    let line: [(f32, f32); 13] = [
+        (0.0, 20.0 + 12.0 * rec),
+        (25.0, 18.0 + 18.0 * rec),
+        (40.0, 8.0 + 14.0 * rec),
+        (e0 - 9.0, -8.0 + 8.0 * rec),
+        (e0 - 5.0, -26.0 + 10.0 * rec),
+        (e0 - 2.0, -33.0 + 10.0 * rec),
+        (e0 + 2.0, et - 2.0),
+        (e0 + 6.0, et + 2.0),
+        (e1 - 4.0, et + 2.0),
+        (e1 + 8.0, -16.0),
+        (e1 + 22.0, -32.0),
+        (150.0, -42.0),
+        (180.0, -48.0),
+    ];
+    let hairline = |th: f32| {
+        let a = th.abs().min(180.0);
+        let k = line.iter().position(|q| q.0 >= a).unwrap_or(line.len() - 1).max(1);
+        let (p0, p1) = (line[k - 1], line[k]);
+        lerp(p0.1, p1.1, (a - p0.0) / (p1.0 - p0.0))
+    };
+    // the crown goes bald from the top down
+    let top_bald = if bald > 0.4 { 92.0 - (bald - 0.4) * 78.0 } else { 999.0 };
+    let whorl = norm(dd(180.0, 56.0));
+    let kid = c01(age / 4.0);
+    let thick = (0.055 + 0.03 * rng.next() + 0.045 * curl) * hs * lerp(0.35, 1.0, kid);
+    let ridge_h = 0.032 * hs * (1.0 - sm(0.55, 0.85, curl)) * lerp(0.4, 1.0, kid);
+    let wave = 0.014 * hs * sm(0.25, 0.55, curl) * (1.0 - sm(0.7, 0.9, curl));
+    let (nc, nr) = (96usize, 12usize);
+    // locks of two to four columns, from the back round to the back
+    struct Lock {
+        s: usize,
+        w: usize,
+        r: f32,
+        d: f32,
+    }
+    let mut locks = Vec::new();
+    let mut s0 = 0;
+    while s0 < nc {
+        let w = [3, 4, 4, 5, 6][((rng.next() * 5.0) as usize).min(4)].min(nc - s0);
+        locks.push(Lock { s: s0, w, r: rng.next(), d: rng.next() - 0.5 });
+        s0 += w;
+    }
+    let lock_of = |ci: usize| locks.iter().find(|l| ci >= l.s && ci <= l.s + l.w).unwrap_or(locks.last().unwrap());
+    let th_of = |ci: f32| -180.0 + 360.0 * ci / nc as f32;
+    let mut fr = vec![vec![[0f32; 3]; nr + 1]; nc + 1];
+    let mut sk = fr.clone();
+    let mut ok = vec![vec![false; nr + 1]; nc + 1];
+    let mut lit = vec![0f32; nc + 1];
+    for ci in 0..=nc {
+        let l = lock_of(ci.min(nc - 1));
+        let l = if ci == nc { &locks[0] } else { l };
+        let cpos = if ci == nc { 0.0 } else { ci as f32 - l.s as f32 };
+        let pos = 2.0 * cpos / l.w as f32 - 1.0;
+        lit[ci] = 0.72 + 0.3 * (1.0 - pos.abs());
+        let th = th_of(ci as f32);
+        let thm = th_of(l.s as f32 + l.w as f32 / 2.0);
+        // the lock's middle reaches below the hairline, most in front: the
+        // point of a comma lock on the forehead; each lock ends a little
+        // higher or lower and leans a little aside
+        let tip = lerp(9.0, 3.0, sm(30.0, 80.0, thm.abs())) * (0.7 + 0.6 * l.r);
+        let lean = l.d * lerp(10.0, 4.0, sm(30.0, 80.0, thm.abs()));
+        for ri in 0..=nr {
+            let v = ri as f32 / nr as f32;
+            // towards its end the lock narrows to its middle (sideways
+            // only, so that sideburns and the line over the ear stay)
+            let tv = lerp(th, thm, 0.8 * sm(0.62, 1.0, v)) + lean * sm(0.3, 1.0, v);
+            let tgt = norm(dd(tv, hairline(tv) - tip * (1.0 - pos * pos) + 2.0 * l.d));
+            let d = slerp(whorl, tgt, v);
+            let s = skin(d);
+            let el = d[1].asin() / D2R;
+            let tn = (thick * (1.0 - 0.75 * sm(0.5, 1.0, v))).max(0.014 * hs) + ridge_h * (0.6 + 0.7 * l.r) * (1.0 - pos * pos) * sm(0.0, 0.3, v) + wave * (v * 9.0 + l.s as f32 * 1.9).sin() * sm(0.1, 0.4, v) + (rng.next() - 0.5) * 0.004 * hs;
+            let q = madd(hc, d, s + tn);
+            fr[ci][ri] = q;
+            sk[ci][ri] = madd(hc, d, s - 0.004 * hs);
+            ok[ci][ri] = !(el > top_bald && th.abs() < 165.0) && !hidden(q);
+        }
+    }
+    // no islands: below the first bald row from the end up, all is bald
+    for row in ok.iter_mut() {
+        if let Some(last) = (0..=nr).rev().find(|&ri| !row[ri]) {
+            row[..=last].iter_mut().for_each(|o| *o = false);
+        }
+        if row.iter().filter(|&&o| o).count() < 4 {
+            row.iter_mut().for_each(|o| *o = false);
+        }
+    }
+    let col = |ci: usize, ri: usize, v: f32, rng: &mut Rng| cmul(hair, (lit[ci] + lit[ci + 1]) / 2.0 * (0.8 + 0.2 * sm(0.0, 0.35, v)) * (0.92 + 0.14 * rng.next()) * if ri.is_multiple_of(2) { 1.0 } else { 0.97 });
+    for ci in 0..nc {
+        for ri in 0..nr {
+            if !(ok[ci][ri] && ok[ci + 1][ri] && ok[ci][ri + 1] && ok[ci + 1][ri + 1]) {
+                continue;
+            }
+            let v = (ri as f32 + 0.5) / nr as f32;
+            let c = col(ci, ri, v, rng);
+            out.tri(fr[ci][ri], fr[ci + 1][ri + 1], fr[ci + 1][ri], c);
+            out.tri(fr[ci][ri], fr[ci][ri + 1], fr[ci + 1][ri + 1], cmul(c, 0.97));
+            // the edge where the hair ends: at the hairline, and towards a
+            // bald crown above
+            let dk = cmul(hair, 0.62);
+            if ri + 1 < nr && !(ok[ci][ri + 2] && ok[ci + 1][ri + 2]) {
+                let r1 = ri + 1;
+                out.tri(fr[ci][r1], sk[ci][r1], sk[ci + 1][r1], dk);
+                out.tri(fr[ci][r1], sk[ci + 1][r1], fr[ci + 1][r1], dk);
+            }
+            if ri > 0 && !(ok[ci][ri - 1] && ok[ci + 1][ri - 1]) {
+                out.tri(fr[ci][ri], fr[ci + 1][ri], sk[ci + 1][ri], dk);
+                out.tri(fr[ci][ri], sk[ci + 1][ri], sk[ci][ri], dk);
+            }
+        }
+    }
+    // curls on the shell
+    if curl > 0.6 {
+        let ico = icosahedron();
+        let share = sm(0.6, 0.9, curl);
+        for (ci, ri) in (0..nc).step_by(3).flat_map(|ci| (1..nr).map(move |ri| (ci, ri))) {
+            let ci = (ci + (ri % 2) + (rng.next() * 2.0) as usize).min(nc - 1);
+            if !ok[ci][ri] || rng.next() > share {
+                continue;
+            }
+            let q = fr[ci][ri];
+            let nd = norm(sub(q, hc));
+            let r = (0.05 + 0.03 * rng.next()) * hs * lerp(0.5, 1.0, kid) * lerp(1.0, 0.7, ri as f32 / nr as f32);
+            let m = euler(rng.next() * 3.0, rng.next() * 3.0, 0.0);
+            solid(out, &ico, madd(q, nd, 0.25 * r), [r, r * 0.8, r], &m, cmul(hair, 0.82 + 0.25 * rng.next()));
+        }
+    }
+}
+
 /// Ellipse-free polyhedron put down at `c`, radius `r`, rotated by `m`,
 /// scaled per axis by `s`.
 fn solid(out: &mut Surface, shape: &(Vec<V3>, Vec<[usize; 3]>), c: V3, s: V3, m: &[V3; 3], col: Rgb) {
@@ -525,6 +722,9 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         }
     }
     let fem = p.female;
+    // girls under three have short hair like the boys
+    let long_hair = fem && p.age >= 3.0;
+    let grown = p.grown();
     let st = p.st();
     let lf = p.life;
     let hung = c01((0.42 - lf.food) / 0.42);
@@ -532,6 +732,29 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
     let usk = p.u(SKIN);
     // skin: the sun tans (more on light skin), hunger makes it sallow, illness pale
     let skin = cmix(cmix(cmix(p.skin(), hex("#9a6440"), 0.24 * lf.sun * (1.0 - 0.6 * usk)), hex("#c8bc9c"), 0.2 * hung), hex("#ddd6ca"), 0.28 * lf.ill);
+    // what the clothes tell, at the facet's place `c` (base): the dye by the
+    // wealth around (undyed wool for the poorest, deeper colour for the
+    // better off), fading and patches where the household lacks clothing,
+    // dark cloth in mourning (the toga pulla). PLACEHOLDER strengths.
+    let patch = hex(st.tunic[(p.seed as usize + 1) % st.tunic.len()]);
+    let dress = |col: Rgb, c: V3| -> Rgb {
+        let mut k = col;
+        if lf.wealth < 0.35 {
+            k = cmix(k, hex("#b3a589"), (0.35 - lf.wealth) / 0.35 * 0.55);
+        } else if lf.wealth > 0.7 {
+            let g = (k[0] + k[1] + k[2]) / 3.0;
+            let t = (lf.wealth - 0.7) / 0.3 * 0.35;
+            k = [c01(k[0] + (k[0] - g) * t), c01(k[1] + (k[1] - g) * t), c01(k[2] + (k[2] - g) * t)];
+        }
+        if lf.worn > 0.0 {
+            k = cmix(k, hex("#9c9484"), lf.worn * 0.35);
+            let cell = |v: f32| ((v / 0.38).floor() + 64.0) as u32;
+            if hash(cell(c[0]), cell(c[1]), cell(c[2]) + 7) < (lf.worn - 0.25).max(0.0) * 0.2 {
+                k = cmul(cmix(k, patch, 0.8), 0.8);
+            }
+        }
+        cmix(k, hex("#2f2b28"), 0.65 * lf.mourn)
+    };
     // wrinkles as darker facets along the usual lines; age counts, the sun deepens them
     const WR: [[f32; 5]; 8] = [
         [0.19, 6.93, 0.27, 6.62, 32.0],
@@ -562,6 +785,25 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             k = k.max(w * c01(1.0 - seg_d(ax, c[1], x0, y0, x1, y1) / 0.032));
         }
         k
+    };
+    // age spots on forehead, temples and cheeks after 50, more after years
+    // in the sun: (x, y, radius) on the face (PLACEHOLDER, eyeballed)
+    let spots: Vec<(f32, f32, f32)> = {
+        let mut r = Rng::new(p.seed ^ 0x5be0_cd19);
+        let n = (c01((p.age - 50.0) / 30.0) * (0.4 + 0.9 * lf.sun) * 8.0).round() as usize;
+        (0..n)
+            .map(|_| {
+                let (zone, sg) = (r.next(), if r.next() < 0.5 { -1.0 } else { 1.0 });
+                let (x, y) = if zone < 0.45 {
+                    (r.next() * 0.5, 7.62 + r.next() * 0.3)
+                } else if zone < 0.7 {
+                    (0.5 + r.next() * 0.18, 7.3 + r.next() * 0.35)
+                } else {
+                    (0.33 + r.next() * 0.3, 6.92 + r.next() * 0.25)
+                };
+                (sg * x, y, 0.05 + 0.04 * r.next())
+            })
+            .collect()
     };
     let scars = p.scars();
     let scar_c = if usk < 0.45 { cmix(skin, hex("#c06a62"), 0.62) } else { cmix(skin, hex("#efcdb8"), 0.7) };
@@ -639,8 +881,11 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             if lf.sun > 0.3 {
                 col = cmul(col, 1.0 + (hh - 0.5) * 0.12 * lf.sun);
             }
-            if c[2] > 1.05 && ey < -0.04 && ey > -0.16 && ex.abs() < 0.16 && (lf.ill > 0.0 || hung > 0.0) {
-                col = cmix(col, hex("#6e4a52"), 0.18 * lf.ill + 0.12 * hung);
+            if c[2] > 1.05 && ey < -0.04 && ey > -0.16 && ex.abs() < 0.16 && (lf.ill > 0.0 || hung > 0.0 || lf.mourn > 0.0) {
+                col = cmix(col, hex("#6e4a52"), 0.18 * lf.ill + 0.12 * hung + 0.14 * lf.mourn);
+            }
+            if c[2] > 0.6 && spots.iter().any(|&(x, y, r)| (c[0] - x).hypot(c[1] - y) < r) && Ctx::mask3(&h.nose, a, b, cc) < 0.2 {
+                col = cmix(col, hex("#6e4428"), 0.42 + 0.12 * hh);
             }
             col
         };
@@ -989,7 +1234,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             let t2 = cross(n, t1);
             let s0 = (0.009 + 0.008 * x.rng.next()) * hs;
             let o = madd(d.p, n, 0.003);
-            let a0 = x.rng.next() * 6.28;
+            let a0 = x.rng.next() * std::f32::consts::TAU;
             let cc = cmul(dc, 0.8 + 0.4 * x.rng.next());
             let l = linear(cc);
             for k in 0..3 {
@@ -1085,9 +1330,10 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 let m = mul(add(add(pp[a as usize], pp[b as usize]), pp[cc as usize]), 1.0 / 3.0);
                 let q = sub(m, c);
                 let d = q[2] / len(q);
-                if d > 0.985 {
+                // a child's iris and pupil fill more of the eye
+                if d > 0.985 - 0.006 * (1.0 - grown) {
                     hex("#0d0806")
-                } else if d > 0.875 {
+                } else if d > 0.875 - 0.05 * (1.0 - grown) {
                     cmul(iris, if d > 0.95 { 0.85 } else { 1.15 })
                 } else {
                     hex("#f4efe7")
@@ -1097,69 +1343,30 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         }
         out.push(se);
     }
-    // men's hair: an under-layer plus strands with a growth direction
-    let theta = |c: V3| (c[0].atan2(c[2] - 0.45)).abs() / PI;
-    let hairline = |c: V3| {
-        let t = theta(c);
-        let f = if fem { 7.96 } else if bald > 0.25 { 8.02 } else { 7.95 };
-        let sd = if fem { 7.05 } else { 7.52 };
-        let bk = if fem { 6.55 } else { 6.85 };
-        if t < 0.5 {
-            lerp(f, sd, t / 0.5)
-        } else {
-            lerp(sd, bk, (t - 0.5) / 0.5)
-        }
-    };
-    let hair_filter = |c: V3, a: u32, b: u32, cc: u32| {
-        let t = theta(c);
-        if c[1] < 6.4 || c[0].abs() > 1.0 || c[1] < hairline(c) {
-            return false;
-        }
-        if !fem && Ctx::mask3(&h.ear, a, b, cc) > 0.25 {
-            return false;
-        }
-        if bald > 0.25 && t < 0.3 && c[1] < 8.02 + 0.5 * (bald - 0.25) {
-            return false;
-        }
-        if bald > 0.4 && t < 0.8 && c[1] > 8.5 - (bald - 0.4) * 0.9 {
-            return false;
-        }
-        true
-    };
     let kid = p.age < 13.0;
-    if bald < 1.3 && !fem {
-        let mut su = Surface::new(mat(0.9));
-        let off = 0.04 + 0.03 * curl;
-        x.facets(&mut su, &h.parts["body"][lod.min(2)], &hair_filter, &mut |_, a, b, c| cmul(hair, 0.74 + 0.1 * hash(a, b, c)), Some((&nb, &|_| off)));
-        out.push(su);
-        let roots = x.sample(&hair_filter, if curl > 0.55 { 40.0 } else { 30.0 });
-        for s in &roots {
-            let [bx, _, bz] = s.b;
-            let sg = if bx > 0.0 { 1.0 } else if bx < 0.0 { -1.0 } else { 1.0 };
-            // Roman short cut: combed from the crown forward into the forehead
-            let (cx, cz) = (bx, bz - 0.05);
-            let hl = cx.hypot(cz);
-            let hl = if hl > 0.0 { hl } else { 1.0 };
-            let mut dir = [cx / hl * 0.7, -0.55, cz / hl * 0.7];
-            if bz > 0.55 {
-                dir = [sg * 0.12 + bx * 0.2, -0.35, 1.0];
+    // under a hat or cap the hair of the crown stays inside it; what grows
+    // just above the band still shows below it
+    let hatted = matches!(p.hat_style(), Hat::Cap | Hat::Pileus | Hat::Petasos);
+    let under_hat = |q: V3| {
+        let d = sub(q, hc);
+        let th = d[0].atan2(d[2]);
+        hatted && d[1].atan2(d[0].hypot(d[2])) / D2R > lerp(26.0, 6.0, (1.0 - th.cos()) / 2.0) + 4.0
+    };
+    if !long_hair {
+        let mut cap = Surface::new(mat(0.85));
+        // the ear seen from the head's centre: from and to (degrees from
+        // the front), and its top (degrees up)
+        let mut ear = (180f32, 0f32, -90f32);
+        for &v in &uniq {
+            if h.ear[v as usize] > 0.9 {
+                let d = sub(x.pp[v as usize], hc);
+                let th = d[0].atan2(d[2]).abs() / D2R;
+                let el = (d[1] / dot(d, d).sqrt()).asin() / D2R;
+                ear = (ear.0.min(th), ear.1.max(th), ear.2.max(el));
             }
-            let ln = (0.32 + 0.1 * x.rng.next()) * if kid { 0.9 } else { 1.0 } * (1.0 - 0.35 * curl);
-            let (w, hh, arch) = (0.15 + 0.03 * curl, 0.03 + 0.02 * curl, 0.03 + 0.3 * curl);
-            let col = cmul(hair, 0.88 + 0.18 * x.rng.next());
-            strand(&mut strands, s.p, s.n, dir, ln, w, hh, col, arch, 1.18);
         }
-        if curl > 0.72 {
-            let mut sc = Surface::new(mat(0.85));
-            let ico = icosahedron();
-            let r = 0.045 + 0.04 * curl;
-            let col = cmul(hair, 0.9);
-            for s in roots.iter().step_by(3) {
-                let m = euler(x.rng.next() * 3.0, x.rng.next() * 3.0, 0.0);
-                solid(&mut sc, &ico, madd(s.p, s.n, 0.05 + 0.04 * curl), [r; 3], &m, col);
-            }
-            out.push(sc);
-        }
+        cap_hair(&mut cap, &mut x.rng, &cast_h, hc, hs, hair, curl, bald, p.age, ear, &under_hat);
+        out.push(cap);
     }
     // brows: two rows of short strands along the brow arch, up at the inner
     // end, down at the outer
@@ -1171,7 +1378,8 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 c[2] >= 0.95 && c[1] >= 7.4 && c[1] <= 7.75
             })
             .collect();
-        let bc = cmul(cmix(hair, hex("#2a1d14"), if p.u(HAIR_L) > 0.6 { 0.35 } else { 0.15 }), 0.9);
+        // a child's brows are thin and light
+        let bc = cmix(skin, cmul(cmix(hair, hex("#2a1d14"), if p.u(HAIR_L) > 0.6 { 0.35 } else { 0.15 }), 0.9), 0.5 + 0.5 * grown);
         let brow_at = |xx: f32, yy: f32| {
             let mut best = front[0];
             let mut bd = f32::MAX;
@@ -1186,7 +1394,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             let (pa, pb, pc) = (x.pp[body_full[best] as usize], x.pp[body_full[best + 1] as usize], x.pp[body_full[best + 2] as usize]);
             (mul(add(add(pa, pb), pc), 1.0 / 3.0), norm(cross(sub(pb, pa), sub(pc, pa))))
         };
-        let (thick, ns) = (if fem { 0.75 } else { 1.1 }, if fem { 6 } else { 7 });
+        let (thick, ns) = ((if fem { 0.75 } else { 1.1 }) * (0.55 + 0.45 * grown), if fem { 6 } else { 7 });
         let mut todo = Vec::new();
         for sg in [-1f32, 1.0] {
             for row in 0..2 {
@@ -1216,13 +1424,13 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
 
     // --- women's hair c. 300: middle parting, wavy strand bands over the
     // ears to the nape; on top a braid, a bun or a veil ---
-    if fem {
+    if long_hair {
         let hst = p.hair_style();
         let dd = |t: f32, e: f32| [(e * D2R).cos() * (t * D2R).sin(), (e * D2R).sin(), (e * D2R).cos() * (t * D2R).cos()];
         let ang = |a: V3, b: V3| dot(a, b).clamp(-1.0, 1.0).acos();
         let mut last_r = 0.95 * hs;
-        let mut rr = |d: V3, far: bool| {
-            let r = cast_h.cast(d, far);
+        let mut rr = |d: V3, _far: bool| {
+            let r = outer_skin(&cast_h, d, hs);
             if r > 0.0 {
                 last_r = r;
                 r
@@ -1253,11 +1461,19 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             norm([f(0), f(1), f(2)])
         };
         let waves = (3.0 + jround(3.0 * curl)) * if kid { 0.6 } else { 1.0 };
-        let w_a = (0.02 + 0.016 * curl) * hs;
-        let ns = [5, 7, 9, 11][lod];
+        let w_a = (0.03 + 0.018 * curl) * hs;
+        // bands from the parting, three or four to a lock
+        let ns = [9, 12, 15, 18][lod];
         let nt = ([10, 13, 16, 19][lod] as f32).max(jround(waves * [2.0, 3.0, 4.0, 4.0][lod] * 2.0 + 3.0)) as usize;
         let cap_t = |s: f32, t: f32| {
-            (0.035 + (if veil { 0.03 } else { 0.12 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.45 * s) + 0.015 * (1.0 - s).powi(4) * sm(0.02, 0.12, t)) * hs
+            (0.035 + (if veil { 0.03 } else { 0.15 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.35 * s) * (0.3 + 0.7 * sm(0.0, 0.35, s)) + 0.015 * (1.0 - s).powi(4) * sm(0.02, 0.12, t)) * hs
+        };
+        // a band's place in its lock: ridge height (-0.3 at the grooves, 1 on
+        // the crest) and light (0 at the grooves, 1 on the crest)
+        let lock_pos = |i: usize| {
+            let w = 3 + (i / 3 + p.seed as usize) % 2;
+            let f = (i % w) as f32 / w as f32 * 2.0 - 1.0 + 1.0 / w as f32;
+            (1.0 - 1.3 * f * f, 1.0 - f.abs())
         };
         for sg in [1f32, -1.0] {
             let (mut g, mut sk) = (Vec::new(), Vec::new());
@@ -1267,14 +1483,14 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 let p0 = norm([sg * 0.016 * (1.0 - s), gm.sin(), gm.cos()]);
                 let t_ = norm(mix(dd(sg * 58.0, -14.0), dd(sg * 179.0, 34.0), s));
                 let e_ = norm(mix(dd(sg * 98.0, -38.0), dd(sg * 182.0, -4.0), s));
-                let ridge = if i % 2 == 1 { 1.0 } else { -0.7 };
+                let ridge = lock_pos(i).0;
                 let (mut col, mut skr) = (Vec::new(), Vec::new());
                 for j in 0..=nt {
                     let t = j as f32 / nt as f32;
                     let d = path(&[p0, t_, e_, kk], t);
-                    let r = rr(d, false);
+                    let r = rr(d, true);
                     let w = (t * PI * 2.0 * waves + (i % 2) as f32 * 0.5).sin() * w_a * sm(0.05, 0.2, t) * (1.0 - sm(0.75, 1.0, t));
-                    col.push(at(d, r + cap_t(s, t) + ridge * 0.016 * hs * sm(0.0, 0.15, t) + w));
+                    col.push(at(d, r + cap_t(s, t) + ridge * 0.03 * hs * sm(0.0, 0.15, t) + w));
                     skr.push(at(d, r - 0.006 * hs));
                 }
                 g.push(col);
@@ -1284,7 +1500,8 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 for j in 0..nt {
                     let t = (j as f32 + 0.5) / nt as f32;
                     let crest = 0.5 + 0.5 * (t * PI * 2.0 * waves + 0.9).sin();
-                    let c = cmul(hair, (if i % 2 == 1 { 1.0 } else { 0.8 }) * (0.88 + 0.14 * crest) * (0.96 + 0.06 * x.rng.next()));
+                    let lit = 0.74 + 0.26 * (lock_pos(i).1 + lock_pos(i + 1).1) / 2.0;
+                    let c = cmul(hair, lit * (0.84 + 0.2 * crest) * (0.96 + 0.06 * x.rng.next()));
                     if sg > 0.0 {
                         hm.quad(g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1], c);
                     } else {
@@ -1309,7 +1526,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 for j in 0..=nv {
                     let t = j as f32 / nv as f32;
                     let d = norm(mix(h0, kk, t));
-                    let r = rr(d, false);
+                    let r = rr(d, true);
                     col.push(at(d, r + (0.03 + 0.05 * (PI * t).sin()) * hs + if i % 2 == 1 { 0.008 * hs } else { 0.0 }));
                     skr.push(at(d, r - 0.006 * hs));
                 }
@@ -1333,7 +1550,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         let nk = kk;
         let ak = [1.0, 0.0, 0.0];
         let bk = norm(cross(nk, ak));
-        let q = at(kk, rr(kk, false) + 0.02 * hs);
+        let q = at(kk, rr(kk, true) + 0.04 * hs);
         // a tube along a centre line, pentagonal, light and dark as if plaited
         let tube = |hm: &mut Surface, pts: &[V3], rad: &dyn Fn(f32) -> f32, col_f: &dyn Fn(usize) -> Rgb| {
             const SIDES: usize = 5;
@@ -1388,17 +1605,18 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         if hst == Hair::Braid {
             // braid from the nape over the back of the head up to the crown,
             // a herringbone of staggered leaves
-            let nb = [5, 6, 7, 8][lod];
-            let (e0, e1) = (ek + 6.0, 84.0);
+            let nb = [8, 10, 12, 13][lod];
+            // (over the crown to the top of the forehead, as Helena wears it)
+            let (e0, e1) = (ek + 6.0, 150.0);
             for k in 0..nb {
                 for side in [-1f32, 1.0] {
                     let f = (k as f32 + if side > 0.0 { 0.5 } else { 0.0 }) / nb as f32;
                     let e = lerp(e0, e1, f);
                     let d = dd(180.0, e);
-                    let r = rr(d, false) + (0.075 + 0.03 * (PI * f).sin()) * hs;
+                    let r = rr(d, true) + (lerp(0.2, 0.11, sm(0.55, 1.0, f)) + 0.03 * (PI * f).sin()) * hs;
                     let c = at(d, r);
                     let up = norm([0.0, (e * D2R).cos(), (e * D2R).sin()]);
-                    let wv = (1.0 - 0.35 * f) * hs;
+                    let wv = (1.0 - 0.45 * f) * hs;
                     let ax = norm(add(mul([1.0, 0.0, 0.0], -side * 0.55), up));
                     let la = norm(cross(ax, d));
                     let cc = [c[0] + side * 0.09 * wv, c[1], c[2]];
@@ -1422,7 +1640,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         if veil {
             // the palla drawn over the head: open around the face, falling
             // in folds onto the shoulders
-            let vcol = hex(st.palla.unwrap_or(["#e9e2d2", "#c8b68c", "#8396ad", "#a4664f", "#6f7d5c"][(p.seed % 5) as usize]));
+            let vcol = dress(hex(st.palla.unwrap_or(["#e9e2d2", "#c8b68c", "#8396ad", "#a4664f", "#6f7d5c"][(p.seed % 5) as usize])), [0.0, 7.5, 0.0]);
             const VE: [[f32; 2]; 7] = [[44.0, 0.0], [30.0, 36.0], [12.0, 60.0], [-8.0, 74.0], [-35.0, 86.0], [-60.0, 94.0], [-80.0, 98.0]];
             let th_e = |e: f32| {
                 if e >= 44.0 {
@@ -1480,6 +1698,11 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
     // clothing: a tunic over the tights helper's place, toga and cloak as
     // further shells
     let tc = hex(st.tunic[(p.seed as usize) % st.tunic.len()]);
+    // a baby in its first year is swaddled: linen bands wound crosswise
+    // around the body up to the neck (fasciae; Soranus, Gynaecology 2.14-15)
+    let swaddled = p.age < 1.0;
+    // the angle round the base mesh's axis, 0 in front, 1 at the back
+    let theta = |c: V3| (c[0].atan2(c[2] - 0.45)).abs() / PI;
     let neck_ok = |c: V3| {
         let front = c[2] > 0.25;
         if c[1] > 6.3 {
@@ -1498,16 +1721,28 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             &|c, _, _, _| neck_ok(c),
             &mut |c, a, b, cc| {
                 let hh = hash(a, b, cc);
+                if swaddled {
+                    let u = (c[1] + 0.7 * c[0] * if c[1] > 5.2 { 1.0 } else { -1.0 }) / 0.3;
+                    let f = u - u.floor();
+                    let band = if f < 0.14 {
+                        "#8f7f62"
+                    } else if (u.floor() as i32) % 2 == 0 {
+                        "#dccfb3"
+                    } else {
+                        "#bfae8c"
+                    };
+                    return cmul(hex(band), 0.94 + 0.08 * hh);
+                }
                 if st.stripe > 0.0 && !fem && !st.toga && c[2] > 0.3 && c[1] < 5.35 && (c[0].abs() - 0.4).abs() < st.stripe {
                     return cmul(hex("#5e1a44"), 0.92 + 0.1 * hh);
                 }
-                cmul(tc, 0.88 + 0.14 * hh)
+                cmul(dress(tc, c), 0.88 + 0.14 * hh)
             },
             Some((&nb, &|_| off)),
         );
         out.push(s);
     }
-    if st.toga && !fem {
+    if st.toga && !fem && !swaddled {
         let in_toga = |c: V3| {
             let [xx, yy, zz] = c;
             if !neck_ok(c) {
@@ -1522,7 +1757,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         };
         let mut s = Surface::new(mat(0.95));
         let off = 0.16 + 0.03 * wt;
-        x.facets(&mut s, body_full, &|c, _, _, _| in_toga(c), &mut |_, a, b, c| cmul(hex("#efe9dc"), 0.84 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        x.facets(&mut s, body_full, &|c, _, _, _| in_toga(c), &mut |c, a, b, cc| cmul(dress(hex("#efe9dc"), c), 0.84 + 0.2 * hash(a, b, cc)), Some((&nb, &|_| off)));
         out.push(s);
     }
     let cloak = match (st.chlamys, st.palla) {
@@ -1530,7 +1765,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         (_, Some(c)) if fem => Some(c),
         _ => None,
     };
-    if let Some(cloak) = cloak {
+    if let (Some(cloak), false) = (cloak, swaddled) {
         let open = |c: V3| {
             if !neck_ok(c) {
                 return false;
@@ -1540,7 +1775,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         let mut s = Surface::new(mat(0.9));
         let off = 0.14 + 0.03 * wt;
         let cc = hex(cloak);
-        x.facets(&mut s, body_full, &|c, _, _, _| open(c), &mut |_, a, b, c| cmul(cc, 0.85 + 0.2 * hash(a, b, c)), Some((&nb, &|_| off)));
+        x.facets(&mut s, body_full, &|c, _, _, _| open(c), &mut |c, a, b, c3| cmul(dress(cc, c), 0.85 + 0.2 * hash(a, b, c3)), Some((&nb, &|_| off)));
         out.push(s);
         if !fem {
             let mut g = Surface::new(Mat { rough: 0.32, metal: 0.85, double: false });
@@ -1565,7 +1800,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 0.9 * hs
             }
         };
-        let hair_off = (if fem {
+        let hair_off = (if long_hair {
             0.16
         } else if bald > 0.9 {
             0.03
@@ -1606,44 +1841,88 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         match hw {
             Hat::Cap => {
                 // Pannonian felt cap: a low cylinder with a flat top, as the Tetrarchs wear in Venice
-                let b0 = band(16, 0.0, hair_off);
-                let b1 = up(&b0, 0.27 * hs, 0.96, 0.15);
-                loft(&mut a0, &b0, &b1, felt);
-                let c = cen(&b1);
-                fan(&mut a0, &b1, [c[0], c[1] + 0.025 * hs, c[2]], cmul(felt, 1.08));
-                loft(&mut a0, &band(16, -1.5, hair_off + 0.012 * hs), &band(16, 2.5, hair_off + 0.012 * hs), cmul(felt, 0.8));
+                // (a little wider at the top, the upper edge rounded)
+                let b0 = band(32, 0.0, hair_off);
+                let rings: Vec<Vec<V3>> = [(0.0, 1.0), (0.12, 1.02), (0.22, 1.03), (0.27, 1.0), (0.295, 0.9)].iter().map(|&(hh, sc)| up(&b0, hh * hs, sc, 0.15)).collect();
+                for i in 0..rings.len() - 1 {
+                    loft(&mut a0, &rings[i], &rings[i + 1], cmul(felt, [0.96, 1.0, 1.04, 1.1][i]));
+                }
+                let last = &rings[rings.len() - 1];
+                let c = cen(last);
+                fan(&mut a0, last, [c[0], c[1] + 0.02 * hs, c[2]], cmul(felt, 1.12));
+                let (r0, r1) = (up(&b0, -0.005 * hs, 1.03, 0.0), up(&b0, 0.06 * hs, 1.035, 0.0));
+                loft(&mut a0, &r0, &r1, cmul(felt, 0.78));
+                loft(&mut a0, &r1, &up(&b0, 0.06 * hs, 1.0, 0.0), cmul(felt, 0.9));
+                hat_top = hat_top.max(c[1] + 0.02 * hs);
             }
             Hat::Pileus => {
-                let b0 = band(12, 0.0, hair_off);
-                let b1 = up(&b0, 0.2 * hs, 0.74, 0.3);
-                let c = cen(&b1);
-                let col = cmix(felt, hex("#a08a68"), 0.5);
-                loft(&mut a0, &b0, &b1, col);
-                fan(&mut a0, &b1, [c[0], c[1] + 0.24 * hs, c[2] - 0.12 * hs], col);
+                // felt cap of workers and freedmen: a rolled rim, then a
+                // rounded cone leaning a little back
+                let col = hex(["#6b5440", "#7a7266", "#9a8f78", "#5e3b2c"][(p.seed / 4 % 4) as usize]);
+                let b0 = band(24, -1.0, hair_off + 0.01 * hs);
+                let rim = [up(&b0, 0.0, 1.0, 0.0), up(&b0, 0.02 * hs, 1.045, 0.0), up(&b0, 0.055 * hs, 1.05, 0.0), up(&b0, 0.08 * hs, 1.0, 0.0)];
+                for i in 0..3 {
+                    loft(&mut a0, &rim[i], &rim[i + 1], cmul(col, [0.82, 1.0, 0.9][i]));
+                }
+                let cone: Vec<Vec<V3>> = [(0.08, 1.0), (0.2, 0.97), (0.31, 0.88), (0.41, 0.72), (0.49, 0.5), (0.54, 0.26)].iter().map(|&(hh, sc)| up(&b0, hh * hs, sc, 0.15)).collect();
+                for i in 0..cone.len() - 1 {
+                    loft(&mut a0, &cone[i], &cone[i + 1], cmul(col, 0.94 + 0.05 * (i % 2) as f32));
+                }
+                let last = &cone[cone.len() - 1];
+                let c = cen(last);
+                fan(&mut a0, last, [c[0], c[1] + 0.025 * hs, c[2] - 0.01 * hs], cmul(col, 1.04));
+                hat_top = hat_top.max(c[1] + 0.025 * hs);
             }
             Hat::Petasos => {
-                // straw sun hat: a flat dome, a wide brim
-                let straw = hex("#c4a35e");
-                let b0 = band(18, 0.0, hair_off);
-                let b1 = up(&b0, 0.13 * hs, 0.9, 0.1);
-                let b2 = up(&b0, 0.21 * hs, 0.55, 0.1);
-                let c = cen(&b2);
-                loft(&mut a0, &b0, &b1, straw);
-                loft(&mut a0, &b1, &b2, cmul(straw, 1.05));
-                fan(&mut a0, &b2, [c[0], c[1] + 0.04 * hs, c[2]], cmul(straw, 1.1));
+                // straw sun hat: a rounded crown with a cord band, a wide brim
+                // with an upper and an under side and a rim, drooping to the
+                // sides and back. Woven straw shows as rings of light and
+                // dark; a flat thin brim read as a halo (Ramon, 31.10.2026).
+                let straw = cmix(hex("#b8975a"), hex("#8a6a3e"), 0.15 + 0.3 * hash(p.seed, 3, 7));
+                let n = 32;
+                let b0 = band(n, 0.0, hair_off + 0.01 * hs);
+                let crown: Vec<Vec<V3>> = [(0.0, 1.0), (0.1, 1.0), (0.19, 0.96), (0.27, 0.86), (0.32, 0.68), (0.345, 0.4)].iter().map(|&(hh, sc)| up(&b0, hh * hs, sc, 0.05)).collect();
+                for i in 0..crown.len() - 1 {
+                    loft(&mut a0, &crown[i], &crown[i + 1], cmul(straw, [1.0, 1.04, 0.96, 1.06, 1.0][i]));
+                }
+                let c = cen(&crown[crown.len() - 1]);
+                fan(&mut a0, &crown[crown.len() - 1], [c[0], c[1] + 0.012 * hs, c[2]], cmul(straw, 1.08));
+                // the cord: a darker band around the foot of the crown
+                let cord = cmix(hex("#4a3424"), hex("#7a2e22"), hash(p.seed, 5, 1).round());
+                let (k0, k1) = (up(&b0, 0.03 * hs, 1.035, 0.05), up(&b0, 0.085 * hs, 1.03, 0.05));
+                loft(&mut a0, &k0, &k1, cord);
+                loft(&mut a0, &up(&b0, 0.03 * hs, 1.0, 0.05), &k0, cmul(cord, 0.7));
+                loft(&mut a0, &k1, &up(&b0, 0.085 * hs, 1.0, 0.05), cmul(cord, 1.1));
+                // the brim in rings out from the head; it droops more at the
+                // back than in front, so the face stays free
                 let c0 = cen(&b0);
-                let brim: Vec<V3> = b0
+                let width = (0.5 + 0.06 * hash(p.seed, 9, 2)) * hs;
+                let thick = 0.035 * hs;
+                let ts = [0.0f32, 0.25, 0.5, 0.75, 1.0];
+                let top: Vec<Vec<V3>> = ts
                     .iter()
-                    .enumerate()
-                    .map(|(k, q)| {
-                        let (dx, dz) = (q[0] - c0[0], q[2] - c0[2]);
-                        let l = dx.hypot(dz);
-                        let l = if l > 0.0 { l } else { 1.0 };
-                        let w = (0.36 + 0.03 * (k as f32 * 1.7).sin()) * hs;
-                        [q[0] + dx / l * w, q[1] - 0.06 * hs, q[2] + dz / l * w]
+                    .map(|&t| {
+                        b0.iter()
+                            .enumerate()
+                            .map(|(k, q)| {
+                                let th = k as f32 / n as f32 * 2.0 * PI;
+                                let (dx, dz) = (q[0] - c0[0], q[2] - c0[2]);
+                                let l = dx.hypot(dz).max(1e-6);
+                                let w = width * t * (1.0 + 0.05 * (k as f32 * 1.7).sin());
+                                let droop = lerp(0.55, 1.0, (1.0 - th.cos()) / 2.0) * (0.02 + 0.2 * t * t) * hs;
+                                [q[0] + dx / l * w, q[1] - droop, q[2] + dz / l * w]
+                            })
+                            .collect()
                     })
                     .collect();
-                loft(&mut a0, &b0, &brim, cmul(straw, 0.95));
+                let under: Vec<Vec<V3>> = top.iter().map(|r| r.iter().map(|q| [q[0], q[1] - thick, q[2]]).collect()).collect();
+                for i in 0..ts.len() - 1 {
+                    // upper side outer to inner, under side inner to outer
+                    loft(&mut a0, &top[i + 1], &top[i], cmul(straw, if i % 2 == 0 { 1.02 } else { 0.9 }));
+                    loft(&mut a0, &under[i], &under[i + 1], cmul(straw, if i % 2 == 0 { 0.6 } else { 0.54 }));
+                }
+                loft(&mut a0, &under[ts.len() - 1], &top[ts.len() - 1], cmul(straw, 0.78));
+                hat_top = hat_top.max(crown[crown.len() - 1].iter().fold(-1e9f32, |m, q| m.max(q[1])));
             }
             Hat::Diadem => {
                 // jewelled diadem: a gold band, pearls on top, a stone over the forehead
@@ -1659,44 +1938,42 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 gem(&mut g0, [fq[0], fq[1] + 0.03 * hs, fq[2] + 0.02 * hs], 0.05 * hs, hex("#7a1a2a"));
             }
             Hat::Wreath => {
-                let (mut sx, mut sz, mut n, mut y, mut rx, mut rz) = (0f32, 0f32, 0, 0f32, 0f32, 0f32);
-                for &v in body_full {
-                    let b = h.base[v as usize];
-                    if b[1] > 7.95 && b[1] < 8.1 && b[0].abs() < 1.0 {
-                        let q = x.pp[v as usize];
-                        sx += q[0];
-                        sz += q[2];
-                        y += q[1];
-                        n += 1;
-                    }
-                }
-                let n = n.max(1) as f32;
-                sx /= n;
-                sz /= n;
-                y /= n;
-                for &v in body_full {
-                    let b = h.base[v as usize];
-                    if b[1] > 7.95 && b[1] < 8.1 && b[0].abs() < 1.0 {
-                        let q = x.pp[v as usize];
-                        rx = rx.max((q[0] - sx).abs());
-                        rz = rz.max((q[2] - sz).abs());
-                    }
-                }
-                let mut leaves = Surface::new(Mat { rough: 0.4, metal: 0.6, double: false });
-                let oct = octahedron();
-                let group = euler(-0.18, 0.0, 0.0);
-                let gpos = [sx, y + 0.05, sz];
-                let col = hex("#c9a640");
-                for k in 0..26 {
-                    let a = k as f32 / 26.0 * PI * 2.0;
-                    if a.sin().abs() < 0.12 && a.cos() > 0.0 {
-                        continue;
-                    }
-                    let lpos = [a.sin() * (rx + 0.08), 0.04 * a.cos(), a.cos() * (rz + 0.08)];
-                    let lr = euler(0.0, a + 0.6, 0.0);
-                    let w: Vec<V3> = oct.0.iter().map(|q| add(gpos, rot(&group, add(lpos, rot(&lr, [q[0] * 0.06, q[1] * 0.035, q[2] * 0.16]))))).collect();
-                    for t in &oct.1 {
-                        leaves.tri(w[t[0]], w[t[1]], w[t[2]], col);
+                // a gold laurel wreath: two branches from the nape to the
+                // forehead, the leaves pointing forward in pairs, one tilted
+                // up and out, one down and out, a midrib folded up
+                let mut leaves = Surface::new(Mat { rough: 0.4, metal: 0.6, double: true });
+                // on the hair like a hat band: on the forehead in front,
+                // lower on the back of the head
+                let ring = |a: f32| {
+                    let th = a / D2R;
+                    let d = dd(th, lerp(30.0, 8.0, (1.0 - a.cos()) / 2.0));
+                    at2(d, rh(d) + hair_off + 0.03 * hs)
+                };
+                let per = 15;
+                for sg in [1f32, -1.0] {
+                    for k in 0..per {
+                        let f = k as f32 / (per - 1) as f32;
+                        let a = sg * lerp(PI * 0.94, 0.16, f);
+                        let at = ring(a);
+                        // along the ring towards the front, outwards, up
+                        let tan = norm(sub(ring(a - sg * 0.05), at));
+                        let out_ = norm(sub(at, hc));
+                        for (j, tilt) in [0.55f32, -0.4].into_iter().enumerate() {
+                            let ln = (0.2 + 0.04 * hash(k as u32, j as u32, 11)) * hs * lerp(0.75, 1.0, f);
+                            let wd = 0.42 * ln;
+                            let ax = norm(add(add(mul(tan, 1.0), mul([0.0, 1.0, 0.0], tilt)), mul(out_, 0.3)));
+                            let side = norm(cross(ax, out_));
+                            let base = madd(at, ax, -0.02);
+                            let tip = madd(base, ax, ln);
+                            let mid = madd(madd(base, ax, 0.45 * ln), out_, 0.08 * ln);
+                            let (l, r) = (madd(madd(base, ax, 0.42 * ln), side, wd * 0.5), madd(madd(base, ax, 0.42 * ln), side, -wd * 0.5));
+                            let c = cmul(hex("#c9a640"), 0.86 + 0.24 * hash(k as u32, j as u32, sg.to_bits()));
+                            let (b, t, m) = (base, tip, mid);
+                            leaves.tri(b, l, m, c);
+                            leaves.tri(m, l, t, cmul(c, 1.08));
+                            leaves.tri(b, m, r, cmul(c, 0.86));
+                            leaves.tri(m, t, r, cmul(c, 0.94));
+                        }
                     }
                 }
                 out.push(leaves);
@@ -1759,6 +2036,49 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 }
             }
         }
+        // a freeborn child's amulet on a cord: the boy's round bulla until
+        // he takes the man's toga, the girl's crescent lunula until she
+        // marries; gold in the upper stands, bronze, or leather for the
+        // poor ("nodus tantum et signum de paupere loro", Juvenal 5.165).
+        // Slaves' children wear none.
+        let amulet = p.age >= 1.5 && p.age < if fem { 13.0 } else { 16.0 } && p.stand != SKLAVE;
+        if amulet {
+            let nc = [fit[0][1], ym(6.12), fit[2][0] * 0.25 + fit[2][1]];
+            let cn = Caster::new(nc, &pp_snapshot, body_full);
+            let cord = hex("#3b2a1c");
+            let mut th = -96;
+            while th <= 96 {
+                let thf = th as f32;
+                let d = dd(thf, -12.0 - 18.0 * (thf * D2R).cos().powi(2));
+                let r = cn.cast(d, false);
+                if r >= 0.0 {
+                    gem(&mut a0, madd(nc, d, r + 0.03 * hs), 0.02 * hs, cord);
+                }
+                th += 5;
+            }
+            let d = dd(0.0, -30.0);
+            let r = cn.cast(d, false);
+            if r > 0.0 {
+                let q = madd(nc, d, r + 0.1);
+                let q = [q[0], q[1] - 0.1 * hs, q[2]];
+                let (metal, col) = match p.stand {
+                    DECURIO | SENATOR | KAISER => (true, hex("#d8b04c")),
+                    HAENDLER | HANDWERKER => (true, hex("#b07a3c")),
+                    _ => (false, hex("#6b4a2b")),
+                };
+                let sf = if metal { &mut g0 } else { &mut a0 };
+                if fem {
+                    // the crescent, horns up
+                    for k in 0..9 {
+                        let t = (k as f32 / 8.0 - 0.5) * 2.4;
+                        let at = [q[0] + 0.12 * hs * t.sin(), q[1] - 0.085 * hs * t.cos() + 0.02 * hs, q[2]];
+                        gem(sf, at, (0.04 - 0.015 * (t / 1.2).abs()) * hs, col);
+                    }
+                } else {
+                    solid(sf, &icosahedron(), q, [0.11 * hs, 0.11 * hs, 0.05 * hs], &euler(0.0, 0.0, 0.3), col);
+                }
+            }
+        }
         for v in a0.pos.iter().chain(&g0.pos) {
             hat_top = hat_top.max(v[1]);
         }
@@ -1788,5 +2108,10 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         }
     }
     let tris = merged.iter().map(|s| s.tris()).sum();
-    Portrait { surfaces: merged, top: (y1 + 0.12).max(hat_top + 0.06), chin: y0, cx: hx / hn.max(1) as f32, cz: hz / hn.max(1) as f32, tris, targets }
+    // the picture's foot (0.86 of its height below the top) stays above
+    // where the chest's data ends
+    let top = (y1 + 0.12).max(hat_top + 0.06);
+    let low = body_full.iter().filter(|&&v| h.base[v as usize][0].abs() < 1.0).map(|&v| x.pp[v as usize][1]).fold(f32::MAX, f32::min);
+    let fill = (0.86 * (top - y0).max(0.8) / (top - low - 0.1)).max(0.53);
+    Portrait { surfaces: merged, top, chin: y0, cx: hx / hn.max(1) as f32, cz: hz / hn.max(1) as f32, fill, tris, targets }
 }

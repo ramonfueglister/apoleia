@@ -3,11 +3,12 @@ extends PanelContainer
 ## ui/vic3_style.gd: a slate panel in a gold rim under a band of wine-red
 ## leather with the title, the game date and a red medallion that folds
 ## it away. Each notice is a dark green row: a small medallion with the
-## icon of its kind in the kind's colour, the day, the text, lit gold
-## under the mouse; its star at the right asks to pin it in the outliner
-## (ui/outliner.gd). The cog in the band opens the settings at «Meldungen»
-## (ui/pause_menu.gd show_settings). It only shows rows; what they are and
-## what a click does is up to its owner (sim/sim_events.gd).
+## icon of its kind in the kind's colour (or the face of the household it
+## is about), the day, the text, lit gold under the mouse; its star at the
+## right asks to pin it in the outliner (ui/outliner.gd). The cog in the
+## band opens the settings at «Meldungen» (ui/pause_menu.gd show_settings).
+## It only shows rows; what they are and what a click does is up to its
+## owner (sim/sim_events.gd).
 
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const WIDTH := 400.0
@@ -77,13 +78,15 @@ func _draw() -> void:
 func _draw_band() -> void:
 	Vic3.draw_band(_bar, Rect2(Vector2(2, 2), _bar.size - Vector2(4, 2)))
 
-## The rows, newest first: each {day, text, colour, icon, entry}; a click
+## The rows, newest first: each {day, text, colour, icon, entry, and
+## maybe face: a person as ApoleiaPeople.take_faces gives them}; a click
 ## on one emits chosen(entry).
 func show_rows(rows: Array) -> void:
 	_clear()
 	for i in rows.size():
 		var r: Dictionary = rows[i]
 		var row := Row.new(r.get("day", ""), r.get("text", ""), r.get("colour", Vic3.TEXT), r.get("icon", ""), i % 2 == 1)
+		row.show_face(r.get("face", {}))
 		var entry: Dictionary = r.get("entry", {})
 		row.pressed.connect(func(): pin_asked.emit(entry) if row.on_star() else chosen.emit(entry))
 		list.add_child(row)
@@ -112,9 +115,15 @@ static func open_button() -> Button:
 class Row extends Button:
 	const V = preload("res://scripts/ui/vic3_style.gd")
 	const STAR_W := 30.0
+	const PortraitCache = preload("res://scripts/ui/portrait_cache.gd")
+	## the round cut of a portrait (portrait_cache.gd SIZE) around the head
+	const FACE_UV := Vector2(0.5, 0.4)
+	const FACE_R := 0.3
 	var _colour: Color
 	var _press_x := -1.0
 	var _icon: Texture2D
+	var _face: Texture2D
+	var _face_bg := Color("2b2e1f")
 	var _day: String
 	var _text: String
 	var _odd := false
@@ -134,6 +143,17 @@ class Row extends Button:
 			add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+	## The face of `p` in the medallion instead of the icon, once rendered.
+	func show_face(p: Dictionary) -> void:
+		if not p.is_empty():
+			PortraitCache.of(Engine.get_main_loop() as SceneTree).face(p, _got_face)
+
+	func _got_face(face: Dictionary) -> void:
+		_face = face.texture
+		_face_bg = face.bg[0]
+		queue_redraw()
 
 	func _draw() -> void:
 		var lit := is_hovered()
@@ -148,7 +168,17 @@ class Row extends Button:
 		draw_circle(c, rad, V.GOLD_LIT if lit else V.GOLD)
 		draw_circle(c, rad - 2.0, Color("121a16"))
 		draw_circle(c + Vector2(0, -rad * 0.2), rad * 0.62, Color(_colour, 0.18))
-		if _icon != null:
+		if _face != null:
+			var pts := PackedVector2Array()
+			var uvs := PackedVector2Array()
+			var aspect := float(PortraitCache.SIZE.x) / PortraitCache.SIZE.y
+			for k in 32:
+				var u := Vector2.from_angle(TAU * k / 32.0)
+				pts.append(c + u * (rad - 2.0))
+				uvs.append(FACE_UV + Vector2(u.x, u.y * aspect) * FACE_R)
+			draw_circle(c, rad - 2.0, _face_bg)
+			draw_polygon(pts, PackedColorArray([Color.WHITE]), uvs, _face)
+		elif _icon != null:
 			var s := rad * 1.25
 			draw_texture_rect(_icon, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, _colour.lightened(0.15))
 		else:
