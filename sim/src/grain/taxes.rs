@@ -76,11 +76,11 @@ const HEAD_DOY: i64 = 0;
 /// Minimum bid at the Zwangsversteigerung, per cent of the value (§ 85a
 /// ZVG: half the value in the first auction).
 const RESERVE_PCT: i64 = 50;
-/// Age of the arrears at a due date that brings the Pfändung and the
-/// Zwangsversteigerung (a year and two years, less a month for the farms
-/// whose harvest ends a few days earlier than last year).
-const SEIZE_AFTER: i64 = YEAR - MONTH;
-const AUCTION_AFTER: i64 = 2 * YEAR - MONTH;
+/// Age of the arrears that brings the Pfändung and the Zwangsversteigerung:
+/// a year and two years, and a month more, so a farm has had a month after
+/// its next harvest to sell for them (PLACEHOLDER).
+const SEIZE_AFTER: i64 = YEAR + MONTH;
+const AUCTION_AFTER: i64 = 2 * YEAR + MONTH;
 
 /// One household's Steuerrückstand: Grundsteuer and Kopfsteuer owed,
 /// milli-denarii, and the day since when it owes.
@@ -108,6 +108,8 @@ pub struct LawRow {
     pub rate: i64,
     pub unit: &'static str,
     pub denar: i64,
+    /// The rate of each level, in `unit`.
+    pub rates: [i64; LAW_LEVELS],
 }
 
 impl Grain {
@@ -129,12 +131,12 @@ impl Grain {
         (0..LAWS)
             .map(|k| {
                 let level = self.law[k] as usize;
-                let (rate, denar) = match k {
-                    TITHE => (TITHE_PCT[level], 0),
-                    LAND => (LAND_PCT[level], self.tax_view.0 * LAND_PCT[level] / 100),
-                    _ => (HEAD_DAYS[level], self.tax_view.1 * HEAD_DAYS[level]),
+                let (rates, denar) = match k {
+                    TITHE => (TITHE_PCT, 0),
+                    LAND => (LAND_PCT, self.tax_view.0 * LAND_PCT[level] / 100),
+                    _ => (HEAD_DAYS, self.tax_view.1 * HEAD_DAYS[level]),
                 };
-                LawRow { law: k as u8, name: LAW_NAMES[k], level: level as u8, rate, unit: UNITS[k], denar }
+                LawRow { law: k as u8, name: LAW_NAMES[k], level: level as u8, rate: rates[level], unit: UNITS[k], denar, rates }
             })
             .collect()
     }
@@ -236,10 +238,9 @@ impl Grain {
         }
     }
 
-    /// At a due date: old arrears of household `id` bring the Pfändung (a
-    /// year) and then the Zwangsversteigerung of its family farm `farm` or
-    /// the write-off (two years). `keep` is the grain the Pfändung leaves
-    /// on the farm, kg.
+    /// Old arrears of household `id` bring the Pfändung (a year) and then
+    /// the Zwangsversteigerung of its family farm `farm` or the write-off
+    /// (two years). `keep` is the grain the Pfändung leaves on the farm, kg.
     fn enforce(&mut self, id: u32, farm: Option<usize>, mk: usize, keep: i64, day: i64) {
         let Some(a) = self.arrears.get(&id).copied() else { return };
         let age = day - a.since;
@@ -386,19 +387,14 @@ impl Grain {
     }
 
     /// After farm `f`'s harvest: the year's Grundsteuer and Kopfsteuer of
-    /// its household `id` come due (to its `payer`), after the Pfändung or
-    /// Zwangsversteigerung of old arrears. `keep` is the food until the next
-    /// harvest and the seed, kg. Returns what the payer still owes.
-    pub(super) fn farm_taxes(&mut self, f: usize, id: u32, day: i64, keep: i64) -> i64 {
+    /// its household `id` come due, to its `payer`, who pays what it can.
+    /// Returns what the payer still owes.
+    pub(super) fn farm_taxes(&mut self, f: usize, id: u32, day: i64) -> i64 {
         if self.law[LAND] == 0 && self.law[HEAD] == 0 && self.arrears.is_empty() {
             return 0;
         }
         let mk = self.farms[f].market as usize;
         let payer = self.payer(f, id);
-        self.enforce(payer, Some(f), mk, keep, day);
-        if self.farms[f].hh != id {
-            return 0;
-        }
         let (land, head) = (self.land_due(f), self.head_due(id, mk));
         self.assess(payer, land, head, day);
         self.pay_arrears(payer, mk)
@@ -414,22 +410,25 @@ impl Grain {
     }
 
     /// At the monthly meal count of household `id` (before it buys goods):
-    /// it pays its arrears from its money; a farm that still owes and is at
-    /// home sells grain for them.
-    pub(super) fn tax_month(&mut self, p: &mut People, id: u32, mk: usize, day: i64) {
+    /// it pays its arrears from its money; old arrears bring the Pfändung
+    /// or the Zwangsversteigerung (`enforce`); a farm that still owes and
+    /// is at home sells grain for them.
+    pub(super) fn tax_month(&mut self, p: &People, id: u32, mk: usize, day: i64) {
         if !self.arrears.contains_key(&id) {
             return;
         }
-        let owed = self.pay_arrears(id, mk);
         let Some(s) = self.hh.get(&id).copied() else { return };
-        if owed <= 0 || s.farm == NONE || s.busy {
+        let farm = (s.farm != NONE).then_some(s.farm as usize);
+        // the food until the next harvest and the seed stay on the farm
+        let keep = farm.map_or(0, |f| self.need_day(id) * (doy_until(day + 1, self.farms[f].harvest_doy) + 1) + self.seed_due(f, day));
+        if self.pay_arrears(id, mk) > 0 {
+            self.enforce(id, farm, mk, keep, day);
+        }
+        let owed = self.arrears.get(&id).map_or(0, |a| a.total());
+        let Some(f) = farm else { return };
+        if owed <= 0 || self.hh.get(&id).is_none_or(|s| s.busy) || self.farms[f].to_sell > 0 {
             return;
         }
-        let f = s.farm as usize;
-        if self.farms[f].to_sell > 0 {
-            return;
-        }
-        let keep = self.need_day(id) * (doy_until(day + 1, self.farms[f].harvest_doy) + 1) + self.seed_due(f, day);
         self.tax_sale(f, owed, keep);
         if self.farms[f].to_sell > 0 {
             self.start_carry(p, day, id, SELL);
@@ -437,8 +436,8 @@ impl Grain {
     }
 
     /// On HEAD_DOY: the Kopfsteuer of the households without a farm (farm
-    /// households pay theirs after the harvest), after the Pfändung of old
-    /// arrears; the arrears of households gone are written off.
+    /// households pay theirs after the harvest); the arrears of households
+    /// gone are written off.
     pub(super) fn taxes_day(&mut self, day: i64) {
         if doy(day) != HEAD_DOY || (self.law[HEAD] == 0 && self.arrears.is_empty()) {
             return;
@@ -458,7 +457,6 @@ impl Grain {
                 continue;
             }
             let mk = mk as usize;
-            self.enforce(id, None, mk, 0, day);
             let head = self.head_due(id, mk);
             self.assess(id, 0, head, day);
             self.pay_arrears(id, mk);

@@ -787,7 +787,7 @@ impl ApoleiaPeople {
     /// "% der Ernte"; 10 "% des üblichen Hektarertrags"; 5 "Taglöhne je
     /// Erwachsenen und Jahr"), "denar" (what the rate is in denarii, median
     /// over the markets: per ha and year, per adult and year; 0 for the
-    /// Zehnt).
+    /// Zehnt), "rates" (the rate of each of the six levels, in "unit").
     #[func]
     fn tax_law(&self) -> Array<VarDictionary> {
         let laws = self.shared.front.lock().unwrap().laws.clone();
@@ -802,6 +802,7 @@ impl ApoleiaPeople {
                 d.set("rate", l.rate);
                 d.set("unit", l.unit);
                 d.set("denar", l.denar as f64 / 1000.0);
+                d.set("rates", &PackedInt64Array::from(l.rates.as_slice()));
                 d
             })
             .collect()

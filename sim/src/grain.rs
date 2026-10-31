@@ -3696,7 +3696,7 @@ impl Grain {
         // sells grain for, down to its food until the next harvest and the
         // seed.
         let keep_min = need * (doy_until(day + 1, harvest_doy) + 1) + seed;
-        let owed = self.farm_taxes(f as usize, id, day, keep_min);
+        let owed = self.farm_taxes(f as usize, id, day);
         // Food to the next harvest plus the reserve, and next year's seed.
         let keep = need * (YEAR + RESERVE_DAYS) + seed;
         self.plan_sale(f as usize, keep);
@@ -5969,58 +5969,69 @@ mod tests {
             g.treasury.cash += m;
         };
         let (f, id) = (family[0], g.farms[family[0]].hh);
+        let mk = g.farms[f].market as usize;
         broke(&mut g, f);
-        let keep = 1000;
-        g.farms[f].store = keep;
-        let owed = g.farm_taxes(f, id, d0, keep);
-        let due = g.land_due(f) + g.head_due(id, g.farms[f].market as usize);
+        g.farms[f].store = 0;
+        let owed = g.farm_taxes(f, id, d0);
+        let due = g.land_due(f) + g.head_due(id, mk);
         assert!(owed > 0 && owed == due, "{owed} {due}");
-        assert_eq!(g.arrears[&id], taxes::Arrears { land: g.land_due(f), head: g.head_due(id, g.farms[f].market as usize), since: d0 });
+        assert_eq!(g.arrears[&id], taxes::Arrears { land: g.land_due(f), head: g.head_due(id, mk), since: d0 });
         // a forced sale for it, down to `keep` only
-        g.farms[f].store = keep + 50;
-        g.tax_sale(f, owed, keep);
+        g.farms[f].store = 1050;
+        g.tax_sale(f, owed, 1000);
         assert_eq!(g.farms[f].to_sell, 50);
         g.farms[f].to_sell = 0;
-        // a year on: the Pfändung takes the grain beyond `keep`
-        let horreum = g.markets[g.farms[f].market as usize].horreum;
-        g.farm_taxes(f, id, d0 + YEAR, keep);
-        assert_eq!(g.farms[f].store, keep);
+        // the food until the next harvest and the seed stay on the farm
+        let keep = |g: &Grain, f: usize, day: i64| g.need_day(g.farms[f].hh) * (doy_until(day + 1, g.farms[f].harvest_doy) + 1) + g.seed_due(f, day);
+        // under a year and a month: no Pfändung yet
+        let day = d0 + YEAR;
+        g.farms[f].store = keep(&g, f, day) + 50;
+        g.hh.get_mut(&id).unwrap().busy = true; // at the market: no forced sale
+        g.tax_month(&p, id, mk, day);
+        assert_eq!(g.treasury.seized_kg, 0);
+        // then the Pfändung takes the grain beyond it
+        let day = d0 + YEAR + MONTH;
+        g.farms[f].store = keep(&g, f, day) + 50;
+        let horreum = g.markets[mk].horreum;
+        g.tax_month(&p, id, mk, day);
+        assert_eq!(g.farms[f].store, keep(&g, f, day));
         assert_eq!(g.treasury.seized_kg, 50);
-        assert_eq!(g.markets[g.farms[f].market as usize].horreum, horreum + 50);
+        assert_eq!(g.markets[mk].horreum, horreum + 50);
         assert_eq!(g.arrears[&id].since, d0);
         assert_eq!(g.money_unbooked(), 0);
         // two years on: the Zwangsversteigerung to the highest bidder; one
         // neighbour has the money for it (booked as start money)
         let value = g.land_value(f);
         assert!(value > 0);
-        let mk = g.farms[f].market as usize;
         let rich = g.market_hh[mk].iter().copied().find(|&b| b != id && !g.hh[&b].own_food && !g.arrears.contains_key(&b)).unwrap();
         g.earn(rich, 3 * value + 1_000_000_000);
         g.money.start += 3 * value + 1_000_000_000;
-        g.farm_taxes(f, id, d0 + 2 * YEAR, keep);
+        g.tax_month(&p, id, mk, d0 + 2 * YEAR + MONTH);
         assert_eq!(g.treasury.auctions, 1);
         assert_eq!(g.farms[f].kind, TENANT);
         let lord = g.farms[f].landlord;
         assert!(lord != NONE && lord != id && g.hh.contains_key(&lord));
         assert!(g.treasury.auction_paid >= value * 50 / 100 && g.treasury.auction_paid <= value);
         assert_eq!(g.farms[f].hh, id);
+        assert!(!g.arrears.contains_key(&id));
         assert_eq!(g.money_unbooked(), 0);
         // without a bidder the farm falls to the state
         let (f, id) = (family[1], g.farms[family[1]].hh);
+        let mk = g.farms[f].market as usize;
         broke(&mut g, f);
         g.farms[f].store = 0;
-        let mk = g.farms[f].market as usize;
-        g.farm_taxes(f, id, d0, 0);
-        g.farm_taxes(f, id, d0 + YEAR, 0);
+        g.farm_taxes(f, id, d0);
         let bidders = std::mem::take(&mut g.market_hh[mk]);
         let written = g.treasury.written_off;
-        g.farm_taxes(f, id, d0 + 2 * YEAR, 0);
+        g.tax_month(&p, id, mk, d0 + 2 * YEAR + MONTH);
         g.market_hh[mk] = bidders;
         assert_eq!((g.farms[f].kind, g.farms[f].landlord, g.treasury.domains), (TENANT, NONE, 1));
         assert!(g.treasury.written_off > written);
         // the state's tenant pays no Grundsteuer, only the Kopfsteuer
         assert_eq!(g.land_due(f), 0);
+        g.farm_taxes(f, id, d0 + 3 * YEAR);
         assert_eq!(g.arrears[&id].land, 0);
+        assert!(g.arrears[&id].head > 0);
         assert_eq!(g.money_unbooked(), 0);
         // the Kopfsteuer of a household without a farm, on 1 January
         let wage = sorted_keys(&g.hh).into_iter().find(|id| g.hh[id].farm == NONE && !g.hh[id].own_food && g.hh[id].money > 1_000_000 && g.info.get(id).is_some_and(|i| i.adults > 0) && !g.arrears.contains_key(id)).unwrap();
