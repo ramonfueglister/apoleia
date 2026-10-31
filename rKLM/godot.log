@@ -1,0 +1,29 @@
+2026-10-31 08:24:47.289 Godot[95598:8287733] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/p7/9n6py1_x3c94xzkjssk7sz1m0000gn/T/org.godotengine.godot.savedState
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.custom_build, safeguards balanced)
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M3 Pro (Apple9)
+
+{"event":"load_step","ms":1355.0,"step":"terrain"}
+{"event":"load_step","ms":104.0,"step":"look"}
+{"event":"grain_loaded","ms":1337,"markets":1783}
+{"event":"people_loaded","ms":1760.94,"people":116805}
+{"event":"load_step","ms":14943.0,"step":"people"}
+{"event":"load_step","ms":12896.0,"step":"build"}
+{"bytes":229376,"changed":28668,"event":"house_builds"}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v1-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v2-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v3-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v4-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v5-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v6-w8.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v7-w22.png","tile_km":0.5}
+{"event":"snapshot","level":1,"path":"shots/rKLM/v8-w70.png","tile_km":1.0}
+{"event":"snapshot","level":4,"path":"shots/rKLM/v9-w1500.png","tile_km":8.0}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v10-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v11-w3.png","tile_km":0.25}
+{"event":"snapshot","level":0,"path":"shots/rKLM/v12-w12.png","tile_km":0.25}
+{"event":"snapshot","level":1,"path":"shots/rKLM/v13-w34.png","tile_km":1.0}
+{"event":"snapshot","level":2,"path":"shots/rKLM/v14-w200.png","tile_km":2.0}
+{"event":"snapshot","level":5,"path":"shots/rKLM/v15-w3000.png","tile_km":16.0}
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
