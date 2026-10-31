@@ -86,7 +86,9 @@ const TREND := Color("a09889") # a figure's small curve, its current value in go
 const BAR_ABOUT := {
 	"tax": "Steuern in Denar, die der Staat seit Beginn eingenommen hat.",
 	"rent": "Pacht in Denar, die Höfe auf Staatsland seit Beginn gezahlt haben.",
+	"estates": "Geld von Toten ohne Erben, das seit Beginn an den Staat gefallen ist.",
 	"wages": "Löhne, die der Staat seit Beginn seinen Dienern gezahlt hat: Soldaten, Beamten, Bauarbeitern.",
+	"public_works": "Lohn, den der Staat seit Beginn für öffentliche Arbeit gezahlt hat: aus dem Geld, das über seiner Reserve lag.",
 	"minted": "Denare, die der Staat seit Beginn neu geprägt hat.",
 	"cash": "Was heute in der Staatskasse liegt.",
 }
@@ -128,10 +130,13 @@ const CARDS := {
 	"land": ["shares", "Felder der Höfe", "", "Die Felder aller Höfe: was gesät ist und was brach liegt."],
 	"farm_count": ["line", "Höfe", "", "Alle Höfe auf der Karte am Monatsende."],
 	"farm_store": ["line", "Hoflager", "t", "Korn in den Lagern der Höfe am Monatsende."],
-	"cash": ["line", "Staatskasse", "D", "Denar in der Staatskasse am Ende jedes Monats."],
+	"cash": ["line", "Staatskasse", "D", "Denar in der Staatskasse am Ende jedes Monats. Die Kasse behält eine Reserve: den Staatslohn eines Jahres und was die offenen Bauaufträge noch kosten. Was darüber liegt, zahlt sie als öffentliche Arbeit aus."],
 	"state": ["bars", "Geld des Staates seit Beginn", "", "Was der Staat seit Beginn eingenommen und ausgegeben hat, und was heute in der Kasse liegt."],
 	"held": ["line", "Geld im Umlauf", "D", "Alle Denar ausserhalb der Staatskasse am Monatsende, und was der Staat seit Beginn neu geprägt hat."],
 	"tax_grain": ["line", "Steuerkorn", "t", "Korn, das der Staat seit Beginn als Steuer eingezogen hat."],
+	"income": ["line", "Einnahmen im Monat", "D", "Denar, die der Staat im Monat einnimmt: Steuer, Pacht von Höfen auf Staatsland und das Geld von Toten ohne Erben."],
+	"spending": ["line", "Ausgaben im Monat", "D", "Denar, die der Staat im Monat ausgibt: Staatslohn für Soldaten, Beamte und Bauarbeiter, und Lohn für öffentliche Arbeit aus dem Geld über seiner Reserve."],
+	"public_days": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat als öffentliche Arbeit bezahlt, zum Taglohn des Marktes. Im ersten Jahr noch keine: dann kennt die Kasse ihre Reserve noch nicht."],
 	"m_price": ["line", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel."],
 	"goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum."],
 	"m_goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware an diesem Markt, darunter sein Verlauf im gewählten Zeitraum. Über einer Ware steht, warum sie kostet, was sie kostet."],
@@ -142,6 +147,7 @@ const CARDS := {
 	"m_people": ["shares", "Wer hier lebt", "", "Die Menschen der Region nach der Schicht ihres Haushalts."],
 	"m_money": ["shares", "Geld nach Schicht", "", "Alles Geld der Haushalte der Region nach Schicht, bei Bauern mit dem Geld ihres Hofs. Der weisse Strich: ihr Anteil an den Menschen."],
 	"m_persons": ["line", "Menschen", "", "Die Menschen der Region am Monatsende, und wie viele davon im Zelt leben."],
+	"m_public": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat an diesem Markt als öffentliche Arbeit bezahlt hat, zum Taglohn hier."],
 	"m_gini": ["line", "Arm und Reich", "", "Der Gini des Geldes je Kopf in der Region: 0 heisst, alle haben gleich viel; 1 heisst, einer hat alles. Grau: über alle Menschen der Karte. Gezählt wird nur Bargeld."],
 }
 ## The cards each page shows, in reading order: the wide ones (tiles,
@@ -154,9 +160,9 @@ const PAGES := {
 	"money_charts": ["real", "wage", "work", "money", "lorenz", "gini_rows"],
 	"goods_charts": ["goods", "clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
 	"farms_charts": ["farms", "land", "farm_count", "farm_store"],
-	"state_charts": ["cash", "state", "held", "tax_grain"],
+	"state_charts": ["cash", "state", "income", "spending", "public_days", "held", "tax_grain"],
 	"market": ["tiles", "m_why", "lage", "m_people", "m_money", "m_goods"],
-	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5"],
+	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5", "m_public"],
 }
 ## The cards across the page, as Victoria 3 gives its main graph the width:
 ## each topic's leading chart and the one that sums it up.
@@ -166,8 +172,8 @@ const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real",
 ## is the good that moved most.
 const LAGE_REALM: Array[String] = ["persons", "life", "hunger", "moves", "tents", "jobs", "price", "fed", "harvest", "granaries",
 	"spoiled", "export", "traded", "alms", "real", "wage", "work", "money", "lorenz", "gini_rows", "goods", "clothes", "farms", "land",
-	"farm_count", "farm_store", "cash", "state", "held", "tax_grain"]
-const LAGE_MARKET: Array[String] = ["m_price", "m_hungry", "m_store", "m_real", "m_persons", "m_gini", "m_people", "m_money", "goods"]
+	"farm_count", "farm_store", "cash", "state", "income", "spending", "public_days", "held", "tax_grain"]
+const LAGE_MARKET: Array[String] = ["m_price", "m_hungry", "m_store", "m_real", "m_public", "m_persons", "m_gini", "m_people", "m_money", "goods"]
 ## A topic's name over its lines in the Lage, by the page of its charts.
 const TOPICS := {"people_charts": "Menschen", "grain_charts": "Korn", "money_charts": "Geld", "goods_charts": "Waren",
 	"farms_charts": "Höfe", "state_charts": "Staat"}
@@ -209,7 +215,7 @@ var _events := {} # day -> what happened that month (history), see _find_events
 ## Months shown in the line charts: 12, 120 or 0 for all.
 var _span := 0
 var _market := false # one market's page (show_market) instead of the realm's
-var _tile_specs: Array = [] # the figures: [key, name, unit, scale, falling good]
+var _tile_specs: Array = [] # the figures: [key, name, unit, scale, falling good, neutral (no colour for its change)]
 var _lorenz: Control
 var _lorenz_now := PackedFloat64Array() # the curve's points at 0, 10 … 100 % of the people
 var _lorenz_then := PackedFloat64Array()
@@ -242,7 +248,7 @@ func _init(date_fn: Callable, page_name := "overview") -> void:
 	else:
 		_tile_specs = [["persons", "Menschen", "", 1.0, false], ["price_median", "Kornpreis", " D/kg", 1.0, true],
 			["eaten", "Gegessen", " %", 100.0, false], ["real_p50", "Reallohn", " kg", 1.0, false],
-			["cash", "Staatskasse", " D", 1.0, false]]
+			["cash", "Staatskasse", " D", 1.0, false, true]]
 	for key in PAGES[page]:
 		_add(key)
 
@@ -368,6 +374,12 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("held", h, [{"key": "money_held", "name": "Im Umlauf", "colour": Charts.SERIES[0]},
 			{"key": "minted", "name": "Geprägt seit Beginn", "colour": Charts.SERIES[3]}])
 		_set_line("tax_grain", h, [{"key": "tax_grain_t", "name": "Steuerkorn", "colour": Charts.SERIES[0]}])
+		_set_line("income", h, [{"key": "tax_d", "name": "Steuer", "colour": Charts.SERIES[0]},
+			{"key": "rent_d", "name": "Pacht", "colour": Charts.SERIES[2]},
+			{"key": "estates_d", "name": "Erbloser Nachlass", "colour": Charts.SERIES[4]}])
+		_set_line("spending", h, [{"key": "wages_d", "name": "Staatslohn", "colour": Charts.SERIES[3]},
+			{"key": "public_works_d", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
+		_set_line("public_days", h, [{"key": "public_days", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
 		_fill_tiles(d)
 	var pop: Dictionary = tables.get("population", {})
 	if not pop.is_empty() and pop.data.has("occupation"):
@@ -408,11 +420,12 @@ func show_tables(tables: Dictionary) -> void:
 	var state: Dictionary = tables.get("state", {})
 	if not state.is_empty():
 		_bar_rows = []
-		for item in [["tax", 1.0], ["rent", 1.0], ["wages", -1.0], ["minted", 1.0], ["cash", 1.0]]:
+		for item in [["tax", 1.0], ["rent", 1.0], ["estates", 1.0], ["wages", -1.0], ["public_works", -1.0], ["minted", 1.0], ["cash", 1.0]]:
 			var i := Array(state.columns).find(item[0])
 			if i >= 0:
 				_bar_rows.append([state.labels[i], float(state.data[item[0]][0]) * item[1], item[0]])
 		if _bars != null:
+			_bars.custom_minimum_size.y = maxf(PLOT_PX, 4.0 + _bar_rows.size() * BAR_ROW)
 			_bars.queue_redraw()
 	_find_all(d)
 
@@ -456,7 +469,7 @@ func _fill_tiles(d: Dictionary) -> void:
 		var box: VBoxContainer = tile.get_child(0)
 		(box.get_child(0) as Label).text = s[1]
 		(box.get_child(1) as Label).text = (Charts.label(vals[n - 1]) + s[2]) if n > 0 else "…"
-		var moved := _change(vals, n - 2, s[4])
+		var moved := _change(vals, n - 2, s[4], s.size() > 5 and s[5])
 		var change := box.get_child(2) as Label
 		change.text = moved[0]
 		change.add_theme_color_override("font_color", moved[1])
@@ -468,11 +481,13 @@ func _fill_tiles(d: Dictionary) -> void:
 				["Vor einem Jahr", (Charts.label(vals[n - 13]) + s[2]) if n > 12 else "–"]],
 			"spark": vals, "spark_title": "Alle Monate seit Beginn", "spark_unit": s[2].strip_edges(),
 			"spark_from": date.call(int(d.day[0])) if n > 0 else "", "spark_to": date.call(int(d.day[n - 1])) if n > 0 else "",
-			"colour": Charts.SERIES[0]})
+			"colour": Charts.SERIES[0],
+			"text": "Die Kasse behält eine Reserve und zahlt, was darüber liegt, als öffentliche Arbeit aus. Steigt oder fällt sie, ist das weder gut noch schlecht." if s.size() > 5 and s[5] else ""})
 
 ## "▲ 3.4 %" from month `before` to the last, and its colour: a gain is
-## green, unless `falling_good` (a price).
-static func _change(vals: PackedFloat64Array, before: int, falling_good: bool) -> Array:
+## green, unless `falling_good` (a price); `neutral` (the treasury, which
+## spends what lies above its reserve) is neither good nor bad.
+static func _change(vals: PackedFloat64Array, before: int, falling_good: bool, neutral := false) -> Array:
 	var n := vals.size()
 	if before < 0 or before >= n - 1 or vals[before] == 0.0:
 		return ["", UiStyle.TEXT]
@@ -480,7 +495,7 @@ static func _change(vals: PackedFloat64Array, before: int, falling_good: bool) -
 	if absf(pct) < 0.05:
 		return ["± 0 %", UiStyle.DIM]
 	var good := pct < 0.0 if falling_good else pct > 0.0
-	return ["%s %.1f %%" % ["▲" if pct > 0.0 else "▼", absf(pct)], UiStyle.GAIN if good else UiStyle.LOSS]
+	return ["%s %.1f %%" % ["▲" if pct > 0.0 else "▼", absf(pct)], UiStyle.TEXT if neutral else (UiStyle.GAIN if good else UiStyle.LOSS)]
 
 func _tile(key: String) -> PanelContainer:
 	var tile := PanelContainer.new()
@@ -1638,6 +1653,7 @@ func show_market(d: Dictionary) -> void:
 			{"key": "gini_all", "name": "Alle Menschen der Karte", "colour": Charts.SERIES[3], "muted": true}])
 		for r in GOOD_KEYS.size():
 			_set_line("m_good%d" % r, h, [{"key": "good_" + GOOD_KEYS[r], "name": GOOD_NAMES[r], "colour": Charts.SERIES[0]}])
+		_set_line("m_public", h, [{"key": "public_days", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
 		_fill_tiles(hd)
 	var classes: Dictionary = d.get("classes", {})
 	if not classes.is_empty() and classes.data.has("persons"):
@@ -1753,6 +1769,12 @@ func _find_market(d: Dictionary, row: Dictionary) -> void:
 			says.m_persons = "In der Region leben %s Menschen, %s." % [_num(persons[n - 1]), _against_year(persons, "mehr", "weniger")]
 			if tents.size() == n and tents[n - 1] >= 0.5:
 				says.m_persons += " %s davon im Zelt." % _num(tents[n - 1])
+		var days := _col(d, "public_days")
+		var paid := _col(d, "public_wage")
+		if days.size() == n:
+			says.m_public = ("Im letzten Jahr bezahlte der Staat hier keine öffentliche Arbeit." if _year_sum(days) <= 0.0
+				else "Im letzten Jahr bezahlte der Staat hier %s Tage öffentliche Arbeit%s." % [_num(_year_sum(days)),
+					(" für %s Denar" % _num(_year_sum(paid))) if paid.size() == n else ""])
 		var gini := _col(d, "gini")
 		var gini_all := _col(d, "gini_all")
 		if gini.size() == n and gini_all.size() == n:
@@ -1947,6 +1969,26 @@ func _find_all(d: Dictionary) -> void:
 		var held := _col(d, "money_held")
 		if held.size() == n:
 			says.held = "Im Umlauf sind %s Denar, %s." % [_num(held[n - 1]), _against_year(held, "mehr", "weniger")]
+		var tax_d := _year_sum(_col(d, "tax_d"))
+		var rent_d := _year_sum(_col(d, "rent_d"))
+		var estates_d := _year_sum(_col(d, "estates_d"))
+		var income := tax_d + rent_d + estates_d
+		if d.has("tax_d") and income > 0.0:
+			says.income = "Im %s nahm der Staat %s Denar ein: %d %% Steuer, %d %% Pacht, %d %% Nachlass." % [
+				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(income), roundi(tax_d / income * 100.0),
+				roundi(rent_d / income * 100.0), roundi(estates_d / income * 100.0)]
+		var wages_d := _year_sum(_col(d, "wages_d"))
+		var works_d := _year_sum(_col(d, "public_works_d"))
+		if d.has("wages_d") and wages_d + works_d > 0.0:
+			says.spending = "Im %s gab der Staat %s Denar aus, %d %% davon für öffentliche Arbeit." % [
+				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(wages_d + works_d), roundi(works_d / (wages_d + works_d) * 100.0)]
+		var days := _col(d, "public_days")
+		if days.size() == n:
+			if _year_sum(days) <= 0.0:
+				says.public_days = ("Im letzten Jahr bezahlte der Staat keine öffentliche Arbeit: die Kasse lag nicht über ihrer Reserve." if n > 12
+					else "Im ersten Jahr bezahlt der Staat noch keine öffentliche Arbeit: die Kasse kennt ihre Reserve erst nach einem Jahr.")
+			else:
+				says.public_days = "Diesen Monat bezahlte der Staat %s Tage öffentliche Arbeit, im letzten Jahr %s Tage." % [_num(days[n - 1]), _num(_year_sum(days))]
 		var taxed := _col(d, "tax_grain_t")
 		if taxed.size() == n:
 			says.tax_grain = "Seit Beginn hat der Staat %s t Korn als Steuer eingezogen" % _num(taxed[n - 1])
@@ -1988,12 +2030,12 @@ func _find_all(d: Dictionary) -> void:
 	var paid := 0.0
 	var got := 0.0
 	for r in _bar_rows:
-		if r[2] == "wages":
-			paid = -float(r[1])
-		elif r[2] in ["tax", "rent"]:
+		if r[2] in ["wages", "public_works"]:
+			paid -= float(r[1])
+		elif r[2] in ["tax", "rent", "estates"]:
 			got += float(r[1])
 	if paid > 0.0:
-		says.state = "Steuern und Pacht decken %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
+		says.state = "Steuern, Pacht und Nachlässe decken %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
 	_says = says
 	_set_lage()
 
