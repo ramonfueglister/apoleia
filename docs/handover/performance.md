@@ -1,5 +1,12 @@
 # Übergabe: Performance (Laden, Zoom, Terrain-Shader)
 
+**Nachtrag 31.10.2026, Codex:** Schritt 2 ist auf dem Branch
+`codex/terrain-performance` implementiert und auf dem M3 Pro unter Metal
+verglichen: Kachelwerte werden vor dem Zeichnen zwischengespeichert.
+Die kontrollierte Tour braucht im Median 20,6 % weniger Bildzeit, die
+Fernstufen 31–36 %. [Änderung, Messung, Bildprüfung und Grenzen](performance/terrain-cache-2026-10-31.md).
+Der folgende Text hält den ursprünglichen Übergabestand fest.
+
 **Stand:** 31. Oktober 2026, main `9084b18` · **Status:** Schritt 1 erledigt
 (PR #123), Schritt 2 (Terrain-Shader) geplant, aber noch nicht angefangen.
 
