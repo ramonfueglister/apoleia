@@ -67,6 +67,9 @@ const FIGURE_KM := 10.0 # view width up to which people are figures, not dots
 const FIGURE_M := 1.7 # figure height (the figure mesh is 1 unit tall)
 const FIGURE_MAX := 16384 # most figures drawn at once (nearest first)
 const LIST_W := 128 # width of the slot list texture
+const ROAD_CODE := 8192.0 # record area codes (people_dots_common.gdshaderinc DOT_ROAD, DOT_AT_LOT)
+const AT_LOT_CODE := 12288.0
+const ROUTE_W := 32 # texels per figure in the field way texture: its count and length, then its points
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
@@ -197,6 +200,16 @@ var _ground := Rect2()
 var _lots: MultiMeshInstance2D
 var _lots_material := ShaderMaterial.new()
 var _list_image := Image.create_empty(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF)
+## the way of each figure to its household's field over the worn network
+## (walk_route.gd field_route, people_field_route.gdshaderinc), one row of
+## ROUTE_W texels per figure of the list: (count, km), then the points
+## (world km); anew with the list, the fields and the ways
+var _route_image := Image.create_empty(ROUTE_W, FIGURE_MAX, false, Image.FORMAT_RGF)
+var _route_tex: ImageTexture
+var _route_km := {} # slot -> the length of its field way from the village (for «Heute»)
+var _figure_slots := PackedInt32Array() # the slots of the figure list
+var _routes_dirty := false
+var _route_rows := {} # slot -> its row (count, km, points) or an empty one, until the fields or the ways change
 var _list_tex: ImageTexture
 var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
@@ -305,6 +318,8 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figure_material.set_shader_parameter("list_w", LIST_W)
 	_list_tex = ImageTexture.create_from_image(_list_image)
 	_figure_material.set_shader_parameter("list_tex", _list_tex)
+	_route_tex = ImageTexture.create_from_image(_route_image)
+	_figure_material.set_shader_parameter("field_route_tex", _route_tex)
 	_prep_material.set_shader_parameter("list_tex", _list_tex)
 	_prep_material.set_shader_parameter("list_w", LIST_W)
 	_figures = MultiMeshInstance3D.new()
@@ -320,7 +335,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	_figures.multimesh = fm
 	add_child(_figures)
 	_figure_shadow_material.shader = FIGURE_SHADOW_SHADER
-	for key in ["figure_scale", "list_w", "list_tex"]:
+	for key in ["figure_scale", "list_w", "list_tex", "field_route_tex"]:
 		_figure_shadow_material.set_shader_parameter(key, _figure_material.get_shader_parameter(key))
 	_figure_shadows = MultiMeshInstance3D.new()
 	_figure_shadows.name = "PeopleFigureShadows"
@@ -691,6 +706,9 @@ func _update_map() -> void:
 				_way_tex.update(win.ways)
 			# the travellers walk these ways and the town streets (walk_route.gd)
 			_trips.route.set_ways(win.ways, win.origin, win.tile_km)
+			_routes_dirty = true
+			_route_rows.clear()
+			_route_km.clear()
 			_trips.route.plans = terrain.plans
 		for m in mats:
 			m.set_shader_parameter("sim_fine_tex", _map_tex)
@@ -757,6 +775,8 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	_list_image.set_data(LIST_W, FIGURE_MAX / LIST_W, false, Image.FORMAT_RF, values.to_byte_array())
 	_list_tex.update(_list_image)
 	_figures.multimesh.visible_instance_count = slots.size()
+	_figure_slots = slots
+	_routes_dirty = true
 	_figure_shadows.multimesh.visible_instance_count = slots.size()
 	_prep_points.multimesh.visible_instance_count = slots.size()
 	_prep_frames = 2 # place the newly listed
@@ -1128,6 +1148,38 @@ func _sync_person_fields() -> void:
 	else:
 		_person_fields_img.set_data(side, h, false, Image.FORMAT_RGF, bytes)
 		_person_fields_tex.update(_person_fields_img)
+	_routes_dirty = true
+	_route_rows.clear()
+	_route_km.clear()
+
+## The field ways of the figure list (ROUTE_W), when the list, the fields
+## or the ways changed: for each figure whose household's field the sim
+## tells, the way from its village over the worn network to the field
+## (walk_route.gd field_route); the shader adds the part from the figure's
+## spot round its house to the lanes and the last step into the field.
+## Ways are kept per pair of tiles, so a list costs a few searches.
+func _update_field_routes() -> void:
+	if not _routes_dirty or _route_tex == null:
+		return
+	_routes_dirty = false
+	var floats := PackedFloat32Array()
+	floats.resize(ROUTE_W * FIGURE_MAX * 2)
+	var lot_min: Vector2 = terrain.world_min
+	for i in _figure_slots.size():
+		var slot := _figure_slots[i]
+		if not _route_rows.has(slot):
+			if _route_rows.size() > 60000:
+				_route_rows.clear()
+				_route_km.clear()
+			_route_rows[slot] = _field_route_row(slot, lot_min)
+		var row: PackedFloat32Array = _route_rows[slot]
+		if row.is_empty():
+			continue
+		var o := i * ROUTE_W * 2
+		for k in row.size():
+			floats[o + k] = row[k]
+	_route_image.set_data(ROUTE_W, FIGURE_MAX, false, Image.FORMAT_RGF, floats.to_byte_array())
+	_route_tex.update(_route_image)
 
 ## Who is away from home today and from when till when (people_trips.gd
 ## `away`, at «Alltag»), as the RGBA8 texture of people_dots_common
@@ -1360,8 +1412,30 @@ func _today_of(slot: int) -> Array:
 	var walk_h := -1.0
 	if slot * 2 + 1 < _person_fields.size() and (_person_fields[slot * 2] != -1.0 or _person_fields[slot * 2 + 1] != -1.0):
 		var field := Vector2(_person_fields[slot * 2], _person_fields[slot * 2 + 1]) * 0.001
-		walk_h = maxf(field.distance_to(Vector2(rec[0], rec[1])) / DayPlan.FIELD_KMH, 1.0 / 60.0)
+		# over the worn network (_update_field_routes), as the figure walks it
+		var km: float = _route_km.get(slot, field.distance_to(Vector2(rec[0], rec[1])))
+		walk_h = maxf(km / DayPlan.FIELD_KMH, 1.0 / 60.0)
 	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun, _trips.away.get(slot, {}), walk_h)
+
+## The field way row of `slot` (_update_field_routes), empty without one;
+## its whole length from the village for «Heute» into _route_km.
+func _field_route_row(slot: int, lot_min: Vector2) -> PackedFloat32Array:
+	if slot * 2 + 1 >= _person_fields.size() or (_person_fields[slot * 2] == -1.0 and _person_fields[slot * 2 + 1] == -1.0):
+		return PackedFloat32Array()
+	var rec: PackedFloat32Array = people.record(slot)
+	if rec.size() < 4 or rec[2] <= 0.0 or (rec[2] >= ROAD_CODE and rec[2] < AT_LOT_CODE):
+		return PackedFloat32Array() # a city or the road: no house on a lot
+	var field := Vector2(_person_fields[slot * 2], _person_fields[slot * 2 + 1]) * 0.001
+	var pts: PackedVector2Array = _trips.route.field_route(Vector2(rec[0], rec[1]), field, lot_min, LOT_KM, ROUTE_W - 1)
+	var km := 0.0
+	for k in range(1, pts.size()):
+		km += pts[k].distance_to(pts[k - 1])
+	var row := PackedFloat32Array([float(pts.size()), km])
+	for p in pts:
+		row.append(p.x)
+		row.append(p.y)
+	_route_km[slot] = km + Vector2(rec[0], rec[1]).distance_to(pts[0]) + pts[pts.size() - 1].distance_to(field)
+	return row
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
@@ -1465,6 +1539,7 @@ func _frame(delta: float) -> void:
 	_figures.visible = figures
 	if figures:
 		_update_figures(view_km, synced > 0)
+		_update_field_routes()
 		_aim_figure_shadows()
 	if figures != _prep_listed:
 		_prep_listed = figures
