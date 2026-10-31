@@ -64,6 +64,15 @@ LANDMARK_GROW = 2.5
 LANDMARK_FROM_M = 100
 LANDMARK_LONG_M = 500  # grown no longer than this (two parcels at scale 1)
 LANDMARK_KINDS = {"amphitheatre", "circus", "baths", "palace", "theatre", "stadium", "temple", "forum", "market", "tomb"}
+# Buildings sized for the people who use them in the sim (docs/kit2/SCALE.md
+# S51, Ramon 31.10.2026: «wir sind ein Diorama, alles muss geschrumpft sein»):
+# their own model's footprint in diorama metres (keep in step with
+# app/scripts/voxel/roman_arena.gd), drawn at the diorama scale, so they get
+# as many parcels as the model needs with the free strip tile_terrain.gd
+# leaves round it (LANDMARK_PLAN_REACH), not their real size grown.
+USER_SIZED_M = {"arena": (25.0, 18.5)}
+DIORAMA_KM_PER_M = 0.0238
+LANDMARK_PLAN_REACH = 0.9
 # building kinds that streets may cross (open squares)
 OPEN_BUILDINGS = {"forum", "plaza"}
 
@@ -179,6 +188,11 @@ def parcel_size(plan, b):
     """A building's extent in km along the parcel axes (grown if a
     landmark): its long side runs east-west unless turned more than 45
     degrees."""
+    model = LANDMARK_MODELS.get(b["name"])
+    if model in USER_SIZED_M:
+        # the model stands unturned on its parcels (tile_terrain.gd LANDMARKS)
+        return tuple(math.ceil(m * DIORAMA_KM_PER_M / LANDMARK_PLAN_REACH / PARCEL_KM) * PARCEL_KM
+                     for m in USER_SIZED_M[model])
     grow = 1.0
     if b.get("landmark", b["kind"] in LANDMARK_KINDS and max(b["size_m"]) >= LANDMARK_FROM_M):
         grow = max(1.0, min(LANDMARK_GROW / plan.scale, LANDMARK_LONG_M / (plan.scale * max(b["size_m"]))))
@@ -746,7 +760,7 @@ SURFACE_BITS = {"": 0, "earth": 0, "gravel": 1, "slabs": 2, "basalt": 3}
 MODELS = ["", "amphitheatre", "forum", "baths", "temple", "circus", "theatre", "public", "market", "palace",
           "fort", "warehouse", "harbour", "tomb", "stadium", "portico", "agora", "spoil"]
 # named buildings that are tile_terrain.gd LANDMARKS (their own models)
-LANDMARK_MODELS = {"Amphitheatrum Flavium": "colosseum", "Forum Romanum": "forum", "Thermae Antoninianae": "baths",
+LANDMARK_MODELS = {"Amphitheatrum Flavium": "arena", "Forum Romanum": "forum", "Thermae Antoninianae": "baths",
                    "Pantheon": "pantheon", "Circus Maximus": "circus"}
 # storeys of the houses (B bits 0-5), own rule: insulae 4-5, houses 2-3 in big
 # cities, domus 1-2

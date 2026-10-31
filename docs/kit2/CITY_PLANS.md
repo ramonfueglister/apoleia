@@ -111,6 +111,13 @@ Wahrzeichen, die grösser gezeichnet werden).
 stehen am echten Ort, werden aber bis 2,5-fach vergrössert, höchstens auf 500 m (zwei Parzellen).
 Eigene Designentscheidung, damit sie lesbar bleiben; offen ausgewiesen.
 
+**Regel A (Ramon 31.10.2026, «alles muss geschrumpft sein»):** Gemeinschaftsbauten werden nach ihren
+Nutzern in der Simulation bemessen (SCALE.md S51) und in Menschenproportionen gebaut. Ein solcher Bau
+bekommt so viele Parzellen, wie sein Modell im Diorama-Massstab braucht (`USER_SIZED_M`). Bisher gilt
+das für Roms Arena: 88 Zuschauer, in der Bauform des Kolosseums mit drei Bogenreihen 15 m hoch, 25 × 18,5 m,
+3 × 2 Parzellen (`app/scripts/voxel/roman_arena.gd`).
+Die übrigen Wahrzeichen folgen; bis dahin gilt für sie die Vergrösserung oben.
+
 ## Strassen
 
 | Belag | G-Bits | Wo (Regel für generierte Städte) |

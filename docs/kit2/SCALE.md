@@ -96,6 +96,37 @@ Plätze) wird zu einer Arena mit etwa 90 Plätzen.
   Märkte, Provinzen und Kartenmodi.
 - Rust-Kern, Befehle, Festkomma und Snapshots (S40–S48) bleiben; Menschen sind Entities.
 
+## Massstabstabelle (Ramon 31.10.2026: «wir sind ein Diorama, alles muss geschrumpft sein»)
+
+Jedes sichtbare Ding steht hier mit seiner Regel. Geschrumpft wird alles ausser
+dem einzelnen Menschen und dem, was ihm gehört (S51). Eine neue Grafik- oder
+Sim-Runde prüft gegen diese Tabelle. Jede Ausnahme entscheidet Ramon vorher.
+Weltkoordinaten im Code sind echte km; «Diorama-m» = Welt-m × 0,0238
+(`DIORAMA_KM_PER_M`).
+
+| Ding | Regel | Zahl | Quelle (Sim / Daten) | Code | Stand |
+|---|---|---|---|---|---|
+| Karte, Distanzen | 1 : 23,8 | Italien ≈ 42 km Diorama | Geodaten in echten m | Weltkoordinaten = echte km | stimmt |
+| Menschen (Anzahl) | 1 : 566,5 | 100'000–200'000 | `sim` Personen | – | stimmt |
+| Figur | nicht verkleinert | 1,7 m | Person | `people_dots.gd FIGURE_M` | stimmt |
+| Bauernhaus, Stadthaus | nicht verkleinert | Hof 15 m, Los 10 m | Haushalt | `HOUSE_M`, `voxel/farmhouse.gd` | stimmt |
+| Feld einer Familie | nicht verkleinert | Median 8,4 Welt-km vom Hof ≈ 350 m Diorama | `Grain::near_field` | `people_fields`, `sim_fields` | stimmt (Sonde 31.10.) |
+| Baum | nicht verkleinert (Urbek 5–8 m) | 8 m | Bodenbedeckung | `TREE_M` | nah stimmt; ab 1-km-Kacheln 1,8-fach (`TREE_FAR_GROW`), **offen** |
+| Höhe | 1 : 23,8, nah 7,5-fach, fern Stufe 0,6 km | Alpen ≈ 6 km Welt | ETOPO | `NEAR_EXAGGERATION`, `FAR_LEVEL_KM` | stimmt (#105, #112) |
+| Stadtfläche | Fläche 1 : 566,5 wie Menschen | Rom ≈ 13 km² Welt, ≈ 250 Häuser | Stadtplan `area_ha`, Sim-Einwohner | `build_tile_terrain.py settlements` | stimmt (#110) |
+| Stadtzeichen fern | Zeichen, kein Massstab | ein Hauslos 9 px | Einwohner 117 | `city_markers.gd` | so entschieden (Bauplan B) |
+| Gemeinschaftsbau (Arena, Thermen, Circus, Theater) | nach Nutzern in der Sim, in Menschenproportionen | Kolosseum 50'000 ÷ 566,5 ≈ 90 Plätze | Sim-Einwohner der Stadt | `voxel/roman_*.gd`, `city_plans.py` | **Arena Roms umgebaut (Regel A):** Grundfläche nach 88 Nutzern (50'000 ÷ 566,5), Bauform des Kolosseums in Menschenproportionen: 25 × 18,5 m, drei Bogenreihen zu 4 m und Attika, 15 m hoch (Haus 9 m), Bögen 1,5 m, Stufen 0,5 m; 88 Zuschauer so gross wie die Figuren, übrige Stufen leer (`voxel/roman_arena.gd`, Ramon 31.10.: das Kolosseum muss höher sein als die Häuser); im Stadtplan 3 × 2 Parzellen (`city_plans.py USER_SIZED_M`). **Weichen noch ab:** Thermen, Circus, Theater (Kit-Modell auf den Planblock geschrumpft, Stadtplan echte Grundfläche ×2,5, `LANDMARK_GROW`); Amphitheater anderer Städte (`plan_amphitheatre`, ein Los) |
+| Tempel, Forum | nach Nutzern | – | – | `city_plans.py` | **weicht ab** wie oben, folgt nach der Arena |
+| Brücke ohne Stadtplan | Breite ihres Verkehrs | – | – | `LANDMARK_KM_PER_M` 6-fach | **weicht ab**, nur ohne Stadtpläne sichtbar |
+| Landstrasse | Breite ihres Verkehrsmittels | 4 m | Strassen-Lose (S116) | `road_view.gd ROAD_KM` | stimmt |
+| Trampelpfad | aus dem Gehen, 8 Stufen | bis 0,042 Welt-km | Wegabnutzung (S70) | `sim_fields SIM_WAY_KM` | stimmt |
+| Reise zwischen Orten | Tempo 1 : 23,8 = Dauer wie damals | 4,5 km/h in Welt-km | Reisen der Sim | `day_clock.gd WALK_KMH` | stimmt |
+| Weg zum eigenen Feld | im eigenen (unverkleinerten) Land Menschentempo | 4,5 km/h ÷ 0,0238 | `people_fields` | `dot_field_way` | stimmt (#114) |
+| Szenenwege (Markt, Besuch) | aus der Sim | 1,2 Welt-km Start | – | `people_trips.gd OUT_KM` | **weicht ab:** eigene Zahl der Ansicht |
+| Marktstände | Menschengrösse um den Platz | 85–95 Welt-m vom Platzmittel ≈ 4 m Diorama | Marktplatz der Sim | `people_trips.gd STALLS` | stimmt |
+| Wetter | Grösse und Zug 1 : 23,8, Dauer echt | – | – | `weather/` | **weicht ab** laut Bericht 31.10. (nicht verkleinert), prüfen |
+| Kalender, Tag, Sonne | 1 : 1 | – | – | `day_clock.gd` | stimmt |
+
 ## Zoom (Bauplan B, Ramon 31.10.2026)
 
 Nah ein strenges Diorama, fern eine Karte mit Zeichen. Bericht mit Herleitung:
