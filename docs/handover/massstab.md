@@ -1,6 +1,7 @@
 # Übergabe: Massstab und Wahrzeichen (Stand 31.10.2026, 18:40)
 
 Für die nächste Claude-Sitzung, die am Thema «Grössenverhältnisse» weiterarbeitet.
+claude.ai-Links sind privat auf Ramons erstem Account; ihr Inhalt steht in Abschnitt 7 und 8.
 Kurz: Die Diorama-Regel ist entschieden und für Rom gebaut (#125). Ramon hat
 um 18:36 entschieden, dass **alle anderen Städte** ihre grossen Bauten ebenfalls
 nach der Regel zeigen. Das ist noch nicht gebaut. Danach folgt Schritt 2 für Rom.
@@ -158,3 +159,135 @@ Gleiche Regel, noch nicht umgesetzt (siehe SCALE.md, Massstabstabelle):
   orthografisch) und mit den **echten Spielhäusern** daneben; zuerst die Höhe
   gegen die Häuser zeigen.
 - Mac nur über den Koordinator; GDScript-Änderungen brauchen auf dem Mac nur `git pull`.
+
+## 7. Kernpunkte des Grössen-Reports (31.10.2026)
+
+Die claude.ai-Links in dieser Datei sind privat auf Ramons erstem Account. Was
+daraus zählt, steht hier. Bilder des Reports liegen unter `/mnt/project-files/groessen/`
+(`rom-3km.jpg`, `rom-8km.jpg`, `kolosseum-1km.jpg`, `felder-3km.jpg`,
+`land-34km.jpg`, `europa-1500km.jpg`), die Seite selbst als `index.html` daneben.
+
+**Befund (Stand main a5705d1, vor den Umbauten):** Im Spiel galten etwa zehn
+verschiedene Vergrösserungsfaktoren. Die Grundregel (Geografie 1 : 23,8, Mensch
+und Haus echt gross; Anzahl und Fläche 1 : 566,5, S50–S52) war für Flächen und
+Anzahlen sauber, aber für Höhen, Wege und Zeit, Wahrzeichen und alles ab etwa
+35 km Sichtbreite nie zu Ende gedacht. Kern: zwei Längenmassstäbe (Geografie und
+Mensch), aber nur ein Tempo und eine Höhe.
+
+| Ding | Diorama-Mass | in der Welt (echte km) |
+|---|---|---|
+| Mensch (Figur) | 1,7 m | 40 m |
+| Hauslos | 10 m | 238 m (Viertelkachel 250 m) |
+| Baum | 8 m | 190 m |
+| Rom in der Mauer | ≈ 190 × 190 m, 203 Parzellen | ≈ 13 km² (echt 13,7 km²) |
+| Feldlos der Sim | 441 m² | 0,5 × 0,5 km |
+| Gehtempo | 0,19 km/h | 4,5 km/h |
+
+Was schon stimmte: Fläche pro Mensch (ein Hof mit 3 ha belegt gut 300 Hauslose,
+dasselbe Verhältnis wie damals); Rom nah (203 Parzellen, 1626 Menschen, etwa
+270 Haushalte); Reisen zwischen Orten (Märkte 25 km auseinander, 4,5 km/h).
+
+Die sechs Widersprüche und was daraus wurde:
+1. Häuser so hoch wie die Hügel (Relief nah nur 2,4- bis 6-fach) → **#105**, Relief
+   nah fest 7,5-fach (`NEAR_EXAGGERATION`).
+2. Ein Tempo für zwei Längen (Weg zum Feld im Client 150–220 m, die Sim legt Felder
+   bis 12,5 km weit) → **#114**, Figuren gehen zum echten nächsten Feld des Hofs im
+   Diorama-Tempo 4,5 km/h ÷ 0,0238. Nähere Felder liessen in der Sim Leute verhungern,
+   darum «Felder bleiben, Weg schneller».
+3. Drei Regeln für Wahrzeichen (S51 Nutzer, CITY_PLANS bis 2,5-fach, Kit-Modelle in
+   Hausgrösse, Brücken 6-fach) → **S136**, siehe oben.
+4. Städte springen beim Herauszoomen (Bake-Scheibe für Rom 121 km² statt 13 km²,
+   Häuser fern 2,5- und 5-fach) → **#110**, echte Planfläche auf jeder Stufe,
+   Voxel-Stadtmarken ab etwa 90 km (`city_markers.gd`).
+5. Berge fern bis 320-fach überhöht → **#112**, fern eine feste Stufe 0,6 km
+   (`FAR_LEVEL_KM`).
+6. Dokument und Code widersprachen sich (Höhe, Wetter, Strassen, Tempo) →
+   SCALE.md hat jetzt eine Massstabstabelle mit Spalte «stimmt / weicht ab».
+
+**Grundsatzentscheid 31.10. 08:24: Bauplan B** = strenges Diorama nah, Karte mit
+Zeichen fern, wie EU5 und Victoria 3 (Alternativen waren A «ein Massstab überall»
+wie Urbek, C «SimCity-Wachstum mit Gesetz»). Einzelfragen: D1a Höhe nah fest 7,5
+(gebaut), D3a Weg zum Feld aus der Sim (gebaut), D4 SCALE.md nachführen (gebaut),
+D2 Wahrzeichen → nach mehreren Runden S136.
+
+Vergleich mit anderen Spielen (aus dem Report): EU5 zeichnet Städte als 3D-Marken,
+Spieler kritisierten zu grosse Städte, danach kleiner gezeichnet; Victoria 3 hat
+«Hubs», die in Schwellen wachsen, fern eine eigene Papierkarte, bewusst keine
+Einzelmenschen, Grösse als Zeichen der Wichtigkeit; Urbek und Islanders bleiben
+bei einem Massstab, weil sie nie auf Kontinentgrösse zoomen; SimCity 2000 lässt
+Kacheln samt Häusern wachsen (Darstellungsregel, kein Massstab).
+
+Quellen des Reports (APA 7):
+- Bederson, B. B., & Hollan, J. D. (1994). Pad++: A zooming graphical interface for exploring alternate interface physics. In *Proceedings of the 7th Annual ACM Symposium on User Interface Software and Technology* (pp. 17–26). ACM. https://doi.org/10.1145/192426.192435
+- Luebke, D., Reddy, M., Cohen, J. D., Varshney, A., Watson, B., & Huebner, R. (2003). *Level of detail for 3D graphics*. Morgan Kaufmann.
+- Paradox Interactive. (2022). *Victoria 3 dev diary #49: Graphics overview*. paradoxinteractive.com
+- Paradox Interactive. (2022). *Victoria 3 dev diary #50: Living map*. forum.paradoxplaza.com
+- Perlin, K., & Fox, D. (1993). Pad: An alternative approach to the computer interface. In *Proceedings of SIGGRAPH '93* (pp. 57–64). ACM. https://doi.org/10.1145/166117.166125
+- r/EU5. (2025). *Cities evolving over time on the map* [Discussion]. Reddit.
+- Töpfer, F., & Pillewizer, W. (1966). The principles of selection. *The Cartographic Journal, 3*(1), 10–16. https://doi.org/10.1179/caj.1966.3.1.10
+
+## 8. Literatur und Verfahren zur Diorama-Regel
+
+Grundlage für S136 (Doc «Rom als Diorama: Literatur und Verfahren für
+Grössenverhältnisse», 31.10.2026). Die Kartografie nennt es **Generalisierung**,
+der Modellbau **selektive Verdichtung**. Alle Verfahren machen dasselbe in vier
+Schritten:
+1. Viel weniger gewöhnliche Bauten zeigen (Rom: 250 statt rund 46 000 Häuser).
+2. Menschen, Türen, Fenster und Sitze in echter Grösse lassen.
+3. Wichtige Bauten weniger stark verkleinern als gewöhnliche, damit man sie erkennt.
+4. Die Reihenfolge der Grössen erhalten.
+
+Eine feste Formel für Schritt 3 gibt die Literatur **nicht** vor; die Kubikwurzel
+ist eine Gestaltungswahl für Apoleia.
+
+- **Kartografische Generalisierung** (McMaster & Shea, 1992): Auswahl (nur so viele
+  Häuser wie Haushalte), Typisierung (250 Häuser stehen für 46 000), Übertreibung
+  (Wahrzeichen grösser als ihr Flächenanteil), Verdrängung (Häuser rücken zur Seite).
+  Töpfers Wurzelgesetz N_d = N_s · √(M_s / M_d) beschreibt, wie viele Objekte bei
+  einer Verkleinerung bleiben (Töpfer & Pillewizer, 1966; Jiang et al., 2013); es
+  gilt für Kartenzeichen, das Prinzip «weglassen und Stellvertreter» ist anerkannt.
+- **Touristenkarten und 3D-Stadtmodelle:** Grabler et al. (2008) bauen Touristenkarten
+  automatisch: «Mapmakers often increase the size of important landmarks while
+  decreasing the size of less relevant buildings»; ihr System bestraft starke
+  Verkleinerung wichtiger Bauten. Glander & Döllner (2008) fassen gewöhnliche Häuser
+  zu Blöcken, Wahrzeichen bleiben «as they represent essential orientation marks»,
+  die wichtigsten vergrössert, Nachbarblöcke beschnitten; Glander (2013) skaliert sie
+  nach Kameraabstand.
+- **Panoramakarten nach Berann:** übertriebene Berge, breitere Täler (Patterson, 2000),
+  aber die Reihenfolge der Höhen bleibt (Brown & Samavati, 2017). Für Apoleia:
+  Kolosseum, Thermen, Theater, Circus, dann Insula und Haus.
+- **Modellbahn:** selektive Verdichtung (Verducci, 2010): Tiefe und Länge kürzen
+  «without losing the flavor of the building», Wand zwischen Öffnungen weglassen,
+  obere Geschosse niedriger, aber «make the ground-floor doors and windows to the
+  correct scale». Für Apoleia: Grundfläche stark verdichten, Höhe weniger, Türen,
+  Bögen, Sitze und Menschen echt.
+- **Disneyland Main Street:** Erdgeschoss etwa 90 %, zweites 80 %, drittes weniger
+  (Gennawey, 2008, «forced perspective»): Höhe und Fläche dürfen verschieden stark
+  schrumpfen, solange unten alles echt gross ist.
+- **Wahrnehmung:** empfundene Fläche wächst mit Exponent 0,7, Länge mit 1,0
+  (Stevens, 1957): 10-mal mehr Fläche wirkt nur etwa 5-mal so gross; Höhe und
+  Silhouette tragen viel vom Eindruck «riesig». Geringe Schärfentiefe lässt Städte
+  wie Miniaturen wirken (Held et al., 2010; Look, nicht Grösse, eigenes Thema).
+- **Gegenbeispiel:** Gismondis Plastico di Roma imperiale, einheitlich 1 : 250, füllt
+  einen Saal; mit 250 Häusern für Rom nicht möglich.
+- **Warum Kubik- statt Quadratwurzel:** Mit der Quadratwurzel würde der Circus
+  119 × 23 m, das Kolosseum 48 × 40 m; Rom ist im Spiel nur 160–190 m breit.
+  Die Circus-Breite 13,1 m nach der Regel ist zugleich das Minimum für Bahn mit Spina,
+  zwei Gespanne nebeneinander und eine Sitzreihe.
+- Nicht gefunden: eine wissenschaftliche Arbeit zu Massstäben in Aufbauspielen
+  (EU5, Anno); dort Studiopraxis, unveröffentlicht.
+
+Literatur (APA 7; online geöffnet am 31.10.2026, ausser wo «nicht geprüft» steht):
+- Brown, S. A., & Samavati, F. (2017). Real-time panorama maps. In *Proceedings of the Symposium on Non-Photorealistic Animation and Rendering (NPAR '17)*. ACM. https://doi.org/10.1145/3092919.3092922
+- Gennawey, S. (2008, November 13). *An urban designer looks at Main Street*. TouringPlans. https://touringplans.com/blog/an-urban-designer-looks-at-main-street/
+- Glander, T. (2013). *Multi-scale representations of virtual 3D city models* [Doctoral dissertation, Universität Potsdam]. https://publishup.uni-potsdam.de/opus4-ubp/files/6201/glander_diss.pdf
+- Glander, T., & Döllner, J. (2008). *Automated cell-based generalization of virtual 3D city models with dynamic landmark highlighting* [Workshop paper]. ICA Workshop on Generalisation and Multiple Representation. https://kartographie.geo.tu-dresden.de/downloads/ica-gen/workshop2008/29_Glander_Dollner.pdf
+- Grabler, F., Agrawala, M., Sumner, R. W., & Pauly, M. (2008). Automatic generation of tourist maps. *ACM Transactions on Graphics, 27*(3), 1–11. https://doi.org/10.1145/1360612.1360699
+- Held, R. T., Cooper, E. A., O'Brien, J. F., & Banks, M. S. (2010). Using blur to affect perceived distance and size. *ACM Transactions on Graphics, 29*(2), Article 19. https://doi.org/10.1145/1731047.1731057
+- Jiang, B., Liu, X., & Jia, T. (2013). *Scaling of geographic space as a universal rule for map generalization* [Preprint]. arXiv. https://arxiv.org/abs/1102.1561 (Zeitschriftenangaben nicht geprüft)
+- McMaster, R. B., & Shea, K. S. (1992). *Generalization in digital cartography*. Association of American Geographers. (nicht geprüft)
+- Museo della Civiltà Romana. (o. J.). *Plastico di Roma imperiale: Veduta generale*. https://www.museociviltaromana.it/en/collezioni/percorsi_per_sale/plastico_di_roma_imperiale/plastico_di_roma_imperiale_veduta_generale
+- Patterson, T. (2000). A view from on high: Heinrich Berann's panoramas and landscape visualization techniques for the U.S. National Park Service. *Cartographic Perspectives, 36*, 38–65. https://doi.org/10.14714/CP36.824
+- Stevens, S. S. (1957). On the psychophysical law. *Psychological Review, 64*(3), 153–181. (nicht geprüft)
+- Töpfer, F., & Pillewizer, W. (1966). The principles of selection. *The Cartographic Journal, 3*(1), 10–16. (nicht geprüft)
+- Verducci, J. (2010, Februar). Structures: Selective compression. *Garden Railways*. https://www.trains.com/wp-content/uploads/2020/10/selective_compression.pdf
