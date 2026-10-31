@@ -14,7 +14,8 @@
 // the work (Ramon, 30.10.2026: "Wuselfaktor", "alles aus der Simulation").
 // At the slow speeds the figures keep the day of people_day.gdshaderinc:
 // in the house at night and for the midday meal, out to the fields and
-// home again by the hour, sitting at a meal in the field or without one.
+// home again by the hour, sitting at a meal in the field or without one,
+// at work by the workshop, gone while they walk to the market or to work.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
@@ -109,7 +110,7 @@ void vertex() {
 	bool female = ((w >> 22u) & 1u) == 1u;
 	bool child = ((w >> 23u) & 1u) == 1u;
 	vec2 look = dot_person_look(px);
-	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, look, dot_person_flags(px));
+	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, look, dot_person_flags(px), dot_person_away(px));
 	bool field = day.pose == DAY_WORK;
 	bool lying = day.pose == DAY_LIE;
 	bool sitting = day.pose == DAY_SIT;
@@ -180,8 +181,14 @@ void vertex() {
 	if (day.walking) {
 		a = atan(-day.way.x, day.way.y); // the figure's front (+z) along the way
 	}
-	float s = figure_scale * (child ? 0.62 : (female ? 0.94 : 1.0) * (0.94 + 0.1 * r2.y)) * (slot == selected_slot ? 1.4 : 1.0);
 	vec2 p = rec.xy + place.xy - 32.0;
+	if (day.faces) {
+		// at the workshop, turned to it as the house is (dot_place DOT_WORK_AT)
+		vec2 st;
+		vec2 f = dot_house_turn(p, st) * vec2(0.0, 1.0);
+		a = atan(-f.x, f.y);
+	}
+	float s = figure_scale * (child ? 0.62 : (female ? 0.94 : 1.0) * (0.94 + 0.1 * r2.y)) * (slot == selected_slot ? 1.4 : 1.0);
 	if (playing) {
 		// round and round, either way; facing along the circle
 		float way = r.y < 0.5 ? 1.0 : -1.0;

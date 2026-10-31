@@ -63,16 +63,24 @@ vec4 dot_record(ivec2 px) {
 	return texelFetch(people_tex, ivec3(px.x, px.y % page_side, px.y / page_side), 0);
 }
 
+// The pixel of a slot in the prep texture (dot_record).
+ivec2 dot_slot_px(uint slot) {
+	int per = page_side * page_side;
+	int in_page = int(slot) % per;
+	return ivec2(in_page % page_side, (int(slot) / per) * page_side + in_page / page_side);
+}
+
 // What the sim has of each person's household (ApoleiaPeople.people_looks,
 // once a sim week, people_dots.gd): r its share of its need eaten (‰ / 4),
-// g its flags (apoleia_sim::grain HOUSE_*, 128 when the sim knows it), by
-// the same pixel as the record.
+// g its flags (apoleia_sim::grain HOUSE_*, its workshop in bits 5 and 6,
+// 128 when the sim knows it), by the same pixel as the record.
 uniform sampler2D person_look_tex : filter_nearest, repeat_disable;
 uniform bool has_person_looks = false;
 const int DOT_LOOK_COOKS = 1;
 const int DOT_LOOK_HARVEST = 4;
 const int DOT_LOOK_SOWING = 8;
 const int DOT_LOOK_FARM = 16;
+const int DOT_LOOK_CRAFT_SHIFT = 5; // 1 weaver, 2 smith, 3 potter, 0 none (sim CRAFT_NAMES)
 const int DOT_LOOK_KNOWN = 128;
 
 // x the share of its need the person's household ate (1 when not known),
@@ -95,6 +103,35 @@ int dot_person_flags(ivec2 px) {
 	}
 	int g = int(texelFetch(person_look_tex, px, 0).g * 255.0 + 0.5);
 	return (g & DOT_LOOK_KNOWN) != 0 ? g : 0;
+}
+
+// The household's workshop from its flags: 1 weaver, 2 smith, 3 potter, 0 none.
+int dot_craft(int flags) {
+	return (flags >> DOT_LOOK_CRAFT_SHIFT) & 3;
+}
+
+// Where a grown-up of a household with a workshop stands at it, metres in
+// the farmhouse's frame (scripts/voxel/farmhouse.gd WORKSHOP_AT, outside
+// the fence), and which way it faces there (+z): the weaver behind the
+// house at the loom, the smith by the anvil front right, the potter by the
+// jars beside the kiln front left (people_day.gdshaderinc «Handwerk»).
+const vec2 DOT_WORK_AT[3] = vec2[](vec2(-0.6, -8.6), vec2(5.0, 7.45), vec2(-3.25, 6.95));
+
+// When the person in a slot is away from home today (people_trips.gd: a
+// carrier, trader or day labourer walking out and back, at «Alltag»), RGBA8
+// by the same pixel as the record: the hour it leaves (r * 256 + g) / 2048
+// and the hour it is back (b * 256 + a) / 2048, people_dots.gd.
+uniform sampler2D person_away_tex : filter_nearest, repeat_disable;
+uniform bool has_person_away = false;
+
+// x the hour the person leaves, y the hour it is back; x >= y when it
+// stays at home.
+vec2 dot_person_away(ivec2 px) {
+	if (!has_person_away) {
+		return vec2(0.0);
+	}
+	vec4 a = round(texelFetch(person_away_tex, px, 0) * 255.0);
+	return vec2(a.r * 256.0 + a.g, a.b * 256.0 + a.a) / 2048.0;
 }
 
 // Where a member of a household at work on its fields stands, from where
@@ -296,7 +333,11 @@ vec3 dot_place(vec4 rec, uint slot, bool house) {
 			mat2 turn = dot_house_turn(p, st);
 			float m_km = dot_km_per_m * st.x;
 			vec2 local; // metres in the farmhouse's frame, front towards +z
-			if (h.y < 0.25) {
+			// the grown-ups of a household with a workshop at it, side by side
+			int craft = ((uint(rec.w) >> 23u) & 1u) == 0u ? dot_craft(dot_person_flags(dot_slot_px(slot))) : 0;
+			if (craft > 0) {
+				local = DOT_WORK_AT[craft - 1] + vec2((h.x - 0.5) * 1.6, (h2.x - 0.5) * 0.4);
+			} else if (h.y < 0.25) {
 				// in front of the house (clear of the well, farmhouse.gd _well) or behind it
 				local = h2.y < 0.5 ? vec2(h.x * 10.25 - 6.0, 3.9 + 1.9 * h2.x) : vec2((h.x - 0.5) * 7.0, -4.0 - 1.6 * h2.x);
 			} else if (h.y < 0.6) {

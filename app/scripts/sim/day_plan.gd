@@ -5,7 +5,8 @@ extends RefCounted
 ## routines). The same blocks and the same hashes as the shader
 ## (people_dots_common.gdshaderinc dot_hash, dot_rand2), so the list says
 ## what the figure does: keep the two in step. The day is sampled every
-## minute and cut where what the person does changes.
+## minute and cut where what the person does changes. Where it walks today
+## as a carrier, trader or hired hand comes from people_trips.gd (`away`).
 
 const WALK_KMH := 4.5 # people_day.gdshaderinc DAY_WALK_KMH
 const UNFREE := 12 # the job of the unfree (sim groups.rs)
@@ -13,6 +14,7 @@ const LOOK_COOKS := 1 # the household flags (people_dots_common.gdshaderinc DOT_
 const LOOK_HARVEST := 4
 const LOOK_SOWING := 8
 const LOOK_FARM := 16
+const LOOK_CRAFT_SHIFT := 5 # the workshop: 1 weaver, 2 smith, 3 potter
 const STEPS := 24 * 60
 ## What a person does, as day_at tells it
 const SLEEP := "sleep"
@@ -25,6 +27,10 @@ const MEAL_FIELD := "meal_field"
 const REST := "rest"
 const LIE := "lie"
 const ROAD := "road"
+const CRAFT := "craft"
+const AWAY_OUT := "away_out"
+const AWAY_AT := "away_at"
+const AWAY_HOME := "away_home"
 
 ## a * b modulo 2^32, without leaving 64 bits
 static func _mul(a: int, b: int) -> int:
@@ -61,13 +67,17 @@ static func _leg(h: float, s: float, e: float, walk: float) -> float:
 	return clampf((h - s) / walk, 0.0, 1.0) if h < e else 1.0 - clampf((h - e) / walk, 0.0, 1.0)
 
 ## What person `slot` of household `key` does at hour `h` (day_at): kind,
-## job, female, child from its record, flags the household's (0 not known).
-static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2) -> String:
+## job, female, child from its record, flags the household's (0 not known),
+## away where it walks today (people_trips.gd `away`, {} if nowhere).
+static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}) -> String:
 	var busy := (flags & (LOOK_HARVEST | LOOK_SOWING)) != 0
 	var farmer := kind == 0 and not child and (busy or ((flags & LOOK_FARM) != 0 and (not female or job == UNFREE)))
+	var craft := (flags >> LOOK_CRAFT_SHIFT) & 3 if kind == 0 and not child else 0
 	var r := _rand2(slot, 61)
 	if kind >= 2:
 		return LIE if h < sun.x - 0.5 + 0.5 * r.x or h >= sun.y + 1.0 + r.y else ROAD
+	if not away.is_empty() and h >= _away_hour(away.leave) and h < _away_hour(away.back):
+		return AWAY_OUT if h < float(away.arrive) else (AWAY_AT if h < float(away.stay) else AWAY_HOME)
 	var wake := sun.x + 0.25 + 0.75 * r.x if child else sun.x - 0.5 + 0.75 * r.x
 	var bed := sun.y - 0.25 + 0.5 * r.y if child else sun.y + 0.25 + 0.75 * r.y
 	if h < wake or h >= bed:
@@ -80,6 +90,8 @@ static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool,
 		var r2 := _rand2(slot, 62)
 		var walk := field_km(key, slot) / WALK_KMH
 		var go := maxf(sun.x - 0.25 + 0.5 * r2.x if busy else sun.x + 0.25 + 0.75 * r2.x, wake + 0.1)
+		if not away.is_empty() and _away_hour(away.back) > _away_hour(away.leave):
+			go = maxf(go, _away_hour(away.back) + 0.1) # out to the field once back from the market
 		var back := maxf(sun.y - 0.25 - 0.5 * r2.y if busy else sun.y - 0.5 - 0.75 * r2.y, go + walk)
 		var noon_go := m.x - walk - 0.15 * r2.x
 		var noon_back := m.y + 0.15 * r2.y
@@ -96,19 +108,28 @@ static func at(h: float, slot: int, key: int, kind: int, job: int, female: bool,
 			if u < 1.0:
 				return TO_FIELD if going else TO_HOME
 			return (MEAL_FIELD if cooks else REST) if at_meal else FIELD
+	if craft > 0 and not at_meal:
+		var r3 := _rand2(slot, 63)
+		if h >= maxf(sun.x + 0.25 + 0.5 * r3.x, wake + 0.5) and h < sun.y - 0.5 - 0.75 * r3.y:
+			return CRAFT
 	if at_meal:
 		return MEAL_IN if cooks else REST
 	return HOME
 
+## An hour of `away` as the figures read it (people_dots_common
+## dot_person_away: in 2048ths, people_dots.gd _sync_away).
+static func _away_hour(h: float) -> float:
+	return float(clampi(int(round(h * 2048.0)), 0, 65535)) / 2048.0
+
 ## The person's day as blocks [{from, to, what, text}], hours 0-24, cut
 ## where what it does changes; the night's two ends are the first and the
 ## last block.
-static func day(slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2) -> Array:
+static func day(slot: int, key: int, kind: int, job: int, female: bool, child: bool, flags: int, sun: Vector2, away := {}) -> Array:
 	var out: Array = []
 	var last := ""
 	for i in STEPS:
 		var h := (float(i) + 0.5) * 24.0 / float(STEPS)
-		var what := at(h, slot, key, kind, job, female, child, flags, sun)
+		var what := at(h, slot, key, kind, job, female, child, flags, sun, away)
 		if what != last:
 			if not out.is_empty():
 				out[-1].to = float(i) * 24.0 / float(STEPS)
@@ -116,12 +137,17 @@ static func day(slot: int, key: int, kind: int, job: int, female: bool, child: b
 			last = what
 	var playing := child and kind == 0 and _rand2(slot, 37).x < 0.7 # as people_figures.gdshader
 	for i in out.size():
-		out[i].text = _text(out[i].what, i == 0, flags, playing)
+		out[i].text = _text(out[i].what, i == 0, flags, playing, away)
 	return out
 
 ## The block for German eyes.
-static func _text(what: String, first: bool, flags: int, playing: bool) -> String:
+static func _text(what: String, first: bool, flags: int, playing: bool, away: Dictionary) -> String:
 	match what:
+		CRAFT:
+			return ["", "webt am Webstuhl hinter dem Haus", "schmiedet am Amboss", "töpfert beim Brennofen"][(flags >> LOOK_CRAFT_SHIFT) & 3]
+		AWAY_OUT, AWAY_AT, AWAY_HOME:
+			var texts: Array = away.get("texts", ["unterwegs", "unterwegs", "unterwegs"])
+			return texts[[AWAY_OUT, AWAY_AT, AWAY_HOME].find(what)]
 		SLEEP:
 			return "schläft, frühstückt im Haus" if first else "isst zu Abend, schläft im Haus"
 		HOME:
