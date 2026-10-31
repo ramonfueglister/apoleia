@@ -20,6 +20,7 @@ const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const MAIN_MENU := "res://main_menu.tscn"
 const LAYER := 30 # over the windows (10) and tooltips (20)
+const SETTINGS_PX := 640.0 # the settings' window: room for the notices' two controls
 const BLUR := """
 shader_type canvas_item;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
@@ -43,6 +44,7 @@ var _year := -1 # the game year last seen, for the autosave
 
 func setup(game_clock: Node, music: Node) -> void:
 	name = "PauseMenu"
+	add_to_group("pause_menu")
 	layer = LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	clock = game_clock
@@ -142,9 +144,16 @@ func _show_saves(can_save: bool) -> void:
 	_show(panel)
 	_saves.first_focus().grab_focus.call_deferred()
 
-func _show_settings() -> void:
-	var panel := _page("Einstellungen", 520.0)
-	var settings := GameSettings.new(soundtrack)
+## The settings at their tab `tab` (0 Allgemein, 1 Meldungen, 2 Tasten);
+## the notices' settings button opens them from the game.
+func show_settings(tab := 0) -> void:
+	if not open:
+		show_menu()
+	_show_settings(tab)
+
+func _show_settings(tab := 0) -> void:
+	var panel := _page("Einstellungen", SETTINGS_PX)
+	var settings := GameSettings.new(soundtrack, tab)
 	panel.body.add_child(settings)
 	MenuPanel.gap(panel.body, 8)
 	panel.body.add_child(MenuPanel.button("Fertig", _back))

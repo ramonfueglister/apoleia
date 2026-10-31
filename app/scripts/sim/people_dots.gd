@@ -73,6 +73,7 @@ const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HouseLife = preload("res://scripts/sim/people_house_life.gd")
 const PeopleFlows = preload("res://scripts/sim/people_flows.gd")
@@ -1156,7 +1157,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_at = event.position
 		elif _press_at.distance_to(event.position) <= CLICK_PX:
 			_pick(event.position)
-	if event is InputEventKey and event.pressed and not event.echo:
+	if event is InputEventKey and Keys.pressed(event, "apoleia_people"):
+		shown = not shown
+	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_C:
 				colour_mode = (colour_mode + 1) % MODES.size()
@@ -1169,7 +1172,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				for m in [_material, _figure_material]:
 					m.set_shader_parameter("selected_slot", -1)
 				_show_info(false)
-			KEY_P: shown = not shown
 			KEY_G:
 				map_on = not map_on
 				_map_version = -1

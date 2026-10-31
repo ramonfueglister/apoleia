@@ -16,6 +16,15 @@ extends Node3D
 ##   Esc or a right click puts the tool away; a click on a farm of yours
 ##   takes it back. Middle and right drag still move the map.
 ##
+## The strip stands at the bottom left, under the round buttons of the main
+## windows (ui/main_buttons.gd). A chosen tool opens «Wo bauen» beside it
+## (ui/build_sites.gd, as Victoria 3's construction list): the markets with
+## people in tents, free land, hunger and the grain price; a click there
+## flies close and the tool stays in hand. Chosen from too far out, the
+## tool waits until the view is close (a row of the list, or zooming in),
+## and zooming out puts it back to waiting. The keys are the player's
+## (ui/keys.gd).
+##
 ## Water takes no order; the preview shows it red, and amber or grey where
 ## the sim says nobody would move in or what it does is not decided yet.
 ##
@@ -32,6 +41,8 @@ extends Node3D
 
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
+const BuildSites = preload("res://scripts/ui/build_sites.gd")
 const RoadView = preload("res://scripts/road_view.gd")
 const FarmhouseGhost = preload("res://scripts/voxel/farmhouse_ghost.gd")
 const LOT_KM := 0.5 # people_dots.gd LOT_KM, people_dots_common.gdshaderinc DOT_LOT_KM
@@ -57,6 +68,7 @@ const NAMES := ["Hof", "Feld", "Strasse"]
 ## Steinstrassen"); roads ordered before are still built and drawn.
 const TOOLS := [FARM, FIELD]
 const ICONS := ["house", "plow", "horizon-road"] # assets/ui/icons
+const ACTIONS := ["apoleia_farm", "apoleia_field", ""] # their keys (ui/keys.gd)
 ## roof terracotta, ripe grain, stone: each stands off the green ground
 const COLOURS: Array[Color] = [Color("b5552e"), Color("e0b83c"), Color("a9a296")]
 const BAD := Color(0.91, 0.42, 0.35, 0.6)
@@ -68,6 +80,8 @@ var landscape: Node3D
 var terrain: Node3D
 var people: RefCounted # ApoleiaPeople, or null
 var tool := NONE
+var _wanted := NONE # a tool chosen too far out: it comes into hand once the view is close
+var _sites: BuildSites # «Wo bauen»
 var _orders := {} # lot (Vector2i) -> kind, as the sim last reported
 var _progress := {} # lot -> share of the site built (0 … 1), where work began
 var _built_roads := {} # lot -> true: finished road lots (build_orders "roads")
@@ -128,7 +142,9 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	# BUTTON_PX points; on a Retina screen a pixel is half a point
 	var k := BUTTON_PX / ToolButton.SIZE.x * DisplayServer.screen_get_scale(DisplayServer.window_get_current_screen())
 	bar.add_theme_constant_override("separation", roundi(8 * k))
-	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, roundi(14 * k))
+	# at the bottom left, clear of the main windows' buttons above (ui/main_buttons.gd)
+	bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, roundi(14 * k))
+	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	bar.theme = Vic3.theme() # the tooltips
 	# the medallions on a strip of leather, as the map modes at the foot (ui/map_modes.gd)
 	bar.draw.connect(func(): Vic3.draw_strip(bar, Rect2(Vector2.ZERO, bar.size).grow(5.0 * k)))
@@ -138,7 +154,7 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 		b.scale_k = k
 		b.custom_minimum_size = ToolButton.SIZE * k
 		b.kind = kind
-		b.tooltip_text = "%s  (%d)" % [NAMES[kind], kind + 1]
+		b.mouse_entered.connect(_tip.bind(b))
 		b.chosen.connect(_choose.bind(kind))
 		bar.add_child(b)
 		_buttons.append(b)
@@ -154,17 +170,53 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.visible = false
 	hud.add_child(_label)
+	_sites = BuildSites.new()
+	_sites.landscape = scene
+	if "people" in scene and scene.people != null:
+		for c in scene.people.get_children():
+			if c.get_script() == SimTables:
+				_sites.tables = c
+	_sites.closed.connect(_sites_closed)
+	add_child(_sites)
 
 func _close() -> bool:
 	return landscape.width <= BUILD_MAX_KM
 
+## What is being built, for the outliner (ui/outliner.gd): each order as
+## {kind, at (world km), share built (0 before work began)}.
+func sites() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for l: Vector2i in _orders:
+		out.append({"kind": _orders[l], "at": lot_centre(l), "share": _progress.get(l, 0.0)})
+	return out
+
+## A tool's button or key: the tool in hand, or put away when it was; too
+## far out it waits for the view to come close.
 func _choose(kind: int) -> void:
-	tool = NONE if tool == kind or not _close() else kind
+	var was := tool if tool != NONE else _wanted
+	_put(NONE if was == kind else kind)
+	var now := tool if tool != NONE else _wanted
+	_sites.show_for(now, NAMES[now] if now != NONE else "")
+
+## `kind` in hand, or waiting when the view is too far out (NONE: neither).
+func _put(kind: int) -> void:
+	tool = kind if _close() else NONE
+	_wanted = NONE if _close() else kind
 	_end_stroke(false)
 	for b in _buttons:
-		b.active = b.kind == tool
+		b.active = b.kind == kind
 		b.queue_redraw()
 	_dirty = true
+
+## «Wo bauen» closed with its ✕: a waiting tool waits no more; one in hand stays.
+func _sites_closed() -> void:
+	if _wanted != NONE:
+		_put(NONE)
+
+func _tip(b: ToolButton) -> void:
+	var key := Keys.key_of(ACTIONS[b.kind]) if ACTIONS[b.kind] != "" else KEY_NONE
+	var label: String = NAMES[b.kind] if key == KEY_NONE else "%s  (%s)" % [NAMES[b.kind], Keys.key_name(key)]
+	b.tooltip_text = label if b.enabled else "%s\nZu weit weg zum Bauen: einen Ort wählen oder näher heranzoomen" % label
 
 # ---------------------------------------------------------------- the lots
 
@@ -239,14 +291,12 @@ static func _dist(a: Vector2i, b: Vector2i) -> float:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_1, KEY_2:
-				_choose(TOOLS[event.keycode - KEY_1])
-				get_viewport().set_input_as_handled()
-			KEY_ESCAPE:
-				if tool != NONE:
-					_choose(tool)
-					get_viewport().set_input_as_handled()
+		if Keys.pressed(event, "apoleia_farm") or Keys.pressed(event, "apoleia_field"):
+			_choose(FARM if Keys.pressed(event, "apoleia_farm") else FIELD)
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_ESCAPE and (tool != NONE or _wanted != NONE):
+			_choose(tool if tool != NONE else _wanted)
+			get_viewport().set_input_as_handled()
 		return
 	if tool == NONE:
 		return
@@ -342,10 +392,10 @@ func _process(_delta: float) -> void:
 	for b in _buttons:
 		if b.enabled != close:
 			b.enabled = close
-			b.tooltip_text = "%s  (%d)" % [NAMES[b.kind], b.kind + 1] if close else "%s: zum Bauen näher heranzoomen" % NAMES[b.kind]
+			_tip(b)
 			b.queue_redraw()
-	if not close and tool != NONE:
-		_choose(tool)
+	if (not close and tool != NONE) or (close and _wanted != NONE):
+		_put(tool if tool != NONE else _wanted) # in hand when close, waiting when far
 	if people != null:
 		var v: int = people.build_version()
 		if v != _version:
@@ -748,17 +798,17 @@ class ToolButton extends Control:
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
 
-	## A Victoria 3 medallion with the tool's icon: lit while chosen or under
-	## the mouse, dimmed when the view is too far out to build.
+	## A Victoria 3 medallion with the tool's icon: lit while chosen (also
+	## while it waits for the view to come close) or under the mouse, dimmed
+	## when the view is too far out to build.
 	func _draw() -> void:
 		var hover := get_global_rect().has_point(get_global_mouse_position())
 		if _icon == null:
 			_icon = Vic3.icon(ICONS[kind])
 		Vic3.draw_medallion(self, size * 0.5, minf(size.x, size.y) * 0.5 - 2.0 * scale_k, _icon,
-			enabled and (active or hover), false, not enabled)
+			active or (enabled and hover), false, not enabled) # a waiting tool stays lit
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if enabled:
-				chosen.emit()
+			chosen.emit() # too far out the tool waits, and «Wo bauen» shows where
 			accept_event()
