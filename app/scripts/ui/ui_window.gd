@@ -12,6 +12,7 @@ extends Control
 ##   drag the grip          size
 ##   double click the bar   fold or unfold
 ##   ← at the left          back to what it showed before (remember)
+##   right click the bar    the menu of what it shows (context)
 ##
 ## The content goes into `body` (a VBoxContainer that fills the window);
 ## `bar_extra` takes controls left of the title (back and settings go there).
@@ -20,6 +21,7 @@ extends Control
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const WINDOW_LAYER := 10 # over the game clock and market (4) and the build menu (3)
 const BAR_PX := 56.0
 const ROUND_PX := 38.0
@@ -41,6 +43,9 @@ var min_size := Vector2(320, 200)
 var body: VBoxContainer
 var bar_extra: HBoxContainer
 var folded := false
+## func() -> Dictionary: the right-click menu of what the window shows
+## (ui/context_menu.gd, {title, kind, entries}), {} for none
+var context := Callable()
 var _bar: Control
 var _title: RichTextLabel
 var _subtitle: Label
@@ -275,7 +280,11 @@ func toggle_fold() -> void:
 	_save()
 
 func _on_bar_input(e: InputEvent) -> void:
-	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_RIGHT:
+		if not e.pressed and context.is_valid():
+			ContextMenu.open(self, context.call())
+		accept_event()
+	elif e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 		if e.double_click:
 			toggle_fold()
 		elif e.pressed:

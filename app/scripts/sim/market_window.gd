@@ -16,6 +16,7 @@ extends CanvasLayer
 ##   click on a market square   open its window
 ##   ← in its band              the market shown before
 ##   → under its title          the camera onto the market
+##   right click on its band    its menu: on the map, in the outliner
 ##   Esc or ×                   close it
 ##
 ## In the group "market_window": call_group("market_window", "open", m)
@@ -29,6 +30,7 @@ const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
 const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const CLICK_PX := 4.0
 const MARKET_MAX_KM := 80.0 # view width up to which a click opens a market (build_menu.gd BUILD_MAX_KM)
 const REFRESH_DAYS := 7
@@ -49,6 +51,7 @@ var _numbers: ScrollContainer
 var _when: Label
 var _rows: GridContainer
 var _notes: VBoxContainer
+var _shown := {} # the market's row as last shown
 
 func setup(scene: Node3D, sim: RefCounted) -> void:
 	name = "MarketWindow"
@@ -62,6 +65,12 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_win.closed.connect(func():
 		if market >= 0:
 			close_window())
+	_win.context = func() -> Dictionary:
+		if market < 0 or not _shown.has("region"):
+			return {}
+		var fly := _fly_to.bind(_shown) if _shown.has("lon") else Callable()
+		return {"title": "Markt %s" % _shown.region[0], "kind": "Kornmarkt",
+			"entries": ContextMenu.entries(get_tree(), "market", market, _shown.region[0], fly, true)}
 	var tabs := UiTabs.new()
 	for title in ["Überblick", "Diagramme", "Alle Zahlen"]:
 		tabs.add_tab(title)
@@ -171,9 +180,11 @@ func _clear() -> void:
 func _show(d: Dictionary) -> void:
 	_clear()
 	if not d.has("data"):
+		_shown = {}
 		_win.set_title("Kein Markt")
 		return
 	var data: Dictionary = d.data
+	_shown = data
 	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
 	var persons := int(data.persons[0]) if data.has("persons") else 0
 	_win.set_subtitle("Kornmarkt einer Region mit %s Menschen" % SimOverview._num(persons) if data.has("persons") else "Kornmarkt",

@@ -23,7 +23,9 @@ extends CanvasLayer
 ## extent_km in data place a row: a click on it flies the camera there. The
 ## panel asks again once the next monthly count is done (day 17 of a month).
 ##
-## A click on a column head sorts by it (again: the other way round), the
+## A right click on a row opens its menu (ui/context_menu.gd): a market's
+## window (for a region's row, its market's), the place on the map, the
+## outliner. A click on a column head sorts by it (again: the other way round), the
 ## search field and the dropdowns of the text columns filter, and
 ## "zusammenfassen" folds the rows by the first dropdown's column, with sums,
 ## and shares, means ("mean" in the key) and per-unit values ("Denar/kg")
@@ -56,6 +58,7 @@ const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Tooltips = preload("res://scripts/ui/tooltips.gd")
 const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 ## apoleia_sim::tables::TABLES, then "overview": a page of sim_overview.gd
 ## (VIEWS), drawn from OVERVIEW_KINDS
 const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
@@ -825,6 +828,7 @@ func _row_tip(at: Vector2) -> Dictionary:
 		_history_spark(d, KINDS[_kind], int(t.data.id[rows[0]]))
 	if t.data.has("lon"):
 		d.hints.append(["Klick", "fliegt zum Ort"])
+		d.hints.append(["Rechtsklick", "Menü"])
 	return d
 
 ## A good's price, or what a class ate of its need, over all months from
@@ -938,6 +942,44 @@ func _on_selected() -> void:
 	if rows.size() == 1 and t.data.has("id"):
 		_state[_kind].selected = int(t.data.id[rows[0]])
 	_fly(t, rows)
+
+## A right click on a row: its menu. A market opens its window, a region's
+## row (people, farms) its market's; a row with a place flies there.
+func _on_tree_input(e: InputEvent) -> void:
+	if not (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_RIGHT):
+		return
+	_tree.accept_event() # the right button selects nothing
+	var t := _tables[_kind]
+	var item := _tree.get_item_at_position(e.position)
+	if e.pressed or t.is_empty() or item == null or not item.has_meta("rows") or _is_sheet(t):
+		return
+	var rows: PackedInt32Array = item.get_meta("rows")
+	var title := item.get_text(0).strip_edges()
+	var fly := _fly.bind(t, rows) if t.data.has("lon") else Callable()
+	var m := _market_of(t, rows)
+	var entries := ContextMenu.entries(get_tree(), "market", m, _market_name(m), fly) if m >= 0 else ContextMenu.entries(get_tree(), "", -1, "", fly)
+	ContextMenu.open(_tree, {"title": title,
+		"kind": ROW_KINDS[_kind] if rows.size() == 1 else "%s, %s zusammen" % [TITLES[_kind], _int(rows.size())], "entries": entries})
+
+## The market of a single row: a market's own, a region's (people, farms)
+## by its name in the markets table; -1 for none.
+func _market_of(t: Dictionary, rows: PackedInt32Array) -> int:
+	if rows.size() != 1 or not t.data.has("id"):
+		return -1
+	if KINDS[_kind] == "markets":
+		return int(t.data.id[rows[0]])
+	var markets := _tables[0]
+	if not KINDS[_kind] in ["population", "farms"] or not t.data.has("region") or markets.is_empty():
+		return -1
+	var at := Array(markets.data.region).find(t.data.region[rows[0]])
+	return int(markets.data.id[at]) if at >= 0 else -1
+
+func _market_name(m: int) -> String:
+	var markets := _tables[0]
+	if markets.is_empty():
+		return ""
+	var at := Array(markets.data.id).find(m)
+	return String(markets.data.region[at]) if at >= 0 else ""
 
 ## A group opened the first time gets its rows; the state keeps it open
 ## across the monthly refresh.
@@ -1327,6 +1369,7 @@ func _build() -> void:
 	_tree.column_title_clicked.connect(_on_title)
 	_tree.item_selected.connect(_on_selected)
 	_tree.item_collapsed.connect(_on_collapsed)
+	_tree.gui_input.connect(_on_tree_input)
 	Tooltips.attach(_tree, _row_tip)
 	column.add_child(_tree)
 	_note = Label.new()

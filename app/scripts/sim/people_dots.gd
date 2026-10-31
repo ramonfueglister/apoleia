@@ -72,6 +72,7 @@ const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
 const HouseLife = preload("res://scripts/sim/people_house_life.gd")
@@ -1002,6 +1003,7 @@ func _build_hud() -> void:
 	# the person clicked, in a window (person_window.gd) at the bottom left
 	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
 	_person._win.closed.connect(func(): _shown_pid = -1)
+	add_to_group("person_window") # call_group("person_window", "open_person", pid)
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()
@@ -1080,6 +1082,11 @@ static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
 
+## The person `pid` in their window, from anywhere (the outliner, a
+## right-click menu: the group "person_window").
+func open_person(pid: int) -> void:
+	_show_household(pid, -1)
+
 ## Opens the person's window for a person by id, else a member of a
 ## household (an event window's people, sim_events.gd).
 func _show_household(pid: int, household: int) -> void:
@@ -1150,11 +1157,13 @@ func _show_info(on: bool) -> void:
 
 ## The person in its window. The one shown before stays one step back
 ## (the window's ←); the line under the title names their market, its →
-## opens the market's window.
+## opens the market's window; a right click on the band gives the menu
+## (their market, the outliner).
 func _show_person(p: Dictionary) -> void:
 	var win = _person._win
 	if p.is_empty():
 		win.set_subtitle("")
+		win.context = Callable()
 	else:
 		var pid := int(p.pid)
 		if _shown_pid >= 0 and pid != _shown_pid and not _back_pending:
@@ -1167,6 +1176,14 @@ func _show_person(p: Dictionary) -> void:
 		var m := int(p.get("market", -1))
 		win.set_subtitle("Am Markt %s" % p.market_name if m >= 0 else "",
 			func(): get_tree().call_group("market_window", "open", m), "Den Markt öffnen")
+		var who: String = p.get("name", p.job)
+		var market_name: String = p.get("market_name", "")
+		win.context = func() -> Dictionary:
+			var entries := ContextMenu.entries(get_tree(), "person", pid, who, Callable(), true)
+			if m >= 0:
+				entries.push_front({"text": "Markt %s öffnen" % market_name, "icon": "open-book",
+					"action": func(): get_tree().call_group("market_window", "open", m)})
+			return {"title": who, "kind": "Person", "entries": entries}
 	_person.show_person(p, _doing)
 	if not p.is_empty():
 		print(JSON.stringify({"event": "people_person", "pid": p.pid}))
