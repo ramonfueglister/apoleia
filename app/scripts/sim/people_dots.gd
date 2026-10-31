@@ -54,6 +54,7 @@ const CROP_SHADER = preload("res://shaders/people_crops.gdshader")
 const PARCELS_SHADER = preload("res://shaders/people_parcels.gdshader")
 const CROP_N := 40 # parcels per side of the square of crops around the ground in view
 const CROP_ROWS := 8 # rows of crops or vines per parcel: clumps 8-10 px wide at 3 km, as Urbek's (r11: 12 rows read as dots)
+const CROP_LUMPS := 6 # lumps a row can carry (round O, people_crops.gdshader CROP_LUMPS)
 const FENCE_POSTS := 6 # posts per side of a fenced field (people_crops.gdshader)
 const HEDGE_BLOCKS := 5 # blocks per side of a hedged field, about two metres each (people_crops.gdshader)
 const FLOCK_MAX := 9 # sheep in the largest flock on a pasture parcel (a three by three grid, people_crops.gdshader)
@@ -619,7 +620,8 @@ static func _box(st: SurfaceTool, centre: Vector3, half: Vector3, colour: Color,
 				st.set_color(Color(colour.r, colour.g, colour.b, ao)); st.set_uv(uv); st.set_normal(n); st.add_vertex(v)
 
 ## A parcel's field: the slab (UV.x = -1), CROP_ROWS rows (UV.x their
-## place across the parcel, UV.y their number), the fence (UV.x = -2,
+## place across the parcel, UV.y their number) and CROP_LUMPS lumps on each
+## (UV.y the row's number + 16 * (lump + 1), round O), the fence (UV.x = -2,
 ## UV.y side * 16 + post, 15 the rail), the hedge (UV.x = -4, UV.y side *
 ## 16 + block) and a flock for the pasture (UV.x = -3, UV.y sheep * 4 +
 ## body, legs or head), each a unit box (x, z
@@ -631,6 +633,8 @@ static func _crop_mesh() -> ArrayMesh:
 	var parts: Array[Vector2] = [Vector2(-1.0, 0.0)]
 	for i in CROP_ROWS:
 		parts.append(Vector2((i + 0.5) / CROP_ROWS, i))
+		for k in CROP_LUMPS:
+			parts.append(Vector2((i + 0.5) / CROP_ROWS, i + 16 * (k + 1)))
 	for side in 4:
 		for k: int in range(FENCE_POSTS) + [15]:
 			parts.append(Vector2(-2.0, side * 16 + k))

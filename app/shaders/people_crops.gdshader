@@ -14,9 +14,10 @@
 // growth come from the same fine layer and rule as the field colours
 // (sim_fields.gdshaderinc). The crop mesh (people_dots.gd _crop_mesh) holds
 // unit boxes (x, z in -0.5..0.5, y 0..1): the slab (UV.x -1), the rows
-// (UV.x the row's place across the parcel), the fence (UV.x -2) and the
-// hedge (UV.x -4). The pasture parcels near the camera (not farmed, open
-// land) carry a small flock of sheep instead (UV.x -3).
+// (UV.x the row's place across the parcel) with their lumps, the fence
+// (UV.x -2) and the hedge (UV.x -4). The pasture parcels near the camera
+// (not farmed, open land) carry a small flock of sheep instead (UV.x -3),
+// and round their pasture block the balk on the hedge's boxes (round O).
 shader_type spatial;
 render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled;
 
@@ -39,6 +40,9 @@ varying float slab_top; // 1 on a slab's top face
 varying float grains;   // how strongly a slab's top is speckled (straw more than soil)
 varying vec2 ground;    // world km on the slab (the speckle runs on across a field's parcels)
 varying flat int joined; // the slab's sides (bits -x, -y, +x, +y) that run on into its field (no lit lip there)
+varying float vox;            // voxels along a row's ridge (-1 off the ridges)
+varying flat float row_seed;  // the row's own dice, for its voxels
+varying flat float gaps;      // share of the ridge's voxels missing
 const vec3 ART_LIGHT = vec3(-0.45, 0.72, 0.53); // towards the SimCity light, world (tile_terrain.gdshader)
 
 // Colours (sRGB) after Urbek's farmland (gauntlet refs/urbek-landschaft-02):
@@ -79,6 +83,24 @@ const vec3 WOOL = vec3(0.84, 0.81, 0.74); // below the house walls (brighter it 
 const vec3 SHEEP_DARK = vec3(0.33, 0.27, 0.22); // face and legs
 const float FLOCK_SHARE = 0.3;   // share of the pasture parcels with a flock: fewer, larger flocks (r11: confetti)
 const vec2 SHEEP_SPACING = vec2(2.2, 1.4); // m between the spots of a flock's three by three grid
+// Rows (round O, 31.10.2026, Ramon: «Beides: Reihen und Weiden»): Urbek's
+// rows are long narrow ridges of small voxels with lumps on them and the
+// soil showing between; ours stood as large smooth clumps in a regular
+// grid, like bricks (at 3 km light green 53 % of the view against Urbek's
+// 21 %, soil 6 % against 18 %). A row is now a low ridge the length of the
+// field, its voxels (VOX_M) in two tones and now and then one missing, and
+// it carries up to CROP_LUMPS lumps (people_dots.gd, UV.y the row + 16 x
+// (lump + 1)) of two to four voxels, wider and twice as high, as many as
+// the stage's share.
+const float CROP_LUMPS = 6.0;
+const float VOX_M = 0.35;
+// The balk round a pasture block (round O, sim_map.gdshaderinc
+// sim_pasture): low blocks of taller, darker grass from the parcel line
+// BALK_M in, and a shrub now and then (SHRUB_SHARE of the blocks); the
+// balks of two blocks side by side meet on the line as one.
+const vec3 BALK = vec3(0.17, 0.32, 0.13);
+const float BALK_M = 0.6;  // sim_map.gdshaderinc SIM_BALK_KM
+const float SHRUB_SHARE = 0.18;
 
 void vertex() {
 	float size = tt_data_km() * 0.5; // a quarter tile up close, half a data tile
@@ -104,17 +126,24 @@ void vertex() {
 	float slab = crop_slab_m(state, kind, g);
 	vec3 c = SOIL;
 	// the rows on it: height (m), width (share of the row spacing), colour,
-	// clumps per row (0: closed)
+	// clumps per row (0: closed); their lumps' height, width and share, and
+	// the share of the ridges' voxels missing
 	float h = 0.0;
 	float w = 0.0;
 	vec3 rc = LEAVES;
 	clumps = 0.0;
 	fill = 0.38;
-	// Urbek's rows run the length of the field as bold dashes of a few
-	// voxels with a voxel's gap, high enough to throw a shadow on the soil
-	// (29.10.: our sprouts in short clumps read as a grid of dots; s4: low
-	// fine dashes flickered as a moire over a large field); a ploughed
-	// field shows its furrows
+	float lh = 0.0;
+	float lw = 0.0;
+	float lumps = 0.0;
+	vox = -1.0;
+	row_seed = 0.0;
+	gaps = 0.0;
+	// Urbek's rows run the length of the field as narrow lumpy ridges,
+	// high enough to throw a shadow on the soil (29.10.: our sprouts in
+	// short clumps read as a grid of dots; s4: low fine dashes flickered as
+	// a moire over a large field; round O: bold dashes read as bricks); a
+	// ploughed field shows its furrows
 	if (state == 1) {
 		// a flat sheet as Urbek's, high enough to show its edge (dark tufts
 		// on it read as ticks, round 16; light sheaves as studs, round 18)
@@ -123,18 +152,25 @@ void vertex() {
 	} else if (grain) {
 		if (g <= 0.0) { c = STUBBLE; h = 0.1; w = 0.35; rc = STUBBLE * 0.85; }
 		else if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
-		else if (g < 0.4) { h = 0.35; w = 0.5; rc = SPROUT; clumps = 6.0; fill = 0.85; }
-		else if (g < 0.75) { h = 0.7; w = 0.6; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN; clumps = 5.0; fill = 0.88; }
-		else {
+		else if (g < 0.4) { h = 0.2; w = 0.3; rc = SPROUT; lh = 0.35; lw = 0.45; lumps = 0.35; gaps = 0.12; }
+		else if (g < 0.75) {
+			h = 0.35; w = 0.35; rc = kind == SIM_WHEAT ? GRAIN_GREEN : BARLEY_GREEN;
+			lh = 0.7; lw = 0.5; lumps = 0.5; gaps = 0.03;
+		} else {
 			c = RIPE[kind];
-			// the ears stand in dense light rows on the sheet (a bare sheet
-			// read as an empty tray, rounds 17 and 20)
-			h = 0.35; w = 0.6; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); clumps = 6.0; fill = 0.85;
+			// the ears stand in light rows on the sheet (a bare sheet read as
+			// an empty tray, rounds 17 and 20)
+			h = 0.2; w = 0.4; rc = mix(RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3);
+			lh = 0.35; lw = 0.6; lumps = 0.5; gaps = 0.03;
 		}
 	} else if (kind == SIM_BEANS) {
 		if (g < 0.12) { h = 0.12; w = 0.5; rc = FURROW; }
-		else if (g < 0.4) { h = 0.35; w = 0.5; rc = SPROUT; clumps = 6.0; fill = 0.85; }
-		else { h = 0.7; w = 0.6; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3); clumps = 5.0; fill = 0.85; }
+		else if (g < 0.4) { h = 0.2; w = 0.3; rc = SPROUT; lh = 0.35; lw = 0.45; lumps = 0.35; gaps = 0.12; }
+		else {
+			// beans bushier than the grain: lumps on most of the row
+			h = 0.35; w = 0.35; rc = g < 0.75 ? LEAVES : mix(LEAVES, RIPE[0], 0.3);
+			lh = 0.7; lw = 0.55; lumps = 0.65; gaps = 0.05;
+		}
 	} else if (kind == SIM_VINES) {
 		// vines stand the year round, every other row of plants, bare in winter
 		c = SOIL_DRY;
@@ -148,12 +184,15 @@ void vertex() {
 	bool fence = UV.x == -2.0;
 	bool hedge = UV.x == -4.0;
 	bool row = UV.x >= 0.0;
-	if (row && (h <= 0.0 || (kind == SIM_VINES && int(UV.y) % 2 == 1))) { show = false; }
+	int row_i = int(UV.y) % 16;    // the row's number
+	int lump = int(UV.y) / 16 - 1; // its lump's, -1 the ridge
+	if (row && (h <= 0.0 || (kind == SIM_VINES && row_i % 2 == 1))) { show = false; }
 	// the fields next to a farmhouse lot fenced all round, further out a
 	// fence or a hedge along a side now and then, as Urbek's farmland
 	int side = int(UV.y) / 16;
 	vec2 block2 = floor(cell / 2.0); // the paddock's block
 	bool walled = false;
+	bool balk = false;
 	if (hedge && near && state == 0 && open) {
 		// a paddock: all four parcels of its block pasture, its ring the
 		// sides of each parcel on the block's edge (the sides are -y, +y,
@@ -173,6 +212,11 @@ void vertex() {
 			&& int(UV.y) % 16 == 2;
 		show = paddock && rim && !gap;
 		walled = sim_hash(block2 * 2.91 + 5.1) < PADDOCK_WALLS;
+		// round O: outside a paddock the farms' pasture has its balk on the
+		// sides where its block ends (people_parcels.gdshader joins)
+		int bit = side == 0 ? 2 : side == 1 ? 8 : side == 2 ? 4 : 1;
+		balk = !paddock && (code & SIM_P_FARMED) != 0 && ((code / SIM_P_JOIN) & bit) == 0;
+		show = show || balk;
 	} else if (fence || hedge) {
 		// only round a field's outside (the join bits -x, -y, +x, +y), by
 		// one draw per side of the field, so a side is fenced or hedged
@@ -198,14 +242,31 @@ void vertex() {
 		y = VERTEX.y * slab;
 	} else if (row) {
 		float step = inner / crop_rows;
-		off = vec2(VERTEX.x * inner * 0.97, (UV.x - 0.5) * inner + VERTEX.z * w * step);
-		// clumps along the field, each row shifted by its own amount (a
-		// strict stagger drew a checker), so they run on from parcel to
-		// parcel (the camera looks along the diagonal, so either way reads
-		// alike)
-		along = VERTEX.x * 0.97 + 0.5 + sim_hash(vec2(UV.y, 2.3)) / max(clumps, 1.0);
+		float len = inner * 0.97; // a row's length, km
+		row_seed = sim_hash(cell * 1.91 + float(row_i) * 0.37);
+		if (lump < 0) {
+			// the ridge
+			off = vec2(VERTEX.x * len, (UV.x - 0.5) * inner + VERTEX.z * w * step);
+			// clumps (the vines) along the field, each row shifted by its own
+			// amount (a strict stagger drew a checker), so they run on from
+			// parcel to parcel (the camera looks along the diagonal, so
+			// either way reads alike)
+			along = VERTEX.x * 0.97 + 0.5 + sim_hash(vec2(float(row_i), 2.3)) / max(clumps, 1.0);
+			vox = (VERTEX.x + 0.5) * len / (VOX_M * km_per_m);
+			y = slab + VERTEX.y * h;
+		} else {
+			// a lump of two to four voxels in its own slot along the row,
+			// shifted in it by its own amount, a shade darker or lighter
+			float r = sim_hash(cell * 2.63 + vec2(float(row_i) * 0.71, float(lump) * 1.37));
+			if (r >= lumps) { show = false; }
+			float slot = len / CROP_LUMPS;
+			float l = min((2.0 + floor(sim_hash(cell * 1.17 + vec2(float(lump) * 3.1, float(row_i) * 0.53)) * 3.0)) * VOX_M * km_per_m, slot * 0.9);
+			float at = (float(lump) + 0.5) * slot - 0.5 * len + (sim_hash(cell * 0.83 + vec2(float(row_i) * 1.9, float(lump) * 0.29)) - 0.5) * (slot - l);
+			off = vec2(at + VERTEX.x * l, (UV.x - 0.5) * inner + VERTEX.z * lw * step);
+			y = slab + VERTEX.y * lh;
+			rc *= r < lumps * 0.5 ? 0.94 : 1.04;
+		}
 		quarter = along_y ? 1 : 0;
-		y = slab + VERTEX.y * h;
 	} else if (sheep) {
 		// sheep k (UV.y / 4) of the flock, part UV.y % 4: body, legs, head;
 		// six to nine of them on their own spots of a loose three by three
@@ -230,6 +291,23 @@ void vertex() {
 		mid = at + mid; // the sheep's place; the quarter turn below is about its own middle
 		y = v.y / km_per_m;
 		c = part == 0 ? WOOL : SHEEP_DARK;
+	} else if (hedge && balk) {
+		// the balk: blocks of taller grass over the parcel's side from its
+		// line BALK_M in, each a little higher or deeper than the next, now
+		// and then a shrub
+		int n = int(UV.y) % 16;
+		float block = size / HEDGE_BLOCKS;
+		float r1 = sim_hash(cell * 2.17 + float(UV.y) * 0.61);
+		float r2 = sim_hash(cell * 3.31 + float(UV.y) * 0.37);
+		bool shrub = r1 < SHRUB_SHARE;
+		float depth = (shrub ? 0.5 + 0.3 * r2 : BALK_M * (0.8 + 0.4 * r2)) * km_per_m;
+		float len = shrub ? (0.6 + 0.4 * r2) * km_per_m : block * 1.02;
+		vec2 a = vec2((float(n) + 0.5) * block - 0.5 * size + VERTEX.x * len, VERTEX.z * depth);
+		float edge = (side % 2 == 0 ? -1.0 : 1.0) * (0.5 * size - 0.5 * depth);
+		off = vec2(a.x, edge + a.y);
+		quarter = side >= 2 ? 1 : 0;
+		y = VERTEX.y * (shrub ? 0.5 + 0.3 * r2 : 0.12 + 0.12 * r2);
+		c = shrub ? HEDGE * (0.9 + 0.2 * r1) : BALK * (0.92 + 0.16 * r2);
 	} else if (hedge) {
 		// a clipped hedge on the field's edge: blocks of about two metres,
 		// each a little higher or deeper than the next, so it reads as
@@ -262,9 +340,11 @@ void vertex() {
 		off = vec2(-off.y, off.x);
 		nrm.xz = vec2(-nrm.z, nrm.x);
 	}
-	// the slab, its rows and fence fitted into the parcel's slab (clear of lanes)
+	// the slab, its rows and fence fitted into the parcel's slab (clear of
+	// lanes); a pasture's join bits are its block's (people_parcels.gdshader),
+	// not a slab's
 	if (!sheep) {
-		vec4 box = crop_box_of((code / SIM_P_LANES) & 31, code, size);
+		vec4 box = crop_box_of((code / SIM_P_LANES) & 31, state == 0 ? code % SIM_P_JOIN : code, size);
 		off = (box.xy + box.zw) * 0.5 + off * (box.zw - box.xy) / inner;
 	}
 	vec2 p = mid + off;
@@ -282,6 +362,15 @@ void fragment() {
 	// the gaps between the clumps of a row
 	if (clumps > 0.0 && fract(along * clumps) > fill) { discard; }
 	ALBEDO = colour;
+	// a ridge's voxels in two tones, now and then one missing, while they
+	// are over a pixel or so (round O)
+	if (vox >= 0.0) {
+		float v = floor(vox);
+		float r = fract(sin(dot(vec2(v, row_seed * 97.0), vec2(12.9898, 78.233))) * 43758.5453);
+		float big = 1.0 - smoothstep(0.35, 0.7, fwidth(vox));
+		if (r < gaps && big > 0.5) { discard; }
+		ALBEDO *= mix(1.0, r < 0.5 ? 0.9 : 1.03, big);
+	}
 	// a lit lip of a pixel or two round the top of a slab, as the bevel of
 	// Urbek's field plates, so a sheet of straw reads as a raised plate
 	if (slab_top > 0.5) {

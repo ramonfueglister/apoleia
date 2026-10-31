@@ -161,6 +161,53 @@ bool sim_slab_open(vec2 mid) {
 	return !sim_house_lot(mid) && sim_flat(mid) && (built || !sim_no_field(mid, land));
 }
 
+// Round O (31.10.2026, Ramon: «Beides: Reihen und Weiden»): the open land
+// the farms leave on their fine tiles (a parcel not farmed, SIM_P_OPEN,
+// SIM_P_FARMED) lies in pasture blocks as the fields lie in fields
+// (sim_strip, joined in people_parcels.gdshader): grazed short (a shade
+// lighter), a hay meadow mown in swaths along the block (Cato, agr. 1.7,
+// ranks the pratum second of the kinds of land) or rough (darker, tufted),
+// and round each block a balk of taller, darker grass, on which
+// people_crops.gdshader sets its low blocks and shrubs. Before, it was one
+// flat lawn (40 % of the 3 km view smooth against Urbek's 15 %). The sim
+// knows no pasture: this is the land without fields, drawn as the
+// village's commons, as the sheep on it.
+const float SIM_BALK_KM = 0.0143;  // 0.6 diorama m from the parcel line (people_crops.gdshader BALK_M)
+const float SIM_SWATH_KM = 0.038;  // a swath and its neighbour, 1.6 diorama m
+vec3 sim_pasture(vec2 p, vec2 cell, float size, int code, vec3 c, float fw_km) {
+	vec3 block = sim_strip(cell);
+	float look = sim_hash(block.xy * 2.07 + block.z * 5.3 + 31.7);
+	if (look < 0.35) {
+		c *= 1.06;
+	} else if (look < 0.65) {
+		// the swaths run along the block (sim_strip z: 0 long along x),
+		// gone before they would shimmer
+		float across = (block.z < 0.5 ? p.y : p.x) / SIM_SWATH_KM;
+		float show = smoothstep(3.0, 6.0, SIM_SWATH_KM / max(fw_km, 1e-6));
+		c *= mix(1.02, fract(across) < 0.5 ? 1.06 : 0.98, show);
+	} else {
+		// tufts: a square of 0.4 m in more of the cells of 0.7 m than on the
+		// meadow (tile_terrain.gdshaderinc tt_grass)
+		c *= 0.94;
+		vec2 q = mod(p / 0.0238, 4096.0) / 0.7;
+		vec2 cl = floor(q);
+		vec2 in_cell = fract(q) - vec2(sim_hash(cl + 1.7), sim_hash(cl - 2.9)) * 0.4;
+		bool inside = all(greaterThanEqual(in_cell, vec2(0.0))) && all(lessThan(in_cell, vec2(0.57)));
+		float fine = 1.0 - smoothstep(0.08, 0.2, fw_km / 0.0238);
+		if (inside && sim_hash(cl + 4.1) < 0.12) { c = mix(c, c * vec3(0.62, 0.72, 0.58), fine); }
+	}
+	// the balk on the sides where the block ends
+	vec2 at = ((p - world_min) / size - cell) * size; // km into the parcel
+	int joins = code / SIM_P_JOIN;
+	float edge = 1e9;
+	if ((joins & 1) == 0) { edge = min(edge, at.x); }
+	if ((joins & 2) == 0) { edge = min(edge, at.y); }
+	if ((joins & 4) == 0) { edge = min(edge, size - at.x); }
+	if ((joins & 8) == 0) { edge = min(edge, size - at.y); }
+	float aa = 0.5 * fw_km;
+	return mix(c, c * 0.82, 1.0 - smoothstep(SIM_BALK_KM - aa, SIM_BALK_KM + aa, edge));
+}
+
 // `fw_km`: the size of a pixel at p (km).
 vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
@@ -183,6 +230,8 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
 	float growth;
 	float level;
 	if (crops && sim_parcel_baked(cell, code, growth, level)) {
+		int commons = SIM_P_OPEN | SIM_P_FARMED;
+		if ((code & SIM_P_STATE) == 0 && (code & commons) == commons) { return sim_pasture(p, cell, size, code, pasture, fw_km); }
 		if ((code & SIM_P_STATE) == 0 || (code & SIM_P_NO_FIELD) != 0) { return pasture; }
 		return (code & SIM_P_OPEN) != 0 ? SIM_DIRT : meadow;
 	}

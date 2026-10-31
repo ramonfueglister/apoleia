@@ -38,6 +38,13 @@ void fragment() {
 	int joins = 0;
 	if (crop_open_land(mid, land) && !no_field && !way) { code |= SIM_P_OPEN; }
 	if (no_field) { code |= SIM_P_NO_FIELD; }
+	bool farmed = f.r > 0.0 && (sim_built(mid) & SIM_B_ROAD) == 0;
+	if (farmed) { code |= SIM_P_FARMED; }
+	// round O: the open land the farms leave on their fine tiles is their
+	// pasture, in blocks as the fields (sim_strip), with a balk round each
+	// (sim_map.gdshaderinc sim_pasture, people_crops.gdshader)
+	bool pasture = state == 0 && (code & SIM_P_OPEN) != 0 && farmed;
+	int lanes = 0;
 	if (state > 0) {
 		// the fields next to a farmhouse lot are fenced all round
 		bool by_farm = false;
@@ -45,20 +52,25 @@ void fragment() {
 			by_farm = by_farm || (k != 4 && sim_house_lot(mid + vec2(float(k % 3 - 1), float(k / 3 - 1)) * size));
 		}
 		if (by_farm) { code |= SIM_P_BY_FARM; }
-		int lanes = crop_lanes(cell, size);
+		lanes = crop_lanes(cell, size);
 		code |= lanes * SIM_P_LANES;
+	}
+	if (state > 0 || pasture) {
 		// the slab runs on into the parcels of its field that lie as it does
-		// (no lane between them)
+		// (no lane between them), a pasture into the pasture parcels of its
+		// block; one loop for both, so each lookup is inlined once (Metal,
+		// sim_fields.gdshaderinc sim_lot_mask)
 		vec3 field = sim_strip(cell);
 		const vec2 SIDES[4] = vec2[](vec2(-1.0, 0.0), vec2(0.0, -1.0), vec2(1.0, 0.0), vec2(0.0, 1.0));
 		for (int k = 0; k < 4; k++) {
 			vec2 nb = cell + SIDES[k];
+			vec2 nb_mid = world_min + (nb + 0.5) * size;
 			vec4 fn;
-			if ((lanes & (1 << k)) == 0 && (code & SIM_P_OPEN) != 0 && sim_strip(nb) == field
-					&& sim_parcel(nb, size, fn) == state && crop_open(world_min + (nb + 0.5) * size)
-					&& !sim_way_parcel(world_min + (nb + 0.5) * size, size)) {
-				joins |= 1 << k;
-			}
+			int nb_state = sim_parcel(nb, size, fn);
+			bool nb_open = sim_strip(nb) == field && crop_open(nb_mid) && !sim_way_parcel(nb_mid, size);
+			bool same = state > 0 ? (lanes & (1 << k)) == 0 && (code & SIM_P_OPEN) != 0 && nb_state == state
+				: nb_state == 0 && fn.r > 0.0 && (sim_built(nb_mid) & SIM_B_ROAD) == 0;
+			if (nb_open && same) { joins |= 1 << k; }
 		}
 	}
 	float level = dot_ground_level(mid);
