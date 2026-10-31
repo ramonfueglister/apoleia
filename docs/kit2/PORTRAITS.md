@@ -170,6 +170,31 @@ eine Person von aussen setzen und fremde Dreiecke zeichnen kann, zeigt beide
 nebeneinander: am 30.10.2026 gleich, mit derselben Zahl Dreiecke (ausser dem
 Lorbeerkranz, den die Werkstatt mit 26 statt 25 Blättern zählt).
 
+## Hüte, neu gebaut (31.10.2026)
+
+Ramon, 31.10.2026, zum Personenfenster: „das sieht aus als hätte jemand einen
+heiligenschein. kopfbedeckungen haare sind leider noch müll“. Der Strohhut war
+eine flache, dünne Krempe ohne sichtbare Krone; von leicht oben gesehen
+umrahmte sie den Kopf als heller Ring. Seither weicht Rust von der Werkstatt
+ab:
+
+- **Strohhut (Petasos):** runde Krone mit dunkler oder roter Kordel, Krempe
+  mit Ober- und Unterseite und Rand, hinten tiefer hängend als vorne, Ringe aus
+  hellem und dunklem Stroh.
+- **Filzkappe (Pileus):** Rollrand und hohe, runde Kegelform, leicht nach
+  hinten geneigt, in vier Filzfarben.
+- **Pannonische Mütze:** 32 statt 16 Seiten, oben leicht weiter und gerundet,
+  abgesetzter Rand.
+- **Lorbeerkranz:** zwei Zweige von hinten zur Stirn, Blätter paarweise nach
+  vorne, mit gefalteter Mittelrippe, auf dem Haar sitzend wie ein Hutband
+  (vorher schwebte er hinten über dem Kopf).
+- Unter Hut und Kappe wachsen keine Haarsträhnen mehr durch die Krone.
+
+Schnellvorschau ohne Spiel:
+`cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json hats`
+(auch `hair` und `men`) schreibt Hüte und Frisuren als Dreiecke für ein
+Kontaktblatt.
+
 ## Licht in Godot
 
 Am 30.10.2026 mit Godot 4.7.2 in der Cloud geprüft (Forward+ über Mesas
