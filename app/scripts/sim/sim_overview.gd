@@ -70,7 +70,7 @@ const ICONS := {
 	"Hofleute": "family-house", "Im Zelt": "camping-tent", "Lohnarbeit": "anvil", "Händler": "two-coins", "Oberschicht": "roman-toga",
 	"Bauern": "wheat", "Pächter": "field", "Tagelöhner": "walking-boot", "Handwerker": "anvil", "Adel": "laurel-crown",
 	"Geistliche": "greek-temple", "Gelehrte": "open-book", "Beamte": "scroll-quill", "Offiziere": "eagle-emblem",
-	"Unternehmer": "scales", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn", "Alle": "scales",
+	"Unternehmer": "scales", "Soldaten": "centurion-helmet", "Unfreie": "manacles", "Familienhof": "family-house", "Pachthof": "field", "Gut": "barn", "Alle": "scales",
 }
 ## The goods table's rows in apoleia_sim::grain::GOOD_KEYS order; the
 ## history has each one's price as good_<key>.
