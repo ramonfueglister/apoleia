@@ -13,9 +13,9 @@
 //! of those fields, B growth of the crop (0 bare … 255 ripe), A market
 //! tile (bit 6).
 //! Way layer (S127), one RG8 texel per fine tile: R the neighbours its way
-//! leads to (bit k = DIRS[k]), G the way's level 0 … 7 (7 also on a tile
-//! the public works paved, S133; a paved tile no one walks now leads to its
-//! paved neighbours).
+//! leads to (bit k = DIRS[k]), G the way's level 0 … 7 in the low three
+//! bits and bit 3 (8) on a tile the public works paved (S133; a paved tile
+//! no one walks now leads to its paved neighbours).
 //! Road layer, one RG8 texel per 25 km cell: R trade road level (1 track,
 //! 2 road; at sea a sea lane, the only part drawn, S127), G the neighbours
 //! it joins (bit k = DIRS[k]).
@@ -181,10 +181,10 @@ impl GrainMap {
                 ways[t as usize * 2 + 1] = level.min(7);
             }
         }
-        // S133: a paved tile shows as the widest way until it has a look
-        // of its own
+        // S133: a paved tile keeps its level (wear) and carries bit 3, drawn
+        // as gravel as wide as its wear (sim_map.gdshaderinc sim_ways)
         for &t in &job.paved {
-            ways[t as usize * 2 + 1] = 7;
+            ways[t as usize * 2 + 1] |= 8;
         }
         // S133: a paved tile no one walks now (no links) joins its paved
         // neighbours, and they join it back: the straight ones always, a
