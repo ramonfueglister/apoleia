@@ -112,6 +112,7 @@ const CARDS := {
 	"fed": ["rows", "Gegessen nach Schicht", "", "Wie viel ihres Kornbedarfs jede Schicht im Monat gegessen hat. 100 % heisst satt. Alle Zeilen haben dieselbe Skala; rot ist, was zum Sattwerden fehlte."],
 	"harvest": ["line", "Ernte und Verkauf", "t", "Korn, das die Höfe im Monat ernten, und Korn, das die Märkte im Monat verkaufen."],
 	"granaries": ["line", "Getreide in Speichern", "t", "Korn in den Speichern des Staates (Steuerkorn), der Grundherren (Pachtkorn) und der Händler auf den Märkten."],
+	"flows": ["line", "Korn ausser Handel", "t", "Korn im Monat, das verdirbt, über den Kartenrand verkauft wird, zwischen fernen Märkten gehandelt oder als Almosen verteilt wird."],
 	"spoiled": ["line", "Verdorbenes Korn", "t", "Korn, das im Monat in Speichern und Lagern verdirbt."],
 	"export": ["line", "Korn über den Kartenrand", "t", "Korn, das Händler im Monat über den Kartenrand verkaufen."],
 	"traded": ["line", "Fernhandel mit Korn", "t", "Korn, das im Monat zwischen fernen Märkten der Karte gehandelt wird."],
@@ -132,7 +133,8 @@ const CARDS := {
 	"held": ["line", "Geld im Umlauf", "D", "Alle Denar ausserhalb der Staatskasse am Monatsende, und was der Staat seit Beginn neu geprägt hat."],
 	"tax_grain": ["line", "Steuerkorn", "t", "Korn, das der Staat seit Beginn als Steuer eingezogen hat."],
 	"m_price": ["line", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel."],
-	"goods": ["lage", "Warenpreise", "D", "Die Ware, deren Preis sich seit einem Jahr am stärksten verändert hat. Die Preise jeder Ware stehen unter Waren."],
+	"goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum."],
+	"m_goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware an diesem Markt, darunter sein Verlauf im gewählten Zeitraum. Über einer Ware steht, warum sie kostet, was sie kostet."],
 	"m_why": ["text", "Warum dieser Preis", "", "Was die Händler dieses Marktes zu ihrem Kornpreis bewegt: ihr Lager gegen ihren Plan, die Jahreszeit, der Lagerboden, Käufer ohne Ware."],
 	"m_hungry": ["line", "Hungernd", "%", "Anteil der Menschen der Region, die ihr Korn kaufen und im Monat nicht satt wurden."],
 	"m_store": ["line", "Lager und Verkauf", "t", "Korn im Lager der Händler dieses Marktes am Monatsende, und Korn, das sie im Monat verkauft haben."],
@@ -148,17 +150,18 @@ const PAGES := {
 	"overview": ["tiles", "lage"],
 	"people": ["classes"],
 	"people_charts": ["persons", "life", "hunger", "moves", "tents", "jobs"],
-	"grain_charts": ["price", "fed", "harvest", "granaries", "spoiled", "export", "traded", "alms"],
+	"grain_charts": ["price", "fed", "harvest", "granaries", "flows", "spoiled", "export", "traded", "alms"],
 	"money_charts": ["real", "wage", "work", "money", "lorenz", "gini_rows"],
-	"goods_charts": ["clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
+	"goods_charts": ["goods", "clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
 	"farms_charts": ["farms", "land", "farm_count", "farm_store"],
 	"state_charts": ["cash", "state", "held", "tax_grain"],
-	"market": ["tiles", "m_why", "lage", "m_people", "m_money"],
+	"market": ["tiles", "m_why", "lage", "m_people", "m_money", "m_goods"],
 	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5"],
 }
 ## The cards across the page, as Victoria 3 gives its main graph the width:
 ## each topic's leading chart and the one that sums it up.
-const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "real", "gini_rows", "clothes", "cash", "state", "m_price", "m_persons"]
+const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "m_price",
+	"m_persons", "m_goods"]
 ## The findings in the Lage's order: the topics as their pages; "goods"
 ## is the good that moved most.
 const LAGE_REALM: Array[String] = ["persons", "life", "hunger", "moves", "tents", "jobs", "price", "fed", "harvest", "granaries",
@@ -199,6 +202,7 @@ var _bars: Control
 var _bar_rows: Array = [] # [label, value, key]
 var _says := {} # card key -> what its numbers say now, see _find_all
 var _good_tips := {} # good card key -> its name's tooltip
+var _goods: GridContainer # the goods' tiles, each its price and its course
 var _lage: VBoxContainer
 var _classes: HBoxContainer
 var _events := {} # day -> what happened that month (history), see _find_events
@@ -268,6 +272,8 @@ func _add(key: String) -> void:
 			_lorenz_card()
 		"bars":
 			_bar_card()
+		"goods":
+			_goods_card(key)
 		_:
 			_line_card(key)
 
@@ -336,6 +342,10 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("granaries", h, [{"key": "horrea_t", "name": "Staat", "colour": Charts.SERIES[3]},
 			{"key": "lords_t", "name": "Grundherren", "colour": Charts.SERIES[2]},
 			{"key": "market_store_t", "name": "Märkte", "colour": Charts.SERIES[0]}])
+		_set_line("flows", h, [{"key": "spoiled_t", "name": "Verdorben", "colour": Charts.SERIES[2]},
+			{"key": "export_t", "name": "Ausfuhr", "colour": Charts.SERIES[3]},
+			{"key": "traded_t", "name": "Fernhandel", "colour": Charts.SERIES[1]},
+			{"key": "alms_t", "name": "Almosen", "colour": Charts.SERIES[4]}])
 		_set_line("spoiled", h, [{"key": "spoiled_t", "name": "Verdorben", "colour": Charts.SERIES[2]}])
 		_set_line("export", h, [{"key": "export_t", "name": "Ausfuhr", "colour": Charts.SERIES[3]}])
 		_set_line("traded", h, [{"key": "traded_t", "name": "Fernhandel", "colour": Charts.SERIES[1]}])
@@ -1051,6 +1061,81 @@ func _icon(name: String) -> Texture2D:
 
 # ------------------------------------------------------------------ goods
 
+## All goods at a glance across the page, three to a row: each its name,
+## price, change against the month before and its course.
+func _goods_card(key: String) -> void:
+	var box := _card(key, true)
+	_goods = GridContainer.new()
+	_goods.columns = 3
+	_goods.add_theme_constant_override("h_separation", 6)
+	_goods.add_theme_constant_override("v_separation", 6)
+	box.add_child(_goods)
+
+func _good_tile(r: int) -> PanelContainer:
+	var tile := PanelContainer.new()
+	var back := UiStyle.box(UiStyle.ROW if r % 2 == 0 else UiStyle.ROW_DARK, Color(UiStyle.GOLD_DIM, 0.6), 1, 2, 0)
+	back.content_margin_left = 8
+	back.content_margin_right = 8
+	back.content_margin_top = 4
+	back.content_margin_bottom = 4
+	tile.add_theme_stylebox_override("panel", back)
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.mouse_filter = Control.MOUSE_FILTER_PASS
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tile.add_child(box)
+	var top := HBoxContainer.new()
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(top)
+	var name := _label("", UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	top.add_child(name)
+	top.add_child(_label("", UiStyle.VALUE, UiStyle.SIZE_TEXT))
+	box.add_child(_label("", UiStyle.DIM, UiStyle.SIZE_SMALL))
+	var spark := Control.new()
+	spark.custom_minimum_size = Vector2(0, 40)
+	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spark.draw.connect(func(): # small multiples in one hue: the name says which good
+		Charts.board(spark, Rect2(Vector2.ZERO, spark.size), false)
+		Charts.spark(spark, Rect2(Vector2(4, 4), spark.size - Vector2(10, 8)), spark.get_meta("values", PackedFloat64Array()), Charts.SERIES[0]))
+	box.add_child(spark)
+	Tooltips.attach(tile, func(_at: Vector2) -> Dictionary: return tile.get_meta("tip", {}))
+	return tile
+
+## The goods' tiles from the goods table and the history, each with the
+## tooltip of its chart's name and its price since the start.
+func _fill_good_tiles(goods: Dictionary, h: Dictionary) -> void:
+	if _goods == null:
+		return
+	var n: int = mini(goods.data.good.size(), GOOD_KEYS.size())
+	while _goods.get_child_count() < n:
+		_goods.add_child(_good_tile(_goods.get_child_count()))
+	for r in n:
+		var tile: PanelContainer = _goods.get_child(r)
+		var all := _col(h, "good_" + GOOD_KEYS[r])
+		var change := _change(all, all.size() - 2, true)
+		var box: VBoxContainer = tile.get_child(0)
+		(box.get_child(0).get_child(0) as Label).text = goods.data.good[r]
+		(box.get_child(0).get_child(1) as Label).text = "%s D je %s" % [Charts.label(float(goods.data.price[r])), goods.data.unit[r]]
+		var moved := box.get_child(1) as Label
+		moved.text = change[0] + ("  zum Vormonat" if change[0] != "" else "")
+		moved.add_theme_color_override("font_color", UiStyle.DIM) # dearer is good for the maker, bad for the buyer
+		var spark: Control = box.get_child(2)
+		spark.set_meta("values", all.slice(_first(all.size())))
+		spark.queue_redraw()
+		var tip: Dictionary = _good_tips.get(("m_good%d" if _market else "good%d") % r, {}).duplicate()
+		if all.size() > 1:
+			tip.spark = all
+			tip.spark_title = "Preis seit Beginn"
+			tip.spark_unit = "D"
+			tip.spark_from = date.call(int(h.day[0]))
+			tip.spark_to = date.call(int(h.day[h.day.size() - 1]))
+			tip.colour = Charts.SERIES[0]
+		tile.set_meta("tip", tip)
+
 ## Each good's card (a line chart of its price): its name and unit from the
 ## goods table, and its name's tooltip with its price, store and flows
 ## since the start (one market's: why it costs what it costs there).
@@ -1081,6 +1166,7 @@ func _set_goods(goods: Dictionary, h: Dictionary) -> void:
 		if _lines.has(key):
 			_lines[key].unit = "D/" + unit
 			_lines[key].control.queue_redraw()
+	_fill_good_tiles(goods, h)
 
 # ------------------------------------------------------------------ the Lage
 
@@ -1687,6 +1773,7 @@ func _find_market(d: Dictionary, row: Dictionary) -> void:
 				if change > moved:
 					moved = change
 					says.goods = "Am stärksten verändert: %s, %s." % [goods.data.good[r], _against_year(price, "teurer", "billiger")]
+					says.m_goods = says.goods
 	for r in GOOD_KEYS.size():
 		var price := _col(d, "good_" + GOOD_KEYS[r])
 		if price.size() == n and n > 0:
@@ -1799,6 +1886,9 @@ func _find_all(d: Dictionary) -> void:
 		if stored.size() == n:
 			says.granaries = "In den Speichern liegen %s t Korn, %s." % [_num(stored[n - 1]), _against_year(stored, "mehr", "weniger")]
 		says.spoiled = "%s sind %s t Korn verdorben." % [period, _num(_year_sum(_col(d, "spoiled_t")))]
+		says.flows = says.spoiled
+		if _year_sum(_col(d, "export_t")) > 0.0:
+			says.flows += " %s t gingen über den Kartenrand." % _num(_year_sum(_col(d, "export_t")))
 		var out := _year_sum(_col(d, "export_t"))
 		says.export = ("%s gingen %s t Korn über den Kartenrand." % [period, _num(out)]) if out >= 0.5 else ("%s ging kaum Korn über den Kartenrand." % period)
 		says.traded = "%s wurden %s t Korn zwischen fernen Märkten gehandelt." % [period, _num(_year_sum(_col(d, "traded_t")))]

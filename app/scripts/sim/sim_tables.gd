@@ -1031,6 +1031,14 @@ func _page_node(name: String) -> SimOverview:
 		_pages[name] = page
 	return _pages[name]
 
+## Opens the statistics at `view`: a topic's view as VIEWS names it
+## ("people", "grain_charts", "farms" …); an unknown one opens the overview.
+## The bar of buttons at the left (ui/main_buttons.gd) opens it so.
+func open_at(view: String) -> void:
+	if not open:
+		_show(true)
+	_go_to(view)
+
 func _show(on: bool) -> void:
 	open = on
 	if on:
