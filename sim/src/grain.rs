@@ -4817,21 +4817,23 @@ impl Grain {
     }
 
     fn population_table(&self, p: &People, day: i64) -> Table {
-        // (region, job) -> (households, people, fed people, money in milli-denarii)
-        let mut sums: std::collections::BTreeMap<(u32, u8), (i64, i64, i64, i64)> = Default::default();
+        // (region, job) -> (households, people, fed people, money in
+        // milli-denarii, the household that stands for them: the lowest id)
+        let mut sums: std::collections::BTreeMap<(u32, u8), (i64, i64, i64, i64, u32)> = Default::default();
         for (id, i) in self.info.iter() {
             let mk = self.cell_market[i.home as usize];
             let Some(s) = self.hh.get(id) else { continue };
             if mk == NONE {
                 continue;
             }
-            let e = sums.entry((self.markets[mk as usize].region, i.job)).or_default();
+            let e = sums.entry((self.markets[mk as usize].region, i.job)).or_insert((0, 0, 0, 0, u32::MAX));
             e.0 += 1;
             e.1 += i.size as i64;
             if s.own_food || s.fed >= NEED_FED {
                 e.2 += i.size as i64;
             }
             e.3 += self.money_of(*id);
+            e.4 = e.4.min(*id);
         }
         let of = self.market_of_region();
         let ms: Vec<usize> = sums.keys().map(|(k, _)| of[k]).collect();
@@ -4842,7 +4844,8 @@ impl Grain {
             .int("households", "Haushalte", "", sums.values().map(|v| v.0).collect())
             .int("persons", "Menschen", "", sums.values().map(|v| v.1).collect())
             .float("share_fed", "Satt", "%", sums.values().map(|v| if v.1 > 0 { v.2 as f64 / v.1 as f64 } else { 0.0 }).collect())
-            .float("money_mean", "Geld je Kopf", "Denar", sums.values().map(|v| v.3 as f64 / 1000.0 / v.1.max(1) as f64).collect());
+            .float("money_mean", "Geld je Kopf", "Denar", sums.values().map(|v| v.3 as f64 / 1000.0 / v.1.max(1) as f64).collect())
+            .hidden_float("household", "", sums.values().map(|v| v.4 as f64).collect()); // its face in the list (ask_faces)
         t
     }
 

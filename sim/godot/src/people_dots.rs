@@ -73,6 +73,9 @@ struct Front {
     /// Answer to the last `ask_faces`: by household, a member as
     /// `ask_household_member` finds them, with what their face needs.
     faces: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>,
+    /// Answer to the last `ask_list_faces`, as `faces` (a slot of its own:
+    /// the statistics and the events ask at the same time).
+    list_faces: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>,
     /// Answer to the last `ask_table` (built between two days).
     table: Option<Table>,
     /// Answer to the last `ask_trips` (built between two days).
@@ -167,11 +170,13 @@ struct Queue {
     farm: Option<usize>,
     /// Households whose faces to give (`ask_faces`).
     faces: Option<Vec<u32>>,
+    /// Households whose faces the statistics' lists want (`ask_list_faces`).
+    list_faces: Option<Vec<u32>>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.farm.is_some() || self.faces.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.farm.is_some() || self.faces.is_some() || self.list_faces.is_some()
     }
 }
 
@@ -440,7 +445,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
     let mut sites_were = shared.site_houses.load(Ordering::Relaxed);
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, farm, faces) = {
+        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, farm, faces, list_faces) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -452,7 +457,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.farm.take(), q.faces.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.farm.take(), q.faces.take(), q.list_faces.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -535,18 +540,23 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             });
             shared.front.lock().unwrap().person = who;
         }
-        if let Some(households) = &faces {
-            let v = households
+        let mut faces_of = |households: &Vec<u32>| -> Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)> {
+            households
                 .iter()
                 .filter_map(|&h| {
                     let p = PeopleView::member_of(people, h).and_then(|pid| PeopleView::person(people, pid))?;
                     let face = crate::portrait::Face::of(people, &p, today);
                     Some((h, p, grain.household(h), face))
                 })
-                .collect();
-            shared.front.lock().unwrap().faces = Some(v);
+                .collect()
+        };
+        if let Some(households) = &faces {
+            shared.front.lock().unwrap().faces = Some(faces_of(households));
         }
-        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || farm.is_some() || faces.is_some() {
+        if let Some(households) = &list_faces {
+            shared.front.lock().unwrap().list_faces = Some(faces_of(households));
+        }
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || farm.is_some() || faces.is_some() || list_faces.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -1407,8 +1417,33 @@ impl ApoleiaPeople {
     /// without anyone left out; empty until the sim thread answered.
     #[func]
     fn take_faces(&mut self) -> VarDictionary {
+        let v = self.shared.front.lock().unwrap().faces.take();
+        Self::faces_dict(v)
+    }
+
+    /// As `ask_faces`, for the statistics' lists (a face for each row of
+    /// the population, ui sim_tables.gd), answered by `take_list_faces`.
+    #[func]
+    fn ask_list_faces(&mut self, households: PackedInt64Array) {
+        if self.worker.is_none() {
+            return;
+        }
+        let v: Vec<u32> = households.as_slice().iter().filter(|&&h| (0..u32::MAX as i64).contains(&h)).map(|&h| h as u32).collect();
+        self.shared.front.lock().unwrap().list_faces = None;
+        self.shared.queue.lock().unwrap().list_faces = Some(v);
+        self.shared.wake.notify_one();
+    }
+
+    /// The faces `ask_list_faces` asked for, once, as `take_faces` gives them.
+    #[func]
+    fn take_list_faces(&mut self) -> VarDictionary {
+        let v = self.shared.front.lock().unwrap().list_faces.take();
+        Self::faces_dict(v)
+    }
+
+    fn faces_dict(v: Option<Vec<(u32, Person, Option<HouseholdLook>, crate::portrait::Face)>>) -> VarDictionary {
         let mut d = VarDictionary::new();
-        if let Some(v) = self.shared.front.lock().unwrap().faces.take() {
+        if let Some(v) = v {
             let mut faces = VarDictionary::new();
             for (h, p, hh, face) in &v {
                 faces.set(*h as i64, &crate::portrait::face_dict(p, hh.as_ref(), face));

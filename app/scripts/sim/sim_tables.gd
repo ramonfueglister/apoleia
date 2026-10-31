@@ -69,6 +69,7 @@ const Charts = preload("res://scripts/ui/charts.gd")
 const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const Vic3Style = preload("res://scripts/ui/vic3_style.gd")
+const PortraitCache = preload("res://scripts/ui/portrait_cache.gd")
 ## apoleia_sim::tables::TABLES, then "overview": a page of sim_overview.gd
 ## (VIEWS), drawn from OVERVIEW_KINDS
 const KINDS: Array[String] = ["markets", "population", "farms", "state", "history", "overview", "classes", "goods", "outside"]
@@ -115,6 +116,15 @@ const CELL_PX := Vector2(46, 50)
 const ICON_PX := 18.0 # an occupation's icon in its cell
 const REGION_ROWS := 8 # the largest regions under the filters
 const PROSE_CHARS := 60 # a longer text is a sentence, not a name
+## A row of the population shows a face, as Victoria 3's pops: of the
+## household standing for it (the hidden column "household"), asked only
+## for the rows in view, kept small (FACE_PX, the head of the portrait
+## FACE_HEAD) for the last FACE_KEEP households.
+const FACE_PX := Vector2i(56, 70)
+const FACE_HEAD := Rect2(8, 2, 40, 44)
+const FACE_ICON_PX := 38
+const FACE_KEEP := 200
+const FACE_ASK := 24 # households asked at once
 const TEXT_MIN_PX := 120 # a text column of the list
 const TEXT_MAX_PX := 260
 ## The large lists' cards of tiles: the text column `key` the tiles are,
@@ -209,6 +219,12 @@ var _note: Label
 var _unit := PackedStringArray() # per column of the table shown: unit and factor shown in
 var _factor := PackedFloat64Array()
 var _prose: Array[bool] = [] # per column of the table shown: sentences, cut short
+var _faces := {} # household -> its face (Texture2D), true while it is made, false: none
+var _face_order: Array[int] = [] # households with a face, the last shown last
+var _face_rows := {} # household -> the rows of the list showing it
+var _faces_asked := PackedInt64Array() # asked of the sim, not answered yet
+var _faces_look := false # the rows in view changed: look which want a face
+var _no_face: ImageTexture # an empty face, so that the names stand where they will
 var _chart: Control
 var _series := "persons" # the history's curve
 var _paint: CheckButton
@@ -256,6 +272,7 @@ func _process(_delta: float) -> void:
 	if _stale and not (_tree.visible and _tree.get_global_rect().has_point(_tree.get_global_mouse_position())):
 		_stale = false
 		_refresh()
+	_faces_step()
 	if _asked >= 0:
 		var answer: Dictionary = people.take_table()
 		if answer.is_empty():
@@ -1078,6 +1095,7 @@ func _fill_tree(t: Dictionary) -> void:
 	var at := scroll.value if scroll != null else 0.0
 	_tree.set_block_signals(true) # selecting the chosen row again must not fly
 	_tree.clear()
+	_face_rows.clear()
 	_spark_at = Array(cols).find("price") + 1 if _has_spark(t) else -1
 	_tree.columns = cols.size() + (1 if _spark_at >= 0 else 0)
 	if _spark_at >= 0: # the price's last months, right after the price
@@ -1119,7 +1137,8 @@ func _fill_tree(t: Dictionary) -> void:
 		if total.get_custom_color(i) != NEGATIVE:
 			total.set_custom_color(i, UiStyle.NAME)
 		if not _is_text(t, cols[d]): # the sum is often the widest number, else the head
-			var wide := maxf(font.get_string_size(total.get_text(i), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x,
+			var widest: String = "100 %" if _unit[d] == "%" else total.get_text(i) # a share runs to 100 %
+			var wide := maxf(font.get_string_size(widest, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x,
 				head_font.get_string_size(_tree.get_column_title(i), HORIZONTAL_ALIGNMENT_LEFT, -1, head_size).x)
 			_tree.set_column_custom_minimum_width(i, ceili(wide) + 22)
 			columns_px += ceilf(wide) + 30.0 # and the head's margins
@@ -1160,8 +1179,103 @@ func _fill_tree(t: Dictionary) -> void:
 				item.collapsed = true
 	_tree.set_block_signals(false)
 	_fit_width(columns_px)
+	_faces_look = true
 	if scroll != null:
 		(func(): scroll.value = at).call_deferred() # once the tree has its new height
+
+# ------------------------------------------------------------------ faces
+
+## A row of the population: its household's face in front of its name,
+## an empty one until the face is there.
+func _face_row(item: TreeItem, household: int) -> void:
+	item.set_meta("household", household)
+	if not _face_rows.has(household):
+		_face_rows[household] = []
+	_face_rows[household].append(item)
+	if _no_face == null:
+		var blank := Image.create(int(FACE_HEAD.size.x), int(FACE_HEAD.size.y), false, Image.FORMAT_RGBA8)
+		_no_face = ImageTexture.create_from_image(blank)
+	var face = _faces.get(household, null)
+	_set_face(item, face if face is Texture2D else null)
+
+func _set_face(item: TreeItem, face: Texture2D) -> void:
+	item.set_icon(0, face if face != null else _no_face)
+	if face != null:
+		item.set_icon_region(0, FACE_HEAD)
+	item.set_icon_max_width(0, FACE_ICON_PX)
+	item.set_icon_modulate(0, Color.WHITE)
+
+## Each frame: the faces the sim gave go to the portrait cache (it makes
+## one a frame); the rows in view without a face ask for theirs.
+func _faces_step() -> void:
+	if not people.has_method("ask_list_faces"):
+		return
+	if not _faces_asked.is_empty():
+		var answer: Dictionary = people.take_list_faces()
+		if answer.is_empty():
+			return
+		var faces: Dictionary = answer.get("faces", {})
+		for h in _faces_asked:
+			if not faces.has(h):
+				_faces[h] = false
+				continue
+			_faces[h] = true
+			var household: int = h
+			var made: bool = PortraitCache.of(get_tree()).face(faces[h], func(face: Dictionary): _got_face(household, face))
+			if not made:
+				_faces[h] = false
+		_faces_asked = PackedInt64Array()
+	if not _faces_look or not open or not _tree.visible:
+		return
+	_faces_look = false
+	var want := PackedInt64Array()
+	for item in _rows_in_view():
+		var h: int = item.get_meta("household", -1)
+		if h >= 0 and not _faces.has(h) and not want.has(h):
+			want.append(h)
+			if want.size() >= FACE_ASK:
+				break
+	if not want.is_empty():
+		people.ask_list_faces(want)
+		_faces_asked = want
+		_faces_look = true # once answered, the next rows in view
+
+## A face made: kept small (the list draws it at FACE_ICON_PX), shown in
+## its rows; the oldest beyond FACE_KEEP are let go.
+func _got_face(household: int, face: Dictionary) -> void:
+	var texture: Texture2D = face.get("texture", null)
+	if texture == null:
+		_faces[household] = false
+		return
+	var image := texture.get_image()
+	if image == null:
+		_faces[household] = false
+		return
+	image = image.duplicate()
+	if image.has_mipmaps():
+		image.clear_mipmaps()
+	image.resize(FACE_PX.x, FACE_PX.y, Image.INTERPOLATE_LANCZOS)
+	var small := ImageTexture.create_from_image(image)
+	_faces[household] = small
+	_face_order.append(household)
+	while _face_order.size() > FACE_KEEP:
+		var old: int = _face_order.pop_front()
+		if not _face_rows.has(old):
+			_faces.erase(old)
+	for item in _face_rows.get(household, []):
+		if is_instance_valid(item):
+			_set_face(item, small)
+
+## The rows of the list in view, top to bottom.
+func _rows_in_view() -> Array[TreeItem]:
+	var out: Array[TreeItem] = []
+	var y := 0.0
+	while y < _tree.size.y:
+		var item := _tree.get_item_at_position(Vector2(_tree.size.x * 0.5, y))
+		if item != null and not out.has(item):
+			out.append(item)
+		y += 12.0
+	return out
 
 ## A text column's least width: its longest value (with its icon) up to
 ## TEXT_MAX_PX; a longer one wraps to a second line.
@@ -1368,6 +1482,8 @@ func _fill_rows(parent: TreeItem, t: Dictionary, rows: PackedInt32Array) -> void
 			item.set_cell_mode(_spark_at, TreeItem.CELL_MODE_CUSTOM)
 			item.set_metadata(_spark_at, int(t.data.id[r]))
 			item.set_custom_draw_callback(_spark_at, _draw_spark)
+		if t.data.has("household") and float(t.data.household[r]) >= 0.0 and float(t.data.household[r]) < 4294967295.0:
+			_face_row(item, int(t.data.household[r]))
 		if parent == _tree.get_root():
 			_stripe(item, n)
 		if t.data.has("id") and int(t.data.id[r]) == chosen:
@@ -2072,6 +2188,10 @@ func _build() -> void:
 	_tree.item_selected.connect(_on_selected)
 	_tree.item_collapsed.connect(_on_collapsed)
 	_tree.gui_input.connect(_on_tree_input)
+	_tree.resized.connect(func(): _faces_look = true)
+	var bar := _scroll_bar()
+	if bar != null: # the rows scrolled into view want their faces
+		bar.value_changed.connect(func(_v: float): _faces_look = true)
 	Tooltips.attach(_tree, _row_tip)
 	# a large list as Victoria 3's: the filters at the left, the tiles over the rows
 	_lists = HBoxContainer.new()
