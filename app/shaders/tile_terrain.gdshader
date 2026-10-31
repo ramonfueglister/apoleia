@@ -49,8 +49,7 @@ const float FAR_SHADE_TONE = 0.6;
 // (tt_sea_distance: 0 on a land node, 2 km on the sea nodes beside it), at
 // CONTOUR_SD, instead of the tiles' edges (round M: on the map of Europe
 // the coasts were staircases of 8 km tiles; Ramon's landscape reference
-// draws them smooth)
-const float CONTOUR_KM = 2.0;
+// draws them smooth; CONTOUR_KM in tile_terrain.gdshaderinc)
 const float CONTOUR_SD = 1.0;
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
