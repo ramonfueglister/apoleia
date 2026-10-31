@@ -290,6 +290,31 @@ unabhängig und unverändert.
   stand es eine Uferwand tiefer als das Land, und diese Wände an den
   Kachelkanten liefen auf dem Mac als kurze beige Striche neben der glatten
   Linie, im Land oder draussen auf dem Wasser (Mac-Check K + L + M).
+  Runde N (31.10.2026, Flüsse und Berge der Europakarte), ebenfalls ab den
+  2-km-Kacheln: Die Flüsse liefen als Treppe aus Kachelbändern (die
+  4-verbundenen Flusszellen) über die Karte; Ramons Referenz lässt sie
+  mäandern. Jetzt zeichnet der Shader die Natural-Earth-Linien selbst:
+  `rivers.png` (`build_tile_terrain.py --rivers-only`, `river_line_field`)
+  hält an jedem 2-km-Knoten im Umkreis von zwei Knoten den nächsten Punkt
+  der nächsten Flusslinie, ihre Richtung und ihre Krümmung dort, dazu den
+  Rang (scalerank). Die Linien sind vorher gleichmässig neu abgetastet und
+  über 0,7 Knoten geglättet (Zacken unter einem Knoten kann die Karte nicht
+  zeigen). Jeder der 3 × 3 Knoten um ein Pixel zeichnet einen kurzen Bogen
+  durch seinen Punkt (`river_distance`); gerade Stücke standen als Sporne
+  aus jeder Biegung. Welche Flüsse, bestimmt wie bisher `RIVER_RANK` (Rang
+  bis 8 auf den 2-km-Kacheln, je Zoomstufe einer weniger). Die Breite ist
+  mindestens anderthalb Pixel, die grossen Flüsse so breit wie die
+  Kachelbänder; am Meer endet der Fluss an der Küstenlinie, in den Seen an
+  der Seekachel. Die Berge waren ganze beige Felskacheln mit wenigen
+  Terrassen (eine Rampe je Kachel, Runde L ruhig getönt). Jetzt kommt das
+  Relief aus den 2-km-Höhen: ein Ton je Knotendreieck, geteilt an der
+  Diagonale mit den näheren Höhen wie die Kacheln (`contour_relief`,
+  Kunstlicht, `RELIEF_EXAG` 1,875, Ton −30 bis +20 %), statt der Rampentöne
+  der Kacheln. Fels ab 1150, Schnee ab 1600 Diorama-Metern Knotenhöhe
+  (Mont Blancs Knoten 1673, Gran Sassos 1291), leicht ausgefranst; eine
+  Bergkachel (Alpweide, Fels, Schnee) darunter ist Wald, wo die Landbedeckung
+  bewaldet ist, sonst Alpweide (`contour_mountain`). Skizze:
+  `/mnt/project-files/grafik/runde-n-fluesse-berge-skizze.jpg`.
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte

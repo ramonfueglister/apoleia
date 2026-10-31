@@ -665,5 +665,26 @@
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
   },
   "town_on_river_km": 4.0,
-  "town_core_km": 2.0
+  "town_core_km": 2.0,
+  "river_field": {
+    "path": "rivers.png",
+    "sha256": "437073bcfb01ef517c011d1c0836648792e351675a3bb83b27bc33ffb8f0c426",
+    "reach_nodes": 2.0,
+    "river_rank": [
+      10,
+      10,
+      8,
+      7,
+      6,
+      5,
+      4
+    ],
+    "bend_max": 2.5,
+    "channels": [
+      "nearest river point x offset: 128 + 127 * nodes / reach_nodes",
+      "z offset, the same",
+      "direction there, angle mod pi in 256 steps",
+      "scalerank (low 4 bits) + 16 * (8 + 7 * bend / bend_max), bend = 1 / radius in node steps, to the left of the stored direction positive; 0 = no river within reach_nodes"
+    ]
+  }
 }

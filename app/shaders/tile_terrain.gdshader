@@ -464,6 +464,114 @@ vec3 contour_shore(vec3 c, float sd, float aa, float px_km, float low) {
 	return mix(c, contour_sea_rgb(sd), wet * low);
 }
 
+// Rivers by their lines (round N): from the 2 km tiles out the rivers were a
+// staircase of tile bands across the map of Europe, as the 4-connected cells
+// run; Ramon's landscape reference lets them wind. river_tex (rivers.png,
+// tools/build_tile_terrain.py river_line_field) keeps at every 2 km node the
+// nearest point of the nearest river line, the line's direction and its bend
+// there; each of the 3 x 3 nodes around a pixel draws a short arc through
+// its point (straight pieces stood out of every bend as spurs).
+uniform sampler2D river_tex : filter_nearest, repeat_disable;
+uniform bool river_ready = false;
+const float RIVER_REACH = 2.0;     // nodes (RIVER_FIELD_NODES)
+const float RIVER_BEND_MAX = 2.5;  // 1 / radius per node step
+const float RIVER_ARC = 0.7;       // half an arc, nodes
+
+// Distance (km) from p to the nearest river shown at this zoom (the bake's
+// RIVER_RANK: Natural Earth scalerank up to 8 on the 2 km tiles, one less
+// each zoom out), 1e3 where none; `rank` its scalerank.
+float river_distance(vec2 p, out float rank) {
+	float node_km = world_size.x / (grid_size.x - 1.0);
+	vec2 g = (p - world_min) / node_km;
+	ivec2 c = clamp(ivec2(round(g)), ivec2(1), ivec2(grid_size) - 2);
+	float rank_max = 10.0 - round(log2(tile_km / 0.5));
+	float best = 1e3;
+	rank = 10.0;
+	for (int dz = -1; dz <= 1; dz++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			ivec2 n = c + ivec2(dx, dz);
+			vec4 t = round(texelFetch(river_tex, n, 0) * 255.0);
+			float r = mod(t.a, 16.0);
+			float k = (floor(t.a / 16.0) - 8.0) / 7.0 * RIVER_BEND_MAX;
+			vec2 at = vec2(n) + (t.rg - 128.0) / 127.0 * RIVER_REACH;
+			float an = t.b / 256.0 * PI;
+			vec2 dir = vec2(cos(an), sin(an));
+			vec2 v = g - at;
+			float along = dot(v, dir);
+			float across = dot(v, vec2(-dir.y, dir.x));
+			// an arc across = k along^2 / 2, shorter in a tight bend
+			float half_len = clamp(1.0 / max(abs(k), 1e-3), 0.35, RIVER_ARC);
+			float a = clamp(along, -half_len, half_len);
+			float d = abs(across - 0.5 * k * a * a) / sqrt(1.0 + k * a * k * a);
+			d = length(vec2(d, along - a)) * node_km;
+			bool shown = t.a > 0.5 && r <= rank_max;
+			rank = shown && d < best ? r : rank;
+			best = shown ? min(best, d) : best;
+		}
+	}
+	return best;
+}
+
+// The river over colour `c` (contour zooms): at least a pixel and a half
+// wide, the big rivers (scalerank 4 and less) as wide as the tile bands were
+// (no early return before the fetches: texelFetch behind early returns,
+// inlined, crashed Apple's Metal compiler, PR #51)
+vec3 contour_river(vec2 p, vec3 c, float px_km) {
+	float rank;
+	float d = river_distance(p, rank);
+	float w = rank <= 4.0 ? 0.175 : rank <= 6.0 ? 0.125 : 0.09;
+	float half_w = max(w, 0.75 * px_km);
+	float aa = 0.5 * px_km;
+	float river = (1.0 - smoothstep(half_w - aa, half_w + aa, d)) * (river_ready ? 1.0 : 0.0);
+	return mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
+}
+
+// Mountains by the heights (round N): from the 2 km tiles out a tile is one
+// level step and its ramp tone, so the Alps at 1500 km were a beige plateau
+// of 8 km rock tiles with a few terraces; Ramon's landscape reference draws
+// ridges and valleys, rock and snow on the crests and wooded flanks. The
+// relief now comes from the 2 km height nodes (height_tex, the diorama
+// metres), one tone per node triangle as SimCity 2000 tiles split
+// (facets), lit by the art light; rock and snow lie by the node height.
+const float RELIEF_EXAG = 1.875;  // height over width of the node facets
+const float RELIEF_AMP = 0.9;     // tone per unit of light above the flat
+const float ROCK_H = 1150.0;      // diorama metres (Mont Blanc's node 1673, Gran Sasso's 1291)
+const float SNOW_H = 1600.0;
+
+// The tone of the node facet under p (1 on the flat)
+float contour_relief(vec2 p, vec3 art) {
+	float node_km = world_size.x / (grid_size.x - 1.0);
+	vec2 g = (p - world_min) / node_km;
+	ivec2 i = clamp(ivec2(floor(g)), ivec2(0), ivec2(grid_size) - 2);
+	vec2 f = g - vec2(i);
+	float h00 = texelFetch(height_tex, i, 0).r;
+	float h10 = texelFetch(height_tex, i + ivec2(1, 0), 0).r;
+	float h11 = texelFetch(height_tex, i + ivec2(1, 1), 0).r;
+	float h01 = texelFetch(height_tex, i + ivec2(0, 1), 0).r;
+	// split at the diagonal whose corners are closer in height
+	bool split0 = abs(h00 - h11) <= abs(h10 - h01);
+	vec2 grad = split0 ? (f.x >= f.y ? vec2(h10 - h00, h11 - h10) : vec2(h11 - h01, h01 - h00))
+		: (f.x + f.y <= 1.0 ? vec2(h10 - h00, h01 - h00) : vec2(h11 - h01, h11 - h10));
+	grad *= RELIEF_EXAG / (node_km * 1000.0);
+	vec3 n = normalize(vec3(-grad.x, 1.0, -grad.y));
+	return 1.0 + clamp((dot(n, art) - art.y) * RELIEF_AMP, -0.3, 0.2);
+}
+
+// Rock and snow by the node height (frayed a little, so they follow the
+// crests and not height lines); a mountain tile (alpine, rock, snow) below
+// the rock is wood where the land cover is wooded, else alpine meadow
+vec3 contour_mountain(vec2 p, int g, vec3 c, float band) {
+	float n = tt_noise(p / 5.0) - 0.5;
+	float h = tt_height_m(p, 0.0) + n * 120.0;
+	if (g == G_ALPINE || g == G_ROCK || g == G_SNOW) {
+		float wood = textureLod(cover_tex, tt_node_uv(p), 0.0).r + n * 0.2;
+		c = ground_rgb_at(wood > 0.4 ? G_FOREST : G_ALPINE, band);
+	}
+	float aa = fwidth(h) * 0.75 + 1.0;
+	c = mix(c, ground_rgb_at(G_ROCK, band), smoothstep(ROCK_H - aa, ROCK_H + aa, h));
+	return mix(c, ground_rgb_at(G_SNOW, band), smoothstep(SNOW_H - aa, SNOW_H + aa, h));
+}
+
 void fragment() {
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
@@ -529,7 +637,7 @@ void fragment() {
 			// the land the coast line lays over the sea tile, with its sand
 			float dry = 1.0 - smoothstep(CONTOUR_SD - sd_aa, CONTOUR_SD + sd_aa, sd);
 			if (contour && dry > 0.0) {
-				vec3 land = sim_ways(p, contour_land_rgb(p), px_km);
+				vec3 land = contour_river(p, sim_ways(p, contour_land_rgb(p), px_km), px_km);
 				c = mix(contour_shore(land, sd, sd_aa, px_km, 1.0), c, 1.0 - dry);
 				rough = dry > 0.5 ? 1.0 : rough;
 				sea_px = dry <= 0.5;
@@ -554,6 +662,7 @@ void fragment() {
 			float aa = fwidth(d) * 0.75 + 1e-4;
 			c = mix(ground_rgb_at(ground_alt, band), c, smoothstep(-aa, aa, d));
 		}
+		if (contour && water != W_LAKE) { c = contour_mountain(p, ground, c, band); }
 		// inside a town the river banks are paved quays (they were wheat
 		// strips through Rome)
 		if (water == W_RIVER && tile_km < 2.0 && max(max(tt_town(tile + ivec2(1, 0)), tt_town(tile - ivec2(1, 0))),
@@ -733,8 +842,10 @@ void fragment() {
 		// goes on untoned
 		float foot = contour ? smoothstep(0.0, 0.6, world_pos.y / level_h) : 1.0;
 		float tone = 1.0 + shade * away * steep * far * foot;
-		c *= flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
-		if (water == W_RIVER) {
+		float ramp = flat_top > 0.5 || length(slope) < 0.02 ? 1.0 : tone; // flat tiles never flicker between tones
+		// from the 2 km tiles the node facets instead of the tiles' level ramps (round N)
+		c *= contour ? contour_relief(p, art) : ramp;
+		if (water == W_RIVER && !(contour && river_ready)) {
 			// a band from the tile centre to each side with water beyond it;
 			// at least a boat wide, never more than half a tile
 			float half_w = clamp(0.075 / tt_data_km(), 0.06, 0.22);
@@ -775,6 +886,7 @@ void fragment() {
 		// the sea; the line lays the sea on its low half only (never on the
 		// hills: a lake of blue on a slope)
 		if (contour && water != W_LAKE) {
+			c = contour_river(p, c, px_km); // the rivers by their lines (round N), not the tile bands above
 			float low = 1.0 - smoothstep(0.35, 0.55, world_pos.y / level_h);
 			c = contour_shore(c, sd, sd_aa, px_km, low);
 			sea_px = sd > CONTOUR_SD && low > 0.5;
