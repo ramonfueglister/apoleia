@@ -22,12 +22,12 @@
       "height": 9563,
       "packed_width": 10323,
       "path": "cells-L0.png",
-      "sha256": "e5567d7c8f9e7bea920582617e907baf7139367d788038ad8747ba387057e4de",
+      "sha256": "6b054a5e06724dc517f8e05d59a6014c33afee9f2a0316e4e3e36b2fbc10cb5b",
       "river_max_scalerank": 10,
       "towns": {
         "path": "towns-L0.i32",
-        "count": 11255,
-        "sha256": "e41aaae8f38c54f04ee82ead13dee2bf70a1ff45a01dd8e97a8431bd09b5028e",
+        "count": 3975,
+        "sha256": "0393a28966ed580f65c98f755e3c81097d5cbb8df993b5c6042ea28bfe418fdd",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -38,12 +38,12 @@
       "height": 4782,
       "packed_width": 5162,
       "path": "cells-L1.png",
-      "sha256": "dd68f31d3367d3fe6e77dab974d65a79c2b4bae5b53828d1af8ae02333e07311",
+      "sha256": "e203d816677d1138367c4adfb188c8443f375085223235b25ab6ab5f3e0774da",
       "river_max_scalerank": 10,
       "towns": {
         "path": "towns-L1.i32",
-        "count": 2728,
-        "sha256": "a1d70b0dd11f2b813c8132d0c4d6bb520a2429ec3a16fb9246b708c8f5cd7e00",
+        "count": 1686,
+        "sha256": "280f655d8c92b80d1d2eea1fc58e18ad9e2c991adc0cc31d8df15b548935c14d",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -54,12 +54,12 @@
       "height": 2391,
       "packed_width": 2581,
       "path": "cells-L2.png",
-      "sha256": "393e9dc253907dea7310d5dc486504bd0ccaaf6dc495bc71cb06f06bc5b33692",
+      "sha256": "251d11c5c0eb38b3dbc032f79d421bbaea46b580883698f8719fc057cb2f50d1",
       "river_max_scalerank": 8,
       "towns": {
         "path": "towns-L2.i32",
-        "count": 942,
-        "sha256": "2123972d25da006d57b3c786bf0422ad4b01ca2f4a4d1e94b0b426de335f2915",
+        "count": 960,
+        "sha256": "88a3cf5f702dc174555f55faaecd536acba9400c4047aeb78722097cfc1b3eef",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -70,12 +70,12 @@
       "height": 1196,
       "packed_width": 1291,
       "path": "cells-L3.png",
-      "sha256": "44358771bb3ef6d5b9078d4c2716f92fc9dc4dde58778f914183ed1fec77f887",
+      "sha256": "9b5a9c56306c9b9efb0ec09733458b429793ddd875b52e56eba71b17c4048abf",
       "river_max_scalerank": 7,
       "towns": {
         "path": "towns-L3.i32",
-        "count": 187,
-        "sha256": "b5689232b64efa77af3426460e5ae0b9859f6902c665e2090babc290f50385af",
+        "count": 343,
+        "sha256": "f1ab135d1834c065bf69cb3b18bf59eaa774b1b07aeaae5c2a81353baeb847a4",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -86,12 +86,12 @@
       "height": 598,
       "packed_width": 646,
       "path": "cells-L4.png",
-      "sha256": "e62a9b4ff4941ce8c052ad7d064f8834f338689a49fa74e981b30be4e519fbdf",
+      "sha256": "e4bfac57b923cc8d417ec5f523b9bb50bbb1a2ed4f9855ca0a373a4f3ea76487",
       "river_max_scalerank": 6,
       "towns": {
         "path": "towns-L4.i32",
-        "count": 43,
-        "sha256": "7cedfbad216515bc26f0e35b626676d2a077a637db5265badb42642f8e7237f5",
+        "count": 101,
+        "sha256": "1a34725d53438c49d2518c19e9cd8835e6939398b9e22f66678a98a8d1ae329e",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -102,12 +102,12 @@
       "height": 299,
       "packed_width": 323,
       "path": "cells-L5.png",
-      "sha256": "19bb96cd36940a9d061f42262e8a845ba4363f5aab9e4d9dc84d77b31c84fa5c",
+      "sha256": "6883205081dc3fdb391ef5335cef5d87978629d6fb221996f0366baede7d6e77",
       "river_max_scalerank": 5,
       "towns": {
         "path": "towns-L5.i32",
-        "count": 7,
-        "sha256": "34eecfa2ddc7a5c97ff432498294d8326e7f0913f5ee81b0836d4626de5b0474",
+        "count": 24,
+        "sha256": "0522cfaaf7d1deeba012a1ddaa88054c064579b093176ee31371ada6045642ba",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     },
@@ -118,12 +118,12 @@
       "height": 150,
       "packed_width": 162,
       "path": "cells-L6.png",
-      "sha256": "732d9104ffa22dba09e1f2d4bc377f12c7482752c57854607422b5b40957de8f",
+      "sha256": "2f87950299ff9cf7cbfecd03ace6ccd2b02b07ce56eeb24dd8fa97f28ecc28cd",
       "river_max_scalerank": 4,
       "towns": {
         "path": "towns-L6.i32",
-        "count": 0,
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "count": 7,
+        "sha256": "53aaf5fd84283a9d8f62e96f6df5ffb587217233e3a39c8b3d2e5d32bcac1395",
         "rule": "int32 (j * width + i) * 4 + town class, sorted"
       }
     }
@@ -156,6 +156,10 @@
     "places": {
       "path": "data/gametiles/places.csv",
       "sha256": "25cf68fd5d9b068537ff3736d7176d5175150a911a0a2ab13e7602f8c0000036"
+    },
+    "town_areas": {
+      "path": "data/cities/facts.json",
+      "sha256": "1b5ea211a03a9744200ad249e2db89e7c1a1f9ab322b8b2e53b2f329d946cbf4"
     }
   },
   "relief_half": {
@@ -660,7 +664,6 @@
     "sha256": "61cbd979a147bb1baa6e8377a6b1fbb95875ece6355d0ae2891fb89d03de75d8",
     "encoding": "RG8 high/low byte, 0.25 m steps, -8192 m offset"
   },
-  "town_extra_km": 0.45,
-  "town_min_km": 0.8,
-  "town_on_river_km": 4.0
+  "town_on_river_km": 4.0,
+  "town_core_km": 2.0
 }

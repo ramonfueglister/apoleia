@@ -23,6 +23,7 @@ extends Node3D
 ## people-draw, people-process: half of people).
 
 const TileTerrain = preload("res://scripts/tile_terrain.gd")
+const CityMarkers = preload("res://scripts/city_markers.gd")
 const TourBench = preload("res://scripts/tour_bench.gd")
 const WeatherSystem = preload("res://scripts/weather/weather_system.gd")
 const PeopleDots = preload("res://scripts/sim/people_dots.gd")
@@ -78,6 +79,7 @@ const TILT_TO := 40.0
 const TILT_SHARP := 0.55
 
 var terrain: Node3D
+var markers: CityMarkers # town markers on the far map (city_markers.gd)
 var camera := Camera3D.new()
 var sun := DirectionalLight3D.new()
 var environment := Environment.new()
@@ -152,6 +154,11 @@ func _ready() -> void:
 	if not await terrain.load_data(loading.part):
 		get_tree().quit(1)
 		return
+	markers = CityMarkers.new()
+	add_child(markers)
+	if not markers.setup(terrain, TileTerrain.data_root()):
+		markers.queue_free()
+		markers = null
 	await loading.step("look", "Licht, Kamera und Wetter …")
 	_setup_look()
 	camera.fov = fov_for_width(start.z)
@@ -398,6 +405,8 @@ func _place_camera() -> void:
 	var centre := _footprint_centre(distance)
 	var spans := _drawn_spans()
 	terrain.update_view(centre, width, spans.x, spans.y)
+	if markers != null:
+		markers.update_view(width, get_viewport().get_visible_rect().size.x)
 	_update_look(distance)
 
 ## Ground (km) to cover around the middle of the view: x by the terrain,

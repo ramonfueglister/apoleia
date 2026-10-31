@@ -352,13 +352,19 @@ def block_mean(a, f):
     return p.reshape(H // f, f, W // f, f).mean((1, 3))
 
 
-TOWN_EXTRA_KM = 0.45
-# Every place of the 117 AD list is a town (Hanson's urban sites), its radius
-# at least TOWN_MIN_KM (built up within about nine tenths of it, so 3 x 3
-# tiles of 0.5 km): Aricia (2600 people) was one tile of four lots, a
-# farmstead in the woods (Kritik r8); the woods keep a tile away from the
-# towns up close (TOWN_CLEARING).
-TOWN_MIN_KM = 0.8
+# Every place of the 117 AD list is a town (Hanson's urban sites) of its
+# real area, the area its city plan has (tools/city_generate.py area_ha:
+# Hanson's area, else the Hanson & Ortman fit from the people, at least
+# 4 ha), so a town is as large on every zoom level as up close (Ramon
+# 31.10.2026, Bauplan B step 3: Rome had a disk of 6.2 km, 121 km2, far
+# out and its 18 km2 plan up close; the towns together 3,034 km2 against
+# 451 km2). A cell's class is the share of it the town covers (thirds,
+# rounded up); a place keeps class 1 on its own cell up to TOWN_CORE_KM
+# tiles, so a small town is a house or a few up close and, far out, a
+# marker. Before: radius 0.6 * sqrt(people / 10,000) km plus a ring of up
+# to 0.45 km, at least 0.8 km.
+TOWN_CORE_KM = 2.0
+TOWN_SUPERSAMPLE = 4  # samples per cell side for the covered share
 # Towns stand on land; from 4 km tiles also across the rivers, so a city
 # astride a river stays one block (Kritik r9: Rome at 400 km was a bar of
 # one tile column east of the Tiber).
@@ -373,37 +379,46 @@ def town_ground(water, cell_km):
     return (water == 0) | ((water == 3) & (cell_km >= TOWN_ON_RIVER_KM))
 
 
+def town_areas_ha():
+    """Real area (ha) of each place by id, as its city plan has it."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    from city_generate import area_ha  # noqa: E402 (tools/ is not a package)
+    facts = json.loads((ROOT / "data/cities/facts.json").read_text())["cities"]
+    return {k: area_ha(f) for k, f in facts.items()}
+
+
 def settlements(cell_km, n_x, n_y):
-    """0..3 density per cell from the 117 AD population (places.csv)."""
+    """0..3 per cell: the share (thirds) of it a place covers at its real
+    area (town_areas_ha), from the 117 AD places (places.csv)."""
+    areas = town_areas_ha()
     out = np.zeros((n_y, n_x), np.float32)
+    k = TOWN_SUPERSAMPLE
+    sub = (np.arange(k) + 0.5) / k
     for row in csv.DictReader(open(ROOT / "data/gametiles/places.csv")):
         if not row["p117"]:
             continue
-        pop = float(row["p117"])
+        ha = areas.get(row["id"])
+        if ha is None:
+            from city_generate import HO_D, HO_P, MIN_HA
+            ha = max((max(float(row["p117"]), 1.0) / HO_D) ** (1 / HO_P), MIN_HA)
+        r_km = math.sqrt(ha * 0.01 / math.pi)
         px, pz = lonlat_to_world(float(row["lon"]), float(row["lat"]))
-        # the area of a place grows with its people; towns from 3000 to 7000
-        # people up get a ring of up to TOWN_EXTRA_KM, else the diorama-sized
-        # houses (a lot per 0.25 km) left a town of 7000 (Tibur) three houses;
-        # villages keep their size
-        r_km = 0.6 * math.sqrt(pop / 10000) + TOWN_EXTRA_KM * min(max((pop - 3000) / 4000, 0.0), 1.0)
-        r_km = max(r_km, TOWN_MIN_KM)
         ci = (float(px) - WORLD_MIN[0]) / cell_km
         cj = (float(pz) - WORLD_MIN[1]) / cell_km
-        rc = max(r_km / cell_km, 0.0)
-        i0, i1 = int(math.floor(ci - rc - 1)), int(math.ceil(ci + rc + 1))
-        j0, j1 = int(math.floor(cj - rc - 1)), int(math.ceil(cj + rc + 1))
-        i0, j0 = max(i0, 0), max(j0, 0)
-        i1, j1 = min(i1, n_x - 1), min(j1, n_y - 1)
+        rc = r_km / cell_km
+        i0, i1 = max(int(math.floor(ci - rc)), 0), min(int(math.floor(ci + rc)), n_x - 1)
+        j0, j1 = max(int(math.floor(cj - rc)), 0), min(int(math.floor(cj + rc)), n_y - 1)
         if i1 < i0 or j1 < j0:
             continue
-        ii, jj = np.meshgrid(np.arange(i0, i1 + 1) + 0.5, np.arange(j0, j1 + 1) + 0.5)
-        d = np.hypot(ii - ci, jj - cj) * cell_km
-        dens = np.where(d < r_km, np.clip(1.25 - d / max(r_km, 1e-6), 0, 1), 0)
-        # every place owns at least the cell it sits in, if the cell is not too coarse
-        if cell_km <= 2.0 and 0 <= int(ci) < n_x and 0 <= int(cj) < n_y:
-            core = min(1.0, 0.34 + 0.2 * math.log10(max(pop, 1000) / 1000))
-            dens[int(cj) - j0, int(ci) - i0] = max(dens[int(cj) - j0, int(ci) - i0], core)
-        out[j0:j1 + 1, i0:i1 + 1] = np.maximum(out[j0:j1 + 1, i0:i1 + 1], dens)
+        # covered share of each cell: k x k samples inside the disk
+        xs = (np.arange(i0, i1 + 1)[:, None] + sub[None, :]).ravel()
+        ys = (np.arange(j0, j1 + 1)[:, None] + sub[None, :]).ravel()
+        inside = np.hypot(xs[None, :] - ci, ys[:, None] - cj) * cell_km < r_km
+        share = inside.reshape(j1 - j0 + 1, k, i1 - i0 + 1, k).mean((1, 3)).astype(np.float32)
+        # a place owns at least a third of the cell it sits in, if the cell is not too coarse
+        if cell_km <= TOWN_CORE_KM and i0 <= int(ci) <= i1 and j0 <= int(cj) <= j1:
+            share[int(cj) - j0, int(ci) - i0] = max(share[int(cj) - j0, int(ci) - i0], 1.0 / 3.0)
+        out[j0:j1 + 1, i0:i1 + 1] = np.maximum(out[j0:j1 + 1, i0:i1 + 1], share)
     return np.clip(np.ceil(out * 3 - 0.01), 0, 3).astype(np.uint8)
 
 
@@ -1377,8 +1392,10 @@ def towns_only():
         write_town_list(e, town)
         print("towns", e["level"], int((town > 0).sum()))
     manifest["inputs"]["places"] = {"path": "data/gametiles/places.csv", "sha256": sha(ROOT / "data/gametiles/places.csv")}
-    manifest["town_extra_km"] = TOWN_EXTRA_KM
-    manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["inputs"]["town_areas"] = {"path": "data/cities/facts.json", "sha256": sha(ROOT / "data/cities/facts.json")}
+    manifest.pop("town_extra_km", None)
+    manifest.pop("town_min_km", None)
+    manifest["town_core_km"] = TOWN_CORE_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
@@ -1523,7 +1540,7 @@ def cells_only():
     rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
         RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
     bake_cells(manifest, height, land, lakes, rivers)
-    manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["town_core_km"] = TOWN_CORE_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
@@ -1544,7 +1561,7 @@ def main():
                               "rule": "node i at world_min + i * world_size / (width - 1)"},
                 "cells": [], "inputs": {}}
     water_by_level, land_frac, lake_frac, lake_cells = bake_cells(manifest, height, land, lakes, rivers)
-    manifest["town_min_km"] = TOWN_MIN_KM
+    manifest["town_core_km"] = TOWN_CORE_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     n0y, n0x = land_frac.shape
 
