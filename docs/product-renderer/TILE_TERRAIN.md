@@ -108,7 +108,8 @@ unabhängig und unverändert.
   so entstehen keine Kraterwände am Seeufer. (Das Relief aus `relief.r16f`
   baut nur noch die Ecken, wenn die gebackenen Stufen fehlen.)
 - Ufer wie in SimCity 2000: Meer und Seen liegen um `water_drop` (0,3 Stufen)
-  tiefer als das Land, das Land endet also mit einer kleinen Erdkante am Wasser.
+  tiefer als das Land, das Land endet also mit einer kleinen Erdkante am Wasser
+  (ab den 2-km-Kacheln nicht mehr: Runden M und P).
   Hat eine Landkachel auf zwei benachbarten Seiten und der Diagonale dazwischen
   Wasser, ist die Hälfte zu dieser Ecke hin ebenfalls Wasser, geschnitten an der
   Kacheldiagonale (`tt_coast_cut`). So läuft eine Treppe aus Wasserkacheln als
@@ -317,6 +318,31 @@ unabhängig und unverändert.
   Bergkachel (Alpweide, Fels, Schnee) darunter ist Wald, wo die Landbedeckung
   bewaldet ist, sonst Alpweide (`contour_mountain`). Skizze:
   `/mnt/project-files/grafik/runde-n-fluesse-berge-skizze.jpg`.
+  Runde P (31.10.2026, Seen und Flecken der Europakarte), ebenfalls ab den
+  2-km-Kacheln: Die Seen waren ganze Kacheln, auf der Karte Quadrate und
+  Treppen, die Landschaften je Kachel eine Farbe mit Diagonalschnitten, ein
+  Mosaik aus 8-km-Blöcken; Ramons Referenz hat runde Seeufer und weiche,
+  gefleckte Landschaften. Jetzt hält `aux.png` A an jedem 2-km-Knoten den
+  vorzeichenbehafteten Abstand zum Ufer der Seepolygone (128 + km / 0,125,
+  im See negativ; `build_tile_terrain.py --lakes-only`,
+  `lake_shore_distance`, gemessen auf einem 0,25-km-Raster), und der Shader
+  zieht das Ufer als Linie durch den bilinearen Abstand (`tt_lake_distance`).
+  Wie die Küste bei Runde M: Auf Landkacheln liegt der See nur auf dem
+  tiefen Teil der Kachel (bis knapp eine halbe Stufe über ihrer tiefsten
+  Ecke, nie einen Hang hinauf), auf der Seekachel ausserhalb der Linie das
+  Land weiter (flach, auf Uferhöhe, mit Fels, Wegen, Relief und Flüssen wie
+  daneben). Die Seekacheln liegen dort auf ihrer Seehöhe statt `water_drop`
+  darunter, sonst stünden Erdkanten zwischen den beiden; Seeecken-Schnitte
+  gibt es dort keine. Ein See schmaler als ein Knotenschritt kann zwischen
+  zwei Knoten dünn werden; dafür erscheinen fern auch Seen, die keine
+  ganze Kachel füllen. Die Landschaft eines Punkts kommt aus den vier
+  Kacheln um ihn (`contour_land_soft`): jede wiegt mit ihrem bilinearen
+  Anteil, der Punkt wandert dabei um bis zu einer halben Kachel (Rauschen
+  in Kacheln, auf jeder Stufe gleich), Wasserkacheln wiegen nichts, die
+  schwerste Landschaft gewinnt und geht über etwa ein Pixel in die nächste
+  über. Hügel- und Bergtöne kommen mit der Höhe des Punkts statt in einer
+  Stufe je Kachel (`contour_ground_tone`); die Farben selbst sind dieselben.
+  Skizze: `/mnt/project-files/grafik/runde-p-seen-flecken-skizze.jpg`.
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
