@@ -132,11 +132,13 @@ pub struct Surface {
     pub uv: Vec<[f32; 2]>,
     pub nrm: Vec<V3>,
     pub tex: Option<String>,
+    /// real look: a normal map other than the one beside the texture (name_n)
+    pub nmap: Option<String>,
 }
 
 impl Surface {
     pub fn new(mat: Mat) -> Surface {
-        Surface { mat, pos: Vec::new(), col: Vec::new(), uv: Vec::new(), nrm: Vec::new(), tex: None }
+        Surface { mat, pos: Vec::new(), col: Vec::new(), uv: Vec::new(), nrm: Vec::new(), tex: None, nmap: None }
     }
     /// One vertex with an sRGB colour.
     pub fn put(&mut self, v: V3, c: Rgb) {

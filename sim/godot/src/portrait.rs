@@ -329,7 +329,7 @@ impl ApoleiaPortrait {
             let i = mesh.get_surface_count() - 1;
             // materials kept and shared: a new one each time drops Godot's
             // shader with the last face and compiles it again (~6 ms each)
-            let key = format!("{:08x}|{:08x}|{}|{}", s.mat.rough.to_bits(), s.mat.metal.to_bits(), s.mat.double, s.tex.as_deref().unwrap_or(""));
+            let key = format!("{:08x}|{:08x}|{}|{}|{}", s.mat.rough.to_bits(), s.mat.metal.to_bits(), s.mat.double, s.tex.as_deref().unwrap_or(""), s.nmap.as_deref().unwrap_or(""));
             let kept = self.materials.borrow().get(&key).cloned();
             let m = if let Some(m) = kept {
                 m
@@ -343,8 +343,8 @@ impl ApoleiaPortrait {
                     {
                         if let Some(t) = self.texture(path) {
                             m.set_texture(TextureParam::ALBEDO, &t);
-                            // a normal map beside the image (name_n), if any
-                            if let Some(nt) = apoleia_portrait::real::normal_map(path).filter(|_| apoleia_portrait::real::on("APOLEIA_REAL_NMAP")).and_then(|np| self.texture(&np)) {
+                            // a normal map beside the image (name_n), or the one the surface names (skin with age wrinkles)
+                            if let Some(nt) = s.nmap.clone().or_else(|| apoleia_portrait::real::normal_map(path)).filter(|_| apoleia_portrait::real::on("APOLEIA_REAL_NMAP")).and_then(|np| self.texture(&np)) {
                                 m.set_feature(Feature::NORMAL_MAPPING, true);
                                 m.set_texture(TextureParam::NORMAL, &nt);
                             }

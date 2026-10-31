@@ -210,6 +210,24 @@ fn morph(h: &Head, p: &Look) -> (Vec<V3>, usize) {
         add("nose/nose-scale-vert-incr", older * 0.3);
         add("nose/nose-point-down", older * 0.4);
     }
+    // real look: the soft tissue sinks with age. Fat in the midface thins and
+    // slides down, bags form under the eyes, the brow and the upper lid sag,
+    // the mouth corners drop, jowls and a soft double chin form (Coleman &
+    // Grover, 2006; Mendelson & Wong, 2012; not verified online). From about
+    // 38, full at 80; weights PLACEHOLDER
+    let sag = c01((yrs - 38.0) / 42.0);
+    if sag > 0.0 && crate::real::dir("APOLEIA_REAL").is_some() {
+        for sd in ["l", "r"] {
+            add(&format!("eyes/{sd}-eye-bag-incr"), sag * 0.7);
+            add(&format!("eyes/{sd}-eye-bag-height-incr"), sag * 0.35);
+            add(&format!("eyes/{sd}-eye-height1-decr"), sag * 0.3);
+            add(&format!("cheek/{sd}-cheek-volume-decr"), sag * 0.45);
+            add(&format!("cheek/{sd}-cheek-trans-down"), sag * 0.45);
+        }
+        add("eyebrows/eyebrows-trans-down", sag * 0.25);
+        add("mouth/mouth-angles-down", sag * 0.3);
+        add("neck/neck-double-incr", sag * 0.6);
+    }
     let mood: &[(&str, f32)] = match p.mood {
         // a gentle closed-mouth smile: the corners up and a little apart,
         // the cheeks lifted (Ramon 31.10.: corners up 0.9 read as a smirk)
@@ -772,7 +790,8 @@ fn gem(out: &mut Surface, c: V3, r: f32, col: Rgb) {
 /// uvs.txt and skin_<age>_<sex>.png): each vertex the mean colour of its
 /// facets, normals averaged, the UVs of the base mesh (at a seam the corner
 /// UVs that lie closest together).
-fn real_skin(s: &mut Surface, idx: &[u32], pp: &[V3], dir: &str, age: f32, female: bool, hair: Rgb, scalp_file: Option<String>) {
+#[allow(clippy::too_many_arguments)]
+fn real_skin(s: &mut Surface, idx: &[u32], pp: &[V3], dir: &str, age: f32, female: bool, hair: Rgb, scalp_file: Option<String>, sun: f32, seed: u32) {
     let Some(rows) = crate::real::rows(&format!("{dir}/uvs.txt")) else { return };
     let uvs: Vec<Vec<[f32; 2]>> = rows.iter().map(|f| f.chunks_exact(2).map(|c| [c[0], 1.0 - c[1]]).collect()).collect();
     if s.pos.len() != idx.len() {
@@ -844,6 +863,20 @@ fn real_skin(s: &mut Surface, idx: &[u32], pp: &[V3], dir: &str, age: f32, femal
     // more on old men (weathered, broken veins)
     let red: Vec<f32> = crate::real::column(&format!("{dir}/skin_red.txt"), 0.0);
     let red_k: f32 = std::env::var("APOLEIA_SKIN_RED").ok().and_then(|v| v.parse().ok()).unwrap_or(0.6) * if female { 1.0 } else { 1.0 + 0.5 * ((age - 40.0) / 30.0).clamp(0.0, 1.0) };
+    // real look: age wrinkles. A "wrinkle age": years in the sun add some (the
+    // weathered farmer looks older than the scribe of his age), and people
+    // differ by a few years (PLACEHOLDER 14 and 4 years)
+    let wage = age + 14.0 * (sun - 0.5) + 4.0 * (Rng::new(seed ^ 0x7f4a_7c15).next() * 2.0 - 1.0);
+    // each line group (wrinkle_lines.txt: onset, span, depth men, women, shade)
+    // deepens with the wrinkle age; its broad fold darkens the skin
+    // continuously (wrinkle_fold.txt, one column per group and vertex), the
+    // crisp crease comes from the normal map below
+    let groups = crate::real::rows(&format!("{dir}/wrinkle_lines.txt"));
+    let folds = crate::real::rows(&format!("{dir}/wrinkle_fold.txt"));
+    let gdepth: Vec<f32> = groups
+        .as_ref()
+        .map(|g| g.iter().map(|r| if r.len() < 5 { 0.0 } else { (if female { r[3] } else { r[2] }) * c01((wage - r[0]) / r[1]).powf(0.7) * r[4] }).collect())
+        .unwrap_or_default();
     // texture mean 0.88 in sRGB is about 0.755 in linear light
     let lift = 1.0 / 0.755;
     s.uv.clear();
@@ -867,7 +900,8 @@ fn real_skin(s: &mut Surface, idx: &[u32], pp: &[V3], dir: &str, age: f32, femal
         for (j, &v) in f.iter().enumerate() {
             let mut c = mul(acc[v as usize], 1.0 / wsum[v as usize].max(1e-9));
             if let Some(&m) = scalp.get(v as usize) {
-                c = mix(c, hl, 0.8 * m);
+                // (only darker: under grey or white hair the scalp stays skin)
+                c = mix(c, [c[0].min(hl[0]), c[1].min(hl[1]), c[2].min(hl[2])], 0.8 * m);
             }
             if let Some(&r) = red.get(v as usize) {
                 let lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
@@ -877,13 +911,25 @@ fn real_skin(s: &mut Surface, idx: &[u32], pp: &[V3], dir: &str, age: f32, femal
             if let Some(&a) = ao.get(v as usize) {
                 c = mul(c, 1.0 - ao_k * (1.0 - a.max(0.0)).powf(1.3));
             }
+            if let Some(fv) = folds.as_ref().and_then(|f| f.get(v as usize)) {
+                let dark: f32 = fv.iter().zip(&gdepth).map(|(w, d)| w * d).sum();
+                c = mul(c, 1.0 - dark.min(0.5));
+            }
             s.col[3 * k + j] = [(c[0] * lift).min(1.0), (c[1] * lift).min(1.0), (c[2] * lift).min(1.0)];
             s.nrm.push(nrm[v as usize]);
         }
         s.uv.extend([best.0, best.1, best.2]);
     }
     let a = if age < 30.0 { "young" } else if age < 55.0 { "middleage" } else { "old" };
-    s.tex = Some(crate::real::image(dir, &format!("skin_{a}_{}", if female { "female" } else { "male" })));
+    let sex = if female { "female" } else { "male" };
+    s.tex = Some(crate::real::image(dir, &format!("skin_{a}_{sex}")));
+    // the pores with the creases of the nearest wrinkle age below, in steps
+    // of 8 years from 38 (skin_<age>_<sex>_w<E>_n); younger: pores only
+    s.nmap = (0..7)
+        .map(|k| 86 - 8 * k)
+        .filter(|&e| e as f32 <= wage)
+        .map(|e| crate::real::image(dir, &format!("skin_{a}_{sex}_w{e}_n")))
+        .find(|f| std::path::Path::new(f).exists());
 }
 
 /// Real look: which hairstyle (Blender cards) a person wears, when
@@ -935,7 +981,7 @@ fn mh_pick(p: &Look, long_hair: bool) -> Option<(String, String)> {
 /// weighted sum of three body vertices plus an offset scaled with the head)
 /// on this person's morphed head, as textured cards.
 fn mh_hair(dir: &str, name: &str, pp: &[V3], base: &[V3], hc: V3, hair: Rgb) -> Option<Surface> {
-    mh_hair2(dir, name, pp, base, hc, &|_| hair, false)
+    mh_hair2(dir, name, pp, base, hc, &|_| hair, false, (0.0, 0))
 }
 
 /// Real look: a Blender garment (name.txt bound like the hair, name.png): smooth
@@ -1080,8 +1126,10 @@ fn mh_cloth(dir: &str, name: &str, pp: &[V3], base: &[V3], color: &dyn Fn(V3) ->
 }
 
 /// Real look: as mh_hair, the colour per vertex; `hang`: normals outward from the
-/// vertical axis below hc (for beards hanging below the chin).
-fn mh_hair2(dir: &str, name: &str, pp: &[V3], base: &[V3], hc: V3, color: &dyn Fn(V3) -> Rgb, hang: bool) -> Option<Surface> {
+/// vertical axis below hc (for beards hanging below the chin); `thin`: the share
+/// of cards left out (thinning hair in age) and the seed that picks them.
+#[allow(clippy::too_many_arguments)]
+fn mh_hair2(dir: &str, name: &str, pp: &[V3], base: &[V3], hc: V3, color: &dyn Fn(V3) -> Rgb, hang: bool, thin: (f32, u32)) -> Option<Surface> {
     let rows = crate::real::rows(&format!("{dir}/{name}.txt"))?;
     let mut it = rows.iter();
     let head = it.next()?;
@@ -1113,8 +1161,35 @@ fn mh_hair2(dir: &str, name: &str, pp: &[V3], base: &[V3], hc: V3, color: &dyn F
     let mut s = Surface::new(mat2(if flat { 0.85 } else { 0.6 }));
     s.tex = Some(crate::real::image(dir, name));
     let red = name.ends_with("_cap") && std::env::var_os("APOLEIA_DEBUG_CAP").is_some();
-    for _ in 0..nt {
-        let f = it.next()?;
+    let tris: Vec<&Vec<f32>> = it.by_ref().take(nt).collect();
+    if tris.len() < nt {
+        return None;
+    }
+    // thinning: whole cards (triangles joined by shared corners) left out
+    let mut card: Vec<usize> = (0..nv).collect();
+    if thin.0 > 0.0 {
+        fn root(c: &mut [usize], mut i: usize) -> usize {
+            while c[i] != i {
+                c[i] = c[c[i]];
+                i = c[i];
+            }
+            i
+        }
+        for f in &tris {
+            let a = root(&mut card, f[0] as usize);
+            for k in 1..3 {
+                let b = root(&mut card, f[k] as usize);
+                card[b] = a;
+            }
+        }
+        for i in 0..nv {
+            card[i] = root(&mut card, i);
+        }
+    }
+    for f in tris {
+        if thin.0 > 0.0 && Rng::new(thin.1 ^ (card[f[0] as usize] as u32).wrapping_mul(0x9e37_79b9)).next() < thin.0 {
+            continue;
+        }
         for k in 0..3 {
             let v = vs[f[k] as usize];
             s.pos.push(v);
@@ -1350,7 +1425,8 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             if c[1] > 6.0 && c[1] < 6.15 && c[2] > 0.4 {
                 col = cmul(col, 0.94);
             }
-            let wk = wrinkle(c);
+            // (real look: the wrinkles come from the skin's fold shade and normal map)
+            let wk = if real.is_some() { 0.0 } else { wrinkle(c) };
             if wk > 0.0 {
                 col = cmul(col, 1.0 - 0.26 * wk);
             }
@@ -1383,7 +1459,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             // the scalp under the hair this person wears (name_scalp.txt beside it), if bare-headed
             let bare = !matches!(p.hat_style(), Hat::Cap | Hat::Pileus | Hat::Petasos) && !(long_hair && p.hair_style() == Hair::Veil);
             let sf = if bare { mh_pick(p, long_hair).map(|(d, n)| format!("{d}/{n}_scalp.txt")).filter(|f| crate::real::exists(f)) } else { None };
-            real_skin(&mut s, &h.parts["body"][lod], &x.pp, dir, p.age, fem, hair, sf);
+            real_skin(&mut s, &h.parts["body"][lod], &x.pp, dir, p.age, fem, hair, sf, lf.sun, p.seed);
         }
         out.push(s);
     }
@@ -1887,11 +1963,21 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
     let veiled = long_hair && p.hair_style() == Hair::Veil;
     let mh = if hatted_mh || veiled { None } else { mh_pick(p, long_hair) };
     if let Some((dir, name)) = &mh {
-        if let Some(sf) = mh_hair(dir, name, &x.pp, &h.base, hc, hair) {
+        // hair thins with age: women diffusely over the crown (female pattern
+        // hair loss, rising to about half of women past 80; Gan & Sinclair,
+        // 2005, not verified online), more with the bald gene. Cards left out,
+        // the painted cap of fine hairs lets the scalp show. Men keep their
+        // cards (their short cut shows gaps as patches; the bald pattern does
+        // the work). Shares PLACEHOLDER
+        let thin = if fem { c01((p.age - 45.0) / 40.0) * (0.3 + 0.7 * p.u(BALD)) * 0.55 } else { 0.0 };
+        if let Some(sf) = mh_hair2(dir, name, &x.pp, &h.base, hc, &|_| hair, false, (thin, p.seed ^ 0x3c6e_f372)) {
             out.push(sf);
         }
         // real look: a painted cap of fine hairs under the cards, if there is one
-        if let Some(sf) = mh_hair(dir, &format!("{name}_cap"), &x.pp, &h.base, hc, hair) {
+        // (grey and white fuzz is see-through: the cap fades towards the skin as
+        // the hair greys, else its soft edge lays a pale band over the forehead)
+        let cap_c = cmix(hair, skin, (0.7 * thin).max(0.75 * beard_grey));
+        if let Some(sf) = mh_hair(dir, &format!("{name}_cap"), &x.pp, &h.base, hc, cap_c) {
             out.push(sf);
         }
     }
@@ -1900,10 +1986,10 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
     if let Some((dir, name)) = &real_beard {
         let hcb = [fit[0][1], ym(6.9), fit[2][0] * 0.35 + fit[2][1]];
         let bcol = |v: V3| cmix(cmul(hair, 1.12), hex("#d6d1c9"), beard_grey * 0.6 * c01((ym(6.8) - v[1]) / (0.6 * hs)));
-        if let Some(sf) = mh_hair2(dir, name, &x.pp, &h.base, hcb, &bcol, true) {
+        if let Some(sf) = mh_hair2(dir, name, &x.pp, &h.base, hcb, &bcol, true, (0.0, 0)) {
             out.push(sf);
         }
-        if let Some(sf) = mh_hair2(dir, &format!("{name}_cap"), &x.pp, &h.base, hcb, &bcol, false) {
+        if let Some(sf) = mh_hair2(dir, &format!("{name}_cap"), &x.pp, &h.base, hcb, &bcol, false, (0.0, 0)) {
             out.push(sf);
         }
     }
