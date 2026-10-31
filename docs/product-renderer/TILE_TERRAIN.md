@@ -198,7 +198,16 @@ unabhängig und unverändert.
   ganze Relief: dort sind sie 1,6-mal so stark (West +19 %, Ost −24 %,
   Stufen −16 %; Kritik r9 und Personen-Kritik r16: bei 70 km verschwanden
   die Stufen, hell zu dunkel nur 1,05 bis 1,2). Kritik r7: Mit den Stufen zur Kamera +5 % heller verschwanden
-  sie; mit West +18 % und sonst nichts lasen Hänge als gestreifter Rasen. Rampen, die von der Kamera weg zeigen (auch nach
+  sie; mit West +18 % und sonst nichts lasen Hänge als gestreifter Rasen.
+  Runde L (31.10.2026): Ab den 0,5-km-Kacheln ist jede Rampe eine ganze
+  Kachel und eine Stufe hoch, also überall gleich steil; mit den vollen Tönen
+  lagen die Hügel bei 22 bis 70 km als grosse helle und dunkle Dreiecke da,
+  die Sonnenseite +22 % wie Glasscherben (Ramon). Urbek hat kaum Hänge, und
+  die Landschaftsreferenz macht Hänge nur leicht heller oder dunkler. Darum
+  behält die Sonnenseite dort ein Drittel ihres Tons (`FAR_SUN_TONE`), die
+  Schattenseiten zwei Drittel (`FAR_SHADE_TONE`): Die Stufen bleiben als
+  dunklere Bänder lesbar. Skizze vorher/nachher:
+  `/mnt/project-files/grafik/runde-l-haenge-skizze.jpg`. Rampen, die von der Kamera weg zeigen (auch nach
   Nordost und Nordwest), sieht man nur als Kante; sie bleiben im flachen Ton
   (die diagonalen zogen bei 70 km Haarlinien durchs Land), sonst zeichnet eine lange Stufe
   einen dunklen Strich durchs Land (die „Naht“ bei 120 km). Die Töne kommen von einem festen
