@@ -65,6 +65,9 @@ struct Front {
     /// Per house slot, x and z (world m) of the household's nearest field
     /// (Grain::near_field), -1, -1 without; rebuilt with `house_looks`.
     house_fields: Vec<f32>,
+    /// The same by person slot (the people texture's order), for the
+    /// figures, which know their person, not their house.
+    people_fields: Vec<f32>,
     /// What shows of each person, 2 bytes by person slot (the people
     /// texture's order): their household's share of its need eaten (‰ / 4)
     /// and its HOUSE_* flags with its workshop (PERSON_CRAFT_SHIFT) and
@@ -395,14 +398,18 @@ fn publish_house_looks(game: &Game, view: &PeopleView, f: &mut Front) {
         looks[slot as usize * 4..][..4].copy_from_slice(&game.grain.house_look(hh).unwrap_or_default());
     }
     f.house_looks = looks;
+    let mut near: rustc_hash::FxHashMap<u32, [f32; 2]> = rustc_hash::FxHashMap::default();
+    let mut near_field = |hh: u32| *near.entry(hh).or_insert_with(|| game.grain.near_field(hh).map_or([-1.0, -1.0], |((x, z), _)| [(x * 1000.0) as f32, (z * 1000.0) as f32]));
     let mut fields = vec![-1.0f32; view.houses.slots() * 2];
     for (slot, hh) in view.houses.households() {
-        if let Some(((x, z), _)) = game.grain.near_field(hh) {
-            fields[slot as usize * 2] = (x * 1000.0) as f32;
-            fields[slot as usize * 2 + 1] = (z * 1000.0) as f32;
-        }
+        fields[slot as usize * 2..][..2].copy_from_slice(&near_field(hh));
     }
     f.house_fields = fields;
+    let mut fields = vec![-1.0f32; view.slots() * 2];
+    for (slot, hh) in view.slot_households() {
+        fields[slot * 2..][..2].copy_from_slice(&near_field(hh));
+    }
+    f.people_fields = fields;
     let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
     let craft: rustc_hash::FxHashMap<u32, u8> = c.household.iter().zip(&c.craft).map(|(&h, &k)| (h as u32, k & 3)).collect();
     let mut people = vec![0u8; view.slots() * 2];
@@ -1893,6 +1900,14 @@ impl ApoleiaPeople {
     #[func]
     fn house_fields(&self) -> PackedFloat32Array {
         PackedFloat32Array::from(self.shared.front.lock().unwrap().house_fields.as_slice())
+    }
+
+    /// `house_fields` by person slot (the people texture's order, rebuilt
+    /// with `house_looks`): x and z in world metres of the nearest field of
+    /// the person's household; -1, -1 without.
+    #[func]
+    fn people_fields(&self) -> PackedFloat32Array {
+        PackedFloat32Array::from(self.shared.front.lock().unwrap().people_fields.as_slice())
     }
 
     /// What shows of each person, 2 bytes by person slot (the people
