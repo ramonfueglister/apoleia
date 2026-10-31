@@ -31,6 +31,13 @@ extends CanvasLayer
 ## WINDOW_GAP_S seconds, so a fast game is not buried in windows. Its
 ## people open the person's window (person_chosen, people_dots.gd).
 ##
+## Faces (docs/kit2/PORTRAITS.md): an event window's people get the face
+## of their household (ApoleiaPeople.ask_faces, a member as the window's
+## links open), and so does a line for one event of a household that lives
+## on (FACE_KINDS); the faces are kept by household, the last FACES_KEEP.
+## With the face comes that member's name (docs/kit2/NAMES.md), which then
+## names the household on the window's link and the line.
+##
 ## Command line (after --): --no-events starts with the list hidden,
 ## --no-event-windows opens no event windows.
 
@@ -67,6 +74,10 @@ const WINDOW_KINDS: Array[int] = [THEFT, FARM_TAKEN, MANCIANA, FARM_LEFT]
 const FAMILY_FROM := 12
 const WINDOW_DAYS := 2
 const WINDOW_GAP_S := 30.0
+## moved, joined relatives, theft, alms, tent moved, farm taken, heir, to
+## the tents, Lex Manciana: the household is still there to show
+const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10]
+const FACES_KEEP := 200
 
 ## Every answer of the sim thread, also while the list is hidden.
 signal answered(events: Dictionary)
@@ -93,6 +104,10 @@ var _windows := true
 var _window: Control # the event window open now, if any
 var _window_msec := -1000000
 var _window_seen := {} # rare events of the last WINDOW_DAYS already shown or passed over
+var _faces := {} # household -> its face as take_faces gives it, {} when it has none
+var _faces_order: Array[int] = []
+var _faces_wanted: Array[int] = [] # not asked yet
+var _faces_asked: Array[int] = [] # asked, the answer not there yet
 
 ## `sim` is ApoleiaPeople, `scene` the landscape whose camera a line moves.
 func setup(sim: RefCounted, scene: Node3D) -> void:
@@ -119,11 +134,18 @@ func _process(_delta: float) -> void:
 				_refresh()
 				_window_for(answer)
 			answered.emit(answer)
+	if not _faces_asked.is_empty():
+		var faces: Dictionary = people.take_faces()
+		if not faces.is_empty():
+			_got_faces(faces.faces)
 	if open:
 		_place_pins()
 	if _asked:
 		return
 	var day: int = people.day()
+	if day < _asked_day: # a save game was loaded: its households are others
+		_faces.clear()
+		_faces_order.clear()
 	var centre: Vector2 = landscape.target if "target" in landscape else Vector2.ZERO
 	var width: float = landscape.width if "width" in landscape else 360.0
 	var moved := _asked_at.x == INF or Vector2(_asked_at.x, _asked_at.y).distance_to(centre) > width * 0.3 \
@@ -145,7 +167,32 @@ func _refresh() -> void:
 	_fill()
 	_make_pins()
 
-## One entry per day and kind, newest first, at most LINES.
+## Asks for the faces of `households` not known yet, once the last answer
+## is there.
+func _want_faces(households: Array) -> void:
+	for h in households:
+		if h >= 0 and not _faces.has(h) and not h in _faces_wanted and not h in _faces_asked:
+			_faces_wanted.append(h)
+	if _faces_asked.is_empty() and not _faces_wanted.is_empty():
+		people.ask_faces(PackedInt64Array(_faces_wanted))
+		_faces_asked = _faces_wanted
+		_faces_wanted = []
+
+func _got_faces(faces: Dictionary) -> void:
+	for h in _faces_asked:
+		_faces[h] = faces.get(h, {})
+		_faces_order.append(h)
+	while _faces_order.size() > FACES_KEEP:
+		_faces.erase(_faces_order.pop_front())
+	_faces_asked = []
+	if open:
+		_fill()
+	if is_instance_valid(_window):
+		_window.show_faces(_faces)
+	_want_faces([])
+
+## One entry per day and kind, newest first, at most LINES; a line for
+## one event of FACE_KINDS wants its household's face.
 func _group(e: Dictionary) -> void:
 	var days: PackedInt64Array = e.day
 	var kinds: PackedInt32Array = e.kind
@@ -162,7 +209,7 @@ func _group(e: Dictionary) -> void:
 			if order.size() >= LINES:
 				continue
 			by[key] = {"day": int(days[i]), "kind": kinds[i], "name": names[kinds[i]] if kinds[i] < names.size() else "?",
-				"n": 0, "amount": 0, "lo": at[i], "hi": at[i]}
+				"n": 0, "amount": 0, "lo": at[i], "hi": at[i], "household": int(e.household[i])}
 			order.append(key)
 		var g: Dictionary = by[key]
 		g.n += 1
@@ -170,8 +217,12 @@ func _group(e: Dictionary) -> void:
 		g.lo = (g.lo as Vector2).min(at[i])
 		g.hi = (g.hi as Vector2).max(at[i])
 	_entries.clear()
+	var faces := []
 	for key in order:
 		_entries.append(by[key])
+		if by[key].n == 1 and by[key].kind in FACE_KINDS:
+			faces.append(by[key].household)
+	_want_faces(faces)
 	_stand.text = SimTables._date(int(people.day()))
 
 ## Pins for the events of the last PIN_DAYS: one per kind and patch of the
@@ -244,9 +295,16 @@ func _fill() -> void:
 		return
 	var rows := []
 	for g in _entries:
-		rows.append({"day": _day(g.day), "text": _text(g), "entry": g,
+		# one event of a household that lives on: its face, and the name of
+		# the one shown
+		var face: Dictionary = _faces.get(g.household, {}) if g.n == 1 and g.kind in FACE_KINDS else {}
+		var text := _text(g)
+		if face.has("name"):
+			text += ": " + str(face.name)
+		rows.append({"day": _day(g.day), "text": text, "entry": g,
 			"colour": KIND_COLOURS[g.kind] if g.kind < KIND_COLOURS.size() else SimTables.INK,
-			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else ""})
+			"icon": KIND_ICONS[g.kind] if g.kind < KIND_ICONS.size() else "",
+			"face": face})
 	_panel.show_rows(rows)
 
 ## "Hungertod ×3", "Diebstahl ×2, 140 kg", "Umzug ×4, 19 Menschen".
@@ -312,8 +370,9 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.text = "Ein Haushalt aus dem Zelt fand nicht genug zu essen und stahl in der Not Korn aus dem Speicher eines Hofs."
 			d.figures = [{"label": "Gestohlen", "value": "%s kg Korn" % SimTables._int(amount)}]
 			d.people[0].label = "Haushalt %d (Dieb)" % hh
+			d.people[0].role = "Dieb"
 			if other >= 0:
-				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other})
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (bestohlen)" % other, "role": "bestohlen"})
 		FARM_TAKEN:
 			d.title = "Ein freier Hof ist wieder bewirtschaftet"
 			d.text = "Ein Haushalt ohne eigenes Land hat einen freien Hof übernommen und lebt jetzt von dessen Ernte."
@@ -326,6 +385,11 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.erase("people") # the household may be gone
 	_window = EventWindow.open(get_tree(), d)
 	_window_msec = Time.get_ticks_msec()
+	var households := []
+	for p in d.get("people", []):
+		households.append(int(p.household))
+	_window.show_faces(_faces)
+	_want_faces(households)
 	_window.fly_to.connect(func(p: Vector2): _fly({"lo": p, "hi": p}))
 	_window.person.connect(func(pid: int, household: int): person_chosen.emit(pid, household))
 

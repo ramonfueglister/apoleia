@@ -262,10 +262,10 @@ func _person_row(box: VBoxContainer, p: Dictionary, k: int, note: String) -> voi
 		if lit:
 			row.draw_rect(Rect2(0, 0, row.size.x, ROW_PX - 2.0), UiStyle.HOVER)
 			row.draw_rect(Rect2(0, 0, 3, ROW_PX - 2.0), UiStyle.GOLD)
-		UiStyle.text_at(row, Vector2(10, 18), who, UiStyle.NAME if lit else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, 120.0, font)
-		UiStyle.text_at(row, Vector2(130, 18), job, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - 290.0, font)
+		UiStyle.text_at(row, Vector2(10, 18), who, UiStyle.NAME if lit else UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, 172.0, font)
+		UiStyle.text_at(row, Vector2(188, 18), job, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, row.size.x - (330.0 if note != "" else 196.0), font)
 		if note != "":
-			UiStyle.text_at(row, Vector2(row.size.x - 160.0, 18), note, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 154.0, UiStyle.italic()))
+			UiStyle.text_at(row, Vector2(row.size.x - 140.0, 18), note, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, 134.0, UiStyle.italic()))
 	row.mouse_entered.connect(row.queue_redraw)
 	row.mouse_exited.connect(row.queue_redraw)
 	row.gui_input.connect(func(e: InputEvent):

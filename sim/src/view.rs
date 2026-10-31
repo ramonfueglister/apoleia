@@ -409,6 +409,12 @@ impl PeopleView {
         let mut out = person_of(day, q.iter(&p.world).find(|t| t.0 .0 == pid)?);
         let house = out.household;
         out.members = q.iter(&p.world).filter(|t| t.3 .0 == house).count() as u32;
+        out.shown = p.names.shown(pid);
+        if let Some(sh) = &out.shown {
+            out.name = sh.full.clone();
+            let line = sh.line_id;
+            out.line_members = q.iter(&p.world).filter(|t| p.names.line_of(t.0 .0) == Some(line)).count() as u32;
+        }
         Some(out)
     }
 
@@ -419,7 +425,10 @@ impl PeopleView {
         let mut q = p.world.query::<PersonQuery>();
         let mut out: Vec<Person> = q.iter(&p.world).filter(|t| t.3 .0 == house).map(|t| person_of(day, t)).collect();
         let n = out.len() as u32;
-        out.iter_mut().for_each(|x| x.members = n);
+        out.iter_mut().for_each(|x| {
+            x.members = n;
+            x.name = p.names.full(x.pid);
+        });
         out.sort_by_key(|x| x.pid);
         out
     }
@@ -612,6 +621,12 @@ pub struct Person {
     pub spouse: Option<u32>,
     /// On the road: Some(leaving for good).
     pub travelling: Option<bool>,
+    /// Full name (crate::names), empty if none.
+    pub name: String,
+    /// The name's parts and line, and the line's living members: only for
+    /// the person window (`PeopleView::person`).
+    pub shown: Option<crate::names::Shown>,
+    pub line_members: u32,
 }
 
 type PersonQuery = (&'static Pid, &'static Born, &'static Sex, &'static Household, &'static Home, &'static Job, &'static Stand, &'static Health, &'static Faction, &'static Culture, &'static Religion, Option<&'static Intelligence>, Option<&'static Spouse>, Option<&'static Travel>);
@@ -637,6 +652,9 @@ fn person_of(day: i64, t: (&Pid, &Born, &Sex, &Household, &Home, &Job, &Stand, &
         iq: iq.map(|i| i.iq(age)),
         spouse: spouse.map(|s| s.0).filter(|&s| s != NONE),
         travelling: travel.map(|t| t.leave),
+        name: String::new(),
+        shown: None,
+        line_members: 0,
     }
 }
 

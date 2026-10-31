@@ -453,8 +453,9 @@ func _scene(e: Dictionary, i: int) -> void:
 			if square.x == INF:
 				return
 			var graves := square + _away(hh, at - square) * 0.9
+			var dead := _name_of(e, "name", i)
 			_group(PackedVector2Array([square, graves]), 4, BIER, 0, 5.0, false, 0.55,
-				"Trauerzug: ein Mensch aus dieser Gegend ist verhungert", {"household": -1, "pid": -1}, 6)
+				"Trauerzug: %s ist verhungert" % dead if dead != "" else "Trauerzug: ein Mensch aus dieser Gegend ist verhungert", {"household": -1, "pid": -1}, 6)
 		EV_FARM_TAKEN, EV_HEIR:
 			var from := at + _away(hh, Vector2.ZERO) * OUT_KM
 			var what := "Familie übernimmt einen freien Hof" if kind == EV_FARM_TAKEN else "Sohn zieht auf seinen Erbteil vom Hof des Vaters"
@@ -467,24 +468,36 @@ func _scene(e: Dictionary, i: int) -> void:
 			# neighbours call at the house (the event's place: the house's
 			# village tile) and go home again
 			var from := at + _away(hh + 7, Vector2.ZERO) * 0.35
+			var child := _name_of(e, "name", i)
 			_group(PackedVector2Array([from, at]), 2, BUNDLE, 0, 6.0, true, 0.9,
-				"Nachbarinnen besuchen eine Familie: ein Kind ist geboren", who)
+				"Nachbarinnen besuchen eine Familie: %s ist geboren" % child if child != "" else "Nachbarinnen besuchen eine Familie: ein Kind ist geboren", who)
 		EV_WEDDING:
 			# the bride with her people from where she lived to the groom's house
 			var other: int = e.other[i]
 			var from := at + _away(hh, to - at) * 0.6
-			_group(PackedVector2Array([from, at]), 4, BUNDLE, 0, 4.0, false, 0.8,
-				"Hochzeitszug: die Braut zieht ins Haus ihres Mannes", {"household": hh, "pid": other}, 2)
+			var bride := _name_of(e, "other_name", i)
+			var groom := _name_of(e, "name", i)
+			var what := "Hochzeitszug: die Braut zieht ins Haus ihres Mannes"
+			if bride != "" and groom != "":
+				what = "Hochzeitszug: %s zieht ins Haus des %s" % [bride, groom]
+			_group(PackedVector2Array([from, at]), 4, BUNDLE, 0, 4.0, false, 0.8, what, {"household": hh, "pid": other}, 2)
 		EV_DEATH:
 			# a funeral from the house to the graves outside the village
 			var graves := at + _away(hh, Vector2.ZERO) * 0.9
+			var dead := _name_of(e, "name", i)
 			_group(PackedVector2Array([at, graves]), 4, BIER, 0, 5.0, false, 0.55,
-				"Trauerzug: ein Mensch von %d Jahren ist gestorben" % amount, {"household": -1, "pid": -1}, 6)
+				"Trauerzug für %s, %d Jahre alt" % [dead, amount] if dead != "" else "Trauerzug: ein Mensch von %d Jahren ist gestorben" % amount, {"household": -1, "pid": -1}, 6)
 		EV_FARM_LEFT:
 			if not _moved.has(hh):
 				return # died out: nobody leaves
 			var off := at + _away(hh, Vector2.ZERO) * OUT_KM * 2.0
 			_group(PackedVector2Array([at, off]), 3, HANDCART, BUNDLE, 0.0, false, 1.0, "gibt den Hof auf und zieht weg", who)
+
+## The name of event i's person ("name") or of the other ("other_name": the
+## bride), as the sim gives it (docs/kit2/NAMES.md); "" if none.
+static func _name_of(e: Dictionary, key: String, i: int) -> String:
+	var names: PackedStringArray = e.get(key, PackedStringArray())
+	return names[i] if i < names.size() else ""
 
 ## A group of n on `way`, one behind the other: the first with `lead`, the
 ## others with `rest`; at the end each stays `stay` seconds (0: gone there).

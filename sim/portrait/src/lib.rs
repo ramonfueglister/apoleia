@@ -73,6 +73,24 @@ mod tests {
     }
 
     #[test]
+    fn mourners_dress_and_groom_as_mourners() {
+        for seed in 0..40 {
+            let mut man = look(false, 35.0, 1, seed);
+            let mut woman = look(true, 35.0, 3, seed);
+            for p in [&mut man, &mut woman] {
+                p.life.mourn = 1.0;
+            }
+            assert_ne!(man.beard_style(), Beard::Shaven);
+            assert_eq!(woman.hair_style(), Hair::Veil);
+            assert_eq!(woman.jewel_style(), Jewel::None);
+        }
+        let Some(h) = head() else { return };
+        let mut p = look(true, 78.0, 2, 9);
+        p.life = Life { mourn: 0.6, wealth: 0.1, worn: 1.0, sun: 0.9, ..p.life };
+        assert!(build(&h, &p, 1).tris > 1000);
+    }
+
+    #[test]
     fn same_person_same_portrait() {
         let Some(h) = head() else { return };
         let p = look(false, 38.0, 5, 42);
