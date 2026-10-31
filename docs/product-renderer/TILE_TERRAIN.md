@@ -64,10 +64,12 @@ unabhängig und unverändert.
   über die 2-km-Quadrate der Knoten (`dem_node_heights`): Auf den glatten
   2-km-Höhen endeten die Alpen bei 1900 m und die Gebirge waren breite flache
   Tafeln (Kritik r9), jetzt haben die Alpen bei 8-km-Kacheln zehn statt sechs
-  Stufen. Eine Stufe ist weit draußen höher gezeichnet
-  (`LEVEL_HEIGHTS` in tile_terrain.gd: 0,6 / 0,9 / 1,2 / 1,5 Kachelbreiten bei
-  2 / 4 / 8 / 16 km), so stehen die gestapelten Plateaus der Gebirge auch auf
-  der Europakarte. Die Höhe nimmt vorher zur Hälfte den höchsten Punkt
+  Stufen. Eine Stufe ist fern auf jeder Kachelgrösse
+  0,6 km hoch (`FAR_LEVEL_KM`, Ramon 31.10.2026, Bauplan B Schritt 2), die
+  Alpen also rund 6 km wie auf den 1-km-Kacheln davor; die Gebirge liest man
+  an ihrer Schattierung (Grafikrunde N). Vorher war eine Stufe 0,6 / 0,9 /
+  1,2 / 1,5 Kachelbreiten hoch (`LEVEL_HEIGHTS`), auf den 32-km-Kacheln 48 km:
+  derselbe Berg stand je nach Zoom 2,4- bis 320-fach überhöht. Die Höhe nimmt vorher zur Hälfte den höchsten Punkt
   innerhalb einer Kachel (`PEAK_SHARE`) und wird über eine Kachel
   weichgezeichnet, so behalten schmale Gebirge wie Apennin und Pyrenäen ihren
   Grat, statt in der Ebene zu zerfließen (mit drei Vierteln und 0,7 Kacheln
