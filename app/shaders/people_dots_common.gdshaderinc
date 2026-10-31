@@ -71,6 +71,7 @@ uniform sampler2D person_look_tex : filter_nearest, repeat_disable;
 uniform bool has_person_looks = false;
 const int DOT_LOOK_HARVEST = 4;
 const int DOT_LOOK_SOWING = 8;
+const int DOT_LOOK_FARM = 16;
 const int DOT_LOOK_KNOWN = 128;
 
 // x the share of its need the person's household ate (1 when not known),
@@ -84,6 +85,15 @@ vec2 dot_person_look(ivec2 px) {
 		return vec2(1.0, 0.0);
 	}
 	return vec2(min(float(l.x) * 0.004, 1.0), (l.y & (DOT_LOOK_HARVEST | DOT_LOOK_SOWING)) != 0 ? 1.0 : 0.0);
+}
+
+// The household's flags (DOT_LOOK_*), 0 when the sim does not know it.
+int dot_person_flags(ivec2 px) {
+	if (!has_person_looks) {
+		return 0;
+	}
+	int g = int(texelFetch(person_look_tex, px, 0).g * 255.0 + 0.5);
+	return (g & DOT_LOOK_KNOWN) != 0 ? g : 0;
 }
 
 // Where a member of a household at work on its fields stands, from where
