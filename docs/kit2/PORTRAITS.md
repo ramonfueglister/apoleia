@@ -215,15 +215,24 @@ weicht Rust auch hier von der Werkstatt ab.
   wellen die Strähnen, starke Locken werden zu einer dichten Masse aus kleinen
   Knoten. Kinder haben dünneres Haar.
 - **Frauen:** Mittelscheitel, Strähnen in Bändern mit Grat und Licht, mehr
-  Volumen über den Ohren, Wellen nach hinten; der Zopf liegt als
-  Flechtenkamm sichtbar auf dem Scheitel. Die spätrömische „Helmfrisur“ ist
-  absichtlich kappenförmig, wirkt aber noch zu glatt (offen).
+  Volumen über den Ohren, Wellen nach hinten. Die spätrömische „Helmfrisur“
+  ist absichtlich kappenförmig; damit sie nicht wie eine Badekappe wirkt
+  (Runde 2, 31.10.2026):
+  - Der Haaransatz liegt dünn auf der Haut; das Volumen beginnt erst
+    dahinter. Vorher stand an Stirn und Schläfe eine dicke Kante mit dunklem
+    Rand.
+  - Die Wellen sind tiefer und an den Kämmen schärfer, und sie reichen bis
+    ins Gesicht: Der Haaransatz schwingt mit ihnen ein und aus.
+  - Der Scheitelzopf liegt auf dem Haar (äusserster Haarpunkt unter ihm),
+    breit und flach, statt als Grat darüber zu schweben.
+  - Der Knoten sitzt höher und ist grösser, von der Seite gut zu sehen.
 - **Kopfhaut finden:** Der nächste Treffer eines Strahls vom Kopfmittelpunkt
   liegt oft innen (Augenhöhlen), darum lagen Schläfenhaare unter der Haut.
   `outer_skin` nimmt den äussersten Treffer, ausser er liegt weiter als
   1,2 Kopfgrössen draussen (Schulter).
 
-Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.png`.
+Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.png`,
+Frauenhaar Runde 2: `/mnt/project-files/portraits/frauenhaar-runde2.png`.
 
 ## Licht in Godot
 
@@ -250,8 +259,9 @@ und in der Werkstatt nebeneinander.
   nicht.
 - Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken,
   Altersflecken, die neuen Hüte und die geformten Haare.
-- Frauenhaar: noch zu glatt und kappenförmig; der Knoten im Nacken ist von
-  vorne nicht zu sehen.
+- Frauenhaar: der Knoten im Nacken ist von vorne nicht zu sehen (das ist
+  richtig so, aber er zeigt sich nur im Profil); Schläfenlöckchen wie auf
+  den Mumienporträts aus dem Fayum fehlen noch.
 - Die Gesichter der Hinweise sind klein (30 Pixel); ob sie dort helfen, muss
   sich im Spiel zeigen.
 

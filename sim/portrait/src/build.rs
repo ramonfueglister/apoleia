@@ -1440,8 +1440,10 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
         };
         let at = |d: V3, r: f32| madd(hc, d, r);
         let mut hm = Surface::new(mat2(0.8));
+        // every point of the hair's outer surface, to seat the braid on it
+        let mut hp: Vec<V3> = Vec::new();
         let veil = hst == Hair::Veil;
-        let ek = if hst == Hair::Braid { -40.0 } else { -30.0 };
+        let ek = if hst == Hair::Braid { -40.0 } else { -24.0 };
         let kk = norm(dd(180.0, ek));
         // Catmull-Rom through control directions, spaced by arc length
         let path = |cp: &[V3], t: f32| -> V3 {
@@ -1461,12 +1463,12 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             norm([f(0), f(1), f(2)])
         };
         let waves = (3.0 + jround(3.0 * curl)) * if kid { 0.6 } else { 1.0 };
-        let w_a = (0.03 + 0.018 * curl) * hs;
+        let w_a = (0.038 + 0.016 * curl) * hs;
         // bands from the parting, three or four to a lock
         let ns = [9, 12, 15, 18][lod];
         let nt = ([10, 13, 16, 19][lod] as f32).max(jround(waves * [2.0, 3.0, 4.0, 4.0][lod] * 2.0 + 3.0)) as usize;
         let cap_t = |s: f32, t: f32| {
-            (0.035 + (if veil { 0.03 } else { 0.15 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.35 * s) * (0.3 + 0.7 * sm(0.0, 0.35, s)) + 0.015 * (1.0 - s).powi(4) * sm(0.02, 0.12, t)) * hs
+            (0.012 + 0.023 * sm(0.0, 0.2, s) + (if veil { 0.03 } else { 0.15 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.35 * s) * (0.12 + 0.88 * sm(0.0, 0.35, s))) * hs
         };
         // a band's place in its lock: ridge height (-0.3 at the grooves, 1 on
         // the crest) and light (0 at the grooves, 1 on the crest)
@@ -1475,24 +1477,41 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             let f = (i % w) as f32 / w as f32 * 2.0 - 1.0 + 1.0 / w as f32;
             (1.0 - 1.3 * f * f, 1.0 - f.abs())
         };
+        // the wave along a band, crests sharper than troughs
+        let wave = |t: f32, i: usize| {
+            let f = (t * PI * 2.0 * waves + (i % 2) as f32 * 0.5).sin();
+            f.signum() * f.abs().powf(0.6) * sm(0.05, 0.2, t) * (1.0 - sm(0.75, 1.0, t))
+        };
         for sg in [1f32, -1.0] {
             let (mut g, mut sk) = (Vec::new(), Vec::new());
-            for i in 0..=ns {
-                let s = i as f32 / ns as f32;
+            let band = |s: f32, t: f32| {
                 let gm = (16.0 + 92.0 * s.powf(1.25)) * D2R;
                 let p0 = norm([sg * 0.016 * (1.0 - s), gm.sin(), gm.cos()]);
                 let t_ = norm(mix(dd(sg * 58.0, -14.0), dd(sg * 179.0, 34.0), s));
                 let e_ = norm(mix(dd(sg * 98.0, -38.0), dd(sg * 182.0, -4.0), s));
+                path(&[p0, t_, e_, kk], t)
+            };
+            for i in 0..=ns {
+                let s = i as f32 / ns as f32;
                 let ridge = lock_pos(i).0;
                 let (mut col, mut skr) = (Vec::new(), Vec::new());
                 for j in 0..=nt {
                     let t = j as f32 / nt as f32;
-                    let d = path(&[p0, t_, e_, kk], t);
+                    let mut d = band(s, t);
+                    // the waves reach the face: the hairline swings in and out
+                    let k = (1.0 - s / 0.25).max(0.0) * if veil { 0.0 } else { 1.0 };
+                    if k > 0.0 {
+                        let out = sub(d, band(s + 0.06, t));
+                        let pp = norm(sub(out, mul(d, dot(out, d))));
+                        let a = 3.5 * D2R * k * wave(t, 0) * sm(0.08, 0.22, t);
+                        d = norm(add(mul(d, a.cos()), mul(pp, a.sin())));
+                    }
                     let r = rr(d, true);
-                    let w = (t * PI * 2.0 * waves + (i % 2) as f32 * 0.5).sin() * w_a * sm(0.05, 0.2, t) * (1.0 - sm(0.75, 1.0, t));
+                    let w = wave(t, i) * w_a;
                     col.push(at(d, r + cap_t(s, t) + ridge * 0.03 * hs * sm(0.0, 0.15, t) + w));
                     skr.push(at(d, r - 0.006 * hs));
                 }
+                hp.extend_from_slice(&col);
                 g.push(col);
                 sk.push(skr);
             }
@@ -1501,7 +1520,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                     let t = (j as f32 + 0.5) / nt as f32;
                     let crest = 0.5 + 0.5 * (t * PI * 2.0 * waves + 0.9).sin();
                     let lit = 0.74 + 0.26 * (lock_pos(i).1 + lock_pos(i + 1).1) / 2.0;
-                    let c = cmul(hair, lit * (0.84 + 0.2 * crest) * (0.96 + 0.06 * x.rng.next()));
+                    let c = cmul(hair, lit * (0.8 + 0.28 * crest) * (0.96 + 0.06 * x.rng.next()));
                     if sg > 0.0 {
                         hm.quad(g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1], c);
                     } else {
@@ -1511,7 +1530,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             }
             // close the edges: the forehead's (first strand) and the parting
             for j in 0..nt {
-                hm.quad(g[0][j], g[0][j + 1], sk[0][j + 1], sk[0][j], cmul(hair, 0.62));
+                hm.quad(g[0][j], g[0][j + 1], sk[0][j + 1], sk[0][j], cmul(hair, 0.78));
             }
             for i in 0..ns {
                 hm.quad(g[i][0], g[i + 1][0], sk[i + 1][0], sk[i][0], cmul(hair, 0.55));
@@ -1530,6 +1549,7 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                     col.push(at(d, r + (0.03 + 0.05 * (PI * t).sin()) * hs + if i % 2 == 1 { 0.008 * hs } else { 0.0 }));
                     skr.push(at(d, r - 0.006 * hs));
                 }
+                hp.extend_from_slice(&col);
                 l2.push(col);
                 s2.push(skr);
             }
@@ -1593,13 +1613,13 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 .map(|k| {
                     let f = k as f32 / segs as f32;
                     let a = f * 2.0 * PI * 2.0;
-                    let rad = lerp(0.25, 0.07, f) * hs * sz;
-                    let hh = lerp(0.07, 0.2, f) * hs * sz;
+                    let rad = lerp(0.29, 0.08, f) * hs * sz;
+                    let hh = lerp(0.08, 0.24, f) * hs * sz;
                     madd(madd(q, nk, hh), add(mul(ak, a.cos()), mul(bk, a.sin())), rad)
                 })
                 .collect();
             if !veil {
-                tube(&mut hm, &pts, &|f| (0.1 - 0.035 * f) * hs * sz, &|k| cmul(hair, if k % 2 == 1 { 0.8 } else { 0.98 }));
+                tube(&mut hm, &pts, &|f| (0.12 - 0.045 * f) * hs * sz, &|k| cmul(hair, if k % 2 == 1 { 0.8 } else { 0.98 }));
             }
         }
         if hst == Hair::Braid {
@@ -1613,14 +1633,16 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                     let f = (k as f32 + if side > 0.0 { 0.5 } else { 0.0 }) / nb as f32;
                     let e = lerp(e0, e1, f);
                     let d = dd(180.0, e);
-                    let r = rr(d, true) + (lerp(0.2, 0.11, sm(0.55, 1.0, f)) + 0.03 * (PI * f).sin()) * hs;
+                    // on the hair: the outermost hair point within a few degrees
+                    let top = hp.iter().filter(|&&q| ang(norm(sub(q, hc)), d) < 7.0 * D2R).map(|&q| len(sub(q, hc))).fold(rr(d, true) + 0.035 * hs, f32::max);
+                    let r = top + 0.015 * hs;
                     let c = at(d, r);
                     let up = norm([0.0, (e * D2R).cos(), (e * D2R).sin()]);
                     let wv = (1.0 - 0.45 * f) * hs;
                     let ax = norm(add(mul([1.0, 0.0, 0.0], -side * 0.55), up));
                     let la = norm(cross(ax, d));
-                    let cc = [c[0] + side * 0.09 * wv, c[1], c[2]];
-                    let (l, w, hh) = (0.16 * wv, 0.085 * wv, 0.07 * wv);
+                    let cc = [c[0] + side * 0.1 * wv, c[1], c[2]];
+                    let (l, w, hh) = (0.17 * wv, 0.11 * wv, 0.05 * wv);
                     let (pa, pb, pc, pd) = (madd(cc, ax, l), madd(cc, ax, -l), madd(cc, la, w), madd(cc, la, -w));
                     let (pt, pu) = (madd(cc, d, hh), madd(cc, d, -hh * 0.6));
                     let col = cmul(hair, if side > 0.0 { 0.95 } else { 0.85 });
