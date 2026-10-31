@@ -42,7 +42,7 @@ mod pricing;
 mod sites;
 mod tables;
 mod ways;
-pub use tables::{HistoryExtra, HouseholdLook, MarketMonth};
+pub use tables::{FarmLook, HistoryExtra, HouseholdLook, MarketMonth};
 pub use outside::Outer;
 pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};

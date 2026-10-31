@@ -30,6 +30,7 @@ const LoadingScreen = preload("res://scripts/loading_screen.gd")
 const BuildMenu = preload("res://scripts/build_menu.gd")
 const GameClock = preload("res://scripts/sim/game_clock.gd")
 const MarketWindow = preload("res://scripts/sim/market_window.gd")
+const FarmWindow = preload("res://scripts/sim/farm_window.gd")
 const PauseMenu = preload("res://scripts/ui/pause_menu.gd")
 const SaveGames = preload("res://scripts/ui/save_games.gd")
 const EARTH_KM := 6371.0088
@@ -179,6 +180,9 @@ func _ready() -> void:
 		var markets := MarketWindow.new()
 		add_child(markets)
 		markets.setup(self, dots.people)
+		var farms := FarmWindow.new() # opened from a person, the outliner or a menu
+		add_child(farms)
+		farms.setup(self, dots.people)
 	else:
 		dots.queue_free()
 	# after the people: its clicks on the map come before theirs

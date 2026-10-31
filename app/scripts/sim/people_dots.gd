@@ -1158,7 +1158,7 @@ func _show_info(on: bool) -> void:
 ## The person in its window. The one shown before stays one step back
 ## (the window's ←); the line under the title names their market, its →
 ## opens the market's window; a right click on the band gives the menu
-## (their market, the outliner).
+## (their farm, their market, the outliner).
 func _show_person(p: Dictionary) -> void:
 	var win = _person._win
 	if p.is_empty():
@@ -1178,8 +1178,11 @@ func _show_person(p: Dictionary) -> void:
 			func(): get_tree().call_group("market_window", "open", m), "Den Markt öffnen")
 		var who: String = p.get("name", p.job)
 		var market_name: String = p.get("market_name", "")
+		var farm := int(p.get("farm", -1))
 		win.context = func() -> Dictionary:
 			var entries := ContextMenu.entries(get_tree(), "person", pid, who, Callable(), true)
+			if farm >= 0:
+				entries.push_front({"text": "Hof öffnen", "icon": "field", "action": func(): get_tree().call_group("farm_window", "open", farm)})
 			if m >= 0:
 				entries.push_front({"text": "Markt %s öffnen" % market_name, "icon": "open-book",
 					"action": func(): get_tree().call_group("market_window", "open", m)})

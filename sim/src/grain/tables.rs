@@ -173,6 +173,8 @@ pub struct HouseholdLook {
     pub money_head: i64,
     /// Its farm: kind (FARM_KIND_NAMES) and field area in m², if it has one.
     pub farm: Option<(u8, i64)>,
+    /// That farm's index (`Grain::farm_look`).
+    pub farm_id: Option<u32>,
     /// Its market (index, name), the grain price and the day wage there,
     /// milli-denarii.
     pub market: Option<(u32, String)>,
@@ -461,6 +463,7 @@ impl Grain {
             money,
             money_head: head,
             farm: farm.map(|f| (f.kind, f.area)),
+            farm_id: farm.map(|_| s.farm),
             market: (mk != NONE).then(|| (mk, self.markets[mk as usize].name.clone())),
             grain_price: if mk != NONE { self.markets[mk as usize].price } else { 0 },
             wage: if mk != NONE { self.markets[mk as usize].wage } else { 0 },
@@ -533,6 +536,106 @@ impl Grain {
     }
 }
 
+/// A farm as its window shows it (people_dots.rs take_farm), as of now.
+#[derive(Clone, Debug, Default)]
+pub struct FarmLook {
+    /// Index into FARM_KIND_NAMES.
+    pub kind: u8,
+    /// The household that works it and the one it pays rent to (NONE for
+    /// none); the people of the first.
+    pub hh: u32,
+    pub landlord: u32,
+    pub members: Vec<u32>,
+    /// Its market (index, name).
+    pub market: (u32, String),
+    /// The farmhouse's fine tile centre and how far its fields reach from
+    /// it, world km.
+    pub at_km: (f64, f64),
+    pub reach_km: f64,
+    /// Fields, of them cleared land, sown, state land leased (m²); fine
+    /// tiles they lie on.
+    pub area: i64,
+    pub poor: i64,
+    pub sown: i64,
+    pub state: i64,
+    pub plots: usize,
+    /// Net kg per ha; grain in store and money (milli-denarii); grain
+    /// held back to sell, kg.
+    pub net_kg_ha: i64,
+    pub store: i64,
+    pub money: i64,
+    pub to_sell: i64,
+    /// Day of the year of harvest and sowing.
+    pub harvest_doy: i64,
+    pub sow_doy: i64,
+    /// Work outside the peaks since the last harvest: needed and done, days.
+    pub off_need: i64,
+    pub off_done: i64,
+    /// Cleared under the Lex Manciana; years in a row unsown.
+    pub manciana: bool,
+    pub idle: u8,
+    /// Tools (kg) and the share of the family's work they allow (0..1),
+    /// storage jars, wool (kg), sheep, pork fattened a year (kg).
+    pub tools_kg: f64,
+    pub tools_share: f64,
+    pub jars: f64,
+    pub wool_kg: f64,
+    pub sheep: i64,
+    pub pork_kg_year: f64,
+    /// Who worked here at the last weekly labour exchange: (household,
+    /// days, WORK_SOW / WORK_HARVEST / WORK_OFF / WORK_SURPLUS).
+    pub workers: Vec<(u32, i64, u8)>,
+}
+
+impl Grain {
+    /// The farm `f` (an index into the farms, as `HouseholdLook::farm_id`),
+    /// if there is one and someone works it.
+    pub fn farm_look(&self, f: usize) -> Option<FarmLook> {
+        let fm = self.farms.get(f).filter(|fm| fm.hh != NONE)?;
+        let at_km = self.settle.fine_centre_km(fm.fine);
+        let mut reach_km = 0.0f64;
+        PlotsAt::new(self, 0).farm(fm, &mut |fine, _, _, _| {
+            let (x, z) = self.settle.fine_centre_km(fine);
+            reach_km = reach_km.max((x - at_km.0).hypot(z - at_km.1));
+        });
+        let reach_km = reach_km + crate::settle::FINE_KM * 0.5;
+        let members = self.info.get(&fm.hh).map_or(Vec::new(), |i| self.members.get(i.at as usize..i.at as usize + i.size as usize).map_or(Vec::new(), |v| v.to_vec()));
+        let mk = fm.market as usize;
+        let workers = self.markets.get(mk).map_or(Vec::new(), |m| m.work.iter().filter(|w| w.1 as usize == f && w.1 != NONE).map(|&(w, _, days, kind)| (w, days, kind)).collect());
+        Some(FarmLook {
+            kind: fm.kind,
+            hh: fm.hh,
+            landlord: fm.landlord,
+            members,
+            market: (fm.market, self.markets.get(mk).map_or(String::new(), |m| m.name.clone())),
+            at_km,
+            reach_km,
+            area: fm.area,
+            poor: fm.poor,
+            sown: fm.sown,
+            state: fm.state,
+            plots: fm.plots.len() + fm.state_plots.len(),
+            net_kg_ha: fm.net_kg_ha,
+            store: fm.store,
+            money: fm.money,
+            to_sell: fm.to_sell,
+            harvest_doy: fm.harvest_doy,
+            sow_doy: fm.sow_doy,
+            off_need: fm.off_need,
+            off_done: fm.off_done,
+            manciana: fm.manciana,
+            idle: fm.idle,
+            tools_kg: fm.goods.tools as f64 / 1000.0,
+            tools_share: self.tool_factor(f as u32) as f64 / 1000.0,
+            jars: fm.goods.jars as f64 / 1000.0,
+            wool_kg: fm.goods.wool as f64 / 1000.0,
+            sheep: fm.goods.sheep,
+            pork_kg_year: fm.goods.pork_year as f64 / 1000.0,
+            workers,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{gini_lorenz, History, MarketMonth, MARKET_MONTHS};
@@ -566,5 +669,26 @@ mod tests {
         assert!((g - 0.9).abs() < 1e-9, "{g}");
         assert!(l.iter().all(|&x| x.abs() < 1e-9));
         assert_eq!(gini_lorenz(&mut []).0, 0.0);
+    }
+
+    /// A farm's window reads it, finds it again from its household and
+    /// changes nothing.
+    #[test]
+    fn farm_look_read_only() {
+        use super::{Grain, People, NONE};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        let before = g.fingerprint();
+        let f = g.farms.iter().position(|f| f.hh != NONE).unwrap();
+        let l = g.farm_look(f).unwrap();
+        assert_eq!(l.hh, g.farms[f].hh);
+        assert!(l.area > 0 && l.reach_km > 0.0 && l.market.0 == g.farms[f].market);
+        assert_eq!(g.household(l.hh).and_then(|h| h.farm_id), Some(f as u32));
+        assert!(g.farm_look(g.farms.len()).is_none());
+        assert_eq!(before, g.fingerprint());
     }
 }
