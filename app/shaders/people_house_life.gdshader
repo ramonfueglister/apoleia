@@ -13,11 +13,14 @@
 // the pen 14, the tent 15, sheaves 16, seed sacks 17, the lamplight in the
 // front windows 18: lit at the slow speeds (game_clock.gd) in a house that
 // cooks, from dusk for one to three and a half hours and for a while
-// before sunrise, each house at its own time.
+// before sunrise, each house at its own time. At the slow speeds the smoke
+// rises only while the hearth burns for a meal (people_day.gdshaderinc
+// day_fire), at the household's own hours.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/people_dots_common.gdshaderinc"
+#include "res://shaders/people_day.gdshaderinc"
 
 uniform sampler2D place_tex : filter_nearest, repeat_disable;
 uniform sampler2D list_tex : filter_nearest, repeat_disable;
@@ -62,7 +65,7 @@ void vertex() {
 		float t = fract(TIME * 0.22 + float(part) / 3.0 + seed);
 		float size = sin(t * PI) * (0.35 + t * 0.7); // small: the house is drawn larger than life, a puff is not
 		v = v * size + CHIMNEY + vec3(t * 1.5, t * 5.0, t * 0.5);
-		show = show && (flags & COOKS) != 0 && !tent;
+		show = show && (flags & COOKS) != 0 && !tent && day_fire(day_hour, (uint(rec.w) >> 8u) & 0x3fffu);
 	} else if (part <= 10) {
 		int k = part - 3;
 		float a = (float(k) / float(SHEEP_MAX) + seed) * TAU;
