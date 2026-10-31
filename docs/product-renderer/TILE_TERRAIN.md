@@ -248,6 +248,17 @@ unabhängig und unverändert.
   Sand am Fuss. Die Brandung ist nur noch eine dünne Linie (die zweite, die
   hinauslief, ist weg), das Flachwasser ein weicher Saum, der ins Meer
   ausläuft (Ramon: «Dezenter»).
+  Runde K (31.10.2026, nach dem Mac-Check von I und J): Die feinen Zellen
+  der Sandkante kamen bei 3 km nie zum Zug (die Länge von fwidth gegen 0,35
+  war unter der schrägen Kamera zu streng), der Sägezahn blieb. Jetzt gilt
+  die grössere Pixelseite gegen 0,6 (eine feine Zelle mindestens etwa
+  1,7 Pixel); sind die Zellen kleiner, ist die Kante eine glatte, weich
+  ausgefranste Linie statt ganzer Zellen, und auch die Breite des Sandes
+  wandert mit den feinen Zellen statt in Sprüngen ganzer Zellen. Schatten
+  auf dem Wasser behalten nur 35 % ihrer Tiefe (`light()`, sonst Lambert wie
+  `diffuse_lambert`): Unter dem blauen Umgebungslicht lag der Schatten einer
+  Mauer fast schwarzblau auf dem Meer, bei Urbek dunkelt er das Hellblau nur
+  leicht ab.
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
