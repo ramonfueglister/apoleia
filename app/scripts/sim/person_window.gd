@@ -143,10 +143,10 @@ func show_person(p: Dictionary, doing := "") -> void:
 	_note.text = "\n".join(lines)
 	_head.visible = true
 	_fill_head(p)
-	_name(p)
-	_family(p)
 	if p.has("today"):
 		_today(p)
+	_name(p)
+	_family(p)
 	if p.has("hh_kind"):
 		_food(p)
 		_work(p)

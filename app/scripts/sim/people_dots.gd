@@ -1208,22 +1208,20 @@ func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void
 		_person.today_now(hour)
 
 ## The day of the person in `slot` as its figure lives it (day_plan.gd),
-## from its record and its household's flags; [] for an empty slot. The
-## record is read back from the people texture, once, on a click.
+## from its record (ApoleiaPeople.record) and its household's flags; [] for
+## an empty slot or an extension built before `record`.
 func _today_of(slot: int) -> Array:
-	if _texture == null or slot < 0:
+	if slot < 0 or not people.has_method("record"):
 		return []
+	var rec: PackedFloat32Array = people.record(slot)
+	if rec.size() < 4 or rec[2] == 0.0:
+		return []
+	var w := int(rec[3])
 	var side: int = people.page_side()
 	var per := side * side
 	var layer := slot / per
-	if layer >= _texture.get_layers():
-		return []
 	var x := (slot % per) % side
 	var y := (slot % per) / side
-	var rec := _texture.get_layer_data(layer).get_pixel(x, y)
-	if rec.b == 0.0:
-		return []
-	var w := int(rec.a)
 	var flags := 0
 	if _person_looks != null and layer * side + y < _person_looks.get_height():
 		var g := int(_person_looks.get_pixel(x, layer * side + y).g * 255.0 + 0.5)
