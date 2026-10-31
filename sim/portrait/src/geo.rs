@@ -127,11 +127,16 @@ pub struct Surface {
     pub mat: Mat,
     pub pos: Vec<V3>,
     pub col: Vec<Rgb>,
+    /// TEST: per-vertex texture coordinates and normals, and the texture
+    /// file (MakeHuman hair cards); empty for faceted parts.
+    pub uv: Vec<[f32; 2]>,
+    pub nrm: Vec<V3>,
+    pub tex: Option<String>,
 }
 
 impl Surface {
     pub fn new(mat: Mat) -> Surface {
-        Surface { mat, pos: Vec::new(), col: Vec::new() }
+        Surface { mat, pos: Vec::new(), col: Vec::new(), uv: Vec::new(), nrm: Vec::new(), tex: None }
     }
     /// One vertex with an sRGB colour.
     pub fn put(&mut self, v: V3, c: Rgb) {

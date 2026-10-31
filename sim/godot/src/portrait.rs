@@ -113,7 +113,11 @@ pub fn look_of(genes: &[u8], female: bool, age: f32, stand: u8, job: &str, weigh
     let life = life_of(job, age, weight, seed, lived);
     // mourners look sad, hungry households grim; otherwise most look calm,
     // some content
-    let mood = if life.mourn > 0.3 {
+    // for test renders: APOLEIA_TEST_MOOD=content|sad|grim|neutral sets everyone's mood
+    let test_mood = std::env::var("APOLEIA_TEST_MOOD").ok().map(|m| match m.as_str() { "content" => Mood::Content, "sad" => Mood::Sad, "grim" => Mood::Grim, _ => Mood::Neutral });
+    let mood = if let Some(m) = test_mood {
+        m
+    } else if life.mourn > 0.3 {
         Mood::Sad
     } else if fed < 900.0 {
         Mood::Grim
@@ -131,9 +135,28 @@ pub fn look_of(genes: &[u8], female: bool, age: f32, stand: u8, job: &str, weigh
         seed,
         mood,
         life,
-        beard: None,
-        hair: None,
-        hat: None,
+        // for test renders: APOLEIA_TEST_BEARDS="pid=style,..." sets the beard (shaven, stubble, short, full, phil, chin)
+        beard: std::env::var("APOLEIA_TEST_BEARDS").ok().and_then(|l| {
+            use apoleia_portrait::look::Beard::*;
+            l.split(',').find_map(|kv| {
+                let (k, v) = kv.split_once('=')?;
+                (k.trim().parse::<u32>().ok()? == pid).then_some(())?;
+                Some(match v.trim() {
+                    "shaven" => Shaven,
+                    "stubble" => Stubble,
+                    "short" => Short,
+                    "full" => Full,
+                    "phil" => Philosopher,
+                    _ => Chin,
+                })
+            })
+        }),
+        // for test renders: APOLEIA_TEST_BARE shows every head bare (no hat, no veil)
+        // for test renders: APOLEIA_TEST_VEIL="pid,pid,..." puts these women under the veil
+        hair: if female && std::env::var("APOLEIA_TEST_VEIL").is_ok_and(|l| l.split(',').any(|k| k.trim().parse::<u32>().ok() == Some(pid))) {
+            Some(apoleia_portrait::look::Hair::Veil)
+        } else if std::env::var_os("APOLEIA_TEST_BARE").is_some() && female { Some(if seed % 2 == 0 { apoleia_portrait::look::Hair::Bun } else { apoleia_portrait::look::Hair::Braid }) } else { None },
+        hat: if std::env::var_os("APOLEIA_TEST_BARE").is_some() { Some(apoleia_portrait::look::Hat::None) } else { None },
         jewel: None,
     }
 }
@@ -156,7 +179,27 @@ fn material(m: apoleia_portrait::Mat) -> Gd<StandardMaterial3D> {
 
 #[derive(GodotClass)]
 #[class(init, base = RefCounted)]
-pub struct ApoleiaPortrait {}
+pub struct ApoleiaPortrait {
+    /// The real look's images, each loaded once with mipmaps and kept
+    /// (None: missing or unreadable)
+    textures: std::cell::RefCell<std::collections::HashMap<String, Option<Gd<godot::classes::ImageTexture>>>>,
+    /// The materials made so far, by their settings and image
+    materials: std::cell::RefCell<std::collections::HashMap<String, Gd<StandardMaterial3D>>>,
+}
+
+impl ApoleiaPortrait {
+    fn texture(&self, path: &str) -> Option<Gd<godot::classes::ImageTexture>> {
+        if let Some(t) = self.textures.borrow().get(path) {
+            return t.clone();
+        }
+        let t = godot::classes::Image::load_from_file(path).and_then(|mut img| {
+            img.generate_mipmaps();
+            godot::classes::ImageTexture::create_from_image(&img)
+        });
+        self.textures.borrow_mut().insert(path.to_string(), t.clone());
+        t
+    }
+}
 
 #[godot_api]
 impl ApoleiaPortrait {
@@ -182,6 +225,17 @@ impl ApoleiaPortrait {
     #[func]
     fn is_loaded(&self) -> bool {
         HEAD.get().is_some()
+    }
+
+    /// The real look (Blender hair, beards and clothes, textured skin and
+    /// eyes, the face space) from the files in `folder` (an absolute path),
+    /// or the simple look when it is empty (apoleia_portrait::real).
+    #[func]
+    fn set_real(&mut self, folder: GString) {
+        let f = folder.to_string();
+        apoleia_portrait::real::set_real(if f.is_empty() { None } else { Some(f) });
+        // (a material's look depends on the switch)
+        self.materials.borrow_mut().clear();
     }
 
     /// The portrait of a person as take_person describes them ("dna",
@@ -210,14 +264,19 @@ impl ApoleiaPortrait {
         };
         let stand = num("stand").unwrap_or(0.0).clamp(0.0, 3.0) as u8;
         let look = look_of(genes, female, num("age").unwrap_or(30.0) as f32, stand, &text("job"), num("health").unwrap_or(1000.0) as f32, num("fed").unwrap_or(1000.0) as f32, num("pid").unwrap_or(0.0) as u32, &text("origin"), lived);
+        let t0 = std::time::Instant::now();
         let p = build(head, &look, lod.clamp(0, 3) as usize);
+        let t_build = t0.elapsed();
         let mut mesh = ArrayMesh::new_gd();
+        let (mut t_conv, mut t_add, mut t_mat) = (std::time::Duration::ZERO, std::time::Duration::ZERO, std::time::Duration::ZERO);
         for s in &p.surfaces {
+            let tc = std::time::Instant::now();
             // Godot's front faces wind clockwise: swap each triangle's last two
             let n = s.pos.len();
             let mut verts = Vec::with_capacity(n);
             let mut norms = Vec::with_capacity(n);
             let mut cols = Vec::with_capacity(n);
+            let mut uvs = Vec::with_capacity(if s.uv.is_empty() { 0 } else { n });
             for t in (0..n).step_by(3) {
                 let (a, b, c) = (s.pos[t], s.pos[t + 1], s.pos[t + 2]);
                 let u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
@@ -227,7 +286,14 @@ impl ApoleiaPortrait {
                     let q = s.pos[t + k];
                     let col = srgb(s.col[t + k]);
                     verts.push(Vector3::new(q[0], q[1], q[2]));
-                    norms.push(nn);
+                    if let Some(m) = s.nrm.get(t + k) {
+                        norms.push(Vector3::new(m[0], m[1], m[2]));
+                    } else {
+                        norms.push(nn);
+                    }
+                    if let Some(u) = s.uv.get(t + k) {
+                        uvs.push(Vector2::new(u[0], u[1]));
+                    }
                     cols.push(Color::from_rgb(col[0], col[1], col[2]));
                 }
             }
@@ -236,9 +302,106 @@ impl ApoleiaPortrait {
             arrays.set(ArrayType::VERTEX.ord() as usize, &PackedVector3Array::from(verts.as_slice()).to_variant());
             arrays.set(ArrayType::NORMAL.ord() as usize, &PackedVector3Array::from(norms.as_slice()).to_variant());
             arrays.set(ArrayType::COLOR.ord() as usize, &PackedColorArray::from(cols.as_slice()).to_variant());
+            if !uvs.is_empty() {
+                arrays.set(ArrayType::TEX_UV.ord() as usize, &PackedVector2Array::from(uvs.as_slice()).to_variant());
+                // real look: tangents along v (MakeHuman's hair strands run that way)
+                let mut tan = Vec::with_capacity(uvs.len() * 4);
+                for t in (0..verts.len()).step_by(3) {
+                    let (p0, p1, p2) = (verts[t], verts[t + 1], verts[t + 2]);
+                    let (u0, u1, u2) = (uvs[t], uvs[t + 1], uvs[t + 2]);
+                    let (e1, e2) = (p1 - p0, p2 - p0);
+                    let (d1, d2) = (u1 - u0, u2 - u0);
+                    let r = d1.x * d2.y - d2.x * d1.y;
+                    let tv = if r.abs() > 1e-12 { ((e2 * d1.x - e1 * d2.x) / r).normalized_or_zero() } else { Vector3::ZERO };
+                    for k in 0..3 {
+                        let nn = norms[t + k];
+                        let tt = (tv - nn * nn.dot(tv)).normalized_or_zero();
+                        tan.extend([tt.x, tt.y, tt.z, 1.0]);
+                    }
+                }
+                arrays.set(ArrayType::TANGENT.ord() as usize, &PackedFloat32Array::from(tan.as_slice()).to_variant());
+            }
+            t_conv += tc.elapsed();
+            let ta = std::time::Instant::now();
             mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, &arrays);
+            t_add += ta.elapsed();
+            let tm = std::time::Instant::now();
             let i = mesh.get_surface_count() - 1;
-            mesh.surface_set_material(i, &material(s.mat));
+            // materials kept and shared: a new one each time drops Godot's
+            // shader with the last face and compiles it again (~6 ms each)
+            let key = format!("{:08x}|{:08x}|{}|{}", s.mat.rough.to_bits(), s.mat.metal.to_bits(), s.mat.double, s.tex.as_deref().unwrap_or(""));
+            let kept = self.materials.borrow().get(&key).cloned();
+            let m = if let Some(m) = kept {
+                m
+            } else {
+                let mut m = material(s.mat);
+                // real look: MakeHuman hair cards (two-sided, the texture's alpha cut
+                // out, gloss along the strands) and textured skin (light
+                // scattering in skin mode)
+                if let Some(path) = &s.tex {
+                    use godot::classes::base_material_3d::{AlphaAntiAliasing, Feature, TextureParam, Transparency};
+                    {
+                        if let Some(t) = self.texture(path) {
+                            m.set_texture(TextureParam::ALBEDO, &t);
+                            // a normal map beside the image (name_n), if any
+                            if let Some(nt) = apoleia_portrait::real::normal_map(path).filter(|_| apoleia_portrait::real::on("APOLEIA_REAL_NMAP")).and_then(|np| self.texture(&np)) {
+                                m.set_feature(Feature::NORMAL_MAPPING, true);
+                                m.set_texture(TextureParam::NORMAL, &nt);
+                            }
+                            if path.contains("/cloth_") {
+                                // real look: woollen cloth, both sides (the inside shows at the neck)
+                                m.set_cull_mode(CullMode::DISABLED);
+                                m.set_roughness(0.95);
+                                m.set_specular(0.15);
+                            } else if path.contains("_cap.") {
+                                // the painted cap under the hair cards: blended over the skin
+                                if std::env::var_os("APOLEIA_DEBUG_OPAQUE").is_none() {
+                                    m.set_transparency(Transparency::ALPHA);
+                                }
+                                m.set_roughness(0.85);
+                                m.set_specular(0.15);
+                                m.set_cull_mode(CullMode::DISABLED);
+                            } else if path.contains("/eyeball") {
+                                // real look: the wet eyeball
+                                m.set_roughness(0.08);
+                                m.set_specular(0.6);
+                            } else if s.mat.double && path.contains("/eye") || path.contains("/Eye") {
+                                // brows and lashes: fine hairs that cutting out would lose
+                                m.set_transparency(Transparency::ALPHA);
+                                m.set_cull_mode(CullMode::DISABLED);
+                            } else if s.mat.double && apoleia_portrait::real::on("APOLEIA_REAL_BLEND") {
+                                // blended cards (no MSAA in the portrait viewport, so cut-out
+                                // edges stay hard); a soft sheen along the strands
+                                m.set_transparency(Transparency::ALPHA_DEPTH_PRE_PASS);
+                                m.set_cull_mode(CullMode::DISABLED);
+                                m.set_roughness(0.55);
+                                m.set_specular(0.3);
+                                m.set_feature(Feature::ANISOTROPY, true);
+                                m.set_anisotropy(0.5);
+                            } else if s.mat.double {
+                                m.set_transparency(Transparency::ALPHA_SCISSOR);
+                                m.set_alpha_scissor_threshold(0.5);
+                                m.set_alpha_antialiasing(AlphaAntiAliasing::ALPHA_TO_COVERAGE);
+                                if apoleia_portrait::real::on("APOLEIA_REAL_ANISO") {
+                                    m.set_feature(Feature::ANISOTROPY, true);
+                                    m.set_anisotropy(0.8);
+                                }
+                            } else {
+                                m.set_feature(Feature::SUBSURFACE_SCATTERING, true);
+                                m.set_subsurface_scattering_strength(0.6);
+                                m.set_flag(Flags::SUBSURFACE_MODE_SKIN, true);
+                            }
+                        }
+                    }
+                }
+                self.materials.borrow_mut().insert(key, m.clone());
+                m
+            };
+            mesh.surface_set_material(i, &m);
+            t_mat += tm.elapsed();
+        }
+        if std::env::var_os("APOLEIA_TIME").is_some() {
+            godot_print!("portrait: build {:.1} ms, mesh {:.1} ms (arrays {:.1}, add {:.1}, material {:.1}), {} surfaces, {} tris", t_build.as_secs_f64() * 1e3, (t0.elapsed() - t_build).as_secs_f64() * 1e3, t_conv.as_secs_f64() * 1e3, t_add.as_secs_f64() * 1e3, t_mat.as_secs_f64() * 1e3, p.surfaces.len(), p.tris);
         }
         let st = &STANDS[look.stand];
         d.set("mesh", &mesh);

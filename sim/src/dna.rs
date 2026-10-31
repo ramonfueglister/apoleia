@@ -75,6 +75,24 @@ const RANGES: [&[(&str, u8, u8)]; 7] = [
     &[("skin", 110, 240), ("hairL", 0, 40), ("hairR", 0, 20), ("eye", 0, 50), ("curl", 140, 255), ("typA", 120, 255), ("typB", 0, 30), ("typC", 30, 140)],
 ];
 
+/// Per origin a shift of the founders' face genes away
+/// from the middle (in allele units; one within-group sd of a measure is
+/// about 24), fitted to craniometric means (Howells, 1973, 1989, 1995) by
+/// face_shift.py (Howells summary of NORSE, ZALAVAR, BERG, EGYPT, data via
+/// web.utk.edu/~auerbach/HOWL.htm, Internet Archive copy of 2024-11-18).
+// Italia, Gallia, Germania, Graecia, Syria, Aegyptus, Africa; Germania from
+// NORSE + BERG, Aegyptus from EGYPT, the rest PLACEHOLDER by latitude;
+// headW, headH, noseW solved together against the base types' own effect
+const FACE_SHIFT: [&[(&str, i32)]; 7] = [
+    &[("noseL", -1), ("eyeS", 0), ("eyeD", 4), ("headW", 7), ("headH", -1), ("noseW", 3)],
+    &[("noseL", -2), ("eyeS", 1), ("eyeD", 9), ("headW", 17), ("headH", -1), ("noseW", 2)],
+    &[("noseL", 1), ("eyeS", 3), ("eyeD", 6), ("headW", 15), ("headH", 2), ("noseW", 2)],
+    &[("noseL", 0), ("eyeS", -1), ("eyeD", -1), ("headW", -2), ("headH", 0), ("noseW", 6)],
+    &[("noseL", 0), ("eyeS", -1), ("eyeD", -4), ("headW", -10), ("headH", 2), ("noseW", 9)],
+    &[("noseL", 1), ("eyeS", -2), ("eyeD", -11), ("headW", -21), ("headH", 1), ("noseW", -2)],
+    &[("noseL", 0), ("eyeS", -1), ("eyeD", -3), ("headW", -6), ("headH", -3), ("noseW", -21)],
+];
+
 /// Kilometres per degree of longitude and latitude in the map projection
 /// (data/projection.json: equidistant cylindrical, true at 41° N, centre
 /// 19° E 41° N); 25 km grid cells.
@@ -137,6 +155,7 @@ pub fn origin(lon: f64, lat: f64) -> u8 {
 /// `r(k)` for k = 0, 1, … (one draw per allele).
 pub fn founder(origin: u8, r: impl Fn(u32) -> u64) -> Dna {
     let ranges = RANGES[(origin as usize).min(RANGES.len() - 1)];
+    let shifts = FACE_SHIFT[(origin as usize).min(FACE_SHIFT.len() - 1)];
     let mut d = Dna { a: [0; NG], b: [0; NG] };
     for (i, name) in GENES.iter().enumerate() {
         for (k, out) in [&mut d.a[i], &mut d.b[i]].into_iter().enumerate() {
@@ -146,7 +165,8 @@ pub fn founder(origin: u8, r: impl Fn(u32) -> u64) -> Dna {
             } else if *name == "bald" || *name == "grey" {
                 h as u8
             } else {
-                around_middle(h)
+                let shift = shifts.iter().find(|g| g.0 == *name).map_or(0, |g| g.1);
+                (around_middle(h) as i32 + shift).clamp(0, 255) as u8
             };
         }
     }

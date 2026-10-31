@@ -12,8 +12,9 @@ mod caster;
 pub mod geo;
 pub mod head;
 pub mod look;
+pub mod real;
 
-pub use build::{build, Portrait, LODS};
+pub use build::{build, morph_test, Portrait, LODS};
 pub use geo::{Mat, Surface};
 pub use head::Head;
 pub use look::{default_life, Beard, Hair, Hat, Jewel, Life, Look, Mood, GENES, NG, STANDS};

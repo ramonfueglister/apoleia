@@ -1,8 +1,8 @@
 extends VBoxContainer
 ## The settings both menus show (main_menu.gd, pause_menu.gd), on three
 ## tabs as Victoria 3's (Ramon, 31.10.2026: "ich hätte gerne alles"):
-## «Allgemein» full screen, music on or off, its loudness and the yearly
-## autosave; «Meldungen» for each kind of event whether it opens a window,
+## «Allgemein» full screen, the real portraits on or off, music on or off,
+## its loudness and the yearly autosave; «Meldungen» for each kind of event whether it opens a window,
 ## is only a line in the notices or is not told, and whether the game
 ## pauses for it (ui/notice_settings.gd); «Tasten» the keys of the game,
 ## each changed by a click and the new key (ui/keys.gd). Each change is
@@ -15,6 +15,7 @@ const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const Keys = preload("res://scripts/ui/keys.gd")
 const NoticeSettings = preload("res://scripts/ui/notice_settings.gd")
+const PortraitCache = preload("res://scripts/ui/portrait_cache.gd")
 const STORE := "user://display.cfg"
 const TABS: Array[String] = ["Allgemein", "Meldungen", "Tasten"]
 const PAGE_PX := 430.0 # a page's height; longer ones scroll
@@ -26,6 +27,7 @@ var _tabs: UiTabs
 var _pages: Array[ScrollContainer] = []
 var _page: VBoxContainer # the page _head and _row fill
 var _fullscreen: CheckButton
+var _portraits: CheckButton
 var _music: CheckButton
 var _volume: HSlider
 var _autosave: CheckButton
@@ -114,6 +116,10 @@ func _fill_general() -> void:
 	_fullscreen.set_pressed_no_signal(DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN])
 	_fullscreen.toggled.connect(_set_fullscreen)
 	_fullscreen.get_parent().get_parent().visible = not OS.has_feature("mobile")
+	_portraits = _switch("Echte Porträts")
+	_portraits.set_pressed_no_signal(PortraitCache.real_on())
+	_portraits.toggled.connect(_set_portraits)
+	_portraits.tooltip_text = "Haut, Augen, Haar, Bärte und Kleider wie aus Blender statt einfacher Flächen. Neu gezeichnet werden die Gesichter, sobald ein Fenster sie wieder zeigt."
 	_head("Ton")
 	_music = _switch("Musik")
 	_music.set_pressed_no_signal(not _muted())
@@ -348,6 +354,15 @@ func _set_music(on: bool) -> void:
 func _set_volume(v: float) -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(v))
 	_report(_keep("audio", "volume", v))
+
+func _set_portraits(on: bool) -> void:
+	if not _report(_keep("portraits", "real", on)):
+		_portraits.set_pressed_no_signal(not on)
+		return
+	if get_tree().root.has_meta("portrait_cache"):
+		var cache = get_tree().root.get_meta("portrait_cache")
+		if is_instance_valid(cache):
+			cache.set_real(on)
 
 func _report(ok: bool) -> bool:
 	if ok:
