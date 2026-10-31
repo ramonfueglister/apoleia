@@ -229,7 +229,7 @@ Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.
 
 Ramon wollte Porträts auf CK3/EU5-Niveau, mit Blender und dem Stand der
 Forschung (31.10.2026), und hat am selben Tag entschieden: «Ins Spiel
-bringen, mit Schalter» (S133). Unter Einstellungen › Allgemein schaltet
+bringen, mit Schalter» (S134). Unter Einstellungen › Allgemein schaltet
 **Echte Porträts** zwischen dem einfachen und dem echten Look um; der
 Schalter ist aus, bis man ihn einschaltet (`user://display.cfg`,
 `[portraits] real`). Danach werden die Gesichter neu gezeichnet, sobald ein
