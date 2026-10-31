@@ -612,7 +612,14 @@ impl Grain {
         }
         let income = g.earned.max(1);
         let have = if f == NONE { self.hh.get(&id).map_or(0, |h| h.pantry) } else { self.farms[f as usize].store };
-        let food_money = (need_day * RESERVE_DAYS - have).max(0) * grain_sell;
+        // S130: a farm keeps the money for the grain it must buy until its
+        // next harvest and for the seed it still sows, not only for
+        // RESERVE_DAYS: its year's food plan before goods (Erdkamp, 2005;
+        // buffer-stock saving: Carroll, 1997).
+        let plan = self.food_plan && f != NONE;
+        let days = if plan { doy_until(day, self.farms[f as usize].harvest_doy) + RESERVE_DAYS } else { RESERVE_DAYS };
+        let seed = if plan { self.seed_due(f as usize, day) } else { 0 };
+        let food_money = (need_day * days + seed - have).max(0) * grain_sell;
         let money = now - if s.kind == TRADER { TRADER_MONEY } else { 0 };
         let mut budget = (consume(money.max(0) + food, income) - food).min(money - food_money).max(0);
         self.stats.goods.budget += budget;
