@@ -34,6 +34,13 @@ varying flat int side_bits;   // bit k: core town tile, no town across side k; b
 varying flat int shore_lake;  // 1: that water is a lake
 varying flat int wet_tri;     // the wet half of a coast cut tile
 varying flat int ground_bits; // landscape of the tile (bits 0-3), of the cut half (4-7), cut corner + 1 (8-10, 0: none)
+// Shadows on the water (round K): Urbek's water keeps its light blue in a
+// shadow, only a little darker; under our blue ambient light a wall's
+// shadow lay on the sea in near black blue (Mac check I + J, Naples).
+// Written in fragment(), read in light(): the share of a cast shadow the
+// water keeps.
+varying float shadow_share;
+const float WATER_SHADOW = 0.35;
 
 // Palette after Urbek (Ramon, 28.10.2026): one flat colour per landscape,
 // measured from Urbek screenshots (urbek-landschaft-*.jpg): fresh light
@@ -538,7 +545,8 @@ void fragment() {
 		}
 		// the farms' fields from the grain economy, up close
 		int land = tt_ground_at(tile, tile_uv);
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
+		float fw_km = length(fwidth(p));
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km, fw_km); }
 		// up close the grass in patches, tufts and flowers (not the field tracks)
 		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
 		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
@@ -563,19 +571,28 @@ void fragment() {
 				bool rock = steps != 0 && (steps & 4096) == 0 && cs_headland(data_tile(), steps, data_uv(cell), sub_tiles ? width * 0.5 : width);
 				// the edge to the grass in cells a quarter as big, frayed into
 				// pale patches as Urbek's (a staircase of whole cells along a
-				// coast cut's diagonal stood on screen as a row of teeth)
+				// coast cut's diagonal stood on screen as a row of teeth);
+				// once those cells are under ~1.7 px a smooth line, frayed
+				// softly, instead of the whole cells' teeth (round K: with
+				// the length of fwidth against 0.35 the fine cells never came
+				// on at 3 km under the tilted camera, Mac check I + J)
 				float n = round(tile_km / COAST_CELL_KM) * 4.0;
-				if (length(fwidth(tile_uv)) * n < 0.35) {
-					vec2 fine = (floor(tile_uv * n) + 0.5) / n;
-					float fd = side_distance_at(shore_sides & 255, fine);
-					if (shore_cut) {
-						vec2 tip = vec2(CORNER[cut_tip]);
-						fd = (abs(fine.x - tip.x) + abs(fine.y - tip.y) - 1.0) * 0.7071;
-					}
-					float fray = tt_hash(floor((p - world_min) / (tile_km / n)) * 0.37 + 5.1) - 0.5;
-					d = fd + fray * 0.07;
+				vec2 fu = fwidth(tile_uv);
+				float px = max(fu.x, fu.y); // a pixel in tile units
+				bool fine_cells = px * n < 0.6;
+				vec2 at = fine_cells ? (floor(tile_uv * n) + 0.5) / n : tile_uv;
+				d = side_distance_at(shore_sides & 255, at);
+				if (shore_cut) {
+					vec2 tip = vec2(CORNER[cut_tip]);
+					d = (abs(at.x - tip.x) + abs(at.y - tip.y) - 1.0) * 0.7071;
 				}
-				float sand = d < width - 0.025 ? 0.85 : d < width + 0.025 ? 0.45 : 0.0;
+				float fray = fine_cells ? tt_hash(floor((p - world_min) / (tile_km / n)) * 0.37 + 5.1) - 0.5
+					: (tt_noise((p - world_min) / (tile_km * 4.0 / n)) - 0.5) * (1.0 - smoothstep(0.15, 0.4, px * n * 0.25));
+				d += fray * 0.07;
+				width = mix(0.1, 0.5, coast_wander(at, p)); // wandering by the same cells, not in whole cells' jumps
+				float aa = fine_cells ? 1e-4 : px;
+				float sand = 0.4 * (1.0 - smoothstep(width - 0.025 - aa, width - 0.025 + aa, d))
+					+ 0.45 * (1.0 - smoothstep(width + 0.025 - aa, width + 0.025 + aa, d));
 				c = !rock ? mix(c, C_SAND, sand) : c;
 			} else {
 				float aa = fwidth(d) + 1e-4;
@@ -583,7 +600,7 @@ void fragment() {
 			}
 		}
 		// the ways people wear and the markets of the grain economy
-		c = sim_ways(p, c, length(fwidth(p)));
+		c = sim_ways(p, c, fw_km);
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient, matched to the west-south-west sun: slopes turned west
 		// light, east dark, south (the risers the camera sees head on) and
@@ -681,8 +698,17 @@ void fragment() {
 		float f = dot(wn, normalize(art.xz));
 		c = base * mix(0.70, 1.0, smoothstep(-0.8, 0.8, f));
 	}
+	c = sim_muted(c, water == W_SEA);
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
+	shadow_share = rough < 1.0 ? WATER_SHADOW : 1.0; // the water's tops (not its sand)
 	// tops and walls are lit as flat ground; the fixed tones above do the relief
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+}
+
+// Lambert, as diffuse_lambert, with the sun's cast shadow weakened on the
+// water (shadow_share)
+void light() {
+	float shade = LIGHT_IS_DIRECTIONAL ? 1.0 - (1.0 - ATTENUATION) * shadow_share : ATTENUATION;
+	DIFFUSE_LIGHT += clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * shade * LIGHT_COLOR / PI;
 }

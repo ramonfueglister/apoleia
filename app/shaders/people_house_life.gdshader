@@ -10,7 +10,10 @@
 // share eaten ‰ / 4, flags, sheep, pigs). The mesh is in metres about the
 // house's middle, its front +z, turned and sized with the house (1 house
 // unit = 10 m); UV.x the part: smoke puffs 0-2, sheep 3-10, pigs 11-13,
-// the pen 14, the tent 15, sheaves 16, seed sacks 17.
+// the pen 14, the tent 15, sheaves 16, seed sacks 17, the lamplight in the
+// front windows 18: lit at the slow speeds (game_clock.gd) in a house that
+// cooks, from dusk for one to three and a half hours and for a while
+// before sunrise, each house at its own time.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
@@ -21,6 +24,8 @@ uniform sampler2D list_tex : filter_nearest, repeat_disable;
 uniform int list_w = 128;
 uniform sampler2D look_tex : filter_nearest, repeat_disable;
 uniform float km_per_m = 0.0238; // the house's scale (TileTerrain.HOUSE_M units of DIORAMA_KM_PER_M)
+uniform float since_sunset = -1.0; // hours, -1 by day and at the fast speeds (people_house_life.gd set_lamps)
+uniform float to_sunrise = -1.0;
 const int COOKS = 1;
 const int TENT = 2;
 const int HARVEST = 4;
@@ -31,6 +36,7 @@ const vec3 HOUSE_LIGHT = vec3(-0.63, 0.72, 0.294); // as people_houses.gdshader
 
 varying vec3 colour;
 varying vec3 art_light;
+varying float glow;
 
 float h1(float n) { return fract(sin(n * 12.9898) * 43758.5453); }
 
@@ -79,9 +85,14 @@ void vertex() {
 		show = show && tent;
 	} else if (part == 16) {
 		show = show && (flags & HARVEST) != 0 && !tent;
-	} else {
+	} else if (part == 17) {
 		show = show && (flags & SOWING) != 0 && !tent;
+	} else {
+		bool evening = since_sunset >= 0.0 && since_sunset < 1.0 + seed * 2.5;
+		bool morning = to_sunrise >= 0.0 && to_sunrise < 0.3 + seed * 0.9;
+		show = show && (evening || morning) && (flags & COOKS) != 0 && !tent;
 	}
+	glow = part == 18 ? 1.0 : 0.0;
 	v *= km_per_m * st.x;
 	v.xz = turn * v.xz;
 	vec3 world = vec3(p.x, place.z * level_h, p.y) + v;
@@ -94,7 +105,8 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = colour;
+	ALBEDO = colour * (1.0 - glow);
+	EMISSION = colour * glow * 2.5;
 	ROUGHNESS = 1.0;
 }
 
