@@ -90,7 +90,7 @@ S136 Wahrzeichenregel (#125). **Die nächste freie Nummer ist S137.** Bei Konfli
 5. **Zinskarte** (C3) und **wann Landverkauf/Zahlungsrückstand gebaut werden** ([regierung.md §6–7](regierung.md)); auch: wer ist der Spieler.
 6. Sim: Erbteil statt Startgeld, Ursache der +9–13 % Hungertote mit befestigten Wegen, Geldleck.
 7. **Porträts**: Frauenfrisuren, Kleiderfehler, Kleider nach Epoche, Ausdrücke, Metal-Test, Namenssystem ([portraits.md §4](portraits.md)).
-8. **Performance Schritt 2**: Terrain-Shader (`tile_terrain.gdshader`, `tile_corner_prep`), nicht angefangen ([performance.md §4](performance.md)).
+8. **Performance Schritt 2**: Kachelwerte im Terrain-Shader auf Branch `codex/terrain-performance` vorbereitet und unter Metal verglichen; p50 −20,6 % in der Tour mit pausierter Simulation. Noch nicht auf `main`. [Messbericht und Bildprüfung](performance/terrain-cache-2026-10-31.md). Der ursprüngliche Plan steht in [performance.md §4](performance.md).
 9. **Grafik**: Pachtfeld unsichtbar (braucht zuerst ein Feld in der Sim-Ansicht),
    N–Q und #127 auf dem Mac ungeprüft, weitere Lücken in [grafik.md](grafik.md).
 

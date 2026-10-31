@@ -8,6 +8,7 @@ extends Node3D
 const DATA_DIR = "artifacts/render-data/tile-terrain-r1"
 const TERRAIN_SHADER = preload("res://shaders/tile_terrain.gdshader")
 const PROPS_SHADER = preload("res://shaders/tile_props.gdshader")
+const FLAGS_PREP_SHADER = preload("res://shaders/tile_flags_prep.gdshader")
 const CORNER_PREP_SHADER = preload("res://shaders/tile_corner_prep.gdshader")
 const PROP_PREP_SHADER = preload("res://shaders/tile_prop_prep.gdshader")
 const SUB_PREP_SHADER = preload("res://shaders/tile_sub_prep.gdshader")
@@ -270,6 +271,8 @@ var _sub_origin := NO_WINDOW
 var _ground_textures := {}  # zoom level -> landscape per tile (two per byte)
 var _terrain_material: ShaderMaterial
 var _corner_material: ShaderMaterial # 2D pass: corner levels of the patch tiles
+var _flags_view: SubViewport
+var _flags_material: ShaderMaterial
 var _corner_view: SubViewport
 var _place_material: ShaderMaterial # 2D pass: where each tree and house slot stands
 var _coast_material: ShaderMaterial # the steps of the shore
@@ -403,6 +406,8 @@ func load_data(progress := Callable()) -> bool:
 		"shore_tex": shore_texture,
 		"shore_ready": shore_texture != null,
 	}
+	_flags_material = ShaderMaterial.new()
+	_flags_material.shader = FLAGS_PREP_SHADER
 	_corner_material = ShaderMaterial.new()
 	_corner_material.shader = CORNER_PREP_SHADER
 	_place_material = ShaderMaterial.new()
@@ -462,7 +467,7 @@ func _lot_of(kind: int) -> int:
 	return kind - PROP_KINDS.size() + 1 if kind >= PROP_KINDS.size() and kind < _plinth_kind() else -1
 
 func _all_materials() -> Array[ShaderMaterial]:
-	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material, _coast_material]
+	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material, _coast_material, _flags_material]
 	list.append_array(_prop_materials)
 	return list
 
@@ -474,6 +479,10 @@ func _build_nodes() -> void:
 	_sub_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	for material in _all_materials():
 		material.set_shader_parameter("sub_tex", _sub_view.get_texture())
+	# The tile-local flags use the same quarter data as the geometry. The
+	# texture has two float pixels per tile; only the drawn patch is evaluated.
+	_flags_view = _prep_view("TileFlags", Vector2i(PATCH_N * 2, PATCH_N), _flags_material)
+	_terrain_material.set_shader_parameter("flags_tex", _flags_view.get_texture())
 	# the corner levels of the patch (one margin tile for the walls), as
 	# float pixels; redrawn every frame because zoom changes them smoothly
 	_corner_view = _prep_view("TileCorners", Vector2i(PATCH_N + 2, PATCH_N + 2), _corner_material)
@@ -911,7 +920,7 @@ func _update_coast_list() -> void:
 					if block[k] >= lo.x and block[k] <= hi.x and block[k + 1] >= lo.y and block[k + 1] <= hi.y:
 						sides.append_array(block.slice(k, k + 3))
 	_coast_key = key
-	for material in [_terrain_material, _coast_material]:
+	for material in [_terrain_material, _coast_material, _flags_material]:
 		material.set_shader_parameter("steps_lo", lo)
 		material.set_shader_parameter("steps_hi", hi)
 	var count := mini(sides.size() / 3, COAST_MAX)
@@ -1374,7 +1383,10 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 		draw_n = n
 		_terrain.multimesh.visible_instance_count = n * n
 		_terrain_material.set_shader_parameter("patch_n", n)
-	_terrain_material.set_shader_parameter("patch_origin", Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2))
+	var drawn_origin := Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2)
+	_terrain_material.set_shader_parameter("patch_origin", drawn_origin)
+	_flags_material.set_shader_parameter("flags_origin", drawn_origin)
+	_flags_material.set_shader_parameter("flags_n", draw_n)
 	if _near_levels.has(level) and _update_level_window():
 		for material in _all_materials() + [_sub_material]:
 			material.set_shader_parameter("levels_origin", Vector2i(_level_window_key.y, _level_window_key.z))
