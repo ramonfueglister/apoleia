@@ -145,6 +145,9 @@ const float SIM_WAY_SHOW_KM[8] = float[](0.0, 6.0, 10.0, 16.0, 25.0, 40.0, 40.0,
 const float SIM_WAY_ALPHA[8] = float[](0.0, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0, 1.0);
 const vec3 SIM_VERGE_RGB = vec3(0.55, 0.7, 0.45); // the grass along them, paler than the meadow
 const float SIM_VERGE_KM = 0.016;                  // its width, a third of the lane's as Urbek's
+const vec3 SIM_PAVED_RGB = vec3(0.62, 0.57, 0.47);  // a way the public works paved: gravel (road.gdshaderinc GRAVEL)
+const vec3 SIM_PAVED_EDGE_RGB = vec3(0.44, 0.38, 0.29); // its edge (road.gdshaderinc VERGE)
+const float SIM_PAVED_FILL = 0.78;                 // the gravel's share of the width (road.gdshaderinc FILL)
 
 // Whether the parcel with its middle at `mid` carries a slab up close, as
 // people_crop_slab.gdshaderinc crop_open (which needs the people's
@@ -343,8 +346,18 @@ vec3 sim_ways(vec2 p, vec3 c, float fw_km) {
 		// with a paler verge, as Urbek's farm tracks (#8a7e64 by a verge
 		// #66ac5c); up close only for the faint ones, the wide ones further
 		vec2 w = sim_way(p);
-		int lv = int(w.y);
-		if (lv > 0 && sim_view_km <= SIM_WAY_SHOW_KM[lv]) {
+		int code = int(w.y);
+		int lv = code & 7;
+		bool paved = (code & SIM_WAY_PAVED) != 0;
+		if (paved && sim_view_km <= SIM_WAY_SHOW_KM[7]) {
+			// paved by the public works (S133): gravel with a brown edge, as
+			// the player's roads (road.gdshaderinc GRAVEL, VERGE, FILL)
+			float half_km = sim_way_half(code);
+			float lift = max(fw_km * 0.7 - half_km, 0.0);
+			float d = w.x - lift; // from the edge, negative inside
+			c = mix(c, SIM_PAVED_EDGE_RGB, sim_band(d, 0.0, fw_km));
+			c = mix(c, SIM_PAVED_RGB, sim_band(d, -(half_km + lift) * (1.0 - SIM_PAVED_FILL), fw_km));
+		} else if (lv > 0 && sim_view_km <= SIM_WAY_SHOW_KM[lv]) {
 			float lift = max(fw_km * 0.7 - SIM_WAY_KM[lv], 0.0); // at least ~1.5 px wide
 			float d = w.x - lift;
 			if (lv >= 4) {

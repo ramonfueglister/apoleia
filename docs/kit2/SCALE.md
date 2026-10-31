@@ -121,6 +121,7 @@ Weltkoordinaten im Code sind echte km; «Diorama-m» = Welt-m × 0,0238
 | Brücke ohne Stadtplan | Breite ihres Verkehrs | – | – | `LANDMARK_KM_PER_M` 6-fach | **weicht ab**, nur ohne Stadtpläne sichtbar |
 | Landstrasse | Breite ihres Verkehrsmittels | 4 m | Strassen-Lose (S116) | `road_view.gd ROAD_KM` | stimmt |
 | Trampelpfad | aus dem Gehen, 8 Stufen | bis 0,042 Welt-km | Wegabnutzung (S70) | `sim_fields SIM_WAY_KM` | stimmt |
+| Befestigter Weg | Kies, so breit wie seine Abnutzung, mindestens Stufe 3 (Ramon 31.10.: B) | 0,013–0,042 Welt-km | öffentliche Arbeit (S133) | `sim_fields sim_way_half` | stimmt |
 | Reise zwischen Orten | Tempo 1 : 23,8 = Dauer wie damals | 4,5 km/h in Welt-km | Reisen der Sim | `day_clock.gd WALK_KMH` | stimmt |
 | Weg zum eigenen Feld | im eigenen (unverkleinerten) Land Menschentempo | 4,5 km/h ÷ 0,0238 | `people_fields` | `dot_field_way` | stimmt (#114) |
 | Szenenwege (Markt, Besuch) | aus der Sim | 1,2 Welt-km Start | – | `people_trips.gd OUT_KM` | **weicht ab:** eigene Zahl der Ansicht |
