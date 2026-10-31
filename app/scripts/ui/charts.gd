@@ -14,7 +14,7 @@ const RED := Color("e8846b")
 const GRID := Color(1.0, 1.0, 1.0, 0.07)
 const CELL := 28.0 # the side of a square of EU5's chart grid
 const BAND_REACH := 2.0
-const END_PX := 62.0 # room at a line chart's right for the last values
+const END_PX := 74.0 # room at a line chart's right for the last values
 const MUTED := Color("6f675c") # a context line, behind the one that matters
 
 ## `values` as a line over `rect`, scaled to their own range and the
@@ -111,8 +111,8 @@ static func ticks(lo: float, hi: float, want := 4) -> PackedFloat64Array:
 
 ## The x range a line chart of `rect` draws its months over: inside the
 ## board, with room at the right for the last values (END_PX).
-static func x_span(rect: Rect2) -> Vector2:
-	return Vector2(rect.position.x + 6.0, rect.end.x - END_PX)
+static func x_span(rect: Rect2, gutter := 6.0) -> Vector2:
+	return Vector2(rect.position.x + gutter, rect.end.x - END_PX)
 
 ## EU5's economy graph on its brown board, read as Few and Tufte ask: a
 ## grid of hairlines on round values with their numbers at the left (the
@@ -162,23 +162,33 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 	lo = grid[0]
 	hi = grid[grid.size() - 1]
 	var f := font if font != null else UiStyle.serif()
-	var span := x_span(rect)
-	var top := plot.position.y + 17.0 # room for the top value's number
+	# the numbers in a gutter of their own at the left, so no line runs
+	# through them; the unit once, over the gutter
+	var gutter := 0.0
+	var texts := PackedStringArray()
+	for k in grid.size(): # as Victoria 3's: only the bottom and the top value
+		texts.append(label(grid[k]) if k == 0 or k == grid.size() - 1 else "")
+		gutter = maxf(gutter, f.get_string_size(texts[k], HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL).x)
+	var span := x_span(rect, gutter + 14.0)
+	ci.set_meta("span", span)
+	var top := plot.position.y + 26.0 # room for the unit
 	var bottom := plot.end.y - 4.0
 	var x_of := func(i: int) -> float: return span.x + (span.y - span.x) * float(i) / float(n - 1)
 	var y_of := func(v: float) -> float: return bottom - (v - lo) / (hi - lo) * (bottom - top)
-	# the grid: hairlines on the round values, their numbers above them at the left
+	# the grid: hairlines on the round values, the outer two numbered at the left
 	for k in grid.size():
 		var y: float = y_of.call(grid[k])
-		ci.draw_line(Vector2(rect.position.x + 2.0, y), Vector2(span.y, y), UiStyle.CHART_GRID, 1.0)
-		var text := label(grid[k], unit if k == grid.size() - 1 else "")
-		UiStyle.text_at(ci, Vector2(rect.position.x + 8.0, y - 3.0), text, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
+		ci.draw_line(Vector2(span.x - 4.0, y), Vector2(span.y, y), UiStyle.CHART_GRID, 1.0)
+		if texts[k] != "":
+			UiStyle.text_at(ci, Vector2(rect.position.x + 6.0, y + 5.0), texts[k], UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, gutter, f)
+	if unit != "":
+		UiStyle.text_at(ci, Vector2(rect.position.x + 6.0, plot.position.y + 12.0), unit, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, f)
 	for i in marks:
 		if i >= 0 and i < n:
 			var x: float = x_of.call(i)
 			ci.draw_line(Vector2(x, top - 4.0), Vector2(x, bottom), Color(UiStyle.GOLD, 0.3), 1.0)
-			var tip := Vector2(x, top - 9.0)
-			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(0, -4.5), tip + Vector2(4.5, 0), tip + Vector2(0, 4.5), tip + Vector2(-4.5, 0)]), UiStyle.GOLD_LIT)
+			var tip := Vector2(x, top - 8.0)
+			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(0, -3.5), tip + Vector2(3.5, 0), tip + Vector2(0, 3.5), tip + Vector2(-3.5, 0)]), UiStyle.GOLD_LIT)
 	# context first, then the lines that carry the story over them
 	var order := series.duplicate()
 	order.sort_custom(func(a, b): return a.get("muted", false) and not b.get("muted", false))
@@ -210,20 +220,30 @@ static func line_chart(ci: CanvasItem, rect: Rect2, series: Array, font: Font, u
 		if vals.size() == n and not s.get("muted", false):
 			ends.append({"y": y_of.call(vals[n - 1]), "v": vals[n - 1], "colour": s.colour})
 	ends.sort_custom(func(a, b): return a.y < b.y)
-	var last_y := -INF
+	var ys := PackedFloat64Array() # each pushed down from the one above, then up from the foot
 	for e in ends:
+		ys.append(maxf(maxf(e.y, top), (ys[ys.size() - 1] + 15.0) if ys.size() > 0 else -INF))
+	var limit := bottom + 6.0
+	for k in range(ys.size() - 1, -1, -1):
+		ys[k] = minf(ys[k], limit)
+		limit = ys[k] - 15.0
+	for k in ends.size():
+		var e: Dictionary = ends[k]
 		var at := Vector2(span.y, e.y)
-		var y := clampf(maxf(e.y, last_y + 15.0), top, bottom + 6.0)
-		last_y = y
+		var y := ys[k]
 		if absf(y - e.y) > 2.0:
 			ci.draw_line(at + Vector2(4, 0), Vector2(span.y + 9.0, y - 4.0), Color(UiStyle.TEXT, 0.5), 1.0, true)
 		ci.draw_circle(at, 5.0, UiStyle.CHART)
 		ci.draw_circle(at, 3.5, e.colour)
-		UiStyle.text_at(ci, Vector2(span.y + 10.0, y + 1.0), label(e.v, unit if unit.length() <= 2 else ""), UiStyle.VALUE, UiStyle.SIZE_SMALL + 1, HORIZONTAL_ALIGNMENT_LEFT, END_PX - 12.0, f)
+		UiStyle.text_at(ci, Vector2(span.y + 10.0, y + 1.0), label(e.v), UiStyle.VALUE, UiStyle.SIZE_SMALL + 1, HORIZONTAL_ALIGNMENT_LEFT, END_PX - 10.0, f)
 	if from != "":
 		var it := UiStyle.italic()
-		UiStyle.text_at(ci, Vector2(rect.position.x + 8, rect.end.y - 7), from, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, it)
-		UiStyle.text_at(ci, Vector2(rect.position.x, rect.end.y - 7), to, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, span.y - rect.position.x, it)
+		var room := span.y - span.x - 12.0
+		if it.get_string_size(from + to, HORIZONTAL_ALIGNMENT_LEFT, -1, UiStyle.SIZE_SMALL).x > room: # narrow: only the years
+			from = from.get_slice(", ", from.get_slice_count(", ") - 1)
+			to = to.get_slice(", ", to.get_slice_count(", ") - 1)
+		UiStyle.text_at(ci, Vector2(span.x, rect.end.y - 7), from, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1, it)
+		UiStyle.text_at(ci, Vector2(span.x, rect.end.y - 7), to, UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, span.y - span.x, it)
 	if hover >= 0 and hover < n:
 		var x: float = x_of.call(hover)
 		ci.draw_line(Vector2(x, plot.position.y), Vector2(x, plot.end.y), Color(UiStyle.TEXT, 0.35), 1.0)
@@ -283,10 +303,11 @@ static func dashes(line: PackedVector2Array, on: float, off: float) -> Array[Pac
 	return out
 
 ## The month under `local_x` of a line chart drawn into `rect` over n months.
-static func month_at(rect: Rect2, n: int, local_x: float) -> int:
+## `ci`, the chart's control, knows its span from the last draw (its gutter).
+static func month_at(rect: Rect2, n: int, local_x: float, ci: CanvasItem = null) -> int:
 	if n < 2:
 		return -1
-	var span := x_span(rect)
+	var span: Vector2 = ci.get_meta("span", x_span(rect)) if ci != null else x_span(rect)
 	return clampi(roundi((local_x - span.x) / (span.y - span.x) * (n - 1)), 0, n - 1)
 
 ## A ring of shares, each a slice with a small gap, as EU5's culture ring.
@@ -335,7 +356,9 @@ static func slice_at(centre: Vector2, radius: float, width: float, values: Packe
 static func label(v: float, unit := "") -> String:
 	var a := absf(v)
 	var text := ""
-	if a >= 1.0e6:
+	if a >= 1.0e8:
+		text = "%d Mio" % roundi(v / 1.0e6)
+	elif a >= 1.0e6:
 		text = "%.1f Mio" % (v / 1.0e6)
 	elif a >= 1.0e4:
 		text = "%dk" % roundi(v / 1000.0)

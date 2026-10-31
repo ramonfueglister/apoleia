@@ -150,7 +150,7 @@ static func draw_window(ci: CanvasItem, r: Rect2) -> void:
 
 ## A round button as the menus' medallions: a gold ring round a dark boss
 ## lit from above, green, red for "close". `glyph` is "close", "fold",
-## "back" or a letter.
+## "back", "forward" or a letter.
 static func draw_round(ci: CanvasItem, centre: Vector2, radius: float, glyph: String, hover := false, down := false) -> void:
 	if hover:
 		for i in 3:
@@ -180,6 +180,10 @@ static func draw_round(ci: CanvasItem, centre: Vector2, radius: float, glyph: St
 			var tip := centre - Vector2(s, 0)
 			ci.draw_polyline(PackedVector2Array([centre + Vector2(0, -s), tip, centre + Vector2(0, s)]), ink, w, true)
 			ci.draw_line(tip, centre + Vector2(s, 0), ink, w, true)
+		"forward":
+			var tip := centre + Vector2(s, 0)
+			ci.draw_polyline(PackedVector2Array([centre + Vector2(0, -s), tip, centre + Vector2(0, s)]), ink, w, true)
+			ci.draw_line(tip, centre - Vector2(s, 0), ink, w, true)
 		_:
 			ci.draw_string(bold(), centre + Vector2(-radius, radius * 0.3), glyph, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, int(radius * 0.9), ink)
 

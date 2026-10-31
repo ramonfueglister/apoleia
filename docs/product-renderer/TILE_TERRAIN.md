@@ -26,8 +26,8 @@ unabhängig und unverändert.
   wird ein flaches Viertel auf der oberen Terrasse und eine Viertelrampe
   darunter, drei Viertel der Kacheln sind flach statt knapp die Hälfte, und
   die Hänge stehen als gestapelte Plateaus (Kritik r4: „glatte Dreiecke statt
-  Plateaus“). Eine Stufe ist dort so hoch wie bei 0,5 km (`SUB_LEVEL_HEIGHT`,
-  1,2 Viertelbreiten), damit die Hügel beim Zoomen ihre Höhe behalten. Ein
+  Plateaus“). Eine Stufe ist dort so hoch wie bei 0,5 km (`NEAR_EXAGGERATION`), damit
+  die Hügel beim Zoomen ihre Höhe behalten. Ein
   kleiner 2D-Pass (`tile_sub_prep.gdshader`) schneidet Zellen, Landschaften
   und Eckstufen der Viertel einmal je Fensterwechsel in eine Textur
   (`sub_tex`, 1024 × 1024 Viertel um den Ausschnitt).
@@ -285,6 +285,11 @@ unabhängig und unverändert.
   der Meerkachel ohne Kante anschliesst. Küstenschnitte (die nasse
   Halbkachel) gibt es dort keine mehr. Skizze:
   `/mnt/project-files/grafik/runde-m-kuesten-skizze.jpg`.
+  Dort liegt auch das Meer auf 0, der Höhe der Küstenecken (`tt_corners`,
+  `CONTOUR_KM` in `tile_terrain.gdshaderinc`): Um `water_drop` abgesenkt
+  stand es eine Uferwand tiefer als das Land, und diese Wände an den
+  Kachelkanten liefen auf dem Mac als kurze beige Striche neben der glatten
+  Linie, im Land oder draussen auf dem Wasser (Mac-Check K + L + M).
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
@@ -435,11 +440,13 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Kacheldiagonale entlang (`YAW_CLOSE` 45°) und 35° nach unten
   (`PITCH_CLOSE`); bis 700 km Sichtbreite dreht sie zurück nach Norden und
   wird steiler. Die Sonne dreht mit.
-- Gelände nah flacher (`TileTerrain.relief_for_width`): Eine Stufe war 0,3 km
-  hoch, ein Hauslos 0,24 km breit, die Terrassenmauern also doppelt so hoch
-  wie die Häuser. Unter 16 km Sichtbreite schrumpft die Stufe bis auf 40 % bei
-  4 km. Viertel- und 0,5-km-Kacheln haben beide 0,3 km je Stufe, darum springt
-  beim Wechsel nichts. Flache Rampen bekommen nah einen schwächeren Seitenton.
+- Relief nah fest 7,5-fach (`TileTerrain.NEAR_EXAGGERATION`, Ramon 31.10.2026,
+  Bauplan B Schritt 1): Auf Viertel-, 0,5- und 1-km-Kacheln ist eine Stufe
+  7,5-mal ihr erster Stufenschritt aus dem Bake (20 m bzw. 40 m), also 0,15 km
+  bzw. 0,3 km, bei jeder Sichtbreite. Vorher war sie 0,6 Kachelbreiten und
+  schrumpfte unter 16 km bis auf 40 % (`relief_for_width`): 6- bis 15-fach je
+  nach Zoom. Stufen über 120 m sind 50 m (100 m) hoch und stehen darum etwa
+  3-fach. Flache Rampen bekommen nah einen schwächeren Seitenton.
 - Skyline (`_lot_weights` in `tile_terrain.gd`): Die hohen Lose (bis vier
   Geschosse) sammeln sich in den Stadtkernen, die niedrigen in den Dörfern.
 - Grauer Steinbelag statt Creme (`C_PAVED`, `C_PLAZA`, `tt_paving`) und weiche

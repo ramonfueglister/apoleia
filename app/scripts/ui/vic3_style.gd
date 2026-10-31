@@ -48,6 +48,7 @@ static var _italic: Font
 static var _leather: Texture2D
 static var _slate: Texture2D
 static var _theme: Theme
+static var _icons := {}
 
 ## The small caps of the titles.
 static func title_font() -> Font:
@@ -74,9 +75,15 @@ static func italic() -> Font:
 static func _font(file: String) -> Font:
 	var fallback := SystemFont.new()
 	fallback.font_names = PackedStringArray(["Palatino", "Georgia", "Times New Roman", "serif"])
-	if not ResourceLoader.exists(FONT_DIR + file):
+	var f: FontFile = null
+	if ResourceLoader.exists(FONT_DIR + file):
+		f = load(FONT_DIR + file)
+	elif FileAccess.file_exists(FONT_DIR + file): # not imported yet, see texture()
+		f = FontFile.new()
+		if f.load_dynamic_font(FONT_DIR + file) != OK:
+			f = null
+	if f == null:
 		return fallback
-	var f: FontFile = load(FONT_DIR + file)
 	var font := FontVariation.new()
 	font.base_font = f
 	font.fallbacks = [fallback]
@@ -84,17 +91,38 @@ static func _font(file: String) -> Font:
 
 ## One of the white icons in assets/ui/icons; draw it with a modulate.
 static func icon(name: String) -> Texture2D:
-	var path := ICON_DIR + name + ".svg"
-	return load(path) if ResourceLoader.exists(path) else null
+	if not _icons.has(name):
+		_icons[name] = texture(ICON_DIR + name + ".svg")
+	return _icons[name]
+
+## A picture from the project, or null if there is none. Godot started as a
+## game (`--path app`, no editor) does not import new files, and then
+## ResourceLoader knows nothing of a freshly pulled icon: every medallion
+## showed only its close cross. So a file not imported yet is read raw.
+static func texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		return load(path)
+	if not FileAccess.file_exists(path):
+		return null
+	var img := Image.new()
+	var err := ERR_FILE_UNRECOGNIZED
+	if path.get_extension().to_lower() == "svg":
+		err = img.load_svg_from_string(FileAccess.get_file_as_string(path), 0.5) # 512 px drawings, at 256 px
+	else:
+		err = img.load(path)
+	if err != OK:
+		return null
+	push_warning("not imported, read raw: %s (run Godot once with --import)" % path)
+	return ImageTexture.create_from_image(img)
 
 static func leather() -> Texture2D:
-	if _leather == null and ResourceLoader.exists("res://assets/ui/leder.png"):
-		_leather = load("res://assets/ui/leder.png")
+	if _leather == null:
+		_leather = texture("res://assets/ui/leder.png")
 	return _leather
 
 static func slate() -> Texture2D:
-	if _slate == null and ResourceLoader.exists("res://assets/ui/schiefer.png"):
-		_slate = load("res://assets/ui/schiefer.png")
+	if _slate == null:
+		_slate = texture("res://assets/ui/schiefer.png")
 	return _slate
 
 ## A texture laid in tiles over `r`, or `colour` without it.

@@ -3,6 +3,8 @@ extends HBoxContainer
 ## olive boards of equal width across the whole window in a quiet gold
 ## edge, lit from above, the chosen one lighter in a gold edge with its name
 ## in gold. Takes the place of a TabBar: add_tab(), current_tab, tab_changed.
+## Made with a `width`, the boards keep it and the row its tabs' width (a
+## row of views under a window's tabs, sim_tables.gd).
 
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
 const HEIGHT := 40.0
@@ -10,6 +12,9 @@ const HEIGHT := 40.0
 signal tab_changed(index: int)
 
 var _titles: Array[String] = []
+var _height := HEIGHT
+var _width := 0.0 # a board's width, 0 to share the row's
+var _largest := UiStyle.SIZE_HEAD + 2 # the names' largest size
 
 var current_tab := 0:
 	set(i):
@@ -20,10 +25,14 @@ var current_tab := 0:
 			c.queue_redraw()
 		tab_changed.emit(i)
 
-func _init() -> void:
+func _init(height := HEIGHT, width := 0.0) -> void:
+	_height = height
+	_width = width
+	if width > 0.0:
+		_largest = UiStyle.SIZE_TEXT
 	add_theme_constant_override("separation", 4)
-	custom_minimum_size = Vector2(0, HEIGHT)
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	custom_minimum_size = Vector2(0, height)
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL if width <= 0.0 else Control.SIZE_SHRINK_BEGIN
 	resized.connect(_share_width)
 
 func add_tab(title: String) -> void:
@@ -32,7 +41,7 @@ func add_tab(title: String) -> void:
 	var tab := Button.new()
 	tab.focus_mode = Control.FOCUS_NONE
 	tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tab.custom_minimum_size = Vector2(0, HEIGHT)
+	tab.custom_minimum_size = Vector2(_width, _height)
 	tab.clip_text = true
 	for state in ["normal", "hover", "pressed", "focus"]:
 		tab.add_theme_stylebox_override(state, StyleBoxEmpty.new())
@@ -56,7 +65,7 @@ func _share_width() -> void:
 ## board, so many tabs in a narrow window shrink their names, not clip them.
 func _font_size() -> int:
 	var f := UiStyle.bold()
-	for font_size in range(UiStyle.SIZE_HEAD + 2, UiStyle.SIZE_SMALL - 1, -1):
+	for font_size in range(_largest, UiStyle.SIZE_SMALL - 1, -1):
 		var fits := true
 		for k in get_child_count():
 			var w := (get_child(k) as Control).size.x

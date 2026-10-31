@@ -95,6 +95,7 @@ const SHADER = preload("res://shaders/people_walkers.gdshader")
 const DayClock = preload("res://scripts/sim/day_clock.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
+const WalkRoute = preload("res://scripts/sim/walk_route.gd")
 const MAX := 300 # travellers at once
 const WALK_KMPS := 0.05 # on screen, world km a second: a body height (40 m at diorama scale) and a quarter
 const CART_KMPS := 0.04
@@ -154,6 +155,8 @@ const GOODS_REACH_KM := 30.0 # goods moves are asked for this far around the vie
 const SCENE_DAYS := 2 # events this many days old or newer become scenes; older ones were over before the view came
 const GAP_KM := 0.035 # between the members of a group along their way (a figure is 40 m at diorama scale)
 const SQUARE_REACH_KM := 20.0 # the market square of a cell event: the nearest one this close to the cell's middle
+const TAKE_USEC := 3000 # time a frame may spend on new travellers' ways
+const ROUTE_MIN_KM := 0.6 # a straight scene way longer than this is looked for on the worn network
 const OUT_KM := 1.2 # how far from the farm or square a scene's way starts when nothing else says where
 ## event kinds (sim/src/events.rs)
 const EV_HUNGER := 0
@@ -205,6 +208,12 @@ var _sun := Vector2(6.0, 18.0) # sunrise and sunset today
 var _hour_s := 0.0 # real seconds an hour of daylight lasts at «Alltag»
 var _frozen := false # the game is paused at «Alltag»: the travellers stand
 var _pending: Array = [] # [clock time, traveller] of those who leave later today
+## the ways they walk: on the worn network and the town streets, not
+## through the houses (walk_route.gd)
+var route := WalkRoute.new()
+var _taking := {} # the trips answer still being taken (_take_some)
+var _taking_i := 0 # its next trip
+var _taking_old := {} # the ids listed before it, already walking
 ## At «Alltag»: by the slot of a person who walks as a carrier, trader or
 ## hired hand today, the hours it is away and what it does (`_away_of`);
 ## people_dots.gd draws its figure at home from it, bumped `away_version`.
@@ -239,6 +248,8 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 	if not visible:
 		_walkers.clear()
 		_listed.clear()
+		_taking = {}
+		_taking_old = {}
 		_hired.clear()
 		_scene_seen.clear()
 		_goods_seen.clear()
@@ -266,11 +277,12 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		if not goods.is_empty():
 			_asked_goods = false
 			_take_goods(goods)
+	_take_some()
 	if not _asked_slots.is_empty():
 		var slots: Dictionary = people.take_slots()
 		if not slots.is_empty():
 			_take_slots(slots)
-	elif _slots_due and not _asked and not _asked_work:
+	elif _slots_due and not _asked and not _asked_work and _taking.is_empty():
 		_ask_slots()
 	if _day_s > 0.0 and int(people.day()) != _away_day and not away.is_empty():
 		_away_build() # the hours of those still out from yesterday
@@ -296,6 +308,7 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 			_asked = true
 			_asked_work = true
 			_asked_day = day
+			route.area = _window.grow(1.0) # the streets looked for in and just around the view
 			_asked_at = Vector3(centre.x, centre.y, view_km)
 			var squares := PackedVector2Array()
 			if view_km <= SQUARES_KM:
@@ -352,12 +365,39 @@ func _take(t: Dictionary) -> void:
 	var listed := {}
 	for i in ids.size():
 		listed[ids[i]] = true
-		if _listed.has(ids[i]) or _walkers.size() - _scenes >= MAX:
+	var old := _listed
+	if not _taking.is_empty(): # the last answer not yet taken to its end: only its taken trips walk
+		old = _taking_old
+		var before: PackedInt64Array = _taking.id
+		for i in _taking_i:
+			old[before[i]] = true
+	_taking = t
+	_taking_i = 0
+	_taking_old = old
+	_listed = listed
+	_take_some()
+
+## The new trips of the last answer as travellers, as many as TAKE_USEC
+## allows this frame; the rest in the next frames (laying a way through a
+## town on its streets takes a millisecond or two, walk_route.gd).
+func _take_some() -> void:
+	if _taking.is_empty():
+		return
+	var t := _taking
+	var ids: PackedInt64Array = t.id
+	var t0 := Time.get_ticks_usec()
+	while _taking_i < ids.size():
+		var i := _taking_i
+		_taking_i += 1
+		if _taking_old.has(ids[i]) or _walkers.size() - _scenes >= MAX:
 			continue
 		var w := _traveller(t, i)
 		if not w.is_empty():
 			_add(w)
-	_listed = listed
+		if Time.get_ticks_usec() - t0 > TAKE_USEC:
+			return
+	_taking = {}
+	_taking_old = {}
 
 ## Each hire new to the list sends its worker from home to the farm and
 ## back, in a straight line (both are fine tiles, a few km apart at most);
@@ -378,9 +418,10 @@ func _take_work(h: Dictionary) -> void:
 		hired[key] = true
 		if _hired.has(key) or _walkers.size() - _scenes >= MAX / 2 or from[i].distance_to(to[i]) < 0.05: # half stays for the trips
 			continue
+		var points := route.between(from[i], to[i]) # on the ways, not over the houses
 		var w := {
-			"points": PackedVector2Array([from[i], to[i]]),
-			"along": PackedFloat32Array([0.0, from[i].distance_to(to[i])]),
+			"points": points,
+			"along": _lengths(points),
 			"s": 0.0, "dir": 1.0, "turn": true, "cart": false, "cargo": false, "out": false,
 			"phase": fposmod(float(worker[i]) * 0.618034, 1.0), "tint": int(worker[i] % 8),
 			"side": (fposmod(float(worker[i]) * 0.377, 1.0) - 0.5) * LANE_KM,
@@ -391,7 +432,7 @@ func _take_work(h: Dictionary) -> void:
 		if not _window.has_point(from[i]):
 			if not _window.has_point(to[i]):
 				continue
-			w.s = w.along[1] # seen at the farm, walking home
+			w.s = w.along[w.along.size() - 1] # seen at the farm, walking home
 			w.dir = -1.0
 			w.turn = false
 		_add(w)
@@ -546,13 +587,17 @@ func _group(way: PackedVector2Array, n: int, lead: int, rest: int, stay: float, 
 
 ## A scene's walker on `way` (world km), `ahead` km along it.
 func _scene_walker(way: PackedVector2Array, ahead: float, parts: int, parts_home: int, stay: float, back: bool, pace: float, who: Dictionary, member := 0) -> Dictionary:
-	var along := PackedFloat32Array([0.0])
-	for k in range(1, way.size()):
-		along.append(along[k - 1] + way[k].distance_to(way[k - 1]))
-	var length := along[along.size() - 1]
 	var inside := _window.grow(0.01) # a clipped way ends on the window's edge
-	if length < 0.05 or not (inside.has_point(way[0]) or inside.has_point(way[way.size() - 1])):
+	if way[0].distance_to(way[way.size() - 1]) < 0.05 or not (inside.has_point(way[0]) or inside.has_point(way[way.size() - 1])):
 		return {}
+	# on the ways and the streets, not over the houses (walk_route.gd); a
+	# few hundred metres (a building site's hands) only round the town's houses
+	if way.size() == 2 and way[0].distance_to(way[1]) > ROUTE_MIN_KM:
+		way = route.between(way[0], way[1])
+	else:
+		way = route.through_towns(way)
+	var along := _lengths(way)
+	var length := along[along.size() - 1]
 	var hh: int = who.household
 	var seed := float(hh if hh >= 0 else int(way[0].x * 1000.0)) + member * 7.0
 	return {
@@ -722,10 +767,11 @@ func _traveller(t: Dictionary, i: int) -> Dictionary:
 	var count: int = t.count[i]
 	if count < 2:
 		return {}
-	var points: PackedVector2Array = t.points.slice(first, first + count)
-	var along := PackedFloat32Array([0.0])
-	for k in range(1, count):
-		along.append(along[k - 1] + points[k].distance_to(points[k - 1]))
+	# the footpath tile by tile laid on the ways as drawn, and through a
+	# town on its streets (walk_route.gd)
+	var points := route.through_towns(route.on_ways(t.points.slice(first, first + count)))
+	count = points.size()
+	var along := _lengths(points)
 	var length := along[count - 1]
 	if length <= 0.0:
 		return {}
@@ -827,6 +873,13 @@ static func _what(w: Dictionary) -> String:
 			return ("Händler, liefert %s kg Korn an einem fremden Markt ab" % kg) if staying else (("Händler mit Ochsenkarren, fährt %s kg Korn zu einem anderen Markt" % kg) if there else "Händler, fährt leer zurück zu seinem Markt")
 		_: # an import
 			return ("Händler, lädt Korn an einem fremden Markt") if staying else (("Händler mit Ochsenkarren, fährt Korn holen") if there else ("Händler, bringt %s kg Korn an seinen Markt" % kg))
+
+## The length along `points` at each of them, from 0.
+static func _lengths(points: PackedVector2Array) -> PackedFloat32Array:
+	var along := PackedFloat32Array([0.0])
+	for k in range(1, points.size()):
+		along.append(along[k - 1] + points[k].distance_to(points[k - 1]))
+	return along
 
 ## Where traveller w is (world km) and which way it faces.
 static func _at(w: Dictionary) -> Array:

@@ -2,17 +2,25 @@ extends CanvasLayer
 ## A market's window (docs/kit1/REALTIME_GAMEPLAY.md phase 6): a click on a
 ## market square up close opens it at the right edge, as Cities: Skylines
 ## opens a building's info, in a window (ui/ui_window.gd) that can be
-## moved, sized and folded. Two tabs: "Übersicht", the statistics' cards
-## for this one market (sim_overview.gd in its market mode: its figures,
-## grain price, hunger, store and sales, real wage, who lives there, rich
-## and poor, its goods, each over the months), and "Alle Zahlen", the
-## market's row of the markets table (apoleia_sim::grain, the same numbers
-## as the T table), one line per column, so every column the economy adds
-## there, the reasons for a price included, shows here too. While open it
-## follows the sim once a week.
+## moved, sized and folded. Three tabs, as the statistics' views:
+## "Überblick", this market's figures, why its grain costs what it costs,
+## what its numbers say (the Lage, a click on a line opens its chart) and
+## who lives there with their money; "Diagramme", its charts over the
+## months (grain price, hunger, store and sales, real wage, people, rich
+## and poor, each good's price), two to a row (both sim_overview.gd pages);
+## and "Alle Zahlen", the market's row of the markets table
+## (apoleia_sim::grain, the same numbers as the T table), one line per
+## column, so every column the economy adds there, the reasons for a price
+## included, shows here too. While open it follows the sim once a week.
 ##
 ##   click on a market square   open its window
+##   ← in its band              the market shown before
+##   → under its title          the camera onto the market
+##   right click on its band    its menu: on the map, in the outliner
 ##   Esc or ×                   close it
+##
+## In the group "market_window": call_group("market_window", "open", m)
+## opens a market from anywhere (the outliner, a right-click menu).
 ##
 ## Clicks while a build tool is out belong to the build menu (added after
 ## this node, so it sees them first).
@@ -22,6 +30,7 @@ const SimOverview = preload("res://scripts/sim/sim_overview.gd")
 const UiWindow = preload("res://scripts/ui/ui_window.gd")
 const UiTabs = preload("res://scripts/ui/ui_tabs.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const CLICK_PX := 4.0
 const MARKET_MAX_KM := 80.0 # view width up to which a click opens a market (build_menu.gd BUILD_MAX_KM)
 const REFRESH_DAYS := 7
@@ -35,14 +44,18 @@ var _press_at := Vector2.INF
 var _waiting := false
 var _asked_day := -1
 var _win # ui_window.gd
-var _overview # sim_overview.gd, market mode
+var _overview # sim_overview.gd, page "market"
+var _charts # sim_overview.gd, page "market_charts"
+var _spans: HBoxContainer # the months the charts show, over them
 var _numbers: ScrollContainer
 var _when: Label
 var _rows: GridContainer
 var _notes: VBoxContainer
+var _shown := {} # the market's row as last shown
 
 func setup(scene: Node3D, sim: RefCounted) -> void:
 	name = "MarketWindow"
+	add_to_group("market_window")
 	layer = 4
 	landscape = scene
 	people = sim
@@ -52,12 +65,26 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_win.closed.connect(func():
 		if market >= 0:
 			close_window())
+	_win.context = func() -> Dictionary:
+		if market < 0 or not _shown.has("region"):
+			return {}
+		var fly := _fly_to.bind(_shown) if _shown.has("lon") else Callable()
+		return {"title": "Markt %s" % _shown.region[0], "kind": "Kornmarkt",
+			"entries": ContextMenu.entries(get_tree(), "market", market, _shown.region[0], fly, true)}
 	var tabs := UiTabs.new()
-	tabs.add_tab("Übersicht")
-	tabs.add_tab("Alle Zahlen")
+	for title in ["Überblick", "Diagramme", "Alle Zahlen"]:
+		tabs.add_tab(title)
 	_win.body.add_child(tabs)
-	_overview = SimOverview.new(SimTables._date, true)
+	_overview = SimOverview.new(SimTables._date, "market")
+	_overview.go.connect(func(_page: String): tabs.current_tab = 1)
 	_win.body.add_child(_overview)
+	_spans = SimOverview.span_buttons(func(months: int): _charts.set_span(months))
+	_spans.alignment = BoxContainer.ALIGNMENT_END
+	_spans.visible = false
+	_win.body.add_child(_spans)
+	_charts = SimOverview.new(SimTables._date, "market_charts")
+	_charts.visible = false
+	_win.body.add_child(_charts)
 	_numbers = ScrollContainer.new()
 	_numbers.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_numbers.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -65,7 +92,9 @@ func setup(scene: Node3D, sim: RefCounted) -> void:
 	_win.body.add_child(_numbers)
 	tabs.tab_changed.connect(func(i: int):
 		_overview.visible = i == 0
-		_numbers.visible = i == 1)
+		_spans.visible = i == 1
+		_charts.visible = i == 1
+		_numbers.visible = i == 2)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -100,6 +129,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func open(m: int) -> void:
+	if _win.visible and market >= 0 and m != market:
+		var before := market
+		_win.remember(func(): open(before))
 	market = m
 	_ask()
 	if not _win.visible:
@@ -107,6 +139,14 @@ func open(m: int) -> void:
 		_when.text = ""
 		_clear()
 	_win.open()
+
+## The camera onto the market's region, framed by its extent.
+func _fly_to(data: Dictionary) -> void:
+	if landscape == null or not "_goal_target" in landscape:
+		return
+	landscape._goal_target = landscape.lonlat_to_world(float(data.lon[0]), float(data.lat[0]))
+	var reach := float(data.extent_km[0]) if data.has("extent_km") else 0.0
+	landscape._goal_width = clampf(reach * SimTables.FLY_MARGIN, SimTables.FLY_MIN_KM, MARKET_MAX_KM)
 
 func close_window() -> void:
 	market = -1
@@ -140,12 +180,18 @@ func _clear() -> void:
 func _show(d: Dictionary) -> void:
 	_clear()
 	if not d.has("data"):
+		_shown = {}
 		_win.set_title("Kein Markt")
 		return
 	var data: Dictionary = d.data
+	_shown = data
 	_win.set_title("Markt %s" % (data.region[0] if data.has("region") else str(market)))
+	var persons := int(data.persons[0]) if data.has("persons") else 0
+	_win.set_subtitle("Kornmarkt einer Region mit %s Menschen" % SimOverview._num(persons) if data.has("persons") else "Kornmarkt",
+		_fly_to.bind(data) if data.has("lon") and data.has("lat") else Callable(), "Auf der Karte zeigen")
 	_when.text = "Stand %d. %s" % [int(d.day) % SimTables.MONTH + 1, SimTables._date(int(d.day))]
 	_overview.show_market(d)
+	_charts.show_market(d)
 	var columns: PackedStringArray = d.columns
 	for i in columns.size():
 		var key := columns[i]

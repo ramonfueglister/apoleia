@@ -74,6 +74,7 @@ const PersonWindow = preload("res://scripts/sim/person_window.gd")
 const DayClock = preload("res://scripts/sim/day_clock.gd")
 const DayPlan = preload("res://scripts/sim/day_plan.gd")
 const UiStyle = preload("res://scripts/ui/ui_style.gd")
+const ContextMenu = preload("res://scripts/ui/context_menu.gd")
 const SimEvents = preload("res://scripts/sim/sim_events.gd")
 const Keys = preload("res://scripts/ui/keys.gd")
 const PeopleTrips = preload("res://scripts/sim/people_trips.gd")
@@ -129,6 +130,8 @@ var _legend: Dictionary
 var _hud: CanvasLayer
 var _legend_label: RichTextLabel
 var _person # person_window.gd
+var _shown_pid := -1 # the person in its window, for the window's back button
+var _back_pending := false # the back button asked for the person shown before
 var _press_at := Vector2.INF
 var _click_at := Vector2.INF # --people-click, for screenshots
 var _frames := 0
@@ -345,6 +348,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	add_child(_crops)
 	_trips = PeopleTrips.new()
 	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
+	_trips.route.plans = terrain.plans # the town streets the travellers walk (walk_route.gd)
 	add_child(_trips)
 	_life = HouseLife.new()
 	_life.setup(TileTerrain.DIORAMA_KM_PER_M, _house_list_tex, LIST_W) # the house mesh's metres
@@ -681,6 +685,9 @@ func _update_map() -> void:
 				_way_tex = ImageTexture.create_from_image(win.ways)
 			else:
 				_way_tex.update(win.ways)
+			# the travellers walk these ways and the town streets (walk_route.gd)
+			_trips.route.set_ways(win.ways, win.origin, win.tile_km)
+			_trips.route.plans = terrain.plans
 		for m in mats:
 			m.set_shader_parameter("sim_fine_tex", _map_tex)
 			m.set_shader_parameter("sim_way_tex", _way_tex)
@@ -1009,6 +1016,8 @@ func _build_hud() -> void:
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	# the person clicked, in a window (person_window.gd) at the bottom left
 	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
+	_person._win.closed.connect(func(): _shown_pid = -1)
+	add_to_group("person_window") # call_group("person_window", "open_person", pid)
 	_person.member_chosen.connect(func(pid: int): _show_household(pid, -1))
 
 static func _hud_label(parent: Node) -> RichTextLabel:
@@ -1126,6 +1135,11 @@ static func _linear(c: Color) -> Vector3:
 	var l := c.srgb_to_linear()
 	return Vector3(l.r, l.g, l.b)
 
+## The person `pid` in their window, from anywhere (the outliner, a
+## right-click menu: the group "person_window").
+func open_person(pid: int) -> void:
+	_show_household(pid, -1)
+
 ## Opens the person's window for a person by id, else a member of a
 ## household (an event window's people, sim_events.gd).
 func _show_household(pid: int, household: int) -> void:
@@ -1197,7 +1211,38 @@ func _show_info(on: bool) -> void:
 	else:
 		_person.close()
 
+## The person in its window. The one shown before stays one step back
+## (the window's ←); the line under the title names their market, its →
+## opens the market's window; a right click on the band gives the menu
+## (their farm, their market, the outliner).
 func _show_person(p: Dictionary) -> void:
+	var win = _person._win
+	if p.is_empty():
+		win.set_subtitle("")
+		win.context = Callable()
+	else:
+		var pid := int(p.pid)
+		if _shown_pid >= 0 and pid != _shown_pid and not _back_pending:
+			var before := _shown_pid
+			win.remember(func():
+				_back_pending = true
+				_show_household(before, -1))
+		_back_pending = false
+		_shown_pid = pid
+		var m := int(p.get("market", -1))
+		win.set_subtitle("Am Markt %s" % p.market_name if m >= 0 else "",
+			func(): get_tree().call_group("market_window", "open", m), "Den Markt öffnen")
+		var who: String = p.get("name", p.job)
+		var market_name: String = p.get("market_name", "")
+		var farm := int(p.get("farm", -1))
+		win.context = func() -> Dictionary:
+			var entries := ContextMenu.entries(get_tree(), "person", pid, who, Callable(), true)
+			if farm >= 0:
+				entries.push_front({"text": "Hof öffnen", "icon": "field", "action": func(): get_tree().call_group("farm_window", "open", farm)})
+			if m >= 0:
+				entries.push_front({"text": "Markt %s öffnen" % market_name, "icon": "open-book",
+					"action": func(): get_tree().call_group("market_window", "open", m)})
+			return {"title": who, "kind": "Person", "entries": entries}
 	if _today_slot >= 0 and not p.is_empty():
 		var today := _today_of(_today_slot)
 		if not today.is_empty():
