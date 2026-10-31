@@ -503,7 +503,29 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Grasrand von `SLAB_GAP` je Seite, mindestens ein halbes Pixel. Vorher nahm
   ein Quadrat aus 3 × 3 Parzellen eine eigene flache Farbe, die Brache war
   Wiese: Beim Herauszoomen über 8 km mischten sich die Felder neu, und
-  Nachbarn flossen zu Flecken zusammen.
+  Nachbarn flossen zu Flecken zusammen. Runde O (31.10.2026, Ramon:
+  «Beides: Reihen und Weiden»): Die Pflanzen standen als grosse, glatte
+  Klötze in einem regelmässigen Raster, wie Ziegelsteine; bei 3 km war das
+  Bild zu 53 % hellgrün (Urbek 21 %) und zeigte 6 % Erde (Urbek 18 %). Eine
+  Reihe ist jetzt eine niedrige, schmale Rippe über die ganze Feldlänge,
+  ihre Voxel (`VOX_M` 0,35 m) in zwei Tönen und hie und da einer weg, mit
+  bis zu sechs Buckeln je Reihe (`CROP_LUMPS`) aus zwei bis vier Voxeln,
+  breiter und doppelt so hoch, je nach Stand der Frucht (Keimling 35 %,
+  grün 50 %, reif 50 %, Bohnen 65 %). Die Reben bleiben, wie sie sind.
+  Das Netz der Felder hat 57 % mehr Ecken (2640 statt 1680 je Parzelle).
+- Weiden (Runde O, `sim_pasture`): Das offene Land, das die Höfe auf ihren
+  Feinkacheln frei lassen (Parzelle ohne Feld, `SIM_P_OPEN` und
+  `SIM_P_FARMED`), liegt in Weideblöcken wie die Felder in Äckern
+  (`sim_strip`, verbunden in `people_parcels.gdshader`): kurz abgeweidet
+  (etwas heller), Heuwiese mit Mähstreifen längs des Blocks (Cato, agr. 1,7,
+  nennt das pratum an zweiter Stelle der Bodennutzungen) oder raue Weide
+  (dunkler, mit Büscheln). Um jeden Block läuft ein Rain aus höherem,
+  dunklerem Gras von der Parzellenlinie 0,6 m nach innen, auf den
+  `people_crops.gdshader` niedrige Blöcke und hie und da einen Busch setzt;
+  zwei Blöcke nebeneinander teilen sich ihren Rain. Die Koppeln aus Runde G
+  bleiben und haben keinen Rain. Vorher war das eine glatte Wiese, 40 % des
+  3-km-Bilds glatt (Urbek 15 %). Die Sim kennt keine Weide: Es ist das Land
+  ohne Feld, gezeichnet als Gemeinweide des Dorfs wie schon die Schafe.
 - Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
   Loslinie (alle 1,5 km) ein brauner Feldweg, mit Lücken. Die Äcker halten
   Abstand wie bei den Dorfwegen.

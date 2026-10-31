@@ -322,8 +322,13 @@ const int SIM_P_OPEN = 4;      // people_crop_slab.gdshaderinc crop_open
 const int SIM_P_BY_FARM = 8;   // next to a farmhouse lot (fenced)
 const int SIM_P_NO_FIELD = 16; // sim_no_field
 const int SIM_P_LANES = 32;    // people_crop_slab.gdshaderinc crop_lanes, five bits from here
+// round O: the parcel's fine tile has fields (and no road the player built
+// crosses it), so open land there is the farms' pasture (sim_map.gdshaderinc
+// sim_pasture)
+const int SIM_P_FARMED = 1024;
 // The sides (bits -x, -y, +x, +y, as SIM_P_LANES) where the slab runs on
-// into a parcel of its field (sim_strip): baked into the B channel above
+// into a parcel of its field (sim_strip), on a pasture where it runs on
+// into a pasture parcel of its block (round O): baked into the B channel above
 // the ground level (B = whole levels + 128 x sides, below 2048 and so exact
 // in a half float), read back into the code from this bit.
 const int SIM_P_JOIN = 2048;
