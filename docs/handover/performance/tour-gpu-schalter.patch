@@ -1,0 +1,78 @@
+diff --git a/app/scripts/tour_bench.gd b/app/scripts/tour_bench.gd
+index cd26f3a..42b1a3f 100644
+--- a/app/scripts/tour_bench.gd
++++ b/app/scripts/tour_bench.gd
+@@ -136,6 +136,18 @@ func _hide(terrain: Node3D) -> void:
+ 		if "people" in hide or "people-process" in hide:
+ 			landscape.people.process_mode = Node.PROCESS_MODE_DISABLED # its per-frame work
+ 	landscape.shadows = "shadows" not in hide
++	# measuring knobs (probe patch 3): no vsync, half resolution, the terrain's
++	# fragment or per-tile vertex work replaced by a flat stand-in
++	if not _knobs_set:
++		_knobs_set = true
++		if "novsync" in hide:
++			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
++		if "half" in hide:
++			get_viewport().scaling_3d_scale = 0.5
++		var dbg := 1 if "flatfrag" in hide else 2 if "flatvert" in hide else 3 if "flatboth" in hide else 0
++		terrain._terrain_material.set_shader_parameter("dbg_mode", dbg)
++
++var _knobs_set := false
+ 
+ func _finish_pass() -> void:
+ 	var result := _summary(_frames)
+diff --git a/app/shaders/tile_terrain.gdshader b/app/shaders/tile_terrain.gdshader
+index 71bae2e..6beed9b 100644
+--- a/app/shaders/tile_terrain.gdshader
++++ b/app/shaders/tile_terrain.gdshader
+@@ -16,6 +16,7 @@ uniform int house_grid = 2;                      // house blocks per tile side
+ uniform bool town_props = true;                  // houses are drawn as models at this level
+ uniform ivec2 prop_origin;                       // the tiles that have them (tile_props.gdshader)
+ uniform int prop_n = 96;
++uniform int dbg_mode = 0; // probe patch 3: 1 flat fragment, 2 no per-tile flags in the vertex stage, 3 both
+ 
+ varying vec3 world_pos;
+ varying vec2 tile_uv;
+@@ -217,6 +218,13 @@ void vertex() {
+ 		if (cut < 0) { cpos = vec2(tile); level = own.x; } // no cut: nothing drawn
+ 	}
+ 	world_pos = vec3(world_min.x + cpos.x * tile_km, level * level_h, world_min.y + cpos.y * tile_km);
++	if (dbg_mode >= 2) {
++		coast = 0.0;
++		shore_lake = 0;
++		ground_bits = 0;
++		shore_sides = 0;
++		side_bits = 0;
++	} else {
+ 	// coast flags: land next to the sea gets a beach, sea next to land a lagoon tint
+ 	coast = 0.0;
+ 	// sea tile: bit k = land across side k, bit 4 + k = land at corner k only;
+@@ -283,6 +291,7 @@ void vertex() {
+ 	if (part == 0 && tile_km <= 0.5 && (shore_sides & 15) != 0) {
+ 		shore_sides |= cs_steps(sub_tiles ? tile >> ivec2(1) : tile) << 16;
+ 	}
++	}
+ 	VERTEX = (VIEW_MATRIX * vec4(world_pos, 1.0)).xyz;
+ 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+ }
+@@ -643,6 +652,12 @@ vec3 contour_land_soft(vec2 p, float band, float px_km, out int g) {
+ }
+ 
+ void fragment() {
++	if (dbg_mode == 1 || dbg_mode == 3) {
++		ALBEDO = vec3(0.12, 0.25, 0.1);
++		ROUGHNESS = 1.0;
++		shadow_share = 1.0;
++		NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
++	} else {
+ 	int ground = ground_bits & 15;
+ 	int ground_alt = (ground_bits >> 4) & 15;
+ 	int ground_tip = (ground_bits >> 8) - 1;
+@@ -1053,6 +1068,7 @@ void fragment() {
+ 	shadow_share = rough < 1.0 ? WATER_SHADOW : 1.0; // the water's tops (not its sand)
+ 	// tops and walls are lit as flat ground; the fixed tones above do the relief
+ 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
++	}
+ }
+ 
+ // Lambert, as diffuse_lambert, with the sun's cast shadow weakened on the

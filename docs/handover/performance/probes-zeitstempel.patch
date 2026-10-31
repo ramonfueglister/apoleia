@@ -1,0 +1,366 @@
+diff --git a/app/scripts/landscape.gd b/app/scripts/landscape.gd
+index 156f626..1c55242 100644
+--- a/app/scripts/landscape.gd
++++ b/app/scripts/landscape.gd
+@@ -403,11 +403,17 @@ func _place_camera() -> void:
+ 	camera.fov = fov_for_width(width)
+ 	camera.global_transform = Transform3D(basis, Vector3(target.x, _focus_y, target.y) + basis.z * distance)
+ 	var centre := _footprint_centre(distance)
++	var _t := Time.get_ticks_usec()
+ 	var spans := _drawn_spans()
++	terrain.probe("drawn_spans", _t)
+ 	terrain.update_view(centre, width, spans.x, spans.y)
++	_t = Time.get_ticks_usec()
+ 	if markers != null:
+ 		markers.update_view(width, get_viewport().get_visible_rect().size.x)
++	terrain.probe("markers", _t)
++	_t = Time.get_ticks_usec()
+ 	_update_look(distance)
++	terrain.probe("look", _t)
+ 
+ ## Ground (km) to cover around the middle of the view: x by the terrain,
+ ## the visible ground, a margin, and how far beyond its edge high ground can
+@@ -533,6 +539,12 @@ func _unhandled_input(event: InputEvent) -> void:
+ 			_zoom_at(1.0 / (ZOOM_STEP * ZOOM_STEP), get_viewport().get_visible_rect().size * 0.5)
+ 
+ func _process(delta: float) -> void:
++	var _tp := Time.get_ticks_usec()
++	_process_inner(delta)
++	if terrain != null:
++		terrain.probe("landscape_proc", _tp)
++
++func _process_inner(delta: float) -> void:
+ 	var keys := Vector2(
+ 		Input.get_axis("ui_left", "ui_right") + float(Keys.held("apoleia_right")) - float(Keys.held("apoleia_left")),
+ 		Input.get_axis("ui_up", "ui_down") + float(Keys.held("apoleia_down")) - float(Keys.held("apoleia_up")))
+diff --git a/app/scripts/sim/people_dots.gd b/app/scripts/sim/people_dots.gd
+index 88a6a4a..a7c8a4b 100644
+--- a/app/scripts/sim/people_dots.gd
++++ b/app/scripts/sim/people_dots.gd
+@@ -1458,6 +1458,8 @@ func _process(delta: float) -> void:
+ 	var start := Time.get_ticks_usec()
+ 	_frame(delta)
+ 	process_usec = Time.get_ticks_usec() - start
++	if terrain != null:
++		terrain.probe("people_frame", start)
+ 
+ func _frame(delta: float) -> void:
+ 	if people == null or people.is_loading():
+@@ -1489,7 +1491,10 @@ func _frame(delta: float) -> void:
+ 	var trips_start := Time.get_ticks_usec()
+ 	_trips.step(delta, close and figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
+ 	trips_usec = Time.get_ticks_usec() - trips_start
++	terrain.probe("trips", trips_start)
++	var _tf := Time.get_ticks_usec()
+ 	_flows.step(drawn and not figures, landscape.target if "target" in landscape else Vector2.ZERO, view_km)
++	terrain.probe("flows", _tf)
+ 	if not close:
+ 		# out of the close LOD the frame does nothing for the people: no
+ 		# upload, no placement pass, no draw. The sim thread keeps running and
+@@ -1497,7 +1502,9 @@ func _frame(delta: float) -> void:
+ 		if _bench_path != "":
+ 			_bench_step()
+ 		return
++	var _ts := Time.get_ticks_usec()
+ 	var synced: int = people.sync(_texture)
++	terrain.probe("people_sync", _ts)
+ 	if synced < 0:
+ 		_rebuild()
+ 	var synced_houses: int = people.sync_houses(_house_texture)
+@@ -1542,8 +1549,12 @@ func _frame(delta: float) -> void:
+ 	# up close only the figures are placed, so their list first
+ 	_figures.visible = figures
+ 	if figures:
++		var _t := Time.get_ticks_usec()
+ 		_update_figures(view_km, synced > 0)
++		terrain.probe("figure_list", _t)
++		_t = Time.get_ticks_usec()
+ 		_update_field_routes()
++		terrain.probe("field_routes", _t)
+ 		_aim_figure_shadows()
+ 	if figures != _prep_listed:
+ 		_prep_listed = figures
+diff --git a/app/scripts/sim/people_trips.gd b/app/scripts/sim/people_trips.gd
+index 620a0c3..41e329e 100644
+--- a/app/scripts/sim/people_trips.gd
++++ b/app/scripts/sim/people_trips.gd
+@@ -243,6 +243,12 @@ func setup(sim: RefCounted, km_per_m: float) -> void:
+ 
+ ## One frame: `on` while the figures are drawn, `centre` the ground in the
+ ## middle of the view (world km), `view_km` its width.
++## Perf probe into the terrain's events (bench only).
++func _p(name: String, t: int) -> void:
++	var d := get_parent()
++	if d != null and "terrain" in d and d.terrain != null:
++		d.terrain.probe("trips." + name, t)
++
+ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
+ 	visible = on and _able
+ 	if not visible:
+@@ -263,39 +269,54 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
+ 		return
+ 	if not _frozen:
+ 		_clock += delta
++	var _t := Time.get_ticks_usec()
+ 	if not _pending.is_empty():
+ 		_release(false)
++	_p("release", _t)
+ 	var half := view_km * (0.5 + MARGIN)
+ 	_window = Rect2(centre - Vector2(half, half), Vector2(half, half) * 2.0)
+ 	if _asked_work:
+ 		var hires: Dictionary = people.take_work()
+ 		if not hires.is_empty():
+ 			_asked_work = false
++			_t = Time.get_ticks_usec()
+ 			_take_work(hires)
++			_p("take_work", _t)
+ 	if _asked_goods:
+ 		var goods: Dictionary = people.take_goods()
+ 		if not goods.is_empty():
+ 			_asked_goods = false
++			_t = Time.get_ticks_usec()
+ 			_take_goods(goods)
++			_p("take_goods", _t)
++	_t = Time.get_ticks_usec()
+ 	_take_some()
++	_p("take_some", _t)
+ 	if not _asked_slots.is_empty():
+ 		var slots: Dictionary = people.take_slots()
+ 		if not slots.is_empty():
++			_t = Time.get_ticks_usec()
+ 			_take_slots(slots)
++			_p("take_slots", _t)
+ 	elif _slots_due and not _asked and not _asked_work and _taking.is_empty():
+ 		_ask_slots()
+ 	if _day_s > 0.0 and int(people.day()) != _away_day and not away.is_empty():
++		_t = Time.get_ticks_usec()
+ 		_away_build() # the hours of those still out from yesterday
++		_p("away_build", _t)
+ 	if _asked:
+ 		var answer: Dictionary = people.take_trips()
+ 		if not answer.is_empty():
+ 			_asked = false
++			_t = Time.get_ticks_usec()
+ 			_take(answer)
++			_p("take", _t)
+ 	elif not _asked_work:
+ 		var day: int = people.day()
+ 		var moved := _asked_at.x == INF or Vector2(_asked_at.x, _asked_at.y).distance_to(centre) > view_km * 0.25 \
+ 			or absf(log(view_km / _asked_at.z)) > 0.3
+ 		if day != _asked_day or moved:
++			_t = Time.get_ticks_usec()
+ 			people.ask_trips(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
+ 			people.ask_work(_window.position.x, _window.position.y, _window.end.x, _window.end.y)
+ 			if people.has_method("ask_goods") and not _asked_goods:
+@@ -319,13 +340,18 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
+ 			if squares != _squares:
+ 				_squares = squares
+ 				_write_all() # the travellers move up or down behind the stalls
++			_p("ask", _t)
+ 	if _clock >= _next:
++		_t = Time.get_ticks_usec()
+ 		_events()
++		_p("events", _t)
+ 	material.set_shader_parameter("walk_clock", _clock)
+ 	if _dirty:
++		_t = Time.get_ticks_usec()
+ 		_dirty = false
+ 		multimesh.buffer = _buffer
+ 		multimesh.visible_instance_count = _fixed + _walkers.size()
++		_p("upload", _t)
+ 
+ ## The hour from the game clock (people_dots.gd set_day_time): `day_s`
+ ## the real seconds a day lasts at «Alltag», 0 at the other speeds, where
+diff --git a/app/scripts/tile_terrain.gd b/app/scripts/tile_terrain.gd
+index 4f11000..b58ff47 100644
+--- a/app/scripts/tile_terrain.gd
++++ b/app/scripts/tile_terrain.gd
+@@ -282,6 +282,13 @@ var _plan_house_lots := {} # metres -> house lots nearest that height (_lot_weig
+ ## the tour benchmark (landscape.gd --tour); whoever reads it clears it.
+ var events := PackedStringArray()
+ 
++## Perf probe (bench only): "t:name ms" into events when a step took 1 ms or more.
++func probe(name: String, start_usec: int) -> void:
++	var ms := (Time.get_ticks_usec() - start_usec) / 1000.0
++	if ms >= 1.0:
++		events.append("t:%s %.1f" % [name, ms])
++
++
+ static func data_root() -> String:
+ 	return ProjectSettings.globalize_path("res://").path_join("..").simplify_path()
+ 
+@@ -813,6 +820,7 @@ func _update_town_list() -> void:
+ 	if key == _town_key or house_slots == 0:
+ 		return
+ 	_town_key = key
++	var _t_tl := Time.get_ticks_usec()
+ 	var list: PackedInt32Array = _town_lists.get(level, PackedInt32Array())
+ 	var size: Vector2i = _cell_sizes[level]
+ 	var q := 2 if sub_tiles else 1 # quarter tiles per data tile side
+@@ -842,8 +850,12 @@ func _update_town_list() -> void:
+ 					var t := at + prop_origin
+ 					for slot in house_slots:
+ 						lots[_pick_lot(t, slot, v & 3)].append(local * 512 + slot)
++	var _t := Time.get_ticks_usec()
++	probe("town_tiles", _t_tl)
+ 	if plans != null and (sub_tiles or level == 0):
+ 		_list_plan_lots(tiles, lots, room)
++	probe("plan_lots", _t)
++	_t = Time.get_ticks_usec()
+ 	town_count = tiles.size()
+ 	var data := tiles.duplicate()
+ 	var starts := PackedInt32Array()
+@@ -865,6 +877,7 @@ func _update_town_list() -> void:
+ 			_props[kind].multimesh.visible_instance_count = mini(lots[lot].size(), _props[kind].multimesh.instance_count)
+ 		else:
+ 			_props[kind].multimesh.visible_instance_count = town_count * house_slots
++	probe("town_upload", _t)
+ 	events.append("towns")
+ 
+ # ------------------------------------------------------- steps of the shore
+@@ -1323,9 +1336,12 @@ func set_light_dir(dir: Vector3) -> void:
+ ## `span` km across, the trees and houses `prop_span` km (at most PROP_SPAN
+ ## view widths).
+ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -> void:
++	var _t_all := Time.get_ticks_usec()
++	var _t := _t_all
+ 	var wanted := level_for_width(width)
+ 	if wanted != zoom:
+ 		_apply_level(wanted)
++		probe("apply_level", _t)
+ 	var c := ((centre - world_min) / tile_km).floor()
+ 	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
+ 	# only the tiles around the view are drawn: each costs vertex work (and
+@@ -1337,10 +1353,13 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
+ 		_terrain.multimesh.visible_instance_count = n * n
+ 		_terrain_material.set_shader_parameter("patch_n", n)
+ 	_terrain_material.set_shader_parameter("patch_origin", Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2))
++	_t = Time.get_ticks_usec()
+ 	if _near_levels.has(level) and _update_level_window():
+ 		for material in _all_materials() + [_sub_material]:
+ 			material.set_shader_parameter("levels_origin", Vector2i(_level_window_key.y, _level_window_key.z))
+ 		_sub_origin = NO_WINDOW # the quarter data comes from the new window
++	probe("level_window", _t)
++	_t = Time.get_ticks_usec()
+ 	# the picture of the rivers and lakes over the drawn tiles
+ 	if _water_lines != null and not sub_tiles and level <= 1:
+ 		var first := Vector2i(int(c.x) - draw_n / 2, int(c.y) - draw_n / 2)
+@@ -1348,6 +1367,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
+ 			var r: Rect2 = _water_lines.rect
+ 			for material in _all_materials():
+ 				material.set_shader_parameter("water_win_rect", Vector4(r.position.x, r.position.y, r.size.x, r.size.y))
++	probe("water_cover", _t)
+ 	var corner_origin := patch_origin - Vector2i.ONE
+ 	for material in _all_materials():
+ 		material.set_shader_parameter("corner_origin", corner_origin)
+@@ -1357,12 +1377,15 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
+ 	var wanted_n := clampi(int(ceil(minf(PROP_SPAN * width, minf(span, prop_span)) / tile_km / 2.0)) * 2 + 2, 12, PROP_N)
+ 	if wanted_n != prop_n:
+ 		prop_n = wanted_n
++		_t = Time.get_ticks_usec()
+ 		_apply_prop_count()
++		probe("prop_count", _t)
+ 		events.append("props")
+ 	# far out the trees are a few pixels tall: low-poly and no shadows; up
+ 	# close the lots and landmarks in full detail
+ 	var tier := 2 if width > PROP_LOW_KM else 0 if width <= PROP_DETAIL_KM else 1
+ 	if tier != _props_tier:
++		_t = Time.get_ticks_usec()
+ 		_props_tier = tier
+ 		events.append("tier %d" % tier)
+ 		for kind in _props.size():
+@@ -1373,6 +1396,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
+ 			var which := _landmark_names[k]
+ 			if which.begins_with("kit:"):
+ 				_landmarks[k].mesh = RomanBuildings.landmark_mesh(which.trim_prefix("kit:"), 0 if tier < 2 else 1)
++		probe("tier", _t)
+ 	var f := ((centre - world_min) / tile_km).floor()
+ 	prop_origin = Vector2i(int(f.x) - prop_n / 2, int(f.y) - prop_n / 2)
+ 	for material in _prop_materials:
+@@ -1384,10 +1408,17 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
+ 	# beyond the prop patch towns are roof coloured tiles again
+ 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
+ 	_terrain_material.set_shader_parameter("prop_n", prop_n)
++	_t = Time.get_ticks_usec()
+ 	_update_town_list()
++	probe("town_list", _t)
++	_t = Time.get_ticks_usec()
+ 	_update_coast_list()
++	probe("coast_list", _t)
++	_t = Time.get_ticks_usec()
+ 	if sub_tiles:
+ 		_update_sub_window()
++	probe("sub_window", _t)
++	probe("update_view", _t_all)
+ 
+ # ------------------------------------------------------------- CPU mirror
+ 
+diff --git a/app/scripts/tour_bench.gd b/app/scripts/tour_bench.gd
+index de8d406..cd26f3a 100644
+--- a/app/scripts/tour_bench.gd
++++ b/app/scripts/tour_bench.gd
+@@ -76,11 +76,20 @@ static func view_at(f: int) -> Vector3:
+ 	var last: Array = KEYS[-1]
+ 	return Vector3(last[0], last[1], last[2])
+ 
++var _probes := {} # probe name -> [frames, sum ms, max ms] this pass
++
+ func _process(_delta: float) -> void:
+ 	var now := Time.get_ticks_usec()
+ 	var terrain = landscape.terrain
+ 	var events: PackedStringArray = terrain.events.duplicate()
+ 	terrain.events.clear()
++	if _frame >= warmup:
++		for e in events:
++			if e.begins_with("t:"):
++				var name := e.get_slice(" ", 0)
++				var ms := float(e.get_slice(" ", 1))
++				var p: Array = _probes.get(name, [0, 0.0, 0.0])
++				_probes[name] = [p[0] + 1, p[1] + ms, maxf(p[2], ms)]
+ 	var compiles := _compile_count()
+ 	_hide(terrain)
+ 	_frame += 1
+@@ -131,6 +140,8 @@ func _hide(terrain: Node3D) -> void:
+ func _finish_pass() -> void:
+ 	var result := _summary(_frames)
+ 	result.pass = _pass + 1
++	result.probes = _probes.duplicate(true)
++	_probes.clear()
+ 	_results.append(result)
+ 	print(JSON.stringify({"event": "tour_pass", "pass": _pass + 1, "p50_ms": result.p50_ms, "p95_ms": result.p95_ms,
+ 		"p99_ms": result.p99_ms, "max_ms": result.max_ms, "over_33_ms": result.over_33_ms, "over_50_ms": result.over_50_ms}))
+diff --git a/app/scripts/water_lines.gd b/app/scripts/water_lines.gd
+index 7b28a4c..179c351 100644
+--- a/app/scripts/water_lines.gd
++++ b/app/scripts/water_lines.gd
+@@ -90,6 +90,13 @@ func cover(patch: Rect2) -> bool:
+ 
+ ## Layers: 0 lakes, 1 their islands, 2 the river banks, 3 the rivers.
+ func _draw_layer(which: int) -> void:
++	var _t := Time.get_ticks_usec()
++	_draw_layer_inner(which)
++	var t: Node = get_parent()
++	if t != null and t.has_method("probe"):
++		t.probe("water_draw%d" % which, _t)
++
++func _draw_layer_inner(which: int) -> void:
+ 	var layer := _layers[which]
+ 	var s := float(SIZE) / rect.size.x # pixels per km
+ 	var to_px := Transform2D(0.0, Vector2(s, s), 0.0, -rect.position * s)
+diff --git a/app/scripts/weather/weather_system.gd b/app/scripts/weather/weather_system.gd
+index fbcbb46..fd7423a 100644
+--- a/app/scripts/weather/weather_system.gd
++++ b/app/scripts/weather/weather_system.gd
+@@ -427,6 +427,12 @@ func _pick_auto_state() -> String:
+ # --- Frame update -------------------------------------------------------------
+ 
+ func _process(delta: float) -> void:
++	var _tp := Time.get_ticks_usec()
++	_process_inner(delta)
++	if _landscape != null and _landscape.terrain != null:
++		_landscape.terrain.probe("weather", _tp)
++
++func _process_inner(delta: float) -> void:
+ 	if not configured: return
+ 	_frame += 1
+ 	var dt := delta * time_scale
