@@ -879,7 +879,10 @@ func _update_coast_list() -> void:
 	var lo := Vector2i(floori(prop_origin.x / float(q)), floori(prop_origin.y / float(q)))
 	var hi := Vector2i(floori((prop_origin.x + prop_n - 1) / float(q)), floori((prop_origin.y + prop_n - 1) / float(q)))
 	if zoom > 0:
-		hi = lo - Vector2i.ONE
+		# none further out: one empty window for all of it, so a pan does
+		# not upload the empty list anew at every tile (Mac tour 31.10.2026)
+		lo = Vector2i.ZERO
+		hi = -Vector2i.ONE
 	var key := Vector4i(lo.x, lo.y, hi.x, hi.y)
 	if key == _coast_key:
 		return
