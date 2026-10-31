@@ -7,7 +7,10 @@
 // coast cut (the 45-degree coast) the same in front of a staircase that
 // fills the half cells along the diagonal, so the diagonal becomes a voxel
 // stair. So the bank comes down in steps, as Urbek's, and the waterline goes
-// in and out instead of along the tile edges and diagonals.
+// in and out instead of along the tile edges and diagonals. In front of a
+// town a quay instead: a path a little below the town on a stone kerb that
+// drops to the water, as Urbek always keeps a strip between its houses and
+// the sea (its store shots, 30.10.2026).
 // tile_coast_steps.gdshader draws the blocks on the tiles that TileTerrain
 // lists (_update_coast_list, the same rules as cs_open and cs_cut_tip);
 // tile_terrain.gdshader lays the sand at their foot, the surf and the
@@ -19,6 +22,7 @@
 const float COAST_CELL_KM = 0.031;
 const float COAST_BAY_KM = 0.15;
 const int CS_CELLS = 16; // columns per data tile side (31 m)
+const int CS_QUAY = 2;   // cells of quay in front of a town
 const ivec2 CS_CORNER[4] = ivec2[](ivec2(0, 0), ivec2(1, 0), ivec2(1, 1), ivec2(0, 1));
 const ivec2 CS_SIDE[4] = ivec2[](ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0));
 // the data tiles that have steps (the prop patch up close; none further out)
@@ -29,11 +33,13 @@ int cs_water(ivec2 t) {
 	return tt_data_cell(t) & 3;
 }
 
-// Data tile t is open land up to the sea: land, not a town (its quay), not
-// a coast cut (its 45-degree edge) and not a lone tile in the sea.
-bool cs_open(ivec2 t) {
+// Data tile t is land up to the sea with steps in front: open land (town
+// below 2) or, `town`, a town (its quay; towns are never cut, so a quay
+// turns round their corners); not a coast cut (its 45-degree edge) and not
+// a lone tile in the sea.
+bool cs_shore(ivec2 t, bool town) {
 	int cell = tt_data_cell(t);
-	if ((cell & 3) != W_LAND || cell >= 8) { return false; }
+	if ((cell & 3) != W_LAND || (cell >= 8) != town) { return false; }
 	int nb[4];
 	bool lone = true;
 	for (int k = 0; k < 4; k++) {
@@ -41,6 +47,7 @@ bool cs_open(ivec2 t) {
 		lone = lone && (nb[k] & 3) == W_SEA;
 	}
 	if (lone) { return false; }
+	if (town) { return true; }
 	// tt_coast_cut_nb, on the data tiles
 	for (int k = 0; k < 4; k++) {
 		int a = nb[k] & 3;
@@ -51,17 +58,30 @@ bool cs_open(ivec2 t) {
 	return true;
 }
 
+bool cs_open(ivec2 t) {
+	return cs_shore(t, false);
+}
+
+// The land across side k of sea tile s, whose steps are listed, is a town:
+// they are its quay.
+bool cs_quay(ivec2 s, int k) {
+	return tt_data_cell(s + CS_SIDE[k]) >= 8;
+}
+
 // Side k of sea data tile s: 0 without steps, else 1, + 2 where the land
 // ends at the side's first corner (CS_CORNER[k]), + 4 at its last: there the
 // steps come down to it in a 45-degree stair. Where the coast turns round
-// that corner of the sea tile (open land on the next side too) they go on.
+// that corner of the sea tile (the same kind of land on the next side too)
+// they go on.
 int cs_side(ivec2 s, int k) {
 	if (any(lessThan(s, steps_lo)) || any(greaterThan(s, steps_hi))) { return 0; }
-	if (cs_water(s) != W_SEA || !cs_open(s + CS_SIDE[k])) { return 0; }
+	if (cs_water(s) != W_SEA) { return 0; }
+	bool town = tt_data_cell(s + CS_SIDE[k]) >= 8;
+	if (!cs_shore(s + CS_SIDE[k], town)) { return 0; }
 	ivec2 e = CS_SIDE[(k + 1) & 3]; // along the side, from its first corner
 	int bits = 1;
-	if (!cs_open(s + CS_SIDE[k] - e) && !cs_open(s - e)) { bits |= 2; }
-	if (!cs_open(s + CS_SIDE[k] + e) && !cs_open(s + e)) { bits |= 4; }
+	if (!cs_shore(s + CS_SIDE[k] - e, town) && !cs_shore(s - e, town)) { bits |= 2; }
+	if (!cs_shore(s + CS_SIDE[k] + e, town) && !cs_shore(s + e, town)) { bits |= 4; }
 	return bits;
 }
 
@@ -85,12 +105,14 @@ int cs_ledge(float w) {
 }
 
 // Cells out from the edge at column col of side k (`bits` from cs_side):
-// x the headland at the land's level, y the ledge below it (0: none).
+// x the headland at the land's level, y the ledge below it (0: none); in
+// front of a town no headland and the quay as the ledge.
 ivec2 cs_depth(ivec2 s, int k, int col, int bits) {
 	if ((bits & 1) == 0) { return ivec2(0); }
 	float w = cs_wander(s, k, col);
-	int head = cs_head(w);
-	int ledge = head + cs_ledge(w);
+	bool quay = cs_quay(s, k);
+	int head = quay ? 0 : cs_head(w);
+	int ledge = quay ? CS_QUAY : head + cs_ledge(w);
 	if ((bits & 2) != 0) { head = min(head, col); ledge = min(ledge, col + 1); }
 	if ((bits & 4) != 0) { head = min(head, CS_CELLS - 1 - col); ledge = min(ledge, CS_CELLS - col); }
 	return ivec2(head, ledge);

@@ -62,19 +62,37 @@ bool tt_olive_grove(ivec2 dt, bool ramp) {
 // Up close single trees and bushes stand about the open land, as in Urbek
 // (Ramon 29.10.2026: whole hillsides and pastures of bare lawn): on the
 // ramps, where no field ever lies, and on the parcels the farms leave as
-// pasture (sim_parcel), never on a sown or fallow parcel or a farmhouse's
-// lot. Beyond the crops (SIM_CROPS_KM) only the ramps keep theirs. As
-// densely as on Urbek's lawns (s5 measured: with 0.09 of the slots a fifth
-// of the farmland views was bare lawn, 15-17 % flat green against Urbek's
-// 1.5 %; Urbek's grass is as flat as ours, its trees and bushes are three
-// to four times as many).
+// pasture (sim_parcel, the same parcels near and far), never on a sown or
+// fallow parcel or a farmhouse's lot. Beyond the crops (SIM_CROPS_KM) the
+// trees stay and the bushes go (specks there). As densely as on Urbek's
+// lawns (s5 measured: with 0.09 of the slots a fifth of the farmland views
+// was bare lawn, 15-17 % flat green against Urbek's 1.5 %; Urbek's grass
+// is as flat as ours, its trees and bushes are three to four times as
+// many).
 const float SCATTER_TREE = 0.3; // share of the slots with a tree
 const float SCATTER_BUSH = 0.25; // and with a shrub (tile_prop_meshes.gd _shrub; s4: small trees as bushes read as saplings)
 bool tt_scatter_free(vec2 at, bool ramp, bool field) {
 	if (!sim_map_on || sim_fine_n == 0) { return !field; }
 	if (sim_house_lot(at)) { return false; }
 	if (ramp) { return true; }
-	if (sim_view_km > SIM_CROPS_KM) { return false; }
+	float size = tt_data_km() * 0.5;
+	vec4 f;
+	return sim_parcel(floor((at - world_min) / size), size, f) == 0;
+}
+
+// Further out (the 0.5 and 1 km tiles, 12 to 90 km views) the open land
+// keeps groves of a few trees, about every third to fifth tile, and the
+// farmland on the parcels it leaves as pasture, so it does not turn into
+// bare colour (Ramon 30.10.2026, round c: Urbek's furthest shot still
+// shows its woods as single small trees, densely packed). Up close the
+// single trees fill it instead.
+const float GROVE_OPEN_NEAR = 0.07;
+const float GROVE_OPEN_FAR = 0.22;
+const float GROVE_FIELD_NEAR = 0.03;
+const float GROVE_FIELD_FAR = 0.12;
+bool tt_grove_free(vec2 at, bool field) {
+	if (!field || !sim_map_on || sim_fine_n == 0) { return true; }
+	if (sim_house_lot(at)) { return false; }
 	float size = tt_data_km() * 0.5;
 	vec4 f;
 	return sim_parcel(floor((at - world_min) / size), size, f) == 0;
@@ -184,7 +202,8 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 			vec2 duv = sub_tiles ? (vec2(t & ivec2(1)) + uv) * 0.5 : uv;
 			float gh = tt_hash(vec2(dt) * 0.613 + 7.1);
 			vec2 spot = 0.3 + 0.4 * vec2(tt_hash(vec2(dt) + 1.7), tt_hash(vec2(dt) - 2.9));
-			grove = gh < (open ? 0.07 : 0.03) && length(duv - spot) < 0.3; // three to seven trees
+			float share = sub_tiles ? (open ? GROVE_OPEN_NEAR : GROVE_FIELD_NEAR) : (open ? GROVE_OPEN_FAR : GROVE_FIELD_FAR);
+			grove = gh < share && length(duv - spot) < 0.3 && (sub_tiles || tt_grove_free(at, field)); // three to seven trees
 		}
 		// up close a wood keeps the density of the 0.5 km tiles (about 2 of
 		// the 4 slots of a quarter), so the ground shows between the crowns
@@ -193,6 +212,8 @@ vec4 tt_prop_place(ivec2 t, int slot, int slots, bool house) {
 		bool scatter = sub_tiles && (open || field) && !olive && !grove && rs < SCATTER_TREE + SCATTER_BUSH
 			&& tt_scatter_free(at, ramp, field);
 		bool bush = scatter && rs >= SCATTER_TREE;
+		scatter = scatter && (!bush || sim_view_km <= SIM_CROPS_KM);
+		bush = bush && scatter;
 		// on the four points of a 2 x 2 grid in its quarter, a little
 		// jittered: the crowns (up to 4.6 m on a 10 m parcel) clear of each
 		// other and of the fields round the parcel

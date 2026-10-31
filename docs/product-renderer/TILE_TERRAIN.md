@@ -236,6 +236,18 @@ unabhängig und unverändert.
   Regeln auf der CPU, in Blöcken von 32 Kacheln gelesen und behalten); die
   Kacheln legen Fusssand, Brandung und Flachwasser vor die Stufenfront und
   keinen Sandsaum hinter eine Felsnase. Weiter draussen keine Stufen.
+  Runde I (30.10.2026, nach allen 15 Urbek-Shopbildern: Urbek hat keine
+  Brandung, ruhiges Wasser, feine Küstenbögen und immer einen Streifen
+  zwischen Haus und Wasser): Die Grenze des Sandsaums zum Gras liegt nah in
+  Zellen eines Viertels (8 m), ausgefranst und mit einem blassen Rand (halb
+  Sand), statt als Treppe ganzer Zellen, die auf der 45-Grad-Diagonale am
+  Bildschirm als Zahnreihe stand. Vor einem Ort (Klasse 2 und 3, nie
+  geschnitten) steht statt der Stufen ein Kai: zwei Zellen tief, ein heller
+  Weg etwas unter dem Ort auf einer grauen Steinkante bis ins Wasser, auch um
+  die Ecken der Stadt herum; die Uferwand des Orts darüber ist Stein, kein
+  Sand am Fuss. Die Brandung ist nur noch eine dünne Linie (die zweite, die
+  hinauslief, ist weg), das Flachwasser ein weicher Saum, der ins Meer
+  ausläuft (Ramon: «Dezenter»).
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
@@ -245,7 +257,14 @@ unabhängig und unverändert.
   Waldkacheln (und Waldhälften), auf den Vierteln so dicht wie auf den
   0,5-km-Kacheln (gut zwei der vier Plätze, der Waldboden zeigt sich
   zwischen den Kronen), dazu kleine Gruppen von drei bis sieben Bäumen auf
-  offenem Grasland und an Feldern (keine Einzelbäume, sie lasen als Tischchen). Auch dichter Wald öffnet sich alle paar
+  offenem Grasland und an Feldern (keine Einzelbäume, sie lasen als Tischchen);
+  seit Runde I auf den 0,5-km-Kacheln (12 bis 35 km) auf gut jeder fünften
+  offenen Kachel und jeder achten Weide der Höfe (nie auf gesäten oder
+  brachen Parzellen), und auf den 1-km-Kacheln (35 bis 90 km) stehen die
+  Wälder weiter als Einzelbäume, neun je Kachel und 1,8-mal so gross
+  (`TREE_FAR_GROW`), wie Urbek seine fernen Wälder als dicht gepackte kleine
+  Bäume zeigt. Die Einzelbäume der Weiden bleiben bis zu den Viertelkacheln
+  (12 km) stehen, nur die Büsche gehen jenseits der Feldfrüchte (8 km). Auch dichter Wald öffnet sich alle paar
   Kilometer zu Lichtungen. Flüsse sind auch weit draußen mindestens anderthalb
   Pixel breit. Natural Earth scalerank je Ebene: bis 10 bei 0,5 und 1 km,
   8 bei 2 km, 7 bei 4 km, 6 bei 8 km und 5 auf der Europakarte (16 km). Tiber
@@ -405,7 +424,15 @@ fast keine, und ein Drittel unseres Bildes war ein einziges helles Wiesengrün.
   Trockenmauer (maceria) ringsum und einem Block als Tor; die Schafe weiden
   drinnen und draussen wie bisher. Die Strohplatten sind dünner und haben eine
   feine Körnung. 3–6 × 2–3 Parzellen (Runde 4) machten Bäume und Häuser
-  winzig.
+  winzig. Runde J (30.10.2026): Jenseits der Feldfrüchte (8 bis 40 km)
+  liegen dieselben Äcker flach im Gelände (`sim_far_field`): die Brache als
+  Strohfläche, ein gesäter Acker mit seiner Frucht und Reife in den Farben
+  der Platten von nah, drei Reihen je Parzelle längs des Ackers, solange sie
+  mindestens 2–4 Pixel auseinander liegen (darunter die Mischfarbe), und ein
+  Grasrand von `SLAB_GAP` je Seite, mindestens ein halbes Pixel. Vorher nahm
+  ein Quadrat aus 3 × 3 Parzellen eine eigene flache Farbe, die Brache war
+  Wiese: Beim Herauszoomen über 8 km mischten sich die Felder neu, und
+  Nachbarn flossen zu Flecken zusammen.
 - Feldwege (`sim_track_between`): Durchs Ackerland läuft auf jeder dritten
   Loslinie (alle 1,5 km) ein brauner Feldweg, mit Lücken. Die Äcker halten
   Abstand wie bei den Dorfwegen.

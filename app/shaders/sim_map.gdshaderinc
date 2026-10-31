@@ -44,27 +44,85 @@ float sim_along(vec2 p, vec2 a, vec2 b) {
 	return clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0) * length(e);
 }
 
-// Further out the farmland lies in square fields of 3 x 3 parcels in each
-// farm's block (the fine tile, sim_parcel), each in one flat colour a
-// clear step from the pasture: Urbek's wheat yellow or the fresh green of
-// growing grain, now and then ploughed brown; the fallow is grazed grass,
-// so the fields lie in calm clusters on green and stay quieter than the
-// town (rounds 12-18: single parcels, 2 x 2 km blotches, strips, a crop
-// green too close to the grass or four tones read as camouflage, confetti
-// or a barcode).
-const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close; a field is 3 x 3 of them
-vec3 sim_strip_rgb(vec2 cell, float size, vec4 f, bool built) {
-	vec2 farm = floor((world_min + (cell + 0.5) * size - sim_fine_origin) / sim_fine_km); // its fine tile
-	vec2 strip = farm * 13.0 + floor(cell / 3.0) * vec2(1.0, 0.37);
-	vec3 wheat = GROUND_RGB[G_FIELD] * 1.02;   // #d2c574 on screen
-	vec3 ploughed = vec3(0.37, 0.27, 0.2);     // #8c5c3c on screen, the lit soil of the parcels up close (lighter it was a second soil, r11; 0.31, 0.19, 0.13 came out #70371d, rust holes in the lawn at 22 km)
-	vec3 green = vec3(0.36, 0.555, 0.27);      // #82b85a, a fresh green above the pasture (darker it read as a ramp's shade, round 19; yellower as acid lime, round 20)
-	float h = sim_hash(strip + 3.7);
-	// a field the player built lies as stubble where it is not sown, as up
-	// close (people_crops.gdshader FALLOW), not as grass
-	if (sim_hash(strip + 17.3) >= f.g) { return built ? wheat : h < 0.88 ? GROUND_RGB[G_MEADOW] : ploughed; }
-	float g = clamp(f.b + (h - 0.5) * 0.6, 0.0, 1.0);
-	return g < 0.5 ? green : wheat;
+// Further out (beyond the crops, to SIM_FIELDS_KM) the fields are those
+// of the near view, only smaller (round J, 30.10.2026): the same long
+// fields of sim_strip, sown or fallow and with the crop as up close
+// (sim_parcel, sim_crop_kind), in the colours of the crops on their slabs
+// (people_crops.gdshader): the fallow a straw sheet, a sown field its rows
+// along the field over the soil. The rows (SIM_FAR_ROWS a parcel) show
+// while they are at least SIM_FAR_ROW_PX on screen and blend into the
+// field's mean colour below; a grass margin of SLAB_GAP a side, half a
+// pixel at least, parts one field from the next as the slabs' edges do up
+// close. (Before, a square of 3 x 3 parcels took one flat colour of its
+// own and the fallow lay as grass: zooming out past the crops shuffled
+// the fields, and neighbours ran together into blotches.)
+const float SIM_FAR_PARCEL_KM = 0.25; // as the parcels up close
+const float SIM_FAR_ROWS = 3.0;       // rows a parcel (12 up close, people_crops.gdshader crop_rows)
+const float SIM_FAR_ROW_PX = 4.0;     // rows in full from this spacing on screen, gone at half of it
+const float SIM_FAR_GAP = 0.04;       // people_crop_slab.gdshaderinc SLAB_GAP
+// the crops' colours (people_crops.gdshader)
+const vec3 SIM_SOIL = vec3(0.34, 0.24, 0.18);
+const vec3 SIM_SOIL_DRY = vec3(0.46, 0.34, 0.25);
+const vec3 SIM_SPROUT = vec3(0.28, 0.5, 0.2);
+const vec3 SIM_GRAIN_GREEN[2] = vec3[](vec3(0.2, 0.43, 0.15), vec3(0.32, 0.48, 0.18)); // wheat, barley
+const vec3 SIM_RIPE[2] = vec3[](vec3(0.68, 0.64, 0.36), vec3(0.72, 0.68, 0.46));
+const vec3 SIM_FALLOW = vec3(0.62, 0.6, 0.32);
+const vec3 SIM_STUBBLE = vec3(0.62, 0.54, 0.38);
+const vec3 SIM_FURROW = vec3(0.26, 0.18, 0.13);
+const vec3 SIM_LEAVES = vec3(0.2, 0.42, 0.17);
+const vec3 SIM_VINE = vec3(0.24, 0.44, 0.18);
+const vec3 SIM_VINE_BARE = vec3(0.42, 0.3, 0.2);
+
+// Whether the parcel `cell` belongs to field `strip` (sim_strip).
+bool sim_same_field(vec2 cell, vec3 strip) {
+	return all(equal(sim_strip(cell), strip));
+}
+
+// The far field colour at p of parcel `cell` (side `size` km) in `state`
+// (1 fallow, 2 sown) with growth g; `fw_km` the size of a pixel there and
+// `pasture` the ground round the fields.
+vec3 sim_far_field(vec2 p, vec2 cell, float size, int state, float g, float fw_km, vec3 pasture) {
+	vec3 strip = sim_strip(cell);
+	vec2 at = (p - world_min) / size - cell; // 0..1 in the parcel
+	// the grass margin on the sides where another field (or none) begins
+	float gap = max(SIM_FAR_GAP, 0.5 * fw_km / size);
+	float aa = 0.5 * fw_km / size + 1e-5;
+	float edge = 10.0;
+	if (at.x < gap * 2.0 && !sim_same_field(cell - vec2(1.0, 0.0), strip)) { edge = min(edge, at.x); }
+	if (at.x > 1.0 - gap * 2.0 && !sim_same_field(cell + vec2(1.0, 0.0), strip)) { edge = min(edge, 1.0 - at.x); }
+	if (at.y < gap * 2.0 && !sim_same_field(cell - vec2(0.0, 1.0), strip)) { edge = min(edge, at.y); }
+	if (at.y > 1.0 - gap * 2.0 && !sim_same_field(cell + vec2(0.0, 1.0), strip)) { edge = min(edge, 1.0 - at.y); }
+	float grass = 1.0 - smoothstep(gap - aa, gap + aa, edge);
+	if (state == 1) { return mix(SIM_FALLOW, pasture, grass); }
+	// the soil and its rows by crop and growth, as people_crops.gdshader
+	float pick = sim_hash(strip.xy * 1.37 + strip.z * 19.1 + 5.1); // sim_crop_kind
+	int kind = pick < 0.4 ? SIM_WHEAT : pick < 0.6 ? SIM_BARLEY : pick < 0.85 ? SIM_BEANS : SIM_VINES;
+	vec3 soil = SIM_SOIL;
+	vec3 row = SIM_FURROW;
+	float w = 0.5; // share of the row spacing
+	if (kind == SIM_WHEAT || kind == SIM_BARLEY) {
+		if (g <= 0.0) { soil = SIM_STUBBLE; row = SIM_STUBBLE * 0.85; w = 0.35; }
+		else if (g < 0.12) { row = SIM_FURROW; }
+		else if (g < 0.4) { row = SIM_SPROUT; }
+		else if (g < 0.75) { row = SIM_GRAIN_GREEN[kind]; w = 0.6; }
+		else { soil = SIM_RIPE[kind]; row = mix(SIM_RIPE[kind], vec3(1.0, 0.95, 0.7), 0.3); w = 0.6; }
+	} else if (kind == SIM_BEANS) {
+		if (g >= 0.12) { row = g < 0.4 ? SIM_SPROUT : g < 0.75 ? SIM_LEAVES : mix(SIM_LEAVES, SIM_RIPE[0], 0.3); }
+		w = g < 0.4 ? 0.5 : 0.6;
+	} else {
+		soil = SIM_SOIL_DRY;
+		row = g < 0.12 ? SIM_VINE_BARE : SIM_VINE;
+	}
+	// the rows run along the field (sim_strip z: 0 long along x)
+	float across = (strip.z < 0.5 ? at.y : at.x) * SIM_FAR_ROWS;
+	float d = abs(fract(across) - 0.5);
+	float raa = 0.5 * fw_km / size * SIM_FAR_ROWS + 1e-5;
+	float on = 1.0 - smoothstep(w * 0.5 - raa, w * 0.5 + raa, d);
+	float spacing_px = size / SIM_FAR_ROWS / max(fw_km, 1e-6);
+	float show = smoothstep(SIM_FAR_ROW_PX * 0.5, SIM_FAR_ROW_PX, spacing_px);
+	vec3 mean = mix(soil, row, w);
+	vec3 c = mix(mean, mix(soil, row, on), show);
+	return mix(c, pasture, grass);
 }
 
 // Fields on open land (`land`, the terrain's landscape here), on the
@@ -76,8 +134,8 @@ vec3 sim_strip_rgb(vec2 cell, float size, vec4 f, bool built) {
 // quarter tile of the drawn terrain, and a sown or fallow one is grass
 // round the raised slab of crops or stubble that stands on it
 // (people_crops.gdshader), so the farmland is a mosaic of slabs with grass
-// edges. Further out the parcels of SIM_FAR_PARCEL_KM lie in the strip
-// fields of sim_strip_rgb, so the farmland still reads as fields round the
+// edges. Further out the same fields lie flat on the ground in their crops'
+// colours (sim_far_field), so the farmland still reads as fields round the
 // towns at 20-30 km. From SIM_FIELDS_KM the farmland is the terrain's own.
 const vec3 SIM_DIRT = vec3(0.3, 0.28, 0.225); // #888068 on screen: Urbek's field tracks (r11 Fix 5)
 const vec3 SIM_TRACK_RGB = vec3(0.42, 0.37, 0.29); // the ways people wear (sim_ways)
@@ -103,7 +161,8 @@ bool sim_slab_open(vec2 mid) {
 	return !sim_house_lot(mid) && sim_flat(mid) && (built || !sim_no_field(mid, land));
 }
 
-vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
+// `fw_km`: the size of a pixel at p (km).
+vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size, float fw_km) {
 	if (!sim_map_on || sim_fine_n == 0 || sim_view_km > SIM_FIELDS_KM) { return c; }
 	bool built = (sim_built(p) & SIM_B_FIELD) != 0; // a field the player built, on any land
 	if (land != G_FIELD && land != G_MEADOW && land != G_DRY_GRASS && !built) { return c; }
@@ -131,7 +190,7 @@ vec3 sim_fields(vec2 p, vec3 c, int land, float tile_size) {
 	int state = sim_parcel(cell, size, f);
 	if (state == 0 || (!built && sim_no_field(world_min + (cell + 0.5) * size, land))) { return pasture; }
 	if (crops) { return sim_slab_open(world_min + (cell + 0.5) * size) ? SIM_DIRT : meadow; }
-	return sim_strip_rgb(cell, size, f, built);
+	return sim_far_field(p, cell, size, state, f.b, fw_km, pasture);
 }
 
 // Distance from p to the market square on or next to the fine tile under

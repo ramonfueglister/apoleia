@@ -102,6 +102,7 @@ const vec3 C_PLAZA = vec3(0.640, 0.620, 0.580);  // travertine squares of the la
 const vec3 C_STREET = vec3(0.420, 0.404, 0.384); // Roman basalt paving
 const vec3 C_ROOF = vec3(0.580, 0.250, 0.190); // terracotta, not salmon or orange
 const vec3 C_WALL = vec3(0.686, 0.627, 0.522);
+const vec3 C_QUAY_WALL = vec3(0.57, 0.56, 0.53); // a town's bank over its quay (tile_coast_steps.gdshader C_KERB)
 const vec3 C_SEA = vec3(0.314, 0.541, 0.824);   // Urbek water, #6db3df on screen
 const vec3 C_SHORE = vec3(0.396, 0.643, 0.953);  // sea tiles that touch the land
 const vec3 C_INLAND = vec3(0.275, 0.498, 0.780); // rivers and lakes, a little darker than the sea
@@ -332,6 +333,16 @@ float steps_front(vec2 uv) {
 	return cs_steps_front(data_tile(), shore_sides >> 16, data_uv(uv)) * (sub_tiles ? 2.0 : 1.0);
 }
 
+// A sea tile with a town's quay (coast_steps.gdshaderinc) along a side.
+bool quay_tile() {
+	int steps = shore_sides >> 16;
+	if (steps == 0 || (steps & 4096) != 0 || water != W_SEA) { return false; }
+	for (int k = 0; k < 4; k++) {
+		if (((steps >> (3 * k)) & 7) != 0 && cs_quay(data_tile(), k)) { return true; }
+	}
+	return false;
+}
+
 // The wet half of a coast cut with a stair of steps on its diagonal.
 bool cut_stair() {
 	return ((shore_sides >> 16) & 4096) != 0;
@@ -358,11 +369,12 @@ float coast_wander(vec2 cell, vec2 p) {
 	return tt_noise((p + (cell - tile_uv) * tile_km) / COAST_BAY_KM);
 }
 
-// Surf along the coast up close, as in Islanders: a white band where the
-// sea meets the land and a thin second line that drifts out from it and
-// fades. Distance in tiles from the nearest land side or corner (on a coast
-// cut, from the diagonal; in front of steps, from their front), less
-// `reach`, the sand it breaks on; gone from 2 km tiles, where it would be a
+// Surf along the coast up close, as in Islanders: one thin white line where
+// the sea meets the land, breathing a little (Ramon 30.10.2026 "Dezenter":
+// Urbek has no surf at all, the second line that drifted out from it went).
+// Distance in tiles from the nearest land side or corner (on a coast cut,
+// from the diagonal; in front of steps, from their front), less `reach`,
+// the sand it breaks on; gone from 2 km tiles, where it would be a
 // hairline.
 const vec3 C_FOAM = vec3(0.900, 0.955, 1.000);
 vec3 shore_foam(vec3 c, vec2 p, float reach) {
@@ -383,13 +395,10 @@ vec3 shore_foam(vec3 c, vec2 p, float reach) {
 	if (d > 1.0) { return c; }
 	float aa = fwidth(d) + 1e-4;
 	float t = TIME + tt_hash(vec2(tile)) * 0.6; // neighbouring tiles a little out of step
-	float band = 0.07 + 0.025 * sin(t * 1.3);
+	float band = 0.035 + 0.01 * sin(t * 1.3);
 	float surf = 1.0 - smoothstep(band - aa, band + aa, d);
-	float phase = fract(t * 0.12);
-	float ring = 0.12 + 0.3 * phase;
-	float line = (1.0 - smoothstep(0.012, 0.012 + aa, abs(d - ring))) * (1.0 - phase) * 0.6;
 	float fade = 1.0 - smoothstep(1.0, 2.0, tile_km);
-	return mix(c, C_FOAM, max(surf * 0.85, line) * fade);
+	return mix(c, C_FOAM, surf * 0.7 * fade);
 }
 
 void fragment() {
@@ -405,15 +414,18 @@ void fragment() {
 	float rough = 1.0;
 	if ((water == W_SEA || water == W_LAKE || wet_tri == 1) && part == 0) {
 		// one flat colour per water tile, a lighter one where it touches the
-		// land. Up close the shallows are a band in voxel steps, wide off the
-		// coves and narrow off the headlands (the wet half of a coast cut is
-		// all shallow, it lies within the band), and in the coves sand lies
-		// at the foot of the shore, the surf breaking on it; where the shore
-		// comes down in steps (coast_steps.gdshaderinc), at their foot.
+		// land. Up close the shallows are a soft seam that fades into the sea,
+		// wide off the coves and narrow off the headlands (Ramon 30.10.2026
+		// "Dezenter": the band in voxel steps went; Urbek's water is one calm
+		// blue), the wet half of a coast cut lies within it, and in the coves
+		// sand lies at the foot of the shore, the surf breaking on it; where
+		// the shore comes down in steps (coast_steps.gdshaderinc), at their
+		// foot.
 		float far = far_share();
 		rough = 0.55;
 		if (water == W_SEA || (wet_tri == 1 && shore_lake == 0)) {
 			bool shallow = wet_tri == 1 || coast >= 1.0;
+			float seam = shallow ? 1.0 : 0.0; // how much of the shallows' colour
 			float shore_d = 10.0; // tile units from dry land at the cell's centre
 			float foot = 0.0;     // the sand's width there
 			float reach = 0.0;    // where it ends (on the cell edges)
@@ -423,17 +435,19 @@ void fragment() {
 				if (wet_tri == 1) {
 					vec2 tip = vec2(CORNER[cut_tip]);
 					shore_d = cut_stair() ? steps_front(cell) : -(abs(cell.x - tip.x) + abs(cell.y - tip.y) - 1.0) * 0.7071;
+					seam = 0.85;
 				} else {
 					int stepped = stepped_sides();
-					float front = steps_front(cell);
-					shallow = min(side_distance_at(shore_sides & 255 & ~stepped, cell), front) < mix(0.3, 0.95, wander);
-					shore_d = min(side_distance_at((shore_sides >> 8) & 255 & ~stepped, cell), front);
+					float out_d = min(side_distance_at(shore_sides & 255 & ~stepped, tile_uv), steps_front(tile_uv));
+					seam = 0.85 * (1.0 - smoothstep(0.03, mix(0.25, 0.6, tt_noise(p / COAST_BAY_KM)), out_d));
+					shore_d = min(side_distance_at((shore_sides >> 8) & 255 & ~stepped, cell), steps_front(cell));
 				}
-				foot = shore_d < 1.5 ? max(0.0, wander * 0.45 - 0.12) : 0.0;
+				// (none at the foot of a town's quay)
+				foot = shore_d < 1.5 && !quay_tile() ? max(0.0, wander * 0.45 - 0.12) : 0.0;
 				float n = round(tile_km / COAST_CELL_KM);
 				reach = max(0.0, ceil(foot * n - 0.5)) / n;
 			}
-			c = shallow ? mix(C_SHORE, C_SHORE_FAR, far) : mix(C_SEA, C_SEA_FAR, far);
+			c = mix(mix(C_SEA, C_SEA_FAR, far), mix(C_SHORE, C_SHORE_FAR, far), seam);
 			c = sim_lanes(p, c, length(fwidth(p)));
 			c = shore_foam(c, p, reach);
 			if (shore_d < foot) {
@@ -524,7 +538,8 @@ void fragment() {
 		}
 		// the farms' fields from the grain economy, up close
 		int land = tt_ground_at(tile, tile_uv);
-		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km); }
+		float fw_km = length(fwidth(p));
+		if (town == 0 && tile_km <= 1.0) { c = sim_fields(p, c, land, tile_km, fw_km); }
 		// up close the grass in patches, tufts and flowers (not the field tracks)
 		bool grassy = land == G_MEADOW || land == G_FIELD || land == G_DRY_GRASS || land == G_ALPINE || land == G_WETLAND;
 		if (tile_km <= 0.5 && town == 0 && grassy && distance(c, SIM_DIRT) > 0.01) { c = tt_grass(p, c); }
@@ -547,14 +562,29 @@ void fragment() {
 				float width = mix(0.1, 0.5, coast_wander(cell, p));
 				int steps = shore_sides >> 16;
 				bool rock = steps != 0 && (steps & 4096) == 0 && cs_headland(data_tile(), steps, data_uv(cell), sub_tiles ? width * 0.5 : width);
-				c = d < width && !rock ? mix(c, C_SAND, 0.85) : c;
+				// the edge to the grass in cells a quarter as big, frayed into
+				// pale patches as Urbek's (a staircase of whole cells along a
+				// coast cut's diagonal stood on screen as a row of teeth)
+				float n = round(tile_km / COAST_CELL_KM) * 4.0;
+				if (length(fwidth(tile_uv)) * n < 0.35) {
+					vec2 fine = (floor(tile_uv * n) + 0.5) / n;
+					float fd = side_distance_at(shore_sides & 255, fine);
+					if (shore_cut) {
+						vec2 tip = vec2(CORNER[cut_tip]);
+						fd = (abs(fine.x - tip.x) + abs(fine.y - tip.y) - 1.0) * 0.7071;
+					}
+					float fray = tt_hash(floor((p - world_min) / (tile_km / n)) * 0.37 + 5.1) - 0.5;
+					d = fd + fray * 0.07;
+				}
+				float sand = d < width - 0.025 ? 0.85 : d < width + 0.025 ? 0.45 : 0.0;
+				c = !rock ? mix(c, C_SAND, sand) : c;
 			} else {
 				float aa = fwidth(d) + 1e-4;
 				c = mix(c, C_SAND, (1.0 - smoothstep(0.26 - aa, 0.26 + aa, d)) * 0.85);
 			}
 		}
 		// the ways people wear and the markets of the grain economy
-		c = sim_ways(p, c, length(fwidth(p)));
+		c = sim_ways(p, c, fw_km);
 		// SimCity 2000 slope tiles come in one clear tone per side, with no
 		// gradient, matched to the west-south-west sun: slopes turned west
 		// light, east dark, south (the risers the camera sees head on) and
@@ -640,9 +670,11 @@ void fragment() {
 			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
 		}
 	} else {
-		// walls: one darker earth tone (sand at the coast, rock up high), no texture
+		// walls: one darker earth tone (sand at the coast, stone where a town
+		// stands over its quay, rock up high), no texture
 		float hm = tt_level_metres(world_pos.y / level_h);
 		vec3 base = water == W_SEA ? mix(C_SEA, C_SEA_FAR, far_share()) * 0.8 : (coast > 0.0 && body_level <= 3.0) ? C_BANK : C_EARTH;
+		if (water == W_LAND && coast >= 1.0 && tile_km <= 0.5 && tt_town(tile) >= 2) { base = C_QUAY_WALL; }
 		if (water == W_LAND && hm > 1200.0) { base = C_CLIFF; }
 		// lit like the ramps: light on the walls facing the camera, darker
 		// the more a wall turns east
