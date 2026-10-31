@@ -69,6 +69,7 @@ vec4 dot_record(ivec2 px) {
 // the same pixel as the record.
 uniform sampler2D person_look_tex : filter_nearest, repeat_disable;
 uniform bool has_person_looks = false;
+const int DOT_LOOK_COOKS = 1;
 const int DOT_LOOK_HARVEST = 4;
 const int DOT_LOOK_SOWING = 8;
 const int DOT_LOOK_FARM = 16;

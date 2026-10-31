@@ -31,6 +31,7 @@ const BuildMenu = preload("res://scripts/build_menu.gd")
 const GameClock = preload("res://scripts/sim/game_clock.gd")
 const MarketWindow = preload("res://scripts/sim/market_window.gd")
 const FarmWindow = preload("res://scripts/sim/farm_window.gd")
+const Keys = preload("res://scripts/ui/keys.gd")
 const PauseMenu = preload("res://scripts/ui/pause_menu.gd")
 const SaveGames = preload("res://scripts/ui/save_games.gd")
 const EARTH_KM := 6371.0088
@@ -517,14 +518,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMagnifyGesture:
 		_zoom_at(event.factor, event.position)
 	elif event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_PLUS, KEY_EQUAL, KEY_KP_ADD: _zoom_at(ZOOM_STEP * ZOOM_STEP, get_viewport().get_visible_rect().size * 0.5)
-			KEY_MINUS, KEY_KP_SUBTRACT: _zoom_at(1.0 / (ZOOM_STEP * ZOOM_STEP), get_viewport().get_visible_rect().size * 0.5)
+		if Keys.pressed(event, "apoleia_zoom_in"):
+			_zoom_at(ZOOM_STEP * ZOOM_STEP, get_viewport().get_visible_rect().size * 0.5)
+		elif Keys.pressed(event, "apoleia_zoom_out"):
+			_zoom_at(1.0 / (ZOOM_STEP * ZOOM_STEP), get_viewport().get_visible_rect().size * 0.5)
 
 func _process(delta: float) -> void:
 	var keys := Vector2(
-		Input.get_axis("ui_left", "ui_right") + float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
-		Input.get_axis("ui_up", "ui_down") + float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W)))
+		Input.get_axis("ui_left", "ui_right") + float(Keys.held("apoleia_right")) - float(Keys.held("apoleia_left")),
+		Input.get_axis("ui_up", "ui_down") + float(Keys.held("apoleia_down")) - float(Keys.held("apoleia_up")))
 	if keys != Vector2.ZERO and not (get_viewport().gui_get_focus_owner() is LineEdit): # typing in the tables' search
 		_pan_pixels(-keys.normalized() * 900.0 * delta)
 	var k := 1.0 - exp(-SETTLE * delta)
