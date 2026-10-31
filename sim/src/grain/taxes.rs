@@ -371,22 +371,37 @@ impl Grain {
         self.events.push(crate::events::Event { day, kind: crate::events::AUCTION, household: id, pid: NONE, cell, to: NONE, fine, other: best.1, amount: price / 1000 });
     }
 
+    /// Who pays farm `f`'s taxes: its household, but an estate's lord, to
+    /// whom the estate's grain and its money belong (the arrival of a sale
+    /// pays him, `arrive`), as the owner answered for the taxes of his
+    /// land and his coloni in late Rome (Jones, 1964) and the lord for his
+    /// serfs later.
+    fn payer(&self, f: usize, id: u32) -> u32 {
+        let fm = &self.farms[f];
+        if fm.kind == ESTATE && fm.landlord != NONE && self.hh.contains_key(&fm.landlord) {
+            fm.landlord
+        } else {
+            id
+        }
+    }
+
     /// After farm `f`'s harvest: the year's Grundsteuer and Kopfsteuer of
-    /// its household `id` come due, after the Pfändung or Zwangsversteigerung
-    /// of old arrears. `keep` is the food until the next harvest and the
-    /// seed, kg. Returns what the household still owes.
+    /// its household `id` come due (to its `payer`), after the Pfändung or
+    /// Zwangsversteigerung of old arrears. `keep` is the food until the next
+    /// harvest and the seed, kg. Returns what the payer still owes.
     pub(super) fn farm_taxes(&mut self, f: usize, id: u32, day: i64, keep: i64) -> i64 {
         if self.law[LAND] == 0 && self.law[HEAD] == 0 && self.arrears.is_empty() {
             return 0;
         }
         let mk = self.farms[f].market as usize;
-        self.enforce(id, Some(f), mk, keep, day);
+        let payer = self.payer(f, id);
+        self.enforce(payer, Some(f), mk, keep, day);
         if self.farms[f].hh != id {
             return 0;
         }
         let (land, head) = (self.land_due(f), self.head_due(id, mk));
-        self.assess(id, land, head, day);
-        self.pay_arrears(id, mk)
+        self.assess(payer, land, head, day);
+        self.pay_arrears(payer, mk)
     }
 
     /// A farm that owes taxes sells grain for them: as much as pays them at
