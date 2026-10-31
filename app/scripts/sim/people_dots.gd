@@ -341,6 +341,7 @@ func setup(tile_terrain: Node3D) -> bool:
 	add_child(_crops)
 	_trips = PeopleTrips.new()
 	_trips.setup(people, TileTerrain.DIORAMA_KM_PER_M)
+	_trips.route.plans = terrain.plans # the town streets the travellers walk (walk_route.gd)
 	add_child(_trips)
 	_life = HouseLife.new()
 	_life.setup(TileTerrain.DIORAMA_KM_PER_M, _house_list_tex, LIST_W) # the house mesh's metres
@@ -677,6 +678,9 @@ func _update_map() -> void:
 				_way_tex = ImageTexture.create_from_image(win.ways)
 			else:
 				_way_tex.update(win.ways)
+			# the travellers walk these ways and the town streets (walk_route.gd)
+			_trips.route.set_ways(win.ways, win.origin, win.tile_km)
+			_trips.route.plans = terrain.plans
 		for m in mats:
 			m.set_shader_parameter("sim_fine_tex", _map_tex)
 			m.set_shader_parameter("sim_way_tex", _way_tex)
