@@ -174,19 +174,25 @@ const LANDMARK_PLAN_REACH := 0.9
 const PLAN_STREET_TOWN := [1, 2, 3, 4, 6, 7]
 const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
 # Rome's great buildings on blocks of city tiles, drawn while the houses are
-# (the two nearest levels). The arena (Rome's amphitheatre sized for its
-# users in the sim, voxel/roman_arena.gd, SCALE.md rule A), the Forum (with
-# the Capitolium), the baths, the Pantheon and the Circus Maximus are the
-# Roman town's models ("kit:", voxel/roman_buildings.gd) at the houses'
-# diorama scale, so their voxels match the lots: the arena is 25 x 18.5 m,
-# about 0.6 km; the city plan gives it the parcels it needs, so it is not
-# shrunk to its block. The others were drawn before rule A and are shrunk
-# to theirs. Without the plans the blocks keep the order of the real city
-# but not its distances: the Forum west of the arena, the baths on the
-# hill north of it, the Circus Maximus to the south, the Pantheon in the
-# Campus Martius by the river. Other shapes (the bridges, tile_prop_meshes.gd)
-# stand at LANDMARK_KM_PER_M (6 times their real size) and a half higher
-# again (LANDMARK_RISE). Each block is snapped to the 0.5 km tiles around its
+# (the two nearest levels). The arena (the Colosseum), the circus, the
+# theatre of Marcellus and the baths are compressed by the landmark rule
+# (SCALE.md; voxel/roman_arena.gd, voxel/roman_landmarks.gd): against the
+# houses at their true size a landmark's area grows with the cube root of
+# its real area, its height with the cube root above 16 m, so the Colosseum
+# is 30.7 x 25.4 m and 23 m high, above every house. These, the Forum (with
+# the Capitolium) and the Pantheon are the Roman town's models ("kit:",
+# voxel/roman_buildings.gd) at the houses' diorama scale, so their voxels
+# match the lots; the city plan gives the four by the rule the parcels they
+# need, so they are not shrunk to their block. The Forum and the Pantheon
+# were drawn before the rule and are shrunk to theirs. Without the plans
+# the blocks keep the order of the real city but not its distances: the
+# Forum west of the arena, the baths on the hill north of the arena, the
+# Circus Maximus to the south, the Pantheon in the Campus Martius by the
+# river; the theatre (west of the Forum by the river in Rome, where the
+# Forum's large block leaves no room) in the strip between the Forum and
+# the arena. Other shapes (the bridges, tile_prop_meshes.gd) stand at
+# LANDMARK_KM_PER_M (6 times their real size) and a half higher again
+# (LANDMARK_RISE). Each block is snapped to the 0.5 km tiles around its
 # place.
 const LANDMARK_KM_PER_M := 0.006
 const LANDMARK_RISE := 1.5
@@ -194,11 +200,12 @@ const LANDMARK_TILE_KM := 0.5
 const LANDMARKS := [
 	# mesh, block centre (lon, lat), block size in tiles, free ground around
 	# the building (km)
-	["kit:arena", Vector2(12.5065, 41.8894), Vector2i(2, 1), 0.05],
+	["kit:arena", Vector2(12.5065, 41.8894), Vector2i(2, 2), 0.05],
 	["kit:forum", Vector2(12.4854, 41.8917), Vector2i(3, 3), 0.05],
 	["kit:baths", Vector2(12.5065, 41.9010), Vector2i(2, 1), 0.05],
 	["kit:pantheon", Vector2(12.4810, 41.9060), Vector2i(2, 2), 0.05],
-	["kit:circus", Vector2(12.4870, 41.8745), Vector2i(4, 2), 0.05],
+	["kit:circus", Vector2(12.4870, 41.8745), Vector2i(4, 1), 0.05],
+	["kit:theatre", Vector2(12.4974, 41.8905), Vector2i(1, 2), 0.05],
 	# two Tiber bridges on the river tiles by the Capitol and in the north
 	["bridge", Vector2(12.4734, 41.8872), Vector2i(1, 1), 0.0],
 	["bridge", Vector2(12.4734, 41.9142), Vector2i(1, 1), 0.0],

@@ -24,9 +24,10 @@ Hausrat, Wagen, Boot, Feld einer Familie. Weil Fläche und Menschen im selben
 Verhältnis schrumpfen, hat jeder Mensch gleich viel Land wie damals; die Anteile
 von Feld, Wald, Weide und Ödland bleiben gleich.
 
-**Gemeinschaftsbauten** (Forum, Tempel, Thermen, Arena, Hafen, Lager) werden nach
-ihrer Nutzerzahl bemessen, nicht nach ihrer echten Grösse. Das Kolosseum (50'000
-Plätze) wird zu einer Arena mit etwa 90 Plätzen.
+**Gemeinschaftsbauten** (Forum, Tempel, Thermen, Arena, Hafen, Lager) haben so
+viele Nutzer, wie die Sim schickt: Im Kolosseum (50'000 Plätze) sitzen etwa 90.
+Ihre **Grösse** folgt bei Wahrzeichen der Wahrzeichenregel (S136, unten): selektiv
+verdichtet, grösser als jedes Haus, in der echten Reihenfolge; leere Plätze bleiben leer.
 
 ## Eckwerte
 
@@ -115,8 +116,8 @@ Weltkoordinaten im Code sind echte km; «Diorama-m» = Welt-m × 0,0238
 | Höhe | 1 : 23,8, nah 7,5-fach, fern Stufe 0,6 km | Alpen ≈ 6 km Welt | ETOPO | `NEAR_EXAGGERATION`, `FAR_LEVEL_KM` | stimmt (#105, #112) |
 | Stadtfläche | Fläche 1 : 566,5 wie Menschen | Rom ≈ 13 km² Welt, ≈ 250 Häuser | Stadtplan `area_ha`, Sim-Einwohner | `build_tile_terrain.py settlements` | stimmt (#110) |
 | Stadtzeichen fern | Zeichen, kein Massstab | ein Hauslos 9 px | Einwohner 117 | `city_markers.gd` | so entschieden (Bauplan B) |
-| Gemeinschaftsbau (Arena, Thermen, Circus, Theater) | nach Nutzern in der Sim, in Menschenproportionen | Kolosseum 50'000 ÷ 566,5 ≈ 90 Plätze | Sim-Einwohner der Stadt | `voxel/roman_*.gd`, `city_plans.py` | **Arena Roms umgebaut (Regel A):** Grundfläche nach 88 Nutzern (50'000 ÷ 566,5), Bauform des Kolosseums in Menschenproportionen: 25 × 18,5 m, drei Bogenreihen zu 4 m und Attika, 15 m hoch (Haus 9 m), Bögen 1,5 m, Stufen 0,5 m; 88 Zuschauer so gross wie die Figuren, übrige Stufen leer (`voxel/roman_arena.gd`, Ramon 31.10.: das Kolosseum muss höher sein als die Häuser); im Stadtplan 3 × 2 Parzellen (`city_plans.py USER_SIZED_M`). **Weichen noch ab:** Thermen, Circus, Theater (Kit-Modell auf den Planblock geschrumpft, Stadtplan echte Grundfläche ×2,5, `LANDMARK_GROW`); Amphitheater anderer Städte (`plan_amphitheatre`, ein Los) |
-| Tempel, Forum | nach Nutzern | – | – | `city_plans.py` | **weicht ab** wie oben, folgt nach der Arena |
+| Wahrzeichen (Arena, Thermen, Circus, Theater) | Wahrzeichenregel (S136): Fläche und Höhe gegen das Haus mit der Kubikwurzel verdichtet, Form, Türen, Sitze, Menschen echt; Nutzer aus der Sim | Kolosseum 30,7 × 25,4 m, 23 m; 88 Zuschauer | Sim-Einwohner der Stadt | `voxel/roman_arena.gd`, `voxel/roman_landmarks.gd`, `city_plans.py USER_SIZED_M` | **stimmt für Rom:** Kolosseum, Caracalla-Thermen, Marcellustheater, Circus Maximus (Tabelle unten). **Weichen noch ab:** Amphitheater, Theater, Thermen und Circus anderer Städte (`plan_*`, ein Los), Schritt 2 |
+| Tempel, Forum, Pantheon | Wahrzeichenregel (S136) | – | – | `voxel/roman_town.gd`, `city_plans.py` | **weicht ab:** ältere Kit-Modelle, auf den Planblock geschrumpft (Stadtplan echte Grundfläche ×2,5, `LANDMARK_GROW`), Schritt 2 |
 | Brücke ohne Stadtplan | Breite ihres Verkehrs | – | – | `LANDMARK_KM_PER_M` 6-fach | **weicht ab**, nur ohne Stadtpläne sichtbar |
 | Landstrasse | Breite ihres Verkehrsmittels | 4 m | Strassen-Lose (S116) | `road_view.gd ROAD_KM` | stimmt |
 | Trampelpfad | aus dem Gehen, 8 Stufen | bis 0,042 Welt-km | Wegabnutzung (S70) | `sim_fields SIM_WAY_KM` | stimmt |
@@ -126,6 +127,46 @@ Weltkoordinaten im Code sind echte km; «Diorama-m» = Welt-m × 0,0238
 | Marktstände | Menschengrösse um den Platz | 85–95 Welt-m vom Platzmittel ≈ 4 m Diorama | Marktplatz der Sim | `people_trips.gd STALLS` | stimmt |
 | Wetter | Grösse und Zug 1 : 23,8, Dauer echt | – | – | `weather/` | **weicht ab** laut Bericht 31.10. (nicht verkleinert), prüfen |
 | Kalender, Tag, Sonne | 1 : 1 | – | – | `day_clock.gd` | stimmt |
+
+## Wahrzeichenregel (S136, Ramon 31.10.2026)
+
+Ramon: «das Kolosseum muss auch in der Spielwelt massstäblich grösser sein als das
+Haus» und «das riesige Rom in einer Mini-Variante, die begreifbar ist, … zugleich
+die Grössenverhältnisse adaptiert wiedergeben». Mit Häusern in echter Grösse und
+Roms Fläche 1 : 566,5 passt ein Kolosseum im echten Verhältnis (19 Häuser lang)
+nicht in die Stadt, eines nach Nutzern (88 Plätze) wäre kleiner als ein Haus.
+Darum **selektive Verdichtung**, wie Modellbahnen (Verducci 2010), Touristenkarten
+(Grabler et al. 2008) und Stadtmodelle (Glander & Döllner 2008) sie machen
+(Literatur: https://claude.ai/artifact/1gWXz2MKsPEHxHTvaNSh3U):
+
+- Häuser, Menschen, Tiere, Türen, Bögen, Stufen und Sitze bleiben **echt gross**.
+- Ein Wahrzeichen behält **seine Form** (Seitenverhältnis, Geschosse, Bauteile).
+- Gegen das Haus (Los 10 m = 100 m², höchstes Haus 16 m):
+  Fläche = 100 m² × (echte Fläche / 100 m²)^(1/3),
+  Höhe = 16 m × (echte Höhe / 16 m)^(1/3), sobald die echte Höhe über 16 m liegt.
+- Auf den Rängen sitzen so viele, wie die Sim schickt (echte Plätze ÷ 566,5);
+  die übrigen Plätze bleiben leer.
+
+Damit stehen alle Wahrzeichen über dem höchsten Haus, und ihre Reihenfolge stimmt.
+Längenverhältnis Kolosseum zu Haus: echt 19, im Spiel 3; Höhe echt 3, im Spiel 1,4.
+
+| Bau | echt | im Spiel | Höhe echt → Spiel | in der Sim | Plan Rom | Code |
+|---|---|---|---|---|---|---|
+| Kolosseum | 188 × 156 m (Oval) | 30,7 × 25,4 m, Arena 13,5 × 7,8 m, drei Bogengeschosse zu 5,5 m, Attika 6 m | 48 → 23 m | 88 Zuschauer | 4 × 3 Parzellen | `roman_arena.gd` |
+| Thermen des Caracalla | 214 × 110 m | 34,7 × 17,5 m, Frigidarium 19,9 m | Kuppel 38,5 → 21,4 m | 3 Badende | 4 × 2 | `roman_landmarks.gd baths` |
+| Marcellustheater | Ø 130 m | Ø 28 m, zwei Bogengeschosse zu 7 m und Attika, Bühne im Westen | 32,6 → 20,3 m | 26 Zuschauer, 3 Schauspieler | 3 × 4 | `roman_landmarks.gd theatre` |
+| Circus Maximus | 621 × 118 m | 69 × 13 m, drei Bogengeschosse zu 6 m, Obelisk 18 m | 28 → 19,3 m | 265 Zuschauer, 4 Gespanne | 8 × 2 | `roman_landmarks.gd circus` |
+| höchstes Haus (Insula) | – | Los 10 m | 16 m | ein Haushalt je Geschoss | 1 | `roman_town.gd` |
+
+Der Stadtplan setzt diese vier zuerst und schiebt sie bis 6 Parzellen von ihrem
+echten Ort, wenn dort Wasser oder Mauer ist (der Circus liegt darum 0,75 km östlich
+seines Tals); Bauten, deren Platz sie nehmen, weichen bis 4 Parzellen aus. Roms
+Mitte trägt damit mehr Wahrzeichen und weniger Häuser (Wohnparzellen 87 → 66).
+Vorschaubilder: `/mnt/project-files/groessen/ein-massstab/diorama-uebersicht.jpg`,
+`diorama-nah.jpg`, Zwillinge in Python `vorschau-code/` (vd.py).
+
+**Schritt 2 (offen):** Forum, Pantheon, Tempel, Brücken (`LANDMARK_KM_PER_M`),
+Amphitheater, Theater, Thermen und Circus anderer Städte nach derselben Regel.
 
 ## Zoom (Bauplan B, Ramon 31.10.2026)
 

@@ -64,13 +64,17 @@ LANDMARK_GROW = 2.5
 LANDMARK_FROM_M = 100
 LANDMARK_LONG_M = 500  # grown no longer than this (two parcels at scale 1)
 LANDMARK_KINDS = {"amphitheatre", "circus", "baths", "palace", "theatre", "stadium", "temple", "forum", "market", "tomb"}
-# Buildings sized for the people who use them in the sim (docs/kit2/SCALE.md
-# S51, Ramon 31.10.2026: «wir sind ein Diorama, alles muss geschrumpft sein»):
-# their own model's footprint in diorama metres (keep in step with
-# app/scripts/voxel/roman_arena.gd), drawn at the diorama scale, so they get
-# as many parcels as the model needs with the free strip tile_terrain.gd
-# leaves round it (LANDMARK_PLAN_REACH), not their real size grown.
-USER_SIZED_M = {"arena": (25.0, 18.5)}
+# Landmarks compressed by the landmark rule (docs/kit2/SCALE.md, Ramon
+# 31.10.2026: Rome as a graspable diorama, the size relations kept in adapted
+# form): their own model's footprint in diorama metres, east-west and
+# north-south (keep in step with app/scripts/voxel/roman_arena.gd and
+# roman_landmarks.gd), drawn at the diorama scale, so they get as many
+# parcels as the model needs with the free strip tile_terrain.gd leaves round
+# it (LANDMARK_PLAN_REACH), not their real size grown. They are placed first
+# and may move up to USER_SIZED_REACH parcels from their real place to find
+# room; the buildings after them move round them.
+USER_SIZED_M = {"arena": (31.75, 26.5), "baths": (35.25, 17.5), "theatre": (19.0, 29.0), "circus": (70.0, 14.0)}
+USER_SIZED_REACH = 6
 DIORAMA_KM_PER_M = 0.0238
 LANDMARK_PLAN_REACH = 0.9
 # building kinds that streets may cross (open squares)
@@ -184,12 +188,21 @@ FAMOUS = {"Amphitheatrum Flavium", "Forum Romanum", "Circus Maximus", "Thermae A
           "Thermae Diocletiani", "Palatium", "Forum Traiani", "Capitolium (Iuppiter Optimus Maximus)"}
 
 
+def ruled_model(plan, b):
+    """The landmark model by the rule (USER_SIZED_M) a building of Rome is
+    drawn with, else None: the game draws these models only in Rome
+    (tile_terrain.gd), so a namesake elsewhere (Carthage's Thermae
+    Antoninianae) keeps its plan size."""
+    model = LANDMARK_MODELS.get(b["name"])
+    return model if model in USER_SIZED_M and plan.data.get("id") == "rome" else None
+
+
 def parcel_size(plan, b):
     """A building's extent in km along the parcel axes (grown if a
     landmark): its long side runs east-west unless turned more than 45
     degrees."""
-    model = LANDMARK_MODELS.get(b["name"])
-    if model in USER_SIZED_M:
+    model = ruled_model(plan, b)
+    if model:
         # the model stands unturned on its parcels (tile_terrain.gd LANDMARKS)
         return tuple(math.ceil(m * DIORAMA_KM_PER_M / LANDMARK_PLAN_REACH / PARCEL_KM) * PARCEL_KM
                      for m in USER_SIZED_M[model])
@@ -335,9 +348,12 @@ def build(data, scale, margin=6, terrain=None, hook=None):
                 if (wall_cells[k, 0] - r) ** 2 + (wall_cells[k, 1] - q) ** 2 <= 4:
                     kind[tuple(wall_cells[k])] = K["gate"]
 
-    # buildings as rectangles of parcels at their place, the landmarks and
-    # the big ones first; one that finds its place taken moves to the
-    # nearest free one within two parcels, or merges into its neighbour
+    # buildings as rectangles of parcels at their place: the landmarks by
+    # the rule first (in USER_SIZED_M's order), each moving to the nearest
+    # free place within USER_SIZED_REACH parcels; then the other landmarks
+    # and the big ones; one that finds its place taken moves to a free one
+    # within two parcels (four where a landmark by the rule took it), or is
+    # left out
     blocked = (K["water"], K["wall"], K["gate"], K["bridge"], K["building"], K["plaza"])
 
     def rect(b):
@@ -353,15 +369,27 @@ def build(data, scale, margin=6, terrain=None, hook=None):
             return False
         return not np.isin(kind[r0:r0 + b_, q0:q0 + a_], blocked).any()
 
+    ruled = list(USER_SIZED_M)
+
+    def rank_of(b):
+        model = ruled_model(plan, b)
+        if model:
+            return 0, ruled.index(model)
+        return 1 + (not b.get("landmark", False) and b["name"] not in FAMOUS), 0
+
     order = sorted(range(len(data.get("buildings", []))),
-                   key=lambda k: (not data["buildings"][k].get("landmark", False) and data["buildings"][k]["name"] not in FAMOUS,
-                                  -np.prod(data["buildings"][k]["size_m"])))
+                   key=lambda k: (rank_of(data["buildings"][k]), -np.prod(data["buildings"][k]["size_m"])))
+    taken = np.zeros((h, w), bool)  # parcels of the landmarks by the rule
     for k in order:
         b = data["buildings"][k]
         q0, r0, a_, b_ = rect(b)
         spot = None
-        for d in range(3):
+        own = rank_of(b)[0] == 0
+        reach = USER_SIZED_REACH if own else (4 if taken[max(r0, 0):r0 + b_, max(q0, 0):q0 + a_].any() else 2)
+        for d in range(reach + 1):
             cands = [(q0 + dq, r0 + dr) for dq in range(-d, d + 1) for dr in range(-d, d + 1) if max(abs(dq), abs(dr)) == d]
+            if own:
+                cands.sort(key=lambda c: (c[0] - q0) ** 2 + (c[1] - r0) ** 2)
             for q1, r1 in cands:
                 if fits(q1, r1, a_, b_):
                     spot = (q1, r1)
@@ -372,6 +400,8 @@ def build(data, scale, margin=6, terrain=None, hook=None):
             continue
         kind[spot[1]:spot[1] + b_, spot[0]:spot[0] + a_] = K["plaza"] if b["kind"] in OPEN_BUILDINGS else K["building"]
         bld[spot[1]:spot[1] + b_, spot[0]:spot[0] + a_] = k
+        if own:
+            taken[spot[1]:spot[1] + b_, spot[0]:spot[0] + a_] = True
 
     # streets, main ones first; a street stops at a closed building and goes on
     # beyond it (people walk round the Colosseum)
@@ -761,7 +791,7 @@ MODELS = ["", "amphitheatre", "forum", "baths", "temple", "circus", "theatre", "
           "fort", "warehouse", "harbour", "tomb", "stadium", "portico", "agora", "spoil"]
 # named buildings that are tile_terrain.gd LANDMARKS (their own models)
 LANDMARK_MODELS = {"Amphitheatrum Flavium": "arena", "Forum Romanum": "forum", "Thermae Antoninianae": "baths",
-                   "Pantheon": "pantheon", "Circus Maximus": "circus"}
+                   "Pantheon": "pantheon", "Circus Maximus": "circus", "Theatrum Marcelli": "theatre"}
 # storeys of the houses (B bits 0-5), own rule: insulae 4-5, houses 2-3 in big
 # cities, domus 1-2
 STOREYS = {"insula": (4, 5), "house": (2, 3), "domus": (1, 2)}
