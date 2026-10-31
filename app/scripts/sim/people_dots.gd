@@ -71,6 +71,7 @@ const LIST_W := 128 # width of the slot list texture
 const ROAD_CODE := 8192.0 # record area codes (people_dots_common.gdshaderinc DOT_ROAD, DOT_AT_LOT)
 const AT_LOT_CODE := 12288.0
 const ROUTE_W := 32 # texels per figure in the field way texture: its count and length, then its points
+const ROUTE_BUDGET_USEC := 2000 # time a frame may spend on new field ways (a search each); the rest follow next frame
 const Farmhouse = preload("res://scripts/voxel/farmhouse.gd")
 const VoxelMesh = preload("res://scripts/voxel/voxel_mesh.gd")
 const SimTables = preload("res://scripts/sim/sim_tables.gd")
@@ -210,7 +211,8 @@ var _route_tex: ImageTexture
 var _route_km := {} # slot -> the length of its field way from the village (for «Heute»)
 var _figure_slots := PackedInt32Array() # the slots of the figure list
 var _routes_dirty := false
-var _route_rows := {} # slot -> its row (count, km, points) or an empty one, until the fields or the ways change
+var _route_rows := {} # slot -> its row (count, km, points; ROUTE_W * 2 floats) or the empty one, until the fields or the ways change
+var _no_route := PackedFloat32Array() # the row of a figure without a field way (ROUTE_W * 2 zeros)
 var _list_tex: ImageTexture
 var _list_at := Vector3.INF # centre x, z and radius of the current list
 var prep_runs := 0
@@ -772,6 +774,8 @@ func _update_figures(view_km: float, synced: bool) -> void:
 	var centre := Vector2(_list_at.x, _list_at.y)
 	var radius := _list_at.z
 	var slots: PackedInt32Array = people.near(centre.x, centre.y, radius, FIGURE_MAX)
+	if slots == _figure_slots:
+		return # the same figures: no upload, and their field ways stand
 	var values := PackedFloat32Array()
 	values.resize(FIGURE_MAX)
 	for i in slots.size():
@@ -1161,27 +1165,37 @@ func _sync_person_fields() -> void:
 ## tells, the way from its village over the worn network to the field
 ## (walk_route.gd field_route); the shader adds the part from the figure's
 ## spot round its house to the lanes and the last step into the field.
-## Ways are kept per pair of tiles, so a list costs a few searches.
+## Ways are kept per pair of tiles, so a list costs a few searches. The
+## rows are kept at their full width and joined whole (a loop over every
+## float of 16 384 figures took tens of ms on each new list); new ways get
+## ROUTE_BUDGET_USEC a frame, so a new map window (all ways anew) does not
+## stall one frame: the figures still without a way get it the next.
 func _update_field_routes() -> void:
 	if not _routes_dirty or _route_tex == null:
 		return
-	_routes_dirty = false
+	var start := Time.get_ticks_usec()
+	var stride := ROUTE_W * 2
+	if _no_route.size() != stride:
+		_no_route.resize(stride)
+		_no_route.fill(0.0)
 	var floats := PackedFloat32Array()
-	floats.resize(ROUTE_W * FIGURE_MAX * 2)
 	var lot_min: Vector2 = terrain.world_min
+	var done := true
 	for i in _figure_slots.size():
 		var slot := _figure_slots[i]
+		var row: PackedFloat32Array = _route_rows.get(slot, _no_route)
 		if not _route_rows.has(slot):
-			if _route_rows.size() > 60000:
-				_route_rows.clear()
-				_route_km.clear()
-			_route_rows[slot] = _field_route_row(slot, lot_min)
-		var row: PackedFloat32Array = _route_rows[slot]
-		if row.is_empty():
-			continue
-		var o := i * ROUTE_W * 2
-		for k in row.size():
-			floats[o + k] = row[k]
+			if Time.get_ticks_usec() - start < ROUTE_BUDGET_USEC:
+				if _route_rows.size() > 60000:
+					_route_rows.clear()
+					_route_km.clear()
+				row = _full_row(_field_route_row(slot, lot_min), stride)
+				_route_rows[slot] = row
+			else:
+				done = false
+		floats.append_array(row)
+	_routes_dirty = not done
+	floats.resize(stride * FIGURE_MAX) # past the list: never read
 	_route_image.set_data(ROUTE_W, FIGURE_MAX, false, Image.FORMAT_RGF, floats.to_byte_array())
 	_route_tex.update(_route_image)
 
@@ -1439,6 +1453,17 @@ func _field_route_row(slot: int, lot_min: Vector2) -> PackedFloat32Array:
 		row.append(p.x)
 		row.append(p.y)
 	_route_km[slot] = km + Vector2(rec[0], rec[1]).distance_to(pts[0]) + pts[pts.size() - 1].distance_to(field)
+	return row
+
+## `row` (_field_route_row) at `stride` floats, zeros after it; the empty
+## row for none.
+func _full_row(row: PackedFloat32Array, stride: int) -> PackedFloat32Array:
+	if row.is_empty():
+		return _no_route
+	var n := row.size()
+	row.resize(stride)
+	for k in range(n, stride):
+		row[k] = 0.0
 	return row
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
