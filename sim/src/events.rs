@@ -31,8 +31,15 @@ pub const WEDDING: u8 = 13;
 /// A death of old age, illness or in childbirth (`amount` the age in years;
 /// hunger deaths are HUNGER_DEATH).
 pub const DEATH: u8 = 14;
+/// S131: the Pfändung of a household for its Steuerrückstand (`amount` the
+/// money and grain taken, denarii); the Zwangsversteigerung of its farm
+/// (`other` the buyer, `amount` the price, denarii); a farm without a
+/// bidder falls to the state (`amount` the arrears written off, denarii).
+pub const SEIZURE: u8 = 15;
+pub const AUCTION: u8 = 16;
+pub const DOMAIN: u8 = 17;
 
-pub const NAMES: [&str; 15] = [
+pub const NAMES: [&str; 18] = [
     "Hungertod",
     "Umzug",
     "Verlässt die Karte",
@@ -48,6 +55,9 @@ pub const NAMES: [&str; 15] = [
     "Geburt",
     "Hochzeit",
     "Todesfall",
+    "Pfändung",
+    "Zwangsversteigerung",
+    "Hof fällt an die Domäne",
 ];
 
 /// Days an event is kept.

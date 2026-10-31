@@ -17,6 +17,11 @@
 //! Carrying the orders out (S113) is Grain::build_day (grain/sites.rs):
 //! day labourers build them, paid the market wage in denarii from the
 //! treasury; a finished order is taken off (`finish`).
+//!
+//! S131: a change of a tax law's level (`Command::Law`) is a command too,
+//! logged like an order; the game hands it to the grain economy
+//! (`Grain::set_law`), so a save played again sets the same laws on the
+//! same days.
 
 use crate::save::{In, Out, SaveError};
 use std::collections::BTreeMap;
@@ -55,15 +60,25 @@ pub struct Order {
 pub enum Command {
     Place { kind: u8, tiles: Vec<Tile> },
     Cancel { tiles: Vec<Tile> },
+    /// S131: tax law `law` (crate::grain::LAW_NAMES) to `level`
+    /// (crate::grain::LEVEL_NAMES).
+    Law { law: u8, level: u8 },
 }
 
 impl Command {
     /// Appends the command to a save (crate::game): tag (0 place, 1
-    /// cancel), kind, tile count, then rows and columns.
+    /// cancel), kind, tile count, then rows and columns; a law: tag 2,
+    /// law, level.
     pub(crate) fn write(&self, o: &mut Out) {
         let (tag, kind, tiles) = match self {
             Command::Place { kind, tiles } => (0, *kind, tiles),
             Command::Cancel { tiles } => (1, 0, tiles),
+            Command::Law { law, level } => {
+                o.u8(2);
+                o.u8(*law);
+                o.u8(*level);
+                return;
+            }
         };
         o.u8(tag);
         o.u8(kind);
@@ -76,6 +91,10 @@ impl Command {
 
     pub(crate) fn read(r: &mut In) -> Result<Command, SaveError> {
         let (tag, kind) = (r.u8()?, r.u8()?);
+        if tag == 2 {
+            let level = r.u8()?;
+            return if (kind as usize) < crate::grain::LAWS && (level as usize) < crate::grain::LAW_LEVELS { Ok(Command::Law { law: kind, level }) } else { Err(SaveError::Corrupt("unknown law")) };
+        }
         let n = r.count(8)?;
         let tiles = r.col(n, |r| Ok((r.i32()?, r.i32()?)))?;
         match tag {
@@ -119,6 +138,8 @@ impl Orders {
                     }
                 }
             }
+            // logged only; the game sets the law (`Game::command`)
+            Command::Law { .. } => {}
         }
         if changed > 0 {
             self.version += 1;
@@ -188,7 +209,7 @@ mod tests {
 
     #[test]
     fn commands_read_back() {
-        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
+        let cmds = [Command::Place { kind: ROAD, tiles: vec![(-4, 7), (-4, 8)] }, Command::Cancel { tiles: vec![] }, Command::Law { law: 1, level: 5 }, Command::Place { kind: FARM, tiles: vec![(0, 0)] }];
         let mut o = Out(Vec::new());
         cmds.iter().for_each(|c| c.write(&mut o));
         let mut r = In { b: &o.0 };
@@ -200,6 +221,11 @@ mod tests {
         assert!(Command::read(&mut In { b: &[0, 9, 0, 0, 0, 0, 0, 0, 0, 0] }).is_err());
         assert!(Command::read(&mut In { b: &o.0[..o.0.len() - 3] }).is_ok());
         assert!(Command::read(&mut In { b: &o.0[..5] }).is_err());
+        // a law out of range or cut off is an error too
+        assert!(Command::read(&mut In { b: &[2, 3, 0] }).is_err());
+        assert!(Command::read(&mut In { b: &[2, 0, 6] }).is_err());
+        assert!(Command::read(&mut In { b: &[2, 0] }).is_err());
+        assert_eq!(Command::read(&mut In { b: &[2, 2, 0] }).unwrap(), Command::Law { law: 2, level: 0 });
     }
 
     #[test]

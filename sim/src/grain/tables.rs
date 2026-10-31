@@ -60,6 +60,10 @@ pub struct HistoryExtra {
     /// The treasury's account since the start (S94; S129 public works),
     /// whose month the history shows.
     pub state: Treasury,
+    /// S131: the households' Steuerrückstand, milli-denarii, and how many
+    /// households owe.
+    pub arrears: i64,
+    pub arrears_households: i64,
 }
 
 /// One market's month in the history (Ramon, 30.10.2026, "Verlauf je
@@ -85,6 +89,10 @@ pub struct MarketMonth {
     /// S129: public works hired here in the month, days and denarii paid.
     pub public_days: f32,
     pub public_wage: f32,
+    /// S131: Grundsteuer and Kopfsteuer paid here in the month, denarii;
+    /// the Zehnt delivered here in the month, t.
+    pub tax_d: f32,
+    pub tithe_t: f32,
 }
 
 /// Months each market keeps one by one (ten years); the years before
@@ -109,6 +117,8 @@ impl MarketMonth {
             goods: std::array::from_fn(|g| sum(&|x| x.goods[g])),
             public_days: sum(&|x| x.public_days),
             public_wage: sum(&|x| x.public_wage),
+            tax_d: sum(&|x| x.tax_d),
+            tithe_t: sum(&|x| x.tithe_t),
         }
     }
 }
@@ -280,6 +290,8 @@ impl Grain {
                 goods: std::array::from_fn(|g| m.goods[g].price as f32 / 1e3),
                 public_days: m.public_days as f32,
                 public_wage: m.public_paid as f32 / 1e3,
+                tax_d: m.tax_paid as f32 / 1e3,
+                tithe_t: m.tithe_kg as f32 / 1e3,
             })
             .collect();
         (self.history_levels(&spread), months)
@@ -307,6 +319,7 @@ impl Grain {
         let (money, _) = self.money_by_kind();
         let all: f64 = money.iter().sum();
         let (_, _, goods_price) = self.goods_report();
+        let (arrears, arrears_households) = self.arrears_now();
         HistoryExtra {
             wage: at(&wage, 0.5),
             real_wage: (at(&real, 0.1), at(&real, 0.5), at(&real, 0.9)),
@@ -327,6 +340,8 @@ impl Grain {
             gini_by: spread.gini_by,
             lorenz: spread.lorenz,
             state: self.treasury,
+            arrears,
+            arrears_households,
         }
     }
 
@@ -402,7 +417,9 @@ impl Grain {
             .float("gini", "Gini des Geldes", "", col(&|x| x.gini))
             .float("gini_all", "Gini des Geldes aller Märkte", "", gini_all)
             .float("public_days", "Öffentliche Arbeit", "Tage", col(&|x| x.public_days))
-            .float("public_wage", "Lohn für öffentliche Arbeit", "Denar", col(&|x| x.public_wage));
+            .float("public_wage", "Lohn für öffentliche Arbeit", "Denar", col(&|x| x.public_wage))
+            .float("tax_d", "Grund- und Kopfsteuer im Monat", "Denar", col(&|x| x.tax_d))
+            .float("tithe_t", "Zehnt im Monat", "t", col(&|x| x.tithe_t));
         for g in 0..GOODS {
             t.float(GOOD_PRICE_KEYS[g], GOOD_PRICE_NAMES[g], "Denar", col(&|x| x.goods[g]));
         }
@@ -601,6 +618,57 @@ pub struct FarmLook {
 }
 
 impl Grain {
+    /// How far the farms' fields lie from their farmstead (for the scale
+    /// across the zoom levels, Ramon 31.10.2026; read only): the share of
+    /// all field area 0, 1, 2, 3–4, 5–6, 7–8 and more than 8 fine tiles
+    /// away (centre to centre, a tile 1.5625 world km), the median and the
+    /// 90th percentile by area in world km, and the farms with fields 7 or
+    /// more tiles away (near FIELD_RADIUS, where taking land stops unless
+    /// it is the start's own 25 km cell).
+    pub fn field_report(&self) -> String {
+        let at = PlotsAt::new(self, 0);
+        let mut v: Vec<(f64, i64)> = Vec::new();
+        let (mut farms, mut edge) = (0usize, 0usize);
+        for fm in &self.farms {
+            let (r0, c0) = ((fm.fine as i32 / self.cols_f) as f64, (fm.fine as i32 % self.cols_f) as f64);
+            let mut far = false;
+            let n = v.len();
+            at.farm(fm, &mut |fine, m2, _, _| {
+                let (r, c) = ((fine as i32 / self.cols_f) as f64, (fine as i32 % self.cols_f) as f64);
+                let d = (r - r0).hypot(c - c0);
+                far |= d >= 6.5;
+                v.push((d, m2 as i64));
+            });
+            farms += usize::from(v.len() > n);
+            edge += usize::from(far);
+        }
+        let total: i64 = v.iter().map(|x| x.1).sum::<i64>().max(1);
+        let bins = [(0.0, 0.5), (0.5, 1.5), (1.5, 2.5), (2.5, 4.5), (4.5, 6.5), (6.5, 8.5), (8.5, f64::MAX)];
+        let shares: Vec<String> = bins
+            .iter()
+            .zip(["0", "1", "2", "3-4", "5-6", "7-8", ">8"])
+            .map(|(&(a, b), name)| format!("{name}: {:.1} %", 100.0 * v.iter().filter(|x| x.0 >= a && x.0 < b).map(|x| x.1).sum::<i64>() as f64 / total as f64))
+            .collect();
+        v.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let quantile = |q: f64| {
+            let mut acc = 0;
+            for x in &v {
+                acc += x.1;
+                if acc as f64 >= q * total as f64 {
+                    return x.0 * crate::settle::FINE_KM;
+                }
+            }
+            0.0
+        };
+        format!(
+            "fields by distance from the farmstead (fine tiles, share of the area): {} | median {:.2} km, p90 {:.2} km (world) | farms {farms}, with fields 7+ tiles away {edge} ({:.1} %)\n",
+            shares.join(", "),
+            quantile(0.5),
+            quantile(0.9),
+            100.0 * edge as f64 / farms.max(1) as f64
+        )
+    }
+
     /// The farm `f` (an index into the farms, as `HouseholdLook::farm_id`),
     /// if there is one and someone works it.
     pub fn farm_look(&self, f: usize) -> Option<FarmLook> {

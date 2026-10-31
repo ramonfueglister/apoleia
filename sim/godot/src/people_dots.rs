@@ -21,7 +21,7 @@ use crate::grain_map::{GrainMap, MapJob, MapLayers, MapThread, FINE, MARKET_BIT}
 use crate::{tables, trips};
 use apoleia_sim::build::{self, Command, Orders};
 use apoleia_sim::game::{Game, Loaded, Start};
-use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES};
+use apoleia_sim::grain::{Clearable, CraftsView, EventsView, FarmLook, FineCover, GoodsMovesView, HouseholdLook, LawRow, TripsView, WorkView, CRAFT_NAMES, FARM_KIND_NAMES, GOODS, KIND_NAMES, LAWS, LAW_LEVELS, LEVEL_NAMES};
 use apoleia_sim::groups::{JOB_GROUP, JOB_NAMES, POLITICAL_NAMES};
 use apoleia_sim::tables::{Table, Values};
 use apoleia_sim::view::{PeopleView, Person, PAGE, REC, ROAD};
@@ -126,6 +126,8 @@ struct Front {
     saved: Option<Result<i64, String>>,
     /// The treasury's cash after the last day, milli-denarii.
     cash: i64,
+    /// S131: the tax laws after the last day.
+    laws: Vec<LawRow>,
     /// Milliseconds the sim thread spent on its days so far: the day
     /// itself, orders and map layers, the view, handing over; and the days.
     spent: [f64; 4],
@@ -297,6 +299,7 @@ fn begin(game: &mut Game, data: &Data, shared: &Shared) -> (GrainMap, PeopleView
     f.day = today;
     f.count = game.people.count;
     f.cash = game.grain.treasury.cash;
+    f.laws = game.grain.law_rows();
     f.map = map.layers.clone();
     publish_orders(game, &mut f);
     (map, view)
@@ -614,6 +617,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
         f.day = today;
         f.count = game.people.count;
         f.cash = game.grain.treasury.cash;
+        f.laws = game.grain.law_rows();
         f.day_usec = day_usec;
         f.grain_usec = grain_usec;
     }
@@ -762,6 +766,45 @@ impl ApoleiaPeople {
     #[func]
     fn cash(&self) -> f64 {
         self.shared.front.lock().unwrap().cash as f64 / 1000.0
+    }
+
+    /// S131: sets tax law `law` (0 Zehnt, 1 Grundsteuer, 2 Kopfsteuer) to
+    /// `level` (0 keine … 5 sehr hoch). A command like a build order: applied
+    /// between two days, logged for the save, in effect from the next due
+    /// date; `tax_law` shows it a frame or two later.
+    #[func]
+    fn set_tax(&mut self, law: i64, level: i64) {
+        if self.worker.is_none() || !(0..LAWS as i64).contains(&law) || !(0..LAW_LEVELS as i64).contains(&level) {
+            return;
+        }
+        self.shared.queue.lock().unwrap().commands.push(Command::Law { law: law as u8, level: level as u8 });
+        self.shared.wake.notify_one();
+    }
+
+    /// S131: the tax laws after the last day, one Dictionary each: "law"
+    /// (0…2), "name" (Zehnt, Grundsteuer, Kopfsteuer), "level" (0…5),
+    /// "levels" (the six names, keine … sehr hoch), "rate" and "unit" (10
+    /// "% der Ernte"; 10 "% des üblichen Hektarertrags"; 5 "Taglöhne je
+    /// Erwachsenen und Jahr"), "denar" (what the rate is in denarii, median
+    /// over the markets: per ha and year, per adult and year; 0 for the
+    /// Zehnt).
+    #[func]
+    fn tax_law(&self) -> Array<VarDictionary> {
+        let laws = self.shared.front.lock().unwrap().laws.clone();
+        let levels = PackedStringArray::from_iter(LEVEL_NAMES.iter().map(|n| GString::from(*n)));
+        laws.iter()
+            .map(|l| {
+                let mut d = VarDictionary::new();
+                d.set("law", l.law as i64);
+                d.set("name", l.name);
+                d.set("level", l.level as i64);
+                d.set("levels", &levels);
+                d.set("rate", l.rate);
+                d.set("unit", l.unit);
+                d.set("denar", l.denar as f64 / 1000.0);
+                d
+            })
+            .collect()
     }
 
     /// A save game is playing again: no days, no dots until it has.

@@ -86,6 +86,18 @@ fn main() {
     g.food_plan = !args.iter().any(|a| a == "--no-food-plan");
     println!("storage floor (S123): {}, own sowing by price (S124): {}, sales over a year (S125): {}, granaries sell carry-over (S126): {}", g.storage_floor, g.sow_by_price, g.sales_year, g.carry_sale);
     println!("treasury spends its surplus (S129): {}, farms' food plan (S130): {}", g.state_spend, g.food_plan);
+    // S131: the tax laws' levels (0 keine … 5 sehr hoch) from the first due
+    // date, and the Pfändung and Zwangsversteigerung off to measure.
+    for (k, key) in ["--tithe", "--land-tax", "--head-tax"].iter().enumerate() {
+        if let Some(v) = arg(key) {
+            g.set_law(k as u8, v.parse().unwrap());
+        }
+    }
+    g.seizure = !args.iter().any(|a| a == "--no-seizure");
+    g.auction = !args.iter().any(|a| a == "--no-auction");
+    g.lord_farm_money = !args.iter().any(|a| a == "--lord-money-old");
+    let laws: Vec<String> = g.law_rows().iter().map(|l| format!("{} {} ({} {})", l.name, apoleia_sim::grain::LEVEL_NAMES[l.level as usize], l.rate, l.unit)).collect();
+    println!("tax laws (S131): {}; Pfändung: {}, Zwangsversteigerung: {}, rent of lords with a farm to the farm: {}", laws.join(", "), g.seizure, g.auction, g.lord_farm_money);
     drop(fine);
     // S106: pasture near the fields, grassland per farmland of each cell.
     let grass = apoleia_sim::grain::clearable(&root, &["grass_8", "grass_16", "grass_30", "grass_steep"].map(String::from)).expect("landcover25.csv");
@@ -199,6 +211,7 @@ fn main() {
             den(gs.public_paid),
             gs.public_days
         );
+        print!("{}", g.tax_report());
         let by: Vec<String> = (0..5).map(|k| format!("{:.0}%", 100.0 * gs.eaten_by[k] as f64 / gs.need_by[k].max(1) as f64)).collect();
         if std::env::var("PRICE_DEBUG").is_ok() {
             print!("{}", g.price_debug());
@@ -300,5 +313,8 @@ fn main() {
         ha[2],
         ha[3]
     );
+    if std::env::var("FIELD_DEBUG").is_ok() {
+        print!("{}", g.field_report());
+    }
     println!("fingerprint people={:016x} grain={:016x}", p.fingerprint(), g.fingerprint());
 }

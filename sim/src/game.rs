@@ -133,9 +133,12 @@ impl Game {
     }
 
     /// Applies a command now, between two days; returns how many tiles
-    /// changed.
+    /// changed (a law changes none, S131).
     pub fn command(&mut self, c: &Command) -> usize {
         let today = self.today();
+        if let Command::Law { law, level } = *c {
+            self.grain.set_law(law, level);
+        }
         self.orders.apply(c, today)
     }
 
@@ -207,7 +210,8 @@ impl Game {
         if inputs != current {
             return Err(SaveError::Inputs { saved: inputs, current });
         }
-        let n = r.count(8 + 10)?;
+        // the smallest command: a law (S131), 3 bytes
+        let n = r.count(8 + 3)?;
         let mut log = Vec::with_capacity(n);
         let mut last = 0;
         for _ in 0..n {
@@ -262,6 +266,8 @@ mod tests {
                 31 => {
                     a.command(&Command::Place { kind: ROAD, tiles: vec![(11, 20), (12, 20)] });
                     a.command(&Command::Place { kind: FIELD, tiles: vec![(10, 21)] });
+                    // S131: a law is a command as well
+                    a.command(&Command::Law { law: 2, level: 4 });
                 }
                 60 => {
                     a.command(&Command::Cancel { tiles: vec![(12, 20)] });
@@ -280,7 +286,8 @@ mod tests {
             days = d;
         })
         .unwrap();
-        assert_eq!(info, Loaded { day: 70, commands: 5, identical: true });
+        assert_eq!(info, Loaded { day: 70, commands: 6, identical: true });
+        assert_eq!((a.grain.law, b.grain.law), ([2, 0, 4], [2, 0, 4]));
         assert_eq!(days, 70);
         assert_eq!(b.orders.log, a.orders.log);
         assert_eq!((b.grain.treasury.cash, b.grain.money_held()), (a.grain.treasury.cash, a.grain.money_held()));
