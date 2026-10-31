@@ -1326,6 +1326,48 @@ Was auffällt:
 - Wikipedia. (2026b). *Poll taxes of 1376–1381*. Abgerufen am 31. Oktober 2026, von https://en.wikipedia.org/wiki/Poll_taxes_of_1376%E2%80%931381
 - Russische Kopfsteuer 1724–1887: nach dem Planungs-Thread (Plan Abschnitt 4c, https://claude.ai/artifact/12Sa2gxdKcWjYqJdMoSr8F) aus Sovcombank Journal (o. J.), *Подушная подать*, und Statmuseum (o. J.), *Peter’s reforms and population statistics*; nicht selbst geprüft.
 
+## Fuhrlohn (S132, 100 Jahre, Seeds 1 und 2, Sonde `/mnt/project-files/sim-probes/geldkreislauf/`; vorher: main mit S131)
+
+Ramon (31.10.2026): „weiter“ zu S94 (Geldkreislauf schliessen), dann Karte „Fuhrlohn jetzt, Erbteil weiter
+prüfen“. Die Fracht wartet am Startmarkt einer Ladung und geht wöchentlich als Taglohn an Fuhrleute; Regeln in
+S132. Gemessen als Sonde mit Schaltern (`--freight-wage`, `--inherit-money`); der Standard heute entspricht dem
+Lauf „Fuhrlohn“. Neu im Lauf: Zeile „money loop (S132)“ (Ein- und Ausfuhr, Fuhrlohn seit Beginn, offen, im Jahr).
+Geld in Mio. Denar, 100 Jahre aufsummiert, Geld im Umlauf im Jahr 100.
+
+| Lauf | Menschen J. 100 | Hungertote J. 31–100 | Geld im Umlauf | Startgeld aus dem Nichts | Fracht verschwunden | Staat prägt | öffentliche Arbeit |
+|---|---|---|---|---|---|---|---|
+| Seed 1: wie vorher (main) | 129'969 | 7'792 | 297 | 254 | 96 | 0 | 206 |
+| Seed 1: Fuhrlohn (heute) | 128'104 | 7'732 | 450 | 324 | 0 | 0 | 315 |
+| Seed 1: nur Erbteil (Sonde) | 125'942 | 10'860 | 171 | 0 | 56 | 92 | 0,3 |
+| Seed 1: Fuhrlohn und Erbteil (Sonde) | 126'360 | 9'892 | 197 | 0 | 0 | 64 | 2,7 |
+| Seed 2: wie vorher (main) | 133'573 | 7'145 | 354 | 334 | 110 | 0 | 385 |
+| Seed 2: Fuhrlohn (heute) | 133'118 | 7'033 | 467 | 342 | 0 | 0 | 405 |
+| Seed 2: nur Erbteil (Sonde) | 127'795 | 9'963 | 130 | 0 | 47 | 40 | 9,8 |
+| Seed 2: Fuhrlohn und Erbteil (Sonde) | 127'222 | 8'748 | 165 | 0 | 0 | 27 | 22 |
+
+Was auffällt:
+
+- **Fuhrlohn schliesst das Loch ohne Nebenwirkung.** Hunger und Menschen bleiben innerhalb der Streuung,
+  Fuhrleute bekommen 0,5–1,7 Mio. Denar im Jahr (im ersten Jahr 2,6–2,7 Mio., wenn viel Korn umverteilt wird);
+  am Jahresende warten nur rund 20'000 Denar auf Hände.
+- **Das Startgeld aus dem Nichts bezahlt heimlich den Staat.** Von 237 neuen Senatorenhaushalten (je 1 Mio.
+  Denar, Seed 1) sind nur 25 Söhne; 212 sind geschiedene Frauen, die ohne lebenden Vater einen eigenen Haushalt
+  gründen (S86) und den Stand des Manns behalten. Sie sterben allein, ihr Geld fällt als Heimfall an die Kasse
+  (222 / 277 Mio.), die es als öffentliche Arbeit (S129) ausgibt. Ohne Startgeld (Erbteil) ist die Kasse ab
+  etwa Jahr 5 leer, die Staatslöhne übersteigen Zehnt und Heimfall, der Staat prägt, und es gibt 22–40 % mehr
+  Hungertote. Mit einem Anteil für die geschiedene Frau (Geld des Haushalts ÷ (Erwachsene + 1), Sonde
+  `--divorce-money`) prägt der Staat 0–10 Mio., die Hungertoten bleiben 20–22 % über heute.
+- **Haushaltsteilungen (S81) gibt es erst nach rund 25 Jahren**, weil die Startbevölkerung keine Eltern kennt;
+  der Erbteil wirkt deshalb spät (28–39 Mio. Denar bis Jahr 100).
+- **Der Kornpreis fällt in allen Läufen** auf 0,5–1,3 Denar/kg, auch dort, wo die Geldmenge auf 450 Mio. steigt;
+  er hängt nicht an der Geldmenge (Korn wird in kg gekauft, siehe Angebot-und-Nachfrage-Prüfung).
+- 93 Tests grün, 1 ausgelassen (neu: `freight_pays_carriers`; `deterministic_fingerprint` prüft, dass keine
+  Fracht mehr verschwindet).
+
+### Quellen zu S132 (APA 7)
+
+- Erdkamp, P. (2005). *The grain market in the Roman Empire: A social, political and economic study*. Cambridge University Press. https://doi.org/10.1017/CBO9780511482748 (für das Fuhrwesen als Nebenarbeit der Bauern nicht selbst nachgelesen)
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1462,6 +1504,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
 | Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
 | Steuergesetz (S131) | Kopfsteuer ohne Hof am 1. Januar (Stufen entschieden: Zehnt und Grundsteuer 0/5/10/12/15/20 %, D3; Kopfsteuer 0/1/2/4/6/9 Taglöhne); Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
+| Fuhrlohn (S132) | ein Fuhrmannstag je Taglohn Fracht; der Lohn geht am Startmarkt der Ladung aus, nach den Ernte- und Hofarbeiten und vor den Diensten (S111); Fuhrleute nicht in der Arbeitsliste der Leute | frei gewählt; Fuhrwesen als Arbeit der Landlosen nach Erdkamp 2005 |
 
 ## Nicht gebaut
 

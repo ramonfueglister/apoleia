@@ -593,6 +593,9 @@ pub struct Market {
     /// denarii (milli).
     public_days: i64,
     public_paid: i64,
+    /// S132: freight paid for loads that start here, not yet paid out as
+    /// carriers' wages (milli-denarii; `freight_wage`).
+    freight_due: i64,
     /// S131: the usual net yield of a hectare of the region's farms, kg
     /// (as of the last count; the Grundsteuer's base); Grundsteuer and
     /// Kopfsteuer paid here and the Zehnt delivered here since the last
@@ -638,6 +641,9 @@ pub struct GrainStats {
     /// denarii (milli).
     pub public_days: i64,
     pub public_paid: i64,
+    /// S132: carriers hired with the freight, days and denarii (milli).
+    pub carry_days: i64,
+    pub carry_paid: i64,
     pub harvest_kg: i64,
     pub harvest_lost_kg: i64,
     pub sow_short_m2: i64,
@@ -754,8 +760,11 @@ pub struct Money {
     /// Start money of trader and elite households formed after the start.
     pub endowed: i64,
     /// Freight paid by traders (cost per kg of the route); nobody in the
-    /// simulation receives it.
+    /// simulation receives it (S132 `freight_wage` off).
     pub freight: i64,
+    /// S132: freight paid into the start market's carriers' wages
+    /// (`freight_wage`; only moves money).
+    pub carried: i64,
     /// Money that left the map with the households that left it (S97).
     pub left_map: i64,
     /// S98: paid by the markets beyond the map for grain (a source) and
@@ -922,6 +931,9 @@ pub struct Grain {
     /// S131: rent money of a lord with a farm goes to the farm's money
     /// (`to_lord`; off as before S131).
     pub lord_farm_money: bool,
+    /// S132: the freight goes to the start market's carriers as wages
+    /// (Fuhrlohn; off: it is gone, as before S132).
+    pub freight_wage: bool,
     /// S129: the state wages of the last full year (`Treasury::wages`), and
     /// the day and the wages paid by then that it is counted from.
     works_reserve: Option<i64>,
@@ -1409,6 +1421,7 @@ impl Grain {
                 state_want: 0,
                 public_days: 0,
                 public_paid: 0,
+                freight_due: 0,
                 yield_ha: 0,
                 tax_paid: 0,
                 tithe_kg: 0,
@@ -1463,6 +1476,7 @@ impl Grain {
             auction: true,
             tax_view: (0, 0),
             lord_farm_money: true,
+            freight_wage: true,
             works_reserve: None,
             works_mark: None,
             scratch: Vec::new(),
@@ -1601,7 +1615,7 @@ impl Grain {
             m.store += kg;
             self.stats.inflow[2] += kg;
             m.money -= kg * (price + cost);
-            self.money.freight += kg * cost;
+            self.freight_paid(src, kg * cost);
             self.stats.arbitrage_kg += kg;
             self.grain_moves.push((day, src as u32, mi as u32, kg));
         }
@@ -1646,7 +1660,7 @@ impl Grain {
             d.store += kg;
             d.money -= kg * price;
             self.stats.inflow[2] += kg;
-            self.money.freight += kg * cost;
+            self.freight_paid(mi, kg * cost);
             self.stats.pushed_kg += kg;
             self.grain_moves.push((day, mi as u32, dst as u32, kg));
         }
@@ -3117,10 +3131,26 @@ impl Grain {
         self.hh.values().map(|s| s.money).sum::<i64>() + self.farms.iter().map(|f| f.money).sum::<i64>() + self.markets.iter().map(|m| m.money).sum::<i64>()
     }
 
+    /// S132: freight waiting in the markets for carriers.
+    pub fn freight_due(&self) -> i64 {
+        self.markets.iter().map(|m| m.freight_due).sum()
+    }
+
+    /// S132: freight of a load that starts at market `m`: wages for its
+    /// carriers there (`freight_wage`), else gone.
+    fn freight_paid(&mut self, m: usize, amount: i64) {
+        if self.freight_wage {
+            self.markets[m].freight_due += amount;
+            self.money.carried += amount;
+        } else {
+            self.money.freight += amount;
+        }
+    }
+
     /// Money that appeared or vanished without a booking (S94: 0).
     pub fn money_unbooked(&self) -> i64 {
         let m = self.money;
-        self.money_held() + self.treasury.cash - (m.start + m.minted + m.endowed + m.exports - m.imports - m.freight - m.left_map)
+        self.money_held() + self.treasury.cash + self.freight_due() - (m.start + m.minted + m.endowed + m.exports - m.imports - m.freight - m.left_map)
     }
 
     fn money_of(&self, id: u32) -> i64 {
@@ -3466,6 +3496,28 @@ impl Grain {
                 }
             }
             self.markets[mi].hirers = hirers;
+            // S132 (`freight_wage`): the freight of the loads that
+            // started here pays carriers at the day wage (Fuhrlohn), as far
+            // as hands are offered; the rest waits for the next week.
+            // Carting was paid work for the landless and for farmers
+            // between the peaks (PLACEHOLDER: one carrier-day per day wage
+            // of freight).
+            let mut want = self.markets[mi].freight_due / wage;
+            while want > 0 && o < offers.len() {
+                let take = want.min(offers[o].1);
+                offers[o].1 -= take;
+                want -= take;
+                let pay = take * wage;
+                self.markets[mi].freight_due -= pay;
+                self.earn(offers[o].0, pay);
+                self.stats.hired_days += take;
+                self.stats.carry_days += take;
+                self.stats.carry_paid += pay;
+                if offers[o].1 == 0 {
+                    o += 1;
+                }
+            }
+            vacant += want;
             // S111: households with money beyond their savings hire work
             // for money, at the day wage (S114).
             let servers = std::mem::take(&mut self.markets[mi].servers);
@@ -4163,7 +4215,7 @@ impl Grain {
                 m.money += kg * price;
                 m.sold_today += kg;
                 self.pay(id, kg * (price + cost));
-                self.money.freight += kg * cost;
+                self.freight_paid(h, kg * cost);
             } else {
                 // Freight paid at the start, for both legs; the trip starts
                 // only if the money beyond the food reserve also buys a
@@ -4174,7 +4226,7 @@ impl Grain {
                     continue;
                 }
                 self.pay(id, WAGON.0 * cost);
-                self.money.freight += WAGON.0 * cost;
+                self.freight_paid(h, WAGON.0 * cost);
             }
             for &c in &self.markets[h].neigh[k].route.clone() {
                 *self.lanes.entry(c).or_default() += 1;
@@ -4983,6 +5035,8 @@ impl Grain {
             .float("start", "Geld am Anfang", "Denar", den(m.start))
             .float("endowed", "Startgeld neuer Haushalte", "Denar", den(m.endowed))
             .float("freight", "Fracht", "Denar", den(m.freight))
+            .float("carried", "Fuhrlohn", "Denar", den(m.carried))
+            .float("freight_due", "Fuhrlohn offen", "Denar", den(self.freight_due()))
             .float("estates", "Erbloser Nachlass", "Denar", den(tr.estates))
             .float("public_works", "Öffentliche Arbeit", "Denar", den(tr.public_works))
             .int("public_days", "Öffentliche Arbeit", "Tage", vec![tr.public_days])
@@ -5749,7 +5803,9 @@ mod tests {
             assert!(g.stats.harvest_kg > 0 && g.stats.sold_kg > 0);
             // S115: the granaries' sales pay the state wage at first, so
             // nothing need be minted yet.
-            assert!(g.money.freight > 0 && g.treasury.wages > 0 && g.treasury.wages >= g.money.minted);
+            // S132: the freight is paid to carriers, none is gone.
+            assert!(g.money.carried > 0 && g.money.freight == 0 && g.stats.carry_paid > 0);
+            assert!(g.treasury.wages > 0 && g.treasury.wages >= g.money.minted);
             // The history adds up to the counters (none reset here).
             let h = g.history();
             assert!(h.len() >= 6);
@@ -5891,6 +5947,33 @@ mod tests {
     /// pays public works from cash (nothing minted, every denarius
     /// booked), shown at the market place without a farm; open build
     /// orders raise the reserve by what they still cost.
+    /// S132: the freight is paid out to carriers at the day wage (all of
+    /// it but what waits for next week's hands); off, it is gone as before.
+    #[test]
+    fn freight_pays_carriers() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        for wage in [true, false] {
+            let mut p = People::new(&inp, 3);
+            let mut g = Grain::new(&inp, &mut p);
+            g.freight_wage = wage;
+            for _ in 0..120 {
+                p.day();
+                g.day(&mut p);
+                assert_eq!(g.money_unbooked(), 0);
+                assert_eq!(g.stats.carry_paid + g.freight_due(), g.money.carried);
+            }
+            if wage {
+                assert_eq!(g.money.freight, 0);
+                assert!(g.stats.carry_days > 0 && g.freight_due() >= 0 && g.freight_due() * 4 < g.money.carried);
+            } else {
+                assert!(g.money.freight > 0 && g.money.carried == 0 && g.stats.carry_days == 0);
+            }
+        }
+    }
+
     #[test]
     fn public_works_from_surplus() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");

@@ -392,7 +392,7 @@ impl Grain {
         g.sold_today += kg;
         g.money += kg * (price - freight);
         self.money.exports += kg * price;
-        self.money.freight += kg * freight;
+        self.freight_paid(mi, kg * freight);
         self.stats.out_export_kg += kg;
         self.stats.outer[k][FROM_MAP] += kg;
         self.outer[k].store += kg;
@@ -411,7 +411,7 @@ impl Grain {
         g.store += kg;
         g.money -= kg * (price + freight);
         self.money.imports += kg * price;
-        self.money.freight += kg * freight;
+        self.freight_paid(mi, kg * freight);
         self.stats.inflow[1] += kg;
         self.stats.out_import_kg += kg;
         self.stats.outer[k][TO_MAP] += kg;
