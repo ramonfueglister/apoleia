@@ -45,9 +45,10 @@ func _build_ui() -> void:
 	background.color = Color("1a1718")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
-	if ResourceLoader.exists(BACKGROUND_IMAGE):
+	var still_tex := Vic3.texture(BACKGROUND_IMAGE)
+	if still_tex != null:
 		var still := TextureRect.new()
-		still.texture = load(BACKGROUND_IMAGE)
+		still.texture = still_tex
 		still.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		still.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		still.modulate = Color(0.46, 0.41, 0.37)
@@ -217,8 +218,9 @@ class Diorama extends Control:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		for p in PIECES:
 			var path := "res://assets/menu/diorama/%s.png" % p[0]
-			if ResourceLoader.exists(path):
-				_tex[p[0]] = load(path)
+			var tex := Vic3.texture(path)
+			if tex != null:
+				_tex[p[0]] = tex
 		resized.connect(queue_redraw)
 
 	func _draw() -> void:

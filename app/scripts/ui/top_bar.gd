@@ -33,8 +33,7 @@ func _init() -> void:
 	offset_bottom = HEIGHT
 	mouse_filter = Control.MOUSE_FILTER_STOP # the map below takes no clicks through the bar
 	theme = Vic3.theme()
-	if ResourceLoader.exists(TEXTURE):
-		_texture = load(TEXTURE)
+	_texture = Vic3.texture(TEXTURE)
 	_figures = HBoxContainer.new()
 	_figures.add_theme_constant_override("separation", 22)
 	_figures.set_anchors_preset(Control.PRESET_FULL_RECT)
