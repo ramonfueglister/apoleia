@@ -40,7 +40,7 @@ void vertex() {
 	float level = place.z;
 	// where the person is at this hour (people_day.gdshaderinc); a figure
 	// in the house or lying down throws no strip, one sitting a short one
-	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, dot_person_look(px), dot_person_flags(px));
+	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, dot_person_look(px), dot_person_flags(px), dot_person_away(px));
 	if (day.pose == DAY_SIT) {
 		s *= 0.6;
 		playing = false;

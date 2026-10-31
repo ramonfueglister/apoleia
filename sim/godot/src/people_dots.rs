@@ -64,7 +64,8 @@ struct Front {
     house_looks_version: i64,
     /// What shows of each person, 2 bytes by person slot (the people
     /// texture's order): their household's share of its need eaten (‰ / 4)
-    /// and its HOUSE_* flags with PERSON_KNOWN, rebuilt with `house_looks`.
+    /// and its HOUSE_* flags with its workshop (PERSON_CRAFT_SHIFT) and
+    /// PERSON_KNOWN, rebuilt with `house_looks`.
     people_looks: Vec<u8>,
     /// Answer to the last `ask_person`, with the household as the grain
     /// economy sees it, its people, and what the portrait needs
@@ -81,6 +82,9 @@ struct Front {
     work: Option<WorkView>,
     /// Answer to the last `ask_events`.
     events: Option<EventsView>,
+    /// Answer to the last `ask_slots`: the slot of each person asked for
+    /// and of each household's hired hand, -1 for none.
+    slots: Option<(Vec<i64>, Vec<i64>)>,
     /// Answer to the last `ask_goods`: workshops, markets' goods, goods
     /// moves, markets' grain, grain moves (trips::goods_to_dict).
     goods: Option<(CraftsView, Vec<((f32, f32), [(f32, f32); GOODS])>, GoodsMovesView, Vec<[f32; 3]>, GoodsMovesView)>,
@@ -160,11 +164,14 @@ struct Queue {
     market: Option<usize>,
     /// Households whose faces to give (`ask_faces`).
     faces: Option<Vec<u32>>,
+    /// Persons by id and households whose hired hand to find in the view
+    /// (`ask_slots`).
+    slots: Option<(Vec<u32>, Vec<u32>)>,
 }
 
 impl Queue {
     fn asked(&self) -> bool {
-        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.faces.is_some()
+        !self.commands.is_empty() || self.save.is_some() || self.check.is_some() || self.ask.is_some() || self.table.is_some() || self.trips.is_some() || self.work.is_some() || self.events.is_some() || self.goods.is_some() || self.sites.is_some() || self.market.is_some() || self.faces.is_some() || self.slots.is_some()
     }
 }
 
@@ -370,11 +377,13 @@ fn publish_house_looks(game: &Game, view: &PeopleView, f: &mut Front) {
         looks[slot as usize * 4..][..4].copy_from_slice(&game.grain.house_look(hh).unwrap_or_default());
     }
     f.house_looks = looks;
+    let c = game.grain.crafts_in((f64::MIN, f64::MIN), (f64::MAX, f64::MAX));
+    let craft: rustc_hash::FxHashMap<u32, u8> = c.household.iter().zip(&c.craft).map(|(&h, &k)| (h as u32, k & 3)).collect();
     let mut people = vec![0u8; view.slots() * 2];
     for (slot, hh) in view.slot_households() {
         if let Some(look) = game.grain.house_look(hh) {
             people[slot * 2] = look[0];
-            people[slot * 2 + 1] = look[1] | PERSON_KNOWN;
+            people[slot * 2 + 1] = look[1] | craft.get(&hh).map_or(0, |&k| k << PERSON_CRAFT_SHIFT) | PERSON_KNOWN;
         }
     }
     f.people_looks = people;
@@ -384,6 +393,10 @@ fn publish_house_looks(game: &Game, view: &PeopleView, f: &mut Front) {
 /// Flag in `people_looks`: the grain economy knows the person's household
 /// (a newborn's slot or a household it has not counted yet shows nothing).
 const PERSON_KNOWN: u8 = 128;
+/// Bits 5 and 6 of the flags in `people_looks`: the household's workshop
+/// (apoleia_sim::grain CRAFT_NAMES 1 weaver, 2 smith, 3 potter; 0 none),
+/// for the day of its people (people_day.gdshaderinc «Handwerk»).
+const PERSON_CRAFT_SHIFT: u8 = 5;
 
 /// The building sites in the window (world km, min x, min z, max x, max
 /// z): x and z of the order's spot (the middle of its village lot), kind
@@ -433,7 +446,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
     let mut sites_were = shared.site_houses.load(Ordering::Relaxed);
     loop {
         // commands and questions from the game first, between two days; then a day
-        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, faces) = {
+        let (commands, save, check, ask, table, trips, work, events, goods, sites, market, faces, slots) = {
             let mut q = shared.queue.lock().unwrap();
             while q.days == 0 && !q.stop && !q.asked() {
                 q = shared.wake.wait(q).unwrap();
@@ -445,7 +458,7 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
             if !asked {
                 q.days -= 1;
             }
-            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.faces.take())
+            (std::mem::take(&mut q.commands), q.save.take(), q.check.take(), q.ask.take(), q.table.take(), q.trips.take(), q.work.take(), q.events.take(), q.goods.take(), q.sites.take(), q.market.take(), q.faces.take(), q.slots.take())
         };
         if !commands.is_empty() {
             let mut changed = 0;
@@ -525,7 +538,19 @@ fn run(mut game: Game, map: GrainMap, mut view: PeopleView, shared: Arc<Shared>)
                 .collect();
             shared.front.lock().unwrap().faces = Some(v);
         }
-        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || faces.is_some() {
+        if let Some((pids, households)) = &slots {
+            // the hand a click on a day labourer shows (`ask_household_member`)
+            let hands: Vec<Option<u32>> = households.iter().map(|&h| PeopleView::member_of(people, h)).collect();
+            let mut at: rustc_hash::FxHashMap<u32, i64> = pids.iter().chain(hands.iter().flatten()).map(|&p| (p, -1)).collect();
+            for slot in 0..view.slots() {
+                if let Some(s) = view.pid_at(slot).and_then(|p| at.get_mut(&p)) {
+                    *s = slot as i64;
+                }
+            }
+            let v = (pids.iter().map(|p| at[p]).collect(), hands.iter().map(|h| h.map_or(-1, |p| at[&p])).collect());
+            shared.front.lock().unwrap().slots = Some(v);
+        }
+        if !commands.is_empty() || save.is_some() || check.is_some() || ask.is_some() || table.is_some() || trips.is_some() || work.is_some() || events.is_some() || goods.is_some() || sites.is_some() || market.is_some() || faces.is_some() || slots.is_some() {
             continue;
         }
         // the people, the grain economy (S69–S112) and the building sites
@@ -1466,6 +1491,37 @@ impl ApoleiaPeople {
         }
     }
 
+    /// Asks the sim thread in which slot of the view the persons `pids`
+    /// live and the hired hand of each of `households` (the member
+    /// `ask_household_member` finds), so the figure at home can be gone
+    /// while it walks as a carrier or a day labourer (people_trips.gd, at
+    /// «Alltag» only: a pass over the people for each household). The
+    /// answer comes with `take_slots`.
+    #[func]
+    fn ask_slots(&mut self, pids: PackedInt64Array, households: PackedInt64Array) {
+        if self.worker.is_none() {
+            return;
+        }
+        let ids = |a: &PackedInt64Array| a.as_slice().iter().map(|&x| u32::try_from(x).unwrap_or(u32::MAX)).collect::<Vec<u32>>();
+        self.shared.front.lock().unwrap().slots = None;
+        self.shared.queue.lock().unwrap().slots = Some((ids(&pids), ids(&households)));
+        self.shared.wake.notify_one();
+    }
+
+    /// The slots asked for, once: {"pid_slots", "hand_slots"} in the order
+    /// of the ask's `pids` and `households` (-1 where there is none); empty
+    /// until the sim thread answered.
+    #[func]
+    fn take_slots(&mut self) -> VarDictionary {
+        let Some((by_pid, by_hh)) = self.shared.front.lock().unwrap().slots.take() else {
+            return VarDictionary::new();
+        };
+        let mut d = VarDictionary::new();
+        d.set("pid_slots", &PackedInt64Array::from(by_pid.as_slice()));
+        d.set("hand_slots", &PackedInt64Array::from(by_hh.as_slice()));
+        d
+    }
+
     /// Asks the sim thread for the craft goods (S105–S111): the workshops
     /// and the goods moved between markets in the window (world km), and
     /// every market's goods; the answer comes with `take_goods`.
@@ -1624,7 +1680,8 @@ impl ApoleiaPeople {
     /// What shows of each person, 2 bytes by person slot (the people
     /// texture's order, rebuilt with `house_looks`): their household's
     /// share of its need eaten (‰ / 4) and its flags as in `house_looks`,
-    /// with 128 when the grain economy knows the household.
+    /// with its workshop in bits 5 and 6 (1 weaver, 2 smith, 3 potter)
+    /// and 128 when the grain economy knows the household.
     #[func]
     fn people_looks(&self) -> PackedByteArray {
         PackedByteArray::from(self.shared.front.lock().unwrap().people_looks.as_slice())

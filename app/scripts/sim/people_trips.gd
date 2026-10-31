@@ -72,6 +72,9 @@ extends MultiMeshInstance3D
 ## at most SITE_HANDS each, as work days were done there since the last
 ## sim day.
 ##
+## Hired hands for the state's public works (S129, kind WORK_STATE) walk
+## from home to the market place with an axe on the shoulder.
+##
 ## At the slow speed «Alltag» (game_clock.gd, Ramon 30.10.2026: "wie
 ## RimWorld") the travellers keep the hours of the day instead
 ## (`set_day_time`, day_clock.gd): they walk at their real pace (WALK_KMH on
@@ -82,7 +85,11 @@ extends MultiMeshInstance3D
 ## and wait unseen until then; they stay at the market MARKET_H, at work
 ## until shortly before sunset, elsewhere STAY_H; and they stand while the
 ## game is paused. Who would have left earlier today, before the view came,
-## is on the way already, where the clock has them.
+## is on the way already, where the clock has them. At «Alltag» the carriers,
+## traders and hired hands are also looked up in the view (ApoleiaPeople
+## ask_slots), so the figure at home is gone while it walks (`away`, the
+## block «Unterwegs» of people_day.gdshaderinc) and its day in the
+## person's window says where it went (day_plan.gd).
 
 const SHADER = preload("res://shaders/people_walkers.gdshader")
 const DayClock = preload("res://scripts/sim/day_clock.gd")
@@ -104,8 +111,9 @@ const LOAD := 16
 const SICKLE := 32
 const BASKET := 64
 const HOE := 128
-const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE] # by kind of work: sowing, harvest, through the year, from a surplus
-const WORK_NAMES: Array[String] = ["bei der Aussaat", "bei der Ernte", "über das Jahr", "aus einem Überschuss"] # likewise, for a click
+const TOOLS: Array[int] = [BASKET, SICKLE, HOE, HOE, AXE] # by kind of work: sowing, harvest, through the year, from a surplus, for the state
+const WORK_NAMES: Array[String] = ["bei der Aussaat", "bei der Ernte", "über das Jahr", "aus einem Überschuss", "für den Staat"] # likewise, for a click
+const WORK_STATE := 4 # public works at the market place (sim grain.rs WORK_STATE, S129)
 const STALL := 256
 const WARES := 1048576 # the wares on a stall's counter (part 21)
 const HANDCART := 512 # pulled behind the person, with the household's bundles
@@ -123,6 +131,7 @@ const LINGER_S := 6.0 # seconds a traveller stays at the end of its way
 const MARKET_H := 2.5 # at «Alltag»: hours at the market
 const STAY_H := 1.0 # at «Alltag»: hours of a stay of LINGER_S elsewhere (traders, scenes)
 const WORK_END_H := 0.5 # at «Alltag»: the hands stop work this long before sunset
+const NOT_TODAY := 30.0 # `away`: the hour back of one who is not back today
 ## how an instance moves (INSTANCE_CUSTOM.a): walking, standing, a stall
 const WALKING := 0.0
 const STANDING := 1.0
@@ -196,6 +205,14 @@ var _sun := Vector2(6.0, 18.0) # sunrise and sunset today
 var _hour_s := 0.0 # real seconds an hour of daylight lasts at «Alltag»
 var _frozen := false # the game is paused at «Alltag»: the travellers stand
 var _pending: Array = [] # [clock time, traveller] of those who leave later today
+## At «Alltag»: by the slot of a person who walks as a carrier, trader or
+## hired hand today, the hours it is away and what it does (`_away_of`);
+## people_dots.gd draws its figure at home from it, bumped `away_version`.
+var away := {}
+var away_version := 0
+var _away_day := -1
+var _slots_due := false # walkers came that are not yet looked up in the view
+var _asked_slots: Array = [] # the walkers of the last ask_slots, in its order
 
 func setup(sim: RefCounted, km_per_m: float) -> void:
 	people = sim
@@ -231,6 +248,7 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		_pending.clear()
 		_asked_at = Vector3.INF
 		_next = INF
+		_away_clear()
 		return
 	if not _frozen:
 		_clock += delta
@@ -248,6 +266,14 @@ func step(delta: float, on: bool, centre: Vector2, view_km: float) -> void:
 		if not goods.is_empty():
 			_asked_goods = false
 			_take_goods(goods)
+	if not _asked_slots.is_empty():
+		var slots: Dictionary = people.take_slots()
+		if not slots.is_empty():
+			_take_slots(slots)
+	elif _slots_due and not _asked and not _asked_work:
+		_ask_slots()
+	if _day_s > 0.0 and int(people.day()) != _away_day and not away.is_empty():
+		_away_build() # the hours of those still out from yesterday
 	if _asked:
 		var answer: Dictionary = people.take_trips()
 		if not answer.is_empty():
@@ -298,6 +324,7 @@ func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void
 			_day_s = 0.0
 			_hour_s = 0.0
 			_release(true)
+		_away_clear()
 		return
 	_hour = hour
 	_sun = sun
@@ -320,6 +347,7 @@ func _release(all: bool) -> void:
 		_begin(w, _clock if all else float(p[0]))
 
 func _take(t: Dictionary) -> void:
+	_slots_due = true
 	var ids: PackedInt64Array = t.id
 	var listed := {}
 	for i in ids.size():
@@ -335,6 +363,7 @@ func _take(t: Dictionary) -> void:
 ## back, in a straight line (both are fine tiles, a few km apart at most);
 ## at «Alltag» every day of the hire anew, morning and evening.
 func _take_work(h: Dictionary) -> void:
+	_slots_due = true
 	var today: int = people.day() if _day_s > 0.0 else -1
 	var worker: PackedInt64Array = h.worker
 	var day: PackedInt64Array = h.day
@@ -773,7 +802,7 @@ func pick(cam: Camera3D, pixel: Vector2, ground: Callable, lift: float, max_px: 
 		return {}
 	if best.has("crowd"):
 		return {"pid": -1, "household": -1, "what": best.what}
-	return {"pid": best.get("pid", -1), "household": best.get("worker", best.get("household", -1)), "what": _what(best)}
+	return {"pid": best.get("pid", -1), "household": best.get("worker", best.get("household", -1)), "what": _what(best), "slot": best.get("slot", -1)}
 
 
 ## What a traveller is doing, as a line for the person's info.
@@ -783,8 +812,10 @@ static func _what(w: Dictionary) -> String:
 	if w.has("what"): # a scene: its event
 		return w.what if there or not w.has("what_home") else w.what_home
 	if w.has("worker"):
-		var at := "auf dem Hof von Haushalt %d" % w.farm if int(w.farm) >= 0 else "auf einem Hof"
 		var doing := "arbeitet" if staying else ("geht zur Arbeit" if there else "kommt von der Arbeit")
+		if int(w.work) == WORK_STATE:
+			return "Tagelöhner, %s: %d Tage öffentliche Arbeit am Markt, vom Staat bezahlt" % [doing, int(w.days)]
+		var at := "auf dem Hof von Haushalt %d" % w.farm if int(w.farm) >= 0 else "auf einem Hof"
 		return "Tagelöhner, %s: %d Tage %s %s" % [doing, int(w.days), WORK_NAMES[clampi(int(w.work), 0, 3)], at]
 	var kg := SimTables._int(int(w.cargo_kg))
 	match int(w.kind):
@@ -812,6 +843,7 @@ static func _at(w: Dictionary) -> Array:
 ## gone today starts from then, so that it is where the clock has it (the
 ## next _events walks it on to now).
 func _add(w: Dictionary) -> void:
+	w.s0 = w.s
 	if _day_s <= 0.0 or w.get("under_way", false):
 		_begin(w, _clock)
 		return
@@ -822,11 +854,124 @@ func _add(w: Dictionary) -> void:
 		_begin(w, t)
 
 func _begin(w: Dictionary, t: float) -> void:
+	if _day_s > 0.0:
+		w.begin_h = _hour_at(t)
 	_walkers.append(w)
 	_start(w, t)
 	_write(_walkers.size() - 1)
 	_next = minf(_next, w.until)
 	_dirty = true
+
+## Looks up in the view, at «Alltag», the persons walking as carriers and
+## traders (by id) and as hired hands (their household's hand), who have no
+## slot yet; the answer comes in `step`.
+func _ask_slots() -> void:
+	_slots_due = false
+	if _day_s <= 0.0 or not people.has_method("ask_slots"):
+		return
+	var pids := PackedInt64Array()
+	var households := PackedInt64Array()
+	_asked_slots.clear()
+	for w in _all_walkers():
+		if w.has("slot") or w.has("pool"):
+			continue
+		var pid: int = w.get("pid", -1)
+		var worker: int = w.get("worker", -1)
+		if pid < 0 and worker < 0:
+			continue
+		pids.append(pid)
+		households.append(-1 if pid >= 0 else worker)
+		_asked_slots.append(w)
+	if _asked_slots.is_empty():
+		return
+	people.ask_slots(pids, households)
+
+func _take_slots(d: Dictionary) -> void:
+	var by_pid: PackedInt64Array = d.get("pid_slots", PackedInt64Array())
+	var by_hand: PackedInt64Array = d.get("hand_slots", PackedInt64Array())
+	for i in mini(_asked_slots.size(), mini(by_pid.size(), by_hand.size())):
+		var w: Dictionary = _asked_slots[i]
+		w.slot = by_pid[i] if int(w.get("pid", -1)) >= 0 else by_hand[i]
+	_asked_slots.clear()
+	_away_build()
+
+## The walkers under way and those waiting to leave today.
+func _all_walkers() -> Array:
+	var all: Array = []
+	all.append_array(_walkers)
+	for p in _pending:
+		all.append(p[1])
+	return all
+
+## `away` anew from the walkers and those waiting to leave, today's hours.
+func _away_build() -> void:
+	away.clear()
+	_away_day = int(people.day())
+	for w in _all_walkers():
+		var slot: int = w.get("slot", -1)
+		if slot >= 0:
+			away[slot] = _away_of(w)
+	away_version += 1
+
+func _away_clear() -> void:
+	_asked_slots.clear()
+	_slots_due = false
+	if not away.is_empty():
+		away.clear()
+		away_version += 1
+
+## The hours today the person walking as `w` is away from home and what it
+## does meanwhile, at «Alltag», as the block «Unterwegs» of
+## people_day.gdshaderinc and day_plan.gd take them: {"leave", "arrive" (at
+## the market or at work), "stay" (there till), "back" (NOT_TODAY when it
+## is not back today), "texts": on the way there, there, on the way home}.
+## The same pace, stays and hours as the walker's own (_leave_hour, _stay,
+## _start), counted in hours of daylight.
+func _away_of(w: Dictionary) -> Dictionary:
+	var along: PackedFloat32Array = w.along
+	var length := along[along.size() - 1]
+	var s0: float = w.get("s0", w.s)
+	var kmh: float = (DayClock.CART_KMH if w.cart else DayClock.WALK_KMH) * float(w.get("pace", 1.0))
+	var begin: float = w.get("begin_h", _leave_hour(w))
+	var leave := 0.0 if w.get("under_way", false) else begin
+	var arrive := leave
+	var stay := leave
+	var back := begin + s0 / kmh # on its way home from where it is
+	if w.dir > 0.0:
+		arrive = begin + (length - s0) / kmh
+		if w.has("worker"):
+			stay = maxf(_sun.y - WORK_END_H, arrive + 0.5)
+		elif int(w.get("kind", -1)) in [0, 1]:
+			stay = arrive + MARKET_H
+		else:
+			stay = arrive + STAY_H
+		back = stay + length / kmh if w.turn else NOT_TODAY
+	elif w.has("worker"): # seen at work, walking home: out since the morning
+		leave = _sun.x - minf(length / kmh, 1.5) - float(w.phase) * 0.3
+		arrive = leave + length / kmh
+		stay = begin
+	return {"leave": clampf(leave, 0.0, NOT_TODAY), "arrive": clampf(arrive, 0.0, NOT_TODAY), "stay": clampf(stay, 0.0, NOT_TODAY),
+		"back": clampf(back, 0.0, NOT_TODAY), "texts": _away_texts(w)}
+
+## What a walker does on the way there, there and on the way home, for
+## the person's day (day_plan.gd).
+static func _away_texts(w: Dictionary) -> Array:
+	if w.has("worker"):
+		var k := clampi(int(w.work), 0, WORK_STATE)
+		if k == WORK_STATE:
+			return ["geht zur öffentlichen Arbeit am Markt", "arbeitet für den Staat am Markt, gegen Taglohn", "kommt von der Arbeit heim"]
+		var doing: String = ["sät", "erntet", "arbeitet", "arbeitet"][k]
+		return ["geht zur Arbeit auf einen fremden Hof", "%s für Taglohn auf einem fremden Hof" % doing, "kommt von der Arbeit heim"]
+	var kg := SimTables._int(int(w.get("cargo_kg", 0)))
+	match int(w.get("kind", -1)):
+		0:
+			return ["bringt %s kg Korn mit dem Esel zum Markt" % kg, "verkauft Korn am Markt", "kommt vom Markt heim"]
+		1:
+			return ["geht mit dem Esel auf den Markt", "kauft Korn am Markt", "trägt %s kg Korn vom Markt heim" % kg]
+		2:
+			return ["fährt %s kg Korn mit dem Ochsenkarren zu einem anderen Markt" % kg, "liefert das Korn ab", "fährt leer zurück"]
+		_:
+			return ["fährt mit dem Ochsenkarren Korn holen", "lädt Korn an einem fremden Markt", "bringt %s kg Korn heim" % kg]
 
 ## The hour a traveller leaves at «Alltag», spread by its own share
 ## (phase, or a scene group's): farm folk to market at first light, hired

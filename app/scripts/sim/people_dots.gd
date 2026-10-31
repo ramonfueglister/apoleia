@@ -168,6 +168,10 @@ var _day_hour := -1.0 # the clock's hour at the slow speeds, -1 at the fast ones
 var _day_sun := Vector2(6.0, 18.0)
 var _person_looks_tex: ImageTexture
 var _person_looks_version := -1
+var _away: Image # who is away from home today and when (people_trips.gd away), for the figures
+var _away_tex: ImageTexture
+var _away_version := -1
+var _away_px: Array[Vector2i] = [] # the pixels written last, to clear
 var _crop_material := ShaderMaterial.new()
 var _lots_view: SubViewport # the lots that carry a house, so the crops leave them free, and what the player built
 var _lots_dirty := true # the mask is drawn again only when its window, the houses or what the player built changed
@@ -1055,9 +1059,10 @@ func _apply_colours() -> void:
 	_legend_label.visible = colour_mode != 0
 
 ## Each person's household as the sim has it (fed, its farm at the harvest
-## or sowing), anew when the sim rebuilt it once a sim week or the people
-## texture grew: the figures draw the hungry thin and send the grown-ups of
-## a farm at work out on its fields (people_figures.gdshader).
+## or sowing, its workshop), anew when the sim rebuilt it once a sim week or
+## the people texture grew: the figures draw the hungry thin and send the
+## grown-ups of a farm at work out on its fields (people_figures.gdshader),
+## and the placement puts those of a workshop at it (people_dots_prep).
 func _sync_person_looks() -> void:
 	if not people.has_method("people_looks") or _texture == null:
 		return
@@ -1072,12 +1077,49 @@ func _sync_person_looks() -> void:
 	if _person_looks == null or _person_looks.get_height() != h:
 		_person_looks = Image.create_from_data(side, h, false, Image.FORMAT_RG8, bytes)
 		_person_looks_tex = ImageTexture.create_from_image(_person_looks)
-		for m in [_figure_material, _figure_shadow_material]:
+		for m in [_figure_material, _figure_shadow_material, _prep_material]:
 			m.set_shader_parameter("person_look_tex", _person_looks_tex)
 			m.set_shader_parameter("has_person_looks", true)
 	else:
 		_person_looks.set_data(side, h, false, Image.FORMAT_RG8, bytes)
 		_person_looks_tex.update(_person_looks)
+	_prep_frames = 2 # a household took up or left a workshop
+
+## Who is away from home today and from when till when (people_trips.gd
+## `away`, at «Alltag»), as the RGBA8 texture of people_dots_common
+## dot_person_away, anew when the list changed: the figure at home is gone
+## while it walks as a carrier or hired hand (people_day.gdshaderinc).
+func _sync_away() -> void:
+	if _texture == null or _trips.away_version == _away_version:
+		return
+	_away_version = _trips.away_version
+	var side: int = people.page_side()
+	var h := side * maxi(_texture.get_layers(), 1)
+	var fresh := _away == null or _away.get_height() != h
+	if fresh:
+		_away = Image.create_empty(side, h, false, Image.FORMAT_RGBA8)
+	else:
+		for px in _away_px:
+			_away.set_pixelv(px, Color(0, 0, 0, 0))
+	_away_px.clear()
+	var per := side * side
+	for slot: int in _trips.away:
+		var e: Dictionary = _trips.away[slot]
+		var px := Vector2i((slot % per) % side, (slot / per) * side + (slot % per) / side)
+		if px.y >= h:
+			continue
+		var a := clampi(int(round(float(e.leave) * 2048.0)), 0, 65535)
+		var b := clampi(int(round(float(e.back) * 2048.0)), 0, 65535)
+		_away.set_pixelv(px, Color8(a >> 8, a & 255, b >> 8, b & 255))
+		_away_px.append(px)
+	if fresh:
+		_away_tex = ImageTexture.create_from_image(_away)
+		for m in [_figure_material, _figure_shadow_material]:
+			m.set_shader_parameter("person_away_tex", _away_tex)
+	else:
+		_away_tex.update(_away)
+	for m in [_figure_material, _figure_shadow_material]:
+		m.set_shader_parameter("has_person_away", not _away_px.is_empty())
 
 ## Palette entries as linear colour, as source_color uniforms arrive.
 static func _linear(c: Color) -> Vector3:
@@ -1120,7 +1162,7 @@ func _pick(pixel: Vector2) -> void:
 			_waiting = false
 			_person.note("[color=#c9a45c]%s[/color]" % _doing)
 			return
-		_today_slot = -1
+		_today_slot = int(traveller.get("slot", -1)) # looked up at «Alltag» (people_trips.gd ask_slots)
 		if int(traveller.pid) >= 0:
 			people.ask_person_id(traveller.pid)
 		else:
@@ -1210,8 +1252,9 @@ func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void
 		_person.today_now(hour)
 
 ## The day of the person in `slot` as its figure lives it (day_plan.gd),
-## from its record (ApoleiaPeople.record) and its household's flags; [] for
-## an empty slot or an extension built before `record`.
+## from its record (ApoleiaPeople.record), its household's flags and, at
+## «Alltag», where it walks today (people_trips.gd away); [] for an empty
+## slot or an extension built before `record`.
 func _today_of(slot: int) -> Array:
 	if slot < 0 or not people.has_method("record"):
 		return []
@@ -1232,7 +1275,7 @@ func _today_of(slot: int) -> Array:
 	if _day_hour < 0.0:
 		var land := get_parent()
 		sun = DayClock.daylight(int(people.day()), DayClock.latitude(land.target) if "target" in land else 41.9)
-	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun)
+	return DayPlan.day(slot, (w >> 8) & 0x3fff, w & 3, (w >> 4) & 15, (w >> 22) & 1 == 1, (w >> 23) & 1 == 1, flags, sun, _trips.away.get(slot, {}))
 
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
@@ -1302,6 +1345,7 @@ func _frame(delta: float) -> void:
 			m.set_shader_parameter("look_tex", looks)
 			m.set_shader_parameter("has_looks", true)
 	_sync_person_looks()
+	_sync_away()
 	# the dots stand on the terrain: same zoom level, relief blend and patch
 	# only what changed: setting a texture rebuilds a material's uniform set,
 	# for some 20 materials each frame (Mac tour, 29.10.2026)
