@@ -14,7 +14,8 @@
 //! tile (bit 6).
 //! Way layer (S127), one RG8 texel per fine tile: R the neighbours its way
 //! leads to (bit k = DIRS[k]), G the way's level 0 … 7 (7 also on a tile
-//! the public works paved, S133).
+//! the public works paved, S133; a paved tile no one walks now leads to its
+//! paved neighbours).
 //! Road layer, one RG8 texel per 25 km cell: R trade road level (1 track,
 //! 2 road; at sea a sea lane, the only part drawn, S127), G the neighbours
 //! it joins (bit k = DIRS[k]).
@@ -184,6 +185,26 @@ impl GrainMap {
         // of its own
         for &t in &job.paved {
             ways[t as usize * 2 + 1] = 7;
+        }
+        // S133: a paved tile no one walks now (no links) joins its paved
+        // neighbours, and they join it back: the straight ones always, a
+        // diagonal only where neither straight tile beside it is paved
+        // (no triangles; as the trade roads below)
+        let mut paved = vec![false; n];
+        for &t in &job.paved {
+            paved[t as usize] = true;
+        }
+        let is_paved = |r: i32, c: i32| r >= 0 && c >= 0 && r < rf && c < cf && paved[(r * cf + c) as usize];
+        let lone: Vec<u32> = job.paved.iter().copied().filter(|&t| ways[t as usize * 2] == 0).collect();
+        for t in lone {
+            let (r, c) = (t as i32 / cf, t as i32 % cf);
+            for (k, &(dr, dc)) in DIRS.iter().enumerate() {
+                if !is_paved(r + dr, c + dc) || (dr != 0 && dc != 0 && (is_paved(r + dr, c) || is_paved(r, c + dc))) {
+                    continue;
+                }
+                ways[t as usize * 2] |= 1 << k;
+                ways[((r + dr) * cf + c + dc) as usize * 2] |= 1 << (7 - k);
+            }
         }
         self.layers.ways = Arc::new(ways);
         for &t in &job.markets {
