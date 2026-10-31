@@ -84,13 +84,43 @@ const FED_COLOURS: Array[Color] = [Color("b8893a"), Color("1f9cc4"), Color("cf5f
 const TREND := Color("a09889") # a figure's small curve, its current value in gold
 ## What the state's bars are, for their tooltips.
 const BAR_ABOUT := {
-	"tax": "Steuern in Denar, die der Staat seit Beginn eingenommen hat.",
+	"tax": "Denar aus dem Verkauf von Korn aus den Staatsspeichern seit Beginn: Zehntkorn, Pachtkorn vom Staatsland und gepfändetes Korn.",
+	"land_tax": "Grundsteuer in Denar, die Höfe seit Beginn für ihre eigenen Felder gezahlt haben.",
+	"head_tax": "Kopfsteuer in Denar, die Haushalte seit Beginn für ihre Erwachsenen gezahlt haben.",
 	"rent": "Pacht in Denar, die Höfe auf Staatsland seit Beginn gezahlt haben.",
 	"estates": "Geld von Toten ohne Erben, das seit Beginn an den Staat gefallen ist.",
 	"wages": "Löhne, die der Staat seit Beginn seinen Dienern gezahlt hat: Soldaten, Beamten, Bauarbeitern.",
 	"public_works": "Lohn, den der Staat seit Beginn für öffentliche Arbeit gezahlt hat: aus dem Geld, das über seiner Reserve lag.",
 	"minted": "Denare, die der Staat seit Beginn neu geprägt hat.",
 	"cash": "Was heute in der Staatskasse liegt.",
+}
+## The state's budget, a line per item of the history's months (Denar): the
+## money it takes in and pays out. The taxes share one hue, as the
+## occupations of a class in the lists. [key, colour, what it is]; the name
+## is the sim's label without "im Monat".
+const BUDGET_IN := [
+	["land_tax_d", Color("d4b889"), "Grundsteuer der Höfe für ihre eigenen Felder: ein Anteil am üblichen Ertrag eines Hektars, einmal im Jahr nach der Ernte."],
+	["head_tax_d", Color("eadcc4"), "Kopfsteuer für jeden Erwachsenen (15 bis 60 Jahre): Taglöhne im Jahr, Höfe nach der Ernte, alle anderen am ersten Tag des Jahres."],
+	["tax_d", Color("b8893a"), "Geld aus dem Verkauf von Korn aus den Staatsspeichern: Zehntkorn, Pachtkorn vom Staatsland und gepfändetes Korn."],
+	["rent_d", Color("cf5f44"), "Pacht in Geld von Höfen auf Staatsland."],
+	["estates_d", Color("6f9a3a"), "Geld von Toten ohne Erben, das an den Staat fällt."],
+]
+const BUDGET_OUT := [
+	["wages_d", Color("8f6fd0"), "Lohn für Soldaten, Beamte und die Bauarbeiter der Bauaufträge."],
+	["public_works_d", Color("1f9cc4"), "Lohn für öffentliche Arbeit, bezahlt aus dem Geld über der Reserve der Kasse."],
+]
+const BUDGET_ROW := 34.0 # a line of the budget: its name and value, under them its bar
+const BUDGET_HEAD := 30.0
+const YEAR_DAYS := 360
+const TAX_CARDS: Array[String] = ["arrears", "arrears_households", "seized", "auctions"]
+const YEARS_PX := 210.0 # the budget's years, a bar each
+## A figure's tooltip: what it is, where that needs saying.
+const TILE_ABOUT := {
+	"cash": "Die Kasse behält eine Reserve und zahlt, was darüber liegt, als öffentliche Arbeit aus. Steigt oder fällt sie, ist das weder gut noch schlecht.",
+	"income_y": "Was der Staat in den letzten zwölf Monaten eingenommen hat. Die Steuern sind einmal im Jahr fällig, darum zählt das ganze Jahr.",
+	"spending_y": "Was der Staat in den letzten zwölf Monaten ausgegeben hat.",
+	"arrears": "Grund- und Kopfsteuer, die Haushalte dem Staat schulden.",
+	"arrears_households": "Haushalte, die dem Staat Steuern schulden.",
 }
 
 ## The goods' names before the goods table names them (GOOD_KEYS order).
@@ -134,8 +164,15 @@ const CARDS := {
 	"state": ["bars", "Geld des Staates seit Beginn", "", "Was der Staat seit Beginn eingenommen und ausgegeben hat, und was heute in der Kasse liegt."],
 	"held": ["line", "Geld im Umlauf", "D", "Alle Denar ausserhalb der Staatskasse am Monatsende, und was der Staat seit Beginn neu geprägt hat."],
 	"tax_grain": ["line", "Steuerkorn", "t", "Korn, das der Staat seit Beginn als Steuer eingezogen hat."],
-	"income": ["line", "Einnahmen im Monat", "D", "Denar, die der Staat im Monat einnimmt: Steuer, Pacht von Höfen auf Staatsland und das Geld von Toten ohne Erben."],
+	"income": ["line", "Einnahmen im Monat", "D", "Denar, die der Staat im Monat einnimmt: Grund- und Kopfsteuer, Geld aus dem Verkauf von Korn aus seinen Speichern (Zehnt, Pacht vom Staatsland), Pacht in Geld und das Geld von Toten ohne Erben."],
 	"spending": ["line", "Ausgaben im Monat", "D", "Denar, die der Staat im Monat ausgibt: Staatslohn für Soldaten, Beamte und Bauarbeiter, und Lohn für öffentliche Arbeit aus dem Geld über seiner Reserve."],
+	"budget": ["budget", "Haushalt im letzten Jahr", "D", "Was der Staat in den letzten zwölf Monaten eingenommen und ausgegeben hat, Posten für Posten, und darunter, was nicht in diese Summen gehört. Die Steuern sind einmal im Jahr fällig, darum zählt das ganze Jahr und nicht ein Monat."],
+	"laws": ["laws", "Steuergesetz", "", "Für jede Steuer eine von sechs Stufen. Eine neue Stufe gilt ab der nächsten Fälligkeit: der Zehnt bei der Ernte, die Grundsteuer nach der Ernte, die Kopfsteuer der Höfe nach der Ernte und aller anderen am ersten Tag des Jahres. Wer nicht zahlen kann, kommt in den Steuerrückstand."],
+	"budget_years": ["years", "Haushalt nach Jahren", "D", "Jedes Jahr ein Balken: nach oben die Einnahmen nach Posten, nach unten die Ausgaben. Das laufende Jahr ist noch nicht voll."],
+	"arrears": ["line", "Steuerrückstand", "D", "Grund- und Kopfsteuer, die Haushalte dem Staat am Monatsende schulden. Ist der Rückstand ein Jahr alt, pfändet der Staat bald nach der nächsten Ernte Geld und Korn, ausser dem Essen bis zur nächsten Ernte und dem Saatgut; nach zwei Jahren wird ein eigener Hof versteigert. Die Steuern eines Guts zahlt sein Grundherr."],
+	"arrears_households": ["line", "Haushalte im Rückstand", "", "Haushalte, die dem Staat am Monatsende Steuern schulden."],
+	"seized": ["line", "Pfändungen", "D", "Geld und Korn, das der Staat im Monat für Rückstände pfändet, das Korn zum Ankaufspreis; und Rückstand, den er als uneinbringlich abschreibt, wenn nach zwei Jahren nichts mehr zu holen ist."],
+	"auctions": ["line", "Zwangsversteigerungen", "Höfe", "Eigene Höfe, die im Monat für zwei Jahre Steuerrückstand versteigert werden: die Familie bleibt als Pächter des Käufers. Bietet niemand, fällt der Hof an den Staat (Domäne)."],
 	"public_days": ["line", "Öffentliche Arbeit", "Tage", "Arbeitstage im Monat, die der Staat als öffentliche Arbeit bezahlt, zum Taglohn des Marktes. Im ersten Jahr noch keine: dann kennt die Kasse ihre Reserve noch nicht."],
 	"m_price": ["line", "Kornpreis", "D/kg", "Der Kornpreis dieses Marktes am Monatsende. Grau: der Median aller Märkte. Vor den letzten zehn Jahren steht jedes Jahr als sein Mittel."],
 	"goods": ["goods", "Warenpreise", "D", "Der Preis jeder Ware ist der Median der Märkte, gewichtet nach ihren Menschen. Darunter sein Verlauf im gewählten Zeitraum."],
@@ -160,23 +197,25 @@ const PAGES := {
 	"money_charts": ["real", "wage", "work", "money", "lorenz", "gini_rows"],
 	"goods_charts": ["goods", "clothes", "good0", "good1", "good2", "good3", "good4", "good5"],
 	"farms_charts": ["farms", "land", "farm_count", "farm_store"],
+	"budget_charts": ["tiles", "budget", "laws", "budget_years", "arrears", "arrears_households", "seized", "auctions"],
 	"state_charts": ["cash", "state", "income", "spending", "public_days", "held", "tax_grain"],
 	"market": ["tiles", "m_why", "lage", "m_people", "m_money", "m_goods"],
 	"market_charts": ["m_price", "m_hungry", "m_store", "m_real", "m_gini", "m_persons", "m_good0", "m_good1", "m_good2", "m_good3", "m_good4", "m_good5", "m_public"],
 }
 ## The cards across the page, as Victoria 3 gives its main graph the width:
 ## each topic's leading chart and the one that sums it up.
-const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "m_price",
+const WIDE: Array[String] = ["persons", "jobs", "price", "fed", "flows", "real", "gini_rows", "goods", "clothes", "cash", "state", "budget", "laws", "budget_years", "m_price",
 	"m_persons", "m_goods"]
 ## The findings in the Lage's order: the topics as their pages; "goods"
 ## is the good that moved most.
 const LAGE_REALM: Array[String] = ["persons", "life", "hunger", "moves", "tents", "jobs", "price", "fed", "harvest", "granaries",
 	"spoiled", "export", "traded", "alms", "real", "wage", "work", "money", "lorenz", "gini_rows", "goods", "clothes", "farms", "land",
-	"farm_count", "farm_store", "cash", "state", "income", "spending", "public_days", "held", "tax_grain"]
+	"farm_count", "farm_store", "budget", "arrears", "seized", "auctions", "cash", "state", "income", "spending", "public_days", "held",
+	"tax_grain"]
 const LAGE_MARKET: Array[String] = ["m_price", "m_hungry", "m_store", "m_real", "m_public", "m_persons", "m_gini", "m_people", "m_money", "goods"]
 ## A topic's name over its lines in the Lage, by the page of its charts.
 const TOPICS := {"people_charts": "Menschen", "grain_charts": "Korn", "money_charts": "Geld", "goods_charts": "Waren",
-	"farms_charts": "Höfe", "state_charts": "Staat"}
+	"farms_charts": "Höfe", "budget_charts": "Staat", "state_charts": "Staat"}
 ## The classes' table, a line per measure: [key, name, what it is].
 const CLASS_ROWS := [
 	["persons", "Menschen", "Die Menschen der Schicht."],
@@ -227,6 +266,21 @@ var _class_table: Control
 var _class_names := PackedStringArray()
 var _class_cells := [] # per line of CLASS_ROWS: per class [text, colour]
 var _class_hover := Vector2i(-1, -1) # column, part of CLASS_PARTS
+var set_tax: Callable # (law, level): the sim's set_tax, handed by sim_tables.gd; the laws' buttons call it
+var _budget: Control
+var _budget_sides := [[], []] # income, spending: per item {key, name, colour, about, year, before, months}
+var _budget_extra := [] # what is not in the sums: [name, value text, about]
+var _budget_hover := Vector2i(-1, -1) # side, row
+var _years: Control
+var _years_legend: HFlowContainer
+var _year_rows := [] # per year {year, part (not full yet), in, out}: each item's Denar
+var _year_names := [[], []] # income, spending: per item [name, colour]
+var _year_hover := -1
+var _laws_box: VBoxContainer
+var _laws := [] # tax_law(): per law {law, name, level, levels, rate, unit, denar}
+var _law_buttons := [] # per law its six buttons
+var _law_notes := [] # per law the line under its buttons
+var _law_wanted := {} # law row -> the level the player chose, until the sim has it
 
 func _init(date_fn: Callable, page_name := "overview") -> void:
 	date = date_fn
@@ -242,7 +296,11 @@ func _init(date_fn: Callable, page_name := "overview") -> void:
 		for c in _column.get_children():
 			if c is GridContainer:
 				c.columns = 2 if size.x <= 0.0 or size.x >= CARD_MIN * 2.0 + GAP + 12.0 else 1)
-	if _market:
+	if page == "budget_charts":
+		_tile_specs = [["cash", "Staatskasse", " D", 1.0, false, true], ["income_y", "Einnahmen im Jahr", " D", 1.0, false, true],
+			["spending_y", "Ausgaben im Jahr", " D", 1.0, false, true], ["arrears", "Steuerrückstand", " D", 1.0, true],
+			["arrears_households", "Säumige Haushalte", "", 1.0, true]]
+	elif _market:
 		_tile_specs = [["price", "Kornpreis", " D/kg", 1.0, true], ["share_hungry", "Hungernd", " %", 100.0, true],
 			["real_wage", "Reallohn", " kg", 1.0, false], ["persons", "Menschen", "", 1.0, false], ["gini", "Gini", "", 1.0, true]]
 	else:
@@ -278,6 +336,12 @@ func _add(key: String) -> void:
 			_lorenz_card()
 		"bars":
 			_bar_card()
+		"budget":
+			_budget_card()
+		"laws":
+			_laws_card()
+		"years":
+			_years_card()
 		"goods":
 			_goods_card(key)
 		_:
@@ -374,13 +438,27 @@ func show_tables(tables: Dictionary) -> void:
 		_set_line("held", h, [{"key": "money_held", "name": "Im Umlauf", "colour": Charts.SERIES[0]},
 			{"key": "minted", "name": "Geprägt seit Beginn", "colour": Charts.SERIES[3]}])
 		_set_line("tax_grain", h, [{"key": "tax_grain_t", "name": "Steuerkorn", "colour": Charts.SERIES[0]}])
-		_set_line("income", h, [{"key": "tax_d", "name": "Steuer", "colour": Charts.SERIES[0]},
+		_set_line("income", h, [{"key": "land_tax_d", "name": "Grundsteuer", "colour": BUDGET_IN[0][1]},
+			{"key": "head_tax_d", "name": "Kopfsteuer", "colour": BUDGET_IN[1][1]},
+			{"key": "tax_d", "name": "Verkauf aus Staatsspeichern", "colour": Charts.SERIES[0]},
 			{"key": "rent_d", "name": "Pacht", "colour": Charts.SERIES[2]},
 			{"key": "estates_d", "name": "Erbloser Nachlass", "colour": Charts.SERIES[4]}])
 		_set_line("spending", h, [{"key": "wages_d", "name": "Staatslohn", "colour": Charts.SERIES[3]},
 			{"key": "public_works_d", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
 		_set_line("public_days", h, [{"key": "public_days", "name": "Öffentliche Arbeit", "colour": Charts.SERIES[1]}])
-		_fill_tiles(d)
+		_set_line("arrears", h, [{"key": "arrears", "name": "Steuerrückstand", "colour": Charts.SERIES[2]}])
+		_set_line("arrears_households", h, [{"key": "arrears_households", "name": "Haushalte", "colour": Charts.SERIES[2]}])
+		_set_line("seized", h, [{"key": "seized_d", "name": "Gepfändet", "colour": Charts.SERIES[2]},
+			{"key": "written_off_d", "name": "Abgeschrieben", "colour": Charts.SERIES[3]}])
+		_set_line("auctions", h, [{"key": "auctions", "name": "Versteigert", "colour": Charts.SERIES[0]},
+			{"key": "domains", "name": "An den Staat", "colour": Charts.SERIES[3]}])
+		if page == "budget_charts":
+			_set_budget(h)
+			_set_years(h)
+			_set_laws(tables.get("laws", []), d)
+			_fill_tiles(_with_year_sums(d))
+		else:
+			_fill_tiles(d)
 	var pop: Dictionary = tables.get("population", {})
 	if not pop.is_empty() and pop.data.has("occupation"):
 		var sums := {}
@@ -420,7 +498,8 @@ func show_tables(tables: Dictionary) -> void:
 	var state: Dictionary = tables.get("state", {})
 	if not state.is_empty():
 		_bar_rows = []
-		for item in [["tax", 1.0], ["rent", 1.0], ["estates", 1.0], ["wages", -1.0], ["public_works", -1.0], ["minted", 1.0], ["cash", 1.0]]:
+		for item in [["land_tax", 1.0], ["head_tax", 1.0], ["tax", 1.0], ["rent", 1.0], ["estates", 1.0], ["wages", -1.0], ["public_works", -1.0],
+				["minted", 1.0], ["cash", 1.0]]:
 			var i := Array(state.columns).find(item[0])
 			if i >= 0:
 				_bar_rows.append([state.labels[i], float(state.data[item[0]][0]) * item[1], item[0]])
@@ -482,7 +561,7 @@ func _fill_tiles(d: Dictionary) -> void:
 			"spark": vals, "spark_title": "Alle Monate seit Beginn", "spark_unit": s[2].strip_edges(),
 			"spark_from": date.call(int(d.day[0])) if n > 0 else "", "spark_to": date.call(int(d.day[n - 1])) if n > 0 else "",
 			"colour": Charts.SERIES[0],
-			"text": "Die Kasse behält eine Reserve und zahlt, was darüber liegt, als öffentliche Arbeit aus. Steigt oder fällt sie, ist das weder gut noch schlecht." if s.size() > 5 and s[5] else ""})
+			"text": TILE_ABOUT.get(s[0], "")})
 
 ## "▲ 3.4 %" from month `before` to the last, and its colour: a gain is
 ## green, unless `falling_good` (a price); `neutral` (the treasury, which
@@ -639,6 +718,8 @@ func _set_line(key: String, h: Dictionary, specs: Array) -> void:
 			one.band = s.get("band", "Spanne")
 		series.append(one)
 	entry.series = series
+	if key in TAX_CARDS: # a game from before the tax law: no card
+		entry.control.get_parent().get_parent().visible = not series.is_empty()
 	var days := PackedInt64Array(Array(d.day))
 	entry.days = days.slice(_first(days.size()))
 	if d.has("yearly"):
@@ -1469,7 +1550,7 @@ func _bar_card() -> void:
 		var top := 1.0
 		for r in _bar_rows:
 			top = maxf(top, absf(r[1]))
-		var label_w := 150.0
+		var label_w := 216.0
 		var value_w := 80.0
 		var x1 := _bars.size.x - value_w - 8.0
 		var mid := (label_w + x1) * 0.5
@@ -1492,6 +1573,433 @@ func _bar_card() -> void:
 		var v: float = _bar_rows[k][1]
 		return {"id": "bar:%d" % k, "title": _bar_rows[k][0], "kind": "Geld des Staates", "text": BAR_ABOUT.get(_bar_rows[k][2], ""),
 			"rows": [["Denar", ("+" if v > 0.0 else ("−" if v < 0.0 else "")) + Charts.label(absf(v))]]})
+
+# ------------------------------------------------------------------ the state's budget
+
+## The budget as Victoria 3's: the income at the left, the spending at the
+## right, each item with its sum over the last twelve months and a bar on
+## one scale for both sides; under them the balance and what is not in the
+## sums (the Zehnt as grain, what was seized, what was written off).
+func _budget_card() -> void:
+	var box := _card("budget")
+	_budget = Control.new()
+	_budget.custom_minimum_size = Vector2(0, PLOT_PX)
+	_budget.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_budget)
+	_budget.draw.connect(_draw_budget)
+	_budget.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var at := _budget_at(e.position)
+			if at != _budget_hover:
+				_budget_hover = at
+				_budget.queue_redraw())
+	_budget.mouse_exited.connect(func():
+		_budget_hover = Vector2i(-1, -1)
+		_budget.queue_redraw())
+	Tooltips.attach(_budget, func(at: Vector2) -> Dictionary: return _budget_tip(_budget_at(at)))
+
+## Each item of BUDGET_IN and BUDGET_OUT the history has, summed over the
+## last twelve months and the twelve before.
+func _set_budget(h: Dictionary) -> void:
+	if _budget == null:
+		return
+	var d: Dictionary = h.data
+	var n: int = d.day.size()
+	for side in 2:
+		var items := []
+		for spec in (BUDGET_IN if side == 0 else BUDGET_OUT):
+			if not d.has(spec[0]):
+				continue
+			var vals := _col(d, spec[0])
+			var before := 0.0
+			for v in vals.slice(maxi(0, n - 24), maxi(0, n - 12)):
+				before += v
+			items.append({"key": spec[0], "name": _label_of(h, spec[0]), "colour": spec[1], "about": spec[2], "year": _year_sum(vals),
+				"before": before if n > 12 else -1.0, "months": vals})
+		_budget_sides[side] = items
+	_budget_extra = []
+	if d.has("tithe_t"):
+		var grain := _year_sum(_col(d, "tithe_t"))
+		var worth := _year_sum(_col(d, "tithe_d")) if d.has("tithe_d") else 0.0
+		_budget_extra.append(["Zehnt abgeliefert", "%s t, zum Ankaufspreis %s D" % [Charts.label(grain), Charts.label(worth)],
+			"Korn, das die Höfe als Zehnt bei der Ernte in die Staatsspeicher abliefern. Zu Geld wird es erst, wenn der Staat es verkauft (Verkauf aus Staatsspeichern), darum steht es nicht in der Summe."])
+	if d.has("seized_d"):
+		_budget_extra.append(["Gepfändet", Charts.label(_year_sum(_col(d, "seized_d"))) + " D",
+			"Geld und Korn, das der Staat für Steuerrückstand gepfändet hat, das Korn zum Ankaufspreis. Das Geld steckt schon in Grund- und Kopfsteuer, das Korn kommt beim Verkauf aus den Staatsspeichern."])
+	if d.has("written_off_d"):
+		_budget_extra.append(["Uneinbringlich abgeschrieben", Charts.label(_year_sum(_col(d, "written_off_d"))) + " D",
+			"Steuerrückstand, den der Staat nach zwei Jahren abschreibt, weil nichts mehr zu holen ist."])
+	var rows := maxi(_budget_sides[0].size(), _budget_sides[1].size())
+	_budget.custom_minimum_size.y = BUDGET_HEAD + rows * BUDGET_ROW + 10.0 + LINE_PX + _budget_extra.size() * LINE_PX
+	_budget.queue_redraw()
+
+## A history column's name without "im Monat": the sim's own words.
+static func _label_of(h: Dictionary, key: String) -> String:
+	var i := Array(h.get("columns", [])).find(key)
+	var name: String = h.labels[i] if i >= 0 else key
+	return name.trim_suffix(" im Monat")
+
+static func _side_total(items: Array) -> float:
+	var sum := 0.0
+	for it in items:
+		sum += float(it.year)
+	return sum
+
+## The budget's halves: x and width of side 0 (income) and 1 (spending).
+func _budget_half(side: int) -> Vector2:
+	var w := (_budget.size.x - 16.0) * 0.5
+	return Vector2(side * (w + 16.0), w)
+
+## Side and row under `at`; row -1 the head, -2 nothing; side 2 the lines
+## under the sums, its row the line.
+func _budget_at(at: Vector2) -> Vector2i:
+	var rows := maxi(_budget_sides[0].size(), _budget_sides[1].size())
+	var below := BUDGET_HEAD + rows * BUDGET_ROW + 10.0 + LINE_PX
+	if at.y >= below:
+		var k := int((at.y - below) / LINE_PX)
+		return Vector2i(2, k) if k < _budget_extra.size() else Vector2i(-1, -1)
+	var side := 0 if at.x < _budget_half(1).x else 1
+	var row := int((at.y - BUDGET_HEAD) / BUDGET_ROW) if at.y >= BUDGET_HEAD else -1
+	if row >= _budget_sides[side].size():
+		return Vector2i(-1, -1)
+	return Vector2i(side, row)
+
+func _draw_budget() -> void:
+	var font := UiStyle.serif()
+	var top := 1.0
+	for side in 2:
+		for it in _budget_sides[side]:
+			top = maxf(top, float(it.year))
+	var rows := maxi(_budget_sides[0].size(), _budget_sides[1].size())
+	for side in 2:
+		var half := _budget_half(side)
+		var x0 := half.x
+		var w := half.y
+		var items: Array = _budget_sides[side]
+		var sign_colour := UiStyle.GAIN if side == 0 else UiStyle.LOSS # as the state's bars and Victoria 3's budget
+		_budget.draw_rect(Rect2(x0, 0, w, BUDGET_HEAD - 4.0), UiStyle.BAR) # the section's band, as Victoria 3's
+		_budget.draw_line(Vector2(x0, BUDGET_HEAD - 4.0), Vector2(x0 + w, BUDGET_HEAD - 4.0), UiStyle.GOLD_DIM, 1.0)
+		UiStyle.text_at(_budget, Vector2(x0 + 8.0, 19.0), "Einnahmen" if side == 0 else "Ausgaben", UiStyle.TITLE, UiStyle.SIZE_TEXT,
+			HORIZONTAL_ALIGNMENT_LEFT, w * 0.5, font)
+		var total := _side_total(items)
+		UiStyle.text_at(_budget, Vector2(x0 + w * 0.5, 19.0), ("+" if side == 0 else "−") + Charts.label(total) + " D", sign_colour,
+			UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, w * 0.5 - 8.0, UiStyle.bold())
+		for k in rows:
+			var y := BUDGET_HEAD + k * BUDGET_ROW
+			_budget.draw_rect(Rect2(x0, y, w, BUDGET_ROW - 2.0), UiStyle.ROW if k % 2 == 0 else UiStyle.ROW_DARK)
+			if k >= items.size():
+				continue
+			var it: Dictionary = items[k]
+			if _budget_hover == Vector2i(side, k):
+				_budget.draw_rect(Rect2(x0, y, w, BUDGET_ROW - 2.0), UiStyle.HOVER)
+			_budget.draw_rect(Rect2(x0 + 8.0, y + 7.0, 11.0, 11.0), it.colour)
+			_budget.draw_rect(Rect2(x0 + 8.0, y + 7.0, 11.0, 11.0), UiStyle.EDGE, false, 1.0)
+			UiStyle.text_at(_budget, Vector2(x0 + 26.0, y + 17.0), it.name, UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT,
+				w - 26.0 - 96.0, font)
+			UiStyle.text_at(_budget, Vector2(x0 + w - 106.0, y + 17.0), ("+" if side == 0 else "−") + Charts.label(it.year) + " D", sign_colour,
+				UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, 100.0, font)
+			var trough := Rect2(x0 + 26.0, y + 22.0, w - 32.0, 6.0)
+			_budget.draw_rect(trough, UiStyle.CHART_GRID)
+			var fill := trough.size.x * clampf(float(it.year) / top, 0.0, 1.0)
+			if fill >= 1.0:
+				var a := trough.position
+				var b := a + Vector2(fill, 0.0)
+				var dark := Color(it.colour).darkened(0.35)
+				var light := Color(it.colour).lightened(0.15)
+				_budget.draw_polygon(PackedVector2Array([a, b, b + Vector2(0, 6), a + Vector2(0, 6)]), PackedColorArray([dark, light, light, dark]))
+	var y2 := BUDGET_HEAD + rows * BUDGET_ROW + 6.0
+	_budget.draw_line(Vector2(0, y2), Vector2(_budget.size.x, y2), UiStyle.GOLD_DIM, 1.0)
+	var balance := _side_total(_budget_sides[0]) - _side_total(_budget_sides[1])
+	UiStyle.text_at(_budget, Vector2(4.0, y2 + 20.0), "Saldo im letzten Jahr", UiStyle.CONCEPT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font)
+	UiStyle.text_at(_budget, Vector2(_budget.size.x - 200.0, y2 + 20.0), ("+" if balance > 0.0 else ("−" if balance < 0.0 else ""))
+		+ Charts.label(absf(balance)) + " D", UiStyle.TEXT, UiStyle.SIZE_TEXT, HORIZONTAL_ALIGNMENT_RIGHT, 194.0, UiStyle.bold())
+	for k in _budget_extra.size():
+		var y := y2 + 4.0 + LINE_PX * (k + 1)
+		if _budget_hover == Vector2i(2, k):
+			_budget.draw_rect(Rect2(0, y, _budget.size.x, LINE_PX), UiStyle.HOVER)
+		UiStyle.text_at(_budget, Vector2(4.0, y + 16.0), _budget_extra[k][0], UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font)
+		UiStyle.text_at(_budget, Vector2(_budget.size.x - 300.0, y + 16.0), _budget_extra[k][1], UiStyle.DIM, UiStyle.SIZE_SMALL,
+			HORIZONTAL_ALIGNMENT_RIGHT, 294.0, font)
+
+func _budget_tip(at: Vector2i) -> Dictionary:
+	if at.x == 2:
+		var e: Array = _budget_extra[at.y]
+		return {"id": "budget:x%d" % at.y, "title": e[0], "kind": "Nicht in der Summe", "text": e[2], "rows": [["Im letzten Jahr", e[1]]]}
+	if at.x < 0 or at.y < 0:
+		return {}
+	var it: Dictionary = _budget_sides[at.x][at.y]
+	var total := _side_total(_budget_sides[at.x])
+	var rows := [["Im letzten Jahr", Charts.label(it.year) + " D"]]
+	if float(it.before) >= 0.0:
+		rows.append(["Im Jahr davor", Charts.label(it.before) + " D"])
+	if total > 0.0:
+		rows.append(["Anteil", _pct(float(it.year) / total * 100.0) + " %"])
+	var months: PackedFloat64Array = it.months
+	return {"id": "budget:%s" % it.key, "title": it.name, "kind": "Einnahme" if at.x == 0 else "Ausgabe", "text": it.about, "rows": rows,
+		"spark": months, "spark_title": "Jeder Monat seit Beginn", "spark_unit": "D", "colour": it.colour}
+
+## The laws as Victoria 3's tax levels: per tax a row of six buttons, the
+## level in force lit; under it what the level is and what the tax brought.
+func _laws_card() -> void:
+	var box := _card("laws")
+	_laws_box = VBoxContainer.new()
+	_laws_box.add_theme_constant_override("separation", 6)
+	box.add_child(_laws_box)
+	var foot := _foot()
+	foot.text = "Eine neue Stufe gilt ab der nächsten Fälligkeit; Zehnt und Grundsteuer nach der Ernte."
+	box.add_child(foot)
+
+func _set_laws(laws: Array, d: Dictionary) -> void:
+	if _laws_box == null:
+		return
+	_laws_box.get_parent().get_parent().visible = not laws.is_empty() # a sim without the tax law
+	if laws.size() != _law_buttons.size():
+		for c in _laws_box.get_children():
+			c.queue_free()
+		_law_buttons = []
+		_law_notes = []
+		for k in laws.size():
+			_law_row(k, laws[k])
+	_laws = laws
+	var brought := {0: "tithe_d", 1: "land_tax_d", 2: "head_tax_d"}
+	for k in laws.size():
+		var law: Dictionary = laws[k]
+		if _law_wanted.get(k, -1) == int(law.level):
+			_law_wanted.erase(k)
+		var lit: int = _law_wanted.get(k, int(law.level))
+		for lv in _law_buttons[k].size():
+			_law_buttons[k][lv].set_pressed_no_signal(lv == lit)
+			_law_buttons[k][lv].disabled = not set_tax.is_valid()
+		var note := "%s %s" % [_num(float(law.rate)), law.unit] if int(law.level) > 0 else "keine"
+		if float(law.get("denar", 0.0)) > 0.0:
+			note += ", etwa %s D %s" % [_num(float(law.denar)), "je ha und Jahr" if int(law.law) == 1 else "je Erwachsenen und Jahr"]
+		var col: String = brought.get(int(law.law), "")
+		if d.has(col):
+			note += "  ·  im letzten Jahr %s D%s" % [Charts.label(_year_sum(_col(d, col))), " (Korn zum Ankaufspreis)" if col == "tithe_d" else ""]
+		if _law_wanted.has(k):
+			note = "Neu «%s» ab der nächsten Fälligkeit  ·  jetzt %s" % [law.levels[_law_wanted[k]], note]
+		_law_notes[k].text = note
+
+func _law_row(k: int, law: Dictionary) -> void:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	_laws_box.add_child(row)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 4)
+	row.add_child(line)
+	var name := _label(str(law.name), UiStyle.CONCEPT, UiStyle.SIZE_TEXT)
+	name.custom_minimum_size = Vector2(130, 0)
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(name)
+	var buttons := []
+	var levels: PackedStringArray = law.levels
+	for lv in levels.size():
+		var b := Button.new()
+		b.text = levels[lv]
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(70, 30)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.add_theme_font_size_override("font_size", UiStyle.SIZE_SMALL)
+		b.pressed.connect(_pick_law.bind(k, lv))
+		Tooltips.attach(b, func(_at: Vector2) -> Dictionary:
+			var now: Dictionary = _laws[k]
+			var tip := {"id": "law:%d:%d" % [k, lv], "title": "%s: %s" % [law.name, levels[lv]], "kind": "Steuerstufe",
+				"text": "Ein Klick setzt die Stufe; sie gilt ab der nächsten Fälligkeit." if lv != int(now.level) else "Diese Stufe gilt jetzt."}
+			var rates: Array = Array(now.get("rates", []))
+			if lv < rates.size(): # what the level is, in the law's unit
+				tip["rows"] = [["Satz", ("%s %s" % [_num(float(rates[lv])), now.unit]) if int(rates[lv]) > 0 else "keine Steuer"]]
+			return tip)
+		line.add_child(b)
+		buttons.append(b)
+	_law_buttons.append(buttons)
+	var note := _label("", UiStyle.DIM, UiStyle.SIZE_SMALL)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART # a second line, not an ellipsis
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pad := MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 134)
+	pad.add_child(note)
+	row.add_child(pad)
+	_law_notes.append(note)
+
+func _pick_law(k: int, level: int) -> void:
+	if not set_tax.is_valid() or k >= _laws.size():
+		return
+	set_tax.call(int(_laws[k].law), level)
+	if level == int(_laws[k].level):
+		_law_wanted.erase(k)
+	else:
+		_law_wanted[k] = level
+	var d: Dictionary = _tables.get("history", {}).get("data", {})
+	_set_laws(_laws, d)
+
+## The budget's years: a bar each, the income stacked up from the middle
+## line, the spending down, in the items' colours.
+func _years_card() -> void:
+	var box := _card("budget_years")
+	_years = Control.new()
+	_years.custom_minimum_size = Vector2(0, YEARS_PX)
+	_years.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_years)
+	_years_legend = HFlowContainer.new()
+	_years_legend.add_theme_constant_override("h_separation", 12)
+	_years_legend.custom_minimum_size = Vector2(0, LINE_PX)
+	box.add_child(_years_legend)
+	_years.draw.connect(_draw_years)
+	_years.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var k := _year_at(e.position.x)
+			if k != _year_hover:
+				_year_hover = k
+				_years.queue_redraw())
+	_years.mouse_exited.connect(func():
+		_year_hover = -1
+		_years.queue_redraw())
+	Tooltips.attach(_years, func(at: Vector2) -> Dictionary: return _year_tip(_year_at(at.x)))
+
+func _set_years(h: Dictionary) -> void:
+	if _years == null:
+		return
+	var d: Dictionary = h.data
+	var specs := [BUDGET_IN.filter(func(s): return d.has(s[0])), BUDGET_OUT.filter(func(s): return d.has(s[0]))]
+	var names := [[], []]
+	for side in 2:
+		for s in specs[side]:
+			names[side].append([_label_of(h, s[0]), s[1]])
+	var by_year := {}
+	var order := []
+	var days: Array = Array(d.day)
+	for i in days.size():
+		var yr := int(days[i]) / YEAR_DAYS
+		if not by_year.has(yr):
+			by_year[yr] = {"year": yr + 1, "months": 0, "in": PackedFloat64Array(), "out": PackedFloat64Array()}
+			by_year[yr]["in"].resize(specs[0].size())
+			by_year[yr]["out"].resize(specs[1].size())
+			order.append(yr)
+		var row: Dictionary = by_year[yr]
+		row.months += 1
+		for k in specs[0].size():
+			row["in"][k] += float(d[specs[0][k][0]][i])
+		for k in specs[1].size():
+			row["out"][k] += float(d[specs[1][k][0]][i])
+	_year_rows = []
+	for yr in order:
+		var row: Dictionary = by_year[yr]
+		row.part = row.months < 12
+		_year_rows.append(row)
+	if names != _year_names:
+		_year_names = names
+		for c in _years_legend.get_children():
+			c.queue_free()
+		for side in 2:
+			for nm in names[side]:
+				_years_legend.add_child(_swatch(nm[1], nm[0]))
+	_years.queue_redraw()
+
+func _years_plot() -> Rect2:
+	return Rect2(84.0, 6.0, maxf(10.0, _years.size.x - 90.0), YEARS_PX - 30.0)
+
+func _year_at(x: float) -> int:
+	var plot := _years_plot()
+	if _year_rows.is_empty() or x < plot.position.x or x > plot.end.x:
+		return -1
+	return clampi(int((x - plot.position.x) / plot.size.x * _year_rows.size()), 0, _year_rows.size() - 1)
+
+static func _sum(vals: PackedFloat64Array) -> float:
+	var s := 0.0
+	for v in vals:
+		s += v
+	return s
+
+func _draw_years() -> void:
+	var plot := _years_plot()
+	Charts.board(_years, plot, false)
+	var n := _year_rows.size()
+	if n == 0:
+		return
+	var up := 0.0
+	var down := 0.0
+	for row in _year_rows:
+		up = maxf(up, _sum(row["in"]))
+		down = maxf(down, _sum(row.out))
+	if up + down <= 0.0:
+		return
+	var inner := plot.grow(-4.0)
+	var scale := inner.size.y / (up + down)
+	var zero := inner.position.y + up * scale
+	var slot := inner.size.x / n
+	var bw := maxf(2.0, slot * 0.72)
+	var font := UiStyle.serif()
+	for k in n:
+		var row: Dictionary = _year_rows[k]
+		var x := inner.position.x + k * slot + (slot - bw) * 0.5
+		if k == _year_hover:
+			_years.draw_rect(Rect2(inner.position.x + k * slot, inner.position.y, slot, inner.size.y), UiStyle.HOVER)
+		var alpha := 0.55 if row.part else 1.0
+		var y := zero
+		for i in row["in"].size():
+			var hgt: float = row["in"][i] * scale
+			if hgt > 0.0:
+				_years.draw_rect(Rect2(x, y - hgt, bw, hgt), Color(_year_names[0][i][1], alpha))
+				y -= hgt
+				if hgt > 3.0:
+					_years.draw_line(Vector2(x, y), Vector2(x + bw, y), UiStyle.CHART, 1.0) # a gap between the parts
+		y = zero
+		for i in row.out.size():
+			var hgt: float = row.out[i] * scale
+			if hgt > 0.0:
+				_years.draw_rect(Rect2(x, y, bw, hgt), Color(_year_names[1][i][1], alpha))
+				y += hgt
+				if hgt > 3.0:
+					_years.draw_line(Vector2(x, y), Vector2(x + bw, y), UiStyle.CHART, 1.0)
+	_years.draw_line(Vector2(plot.position.x, zero), Vector2(plot.end.x, zero), UiStyle.GOLD, 1.0)
+	UiStyle.text_at(_years, Vector2(0, inner.position.y + 10.0), "+" + Charts.label(up, "D"), UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT,
+		plot.position.x - 6.0, font)
+	UiStyle.text_at(_years, Vector2(0, zero + 5.0), "0", UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT, plot.position.x - 6.0, font)
+	UiStyle.text_at(_years, Vector2(0, inner.end.y), "−" + Charts.label(down, "D"), UiStyle.DIM, UiStyle.SIZE_SMALL, HORIZONTAL_ALIGNMENT_RIGHT,
+		plot.position.x - 6.0, font)
+	var every := maxi(1, ceili(n / 6.0))
+	for k in range(0, n, every):
+		var cx := inner.position.x + (k + 0.5) * slot
+		UiStyle.text_at(_years, Vector2(cx - 40.0, YEARS_PX - 6.0), "Jahr %d" % _year_rows[k].year, UiStyle.DIM, UiStyle.SIZE_SMALL,
+			HORIZONTAL_ALIGNMENT_CENTER, 80.0, UiStyle.italic())
+
+func _year_tip(k: int) -> Dictionary:
+	if k < 0 or k >= _year_rows.size():
+		return {}
+	var row: Dictionary = _year_rows[k]
+	var rows := []
+	for side in 2:
+		var vals: PackedFloat64Array = row["in"] if side == 0 else row.out
+		for i in vals.size():
+			if vals[i] > 0.0:
+				rows.append([_year_names[side][i][0], ("+" if side == 0 else "−") + Charts.label(vals[i]) + " D"])
+	var balance := _sum(row["in"]) - _sum(row.out)
+	rows.append(["Saldo", ("+" if balance > 0.0 else ("−" if balance < 0.0 else "")) + Charts.label(absf(balance)) + " D"])
+	return {"id": "year:%d" % k, "title": "Jahr %d%s" % [row.year, " (bis jetzt)" if row.part else ""], "kind": "Haushalt", "rows": rows}
+
+## The history with the budget's sums over the last twelve months of each
+## month, for the figures: income_y, spending_y.
+func _with_year_sums(d: Dictionary) -> Dictionary:
+	var out := d.duplicate()
+	var n: int = d.day.size()
+	for side in 2:
+		var month := PackedFloat64Array()
+		month.resize(n)
+		for spec in (BUDGET_IN if side == 0 else BUDGET_OUT):
+			if d.has(spec[0]):
+				for i in n:
+					month[i] += float(d[spec[0]][i])
+		var run := PackedFloat64Array()
+		run.resize(n)
+		var sum := 0.0
+		for i in n:
+			sum += month[i]
+			if i >= 12:
+				sum -= month[i - 12]
+			run[i] = sum
+		out["income_y" if side == 0 else "spending_y"] = run
+	return out
 
 # ------------------------------------------------------------------ rich and poor
 
@@ -1969,19 +2477,54 @@ func _find_all(d: Dictionary) -> void:
 		var held := _col(d, "money_held")
 		if held.size() == n:
 			says.held = "Im Umlauf sind %s Denar, %s." % [_num(held[n - 1]), _against_year(held, "mehr", "weniger")]
-		var tax_d := _year_sum(_col(d, "tax_d"))
-		var rent_d := _year_sum(_col(d, "rent_d"))
-		var estates_d := _year_sum(_col(d, "estates_d"))
-		var income := tax_d + rent_d + estates_d
-		if d.has("tax_d") and income > 0.0:
-			says.income = "Im %s nahm der Staat %s Denar ein: %d %% Steuer, %d %% Pacht, %d %% Nachlass." % [
-				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(income), roundi(tax_d / income * 100.0),
-				roundi(rent_d / income * 100.0), roundi(estates_d / income * 100.0)]
+		var income := 0.0
+		var parts := PackedStringArray()
+		var biggest := ["", 0.0]
+		for spec in BUDGET_IN:
+			income += _year_sum(_col(d, spec[0]))
+		for spec in BUDGET_IN:
+			var v := _year_sum(_col(d, spec[0]))
+			if d.has(spec[0]) and income > 0.0 and v / income >= 0.005:
+				var name := _label_of(_tables.get("history", {}), spec[0])
+				parts.append("%s %% %s" % [_pct(v / income * 100.0), name])
+				if v > biggest[1]:
+					biggest = [name, v]
+		if income > 0.0:
+			says.income = "Im %s nahm der Staat %s Denar ein: %s." % ["letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(income), ", ".join(parts)]
 		var wages_d := _year_sum(_col(d, "wages_d"))
 		var works_d := _year_sum(_col(d, "public_works_d"))
 		if d.has("wages_d") and wages_d + works_d > 0.0:
 			says.spending = "Im %s gab der Staat %s Denar aus, %d %% davon für öffentliche Arbeit." % [
 				"letzten Jahr" if n > 12 else "ersten Jahr bisher", _num(wages_d + works_d), roundi(works_d / (wages_d + works_d) * 100.0)]
+		var spent := 0.0
+		for spec in BUDGET_OUT:
+			spent += _year_sum(_col(d, spec[0]))
+		if income > 0.0 or spent > 0.0:
+			var balance := income - spent
+			says.budget = "Im %s nahm der Staat %s Denar ein und gab %s aus, %s Denar %s." % ["letzten Jahr" if n > 12 else "ersten Jahr bisher",
+				_num(income), _num(spent), _num(absf(balance)), "mehr ein als aus" if balance >= 0.0 else "mehr aus als ein"]
+			if biggest[1] > 0.0:
+				says.budget += " Am meisten brachte: %s." % biggest[0]
+		var arrears := _col(d, "arrears")
+		var owing := _col(d, "arrears_households")
+		if arrears.size() == n:
+			says.arrears = ("Niemand schuldet dem Staat Steuern." if arrears[n - 1] < 1.0 else
+				"%s Haushalte schulden dem Staat %s Denar Steuern, %s." % [_num(owing[n - 1]) if owing.size() == n else "Einige", _num(arrears[n - 1]),
+					_against_year(arrears, "mehr", "weniger")])
+			says.arrears_households = says.arrears
+		var seized := _col(d, "seized_d")
+		if seized.size() == n:
+			says.seized = "Im letzten Jahr pfändete der Staat %s Denar in Geld und Korn und schrieb %s Denar ab." % [_num(_year_sum(seized)),
+				_num(_year_sum(_col(d, "written_off_d")))]
+		var sold := _col(d, "auctions")
+		if sold.size() == n:
+			var fell := _year_sum(_col(d, "domains"))
+			says.auctions = "Im letzten Jahr wurden %s Höfe versteigert, %s fielen ohne Käufer an den Staat." % [_num(_year_sum(sold)), _num(fell)]
+			var ha_price := _col(d, "land_price")
+			for i in range(ha_price.size() - 1, -1, -1):
+				if ha_price[i] > 0.0:
+					says.auctions += " Zuletzt brachte ein Hektar %s Denar (%s)." % [_num(ha_price[i]), date.call(int(d.day[i]))]
+					break
 		var days := _col(d, "public_days")
 		if days.size() == n:
 			if _year_sum(days) <= 0.0:
@@ -2032,10 +2575,16 @@ func _find_all(d: Dictionary) -> void:
 	for r in _bar_rows:
 		if r[2] in ["wages", "public_works"]:
 			paid -= float(r[1])
-		elif r[2] in ["tax", "rent", "estates"]:
+		elif r[2] in ["land_tax", "head_tax", "tax", "rent", "estates"]:
 			got += float(r[1])
 	if paid > 0.0:
-		says.state = "Steuern, Pacht und Nachlässe decken %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
+		says.state = "Seit Beginn decken die Einnahmen %d %% dessen, was der Staat an Löhnen zahlt." % roundi(got / paid * 100.0)
+	var laws: Array = _tables.get("laws", [])
+	if not laws.is_empty():
+		var parts := PackedStringArray()
+		for law in laws:
+			parts.append("%s %s" % [law.name, law.levels[int(law.level)]])
+		says.laws = "Jetzt: %s." % ", ".join(parts)
 	_says = says
 	_set_lage()
 

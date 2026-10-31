@@ -84,7 +84,7 @@ const VIEWS := [
 	["Geld", [["Diagramme", "money_charts"], ["Schichten", "classes"]]],
 	["Waren", [["Diagramme", "goods_charts"], ["Liste", "goods"]]],
 	["Höfe", [["Diagramme", "farms_charts"], ["Liste", "farms"]]],
-	["Staat", [["Diagramme", "state_charts"], ["Liste", "state"]]],
+	["Staat", [["Haushalt", "budget_charts"], ["Diagramme", "state_charts"], ["Liste", "state"]]],
 ]
 const VIEW_PX := 112.0 # a view's board
 const OVERVIEW_KINDS: Array[String] = ["history", "population", "farms", "state", "classes", "goods"]
@@ -451,6 +451,8 @@ func _refresh() -> void:
 		var shown := {}
 		for k in OVERVIEW_KINDS:
 			shown[k] = _tables[KINDS.find(k)]
+		if people != null and people.has_method("tax_law"):
+			shown.laws = people.tax_law()
 		page.show_tables(shown)
 		var h: Dictionary = shown.history
 		_stand.text = ("Stand %s" % _date(int(h.day))) if not h.is_empty() else "…"
@@ -1877,6 +1879,8 @@ func _page_node(name: String) -> SimOverview:
 	if not _pages.has(name):
 		var page := SimOverview.new(_date, name)
 		page.visible = false
+		if people != null and people.has_method("set_tax"): # the laws' buttons (S131)
+			page.set_tax = func(law: int, level: int) -> void: people.set_tax(law, level)
 		page.set_span(_span)
 		page.go.connect(_go_to)
 		_lists.add_sibling(page) # in the window's column, not in the lists (hidden on a page)
