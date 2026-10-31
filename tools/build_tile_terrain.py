@@ -24,6 +24,8 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
                    downloaded once to DEM_DIR, not in Git)
   ground-L{n}.png  per zoom level: the landscape of every tile (GROUND, one colour
                    each), two tiles per byte like cells-L{n}.png; 15 = water
+  rivers.png       RGBA8 at the 2 km nodes: the nearest river line (offset, direction,
+                   rank) within RIVER_FIELD_NODES, drawn from the 2 km tiles out
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
@@ -32,6 +34,7 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
     python3 tools/build_tile_terrain.py --ground-only   # only ground-L*.png
     python3 tools/build_tile_terrain.py --towns-only    # only the settlements in cells-L*.png
     python3 tools/build_tile_terrain.py --cells-only    # only cells-L*.png (water, rivers, towns)
+    python3 tools/build_tile_terrain.py --rivers-only   # only rivers.png (the far map's river lines)
 """
 
 from __future__ import annotations
@@ -233,6 +236,137 @@ def raster_rivers(feats, cell_km, n_x, n_y, max_rank, band_rows=4096):
             dr.line(list(zip(px.tolist(), (pz - r0).tolist())), fill=255, width=1)
         out[r0:r1] = np.asarray(img) > 0
     return out
+
+
+# River line field (round N): from the 2 km tiles out the map draws the rivers
+# as the Natural Earth lines, not as the 4-connected cells (a staircase of
+# 8 km tiles across the map of Europe; Ramon's landscape reference lets them
+# wind). Every node within RIVER_FIELD_NODES of a river keeps the nearest
+# point of the nearest river line, the line's direction and its bend there;
+# the shader draws the band from the nodes around a pixel, each a short arc
+# (tile_terrain.gdshader; straight pieces stood out of every bend as spurs).
+RIVER_FIELD_NODES = 2.0
+# the lines resampled every RIVER_STEP_NODES and smoothed over RIVER_SMOOTH_NODES
+# (the wiggles of the data under a node are no shape the map can draw)
+RIVER_STEP_NODES = 0.25
+RIVER_SMOOTH_NODES = 0.7
+# bend (1 / radius, per node step) in 15 steps up to RIVER_BEND_MAX
+RIVER_BEND_MAX = 2.5
+
+
+def smooth_river_line(x, z):
+    """Line in node steps, resampled evenly and smoothed (ends kept)."""
+    seg = np.hypot(np.diff(x), np.diff(z))
+    s = np.concatenate([[0.0], np.cumsum(seg)])
+    if s[-1] < RIVER_STEP_NODES * 2:
+        return np.asarray(x, float), np.asarray(z, float)
+    t = np.linspace(0.0, s[-1], int(math.ceil(s[-1] / RIVER_STEP_NODES)) + 1)
+    rx, rz = np.interp(t, s, x), np.interp(t, s, z)
+    sigma = RIVER_SMOOTH_NODES / RIVER_STEP_NODES
+    sx = ndimage.gaussian_filter1d(rx, sigma, mode="nearest")
+    sz = ndimage.gaussian_filter1d(rz, sigma, mode="nearest")
+    sx[0], sz[0], sx[-1], sz[-1] = rx[0], rz[0], rx[-1], rz[-1]
+    return sx, sz
+
+
+def segment_bends(x, z):
+    """Bend of each segment of a line (1 / radius in node steps, signed: to
+    the left of the direction from point k to k + 1 positive)."""
+    head = np.arctan2(np.diff(z), np.diff(x))
+    step = np.maximum(np.hypot(np.diff(x), np.diff(z)), 1e-6)
+    turn = (np.diff(head) + math.pi) % (2 * math.pi) - math.pi
+    at = np.concatenate([[0.0], turn / (0.5 * (step[:-1] + step[1:])), [0.0]])  # at the points
+    return 0.5 * (at[:-1] + at[1:])
+
+
+def river_line_field(feats, max_rank=max(RIVER_RANK[2:])):
+    """rivers.png, RGBA8 at the 2 km nodes: R, G the nearest river point's
+    offset from the node (128 + 127 * offset / RIVER_FIELD_NODES, node steps),
+    B the line's direction at that point (angle mod pi, 256 steps), A the
+    river's scalerank (as raster_rivers ranks it) in the low 4 bits and its
+    bend there in the high 4 (8 + 7 * bend / RIVER_BEND_MAX, signed for the
+    stored direction); 0 = no river near."""
+    best = {}
+    for props, _ in feats:
+        if props.get("name"):
+            best[props["name"]] = min(best.get(props["name"], 10), props.get("scalerank") or 10)
+    rad = RIVER_FIELD_NODES
+    dist = np.full((GRID_H, GRID_W), np.inf, np.float32)
+    off = np.zeros((GRID_H, GRID_W, 2), np.float32)
+    ang = np.zeros((GRID_H, GRID_W), np.float32)
+    bend = np.zeros((GRID_H, GRID_W), np.float32)
+    rank_of = np.zeros((GRID_H, GRID_W), np.uint8)
+    # bigger rivers last, so where two lines are as near the bigger one wins
+    order = []
+    for props, geoms in feats:
+        name = props.get("name")
+        rank = min(best.get(name, props.get("scalerank") or 10), ROMAN_RIVER_RANK.get(name, 10))
+        if rank > max_rank or props.get("featurecla", "River") not in ("River", "Lake Centerline", None):
+            continue
+        order.append((rank, geoms))
+    order.sort(key=lambda e: -e[0])
+    for rank, geoms in order:
+        for line, _ in geoms:
+            nx, nz = smooth_river_line((line[:, 0] - WORLD_MIN[0]) / NODE_KM, (line[:, 1] - WORLD_MIN[1]) / NODE_KM)
+            bends = segment_bends(nx, nz) if len(nx) > 2 else np.zeros(max(len(nx) - 1, 0))
+            for k in range(len(nx) - 1):
+                ax_, az_, bx_, bz_ = nx[k], nz[k], nx[k + 1], nz[k + 1]
+                i0 = max(int(math.floor(min(ax_, bx_) - rad)), 0)
+                i1 = min(int(math.ceil(max(ax_, bx_) + rad)), GRID_W - 1)
+                j0 = max(int(math.floor(min(az_, bz_) - rad)), 0)
+                j1 = min(int(math.ceil(max(az_, bz_) + rad)), GRID_H - 1)
+                if i1 < i0 or j1 < j0:
+                    continue
+                gi, gj = np.meshgrid(np.arange(i0, i1 + 1, dtype=np.float32), np.arange(j0, j1 + 1, dtype=np.float32))
+                ex, ez = bx_ - ax_, bz_ - az_
+                ll = ex * ex + ez * ez
+                t = np.clip(((gi - ax_) * ex + (gj - az_) * ez) / ll, 0, 1) if ll > 0 else np.zeros_like(gi)
+                px, pz = ax_ + ex * t - gi, az_ + ez * t - gj
+                d = np.hypot(px, pz)
+                cur = dist[j0:j1 + 1, i0:i1 + 1]
+                take = (d <= rad) & (d <= cur)
+                if not take.any():
+                    continue
+                cur[take] = d[take]
+                off[j0:j1 + 1, i0:i1 + 1][take] = np.stack([px, pz], -1)[take]
+                head = math.atan2(ez, ex)
+                ang[j0:j1 + 1, i0:i1 + 1][take] = head % math.pi
+                # the direction is stored mod pi: turned round, a bend to the
+                # left is one to the right
+                bend[j0:j1 + 1, i0:i1 + 1][take] = bends[k] if 0.0 <= head < math.pi else -bends[k]
+                rank_of[j0:j1 + 1, i0:i1 + 1][take] = rank
+    out = np.zeros((GRID_H, GRID_W, 4), np.uint8)
+    near = rank_of > 0
+    out[..., 0] = np.where(near, np.clip(np.round(128 + 127 * off[..., 0] / rad), 1, 255), 0)
+    out[..., 1] = np.where(near, np.clip(np.round(128 + 127 * off[..., 1] / rad), 1, 255), 0)
+    out[..., 2] = np.where(near, np.round(ang / math.pi * 256) % 256, 0)
+    q = np.clip(np.round(bend / RIVER_BEND_MAX * 7), -7, 7) + 8
+    out[..., 3] = np.where(near, rank_of + 16 * q, 0)
+    return out
+
+
+def bake_river_field(manifest, rivers):
+    field = river_line_field(rivers)
+    Image.fromarray(field, "RGBA").save(OUT / "rivers.png", optimize=True)
+    manifest["river_field"] = {"path": "rivers.png", "sha256": sha(OUT / "rivers.png"),
+                               "reach_nodes": RIVER_FIELD_NODES, "river_rank": RIVER_RANK,
+                               "bend_max": RIVER_BEND_MAX,
+                               "channels": ["nearest river point x offset: 128 + 127 * nodes / reach_nodes",
+                                            "z offset, the same", "direction there, angle mod pi in 256 steps",
+                                            "scalerank (low 4 bits) + 16 * (8 + 7 * bend / bend_max), bend = 1 / radius "
+                                            "in node steps, to the left of the stored direction positive; "
+                                            "0 = no river within reach_nodes"]}
+    print("river field", int((field[..., 3] > 0).sum()), "nodes")
+
+
+def rivers_only():
+    """Rebuild only rivers.png (the river line field of the far map)."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
+        RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
+    bake_river_field(manifest, rivers)
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
 
 
 def four_connect(m, allowed):
@@ -1561,6 +1695,7 @@ def main():
                               "rule": "node i at world_min + i * world_size / (width - 1)"},
                 "cells": [], "inputs": {}}
     water_by_level, land_frac, lake_frac, lake_cells = bake_cells(manifest, height, land, lakes, rivers)
+    bake_river_field(manifest, rivers)
     manifest["town_core_km"] = TOWN_CORE_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     n0y, n0x = land_frac.shape
@@ -1643,5 +1778,7 @@ if __name__ == "__main__":
         town_lists()
     elif "--cells-only" in sys.argv:
         cells_only()
+    elif "--rivers-only" in sys.argv:
+        rivers_only()
     else:
         main()

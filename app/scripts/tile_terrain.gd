@@ -298,6 +298,8 @@ func load_data(progress := Callable()) -> bool:
 		func() -> Variant: return Image.create_from_data(size.x, size.y, false, Image.FORMAT_RH, FileAccess.get_file_as_bytes(dir.path_join(manifest.shore_half.path))) if manifest.has("shore_half") else null,
 		func() -> Variant: return _png(dir.path_join(manifest.cover.path), -1, true),
 		func() -> Variant: return _png(dir.path_join(manifest.aux.path), -1, false),
+		# the far map's river lines (round N); older data without them keeps the tile bands
+		func() -> Variant: return _png(dir.path_join(manifest.river_field.path), -1, false) if manifest.has("river_field") else null,
 	]
 	var plan_job := jobs.size()
 	var plan_size := world_size
@@ -333,6 +335,7 @@ func load_data(progress := Callable()) -> bool:
 	var shore_texture: ImageTexture = ImageTexture.create_from_image(done[2]) if done[2] != null else null
 	var cover: Image = done[3]
 	var aux: Image = done[4]
+	var rivers: Image = done[5]
 	plans = done[plan_job]
 	if plans != null:
 		plans.make_textures()
@@ -372,6 +375,8 @@ func load_data(progress := Callable()) -> bool:
 		"relief_tex": ImageTexture.create_from_image(relief_image),
 		"cover_tex": ImageTexture.create_from_image(cover),
 		"aux_tex": ImageTexture.create_from_image(aux),
+		"river_tex": ImageTexture.create_from_image(rivers) if rivers != null else null,
+		"river_ready": rivers != null,
 		"world_min": world_min,
 		"world_size": world_size,
 		"grid_size": Vector2(grid_size),
