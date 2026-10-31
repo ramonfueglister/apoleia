@@ -27,6 +27,9 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
                    each), two tiles per byte like cells-L{n}.png; 15 = water
   rivers.png       RGBA8 at the 2 km nodes: the nearest river line (offset, direction,
                    rank) within RIVER_FIELD_NODES, drawn from the 2 km tiles out
+  water-lines.bin  the rivers and lake shores as smoothed lines (world km), which
+                   the 0.5 and 1 km tiles draw into a picture of the view
+                   (app/scripts/water_lines.gd, round Q)
   manifest.json    grid definitions and hashes
 
     python3 tools/build_tile_terrain.py
@@ -37,6 +40,7 @@ Natural Earth coast/lake/river layers plus the Europe supplements and the
     python3 tools/build_tile_terrain.py --cells-only    # only cells-L*.png (water, rivers, towns)
     python3 tools/build_tile_terrain.py --rivers-only   # only rivers.png (the far map's river lines)
     python3 tools/build_tile_terrain.py --lakes-only    # only aux.png A (the far map's lake shores)
+    python3 tools/build_tile_terrain.py --water-lines-only  # only water-lines.bin
 """
 
 from __future__ import annotations
@@ -45,6 +49,7 @@ import csv
 import hashlib
 import json
 import math
+import struct
 import sys
 from pathlib import Path
 
@@ -367,6 +372,122 @@ def rivers_only():
     rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
         RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
     bake_river_field(manifest, rivers)
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print("done")
+
+
+# Water lines (round Q): at the 0.5 and 1 km tiles the rivers were bands from
+# tile centre to tile centre and the lakes whole tiles, a zigzag and a
+# staircase. The game draws the real lines into a picture of the view
+# instead (app/scripts/water_lines.gd); here they are smoothed once
+# (centripetal Catmull-Rom through the Natural Earth points, so the line keeps
+# to its river tiles) and thinned to WATER_LINE_TOL.
+WATER_LINE_STEP = 0.1   # km between the samples of the smoothed lines
+WATER_LINE_TOL = 0.01   # km the thinned line may stray from the smooth one
+WATER_LAKE = 100        # line kind of a lake's outline (a river: its rank)
+WATER_ISLAND = 101      # and of an island in a lake
+
+
+def catmull_rom(pts, closed, step=WATER_LINE_STEP):
+    """Centripetal Catmull-Rom through the points (km), about every `step` km."""
+    if closed and len(pts) > 1 and np.allclose(pts[0], pts[-1]):
+        pts = pts[:-1]
+    if len(pts) < 3:
+        return pts
+    if closed:
+        P = np.concatenate([pts[-1:], pts, pts[:2]])
+    else:
+        P = np.concatenate([2 * pts[:1] - pts[1:2], pts, 2 * pts[-1:] - pts[-2:-1]])
+    p0, p1, p2, p3 = P[:-3], P[1:-2], P[2:-1], P[3:]
+
+    def knot(a, b):
+        return np.maximum(np.linalg.norm(b - a, axis=1), 1e-6) ** 0.5
+    t0 = np.zeros(len(p0))
+    t1 = t0 + knot(p0, p1)
+    t2 = t1 + knot(p1, p2)
+    t3 = t2 + knot(p2, p3)
+    k = np.maximum(1, np.ceil(np.linalg.norm(p2 - p1, axis=1) / step)).astype(int)
+    seg = np.repeat(np.arange(len(k)), k)
+    frac = (np.arange(k.sum()) - np.repeat(np.cumsum(k) - k, k)) / np.repeat(k, k)
+    T0, T1, T2, T3 = (v[seg][:, None] for v in (t0, t1, t2, t3))
+    t = T1 + (T2 - T1) * frac[:, None]
+    a, b, c, d = p0[seg], p1[seg], p2[seg], p3[seg]
+    a1 = (T1 - t) / (T1 - T0) * a + (t - T0) / (T1 - T0) * b
+    a2 = (T2 - t) / (T2 - T1) * b + (t - T1) / (T2 - T1) * c
+    a3 = (T3 - t) / (T3 - T2) * c + (t - T2) / (T3 - T2) * d
+    b1 = (T2 - t) / (T2 - T0) * a1 + (t - T0) / (T2 - T0) * a2
+    b2 = (T3 - t) / (T3 - T1) * a2 + (t - T1) / (T3 - T1) * a3
+    out = (T2 - t) / (T2 - T1) * b1 + (t - T1) / (T2 - T1) * b2
+    return out if closed else np.concatenate([out, pts[-1:]])
+
+
+def thin_line(pts, tol=WATER_LINE_TOL):
+    """Douglas-Peucker: the points that keep the line within `tol` km."""
+    n = len(pts)
+    if n < 3:
+        return pts
+    keep = np.zeros(n, bool)
+    keep[0] = keep[-1] = True
+    stack = [(0, n - 1)]
+    while stack:
+        i, j = stack.pop()
+        if j - i < 2:
+            continue
+        e = pts[j] - pts[i]
+        ll = float(e @ e)
+        q = pts[i + 1:j] - pts[i]
+        d = np.linalg.norm(q, axis=1) if ll < 1e-12 else np.abs(q[:, 0] * e[1] - q[:, 1] * e[0]) / math.sqrt(ll)
+        m = int(np.argmax(d))
+        if d[m] > tol:
+            keep[i + 1 + m] = True
+            stack += [(i, i + 1 + m), (i + 1 + m, j)]
+    return pts[keep]
+
+
+def bake_water_lines(manifest, rivers, lakes):
+    """water-lines.bin, little endian: b"WLN1", uint32 line count, then per
+    line int32 kind (a river's scalerank as raster_rivers ranks it,
+    WATER_LAKE or WATER_ISLAND), int32 point count n, float32 bounds
+    (min x, min z, max x, max z) and float32 x, z of the n points (world km;
+    a lake's ring closed without repeating its first point)."""
+    best = {}
+    for props, _ in rivers:
+        if props.get("name"):
+            best[props["name"]] = min(best.get(props["name"], 10), props.get("scalerank") or 10)
+    lines = []
+    for props, geoms in rivers:
+        name = props.get("name")
+        rank = min(best.get(name, props.get("scalerank") or 10), ROMAN_RIVER_RANK.get(name, 10))
+        if rank > RIVER_RANK[0] or props.get("featurecla", "River") not in ("River", "Lake Centerline", None):
+            continue
+        for line, _ in geoms:
+            lines.append((rank, thin_line(catmull_rom(line, False))))
+    for _, geoms in lakes:
+        for ring, exterior in geoms:
+            pts = thin_line(catmull_rom(ring, True)) if len(ring) > 4 else ring[:-1] if np.allclose(ring[0], ring[-1]) else ring
+            if len(pts) >= 3:
+                lines.append((WATER_LAKE if exterior else WATER_ISLAND, pts))
+    out = bytearray(b"WLN1" + struct.pack("<I", len(lines)))
+    for kind, pts in lines:
+        pts = pts.astype("<f4")
+        out += struct.pack("<ii4f", int(kind), len(pts), *pts.min(0), *pts.max(0)) + pts.tobytes()
+    (OUT / "water-lines.bin").write_bytes(bytes(out))
+    manifest["water_lines"] = {"path": "water-lines.bin", "sha256": sha(OUT / "water-lines.bin"),
+                               "lake": WATER_LAKE, "island": WATER_ISLAND, "step_km": WATER_LINE_STEP,
+                               "tolerance_km": WATER_LINE_TOL,
+                               "format": "b'WLN1', uint32 lines; per line int32 kind (river scalerank, lake, "
+                                         "island), int32 n, float32 min x, min z, max x, max z, n x float32 x, z "
+                                         "(world km); little endian"}
+    print("water lines", len(lines), "lines", sum(len(p) for _, p in lines), "points")
+
+
+def water_lines_only():
+    """Rebuild only water-lines.bin (the 0.5 and 1 km tiles' rivers and lakes)."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    rivers = load_features(ROOT / "data/derived/rivers.geojson", lines=True) + load_features(
+        RD / "rivers-europe-supplement-r1/rivers.geojson", lines=True)
+    lakes = load_features(ROOT / "data/derived/lakes.geojson") + load_features(RD / "lakes-europe-supplement-r1/lakes.geojson")
+    bake_water_lines(manifest, rivers, lakes)
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("done")
 
@@ -1769,6 +1890,7 @@ def main():
                 "cells": [], "inputs": {}}
     water_by_level, land_frac, lake_frac, lake_cells = bake_cells(manifest, height, land, lakes, rivers)
     bake_river_field(manifest, rivers)
+    bake_water_lines(manifest, rivers, lakes)
     manifest["town_core_km"] = TOWN_CORE_KM
     manifest["town_on_river_km"] = TOWN_ON_RIVER_KM
     n0y, n0x = land_frac.shape
@@ -1856,5 +1978,7 @@ if __name__ == "__main__":
         rivers_only()
     elif "--lakes-only" in sys.argv:
         lakes_only()
+    elif "--water-lines-only" in sys.argv:
+        water_lines_only()
     else:
         main()

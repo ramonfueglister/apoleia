@@ -343,6 +343,30 @@ unabhängig und unverändert.
   über. Hügel- und Bergtöne kommen mit der Höhe des Punkts statt in einer
   Stufe je Kachel (`contour_ground_tone`); die Farben selbst sind dieselben.
   Skizze: `/mnt/project-files/grafik/runde-p-seen-flecken-skizze.jpg`.
+  Runde Q (31.10.2026, Flüsse und Seen der mittleren Zoomstufe): Auf den
+  0,5- und 1-km-Kacheln (etwa 12 bis 95 km Sicht) war ein Fluss ein Band
+  von Kachelmitte zu Kachelmitte, in jeder Biegung gerade abgeschnitten,
+  ein Zickzack, und ein See eine Treppe aus ganzen Kacheln. Jetzt backt
+  `build_tile_terrain.py --water-lines-only` die Natural-Earth-Flüsse
+  (Rang bis 10) und Seeumrisse einmal geglättet nach `water-lines.bin`
+  (zentripetales Catmull-Rom durch die Punkte, so bleibt die Linie auf
+  ihren Flusskacheln; auf 10 m ausgedünnt, etwa 2 MB), und
+  `app/scripts/water_lines.gd` zeichnet sie in ein Bild von 4096² Pixeln
+  über die gezeichneten Kacheln: R Flusswasser, G Seewasser, B das Ufer
+  des Flusses. Neu gezeichnet wird nur, wenn die gezeichneten Kacheln das
+  Bild verlassen oder es mehr als doppelt so gross ist wie nötig. Der
+  Shader liest es (`tt_water_lines`, an der halben Bedeckung scharf
+  gezogen) statt der Kachelbänder: Flüsse 0,11 bis 0,2 km breit nach
+  Rang, mindestens zwei Bildpixel; Seen wie bei Runde P nur auf dem
+  tiefen Teil einer Kachel, die eine Seekachel berührt, die Seekachel auf
+  ihrer Seehöhe ohne Ecken- und Küstenschnitte, ausserhalb des Umrisses
+  Land. In Städten (ab Klasse 2), an ihren Kais und auf den bebauten
+  Parzellen eines Stadtplans bleibt der Fluss das Band auf seinen
+  Kacheln, wo Brücken und Kais stehen; am Stadtrand kann er dort leicht
+  versetzt ansetzen. Bäume stehen nun auch auf Flusskacheln, aber nicht
+  auf dem Fluss, seinem Ufer oder einem See. Näher als 12 km (Viertel-
+  kacheln) bleibt alles wie zuvor. Skizze:
+  `/mnt/project-files/grafik/runde-q-fluesse-seen-skizze.jpg`.
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
