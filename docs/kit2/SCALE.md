@@ -15,7 +15,7 @@ mit Familie, Eigenschaften und Lebenslauf wie in Crusader Kings 3.
 | Menschen, Häuser, Betriebe, Schiffe, Soldaten (Anzahl) | 1 : 566,5 | 56,65 Mio. im Spielgebiet (HYDE 3.3, 200 n. Chr.) → 100'000 |
 | Fläche | 1 : 566,5 | gleiche Dichte wie damals |
 | Länge, Distanz | 1 : 23,8 (gerundet 1 : 24) | √566,5 |
-| Höhe | 1 : 23,8, danach 7,5-fach überhöht | SimCity 2000, PR #29 (K06) |
+| Höhe | 1 : 23,8, danach 7,5-fach überhöht | SimCity 2000, PR #29 (K06); nah im Spiel fest 7,5-fach je erstem Stufenschritt (20 m), seit 31.10.2026 bei jeder Sichtbreite (`NEAR_EXAGGERATION`) |
 | Geschwindigkeit jeder Bewegung | 1 : 23,8 | damit jede Reise so lange dauert wie damals |
 | Kalender, Lebensalter, Tageslänge | 1 : 1 | ein Spieljahr ist ein Jahr |
 
