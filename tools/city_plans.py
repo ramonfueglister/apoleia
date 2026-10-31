@@ -70,7 +70,7 @@ LANDMARK_KINDS = {"amphitheatre", "circus", "baths", "palace", "theatre", "stadi
 # app/scripts/voxel/roman_arena.gd), drawn at the diorama scale, so they get
 # as many parcels as the model needs with the free strip tile_terrain.gd
 # leaves round it (LANDMARK_PLAN_REACH), not their real size grown.
-USER_SIZED_M = {"arena": (25.0, 18.0)}
+USER_SIZED_M = {"arena": (25.0, 18.5)}
 DIORAMA_KM_PER_M = 0.0238
 LANDMARK_PLAN_REACH = 0.9
 # building kinds that streets may cross (open squares)

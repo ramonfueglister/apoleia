@@ -1,201 +1,236 @@
 extends RefCounted
-## Rome's arena at the diorama scale (Ramon 31.10.2026, rule A: «wir sind
-## ein Diorama, alles muss geschrumpft sein»). A building the people share is
-## sized for the people who use it in the simulation, not for its real size
-## (docs/kit2/SCALE.md S51): the Colosseum seated about 50'000 of Rome's
-## 920'000, so in the sim's Rome of 1'626 it seats SEATS = 50'000 / 566.5.
-## Built in true human proportions on the town's 0.25 m voxels
-## (roman_kit.gd), so the spectators are as tall as the figures in the
-## street: an oval of sand 18 x 11 m, a painted timber podium fence, one row
-## of benches on a timber deck with a rail behind, a grassed earth bank
-## outside, gates with timber towers at both ends, the editor's box under a
-## tiled roof on the north side, stairs up the bank on the south. That is
-## how the first amphitheatres were built before stone ones (timber stands
-## on earth banks; Welch, 2007, The Roman Amphitheatre). 25 x 18 m in all,
-## a 0.6 x 0.43 km block of the city plan (tools/city_plans.py
-## USER_SIZED_M, keep in step). Models face +z (south, to the camera).
+## Rome's amphitheatre at the diorama scale (Ramon 31.10.2026: «wir sind ein
+## Diorama, alles muss geschrumpft sein», and the Colosseum must still stand
+## above the houses). Its ground is sized for the people who use it in the
+## simulation (docs/kit2/SCALE.md S51): the Colosseum seated about 50'000
+## of Rome's 920'000, so in the sim's Rome of 1'626 SEATS = 50'000 / 566.5
+## sit in it. Built in the Colosseum's form and in true human proportions
+## on the town's 0.25 m voxels (roman_kit.gd): an oval 24 x 17.5 m of
+## travertine with three arcades of 4 m storeys and an attic, 15 m high
+## (a two-storey house is 9 m), arches 1.5 m wide, the corridor behind
+## them, inner arches onto the seats, a marble podium, treads 0.5 m deep
+## and high, the sand, gates at both ends, the editor's box on the north
+## side, masts with pennants on the attic. SEATS spectators as tall as the
+## figures in the street fill the lowest treads, the rest stay empty. A
+## 0.6 x 0.44 km block of the city plan (tools/city_plans.py USER_SIZED_M,
+## keep in step). Models face +z (south, to the camera). A twin in Python
+## for previews without Godot: /mnt/project-files/groessen/arena-vorschau.
 
 const Kit := preload("res://scripts/voxel/roman_kit.gd")
 const Colosseum := preload("res://scripts/voxel/roman_colosseum.gd")
 const V := 0.25
 const GROUND := 2
 const SEATS := 88 # 50'000 / 566.5 (SCALE.md)
-const BOX_SEATS := 6 # in the editor's box
-const SEAT_W := 0.45 # a place on the bench (the Colosseum's were about 0.4 m)
-# metres from the middle and outward from the sand's edge
-const ARENA_A := 9.0
-const ARENA_B := 5.5
-const FENCE := 0.5
-const DECK := 1.25 # the bench and the walk behind it
-const RAIL := 0.25
-const BANK := 1.25
-const GATE_HALF := 1.25 # half the gate's width
-const BOX_HALF := 1.75 # half the editor's box
-const STAIRS_X := 4.5 # the stairs up the bank on the south side, either way from the middle
-const PAD := 1 # voxels round the bank
-# layers above the ground
-const FENCE_TOP := 6 # the fence's cap, the deck at the same height (1.75 m)
-const BENCH := 8 # the bench's seat
-const RAIL_TOP := 10
-const POST_TOP := 13
-const BOX_DECK := 9
-const ROOF := 18
-const TOWER_TOP := 16
-const HEIGHT := 22
+const BOX_SEATS := 4 # in the editor's box
+const SEAT_W := 0.45 # a place on a tread (the Colosseum's were about 0.4 m)
+# metres
+const OUT_A := 12.0 # the outer wall's half axes
+const OUT_B := 8.75
+const ARENA_A := 6.5 # the sand's
+const ARENA_B := 3.75
+const SHELL := 1.5 # outer wall and corridor
+const PODIUM_W := 0.5
+const TREAD := 0.5
+const GATE_HALF := 0.75
+# voxels
+const BAYS := 26 # round the oval, 2.5 m each: pier 4 with a column, arch 6
+const ROWS := 16 # a storey, 4 m
+const BASE := 2
+const STOREYS := 3
+const ARCADE_TOP := BASE + ROWS * STOREYS
+const ATTIC := 10
+const WALL := ARCADE_TOP + ATTIC # 15 m
+const MAST := 4
+const PODIUM_TOP := 6 # 1.5 m
+const PAD := 2
+const HEIGHT := WALL + MAST + 2
+const HEAD := [1, 2, 2, 2, 2, 1] # the arch's stepped round head
+const ARC_N := 4096
 
-static func _outer_a() -> float:
-	return ARENA_A + FENCE + DECK + RAIL + BANK
+## The arc length along the outer oval at ARC_N + 1 angles from 0 to TAU
+## (built per grid: the models are baked on several threads at once).
+static func _arc_table() -> PackedFloat32Array:
+	var s := PackedFloat32Array()
+	s.resize(ARC_N + 1)
+	var last := Vector2(OUT_A, 0.0)
+	for i in range(1, ARC_N + 1):
+		var a := TAU * float(i) / float(ARC_N)
+		var p := Vector2(OUT_A * cos(a), OUT_B * sin(a))
+		s[i] = s[i - 1] + p.distance_to(last)
+		last = p
+	return s
 
-static func _outer_b() -> float:
-	return ARENA_B + FENCE + DECK + RAIL + BANK
+## Arc length along the outer oval from angle 0.
+static func _arc_at(arc: PackedFloat32Array, t: float) -> float:
+	var f := fposmod(t, TAU) / TAU * ARC_N
+	var i := mini(int(f), ARC_N - 1)
+	return arc[i] + (arc[i + 1] - arc[i]) * (f - i)
 
-## Metres outward from the sand's edge along the ray from the middle
-## (negative on the sand), and the ray's angle.
-static func _dist(px: float, pz: float) -> Vector2:
-	var u := Vector2(px / ARENA_A, pz / ARENA_B)
+## Metres outward from the oval with half axes a, b along the ray from the
+## middle (negative inside), and the ray's angle.
+static func _ring(px: float, pz: float, a: float, b: float) -> Vector2:
+	var u := Vector2(px / a, pz / b)
 	var t := atan2(u.y, u.x)
-	return Vector2((u.length() - 1.0) * Vector2(ARENA_A * cos(t), ARENA_B * sin(t)).length(), t)
+	return Vector2((u.length() - 1.0) * Vector2(a * cos(t), b * sin(t)).length(), t)
 
-static func _in_gate(px: float, pz: float) -> bool:
-	return absf(pz) < GATE_HALF and absf(px) > ARENA_A * 0.7
+static func _open(o: int, lr: int) -> bool:
+	return o >= 2 and o <= 7 and lr >= 1 and lr <= 9 + int(HEAD[o - 2])
 
-static func _in_box(px: float, pz: float) -> bool:
-	return pz < 0.0 and absf(px) < BOX_HALF
+## The outer wall at row r: o the column in the bay (0..9), b the bay,
+## layer 0 the face, 1 behind it.
+static func _facade(o: int, b: int, r: int, layer: int) -> int:
+	if r < GROUND:
+		return Kit.EMPTY
+	if r < GROUND + BASE:
+		return Kit.TRAV_D
+	if r < GROUND + ARCADE_TOP:
+		var rr := r - GROUND - BASE
+		var lr := rr % ROWS
+		if lr >= ROWS - 2:
+			return Kit.TRAV_L if lr == ROWS - 1 else Kit.TRAV_W # the cornice
+		if _open(o, lr):
+			if rr / ROWS > 0 and lr <= 2 and layer == 0:
+				return Kit.TRAV_L # the parapet in the upper arches
+			return Kit.EMPTY
+		return Kit.TRAV_W if Kit.chance(b * 10 + o, r / 2, 0, 41, 12) else Kit.TRAV
+	var ar := r - GROUND - ARCADE_TOP
+	if ar >= ATTIC - 1:
+		return Kit.TRAV_L
+	if b % 2 == 0 and o >= 4 and o <= 5 and ar >= 3 and ar <= 5 and layer == 0:
+		return Kit.EMPTY # a small window every other bay
+	return Kit.TRAV
 
 static func grid() -> Kit.Grid:
-	var nx := ceili(2.0 * _outer_a() / V) + 2 * PAD
-	var nz := ceili(2.0 * _outer_b() / V) + 2 * PAD
+	var nx := ceili(2.0 * OUT_A / V) + 2 * PAD
+	var nz := ceili(2.0 * OUT_B / V) + 2 * PAD
 	var g := Kit.Grid.new(Vector3i(nx, GROUND + HEIGHT, nz))
 	var y0 := GROUND
+	var arc := _arc_table()
+	var perim := arc[ARC_N]
 	for z in nz:
 		for x in nx:
 			var px := (x + 0.5 - nx * 0.5) * V
 			var pz := (z + 0.5 - nz * 0.5) * V
-			var dt := _dist(px, pz)
-			var d := dt.x
-			var t := dt.y
-			# posts about every 2 m round the oval (24 of them, a voxel wide)
-			var post := posmod(int(floor(t / TAU * 192.0)), 8) == 0
-			if d < 0.0 or (_in_gate(px, pz) and d < FENCE + DECK + RAIL + BANK):
-				# the sand, raked in bands; the gate ways trodden
+			var outer := _ring(px, pz, OUT_A, OUT_B)
+			var d := -outer.x # metres in from the outer face
+			var t := outer.y
+			var e := _ring(px, pz, ARENA_A, ARENA_B).x # metres out from the sand
+			var s := _arc_at(arc, t) / perim * BAYS
+			var b := floori(s)
+			var o := int((s - b) * 10.0)
+			var gate := absf(pz) < GATE_HALF and absf(px) > ARENA_A * 0.6
+			if d < -0.5:
+				continue
+			if d < 0.0:
+				# the plinth round it; engaged columns and cornices proud of the face
+				g.put(x, y0, z, Kit.TRAV_D)
+				if d >= -0.25 and (o == 0 or o == 9):
+					for r in range(y0 + BASE, y0 + ARCADE_TOP):
+						var lr := (r - y0 - BASE) % ROWS
+						g.put(x, r, z, Kit.TRAV_L if lr >= ROWS - 2 or lr == 0 else Kit.TRAV_W)
+				elif d >= -0.25:
+					for st in STOREYS:
+						g.put(x, y0 + BASE + st * ROWS + ROWS - 1, z, Kit.TRAV_L)
+				continue
+			if d < 0.5:
+				var layer := 0 if d < 0.25 else 1
+				for r in range(y0, y0 + WALL):
+					var c := _facade(o, b, r, layer)
+					if c != Kit.EMPTY:
+						g.put(x, r, z, c)
+				# masts for the awning on the attic, red pennants
+				if layer == 0 and b % 2 == 1 and o == 5:
+					g.box(x, y0 + WALL, z, x + 1, y0 + WALL + MAST, z + 1, Kit.WOOD_D)
+					g.put(x, y0 + WALL + MAST - 1, z, Kit.FLAG)
+				continue
+			if d < SHELL - 0.25:
+				# the corridor behind the arches: a floor and a dark vault each storey
+				for st in STOREYS:
+					g.put(x, y0 + BASE + st * ROWS - 1 if st > 0 else y0, z, Kit.TRAV_D)
+					g.put(x, y0 + BASE + st * ROWS + ROWS - 2, z, Kit.VAULT)
+				g.box(x, y0 + ARCADE_TOP, z, x + 1, y0 + WALL - 1, z + 1, Kit.TRAV)
+				continue
+			if d < SHELL:
+				# the inner wall, arched onto the seats from the second storey
+				for r in range(y0, y0 + WALL - 1):
+					var rr := r - y0 - BASE
+					var st := rr / ROWS
+					if st >= 1 and st < STOREYS and _open(o, rr % ROWS):
+						continue
+					g.put(x, r, z, Kit.TRAV_D if r < y0 + ARCADE_TOP else Kit.TRAV)
+				continue
+			# inside: the gate passages, the sand, the podium, the treads
+			if e < 0.0 or gate:
 				var c := Kit.SAND_D if Kit.chance(x / 4, 0, z / 3, 7, 22) else Kit.SAND
-				if d >= 0.0:
-					c = Kit.PATH
+				if e >= 0.0:
+					c = Kit.PAVE
 				g.put(x, y0, z, c)
 				continue
-			if d < FENCE:
-				# the podium fence: planks, a red band, a cap; posts above it
-				g.box(x, y0, z, x + 1, y0 + FENCE_TOP, z + 1, Kit.TIMBER)
-				g.box(x, y0 + 3, z, x + 1, y0 + 5, z + 1, Kit.REDWASH)
-				g.put(x, y0 + FENCE_TOP, z, Kit.WOOD)
-				if _in_box(px, pz):
-					g.box(x, y0 + 2, z, x + 1, y0 + FENCE_TOP, z + 1, Kit.CLOTH_R) # a cloth over the fence below the box
+			if e < PODIUM_W:
+				g.box(x, y0, z, x + 1, y0 + PODIUM_TOP, z + 1, Kit.PODIUM)
+				g.put(x, y0 + PODIUM_TOP - 2, z, Kit.REDWASH)
+				g.put(x, y0 + PODIUM_TOP, z, Kit.TRAV_L)
 				continue
-			if d < FENCE + DECK:
-				var deck := y0 + (BOX_DECK if _in_box(px, pz) else FENCE_TOP)
-				g.box(x, y0, z, x + 1, deck, z + 1, Kit.TIMBER_W)
-				g.put(x, deck, z, Kit.WOOD)
-				var e := d - FENCE
-				if not _in_box(px, pz) and e >= 0.1 and e < 0.6:
-					g.box(x, y0 + FENCE_TOP + 1, z, x + 1, y0 + BENCH + 1, z + 1, Kit.SEAT_WOOD)
-				continue
-			if d < FENCE + DECK + RAIL:
-				# the rail behind the walk, its posts higher
-				var top := y0 + (POST_TOP if post else RAIL_TOP)
-				if _in_box(px, pz):
-					top = y0 + BOX_DECK + 4
-				g.box(x, y0, z, x + 1, top + 1, z + 1, Kit.TIMBER)
-				if post:
-					g.put(x, top, z, Kit.TIMBER_W)
-				continue
-			if d < FENCE + DECK + RAIL + BANK:
-				# the earth bank, grassed, down to the ground; timber stairs on the south
-				var b := (d - FENCE - DECK - RAIL) / BANK
-				var h := maxi(int(round((1.0 - b) * FENCE_TOP)), 0)
-				var stairs := pz > 0.0 and absf(absf(px) - STAIRS_X) < 0.5
-				for y in h:
-					g.put(x, y0 + y, z, Kit.EARTH)
-				if stairs:
-					g.put(x, y0 + h, z, Kit.WOOD)
-				else:
-					g.put(x, y0 + h, z, Kit.GRASS_L if Kit.chance(x, z, 0, 9, 30) else Kit.GRASS)
-	_gates(g, nx, nz, y0)
-	_box(g, nx, nz, y0)
+			var j := int((e - PODIUM_W) / TREAD)
+			var top := mini(y0 + PODIUM_TOP + 2 * (j + 1), y0 + BASE + ROWS)
+			var aisle := posmod(floori(s * 10.0), 30) == 5
+			g.box(x, y0, z, x + 1, top - 1, z + 1, Kit.TRAV_D)
+			g.put(x, top - 1, z, Kit.TRAV_L if aisle else (Kit.SEAT_HI if j < 3 else Kit.SEAT_MID))
+			if aisle and int((e - PODIUM_W) / TREAD * 2.0) % 2 == 1:
+				g.put(x, top, z, Kit.TRAV_L) # the half steps of the stairway
 	_crowd(g, nx, nz, y0)
-	# two pairs of fighters on the sand and the umpire in white
+	# the editor's box on the north side, a red cloth over its front
 	var cx := nx / 2
 	var cz := nz / 2
-	var k := 0
-	for p: Vector2i in [Vector2i(-12, -4), Vector2i(-6, -4), Vector2i(6, 5), Vector2i(12, 5)]:
-		Colosseum._gladiator(g, cx + p.x, y0 + 1, cz + p.y, 1 if k % 2 == 0 else -1, k)
-		k += 1
-	_figure(g, cx, y0 + 1, cz + 1, Kit.ROBE_W, true)
+	var bz := cz - int((ARENA_B + PODIUM_W) / V) - 6
+	g.box(cx - 6, y0, bz, cx + 6, y0 + PODIUM_TOP + 4, bz + 6, Kit.MARBLE)
+	g.box(cx - 6, y0 + 2, bz + 6, cx + 6, y0 + PODIUM_TOP + 2, bz + 7, Kit.CLOTH_R)
+	for k in BOX_SEATS:
+		_seated(g, cx - 5 + k * 3, y0 + PODIUM_TOP + 5, bz + 2, true, Kit.ROBE_R if k == 1 else Kit.ROBE_W, k)
+	# two pairs of fighters on the sand and the umpire in white
+	var n := 0
+	for p: Vector2i in [Vector2i(-9, -2), Vector2i(-4, -2), Vector2i(4, 3), Vector2i(9, 3)]:
+		Colosseum._gladiator(g, cx + p.x, y0 + 1, cz + p.y, 1 if n % 2 == 0 else -1, n)
+		n += 1
+	_figure(g, cx, y0 + 1, cz + 1, Kit.ROBE_W)
 	return g
 
-## The two gates at the ends of the long axis: a timber tower each side,
-## a beam across, red pennants on top.
-static func _gates(g: Kit.Grid, nx: int, nz: int, y0: int) -> void:
-	var cz := nz / 2
-	var half := int(GATE_HALF / V)
-	for side: int in [-1, 1]:
-		var inner := nx / 2 + side * int(ARENA_A / V)
-		var outer := nx / 2 + side * int((ARENA_A + FENCE + DECK + RAIL) / V)
-		for gx: int in [inner, outer]:
-			for gz: int in [cz - half - 2, cz + half]:
-				g.box(gx - 1, y0, gz, gx + 1, y0 + TOWER_TOP, gz + 2, Kit.TIMBER)
-				g.box(gx - 1, y0 + TOWER_TOP, gz, gx + 1, y0 + TOWER_TOP + 1, gz + 2, Kit.WOOD)
-				g.box(gx, y0 + TOWER_TOP + 1, gz, gx + 1, y0 + TOWER_TOP + 4, gz + 1, Kit.TIMBER_W)
-				g.box(gx + side, y0 + TOWER_TOP + 2, gz, gx + side + 1, y0 + TOWER_TOP + 4, gz + 1, Kit.FLAG)
-			g.box(gx - 1, y0 + TOWER_TOP - 2, cz - half, gx + 1, y0 + TOWER_TOP, cz + half, Kit.TIMBER_W)
-
-## The editor's box on the north side: posts, a little tiled roof, the
-## editor in red among his guests in white.
-static func _box(g: Kit.Grid, nx: int, nz: int, y0: int) -> void:
-	var cx := nx / 2
-	var half := int(BOX_HALF / V)
-	var front := nz / 2 - int((ARENA_B + FENCE) / V)
-	var back := nz / 2 - int((ARENA_B + FENCE + DECK + RAIL) / V)
-	for bx: int in [cx - half, cx + half - 1]:
-		for bz: int in [front - 1, back]:
-			g.box(bx, y0 + BOX_DECK, bz, bx + 1, y0 + ROOF, bz + 1, Kit.TIMBER)
-	g.box(cx - half - 1, y0 + ROOF, back - 1, cx + half + 1, y0 + ROOF + 1, front + 1, Kit.EAVE)
-	g.box(cx - half, y0 + ROOF + 1, back, cx + half, y0 + ROOF + 2, front, Kit.TILE)
-	g.box(cx - half + 1, y0 + ROOF + 2, back + 1, cx + half - 1, y0 + ROOF + 3, front - 1, Kit.RIDGE)
-	for k in BOX_SEATS:
-		var x := cx - half + 1 + k * 2
-		_seated(g, x, y0 + BOX_DECK + 1, front - 3, true, Kit.ROBE_R if k == BOX_SEATS / 2 else Kit.ROBE_W, k)
-
-## The spectators shoulder to shoulder on the bench: SEATS less the box,
-## spread evenly over the places on it.
+## SEATS less the box on the three lowest treads, spread round them, the
+## gates, the box and the stairways left free.
 static func _crowd(g: Kit.Grid, nx: int, nz: int, y0: int) -> void:
-	var a := ARENA_A + FENCE + 0.35
-	var b := ARENA_B + FENCE + 0.35
-	var places: Array[Vector3] = [] # x, z, along x (1) or z (0)
-	var steps := 2000
-	var walked := 0.0
-	var last := Vector2(a, 0.0)
-	for i in steps:
-		var t := TAU * float(i) / float(steps)
-		var p := Vector2(a * cos(t), b * sin(t))
-		walked += p.distance_to(last)
-		last = p
-		if walked < SEAT_W:
-			continue
-		walked = 0.0
-		var by_gate := absf(p.y) < GATE_HALF + 0.5 and absf(p.x) > ARENA_A * 0.7
-		var by_box := p.y < 0.0 and absf(p.x) < BOX_HALF + 0.25
-		if by_gate or by_box:
-			continue
-		places.append(Vector3(p.x, p.y, 1.0 if absf(sin(t)) > 0.6 else 0.0))
+	var places: Array[Vector4] = [] # x, z (m), along x (1) or z (0), tread
+	for j in 3:
+		var e := PODIUM_W + TREAD * (j + 0.5)
+		var a := ARENA_A + e
+		var b := ARENA_B + e
+		var walked := 0.0
+		var last := Vector2(a, 0.0)
+		for i in 2400:
+			var t := TAU * float(i) / 2400.0
+			var p := Vector2(a * cos(t), b * sin(t))
+			walked += p.distance_to(last)
+			last = p
+			if walked < SEAT_W:
+				continue
+			walked = 0.0
+			if absf(p.y) < GATE_HALF + 0.5 and absf(p.x) > ARENA_A * 0.6:
+				continue
+			if p.y < 0.0 and absf(p.x) < 1.75 and j < 2:
+				continue
+			places.append(Vector4(p.x, p.y, 1.0 if absf(sin(t)) > 0.6 else 0.0, j))
+	places.sort_custom(func(l: Vector4, r: Vector4) -> bool: return l.w < r.w or (l.w == r.w and l.y < r.y))
 	var want := mini(SEATS - BOX_SEATS, places.size())
+	if want <= 0:
+		return
+	var step := float(places.size()) / float(want)
 	for k in want:
-		var at: Vector3 = places[int(float(k) * places.size() / want)]
-		var x := int(floor(at.x / V + nx * 0.5))
-		var z := int(floor(at.y / V + nz * 0.5))
+		var p: Vector4 = places[int(k * step)]
+		var x := int(floor(p.x / V + nx * 0.5))
+		var z := int(floor(p.y / V + nz * 0.5))
 		var tunic: int = [Kit.ROBE_W, Kit.ROBE_N, Kit.ROBE_W, Kit.ROBE_R, Kit.ROBE_O, Kit.ROBE_N, Kit.ROBE_W, Kit.ROBE_B][Kit.rnd(k, 0, 0, 9) % 8]
-		_seated(g, x, y0 + BENCH + 1, z, at.z > 0.5, tunic, k)
+		_seated(g, x, y0 + PODIUM_TOP + 2 * (int(p.w) + 1), z, p.z > 0.5, tunic, k)
 
-## A person sitting on the bench (the seat at y - 1): body, face, hair.
+## A person sitting on a tread (the seat at y - 1): body, face, hair.
 static func _seated(g: Kit.Grid, x: int, y: int, z: int, along_x: bool, tunic: int, seed: int) -> void:
 	var x1 := x + (2 if along_x else 1)
 	var z1 := z + (1 if along_x else 2)
@@ -203,11 +238,10 @@ static func _seated(g: Kit.Grid, x: int, y: int, z: int, along_x: bool, tunic: i
 	g.box(x, y + 3, z, x1, y + 4, z1, Kit.SKIN)
 	g.box(x, y + 4, z, x1, y + 5, z1, Kit.HAIR if seed % 5 != 0 else Kit.SKIN)
 
-## A person standing (7 voxels, 1.75 m), as Town._person.
-static func _figure(g: Kit.Grid, x: int, y: int, z: int, tunic: int, staff: bool) -> void:
+## The umpire standing with his staff (7 voxels, 1.75 m, as Town._person).
+static func _figure(g: Kit.Grid, x: int, y: int, z: int, tunic: int) -> void:
 	g.box(x, y, z, x + 2, y + 2, z + 1, Kit.SKIN)
 	g.box(x, y + 2, z, x + 2, y + 5, z + 1, tunic)
 	g.box(x, y + 5, z, x + 2, y + 6, z + 1, Kit.SKIN)
 	g.box(x, y + 6, z, x + 2, y + 7, z + 1, Kit.HAIR)
-	if staff:
-		g.box(x + 2, y, z, x + 3, y + 8, z + 1, Kit.WOOD_D)
+	g.box(x + 2, y, z, x + 3, y + 8, z + 1, Kit.WOOD_D)

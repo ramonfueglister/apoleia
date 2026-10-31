@@ -177,7 +177,7 @@ const LOT_SHARE := 0.92 # of the slot a lot fills; the rest is street
 # users in the sim, voxel/roman_arena.gd, SCALE.md rule A), the Forum (with
 # the Capitolium), the baths, the Pantheon and the Circus Maximus are the
 # Roman town's models ("kit:", voxel/roman_buildings.gd) at the houses'
-# diorama scale, so their voxels match the lots: the arena is 25 x 18 m,
+# diorama scale, so their voxels match the lots: the arena is 25 x 18.5 m,
 # about 0.6 km; the city plan gives it the parcels it needs, so it is not
 # shrunk to its block. The others were drawn before rule A and are shrunk
 # to theirs. Without the plans the blocks keep the order of the real city
