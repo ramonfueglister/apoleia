@@ -60,13 +60,16 @@ const REACH_MIN_KM := 30.0 # and at least this far from the middle: moves are pl
 const FLY_KM := 6.0 # a farmstead's width on screen; a 25 km cell gets its own
 ## by kind (sim/src/events.rs): hunger death, moved, left the map, joined
 ## relatives, theft, alms, tent moved, farm taken, heir, to the tents,
-## Lex Manciana, farm left
+## Lex Manciana, farm left; births, weddings, deaths (scenes only); S131
+## Pfändung, Zwangsversteigerung, farm to the Domäne
 const KIND_COLOURS: Array[Color] = [SimTables.NEGATIVE, SimTables.SECONDARY, SimTables.SECONDARY, SimTables.SECONDARY,
 	Color("e0a060"), SimTables.GOLD, SimTables.SECONDARY, Color("9cc47e"), Color("9cc47e"), Color("e0a060"),
-	Color("9cc47e"), Color("e0a060")]
+	Color("9cc47e"), Color("e0a060"), SimTables.SECONDARY, SimTables.SECONDARY, SimTables.SECONDARY,
+	Color("e0a060"), Color("e0a060"), SimTables.GOLD]
 ## each kind's icon in res://assets/ui/icons/, in the order above
 const KIND_ICONS: Array[String] = ["death-skull", "walking-boot", "exit-door", "family-house", "robber-hand", "bread",
-	"camping-tent", "barn", "family-tree", "camping-tent", "scroll-quill", "exit-door"]
+	"camping-tent", "barn", "family-tree", "camping-tent", "scroll-quill", "exit-door", "", "", "",
+	"two-coins", "scales", "scroll-unfurled"]
 const PIN_DAYS := 15
 const PINS_MAX := 40
 const PIN_GRID := 14.0 # pins closer than the view width over this merge
@@ -85,11 +88,16 @@ const FARM_LEFT := 11
 ## births, weddings and deaths of old age or illness: daily all over, so
 ## only scenes on the map (people_trips.gd), not lines or pins
 const FAMILY_FROM := 12
+const FAMILY_TO := 15
+## S131: the tax law's Pfändung, Zwangsversteigerung and farm to the Domäne
+const SEIZURE := 15
+const AUCTION := 16
+const DOMAIN := 17
 const WINDOW_DAYS := 2
 const WINDOW_GAP_S := 30.0
 ## moved, joined relatives, theft, alms, tent moved, farm taken, heir, to
 ## the tents, Lex Manciana: the household is still there to show
-const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10]
+const FACE_KINDS: Array[int] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17]
 const FACES_KEEP := 200
 
 ## Every answer of the sim thread, also while the list is hidden.
@@ -219,7 +227,7 @@ func _group(e: Dictionary) -> void:
 	var by := {}
 	var order: Array[Vector2i] = []
 	for i in range(days.size() - 1, -1, -1):
-		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
+		if _family(kinds[i]) or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
 			continue
 		var key := Vector2i(days[i], kinds[i])
 		if not by.has(key):
@@ -263,7 +271,7 @@ func _make_pins() -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - PIN_DAYS:
 			break
-		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
+		if _family(kinds[i]) or NoticeSettings.show_of(kinds[i]) == NoticeSettings.NOTHING:
 			continue
 		var cell := (at[i] / grid).floor()
 		var key := Vector3i(int(cell.x), int(cell.y), kinds[i])
@@ -364,7 +372,7 @@ func _window_for(e: Dictionary) -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - WINDOW_DAYS:
 			break
-		if kinds[i] >= FAMILY_FROM or NoticeSettings.show_of(kinds[i]) != NoticeSettings.WINDOW or not view.has_point(at[i]):
+		if _family(kinds[i]) or NoticeSettings.show_of(kinds[i]) != NoticeSettings.WINDOW or not view.has_point(at[i]):
 			continue
 		var key := "%d:%d:%d" % [days[i], kinds[i], e.household[i]]
 		seen[key] = true
@@ -392,7 +400,7 @@ func _pause_for(e: Dictionary) -> void:
 	for i in range(days.size() - 1, -1, -1):
 		if days[i] < today - WINDOW_DAYS:
 			break
-		if kinds[i] >= FAMILY_FROM or not NoticeSettings.pauses(kinds[i]) or not view.has_point(at[i]):
+		if _family(kinds[i]) or not NoticeSettings.pauses(kinds[i]) or not view.has_point(at[i]):
 			continue
 		var key := "%d:%d:%d" % [days[i], kinds[i], e.household[i]]
 		seen[key] = true
@@ -402,6 +410,10 @@ func _pause_for(e: Dictionary) -> void:
 	if newest >= 0:
 		var k: int = kinds[newest]
 		pause_asked.emit("%s, %s" % [e.names[k] if k < e.names.size() else "Ereignis", _day(int(days[newest]))])
+
+## Births, weddings and deaths of old age: scenes on the map only.
+static func _family(kind: int) -> bool:
+	return kind >= FAMILY_FROM and kind < FAMILY_TO
 
 ## The window for event i: what the sim knows of it, the households as links.
 func _open_window(e: Dictionary, i: int) -> void:
@@ -467,6 +479,22 @@ func _open_window(e: Dictionary, i: int) -> void:
 			d.title = "Ein Hof steht leer"
 			d.text = "Der Haushalt dieses Hofs ist weggezogen oder ausgestorben. Übernimmt ihn nach zwei Aussaaten niemand, fallen seine Felder an das freie Land zurück."
 			d.erase("people") # the household may be gone
+		SEIZURE:
+			d.title = "Pfändung wegen Steuerrückstand"
+			d.text = "Dieser Haushalt hat seine Steuern seit über einem Jahr nicht bezahlt. Die Pfändung nimmt sein Geld und das Korn, das er bis zur nächsten Ernte und für die Saat nicht braucht."
+			d.figures = [{"label": "Gepfändet (Geld und Korn)", "value": "%s Denar" % SimTables._int(amount)}]
+		AUCTION:
+			d.title = "Zwangsversteigerung eines Hofs"
+			d.text = "Der Steuerrückstand dieses Hofs ist zwei Jahre alt. Der Meistbietende am Markt hat das Land ersteigert; aus dem Erlös ist die Steuerschuld bezahlt, der Rest geht an die Familie. Sie bleibt auf dem Hof und zahlt dem Käufer fortan Pacht."
+			d.figures = [{"label": "Erlös", "value": "%s Denar" % SimTables._int(amount)}]
+			d.people[0].label = "Haushalt %d (Familie)" % hh
+			d.people[0].role = "Familie"
+			if other >= 0:
+				d.people.append({"pid": -1, "household": other, "label": "Haushalt %d (Käufer)" % other, "role": "Käufer"})
+		DOMAIN:
+			d.title = "Ein Hof fällt an die Domäne"
+			d.text = "Der Steuerrückstand dieses Hofs ist zwei Jahre alt, und bei der Zwangsversteigerung hat niemand genug geboten. Der Hof fällt an den Staat; die Familie bleibt als Pächterin des Staates, der Rückstand wird abgeschrieben."
+			d.figures = [{"label": "Abgeschrieben", "value": "%s Denar" % SimTables._int(amount)}]
 	_window = EventWindow.open(get_tree(), d)
 	_window_msec = Time.get_ticks_msec()
 	var households := []

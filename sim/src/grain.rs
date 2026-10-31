@@ -41,6 +41,7 @@ mod outside;
 mod pricing;
 mod sites;
 mod tables;
+mod taxes;
 mod ways;
 pub use tables::{FarmLook, HistoryExtra, HouseholdLook, MarketMonth};
 pub use outside::Outer;
@@ -48,6 +49,7 @@ pub use pricing::{GoodLook, MarketLook};
 pub use sites::{Site, SiteCheck, CHECK_BUILDS, CHECK_NO_LAND, CHECK_NO_MARKET, CHECK_NO_TENANT, CHECK_UNDECIDED};
 pub use crafts::{CraftsView, GoodsMovesView, GoodsStats, Ware, CRAFT_NAMES, GOODS, GOOD_KEYS, GOOD_NAMES, GOOD_UNITS};
 use crafts::{FarmGoods, HhGoods};
+pub use taxes::{LawRow, DEFAULT_LAW, LAWS, LAW_LEVELS, LAW_NAMES, LEVEL_NAMES};
 
 // ---------------------------------------------------------------------
 // Numbers. Sources in docs/kit2/GRAIN-NUMBERS.md unless noted.
@@ -173,8 +175,10 @@ const TRADER_MONEY: i64 = 5_000_000;
 const ELITE_MONEY: i64 = 1_000_000_000;
 /// Tax on the harvest of family and tenant farms, per cent. PLACEHOLDER
 /// (S70: "Höhe der Steuer offen"); the Sicilian tithe (decuma) was 10 %.
-/// Note for Ramon: Italian land paid no land tax until Diocletian.
-const TAX_PCT: i64 = 10;
+/// Note for Ramon: Italian land paid no land tax until Diocletian. S131:
+/// the Zehnt's level sets it (`taxes::TITHE_PCT`); this is the default
+/// level's, which the start's stores (`last_harvest`) assume.
+const TAX_PCT: i64 = taxes::TITHE_PCT[taxes::DEFAULT_LAW[taxes::TITHE] as usize];
 /// PLACEHOLDER (S69: Pacht offen): tenants give this share of the harvest
 /// to the landlord (share-cropping, coloni partiarii).
 const RENT_PCT: i64 = 33;
@@ -589,6 +593,13 @@ pub struct Market {
     /// denarii (milli).
     public_days: i64,
     public_paid: i64,
+    /// S131: the usual net yield of a hectare of the region's farms, kg
+    /// (as of the last count; the Grundsteuer's base); Grundsteuer and
+    /// Kopfsteuer paid here and the Zehnt delivered here since the last
+    /// monthly row, milli-denarii and kg.
+    yield_ha: i64,
+    tax_paid: i64,
+    tithe_kg: i64,
 }
 
 #[derive(Clone, Copy)]
@@ -779,6 +790,23 @@ pub struct Treasury {
     /// minted, not in `wages`), and their days.
     pub public_works: i64,
     pub public_days: i64,
+    /// S131: Grundsteuer and Kopfsteuer received in money, however paid
+    /// (by the household, by the Pfändung, from a Zwangsversteigerung);
+    /// the Zehnt delivered, at the dealers' buying price that day (its
+    /// money comes in `tax` when the granary sells it); the Pfändung, money
+    /// and grain at that price (of it the grain, kg); the
+    /// Zwangsversteigerungen, the price paid and the land sold (m²); farms
+    /// fallen to the state (Domäne); arrears written off as uncollectable.
+    pub land_tax: i64,
+    pub head_tax: i64,
+    pub tithe_worth: i64,
+    pub seized: i64,
+    pub seized_kg: i64,
+    pub auctions: i64,
+    pub auction_paid: i64,
+    pub auction_m2: i64,
+    pub domains: i64,
+    pub written_off: i64,
 }
 
 /// The flows the history sums per month: births, deaths, hunger deaths,
@@ -882,6 +910,18 @@ pub struct Grain {
     /// farms' food plan (on by default; off to measure without them).
     pub state_spend: bool,
     pub food_plan: bool,
+    /// S131: each tax law's level (`taxes::LAWS`), the households'
+    /// Steuerrückstand, the Pfändung and the Zwangsversteigerung (on by
+    /// default; off to measure without them), and for the view the median
+    /// hectare value and day wage (`taxes::tax_view_update`).
+    pub law: [u8; LAWS],
+    arrears: taxes::ArrearsMap,
+    pub seizure: bool,
+    pub auction: bool,
+    tax_view: (i64, i64),
+    /// S131: rent money of a lord with a farm goes to the farm's money
+    /// (`to_lord`; off as before S131).
+    pub lord_farm_money: bool,
     /// S129: the state wages of the last full year (`Treasury::wages`), and
     /// the day and the wages paid by then that it is counted from.
     works_reserve: Option<i64>,
@@ -1369,6 +1409,9 @@ impl Grain {
                 state_want: 0,
                 public_days: 0,
                 public_paid: 0,
+                yield_ha: 0,
+                tax_paid: 0,
+                tithe_kg: 0,
                 state_done: 0,
             });
         }
@@ -1414,6 +1457,12 @@ impl Grain {
             carry_sale: true,
             state_spend: true,
             food_plan: true,
+            law: DEFAULT_LAW,
+            arrears: Default::default(),
+            seizure: true,
+            auction: true,
+            tax_view: (0, 0),
+            lord_farm_money: true,
             works_reserve: None,
             works_mark: None,
             scratch: Vec::new(),
@@ -2180,6 +2229,17 @@ impl Grain {
                 self.markets[mk as usize].free_area += a;
             }
         }
+        // S131: the usual net yield of a hectare, by field area.
+        let mut acc = vec![(0i64, 0i64); self.markets.len()];
+        for fm in self.farms.iter().filter(|fm| fm.hh != NONE && fm.area > 0) {
+            let a = &mut acc[fm.market as usize];
+            a.0 += (fm.area - fm.poor) * fm.net_kg_ha + fm.poor * NET_POOR;
+            a.1 += fm.area;
+        }
+        for (m, a) in self.markets.iter_mut().zip(acc) {
+            m.yield_ha = if a.1 > 0 { a.0 / a.1 } else { 0 };
+        }
+        self.tax_view_update();
     }
 
 
@@ -2579,7 +2639,7 @@ impl Grain {
         // does not cover it.
         let carry = (fm.store - self.need_day(fm.hh) * (doy_until(self.today, fm.harvest_doy) + RESERVE_DAYS) - full * SEED_KG_HA / 10_000).max(0) * (100 - SPOIL_PCT_YEAR) / 100;
         // Share of the crop the farm keeps after rent and tax.
-        let kept_pct = 100 - if fm.manciana || fm.kind == TENANT { RENT_PCT } else { 0 } - if fm.manciana { 0 } else { TAX_PCT };
+        let kept_pct = 100 - if fm.manciana || fm.kind == TENANT { RENT_PCT } else { 0 } - if fm.manciana { 0 } else { self.tithe_pct() };
         // S116: leased state fields keep 100 - RENT_PCT.
         let kept_pct = if fm.area == 0 { kept_pct } else { (kept_pct * (fm.area - fm.state) + (100 - RENT_PCT) * fm.state) / fm.area };
         let m = &self.markets[fm.market as usize];
@@ -2632,6 +2692,7 @@ impl Grain {
         self.timing.peaks += us(t0);
         let t0 = t();
         self.labour(day);
+        self.taxes_day(day);
         self.timing.labour += us(t0);
         let t0 = t();
         self.news(day);
@@ -2738,6 +2799,8 @@ impl Grain {
         for m in self.markets.iter_mut() {
             m.public_days = 0;
             m.public_paid = 0;
+            m.tax_paid = 0;
+            m.tithe_kg = 0;
         }
     }
 
@@ -3563,6 +3626,7 @@ impl Grain {
     fn peak_end(&mut self, p: &People, day: i64, f: u32) {
         let Some(pk) = self.farms[f as usize].peak.take() else { return };
         let cropped = pk.area;
+        let tithe_pct = self.tithe_pct();
         let fm = &mut self.farms[f as usize];
         // S75: the hands that were missing, as wages a worker could have had.
         let m = &self.markets[fm.market as usize];
@@ -3610,23 +3674,35 @@ impl Grain {
         let state_rent = lease * RENT_PCT / 100;
         let net = net - lease;
         // S92: on Manciana land the third (RENT_PCT) to the state is all.
-        let tax = if fm.manciana { 0 } else { net * TAX_PCT / 100 };
+        // S131: the Zehnt at its law's level.
+        let tax = if fm.manciana { 0 } else { net * tithe_pct / 100 };
         let rent = if fm.kind == TENANT { net * RENT_PCT / 100 } else { 0 };
         fm.store += crop - tax - rent - state_rent;
-        let (mk, lord, id) = (fm.market as usize, fm.landlord, fm.hh);
+        let (mk, lord, id, harvest_doy) = (fm.market as usize, fm.landlord, fm.hh, fm.harvest_doy);
         self.deliver(mk, lord, tax, rent);
         self.deliver(mk, NONE, 0, state_rent);
         self.stats.state_rent_kg += state_rent;
         self.stats.tax_kg += tax;
         self.treasury.grain_kg += tax;
+        self.treasury.tithe_worth += tax * Self::buy_price(&self.markets[mk]);
+        self.markets[mk].tithe_kg += tax;
         self.stats.rent_kg += rent;
         if id == NONE {
             return;
         }
         let need = self.need_day(id);
+        let seed = cropped * SEED_KG_HA / 10_000;
+        // S131: the year's taxes in money; what the farm cannot pay it
+        // sells grain for, down to its food until the next harvest and the
+        // seed.
+        let keep_min = need * (doy_until(day + 1, harvest_doy) + 1) + seed;
+        let owed = self.farm_taxes(f as usize, id, day);
         // Food to the next harvest plus the reserve, and next year's seed.
-        let keep = need * (YEAR + RESERVE_DAYS) + cropped * SEED_KG_HA / 10_000;
+        let keep = need * (YEAR + RESERVE_DAYS) + seed;
         self.plan_sale(f as usize, keep);
+        if owed > 0 {
+            self.tax_sale(f as usize, owed, keep_min);
+        }
         if self.farms[f as usize].to_sell > 0 {
             self.start_carry(p, day, id, SELL);
         }
@@ -3652,9 +3728,14 @@ impl Grain {
     }
 
     /// Money for a landlord; the state's if the lord is gone without heirs.
+    /// S131: a lord with a farm (a buyer at a Zwangsversteigerung, or an
+    /// heir) keeps it with the farm's money, as every farm household does
+    /// (`earn`); before, it went to the household's own money, which a farm
+    /// household never spends (`money_of`).
     fn to_lord(&mut self, lord: u32, money: i64) {
         match self.hh.get_mut(&lord) {
-            Some(h) => h.money += money,
+            Some(h) if h.farm == NONE || !self.lord_farm_money => h.money += money,
+            Some(_) => self.earn(lord, money),
             None => {
                 self.treasury.cash += money;
                 self.treasury.rent += money;
@@ -3964,6 +4045,9 @@ impl Grain {
                     self.start_carry(p, day, id, BUY);
                 }
             }
+            // S131: the Steuerrückstand before the goods (and S130's food
+            // money).
+            self.tax_month(p, id, mk as usize, day);
             self.goods_month(id, &info, mk as usize, day);
         }
         self.hh_slices[slice] = ids;
@@ -4418,6 +4502,16 @@ impl Grain {
                 b.extend_from_slice(&x.to_le_bytes());
             }
         }
+        // S131: the laws when not the default, and the arrears (none
+        // without taxes in money), so the default is the same as before.
+        if self.law != DEFAULT_LAW {
+            b.extend_from_slice(&self.law);
+        }
+        for (&id, a) in &self.arrears {
+            for x in [id as i64, a.land, a.head, a.since] {
+                b.extend_from_slice(&x.to_le_bytes());
+            }
+        }
         b.extend_from_slice(&self.road_level);
         for &(r, c) in self.road_lots.iter().chain(&self.field_lots) {
             b.extend_from_slice(&r.to_le_bytes());
@@ -4846,12 +4940,28 @@ impl Grain {
             .float("spoiled_t", "Verdorben im Monat", "t", since(&|r| r.extra.spoiled_kg))
             .float("export_t", "Ausfuhr im Monat", "t", since(&|r| r.extra.export_kg))
             // the treasury's month: in and out (S94, S129), denarii
-            .float("tax_d", "Steuer im Monat", "Denar", since(&|r| r.extra.state.tax))
+            .float("tax_d", "Verkauf aus Staatsspeichern im Monat", "Denar", since(&|r| r.extra.state.tax))
             .float("rent_d", "Pacht an den Staat im Monat", "Denar", since(&|r| r.extra.state.rent))
             .float("estates_d", "Erbloser Nachlass im Monat", "Denar", since(&|r| r.extra.state.estates))
             .float("wages_d", "Staatslohn im Monat", "Denar", since(&|r| r.extra.state.wages))
             .float("public_works_d", "Öffentliche Arbeit im Monat", "Denar", since(&|r| r.extra.state.public_works))
             .int("public_days", "Öffentliche Arbeit im Monat", "Tage", (0..rows.len()).map(|i| rows[i].extra.state.public_days - if i > 0 { rows[i - 1].extra.state.public_days } else { 0 }).collect());
+        // S131: the tax law's month
+        let count = |f: &dyn Fn(&HistoryRow) -> i64| -> Vec<i64> { (0..rows.len()).map(|i| f(&rows[i]) - if i > 0 { f(&rows[i - 1]) } else { 0 }).collect() };
+        let auction_m2 = since(&|r| r.extra.state.auction_m2);
+        let land_price: Vec<f64> = since(&|r| r.extra.state.auction_paid).iter().zip(&auction_m2).map(|(&d, &m2)| if m2 > 0.0 { d / m2 * 10.0 } else { 0.0 }).collect();
+        t.float("tithe_t", "Zehnt im Monat", "t", since(&|r| r.extra.state.grain_kg))
+            .float("tithe_d", "Zehnt im Monat zum Ankaufspreis", "Denar", since(&|r| r.extra.state.tithe_worth))
+            .float("land_tax_d", "Grundsteuer im Monat", "Denar", since(&|r| r.extra.state.land_tax))
+            .float("head_tax_d", "Kopfsteuer im Monat", "Denar", since(&|r| r.extra.state.head_tax))
+            .float("seized_d", "Gepfändet im Monat (Geld und Korn)", "Denar", since(&|r| r.extra.state.seized))
+            .float("seized_t", "Gepfändetes Korn im Monat", "t", since(&|r| r.extra.state.seized_kg))
+            .int("auctions", "Zwangsversteigerungen im Monat", "", count(&|r| r.extra.state.auctions))
+            .float("land_price", "Bodenpreis bei Zwangsversteigerungen", "Denar/ha", land_price)
+            .int("domains", "Höfe an die Domäne im Monat", "", count(&|r| r.extra.state.domains))
+            .float("written_off_d", "Uneinbringlich abgeschrieben im Monat", "Denar", since(&|r| r.extra.state.written_off))
+            .float("arrears", "Steuerrückstand", "Denar", den(&|r| r.extra.arrears))
+            .int("arrears_households", "Haushalte im Steuerrückstand", "", int(&|r| r.extra.arrears_households));
         self.history_by_good_and_class(&mut t);
         t
     }
@@ -4866,7 +4976,7 @@ impl Grain {
         t.float("cash", "Staatskasse", "Denar", den(tr.cash))
             .float("wages", "Staatslohn", "Denar", den(tr.wages))
             .float("minted", "Neu geprägt", "Denar", den(m.minted))
-            .float("tax", "Steuer", "Denar", den(tr.tax))
+            .float("tax", "Verkauf aus Staatsspeichern", "Denar", den(tr.tax))
             .float("rent", "Pacht an den Staat", "Denar", den(tr.rent))
             .float("tax_grain_t", "Steuerkorn", "t", vec![tr.grain_kg as f64 / 1000.0])
             .float("held", "Geld im Umlauf", "Denar", den(self.money_held()))
@@ -4878,6 +4988,26 @@ impl Grain {
             .int("public_days", "Öffentliche Arbeit", "Tage", vec![tr.public_days])
             .float("left_map", "Mit Auswanderern fort", "Denar", den(m.left_map))
             .float("unbooked", "Nicht gebucht", "Denar", den(self.money_unbooked()));
+        // S131: the tax laws and their account since the start
+        let laws = self.law_rows();
+        let (arrears, owing) = self.arrears_now();
+        t.text("tithe_level", "Zehnt", vec![LEVEL_NAMES[laws[taxes::TITHE].level as usize].to_string()])
+            .text("land_level", "Grundsteuer", vec![LEVEL_NAMES[laws[taxes::LAND].level as usize].to_string()])
+            .text("head_level", "Kopfsteuer", vec![LEVEL_NAMES[laws[taxes::HEAD].level as usize].to_string()])
+            .float("tithe_pct", "Zehnt", "%", vec![laws[taxes::TITHE].rate as f64 / 100.0])
+            .float("land_tax_ha", "Grundsteuer je ha und Jahr (Median)", "Denar", den(laws[taxes::LAND].denar))
+            .float("head_tax_adult", "Kopfsteuer je Erwachsenen und Jahr (Median)", "Denar", den(laws[taxes::HEAD].denar))
+            .float("tithe", "Zehnt zum Ankaufspreis", "Denar", den(tr.tithe_worth))
+            .float("land_tax", "Grundsteuer", "Denar", den(tr.land_tax))
+            .float("head_tax", "Kopfsteuer", "Denar", den(tr.head_tax))
+            .float("seized", "Gepfändet (Geld und Korn)", "Denar", den(tr.seized))
+            .float("seized_t", "Gepfändetes Korn", "t", vec![tr.seized_kg as f64 / 1000.0])
+            .int("auctions", "Zwangsversteigerungen", "", vec![tr.auctions])
+            .float("auction_paid", "Erlös der Zwangsversteigerungen", "Denar", den(tr.auction_paid))
+            .int("domains", "Höfe an die Domäne", "", vec![tr.domains])
+            .float("written_off", "Uneinbringlich abgeschrieben", "Denar", den(tr.written_off))
+            .float("arrears", "Steuerrückstand", "Denar", den(arrears))
+            .int("arrears_households", "Haushalte im Steuerrückstand", "", vec![owing]);
         t
     }
 
@@ -4927,7 +5057,9 @@ impl Grain {
             order.iter().map(|&m| self.history.markets.last().and_then(|l| l.1.get(m)).map_or(0.0, |x| f(x) as f64)).collect()
         };
         t.float("public_days", "Öffentliche Arbeit im Monat", "Tage", last(&|x| x.public_days))
-            .float("public_wage", "Lohn für öffentliche Arbeit im Monat", "Denar", last(&|x| x.public_wage));
+            .float("public_wage", "Lohn für öffentliche Arbeit im Monat", "Denar", last(&|x| x.public_wage))
+            .float("tax_d", "Grund- und Kopfsteuer im Monat", "Denar", last(&|x| x.tax_d))
+            .float("tithe_t", "Zehnt im Monat", "t", last(&|x| x.tithe_t));
         pricing::market_columns(self, &mut t, &order);
         t
     }
@@ -5798,6 +5930,118 @@ mod tests {
         let public: Vec<usize> = (0..w.kind.len()).filter(|&i| w.kind[i] == WORK_STATE as i32).collect();
         assert!(!public.is_empty());
         assert!(public.iter().all(|&i| w.farm_household[i] == -1 && places.contains(&w.to[i])));
+    }
+
+    /// S131: taxes in money come due, the arrears bring the Pfändung after
+    /// a year and the Zwangsversteigerung after two (to the highest bidder,
+    /// or to the state as a Domäne without one); every denarius is booked.
+    #[test]
+    fn taxes_arrears_seizure_auction() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let Ok(inp) = crate::inputs::load(&root, false) else {
+            return;
+        };
+        let mut p = People::new(&inp, 3);
+        let mut g = Grain::new(&inp, &mut p);
+        for _ in 0..40 {
+            p.day();
+            g.day(&mut p);
+        }
+        assert_eq!(g.money_unbooked(), 0);
+        g.set_law(taxes::LAND as u8, 5);
+        g.set_law(taxes::HEAD as u8, 5);
+        g.set_law(9, 1);
+        assert_eq!(g.law, [2, 5, 5]);
+        // two family farms with a household, at markets with bidders
+        let family: Vec<usize> = (0..g.farms.len())
+            .filter(|&f| {
+                let fm = &g.farms[f];
+                fm.kind == FAMILY && fm.hh != NONE && !fm.manciana && fm.area > fm.state && g.info.get(&fm.hh).is_some_and(|i| i.adults > 0) && g.markets[fm.market as usize].yield_ha > 0 && g.market_hh[fm.market as usize].len() > 3
+            })
+            .take(2)
+            .collect();
+        assert_eq!(family.len(), 2);
+        let d0 = 400;
+        let broke = |g: &mut Grain, f: usize| {
+            // the farm's money to the treasury, so the books stay closed
+            let m = g.farms[f].money;
+            g.farms[f].money = 0;
+            g.treasury.cash += m;
+        };
+        let (f, id) = (family[0], g.farms[family[0]].hh);
+        let mk = g.farms[f].market as usize;
+        broke(&mut g, f);
+        g.farms[f].store = 0;
+        let owed = g.farm_taxes(f, id, d0);
+        let due = g.land_due(f) + g.head_due(id, mk);
+        assert!(owed > 0 && owed == due, "{owed} {due}");
+        assert_eq!(g.arrears[&id], taxes::Arrears { land: g.land_due(f), head: g.head_due(id, mk), since: d0 });
+        // a forced sale for it, down to `keep` only
+        g.farms[f].store = 1050;
+        g.tax_sale(f, owed, 1000);
+        assert_eq!(g.farms[f].to_sell, 50);
+        g.farms[f].to_sell = 0;
+        // the food until the next harvest and the seed stay on the farm
+        let keep = |g: &Grain, f: usize, day: i64| g.need_day(g.farms[f].hh) * (doy_until(day + 1, g.farms[f].harvest_doy) + 1) + g.seed_due(f, day);
+        // under a year and a month: no Pfändung yet
+        let day = d0 + YEAR;
+        g.farms[f].store = keep(&g, f, day) + 50;
+        g.hh.get_mut(&id).unwrap().busy = true; // at the market: no forced sale
+        g.tax_month(&p, id, mk, day);
+        assert_eq!(g.treasury.seized_kg, 0);
+        // then the Pfändung takes the grain beyond it
+        let day = d0 + YEAR + MONTH;
+        g.farms[f].store = keep(&g, f, day) + 50;
+        let horreum = g.markets[mk].horreum;
+        g.tax_month(&p, id, mk, day);
+        assert_eq!(g.farms[f].store, keep(&g, f, day));
+        assert_eq!(g.treasury.seized_kg, 50);
+        assert_eq!(g.markets[mk].horreum, horreum + 50);
+        assert_eq!(g.arrears[&id].since, d0);
+        assert_eq!(g.money_unbooked(), 0);
+        // two years on: the Zwangsversteigerung to the highest bidder; one
+        // neighbour has the money for it (booked as start money)
+        let value = g.land_value(f);
+        assert!(value > 0);
+        let rich = g.market_hh[mk].iter().copied().find(|&b| b != id && !g.hh[&b].own_food && !g.arrears.contains_key(&b)).unwrap();
+        g.earn(rich, 3 * value + 1_000_000_000);
+        g.money.start += 3 * value + 1_000_000_000;
+        g.tax_month(&p, id, mk, d0 + 2 * YEAR + MONTH);
+        assert_eq!(g.treasury.auctions, 1);
+        assert_eq!(g.farms[f].kind, TENANT);
+        let lord = g.farms[f].landlord;
+        assert!(lord != NONE && lord != id && g.hh.contains_key(&lord));
+        assert!(g.treasury.auction_paid >= value * 50 / 100 && g.treasury.auction_paid <= value);
+        assert_eq!(g.farms[f].hh, id);
+        assert!(!g.arrears.contains_key(&id));
+        assert_eq!(g.money_unbooked(), 0);
+        // without a bidder the farm falls to the state
+        let (f, id) = (family[1], g.farms[family[1]].hh);
+        let mk = g.farms[f].market as usize;
+        broke(&mut g, f);
+        g.farms[f].store = 0;
+        g.farm_taxes(f, id, d0);
+        let bidders = std::mem::take(&mut g.market_hh[mk]);
+        let written = g.treasury.written_off;
+        g.tax_month(&p, id, mk, d0 + 2 * YEAR + MONTH);
+        g.market_hh[mk] = bidders;
+        assert_eq!((g.farms[f].kind, g.farms[f].landlord, g.treasury.domains), (TENANT, NONE, 1));
+        assert!(g.treasury.written_off > written);
+        // the state's tenant pays no Grundsteuer, only the Kopfsteuer
+        assert_eq!(g.land_due(f), 0);
+        g.farm_taxes(f, id, d0 + 3 * YEAR);
+        assert_eq!(g.arrears[&id].land, 0);
+        assert!(g.arrears[&id].head > 0);
+        assert_eq!(g.money_unbooked(), 0);
+        // the Kopfsteuer of a household without a farm, on 1 January
+        let wage = sorted_keys(&g.hh).into_iter().find(|id| g.hh[id].farm == NONE && !g.hh[id].own_food && g.hh[id].money > 1_000_000 && g.info.get(id).is_some_and(|i| i.adults > 0) && !g.arrears.contains_key(id)).unwrap();
+        let (head, money) = (g.treasury.head_tax, g.hh[&wage].money);
+        g.taxes_day(2 * YEAR + 1);
+        assert_eq!(g.treasury.head_tax, head);
+        g.taxes_day(3 * YEAR);
+        assert!(g.treasury.head_tax > head);
+        assert!(g.hh[&wage].money < money);
+        assert_eq!(g.money_unbooked(), 0);
     }
 
     #[test]

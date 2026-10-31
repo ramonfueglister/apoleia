@@ -1243,6 +1243,82 @@ Was auffällt:
 - Foellmi, R., & Zweimüller, J. (2006). Income distribution and demand-induced innovations. *The Review of Economic Studies, 73*(4), 941–960.
 - Hopkins, K. (1980). Taxes and trade in the Roman Empire (200 B.C.–A.D. 400). *The Journal of Roman Studies, 70*, 101–125. https://doi.org/10.2307/299558
 
+## Steuergesetz Schritt 1: Zehnt, Grundsteuer, Kopfsteuer (S131, 100 Jahre, 14 Läufe, Seeds 1 und 2, `run100-s131-summary.txt` und `run100-s131-land-tax.txt` mit `PRICE_DEBUG=1 GOODS_DEBUG=1 FIELD_DEBUG=1`; vorher: main mit S129, S130)
+
+Ramon (31.10.2026, Planungs-Thread „Regierungseinflüsse nach Vic3-Vorbild“): „steuern und haushalt
+zuerst“, Karten D1 „Zehnt, Grundsteuer, Kopfsteuer“, D2 „Rückstand → Pfändung → Versteigerung“ und
+„Bauen nach #100“; Plan https://claude.ai/artifact/12Sa2gxdKcWjYqJdMoSr8F, Abschnitt 4b. Je Steuer
+sechs Stufen; Regeln in S131. Mit Zehnt „niedrig“ (10 %), ohne Geldsteuern und `--lord-money-old`
+gleicher Fingerabdruck wie main (8 Jahre); gleicher Fingerabdruck mit 1 und 3 Threads (Grundsteuer
+und Kopfsteuer „hoch“, 3 Jahre). Je Lauf eine Stufe einer Steuer, die anderen wie heute (Zehnt
+niedrig, keine Geldsteuer); von den fünf Stufen ausser „niedrig“ beim Zehnt bzw. „keine“ bei den
+Geldsteuern liefen „sehr niedrig“, „mittel“ und „sehr hoch“, mit Seed 2 nur „mittel“. Die Läufe
+liefen zu viert gleichzeitig mit je 1 Thread. Neu im Lauf: Zeile „taxes (S131)“ (Summen seit Beginn).
+„Geldsteuer bezahlt“ ist Grund- und Kopfsteuer in Geld, auch aus Pfändung und Versteigerung;
+„gepfändet“ ist Geld und Korn zum Ankaufspreis (das Korn wird erst beim Verkauf aus dem Staatsspeicher
+zu Geld); beides 100 Jahre, Denar.
+
+| Lauf | Menschen J. 100 | Hungertote J. 31–100 | Höfe J. 100 | Preis J. 100 (Denar/kg) | gesät J. 100 | Geldsteuer bezahlt | gepfändet (Korn) | Versteigert / Domäne | abgeschrieben |
+|---|---|---|---|---|---|---|---|---|---|
+| Seed 1: Zehnt niedrig (10 %), wie heute | 129'969 | 7'792 | 17'616 | 0,84 | 81 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 1: Zehnt keine | 130'247 | 7'645 | 17'518 | 1,25 | 84 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 1: Zehnt mittel (15 %) | 127'654 | 8'269 | 17'295 | 0,97 | 74 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 1: Zehnt sehr hoch (30 %) | 121'015 | 8'791 | 16'287 | 0,55 | 70 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 1: Grundsteuer sehr niedrig (5 %) | 126'813 | 8'127 | 17'021 | 0,90 | 79 % | 200 Mio. | 207 Mio. (52,5 kt) | 82 / 139 | 2,2 Mio. |
+| Seed 1: Grundsteuer mittel (15 %) | 126'720 | 8'768 | 16'769 | 0,87 | 75 % | 436 Mio. | 492 Mio. (134,5 kt) | 364 / 419 | 56,9 Mio. |
+| Seed 1: Grundsteuer sehr hoch (30 %) | 120'397 | 9'489 | 15'908 | 0,79 | 70 % | 603 Mio. | 819 Mio. (241,0 kt) | 1239 / 1233 | 199,1 Mio. |
+| Seed 1: Kopfsteuer sehr niedrig (2 Taglöhne) | 126'425 | 7'580 | 16'982 | 0,90 | 77 % | 97 Mio. | 52 Mio. (13,2 kt) | 28 / 66 | 0,9 Mio. |
+| Seed 1: Kopfsteuer mittel (10 Taglöhne) | 128'300 | 8'088 | 17'386 | 0,87 | 76 % | 431 Mio. | 259 Mio. (68,1 kt) | 96 / 153 | 6,3 Mio. |
+| Seed 1: Kopfsteuer sehr hoch (20 Taglöhne) | 122'957 | 8'273 | 16'547 | 1,31 | 72 % | 908 Mio. | 376 Mio. (99,2 kt) | 143 / 221 | 23,5 Mio. |
+| Seed 2: Zehnt niedrig, wie heute | 133'573 | 7'145 | 18'034 | 1,02 | 77 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 2: Zehnt mittel | 132'226 | 7'333 | 17'916 | 0,86 | 76 % | 0 Mio. | 0 Mio. (0,0 kt) | 0 / 0 | 0,0 Mio. |
+| Seed 2: Grundsteuer mittel | 126'845 | 8'869 | 16'956 | 0,97 | 72 % | 472 Mio. | 427 Mio. (117,3 kt) | 373 / 358 | 45,0 Mio. |
+| Seed 2: Kopfsteuer mittel | 129'731 | 8'465 | 17'395 | 1,17 | 75 % | 493 Mio. | 181 Mio. (46,4 kt) | 73 / 94 | 6,5 Mio. |
+
+Was auffällt:
+
+- **Der Zehnt wirkt wie erwartet.** Ohne Zehnt 2 % weniger Hungertote ab Jahr 31, mit 15 % 6 % mehr
+  (Seed 2: 3 %), mit 30 % 13 % mehr und 7 % weniger Menschen im Jahr 100; in den Jahren 1–10 sterben bei
+  30 % 58 % mehr an Hunger. Ohne Zehnt verkauft der Staat weniger Korn, und der Preis im Jahr 100 liegt
+  bei 1,25 statt 0,84 Denar/kg; bei 30 % säen die Höfe 70 statt 81 % ihrer Fläche.
+- **Geldsteuern auf Höfe kommen zur Hälfte als Korn herein.** Bei der Grundsteuer zahlen die Höfe nur
+  42–52 % in Geld, den Rest holt die Pfändung als Korn (52–241 kt in 100 Jahren). Der Grund ist der dünne
+  Markt: Die Händler kaufen im Jahr nur einen kleinen Teil der Ernte, und die Höfe halten kaum Geld (im
+  Jahr 2 zusammen rund 2 Mio. Denar, die Grundsteuer „mittel“ verlangt im ersten Jahr rund 37 Mio.).
+  Was der Hof für die Steuer verkaufen will, findet am Markt keinen Käufer. Das passt zur Geschichte: Ein
+  Staat mit wenig Geld im Umlauf zieht Steuern in Korn ein; Diokletians Steuer wurde in Naturalien
+  erhoben (Jones, 1964), und Steuern in Geld setzen einen Markt voraus, der das Korn abnimmt (Hopkins, 1980).
+- **Die Kopfsteuer trifft weniger hart.** Sie kommt zu 62–73 % in Geld herein, weil Lohn-, Händler- und
+  reiche Haushalte Geld haben; Hungertote ab Jahr 31 −3 / +4 / +6 % bei 2 / 10 / 20 Taglöhnen (Seed 2
+  bei 10: +18 %). Bei 20 Taglöhnen steigt der Kornpreis im Jahr 100 auf 1,31 Denar/kg.
+- **Höfe wechseln den Besitzer.** Bei der Grundsteuer „sehr niedrig / mittel / sehr hoch“ werden in 100
+  Jahren 82 / 364 / 1'239 Höfe versteigert und 139 / 419 / 1'233 fallen an die Domäne, von rund 17'600
+  (1,3 / 4,4 / 14 %). Bei gut der Hälfte bietet niemand genug: In vielen Märkten hat kein Haushalt über
+  ein Jahr Essen hinaus das Geld für Land. Ersteigert wird Boden im Mittel für 640–750 Denar je ha; den
+  Deckel setzen meist die Rodungskosten, wo freies Land da ist.
+- **Mehr Hunger mit jeder Steuer, aber nicht linear.** Grundsteuer: +4 / +13 / +22 % Hungertote ab Jahr
+  31 (Seed 2 bei „mittel“: +24 %). Die Menschen im Jahr 100 streuen von Lauf zu Lauf um einige Tausend
+  (Seed 1 und 2 ohne Änderung: 129'969 und 133'573), Unterschiede unter rund 2 % sind nicht sicher.
+- **Alles gebucht.** Nicht gebucht 0 in allen Läufen; die Kasse gibt den Mehrertrag als öffentliche
+  Arbeit (S129) wieder aus (im Jahr 100 7–20 Mio. Denar in der Kasse).
+- **Pacht an Grundherren mit Hof.** Neu geht sie ins Hofgeld (`to_lord`). Gegenüber main (S129 + S130):
+  Seed 1 129'969 statt 129'908 Menschen und 7'792 statt 7'449 Hungertote ab Jahr 31, Seed 2 133'573 statt
+  132'885 und 7'145 statt 6'651. Mit `--lord-money-old` wie main.
+- **Feldabstände (für die Zoomstufen, nur gelesen):** Im Jahr 100 liegen vom Feld 1,4 % auf der Hofkachel,
+  7 % eine, 8 % zwei, 24 % 3–4, 26 % 5–6, 20 % 7–8 und 13 % mehr als 8 Kacheln weit; Median 8,4 km
+  (Welt), 85 % der Höfe haben Felder 7 oder mehr Kacheln weg (`Grain::field_report`, `FIELD_DEBUG=1`).
+- 91 Tests grün, 1 ausgelassen (neu: `taxes_arrears_seizure_auction`; `commands_read_back` und
+  `save_plays_again` mit dem Gesetz-Befehl).
+
+### Quellen zu S131 (APA 7)
+
+- Besley, T., & Persson, T. (2014). Why do developing countries tax so little? *Journal of Economic Perspectives, 28*(4), 99–120. https://doi.org/10.1257/jep.28.4.99
+- Clark, G. (2002). Land rental values and the agrarian economy: England and Wales, 1500–1914. *European Review of Economic History, 6*(3), 281–308. https://doi.org/10.1017/S1361491602000138
+- Fullerton, D., & Metcalf, G. E. (2002). Tax incidence. In A. J. Auerbach & M. Feldstein (Hrsg.), *Handbook of public economics* (Bd. 4, S. 1787–1872). Elsevier. https://doi.org/10.1016/S1573-4420(02)80009-4
+- Gesetz über die Zwangsversteigerung und die Zwangsverwaltung (ZVG) vom 24. März 1897, § 85a (Deutschland). https://www.gesetze-im-internet.de/zvg/__85a.html
+- Hopkins, K. (1980). Taxes and trade in the Roman Empire (200 B.C.–A.D. 400). *The Journal of Roman Studies, 70*, 101–125. https://doi.org/10.2307/299558
+- Jones, A. H. M. (1964). *The later Roman Empire, 284–602: A social, economic and administrative survey*. Blackwell.
+
 ## Was die Simulation dem Spiel liefert (S94, nur lesen, Fingerabdruck gleich)
 
 Ramon (29.10.2026): alles zeigen, was die Simulation rechnet. Die Simulation liefert, der
@@ -1377,6 +1453,7 @@ in Arrays nach ID statt in Hashtabellen.
 | Speicher-Übertrag (S126) | Übertrag ist, was in den Speichern eines Markts über dessen Absatz eines Jahres liegt; verkauft bis zum Lagerboden (S123) | frei gewählt nach dem Lagermodell (ein Lager trägt zum erwarteten Preis nur bis zur nächsten Ernte) |
 | Kasse gibt aus (S129) | Reserve = Staatslohn des letzten vollen Jahres (Sold und Bauplätze, einmal im Jahr gezählt) plus Restkosten der offenen Bauaufträge zum heutigen Taglohn; vom Rest ein 52stel pro Woche; verteilt nach den Menschen der Märkte; erst ab dem zweiten Jahr; die Arbeit baut nichts | frei gewählt; dass der Staat fast alles ausgab: Hopkins 1980, Duncan-Jones 1994 |
 | Jahresplan der Höfe (S130) | nur Höfe; Korn bis zur nächsten Ernte plus RESERVE_DAYS und die noch zu säende Saat, zum Verkaufspreis der Marktleute | frei gewählt nach Erdkamp 2005 und Carroll 1997 |
+| Steuergesetz (S131) | Stufen Zehnt 0/5/10/15/20/30 %, Grundsteuer 0/5/10/15/20/30 % des üblichen Hektarertrags zum üblichen Ankaufspreis, Kopfsteuer 0/2/5/10/15/20 Taglöhne je Erwachsenen; Kopfsteuer ohne Hof am 1. Januar; Pfändung nach einem Jahr und einem Monat, Versteigerung oder Abschreibung nach zwei Jahren und einem Monat; Mindestgebot halber Wert; 12 % Zins; Bieter behalten ein Jahr Essen; Pfändung bis zum ganzen Rückstand; Steuer vor Korngeld, Familie bleibt als Pächterin | Entscheid D3 des Plans offen; Mindestgebot nach § 85a ZVG; Ertragswert nach Clark 2002; die übrigen frei gewählt bzw. Vorschläge des Planungs-Threads |
 
 ## Nicht gebaut
 
