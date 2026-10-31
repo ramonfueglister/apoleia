@@ -108,4 +108,5 @@ Artifact «Grössen über die Zoomstufen».
 | Stadtfläche | auf jeder Zoomstufe die echte Fläche aus dem Stadtplan (`area_ha`, mindestens 4 ha), nicht mehr eine Scheibe nach Einwohnern |
 | Häuser | wachsen nie; bis zu den 1-km-Kacheln in Diorama-Grösse, ab den 2-km-Kacheln nur noch Dachfarbe der Stadtfläche |
 | Stadtmarken | ab den 2-km-Kacheln (≈ 90 km) eine kleine Voxel-Marke je Stadt aus ihren Hausmodellen: 1–5 Häuser nach Einwohnern, Tempel ab 30'000, Tor mit Türmen bei Mauern; feste Bildschirmgrösse (ein Hauslos 9 px), Name ab 20'000 Einwohnern; weiter draussen nur noch grössere Städte (`app/scripts/city_markers.gd`). Ein Zeichen, kein Massstab |
+| Feldweg | Felder sind wie Häuser im Diorama-Mass gezeichnet: die Sim legt sie im Median 8,4 Welt-km vom Hof (≈ 350 m im Diorama-Mass); nähere Felder liessen die Leute verhungern (Sonde 31.10.). Die Bauern gehen darum zum nächsten eigenen oder gepachteten Feld des Hofs (`people_fields`, `Grain::near_field`) im Diorama-Tempo, 4,5 km/h ÷ 0,0238 (`dot_field_way`), also einige Minuten. Wege zwischen Orten (Markt, Arbeit, Reisen) bleiben in echter Zeit |
 

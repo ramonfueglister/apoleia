@@ -110,7 +110,9 @@ void vertex() {
 	bool female = ((w >> 22u) & 1u) == 1u;
 	bool child = ((w >> 23u) & 1u) == 1u;
 	vec2 look = dot_person_look(px);
-	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, look, dot_person_flags(px), dot_person_away(px));
+	uint key = (w >> 8u) & 0x3fffu;
+	vec3 way = dot_field_way(key, uint(slot), px, rec.xy + place.xy - 32.0);
+	DayNow day = day_now(uint(slot), key, kind, job, female, child, look, dot_person_flags(px), dot_person_away(px), way);
 	bool field = day.pose == DAY_WORK;
 	bool lying = day.pose == DAY_LIE;
 	bool sitting = day.pose == DAY_SIT;
