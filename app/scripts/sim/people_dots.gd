@@ -189,6 +189,10 @@ var _shared_uniforms: Array[StringName] = []
 var _shared_values := {} # what each shared uniform was last copied as
 var _shared_count := 0 # materials it was copied into
 var _day_debt := 0.0
+## The sim day and the share of the real time to the next one the clock has
+## run (day_clock.gd: the hour at the slow speeds); never runs back while
+## the next day is being computed.
+var clock_day := 0.0
 var _bench_path := ""
 var _bench_frame := 0
 var _bench_last := 0
@@ -1151,6 +1155,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				map_on = not map_on
 				_map_version = -1
 
+## The hour from the game clock at the slow speeds (day_clock.gd), -1 at
+## the fast ones: the travellers walk at their real pace when a day lasts
+## `day_s` real seconds (0: at a pace for the eye), stand while `frozen`
+## (the game paused), and the houses light their lamps.
+func set_day_time(hour: float, sun: Vector2, day_s: float, frozen: bool) -> void:
+	if _trips != null:
+		_trips.set_day_time(hour, sun, day_s, frozen)
+	if _life != null:
+		_life.set_lamps(hour, sun)
+
 ## A save game was loaded (game_clock.gd): a new sim thread, new people.
 ## Forget the person shown and the map layers; the textures follow on the
 ## next sync.
@@ -1162,6 +1176,7 @@ func restarted() -> void:
 	_show_info(false)
 	_map_version = -1
 	_day_debt = 0.0
+	clock_day = 0.0
 
 func _process(delta: float) -> void:
 	var start := Time.get_ticks_usec()
@@ -1176,6 +1191,7 @@ func _frame(delta: float) -> void:
 	if whole > 0 and people.backlog() < 4:
 		people.advance(whole)
 	_day_debt -= whole
+	clock_day = maxf(clock_day, float(people.day()) + minf(_day_debt, 0.999))
 	_frames += 1
 	if _frames == 20 and _click_at != Vector2.INF:
 		_pick(_click_at)

@@ -14,7 +14,7 @@ const GEM_PX := 34.0
 const TEXTURE := "res://assets/ui/leiste.png"
 
 signal seal_pressed
-signal speed_chosen(kind: int) # 0 pause or run on, 1-4 a speed
+signal speed_chosen(kind: int) # 0 pause or run on, 1-6 a speed
 signal save_pressed
 signal load_pressed
 
@@ -124,7 +124,7 @@ func set_figure(key: String, icon_name: String, value: String, caption: String, 
 	(e.caption as Label).text = caption
 	(e.cell as Control).tooltip_text = tip
 
-## The date, the speed lit (1-4) and whether the game stands; `warn` gilds
+## The date, the speed lit (1-6) and whether the game stands; `warn` gilds
 ## the date when the sim falls behind.
 func set_clock(date: String, paused: bool, speed: int, warn := false) -> void:
 	_date.text = date
@@ -136,6 +136,10 @@ func set_clock(date: String, paused: bool, speed: int, warn := false) -> void:
 		_pause.tooltip_text = pause_tip
 		_pause._icon = Vic3.icon("play-button" if paused else "pause-button")
 		_pause.queue_redraw()
+
+## What the speed pips' tooltip says about the speeds.
+func set_speed_tip(text: String) -> void:
+	_pips.tooltip_text = text
 
 ## The large red seal at the left, overhanging the bar.
 class Seal extends Button:
@@ -200,12 +204,13 @@ class Gem extends Control:
 			var s := r * 1.25
 			draw_texture_rect(_icon, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, V.GOLD_LIT)
 
-## The speeds as four pips, lit up to the one running; a click on a pip
+## The speeds as six pips, lit up to the one running (the two slow ones
+## with the hours of the day first, game_clock.gd); a click on a pip
 ## chooses its speed.
 class Pips extends Control:
 	const V = preload("res://scripts/ui/vic3_style.gd")
-	const N := 4
-	const W := 14.0
+	const N := 6
+	const W := 11.0
 	const H := 7.0
 	const GAP := 4.0
 	signal chosen(kind: int)
