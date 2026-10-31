@@ -999,6 +999,7 @@ func _build_hud() -> void:
 	_legend_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	# the person clicked, in a window (person_window.gd) at the bottom left
 	_person = PersonWindow.new(Engine.get_main_loop() as SceneTree)
+	_person.member_chosen.connect(func(pid: int): _show_household(pid, -1))
 
 static func _hud_label(parent: Node) -> RichTextLabel:
 	var label := RichTextLabel.new()

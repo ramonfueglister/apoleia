@@ -819,6 +819,8 @@ pub struct People {
     kids_job: Option<std::thread::JoinHandle<Vec<(u32, u32)>>>,
     /// Set by the grain economy; None keeps the capacity K of S35.
     pub econ: Option<Econ>,
+    /// Everyone's name and the lines (crate::names), the dead included.
+    pub names: crate::names::Names,
 }
 
 /// The rows of a table of `len` handled on day `slice` of `parts`: work
@@ -1078,10 +1080,21 @@ impl People {
             households_job: None,
             kids_job: None,
             econ: None,
+            names: crate::names::Names::default(),
         };
         let mut q = p.world.query::<&Traits>();
         p.traits = q.iter(&p.world).map(|t| t.0).collect();
         p.parents = vec![(NONE, NONE); p.next_pid as usize];
+        // names: one line per household, names by the origin of the home
+        let mut q = p.world.query::<(&Pid, &Sex, &Household, &Stand, &Home, &Born)>();
+        let start: Vec<crate::names::StartPerson> = q
+            .iter(&p.world)
+            .map(|(pid, sex, hh, stand, home, born)| {
+                let (lon, lat) = dna::lon_lat_of(&p.grid, home.0);
+                crate::names::StartPerson { pid: pid.0, female: sex.0 == 0, household: hh.0, stand: stand.0, origin: dna::origin(lon, lat), region: p.cell_region[home.0 as usize], born: born.0 }
+            })
+            .collect();
+        p.names = crate::names::Names::start(seed, &start, p.region_key.len());
         // Marriages at the start: let the families search for a year.
         for m in 0..12 {
             p.refresh_index();
@@ -1455,6 +1468,7 @@ impl People {
         if !leaving {
             self.add_pop(home, -1);
         }
+        self.names.died(pid, day);
         self.world.despawn(e);
         self.ent[pid as usize] = Entity::PLACEHOLDER;
         self.count -= 1;
@@ -1500,6 +1514,21 @@ impl People {
             ec.insert(t);
         }
         let e = ec.id();
+        // the name, chosen by the parents (crate::names); the living
+        // siblings from the monthly list of children
+        let at = self.kids.partition_point(|k| k.0 < mother);
+        let siblings: Vec<u32> = self.kids[at..].iter().take_while(|k| k.0 == mother).map(|k| k.1).collect();
+        self.names.birth(&crate::names::Birth {
+            pid,
+            female: sex == 0,
+            father,
+            mother,
+            parents: &self.parents,
+            siblings: &siblings,
+            region: self.cell_region[m_home as usize],
+            stand: f.0 .0,
+            day,
+        });
         if !leaving {
             self.add_pop(m_home, 1);
             self.events.push(crate::events::Event { day, kind: crate::events::BIRTH, household: m_house, pid, cell: m_home, to: NONE, fine: NONE, other: mother, amount: 0 });

@@ -3,7 +3,10 @@
 //! portrait's triangles, so that a page with the Werkstatt can draw both
 //! side by side (docs/kit2/PORTRAITS.md, "Compare with the Werkstatt").
 //!
-//!   cargo run --release -p apoleia-portrait --example portrait_dump -- out.json [lod]
+//!   cargo run --release -p apoleia-portrait --example portrait_dump -- out.json [lod] [kids]
+//!
+//! With `kids`, children from half a year to fourteen instead, as boy and
+//! girl, under the stands' own choices of hair, clothes and jewellery.
 
 use apoleia_portrait::look::{Beard, Hair, Hat, Jewel, Life, Look, Mood, NG, STANDS};
 use apoleia_portrait::{build, Head};
@@ -18,15 +21,26 @@ fn main() {
     use Beard::*;
     #[rustfmt::skip]
     let people: Vec<(bool, f32, usize, Option<Beard>, Option<Hair>, Option<Hat>, Option<Jewel>, Life, Mood, bool)> = vec![
-        (false, 48.0, 1, Some(Full), None, Some(Hat::Petasos), None, Life { food: 0.3, sun: 0.9, scars: 1, ill: 0.0 }, Mood::Grim, false),
-        (false, 62.0, 5, Some(Philosopher), None, Some(Hat::None), None, Life { food: 0.7, sun: 0.1, scars: 0, ill: 0.0 }, Mood::Neutral, true),
-        (true, 32.0, 4, None, Some(Hair::Braid), Some(Hat::None), Some(Jewel::Chain), Life { food: 0.65, sun: 0.2, scars: 0, ill: 0.0 }, Mood::Content, false),
-        (true, 26.0, 3, None, Some(Hair::Veil), Some(Hat::None), Some(Jewel::Earrings), Life { food: 0.6, sun: 0.4, scars: 0, ill: 0.5 }, Mood::Neutral, true),
-        (false, 35.0, 6, Some(Short), None, None, None, Life { food: 0.75, sun: 0.1, scars: 0, ill: 0.0 }, Mood::Neutral, false),
-        (true, 9.0, 1, None, Some(Hair::Bun), None, None, Life { food: 0.5, sun: 0.4, scars: 0, ill: 0.0 }, Mood::Content, false),
-        (false, 22.0, 2, Some(Chin), None, Some(Hat::Pileus), None, Life { food: 0.55, sun: 0.45, scars: 2, ill: 0.0 }, Mood::Neutral, false),
-        (false, 40.0, 0, Some(Stubble), None, Some(Hat::Cap), None, Life { food: 0.35, sun: 0.8, scars: 1, ill: 0.0 }, Mood::Sad, false),
+        (false, 48.0, 1, Some(Full), None, Some(Hat::Petasos), None, Life { food: 0.3, sun: 0.9, scars: 1, ill: 0.0, ..Life::default() }, Mood::Grim, false),
+        (false, 62.0, 5, Some(Philosopher), None, Some(Hat::None), None, Life { food: 0.7, sun: 0.1, scars: 0, ill: 0.0, ..Life::default() }, Mood::Neutral, true),
+        (true, 32.0, 4, None, Some(Hair::Braid), Some(Hat::None), Some(Jewel::Chain), Life { food: 0.65, sun: 0.2, scars: 0, ill: 0.0, ..Life::default() }, Mood::Content, false),
+        (true, 26.0, 3, None, Some(Hair::Veil), Some(Hat::None), Some(Jewel::Earrings), Life { food: 0.6, sun: 0.4, scars: 0, ill: 0.5, ..Life::default() }, Mood::Neutral, true),
+        (false, 35.0, 6, Some(Short), None, None, None, Life { food: 0.75, sun: 0.1, scars: 0, ill: 0.0, ..Life::default() }, Mood::Neutral, false),
+        (true, 9.0, 1, None, Some(Hair::Bun), None, None, Life { food: 0.5, sun: 0.4, scars: 0, ill: 0.0, ..Life::default() }, Mood::Content, false),
+        (false, 22.0, 2, Some(Chin), None, Some(Hat::Pileus), None, Life { food: 0.55, sun: 0.45, scars: 2, ill: 0.0, ..Life::default() }, Mood::Neutral, false),
+        (false, 40.0, 0, Some(Stubble), None, Some(Hat::Cap), None, Life { food: 0.35, sun: 0.8, scars: 1, ill: 0.0, ..Life::default() }, Mood::Sad, false),
     ];
+    let kids = args.get(3).is_some_and(|a| a == "kids");
+    let people = if !kids {
+        people
+    } else {
+        let life = Life { food: 0.6, sun: 0.3, scars: 0, ill: 0.0, ..Life::default() };
+        [0.5, 1.5, 3.0, 5.0, 8.0, 11.0, 14.0]
+            .iter()
+            .enumerate()
+            .flat_map(|(k, &age)| [false, true].map(|female| (female, age, [1, 2, 4, 1, 5, 2, 3][k], None, None, None, None, life, if k % 3 == 0 { Mood::Content } else { Mood::Neutral }, k == 4)))
+            .collect()
+    };
     let mut js = String::from("[");
     for (k, &(female, age, stand, beard, hair, hat, jewel, life, mood, east)) in people.iter().enumerate() {
         let seed = 7919 * (k as u32 + 1) + 13;
@@ -62,7 +76,7 @@ fn main() {
             life.scars,
             life.ill
         );
-        let _ = write!(js, "\"top\":{},\"chin\":{},\"cx\":{},\"cz\":{},\"tris\":{},\"ms\":{ms:.1},\"surfaces\":[", p.top, p.chin, p.cx, p.cz, p.tris);
+        let _ = write!(js, "\"top\":{},\"chin\":{},\"cx\":{},\"cz\":{},\"fill\":{},\"tris\":{},\"ms\":{ms:.1},\"surfaces\":[", p.top, p.chin, p.cx, p.cz, p.fill, p.tris);
         for (i, s) in p.surfaces.iter().enumerate() {
             let _ = write!(js, "{}{{\"rough\":{},\"metal\":{},\"double\":{},\"pos\":[", if i > 0 { "," } else { "" }, s.mat.rough, s.mat.metal, s.mat.double);
             for (j, v) in s.pos.iter().enumerate() {
