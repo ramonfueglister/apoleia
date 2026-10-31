@@ -268,6 +268,23 @@ unabhängig und unverändert.
   `diffuse_lambert`): Unter dem blauen Umgebungslicht lag der Schatten einer
   Mauer fast schwarzblau auf dem Meer, bei Urbek dunkelt er das Hellblau nur
   leicht ab.
+  Runde M (31.10.2026): Ab den 2-km-Kacheln (Ansichten ab etwa 95 km) ist
+  die Küste nicht mehr die Kachelkante, sondern eine Linie durch die
+  2-km-Meeresdistanz (`aux.png` R, bilinear, die Linie bei 1 km zwischen
+  einem Landknoten und dem Meerknoten daneben). Auf der Europakarte standen
+  die Küsten als Treppen aus 8-km-Kacheln da, Flachwasser und Sandsaum je
+  ganze Kachel; Ramons Landschaftsreferenz zeichnet sie glatt. Das Meer
+  wird an der Linie zum Flachwasser und auf einer Kachel Breite wieder
+  tief; Land, das die Linie über eine Meerkachel legt, nimmt die Landschaft
+  der nächsten Landkachel; auf der Landseite ein Sandsaum von etwa einem
+  Pixel (höchstens 0,5 km, sonst wären Inselchen aus ein, zwei Knoten wieder
+  beige Flecken wie die Ein-Kachel-Inseln). Weil die Ecken am Meer auf 0
+  und das Land ab 1 liegen, ist jede Küstenkachel eine Rampe vom Meer
+  hinauf: Die Linie legt das Meer nur auf ihre untere Hälfte, nie auf einen
+  Hang, und der Rampenton läuft am Fuss der Rampe aus, damit das Land auf
+  der Meerkachel ohne Kante anschliesst. Küstenschnitte (die nasse
+  Halbkachel) gibt es dort keine mehr. Skizze:
+  `/mnt/project-files/grafik/runde-m-kuesten-skizze.jpg`.
   Flüsse und Seen sind
   dunkler als dieses Flachwasser. Eine Seekachel an einer Ecke ihres Sees
   (Land auf zwei Nachbarseiten und der Diagonale dazwischen) ist zur Hälfte
