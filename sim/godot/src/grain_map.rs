@@ -13,7 +13,8 @@
 //! of those fields, B growth of the crop (0 bare … 255 ripe), A market
 //! tile (bit 6).
 //! Way layer (S127), one RG8 texel per fine tile: R the neighbours its way
-//! leads to (bit k = DIRS[k]), G the way's level 0 … 7.
+//! leads to (bit k = DIRS[k]), G the way's level 0 … 7 (7 also on a tile
+//! the public works paved, S133).
 //! Road layer, one RG8 texel per 25 km cell: R trade road level (1 track,
 //! 2 road; at sea a sea lane, the only part drawn, S127), G the neighbours
 //! it joins (bit k = DIRS[k]).
@@ -56,6 +57,8 @@ pub struct MapJob {
     markets: Vec<u32>,
     road_levels: Vec<u8>,
     regions: Vec<u32>,
+    /// S133: fine tiles the public works paved (Grain::paved_tiles).
+    paved: Vec<u32>,
 }
 
 impl MapJob {
@@ -66,6 +69,7 @@ impl MapJob {
             markets: g.markets.iter().map(|m| m.fine).collect(),
             road_levels: g.road_levels().to_vec(),
             regions: g.cell_markets().to_vec(),
+            paved: g.paved_tiles().collect(),
         }
     }
 
@@ -175,6 +179,11 @@ impl GrainMap {
                 ways[t as usize * 2] = links;
                 ways[t as usize * 2 + 1] = level.min(7);
             }
+        }
+        // S133: a paved tile shows as the widest way until it has a look
+        // of its own
+        for &t in &job.paved {
+            ways[t as usize * 2 + 1] = 7;
         }
         self.layers.ways = Arc::new(ways);
         for &t in &job.markets {
