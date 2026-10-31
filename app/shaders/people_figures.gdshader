@@ -13,7 +13,8 @@
 // sowing wants hands its grown-ups stand out on their fields, bent over
 // the work (Ramon, 30.10.2026: "Wuselfaktor", "alles aus der Simulation").
 // At the slow speeds the figures keep the day of people_day.gdshaderinc:
-// in the house at night, out to the fields and home again by the hour.
+// in the house at night and for the midday meal, out to the fields and
+// home again by the hour, sitting at a meal in the field or without one.
 shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
@@ -111,6 +112,7 @@ void vertex() {
 	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, look, dot_person_flags(px));
 	bool field = day.pose == DAY_WORK;
 	bool lying = day.pose == DAY_LIE;
+	bool sitting = day.pose == DAY_SIT;
 	float thin = mix(0.6, 1.0, smoothstep(0.5, 0.95, look.x)); // ate under 95 % of the need: thinner, at half of it a skeleton
 	vec2 r = dot_rand2(uint(slot), 31u);
 	vec2 r2 = dot_rand2(uint(slot), 37u);
@@ -134,7 +136,7 @@ void vertex() {
 		|| (part == APRON && apron) || (part == BUNDLE && bundle);
 	// children at home run in circles about their house; travellers walk,
 	// and so do the people on their way to the fields and back
-	bool playing = child && kind == 0u && r2.x < 0.7;
+	bool playing = child && kind == 0u && r2.x < 0.7 && !sitting;
 	bool walking = (kind >= 2u && !lying) || playing || day.walking;
 	vec3 v = shown ? VERTEX : vec3(0.0);
 	local = v;
@@ -167,8 +169,14 @@ void vertex() {
 		v = swing(v, 0.0, -1.5707963);
 		v.y += 0.11;
 	}
+	if (sitting) {
+		// on the ground, the legs and the hem of a long dress out in front
+		bool legs = part == LEG_L || part == LEG_R || part == SANDAL_L || part == SANDAL_R;
+		if (legs || (part == TUNIC && local.y < 0.46)) v = swing(v, 0.47, -1.5707963);
+		v.y -= 0.4;
+	}
 	// people standing about turn now and then; walkers face their way
-	float a = r.x * 6.2831853 + (walking || lying ? 0.0 : floor(TIME * 0.05 + r2.x * 8.0) * 2.1);
+	float a = r.x * 6.2831853 + (walking || lying || sitting ? 0.0 : floor(TIME * 0.05 + r2.x * 8.0) * 2.1);
 	if (day.walking) {
 		a = atan(-day.way.x, day.way.y); // the figure's front (+z) along the way
 	}

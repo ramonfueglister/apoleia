@@ -39,8 +39,12 @@ void vertex() {
 	vec2 p = rec.xy + place.xy - 32.0;
 	float level = place.z;
 	// where the person is at this hour (people_day.gdshaderinc); a figure
-	// in the house or lying down throws no strip
+	// in the house or lying down throws no strip, one sitting a short one
 	DayNow day = day_now(uint(slot), (w >> 8u) & 0x3fffu, kind, job, female, child, dot_person_look(px), dot_person_flags(px));
+	if (day.pose == DAY_SIT) {
+		s *= 0.6;
+		playing = false;
+	}
 	if (day.moved) {
 		p += day.offset;
 		level = dot_ground_level(p);
