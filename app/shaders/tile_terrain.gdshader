@@ -682,6 +682,7 @@ void fragment() {
 		float f = dot(wn, normalize(art.xz));
 		c = base * mix(0.70, 1.0, smoothstep(-0.8, 0.8, f));
 	}
+	c = sim_muted(c, water == W_SEA);
 	ALBEDO = pow(clamp(c, 0.0, 1.0), vec3(2.2)); // palette is sRGB
 	ROUGHNESS = rough;
 	// tops and walls are lit as flat ground; the fixed tones above do the relief

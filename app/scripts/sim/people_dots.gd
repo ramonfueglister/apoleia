@@ -157,6 +157,7 @@ var _figure_shadow_material := ShaderMaterial.new()
 var _crops: MultiMeshInstance3D
 var _trips: MultiMeshInstance3D # carriers and wagons on their way (people_trips.gd)
 var _flows: MeshInstance3D # from further up: what went between the markets (people_flows.gd)
+var _weather_was := -1 # the clouds before the map was muted (1 on, 0 off), -1 not muted
 var _life: MultiMeshInstance3D # smoke, tents, sheaves and animals at the houses (people_house_life.gd)
 var _person_looks: Image # each person's household as the sim has it (ApoleiaPeople.people_looks), for the figures
 var _person_looks_tex: ImageTexture
@@ -699,6 +700,24 @@ func paint_regions(img: Image, grid: Dictionary) -> void:
 	mat.set_shader_parameter("sim_cell_km", grid.cell_km)
 	mat.set_shader_parameter("sim_cell_n", img.get_size())
 	mat.set_shader_parameter("sim_regions_on", true)
+
+## The map greyed under a view of lines (ui/map_modes.gd «Handel»), the
+## clouds away over it and back as they were after it.
+func mute_map(on: bool) -> void:
+	terrain._terrain_material.set_shader_parameter("sim_mute", 1.0 if on else 0.0)
+	var weather: Node = get_parent().get("weather")
+	if weather == null or not weather.has_method("set_enabled"):
+		return
+	if on and _weather_was < 0:
+		_weather_was = 1 if weather.enabled else 0
+		weather.set_enabled(false)
+	elif not on and _weather_was >= 0:
+		weather.set_enabled(_weather_was == 1)
+		_weather_was = -1
+
+## What went between the markets (the map mode «Handel» draws it).
+func flows() -> MeshInstance3D:
+	return _flows
 
 ## The people in view, as a slot list for the figure shader: those in the
 ## circle round the ground in view, nearest its middle first.

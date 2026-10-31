@@ -25,6 +25,7 @@ uniform ivec2 sim_cell_n = ivec2(0);
 // south and west
 uniform sampler2D sim_region_tex : filter_nearest, repeat_disable;
 uniform bool sim_regions_on = false;
+uniform float sim_mute = 0.0;       // the map mode «Handel»: land and sea greyed under its lines
 
 
 
@@ -270,6 +271,15 @@ vec3 sim_regions(vec2 p, vec3 c, float fw_km) {
 	float half_w = max(fw_km * 1.5, 0.4) / sim_cell_km;
 	float aa = fw_km / sim_cell_km;
 	return mix(c, tint * 0.45, 1.0 - smoothstep(half_w - aa, half_w + aa, edge));
+}
+
+// The land and sea under a view of lines (map mode «Handel», ui/map_modes.gd):
+// the land a calm stone grey, the sea a darker slate, each keeping a little
+// of its relief, so the lines stand on them as figure on ground.
+vec3 sim_muted(vec3 c, bool sea) {
+	float grey = dot(c, vec3(0.299, 0.587, 0.114));
+	vec3 calm = sea ? vec3(0.33, 0.40, 0.46) * mix(0.9, 1.1, grey) : vec3(0.64, 0.61, 0.54) * mix(0.8, 1.12, grey);
+	return mix(c, calm, sim_mute);
 }
 
 vec3 sim_ways(vec2 p, vec3 c, float fw_km) {

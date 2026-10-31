@@ -4,9 +4,10 @@ extends CanvasLayer
 ## speeds and the date at the right, the number of people, the treasury's
 ## cash and the grain markets' figures at the left, the red seal opens the
 ## statistics; the map modes at the foot (ui/map_modes.gd) colour the
-## markets' regions. It only sets how many days a second the people
-## (people_dots.gd, ApoleiaPeople) run; the sim thread computes them and the
-## frame never waits for a day.
+## markets' regions, «Handel» shows what the dealers carried between them
+## (people_flows.gd, ui/trade_legend.gd). It only sets how many days a
+## second the people (people_dots.gd, ApoleiaPeople) run; the sim thread
+## computes them and the frame never waits for a day.
 ##
 ## The two slow speeds show the hours of the day (Ramon, 30.10.2026: daily
 ## routines visible, "wie RimWorld"): «Alltag», a day in DAY_MINUTES (the
@@ -24,7 +25,8 @@ extends CanvasLayer
 ##
 ## Command line (after --): --day-minutes=n a day at «Alltag» in n real
 ## minutes (default 4; 6 and 25 to compare), --reckoning=modern names the
-## hours as a clock does instead of the Roman way (day_clock.gd RECKONINGS).
+## hours as a clock does instead of the Roman way (day_clock.gd RECKONINGS),
+## --map-mode=<column|trade> starts in a map mode (for renders).
 ##
 ## When the sim falls behind the speed set, the bar says how many days a
 ## second it manages. A save holds the seed and the build commands
@@ -34,6 +36,7 @@ const SimTables = preload("res://scripts/sim/sim_tables.gd")
 const SaveGames = preload("res://scripts/ui/save_games.gd")
 const TopBar = preload("res://scripts/ui/top_bar.gd")
 const MapModes = preload("res://scripts/ui/map_modes.gd")
+const TradeLegend = preload("res://scripts/ui/trade_legend.gd")
 const Vic3 = preload("res://scripts/ui/vic3_style.gd")
 const DayClock = preload("res://scripts/sim/day_clock.gd")
 const FAST_SPEEDS: Array[float] = [2.0, 10.0, 30.0, 100.0] # days a second, after the two slow ones
@@ -60,6 +63,9 @@ var _sun := Vector2(6.0, 18.0) # sunrise and sunset today
 var _bar: TopBar
 var _modes: MapModes
 var _tables: Node # sim_tables.gd, for the seal and the markets' figures
+var _trade: TradeLegend
+var _flows: Node # people_flows.gd
+var _trading := false # the map mode «Handel» is on
 var _markets_day := -1 # the markets' monthly count last shown
 var _note: Label
 var _note_until := 0.0
@@ -112,6 +118,16 @@ func setup(people_dots: Node) -> void:
 	add_child(_modes)
 	if _modes.visible:
 		_tables.legend_over = _modes
+	_trade = TradeLegend.new()
+	add_child(_trade)
+	_trade.over = _modes
+	if dots.has_method("flows"):
+		_flows = dots.flows()
+		_trade.good_chosen.connect(_flows.choose_good)
+		_flows.changed.connect(func(): _trade.show_scale(_flows))
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--map-mode="): # a map mode from the start, for renders
+			_colour_map.call_deferred(arg.trim_prefix("--map-mode="))
 	_note = _label(14, Vic3.GOLD_LIT)
 	_note.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, TopBar.HEIGHT + 12)
 	_note.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -206,7 +222,10 @@ func _process(delta: float) -> void:
 	_daytime()
 	_show_date()
 	if _tables != null and _tables.has_method("map_column"):
-		_modes.show_mode(_tables.map_column()) # «Karte färben» in the statistics colours it too
+		var column: String = _tables.map_column()
+		if _trading and column != "":
+			_colour_map(column) # «Karte färben» in the statistics ends «Handel»
+		_modes.show_mode("trade" if _trading else column) # and colours the map too
 
 ## Days a second the sim actually made over the last RATE_SECONDS.
 func _measure(delta: float) -> void:
@@ -306,12 +325,20 @@ func _show_markets() -> void:
 		"Korn in den Lagern der Händler auf allen Märkten.")
 
 ## A map mode: the markets' regions coloured by `column` ("" none), as
-## «Karte färben» in the statistics does.
+## «Karte färben» in the statistics does, or "trade": the flows of goods
+## over the map greyed.
 func _colour_map(column: String) -> void:
 	if _tables == null or not _tables.has_method("colour_map"):
 		return
-	_tables.colour_map(column)
-	_modes.show_mode(column)
+	_trading = column == "trade" and _flows != null
+	if column == "trade" and not _trading:
+		column = ""
+	if _flows != null:
+		dots.mute_map(_trading)
+		_flows.show_mode(_trading)
+	_trade.visible = _trading
+	_tables.colour_map("" if _trading else column)
+	_modes.show_mode("trade" if _trading else column)
 
 ## The red seal: the statistics open or close, as with T.
 func _toggle_tables() -> void:
