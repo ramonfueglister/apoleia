@@ -195,44 +195,49 @@ Schnellvorschau ohne Spiel:
 (auch `hair`, `men` und `kids`) schreibt Hüte und Frisuren als Dreiecke für
 ein Kontaktblatt.
 
-## Haare als geformte Masse (31.10.2026)
+## Modellierte Frisuren (31.10.2026)
 
-Ramon wählte am selben Morgen „Geformte Masse wie die Bärte“: Haar als
-Volumen mit Dicke und geschnittenen Strähnen statt einzelner Stäbe. Seither
-weicht Rust auch hier von der Werkstatt ab.
+Zwei Runden mit einer Haarschale (geformte Masse mit Strähnen, dann dünnerer
+Haaransatz und tiefere Wellen) reichten nicht: „die qualität reicht leider
+gar nicht“. Ramon wählte darauf „Modellierte Frisuren“. Seither ist jede
+Locke ein eigener Körper, und die Locken überlagern sich wie auf einem Kopf
+(`lock_hair` und `loft` in `sim/portrait/src/build.rs`). Die Werkstatt hat
+das nicht.
 
-- **Männer und Knaben** (`cap_hair` in `sim/portrait/src/build.rs`): eine
-  Haarkappe von 96 Spalten und 12 Ringen, die vom Wirbel am Hinterkopf zur
-  Haarlinie läuft. Die Spalten sind zu Strähnen von drei bis sechs Spalten
-  gebündelt; jede Strähne endet an der Stirn in einer Spitze, hat einen
-  Grat in der Mitte und ein eigenes Licht. Die Haarlinie folgt einer Tabelle
-  über den Winkel um den Kopf: Stirn, Geheimratsecken, Schläfe, Koteletten
-  vor dem Ohr, Bogen über dem Ohr, Nacken. Sie wird aus dem gemessenen Ohr
-  jedes Kopfes gesetzt.
-- **Glatze und Locken** kommen aus den Genen `BALD` und `CURL`: die
-  Geheimratsecken weichen zurück, ab etwa der Hälfte öffnet sich die Platte
-  oben, bis ein Kranz bleibt; Haarinseln werden entfernt. Leichte Locken
-  wellen die Strähnen, starke Locken werden zu einer dichten Masse aus kleinen
-  Knoten. Kinder haben dünneres Haar.
-- **Frauen:** Mittelscheitel, Strähnen in Bändern mit Grat und Licht, mehr
-  Volumen über den Ohren, Wellen nach hinten. Die spätrömische „Helmfrisur“
-  ist absichtlich kappenförmig; damit sie nicht wie eine Badekappe wirkt
-  (Runde 2, 31.10.2026):
-  - Der Haaransatz liegt dünn auf der Haut; das Volumen beginnt erst
-    dahinter. Vorher stand an Stirn und Schläfe eine dicke Kante mit dunklem
-    Rand.
-  - Die Wellen sind tiefer und an den Kämmen schärfer, und sie reichen bis
-    ins Gesicht: Der Haaransatz schwingt mit ihnen ein und aus.
-  - Der Scheitelzopf liegt auf dem Haar (äusserster Haarpunkt unter ihm),
-    breit und flach, statt als Grat darüber zu schweben.
-  - Der Knoten sitzt höher und ist grösser, von der Seite gut zu sehen.
-- **Kopfhaut finden:** Der nächste Treffer eines Strahls vom Kopfmittelpunkt
-  liegt oft innen (Augenhöhlen), darum lagen Schläfenhaare unter der Haut.
-  `outer_skin` nimmt den äussersten Treffer, ausser er liegt weiter als
-  1,2 Kopfgrössen draussen (Schulter).
+- **Locke:** ein Grat zwischen zwei Kanten, die etwas tiefer liegen, so dass
+  Nachbarn sich wie Dachziegel decken; breit an der Wurzel, zur Spitze schmal.
+  Jede Locke hat ihr eigenes Licht, zur Wurzel hin etwas dunkler.
+- **Wurzeln:** gleichmässig über die Kugel verteilt (goldener Winkel), etwas
+  verschoben, nur innerhalb der Haarlinie und nicht auf der Glatze oder unter
+  dem Hut.
+- **Kämmen:** Kurzes Haar läuft vom Wirbel am Hinterkopf nach aussen, nahe
+  dem Wirbel leicht gedreht; die Stirnfransen sind etwas länger. Langes Haar
+  läuft vom Mittelscheitel seitlich hinunter und dann nach hinten zum Knoten
+  oder zum Zopfansatz. Die Locken nahe dem Wirbel oder dem Scheitel liegen
+  oben (`tier`), am Scheitel selbst beginnen sie flach, so dass der Scheitel
+  als Furche bleibt.
+- **Locken und Wellen:** Das Gen `CURL` lässt kurze Locken erst wellen, dann
+  zu Haken drehen und kürzer werden. Langes Haar hat Wellen quer über den
+  Kopf, deren Kämme auf allen Locken gleich hoch liegen.
+- **Knoten:** fünf Locken, um einen Punkt am Hinterkopf gewunden, nach aussen
+  enger. Der Scheitelzopf bleibt die Blattreihe von vorher und sitzt auf dem
+  äussersten Haarpunkt unter ihm.
+- **Unter dem Schleier** liegt das Haar flach, ohne Wellen.
+- **Kopfhaut:** Eine dunkle Schicht auf der Kopfhaut, von der Haarlinie an,
+  füllt die Lücken zwischen den Locken. Der nächste Treffer eines Strahls vom
+  Kopfmittelpunkt liegt oft innen (Augenhöhlen), darum nimmt `outer_skin` den
+  äussersten, ausser er liegt weiter als 1,2 Kopfgrössen draussen (Schulter).
+  Ein Strahl kann durch eine Naht des Kopfnetzes rutschen; dann wird knapp
+  daneben noch einmal gesucht (sonst lag ein heller Fleck im Haar).
+- Glatze, Geheimratsecken und Haarlinie der Männer folgen weiter der Tabelle
+  aus dem gemessenen Ohr. Babys haben kurze, dünne Locken.
 
-Vorher und nachher in Godot: `/mnt/project-files/portraits/haare-vorher-nachher.png`,
-Frauenhaar Runde 2: `/mnt/project-files/portraits/frauenhaar-runde2.png`.
+Alle Masse sind PLACEHOLDER nach Augenmass. Rund 9'000 bis 13'000 Dreiecke je
+Porträt, wie vorher.
+
+Bilder: Probe `/mnt/project-files/portraits/modellierte-haare-probe.png`,
+Vorschau `/mnt/project-files/portraits/modellierte-frisuren-vorschau.png`,
+im Spiel `/mnt/project-files/portraits/modellierte-frisuren-im-spiel.png`.
 
 ## Licht in Godot
 
@@ -259,9 +264,9 @@ und in der Werkstatt nebeneinander.
   nicht.
 - Die Werkstatt hat weder die Kinder noch Trauer, Geld, Flicken,
   Altersflecken, die neuen Hüte und die geformten Haare.
-- Frauenhaar: der Knoten im Nacken ist von vorne nicht zu sehen (das ist
-  richtig so, aber er zeigt sich nur im Profil); Schläfenlöckchen wie auf
-  den Mumienporträts aus dem Fayum fehlen noch.
+- Haare: Schläfenlöckchen wie auf den Mumienporträts aus dem Fayum fehlen
+  noch. Das Porträt ist im Personenfenster nur 112 × 140 Punkte gross; dort
+  bleibt vom Haar wenig sichtbar.
 - Die Gesichter der Hinweise sind klein (30 Pixel); ob sie dort helfen, muss
   sich im Spiel zeigen.
 

@@ -3,7 +3,7 @@
 //! bald, written as JSON (label, frame and triangles per portrait) for a
 //! quick look without the game.
 //!
-//!   cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json [hats|hair|men|kids]
+//!   cargo run --release -p apoleia-portrait --example portrait_sheet -- out.json [hats|hair|men|kids] [lod]
 
 use apoleia_portrait::look::{default_life, Beard, Hair, Hat, Look, Mood, BALD, CURL, NG};
 use apoleia_portrait::{build, Head};
@@ -18,6 +18,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let out = args.get(1).cloned().unwrap_or_else(|| "sheet.json".into());
     let set = args.get(2).map_or("hats", |s| s.as_str());
+    let lod = args.get(3).and_then(|s| s.parse().ok()).unwrap_or(1);
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../app/assets/portrait/head.bin.zst");
     let head = Head::load(&std::fs::read(root).expect("head file")).expect("head");
     let person = |female: bool, age: f32, stand: usize, seed: u32| Look {
@@ -83,7 +84,7 @@ fn main() {
     }
     let mut js = String::from("[");
     for (k, (label, look)) in looks.iter().enumerate() {
-        let p = build(&head, look, 1);
+        let p = build(&head, look, lod);
         let _ = write!(js, "{}{{\"label\":\"{label}\",\"top\":{},\"chin\":{},\"cx\":{},\"cz\":{},\"fill\":{},\"tris\":{},\"surfaces\":[", if k > 0 { "," } else { "" }, p.top, p.chin, p.cx, p.cz, p.fill, p.tris);
         for (i, s) in p.surfaces.iter().enumerate() {
             let _ = write!(js, "{}{{\"double\":{},\"metal\":{},\"pos\":[", if i > 0 { "," } else { "" }, s.mat.double, s.mat.metal);

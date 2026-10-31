@@ -525,166 +525,238 @@ fn outer_skin(cast: &Caster, d: V3, hs: f32) -> f32 {
     }
 }
 
-/// Short hair as a sculpted cap, like the beard (Ramon, 31.10.2026: strands
-/// read as noise at portrait size): a shell with real thickness over the
-/// skull, cut into locks combed from the crown forward and down, each a
-/// ridge with grooves at its edges, pinched to a point at the hairline, as
-/// the comma-shaped locks of Tetrarchic and Constantinian portraits. Wavy
-/// hair waves along the lock, curly hair is a thicker shell under curls.
-/// `bald` (0..1.7) takes the front back and then the crown; `hidden` drops
-/// what a hat covers.
+/// How a head of hair is combed: from a whorl on the crown outwards (short
+/// hair), or from a middle parting down and back to the nape (long hair,
+/// towards the given direction).
+enum Flow {
+    Whorl(V3),
+    Parting(V3),
+}
+
+/// One head of hair for `lock_hair`; lengths in head sizes.
+struct Locks<'a> {
+    flow: Flow,
+    /// the hairline's height (degrees above the head's centre) by the angle
+    /// from the front (0..180)
+    line: &'a [(f32, f32)],
+    /// above this height the crown is bald (degrees; 999: no bald crown)
+    top_bald: f32,
+    spacing: f32,
+    width: f32,
+    thick: f32,
+    length: f32,
+    /// how much higher the locks next to the whorl or the parting lie
+    tier: f32,
+    /// curl 0..1: waves along each lock, then hooks
+    curl: f32,
+    /// waves across the head, crests at the same height on every lock
+    wave: f32,
+    /// a knot at the nape, wound from five locks (its size; 0: none)
+    knot: f32,
+}
+
+/// The height of a hairline table at `th` degrees from the front.
+fn line_at(line: &[(f32, f32)], th: f32) -> f32 {
+    let a = th.abs().min(180.0);
+    let k = line.iter().position(|q| q.0 >= a).unwrap_or(line.len() - 1).max(1);
+    let (p0, p1) = (line[k - 1], line[k]);
+    lerp(p0.1, p1.1, (a - p0.0) / (p1.0 - p0.0))
+}
+
+/// One lock along `pts`: a ridge between two edges, wide at the root and
+/// narrowing to a point, its edges a little lower than its ridge so that
+/// neighbours overlap like roof tiles; its ridge points go to `hp`.
 #[allow(clippy::too_many_arguments)]
-fn cap_hair(out: &mut Surface, rng: &mut Rng, cast: &Caster, hc: V3, hs: f32, hair: Rgb, curl: f32, bald: f32, age: f32, ear: (f32, f32, f32), hidden: &dyn Fn(V3) -> bool) {
+fn loft(out: &mut Surface, rng: &mut Rng, hc: V3, pts: &[V3], w: f32, h: f32, hair: Rgb, hp: &mut Vec<V3>) {
+    let m = pts.len();
+    let lit = 0.84 + 0.26 * rng.next();
+    let mut rings: Vec<[V3; 3]> = Vec::with_capacity(m);
+    for k in 0..m {
+        let c = pts[k];
+        let t = norm(sub(pts[(k + 1).min(m - 1)], pts[k.saturating_sub(1)]));
+        if k == m - 1 {
+            rings.push([madd(c, t, 0.3 * w); 3]);
+            continue;
+        }
+        let o = sub(c, hc);
+        let n = norm(sub(o, mul(t, dot(o, t))));
+        let b = cross(t, n);
+        let f = k as f32 / (m - 1) as f32;
+        let ww = w * ((0.7 + 0.3 * sm(0.0, 0.25, f)) * (1.0 - f).powf(0.85) + 0.01);
+        let hh = h * (0.55 + 0.45 * (1.0 - f));
+        rings.push([madd(madd(c, b, -ww), n, -0.25 * hh), madd(c, n, hh), madd(madd(c, b, ww), n, -0.25 * hh)]);
+        hp.push(rings[k][1]);
+    }
+    for k in 0..m - 1 {
+        let (a, b) = (rings[k], rings[k + 1]);
+        let f = (k as f32 + 0.5) / (m - 1) as f32;
+        for (i, j) in [(0, 1), (1, 2)] {
+            let c = cmul(hair, lit * (0.86 + 0.14 * sm(0.0, 0.35, f)) * (0.97 + 0.06 * rng.next()));
+            if k + 2 < m {
+                out.tri(a[i], b[j], b[i], c);
+            }
+            out.tri(a[i], a[j], b[j], c);
+        }
+    }
+    let a = rings[0];
+    out.tri(a[0], a[1], a[2], cmul(hair, 0.6));
+}
+
+/// Hair as overlapping locks (Ramon, 31.10.2026, "Modellierte Frisuren"):
+/// each lock its own faceted clump (`loft`), combed along the scalp from a
+/// whorl or a parting; the locks next to the whorl or the parting lie on top,
+/// as they do on a head. A dark layer on the scalp fills the gaps. `hidden`
+/// drops what a hat covers. Returns points on the hair's outside.
+#[allow(clippy::too_many_arguments)]
+fn lock_hair(out: &mut Surface, rng: &mut Rng, cast: &Caster, hc: V3, hs: f32, hair: Rgb, l: &Locks, lod: usize, hidden: &dyn Fn(V3) -> bool) -> Vec<V3> {
     let dd = |th: f32, el: f32| [(el * D2R).cos() * (th * D2R).sin(), (el * D2R).sin(), (el * D2R).cos() * (th * D2R).cos()];
+    let th_el = |d: V3| (d[0].atan2(d[2]) / D2R, d[1].clamp(-1.0, 1.0).asin() / D2R);
+    // a ray can slip through a seam of the mesh: then try beside it
     let skin = |d: V3| {
-        let r = outer_skin(cast, d, hs);
-        if r > 0.0 {
-            r
-        } else {
-            0.9 * hs
+        for o in [[0.0, 0.0, 0.0], [0.01, 0.0, 0.0], [-0.01, 0.0, 0.0], [0.0, 0.01, 0.0], [0.0, -0.01, 0.0], [0.0, 0.0, 0.01]] {
+            let r = outer_skin(cast, norm(add(d, o)), hs);
+            if r > 0.0 {
+                return r;
+            }
+        }
+        0.9 * hs
+    };
+    let hl = |th: f32| line_at(l.line, th);
+    let bald = |th: f32, el: f32| el > l.top_bald && th.abs() < 165.0;
+    // the part of `v` along the scalp at `d`
+    let along = |d: V3, v: V3| norm(sub(v, mul(d, dot(v, d))));
+    let field = |d: V3| -> V3 {
+        match l.flow {
+            Flow::Whorl(w) => {
+                // away from the whorl, turning a little round it
+                let t = along(d, sub(d, w));
+                let a = dot(d, w).clamp(-1.0, 1.0).acos();
+                norm(madd(t, cross(d, t), 0.45 * (-a / 0.5).exp()))
+            }
+            Flow::Parting(k) => {
+                // from the parting sideways down, then back to the nape
+                let (th, el) = th_el(d);
+                let a = sm(-10.0, 50.0, el) * (1.0 - sm(100.0, 160.0, th.abs()));
+                norm(add(mul(along(d, [th.signum(), 0.0, 0.0]), a), mul(along(d, sub(k, d)), 1.0 - a)))
+            }
         }
     };
-    let slerp = |a: V3, b: V3, t: f32| {
-        let c = dot(a, b).clamp(-1.0, 1.0);
-        let w = c.acos();
-        if w < 1e-4 {
-            return a;
+    let long = matches!(l.flow, Flow::Parting(_));
+    // roots: evenly over the sphere (golden angle), shaken a little; long
+    // hair keeps off the parting and grows from a little inside the hairline
+    let sp = l.spacing * [1.5, 1.25, 1.1, 1.0][lod.min(3)];
+    let n = (4.0 * PI / (sp * sp)) as usize;
+    let mut roots = Vec::new();
+    for i in 0..n {
+        let y = 1.0 - 2.0 * (i as f32 + 0.5) / n as f32;
+        let r = (1.0 - y * y).max(0.0).sqrt();
+        let a = i as f32 * 2.399_963;
+        let j = [rng.next() - 0.5, rng.next() - 0.5, rng.next() - 0.5];
+        let d = norm(madd([r * a.cos(), y, r * a.sin()], j, 0.7 * sp));
+        let (th, el) = th_el(d);
+        if el < hl(th) + if long { 6.0 } else { 0.0 } || bald(th, el) || (long && d[0].abs() < 0.025) || hidden(madd(hc, d, skin(d))) {
+            continue;
         }
-        let s = w.sin();
-        norm(add(mul(a, ((1.0 - t) * w).sin() / s), mul(b, (t * w).sin() / s)))
-    };
-    // the hairline's height (degrees above the head's centre) by the angle
-    // from the front; it recedes at the temples first, then in front
-    let rec = c01((bald - 0.25) / 0.9);
-    // (temple corners, sideburns in front of the ear, over the ear, nape)
-    let (e0, e1, et) = ear;
-    let line: [(f32, f32); 13] = [
-        (0.0, 20.0 + 12.0 * rec),
-        (25.0, 18.0 + 18.0 * rec),
-        (40.0, 8.0 + 14.0 * rec),
-        (e0 - 9.0, -8.0 + 8.0 * rec),
-        (e0 - 5.0, -26.0 + 10.0 * rec),
-        (e0 - 2.0, -33.0 + 10.0 * rec),
-        (e0 + 2.0, et - 2.0),
-        (e0 + 6.0, et + 2.0),
-        (e1 - 4.0, et + 2.0),
-        (e1 + 8.0, -16.0),
-        (e1 + 22.0, -32.0),
-        (150.0, -42.0),
-        (180.0, -48.0),
-    ];
-    let hairline = |th: f32| {
-        let a = th.abs().min(180.0);
-        let k = line.iter().position(|q| q.0 >= a).unwrap_or(line.len() - 1).max(1);
-        let (p0, p1) = (line[k - 1], line[k]);
-        lerp(p0.1, p1.1, (a - p0.0) / (p1.0 - p0.0))
-    };
-    // the crown goes bald from the top down
-    let top_bald = if bald > 0.4 { 92.0 - (bald - 0.4) * 78.0 } else { 999.0 };
-    let whorl = norm(dd(180.0, 56.0));
-    let kid = c01(age / 4.0);
-    let thick = (0.055 + 0.03 * rng.next() + 0.045 * curl) * hs * lerp(0.35, 1.0, kid);
-    let ridge_h = 0.032 * hs * (1.0 - sm(0.55, 0.85, curl)) * lerp(0.4, 1.0, kid);
-    let wave = 0.014 * hs * sm(0.25, 0.55, curl) * (1.0 - sm(0.7, 0.9, curl));
-    let (nc, nr) = (96usize, 12usize);
-    // locks of two to four columns, from the back round to the back
-    struct Lock {
-        s: usize,
-        w: usize,
-        r: f32,
-        d: f32,
+        roots.push(d);
     }
-    let mut locks = Vec::new();
-    let mut s0 = 0;
-    while s0 < nc {
-        let w = [3, 4, 4, 5, 6][((rng.next() * 5.0) as usize).min(4)].min(nc - s0);
-        locks.push(Lock { s: s0, w, r: rng.next(), d: rng.next() - 0.5 });
-        s0 += w;
-    }
-    let lock_of = |ci: usize| locks.iter().find(|l| ci >= l.s && ci <= l.s + l.w).unwrap_or(locks.last().unwrap());
-    let th_of = |ci: f32| -180.0 + 360.0 * ci / nc as f32;
-    let mut fr = vec![vec![[0f32; 3]; nr + 1]; nc + 1];
-    let mut sk = fr.clone();
-    let mut ok = vec![vec![false; nr + 1]; nc + 1];
-    let mut lit = vec![0f32; nc + 1];
-    for ci in 0..=nc {
-        let l = lock_of(ci.min(nc - 1));
-        let l = if ci == nc { &locks[0] } else { l };
-        let cpos = if ci == nc { 0.0 } else { ci as f32 - l.s as f32 };
-        let pos = 2.0 * cpos / l.w as f32 - 1.0;
-        lit[ci] = 0.72 + 0.3 * (1.0 - pos.abs());
-        let th = th_of(ci as f32);
-        let thm = th_of(l.s as f32 + l.w as f32 / 2.0);
-        // the lock's middle reaches below the hairline, most in front: the
-        // point of a comma lock on the forehead; each lock ends a little
-        // higher or lower and leans a little aside
-        let tip = lerp(9.0, 3.0, sm(30.0, 80.0, thm.abs())) * (0.7 + 0.6 * l.r);
-        let lean = l.d * lerp(10.0, 4.0, sm(30.0, 80.0, thm.abs()));
-        for ri in 0..=nr {
-            let v = ri as f32 / nr as f32;
-            // towards its end the lock narrows to its middle (sideways
-            // only, so that sideburns and the line over the ear stay)
-            let tv = lerp(th, thm, 0.8 * sm(0.62, 1.0, v)) + lean * sm(0.3, 1.0, v);
-            let tgt = norm(dd(tv, hairline(tv) - tip * (1.0 - pos * pos) + 2.0 * l.d));
-            let d = slerp(whorl, tgt, v);
-            let s = skin(d);
-            let el = d[1].asin() / D2R;
-            let tn = (thick * (1.0 - 0.75 * sm(0.5, 1.0, v))).max(0.014 * hs) + ridge_h * (0.6 + 0.7 * l.r) * (1.0 - pos * pos) * sm(0.0, 0.3, v) + wave * (v * 9.0 + l.s as f32 * 1.9).sin() * sm(0.1, 0.4, v) + (rng.next() - 0.5) * 0.004 * hs;
-            let q = madd(hc, d, s + tn);
-            fr[ci][ri] = q;
-            sk[ci][ri] = madd(hc, d, s - 0.004 * hs);
-            ok[ci][ri] = !(el > top_bald && th.abs() < 165.0) && !hidden(q);
-        }
-    }
-    // no islands: below the first bald row from the end up, all is bald
-    for row in ok.iter_mut() {
-        if let Some(last) = (0..=nr).rev().find(|&ri| !row[ri]) {
-            row[..=last].iter_mut().for_each(|o| *o = false);
-        }
-        if row.iter().filter(|&&o| o).count() < 4 {
-            row.iter_mut().for_each(|o| *o = false);
-        }
-    }
-    let col = |ci: usize, ri: usize, v: f32, rng: &mut Rng| cmul(hair, (lit[ci] + lit[ci + 1]) / 2.0 * (0.8 + 0.2 * sm(0.0, 0.35, v)) * (0.92 + 0.14 * rng.next()) * if ri.is_multiple_of(2) { 1.0 } else { 0.97 });
-    for ci in 0..nc {
-        for ri in 0..nr {
-            if !(ok[ci][ri] && ok[ci + 1][ri] && ok[ci][ri + 1] && ok[ci + 1][ri + 1]) {
-                continue;
+    let steps = [4, 5, 6, 7][lod.min(3)];
+    let hook = 35.0 * D2R * sm(0.55, 0.9, l.curl);
+    let wavy = 25.0 * D2R * sm(0.25, 0.55, l.curl) * (1.0 - sm(0.6, 0.9, l.curl));
+    let len = l.length * lerp(1.0, 0.55, sm(0.5, 0.9, l.curl));
+    let mut hp = Vec::new();
+    for &d0 in &roots {
+        let (th0, el0) = th_el(d0);
+        // the fringe is a little longer
+        let front = !long && (th0 * D2R).cos() > 0.6 && el0 < 50.0;
+        let step = len * hs * (if front { 1.1 } else { 1.0 }) * (0.85 + 0.3 * rng.next()) / steps as f32;
+        let (w, h) = (l.width * hs * (0.8 + 0.4 * rng.next()), l.thick * hs * (0.8 + 0.4 * rng.next()));
+        let tier = l.tier
+            * hs
+            * match l.flow {
+                Flow::Whorl(wh) => 1.0 - dot(d0, wh).clamp(-1.0, 1.0).acos() / PI,
+                Flow::Parting(_) => (1.0 - d0[0].abs().min(1.0).asin() / (70.0 * D2R)).max(0.0),
+            };
+        let turn = if rng.next() < 0.5 { -1.0 } else { 1.0 };
+        let phase = rng.next() * 6.3;
+        let mut p = madd(hc, d0, skin(d0) + 0.3 * h + if long { 0.0 } else { tier });
+        let mut pts = vec![p];
+        let mut d = d0;
+        for k in 0..steps {
+            let mut t = field(d);
+            let a = turn * hook * (k + 1) as f32 + wavy * (k as f32 * 1.6 + phase).sin();
+            if a != 0.0 {
+                t = norm(add(mul(t, a.cos()), mul(cross(d, t), a.sin())));
             }
-            let v = (ri as f32 + 0.5) / nr as f32;
-            let c = col(ci, ri, v, rng);
-            out.tri(fr[ci][ri], fr[ci + 1][ri + 1], fr[ci + 1][ri], c);
-            out.tri(fr[ci][ri], fr[ci][ri + 1], fr[ci + 1][ri + 1], cmul(c, 0.97));
-            // the edge where the hair ends: at the hairline, and towards a
-            // bald crown above
-            let dk = cmul(hair, 0.62);
-            if ri + 1 < nr && !(ok[ci][ri + 2] && ok[ci + 1][ri + 2]) {
-                let r1 = ri + 1;
-                out.tri(fr[ci][r1], sk[ci][r1], sk[ci + 1][r1], dk);
-                out.tri(fr[ci][r1], sk[ci + 1][r1], fr[ci + 1][r1], dk);
+            let mut np = madd(p, t, step);
+            if l.wave > 0.0 {
+                let d1 = norm(sub(np, hc));
+                let (e0, e1) = (th_el(d).1, th_el(d1).1);
+                np = madd(np, cross(d1, t), l.wave * hs * ((2.0 * PI * e1 / 22.0).sin() - (2.0 * PI * e0 / 22.0).sin()));
             }
-            if ri > 0 && !(ok[ci][ri - 1] && ok[ci + 1][ri - 1]) {
-                out.tri(fr[ci][ri], fr[ci + 1][ri], sk[ci + 1][ri], dk);
-                out.tri(fr[ci][ri], sk[ci + 1][ri], sk[ci][ri], dk);
+            d = norm(sub(np, hc));
+            let (th, el) = th_el(d);
+            let limit = if !long && th.abs() < 40.0 { 5.0 } else { 2.0 };
+            if hl(th) - el > limit || bald(th, el) {
+                break;
+            }
+            let ramp = if long { sm(0.0, 0.3, (k + 1) as f32 / steps as f32) } else { 1.0 };
+            p = madd(hc, d, skin(d) + 0.55 * h + 0.004 * hs + tier * ramp);
+            if hidden(p) {
+                break;
+            }
+            pts.push(p);
+            if let Flow::Parting(kd) = l.flow {
+                if dot(d, kd) > (14.0 * D2R).cos() {
+                    break;
+                }
+            }
+        }
+        if pts.len() >= 2 {
+            loft(out, rng, hc, &pts, w, h, hair, &mut hp);
+        }
+    }
+    if let (Flow::Parting(kd), true) = (&l.flow, l.knot > 0.0) {
+        let kq = madd(hc, *kd, skin(*kd));
+        let u = norm(cross(*kd, [0.0, 1.0, 0.0]));
+        let v = cross(*kd, u);
+        for j in 0..5 {
+            let pts: Vec<V3> = (0..=12)
+                .map(|k| {
+                    let f = k as f32 / 12.0;
+                    let a = 2.0 * PI * (j as f32 / 5.0 + 1.25 * f);
+                    madd(madd(kq, *kd, (0.06 + 0.16 * f) * hs * l.knot), add(mul(u, a.cos()), mul(v, a.sin())), (0.2 - 0.12 * f) * hs * l.knot)
+                })
+                .collect();
+            loft(out, rng, hc, &pts, 0.13 * hs * l.knot, 0.075 * hs * l.knot, hair, &mut hp);
+        }
+    }
+    // the scalp under the locks, from the hairline up, dark
+    let (nt, ne) = ([24, 32, 40, 48][lod.min(3)], [8, 10, 12, 14][lod.min(3)]);
+    let g: Vec<Vec<(V3, bool)>> = (0..=nt)
+        .map(|i| {
+            let th = -180.0 + 360.0 * i as f32 / nt as f32;
+            let e0 = hl(th) - 1.0;
+            (0..=ne)
+                .map(|j| {
+                    let el = lerp(e0, 90.0, j as f32 / ne as f32);
+                    let d = dd(th, el);
+                    let q = madd(hc, d, skin(d) + 0.02 * hs);
+                    (q, !bald(th, el) && !hidden(q))
+                })
+                .collect()
+        })
+        .collect();
+    let dark = cmul(hair, 0.62);
+    for i in 0..nt {
+        for j in 0..ne {
+            let (a, b, c, e) = (g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1]);
+            if a.1 && b.1 && c.1 && e.1 {
+                out.tri(a.0, b.0, c.0, dark);
+                out.tri(a.0, c.0, e.0, dark);
             }
         }
     }
-    // curls on the shell
-    if curl > 0.6 {
-        let ico = icosahedron();
-        let share = sm(0.6, 0.9, curl);
-        for (ci, ri) in (0..nc).step_by(3).flat_map(|ci| (1..nr).map(move |ri| (ci, ri))) {
-            let ci = (ci + (ri % 2) + (rng.next() * 2.0) as usize).min(nc - 1);
-            if !ok[ci][ri] || rng.next() > share {
-                continue;
-            }
-            let q = fr[ci][ri];
-            let nd = norm(sub(q, hc));
-            let r = (0.05 + 0.03 * rng.next()) * hs * lerp(0.5, 1.0, kid) * lerp(1.0, 0.7, ri as f32 / nr as f32);
-            let m = euler(rng.next() * 3.0, rng.next() * 3.0, 0.0);
-            solid(out, &ico, madd(q, nd, 0.25 * r), [r, r * 0.8, r], &m, cmul(hair, 0.82 + 0.25 * rng.next()));
-        }
-    }
+    hp
 }
 
 /// Ellipse-free polyhedron put down at `c`, radius `r`, rotated by `m`,
@@ -1365,7 +1437,41 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
                 ear = (ear.0.min(th), ear.1.max(th), ear.2.max(el));
             }
         }
-        cap_hair(&mut cap, &mut x.rng, &cast_h, hc, hs, hair, curl, bald, p.age, ear, &under_hat);
+        // the hairline recedes at the temples first, then in front; then
+        // the crown goes bald from the top down
+        let rec = c01((bald - 0.25) / 0.9);
+        let (e0, e1, et) = ear;
+        let line = [
+            (0.0, 20.0 + 12.0 * rec),
+            (25.0, 18.0 + 18.0 * rec),
+            (40.0, 8.0 + 14.0 * rec),
+            (e0 - 9.0, -8.0 + 8.0 * rec),
+            (e0 - 5.0, -26.0 + 10.0 * rec),
+            (e0 - 2.0, -33.0 + 10.0 * rec),
+            (e0 + 2.0, et - 2.0),
+            (e0 + 6.0, et + 2.0),
+            (e1 - 4.0, et + 2.0),
+            (e1 + 8.0, -16.0),
+            (e1 + 22.0, -32.0),
+            (150.0, -42.0),
+            (180.0, -48.0),
+        ];
+        // a baby's hair is short, thin and fine
+        let small = c01(p.age / 4.0);
+        let locks = Locks {
+            flow: Flow::Whorl(norm([0.0, (56.0 * D2R).sin(), -(56.0 * D2R).cos()])),
+            line: &line,
+            top_bald: if bald > 0.4 { 92.0 - (bald - 0.4) * 78.0 } else { 999.0 },
+            spacing: lerp(0.12, 0.17, small),
+            width: lerp(0.13, 0.22, small),
+            thick: lerp(0.025, 0.07, small) * (1.0 + 0.4 * curl),
+            length: lerp(0.3, 0.6, small),
+            tier: 0.035,
+            curl,
+            wave: 0.0,
+            knot: 0.0,
+        };
+        lock_hair(&mut cap, &mut x.rng, &cast_h, hc, hs, hair, &locks, lod, &under_hat);
         out.push(cap);
     }
     // brows: two rows of short strands along the brow arch, up at the inner
@@ -1439,189 +1545,30 @@ pub fn build(h: &Head, p: &Look, lod: usize) -> Portrait {
             }
         };
         let at = |d: V3, r: f32| madd(hc, d, r);
-        let mut hm = Surface::new(mat2(0.8));
-        // every point of the hair's outer surface, to seat the braid on it
-        let mut hp: Vec<V3> = Vec::new();
+        let mut hm = Surface::new(mat(0.85));
         let veil = hst == Hair::Veil;
         let ek = if hst == Hair::Braid { -40.0 } else { -24.0 };
         let kk = norm(dd(180.0, ek));
-        // Catmull-Rom through control directions, spaced by arc length
-        let path = |cp: &[V3], t: f32| -> V3 {
-            let ls: Vec<f32> = cp.windows(2).map(|w| ang(w[0], w[1])).collect();
-            let tot: f32 = ls.iter().sum();
-            let mut xx = t * tot;
-            let mut i = 0;
-            while i < ls.len() - 1 && xx > ls[i] {
-                xx -= ls[i];
-                i += 1;
-            }
-            let u = if ls[i] > 0.0 { (xx / ls[i]).min(1.0) } else { 0.0 };
-            let p0 = if i > 0 { cp[i - 1] } else { mix(cp[0], cp[1], -1.0) };
-            let (p1, p2) = (cp[i], cp[i + 1]);
-            let p3 = if i + 2 < cp.len() { cp[i + 2] } else { mix(cp[i + 1], cp[i], -1.0) };
-            let f = |k: usize| 0.5 * (2.0 * p1[k] + (-p0[k] + p2[k]) * u + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * u * u + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * u * u * u);
-            norm([f(0), f(1), f(2)])
+        // the hairline: across the forehead, over the top of the ear, down
+        // to the nape
+        let line = [(0.0, 16.0), (20.0, 14.0), (40.0, 4.0), (58.0, -14.0), (78.0, -27.0), (98.0, -38.0), (130.0, -50.0), (160.0, -58.0), (180.0, -62.0)];
+        let small = if kid { 0.75 } else { 1.0 };
+        let locks = Locks {
+            flow: Flow::Parting(kk),
+            line: &line,
+            top_bald: 999.0,
+            spacing: 0.15 * small,
+            width: 0.17 * small,
+            // under the veil the hair lies flat
+            thick: if veil { 0.03 } else { 0.065 * small },
+            length: 1.0,
+            tier: if veil { 0.0 } else { 0.05 * small },
+            curl: 0.0,
+            wave: if veil { 0.0 } else { (0.02 + 0.02 * curl) * small },
+            knot: if hst == Hair::Bun { 1.3 * small } else { 0.0 },
         };
-        let waves = (3.0 + jround(3.0 * curl)) * if kid { 0.6 } else { 1.0 };
-        let w_a = (0.038 + 0.016 * curl) * hs;
-        // bands from the parting, three or four to a lock
-        let ns = [9, 12, 15, 18][lod];
-        let nt = ([10, 13, 16, 19][lod] as f32).max(jround(waves * [2.0, 3.0, 4.0, 4.0][lod] * 2.0 + 3.0)) as usize;
-        let cap_t = |s: f32, t: f32| {
-            (0.012 + 0.023 * sm(0.0, 0.2, s) + (if veil { 0.03 } else { 0.15 }) * (PI * (t * 1.12).min(1.0)).sin().max(0.0).powf(0.8) * (1.0 - 0.35 * s) * (0.12 + 0.88 * sm(0.0, 0.35, s))) * hs
-        };
-        // a band's place in its lock: ridge height (-0.3 at the grooves, 1 on
-        // the crest) and light (0 at the grooves, 1 on the crest)
-        let lock_pos = |i: usize| {
-            let w = 3 + (i / 3 + p.seed as usize) % 2;
-            let f = (i % w) as f32 / w as f32 * 2.0 - 1.0 + 1.0 / w as f32;
-            (1.0 - 1.3 * f * f, 1.0 - f.abs())
-        };
-        // the wave along a band, crests sharper than troughs
-        let wave = |t: f32, i: usize| {
-            let f = (t * PI * 2.0 * waves + (i % 2) as f32 * 0.5).sin();
-            f.signum() * f.abs().powf(0.6) * sm(0.05, 0.2, t) * (1.0 - sm(0.75, 1.0, t))
-        };
-        for sg in [1f32, -1.0] {
-            let (mut g, mut sk) = (Vec::new(), Vec::new());
-            let band = |s: f32, t: f32| {
-                let gm = (16.0 + 92.0 * s.powf(1.25)) * D2R;
-                let p0 = norm([sg * 0.016 * (1.0 - s), gm.sin(), gm.cos()]);
-                let t_ = norm(mix(dd(sg * 58.0, -14.0), dd(sg * 179.0, 34.0), s));
-                let e_ = norm(mix(dd(sg * 98.0, -38.0), dd(sg * 182.0, -4.0), s));
-                path(&[p0, t_, e_, kk], t)
-            };
-            for i in 0..=ns {
-                let s = i as f32 / ns as f32;
-                let ridge = lock_pos(i).0;
-                let (mut col, mut skr) = (Vec::new(), Vec::new());
-                for j in 0..=nt {
-                    let t = j as f32 / nt as f32;
-                    let mut d = band(s, t);
-                    // the waves reach the face: the hairline swings in and out
-                    let k = (1.0 - s / 0.25).max(0.0) * if veil { 0.0 } else { 1.0 };
-                    if k > 0.0 {
-                        let out = sub(d, band(s + 0.06, t));
-                        let pp = norm(sub(out, mul(d, dot(out, d))));
-                        let a = 3.5 * D2R * k * wave(t, 0) * sm(0.08, 0.22, t);
-                        d = norm(add(mul(d, a.cos()), mul(pp, a.sin())));
-                    }
-                    let r = rr(d, true);
-                    let w = wave(t, i) * w_a;
-                    col.push(at(d, r + cap_t(s, t) + ridge * 0.03 * hs * sm(0.0, 0.15, t) + w));
-                    skr.push(at(d, r - 0.006 * hs));
-                }
-                hp.extend_from_slice(&col);
-                g.push(col);
-                sk.push(skr);
-            }
-            for i in 0..ns {
-                for j in 0..nt {
-                    let t = (j as f32 + 0.5) / nt as f32;
-                    let crest = 0.5 + 0.5 * (t * PI * 2.0 * waves + 0.9).sin();
-                    let lit = 0.74 + 0.26 * (lock_pos(i).1 + lock_pos(i + 1).1) / 2.0;
-                    let c = cmul(hair, lit * (0.8 + 0.28 * crest) * (0.96 + 0.06 * x.rng.next()));
-                    if sg > 0.0 {
-                        hm.quad(g[i][j], g[i + 1][j], g[i + 1][j + 1], g[i][j + 1], c);
-                    } else {
-                        hm.quad(g[i][j], g[i][j + 1], g[i + 1][j + 1], g[i + 1][j], c);
-                    }
-                }
-            }
-            // close the edges: the forehead's (first strand) and the parting
-            for j in 0..nt {
-                hm.quad(g[0][j], g[0][j + 1], sk[0][j + 1], sk[0][j], cmul(hair, 0.78));
-            }
-            for i in 0..ns {
-                hm.quad(g[i][0], g[i + 1][0], sk[i + 1][0], sk[i][0], cmul(hair, 0.55));
-            }
-            // nape: from the hairline behind the ear up to the bun
-            let (nu, nv) = ([3, 4, 5, 6][lod], [4, 5, 6, 7][lod]);
-            let (mut l2, mut s2) = (Vec::new(), Vec::new());
-            for i in 0..=nu {
-                let u = i as f32 / nu as f32;
-                let h0 = norm(mix(dd(sg * 98.0, -40.0), dd(sg * 181.0, -64.0), u));
-                let (mut col, mut skr) = (Vec::new(), Vec::new());
-                for j in 0..=nv {
-                    let t = j as f32 / nv as f32;
-                    let d = norm(mix(h0, kk, t));
-                    let r = rr(d, true);
-                    col.push(at(d, r + (0.03 + 0.05 * (PI * t).sin()) * hs + if i % 2 == 1 { 0.008 * hs } else { 0.0 }));
-                    skr.push(at(d, r - 0.006 * hs));
-                }
-                hp.extend_from_slice(&col);
-                l2.push(col);
-                s2.push(skr);
-            }
-            for i in 0..nu {
-                for j in 0..nv {
-                    let c = cmul(hair, (if i % 2 == 1 { 0.95 } else { 0.8 }) * (0.94 + 0.08 * x.rng.next()));
-                    if sg > 0.0 {
-                        hm.quad(l2[i][j], l2[i + 1][j], l2[i + 1][j + 1], l2[i][j + 1], c);
-                    } else {
-                        hm.quad(l2[i][j], l2[i][j + 1], l2[i + 1][j + 1], l2[i + 1][j], c);
-                    }
-                }
-            }
-            for i in 0..nu {
-                hm.quad(l2[i][0], l2[i + 1][0], s2[i + 1][0], s2[i][0], cmul(hair, 0.6));
-            }
-        }
-        let nk = kk;
-        let ak = [1.0, 0.0, 0.0];
-        let bk = norm(cross(nk, ak));
-        let q = at(kk, rr(kk, true) + 0.04 * hs);
-        // a tube along a centre line, pentagonal, light and dark as if plaited
-        let tube = |hm: &mut Surface, pts: &[V3], rad: &dyn Fn(f32) -> f32, col_f: &dyn Fn(usize) -> Rgb| {
-            const SIDES: usize = 5;
-            let mut prev: Option<Vec<V3>> = None;
-            for k in 0..pts.len() {
-                let (c, nx, pv) = (pts[k], pts[(k + 1).min(pts.len() - 1)], pts[k.saturating_sub(1)]);
-                let tg = norm(sub(nx, pv));
-                let u = norm(cross(tg, nk));
-                let v = norm(cross(tg, u));
-                let r = rad(k as f32 / (pts.len() - 1) as f32);
-                let ring: Vec<V3> = (0..SIDES)
-                    .map(|q| {
-                        let a = q as f32 / SIDES as f32 * PI * 2.0;
-                        madd(c, add(mul(u, a.cos()), mul(v, a.sin())), r)
-                    })
-                    .collect();
-                if let Some(pr) = &prev {
-                    let cc = col_f(k);
-                    for q in 0..SIDES {
-                        let q2 = (q + 1) % SIDES;
-                        hm.quad(pr[q], pr[q2], ring[q2], ring[q], cmul(cc, if q % 2 == 1 { 0.9 } else { 1.0 }));
-                    }
-                } else {
-                    for q in 1..SIDES - 1 {
-                        hm.tri(ring[0], ring[q], ring[q + 1], cmul(col_f(0), 0.7));
-                    }
-                }
-                prev = Some(ring);
-            }
-            let pr = prev.unwrap();
-            for q in 1..SIDES - 1 {
-                hm.tri(pr[0], pr[q + 1], pr[q], cmul(col_f(pts.len() - 1), 0.7));
-            }
-        };
-        if hst == Hair::Bun || hst == Hair::Veil {
-            // nape bun: two turns of a plait, narrowing outwards
-            let segs = [14, 18, 22, 24][lod];
-            let sz = if kid { 0.7 } else { 1.0 };
-            let pts: Vec<V3> = (0..=segs)
-                .map(|k| {
-                    let f = k as f32 / segs as f32;
-                    let a = f * 2.0 * PI * 2.0;
-                    let rad = lerp(0.29, 0.08, f) * hs * sz;
-                    let hh = lerp(0.08, 0.24, f) * hs * sz;
-                    madd(madd(q, nk, hh), add(mul(ak, a.cos()), mul(bk, a.sin())), rad)
-                })
-                .collect();
-            if !veil {
-                tube(&mut hm, &pts, &|f| (0.12 - 0.045 * f) * hs * sz, &|k| cmul(hair, if k % 2 == 1 { 0.8 } else { 0.98 }));
-            }
-        }
+        // points on the hair's outside, to seat the braid on
+        let hp = lock_hair(&mut hm, &mut x.rng, &cast_h, hc, hs, hair, &locks, lod, &|_| false);
         if hst == Hair::Braid {
             // braid from the nape over the back of the head up to the crown,
             // a herringbone of staggered leaves
