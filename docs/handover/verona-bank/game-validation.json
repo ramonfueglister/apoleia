@@ -1,0 +1,2452 @@
+{
+	"assertions": 1389887,
+	"atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"failures": [],
+	"game_frames": 583,
+	"ground_corners_after": "6c48a502d46e19fdc9ea87e2172f3ff3b36b1398b9e6226c5f2e78e3bad8b0c7",
+	"ground_corners_before": "6c48a502d46e19fdc9ea87e2172f3ff3b36b1398b9e6226c5f2e78e3bad8b0c7",
+	"injected_missing_assets": [
+		"bank_stones",
+		"bank_grass",
+		"reeds"
+	],
+	"pages_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"phase": "validated",
+	"test": "verona_bank_check",
+	"views": [
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 0,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "width-0.65",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-0.65.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 0.65
+		},
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 0,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "width-1.5",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-1.5.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 1.5
+		},
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 1,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "width-3.0",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-3.0.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 3.0
+		},
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 2,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "width-5.0",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-5.0.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 5.0
+		},
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 2,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "width-7.5",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-7.5.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 7.5
+		},
+		{
+			"enabled": false,
+			"entries": 32,
+			"lod": 2,
+			"name": "width-12.0",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/width-12.0.png",
+			"width_km": 12.0
+		},
+		{
+			"enabled": true,
+			"entries": 32,
+			"ground_contact_vertices": 12491,
+			"lod": 0,
+			"maximum_ground_error_km": 0.0,
+			"minimum_dry_distance_km": 0.00654296875,
+			"name": "return",
+			"placements": [
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.68115234375,
+						-495.042144775391
+					],
+					"river_edge_km": 0.0344970703125
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7978515625,
+						-495.042175292969
+					],
+					"river_edge_km": 0.034375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8681640625,
+						-495.034515380859
+					],
+					"river_edge_km": 0.0420654296875
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6025390625,
+						-495.036651611328
+					],
+					"river_edge_km": 0.039990234375
+				},
+				{
+					"asset": "reeds",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.078735351562,
+						-495.113647460938
+					],
+					"river_edge_km": 0.0360896542668343
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6914
+					],
+					"point": [
+						-673.13427734375,
+						-495.166259765625
+					],
+					"river_edge_km": 0.0382475733757019
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.935546875,
+						-495.028137207031
+					],
+					"river_edge_km": 0.04853515625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.030090332031,
+						-495.085906982422
+					],
+					"river_edge_km": 0.0215021252632141
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.55908203125,
+						-495.055450439453
+					],
+					"river_edge_km": 0.02119140625
+				},
+				{
+					"asset": "bank_stones",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.75048828125,
+						-495.045013427734
+					],
+					"river_edge_km": 0.0315673828125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.138549804688,
+						-495.132568359375
+					],
+					"river_edge_km": 0.0651783972978592
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.65283203125,
+						-494.993438720703
+					],
+					"river_edge_km": 0.083203125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77001953125,
+						-495.009704589844
+					],
+					"river_edge_km": 0.066845703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9580078125,
+						-494.986511230469
+					],
+					"river_edge_km": 0.0900390625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.77294921875,
+						-494.984497070312
+					],
+					"river_edge_km": 0.0921142578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.84765625,
+						-494.984954833984
+					],
+					"river_edge_km": 0.0916259765625
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.9189453125,
+						-494.981842041016
+					],
+					"river_edge_km": 0.0947998046875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6171875,
+						-494.992584228516
+					],
+					"river_edge_km": 0.0840576171875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.125,
+						-495.076751708984
+					],
+					"river_edge_km": 0.0949576675891876
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.7001953125,
+						-494.985717773438
+					],
+					"river_edge_km": 0.0908935546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.119445800781,
+						-495.104095458984
+					],
+					"river_edge_km": 0.0718247771263123
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8818359375,
+						-494.986755371094
+					],
+					"river_edge_km": 0.089794921875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.7333984375,
+						-494.993896484375
+					],
+					"river_edge_km": 0.08271484375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5703125,
+						-494.993011474609
+					],
+					"river_edge_km": 0.0835693359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.5478515625,
+						-494.996948242188
+					],
+					"river_edge_km": 0.0796630859375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.6396484375,
+						-495.013427734375
+					],
+					"river_edge_km": 0.06318359375
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.8994140625,
+						-495.001342773438
+					],
+					"river_edge_km": 0.0752685546875
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.079284667969,
+						-495.041290283203
+					],
+					"river_edge_km": 0.0876207530498505
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18457,
+						6915
+					],
+					"point": [
+						-672.677734375,
+						-494.994140625
+					],
+					"river_edge_km": 0.082470703125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18456,
+						6915
+					],
+					"point": [
+						-672.72216796875,
+						-495.015777587891
+					],
+					"river_edge_km": 0.0608642578125
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.153564453125,
+						-495.113861083984
+					],
+					"river_edge_km": 0.0890881299972534
+				},
+				{
+					"asset": "bank_grass",
+					"parcel": [
+						18455,
+						6915
+					],
+					"point": [
+						-673.088500976562,
+						-495.070434570312
+					],
+					"river_edge_km": 0.0735511213541031
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bank/validated/return.png",
+			"sloped_contact_vertices": 8664,
+			"species_counts": {
+				"bank_grass": 22,
+				"bank_stones": 5,
+				"reeds": 5
+			},
+			"vertex_checks": 77130,
+			"width_km": 1.5
+		}
+	]
+}
