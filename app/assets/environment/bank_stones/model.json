@@ -1,0 +1,70 @@
+{
+  "slug": "bank_stones",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 532,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.6586822867393494,
+          -0.3517873287200928,
+          0.0
+        ],
+        [
+          0.6102818250656128,
+          0.3187061846256256,
+          0.23000000417232513
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 364,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.65489661693573,
+          -0.3519376814365387,
+          0.0
+        ],
+        [
+          0.6016374826431274,
+          0.31974273920059204,
+          0.23000000417232513
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 182,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.6552581787109375,
+          -0.3517873287200928,
+          0.0
+        ],
+        [
+          0.6102818250656128,
+          0.3082664906978607,
+          0.23000000417232513
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.6586822867393494,
+      -0.3517873287200928,
+      0.0
+    ],
+    [
+      0.6102818250656128,
+      0.3187061846256256,
+      0.23000000417232513
+    ]
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "slug": "bank_grass",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 224,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.30590924620628357,
+          -0.3056459426879883,
+          0.0
+        ],
+        [
+          0.24585594236850739,
+          0.34267616271972656,
+          0.5836508274078369
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 168,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.30590924620628357,
+          -0.3056459426879883,
+          0.0
+        ],
+        [
+          0.24585594236850739,
+          0.34267616271972656,
+          0.5836508274078369
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 112,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.30590924620628357,
+          -0.3056459426879883,
+          0.0
+        ],
+        [
+          0.24585594236850739,
+          0.34267616271972656,
+          0.5836508274078369
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.30590924620628357,
+      -0.3056459426879883,
+      0.0
+    ],
+    [
+      0.24585594236850739,
+      0.34267616271972656,
+      0.5836508274078369
+    ]
+  ]
+}

@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disabled;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
+#include "res://shaders/verona_bank.gdshaderinc"
 #include "res://shaders/coast_steps.gdshaderinc"
 
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
@@ -932,6 +933,8 @@ void fragment() {
 			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
 			c = mix(c, C_BANK, bank);
 			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
+			// Original dry-side gravel colour only: no changed water or geometry.
+			c = vb_ground_colour(p, c, d * tt_data_km());
 		}
 		if (water_lines) {
 			// the river with its bank, and a lake by its outline on the low part
